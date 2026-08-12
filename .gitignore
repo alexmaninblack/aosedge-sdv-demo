@@ -1,0 +1,45 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+
+# Local VM state and downloaded upstream artifacts
+.cache/
+.local/
+.run/
+artifacts/
+downloads/
+runs/
+
+# Virtual machine images, firmware, and release archives
+*.qcow2
+*.img
+*.raw
+*.vdi
+*.vmdk
+*.fd
+*.tar
+*.tar.gz
+*.tar.xz
+*.xz
+
+# Credentials and private key material
+secrets/
+credentials/
+*.key
+*.pem
+*.crt
+*.cer
+*.csr
+*.p12
+*.pfx
+*.pkcs12
+*.jks
+id_rsa
+id_ed25519
+
+# Language and tool output
+__pycache__/
+*.py[cod]
+.venv/
+build/
