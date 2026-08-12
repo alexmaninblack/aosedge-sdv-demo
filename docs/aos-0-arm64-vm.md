@@ -10,6 +10,37 @@ whether this image is a sound base for the CARLA integration.
 Provisioning and certificate enrollment are explicitly out of scope. They will
 be performed in AOS-1 with the utilities supplied by the AosEdge SDK.
 
+## Execution status
+
+| Phase | Status | Result |
+| --- | --- | --- |
+| Phase 1: host baseline | Complete — 2026-08-12 | Pass |
+| Phase 2: native QEMU qualification | Not started | QEMU is not installed yet |
+| Phases 3–14 | Not started | — |
+
+### Phase 1 observed baseline
+
+| Field | Observed value |
+| --- | --- |
+| Host | Apple M5 Pro (`Mac17,8`) |
+| Architecture | `arm64` |
+| CPU | 18 physical / 18 logical cores |
+| Memory | 51,539,607,552 bytes (48 GiB) |
+| macOS | 26.5.2, build `25F84` |
+| Hypervisor Framework | Available (`kern.hv_support=1`) |
+| Free disk at repository | 392,364,826,624 bytes (365.42 GiB) |
+| Planned SSH forward | `127.0.0.1:10022`, available at check time |
+| Homebrew | Native prefix `/opt/homebrew` |
+| QEMU | Not installed; expected input to Phase 2 |
+| Repository branch | `feature/aos-0-arm64-vm` |
+| Repository commit checked | `9168b64cb91983b78c10c9dc17184f0334c99bb8` |
+| Check time | `2026-08-12T23:19:40+0200` (`CEST`) |
+
+No serial number, hardware UUID, network address, credential, or account data
+was collected. Phase 1 passes because the host is native ARM64, supports HVF,
+has substantially more than the 20 GiB disk minimum and 2 GiB guest-memory
+baseline, and has no listener occupying the planned loopback port.
+
 ## Pinned upstream input
 
 | Field | Value |
