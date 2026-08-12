@@ -18,9 +18,9 @@ the legacy AOS Vehicle Information Service interface.
 
 ## Current status
 
-Planning and the Phase 1 host baseline are complete for AOS-0. The Apple M5 Pro
-host supports HVF and has sufficient resources. No VM image has been downloaded
-and QEMU has not been installed yet; native QEMU qualification is Phase 2.
+Planning and Phases 1–2 are complete for AOS-0. The Apple M5 Pro host supports
+HVF and native QEMU 11.0.3 has passed an ARM64 `virt-11.0`/`host` CPU probe. No
+VM image has been downloaded yet; pinned release acquisition is Phase 3.
 
 ## Repository policy
 

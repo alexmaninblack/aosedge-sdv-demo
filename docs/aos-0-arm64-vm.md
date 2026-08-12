@@ -15,7 +15,7 @@ be performed in AOS-1 with the utilities supplied by the AosEdge SDK.
 | Phase | Status | Result |
 | --- | --- | --- |
 | Phase 1: host baseline | Complete — 2026-08-12 | Pass |
-| Phase 2: native QEMU qualification | Not started | QEMU is not installed yet |
+| Phase 2: native QEMU qualification | Complete — 2026-08-12 | Pass |
 | Phases 3–14 | Not started | — |
 
 ### Phase 1 observed baseline
@@ -40,6 +40,34 @@ No serial number, hardware UUID, network address, credential, or account data
 was collected. Phase 1 passes because the host is native ARM64, supports HVF,
 has substantially more than the 20 GiB disk minimum and 2 GiB guest-memory
 baseline, and has no listener occupying the planned loopback port.
+
+### Phase 2 observed baseline
+
+| Field | Qualified value |
+| --- | --- |
+| Package manager | Homebrew 6.0.17, native prefix `/opt/homebrew` |
+| Package | `qemu` 11.0.3, Homebrew ARM64 bottle |
+| System binary | `/opt/homebrew/bin/qemu-system-aarch64`, Mach-O ARM64 |
+| Image binary | `/opt/homebrew/bin/qemu-img`, Mach-O ARM64 |
+| Accelerator | `hvf` |
+| Machine | `virt-11.0` |
+| CPU | `host` |
+| Initial topology | 2 vCPUs, 2 GiB RAM for AosVM |
+| Storage controller | `virtio-scsi-pci` with `scsi-hd` |
+| Network device | `virtio-net-pci` |
+| User network | `10.0.0.0/24`, host `10.0.0.1`, DNS proxy `10.0.0.2` |
+| Planned SSH forward | `127.0.0.1:10022` to `10.0.0.100:22` |
+| Check completed | `2026-08-12T23:30:25+0200` (`CEST`) |
+
+Qualification used empty, diskless probes only; no AosVM image or guest OS was
+started. QEMU successfully created and ran two `host` vCPUs with HVF, created
+the required virtio-SCSI and virtio network devices, accepted the planned user
+network, and bound the SSH forward only to loopback. The probes exited cleanly,
+leaving no QEMU process or listener on port 10022.
+
+The installed binary also contains TCG, but the accepted launcher configuration
+selects `virt-11.0,accel=hvf` explicitly and defines no accelerator fallback.
+TCG does not satisfy the AOS-0 acceptance criteria.
 
 ## Pinned upstream input
 
