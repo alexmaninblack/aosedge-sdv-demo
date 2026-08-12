@@ -7,17 +7,20 @@ in one layer must not be hidden by work in another layer.
 ## AOS-0 — Boot the official ARM64 AosVM image on Apple Silicon
 
 - Download and verify the pinned official AosVM `qemuarm64` release.
-- Boot one unmodified Main Node image through a disposable qcow2 overlay.
-- Use QEMU with Apple Hypervisor Framework acceleration.
+- Boot the complete Main Node system through a disposable qcow2 overlay,
+  including the official EFI, guest kernel, initramfs, and root filesystem.
+- Use QEMU system virtualization with Apple Hypervisor Framework acceleration.
 - Establish serial console and loopback-only SSH access.
-- Verify guest architecture, services, outbound HTTPS, DNS, clean shutdown,
-  and restart persistence.
+- Functionally validate the guest kernel facilities required by AosCore.
+- Run a cloud-free local OCI probe through the image's `crun` runtime.
+- Validate AosCore components and classify the expected unprovisioned state.
+- Verify outbound HTTPS, DNS, clean shutdown, and restart persistence.
 - Record the exact host, QEMU, image, firmware, and network configuration.
 
 Exit criterion: the pinned Main Node boots reproducibly on the M5 Pro, is
 reachable only through explicitly configured local forwards, reaches the
-Internet, and survives a clean stop/start without modifying the downloaded
-base image.
+Internet, passes the kernel and local OCI gates, and survives a clean stop/start
+without modifying the downloaded base image.
 
 Detailed plan: [AOS-0 runbook](aos-0-arm64-vm.md).
 
