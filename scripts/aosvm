@@ -1,0 +1,155 @@
+#!/bin/sh
+
+set -eu
+
+RELEASE="6.1.0"
+ASSET="aos-vm-image-qemuarm64-6.1.0.tar.xz"
+ASSET_SIZE="381515220"
+ASSET_SHA256="db8fef0188f4ba0930aecafecdfe4ad063a3cf27a48e8649fc5050f9b3117e04"
+ASSET_URL="https://github.com/aosedge/meta-aos-vm/releases/download/v6.1.0/aos-vm-image-qemuarm64-6.1.0.tar.xz"
+
+fail() {
+    printf 'Error: %s\n' "$*" >&2
+    exit 1
+}
+
+require_command() {
+    command -v "$1" >/dev/null 2>&1 || fail "Required command is not available: $1"
+}
+
+file_size() {
+    stat -f '%z' "$1"
+}
+
+file_sha256() {
+    shasum -a 256 "$1" | awk '{print $1}'
+}
+
+validate_effective_url() {
+    effective_url=$1
+
+    case "$effective_url" in
+        https://*) ;;
+        *) fail "Download did not finish on an HTTPS URL" ;;
+    esac
+
+    effective_authority=${effective_url#https://}
+    effective_authority=${effective_authority%%/*}
+    effective_host=${effective_authority%%:*}
+
+    case "$effective_host" in
+        github.com|release-assets.githubusercontent.com|objects.githubusercontent.com) ;;
+        *) fail "Download redirected to an unexpected host" ;;
+    esac
+}
+
+verify_archive() {
+    verified_archive_path=$1
+
+    [ -f "$verified_archive_path" ] || fail "Archive does not exist: $verified_archive_path"
+
+    verified_actual_size=$(file_size "$verified_archive_path")
+    [ "$verified_actual_size" = "$ASSET_SIZE" ] ||
+        fail "Archive size mismatch: expected $ASSET_SIZE bytes, found $verified_actual_size bytes"
+
+    verified_actual_sha256=$(file_sha256 "$verified_archive_path")
+    [ "$verified_actual_sha256" = "$ASSET_SHA256" ] ||
+        fail "Archive SHA-256 mismatch: expected $ASSET_SHA256, found $verified_actual_sha256"
+}
+
+download_archive() {
+    require_command curl
+    require_command shasum
+    require_command stat
+
+    script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+    repository_root=$(CDPATH='' cd -- "$script_dir/.." && pwd)
+    cache_root=${AOSVM_CACHE_ROOT:-"$repository_root/.cache"}
+    release_dir="$cache_root/aosvm/v$RELEASE/qemuarm64"
+    archive_path="$release_dir/$ASSET"
+    partial_path="$archive_path.partial"
+
+    mkdir -p "$release_dir"
+
+    if [ -L "$archive_path" ]; then
+        fail "Final archive path must not be a symbolic link: $archive_path"
+    fi
+    if [ -e "$archive_path" ] && [ ! -f "$archive_path" ]; then
+        fail "Final archive path is not a regular file: $archive_path"
+    fi
+
+    if [ -f "$archive_path" ]; then
+        verify_archive "$archive_path"
+        printf 'Verified cached AosVM archive.\n'
+        printf 'Path: %s\n' "$archive_path"
+        printf 'Size: %s bytes\n' "$ASSET_SIZE"
+        printf 'SHA-256: %s\n' "$ASSET_SHA256"
+        return
+    fi
+
+    if [ -L "$partial_path" ]; then
+        fail "Partial archive path must not be a symbolic link: $partial_path"
+    fi
+    if [ -e "$partial_path" ] && [ ! -f "$partial_path" ]; then
+        fail "Partial archive path is not a regular file: $partial_path"
+    fi
+
+    if [ -f "$partial_path" ]; then
+        partial_size=$(file_size "$partial_path")
+        if [ "$partial_size" -gt "$ASSET_SIZE" ]; then
+            fail "Partial archive is larger than the pinned asset: $partial_path"
+        fi
+        if [ "$partial_size" = "$ASSET_SIZE" ]; then
+            verify_archive "$partial_path"
+            mv "$partial_path" "$archive_path"
+            printf 'Promoted the complete verified partial archive.\n'
+            printf 'Path: %s\n' "$archive_path"
+            printf 'Size: %s bytes\n' "$ASSET_SIZE"
+            printf 'SHA-256: %s\n' "$ASSET_SHA256"
+            return
+        fi
+        printf 'Resuming AosVM download at %s of %s bytes.\n' "$partial_size" "$ASSET_SIZE"
+    else
+        printf 'Downloading pinned AosVM v%s qemuarm64 archive.\n' "$RELEASE"
+    fi
+
+    effective_url=$(curl \
+        --fail \
+        --location \
+        --proto '=https' \
+        --proto-redir '=https' \
+        --retry 5 \
+        --retry-all-errors \
+        --continue-at - \
+        --output "$partial_path" \
+        --write-out '%{url_effective}' \
+        "$ASSET_URL")
+
+    validate_effective_url "$effective_url"
+
+    verify_archive "$partial_path"
+    mv "$partial_path" "$archive_path"
+
+    printf 'Downloaded and verified AosVM archive.\n'
+    printf 'Path: %s\n' "$archive_path"
+    printf 'Size: %s bytes\n' "$ASSET_SIZE"
+    printf 'SHA-256: %s\n' "$ASSET_SHA256"
+}
+
+usage() {
+    printf 'Usage: %s download\n' "$0"
+}
+
+case ${1:-} in
+    download)
+        [ "$#" -eq 1 ] || fail "The download command does not accept arguments"
+        download_archive
+        ;;
+    -h|--help|help)
+        usage
+        ;;
+    *)
+        usage >&2
+        exit 2
+        ;;
+esac

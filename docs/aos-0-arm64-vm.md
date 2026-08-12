@@ -16,7 +16,8 @@ be performed in AOS-1 with the utilities supplied by the AosEdge SDK.
 | --- | --- | --- |
 | Phase 1: host baseline | Complete — 2026-08-12 | Pass |
 | Phase 2: native QEMU qualification | Complete — 2026-08-12 | Pass |
-| Phases 3–14 | Not started | — |
+| Phase 3: pinned release download | Complete — 2026-08-12 | Pass |
+| Phases 4–14 | Not started | — |
 
 ### Phase 1 observed baseline
 
@@ -68,6 +69,29 @@ leaving no QEMU process or listener on port 10022.
 The installed binary also contains TCG, but the accepted launcher configuration
 selects `virt-11.0,accel=hvf` explicitly and defines no accelerator fallback.
 TCG does not satisfy the AOS-0 acceptance criteria.
+
+### Phase 3 observed baseline
+
+| Field | Verified value |
+| --- | --- |
+| Release | AosVM `v6.1.0` |
+| Asset | `aos-vm-image-qemuarm64-6.1.0.tar.xz` |
+| Download source | Official GitHub release over HTTPS |
+| Effective asset host | `release-assets.githubusercontent.com` over HTTPS |
+| Exact size | 381,515,220 bytes |
+| SHA-256 | `db8fef0188f4ba0930aecafecdfe4ad063a3cf27a48e8649fc5050f9b3117e04` |
+| Local cache | `.cache/aosvm/v6.1.0/qemuarm64/` |
+| Check completed | `2026-08-12T23:37:41+0200` (`CEST`) |
+
+The tracked `scripts/aosvm download` command uses a temporary `.partial` file,
+HTTPS-only redirects, an allowlist for the effective GitHub asset host, retry
+and resume support, exact size verification, SHA-256 verification, and an
+atomic final rename. A complete cached file is reverified on every invocation.
+The downloader rejects corrupt cached files, oversized partial files, and
+symbolic links at either cache target.
+
+The verified archive is ignored by Git. It has not been extracted, inspected,
+mounted, or executed; those actions begin in Phase 4.
 
 ## Pinned upstream input
 

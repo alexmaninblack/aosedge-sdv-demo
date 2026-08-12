@@ -1,0 +1,40 @@
+#!/bin/sh
+
+set -eu
+
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+repository_root=$(CDPATH='' cd -- "$script_dir/../.." && pwd)
+test_root=$(mktemp -d /private/tmp/aosvm-download-test.XXXXXX)
+
+cleanup() {
+    rm -r "$test_root"
+}
+
+trap cleanup EXIT HUP INT TERM
+
+release_dir="$test_root/aosvm/v6.1.0/qemuarm64"
+archive_path="$release_dir/aos-vm-image-qemuarm64-6.1.0.tar.xz"
+
+mkdir -p "$release_dir"
+: > "$archive_path"
+
+if AOSVM_CACHE_ROOT="$test_root" "$repository_root/scripts/aosvm" download \
+    >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected a corrupt cached archive to be rejected.\n' >&2
+    exit 1
+fi
+
+grep -q 'Archive size mismatch' "$test_root/stderr"
+
+rm "$archive_path"
+ln -s /dev/null "$archive_path"
+
+if AOSVM_CACHE_ROOT="$test_root" "$repository_root/scripts/aosvm" download \
+    >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected a symbolic-link cache target to be rejected.\n' >&2
+    exit 1
+fi
+
+grep -q 'must not be a symbolic link' "$test_root/stderr"
+
+printf 'AosVM download safety tests passed.\n'

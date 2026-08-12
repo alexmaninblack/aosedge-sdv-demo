@@ -18,9 +18,18 @@ the legacy AOS Vehicle Information Service interface.
 
 ## Current status
 
-Planning and Phases 1–2 are complete for AOS-0. The Apple M5 Pro host supports
-HVF and native QEMU 11.0.3 has passed an ARM64 `virt-11.0`/`host` CPU probe. No
-VM image has been downloaded yet; pinned release acquisition is Phase 3.
+Planning and Phases 1–3 are complete for AOS-0. The Apple M5 Pro host supports
+HVF, native QEMU 11.0.3 passed the ARM64 probe, and the pinned AosVM 6.1.0
+archive has been downloaded and verified. Archive inspection and immutable disk
+preparation are Phase 4.
+
+## Commands
+
+Download or reverify the pinned official release archive:
+
+```sh
+./scripts/aosvm download
+```
 
 ## Repository policy
 
