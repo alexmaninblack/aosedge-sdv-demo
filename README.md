@@ -14,6 +14,7 @@ the legacy AOS Vehicle Information Service interface.
 - [Project roadmap](docs/roadmap.md)
 - [AOS-0: boot official ARM64 AosVM on Apple Silicon](docs/aos-0-arm64-vm.md)
 - [AOS-1: provision one Main Node](docs/aos-1-single-node-provisioning.md)
+- [Reissue AosEdge user certificates on a new Mac](docs/aos-user-certificate-reissue-macos.md)
 - [Repository and artifact boundaries](docs/decisions/0001-repository-and-artifact-boundaries.md)
 - [QEMU system VM with HVF](docs/decisions/0002-qemu-system-hvf-for-aosvm.md)
 - [Superseded two-Node topology decision](docs/decisions/0003-two-node-aos1-topology.md)

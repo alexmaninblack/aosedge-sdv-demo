@@ -1,0 +1,62 @@
+#!/bin/sh
+
+set -eu
+umask 077
+
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+repository_root=$(CDPATH='' cd -- "$script_dir/../.." && pwd)
+helper="$repository_root/scripts/aos-user-setup"
+test_root=$(mktemp -d /private/tmp/aos-user-setup-test.XXXXXX)
+
+cleanup() {
+    rm -r "$test_root"
+}
+
+trap cleanup EXIT HUP INT TERM
+
+"$helper" --help >"$test_root/help"
+grep -q '^  all ' "$test_root/help"
+grep -q '^  bootstrap ' "$test_root/help"
+grep -q '^  reissue ' "$test_root/help"
+grep -q 'never written to files, command-line arguments' "$test_root/help"
+
+if AOS_USER_ROOT="$test_root/aos" "$helper" verify \
+    >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected verification without a bootstrap environment to fail.\n' >&2
+    exit 1
+fi
+grep -q 'Run bootstrap first' "$test_root/stderr"
+[ ! -e "$test_root/aos" ]
+
+if grep -Eq '[0-9a-fA-F]{32,}' "$helper"; then
+    printf 'The setup helper appears to contain a token-like literal.\n' >&2
+    exit 1
+fi
+
+grep -q "'aos-keys>=1.10.0,<2'" "$helper"
+grep -q "'aos-prov>=5.2.0,<6'" "$helper"
+grep -q 'getpass.getpass' "$helper"
+grep -q 'from aos_keys.actions import UserType, new_token_user' "$helper"
+if grep -q 'AOS_REISSUE_TOKEN' "$helper"; then
+    printf 'The setup helper must not pass tokens through process environment.\n' >&2
+    exit 1
+fi
+grep -q 'Preserving existing %s certificate' "$helper"
+grep -A5 '^all()' "$helper" | grep -q 'install_root'
+
+ln -s "$test_root/elsewhere" "$test_root/aos-link"
+if AOS_USER_ROOT="$test_root/aos-link" "$helper" check-host \
+    >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected a symbolic-link Aos user root to be rejected.\n' >&2
+    exit 1
+fi
+grep -q 'must not be a symbolic link' "$test_root/stderr"
+
+if AOS_USER_ROOT=relative/aos "$helper" check-host \
+    >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected a relative Aos user root to be rejected.\n' >&2
+    exit 1
+fi
+grep -q 'must be an absolute path' "$test_root/stderr"
+
+printf 'Aos user setup safety tests passed.\n'

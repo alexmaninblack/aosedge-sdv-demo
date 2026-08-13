@@ -17,9 +17,9 @@ acceptance evidence.
 
 | Phase | Status | Exit condition |
 | --- | --- | --- |
-| AOS-1.1: account and roles | Not started | OEM and SP access confirmed |
-| AOS-1.2: CLI environment | Not started | Exact tool versions recorded locally |
-| AOS-1.3: user certificates | Not started | OEM and SP certificate checks pass |
+| AOS-1.1: account and roles | In progress | Admin, OEM, and SP access confirmed |
+| AOS-1.2: CLI environment | Complete - 2026-08-13 | Exact tool versions and single-Node CLI contract verified |
+| AOS-1.3: user certificates | In progress | Admin, OEM, and SP certificate checks pass |
 | AOS-1.4: single-Node cloud model | Not started | Target System matches the Main Node only |
 | AOS-1.5: provisioning transport | Not started | Guest IAM is reachable only on host loopback |
 | AOS-1.6: persistent lifecycle and recovery checkpoint | In progress | Reset lock and independent pre-provision checkpoint pass |
@@ -27,8 +27,11 @@ acceptance evidence.
 | AOS-1.8: post-provision acceptance | Not started | Local core and cloud Unit gates pass |
 | AOS-1.9: Hello World | Not started | Official service reaches `Active` |
 
-No account, certificate, Target System, cloud Unit, or provisioning state has
-been created by this plan. The AOS-0 Main Node is stopped and unprovisioned.
+An existing AosEdge account is being recovered on this new Mac through the
+official reissue flow. No local client certificate, Target System, cloud Unit,
+or provisioning state has yet been created by this plan. The AOS-0 Main Node
+is stopped and unprovisioned. The clean-machine procedure and a token-safe
+helper are documented in [AosEdge user certificate reissue on a new Mac](aos-user-certificate-reissue-macos.md).
 
 ## Fixed decisions
 
@@ -97,11 +100,12 @@ domain that has not been selected explicitly.
 ## Phase AOS-1.2: Install the CLI in an isolated environment
 
 Follow the official macOS layout rather than installing packages into the
-system Python:
+system Python. The checked-in helper implements these steps and enforces
+Python 3.10 or later, which is required by `aos-keys` 1.10.0:
 
 ```sh
-python3 -m venv ~/.aos/venv
-~/.aos/venv/bin/python3 -m pip install --upgrade aos-keys aos-signer aos-prov
+brew install python@3.12
+./scripts/aos-user-setup bootstrap
 ```
 
 Before using credentials:
@@ -120,11 +124,16 @@ smoke checks are mandatory even though the tools are pure Python and expected
 to work. Do not treat an unlisted host version as a failure by itself, but do
 not proceed past an observed compatibility failure.
 
-The package review performed while writing this plan observed published
-`aos-prov` 5.2.0. Its default provisioning port is `8089`, its Unit endpoint
-accepts `IP:PORT`, and its protocol-v5 implementation stops waiting as soon as
-the requested Node count is present. The installed version must be checked
-again at execution time rather than assumed.
+The clean-machine qualification installed native ARM64 Python 3.12.14,
+`aos-keys` 1.10.0, `aos-signer` 1.17.0, and `aos-prov` 5.4.2 in
+`~/.aos/venv`. Package dependency checks, an in-memory RSA/CSR smoke test, and
+the complete `aos_prov provision --help` import path pass on macOS 26.5.2.
+That host version is outside the official macOS 13/14/15 test matrix and is
+qualified here for this project rather than claimed as vendor-supported.
+The installed provisioning command accepts `IP_ADDRESS:PORT` and `--nodes`.
+Its default is two Nodes, so AOS-1.7 must supply `--nodes 1` explicitly. The
+private root, venv, and empty security directory are mode `0700`; no credential
+was used or generated during qualification.
 
 **Pass:** the isolated tools run on macOS and the exact versions and CLI
 contract are known.
@@ -145,17 +154,27 @@ macOS may require the user to approve Keychain trust with Touch ID or the local
 account password. This is an expected user-presence step and must not be
 automated around the Keychain prompt.
 
-Next, the user runs the exact `aos_keys new-user` commands from the OEM and SP
-welcome emails in a personal terminal. Representative shape only:
+Next, the user supplies the fresh Admin, OEM, and SP reissue tokens directly to
+the private terminal prompts in the tracked helper. Representative shape only:
 
 ```text
+~/.aos/venv/bin/python3 -m aos_keys new-user -d <cloud-domain> -t <one-time-token> --admin
 ~/.aos/venv/bin/python3 -m aos_keys new-user -d <cloud-domain> -t <one-time-token> --oem
 ~/.aos/venv/bin/python3 -m aos_keys new-user -d <cloud-domain> -t <one-time-token> --sp
 ```
 
-Never replace the placeholders in tracked text. Verify locally:
+Never replace the placeholders in tracked text. The reissue email or PDF must
+not be committed, and a disclosed token should be replaced before use. Run:
 
 ```sh
+./scripts/aos-user-setup reissue
+./scripts/aos-user-setup verify
+```
+
+The equivalent local verification calls are:
+
+```sh
+~/.aos/venv/bin/python3 -m aos_keys info --admin
 ~/.aos/venv/bin/python3 -m aos_keys info --oem
 ~/.aos/venv/bin/python3 -m aos_keys info --sp
 ```
