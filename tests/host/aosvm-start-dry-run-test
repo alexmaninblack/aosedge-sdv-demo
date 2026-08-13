@@ -1,0 +1,122 @@
+#!/bin/sh
+
+set -eu
+umask 077
+
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+repository_root=$(CDPATH='' cd -- "$script_dir/../.." && pwd)
+test_root=$(mktemp -d /private/tmp/aosvm-start-dry-run-test.XXXXXX)
+test_run_root="$test_root/run"
+test_runs_root="$test_root/runs"
+output_path="$test_root/dry-run-output"
+test_port="41022"
+
+cleanup() {
+    rm -r "$test_root"
+}
+
+trap cleanup EXIT HUP INT TERM
+
+run_dry_run() {
+    AOSVM_RUN_ROOT="$test_run_root" \
+    AOSVM_RUNS_ROOT="$test_runs_root" \
+    AOSVM_SSH_HOST_PORT="$test_port" \
+        "$repository_root/scripts/aosvm" start --dry-run
+}
+
+run_dry_run >"$output_path"
+
+grep -Fq "QEMU command (dry run; not executed):" "$output_path"
+grep -Fq "'/opt/homebrew/bin/qemu-system-aarch64'" "$output_path"
+grep -Fq "'virt-11.0,accel=hvf'" "$output_path"
+grep -Fq "'-cpu'" "$output_path"
+grep -Fq "'host'" "$output_path"
+grep -Fq "'-smp'" "$output_path"
+grep -Fq "'2'" "$output_path"
+grep -Fq "'-m'" "$output_path"
+grep -Fq "'2048'" "$output_path"
+grep -Fq "'-nodefaults'" "$output_path"
+grep -Fq "QEMU_EFI.fd'" "$output_path"
+grep -Fq "file=$repository_root/.local/aosvm-main-overlay.qcow2,if=none,id=aos-image,format=qcow2,cache=writeback" "$output_path"
+grep -Fq "'virtio-scsi-pci,id=scsi'" "$output_path"
+grep -Fq "'scsi-hd,drive=aos-image,bootindex=0'" "$output_path"
+grep -Fq "user,id=aosnet,net=10.0.0.0/24,host=10.0.0.1,dns=10.0.0.2,restrict=off,hostfwd=tcp:127.0.0.1:$test_port-10.0.0.100:22" "$output_path"
+grep -Fq "'virtio-net-pci,netdev=aosnet,mac=52:54:00:41:4f:53'" "$output_path"
+grep -Fq "path=$test_run_root/aosvm-main.serial,server=on,wait=off,logfile=$test_runs_root/aosvm-main-serial.log,logappend=on,logtimestamp=on" "$output_path"
+grep -Fq "'chardev:serial0'" "$output_path"
+grep -Fq "'unix:$test_run_root/aosvm-main.qmp,server=on,wait=off'" "$output_path"
+grep -Fq "'$test_run_root/aosvm-main.pid'" "$output_path"
+grep -Fq "'-monitor'" "$output_path"
+grep -Fq "'none'" "$output_path"
+grep -Fq "'-display'" "$output_path"
+
+if grep -Eq 'tcg|qemu-aarch64|aos-vm-main-qemuarm64\.qcow2|aos-vm-secondary|hostfwd=[^,]*0\.0\.0\.0|-daemonize|-nographic|-enable-kvm' "$output_path"; then
+    printf 'Dry-run output contains a forbidden QEMU argument.\n' >&2
+    exit 1
+fi
+
+[ "$(stat -f '%Lp' "$test_run_root")" = "700" ]
+[ "$(stat -f '%Lp' "$test_runs_root")" = "700" ]
+[ -z "$(find "$test_run_root" -mindepth 1 -print)" ]
+[ -z "$(find "$test_runs_root" -mindepth 1 -print)" ]
+
+if AOSVM_RUN_ROOT="$test_root/invalid-port-run" \
+    AOSVM_RUNS_ROOT="$test_root/invalid-port-runs" \
+    AOSVM_SSH_HOST_PORT="22" \
+        "$repository_root/scripts/aosvm" start --dry-run \
+        >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected a privileged SSH host port to be rejected.\n' >&2
+    exit 1
+fi
+
+grep -q 'SSH host port must be between 1024 and 65535' "$test_root/stderr"
+
+symlink_target="$test_root/symlink-target"
+mkdir "$symlink_target"
+ln -s "$symlink_target" "$test_root/symlink-run"
+
+if AOSVM_RUN_ROOT="$test_root/symlink-run" \
+    AOSVM_RUNS_ROOT="$test_root/symlink-runs" \
+    AOSVM_SSH_HOST_PORT="41023" \
+        "$repository_root/scripts/aosvm" start --dry-run \
+        >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected a symbolic-link runtime directory to be rejected.\n' >&2
+    exit 1
+fi
+
+grep -q 'Runtime directory must not be a symbolic link' "$test_root/stderr"
+
+existing_run_root="$test_root/existing-run"
+existing_runs_root="$test_root/existing-runs"
+mkdir -m 700 "$existing_run_root" "$existing_runs_root"
+: >"$existing_run_root/aosvm-main.pid"
+
+if AOSVM_RUN_ROOT="$existing_run_root" \
+    AOSVM_RUNS_ROOT="$existing_runs_root" \
+    AOSVM_SSH_HOST_PORT="41024" \
+        "$repository_root/scripts/aosvm" start --dry-run \
+        >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected an existing runtime path to be rejected.\n' >&2
+    exit 1
+fi
+
+grep -q 'Runtime path already exists' "$test_root/stderr"
+
+serial_log_run_root="$test_root/serial-log-run"
+serial_log_runs_root="$test_root/serial-log-runs"
+mkdir -m 700 "$serial_log_run_root" "$serial_log_runs_root"
+: >"$serial_log_runs_root/aosvm-main-serial.log"
+chmod 0644 "$serial_log_runs_root/aosvm-main-serial.log"
+
+if AOSVM_RUN_ROOT="$serial_log_run_root" \
+    AOSVM_RUNS_ROOT="$serial_log_runs_root" \
+    AOSVM_SSH_HOST_PORT="41025" \
+        "$repository_root/scripts/aosvm" start --dry-run \
+        >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected an overly broad serial log mode to be rejected.\n' >&2
+    exit 1
+fi
+
+grep -q 'Existing serial log mode must be 0600' "$test_root/stderr"
+
+printf 'AosVM start dry-run contract tests passed.\n'

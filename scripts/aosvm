@@ -1,6 +1,7 @@
 #!/bin/sh
 
 set -eu
+umask 077
 
 RELEASE="6.1.0"
 ASSET="aos-vm-image-qemuarm64-6.1.0.tar.xz"
@@ -18,11 +19,26 @@ FIRMWARE_SIZE="2097152"
 FIRMWARE_SHA256="30f7042c23b81c28b8196a76f4af6bcf10046f08049c9d78b4387472c5bbcd10"
 IMAGE_VIRTUAL_SIZE="6997147648"
 OVERLAY="aosvm-main-overlay.qcow2"
+QEMU_BASELINE_VERSION="11.0.3"
+QEMU_MACHINE="virt-11.0"
+QEMU_CPU="host"
+QEMU_VCPUS="2"
+QEMU_MEMORY_MIB="2048"
+VM_NAME="aosvm-main"
+VM_MAC_ADDRESS="52:54:00:41:4f:53"
+GUEST_NETWORK="10.0.0.0/24"
+GUEST_ADDRESS="10.0.0.100"
+GUEST_SSH_PORT="22"
+GUEST_VISIBLE_HOST="10.0.0.1"
+GUEST_DNS_PROXY="10.0.0.2"
 
 SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 REPOSITORY_ROOT=$(CDPATH='' cd -- "$SCRIPT_DIR/.." && pwd)
 CACHE_ROOT=${AOSVM_CACHE_ROOT:-"$REPOSITORY_ROOT/.cache"}
 LOCAL_ROOT=${AOSVM_LOCAL_ROOT:-"$REPOSITORY_ROOT/.local"}
+RUN_ROOT=${AOSVM_RUN_ROOT:-"$REPOSITORY_ROOT/.run"}
+RUNS_ROOT=${AOSVM_RUNS_ROOT:-"$REPOSITORY_ROOT/runs"}
+SSH_HOST_PORT=${AOSVM_SSH_HOST_PORT:-"10022"}
 RELEASE_DIR="$CACHE_ROOT/aosvm/v$RELEASE/qemuarm64"
 ARCHIVE_PATH="$RELEASE_DIR/$ASSET"
 PARTIAL_PATH="$ARCHIVE_PATH.partial"
@@ -30,9 +46,14 @@ MAIN_IMAGE_PATH="$RELEASE_DIR/$MAIN_IMAGE"
 SECONDARY_IMAGE_PATH="$RELEASE_DIR/$SECONDARY_IMAGE"
 FIRMWARE_PATH="$RELEASE_DIR/$FIRMWARE"
 OVERLAY_PATH="$LOCAL_ROOT/$OVERLAY"
+PID_PATH="$RUN_ROOT/$VM_NAME.pid"
+QMP_SOCKET_PATH="$RUN_ROOT/$VM_NAME.qmp"
+SERIAL_SOCKET_PATH="$RUN_ROOT/$VM_NAME.serial"
+SERIAL_LOG_PATH="$RUNS_ROOT/$VM_NAME-serial.log"
 
 PREPARE_WORK_DIR=''
 PREPARE_LOCK_DIR=''
+QEMU_SYSTEM_PATH=''
 
 fail() {
     printf 'Error: %s\n' "$*" >&2
@@ -126,6 +147,10 @@ verify_base_image() {
 absolute_path() {
     absolute_path_directory=$(CDPATH='' cd -- "$(dirname -- "$1")" && pwd)
     printf '%s/%s\n' "$absolute_path_directory" "$(basename -- "$1")"
+}
+
+file_mode() {
+    stat -f '%Lp' "$1"
 }
 
 verify_overlay() {
@@ -349,8 +374,206 @@ prepare_images() {
     printf 'Overlay: %s\n' "$OVERLAY_PATH"
 }
 
+ensure_private_directory() {
+    private_directory=$1
+    private_directory_label=$2
+
+    [ "$private_directory" != "/" ] ||
+        fail "$private_directory_label must not be the filesystem root"
+    [ ! -L "$private_directory" ] ||
+        fail "$private_directory_label must not be a symbolic link: $private_directory"
+
+    if [ -e "$private_directory" ]; then
+        [ -d "$private_directory" ] ||
+            fail "$private_directory_label is not a directory: $private_directory"
+        [ "$(file_mode "$private_directory")" = "700" ] ||
+            fail "$private_directory_label mode must be 0700: $private_directory"
+    else
+        mkdir -p "$private_directory"
+        chmod 0700 "$private_directory"
+    fi
+}
+
+validate_socket_path() {
+    socket_path=$1
+    socket_label=$2
+    socket_path_length=$(printf '%s' "$socket_path" | wc -c | tr -d ' ')
+
+    [ "$socket_path_length" -le 100 ] ||
+        fail "$socket_label exceeds the safe macOS Unix socket path length: $socket_path"
+}
+
+validate_runtime_state() {
+    require_command lsof
+    require_command tr
+    require_command wc
+
+    case "$SSH_HOST_PORT" in
+        ''|*[!0-9]*) fail "SSH host port must be a decimal integer" ;;
+    esac
+    [ "$SSH_HOST_PORT" -ge 1024 ] && [ "$SSH_HOST_PORT" -le 65535 ] ||
+        fail "SSH host port must be between 1024 and 65535"
+
+    ensure_private_directory "$RUN_ROOT" "Runtime directory"
+    ensure_private_directory "$RUNS_ROOT" "Run-log directory"
+
+    validate_socket_path "$QMP_SOCKET_PATH" "QMP socket path"
+    validate_socket_path "$SERIAL_SOCKET_PATH" "Serial socket path"
+
+    for runtime_path in "$PID_PATH" "$QMP_SOCKET_PATH" "$SERIAL_SOCKET_PATH"; do
+        [ ! -e "$runtime_path" ] && [ ! -L "$runtime_path" ] ||
+            fail "Runtime path already exists: $runtime_path"
+    done
+
+    [ ! -L "$SERIAL_LOG_PATH" ] ||
+        fail "Serial log path must not be a symbolic link: $SERIAL_LOG_PATH"
+    if [ -e "$SERIAL_LOG_PATH" ] && [ ! -f "$SERIAL_LOG_PATH" ]; then
+        fail "Serial log path is not a regular file: $SERIAL_LOG_PATH"
+    fi
+    if [ -f "$SERIAL_LOG_PATH" ] && [ "$(file_mode "$SERIAL_LOG_PATH")" != "600" ]; then
+        fail "Existing serial log mode must be 0600: $SERIAL_LOG_PATH"
+    fi
+
+    if lsof -nP -iTCP:"$SSH_HOST_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
+        fail "SSH host port is already in use: 127.0.0.1:$SSH_HOST_PORT"
+    fi
+}
+
+verify_start_inputs() {
+    require_command jq
+    require_command qemu-img
+    require_command shasum
+    require_command stat
+
+    verify_archive "$ARCHIVE_PATH"
+    verify_release_file "$MAIN_IMAGE_PATH" "$MAIN_IMAGE_SIZE" "$MAIN_IMAGE_SHA256" "Main Node image"
+    verify_release_file "$SECONDARY_IMAGE_PATH" "$SECONDARY_IMAGE_SIZE" "$SECONDARY_IMAGE_SHA256" "Secondary Node image"
+    verify_release_file "$FIRMWARE_PATH" "$FIRMWARE_SIZE" "$FIRMWARE_SHA256" "QEMU EFI firmware"
+
+    [ "$(file_mode "$ARCHIVE_PATH")" = "444" ] ||
+        fail "Archive mode must be 0444"
+    [ "$(file_mode "$MAIN_IMAGE_PATH")" = "444" ] ||
+        fail "Main Node image mode must be 0444"
+    [ "$(file_mode "$SECONDARY_IMAGE_PATH")" = "444" ] ||
+        fail "Secondary Node image mode must be 0444"
+    [ "$(file_mode "$FIRMWARE_PATH")" = "444" ] ||
+        fail "QEMU EFI firmware mode must be 0444"
+
+    verify_base_image "$MAIN_IMAGE_PATH" "Main Node image"
+    verify_base_image "$SECONDARY_IMAGE_PATH" "Secondary Node image"
+    verify_overlay "$OVERLAY_PATH"
+    [ "$(file_mode "$OVERLAY_PATH")" = "600" ] ||
+        fail "Overlay mode must be 0600"
+}
+
+qualify_qemu_for_start() {
+    require_command file
+    require_command grep
+    require_command qemu-system-aarch64
+    require_command sed
+
+    QEMU_SYSTEM_PATH=$(command -v qemu-system-aarch64)
+    case "$QEMU_SYSTEM_PATH" in
+        /*) ;;
+        *) fail "qemu-system-aarch64 did not resolve to an absolute path" ;;
+    esac
+
+    file "$QEMU_SYSTEM_PATH" | grep -q 'Mach-O 64-bit executable arm64' ||
+        fail "qemu-system-aarch64 is not a native macOS ARM64 executable"
+
+    qemu_version_line=$($QEMU_SYSTEM_PATH --version | sed -n '1p')
+    [ "$qemu_version_line" = "QEMU emulator version $QEMU_BASELINE_VERSION" ] ||
+        fail "QEMU version is not the qualified baseline $QEMU_BASELINE_VERSION"
+
+    $QEMU_SYSTEM_PATH -accel help | grep -qx 'hvf' ||
+        fail "QEMU does not provide the HVF accelerator"
+    $QEMU_SYSTEM_PATH -machine help | grep -Eq "^${QEMU_MACHINE}[[:space:]]" ||
+        fail "QEMU does not provide the qualified machine $QEMU_MACHINE"
+    $QEMU_SYSTEM_PATH -cpu help | grep -Eq '^[[:space:]]+host$' ||
+        fail "QEMU does not provide the host ARM CPU model"
+
+    qemu_device_list=$($QEMU_SYSTEM_PATH -machine "$QEMU_MACHINE" -device help)
+    printf '%s\n' "$qemu_device_list" | grep -q 'name "virtio-scsi-pci"' ||
+        fail "QEMU does not provide virtio-scsi-pci"
+    printf '%s\n' "$qemu_device_list" | grep -q 'name "scsi-hd"' ||
+        fail "QEMU does not provide scsi-hd"
+    printf '%s\n' "$qemu_device_list" | grep -q 'name "virtio-net-pci"' ||
+        fail "QEMU does not provide virtio-net-pci"
+}
+
+validate_qemu_option_paths() {
+    for qemu_option_path in \
+        "$FIRMWARE_PATH" "$OVERLAY_PATH" "$PID_PATH" "$QMP_SOCKET_PATH" \
+        "$SERIAL_SOCKET_PATH" "$SERIAL_LOG_PATH"; do
+        case "$qemu_option_path" in
+            *,*) fail "QEMU option paths must not contain commas: $qemu_option_path" ;;
+        esac
+    done
+}
+
+shell_quote() {
+    printf "'"
+    printf '%s' "$1" | sed "s/'/'\\\\''/g"
+    printf "'"
+}
+
+print_command() {
+    printf 'QEMU command (dry run; not executed):\n'
+    command_separator=''
+    for command_argument in "$@"; do
+        printf '%s' "$command_separator"
+        shell_quote "$command_argument"
+        command_separator=' \
+  '
+    done
+    printf '\n'
+}
+
+start_dry_run() {
+    validate_runtime_state
+    verify_start_inputs
+    qualify_qemu_for_start
+    validate_qemu_option_paths
+
+    absolute_overlay_path=$(absolute_path "$OVERLAY_PATH")
+    absolute_firmware_path=$(absolute_path "$FIRMWARE_PATH")
+    absolute_pid_path=$(absolute_path "$PID_PATH")
+    absolute_qmp_socket_path=$(absolute_path "$QMP_SOCKET_PATH")
+    absolute_serial_socket_path=$(absolute_path "$SERIAL_SOCKET_PATH")
+    absolute_serial_log_path=$(absolute_path "$SERIAL_LOG_PATH")
+
+    drive_option="file=$absolute_overlay_path,if=none,id=aos-image,format=qcow2,cache=writeback"
+    network_option="user,id=aosnet,net=$GUEST_NETWORK,host=$GUEST_VISIBLE_HOST,dns=$GUEST_DNS_PROXY,restrict=off,hostfwd=tcp:127.0.0.1:$SSH_HOST_PORT-$GUEST_ADDRESS:$GUEST_SSH_PORT"
+    network_device_option="virtio-net-pci,netdev=aosnet,mac=$VM_MAC_ADDRESS"
+    qmp_option="unix:$absolute_qmp_socket_path,server=on,wait=off"
+    serial_chardev_option="socket,id=serial0,path=$absolute_serial_socket_path,server=on,wait=off,logfile=$absolute_serial_log_path,logappend=on,logtimestamp=on"
+
+    set -- \
+        "$QEMU_SYSTEM_PATH" \
+        -name "$VM_NAME" \
+        -machine "$QEMU_MACHINE,accel=hvf" \
+        -cpu "$QEMU_CPU" \
+        -smp "$QEMU_VCPUS" \
+        -m "$QEMU_MEMORY_MIB" \
+        -nodefaults \
+        -bios "$absolute_firmware_path" \
+        -drive "$drive_option" \
+        -device 'virtio-scsi-pci,id=scsi' \
+        -device 'scsi-hd,drive=aos-image,bootindex=0' \
+        -netdev "$network_option" \
+        -device "$network_device_option" \
+        -chardev "$serial_chardev_option" \
+        -serial 'chardev:serial0' \
+        -qmp "$qmp_option" \
+        -pidfile "$absolute_pid_path" \
+        -monitor none \
+        -display none
+
+    print_command "$@"
+}
+
 usage() {
-    printf 'Usage: %s <download|prepare>\n' "$0"
+    printf 'Usage: %s <download|prepare|start --dry-run>\n' "$0"
 }
 
 case ${1:-} in
@@ -361,6 +584,11 @@ case ${1:-} in
     prepare)
         [ "$#" -eq 1 ] || fail "The prepare command does not accept arguments"
         prepare_images
+        ;;
+    start)
+        [ "$#" -eq 2 ] && [ "$2" = "--dry-run" ] ||
+            fail "Phase 5 supports only: start --dry-run"
+        start_dry_run
         ;;
     -h|--help|help)
         usage

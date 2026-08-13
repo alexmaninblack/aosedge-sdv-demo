@@ -18,10 +18,11 @@ the legacy AOS Vehicle Information Service interface.
 
 ## Current status
 
-Planning and Phases 1–4 are complete for AOS-0. The Apple M5 Pro host supports
+Planning and Phases 1–5 are complete for AOS-0. The Apple M5 Pro host supports
 HVF, native QEMU 11.0.3 passed the ARM64 probe, and the pinned AosVM 6.1.0
 archive, immutable base images, firmware, and disposable Main Node overlay have
-been verified and prepared. QEMU command assembly is Phase 5.
+been verified and prepared. The exact QEMU argument contract has passed dry-run
+checks; the first serial boot is Phase 6.
 
 ## Commands
 
@@ -35,6 +36,12 @@ Prepare or reverify immutable release inputs and the writable Main Node overlay:
 
 ```sh
 ./scripts/aosvm prepare
+```
+
+Validate and print the exact QEMU command without starting the VM:
+
+```sh
+./scripts/aosvm start --dry-run
 ```
 
 ## Repository policy

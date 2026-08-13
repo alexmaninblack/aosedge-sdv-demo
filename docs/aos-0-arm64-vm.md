@@ -18,7 +18,8 @@ be performed in AOS-1 with the utilities supplied by the AosEdge SDK.
 | Phase 2: native QEMU qualification | Complete — 2026-08-12 | Pass |
 | Phase 3: pinned release download | Complete — 2026-08-12 | Pass |
 | Phase 4: immutable inputs and overlay | Complete — 2026-08-13 | Pass |
-| Phases 5–14 | Not started | — |
+| Phase 5: QEMU command assembly | Complete — 2026-08-13 | Pass |
+| Phases 6–14 | Not started | — |
 
 ### Phase 1 observed baseline
 
@@ -138,6 +139,50 @@ existing overlay, an unexpected backing file, or a symbolic-link target.
 All archive, base, firmware, and overlay files remain ignored by Git. The
 Secondary Node is prepared for upstream-release completeness but is not attached
 or used in AOS-0. No firmware, disk, or guest code has been executed yet.
+
+### Phase 5 observed baseline
+
+`scripts/aosvm start --dry-run` revalidates the prepared artifacts, exact file
+modes, qcow2 backing chain, native QEMU binary, QEMU version, HVF availability,
+machine, CPU model, required devices, runtime paths, and loopback port before it
+prints the shell-quoted argument vector. It does not start a VM.
+
+The accepted Phase 6 command contract is:
+
+| Field | Qualified value |
+| --- | --- |
+| QEMU | `/opt/homebrew/bin/qemu-system-aarch64` 11.0.3, native ARM64 |
+| VM name | `aosvm-main` |
+| Machine | `virt-11.0,accel=hvf` with no accelerator fallback |
+| CPU and memory | `host`, 2 vCPUs, 2,048 MiB RAM |
+| Defaults | `-nodefaults` |
+| Firmware | Verified immutable `QEMU_EFI.fd` |
+| Writable disk | `.local/aosvm-main-overlay.qcow2` only |
+| Disk topology | `virtio-scsi-pci` -> `scsi-hd` -> `aos-image` |
+| User network | `10.0.0.0/24`, host `10.0.0.1`, DNS proxy `10.0.0.2` |
+| SSH forward | `127.0.0.1:10022` -> `10.0.0.100:22` |
+| NIC | `virtio-net-pci`, MAC `52:54:00:41:4f:53` |
+| Serial | Repository-owned Unix socket with append-only timestamped local log |
+| Control | Repository-owned QMP Unix socket; HMP monitor disabled |
+| Display | Disabled |
+| PID | Repository-owned PID file |
+| Runtime directory modes | `0700` |
+| Check completed | `2026-08-13T08:47:14+0200` (`CEST`) |
+
+The command does not contain TCG, KVM, `qemu-aarch64` user-mode execution,
+`-daemonize`, `-nographic`, a graphical display, a non-loopback host forward,
+the Secondary Node disk, or the immutable Main Node base disk as a QEMU drive.
+The absolute base path appears only inside the overlay metadata validated by
+`qemu-img`; QEMU receives the overlay path.
+
+Dry-run rejects an unqualified QEMU version or architecture, unavailable HVF or
+devices, changed input hash/mode/backing chain, privileged or invalid SSH port,
+occupied SSH port, symbolic-link runtime/log paths, unsafe Unix socket length,
+and any pre-existing PID or control socket. Contract tests confirmed that no
+QEMU process, port listener, PID, socket, or serial log remains after dry-run.
+
+Phase 5 did not boot EFI or execute guest code. The first real QEMU start and
+serial boot checkpoints belong exclusively to Phase 6.
 
 ## Pinned upstream input
 
