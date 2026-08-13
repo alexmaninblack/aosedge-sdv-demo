@@ -22,6 +22,12 @@ reachable only through explicitly configured local forwards, reaches the
 Internet, passes the kernel and local OCI gates, and survives a clean stop/start
 without modifying the downloaded base image.
 
+Current gate: Phase 8 passes 12 of 13 required capabilities. The official
+AosVM 6.1.0 image configures SquashFS as a module but omits `squashfs.ko` from
+the released filesystem, so AOS-0 is stopped before local OCI qualification and
+cloud provisioning. Resolve this in the upstream image recipe or a temporary
+project-qualified AosVM build, then rerun Phase 8 from the beginning.
+
 Detailed plan: [AOS-0 runbook](aos-0-arm64-vm.md).
 
 ## AOS-1 — Register and provision the Unit

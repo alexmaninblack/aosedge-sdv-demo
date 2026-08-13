@@ -1,0 +1,522 @@
+#!/bin/sh
+
+set -u
+umask 077
+
+pass_count=0
+fail_count=0
+probe_index=0
+probe_id=$$
+token=$(printf '%03d' $(( $$ % 1000 )))
+probe_prefix="aos0-probe-$probe_id"
+work_dir="/tmp/$probe_prefix"
+lock_dir=/run/aos0-probe-phase8-lock
+details_file=
+netns_mount_preexisting=0
+
+if mountpoint -q /run/netns 2>/dev/null; then
+    netns_mount_preexisting=1
+fi
+
+cgroup_unit="${probe_prefix}-cgroup"
+container_id="${probe_prefix}-oci"
+netns_name="${probe_prefix}-net"
+bridge_link="aos0-probe-b$token"
+veth_host="aos0-probe-h$token"
+veth_peer="aos0-probe-n$token"
+vlan_parent="aos0-probe-p$token"
+vlan_peer="aos0-probe-q$token"
+vlan_link="aos0-probe-v$token"
+vxlan_link="aos0-probe-x$token"
+ifb_link="aos0-probe-i$token"
+tc_host="aos0-probe-t$token"
+tc_peer="aos0-probe-u$token"
+tc_ifb="aos0-probe-f$token"
+nft_table="${probe_prefix}-nat"
+quota_device=/dev/ram15
+quota_mount="$work_dir/quota"
+overlay_mount="$work_dir/overlay/merged"
+oci_dir="$work_dir/oci"
+oci_result="$work_dir/oci-result"
+oci_diagnostics="$work_dir/oci-diagnostics"
+loaded_by_probe=
+quota_device_claimed=0
+
+[ ! -e "$lock_dir" ] || {
+    printf 'Another Phase 8 guest capability gate may be running.\n' >&2
+    exit 1
+}
+mkdir "$lock_dir" || exit 1
+if [ -e "$work_dir" ] || ! mkdir "$work_dir"; then
+    rmdir "$lock_dir" 2>/dev/null || true
+    exit 1
+fi
+
+record_loaded_module() {
+    case " $loaded_by_probe " in
+        *" $1 "*) ;;
+        *) loaded_by_probe="$1 $loaded_by_probe" ;;
+    esac
+}
+
+ensure_module() {
+    module=$1
+
+    if lsmod | awk '{ print $1 }' | grep -qx "$module"; then
+        return 0
+    fi
+
+    modprobe "$module" || return 1
+    if lsmod | awk '{ print $1 }' | grep -qx "$module"; then
+        record_loaded_module "$module"
+    fi
+}
+
+cleanup_cgroup() {
+    systemctl stop "$cgroup_unit.service" >/dev/null 2>&1 || true
+    systemctl reset-failed "$cgroup_unit.service" >/dev/null 2>&1 || true
+}
+
+cleanup_oci() {
+    crun delete --force "$container_id" >/dev/null 2>&1 || true
+}
+
+cleanup_overlay() {
+    if mountpoint -q "$overlay_mount" 2>/dev/null; then
+        umount "$overlay_mount" >/dev/null 2>&1 || true
+    fi
+}
+
+cleanup_network() {
+    ip netns delete "$netns_name" >/dev/null 2>&1 || true
+    for link in \
+        "$bridge_link" "$veth_host" "$vlan_link" "$vlan_parent" \
+        "$vxlan_link" "$ifb_link" "$tc_host" "$tc_ifb"; do
+        ip link delete "$link" >/dev/null 2>&1 || true
+    done
+    if [ "$netns_mount_preexisting" -eq 0 ] && \
+        mountpoint -q /run/netns 2>/dev/null; then
+        umount /run/netns >/dev/null 2>&1 || true
+    fi
+}
+
+cleanup_nftables() {
+    nft delete table ip "$nft_table" >/dev/null 2>&1 || true
+}
+
+cleanup_quota() {
+    if mountpoint -q "$quota_mount" 2>/dev/null; then
+        quotaoff -u "$quota_mount" >/dev/null 2>&1 || true
+        umount "$quota_mount" >/dev/null 2>&1 || true
+    fi
+    if [ "$quota_device_claimed" -eq 1 ]; then
+        dd if=/dev/zero of="$quota_device" bs=1M count=4 conv=fsync \
+            >/dev/null 2>&1 || true
+        quota_device_claimed=0
+    fi
+}
+
+cleanup_modules() {
+    for module in $loaded_by_probe; do
+        modprobe -r "$module" >/dev/null 2>&1 || true
+    done
+    loaded_by_probe=
+}
+
+cleanup_all() {
+    cleanup_cgroup
+    cleanup_oci
+    cleanup_overlay
+    cleanup_network
+    cleanup_nftables
+    cleanup_quota
+    cleanup_modules
+    if [ -n "$details_file" ] && [ -f "$details_file" ]; then
+        rm -f "$details_file"
+    fi
+    rm -rf "$work_dir"
+    rmdir "$lock_dir" 2>/dev/null || true
+}
+
+trap cleanup_all EXIT HUP INT TERM
+
+run_probe() {
+    capability=$1
+    shift
+    probe_index=$((probe_index + 1))
+    details_file="$work_dir/result-$probe_index"
+
+    if "$@" >"$details_file" 2>&1; then
+        printf 'PASS: %s\n' "$capability"
+        pass_count=$((pass_count + 1))
+    else
+        printf 'FAIL: %s\n' "$capability"
+        fail_count=$((fail_count + 1))
+    fi
+    sed 's/^/  /' "$details_file"
+    rm -f "$details_file"
+    details_file=
+}
+
+probe_cgroups_v2() {
+    [ "$(stat -fc '%T' /sys/fs/cgroup)" = cgroup2fs ] || {
+        printf 'The unified cgroup v2 hierarchy is not mounted.\n'
+        return 1
+    }
+    for controller in cpu memory pids; do
+        grep -qw "$controller" /sys/fs/cgroup/cgroup.controllers || {
+            printf 'Required controller is unavailable: %s\n' "$controller"
+            return 1
+        }
+    done
+
+    cleanup_cgroup
+    systemd-run --quiet --unit="$cgroup_unit" \
+        --property=MemoryMax=16777216 \
+        --property=TasksMax=8 \
+        --property=CPUQuota=50% \
+        /bin/sleep 60 || return 1
+
+    control_group=$(systemctl show "$cgroup_unit.service" \
+        --property=ControlGroup --value)
+    [ -n "$control_group" ] || return 1
+    cgroup_path="/sys/fs/cgroup$control_group"
+    [ "$(cat "$cgroup_path/memory.max")" = 16777216 ] || return 1
+    [ "$(cat "$cgroup_path/pids.max")" = 8 ] || return 1
+    read -r cpu_quota cpu_period <"$cgroup_path/cpu.max"
+    [ "$cpu_quota" != max ] || return 1
+    [ "$cpu_quota" -lt "$cpu_period" ] || return 1
+
+    printf 'Hierarchy: %s\n' "$(stat -fc '%T' /sys/fs/cgroup)"
+    printf 'Enforced memory.max: %s bytes\n' "$(cat "$cgroup_path/memory.max")"
+    printf 'Enforced pids.max: %s tasks\n' "$(cat "$cgroup_path/pids.max")"
+    printf 'Enforced cpu.max: %s\n' "$(cat "$cgroup_path/cpu.max")"
+
+    cleanup_cgroup
+    [ ! -e "$cgroup_path" ]
+}
+
+prepare_oci_probe() {
+    mkdir -p "$oci_dir/rootfs/bin" "$oci_dir/rootfs/dev" \
+        "$oci_dir/rootfs/lib" "$oci_dir/rootfs/proc" \
+        "$oci_dir/rootfs/usr/lib"
+    cp -L /bin/busybox "$oci_dir/rootfs/bin/busybox" || return 1
+    for library in libc.so.6 libm.so.6 ld-linux-aarch64.so.1; do
+        cp -L "/lib/$library" "$oci_dir/rootfs/lib/$library" || return 1
+        cp -L "/usr/lib/$library" "$oci_dir/rootfs/usr/lib/$library" || return 1
+    done
+    cp -L /usr/lib/ld-linux-aarch64.so.1 \
+        "$oci_dir/rootfs/usr/lib/ld-linux-aarch64.so.1" || return 1
+
+    cat >"$oci_dir/config.json" <<'EOF'
+{
+  "ociVersion": "1.0.2",
+  "process": {
+    "terminal": false,
+    "user": { "uid": 0, "gid": 0 },
+    "args": [
+      "/bin/busybox",
+      "sh",
+      "-c",
+      "echo PID=$$; echo HOST=$(/bin/busybox hostname); for namespace in mnt pid ipc uts net; do echo NS-$namespace=$(/bin/busybox readlink /proc/self/ns/$namespace); done; if /bin/busybox pwd; then echo SECCOMP=not-blocked; exit 42; else echo SECCOMP=blocked; fi"
+    ],
+    "env": [ "PATH=/bin" ],
+    "cwd": "/",
+    "noNewPrivileges": true
+  },
+  "root": { "path": "rootfs", "readonly": true },
+  "hostname": "aos0-probe-host",
+  "mounts": [
+    { "destination": "/proc", "type": "proc", "source": "proc" }
+  ],
+  "linux": {
+    "namespaces": [
+      { "type": "mount" },
+      { "type": "pid" },
+      { "type": "ipc" },
+      { "type": "uts" },
+      { "type": "network" }
+    ],
+    "seccomp": {
+      "defaultAction": "SCMP_ACT_ALLOW",
+      "syscalls": [
+        { "names": [ "getcwd" ], "action": "SCMP_ACT_ERRNO", "errnoRet": 1 }
+      ]
+    }
+  }
+}
+EOF
+
+    cleanup_oci
+    (cd "$oci_dir" && crun run --bundle . "$container_id") >"$oci_result" 2>&1
+}
+
+namespace_value() {
+    namespace=$1
+    sed -n "s/^NS-$namespace=//p" "$oci_result"
+}
+
+probe_namespaces() {
+    cat "$oci_diagnostics"
+    cat "$oci_result"
+    [ -f "$oci_result" ] || return 1
+    [ "$(sed -n 's/^PID=//p' "$oci_result")" = 1 ] || return 1
+    [ "$(sed -n 's/^HOST=//p' "$oci_result")" = aos0-probe-host ] || return 1
+    for namespace in mnt pid ipc uts net; do
+        guest_value=$(namespace_value "$namespace")
+        parent_value=$(readlink "/proc/self/ns/$namespace")
+        [ -n "$guest_value" ] || return 1
+        [ "$guest_value" != "$parent_value" ] || return 1
+        printf '%s namespace: host=%s child=%s\n' \
+            "$namespace" "$parent_value" "$guest_value"
+    done
+    cleanup_oci
+}
+
+probe_seccomp() {
+    cat "$oci_diagnostics"
+    cat "$oci_result"
+    grep -qw kill_process /proc/sys/kernel/seccomp/actions_avail || return 1
+    grep -qw errno /proc/sys/kernel/seccomp/actions_avail || return 1
+    crun features | jq -e '.linux.seccomp.enabled == true' >/dev/null || return 1
+    grep -qx 'SECCOMP=blocked' "$oci_result" || return 1
+    printf 'Kernel actions: %s\n' "$(cat /proc/sys/kernel/seccomp/actions_avail)"
+    printf 'crun blocked the getcwd syscall with SCMP_ACT_ERRNO.\n'
+}
+
+probe_overlayfs() {
+    overlay_dir="$work_dir/overlay"
+    mkdir -p "$overlay_dir/lower" "$overlay_dir/upper" \
+        "$overlay_dir/work" "$overlay_mount"
+    printf 'lower-data\n' >"$overlay_dir/lower/lower.txt"
+
+    mount -t overlay overlay \
+        -o "lowerdir=$overlay_dir/lower,upperdir=$overlay_dir/upper,workdir=$overlay_dir/work" \
+        "$overlay_mount" || return 1
+    [ "$(cat "$overlay_mount/lower.txt")" = lower-data ] || return 1
+    printf 'upper-data\n' >"$overlay_mount/upper.txt" || return 1
+    [ "$(cat "$overlay_dir/upper/upper.txt")" = upper-data ] || return 1
+    printf 'Overlay mount read the lower layer and persisted a write in the upper layer.\n'
+    cleanup_overlay
+    ! mountpoint -q "$overlay_mount"
+}
+
+probe_squashfs() {
+    if ! grep -qw squashfs /proc/filesystems; then
+        modprobe squashfs || {
+            printf 'CONFIG_SQUASHFS is set to module, but squashfs.ko is absent.\n'
+            zcat /proc/config.gz | grep '^CONFIG_SQUASHFS='
+            return 1
+        }
+        record_loaded_module squashfs
+    fi
+    grep -qw squashfs /proc/filesystems || return 1
+    printf 'The kernel reports SquashFS filesystem support.\n'
+
+    if command -v mksquashfs >/dev/null 2>&1; then
+        squash_dir="$work_dir/squashfs"
+        mkdir -p "$squash_dir/source" "$squash_dir/mounted"
+        printf 'squash-data\n' >"$squash_dir/source/data.txt"
+        mksquashfs "$squash_dir/source" "$squash_dir/fixture.squashfs" \
+            -noappend -quiet || return 1
+        mount -t squashfs -o loop,ro "$squash_dir/fixture.squashfs" \
+            "$squash_dir/mounted" || return 1
+        [ "$(cat "$squash_dir/mounted/data.txt")" = squash-data ] || return 1
+        umount "$squash_dir/mounted" || return 1
+        printf 'A generated SquashFS fixture was mounted and read.\n'
+    else
+        printf 'mksquashfs is unavailable; positive kernel detection is the available proof.\n'
+    fi
+}
+
+probe_veth_and_bridge() {
+    cleanup_network
+    ip netns add "$netns_name" || return 1
+    ip link add "$veth_host" type veth peer name "$veth_peer" || return 1
+    ip link add name "$bridge_link" type bridge || return 1
+    ip link set "$veth_peer" netns "$netns_name" || return 1
+    ip link set "$veth_host" master "$bridge_link" || return 1
+    ip link set "$bridge_link" up || return 1
+    ip link set "$veth_host" up || return 1
+    ip netns exec "$netns_name" ip link set lo up || return 1
+    ip netns exec "$netns_name" ip link set "$veth_peer" up || return 1
+
+    bridge link show dev "$veth_host" >/dev/null || return 1
+    ip netns exec "$netns_name" ip link show "$veth_peer" >/dev/null || return 1
+    printf 'Created bridge %s and moved veth peer %s into namespace %s.\n' \
+        "$bridge_link" "$veth_peer" "$netns_name"
+    cleanup_network
+}
+
+probe_vlan_and_vxlan() {
+    cleanup_network
+    ensure_module 8021q || return 1
+    ensure_module vxlan || return 1
+    ip link add "$vlan_parent" type veth peer name "$vlan_peer" || return 1
+    ip link add link "$vlan_parent" name "$vlan_link" type vlan id 100 || return 1
+    ip link add "$vxlan_link" type vxlan id 4242 dstport 4789 \
+        local 127.0.0.1 nolearning || return 1
+
+    ip -d link show "$vlan_link" | grep -q 'vlan protocol 802.1Q id 100' || return 1
+    ip -d link show "$vxlan_link" | grep -q 'vxlan id 4242' || return 1
+    printf 'Created VLAN 100 link %s and VXLAN 4242 link %s.\n' \
+        "$vlan_link" "$vxlan_link"
+    cleanup_network
+}
+
+probe_ifb() {
+    cleanup_network
+    ensure_module ifb || return 1
+    ip link add "$ifb_link" type ifb || return 1
+    ip -d link show "$ifb_link" | grep -q 'ifb' || return 1
+    printf 'Created IFB device %s.\n' "$ifb_link"
+    cleanup_network
+}
+
+probe_nftables_nat() {
+    cleanup_nftables
+    nft add table ip "$nft_table" || return 1
+    nft "add chain ip $nft_table postrouting { type nat hook postrouting priority srcnat; policy accept; }" || return 1
+    nft add rule ip "$nft_table" postrouting \
+        ip saddr 198.18.0.0/15 counter masquerade || return 1
+    nft list table ip "$nft_table" | grep -q 'type nat hook postrouting' || return 1
+    nft list table ip "$nft_table" | grep -q masquerade || return 1
+    printf 'Created and listed isolated nftables NAT table %s.\n' "$nft_table"
+    cleanup_nftables
+    ! nft list table ip "$nft_table" >/dev/null 2>&1
+}
+
+probe_traffic_control() {
+    cleanup_network
+    ensure_module ifb || return 1
+    ensure_module sch_tbf || return 1
+    ensure_module sch_ingress || return 1
+    ensure_module cls_matchall || return 1
+    ensure_module act_mirred || return 1
+
+    ip link add "$tc_host" type veth peer name "$tc_peer" || return 1
+    ip link add "$tc_ifb" type ifb || return 1
+    ip link set "$tc_host" up || return 1
+    ip link set "$tc_ifb" up || return 1
+    tc qdisc add dev "$tc_host" root tbf rate 1mbit burst 32kbit latency 50ms || return 1
+    tc qdisc add dev "$tc_host" ingress || return 1
+    tc filter add dev "$tc_host" parent ffff: matchall \
+        action mirred egress redirect dev "$tc_ifb" || return 1
+
+    tc qdisc show dev "$tc_host" | grep -q tbf || return 1
+    tc qdisc show dev "$tc_host" | grep -q ingress || return 1
+    tc filter show dev "$tc_host" parent ffff: | grep -q matchall || return 1
+    tc filter show dev "$tc_host" parent ffff: | grep -q mirred || return 1
+    printf 'Applied TBF, ingress, matchall, and mirred objects to isolated test links.\n'
+    cleanup_network
+}
+
+probe_quotas() {
+    [ -b "$quota_device" ] || {
+        printf 'Volatile RAM block device is unavailable: %s\n' "$quota_device"
+        return 1
+    }
+    [ -z "$(findmnt -rn -S "$quota_device")" ] || {
+        printf 'Refusing to use a mounted RAM block device: %s\n' "$quota_device"
+        return 1
+    }
+    [ -z "$(ls -A "/sys/class/block/${quota_device##*/}/holders")" ] || {
+        printf 'Refusing to use a RAM block device with holders: %s\n' "$quota_device"
+        return 1
+    }
+    [ -z "$(blkid "$quota_device" 2>/dev/null || true)" ] || {
+        printf 'Refusing to overwrite a RAM block device with a filesystem signature: %s\n' \
+            "$quota_device"
+        return 1
+    }
+
+    zcat /proc/config.gz | grep -qx 'CONFIG_QUOTA=y' || return 1
+    zcat /proc/config.gz | grep -qx 'CONFIG_QUOTACTL=y' || return 1
+    zcat /proc/config.gz | grep -qx 'CONFIG_QFMT_V2=y' || return 1
+    command -v mkfs.ext4 >/dev/null 2>&1 || return 1
+    command -v setquota >/dev/null 2>&1 || return 1
+    command -v repquota >/dev/null 2>&1 || return 1
+
+    quota_device_claimed=1
+    dd if=/dev/zero of="$quota_device" bs=1M count=4 conv=fsync \
+        >/dev/null 2>&1 || return 1
+    mkfs.ext4 -q -F -O quota "$quota_device" || return 1
+    mkdir -p "$quota_mount"
+    mount -t ext4 -o rw,usrquota "$quota_device" "$quota_mount" || return 1
+    quota_state=$(quotaon -p "$quota_mount" 2>&1 || true)
+    printf '%s\n' "$quota_state" | grep -q 'user quota on' || return 1
+
+    chmod 0711 "$work_dir" || return 1
+    chmod 0777 "$quota_mount" || return 1
+    setquota -u 12345 32 64 0 0 "$quota_mount" || return 1
+    chroot --userspec=12345:12345 / /bin/dd if=/dev/zero \
+        "of=$quota_mount/small" bs=1024 count=16 >/dev/null 2>&1 || return 1
+    if chroot --userspec=12345:12345 / /bin/dd if=/dev/zero \
+        "of=$quota_mount/large" bs=1024 count=128 >/dev/null 2>&1; then
+        printf 'The quota hard limit did not reject an over-limit write.\n'
+        return 1
+    fi
+    quota_report=$(repquota -u "$quota_mount") || return 1
+
+    printf 'An ext4 filesystem on %s enforced a user block-quota hard limit.\n' \
+        "$quota_device"
+    printf '%s\n' "$quota_report" | sed -n '/#12345/p'
+    cleanup_quota
+    ! mountpoint -q "$quota_mount"
+}
+
+probe_selinux() {
+    [ -d /sys/fs/selinux ] || return 1
+    zcat /proc/config.gz | grep -qx 'CONFIG_SECURITY_SELINUX=y' || return 1
+    [ "$(getenforce)" = Enforcing ] || return 1
+    sestatus | grep -q 'SELinux status:[[:space:]]*enabled' || return 1
+    printf 'SELinux is enabled and enforcing with policy: %s\n' \
+        "$(sestatus | awk -F: '/Loaded policy name/ { gsub(/^[[:space:]]+/, "", $2); print $2 }')"
+}
+
+probe_cleanup() {
+    cleanup_cgroup
+    cleanup_oci
+    cleanup_overlay
+    cleanup_network
+    cleanup_nftables
+    cleanup_quota
+    cleanup_modules
+
+    ! findmnt -rn | grep -q "$probe_prefix" || return 1
+    ! ip netns list | grep -q "$probe_prefix" || return 1
+    ! ip -o link show | grep -q 'aos0-probe-' || return 1
+    ! nft list tables | grep -q "$probe_prefix" || return 1
+    [ ! -e "/sys/fs/cgroup/system.slice/$cgroup_unit.service" ] || return 1
+    if [ "$netns_mount_preexisting" -eq 0 ]; then
+        ! mountpoint -q /run/netns 2>/dev/null || return 1
+    fi
+    printf 'No probe mounts, namespaces, links, nftables tables, or cgroups remain.\n'
+}
+
+printf 'AosVM Phase 8 guest kernel capability gate\n'
+printf 'Kernel: %s\n' "$(uname -r)"
+printf 'Probe prefix: %s\n' "$probe_prefix"
+
+run_probe 'cgroups v2 resource enforcement' probe_cgroups_v2
+
+if prepare_oci_probe >"$oci_diagnostics" 2>&1; then
+    printf 'OCI setup: crun started the isolated namespace/seccomp probe.\n'
+else
+    printf 'OCI setup: the isolated namespace/seccomp probe failed.\n'
+fi
+run_probe 'mount, PID, IPC, UTS, and network namespaces' probe_namespaces
+run_probe 'seccomp kernel and crun support' probe_seccomp
+run_probe 'overlayfs read/write mount' probe_overlayfs
+run_probe 'SquashFS kernel support' probe_squashfs
+run_probe 'veth, bridge, and network namespace' probe_veth_and_bridge
+run_probe 'VLAN and VXLAN links' probe_vlan_and_vxlan
+run_probe 'IFB link' probe_ifb
+run_probe 'nftables NAT rule set' probe_nftables_nat
+run_probe 'traffic control TBF, ingress, matchall, and mirred' probe_traffic_control
+run_probe 'ext4 filesystem quota enforcement' probe_quotas
+run_probe 'SELinux policy enforcement' probe_selinux
+run_probe 'probe-state cleanup' probe_cleanup
+
+printf 'Summary: %s passed, %s failed.\n' "$pass_count" "$fail_count"
+[ "$fail_count" -eq 0 ]

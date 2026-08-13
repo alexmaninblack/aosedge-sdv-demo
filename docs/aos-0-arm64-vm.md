@@ -21,7 +21,8 @@ be performed in AOS-1 with the utilities supplied by the AosEdge SDK.
 | Phase 5: QEMU command assembly | Complete — 2026-08-13 | Pass |
 | Phase 6: first serial boot | Complete — 2026-08-13 | Pass |
 | Phase 7: guest identity and storage | Complete — 2026-08-13 | Pass |
-| Phases 8–14 | Not started | — |
+| Phase 8: guest kernel capability gate | Complete — 2026-08-13 | **Fail: upstream SquashFS module omitted** |
+| Phases 9–14 | Blocked by Phase 8 | — |
 
 ### Phase 1 observed baseline
 
@@ -306,6 +307,65 @@ The serial log is mode `0600`, ignored by Git, and remains local because an
 interactive development login was used. No credential, device identifier, raw
 journal, or serial transcript is stored in tracked files. The reusable guest
 test contains only read-only validation commands and no access credential.
+
+### Phase 8 observed baseline
+
+The tracked `tests/guest/aosvm-phase8-test` ran as root inside the initialized,
+unprovisioned Main Node. It creates every object under a unique
+`aos0-probe-*` name, records one result per required capability, and removes its
+temporary cgroup, OCI bundle, mounts, network namespace, links, nftables table,
+traffic-control objects, RAM-disk filesystem, and loaded probe modules. It does
+not access the cloud or initialize `/dev/sda6`.
+
+| Capability | Result | Functional evidence |
+| --- | --- | --- |
+| cgroups v2 | Pass | A transient systemd cgroup enforced `memory.max=16777216`, `pids.max=8`, and `cpu.max=50000 100000` |
+| Mount, PID, IPC, UTS, and network namespaces | Pass | `crun` started PID 1 with a probe hostname and five namespace inode values distinct from the parent |
+| Seccomp | Pass | Kernel actions include kill, trap, errno, notification, trace, log, and allow; `crun` applied `SCMP_ACT_ERRNO` to `getcwd` |
+| Overlayfs | Pass | A temporary overlay mount read its lower layer and stored a write in its upper layer |
+| SquashFS | **Fail** | `CONFIG_SQUASHFS=m`, but `squashfs.ko` is absent and `modprobe squashfs` fails |
+| veth and bridge | Pass | A veth peer was moved into a new network namespace and its host peer attached to a temporary bridge |
+| VLAN and VXLAN | Pass | VLAN ID 100 and VXLAN ID 4242 links were created, inspected, and deleted |
+| IFB | Pass | A temporary IFB link was created, inspected, and deleted |
+| nftables/NAT | Pass | An isolated IPv4 table, NAT postrouting chain, and masquerade rule were added, listed, and removed |
+| Traffic control | Pass | TBF, ingress, matchall, and mirred-to-IFB objects were applied to temporary links |
+| Quotas | Pass | An ext4 filesystem created on volatile `/dev/ram15` enforced a 64 KiB user hard limit |
+| SELinux | Pass | Kernel support is built in; policy `aos` is loaded and enforcing |
+| Probe cleanup | Pass | No probe mounts, namespaces, links, nftables tables, or cgroups remained |
+
+The final run completed with **12 passes and one failure**, so the mandatory
+kernel gate fails and Phase 9 must not begin. The other probes demonstrate
+that this is not an HVF, QEMU, architecture, `crun`, or general kernel-runtime
+failure.
+
+The defect is in the pinned upstream image recipe and release packaging. Tag
+`AosEdge/meta-aos-vm` `v6.1.0` (source commit
+`b13320898a2ed1cce504f90f70451638232d6a83`) explicitly sets
+`CONFIG_SQUASHFS=m`, and the same source declares update components with the
+SquashFS media type. Its
+`aos-image-vm.bb` package list does not install the SquashFS kernel-module
+package. The released root filesystem consequently contains only a small
+selected module set and omits both `squashfs.ko` and `loop.ko`, although both
+are configured as modules. The current Phase 8 failure is based on the direct
+SquashFS module probe; loopback support should be included in the same upstream
+packaging fix because ordinary file-backed SquashFS mounts require it.
+
+The preferred resolution is a focused `meta-aos-vm` change that installs the
+required kernel module packages, followed by a reproducible `qemuarm64` build
+and this gate on the resulting image. Compiling an untracked module in the VM,
+patching the downloaded base disk, or proceeding to SDK provisioning would
+violate the immutable-input and stop-gate decisions. A future official release
+containing the modules can replace the temporary project-qualified build.
+
+The guest was then powered off through systemd. It unmounted all filesystems,
+synchronized the SCSI disk, and powered down; no QEMU process, listener, PID
+file, or runtime socket remained. `qemu-img check` reported no overlay errors,
+and the immutable Main Node, Secondary Node, and firmware SHA-256 values still
+matched the pinned release.
+
+The full serial output remains local and ignored. The reusable test and this
+sanitized result contain no credential, certificate, device identifier, or
+cloud account data.
 
 ## Pinned upstream input
 
