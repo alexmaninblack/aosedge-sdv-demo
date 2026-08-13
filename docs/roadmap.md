@@ -22,7 +22,7 @@ reachable only through explicitly configured local forwards, reaches the
 Internet, passes the kernel and local OCI gates, and survives a clean stop/start
 without modifying the downloaded base image.
 
-Current gate: Phase 13 passes. Addressing, routing,
+Current gate: AOS-0 passes all 14 phases. Addressing, routing,
 outbound TCP, guest-to-host access, DNS, synchronized time, verified HTTPS, and
 loopback-only SSH all pass tracked host and guest gates. A tracked macOS DNS
 bridge binds only to `127.0.0.1`; the overlay-only guest helper routes the
@@ -37,8 +37,9 @@ restart and disappeared after explicit overlay recreation. Every stopped-state
 gate found no owned process, listener, or runtime residue and reverified the
 exact Main Node, Secondary Node, and EFI hashes. The tracked ARM64 and DNS
 compatibility changes were restored on the fresh overlay, remained idempotent,
-and passed the Phase 10 and complete Phase 11 regressions. Phase 14 accepted
-baseline recording is next.
+and passed the Phase 10 and complete Phase 11 regressions. The final accepted
+start/smoke/stop run passed, the VM is stopped, and the sanitized baseline and
+go decision are recorded in the runbook.
 
 Phase 9 also passes the complete cloud-free `crun` qualification.
 The probe ran an isolated ARM64 PID 1 with enforced CPU, memory, and PID
@@ -54,8 +55,9 @@ Detailed plan: [AOS-0 runbook](aos-0-arm64-vm.md).
 
 - Use the AosEdge-provided SDK and CLI utilities for registration,
   provisioning, and certificate installation.
-- Decide whether the demonstration Unit remains single-node or follows the
-  official two-node AosVM topology.
+- Extend the owned QEMU/HVF lifecycle and private networking to the released
+  Secondary Node image.
+- Use the accepted official two-Node topology, with both VMs on the same Mac.
 - Confirm that the Unit appears online in hosted AosCloud.
 - Deploy and observe the official Hello World service.
 
@@ -117,7 +119,8 @@ translation layer.
 ## Deferred decisions
 
 - Self-hosted AosCloud versus the hosted platform.
-- Multi-node AosVM operation beyond what provisioning requires.
+- Additional AosVM Nodes beyond the accepted Main + Secondary provisioning
+  topology.
 - Cameras, LiDAR, radar, and ultrasonic data.
 - ROS 2 integration.
 - Upstream contributions to `AosEdge/meta-aos-vm` or `AosEdge/aos_vis`.

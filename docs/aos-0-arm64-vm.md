@@ -27,7 +27,7 @@ be performed in AOS-1 with the utilities supplied by the AosEdge SDK.
 | Phase 11: layered networking | Complete — 2026-08-13 | Pass with tracked loopback DNS bridge |
 | Phase 12: owned VM lifecycle | Complete — 2026-08-13 | Pass |
 | Phase 13: persistence and overlay reset | Complete — 2026-08-13 | Pass |
-| Phase 14: accepted baseline | Not started | — |
+| Phase 14: accepted baseline | Complete — 2026-08-13 | Pass; go to AOS-1 with two Nodes on one Mac |
 
 ### Phase 1 observed baseline
 
@@ -574,6 +574,112 @@ The VM is stopped. The active overlay contains no Phase 13 marker and retains
 the qualified ARM64 and DNS compatibility state. No provisioning, certificate
 enrollment, cloud connection, external listener, or administrator privilege
 was introduced.
+
+### Phase 14 accepted baseline
+
+The accepted AOS-0 baseline is the official AosVM `v6.1.0` Main Node running as
+a complete ARM64 system VM on the Apple M5 Pro. The host package is Homebrew
+`qemu` 11.0.3 from the native ARM64 bottle. The launcher resolves
+`/opt/homebrew/bin/qemu-system-aarch64`, requires the exact qualified version,
+and selects Apple Hypervisor Framework explicitly; it has no TCG fallback.
+
+The final QEMU argument contract is shown below with repository-local paths
+sanitized. `scripts/aosvm start --dry-run` validates and prints the concrete
+absolute paths before every launch.
+
+```text
+qemu-system-aarch64
+  -name aosvm-main
+  -machine virt-11.0,accel=hvf
+  -cpu host -smp 2 -m 2048 -nodefaults
+  -bios <cache>/QEMU_EFI.fd
+  -drive file=<local>/aosvm-main-overlay.qcow2,if=none,id=aos-image,format=qcow2,cache=writeback
+  -device virtio-scsi-pci,id=scsi
+  -device scsi-hd,drive=aos-image,bootindex=0
+  -netdev user,id=aosnet,net=10.0.0.0/24,host=10.0.0.1,dns=10.0.0.2,restrict=off,hostfwd=tcp:127.0.0.1:10022-10.0.0.100:22
+  -device virtio-net-pci,netdev=aosnet,mac=52:54:00:41:4f:53
+  -chardev socket,id=serial0,path=<run>/aosvm-main.serial,server=on,wait=off,logfile=<runs>/aosvm-main-serial.log,logappend=on,logtimestamp=on
+  -serial chardev:serial0
+  -qmp unix:<run>/aosvm-main.qmp,server=on,wait=off
+  -pidfile <run>/aosvm-main.pid
+  -monitor none -display none
+```
+
+The accepted network backend is QEMU user networking. SSH is forwarded only
+from `127.0.0.1:10022`; the guest-visible host and gateway are `10.0.0.1`, and
+the guest remains `10.0.0.100/24`. DNS uses the image's local dnsmasq and the
+tracked overlay-only forwarding adjustment, then crosses QEMU to the tracked
+macOS DNS bridge on `127.0.0.1:18053`. Both TCP and UDP DNS listeners are
+loopback-only. No TAP device, macOS bridge, packet-filter change,
+administrator privilege, or LAN listener is part of this baseline.
+
+Observed timing is recorded as evidence, not as a performance guarantee:
+
+| Readiness point | Observed result |
+| --- | --- |
+| Completely fresh overlay | First serial prompt 67.307 seconds after initial EFI output, including the intentional one-time SELinux relabel and reboot |
+| Initialized overlay, serial | Stable prompt 47.887 seconds after EFI output in the Phase 7 measurement |
+| Final launcher run, QEMU | `start` reported the owned QEMU process running after 8 seconds |
+| Final launcher run, guest | `smoke-test` confirmed QMP and loopback SSH 26 seconds after the start invocation |
+| Final launcher run, shutdown | Clean QMP-requested guest poweroff and exclusive overlay check completed in 2 seconds |
+
+The launcher retains conservative bounds of 30 seconds for QEMU start, 90
+seconds for SSH smoke readiness, 90 seconds for clean shutdown, and 15 seconds
+for a verified process-specific `TERM` only if clean shutdown times out.
+
+All required guest-kernel capabilities passed: cgroups v2; mount, PID, IPC,
+UTS, and network namespaces; seccomp; overlayfs; initramfs-scoped SquashFS and
+loop; veth, bridge, VLAN, VXLAN, and IFB; nftables/NAT; traffic control; quotas;
+and enforcing SELinux. The separate local OCI gate used the image's AArch64
+`crun` 1.14.3 build to start an isolated ARM64 PID 1 with enforced CPU, memory,
+and PID limits, a read-only rootfs, a writable bounded tmpfs, no usable external
+network interface, empty capabilities, `noNewPrivileges`, and complete cleanup.
+
+Before provisioning, `aos_iam_app`, `aos_sm_app`, and `aos_cm_app` are native
+AArch64 binaries at `v9.1.0-1-g9eec`. Provisioning IAM is active and reports
+`unprovisioned`; runtime IAM, Service Manager, Communication Manager, and the
+provisioning firewall are condition-gated on `/var/aos/.provisionstate`.
+`/dev/sda6` is intentionally unopened, the generated Aos data mounts are
+absent, and the dependent NFS unit is therefore the single classified failed
+unit. No binary crash, kernel failure, SELinux denial, certificate, owned
+PKCS#11 token, or unexplained local defect remains.
+
+Known warnings and operational constraints are:
+
+- a completely fresh overlay performs one intentional SELinux autorelabel and
+  reboot before becoming ready;
+- the released ARM64 image names `bootx64.efi` in Service Manager configuration
+  even though it contains `bootaa64.efi`; the tracked idempotent helper corrects
+  only the disposable overlay;
+- the released static DNS assumptions do not work reliably with QEMU/libslirp
+  and the active macOS resolver set; the tracked loopback bridge and
+  overlay-only guest adjustment are required;
+- GRUB emits non-fatal fallback-path and missing `com0` warnings before Linux
+  uses the working PL011 `ttyAMA0` console;
+- systemd is expected to report `degraded` before provisioning because the Aos
+  data partition and NFS export paths have not yet been initialized;
+- overlay reset deliberately removes both compatibility adjustments and
+  regenerates the guest SSH host key, so the helpers and strict serial-verified
+  host-key enrollment must be repeated before network gates pass;
+- the smoke manifest and raw serial, DNS, and supervisor logs are mode-0600
+  local evidence and remain ignored by Git.
+
+The final smoke manifest at `2026-08-13T14:02:00Z` recorded `pass`, QMP
+`running`, loopback-only SSH and DNS, a qcow2 overlay, and the exact pinned Main
+Node base SHA-256. Clean stop then passed the complete Phase 13 stopped gate:
+no owned process, listener, PID, socket, lock, corrupt overlay, or immutable
+input drift remained. The VM is stopped.
+
+**Decision: go to AOS-1.** Use the official two-Node topology: one Main Node
+and one Secondary Node, both as separate QEMU/HVF VMs on this same Mac. This
+does not require a second physical computer. The official `v6.1.0`
+`unitconfig.json` declares both `aos-vm-main` and `aos-vm-secondary`, and the
+official AosVM provisioning flow creates two VMs and waits for the Secondary
+Node to connect. AOS-1 must first extend the ownership, overlay, listener, and
+networking gates to the Secondary Node and qualify private inter-Node
+connectivity. Only then may the SDK receive account credentials or begin
+provisioning. The AOS-0 acceptance result itself remains deliberately scoped to
+the Main Node.
 
 ## Pinned upstream input
 
@@ -1151,7 +1257,8 @@ the guest for the later VISS path, and no service is exposed externally.
 
 **Observed:** pass. `tests/guest/aosvm-phase11-test` and
 `tests/host/aosvm-phase11-host-gate` passed twice, including after a clean
-reboot. Phase 12 lifecycle automation also passes; Phase 13 is next.
+reboot. Phase 12 lifecycle automation and the Phase 13 reset regression also
+pass.
 
 **Stop:** basic connectivity needs an undocumented image mutation, external LAN
 exposure, or administrator-owned network configuration.
@@ -1258,6 +1365,12 @@ Before committing:
 **Pass:** the accepted baseline is reproducible from a fresh overlay, the
 sanitized evidence is committed, and the working tree is clean.
 
+**Observed:** pass. Phase 13 recreated the overlay, restored both tracked
+compatibility adjustments, and repeated the Phase 10 and Phase 11 gates. The
+final Phase 14 start/smoke/stop run passed and left the VM stopped. This
+document contains the sanitized accepted result; local manifests and raw logs
+remain ignored.
+
 ## Acceptance checklist
 
 - [x] Official archive matches the pinned SHA-256.
@@ -1276,7 +1389,7 @@ sanitized evidence is committed, and the working tree is clean.
 - [x] Clean shutdown and second boot succeed.
 - [x] Overlay reset is safe and reproducible.
 - [x] The launcher does not require administrator privileges.
-- [ ] A sanitized baseline is committed and the working tree is clean.
+- [x] A sanitized baseline is committed and the working tree is clean.
 
 ## Explicit non-goals
 
@@ -1290,10 +1403,18 @@ sanitized evidence is committed, and the working tree is clean.
 
 ## Go/no-go decision for AOS-1
 
-Proceed when the acceptance checklist passes and the remaining warnings are
-limited to the expected unprovisioned state. This means AOS-1 can focus on SDK
-provisioning, certificates, and the first cloud-managed service instead of
-debugging the VM foundation.
+**Go.** The Main Node foundation satisfies every AOS-0 acceptance item and the
+remaining warnings are understood pre-provisioning or overlay-only
+compatibility conditions. Use the official two-Node topology in AOS-1: one
+Main Node and one Secondary Node as independent QEMU/HVF VMs on the same Mac.
+The released Unit Configuration and official SDK flow both expect these two
+Node types.
+
+AOS-1 begins by qualifying owned Secondary Node lifecycle and private
+inter-Node networking. Provisioning, certificates, and the first cloud-managed
+service follow only after both local VMs pass that gate. The detailed decision
+and its alternatives are recorded in
+`docs/decisions/0003-two-node-aos1-topology.md`.
 
 Stop and reconsider the VM base if HVF cannot boot the image, a mandatory guest
 kernel capability or local `crun` execution fails, the released disk requires

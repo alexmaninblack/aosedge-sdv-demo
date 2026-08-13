@@ -15,10 +15,11 @@ the legacy AOS Vehicle Information Service interface.
 - [AOS-0: boot official ARM64 AosVM on Apple Silicon](docs/aos-0-arm64-vm.md)
 - [Repository and artifact boundaries](docs/decisions/0001-repository-and-artifact-boundaries.md)
 - [QEMU system VM with HVF](docs/decisions/0002-qemu-system-hvf-for-aosvm.md)
+- [Two-Node topology for AOS-1](docs/decisions/0003-two-node-aos1-topology.md)
 
 ## Current status
 
-Planning and Phases 1–13 are complete for AOS-0. The official AosVM 6.1.0 ARM64
+Planning and Phases 1–14 are complete for AOS-0. The official AosVM 6.1.0 ARM64
 Main Node boots natively accelerated by HVF on the Apple M5 Pro. Its guest
 identity, own kernel, unified cgroups v2, memory, partition layout, read-only
 root, writable data mounts, SELinux state, and pre-provisioning services are
@@ -39,7 +40,10 @@ shutdown, and explicit overlay reset. Phase 13 proves persistence across a
 clean restart, safe recreation of only the disposable overlay, unchanged
 immutable inputs, complete stopped-state cleanup, and recovery of the tracked
 ARM64 and DNS compatibility state. Phase 14 accepted-baseline recording is
-next.
+complete: the final start/smoke/stop run passed, sanitized evidence is recorded,
+and the VM is stopped. The decision is **go to AOS-1** with the official Main +
+Secondary topology as two QEMU/HVF VMs on this same Mac; a second physical
+computer is not required.
 
 ## Commands
 
