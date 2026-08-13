@@ -7,6 +7,32 @@ ASSET="aos-vm-image-qemuarm64-6.1.0.tar.xz"
 ASSET_SIZE="381515220"
 ASSET_SHA256="db8fef0188f4ba0930aecafecdfe4ad063a3cf27a48e8649fc5050f9b3117e04"
 ASSET_URL="https://github.com/aosedge/meta-aos-vm/releases/download/v6.1.0/aos-vm-image-qemuarm64-6.1.0.tar.xz"
+MAIN_IMAGE="aos-vm-main-qemuarm64.qcow2"
+MAIN_IMAGE_SIZE="593428480"
+MAIN_IMAGE_SHA256="8cbc4bd331650fbae7b54ad5b11b00e36e275cea00298327629e568422023fc4"
+SECONDARY_IMAGE="aos-vm-secondary-qemuarm64.qcow2"
+SECONDARY_IMAGE_SIZE="573833216"
+SECONDARY_IMAGE_SHA256="c6b687c180bab7621d5680c6e44894b531edc8a64cd6851afd467cec2dc193f6"
+FIRMWARE="QEMU_EFI.fd"
+FIRMWARE_SIZE="2097152"
+FIRMWARE_SHA256="30f7042c23b81c28b8196a76f4af6bcf10046f08049c9d78b4387472c5bbcd10"
+IMAGE_VIRTUAL_SIZE="6997147648"
+OVERLAY="aosvm-main-overlay.qcow2"
+
+SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+REPOSITORY_ROOT=$(CDPATH='' cd -- "$SCRIPT_DIR/.." && pwd)
+CACHE_ROOT=${AOSVM_CACHE_ROOT:-"$REPOSITORY_ROOT/.cache"}
+LOCAL_ROOT=${AOSVM_LOCAL_ROOT:-"$REPOSITORY_ROOT/.local"}
+RELEASE_DIR="$CACHE_ROOT/aosvm/v$RELEASE/qemuarm64"
+ARCHIVE_PATH="$RELEASE_DIR/$ASSET"
+PARTIAL_PATH="$ARCHIVE_PATH.partial"
+MAIN_IMAGE_PATH="$RELEASE_DIR/$MAIN_IMAGE"
+SECONDARY_IMAGE_PATH="$RELEASE_DIR/$SECONDARY_IMAGE"
+FIRMWARE_PATH="$RELEASE_DIR/$FIRMWARE"
+OVERLAY_PATH="$LOCAL_ROOT/$OVERLAY"
+
+PREPARE_WORK_DIR=''
+PREPARE_LOCK_DIR=''
 
 fail() {
     printf 'Error: %s\n' "$*" >&2
@@ -46,6 +72,8 @@ validate_effective_url() {
 verify_archive() {
     verified_archive_path=$1
 
+    [ ! -L "$verified_archive_path" ] ||
+        fail "Archive must not be a symbolic link: $verified_archive_path"
     [ -f "$verified_archive_path" ] || fail "Archive does not exist: $verified_archive_path"
 
     verified_actual_size=$(file_size "$verified_archive_path")
@@ -57,53 +85,161 @@ verify_archive() {
         fail "Archive SHA-256 mismatch: expected $ASSET_SHA256, found $verified_actual_sha256"
 }
 
+verify_release_file() {
+    release_file_path=$1
+    release_file_size=$2
+    release_file_sha256=$3
+    release_file_label=$4
+
+    [ ! -L "$release_file_path" ] ||
+        fail "$release_file_label must not be a symbolic link: $release_file_path"
+    [ -f "$release_file_path" ] ||
+        fail "$release_file_label is not a regular file: $release_file_path"
+
+    release_actual_size=$(file_size "$release_file_path")
+    [ "$release_actual_size" = "$release_file_size" ] ||
+        fail "$release_file_label size mismatch: expected $release_file_size bytes, found $release_actual_size bytes"
+
+    release_actual_sha256=$(file_sha256 "$release_file_path")
+    [ "$release_actual_sha256" = "$release_file_sha256" ] ||
+        fail "$release_file_label SHA-256 mismatch: expected $release_file_sha256, found $release_actual_sha256"
+}
+
+verify_base_image() {
+    base_image_path=$1
+    base_image_label=$2
+
+    base_image_info=$(qemu-img info --output=json "$base_image_path")
+    printf '%s\n' "$base_image_info" | jq -e \
+        --argjson expected_virtual_size "$IMAGE_VIRTUAL_SIZE" \
+        '.format == "qcow2" and
+         .["virtual-size"] == $expected_virtual_size and
+         .["dirty-flag"] == false and
+         .["format-specific"].data.corrupt == false and
+         (has("backing-filename") | not)' >/dev/null ||
+        fail "$base_image_label qcow2 metadata does not match the pinned release"
+
+    qemu-img check "$base_image_path" >/dev/null ||
+        fail "$base_image_label failed qemu-img check"
+}
+
+absolute_path() {
+    absolute_path_directory=$(CDPATH='' cd -- "$(dirname -- "$1")" && pwd)
+    printf '%s/%s\n' "$absolute_path_directory" "$(basename -- "$1")"
+}
+
+verify_overlay() {
+    overlay_to_verify=$1
+    expected_backing_path=$(absolute_path "$MAIN_IMAGE_PATH")
+
+    [ ! -L "$overlay_to_verify" ] ||
+        fail "Overlay must not be a symbolic link: $overlay_to_verify"
+    [ -f "$overlay_to_verify" ] ||
+        fail "Overlay is not a regular file: $overlay_to_verify"
+
+    overlay_info=$(qemu-img info --output=json "$overlay_to_verify")
+    printf '%s\n' "$overlay_info" | jq -e \
+        --arg expected_backing "$expected_backing_path" \
+        --argjson expected_virtual_size "$IMAGE_VIRTUAL_SIZE" \
+        '.format == "qcow2" and
+         .["virtual-size"] == $expected_virtual_size and
+         .["dirty-flag"] == false and
+         .["backing-filename"] == $expected_backing and
+         .["backing-filename-format"] == "qcow2" and
+         .["format-specific"].data.corrupt == false' >/dev/null ||
+        fail "Overlay qcow2 metadata or backing file is not the expected value"
+
+    qemu-img check "$overlay_to_verify" >/dev/null ||
+        fail "Overlay failed qemu-img check"
+}
+
+prepare_cleanup() {
+    if [ -n "$PREPARE_WORK_DIR" ] && [ -d "$PREPARE_WORK_DIR" ]; then
+        rm -r "$PREPARE_WORK_DIR"
+    fi
+    if [ -n "$PREPARE_LOCK_DIR" ] && [ -d "$PREPARE_LOCK_DIR" ]; then
+        rmdir "$PREPARE_LOCK_DIR" 2>/dev/null || true
+    fi
+}
+
+validate_archive_members() {
+    expected_members_path="$PREPARE_WORK_DIR/expected-members"
+    actual_members_path="$PREPARE_WORK_DIR/actual-members"
+    verbose_members_path="$PREPARE_WORK_DIR/verbose-members"
+
+    printf '%s\n' "$MAIN_IMAGE" "$SECONDARY_IMAGE" "$FIRMWARE" |
+        LC_ALL=C sort >"$expected_members_path"
+    tar -tf "$ARCHIVE_PATH" | LC_ALL=C sort >"$actual_members_path"
+
+    cmp -s "$expected_members_path" "$actual_members_path" ||
+        fail "Archive members do not exactly match the pinned release manifest"
+
+    tar -tvf "$ARCHIVE_PATH" >"$verbose_members_path"
+    awk '
+        NF == 0 { next }
+        substr($1, 1, 1) != "-" { exit 1 }
+        END { if (NR != 3) exit 1 }
+    ' "$verbose_members_path" ||
+        fail "Archive must contain exactly three regular files"
+}
+
+install_prepared_file() {
+    prepared_source=$1
+    prepared_target=$2
+    prepared_size=$3
+    prepared_sha256=$4
+    prepared_label=$5
+
+    if [ -e "$prepared_target" ] || [ -L "$prepared_target" ]; then
+        verify_release_file "$prepared_target" "$prepared_size" "$prepared_sha256" "$prepared_label"
+    else
+        chmod 0444 "$prepared_source"
+        mv "$prepared_source" "$prepared_target"
+    fi
+
+    chmod 0444 "$prepared_target"
+}
+
 download_archive() {
     require_command curl
     require_command shasum
     require_command stat
 
-    script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
-    repository_root=$(CDPATH='' cd -- "$script_dir/.." && pwd)
-    cache_root=${AOSVM_CACHE_ROOT:-"$repository_root/.cache"}
-    release_dir="$cache_root/aosvm/v$RELEASE/qemuarm64"
-    archive_path="$release_dir/$ASSET"
-    partial_path="$archive_path.partial"
+    mkdir -p "$RELEASE_DIR"
 
-    mkdir -p "$release_dir"
-
-    if [ -L "$archive_path" ]; then
-        fail "Final archive path must not be a symbolic link: $archive_path"
+    if [ -L "$ARCHIVE_PATH" ]; then
+        fail "Final archive path must not be a symbolic link: $ARCHIVE_PATH"
     fi
-    if [ -e "$archive_path" ] && [ ! -f "$archive_path" ]; then
-        fail "Final archive path is not a regular file: $archive_path"
+    if [ -e "$ARCHIVE_PATH" ] && [ ! -f "$ARCHIVE_PATH" ]; then
+        fail "Final archive path is not a regular file: $ARCHIVE_PATH"
     fi
 
-    if [ -f "$archive_path" ]; then
-        verify_archive "$archive_path"
+    if [ -f "$ARCHIVE_PATH" ]; then
+        verify_archive "$ARCHIVE_PATH"
         printf 'Verified cached AosVM archive.\n'
-        printf 'Path: %s\n' "$archive_path"
+        printf 'Path: %s\n' "$ARCHIVE_PATH"
         printf 'Size: %s bytes\n' "$ASSET_SIZE"
         printf 'SHA-256: %s\n' "$ASSET_SHA256"
         return
     fi
 
-    if [ -L "$partial_path" ]; then
-        fail "Partial archive path must not be a symbolic link: $partial_path"
+    if [ -L "$PARTIAL_PATH" ]; then
+        fail "Partial archive path must not be a symbolic link: $PARTIAL_PATH"
     fi
-    if [ -e "$partial_path" ] && [ ! -f "$partial_path" ]; then
-        fail "Partial archive path is not a regular file: $partial_path"
+    if [ -e "$PARTIAL_PATH" ] && [ ! -f "$PARTIAL_PATH" ]; then
+        fail "Partial archive path is not a regular file: $PARTIAL_PATH"
     fi
 
-    if [ -f "$partial_path" ]; then
-        partial_size=$(file_size "$partial_path")
+    if [ -f "$PARTIAL_PATH" ]; then
+        partial_size=$(file_size "$PARTIAL_PATH")
         if [ "$partial_size" -gt "$ASSET_SIZE" ]; then
-            fail "Partial archive is larger than the pinned asset: $partial_path"
+            fail "Partial archive is larger than the pinned asset: $PARTIAL_PATH"
         fi
         if [ "$partial_size" = "$ASSET_SIZE" ]; then
-            verify_archive "$partial_path"
-            mv "$partial_path" "$archive_path"
+            verify_archive "$PARTIAL_PATH"
+            mv "$PARTIAL_PATH" "$ARCHIVE_PATH"
             printf 'Promoted the complete verified partial archive.\n'
-            printf 'Path: %s\n' "$archive_path"
+            printf 'Path: %s\n' "$ARCHIVE_PATH"
             printf 'Size: %s bytes\n' "$ASSET_SIZE"
             printf 'SHA-256: %s\n' "$ASSET_SHA256"
             return
@@ -121,29 +257,110 @@ download_archive() {
         --retry 5 \
         --retry-all-errors \
         --continue-at - \
-        --output "$partial_path" \
+        --output "$PARTIAL_PATH" \
         --write-out '%{url_effective}' \
         "$ASSET_URL")
 
     validate_effective_url "$effective_url"
 
-    verify_archive "$partial_path"
-    mv "$partial_path" "$archive_path"
+    verify_archive "$PARTIAL_PATH"
+    mv "$PARTIAL_PATH" "$ARCHIVE_PATH"
 
     printf 'Downloaded and verified AosVM archive.\n'
-    printf 'Path: %s\n' "$archive_path"
+    printf 'Path: %s\n' "$ARCHIVE_PATH"
     printf 'Size: %s bytes\n' "$ASSET_SIZE"
     printf 'SHA-256: %s\n' "$ASSET_SHA256"
 }
 
+prepare_images() {
+    require_command awk
+    require_command cmp
+    require_command jq
+    require_command qemu-img
+    require_command shasum
+    require_command stat
+    require_command tar
+
+    [ "$CACHE_ROOT" != "/" ] || fail "Cache root must not be the filesystem root"
+    [ "$LOCAL_ROOT" != "/" ] || fail "Local root must not be the filesystem root"
+
+    verify_archive "$ARCHIVE_PATH"
+    mkdir -p "$RELEASE_DIR" "$LOCAL_ROOT"
+
+    PREPARE_LOCK_DIR="$RELEASE_DIR/.prepare.lock"
+    mkdir "$PREPARE_LOCK_DIR" 2>/dev/null ||
+        fail "Another prepare operation may be running: $PREPARE_LOCK_DIR"
+
+    trap prepare_cleanup EXIT HUP INT TERM
+    PREPARE_WORK_DIR=$(mktemp -d "$RELEASE_DIR/.prepare.XXXXXX")
+
+    validate_archive_members
+
+    if [ -e "$MAIN_IMAGE_PATH" ] || [ -L "$MAIN_IMAGE_PATH" ] ||
+       [ -e "$SECONDARY_IMAGE_PATH" ] || [ -L "$SECONDARY_IMAGE_PATH" ] ||
+       [ -e "$FIRMWARE_PATH" ] || [ -L "$FIRMWARE_PATH" ]; then
+        verify_release_file "$MAIN_IMAGE_PATH" "$MAIN_IMAGE_SIZE" "$MAIN_IMAGE_SHA256" "Main Node image"
+        verify_release_file "$SECONDARY_IMAGE_PATH" "$SECONDARY_IMAGE_SIZE" "$SECONDARY_IMAGE_SHA256" "Secondary Node image"
+        verify_release_file "$FIRMWARE_PATH" "$FIRMWARE_SIZE" "$FIRMWARE_SHA256" "QEMU EFI firmware"
+    else
+        tar -xf "$ARCHIVE_PATH" -C "$PREPARE_WORK_DIR" \
+            "$MAIN_IMAGE" "$SECONDARY_IMAGE" "$FIRMWARE"
+        verify_archive "$ARCHIVE_PATH"
+
+        verify_release_file "$PREPARE_WORK_DIR/$MAIN_IMAGE" "$MAIN_IMAGE_SIZE" "$MAIN_IMAGE_SHA256" "Main Node image"
+        verify_release_file "$PREPARE_WORK_DIR/$SECONDARY_IMAGE" "$SECONDARY_IMAGE_SIZE" "$SECONDARY_IMAGE_SHA256" "Secondary Node image"
+        verify_release_file "$PREPARE_WORK_DIR/$FIRMWARE" "$FIRMWARE_SIZE" "$FIRMWARE_SHA256" "QEMU EFI firmware"
+        verify_base_image "$PREPARE_WORK_DIR/$MAIN_IMAGE" "Main Node image"
+        verify_base_image "$PREPARE_WORK_DIR/$SECONDARY_IMAGE" "Secondary Node image"
+
+        install_prepared_file "$PREPARE_WORK_DIR/$MAIN_IMAGE" "$MAIN_IMAGE_PATH" "$MAIN_IMAGE_SIZE" "$MAIN_IMAGE_SHA256" "Main Node image"
+        install_prepared_file "$PREPARE_WORK_DIR/$SECONDARY_IMAGE" "$SECONDARY_IMAGE_PATH" "$SECONDARY_IMAGE_SIZE" "$SECONDARY_IMAGE_SHA256" "Secondary Node image"
+        install_prepared_file "$PREPARE_WORK_DIR/$FIRMWARE" "$FIRMWARE_PATH" "$FIRMWARE_SIZE" "$FIRMWARE_SHA256" "QEMU EFI firmware"
+    fi
+
+    chmod 0444 "$ARCHIVE_PATH"
+    chmod 0444 "$MAIN_IMAGE_PATH" "$SECONDARY_IMAGE_PATH" "$FIRMWARE_PATH"
+
+    verify_base_image "$MAIN_IMAGE_PATH" "Main Node image"
+    verify_base_image "$SECONDARY_IMAGE_PATH" "Secondary Node image"
+
+    if [ -L "$OVERLAY_PATH" ]; then
+        fail "Overlay path must not be a symbolic link: $OVERLAY_PATH"
+    fi
+
+    if [ -e "$OVERLAY_PATH" ]; then
+        verify_overlay "$OVERLAY_PATH"
+    else
+        overlay_partial_path="$PREPARE_WORK_DIR/$OVERLAY"
+        absolute_main_image_path=$(absolute_path "$MAIN_IMAGE_PATH")
+        qemu-img create -q -f qcow2 -b "$absolute_main_image_path" -B qcow2 "$overlay_partial_path"
+        chmod 0600 "$overlay_partial_path"
+        verify_overlay "$overlay_partial_path"
+        mv "$overlay_partial_path" "$OVERLAY_PATH"
+    fi
+
+    chmod 0600 "$OVERLAY_PATH"
+    verify_overlay "$OVERLAY_PATH"
+
+    printf 'Prepared verified immutable AosVM inputs and writable overlay.\n'
+    printf 'Main image: %s\n' "$MAIN_IMAGE_PATH"
+    printf 'Secondary image: %s\n' "$SECONDARY_IMAGE_PATH"
+    printf 'Firmware: %s\n' "$FIRMWARE_PATH"
+    printf 'Overlay: %s\n' "$OVERLAY_PATH"
+}
+
 usage() {
-    printf 'Usage: %s download\n' "$0"
+    printf 'Usage: %s <download|prepare>\n' "$0"
 }
 
 case ${1:-} in
     download)
         [ "$#" -eq 1 ] || fail "The download command does not accept arguments"
         download_archive
+        ;;
+    prepare)
+        [ "$#" -eq 1 ] || fail "The prepare command does not accept arguments"
+        prepare_images
         ;;
     -h|--help|help)
         usage

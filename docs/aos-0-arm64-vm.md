@@ -17,7 +17,8 @@ be performed in AOS-1 with the utilities supplied by the AosEdge SDK.
 | Phase 1: host baseline | Complete — 2026-08-12 | Pass |
 | Phase 2: native QEMU qualification | Complete — 2026-08-12 | Pass |
 | Phase 3: pinned release download | Complete — 2026-08-12 | Pass |
-| Phases 4–14 | Not started | — |
+| Phase 4: immutable inputs and overlay | Complete — 2026-08-13 | Pass |
+| Phases 5–14 | Not started | — |
 
 ### Phase 1 observed baseline
 
@@ -92,6 +93,51 @@ symbolic links at either cache target.
 
 The verified archive is ignored by Git. It has not been extracted, inspected,
 mounted, or executed; those actions begin in Phase 4.
+
+### Phase 4 observed baseline
+
+The verified archive contains exactly three top-level regular files and no
+directory, symbolic link, hard link, device node, or nested path:
+
+| Artifact | File size | SHA-256 | Prepared mode |
+| --- | ---: | --- | --- |
+| `aos-vm-main-qemuarm64.qcow2` | 593,428,480 bytes | `8cbc4bd331650fbae7b54ad5b11b00e36e275cea00298327629e568422023fc4` | `0444` |
+| `aos-vm-secondary-qemuarm64.qcow2` | 573,833,216 bytes | `c6b687c180bab7621d5680c6e44894b531edc8a64cd6851afd467cec2dc193f6` | `0444` |
+| `QEMU_EFI.fd` | 2,097,152 bytes | `30f7042c23b81c28b8196a76f4af6bcf10046f08049c9d78b4387472c5bbcd10` | `0444` |
+
+Both upstream disks are standalone qcow2 1.1 images with no backing file, a
+virtual size of 6,997,147,648 bytes, a clean dirty flag, and `corrupt=false`.
+QEMU 11.0.3 reported no errors for either image.
+
+The active Main Node overlay is:
+
+| Field | Prepared value |
+| --- | --- |
+| Path | `.local/aosvm-main-overlay.qcow2` |
+| Format | qcow2 1.1 |
+| Virtual size | 6,997,147,648 bytes (approximately 6.52 GiB) |
+| Initial file size | 196,720 bytes |
+| Initial allocated disk space | approximately 196 KiB |
+| Mode | `0600` |
+| Backing format | qcow2 |
+| Backing file | Verified absolute path to the immutable Main Node image |
+| Integrity | Clean; `qemu-img check` found no errors |
+| Check completed | `2026-08-13T08:32:40+0200` (`CEST`) |
+
+The absolute backing path deliberately prevents ambiguous resolution when QEMU
+is launched from a different working directory. If the repository is moved,
+the disposable overlay must be recreated by a lifecycle command rather than
+edited by hand. The upstream base images remain valid and unchanged.
+
+The tracked `scripts/aosvm prepare` command verifies the archive manifest before
+extraction, extracts only the exact pinned manifest, verifies every file by
+size and SHA-256, validates both qcow2 images, and creates the overlay through a
+temporary path. It is idempotent and refuses an incomplete base set, a corrupt
+existing overlay, an unexpected backing file, or a symbolic-link target.
+
+All archive, base, firmware, and overlay files remain ignored by Git. The
+Secondary Node is prepared for upstream-release completeness but is not attached
+or used in AOS-0. No firmware, disk, or guest code has been executed yet.
 
 ## Pinned upstream input
 
