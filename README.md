@@ -14,6 +14,7 @@ the legacy AOS Vehicle Information Service interface.
 - [Project roadmap](docs/roadmap.md)
 - [AOS-0: boot official ARM64 AosVM on Apple Silicon](docs/aos-0-arm64-vm.md)
 - [AOS-1: provision one Main Node](docs/aos-1-single-node-provisioning.md)
+- [Colleague setup: run and provision AosVM on an Apple Silicon Mac](docs/aosvm-macos-colleague-setup.md)
 - [Reissue AosEdge user certificates on a new Mac](docs/aos-user-certificate-reissue-macos.md)
 - [Repository and artifact boundaries](docs/decisions/0001-repository-and-artifact-boundaries.md)
 - [QEMU system VM with HVF](docs/decisions/0002-qemu-system-hvf-for-aosvm.md)
@@ -55,6 +56,17 @@ stopped with lifecycle `provisioned`. Deploying the official Hello World
 service is the remaining AOS-1 phase.
 
 ## Commands
+
+For a new Apple Silicon Mac, use the guarded onboarding entry point. It keeps
+local VM setup separate from the explicit cloud-provisioning step:
+
+```sh
+./scripts/aosvm-macos-onboard doctor
+./scripts/aosvm-macos-onboard bootstrap
+./scripts/aosvm-macos-onboard setup
+```
+
+See the colleague setup guide before running `provision --confirm`.
 
 Qualify the Apple Silicon host, HVF, QEMU baseline, resources, and planned
 loopback listeners:

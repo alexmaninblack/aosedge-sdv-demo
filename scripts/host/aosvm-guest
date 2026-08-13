@@ -1,0 +1,254 @@
+#!/bin/sh
+
+set -eu
+umask 077
+
+SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+REPOSITORY_ROOT=$(CDPATH='' cd -- "$SCRIPT_DIR/../.." && pwd)
+AOSVM="$REPOSITORY_ROOT/scripts/aosvm"
+EXPECT_HELPER="$SCRIPT_DIR/aosvm-expect-password"
+INSTALL_KEY_HELPER="$REPOSITORY_ROOT/scripts/guest/aosvm-install-host-key"
+LOCAL_ROOT=${AOSVM_LOCAL_ROOT:-"$REPOSITORY_ROOT/.local"}
+ACCESS_ROOT=${AOSVM_GUEST_ACCESS_ROOT:-"$LOCAL_ROOT/host-access"}
+PRIVATE_KEY="$ACCESS_ROOT/aosvm-host-ed25519"
+PUBLIC_KEY="$PRIVATE_KEY.pub"
+KNOWN_HOSTS="$ACCESS_ROOT/known_hosts"
+SSH_PORT=${AOSVM_SSH_HOST_PORT:-10022}
+WAIT_SECONDS=${AOSVM_GUEST_WAIT_SECONDS:-240}
+REMOTE_HOST=127.0.0.1
+REMOTE_USER=root
+
+fail() {
+    printf 'Error: %s\n' "$*" >&2
+    exit 1
+}
+
+usage() {
+    cat <<'EOF'
+Usage: scripts/host/aosvm-guest COMMAND [ARGUMENT ...]
+
+Commands:
+  wait                         Wait for SSH and verify the saved host key.
+  enroll-key                   Install a private per-VM Mac access key.
+  copy LOCAL_FILE REMOTE_PATH  Copy one regular file to the guest.
+  run COMMAND [ARGUMENT ...]   Run a command without password prompts.
+
+The official development-image password is used only to enroll the private
+host key. The generated private key and known-host record remain outside Git.
+EOF
+}
+
+validate_decimal() {
+    value=$1
+    label=$2
+    case "$value" in
+        ''|*[!0-9]*) fail "$label must be a decimal integer" ;;
+    esac
+}
+
+ensure_access_root() {
+    [ "$ACCESS_ROOT" != / ] || fail 'the guest access directory is unsafe'
+    [ ! -L "$ACCESS_ROOT" ] ||
+        fail "the guest access directory must not be a symbolic link: $ACCESS_ROOT"
+    if [ -e "$ACCESS_ROOT" ]; then
+        [ -d "$ACCESS_ROOT" ] ||
+            fail "the guest access path is not a directory: $ACCESS_ROOT"
+        [ "$(stat -f '%Lp' "$ACCESS_ROOT")" = 700 ] ||
+            fail "the guest access directory mode must be 0700: $ACCESS_ROOT"
+    else
+        mkdir -p "$ACCESS_ROOT"
+        chmod 0700 "$ACCESS_ROOT"
+    fi
+}
+
+scan_host_key() {
+    ensure_access_root
+    scan_file=$(mktemp "$ACCESS_ROOT/.known-hosts.XXXXXX")
+    trap 'rm -f "$scan_file"' EXIT HUP INT TERM
+    scan_raw_file=$(mktemp "$ACCESS_ROOT/.known-hosts-raw.XXXXXX")
+    if ! ssh-keyscan -T 5 -t ed25519 -p "$SSH_PORT" "$REMOTE_HOST" \
+        >"$scan_raw_file" 2>/dev/null; then
+        rm -f "$scan_raw_file"
+        fail 'cannot read the guest SSH host key'
+    fi
+    awk '$1 !~ /^#/ { print }' "$scan_raw_file" >"$scan_file"
+    rm "$scan_raw_file"
+    [ -s "$scan_file" ] || fail 'the guest did not return an Ed25519 host key'
+    chmod 0600 "$scan_file"
+    expected_host="[$REMOTE_HOST]:$SSH_PORT"
+    awk -v expected_host="$expected_host" '
+        NF != 3 || $1 != expected_host || $2 != "ssh-ed25519" || $3 == "" {
+            exit 1
+        }
+        END { if (NR != 1) exit 1 }
+    ' "$scan_file" ||
+        fail 'the SSH host-key scan returned an unexpected record'
+
+    if [ -e "$KNOWN_HOSTS" ] || [ -L "$KNOWN_HOSTS" ]; then
+        [ -f "$KNOWN_HOSTS" ] && [ ! -L "$KNOWN_HOSTS" ] ||
+            fail "the known-hosts path is unsafe: $KNOWN_HOSTS"
+        [ "$(stat -f '%Lp' "$KNOWN_HOSTS")" = 600 ] ||
+            fail "the known-hosts mode must be 0600: $KNOWN_HOSTS"
+        cmp -s "$scan_file" "$KNOWN_HOSTS" ||
+            fail 'the guest SSH host key changed; stop and verify the VM identity before continuing'
+        rm "$scan_file"
+    else
+        mv "$scan_file" "$KNOWN_HOSTS"
+    fi
+    trap - EXIT HUP INT TERM
+}
+
+wait_for_ssh_banner() {
+    validate_decimal "$SSH_PORT" 'SSH host port'
+    validate_decimal "$WAIT_SECONDS" 'guest wait timeout'
+    [ "$SSH_PORT" -ge 1024 ] && [ "$SSH_PORT" -le 65535 ] ||
+        fail 'SSH host port must be between 1024 and 65535'
+    "$AOSVM" status >/dev/null || fail 'the owned AosVM is not running cleanly'
+
+    deadline=$(($(date +%s) + WAIT_SECONDS))
+    banner=''
+    while [ "$(date +%s)" -lt "$deadline" ]; do
+        banner=$(nc -w 2 "$REMOTE_HOST" "$SSH_PORT" 2>/dev/null |
+            sed -n '1p' | tr -d '\r' || true)
+        case "$banner" in
+            SSH-2.0-OpenSSH_*) break ;;
+        esac
+        sleep 2
+    done
+    case "$banner" in
+        SSH-2.0-OpenSSH_*) ;;
+        *) fail "guest SSH did not become ready within $WAIT_SECONDS seconds" ;;
+    esac
+    scan_host_key
+}
+
+password_ssh() {
+    "$EXPECT_HELPER" ssh \
+        -F /dev/null \
+        -o BatchMode=no \
+        -o PreferredAuthentications=password \
+        -o PubkeyAuthentication=no \
+        -o StrictHostKeyChecking=yes \
+        -o "UserKnownHostsFile=$KNOWN_HOSTS" \
+        -o ConnectTimeout=10 \
+        -p "$SSH_PORT" \
+        "$REMOTE_USER@$REMOTE_HOST" "$@"
+}
+
+password_scp() {
+    "$EXPECT_HELPER" scp \
+        -F /dev/null \
+        -O \
+        -o BatchMode=no \
+        -o PreferredAuthentications=password \
+        -o PubkeyAuthentication=no \
+        -o StrictHostKeyChecking=yes \
+        -o "UserKnownHostsFile=$KNOWN_HOSTS" \
+        -o ConnectTimeout=10 \
+        -P "$SSH_PORT" \
+        "$1" "$REMOTE_USER@$REMOTE_HOST:$2"
+}
+
+run_with_key() {
+    [ -f "$PRIVATE_KEY" ] && [ ! -L "$PRIVATE_KEY" ] ||
+        fail 'the private guest access key is missing; run enroll-key first'
+    [ "$(stat -f '%Lp' "$PRIVATE_KEY")" = 600 ] ||
+        fail "the private guest access key mode must be 0600: $PRIVATE_KEY"
+    ssh -F /dev/null \
+        -o BatchMode=yes \
+        -o IdentitiesOnly=yes \
+        -o LogLevel=ERROR \
+        -o StrictHostKeyChecking=yes \
+        -o "UserKnownHostsFile=$KNOWN_HOSTS" \
+        -o ConnectTimeout=10 \
+        -i "$PRIVATE_KEY" \
+        -p "$SSH_PORT" \
+        "$REMOTE_USER@$REMOTE_HOST" "$@"
+}
+
+copy_with_key() {
+    source_file=$1
+    remote_path=$2
+    [ -f "$source_file" ] && [ ! -L "$source_file" ] ||
+        fail "the copy source is not a safe regular file: $source_file"
+    case "$remote_path" in
+        /tmp/*) ;;
+        *) fail 'automated guest copies are restricted to /tmp' ;;
+    esac
+    [ -f "$PRIVATE_KEY" ] && [ ! -L "$PRIVATE_KEY" ] ||
+        fail 'the private guest access key is missing; run enroll-key first'
+    scp -F /dev/null -O \
+        -o BatchMode=yes \
+        -o IdentitiesOnly=yes \
+        -o LogLevel=ERROR \
+        -o StrictHostKeyChecking=yes \
+        -o "UserKnownHostsFile=$KNOWN_HOSTS" \
+        -o ConnectTimeout=10 \
+        -i "$PRIVATE_KEY" \
+        -P "$SSH_PORT" \
+        "$source_file" "$REMOTE_USER@$REMOTE_HOST:$remote_path"
+}
+
+enroll_key() {
+    wait_for_ssh_banner
+    ensure_access_root
+    [ -x "$EXPECT_HELPER" ] || fail "password helper is unavailable: $EXPECT_HELPER"
+    [ -x "$INSTALL_KEY_HELPER" ] ||
+        fail "guest key installer is unavailable: $INSTALL_KEY_HELPER"
+
+    if [ -e "$PRIVATE_KEY" ] || [ -L "$PRIVATE_KEY" ] ||
+       [ -e "$PUBLIC_KEY" ] || [ -L "$PUBLIC_KEY" ]; then
+        [ -f "$PRIVATE_KEY" ] && [ ! -L "$PRIVATE_KEY" ] ||
+            fail "the private guest access key path is unsafe: $PRIVATE_KEY"
+        [ -f "$PUBLIC_KEY" ] && [ ! -L "$PUBLIC_KEY" ] ||
+            fail "the public guest access key path is unsafe: $PUBLIC_KEY"
+    else
+        ssh-keygen -q -t ed25519 -N '' -C aosvm-local-host-access \
+            -f "$PRIVATE_KEY"
+    fi
+    chmod 0600 "$PRIVATE_KEY"
+    chmod 0644 "$PUBLIC_KEY"
+
+    if run_with_key true >/dev/null 2>&1; then
+        printf 'The private Mac host access key is already active.\n'
+        return
+    fi
+
+    remote_public=/tmp/aosvm-host-access.pub
+    remote_installer=/tmp/aosvm-install-host-key
+    password_scp "$PUBLIC_KEY" "$remote_public"
+    password_scp "$INSTALL_KEY_HELPER" "$remote_installer"
+    password_ssh sh "$remote_installer" "$remote_public"
+    password_ssh rm -f "$remote_public" "$remote_installer"
+    run_with_key true >/dev/null || fail 'key-based guest access verification failed'
+    printf 'Private key-based access to this AosVM is ready.\n'
+}
+
+command=${1:-}
+case "$command" in
+    wait)
+        [ "$#" -eq 1 ] || fail 'the wait command does not accept arguments'
+        wait_for_ssh_banner
+        if [ -f "$PRIVATE_KEY" ]; then
+            run_with_key true >/dev/null || fail 'key-based guest access failed'
+        fi
+        printf 'AosVM SSH and host-key verification passed.\n'
+        ;;
+    enroll-key)
+        [ "$#" -eq 1 ] || fail 'the enroll-key command does not accept arguments'
+        enroll_key
+        ;;
+    copy)
+        [ "$#" -eq 3 ] || fail 'usage: aosvm-guest copy LOCAL_FILE REMOTE_PATH'
+        wait_for_ssh_banner
+        copy_with_key "$2" "$3"
+        ;;
+    run)
+        [ "$#" -ge 2 ] || fail 'usage: aosvm-guest run COMMAND [ARGUMENT ...]'
+        shift
+        wait_for_ssh_banner
+        run_with_key "$@"
+        ;;
+    -h|--help|help|'') usage ;;
+    *) usage >&2; fail "unknown command: $command" ;;
+esac

@@ -23,7 +23,7 @@ LIFECYCLE_STATE="aosvm-main-lifecycle.json"
 LIFECYCLE_GUARD="aosvm-main-provisioning-lock.json"
 PRE_PROVISION_BACKUP="aosvm-main-pre-provision.qcow2"
 POST_PROVISION_BACKUP="aosvm-main-post-provision.qcow2"
-QEMU_BASELINE_VERSION="11.0.3"
+QEMU_QUALIFIED_VERSIONS="11.0.3 11.1.0"
 QEMU_MACHINE="virt-11.0"
 QEMU_CPU="host"
 QEMU_VCPUS="2"
@@ -80,6 +80,7 @@ SCRIPT_PATH="$REPOSITORY_ROOT/scripts/aosvm"
 PREPARE_WORK_DIR=''
 PREPARE_LOCK_DIR=''
 QEMU_SYSTEM_PATH=''
+QEMU_SYSTEM_VERSION=''
 DNS_BRIDGE_PID=''
 QEMU_CHILD_PID=''
 LIFECYCLE_LOCK_HELD=0
@@ -1015,8 +1016,13 @@ qualify_qemu_for_start() {
         fail "qemu-system-aarch64 is not a native macOS ARM64 executable"
 
     qemu_version_line=$($QEMU_SYSTEM_PATH --version | sed -n '1p')
-    [ "$qemu_version_line" = "QEMU emulator version $QEMU_BASELINE_VERSION" ] ||
-        fail "QEMU version is not the qualified baseline $QEMU_BASELINE_VERSION"
+    QEMU_SYSTEM_VERSION=${qemu_version_line#QEMU emulator version }
+    [ "$QEMU_SYSTEM_VERSION" != "$qemu_version_line" ] ||
+        fail "Cannot parse the QEMU version"
+    case " $QEMU_QUALIFIED_VERSIONS " in
+        *" $QEMU_SYSTEM_VERSION "*) ;;
+        *) fail "QEMU version $QEMU_SYSTEM_VERSION is not qualified; supported versions: $QEMU_QUALIFIED_VERSIONS" ;;
+    esac
 
     $QEMU_SYSTEM_PATH -accel help | grep -qx 'hvf' ||
         fail "QEMU does not provide the HVF accelerator"
@@ -1075,7 +1081,7 @@ host_check() {
     printf 'Host: macOS ARM64 with Hypervisor Framework\n'
     printf 'Memory: %s bytes\n' "$host_memory_bytes"
     printf 'Free disk: %s KiB\n' "$host_free_kib"
-    printf 'QEMU: %s %s\n' "$QEMU_SYSTEM_PATH" "$QEMU_BASELINE_VERSION"
+    printf 'QEMU: %s %s\n' "$QEMU_SYSTEM_PATH" "$QEMU_SYSTEM_VERSION"
     printf 'Normal listeners: 127.0.0.1:%s (SSH), 127.0.0.1:%s (DNS)\n' \
         "$SSH_HOST_PORT" "$HOST_DNS_PORT"
     printf 'Provisioning-only listener: 127.0.0.1:%s (IAM)\n' \

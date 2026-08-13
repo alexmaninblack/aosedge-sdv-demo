@@ -1,0 +1,96 @@
+#!/bin/sh
+
+set -eu
+umask 077
+
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+repository_root=$(CDPATH='' cd -- "$script_dir/../.." && pwd)
+onboard="$repository_root/scripts/aosvm-macos-onboard"
+guest="$repository_root/scripts/host/aosvm-guest"
+expect_helper="$repository_root/scripts/host/aosvm-expect-password"
+test_root=$(mktemp -d /private/tmp/aosvm-macos-onboard-test.XXXXXX)
+
+cleanup() {
+    rm -r "$test_root"
+}
+
+trap cleanup EXIT HUP INT TERM
+
+for helper in \
+    "$onboard" \
+    "$guest" \
+    "$expect_helper" \
+    "$repository_root/scripts/guest/aosvm-install-host-key" \
+    "$repository_root/scripts/guest/aosvm-onboarding-check"; do
+    [ -f "$helper" ] && [ -x "$helper" ] || {
+        printf 'Expected an executable onboarding helper: %s\n' "$helper" >&2
+        exit 1
+    }
+done
+
+"$onboard" --help >"$test_root/help"
+grep -q '^  doctor ' "$test_root/help"
+grep -q '^  bootstrap ' "$test_root/help"
+grep -q '^  setup ' "$test_root/help"
+grep -q '^  provision-preflight ' "$test_root/help"
+grep -q '^  provision --confirm ' "$test_root/help"
+grep -q 'never provisions the VM' "$test_root/help"
+grep -q 'never retried automatically' "$test_root/help"
+
+if "$onboard" provision >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected provisioning without confirmation to fail.\n' >&2
+    exit 1
+fi
+grep -q 'provision --confirm' "$test_root/stderr"
+
+if "$onboard" provision --confirm extra \
+    >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected provisioning with extra arguments to fail.\n' >&2
+    exit 1
+fi
+grep -q 'provision --confirm' "$test_root/stderr"
+
+AOSVM_CACHE_ROOT="$test_root/cache" \
+AOSVM_LOCAL_ROOT="$test_root/local" \
+AOSVM_RUN_ROOT="$test_root/run" \
+AOSVM_RUNS_ROOT="$test_root/runs" \
+AOSVM_BACKUP_ROOT="$test_root/backups" \
+AOSVM_GUEST_ACCESS_ROOT="$test_root/access" \
+AOSVM_PROVISION_ATTEMPT_ROOT="$test_root/provisioning" \
+AOS_USER_ROOT="$test_root/aos" \
+    "$onboard" doctor >"$test_root/doctor"
+grep -q '^AosVM macOS onboarding doctor$' "$test_root/doctor"
+grep -q '^MISSING: The isolated Aos CLI environment' "$test_root/doctor"
+grep -q '^MISSING: The OEM certificate is not present' "$test_root/doctor"
+grep -q '^NOTE: No local VM disk exists yet.$' "$test_root/doctor"
+[ ! -e "$test_root/cache" ]
+[ ! -e "$test_root/local" ]
+[ ! -e "$test_root/backups" ]
+[ ! -e "$test_root/access" ]
+[ ! -e "$test_root/provisioning" ]
+[ ! -e "$test_root/aos" ]
+
+grep -q -- '--nodes 1' "$onboard"
+grep -q -- '--check-software' "$onboard"
+grep -q 'write_attempt_state sdk-started' "$onboard"
+grep -q 'Do not retry automatically' "$onboard"
+grep -q 'checkpoint-pre-provision' "$onboard"
+grep -q 'seal-provisioned' "$onboard"
+if grep -Eq '(aos-user-(admin|sp)\.p12|reissue|install-root)' "$onboard"; then
+    printf 'Onboarding must not require certificate recovery, Admin, or SP.\n' >&2
+    exit 1
+fi
+if grep -Eq '[0-9a-fA-F]{32,}' "$onboard"; then
+    printf 'Onboarding appears to contain a token or identifier literal.\n' >&2
+    exit 1
+fi
+
+"$guest" --help >"$test_root/guest-help"
+grep -q '^  enroll-key ' "$test_root/guest-help"
+grep -q 'remain outside Git' "$test_root/guest-help"
+grep -q 'StrictHostKeyChecking=yes' "$guest"
+grep -q 'BatchMode=yes' "$guest"
+grep -q 'only an Ed25519 public key is accepted' \
+    "$repository_root/scripts/guest/aosvm-install-host-key"
+
+printf 'AosVM macOS onboarding safety tests passed.\n'

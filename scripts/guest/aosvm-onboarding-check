@@ -1,0 +1,95 @@
+#!/bin/sh
+
+set -eu
+umask 077
+
+mode=${1:-}
+wait_seconds=${AOSVM_ONBOARDING_WAIT_SECONDS:-240}
+
+fail() {
+    printf 'AosVM onboarding guest check failed: %s\n' "$*" >&2
+    exit 1
+}
+
+wait_for_pre_provision_services() {
+    case "$wait_seconds" in
+        ''|*[!0-9]*) fail 'the onboarding wait timeout is not numeric' ;;
+    esac
+    deadline=$(($(date +%s) + wait_seconds))
+    while [ "$(date +%s)" -lt "$deadline" ]; do
+        if [ "$(systemctl is-active multi-user.target 2>/dev/null || true)" = active ] &&
+           [ "$(systemctl is-active aos-iam-prov.service 2>/dev/null || true)" = active ]; then
+            return
+        fi
+        sleep 5
+    done
+}
+
+[ "$(id -u)" -eq 0 ] || fail 'this command must run as root'
+[ "$(uname -m)" = aarch64 ] || fail 'the guest is not AArch64'
+grep -qx 'ID=aos-core' /etc/os-release || fail 'the guest OS is not AosCore'
+grep -qx 'VERSION_ID=6.1.0' /etc/os-release ||
+    fail 'the guest OS is not AosCore 6.1.0'
+[ "$(getenforce)" = Enforcing ] || fail 'SELinux is not enforcing'
+[ "$(findmnt -T / -no SOURCE)" = /dev/sda3 ] ||
+    fail 'the root filesystem is not the qualified AosVM root partition'
+findmnt -T / -no OPTIONS | tr ',' '\n' | grep -qx ro ||
+    fail 'the root filesystem is not read-only'
+
+loader=$(jq -r \
+    '.runtimes[] | select(.plugin == "boot") | .config.loader' /etc/aos/sm.cfg)
+[ "$loader" = /EFI/BOOT/bootaa64.efi ] ||
+    fail "the Service Manager ARM64 loader is incorrect: $loader"
+[ "$(awk -F= '$1 == "DNS" { print $2 }' \
+    /etc/systemd/network/20-wired.network)" = 10.0.0.100 ] ||
+    fail 'the persistent guest DNS setting is incorrect'
+[ "$(awk -F= '$1 == "server" { print $0 }' \
+    /var/aos/dns/dnsmasq.conf)" = 'server=10.0.0.1#18053' ] ||
+    fail 'the dnsmasq upstream setting is incorrect'
+
+case "$mode" in
+    pre-provision)
+        wait_for_pre_provision_services
+        [ ! -e /var/aos/.provisionstate ] ||
+            fail 'the guest already has a provisioning completion marker'
+        [ ! -e /var/aos/iam/.usrpin ] ||
+            fail 'the guest already has a provisioning PKCS#11 user PIN'
+        [ "$(systemctl is-active aos-iam-prov.service)" = active ] ||
+            fail 'provisioning IAM is not active'
+        for unit in aos-iam.service aos-sm.service aos-cm.service; do
+            [ "$(systemctl is-active "$unit")" = inactive ] ||
+                fail "runtime service is unexpectedly active: $unit"
+        done
+        printf 'PASS: AosVM is configured and unprovisioned.\n'
+        ;;
+    post-provision)
+        case "$wait_seconds" in
+            ''|*[!0-9]*) fail 'the post-provision wait timeout is not numeric' ;;
+        esac
+        deadline=$(($(date +%s) + wait_seconds))
+        while [ "$(date +%s)" -lt "$deadline" ]; do
+            if [ -e /var/aos/.provisionstate ] &&
+               [ "$(systemctl is-active aos-iam-prov.service 2>/dev/null || true)" = inactive ] &&
+               [ "$(systemctl is-active aos-iam.service 2>/dev/null || true)" = active ] &&
+               [ "$(systemctl is-active aos-sm.service 2>/dev/null || true)" = active ] &&
+               [ "$(systemctl is-active aos-cm.service 2>/dev/null || true)" = active ]; then
+                break
+            fi
+            sleep 5
+        done
+        [ -e /var/aos/.provisionstate ] ||
+            fail 'the provisioning completion marker is absent'
+        [ "$(systemctl is-active aos-iam-prov.service)" = inactive ] ||
+            fail 'provisioning IAM is still active'
+        for unit in aos-iam.service aos-sm.service aos-cm.service; do
+            [ "$(systemctl is-active "$unit")" = active ] ||
+                fail "runtime service is not active: $unit"
+        done
+        for path in /var/aos/states /var/aos/storages; do
+            findmnt -T "$path" -no OPTIONS | tr ',' '\n' | grep -qx rw ||
+                fail "the Aos data path is not mounted read-write: $path"
+        done
+        printf 'PASS: AosVM is provisioned and its core services are active.\n'
+        ;;
+    *) fail 'usage: aosvm-onboarding-check <pre-provision|post-provision>' ;;
+esac

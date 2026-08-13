@@ -26,6 +26,7 @@ Commands:
   install-root   Install the two Aos root certificates in the login Keychain.
   reissue        Prompt privately for Admin, OEM, and SP one-time tokens.
   verify         Verify local certificates and their AosCloud roles.
+  verify-oem     Verify only the existing OEM certificate for provisioning.
 
 Tokens are read without terminal echo and are passed directly to aos-keys.
 They are never written to files, command-line arguments, logs, or shell history.
@@ -282,6 +283,33 @@ verify() {
     printf 'Admin, OEM, and SP certificate checks completed.\n'
 }
 
+verify_oem() {
+    require_macos_arm64
+    validate_aos_root
+    require_venv
+    certificate=${AOS_OEM_CERTIFICATE:-$(certificate_for_role oem)}
+    [ -f "$certificate" ] && [ ! -L "$certificate" ] ||
+        die "OEM certificate is missing: $certificate"
+    chmod 0600 "$certificate"
+    "$python_path" -m aos_keys info -c "$certificate"
+    "$python_path" - "$certificate" <<'PY'
+import sys
+
+from aos_prov.communication.cloud.cloud_api import CloudAPI
+from aos_prov.utils.user_credentials import UserCredentials
+
+certificate = sys.argv[1]
+try:
+    credentials = UserCredentials(pkcs12=certificate)
+    CloudAPI(credentials, retry_count=3, retry_delay=2.0).check_cloud_access()
+except Exception as error:
+    raise SystemExit(
+        f'Error: live OEM certificate check failed: {type(error).__name__}: {error}'
+    ) from None
+PY
+    printf 'OEM certificate and live AosCloud role check completed.\n'
+}
+
 all() {
     bootstrap
     install_root
@@ -297,6 +325,7 @@ case "$command" in
     install-root) install_root ;;
     reissue) reissue ;;
     verify) verify ;;
+    verify-oem) verify_oem ;;
     -h|--help|help|'') usage ;;
     *) usage >&2; die "Unknown command: $command" ;;
 esac

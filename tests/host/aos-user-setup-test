@@ -18,6 +18,7 @@ trap cleanup EXIT HUP INT TERM
 grep -q '^  all ' "$test_root/help"
 grep -q '^  bootstrap ' "$test_root/help"
 grep -q '^  reissue ' "$test_root/help"
+grep -q '^  verify-oem ' "$test_root/help"
 grep -q 'never written to files, command-line arguments' "$test_root/help"
 
 if AOS_USER_ROOT="$test_root/aos" "$helper" verify \
@@ -42,6 +43,8 @@ if grep -q 'AOS_REISSUE_TOKEN' "$helper"; then
     exit 1
 fi
 grep -q 'Preserving existing %s certificate' "$helper"
+grep -q 'CloudAPI(credentials, retry_count=3' "$helper"
+grep -q "AOS_OEM_CERTIFICATE" "$helper"
 grep -A5 '^all()' "$helper" | grep -q 'install_root'
 
 ln -s "$test_root/elsewhere" "$test_root/aos-link"

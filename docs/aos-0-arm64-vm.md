@@ -70,8 +70,15 @@ baseline, and has no listener occupying the planned loopback port.
 | Planned SSH forward | `127.0.0.1:10022` to `10.0.0.100:22` |
 | Check completed | `2026-08-12T23:30:25+0200` (`CEST`) |
 
-Qualification used empty, diskless probes only; no AosVM image or guest OS was
-started. QEMU successfully created and ran two `host` vCPUs with HVF, created
+QEMU 11.1.0, the next Homebrew ARM64 bottle, was additionally qualified on
+2026-08-13 against the same fixed `virt-11.0,accel=hvf` contract. An isolated
+fresh overlay reached the real OpenSSH banner in 20 seconds, and its qcow2
+integrity check passed after shutdown. The launcher accepts 11.0.3 and 11.1.0
+only; later releases remain fail-closed until independently qualified.
+
+The original 11.0.3 qualification used empty, diskless probes only; no AosVM
+image or guest OS was started in that phase. QEMU successfully created and ran
+two `host` vCPUs with HVF, created
 the required virtio-SCSI and virtio network devices, accepted the planned user
 network, and bound the SSH forward only to loopback. The probes exited cleanly,
 leaving no QEMU process or listener on port 10022.

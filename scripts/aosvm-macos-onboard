@@ -1,0 +1,642 @@
+#!/bin/sh
+
+set -eu
+umask 077
+
+SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+REPOSITORY_ROOT=$(CDPATH='' cd -- "$SCRIPT_DIR/.." && pwd)
+AOSVM="$SCRIPT_DIR/aosvm"
+AOS_USER_SETUP="$SCRIPT_DIR/aos-user-setup"
+GUEST="$SCRIPT_DIR/host/aosvm-guest"
+OEM_CERTIFICATE=${AOS_OEM_CERTIFICATE:-"${AOS_USER_ROOT:-$HOME/.aos}/security/aos-user-oem.p12"}
+AOS_PYTHON=${AOS_PYTHON:-"${AOS_USER_ROOT:-$HOME/.aos}/venv/bin/python3"}
+PROVISIONING_ADDRESS=127.0.0.1:${AOSVM_PROVISIONING_HOST_PORT:-18089}
+PROVISION_ATTEMPT_ROOT=${AOSVM_PROVISION_ATTEMPT_ROOT:-"$HOME/Library/Application Support/CarlaAosEdge/AosVM/provisioning"}
+PROVISION_ATTEMPT_STATE="$PROVISION_ATTEMPT_ROOT/attempt.state"
+UNIT_CONFIG="$REPOSITORY_ROOT/config/aosvm-single-node-unitconfig.json"
+GUEST_ONBOARDING_CHECK="$REPOSITORY_ROOT/scripts/guest/aosvm-onboarding-check"
+EXPECTED_MODEL_NAME=aos-vm
+EXPECTED_MODEL_VERSION=1.0.0
+
+fail() {
+    printf 'Error: %s\n' "$*" >&2
+    exit 1
+}
+
+usage() {
+    cat <<'EOF'
+Usage: ./scripts/aosvm-macos-onboard COMMAND
+
+Commands:
+  doctor                 Read-only host, dependency, disk, and key report.
+  bootstrap              Install missing Homebrew packages and Aos CLI tools.
+  setup                   Download, prepare, boot, and configure a fresh AosVM.
+  status                  Report host, VM, lifecycle, guest, and key readiness.
+  provision-preflight    Verify OEM access and the existing single-node model.
+  provision --confirm    Provision exactly one Main Node after a checkpoint.
+  start                   Start the persistent VM in normal mode.
+  stop                    Stop the persistent VM cleanly.
+
+The setup command is idempotent and never provisions the VM. Provisioning is a
+separate, explicit cloud mutation and is never retried automatically after the
+official SDK begins. All VM disks and access keys remain outside Git.
+EOF
+}
+
+print_ok() {
+    printf 'OK: %s\n' "$*"
+}
+
+print_note() {
+    printf 'NOTE: %s\n' "$*"
+}
+
+print_missing() {
+    printf 'MISSING: %s\n' "$*"
+}
+
+require_macos_arm64() {
+    [ "$(uname -s)" = Darwin ] || fail 'this helper supports macOS only'
+    [ "$(uname -m)" = arm64 ] || fail 'this helper requires Apple Silicon'
+}
+
+validate_repository() {
+    command -v jq >/dev/null 2>&1 || fail 'the jq command is unavailable'
+    [ -x "$AOSVM" ] || fail "the AosVM launcher is unavailable: $AOSVM"
+    [ -x "$AOS_USER_SETUP" ] ||
+        fail "the Aos user helper is unavailable: $AOS_USER_SETUP"
+    [ -x "$GUEST" ] || fail "the guest access helper is unavailable: $GUEST"
+    [ -f "$UNIT_CONFIG" ] && [ ! -L "$UNIT_CONFIG" ] ||
+        fail "the single-node configuration is unavailable: $UNIT_CONFIG"
+    jq -e \
+        '.nodes == [{"nodeType":"aos-vm-main","labels":["main"],"priority":100}]' \
+        "$UNIT_CONFIG" >/dev/null ||
+        fail 'the tracked Unit Configuration is not the expected one-Main-Node model'
+}
+
+is_vm_running() {
+    "$AOSVM" status 2>/dev/null | grep -qx 'AosVM Main Node is running.'
+}
+
+vm_lifecycle() {
+    "$AOSVM" lifecycle-status 2>/dev/null |
+        sed -n 's/^AosVM lifecycle: //p' | sed -n '1p'
+}
+
+doctor() {
+    require_macos_arm64
+    printf 'AosVM macOS onboarding doctor\n'
+    printf 'Host: macOS %s (%s)\n' "$(sw_vers -productVersion)" "$(uname -m)"
+    if [ "$(sysctl -n kern.hv_support 2>/dev/null || true)" = 1 ]; then
+        print_ok 'Apple Hypervisor Framework is available.'
+    else
+        print_missing 'Apple Hypervisor Framework is unavailable.'
+    fi
+
+    if command -v brew >/dev/null 2>&1; then
+        case "$(brew --prefix 2>/dev/null || true)" in
+            /opt/homebrew) print_ok 'Native Apple Silicon Homebrew is available.' ;;
+            *) print_missing 'Homebrew is not the native /opt/homebrew installation.' ;;
+        esac
+    else
+        print_missing 'Homebrew is not installed.'
+    fi
+
+    for command_name in jq qemu-img qemu-system-aarch64; do
+        if command -v "$command_name" >/dev/null 2>&1; then
+            print_ok "$command_name is available."
+        else
+            print_missing "$command_name is unavailable."
+        fi
+    done
+
+    if command -v qemu-system-aarch64 >/dev/null 2>&1; then
+        qemu_version=$(qemu-system-aarch64 --version 2>/dev/null |
+            sed -n '1s/^QEMU emulator version //p')
+        case "$qemu_version" in
+            11.0.3|11.1.0) print_ok "QEMU $qemu_version is qualified." ;;
+            '') print_missing 'The QEMU version could not be read.' ;;
+            *) print_missing "QEMU $qemu_version is not qualified by this repository." ;;
+        esac
+    fi
+
+    if [ -x "$AOS_PYTHON" ]; then
+        print_ok "The isolated Aos CLI environment exists."
+    else
+        print_missing 'The isolated Aos CLI environment has not been bootstrapped.'
+    fi
+
+    if [ -f "$OEM_CERTIFICATE" ] && [ ! -L "$OEM_CERTIFICATE" ]; then
+        print_ok "The OEM certificate file is present."
+    else
+        print_missing "The OEM certificate is not present at $OEM_CERTIFICATE."
+    fi
+
+    free_kib=$(df -Pk "$REPOSITORY_ROOT" | awk 'NR == 2 { print $4 }')
+    if [ "$free_kib" -ge 20971520 ]; then
+        print_ok 'At least 20 GiB of free disk is available.'
+    else
+        print_missing 'Less than 20 GiB of free disk is available.'
+    fi
+
+    if validate_repository >/dev/null 2>&1; then
+        print_ok 'The repository onboarding files are intact.'
+    else
+        print_missing 'The repository onboarding files are incomplete or changed.'
+    fi
+
+    local_disk_root=${AOSVM_LOCAL_ROOT:-"$REPOSITORY_ROOT/.local"}
+    if [ -d "$local_disk_root" ]; then
+        print_note 'A local VM disk directory already exists; setup will preserve it.'
+    else
+        print_note 'No local VM disk exists yet.'
+    fi
+
+    if "$AOSVM" status >/dev/null 2>&1; then
+        "$AOSVM" status
+    else
+        print_note 'VM status is not yet available; run bootstrap and setup.'
+    fi
+
+    cat <<'EOF'
+
+Doctor is read-only. Resolve every MISSING item before provisioning. It is safe
+to rerun doctor, bootstrap, and setup after an interrupted installation.
+EOF
+}
+
+bootstrap() {
+    require_macos_arm64
+    command -v brew >/dev/null 2>&1 || fail \
+        'Homebrew is missing. Install it from https://brew.sh/ and rerun bootstrap.'
+    [ "$(brew --prefix)" = /opt/homebrew ] ||
+        fail 'native Apple Silicon Homebrew at /opt/homebrew is required'
+
+    missing_formulae=''
+    for formula in qemu jq python@3.12; do
+        if ! brew list --versions "$formula" >/dev/null 2>&1; then
+            missing_formulae="$missing_formulae $formula"
+        fi
+    done
+    if [ -n "$missing_formulae" ]; then
+        printf 'Installing missing Homebrew packages:%s\n' "$missing_formulae"
+        # Word splitting is intentional: formula names are fixed above.
+        # shellcheck disable=SC2086
+        brew install $missing_formulae
+    else
+        printf 'Required Homebrew packages are already installed.\n'
+    fi
+
+    export PATH="/opt/homebrew/bin:$PATH"
+    if is_vm_running; then
+        "$AOSVM" status
+    else
+        "$AOSVM" host-check
+    fi
+    "$AOS_USER_SETUP" bootstrap
+    printf 'Host and Aos CLI bootstrap completed.\n'
+    printf 'Next: ./scripts/aosvm-macos-onboard setup\n'
+}
+
+install_guest_file() {
+    source_file=$1
+    remote_name=$2
+    "$GUEST" copy "$source_file" "/tmp/$remote_name"
+    "$GUEST" run chmod 0700 "/tmp/$remote_name"
+    "$GUEST" run sh "/tmp/$remote_name"
+    "$GUEST" run rm -f "/tmp/$remote_name"
+}
+
+run_guest_onboarding_check() {
+    check_mode=$1
+    "$GUEST" copy "$GUEST_ONBOARDING_CHECK" /tmp/aosvm-onboarding-check
+    "$GUEST" run chmod 0700 /tmp/aosvm-onboarding-check
+    "$GUEST" run sh /tmp/aosvm-onboarding-check "$check_mode"
+    "$GUEST" run rm -f /tmp/aosvm-onboarding-check
+}
+
+configure_guest() {
+    "$GUEST" enroll-key
+    install_guest_file \
+        "$REPOSITORY_ROOT/scripts/guest/aosvm-apply-arm64-compat" \
+        aosvm-apply-arm64-compat
+    install_guest_file \
+        "$REPOSITORY_ROOT/scripts/guest/aosvm-apply-qemu-network-compat" \
+        aosvm-apply-qemu-network-compat
+    printf 'Guest compatibility configuration is complete.\n'
+}
+
+setup_vm() {
+    require_macos_arm64
+    validate_repository
+    if is_vm_running; then
+        "$AOSVM" status
+        "$AOSVM" smoke-test
+    else
+        "$AOSVM" host-check
+    "$AOSVM" download
+    "$AOSVM" prepare
+    fi
+    lifecycle=$(vm_lifecycle)
+    case "$lifecycle" in
+        unprotected) ;;
+        provisioning-locked|provisioned)
+            fail "setup is for a fresh unprovisioned VM; lifecycle is $lifecycle"
+            ;;
+        *) fail 'cannot determine the VM lifecycle state' ;;
+    esac
+    "$AOSVM" start
+    "$AOSVM" smoke-test
+    configure_guest
+    printf 'Restarting once so the persistent network configuration takes effect.\n'
+    "$AOSVM" stop
+    "$AOSVM" start
+    "$AOSVM" smoke-test
+    "$GUEST" wait
+    run_guest_onboarding_check pre-provision
+    printf '\nAosVM setup completed successfully.\n'
+    printf 'The VM is running and unprovisioned. No cloud state was changed.\n'
+    printf 'Next: ./scripts/aosvm-macos-onboard status\n'
+}
+
+status_report() {
+    require_macos_arm64
+    validate_repository
+    "$AOSVM" status
+    "$AOSVM" lifecycle-status
+    if is_vm_running; then
+        "$AOSVM" smoke-test
+        if "$GUEST" wait >/dev/null 2>&1; then
+            print_ok 'Key-based guest access is healthy.'
+        else
+            print_note 'Guest SSH is reachable but private key access is not ready.'
+        fi
+    fi
+    if [ -f "$OEM_CERTIFICATE" ] && [ ! -L "$OEM_CERTIFICATE" ]; then
+        print_ok 'OEM certificate file is present.'
+    else
+        print_note 'OEM certificate file is absent; local VM use is still available.'
+    fi
+    if [ -f "$PROVISION_ATTEMPT_STATE" ]; then
+        attempt_state=$(sed -n '1p' "$PROVISION_ATTEMPT_STATE")
+        print_note "Provisioning attempt state: $attempt_state"
+    fi
+}
+
+oem_cloud_preflight() {
+    [ -x "$AOS_PYTHON" ] ||
+        fail 'the Aos CLI environment is missing; run bootstrap first'
+    [ -f "$OEM_CERTIFICATE" ] && [ ! -L "$OEM_CERTIFICATE" ] ||
+        fail "the OEM certificate is missing: $OEM_CERTIFICATE"
+    AOS_OEM_CERTIFICATE="$OEM_CERTIFICATE" "$AOS_USER_SETUP" verify-oem
+    "$AOS_PYTHON" - "$OEM_CERTIFICATE" "$UNIT_CONFIG" \
+        "$EXPECTED_MODEL_NAME" "$EXPECTED_MODEL_VERSION" <<'PY'
+import json
+import sys
+from urllib.parse import urlencode
+
+import requests
+from importlib import resources
+from aos_prov.utils.common import REQUEST_TIMEOUT
+from aos_prov.utils.user_credentials import UserCredentials
+
+certificate, config_path, model_name, model_version = sys.argv[1:]
+with open(config_path, encoding='utf-8') as stream:
+    expected_config = json.load(stream)
+
+credentials = UserCredentials(pkcs12=certificate)
+ca_resource = resources.files('aos_prov') / 'files/1rootCA.crt'
+query = urlencode({'name': model_name, 'version': model_version, 'limit': 50})
+url = f'https://{credentials.cloud_url}:10000/api/v11/unit-models/?{query}'
+with resources.as_file(ca_resource) as ca_path:
+    with credentials.user_credentials as temporary:
+        response = requests.get(
+            url,
+            verify=ca_path,
+            cert=(temporary.cert_file_name, temporary.key_file_name),
+            timeout=REQUEST_TIMEOUT,
+        )
+response.raise_for_status()
+payload = response.json()
+items = [
+    item for item in payload.get('items', [])
+    if item.get('name') == model_name and item.get('version') == model_version
+]
+if len(items) != 1:
+    raise SystemExit(
+        f'Error: expected exactly one existing {model_name} {model_version} '
+        f'Target System in this OEM; found {len(items)}.'
+    )
+model_id = items[0].get('id')
+if not model_id:
+    raise SystemExit('Error: the existing Target System has no readable ID.')
+detail_url = f'https://{credentials.cloud_url}:10000/api/v11/unit-models/{model_id}/'
+with resources.as_file(ca_resource) as ca_path:
+    with credentials.user_credentials as temporary:
+        detail = requests.get(
+            detail_url,
+            verify=ca_path,
+            cert=(temporary.cert_file_name, temporary.key_file_name),
+            timeout=REQUEST_TIMEOUT,
+        )
+detail.raise_for_status()
+actual_config = detail.json().get('unit_config')
+if actual_config is None:
+    configs_url = (
+        f'https://{credentials.cloud_url}:10000/api/v11/unit-models/'
+        f'{model_id}/unit-configs/?limit=1&ordering=-id'
+    )
+    with resources.as_file(ca_resource) as ca_path:
+        with credentials.user_credentials as temporary:
+            configs = requests.get(
+                configs_url,
+                verify=ca_path,
+                cert=(temporary.cert_file_name, temporary.key_file_name),
+                timeout=REQUEST_TIMEOUT,
+            )
+    configs.raise_for_status()
+    config_items = configs.json().get('items', [])
+    if len(config_items) != 1:
+        raise SystemExit(
+            'Error: the existing Target System has no readable latest Unit '
+            'Configuration. Nothing was changed.'
+        )
+    actual_config = config_items[0].get('unit_config')
+if actual_config != expected_config:
+    raise SystemExit(
+        'Error: the existing Target System does not exactly match the tracked '
+        'single-Main-Node Unit Configuration. Nothing was changed.'
+    )
+print(f'Cloud Target System: {model_name} {model_version}, one Main Node (verified)')
+PY
+}
+
+provision_preflight() {
+    require_macos_arm64
+    validate_repository
+    lifecycle=$(vm_lifecycle)
+    case "$lifecycle" in
+        unprotected|provisioning-locked) ;;
+        provisioned) fail 'this VM is already recorded as provisioned' ;;
+        *) fail 'cannot determine the VM lifecycle state' ;;
+    esac
+    is_vm_running ||
+        fail 'provisioning preflight requires the VM to be running; run start first'
+    oem_cloud_preflight
+    "$AOSVM" smoke-test
+    "$GUEST" wait
+    run_guest_onboarding_check pre-provision
+    printf 'Provisioning preflight passed without changing cloud or VM state.\n'
+}
+
+ensure_attempt_root() {
+    [ "$PROVISION_ATTEMPT_ROOT" != / ] ||
+        fail 'the provisioning attempt directory is unsafe'
+    [ ! -L "$PROVISION_ATTEMPT_ROOT" ] ||
+        fail "the provisioning attempt directory is a symbolic link: $PROVISION_ATTEMPT_ROOT"
+    if [ -e "$PROVISION_ATTEMPT_ROOT" ]; then
+        [ -d "$PROVISION_ATTEMPT_ROOT" ] ||
+            fail 'the provisioning attempt path is not a directory'
+        [ "$(stat -f '%Lp' "$PROVISION_ATTEMPT_ROOT")" = 700 ] ||
+            fail 'the provisioning attempt directory mode must be 0700'
+    else
+        mkdir -p "$PROVISION_ATTEMPT_ROOT"
+        chmod 0700 "$PROVISION_ATTEMPT_ROOT"
+    fi
+}
+
+write_attempt_state() {
+    value=$1
+    ensure_attempt_root
+    state_partial=$(mktemp "$PROVISION_ATTEMPT_ROOT/.attempt.XXXXXX")
+    printf '%s\n' "$value" >"$state_partial"
+    chmod 0600 "$state_partial"
+    mv "$state_partial" "$PROVISION_ATTEMPT_STATE"
+}
+
+post_provision_guest_check() {
+    "$GUEST" wait
+    run_guest_onboarding_check post-provision
+}
+
+cloud_unit_acceptance() {
+    ensure_attempt_root
+    identity_file=$(mktemp "$PROVISION_ATTEMPT_ROOT/.system-identity.XXXXXX")
+    chmod 0600 "$identity_file"
+    trap 'rm -f "$identity_file"' EXIT HUP INT TERM
+    "$GUEST" run cat /etc/machine-id >"$identity_file" ||
+        fail 'cannot read the guest system identity'
+    grep -Eq '^[0-9a-f]{32}$' "$identity_file" ||
+        fail 'the guest returned an invalid system identity'
+    "$AOS_PYTHON" - "$OEM_CERTIFICATE" "$identity_file" <<'PY'
+import sys
+import time
+from importlib import resources
+from urllib.parse import urlencode
+
+import requests
+from aos_prov.utils.common import REQUEST_TIMEOUT
+from aos_prov.utils.user_credentials import UserCredentials
+
+certificate, identity_path = sys.argv[1:]
+with open(identity_path, encoding='ascii') as stream:
+    system_uid = stream.read().strip()
+credentials = UserCredentials(pkcs12=certificate)
+ca_resource = resources.files('aos_prov') / 'files/1rootCA.crt'
+query = urlencode({'system_uid': system_uid, 'limit': 2})
+units_url = f'https://{credentials.cloud_url}:10000/api/v11/units/?{query}'
+deadline = time.monotonic() + 300
+unit = None
+while time.monotonic() < deadline:
+    with resources.as_file(ca_resource) as ca_path:
+        with credentials.user_credentials as temporary:
+            response = requests.get(
+                units_url,
+                verify=ca_path,
+                cert=(temporary.cert_file_name, temporary.key_file_name),
+                timeout=REQUEST_TIMEOUT,
+            )
+    response.raise_for_status()
+    payload = response.json()
+    if payload.get('total') == 1 and len(payload.get('items', [])) == 1:
+        candidate = payload['items'][0]
+        if (
+            candidate.get('status') == 'provisioned'
+            and candidate.get('online_status') == 'Online'
+        ):
+            unit = candidate
+            break
+    time.sleep(10)
+if unit is None:
+    raise SystemExit(
+        'Error: the new cloud Unit did not become uniquely provisioned and '
+        'Online within 300 seconds.'
+    )
+nodes_url = (
+    f'https://{credentials.cloud_url}:10000/api/v11/units/'
+    f'{system_uid}/nodes/?limit=2'
+)
+with resources.as_file(ca_resource) as ca_path:
+    with credentials.user_credentials as temporary:
+        nodes_response = requests.get(
+            nodes_url,
+            verify=ca_path,
+            cert=(temporary.cert_file_name, temporary.key_file_name),
+            timeout=REQUEST_TIMEOUT,
+        )
+nodes_response.raise_for_status()
+nodes = nodes_response.json()
+if nodes.get('total') != 1 or len(nodes.get('items', [])) != 1:
+    raise SystemExit('Error: the cloud Unit does not contain exactly one Node.')
+node = nodes['items'][0]
+if (
+    node.get('node_type') != 'aos-vm-main'
+    or node.get('status') != 'provisioned'
+    or node.get('is_primary') is not True
+):
+    raise SystemExit(
+        'Error: the cloud Node is not the expected provisioned primary '
+        'aos-vm-main Node.'
+    )
+print('Cloud Unit: provisioned and Online with one primary Main Node (verified)')
+PY
+    rm "$identity_file"
+    trap - EXIT HUP INT TERM
+}
+
+provision() {
+    [ "${1:-}" = --confirm ] && [ "$#" -eq 1 ] ||
+        fail 'provisioning requires the exact command: provision --confirm'
+    require_macos_arm64
+    validate_repository
+    if [ -f "$PROVISION_ATTEMPT_STATE" ]; then
+        prior_state=$(sed -n '1p' "$PROVISION_ATTEMPT_STATE")
+        case "$prior_state" in
+            completed) fail 'this helper has already completed provisioning for this VM' ;;
+            sdk-started|sdk-succeeded)
+                fail "a prior provisioning attempt reached state $prior_state; automatic retry is blocked—reconcile the guest and cloud state first"
+                ;;
+            *) fail "an unknown provisioning attempt state exists: $prior_state" ;;
+        esac
+    fi
+
+    if ! is_vm_running; then
+        "$AOSVM" start
+        "$AOSVM" smoke-test
+        "$GUEST" wait
+        run_guest_onboarding_check pre-provision
+    fi
+    provision_preflight
+    "$AOSVM" stop
+    lifecycle=$(vm_lifecycle)
+    case "$lifecycle" in
+        unprotected)
+            "$REPOSITORY_ROOT/tests/host/aosvm-phase13-stopped-gate"
+            "$AOSVM" checkpoint-pre-provision
+            ;;
+        provisioning-locked)
+            "$AOSVM" lifecycle-status
+            ;;
+        *) fail "provisioning cannot continue from lifecycle $lifecycle" ;;
+    esac
+
+    "$AOSVM" start-provisioning
+    "$AOSVM" smoke-test
+    "$REPOSITORY_ROOT/tests/host/aosvm-provisioning-host-gate"
+    "$GUEST" wait
+    run_guest_onboarding_check pre-provision
+
+    ensure_attempt_root
+    timestamp=$(date -u '+%Y%m%dT%H%M%SZ')
+    raw_log="$PROVISION_ATTEMPT_ROOT/aos-prov-$timestamp.log"
+    [ ! -e "$raw_log" ] && [ ! -L "$raw_log" ] ||
+        fail 'the private provisioning log path already exists'
+    : >"$raw_log"
+    chmod 0600 "$raw_log"
+    write_attempt_state sdk-started
+
+    printf 'Starting the official single-Node provisioning command exactly once.\n'
+    printf 'Private raw output is stored outside Git.\n'
+    set +e
+    "$AOS_PYTHON" -m aos_prov provision \
+        -u "$PROVISIONING_ADDRESS" \
+        -p "$OEM_CERTIFICATE" \
+        --nodes 1 \
+        --check-software \
+        >"$raw_log" 2>&1
+    provision_status=$?
+    set -e
+    if [ "$provision_status" -ne 0 ]; then
+        printf 'Error: the official SDK returned status %s.\n' "$provision_status" >&2
+        printf 'The VM, checkpoint, cloud state, and private log were preserved.\n' >&2
+        printf 'Do not retry automatically. Review: %s\n' "$raw_log" >&2
+        exit "$provision_status"
+    fi
+    write_attempt_state sdk-succeeded
+    printf 'The official SDK reported success. Waiting for guest activation.\n'
+    post_provision_guest_check
+    printf 'Restarting in normal mode.\n'
+    "$AOSVM" stop
+    "$AOSVM" start
+    "$AOSVM" smoke-test
+    post_provision_guest_check
+    cloud_unit_acceptance
+    "$AOSVM" stop
+    "$AOSVM" seal-provisioned
+    write_attempt_state completed
+    "$AOSVM" lifecycle-status
+    printf 'Provisioning completed and the persistent VM identity is sealed.\n'
+    printf 'Start it with: ./scripts/aosvm-macos-onboard start\n'
+}
+
+start_normal() {
+    require_macos_arm64
+    validate_repository
+    "$AOSVM" start
+    "$AOSVM" smoke-test
+    printf 'AosVM is running in normal mode.\n'
+}
+
+stop_vm() {
+    require_macos_arm64
+    validate_repository
+    "$AOSVM" stop
+}
+
+command=${1:-}
+case "$command" in
+    doctor)
+        [ "$#" -eq 1 ] || fail 'doctor does not accept arguments'
+        doctor
+        ;;
+    bootstrap)
+        [ "$#" -eq 1 ] || fail 'bootstrap does not accept arguments'
+        bootstrap
+        ;;
+    setup)
+        [ "$#" -eq 1 ] || fail 'setup does not accept arguments'
+        setup_vm
+        ;;
+    status)
+        [ "$#" -eq 1 ] || fail 'status does not accept arguments'
+        status_report
+        ;;
+    provision-preflight)
+        [ "$#" -eq 1 ] || fail 'provision-preflight does not accept arguments'
+        provision_preflight
+        ;;
+    provision)
+        shift
+        provision "$@"
+        ;;
+    start)
+        [ "$#" -eq 1 ] || fail 'start does not accept arguments'
+        start_normal
+        ;;
+    stop)
+        [ "$#" -eq 1 ] || fail 'stop does not accept arguments'
+        stop_vm
+        ;;
+    -h|--help|help|'') usage ;;
+    *) usage >&2; fail "unknown command: $command" ;;
+esac
