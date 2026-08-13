@@ -18,11 +18,12 @@ the legacy AOS Vehicle Information Service interface.
 
 ## Current status
 
-Planning and Phases 1–6 are complete for AOS-0. The official AosVM 6.1.0 ARM64
-Main Node boots natively accelerated by HVF on the Apple M5 Pro and reaches the
-serial login prompt. The pinned archive, immutable base images, firmware, and
-disposable overlay remain verified; the first shutdown was clean. Phase 7 will
-validate the guest identity, boot state, and storage from inside the VM.
+Planning and Phases 1–7 are complete for AOS-0. The official AosVM 6.1.0 ARM64
+Main Node boots natively accelerated by HVF on the Apple M5 Pro. Its guest
+identity, own kernel, unified cgroups v2, memory, partition layout, read-only
+root, writable data mounts, SELinux state, and pre-provisioning services are
+validated by an automated read-only guest gate. Phase 8 will test the kernel
+capabilities needed for AosCore workloads.
 
 ## Commands
 
@@ -53,6 +54,10 @@ QMP and serial sockets:
 
 Foreground start is the validated Phase 6 path. Interactive console, status,
 and lifecycle commands are added in later phases.
+
+The read-only Phase 7 guest gate is tracked at
+`tests/guest/aosvm-phase7-test`. It is intended to run as root inside the
+unprovisioned Main Node and contains no credential or provisioning action.
 
 ## Repository policy
 

@@ -20,7 +20,8 @@ be performed in AOS-1 with the utilities supplied by the AosEdge SDK.
 | Phase 4: immutable inputs and overlay | Complete — 2026-08-13 | Pass |
 | Phase 5: QEMU command assembly | Complete — 2026-08-13 | Pass |
 | Phase 6: first serial boot | Complete — 2026-08-13 | Pass |
-| Phases 7–14 | Not started | — |
+| Phase 7: guest identity and storage | Complete — 2026-08-13 | Pass |
+| Phases 8–14 | Not started | — |
 
 ### Phase 1 observed baseline
 
@@ -214,9 +215,9 @@ prompt. Before that reboot, SELinux rejected access to an unlabeled writable
 partition and `rpcbind` and the persistent journal could not start. systemd
 then synchronized and unmounted every filesystem and rebooted normally. On the
 second boot, `rpcbind` and the journal started successfully and the login
-prompt appeared. This is consistent with first-boot writable-partition label
-initialization, but Phase 7 must inspect the guest journal before treating that
-explanation as confirmed.
+prompt appeared. Phase 7 confirmed that the upstream SELinux autorelabel unit
+performs a full relabel and explicitly reboots when `/var/aos/.autorelabel` is
+present. The marker is removed after that one-time initialization.
 
 Known upstream boot warnings are:
 
@@ -238,6 +239,73 @@ The writable overlay grew from 196,720 bytes to approximately 38.4 MB. It has a
 clean dirty flag, `corrupt=false`, and the expected immutable backing file. The
 upstream Main Node image and EFI firmware still match their pinned SHA-256
 values.
+
+### Phase 7 observed baseline
+
+The initialized overlay completed the next start in one boot with no automatic
+reboot. Upstream EFI output began at `2026-08-13T09:22:15.810785+0200` and the
+serial login prompt appeared 47.887 seconds later. systemd recorded 5.955
+seconds in the kernel and 30.439 seconds in userspace, or 36.394 seconds to its
+operational target after the kernel clock started.
+
+| Field | Observed value |
+| --- | --- |
+| Architecture | `aarch64`, two virtual CPUs |
+| OS | AosCore `6.1.0 (scarthgap)` |
+| Kernel | `6.6.123-yocto-standard`, AArch64, SMP PREEMPT |
+| Memory | 1,962,964 KiB total, no swap |
+| Cgroups | Unified cgroups v2; `cpuset cpu io memory pids` controllers |
+| Security | SELinux enabled with the `aos` policy in Enforcing mode |
+| Kernel root argument | `root=/dev/sda3 rootwait ro rootfstype=ext4` |
+| Operational targets | `multi-user`, `getty`, and `network-online` active |
+| Pre-provisioning service | `aos-iam-prov.service` active and running |
+| Provisioning state | IAM reports the node as `unprovisioned` |
+| Automated guest gate | `tests/guest/aosvm-phase7-test`, exit status 0 |
+| Clean shutdown | Guest `systemctl poweroff`; all filesystems unmounted |
+| Post-shutdown disk check | No qcow2 errors; immutable hashes unchanged |
+| Check completed | `2026-08-13T09:40:52+0200` (`CEST`) |
+
+The complete upstream disk layout is:
+
+| Device | Size | Filesystem | Observed role |
+| --- | ---: | --- | --- |
+| `/dev/sda1` | 256 MiB | FAT | `boot_a`, not mounted at runtime |
+| `/dev/sda2` | 256 MiB | FAT | `boot_b`, not mounted at runtime |
+| `/dev/sda3` | 1 GiB | ext4 | `/`, mounted read-only |
+| `/dev/sda4` | 512 MiB | ext4 | `/home`, mounted read-write with `noatime` |
+| `/dev/sda5` | 512 MiB | ext4 | `/var`, mounted read-write; also backs `/etc/machine-id` |
+| `/dev/sda6` | 4 GiB | No signature | Aos data partition, unopened and unmounted |
+
+`/dev/sda6` has no filesystem signature, `/dev/aosvg` does not exist, and the
+planned `downloads`, `states`, `storages`, and `workdirs` logical volumes and
+mounts are absent. This is the correct non-destructive state before SDK
+provisioning. Phase 7 did not format, mount, unlock, or otherwise initialize the
+partition.
+
+systemd reports `degraded` because `nfs-server.service` is the sole failed
+unit. Its `exportfs -r` precondition references `/var/aos/states` and
+`/var/aos/storages`, which do not exist until the Aos data partition is opened.
+The failure does not block the operational targets or provisioning IAM. The
+normal IAM, Communication Manager, and Service Manager units are conditionally
+inactive while the node is unprovisioned. This is a fully explained
+pre-provisioning condition, not a boot-critical failure.
+
+The first-boot reboot is now confirmed as intentional. The upstream
+`selinux-autorelabel.service` checks for `/var/aos/.autorelabel`, performs a
+forced filesystem relabel, removes the marker, and invokes `/sbin/reboot`.
+Afterwards the writable paths carry their intended SELinux types, the marker is
+absent, and subsequent starts do not repeat the reboot.
+
+One issue remains outside the Phase 7 acceptance gate: the guest clock stayed
+at the image's 2025 timestamp even though `systemd-timesyncd` was active. This
+must be resolved and tested with DNS/outbound connectivity before any TLS,
+certificate enrollment, or cloud provisioning. No clock or network setting was
+changed in Phase 7.
+
+The serial log is mode `0600`, ignored by Git, and remains local because an
+interactive development login was used. No credential, device identifier, raw
+journal, or serial transcript is stored in tracked files. The reusable guest
+test contains only read-only validation commands and no access credential.
 
 ## Pinned upstream input
 
@@ -910,11 +978,11 @@ sanitized evidence is committed, and the working tree is clean.
 - [x] Native ARM64 QEMU starts the Main Node with HVF and no TCG fallback.
 - [x] EFI, GRUB, the upstream AosVM kernel, initramfs, and root filesystem boot.
 - [x] Serial console reaches a login prompt.
-- [ ] Guest reports ARM64 architecture.
-- [ ] Guest disk is `/dev/sda` with the expected partition and mount roles.
+- [x] Guest reports ARM64 architecture.
+- [x] Guest disk is `/dev/sda` with the expected partition and mount roles.
 - [ ] The mandatory guest-kernel capability matrix passes.
 - [ ] A local OCI bundle runs successfully with `crun` and leaves no residue.
-- [ ] No unexplained local AosCore component failure exists.
+- [x] No unexplained local AosCore component failure exists.
 - [ ] Outbound HTTPS and DNS work.
 - [ ] The guest can reach the macOS host for the later VISS path.
 - [ ] SSH is reachable only through a loopback host forward.

@@ -1,0 +1,89 @@
+#!/bin/sh
+
+set -eu
+
+fail() {
+    printf 'Phase 7 guest validation failed: %s\n' "$*" >&2
+    exit 1
+}
+
+mount_field() {
+    findmnt -T "$1" -no "$2"
+}
+
+has_mount_option() {
+    mount_field "$1" OPTIONS | tr ',' '\n' | grep -qx "$2"
+}
+
+[ "$(uname -m)" = "aarch64" ] || fail "guest architecture is not aarch64"
+grep -qx 'ID=aos-core' /etc/os-release || fail "guest OS is not AosCore"
+grep -qx 'VERSION_ID=6.1.0' /etc/os-release || fail "guest OS is not AosCore 6.1.0"
+case "$(uname -r)" in
+    6.6.123-yocto-standard) ;;
+    *) fail "guest kernel is not the pinned AosVM kernel" ;;
+esac
+
+grep -qw 'root=/dev/sda3' /proc/cmdline || fail "kernel root device is not /dev/sda3"
+grep -qw 'rootwait' /proc/cmdline || fail "kernel command line does not wait for the root device"
+grep -qw 'ro' /proc/cmdline || fail "kernel command line does not request a read-only root"
+
+[ "$(stat -fc '%T' /sys/fs/cgroup)" = "cgroup2fs" ] || fail "cgroups v2 is not mounted"
+for controller in cpu io memory pids; do
+    grep -qw "$controller" /sys/fs/cgroup/cgroup.controllers ||
+        fail "required cgroup controller is unavailable: $controller"
+done
+
+[ "$(grep -c '^processor[[:space:]]*:' /proc/cpuinfo)" = "2" ] ||
+    fail "guest does not expose exactly two virtual CPUs"
+memory_kib=$(awk '/^MemTotal:/ { print $2 }' /proc/meminfo)
+[ "$memory_kib" -ge 1900000 ] && [ "$memory_kib" -le 2100000 ] ||
+    fail "guest memory is outside the qualified 2 GiB range"
+
+[ "$(mount_field / SOURCE)" = "/dev/sda3" ] || fail "root is not mounted from /dev/sda3"
+[ "$(mount_field / FSTYPE)" = "ext4" ] || fail "root filesystem is not ext4"
+has_mount_option / ro || fail "root filesystem is not read-only"
+
+[ "$(mount_field /home SOURCE)" = "/dev/sda4" ] || fail "/home is not mounted from /dev/sda4"
+[ "$(mount_field /home FSTYPE)" = "ext4" ] || fail "/home filesystem is not ext4"
+has_mount_option /home rw || fail "/home is not writable"
+
+[ "$(mount_field /var SOURCE)" = "/dev/sda5" ] || fail "/var is not mounted from /dev/sda5"
+[ "$(mount_field /var FSTYPE)" = "ext4" ] || fail "/var filesystem is not ext4"
+has_mount_option /var rw || fail "/var is not writable"
+
+for partition_spec in \
+    'sda1:524288' \
+    'sda2:524288' \
+    'sda3:2097152' \
+    'sda4:1048576' \
+    'sda5:1048576' \
+    'sda6:8388608'; do
+    partition=${partition_spec%%:*}
+    expected_sectors=${partition_spec#*:}
+    [ -b "/dev/$partition" ] || fail "expected partition is missing: /dev/$partition"
+    [ "$(cat "/sys/class/block/$partition/size")" = "$expected_sectors" ] ||
+        fail "partition has an unexpected size: /dev/$partition"
+done
+
+[ -z "$(findmnt -rn -S /dev/sda6)" ] || fail "/dev/sda6 was mounted before provisioning"
+[ -z "$(blkid /dev/sda6 2>/dev/null || true)" ] || fail "/dev/sda6 has a signature before provisioning"
+[ ! -e /dev/aosvg ] || fail "Aos volume group exists before provisioning"
+
+for unit in multi-user.target getty.target network-online.target aos-iam-prov.service; do
+    [ "$(systemctl is-active "$unit")" = "active" ] || fail "required unit is not active: $unit"
+done
+
+failed_units=$(SYSTEMD_COLORS=0 systemctl --failed --no-legend --plain |
+    awk 'NF { print $1 }')
+[ "$failed_units" = "nfs-server.service" ] ||
+    fail "failed units differ from the accepted pre-provisioning baseline: ${failed_units:-none}"
+
+for path in /var/aos/states /var/aos/storages; do
+    [ ! -e "$path" ] || fail "pre-provisioning NFS path unexpectedly exists: $path"
+done
+
+[ "$(getenforce)" = "Enforcing" ] || fail "SELinux is not enforcing"
+[ ! -e /var/aos/.autorelabel ] || fail "SELinux autorelabel marker remains after first boot"
+
+printf 'Phase 7 guest identity, boot-state, and storage checks passed.\n'
+printf 'Known pre-provisioning condition: nfs-server.service is failed until Aos data storage is opened.\n'
