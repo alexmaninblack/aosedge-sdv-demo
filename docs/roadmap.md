@@ -55,9 +55,13 @@ Detailed plan: [AOS-0 runbook](aos-0-arm64-vm.md).
 
 - Use the AosEdge-provided SDK and CLI utilities for registration,
   provisioning, and certificate installation.
-- Extend the owned QEMU/HVF lifecycle and private networking to the released
-  Secondary Node image.
-- Use the accepted official two-Node topology, with both VMs on the same Mac.
+- Create and verify the OEM and SP account identities without storing their
+  tokens or certificates in this repository.
+- Provision only the qualified Main Node with
+  `aos-prov provision --nodes 1`.
+- Use a temporary loopback-only forwarding mode for the guest IAM provisioning
+  port; remove that forward from normal post-provision launches.
+- Register a single-Node Target System containing only `aos-vm-main`.
 - Confirm that the Unit appears online in hosted AosCloud.
 - Deploy and observe the official Hello World service.
 
@@ -65,6 +69,8 @@ Exit criterion: AosCloud reports the Unit online and an official sample service
 reaches `Active` state after a cloud-driven deployment.
 
 No repository-managed script will reimplement the SDK provisioning protocol.
+
+Detailed plan: [AOS-1 single-Node runbook](aos-1-single-node-provisioning.md).
 
 ## AOS-2 — Connect the VM to the CARLA VISS endpoint
 
@@ -119,8 +125,8 @@ translation layer.
 ## Deferred decisions
 
 - Self-hosted AosCloud versus the hosted platform.
-- Additional AosVM Nodes beyond the accepted Main + Secondary provisioning
-  topology.
+- Secondary and additional AosVM Nodes, inter-Node networking, Dynamic
+  Rebalance, and migration from a provisioned single-Node Unit.
 - Cameras, LiDAR, radar, and ultrasonic data.
 - ROS 2 integration.
 - Upstream contributions to `AosEdge/meta-aos-vm` or `AosEdge/aos_vis`.

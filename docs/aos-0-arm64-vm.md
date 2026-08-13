@@ -27,7 +27,7 @@ be performed in AOS-1 with the utilities supplied by the AosEdge SDK.
 | Phase 11: layered networking | Complete — 2026-08-13 | Pass with tracked loopback DNS bridge |
 | Phase 12: owned VM lifecycle | Complete — 2026-08-13 | Pass |
 | Phase 13: persistence and overlay reset | Complete — 2026-08-13 | Pass |
-| Phase 14: accepted baseline | Complete — 2026-08-13 | Pass; go to AOS-1 with two Nodes on one Mac |
+| Phase 14: accepted baseline | Complete — 2026-08-13 | Pass; go to AOS-1 with one qualified Main Node |
 
 ### Phase 1 observed baseline
 
@@ -670,16 +670,15 @@ Node base SHA-256. Clean stop then passed the complete Phase 13 stopped gate:
 no owned process, listener, PID, socket, lock, corrupt overlay, or immutable
 input drift remained. The VM is stopped.
 
-**Decision: go to AOS-1.** Use the official two-Node topology: one Main Node
-and one Secondary Node, both as separate QEMU/HVF VMs on this same Mac. This
-does not require a second physical computer. The official `v6.1.0`
-`unitconfig.json` declares both `aos-vm-main` and `aos-vm-secondary`, and the
-official AosVM provisioning flow creates two VMs and waits for the Secondary
-Node to connect. AOS-1 must first extend the ownership, overlay, listener, and
-networking gates to the Secondary Node and qualify private inter-Node
-connectivity. Only then may the SDK receive account credentials or begin
-provisioning. The AOS-0 acceptance result itself remains deliberately scoped to
-the Main Node.
+**Decision: go to AOS-1 with one Main Node.** The initial Phase 14 review
+selected the official two-Node AosVM demonstration topology. A subsequent
+review confirmed that the AosEdge architecture supports a Unit with one Node,
+the released Main image contains IAM, SM, and CM without a dependency on a
+Secondary, and the official generic provisioning path explicitly supports
+`aos-prov provision --nodes 1`. ADR 0003 retains the initial rationale and is
+superseded by ADR 0004. The accepted AOS-0 evidence remains unchanged because
+it qualified exactly this Main Node. The Secondary image remains verified,
+immutable, and unused.
 
 ## Pinned upstream input
 
@@ -1405,16 +1404,15 @@ remain ignored.
 
 **Go.** The Main Node foundation satisfies every AOS-0 acceptance item and the
 remaining warnings are understood pre-provisioning or overlay-only
-compatibility conditions. Use the official two-Node topology in AOS-1: one
-Main Node and one Secondary Node as independent QEMU/HVF VMs on the same Mac.
-The released Unit Configuration and official SDK flow both expect these two
-Node types.
+compatibility conditions. AOS-1 uses one `aos-vm-main` Node and the official
+generic SDK path with an explicit `--nodes 1`. The tracked cloud Unit
+Configuration must likewise contain only `aos-vm-main`.
 
-AOS-1 begins by qualifying owned Secondary Node lifecycle and private
-inter-Node networking. Provisioning, certificates, and the first cloud-managed
-service follow only after both local VMs pass that gate. The detailed decision
-and its alternatives are recorded in
-`docs/decisions/0003-two-node-aos1-topology.md`.
+AOS-1 begins with account and role verification, isolated CLI installation,
+OEM/SP user certificates, and a temporary loopback-only provisioning forward.
+It then provisions the Main Node, verifies the post-provision core state, and
+deploys the official Hello World service. ADR 0004 and the AOS-1 runbook record
+the detailed decision, safety boundaries, and execution phases.
 
 Stop and reconsider the VM base if HVF cannot boot the image, a mandatory guest
 kernel capability or local `crun` execution fails, the released disk requires

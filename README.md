@@ -13,9 +13,11 @@ the legacy AOS Vehicle Information Service interface.
 
 - [Project roadmap](docs/roadmap.md)
 - [AOS-0: boot official ARM64 AosVM on Apple Silicon](docs/aos-0-arm64-vm.md)
+- [AOS-1: provision one Main Node](docs/aos-1-single-node-provisioning.md)
 - [Repository and artifact boundaries](docs/decisions/0001-repository-and-artifact-boundaries.md)
 - [QEMU system VM with HVF](docs/decisions/0002-qemu-system-hvf-for-aosvm.md)
-- [Two-Node topology for AOS-1](docs/decisions/0003-two-node-aos1-topology.md)
+- [Superseded two-Node topology decision](docs/decisions/0003-two-node-aos1-topology.md)
+- [Single Main Node for AOS-1](docs/decisions/0004-single-main-node-for-aos1.md)
 
 ## Current status
 
@@ -41,9 +43,10 @@ clean restart, safe recreation of only the disposable overlay, unchanged
 immutable inputs, complete stopped-state cleanup, and recovery of the tracked
 ARM64 and DNS compatibility state. Phase 14 accepted-baseline recording is
 complete: the final start/smoke/stop run passed, sanitized evidence is recorded,
-and the VM is stopped. The decision is **go to AOS-1** with the official Main +
-Secondary topology as two QEMU/HVF VMs on this same Mac; a second physical
-computer is not required.
+and the VM is stopped. The current decision is **go to AOS-1** with only the
+qualified Main Node. Official generic provisioning supports one Node; the
+Secondary image and multi-Node work are deferred until a concrete use case
+justifies them.
 
 ## Commands
 

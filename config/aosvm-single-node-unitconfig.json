@@ -1,0 +1,11 @@
+{
+  "nodes": [
+    {
+      "nodeType": "aos-vm-main",
+      "labels": [
+        "main"
+      ],
+      "priority": 100
+    }
+  ]
+}

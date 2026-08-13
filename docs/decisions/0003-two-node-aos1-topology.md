@@ -1,7 +1,13 @@
 # ADR 0003: Use the Official Two-Node AosVM Topology in AOS-1
 
-- Status: Accepted for AOS-1
+- Status: Superseded by ADR 0004
 - Date: 2026-08-13
+
+This decision was superseded after the official generic provisioning path was
+confirmed to support `aos-prov provision --nodes 1` for an AosVM-derived image.
+[ADR 0004](0004-single-main-node-for-aos1.md) records the current single-Node
+decision. This file remains as the history of why the initial two-Node baseline
+was considered.
 
 ## Context
 
