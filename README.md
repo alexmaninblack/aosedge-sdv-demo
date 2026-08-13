@@ -76,6 +76,19 @@ Validate and print the exact QEMU command without starting the VM:
 ./scripts/aosvm start --dry-run
 ```
 
+The provisioning-only dry run adds a single loopback forward for IAM. A real
+provisioning start is rejected until the pre-provision checkpoint has locked
+the lifecycle:
+
+```sh
+./scripts/aosvm start-provisioning --dry-run
+./scripts/aosvm checkpoint-pre-provision
+./scripts/aosvm start-provisioning
+```
+
+Provisioning mode adds only
+`127.0.0.1:18089 -> 10.0.0.100:8089`; normal `start` never exposes IAM.
+
 Start the Main Node as an owned background VM:
 
 ```sh

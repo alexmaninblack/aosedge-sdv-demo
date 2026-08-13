@@ -17,21 +17,24 @@ acceptance evidence.
 
 | Phase | Status | Exit condition |
 | --- | --- | --- |
-| AOS-1.1: account and roles | In progress | Admin, OEM, and SP access confirmed |
+| AOS-1.1: account and roles | Complete - 2026-08-13 | OEM and SP cloud access confirmed |
 | AOS-1.2: CLI environment | Complete - 2026-08-13 | Exact tool versions and single-Node CLI contract verified |
-| AOS-1.3: user certificates | In progress | Admin, OEM, and SP certificate checks pass |
-| AOS-1.4: single-Node cloud model | Not started | Target System matches the Main Node only |
-| AOS-1.5: provisioning transport | Not started | Guest IAM is reachable only on host loopback |
+| AOS-1.3: user certificates | Complete - 2026-08-13 | OEM and SP certificate/API checks pass |
+| AOS-1.4: single-Node cloud model | Complete - 2026-08-13 | Target System matches the Main Node only |
+| AOS-1.5: provisioning transport | Implemented; runtime gate pending | Guest IAM is reachable only on host loopback |
 | AOS-1.6: persistent lifecycle and recovery checkpoint | In progress | Reset lock and independent pre-provision checkpoint pass |
 | AOS-1.7: SDK provisioning | Not started | `aos-prov` completes for exactly one Node |
 | AOS-1.8: post-provision acceptance | Not started | Local core and cloud Unit gates pass |
 | AOS-1.9: Hello World | Not started | Official service reaches `Active` |
 
-An existing AosEdge account is being recovered on this new Mac through the
-official reissue flow. No local client certificate, Target System, cloud Unit,
-or provisioning state has yet been created by this plan. The AOS-0 Main Node
-is stopped and unprovisioned. The clean-machine procedure and a token-safe
-helper are documented in [AosEdge user certificate reissue on a new Mac](aos-user-certificate-reissue-macos.md).
+The existing AosEdge account has been recovered on this new Mac. OEM and SP
+client certificates pass live role-scoped API checks. The Admin leaf
+certificate is valid but its issued PKCS#12 contains a mismatched legacy CA
+chain; that account-recovery defect is parked because Admin access is not used
+by `aos-prov`. A single-Node `aos-vm` version `1.0.0` Target System now exists
+in the authenticated OEM and its API read-back exactly matches the tracked
+configuration. No cloud Unit or provisioning state exists yet. The AOS-0 Main
+Node is stopped and unprovisioned.
 
 ## Fixed decisions
 
@@ -179,11 +182,14 @@ The equivalent local verification calls are:
 ~/.aos/venv/bin/python3 -m aos_keys info --sp
 ```
 
-Then sign in once as OEM and once as SP, using separate browser contexts if the
-browser cannot hold both certificate identities simultaneously.
+Live mTLS API checks returned the `oem` and `service provider` roles. OEM can
+read Unit Models, Node Types, and Units; SP can read Services and is correctly
+denied access to OEM-only Unit Models. The provisioning CLI selects the OEM
+certificate by default. Browser sign-in is optional for visual inspection and
+is not an execution dependency.
 
-**Pass:** both role checks succeed, both browser roles are correct, the files
-remain outside the repository, and no token or private material was captured.
+**Pass:** both required role checks succeed, the files remain outside the
+repository, and no token or private material was captured.
 
 **Stop:** a role is wrong, a certificate is expired, the browser selects the
 wrong identity, or private material appears anywhere under the repository.
@@ -200,9 +206,8 @@ Node attribute: MainNode
 Aos components: cm,iam,sm
 ```
 
-In the OEM Target Systems page, inspect whether `aos-vm` version `1.0.0`
-already exists. Do not overwrite an existing two-Node configuration used by
-another Unit.
+Use the OEM API to inspect whether `aos-vm` version `1.0.0` already exists. Do
+not overwrite an existing two-Node configuration used by another Unit.
 
 For a new Target System, use:
 
@@ -233,9 +238,16 @@ topology, the guest reports another model/type, or cloud validation adds a
 second required Node. Resolve model ownership before provisioning; do not
 silently patch `/etc/aos/unit_model`.
 
+**Observed:** the initial exact-name/version API lookup returned no match. The
+new Unit Model was created once and read back through the OEM API. Its name is
+`aos-vm`, version is `1.0.0`, and Unit Configuration contains exactly one
+`aos-vm-main` entry. The official release image and its `/etc/aos` model data
+were not changed. The installed `aos-prov` obtains model and Node information
+from guest IAM and `--nodes 1` prevents waiting for a Secondary.
+
 ## Phase AOS-1.5: Add an explicit provisioning transport
 
-Extend `scripts/aosvm` with an opt-in provisioning start mode. The accepted
+`scripts/aosvm` provides an opt-in `start-provisioning` mode. The accepted
 network difference is one additional QEMU user-network rule:
 
 ```text
@@ -255,6 +267,11 @@ Implementation requirements:
   listeners;
 - stop must remove the forward together with the owned QEMU process;
 - no credential may be accepted by the launcher.
+
+The real provisioning start is additionally gated on lifecycle state
+`provisioning-locked`; its dry run remains available before the checkpoint.
+`tests/host/aosvm-start-dry-run-test` proves the command contract and
+`tests/host/aosvm-provisioning-host-gate` proves the live loopback boundary.
 
 The generic provisioning flow does not require the cloud to connect inbound to
 the Mac. `aos-prov` connects locally to the loopback forward and separately to

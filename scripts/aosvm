@@ -33,10 +33,13 @@ VM_MAC_ADDRESS="52:54:00:41:4f:53"
 GUEST_NETWORK="10.0.0.0/24"
 GUEST_ADDRESS="10.0.0.100"
 GUEST_SSH_PORT="22"
+GUEST_PROVISIONING_PORT="8089"
 GUEST_VISIBLE_HOST="10.0.0.1"
 GUEST_DNS_PROXY="10.0.0.2"
 HOST_DNS_ADDRESS="127.0.0.1"
 HOST_DNS_PORT=${AOSVM_HOST_DNS_PORT:-"18053"}
+PROVISIONING_HOST_ADDRESS="127.0.0.1"
+PROVISIONING_HOST_PORT=${AOSVM_PROVISIONING_HOST_PORT:-"18089"}
 MINIMUM_HOST_MEMORY_BYTES="4294967296"
 MINIMUM_HOST_FREE_KIB="20971520"
 START_TIMEOUT_SECONDS=${AOSVM_START_TIMEOUT_SECONDS:-"30"}
@@ -641,10 +644,13 @@ cleanup_background_start() {
     if [ -n "$BACKGROUND_START_PID" ] &&
        kill -0 "$BACKGROUND_START_PID" 2>/dev/null; then
         background_start_command=$(process_command "$BACKGROUND_START_PID" || true)
-        if [ "$background_start_command" = "/bin/sh $SCRIPT_PATH _supervise" ]; then
-            kill -TERM "$BACKGROUND_START_PID" >/dev/null 2>&1 || true
-            wait "$BACKGROUND_START_PID" 2>/dev/null || true
-        fi
+        case "$background_start_command" in
+            "/bin/sh $SCRIPT_PATH _supervise normal"|\
+            "/bin/sh $SCRIPT_PATH _supervise provisioning")
+                kill -TERM "$BACKGROUND_START_PID" >/dev/null 2>&1 || true
+                wait "$BACKGROUND_START_PID" 2>/dev/null || true
+                ;;
+        esac
     fi
     if [ -n "$BACKGROUND_START_PID" ] && [ -f "$SUPERVISOR_PID_PATH" ] &&
        [ "$(sed -n '1p' "$SUPERVISOR_PID_PATH")" = "$BACKGROUND_START_PID" ]; then
@@ -722,6 +728,42 @@ verify_owned_qemu_pid() {
         *"-pidfile $expected_pid_file"*) ;;
         *) fail "Owned QEMU PID does not own the expected PID file" ;;
     esac
+    owned_network_mode=$(qemu_network_mode "$owned_qemu_pid")
+    [ "$owned_network_mode" = normal ] ||
+        [ "$owned_network_mode" = provisioning ] ||
+        fail "Owned QEMU PID has an unknown network mode"
+}
+
+network_option_for_mode() {
+    network_mode=$1
+    network_option_value="user,id=aosnet,net=$GUEST_NETWORK,host=$GUEST_VISIBLE_HOST,dns=$GUEST_DNS_PROXY,restrict=off,hostfwd=tcp:127.0.0.1:$SSH_HOST_PORT-$GUEST_ADDRESS:$GUEST_SSH_PORT"
+    case "$network_mode" in
+        normal) ;;
+        provisioning)
+            network_option_value="$network_option_value,hostfwd=tcp:$PROVISIONING_HOST_ADDRESS:$PROVISIONING_HOST_PORT-$GUEST_ADDRESS:$GUEST_PROVISIONING_PORT"
+            ;;
+        *) fail "Unknown AosVM network mode: $network_mode" ;;
+    esac
+    printf '%s\n' "$network_option_value"
+}
+
+qemu_network_mode() {
+    network_qemu_pid=$1
+    network_qemu_command=$(process_command "$network_qemu_pid") ||
+        fail "QEMU PID is not running: $network_qemu_pid"
+    normal_network_option=$(network_option_for_mode normal)
+    provisioning_network_option=$(network_option_for_mode provisioning)
+    network_device_option="virtio-net-pci,netdev=aosnet,mac=$VM_MAC_ADDRESS"
+
+    case "$network_qemu_command" in
+        *"-netdev $provisioning_network_option -device $network_device_option"*)
+            printf 'provisioning\n'
+            ;;
+        *"-netdev $normal_network_option -device $network_device_option"*)
+            printf 'normal\n'
+            ;;
+        *) fail "Owned QEMU PID does not use an accepted network contract" ;;
+    esac
 }
 
 verify_supervisor_pid() {
@@ -729,14 +771,28 @@ verify_supervisor_pid() {
     supervised_qemu_pid=$2
     supervisor_command=$(process_command "$supervisor_pid") ||
         fail "Supervisor PID is not running: $supervisor_pid"
+    supervised_network_mode=$(qemu_network_mode "$supervised_qemu_pid")
     case "$supervisor_command" in
-        "/bin/sh $SCRIPT_PATH _supervise"|\
-        "/bin/sh $SCRIPT_PATH start --foreground") ;;
-        "/bin/sh ./scripts/aosvm start --foreground")
+        "/bin/sh $SCRIPT_PATH _supervise $supervised_network_mode") ;;
+        "/bin/sh $SCRIPT_PATH start --foreground")
+            [ "$supervised_network_mode" = normal ] ||
+                fail "Foreground normal supervisor owns a provisioning QEMU process"
+            ;;
+        "/bin/sh $SCRIPT_PATH start-provisioning --foreground")
+            [ "$supervised_network_mode" = provisioning ] ||
+                fail "Foreground provisioning supervisor owns a non-provisioning QEMU process"
+            ;;
+        "/bin/sh ./scripts/aosvm start --foreground"|\
+        "/bin/sh ./scripts/aosvm start-provisioning --foreground")
             supervisor_cwd=$(process_working_directory "$supervisor_pid") ||
                 fail "Cannot resolve the foreground supervisor directory"
             [ "$supervisor_cwd" = "$REPOSITORY_ROOT" ] ||
                 fail "Foreground supervisor does not run from this repository"
+            case "$supervisor_command:$supervised_network_mode" in
+                "/bin/sh ./scripts/aosvm start --foreground:normal"|\
+                "/bin/sh ./scripts/aosvm start-provisioning --foreground:provisioning") ;;
+                *) fail "Foreground supervisor mode does not match the QEMU network mode" ;;
+            esac
             ;;
         *) fail "PID $supervisor_pid is not the owned AosVM supervisor" ;;
     esac
@@ -786,6 +842,7 @@ validate_lifecycle_timeouts() {
 }
 
 validate_runtime_state() {
+    runtime_network_mode=$1
     require_command lsof
     require_command tr
     require_command wc
@@ -794,6 +851,17 @@ validate_runtime_state() {
     validate_decimal_range "$HOST_DNS_PORT" 1024 65535 "Host DNS port"
     [ "$HOST_DNS_PORT" -ne "$SSH_HOST_PORT" ] ||
         fail "Host DNS and SSH ports must differ"
+    case "$runtime_network_mode" in
+        normal) ;;
+        provisioning)
+            validate_decimal_range "$PROVISIONING_HOST_PORT" 1024 65535 \
+                "Provisioning host port"
+            [ "$PROVISIONING_HOST_PORT" -ne "$SSH_HOST_PORT" ] &&
+                [ "$PROVISIONING_HOST_PORT" -ne "$HOST_DNS_PORT" ] ||
+                fail "Provisioning, SSH, and DNS host ports must differ"
+            ;;
+        *) fail "Unknown AosVM network mode: $runtime_network_mode" ;;
+    esac
 
     ensure_lifecycle_directories
 
@@ -850,6 +918,10 @@ validate_runtime_state() {
     if lsof -nP -iTCP:"$HOST_DNS_PORT" -sTCP:LISTEN >/dev/null 2>&1 ||
        lsof -nP -iUDP:"$HOST_DNS_PORT" >/dev/null 2>&1; then
         fail "Host DNS port is already in use: $HOST_DNS_ADDRESS:$HOST_DNS_PORT"
+    fi
+    if [ "$runtime_network_mode" = provisioning ] &&
+       lsof -nP -iTCP:"$PROVISIONING_HOST_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
+        fail "Provisioning host port is already in use: $PROVISIONING_HOST_ADDRESS:$PROVISIONING_HOST_PORT"
     fi
 }
 
@@ -972,6 +1044,14 @@ host_check() {
     [ "$(uname -m)" = arm64 ] || fail "The host architecture is not ARM64"
     [ "$(sysctl -n kern.hv_support)" = 1 ] ||
         fail "Apple Hypervisor Framework is unavailable"
+    validate_decimal_range "$SSH_HOST_PORT" 1024 65535 "SSH host port"
+    validate_decimal_range "$HOST_DNS_PORT" 1024 65535 "Host DNS port"
+    validate_decimal_range "$PROVISIONING_HOST_PORT" 1024 65535 \
+        "Provisioning host port"
+    [ "$SSH_HOST_PORT" -ne "$HOST_DNS_PORT" ] &&
+        [ "$SSH_HOST_PORT" -ne "$PROVISIONING_HOST_PORT" ] &&
+        [ "$HOST_DNS_PORT" -ne "$PROVISIONING_HOST_PORT" ] ||
+        fail "Provisioning, SSH, and DNS host ports must differ"
     host_memory_bytes=$(sysctl -n hw.memsize)
     [ "$host_memory_bytes" -ge "$MINIMUM_HOST_MEMORY_BYTES" ] ||
         fail "Host memory is below the 4 GiB minimum"
@@ -987,14 +1067,19 @@ host_check() {
        lsof -nP -iUDP:"$HOST_DNS_PORT" >/dev/null 2>&1; then
         fail "Host DNS port is already in use: $HOST_DNS_ADDRESS:$HOST_DNS_PORT"
     fi
+    if lsof -nP -iTCP:"$PROVISIONING_HOST_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
+        fail "Provisioning host port is already in use: $PROVISIONING_HOST_ADDRESS:$PROVISIONING_HOST_PORT"
+    fi
 
     printf 'AosVM host qualification passed.\n'
     printf 'Host: macOS ARM64 with Hypervisor Framework\n'
     printf 'Memory: %s bytes\n' "$host_memory_bytes"
     printf 'Free disk: %s KiB\n' "$host_free_kib"
     printf 'QEMU: %s %s\n' "$QEMU_SYSTEM_PATH" "$QEMU_BASELINE_VERSION"
-    printf 'Planned listeners: 127.0.0.1:%s (SSH), 127.0.0.1:%s (DNS)\n' \
+    printf 'Normal listeners: 127.0.0.1:%s (SSH), 127.0.0.1:%s (DNS)\n' \
         "$SSH_HOST_PORT" "$HOST_DNS_PORT"
+    printf 'Provisioning-only listener: 127.0.0.1:%s (IAM)\n' \
+        "$PROVISIONING_HOST_PORT"
 }
 
 validate_qemu_option_paths() {
@@ -1027,9 +1112,15 @@ print_command() {
 
 start_vm() {
     start_mode=$1
+    start_network_mode=$2
 
     validate_lifecycle_timeouts
-    validate_runtime_state
+    validate_runtime_state "$start_network_mode"
+    if [ "$start_network_mode" = provisioning ] && [ "$start_mode" != dry-run ]; then
+        verify_lifecycle_state
+        [ "$LIFECYCLE_STATUS" = provisioning-locked ] ||
+            fail "Provisioning mode requires a verified pre-provision checkpoint and provisioning-locked lifecycle"
+    fi
     verify_start_inputs
     qualify_qemu_for_start
     validate_qemu_option_paths
@@ -1042,7 +1133,7 @@ start_vm() {
     absolute_serial_log_path=$(absolute_path "$SERIAL_LOG_PATH")
 
     drive_option="file=$absolute_overlay_path,if=none,id=aos-image,format=qcow2,cache=writeback"
-    network_option="user,id=aosnet,net=$GUEST_NETWORK,host=$GUEST_VISIBLE_HOST,dns=$GUEST_DNS_PROXY,restrict=off,hostfwd=tcp:127.0.0.1:$SSH_HOST_PORT-$GUEST_ADDRESS:$GUEST_SSH_PORT"
+    network_option=$(network_option_for_mode "$start_network_mode")
     network_device_option="virtio-net-pci,netdev=aosnet,mac=$VM_MAC_ADDRESS"
     qmp_option="unix:$absolute_qmp_socket_path,server=on,wait=off"
     serial_chardev_option="socket,id=serial0,path=$absolute_serial_socket_path,server=on,wait=off,logfile=$absolute_serial_log_path,logappend=on,logtimestamp=on"
@@ -1084,7 +1175,8 @@ start_vm() {
             trap 'cleanup_foreground_children; exit 130' INT
             trap 'cleanup_foreground_children; exit 143' TERM
             start_dns_bridge
-            printf 'Starting AosVM Main Node in the foreground.\n'
+            printf 'Starting AosVM Main Node in %s mode in the foreground.\n' \
+                "$start_network_mode"
             printf 'Serial log: %s\n' "$absolute_serial_log_path"
             printf 'QMP socket: %s\n' "$absolute_qmp_socket_path"
             printf 'Loopback DNS bridge: %s:%s\n' \
@@ -1104,22 +1196,32 @@ start_vm() {
 }
 
 start_background() {
+    start_network_mode=$1
     acquire_lifecycle_lock
     validate_lifecycle_timeouts
     if [ -e "$PID_PATH" ] || [ -L "$PID_PATH" ]; then
         vm_status
+        running_qemu_pid=$(resolve_running_vm)
+        running_network_mode=$(qemu_network_mode "$running_qemu_pid")
+        [ "$running_network_mode" = "$start_network_mode" ] ||
+            fail "AosVM is already running in $running_network_mode mode; stop it before requesting $start_network_mode mode"
         release_lifecycle_lock
         trap - EXIT HUP INT TERM
         printf 'AosVM Main Node is already running.\n'
         return
     fi
-    validate_runtime_state
+    validate_runtime_state "$start_network_mode"
+    if [ "$start_network_mode" = provisioning ]; then
+        verify_lifecycle_state
+        [ "$LIFECYCLE_STATUS" = provisioning-locked ] ||
+            fail "Provisioning mode requires a verified pre-provision checkpoint and provisioning-locked lifecycle"
+    fi
     verify_start_inputs
     qualify_qemu_for_start
 
     : >"$SUPERVISOR_LOG_PATH"
     chmod 0600 "$SUPERVISOR_LOG_PATH"
-    nohup "$SCRIPT_PATH" _supervise \
+    nohup "$SCRIPT_PATH" _supervise "$start_network_mode" \
         >>"$SUPERVISOR_LOG_PATH" 2>&1 </dev/null &
     supervisor_pid=$!
     BACKGROUND_START_PID=$supervisor_pid
@@ -1141,7 +1243,8 @@ start_background() {
             release_lifecycle_lock
             trap - EXIT HUP INT TERM
             BACKGROUND_START_PID=''
-            printf 'Started AosVM Main Node in the background.\n'
+            printf 'Started AosVM Main Node in %s mode in the background.\n' \
+                "$start_network_mode"
             printf 'QEMU PID: %s\n' "$qemu_pid"
             printf 'Supervisor PID: %s\n' "$supervisor_pid"
             printf 'Serial log: %s\n' "$SERIAL_LOG_PATH"
@@ -1413,6 +1516,7 @@ vm_status() {
     fi
 
     qemu_pid=$(resolve_running_vm)
+    running_network_mode=$(qemu_network_mode "$qemu_pid")
     supervisor_pid=$(read_pid_file "$SUPERVISOR_PID_PATH" "Supervisor PID file")
     verify_supervisor_pid "$supervisor_pid" "$qemu_pid"
     dns_pid=$(read_pid_file "$DNS_BRIDGE_PID_PATH" "DNS bridge PID file")
@@ -1435,6 +1539,19 @@ vm_status() {
         -sTCP:LISTEN -F n 2>/dev/null | sed -n 's/^n//p')
     [ "$ssh_listener" = "127.0.0.1:$SSH_HOST_PORT" ] ||
         fail "Owned QEMU SSH listener is not loopback-only"
+    provisioning_listener=$(lsof -nP -a -p "$qemu_pid" \
+        -iTCP:"$PROVISIONING_HOST_PORT" -sTCP:LISTEN -F n 2>/dev/null |
+        sed -n 's/^n//p')
+    case "$running_network_mode" in
+        normal)
+            [ -z "$provisioning_listener" ] ||
+                fail "Normal AosVM mode unexpectedly exposes the provisioning port"
+            ;;
+        provisioning)
+            [ "$provisioning_listener" = "$PROVISIONING_HOST_ADDRESS:$PROVISIONING_HOST_PORT" ] ||
+                fail "Provisioning listener is not loopback-only"
+            ;;
+    esac
     dns_tcp_listener=$(lsof -nP -a -p "$dns_pid" -iTCP:"$HOST_DNS_PORT" \
         -sTCP:LISTEN -F n 2>/dev/null | sed -n 's/^n//p')
     dns_udp_listener=$(lsof -nP -a -p "$dns_pid" -iUDP:"$HOST_DNS_PORT" \
@@ -1448,7 +1565,15 @@ vm_status() {
     printf 'Supervisor PID: %s\n' "$supervisor_pid"
     printf 'DNS bridge PID: %s\n' "$dns_pid"
     printf 'QMP status: running\n'
+    printf 'Network mode: %s\n' "$running_network_mode"
     printf 'SSH: 127.0.0.1:%s\n' "$SSH_HOST_PORT"
+    if [ "$running_network_mode" = provisioning ]; then
+        printf 'Provisioning IAM: %s:%s -> %s:%s\n' \
+            "$PROVISIONING_HOST_ADDRESS" "$PROVISIONING_HOST_PORT" \
+            "$GUEST_ADDRESS" "$GUEST_PROVISIONING_PORT"
+    else
+        printf 'Provisioning IAM: not exposed\n'
+    fi
     printf 'DNS bridge: %s:%s (TCP and UDP)\n' \
         "$HOST_DNS_ADDRESS" "$HOST_DNS_PORT"
     printf 'Serial socket: %s\n' "$SERIAL_SOCKET_PATH"
@@ -1456,6 +1581,7 @@ vm_status() {
 }
 
 supervise_vm() {
+    supervised_network_mode=$1
     [ "$SUPERVISOR_MODE" -eq 0 ] || fail "Supervisor mode is already active"
     supervisor_wait=0
     while [ ! -f "$SUPERVISOR_PID_PATH" ]; do
@@ -1468,13 +1594,18 @@ supervise_vm() {
     [ "$supervisor_pid" -eq "$$" ] ||
         fail "Supervisor PID file does not name the current process"
     SUPERVISOR_MODE=1
-    start_vm foreground
+    start_vm foreground "$supervised_network_mode"
 }
 
 start_foreground_owned() {
+    start_network_mode=$1
     acquire_lifecycle_lock
     if [ -e "$PID_PATH" ] || [ -L "$PID_PATH" ]; then
         vm_status
+        running_qemu_pid=$(resolve_running_vm)
+        running_network_mode=$(qemu_network_mode "$running_qemu_pid")
+        [ "$running_network_mode" = "$start_network_mode" ] ||
+            fail "AosVM is already running in $running_network_mode mode; stop it before requesting $start_network_mode mode"
         release_lifecycle_lock
         trap - EXIT HUP INT TERM
         printf 'AosVM Main Node is already running.\n'
@@ -1487,7 +1618,7 @@ start_foreground_owned() {
     SUPERVISOR_MODE=1
     release_lifecycle_lock
     trap - EXIT HUP INT TERM
-    start_vm foreground
+    start_vm foreground "$start_network_mode"
 }
 
 vm_console() {
@@ -1557,6 +1688,7 @@ smoke_test() {
     ensure_lifecycle_directories
     validate_lifecycle_timeouts
     qemu_pid=$(resolve_running_vm)
+    running_network_mode=$(qemu_network_mode "$qemu_pid")
     vm_status >/dev/null
     require_command nc
     require_command stat
@@ -1586,7 +1718,7 @@ smoke_test() {
     [ ! -e "$manifest_path" ] && [ ! -L "$manifest_path" ] ||
         fail "Smoke-test manifest already exists: $manifest_path"
     cat >"$manifest_partial" <<EOF
-{"schema":1,"vm":"$VM_NAME","result":"pass","qmp":"running","ssh":"loopback","sshPort":$SSH_HOST_PORT,"dns":"loopback","dnsPort":$HOST_DNS_PORT,"qemuPid":$qemu_pid,"overlayFormat":"qcow2","baseImageSha256":"$MAIN_IMAGE_SHA256","checkedAt":"$(date -u '+%Y-%m-%dT%H:%M:%SZ')"}
+{"schema":1,"vm":"$VM_NAME","result":"pass","qmp":"running","networkMode":"$running_network_mode","ssh":"loopback","sshPort":$SSH_HOST_PORT,"dns":"loopback","dnsPort":$HOST_DNS_PORT,"qemuPid":$qemu_pid,"overlayFormat":"qcow2","baseImageSha256":"$MAIN_IMAGE_SHA256","checkedAt":"$(date -u '+%Y-%m-%dT%H:%M:%SZ')"}
 EOF
     chmod 0600 "$manifest_partial"
     mv "$manifest_partial" "$manifest_path"
@@ -1595,7 +1727,7 @@ EOF
 }
 
 usage() {
-    printf 'Usage: %s <host-check|download|prepare|start [--foreground|--dry-run]|console|status|smoke-test|stop|checkpoint-pre-provision|seal-provisioned|lifecycle-status|reset-overlay --confirm>\n' "$0"
+    printf 'Usage: %s <host-check|download|prepare|start [--foreground|--dry-run]|start-provisioning [--foreground|--dry-run]|console|status|smoke-test|stop|checkpoint-pre-provision|seal-provisioned|lifecycle-status|reset-overlay --confirm>\n' "$0"
 }
 
 case ${1:-} in
@@ -1615,10 +1747,20 @@ case ${1:-} in
         [ "$#" -le 2 ] ||
             fail "Start accepts no option, --dry-run, or --foreground"
         case ${2:-background} in
-            background) start_background ;;
-            --dry-run) start_vm dry-run ;;
-            --foreground) start_foreground_owned ;;
+            background) start_background normal ;;
+            --dry-run) start_vm dry-run normal ;;
+            --foreground) start_foreground_owned normal ;;
             *) fail "Start mode must be --dry-run or --foreground" ;;
+        esac
+        ;;
+    start-provisioning)
+        [ "$#" -le 2 ] ||
+            fail "Start-provisioning accepts no option, --dry-run, or --foreground"
+        case ${2:-background} in
+            background) start_background provisioning ;;
+            --dry-run) start_vm dry-run provisioning ;;
+            --foreground) start_foreground_owned provisioning ;;
+            *) fail "Start-provisioning mode must be --dry-run or --foreground" ;;
         esac
         ;;
     console)
@@ -1657,8 +1799,11 @@ case ${1:-} in
         reset_overlay "$2"
         ;;
     _supervise)
-        [ "$#" -eq 1 ] || fail "The internal supervisor does not accept arguments"
-        supervise_vm
+        [ "$#" -eq 2 ] || fail "The internal supervisor requires one network mode"
+        case "$2" in
+            normal|provisioning) supervise_vm "$2" ;;
+            *) fail "The internal supervisor received an invalid network mode" ;;
+        esac
         ;;
     -h|--help|help)
         usage

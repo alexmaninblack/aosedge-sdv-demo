@@ -1,0 +1,62 @@
+#!/bin/sh
+
+set -eu
+umask 077
+
+ssh_host_port=${AOSVM_SSH_HOST_PORT:-10022}
+dns_host_port=${AOSVM_HOST_DNS_PORT:-18053}
+provisioning_host_port=${AOSVM_PROVISIONING_HOST_PORT:-18089}
+
+fail() {
+    printf 'FAIL: AosVM provisioning host gate: %s\n' "$*" >&2
+    exit 1
+}
+
+for port_spec in \
+    "$ssh_host_port:SSH" \
+    "$dns_host_port:DNS" \
+    "$provisioning_host_port:Provisioning"
+do
+    port_value=${port_spec%%:*}
+    port_label=${port_spec#*:}
+    case "$port_value" in
+        ''|*[!0-9]*) fail "$port_label host port is not numeric" ;;
+    esac
+    [ "$port_value" -ge 1024 ] && [ "$port_value" -le 65535 ] ||
+        fail "$port_label host port must be between 1024 and 65535"
+done
+
+[ "$ssh_host_port" -ne "$dns_host_port" ] &&
+    [ "$ssh_host_port" -ne "$provisioning_host_port" ] &&
+    [ "$dns_host_port" -ne "$provisioning_host_port" ] ||
+    fail 'SSH, DNS, and provisioning host ports must be distinct'
+
+for tool in ifconfig lsof nc; do
+    command -v "$tool" >/dev/null 2>&1 ||
+        fail "required host command is unavailable: $tool"
+done
+
+listener_names=$(lsof -nP -a -iTCP:"$provisioning_host_port" \
+    -sTCP:LISTEN -F n 2>/dev/null | sed -n 's/^n//p')
+[ "$listener_names" = "127.0.0.1:$provisioning_host_port" ] ||
+    fail "provisioning IAM is not listening exclusively on 127.0.0.1:$provisioning_host_port"
+
+nc -z -w 3 127.0.0.1 "$provisioning_host_port" >/dev/null 2>&1 ||
+    fail 'the loopback provisioning forward does not accept TCP connections'
+
+lan_addresses=$(ifconfig | awk '
+    /^[[:alnum:]][[:alnum:]]*:/ {
+        interface = $1
+        sub(/:$/, "", interface)
+    }
+    /inet / && $2 !~ /^127\./ { print $2 }
+')
+for address in $lan_addresses; do
+    if nc -z -w 1 "$address" "$provisioning_host_port" >/dev/null 2>&1; then
+        fail "the provisioning forward is reachable on non-loopback address $address"
+    fi
+done
+
+printf 'PASS: the provisioning forward listens only on 127.0.0.1:%s\n' \
+    "$provisioning_host_port"
+printf 'PASS: AosVM provisioning host gate\n'

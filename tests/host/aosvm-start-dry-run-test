@@ -11,6 +11,7 @@ test_runs_root="$test_root/runs"
 output_path="$test_root/dry-run-output"
 test_port="41022"
 test_dns_port="41053"
+test_provisioning_port="41089"
 
 cleanup() {
     rm -r "$test_root"
@@ -27,6 +28,14 @@ run_dry_run() {
 }
 
 run_dry_run >"$output_path"
+
+AOSVM_RUN_ROOT="$test_root/provisioning-run" \
+AOSVM_RUNS_ROOT="$test_root/provisioning-runs" \
+AOSVM_SSH_HOST_PORT="41023" \
+AOSVM_HOST_DNS_PORT="41054" \
+AOSVM_PROVISIONING_HOST_PORT="$test_provisioning_port" \
+    "$repository_root/scripts/aosvm" start-provisioning --dry-run \
+    >"$test_root/provisioning-dry-run-output"
 
 if "$repository_root/scripts/aosvm" start --invalid \
     >"$test_root/stdout" 2>"$test_root/stderr"; then
@@ -51,6 +60,17 @@ grep -Fq "file=$repository_root/.local/aosvm-main-overlay.qcow2,if=none,id=aos-i
 grep -Fq "'virtio-scsi-pci,id=scsi'" "$output_path"
 grep -Fq "'scsi-hd,drive=aos-image,bootindex=0'" "$output_path"
 grep -Fq "user,id=aosnet,net=10.0.0.0/24,host=10.0.0.1,dns=10.0.0.2,restrict=off,hostfwd=tcp:127.0.0.1:$test_port-10.0.0.100:22" "$output_path"
+if grep -Fq '10.0.0.100:8089' "$output_path"; then
+    printf 'Normal dry-run unexpectedly exposes provisioning IAM.\n' >&2
+    exit 1
+fi
+grep -Fq "user,id=aosnet,net=10.0.0.0/24,host=10.0.0.1,dns=10.0.0.2,restrict=off,hostfwd=tcp:127.0.0.1:41023-10.0.0.100:22,hostfwd=tcp:127.0.0.1:$test_provisioning_port-10.0.0.100:8089" \
+    "$test_root/provisioning-dry-run-output"
+if grep -Eq 'hostfwd=tcp:(0\.0\.0\.0|10\.|192\.168\.|172\.)' \
+    "$test_root/provisioning-dry-run-output"; then
+    printf 'Provisioning dry-run exposes a non-loopback listener.\n' >&2
+    exit 1
+fi
 grep -Fq "'virtio-net-pci,netdev=aosnet,mac=52:54:00:41:4f:53'" "$output_path"
 grep -Fq "path=$test_run_root/aosvm-main.serial,server=on,wait=off,logfile=$test_runs_root/aosvm-main-serial.log,logappend=on,logtimestamp=on" "$output_path"
 grep -Fq "'chardev:serial0'" "$output_path"
@@ -81,6 +101,58 @@ if AOSVM_RUN_ROOT="$test_root/dns-port-run" \
 fi
 
 grep -q 'Host DNS port must be between 1024 and 65535' "$test_root/stderr"
+
+if AOSVM_RUN_ROOT="$test_root/provisioning-port-run" \
+    AOSVM_RUNS_ROOT="$test_root/provisioning-port-runs" \
+    AOSVM_SSH_HOST_PORT="41027" \
+    AOSVM_HOST_DNS_PORT="41057" \
+    AOSVM_PROVISIONING_HOST_PORT="443" \
+        "$repository_root/scripts/aosvm" start-provisioning --dry-run \
+        >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected a privileged provisioning host port to be rejected.\n' >&2
+    exit 1
+fi
+
+grep -q 'Provisioning host port must be between 1024 and 65535' \
+    "$test_root/stderr"
+
+if AOSVM_RUN_ROOT="$test_root/provisioning-conflict-run" \
+    AOSVM_RUNS_ROOT="$test_root/provisioning-conflict-runs" \
+    AOSVM_SSH_HOST_PORT="41028" \
+    AOSVM_HOST_DNS_PORT="41058" \
+    AOSVM_PROVISIONING_HOST_PORT="41028" \
+        "$repository_root/scripts/aosvm" start-provisioning --dry-run \
+        >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected a conflicting provisioning host port to be rejected.\n' >&2
+    exit 1
+fi
+
+grep -q 'Provisioning, SSH, and DNS host ports must differ' "$test_root/stderr"
+
+unprotected_local_root="$test_root/unprotected-local"
+mkdir -m 700 "$unprotected_local_root"
+if AOSVM_LOCAL_ROOT="$unprotected_local_root" \
+    AOSVM_BACKUP_ROOT="$test_root/unprotected-backups" \
+    AOSVM_RUN_ROOT="$test_root/unprotected-run" \
+    AOSVM_RUNS_ROOT="$test_root/unprotected-runs" \
+    AOSVM_SSH_HOST_PORT="41029" \
+    AOSVM_HOST_DNS_PORT="41059" \
+    AOSVM_PROVISIONING_HOST_PORT="41099" \
+        "$repository_root/scripts/aosvm" start-provisioning \
+        >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected a real provisioning start without a checkpoint to fail.\n' >&2
+    exit 1
+fi
+
+grep -q 'Provisioning mode requires a verified pre-provision checkpoint' \
+    "$test_root/stderr"
+[ ! -e "$test_root/unprotected-run/aosvm-main.pid" ]
+[ ! -e "$test_root/unprotected-run/aosvm-main-supervisor.pid" ]
+
+grep -q 'lsof -nP -a -iTCP:"$provisioning_host_port"' \
+    "$repository_root/tests/host/aosvm-provisioning-host-gate"
+grep -q 'nc -z -w 1 "$address" "$provisioning_host_port"' \
+    "$repository_root/tests/host/aosvm-provisioning-host-gate"
 
 if AOSVM_RUN_ROOT="$test_root/invalid-port-run" \
     AOSVM_RUNS_ROOT="$test_root/invalid-port-runs" \
