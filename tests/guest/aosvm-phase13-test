@@ -1,0 +1,88 @@
+#!/bin/sh
+
+set -eu
+umask 077
+
+marker_path=/home/aosvm-phase13-persistence-marker
+marker_value=AOSVM_PHASE13_PERSISTENCE_V1
+released_loader=/EFI/BOOT/bootx64.efi
+released_dns='10.0.0.1
+10.0.0.100'
+
+fail() {
+    printf 'FAIL: AosVM Phase 13 guest gate: %s\n' "$*" >&2
+    exit 1
+}
+
+verify_guest() {
+    [ "$(id -u)" -eq 0 ] || fail 'the gate must run as root'
+    [ "$(uname -m)" = aarch64 ] || fail 'the guest is not AArch64'
+    grep -qx 'ID=aos-core' /etc/os-release || fail 'the guest OS is not AosCore'
+    grep -qx 'VERSION_ID=6.1.0' /etc/os-release \
+        || fail 'the guest OS is not AosCore 6.1.0'
+    [ "$(findmnt -T / -no SOURCE)" = /dev/sda3 ] \
+        || fail 'the root filesystem is not the qualified root partition'
+    findmnt -T / -no OPTIONS | tr ',' '\n' | grep -qx ro \
+        || fail 'the root filesystem is not read-only'
+    [ "$(findmnt -T /home -no SOURCE)" = /dev/sda4 ] \
+        || fail '/home is not the qualified persistent partition'
+    findmnt -T /home -no OPTIONS | tr ',' '\n' | grep -qx rw \
+        || fail '/home is not writable'
+}
+
+verify_marker() {
+    [ ! -L "$marker_path" ] || fail 'the persistence marker is a symbolic link'
+    [ -f "$marker_path" ] || fail 'the persistence marker is absent'
+    [ "$(cat "$marker_path")" = "$marker_value" ] \
+        || fail 'the persistence marker has unexpected content'
+    [ "$(stat -c '%a' "$marker_path")" = 600 ] \
+        || fail 'the persistence marker mode is not 0600'
+    [ "$(stat -c '%u:%g' "$marker_path")" = 0:0 ] \
+        || fail 'the persistence marker is not owned by root'
+}
+
+verify_guest
+
+case ${1:-} in
+    create)
+        [ ! -e "$marker_path" ] && [ ! -L "$marker_path" ] \
+            || fail 'the persistence marker already exists'
+        marker_partial="$marker_path.partial.$$"
+        trap 'rm -f "$marker_partial"' EXIT HUP INT TERM
+        printf '%s\n' "$marker_value" >"$marker_partial" \
+            || fail 'cannot write the persistence marker'
+        chmod 0600 "$marker_partial" \
+            || fail 'cannot set the persistence marker mode'
+        mv "$marker_partial" "$marker_path" \
+            || fail 'cannot install the persistence marker'
+        sync
+        verify_marker
+        trap - EXIT HUP INT TERM
+        printf 'PASS: created the Phase 13 persistence marker on /dev/sda4\n'
+        ;;
+    verify-persisted)
+        verify_marker
+        printf 'PASS: the Phase 13 marker persisted across a clean restart\n'
+        ;;
+    verify-reset)
+        [ ! -e "$marker_path" ] && [ ! -L "$marker_path" ] \
+            || fail 'the persistence marker survived overlay reset'
+        command -v jq >/dev/null 2>&1 || fail 'jq is unavailable'
+        current_loader=$(jq -r \
+            '.runtimes[] | select(.plugin == "boot") | .config.loader' \
+            /etc/aos/sm.cfg)
+        [ "$current_loader" = "$released_loader" ] \
+            || fail 'the reset overlay does not contain the released EFI setting'
+        current_dns=$(awk -F= '$1 == "DNS" { print $2 }' \
+            /etc/systemd/network/20-wired.network)
+        [ "$current_dns" = "$released_dns" ] \
+            || fail 'the reset overlay does not contain the released DNS settings'
+        [ -z "$(awk -F= '$1 == "server" { print $0 }' \
+            /var/aos/dns/dnsmasq.conf)" ] \
+            || fail 'the reset overlay retained a dnsmasq compatibility upstream'
+        printf 'PASS: overlay reset removed the marker and restored released settings\n'
+        ;;
+    *)
+        fail 'usage: aosvm-phase13-test <create|verify-persisted|verify-reset>'
+        ;;
+esac

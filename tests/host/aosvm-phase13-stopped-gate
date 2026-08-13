@@ -1,0 +1,105 @@
+#!/bin/sh
+
+set -eu
+umask 077
+
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+repository_root=$(CDPATH='' cd -- "$script_dir/../.." && pwd)
+cache_root=${AOSVM_CACHE_ROOT:-"$repository_root/.cache"}
+local_root=${AOSVM_LOCAL_ROOT:-"$repository_root/.local"}
+run_root=${AOSVM_RUN_ROOT:-"$repository_root/.run"}
+ssh_host_port=${AOSVM_SSH_HOST_PORT:-10022}
+host_dns_port=${AOSVM_HOST_DNS_PORT:-18053}
+release_dir="$cache_root/aosvm/v6.1.0/qemuarm64"
+main_image="$release_dir/aos-vm-main-qemuarm64.qcow2"
+secondary_image="$release_dir/aos-vm-secondary-qemuarm64.qcow2"
+firmware="$release_dir/QEMU_EFI.fd"
+overlay="$local_root/aosvm-main-overlay.qcow2"
+
+fail() {
+    printf 'FAIL: AosVM Phase 13 stopped-state gate: %s\n' "$*" >&2
+    exit 1
+}
+
+file_sha256() {
+    shasum -a 256 "$1" | awk '{ print $1 }'
+}
+
+verify_pinned_file() {
+    file_path=$1
+    expected_size=$2
+    expected_sha256=$3
+    file_label=$4
+    [ ! -L "$file_path" ] && [ -f "$file_path" ] \
+        || fail "$file_label is not a regular immutable file"
+    [ "$(stat -f '%z' "$file_path")" = "$expected_size" ] \
+        || fail "$file_label size changed"
+    [ "$(file_sha256 "$file_path")" = "$expected_sha256" ] \
+        || fail "$file_label SHA-256 changed"
+    [ "$(stat -f '%Lp' "$file_path")" = 444 ] \
+        || fail "$file_label mode is not 0444"
+}
+
+for tool in jq lsof ps qemu-img shasum stat; do
+    command -v "$tool" >/dev/null 2>&1 \
+        || fail "required host command is unavailable: $tool"
+done
+
+[ "$("$repository_root/scripts/aosvm" status)" = \
+    'AosVM Main Node is stopped.' ] \
+    || fail 'the lifecycle command does not report a clean stopped state'
+
+for runtime_name in \
+    aosvm-main.pid aosvm-main-supervisor.pid aosvm-main-dns.pid \
+    aosvm-main.qmp aosvm-main.serial aosvm-main.lifecycle.lock; do
+    [ ! -e "$run_root/$runtime_name" ] && [ ! -L "$run_root/$runtime_name" ] \
+        || fail "owned runtime state remains: $run_root/$runtime_name"
+done
+
+if lsof -nP -iTCP:"$ssh_host_port" -sTCP:LISTEN >/dev/null 2>&1; then
+    fail "an SSH listener remains on host port $ssh_host_port"
+fi
+if lsof -nP -iTCP:"$host_dns_port" -sTCP:LISTEN >/dev/null 2>&1 ||
+   lsof -nP -iUDP:"$host_dns_port" >/dev/null 2>&1; then
+    fail "a DNS bridge listener remains on host port $host_dns_port"
+fi
+
+processes=$(ps -ax -o command=)
+case "$processes" in
+    *"file=$overlay,if=none,id=aos-image"*) \
+        fail 'an owned QEMU process still uses the overlay' ;;
+esac
+case "$processes" in
+    *"$repository_root/scripts/host/aosvm-dns-bridge --listen-address"*) \
+        fail 'an owned DNS bridge process remains' ;;
+esac
+
+verify_pinned_file "$main_image" 593428480 \
+    8cbc4bd331650fbae7b54ad5b11b00e36e275cea00298327629e568422023fc4 \
+    'Main Node image'
+verify_pinned_file "$secondary_image" 573833216 \
+    c6b687c180bab7621d5680c6e44894b531edc8a64cd6851afd467cec2dc193f6 \
+    'Secondary Node image'
+verify_pinned_file "$firmware" 2097152 \
+    30f7042c23b81c28b8196a76f4af6bcf10046f08049c9d78b4387472c5bbcd10 \
+    'QEMU EFI firmware'
+
+[ ! -L "$overlay" ] && [ -f "$overlay" ] \
+    || fail 'the writable overlay is unavailable'
+[ "$(stat -f '%Lp' "$overlay")" = 600 ] \
+    || fail 'the writable overlay mode is not 0600'
+expected_backing=$(CDPATH='' cd -- "$(dirname -- "$main_image")" && pwd)/$(basename -- "$main_image")
+overlay_info=$(qemu-img info --output=json "$overlay")
+printf '%s\n' "$overlay_info" | jq -e \
+    --arg expected_backing "$expected_backing" \
+    '.format == "qcow2" and
+     .["virtual-size"] == 6997147648 and
+     .["dirty-flag"] == false and
+     .["backing-filename"] == $expected_backing and
+     .["backing-filename-format"] == "qcow2" and
+     .["format-specific"].data.corrupt == false' >/dev/null \
+    || fail 'the overlay metadata does not match the qualified contract'
+qemu-img check "$overlay" >/dev/null \
+    || fail 'the stopped overlay failed qemu-img check'
+
+printf 'PASS: AosVM Phase 13 stopped state, immutable inputs, and overlay\n'

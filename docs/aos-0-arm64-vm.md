@@ -26,7 +26,8 @@ be performed in AOS-1 with the utilities supplied by the AosEdge SDK.
 | Phase 10: AosCore pre-provisioning state | Complete — 2026-08-13 | Pass with tracked ARM64 overlay fix |
 | Phase 11: layered networking | Complete — 2026-08-13 | Pass with tracked loopback DNS bridge |
 | Phase 12: owned VM lifecycle | Complete — 2026-08-13 | Pass |
-| Phases 13–14 | Not started | — |
+| Phase 13: persistence and overlay reset | Complete — 2026-08-13 | Pass |
+| Phase 14: accepted baseline | Not started | — |
 
 ### Phase 1 observed baseline
 
@@ -525,8 +526,54 @@ No command uses `killall`, broad process-name matching, administrator
 privilege, LAN listeners, or an unverified PID. Static safety gates also prove
 that an unrelated live PID remains alive, a nonexistent PID is rejected, a
 concurrent lifecycle lock blocks mutation, and stopped smoke testing fails
-closed. The real working overlay has not been reset; persistence and destructive
-reset qualification belong to Phase 13.
+closed. Phase 13 subsequently qualified persistence and destructive reset on
+the real working overlay.
+
+### Phase 13 observed baseline
+
+The tracked `tests/guest/aosvm-phase13-test` placed one harmless mode-0600,
+root-owned marker on `/home`, which is the writable `/dev/sda4` partition. A
+clean QMP shutdown, exclusive qcow2 check, and second full boot preserved the
+marker exactly. Volatile `/tmp` did not survive the reboot, proving the result
+did not depend on temporary guest state.
+
+After a second clean shutdown, `scripts/aosvm reset-overlay --confirm`
+atomically recreated only `.local/aosvm-main-overlay.qcow2` from the verified
+Main Node backing image. The next boot proved all three expected reset effects:
+
+- the `/home` marker was absent;
+- the Service Manager loader returned to the released x86 path;
+- network DNS and dnsmasq configuration returned to their released values.
+
+The released configuration observations matter because they prove that reset
+replaced the complete overlay instead of merely deleting the test marker. The
+tracked ARM64 loader and QEMU DNS compatibility helpers were then transferred
+to guest `/tmp`, matched against their repository SHA-256 values, applied, and
+run a second time to prove idempotency. After another clean reboot, the Phase
+10 pre-provisioning gate and both Phase 11 host and guest gates passed again,
+including verified HTTPS, guest-to-host access, DNS failover, loopback-only
+SSH/DNS listeners, and LAN isolation.
+
+Reset also regenerated the guest SSH host key. Strict host-key checking
+rejected the stale local key. The new ED25519 fingerprint was independently
+read from `/var/ssh/ssh_host_ed25519_key.pub` through the serial console and
+from the owned loopback SSH forward; only the exact matching public key was
+then written to ignored `.run/aosvm-known-hosts`.
+
+The tracked `tests/host/aosvm-phase13-stopped-gate` passed before testing,
+after both persistence stops, immediately after reset, after compatibility
+recovery, and at final shutdown. Every pass proved:
+
+- no owned QEMU or DNS bridge process remained;
+- ports `10022` and `18053` had no remaining listener;
+- no owned PID, QMP socket, serial socket, or lifecycle lock remained;
+- the overlay was a healthy mode-0600 qcow2 with the exact backing file;
+- Main Node, Secondary Node, and EFI size, mode, and SHA-256 stayed pinned.
+
+The VM is stopped. The active overlay contains no Phase 13 marker and retains
+the qualified ARM64 and DNS compatibility state. No provisioning, certificate
+enrollment, cloud connection, external listener, or administrator privilege
+was introduced.
 
 ## Pinned upstream input
 
@@ -1173,6 +1220,12 @@ Also verify after each stop:
 **Pass:** two normal boot/shutdown cycles succeed, intended overlay persistence
 works, reset removes it, and the base remains identical.
 
+**Observed:** pass. The `/dev/sda4` marker survived a clean stop/start and was
+absent after explicit overlay recreation. Released EFI and DNS values returned,
+both tracked compatibility helpers were restored and proved idempotent, and
+Phase 10 plus complete Phase 11 regressions passed after reboot. All stopped
+gates found no process, listener, or runtime leak and exact immutable hashes.
+
 **Stop:** base-image drift, leaked process/listener state, or a reset that can
 target more than the named overlay.
 
@@ -1221,7 +1274,7 @@ sanitized evidence is committed, and the working tree is clean.
 - [x] The guest can reach the macOS host for the later VISS path.
 - [x] SSH is reachable only through a loopback host forward.
 - [x] Clean shutdown and second boot succeed.
-- [ ] Overlay reset is safe and reproducible.
+- [x] Overlay reset is safe and reproducible.
 - [x] The launcher does not require administrator privileges.
 - [ ] A sanitized baseline is committed and the working tree is clean.
 

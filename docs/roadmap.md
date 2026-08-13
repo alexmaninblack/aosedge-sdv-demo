@@ -22,7 +22,7 @@ reachable only through explicitly configured local forwards, reaches the
 Internet, passes the kernel and local OCI gates, and survives a clean stop/start
 without modifying the downloaded base image.
 
-Current gate: Phase 12 passes. Addressing, routing,
+Current gate: Phase 13 passes. Addressing, routing,
 outbound TCP, guest-to-host access, DNS, synchronized time, verified HTTPS, and
 loopback-only SSH all pass tracked host and guest gates. A tracked macOS DNS
 bridge binds only to `127.0.0.1`; the overlay-only guest helper routes the
@@ -32,7 +32,13 @@ stable. The tracked lifecycle now qualifies host readiness; starts and owns the
 VM; attaches to its serial console; reports exact process, listener, and disk
 state; waits for SSH readiness in its smoke test; and shuts down through QMP
 before any bounded escalation. Stale or unrelated PID state is rejected.
-Phase 13 persistence and destructive-reset qualification is next.
+A marker on the guest's writable `/home` partition persisted across a clean
+restart and disappeared after explicit overlay recreation. Every stopped-state
+gate found no owned process, listener, or runtime residue and reverified the
+exact Main Node, Secondary Node, and EFI hashes. The tracked ARM64 and DNS
+compatibility changes were restored on the fresh overlay, remained idempotent,
+and passed the Phase 10 and complete Phase 11 regressions. Phase 14 accepted
+baseline recording is next.
 
 Phase 9 also passes the complete cloud-free `crun` qualification.
 The probe ran an isolated ARM64 PID 1 with enforced CPU, memory, and PID

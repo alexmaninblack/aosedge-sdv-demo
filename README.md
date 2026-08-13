@@ -18,7 +18,7 @@ the legacy AOS Vehicle Information Service interface.
 
 ## Current status
 
-Planning and Phases 1–12 are complete for AOS-0. The official AosVM 6.1.0 ARM64
+Planning and Phases 1–13 are complete for AOS-0. The official AosVM 6.1.0 ARM64
 Main Node boots natively accelerated by HVF on the Apple M5 Pro. Its guest
 identity, own kernel, unified cgroups v2, memory, partition layout, read-only
 root, writable data mounts, SELinux state, and pre-provisioning services are
@@ -35,8 +35,11 @@ gates. A tracked loopback-only macOS DNS bridge supplies bounded resolver
 failover without TAP, packet-filter changes, administrator privilege, or LAN
 exposure. Phase 12 adds an English-only, ownership-checked lifecycle with
 background and foreground start, serial console, status, smoke test, QMP-first
-shutdown, and explicit overlay reset. Phase 13 persistence and reset
-qualification is next.
+shutdown, and explicit overlay reset. Phase 13 proves persistence across a
+clean restart, safe recreation of only the disposable overlay, unchanged
+immutable inputs, complete stopped-state cleanup, and recovery of the tracked
+ARM64 and DNS compatibility state. Phase 14 accepted-baseline recording is
+next.
 
 ## Commands
 
@@ -96,8 +99,8 @@ Request a clean guest shutdown through QMP. Repeating `start`, `status`, or
 ```
 
 `reset-overlay` recreates only the disposable Main Node overlay and requires
-explicit confirmation. It is implemented and safety-tested, but destructive
-reset of the working overlay remains a Phase 13 qualification step:
+explicit confirmation. Phase 13 qualifies this destructive operation and
+proves that the immutable inputs remain unchanged:
 
 ```sh
 ./scripts/aosvm reset-overlay --confirm
@@ -137,6 +140,13 @@ idempotent, changes only the disposable overlay, preserves SELinux labels and
 the read-only root contract, and contains no credential. The repeatable live
 gates are `tests/guest/aosvm-phase11-test` and
 `tests/host/aosvm-phase11-host-gate`.
+
+Phase 13 persistence and stopped-state gates are
+`tests/guest/aosvm-phase13-test` and
+`tests/host/aosvm-phase13-stopped-gate`. The guest gate writes only one
+explicit marker on the writable `/home` partition. The host gate is read-only
+and verifies cleanup, listener absence, qcow2 integrity, and exact immutable
+input hashes after each stop.
 
 ## Repository policy
 
