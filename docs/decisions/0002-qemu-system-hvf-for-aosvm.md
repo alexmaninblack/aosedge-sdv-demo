@@ -36,7 +36,8 @@ Use native `qemu-system-aarch64` with:
 - the CPU model qualified for HVF on the host, preferably `host`;
 - the upstream `QEMU_EFI.fd` firmware;
 - the upstream Main Node qcow2 disk behind `virtio-scsi-pci` and `scsi-hd`;
-- a disposable qcow2 overlay as the only writable VM disk;
+- a qcow2 overlay as the only writable VM disk; it is disposable only while
+  unprovisioned and becomes the permanent local Unit disk before provisioning;
 - QEMU user networking and loopback-only host forwarding for the first spike;
 - serial and QMP sockets owned by this repository.
 
@@ -59,7 +60,9 @@ baseline.
   by AosCore.
 - Uses Apple hardware virtualization without requiring VirtualBox kernel
   extensions or a separate image-conversion workflow.
-- Keeps base artifacts immutable and makes all local changes disposable.
+- Keeps base artifacts immutable and isolates local changes in one overlay.
+  Before provisioning, the lifecycle protects that overlay from reset and
+  creates an independent recovery checkpoint outside Git.
 - Allows headless, scriptable startup, shutdown, serial logging, and health
   checks.
 

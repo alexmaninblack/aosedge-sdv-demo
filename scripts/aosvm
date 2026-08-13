@@ -19,6 +19,10 @@ FIRMWARE_SIZE="2097152"
 FIRMWARE_SHA256="30f7042c23b81c28b8196a76f4af6bcf10046f08049c9d78b4387472c5bbcd10"
 IMAGE_VIRTUAL_SIZE="6997147648"
 OVERLAY="aosvm-main-overlay.qcow2"
+LIFECYCLE_STATE="aosvm-main-lifecycle.json"
+LIFECYCLE_GUARD="aosvm-main-provisioning-lock.json"
+PRE_PROVISION_BACKUP="aosvm-main-pre-provision.qcow2"
+POST_PROVISION_BACKUP="aosvm-main-post-provision.qcow2"
 QEMU_BASELINE_VERSION="11.0.3"
 QEMU_MACHINE="virt-11.0"
 QEMU_CPU="host"
@@ -44,6 +48,7 @@ SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 REPOSITORY_ROOT=$(CDPATH='' cd -- "$SCRIPT_DIR/.." && pwd)
 CACHE_ROOT=${AOSVM_CACHE_ROOT:-"$REPOSITORY_ROOT/.cache"}
 LOCAL_ROOT=${AOSVM_LOCAL_ROOT:-"$REPOSITORY_ROOT/.local"}
+BACKUP_ROOT_OVERRIDE=${AOSVM_BACKUP_ROOT:-}
 RUN_ROOT=${AOSVM_RUN_ROOT:-"$REPOSITORY_ROOT/.run"}
 RUNS_ROOT=${AOSVM_RUNS_ROOT:-"$REPOSITORY_ROOT/runs"}
 SSH_HOST_PORT=${AOSVM_SSH_HOST_PORT:-"10022"}
@@ -54,6 +59,8 @@ MAIN_IMAGE_PATH="$RELEASE_DIR/$MAIN_IMAGE"
 SECONDARY_IMAGE_PATH="$RELEASE_DIR/$SECONDARY_IMAGE"
 FIRMWARE_PATH="$RELEASE_DIR/$FIRMWARE"
 OVERLAY_PATH="$LOCAL_ROOT/$OVERLAY"
+LIFECYCLE_GUARD_PATH="$LOCAL_ROOT/$LIFECYCLE_GUARD"
+LIFECYCLE_STATE_PATH=''
 PID_PATH="$RUN_ROOT/$VM_NAME.pid"
 QMP_SOCKET_PATH="$RUN_ROOT/$VM_NAME.qmp"
 SERIAL_SOCKET_PATH="$RUN_ROOT/$VM_NAME.serial"
@@ -75,6 +82,10 @@ QEMU_CHILD_PID=''
 LIFECYCLE_LOCK_HELD=0
 SUPERVISOR_MODE=0
 BACKGROUND_START_PID=''
+BACKUP_ROOT=''
+CHECKPOINT_WORK_DIR=''
+CHECKPOINT_GUARD_PARTIAL=''
+LIFECYCLE_STATUS='unprotected'
 
 fail() {
     printf 'Error: %s\n' "$*" >&2
@@ -227,6 +238,143 @@ verify_overlay() {
     fi
 }
 
+verify_standalone_backup() {
+    backup_to_verify=$1
+
+    [ ! -L "$backup_to_verify" ] ||
+        fail "Checkpoint must not be a symbolic link: $backup_to_verify"
+    [ -f "$backup_to_verify" ] ||
+        fail "Checkpoint is not a regular file: $backup_to_verify"
+    [ "$(file_mode "$backup_to_verify")" = "600" ] ||
+        fail "Checkpoint mode must be 0600: $backup_to_verify"
+
+    backup_info=$(qemu-img info --output=json "$backup_to_verify")
+    printf '%s\n' "$backup_info" | jq -e \
+        --argjson expected_virtual_size "$IMAGE_VIRTUAL_SIZE" \
+        '.format == "qcow2" and
+         .["virtual-size"] == $expected_virtual_size and
+         .["dirty-flag"] == false and
+         .["format-specific"].data.corrupt == false and
+         (has("backing-filename") | not)' >/dev/null ||
+        fail "Checkpoint is not a healthy standalone qcow2 image"
+
+    qemu-img check "$backup_to_verify" >/dev/null ||
+        fail "Checkpoint failed qemu-img check"
+}
+
+resolve_backup_root() {
+    if [ -n "$BACKUP_ROOT_OVERRIDE" ]; then
+        BACKUP_ROOT=$BACKUP_ROOT_OVERRIDE
+    else
+        [ -n "${HOME:-}" ] ||
+            fail "HOME is unavailable; set AOSVM_BACKUP_ROOT explicitly"
+        BACKUP_ROOT="$HOME/Library/Application Support/CarlaAosEdge/AosVM/backups"
+    fi
+    case "$BACKUP_ROOT" in
+        /*) ;;
+        *) fail "Checkpoint directory must be an absolute path: $BACKUP_ROOT" ;;
+    esac
+    [ "$BACKUP_ROOT" != "/" ] ||
+        fail "Checkpoint directory must not be the filesystem root"
+}
+
+verify_lifecycle_state() {
+    LIFECYCLE_STATUS='unprotected'
+
+    resolve_backup_root
+    LIFECYCLE_STATE_PATH="$BACKUP_ROOT/$LIFECYCLE_STATE"
+
+    [ ! -L "$LIFECYCLE_GUARD_PATH" ] ||
+        fail "Lifecycle guard must not be a symbolic link: $LIFECYCLE_GUARD_PATH"
+    [ ! -L "$BACKUP_ROOT" ] ||
+        fail "Checkpoint directory must not be a symbolic link: $BACKUP_ROOT"
+    [ ! -L "$LIFECYCLE_STATE_PATH" ] ||
+        fail "Lifecycle state must not be a symbolic link: $LIFECYCLE_STATE_PATH"
+
+    guard_present=0
+    state_present=0
+    [ ! -e "$LIFECYCLE_GUARD_PATH" ] || guard_present=1
+    [ ! -e "$LIFECYCLE_STATE_PATH" ] || state_present=1
+
+    if [ "$guard_present" -eq 0 ] && [ "$state_present" -eq 0 ]; then
+        return
+    fi
+    [ "$guard_present" -eq 1 ] && [ "$state_present" -eq 1 ] ||
+        fail "Protected lifecycle metadata is incomplete; overlay reset and provisioning are blocked"
+
+    [ -d "$LOCAL_ROOT" ] ||
+        fail "Protected active VM directory is unavailable: $LOCAL_ROOT"
+    [ -f "$LIFECYCLE_GUARD_PATH" ] ||
+        fail "Lifecycle guard is not a regular file: $LIFECYCLE_GUARD_PATH"
+    [ "$(file_mode "$LIFECYCLE_GUARD_PATH")" = "600" ] ||
+        fail "Lifecycle guard mode must be 0600: $LIFECYCLE_GUARD_PATH"
+    [ -d "$BACKUP_ROOT" ] ||
+        fail "Checkpoint path is not a directory: $BACKUP_ROOT"
+    [ "$(file_mode "$BACKUP_ROOT")" = "700" ] ||
+        fail "Checkpoint directory mode must be 0700: $BACKUP_ROOT"
+
+    [ -f "$LIFECYCLE_STATE_PATH" ] ||
+        fail "Lifecycle state is not a regular file: $LIFECYCLE_STATE_PATH"
+    [ "$(file_mode "$LIFECYCLE_STATE_PATH")" = "600" ] ||
+        fail "Lifecycle state mode must be 0600: $LIFECYCLE_STATE_PATH"
+
+    expected_active_overlay=$(absolute_path "$OVERLAY_PATH")
+    lifecycle_json=$(cat "$LIFECYCLE_STATE_PATH")
+    lifecycle_lock_id=$(printf '%s\n' "$lifecycle_json" |
+        jq -er 'select(.lockId | test("^[0-9a-f]{64}$")) | .lockId') ||
+        fail "Lifecycle state has no valid lock ID"
+    jq -e \
+        --arg vm "$VM_NAME" \
+        --arg active_overlay "$expected_active_overlay" \
+        --arg base_sha256 "$MAIN_IMAGE_SHA256" \
+        --arg lock_id "$lifecycle_lock_id" \
+        'select(.schema == 1 and .vm == $vm and
+                .activeOverlay == $active_overlay and
+                .baseImageSha256 == $base_sha256 and
+                .lockId == $lock_id and .resetLocked == true)' \
+        "$LIFECYCLE_GUARD_PATH" >/dev/null ||
+        fail "Lifecycle guard does not match the protected active VM"
+    LIFECYCLE_STATUS=$(printf '%s\n' "$lifecycle_json" | jq -er \
+        --arg vm "$VM_NAME" \
+        --arg active_overlay "$expected_active_overlay" \
+        --arg base_sha256 "$MAIN_IMAGE_SHA256" \
+        'select(.schema == 1 and .vm == $vm and
+                .activeOverlay == $active_overlay and
+                .baseImageSha256 == $base_sha256 and
+                .lockId == .preProvisionBackupSha256 and
+                (.lifecycle == "provisioning-locked" or
+                 .lifecycle == "provisioned") and
+                (.preProvisionBackup | type == "string") and
+                (.preProvisionBackupSha256 | test("^[0-9a-f]{64}$"))) |
+         .lifecycle') ||
+        fail "Lifecycle state does not match the supported schema"
+
+    pre_provision_backup=$(printf '%s\n' "$lifecycle_json" |
+        jq -er '.preProvisionBackup')
+    [ "$pre_provision_backup" = "$BACKUP_ROOT/$PRE_PROVISION_BACKUP" ] ||
+        fail "Lifecycle state names an unexpected pre-provision checkpoint"
+    [ ! -L "$pre_provision_backup" ] && [ -f "$pre_provision_backup" ] ||
+        fail "Protected pre-provision checkpoint is unavailable: $pre_provision_backup"
+    [ "$(file_mode "$pre_provision_backup")" = "600" ] ||
+        fail "Protected pre-provision checkpoint mode must be 0600"
+
+    if [ "$LIFECYCLE_STATUS" = "provisioned" ]; then
+        printf '%s\n' "$lifecycle_json" | jq -e \
+            'select((.postProvisionBackup | type == "string") and
+                           (.postProvisionBackupSha256 |
+                            test("^[0-9a-f]{64}$")))' >/dev/null ||
+            fail "Provisioned lifecycle state has no valid sealed checkpoint"
+        post_provision_backup=$(printf '%s\n' "$lifecycle_json" |
+            jq -er '.postProvisionBackup')
+        [ "$post_provision_backup" = "$BACKUP_ROOT/$POST_PROVISION_BACKUP" ] ||
+            fail "Lifecycle state names an unexpected post-provision checkpoint"
+        [ ! -L "$post_provision_backup" ] && [ -f "$post_provision_backup" ] ||
+            fail "Protected post-provision checkpoint is unavailable: $post_provision_backup"
+        [ "$(file_mode "$post_provision_backup")" = "600" ] ||
+            fail "Protected post-provision checkpoint mode must be 0600"
+    fi
+}
+
 prepare_cleanup() {
     if [ -n "$PREPARE_WORK_DIR" ] && [ -d "$PREPARE_WORK_DIR" ]; then
         rm -r "$PREPARE_WORK_DIR"
@@ -234,6 +382,17 @@ prepare_cleanup() {
     if [ -n "$PREPARE_LOCK_DIR" ] && [ -d "$PREPARE_LOCK_DIR" ]; then
         rmdir "$PREPARE_LOCK_DIR" 2>/dev/null || true
     fi
+}
+
+checkpoint_cleanup() {
+    if [ -n "$CHECKPOINT_WORK_DIR" ] && [ -d "$CHECKPOINT_WORK_DIR" ]; then
+        rm -r "$CHECKPOINT_WORK_DIR"
+    fi
+    if [ -n "$CHECKPOINT_GUARD_PARTIAL" ] &&
+       [ -f "$CHECKPOINT_GUARD_PARTIAL" ]; then
+        rm "$CHECKPOINT_GUARD_PARTIAL"
+    fi
+    release_lifecycle_lock
 }
 
 validate_archive_members() {
@@ -357,6 +516,8 @@ prepare_images() {
 
     [ "$CACHE_ROOT" != "/" ] || fail "Cache root must not be the filesystem root"
     [ "$LOCAL_ROOT" != "/" ] || fail "Local root must not be the filesystem root"
+
+    verify_lifecycle_state
 
     verify_archive "$ARCHIVE_PATH"
     mkdir -p "$RELEASE_DIR" "$LOCAL_ROOT"
@@ -763,6 +924,7 @@ verify_start_inputs() {
     verify_overlay "$OVERLAY_PATH"
     [ "$(file_mode "$OVERLAY_PATH")" = "600" ] ||
         fail "Overlay mode must be 0600"
+    verify_lifecycle_state
 }
 
 qualify_qemu_for_start() {
@@ -1000,7 +1162,11 @@ reset_overlay() {
     reset_confirmation=$1
     [ "$reset_confirmation" = --confirm ] ||
         fail "Reset requires the explicit --confirm option"
+    require_command jq
     acquire_lifecycle_lock
+    verify_lifecycle_state
+    [ "$LIFECYCLE_STATUS" = unprotected ] ||
+        fail "Overlay reset is disabled while lifecycle state is $LIFECYCLE_STATUS; reconcile the Unit with AosCloud before any recovery action"
     if [ -e "$PID_PATH" ] || [ -L "$PID_PATH" ] ||
        [ -e "$QMP_SOCKET_PATH" ] || [ -L "$QMP_SOCKET_PATH" ] ||
        [ -e "$SERIAL_SOCKET_PATH" ] || [ -L "$SERIAL_SOCKET_PATH" ] ||
@@ -1008,7 +1174,6 @@ reset_overlay() {
        [ -e "$SUPERVISOR_PID_PATH" ] || [ -L "$SUPERVISOR_PID_PATH" ]; then
         fail "Reset is allowed only when the VM has no runtime state"
     fi
-    require_command jq
     require_command qemu-img
     verify_release_file "$MAIN_IMAGE_PATH" "$MAIN_IMAGE_SIZE" \
         "$MAIN_IMAGE_SHA256" "Main Node image"
@@ -1035,8 +1200,204 @@ reset_overlay() {
     verify_overlay "$OVERLAY_PATH"
     release_lifecycle_lock
     trap - EXIT HUP INT TERM
-    printf 'Recreated only the disposable AosVM overlay.\n'
+    printf 'Recreated the unprovisioned AosVM overlay.\n'
     printf 'Overlay: %s\n' "$OVERLAY_PATH"
+}
+
+require_stopped_vm() {
+    for stopped_runtime_path in \
+        "$PID_PATH" "$QMP_SOCKET_PATH" "$SERIAL_SOCKET_PATH" \
+        "$DNS_BRIDGE_PID_PATH" "$SUPERVISOR_PID_PATH"; do
+        [ ! -e "$stopped_runtime_path" ] && [ ! -L "$stopped_runtime_path" ] ||
+            fail "Checkpoint operation requires a cleanly stopped VM: $stopped_runtime_path"
+    done
+}
+
+write_pre_provision_state() {
+    state_target=$1
+    backup_target=$2
+    backup_sha256=$3
+    active_overlay=$(absolute_path "$OVERLAY_PATH")
+
+    jq -n \
+        --arg vm "$VM_NAME" \
+        --arg lifecycle "provisioning-locked" \
+        --arg active_overlay "$active_overlay" \
+        --arg pre_backup "$backup_target" \
+        --arg pre_sha256 "$backup_sha256" \
+        --arg base_sha256 "$MAIN_IMAGE_SHA256" \
+        --arg created_at "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+        '{schema: 1, vm: $vm, lifecycle: $lifecycle,
+          lockId: $pre_sha256,
+          activeOverlay: $active_overlay,
+          preProvisionBackup: $pre_backup,
+          preProvisionBackupSha256: $pre_sha256,
+          baseImageSha256: $base_sha256,
+          lockedAt: $created_at}' >"$state_target"
+    chmod 0600 "$state_target"
+}
+
+write_lifecycle_guard() {
+    guard_target=$1
+    lock_id=$2
+    active_overlay=$(absolute_path "$OVERLAY_PATH")
+
+    jq -n \
+        --arg vm "$VM_NAME" \
+        --arg active_overlay "$active_overlay" \
+        --arg base_sha256 "$MAIN_IMAGE_SHA256" \
+        --arg lock_id "$lock_id" \
+        --arg locked_at "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+        '{schema: 1, vm: $vm, resetLocked: true,
+          activeOverlay: $active_overlay,
+          baseImageSha256: $base_sha256,
+          lockId: $lock_id,
+          lockedAt: $locked_at}' >"$guard_target"
+    chmod 0600 "$guard_target"
+}
+
+write_provisioned_state() {
+    source_state=$1
+    state_target=$2
+    backup_target=$3
+    backup_sha256=$4
+
+    jq \
+        --arg lifecycle "provisioned" \
+        --arg post_backup "$backup_target" \
+        --arg post_sha256 "$backup_sha256" \
+        --arg sealed_at "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+        '.lifecycle = $lifecycle |
+         .postProvisionBackup = $post_backup |
+         .postProvisionBackupSha256 = $post_sha256 |
+         .sealedAt = $sealed_at' "$source_state" >"$state_target"
+    chmod 0600 "$state_target"
+}
+
+create_lifecycle_checkpoint() {
+    checkpoint_kind=$1
+
+    require_command jq
+    require_command qemu-img
+    require_command shasum
+    require_command stat
+    acquire_lifecycle_lock
+    require_stopped_vm
+    verify_release_file "$MAIN_IMAGE_PATH" "$MAIN_IMAGE_SIZE" \
+        "$MAIN_IMAGE_SHA256" "Main Node image"
+    verify_base_image "$MAIN_IMAGE_PATH" "Main Node image"
+    verify_overlay "$OVERLAY_PATH"
+    [ "$(file_mode "$OVERLAY_PATH")" = 600 ] ||
+        fail "Overlay mode must be 0600"
+    verify_lifecycle_state
+
+    case "$checkpoint_kind" in
+        pre-provision)
+            [ "$LIFECYCLE_STATUS" = unprotected ] ||
+                fail "Pre-provision checkpoint requires unprotected lifecycle state, found $LIFECYCLE_STATUS"
+            checkpoint_name=$PRE_PROVISION_BACKUP
+            ;;
+        post-provision)
+            [ "$LIFECYCLE_STATUS" = provisioning-locked ] ||
+                fail "Post-provision sealing requires provisioning-locked state, found $LIFECYCLE_STATUS"
+            checkpoint_name=$POST_PROVISION_BACKUP
+            ;;
+        *) fail "Unknown checkpoint kind: $checkpoint_kind" ;;
+    esac
+
+    ensure_private_directory "$BACKUP_ROOT" "Checkpoint directory"
+    checkpoint_target="$BACKUP_ROOT/$checkpoint_name"
+    [ ! -e "$checkpoint_target" ] && [ ! -L "$checkpoint_target" ] ||
+        fail "Checkpoint already exists: $checkpoint_target"
+
+    CHECKPOINT_WORK_DIR=$(mktemp -d "$BACKUP_ROOT/.checkpoint.XXXXXX")
+    chmod 0700 "$CHECKPOINT_WORK_DIR"
+    trap checkpoint_cleanup EXIT HUP INT TERM
+    checkpoint_partial="$CHECKPOINT_WORK_DIR/$checkpoint_name"
+    state_partial="$CHECKPOINT_WORK_DIR/$LIFECYCLE_STATE"
+    CHECKPOINT_GUARD_PARTIAL="$LOCAL_ROOT/.$LIFECYCLE_GUARD.partial.$$"
+
+    qemu-img convert -q -f qcow2 -O qcow2 "$OVERLAY_PATH" \
+        "$checkpoint_partial"
+    chmod 0600 "$checkpoint_partial"
+    verify_standalone_backup "$checkpoint_partial"
+    checkpoint_sha256=$(file_sha256 "$checkpoint_partial")
+
+    case "$checkpoint_kind" in
+        pre-provision)
+            write_pre_provision_state "$state_partial" "$checkpoint_target" \
+                "$checkpoint_sha256"
+            [ ! -e "$LIFECYCLE_GUARD_PATH" ] &&
+                [ ! -L "$LIFECYCLE_GUARD_PATH" ] ||
+                fail "Lifecycle guard already exists: $LIFECYCLE_GUARD_PATH"
+            write_lifecycle_guard "$CHECKPOINT_GUARD_PARTIAL" \
+                "$checkpoint_sha256"
+            ;;
+        post-provision)
+            write_provisioned_state "$LIFECYCLE_STATE_PATH" "$state_partial" \
+                "$checkpoint_target" "$checkpoint_sha256"
+            ;;
+    esac
+
+    mv "$checkpoint_partial" "$checkpoint_target"
+    mv "$state_partial" "$LIFECYCLE_STATE_PATH"
+    if [ "$checkpoint_kind" = pre-provision ]; then
+        mv "$CHECKPOINT_GUARD_PARTIAL" "$LIFECYCLE_GUARD_PATH"
+        CHECKPOINT_GUARD_PARTIAL=''
+    fi
+    rmdir "$CHECKPOINT_WORK_DIR"
+    CHECKPOINT_WORK_DIR=''
+    verify_lifecycle_state
+    release_lifecycle_lock
+    trap - EXIT HUP INT TERM
+
+    printf 'Created and verified the %s AosVM checkpoint.\n' "$checkpoint_kind"
+    printf 'Lifecycle: %s\n' "$LIFECYCLE_STATUS"
+    printf 'Checkpoint: %s\n' "$checkpoint_target"
+    printf 'SHA-256: %s\n' "$checkpoint_sha256"
+    if [ "$checkpoint_kind" = pre-provision ]; then
+        printf 'Destructive overlay reset is now locked.\n'
+    else
+        printf 'This provisioned identity must never run concurrently with a restored copy.\n'
+    fi
+}
+
+lifecycle_status() {
+    require_command jq
+    require_command qemu-img
+    require_command shasum
+    require_command stat
+    verify_lifecycle_state
+
+    printf 'AosVM lifecycle: %s\n' "$LIFECYCLE_STATUS"
+    printf 'Active overlay: %s\n' "$OVERLAY_PATH"
+    printf 'Lifecycle state: %s\n' "$LIFECYCLE_STATE_PATH"
+    if [ "$LIFECYCLE_STATUS" = unprotected ]; then
+        printf 'No protected checkpoint exists; provisioning must not start.\n'
+        return
+    fi
+
+    lifecycle_json=$(cat "$LIFECYCLE_STATE_PATH")
+    pre_provision_backup=$(printf '%s\n' "$lifecycle_json" |
+        jq -er '.preProvisionBackup')
+    expected_pre_sha256=$(printf '%s\n' "$lifecycle_json" |
+        jq -er '.preProvisionBackupSha256')
+    verify_standalone_backup "$pre_provision_backup"
+    [ "$(file_sha256 "$pre_provision_backup")" = "$expected_pre_sha256" ] ||
+        fail "Pre-provision checkpoint SHA-256 does not match lifecycle state"
+    printf 'Pre-provision checkpoint: verified\n'
+
+    if [ "$LIFECYCLE_STATUS" = provisioned ]; then
+        post_provision_backup=$(printf '%s\n' "$lifecycle_json" |
+            jq -er '.postProvisionBackup')
+        expected_post_sha256=$(printf '%s\n' "$lifecycle_json" |
+            jq -er '.postProvisionBackupSha256')
+        verify_standalone_backup "$post_provision_backup"
+        [ "$(file_sha256 "$post_provision_backup")" = "$expected_post_sha256" ] ||
+            fail "Post-provision checkpoint SHA-256 does not match lifecycle state"
+        printf 'Post-provision checkpoint: verified\n'
+    fi
+    printf 'Destructive overlay reset: locked\n'
 }
 
 vm_status() {
@@ -1234,7 +1595,7 @@ EOF
 }
 
 usage() {
-    printf 'Usage: %s <host-check|download|prepare|start [--foreground|--dry-run]|console|status|smoke-test|stop|reset-overlay --confirm>\n' "$0"
+    printf 'Usage: %s <host-check|download|prepare|start [--foreground|--dry-run]|console|status|smoke-test|stop|checkpoint-pre-provision|seal-provisioned|lifecycle-status|reset-overlay --confirm>\n' "$0"
 }
 
 case ${1:-} in
@@ -1275,6 +1636,21 @@ case ${1:-} in
     stop)
         [ "$#" -eq 1 ] || fail "The stop command does not accept arguments"
         vm_stop
+        ;;
+    checkpoint-pre-provision)
+        [ "$#" -eq 1 ] ||
+            fail "The checkpoint-pre-provision command does not accept arguments"
+        create_lifecycle_checkpoint pre-provision
+        ;;
+    seal-provisioned)
+        [ "$#" -eq 1 ] ||
+            fail "The seal-provisioned command does not accept arguments"
+        create_lifecycle_checkpoint post-provision
+        ;;
+    lifecycle-status)
+        [ "$#" -eq 1 ] ||
+            fail "The lifecycle-status command does not accept arguments"
+        lifecycle_status
         ;;
     reset-overlay)
         [ "$#" -eq 2 ] || fail "Reset requires the explicit --confirm option"

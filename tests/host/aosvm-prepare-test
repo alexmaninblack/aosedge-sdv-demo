@@ -52,7 +52,7 @@ AOSVM_RUN_ROOT="$test_root/reset-run" \
 AOSVM_RUNS_ROOT="$test_root/reset-runs" \
     "$repository_root/scripts/aosvm" reset-overlay --confirm \
     >"$test_root/reset.log"
-grep -q 'Recreated only the disposable AosVM overlay' "$test_root/reset.log"
+grep -q 'Recreated the unprovisioned AosVM overlay' "$test_root/reset.log"
 qemu-img check "$overlay_path" >/dev/null
 qemu-img info --output=json "$overlay_path" | jq -e \
     --arg expected_backing "$expected_backing" \

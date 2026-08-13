@@ -1,0 +1,145 @@
+#!/bin/sh
+
+set -eu
+umask 077
+
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+repository_root=$(CDPATH='' cd -- "$script_dir/../.." && pwd)
+test_root=$(mktemp -d /private/tmp/aosvm-provisioned-lifecycle-test.XXXXXX)
+test_local_root="$test_root/local"
+test_backup_root="$test_root/backups"
+test_run_root="$test_root/run"
+test_runs_root="$test_root/runs"
+
+cleanup() {
+    rm -r "$test_root"
+}
+
+trap cleanup EXIT HUP INT TERM
+
+run_lifecycle() {
+    AOSVM_LOCAL_ROOT="$test_local_root" \
+    AOSVM_BACKUP_ROOT="$test_backup_root" \
+    AOSVM_RUN_ROOT="$test_run_root" \
+    AOSVM_RUNS_ROOT="$test_runs_root" \
+        "$repository_root/scripts/aosvm" "$@"
+}
+
+run_lifecycle prepare >"$test_root/prepare.log"
+run_lifecycle lifecycle-status >"$test_root/unprotected.log"
+grep -qx 'AosVM lifecycle: unprotected' "$test_root/unprotected.log"
+grep -qx 'No protected checkpoint exists; provisioning must not start.' \
+    "$test_root/unprotected.log"
+
+mkdir -p "$test_run_root"
+chmod 0700 "$test_run_root"
+: >"$test_run_root/aosvm-main.pid"
+chmod 0600 "$test_run_root/aosvm-main.pid"
+if run_lifecycle checkpoint-pre-provision \
+    >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected a checkpoint of a running or ambiguous VM to fail.\n' >&2
+    exit 1
+fi
+grep -q 'Checkpoint operation requires a cleanly stopped VM' \
+    "$test_root/stderr"
+rm "$test_run_root/aosvm-main.pid"
+
+run_lifecycle checkpoint-pre-provision >"$test_root/pre.log"
+grep -qx 'Lifecycle: provisioning-locked' "$test_root/pre.log"
+grep -qx 'Destructive overlay reset is now locked.' "$test_root/pre.log"
+
+pre_backup="$test_backup_root/aosvm-main-pre-provision.qcow2"
+state_path="$test_backup_root/aosvm-main-lifecycle.json"
+guard_path="$test_local_root/aosvm-main-provisioning-lock.json"
+[ -f "$pre_backup" ] && [ ! -L "$pre_backup" ]
+[ -f "$state_path" ] && [ ! -L "$state_path" ]
+[ -f "$guard_path" ] && [ ! -L "$guard_path" ]
+[ "$(stat -f '%Lp' "$test_backup_root")" = 700 ]
+[ "$(stat -f '%Lp' "$pre_backup")" = 600 ]
+[ "$(stat -f '%Lp' "$state_path")" = 600 ]
+[ "$(stat -f '%Lp' "$guard_path")" = 600 ]
+qemu-img info --output=json "$pre_backup" | jq -e \
+    '.format == "qcow2" and
+     .["virtual-size"] == 6997147648 and
+     (has("backing-filename") | not)' >/dev/null
+qemu-img check "$pre_backup" >/dev/null
+jq -e \
+    --arg expected_overlay "$test_local_root/aosvm-main-overlay.qcow2" \
+    --arg expected_backup "$pre_backup" \
+    'select(.schema == 1 and .vm == "aosvm-main" and
+            .lifecycle == "provisioning-locked" and
+            .activeOverlay == $expected_overlay and
+            .preProvisionBackup == $expected_backup and
+            (.preProvisionBackupSha256 | test("^[0-9a-f]{64}$")))' \
+    "$state_path" >/dev/null
+jq -e \
+    --arg expected_overlay "$test_local_root/aosvm-main-overlay.qcow2" \
+    'select(.schema == 1 and .vm == "aosvm-main" and
+            .resetLocked == true and
+            .activeOverlay == $expected_overlay and
+            (.lockId | test("^[0-9a-f]{64}$")))' \
+    "$guard_path" >/dev/null
+
+if run_lifecycle reset-overlay --confirm \
+    >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected reset of a provisioning-locked overlay to fail.\n' >&2
+    exit 1
+fi
+grep -q 'Overlay reset is disabled while lifecycle state is provisioning-locked' \
+    "$test_root/stderr"
+
+if run_lifecycle checkpoint-pre-provision \
+    >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected a second pre-provision checkpoint to fail.\n' >&2
+    exit 1
+fi
+grep -q 'Pre-provision checkpoint requires unprotected lifecycle state' \
+    "$test_root/stderr"
+
+run_lifecycle seal-provisioned >"$test_root/post.log"
+grep -qx 'Lifecycle: provisioned' "$test_root/post.log"
+grep -qx \
+    'This provisioned identity must never run concurrently with a restored copy.' \
+    "$test_root/post.log"
+
+post_backup="$test_backup_root/aosvm-main-post-provision.qcow2"
+[ -f "$post_backup" ] && [ ! -L "$post_backup" ]
+[ "$(stat -f '%Lp' "$post_backup")" = 600 ]
+qemu-img info --output=json "$post_backup" | jq -e \
+    '.format == "qcow2" and
+     .["virtual-size"] == 6997147648 and
+     (has("backing-filename") | not)' >/dev/null
+qemu-img check "$post_backup" >/dev/null
+jq -e \
+    --arg expected_backup "$post_backup" \
+    'select(.lifecycle == "provisioned" and
+            .postProvisionBackup == $expected_backup and
+            (.postProvisionBackupSha256 | test("^[0-9a-f]{64}$")))' \
+    "$state_path" >/dev/null
+
+run_lifecycle lifecycle-status >"$test_root/provisioned.log"
+grep -qx 'AosVM lifecycle: provisioned' "$test_root/provisioned.log"
+grep -qx 'Pre-provision checkpoint: verified' "$test_root/provisioned.log"
+grep -qx 'Post-provision checkpoint: verified' "$test_root/provisioned.log"
+grep -qx 'Destructive overlay reset: locked' "$test_root/provisioned.log"
+
+if run_lifecycle reset-overlay --confirm \
+    >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected reset of a provisioned overlay to fail.\n' >&2
+    exit 1
+fi
+grep -q 'Overlay reset is disabled while lifecycle state is provisioned' \
+    "$test_root/stderr"
+
+# Losing either half of the two-sided lifecycle record must fail safe. A
+# missing external state file must never make the local guard look unprotected.
+mv "$state_path" "$test_root/saved-lifecycle-state.json"
+if run_lifecycle reset-overlay --confirm \
+    >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected reset with incomplete protected metadata to fail.\n' >&2
+    exit 1
+fi
+grep -q 'Protected lifecycle metadata is incomplete' "$test_root/stderr"
+mv "$test_root/saved-lifecycle-state.json" "$state_path"
+
+printf 'AosVM provisioned lifecycle safety tests passed.\n'

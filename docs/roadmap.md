@@ -62,6 +62,10 @@ Detailed plan: [AOS-0 runbook](aos-0-arm64-vm.md).
 - Use a temporary loopback-only forwarding mode for the guest IAM provisioning
   port; remove that forward from normal post-provision launches.
 - Register a single-Node Target System containing only `aos-vm-main`.
+- Lock destructive overlay reset before provisioning, keep lifecycle metadata
+  outside Git, and create independent pre- and post-provision qcow2 checkpoints.
+- Treat the provisioned overlay as the permanent local disk of the cloud Unit;
+  never run a restored copy concurrently with the active VM.
 - Confirm that the Unit appears online in hosted AosCloud.
 - Deploy and observe the official Hello World service.
 

@@ -22,7 +22,7 @@ acceptance evidence.
 | AOS-1.3: user certificates | Not started | OEM and SP certificate checks pass |
 | AOS-1.4: single-Node cloud model | Not started | Target System matches the Main Node only |
 | AOS-1.5: provisioning transport | Not started | Guest IAM is reachable only on host loopback |
-| AOS-1.6: recovery checkpoint | Not started | Clean pre-provision state can be identified safely |
+| AOS-1.6: persistent lifecycle and recovery checkpoint | In progress | Reset lock and independent pre-provision checkpoint pass |
 | AOS-1.7: SDK provisioning | Not started | `aos-prov` completes for exactly one Node |
 | AOS-1.8: post-provision acceptance | Not started | Local core and cloud Unit gates pass |
 | AOS-1.9: Hello World | Not started | Official service reaches `Active` |
@@ -43,6 +43,10 @@ been created by this plan. The AOS-0 Main Node is stopped and unprovisioned.
 - Keep all user and Unit private material outside Git.
 - Do not reset a partially or fully provisioned overlay until cloud identity
   and local identity have been reconciled.
+- Treat the active overlay as the permanent disk of the cloud Unit from the
+  first provisioning attempt onward. It is not disposable after AOS-1.6.
+- Never run the active disk and a restored checkpoint at the same time. They
+  would carry the same Unit identity.
 
 ## Credential and evidence boundary
 
@@ -245,7 +249,7 @@ AOS-0 exposure and ownership gates continue to pass.
 **Stop:** provisioning requires a LAN/global listener, administrator-owned
 bridge or packet-filter change, or an unowned forwarding process.
 
-## Phase AOS-1.6: Create a recovery checkpoint
+## Phase AOS-1.6: Lock the persistent lifecycle and create a checkpoint
 
 Provisioning changes both the guest overlay and cloud state. A disk copy alone
 is therefore not a complete rollback.
@@ -255,24 +259,41 @@ Immediately before provisioning:
 1. stop the VM and pass the complete stopped-state gate;
 2. verify immutable input hashes and qcow2 integrity;
 3. confirm the overlay has the accepted ARM64 and DNS compatibility state;
-4. create an ignored, mode-0600 pre-provision overlay checkpoint while QEMU is
-   stopped;
-5. record its hash and backing chain in ignored local evidence;
-6. start provisioning mode and rerun the smoke and exposure gates;
-7. confirm provisioning IAM is active and the runtime IAM/SM/CM units remain
+4. run `scripts/aosvm checkpoint-pre-provision` while QEMU is stopped;
+5. confirm that it creates a mode-0600, standalone pre-provision qcow2
+   checkpoint with no backing file, records its SHA-256 in mode-0600 lifecycle
+   metadata, writes a matching mode-0600 guard beside the active overlay, and
+   changes the local lifecycle to `provisioning-locked`;
+6. run `scripts/aosvm lifecycle-status` and verify the complete checkpoint;
+7. prove that `reset-overlay --confirm` is rejected after the lock;
+8. start provisioning mode and rerun the smoke and exposure gates;
+9. confirm provisioning IAM is active and the runtime IAM/SM/CM units remain
    correctly condition-gated;
-8. confirm time, DNS, and verified HTTPS are healthy.
+10. confirm time, DNS, and verified HTTPS are healthy.
+
+By default the checkpoint and lifecycle metadata live outside the checkout at
+`~/Library/Application Support/CarlaAosEdge/AosVM/backups`. An explicit
+absolute `AOSVM_BACKUP_ROOT` may select a different private directory. The
+directory and metadata are mode `0700` and `0600`; neither is tracked by Git.
+The second, non-secret reset guard lives beside the ignored active overlay.
+The launcher requires both copies to match and fails safe if either side is
+missing or inconsistent.
+The standalone checkpoint remains usable if the repository is moved or
+deleted. Its storage must be covered by FileVault or equivalent host
+encryption because it contains a complete copy of the guest disk.
 
 The checkpoint is evidence and a local recovery aid. It must not be restored
 after cloud registration unless the Unit has first been removed or
 deprovisioned through an agreed cloud/local reconciliation procedure. Restoring
 it blindly could clone or reuse a cloud identity.
 
-**Pass:** one exact pre-provision state is identifiable, healthy, ignored, and
-recoverable without touching the immutable base.
+**Pass:** one exact pre-provision state is identifiable, healthy, independent
+of the checkout, and recoverable without touching the immutable base; the
+active overlay cannot be reset through the normal lifecycle command.
 
 **Stop:** the VM is running during the copy, the overlay is inconsistent, the
-checkpoint is tracked by Git, or rollback ownership is unclear.
+checkpoint is inside Git or on unencrypted storage, the reset lock does not
+hold, or rollback ownership is unclear.
 
 ## Phase AOS-1.7: Provision exactly one Node
 
@@ -342,7 +363,23 @@ Verify in AosCloud:
 Finally, cleanly stop the provisioning-mode VM and start it in normal mode.
 Prove that ports `18089` and guest IAM `8089` are no longer exposed through the
 host while SSH and DNS retain their accepted loopback scope. Repeat a clean
-restart and the local/cloud health checks.
+restart and the local/cloud health checks. Across both starts, verify that the
+System ID, Node ID, Unit certificate public fingerprints, and cloud Unit are
+unchanged; never export or record private key material.
+
+After those identity-continuity and cloud-online gates pass, stop the VM and
+run `scripts/aosvm seal-provisioned`. This creates a standalone, mode-0600
+post-provision checkpoint, records its SHA-256, and moves the lifecycle from
+`provisioning-locked` to `provisioned`. Run `scripts/aosvm lifecycle-status`
+to verify both checkpoints. Keep only the active VM runnable. A checkpoint is
+for disaster recovery and must never be booted while the original Unit exists.
+
+The overlay, checkpoints, and lifecycle metadata are not Git artifacts. A new
+clone reproduces the launcher but not the Unit. Backup retention, restore,
+repository relocation, deprovisioning, and factory reset are controlled
+operations that must reconcile the local identity with AosCloud before any
+disk replacement. The current lifecycle intentionally provides no command to
+remove this protection.
 
 **Pass:** one Main Node remains online and healthy after a normal restart, all
 local core services are explained, and the provisioning listener is absent.
@@ -384,10 +421,14 @@ destabilizes AosCore.
 - [ ] Normal QEMU mode does not expose provisioning IAM.
 - [ ] Provisioning mode binds IAM only to `127.0.0.1`.
 - [ ] A consistent ignored pre-provision checkpoint exists.
+- [ ] Lifecycle is `provisioning-locked` and overlay reset is rejected before provisioning.
 - [ ] `aos-prov provision --nodes 1` completes for exactly one Main Node.
 - [ ] IAM, SM, CM, storage, NFS, SELinux, time, DNS, and HTTPS gates pass.
 - [ ] AosCloud reports one online Main Node and no missing Secondary.
 - [ ] Normal restart removes the provisioning listener and preserves health.
+- [ ] System ID, Node ID, certificate public fingerprints, and cloud Unit remain identical across two clean restarts.
+- [ ] A verified standalone post-provision checkpoint exists and lifecycle is `provisioned`.
+- [ ] The active Unit and a restored checkpoint are never run concurrently.
 - [ ] The official Hello World service reaches `Active` and restarts cleanly.
 - [ ] Sanitized evidence is committed and the working tree is clean.
 

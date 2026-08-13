@@ -105,13 +105,37 @@ Request a clean guest shutdown through QMP. Repeating `start`, `status`, or
 ./scripts/aosvm stop
 ```
 
-`reset-overlay` recreates only the disposable Main Node overlay and requires
-explicit confirmation. Phase 13 qualifies this destructive operation and
-proves that the immutable inputs remain unchanged:
+`reset-overlay` recreates only an unprovisioned Main Node overlay and requires
+explicit confirmation. It is permanently blocked after the pre-provision
+lifecycle checkpoint is created:
 
 ```sh
 ./scripts/aosvm reset-overlay --confirm
 ```
+
+Immediately before provisioning, stop the VM and create a standalone recovery
+checkpoint. This also locks destructive reset:
+
+```sh
+./scripts/aosvm checkpoint-pre-provision
+./scripts/aosvm lifecycle-status
+```
+
+After successful provisioning, two clean restart/identity checks, and cloud
+acceptance, stop the VM and seal its persistent identity with a second
+standalone checkpoint:
+
+```sh
+./scripts/aosvm seal-provisioned
+./scripts/aosvm lifecycle-status
+```
+
+These checkpoints and their lifecycle metadata live outside the checkout at
+`~/Library/Application Support/CarlaAosEdge/AosVM/backups` by default and must
+remain private. A matching reset guard beside the active overlay makes missing
+or inconsistent lifecycle metadata fail safe. Never start a restored
+checkpoint while the active Unit still exists; both disks contain the same
+cloud identity.
 
 Optional non-secret environment overrides are documented in
 `config/aosvm.env.example`.

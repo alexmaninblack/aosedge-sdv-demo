@@ -57,6 +57,7 @@ explicit paths.
 ## Untracked content
 
 - downloaded AosVM archives, disks, firmware, and mutable overlays;
+- local VM lifecycle metadata and pre-/post-provision recovery checkpoints;
 - SDK virtual environments and caches;
 - provisioning state;
 - OEM, Service Provider, Fleet Owner, Unit, or TLS private keys;
