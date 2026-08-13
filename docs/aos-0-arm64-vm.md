@@ -22,7 +22,8 @@ be performed in AOS-1 with the utilities supplied by the AosEdge SDK.
 | Phase 6: first serial boot | Complete — 2026-08-13 | Pass |
 | Phase 7: guest identity and storage | Complete — 2026-08-13 | Pass |
 | Phase 8: guest kernel capability gate | Complete — 2026-08-13 | Pass |
-| Phases 9–14 | Not started | — |
+| Phase 9: local OCI runtime gate | Complete — 2026-08-13 | Pass |
+| Phases 10–14 | Not started | — |
 
 ### Phase 1 observed baseline
 
@@ -357,6 +358,33 @@ matched the pinned release.
 The full serial output remains local and ignored. The reusable test and this
 sanitized result contain no credential, certificate, device identifier, or
 cloud account data.
+
+### Phase 9 observed baseline
+
+The tracked `tests/guest/aosvm-phase9-test` and
+`tests/guest/aosvm-phase9-config.json` ran as root inside the same initialized,
+unprovisioned Main Node. The gate used the image's own `crun` runtime directly;
+it did not invoke AosCore, contact AosCloud, or initialize `/dev/sda6`.
+
+| Check | Result | Functional evidence |
+| --- | --- | --- |
+| Runtime identity | Pass | `crun 1.14.3.0.0.0.8-89d44-dirty`, commit `89d44467e3b410b73f2065756a12789be45b855b`, OCI spec 1.0.0 |
+| Runtime features | Pass | `crun features` reports OCI 1.0.0–1.1.0+dev, cgroups v2, systemd cgroups, and seccomp enabled |
+| ARM64 process | Pass | The container ran the guest BusyBox as AArch64 PID 1 and emitted the fixed `AOSVM_PHASE9_OCI_OK` marker once before exiting 0 |
+| Namespace isolation | Pass | Mount, PID, IPC, UTS, network, and cgroup namespace inode values differed from the parent |
+| Filesystem boundary | Pass | The OCI rootfs rejected a write while a 1 MiB `/tmp` tmpfs accepted and returned probe data |
+| Network boundary | Pass | A fresh network namespace had no externally usable interface; only loopback and the kernel-created down `sit0` device were present |
+| Resource boundary | Pass | The live container cgroup enforced `memory.max=33554432`, `pids.max=16`, and `cpu.max=50000 100000` |
+| Privilege boundary | Pass | The OCI process had `noNewPrivileges` and empty bounding, effective, inheritable, permitted, and ambient capability sets |
+| Cleanup | Pass | The container, cgroup, probe mounts, lock, bundle, and ephemeral rootfs were absent after exit |
+
+The minimal rootfs was constructed from the guest's own AArch64 BusyBox,
+runtime linker, and libraries under volatile `/var/tmp/aos0-oci-probe`. The
+tracked OCI configuration made the rootfs read-only, mounted separate `/proc`,
+`/sys`, `/dev`, and `/tmp` filesystems, and declared all resource and namespace
+constraints. This is a complete local OCI acceptance result, not a substitute
+for the cloud-driven Service Manager lifecycle that begins after provisioning
+in AOS-1.
 
 ## Pinned upstream input
 

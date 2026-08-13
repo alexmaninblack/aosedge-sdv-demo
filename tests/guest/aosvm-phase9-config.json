@@ -1,0 +1,120 @@
+{
+  "ociVersion": "1.0.2",
+  "process": {
+    "terminal": false,
+    "user": {
+      "uid": 0,
+      "gid": 0
+    },
+    "args": [
+      "/bin/busybox",
+      "sh",
+      "-c",
+      "echo AOSVM_PHASE9_READY; echo PID=$$; echo ARCH=$(/bin/busybox uname -m); echo HOST=$(/bin/busybox hostname); for namespace in mnt pid ipc uts net cgroup; do echo NS-$namespace=$(/bin/busybox readlink /proc/self/ns/$namespace); done; if /bin/busybox touch /rootfs-write-test 2>/dev/null; then echo ROOTFS=writable; exit 31; else echo ROOTFS=read-only; fi; echo phase9-tmpfs > /tmp/probe; test \"$(/bin/busybox cat /tmp/probe)\" = phase9-tmpfs || exit 32; echo TMPFS=writable; for interface in $(/bin/busybox ls /sys/class/net); do case \"$interface\" in lo) ;; sit0) test \"$(/bin/busybox cat /sys/class/net/sit0/operstate)\" = down || exit 33 ;; *) echo NETWORK=unexpected:$interface; exit 34 ;; esac; done; echo NETWORK=isolated; /bin/busybox sleep 8; echo AOSVM_PHASE9_OCI_OK"
+    ],
+    "env": [
+      "PATH=/bin"
+    ],
+    "cwd": "/",
+    "capabilities": {
+      "bounding": [],
+      "effective": [],
+      "inheritable": [],
+      "permitted": [],
+      "ambient": []
+    },
+    "rlimits": [
+      {
+        "type": "RLIMIT_NOFILE",
+        "hard": 64,
+        "soft": 64
+      }
+    ],
+    "noNewPrivileges": true
+  },
+  "root": {
+    "path": "rootfs",
+    "readonly": true
+  },
+  "hostname": "aos0-phase9",
+  "mounts": [
+    {
+      "destination": "/proc",
+      "type": "proc",
+      "source": "proc",
+      "options": [
+        "nosuid",
+        "noexec",
+        "nodev"
+      ]
+    },
+    {
+      "destination": "/sys",
+      "type": "sysfs",
+      "source": "sysfs",
+      "options": [
+        "ro",
+        "nosuid",
+        "noexec",
+        "nodev"
+      ]
+    },
+    {
+      "destination": "/dev",
+      "type": "tmpfs",
+      "source": "tmpfs",
+      "options": [
+        "nosuid",
+        "strictatime",
+        "mode=755",
+        "size=65536k"
+      ]
+    },
+    {
+      "destination": "/tmp",
+      "type": "tmpfs",
+      "source": "tmpfs",
+      "options": [
+        "nosuid",
+        "nodev",
+        "mode=1777",
+        "size=1024k"
+      ]
+    }
+  ],
+  "linux": {
+    "cgroupsPath": "AOS0_CGROUP_PATH",
+    "resources": {
+      "memory": {
+        "limit": 33554432
+      },
+      "cpu": {
+        "quota": 50000,
+        "period": 100000
+      },
+      "pids": {
+        "limit": 16
+      }
+    },
+    "namespaces": [
+      {
+        "type": "mount"
+      },
+      {
+        "type": "pid"
+      },
+      {
+        "type": "ipc"
+      },
+      {
+        "type": "uts"
+      },
+      {
+        "type": "network"
+      },
+      {
+        "type": "cgroup"
+      }
+    ]
+  }
+}

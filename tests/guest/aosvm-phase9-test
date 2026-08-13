@@ -1,0 +1,179 @@
+#!/bin/sh
+
+set -u
+umask 077
+
+work_dir=/var/tmp/aos0-oci-probe
+lock_dir=/run/aos0-oci-phase9-lock
+bundle_dir="$work_dir/bundle"
+rootfs_dir="$bundle_dir/rootfs"
+result_file="$work_dir/container-output"
+features_file="$work_dir/crun-features.json"
+container_id="aos0-phase9-$$"
+cgroup_name="$container_id"
+cgroup_path=
+runtime_pid=
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+config_template="$script_dir/aosvm-phase9-config.json"
+
+fail() {
+    printf 'FAIL: %s\n' "$1" >&2
+    exit 1
+}
+
+cleanup_runtime() {
+    if [ -n "$runtime_pid" ] && kill -0 "$runtime_pid" 2>/dev/null; then
+        kill "$runtime_pid" >/dev/null 2>&1 || true
+        wait "$runtime_pid" >/dev/null 2>&1 || true
+    fi
+    runtime_pid=
+    crun delete --force "$container_id" >/dev/null 2>&1 || true
+}
+
+cleanup_all() {
+    cleanup_runtime
+    rm -rf "$work_dir"
+    rmdir "$lock_dir" >/dev/null 2>&1 || true
+}
+
+trap cleanup_all EXIT HUP INT TERM
+
+[ "$(id -u)" -eq 0 ] || fail 'Phase 9 must run as root.'
+[ -f "$config_template" ] || fail "Missing tracked OCI configuration: $config_template"
+[ ! -e "$lock_dir" ] || fail 'Another Phase 9 OCI gate may be running.'
+[ ! -e "$work_dir" ] || fail "Refusing to reuse existing state: $work_dir"
+
+for tool in crun jq cp sed grep readlink findmnt; do
+    command -v "$tool" >/dev/null 2>&1 || fail "Required command is unavailable: $tool"
+done
+
+mkdir "$lock_dir" || fail 'Cannot acquire the Phase 9 lock.'
+mkdir -p "$rootfs_dir/bin" "$rootfs_dir/dev" "$rootfs_dir/lib" \
+    "$rootfs_dir/proc" "$rootfs_dir/sys" "$rootfs_dir/tmp" \
+    "$rootfs_dir/usr/lib" || fail 'Cannot construct the ephemeral rootfs.'
+
+printf 'AosVM Phase 9 local OCI runtime gate\n'
+printf 'Runtime:\n'
+crun --version | sed 's/^/  /'
+crun features >"$features_file" \
+    || fail 'Cannot record crun feature output.'
+jq -e \
+    '.linux.cgroup.v2 == true and .linux.seccomp.enabled == true' \
+    "$features_file" >/dev/null \
+    || fail 'crun does not report cgroups v2 and seccomp support.'
+printf 'Features:\n'
+jq -M '{ociVersionMin, ociVersionMax, linux: {cgroup: .linux.cgroup, seccomp: {enabled: .linux.seccomp.enabled}}}' \
+    "$features_file" | sed 's/^/  /'
+
+cp -L /bin/busybox "$rootfs_dir/bin/busybox" \
+    || fail 'Cannot copy BusyBox into the rootfs.'
+for library in libc.so.6 libm.so.6 ld-linux-aarch64.so.1; do
+    cp -L "/lib/$library" "$rootfs_dir/lib/$library" \
+        || fail "Cannot copy /lib/$library."
+    cp -L "/usr/lib/$library" "$rootfs_dir/usr/lib/$library" \
+        || fail "Cannot copy /usr/lib/$library."
+done
+cp -L /usr/lib/ld-linux-aarch64.so.1 \
+    "$rootfs_dir/usr/lib/ld-linux-aarch64.so.1" \
+    || fail 'Cannot copy the AArch64 runtime linker.'
+
+cp "$config_template" "$bundle_dir/config.json" \
+    || fail 'Cannot copy the tracked OCI configuration.'
+sed -i "s/AOS0_CGROUP_PATH/$cgroup_name/g" "$bundle_dir/config.json" \
+    || fail 'Cannot specialize the OCI cgroup path.'
+jq -e . "$bundle_dir/config.json" >/dev/null \
+    || fail 'The specialized OCI configuration is invalid JSON.'
+
+parent_mnt=$(readlink /proc/self/ns/mnt)
+parent_pid=$(readlink /proc/self/ns/pid)
+parent_ipc=$(readlink /proc/self/ns/ipc)
+parent_uts=$(readlink /proc/self/ns/uts)
+parent_net=$(readlink /proc/self/ns/net)
+parent_cgroup=$(readlink /proc/self/ns/cgroup)
+
+(
+    cd "$bundle_dir" || exit 1
+    exec crun run --bundle . "$container_id"
+) >"$result_file" 2>&1 &
+runtime_pid=$!
+
+ready=0
+attempt=0
+while [ "$attempt" -lt 10 ]; do
+    if grep -qx AOSVM_PHASE9_READY "$result_file" 2>/dev/null; then
+        ready=1
+        break
+    fi
+    kill -0 "$runtime_pid" 2>/dev/null \
+        || fail 'The OCI process exited before its readiness marker.'
+    attempt=$((attempt + 1))
+    sleep 1
+done
+[ "$ready" -eq 1 ] || fail 'The OCI process did not become ready.'
+
+cgroup_path=$(find /sys/fs/cgroup -type d -name "$cgroup_name" \
+    -print -quit)
+[ -n "$cgroup_path" ] && [ -d "$cgroup_path" ] \
+    || fail "The OCI cgroup is absent: $cgroup_name"
+container_pid=$(sed -n '1p' "$cgroup_path/cgroup.procs")
+[ -n "$container_pid" ] && [ -d "/proc/$container_pid" ] \
+    || fail 'The OCI cgroup does not contain a live process.'
+[ "$(cat "$cgroup_path/memory.max")" = 33554432 ] \
+    || fail 'The OCI memory limit was not enforced.'
+[ "$(cat "$cgroup_path/pids.max")" = 16 ] \
+    || fail 'The OCI PID limit was not enforced.'
+[ "$(cat "$cgroup_path/cpu.max")" = '50000 100000' ] \
+    || fail 'The OCI CPU limit was not enforced.'
+
+for namespace in mnt pid ipc uts net cgroup; do
+    child_value=$(readlink "/proc/$container_pid/ns/$namespace") \
+        || fail "Cannot inspect the child $namespace namespace."
+    case "$namespace" in
+        mnt) parent_value=$parent_mnt ;;
+        pid) parent_value=$parent_pid ;;
+        ipc) parent_value=$parent_ipc ;;
+        uts) parent_value=$parent_uts ;;
+        net) parent_value=$parent_net ;;
+        cgroup) parent_value=$parent_cgroup ;;
+    esac
+    [ "$child_value" != "$parent_value" ] \
+        || fail "The $namespace namespace was not isolated."
+done
+
+if wait "$runtime_pid"; then
+    runtime_status=0
+else
+    runtime_status=$?
+fi
+runtime_pid=
+cat "$result_file"
+[ "$runtime_status" -eq 0 ] \
+    || fail "crun exited with status $runtime_status."
+
+grep -qx 'PID=1' "$result_file" || fail 'The OCI process did not run as PID 1.'
+grep -qx 'ARCH=aarch64' "$result_file" || fail 'The OCI process is not AArch64.'
+grep -qx 'HOST=aos0-phase9' "$result_file" || fail 'The UTS namespace hostname is wrong.'
+grep -qx 'ROOTFS=read-only' "$result_file" || fail 'The OCI rootfs was not read-only.'
+grep -qx 'TMPFS=writable' "$result_file" || fail 'The OCI tmpfs was not writable.'
+grep -qx 'NETWORK=isolated' "$result_file" || fail 'The OCI network was not isolated.'
+[ "$(grep -cx AOSVM_PHASE9_OCI_OK "$result_file")" -eq 1 ] \
+    || fail 'The fixed OCI success marker is missing or duplicated.'
+
+cleanup_runtime
+crun state "$container_id" >/dev/null 2>&1 \
+    && fail 'crun still reports the stopped container.'
+[ ! -e "$cgroup_path" ] || fail 'The OCI cgroup remains after cleanup.'
+findmnt -rn | grep -Fq "$work_dir" \
+    && fail 'An OCI probe mount remains after cleanup.'
+
+rm -rf "$work_dir"
+[ ! -e "$work_dir" ] || fail 'The ephemeral rootfs remains after cleanup.'
+rmdir "$lock_dir" || fail 'The Phase 9 lock remains after cleanup.'
+trap - EXIT HUP INT TERM
+
+printf 'Resource boundary:\n'
+printf '  memory.max: 33554432\n'
+printf '  pids.max: 16\n'
+printf '  cpu.max: 50000 100000\n'
+printf 'Cleanup: container, cgroup, mounts, and ephemeral rootfs are absent.\n'
+printf 'PASS: AosVM Phase 9 local OCI runtime gate\n'

@@ -18,13 +18,15 @@ the legacy AOS Vehicle Information Service interface.
 
 ## Current status
 
-Planning and Phases 1–8 are complete for AOS-0. The official AosVM 6.1.0 ARM64
+Planning and Phases 1–9 are complete for AOS-0. The official AosVM 6.1.0 ARM64
 Main Node boots natively accelerated by HVF on the Apple M5 Pro. Its guest
 identity, own kernel, unified cgroups v2, memory, partition layout, read-only
 root, writable data mounts, SELinux state, and pre-provisioning services are
 validated by automated guest gates. Phase 8 passes all 13 capability probes,
-including the initramfs-scoped SquashFS and loop update path. Phase 9 is the
-next gate: a complete local OCI run through `crun` without AosCloud.
+including the initramfs-scoped SquashFS and loop update path. Phase 9 passes a
+complete local ARM64 OCI run through `crun`, including namespace isolation,
+resource limits, read-only rootfs, isolated networking, and clean teardown.
+Phase 10 is next: classify AosCore's expected pre-provisioning state.
 
 ## Commands
 
@@ -64,6 +66,12 @@ The self-cleaning Phase 8 capability gate is tracked at
 `tests/guest/aosvm-phase8-test`. It is also intended to run as root inside the
 unprovisioned Main Node. It exercises temporary kernel objects and therefore
 must only be run on an otherwise idle development VM.
+
+The Phase 9 local OCI gate and its tracked runtime configuration are
+`tests/guest/aosvm-phase9-test` and
+`tests/guest/aosvm-phase9-config.json`. Run them from the same directory as
+root inside an idle, unprovisioned Main Node. The gate constructs its rootfs in
+volatile `/var/tmp`, does not contact AosCloud, and removes all probe state.
 
 ## Repository policy
 

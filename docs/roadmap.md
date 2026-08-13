@@ -22,10 +22,14 @@ reachable only through explicitly configured local forwards, reaches the
 Internet, passes the kernel and local OCI gates, and survives a clean stop/start
 without modifying the downloaded base image.
 
-Current gate: Phase 8 passes all 13 required capabilities. SquashFS and loop
+Current gate: Phase 9 passes the complete cloud-free `crun` qualification.
+The probe ran an isolated ARM64 PID 1 with enforced CPU, memory, and PID
+limits, a read-only rootfs, writable tmpfs, isolated networking, and clean
+teardown. Phase 10 is next: classify the installed AosCore services before
+provisioning. Phase 8 also passes all 13 required capabilities. SquashFS and loop
 are intentionally packaged in the boot initramfs, where the rootfs update path
 uses them before `switch_root`; they are not required in the steady-state
-rootfs. Phase 9 is the next local gate and does not require provisioning.
+rootfs.
 
 Detailed plan: [AOS-0 runbook](aos-0-arm64-vm.md).
 
