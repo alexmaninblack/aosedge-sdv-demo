@@ -21,8 +21,8 @@ be performed in AOS-1 with the utilities supplied by the AosEdge SDK.
 | Phase 5: QEMU command assembly | Complete — 2026-08-13 | Pass |
 | Phase 6: first serial boot | Complete — 2026-08-13 | Pass |
 | Phase 7: guest identity and storage | Complete — 2026-08-13 | Pass |
-| Phase 8: guest kernel capability gate | Complete — 2026-08-13 | **Fail: upstream SquashFS module omitted** |
-| Phases 9–14 | Blocked by Phase 8 | — |
+| Phase 8: guest kernel capability gate | Complete — 2026-08-13 | Pass |
+| Phases 9–14 | Not started | — |
 
 ### Phase 1 observed baseline
 
@@ -323,7 +323,7 @@ not access the cloud or initialize `/dev/sda6`.
 | Mount, PID, IPC, UTS, and network namespaces | Pass | `crun` started PID 1 with a probe hostname and five namespace inode values distinct from the parent |
 | Seccomp | Pass | Kernel actions include kill, trap, errno, notification, trace, log, and allow; `crun` applied `SCMP_ACT_ERRNO` to `getcwd` |
 | Overlayfs | Pass | A temporary overlay mount read its lower layer and stored a write in its upper layer |
-| SquashFS | **Fail** | `CONFIG_SQUASHFS=m`, but `squashfs.ko` is absent and `modprobe squashfs` fails |
+| SquashFS and loop | Pass | The boot initramfs contains matching `squashfs.ko` and `loop.ko`; its update script mounts `*.squashfs` through loop before `switch_root` |
 | veth and bridge | Pass | A veth peer was moved into a new network namespace and its host peer attached to a temporary bridge |
 | VLAN and VXLAN | Pass | VLAN ID 100 and VXLAN ID 4242 links were created, inspected, and deleted |
 | IFB | Pass | A temporary IFB link was created, inspected, and deleted |
@@ -333,29 +333,20 @@ not access the cloud or initialize `/dev/sda6`.
 | SELinux | Pass | Kernel support is built in; policy `aos` is loaded and enforcing |
 | Probe cleanup | Pass | No probe mounts, namespaces, links, nftables tables, or cgroups remained |
 
-The final run completed with **12 passes and one failure**, so the mandatory
-kernel gate fails and Phase 9 must not begin. The other probes demonstrate
-that this is not an HVF, QEMU, architecture, `crun`, or general kernel-runtime
-failure.
+The corrected final run completed with **13 passes and no failures**. The
+original SquashFS check incorrectly attempted `modprobe squashfs` after
+`switch_root`, where the module is intentionally absent. The released boot
+partition contains a separate initramfs with `squashfs.ko`, `loop.ko`, and
+`overlay.ko`, all built for `6.6.123-yocto-standard`. Its `95-aosupdate` script
+mounts the rootfs update image using `mount -t squashfs -o loop` before
+`99-finish` switches to the steady-state ext4 rootfs.
 
-The defect is in the pinned upstream image recipe and release packaging. Tag
-`AosEdge/meta-aos-vm` `v6.1.0` (source commit
-`b13320898a2ed1cce504f90f70451638232d6a83`) explicitly sets
-`CONFIG_SQUASHFS=m`, and the same source declares update components with the
-SquashFS media type. Its
-`aos-image-vm.bb` package list does not install the SquashFS kernel-module
-package. The released root filesystem consequently contains only a small
-selected module set and omits both `squashfs.ko` and `loop.ko`, although both
-are configured as modules. The current Phase 8 failure is based on the direct
-SquashFS module probe; loopback support should be included in the same upstream
-packaging fix because ordinary file-backed SquashFS mounts require it.
-
-The preferred resolution is a focused `meta-aos-vm` change that installs the
-required kernel module packages, followed by a reproducible `qemuarm64` build
-and this gate on the resulting image. Compiling an untracked module in the VM,
-patching the downloaded base disk, or proceeding to SDK provisioning would
-violate the immutable-input and stop-gate decisions. A future official release
-containing the modules can replace the temporary project-qualified build.
+This split is deliberate. The pinned `meta-aos` recipes recommend SquashFS,
+loop, and overlay for the initramfs update module, while the Service Manager
+runtime recommends overlay and the networking modules but not SquashFS or
+loop. Omitting the two update-only modules from the steady-state rootfs reduces
+its footprint without removing the capability from the execution environment
+that uses it. No AosVM rebuild or rootfs patch is required.
 
 The guest was then powered off through systemd. It unmounted all filesystems,
 synchronized the SCSI disk, and powered down; no QEMU process, listener, PID
@@ -828,7 +819,7 @@ trap.
 | Namespaces | A child process successfully enters new mount, PID, IPC, UTS, and network namespaces |
 | Seccomp | Kernel seccomp actions are present and `crun` reports seccomp support |
 | Overlayfs | Create lower/upper/work/merged directories, mount, write, read, and unmount |
-| Squashfs | Load/detect filesystem support; mount a generated fixture if tooling exists |
+| Squashfs and loop | Verify matching modules and the SquashFS-through-loop update path in the boot initramfs; do not require update-only modules after `switch_root` |
 | veth and bridge | Create a network namespace, veth pair, and bridge; move/link interfaces; clean up |
 | VLAN and VXLAN | Create and delete temporary VLAN and VXLAN links |
 | IFB | Create and delete an IFB device |

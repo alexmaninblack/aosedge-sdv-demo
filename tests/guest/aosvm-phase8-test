@@ -36,6 +36,8 @@ nft_table="${probe_prefix}-nat"
 quota_device=/dev/ram15
 quota_mount="$work_dir/quota"
 overlay_mount="$work_dir/overlay/merged"
+boot_mount="$work_dir/boot"
+initramfs_extract="$work_dir/initramfs"
 oci_dir="$work_dir/oci"
 oci_result="$work_dir/oci-result"
 oci_diagnostics="$work_dir/oci-diagnostics"
@@ -87,6 +89,12 @@ cleanup_overlay() {
     fi
 }
 
+cleanup_initramfs() {
+    if mountpoint -q "$boot_mount" 2>/dev/null; then
+        umount "$boot_mount" >/dev/null 2>&1 || true
+    fi
+}
+
 cleanup_network() {
     ip netns delete "$netns_name" >/dev/null 2>&1 || true
     for link in \
@@ -127,6 +135,7 @@ cleanup_all() {
     cleanup_cgroup
     cleanup_oci
     cleanup_overlay
+    cleanup_initramfs
     cleanup_network
     cleanup_nftables
     cleanup_quota
@@ -301,32 +310,64 @@ probe_overlayfs() {
     ! mountpoint -q "$overlay_mount"
 }
 
-probe_squashfs() {
-    if ! grep -qw squashfs /proc/filesystems; then
-        modprobe squashfs || {
-            printf 'CONFIG_SQUASHFS is set to module, but squashfs.ko is absent.\n'
-            zcat /proc/config.gz | grep '^CONFIG_SQUASHFS='
-            return 1
-        }
-        record_loaded_module squashfs
-    fi
-    grep -qw squashfs /proc/filesystems || return 1
-    printf 'The kernel reports SquashFS filesystem support.\n'
+probe_initramfs_update_filesystems() {
+    kernel_release=$(uname -r)
+    initramfs_name=aos-image-initramfs-qemuarm64.cpio.gz
+    initramfs_path="$boot_mount/$initramfs_name"
+    module_root="usr/lib/modules/$kernel_release/kernel"
+    loop_module="$initramfs_extract/$module_root/drivers/block/loop.ko"
+    squashfs_module="$initramfs_extract/$module_root/fs/squashfs/squashfs.ko"
+    update_script="$initramfs_extract/init.d/95-aosupdate"
+    finish_script="$initramfs_extract/init.d/99-finish"
 
-    if command -v mksquashfs >/dev/null 2>&1; then
-        squash_dir="$work_dir/squashfs"
-        mkdir -p "$squash_dir/source" "$squash_dir/mounted"
-        printf 'squash-data\n' >"$squash_dir/source/data.txt"
-        mksquashfs "$squash_dir/source" "$squash_dir/fixture.squashfs" \
-            -noappend -quiet || return 1
-        mount -t squashfs -o loop,ro "$squash_dir/fixture.squashfs" \
-            "$squash_dir/mounted" || return 1
-        [ "$(cat "$squash_dir/mounted/data.txt")" = squash-data ] || return 1
-        umount "$squash_dir/mounted" || return 1
-        printf 'A generated SquashFS fixture was mounted and read.\n'
-    else
-        printf 'mksquashfs is unavailable; positive kernel detection is the available proof.\n'
+    [ -b /dev/sda1 ] || return 1
+    [ -z "$(findmnt -rn -S /dev/sda1)" ] || return 1
+    zcat /proc/config.gz | grep -qx 'CONFIG_BLK_DEV_LOOP=m' || return 1
+    zcat /proc/config.gz | grep -qx 'CONFIG_SQUASHFS=m' || return 1
+    command -v cpio >/dev/null 2>&1 || return 1
+    command -v gzip >/dev/null 2>&1 || return 1
+    command -v strings >/dev/null 2>&1 || return 1
+
+    mkdir -p "$boot_mount" "$initramfs_extract"
+    mount -t vfat -o ro /dev/sda1 "$boot_mount" || return 1
+    [ -f "$initramfs_path" ] || return 1
+
+    (
+        cd "$initramfs_extract" || exit 1
+        gzip -dc "$initramfs_path" | cpio -idmu \
+            "$module_root/drivers/block/loop.ko" \
+            "$module_root/fs/squashfs/squashfs.ko" \
+            init.d/95-aosupdate init.d/99-finish
+    ) || return 1
+
+    [ -f "$loop_module" ] || return 1
+    [ -f "$squashfs_module" ] || return 1
+    [ -f "$update_script" ] || return 1
+    [ -f "$finish_script" ] || return 1
+    loop_vermagic=$(strings "$loop_module" | sed -n 's/^vermagic=//p' | head -n 1)
+    squashfs_vermagic=$(strings "$squashfs_module" | sed -n 's/^vermagic=//p' | head -n 1)
+    printf '%s\n' "$loop_vermagic" | grep -q "^$kernel_release " || return 1
+    printf '%s\n' "$squashfs_vermagic" | grep -q "^$kernel_release " || return 1
+    # Match the literal variables in the initramfs script.
+    # shellcheck disable=SC2016
+    grep -Fq 'mount -t squashfs -o loop "$UPDATE_IMAGE" "$IMAGE_MOUNT"' \
+        "$update_script" || return 1
+    # Match the literal variable in the initramfs script.
+    # shellcheck disable=SC2016
+    grep -Fq 'exec switch_root -c /dev/console $ROOTFS_DIR' \
+        "$finish_script" || return 1
+
+    printf 'Boot initramfs: %s\n' "$initramfs_name"
+    printf 'Loop module vermagic: %s\n' "$loop_vermagic"
+    printf 'SquashFS module vermagic: %s\n' "$squashfs_vermagic"
+    printf 'The initramfs update path mounts SquashFS through loop before switch_root.\n'
+    if [ ! -e "/lib/modules/$kernel_release/kernel/drivers/block/loop.ko" ] && \
+       [ ! -e "/lib/modules/$kernel_release/kernel/fs/squashfs/squashfs.ko" ]; then
+        printf 'The steady-state rootfs intentionally omits the initramfs-only modules.\n'
     fi
+
+    cleanup_initramfs
+    ! mountpoint -q "$boot_mount"
 }
 
 probe_veth_and_bridge() {
@@ -478,6 +519,7 @@ probe_cleanup() {
     cleanup_cgroup
     cleanup_oci
     cleanup_overlay
+    cleanup_initramfs
     cleanup_network
     cleanup_nftables
     cleanup_quota
@@ -508,7 +550,7 @@ fi
 run_probe 'mount, PID, IPC, UTS, and network namespaces' probe_namespaces
 run_probe 'seccomp kernel and crun support' probe_seccomp
 run_probe 'overlayfs read/write mount' probe_overlayfs
-run_probe 'SquashFS kernel support' probe_squashfs
+run_probe 'initramfs SquashFS and loop support' probe_initramfs_update_filesystems
 run_probe 'veth, bridge, and network namespace' probe_veth_and_bridge
 run_probe 'VLAN and VXLAN links' probe_vlan_and_vxlan
 run_probe 'IFB link' probe_ifb

@@ -22,10 +22,9 @@ Planning and Phases 1–8 are complete for AOS-0. The official AosVM 6.1.0 ARM64
 Main Node boots natively accelerated by HVF on the Apple M5 Pro. Its guest
 identity, own kernel, unified cgroups v2, memory, partition layout, read-only
 root, writable data mounts, SELinux state, and pre-provisioning services are
-validated by automated guest gates. Phase 8 passed 12 of 13 capability probes
-but stopped AOS-0 because the official image configures SquashFS as a module and
-does not ship `squashfs.ko`. Phases 9–14 and provisioning remain blocked until
-the upstream image recipe or a project-qualified rebuild supplies the module.
+validated by automated guest gates. Phase 8 passes all 13 capability probes,
+including the initramfs-scoped SquashFS and loop update path. Phase 9 is the
+next gate: a complete local OCI run through `crun` without AosCloud.
 
 ## Commands
 
