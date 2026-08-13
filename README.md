@@ -18,7 +18,7 @@ the legacy AOS Vehicle Information Service interface.
 
 ## Current status
 
-Planning and Phases 1–9 are complete for AOS-0. The official AosVM 6.1.0 ARM64
+Planning and Phases 1–10 are complete for AOS-0. The official AosVM 6.1.0 ARM64
 Main Node boots natively accelerated by HVF on the Apple M5 Pro. Its guest
 identity, own kernel, unified cgroups v2, memory, partition layout, read-only
 root, writable data mounts, SELinux state, and pre-provisioning services are
@@ -26,7 +26,11 @@ validated by automated guest gates. Phase 8 passes all 13 capability probes,
 including the initramfs-scoped SquashFS and loop update path. Phase 9 passes a
 complete local ARM64 OCI run through `crun`, including namespace isolation,
 resource limits, read-only rootfs, isolated networking, and clean teardown.
-Phase 10 is next: classify AosCore's expected pre-provisioning state.
+Phase 10 classifies the installed AosCore components as locally healthy and
+intentionally unprovisioned. It also applies a tracked ARM64 compatibility fix
+to the disposable overlay because the upstream Service Manager configuration
+names the x86 EFI loader. Phase 11 is next: validate networking as independent
+layers before any certificate enrollment or cloud connection.
 
 ## Commands
 
@@ -72,6 +76,14 @@ The Phase 9 local OCI gate and its tracked runtime configuration are
 `tests/guest/aosvm-phase9-config.json`. Run them from the same directory as
 root inside an idle, unprovisioned Main Node. The gate constructs its rootfs in
 volatile `/var/tmp`, does not contact AosCloud, and removes all probe state.
+
+The read-only Phase 10 classification gate is
+`tests/guest/aosvm-phase10-test`. Before running it on the pinned `qemuarm64`
+image, apply `scripts/guest/aosvm-apply-arm64-compat` once inside the guest. The
+helper changes only the disposable overlay, is idempotent, preserves the
+read-only root and SELinux context, and corrects the Service Manager boot
+runtime from `bootx64.efi` to the ARM64 `bootaa64.efi` present on both boot
+partitions.
 
 ## Repository policy
 

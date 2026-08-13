@@ -1,0 +1,216 @@
+#!/bin/sh
+
+set -u
+umask 077
+
+boot_mount="/run/aosvm-phase10-boot-$$"
+
+fail() {
+    printf 'FAIL: AosVM Phase 10 pre-provisioning gate: %s\n' "$*" >&2
+    exit 1
+}
+
+cleanup() {
+    if mountpoint -q "$boot_mount" 2>/dev/null; then
+        umount "$boot_mount" >/dev/null 2>&1 || true
+    fi
+    rmdir "$boot_mount" >/dev/null 2>&1 || true
+}
+
+trap cleanup EXIT HUP INT TERM
+
+unit_property() {
+    systemctl show "$1" --property="$2" --value
+}
+
+require_unit_state() {
+    unit=$1
+    active=$2
+    sub=$3
+    condition=$4
+
+    [ "$(unit_property "$unit" LoadState)" = loaded ] \
+        || fail "unit is not installed: $unit"
+    [ "$(unit_property "$unit" UnitFileState)" = enabled ] \
+        || fail "unit is not enabled: $unit"
+    [ "$(unit_property "$unit" ActiveState)" = "$active" ] \
+        || fail "unexpected active state for $unit"
+    [ "$(unit_property "$unit" SubState)" = "$sub" ] \
+        || fail "unexpected sub-state for $unit"
+    [ "$(unit_property "$unit" ConditionResult)" = "$condition" ] \
+        || fail "unexpected condition result for $unit"
+}
+
+[ "$(id -u)" -eq 0 ] || fail 'the gate must run as root'
+[ "$(uname -m)" = aarch64 ] || fail 'the guest is not AArch64'
+grep -qx 'ID=aos-core' /etc/os-release || fail 'the guest OS is not AosCore'
+grep -qx 'VERSION_ID=6.1.0' /etc/os-release \
+    || fail 'the guest OS is not AosCore 6.1.0'
+
+for tool in jq crun journalctl readelf findmnt systemctl getenforce; do
+    command -v "$tool" >/dev/null 2>&1 || fail "required command is unavailable: $tool"
+done
+
+printf 'AosVM Phase 10 pre-provisioning classification gate\n'
+printf 'Installed components:\n'
+for component in \
+    'IAM:/usr/bin/aos_iam_app:Aos IAM version:[[:space:]]+v9.1.0-1-g9eec' \
+    'SM:/usr/bin/aos_sm_app:Aos SM version:[[:space:]]+v9.1.0-1-g9eec' \
+    'CM:/usr/bin/aos_cm_app:Aos CM version:[[:space:]]+v9.1.0-1-g9eec'; do
+    name=${component%%:*}
+    remainder=${component#*:}
+    binary=${remainder%%:*}
+    version_pattern=${remainder#*:}
+    [ -x "$binary" ] || fail "missing executable: $binary"
+    readelf -h "$binary" | grep -q 'Machine:.*AArch64' \
+        || fail "component is not AArch64: $binary"
+    version_output=$("$binary" --version 2>&1) \
+        || fail "component cannot load and report its version: $binary"
+    printf '%s\n' "$version_output" | grep -Eq "$version_pattern" \
+        || fail "unexpected component version: $binary"
+    printf '  %s: v9.1.0-1-g9eec, AArch64\n' "$name"
+done
+
+readelf -h /usr/bin/crun | grep -q 'Machine:.*AArch64' \
+    || fail 'crun is not AArch64'
+crun features | jq -e \
+    '.linux.cgroup.v2 == true and .linux.seccomp.enabled == true' \
+    >/dev/null || fail 'crun lacks the required cgroups v2 or seccomp feature'
+printf '  OCI runtime: crun with cgroups v2 and seccomp\n'
+
+for config in /etc/aos/iam.cfg /etc/aos/sm.cfg /etc/aos/cm.cfg; do
+    jq -e . "$config" >/dev/null || fail "invalid JSON configuration: $config"
+done
+[ -r /usr/share/ca-certificates/aos/AosRootCA.crt ] \
+    || fail 'the Aos root CA is unavailable'
+[ -x /usr/lib/softhsm/libsofthsm2.so ] \
+    || fail 'the SoftHSM PKCS#11 module is unavailable'
+jq -e '.workingDir == "/var/aos/iam" and
+    .nodeInfo.architecture == "arm64" and
+    .nodeInfo.attrs.AosComponents == "cm,iam,sm" and
+    (.certModules | length == 6)' /etc/aos/iam.cfg >/dev/null \
+    || fail 'IAM configuration does not match the Main Node contract'
+jq -e '.runtimes[] | select(.plugin == "container" and .type == "crun") |
+    .config.stateDir == "/var/aos/states" and
+    .config.storageDir == "/var/aos/storages"' /etc/aos/sm.cfg >/dev/null \
+    || fail 'Service Manager is not configured for crun and Aos storage paths'
+jq -e '.serviceDiscoveryUrl == "https://aoscloud.io:9000/sd/v7/" and
+    .workingDir == "/var/aos/workdirs/cm" and
+    .stateDir == "/var/aos/states" and
+    .storageDir == "/var/aos/storages"' /etc/aos/cm.cfg >/dev/null \
+    || fail 'Communication Manager configuration does not match the Main Node contract'
+
+[ ! -e /var/aos/.provisionstate ] \
+    || fail 'the provisioning completion marker already exists'
+[ ! -e /var/aos/iam/.usrpin ] \
+    || fail 'a provisioning PKCS#11 user PIN already exists'
+[ ! -e /etc/aos/subjects ] \
+    || fail 'provisioned subjects already exist'
+[ ! -e /dev/aosvg ] || fail 'the Aos volume group exists before provisioning'
+[ -z "$(blkid /dev/sda6 2>/dev/null || true)" ] \
+    || fail '/dev/sda6 has a signature before provisioning'
+for path in /var/aos/downloads /var/aos/workdirs /var/aos/storages /var/aos/states; do
+    [ ! -e "$path" ] || fail "Aos data path exists before provisioning: $path"
+done
+
+require_unit_state aos-iam-prov.service active running yes
+[ "$(unit_property aos-iam-prov.service NRestarts)" = 0 ] \
+    || fail 'provisioning IAM restarted during this boot'
+iam_pid=$(unit_property aos-iam-prov.service MainPID)
+[ "$iam_pid" -gt 1 ] && [ -d "/proc/$iam_pid" ] \
+    || fail 'provisioning IAM has no live process'
+tr '\0' ' ' <"/proc/$iam_pid/cmdline" | grep -Fq \
+    '/usr/bin/aos_iam_app -c /etc/aos/iam.cfg -provisioning' \
+    || fail 'provisioning IAM is running with unexpected arguments'
+
+require_unit_state aos-iam.service inactive dead no
+require_unit_state aos-sm.service inactive dead no
+require_unit_state aos-cm.service inactive dead no
+require_unit_state aos-provfirewall.service inactive dead no
+[ "$(unit_property aos.target ActiveState)" = active ] \
+    || fail 'aos.target is not active'
+[ "$(unit_property aos-nftables.service ActiveState)" = active ] \
+    || fail 'the Aos nftables baseline is not active'
+
+for mount_spec in \
+    'var-aos-downloads.mount:/var/aos/downloads:/dev/aosvg/downloads' \
+    'var-aos-workdirs.mount:/var/aos/workdirs:/dev/aosvg/workdirs' \
+    'var-aos-storages.mount:/var/aos/storages:/dev/aosvg/storages' \
+    'var-aos-states.mount:/var/aos/states:/dev/aosvg/states'; do
+    unit=${mount_spec%%:*}
+    remainder=${mount_spec#*:}
+    where=${remainder%%:*}
+    what=${remainder#*:}
+    [ "$(unit_property "$unit" ActiveState)" = inactive ] \
+        || fail "pre-provisioning mount is unexpectedly active: $unit"
+    [ "$(unit_property "$unit" ConditionResult)" = no ] \
+        || fail "pre-provisioning mount condition unexpectedly passed: $unit"
+    [ "$(unit_property "$unit" Where)" = "$where" ] \
+        || fail "unexpected mount target: $unit"
+    [ "$(unit_property "$unit" What)" = "$what" ] \
+        || fail "unexpected mount source: $unit"
+done
+
+failed_units=$(SYSTEMD_COLORS=0 systemctl --failed --no-legend --plain |
+    awk 'NF { print $1 }')
+[ "$failed_units" = nfs-server.service ] \
+    || fail "failed units differ from the classified baseline: ${failed_units:-none}"
+journalctl -b -u nfs-server.service --no-pager -o cat |
+    grep -Fq 'Failed to stat /var/aos/states: No such file or directory' \
+    || fail 'the NFS states-path failure is not present'
+journalctl -b -u nfs-server.service --no-pager -o cat |
+    grep -Fq 'Failed to stat /var/aos/storages: No such file or directory' \
+    || fail 'the NFS storages-path failure is not present'
+
+iam_log=$(journalctl -b -u aos-iam-prov.service --no-pager -o cat)
+printf '%s\n' "$iam_log" | grep -Fq 'Init IAM: version=v9.1.0-1-g9eec' \
+    || fail 'provisioning IAM did not initialize the expected release'
+printf '%s\n' "$iam_log" | grep -Fq 'state=unprovisioned' \
+    || fail 'provisioning IAM did not classify the node as unprovisioned'
+printf '%s\n' "$iam_log" | grep -Fq 'Start IAM: provisioning=1' \
+    || fail 'IAM is not operating in provisioning mode'
+printf '%s\n' "$iam_log" | grep -Fq 'No owned token found' \
+    || fail 'the expected pre-provisioning token state was not observed'
+
+for unit in aos-iam-prov.service aos-iam.service aos-sm.service aos-cm.service; do
+    if journalctl -b -u "$unit" --no-pager -o cat |
+        grep -Eiq 'segfault|illegal instruction|core dumped|panic|out of memory'; then
+        fail "local AosCore crash evidence exists: $unit"
+    fi
+done
+if journalctl -b -k --no-pager -o cat | grep -Eiq 'avc:.*denied'; then
+    fail 'an unexplained SELinux denial exists in the current boot'
+fi
+[ "$(getenforce)" = Enforcing ] || fail 'SELinux is not enforcing'
+
+loader=$(jq -r \
+    '.runtimes[] | select(.plugin == "boot") | .config.loader' /etc/aos/sm.cfg)
+[ "$loader" = /EFI/BOOT/bootaa64.efi ] \
+    || fail "Service Manager has the wrong ARM64 EFI loader: $loader"
+jq -e '.runtimes[] | select(.plugin == "boot") |
+    .config.detectMode == "auto" and
+    .config.partitions == ["1", "2"]' /etc/aos/sm.cfg >/dev/null \
+    || fail 'the boot runtime does not manage both qualified boot partitions'
+
+mkdir "$boot_mount" || fail 'cannot create the boot verification mount point'
+for partition in /dev/sda1 /dev/sda2; do
+    [ -z "$(findmnt -rn -S "$partition")" ] \
+        || fail "boot partition is already mounted: $partition"
+    mount -t vfat -o ro "$partition" "$boot_mount" \
+        || fail "cannot mount boot partition read-only: $partition"
+    [ -f "$boot_mount$loader" ] \
+        || fail "$partition does not contain the configured ARM64 EFI loader"
+    umount "$boot_mount" || fail "cannot unmount boot partition: $partition"
+done
+rmdir "$boot_mount" || fail 'cannot remove the boot verification mount point'
+
+trap - EXIT HUP INT TERM
+printf 'Classification:\n'
+printf '  Provisioning IAM: active and stable in unprovisioned mode\n'
+printf '  Runtime IAM, SM, CM, and firewall: intentionally condition-gated\n'
+printf '  Aos data mounts: intentionally absent until /dev/sda6 is provisioned\n'
+printf '  NFS: expected dependency failure until states and storages exist\n'
+printf '  Certificates and PKCS#11 ownership: intentionally absent\n'
+printf '  Local binaries, crun registration, configuration, and SELinux: healthy\n'
+printf '  ARM64 boot runtime: both partitions contain the configured EFI loader\n'
+printf 'PASS: AosVM Phase 10 pre-provisioning classification gate\n'

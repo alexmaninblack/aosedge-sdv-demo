@@ -22,11 +22,19 @@ reachable only through explicitly configured local forwards, reaches the
 Internet, passes the kernel and local OCI gates, and survives a clean stop/start
 without modifying the downloaded base image.
 
-Current gate: Phase 9 passes the complete cloud-free `crun` qualification.
+Current gate: Phase 10 passes after applying the tracked ARM64 compatibility
+fix to the disposable overlay. Provisioning IAM is stable in `unprovisioned`
+mode; runtime IAM, Service Manager, Communication Manager, data mounts, and the
+provisioning firewall are intentionally condition-gated. The only failed unit
+is the classified NFS dependency on storage created during provisioning. The
+upstream `qemuarm64` Service Manager config incorrectly names `bootx64.efi`;
+the tracked fix selects the `bootaa64.efi` present on both ARM64 boot
+partitions and survives reboot. Phase 11 networking validation is next.
+
+Phase 9 also passes the complete cloud-free `crun` qualification.
 The probe ran an isolated ARM64 PID 1 with enforced CPU, memory, and PID
 limits, a read-only rootfs, writable tmpfs, isolated networking, and clean
-teardown. Phase 10 is next: classify the installed AosCore services before
-provisioning. Phase 8 also passes all 13 required capabilities. SquashFS and loop
+teardown. Phase 8 passes all 13 required capabilities. SquashFS and loop
 are intentionally packaged in the boot initramfs, where the rootfs update path
 uses them before `switch_root`; they are not required in the steady-state
 rootfs.

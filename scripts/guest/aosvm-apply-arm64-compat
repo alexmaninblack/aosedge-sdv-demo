@@ -1,0 +1,107 @@
+#!/bin/sh
+
+set -u
+umask 077
+
+config=/etc/aos/sm.cfg
+expected_old_loader=/EFI/BOOT/bootx64.efi
+expected_loader=/EFI/BOOT/bootaa64.efi
+mount_dir="/run/aosvm-arm64-compat-$$"
+temporary_config=
+root_remounted_rw=0
+
+fail() {
+    printf 'AosVM ARM64 compatibility update failed: %s\n' "$*" >&2
+    exit 1
+}
+
+cleanup() {
+    if mountpoint -q "$mount_dir" 2>/dev/null; then
+        umount "$mount_dir" >/dev/null 2>&1 || true
+    fi
+    rmdir "$mount_dir" >/dev/null 2>&1 || true
+    if [ -n "$temporary_config" ] && [ -e "$temporary_config" ]; then
+        rm -f "$temporary_config" >/dev/null 2>&1 || true
+    fi
+    if [ "$root_remounted_rw" -eq 1 ]; then
+        mount -o remount,ro / >/dev/null 2>&1 || true
+    fi
+}
+
+trap cleanup EXIT HUP INT TERM
+
+[ "$(id -u)" -eq 0 ] || fail 'this command must run as root'
+[ "$(uname -m)" = aarch64 ] || fail 'the guest is not AArch64'
+[ "$(findmnt -T / -no SOURCE)" = /dev/sda3 ] \
+    || fail 'the root filesystem is not the qualified AosVM root partition'
+[ -f "$config" ] || fail "missing Service Manager configuration: $config"
+command -v jq >/dev/null 2>&1 || fail 'jq is unavailable'
+jq -e . "$config" >/dev/null || fail 'the Service Manager configuration is invalid JSON'
+
+boot_runtime_count=$(jq \
+    '[.runtimes[] | select(.plugin == "boot")] | length' "$config")
+[ "$boot_runtime_count" -eq 1 ] \
+    || fail 'the Service Manager configuration does not contain exactly one boot runtime'
+
+mkdir "$mount_dir" || fail 'cannot create the private boot-partition mount point'
+for partition in /dev/sda1 /dev/sda2; do
+    [ -b "$partition" ] || fail "missing boot partition: $partition"
+    [ -z "$(findmnt -rn -S "$partition")" ] \
+        || fail "boot partition is already mounted: $partition"
+    mount -t vfat -o ro "$partition" "$mount_dir" \
+        || fail "cannot mount boot partition read-only: $partition"
+    [ -f "$mount_dir$expected_loader" ] \
+        || fail "$partition does not contain the AArch64 EFI loader"
+    umount "$mount_dir" || fail "cannot unmount boot partition: $partition"
+done
+rmdir "$mount_dir" || fail 'cannot remove the private boot-partition mount point'
+
+current_loader=$(jq -r \
+    '.runtimes[] | select(.plugin == "boot") | .config.loader' "$config")
+case "$current_loader" in
+    "$expected_loader")
+        printf 'AosVM ARM64 Service Manager loader is already correct: %s\n' \
+            "$expected_loader"
+        trap - EXIT HUP INT TERM
+        exit 0
+        ;;
+    "$expected_old_loader") ;;
+    *) fail "unexpected existing Service Manager loader: $current_loader" ;;
+esac
+
+mount -o remount,rw / || fail 'cannot remount the root filesystem read-write'
+root_remounted_rw=1
+temporary_config="/etc/aos/.sm.cfg.aosvm-arm64-compat.$$"
+
+jq --arg loader "$expected_loader" \
+    '(.runtimes[] | select(.plugin == "boot") | .config.loader) = $loader' \
+    "$config" >"$temporary_config" \
+    || fail 'cannot create the corrected Service Manager configuration'
+jq -e . "$temporary_config" >/dev/null \
+    || fail 'the corrected Service Manager configuration is invalid JSON'
+chown --reference="$config" "$temporary_config" \
+    || fail 'cannot preserve configuration ownership'
+chmod --reference="$config" "$temporary_config" \
+    || fail 'cannot preserve configuration mode'
+if command -v chcon >/dev/null 2>&1; then
+    chcon --reference="$config" "$temporary_config" \
+        || fail 'cannot preserve the SELinux context'
+fi
+mv "$temporary_config" "$config" \
+    || fail 'cannot install the corrected Service Manager configuration'
+temporary_config=
+if command -v restorecon >/dev/null 2>&1; then
+    restorecon "$config" || fail 'cannot restore the SELinux context'
+fi
+sync
+mount -o remount,ro / || fail 'cannot return the root filesystem to read-only mode'
+root_remounted_rw=0
+
+[ "$(findmnt -T / -no OPTIONS | tr ',' '\n' | grep -x ro)" = ro ] \
+    || fail 'the root filesystem is not read-only after the update'
+[ "$(jq -r '.runtimes[] | select(.plugin == "boot") | .config.loader' "$config")" \
+    = "$expected_loader" ] || fail 'the ARM64 loader correction did not persist'
+
+trap - EXIT HUP INT TERM
+printf 'Updated the disposable AosVM overlay for the ARM64 EFI loader: %s\n' \
+    "$expected_loader"

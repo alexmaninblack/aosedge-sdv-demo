@@ -23,7 +23,8 @@ be performed in AOS-1 with the utilities supplied by the AosEdge SDK.
 | Phase 7: guest identity and storage | Complete — 2026-08-13 | Pass |
 | Phase 8: guest kernel capability gate | Complete — 2026-08-13 | Pass |
 | Phase 9: local OCI runtime gate | Complete — 2026-08-13 | Pass |
-| Phases 10–14 | Not started | — |
+| Phase 10: AosCore pre-provisioning state | Complete — 2026-08-13 | Pass with tracked ARM64 overlay fix |
+| Phases 11–14 | Not started | — |
 
 ### Phase 1 observed baseline
 
@@ -385,6 +386,49 @@ tracked OCI configuration made the rootfs read-only, mounted separate `/proc`,
 constraints. This is a complete local OCI acceptance result, not a substitute
 for the cloud-driven Service Manager lifecycle that begins after provisioning
 in AOS-1.
+
+### Phase 10 observed baseline
+
+The tracked `tests/guest/aosvm-phase10-test` classified the installed AosCore
+components without provisioning the Unit, starting condition-gated services,
+contacting AosCloud, or initializing `/dev/sda6`.
+
+| Check | Result | Classification |
+| --- | --- | --- |
+| Component installation | Pass | AArch64 `aos_iam_app`, `aos_sm_app`, and `aos_cm_app` all load and report `v9.1.0-1-g9eec`; the core library reports the same release |
+| Provisioning IAM | Pass | `aos-iam-prov.service` is active with zero restarts and runs IAM in provisioning mode; its journal reports `state=unprovisioned` and no owned PKCS#11 token |
+| Runtime services | Pass | `aos-iam.service`, `aos-sm.service`, `aos-cm.service`, and `aos-provfirewall.service` are inactive because their explicit `/var/aos/.provisionstate` condition is false, not because their binaries crashed |
+| OCI registration | Pass | Service Manager selects the `crun` container runtime with `/var/aos/states` and `/var/aos/storages`; `crun` reports cgroups v2 and seccomp support |
+| Aos data storage | Pass | `/dev/sda6` remains unsigned and unmounted; `/dev/aosvg` and the four generated Aos mount sources are absent; their unit conditions are false as expected |
+| NFS failure | Pass, classified | `nfs-server.service` is the only failed unit because `/var/aos/states` and `/var/aos/storages` do not exist until provisioning opens the Aos data partition |
+| Certificates and identity | Pass, classified | The trusted Aos root CA and SoftHSM library are installed; the provisioning marker, PKCS#11 user PIN, subjects, and owned tokens are intentionally absent |
+| Policy and stability | Pass | SELinux is enforcing, no current-boot AVC denial is present, and no AosCore crash, panic, illegal instruction, core dump, or OOM evidence exists |
+| ARM64 boot runtime | Pass after overlay fix | Both boot partitions contain `/EFI/BOOT/bootaa64.efi`, and Service Manager now names that loader while managing partitions 1 and 2 |
+| Restart persistence | Pass | A clean reboot preserved the compatibility correction and the full Phase 10 gate passed again |
+
+One upstream image defect was found and corrected only in the disposable
+overlay. The pinned `AosEdge/meta-aos-vm` `v6.1.0` source commit
+`b13320898a2ed1cce504f90f70451638232d6a83` supplies the same Main Node
+`sm.cfg` to `qemuarm64` and hard-codes `/EFI/BOOT/bootx64.efi`. The released
+ARM64 boot partitions instead contain `/EFI/BOOT/bootaa64.efi` and no x86
+loader. This is functionally significant: the installed Aos core v9.1.0 source
+commit `4475d18f9e5e311b9b7e003a34c5ba8907ce596e` passes the configured loader
+path to `efi_generate_file_device_path_from_esp` when Service Manager creates a
+missing EFI Boot entry.
+
+The tracked `scripts/guest/aosvm-apply-arm64-compat` helper verifies both boot
+partitions read-only, accepts only the exact known old or corrected value,
+changes `sm.cfg` atomically, preserves its mode, owner, and SELinux context,
+syncs the overlay, and returns `/dev/sda3` to read-only. Repeated execution is a
+no-op. The upstream base qcow2 remains unchanged. The preferred long-term fix
+is an architecture-specific loader value in `meta-aos-vm`; the local helper
+must be removed once a pinned official release contains that correction.
+
+Phase 10 passes because all present failures are either explicit
+pre-provisioning conditions or the resolved ARM64 configuration mismatch. No
+remaining local host, kernel, runtime, storage, binary, or policy defect blocks
+Phase 11. This result does not claim that runtime IAM, SM, or CM have completed
+their post-provisioning startup; that acceptance belongs to AOS-1.
 
 ## Pinned upstream input
 
@@ -923,6 +967,11 @@ failures remain.
 
 **Stop:** any local AosCore component cannot initialize for a host, kernel,
 storage, runtime, or policy reason.
+
+For the pinned `qemuarm64` release, also verify that the Service Manager boot
+runtime names the AArch64 EFI loader present on both managed boot partitions.
+An x86 loader path is a local update-path defect even when ordinary boot still
+works through a pre-existing firmware entry.
 
 ### Phase 11: Validate networking as independent layers
 
