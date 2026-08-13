@@ -26,6 +26,14 @@ run_dry_run() {
 
 run_dry_run >"$output_path"
 
+if "$repository_root/scripts/aosvm" start \
+    >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected start without an explicit mode to be rejected.\n' >&2
+    exit 1
+fi
+
+grep -q 'Start requires exactly one mode' "$test_root/stderr"
+
 grep -Fq "QEMU command (dry run; not executed):" "$output_path"
 grep -Fq "'/opt/homebrew/bin/qemu-system-aarch64'" "$output_path"
 grep -Fq "'virt-11.0,accel=hvf'" "$output_path"

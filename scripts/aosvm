@@ -529,7 +529,9 @@ print_command() {
     printf '\n'
 }
 
-start_dry_run() {
+start_vm() {
+    start_mode=$1
+
     validate_runtime_state
     verify_start_inputs
     qualify_qemu_for_start
@@ -569,11 +571,24 @@ start_dry_run() {
         -monitor none \
         -display none
 
-    print_command "$@"
+    case "$start_mode" in
+        dry-run)
+            print_command "$@"
+            ;;
+        foreground)
+            printf 'Starting AosVM Main Node in the foreground.\n'
+            printf 'Serial log: %s\n' "$absolute_serial_log_path"
+            printf 'QMP socket: %s\n' "$absolute_qmp_socket_path"
+            exec "$@"
+            ;;
+        *)
+            fail "Unknown start mode: $start_mode"
+            ;;
+    esac
 }
 
 usage() {
-    printf 'Usage: %s <download|prepare|start --dry-run>\n' "$0"
+    printf 'Usage: %s <download|prepare|start --dry-run|start --foreground>\n' "$0"
 }
 
 case ${1:-} in
@@ -586,9 +601,13 @@ case ${1:-} in
         prepare_images
         ;;
     start)
-        [ "$#" -eq 2 ] && [ "$2" = "--dry-run" ] ||
-            fail "Phase 5 supports only: start --dry-run"
-        start_dry_run
+        [ "$#" -eq 2 ] ||
+            fail "Start requires exactly one mode: --dry-run or --foreground"
+        case "$2" in
+            --dry-run) start_vm dry-run ;;
+            --foreground) start_vm foreground ;;
+            *) fail "Start mode must be --dry-run or --foreground" ;;
+        esac
         ;;
     -h|--help|help)
         usage

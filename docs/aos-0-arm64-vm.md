@@ -19,7 +19,8 @@ be performed in AOS-1 with the utilities supplied by the AosEdge SDK.
 | Phase 3: pinned release download | Complete — 2026-08-12 | Pass |
 | Phase 4: immutable inputs and overlay | Complete — 2026-08-13 | Pass |
 | Phase 5: QEMU command assembly | Complete — 2026-08-13 | Pass |
-| Phases 6–14 | Not started | — |
+| Phase 6: first serial boot | Complete — 2026-08-13 | Pass |
+| Phases 7–14 | Not started | — |
 
 ### Phase 1 observed baseline
 
@@ -183,6 +184,60 @@ QEMU process, port listener, PID, socket, or serial log remains after dry-run.
 
 Phase 5 did not boot EFI or execute guest code. The first real QEMU start and
 serial boot checkpoints belong exclusively to Phase 6.
+
+### Phase 6 observed baseline
+
+The first real start used `scripts/aosvm start --foreground` and exactly the
+Phase 5 argument contract. QEMU 11.0.3 remained alive with
+`virt-11.0,accel=hvf` and `-cpu host`; no fallback accelerator was configured.
+The VM ran without a graphical window, and QMP reported `status: running`.
+
+| Checkpoint | Observed result |
+| --- | --- |
+| Start | `2026-08-13T08:56:51.190008+0200` (`CEST`) |
+| EFI | Upstream EDK II firmware selected the virtio-SCSI QEMU hard disk |
+| GRUB | GRUB 2.12 selected the fallback `boot` entry after a 5-second timeout |
+| Kernel | Linux `6.6.123-yocto-standard`, compiled for AArch64 |
+| Disk | 6.52 GiB SCSI disk as `/dev/sda`, partitions `sda1` through `sda6` |
+| Root | `/dev/sda3` mounted as read-only ext4 by the initramfs |
+| Guest identity | systemd detected `qemu` virtualization and `arm64` architecture |
+| Operational target | Multi-User System queued; serial getty reached a stable prompt |
+| Prompt | `AosCore 6.1.0 main ttyAMA0` followed by `main login:` |
+| First prompt time | 67.307 seconds after initial EFI output |
+| SSH forward | Guest SSH accepted TCP connections through `127.0.0.1:10022` |
+| Graceful stop | QMP ACPI power-down; guest powered off in approximately 14.6 seconds |
+| Disk integrity | Post-shutdown `qemu-img check` reported no errors |
+| Check completed | `2026-08-13T09:00:00+0200` (`CEST`) |
+
+The initial start performed one clean automatic reboot before presenting the
+prompt. Before that reboot, SELinux rejected access to an unlabeled writable
+partition and `rpcbind` and the persistent journal could not start. systemd
+then synchronized and unmounted every filesystem and rebooted normally. On the
+second boot, `rpcbind` and the journal started successfully and the login
+prompt appeared. This is consistent with first-boot writable-partition label
+initialization, but Phase 7 must inspect the guest journal before treating that
+explanation as confirmed.
+
+Known upstream boot warnings are:
+
+- GRUB could not load its first attempted `EFI/BOOT/grub.cfg` path, then used
+  the visible fallback `boot` entry and successfully loaded the kernel;
+- GRUB reported that serial port `com0` was not present, while Linux and the
+  serial getty correctly used the ARM PL011 console exposed as `ttyAMA0`;
+- the initramfs reported that the Aos update workdirs device did not exist,
+  which is expected before the later provisioning and storage-validation
+  phases.
+
+None of these warnings caused a kernel panic, illegal instruction, missing
+root disk, repeated initramfs failure, or accelerator fallback. The QEMU
+process accepted an ACPI power-down through its private QMP socket; the guest
+cleanly unmounted `sda4` and `sda5`, synchronized the SCSI disk, and powered
+off. QEMU removed its PID and socket files on exit.
+
+The writable overlay grew from 196,720 bytes to approximately 38.4 MB. It has a
+clean dirty flag, `corrupt=false`, and the expected immutable backing file. The
+upstream Main Node image and EFI firmware still match their pinned SHA-256
+values.
 
 ## Pinned upstream input
 
@@ -596,7 +651,9 @@ project secret or exposed beyond a loopback forward.
 **Stop:** kernel panic, illegal instruction, missing root disk, unexpected
 `/dev/vda` dependency, repeated initramfs failure, or QEMU accelerator fallback.
 
-**Evidence:** timestamped serial log and boot-duration fields in the manifest.
+**Evidence:** timestamped ignored serial log and the sanitized observed
+baseline recorded above. A structured per-run manifest remains a later
+lifecycle deliverable.
 
 ### Phase 7: Validate guest identity, boot state, and storage
 
@@ -848,11 +905,11 @@ sanitized evidence is committed, and the working tree is clean.
 
 ## Acceptance checklist
 
-- [ ] Official archive matches the pinned SHA-256.
-- [ ] Base image remains unchanged after every test.
-- [ ] Native ARM64 QEMU starts the Main Node with HVF and no TCG fallback.
-- [ ] EFI, GRUB, the upstream AosVM kernel, initramfs, and root filesystem boot.
-- [ ] Serial console reaches a login prompt.
+- [x] Official archive matches the pinned SHA-256.
+- [x] Base image remains unchanged after every completed test.
+- [x] Native ARM64 QEMU starts the Main Node with HVF and no TCG fallback.
+- [x] EFI, GRUB, the upstream AosVM kernel, initramfs, and root filesystem boot.
+- [x] Serial console reaches a login prompt.
 - [ ] Guest reports ARM64 architecture.
 - [ ] Guest disk is `/dev/sda` with the expected partition and mount roles.
 - [ ] The mandatory guest-kernel capability matrix passes.
