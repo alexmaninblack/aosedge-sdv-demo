@@ -5,9 +5,13 @@ set -eu
 script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 repository_root=$(CDPATH='' cd -- "$script_dir/../.." && pwd)
 test_root=$(mktemp -d /private/tmp/aosvm-prepare-test.XXXXXX)
+test_cache_root="$test_root/cache"
 test_local_root="$test_root/local"
+test_backup_root="$test_root/backups"
 overlay_path="$test_local_root/aosvm-main-overlay.qcow2"
-expected_backing="$repository_root/.cache/aosvm/v6.1.0/qemuarm64/aos-vm-main-qemuarm64.qcow2"
+source_release="$repository_root/.cache/aosvm/v6.1.0/qemuarm64"
+test_release="$test_cache_root/aosvm/v6.1.0/qemuarm64"
+expected_backing="$test_release/aos-vm-main-qemuarm64.qcow2"
 
 cleanup() {
     rm -r "$test_root"
@@ -15,7 +19,19 @@ cleanup() {
 
 trap cleanup EXIT HUP INT TERM
 
-AOSVM_LOCAL_ROOT="$test_local_root" "$repository_root/scripts/aosvm" prepare \
+mkdir -p "$test_release"
+for release_file in \
+    aos-vm-image-qemuarm64-6.1.0.tar.xz \
+    aos-vm-main-qemuarm64.qcow2 \
+    aos-vm-secondary-qemuarm64.qcow2 \
+    QEMU_EFI.fd; do
+    cp -c "$source_release/$release_file" "$test_release/$release_file"
+done
+
+AOSVM_CACHE_ROOT="$test_cache_root" \
+AOSVM_LOCAL_ROOT="$test_local_root" \
+AOSVM_BACKUP_ROOT="$test_backup_root" \
+    "$repository_root/scripts/aosvm" prepare \
     >"$test_root/first-prepare.log"
 
 [ -f "$overlay_path" ]
@@ -33,11 +49,16 @@ qemu-img info --output=json "$overlay_path" | jq -e \
 
 qemu-img check "$overlay_path" >/dev/null
 
-AOSVM_LOCAL_ROOT="$test_local_root" "$repository_root/scripts/aosvm" prepare \
+AOSVM_CACHE_ROOT="$test_cache_root" \
+AOSVM_LOCAL_ROOT="$test_local_root" \
+AOSVM_BACKUP_ROOT="$test_backup_root" \
+    "$repository_root/scripts/aosvm" prepare \
     >"$test_root/second-prepare.log"
 
 printf 'overlay-marker\n' >>"$overlay_path"
 if AOSVM_LOCAL_ROOT="$test_local_root" \
+    AOSVM_CACHE_ROOT="$test_cache_root" \
+    AOSVM_BACKUP_ROOT="$test_backup_root" \
     AOSVM_RUN_ROOT="$test_root/reset-run" \
     AOSVM_RUNS_ROOT="$test_root/reset-runs" \
         "$repository_root/scripts/aosvm" reset-overlay \
@@ -48,6 +69,8 @@ fi
 grep -q 'Reset requires the explicit --confirm option' "$test_root/stderr"
 
 AOSVM_LOCAL_ROOT="$test_local_root" \
+AOSVM_CACHE_ROOT="$test_cache_root" \
+AOSVM_BACKUP_ROOT="$test_backup_root" \
 AOSVM_RUN_ROOT="$test_root/reset-run" \
 AOSVM_RUNS_ROOT="$test_root/reset-runs" \
     "$repository_root/scripts/aosvm" reset-overlay --confirm \
@@ -61,7 +84,10 @@ qemu-img info --output=json "$overlay_path" | jq -e \
 
 : > "$overlay_path"
 
-if AOSVM_LOCAL_ROOT="$test_local_root" "$repository_root/scripts/aosvm" prepare \
+if AOSVM_LOCAL_ROOT="$test_local_root" \
+    AOSVM_CACHE_ROOT="$test_cache_root" \
+    AOSVM_BACKUP_ROOT="$test_backup_root" \
+    "$repository_root/scripts/aosvm" prepare \
     >"$test_root/stdout" 2>"$test_root/stderr"; then
     printf 'Expected a corrupt existing overlay to be rejected.\n' >&2
     exit 1
@@ -73,7 +99,10 @@ grep -q 'Overlay qcow2 metadata or backing file is not the expected value' \
 rm "$overlay_path"
 ln -s /dev/null "$overlay_path"
 
-if AOSVM_LOCAL_ROOT="$test_local_root" "$repository_root/scripts/aosvm" prepare \
+if AOSVM_LOCAL_ROOT="$test_local_root" \
+    AOSVM_CACHE_ROOT="$test_cache_root" \
+    AOSVM_BACKUP_ROOT="$test_backup_root" \
+    "$repository_root/scripts/aosvm" prepare \
     >"$test_root/stdout" 2>"$test_root/stderr"; then
     printf 'Expected a symbolic-link overlay to be rejected.\n' >&2
     exit 1

@@ -21,10 +21,10 @@ acceptance evidence.
 | AOS-1.2: CLI environment | Complete - 2026-08-13 | Exact tool versions and single-Node CLI contract verified |
 | AOS-1.3: user certificates | Complete - 2026-08-13 | OEM and SP certificate/API checks pass |
 | AOS-1.4: single-Node cloud model | Complete - 2026-08-13 | Target System matches the Main Node only |
-| AOS-1.5: provisioning transport | Implemented; runtime gate pending | Guest IAM is reachable only on host loopback |
-| AOS-1.6: persistent lifecycle and recovery checkpoint | In progress | Reset lock and independent pre-provision checkpoint pass |
-| AOS-1.7: SDK provisioning | Not started | `aos-prov` completes for exactly one Node |
-| AOS-1.8: post-provision acceptance | Not started | Local core and cloud Unit gates pass |
+| AOS-1.5: provisioning transport | Complete - 2026-08-13 | Guest IAM was reachable only on host loopback |
+| AOS-1.6: persistent lifecycle and recovery checkpoint | Complete - 2026-08-13 | Reset lock and independent pre-provision checkpoint pass |
+| AOS-1.7: SDK provisioning | Complete - 2026-08-13 | `aos-prov` completed once for exactly one Node |
+| AOS-1.8: post-provision acceptance | Complete - 2026-08-13 | Local core, identity continuity, and cloud Unit gates pass |
 | AOS-1.9: Hello World | Not started | Official service reaches `Active` |
 
 The existing AosEdge account has been recovered on this new Mac. OEM and SP
@@ -33,8 +33,13 @@ certificate is valid but its issued PKCS#12 contains a mismatched legacy CA
 chain; that account-recovery defect is parked because Admin access is not used
 by `aos-prov`. A single-Node `aos-vm` version `1.0.0` Target System now exists
 in the authenticated OEM and its API read-back exactly matches the tracked
-configuration. No cloud Unit or provisioning state exists yet. The AOS-0 Main
-Node is stopped and unprovisioned.
+configuration. The SDK provisioned the Main Node with protocol v6 and
+`--nodes 1` on the first and only attempt. AosCloud now reports one online,
+provisioned Unit containing one provisioned `aos-vm-main` Node. Two normal-mode
+starts preserved the Unit, Node, and certificate identity, exposed no
+provisioning port, and passed the local core and network acceptance gates. The
+VM is stopped with verified pre- and post-provision checkpoints and lifecycle
+state `provisioned`. AOS-1.9, the official Hello World deployment, remains.
 
 ## Fixed decisions
 
@@ -143,7 +148,7 @@ contract are known.
 
 **Stop:** the tool has no single-Node option, requires VirtualBox for the
 generic `provision` command, cannot use an explicit port, or is incompatible
-with provisioning protocol v5.
+with the provisioning protocol reported by the guest.
 
 ## Phase AOS-1.3: Install trust and user certificates
 
@@ -285,6 +290,12 @@ AOS-0 exposure and ownership gates continue to pass.
 **Stop:** provisioning requires a LAN/global listener, administrator-owned
 bridge or packet-filter change, or an unowned forwarding process.
 
+**Observed:** the live host gate proved that QEMU owned the only listener on
+`127.0.0.1:18089` and that it was not reachable through a Mac LAN address. IAM
+responded with provisioning protocol v6, model `aos-vm;1.0.0`, and exactly one
+Node marked Main with type `aos-vm-main`. Normal mode had no port `18089`
+listener before or after provisioning.
+
 ## Phase AOS-1.6: Lock the persistent lifecycle and create a checkpoint
 
 Provisioning changes both the guest overlay and cloud state. A disk copy alone
@@ -331,6 +342,12 @@ active overlay cannot be reset through the normal lifecycle command.
 checkpoint is inside Git or on unencrypted storage, the reset lock does not
 hold, or rollback ownership is unclear.
 
+**Observed:** the stopped-state gate passed immediately before the checkpoint.
+The standalone pre-provision qcow2 and its SHA-256 metadata were created under
+the private host backup root, lifecycle moved to `provisioning-locked`, and an
+explicit destructive reset attempt was rejected. The checkpoint remained
+verified through provisioning and every subsequent stop.
+
 ## Phase AOS-1.7: Provision exactly one Node
 
 With the OEM certificate verified and the provisioning-only listener active,
@@ -352,7 +369,7 @@ Before confirming execution, independently verify:
 
 During execution, observe but do not commit:
 
-- provisioning protocol v5 negotiation;
+- provisioning protocol negotiation;
 - exactly one Node ID discovered and identified as Main;
 - certificate types requested for that Main Node;
 - successful Unit registration and certificate application;
@@ -369,6 +386,15 @@ Unit becomes visible to the OEM account.
 **Stop:** the tool waits for a Secondary, discovers more than one Node,
 registers the wrong model/type, fails after cloud registration, or asks to
 replace an existing Unit identity.
+
+**Observed:** all read-only preflight gates passed immediately before the
+attempt: OEM mTLS access, supported `aos-prov` version, exact cloud Unit Model
+detail, protocol v6, one Main Node, verified checkpoint, and no existing cloud
+Unit for the VM identity. The official SDK command ran exactly once with
+`--nodes 1`, reached cloud registration, applied the Unit credentials, finished
+provisioning, and returned success. Its raw output is mode `0600` outside the
+repository; tracked evidence contains no Unit, Node, account, or certificate
+identifier.
 
 ## Phase AOS-1.8: Accept the provisioned Main Node
 
@@ -424,6 +450,30 @@ local core services are explained, and the provisioning listener is absent.
 is incomplete, core services crash, the Unit duplicates an identity, or port
 `18089` survives normal launch.
 
+**Observed:** the provision marker is present; runtime IAM, Service Manager,
+Communication Manager, and NFS are active; provisioning IAM and its firewall
+unit are inactive. All three AosCore processes reported zero restarts. The
+four encrypted Aos data filesystems are mounted read-write, SELinux is
+enforcing, DNS and synchronized time pass, and verified TLS and HTTPS succeed.
+AosCloud reports exactly one online, provisioned Unit with exactly one
+provisioned `aos-vm-main` Node, and its monitoring endpoint returns data.
+
+Two normal-mode starts exposed no provisioning listener and preserved private
+hashes of the System, Unit, Node, and five cloud certificate records. Both
+accepted cycles ended in a QMP/ACPI guest shutdown and a clean qcow2 gate. The
+post-provision standalone checkpoint was then created, both checkpoints were
+reverified, lifecycle moved to `provisioned`, and destructive reset remained
+locked.
+
+One non-blocking upstream image issue remains classified. On a provisioned
+boot, the generic `quotaon.service` runs `quotaon -aug` after the `states` and
+`storages` filesystems have already enabled user and group quotas while
+mounting. The redundant command returns `EEXIST`/status 4, so systemd records
+that helper as failed even though both filesystems are mounted, user and group
+quotas report `on`, and IAM, SM, CM, NFS, storage, and cloud connectivity are
+healthy. The release image was not modified to mask this diagnostic; it should
+be handled as a separate upstream unit-ordering/idempotency issue.
+
 ## Phase AOS-1.9: Deploy the official Hello World service
 
 Use the SP certificate and official AosEdge service tooling to register, sign,
@@ -449,24 +499,24 @@ destabilizes AosCore.
 
 ## AOS-1 acceptance checklist
 
-- [ ] OEM and SP account roles are confirmed.
-- [ ] Exact isolated CLI versions are recorded locally.
-- [ ] Aos root trust and OEM/SP certificate checks pass.
-- [ ] No token, private key, certificate, or account identifier is tracked.
-- [ ] The cloud Target System contains only `aos-vm-main`.
-- [ ] Normal QEMU mode does not expose provisioning IAM.
-- [ ] Provisioning mode binds IAM only to `127.0.0.1`.
-- [ ] A consistent ignored pre-provision checkpoint exists.
-- [ ] Lifecycle is `provisioning-locked` and overlay reset is rejected before provisioning.
-- [ ] `aos-prov provision --nodes 1` completes for exactly one Main Node.
-- [ ] IAM, SM, CM, storage, NFS, SELinux, time, DNS, and HTTPS gates pass.
-- [ ] AosCloud reports one online Main Node and no missing Secondary.
-- [ ] Normal restart removes the provisioning listener and preserves health.
-- [ ] System ID, Node ID, certificate public fingerprints, and cloud Unit remain identical across two clean restarts.
-- [ ] A verified standalone post-provision checkpoint exists and lifecycle is `provisioned`.
-- [ ] The active Unit and a restored checkpoint are never run concurrently.
+- [x] OEM and SP account roles are confirmed.
+- [x] Exact isolated CLI versions are recorded locally.
+- [x] Aos root trust and OEM/SP certificate checks pass.
+- [x] No token, private key, certificate, or account identifier is tracked.
+- [x] The cloud Target System contains only `aos-vm-main`.
+- [x] Normal QEMU mode does not expose provisioning IAM.
+- [x] Provisioning mode binds IAM only to `127.0.0.1`.
+- [x] A consistent ignored pre-provision checkpoint exists.
+- [x] Lifecycle was `provisioning-locked` and overlay reset was rejected before provisioning.
+- [x] `aos-prov provision --nodes 1` completed for exactly one Main Node.
+- [x] IAM, SM, CM, storage, NFS, SELinux, time, DNS, and HTTPS gates pass.
+- [x] AosCloud reports one online Main Node and no missing Secondary.
+- [x] Normal restart removes the provisioning listener and preserves health.
+- [x] System, Node, certificate, and cloud Unit identity remain identical across two accepted normal starts.
+- [x] A verified standalone post-provision checkpoint exists and lifecycle is `provisioned`.
+- [x] The active Unit and a restored checkpoint were never run concurrently.
 - [ ] The official Hello World service reaches `Active` and restarts cleanly.
-- [ ] Sanitized evidence is committed and the working tree is clean.
+- [x] Sanitized AOS-1.7/AOS-1.8 evidence is committed and the working tree is clean.
 
 ## Failure routing
 
@@ -481,6 +531,7 @@ destabilizes AosCore.
 | Failure after cloud registration | Overlay, cloud Unit, local SDK secure state | No reset; reconcile cloud and guest identity first |
 | Unit online but core unhealthy | Sanitized service/storage classifications | Block Hello World until the local defect is resolved |
 | Cloud shows a missing Secondary | Target System and Unit Configuration | Correct topology before deploying a service |
+| `quotaon.service` reports `EEXIST` while quotas are already on | Mount options, `quotaon -p`, and sanitized unit status | Track the upstream idempotency defect; block only if quotas or Aos data paths are not operational |
 | Hello World cannot schedule | Service architecture and Node selector | Fix the sample package/placement, not the VM identity |
 
 ## Official references

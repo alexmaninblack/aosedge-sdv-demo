@@ -72,6 +72,19 @@ Detailed plan: [AOS-0 runbook](aos-0-arm64-vm.md).
 Exit criterion: AosCloud reports the Unit online and an official sample service
 reaches `Active` state after a cloud-driven deployment.
 
+Current gate: AOS-1.1 through AOS-1.8 pass. The SDK provisioned exactly one
+Main Node with protocol v6 and `--nodes 1`; AosCloud reports one online,
+provisioned Unit with one provisioned `aos-vm-main` Node. Two accepted
+normal-mode starts preserved private identity hashes and exposed no
+provisioning listener. Local IAM, SM, CM, encrypted storage, NFS, SELinux,
+time, DNS, TLS, and HTTPS gates pass. Independent pre- and post-provision
+checkpoints are verified, destructive reset is locked, lifecycle is
+`provisioned`, and the VM is stopped. The official Hello World deployment is
+the remaining AOS-1 exit gate. The released image's redundant
+`quotaon.service` reports `EEXIST` after mount-time quota activation; quotas
+and all required Aos data paths are operational, so this is tracked as a
+non-blocking upstream idempotency issue.
+
 No repository-managed script will reimplement the SDK provisioning protocol.
 
 Detailed plan: [AOS-1 single-Node runbook](aos-1-single-node-provisioning.md).

@@ -47,7 +47,12 @@ complete: the final start/smoke/stop run passed, sanitized evidence is recorded,
 and the VM is stopped. The current decision is **go to AOS-1** with only the
 qualified Main Node. Official generic provisioning supports one Node; the
 Secondary image and multi-Node work are deferred until a concrete use case
-justifies them.
+justifies them. AOS-1.1 through AOS-1.8 are now complete. The official SDK
+provisioned exactly one Main Node, AosCloud reports the Unit online, two normal
+starts preserved its identity without exposing provisioning IAM, and verified
+pre- and post-provision checkpoints protect its persistent disk. The VM is
+stopped with lifecycle `provisioned`. Deploying the official Hello World
+service is the remaining AOS-1 phase.
 
 ## Commands
 
