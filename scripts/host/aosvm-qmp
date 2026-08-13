@@ -1,0 +1,84 @@
+#!/usr/bin/python3
+
+"""Send one qualified command to an AosVM QMP Unix socket."""
+
+import argparse
+import json
+import socket
+import sys
+from typing import Any, Dict
+
+
+TIMEOUT_SECONDS = 5
+ALLOWED_COMMANDS = {"query-status", "system_powerdown"}
+
+
+def fail(message: str) -> None:
+    print(f"AosVM QMP command failed: {message}", file=sys.stderr)
+    raise SystemExit(1)
+
+
+def read_message(stream: Any) -> Dict[str, Any]:
+    while True:
+        try:
+            line = stream.readline()
+        except OSError as error:
+            fail(f"cannot read from the QMP socket: {error}")
+        if not line:
+            fail("the QMP socket closed before returning a response")
+        try:
+            message = json.loads(line.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as error:
+            fail(f"QMP returned invalid JSON: {error}")
+        if not isinstance(message, dict):
+            fail("QMP returned a non-object response")
+        if "event" in message:
+            continue
+        return message
+
+
+def send_command(stream: Any, command: str, command_id: str) -> Dict[str, Any]:
+    request = {"execute": command, "id": command_id}
+    stream.write(json.dumps(request, separators=(",", ":")).encode("utf-8") + b"\r\n")
+    stream.flush()
+    while True:
+        response = read_message(stream)
+        if response.get("id") == command_id:
+            return response
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("socket_path")
+    parser.add_argument("command", choices=sorted(ALLOWED_COMMANDS))
+    arguments = parser.parse_args()
+
+    try:
+        client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        client.settimeout(TIMEOUT_SECONDS)
+        client.connect(arguments.socket_path)
+    except OSError as error:
+        fail(f"cannot connect to {arguments.socket_path}: {error}")
+
+    with client:
+        stream = client.makefile("rwb", buffering=0)
+        greeting = read_message(stream)
+        if "QMP" not in greeting or not isinstance(greeting["QMP"], dict):
+            fail("the socket did not return a QMP greeting")
+
+        capabilities = send_command(stream, "qmp_capabilities", "capabilities")
+        if "error" in capabilities:
+            fail(f"QMP rejected capabilities: {capabilities['error']}")
+        if "return" not in capabilities:
+            fail("QMP did not acknowledge capabilities")
+
+        response = send_command(stream, arguments.command, "command")
+        if "error" in response:
+            fail(f"QMP rejected {arguments.command}: {response['error']}")
+        if "return" not in response:
+            fail(f"QMP returned no result for {arguments.command}")
+        print(json.dumps(response, sort_keys=True, separators=(",", ":")))
+
+
+if __name__ == "__main__":
+    main()

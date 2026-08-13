@@ -33,6 +33,12 @@ GUEST_VISIBLE_HOST="10.0.0.1"
 GUEST_DNS_PROXY="10.0.0.2"
 HOST_DNS_ADDRESS="127.0.0.1"
 HOST_DNS_PORT=${AOSVM_HOST_DNS_PORT:-"18053"}
+MINIMUM_HOST_MEMORY_BYTES="4294967296"
+MINIMUM_HOST_FREE_KIB="20971520"
+START_TIMEOUT_SECONDS=${AOSVM_START_TIMEOUT_SECONDS:-"30"}
+STOP_TIMEOUT_SECONDS=${AOSVM_STOP_TIMEOUT_SECONDS:-"90"}
+TERM_TIMEOUT_SECONDS=${AOSVM_TERM_TIMEOUT_SECONDS:-"15"}
+SMOKE_TIMEOUT_SECONDS=${AOSVM_SMOKE_TIMEOUT_SECONDS:-"90"}
 
 SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 REPOSITORY_ROOT=$(CDPATH='' cd -- "$SCRIPT_DIR/.." && pwd)
@@ -55,12 +61,20 @@ SERIAL_LOG_PATH="$RUNS_ROOT/$VM_NAME-serial.log"
 DNS_BRIDGE_PID_PATH="$RUN_ROOT/$VM_NAME-dns.pid"
 DNS_BRIDGE_LOG_PATH="$RUNS_ROOT/$VM_NAME-dns.log"
 DNS_BRIDGE_SCRIPT="$REPOSITORY_ROOT/scripts/host/aosvm-dns-bridge"
+QMP_HELPER="$REPOSITORY_ROOT/scripts/host/aosvm-qmp"
+SUPERVISOR_PID_PATH="$RUN_ROOT/$VM_NAME-supervisor.pid"
+SUPERVISOR_LOG_PATH="$RUNS_ROOT/$VM_NAME-supervisor.log"
+LIFECYCLE_LOCK_DIR="$RUN_ROOT/$VM_NAME.lifecycle.lock"
+SCRIPT_PATH="$REPOSITORY_ROOT/scripts/aosvm"
 
 PREPARE_WORK_DIR=''
 PREPARE_LOCK_DIR=''
 QEMU_SYSTEM_PATH=''
 DNS_BRIDGE_PID=''
 QEMU_CHILD_PID=''
+LIFECYCLE_LOCK_HELD=0
+SUPERVISOR_MODE=0
+BACKGROUND_START_PID=''
 
 fail() {
     printf 'Error: %s\n' "$*" >&2
@@ -69,6 +83,20 @@ fail() {
 
 require_command() {
     command -v "$1" >/dev/null 2>&1 || fail "Required command is not available: $1"
+}
+
+validate_decimal_range() {
+    decimal_value=$1
+    decimal_minimum=$2
+    decimal_maximum=$3
+    decimal_label=$4
+
+    case "$decimal_value" in
+        ''|*[!0-9]*) fail "$decimal_label must be a decimal integer" ;;
+    esac
+    [ "$decimal_value" -ge "$decimal_minimum" ] &&
+        [ "$decimal_value" -le "$decimal_maximum" ] ||
+        fail "$decimal_label must be between $decimal_minimum and $decimal_maximum"
 }
 
 file_size() {
@@ -162,6 +190,7 @@ file_mode() {
 
 verify_overlay() {
     overlay_to_verify=$1
+    overlay_access_mode=${2:-exclusive}
     expected_backing_path=$(absolute_path "$MAIN_IMAGE_PATH")
 
     [ ! -L "$overlay_to_verify" ] ||
@@ -169,7 +198,15 @@ verify_overlay() {
     [ -f "$overlay_to_verify" ] ||
         fail "Overlay is not a regular file: $overlay_to_verify"
 
-    overlay_info=$(qemu-img info --output=json "$overlay_to_verify")
+    case "$overlay_access_mode" in
+        exclusive)
+            overlay_info=$(qemu-img info --output=json "$overlay_to_verify")
+            ;;
+        shared)
+            overlay_info=$(qemu-img info -U --output=json "$overlay_to_verify")
+            ;;
+        *) fail "Unknown overlay verification mode: $overlay_access_mode" ;;
+    esac
     printf '%s\n' "$overlay_info" | jq -e \
         --arg expected_backing "$expected_backing_path" \
         --argjson expected_virtual_size "$IMAGE_VIRTUAL_SIZE" \
@@ -181,8 +218,13 @@ verify_overlay() {
          .["format-specific"].data.corrupt == false' >/dev/null ||
         fail "Overlay qcow2 metadata or backing file is not the expected value"
 
-    qemu-img check "$overlay_to_verify" >/dev/null ||
-        fail "Overlay failed qemu-img check"
+    if [ "$overlay_access_mode" = shared ]; then
+        qemu-img check -U "$overlay_to_verify" >/dev/null ||
+            fail "Overlay failed shared qemu-img check"
+    else
+        qemu-img check "$overlay_to_verify" >/dev/null ||
+            fail "Overlay failed qemu-img check"
+    fi
 }
 
 prepare_cleanup() {
@@ -410,26 +452,189 @@ validate_socket_path() {
         fail "$socket_label exceeds the safe macOS Unix socket path length: $socket_path"
 }
 
+ensure_lifecycle_directories() {
+    ensure_private_directory "$RUN_ROOT" "Runtime directory"
+    ensure_private_directory "$RUNS_ROOT" "Run-log directory"
+}
+
+release_lifecycle_lock() {
+    if [ "$LIFECYCLE_LOCK_HELD" -eq 1 ]; then
+        rmdir "$LIFECYCLE_LOCK_DIR" >/dev/null 2>&1 || true
+        LIFECYCLE_LOCK_HELD=0
+    fi
+}
+
+acquire_lifecycle_lock() {
+    ensure_lifecycle_directories
+    [ ! -L "$LIFECYCLE_LOCK_DIR" ] ||
+        fail "Lifecycle lock must not be a symbolic link: $LIFECYCLE_LOCK_DIR"
+    mkdir "$LIFECYCLE_LOCK_DIR" 2>/dev/null ||
+        fail "Another AosVM lifecycle operation is running: $LIFECYCLE_LOCK_DIR"
+    chmod 0700 "$LIFECYCLE_LOCK_DIR"
+    LIFECYCLE_LOCK_HELD=1
+    trap release_lifecycle_lock EXIT HUP INT TERM
+}
+
+cleanup_background_start() {
+    trap - EXIT HUP INT TERM
+    if [ -n "$BACKGROUND_START_PID" ] &&
+       kill -0 "$BACKGROUND_START_PID" 2>/dev/null; then
+        background_start_command=$(process_command "$BACKGROUND_START_PID" || true)
+        if [ "$background_start_command" = "/bin/sh $SCRIPT_PATH _supervise" ]; then
+            kill -TERM "$BACKGROUND_START_PID" >/dev/null 2>&1 || true
+            wait "$BACKGROUND_START_PID" 2>/dev/null || true
+        fi
+    fi
+    if [ -n "$BACKGROUND_START_PID" ] && [ -f "$SUPERVISOR_PID_PATH" ] &&
+       [ "$(sed -n '1p' "$SUPERVISOR_PID_PATH")" = "$BACKGROUND_START_PID" ]; then
+        rm -f "$SUPERVISOR_PID_PATH"
+    fi
+    release_lifecycle_lock
+}
+
+read_pid_file() {
+    pid_file=$1
+    pid_label=$2
+
+    [ ! -L "$pid_file" ] || fail "$pid_label must not be a symbolic link: $pid_file"
+    [ -f "$pid_file" ] || fail "$pid_label does not exist: $pid_file"
+    [ "$(file_mode "$pid_file")" = "600" ] ||
+        fail "$pid_label mode must be 0600: $pid_file"
+    pid_value=$(sed -n '1p' "$pid_file")
+    [ "$(wc -l <"$pid_file" | tr -d ' ')" -eq 1 ] ||
+        fail "$pid_label must contain exactly one line"
+    case "$pid_value" in
+        ''|*[!0-9]*) fail "$pid_label is not a decimal PID" ;;
+    esac
+    [ "$pid_value" -gt 1 ] || fail "$pid_label contains an unsafe PID"
+    printf '%s\n' "$pid_value"
+}
+
+process_command() {
+    process_pid=$1
+    ps -p "$process_pid" -o command= 2>/dev/null
+}
+
+process_parent_pid() {
+    process_pid=$1
+    ps -p "$process_pid" -o ppid= 2>/dev/null | tr -d ' '
+}
+
+process_working_directory() {
+    process_pid=$1
+    lsof -nP -a -p "$process_pid" -d cwd -F n 2>/dev/null |
+        sed -n 's/^n//p'
+}
+
+verify_owned_qemu_pid() {
+    owned_qemu_pid=$1
+    [ -d "$LOCAL_ROOT" ] || fail "Local VM directory is unavailable: $LOCAL_ROOT"
+    [ -f "$OVERLAY_PATH" ] || fail "Overlay is unavailable: $OVERLAY_PATH"
+    expected_overlay=$(absolute_path "$OVERLAY_PATH")
+    expected_qmp=$(absolute_path "$QMP_SOCKET_PATH")
+    expected_serial=$(absolute_path "$SERIAL_SOCKET_PATH")
+    expected_pid_file=$(absolute_path "$PID_PATH")
+    owned_qemu_command=$(process_command "$owned_qemu_pid") ||
+        fail "QEMU PID is not running: $owned_qemu_pid"
+
+    case "$owned_qemu_command" in
+        "$QEMU_SYSTEM_PATH -name $VM_NAME "*) ;;
+        *) fail "PID $owned_qemu_pid is not the owned AosVM QEMU process" ;;
+    esac
+    case "$owned_qemu_command" in
+        *"-machine $QEMU_MACHINE,accel=hvf"*) ;;
+        *) fail "Owned QEMU PID does not use the qualified machine and HVF" ;;
+    esac
+    case "$owned_qemu_command" in
+        *"file=$expected_overlay,if=none,id=aos-image,format=qcow2"*) ;;
+        *) fail "Owned QEMU PID does not use the expected overlay" ;;
+    esac
+    case "$owned_qemu_command" in
+        *"-qmp unix:$expected_qmp,server=on,wait=off"*) ;;
+        *) fail "Owned QEMU PID does not use the expected QMP socket" ;;
+    esac
+    case "$owned_qemu_command" in
+        *"-chardev socket,id=serial0,path=$expected_serial,server=on,wait=off,"*) ;;
+        *) fail "Owned QEMU PID does not use the expected serial socket" ;;
+    esac
+    case "$owned_qemu_command" in
+        *"-pidfile $expected_pid_file"*) ;;
+        *) fail "Owned QEMU PID does not own the expected PID file" ;;
+    esac
+}
+
+verify_supervisor_pid() {
+    supervisor_pid=$1
+    supervised_qemu_pid=$2
+    supervisor_command=$(process_command "$supervisor_pid") ||
+        fail "Supervisor PID is not running: $supervisor_pid"
+    case "$supervisor_command" in
+        "/bin/sh $SCRIPT_PATH _supervise"|\
+        "/bin/sh $SCRIPT_PATH start --foreground") ;;
+        "/bin/sh ./scripts/aosvm start --foreground")
+            supervisor_cwd=$(process_working_directory "$supervisor_pid") ||
+                fail "Cannot resolve the foreground supervisor directory"
+            [ "$supervisor_cwd" = "$REPOSITORY_ROOT" ] ||
+                fail "Foreground supervisor does not run from this repository"
+            ;;
+        *) fail "PID $supervisor_pid is not the owned AosVM supervisor" ;;
+    esac
+    qemu_parent_pid=$(process_parent_pid "$supervised_qemu_pid") ||
+        fail "Cannot resolve the QEMU parent PID"
+    [ "$qemu_parent_pid" = "$supervisor_pid" ] ||
+        fail "Owned QEMU is not a child of the recorded supervisor"
+}
+
+resolve_running_vm() {
+    qualify_qemu_for_start
+    qemu_pid=$(read_pid_file "$PID_PATH" "QEMU PID file")
+    verify_owned_qemu_pid "$qemu_pid"
+    printf '%s\n' "$qemu_pid"
+}
+
+qmp_command() {
+    qmp_action=$1
+    [ ! -L "$QMP_SOCKET_PATH" ] && [ -S "$QMP_SOCKET_PATH" ] ||
+        fail "The owned QMP socket is unavailable: $QMP_SOCKET_PATH"
+    [ ! -L "$QMP_HELPER" ] && [ -f "$QMP_HELPER" ] && [ -x "$QMP_HELPER" ] ||
+        fail "The tracked QMP helper is unavailable: $QMP_HELPER"
+    "$QMP_HELPER" "$QMP_SOCKET_PATH" "$qmp_action"
+}
+
+wait_for_process_exit() {
+    wait_pid=$1
+    wait_seconds=$2
+    wait_elapsed=0
+    while kill -0 "$wait_pid" 2>/dev/null; do
+        [ "$wait_elapsed" -lt "$wait_seconds" ] || return 1
+        sleep 1
+        wait_elapsed=$((wait_elapsed + 1))
+        if [ $((wait_elapsed % 10)) -eq 0 ]; then
+            printf 'Still waiting for PID %s to exit (%s seconds).\n' \
+                "$wait_pid" "$wait_elapsed"
+        fi
+    done
+    return 0
+}
+
+validate_lifecycle_timeouts() {
+    validate_decimal_range "$START_TIMEOUT_SECONDS" 1 300 "Start timeout"
+    validate_decimal_range "$STOP_TIMEOUT_SECONDS" 1 600 "Stop timeout"
+    validate_decimal_range "$TERM_TIMEOUT_SECONDS" 1 120 "Termination timeout"
+    validate_decimal_range "$SMOKE_TIMEOUT_SECONDS" 1 600 "Smoke timeout"
+}
+
 validate_runtime_state() {
     require_command lsof
     require_command tr
     require_command wc
 
-    case "$SSH_HOST_PORT" in
-        ''|*[!0-9]*) fail "SSH host port must be a decimal integer" ;;
-    esac
-    [ "$SSH_HOST_PORT" -ge 1024 ] && [ "$SSH_HOST_PORT" -le 65535 ] ||
-        fail "SSH host port must be between 1024 and 65535"
-    case "$HOST_DNS_PORT" in
-        ''|*[!0-9]*) fail "Host DNS port must be a decimal integer" ;;
-    esac
-    [ "$HOST_DNS_PORT" -ge 1024 ] && [ "$HOST_DNS_PORT" -le 65535 ] ||
-        fail "Host DNS port must be between 1024 and 65535"
+    validate_decimal_range "$SSH_HOST_PORT" 1024 65535 "SSH host port"
+    validate_decimal_range "$HOST_DNS_PORT" 1024 65535 "Host DNS port"
     [ "$HOST_DNS_PORT" -ne "$SSH_HOST_PORT" ] ||
         fail "Host DNS and SSH ports must differ"
 
-    ensure_private_directory "$RUN_ROOT" "Runtime directory"
-    ensure_private_directory "$RUNS_ROOT" "Run-log directory"
+    ensure_lifecycle_directories
 
     validate_socket_path "$QMP_SOCKET_PATH" "QMP socket path"
     validate_socket_path "$SERIAL_SOCKET_PATH" "Serial socket path"
@@ -440,6 +645,15 @@ validate_runtime_state() {
         [ ! -e "$runtime_path" ] && [ ! -L "$runtime_path" ] ||
             fail "Runtime path already exists: $runtime_path"
     done
+    if [ "$SUPERVISOR_MODE" -eq 1 ]; then
+        supervisor_pid=$(read_pid_file "$SUPERVISOR_PID_PATH" \
+            "Supervisor PID file")
+        [ "$supervisor_pid" -eq "$$" ] ||
+            fail "Supervisor PID file does not belong to the current supervisor"
+    else
+        [ ! -e "$SUPERVISOR_PID_PATH" ] && [ ! -L "$SUPERVISOR_PID_PATH" ] ||
+            fail "Runtime path already exists: $SUPERVISOR_PID_PATH"
+    fi
 
     [ ! -L "$SERIAL_LOG_PATH" ] ||
         fail "Serial log path must not be a symbolic link: $SERIAL_LOG_PATH"
@@ -456,6 +670,14 @@ validate_runtime_state() {
     fi
     if [ -f "$DNS_BRIDGE_LOG_PATH" ] && [ "$(file_mode "$DNS_BRIDGE_LOG_PATH")" != "600" ]; then
         fail "Existing DNS bridge log mode must be 0600: $DNS_BRIDGE_LOG_PATH"
+    fi
+    [ ! -L "$SUPERVISOR_LOG_PATH" ] ||
+        fail "Supervisor log path must not be a symbolic link: $SUPERVISOR_LOG_PATH"
+    if [ -e "$SUPERVISOR_LOG_PATH" ] && [ ! -f "$SUPERVISOR_LOG_PATH" ]; then
+        fail "Supervisor log path is not a regular file: $SUPERVISOR_LOG_PATH"
+    fi
+    if [ -f "$SUPERVISOR_LOG_PATH" ] && [ "$(file_mode "$SUPERVISOR_LOG_PATH")" != "600" ]; then
+        fail "Existing supervisor log mode must be 0600: $SUPERVISOR_LOG_PATH"
     fi
     [ ! -L "$DNS_BRIDGE_SCRIPT" ] && [ -f "$DNS_BRIDGE_SCRIPT" ] &&
         [ -x "$DNS_BRIDGE_SCRIPT" ] ||
@@ -481,6 +703,13 @@ cleanup_foreground_children() {
         wait "$DNS_BRIDGE_PID" 2>/dev/null || true
     fi
     rm -f "$DNS_BRIDGE_PID_PATH"
+    if [ "$SUPERVISOR_MODE" -eq 1 ] && [ -f "$SUPERVISOR_PID_PATH" ]; then
+        supervisor_cleanup_pid=$(sed -n '1p' "$SUPERVISOR_PID_PATH")
+        if [ "$supervisor_cleanup_pid" = "$$" ]; then
+            rm -f "$SUPERVISOR_PID_PATH"
+        fi
+    fi
+    release_lifecycle_lock
 }
 
 start_dns_bridge() {
@@ -571,6 +800,41 @@ qualify_qemu_for_start() {
         fail "QEMU does not provide virtio-net-pci"
 }
 
+host_check() {
+    require_command df
+    require_command lsof
+    require_command sysctl
+    require_command uname
+
+    [ "$(uname -s)" = Darwin ] || fail "The host operating system is not macOS"
+    [ "$(uname -m)" = arm64 ] || fail "The host architecture is not ARM64"
+    [ "$(sysctl -n kern.hv_support)" = 1 ] ||
+        fail "Apple Hypervisor Framework is unavailable"
+    host_memory_bytes=$(sysctl -n hw.memsize)
+    [ "$host_memory_bytes" -ge "$MINIMUM_HOST_MEMORY_BYTES" ] ||
+        fail "Host memory is below the 4 GiB minimum"
+    host_free_kib=$(df -Pk "$REPOSITORY_ROOT" | awk 'NR == 2 { print $4 }')
+    [ "$host_free_kib" -ge "$MINIMUM_HOST_FREE_KIB" ] ||
+        fail "Free disk at the repository is below the 20 GiB minimum"
+
+    qualify_qemu_for_start
+    if lsof -nP -iTCP:"$SSH_HOST_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
+        fail "SSH host port is already in use: 127.0.0.1:$SSH_HOST_PORT"
+    fi
+    if lsof -nP -iTCP:"$HOST_DNS_PORT" -sTCP:LISTEN >/dev/null 2>&1 ||
+       lsof -nP -iUDP:"$HOST_DNS_PORT" >/dev/null 2>&1; then
+        fail "Host DNS port is already in use: $HOST_DNS_ADDRESS:$HOST_DNS_PORT"
+    fi
+
+    printf 'AosVM host qualification passed.\n'
+    printf 'Host: macOS ARM64 with Hypervisor Framework\n'
+    printf 'Memory: %s bytes\n' "$host_memory_bytes"
+    printf 'Free disk: %s KiB\n' "$host_free_kib"
+    printf 'QEMU: %s %s\n' "$QEMU_SYSTEM_PATH" "$QEMU_BASELINE_VERSION"
+    printf 'Planned listeners: 127.0.0.1:%s (SSH), 127.0.0.1:%s (DNS)\n' \
+        "$SSH_HOST_PORT" "$HOST_DNS_PORT"
+}
+
 validate_qemu_option_paths() {
     for qemu_option_path in \
         "$FIRMWARE_PATH" "$OVERLAY_PATH" "$PID_PATH" "$QMP_SOCKET_PATH" \
@@ -602,6 +866,7 @@ print_command() {
 start_vm() {
     start_mode=$1
 
+    validate_lifecycle_timeouts
     validate_runtime_state
     verify_start_inputs
     qualify_qemu_for_start
@@ -647,7 +912,13 @@ start_vm() {
             ;;
         foreground)
             trap cleanup_foreground_children EXIT
-            trap 'cleanup_foreground_children; exit 129' HUP
+            if [ "$SUPERVISOR_MODE" -eq 1 ]; then
+                # nohup intentionally makes the detached supervisor immune to
+                # a controlling shell hangup. Preserve that contract here.
+                trap '' HUP
+            else
+                trap 'cleanup_foreground_children; exit 129' HUP
+            fi
             trap 'cleanup_foreground_children; exit 130' INT
             trap 'cleanup_foreground_children; exit 143' TERM
             start_dns_bridge
@@ -670,11 +941,307 @@ start_vm() {
     esac
 }
 
+start_background() {
+    acquire_lifecycle_lock
+    validate_lifecycle_timeouts
+    if [ -e "$PID_PATH" ] || [ -L "$PID_PATH" ]; then
+        vm_status
+        release_lifecycle_lock
+        trap - EXIT HUP INT TERM
+        printf 'AosVM Main Node is already running.\n'
+        return
+    fi
+    validate_runtime_state
+    verify_start_inputs
+    qualify_qemu_for_start
+
+    : >"$SUPERVISOR_LOG_PATH"
+    chmod 0600 "$SUPERVISOR_LOG_PATH"
+    nohup "$SCRIPT_PATH" _supervise \
+        >>"$SUPERVISOR_LOG_PATH" 2>&1 </dev/null &
+    supervisor_pid=$!
+    BACKGROUND_START_PID=$supervisor_pid
+    trap cleanup_background_start EXIT HUP INT TERM
+    printf '%s\n' "$supervisor_pid" >"$SUPERVISOR_PID_PATH"
+    chmod 0600 "$SUPERVISOR_PID_PATH"
+
+    start_elapsed=0
+    while [ "$start_elapsed" -lt "$START_TIMEOUT_SECONDS" ]; do
+        if [ -f "$PID_PATH" ] && [ -S "$QMP_SOCKET_PATH" ]; then
+            qemu_pid=$(read_pid_file "$PID_PATH" "QEMU PID file")
+            verify_owned_qemu_pid "$qemu_pid"
+            supervisor_pid_check=$(read_pid_file "$SUPERVISOR_PID_PATH" \
+                "Supervisor PID file")
+            verify_supervisor_pid "$supervisor_pid_check" "$qemu_pid"
+            qmp_status=$(qmp_command query-status)
+            printf '%s\n' "$qmp_status" | grep -Fq '"status":"running"' ||
+                fail "QEMU did not report running state"
+            release_lifecycle_lock
+            trap - EXIT HUP INT TERM
+            BACKGROUND_START_PID=''
+            printf 'Started AosVM Main Node in the background.\n'
+            printf 'QEMU PID: %s\n' "$qemu_pid"
+            printf 'Supervisor PID: %s\n' "$supervisor_pid"
+            printf 'Serial log: %s\n' "$SERIAL_LOG_PATH"
+            return
+        fi
+        if ! kill -0 "$supervisor_pid" 2>/dev/null; then
+            rm -f "$SUPERVISOR_PID_PATH"
+            fail "AosVM supervisor exited during startup; see $SUPERVISOR_LOG_PATH"
+        fi
+        sleep 1
+        start_elapsed=$((start_elapsed + 1))
+    done
+
+    fail "AosVM did not become ready within $START_TIMEOUT_SECONDS seconds"
+}
+
+reset_overlay() {
+    reset_confirmation=$1
+    [ "$reset_confirmation" = --confirm ] ||
+        fail "Reset requires the explicit --confirm option"
+    acquire_lifecycle_lock
+    if [ -e "$PID_PATH" ] || [ -L "$PID_PATH" ] ||
+       [ -e "$QMP_SOCKET_PATH" ] || [ -L "$QMP_SOCKET_PATH" ] ||
+       [ -e "$SERIAL_SOCKET_PATH" ] || [ -L "$SERIAL_SOCKET_PATH" ] ||
+       [ -e "$DNS_BRIDGE_PID_PATH" ] || [ -L "$DNS_BRIDGE_PID_PATH" ] ||
+       [ -e "$SUPERVISOR_PID_PATH" ] || [ -L "$SUPERVISOR_PID_PATH" ]; then
+        fail "Reset is allowed only when the VM has no runtime state"
+    fi
+    require_command jq
+    require_command qemu-img
+    verify_release_file "$MAIN_IMAGE_PATH" "$MAIN_IMAGE_SIZE" \
+        "$MAIN_IMAGE_SHA256" "Main Node image"
+    verify_base_image "$MAIN_IMAGE_PATH" "Main Node image"
+    verify_overlay "$OVERLAY_PATH"
+    [ "$(file_mode "$OVERLAY_PATH")" = 600 ] || fail "Overlay mode must be 0600"
+
+    reset_work_dir=$(mktemp -d "$LOCAL_ROOT/.reset-overlay.XXXXXX")
+    reset_new_overlay="$reset_work_dir/$OVERLAY"
+    reset_old_overlay="$reset_work_dir/$OVERLAY.old"
+    absolute_main_image_path=$(absolute_path "$MAIN_IMAGE_PATH")
+    qemu-img create -q -f qcow2 -b "$absolute_main_image_path" -B qcow2 \
+        "$reset_new_overlay"
+    chmod 0600 "$reset_new_overlay"
+    verify_overlay "$reset_new_overlay"
+    mv "$OVERLAY_PATH" "$reset_old_overlay"
+    if mv "$reset_new_overlay" "$OVERLAY_PATH"; then
+        rm "$reset_old_overlay"
+        rmdir "$reset_work_dir"
+    else
+        mv "$reset_old_overlay" "$OVERLAY_PATH" >/dev/null 2>&1 || true
+        fail "Cannot install the recreated overlay"
+    fi
+    verify_overlay "$OVERLAY_PATH"
+    release_lifecycle_lock
+    trap - EXIT HUP INT TERM
+    printf 'Recreated only the disposable AosVM overlay.\n'
+    printf 'Overlay: %s\n' "$OVERLAY_PATH"
+}
+
+vm_status() {
+    ensure_lifecycle_directories
+    if [ ! -e "$PID_PATH" ] && [ ! -L "$PID_PATH" ]; then
+        for stale_path in "$QMP_SOCKET_PATH" "$SERIAL_SOCKET_PATH" \
+            "$DNS_BRIDGE_PID_PATH" "$SUPERVISOR_PID_PATH"; do
+            [ ! -e "$stale_path" ] && [ ! -L "$stale_path" ] ||
+                fail "VM is stopped but ambiguous runtime state remains: $stale_path"
+        done
+        printf 'AosVM Main Node is stopped.\n'
+        return
+    fi
+
+    qemu_pid=$(resolve_running_vm)
+    supervisor_pid=$(read_pid_file "$SUPERVISOR_PID_PATH" "Supervisor PID file")
+    verify_supervisor_pid "$supervisor_pid" "$qemu_pid"
+    dns_pid=$(read_pid_file "$DNS_BRIDGE_PID_PATH" "DNS bridge PID file")
+    dns_command=$(process_command "$dns_pid") ||
+        fail "DNS bridge PID is not running: $dns_pid"
+    case "$dns_command" in
+        "/usr/bin/python3 $DNS_BRIDGE_SCRIPT --listen-address $HOST_DNS_ADDRESS --listen-port $HOST_DNS_PORT"|\
+        *"/Python $DNS_BRIDGE_SCRIPT --listen-address $HOST_DNS_ADDRESS --listen-port $HOST_DNS_PORT") ;;
+        *) fail "DNS bridge PID is not the owned loopback bridge" ;;
+    esac
+    dns_parent_pid=$(process_parent_pid "$dns_pid") ||
+        fail "Cannot resolve the DNS bridge parent PID"
+    [ "$dns_parent_pid" = "$supervisor_pid" ] ||
+        fail "Owned DNS bridge is not a child of the recorded supervisor"
+    qmp_status=$(qmp_command query-status)
+    printf '%s\n' "$qmp_status" | grep -Fq '"status":"running"' ||
+        fail "QEMU is not in running state"
+
+    ssh_listener=$(lsof -nP -a -p "$qemu_pid" -iTCP:"$SSH_HOST_PORT" \
+        -sTCP:LISTEN -F n 2>/dev/null | sed -n 's/^n//p')
+    [ "$ssh_listener" = "127.0.0.1:$SSH_HOST_PORT" ] ||
+        fail "Owned QEMU SSH listener is not loopback-only"
+    dns_tcp_listener=$(lsof -nP -a -p "$dns_pid" -iTCP:"$HOST_DNS_PORT" \
+        -sTCP:LISTEN -F n 2>/dev/null | sed -n 's/^n//p')
+    dns_udp_listener=$(lsof -nP -a -p "$dns_pid" -iUDP:"$HOST_DNS_PORT" \
+        -F n 2>/dev/null | sed -n 's/^n//p')
+    [ "$dns_tcp_listener" = "$HOST_DNS_ADDRESS:$HOST_DNS_PORT" ] &&
+        [ "$dns_udp_listener" = "$HOST_DNS_ADDRESS:$HOST_DNS_PORT" ] ||
+        fail "Owned DNS bridge listeners are not loopback-only"
+
+    printf 'AosVM Main Node is running.\n'
+    printf 'QEMU PID: %s\n' "$qemu_pid"
+    printf 'Supervisor PID: %s\n' "$supervisor_pid"
+    printf 'DNS bridge PID: %s\n' "$dns_pid"
+    printf 'QMP status: running\n'
+    printf 'SSH: 127.0.0.1:%s\n' "$SSH_HOST_PORT"
+    printf 'DNS bridge: %s:%s (TCP and UDP)\n' \
+        "$HOST_DNS_ADDRESS" "$HOST_DNS_PORT"
+    printf 'Serial socket: %s\n' "$SERIAL_SOCKET_PATH"
+    printf 'Overlay: %s\n' "$OVERLAY_PATH"
+}
+
+supervise_vm() {
+    [ "$SUPERVISOR_MODE" -eq 0 ] || fail "Supervisor mode is already active"
+    supervisor_wait=0
+    while [ ! -f "$SUPERVISOR_PID_PATH" ]; do
+        [ "$supervisor_wait" -lt 50 ] ||
+            fail "Supervisor PID file did not become available"
+        sleep 0.1
+        supervisor_wait=$((supervisor_wait + 1))
+    done
+    supervisor_pid=$(read_pid_file "$SUPERVISOR_PID_PATH" "Supervisor PID file")
+    [ "$supervisor_pid" -eq "$$" ] ||
+        fail "Supervisor PID file does not name the current process"
+    SUPERVISOR_MODE=1
+    start_vm foreground
+}
+
+start_foreground_owned() {
+    acquire_lifecycle_lock
+    if [ -e "$PID_PATH" ] || [ -L "$PID_PATH" ]; then
+        vm_status
+        release_lifecycle_lock
+        trap - EXIT HUP INT TERM
+        printf 'AosVM Main Node is already running.\n'
+        return
+    fi
+    [ ! -e "$SUPERVISOR_PID_PATH" ] && [ ! -L "$SUPERVISOR_PID_PATH" ] ||
+        fail "Ambiguous supervisor state exists: $SUPERVISOR_PID_PATH"
+    printf '%s\n' "$$" >"$SUPERVISOR_PID_PATH"
+    chmod 0600 "$SUPERVISOR_PID_PATH"
+    SUPERVISOR_MODE=1
+    release_lifecycle_lock
+    trap - EXIT HUP INT TERM
+    start_vm foreground
+}
+
+vm_console() {
+    require_command nc
+    resolve_running_vm >/dev/null
+    [ ! -L "$SERIAL_SOCKET_PATH" ] && [ -S "$SERIAL_SOCKET_PATH" ] ||
+        fail "The owned serial socket is unavailable: $SERIAL_SOCKET_PATH"
+    printf 'Connecting to the AosVM serial console. Press Ctrl-C to detach.\n'
+    nc -U "$SERIAL_SOCKET_PATH"
+}
+
+vm_stop() {
+    acquire_lifecycle_lock
+    validate_lifecycle_timeouts
+
+    if [ ! -e "$PID_PATH" ] && [ ! -L "$PID_PATH" ]; then
+        for stale_path in "$QMP_SOCKET_PATH" "$SERIAL_SOCKET_PATH" \
+            "$DNS_BRIDGE_PID_PATH" "$SUPERVISOR_PID_PATH"; do
+            [ ! -e "$stale_path" ] && [ ! -L "$stale_path" ] ||
+                fail "VM has no PID but ambiguous runtime state remains: $stale_path"
+        done
+        release_lifecycle_lock
+        trap - EXIT HUP INT TERM
+        printf 'AosVM Main Node is already stopped.\n'
+        return
+    fi
+
+    qemu_pid=$(resolve_running_vm)
+    supervisor_pid=$(read_pid_file "$SUPERVISOR_PID_PATH" "Supervisor PID file")
+    verify_supervisor_pid "$supervisor_pid" "$qemu_pid"
+    printf 'Requesting a clean AosVM shutdown through QMP.\n'
+    qmp_command system_powerdown >/dev/null
+    if wait_for_process_exit "$qemu_pid" "$STOP_TIMEOUT_SECONDS"; then
+        printf 'The guest completed a clean shutdown.\n'
+    else
+        verify_owned_qemu_pid "$qemu_pid"
+        printf 'Guest shutdown timed out; sending TERM to verified QEMU PID %s.\n' \
+            "$qemu_pid"
+        kill -TERM "$qemu_pid" || fail "Cannot signal verified QEMU PID $qemu_pid"
+        wait_for_process_exit "$qemu_pid" "$TERM_TIMEOUT_SECONDS" ||
+            fail "Verified QEMU PID did not exit after TERM: $qemu_pid"
+    fi
+
+    wait_for_process_exit "$supervisor_pid" "$TERM_TIMEOUT_SECONDS" ||
+        fail "Owned supervisor did not exit after QEMU shutdown"
+    runtime_cleanup_elapsed=0
+    while [ "$runtime_cleanup_elapsed" -lt "$TERM_TIMEOUT_SECONDS" ]; do
+        if [ ! -e "$PID_PATH" ] && [ ! -e "$QMP_SOCKET_PATH" ] &&
+           [ ! -e "$SERIAL_SOCKET_PATH" ] && [ ! -e "$DNS_BRIDGE_PID_PATH" ] &&
+           [ ! -e "$SUPERVISOR_PID_PATH" ]; then
+            break
+        fi
+        sleep 1
+        runtime_cleanup_elapsed=$((runtime_cleanup_elapsed + 1))
+    done
+    [ ! -e "$PID_PATH" ] && [ ! -e "$QMP_SOCKET_PATH" ] &&
+        [ ! -e "$SERIAL_SOCKET_PATH" ] && [ ! -e "$DNS_BRIDGE_PID_PATH" ] &&
+        [ ! -e "$SUPERVISOR_PID_PATH" ] ||
+        fail "Owned runtime state remained after shutdown"
+    verify_overlay "$OVERLAY_PATH"
+    release_lifecycle_lock
+    trap - EXIT HUP INT TERM
+    printf 'Stopped AosVM Main Node and verified overlay integrity.\n'
+}
+
+smoke_test() {
+    ensure_lifecycle_directories
+    validate_lifecycle_timeouts
+    qemu_pid=$(resolve_running_vm)
+    vm_status >/dev/null
+    require_command nc
+    require_command stat
+
+    ssh_banner=''
+    smoke_deadline=$(($(date +%s) + SMOKE_TIMEOUT_SECONDS))
+    while [ "$(date +%s)" -lt "$smoke_deadline" ]; do
+        ssh_banner=$( (sleep 1) |
+            nc -w 2 127.0.0.1 "$SSH_HOST_PORT" 2>/dev/null |
+            sed -n '1p')
+        case "$ssh_banner" in
+            SSH-2.0-OpenSSH_*) break ;;
+        esac
+        sleep 1
+    done
+    case "$ssh_banner" in
+        SSH-2.0-OpenSSH_*) ;;
+        *) fail "The guest SSH banner did not become ready within $SMOKE_TIMEOUT_SECONDS seconds" ;;
+    esac
+    qmp_status=$(qmp_command query-status)
+    printf '%s\n' "$qmp_status" | grep -Fq '"status":"running"' ||
+        fail "QMP smoke check did not report running state"
+    verify_overlay "$OVERLAY_PATH" shared
+
+    manifest_path="$RUNS_ROOT/$VM_NAME-smoke-$(date -u '+%Y%m%dT%H%M%SZ').json"
+    manifest_partial="$manifest_path.partial"
+    [ ! -e "$manifest_path" ] && [ ! -L "$manifest_path" ] ||
+        fail "Smoke-test manifest already exists: $manifest_path"
+    cat >"$manifest_partial" <<EOF
+{"schema":1,"vm":"$VM_NAME","result":"pass","qmp":"running","ssh":"loopback","sshPort":$SSH_HOST_PORT,"dns":"loopback","dnsPort":$HOST_DNS_PORT,"qemuPid":$qemu_pid,"overlayFormat":"qcow2","baseImageSha256":"$MAIN_IMAGE_SHA256","checkedAt":"$(date -u '+%Y-%m-%dT%H:%M:%SZ')"}
+EOF
+    chmod 0600 "$manifest_partial"
+    mv "$manifest_partial" "$manifest_path"
+    printf 'AosVM smoke test passed.\n'
+    printf 'Local manifest: %s\n' "$manifest_path"
+}
+
 usage() {
-    printf 'Usage: %s <download|prepare|start --dry-run|start --foreground>\n' "$0"
+    printf 'Usage: %s <host-check|download|prepare|start [--foreground|--dry-run]|console|status|smoke-test|stop|reset-overlay --confirm>\n' "$0"
 }
 
 case ${1:-} in
+    host-check)
+        [ "$#" -eq 1 ] || fail "The host-check command does not accept arguments"
+        host_check
+        ;;
     download)
         [ "$#" -eq 1 ] || fail "The download command does not accept arguments"
         download_archive
@@ -684,13 +1251,38 @@ case ${1:-} in
         prepare_images
         ;;
     start)
-        [ "$#" -eq 2 ] ||
-            fail "Start requires exactly one mode: --dry-run or --foreground"
-        case "$2" in
+        [ "$#" -le 2 ] ||
+            fail "Start accepts no option, --dry-run, or --foreground"
+        case ${2:-background} in
+            background) start_background ;;
             --dry-run) start_vm dry-run ;;
-            --foreground) start_vm foreground ;;
+            --foreground) start_foreground_owned ;;
             *) fail "Start mode must be --dry-run or --foreground" ;;
         esac
+        ;;
+    console)
+        [ "$#" -eq 1 ] || fail "The console command does not accept arguments"
+        vm_console
+        ;;
+    status)
+        [ "$#" -eq 1 ] || fail "The status command does not accept arguments"
+        vm_status
+        ;;
+    smoke-test)
+        [ "$#" -eq 1 ] || fail "The smoke-test command does not accept arguments"
+        smoke_test
+        ;;
+    stop)
+        [ "$#" -eq 1 ] || fail "The stop command does not accept arguments"
+        vm_stop
+        ;;
+    reset-overlay)
+        [ "$#" -eq 2 ] || fail "Reset requires the explicit --confirm option"
+        reset_overlay "$2"
+        ;;
+    _supervise)
+        [ "$#" -eq 1 ] || fail "The internal supervisor does not accept arguments"
+        supervise_vm
         ;;
     -h|--help|help)
         usage

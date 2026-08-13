@@ -25,7 +25,8 @@ be performed in AOS-1 with the utilities supplied by the AosEdge SDK.
 | Phase 9: local OCI runtime gate | Complete — 2026-08-13 | Pass |
 | Phase 10: AosCore pre-provisioning state | Complete — 2026-08-13 | Pass with tracked ARM64 overlay fix |
 | Phase 11: layered networking | Complete — 2026-08-13 | Pass with tracked loopback DNS bridge |
-| Phases 12–14 | Not started | — |
+| Phase 12: owned VM lifecycle | Complete — 2026-08-13 | Pass |
+| Phases 13–14 | Not started | — |
 
 ### Phase 1 observed baseline
 
@@ -489,6 +490,44 @@ Node, and firmware SHA-256 values remained exactly pinned. No provisioning,
 certificate enrollment, AosCloud connection, credential capture, or LAN
 exposure occurred.
 
+### Phase 12 observed baseline
+
+The tracked `scripts/aosvm` entry point now owns the complete host lifecycle.
+All user-visible launcher and test text is English. The implementation uses a
+private per-VM lock, exact PID files, QMP and serial Unix sockets, and a small
+allowlisted QMP client. It validates the QEMU executable and complete owned
+command, links QEMU and the DNS bridge to the recorded supervisor through
+their parent PIDs, and rejects stale, unrelated, symbolic-link, or ambiguous
+runtime state.
+
+The qualified command behavior is:
+
+| Command | Qualified result |
+| --- | --- |
+| `host-check` | Passed macOS ARM64, HVF, 48 GiB memory, disk minimum, QEMU 11.0.3, and loopback-port checks |
+| `start` | Started a detached supervisor, DNS bridge, and QEMU; remained running after an explicit `SIGHUP` |
+| repeated `start` | Reported the already-running owned VM without starting a second process |
+| `status` | Verified exact supervisor/QEMU/DNS ownership, QMP running state, loopback SSH/DNS listeners, serial socket, and overlay |
+| `console` | Attached only to the owned serial socket and displayed `main login:`; `Ctrl-C` detached without stopping the VM |
+| `smoke-test` | Waited up to a bounded guest-readiness timeout, verified the OpenSSH banner, QMP, and shared read-only qcow2 integrity, then wrote a mode-0600 ignored JSON manifest |
+| `stop` | Requested `system_powerdown` through QMP, waited for guest exit, removed owned runtime state, and passed exclusive `qemu-img check` |
+| repeated `stop` and stopped `status` | Reported the already-stopped state without error or broad cleanup |
+| `reset-overlay --confirm` | Rejected missing confirmation and passed atomic recreation and metadata checks against an isolated disposable test overlay |
+
+The start gate deliberately means **QEMU is running**, not that all guest
+services are ready. The smoke test owns the separate readiness contract and
+waits up to 90 seconds for the guest SSH banner. The first observed boot
+reached QEMU running state in roughly 10 seconds and the serial login prompt in
+roughly 37 seconds. Shutdown is bounded: QMP is tried for up to 90 seconds,
+then `TERM` may be sent only after revalidating the exact owned QEMU PID.
+
+No command uses `killall`, broad process-name matching, administrator
+privilege, LAN listeners, or an unverified PID. Static safety gates also prove
+that an unrelated live PID remains alive, a nonexistent PID is rejected, a
+concurrent lifecycle lock blocks mutation, and stopped smoke testing fails
+closed. The real working overlay has not been reset; persistence and destructive
+reset qualification belong to Phase 13.
+
 ## Pinned upstream input
 
 | Field | Value |
@@ -627,7 +666,7 @@ carla-aosedge-integration/
   README.md
   docs/
   scripts/aosvm             # one entry point with lifecycle subcommands
-  scripts/lib/              # shared validation and QEMU command assembly
+  scripts/host/             # constrained host helpers such as QMP and DNS
   config/
     aosvm.env.example
   tests/
@@ -1065,7 +1104,7 @@ the guest for the later VISS path, and no service is exposed externally.
 
 **Observed:** pass. `tests/guest/aosvm-phase11-test` and
 `tests/host/aosvm-phase11-host-gate` passed twice, including after a clean
-reboot. Phase 12 lifecycle automation is next.
+reboot. Phase 12 lifecycle automation also passes; Phase 13 is next.
 
 **Stop:** basic connectivity needs an undocumented image mutation, external LAN
 exposure, or administrator-owned network configuration.
@@ -1105,6 +1144,12 @@ Lifecycle rules:
 - make `start`, `stop`, and `status` idempotent.
 
 **Pass:** start/status/console/stop can be repeated and affect only this VM.
+
+**Observed:** pass. Real foreground and background runs exercised console,
+status, immediate repeated start, bounded smoke readiness, QMP powerdown,
+exclusive post-stop disk validation, repeated stop, and stopped status. An
+explicit `SIGHUP` did not terminate the detached supervisor or its children.
+The safety tests reject stale, unrelated, locked, and ambiguous runtime state.
 
 **Stop:** any lifecycle action relies on process names, broad deletion, or
 ambiguous state.
@@ -1177,7 +1222,7 @@ sanitized evidence is committed, and the working tree is clean.
 - [x] SSH is reachable only through a loopback host forward.
 - [x] Clean shutdown and second boot succeed.
 - [ ] Overlay reset is safe and reproducible.
-- [ ] The launcher does not require administrator privileges.
+- [x] The launcher does not require administrator privileges.
 - [ ] A sanitized baseline is committed and the working tree is clean.
 
 ## Explicit non-goals

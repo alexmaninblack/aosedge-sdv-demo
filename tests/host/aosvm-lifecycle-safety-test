@@ -1,0 +1,84 @@
+#!/bin/sh
+
+set -eu
+umask 077
+
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+repository_root=$(CDPATH='' cd -- "$script_dir/../.." && pwd)
+test_root=$(mktemp -d /private/tmp/aosvm-lifecycle-safety-test.XXXXXX)
+test_run_root="$test_root/run"
+test_runs_root="$test_root/runs"
+test_local_root="$test_root/local"
+
+cleanup() {
+    if [ -n "${unrelated_pid:-}" ] && kill -0 "$unrelated_pid" 2>/dev/null; then
+        kill "$unrelated_pid" >/dev/null 2>&1 || true
+        wait "$unrelated_pid" 2>/dev/null || true
+    fi
+    rm -r "$test_root"
+}
+
+trap cleanup EXIT HUP INT TERM
+
+run_lifecycle() {
+    AOSVM_RUN_ROOT="$test_run_root" \
+    AOSVM_RUNS_ROOT="$test_runs_root" \
+    AOSVM_LOCAL_ROOT="$test_local_root" \
+        "$repository_root/scripts/aosvm" "$@"
+}
+
+run_lifecycle status >"$test_root/stopped-status"
+grep -qx 'AosVM Main Node is stopped.' "$test_root/stopped-status"
+
+mkdir -p "$test_local_root"
+ln -s "$repository_root/.local/aosvm-main-overlay.qcow2" \
+    "$test_local_root/aosvm-main-overlay.qcow2"
+
+mkdir -p "$test_run_root"
+chmod 0700 "$test_run_root"
+: >"$test_run_root/aosvm-main.qmp"
+if run_lifecycle status >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected ambiguous stopped runtime state to be rejected.\n' >&2
+    exit 1
+fi
+grep -q 'ambiguous runtime state remains' "$test_root/stderr"
+rm "$test_run_root/aosvm-main.qmp"
+
+sleep 120 &
+unrelated_pid=$!
+printf '%s\n' "$unrelated_pid" >"$test_run_root/aosvm-main.pid"
+chmod 0600 "$test_run_root/aosvm-main.pid"
+if run_lifecycle stop >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected an unrelated PID to be rejected by stop.\n' >&2
+    exit 1
+fi
+grep -Eq 'not the owned AosVM QEMU process|QEMU PID is not running' \
+    "$test_root/stderr"
+kill -0 "$unrelated_pid"
+rm "$test_run_root/aosvm-main.pid"
+
+printf '999999\n' >"$test_run_root/aosvm-main.pid"
+chmod 0600 "$test_run_root/aosvm-main.pid"
+if run_lifecycle status >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected a stale QEMU PID to be rejected.\n' >&2
+    exit 1
+fi
+grep -q 'QEMU PID is not running' "$test_root/stderr"
+rm "$test_run_root/aosvm-main.pid"
+
+mkdir "$test_run_root/aosvm-main.lifecycle.lock"
+chmod 0700 "$test_run_root/aosvm-main.lifecycle.lock"
+if run_lifecycle stop >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected a concurrent lifecycle lock to be rejected.\n' >&2
+    exit 1
+fi
+grep -q 'Another AosVM lifecycle operation is running' "$test_root/stderr"
+rmdir "$test_run_root/aosvm-main.lifecycle.lock"
+
+if run_lifecycle smoke-test >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected smoke-test on a stopped VM to fail.\n' >&2
+    exit 1
+fi
+grep -q 'QEMU PID file does not exist' "$test_root/stderr"
+
+printf 'AosVM lifecycle safety tests passed.\n'

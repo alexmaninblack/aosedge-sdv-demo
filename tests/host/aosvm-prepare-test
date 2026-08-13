@@ -36,6 +36,29 @@ qemu-img check "$overlay_path" >/dev/null
 AOSVM_LOCAL_ROOT="$test_local_root" "$repository_root/scripts/aosvm" prepare \
     >"$test_root/second-prepare.log"
 
+printf 'overlay-marker\n' >>"$overlay_path"
+if AOSVM_LOCAL_ROOT="$test_local_root" \
+    AOSVM_RUN_ROOT="$test_root/reset-run" \
+    AOSVM_RUNS_ROOT="$test_root/reset-runs" \
+        "$repository_root/scripts/aosvm" reset-overlay \
+        >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected reset without explicit confirmation to be rejected.\n' >&2
+    exit 1
+fi
+grep -q 'Reset requires the explicit --confirm option' "$test_root/stderr"
+
+AOSVM_LOCAL_ROOT="$test_local_root" \
+AOSVM_RUN_ROOT="$test_root/reset-run" \
+AOSVM_RUNS_ROOT="$test_root/reset-runs" \
+    "$repository_root/scripts/aosvm" reset-overlay --confirm \
+    >"$test_root/reset.log"
+grep -q 'Recreated only the disposable AosVM overlay' "$test_root/reset.log"
+qemu-img check "$overlay_path" >/dev/null
+qemu-img info --output=json "$overlay_path" | jq -e \
+    --arg expected_backing "$expected_backing" \
+    '.["backing-filename"] == $expected_backing and
+     .format == "qcow2" and .["virtual-size"] == 6997147648' >/dev/null
+
 : > "$overlay_path"
 
 if AOSVM_LOCAL_ROOT="$test_local_root" "$repository_root/scripts/aosvm" prepare \

@@ -18,7 +18,7 @@ the legacy AOS Vehicle Information Service interface.
 
 ## Current status
 
-Planning and Phases 1–11 are complete for AOS-0. The official AosVM 6.1.0 ARM64
+Planning and Phases 1–12 are complete for AOS-0. The official AosVM 6.1.0 ARM64
 Main Node boots natively accelerated by HVF on the Apple M5 Pro. Its guest
 identity, own kernel, unified cgroups v2, memory, partition layout, read-only
 root, writable data mounts, SELinux state, and pre-provisioning services are
@@ -33,9 +33,19 @@ names the x86 EFI loader. Phase 11 passes layered address, route, TCP, DNS,
 time, verified HTTPS, guest-to-host, loopback SSH, exposure, reboot, and cleanup
 gates. A tracked loopback-only macOS DNS bridge supplies bounded resolver
 failover without TAP, packet-filter changes, administrator privilege, or LAN
-exposure. Phase 12 lifecycle automation is next.
+exposure. Phase 12 adds an English-only, ownership-checked lifecycle with
+background and foreground start, serial console, status, smoke test, QMP-first
+shutdown, and explicit overlay reset. Phase 13 persistence and reset
+qualification is next.
 
 ## Commands
+
+Qualify the Apple Silicon host, HVF, QEMU baseline, resources, and planned
+loopback listeners:
+
+```sh
+./scripts/aosvm host-check
+```
 
 Download or reverify the pinned official release archive:
 
@@ -55,15 +65,46 @@ Validate and print the exact QEMU command without starting the VM:
 ./scripts/aosvm start --dry-run
 ```
 
-Start the Main Node in the foreground with a timestamped serial log and private
-QMP and serial sockets:
+Start the Main Node as an owned background VM:
 
 ```sh
+./scripts/aosvm start
+```
+
+The start command reports QEMU readiness. The guest can take longer to reach
+its login prompt and SSH readiness. Use the bounded smoke test when guest
+readiness is required:
+
+```sh
+./scripts/aosvm status
+./scripts/aosvm smoke-test
+```
+
+Attach to the existing VM serial console, or start it in the foreground when
+direct process ownership is preferable:
+
+```sh
+./scripts/aosvm console
 ./scripts/aosvm start --foreground
 ```
 
-Foreground start is the validated Phase 6 path. Interactive console, status,
-and lifecycle commands are added in later phases.
+Request a clean guest shutdown through QMP. Repeating `start`, `status`, or
+`stop` is safe and idempotent:
+
+```sh
+./scripts/aosvm stop
+```
+
+`reset-overlay` recreates only the disposable Main Node overlay and requires
+explicit confirmation. It is implemented and safety-tested, but destructive
+reset of the working overlay remains a Phase 13 qualification step:
+
+```sh
+./scripts/aosvm reset-overlay --confirm
+```
+
+Optional non-secret environment overrides are documented in
+`config/aosvm.env.example`.
 
 The read-only Phase 7 guest gate is tracked at
 `tests/guest/aosvm-phase7-test`. It is intended to run as root inside the
@@ -91,7 +132,7 @@ partitions.
 Before the first Phase 11 run on the pinned image, also apply
 `scripts/guest/aosvm-apply-qemu-network-compat` inside the guest and reboot.
 It configures the image's existing dnsmasq to reach the tracked macOS DNS
-bridge started automatically by `start --foreground`. The helper is
+bridge started automatically by either start mode. The helper is
 idempotent, changes only the disposable overlay, preserves SELinux labels and
 the read-only root contract, and contains no credential. The repeatable live
 gates are `tests/guest/aosvm-phase11-test` and
