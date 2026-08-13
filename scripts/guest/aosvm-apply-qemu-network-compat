@@ -1,0 +1,145 @@
+#!/bin/sh
+
+set -u
+umask 077
+
+config=/etc/systemd/network/20-wired.network
+dnsmasq_config=/var/aos/dns/dnsmasq.conf
+expected_address=10.0.0.100/24
+expected_gateway=10.0.0.1
+expected_old_dns='10.0.0.1
+10.0.0.100'
+expected_intermediate_dns=10.0.0.2
+expected_port_dns=10.0.0.1:18053
+expected_dns=10.0.0.100
+expected_upstream='server=10.0.0.1#18053'
+temporary_config=
+temporary_dnsmasq_config=
+root_remounted_rw=0
+
+fail() {
+    printf 'AosVM QEMU network compatibility update failed: %s\n' "$*" >&2
+    exit 1
+}
+
+cleanup() {
+    if [ -n "$temporary_config" ] && [ -e "$temporary_config" ]; then
+        rm -f "$temporary_config" >/dev/null 2>&1 || true
+    fi
+    if [ -n "$temporary_dnsmasq_config" ] && [ -e "$temporary_dnsmasq_config" ]; then
+        rm -f "$temporary_dnsmasq_config" >/dev/null 2>&1 || true
+    fi
+    if [ "$root_remounted_rw" -eq 1 ]; then
+        mount -o remount,ro / >/dev/null 2>&1 || true
+    fi
+}
+
+trap cleanup EXIT HUP INT TERM
+
+[ "$(id -u)" -eq 0 ] || fail 'this command must run as root'
+[ "$(uname -m)" = aarch64 ] || fail 'the guest is not AArch64'
+[ "$(findmnt -T / -no SOURCE)" = /dev/sda3 ] \
+    || fail 'the root filesystem is not the qualified AosVM root partition'
+[ -f "$config" ] || fail "missing network configuration: $config"
+[ -f "$dnsmasq_config" ] || fail "missing dnsmasq configuration: $dnsmasq_config"
+
+current_address=$(awk -F= '$1 == "Address" { print $2 }' "$config")
+current_gateway=$(awk -F= '$1 == "Gateway" { print $2 }' "$config")
+current_dns=$(awk -F= '$1 == "DNS" { print $2 }' "$config")
+current_upstreams=$(awk -F= '$1 == "server" { print $0 }' "$dnsmasq_config")
+
+[ "$current_address" = "$expected_address" ] \
+    || fail "unexpected guest address: $current_address"
+[ "$current_gateway" = "$expected_gateway" ] \
+    || fail "unexpected guest gateway: $current_gateway"
+
+case "$current_dns" in
+    "$expected_dns")
+        ;;
+    "$expected_old_dns"|"$expected_intermediate_dns"|"$expected_port_dns") ;;
+    *) fail "unexpected existing DNS configuration: $current_dns" ;;
+esac
+case "$current_upstreams" in
+    ''|"$expected_upstream") ;;
+    *) fail "unexpected existing dnsmasq upstream configuration: $current_upstreams" ;;
+esac
+
+if [ "$current_dns" = "$expected_dns" ] && \
+   [ "$current_upstreams" = "$expected_upstream" ]; then
+    printf 'AosVM DNS already uses the loopback DNS bridge through dnsmasq.\n'
+    trap - EXIT HUP INT TERM
+    exit 0
+fi
+
+mount -o remount,rw / || fail 'cannot remount the root filesystem read-write'
+root_remounted_rw=1
+temporary_config="/etc/systemd/network/.20-wired.network.aosvm-qemu.$$"
+
+awk -v dns="$expected_dns" '
+    /^DNS=/ {
+        if (!wrote_dns) {
+            print "DNS=" dns
+            wrote_dns = 1
+        }
+        next
+    }
+    { print }
+    END { if (!wrote_dns) exit 1 }
+' "$config" >"$temporary_config" \
+    || fail 'cannot create the corrected network configuration'
+
+[ "$(awk -F= '$1 == "DNS" { print $2 }' "$temporary_config")" \
+    = "$expected_dns" ] || fail 'the corrected DNS configuration is invalid'
+chown --reference="$config" "$temporary_config" \
+    || fail 'cannot preserve configuration ownership'
+chmod --reference="$config" "$temporary_config" \
+    || fail 'cannot preserve configuration mode'
+if command -v chcon >/dev/null 2>&1; then
+    chcon --reference="$config" "$temporary_config" \
+        || fail 'cannot preserve the SELinux context'
+fi
+mv "$temporary_config" "$config" \
+    || fail 'cannot install the corrected network configuration'
+temporary_config=
+if command -v restorecon >/dev/null 2>&1; then
+    restorecon "$config" || fail 'cannot restore the SELinux context'
+fi
+
+temporary_dnsmasq_config="/var/aos/dns/.dnsmasq.conf.aosvm-qemu.$$"
+awk -v upstream="$expected_upstream" '
+    /^server=/ { next }
+    { print }
+    END { print upstream }
+' "$dnsmasq_config" >"$temporary_dnsmasq_config" \
+    || fail 'cannot create the corrected dnsmasq configuration'
+[ "$(awk -F= '$1 == "server" { print $0 }' "$temporary_dnsmasq_config")" \
+    = "$expected_upstream" ] || fail 'the corrected dnsmasq configuration is invalid'
+chown --reference="$dnsmasq_config" "$temporary_dnsmasq_config" \
+    || fail 'cannot preserve dnsmasq configuration ownership'
+chmod --reference="$dnsmasq_config" "$temporary_dnsmasq_config" \
+    || fail 'cannot preserve dnsmasq configuration mode'
+if command -v chcon >/dev/null 2>&1; then
+    chcon --reference="$dnsmasq_config" "$temporary_dnsmasq_config" \
+        || fail 'cannot preserve the dnsmasq SELinux context'
+fi
+mv "$temporary_dnsmasq_config" "$dnsmasq_config" \
+    || fail 'cannot install the corrected dnsmasq configuration'
+temporary_dnsmasq_config=
+if command -v restorecon >/dev/null 2>&1; then
+    restorecon "$dnsmasq_config" || fail 'cannot restore the dnsmasq SELinux context'
+fi
+sync
+mount -o remount,ro / || fail 'cannot return the root filesystem to read-only mode'
+root_remounted_rw=0
+
+[ "$(findmnt -T / -no OPTIONS | tr ',' '\n' | grep -x ro)" = ro ] \
+    || fail 'the root filesystem is not read-only after the update'
+[ "$(awk -F= '$1 == "DNS" { print $2 }' "$config")" = "$expected_dns" ] \
+    || fail 'the QEMU DNS correction did not persist'
+[ "$(awk -F= '$1 == "server" { print $0 }' "$dnsmasq_config")" \
+    = "$expected_upstream" ] || fail 'the dnsmasq upstream correction did not persist'
+
+trap - EXIT HUP INT TERM
+printf 'Updated the disposable AosVM overlay to use its local dnsmasq forwarder.\n'
+printf 'dnsmasq upstream: %s\n' "$expected_upstream"
+printf 'Reboot the guest before running the Phase 11 network gate.\n'

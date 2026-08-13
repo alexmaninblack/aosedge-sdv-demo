@@ -22,14 +22,13 @@ reachable only through explicitly configured local forwards, reaches the
 Internet, passes the kernel and local OCI gates, and survives a clean stop/start
 without modifying the downloaded base image.
 
-Current gate: Phase 10 passes after applying the tracked ARM64 compatibility
-fix to the disposable overlay. Provisioning IAM is stable in `unprovisioned`
-mode; runtime IAM, Service Manager, Communication Manager, data mounts, and the
-provisioning firewall are intentionally condition-gated. The only failed unit
-is the classified NFS dependency on storage created during provisioning. The
-upstream `qemuarm64` Service Manager config incorrectly names `bootx64.efi`;
-the tracked fix selects the `bootaa64.efi` present on both ARM64 boot
-partitions and survives reboot. Phase 11 networking validation is next.
+Current gate: Phase 11 passes before and after reboot. Addressing, routing,
+outbound TCP, guest-to-host access, DNS, synchronized time, verified HTTPS, and
+loopback-only SSH all pass tracked host and guest gates. A tracked macOS DNS
+bridge binds only to `127.0.0.1`; the overlay-only guest helper routes the
+image's existing dnsmasq through it without administrator-owned networking or
+LAN exposure. The upstream ARM64 EFI loader correction from Phase 10 remains
+stable. Phase 12 lifecycle automation is next.
 
 Phase 9 also passes the complete cloud-free `crun` qualification.
 The probe ran an isolated ARM64 PID 1 with enforced CPU, memory, and PID

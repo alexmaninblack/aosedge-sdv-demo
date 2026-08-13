@@ -18,7 +18,7 @@ the legacy AOS Vehicle Information Service interface.
 
 ## Current status
 
-Planning and Phases 1–10 are complete for AOS-0. The official AosVM 6.1.0 ARM64
+Planning and Phases 1–11 are complete for AOS-0. The official AosVM 6.1.0 ARM64
 Main Node boots natively accelerated by HVF on the Apple M5 Pro. Its guest
 identity, own kernel, unified cgroups v2, memory, partition layout, read-only
 root, writable data mounts, SELinux state, and pre-provisioning services are
@@ -29,8 +29,11 @@ resource limits, read-only rootfs, isolated networking, and clean teardown.
 Phase 10 classifies the installed AosCore components as locally healthy and
 intentionally unprovisioned. It also applies a tracked ARM64 compatibility fix
 to the disposable overlay because the upstream Service Manager configuration
-names the x86 EFI loader. Phase 11 is next: validate networking as independent
-layers before any certificate enrollment or cloud connection.
+names the x86 EFI loader. Phase 11 passes layered address, route, TCP, DNS,
+time, verified HTTPS, guest-to-host, loopback SSH, exposure, reboot, and cleanup
+gates. A tracked loopback-only macOS DNS bridge supplies bounded resolver
+failover without TAP, packet-filter changes, administrator privilege, or LAN
+exposure. Phase 12 lifecycle automation is next.
 
 ## Commands
 
@@ -84,6 +87,15 @@ helper changes only the disposable overlay, is idempotent, preserves the
 read-only root and SELinux context, and corrects the Service Manager boot
 runtime from `bootx64.efi` to the ARM64 `bootaa64.efi` present on both boot
 partitions.
+
+Before the first Phase 11 run on the pinned image, also apply
+`scripts/guest/aosvm-apply-qemu-network-compat` inside the guest and reboot.
+It configures the image's existing dnsmasq to reach the tracked macOS DNS
+bridge started automatically by `start --foreground`. The helper is
+idempotent, changes only the disposable overlay, preserves SELinux labels and
+the read-only root contract, and contains no credential. The repeatable live
+gates are `tests/guest/aosvm-phase11-test` and
+`tests/host/aosvm-phase11-host-gate`.
 
 ## Repository policy
 

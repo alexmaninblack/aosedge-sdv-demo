@@ -1,0 +1,116 @@
+#!/bin/sh
+
+set -u
+umask 077
+
+ssh_host_port=${AOSVM_SSH_HOST_PORT:-10022}
+host_probe_port=${AOSVM_HOST_PROBE_PORT:-18080}
+host_dns_port=${AOSVM_HOST_DNS_PORT:-18053}
+host_probe_marker=AOSVM_PHASE11_HOST_OK
+probe_pid=
+
+fail() {
+    printf 'FAIL: AosVM Phase 11 host gate: %s\n' "$*" >&2
+    exit 1
+}
+
+cleanup() {
+    if [ -n "$probe_pid" ] && kill -0 "$probe_pid" 2>/dev/null; then
+        kill "$probe_pid" >/dev/null 2>&1 || true
+        wait "$probe_pid" 2>/dev/null || true
+    fi
+}
+
+trap cleanup EXIT HUP INT TERM
+
+for value in "$ssh_host_port" "$host_probe_port" "$host_dns_port"; do
+    case "$value" in
+        ''|*[!0-9]*) fail 'a configured port is not numeric' ;;
+    esac
+    [ "$value" -ge 1024 ] && [ "$value" -le 65535 ] \
+        || fail 'configured ports must be between 1024 and 65535'
+done
+[ "$ssh_host_port" -ne "$host_probe_port" ] \
+    || fail 'the SSH and host probe ports must differ'
+[ "$host_dns_port" -ne "$ssh_host_port" ] && \
+    [ "$host_dns_port" -ne "$host_probe_port" ] \
+    || fail 'the DNS bridge port must differ from SSH and the host probe'
+for tool in ifconfig lsof nc; do
+    command -v "$tool" >/dev/null 2>&1 \
+        || fail "required host command is unavailable: $tool"
+done
+
+printf 'AosVM Phase 11 host exposure gate\n'
+listener_names=$(lsof -nP -a -iTCP:"$ssh_host_port" -sTCP:LISTEN -F n 2>/dev/null |
+    sed -n 's/^n//p')
+[ "$listener_names" = "127.0.0.1:$ssh_host_port" ] \
+    || fail "SSH is not listening exclusively on 127.0.0.1:$ssh_host_port"
+ssh_banner=$((sleep 1) | nc -w 5 127.0.0.1 "$ssh_host_port" 2>/dev/null |
+    sed -n '1p')
+case "$ssh_banner" in
+    SSH-2.0-OpenSSH_*) ;;
+    *) fail 'the loopback forward did not return the guest SSH banner' ;;
+esac
+printf 'PASS: host-to-guest SSH is available on loopback\n'
+
+lan_addresses=$(ifconfig | awk '
+    /^[[:alnum:]][[:alnum:]]*:/ {
+        interface = $1
+        sub(/:$/, "", interface)
+    }
+    /inet / && $2 !~ /^127\./ { print $2 }
+')
+for address in $lan_addresses; do
+    if nc -z -w 1 "$address" "$ssh_host_port" >/dev/null 2>&1; then
+        fail "the SSH forward is reachable on non-loopback address $address"
+    fi
+done
+printf 'PASS: the SSH forward is not exposed on a Mac LAN address\n'
+
+dns_udp_names=$(lsof -nP -iUDP:"$host_dns_port" -F n 2>/dev/null |
+    sed -n 's/^n//p')
+dns_tcp_names=$(lsof -nP -a -iTCP:"$host_dns_port" -sTCP:LISTEN -F n 2>/dev/null |
+    sed -n 's/^n//p')
+[ "$dns_udp_names" = "127.0.0.1:$host_dns_port" ] &&
+    [ "$dns_tcp_names" = "127.0.0.1:$host_dns_port" ] \
+    || fail 'the DNS bridge is not listening exclusively on loopback'
+for address in $lan_addresses; do
+    if nc -z -w 1 "$address" "$host_dns_port" >/dev/null 2>&1; then
+        fail "the DNS bridge is reachable on non-loopback address $address"
+    fi
+done
+printf 'PASS: the DNS bridge is loopback-only and not exposed to the LAN\n'
+
+if lsof -nP -a -iTCP:"$host_probe_port" -sTCP:LISTEN >/dev/null 2>&1; then
+    fail "the temporary host probe port is already in use: $host_probe_port"
+fi
+(printf '%s\n' "$host_probe_marker" | nc -l 127.0.0.1 "$host_probe_port") &
+probe_pid=$!
+
+attempt=0
+while ! lsof -nP -a -iTCP:"$host_probe_port" -sTCP:LISTEN \
+    >/dev/null 2>&1; do
+    if ! kill -0 "$probe_pid" 2>/dev/null; then
+        wait "$probe_pid" 2>/dev/null || true
+        probe_pid=
+        fail 'the temporary loopback host probe could not start'
+    fi
+    attempt=$((attempt + 1))
+    [ "$attempt" -lt 50 ] || fail 'the temporary host probe did not become ready'
+    sleep 0.1
+done
+
+printf 'READY: run tests/guest/aosvm-phase11-test inside the guest now.\n'
+attempt=0
+while kill -0 "$probe_pid" 2>/dev/null; do
+    attempt=$((attempt + 1))
+    [ "$attempt" -lt 600 ] \
+        || fail 'the guest did not reach the temporary host probe in 60 seconds'
+    sleep 0.1
+done
+wait "$probe_pid" || fail 'the temporary host probe failed'
+probe_pid=
+
+printf 'PASS: the guest reached a temporary loopback-only Mac service\n'
+printf 'PASS: AosVM Phase 11 host exposure gate\n'
+trap - EXIT HUP INT TERM

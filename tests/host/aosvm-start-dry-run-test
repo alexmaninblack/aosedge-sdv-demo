@@ -10,6 +10,7 @@ test_run_root="$test_root/run"
 test_runs_root="$test_root/runs"
 output_path="$test_root/dry-run-output"
 test_port="41022"
+test_dns_port="41053"
 
 cleanup() {
     rm -r "$test_root"
@@ -21,6 +22,7 @@ run_dry_run() {
     AOSVM_RUN_ROOT="$test_run_root" \
     AOSVM_RUNS_ROOT="$test_runs_root" \
     AOSVM_SSH_HOST_PORT="$test_port" \
+    AOSVM_HOST_DNS_PORT="$test_dns_port" \
         "$repository_root/scripts/aosvm" start --dry-run
 }
 
@@ -67,6 +69,18 @@ fi
 [ "$(stat -f '%Lp' "$test_runs_root")" = "700" ]
 [ -z "$(find "$test_run_root" -mindepth 1 -print)" ]
 [ -z "$(find "$test_runs_root" -mindepth 1 -print)" ]
+
+if AOSVM_RUN_ROOT="$test_root/dns-port-run" \
+    AOSVM_RUNS_ROOT="$test_root/dns-port-runs" \
+    AOSVM_SSH_HOST_PORT="41026" \
+    AOSVM_HOST_DNS_PORT="53" \
+        "$repository_root/scripts/aosvm" start --dry-run \
+        >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected a privileged host DNS port to be rejected.\n' >&2
+    exit 1
+fi
+
+grep -q 'Host DNS port must be between 1024 and 65535' "$test_root/stderr"
 
 if AOSVM_RUN_ROOT="$test_root/invalid-port-run" \
     AOSVM_RUNS_ROOT="$test_root/invalid-port-runs" \

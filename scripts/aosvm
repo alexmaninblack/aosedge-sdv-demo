@@ -31,6 +31,8 @@ GUEST_ADDRESS="10.0.0.100"
 GUEST_SSH_PORT="22"
 GUEST_VISIBLE_HOST="10.0.0.1"
 GUEST_DNS_PROXY="10.0.0.2"
+HOST_DNS_ADDRESS="127.0.0.1"
+HOST_DNS_PORT=${AOSVM_HOST_DNS_PORT:-"18053"}
 
 SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 REPOSITORY_ROOT=$(CDPATH='' cd -- "$SCRIPT_DIR/.." && pwd)
@@ -50,10 +52,15 @@ PID_PATH="$RUN_ROOT/$VM_NAME.pid"
 QMP_SOCKET_PATH="$RUN_ROOT/$VM_NAME.qmp"
 SERIAL_SOCKET_PATH="$RUN_ROOT/$VM_NAME.serial"
 SERIAL_LOG_PATH="$RUNS_ROOT/$VM_NAME-serial.log"
+DNS_BRIDGE_PID_PATH="$RUN_ROOT/$VM_NAME-dns.pid"
+DNS_BRIDGE_LOG_PATH="$RUNS_ROOT/$VM_NAME-dns.log"
+DNS_BRIDGE_SCRIPT="$REPOSITORY_ROOT/scripts/host/aosvm-dns-bridge"
 
 PREPARE_WORK_DIR=''
 PREPARE_LOCK_DIR=''
 QEMU_SYSTEM_PATH=''
+DNS_BRIDGE_PID=''
+QEMU_CHILD_PID=''
 
 fail() {
     printf 'Error: %s\n' "$*" >&2
@@ -413,6 +420,13 @@ validate_runtime_state() {
     esac
     [ "$SSH_HOST_PORT" -ge 1024 ] && [ "$SSH_HOST_PORT" -le 65535 ] ||
         fail "SSH host port must be between 1024 and 65535"
+    case "$HOST_DNS_PORT" in
+        ''|*[!0-9]*) fail "Host DNS port must be a decimal integer" ;;
+    esac
+    [ "$HOST_DNS_PORT" -ge 1024 ] && [ "$HOST_DNS_PORT" -le 65535 ] ||
+        fail "Host DNS port must be between 1024 and 65535"
+    [ "$HOST_DNS_PORT" -ne "$SSH_HOST_PORT" ] ||
+        fail "Host DNS and SSH ports must differ"
 
     ensure_private_directory "$RUN_ROOT" "Runtime directory"
     ensure_private_directory "$RUNS_ROOT" "Run-log directory"
@@ -420,7 +434,9 @@ validate_runtime_state() {
     validate_socket_path "$QMP_SOCKET_PATH" "QMP socket path"
     validate_socket_path "$SERIAL_SOCKET_PATH" "Serial socket path"
 
-    for runtime_path in "$PID_PATH" "$QMP_SOCKET_PATH" "$SERIAL_SOCKET_PATH"; do
+    for runtime_path in \
+        "$PID_PATH" "$QMP_SOCKET_PATH" "$SERIAL_SOCKET_PATH" \
+        "$DNS_BRIDGE_PID_PATH"; do
         [ ! -e "$runtime_path" ] && [ ! -L "$runtime_path" ] ||
             fail "Runtime path already exists: $runtime_path"
     done
@@ -433,10 +449,64 @@ validate_runtime_state() {
     if [ -f "$SERIAL_LOG_PATH" ] && [ "$(file_mode "$SERIAL_LOG_PATH")" != "600" ]; then
         fail "Existing serial log mode must be 0600: $SERIAL_LOG_PATH"
     fi
+    [ ! -L "$DNS_BRIDGE_LOG_PATH" ] ||
+        fail "DNS bridge log path must not be a symbolic link: $DNS_BRIDGE_LOG_PATH"
+    if [ -e "$DNS_BRIDGE_LOG_PATH" ] && [ ! -f "$DNS_BRIDGE_LOG_PATH" ]; then
+        fail "DNS bridge log path is not a regular file: $DNS_BRIDGE_LOG_PATH"
+    fi
+    if [ -f "$DNS_BRIDGE_LOG_PATH" ] && [ "$(file_mode "$DNS_BRIDGE_LOG_PATH")" != "600" ]; then
+        fail "Existing DNS bridge log mode must be 0600: $DNS_BRIDGE_LOG_PATH"
+    fi
+    [ ! -L "$DNS_BRIDGE_SCRIPT" ] && [ -f "$DNS_BRIDGE_SCRIPT" ] &&
+        [ -x "$DNS_BRIDGE_SCRIPT" ] ||
+        fail "The tracked DNS bridge is unavailable or not executable: $DNS_BRIDGE_SCRIPT"
 
     if lsof -nP -iTCP:"$SSH_HOST_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
         fail "SSH host port is already in use: 127.0.0.1:$SSH_HOST_PORT"
     fi
+    if lsof -nP -iTCP:"$HOST_DNS_PORT" -sTCP:LISTEN >/dev/null 2>&1 ||
+       lsof -nP -iUDP:"$HOST_DNS_PORT" >/dev/null 2>&1; then
+        fail "Host DNS port is already in use: $HOST_DNS_ADDRESS:$HOST_DNS_PORT"
+    fi
+}
+
+cleanup_foreground_children() {
+    trap - EXIT HUP INT TERM
+    if [ -n "$QEMU_CHILD_PID" ] && kill -0 "$QEMU_CHILD_PID" 2>/dev/null; then
+        kill "$QEMU_CHILD_PID" >/dev/null 2>&1 || true
+        wait "$QEMU_CHILD_PID" 2>/dev/null || true
+    fi
+    if [ -n "$DNS_BRIDGE_PID" ] && kill -0 "$DNS_BRIDGE_PID" 2>/dev/null; then
+        kill "$DNS_BRIDGE_PID" >/dev/null 2>&1 || true
+        wait "$DNS_BRIDGE_PID" 2>/dev/null || true
+    fi
+    rm -f "$DNS_BRIDGE_PID_PATH"
+}
+
+start_dns_bridge() {
+    : >"$DNS_BRIDGE_LOG_PATH"
+    chmod 0600 "$DNS_BRIDGE_LOG_PATH"
+    "$DNS_BRIDGE_SCRIPT" \
+        --listen-address "$HOST_DNS_ADDRESS" \
+        --listen-port "$HOST_DNS_PORT" \
+        >>"$DNS_BRIDGE_LOG_PATH" 2>&1 &
+    DNS_BRIDGE_PID=$!
+    printf '%s\n' "$DNS_BRIDGE_PID" >"$DNS_BRIDGE_PID_PATH"
+    chmod 0600 "$DNS_BRIDGE_PID_PATH"
+
+    dns_attempt=0
+    while ! lsof -nP -a -p "$DNS_BRIDGE_PID" \
+        -iUDP@"$HOST_DNS_ADDRESS":"$HOST_DNS_PORT" >/dev/null 2>&1; do
+        if ! kill -0 "$DNS_BRIDGE_PID" 2>/dev/null; then
+            wait "$DNS_BRIDGE_PID" 2>/dev/null || true
+            DNS_BRIDGE_PID=''
+            fail "The loopback DNS bridge failed to start; see $DNS_BRIDGE_LOG_PATH"
+        fi
+        dns_attempt=$((dns_attempt + 1))
+        [ "$dns_attempt" -lt 100 ] ||
+            fail "The loopback DNS bridge did not become ready"
+        sleep 0.1
+    done
 }
 
 verify_start_inputs() {
@@ -504,7 +574,7 @@ qualify_qemu_for_start() {
 validate_qemu_option_paths() {
     for qemu_option_path in \
         "$FIRMWARE_PATH" "$OVERLAY_PATH" "$PID_PATH" "$QMP_SOCKET_PATH" \
-        "$SERIAL_SOCKET_PATH" "$SERIAL_LOG_PATH"; do
+        "$SERIAL_SOCKET_PATH" "$SERIAL_LOG_PATH" "$DNS_BRIDGE_LOG_PATH"; do
         case "$qemu_option_path" in
             *,*) fail "QEMU option paths must not contain commas: $qemu_option_path" ;;
         esac
@@ -576,10 +646,23 @@ start_vm() {
             print_command "$@"
             ;;
         foreground)
+            trap cleanup_foreground_children EXIT
+            trap 'cleanup_foreground_children; exit 129' HUP
+            trap 'cleanup_foreground_children; exit 130' INT
+            trap 'cleanup_foreground_children; exit 143' TERM
+            start_dns_bridge
             printf 'Starting AosVM Main Node in the foreground.\n'
             printf 'Serial log: %s\n' "$absolute_serial_log_path"
             printf 'QMP socket: %s\n' "$absolute_qmp_socket_path"
-            exec "$@"
+            printf 'Loopback DNS bridge: %s:%s\n' \
+                "$HOST_DNS_ADDRESS" "$HOST_DNS_PORT"
+            "$@" &
+            QEMU_CHILD_PID=$!
+            qemu_status=0
+            wait "$QEMU_CHILD_PID" || qemu_status=$?
+            QEMU_CHILD_PID=''
+            cleanup_foreground_children
+            return "$qemu_status"
             ;;
         *)
             fail "Unknown start mode: $start_mode"

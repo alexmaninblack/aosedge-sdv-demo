@@ -1,0 +1,246 @@
+#!/usr/bin/python3
+
+"""Loopback-only DNS bridge for the AosVM QEMU user network."""
+
+import argparse
+import ipaddress
+import selectors
+import socket
+import struct
+import subprocess
+import sys
+from typing import List, Optional, Sequence, Tuple
+
+
+DEFAULT_LISTEN_ADDRESS = "127.0.0.1"
+DEFAULT_LISTEN_PORT = 18053
+MAX_DNS_MESSAGE = 65535
+UPSTREAM_TIMEOUT_SECONDS = 1.5
+
+
+def fail(message: str) -> None:
+    print(f"AosVM DNS bridge failed: {message}", file=sys.stderr)
+    raise SystemExit(1)
+
+
+def parse_endpoint(value: str, default_port: int = 53) -> Tuple[str, int]:
+    if value.startswith("["):
+        closing = value.find("]")
+        if closing < 0:
+            raise ValueError("invalid bracketed IPv6 endpoint")
+        address = value[1:closing]
+        remainder = value[closing + 1 :]
+        if remainder:
+            if not remainder.startswith(":"):
+                raise ValueError("invalid bracketed IPv6 endpoint")
+            port = int(remainder[1:])
+        else:
+            port = default_port
+    elif value.count(":") == 1:
+        address, port_text = value.rsplit(":", 1)
+        port = int(port_text)
+    else:
+        address = value
+        port = default_port
+    ipaddress.ip_address(address)
+    if not 1 <= port <= 65535:
+        raise ValueError("port is outside 1..65535")
+    return address, port
+
+
+def macos_resolver_endpoints() -> List[Tuple[str, int]]:
+    try:
+        result = subprocess.run(
+            ["/usr/sbin/scutil", "--dns"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError) as error:
+        fail(f"cannot read the macOS resolver configuration: {error}")
+
+    endpoints: List[Tuple[str, int]] = []
+    seen = set()
+    current_port = 53
+    for raw_line in result.stdout.splitlines():
+        line = raw_line.strip()
+        if line.startswith("port") and ":" in line:
+            port_text = line.split(":", 1)[1].strip()
+            if port_text.isdigit() and 1 <= int(port_text) <= 65535:
+                current_port = int(port_text)
+            continue
+        if not line.startswith("nameserver[") or ":" not in line:
+            continue
+        address = line.split(":", 1)[1].strip()
+        try:
+            ipaddress.ip_address(address)
+        except ValueError:
+            continue
+        endpoint = (address, current_port)
+        if endpoint not in seen:
+            endpoints.append(endpoint)
+            seen.add(endpoint)
+        current_port = 53
+    if not endpoints:
+        fail("macOS did not report any DNS resolver")
+    return endpoints
+
+
+def socket_family(address: str) -> int:
+    return socket.AF_INET6 if ":" in address else socket.AF_INET
+
+
+def receive_exact(connection: socket.socket, length: int) -> bytes:
+    chunks = []
+    remaining = length
+    while remaining:
+        chunk = connection.recv(remaining)
+        if not chunk:
+            raise OSError("unexpected end of DNS TCP stream")
+        chunks.append(chunk)
+        remaining -= len(chunk)
+    return b"".join(chunks)
+
+
+class ResolverPool:
+    def __init__(self, endpoints: Sequence[Tuple[str, int]]) -> None:
+        self.endpoints = list(endpoints)
+        self.preferred: Optional[Tuple[str, int]] = None
+
+    def ordered_endpoints(self) -> List[Tuple[str, int]]:
+        if self.preferred is None:
+            return list(self.endpoints)
+        return [self.preferred] + [
+            endpoint for endpoint in self.endpoints if endpoint != self.preferred
+        ]
+
+    def udp_query(self, query: bytes) -> Optional[bytes]:
+        for endpoint in self.ordered_endpoints():
+            try:
+                with socket.socket(socket_family(endpoint[0]), socket.SOCK_DGRAM) as upstream:
+                    upstream.settimeout(UPSTREAM_TIMEOUT_SECONDS)
+                    upstream.connect(endpoint)
+                    upstream.send(query)
+                    response = upstream.recv(MAX_DNS_MESSAGE)
+                if len(response) >= 12 and response[:2] == query[:2]:
+                    self.preferred = endpoint
+                    return response
+            except OSError:
+                continue
+        return None
+
+    def tcp_query(self, query: bytes) -> Optional[bytes]:
+        framed_query = struct.pack("!H", len(query)) + query
+        for endpoint in self.ordered_endpoints():
+            try:
+                with socket.create_connection(endpoint, timeout=UPSTREAM_TIMEOUT_SECONDS) as upstream:
+                    upstream.settimeout(UPSTREAM_TIMEOUT_SECONDS)
+                    upstream.sendall(framed_query)
+                    response_length = struct.unpack("!H", receive_exact(upstream, 2))[0]
+                    response = receive_exact(upstream, response_length)
+                if len(response) >= 12 and response[:2] == query[:2]:
+                    self.preferred = endpoint
+                    return response
+            except OSError:
+                continue
+        return None
+
+
+def validate_query(query: bytes) -> bool:
+    if not 12 <= len(query) <= MAX_DNS_MESSAGE:
+        return False
+    flags = struct.unpack("!H", query[2:4])[0]
+    question_count = struct.unpack("!H", query[4:6])[0]
+    return flags & 0x8000 == 0 and question_count > 0
+
+
+def open_servers(address: str, port: int) -> Tuple[socket.socket, socket.socket]:
+    family = socket_family(address)
+    udp_server = socket.socket(family, socket.SOCK_DGRAM)
+    tcp_server = socket.socket(family, socket.SOCK_STREAM)
+    for server in (udp_server, tcp_server):
+        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        server.bind((address, port))
+        server.setblocking(False)
+    tcp_server.listen(16)
+    return udp_server, tcp_server
+
+
+def serve(address: str, port: int, endpoints: Sequence[Tuple[str, int]]) -> None:
+    resolver_pool = ResolverPool(endpoints)
+    try:
+        udp_server, tcp_server = open_servers(address, port)
+    except OSError as error:
+        fail(f"cannot bind {address}:{port}: {error}")
+
+    selector = selectors.DefaultSelector()
+    selector.register(udp_server, selectors.EVENT_READ, "udp")
+    selector.register(tcp_server, selectors.EVENT_READ, "tcp")
+    print(f"AosVM DNS bridge ready on {address}:{port}", flush=True)
+
+    try:
+        while True:
+            for key, _ in selector.select():
+                if key.data == "udp":
+                    query, client = udp_server.recvfrom(MAX_DNS_MESSAGE)
+                    if validate_query(query):
+                        response = resolver_pool.udp_query(query)
+                        if response is not None:
+                            udp_server.sendto(response, client)
+                    continue
+
+                connection, _ = tcp_server.accept()
+                with connection:
+                    connection.settimeout(5)
+                    try:
+                        query_length = struct.unpack("!H", receive_exact(connection, 2))[0]
+                        query = receive_exact(connection, query_length)
+                        if validate_query(query):
+                            response = resolver_pool.tcp_query(query)
+                            if response is not None:
+                                connection.sendall(struct.pack("!H", len(response)) + response)
+                    except OSError:
+                        continue
+    except KeyboardInterrupt:
+        pass
+    finally:
+        selector.close()
+        udp_server.close()
+        tcp_server.close()
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--listen-address", default=DEFAULT_LISTEN_ADDRESS)
+    parser.add_argument("--listen-port", type=int, default=DEFAULT_LISTEN_PORT)
+    parser.add_argument(
+        "--upstream",
+        action="append",
+        default=[],
+        help="explicit DNS upstream as address[:port]; defaults to macOS resolvers",
+    )
+    arguments = parser.parse_args()
+
+    try:
+        listen_ip = ipaddress.ip_address(arguments.listen_address)
+    except ValueError as error:
+        fail(f"invalid listen address: {error}")
+    if not listen_ip.is_loopback:
+        fail("the listen address must be loopback")
+    if not 1024 <= arguments.listen_port <= 65535:
+        fail("the listen port must be between 1024 and 65535")
+
+    if arguments.upstream:
+        try:
+            endpoints = [parse_endpoint(value) for value in arguments.upstream]
+        except (TypeError, ValueError) as error:
+            fail(f"invalid upstream endpoint: {error}")
+    else:
+        endpoints = macos_resolver_endpoints()
+    serve(arguments.listen_address, arguments.listen_port, endpoints)
+
+
+if __name__ == "__main__":
+    main()

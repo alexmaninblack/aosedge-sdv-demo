@@ -24,7 +24,8 @@ be performed in AOS-1 with the utilities supplied by the AosEdge SDK.
 | Phase 8: guest kernel capability gate | Complete — 2026-08-13 | Pass |
 | Phase 9: local OCI runtime gate | Complete — 2026-08-13 | Pass |
 | Phase 10: AosCore pre-provisioning state | Complete — 2026-08-13 | Pass with tracked ARM64 overlay fix |
-| Phases 11–14 | Not started | — |
+| Phase 11: layered networking | Complete — 2026-08-13 | Pass with tracked loopback DNS bridge |
+| Phases 12–14 | Not started | — |
 
 ### Phase 1 observed baseline
 
@@ -430,6 +431,64 @@ remaining local host, kernel, runtime, storage, binary, or policy defect blocks
 Phase 11. This result does not claim that runtime IAM, SM, or CM have completed
 their post-provisioning startup; that acceptance belongs to AOS-1.
 
+### Phase 11 observed baseline
+
+The unchanged guest baseline had the correct `10.0.0.100/24` address and
+default route through `10.0.0.1`. Outbound TCP by IP and a guest-to-host TCP
+probe also passed. DNS failed because the image named the gateway and its own
+local forwarder as upstreams, while QEMU presents its virtual DNS service at
+`10.0.0.2`. Pointing the guest at that address exposed a second host-specific
+problem: libslirp selected the first DNS server reported by macOS, which was
+unreachable in the active corporate network configuration even though later
+macOS resolvers worked.
+
+The accepted design preserves QEMU user networking and adds no TAP device,
+bridge, packet-filter rule, administrator privilege, or external listener:
+
+```text
+guest applications -> 10.0.0.100:53 (image dnsmasq)
+                   -> 10.0.0.1:18053 (QEMU host mapping)
+                   -> 127.0.0.1:18053 (tracked macOS DNS bridge)
+                   -> active macOS resolvers with bounded failover
+```
+
+The launcher now starts `scripts/host/aosvm-dns-bridge` before QEMU. The bridge
+supports UDP and TCP DNS, accepts only DNS queries, binds both sockets only to
+`127.0.0.1`, reads the current macOS resolver set through `scutil --dns`, and
+fails over between upstreams. It and QEMU are cleaned up together; the
+timestamped bridge log and PID remain ignored local runtime state.
+
+The idempotent `scripts/guest/aosvm-apply-qemu-network-compat` helper changes
+only the disposable overlay. It configures `systemd-resolved` to use the
+image's existing `dnsmasq` on `10.0.0.100` and configures that forwarder with
+`server=10.0.0.1#18053`. The helper accepts only the known released,
+intermediate, or final states, installs both files atomically, preserves owner,
+mode, and SELinux context, syncs storage, and returns `/dev/sda3` to read-only.
+Recreating the overlay restores the released files and therefore removes this
+guest-side compatibility adjustment; the immutable base is never changed.
+
+The tracked host and guest gates passed before and after a clean reboot:
+
+| Layer | Result | Functional evidence |
+| --- | --- | --- |
+| Guest interface | Pass | `enp0s2`, MAC `52:54:00:41:4f:53`, and `10.0.0.100/24` matched the contract |
+| Default route | Pass | `10.0.0.1` remained the static gateway |
+| Outbound TCP by IP | Pass | TCP port 443 was reachable without DNS or ICMP dependency |
+| Guest-to-host | Pass | The guest received a fixed marker from a temporary loopback-only Mac TCP service through `10.0.0.1` |
+| DNS | Pass | Both `systemd-resolved` and ordinary libc/BusyBox resolution succeeded through guest dnsmasq and the Mac bridge |
+| Time | Pass | `systemd-timesyncd` contacted `time3.google.com`, reached stratum 1, and retained a synchronized 2026 clock after reboot |
+| HTTPS | Pass | `docs.aosedge.tech` completed an HTTPS request and OpenSSL returned certificate verification code 0 |
+| Host-to-guest SSH | Pass | `127.0.0.1:10022` returned the guest OpenSSH banner |
+| Exposure | Pass | SSH and both DNS sockets were bound only to loopback and were unreachable on the Mac LAN address |
+| Restart and cleanup | Pass | The complete host and guest gates passed after reboot; clean poweroff left no QEMU/DNS process, listener, or owned runtime PID/socket |
+
+The final guest clock was `2026-08-13T12:11:25Z`, with three NTP packets,
+approximately 17.8 ms delay, and sub-millisecond offset. Post-shutdown
+`qemu-img check` reported no overlay errors. The immutable Main Node, Secondary
+Node, and firmware SHA-256 values remained exactly pinned. No provisioning,
+certificate enrollment, AosCloud connection, credential capture, or LAN
+exposure occurred.
+
 ## Pinned upstream input
 
 | Field | Value |
@@ -542,21 +601,18 @@ The released Main Node is configured for:
 - gateway `10.0.0.1`;
 - DNS `10.0.0.1`.
 
-QEMU user networking can present `10.0.0.1` as the host/gateway, but its DNS
-proxy normally needs a different guest-visible address. The first boot must
-therefore test routing and name resolution separately.
-
-Preferred resolution if routing works but DNS does not:
-
-1. keep the upstream base image read-only;
-2. change only the disposable overlay's DNS setting to the QEMU DNS proxy;
-3. automate that local development adjustment and record it in the run
-   manifest;
-4. reset by deleting and recreating the overlay.
+QEMU user networking presents `10.0.0.1` as the host/gateway and `10.0.0.2` as
+its virtual DNS proxy. On macOS the proxy can inherit an unusable first system
+resolver without trying later resolvers. Phase 11 therefore keeps the upstream
+base read-only, routes the released guest dnsmasq through a tracked
+loopback-only macOS DNS bridge, and stores the two guest configuration changes
+only in the disposable overlay. Deleting and recreating the overlay restores
+the released DNS configuration.
 
 Fallback order:
 
-1. QEMU user networking with an overlay-only DNS adjustment;
+1. QEMU user networking with the qualified loopback DNS bridge and
+   overlay-only adjustment;
 2. QEMU `vmnet` networking with an explicit macOS host-only/NAT design;
 3. an SDK-managed ARM64 VirtualBox path, if the installed SDK proves that it
    supports the release on Apple Silicon;
@@ -996,8 +1052,9 @@ networking normally separates them. If routing succeeds and DNS alone fails:
 2. make a deterministic DNS override only in the disposable overlay;
 3. relabel the changed file if SELinux requires it;
 4. reboot and rerun the complete network test;
-5. record the override in the manifest and automate it in `prepare`;
-6. prove that recreating the overlay removes the override.
+5. track the helper and host bridge in this repository;
+6. rely on the already qualified overlay recreation path to remove the
+   override, and exercise the destructive reset workflow in Phase 13.
 
 If that controlled overlay change is not reliable, evaluate QEMU `vmnet` next.
 VirtualBox and a custom Yocto image remain later fallbacks. No fallback may
@@ -1005,6 +1062,10 @@ silently widen listener scope or require persistent host packet-filter changes.
 
 **Pass:** outbound DNS/HTTPS and loopback SSH work, the host is reachable from
 the guest for the later VISS path, and no service is exposed externally.
+
+**Observed:** pass. `tests/guest/aosvm-phase11-test` and
+`tests/host/aosvm-phase11-host-gate` passed twice, including after a clean
+reboot. Phase 12 lifecycle automation is next.
 
 **Stop:** basic connectivity needs an undocumented image mutation, external LAN
 exposure, or administrator-owned network configuration.
@@ -1108,13 +1169,13 @@ sanitized evidence is committed, and the working tree is clean.
 - [x] Serial console reaches a login prompt.
 - [x] Guest reports ARM64 architecture.
 - [x] Guest disk is `/dev/sda` with the expected partition and mount roles.
-- [ ] The mandatory guest-kernel capability matrix passes.
-- [ ] A local OCI bundle runs successfully with `crun` and leaves no residue.
+- [x] The mandatory guest-kernel capability matrix passes.
+- [x] A local OCI bundle runs successfully with `crun` and leaves no residue.
 - [x] No unexplained local AosCore component failure exists.
-- [ ] Outbound HTTPS and DNS work.
-- [ ] The guest can reach the macOS host for the later VISS path.
-- [ ] SSH is reachable only through a loopback host forward.
-- [ ] Clean shutdown and second boot succeed.
+- [x] Outbound HTTPS and DNS work.
+- [x] The guest can reach the macOS host for the later VISS path.
+- [x] SSH is reachable only through a loopback host forward.
+- [x] Clean shutdown and second boot succeed.
 - [ ] Overlay reset is safe and reproducible.
 - [ ] The launcher does not require administrator privileges.
 - [ ] A sanitized baseline is committed and the working tree is clean.
