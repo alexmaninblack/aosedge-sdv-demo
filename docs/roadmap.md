@@ -157,13 +157,13 @@ uses a project-owned verifier and the DynamicUser provider receives only a
 seven-path `provide` token through systemd credentials. Verified TLS and
 `VISSv3` connect to the macOS loopback-only endpoint through the guest host
 gateway. Forty-one consecutive atomic seven-path KUKSA batches measured
-20.08 Hz. A separate read-only JWT retrieved the live values and source
+20.16 Hz. A separate read-only JWT retrieved the live values and source
 timestamps. CARLA loss made every path unavailable immediately; reconnect is
 bounded and never fabricates zero. After a clean VM restart, KUKSA and the
 provider were active with zero restarts, root remained read-only, SELinux was
-enforcing without denial, AosCore remained healthy, and AosCloud reported the
-same Online Unit with one primary Main Node. The future Authorization Adapter
-remains explicitly deferred to AOS-5.
+enforcing without a provider-related denial, AosCore remained healthy, and
+AosCloud reported the same Online Unit with one primary Main Node. The future
+Authorization Adapter remains explicitly deferred to AOS-5.
 
 Detailed boundary decision: [ADR 0005](decisions/0005-kuksa-vehicle-data-boundary.md).
 Qualification record: [AOS-2 runbook](aos-2-carla-kuksa-qualification.md).

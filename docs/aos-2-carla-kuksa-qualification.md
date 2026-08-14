@@ -12,10 +12,12 @@ the same provider, policy, and trust inputs into its OEM Yocto/FOTA image
 build.
 
 The accepted platform revision is
-`b82ef747e71c82e49d41b8e766a3924e31475fd8`. The reproducible generated bundle
-is `carla-kuksa-provider-0.1.0-arm64.tar.gz` with SHA-256
-`4d73c196f8ed8812c0a3912ee9231e4fb2d3ffc9d4ba2f16686777d0c35e5a87`.
-The integration baseline records both values and contract 0.1.1.
+`d383be118b5fece6a5e1a700623bc1b69ab13937`. The reproducible generated bundle
+is `carla-kuksa-provider-0.1.1-arm64.tar.gz` with SHA-256
+`8d6b40b3854572cf1706cb43283916640c0ef6116307a805b63fe1323ab0e100`.
+The integration baseline records both values and contract 0.1.1. The final
+dependency lock uses Protocol Buffers 5.29.6, which fixes CVE-2026-0994; the
+previously evaluated 5.29.5 wheel is excluded from the accepted bundle.
 
 ## Accepted architecture
 
@@ -95,13 +97,14 @@ with the same provisioned identity exists.
   exactly seven `provide` scopes published an initial unavailable state.
 - Live CARLA negotiated verified TLS and `VISSv3` from the guest.
 - The read-only qualification client observed 41 atomic seven-path batches at
-  20.08 Hz with source timestamps.
+  20.16 Hz with source timestamps.
 - Stopping CARLA immediately marked all seven KUKSA values unavailable; the
   reconnect delay remained bounded from 0.5 to 10 seconds.
 - A clean VM stop/start preserved the package and credentials. KUKSA and the
   provider returned active and enabled with zero restarts.
-- The root filesystem was read-only, SELinux was Enforcing without a denial,
-  and the VISS listener was bound only to macOS `127.0.0.1:6443`.
+- The root filesystem was read-only, SELinux was Enforcing without a
+  provider-related denial, and the VISS listener was bound only to macOS
+  `127.0.0.1:6443`.
 - Runtime IAM, Service Manager, and Communication Manager remained active.
   AosCloud reported the provisioned Unit Online with exactly one primary
   `aos-vm-main` Node after the restart.

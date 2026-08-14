@@ -93,11 +93,11 @@
       }
     },
     "aos-vehicle-platform": {
-      "version": "0.1.0",
+      "version": "0.1.1",
       "architectures": ["arm64"],
       "source": {
         "repository": "https://github.com/alexmaninblack/aos-vehicle-platform.git",
-        "revision": "b82ef747e71c82e49d41b8e766a3924e31475fd8"
+        "revision": "d383be118b5fece6a5e1a700623bc1b69ab13937"
       },
       "artifact": {
         "kind": "repository-files",
@@ -108,9 +108,9 @@
           }
         ],
         "generatedBundle": {
-          "fileName": "carla-kuksa-provider-0.1.0-arm64.tar.gz",
+          "fileName": "carla-kuksa-provider-0.1.1-arm64.tar.gz",
           "architecture": "arm64",
-          "sha256": "4d73c196f8ed8812c0a3912ee9231e4fb2d3ffc9d4ba2f16686777d0c35e5a87"
+          "sha256": "8d6b40b3854572cf1706cb43283916640c0ef6116307a805b63fe1323ab0e100"
         }
       }
     },
