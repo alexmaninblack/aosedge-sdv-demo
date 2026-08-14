@@ -3,8 +3,8 @@
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "schemaVersion": 1,
   "baseline": {
-    "id": "r6-1-runtime-mechanism-candidate-1",
-    "status": "candidate",
+    "id": "r6-1-runtime-mechanism-1",
+    "status": "accepted",
     "created": "2026-08-14",
     "targetMachine": "qemuarm64",
     "nodeType": "main",
@@ -25,7 +25,14 @@
     "virtualCPUs": 10,
     "memoryMiB": 24576,
     "virtualDiskGiB": 220,
-    "sshHostPort": 10023
+    "sshHostPort": 10023,
+    "toolchain": {
+      "gccVersion": "11.4.0",
+      "conanVersion": "2.31.2",
+      "cmakeVersion": "3.31.10",
+      "clangFormatVersion": "15.0.7",
+      "softHSMVersion": "2.6.1"
+    }
   },
   "manifest": {
     "repository": "https://github.com/AosEdge/meta-aos-vm.git",
@@ -137,6 +144,30 @@
       "source": "aos-core-api",
       "path": "proto/servicemanager/v5/servicemanager.proto",
       "sha256": "92dc5bc11d2e1576f3889e34a8acd370e1490f11f110738a795ac633c969052c"
+    },
+    "cloudApi": {
+      "apiVersion": "v11",
+      "implementationVersion": "6.1.26",
+      "openApiVersion": "3.0.3",
+      "path": "/api/v11/openapi.json",
+      "observed": "2026-08-14",
+      "sha256": "a587d7a308cb7c9ea0d274f1c5f2ff4ae3a99e2e492b753436ae6c9e2dbf508a"
+    },
+    "storageLayout": {
+      "source": "meta-aos",
+      "mountRecipePath": "recipes-core/base-files/base-files_%.bbappend",
+      "mountRecipeSha256": "eafa82ea51eac337fda7c54c9bec5d8d4d8710e7e4cce77807f0048df60b3ab5",
+      "diskConfigPath": "recipes-aos/aos-setupdisk/files/aosdisk_main.cfg",
+      "diskConfigSha256": "7ec156ea7f66369c681f243dd9b5c2ff8d2a25408779c6caecc2f317311fa609",
+      "device": "/dev/aosvg/workdirs",
+      "mountPoint": "/var/aos/workdirs",
+      "componentRoot": "/var/aos/workdirs/sm/runtimes/systemd-slot-component"
+    },
+    "mechanismQualification": {
+      "repository": "https://github.com/alexmaninblack/aos-vehicle-platform.git",
+      "branch": "feature/r6-1-fota-runtime",
+      "revision": "34faf4b1637dd418a8b9a80476e243f5cd81c6d3",
+      "result": "pass"
     }
   },
   "upstreamGaps": [

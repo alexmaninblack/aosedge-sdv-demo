@@ -61,7 +61,8 @@
         "virtualCPUs",
         "memoryMiB",
         "virtualDiskGiB",
-        "sshHostPort"
+        "sshHostPort",
+        "toolchain"
       ],
       "properties": {
         "os": { "const": "Ubuntu Server 22.04 LTS" },
@@ -75,7 +76,25 @@
         "virtualCPUs": { "type": "integer", "minimum": 1 },
         "memoryMiB": { "type": "integer", "minimum": 8192 },
         "virtualDiskGiB": { "type": "integer", "minimum": 120 },
-        "sshHostPort": { "type": "integer", "minimum": 1024, "maximum": 65535 }
+        "sshHostPort": { "type": "integer", "minimum": 1024, "maximum": 65535 },
+        "toolchain": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "gccVersion",
+            "conanVersion",
+            "cmakeVersion",
+            "clangFormatVersion",
+            "softHSMVersion"
+          ],
+          "properties": {
+            "gccVersion": { "type": "string", "minLength": 1 },
+            "conanVersion": { "type": "string", "minLength": 1 },
+            "cmakeVersion": { "type": "string", "minLength": 1 },
+            "clangFormatVersion": { "type": "string", "minLength": 1 },
+            "softHSMVersion": { "type": "string", "minLength": 1 }
+          }
+        }
       }
     },
     "manifest": { "$ref": "#/$defs/manifest" },

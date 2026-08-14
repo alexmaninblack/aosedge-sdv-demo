@@ -30,6 +30,8 @@ IMAGE_SHA256 = "8f61e558498ba262da5b5d13f75b2921136b737a1492415150f33b3d0e46a281
 FIRMWARE_SHA256 = "47765fe344818cbc464b1c14ae658fb4b854f5c2ceffa982411731eb4865594d"
 QEMU_VERSION = "11.0.3"
 QEMU_MACHINE = "virt-11.0"
+CONAN_VERSION = "2.31.2"
+CMAKE_VERSION = "3.31.10"
 VCPUS = 10
 MEMORY_MIB = 24576
 DISK_GIB = 220
@@ -707,6 +709,24 @@ def ssh_base() -> list[str]:
     ]
 
 
+def scp_base() -> list[str]:
+    return [
+        command_path("scp"),
+        "-P",
+        str(SSH_PORT),
+        "-o",
+        "BatchMode=yes",
+        "-o",
+        "IdentitiesOnly=yes",
+        "-i",
+        str(PRIVATE_KEY),
+        "-o",
+        "StrictHostKeyChecking=yes",
+        "-o",
+        f'UserKnownHostsFile="{KNOWN_HOSTS}"',
+    ]
+
+
 def enroll_host_key(deadline: float | None = None) -> None:
     if KNOWN_HOSTS.exists():
         require_regular_file(KNOWN_HOSTS, "builder SSH known-hosts file")
@@ -789,6 +809,25 @@ def guest_run(arguments: list[str]) -> None:
         raise BuilderError(f"guest command failed with exit code {completed.returncode}")
 
 
+def guest_copy(source: str, destination: str) -> None:
+    requested_source = Path(source).expanduser()
+    if requested_source.is_symlink() or not requested_source.exists():
+        fail(f"copy source is unavailable or unsafe: {requested_source}")
+    source_path = requested_source.resolve()
+    if not destination.startswith("/home/yocto/") or ".." in Path(destination).parts:
+        fail("copy destination must be an absolute path below /home/yocto")
+    if resolve_running() is None:
+        fail("the R6.1 builder is not running")
+    require_regular_file(KNOWN_HOSTS, "builder SSH known-hosts file")
+    command = scp_base()
+    if source_path.is_dir():
+        command.append("-r")
+    command.extend([str(source_path), f"yocto@127.0.0.1:{destination}"])
+    completed = subprocess.run(command)
+    if completed.returncode != 0:
+        raise BuilderError(f"guest copy failed with exit code {completed.returncode}")
+
+
 def guest_run_script(script: str) -> None:
     if resolve_running() is None:
         fail("the R6.1 builder is not running")
@@ -822,6 +861,39 @@ sudo systemctl restart systemd-resolved
 timeout 20 resolvectl query cloud-images.ubuntu.com >/dev/null
 """
     guest_run_script(configuration)
+
+
+def build_tools_script() -> str:
+    return f"""set -eu
+sudo apt-get update
+sudo apt-get install -y \
+  autoconf automake bison build-essential clang-format-15 cmake curl flex \
+  gettext git libblkid-dev libcap-dev libefiboot-dev libefivar-dev \
+  libnftables-dev libnl-3-dev libnl-route-3-dev libseccomp-dev libssl-dev \
+  libsystemd-dev libtool libtool-bin libyajl-dev ninja-build pipx pkg-config \
+  python3-venv sbsigntool softhsm2 tcl zip
+
+conan_version=$(/home/yocto/.local/bin/conan --version 2>/dev/null || true)
+if [ "$conan_version" != "Conan version {CONAN_VERSION}" ]; then
+  /usr/bin/pipx install --force "conan=={CONAN_VERSION}"
+fi
+
+cmake_version=$(/home/yocto/.local/bin/cmake --version 2>/dev/null | sed -n '1p' || true)
+if [ "$cmake_version" != "cmake version {CMAKE_VERSION}" ]; then
+  /usr/bin/pipx install --force "cmake=={CMAKE_VERSION}"
+fi
+
+test "$(/home/yocto/.local/bin/conan --version)" = "Conan version {CONAN_VERSION}"
+test "$(/home/yocto/.local/bin/cmake --version | sed -n '1p')" = "cmake version {CMAKE_VERSION}"
+test "$(uname -m)" = aarch64
+clang-format-15 --version
+softhsm2-util --version
+printf 'CONAN={CONAN_VERSION}\nCMAKE={CMAKE_VERSION}\nR6_1_BUILDER_TOOLS=PASS\n'
+"""
+
+
+def bootstrap_tools() -> None:
+    guest_run_script(build_tools_script())
 
 
 def smoke_test() -> None:
@@ -872,10 +944,14 @@ def parse_args() -> argparse.Namespace:
     start_parser.add_argument("--dry-run", action="store_true")
     subparsers.add_parser("wait")
     subparsers.add_parser("smoke-test")
+    subparsers.add_parser("bootstrap-tools")
     subparsers.add_parser("status")
     subparsers.add_parser("stop")
     run_parser = subparsers.add_parser("run")
     run_parser.add_argument("arguments", nargs=argparse.REMAINDER)
+    copy_parser = subparsers.add_parser("copy")
+    copy_parser.add_argument("source")
+    copy_parser.add_argument("destination")
     return parser.parse_args()
 
 
@@ -894,12 +970,16 @@ def main() -> int:
             wait_ready()
         elif args.command == "smoke-test":
             smoke_test()
+        elif args.command == "bootstrap-tools":
+            bootstrap_tools()
         elif args.command == "status":
             status()
         elif args.command == "stop":
             stop()
         elif args.command == "run":
             guest_run(args.arguments)
+        elif args.command == "copy":
+            guest_copy(args.source, args.destination)
         else:
             fail(f"unsupported command: {args.command}")
     except (BuilderError, OSError, subprocess.SubprocessError) as error:

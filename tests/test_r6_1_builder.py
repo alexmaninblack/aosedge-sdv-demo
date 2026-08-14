@@ -91,6 +91,29 @@ class R61BuilderTests(unittest.TestCase):
         )
         self.assertIn("StrictHostKeyChecking=yes", command)
 
+    def test_scp_uses_the_same_strict_identity_boundary(self) -> None:
+        original = BUILDER.command_path
+        try:
+            BUILDER.command_path = lambda name: f"/qualified/{name}"
+            command = BUILDER.scp_base()
+        finally:
+            BUILDER.command_path = original
+        self.assertIn(str(BUILDER.PRIVATE_KEY), command)
+        self.assertIn(
+            f'UserKnownHostsFile="{BUILDER.KNOWN_HOSTS}"', command
+        )
+        self.assertIn("StrictHostKeyChecking=yes", command)
+
+    def test_builder_tool_bootstrap_is_pinned_and_identity_free(self) -> None:
+        script = BUILDER.build_tools_script()
+
+        self.assertIn(f"conan=={BUILDER.CONAN_VERSION}", script)
+        self.assertIn(f"cmake=={BUILDER.CMAKE_VERSION}", script)
+        self.assertIn("softhsm2", script)
+        self.assertIn("R6_1_BUILDER_TOOLS=PASS", script)
+        self.assertNotIn("certificate", script.lower())
+        self.assertNotIn("signing", script.lower())
+
 
 if __name__ == "__main__":
     unittest.main()

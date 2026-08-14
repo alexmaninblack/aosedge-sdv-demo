@@ -105,6 +105,16 @@ def validate_lock(lock: dict[str, Any]) -> None:
     require(builder.get("release") == "20260722", "builder release changed")
     require(builder.get("qemuVersion") == "11.0.3", "QEMU version changed")
     require(builder.get("sshHostPort") == 10023, "builder SSH port changed")
+    toolchain = builder.get("toolchain")
+    require(isinstance(toolchain, dict), "builder toolchain is missing")
+    require(toolchain.get("gccVersion") == "11.4.0", "builder GCC version changed")
+    require(toolchain.get("conanVersion") == "2.31.2", "builder Conan version changed")
+    require(toolchain.get("cmakeVersion") == "3.31.10", "builder CMake version changed")
+    require(
+        toolchain.get("clangFormatVersion") == "15.0.7",
+        "builder clang-format version changed",
+    )
+    require(toolchain.get("softHSMVersion") == "2.6.1", "builder SoftHSM version changed")
     require(
         SHA256_RE.fullmatch(str(builder.get("imageSha256", ""))) is not None,
         "builder image digest is invalid",
@@ -160,6 +170,48 @@ def validate_lock(lock: dict[str, Any]) -> None:
             SHA256_RE.fullmatch(str(item.get("sha256", ""))) is not None,
             f"{name} digest is invalid",
         )
+
+    cloud_api = evidence.get("cloudApi")
+    require(isinstance(cloud_api, dict), "Cloud API evidence is missing")
+    require(cloud_api.get("apiVersion") == "v11", "Cloud API version changed")
+    require(
+        cloud_api.get("implementationVersion") == "6.1.26",
+        "Cloud implementation version changed",
+    )
+    require(cloud_api.get("openApiVersion") == "3.0.3", "OpenAPI version changed")
+    require(
+        SHA256_RE.fullmatch(str(cloud_api.get("sha256", ""))) is not None,
+        "Cloud OpenAPI digest is invalid",
+    )
+
+    storage = evidence.get("storageLayout")
+    require(isinstance(storage, dict), "storage evidence is missing")
+    require(storage.get("source") == "meta-aos", "storage source changed")
+    require(storage.get("device") == "/dev/aosvg/workdirs", "storage device changed")
+    require(storage.get("mountPoint") == "/var/aos/workdirs", "storage mount changed")
+    require(
+        storage.get("componentRoot")
+        == "/var/aos/workdirs/sm/runtimes/systemd-slot-component",
+        "component storage root changed",
+    )
+    for field in ("mountRecipeSha256", "diskConfigSha256"):
+        require(
+            SHA256_RE.fullmatch(str(storage.get(field, ""))) is not None,
+            f"storage {field} digest is invalid",
+        )
+
+    qualification = evidence.get("mechanismQualification")
+    require(isinstance(qualification, dict), "mechanism qualification is missing")
+    require(
+        qualification.get("repository")
+        == "https://github.com/alexmaninblack/aos-vehicle-platform.git",
+        "mechanism repository changed",
+    )
+    require(
+        REVISION_RE.fullmatch(str(qualification.get("revision", ""))) is not None,
+        "mechanism qualification revision must be a full commit SHA",
+    )
+    require(qualification.get("result") == "pass", "mechanism qualification did not pass")
 
     gaps = lock.get("upstreamGaps")
     require(isinstance(gaps, list) and gaps, "upstream gaps must be recorded")

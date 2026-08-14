@@ -175,17 +175,18 @@ side-loaded host-daemon lifecycle with a dedicated, independently versioned,
 Cloud-visible Aos FOTA component. The telemetry consumer remains a separate
 SOTA service.
 
-Current gate: the design is accepted and R6.1-1 is authorized. The preferred
-mechanism is a new slot-based Service Manager component runtime aligned with
-the actual AosVM 6.1.0 stack. An external Update Manager is only a conditional
-fallback after an explicit compatibility proof. One bootstrap/rootfs build is
+Current gate: R6.1-1 is complete and the custom slot-based Service Manager
+component runtime is accepted against the exact AosVM 6.1.0 stack. The local
+factory, lifecycle, protocol, CM, storage, and identity gates passed; the
+Update Manager fallback is not selected. One bootstrap/rootfs build is
 expected to add the stable runtime, launcher, policy, A/B storage, health, and
 rollback machinery. Provider releases can then advance independently through
 FOTA without rebuilding rootfs.
 
-R6.1-1 may establish the separate builder, exact source/API baseline, local
+R6.1-1 established the separate builder, exact source/API baseline, local
 runtime harness, Node/CM reporting proof, storage decision, and accepted ADR.
-It does not authorize a bootstrap deployment, Cloud catalog mutation,
+R6.1-2 is next but still requires its own execution checkpoint. R6.1-1 does
+not authorize a bootstrap deployment, Cloud catalog mutation,
 deprovisioning, reprovisioning, or active-Unit change. The accepted R6
 side-load remains the operational baseline.
 

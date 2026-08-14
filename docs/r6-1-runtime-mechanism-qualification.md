@@ -3,8 +3,9 @@
 
 # R6.1-1 Runtime-Mechanism Qualification
 
-- Status: In progress
+- Status: Complete; mechanism accepted
 - Date started: 2026-08-14
+- Date completed: 2026-08-14
 - Authorized scope: R6.1-1 only
 - Source baseline: `components/r6-1-source.lock.json`
 
@@ -47,8 +48,9 @@ python3 -m unittest tests.test_r6_1_source_lock
 ```
 
 Current result: the validator passes for 12 sources and all negative tests
-pass. The lock remains `candidate` until the local mechanism, protocol,
-storage, and identity gates below are complete.
+pass. The lock is `accepted` for the R6.1-1 mechanism boundary. It does not
+accept a production runtime, bootstrap image, FOTA artifact, or Cloud
+deployment.
 
 ## Recorded Upstream Gaps
 
@@ -86,8 +88,10 @@ the dry-run exposed only loopback SSH and DNS listeners. The first boot passed
 cloud-init and the smoke gate. A clean stop, restart with the same disk and SSH
 host key, repeated smoke gate, and final clean stop also passed. The observed
 guest evidence was ARM64, 10 CPUs, ext4 root storage larger than 200 GB, and no
-Aos services or standard Aos identity paths. The builder and DNS bridge are
-currently stopped.
+Aos services or standard Aos identity paths. Qualification tools were pinned
+to GCC 11.4.0, Conan 2.31.2, CMake 3.31.10, clang-format 15.0.7, and SoftHSM
+2.6.1. The idempotent tool bootstrap passed. The builder and DNS bridge are
+stopped after the qualification run.
 
 Standard QEMU DNS was not accepted as sufficient: on the active Mac network,
 the guest's `10.0.2.3` resolver timed out. The builder now reuses the tracked
@@ -108,10 +112,57 @@ Inspection of the exact locked sources currently establishes:
 - `isComponent` participates in the Yocto runtime configuration but is not a
   field of the transmitted `RuntimeInfo` record.
 
-Therefore local runtime reporting has a real protocol path, but source
-inspection alone does not prove Cloud component classification. The harness
-must determine which desired-state, item, Unit Model, or component metadata is
-also required.
+The exact-source ARM64 harness then passed all three runtime probe cases,
+`RuntimesTest.InitRuntimes`,
+`SMClientTest.SendSMInfoWithMultipleRuntimesAndResources`, and
+`SMControllerTest.SMClientConnected`. It constructed the fourth runtime,
+traced one non-rebooting in-memory instance lifecycle, serialized the exact
+provider type through Service Manager protocol v5, and preserved the type and
+`arm64` architecture at the Communication Manager receiver.
+
+The accepted platform evidence is pinned to
+`alexmaninblack/aos-vehicle-platform` commit
+`34faf4b1637dd418a8b9a80476e243f5cd81c6d3`. The probe is qualification-only
+and deliberately has no systemd, archive, persistence, health, slot, apply,
+rollback, or recovery implementation.
+
+## Cloud and Identity Evidence
+
+A read-only OEM mTLS inspection of `/api/v11/openapi.json` identified
+AosCloud API v11 implementation 6.1.26, OpenAPI 3.0.3, with the exact digest
+recorded in the source lock. No POST, PATCH, DELETE, upload, assignment, Unit
+Model, Node Type, or Unit mutation was performed.
+
+The existing `aos-vm;1.0.0` Unit Configuration contains only one
+`aos-vm-main` Node and has an empty desired-component list. The provisioned
+Unit nevertheless reports the released boot and rootfs types as independent
+installed components. The Node Type schema contains resource ratios and no
+component declarations. Therefore the proposed runtime type does not require
+a Unit Model or Node Type revision.
+
+Future catalog metadata comes from uploading a FOTA bundle whose `type`
+exactly equals
+`aos-vm-1.0.0-main-qemuarm64-vehicle-data-provider`; an assignment then
+creates desired update state. Those mutations and visual Cloud acceptance
+remain R6.1-6 gates.
+
+## Persistent Storage Evidence
+
+The exact `meta-aos` release mounts the dedicated
+`/dev/aosvg/workdirs` ext4 logical volume at `/var/aos/workdirs`; the Main Node
+allocates 30 percent of its encrypted Aos volume to it. Service Manager already
+owns `/var/aos/workdirs/sm`, including its rootfs runtime and migration state.
+
+The accepted provider component root is:
+
+```text
+/var/aos/workdirs/sm/runtimes/systemd-slot-component
+```
+
+The production runtime will own its A/B payloads, transaction metadata, and
+recovery state below this root. Exact slot layout and atomic switching remain
+R6.1-3 implementation work. Downloads remain in the existing Aos downloads
+volume and are not treated as installed component state.
 
 ## Qualification Gates
 
@@ -119,19 +170,22 @@ also required.
 | --- | --- | --- |
 | Source lock | Exact commits and file digests validate | Pass |
 | Builder isolation | ARM64 VM passes resource, network, and no-identity checks | Pass |
-| Runtime factory | Minimal provider runtime is constructed by Service Manager | Pending |
-| Lifecycle trace | Prepare/start/stop/status paths are captured locally | Pending |
-| Node/CM report | Proposed type appears in captured local SMInfo | Pending |
-| Component semantics | Required classification metadata is identified | Pending |
-| Storage | Persistent root and A/B ownership rules are selected | Pending |
-| Identity | Unit Model and Node Type impact is closed | Pending |
-| Mechanism ADR | Runtime or Update Manager fallback is accepted | Pending |
+| Runtime factory | Minimal provider runtime is constructed by Service Manager | Pass |
+| Lifecycle trace | Start/stop/status seam is captured locally without reboot | Pass |
+| Node/CM report | Proposed type appears in captured local SMInfo and CM | Pass |
+| Component semantics | Matching runtime type and FOTA bundle type identified | Pass |
+| Storage | Persistent root and future A/B ownership boundary selected | Pass |
+| Identity | Existing Unit Model and Node Type remain unchanged | Pass |
+| Mechanism ADR | Custom Service Manager runtime accepted | Pass |
 
 ## Current Decision
 
-Continue with the custom Service Manager runtime as the primary candidate.
-The Update Manager fallback remains conditional and must not be selected until
-the runtime harness has either passed or exposed a concrete blocking property.
+Use the custom Service Manager runtime. The local factory, lifecycle,
+protocol, and CM gates passed, so the Update Manager fallback is not selected.
+It can be reconsidered only if a new production blocker is discovered.
 
-The next action is to create and qualify the isolated builder. The active
-provisioned AosVM remains unchanged.
+The accepted ADR is
+`aos-vehicle-platform/docs/decisions/0001-service-manager-component-runtime.md`.
+R6.1-1 is complete. R6.1-2 is the next work package but is not implicitly
+authorized by this record. The active provisioned AosVM remains unchanged and
+does not require deprovisioning or reprovisioning.

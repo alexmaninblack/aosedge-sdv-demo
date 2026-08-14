@@ -73,6 +73,24 @@ class R61SourceLockTests(unittest.TestCase):
         with self.assertRaisesRegex(VALIDATOR.LockError, "builder release"):
             VALIDATOR.validate_lock(value)
 
+    def test_builder_conan_version_is_pinned(self) -> None:
+        value = copy.deepcopy(self.lock)
+        value["builder"]["toolchain"]["conanVersion"] = "latest"
+        with self.assertRaisesRegex(VALIDATOR.LockError, "Conan version"):
+            VALIDATOR.validate_lock(value)
+
+    def test_cloud_openapi_digest_is_required(self) -> None:
+        value = copy.deepcopy(self.lock)
+        value["evidence"]["cloudApi"]["sha256"] = "current"
+        with self.assertRaisesRegex(VALIDATOR.LockError, "OpenAPI digest"):
+            VALIDATOR.validate_lock(value)
+
+    def test_mechanism_qualification_revision_is_pinned(self) -> None:
+        value = copy.deepcopy(self.lock)
+        value["evidence"]["mechanismQualification"]["revision"] = "HEAD"
+        with self.assertRaisesRegex(VALIDATOR.LockError, "full commit SHA"):
+            VALIDATOR.validate_lock(value)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -690,8 +690,8 @@ R6.1 is complete only when all of these are true:
 ## Accepted Review Decisions
 
 - [x] Accept the dedicated role-based `vehicle-data-provider` component.
-- [x] Accept the Service Manager component runtime as the preferred mechanism
-      and the standalone Update Manager only as a proof-gated fallback.
+- [x] Accept the Service Manager component runtime; R6.1-1 passed and the
+      Update Manager fallback is not selected without a new blocker.
 - [x] Accept one initial custom bootstrap/rootfs build followed by independent
       provider FOTA releases.
 - [x] Accept the runtime and provider as separate deployable artifacts even
@@ -709,6 +709,10 @@ R6.1 is complete only when all of these are true:
       compatibility is known.
 - [x] Authorize R6.1-1; later Cloud and active-Unit mutations still
       require their own explicit gates.
+- [x] Complete R6.1-1 with an accepted runtime ADR, exact Cloud/API and source
+      baseline, persistent storage root, and unchanged Unit identity.
+- [ ] Authorize R6.1-2 bootstrap-image implementation after its checkpoint
+      review.
 
 ## References
 

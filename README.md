@@ -74,9 +74,10 @@ separation gate is complete. R6/AOS-2 is also complete: the ARM64 platform
 provider publishes the seven contract 0.1.1 signals from the host-only CARLA
 VISS endpoint into the in-VM KUKSA Databroker at 20 Hz, marks them unavailable
 on source loss, and survives a clean VM restart without changing the
-provisioned cloud Unit. The R6.1 design is accepted and R6.1-1 is authorized to
-prove the local lifecycle mechanism for a dedicated Cloud-visible FOTA
-component. Bootstrap deployment, Cloud mutation, deprovisioning,
+provisioned cloud Unit. R6.1-1 is complete: an isolated ARM64 build proved the
+custom Service Manager runtime through the local CM boundary, selected the
+persistent component root, and confirmed that the existing Unit Model and Node
+Type remain unchanged. Bootstrap deployment, Cloud mutation, deprovisioning,
 reprovisioning, and active-Unit changes remain separately gated.
 
 ## Commands
@@ -119,6 +120,8 @@ Manage the isolated builder separately from the provisioned AosVM:
 ./scripts/r6-1-builder start
 ./scripts/r6-1-builder wait
 ./scripts/r6-1-builder smoke-test
+./scripts/r6-1-builder bootstrap-tools
+./scripts/r6-1-builder copy PATH /home/yocto/DESTINATION
 ./scripts/r6-1-builder stop
 ```
 
@@ -126,6 +129,11 @@ The builder uses a private sparse disk outside Git, key-only SSH on
 `127.0.0.1:10023`, and a dynamic macOS resolver bridge on
 `127.0.0.1:18054`. The DNS listener follows macOS resolver changes but is
 never exposed to the LAN. `stop` cleanly stops both QEMU and the DNS bridge.
+`bootstrap-tools` installs the qualification build dependencies and pins Conan
+and CMake inside the non-provisioned builder; it never installs Aos identity
+or signing material.
+`copy` accepts only an explicit local source and a destination below the
+unprivileged builder user's home directory.
 
 When the project repositories are sibling checkouts, also verify their exact
 commits and locked files without recording those local paths:
