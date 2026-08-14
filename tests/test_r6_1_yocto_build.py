@@ -51,17 +51,24 @@ class R61YoctoBuildTests(unittest.TestCase):
 
     def test_project_build_is_pinned_and_credential_free(self) -> None:
         self.assertIn(
-            "8d1814540e1c6b6291a6b4b8af3bcb66e2d118e9650af5002dc9847b62115445",
+            "d1483a6bf6ae00a1b5fd279f8c745ea21fca8fe6681baa605cf9eb0a59df8539",
             self.content,
         )
         self.assertIn(
-            "ad850e8bad7585cbdf589915a64fee061a0bd405", self.content
+            "fa5e7cfa8c238419eb12a76ae6f0676f9243acd6", self.content
         )
         self.assertIn(
-            "528b09ca750576a2ab8520802d6f9ed015e7e57cab72d5aae4bbcdb55e2cf4a5",
+            "cbb63df9a498167a5233915589ecc630cf9aff265d5c30121d824a4a6167562b",
             self.content,
         )
         self.assertIn("credential reference present", self.content)
+        self.assertIn("ensure_project_platform_revision", self.content)
+        self.assertIn('fetch --no-tags origin', self.content)
+        self.assertIn("project platform origin changed", self.content)
+        self.assertIn("checkout does not match the pinned revision", self.content)
+        self.assertIn("project platform checkout is not clean", self.content)
+        self.assertIn("bitbake aos-image-vm", self.content)
+        self.assertIn("recalculate task signatures", self.content)
         self.assertIn("r6-1-yocto-build run-project", self.content)
 
     def test_unsigned_fota_waits_for_the_project_image(self) -> None:

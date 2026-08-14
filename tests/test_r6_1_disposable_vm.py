@@ -123,7 +123,17 @@ class R61DisposableVMTests(unittest.TestCase):
             'aos-vm-1.0.0-main-qemuarm64-vehicle-data-provider', guest_gate
         )
         self.assertIn('health_status" -eq 3', guest_gate)
+        self.assertIn("aos-vehicle-data-provider-health active", guest_gate)
         self.assertIn("empty project store has an active slot", guest_gate)
+        self.assertIn("provider self-test does not use DynamicUser", guest_gate)
+        self.assertIn("provider reload boundary is missing", guest_gate)
+        self.assertIn("provider systemd unit was not loaded by PID 1", guest_gate)
+        self.assertIn("provider self-test unit was not loaded by PID 1", guest_gate)
+        self.assertNotIn("systemd-analyze verify", guest_gate)
+        self.assertIn(
+            "health controller incorrectly transitions into the payload domain",
+            guest_gate,
+        )
         self.assertIn("vehicle_data_provider_store_t", guest_gate)
         self.assertIn("current boot contains an SELinux AVC denial", guest_gate)
 

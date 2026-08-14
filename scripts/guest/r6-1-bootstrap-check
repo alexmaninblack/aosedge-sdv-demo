@@ -185,7 +185,12 @@ else
             .isComponent == true and
             .config.workingDir == "/var/aos/workdirs/sm/runtimes/systemd-slot-component" and
             .config.unit == "aos-vehicle-data-provider.service" and
-            .config.layoutVersion == 1
+            .config.healthAdapter == "/usr/libexec/aos-vehicle-data-provider-health" and
+            .config.layoutVersion == 1 and
+            .config.maxPayloadBytes == 536870912 and
+            .config.minimumFreeBytes == 134217728 and
+            .config.startTimeoutSeconds == 30 and
+            .config.stopTimeoutSeconds == 15
         )
     ' /etc/aos/sm.cfg >/dev/null || fail 'project runtime contract is incorrect'
     jq -e '
@@ -197,6 +202,7 @@ else
         /usr/libexec/aos-vehicle-data-provider-launcher \
         /usr/libexec/aos-vehicle-data-provider-health \
         /usr/lib/systemd/system/aos-vehicle-data-provider.service \
+        /usr/lib/systemd/system/aos-vehicle-data-provider-selftest@.service \
         /usr/lib/systemd/system/aos-vehicle-data-provider-bootstrap.service \
         /usr/lib/tmpfiles.d/aos-vehicle-data-provider.conf \
         /etc/systemd/system/aos-sm.service.d/30-aos-vehicle-data-provider.conf; do
@@ -205,11 +211,34 @@ else
     done
     [ "$(systemctl is-active aos-vehicle-data-provider.service)" = inactive ] ||
         fail 'empty-store provider service is unexpectedly active'
+    [ "$(systemctl is-active 'aos-vehicle-data-provider-selftest@a.service')" = inactive ] ||
+        fail 'empty-store provider self-test is unexpectedly active'
     provider_enablement=$(systemctl is-enabled aos-vehicle-data-provider.service 2>/dev/null || true)
     case "$provider_enablement" in
         disabled|static) ;;
         *) fail "provider service has unsafe enablement: $provider_enablement" ;;
     esac
+    selftest_enablement=$(systemctl is-enabled \
+        'aos-vehicle-data-provider-selftest@.service' 2>/dev/null || true)
+    case "$selftest_enablement" in
+        disabled|static) ;;
+        *) fail "provider self-test has unsafe enablement: $selftest_enablement" ;;
+    esac
+    grep -qx 'ExecReload=/usr/libexec/aos-vehicle-data-provider-launcher --mark-unavailable' \
+        /usr/lib/systemd/system/aos-vehicle-data-provider.service ||
+        fail 'provider reload boundary is missing'
+    grep -qx 'DynamicUser=yes' \
+        /usr/lib/systemd/system/aos-vehicle-data-provider-selftest@.service ||
+        fail 'provider self-test does not use DynamicUser'
+    grep -qx 'PrivateNetwork=yes' \
+        /usr/lib/systemd/system/aos-vehicle-data-provider-selftest@.service ||
+        fail 'provider self-test is not offline'
+    [ "$(systemctl show --property=LoadState --value \
+        aos-vehicle-data-provider.service)" = loaded ] ||
+        fail 'provider systemd unit was not loaded by PID 1'
+    [ "$(systemctl show --property=LoadState --value \
+        'aos-vehicle-data-provider-selftest@a.service')" = loaded ] ||
+        fail 'provider self-test unit was not loaded by PID 1'
 
     store=/var/aos/workdirs/sm/runtimes/systemd-slot-component
     for path in "$store" "$store/slots" "$store/state" "$store/credentials"; do
@@ -226,7 +255,8 @@ else
 
     health_output=''
     health_status=0
-    health_output=$(/usr/libexec/aos-vehicle-data-provider-health 2>&1) || health_status=$?
+    health_output=$(/usr/libexec/aos-vehicle-data-provider-health active 2>&1) ||
+        health_status=$?
     [ "$health_status" -eq 3 ] && [ "$health_output" = STATE=EMPTY ] ||
         fail 'empty-store health contract did not fail safely'
 
@@ -234,12 +264,13 @@ else
     /usr/libexec/aos-vehicle-data-provider-launcher >/dev/null 2>&1 || launcher_status=$?
     [ "$launcher_status" -ne 0 ] || fail 'empty-store launcher did not fail safely'
 
-    for path in \
-        /usr/libexec/aos-vehicle-data-provider-launcher \
-        /usr/libexec/aos-vehicle-data-provider-health; do
-        stat -c %C "$path" | grep -q ':vehicle_data_provider_exec_t:' ||
-            fail "project executable SELinux type is incorrect: $path"
-    done
+    stat -c %C /usr/libexec/aos-vehicle-data-provider-launcher | \
+        grep -q ':vehicle_data_provider_exec_t:' ||
+        fail 'provider launcher SELinux transition type is incorrect'
+    if stat -c %C /usr/libexec/aos-vehicle-data-provider-health | \
+        grep -q ':vehicle_data_provider_exec_t:'; then
+        fail 'health controller incorrectly transitions into the payload domain'
+    fi
     stat -c %C "$store" | grep -q ':vehicle_data_provider_store_t:' ||
         fail 'project store SELinux type is incorrect'
 fi

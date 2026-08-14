@@ -175,28 +175,31 @@ side-loaded host-daemon lifecycle with a dedicated, independently versioned,
 Cloud-visible Aos FOTA component. The telemetry consumer remains a separate
 SOTA service.
 
-Current gate: R6.1-1 is complete and R6.1-2 bootstrap-image implementation is
-authorized for disposable, non-provisioned images. The custom slot-based
-Service Manager component runtime is accepted against the exact AosVM 6.1.0
-stack. The local factory, protocol, CM, storage, and identity gates passed; the
-Update Manager fallback is not selected. R6.1-2 adds the stable empty-store
-runtime boundary, launcher profile, policy, storage roots, and health adapter.
-Atomic A/B activation and rollback remain R6.1-3 work. Provider releases can
-advance independently through FOTA without rebuilding rootfs after that
-lifecycle is qualified.
+Current gate: R6.1-1 through R6.1-3 are complete. The custom slot-based Service
+Manager component runtime is accepted against the exact AosVM 6.1.0 stack. The
+local factory, protocol, CM, storage, and identity gates passed; the Update
+Manager fallback is not selected. The bootstrap now contains the stable
+runtime boundary, fixed launcher and health profile, SELinux policy, persistent
+store, restricted provider-archive preflight, and durable A/B apply, rollback,
+and restart recovery. Provider releases can advance independently through FOTA
+without rebuilding rootfs after the first bootstrap deployment.
 
 R6.1-1 established the separate builder, exact source/API baseline, local
 runtime harness, Node/CM reporting proof, storage decision, and accepted ADR.
-R6.1-2 now builds and boots the unchanged upstream baseline before adding the
-tracked project Yocto layer. The production runtime and factory compile
-against the exact source pins and their empty-store tests pass. Separate
-upstream and project Moulin graphs are pinned; the project graph contains no
-signing or upload credential. The authorization excludes bootstrap deployment,
-Cloud catalog mutation, deprovisioning, reprovisioning, and active-Unit
-changes. The accepted R6 side-load remains the operational baseline.
+R6.1-2 builds and boots the unchanged upstream baseline before adding the
+tracked project Yocto layer. R6.1-3 adds the production atomic lifecycle: the
+exact ARM64 compile and 38-test update/rollback/recovery matrix pass, the
+signature-aware incremental Yocto build produced a new image, and the
+disposable non-provisioned guest plus unsigned bootstrap FOTA regressions pass.
+Separate upstream and project Moulin graphs are pinned; the project graph
+contains no signing or upload credential. R6.1-4 provider artifact production
+awaits review. The authorization still excludes bootstrap deployment, Cloud
+catalog mutation, deprovisioning, reprovisioning, and active-Unit changes. The
+accepted R6 side-load remains the operational baseline.
 
 Detailed draft: [R6.1 FOTA component design and plan](r6-1-vehicle-data-provider-fota-design.md).
 Qualification record: [R6.1-2 bootstrap-image qualification](r6-1-bootstrap-image-qualification.md).
+Atomic lifecycle qualification: [R6.1-3 record](r6-1-atomic-component-lifecycle-qualification.md).
 
 ## AOS-3 — Deploy the first KUKSA telemetry consumer
 

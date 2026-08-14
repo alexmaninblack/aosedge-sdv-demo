@@ -23,14 +23,17 @@ readonly pid_file="${work_root}/r6-1-upstream-build.pid"
 readonly result_file="${work_root}/r6-1-upstream-build.result"
 readonly project_work_root="/home/yocto/r61-build/project"
 readonly project_manifest="${input_root}/aos-vm-project.pinned.yaml"
-readonly project_manifest_sha256="8d1814540e1c6b6291a6b4b8af3bcb66e2d118e9650af5002dc9847b62115445"
-readonly project_build_ninja_sha256="528b09ca750576a2ab8520802d6f9ed015e7e57cab72d5aae4bbcdb55e2cf4a5"
+readonly project_manifest_sha256="d1483a6bf6ae00a1b5fd279f8c745ea21fca8fe6681baa605cf9eb0a59df8539"
+readonly project_build_ninja_sha256="cbb63df9a498167a5233915589ecc630cf9aff265d5c30121d824a4a6167562b"
 readonly project_log_file="${project_work_root}/r6-1-project-build.log"
 readonly project_pid_file="${project_work_root}/r6-1-project-build.pid"
 readonly project_result_file="${project_work_root}/r6-1-project-build.result"
 readonly project_fota_log_file="${project_work_root}/r6-1-project-fota.log"
 readonly project_fota_pid_file="${project_work_root}/r6-1-project-fota.pid"
 readonly project_fota_result_file="${project_work_root}/r6-1-project-fota.result"
+readonly project_platform_checkout="${project_work_root}/yocto/aos-vehicle-platform"
+readonly project_platform_url="https://github.com/alexmaninblack/aos-vehicle-platform"
+readonly project_platform_revision="fa5e7cfa8c238419eb12a76ae6f0676f9243acd6"
 
 # Non-interactive SSH sessions use the system default PATH and do not include
 # pipx's application directory. Ninja invokes rouge by its generated command
@@ -86,7 +89,7 @@ verify_project_inputs() {
         fail "pinned project manifest digest mismatch"
     grep -F "https://github.com/alexmaninblack/aos-vehicle-platform" \
         "$project_manifest" >/dev/null
-    grep -F "ad850e8bad7585cbdf589915a64fee061a0bd405" \
+    grep -F "fa5e7cfa8c238419eb12a76ae6f0676f9243acd6" \
         "$project_manifest" >/dev/null
     grep -F '"../aos-vehicle-platform/meta-aos-vehicle-platform"' \
         "$project_manifest" >/dev/null
@@ -94,6 +97,29 @@ verify_project_inputs() {
         "$project_manifest" >/dev/null; then
         fail "credential reference present in the project manifest"
     fi
+}
+
+ensure_project_platform_revision() {
+    [[ -d "${project_platform_checkout}/.git" && ! -L "$project_platform_checkout" ]] ||
+        fail "project platform checkout is absent or unsafe"
+    local origin
+    origin="$(git -C "$project_platform_checkout" remote get-url origin)"
+    [[ "$origin" == "$project_platform_url" ]] ||
+        fail "project platform origin changed"
+    if ! git -C "$project_platform_checkout" cat-file -e \
+        "${project_platform_revision}^{commit}" 2>/dev/null; then
+        git -C "$project_platform_checkout" fetch --no-tags origin \
+            "$project_platform_revision"
+    fi
+    [[ "$(git -C "$project_platform_checkout" rev-parse \
+        "${project_platform_revision}^{commit}")" == "$project_platform_revision" ]] ||
+        fail "pinned project platform revision is unavailable"
+    local current_revision
+    current_revision="$(git -C "$project_platform_checkout" rev-parse HEAD)"
+    [[ "$current_revision" == "$project_platform_revision" ]] ||
+        fail "project platform checkout does not match the pinned revision"
+    [[ -z "$(git -C "$project_platform_checkout" status --porcelain)" ]] ||
+        fail "project platform checkout is not clean"
 }
 
 generate_upstream() {
@@ -128,6 +154,7 @@ generate_project() {
         --NODE_TYPE=main \
         --WITH_MESSAGE_PROXY=no \
         --CACHE_LOCATION=outside
+    ensure_project_platform_revision
     require_regular_file "$project_work_root/build.ninja"
     grep -F "/home/yocto/yocto-cache/downloads" "$project_work_root/build.ninja" >/dev/null
     grep -F "/home/yocto/yocto-cache/sstate-cache" "$project_work_root/build.ninja" >/dev/null
@@ -205,12 +232,27 @@ run_upstream() {
 
 run_project() {
     verify_project_inputs
+    ensure_project_platform_revision
     require_regular_file "$project_work_root/build.ninja"
     rm -f "$project_result_file"
-    cd "$project_work_root"
     set +e
-    ninja -j 10 main-qemuarm64.img
+    (
+        cd "${project_work_root}/yocto"
+        set +u
+        # Moulin's Ninja outputs do not depend on Git checkout stamps. Ask
+        # BitBake to recalculate task signatures before Rouge considers the
+        # existing deploy files. This preserves downloads, sstate, and tmp.
+        # shellcheck disable=SC1091
+        source poky/oe-init-build-env build-main >/dev/null
+        set -u
+        bitbake aos-image-vm
+    )
     result=$?
+    if [[ "$result" -eq 0 ]]; then
+        cd "$project_work_root"
+        ninja -j 10 main-qemuarm64.img
+        result=$?
+    fi
     set -e
     if [[ "$result" -eq 0 ]]; then
         printf 'PASS\n' >"$project_result_file"
@@ -223,6 +265,7 @@ run_project() {
 
 run_project_fota() {
     verify_project_inputs
+    ensure_project_platform_revision
     require_regular_file "$project_work_root/build.ninja"
     require_regular_file "$project_result_file"
     [[ "$(cat "$project_result_file")" == PASS ]] ||

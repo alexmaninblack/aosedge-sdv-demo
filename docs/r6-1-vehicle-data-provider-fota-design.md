@@ -3,7 +3,7 @@
 
 # R6.1 Vehicle-Data Provider FOTA Component Design
 
-- Status: Accepted; R6.1-2 is authorized
+- Status: Accepted; R6.1-3 complete and R6.1-4 awaits review
 - Date: 2026-08-14
 - Baseline: AosVM 6.1.0, one `aos-vm-main` Node, provider 0.1.1
 - Depends on: R6/AOS-2, ADR 0005, ADR 0006
@@ -27,11 +27,12 @@ Update Manager is not the default because it is not present in the released
 VM and its compatibility with the current Communication Manager protocol has
 not been demonstrated.
 
-R6.1-1 is complete and R6.1-2 is authorized. R6.1-2 may build and boot only
-disposable, non-provisioned bootstrap images. It does not authorize bootstrap
-deployment to the active provisioned Unit, component upload, Cloud assignment,
-deprovisioning, reprovisioning, or any mutation of the active Unit. Every later
-mutation retains its explicit gate.
+R6.1-1 through R6.1-3 are complete. The atomic A/B lifecycle passed its exact
+ARM64 tests, corrected incremental image build, disposable non-provisioned boot
+gate, and unsigned bootstrap FOTA regression. R6.1-4 remains a separate review
+gate. Completion of R6.1-3 does not authorize bootstrap deployment to the
+active provisioned Unit, provider signing or upload, Cloud assignment,
+deprovisioning, reprovisioning, or any mutation of the active Unit.
 
 ## Why R6.1 Exists
 
@@ -716,6 +717,21 @@ R6.1 is complete only when all of these are true:
 - [x] Authorize R6.1-2 bootstrap-image implementation with disposable,
       non-provisioned images only; Cloud and active-Unit mutations remain
       forbidden.
+- [x] Complete R6.1-2 with an incrementally reproducible bootstrap image,
+      disposable ARM64 boot qualification, and validated unsigned rootfs FOTA
+      output.
+- [x] Authorize the local R6.1-3 atomic lifecycle implementation defined in
+      `r6-1-atomic-component-lifecycle.md`; signed provider publication, Cloud,
+      and active-Unit mutations remain forbidden.
+- [x] Use a provider-specific uncompressed restricted USTAR OCI media type and
+      preflight it inside Image Manager before BusyBox `tar`; keep generic Aos
+      service-layer handling unchanged.
+- [x] Complete R6.1-3 with atomic A/B apply and rollback, recovery from every
+      durable transaction phase, restricted archive and payload validation,
+      an exact ARM64 compile and 38-test lifecycle matrix, a corrected
+      incremental bootstrap image, and a disposable guest regression.
+- [ ] Review and explicitly authorize R6.1-4 provider artifact production and
+      the use of the existing OEM signing workflow.
 
 ## References
 
