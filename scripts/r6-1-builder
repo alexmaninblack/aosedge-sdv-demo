@@ -17,7 +17,7 @@ import stat
 import subprocess
 import sys
 import time
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from urllib.parse import urlparse
 
 
@@ -47,6 +47,13 @@ MINIMUM_HOST_MEMORY = 32 * 1024**3
 MINIMUM_INITIAL_HOST_FREE = 260 * 1024**3
 MINIMUM_OPERATIONAL_HOST_FREE = 60 * 1024**3
 ALLOWED_DOWNLOAD_HOSTS = {"cloud-images.ubuntu.com"}
+GUEST_BUILD_ROOT = PurePosixPath("/home/yocto/r61-build")
+MAXIMUM_FETCH_SIZE = 40 * 1024**3
+FETCH_FREE_SPACE_RESERVE = 20 * 1024**3
+ALLOWED_FETCH_SUFFIXES = {".ext4", ".gz", ".img", ".squashfs"}
+
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+ARTIFACT_ROOT = REPOSITORY_ROOT / "artifacts" / "r6-1"
 
 ROOT = Path(
     os.environ.get(
@@ -832,6 +839,92 @@ def guest_copy(source: str, destination: str) -> None:
         raise BuilderError(f"guest copy failed with exit code {completed.returncode}")
 
 
+def validate_fetch_paths(source: str, destination: str) -> tuple[str, Path]:
+    source_path = PurePosixPath(source)
+    try:
+        source_path.relative_to(GUEST_BUILD_ROOT)
+    except ValueError:
+        fail("fetch source must be below /home/yocto/r61-build")
+    if ".." in source_path.parts or source_path.suffix not in ALLOWED_FETCH_SUFFIXES:
+        fail("fetch source is not an allowed R6.1 image artifact")
+    allowed_characters = (
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._/"
+    )
+    if any(character not in allowed_characters for character in source):
+        fail("fetch source contains an unsafe character")
+
+    requested_destination = Path(destination).expanduser()
+    if not requested_destination.is_absolute():
+        requested_destination = REPOSITORY_ROOT / requested_destination
+    artifact_root = ARTIFACT_ROOT.resolve()
+    destination_path = requested_destination.resolve()
+    try:
+        destination_path.relative_to(artifact_root)
+    except ValueError:
+        fail("fetch destination must be below artifacts/r6-1")
+    if destination_path.suffix != source_path.suffix:
+        fail("fetch source and destination suffixes must match")
+
+    return str(source_path), destination_path
+
+
+def guest_fetch(source: str, destination: str) -> None:
+    source_path, destination_path = validate_fetch_paths(source, destination)
+    if resolve_running() is None:
+        fail("the R6.1 builder is not running")
+    require_regular_file(KNOWN_HOSTS, "builder SSH known-hosts file")
+    ensure_private_directory(ARTIFACT_ROOT)
+    ensure_private_directory(destination_path.parent)
+    if destination_path.exists() or destination_path.is_symlink():
+        fail(f"fetch destination already exists: {destination_path}")
+
+    for remote_check in (["test", "-f", source_path], ["test", "!", "-L", source_path]):
+        completed = subprocess.run(ssh_base() + remote_check)
+        if completed.returncode != 0:
+            fail(f"fetch source is unavailable or unsafe: {source_path}")
+
+    size_result = run(ssh_base() + ["stat", "-c", "%s", source_path], capture=True)
+    size_text = size_result.stdout.strip()
+    if not size_text.isdecimal():
+        fail("cannot determine fetch source size")
+    source_size = int(size_text)
+    if source_size <= 0 or source_size > MAXIMUM_FETCH_SIZE:
+        fail("fetch source size is outside the guarded range")
+    available = shutil.disk_usage(destination_path.parent).free
+    if available < source_size + FETCH_FREE_SPACE_RESERVE:
+        fail("insufficient host space for the fetched artifact and reserve")
+
+    digest_result = run(ssh_base() + ["sha256sum", source_path], capture=True)
+    remote_digest = digest_result.stdout.split(maxsplit=1)[0]
+    if len(remote_digest) != 64 or any(
+        character not in "0123456789abcdef" for character in remote_digest
+    ):
+        fail("cannot determine fetch source SHA-256")
+
+    temporary = destination_path.with_name(f".{destination_path.name}.partial")
+    if temporary.exists() or temporary.is_symlink():
+        fail(f"fetch temporary path already exists: {temporary}")
+    try:
+        command = scp_base() + [f"yocto@127.0.0.1:{source_path}", str(temporary)]
+        completed = subprocess.run(command)
+        if completed.returncode != 0:
+            raise BuilderError(f"guest fetch failed with exit code {completed.returncode}")
+        require_regular_file(temporary, "fetched artifact")
+        if temporary.stat().st_size != source_size:
+            fail("fetched artifact size mismatch")
+        if sha256(temporary) != remote_digest:
+            fail("fetched artifact SHA-256 mismatch")
+        temporary.chmod(0o444)
+        temporary.replace(destination_path)
+    except BaseException:
+        temporary.unlink(missing_ok=True)
+        raise
+
+    print(f"Fetched R6.1 artifact: {destination_path}")
+    print(f"Size: {source_size} bytes")
+    print(f"SHA256: {remote_digest}")
+
+
 def guest_run_script(script: str) -> None:
     if resolve_running() is None:
         fail("the R6.1 builder is not running")
@@ -1007,6 +1100,9 @@ def parse_args() -> argparse.Namespace:
     copy_parser = subparsers.add_parser("copy")
     copy_parser.add_argument("source")
     copy_parser.add_argument("destination")
+    fetch_parser = subparsers.add_parser("fetch")
+    fetch_parser.add_argument("source")
+    fetch_parser.add_argument("destination")
     return parser.parse_args()
 
 
@@ -1037,6 +1133,8 @@ def main() -> int:
             guest_run(args.arguments)
         elif args.command == "copy":
             guest_copy(args.source, args.destination)
+        elif args.command == "fetch":
+            guest_fetch(args.source, args.destination)
         else:
             fail(f"unsupported command: {args.command}")
     except (BuilderError, OSError, subprocess.SubprocessError) as error:

@@ -1,0 +1,483 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+"""Boot an R6.1 image in an isolated, disposable, non-provisioned VM."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import platform
+import shutil
+import stat
+import subprocess
+import sys
+import time
+from dataclasses import dataclass
+from pathlib import Path
+
+
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+ARTIFACT_ROOT = Path(
+    os.environ.get(
+        "R61_QUAL_ARTIFACT_ROOT", str(REPOSITORY_ROOT / "artifacts" / "r6-1")
+    )
+)
+LOCAL_ROOT = REPOSITORY_ROOT / ".local" / "r6-1-qualification"
+RUN_ROOT = REPOSITORY_ROOT / ".run" / "r6-1-qualification"
+LOG_ROOT = REPOSITORY_ROOT / "runs" / "r6-1-qualification"
+FIRMWARE = Path(
+    os.environ.get(
+        "R61_QUAL_FIRMWARE",
+        str(
+            REPOSITORY_ROOT
+            / ".cache"
+            / "aosvm"
+            / "v6.1.0"
+            / "qemuarm64"
+            / "QEMU_EFI.fd"
+        ),
+    )
+)
+FIRMWARE_SHA256 = "30f7042c23b81c28b8196a76f4af6bcf10046f08049c9d78b4387472c5bbcd10"
+QEMU_MACHINE = "virt-11.0"
+QEMU_VERSIONS = {"11.0.3", "11.1.0"}
+MEMORY_MIB = 2048
+VCPUS = 2
+STOP_TIMEOUT_SECONDS = 90
+READY_TIMEOUT_SECONDS = 180
+VARIANTS = {
+    "upstream": {"port": 10024, "mac": "52:54:00:52:61:20"},
+    "project": {"port": 10025, "mac": "52:54:00:52:61:21"},
+}
+
+
+class QualificationError(RuntimeError):
+    """Raised when a disposable qualification operation is unsafe."""
+
+
+def fail(message: str) -> None:
+    raise QualificationError(message)
+
+
+def command_path(name: str) -> str:
+    path = shutil.which(name)
+    if path is None:
+        fail(f"required command is unavailable: {name}")
+    return path
+
+
+def sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def require_regular_file(path: Path, label: str) -> None:
+    if path.is_symlink() or not path.is_file():
+        fail(f"{label} is not a regular, non-symbolic-link file: {path}")
+
+
+def ensure_private_directory(path: Path) -> None:
+    path.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if path.is_symlink() or not path.is_dir():
+        fail(f"qualification directory is unsafe: {path}")
+    path.chmod(0o700)
+
+
+@dataclass(frozen=True)
+class Layout:
+    """All variant-specific paths and identifiers."""
+
+    variant: str
+    base: Path
+    expected_sha256: str
+    overlay: Path
+    pid: Path
+    qmp: Path
+    serial: Path
+    serial_log: Path
+    evidence: Path
+    ssh_port: int
+    mac: str
+    vm_name: str
+
+
+def create_layout(variant: str, base: str, expected_sha256: str) -> Layout:
+    if variant not in VARIANTS:
+        fail(f"unsupported qualification variant: {variant}")
+    if len(expected_sha256) != 64 or any(
+        character not in "0123456789abcdef" for character in expected_sha256
+    ):
+        fail("expected image SHA-256 must be 64 lowercase hexadecimal characters")
+
+    artifact_root = ARTIFACT_ROOT.resolve()
+    base_path = Path(base).expanduser()
+    if not base_path.is_absolute():
+        base_path = REPOSITORY_ROOT / base_path
+    base_path = base_path.resolve()
+    try:
+        base_path.relative_to(artifact_root / variant)
+    except ValueError:
+        fail(f"{variant} base image must be below artifacts/r6-1/{variant}")
+    require_regular_file(base_path, "qualification base image")
+    if base_path.suffix != ".img":
+        fail("qualification base image must use the .img suffix")
+    if base_path.stat().st_mode & 0o222:
+        fail("qualification base image must be read-only")
+    if sha256(base_path) != expected_sha256:
+        fail("qualification base image SHA-256 mismatch")
+
+    settings = VARIANTS[variant]
+    return Layout(
+        variant=variant,
+        base=base_path,
+        expected_sha256=expected_sha256,
+        overlay=LOCAL_ROOT / f"{variant}.qcow2",
+        pid=RUN_ROOT / f"{variant}.pid",
+        qmp=RUN_ROOT / f"{variant}.qmp",
+        serial=RUN_ROOT / f"{variant}.serial",
+        serial_log=LOG_ROOT / f"{variant}-serial.log",
+        evidence=LOG_ROOT / f"{variant}-boot.json",
+        ssh_port=int(settings["port"]),
+        mac=str(settings["mac"]),
+        vm_name=f"r61-qual-{variant}",
+    )
+
+
+def qemu_version(qemu: str) -> str:
+    result = subprocess.run(
+        [qemu, "--version"], check=True, text=True, capture_output=True
+    )
+    first_line = result.stdout.splitlines()[0]
+    prefix = "QEMU emulator version "
+    if not first_line.startswith(prefix):
+        fail("cannot parse the QEMU version")
+    version = first_line.removeprefix(prefix).split()[0]
+    if version not in QEMU_VERSIONS:
+        fail(f"QEMU version is not qualified: {version}")
+    return version
+
+
+def verify_firmware() -> Path:
+    firmware = FIRMWARE.resolve()
+    require_regular_file(firmware, "qualification firmware")
+    if sha256(firmware) != FIRMWARE_SHA256:
+        fail("qualification firmware SHA-256 mismatch")
+    return firmware
+
+
+def resolve_pid(layout: Layout) -> int | None:
+    if not layout.pid.exists():
+        return None
+    require_regular_file(layout.pid, "qualification PID file")
+    value = layout.pid.read_text(encoding="utf-8").strip()
+    if not value.isdecimal() or int(value) <= 1:
+        fail("qualification PID file is invalid")
+    pid = int(value)
+    result = subprocess.run(
+        ["ps", "-p", str(pid), "-o", "command="],
+        check=False,
+        text=True,
+        capture_output=True,
+    )
+    if result.returncode != 0:
+        return None
+    command = result.stdout
+    if (
+        layout.vm_name not in command
+        or str(layout.overlay.resolve()) not in command
+        or str(layout.qmp.resolve()) not in command
+    ):
+        fail("qualification PID is not owned by the expected QEMU process")
+    return pid
+
+
+def qemu_command(layout: Layout, firmware: Path, qemu: str) -> list[str]:
+    network = (
+        "user,id=r61net,net=10.0.0.0/24,host=10.0.0.1,dns=10.0.0.2,"
+        f"restrict=on,hostfwd=tcp:127.0.0.1:{layout.ssh_port}-10.0.0.100:22"
+    )
+    return [
+        qemu,
+        "-name",
+        layout.vm_name,
+        "-machine",
+        f"{QEMU_MACHINE},accel=hvf",
+        "-cpu",
+        "host",
+        "-smp",
+        str(VCPUS),
+        "-m",
+        str(MEMORY_MIB),
+        "-nodefaults",
+        "-bios",
+        str(firmware),
+        "-drive",
+        f"file={layout.overlay.resolve()},if=none,id=r61image,format=qcow2,cache=writeback",
+        "-device",
+        "virtio-scsi-pci,id=scsi",
+        "-device",
+        "scsi-hd,drive=r61image,bootindex=0",
+        "-netdev",
+        network,
+        "-device",
+        f"virtio-net-pci,netdev=r61net,mac={layout.mac}",
+        "-chardev",
+        (
+            f"socket,id=serial0,path={layout.serial.resolve()},server=on,wait=off,"
+            f"logfile={layout.serial_log.resolve()},logappend=on,logtimestamp=on"
+        ),
+        "-serial",
+        "chardev:serial0",
+        "-qmp",
+        f"unix:{layout.qmp.resolve()},server=on,wait=off",
+        "-pidfile",
+        str(layout.pid.resolve()),
+        "-monitor",
+        "none",
+        "-display",
+        "none",
+        "-daemonize",
+    ]
+
+
+def verify_overlay(layout: Layout) -> None:
+    require_regular_file(layout.overlay, "qualification overlay")
+    if stat.S_IMODE(layout.overlay.stat().st_mode) != 0o600:
+        fail("qualification overlay mode must be 0600")
+    result = subprocess.run(
+        [command_path("qemu-img"), "info", "--output=json", str(layout.overlay)],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    try:
+        metadata = json.loads(result.stdout)
+    except json.JSONDecodeError as error:
+        fail(f"qualification overlay metadata is invalid: {error}")
+    if not isinstance(metadata, dict):
+        fail("qualification overlay metadata is not an object")
+    backing = Path(str(metadata.get("full-backing-filename", ""))).resolve()
+    if (
+        metadata.get("format") != "qcow2"
+        or metadata.get("backing-filename-format") != "raw"
+        or backing != layout.base
+    ):
+        fail("qualification overlay does not use the expected read-only raw base")
+
+
+def host_check(layout: Layout) -> tuple[str, Path]:
+    if platform.system() != "Darwin" or platform.machine() != "arm64":
+        fail("disposable qualification requires an Apple Silicon Mac")
+    qemu = command_path("qemu-system-aarch64")
+    qemu_version(qemu)
+    firmware = verify_firmware()
+    for path in (layout.overlay, layout.pid, layout.qmp, layout.serial):
+        if "," in str(path):
+            fail(f"QEMU option path contains a comma: {path}")
+    listener = subprocess.run(
+        ["lsof", "-nP", f"-iTCP:{layout.ssh_port}", "-sTCP:LISTEN"],
+        check=False,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    if listener.returncode == 0 and resolve_pid(layout) is None:
+        fail(f"qualification SSH port is already in use: {layout.ssh_port}")
+    return qemu, firmware
+
+
+def prepare(layout: Layout) -> None:
+    if resolve_pid(layout) is not None:
+        fail("cannot prepare a running qualification VM")
+    ensure_private_directory(LOCAL_ROOT)
+    ensure_private_directory(RUN_ROOT)
+    ensure_private_directory(LOG_ROOT)
+    if layout.overlay.exists() or layout.overlay.is_symlink():
+        fail(f"qualification overlay already exists: {layout.overlay}")
+    qemu_img = command_path("qemu-img")
+    subprocess.run(
+        [
+            qemu_img,
+            "create",
+            "-q",
+            "-f",
+            "qcow2",
+            "-b",
+            str(layout.base),
+            "-F",
+            "raw",
+            str(layout.overlay),
+        ],
+        check=True,
+    )
+    layout.overlay.chmod(0o600)
+    verify_overlay(layout)
+    print(f"Prepared disposable {layout.variant} overlay: {layout.overlay}")
+
+
+def start(layout: Layout, dry_run: bool) -> None:
+    qemu, firmware = host_check(layout)
+    if resolve_pid(layout) is not None:
+        fail("qualification VM is already running")
+    verify_overlay(layout)
+    ensure_private_directory(RUN_ROOT)
+    ensure_private_directory(LOG_ROOT)
+    for runtime_path in (layout.pid, layout.qmp, layout.serial):
+        if runtime_path.exists() or runtime_path.is_symlink():
+            fail(f"stale qualification runtime path exists: {runtime_path}")
+    command = qemu_command(layout, firmware, qemu)
+    if dry_run:
+        print(json.dumps(command))
+        return
+    subprocess.run(command, check=True)
+    deadline = time.monotonic() + 10
+    while time.monotonic() < deadline:
+        if resolve_pid(layout) is not None and layout.qmp.exists():
+            print(f"Started disposable {layout.variant} VM.")
+            print(f"SSH (after guest key setup): 127.0.0.1:{layout.ssh_port}")
+            print(f"Serial log: {layout.serial_log}")
+            return
+        time.sleep(0.5)
+    fail("qualification QEMU process did not become ready")
+
+
+def qmp(layout: Layout, command: str) -> None:
+    subprocess.run(
+        [str(REPOSITORY_ROOT / "scripts" / "host" / "aosvm-qmp"), str(layout.qmp), command],
+        check=True,
+        stdout=subprocess.DEVNULL,
+    )
+
+
+def status(layout: Layout) -> None:
+    pid = resolve_pid(layout)
+    if pid is None:
+        print(f"Disposable {layout.variant} VM is stopped.")
+        return
+    print(f"Disposable {layout.variant} VM is running (PID {pid}).")
+    print(f"SSH: 127.0.0.1:{layout.ssh_port}")
+    print(f"Serial log: {layout.serial_log}")
+
+
+def wait_ready(layout: Layout) -> None:
+    if resolve_pid(layout) is None:
+        fail("qualification VM is not running")
+    deadline = time.monotonic() + READY_TIMEOUT_SECONDS
+    while time.monotonic() < deadline:
+        if layout.serial_log.is_file():
+            content = layout.serial_log.read_text(encoding="utf-8", errors="replace")
+            if "main login:" in content:
+                qmp(layout, "query-status")
+                evidence = {
+                    "schema": 1,
+                    "variant": layout.variant,
+                    "result": "boot-login-pass",
+                    "baseImageSha256": layout.expected_sha256,
+                    "network": "qemu-user-restrict-on",
+                    "sshHost": "127.0.0.1",
+                    "sshPort": layout.ssh_port,
+                    "checkedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                }
+                temporary = layout.evidence.with_suffix(".json.partial")
+                if layout.evidence.exists() or temporary.exists():
+                    fail("qualification boot evidence already exists")
+                temporary.write_text(
+                    json.dumps(evidence, sort_keys=True, separators=(",", ":")) + "\n",
+                    encoding="utf-8",
+                )
+                temporary.chmod(0o600)
+                temporary.replace(layout.evidence)
+                print(f"Disposable {layout.variant} VM reached the login prompt.")
+                print(f"Evidence: {layout.evidence}")
+                return
+        time.sleep(2)
+    fail("qualification VM did not reach the login prompt in time")
+
+
+def stop(layout: Layout) -> None:
+    pid = resolve_pid(layout)
+    if pid is None:
+        print(f"Disposable {layout.variant} VM is already stopped.")
+        return
+    qmp(layout, "system_powerdown")
+    deadline = time.monotonic() + STOP_TIMEOUT_SECONDS
+    while time.monotonic() < deadline:
+        if resolve_pid(layout) is None:
+            for path in (layout.pid, layout.qmp, layout.serial):
+                if path.exists() and not path.is_symlink():
+                    path.unlink()
+            print(f"Stopped disposable {layout.variant} VM cleanly.")
+            return
+        time.sleep(1)
+    fail("qualification VM did not stop cleanly; no forced termination was used")
+
+
+def console(layout: Layout) -> None:
+    if resolve_pid(layout) is None or not layout.serial.exists():
+        fail("qualification serial console is unavailable")
+    subprocess.run(
+        [command_path("socat"), "-,rawer,escape=0x1d", f"UNIX-CONNECT:{layout.serial}"],
+        check=True,
+    )
+
+
+def reset_overlay(layout: Layout, confirm: bool) -> None:
+    if not confirm:
+        fail("reset-overlay requires --confirm")
+    if resolve_pid(layout) is not None:
+        fail("cannot reset a running qualification VM")
+    require_regular_file(layout.overlay, "qualification overlay")
+    layout.overlay.unlink()
+    print(f"Removed disposable {layout.variant} overlay; it cannot be recovered.")
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("variant", choices=sorted(VARIANTS))
+    parser.add_argument("base_image")
+    parser.add_argument("expected_sha256")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    subparsers.add_parser("prepare")
+    start_parser = subparsers.add_parser("start")
+    start_parser.add_argument("--dry-run", action="store_true")
+    subparsers.add_parser("status")
+    subparsers.add_parser("wait-ready")
+    subparsers.add_parser("console")
+    subparsers.add_parser("stop")
+    reset_parser = subparsers.add_parser("reset-overlay")
+    reset_parser.add_argument("--confirm", action="store_true")
+    return parser.parse_args()
+
+
+def main() -> int:
+    args = parse_args()
+    try:
+        layout = create_layout(args.variant, args.base_image, args.expected_sha256)
+        if args.command == "prepare":
+            prepare(layout)
+        elif args.command == "start":
+            start(layout, args.dry_run)
+        elif args.command == "status":
+            status(layout)
+        elif args.command == "wait-ready":
+            wait_ready(layout)
+        elif args.command == "console":
+            console(layout)
+        elif args.command == "stop":
+            stop(layout)
+        elif args.command == "reset-overlay":
+            reset_overlay(layout, args.confirm)
+        return 0
+    except (OSError, subprocess.CalledProcessError, QualificationError) as error:
+        print(f"R6.1 disposable VM failed: {error}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

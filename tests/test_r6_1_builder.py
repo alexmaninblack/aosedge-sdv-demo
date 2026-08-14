@@ -104,6 +104,33 @@ class R61BuilderTests(unittest.TestCase):
         )
         self.assertIn("StrictHostKeyChecking=yes", command)
 
+    def test_fetch_is_limited_to_ignored_r6_1_image_artifacts(self) -> None:
+        source, destination = BUILDER.validate_fetch_paths(
+            "/home/yocto/r61-build/upstream/main-qemuarm64.img",
+            "artifacts/r6-1/upstream/main-qemuarm64.img",
+        )
+        self.assertEqual(
+            source, "/home/yocto/r61-build/upstream/main-qemuarm64.img"
+        )
+        self.assertEqual(
+            destination,
+            (BUILDER.ARTIFACT_ROOT / "upstream/main-qemuarm64.img").resolve(),
+        )
+        with self.assertRaisesRegex(BUILDER.BuilderError, "below /home/yocto"):
+            BUILDER.validate_fetch_paths(
+                "/etc/shadow", "artifacts/r6-1/upstream/shadow.img"
+            )
+        with self.assertRaisesRegex(BUILDER.BuilderError, "allowed"):
+            BUILDER.validate_fetch_paths(
+                "/home/yocto/r61-build/upstream/aos-user-oem.p12",
+                "artifacts/r6-1/upstream/aos-user-oem.p12",
+            )
+        with self.assertRaisesRegex(BUILDER.BuilderError, "below artifacts"):
+            BUILDER.validate_fetch_paths(
+                "/home/yocto/r61-build/upstream/main-qemuarm64.img",
+                "/tmp/main-qemuarm64.img",
+            )
+
     def test_builder_tool_bootstrap_is_pinned_and_identity_free(self) -> None:
         script = BUILDER.build_tools_script()
 

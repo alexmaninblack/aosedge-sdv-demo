@@ -129,6 +129,7 @@ Manage the isolated builder separately from the provisioned AosVM:
 ./scripts/r6-1-builder smoke-test
 ./scripts/r6-1-builder bootstrap-tools
 ./scripts/r6-1-builder copy PATH /home/yocto/DESTINATION
+./scripts/r6-1-builder fetch /home/yocto/r61-build/VARIANT/IMAGE artifacts/r6-1/VARIANT/IMAGE
 ./scripts/r6-1-builder stop
 ```
 
@@ -141,6 +142,10 @@ and CMake inside the non-provisioned builder; it never installs Aos identity
 or signing material.
 `copy` accepts only an explicit local source and a destination below the
 unprivileged builder user's home directory.
+`fetch` accepts only regular R6.1 image artifacts, writes below the ignored
+`artifacts/r6-1` directory, refuses overwrites, preserves a 20 GiB host-space
+reserve, and verifies the guest and host SHA-256 digests before publishing the
+read-only local artifact.
 
 When the project repositories are sibling checkouts, also verify their exact
 commits and locked files without recording those local paths:

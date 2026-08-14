@@ -57,6 +57,33 @@ The builder cache boundary is:
 Both directories reside on the builder's persistent ext4 root disk and remain
 independent of disposable build directories.
 
+Completed images leave the builder only through the guarded `fetch` command.
+It accepts regular image artifacts below `/home/yocto/r61-build`, writes below
+the ignored `artifacts/r6-1` host directory, refuses overwrites, and compares
+the guest and host SHA-256 digests. A fetched read-only raw image is booted
+through `scripts/r6-1-disposable-vm` with a dedicated qcow2 overlay, PID, QMP,
+serial, log, MAC address, and loopback SSH port. Its QEMU user network uses
+`restrict=on`: local qualification remains possible, but the disposable,
+unprovisioned guest cannot contact AosCloud or any external service.
+
+The expected invocation shape is:
+
+```sh
+./scripts/r6-1-builder fetch \
+  /home/yocto/r61-build/upstream/main-qemuarm64.img \
+  artifacts/r6-1/upstream/main-qemuarm64.img
+./scripts/r6-1-disposable-vm upstream \
+  artifacts/r6-1/upstream/main-qemuarm64.img SHA256 prepare
+./scripts/r6-1-disposable-vm upstream \
+  artifacts/r6-1/upstream/main-qemuarm64.img SHA256 start
+./scripts/r6-1-disposable-vm upstream \
+  artifacts/r6-1/upstream/main-qemuarm64.img SHA256 wait-ready
+```
+
+The actual digest is taken from the successful guarded fetch output and is
+recorded in this qualification file; `SHA256` above is deliberately not a
+floating or inferred value.
+
 ## Qualification Gates
 
 | Gate | Evidence required | State |
