@@ -43,3 +43,6 @@ __pycache__/
 *.py[cod]
 .venv/
 build/
+
+# Optional developer checkout locations; never part of the shared lock
+config/component-paths.local.json

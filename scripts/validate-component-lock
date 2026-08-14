@@ -1,0 +1,309 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+"""Validate the exact, non-secret CARLA-AosEdge component lock."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+from typing import Any
+from urllib.parse import urlparse
+
+
+ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_LOCK = ROOT / "components/baseline.lock.json"
+EXPECTED_COMPONENTS = {
+    "aosvm-main",
+    "kuksa-databroker",
+    "vss-broker-tree",
+    "vss-carla-source",
+    "carla-ego-runtime",
+    "aos-vehicle-platform",
+    "vehicle-telemetry-service",
+}
+ARTIFACT_KINDS = {"release-archive", "embedded", "git-commit", "repository-files"}
+ARCHITECTURES = {"arm64", "macos-arm64", "any"}
+SHA256_RE = re.compile(r"[0-9a-f]{64}")
+REVISION_RE = re.compile(r"[0-9a-f]{40}")
+
+
+class LockError(ValueError):
+    """Raised when the lock or a selected local artifact does not match."""
+
+
+def _require(condition: bool, message: str) -> None:
+    if not condition:
+        raise LockError(message)
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def _safe_repository_path(value: Any, label: str) -> str:
+    _require(isinstance(value, str) and value, f"{label} must be a non-empty path")
+    path = Path(value)
+    _require(
+        not path.is_absolute() and ".." not in path.parts,
+        f"{label} must be repository-relative",
+    )
+    return value
+
+
+def load_lock(path: Path) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise LockError(f"cannot read lock {path}: {exc}") from exc
+    _require(isinstance(value, dict), "lock root must be an object")
+    return value
+
+
+def validate_lock(lock: dict[str, Any]) -> None:
+    _require(lock.get("schemaVersion") == 1, "schemaVersion must be 1")
+    baseline = lock.get("baseline")
+    _require(isinstance(baseline, dict), "baseline must be an object")
+    _require(
+        baseline.get("status") in {"candidate", "accepted"},
+        "baseline status is invalid",
+    )
+    _require(
+        baseline.get("hostArchitecture") == "macos-arm64",
+        "host architecture must be macos-arm64",
+    )
+    _require(
+        baseline.get("guestArchitecture") == "arm64",
+        "guest architecture must be arm64",
+    )
+
+    components = lock.get("components")
+    _require(isinstance(components, dict), "components must be an object")
+    _require(
+        set(components) == EXPECTED_COMPONENTS,
+        "component set is incomplete or unexpected",
+    )
+
+    serialized = json.dumps(lock, sort_keys=True)
+    for forbidden in ("file://", "/Users/", "/home/", "~/", "../"):
+        _require(
+            forbidden not in serialized,
+            f"lock contains a local or unresolved path: {forbidden}",
+        )
+
+    for component_id, component in components.items():
+        _require(isinstance(component, dict), f"{component_id} must be an object")
+        version = component.get("version")
+        _require(
+            isinstance(version, str) and version,
+            f"{component_id} version is missing",
+        )
+        _require(
+            version.lower() not in {"latest", "main", "master", "head"},
+            f"{component_id} uses a floating version",
+        )
+
+        architectures = component.get("architectures")
+        _require(
+            isinstance(architectures, list) and architectures,
+            f"{component_id} architectures are missing",
+        )
+        _require(
+            set(architectures) <= ARCHITECTURES,
+            f"{component_id} has an unknown architecture",
+        )
+
+        source = component.get("source")
+        _require(isinstance(source, dict), f"{component_id} source is missing")
+        _require("branch" not in source, f"{component_id} must not lock a branch")
+        repository = source.get("repository")
+        _require(
+            isinstance(repository, str)
+            and repository.startswith("https://github.com/"),
+            f"{component_id} repository must be GitHub HTTPS",
+        )
+        revision = source.get("revision", "")
+        _require(
+            isinstance(revision, str) and REVISION_RE.fullmatch(revision) is not None,
+            f"{component_id} revision must be a full commit SHA",
+        )
+        tag = source.get("tag")
+        if tag is not None:
+            _require(
+                isinstance(tag, str)
+                and tag.lower() not in {"latest", "main", "master", "head"},
+                f"{component_id} tag is floating",
+            )
+
+        artifact = component.get("artifact")
+        _require(isinstance(artifact, dict), f"{component_id} artifact is missing")
+        kind = artifact.get("kind")
+        _require(kind in ARTIFACT_KINDS, f"{component_id} artifact kind is invalid")
+        if kind == "release-archive":
+            _safe_repository_path(
+                artifact.get("fileName"), f"{component_id} artifact fileName"
+            )
+            _require(
+                str(artifact.get("url", "")).startswith("https://"),
+                f"{component_id} artifact URL must use HTTPS",
+            )
+            _require(
+                isinstance(artifact.get("sizeBytes"), int)
+                and artifact["sizeBytes"] > 0,
+                f"{component_id} artifact size is invalid",
+            )
+            _require(
+                SHA256_RE.fullmatch(str(artifact.get("sha256", ""))) is not None,
+                f"{component_id} artifact digest is invalid",
+            )
+            for member in artifact.get("members", []):
+                _safe_repository_path(
+                    member.get("path"), f"{component_id} member path"
+                )
+                _require(
+                    SHA256_RE.fullmatch(str(member.get("sha256", ""))) is not None,
+                    f"{component_id} member digest is invalid",
+                )
+                _require(
+                    isinstance(member.get("sizeBytes"), int)
+                    and member["sizeBytes"] > 0,
+                    f"{component_id} member size is invalid",
+                )
+        elif kind == "embedded":
+            container_id = artifact.get("containerComponent")
+            _require(
+                container_id in components and container_id != component_id,
+                f"{component_id} embedded container is invalid",
+            )
+            container = components[container_id].get("artifact", {})
+            _require(
+                container.get("kind") == "release-archive",
+                f"{component_id} container is not a release artifact",
+            )
+            _require(
+                artifact.get("containerArtifactSha256") == container.get("sha256"),
+                f"{component_id} container digest mismatch",
+            )
+        elif kind == "git-commit":
+            _require(
+                artifact.get("revision") == revision,
+                f"{component_id} source artifact revision mismatch",
+            )
+        elif kind == "repository-files":
+            files = artifact.get("files")
+            _require(
+                isinstance(files, list) and files,
+                f"{component_id} locked files are missing",
+            )
+            for entry in files:
+                _safe_repository_path(
+                    entry.get("path"), f"{component_id} file path"
+                )
+                _require(
+                    SHA256_RE.fullmatch(str(entry.get("sha256", ""))) is not None,
+                    f"{component_id} file digest is invalid",
+                )
+
+
+def _repository_name(repository: str) -> str:
+    name = Path(urlparse(repository).path).name
+    return name[:-4] if name.endswith(".git") else name
+
+
+def verify_project_checkouts(
+    lock: dict[str, Any], workspace_root: Path
+) -> None:
+    for component_id, component in lock["components"].items():
+        source = component["source"]
+        if "github.com/alexmaninblack/" not in source["repository"].lower():
+            continue
+        checkout = workspace_root / _repository_name(source["repository"])
+        _require(
+            (checkout / ".git").exists(),
+            f"{component_id} checkout is missing: {checkout}",
+        )
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=checkout,
+            check=True,
+            text=True,
+            capture_output=True,
+        )
+        _require(
+            result.stdout.strip() == source["revision"],
+            f"{component_id} checkout revision mismatch",
+        )
+        artifact = component["artifact"]
+        if artifact["kind"] == "repository-files":
+            for entry in artifact["files"]:
+                path = checkout / entry["path"]
+                _require(
+                    path.is_file(),
+                    f"{component_id} locked file is missing: {entry['path']}",
+                )
+                _require(
+                    _sha256(path) == entry["sha256"],
+                    f"{component_id} locked file digest mismatch: {entry['path']}",
+                )
+
+
+def verify_external_artifacts(
+    lock: dict[str, Any], artifact_root: Path
+) -> None:
+    for component_id, component in lock["components"].items():
+        artifact = component["artifact"]
+        if artifact["kind"] != "release-archive":
+            continue
+        path = artifact_root / artifact["fileName"]
+        _require(
+            path.is_file(), f"{component_id} external artifact is missing: {path}"
+        )
+        _require(
+            path.stat().st_size == artifact["sizeBytes"],
+            f"{component_id} external artifact size mismatch",
+        )
+        _require(
+            _sha256(path) == artifact["sha256"],
+            f"{component_id} external artifact digest mismatch",
+        )
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--lock", type=Path, default=DEFAULT_LOCK)
+    parser.add_argument("--workspace-root", type=Path)
+    parser.add_argument("--artifact-root", type=Path)
+    args = parser.parse_args()
+    try:
+        lock = load_lock(args.lock)
+        validate_lock(lock)
+        if args.workspace_root is not None:
+            verify_project_checkouts(lock, args.workspace_root.resolve())
+        if args.artifact_root is not None:
+            verify_external_artifacts(lock, args.artifact_root.resolve())
+    except (LockError, OSError, subprocess.CalledProcessError) as exc:
+        print(f"Component lock validation failed: {exc}", file=sys.stderr)
+        return 1
+    print(f"Component lock is valid: {args.lock}")
+    if args.workspace_root is not None:
+        print(
+            "Project checkout revisions and locked files match: "
+            f"{args.workspace_root.resolve()}"
+        )
+    if args.artifact_root is not None:
+        print(f"External artifact digests match: {args.artifact_root.resolve()}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

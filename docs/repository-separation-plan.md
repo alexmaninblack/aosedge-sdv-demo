@@ -11,6 +11,13 @@ This plan is review-gated. Repository creation, code scaffolding, commits,
 pushes, and feature implementation start only after the final review is
 accepted.
 
+## Execution Status
+
+As of 2026-08-14, R-0 through R-4 are complete. The accepted documentation is
+public, both new repositories and their governance are live, their R-2/R-3
+scaffolds pass GitHub CI, and the exact R-5 candidate component lock is
+tracked. R-5 clean-clone qualification is the remaining gate before R-6/AOS-2.
+
 ## Fixed Decisions
 
 - Platform repository: `alexmaninblack/aos-vehicle-platform`.

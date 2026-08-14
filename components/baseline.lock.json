@@ -1,0 +1,134 @@
+{
+  "$schema": "./baseline-lock.schema.json",
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "baseline": {
+    "id": "repository-separation-r5-candidate-1",
+    "status": "candidate",
+    "created": "2026-08-14",
+    "hostArchitecture": "macos-arm64",
+    "guestArchitecture": "arm64"
+  },
+  "components": {
+    "aosvm-main": {
+      "version": "6.1.0",
+      "architectures": ["arm64"],
+      "source": {
+        "repository": "https://github.com/AosEdge/meta-aos-vm.git",
+        "revision": "b13320898a2ed1cce504f90f70451638232d6a83",
+        "tag": "v6.1.0"
+      },
+      "artifact": {
+        "kind": "release-archive",
+        "fileName": "aos-vm-image-qemuarm64-6.1.0.tar.xz",
+        "url": "https://github.com/aosedge/meta-aos-vm/releases/download/v6.1.0/aos-vm-image-qemuarm64-6.1.0.tar.xz",
+        "sizeBytes": 381515220,
+        "sha256": "db8fef0188f4ba0930aecafecdfe4ad063a3cf27a48e8649fc5050f9b3117e04",
+        "members": [
+          {
+            "path": "aos-vm-main-qemuarm64.qcow2",
+            "sizeBytes": 593428480,
+            "sha256": "8cbc4bd331650fbae7b54ad5b11b00e36e275cea00298327629e568422023fc4"
+          },
+          {
+            "path": "QEMU_EFI.fd",
+            "sizeBytes": 2097152,
+            "sha256": "30f7042c23b81c28b8196a76f4af6bcf10046f08049c9d78b4387472c5bbcd10"
+          }
+        ]
+      }
+    },
+    "kuksa-databroker": {
+      "version": "0.5.0",
+      "architectures": ["arm64"],
+      "source": {
+        "repository": "https://github.com/eclipse-kuksa/kuksa-databroker.git",
+        "revision": "30e5c13abc496d0b39aaa6c25acebb088b9902e3",
+        "tag": "0.5.0"
+      },
+      "artifact": {
+        "kind": "embedded",
+        "containerComponent": "aosvm-main",
+        "containerArtifactSha256": "db8fef0188f4ba0930aecafecdfe4ad063a3cf27a48e8649fc5050f9b3117e04",
+        "api": "kuksa.val.v1"
+      }
+    },
+    "vss-broker-tree": {
+      "version": "5.0",
+      "architectures": ["any"],
+      "source": {
+        "repository": "https://github.com/COVESA/vehicle_signal_specification.git",
+        "revision": "f23ba53be78a8bf2b8df2496bbfccb2860913892",
+        "tag": "v5.0"
+      },
+      "artifact": {
+        "kind": "embedded",
+        "containerComponent": "aosvm-main",
+        "containerArtifactSha256": "db8fef0188f4ba0930aecafecdfe4ad063a3cf27a48e8649fc5050f9b3117e04"
+      }
+    },
+    "vss-carla-source": {
+      "version": "6.0",
+      "architectures": ["any"],
+      "source": {
+        "repository": "https://github.com/COVESA/vehicle_signal_specification.git",
+        "revision": "20c609bf95c73b51d483fb8f81a099d1d5b73066",
+        "tag": "v6.0"
+      },
+      "artifact": {
+        "kind": "git-commit",
+        "revision": "20c609bf95c73b51d483fb8f81a099d1d5b73066"
+      }
+    },
+    "carla-ego-runtime": {
+      "version": "0.9.2",
+      "architectures": ["macos-arm64"],
+      "source": {
+        "repository": "https://github.com/alexmaninblack/carla-ego-runtime.git",
+        "revision": "3fcf1fac52151f30bf04bd3b5c5d67bfd8526aa1"
+      },
+      "artifact": {
+        "kind": "git-commit",
+        "revision": "3fcf1fac52151f30bf04bd3b5c5d67bfd8526aa1"
+      }
+    },
+    "aos-vehicle-platform": {
+      "version": "0.1.0",
+      "architectures": ["arm64"],
+      "source": {
+        "repository": "https://github.com/alexmaninblack/aos-vehicle-platform.git",
+        "revision": "4637864297fa42bed3ae1a553bae13fc57d14c79"
+      },
+      "artifact": {
+        "kind": "repository-files",
+        "files": [
+          {
+            "path": "contracts/vehicle-telemetry-profile/v0.1/profile.json",
+            "sha256": "95a73655763aebe485c190b92a1fbf923e4291f19482fa448311ad0da4cd1c2f"
+          }
+        ]
+      }
+    },
+    "vehicle-telemetry-service": {
+      "version": "0.1.0",
+      "architectures": ["arm64"],
+      "source": {
+        "repository": "https://github.com/alexmaninblack/vehicle-telemetry-service.git",
+        "revision": "f4bd0bf49c7601af31dcad83038999bd74a90f56"
+      },
+      "artifact": {
+        "kind": "repository-files",
+        "files": [
+          {
+            "path": "packaging/aos/config.yaml",
+            "sha256": "691b21c1697aef9cd4d4b4118ccfabe3b6c746f3f8610adf0f8e06f19ed3e365"
+          },
+          {
+            "path": "config/compatibility.json",
+            "sha256": "d63164ded0226930d399a3a153a7bb9855740fac67df2a327d82d3fc1ff97483"
+          }
+        ]
+      }
+    }
+  }
+}

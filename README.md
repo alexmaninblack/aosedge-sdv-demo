@@ -18,6 +18,7 @@ subscribes to the resulting VSS signals without depending on CARLA.
 - [Reissue AosEdge user certificates on a new Mac](docs/aos-user-certificate-reissue-macos.md)
 - [Licensing and copyright policy](docs/licensing-and-copyright-policy.md)
 - [Repository separation implementation plan](docs/repository-separation-plan.md)
+- [Exact component lock](docs/component-lock.md)
 - [Repository and artifact boundaries](docs/decisions/0001-repository-and-artifact-boundaries.md)
 - [QEMU system VM with HVF](docs/decisions/0002-qemu-system-hvf-for-aosvm.md)
 - [Superseded two-Node topology decision](docs/decisions/0003-two-node-aos1-topology.md)
@@ -62,11 +63,10 @@ running in normal mode with lifecycle `provisioned`. The schema-v2 official
 Hello World sample is installed as one ARM64 `crun` workload and reports
 `Active`. Its bounded English output was retrieved through the AosCloud log
 API, and a cloud-driven removal and fresh start both passed. The repository
-separation gate is next: create independently owned platform and service
-repositories, publish the vehicle-data contract, and add an exact component
-lock. AOS-2 implementation begins only after that gate passes; it will bridge
-the host VISS telemetry through a platform-owned provider into the in-VM KUKSA
-Databroker.
+separation gate has completed R-0 through R-4: the platform and service
+repositories, draft vehicle-data contract, diagnostic ARM64 service scaffold,
+and exact candidate component lock are public and validated. R-5 clean-clone
+qualification remains before AOS-2 begins.
 
 ## Commands
 
@@ -77,6 +77,19 @@ local VM setup separate from the explicit cloud-provisioning step:
 ./scripts/aosvm-macos-onboard doctor
 ./scripts/aosvm-macos-onboard bootstrap
 ./scripts/aosvm-macos-onboard setup
+```
+
+Validate the non-secret integration baseline lock with:
+
+```sh
+./scripts/validate-component-lock
+```
+
+When the project repositories are sibling checkouts, also verify their exact
+commits and locked files without recording those local paths:
+
+```sh
+./scripts/validate-component-lock --workspace-root ..
 ```
 
 See the colleague setup guide before running `provision --confirm`.
