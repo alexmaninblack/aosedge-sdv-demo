@@ -56,7 +56,17 @@
           "type": "object",
           "required": ["kind"],
           "properties": {
-            "kind": { "enum": ["release-archive", "embedded", "git-commit", "repository-files"] }
+            "kind": { "enum": ["release-archive", "embedded", "git-commit", "repository-files"] },
+            "generatedBundle": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["fileName", "architecture", "sha256"],
+              "properties": {
+                "fileName": { "type": "string", "minLength": 1 },
+                "architecture": { "const": "arm64" },
+                "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+              }
+            }
           }
         }
       }

@@ -172,7 +172,12 @@ def _check_dependency_direction(platform: Path, service: Path, integration: Path
         (platform / "DEPENDENCIES.json").read_text(encoding="utf-8")
     )
     platform_dependencies = platform_inventory["runtime"] + platform_inventory["build"]
-    _require(not platform_dependencies, "platform scaffold must not have runtime/build dependencies")
+    for dependency in platform_dependencies:
+        name = str(dependency.get("name", "")).lower()
+        _require(
+            "vehicle-telemetry-service" not in name,
+            f"platform depends on service package: {name}",
+        )
     for path in _tracked_files(platform):
         relative = path.relative_to(platform).as_posix()
         if relative.startswith("docs/") or relative == "README.md":

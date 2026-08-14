@@ -1,0 +1,117 @@
+#!/usr/bin/env python3
+
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+"""Read the seven AOS-2 values through authenticated KUKSA gRPC/TLS."""
+
+from __future__ import annotations
+
+import argparse
+import time
+from pathlib import Path
+
+from kuksa_client.grpc import Field, SubscribeEntry, VSSClient, View
+
+
+PATHS = (
+    "Vehicle.Speed",
+    "Vehicle.Acceleration.Longitudinal",
+    "Vehicle.Acceleration.Lateral",
+    "Vehicle.Acceleration.Vertical",
+    "Vehicle.Chassis.Accelerator.PedalPosition",
+    "Vehicle.Chassis.Brake.PedalPosition",
+    "Vehicle.Chassis.Axle.Row1.SteeringAngle",
+)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "expectation", choices=("available", "unavailable", "either")
+    )
+    parser.add_argument("--token", required=True, type=Path)
+    parser.add_argument("--samples", type=int, default=1)
+    parser.add_argument("--interval-ms", type=int, default=50)
+    parser.add_argument("--minimum-rate-hz", type=float)
+    arguments = parser.parse_args()
+    if not 1 <= arguments.samples <= 200:
+        raise ValueError("samples must be between 1 and 200")
+    if not 10 <= arguments.interval_ms <= 1000:
+        raise ValueError("interval-ms must be between 10 and 1000")
+    token = arguments.token.read_text(encoding="ascii").strip()
+    if not token or "\n" in token:
+        raise ValueError("qualification token must contain exactly one JWT")
+
+    with VSSClient(
+        "127.0.0.1",
+        55555,
+        token=token,
+        root_certificates=Path("/etc/kuksa-val/CA.pem"),
+        tls_server_name="127.0.0.1",
+    ) as client:
+        snapshots = []
+        arrival_times = []
+        if arguments.minimum_rate_hz is not None:
+            entries = (
+                SubscribeEntry(path, View.CURRENT_VALUE, (Field.VALUE,))
+                for path in PATHS
+            )
+            timeout = max(5.0, arguments.samples / arguments.minimum_rate_hz * 3)
+            for updates in client.subscribe(
+                entries, try_v2=False, timeout=timeout
+            ):
+                snapshot = {
+                    update.entry.path: update.entry.value for update in updates
+                }
+                if set(snapshot) != set(PATHS):
+                    raise RuntimeError(
+                        "KUKSA update is not one atomic seven-path batch"
+                    )
+                snapshots.append(snapshot)
+                arrival_times.append(time.monotonic())
+                if len(snapshots) == arguments.samples:
+                    break
+        else:
+            for sample_index in range(arguments.samples):
+                snapshots.append(client.get_current_values(PATHS, timeout=3.0))
+                if sample_index + 1 < arguments.samples:
+                    time.sleep(arguments.interval_ms / 1000.0)
+
+    values = snapshots[-1]
+    unavailable = []
+    for path in PATHS:
+        datapoint = values.get(path)
+        if datapoint is None:
+            unavailable.append(path)
+            print(f"{path}: unavailable")
+        else:
+            print(f"{path}: {datapoint.value} @ {datapoint.timestamp.isoformat()}")
+
+    if arguments.expectation == "available" and any(
+        snapshot.get(path) is None for snapshot in snapshots for path in PATHS
+    ):
+        raise RuntimeError("one or more KUKSA values are unavailable")
+    if arguments.expectation == "unavailable" and any(
+        snapshot.get(path) is not None for snapshot in snapshots for path in PATHS
+    ):
+        raise RuntimeError("one or more KUKSA values unexpectedly remain available")
+    if arguments.minimum_rate_hz is not None:
+        if len(arrival_times) < 2:
+            raise RuntimeError("not enough KUKSA batches to calculate update rate")
+        wall_seconds = arrival_times[-1] - arrival_times[0]
+        update_rate = (len(arrival_times) - 1) / wall_seconds
+        print(
+            f"Observed KUKSA batch rate: {update_rate:.2f} Hz "
+            f"({len(arrival_times)} atomic batches)"
+        )
+        if update_rate < arguments.minimum_rate_hz:
+            raise RuntimeError(
+                f"source update rate is below {arguments.minimum_rate_hz:.2f} Hz"
+            )
+    print(f"AOS-2 KUKSA {arguments.expectation} qualification passed.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

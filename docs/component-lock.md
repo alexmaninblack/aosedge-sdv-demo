@@ -15,11 +15,13 @@ The initial candidate pins:
 - embedded KUKSA Databroker 0.5.0 and VSS 5.0 against the exact AosVM archive;
 - the VSS 6.0 source revision used by the CARLA projection;
 - the exact `carla-ego-runtime`, platform, and service commits;
-- the platform contract and unsigned service-package template file digests.
+- the platform contract, reproducible AOS-2 ARM64 provider bundle, and unsigned
+  service-package template file digests.
 
 The lock status is `accepted` because R-5 passed clean-clone qualification and
-the independent GitHub Actions boundary gate. It does not claim AOS-2 or AOS-3
-telemetry behavior.
+the independent GitHub Actions boundary gate, and R6/AOS-2 passed the live
+CARLA-to-KUKSA, failure-state, restart, and cloud-continuity gates. It does not
+yet claim AOS-3 service behavior.
 
 ## Static Validation
 

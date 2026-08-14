@@ -3,7 +3,7 @@
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "schemaVersion": 1,
   "baseline": {
-    "id": "repository-separation-r5-accepted-1",
+    "id": "aos2-r6-accepted-1",
     "status": "accepted",
     "created": "2026-08-14",
     "hostArchitecture": "macos-arm64",
@@ -97,16 +97,21 @@
       "architectures": ["arm64"],
       "source": {
         "repository": "https://github.com/alexmaninblack/aos-vehicle-platform.git",
-        "revision": "4637864297fa42bed3ae1a553bae13fc57d14c79"
+        "revision": "b82ef747e71c82e49d41b8e766a3924e31475fd8"
       },
       "artifact": {
         "kind": "repository-files",
         "files": [
           {
-            "path": "contracts/vehicle-telemetry-profile/v0.1/profile.json",
-            "sha256": "95a73655763aebe485c190b92a1fbf923e4291f19482fa448311ad0da4cd1c2f"
+            "path": "contracts/vehicle-telemetry-profile/v0.1.1/profile.json",
+            "sha256": "623a587a64d88da5384e9b9ad00ced196ec1b89831a940e64a51ca6bd916fd8c"
           }
-        ]
+        ],
+        "generatedBundle": {
+          "fileName": "carla-kuksa-provider-0.1.0-arm64.tar.gz",
+          "architecture": "arm64",
+          "sha256": "4d73c196f8ed8812c0a3912ee9231e4fb2d3ffc9d4ba2f16686777d0c35e5a87"
+        }
       }
     },
     "vehicle-telemetry-service": {

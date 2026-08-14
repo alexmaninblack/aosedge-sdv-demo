@@ -65,6 +65,15 @@ class ComponentLockTests(unittest.TestCase):
         self.assertNotEqual(0, result.returncode)
         self.assertIn("local or unresolved path", result.stderr)
 
+    def test_generated_bundle_digest_is_rejected(self) -> None:
+        value = json.loads(LOCK.read_text(encoding="utf-8"))
+        value["components"]["aos-vehicle-platform"]["artifact"][
+            "generatedBundle"
+        ]["sha256"] = "not-a-digest"
+        result = self.run_validator(self.write_mutation(value))
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("generated bundle digest is invalid", result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

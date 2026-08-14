@@ -1,0 +1,39 @@
+#!/bin/sh
+
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: Apache-2.0
+
+set -eu
+
+printf 'Architecture: %s\n' "$(uname -m)"
+printf 'Root mount: '
+findmnt -n -o SOURCE,FSTYPE,OPTIONS /
+printf 'Var mount: '
+findmnt -n -o SOURCE,FSTYPE,OPTIONS /var
+printf 'SELinux: %s\n' "$(getenforce)"
+
+printf '\nKUKSA Databroker\n'
+systemctl is-active kuksa-databroker.service
+systemctl show kuksa-databroker.service \
+    --property=MainPID,ExecMainStatus,NRestarts,MemoryCurrent \
+    --no-pager
+systemctl cat kuksa-databroker.service --no-pager
+
+printf '\nInstalled KUKSA paths (names and metadata only)\n'
+find /etc /usr /opt -maxdepth 4 \
+    \( -iname '*kuksa*' -o -iname '*databroker*' -o -iname '*vss*' \) \
+    -printf '%m %u:%g %s %p\n' 2>/dev/null | sort
+find /etc/kuksa-val -maxdepth 1 -type f \
+    -printf '%m %u:%g %s %p\n' 2>/dev/null | sort
+
+printf '\nPython runtime modules\n'
+python3 -c "import pkgutil; installed={item.name for item in pkgutil.iter_modules()}; names=('grpc','kuksa_client','websockets','aiohttp','google'); [print(name, name in installed) for name in names]"
+
+printf '\nWritable platform locations\n'
+for path in /var /var/aos /opt /usr/local; do
+    if [ -e "$path" ]; then
+        stat -c '%A %U:%G %a %n' "$path"
+    fi
+done
+
+printf '\nAOS-2 guest readiness inspection passed.\n'

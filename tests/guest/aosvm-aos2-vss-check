@@ -1,0 +1,56 @@
+#!/usr/bin/python3
+
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+"""Verify the AOS-2 contract paths in the AosVM VSS 5.0 tree."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+
+TREE = Path("/usr/share/vss/vss.json")
+EXPECTED = {
+    "Vehicle.Speed": ("float", "km/h"),
+    "Vehicle.Acceleration.Longitudinal": ("float", "m/s^2"),
+    "Vehicle.Acceleration.Lateral": ("float", "m/s^2"),
+    "Vehicle.Acceleration.Vertical": ("float", "m/s^2"),
+    "Vehicle.Chassis.Accelerator.PedalPosition": ("uint8", "percent"),
+    "Vehicle.Chassis.Brake.PedalPosition": ("uint8", "percent"),
+    "Vehicle.Chassis.Axle.Row1.SteeringAngle": ("float", "degrees"),
+}
+
+
+def lookup(tree: dict[str, object], path: str) -> dict[str, object]:
+    parts = path.split(".")
+    node = tree.get(parts[0])
+    if not isinstance(node, dict):
+        raise ValueError(f"missing VSS root: {parts[0]}")
+    for part in parts[1:]:
+        children = node.get("children")
+        if not isinstance(children, dict) or not isinstance(children.get(part), dict):
+            raise ValueError(f"missing VSS path: {path}")
+        node = children[part]
+    return node
+
+
+def main() -> int:
+    tree = json.loads(TREE.read_text(encoding="utf-8"))
+    for path, (datatype, unit) in EXPECTED.items():
+        node = lookup(tree, path)
+        actual = (node.get("datatype"), node.get("unit"))
+        if actual != (datatype, unit):
+            raise ValueError(
+                f"{path}: expected {datatype}/{unit}, found {actual[0]}/{actual[1]}"
+            )
+        if node.get("type") != "sensor":
+            raise ValueError(f"{path}: expected a read-only sensor")
+        print(f"{path}: {datatype} {unit}")
+    print("AOS-2 VSS 5.0 path qualification passed.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

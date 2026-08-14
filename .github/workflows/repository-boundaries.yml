@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           repository: alexmaninblack/aos-vehicle-platform
-          ref: 4637864297fa42bed3ae1a553bae13fc57d14c79
+          ref: b82ef747e71c82e49d41b8e766a3924e31475fd8
           path: workspace/aos-vehicle-platform
       - name: Check out telemetry service
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1

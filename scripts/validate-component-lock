@@ -213,6 +213,27 @@ def validate_lock(lock: dict[str, Any]) -> None:
                     SHA256_RE.fullmatch(str(entry.get("sha256", ""))) is not None,
                     f"{component_id} file digest is invalid",
                 )
+            generated_bundle = artifact.get("generatedBundle")
+            if generated_bundle is not None:
+                _require(
+                    isinstance(generated_bundle, dict),
+                    f"{component_id} generated bundle is invalid",
+                )
+                _safe_repository_path(
+                    generated_bundle.get("fileName"),
+                    f"{component_id} generated bundle fileName",
+                )
+                _require(
+                    generated_bundle.get("architecture") == "arm64",
+                    f"{component_id} generated bundle architecture is invalid",
+                )
+                _require(
+                    SHA256_RE.fullmatch(
+                        str(generated_bundle.get("sha256", ""))
+                    )
+                    is not None,
+                    f"{component_id} generated bundle digest is invalid",
+                )
 
 
 def _repository_name(repository: str) -> str:

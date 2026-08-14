@@ -34,6 +34,7 @@ Commands:
   status                  Report host, VM, lifecycle, guest, and key readiness.
   provision-preflight    Verify OEM access and the existing single-node model.
   provision --confirm    Provision exactly one Main Node after a checkpoint.
+  verify-online          Verify the provisioned guest and its cloud Unit.
   start                   Start the persistent VM in normal mode.
   stop                    Stop the persistent VM cleanly.
 
@@ -603,6 +604,16 @@ stop_vm() {
     "$AOSVM" stop
 }
 
+verify_online() {
+    require_macos_arm64
+    validate_repository
+    [ "$(vm_lifecycle)" = provisioned ] ||
+        fail 'cloud verification requires a provisioned lifecycle'
+    is_vm_running || fail 'cloud verification requires the running AosVM'
+    post_provision_guest_check
+    cloud_unit_acceptance
+}
+
 command=${1:-}
 case "$command" in
     doctor)
@@ -628,6 +639,10 @@ case "$command" in
     provision)
         shift
         provision "$@"
+        ;;
+    verify-online)
+        [ "$#" -eq 1 ] || fail 'verify-online does not accept arguments'
+        verify_online
         ;;
     start)
         [ "$#" -eq 1 ] || fail 'start does not accept arguments'

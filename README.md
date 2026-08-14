@@ -14,6 +14,7 @@ subscribes to the resulting VSS signals without depending on CARLA.
 - [Project roadmap](docs/roadmap.md)
 - [AOS-0: boot official ARM64 AosVM on Apple Silicon](docs/aos-0-arm64-vm.md)
 - [AOS-1: provision one Main Node](docs/aos-1-single-node-provisioning.md)
+- [AOS-2: qualify the CARLA VISS-to-KUKSA provider](docs/aos-2-carla-kuksa-qualification.md)
 - [Colleague setup: run and provision AosVM on an Apple Silicon Mac](docs/aosvm-macos-colleague-setup.md)
 - [Reissue AosEdge user certificates on a new Mac](docs/aos-user-certificate-reissue-macos.md)
 - [Licensing and copyright policy](docs/licensing-and-copyright-policy.md)
@@ -67,8 +68,11 @@ separation gate has completed R-0 through R-5: the platform and service
 repositories, draft vehicle-data contract, diagnostic ARM64 service scaffold,
 and exact component lock are public and validated. R-5 passed both fresh-clone
 qualification and the independent GitHub Actions gate. The repository
-separation gate is complete; AOS-2 platform-provider implementation is now
-unblocked but has not started.
+separation gate is complete. R6/AOS-2 is also complete: the ARM64 platform
+provider publishes the seven contract 0.1.1 signals from the host-only CARLA
+VISS endpoint into the in-VM KUKSA Databroker at 20 Hz, marks them unavailable
+on source loss, and survives a clean VM restart without changing the
+provisioned cloud Unit.
 
 ## Commands
 
@@ -148,6 +152,7 @@ readiness is required:
 ./scripts/aosvm status
 ./scripts/aosvm smoke-test
 ./scripts/aosvm dns-check
+./scripts/aosvm-macos-onboard verify-online
 ```
 
 `dns-check` performs a bounded query through the same loopback bridge used by

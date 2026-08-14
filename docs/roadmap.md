@@ -107,7 +107,7 @@ Execution status: R-0 through R-5 are complete. The documentation and scope are
 accepted, both public repositories and their governance are live, the platform
 contract and ARM64 diagnostic service scaffold pass CI, the exact component
 lock is accepted, and clean-clone plus GitHub Actions dependency-boundary
-qualification passed. AOS-2 is unblocked but has not started.
+qualification passed. This gate unblocked the now-complete AOS-2 work.
 
 - Accept ADR 0006 and the review-gated repository separation plan.
 - Create public `aos-vehicle-platform` and `vehicle-telemetry-service`
@@ -129,7 +129,7 @@ ownership matches the vehicle-program platform and independently updated
 service lifecycles, and an accepted lock identifies the exact components for
 the first AOS-2 baseline.
 
-AOS-2 feature implementation is blocked until this gate passes.
+The AOS-2 implementation started only after this gate passed.
 
 Detailed plan: [repository separation plan](repository-separation-plan.md).
 Decision: [ADR 0006](decisions/0006-lifecycle-based-repository-ownership.md).
@@ -151,7 +151,22 @@ Exit criterion: KUKSA continuously receives live CARLA speed, acceleration,
 steering, throttle, and brake values through the platform provider; loss of
 CARLA produces an explicit stale state rather than fabricated zero values.
 
+Current gate: R6/AOS-2 passes. The normalized ARM64 bundle is reproducible and
+contains five exact hash-locked wheels. Inside the provisioned AosVM, KUKSA
+uses a project-owned verifier and the DynamicUser provider receives only a
+seven-path `provide` token through systemd credentials. Verified TLS and
+`VISSv3` connect to the macOS loopback-only endpoint through the guest host
+gateway. Forty-one consecutive atomic seven-path KUKSA batches measured
+20.08 Hz. A separate read-only JWT retrieved the live values and source
+timestamps. CARLA loss made every path unavailable immediately; reconnect is
+bounded and never fabricates zero. After a clean VM restart, KUKSA and the
+provider were active with zero restarts, root remained read-only, SELinux was
+enforcing without denial, AosCore remained healthy, and AosCloud reported the
+same Online Unit with one primary Main Node. The future Authorization Adapter
+remains explicitly deferred to AOS-5.
+
 Detailed boundary decision: [ADR 0005](decisions/0005-kuksa-vehicle-data-boundary.md).
+Qualification record: [AOS-2 runbook](aos-2-carla-kuksa-qualification.md).
 
 ## AOS-3 — Deploy the first KUKSA telemetry consumer
 
