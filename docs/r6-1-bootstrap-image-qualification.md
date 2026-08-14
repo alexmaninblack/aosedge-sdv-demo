@@ -78,11 +78,29 @@ The expected invocation shape is:
   artifacts/r6-1/upstream/main-qemuarm64.img SHA256 start
 ./scripts/r6-1-disposable-vm upstream \
   artifacts/r6-1/upstream/main-qemuarm64.img SHA256 wait-ready
+./scripts/r6-1-guest upstream \
+  artifacts/r6-1/upstream/main-qemuarm64.img SHA256 enroll-key
+./scripts/r6-1-guest upstream \
+  artifacts/r6-1/upstream/main-qemuarm64.img SHA256 \
+  copy scripts/guest/r6-1-bootstrap-check /tmp/r6-1-bootstrap-check
+./scripts/r6-1-guest upstream \
+  artifacts/r6-1/upstream/main-qemuarm64.img SHA256 \
+  run sh /tmp/r6-1-bootstrap-check upstream
 ```
 
 The actual digest is taken from the successful guarded fetch output and is
 recorded in this qualification file; `SHA256` above is deliberately not a
 floating or inferred value.
+
+Guest access reuses the accepted per-VM Ed25519 enrollment and strict
+known-host verification. The official development-image password is consumed
+only by the existing bounded helper during first key enrollment and is not
+stored in a new file or log. The guest gate verifies AArch64, AosCore 6.1.0,
+read-only root, writable persistent partitions, cgroups v2, namespaces,
+seccomp, network shape, enforcing SELinux, pre-provision state, and absence of
+credential-like files. The upstream variant must contain no project runtime;
+the project variant must contain exactly one fixed runtime and a disabled,
+inactive, empty provider store whose health and launcher interfaces fail safe.
 
 ## Qualification Gates
 

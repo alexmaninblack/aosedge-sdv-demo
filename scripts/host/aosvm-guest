@@ -6,6 +6,7 @@ umask 077
 SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 REPOSITORY_ROOT=$(CDPATH='' cd -- "$SCRIPT_DIR/../.." && pwd)
 AOSVM="$REPOSITORY_ROOT/scripts/aosvm"
+STATUS_HELPER=${AOSVM_GUEST_STATUS_HELPER:-}
 EXPECT_HELPER="$SCRIPT_DIR/aosvm-expect-password"
 INSTALL_KEY_HELPER="$REPOSITORY_ROOT/scripts/guest/aosvm-install-host-key"
 LOCAL_ROOT=${AOSVM_LOCAL_ROOT:-"$REPOSITORY_ROOT/.local"}
@@ -103,7 +104,14 @@ wait_for_ssh_banner() {
     validate_decimal "$WAIT_SECONDS" 'guest wait timeout'
     [ "$SSH_PORT" -ge 1024 ] && [ "$SSH_PORT" -le 65535 ] ||
         fail 'SSH host port must be between 1024 and 65535'
-    "$AOSVM" status >/dev/null || fail 'the owned AosVM is not running cleanly'
+    if [ -n "$STATUS_HELPER" ]; then
+        [ -x "$STATUS_HELPER" ] ||
+            fail "the guest status helper is unavailable: $STATUS_HELPER"
+        "$STATUS_HELPER" >/dev/null ||
+            fail 'the owned guest VM is not running cleanly'
+    else
+        "$AOSVM" status >/dev/null || fail 'the owned AosVM is not running cleanly'
+    fi
 
     deadline=$(($(date +%s) + WAIT_SECONDS))
     banner=''

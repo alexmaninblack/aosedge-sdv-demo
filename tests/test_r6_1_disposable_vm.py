@@ -92,6 +92,34 @@ class R61DisposableVMTests(unittest.TestCase):
         self.assertIn("no forced termination was used", content)
         self.assertNotIn("kill -9", content)
 
+    def test_guest_access_reuses_strict_owned_vm_helper(self) -> None:
+        guest_wrapper = (ROOT / "scripts" / "r6-1-guest").read_text(
+            encoding="utf-8"
+        )
+        status_helper = (
+            ROOT / "scripts" / "host" / "r6-1-disposable-status"
+        ).read_text(encoding="utf-8")
+        generic_helper = (ROOT / "scripts" / "host" / "aosvm-guest").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("AOSVM_GUEST_STATUS_HELPER", guest_wrapper)
+        self.assertIn("AOSVM_GUEST_ACCESS_ROOT", guest_wrapper)
+        self.assertIn("R61_QUAL_SHA256", status_helper)
+        self.assertIn('"$STATUS_HELPER" >/dev/null', generic_helper)
+        self.assertIn("StrictHostKeyChecking=yes", generic_helper)
+
+    def test_guest_gate_separates_upstream_and_empty_project_store(self) -> None:
+        guest_gate = (ROOT / "scripts" / "guest" / "r6-1-bootstrap-check").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("guest is unexpectedly provisioned", guest_gate)
+        self.assertIn("unshare --mount --pid --fork --ipc --uts --net true", guest_gate)
+        self.assertIn("upstream image contains the project runtime", guest_gate)
+        self.assertIn('health_status" -eq 3', guest_gate)
+        self.assertIn("empty project store has an active slot", guest_gate)
+        self.assertIn("vehicle_data_provider_store_t", guest_gate)
+        self.assertIn("current boot contains an SELinux AVC denial", guest_gate)
+
 
 if __name__ == "__main__":
     unittest.main()

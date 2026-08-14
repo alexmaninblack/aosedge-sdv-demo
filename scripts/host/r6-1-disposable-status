@@ -1,0 +1,20 @@
+#!/bin/sh
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+set -eu
+
+SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+REPOSITORY_ROOT=$(CDPATH='' cd -- "$SCRIPT_DIR/../.." && pwd)
+
+variant=${R61_QUAL_VARIANT:-}
+base_image=${R61_QUAL_BASE_IMAGE:-}
+expected_sha256=${R61_QUAL_SHA256:-}
+
+[ -n "$variant" ] && [ -n "$base_image" ] && [ -n "$expected_sha256" ] || {
+    printf 'R6.1 disposable status environment is incomplete.\n' >&2
+    exit 1
+}
+
+exec "$REPOSITORY_ROOT/scripts/r6-1-disposable-vm" \
+    "$variant" "$base_image" "$expected_sha256" status

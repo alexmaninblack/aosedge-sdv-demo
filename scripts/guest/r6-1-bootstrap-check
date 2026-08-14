@@ -1,0 +1,166 @@
+#!/bin/sh
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+set -eu
+umask 077
+
+variant=${1:-}
+wait_seconds=${R61_BOOTSTRAP_WAIT_SECONDS:-180}
+
+fail() {
+    printf 'R6.1 bootstrap guest check failed: %s\n' "$*" >&2
+    exit 1
+}
+
+case "$variant" in
+    upstream|project) ;;
+    *) fail 'usage: r6-1-bootstrap-check <upstream|project>' ;;
+esac
+case "$wait_seconds" in
+    ''|*[!0-9]*) fail 'wait timeout must be a decimal integer' ;;
+esac
+
+[ "$(id -u)" -eq 0 ] || fail 'this command must run as root'
+[ "$(uname -m)" = aarch64 ] || fail 'guest architecture is not AArch64'
+grep -qx 'ID=aos-core' /etc/os-release || fail 'guest OS is not AosCore'
+grep -qx 'VERSION_ID=6.1.0' /etc/os-release || fail 'guest OS is not AosCore 6.1.0'
+[ "$(getenforce)" = Enforcing ] || fail 'SELinux is not enforcing'
+[ "$(findmnt -T / -no SOURCE)" = /dev/sda3 ] ||
+    fail 'root is not the expected AosVM partition'
+findmnt -T / -no OPTIONS | tr ',' '\n' | grep -qx ro ||
+    fail 'root filesystem is not read-only'
+for path in /home /var; do
+    findmnt -T "$path" -no OPTIONS | tr ',' '\n' | grep -qx rw ||
+        fail "$path is not backed by writable persistent storage"
+done
+[ "$(stat -f -c %T /sys/fs/cgroup)" = cgroup2fs ] ||
+    fail 'unified cgroups v2 is unavailable'
+grep -qw overlay /proc/filesystems || fail 'overlayfs is unavailable'
+grep -q '^Seccomp:' /proc/self/status || fail 'seccomp status is unavailable'
+unshare --mount --pid --fork --ipc --uts --net true ||
+    fail 'required kernel namespaces do not work together'
+
+ip -4 address show dev eth0 | grep -q '10\.0\.0\.100/24' ||
+    fail 'qualified static guest address is absent'
+ip -4 route show default | grep -q 'via 10\.0\.0\.1' ||
+    fail 'qualified guest default route is absent'
+
+[ ! -e /var/aos/.provisionstate ] || fail 'guest is unexpectedly provisioned'
+[ ! -e /var/aos/iam/.usrpin ] || fail 'guest contains a provisioning user PIN'
+if find /etc/aos /var/aos -xdev -type f \
+    \( -name '*.p12' -o -name '*.pfx' -o -name '*.key' -o -name 'aos-user-*' \) \
+    -print -quit 2>/dev/null | grep -q .; then
+    fail 'guest contains a credential-like file'
+fi
+
+deadline=$(($(date +%s) + wait_seconds))
+while [ "$(date +%s)" -lt "$deadline" ]; do
+    if [ "$(systemctl is-active multi-user.target 2>/dev/null || true)" = active ] &&
+       [ "$(systemctl is-active aos-iam-prov.service 2>/dev/null || true)" = active ]; then
+        break
+    fi
+    sleep 3
+done
+[ "$(systemctl is-active multi-user.target)" = active ] ||
+    fail 'multi-user target is not active'
+[ "$(systemctl is-active aos-iam-prov.service)" = active ] ||
+    fail 'pre-provision IAM is not active'
+for unit in aos-iam.service aos-sm.service aos-cm.service; do
+    [ "$(systemctl is-active "$unit")" = inactive ] ||
+        fail "runtime service is unexpectedly active: $unit"
+done
+
+runtime_count=$(jq '[.runtimes[] | select(.plugin == "systemd-slot-component")] | length' \
+    /etc/aos/sm.cfg)
+
+if [ "$variant" = upstream ]; then
+    [ "$runtime_count" -eq 0 ] || fail 'upstream image contains the project runtime'
+    [ ! -e /usr/libexec/aos-vehicle-data-provider-launcher ] ||
+        fail 'upstream image contains the project launcher'
+    [ ! -e /usr/lib/systemd/system/aos-vehicle-data-provider.service ] ||
+        fail 'upstream image contains the project service'
+    [ ! -e /var/aos/workdirs/sm/runtimes/systemd-slot-component ] ||
+        fail 'upstream image contains the project component store'
+else
+    [ "$runtime_count" -eq 1 ] || fail 'project runtime is not declared exactly once'
+    jq -e '
+        .runtimes[] |
+        select(
+            .plugin == "systemd-slot-component" and
+            .type == "vehicle-data-provider" and
+            .isComponent == true and
+            .config.workingDir == "/var/aos/workdirs/sm/runtimes/systemd-slot-component" and
+            .config.unit == "aos-vehicle-data-provider.service" and
+            .config.layoutVersion == 1
+        )
+    ' /etc/aos/sm.cfg >/dev/null || fail 'project runtime contract is incorrect'
+    jq -e '
+        .runtimes[] |
+        select(.plugin == "boot" and .config.loader == "/EFI/BOOT/bootaa64.efi")
+    ' /etc/aos/sm.cfg >/dev/null || fail 'ARM64 boot loader contract is incorrect'
+
+    for path in \
+        /usr/libexec/aos-vehicle-data-provider-launcher \
+        /usr/libexec/aos-vehicle-data-provider-health \
+        /usr/lib/systemd/system/aos-vehicle-data-provider.service \
+        /usr/lib/systemd/system/aos-vehicle-data-provider-bootstrap.service \
+        /usr/lib/tmpfiles.d/aos-vehicle-data-provider.conf \
+        /etc/systemd/system/aos-sm.service.d/30-aos-vehicle-data-provider.conf; do
+        [ -f "$path" ] && [ ! -L "$path" ] ||
+            fail "project platform file is absent or unsafe: $path"
+    done
+    [ "$(systemctl is-active aos-vehicle-data-provider.service)" = inactive ] ||
+        fail 'empty-store provider service is unexpectedly active'
+    provider_enablement=$(systemctl is-enabled aos-vehicle-data-provider.service 2>/dev/null || true)
+    case "$provider_enablement" in
+        disabled|static) ;;
+        *) fail "provider service has unsafe enablement: $provider_enablement" ;;
+    esac
+
+    store=/var/aos/workdirs/sm/runtimes/systemd-slot-component
+    for path in "$store" "$store/slots" "$store/state" "$store/credentials"; do
+        [ -d "$path" ] && [ ! -L "$path" ] ||
+            fail "project component store path is absent or unsafe: $path"
+    done
+    [ "$(stat -c %a "$store/state")" = 700 ] || fail 'state directory mode is not 0700'
+    [ "$(stat -c %a "$store/credentials")" = 700 ] ||
+        fail 'credential directory mode is not 0700'
+    [ ! -e "$store/active" ] && [ ! -L "$store/active" ] ||
+        fail 'empty project store has an active slot'
+    [ -z "$(find "$store/slots" -mindepth 1 -print -quit)" ] ||
+        fail 'empty project store contains a payload'
+
+    health_output=''
+    health_status=0
+    health_output=$(/usr/libexec/aos-vehicle-data-provider-health 2>&1) || health_status=$?
+    [ "$health_status" -eq 3 ] && [ "$health_output" = STATE=EMPTY ] ||
+        fail 'empty-store health contract did not fail safely'
+
+    launcher_status=0
+    /usr/libexec/aos-vehicle-data-provider-launcher >/dev/null 2>&1 || launcher_status=$?
+    [ "$launcher_status" -ne 0 ] || fail 'empty-store launcher did not fail safely'
+
+    for path in \
+        /usr/libexec/aos-vehicle-data-provider-launcher \
+        /usr/libexec/aos-vehicle-data-provider-health; do
+        stat -c %C "$path" | grep -q ':vehicle_data_provider_exec_t:' ||
+            fail "project executable SELinux type is incorrect: $path"
+    done
+    stat -c %C "$store" | grep -q ':vehicle_data_provider_store_t:' ||
+        fail 'project store SELinux type is incorrect'
+fi
+
+if ausearch -m AVC,USER_AVC -ts boot 2>/dev/null | grep -q '^type=AVC'; then
+    fail 'current boot contains an SELinux AVC denial'
+fi
+if journalctl -b --no-pager 2>/dev/null | \
+    grep -Eiq 'kernel panic|illegal instruction|out of memory|segmentation fault|core dumped'; then
+    fail 'current boot contains a fatal kernel or process failure'
+fi
+
+printf 'ARCH=%s\n' "$(uname -m)"
+printf 'ROOT=%s\n' "$(findmnt -T / -no SOURCE,FSTYPE,OPTIONS)"
+printf 'SELINUX=%s\n' "$(getenforce)"
+printf 'VARIANT=%s\n' "$variant"
+printf 'R6_1_BOOTSTRAP_GUEST=PASS\n'

@@ -1,0 +1,36 @@
+#!/bin/sh
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+set -eu
+umask 077
+
+SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+REPOSITORY_ROOT=$(CDPATH='' cd -- "$SCRIPT_DIR/.." && pwd)
+
+variant=${1:-}
+base_image=${2:-}
+expected_sha256=${3:-}
+[ "$#" -ge 4 ] || {
+    printf 'Usage: scripts/r6-1-guest VARIANT BASE_IMAGE SHA256 COMMAND [ARGUMENT ...]\n' >&2
+    exit 2
+}
+shift 3
+
+case "$variant" in
+    upstream) ssh_port=10024 ;;
+    project) ssh_port=10025 ;;
+    *)
+        printf 'Unsupported R6.1 qualification variant: %s\n' "$variant" >&2
+        exit 2
+        ;;
+esac
+
+export R61_QUAL_VARIANT="$variant"
+export R61_QUAL_BASE_IMAGE="$base_image"
+export R61_QUAL_SHA256="$expected_sha256"
+export AOSVM_GUEST_STATUS_HELPER="$REPOSITORY_ROOT/scripts/host/r6-1-disposable-status"
+export AOSVM_GUEST_ACCESS_ROOT="$REPOSITORY_ROOT/.local/r6-1-qualification/${variant}-host-access"
+export AOSVM_SSH_HOST_PORT="$ssh_port"
+
+exec "$REPOSITORY_ROOT/scripts/host/aosvm-guest" "$@"
