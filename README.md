@@ -5,9 +5,9 @@ Silicon CARLA/VISS environment and AosEdge. It does not vendor CARLA, Unreal
 Engine, AosCore, or AosVM images.
 
 The first milestone boots the official AosVM 6.1.0 `qemuarm64` image on an
-Apple Silicon Mac. Later milestones will deploy an AosEdge-managed service that
-consumes the project's VISS 3.1 telemetry and, if justified, add an adapter to
-the legacy AOS Vehicle Information Service interface.
+Apple Silicon Mac. Later milestones bridge the project's VISS 3.1 telemetry
+into the in-VM KUKSA Databroker and deploy an AosEdge-managed service that
+subscribes to the resulting VSS signals without depending on CARLA.
 
 ## Documents
 
@@ -16,10 +16,14 @@ the legacy AOS Vehicle Information Service interface.
 - [AOS-1: provision one Main Node](docs/aos-1-single-node-provisioning.md)
 - [Colleague setup: run and provision AosVM on an Apple Silicon Mac](docs/aosvm-macos-colleague-setup.md)
 - [Reissue AosEdge user certificates on a new Mac](docs/aos-user-certificate-reissue-macos.md)
+- [Licensing and copyright policy](docs/licensing-and-copyright-policy.md)
+- [Repository separation implementation plan](docs/repository-separation-plan.md)
 - [Repository and artifact boundaries](docs/decisions/0001-repository-and-artifact-boundaries.md)
 - [QEMU system VM with HVF](docs/decisions/0002-qemu-system-hvf-for-aosvm.md)
 - [Superseded two-Node topology decision](docs/decisions/0003-two-node-aos1-topology.md)
 - [Single Main Node for AOS-1](docs/decisions/0004-single-main-node-for-aos1.md)
+- [KUKSA vehicle-data boundary and authorization follow-up](docs/decisions/0005-kuksa-vehicle-data-boundary.md)
+- [Lifecycle-based platform and service repository ownership](docs/decisions/0006-lifecycle-based-repository-ownership.md)
 
 ## Current status
 
@@ -57,8 +61,12 @@ pre- and post-provision checkpoints protect its persistent disk. The VM is
 running in normal mode with lifecycle `provisioned`. The schema-v2 official
 Hello World sample is installed as one ARM64 `crun` workload and reports
 `Active`. Its bounded English output was retrieved through the AosCloud log
-API, and a cloud-driven removal and fresh start both passed. AOS-2, connecting
-the VM to the host VISS endpoint, is the next milestone.
+API, and a cloud-driven removal and fresh start both passed. The repository
+separation gate is next: create independently owned platform and service
+repositories, publish the vehicle-data contract, and add an exact component
+lock. AOS-2 implementation begins only after that gate passes; it will bridge
+the host VISS telemetry through a platform-owned provider into the in-VM KUKSA
+Databroker.
 
 ## Commands
 

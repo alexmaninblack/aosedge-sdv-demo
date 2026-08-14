@@ -1,7 +1,21 @@
 # ADR 0001: Repository and Artifact Boundaries
 
-- Status: Accepted for initial implementation
+- Status: Superseded in part by ADR 0006
 - Date: 2026-08-12
+
+## Supersession
+
+ADR 0006 supersedes the temporary decision to keep the platform provider,
+authorization adapter, and cloud-managed consumer in this integration
+repository. Those components now have distinct vehicle-program platform and
+independently deployed service ownership and release lifecycles. Platform
+updates can still occur after SOP, but remain under the vehicle-program
+qualification path.
+
+The remaining decisions in this ADR still apply: CARLA and restricted Unreal
+Engine changes stay in their own upstream-oriented repositories; large runtime
+artifacts and all credentials remain untracked; exact external versions and
+digests are recorded without Git submodules.
 
 ## Context
 

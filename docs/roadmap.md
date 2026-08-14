@@ -101,29 +101,67 @@ No repository-managed script will reimplement the SDK provisioning protocol.
 
 Detailed plan: [AOS-1 single-Node runbook](aos-1-single-node-provisioning.md).
 
-## AOS-2 — Connect the VM to the CARLA VISS endpoint
+## Repository Separation Gate — Complete R-0 through R-5
+
+- Accept ADR 0006 and the review-gated repository separation plan.
+- Create public `aos-vehicle-platform` and `vehicle-telemetry-service`
+  repositories only after final plan approval.
+- Publish the initial versioned vehicle-data contract from the platform
+  repository.
+- Scaffold platform/FOTA and service/SOTA ownership without implementing AOS-2
+  or AOS-3 behavior during the separation step.
+- Add an exact component version and artifact-digest lock to this integration
+  repository.
+- Qualify dependency direction, licensing, public-source safety, credential
+  exclusion, clean cloning, and static gates across all repositories.
+- Apply Apache-2.0, the `maninblack` copyright holder, SPDX/REUSE metadata,
+  minimal NOTICE files, DCO contribution terms, and reviewed third-party
+  provenance to both new repositories.
+
+Exit criterion: R-0 through R-5 of the separation plan pass, repository
+ownership matches the vehicle-program platform and independently updated
+service lifecycles, and an accepted lock identifies the exact components for
+the first AOS-2 baseline.
+
+AOS-2 feature implementation is blocked until this gate passes.
+
+Detailed plan: [repository separation plan](repository-separation-plan.md).
+Decision: [ADR 0006](decisions/0006-lifecycle-based-repository-ownership.md).
+
+## AOS-2 — Bridge CARLA telemetry into the in-VM KUKSA Databroker
 
 - Provide a host-only route from the guest to the macOS VISS endpoint.
+- Run a platform-owned `carla-kuksa-provider` inside AosVM; do not embed the
+  provider in CARLA or in the cloud-managed telemetry service.
 - Preserve TLS verification and install only the required public trust anchor
-  in the service package or its declared resource.
+  in the provider's declared platform resource.
 - Keep VISS unavailable from the external LAN and Internet.
 - Verify VISS 3.1 `get`, `subscribe`, reconnect, and shutdown behavior from an
-  ordinary process in the guest before containerizing the client.
+  ordinary process in the guest.
+- Map the approved VSS 6.0 telemetry paths to the compatible VSS 5.0 paths and
+  publish them to the local KUKSA Databroker with a path-scoped provider JWT.
 
-Exit criterion: a guest-side probe continuously receives live CARLA speed,
-acceleration, steering, throttle, and brake values over a verified TLS
-connection.
+Exit criterion: KUKSA continuously receives live CARLA speed, acceleration,
+steering, throttle, and brake values through the platform provider; loss of
+CARLA produces an explicit stale state rather than fabricated zero values.
 
-## AOS-3 — Deploy the first telemetry consumer
+Detailed boundary decision: [ADR 0005](decisions/0005-kuksa-vehicle-data-boundary.md).
+
+## AOS-3 — Deploy the first KUKSA telemetry consumer
 
 - Package an ARM64 OCI service with explicit CPU, RAM, storage, and network
   limits.
-- Subscribe directly to the CARLA VISS 3.1 endpoint.
-- Produce structured English logs and basic connection health.
+- Request the Aos `kuksa` resource and a compatible ARM64 `kuksa-client` layer.
+- Subscribe to the approved VSS paths through the KUKSA streaming API; keep all
+  CARLA endpoints and protocol handling outside the service.
+- Use a path-scoped read-only KUKSA JWT until AOS-5 provides Aos IAM-integrated
+  authorization.
+- Produce structured English logs, data-age reporting, and connection health.
 - Deploy, update, stop, and restart the service from AosCloud.
 
 Exit criterion: the cloud-managed service receives live vehicle telemetry and
-its state and logs are visible through AosCloud.
+its state and logs are visible through AosCloud; the same service can consume a
+non-CARLA provider without a code or configuration change.
 
 ## AOS-4 — Add useful edge processing
 
@@ -136,7 +174,24 @@ its state and logs are visible through AosCloud.
 Exit criterion: the service demonstrates a useful transformation of live
 vehicle data and preserves its declared state across an update.
 
-## AOS-5 — Evaluate and, if justified, add AOS VIS integration
+## AOS-5 — Integrate Aos service identity with KUKSA authorization
+
+- Return to the currently unavailable Aos-to-KUKSA Authorization Adapter after
+  the end-to-end prototype and initial edge processing work.
+- Bind the Aos-managed service identity or `AOS_SECRET` flow to short-lived,
+  least-privilege KUKSA authorization.
+- Preserve per-path separation between provider, consumer, and any future
+  actuation permissions.
+- Remove static KUKSA JWTs from service images and deployment artifacts.
+- Define token renewal, revocation, offline operation, and failure behavior.
+
+Exit criterion: Aos-managed service identity authorizes a consumer for only its
+declared VSS paths without a static KUKSA token in the service artifact.
+
+This milestone does not block AOS-2 through AOS-4, but it is mandatory before
+third-party services, actuation, or production credential handling.
+
+## AOS-6 — Evaluate and, if justified, add legacy AOS VIS integration
 
 - Pin the exact AOS VIS protocol and signal-tree version.
 - Define a reviewed mapping from VSS 6.0/VISS 3.1 paths to the older
@@ -147,9 +202,9 @@ vehicle data and preserves its declared state across an update.
 Exit criterion: a second cloud-managed service consumes mapped vehicle data
 through AOS VIS without knowing that CARLA is the original source.
 
-This milestone is intentionally after the direct VISS consumer; it must solve a
-concrete isolation or compatibility requirement rather than add an unnecessary
-translation layer.
+This optional milestone is intentionally after the KUKSA-based consumer. It
+must solve a concrete compatibility requirement rather than add an unnecessary
+second vehicle-data abstraction.
 
 ## Deferred decisions
 
