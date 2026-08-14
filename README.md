@@ -16,6 +16,7 @@ subscribes to the resulting VSS signals without depending on CARLA.
 - [AOS-1: provision one Main Node](docs/aos-1-single-node-provisioning.md)
 - [AOS-2: qualify the CARLA VISS-to-KUKSA provider](docs/aos-2-carla-kuksa-qualification.md)
 - [R6.1: design a Cloud-visible provider FOTA component](docs/r6-1-vehicle-data-provider-fota-design.md)
+- [R6.1-1: runtime-mechanism qualification record](docs/r6-1-runtime-mechanism-qualification.md)
 - [Colleague setup: run and provision AosVM on an Apple Silicon Mac](docs/aosvm-macos-colleague-setup.md)
 - [Reissue AosEdge user certificates on a new Mac](docs/aos-user-certificate-reissue-macos.md)
 - [Licensing and copyright policy](docs/licensing-and-copyright-policy.md)
@@ -94,6 +95,19 @@ Validate the non-secret integration baseline lock with:
 ```sh
 ./scripts/validate-component-lock
 ```
+
+Validate the separate R6.1 source and ARM64 builder candidate before creating
+or using the isolated Yocto builder:
+
+```sh
+./scripts/validate-r6-1-source-lock
+python3 -m unittest tests.test_r6_1_source_lock
+```
+
+This candidate records exact upstream commits, the Service Manager recipe
+`SRCREV`, relevant source-file digests, and the pinned Ubuntu ARM64 builder
+image. It contains no checkout path, Aos Unit identity, Cloud credential, or
+OEM signing material.
 
 When the project repositories are sibling checkouts, also verify their exact
 commits and locked files without recording those local paths:

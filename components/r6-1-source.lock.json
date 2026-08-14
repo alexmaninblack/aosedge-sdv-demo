@@ -1,0 +1,154 @@
+{
+  "$schema": "./r6-1-source-lock.schema.json",
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "baseline": {
+    "id": "r6-1-runtime-mechanism-candidate-1",
+    "status": "candidate",
+    "created": "2026-08-14",
+    "targetMachine": "qemuarm64",
+    "nodeType": "main",
+    "guestArchitecture": "arm64",
+    "unitModel": "aos-vm;1.0.0",
+    "serviceManagerProtocol": "v5",
+    "proposedComponentType": "aos-vm-1.0.0-main-qemuarm64-vehicle-data-provider"
+  },
+  "builder": {
+    "os": "Ubuntu Server 22.04 LTS",
+    "release": "20260722",
+    "architecture": "arm64",
+    "imageFileName": "ubuntu-22.04-server-cloudimg-arm64.img",
+    "imageUrl": "https://cloud-images.ubuntu.com/releases/server/jammy/release-20260722/ubuntu-22.04-server-cloudimg-arm64.img",
+    "imageSha256": "8f61e558498ba262da5b5d13f75b2921136b737a1492415150f33b3d0e46a281",
+    "qemuVersion": "11.0.3",
+    "firmwareSha256": "47765fe344818cbc464b1c14ae658fb4b854f5c2ceffa982411731eb4865594d",
+    "virtualCPUs": 10,
+    "memoryMiB": 24576,
+    "virtualDiskGiB": 220,
+    "sshHostPort": 10023
+  },
+  "manifest": {
+    "repository": "https://github.com/AosEdge/meta-aos-vm.git",
+    "revision": "b13320898a2ed1cce504f90f70451638232d6a83",
+    "tag": "v6.1.0",
+    "path": "aos-vm.yaml",
+    "sha256": "3f4a68db5ca0b21b5c3a8eee30ea48bc7bff667a30aa0b10d1543238845fce19",
+    "moulinMinimumVersion": "0.21"
+  },
+  "sources": [
+    {
+      "name": "poky",
+      "repository": "https://git.yoctoproject.org/poky",
+      "revision": "7d50718f90c51fb7f650c9db59b28c6e0194e5d2",
+      "pinSource": "manifest-commit"
+    },
+    {
+      "name": "meta-openembedded",
+      "repository": "https://git.openembedded.org/meta-openembedded",
+      "revision": "ec0469748be4159fb83fb0fa0148d786484c88cf",
+      "pinSource": "manifest-commit"
+    },
+    {
+      "name": "meta-virtualization",
+      "repository": "https://git.yoctoproject.org/meta-virtualization",
+      "revision": "3dd635f613f7299d986a8ab6bc9f584370f8ed1d",
+      "pinSource": "manifest-commit"
+    },
+    {
+      "name": "meta-security",
+      "repository": "https://git.yoctoproject.org/meta-security",
+      "revision": "97e482b71688b62ac1109d16e89368122f039cbf",
+      "pinSource": "manifest-commit"
+    },
+    {
+      "name": "meta-selinux",
+      "repository": "https://git.yoctoproject.org/meta-selinux",
+      "revision": "536df5a4fbce3c9fd63f51580f43d248a0d1b0ef",
+      "pinSource": "manifest-commit"
+    },
+    {
+      "name": "meta-arm",
+      "repository": "https://git.yoctoproject.org/meta-arm",
+      "revision": "c4fd56386ee30f8b46f8e4eb1220edaf510d2ac0",
+      "pinSource": "release-time-resolution",
+      "upstreamSelector": "scarthgap"
+    },
+    {
+      "name": "meta-aos",
+      "repository": "https://github.com/AosEdge/meta-aos.git",
+      "revision": "176da6346b1199f854106dede4cc49604174619c",
+      "tag": "v9.1.0",
+      "pinSource": "resolved-manifest-tag"
+    },
+    {
+      "name": "meta-aos-vm",
+      "repository": "https://github.com/AosEdge/meta-aos-vm.git",
+      "revision": "b13320898a2ed1cce504f90f70451638232d6a83",
+      "tag": "v6.1.0",
+      "pinSource": "resolved-manifest-tag"
+    },
+    {
+      "name": "aos-core-cpp",
+      "repository": "https://github.com/AosEdge/aos_core_cpp.git",
+      "revision": "9eecb80c4994937b5c8cbe0464970f81e8ad4c2d",
+      "pinSource": "yocto-recipe-srcrev"
+    },
+    {
+      "name": "aos-core-lib-cpp",
+      "repository": "https://github.com/AosEdge/aos_core_lib_cpp.git",
+      "revision": "60cb83535f773762c61ac5f544b31b7b88c502e3",
+      "tag": "v9.1.0",
+      "pinSource": "resolved-cmake-tag"
+    },
+    {
+      "name": "aos-core-api",
+      "repository": "https://github.com/AosEdge/aos_core_api.git",
+      "revision": "af3552a0a5eb0237eff7f5f183780ca46c339cd3",
+      "tag": "v9.1.0",
+      "pinSource": "resolved-cmake-tag"
+    },
+    {
+      "name": "moulin",
+      "repository": "https://github.com/xen-troops/moulin.git",
+      "revision": "cbecc1c748a8c5649e9a319b29167bf27dc4fc3a",
+      "tag": "v0.21",
+      "pinSource": "builder-tool-tag"
+    }
+  ],
+  "evidence": {
+    "releasePublishedAt": "2026-06-07T23:23:55Z",
+    "serviceManagerRecipe": {
+      "source": "meta-aos",
+      "path": "recipes-aos/aos-servicemanager/aos-servicemanager_git.bb",
+      "sha256": "5073a80dabc6b4f1d8430aeb416825faef89dab6ef0955e0924c2c4f9cfbcc46",
+      "sourceRevision": "9eecb80c4994937b5c8cbe0464970f81e8ad4c2d"
+    },
+    "serviceManagerConfig": {
+      "source": "meta-aos-vm",
+      "path": "meta-aos-vm-main/recipes-aos/aos-servicemanager/files/sm.cfg",
+      "sha256": "8b0f8d2ad30e9ea373ac8046496b0c108992fa1b327acb4a0fca40de81e59e4b"
+    },
+    "runtimeFactory": {
+      "source": "aos-core-cpp",
+      "path": "src/sm/launcher/runtimes.cpp",
+      "sha256": "22bb9322410c5763ecd9814cd4bf8b71b1faf4c92e34677a39d4c134fa367a60"
+    },
+    "serviceManagerProtocol": {
+      "source": "aos-core-api",
+      "path": "proto/servicemanager/v5/servicemanager.proto",
+      "sha256": "92dc5bc11d2e1576f3889e34a8acd370e1490f11f110738a795ac633c969052c"
+    }
+  },
+  "upstreamGaps": [
+    {
+      "source": "meta-arm",
+      "issue": "The released aos-vm.yaml selects the floating scarthgap branch instead of a commit.",
+      "resolution": "R6.1 pins the latest commit reachable from scarthgap before the AosVM 6.1.0 release timestamp. This is an audited project pin, not cryptographic proof of the upstream release build checkout."
+    },
+    {
+      "source": "aos-core-cpp",
+      "issue": "The public v9.1.0 tag does not identify the SRCREV used by the meta-aos v9.1.0 Service Manager recipe.",
+      "resolution": "R6.1 pins the recipe SRCREV 9eecb80c4994937b5c8cbe0464970f81e8ad4c2d."
+    }
+  ]
+}

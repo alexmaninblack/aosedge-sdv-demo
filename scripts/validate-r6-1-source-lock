@@ -1,0 +1,182 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+"""Validate the exact, non-secret R6.1 source baseline."""
+
+from __future__ import annotations
+
+import json
+import re
+import sys
+from pathlib import Path
+from typing import Any
+
+
+ROOT = Path(__file__).resolve().parents[1]
+LOCK_PATH = ROOT / "components" / "r6-1-source.lock.json"
+REVISION_RE = re.compile(r"[0-9a-f]{40}")
+SHA256_RE = re.compile(r"[0-9a-f]{64}")
+EXPECTED_SOURCES = {
+    "poky",
+    "meta-openembedded",
+    "meta-virtualization",
+    "meta-security",
+    "meta-selinux",
+    "meta-arm",
+    "meta-aos",
+    "meta-aos-vm",
+    "aos-core-cpp",
+    "aos-core-lib-cpp",
+    "aos-core-api",
+    "moulin",
+}
+PIN_SOURCES = {
+    "manifest-commit",
+    "release-time-resolution",
+    "resolved-manifest-tag",
+    "yocto-recipe-srcrev",
+    "resolved-cmake-tag",
+    "builder-tool-tag",
+}
+
+
+class LockError(ValueError):
+    """Raised when the source baseline is incomplete or unsafe."""
+
+
+def require(condition: bool, message: str) -> None:
+    if not condition:
+        raise LockError(message)
+
+
+def load_lock(path: Path = LOCK_PATH) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise LockError(f"cannot read source lock: {error}") from error
+    require(isinstance(value, dict), "source lock root must be an object")
+    return value
+
+
+def validate_source(source: Any) -> None:
+    require(isinstance(source, dict), "each source must be an object")
+    name = source.get("name")
+    require(isinstance(name, str) and name, "source name is missing")
+    repository = source.get("repository")
+    require(
+        isinstance(repository, str) and repository.startswith("https://"),
+        f"{name}: repository must use HTTPS",
+    )
+    revision = source.get("revision")
+    require(
+        isinstance(revision, str) and REVISION_RE.fullmatch(revision) is not None,
+        f"{name}: revision must be a full commit SHA",
+    )
+    require(source.get("pinSource") in PIN_SOURCES, f"{name}: pin source is invalid")
+    tag = source.get("tag")
+    if tag is not None:
+        require(
+            isinstance(tag, str)
+            and tag.lower() not in {"latest", "main", "master", "head"},
+            f"{name}: tag is floating",
+        )
+
+
+def validate_lock(lock: dict[str, Any]) -> None:
+    require(lock.get("schemaVersion") == 1, "schemaVersion must be 1")
+
+    serialized = json.dumps(lock, sort_keys=True)
+    for forbidden in ("file://", "/Users/", "/home/", "~/", "../"):
+        require(forbidden not in serialized, f"lock contains local path: {forbidden}")
+
+    baseline = lock.get("baseline")
+    require(isinstance(baseline, dict), "baseline is missing")
+    require(baseline.get("status") in {"candidate", "accepted"}, "invalid status")
+    require(baseline.get("targetMachine") == "qemuarm64", "target must be qemuarm64")
+    require(baseline.get("nodeType") == "main", "node type must be main")
+    require(baseline.get("guestArchitecture") == "arm64", "guest must be arm64")
+    require(baseline.get("unitModel") == "aos-vm;1.0.0", "unit model changed")
+    require(baseline.get("serviceManagerProtocol") == "v5", "SM protocol changed")
+
+    builder = lock.get("builder")
+    require(isinstance(builder, dict), "builder baseline is missing")
+    require(builder.get("architecture") == "arm64", "builder must be ARM64")
+    require(builder.get("release") == "20260722", "builder release changed")
+    require(builder.get("qemuVersion") == "11.0.3", "QEMU version changed")
+    require(builder.get("sshHostPort") == 10023, "builder SSH port changed")
+    require(
+        SHA256_RE.fullmatch(str(builder.get("imageSha256", ""))) is not None,
+        "builder image digest is invalid",
+    )
+    require(
+        SHA256_RE.fullmatch(str(builder.get("firmwareSha256", ""))) is not None,
+        "builder firmware digest is invalid",
+    )
+
+    manifest = lock.get("manifest")
+    require(isinstance(manifest, dict), "manifest is missing")
+    require(
+        REVISION_RE.fullmatch(str(manifest.get("revision", ""))) is not None,
+        "manifest revision must be a full commit SHA",
+    )
+    require(
+        SHA256_RE.fullmatch(str(manifest.get("sha256", ""))) is not None,
+        "manifest digest is invalid",
+    )
+    require(manifest.get("moulinMinimumVersion") == "0.21", "Moulin minimum changed")
+
+    sources = lock.get("sources")
+    require(isinstance(sources, list), "sources must be an array")
+    for source in sources:
+        validate_source(source)
+    source_map = {source["name"]: source for source in sources}
+    require(set(source_map) == EXPECTED_SOURCES, "source set is incomplete or unexpected")
+
+    meta_arm = source_map["meta-arm"]
+    require(
+        meta_arm.get("pinSource") == "release-time-resolution",
+        "meta-arm floating upstream selector is not resolved",
+    )
+    require(meta_arm.get("upstreamSelector") == "scarthgap", "meta-arm selector changed")
+
+    evidence = lock.get("evidence")
+    require(isinstance(evidence, dict), "evidence is missing")
+    recipe = evidence.get("serviceManagerRecipe")
+    require(isinstance(recipe, dict), "Service Manager recipe evidence is missing")
+    require(
+        recipe.get("sourceRevision") == source_map["aos-core-cpp"]["revision"],
+        "Service Manager SRCREV does not match aos-core-cpp",
+    )
+    for name in (
+        "serviceManagerRecipe",
+        "serviceManagerConfig",
+        "runtimeFactory",
+        "serviceManagerProtocol",
+    ):
+        item = evidence.get(name)
+        require(isinstance(item, dict), f"{name} evidence is missing")
+        require(
+            SHA256_RE.fullmatch(str(item.get("sha256", ""))) is not None,
+            f"{name} digest is invalid",
+        )
+
+    gaps = lock.get("upstreamGaps")
+    require(isinstance(gaps, list) and gaps, "upstream gaps must be recorded")
+    gap_sources = {gap.get("source") for gap in gaps if isinstance(gap, dict)}
+    require({"meta-arm", "aos-core-cpp"} <= gap_sources, "known gaps are missing")
+
+
+def main() -> int:
+    try:
+        validate_lock(load_lock())
+    except LockError as error:
+        print(f"R6.1 source lock validation failed: {error}", file=sys.stderr)
+        return 1
+
+    print(f"R6.1 source lock validation passed for {len(EXPECTED_SOURCES)} sources.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
