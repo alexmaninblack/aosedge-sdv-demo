@@ -3,7 +3,7 @@
 
 # R6.1 Vehicle-Data Provider FOTA Component Design
 
-- Status: Accepted; R6.1-3 complete and R6.1-4 awaits review
+- Status: Accepted; R6.1-3 complete and R6.1-3.1 awaits review
 - Date: 2026-08-14
 - Baseline: AosVM 6.1.0, one `aos-vm-main` Node, provider 0.1.1
 - Depends on: R6/AOS-2, ADR 0005, ADR 0006
@@ -29,10 +29,13 @@ not been demonstrated.
 
 R6.1-1 through R6.1-3 are complete. The atomic A/B lifecycle passed its exact
 ARM64 tests, corrected incremental image build, disposable non-provisioned boot
-gate, and unsigned bootstrap FOTA regression. R6.1-4 remains a separate review
-gate. Completion of R6.1-3 does not authorize bootstrap deployment to the
-active provisioned Unit, provider signing or upload, Cloud assignment,
-deprovisioning, reprovisioning, or any mutation of the active Unit.
+gate, and unsigned bootstrap FOTA regression. Review identified a required
+R6.1-3.1 interface-closure gate before artifact production: the real Python
+provider must implement the fixed launcher, health, configuration, trust, and
+credential contracts without carrying forward its R6 side-load installer.
+Completion of R6.1-3 does not authorize that implementation, bootstrap
+deployment, provider signing or upload, Cloud assignment, deprovisioning,
+reprovisioning, or any mutation of the active Unit.
 
 ## Why R6.1 Exists
 
@@ -551,8 +554,8 @@ declared KUKSA paths unavailable until its first provider component is active.
 
 ## Implementation Plan After Approval
 
-R6.1-0 is this design/review gate. The following eight work packages remain
-blocked until the design is accepted.
+R6.1-0 is the original design/review gate. The plan below records completed
+work as well as the remaining explicitly gated packages.
 
 ### R6.1-1 — Prove the lifecycle mechanism
 
@@ -603,33 +606,94 @@ store without weakening the accepted VM baseline.
 Exit: local lifecycle tests prove atomic activation and rollback without a VM
 checkpoint or manual file repair.
 
-### R6.1-4 — Produce the signed FOTA component artifact
+### R6.1-3.1 — Close the real-provider/bootstrap interface
+
+- replace the provider 0.1.1 side-load assumptions with the fixed launcher
+  command interface: normal operation, offline self-test, and fail-safe mark
+  unavailable;
+- pin the executable model to the qualified bootstrap CPython 3.12 ABI and
+  normalize the exact locked ARM64 dependencies without running `pip` or
+  creating a virtual environment on the Unit;
+- define immutable payload defaults separately from vehicle-specific endpoint
+  configuration, public trust, and the systemd-delivered KUKSA credential;
+- remove dependencies on the legacy unit name, `/var/lib` install tree,
+  installer, rootfs remount, `/etc` mutation, and credential injection;
+- test the real provider through the fixed launcher and sandboxed units in a
+  disposable ARM64 VM;
+- if the stable bootstrap interface must change, rebuild it incrementally and
+  rerun the complete R6.1-2 and R6.1-3 regressions.
+
+Exit: the actual provider conforms to a documented runtime interface and runs
+from a synthetic component tree without any legacy side-load lifecycle action.
+
+Detailed gate:
+[R6.1-3.1 real provider interface closure](r6-1-real-provider-interface-closure.md).
+
+### R6.1-4 — Produce the reproducible unsigned component candidate
 
 - define the provider component manifest and compatibility metadata;
-- convert provider 0.1.1 inputs into a new FOTA-managed release line;
-- build twice and require byte-identical output and exact digests;
+- confirm `0.2.0` as the first immutable FOTA-managed release version after
+  the R6.1-3.1 interface is fixed;
+- never reuse a recorded or published component version for different bytes;
+  any post-freeze payload change requires a new semantic version;
+- assemble exactly one uncompressed restricted USTAR layer with media type
+  `application/vnd.aos.vehicle-data-provider.layer.v1.tar` and the exact
+  Cloud-visible component type;
+- reuse only provider source, normalized locked runtime dependencies,
+  non-secret configuration/schema, licenses, and notices from 0.1.1; exclude
+  its installer, uninstaller, systemd unit, `/etc` drop-ins, trust injection,
+  and credential inputs;
+- build twice from clean staging roots and require byte-identical payload and
+  unsigned Aos envelope digests;
 - generate SBOM, provenance, dependency inventory, and complete notices;
-- sign through the existing OEM workflow without storing signing material in
-  Git or logs.
+- validate path, ownership, mode, size, architecture, OS, runtime-interface,
+  manifest, media-type, and secret-exclusion contracts locally;
+- do not access an OEM signing identity or Cloud API in this stage.
 
-Exit: one reproducible ARM64 component passes local and Aos bundle validation.
+Exit: one exact, reproducible, unsigned ARM64 provider candidate passes local
+payload and Aos bundle validation without using any signing credential.
 
-### R6.1-5 — Qualify the component offline
+### R6.1-5 — Qualify offline and sign the accepted candidate
 
 - test install, no-source startup, live source, source loss, restart, update,
   downgrade policy, bad candidate, rollback, disk-full, power interruption,
   and corrupted state;
+- drive these operations through the real Service Manager component runtime,
+  not the legacy installer or a second lifecycle helper;
 - verify KUKSA path authorization and absence of stale values at every
   transition;
 - rerun security, SELinux, rootfs, resource, and secret-exclusion gates;
-- prove coexistence with SOTA services without giving them FOTA privileges.
+- prove coexistence with SOTA services without giving them FOTA privileges;
+- freeze the accepted unsigned payload and envelope digests;
+- only after the unsigned matrix passes, stop for explicit approval to access
+  the OEM signing identity, sign those accepted bytes, verify the signature
+  and complete bundle locally, and retain no signing material in Git, logs,
+  artifacts, or the builder VM;
+- do not publish or assign the signed candidate in this stage.
 
-Exit: all mandatory tests pass on a disposable single-Node ARM64 VM without
-using the active Cloud Unit.
+Exit: all mandatory tests pass on a disposable single-Node ARM64 VM and one
+signed, locally verified release candidate is ready for a separately approved
+Cloud gate without using the active Cloud Unit.
 
-### R6.1-6 — Qualify Cloud inventory and deployment
+### R6.1-6 — Establish the validation Unit and qualify first Cloud deployment
 
-- obtain explicit approval for Cloud mutations;
+- decide and record the validation topology before mutation: prefer a new
+  independently provisioned single-Main-Node Unit; if account capacity blocks
+  it, stop for explicit single-Unit risk acceptance rather than silently using
+  the demonstration Unit;
+- obtain explicit approval for provisioning, bootstrap, catalog, publication,
+  and assignment mutations in the selected isolated scope;
+- install the qualified bootstrap runtime on the validation Unit either by
+  provisioning it from the custom complete image or by a separately qualified
+  signed full-rootfs FOTA transaction; if the FOTA path is selected, reproduce,
+  freeze, locally validate, and sign the exact bootstrap bundle only after a
+  separate signing approval and before upload; never clone the demonstration
+  Unit identity;
+- verify preserved or newly issued Unit identity, normal restart persistence,
+  bootstrap version, runtime-type reporting, and an empty provider store before
+  publishing the provider;
+- perform a read-only API preflight of the exact Unit, Unit Model, Node Type,
+  component type, Subject, and Verification Set targets;
 - publish the component to an isolated validation scope;
 - verify runtime discovery, catalog metadata, assignment, progress, final
   status, logs, and Components-view visibility through UI and API;
@@ -730,8 +794,16 @@ R6.1 is complete only when all of these are true:
       durable transaction phase, restricted archive and payload validation,
       an exact ARM64 compile and 38-test lifecycle matrix, a corrected
       incremental bootstrap image, and a disposable guest regression.
-- [ ] Review and explicitly authorize R6.1-4 provider artifact production and
-      the use of the existing OEM signing workflow.
+- [x] Insert R6.1-3.1 before artifact production because the real provider does
+      not yet implement the fixed launcher commands, configuration/credential
+      boundary, or component-native Python layout.
+- [x] Separate deterministic unsigned artifact production in R6.1-4 from OEM
+      signing; signing occurs only after offline acceptance and a separate
+      approval in R6.1-5.
+- [x] Require a validation Unit to run the qualified bootstrap runtime and
+      report the new component type before the first provider Cloud assignment.
+- [ ] Review and explicitly authorize local R6.1-3.1 implementation; signing,
+      Cloud, provisioning, and active-Unit mutations remain forbidden.
 
 ## References
 

@@ -148,7 +148,9 @@ bounded storage, status behavior, restricted payload handling, and fail-safe
 single-writer sequencing are locally proven without a VM checkpoint or manual
 state repair.
 
-R6.1-4 is the next review gate. It defines and produces the reproducible
-provider component artifact, SBOM, provenance, notices, and OEM signature.
-Signing, publication, Cloud assignment, and any change to the provisioned Unit
-remain unauthorized until their respective explicit gates.
+R6.1-3.1 is the next review gate. It closes the actual Python provider's
+launcher, health, configuration, trust, credential, and bootstrap ABI before
+artifact production. R6.1-4 then produces a reproducible unsigned candidate;
+OEM signing is deliberately deferred until that candidate passes offline
+qualification in R6.1-5. Signing, publication, Cloud assignment, and any change
+to the provisioned Unit remain unauthorized until their explicit gates.

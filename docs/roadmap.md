@@ -192,14 +192,21 @@ exact ARM64 compile and 38-test update/rollback/recovery matrix pass, the
 signature-aware incremental Yocto build produced a new image, and the
 disposable non-provisioned guest plus unsigned bootstrap FOTA regressions pass.
 Separate upstream and project Moulin graphs are pinned; the project graph
-contains no signing or upload credential. R6.1-4 provider artifact production
-awaits review. The authorization still excludes bootstrap deployment, Cloud
-catalog mutation, deprovisioning, reprovisioning, and active-Unit changes. The
-accepted R6 side-load remains the operational baseline.
+contains no signing or upload credential. Plan review inserted R6.1-3.1 before
+artifact production: the actual Python provider must conform to the fixed
+launcher modes, external configuration/trust boundary, systemd credential
+path, and component-native ARM64 dependency layout. R6.1-4 now produces only a
+reproducible unsigned candidate; OEM signing follows offline acceptance and a
+separate approval in R6.1-5. R6.1-6 must first place the qualified bootstrap on
+an isolated validation Unit before any provider assignment. The authorization
+still excludes bootstrap deployment, Cloud catalog mutation, signing,
+deprovisioning, reprovisioning, and active-Unit changes. The accepted R6
+side-load remains the operational baseline.
 
 Detailed draft: [R6.1 FOTA component design and plan](r6-1-vehicle-data-provider-fota-design.md).
 Qualification record: [R6.1-2 bootstrap-image qualification](r6-1-bootstrap-image-qualification.md).
 Atomic lifecycle qualification: [R6.1-3 record](r6-1-atomic-component-lifecycle-qualification.md).
+Next gate: [R6.1-3.1 real provider interface closure](r6-1-real-provider-interface-closure.md).
 
 ## AOS-3 — Deploy the first KUKSA telemetry consumer
 

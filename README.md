@@ -20,6 +20,7 @@ subscribes to the resulting VSS signals without depending on CARLA.
 - [R6.1-2: bootstrap-image qualification record](docs/r6-1-bootstrap-image-qualification.md)
 - [R6.1-3: atomic lifecycle design](docs/r6-1-atomic-component-lifecycle.md)
 - [R6.1-3: atomic lifecycle qualification record](docs/r6-1-atomic-component-lifecycle-qualification.md)
+- [R6.1-3.1: real provider interface-closure plan](docs/r6-1-real-provider-interface-closure.md)
 - [Colleague setup: run and provision AosVM on an Apple Silicon Mac](docs/aosvm-macos-colleague-setup.md)
 - [Reissue AosEdge user certificates on a new Mac](docs/aos-user-certificate-reissue-macos.md)
 - [Licensing and copyright policy](docs/licensing-and-copyright-policy.md)
@@ -90,7 +91,11 @@ runtime implements restricted provider-archive handling, durable A/B apply,
 rollback and restart recovery. Its exact ARM64 compile and 38 lifecycle tests,
 corrected incremental Yocto image, disposable non-provisioned guest gate, and
 regenerated unsigned bootstrap FOTA output all pass. R6.1-4 provider-artifact
-production remains the next separately reviewed stage.
+production was split after review: R6.1-3.1 first closes the real Python
+provider's launcher, health, configuration, credential, trust, and packaging
+interface; R6.1-4 then creates a credential-free unsigned artifact. OEM signing
+is deferred until the unsigned candidate passes offline qualification in
+R6.1-5. R6.1-3.1 remains the next separately reviewed stage.
 Bootstrap deployment, Cloud mutation,
 deprovisioning, reprovisioning, and active-Unit changes remain separately
 gated.
