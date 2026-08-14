@@ -464,8 +464,26 @@ guest applications -> 10.0.0.100:53 (image dnsmasq)
 The launcher now starts `scripts/host/aosvm-dns-bridge` before QEMU. The bridge
 supports UDP and TCP DNS, accepts only DNS queries, binds both sockets only to
 `127.0.0.1`, reads the current macOS resolver set through `scutil --dns`, and
-fails over between upstreams. It and QEMU are cleaned up together; the
-timestamped bridge log and PID remain ignored local runtime state.
+fails over between upstreams. It re-reads that set every five seconds, forces
+an immediate refresh after a host scheduling gap or when all current
+upstreams fail, and retries a failed query once with the refreshed set. During
+the brief interval in which macOS publishes no resolver while changing
+networks, it retains the last known set and keeps checking for recovery. The
+listener PID therefore remains stable across Mac sleep, Wi-Fi roaming, and
+ordinary network changes. It and QEMU are cleaned up together; the timestamped
+bridge log and PID remain ignored local runtime state.
+
+A post-provision mobility regression on 2026-08-14 confirmed the need for the
+refresh contract. The Mac slept on one network and woke on another; QEMU and
+all guest core services remained active, but the original bridge process still
+held the previous resolver set. Guest Communication Manager then reported
+temporary DNS failures and the cloud Unit became offline. The revised bridge
+passed resolver-transition unit tests and a live loopback query on an isolated
+test port. After one clean persistent-VM restart, `dns-check`, guest DNS, guest
+time, and the post-provision core gate passed. AosCloud again reported the
+single target Unit online with monitoring present, and the installed Hello
+World instance returned to `active` without a new deployment or any identity
+change.
 
 The idempotent `scripts/guest/aosvm-apply-qemu-network-compat` helper changes
 only the disposable overlay. It configures `systemd-resolved` to use the
@@ -518,6 +536,7 @@ The qualified command behavior is:
 | `status` | Verified exact supervisor/QEMU/DNS ownership, QMP running state, loopback SSH/DNS listeners, serial socket, and overlay |
 | `console` | Attached only to the owned serial socket and displayed `main login:`; `Ctrl-C` detached without stopping the VM |
 | `smoke-test` | Waited up to a bounded guest-readiness timeout, verified the OpenSSH banner, QMP, and shared read-only qcow2 integrity, then wrote a mode-0600 ignored JSON manifest |
+| `dns-check` | Performed a bounded public A-record lookup through the owned loopback bridge without exposing the returned address or changing VM state |
 | `stop` | Requested `system_powerdown` through QMP, waited for guest exit, removed owned runtime state, and passed exclusive `qemu-img check` |
 | repeated `stop` and stopped `status` | Reported the already-stopped state without error or broad cleanup |
 | `reset-overlay --confirm` | Rejected missing confirmation and passed atomic recreation and metadata checks against an isolated disposable test overlay |
@@ -533,8 +552,9 @@ No command uses `killall`, broad process-name matching, administrator
 privilege, LAN listeners, or an unverified PID. Static safety gates also prove
 that an unrelated live PID remains alive, a nonexistent PID is rejected, a
 concurrent lifecycle lock blocks mutation, and stopped smoke testing fails
-closed. Phase 13 subsequently qualified persistence and destructive reset on
-the real working overlay.
+closed. A stopped `dns-check` also fails closed before making a network query.
+Phase 13 subsequently qualified persistence and destructive reset on the real
+working overlay.
 
 ### Phase 13 observed baseline
 

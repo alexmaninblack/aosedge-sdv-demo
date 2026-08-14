@@ -38,7 +38,9 @@ names the x86 EFI loader. Phase 11 passes layered address, route, TCP, DNS,
 time, verified HTTPS, guest-to-host, loopback SSH, exposure, reboot, and cleanup
 gates. A tracked loopback-only macOS DNS bridge supplies bounded resolver
 failover without TAP, packet-filter changes, administrator privilege, or LAN
-exposure. Phase 12 adds an English-only, ownership-checked lifecycle with
+exposure. It follows macOS resolver changes after sleep or a Wi-Fi/network
+transition without restarting the VM. Phase 12 adds an English-only,
+ownership-checked lifecycle with
 background and foreground start, serial console, status, smoke test, QMP-first
 shutdown, and explicit overlay reset. Phase 13 proves persistence across a
 clean restart, safe recreation of only the disposable overlay, unchanged
@@ -122,7 +124,12 @@ readiness is required:
 ```sh
 ./scripts/aosvm status
 ./scripts/aosvm smoke-test
+./scripts/aosvm dns-check
 ```
+
+`dns-check` performs a bounded query through the same loopback bridge used by
+the guest. It is useful after waking the Mac or moving between networks; a
+successful check does not require a VM restart.
 
 Attach to the existing VM serial console, or start it in the foreground when
 direct process ownership is preferable:

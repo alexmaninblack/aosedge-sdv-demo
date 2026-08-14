@@ -141,9 +141,14 @@ cloud API mutation occurs.
 ./scripts/aosvm-macos-onboard status
 ./scripts/aosvm-macos-onboard stop
 ./scripts/aosvm-macos-onboard start
+./scripts/aosvm dns-check
 ```
 
 `start` and `stop` are idempotent. The VM disk persists across both commands.
+The DNS bridge automatically follows the active macOS resolver set after Mac
+sleep or a Wi-Fi/network change. `dns-check` makes a bounded query through the
+same bridge used by the VM and is safe to repeat; a successful result means no
+VM restart is required.
 Normal mode exposes only these host-loopback services:
 
 - `127.0.0.1:10022` — guest SSH;
@@ -233,6 +238,7 @@ After success, start the persistent Unit normally:
 | QEMU version is rejected | Do not bypass the version check. Use a repository revision that qualifies that QEMU release or qualify it on a disposable disk first. |
 | SSH host key changed | Stop. Confirm that the same overlay is being used. Never delete the saved host key merely to silence the warning. |
 | `setup` is interrupted | Rerun `setup`; image preparation, compatibility updates, and key enrollment are idempotent. |
+| Unit stays offline after Mac sleep or a network change | Run `./scripts/aosvm dns-check` and allow a few seconds for the network transition. The bridge refreshes macOS resolvers automatically. If the check still fails after the Mac itself can resolve Internet names, preserve `runs/aosvm-main-dns.log` for diagnosis before using a clean `stop`/`start` as a fallback. |
 | OEM certificate is missing or expired | Restore or reissue it through the AosEdge account process; do not copy another person's certificate. |
 | Live OEM check fails | Confirm network reachability, certificate validity, certificate chain, and the domain encoded in the certificate. Do not hard-code another cloud domain. |
 | Target System check fails | Ask the OEM owner to create or reconcile the exact single-Node model. The helper changes nothing. |

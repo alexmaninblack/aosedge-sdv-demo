@@ -1,0 +1,125 @@
+#!/usr/bin/python3
+
+import contextlib
+import io
+import subprocess
+import sys
+import unittest
+from importlib.machinery import SourceFileLoader
+from importlib.util import module_from_spec, spec_from_loader
+from pathlib import Path
+from unittest import mock
+
+
+sys.dont_write_bytecode = True
+repository_root = Path(__file__).resolve().parents[2]
+bridge_path = repository_root / "scripts" / "host" / "aosvm-dns-bridge"
+loader = SourceFileLoader("aosvm_dns_bridge", str(bridge_path))
+spec = spec_from_loader(loader.name, loader)
+bridge = module_from_spec(spec)
+loader.exec_module(bridge)
+
+
+class FakeClock:
+    def __init__(self):
+        self.value = 0.0
+
+    def __call__(self):
+        return self.value
+
+
+class ResolverParsingTests(unittest.TestCase):
+    def test_macos_resolvers_are_deduplicated_and_keep_ports(self):
+        output = """
+resolver #1
+  nameserver[0] : 192.0.2.53
+  nameserver[1] : 192.0.2.54
+resolver #2
+  port     : 5353
+  nameserver[0] : 2001:db8::53
+resolver #3
+  nameserver[0] : 192.0.2.53
+"""
+        completed = subprocess.CompletedProcess(["scutil", "--dns"], 0, output, "")
+        with mock.patch.object(bridge.subprocess, "run", return_value=completed):
+            self.assertEqual(
+                bridge.macos_resolver_endpoints(),
+                [("192.0.2.53", 53), ("192.0.2.54", 53), ("2001:db8::53", 5353)],
+            )
+
+    def test_empty_macos_resolver_set_is_temporary_configuration_error(self):
+        completed = subprocess.CompletedProcess(["scutil", "--dns"], 0, "No DNS configuration available", "")
+        with mock.patch.object(bridge.subprocess, "run", return_value=completed):
+            with self.assertRaises(bridge.ResolverConfigurationError):
+                bridge.macos_resolver_endpoints()
+
+
+class RefreshingResolverPoolTests(unittest.TestCase):
+    def test_periodic_refresh_replaces_endpoints_and_clears_preference(self):
+        clock = FakeClock()
+        calls = []
+
+        def load():
+            calls.append(True)
+            return [("198.51.100.53", 53)]
+
+        pool = bridge.RefreshingResolverPool(
+            [("192.0.2.53", 53)], load, refresh_interval=5.0, monotonic=clock,
+        )
+        pool.pool.preferred = ("192.0.2.53", 53)
+        clock.value = 4.9
+        self.assertFalse(pool.refresh())
+        self.assertEqual(calls, [])
+        clock.value = 5.0
+        self.assertTrue(pool.refresh())
+        self.assertEqual(pool.pool.endpoints, [("198.51.100.53", 53)])
+        self.assertIsNone(pool.pool.preferred)
+
+    def test_temporary_refresh_failure_keeps_last_known_good_endpoints(self):
+        clock = FakeClock()
+        responses = [
+            bridge.ResolverConfigurationError("network transition"),
+            [("198.51.100.53", 53)],
+        ]
+
+        def load():
+            response = responses.pop(0)
+            if isinstance(response, Exception):
+                raise response
+            return response
+
+        pool = bridge.RefreshingResolverPool(
+            [("192.0.2.53", 53)], load, refresh_interval=5.0, monotonic=clock,
+        )
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            self.assertFalse(pool.refresh(force=True))
+            self.assertEqual(pool.pool.endpoints, [("192.0.2.53", 53)])
+            self.assertTrue(pool.configuration_unavailable)
+            self.assertTrue(pool.refresh(force=True))
+        self.assertEqual(pool.pool.endpoints, [("198.51.100.53", 53)])
+        self.assertFalse(pool.configuration_unavailable)
+
+    def test_failed_query_forces_refresh_and_one_retry(self):
+        clock = FakeClock()
+        loader = mock.Mock(return_value=[("198.51.100.53", 53)])
+        pool = bridge.RefreshingResolverPool(
+            [("192.0.2.53", 53)], loader, refresh_interval=5.0, monotonic=clock,
+        )
+        with mock.patch.object(pool.pool, "udp_query", side_effect=[None, b"response"]) as query:
+            self.assertEqual(pool.udp_query(b"query"), b"response")
+        loader.assert_called_once_with()
+        self.assertEqual(query.call_count, 2)
+        self.assertEqual(pool.pool.endpoints, [("198.51.100.53", 53)])
+
+    def test_explicit_upstream_does_not_refresh_or_retry(self):
+        clock = FakeClock()
+        pool = bridge.RefreshingResolverPool(
+            [("192.0.2.53", 53)], loader=None, refresh_interval=5.0, monotonic=clock,
+        )
+        with mock.patch.object(pool.pool, "udp_query", return_value=None) as query:
+            self.assertIsNone(pool.udp_query(b"query"))
+        query.assert_called_once_with(b"query")
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)

@@ -1732,8 +1732,28 @@ EOF
     printf 'Local manifest: %s\n' "$manifest_path"
 }
 
+dns_check() {
+    resolve_running_vm >/dev/null
+    vm_status >/dev/null
+    require_command dig
+
+    dns_answer=$(dig \
+        @"$HOST_DNS_ADDRESS" \
+        -p "$HOST_DNS_PORT" \
+        aoscloud.io \
+        A \
+        +time=3 \
+        +tries=1 \
+        +short 2>/dev/null) ||
+        fail "The AosVM DNS bridge did not answer a test query"
+    [ -n "$dns_answer" ] ||
+        fail "The AosVM DNS bridge returned no address for aoscloud.io"
+
+    printf 'AosVM DNS bridge check passed.\n'
+}
+
 usage() {
-    printf 'Usage: %s <host-check|download|prepare|start [--foreground|--dry-run]|start-provisioning [--foreground|--dry-run]|console|status|smoke-test|stop|checkpoint-pre-provision|seal-provisioned|lifecycle-status|reset-overlay --confirm>\n' "$0"
+    printf 'Usage: %s <host-check|download|prepare|start [--foreground|--dry-run]|start-provisioning [--foreground|--dry-run]|console|status|smoke-test|dns-check|stop|checkpoint-pre-provision|seal-provisioned|lifecycle-status|reset-overlay --confirm>\n' "$0"
 }
 
 case ${1:-} in
@@ -1780,6 +1800,10 @@ case ${1:-} in
     smoke-test)
         [ "$#" -eq 1 ] || fail "The smoke-test command does not accept arguments"
         smoke_test
+        ;;
+    dns-check)
+        [ "$#" -eq 1 ] || fail "The dns-check command does not accept arguments"
+        dns_check
         ;;
     stop)
         [ "$#" -eq 1 ] || fail "The stop command does not accept arguments"

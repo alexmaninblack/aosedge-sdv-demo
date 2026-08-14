@@ -27,7 +27,10 @@ outbound TCP, guest-to-host access, DNS, synchronized time, verified HTTPS, and
 loopback-only SSH all pass tracked host and guest gates. A tracked macOS DNS
 bridge binds only to `127.0.0.1`; the overlay-only guest helper routes the
 image's existing dnsmasq through it without administrator-owned networking or
-LAN exposure. The upstream ARM64 EFI loader correction from Phase 10 remains
+LAN exposure. The bridge refreshes the active macOS resolver set after host
+sleep and ordinary Wi-Fi/network transitions while retaining last-known-good
+resolvers during a transient empty configuration. The upstream ARM64 EFI
+loader correction from Phase 10 remains
 stable. The tracked lifecycle now qualifies host readiness; starts and owns the
 VM; attaches to its serial console; reports exact process, listener, and disk
 state; waits for SSH readiness in its smoke test; and shuts down through QMP

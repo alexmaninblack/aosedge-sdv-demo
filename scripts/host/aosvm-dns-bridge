@@ -9,13 +9,20 @@ import socket
 import struct
 import subprocess
 import sys
-from typing import List, Optional, Sequence, Tuple
+import time
+from typing import Callable, List, Optional, Sequence, Tuple
 
 
 DEFAULT_LISTEN_ADDRESS = "127.0.0.1"
 DEFAULT_LISTEN_PORT = 18053
 MAX_DNS_MESSAGE = 65535
 UPSTREAM_TIMEOUT_SECONDS = 1.5
+RESOLVER_REFRESH_INTERVAL_SECONDS = 5.0
+HOST_RESUME_GAP_SECONDS = 15.0
+
+
+class ResolverConfigurationError(RuntimeError):
+    """The current macOS resolver set cannot be read safely."""
 
 
 def fail(message: str) -> None:
@@ -59,7 +66,9 @@ def macos_resolver_endpoints() -> List[Tuple[str, int]]:
             timeout=10,
         )
     except (OSError, subprocess.SubprocessError) as error:
-        fail(f"cannot read the macOS resolver configuration: {error}")
+        raise ResolverConfigurationError(
+            f"cannot read the macOS resolver configuration: {error}",
+        ) from error
 
     endpoints: List[Tuple[str, int]] = []
     seen = set()
@@ -84,7 +93,7 @@ def macos_resolver_endpoints() -> List[Tuple[str, int]]:
             seen.add(endpoint)
         current_port = 53
     if not endpoints:
-        fail("macOS did not report any DNS resolver")
+        raise ResolverConfigurationError("macOS did not report any DNS resolver")
     return endpoints
 
 
@@ -108,6 +117,16 @@ class ResolverPool:
     def __init__(self, endpoints: Sequence[Tuple[str, int]]) -> None:
         self.endpoints = list(endpoints)
         self.preferred: Optional[Tuple[str, int]] = None
+
+    def replace_endpoints(self, endpoints: Sequence[Tuple[str, int]]) -> bool:
+        replacement = list(endpoints)
+        if not replacement:
+            raise ValueError("resolver endpoint list must not be empty")
+        if replacement == self.endpoints:
+            return False
+        self.endpoints = replacement
+        self.preferred = None
+        return True
 
     def ordered_endpoints(self) -> List[Tuple[str, int]]:
         if self.preferred is None:
@@ -148,6 +167,72 @@ class ResolverPool:
         return None
 
 
+class RefreshingResolverPool:
+    """Refresh macOS resolvers without interrupting the loopback listener."""
+
+    def __init__(
+        self,
+        endpoints: Sequence[Tuple[str, int]],
+        loader: Optional[Callable[[], List[Tuple[str, int]]]] = None,
+        refresh_interval: float = RESOLVER_REFRESH_INTERVAL_SECONDS,
+        monotonic: Callable[[], float] = time.monotonic,
+    ) -> None:
+        self.pool = ResolverPool(endpoints)
+        self.loader = loader
+        self.refresh_interval = refresh_interval
+        self.monotonic = monotonic
+        self.last_refresh_at = monotonic()
+        self.configuration_unavailable = False
+
+    def refresh(self, force: bool = False) -> bool:
+        if self.loader is None:
+            return False
+        now = self.monotonic()
+        if not force and now - self.last_refresh_at < self.refresh_interval:
+            return False
+        self.last_refresh_at = now
+        try:
+            endpoints = self.loader()
+        except ResolverConfigurationError as error:
+            if not self.configuration_unavailable:
+                print(
+                    "AosVM DNS bridge resolver refresh temporarily unavailable; "
+                    f"keeping {len(self.pool.endpoints)} last-known "
+                    f"upstream(s): {error}",
+                    file=sys.stderr,
+                    flush=True,
+                )
+            self.configuration_unavailable = True
+            return False
+
+        if self.configuration_unavailable:
+            print("AosVM DNS bridge resolver refresh recovered.", flush=True)
+        self.configuration_unavailable = False
+        changed = self.pool.replace_endpoints(endpoints)
+        if changed:
+            print(
+                f"AosVM DNS bridge resolver set changed: {len(endpoints)} upstream(s).",
+                flush=True,
+            )
+        return changed
+
+    def udp_query(self, query: bytes) -> Optional[bytes]:
+        self.refresh()
+        response = self.pool.udp_query(query)
+        if response is None and self.loader is not None:
+            self.refresh(force=True)
+            response = self.pool.udp_query(query)
+        return response
+
+    def tcp_query(self, query: bytes) -> Optional[bytes]:
+        self.refresh()
+        response = self.pool.tcp_query(query)
+        if response is None and self.loader is not None:
+            self.refresh(force=True)
+            response = self.pool.tcp_query(query)
+        return response
+
+
 def validate_query(query: bytes) -> bool:
     if not 12 <= len(query) <= MAX_DNS_MESSAGE:
         return False
@@ -168,8 +253,7 @@ def open_servers(address: str, port: int) -> Tuple[socket.socket, socket.socket]
     return udp_server, tcp_server
 
 
-def serve(address: str, port: int, endpoints: Sequence[Tuple[str, int]]) -> None:
-    resolver_pool = ResolverPool(endpoints)
+def serve(address: str, port: int, resolver_pool: RefreshingResolverPool) -> None:
     try:
         udp_server, tcp_server = open_servers(address, port)
     except OSError as error:
@@ -180,9 +264,22 @@ def serve(address: str, port: int, endpoints: Sequence[Tuple[str, int]]) -> None
     selector.register(tcp_server, selectors.EVENT_READ, "tcp")
     print(f"AosVM DNS bridge ready on {address}:{port}", flush=True)
 
+    last_loop_at = time.monotonic()
     try:
         while True:
-            for key, _ in selector.select():
+            events = selector.select(timeout=1.0)
+            now = time.monotonic()
+            if now - last_loop_at >= HOST_RESUME_GAP_SECONDS:
+                print(
+                    "AosVM DNS bridge detected a host scheduling gap; "
+                    "refreshing resolvers.",
+                    flush=True,
+                )
+                resolver_pool.refresh(force=True)
+            else:
+                resolver_pool.refresh()
+
+            for key, _ in events:
                 if key.data == "udp":
                     query, client = udp_server.recvfrom(MAX_DNS_MESSAGE)
                     if validate_query(query):
@@ -203,6 +300,9 @@ def serve(address: str, port: int, endpoints: Sequence[Tuple[str, int]]) -> None
                                 connection.sendall(struct.pack("!H", len(response)) + response)
                     except OSError:
                         continue
+            # Do not classify time spent trying upstreams as a host sleep gap.
+            # Failed queries already force an immediate resolver refresh.
+            last_loop_at = time.monotonic()
     except KeyboardInterrupt:
         pass
     finally:
@@ -232,14 +332,20 @@ def main() -> None:
     if not 1024 <= arguments.listen_port <= 65535:
         fail("the listen port must be between 1024 and 65535")
 
+    resolver_loader = None
     if arguments.upstream:
         try:
             endpoints = [parse_endpoint(value) for value in arguments.upstream]
         except (TypeError, ValueError) as error:
             fail(f"invalid upstream endpoint: {error}")
     else:
-        endpoints = macos_resolver_endpoints()
-    serve(arguments.listen_address, arguments.listen_port, endpoints)
+        try:
+            endpoints = macos_resolver_endpoints()
+        except ResolverConfigurationError as error:
+            fail(str(error))
+        resolver_loader = macos_resolver_endpoints
+    resolver_pool = RefreshingResolverPool(endpoints, resolver_loader)
+    serve(arguments.listen_address, arguments.listen_port, resolver_pool)
 
 
 if __name__ == "__main__":

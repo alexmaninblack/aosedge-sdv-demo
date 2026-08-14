@@ -81,4 +81,10 @@ if run_lifecycle smoke-test >"$test_root/stdout" 2>"$test_root/stderr"; then
 fi
 grep -q 'QEMU PID file does not exist' "$test_root/stderr"
 
+if run_lifecycle dns-check >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected dns-check on a stopped VM to fail.\n' >&2
+    exit 1
+fi
+grep -q 'QEMU PID file does not exist' "$test_root/stderr"
+
 printf 'AosVM lifecycle safety tests passed.\n'
