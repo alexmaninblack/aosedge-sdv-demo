@@ -118,9 +118,9 @@ metadata, TLS key references, and credential-like content are rejected.
 | Capacity | Host and guest free-space guards pass | Pass |
 | Cache | Persistent ext4 download and shared-state paths pass restart check | Pass |
 | Manifest | Moulin input resolves only locked sources | Pass |
-| Upstream build | Unchanged AosVM 6.1.0 Main Node image builds | Pending |
-| Upstream boot | Disposable unchanged image passes the AOS-0 boot baseline | Pending |
-| Project layer | Runtime, launcher, policy, storage, and health inputs validate | Pending |
+| Upstream build | Unchanged AosVM 6.1.0 Main Node image builds | Pass |
+| Upstream boot | Disposable unchanged image passes the AOS-0 boot baseline | Pass |
+| Project layer | Runtime, launcher, policy, storage, and health inputs validate | Pass |
 | Custom build | Bootstrap image and unsigned full rootfs FOTA bundle build | Pending |
 | Custom boot | Disposable project image passes all required AOS-0 gates | Pending |
 | Secret exclusion | No identity, certificate, key, or token enters artifacts | Pending |
@@ -135,25 +135,87 @@ directories were created on ext4, survived a clean builder shutdown and boot,
 and passed the guarded ownership, symlink, marker, and capacity checks.
 
 The tracked Apache-2.0 manifest passed the local validator and Moulin 0.21.
+Because Moulin 0.21 leaves `gpt-image` unbounded, the builder additionally
+pins `gpt-image` 0.8.1 by the SHA-256 of its official PyPI wheel.
 It selected `qemuarm64`, one Main Node, no message proxy, exact Git revisions,
 and the persistent cache paths. Its SHA-256 is
 `77f25a49c439035ab0dc2d8d496048043b1258bb230996428ca730de364bb4fe`;
 the generated Ninja graph SHA-256 is
 `af224c74f932dab23d8ca736e3b36c4c403df3ba5d219010f87f175ac472f0c6`.
-The unchanged upstream image build is now running in the isolated builder.
 The Apache-2.0 project layer is fixed at
-`aba8c2be9845e3a19d12014bb2aeb17c20906de7`. Its production runtime and
+`ad850e8bad7585cbdf589915a64fee061a0bd405`. Its production runtime and
 Service Manager factory compile against the exact AosCore source pins; all
 three empty-store runtime tests pass. The layer's local contract, policy,
 license, launcher, health-adapter, and 14 unit-test gates also pass. This is
-not yet the complete project-layer gate because BitBake and disposable-image
-qualification remain pending.
+not yet the complete custom-image qualification because the disposable-image
+guest gate and unsigned FOTA build remain pending.
 
 The credential-free project manifest SHA-256 is
-`354a80d04e3ada9a855af8eaadb4551d9f33535d19bb55b0b7d69056c5f4ac92`.
+`869f28a61da7fbdc97be58757ed6ce75364eba6e305a65dddf696cc368a2acd1`.
 It pins the separately versioned platform repository and generates the stable
 Moulin graph SHA-256
-`fb373f865844aa3c68c1c7c53a79a286b2a0ae3c50563d5ccb4f4e76744cfea7`.
-The unchanged upstream image build continues in the isolated builder. The
-next checkpoint is its successful build and disposable boot; only then may
-the project image build start.
+`bd938764f6d26447673f5a3060d90304e98eb7647ff961d9ce84fc5e6d500e09`.
+
+The first unchanged-upstream execution completed all 7,493 BitBake tasks
+successfully, including the VM root filesystem, initramfs, kernel deployment,
+license deployment, KUKSA Databroker, and VSS 5.0 packaging. Final raw-image
+assembly then stopped at Ninja step 20 of 21 because the non-interactive SSH
+environment omitted `/home/yocto/.local/bin` from `PATH`; the generated graph
+therefore could not resolve the `rouge` entry point already installed by the
+pinned Moulin 0.21 environment. No source, BitBake output, download cache, or
+shared-state cache failed or was discarded.
+
+The tracked guest controller now exports the fixed pipx application directory
+before graph generation or execution and verifies that `moulin` and `rouge`
+resolve from the same pinned environment. The first incremental retry reached
+Rouge without rerunning BitBake, but exposed a second reproducibility issue:
+Moulin 0.21 had resolved its unbounded `gpt-image` dependency to 0.9.1. The
+0.9.x staged partition-entry API is incompatible with Moulin 0.21's layout
+calculation, so every partition appeared to start at LBA zero and Rouge sized
+the disk for only the largest partition. The later writes therefore overflowed
+the generated GPT image. R6.1 now pins the last compatible release,
+`gpt-image` 0.8.1, and verifies both its package version and wheel digest. The
+next incremental retry confirmed the corrected GPT layout and began creating
+the EFI/FAT partition, then exposed one missing Ubuntu host utility: Rouge
+requires `mmd` from `mtools`. The builder bootstrap now includes and verifies
+Ubuntu Jammy's mtools 4.0.32. The next incremental execution completed the
+final image assembly without rerunning the 7,493 successful BitBake tasks.
+
+The guarded fetch published the unchanged upstream image read-only with:
+
+- size: 6,997,147,648 bytes;
+- SHA-256: `cc5a14f3ed60bdaa9ad16017d0006ced66aa2670b8f3b9aa498608570fb9e3ee`.
+
+Its isolated disposable overlay reached the AosCore 6.1.0 `main login:` prompt
+with external networking disabled. The full upstream guest gate passed for
+AArch64, storage mounts, cgroups v2, overlayfs, seccomp, OCI namespaces,
+network shape, SELinux enforcing mode, pre-provision state, secret exclusion,
+and absence of all project-owned runtime files. The qualification VM was then
+stopped cleanly while its overlay and evidence were retained. The pinned
+project graph was regenerated with its expected digest and the project image
+build completed successfully against the same persistent caches. During that
+build, three project-layer integration defects were corrected without changing
+the accepted architecture: the shell patch fragment was moved out of a Python
+BitBake task, the SELinux policy now uses the interface exported by the pinned
+refpolicy revision, and its required `service` policy class is declared. The
+resulting read-only project image is retained inside the persistent builder
+with:
+
+- size: 6,997,147,648 bytes;
+- SHA-256: `fbd424dd20a472ed99fb15d1394e89d12b443fc3a280fa4b63f45d661190ccd6`.
+
+The unsigned FOTA build has not been started. The next authorized operation
+after resuming is the guarded project-image fetch followed by its isolated
+disposable guest gate; only after that passes will the unsigned FOTA target be
+built and structurally validated.
+
+The first disposable guest-gate run also corrected a qualification-only test:
+the minimal upstream image intentionally does not ship the `unshare` command,
+so command absence had been misreported as a kernel namespace failure. The
+gate now uses the image's production OCI runtime, crun 1.14.3, to create a
+read-only probe container and verifies distinct mount, PID, IPC, UTS, and
+network namespace inodes. This tests the actual vehicle-service execution path
+without adding a package to the upstream image. The same correction removed a
+legacy `eth0` assumption: the gate now derives the qualified interface from
+the fixed default route and accepts the upstream image's predictable
+`enp0s2` name while still requiring `10.0.0.100/24` and gateway `10.0.0.1`.

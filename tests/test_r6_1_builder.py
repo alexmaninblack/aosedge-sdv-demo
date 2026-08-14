@@ -137,7 +137,25 @@ class R61BuilderTests(unittest.TestCase):
         self.assertIn(f"conan=={BUILDER.CONAN_VERSION}", script)
         self.assertIn(f"cmake=={BUILDER.CMAKE_VERSION}", script)
         self.assertIn("softhsm2", script)
+        self.assertIn("mtools", script)
+        self.assertIn("mmd --version", script)
         self.assertIn("R6_1_BUILDER_TOOLS=PASS", script)
+        self.assertNotIn("certificate", script.lower())
+        self.assertNotIn("signing", script.lower())
+
+    def test_moulin_toolchain_pins_the_compatible_gpt_image_wheel(self) -> None:
+        script = BUILDER.moulin_tools_script()
+
+        self.assertIn(BUILDER.MOULIN_REVISION, script)
+        self.assertIn(BUILDER.GPT_IMAGE_VERSION, script)
+        self.assertIn(BUILDER.GPT_IMAGE_WHEEL_URL, script)
+        self.assertIn(BUILDER.GPT_IMAGE_WHEEL_SHA256, script)
+        self.assertIn(
+            f"gpt_image-{BUILDER.GPT_IMAGE_VERSION}-py3-none-any.whl", script
+        )
+        self.assertIn("sha256sum --check --status", script)
+        self.assertIn("--force-reinstall --no-deps", script)
+        self.assertIn("R6_1_MOULIN_TOOLS=PASS", script)
         self.assertNotIn("certificate", script.lower())
         self.assertNotIn("signing", script.lower())
 

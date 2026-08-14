@@ -128,6 +128,7 @@ Manage the isolated builder separately from the provisioned AosVM:
 ./scripts/r6-1-builder wait
 ./scripts/r6-1-builder smoke-test
 ./scripts/r6-1-builder bootstrap-tools
+./scripts/r6-1-builder pin-moulin-tools
 ./scripts/r6-1-builder copy PATH /home/yocto/DESTINATION
 ./scripts/r6-1-builder fetch /home/yocto/r61-build/VARIANT/IMAGE artifacts/r6-1/VARIANT/IMAGE
 ./scripts/r6-1-builder stop
@@ -140,6 +141,9 @@ never exposed to the LAN. `stop` cleanly stops both QEMU and the DNS bridge.
 `bootstrap-tools` installs the qualification build dependencies and pins Conan
 and CMake inside the non-provisioned builder; it never installs Aos identity
 or signing material.
+`pin-moulin-tools` installs Moulin from the already verified local v0.21
+checkout and replaces its unbounded `gpt-image` dependency with the compatible
+0.8.1 wheel after verifying the wheel's official PyPI SHA-256.
 `copy` accepts only an explicit local source and a destination below the
 unprivileged builder user's home directory.
 `fetch` accepts only regular R6.1 image artifacts, writes below the ignored

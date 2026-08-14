@@ -84,14 +84,20 @@
             "gccVersion",
             "conanVersion",
             "cmakeVersion",
+            "gptImageVersion",
+            "gptImageWheelSha256",
             "clangFormatVersion",
+            "mtoolsVersion",
             "softHSMVersion"
           ],
           "properties": {
             "gccVersion": { "type": "string", "minLength": 1 },
             "conanVersion": { "type": "string", "minLength": 1 },
             "cmakeVersion": { "type": "string", "minLength": 1 },
+            "gptImageVersion": { "type": "string", "minLength": 1 },
+            "gptImageWheelSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
             "clangFormatVersion": { "type": "string", "minLength": 1 },
+            "mtoolsVersion": { "type": "string", "minLength": 1 },
             "softHSMVersion": { "type": "string", "minLength": 1 }
           }
         }

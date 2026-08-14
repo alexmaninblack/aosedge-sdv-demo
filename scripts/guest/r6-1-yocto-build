@@ -12,21 +12,30 @@ readonly manifest_sha256="77f25a49c439035ab0dc2d8d496048043b1258bb230996428ca730
 readonly build_ninja_sha256="af224c74f932dab23d8ca736e3b36c4c403df3ba5d219010f87f175ac472f0c6"
 readonly moulin_root="/home/yocto/r61-work/moulin"
 readonly moulin_revision="cbecc1c748a8c5649e9a319b29167bf27dc4fc3a"
-readonly moulin="/home/yocto/.local/bin/moulin"
+readonly moulin_python="/home/yocto/.local/pipx/venvs/moulin/bin/python"
+readonly gpt_image_version="0.8.1"
+readonly tool_bin="/home/yocto/.local/bin"
+readonly moulin="${tool_bin}/moulin"
+readonly rouge="${tool_bin}/rouge"
 readonly cache_root="/home/yocto/yocto-cache"
 readonly log_file="${work_root}/r6-1-upstream-build.log"
 readonly pid_file="${work_root}/r6-1-upstream-build.pid"
 readonly result_file="${work_root}/r6-1-upstream-build.result"
 readonly project_work_root="/home/yocto/r61-build/project"
 readonly project_manifest="${input_root}/aos-vm-project.pinned.yaml"
-readonly project_manifest_sha256="354a80d04e3ada9a855af8eaadb4551d9f33535d19bb55b0b7d69056c5f4ac92"
-readonly project_build_ninja_sha256="fb373f865844aa3c68c1c7c53a79a286b2a0ae3c50563d5ccb4f4e76744cfea7"
+readonly project_manifest_sha256="869f28a61da7fbdc97be58757ed6ce75364eba6e305a65dddf696cc368a2acd1"
+readonly project_build_ninja_sha256="bd938764f6d26447673f5a3060d90304e98eb7647ff961d9ce84fc5e6d500e09"
 readonly project_log_file="${project_work_root}/r6-1-project-build.log"
 readonly project_pid_file="${project_work_root}/r6-1-project-build.pid"
 readonly project_result_file="${project_work_root}/r6-1-project-build.result"
 readonly project_fota_log_file="${project_work_root}/r6-1-project-fota.log"
 readonly project_fota_pid_file="${project_work_root}/r6-1-project-fota.pid"
 readonly project_fota_result_file="${project_work_root}/r6-1-project-fota.result"
+
+# Non-interactive SSH sessions use the system default PATH and do not include
+# pipx's application directory. Ninja invokes rouge by its generated command
+# name, so export the pinned tool location before any graph is generated or run.
+export PATH="${tool_bin}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 fail() {
     printf 'Error: %s\n' "$*" >&2
@@ -46,11 +55,20 @@ verify_inputs() {
     [[ "$(sha256sum "$manifest" | cut -d' ' -f1)" == "$manifest_sha256" ]] || \
         fail "pinned manifest digest mismatch"
     [[ -x "$moulin" ]] || fail "Moulin is unavailable"
+    [[ -x "$rouge" ]] || fail "Rouge image tool is unavailable"
+    [[ -x "$moulin_python" ]] || fail "Moulin Python environment is unavailable"
+    [[ "$(dirname "$(readlink -f "$rouge")")" == \
+        "$(dirname "$(readlink -f "$moulin")")" ]] || \
+        fail "Moulin and Rouge do not use the same pinned environment"
     [[ "$(git -C "$moulin_root" rev-parse HEAD)" == "$moulin_revision" ]] || \
         fail "Moulin revision mismatch"
     git -C "$moulin_root" diff --quiet
     git -C "$moulin_root" diff --cached --quiet
     "$moulin" -h 2>&1 | grep -F "Moulin meta-build system v0.21" >/dev/null
+    "$rouge" -h 2>&1 | grep -F "usage: rouge" >/dev/null
+    [[ "$("$moulin_python" -c \
+        'from importlib.metadata import version; print(version("gpt-image"))')" == \
+        "$gpt_image_version" ]] || fail "gpt-image version mismatch"
     for path in "$cache_root" "$cache_root/downloads" "$cache_root/sstate-cache"; do
         [[ -d "$path" && ! -L "$path" ]] || fail "unsafe cache path: ${path}"
     done
@@ -68,7 +86,7 @@ verify_project_inputs() {
         fail "pinned project manifest digest mismatch"
     grep -F "https://github.com/alexmaninblack/aos-vehicle-platform" \
         "$project_manifest" >/dev/null
-    grep -F "aba8c2be9845e3a19d12014bb2aeb17c20906de7" \
+    grep -F "ad850e8bad7585cbdf589915a64fee061a0bd405" \
         "$project_manifest" >/dev/null
     grep -F '"../aos-vehicle-platform/meta-aos-vehicle-platform"' \
         "$project_manifest" >/dev/null

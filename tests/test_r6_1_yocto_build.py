@@ -23,6 +23,16 @@ class R61YoctoBuildTests(unittest.TestCase):
         self.assertIn("77f25a49c439035ab0dc2d8d496048043b1258bb230996428ca730de364bb4fe", self.content)
         self.assertIn("Moulin meta-build system v0.21", self.content)
 
+    def test_noninteractive_build_exports_pinned_moulin_tools(self) -> None:
+        self.assertIn('readonly tool_bin="/home/yocto/.local/bin"', self.content)
+        self.assertIn('export PATH="${tool_bin}:', self.content)
+        self.assertIn('readonly rouge="${tool_bin}/rouge"', self.content)
+        self.assertIn("Rouge image tool is unavailable", self.content)
+        self.assertIn("Moulin and Rouge do not use the same pinned environment", self.content)
+        self.assertIn("usage: rouge", self.content)
+        self.assertIn('readonly gpt_image_version="0.8.1"', self.content)
+        self.assertIn("gpt-image version mismatch", self.content)
+
     def test_build_is_arm64_main_node_only(self) -> None:
         self.assertIn("--MACHINE=qemuarm64", self.content)
         self.assertIn("--NODE_TYPE=main", self.content)
@@ -41,14 +51,14 @@ class R61YoctoBuildTests(unittest.TestCase):
 
     def test_project_build_is_pinned_and_credential_free(self) -> None:
         self.assertIn(
-            "354a80d04e3ada9a855af8eaadb4551d9f33535d19bb55b0b7d69056c5f4ac92",
+            "869f28a61da7fbdc97be58757ed6ce75364eba6e305a65dddf696cc368a2acd1",
             self.content,
         )
         self.assertIn(
-            "aba8c2be9845e3a19d12014bb2aeb17c20906de7", self.content
+            "ad850e8bad7585cbdf589915a64fee061a0bd405", self.content
         )
         self.assertIn(
-            "fb373f865844aa3c68c1c7c53a79a286b2a0ae3c50563d5ccb4f4e76744cfea7",
+            "bd938764f6d26447673f5a3060d90304e98eb7647ff961d9ce84fc5e6d500e09",
             self.content,
         )
         self.assertIn("credential reference present", self.content)

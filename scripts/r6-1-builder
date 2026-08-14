@@ -32,6 +32,16 @@ QEMU_VERSION = "11.0.3"
 QEMU_MACHINE = "virt-11.0"
 CONAN_VERSION = "2.31.2"
 CMAKE_VERSION = "3.31.10"
+MOULIN_REVISION = "cbecc1c748a8c5649e9a319b29167bf27dc4fc3a"
+GPT_IMAGE_VERSION = "0.8.1"
+GPT_IMAGE_WHEEL_URL = (
+    "https://files.pythonhosted.org/packages/6d/9a/"
+    "e827c686adae49a5a729b85f874a625d8cafbcb022792a49caba3edfea6c/"
+    "gpt_image-0.8.1-py3-none-any.whl"
+)
+GPT_IMAGE_WHEEL_SHA256 = (
+    "c7c8e3abceb4828bdeb0eb6cf3ed0e1331fed5a760807100f767d3c4ef9c2793"
+)
 YOCTO_CACHE_ROOT = "/home/yocto/yocto-cache"
 YOCTO_DOWNLOADS_DIR = f"{YOCTO_CACHE_ROOT}/downloads"
 YOCTO_SSTATE_DIR = f"{YOCTO_CACHE_ROOT}/sstate-cache"
@@ -969,7 +979,7 @@ sudo apt-get install -y \
   libblkid-dev libcap-dev libefiboot-dev libefivar-dev liblz4-tool \
   libnftables-dev libnl-3-dev libnl-route-3-dev libseccomp-dev libssl-dev \
   libsystemd-dev libtool libtool-bin libyajl-dev locales ninja-build pipx \
-  pkg-config python3-git python3-jinja2 python3-pexpect python3-pip \
+  mtools pkg-config python3-git python3-jinja2 python3-pexpect python3-pip \
   python3-subunit python3-venv sbsigntool socat softhsm2 tcl texinfo unzip \
   wget xz-utils zip zstd
 
@@ -988,12 +998,49 @@ test "$(/home/yocto/.local/bin/cmake --version | sed -n '1p')" = "cmake version 
 test "$(uname -m)" = aarch64
 clang-format-15 --version
 softhsm2-util --version
+test "$(mmd --version 2>&1 | sed -n '1p')" = 'mmd (GNU mtools) 4.0.32'
 printf 'CONAN={CONAN_VERSION}\nCMAKE={CMAKE_VERSION}\nR6_1_BUILDER_TOOLS=PASS\n'
 """
 
 
 def bootstrap_tools() -> None:
     guest_run_script(build_tools_script())
+
+
+def moulin_tools_script() -> str:
+    return f"""set -eu
+moulin_root=/home/yocto/r61-work/moulin
+moulin_python=/home/yocto/.local/pipx/venvs/moulin/bin/python
+temporary_directory=$(mktemp -d)
+wheel=$temporary_directory/gpt_image-{GPT_IMAGE_VERSION}-py3-none-any.whl
+trap 'rm -f "$wheel"; rmdir "$temporary_directory"' EXIT HUP INT TERM
+
+test -d "$moulin_root"
+test ! -L "$moulin_root"
+test "$(git -C "$moulin_root" rev-parse HEAD)" = "{MOULIN_REVISION}"
+git -C "$moulin_root" diff --quiet
+git -C "$moulin_root" diff --cached --quiet
+
+curl --fail --location --proto '=https' --tlsv1.2 \
+  --output "$wheel" "{GPT_IMAGE_WHEEL_URL}"
+printf '%s  %s\n' "{GPT_IMAGE_WHEEL_SHA256}" "$wheel" | sha256sum --check --status
+
+/usr/bin/pipx install --force "$moulin_root"
+/usr/bin/pipx runpip moulin install --force-reinstall --no-deps "$wheel"
+
+test -x "$moulin_python"
+test "$("$moulin_python" -c \
+  'from importlib.metadata import version; print(version("gpt-image"))')" = \
+  "{GPT_IMAGE_VERSION}"
+/home/yocto/.local/bin/moulin -h 2>&1 | \
+  grep -F 'Moulin meta-build system v0.21' >/dev/null
+/home/yocto/.local/bin/rouge -h 2>&1 | grep -F 'usage: rouge' >/dev/null
+printf 'MOULIN_REVISION={MOULIN_REVISION}\nGPT_IMAGE={GPT_IMAGE_VERSION}\nR6_1_MOULIN_TOOLS=PASS\n'
+"""
+
+
+def pin_moulin_tools() -> None:
+    guest_run_script(moulin_tools_script())
 
 
 def yocto_cache_script() -> str:
@@ -1092,6 +1139,7 @@ def parse_args() -> argparse.Namespace:
     subparsers.add_parser("wait")
     subparsers.add_parser("smoke-test")
     subparsers.add_parser("bootstrap-tools")
+    subparsers.add_parser("pin-moulin-tools")
     subparsers.add_parser("prepare-yocto-cache")
     subparsers.add_parser("status")
     subparsers.add_parser("stop")
@@ -1123,6 +1171,8 @@ def main() -> int:
             smoke_test()
         elif args.command == "bootstrap-tools":
             bootstrap_tools()
+        elif args.command == "pin-moulin-tools":
+            pin_moulin_tools()
         elif args.command == "prepare-yocto-cache":
             prepare_yocto_cache()
         elif args.command == "status":

@@ -71,7 +71,7 @@ common_data:
 
     - type: git
       url: "https://github.com/alexmaninblack/aos-vehicle-platform"
-      rev: "aba8c2be9845e3a19d12014bb2aeb17c20906de7"
+      rev: "ad850e8bad7585cbdf589915a64fee061a0bd405"
 
   # Common configuration options for all nodes
   common_conf: &COMMON_CONF

@@ -13,6 +13,96 @@ fail() {
     exit 1
 }
 
+probe_namespaces() {
+    namespace_root="/tmp/r61-bootstrap-namespaces-$$"
+    namespace_bundle="$namespace_root/bundle"
+    namespace_result="$namespace_root/result"
+    namespace_container="r61-bootstrap-namespaces-$$"
+
+    cleanup_namespaces() {
+        crun delete --force "$namespace_container" >/dev/null 2>&1 || true
+        rm -rf "$namespace_root"
+    }
+    trap cleanup_namespaces EXIT HUP INT TERM
+
+    mkdir -p \
+        "$namespace_bundle/rootfs/bin" \
+        "$namespace_bundle/rootfs/dev" \
+        "$namespace_bundle/rootfs/lib" \
+        "$namespace_bundle/rootfs/proc" \
+        "$namespace_bundle/rootfs/usr/lib"
+    cp -L /bin/busybox "$namespace_bundle/rootfs/bin/busybox"
+    for library in libc.so.6 libm.so.6 ld-linux-aarch64.so.1; do
+        cp -L "/lib/$library" "$namespace_bundle/rootfs/lib/$library"
+        cp -L "/usr/lib/$library" "$namespace_bundle/rootfs/usr/lib/$library"
+    done
+    cp -L /usr/lib/ld-linux-aarch64.so.1 \
+        "$namespace_bundle/rootfs/usr/lib/ld-linux-aarch64.so.1"
+
+    cat >"$namespace_bundle/config.json" <<'EOF'
+{
+  "ociVersion": "1.0.2",
+  "process": {
+    "terminal": false,
+    "user": { "uid": 0, "gid": 0 },
+    "args": [
+      "/bin/busybox",
+      "sh",
+      "-c",
+      "echo PID=$$; echo HOST=$(/bin/busybox hostname); for namespace in mnt pid ipc uts net; do echo NS-$namespace=$(/bin/busybox readlink /proc/self/ns/$namespace); done"
+    ],
+    "env": [ "PATH=/bin" ],
+    "cwd": "/",
+    "noNewPrivileges": true
+  },
+  "root": { "path": "rootfs", "readonly": true },
+  "hostname": "r61-bootstrap-probe",
+  "mounts": [
+    { "destination": "/proc", "type": "proc", "source": "proc" }
+  ],
+  "linux": {
+    "namespaces": [
+      { "type": "mount" },
+      { "type": "pid" },
+      { "type": "ipc" },
+      { "type": "uts" },
+      { "type": "network" }
+    ]
+  }
+}
+EOF
+
+    if ! (cd "$namespace_bundle" && \
+        crun run --bundle . "$namespace_container") \
+        </dev/null >"$namespace_result" 2>&1; then
+        cat "$namespace_result" >&2
+        return 1
+    fi
+    [ "$(sed -n 's/^PID=//p' "$namespace_result")" = 1 ] || {
+        cat "$namespace_result" >&2
+        return 1
+    }
+    [ "$(sed -n 's/^HOST=//p' "$namespace_result")" = r61-bootstrap-probe ] || {
+        cat "$namespace_result" >&2
+        return 1
+    }
+    for namespace in mnt pid ipc uts net; do
+        child_namespace=$(sed -n "s/^NS-$namespace=//p" "$namespace_result")
+        parent_namespace=$(readlink "/proc/self/ns/$namespace")
+        [ -n "$child_namespace" ] || {
+            cat "$namespace_result" >&2
+            return 1
+        }
+        [ "$child_namespace" != "$parent_namespace" ] || {
+            cat "$namespace_result" >&2
+            return 1
+        }
+    done
+
+    cleanup_namespaces
+    trap - EXIT HUP INT TERM
+}
+
 case "$variant" in
     upstream|project) ;;
     *) fail 'usage: r6-1-bootstrap-check <upstream|project>' ;;
@@ -38,12 +128,15 @@ done
     fail 'unified cgroups v2 is unavailable'
 grep -qw overlay /proc/filesystems || fail 'overlayfs is unavailable'
 grep -q '^Seccomp:' /proc/self/status || fail 'seccomp status is unavailable'
-unshare --mount --pid --fork --ipc --uts --net true ||
-    fail 'required kernel namespaces do not work together'
+probe_namespaces || fail 'required OCI namespaces do not work together'
 
-ip -4 address show dev eth0 | grep -q '10\.0\.0\.100/24' ||
+qualified_interface=$(ip -4 route show default | awk '
+    $1 == "default" && $3 == "10.0.0.1" { print $5; exit }
+')
+[ -n "$qualified_interface" ] || fail 'qualified guest interface is absent'
+ip -4 address show dev "$qualified_interface" | grep -q '10\.0\.0\.100/24' ||
     fail 'qualified static guest address is absent'
-ip -4 route show default | grep -q 'via 10\.0\.0\.1' ||
+ip -4 route show default | grep -q "via 10\.0\.0\.1 dev $qualified_interface" ||
     fail 'qualified guest default route is absent'
 
 [ ! -e /var/aos/.provisionstate ] || fail 'guest is unexpectedly provisioned'

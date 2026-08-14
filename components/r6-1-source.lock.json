@@ -30,7 +30,10 @@
       "gccVersion": "11.4.0",
       "conanVersion": "2.31.2",
       "cmakeVersion": "3.31.10",
+      "gptImageVersion": "0.8.1",
+      "gptImageWheelSha256": "c7c8e3abceb4828bdeb0eb6cf3ed0e1331fed5a760807100f767d3c4ef9c2793",
       "clangFormatVersion": "15.0.7",
+      "mtoolsVersion": "4.0.32",
       "softHSMVersion": "2.6.1"
     }
   },
@@ -178,10 +181,10 @@
     },
     "projectMoulinManifest": {
       "path": "manifests/r6-1/aos-vm-project.pinned.yaml",
-      "sha256": "354a80d04e3ada9a855af8eaadb4551d9f33535d19bb55b0b7d69056c5f4ac92",
+      "sha256": "869f28a61da7fbdc97be58757ed6ce75364eba6e305a65dddf696cc368a2acd1",
       "platformRepository": "https://github.com/alexmaninblack/aos-vehicle-platform.git",
-      "platformRevision": "aba8c2be9845e3a19d12014bb2aeb17c20906de7",
-      "generatedBuildNinjaSha256": "fb373f865844aa3c68c1c7c53a79a286b2a0ae3c50563d5ccb4f4e76744cfea7",
+      "platformRevision": "ad850e8bad7585cbdf589915a64fee061a0bd405",
+      "generatedBuildNinjaSha256": "bd938764f6d26447673f5a3060d90304e98eb7647ff961d9ce84fc5e6d500e09",
       "result": "pass"
     }
   },
@@ -195,6 +198,11 @@
       "source": "aos-core-cpp",
       "issue": "The public v9.1.0 tag does not identify the SRCREV used by the meta-aos v9.1.0 Service Manager recipe.",
       "resolution": "R6.1 pins the recipe SRCREV 9eecb80c4994937b5c8cbe0464970f81e8ad4c2d."
+    },
+    {
+      "source": "moulin",
+      "issue": "Moulin 0.21 leaves its gpt-image dependency unbounded, while gpt-image 0.9.x changed partition-entry assignment semantics and produces an undersized image with Rouge 0.21.",
+      "resolution": "R6.1 installs Moulin from its exact v0.21 commit and pins the compatible gpt-image 0.8.1 wheel by its official PyPI SHA-256."
     }
   ]
 }

@@ -110,10 +110,17 @@ def validate_lock(lock: dict[str, Any]) -> None:
     require(toolchain.get("gccVersion") == "11.4.0", "builder GCC version changed")
     require(toolchain.get("conanVersion") == "2.31.2", "builder Conan version changed")
     require(toolchain.get("cmakeVersion") == "3.31.10", "builder CMake version changed")
+    require(toolchain.get("gptImageVersion") == "0.8.1", "gpt-image version changed")
+    require(
+        toolchain.get("gptImageWheelSha256")
+        == "c7c8e3abceb4828bdeb0eb6cf3ed0e1331fed5a760807100f767d3c4ef9c2793",
+        "gpt-image wheel digest changed",
+    )
     require(
         toolchain.get("clangFormatVersion") == "15.0.7",
         "builder clang-format version changed",
     )
+    require(toolchain.get("mtoolsVersion") == "4.0.32", "builder mtools version changed")
     require(toolchain.get("softHSMVersion") == "2.6.1", "builder SoftHSM version changed")
     require(
         SHA256_RE.fullmatch(str(builder.get("imageSha256", ""))) is not None,
@@ -216,7 +223,10 @@ def validate_lock(lock: dict[str, Any]) -> None:
     gaps = lock.get("upstreamGaps")
     require(isinstance(gaps, list) and gaps, "upstream gaps must be recorded")
     gap_sources = {gap.get("source") for gap in gaps if isinstance(gap, dict)}
-    require({"meta-arm", "aos-core-cpp"} <= gap_sources, "known gaps are missing")
+    require(
+        {"meta-arm", "aos-core-cpp", "moulin"} <= gap_sources,
+        "known gaps are missing",
+    )
 
 
 def main() -> int:

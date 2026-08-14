@@ -113,7 +113,11 @@ class R61DisposableVMTests(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn("guest is unexpectedly provisioned", guest_gate)
-        self.assertIn("unshare --mount --pid --fork --ipc --uts --net true", guest_gate)
+        self.assertIn('crun run --bundle . "$namespace_container"', guest_gate)
+        self.assertIn("required OCI namespaces do not work together", guest_gate)
+        self.assertIn('"readonly": true', guest_gate)
+        self.assertIn("qualified_interface=$(ip -4 route show default", guest_gate)
+        self.assertNotIn("address show dev eth0", guest_gate)
         self.assertIn("upstream image contains the project runtime", guest_gate)
         self.assertIn('health_status" -eq 3', guest_gate)
         self.assertIn("empty project store has an active slot", guest_gate)
