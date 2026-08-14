@@ -25,7 +25,7 @@ acceptance evidence.
 | AOS-1.6: persistent lifecycle and recovery checkpoint | Complete - 2026-08-13 | Reset lock and independent pre-provision checkpoint pass |
 | AOS-1.7: SDK provisioning | Complete - 2026-08-13 | `aos-prov` completed once for exactly one Node |
 | AOS-1.8: post-provision acceptance | Complete - 2026-08-13 | Local core, identity continuity, and cloud Unit gates pass |
-| AOS-1.9: Hello World | Not started | Official service reaches `Active` |
+| AOS-1.9: Hello World | Complete - 2026-08-14 | Official service reaches `Active` |
 
 The existing AosEdge account has been recovered on this new Mac. OEM and SP
 client certificates pass live role-scoped API checks. The Admin leaf
@@ -38,8 +38,10 @@ configuration. The SDK provisioned the Main Node with protocol v6 and
 provisioned Unit containing one provisioned `aos-vm-main` Node. Two normal-mode
 starts preserved the Unit, Node, and certificate identity, exposed no
 provisioning port, and passed the local core and network acceptance gates. The
-VM is stopped with verified pre- and post-provision checkpoints and lifecycle
-state `provisioned`. AOS-1.9, the official Hello World deployment, remains.
+VM is running in normal mode with verified pre- and post-provision checkpoints
+and lifecycle state `provisioned`. The official Hello World service is
+installed as one active ARM64 workload, its cloud log and lifecycle checks
+pass, and AOS-1 is complete.
 
 ## Fixed decisions
 
@@ -58,6 +60,9 @@ state `provisioned`. AOS-1.9, the official Hello World deployment, remains.
   first provisioning attempt onward. It is not disposable after AOS-1.6.
 - Never run the active disk and a restored checkpoint at the same time. They
   would carry the same Unit identity.
+- Keep this development Unit in a Verification Set only after explicit user
+  approval. Membership bypasses additional OEM approval for future SOTA/FOTA
+  until the Unit is removed from that set.
 
 ## Credential and evidence boundary
 
@@ -133,7 +138,7 @@ to work. Do not treat an unlisted host version as a failure by itself, but do
 not proceed past an observed compatibility failure.
 
 The clean-machine qualification installed native ARM64 Python 3.12.14,
-`aos-keys` 1.10.0, `aos-signer` 1.17.0, and `aos-prov` 5.4.2 in
+`aos-keys` 1.10.0, `aos-signer` 2.0.1, and `aos-prov` 5.4.2 in
 `~/.aos/venv`. Package dependency checks, an in-memory RSA/CSR smoke test, and
 the complete `aos_prov provision --help` import path pass on macOS 26.5.2.
 That host version is outside the official macOS 13/14/15 test matrix and is
@@ -497,6 +502,37 @@ and a cloud-driven restart succeeds.
 Node type, the runtime violates declared resource boundaries, or deployment
 destabilizes AosCore.
 
+**Observed:** the upstream `AosEdge/hello-world` sample was pinned at commit
+`eb5f95f92aa5b6744295d977de13668aa77133f2`. Its schema-v2 configuration
+validated, signed, and uploaded with `aos-signer` 2.0.1. The ephemeral build
+workspace retained the official package structure and service configuration,
+but replaced the sample's public webhook call with one bounded local English
+log line. This avoided sending test data or identifiers to an unrelated
+external receiver. Neither the sample workspace nor its deployment bundle is
+tracked here.
+
+The SP verification batch became `Valid` for `arm64`. A dedicated
+`AOS-1.9 Hello World` Subject binds exactly one service to the single Unit.
+The account's OEM role cannot approve fleet-validation batches, so the user
+explicitly authorized an `AOS-1.9 Verification` Unit Set containing only this
+development Unit. Membership is intentionally persistent: future SOTA/FOTA
+assigned to this Unit bypass additional OEM approval until it is removed from
+the Verification Set.
+
+AosCloud selected version `1.0.0`; Service Manager installed it on the only
+`aos-vm-main` Node and started a `crun` container on AArch64. The instance
+reached `Active` without an error or resource conflict. A bounded cloud log
+request completed and returned both accepted `Hello world!` records. Removing
+the Subject-service assignment drove the real instance to `inactive` and
+removed its process and network state. Restoring the assignment created a new
+`crun` container and returned it to `Active` with a new English log record.
+
+After the lifecycle test, IAM, SM, and CM remained active. The post-provision
+guest gate, complete layered network/TLS gate, loopback-only host exposure
+gate, cloud monitoring endpoint, one-Main-Node topology, both checkpoint
+verifications, and the destructive-reset lock all passed. No private material,
+cloud identifier, bundle, or downloaded log is retained in Git.
+
 ## AOS-1 acceptance checklist
 
 - [x] OEM and SP account roles are confirmed.
@@ -515,8 +551,8 @@ destabilizes AosCore.
 - [x] System, Node, certificate, and cloud Unit identity remain identical across two accepted normal starts.
 - [x] A verified standalone post-provision checkpoint exists and lifecycle is `provisioned`.
 - [x] The active Unit and a restored checkpoint were never run concurrently.
-- [ ] The official Hello World service reaches `Active` and restarts cleanly.
-- [x] Sanitized AOS-1.7/AOS-1.8 evidence is committed and the working tree is clean.
+- [x] The official Hello World service reaches `Active` and restarts cleanly.
+- [x] Sanitized AOS-1 evidence is committed and the working tree is clean.
 
 ## Failure routing
 
@@ -543,3 +579,6 @@ destabilizes AosCore.
 - [Single-Node provisioning guidance](https://docs.aosedge.tech/docs/how-to/register-your-device/with-your-HPC-device)
 - [Unit Configuration reference](https://docs.aosedge.tech/docs/v1/reference/core-component-configs/unit-config)
 - [Deploy a generic service](https://docs.aosedge.tech/docs/how-to/run-your-application/run-qm-service)
+- [Create the official Hello World service](https://docs.aosedge.tech/docs/quick-start/create-service)
+- [Install a service through a Subject](https://docs.aosedge.tech/docs/quick-start/create-subject)
+- [Use a Verification Set](https://docs.aosedge.tech/docs/how-to/updates-and-campaigns/test-before-release)

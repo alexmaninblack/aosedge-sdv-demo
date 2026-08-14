@@ -48,12 +48,15 @@ complete: the final start/smoke/stop run passed, sanitized evidence is recorded,
 and the VM is stopped. The current decision is **go to AOS-1** with only the
 qualified Main Node. Official generic provisioning supports one Node; the
 Secondary image and multi-Node work are deferred until a concrete use case
-justifies them. AOS-1.1 through AOS-1.8 are now complete. The official SDK
+justifies them. AOS-1.1 through AOS-1.9 are complete. The official SDK
 provisioned exactly one Main Node, AosCloud reports the Unit online, two normal
 starts preserved its identity without exposing provisioning IAM, and verified
 pre- and post-provision checkpoints protect its persistent disk. The VM is
-stopped with lifecycle `provisioned`. Deploying the official Hello World
-service is the remaining AOS-1 phase.
+running in normal mode with lifecycle `provisioned`. The schema-v2 official
+Hello World sample is installed as one ARM64 `crun` workload and reports
+`Active`. Its bounded English output was retrieved through the AosCloud log
+API, and a cloud-driven removal and fresh start both passed. AOS-2, connecting
+the VM to the host VISS endpoint, is the next milestone.
 
 ## Commands
 

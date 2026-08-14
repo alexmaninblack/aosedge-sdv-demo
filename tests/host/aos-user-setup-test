@@ -35,7 +35,10 @@ if grep -Eq '[0-9a-fA-F]{32,}' "$helper"; then
 fi
 
 grep -q "'aos-keys>=1.10.0,<2'" "$helper"
+grep -q "'aos-signer>=2.0.1,<3'" "$helper"
 grep -q "'aos-prov>=5.2.0,<6'" "$helper"
+grep -q 'pip check' "$helper"
+grep -q 'package_version_at_least.*aos-signer' "$helper"
 grep -q 'getpass.getpass' "$helper"
 grep -q 'from aos_keys.actions import UserType, new_token_user' "$helper"
 if grep -q 'AOS_REISSUE_TOKEN' "$helper"; then

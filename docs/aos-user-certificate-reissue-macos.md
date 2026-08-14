@@ -76,15 +76,16 @@ From this repository:
 bounded stable tool families:
 
 - `aos-keys >=1.10.0,<2`;
-- `aos-signer >=1.16.0,<2`;
+- `aos-signer >=2.0.1,<3`;
 - `aos-prov >=5.2.0,<6`.
 
 It verifies the exact installed versions and the generic single-Node
 `aos_prov provision` command. Nothing is installed in the repository or in the
 Apple system Python.
 
-The qualified installation on the target Mac on 2026-08-13 is Python 3.12.14
-ARM64, `aos-keys` 1.10.0, `aos-signer` 1.17.0, and `aos-prov` 5.4.2. The
+The qualified installation on the target Mac on 2026-08-14 is Python 3.12.14
+ARM64, `aos-keys` 1.10.0, `aos-signer` 2.0.1, and `aos-prov` 5.4.2. Signer 2.x
+is required by the schema-v2 official service sample. The
 installed provisioning tool accepts an explicit `IP_ADDRESS:PORT` endpoint and
 `--nodes`; its default remains two Nodes, so the later provisioning command
 must still specify `--nodes 1` explicitly.

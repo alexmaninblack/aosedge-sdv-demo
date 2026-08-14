@@ -72,15 +72,24 @@ Detailed plan: [AOS-0 runbook](aos-0-arm64-vm.md).
 Exit criterion: AosCloud reports the Unit online and an official sample service
 reaches `Active` state after a cloud-driven deployment.
 
-Current gate: AOS-1.1 through AOS-1.8 pass. The SDK provisioned exactly one
+Current gate: AOS-1.1 through AOS-1.9 pass. The SDK provisioned exactly one
 Main Node with protocol v6 and `--nodes 1`; AosCloud reports one online,
 provisioned Unit with one provisioned `aos-vm-main` Node. Two accepted
 normal-mode starts preserved private identity hashes and exposed no
 provisioning listener. Local IAM, SM, CM, encrypted storage, NFS, SELinux,
 time, DNS, TLS, and HTTPS gates pass. Independent pre- and post-provision
 checkpoints are verified, destructive reset is locked, lifecycle is
-`provisioned`, and the VM is stopped. The official Hello World deployment is
-the remaining AOS-1 exit gate. The released image's redundant
+`provisioned`, and the VM is running in normal mode. The schema-v2 official
+Hello World package was validated and uploaded with `aos-signer` 2.0.1. One
+dedicated Subject and one explicitly approved Verification Set bind the sample
+to only this development Unit. The Service Manager installed it on the ARM64
+Main Node through `crun`; it reached `Active`, produced bounded English output
+that was retrieved through the cloud log API, stopped after cloud assignment
+removal, and reached `Active` again after a fresh assignment. The final local,
+network, cloud monitoring, checkpoint, and resource-conflict gates pass. The
+Verification Set intentionally remains active for this development Unit, so
+future SOTA/FOTA assigned to it bypass additional OEM approval. The released
+image's redundant
 `quotaon.service` reports `EEXIST` after mount-time quota activation; quotas
 and all required Aos data paths are operational, so this is tracked as a
 non-blocking upstream idempotency issue.
