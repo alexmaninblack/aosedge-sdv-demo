@@ -102,6 +102,14 @@ credential-like files. The upstream variant must contain no project runtime;
 the project variant must contain exactly one fixed runtime and a disabled,
 inactive, empty provider store whose health and launcher interfaces fail safe.
 
+The guarded build controller exposes the unsigned `fota` target only after the
+project image result is `PASS`, and it refuses to run the image and FOTA builds
+concurrently. `scripts/validate-r6-1-fota-output` then requires exactly the
+ARM64 boot and full-rootfs components, version 6.1.0, publisher `maninblack`,
+regular non-empty artifacts below the canonical output root, and fixed runtime
+identities. Incremental or extra items, path traversal, symlinks, publication
+metadata, TLS key references, and credential-like content are rejected.
+
 ## Qualification Gates
 
 | Gate | Evidence required | State |

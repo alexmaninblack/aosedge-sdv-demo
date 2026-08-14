@@ -54,6 +54,11 @@ class R61YoctoBuildTests(unittest.TestCase):
         self.assertIn("credential reference present", self.content)
         self.assertIn("r6-1-yocto-build run-project", self.content)
 
+    def test_unsigned_fota_waits_for_the_project_image(self) -> None:
+        self.assertIn("project image must pass before the FOTA build", self.content)
+        self.assertIn("ninja -j 10 fota", self.content)
+        self.assertIn("r6-1-yocto-build run-project-fota", self.content)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -24,6 +24,9 @@ readonly project_build_ninja_sha256="fb373f865844aa3c68c1c7c53a79a286b2a0ae3c505
 readonly project_log_file="${project_work_root}/r6-1-project-build.log"
 readonly project_pid_file="${project_work_root}/r6-1-project-build.pid"
 readonly project_result_file="${project_work_root}/r6-1-project-build.result"
+readonly project_fota_log_file="${project_work_root}/r6-1-project-fota.log"
+readonly project_fota_pid_file="${project_work_root}/r6-1-project-fota.pid"
+readonly project_fota_result_file="${project_work_root}/r6-1-project-fota.result"
 
 fail() {
     printf 'Error: %s\n' "$*" >&2
@@ -151,6 +154,19 @@ read_project_pid() {
     printf '%s\n' "$pid"
 }
 
+read_project_fota_pid() {
+    [[ -e "$project_fota_pid_file" ]] || return 1
+    require_regular_file "$project_fota_pid_file"
+    local pid
+    pid="$(cat "$project_fota_pid_file")"
+    [[ "$pid" =~ ^[0-9]+$ && "$pid" -gt 1 ]] || fail "invalid project FOTA PID"
+    [[ -r "/proc/${pid}/cmdline" ]] || return 1
+    tr '\0' ' ' <"/proc/${pid}/cmdline" | \
+        grep -F "r6-1-yocto-build run-project-fota" >/dev/null || \
+        fail "build PID is not owned by the R6.1 project FOTA build"
+    printf '%s\n' "$pid"
+}
+
 run_upstream() {
     verify_inputs
     require_regular_file "$work_root/build.ninja"
@@ -187,6 +203,27 @@ run_project() {
     exit "$result"
 }
 
+run_project_fota() {
+    verify_project_inputs
+    require_regular_file "$project_work_root/build.ninja"
+    require_regular_file "$project_result_file"
+    [[ "$(cat "$project_result_file")" == PASS ]] ||
+        fail "project image must pass before the FOTA build"
+    rm -f "$project_fota_result_file"
+    cd "$project_work_root"
+    set +e
+    ninja -j 10 fota
+    result=$?
+    set -e
+    if [[ "$result" -eq 0 ]]; then
+        printf 'PASS\n' >"$project_fota_result_file"
+    else
+        printf 'FAIL:%s\n' "$result" >"$project_fota_result_file"
+    fi
+    chmod 0640 "$project_fota_result_file"
+    exit "$result"
+}
+
 start_upstream() {
     verify_inputs
     require_regular_file "$work_root/build.ninja"
@@ -211,6 +248,9 @@ start_upstream() {
 start_project() {
     verify_project_inputs
     require_regular_file "$project_work_root/build.ninja"
+    if pid="$(read_project_fota_pid)"; then
+        fail "project FOTA build is still running as PID ${pid}"
+    fi
     if pid="$(read_project_pid)"; then
         printf 'R6.1 project build is already running (PID %s).\n' "$pid"
         return
@@ -227,6 +267,33 @@ start_project() {
     fi
     printf 'R6.1 project build started (PID %s).\n' "$pid"
     printf 'Log: %s\n' "$project_log_file"
+}
+
+start_project_fota() {
+    verify_project_inputs
+    require_regular_file "$project_work_root/build.ninja"
+    require_regular_file "$project_result_file"
+    [[ "$(cat "$project_result_file")" == PASS ]] ||
+        fail "project image must pass before the FOTA build"
+    if pid="$(read_project_pid)"; then
+        fail "project image build is still running as PID ${pid}"
+    fi
+    if pid="$(read_project_fota_pid)"; then
+        printf 'R6.1 project FOTA build is already running (PID %s).\n' "$pid"
+        return
+    fi
+    rm -f "$project_fota_pid_file" "$project_fota_result_file"
+    require_regular_file "$0"
+    nohup "$0" run-project-fota >"$project_fota_log_file" 2>&1 </dev/null &
+    pid=$!
+    printf '%s\n' "$pid" >"$project_fota_pid_file"
+    chmod 0640 "$project_fota_pid_file" "$project_fota_log_file"
+    sleep 1
+    if ! kill -0 "$pid" 2>/dev/null && [[ ! -f "$project_fota_result_file" ]]; then
+        fail "project FOTA build did not start; inspect ${project_fota_log_file}"
+    fi
+    printf 'R6.1 project FOTA build started (PID %s).\n' "$pid"
+    printf 'Log: %s\n' "$project_fota_log_file"
 }
 
 status_upstream() {
@@ -261,6 +328,22 @@ status_project() {
     fi
 }
 
+status_project_fota() {
+    if pid="$(read_project_fota_pid)"; then
+        printf 'STATE=RUNNING\nPID=%s\n' "$pid"
+    elif [[ -f "$project_fota_result_file" ]]; then
+        require_regular_file "$project_fota_result_file"
+        printf 'STATE=%s\n' "$(cat "$project_fota_result_file")"
+    else
+        printf 'STATE=NOT_STARTED\n'
+    fi
+    if [[ -f "$project_fota_log_file" ]]; then
+        require_regular_file "$project_fota_log_file"
+        printf '%s\n' '--- LOG TAIL ---'
+        tail -n 30 "$project_fota_log_file"
+    fi
+}
+
 case "$command_name" in
     verify)
         verify_inputs
@@ -287,10 +370,19 @@ case "$command_name" in
     run-project)
         run_project
         ;;
+    run-project-fota)
+        run_project_fota
+        ;;
     status-project)
         status_project
         ;;
+    start-project-fota)
+        start_project_fota
+        ;;
+    status-project-fota)
+        status_project_fota
+        ;;
     *)
-        fail "usage: $0 {verify|generate-upstream|start-upstream|status-upstream|generate-project|start-project|status-project}"
+        fail "usage: $0 {verify|generate-upstream|start-upstream|status-upstream|generate-project|start-project|status-project|start-project-fota|status-project-fota}"
         ;;
 esac

@@ -1,0 +1,166 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+"""Validate the unsigned R6.1-2 full-rootfs FOTA output structure."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import re
+import sys
+from pathlib import Path
+from typing import Any
+
+import yaml
+
+
+EXPECTED_ROOT = Path("/home/yocto/r61-build/project/output/fota")
+EXPECTED_ITEMS = {
+    "aos-vm-1.0.0-main-qemuarm64-boot": (
+        "application/vnd.aos.image.component.full.v1+gzip",
+        ".gz",
+    ),
+    "aos-vm-1.0.0-main-qemuarm64-rootfs": (
+        "application/vnd.aos.image.component.full.v1+squashfs",
+        ".squashfs",
+    ),
+}
+DIGEST_RE = re.compile(r"[0-9a-f]{64}")
+
+
+class FotaOutputError(ValueError):
+    """Raised when the unsigned structural output is incomplete or unsafe."""
+
+
+def require(condition: bool, message: str) -> None:
+    if not condition:
+        raise FotaOutputError(message)
+
+
+def require_regular_file(path: Path, label: str) -> None:
+    require(
+        path.is_file() and not path.is_symlink(),
+        f"{label} is not a regular, non-symbolic-link file: {path}",
+    )
+
+
+def sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def validate_output(output_root: Path = EXPECTED_ROOT) -> list[dict[str, Any]]:
+    root = output_root.resolve()
+    require(root == output_root, "FOTA output root must use the canonical builder path")
+    require(root.is_dir() and not root.is_symlink(), "FOTA output root is unsafe")
+    config_path = root / "config.yaml"
+    require_regular_file(config_path, "FOTA configuration")
+    config_text = config_path.read_text(encoding="utf-8")
+    for forbidden in (
+        "tlsKey",
+        "publish:",
+        ".p12",
+        ".pfx",
+        "BEGIN PRIVATE KEY",
+        "BEGIN CERTIFICATE",
+        "/Users/",
+    ):
+        require(forbidden not in config_text, f"FOTA configuration contains {forbidden}")
+    try:
+        config = yaml.safe_load(config_text)
+    except yaml.YAMLError as error:
+        raise FotaOutputError(f"FOTA configuration is invalid YAML: {error}") from error
+    require(isinstance(config, dict), "FOTA configuration root is not an object")
+    require(config.get("schemaVersion") == 2, "FOTA schema version changed")
+    require(config.get("publisher") == {"company": "maninblack"}, "publisher changed")
+    require("publish" not in config, "FOTA output unexpectedly requests publication")
+    items = config.get("items")
+    require(isinstance(items, list), "FOTA items are missing")
+    require(len(items) == len(EXPECTED_ITEMS), "FOTA item count changed")
+
+    evidence: list[dict[str, Any]] = []
+    observed: set[str] = set()
+    for item in items:
+        require(isinstance(item, dict), "FOTA item is not an object")
+        identity = item.get("identity")
+        require(isinstance(identity, dict), "FOTA identity is missing")
+        codename = identity.get("codename")
+        require(codename in EXPECTED_ITEMS, f"unexpected FOTA item: {codename}")
+        require(codename not in observed, f"duplicate FOTA item: {codename}")
+        observed.add(codename)
+        require(identity.get("type") == "component", f"{codename}: type changed")
+        require(item.get("version") == "6.1.0", f"{codename}: version changed")
+        images = item.get("images")
+        require(isinstance(images, list) and len(images) == 1, f"{codename}: image changed")
+        image = images[0]
+        require(isinstance(image, dict), f"{codename}: image is not an object")
+        media_type, suffix = EXPECTED_ITEMS[codename]
+        require(image.get("mediaType") == media_type, f"{codename}: media type changed")
+        require(
+            image.get("archInfo") == {"architecture": "arm64"},
+            f"{codename}: architecture changed",
+        )
+        require(image.get("osInfo") == {"os": "linux"}, f"{codename}: OS changed")
+        relative_path = image.get("path")
+        require(isinstance(relative_path, str), f"{codename}: image path is missing")
+        relative = Path(relative_path)
+        require(not relative.is_absolute() and ".." not in relative.parts, f"{codename}: unsafe path")
+        artifact = (root / relative).resolve()
+        try:
+            artifact.relative_to(root)
+        except ValueError as error:
+            raise FotaOutputError(f"{codename}: image escaped output root") from error
+        require(artifact.suffix == suffix, f"{codename}: image suffix changed")
+        require_regular_file(artifact, f"{codename} image")
+        require(artifact.stat().st_size > 0, f"{codename}: image is empty")
+        artifact_digest = sha256(artifact)
+        require(DIGEST_RE.fullmatch(artifact_digest) is not None, "invalid artifact digest")
+
+        configuration = item.get("configuration")
+        require(isinstance(configuration, dict), f"{codename}: runtime config missing")
+        require(
+            configuration.get("runtimes")
+            == [{"codename": codename, "type": "runtime"}],
+            f"{codename}: runtime identity changed",
+        )
+        evidence.append(
+            {
+                "codename": codename,
+                "path": str(relative),
+                "sha256": artifact_digest,
+                "size": artifact.stat().st_size,
+            }
+        )
+
+    require(observed == set(EXPECTED_ITEMS), "FOTA item set is incomplete")
+    evidence.sort(key=lambda value: str(value["codename"]))
+    return evidence
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "output_root", nargs="?", type=Path, default=EXPECTED_ROOT
+    )
+    args = parser.parse_args()
+    try:
+        evidence = validate_output(args.output_root)
+    except (FotaOutputError, OSError) as error:
+        print(f"R6.1 FOTA output validation failed: {error}", file=sys.stderr)
+        return 1
+    print(f"CONFIG_SHA256={sha256(args.output_root / 'config.yaml')}")
+    for item in evidence:
+        print(
+            "ITEM={codename} SIZE={size} SHA256={sha256} PATH={path}".format(**item)
+        )
+    print("R6_1_UNSIGNED_FOTA_OUTPUT=PASS")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
