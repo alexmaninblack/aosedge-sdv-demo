@@ -71,12 +71,30 @@ The isolated builder candidate is:
 - QEMU 11.0.3 with Apple Hypervisor Framework acceleration;
 - 10 virtual CPUs, 24 GiB memory, and a 220 GiB sparse virtual disk;
 - SSH bound only to host loopback port 10023;
+- a dynamic macOS resolver bridge bound only to loopback port 18054, with the
+  guest using the QEMU host alias and an explicit non-default DNS port;
 - no Aos services, Unit identity, Cloud certificate, or signing credential.
 
 The virtual disk is stored outside Git under the project's private macOS
 application-support directory. Its nominal 220 GiB capacity is sparse, but
 host free-space checks remain mandatory because a Yocto build may consume much
 of that capacity.
+
+The builder lifecycle passed on 2026-08-14. The pinned image download and
+firmware digests matched, preparation produced a verified sparse overlay, and
+the dry-run exposed only loopback SSH and DNS listeners. The first boot passed
+cloud-init and the smoke gate. A clean stop, restart with the same disk and SSH
+host key, repeated smoke gate, and final clean stop also passed. The observed
+guest evidence was ARM64, 10 CPUs, ext4 root storage larger than 200 GB, and no
+Aos services or standard Aos identity paths. The builder and DNS bridge are
+currently stopped.
+
+Standard QEMU DNS was not accepted as sufficient: on the active Mac network,
+the guest's `10.0.2.3` resolver timed out. The builder now reuses the tracked
+loopback-only, resolver-refreshing macOS bridge already qualified for AosVM.
+The guest uses systemd-resolved's supported `address:port` syntax to reach
+`10.0.2.2:18054`. The final DNS probe and restart gate passed without TAP,
+administrator privilege, packet-filter changes, or LAN exposure.
 
 ## Service Manager Evidence
 
@@ -100,7 +118,7 @@ also required.
 | Gate | Evidence required | State |
 | --- | --- | --- |
 | Source lock | Exact commits and file digests validate | Pass |
-| Builder isolation | ARM64 VM passes resource, network, and no-identity checks | Pending |
+| Builder isolation | ARM64 VM passes resource, network, and no-identity checks | Pass |
 | Runtime factory | Minimal provider runtime is constructed by Service Manager | Pending |
 | Lifecycle trace | Prepare/start/stop/status paths are captured locally | Pending |
 | Node/CM report | Proposed type appears in captured local SMInfo | Pending |

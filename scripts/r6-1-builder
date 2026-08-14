@@ -1,0 +1,912 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+"""Manage the isolated ARM64 R6.1 Yocto builder on Apple Silicon."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import platform
+import shutil
+import socket
+import stat
+import subprocess
+import sys
+import time
+from pathlib import Path
+from urllib.parse import urlparse
+
+
+IMAGE_NAME = "ubuntu-22.04-server-cloudimg-arm64.img"
+IMAGE_URL = (
+    "https://cloud-images.ubuntu.com/releases/server/jammy/release-20260722/"
+    + IMAGE_NAME
+)
+IMAGE_SHA256 = "8f61e558498ba262da5b5d13f75b2921136b737a1492415150f33b3d0e46a281"
+FIRMWARE_SHA256 = "47765fe344818cbc464b1c14ae658fb4b854f5c2ceffa982411731eb4865594d"
+QEMU_VERSION = "11.0.3"
+QEMU_MACHINE = "virt-11.0"
+VCPUS = 10
+MEMORY_MIB = 24576
+DISK_GIB = 220
+SSH_PORT = int(os.environ.get("R61_BUILDER_SSH_PORT", "10023"))
+DNS_PORT = int(os.environ.get("R61_BUILDER_DNS_PORT", "18054"))
+VM_NAME = "r61-yocto-builder"
+VM_MAC = "52:54:00:52:36:31"
+MINIMUM_HOST_MEMORY = 32 * 1024**3
+MINIMUM_INITIAL_HOST_FREE = 260 * 1024**3
+MINIMUM_OPERATIONAL_HOST_FREE = 60 * 1024**3
+ALLOWED_DOWNLOAD_HOSTS = {"cloud-images.ubuntu.com"}
+
+ROOT = Path(
+    os.environ.get(
+        "R61_BUILDER_ROOT",
+        str(
+            Path.home()
+            / "Library"
+            / "Application Support"
+            / "CarlaAosEdge"
+            / "YoctoBuilder"
+        ),
+    )
+)
+CACHE_DIR = ROOT / "cache"
+LOCAL_DIR = ROOT / "local"
+RUN_DIR = ROOT / "run"
+LOG_DIR = ROOT / "logs"
+SEED_DIR = LOCAL_DIR / "seed"
+BASE_IMAGE = CACHE_DIR / IMAGE_NAME
+PARTIAL_IMAGE = CACHE_DIR / f"{IMAGE_NAME}.partial"
+OVERLAY = LOCAL_DIR / "r61-yocto-builder.qcow2"
+SEED_ISO = LOCAL_DIR / "r61-yocto-builder-seed.iso"
+PID_FILE = RUN_DIR / f"{VM_NAME}.pid"
+QMP_SOCKET = RUN_DIR / f"{VM_NAME}.qmp"
+SERIAL_LOG = LOG_DIR / f"{VM_NAME}-serial.log"
+KNOWN_HOSTS = LOCAL_DIR / "known_hosts"
+DNS_PID_FILE = RUN_DIR / f"{VM_NAME}-dns.pid"
+DNS_LOG = LOG_DIR / f"{VM_NAME}-dns.log"
+DNS_BRIDGE = Path(__file__).resolve().parent / "host" / "aosvm-dns-bridge"
+PUBLIC_KEY = Path(
+    os.environ.get("R61_BUILDER_PUBLIC_KEY", str(Path.home() / ".ssh/id_ed25519.pub"))
+)
+PRIVATE_KEY = Path(
+    os.environ.get(
+        "R61_BUILDER_PRIVATE_KEY",
+        str(PUBLIC_KEY)[:-4]
+        if str(PUBLIC_KEY).endswith(".pub")
+        else str(Path.home() / ".ssh/id_ed25519"),
+    )
+)
+FIRMWARE = Path(
+    os.environ.get(
+        "R61_BUILDER_FIRMWARE",
+        "/opt/homebrew/share/qemu/edk2-aarch64-code.fd",
+    )
+)
+QEMU = os.environ.get("R61_BUILDER_QEMU", "qemu-system-aarch64")
+QEMU_IMG = os.environ.get("R61_BUILDER_QEMU_IMG", "qemu-img")
+
+
+class BuilderError(RuntimeError):
+    """Raised when a guarded builder operation cannot continue."""
+
+
+def fail(message: str) -> None:
+    raise BuilderError(message)
+
+
+def run(
+    command: list[str],
+    *,
+    capture: bool = False,
+    timeout: int | None = None,
+    check: bool = True,
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        command,
+        check=check,
+        text=True,
+        capture_output=capture,
+        timeout=timeout,
+    )
+
+
+def sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def require_regular_file(path: Path, label: str) -> None:
+    if path.is_symlink() or not path.is_file():
+        fail(f"{label} is not a regular, non-symbolic-link file: {path}")
+
+
+def ensure_private_directory(path: Path) -> None:
+    path.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if path.is_symlink() or not path.is_dir():
+        fail(f"builder directory is unsafe: {path}")
+    path.chmod(0o700)
+
+
+def command_path(name: str) -> str:
+    result = shutil.which(name)
+    if result is None:
+        fail(f"required command is unavailable: {name}")
+    return result
+
+
+def qemu_version() -> str:
+    result = run([command_path(QEMU), "--version"], capture=True)
+    prefix = "QEMU emulator version "
+    first_line = result.stdout.splitlines()[0] if result.stdout else ""
+    if not first_line.startswith(prefix):
+        fail("cannot determine the QEMU version")
+    return first_line[len(prefix) :].split()[0]
+
+
+def sysctl_integer(name: str) -> int:
+    result = run(["/usr/sbin/sysctl", "-n", name], capture=True)
+    try:
+        return int(result.stdout.strip())
+    except ValueError as error:
+        raise BuilderError(f"cannot read {name}") from error
+
+
+def validate_download_url(value: str) -> None:
+    parsed = urlparse(value)
+    if parsed.scheme != "https" or parsed.hostname not in ALLOWED_DOWNLOAD_HOSTS:
+        fail(f"download resolved to an unexpected URL: {value}")
+
+
+def verify_pinned_file(path: Path, expected: str, label: str) -> None:
+    require_regular_file(path, label)
+    actual = sha256(path)
+    if actual != expected:
+        fail(f"{label} SHA-256 mismatch: expected {expected}, found {actual}")
+
+
+def read_public_key() -> str:
+    require_regular_file(PUBLIC_KEY, "SSH public key")
+    key = PUBLIC_KEY.read_text(encoding="utf-8").strip()
+    fields = key.split()
+    if len(fields) < 2 or fields[0] not in {
+        "ssh-ed25519",
+        "ecdsa-sha2-nistp256",
+        "rsa-sha2-512",
+        "rsa-sha2-256",
+        "ssh-rsa",
+    }:
+        fail(f"unsupported or malformed SSH public key: {PUBLIC_KEY}")
+    if "PRIVATE KEY" in key or "\n" in key:
+        fail("SSH input must contain exactly one public key")
+    return key
+
+
+def validate_private_key_path() -> None:
+    # Do not read, hash, log, or copy the private key. SSH receives only its
+    # local path and performs the key operation itself.
+    require_regular_file(PRIVATE_KEY, "SSH private key")
+    mode = stat.S_IMODE(PRIVATE_KEY.stat().st_mode)
+    if mode & 0o077:
+        fail(f"SSH private key permissions are too broad: {oct(mode)}")
+
+
+def host_check() -> None:
+    if platform.system() != "Darwin" or platform.machine() != "arm64":
+        fail("the R6.1 builder requires an Apple Silicon Mac")
+    if sysctl_integer("kern.hv_support") != 1:
+        fail("Apple Hypervisor Framework is unavailable")
+    if (os.cpu_count() or 0) < VCPUS:
+        fail(f"the host has fewer than the required {VCPUS} CPUs")
+    if sysctl_integer("hw.memsize") < MINIMUM_HOST_MEMORY:
+        fail("the host has less than the required 32 GiB of memory")
+    free = shutil.disk_usage(ROOT.parent if ROOT.parent.exists() else Path.home()).free
+    minimum_free = (
+        MINIMUM_OPERATIONAL_HOST_FREE if OVERLAY.exists() else MINIMUM_INITIAL_HOST_FREE
+    )
+    if free < minimum_free:
+        fail(
+            "host free storage is below the guarded builder minimum: "
+            f"{minimum_free // 1024**3} GiB"
+        )
+    for name in (QEMU, QEMU_IMG, "curl", "hdiutil", "ssh", "ssh-keyscan"):
+        command_path(name)
+    actual_qemu = qemu_version()
+    if actual_qemu != QEMU_VERSION:
+        fail(f"QEMU {actual_qemu} is not the pinned {QEMU_VERSION} version")
+    verify_pinned_file(FIRMWARE, FIRMWARE_SHA256, "QEMU ARM64 firmware")
+    read_public_key()
+    validate_private_key_path()
+    if not 1024 <= SSH_PORT <= 65535:
+        fail("the builder SSH port is outside the allowed range")
+    if not 1024 <= DNS_PORT <= 65535 or DNS_PORT == SSH_PORT:
+        fail("the builder DNS port is invalid or conflicts with SSH")
+    require_regular_file(DNS_BRIDGE, "tracked macOS DNS bridge")
+    if not os.access(DNS_BRIDGE, os.X_OK):
+        fail(f"tracked macOS DNS bridge is not executable: {DNS_BRIDGE}")
+    print("R6.1 builder host check passed.")
+    print(f"Builder storage: {ROOT}")
+    print(f"Resources: {VCPUS} vCPUs, {MEMORY_MIB} MiB RAM, {DISK_GIB} GiB sparse disk")
+    print(f"SSH exposure: 127.0.0.1:{SSH_PORT} only")
+    print(f"DNS exposure: 127.0.0.1:{DNS_PORT} only")
+
+
+def download() -> None:
+    host_check()
+    ensure_private_directory(CACHE_DIR)
+    if BASE_IMAGE.exists():
+        verify_pinned_file(BASE_IMAGE, IMAGE_SHA256, "Ubuntu builder image")
+        print("Pinned Ubuntu ARM64 builder image is already verified.")
+        return
+    if PARTIAL_IMAGE.is_symlink():
+        fail(f"partial download must not be a symbolic link: {PARTIAL_IMAGE}")
+    validate_download_url(IMAGE_URL)
+    result = run(
+        [
+            command_path("curl"),
+            "--fail",
+            "--location",
+            "--proto",
+            "=https",
+            "--tlsv1.2",
+            "--retry",
+            "4",
+            "--retry-all-errors",
+            "--continue-at",
+            "-",
+            "--output",
+            str(PARTIAL_IMAGE),
+            "--write-out",
+            "%{url_effective}",
+            IMAGE_URL,
+        ],
+        capture=True,
+    )
+    validate_download_url(result.stdout.strip())
+    verify_pinned_file(PARTIAL_IMAGE, IMAGE_SHA256, "downloaded Ubuntu builder image")
+    PARTIAL_IMAGE.replace(BASE_IMAGE)
+    BASE_IMAGE.chmod(0o600)
+    print(f"Pinned Ubuntu ARM64 builder image is verified: {BASE_IMAGE}")
+
+
+def cloud_init_files(public_key: str) -> dict[str, str]:
+    return {
+        "meta-data": (
+            f"instance-id: {VM_NAME}-1\n"
+            f"local-hostname: {VM_NAME}\n"
+        ),
+        "user-data": (
+            "#cloud-config\n"
+            "users:\n"
+            "  - default\n"
+            "  - name: yocto\n"
+            "    gecos: R6.1 isolated Yocto builder\n"
+            "    groups: [adm, sudo]\n"
+            "    sudo: ALL=(ALL) NOPASSWD:ALL\n"
+            "    shell: /bin/bash\n"
+            "    lock_passwd: true\n"
+            "    ssh_authorized_keys:\n"
+            f"      - {json.dumps(public_key)}\n"
+            "ssh_pwauth: false\n"
+            "disable_root: true\n"
+            "growpart:\n"
+            "  mode: auto\n"
+            "  devices: ['/']\n"
+            "resize_rootfs: true\n"
+            "write_files:\n"
+            "  - path: /etc/r61-builder-baseline\n"
+            "    owner: root:root\n"
+            "    permissions: '0444'\n"
+            "    content: |\n"
+            "      role=r6-1-yocto-builder\n"
+            "      unit_identity=forbidden\n"
+            "      signing_credentials=forbidden\n"
+            "  - path: /etc/systemd/resolved.conf.d/60-r61-builder.conf\n"
+            "    owner: root:root\n"
+            "    permissions: '0644'\n"
+            "    content: |\n"
+            "      [Resolve]\n"
+            f"      DNS=10.0.2.2:{DNS_PORT}\n"
+            "      Domains=~.\n"
+            "      DNSSEC=no\n"
+            "runcmd:\n"
+            "  - [systemctl, restart, systemd-resolved]\n"
+            "final_message: R6.1 isolated builder cloud-init complete\n"
+        ),
+        "network-config": (
+            "version: 2\n"
+            "ethernets:\n"
+            "  primary:\n"
+            "    match:\n"
+            "      name: 'e*'\n"
+            "    dhcp4: true\n"
+        ),
+    }
+
+
+def write_seed(public_key: str) -> None:
+    ensure_private_directory(SEED_DIR)
+    for name, content in cloud_init_files(public_key).items():
+        path = SEED_DIR / name
+        if path.is_symlink():
+            fail(f"cloud-init input is a symbolic link: {path}")
+        path.write_text(content, encoding="utf-8")
+        path.chmod(0o600)
+    # hdiutil appends ".iso" unless the requested output already ends in it.
+    # Keep the temporary file unambiguous and on the same filesystem so the
+    # final replace remains atomic.
+    partial_iso = SEED_ISO.with_name(f".{SEED_ISO.stem}.partial.iso")
+    legacy_partial = SEED_ISO.with_suffix(".iso.partial.iso")
+    for stale in (partial_iso, legacy_partial):
+        if stale.exists() or stale.is_symlink():
+            stale.unlink()
+    run(
+        [
+            command_path("hdiutil"),
+            "makehybrid",
+            "-quiet",
+            "-iso",
+            "-joliet",
+            "-default-volume-name",
+            "cidata",
+            "-o",
+            str(partial_iso),
+            str(SEED_DIR),
+        ]
+    )
+    require_regular_file(partial_iso, "cloud-init seed image")
+    partial_iso.replace(SEED_ISO)
+    SEED_ISO.chmod(0o600)
+
+
+def image_info(path: Path) -> dict[str, object]:
+    result = run([command_path(QEMU_IMG), "info", "--output=json", str(path)], capture=True)
+    try:
+        value = json.loads(result.stdout)
+    except json.JSONDecodeError as error:
+        raise BuilderError(f"cannot parse image metadata for {path}") from error
+    if not isinstance(value, dict):
+        fail(f"unexpected image metadata for {path}")
+    return value
+
+
+def verify_prepared() -> None:
+    verify_pinned_file(BASE_IMAGE, IMAGE_SHA256, "Ubuntu builder image")
+    require_regular_file(OVERLAY, "builder overlay")
+    require_regular_file(SEED_ISO, "cloud-init seed image")
+    info = image_info(OVERLAY)
+    if info.get("format") != "qcow2" or info.get("virtual-size") != DISK_GIB * 1024**3:
+        fail("builder overlay format or virtual size is incorrect")
+    backing = info.get("full-backing-filename")
+    if backing != str(BASE_IMAGE.resolve()):
+        fail("builder overlay does not reference the pinned base image")
+    run([command_path(QEMU_IMG), "check", str(OVERLAY)], capture=True)
+
+
+def prepare() -> None:
+    host_check()
+    if not BASE_IMAGE.exists():
+        fail("the pinned Ubuntu image is absent; run download first")
+    verify_pinned_file(BASE_IMAGE, IMAGE_SHA256, "Ubuntu builder image")
+    for directory in (LOCAL_DIR, RUN_DIR, LOG_DIR):
+        ensure_private_directory(directory)
+    if not OVERLAY.exists():
+        partial_overlay = OVERLAY.with_suffix(".qcow2.partial")
+        if partial_overlay.exists() or partial_overlay.is_symlink():
+            partial_overlay.unlink()
+        base = str(BASE_IMAGE.resolve())
+        run(
+            [
+                command_path(QEMU_IMG),
+                "create",
+                "-q",
+                "-f",
+                "qcow2",
+                "-F",
+                "qcow2",
+                "-b",
+                base,
+                str(partial_overlay),
+                f"{DISK_GIB}G",
+            ]
+        )
+        partial_overlay.replace(OVERLAY)
+        OVERLAY.chmod(0o600)
+    write_seed(read_public_key())
+    verify_prepared()
+    print("R6.1 isolated builder storage is prepared and verified.")
+
+
+def qemu_command(*, daemonize: bool) -> list[str]:
+    qemu = command_path(QEMU)
+    command = [
+        qemu,
+        "-name",
+        VM_NAME,
+        "-machine",
+        QEMU_MACHINE,
+        "-accel",
+        "hvf",
+        "-cpu",
+        "host",
+        "-smp",
+        str(VCPUS),
+        "-m",
+        str(MEMORY_MIB),
+        "-bios",
+        str(FIRMWARE.resolve()),
+        "-drive",
+        f"if=none,file={OVERLAY.resolve()},format=qcow2,id=rootdisk,discard=unmap",
+        "-device",
+        "virtio-blk-pci,drive=rootdisk",
+        "-drive",
+        f"if=none,file={SEED_ISO.resolve()},format=raw,readonly=on,id=seed",
+        "-device",
+        "virtio-blk-pci,drive=seed",
+        "-netdev",
+        f"user,id=net0,hostfwd=tcp:127.0.0.1:{SSH_PORT}-:22",
+        "-device",
+        f"virtio-net-pci,netdev=net0,mac={VM_MAC}",
+        "-device",
+        "virtio-rng-pci",
+        "-display",
+        "none",
+        "-serial",
+        f"file:{SERIAL_LOG.resolve()}",
+        "-qmp",
+        f"unix:{QMP_SOCKET.resolve()},server=on,wait=off",
+        "-pidfile",
+        str(PID_FILE.resolve()),
+    ]
+    if daemonize:
+        command.append("-daemonize")
+    return command
+
+
+def read_pid_file(path: Path, label: str) -> int | None:
+    if not path.exists():
+        return None
+    require_regular_file(path, label)
+    value = path.read_text(encoding="utf-8").strip()
+    if not value.isdecimal() or int(value) <= 1:
+        fail(f"{label} is invalid")
+    return int(value)
+
+
+def read_pid() -> int | None:
+    return read_pid_file(PID_FILE, "builder PID file")
+
+
+def process_command(pid: int) -> str | None:
+    result = run(["/bin/ps", "-p", str(pid), "-o", "command="], capture=True, check=False)
+    value = result.stdout.strip()
+    return value or None
+
+
+def verify_owned_process(pid: int) -> None:
+    value = process_command(pid)
+    if value is None:
+        fail(f"builder PID is not running: {pid}")
+    for expected in (VM_NAME, str(OVERLAY.resolve()), str(QMP_SOCKET.resolve())):
+        if expected not in value:
+            fail(f"PID {pid} is not the owned R6.1 builder process")
+
+
+def resolve_running() -> int | None:
+    pid = read_pid()
+    if pid is None:
+        return None
+    if process_command(pid) is None:
+        for path in (PID_FILE, QMP_SOCKET):
+            if path.exists() or path.is_symlink():
+                path.unlink()
+        return None
+    verify_owned_process(pid)
+    return pid
+
+
+def verify_owned_dns_process(pid: int) -> None:
+    value = process_command(pid)
+    if value is None:
+        fail(f"builder DNS bridge PID is not running: {pid}")
+    for expected in (str(DNS_BRIDGE), "--listen-address 127.0.0.1", f"--listen-port {DNS_PORT}"):
+        if expected not in value:
+            fail(f"PID {pid} is not the owned R6.1 DNS bridge process")
+
+
+def resolve_dns_bridge() -> int | None:
+    pid = read_pid_file(DNS_PID_FILE, "builder DNS PID file")
+    if pid is None:
+        return None
+    if process_command(pid) is None:
+        DNS_PID_FILE.unlink()
+        return None
+    verify_owned_dns_process(pid)
+    return pid
+
+
+def assert_dns_port_available() -> None:
+    sockets = [
+        socket.socket(socket.AF_INET, socket.SOCK_STREAM),
+        socket.socket(socket.AF_INET, socket.SOCK_DGRAM),
+    ]
+    try:
+        for probe in sockets:
+            probe.bind(("127.0.0.1", DNS_PORT))
+    except OSError as error:
+        raise BuilderError(f"loopback DNS port {DNS_PORT} is unavailable") from error
+    finally:
+        for probe in sockets:
+            probe.close()
+
+
+def start_dns_bridge() -> int:
+    existing = resolve_dns_bridge()
+    if existing is not None:
+        return existing
+    assert_dns_port_available()
+    ensure_private_directory(RUN_DIR)
+    ensure_private_directory(LOG_DIR)
+    if DNS_LOG.is_symlink():
+        fail(f"builder DNS log is a symbolic link: {DNS_LOG}")
+    with DNS_LOG.open("w", encoding="utf-8") as log:
+        DNS_LOG.chmod(0o600)
+        process = subprocess.Popen(
+            [
+                "/usr/bin/python3",
+                str(DNS_BRIDGE),
+                "--listen-address",
+                "127.0.0.1",
+                "--listen-port",
+                str(DNS_PORT),
+            ],
+            stdin=subprocess.DEVNULL,
+            stdout=log,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
+    DNS_PID_FILE.write_text(f"{process.pid}\n", encoding="utf-8")
+    DNS_PID_FILE.chmod(0o600)
+    deadline = time.monotonic() + 10
+    while time.monotonic() < deadline:
+        if process.poll() is not None:
+            fail(f"builder DNS bridge failed to start; inspect {DNS_LOG}")
+        try:
+            with socket.create_connection(("127.0.0.1", DNS_PORT), timeout=0.5):
+                verify_owned_dns_process(process.pid)
+                return process.pid
+        except OSError:
+            time.sleep(0.1)
+    fail(f"builder DNS bridge did not become ready; inspect {DNS_LOG}")
+
+
+def stop_dns_bridge() -> None:
+    pid = resolve_dns_bridge()
+    if pid is None:
+        return
+    verify_owned_dns_process(pid)
+    os.kill(pid, 15)
+    deadline = time.monotonic() + 10
+    while time.monotonic() < deadline:
+        if process_command(pid) is None:
+            if DNS_PID_FILE.exists():
+                DNS_PID_FILE.unlink()
+            return
+        time.sleep(0.2)
+    fail("verified builder DNS bridge did not stop after TERM")
+
+
+def assert_ssh_port_available() -> None:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+        try:
+            probe.bind(("127.0.0.1", SSH_PORT))
+        except OSError as error:
+            raise BuilderError(f"loopback SSH port {SSH_PORT} is unavailable") from error
+
+
+def start(dry_run: bool) -> None:
+    host_check()
+    running = resolve_running()
+    if running is not None:
+        dns_pid = start_dns_bridge()
+        print(f"R6.1 builder is already running (PID {running}).")
+        print(f"DNS bridge is running (PID {dns_pid}).")
+        return
+    verify_prepared()
+    assert_ssh_port_available()
+    for path in (PID_FILE, QMP_SOCKET):
+        if path.exists() or path.is_symlink():
+            path.unlink()
+    command = qemu_command(daemonize=True)
+    if dry_run:
+        import shlex
+
+        print(shlex.join(command))
+        return
+    dns_started_here = resolve_dns_bridge() is None
+    dns_pid = start_dns_bridge()
+    old_umask = os.umask(0o077)
+    try:
+        run(command)
+    except Exception:
+        if dns_started_here:
+            stop_dns_bridge()
+        raise
+    finally:
+        os.umask(old_umask)
+    deadline = time.monotonic() + 20
+    while time.monotonic() < deadline:
+        running = resolve_running()
+        if running is not None and QMP_SOCKET.exists():
+            print(f"R6.1 builder started (PID {running}).")
+            print(f"DNS bridge is running (PID {dns_pid}).")
+            print("Next: ./scripts/r6-1-builder wait")
+            return
+        time.sleep(0.5)
+    fail(f"QEMU did not become ready; inspect {SERIAL_LOG}")
+
+
+def qmp_powerdown() -> None:
+    if QMP_SOCKET.is_symlink() or not QMP_SOCKET.is_socket():
+        fail("the owned builder QMP socket is unavailable")
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
+        connection.settimeout(5)
+        connection.connect(str(QMP_SOCKET))
+        stream = connection.makefile("rwb", buffering=0)
+        stream.readline()
+        stream.write(b'{"execute":"qmp_capabilities"}\n')
+        stream.readline()
+        stream.write(b'{"execute":"system_powerdown"}\n')
+        stream.readline()
+
+
+def stop() -> None:
+    pid = resolve_running()
+    if pid is None:
+        stop_dns_bridge()
+        print("R6.1 builder is stopped.")
+        return
+    verify_owned_process(pid)
+    qmp_powerdown()
+    deadline = time.monotonic() + 120
+    while time.monotonic() < deadline:
+        if process_command(pid) is None:
+            for path in (PID_FILE, QMP_SOCKET):
+                if path.exists() or path.is_symlink():
+                    path.unlink()
+            stop_dns_bridge()
+            print("R6.1 builder stopped cleanly.")
+            return
+        time.sleep(1)
+    fail("builder did not stop after the bounded ACPI shutdown request")
+
+
+def ssh_base() -> list[str]:
+    return [
+        command_path("ssh"),
+        "-p",
+        str(SSH_PORT),
+        "-o",
+        "BatchMode=yes",
+        "-o",
+        "IdentitiesOnly=yes",
+        "-i",
+        str(PRIVATE_KEY),
+        "-o",
+        "StrictHostKeyChecking=yes",
+        "-o",
+        f'UserKnownHostsFile="{KNOWN_HOSTS}"',
+        "yocto@127.0.0.1",
+    ]
+
+
+def enroll_host_key(deadline: float | None = None) -> None:
+    if KNOWN_HOSTS.exists():
+        require_regular_file(KNOWN_HOSTS, "builder SSH known-hosts file")
+        return
+    enrollment_deadline = deadline if deadline is not None else time.monotonic() + 60
+    lines: list[str] = []
+    while time.monotonic() < enrollment_deadline:
+        result = run(
+            [
+                command_path("ssh-keyscan"),
+                "-T",
+                "5",
+                "-p",
+                str(SSH_PORT),
+                "127.0.0.1",
+            ],
+            capture=True,
+            check=False,
+        )
+        lines = [
+            line
+            for line in result.stdout.splitlines()
+            if line and not line.startswith("#")
+        ]
+        if result.returncode == 0 and lines:
+            break
+        time.sleep(2)
+    if not lines:
+        fail("cannot obtain the builder SSH host key before the readiness deadline")
+    ensure_private_directory(LOCAL_DIR)
+    partial = KNOWN_HOSTS.with_suffix(".partial")
+    partial.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    partial.chmod(0o600)
+    partial.replace(KNOWN_HOSTS)
+
+
+def wait_ready() -> None:
+    if resolve_running() is None:
+        fail("the R6.1 builder is not running")
+    start_dns_bridge()
+    deadline = time.monotonic() + 600
+    while time.monotonic() < deadline:
+        try:
+            with socket.create_connection(("127.0.0.1", SSH_PORT), timeout=2):
+                break
+        except OSError:
+            time.sleep(2)
+    else:
+        fail("builder SSH did not become reachable within 10 minutes")
+    enroll_host_key(deadline)
+    while time.monotonic() < deadline:
+        try:
+            result = run(
+                ssh_base() + ["true"],
+                capture=True,
+                check=False,
+                timeout=10,
+            )
+        except subprocess.TimeoutExpired:
+            time.sleep(2)
+            continue
+        if result.returncode == 0:
+            break
+        time.sleep(2)
+    else:
+        fail("key-only builder SSH did not become ready within 10 minutes")
+    run(ssh_base() + ["sudo cloud-init status --wait"], timeout=600)
+    configure_guest_dns()
+    print("R6.1 builder SSH and cloud-init are ready.")
+
+
+def guest_run(arguments: list[str]) -> None:
+    if not arguments:
+        fail("run requires a guest command")
+    if resolve_running() is None:
+        fail("the R6.1 builder is not running")
+    require_regular_file(KNOWN_HOSTS, "builder SSH known-hosts file")
+    completed = subprocess.run(ssh_base() + arguments)
+    if completed.returncode != 0:
+        raise BuilderError(f"guest command failed with exit code {completed.returncode}")
+
+
+def guest_run_script(script: str) -> None:
+    if resolve_running() is None:
+        fail("the R6.1 builder is not running")
+    require_regular_file(KNOWN_HOSTS, "builder SSH known-hosts file")
+    completed = subprocess.run(
+        ssh_base() + ["bash", "-s", "--"],
+        input=script,
+        text=True,
+    )
+    if completed.returncode != 0:
+        raise BuilderError(
+            f"guest script failed with exit code {completed.returncode}"
+        )
+
+
+def configure_guest_dns() -> None:
+    configuration = f"""set -eu
+directory=/etc/systemd/resolved.conf.d
+target=$directory/60-r61-builder.conf
+temporary=$(mktemp)
+trap 'rm -f "$temporary"' EXIT HUP INT TERM
+cat >"$temporary" <<'EOF'
+[Resolve]
+DNS=10.0.2.2:{DNS_PORT}
+Domains=~.
+DNSSEC=no
+EOF
+sudo install -d -m 0755 "$directory"
+sudo install -m 0644 -o root -g root "$temporary" "$target"
+sudo systemctl restart systemd-resolved
+timeout 20 resolvectl query cloud-images.ubuntu.com >/dev/null
+"""
+    guest_run_script(configuration)
+
+
+def smoke_test() -> None:
+    probe = r"""set -eu
+test "$(uname -m)" = aarch64
+. /etc/os-release
+test "$ID" = ubuntu
+test "$VERSION_ID" = 22.04
+test "$(nproc)" -eq 10
+test "$(findmnt -n -o FSTYPE /)" = ext4
+test "$(findmnt -n -b -o SIZE /)" -ge 200000000000
+test "$(awk '/MemTotal/ {print $2}' /proc/meminfo)" -ge 23000000
+test "$(cat /etc/r61-builder-baseline)" = "role=r6-1-yocto-builder
+unit_identity=forbidden
+signing_credentials=forbidden"
+for path in /var/aos /var/lib/aos /etc/aos /run/aos; do test ! -e "$path"; done
+! systemctl list-unit-files --no-legend 2>/dev/null | awk '{print $1}' | grep -E '^aos-|^aos_' >/dev/null
+timeout 20 getent hosts cloud-images.ubuntu.com >/dev/null
+printf 'ARCH=%s\nCPUS=%s\nROOTFS=%s\nR6_1_BUILDER_SMOKE=PASS\n' "$(uname -m)" "$(nproc)" "$(findmnt -n -o FSTYPE /)"
+"""
+    guest_run_script(probe)
+
+
+def status() -> None:
+    pid = resolve_running()
+    dns_pid = resolve_dns_bridge()
+    if pid is None:
+        print("R6.1 builder is stopped.")
+    else:
+        print(f"R6.1 builder is running (PID {pid}).")
+        print(f"SSH: yocto@127.0.0.1:{SSH_PORT}")
+        print(f"Serial log: {SERIAL_LOG}")
+    if dns_pid is None:
+        print("R6.1 builder DNS bridge is stopped.")
+    else:
+        print(f"R6.1 builder DNS bridge is running (PID {dns_pid}).")
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Manage the isolated ARM64 R6.1 Yocto builder."
+    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    subparsers.add_parser("host-check")
+    subparsers.add_parser("download")
+    subparsers.add_parser("prepare")
+    start_parser = subparsers.add_parser("start")
+    start_parser.add_argument("--dry-run", action="store_true")
+    subparsers.add_parser("wait")
+    subparsers.add_parser("smoke-test")
+    subparsers.add_parser("status")
+    subparsers.add_parser("stop")
+    run_parser = subparsers.add_parser("run")
+    run_parser.add_argument("arguments", nargs=argparse.REMAINDER)
+    return parser.parse_args()
+
+
+def main() -> int:
+    args = parse_args()
+    try:
+        if args.command == "host-check":
+            host_check()
+        elif args.command == "download":
+            download()
+        elif args.command == "prepare":
+            prepare()
+        elif args.command == "start":
+            start(args.dry_run)
+        elif args.command == "wait":
+            wait_ready()
+        elif args.command == "smoke-test":
+            smoke_test()
+        elif args.command == "status":
+            status()
+        elif args.command == "stop":
+            stop()
+        elif args.command == "run":
+            guest_run(args.arguments)
+        else:
+            fail(f"unsupported command: {args.command}")
+    except (BuilderError, OSError, subprocess.SubprocessError) as error:
+        print(f"Error: {error}", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

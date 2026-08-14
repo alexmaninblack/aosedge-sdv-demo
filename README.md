@@ -109,6 +109,24 @@ This candidate records exact upstream commits, the Service Manager recipe
 image. It contains no checkout path, Aos Unit identity, Cloud credential, or
 OEM signing material.
 
+Manage the isolated builder separately from the provisioned AosVM:
+
+```sh
+./scripts/r6-1-builder host-check
+./scripts/r6-1-builder download
+./scripts/r6-1-builder prepare
+./scripts/r6-1-builder start --dry-run
+./scripts/r6-1-builder start
+./scripts/r6-1-builder wait
+./scripts/r6-1-builder smoke-test
+./scripts/r6-1-builder stop
+```
+
+The builder uses a private sparse disk outside Git, key-only SSH on
+`127.0.0.1:10023`, and a dynamic macOS resolver bridge on
+`127.0.0.1:18054`. The DNS listener follows macOS resolver changes but is
+never exposed to the LAN. `stop` cleanly stops both QEMU and the DNS bridge.
+
 When the project repositories are sibling checkouts, also verify their exact
 commits and locked files without recording those local paths:
 
