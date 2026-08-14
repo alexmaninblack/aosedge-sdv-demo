@@ -239,9 +239,9 @@ components:
     builder:
       type: custom_script
       work_dir: "workdir"
-      script: "../yocto/meta-aos/scripts/fota_builder.py"
+      script: "/home/yocto/.local/pipx/venvs/moulin/bin/python yocto/meta-aos/scripts/fota_builder.py"
       target_images:
-        - "../output/fota/config.yaml"
+        - "output/fota/config.yaml"
 
       additional_deps:
         - "%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/%{AOS_BASE_IMAGE}-%{MACHINE}.rootfs.ext4"
@@ -254,7 +254,7 @@ components:
       components:
         architecture: "%{AOS_ARCHITECTURE}"
         os: "%{AOS_OS}"
-        output_dir: "../output/fota"
+        output_dir: "output/fota"
         publisher:
           company: "maninblack"
 
@@ -274,19 +274,19 @@ components:
               type: vfat
               size: 128 MiB
               items:
-                "aos-image-initramfs-%{MACHINE}.cpio.gz": "../%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/aos-image-initramfs-%{MACHINE}.rootfs.cpio.gz"
-                "%{KERNEL_TYPE}": "../%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/%{KERNEL_TYPE}"
-                "EFI/BOOT/%{BOOT_TYPE}": "../%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/grub-efi-%{BOOT_TYPE}"
-                "EFI/BOOT/grub.cfg": "../%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/grub.cfg"
-                "aos/version": "../%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/aos/boot/version"
+                "aos-image-initramfs-%{MACHINE}.cpio.gz": "%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/aos-image-initramfs-%{MACHINE}.rootfs.cpio.gz"
+                "%{KERNEL_TYPE}": "%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/%{KERNEL_TYPE}"
+                "EFI/BOOT/%{BOOT_TYPE}": "%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/grub-efi-%{BOOT_TYPE}"
+                "EFI/BOOT/grub.cfg": "%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/grub.cfg"
+                "aos/version": "%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/aos/boot/version"
 
           rootfs-full:
             componentType: "%{AOS_COMPONENT_RUNTIME_PREFIX}rootfs"
             mediaType: "application/vnd.aos.image.component.full.v1+squashfs"
             enabled: true
             method: "overlay"
-            ostree_repo: "../../ostree_repo/%{AOS_NODE_TYPE}-rootfs"
-            yocto_dir: "../%{YOCTOS_WORK_DIR}"
+            ostree_repo: "ostree_repo/%{AOS_NODE_TYPE}-rootfs"
+            yocto_dir: "%{YOCTOS_WORK_DIR}"
             build_dir: "build-%{NODE_TYPE}"
             type: "full"
             title: "Aos VM %{NODE_TYPE} rootfs full image"
@@ -302,8 +302,8 @@ components:
             mediaType: "application/vnd.aos.image.component.inc.v1+squashfs"
             enabled: false
             method: "overlay"
-            ostree_repo: "../../ostree_repo/%{AOS_NODE_TYPE}-rootfs"
-            yocto_dir: "../%{YOCTOS_WORK_DIR}"
+            ostree_repo: "ostree_repo/%{AOS_NODE_TYPE}-rootfs"
+            yocto_dir: "%{YOCTOS_WORK_DIR}"
             build_dir: "build-%{NODE_TYPE}"
             type: "incremental"
             title: "Aos VM %{NODE_TYPE} rootfs incremental image"

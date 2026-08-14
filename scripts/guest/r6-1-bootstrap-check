@@ -181,7 +181,7 @@ else
         .runtimes[] |
         select(
             .plugin == "systemd-slot-component" and
-            .type == "vehicle-data-provider" and
+            .type == "aos-vm-1.0.0-main-qemuarm64-vehicle-data-provider" and
             .isComponent == true and
             .config.workingDir == "/var/aos/workdirs/sm/runtimes/systemd-slot-component" and
             .config.unit == "aos-vehicle-data-provider.service" and

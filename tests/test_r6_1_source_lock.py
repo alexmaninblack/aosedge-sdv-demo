@@ -79,6 +79,12 @@ class R61SourceLockTests(unittest.TestCase):
         with self.assertRaisesRegex(VALIDATOR.LockError, "Conan version"):
             VALIDATOR.validate_lock(value)
 
+    def test_builder_pydantic_wheel_is_pinned(self) -> None:
+        value = copy.deepcopy(self.lock)
+        value["builder"]["toolchain"]["pydanticWheelSha256"] = "latest"
+        with self.assertRaisesRegex(VALIDATOR.LockError, "Pydantic wheel digest"):
+            VALIDATOR.validate_lock(value)
+
     def test_cloud_openapi_digest_is_required(self) -> None:
         value = copy.deepcopy(self.lock)
         value["evidence"]["cloudApi"]["sha256"] = "current"

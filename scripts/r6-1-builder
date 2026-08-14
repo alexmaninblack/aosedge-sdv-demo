@@ -42,6 +42,22 @@ GPT_IMAGE_WHEEL_URL = (
 GPT_IMAGE_WHEEL_SHA256 = (
     "c7c8e3abceb4828bdeb0eb6cf3ed0e1331fed5a760807100f767d3c4ef9c2793"
 )
+PYDANTIC_VERSION = "2.10.6"
+PYDANTIC_WHEEL_SHA256 = (
+    "427d664bf0b8a2b34ff5dd0f5a18df00591adcee7198fbd71981054cef37b584"
+)
+PYDANTIC_CORE_VERSION = "2.27.2"
+PYDANTIC_CORE_WHEEL_SHA256 = (
+    "7969e133a6f183be60e9f6f56bfae753585680f3b7307a8e555a948d443cc05a"
+)
+ANNOTATED_TYPES_VERSION = "0.8.0"
+ANNOTATED_TYPES_WHEEL_SHA256 = (
+    "f072f4d804ea359e4eaf198b1af7a8b0943881a87f31bb764f8bf219bb9419e0"
+)
+TYPING_EXTENSIONS_VERSION = "4.16.0"
+TYPING_EXTENSIONS_WHEEL_SHA256 = (
+    "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8"
+)
 YOCTO_CACHE_ROOT = "/home/yocto/yocto-cache"
 YOCTO_DOWNLOADS_DIR = f"{YOCTO_CACHE_ROOT}/downloads"
 YOCTO_SSTATE_DIR = f"{YOCTO_CACHE_ROOT}/sstate-cache"
@@ -1013,7 +1029,11 @@ moulin_root=/home/yocto/r61-work/moulin
 moulin_python=/home/yocto/.local/pipx/venvs/moulin/bin/python
 temporary_directory=$(mktemp -d)
 wheel=$temporary_directory/gpt_image-{GPT_IMAGE_VERSION}-py3-none-any.whl
-trap 'rm -f "$wheel"; rmdir "$temporary_directory"' EXIT HUP INT TERM
+pydantic_wheel=$temporary_directory/pydantic-{PYDANTIC_VERSION}-py3-none-any.whl
+pydantic_core_wheel=$temporary_directory/pydantic_core-{PYDANTIC_CORE_VERSION}-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+annotated_types_wheel=$temporary_directory/annotated_types-{ANNOTATED_TYPES_VERSION}-py3-none-any.whl
+typing_extensions_wheel=$temporary_directory/typing_extensions-{TYPING_EXTENSIONS_VERSION}-py3-none-any.whl
+trap 'rm -f "$wheel" "$pydantic_wheel" "$pydantic_core_wheel" "$annotated_types_wheel" "$typing_extensions_wheel"; rmdir "$temporary_directory"' EXIT HUP INT TERM
 
 test -d "$moulin_root"
 test ! -L "$moulin_root"
@@ -1026,16 +1046,42 @@ curl --fail --location --proto '=https' --tlsv1.2 \
 printf '%s  %s\n' "{GPT_IMAGE_WHEEL_SHA256}" "$wheel" | sha256sum --check --status
 
 /usr/bin/pipx install --force "$moulin_root"
-/usr/bin/pipx runpip moulin install --force-reinstall --no-deps "$wheel"
+"$moulin_python" -m pip download --disable-pip-version-check \
+  --only-binary=:all: --no-deps --dest "$temporary_directory" \
+  "pydantic=={PYDANTIC_VERSION}" \
+  "pydantic-core=={PYDANTIC_CORE_VERSION}" \
+  "annotated-types=={ANNOTATED_TYPES_VERSION}" \
+  "typing-extensions=={TYPING_EXTENSIONS_VERSION}"
+printf '%s  %s\n' "{PYDANTIC_WHEEL_SHA256}" "$pydantic_wheel" | sha256sum --check --status
+printf '%s  %s\n' "{PYDANTIC_CORE_WHEEL_SHA256}" "$pydantic_core_wheel" | sha256sum --check --status
+printf '%s  %s\n' "{ANNOTATED_TYPES_WHEEL_SHA256}" "$annotated_types_wheel" | sha256sum --check --status
+printf '%s  %s\n' "{TYPING_EXTENSIONS_WHEEL_SHA256}" "$typing_extensions_wheel" | sha256sum --check --status
+/usr/bin/pipx runpip moulin install --force-reinstall --no-deps \
+  "$wheel" "$pydantic_wheel" "$pydantic_core_wheel" \
+  "$annotated_types_wheel" "$typing_extensions_wheel"
 
 test -x "$moulin_python"
 test "$("$moulin_python" -c \
   'from importlib.metadata import version; print(version("gpt-image"))')" = \
   "{GPT_IMAGE_VERSION}"
+test "$("$moulin_python" -c \
+  'from importlib.metadata import version; print(version("pydantic"))')" = \
+  "{PYDANTIC_VERSION}"
+test "$("$moulin_python" -c \
+  'from importlib.metadata import version; print(version("pydantic-core"))')" = \
+  "{PYDANTIC_CORE_VERSION}"
+test "$("$moulin_python" -c \
+  'from importlib.metadata import version; print(version("annotated-types"))')" = \
+  "{ANNOTATED_TYPES_VERSION}"
+test "$("$moulin_python" -c \
+  'from importlib.metadata import version; print(version("typing-extensions"))')" = \
+  "{TYPING_EXTENSIONS_VERSION}"
+"$moulin_python" -c \
+  'from pydantic import BaseModel; assert hasattr(BaseModel, "model_dump")'
 /home/yocto/.local/bin/moulin -h 2>&1 | \
   grep -F 'Moulin meta-build system v0.21' >/dev/null
 /home/yocto/.local/bin/rouge -h 2>&1 | grep -F 'usage: rouge' >/dev/null
-printf 'MOULIN_REVISION={MOULIN_REVISION}\nGPT_IMAGE={GPT_IMAGE_VERSION}\nR6_1_MOULIN_TOOLS=PASS\n'
+printf 'MOULIN_REVISION={MOULIN_REVISION}\nGPT_IMAGE={GPT_IMAGE_VERSION}\nPYDANTIC={PYDANTIC_VERSION}\nR6_1_MOULIN_TOOLS=PASS\n'
 """
 
 

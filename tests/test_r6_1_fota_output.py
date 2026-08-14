@@ -31,10 +31,11 @@ def load_validator():
 VALIDATOR = load_validator()
 
 
-def item(codename: str, media_type: str, path: str) -> dict:
+def item(codename: str, media_type: str, source_folder: str, path: str) -> dict:
     return {
         "identity": {"codename": codename, "type": "component"},
         "version": "6.1.0",
+        "sourceFolder": source_folder,
         "images": [
             {
                 "mediaType": media_type,
@@ -62,15 +63,19 @@ class R61FotaOutputTests(unittest.TestCase):
                 item(
                     boot,
                     "application/vnd.aos.image.component.full.v1+gzip",
+                    "boot",
                     "boot/boot.gz",
                 ),
                 item(
                     rootfs,
                     "application/vnd.aos.image.component.full.v1+squashfs",
+                    "rootfs-full",
                     "rootfs-full/rootfs.squashfs",
                 ),
             ],
         }
+        self.config["items"][0]["images"][0]["path"] = "boot.gz"
+        self.config["items"][1]["images"][0]["path"] = "rootfs.squashfs"
         for path in (self.root / "boot/boot.gz", self.root / "rootfs-full/rootfs.squashfs"):
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(b"qualified-r61-output")
@@ -107,6 +112,12 @@ class R61FotaOutputTests(unittest.TestCase):
         self.config["items"][0]["images"][0]["path"] = "../boot.gz"
         self.write_config()
         with self.assertRaisesRegex(VALIDATOR.FotaOutputError, "unsafe path"):
+            self.validate()
+
+    def test_source_folder_traversal_is_rejected(self) -> None:
+        self.config["items"][0]["sourceFolder"] = "../boot"
+        self.write_config()
+        with self.assertRaisesRegex(VALIDATOR.FotaOutputError, "source folder"):
             self.validate()
 
     def test_incremental_or_extra_item_is_rejected(self) -> None:

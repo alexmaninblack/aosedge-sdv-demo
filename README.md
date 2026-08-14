@@ -78,10 +78,13 @@ on source loss, and survives a clean VM restart without changing the
 provisioned cloud Unit. R6.1-1 is complete: an isolated ARM64 build proved the
 custom Service Manager runtime through the local CM boundary, selected the
 persistent component root, and confirmed that the existing Unit Model and Node
-Type remain unchanged. R6.1-2 is authorized for disposable, non-provisioned
-bootstrap builds and boots and is now in progress. Both the unchanged and
-project Moulin manifests are pinned; the project manifest references the
-separately versioned OEM platform layer and contains no upload credential.
+Type remain unchanged. R6.1-2 is complete: the unchanged and project bootstrap
+images built, both disposable image gates passed, the project delta is exactly
+one OEM platform package, and the unsigned boot plus full-rootfs FOTA output
+passed structural and secret-exclusion checks. Both Moulin manifests are
+pinned; the project manifest references the separately versioned OEM platform
+layer and contains no upload credential. R6.1-3 remains the next lifecycle
+implementation stage.
 Bootstrap deployment, Cloud mutation,
 deprovisioning, reprovisioning, and active-Unit changes remain separately
 gated.
@@ -143,7 +146,9 @@ and CMake inside the non-provisioned builder; it never installs Aos identity
 or signing material.
 `pin-moulin-tools` installs Moulin from the already verified local v0.21
 checkout and replaces its unbounded `gpt-image` dependency with the compatible
-0.8.1 wheel after verifying the wheel's official PyPI SHA-256.
+0.8.1 wheel after verifying the wheel's official PyPI SHA-256. It also installs
+the exact, hash-verified Pydantic 2 wheel set required by the released Aos FOTA
+metadata builder into the same isolated pipx environment.
 `copy` accepts only an explicit local source and a destination below the
 unprivileged builder user's home directory.
 `fetch` accepts only regular R6.1 image artifacts, writes below the ignored

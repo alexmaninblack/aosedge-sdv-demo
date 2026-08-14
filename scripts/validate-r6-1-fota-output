@@ -21,10 +21,12 @@ EXPECTED_ITEMS = {
     "aos-vm-1.0.0-main-qemuarm64-boot": (
         "application/vnd.aos.image.component.full.v1+gzip",
         ".gz",
+        "boot",
     ),
     "aos-vm-1.0.0-main-qemuarm64-rootfs": (
         "application/vnd.aos.image.component.full.v1+squashfs",
         ".squashfs",
+        "rootfs-full",
     ),
 }
 DIGEST_RE = re.compile(r"[0-9a-f]{64}")
@@ -99,17 +101,28 @@ def validate_output(output_root: Path = EXPECTED_ROOT) -> list[dict[str, Any]]:
         require(isinstance(images, list) and len(images) == 1, f"{codename}: image changed")
         image = images[0]
         require(isinstance(image, dict), f"{codename}: image is not an object")
-        media_type, suffix = EXPECTED_ITEMS[codename]
+        media_type, suffix, expected_source_folder = EXPECTED_ITEMS[codename]
         require(image.get("mediaType") == media_type, f"{codename}: media type changed")
         require(
             image.get("archInfo") == {"architecture": "arm64"},
             f"{codename}: architecture changed",
         )
         require(image.get("osInfo") == {"os": "linux"}, f"{codename}: OS changed")
+        source_folder = item.get("sourceFolder")
+        require(
+            source_folder == expected_source_folder,
+            f"{codename}: source folder changed",
+        )
         relative_path = image.get("path")
         require(isinstance(relative_path, str), f"{codename}: image path is missing")
-        relative = Path(relative_path)
-        require(not relative.is_absolute() and ".." not in relative.parts, f"{codename}: unsafe path")
+        image_relative = Path(relative_path)
+        require(
+            not image_relative.is_absolute()
+            and ".." not in image_relative.parts
+            and len(image_relative.parts) == 1,
+            f"{codename}: unsafe path",
+        )
+        relative = Path(source_folder) / image_relative
         artifact = (root / relative).resolve()
         try:
             artifact.relative_to(root)

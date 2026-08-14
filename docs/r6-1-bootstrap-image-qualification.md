@@ -3,8 +3,9 @@
 
 # R6.1-2 Bootstrap-Image Qualification
 
-- Status: In progress
+- Status: Completed
 - Date started: 2026-08-14
+- Date completed: 2026-08-14
 - Authorized scope: R6.1-2 only
 - Source baseline: `components/r6-1-source.lock.json`
 
@@ -121,10 +122,10 @@ metadata, TLS key references, and credential-like content are rejected.
 | Upstream build | Unchanged AosVM 6.1.0 Main Node image builds | Pass |
 | Upstream boot | Disposable unchanged image passes the AOS-0 boot baseline | Pass |
 | Project layer | Runtime, launcher, policy, storage, and health inputs validate | Pass |
-| Custom build | Bootstrap image and unsigned full rootfs FOTA bundle build | Pending |
-| Custom boot | Disposable project image passes all required AOS-0 gates | Pending |
-| Secret exclusion | No identity, certificate, key, or token enters artifacts | Pending |
-| Reproducibility | Exact inputs, commands, delta, and artifact digests recorded | Pending |
+| Custom build | Bootstrap image and unsigned full rootfs FOTA bundle build | Pass |
+| Custom boot | Disposable project image passes all required AOS-0 gates | Pass |
+| Secret exclusion | No identity, certificate, key, or token enters artifacts | Pass |
+| Reproducibility | Exact inputs, commands, delta, and artifact digests recorded | Pass |
 
 ## Current Checkpoint
 
@@ -146,15 +147,13 @@ The Apache-2.0 project layer is fixed at
 `ad850e8bad7585cbdf589915a64fee061a0bd405`. Its production runtime and
 Service Manager factory compile against the exact AosCore source pins; all
 three empty-store runtime tests pass. The layer's local contract, policy,
-license, launcher, health-adapter, and 14 unit-test gates also pass. This is
-not yet the complete custom-image qualification because the disposable-image
-guest gate and unsigned FOTA build remain pending.
+license, launcher, health-adapter, and 14 unit-test gates also pass.
 
 The credential-free project manifest SHA-256 is
-`869f28a61da7fbdc97be58757ed6ce75364eba6e305a65dddf696cc368a2acd1`.
+`8d1814540e1c6b6291a6b4b8af3bcb66e2d118e9650af5002dc9847b62115445`.
 It pins the separately versioned platform repository and generates the stable
 Moulin graph SHA-256
-`bd938764f6d26447673f5a3060d90304e98eb7647ff961d9ce84fc5e6d500e09`.
+`528b09ca750576a2ab8520802d6f9ed015e7e57cab72d5aae4bbcdb55e2cf4a5`.
 
 The first unchanged-upstream execution completed all 7,493 BitBake tasks
 successfully, including the VM root filesystem, initramfs, kernel deployment,
@@ -204,10 +203,53 @@ with:
 - size: 6,997,147,648 bytes;
 - SHA-256: `fbd424dd20a472ed99fb15d1394e89d12b443fc3a280fa4b63f45d661190ccd6`.
 
-The unsigned FOTA build has not been started. The next authorized operation
-after resuming is the guarded project-image fetch followed by its isolated
-disposable guest gate; only after that passes will the unsigned FOTA target be
-built and structurally validated.
+The guarded fetch copied that image to the Mac as a read-only artifact and
+verified the same size and SHA-256. Its offline disposable overlay reached the
+login prompt and passed the full project guest gate: ARM64, read-only rootfs,
+writable persistent partitions, cgroups v2, overlayfs, seccomp, production OCI
+namespaces, fixed network shape, SELinux enforcing mode, pre-provision state,
+secret exclusion, one inactive project runtime, an empty provider store, and
+fail-safe launcher and health behavior. The VM was stopped cleanly and its
+overlay and boot evidence were retained.
+
+The first project gate used the unprefixed Yocto input type
+`vehicle-data-provider`; the running Service Manager correctly reported the
+released prefixed type
+`aos-vm-1.0.0-main-qemuarm64-vehicle-data-provider`. The gate now tests that
+accepted runtime contract and has a regression test.
+
+The released FOTA custom-script paths were relative to a working directory
+that Moulin 0.21 does not enter when executing the generated Ninja rule. The
+credential-free project manifest now normalizes only the FOTA script, output,
+Yocto, OSTree, and boot-input paths against the actual graph root. It also
+invokes the released `fota_builder.py` with the same pinned Moulin Python.
+The builder tool lock supplies the script's previously undeclared Pydantic 2
+runtime as four exact, hash-verified ARM64-compatible wheels: Pydantic 2.10.6,
+Pydantic Core 2.27.2, Annotated Types 0.8.0, and Typing Extensions 4.16.0.
+
+The guarded unsigned FOTA build completed all 1,174 overlay tasks and emitted
+exactly two enabled components. Independent structural validation passed with:
+
+- metadata SHA-256:
+  `76b83af66775b99527e5a2a41ef25490a28897bc740e8f70a5ad3270cbed555b`;
+- boot component: 65,191,559 bytes, SHA-256
+  `bb79e0a9b75ac6429da630da24bcb67dd84a7bb173a8035881e8df558fcacabf`;
+- full rootfs component: 128,319,488 bytes, SHA-256
+  `2bcb778352b59b0b6c5644a8481a672269341822c85d320d8d4751da39c62812`.
+
+The validator confirmed schema version 2, publisher `maninblack`, AosVM 6.1.0
+boot and full-rootfs identities, ARM64/Linux metadata, safe `sourceFolder` and
+image paths, regular non-empty files, and the absence of publish, TLS-key, or
+credential metadata. The disabled incremental component was not emitted.
+
+The upstream and project rootfs package manifests contain 440 and 441 entries,
+respectively. Their only delta is
+`aos-vehicle-data-provider-platform cortexa57 0.1.0`; the upstream and project
+initramfs package manifests are byte-identical. The rootfs manifest SHA-256
+values are, respectively,
+`5e03679eaa002f3aa9e13cdbb06bcd8b01cd48e99289fa9ef8c9dd55c53a5b90`
+and
+`f69d8f84fa1159af5537f817f2e12e66ebd8ebe505bd7443c91874525e36fa34`.
 
 The first disposable guest-gate run also corrected a qualification-only test:
 the minimal upstream image intentionally does not ship the `unshare` command,

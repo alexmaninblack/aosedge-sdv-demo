@@ -32,6 +32,14 @@
       "cmakeVersion": "3.31.10",
       "gptImageVersion": "0.8.1",
       "gptImageWheelSha256": "c7c8e3abceb4828bdeb0eb6cf3ed0e1331fed5a760807100f767d3c4ef9c2793",
+      "pydanticVersion": "2.10.6",
+      "pydanticWheelSha256": "427d664bf0b8a2b34ff5dd0f5a18df00591adcee7198fbd71981054cef37b584",
+      "pydanticCoreVersion": "2.27.2",
+      "pydanticCoreWheelSha256": "7969e133a6f183be60e9f6f56bfae753585680f3b7307a8e555a948d443cc05a",
+      "annotatedTypesVersion": "0.8.0",
+      "annotatedTypesWheelSha256": "f072f4d804ea359e4eaf198b1af7a8b0943881a87f31bb764f8bf219bb9419e0",
+      "typingExtensionsVersion": "4.16.0",
+      "typingExtensionsWheelSha256": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8",
       "clangFormatVersion": "15.0.7",
       "mtoolsVersion": "4.0.32",
       "softHSMVersion": "2.6.1"
@@ -181,10 +189,10 @@
     },
     "projectMoulinManifest": {
       "path": "manifests/r6-1/aos-vm-project.pinned.yaml",
-      "sha256": "869f28a61da7fbdc97be58757ed6ce75364eba6e305a65dddf696cc368a2acd1",
+      "sha256": "8d1814540e1c6b6291a6b4b8af3bcb66e2d118e9650af5002dc9847b62115445",
       "platformRepository": "https://github.com/alexmaninblack/aos-vehicle-platform.git",
       "platformRevision": "ad850e8bad7585cbdf589915a64fee061a0bd405",
-      "generatedBuildNinjaSha256": "bd938764f6d26447673f5a3060d90304e98eb7647ff961d9ce84fc5e6d500e09",
+      "generatedBuildNinjaSha256": "528b09ca750576a2ab8520802d6f9ed015e7e57cab72d5aae4bbcdb55e2cf4a5",
       "result": "pass"
     }
   },

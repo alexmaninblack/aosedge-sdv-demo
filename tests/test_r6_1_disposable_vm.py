@@ -119,6 +119,9 @@ class R61DisposableVMTests(unittest.TestCase):
         self.assertIn("qualified_interface=$(ip -4 route show default", guest_gate)
         self.assertNotIn("address show dev eth0", guest_gate)
         self.assertIn("upstream image contains the project runtime", guest_gate)
+        self.assertIn(
+            'aos-vm-1.0.0-main-qemuarm64-vehicle-data-provider', guest_gate
+        )
         self.assertIn('health_status" -eq 3', guest_gate)
         self.assertIn("empty project store has an active slot", guest_gate)
         self.assertIn("vehicle_data_provider_store_t", guest_gate)

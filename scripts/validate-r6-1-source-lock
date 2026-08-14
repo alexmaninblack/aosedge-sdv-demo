@@ -116,6 +116,39 @@ def validate_lock(lock: dict[str, Any]) -> None:
         == "c7c8e3abceb4828bdeb0eb6cf3ed0e1331fed5a760807100f767d3c4ef9c2793",
         "gpt-image wheel digest changed",
     )
+    require(toolchain.get("pydanticVersion") == "2.10.6", "Pydantic version changed")
+    require(
+        toolchain.get("pydanticWheelSha256")
+        == "427d664bf0b8a2b34ff5dd0f5a18df00591adcee7198fbd71981054cef37b584",
+        "Pydantic wheel digest changed",
+    )
+    require(
+        toolchain.get("pydanticCoreVersion") == "2.27.2",
+        "Pydantic Core version changed",
+    )
+    require(
+        toolchain.get("pydanticCoreWheelSha256")
+        == "7969e133a6f183be60e9f6f56bfae753585680f3b7307a8e555a948d443cc05a",
+        "Pydantic Core wheel digest changed",
+    )
+    require(
+        toolchain.get("annotatedTypesVersion") == "0.8.0",
+        "Annotated Types version changed",
+    )
+    require(
+        toolchain.get("annotatedTypesWheelSha256")
+        == "f072f4d804ea359e4eaf198b1af7a8b0943881a87f31bb764f8bf219bb9419e0",
+        "Annotated Types wheel digest changed",
+    )
+    require(
+        toolchain.get("typingExtensionsVersion") == "4.16.0",
+        "Typing Extensions version changed",
+    )
+    require(
+        toolchain.get("typingExtensionsWheelSha256")
+        == "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8",
+        "Typing Extensions wheel digest changed",
+    )
     require(
         toolchain.get("clangFormatVersion") == "15.0.7",
         "builder clang-format version changed",

@@ -110,6 +110,15 @@ class R61ManifestTests(unittest.TestCase):
         with self.assertRaisesRegex(VALIDATOR.ManifestError, "forbidden data"):
             self.validate_modified_project(content)
 
+    def test_project_fota_paths_must_match_ninja_working_directory(self) -> None:
+        content = self.project_content.replace(
+            'script: "/home/yocto/.local/pipx/venvs/moulin/bin/python '
+            'yocto/meta-aos/scripts/fota_builder.py"',
+            'script: "../yocto/meta-aos/scripts/fota_builder.py"',
+        )
+        with self.assertRaisesRegex(VALIDATOR.ManifestError, "FOTA paths"):
+            self.validate_modified_project(content)
+
 
 if __name__ == "__main__":
     unittest.main()

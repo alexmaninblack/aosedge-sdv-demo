@@ -219,6 +219,17 @@ def validate_project_manifest(
     )
     require('company: "maninblack"' in content, "project publisher is not owned")
     require("EPAM Systems" not in content, "upstream example publisher remains")
+    require(
+        'script: "/home/yocto/.local/pipx/venvs/moulin/bin/python '
+        'yocto/meta-aos/scripts/fota_builder.py"' in content
+        and '- "output/fota/config.yaml"' in content
+        and 'output_dir: "output/fota"' in content,
+        "project FOTA paths are not rooted at the generated Ninja working directory",
+    )
+    require(
+        'script: "../yocto/meta-aos/scripts/fota_builder.py"' not in content,
+        "project FOTA script escapes the generated Ninja working directory",
+    )
     require("SPDX-License-Identifier: Apache-2.0" in content, "license is missing")
     for forbidden in (
         "BEGIN PRIVATE KEY",
