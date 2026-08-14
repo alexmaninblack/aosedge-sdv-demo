@@ -123,6 +123,15 @@ artifact version of every component in a tested baseline without submodules.
 5. Clone all repositories into a fresh temporary workspace and run their
    static gates.
 
+Reproducible command after creating the four sibling clones required by the
+lock (integration, platform, service, and CARLA ego runtime):
+
+```text
+./carla-aosedge-integration/scripts/qualify-repository-boundaries \
+  --workspace-root . \
+  --reuse-command /path/to/reuse
+```
+
 Exit criterion: repository ownership and dependency direction match ADR 0006,
 and the separation can be reproduced from clean clones.
 

@@ -1,0 +1,47 @@
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+name: Repository boundaries
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out integration
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          path: workspace/carla-aosedge-integration
+      - name: Check out CARLA ego runtime
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          repository: alexmaninblack/carla-ego-runtime
+          ref: 3fcf1fac52151f30bf04bd3b5c5d67bfd8526aa1
+          path: workspace/carla-ego-runtime
+      - name: Check out vehicle platform
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          repository: alexmaninblack/aos-vehicle-platform
+          ref: 4637864297fa42bed3ae1a553bae13fc57d14c79
+          path: workspace/aos-vehicle-platform
+      - name: Check out telemetry service
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          repository: alexmaninblack/vehicle-telemetry-service
+          ref: f4bd0bf49c7601af31dcad83038999bd74a90f56
+          path: workspace/vehicle-telemetry-service
+      - name: Install pinned REUSE validator
+        run: |
+          python3 -m venv "$RUNNER_TEMP/reuse"
+          "$RUNNER_TEMP/reuse/bin/pip" install 'reuse[charset-normalizer]==6.2.0'
+      - name: Qualify clean repository boundaries
+        run: >-
+          workspace/carla-aosedge-integration/scripts/qualify-repository-boundaries
+          --workspace-root workspace
+          --reuse-command "$RUNNER_TEMP/reuse/bin/reuse"

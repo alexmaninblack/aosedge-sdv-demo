@@ -1,0 +1,312 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+"""Qualify repository ownership and dependency boundaries from clean clones."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+from urllib.parse import urlparse
+
+
+REPOSITORIES = {
+    "integration": "carla-aosedge-integration",
+    "platform": "aos-vehicle-platform",
+    "service": "vehicle-telemetry-service",
+    "runtime": "carla-ego-runtime",
+}
+PROHIBITED_SUFFIXES = {
+    ".7z",
+    ".bin",
+    ".cer",
+    ".crt",
+    ".der",
+    ".dmg",
+    ".exe",
+    ".img",
+    ".iso",
+    ".jks",
+    ".key",
+    ".map",
+    ".ova",
+    ".ovf",
+    ".p12",
+    ".pak",
+    ".pem",
+    ".pfx",
+    ".qcow2",
+    ".tar",
+    ".uasset",
+    ".umap",
+    ".uplugin",
+    ".uproject",
+    ".zip",
+}
+RESTRICTED_PATH_PARTS = {"Engine/Source", "UnrealEngine/Engine", "CarlaUE4/Content"}
+
+
+class QualificationError(RuntimeError):
+    """Raised when a repository boundary is not qualified."""
+
+
+def _require(condition: bool, message: str) -> None:
+    if not condition:
+        raise QualificationError(message)
+
+
+def _run(command: list[str], cwd: Path, env: dict[str, str] | None = None) -> None:
+    print(f"[{cwd.name}] {' '.join(command)}")
+    subprocess.run(command, cwd=cwd, check=True, env=env)
+
+
+def _tracked_files(repository: Path) -> list[Path]:
+    result = subprocess.run(
+        ["git", "ls-files"],
+        cwd=repository,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    return [repository / value for value in result.stdout.splitlines() if value]
+
+
+def _require_clean(repository: Path) -> None:
+    result = subprocess.run(
+        ["git", "status", "--porcelain", "--untracked-files=all"],
+        cwd=repository,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    _require(not result.stdout.strip(), f"repository is not clean: {repository}")
+
+
+def _scan_public_source(repository: Path) -> None:
+    files = _tracked_files(repository)
+    _require(not (repository / ".gitmodules").exists(), f"submodules are prohibited: {repository}")
+    private_key_marker = "-----BEGIN " + "PRIVATE KEY-----"
+    personal_home = "/Users/" + "alexagizim"
+    credential_patterns = (
+        re.compile(
+            r"(?i)(?:access|api|auth|client|refresh)[_-]?token"
+            r"\s*[:=]\s*['\"][^'\"]{12,}"
+        ),
+        re.compile(r"AKIA[0-9A-Z]{16}"),
+        re.compile(re.escape(private_key_marker)),
+    )
+    url_pattern = re.compile(r"https?://[^\s'\"<>`)]+")
+    for path in files:
+        relative = path.relative_to(repository).as_posix()
+        _require(
+            path.suffix.lower() not in PROHIBITED_SUFFIXES,
+            f"prohibited binary, credential, or restricted file: {repository.name}/{relative}",
+        )
+        _require(
+            not any(part in relative for part in RESTRICTED_PATH_PARTS),
+            f"restricted source path is tracked: {repository.name}/{relative}",
+        )
+        data = path.read_bytes()
+        _require(b"\x00" not in data, f"binary content is tracked: {repository.name}/{relative}")
+        text = data.decode("utf-8", errors="replace")
+        _require(
+            personal_home not in text,
+            f"personal absolute path is tracked: {repository.name}/{relative}",
+        )
+        if relative not in {
+            "scripts/qualify-repository-boundaries",
+            "scripts/validate-component-lock",
+            "tests/test_component_lock.py",
+            "tools/quality_gate.py",
+        }:
+            _require(
+                not any(pattern.search(text) for pattern in credential_patterns),
+                f"possible credential is tracked: {repository.name}/{relative}",
+            )
+        for raw_url in url_pattern.findall(text):
+            hostname = (urlparse(raw_url).hostname or "").lower()
+            private_hostname = (
+                hostname.endswith((".internal", ".local", ".corp"))
+                or hostname.startswith("192.168.")
+                or hostname.startswith("10.")
+                or re.fullmatch(r"172\.(?:1[6-9]|2[0-9]|3[01])\..*", hostname)
+                is not None
+            )
+            _require(
+                not private_hostname,
+                f"private URL is tracked: {repository.name}/{relative}",
+            )
+
+
+def _check_licenses(integration: Path, platform: Path, service: Path) -> None:
+    integration_license = (integration / "LICENSE").read_text(encoding="utf-8")
+    _require("MIT License" in integration_license, "integration license must remain MIT")
+    _require(
+        "Copyright (c) 2026 alexmaninblack" in integration_license,
+        "integration license copyright is unexpected",
+    )
+    expected_notice = {
+        platform: "Aos Vehicle Platform\nCopyright 2026 maninblack\n",
+        service: "Vehicle Telemetry Service\nCopyright 2026 maninblack\n",
+    }
+    for repository, notice in expected_notice.items():
+        license_text = (repository / "LICENSE").read_text(encoding="utf-8")
+        _require(
+            license_text.startswith("                                 Apache License"),
+            f"{repository.name} license must be unmodified Apache-2.0",
+        )
+        _require(
+            (repository / "NOTICE").read_text(encoding="utf-8") == notice,
+            f"{repository.name} NOTICE is unexpected",
+        )
+
+
+def _check_dependency_direction(platform: Path, service: Path, integration: Path) -> None:
+    platform_inventory = json.loads(
+        (platform / "DEPENDENCIES.json").read_text(encoding="utf-8")
+    )
+    platform_dependencies = platform_inventory["runtime"] + platform_inventory["build"]
+    _require(not platform_dependencies, "platform scaffold must not have runtime/build dependencies")
+    for path in _tracked_files(platform):
+        relative = path.relative_to(platform).as_posix()
+        if relative.startswith("docs/") or relative == "README.md":
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace").lower()
+        _require(
+            "vehicle-telemetry-service/src" not in text,
+            f"platform depends on service source: {relative}",
+        )
+
+    service_inventory = json.loads(
+        (service / "DEPENDENCIES.json").read_text(encoding="utf-8")
+    )
+    service_dependencies = (
+        service_inventory["runtime"]
+        + service_inventory["build"]
+        + service_inventory["aosLayers"]
+    )
+    forbidden_dependency_words = ("carla", "viss", "provider", "aos-vehicle-platform")
+    for dependency in service_dependencies:
+        name = str(dependency.get("name", "")).lower()
+        _require(
+            not any(word in name for word in forbidden_dependency_words),
+            f"service has a prohibited platform dependency: {name}",
+        )
+
+    tracked_integration = {
+        path.relative_to(integration).as_posix()
+        for path in _tracked_files(integration)
+    }
+    prohibited_prefixes = (
+        "authorization/",
+        "providers/",
+        "src/vehicle-telemetry-service/",
+        "src/carla-viss-kuksa/",
+    )
+    _require(
+        not any(
+            path.startswith(prohibited_prefixes) for path in tracked_integration
+        ),
+        "integration repository contains component implementation source",
+    )
+
+
+def _run_project_gates(
+    repositories: dict[str, Path], reuse_command: Path
+) -> None:
+    integration = repositories["integration"]
+    platform = repositories["platform"]
+    service = repositories["service"]
+    workspace_root = integration.parent
+
+    _run(["python3", "-B", "tools/validate_contract.py"], platform)
+    _run(
+        ["python3", "-B", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py"],
+        platform,
+    )
+    _run(["python3", "-B", "tools/quality_gate.py"], platform)
+
+    _run(
+        ["python3", "-B", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py"],
+        service,
+    )
+    _run(["python3", "-B", "tools/quality_gate.py"], service)
+
+    _run(
+        ["python3", "-B", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py"],
+        integration,
+    )
+    _run(
+        [
+            str(integration / "scripts/validate-component-lock"),
+            "--workspace-root",
+            str(workspace_root),
+        ],
+        integration,
+    )
+
+    reuse_env = dict(os.environ)
+    reuse_env["REUSE_ENCODING_MODULE"] = "charset_normalizer"
+    for repository in (platform, service):
+        _run([str(reuse_command), "lint"], repository, env=reuse_env)
+
+
+def qualify(workspace_root: Path, reuse_command: Path, allow_dirty: bool) -> None:
+    repositories = {
+        role: workspace_root / name for role, name in REPOSITORIES.items()
+    }
+    for role, repository in repositories.items():
+        _require((repository / ".git").exists(), f"{role} clone is missing: {repository}")
+        if not allow_dirty:
+            _require_clean(repository)
+        _scan_public_source(repository)
+
+    _check_licenses(
+        repositories["integration"],
+        repositories["platform"],
+        repositories["service"],
+    )
+    _check_dependency_direction(
+        repositories["platform"],
+        repositories["service"],
+        repositories["integration"],
+    )
+    _run_project_gates(repositories, reuse_command)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--workspace-root", type=Path, required=True)
+    parser.add_argument("--reuse-command", type=Path, required=True)
+    parser.add_argument(
+        "--allow-dirty",
+        action="store_true",
+        help="development-only: run gates before the qualification commit",
+    )
+    args = parser.parse_args()
+    try:
+        _require(
+            args.reuse_command.is_file(),
+            f"REUSE command is unavailable: {args.reuse_command}",
+        )
+        qualify(
+            args.workspace_root.resolve(),
+            args.reuse_command.resolve(),
+            args.allow_dirty,
+        )
+    except (QualificationError, OSError, subprocess.CalledProcessError, json.JSONDecodeError) as exc:
+        print(f"Repository boundary qualification failed: {exc}", file=sys.stderr)
+        return 1
+    print("Repository boundary qualification passed.")
+    print("Platform, service, and integration ownership match ADR 0006.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
