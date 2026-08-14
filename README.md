@@ -15,6 +15,7 @@ subscribes to the resulting VSS signals without depending on CARLA.
 - [AOS-0: boot official ARM64 AosVM on Apple Silicon](docs/aos-0-arm64-vm.md)
 - [AOS-1: provision one Main Node](docs/aos-1-single-node-provisioning.md)
 - [AOS-2: qualify the CARLA VISS-to-KUKSA provider](docs/aos-2-carla-kuksa-qualification.md)
+- [R6.1: design a Cloud-visible provider FOTA component](docs/r6-1-vehicle-data-provider-fota-design.md)
 - [Colleague setup: run and provision AosVM on an Apple Silicon Mac](docs/aosvm-macos-colleague-setup.md)
 - [Reissue AosEdge user certificates on a new Mac](docs/aos-user-certificate-reissue-macos.md)
 - [Licensing and copyright policy](docs/licensing-and-copyright-policy.md)
@@ -72,7 +73,10 @@ separation gate is complete. R6/AOS-2 is also complete: the ARM64 platform
 provider publishes the seven contract 0.1.1 signals from the host-only CARLA
 VISS endpoint into the in-VM KUKSA Databroker at 20 Hz, marks them unavailable
 on source loss, and survives a clean VM restart without changing the
-provisioned cloud Unit.
+provisioned cloud Unit. The R6.1 design is accepted and R6.1-1 is authorized to
+prove the local lifecycle mechanism for a dedicated Cloud-visible FOTA
+component. Bootstrap deployment, Cloud mutation, deprovisioning,
+reprovisioning, and active-Unit changes remain separately gated.
 
 ## Commands
 

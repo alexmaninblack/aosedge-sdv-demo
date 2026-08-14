@@ -168,6 +168,29 @@ Authorization Adapter remains explicitly deferred to AOS-5.
 Detailed boundary decision: [ADR 0005](decisions/0005-kuksa-vehicle-data-boundary.md).
 Qualification record: [AOS-2 runbook](aos-2-carla-kuksa-qualification.md).
 
+## R6.1 — Promote the Vehicle-Data Provider to a FOTA Component
+
+R6.1 preserves the accepted R6/AOS-2 telemetry behavior while replacing its
+side-loaded host-daemon lifecycle with a dedicated, independently versioned,
+Cloud-visible Aos FOTA component. The telemetry consumer remains a separate
+SOTA service.
+
+Current gate: the design is accepted and R6.1-1 is authorized. The preferred
+mechanism is a new slot-based Service Manager component runtime aligned with
+the actual AosVM 6.1.0 stack. An external Update Manager is only a conditional
+fallback after an explicit compatibility proof. One bootstrap/rootfs build is
+expected to add the stable runtime, launcher, policy, A/B storage, health, and
+rollback machinery. Provider releases can then advance independently through
+FOTA without rebuilding rootfs.
+
+R6.1-1 may establish the separate builder, exact source/API baseline, local
+runtime harness, Node/CM reporting proof, storage decision, and accepted ADR.
+It does not authorize a bootstrap deployment, Cloud catalog mutation,
+deprovisioning, reprovisioning, or active-Unit change. The accepted R6
+side-load remains the operational baseline.
+
+Detailed draft: [R6.1 FOTA component design and plan](r6-1-vehicle-data-provider-fota-design.md).
+
 ## AOS-3 — Deploy the first KUKSA telemetry consumer
 
 - Package an ARM64 OCI service with explicit CPU, RAM, storage, and network
