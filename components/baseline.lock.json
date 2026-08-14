@@ -3,8 +3,8 @@
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "schemaVersion": 1,
   "baseline": {
-    "id": "repository-separation-r5-candidate-1",
-    "status": "candidate",
+    "id": "repository-separation-r5-accepted-1",
+    "status": "accepted",
     "created": "2026-08-14",
     "hostArchitecture": "macos-arm64",
     "guestArchitecture": "arm64"

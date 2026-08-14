@@ -17,8 +17,9 @@ The initial candidate pins:
 - the exact `carla-ego-runtime`, platform, and service commits;
 - the platform contract and unsigned service-package template file digests.
 
-The lock status remains `candidate` until R-5 clean-clone qualification passes.
-It does not claim AOS-2 or AOS-3 telemetry behavior.
+The lock status is `accepted` because R-5 passed clean-clone qualification and
+the independent GitHub Actions boundary gate. It does not claim AOS-2 or AOS-3
+telemetry behavior.
 
 ## Static Validation
 

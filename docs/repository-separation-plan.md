@@ -13,10 +13,11 @@ accepted.
 
 ## Execution Status
 
-As of 2026-08-14, R-0 through R-4 are complete. The accepted documentation is
+As of 2026-08-14, R-0 through R-5 are complete. The accepted documentation is
 public, both new repositories and their governance are live, their R-2/R-3
-scaffolds pass GitHub CI, and the exact R-5 candidate component lock is
-tracked. R-5 clean-clone qualification is the remaining gate before R-6/AOS-2.
+scaffolds pass GitHub CI, the exact component lock is accepted, and R-5 passed
+fresh-clone plus independent GitHub Actions qualification. R-6/AOS-2 is
+unblocked but has not started.
 
 ## Fixed Decisions
 
@@ -150,15 +151,15 @@ and each accepted end-to-end combination is reproducibly pinned.
 
 ## Final Review Checklist
 
-- [ ] The two proposed GitHub repository names are accepted.
-- [ ] Public visibility and Apache-2.0 licensing are accepted.
-- [ ] Original project files use the exact copyright holder `maninblack`.
-- [ ] SPDX, NOTICE, DCO, VSS/MPL-2.0, and third-party provenance rules are
+- [x] The two proposed GitHub repository names are accepted.
+- [x] Public visibility and Apache-2.0 licensing are accepted.
+- [x] Original project files use the exact copyright holder `maninblack`.
+- [x] SPDX, NOTICE, DCO, VSS/MPL-2.0, and third-party provenance rules are
       accepted.
-- [ ] Provider and future Authorization Adapter ownership is platform-side.
-- [ ] Consumer ownership and SOTA lifecycle are service-side.
-- [ ] The vehicle-data contract is initially owned by the platform repository.
-- [ ] The integration repository owns orchestration and exact version locks,
+- [x] Provider and future Authorization Adapter ownership is platform-side.
+- [x] Consumer ownership and SOTA lifecycle are service-side.
+- [x] The vehicle-data contract is initially owned by the platform repository.
+- [x] The integration repository owns orchestration and exact version locks,
       not component source.
-- [ ] No Git submodules are introduced.
-- [ ] AOS-2 implementation remains blocked until R-0 through R-5 pass.
+- [x] No Git submodules are introduced.
+- [x] AOS-2 implementation remained blocked until R-0 through R-5 passed.

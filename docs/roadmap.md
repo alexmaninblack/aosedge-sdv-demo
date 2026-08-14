@@ -103,11 +103,11 @@ Detailed plan: [AOS-1 single-Node runbook](aos-1-single-node-provisioning.md).
 
 ## Repository Separation Gate — Complete R-0 through R-5
 
-Execution status: R-0 through R-4 are complete. The documentation and scope
-are accepted, both public repositories and their governance are live, the
-platform contract and ARM64 diagnostic service scaffold pass CI, and the exact
-candidate component lock is tracked. R-5 clean-clone and dependency-boundary
-qualification remains before AOS-2 starts.
+Execution status: R-0 through R-5 are complete. The documentation and scope are
+accepted, both public repositories and their governance are live, the platform
+contract and ARM64 diagnostic service scaffold pass CI, the exact component
+lock is accepted, and clean-clone plus GitHub Actions dependency-boundary
+qualification passed. AOS-2 is unblocked but has not started.
 
 - Accept ADR 0006 and the review-gated repository separation plan.
 - Create public `aos-vehicle-platform` and `vehicle-telemetry-service`

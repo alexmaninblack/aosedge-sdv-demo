@@ -63,10 +63,12 @@ running in normal mode with lifecycle `provisioned`. The schema-v2 official
 Hello World sample is installed as one ARM64 `crun` workload and reports
 `Active`. Its bounded English output was retrieved through the AosCloud log
 API, and a cloud-driven removal and fresh start both passed. The repository
-separation gate has completed R-0 through R-4: the platform and service
+separation gate has completed R-0 through R-5: the platform and service
 repositories, draft vehicle-data contract, diagnostic ARM64 service scaffold,
-and exact candidate component lock are public and validated. R-5 clean-clone
-qualification remains before AOS-2 begins.
+and exact component lock are public and validated. R-5 passed both fresh-clone
+qualification and the independent GitHub Actions gate. The repository
+separation gate is complete; AOS-2 platform-provider implementation is now
+unblocked but has not started.
 
 ## Commands
 
