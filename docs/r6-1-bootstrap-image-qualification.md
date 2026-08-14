@@ -88,4 +88,19 @@ and the persistent cache paths. Its SHA-256 is
 the generated Ninja graph SHA-256 is
 `af224c74f932dab23d8ca736e3b36c4c403df3ba5d219010f87f175ac472f0c6`.
 The unchanged upstream image build is now running in the isolated builder.
-The next checkpoint is a successful unchanged-image build and disposable boot.
+The Apache-2.0 project layer is fixed at
+`aba8c2be9845e3a19d12014bb2aeb17c20906de7`. Its production runtime and
+Service Manager factory compile against the exact AosCore source pins; all
+three empty-store runtime tests pass. The layer's local contract, policy,
+license, launcher, health-adapter, and 14 unit-test gates also pass. This is
+not yet the complete project-layer gate because BitBake and disposable-image
+qualification remain pending.
+
+The credential-free project manifest SHA-256 is
+`354a80d04e3ada9a855af8eaadb4551d9f33535d19bb55b0b7d69056c5f4ac92`.
+It pins the separately versioned platform repository and generates the stable
+Moulin graph SHA-256
+`fb373f865844aa3c68c1c7c53a79a286b2a0ae3c50563d5ccb4f4e76744cfea7`.
+The unchanged upstream image build continues in the isolated builder. The
+next checkpoint is its successful build and disposable boot; only then may
+the project image build start.

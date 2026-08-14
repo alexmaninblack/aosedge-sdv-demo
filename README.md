@@ -79,7 +79,10 @@ provisioned cloud Unit. R6.1-1 is complete: an isolated ARM64 build proved the
 custom Service Manager runtime through the local CM boundary, selected the
 persistent component root, and confirmed that the existing Unit Model and Node
 Type remain unchanged. R6.1-2 is authorized for disposable, non-provisioned
-bootstrap builds and boots. Bootstrap deployment, Cloud mutation,
+bootstrap builds and boots and is now in progress. Both the unchanged and
+project Moulin manifests are pinned; the project manifest references the
+separately versioned OEM platform layer and contains no upload credential.
+Bootstrap deployment, Cloud mutation,
 deprovisioning, reprovisioning, and active-Unit changes remain separately
 gated.
 

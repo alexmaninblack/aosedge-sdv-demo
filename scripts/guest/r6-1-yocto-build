@@ -9,6 +9,7 @@ readonly input_root="/home/yocto/r61-input"
 readonly work_root="/home/yocto/r61-build/upstream"
 readonly manifest="${input_root}/aos-vm-upstream.pinned.yaml"
 readonly manifest_sha256="77f25a49c439035ab0dc2d8d496048043b1258bb230996428ca730de364bb4fe"
+readonly build_ninja_sha256="af224c74f932dab23d8ca736e3b36c4c403df3ba5d219010f87f175ac472f0c6"
 readonly moulin_root="/home/yocto/r61-work/moulin"
 readonly moulin_revision="cbecc1c748a8c5649e9a319b29167bf27dc4fc3a"
 readonly moulin="/home/yocto/.local/bin/moulin"
@@ -16,6 +17,13 @@ readonly cache_root="/home/yocto/yocto-cache"
 readonly log_file="${work_root}/r6-1-upstream-build.log"
 readonly pid_file="${work_root}/r6-1-upstream-build.pid"
 readonly result_file="${work_root}/r6-1-upstream-build.result"
+readonly project_work_root="/home/yocto/r61-build/project"
+readonly project_manifest="${input_root}/aos-vm-project.pinned.yaml"
+readonly project_manifest_sha256="354a80d04e3ada9a855af8eaadb4551d9f33535d19bb55b0b7d69056c5f4ac92"
+readonly project_build_ninja_sha256="fb373f865844aa3c68c1c7c53a79a286b2a0ae3c50563d5ccb4f4e76744cfea7"
+readonly project_log_file="${project_work_root}/r6-1-project-build.log"
+readonly project_pid_file="${project_work_root}/r6-1-project-build.pid"
+readonly project_result_file="${project_work_root}/r6-1-project-build.result"
 
 fail() {
     printf 'Error: %s\n' "$*" >&2
@@ -50,6 +58,23 @@ verify_inputs() {
     fi
 }
 
+verify_project_inputs() {
+    verify_inputs
+    require_regular_file "$project_manifest"
+    [[ "$(sha256sum "$project_manifest" | cut -d' ' -f1)" == "$project_manifest_sha256" ]] || \
+        fail "pinned project manifest digest mismatch"
+    grep -F "https://github.com/alexmaninblack/aos-vehicle-platform" \
+        "$project_manifest" >/dev/null
+    grep -F "aba8c2be9845e3a19d12014bb2aeb17c20906de7" \
+        "$project_manifest" >/dev/null
+    grep -F '"../aos-vehicle-platform/meta-aos-vehicle-platform"' \
+        "$project_manifest" >/dev/null
+    if grep -E 'tlsKey:|\.p12|\.pfx|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY' \
+        "$project_manifest" >/dev/null; then
+        fail "credential reference present in the project manifest"
+    fi
+}
+
 generate_upstream() {
     verify_inputs
     install -d -m 0750 "$work_root"
@@ -66,10 +91,38 @@ generate_upstream() {
         "$work_root/build.ninja" >/dev/null; then
         fail "generated build contains a floating source selector"
     fi
+    [[ "$(sha256sum "$work_root/build.ninja" | cut -d' ' -f1)" == "$build_ninja_sha256" ]] || \
+        fail "generated upstream build graph digest mismatch"
     printf 'MANIFEST_SHA256=%s\n' "$manifest_sha256"
-    printf 'BUILD_NINJA_SHA256=%s\n' \
-        "$(sha256sum "$work_root/build.ninja" | cut -d' ' -f1)"
+    printf 'BUILD_NINJA_SHA256=%s\n' "$build_ninja_sha256"
     printf 'R6_1_UPSTREAM_GENERATE=PASS\n'
+}
+
+generate_project() {
+    verify_project_inputs
+    install -d -m 0750 "$project_work_root"
+    cd "$project_work_root"
+    "$moulin" "$project_manifest" \
+        --MACHINE=qemuarm64 \
+        --NODE_TYPE=main \
+        --WITH_MESSAGE_PROXY=no \
+        --CACHE_LOCATION=outside
+    require_regular_file "$project_work_root/build.ninja"
+    grep -F "/home/yocto/yocto-cache/downloads" "$project_work_root/build.ninja" >/dev/null
+    grep -F "/home/yocto/yocto-cache/sstate-cache" "$project_work_root/build.ninja" >/dev/null
+    grep -F "yocto/aos-vehicle-platform" "$project_work_root/build.ninja" >/dev/null
+    if grep -E 'rev[^[:alnum:]]+(main|master|scarthgap|v[0-9])' \
+        "$project_work_root/build.ninja" >/dev/null; then
+        fail "generated project build contains a floating source selector"
+    fi
+    if grep -E 'aos-user-oem\.p12|tlsKey' "$project_work_root/build.ninja" >/dev/null; then
+        fail "generated project build contains a credential reference"
+    fi
+    [[ "$(sha256sum "$project_work_root/build.ninja" | cut -d' ' -f1)" == "$project_build_ninja_sha256" ]] || \
+        fail "generated project build graph digest mismatch"
+    printf 'MANIFEST_SHA256=%s\n' "$project_manifest_sha256"
+    printf 'BUILD_NINJA_SHA256=%s\n' "$project_build_ninja_sha256"
+    printf 'R6_1_PROJECT_GENERATE=PASS\n'
 }
 
 read_owned_pid() {
@@ -82,6 +135,19 @@ read_owned_pid() {
     tr '\0' ' ' <"/proc/${pid}/cmdline" | \
         grep -F "r6-1-yocto-build run-upstream" >/dev/null || \
         fail "build PID is not owned by R6.1"
+    printf '%s\n' "$pid"
+}
+
+read_project_pid() {
+    [[ -e "$project_pid_file" ]] || return 1
+    require_regular_file "$project_pid_file"
+    local pid
+    pid="$(cat "$project_pid_file")"
+    [[ "$pid" =~ ^[0-9]+$ && "$pid" -gt 1 ]] || fail "invalid project build PID"
+    [[ -r "/proc/${pid}/cmdline" ]] || return 1
+    tr '\0' ' ' <"/proc/${pid}/cmdline" | \
+        grep -F "r6-1-yocto-build run-project" >/dev/null || \
+        fail "build PID is not owned by the R6.1 project build"
     printf '%s\n' "$pid"
 }
 
@@ -100,6 +166,24 @@ run_upstream() {
         printf 'FAIL:%s\n' "$result" >"$result_file"
     fi
     chmod 0640 "$result_file"
+    exit "$result"
+}
+
+run_project() {
+    verify_project_inputs
+    require_regular_file "$project_work_root/build.ninja"
+    rm -f "$project_result_file"
+    cd "$project_work_root"
+    set +e
+    ninja -j 10 main-qemuarm64.img
+    result=$?
+    set -e
+    if [[ "$result" -eq 0 ]]; then
+        printf 'PASS\n' >"$project_result_file"
+    else
+        printf 'FAIL:%s\n' "$result" >"$project_result_file"
+    fi
+    chmod 0640 "$project_result_file"
     exit "$result"
 }
 
@@ -124,6 +208,27 @@ start_upstream() {
     printf 'Log: %s\n' "$log_file"
 }
 
+start_project() {
+    verify_project_inputs
+    require_regular_file "$project_work_root/build.ninja"
+    if pid="$(read_project_pid)"; then
+        printf 'R6.1 project build is already running (PID %s).\n' "$pid"
+        return
+    fi
+    rm -f "$project_pid_file" "$project_result_file"
+    require_regular_file "$0"
+    nohup "$0" run-project >"$project_log_file" 2>&1 </dev/null &
+    pid=$!
+    printf '%s\n' "$pid" >"$project_pid_file"
+    chmod 0640 "$project_pid_file" "$project_log_file"
+    sleep 1
+    if ! kill -0 "$pid" 2>/dev/null && [[ ! -f "$project_result_file" ]]; then
+        fail "project build did not start; inspect ${project_log_file}"
+    fi
+    printf 'R6.1 project build started (PID %s).\n' "$pid"
+    printf 'Log: %s\n' "$project_log_file"
+}
+
 status_upstream() {
     if pid="$(read_owned_pid)"; then
         printf 'STATE=RUNNING\nPID=%s\n' "$pid"
@@ -140,6 +245,22 @@ status_upstream() {
     fi
 }
 
+status_project() {
+    if pid="$(read_project_pid)"; then
+        printf 'STATE=RUNNING\nPID=%s\n' "$pid"
+    elif [[ -f "$project_result_file" ]]; then
+        require_regular_file "$project_result_file"
+        printf 'STATE=%s\n' "$(cat "$project_result_file")"
+    else
+        printf 'STATE=NOT_STARTED\n'
+    fi
+    if [[ -f "$project_log_file" ]]; then
+        require_regular_file "$project_log_file"
+        printf '%s\n' '--- LOG TAIL ---'
+        tail -n 30 "$project_log_file"
+    fi
+}
+
 case "$command_name" in
     verify)
         verify_inputs
@@ -147,6 +268,9 @@ case "$command_name" in
         ;;
     generate-upstream)
         generate_upstream
+        ;;
+    generate-project)
+        generate_project
         ;;
     run-upstream)
         run_upstream
@@ -157,7 +281,16 @@ case "$command_name" in
     status-upstream)
         status_upstream
         ;;
+    start-project)
+        start_project
+        ;;
+    run-project)
+        run_project
+        ;;
+    status-project)
+        status_project
+        ;;
     *)
-        fail "usage: $0 {verify|generate-upstream|start-upstream|status-upstream}"
+        fail "usage: $0 {verify|generate-upstream|start-upstream|status-upstream|generate-project|start-project|status-project}"
         ;;
 esac

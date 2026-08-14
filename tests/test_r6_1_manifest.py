@@ -33,6 +33,9 @@ class R61ManifestTests(unittest.TestCase):
     def setUp(self) -> None:
         self.lock = VALIDATOR.load_lock()
         self.content = VALIDATOR.MANIFEST_PATH.read_text(encoding="utf-8")
+        self.project_content = VALIDATOR.PROJECT_MANIFEST_PATH.read_text(
+            encoding="utf-8"
+        )
 
     def validate_modified(self, content: str) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -45,8 +48,22 @@ class R61ManifestTests(unittest.TestCase):
             lock["evidence"]["pinnedMoulinManifest"] = evidence
             VALIDATOR.validate_manifest(path, lock)
 
+    def validate_modified_project(self, content: str) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "project-manifest.yaml"
+            path.write_text(content, encoding="utf-8")
+            lock = dict(self.lock)
+            lock["evidence"] = dict(self.lock["evidence"])
+            evidence = dict(lock["evidence"]["projectMoulinManifest"])
+            evidence["sha256"] = VALIDATOR.sha256(path)
+            lock["evidence"]["projectMoulinManifest"] = evidence
+            VALIDATOR.validate_project_manifest(path, lock)
+
     def test_tracked_manifest_passes(self) -> None:
         VALIDATOR.validate_manifest()
+
+    def test_tracked_project_manifest_passes(self) -> None:
+        VALIDATOR.validate_project_manifest()
 
     def test_floating_revision_is_rejected(self) -> None:
         revision = self.lock["sources"][0]["revision"]
@@ -72,6 +89,26 @@ class R61ManifestTests(unittest.TestCase):
         content = self.content + "\n# BEGIN PRIVATE KEY\n"
         with self.assertRaisesRegex(VALIDATOR.ManifestError, "forbidden data"):
             self.validate_modified(content)
+
+    def test_project_layer_must_be_present_in_both_layer_sets(self) -> None:
+        content = self.project_content.replace(
+            '    - "../aos-vehicle-platform/meta-aos-vehicle-platform"\n', "", 1
+        )
+        with self.assertRaisesRegex(VALIDATOR.ManifestError, "both node layer sets"):
+            self.validate_modified_project(content)
+
+    def test_project_layer_revision_must_be_pinned(self) -> None:
+        revision = self.lock["evidence"]["projectMoulinManifest"][
+            "platformRevision"
+        ]
+        content = self.project_content.replace(f'rev: "{revision}"', 'rev: "main"')
+        with self.assertRaisesRegex(VALIDATOR.ManifestError, "full commit SHA"):
+            self.validate_modified_project(content)
+
+    def test_project_manifest_cannot_reference_signing_credentials(self) -> None:
+        content = self.project_content + '\npublish:\n  tlsKey: "oem.p12"\n'
+        with self.assertRaisesRegex(VALIDATOR.ManifestError, "forbidden data"):
+            self.validate_modified_project(content)
 
 
 if __name__ == "__main__":

@@ -39,6 +39,21 @@ class R61YoctoBuildTests(unittest.TestCase):
         self.assertIn("build PID is not owned by R6.1", self.content)
         self.assertIn("nohup", self.content)
 
+    def test_project_build_is_pinned_and_credential_free(self) -> None:
+        self.assertIn(
+            "354a80d04e3ada9a855af8eaadb4551d9f33535d19bb55b0b7d69056c5f4ac92",
+            self.content,
+        )
+        self.assertIn(
+            "aba8c2be9845e3a19d12014bb2aeb17c20906de7", self.content
+        )
+        self.assertIn(
+            "fb373f865844aa3c68c1c7c53a79a286b2a0ae3c50563d5ccb4f4e76744cfea7",
+            self.content,
+        )
+        self.assertIn("credential reference present", self.content)
+        self.assertIn("r6-1-yocto-build run-project", self.content)
+
 
 if __name__ == "__main__":
     unittest.main()

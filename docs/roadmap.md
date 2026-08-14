@@ -177,17 +177,21 @@ SOTA service.
 
 Current gate: R6.1-1 is complete and R6.1-2 bootstrap-image implementation is
 authorized for disposable, non-provisioned images. The custom slot-based
-Service Manager component runtime is accepted against the exact AosVM 6.1.0 stack. The local
-factory, lifecycle, protocol, CM, storage, and identity gates passed; the
-Update Manager fallback is not selected. One bootstrap/rootfs build is
-expected to add the stable runtime, launcher, policy, A/B storage, health, and
-rollback machinery. Provider releases can then advance independently through
-FOTA without rebuilding rootfs.
+Service Manager component runtime is accepted against the exact AosVM 6.1.0
+stack. The local factory, protocol, CM, storage, and identity gates passed; the
+Update Manager fallback is not selected. R6.1-2 adds the stable empty-store
+runtime boundary, launcher profile, policy, storage roots, and health adapter.
+Atomic A/B activation and rollback remain R6.1-3 work. Provider releases can
+advance independently through FOTA without rebuilding rootfs after that
+lifecycle is qualified.
 
 R6.1-1 established the separate builder, exact source/API baseline, local
 runtime harness, Node/CM reporting proof, storage decision, and accepted ADR.
 R6.1-2 now builds and boots the unchanged upstream baseline before adding the
-tracked project Yocto layer. Its authorization excludes bootstrap deployment,
+tracked project Yocto layer. The production runtime and factory compile
+against the exact source pins and their empty-store tests pass. Separate
+upstream and project Moulin graphs are pinned; the project graph contains no
+signing or upload credential. The authorization excludes bootstrap deployment,
 Cloud catalog mutation, deprovisioning, reprovisioning, and active-Unit
 changes. The accepted R6 side-load remains the operational baseline.
 

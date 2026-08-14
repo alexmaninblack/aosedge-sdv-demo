@@ -17,6 +17,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 LOCK_PATH = ROOT / "components" / "r6-1-source.lock.json"
 MANIFEST_PATH = ROOT / "manifests" / "r6-1" / "aos-vm-upstream.pinned.yaml"
+PROJECT_MANIFEST_PATH = ROOT / "manifests" / "r6-1" / "aos-vm-project.pinned.yaml"
 REVISION_RE = re.compile(r"[0-9a-f]{40}")
 SOURCE_RE = re.compile(
     r'^\s+- type: git\s*\n\s+url: "([^"]+)"\s*\n\s+rev: "([^"]+)"',
@@ -32,6 +33,8 @@ YOCTO_SOURCES = {
     "meta-aos",
     "meta-aos-vm",
 }
+PROJECT_SOURCE = "aos-vehicle-platform"
+PROJECT_SOURCE_URL = "https://github.com/alexmaninblack/aos-vehicle-platform"
 DOWNLOADS_DIR = "/home/yocto/yocto-cache/downloads"
 SSTATE_DIR = "/home/yocto/yocto-cache/sstate-cache"
 
@@ -135,13 +138,114 @@ def validate_manifest(
         require(forbidden not in content, f"manifest contains forbidden data: {forbidden}")
 
 
+def validate_project_manifest(
+    manifest_path: Path = PROJECT_MANIFEST_PATH,
+    lock: dict[str, Any] | None = None,
+) -> None:
+    source_lock = load_lock() if lock is None else lock
+    try:
+        content = manifest_path.read_text(encoding="utf-8")
+    except OSError as error:
+        raise ManifestError(f"cannot read project manifest: {error}") from error
+
+    evidence = source_lock.get("evidence", {}).get("projectMoulinManifest")
+    require(isinstance(evidence, dict), "project manifest evidence is missing")
+    require(
+        evidence.get("path") == "manifests/r6-1/aos-vm-project.pinned.yaml",
+        "project manifest path changed",
+    )
+    require(
+        sha256(manifest_path) == evidence.get("sha256"),
+        "project manifest digest does not match the lock",
+    )
+    require(
+        re.fullmatch(
+            r"[0-9a-f]{64}", str(evidence.get("generatedBuildNinjaSha256", ""))
+        )
+        is not None,
+        "project Ninja graph digest is missing",
+    )
+    require(evidence.get("result") == "pass", "project manifest did not pass")
+
+    project_revision = str(evidence.get("platformRevision", ""))
+    require(
+        REVISION_RE.fullmatch(project_revision) is not None,
+        "project layer revision is not a full commit SHA",
+    )
+    require(
+        evidence.get("platformRepository") == f"{PROJECT_SOURCE_URL}.git",
+        "project layer repository changed",
+    )
+
+    expected = {
+        source["name"]: source["revision"]
+        for source in source_lock.get("sources", [])
+        if isinstance(source, dict) and source.get("name") in YOCTO_SOURCES
+    }
+    require(set(expected) == YOCTO_SOURCES, "Yocto source lock is incomplete")
+    expected[PROJECT_SOURCE] = project_revision
+
+    observed: dict[str, str] = {}
+    observed_urls: dict[str, str] = {}
+    for url, revision in SOURCE_RE.findall(content):
+        name = source_name(url)
+        require(name in expected, f"unexpected project manifest source: {name}")
+        require(
+            REVISION_RE.fullmatch(revision) is not None,
+            f"{name}: project manifest revision is not a full commit SHA",
+        )
+        previous = observed.setdefault(name, revision)
+        require(previous == revision, f"{name}: project manifest revisions disagree")
+        observed_urls.setdefault(name, url)
+
+    require(set(observed) == set(expected), "project manifest source set is incomplete")
+    for name, revision in expected.items():
+        require(
+            observed[name] == revision,
+            f"{name}: project manifest revision mismatches lock",
+        )
+    require(
+        observed_urls[PROJECT_SOURCE] == PROJECT_SOURCE_URL,
+        "project layer source URL changed",
+    )
+
+    require(content.count(f'"{DOWNLOADS_DIR}"') == 2, "project DL_DIR is not fixed")
+    require(content.count(f'"{SSTATE_DIR}"') == 2, "project SSTATE_DIR is not fixed")
+    require('"qemuarm64"' in content, "project qemuarm64 target is missing")
+    require('"main":\n      default: true' in content, "project Main Node is not default")
+    require(
+        content.count('"../aos-vehicle-platform/meta-aos-vehicle-platform"') == 2,
+        "project layer is not fixed for both node layer sets",
+    )
+    require('company: "maninblack"' in content, "project publisher is not owned")
+    require("EPAM Systems" not in content, "upstream example publisher remains")
+    require("SPDX-License-Identifier: Apache-2.0" in content, "license is missing")
+    for forbidden in (
+        "BEGIN PRIVATE KEY",
+        "BEGIN CERTIFICATE",
+        "one-time token",
+        "/Users/",
+        "tlsKey:",
+        ".p12",
+        ".pfx",
+    ):
+        require(
+            forbidden not in content,
+            f"project manifest contains forbidden data: {forbidden}",
+        )
+
+
 def main() -> int:
     try:
         validate_manifest()
+        validate_project_manifest()
     except ManifestError as error:
         print(f"R6.1 manifest validation failed: {error}", file=sys.stderr)
         return 1
-    print("R6.1 pinned Moulin manifest validation passed for 8 Yocto sources.")
+    print(
+        "R6.1 pinned Moulin manifest validation passed for the upstream "
+        "and project source sets."
+    )
     return 0
 
 

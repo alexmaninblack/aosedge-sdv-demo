@@ -175,6 +175,14 @@
       "upstreamRevision": "b13320898a2ed1cce504f90f70451638232d6a83",
       "generatedBuildNinjaSha256": "af224c74f932dab23d8ca736e3b36c4c403df3ba5d219010f87f175ac472f0c6",
       "result": "pass"
+    },
+    "projectMoulinManifest": {
+      "path": "manifests/r6-1/aos-vm-project.pinned.yaml",
+      "sha256": "354a80d04e3ada9a855af8eaadb4551d9f33535d19bb55b0b7d69056c5f4ac92",
+      "platformRepository": "https://github.com/alexmaninblack/aos-vehicle-platform.git",
+      "platformRevision": "aba8c2be9845e3a19d12014bb2aeb17c20906de7",
+      "generatedBuildNinjaSha256": "fb373f865844aa3c68c1c7c53a79a286b2a0ae3c50563d5ccb4f4e76744cfea7",
+      "result": "pass"
     }
   },
   "upstreamGaps": [
