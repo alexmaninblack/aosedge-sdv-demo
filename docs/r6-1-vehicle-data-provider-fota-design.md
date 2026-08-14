@@ -3,7 +3,7 @@
 
 # R6.1 Vehicle-Data Provider FOTA Component Design
 
-- Status: Accepted; R6.1-1 is authorized
+- Status: Accepted; R6.1-2 is authorized
 - Date: 2026-08-14
 - Baseline: AosVM 6.1.0, one `aos-vm-main` Node, provider 0.1.1
 - Depends on: R6/AOS-2, ADR 0005, ADR 0006
@@ -27,9 +27,11 @@ Update Manager is not the default because it is not present in the released
 VM and its compatibility with the current Communication Manager protocol has
 not been demonstrated.
 
-This document authorizes R6.1-1 only. It does not authorize a bootstrap image
-deployment, component upload, Cloud assignment, deprovisioning, or change to
-the active provisioned Unit. Every later mutation retains its explicit gate.
+R6.1-1 is complete and R6.1-2 is authorized. R6.1-2 may build and boot only
+disposable, non-provisioned bootstrap images. It does not authorize bootstrap
+deployment to the active provisioned Unit, component upload, Cloud assignment,
+deprovisioning, reprovisioning, or any mutation of the active Unit. Every later
+mutation retains its explicit gate.
 
 ## Why R6.1 Exists
 
@@ -711,8 +713,9 @@ R6.1 is complete only when all of these are true:
       require their own explicit gates.
 - [x] Complete R6.1-1 with an accepted runtime ADR, exact Cloud/API and source
       baseline, persistent storage root, and unchanged Unit identity.
-- [ ] Authorize R6.1-2 bootstrap-image implementation after its checkpoint
-      review.
+- [x] Authorize R6.1-2 bootstrap-image implementation with disposable,
+      non-provisioned images only; Cloud and active-Unit mutations remain
+      forbidden.
 
 ## References
 

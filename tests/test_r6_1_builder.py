@@ -114,6 +114,17 @@ class R61BuilderTests(unittest.TestCase):
         self.assertNotIn("certificate", script.lower())
         self.assertNotIn("signing", script.lower())
 
+    def test_yocto_cache_is_persistent_ext4_and_identity_free(self) -> None:
+        script = BUILDER.yocto_cache_script()
+
+        self.assertIn(BUILDER.YOCTO_DOWNLOADS_DIR, script)
+        self.assertIn(BUILDER.YOCTO_SSTATE_DIR, script)
+        self.assertIn("findmnt -n -o FSTYPE -T", script)
+        self.assertIn("r6-1-yocto-cache-v1", script)
+        self.assertIn("R6_1_YOCTO_CACHE=PASS", script)
+        self.assertNotIn("aos-user-", script)
+        self.assertNotIn("PRIVATE KEY", script)
+
 
 if __name__ == "__main__":
     unittest.main()

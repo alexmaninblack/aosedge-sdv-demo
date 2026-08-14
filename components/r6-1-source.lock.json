@@ -168,6 +168,13 @@
       "branch": "feature/r6-1-fota-runtime",
       "revision": "34faf4b1637dd418a8b9a80476e243f5cd81c6d3",
       "result": "pass"
+    },
+    "pinnedMoulinManifest": {
+      "path": "manifests/r6-1/aos-vm-upstream.pinned.yaml",
+      "sha256": "77f25a49c439035ab0dc2d8d496048043b1258bb230996428ca730de364bb4fe",
+      "upstreamRevision": "b13320898a2ed1cce504f90f70451638232d6a83",
+      "generatedBuildNinjaSha256": "af224c74f932dab23d8ca736e3b36c4c403df3ba5d219010f87f175ac472f0c6",
+      "result": "pass"
     }
   },
   "upstreamGaps": [

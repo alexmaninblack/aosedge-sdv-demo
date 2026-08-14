@@ -32,6 +32,10 @@ QEMU_VERSION = "11.0.3"
 QEMU_MACHINE = "virt-11.0"
 CONAN_VERSION = "2.31.2"
 CMAKE_VERSION = "3.31.10"
+YOCTO_CACHE_ROOT = "/home/yocto/yocto-cache"
+YOCTO_DOWNLOADS_DIR = f"{YOCTO_CACHE_ROOT}/downloads"
+YOCTO_SSTATE_DIR = f"{YOCTO_CACHE_ROOT}/sstate-cache"
+MINIMUM_GUEST_FREE = 180 * 1024**3
 VCPUS = 10
 MEMORY_MIB = 24576
 DISK_GIB = 220
@@ -867,11 +871,14 @@ def build_tools_script() -> str:
     return f"""set -eu
 sudo apt-get update
 sudo apt-get install -y \
-  autoconf automake bison build-essential clang-format-15 cmake curl flex \
-  gettext git libblkid-dev libcap-dev libefiboot-dev libefivar-dev \
+  autoconf automake bison build-essential chrpath clang-format-15 cmake cpio \
+  curl debianutils diffstat file flex gawk gettext git iputils-ping libacl1 \
+  libblkid-dev libcap-dev libefiboot-dev libefivar-dev liblz4-tool \
   libnftables-dev libnl-3-dev libnl-route-3-dev libseccomp-dev libssl-dev \
-  libsystemd-dev libtool libtool-bin libyajl-dev ninja-build pipx pkg-config \
-  python3-venv sbsigntool softhsm2 tcl zip
+  libsystemd-dev libtool libtool-bin libyajl-dev locales ninja-build pipx \
+  pkg-config python3-git python3-jinja2 python3-pexpect python3-pip \
+  python3-subunit python3-venv sbsigntool socat softhsm2 tcl texinfo unzip \
+  wget xz-utils zip zstd
 
 conan_version=$(/home/yocto/.local/bin/conan --version 2>/dev/null || true)
 if [ "$conan_version" != "Conan version {CONAN_VERSION}" ]; then
@@ -894,6 +901,53 @@ printf 'CONAN={CONAN_VERSION}\nCMAKE={CMAKE_VERSION}\nR6_1_BUILDER_TOOLS=PASS\n'
 
 def bootstrap_tools() -> None:
     guest_run_script(build_tools_script())
+
+
+def yocto_cache_script() -> str:
+    return f"""set -eu
+cache_root={YOCTO_CACHE_ROOT}
+downloads={YOCTO_DOWNLOADS_DIR}
+sstate={YOCTO_SSTATE_DIR}
+minimum_free={MINIMUM_GUEST_FREE}
+
+test "$(findmnt -n -o FSTYPE -T /home/yocto)" = ext4
+available=$(df -B1 --output=avail /home/yocto | tail -n 1 | tr -d ' ')
+test "$available" -ge "$minimum_free"
+
+for path in "$cache_root" "$downloads" "$sstate"; do
+  if [ -L "$path" ]; then
+    printf 'Unsafe symbolic-link cache path: %s\n' "$path" >&2
+    exit 1
+  fi
+  install -d -m 0750 "$path"
+  test -d "$path"
+  test "$(stat -c '%U:%G' "$path")" = "yocto:yocto"
+done
+
+marker="$cache_root/.r6-1-cache-layout"
+expected='r6-1-yocto-cache-v1'
+if [ -e "$marker" ]; then
+  test ! -L "$marker"
+  test "$(cat "$marker")" = "$expected"
+else
+  temporary=$(mktemp "$cache_root/.layout.XXXXXX")
+  trap 'rm -f "$temporary"' EXIT HUP INT TERM
+  printf '%s\n' "$expected" >"$temporary"
+  chmod 0640 "$temporary"
+  mv "$temporary" "$marker"
+  trap - EXIT HUP INT TERM
+fi
+
+printf 'FSTYPE=%s\n' "$(findmnt -n -o FSTYPE -T "$cache_root")"
+printf 'AVAILABLE_GIB=%s\n' "$((available / 1024 / 1024 / 1024))"
+printf 'DL_DIR=%s\n' "$downloads"
+printf 'SSTATE_DIR=%s\n' "$sstate"
+printf 'R6_1_YOCTO_CACHE=PASS\n'
+"""
+
+
+def prepare_yocto_cache() -> None:
+    guest_run_script(yocto_cache_script())
 
 
 def smoke_test() -> None:
@@ -945,6 +999,7 @@ def parse_args() -> argparse.Namespace:
     subparsers.add_parser("wait")
     subparsers.add_parser("smoke-test")
     subparsers.add_parser("bootstrap-tools")
+    subparsers.add_parser("prepare-yocto-cache")
     subparsers.add_parser("status")
     subparsers.add_parser("stop")
     run_parser = subparsers.add_parser("run")
@@ -972,6 +1027,8 @@ def main() -> int:
             smoke_test()
         elif args.command == "bootstrap-tools":
             bootstrap_tools()
+        elif args.command == "prepare-yocto-cache":
+            prepare_yocto_cache()
         elif args.command == "status":
             status()
         elif args.command == "stop":

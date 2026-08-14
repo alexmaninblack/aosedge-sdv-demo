@@ -175,8 +175,9 @@ side-loaded host-daemon lifecycle with a dedicated, independently versioned,
 Cloud-visible Aos FOTA component. The telemetry consumer remains a separate
 SOTA service.
 
-Current gate: R6.1-1 is complete and the custom slot-based Service Manager
-component runtime is accepted against the exact AosVM 6.1.0 stack. The local
+Current gate: R6.1-1 is complete and R6.1-2 bootstrap-image implementation is
+authorized for disposable, non-provisioned images. The custom slot-based
+Service Manager component runtime is accepted against the exact AosVM 6.1.0 stack. The local
 factory, lifecycle, protocol, CM, storage, and identity gates passed; the
 Update Manager fallback is not selected. One bootstrap/rootfs build is
 expected to add the stable runtime, launcher, policy, A/B storage, health, and
@@ -185,12 +186,13 @@ FOTA without rebuilding rootfs.
 
 R6.1-1 established the separate builder, exact source/API baseline, local
 runtime harness, Node/CM reporting proof, storage decision, and accepted ADR.
-R6.1-2 is next but still requires its own execution checkpoint. R6.1-1 does
-not authorize a bootstrap deployment, Cloud catalog mutation,
-deprovisioning, reprovisioning, or active-Unit change. The accepted R6
-side-load remains the operational baseline.
+R6.1-2 now builds and boots the unchanged upstream baseline before adding the
+tracked project Yocto layer. Its authorization excludes bootstrap deployment,
+Cloud catalog mutation, deprovisioning, reprovisioning, and active-Unit
+changes. The accepted R6 side-load remains the operational baseline.
 
 Detailed draft: [R6.1 FOTA component design and plan](r6-1-vehicle-data-provider-fota-design.md).
+Qualification record: [R6.1-2 bootstrap-image qualification](r6-1-bootstrap-image-qualification.md).
 
 ## AOS-3 — Deploy the first KUKSA telemetry consumer
 

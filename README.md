@@ -17,6 +17,7 @@ subscribes to the resulting VSS signals without depending on CARLA.
 - [AOS-2: qualify the CARLA VISS-to-KUKSA provider](docs/aos-2-carla-kuksa-qualification.md)
 - [R6.1: design a Cloud-visible provider FOTA component](docs/r6-1-vehicle-data-provider-fota-design.md)
 - [R6.1-1: runtime-mechanism qualification record](docs/r6-1-runtime-mechanism-qualification.md)
+- [R6.1-2: bootstrap-image qualification record](docs/r6-1-bootstrap-image-qualification.md)
 - [Colleague setup: run and provision AosVM on an Apple Silicon Mac](docs/aosvm-macos-colleague-setup.md)
 - [Reissue AosEdge user certificates on a new Mac](docs/aos-user-certificate-reissue-macos.md)
 - [Licensing and copyright policy](docs/licensing-and-copyright-policy.md)
@@ -77,8 +78,10 @@ on source loss, and survives a clean VM restart without changing the
 provisioned cloud Unit. R6.1-1 is complete: an isolated ARM64 build proved the
 custom Service Manager runtime through the local CM boundary, selected the
 persistent component root, and confirmed that the existing Unit Model and Node
-Type remain unchanged. Bootstrap deployment, Cloud mutation, deprovisioning,
-reprovisioning, and active-Unit changes remain separately gated.
+Type remain unchanged. R6.1-2 is authorized for disposable, non-provisioned
+bootstrap builds and boots. Bootstrap deployment, Cloud mutation,
+deprovisioning, reprovisioning, and active-Unit changes remain separately
+gated.
 
 ## Commands
 
@@ -102,6 +105,7 @@ or using the isolated Yocto builder:
 
 ```sh
 ./scripts/validate-r6-1-source-lock
+./scripts/validate-r6-1-manifest
 python3 -m unittest tests.test_r6_1_source_lock
 ```
 

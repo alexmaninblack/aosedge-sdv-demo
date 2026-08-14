@@ -1,0 +1,526 @@
+# SPDX-FileCopyrightText: 2026 maninblack (modifications)
+# SPDX-License-Identifier: Apache-2.0
+#
+# Derived from AosEdge meta-aos-vm aos-vm.yaml at
+# b13320898a2ed1cce504f90f70451638232d6a83.
+# R6.1 modifications pin every Git source, use the persistent builder cache,
+# and replace upstream example publisher metadata. No credential is embedded.
+
+desc: "Aos virtual development machine"
+min_ver: "0.21"
+
+variables:
+  # Aos unit configuration
+  UNIT_MODEL: "aos-vm"
+  UNIT_VERSION: "1.0.0"
+
+  BUNDLE_IMAGE_VERSION: "6.1.0"
+  ROOTFS_REF_VERSION: "6.0.0"
+
+  # Aos node configuration
+  MAIN_NODE_HOSTNAME: "main"
+
+  # Network configuration
+  MAIN_NODE_IP: "10.0.0.100"
+
+  # Build configuration
+  YOCTOS_WORK_DIR: "yocto"
+  DISTRO: "aos-core"
+
+  # Node info
+  AOS_ARCHITECTURE: "amd64"
+  AOS_ARCHITECTURE_VARIANT: ""
+  AOS_OS: "linux"
+  AOS_OS_VERSION: ""
+
+  AOS_BASE_IMAGE: "aos-image-vm"
+  AOS_NODE_TYPE: "%{UNIT_MODEL}-%{NODE_TYPE}"
+  AOS_COMPONENT_RUNTIME_PREFIX: "%{UNIT_MODEL}-%{UNIT_VERSION}-%{NODE_TYPE}-%{MACHINE}-"
+
+common_data:
+  # Sources used by all nodes
+  common_sources: &COMMON_SOURCES
+    - type: git
+      url: "https://git.yoctoproject.org/poky"
+      rev: "7d50718f90c51fb7f650c9db59b28c6e0194e5d2"
+
+    - type: git
+      url: "https://git.openembedded.org/meta-openembedded"
+      rev: "ec0469748be4159fb83fb0fa0148d786484c88cf"
+
+    - type: git
+      url: "https://git.yoctoproject.org/meta-virtualization"
+      rev: "3dd635f613f7299d986a8ab6bc9f584370f8ed1d"
+
+    - type: git
+      url: "https://git.yoctoproject.org/meta-security"
+      rev: "97e482b71688b62ac1109d16e89368122f039cbf"
+
+    - type: git
+      url: "https://git.yoctoproject.org/meta-selinux"
+      rev: "536df5a4fbce3c9fd63f51580f43d248a0d1b0ef"
+
+    - type: git
+      url: "https://github.com/aosedge/meta-aos"
+      rev: "176da6346b1199f854106dede4cc49604174619c"
+
+    - type: git
+      url: "https://github.com/aosedge/meta-aos-vm"
+      rev: "b13320898a2ed1cce504f90f70451638232d6a83"
+
+  # Common configuration options for all nodes
+  common_conf: &COMMON_CONF
+    - [SSTATE_DIR, "/home/yocto/yocto-cache/sstate-cache"]
+    - [DL_DIR, "/home/yocto/yocto-cache/downloads"]
+
+    - [MACHINE, "%{MACHINE}"]
+    - [DISTRO, "%{DISTRO}"]
+
+    # Skip warning about missing "virtualization" distro feature
+    - [SKIP_META_VIRT_SANITY_CHECK, "1"]
+
+    # Deploy grub configuration
+    - [EXTRA_IMAGEDEPENDS:append, " grub-config"]
+
+    # Configure log dir to be stored in persistent storage
+    - [VOLATILE_LOG_DIR, "no"]
+
+    # SELinux config
+    - [DISTRO_FEATURES:append, " acl xattr pam selinux"]
+    - [DISTRO_FEATURES:append, " security"]
+    - [PREFERRED_PROVIDER_virtual/refpolicy, "refpolicy-aos"]
+
+    # Init manager
+    - [INIT_MANAGER, "systemd"]
+
+    # Initramfs configuration
+    - [INITRAMFS_IMAGE, "aos-image-initramfs"]
+    - [INITRAMFS_IMAGE_BUNDLE, "0"]
+    - [INITRAMFS_FSTYPES, "cpio.gz"]
+
+    # Set root home
+    - [ROOT_HOME, "/home/root"]
+
+    # Enable debug tools
+    - [EXTRA_IMAGE_FEATURES:append, " tools-debug"]
+
+      # Unit model
+    - [AOS_UNIT_MODEL, "%{UNIT_MODEL}"]
+    - [AOS_UNIT_VERSION, "%{UNIT_VERSION}"]
+
+    # Image versions
+    - [AOS_ROOTFS_IMAGE_VERSION, "%{BUNDLE_IMAGE_VERSION}"]
+    - [AOS_BOOT_IMAGE_VERSION, "%{BUNDLE_IMAGE_VERSION}"]
+
+    # Node configuration
+    - [AOS_MAIN_NODE_HOSTNAME, "%{MAIN_NODE_HOSTNAME}"]
+    - [AOS_NODE_TYPE, "%{AOS_NODE_TYPE}"]
+    - [AOS_DNS_IP, "%{MAIN_NODE_IP}"]
+
+      # Disk configuration
+    - [AOS_IMAGE_DISK, "sda"]
+
+    # Generate home RW partition
+    - [AOS_HOME_PART_SIZE, "524288"]
+
+    # Omit uutils-coreutils recipe from the build
+    - [BBMASK, "uutils-coreutils"]
+
+  main_layers: &MAIN_LAYERS
+    - "../meta-openembedded/meta-filesystems"
+    - "../meta-openembedded/meta-networking"
+    - "../meta-openembedded/meta-oe"
+    - "../meta-openembedded/meta-perl"
+    - "../meta-openembedded/meta-python"
+    - "../meta-security"
+    - "../meta-selinux"
+    - "../meta-virtualization"
+    - "../meta-aos"
+    - "../meta-aos-vm/meta-aos-vm-common"
+    - "../meta-aos-vm/meta-aos-vm-main"
+
+  node_layers: &NODE_LAYERS
+    - "../meta-openembedded/meta-filesystems"
+    - "../meta-openembedded/meta-networking"
+    - "../meta-openembedded/meta-oe"
+    - "../meta-openembedded/meta-perl"
+    - "../meta-openembedded/meta-python"
+    - "../meta-security"
+    - "../meta-selinux"
+    - "../meta-virtualization"
+    - "../meta-aos"
+    - "../meta-aos-vm/meta-aos-vm-common"
+    - "../meta-aos-vm/meta-aos-vm-node"
+
+components:
+  aos-vm:
+    default: true
+    build-dir: "%{YOCTOS_WORK_DIR}"
+    sources: *COMMON_SOURCES
+    builder:
+      type: yocto
+      work_dir: "build-%{NODE_TYPE}"
+      conf:
+        - *COMMON_CONF
+        - [IMAGE_BASENAME, "%{AOS_BASE_IMAGE}"]
+        - [AOS_BASE_IMAGE, "%{AOS_BASE_IMAGE}"]
+        - [AOS_COMPONENT_RUNTIME_PREFIX, "%{AOS_COMPONENT_RUNTIME_PREFIX}"]
+        - [AOS_ARCHITECTURE, "%{AOS_ARCHITECTURE}"]
+        - [AOS_ARCHITECTURE_VARIANT, "%{AOS_ARCHITECTURE_VARIANT}"]
+        - [AOS_OS, "%{AOS_OS}"]
+        - [AOS_OS_VERSION, "%{AOS_OS_VERSION}"]
+
+      build_target: "%{AOS_BASE_IMAGE}"
+      target_images:
+        - "tmp/deploy/images/%{MACHINE}/%{AOS_BASE_IMAGE}-%{MACHINE}.rootfs.ext4"
+        - "tmp/deploy/images/%{MACHINE}/%{AOS_BASE_IMAGE}-%{MACHINE}-home.ext4"
+        - "tmp/deploy/images/%{MACHINE}/%{AOS_BASE_IMAGE}-%{MACHINE}-var.ext4"
+        - "tmp/deploy/images/%{MACHINE}/grub-efi-%{BOOT_TYPE}"
+        - "tmp/deploy/images/%{MACHINE}/%{KERNEL_TYPE}"
+        - "tmp/deploy/images/%{MACHINE}/aos-image-initramfs-%{MACHINE}.rootfs.cpio.gz"
+        - "tmp/deploy/images/%{MACHINE}/grub.cfg"
+        - "tmp/deploy/images/%{MACHINE}/aos/boot/version"
+
+  aos-sdk:
+    builder:
+      type: custom_script
+      work_dir: "workdir"
+      script: "../yocto/meta-aos/scripts/sdk_builder.py"
+      target_images:
+        - "../output/sdk"
+
+      additional_deps:
+        - "%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/%{AOS_BASE_IMAGE}-%{MACHINE}.rootfs.ext4"
+
+      sdk:
+        yocto_dir: "../%{YOCTOS_WORK_DIR}"
+        build_dir: "build-%{NODE_TYPE}"
+        output_dir: "../output/sdk"
+        base_image: "%{AOS_BASE_IMAGE}"
+
+  layers:
+    builder:
+      type: custom_script
+      work_dir: "workdir"
+      script: "../yocto/meta-aos/scripts/layer_builder.py"
+      target_images:
+        - "../output/layers/config.yaml"
+
+      additional_deps:
+        - "%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/%{AOS_BASE_IMAGE}-%{MACHINE}.rootfs.ext4"
+
+      layers:
+        architecture: "%{AOS_ARCHITECTURE}"
+        os: "%{AOS_OS}"
+        output_dir: "../output/layers"
+        publisher:
+          company: "maninblack"
+
+        publish:
+          tlsKey: "aos-user-oem.p12"
+
+        yocto_dir: "../%{YOCTOS_WORK_DIR}"
+        build_dir: "build-%{NODE_TYPE}"
+        base_image: "%{AOS_BASE_IMAGE}"
+        items:
+          kuksa-client:
+            target: "aos-kuksa-client-layer"
+            version: "1.0.0"
+
+          pylibs:
+            target: "aos-pylibs-layer"
+            version: "1.0.0"
+
+  fota:
+    builder:
+      type: custom_script
+      work_dir: "workdir"
+      script: "../yocto/meta-aos/scripts/fota_builder.py"
+      target_images:
+        - "../output/fota/config.yaml"
+
+      additional_deps:
+        - "%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/%{AOS_BASE_IMAGE}-%{MACHINE}.rootfs.ext4"
+        - "%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/aos-image-initramfs-%{MACHINE}.rootfs.cpio.gz"
+        - "%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/%{KERNEL_TYPE}"
+        - "%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/grub-efi-%{BOOT_TYPE}"
+        - "%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/grub.cfg"
+        - "%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/aos/boot/version"
+
+      components:
+        architecture: "%{AOS_ARCHITECTURE}"
+        os: "%{AOS_OS}"
+        output_dir: "../output/fota"
+        publisher:
+          company: "maninblack"
+
+        publish:
+          tlsKey: "aos-user-oem.p12"
+
+        work_dir: "workdir"
+        items:
+          boot:
+            componentType: "%{AOS_COMPONENT_RUNTIME_PREFIX}boot"
+            mediaType: "application/vnd.aos.image.component.full.v1+gzip"
+            enabled: true
+            method: "raw"
+            title: "Aos VM %{NODE_TYPE} boot image"
+            description: "Aos VM %{NODE_TYPE} boot image for %{MACHINE}"
+            version: "%{BUNDLE_IMAGE_VERSION}"
+            fileName: "%{AOS_NODE_TYPE}-boot-%{BUNDLE_IMAGE_VERSION}.gz"
+            partition:
+              gpt_type: 21686148-6449-6E6F-744E-656564454649 # BIOS boot partition (kinda...)
+              type: vfat
+              size: 128 MiB
+              items:
+                "aos-image-initramfs-%{MACHINE}.cpio.gz": "../%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/aos-image-initramfs-%{MACHINE}.rootfs.cpio.gz"
+                "%{KERNEL_TYPE}": "../%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/%{KERNEL_TYPE}"
+                "EFI/BOOT/%{BOOT_TYPE}": "../%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/grub-efi-%{BOOT_TYPE}"
+                "EFI/BOOT/grub.cfg": "../%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/grub.cfg"
+                "aos/version": "../%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/aos/boot/version"
+
+          rootfs-full:
+            componentType: "%{AOS_COMPONENT_RUNTIME_PREFIX}rootfs"
+            mediaType: "application/vnd.aos.image.component.full.v1+squashfs"
+            enabled: true
+            method: "overlay"
+            ostree_repo: "../../ostree_repo/%{AOS_NODE_TYPE}-rootfs"
+            yocto_dir: "../%{YOCTOS_WORK_DIR}"
+            build_dir: "build-%{NODE_TYPE}"
+            type: "full"
+            title: "Aos VM %{NODE_TYPE} rootfs full image"
+            description: "Aos VM %{NODE_TYPE} rootfs full image for %{MACHINE}"
+            version: "%{BUNDLE_IMAGE_VERSION}"
+            fileName: "%{AOS_NODE_TYPE}-rootfs-full-%{BUNDLE_IMAGE_VERSION}.squashfs"
+            exclude:
+              - "home/*"
+              - "var/*"
+
+          rootfs-incremental:
+            componentType: "%{AOS_COMPONENT_RUNTIME_PREFIX}rootfs"
+            mediaType: "application/vnd.aos.image.component.inc.v1+squashfs"
+            enabled: false
+            method: "overlay"
+            ostree_repo: "../../ostree_repo/%{AOS_NODE_TYPE}-rootfs"
+            yocto_dir: "../%{YOCTOS_WORK_DIR}"
+            build_dir: "build-%{NODE_TYPE}"
+            type: "incremental"
+            title: "Aos VM %{NODE_TYPE} rootfs incremental image"
+            description: "Aos VM %{NODE_TYPE} rootfs incremental image for %{MACHINE}"
+            version: "%{BUNDLE_IMAGE_VERSION}"
+            requiredVersion: "%{ROOTFS_REF_VERSION}"
+            fileName: "%{AOS_NODE_TYPE}-rootfs-incremental-%{BUNDLE_IMAGE_VERSION}.squashfs"
+            exclude:
+              - "home/*"
+              - "var/*"
+
+images:
+  "%{NODE_TYPE}-%{MACHINE}":
+    type: gpt
+    desc: "Aos VM node image"
+    partitions:
+      boot_a:
+        gpt_type: 21686148-6449-6E6F-744E-656564454649 # BIOS boot partition (kinda...)
+        type: vfat
+        size: 256 MiB
+        items:
+          "aos-image-initramfs-%{MACHINE}.cpio.gz": "%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/aos-image-initramfs-%{MACHINE}.rootfs.cpio.gz"
+          "%{KERNEL_TYPE}": "%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/%{KERNEL_TYPE}"
+          "EFI/BOOT/%{BOOT_TYPE}": "%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/grub-efi-%{BOOT_TYPE}"
+          "EFI/BOOT/grub.cfg": "%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/grub.cfg"
+          "aos/version": "%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/aos/boot/version"
+
+      boot_b:
+        gpt_type: 21686148-6449-6E6F-744E-656564454649 # BIOS boot partition (kinda...)
+        type: vfat
+        size: 256 MiB
+        items:
+          "aos-image-initramfs-%{MACHINE}.cpio.gz": "%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/aos-image-initramfs-%{MACHINE}.rootfs.cpio.gz"
+          "%{KERNEL_TYPE}": "%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/%{KERNEL_TYPE}"
+          "EFI/BOOT/%{BOOT_TYPE}": "%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/grub-efi-%{BOOT_TYPE}"
+          "EFI/BOOT/grub.cfg": "%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/grub.cfg"
+          "aos/version": "%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/aos/boot/version"
+
+      rootfs:
+        gpt_type: B921B045-1DF0-41C3-AF44-4C6F280D3FAE # Linux aarch64 root
+        type: raw_image
+        image_path: "%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/%{AOS_BASE_IMAGE}-%{MACHINE}.rootfs.ext4"
+
+      home:
+        gpt_type: B921B045-1DF0-41C3-AF44-4C6F280D3FAE # Linux aarch64 root
+        type: raw_image
+        image_path: "%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/%{AOS_BASE_IMAGE}-%{MACHINE}-home.ext4"
+
+      var:
+        gpt_type: B921B045-1DF0-41C3-AF44-4C6F280D3FAE # Linux aarch64 root
+        type: raw_image
+        image_path: "%{YOCTOS_WORK_DIR}/build-%{NODE_TYPE}/tmp/deploy/images/%{MACHINE}/%{AOS_BASE_IMAGE}-%{MACHINE}-var.ext4"
+
+      aos:
+        gpt_type: CA7D7CCB-63ED-4C53-861C-1742536059CC # LUKS partition
+        type: empty
+        size: 4096 MiB
+
+parameters:
+  MACHINE:
+    desc: "Aos VM machine type"
+
+    "genericx86-64":
+      default: true
+      overrides:
+        variables:
+          MACHINE: "genericx86-64"
+          KERNEL_TYPE: "bzImage"
+          BOOT_TYPE: "bootx64.efi"
+          AOS_ARCHITECTURE: "amd64"
+
+    "qemux86-64":
+      overrides:
+        variables:
+          MACHINE: "qemux86-64"
+          KERNEL_TYPE: "bzImage"
+          BOOT_TYPE: "bootx64.efi"
+          AOS_ARCHITECTURE: "amd64"
+
+        common_data:
+          common_conf:
+            - [MACHINE_FEATURES:append, " efi"]
+            - [EFI_PROVIDER, "grub-efi"]
+
+    "genericarm64":
+      overrides:
+        variables:
+          MACHINE: "qemuarm64"
+          KERNEL_TYPE: "Image"
+          BOOT_TYPE: "bootaa64.efi"
+          AOS_ARCHITECTURE: "arm64"
+
+        common_data:
+          common_sources:
+            - type: git
+              url: "https://git.yoctoproject.org/meta-arm"
+              rev: "c4fd56386ee30f8b46f8e4eb1220edaf510d2ac0"
+
+          common_conf:
+            - [PREFERRED_PROVIDER_virtual/bootloader, "edk2-firmware"]
+            - [MACHINE_FEATURES:append, " efi"]
+            - [EXTRA_IMAGEDEPENDS:append, " edk2-firmware"]
+            - [EFI_PROVIDER, "grub-efi"]
+
+          main_layers:
+            - "../meta-arm/meta-arm-toolchain"
+            - "../meta-arm/meta-arm"
+
+          node_layers:
+            - "../meta-arm/meta-arm-toolchain"
+            - "../meta-arm/meta-arm"
+
+    "qemuarm64":
+      overrides:
+        variables:
+          MACHINE: "qemuarm64"
+          KERNEL_TYPE: "Image"
+          BOOT_TYPE: "bootaa64.efi"
+          AOS_ARCHITECTURE: "arm64"
+
+        common_data:
+          common_sources:
+            - type: git
+              url: "https://git.yoctoproject.org/meta-arm"
+              rev: "c4fd56386ee30f8b46f8e4eb1220edaf510d2ac0"
+
+          common_conf:
+            - [PREFERRED_PROVIDER_virtual/bootloader, "edk2-firmware"]
+            - [MACHINE_FEATURES:append, " efi"]
+            - [EXTRA_IMAGEDEPENDS:append, " edk2-firmware"]
+            - [EFI_PROVIDER, "grub-efi"]
+
+          main_layers:
+            - "../meta-arm/meta-arm-toolchain"
+            - "../meta-arm/meta-arm"
+
+          node_layers:
+            - "../meta-arm/meta-arm-toolchain"
+            - "../meta-arm/meta-arm"
+
+  NODE_TYPE:
+    desc: "Node type to build"
+
+    "main":
+      default: true
+      overrides:
+        variables:
+          NODE_TYPE: "main"
+
+        components:
+          aos-vm:
+            builder:
+              conf:
+                - [AOS_MAIN_NODE, "1"]
+                - [AOS_NODE_IP, "%{MAIN_NODE_IP}/24"]
+                - [AOS_NODE_GW_IP, "10.0.0.1"]
+                - [AOS_HOSTS:append, " %{MAIN_NODE_IP}=%{MAIN_NODE_HOSTNAME}"]
+
+              layers: *MAIN_LAYERS
+
+    "secondary":
+      overrides:
+        variables:
+          NODE_TYPE: "secondary"
+
+        components:
+          aos-vm:
+            builder:
+              conf:
+                - [AOS_MAIN_NODE, "0"]
+
+              layers: *NODE_LAYERS
+
+  USE_DHCP:
+    desc: "Use DHCP for network configuration"
+    "yes":
+      overrides:
+        components:
+          aos-vm:
+            builder:
+              conf:
+                - [AOS_USE_DHCP, "1"]
+                - [AOS_DNS_IP, "%{MAIN_NODE_IP}"]
+                - [AOS_NODE_IP, "%{MAIN_NODE_IP}/24"]
+
+    "no":
+      default: true
+      overrides:
+        components:
+          aos-vm:
+            builder:
+              conf:
+                - [AOS_USE_DHCP, "0"]
+
+  WITH_MESSAGE_PROXY:
+    desc: "Enable Aos message proxy"
+    "yes":
+      overrides:
+        components:
+          aos-vm:
+            builder:
+              conf:
+                - [
+                    IMAGE_INSTALL:append,
+                    " ${@'aos-messageproxy' if bb.utils.to_boolean(d.getVar('AOS_MAIN_NODE')) else ''}",
+                  ]
+
+    "no":
+      default: true
+
+  CACHE_LOCATION:
+    desc: "Indicated where cache and downloads are stored: inside build dir or outside."
+    outside:
+      default: true
+
+    inside:
+      overrides:
+        common_data:
+          common_conf:
+            - [SSTATE_DIR, "/home/yocto/yocto-cache/sstate-cache"]
+            - [DL_DIR, "/home/yocto/yocto-cache/downloads"]

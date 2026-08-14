@@ -1,0 +1,163 @@
+#!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+set -euo pipefail
+
+readonly command_name="${1:-}"
+readonly input_root="/home/yocto/r61-input"
+readonly work_root="/home/yocto/r61-build/upstream"
+readonly manifest="${input_root}/aos-vm-upstream.pinned.yaml"
+readonly manifest_sha256="77f25a49c439035ab0dc2d8d496048043b1258bb230996428ca730de364bb4fe"
+readonly moulin_root="/home/yocto/r61-work/moulin"
+readonly moulin_revision="cbecc1c748a8c5649e9a319b29167bf27dc4fc3a"
+readonly moulin="/home/yocto/.local/bin/moulin"
+readonly cache_root="/home/yocto/yocto-cache"
+readonly log_file="${work_root}/r6-1-upstream-build.log"
+readonly pid_file="${work_root}/r6-1-upstream-build.pid"
+readonly result_file="${work_root}/r6-1-upstream-build.result"
+
+fail() {
+    printf 'Error: %s\n' "$*" >&2
+    exit 1
+}
+
+require_regular_file() {
+    local path="$1"
+    [[ -f "$path" && ! -L "$path" ]] || fail "unsafe or missing file: ${path}"
+}
+
+verify_inputs() {
+    [[ "$(uname -m)" == "aarch64" ]] || fail "builder must be ARM64"
+    [[ "$(findmnt -n -o FSTYPE -T /home/yocto)" == "ext4" ]] || \
+        fail "builder workspace must be on ext4"
+    require_regular_file "$manifest"
+    [[ "$(sha256sum "$manifest" | cut -d' ' -f1)" == "$manifest_sha256" ]] || \
+        fail "pinned manifest digest mismatch"
+    [[ -x "$moulin" ]] || fail "Moulin is unavailable"
+    [[ "$(git -C "$moulin_root" rev-parse HEAD)" == "$moulin_revision" ]] || \
+        fail "Moulin revision mismatch"
+    git -C "$moulin_root" diff --quiet
+    git -C "$moulin_root" diff --cached --quiet
+    "$moulin" -h 2>&1 | grep -F "Moulin meta-build system v0.21" >/dev/null
+    for path in "$cache_root" "$cache_root/downloads" "$cache_root/sstate-cache"; do
+        [[ -d "$path" && ! -L "$path" ]] || fail "unsafe cache path: ${path}"
+    done
+    if find "$input_root" -type f \( \
+        -name '*.p12' -o -name '*.pfx' -o -name '*.pem' -o -name '*.key' \
+    \) -print -quit | grep -q .; then
+        fail "credential-like file present in the input directory"
+    fi
+}
+
+generate_upstream() {
+    verify_inputs
+    install -d -m 0750 "$work_root"
+    cd "$work_root"
+    "$moulin" "$manifest" \
+        --MACHINE=qemuarm64 \
+        --NODE_TYPE=main \
+        --WITH_MESSAGE_PROXY=no \
+        --CACHE_LOCATION=outside
+    require_regular_file "$work_root/build.ninja"
+    grep -F "/home/yocto/yocto-cache/downloads" "$work_root/build.ninja" >/dev/null
+    grep -F "/home/yocto/yocto-cache/sstate-cache" "$work_root/build.ninja" >/dev/null
+    if grep -E 'rev[^[:alnum:]]+(main|master|scarthgap|v[0-9])' \
+        "$work_root/build.ninja" >/dev/null; then
+        fail "generated build contains a floating source selector"
+    fi
+    printf 'MANIFEST_SHA256=%s\n' "$manifest_sha256"
+    printf 'BUILD_NINJA_SHA256=%s\n' \
+        "$(sha256sum "$work_root/build.ninja" | cut -d' ' -f1)"
+    printf 'R6_1_UPSTREAM_GENERATE=PASS\n'
+}
+
+read_owned_pid() {
+    [[ -e "$pid_file" ]] || return 1
+    require_regular_file "$pid_file"
+    local pid
+    pid="$(cat "$pid_file")"
+    [[ "$pid" =~ ^[0-9]+$ && "$pid" -gt 1 ]] || fail "invalid build PID"
+    [[ -r "/proc/${pid}/cmdline" ]] || return 1
+    tr '\0' ' ' <"/proc/${pid}/cmdline" | \
+        grep -F "r6-1-yocto-build run-upstream" >/dev/null || \
+        fail "build PID is not owned by R6.1"
+    printf '%s\n' "$pid"
+}
+
+run_upstream() {
+    verify_inputs
+    require_regular_file "$work_root/build.ninja"
+    rm -f "$result_file"
+    cd "$work_root"
+    set +e
+    ninja -j 10 main-qemuarm64.img
+    result=$?
+    set -e
+    if [[ "$result" -eq 0 ]]; then
+        printf 'PASS\n' >"$result_file"
+    else
+        printf 'FAIL:%s\n' "$result" >"$result_file"
+    fi
+    chmod 0640 "$result_file"
+    exit "$result"
+}
+
+start_upstream() {
+    verify_inputs
+    require_regular_file "$work_root/build.ninja"
+    if pid="$(read_owned_pid)"; then
+        printf 'R6.1 upstream build is already running (PID %s).\n' "$pid"
+        return
+    fi
+    rm -f "$pid_file" "$result_file"
+    require_regular_file "$0"
+    nohup "$0" run-upstream >"$log_file" 2>&1 </dev/null &
+    pid=$!
+    printf '%s\n' "$pid" >"$pid_file"
+    chmod 0640 "$pid_file" "$log_file"
+    sleep 1
+    if ! kill -0 "$pid" 2>/dev/null && [[ ! -f "$result_file" ]]; then
+        fail "upstream build did not start; inspect ${log_file}"
+    fi
+    printf 'R6.1 upstream build started (PID %s).\n' "$pid"
+    printf 'Log: %s\n' "$log_file"
+}
+
+status_upstream() {
+    if pid="$(read_owned_pid)"; then
+        printf 'STATE=RUNNING\nPID=%s\n' "$pid"
+    elif [[ -f "$result_file" ]]; then
+        require_regular_file "$result_file"
+        printf 'STATE=%s\n' "$(cat "$result_file")"
+    else
+        printf 'STATE=NOT_STARTED\n'
+    fi
+    if [[ -f "$log_file" ]]; then
+        require_regular_file "$log_file"
+        printf '%s\n' '--- LOG TAIL ---'
+        tail -n 30 "$log_file"
+    fi
+}
+
+case "$command_name" in
+    verify)
+        verify_inputs
+        printf 'R6_1_UPSTREAM_INPUTS=PASS\n'
+        ;;
+    generate-upstream)
+        generate_upstream
+        ;;
+    run-upstream)
+        run_upstream
+        ;;
+    start-upstream)
+        start_upstream
+        ;;
+    status-upstream)
+        status_upstream
+        ;;
+    *)
+        fail "usage: $0 {verify|generate-upstream|start-upstream|status-upstream}"
+        ;;
+esac
