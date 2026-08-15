@@ -19,7 +19,7 @@ acceptance evidence.
 | --- | --- | --- |
 | AOS-1.1: account and roles | Complete - 2026-08-13 | OEM and SP cloud access confirmed |
 | AOS-1.2: CLI environment | Complete - 2026-08-13 | Exact tool versions and single-Node CLI contract verified |
-| AOS-1.3: user certificates | Complete - 2026-08-13 | OEM and SP certificate/API checks pass |
+| AOS-1.3: provisioning certificate | Complete - 2026-08-13 | Existing OEM certificate and API check pass |
 | AOS-1.4: single-Node cloud model | Complete - 2026-08-13 | Target System matches the Main Node only |
 | AOS-1.5: provisioning transport | Complete - 2026-08-13 | Guest IAM was reachable only on host loopback |
 | AOS-1.6: persistent lifecycle and recovery checkpoint | Complete - 2026-08-13 | Reset lock and independent pre-provision checkpoint pass |
@@ -27,11 +27,8 @@ acceptance evidence.
 | AOS-1.8: post-provision acceptance | Complete - 2026-08-13 | Local core, identity continuity, and cloud Unit gates pass |
 | AOS-1.9: Hello World | Complete - 2026-08-14 | Official service reaches `Active` |
 
-The existing AosEdge account has been recovered on this new Mac. OEM and SP
-client certificates pass live role-scoped API checks. The Admin leaf
-certificate is valid but its issued PKCS#12 contains a mismatched legacy CA
-chain; that account-recovery defect is parked because Admin access is not used
-by `aos-prov`. A single-Node `aos-vm` version `1.0.0` Target System now exists
+The existing AosEdge account and OEM client certificate work on this Mac. A
+single-Node `aos-vm` version `1.0.0` Target System exists
 in the authenticated OEM and its API read-back exactly matches the tracked
 configuration. The SDK provisioned the Main Node with protocol v6 and
 `--nodes 1` on the first and only attempt. AosCloud now reports one online,
@@ -84,9 +81,9 @@ the repository. Unit keys are generated and retained through the guest's
 PKCS#11-backed provisioning flow. Tracked evidence contains only versions,
 pass/fail classifications, generic topology, and sanitized timings.
 
-The user must run each welcome-email token command directly in a personal
-terminal. The command must not be pasted into Codex. The token is one-time but
-should still be kept out of shell-history backups where practical.
+Certificate issuance and recovery remain separate account-administration
+workflows. This repository neither documents token-bearing commands nor
+implements certificate replacement.
 
 ## Phase AOS-1.1: Create and verify the account
 
@@ -155,54 +152,33 @@ contract are known.
 generic `provision` command, cannot use an explicit port, or is incompatible
 with the provisioning protocol reported by the guest.
 
-## Phase AOS-1.3: Install trust and user certificates
+## Phase AOS-1.3: Verify the Existing OEM Certificate
 
-Install the Aos root certificate using the official tool:
-
-```sh
-~/.aos/venv/bin/python3 -m aos_keys install-root
-```
-
-macOS may require the user to approve Keychain trust with Touch ID or the local
-account password. This is an expected user-presence step and must not be
-automated around the Keychain prompt.
-
-Next, the user supplies the fresh Admin, OEM, and SP reissue tokens directly to
-the private terminal prompts in the tracked helper. Representative shape only:
+Certificate issuance, renewal, recovery, root-trust installation, and
+one-time-token handling are account-administration workflows outside this
+repository. The provisioning workflow assumes that the user already has a
+valid OEM PKCS#12 file outside Git, normally at:
 
 ```text
-~/.aos/venv/bin/python3 -m aos_keys new-user -d <cloud-domain> -t <one-time-token> --admin
-~/.aos/venv/bin/python3 -m aos_keys new-user -d <cloud-domain> -t <one-time-token> --oem
-~/.aos/venv/bin/python3 -m aos_keys new-user -d <cloud-domain> -t <one-time-token> --sp
+~/.aos/security/aos-user-oem.p12
 ```
 
-Never replace the placeholders in tracked text. The reissue email or PDF must
-not be committed, and a disclosed token should be replaced before use. Run:
+Run the guarded local and live role check:
 
 ```sh
-./scripts/aos-user-setup reissue
-./scripts/aos-user-setup verify
+./scripts/aos-user-setup verify-oem
 ```
 
-The equivalent local verification calls are:
+The helper validates the certificate locally and performs a read-only mTLS
+Cloud access check. It does not request a token, issue or replace a
+certificate, import browser credentials, or mutate AosCloud. Browser sign-in
+is optional for visual inspection and is not an execution dependency.
 
-```sh
-~/.aos/venv/bin/python3 -m aos_keys info --admin
-~/.aos/venv/bin/python3 -m aos_keys info --oem
-~/.aos/venv/bin/python3 -m aos_keys info --sp
-```
+**Pass:** the OEM certificate is valid, the read-only role check succeeds, and
+the file remains outside the repository.
 
-Live mTLS API checks returned the `oem` and `service provider` roles. OEM can
-read Unit Models, Node Types, and Units; SP can read Services and is correctly
-denied access to OEM-only Unit Models. The provisioning CLI selects the OEM
-certificate by default. Browser sign-in is optional for visual inspection and
-is not an execution dependency.
-
-**Pass:** both required role checks succeed, the files remain outside the
-repository, and no token or private material was captured.
-
-**Stop:** a role is wrong, a certificate is expired, the browser selects the
-wrong identity, or private material appears anywhere under the repository.
+**Stop:** the certificate is absent, expired, has the wrong role, fails mTLS,
+or any private material appears under the repository.
 
 ## Phase AOS-1.4: Define the single-Node cloud model
 
@@ -537,7 +513,7 @@ cloud identifier, bundle, or downloaded log is retained in Git.
 
 - [x] OEM and SP account roles are confirmed.
 - [x] Exact isolated CLI versions are recorded locally.
-- [x] Aos root trust and OEM/SP certificate checks pass.
+- [x] The existing OEM certificate and live provisioning-role check pass.
 - [x] No token, private key, certificate, or account identifier is tracked.
 - [x] The cloud Target System contains only `aos-vm-main`.
 - [x] Normal QEMU mode does not expose provisioning IAM.

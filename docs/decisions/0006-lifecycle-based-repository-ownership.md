@@ -1,6 +1,6 @@
 # ADR 0006: Separate Platform and Service Repositories by Lifecycle
 
-- Status: Accepted; implementation pending final plan review
+- Status: Accepted and implemented
 - Date: 2026-08-14
 - Supersedes: the single-integration-repository portion of ADR 0001
 
@@ -59,7 +59,7 @@ aos-vehicle-platform/
 ├── contracts/
 │   └── vehicle-telemetry-profile/
 ├── packaging/
-│   └── aosvm/
+│   └── fota/
 ├── providers/
 │   └── carla-viss-kuksa/
 ├── tests/
@@ -213,13 +213,14 @@ Detailed rules: [licensing and copyright policy](../licensing-and-copyright-poli
   platform repository and its absence does not justify moving authorization
   logic into the telemetry service.
 
-## Migration
+## Migration Result
 
-No provider, adapter, or telemetry-consumer source exists yet in the
-integration repository, so no source-history rewrite or code move is required.
-Create and qualify the new repositories before AOS-2 implementation begins.
-The detailed, review-gated sequence is recorded in the repository separation
-plan.
+The platform and service repositories are public and independently validated.
+Provider source, the vehicle-data contract, FOTA packaging, and Yocto
+integration now live in `aos-vehicle-platform`; the service scaffold lives in
+`vehicle-telemetry-service`. This integration repository retains only locks,
+orchestration, qualification, and sanitized documentation. Completed migration
+plans and fresh-clone evidence remain available through Git history.
 
 ## Consequences
 
@@ -248,5 +249,4 @@ plan.
 
 - [ADR 0001: initial repository and artifact boundaries](0001-repository-and-artifact-boundaries.md)
 - [ADR 0005: KUKSA vehicle-data boundary](0005-kuksa-vehicle-data-boundary.md)
-- [Repository separation plan](../repository-separation-plan.md)
 - [Licensing and copyright policy](../licensing-and-copyright-policy.md)

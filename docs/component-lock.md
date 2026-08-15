@@ -5,9 +5,11 @@
 
 ## Purpose
 
-`components/baseline.lock.json` identifies the exact source and artifact inputs
-for one tested or candidate integration baseline without Git submodules. It is
-public, non-secret, and contains no developer checkout path.
+`components/baseline.lock.json` identifies the exact accepted AOS-2 source and
+artifact inputs without Git submodules. It is public, non-secret, and contains
+no developer checkout path. The later R6.1 Yocto/runtime source baseline is
+separately pinned by `components/r6-1-source.lock.json`; exact candidate `.11`
+digests are recorded in [the current baseline](current-baseline.md).
 
 The initial candidate pins:
 

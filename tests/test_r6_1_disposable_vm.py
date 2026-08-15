@@ -74,20 +74,22 @@ class R61DisposableVMTests(unittest.TestCase):
                 )
                 self.assertEqual(bootstrap.ssh_port, 10027)
 
-                legacy_bootstrap_image = (
+                rejected_bootstrap_image = (
                     root
                     / "bootstrap-6.1.1-maninblack.3"
                     / "main-qemuarm64.img"
                 )
-                legacy_bootstrap_image.parent.mkdir()
-                legacy_bootstrap_image.write_bytes(b"r61-legacy-bootstrap-image")
-                legacy_bootstrap_image.chmod(0o444)
-                legacy = HELPER.create_layout(
-                    "bootstrap",
-                    str(legacy_bootstrap_image),
-                    HELPER.sha256(legacy_bootstrap_image),
-                )
-                self.assertEqual(legacy.ssh_port, 10027)
+                rejected_bootstrap_image.parent.mkdir()
+                rejected_bootstrap_image.write_bytes(b"r61-rejected-bootstrap-image")
+                rejected_bootstrap_image.chmod(0o444)
+                with self.assertRaisesRegex(
+                    HELPER.QualificationError, "bootstrap-6.1.1-maninblack.11"
+                ):
+                    HELPER.create_layout(
+                        "bootstrap",
+                        str(rejected_bootstrap_image),
+                        HELPER.sha256(rejected_bootstrap_image),
+                    )
 
                 store = HELPER.create_layout(
                     "store",
@@ -205,7 +207,7 @@ class R61DisposableVMTests(unittest.TestCase):
         self.assertIn("guest is unexpectedly provisioned", guest_gate)
         self.assertIn("expected_rootfs_version=6.1.1-maninblack.11", guest_gate)
         self.assertIn("validation) expected_rootfs_version=6.1.1-maninblack.11", guest_gate)
-        self.assertIn("store-side-load) expected_rootfs_version=6.1.1-maninblack.9", guest_gate)
+        self.assertNotIn("store-side-load", guest_gate)
         self.assertIn("validation guest is not provisioned", guest_gate)
         self.assertIn("AosCore runtime service is not active", guest_gate)
         self.assertIn("Aos rootfs component version marker is incorrect", guest_gate)
@@ -277,10 +279,9 @@ class R61DisposableVMTests(unittest.TestCase):
         self.assertIn("/run/aos-vehicle-data-provider-store/loop", fixture)
         self.assertIn("store backing is not fully allocated", fixture)
         self.assertIn("r6-1-store-fixture-v1", fixture)
-        self.assertIn('gate_variant=${2:-store}', fixture)
-        self.assertIn('security_mode=${3:-enforcing}', fixture)
-        self.assertIn('content_mode=${4:-empty}', fixture)
-        self.assertIn('store|store-side-load)', fixture)
+        self.assertIn('content_mode=${2:-empty}', fixture)
+        self.assertNotIn('security_mode=', fixture)
+        self.assertNotIn('store-side-load', fixture)
         self.assertIn('empty|provider)', fixture)
         self.assertIn('provider content mode is valid only for restart', fixture)
         self.assertIn('provider restart did not preserve the active B slot', fixture)
@@ -291,7 +292,6 @@ class R61DisposableVMTests(unittest.TestCase):
         self.assertIn("PROBE_SECURITY_MODEL=PASS", fixture)
         self.assertIn("NON_ROOT_IDENTITY=PASS", fixture)
         self.assertNotIn("uid=$(id -u)", fixture)
-        self.assertIn("PROBE_SIBLING_ACCESS=ALLOWED_FOR_DISCOVERY", fixture)
         self.assertIn("PROBE_SIBLING_ACCESS=DENIED", fixture)
         self.assertIn("provider payload did not prove a non-root", fixture)
         self.assertNotIn("id -Z", fixture)
@@ -304,160 +304,16 @@ class R61DisposableVMTests(unittest.TestCase):
         self.assertNotIn("/dev/sda ", fixture)
         self.assertNotIn("mkfs.ext4 -q -F -m 0 -L r61-workdirs /dev/sda", fixture)
 
-    def test_security_side_load_is_disposable_pinned_and_domain_scoped(self) -> None:
-        helper = (
-            ROOT / "scripts" / "guest" / "r6-1-security-side-load"
-        ).read_text(encoding="utf-8")
-        self.assertIn("VERSION_ID=6.1.1-maninblack.9", helper)
-        self.assertIn(
-            "55dc2e826d639f8434785f54a3dd69e51beef89d6e9c07229718bed72952a071",
-            helper,
-        )
-        self.assertIn(
-            "a1efd6434642210a09a80170a19830b63a6601871d1c32ef7e6f1fd4e3cba2e1",
-            helper,
-        )
-        self.assertIn("semanage permissive -a \"$domain\"", helper)
-        self.assertIn("semanage permissive -d \"$domain\"", helper)
-        self.assertNotIn("setenforce 0", helper)
-        self.assertNotIn("semodule -DB", helper)
-
-    def test_credential_side_load_is_pinned_enforcing_and_read_only(self) -> None:
-        helper = (
-            ROOT / "scripts" / "guest" / "r6-1-credential-side-load"
-        ).read_text(encoding="utf-8")
-        self.assertIn("VERSION_ID=6.1.1-maninblack.10", helper)
-        self.assertIn(
-            "9f0fcf32c38e57c422230e1f79a32d66a880836bac4f2eb491f949518c46132c",
-            helper,
-        )
-        self.assertIn(
-            "0e6f39cf3f799b2455d1037d6983bb632a692618cd549bcc31a26c3c82aba101",
-            helper,
-        )
-        self.assertIn(
-            "PLATFORM_BASE_REVISION=7cd8de32a7608618a3f45d35f989db3138c455b2",
-            helper,
-        )
-        self.assertIn('case "$mode" in', helper)
-        self.assertIn("units-discovery", helper)
-        self.assertIn("provider domain is not in the bounded discovery mode", helper)
-        self.assertIn("CLEAN_RESTART_REQUIRED=yes", helper)
-        self.assertIn("units mode requires a clean restart with read-only rootfs", helper)
-        self.assertIn("/run/systemd/system/aos-vehicle-data-provider.service", helper)
-        self.assertIn("CapabilityBoundingSet=", helper)
-        self.assertIn("require_effective_allow vehicle_data_provider_t", helper)
-        self.assertIn("urandom_device_t", helper)
-        self.assertIn("-ds -dt", helper)
-        self.assertIn("effective credential policy permits provider writes", helper)
-        self.assertIn(
-            "Wants=network-online.target kuksa-databroker.service", helper
-        )
-        self.assertIn("KUKSA remains a hard lifecycle dependency", helper)
-        self.assertNotIn("ExecStart=!", helper)
-        self.assertNotIn("setenforce", helper)
-        self.assertNotIn("semanage permissive -a", helper)
-
-    def test_failed_install_reset_is_exact_and_preserves_store_evidence(self) -> None:
-        helper = (
-            ROOT / "scripts" / "guest" / "r6-1-provider-failed-install-reset"
-        ).read_text(encoding="utf-8")
-        self.assertIn("VERSION_ID=6.1.1-maninblack.10", helper)
-        self.assertIn("candidateVersion", helper)
-        self.assertIn("0\\.2\\.0", helper)
-        self.assertIn("RESET_SCOPE=FAILED_FIRST_INSTALL_ONLY", helper)
-        self.assertIn('rm -rf "$slot_a"', helper)
-        self.assertIn('rm -f "$failure"', helper)
-        self.assertIn("persistent store marker changed", helper)
-        self.assertIn("store schema changed", helper)
-        self.assertIn("unrelated workdirs fixture changed", helper)
-        self.assertNotIn('rm -rf "$root"', helper)
-
-    def test_provider_domain_discovery_is_scoped_and_reversible(self) -> None:
-        helper = (
-            ROOT / "scripts" / "guest" / "r6-1-provider-domain-discovery"
-        ).read_text(encoding="utf-8")
-        self.assertIn("VERSION_ID=6.1.1-maninblack.10", helper)
-        self.assertIn("domain=vehicle_data_provider_t", helper)
-        self.assertIn('semanage permissive -a "$domain"', helper)
-        self.assertIn('semanage permissive -d "$domain"', helper)
-        self.assertIn("audit-enable", helper)
-        self.assertIn("audit-disable", helper)
-        self.assertIn("semodule -DB", helper)
-        self.assertIn("semodule -B", helper)
-        self.assertIn("GLOBAL_SELINUX=Enforcing", helper)
-        self.assertIn("CLEAN_RESTART_REQUIRED=yes", helper)
-        self.assertNotIn("setenforce", helper)
-
-    def test_provider_dependency_discovery_is_bounded_and_restores_inputs(self) -> None:
-        helper = (
-            ROOT / "scripts" / "guest" / "r6-1-provider-dependency-discovery"
-        ).read_text(encoding="utf-8")
-        for result in (
-            "KUKSA_DEPENDENCY_RECOVERY=OBSERVED",
-            "KUKSA_SOFT_DEPENDENCY_RECOVERY=PASS",
-            "DNS_RESOLUTION=PASS",
-            "RUNNING_CREDENTIAL_SNAPSHOT=PASS",
-            "INVALID_CREDENTIAL=FAIL_CLOSED",
-            "SIGKILL_RECOVERY=PASS",
-            "HANG_DETECTION=ABSENT",
-            "DNS_FAILURE=FAIL_SAFE",
-            "TLS_FAILURE=FAIL_SAFE",
-            "R6_1_PROVIDER_DEPENDENCY_DISCOVERY=PASS",
-        ):
-            self.assertIn(result, helper)
-        self.assertIn("VERSION_ID=6.1.1-maninblack.10", helper)
-        self.assertIn("discovery|verify", helper)
-        self.assertIn("provider domain must be enforcing for verification", helper)
-        self.assertIn("vehicle_data_provider_t", helper)
-        self.assertIn("install -o 0 -g 0 -m 0600", helper)
-        self.assertIn("configuration was not restored exactly", helper)
-        self.assertIn("credential source was not restored exactly", helper)
-        self.assertIn("trap cleanup EXIT HUP INT TERM", helper)
-        self.assertNotIn("setenforce", helper)
-        self.assertNotIn("semodule", helper)
-
-    def test_store_failure_matrix_covers_only_new_store_failures(self) -> None:
-        helper = (
-            ROOT / "scripts" / "guest" / "r6-1-store-failure-matrix"
-        ).read_text(encoding="utf-8")
-        for result in (
-            "INTERRUPTED_ALLOCATION=PASS",
-            "INSUFFICIENT_RESERVE=PASS",
-            "INVALID_IDENTITY=PASS",
-            "FAILED_FSCK=PASS",
-            "DAMAGED_FILESYSTEM=PASS",
-            "MISSING_LOOP_CONTROL=PASS",
-            "MOUNT_FAILURE=PASS",
-            "READ_ONLY_REMOUNT=PASS",
-            "EXISTING_STORE_NEVER_REFORMATTED=PASS",
-            "UNRELATED_WORKDIRS_UNCHANGED=PASS",
-        ):
-            self.assertIn(result, helper)
-        self.assertIn("loop-control.r61-failure", helper)
-        self.assertIn("trap restore_loop_control EXIT HUP INT TERM", helper)
-        self.assertIn("resume-loop", helper)
-        self.assertNotIn("systemd-run", helper)
-        self.assertNotIn("setenforce", helper)
-        self.assertNotIn("bitbake", helper)
-
-    def test_provider_delta_skips_the_unchanged_generic_runtime_matrix(self) -> None:
+    def test_provider_integration_runs_the_complete_enforcing_matrix(self) -> None:
         integration = (
             ROOT / "scripts" / "guest" / "r6-1-provider-integration-check"
         ).read_text(encoding="utf-8")
-        restart = (
-            ROOT / "scripts" / "guest" / "r6-1-provider-restart-check"
-        ).read_text(encoding="utf-8")
-        self.assertIn('scope=${1:-complete}', integration)
-        self.assertIn('complete|store-delta|policy-discovery)', integration)
-        self.assertIn('if [ "$scope" = complete ]', integration)
-        self.assertIn('if [ "$scope" = policy-discovery ]', integration)
-        self.assertIn("DISCOVERY_AVC_COUNT=%s", integration)
-        self.assertIn("QUALIFICATION_SCOPE=%s", integration)
-        self.assertIn("fixed-context store path has the wrong SELinux type", integration)
-        self.assertIn("VERSION_ID=6.1.1-maninblack.10", restart)
-        self.assertIn("active provider slot B was not preserved", restart)
-        self.assertIn("R6_1_PROVIDER_RESTART=PASS", restart)
+        self.assertIn("usage: r6-1-provider-integration-check", integration)
+        self.assertIn("generic ARM64 Service Manager runtime matrix failed", integration)
+        self.assertIn("real provider update and rollback runtime gate failed", integration)
+        self.assertIn("provider qualification produced an SELinux AVC denial", integration)
+        self.assertNotIn("policy-discovery", integration)
+        self.assertNotIn("store-delta", integration)
 
 
 if __name__ == "__main__":

@@ -154,33 +154,18 @@ class R61BuilderTests(unittest.TestCase):
                 "/tmp/main-qemuarm64.img",
             )
 
-    def test_fetch_allows_only_the_pinned_side_load_package_outputs(self) -> None:
-        expected = {
-            source: (BUILDER.ARTIFACT_ROOT / destination).resolve()
-            for source, destination in BUILDER.ALLOWED_PACKAGE_FETCHES.items()
-        }
-        self.assertEqual(len(expected), 2)
-        for source, destination in expected.items():
-            validated_source, validated_destination = BUILDER.validate_fetch_paths(
-                str(source), str(destination)
-            )
-            self.assertEqual(validated_source, str(source))
-            self.assertEqual(validated_destination, destination)
-
-        launcher = next(
-            source
-            for source in expected
-            if source.name == "aos-vehicle-data-provider-launcher"
+    def test_fetch_has_no_package_level_side_load_exceptions(self) -> None:
+        self.assertEqual(BUILDER.ALLOWED_PACKAGE_FETCHES, {})
+        launcher = (
+            "/home/yocto/r61-build/project/yocto/build-main/tmp/work/"
+            "cortexa57-aos-linux/aos-vehicle-data-provider-platform/0.1.0/"
+            "packages-split/aos-vehicle-data-provider-platform/usr/libexec/"
+            "aos-vehicle-data-provider-launcher"
         )
-        with self.assertRaisesRegex(BUILDER.BuilderError, "guarded path"):
-            BUILDER.validate_fetch_paths(
-                str(launcher),
-                "artifacts/r6-1/side-load-launcher-unreviewed.bin",
-            )
         with self.assertRaisesRegex(BUILDER.BuilderError, "allowed"):
             BUILDER.validate_fetch_paths(
-                str(launcher.parent / "unexpected-launcher"),
-                "artifacts/r6-1/side-load-launcher-7cd8de3.bin",
+                launcher,
+                "artifacts/r6-1/side-load-launcher.bin",
             )
 
     def test_builder_tool_bootstrap_is_pinned_and_identity_free(self) -> None:

@@ -62,12 +62,12 @@ Choose a private working directory and clone the current onboarding branch:
 ```sh
 mkdir -p "$HOME/Projects"
 cd "$HOME/Projects"
-git clone --branch feature/aos-1-single-node-provisioning \
+git clone --branch feature/r6-1-fota-runtime \
   https://github.com/alexmaninblack/carla-aosedge-integration.git
 cd carla-aosedge-integration
 ```
 
-When this work is merged, replace the explicit branch with `main`.
+Use this branch until the current integration baseline is merged to `main`.
 
 Do not place a `.p12` file in the repository. The repository ignores common
 key formats, but the correct location is still `~/.aos/security`.

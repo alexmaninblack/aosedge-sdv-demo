@@ -6,9 +6,7 @@ set -eu
 umask 077
 
 generation=${1:-}
-gate_variant=${2:-store}
-security_mode=${3:-enforcing}
-content_mode=${4:-empty}
+content_mode=${2:-empty}
 fixture_device=/dev/vda
 fixture_block=vda
 fixture_serial=r61-store-fixture
@@ -33,15 +31,7 @@ mount_option() {
 
 case "$generation" in
     first|restart) ;;
-    *) fail 'usage: r6-1-store-fixture <first|restart>' ;;
-esac
-case "$gate_variant" in
-    store|store-side-load) ;;
-    *) fail 'bootstrap gate must be store or store-side-load' ;;
-esac
-case "$security_mode" in
-    discovery|enforcing) ;;
-    *) fail 'security mode must be discovery or enforcing' ;;
+    *) fail 'usage: r6-1-store-fixture <first|restart> [empty|provider]' ;;
 esac
 case "$content_mode" in
     empty|provider) ;;
@@ -198,8 +188,8 @@ esac
 if [ "$content_mode" = empty ]; then
     [ -f /tmp/r6-1-bootstrap-check ] && [ ! -L /tmp/r6-1-bootstrap-check ] ||
         fail 'bootstrap gate helper is missing or unsafe'
-    sh /tmp/r6-1-bootstrap-check "$gate_variant" >/dev/null ||
-        fail 'complete .3 bootstrap gate failed on the fixture'
+    sh /tmp/r6-1-bootstrap-check store >/dev/null ||
+        fail 'complete .11 bootstrap gate failed on the fixture'
 fi
 
 install -d -m 0755 "$sibling"
@@ -226,20 +216,15 @@ config="$root/slots/a/config/provider.json"
 [ ! -O "$config" ] || exit 43
 printf 'NON_ROOT_IDENTITY=PASS\n'
 cat "$config" >/dev/null
-mode=$(cat "$root/slots/a/config/security-mode")
 if cat /var/aos/workdirs/.r61-store-fixture-sibling/secret >/dev/null 2>&1; then
-    [ "$mode" = discovery ] || exit 41
-    printf 'PROBE_SIBLING_ACCESS=ALLOWED_FOR_DISCOVERY\n'
-else
-    [ "$mode" = enforcing ] || exit 46
-    printf 'PROBE_SIBLING_ACCESS=DENIED\n'
+    exit 41
 fi
+printf 'PROBE_SIBLING_ACCESS=DENIED\n'
 printf 'PROBE_SECURITY_MODEL=PASS\n'
 EOF
     printf '{}\n' >"$probe_slot/config/provider.json"
-    printf '%s\n' "$security_mode" >"$probe_slot/config/security-mode"
     chmod 0755 "$probe_slot/bin/vehicle-data-provider"
-    chmod 0644 "$probe_slot/config/provider.json" "$probe_slot/config/security-mode"
+    chmod 0644 "$probe_slot/config/provider.json"
     systemctl reset-failed "$probe_unit" >/dev/null 2>&1 || true
     probe_status=0
     systemctl start "$probe_unit" >/dev/null 2>&1 || probe_status=$?
@@ -254,18 +239,9 @@ EOF
         fail 'provider payload did not prove a non-root runtime identity'
     printf '%s\n' "$probe_output" | grep -qx 'PROBE_SECURITY_MODEL=PASS' ||
         fail 'provider payload did not complete the store-isolation probe'
-    case "$security_mode" in
-        discovery)
-            printf '%s\n' "$probe_output" |
-                grep -qx 'PROBE_SIBLING_ACCESS=ALLOWED_FOR_DISCOVERY' ||
-                fail 'provider discovery did not exercise sibling access'
-            ;;
-        enforcing)
-            printf '%s\n' "$probe_output" |
-                grep -qx 'PROBE_SIBLING_ACCESS=DENIED' ||
-                fail 'provider enforcing probe did not deny sibling access'
-            ;;
-    esac
+    printf '%s\n' "$probe_output" |
+        grep -qx 'PROBE_SIBLING_ACCESS=DENIED' ||
+        fail 'provider probe did not deny sibling access'
     [ -z "$(find "$store/slots" -mindepth 1 -print -quit)" ] ||
         fail 'provider access probe did not clean its temporary slot'
 else
@@ -303,10 +279,8 @@ printf 'PROVIDER_SIBLING_ACCESS=%s\n' \
     "$(
         if [ "$content_mode" = provider ]; then
             printf PREVIOUSLY_QUALIFIED
-        elif [ "$security_mode" = enforcing ]; then
-            printf DENIED
         else
-            printf DISCOVERY_OBSERVED
+            printf DENIED
         fi
     )"
 printf 'R6_1_ISOLATED_STORE_FIXTURE=PASS\n'

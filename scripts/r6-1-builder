@@ -84,20 +84,10 @@ ALLOWED_FETCH_SUFFIXES = {
     ".squashfs",
     ".yaml",
 }
-ALLOWED_PACKAGE_FETCHES = {
-    PurePosixPath(
-        "/home/yocto/r61-build/project/yocto/build-main/tmp/work/"
-        "cortexa57-aos-linux/aos-vehicle-data-provider-platform/0.1.0/"
-        "packages-split/aos-vehicle-data-provider-platform/usr/libexec/"
-        "aos-vehicle-data-provider-launcher"
-    ): "side-load-launcher-7cd8de3.bin",
-    PurePosixPath(
-        "/home/yocto/r61-build/project/yocto/build-main/tmp/work/"
-        "qemuarm64-aos-linux/refpolicy-aos/2_20220106+git/"
-        "packages-split/refpolicy-aos/usr/share/selinux/aos/"
-        "vehicle_data_provider.pp"
-    ): "side-load-policy-r61-runtime-delta-v2.bin",
-}
+# There are no package-level exceptions. Fetch is restricted to regular image
+# artifacts with the suffixes above; temporary Yocto package files stay inside
+# the isolated builder.
+ALLOWED_PACKAGE_FETCHES: dict[PurePosixPath, str] = {}
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 ARTIFACT_ROOT = REPOSITORY_ROOT / "artifacts" / "r6-1"

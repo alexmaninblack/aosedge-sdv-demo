@@ -3,6 +3,11 @@
 
 # AOS-2 CARLA VISS-to-KUKSA Qualification
 
+> This record describes the accepted AOS-2 side-loaded baseline. R6.1
+> supersedes its packaging and runtime lifecycle with provider `0.2.0` and
+> rootfs candidate `.11`; the telemetry contract and observed behavior remain
+> the compatibility baseline.
+
 ## Result
 
 R6/AOS-2 passed on 2026-08-14. This milestone did not rebuild the official

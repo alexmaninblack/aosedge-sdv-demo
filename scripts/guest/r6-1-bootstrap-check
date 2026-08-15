@@ -118,9 +118,8 @@ case "$variant" in
     upstream|project|candidate) expected_rootfs_version=6.1.0 ;;
     bootstrap) expected_rootfs_version=6.1.1-maninblack.11 ;;
     store) expected_rootfs_version=6.1.1-maninblack.11 ;;
-    store-side-load) expected_rootfs_version=6.1.1-maninblack.9 ;;
     validation) expected_rootfs_version=6.1.1-maninblack.11 ;;
-    *) fail 'usage: r6-1-bootstrap-check <upstream|project|candidate|bootstrap|store|store-side-load|validation>' ;;
+    *) fail 'usage: r6-1-bootstrap-check <upstream|project|candidate|bootstrap|store|validation>' ;;
 esac
 case "$wait_seconds" in
     ''|*[!0-9]*) fail 'wait timeout must be a decimal integer' ;;
@@ -255,7 +254,7 @@ else
             [ -f /usr/lib/tmpfiles.d/aos-vehicle-data-provider.conf ] ||
                 fail 'legacy project tmpfiles configuration is absent'
             ;;
-        bootstrap|store|store-side-load|validation)
+        bootstrap|store|validation)
             for path in \
                 /usr/libexec/aos-vehicle-data-provider-loop \
                 /usr/libexec/aos-vehicle-data-provider-store-layout \
@@ -383,8 +382,7 @@ else
             fail 'empty project store has an active slot'
         [ -z "$(find "$store/slots" -mindepth 1 -print -quit)" ] ||
             fail 'empty project store contains a payload'
-        if [ "$variant" = store ] || [ "$variant" = store-side-load ] ||
-            [ "$variant" = validation ]; then
+        if [ "$variant" = store ] || [ "$variant" = validation ]; then
             [ "$(findmnt -rn -M "$store" -o FSTYPE)" = ext4 ] ||
                 fail 'isolated provider store is not a distinct ext4 mount'
             findmnt -rn -M "$store" -o OPTIONS | tr ',' '\n' | \

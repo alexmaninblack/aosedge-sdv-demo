@@ -6,7 +6,6 @@ umask 077
 minimum_keys_version=1.10.0
 minimum_signer_version=2.0.1
 minimum_prov_version=5.2.0
-default_domain=aoscloud.io
 aos_root=${AOS_USER_ROOT:-"$HOME/.aos"}
 venv_path="$aos_root/venv"
 security_path="$aos_root/security"
@@ -22,16 +21,12 @@ usage() {
 Usage: scripts/aos-user-setup COMMAND
 
 Commands:
-  all            Run bootstrap, root trust, reissue, and verification.
   check-host     Check macOS, ARM64, Python, and current Aos tool state.
   bootstrap      Create ~/.aos/venv and install official Aos CLI tools.
-  install-root   Install the two Aos root certificates in the login Keychain.
-  reissue        Prompt privately for Admin, OEM, and SP one-time tokens.
-  verify         Verify local certificates and their AosCloud roles.
   verify-oem     Verify only the existing OEM certificate for provisioning.
 
-Tokens are read without terminal echo and are passed directly to aos-keys.
-They are never written to files, command-line arguments, logs, or shell history.
+Certificate issuance and recovery are deliberately outside this helper. It
+never requests a one-time token or creates, replaces, or imports a certificate.
 EOF
 }
 
@@ -144,14 +139,12 @@ check_host() {
         fi
     fi
 
-    for role in admin oem sp; do
-        certificate="$security_path/aos-user-$role.p12"
-        if [ -f "$certificate" ] && [ ! -L "$certificate" ]; then
-            printf '%s certificate: present\n' "$role"
-        else
-            printf '%s certificate: absent\n' "$role"
-        fi
-    done
+    certificate="$security_path/aos-user-oem.p12"
+    if [ -f "$certificate" ] && [ ! -L "$certificate" ]; then
+        printf 'OEM certificate: present\n'
+    else
+        printf 'OEM certificate: absent\n'
+    fi
 }
 
 bootstrap() {
@@ -193,101 +186,11 @@ bootstrap() {
     done
     "$python_path" -m aos_prov provision --help >/dev/null
     printf 'Aos CLI bootstrap completed.\n'
-    printf 'Next: %s install-root\n' "$0"
-}
-
-install_root() {
-    require_macos_arm64
-    validate_aos_root
-    require_venv
-    printf 'macOS will request Keychain approval for two Aos root certificates.\n'
-    "$python_path" -m aos_keys install-root
-    printf 'Aos root certificate installation completed.\n'
+    printf 'Next: place the existing OEM certificate outside Git, then run %s verify-oem\n' "$0"
 }
 
 certificate_for_role() {
     printf '%s/aos-user-%s.p12\n' "$security_path" "$1"
-}
-
-reissue_role() {
-    role=$1
-    certificate=$(certificate_for_role "$role")
-    if [ -e "$certificate" ]; then
-        [ -f "$certificate" ] && [ ! -L "$certificate" ] || \
-            die "Existing certificate path is unsafe: $certificate"
-        printf 'Preserving existing %s certificate: %s\n' "$role" "$certificate"
-        return
-    fi
-
-    AOS_USER_SECURITY_PATH="$security_path" \
-        "$python_path" - "$default_domain" "$role" <<'PY'
-import getpass
-import os
-import re
-import sys
-
-from aos_keys.actions import UserType, new_token_user
-from aos_keys.common import AosKeysError
-
-domain, role = sys.argv[1:]
-output_directory = os.environ.pop('AOS_USER_SECURITY_PATH')
-token = getpass.getpass(f'Paste the NEW one-time {role} token (input hidden): ')
-if not re.fullmatch(r'[A-Za-z0-9._~-]+', token):
-    raise SystemExit(f'Error: {role} token is empty or contains unexpected characters.')
-try:
-    new_token_user(
-        domain,
-        output_directory,
-        token,
-        UserType.from_input(role),
-        False,
-        False,
-    )
-except AosKeysError as error:
-    raise SystemExit(f'Certificate request failed: {error}') from None
-finally:
-    token = ''
-PY
-    [ -f "$certificate" ] || die "$role certificate was not created."
-    chmod 0600 "$certificate"
-}
-
-reissue() {
-    require_macos_arm64
-    validate_aos_root
-    require_venv
-    mkdir -p "$security_path"
-    chmod 0700 "$aos_root" "$security_path"
-
-    cat <<'EOF'
-This operation needs three NEW one-time tokens from the reissue email:
-  1. personal Admin account
-  2. aa_oem
-  3. aa_serviceproducer (SP)
-
-The tokens will not be echoed or stored by this helper. Each token is consumed
-by AosCloud, and each resulting PKCS#12 file is imported into the login Keychain.
-EOF
-
-    reissue_role admin
-    reissue_role oem
-    reissue_role sp
-    printf 'All three certificates were reissued.\n'
-    printf 'Next: %s verify\n' "$0"
-}
-
-verify() {
-    require_macos_arm64
-    validate_aos_root
-    require_venv
-    for role in admin oem sp; do
-        certificate=$(certificate_for_role "$role")
-        [ -f "$certificate" ] && [ ! -L "$certificate" ] || \
-            die "$role certificate is missing: $certificate"
-        chmod 0600 "$certificate"
-        "$python_path" -m aos_keys info -c "$certificate"
-    done
-    printf 'Admin, OEM, and SP certificate checks completed.\n'
 }
 
 verify_oem() {
@@ -317,21 +220,10 @@ PY
     printf 'OEM certificate and live AosCloud role check completed.\n'
 }
 
-all() {
-    bootstrap
-    install_root
-    reissue
-    verify
-}
-
 command=${1:-}
 case "$command" in
-    all) all ;;
     check-host) check_host ;;
     bootstrap) bootstrap ;;
-    install-root) install_root ;;
-    reissue) reissue ;;
-    verify) verify ;;
     verify-oem) verify_oem ;;
     -h|--help|help|'') usage ;;
     *) usage >&2; die "Unknown command: $command" ;;

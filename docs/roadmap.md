@@ -1,325 +1,113 @@
+<!-- SPDX-FileCopyrightText: 2026 maninblack -->
+<!-- SPDX-License-Identifier: MIT -->
+
 # Roadmap
 
-The milestones deliberately separate host virtualization, AosCloud lifecycle
-management, vehicle-data transport, and AOS-native data abstraction. A failure
-in one layer must not be hidden by work in another layer.
+The roadmap separates simulation, OEM platform/FOTA, Cloud service/SOTA, and
+authorization lifecycles. A completed experiment is not a supported path; only
+the current accepted baseline and the gates below remain active.
 
-## AOS-0 — Boot the official ARM64 AosVM image on Apple Silicon
+## Completed
 
-- Download and verify the pinned official AosVM `qemuarm64` release.
-- Boot the complete Main Node system through a disposable qcow2 overlay,
-  including the official EFI, guest kernel, initramfs, and root filesystem.
-- Use QEMU system virtualization with Apple Hypervisor Framework acceleration.
-- Establish serial console and loopback-only SSH access.
-- Functionally validate the guest kernel facilities required by AosCore.
-- Run a cloud-free local OCI probe through the image's `crun` runtime.
-- Validate AosCore components and classify the expected unprovisioned state.
-- Verify outbound HTTPS, DNS, clean shutdown, and restart persistence.
-- Record the exact host, QEMU, image, firmware, and network configuration.
+### AOS-0 — Native Apple Silicon AosVM
 
-Exit criterion: the pinned Main Node boots reproducibly on the M5 Pro, is
-reachable only through explicitly configured local forwards, reaches the
-Internet, passes the kernel and local OCI gates, and survives a clean stop/start
-without modifying the downloaded base image.
+The official AosVM 6.1.0 `qemuarm64` Main Node boots with QEMU system
+virtualization and Apple Hypervisor Framework acceleration. Guest kernel,
+storage, SELinux, OCI, networking, DNS mobility, clean shutdown, persistence,
+and recovery gates pass.
 
-Current gate: AOS-0 passes all 14 phases. Addressing, routing,
-outbound TCP, guest-to-host access, DNS, synchronized time, verified HTTPS, and
-loopback-only SSH all pass tracked host and guest gates. A tracked macOS DNS
-bridge binds only to `127.0.0.1`; the overlay-only guest helper routes the
-image's existing dnsmasq through it without administrator-owned networking or
-LAN exposure. The bridge refreshes the active macOS resolver set after host
-sleep and ordinary Wi-Fi/network transitions while retaining last-known-good
-resolvers during a transient empty configuration. The upstream ARM64 EFI
-loader correction from Phase 10 remains
-stable. The tracked lifecycle now qualifies host readiness; starts and owns the
-VM; attaches to its serial console; reports exact process, listener, and disk
-state; waits for SSH readiness in its smoke test; and shuts down through QMP
-before any bounded escalation. Stale or unrelated PID state is rejected.
-A marker on the guest's writable `/home` partition persisted across a clean
-restart and disappeared after explicit overlay recreation. Every stopped-state
-gate found no owned process, listener, or runtime residue and reverified the
-exact Main Node, Secondary Node, and EFI hashes. The tracked ARM64 and DNS
-compatibility changes were restored on the fresh overlay, remained idempotent,
-and passed the Phase 10 and complete Phase 11 regressions. The final accepted
-start/smoke/stop run passed, the VM is stopped, and the sanitized baseline and
-go decision are recorded in the runbook.
+### AOS-1 — One Persistent Main Node
 
-Phase 9 also passes the complete cloud-free `crun` qualification.
-The probe ran an isolated ARM64 PID 1 with enforced CPU, memory, and PID
-limits, a read-only rootfs, writable tmpfs, isolated networking, and clean
-teardown. Phase 8 passes all 13 required capabilities. SquashFS and loop
-are intentionally packaged in the boot initramfs, where the rootfs update path
-uses them before `switch_root`; they are not required in the steady-state
-rootfs.
+The official SDK provisioned exactly one Main Node. Its identity persists on
+the protected VM overlay, normal launches expose no provisioning listener, and
+the official Hello World service completed install, log, removal, and restart
+qualification.
 
-Detailed plan: [AOS-0 runbook](aos-0-arm64-vm.md).
+### Repository Ownership Split
 
-## AOS-1 — Register and provision the Unit
+Platform, service, simulation, and integration code live in separate
+repositories according to their release lifecycle. The versioned vehicle-data
+contract belongs to `aos-vehicle-platform`; this repository pins and qualifies
+the complete graph.
 
-- Use the AosEdge-provided SDK and CLI utilities for registration,
-  provisioning, and certificate installation.
-- Create and verify the OEM and SP account identities without storing their
-  tokens or certificates in this repository.
-- Provision only the qualified Main Node with
-  `aos-prov provision --nodes 1`.
-- Use a temporary loopback-only forwarding mode for the guest IAM provisioning
-  port; remove that forward from normal post-provision launches.
-- Register a single-Node Target System containing only `aos-vm-main`.
-- Lock destructive overlay reset before provisioning, keep lifecycle metadata
-  outside Git, and create independent pre- and post-provision qcow2 checkpoints.
-- Treat the provisioned overlay as the permanent local disk of the cloud Unit;
-  never run a restored copy concurrently with the active VM.
-- Confirm that the Unit appears online in hosted AosCloud.
-- Deploy and observe the official Hello World service.
+### AOS-2 — CARLA to KUKSA
 
-Exit criterion: AosCloud reports the Unit online and an official sample service
-reaches `Active` state after a cloud-driven deployment.
+The platform provider subscribes to the host-only CARLA VISS 3.1 endpoint and
+publishes the seven accepted VSS signals to KUKSA. Live telemetry, stale and
+source-loss behavior, TLS, credential isolation, restart continuity, and
+Cloud-identity continuity pass.
 
-Current gate: AOS-1.1 through AOS-1.9 pass. The SDK provisioned exactly one
-Main Node with protocol v6 and `--nodes 1`; AosCloud reports one online,
-provisioned Unit with one provisioned `aos-vm-main` Node. Two accepted
-normal-mode starts preserved private identity hashes and exposed no
-provisioning listener. Local IAM, SM, CM, encrypted storage, NFS, SELinux,
-time, DNS, TLS, and HTTPS gates pass. Independent pre- and post-provision
-checkpoints are verified, destructive reset is locked, lifecycle is
-`provisioned`, and the VM is running in normal mode. The schema-v2 official
-Hello World package was validated and uploaded with `aos-signer` 2.0.1. One
-dedicated Subject and one explicitly approved Verification Set bind the sample
-to only this development Unit. The Service Manager installed it on the ARM64
-Main Node through `crun`; it reached `Active`, produced bounded English output
-that was retrieved through the cloud log API, stopped after cloud assignment
-removal, and reached `Active` again after a fresh assignment. The final local,
-network, cloud monitoring, checkpoint, and resource-conflict gates pass. The
-Verification Set intentionally remains active for this development Unit, so
-future SOTA/FOTA assigned to it bypass additional OEM approval. The released
-image's redundant
-`quotaon.service` reports `EEXIST` after mount-time quota activation; quotas
-and all required Aos data paths are operational, so this is tracked as a
-non-blocking upstream idempotency issue.
+### R6.1 Local Platform and Provider Qualification
 
-No repository-managed script will reimplement the SDK provisioning protocol.
+The provider is now an independently versioned OEM FOTA component. Provider
+`0.2.0` passed deterministic packaging, official unsigned validation, ARM64
+lifecycle/recovery tests, live telemetry, rollback, SELinux, resource, and
+secret-exclusion gates. Its accepted bytes were signed and independently
+verified locally, but were not published or assigned.
 
-Detailed plan: [AOS-1 single-Node runbook](aos-1-single-node-provisioning.md).
+The Service Manager component runtime, atomic A/B store, fixed `aos-vdp`
+identity, systemd credential boundary, SELinux policy, DNS/TLS behavior, and
+soft KUKSA dependency are integrated into rootfs candidate
+`6.1.1-maninblack.11`. The candidate passed clean disposable boot and targeted
+Enforcing qualification. Its rootfs-only unsigned FOTA output is frozen.
 
-## Repository Separation Gate — Complete R-0 through R-5
+## Active R6.1 Gates
 
-Execution status: R-0 through R-5 are complete. The documentation and scope are
-accepted, both public repositories and their governance are live, the platform
-contract and ARM64 diagnostic service scaffold pass CI, the exact component
-lock is accepted, and clean-clone plus GitHub Actions dependency-boundary
-qualification passed. This gate unblocked the now-complete AOS-2 work.
+Each gate requires the previous result and a fresh explicit authorization for
+any identity or Cloud mutation.
 
-- Accept ADR 0006 and the review-gated repository separation plan.
-- Create public `aos-vehicle-platform` and `vehicle-telemetry-service`
-  repositories only after final plan approval.
-- Publish the initial versioned vehicle-data contract from the platform
-  repository.
-- Scaffold platform/FOTA and service/SOTA ownership without implementing AOS-2
-  or AOS-3 behavior during the separation step.
-- Add an exact component version and artifact-digest lock to this integration
-  repository.
-- Qualify dependency direction, licensing, public-source safety, credential
-  exclusion, clean cloning, and static gates across all repositories.
-- Apply Apache-2.0, the `maninblack` copyright holder, SPDX/REUSE metadata,
-  minimal NOTICE files, DCO contribution terms, and reviewed third-party
-  provenance to both new repositories.
+1. Reverify the frozen `.11` source, manifest, image, rootfs payload, and
+   sanitized candidate metadata.
+2. Sign only the accepted `.11` digest and independently verify the signed
+   envelope. Signing does not unpack or mutate the already accepted payload.
+3. Create or refresh a protected checkpoint of the validation Unit, then
+   deploy `.11` only to that Unit.
+4. Verify boot `6.1.0`, rootfs `.11`, the nested provider store, SELinux,
+   Service Manager runtime, clean restart, and Cloud component reporting.
+5. Publish and assign signed provider `0.2.0` only to the validation Unit.
+6. Demonstrate CARLA telemetry through VISS, the provider, KUKSA, and the
+   consumer; also prove source loss, recovery, restart, and provider rollback.
+7. Decide separately whether to promote the accepted combination to the
+   demonstration Unit. The validation-set scope defect must remain accounted
+   for during every assignment decision.
 
-Exit criterion: R-0 through R-5 of the separation plan pass, repository
-ownership matches the vehicle-program platform and independently updated
-service lifecycles, and an accepted lock identifies the exact components for
-the first AOS-2 baseline.
+Current stop point: `.11` is unsigned and local; the validation Unit remains on
+`.2`, the demonstration Unit remains on `6.1.0`, and provider `0.2.0` remains
+unpublished and unassigned.
 
-The AOS-2 implementation started only after this gate passed.
+## AOS-3 — First KUKSA Telemetry Service
 
-Detailed plan: [repository separation plan](repository-separation-plan.md).
-Decision: [ADR 0006](decisions/0006-lifecycle-based-repository-ownership.md).
+Package the ARM64 telemetry consumer as an Aos SOTA service with explicit
+resources and a compatible vehicle-data contract. Deploy, observe, update,
+stop, restart, and roll it back through AosCloud without any CARLA dependency
+inside the service.
 
-## AOS-2 — Bridge CARLA telemetry into the in-VM KUKSA Databroker
+Exit: a Cloud-managed service consumes live KUKSA telemetry and exposes useful
+English health and data-age logs.
 
-- Provide a host-only route from the guest to the macOS VISS endpoint.
-- Run a platform-owned `carla-kuksa-provider` inside AosVM; do not embed the
-  provider in CARLA or in the cloud-managed telemetry service.
-- Preserve TLS verification and install only the required public trust anchor
-  in the provider's declared platform resource.
-- Keep VISS unavailable from the external LAN and Internet.
-- Verify VISS 3.1 `get`, `subscribe`, reconnect, and shutdown behavior from an
-  ordinary process in the guest.
-- Map the approved VSS 6.0 telemetry paths to the compatible VSS 5.0 paths and
-  publish them to the local KUKSA Databroker with a path-scoped provider JWT.
+## AOS-4 — Useful Edge Processing
 
-Exit criterion: KUKSA continuously receives live CARLA speed, acceleration,
-steering, throttle, and brake values through the platform provider; loss of
-CARLA produces an explicit stale state rather than fabricated zero values.
+Add bounded trip statistics and driving-event detection, define exactly which
+state persists across service updates, and prove update/rollback behavior.
 
-Current gate: R6/AOS-2 passes. The normalized ARM64 bundle is reproducible and
-contains five exact hash-locked wheels. Inside the provisioned AosVM, KUKSA
-uses a project-owned verifier and the DynamicUser provider receives only a
-seven-path `provide` token through systemd credentials. Verified TLS and
-`VISSv3` connect to the macOS loopback-only endpoint through the guest host
-gateway. Forty-one consecutive atomic seven-path KUKSA batches measured
-20.16 Hz. A separate read-only JWT retrieved the live values and source
-timestamps. CARLA loss made every path unavailable immediately; reconnect is
-bounded and never fabricates zero. After a clean VM restart, KUKSA and the
-provider were active with zero restarts, root remained read-only, SELinux was
-enforcing without a provider-related denial, AosCore remained healthy, and
-AosCloud reported the same Online Unit with one primary Main Node. The future
-Authorization Adapter remains explicitly deferred to AOS-5.
+## AOS-5 — Aos-to-KUKSA Authorization Adapter
 
-Detailed boundary decision: [ADR 0005](decisions/0005-kuksa-vehicle-data-boundary.md).
-Qualification record: [AOS-2 runbook](aos-2-carla-kuksa-qualification.md).
+Replace the temporary path-scoped KUKSA token fixture with a platform-owned
+adapter that maps Aos service identity to short-lived least-privilege KUKSA
+authorization. This is mandatory before third-party services, actuation, or
+production credential handling.
 
-## R6.1 — Promote the Vehicle-Data Provider to a FOTA Component
+## Optional AOS-6 — Legacy AOS VIS Compatibility
 
-R6.1 preserves the accepted R6/AOS-2 telemetry behavior while replacing its
-side-loaded host-daemon lifecycle with a dedicated, independently versioned,
-Cloud-visible Aos FOTA component. The telemetry consumer remains a separate
-SOTA service.
+Add a legacy AOS VIS mapping only if a concrete compatibility requirement
+justifies a second vehicle-data abstraction.
 
-Current gate: R6.1-1 through R6.1-4 and the unsigned portion of R6.1-5 are
-complete. The custom slot-based Service
-Manager component runtime is accepted against the exact AosVM 6.1.0 stack. The
-local factory, protocol, CM, storage, and identity gates passed; the Update
-Manager fallback is not selected. The bootstrap now contains the stable
-runtime boundary, fixed launcher and health profile, SELinux policy, persistent
-store, restricted provider-archive preflight, and durable A/B apply, rollback,
-and restart recovery. Provider releases can advance independently through FOTA
-without rebuilding rootfs after the first bootstrap deployment.
+## Deferred
 
-R6.1-1 established the separate builder, exact source/API baseline, local
-runtime harness, Node/CM reporting proof, storage decision, and accepted ADR.
-R6.1-2 builds and boots the unchanged upstream baseline before adding the
-tracked project Yocto layer. R6.1-3 adds the production atomic lifecycle: the
-exact ARM64 compile and 40-test update/rollback/recovery matrix pass, the
-signature-aware incremental Yocto build produced a new image, and the
-disposable non-provisioned guest plus unsigned bootstrap FOTA regressions pass.
-Separate upstream and project Moulin graphs are pinned; the project graph
-contains no signing or upload credential. R6.1-3.1 closed the actual Python
-provider's launcher modes, external configuration/trust boundary, systemd
-credential path, and component-native ARM64 dependency layout. R6.1-4
-produced a byte-reproducible unsigned candidate. R6.1-5 accepted its exact
-layer, configuration, and reproducibility envelope after real install, live
-telemetry, source-loss, update,
-downgrade, failed-candidate rollback, security, resource, and secret-exclusion
-gates. R6.1-5 is complete: only that accepted provider candidate was signed,
-and its embedded inputs, signed hashes, and RS256 signature passed the guarded
-local verifier. No Cloud operation was performed. R6.1-6 local preparation is
-complete. It uses a new isolated validation Unit, keeps boot at `6.1.0`, and
-advances only the full rootfs component to the immutable
-`6.1.1-maninblack.2` replacement release before any provider assignment. The
-incremental
-build, rootfs-only validator, two disposable boots, clean restart, version,
-runtime, SELinux, empty-store, and secret-exclusion gates passed. The frozen
-rootfs candidate was then signed under separate explicit approval; its
-embedded configuration and rootfs, signed hashes, and RS256 signature passed
-the guarded local verifier. A separately approved Cloud deployment installed
-the replacement rootfs only on the validation Unit; the demonstration Unit
-remains online on `6.1.0`. Provider assignment is stopped because the
-provisioned fixed-context workdirs mount cannot supply the proposed per-subtree
-SELinux store label. The accepted R6 side-load remains the operational
-baseline. R6.1-6.5a was accepted for local implementation and now adds a
-bounded nested ext4 provider store without relabelling existing AosCore
-workdirs or weakening the provider domain. Static gates and integrated
-boot/store qualification pass; the lifecycle/failure matrix remains pending.
-Rejected `.3` through `.8` candidates recorded
-successively narrower early-boot, service-ordering, loop-helper,
-filesystem-tool, and SELinux-domain findings. After the findings and hashes
-were recorded, selected obsolete disposable overlays were removed during
-bounded disk housekeeping; rejected `.8` and `.9` raw images, documentation,
-and small log evidence remain. A
-bounded diagnostic run on `.6` collected the complete
-remaining AVC profile. `.8` proved the complete Enforcing store path but was
-rejected because the production systemd self-test exposed suppression of the
-provider domain transition by `DynamicUser` and systemd-level
-`NoNewPrivileges`. Platform revision `083997d` added the bounded native
-privilege-drop launcher and dedicated `aos-vdp` identity. `.9` then exposed
-the launcher's missing post-drop `getcap` permission and is rejected. Revision
-`12b09c6` completes the reviewed privilege-drop policy; its package-only
-discovery and Enforcing persistence runs pass. Integrated rootfs `.10`
-(`a39d4c97…`) passed clean bootstrap and persistent-store qualification, then
-served as the disposable discovery base for the complete provider runtime
-boundary. Platform revision `a12c0aa` closes read-only systemd credential
-access, hostname DNS resolution, unconditional gRPC `urandom` access, and the
-KUKSA soft-dependency lifecycle. The targeted Enforcing matrix passed live
-telemetry, KUKSA restart recovery, credential fail-closed, process restart,
-and DNS/TLS fail-safe behavior. Exactly one incremental rootfs `.11` image
-(`946a296b…`) was built and passed clean AArch64, read-only-root, SELinux,
-unit-contract, and effective-policy qualification. Its rootfs-only FOTA
-output was regenerated with boot and incremental-rootfs disabled. The exact
-`128,528,384`-byte SquashFS (`e30406f6…`) passed structural,
-secret-exclusion, and digest validation and is frozen with sanitized unsigned
-candidate metadata (`56c109c3…`).
-Signing, Cloud upload, provider assignment, and provisioned-Unit mutation
-remain unauthorized.
-
-Detailed draft: [R6.1 FOTA component design and plan](r6-1-vehicle-data-provider-fota-design.md).
-Qualification record: [R6.1-2 bootstrap-image qualification](r6-1-bootstrap-image-qualification.md).
-Atomic lifecycle qualification: [R6.1-3 record](r6-1-atomic-component-lifecycle-qualification.md).
-Current record: [R6.1-5 offline provider qualification](r6-1-offline-provider-qualification.md).
-
-## AOS-3 — Deploy the first KUKSA telemetry consumer
-
-- Package an ARM64 OCI service with explicit CPU, RAM, storage, and network
-  limits.
-- Request the Aos `kuksa` resource and a compatible ARM64 `kuksa-client` layer.
-- Subscribe to the approved VSS paths through the KUKSA streaming API; keep all
-  CARLA endpoints and protocol handling outside the service.
-- Use a path-scoped read-only KUKSA JWT until AOS-5 provides Aos IAM-integrated
-  authorization.
-- Produce structured English logs, data-age reporting, and connection health.
-- Deploy, update, stop, and restart the service from AosCloud.
-
-Exit criterion: the cloud-managed service receives live vehicle telemetry and
-its state and logs are visible through AosCloud; the same service can consume a
-non-CARLA provider without a code or configuration change.
-
-## AOS-4 — Add useful edge processing
-
-- Calculate trip statistics and bounded driving events such as hard braking,
-  hard acceleration, and steering activity.
-- Persist only explicitly selected state across service updates.
-- Define whether processed results remain local, appear in logs/alerts, or are
-  sent to a separate backend.
-
-Exit criterion: the service demonstrates a useful transformation of live
-vehicle data and preserves its declared state across an update.
-
-## AOS-5 — Integrate Aos service identity with KUKSA authorization
-
-- Return to the currently unavailable Aos-to-KUKSA Authorization Adapter after
-  the end-to-end prototype and initial edge processing work.
-- Bind the Aos-managed service identity or `AOS_SECRET` flow to short-lived,
-  least-privilege KUKSA authorization.
-- Preserve per-path separation between provider, consumer, and any future
-  actuation permissions.
-- Remove static KUKSA JWTs from service images and deployment artifacts.
-- Define token renewal, revocation, offline operation, and failure behavior.
-
-Exit criterion: Aos-managed service identity authorizes a consumer for only its
-declared VSS paths without a static KUKSA token in the service artifact.
-
-This milestone does not block AOS-2 through AOS-4, but it is mandatory before
-third-party services, actuation, or production credential handling.
-
-## AOS-6 — Evaluate and, if justified, add legacy AOS VIS integration
-
-- Pin the exact AOS VIS protocol and signal-tree version.
-- Define a reviewed mapping from VSS 6.0/VISS 3.1 paths to the older
-  `Signal.*` and `Attribute.*` AOS VIS namespace.
-- Implement either a dedicated adapter or a narrowly scoped bridge.
-- Apply AosEdge IAM service permissions to vehicle-data access.
-
-Exit criterion: a second cloud-managed service consumes mapped vehicle data
-through AOS VIS without knowing that CARLA is the original source.
-
-This optional milestone is intentionally after the KUKSA-based consumer. It
-must solve a concrete compatibility requirement rather than add an unnecessary
-second vehicle-data abstraction.
-
-## Deferred decisions
-
-- Self-hosted AosCloud versus the hosted platform.
-- Secondary and additional AosVM Nodes, inter-Node networking, Dynamic
-  Rebalance, and migration from a provisioned single-Node Unit.
-- Cameras, LiDAR, radar, and ultrasonic data.
-- ROS 2 integration.
-- Upstream contributions to `AosEdge/meta-aos-vm` or `AosEdge/aos_vis`.
+- production provider-store architecture and migration from the demo nested
+  ext4 backend;
+- Secondary or additional AosVM Nodes;
+- cameras, LiDAR, radar, and ultrasonic data;
+- ROS 2 integration;
+- upstreaming CARLA, Unreal Engine, or AosEdge changes;
+- self-hosted AosCloud.
