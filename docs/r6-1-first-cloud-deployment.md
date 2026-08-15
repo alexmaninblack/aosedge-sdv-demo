@@ -3,7 +3,7 @@
 
 # R6.1-6 First Cloud Deployment
 
-- Status: unsigned bootstrap accepted; stopped before bootstrap signing approval
+- Status: bootstrap signed and locally verified; stopped before Cloud mutation approval
 - Date started: 2026-08-15
 - Baseline: AosVM `6.1.0`, one Main Node
 - Rootfs release: `6.1.1-maninblack.1`
@@ -99,6 +99,9 @@ builder before generating a clean release directory.
 | Full rootfs payload SHA-256 | `9152f59b052e9779eb89b43d8a52fba6eaa31fe56b4b4507fec8faa16d6e9232` |
 | Frozen candidate metadata size | 841 bytes |
 | Frozen candidate metadata SHA-256 | `7a969e57c53eaae266b97b3db555eb5d7aeea3afa2e9629b8b5bf3f634afa04a` |
+| Signed deployment bundle size | 127,428,835 bytes |
+| Signed deployment bundle SHA-256 | `43b0f9521720fc62d1a05a3f5db9d6f8653ef9937bf6ef95b7c9f496f2d36efe` |
+| Signature algorithm and verification | RS256; pass |
 | Boot component marker | `6.1.0`; omitted from the FOTA release |
 | Rootfs component marker | `6.1.1-maninblack.1` |
 
@@ -114,14 +117,26 @@ fail-safe launcher and health behavior, secret exclusion, and fatal-log gates.
 The restart qualification also closed an evidence-lifecycle defect: disposable
 boot logs and evidence are now rotated by generation instead of being
 overwritten or blocking a second boot. The final disposable VM is stopped.
-The Yocto builder, caches, build tree, and unsigned artifacts remain retained.
+The Yocto builder, caches, build tree, accepted unsigned inputs, and signed
+bundle remain retained.
 
 The unsigned candidate is frozen outside Git under the ignored R6.1 artifact
 root. Its mode-0600 `candidate.json` records only the accepted manifest, graph,
 platform, configuration, rootfs, version, sizes, and digests. No certificate,
 key, token, Unit identity, Cloud identifier, or user-specific path is stored
 in the record. A dedicated post-signing verifier and negative RSA/payload tests
-are prepared, but no bootstrap signing identity has been accessed.
+were prepared before credential access. Explicit approval was granted on
+2026-08-15 to use the OEM identity only for local signing and verification of
+this exact bootstrap candidate. It did not authorize upload, provisioning,
+publication, assignment, or any Cloud or Unit mutation.
+
+The official signer validated the configuration and image paths, then created
+the signed deployment bundle. The guarded verifier proved that the outer and
+inner archives contain exactly the accepted configuration and rootfs bytes,
+that the signed SHA3-512 records match those bytes, and that the RS256
+signature validates against the OEM certificate. No signing material or
+certificate identity was copied into Git, the image, the builder, or retained
+evidence.
 
 ## Isolation Profile
 
@@ -175,13 +190,14 @@ ready for a separate signing decision.
 
 ### R6.1-6.3 — Bootstrap signing approval gate
 
-Current gate: stopped for explicit permission to access the OEM identity for
-this exact rootfs candidate. After approval, sign and locally verify only the
-accepted bytes. Do not upload.
+Result: pass. Explicit permission was received for this exact candidate. The
+official signer created a 127,428,835-byte bundle, and the guarded verifier
+proved the accepted configuration and rootfs digests, signed hashes, and RS256
+signature. No upload or Cloud operation was performed.
 
 ### R6.1-6.4 — Validation Unit and Cloud mutation approval gate
 
-Stop for explicit permission covering exactly:
+Current gate: stopped for explicit permission covering exactly:
 
 - creation and provisioning of one new validation Unit;
 - creation of an isolated validation Unit Set or Verification Set if required;

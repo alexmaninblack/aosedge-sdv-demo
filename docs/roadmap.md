@@ -207,10 +207,11 @@ complete. It uses a new isolated validation Unit, keeps boot at `6.1.0`, and
 advances only the full rootfs component to the immutable
 `6.1.1-maninblack.1` release before any provider assignment. The incremental
 build, rootfs-only validator, two disposable boots, clean restart, version,
-runtime, SELinux, empty-store, and secret-exclusion gates passed; the unsigned
-candidate is frozen. Work is stopped before bootstrap signing approval. The
-authorization still excludes bootstrap signing or deployment, Cloud catalog
-mutation,
+runtime, SELinux, empty-store, and secret-exclusion gates passed. The frozen
+rootfs candidate was then signed under separate explicit approval; its
+embedded configuration and rootfs, signed hashes, and RS256 signature passed
+the guarded local verifier. Work is stopped before Cloud mutation approval.
+The authorization still excludes deployment, Cloud catalog mutation,
 deprovisioning, reprovisioning, and active-Unit changes. The accepted R6
 side-load remains the operational baseline.
 

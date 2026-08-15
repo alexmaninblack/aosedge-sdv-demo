@@ -838,8 +838,13 @@ R6.1 is complete only when all of these are true:
       immutable rootfs version `6.1.1-maninblack.1` for R6.1-6.
 - [x] Complete R6.1-6 local build and qualification, then stop for separate
       bootstrap-signing and Cloud-mutation approvals.
-- [ ] Obtain explicit approval to sign only the frozen rootfs
+- [x] Obtain explicit approval to sign only the frozen rootfs
       `6.1.1-maninblack.1` candidate; no upload or Unit mutation is included.
+- [x] Reverify the frozen rootfs and configuration, sign only those accepted
+      bytes, validate the embedded payload, signed hashes, and RS256 signature,
+      and stop before Cloud or Unit mutation.
+- [ ] Obtain explicit approval for the isolated validation Unit and exact
+      Cloud mutations defined by R6.1-6.4.
 
 ## References
 

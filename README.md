@@ -110,7 +110,10 @@ gated. R6.1-6 local preparation is complete: a dedicated validation VM profile
 is isolated, boot remains `6.1.0`, and the rootfs-only
 `6.1.1-maninblack.1` release passed its incremental build, structural checks,
 two disposable boots, clean restart, and security gates. The unsigned rootfs
-candidate is frozen; work is stopped before bootstrap signing approval.
+candidate was frozen and then signed under separate explicit approval. Its
+embedded inputs, signed hashes, and RS256 signature passed the guarded local
+verifier. Work is stopped before Cloud mutation approval; no upload,
+provisioning, publication, assignment, or Unit change is authorized.
 
 ## Commands
 
