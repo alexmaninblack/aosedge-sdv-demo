@@ -105,8 +105,9 @@ EOF
 
 case "$variant" in
     upstream|project|candidate) expected_rootfs_version=6.1.0 ;;
-    bootstrap) expected_rootfs_version=6.1.1-maninblack.1 ;;
-    *) fail 'usage: r6-1-bootstrap-check <upstream|project|candidate|bootstrap>' ;;
+    bootstrap) expected_rootfs_version=6.1.1-maninblack.2 ;;
+    validation) expected_rootfs_version=6.1.1-maninblack.2 ;;
+    *) fail 'usage: r6-1-bootstrap-check <upstream|project|candidate|bootstrap|validation>' ;;
 esac
 case "$wait_seconds" in
     ''|*[!0-9]*) fail 'wait timeout must be a decimal integer' ;;
@@ -143,30 +144,54 @@ ip -4 address show dev "$qualified_interface" | grep -q '10\.0\.0\.100/24' ||
 ip -4 route show default | grep -q "via 10\.0\.0\.1 dev $qualified_interface" ||
     fail 'qualified guest default route is absent'
 
-[ ! -e /var/aos/.provisionstate ] || fail 'guest is unexpectedly provisioned'
-[ ! -e /var/aos/iam/.usrpin ] || fail 'guest contains a provisioning user PIN'
-if find /etc/aos /var/aos -xdev -type f \
-    \( -name '*.p12' -o -name '*.pfx' -o -name '*.key' -o -name 'aos-user-*' \) \
-    -print -quit 2>/dev/null | grep -q .; then
-    fail 'guest contains a credential-like file'
+if [ "$variant" = validation ]; then
+    [ -f /var/aos/.provisionstate ] && [ ! -L /var/aos/.provisionstate ] ||
+        fail 'validation guest is not provisioned'
+    [ -f /var/aos/iam/.usrpin ] && [ ! -L /var/aos/iam/.usrpin ] ||
+        fail 'validation guest has no protected AosCore user PIN'
+else
+    [ ! -e /var/aos/.provisionstate ] || fail 'guest is unexpectedly provisioned'
+    [ ! -e /var/aos/iam/.usrpin ] || fail 'guest contains a provisioning user PIN'
+    if find /etc/aos /var/aos -xdev -type f \
+        \( -name '*.p12' -o -name '*.pfx' -o -name '*.key' -o -name 'aos-user-*' \) \
+        -print -quit 2>/dev/null | grep -q .; then
+        fail 'guest contains a credential-like file'
+    fi
 fi
 
 deadline=$(($(date +%s) + wait_seconds))
 while [ "$(date +%s)" -lt "$deadline" ]; do
-    if [ "$(systemctl is-active multi-user.target 2>/dev/null || true)" = active ] &&
-       [ "$(systemctl is-active aos-iam-prov.service 2>/dev/null || true)" = active ]; then
-        break
+    if [ "$(systemctl is-active multi-user.target 2>/dev/null || true)" = active ]; then
+        if [ "$variant" = validation ]; then
+            all_active=true
+            for unit in aos-iam.service aos-sm.service aos-cm.service; do
+                [ "$(systemctl is-active "$unit" 2>/dev/null || true)" = active ] ||
+                    all_active=false
+            done
+            [ "$all_active" = true ] && break
+        elif [ "$(systemctl is-active aos-iam-prov.service 2>/dev/null || true)" = active ]; then
+            break
+        fi
     fi
     sleep 3
 done
 [ "$(systemctl is-active multi-user.target)" = active ] ||
     fail 'multi-user target is not active'
-[ "$(systemctl is-active aos-iam-prov.service)" = active ] ||
-    fail 'pre-provision IAM is not active'
-for unit in aos-iam.service aos-sm.service aos-cm.service; do
-    [ "$(systemctl is-active "$unit")" = inactive ] ||
-        fail "runtime service is unexpectedly active: $unit"
-done
+if [ "$variant" = validation ]; then
+    [ "$(systemctl is-active aos-iam-prov.service 2>/dev/null || true)" = inactive ] ||
+        fail 'pre-provision IAM is active on the provisioned validation guest'
+    for unit in aos-iam.service aos-sm.service aos-cm.service; do
+        [ "$(systemctl is-active "$unit")" = active ] ||
+            fail "AosCore runtime service is not active: $unit"
+    done
+else
+    [ "$(systemctl is-active aos-iam-prov.service)" = active ] ||
+        fail 'pre-provision IAM is not active'
+    for unit in aos-iam.service aos-sm.service aos-cm.service; do
+        [ "$(systemctl is-active "$unit")" = inactive ] ||
+            fail "runtime service is unexpectedly active: $unit"
+    done
+fi
 
 runtime_count=$(jq '[.runtimes[] | select(.plugin == "systemd-slot-component")] | length' \
     /etc/aos/sm.cfg)

@@ -16,7 +16,7 @@ variables:
   UNIT_VERSION: "1.0.0"
 
   BOOT_IMAGE_VERSION: "6.1.0"
-  ROOTFS_IMAGE_VERSION: "6.1.1-maninblack.1"
+  ROOTFS_IMAGE_VERSION: "6.1.1-maninblack.2"
   ROOTFS_REF_VERSION: "6.0.0"
 
   # Aos node configuration

@@ -121,7 +121,7 @@ class R61ManifestTests(unittest.TestCase):
 
     def test_rootfs_release_version_is_immutable(self) -> None:
         content = self.project_content.replace(
-            'ROOTFS_IMAGE_VERSION: "6.1.1-maninblack.1"',
+            'ROOTFS_IMAGE_VERSION: "6.1.1-maninblack.2"',
             'ROOTFS_IMAGE_VERSION: "6.1.2-maninblack.1"',
         )
         with self.assertRaisesRegex(VALIDATOR.ManifestError, "rootfs release version"):

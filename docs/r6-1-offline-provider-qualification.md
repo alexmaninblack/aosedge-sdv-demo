@@ -171,11 +171,12 @@ or submitted to the Cloud.
 
 The regression output reuses upstream version `6.1.0` and is not a publishable
 custom bootstrap release. R6.1-6 selected a rootfs-only full-image release
-`6.1.1-maninblack.1`; boot remains at `6.1.0` and is omitted from the update.
-The new output must be rebuilt, qualified, and frozen before signing or upload.
-Its expected unsigned payload is approximately 128,372,736 bytes instead of
-the 193,559,688-byte boot-plus-rootfs regression output. Different bytes must
-never be published under an existing component version.
+`6.1.1-maninblack.2`; boot remains at `6.1.0` and is omitted from the update.
+That replacement output was subsequently rebuilt, qualified, frozen, signed,
+and installed only on the isolated validation Unit. Its unsigned payload is
+128,372,736 bytes instead of the 193,559,688-byte boot-plus-rootfs regression
+output. Different bytes must never be published under an existing component
+version.
 
 ## Defects Closed During Qualification
 
@@ -218,5 +219,7 @@ The completed local signing gate:
 5. stopped without uploading, publishing, assigning, provisioning, or
    changing the active Unit.
 
-R6.1-5 is complete. R6.1-6 remains a separate gate requiring explicit approval
-for bootstrap signing or deployment and every Cloud or active-Unit mutation.
+R6.1-5 is complete. R6.1-6 remains a separate lifecycle: its replacement
+rootfs is installed only on the validation Unit, while provider assignment is
+blocked pending resolution of the fixed-context persistent-store SELinux
+boundary.

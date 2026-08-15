@@ -172,6 +172,7 @@
       "diskConfigSha256": "7ec156ea7f66369c681f243dd9b5c2ff8d2a25408779c6caecc2f317311fa609",
       "device": "/dev/aosvg/workdirs",
       "mountPoint": "/var/aos/workdirs",
+      "mountContext": "system_u:object_r:aos_var_run_t:s0",
       "componentRoot": "/var/aos/workdirs/sm/runtimes/systemd-slot-component"
     },
     "mechanismQualification": {
@@ -189,10 +190,10 @@
     },
     "projectMoulinManifest": {
       "path": "manifests/r6-1/aos-vm-project.pinned.yaml",
-      "sha256": "f7909fd95c93ac5a3821c921e3371778d489787c8d2cb8444d93ae273cfb1912",
+      "sha256": "592ea37f0472a21c960b2d23a0bb63aa31d3c9ad0150adb14f48c41be24476fb",
       "platformRepository": "https://github.com/alexmaninblack/aos-vehicle-platform.git",
       "platformRevision": "e972d2bd7f14e27646bb5d7c10c7186ecdecfa9f",
-      "generatedBuildNinjaSha256": "d2916a739c6b702aa9218e5496b25a88f834c1bc9374f86297c7075174167650",
+      "generatedBuildNinjaSha256": "9f95805690e95a4f998997c3052ecde6eb065c5a24e75817fd988ea80d96a8ab",
       "result": "pass"
     }
   },

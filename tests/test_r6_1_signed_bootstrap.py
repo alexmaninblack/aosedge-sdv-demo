@@ -79,7 +79,7 @@ class R61SignedBootstrapTests(unittest.TestCase):
                         "size": len(self.rootfs),
                     },
                     "signingState": "unsigned",
-                    "version": "6.1.1-maninblack.1",
+                    "version": "6.1.1-maninblack.2",
                 }
             ),
             encoding="utf-8",
@@ -177,7 +177,7 @@ class R61SignedBootstrapTests(unittest.TestCase):
 
     def test_valid_signed_bundle_passes(self) -> None:
         evidence = VALIDATOR.validate(self.candidate, self.bundle, self.pkcs12)
-        self.assertEqual("6.1.1-maninblack.1", evidence["version"])
+        self.assertEqual("6.1.1-maninblack.2", evidence["version"])
         self.assertEqual(hashlib.sha256(self.rootfs).hexdigest(), evidence["rootfsSha256"])
 
     def test_changed_embedded_rootfs_is_rejected(self) -> None:

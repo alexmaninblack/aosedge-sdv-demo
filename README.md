@@ -102,18 +102,20 @@ source-loss, update, downgrade, failed-candidate rollback, security, SELinux,
 resource, and secret-exclusion gates. The exact unsigned layer, configuration,
 and reproducibility envelope are frozen. Only that accepted candidate was
 signed with the OEM identity and its RS256 signature, signed hashes, embedded
-layer, and configuration passed the guarded local verifier. No Cloud or active
-Unit mutation was performed or is authorized.
-Bootstrap deployment, Cloud mutation,
-deprovisioning, reprovisioning, and active-Unit changes remain separately
-gated. R6.1-6 local preparation is complete: a dedicated validation VM profile
-is isolated, boot remains `6.1.0`, and the rootfs-only
-`6.1.1-maninblack.1` release passed its incremental build, structural checks,
+layer, and configuration passed the guarded local verifier. No provider Cloud
+assignment or active-Unit mutation was performed.
+R6.1-6 uses a dedicated, isolated validation VM profile. Boot remains
+`6.1.0`, and the rootfs-only
+`6.1.1-maninblack.2` replacement release passed its incremental build,
+structural checks,
 two disposable boots, clean restart, and security gates. The unsigned rootfs
 candidate was frozen and then signed under separate explicit approval. Its
 embedded inputs, signed hashes, and RS256 signature passed the guarded local
-verifier. Work is stopped before Cloud mutation approval; no upload,
-provisioning, publication, assignment, or Unit change is authorized.
+verifier. Under a separate Cloud-mutation approval, the replacement rootfs was
+uploaded and installed only on the isolated validation Unit; the demonstration
+Unit remains on `6.1.0`. Provider assignment is stopped because
+the provisioned fixed-context workdirs mount cannot provide the proposed
+per-subtree SELinux label.
 
 ## Commands
 

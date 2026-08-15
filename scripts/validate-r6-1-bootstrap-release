@@ -17,7 +17,7 @@ import yaml
 
 
 EXPECTED_ROOT = Path("/home/yocto/r61-build/project/output/fota")
-EXPECTED_VERSION = "6.1.1-maninblack.1"
+EXPECTED_VERSION = "6.1.1-maninblack.2"
 EXPECTED_CODENAME = "aos-vm-1.0.0-main-qemuarm64-rootfs"
 EXPECTED_MEDIA_TYPE = "application/vnd.aos.image.component.full.v1+squashfs"
 DIGEST_RE = re.compile(r"[0-9a-f]{64}")

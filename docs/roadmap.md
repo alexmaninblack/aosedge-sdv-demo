@@ -205,15 +205,18 @@ and its embedded inputs, signed hashes, and RS256 signature passed the guarded
 local verifier. No Cloud operation was performed. R6.1-6 local preparation is
 complete. It uses a new isolated validation Unit, keeps boot at `6.1.0`, and
 advances only the full rootfs component to the immutable
-`6.1.1-maninblack.1` release before any provider assignment. The incremental
+`6.1.1-maninblack.2` replacement release before any provider assignment. The
+incremental
 build, rootfs-only validator, two disposable boots, clean restart, version,
 runtime, SELinux, empty-store, and secret-exclusion gates passed. The frozen
 rootfs candidate was then signed under separate explicit approval; its
 embedded configuration and rootfs, signed hashes, and RS256 signature passed
-the guarded local verifier. Work is stopped before Cloud mutation approval.
-The authorization still excludes deployment, Cloud catalog mutation,
-deprovisioning, reprovisioning, and active-Unit changes. The accepted R6
-side-load remains the operational baseline.
+the guarded local verifier. A separately approved Cloud deployment installed
+the replacement rootfs only on the validation Unit; the demonstration Unit
+remains online on `6.1.0`. Provider assignment is stopped because the
+provisioned fixed-context workdirs mount cannot supply the proposed per-subtree
+SELinux store label. The accepted R6 side-load remains the operational
+baseline.
 
 Detailed draft: [R6.1 FOTA component design and plan](r6-1-vehicle-data-provider-fota-design.md).
 Qualification record: [R6.1-2 bootstrap-image qualification](r6-1-bootstrap-image-qualification.md).

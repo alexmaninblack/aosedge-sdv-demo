@@ -230,6 +230,10 @@ def validate_lock(lock: dict[str, Any]) -> None:
     require(storage.get("device") == "/dev/aosvg/workdirs", "storage device changed")
     require(storage.get("mountPoint") == "/var/aos/workdirs", "storage mount changed")
     require(
+        storage.get("mountContext") == "system_u:object_r:aos_var_run_t:s0",
+        "storage mount context changed",
+    )
+    require(
         storage.get("componentRoot")
         == "/var/aos/workdirs/sm/runtimes/systemd-slot-component",
         "component storage root changed",

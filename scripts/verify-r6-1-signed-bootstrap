@@ -51,7 +51,7 @@ def validate(candidate_root: Path, bundle_path: Path, pkcs12_path: Path) -> dict
         "candidate metadata is not the accepted unsigned record",
     )
     COMMON.require(
-        candidate.get("version") == "6.1.1-maninblack.1",
+        candidate.get("version") == "6.1.1-maninblack.2",
         "candidate rootfs version changed",
     )
     rootfs_record = candidate.get("rootfs")

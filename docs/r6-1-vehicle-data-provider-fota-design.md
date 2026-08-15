@@ -293,6 +293,26 @@ The payload must not write directly to `/etc`, replace the stable launcher,
 install a new SELinux policy, or mutate another component's data. A release
 that needs those changes requires a compatible bootstrap/rootfs update first.
 
+### Live FOTA storage-boundary finding
+
+The first provisioned-Unit rootfs deployment invalidated one part of the
+accepted store model. The release VM mounts `/var/aos/workdirs` with the fixed
+SELinux mount context `aos_var_run_t`. A fixed-context mount cannot assign
+`vehicle_data_provider_store_t` to only the provider subtree: `restorecon` and
+`chcon` cannot change per-file labels there, and the tmpfiles `Z` rule leaves
+the mount-wide label unchanged. The full factory image did not expose this
+migration constraint because its storage was prepared as part of image
+construction; rootfs FOTA preserves the already formatted provisioned
+workdirs volume.
+
+Granting the provider domain general access to `aos_var_run_t` would weaken
+isolation across all Aos workdirs and is not accepted as the automatic fix.
+Before provider assignment, R6.1 requires a reviewed persistent-storage
+boundary that can carry a distinct SELinux context, or a different policy and
+process boundary with equivalent least privilege. This finding does not
+invalidate the rootfs runtime, A/B update, Cloud targeting, or `.2` install;
+it blocks the provider payload stage.
+
 ## Update State Machine
 
 | State | Required behavior |
@@ -699,7 +719,7 @@ Cloud gate without using the active Cloud Unit.
   and assignment mutations in the selected isolated scope;
 - select a new immutable bootstrap component version rather than reusing the
   installed `6.1.0`; the accepted decision is boot `6.1.0` plus a rootfs-only
-  full-image release `6.1.1-maninblack.1`, with no boot or incremental item;
+  full-image release `6.1.1-maninblack.2`, with no boot or incremental item;
   rebuild, qualify, and freeze that exact release;
 - install the qualified bootstrap runtime on the validation Unit either by
   provisioning it from the custom complete image or by a separately qualified
@@ -835,16 +855,20 @@ R6.1 is complete only when all of these are true:
       locally, prove that the signed bundle embeds the accepted bytes, verify
       RS256, record sanitized evidence, and stop before Cloud upload.
 - [x] Select a separate validation Unit, rootfs-only bootstrap packaging, and
-      immutable rootfs version `6.1.1-maninblack.1` for R6.1-6.
+      immutable replacement rootfs version `6.1.1-maninblack.2` for R6.1-6.
 - [x] Complete R6.1-6 local build and qualification, then stop for separate
       bootstrap-signing and Cloud-mutation approvals.
 - [x] Obtain explicit approval to sign only the frozen rootfs
-      `6.1.1-maninblack.1` candidate; no upload or Unit mutation is included.
+      `6.1.1-maninblack.2` candidate; no upload or Unit mutation is included.
 - [x] Reverify the frozen rootfs and configuration, sign only those accepted
       bytes, validate the embedded payload, signed hashes, and RS256 signature,
       and stop before Cloud or Unit mutation.
-- [ ] Obtain explicit approval for the isolated validation Unit and exact
+- [x] Obtain explicit approval for the isolated validation Unit and exact
       Cloud mutations defined by R6.1-6.4.
+- [x] Replace the invalid stale-scope `.1` batch with `.2`, prove validation-only
+      targeting, and install `.2` without changing the demonstration Unit.
+- [ ] Resolve and qualify the provider persistent-store SELinux boundary on the
+      provisioned fixed-context workdirs mount before provider assignment.
 
 ## References
 

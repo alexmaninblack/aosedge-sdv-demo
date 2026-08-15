@@ -61,7 +61,7 @@ class R61DisposableVMTests(unittest.TestCase):
 
                 bootstrap_image = (
                     root
-                    / "bootstrap-6.1.1-maninblack.1"
+                    / "bootstrap-6.1.1-maninblack.2"
                     / "main-qemuarm64.img"
                 )
                 bootstrap_image.parent.mkdir()
@@ -150,7 +150,10 @@ class R61DisposableVMTests(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn("guest is unexpectedly provisioned", guest_gate)
-        self.assertIn("expected_rootfs_version=6.1.1-maninblack.1", guest_gate)
+        self.assertIn("expected_rootfs_version=6.1.1-maninblack.2", guest_gate)
+        self.assertIn("validation) expected_rootfs_version=6.1.1-maninblack.2", guest_gate)
+        self.assertIn("validation guest is not provisioned", guest_gate)
+        self.assertIn("AosCore runtime service is not active", guest_gate)
         self.assertIn("Aos rootfs component version marker is incorrect", guest_gate)
         self.assertIn('crun run --bundle . "$namespace_container"', guest_gate)
         self.assertIn("required OCI namespaces do not work together", guest_gate)

@@ -3,10 +3,10 @@
 
 # R6.1-6 First Cloud Deployment
 
-- Status: bootstrap signed and locally verified; stopped before Cloud mutation approval
+- Status: replacement rootfs installed on validation Unit only; provider deployment blocked by persistent-store SELinux boundary
 - Date started: 2026-08-15
 - Baseline: AosVM `6.1.0`, one Main Node
-- Rootfs release: `6.1.1-maninblack.1`
+- Rootfs release: `6.1.1-maninblack.2` (`.1` retained as an invalid incident record)
 - Provider release: signed and locally verified `0.2.0`
 
 ## Decision
@@ -20,11 +20,14 @@ The validation VM starts from the same immutable official AosVM 6.1.0 base
 image but uses a new qcow2 overlay, host-access key, known-host record,
 lifecycle guard, checkpoints, provisioning-attempt record, MAC address, and
 loopback ports. The tracked `scripts/r6-1-validation-vm` profile owns that
-separation. The demonstration VM may remain online and is outside the mutation
-scope of this stage.
+separation. The demonstration VM is outside the software-mutation scope of
+this stage. Its Cloud grouping may be changed only to enforce the accepted
+separation between validation and release-candidate deployment, and that
+grouping change must not install, remove, or restart software on the
+demonstration Unit.
 
 The bootstrap update is **rootfs-only**. The boot component remains at
-`6.1.0`; the full rootfs component advances to `6.1.1-maninblack.1`. This is a
+`6.1.0`; the full rootfs component advances to `6.1.1-maninblack.2`. This is a
 full rootfs image, not an incremental rootfs image, but its deployment bundle
 contains no boot component. The pinned AosVM FOTA implementation explicitly
 supports selecting components with their `enabled` fields.
@@ -37,15 +40,15 @@ component would add approximately 65.2 MB and an unnecessary boot-slot risk.
 The expected unsigned payload is therefore approximately 128.4 MB rather than
 193.6 MB, before Cloud cryptographic metadata and transport encryption.
 
-`6.1.1-maninblack.1` is a SemVer release greater than the installed `6.1.0`
+`6.1.1-maninblack.2` is a SemVer release greater than the installed `6.1.0`
 without claiming to be the future upstream stable `6.1.1`. Its bytes and
 metadata become immutable after local acceptance. A different rootfs requires
 a different version.
 
 The credential-free release manifest SHA-256 is
-`f7909fd95c93ac5a3821c921e3371778d489787c8d2cb8444d93ae273cfb1912`.
+`592ea37f0472a21c960b2d23a0bb63aa31d3c9ad0150adb14f48c41be24476fb`.
 The regenerated pinned Ninja graph SHA-256 is
-`d2916a739c6b702aa9218e5496b25a88f834c1bc9374f86297c7075174167650`.
+`9f95805690e95a4f998997c3052ecde6eb065c5a24e75817fd988ea80d96a8ab`.
 
 ## Validation Unit Concept
 
@@ -69,11 +72,36 @@ The accepted promotion flow is:
 2. provision one new validation Unit from a clean official base;
 3. target only that Unit through an isolated Unit Set or Verification Set when
    required by the Cloud workflow;
-4. install and qualify rootfs `6.1.1-maninblack.1` on the validation Unit;
+4. install and qualify rootfs `6.1.1-maninblack.2` on the validation Unit;
 5. install and qualify provider `0.2.0` on the same Unit;
 6. prove update, restart, failure handling, and rollback;
 7. make a separate, explicit promotion decision before assigning any accepted
    release to the demonstration Unit.
+
+### Validation and promotion sets
+
+The two VMs have different Cloud lifecycle roles even though they belong to
+the same Fleet:
+
+| Unit Set | Verification Set | Member | Purpose |
+| --- | --- | --- | --- |
+| `R6.1 Vehicle Data Validation` | Yes | Validation Unit only | Receive unapproved updates for qualification |
+| `Demo / Release Candidate` | No | Demonstration Unit only | Receive only an explicitly approved post-validation campaign |
+
+There must be exactly one Verification Set participating in R6.1 validation.
+The demonstration Unit must not belong to any Verification Set because such
+membership makes every applicable unapproved update a validation target. A
+successful validation does not directly promote software to the demonstration
+Unit. Promotion is a separate campaign decision targeting the regular
+`Demo / Release Candidate` set.
+
+Changing a Unit Set from verification to regular does not necessarily cancel
+a pending validation batch that Cloud already calculated. Therefore the live
+API scope, not only current Unit Set membership, is an activation gate. Before
+submitting or changing the architecture approval state, Cloud must show no
+pending validation target for the demonstration Unit. If an old target remains,
+the batch must be safely reconciled or replaced while the demonstration Unit
+is prevented from applying it.
 
 The validation Unit is intended to remain a reusable staging target. Stopping
 its VM makes the Unit offline in AosCloud but must not remove or regenerate its
@@ -92,18 +120,18 @@ builder before generating a clean release directory.
 | --- | --- |
 | Integration build checkpoint | `df600fa3fa547a29e4e3970e38e84853cd24847a` |
 | Complete local raw image size; not an OTA payload | 6,997,147,648 bytes |
-| Complete local raw image SHA-256 | `28cc99b8b22f6e77cf6a5f2c7de6ec772eec4a1c8f8eb3ae4aa3b6dbfde5c6e2` |
+| Complete local raw image SHA-256 | `155db230d85824d835ddd76bcfb7a70eafeaf54b7cce1e9dff957be41cccabd2` |
 | Rootfs-only `config.yaml` size | 608 bytes |
-| Rootfs-only `config.yaml` SHA-256 | `7e46cc3b6ae1b1e279c5a460456802a48be7dce282736023d9265f8656f9ef6e` |
+| Rootfs-only `config.yaml` SHA-256 | `46dcb33805b05eab248090eec5a4756496a5a3795f150cd60d910edf8e8416dc` |
 | Full rootfs payload size | 128,372,736 bytes |
-| Full rootfs payload SHA-256 | `9152f59b052e9779eb89b43d8a52fba6eaa31fe56b4b4507fec8faa16d6e9232` |
+| Full rootfs payload SHA-256 | `59c575891a3a0429c2a54c0f8793b0f3fc05ff3856817d35ce4870f2dba28def` |
 | Frozen candidate metadata size | 841 bytes |
-| Frozen candidate metadata SHA-256 | `7a969e57c53eaae266b97b3db555eb5d7aeea3afa2e9629b8b5bf3f634afa04a` |
-| Signed deployment bundle size | 127,428,835 bytes |
-| Signed deployment bundle SHA-256 | `43b0f9521720fc62d1a05a3f5db9d6f8653ef9937bf6ef95b7c9f496f2d36efe` |
+| Frozen candidate metadata SHA-256 | `575802c79859aafe2e81eeb6da8fa742b72bcce6dfd92290e145aae3a80c1fcc` |
+| Signed deployment bundle size | 127,428,809 bytes |
+| Signed deployment bundle SHA-256 | `579bed02d03833a230f8c611bf223b37e7096bdad5e5887a838708f2b0e5a606` |
 | Signature algorithm and verification | RS256; pass |
 | Boot component marker | `6.1.0`; omitted from the FOTA release |
-| Rootfs component marker | `6.1.1-maninblack.1` |
+| Rootfs component marker | `6.1.1-maninblack.2` |
 
 The release output contains exactly `config.yaml` and one full rootfs
 SquashFS. The structural validator rejected boot, incremental, stale,
@@ -174,7 +202,7 @@ the validation profile remains stopped and unprotected with no Cloud identity.
 
 ### R6.1-6.2 — Build and freeze the rootfs release
 
-- pin boot `6.1.0` and rootfs `6.1.1-maninblack.1` independently;
+- pin boot `6.1.0` and rootfs `6.1.1-maninblack.2` independently;
 - disable boot and incremental-rootfs output;
 - regenerate and pin the Moulin graph;
 - run the incremental Yocto image build using the retained download, sstate,
@@ -191,21 +219,24 @@ ready for a separate signing decision.
 ### R6.1-6.3 — Bootstrap signing approval gate
 
 Result: pass. Explicit permission was received for this exact candidate. The
-official signer created a 127,428,835-byte bundle, and the guarded verifier
+official signer created a 127,428,809-byte bundle, and the guarded verifier
 proved the accepted configuration and rootfs digests, signed hashes, and RS256
 signature. No upload or Cloud operation was performed.
 
 ### R6.1-6.4 — Validation Unit and Cloud mutation approval gate
 
-Current gate: stopped for explicit permission covering exactly:
+Result: pass. Explicit permission covers exactly:
 
 - creation and provisioning of one new validation Unit;
 - creation of an isolated validation Unit Set or Verification Set if required;
 - upload/publication of the accepted bootstrap and provider releases;
 - assignments only to the new validation Unit.
 
-No permission in this gate applies to the demonstration Unit or any preexisting
-Unit, Subject, Unit Set, Verification Set, component version, or assignment.
+The later architecture review additionally authorized reclassifying the
+demonstration Unit's existing development set from a Verification Set to the
+regular `Demo / Release Candidate` set. This is a Cloud grouping change only;
+it does not authorize a software update, restart, deprovisioning, or identity
+change on the demonstration Unit.
 
 ### R6.1-6.5 — Provision and bootstrap the validation Unit
 
@@ -215,8 +246,60 @@ Unit, Subject, Unit Set, Verification Set, component version, or assignment.
 - seal a distinct post-provision checkpoint and verify restart persistence;
 - run a read-only API preflight against the exact new System ID;
 - upload and assign the signed rootfs only to that Unit;
-- verify `6.1.1-maninblack.1`, runtime-type reporting, an empty provider store,
+- verify `6.1.1-maninblack.2`, runtime-type reporting, an empty provider store,
   core health, logs, and restart persistence.
+
+Current result: the new Unit was provisioned with exactly one Main Node and
+reconnected from its sealed persistent overlay. The original `.1` batch was
+created before the Unit Set role correction. It retained both Units as targets
+through disapprove, waiting, and verify transitions, so the safety monitor
+returned it to `Invalid`. This is recorded as a reproducible stale
+validation-scope defect. See
+[R6.1 stale validation-scope defect](r6-1-validation-set-scope-defect.md).
+
+The replacement `6.1.1-maninblack.2` rootfs was rebuilt rather than relabelled
+as metadata: Service Manager reads the active version from `/etc/aos/version`,
+so the Cloud version and payload-internal version must agree. The retained
+Yocto caches produced a new rootfs-only candidate. Two isolated local ARM64
+boots, exact unsigned validation, frozen metadata, official signing, embedded
+payload verification, signed-hash verification, and RS256 verification passed.
+
+The `.2` upload created a new `Waiting_validation` batch after the Unit Set
+topology was already correct. Before approval, the API showed `.2` pending on
+the validation Unit only and absent from the demonstration Unit. The guarded
+approval changed only the `arm64` architecture to verified. The validation VM
+then downloaded, installed, activated, and rebooted into `.2`; AosCloud reports
+it `Online`, installed on `6.1.1-maninblack.2`, with no pending rootfs. The
+demonstration VM remained `Online` and installed on `6.1.0`; `.2` never became
+its pending or installed version.
+
+The old batch cannot be deleted through public API v11: its collection offers
+GET, and its item endpoint offers GET and PATCH but no DELETE. The old
+component version also cannot be deleted while a Unit or Verification Batch
+references it. It therefore remains an `Invalid` audit record. On validation
+restart, Image Manager automatically removed the old orphaned downloaded
+blobs before fetching `.2`; no internal AosCore store was manually deleted.
+
+### Persistent-store SELinux stop condition
+
+The post-update gate found a separate platform-integration issue after the
+successful rootfs deployment. On the provisioned release image,
+`/var/aos/workdirs` is mounted with the fixed option
+`context=system_u:object_r:aos_var_run_t:s0`. The provider design expects the
+subtree `/var/aos/workdirs/sm/runtimes/systemd-slot-component` to use
+`vehicle_data_provider_store_t`, but a fixed-context mount cannot hold a
+different per-file SELinux label. Both policy-driven `restorecon` and direct
+`chcon` are unsupported on that mount, and the current tmpfiles `Z` rule cannot
+change the result.
+
+This is not a batch-targeting or `.2` installation failure. It is an
+incompatibility between the proposed provider isolation policy and the
+provisioned AosVM persistent-storage mount contract. Provider `0.2.0` must not
+be assigned until an accepted design supplies a real storage boundary, such as
+an independently labelled persistent mount, or another policy model that does
+not grant the provider broad access to all `aos_var_run_t` data. The builder,
+caches, `.1` incident artifacts, `.2` accepted artifacts, and both persistent
+VM overlays remain retained.
 
 ### R6.1-6.6 — Publish and assign provider `0.2.0`
 
@@ -226,6 +309,10 @@ Unit, Subject, Unit Set, Verification Set, component version, or assignment.
   visibility, provider health, and empty-source KUKSA behavior;
 - retain only sanitized evidence.
 
+Result: not started. The persistent-store SELinux stop condition above must be
+resolved and qualified in a replacement platform rootfs before provider
+assignment.
+
 ## Stop Conditions
 
 Stop without automatic retry if account capacity blocks a new Unit, the new
@@ -233,10 +320,13 @@ System ID is not unique, Cloud selects an existing Unit, more than one Node is
 created, a target scope contains any other Unit, rootfs or boot versions do not
 match the decision, the boot component appears in the release, signing inputs
 change, rollback is unclear, or any action would touch the demonstration Unit.
+Current Unit Set membership alone is insufficient evidence of safe scope; an
+already-created pending validation target is also a stop condition.
 
 ## Exit
 
 R6.1-6 is complete only when AosCloud shows provider `0.2.0` as an independent
 component installed on the separately provisioned validation Unit running
-rootfs `6.1.1-maninblack.1`, while the demonstration Unit and all unrelated
-Cloud objects remain unchanged.
+rootfs `6.1.1-maninblack.2`, while the demonstration Unit and all unrelated
+Cloud objects remain unchanged. The current persistent-store SELinux boundary
+finding prevents that exit condition from being claimed.
