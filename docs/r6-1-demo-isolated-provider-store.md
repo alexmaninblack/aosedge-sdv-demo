@@ -3,7 +3,7 @@
 
 # R6.1-6.5a Demo Isolated Provider Store
 
-- Status: `.11` runtime-dependency closure and clean bootstrap qualification passed
+- Status: `.11` unsigned rootfs-only candidate frozen; signing approval pending
 - Date: 2026-08-15
 - Platform baseline: validation Unit on rootfs `6.1.1-maninblack.2`
 - Current local qualification candidate: `6.1.1-maninblack.11`
@@ -189,6 +189,10 @@ manifest SHA-256: b9b49a575798f2bc4a532a794e77352ed21596677ef5aced4304db9e7a87f0
 build graph SHA-256: 08bb15d68e32cbfce1825563e8207e84c1e3b584d9a48c266338f2c242ca867e
 raw image size: 6997147648 bytes
 raw image SHA-256: 946a296b7200644bc529080f3512712d8b7ec97dedad520146a4f503cf4006a2
+FOTA configuration SHA-256: 9bceee031f31e3c0ec3afe2453c51213282d96ca2ed3b2139965038d4a4506b3
+FOTA rootfs size: 128528384 bytes
+FOTA rootfs SHA-256: e30406f600ada77568d21178e656a34f444973bf121f5a0b537e24efde8ab9d7
+candidate metadata SHA-256: 56c109c30ab1111ba23dffe45634dbd556298f55da79782d867c3ac6be911aa6
 ```
 
 Before the image build, the side-loaded candidate passed in global SELinux
@@ -199,6 +203,12 @@ failed closed; `SIGKILL` recovered in four seconds; and DNS/TLS failures
 remained fail-safe. The one incremental `.11` image then passed a clean
 disposable AArch64 boot with direct compiled-policy gates for credentials,
 DNS, and `urandom`.
+
+The regenerated FOTA output contains exactly one full rootfs SquashFS. Boot
+and incremental-rootfs components are absent. The frozen `128,528,384`-byte
+payload is therefore the actual unsigned update candidate; the
+`6,997,147,648`-byte raw image is only the complete local VM disk used for
+clean-boot qualification and is not transferred as the FOTA payload.
 
 No signing identity, provisioned Unit, Cloud assignment, validation Unit, or
 demonstration Unit was accessed or changed.
@@ -541,7 +551,8 @@ passed with that sibling read denied and no procfs, userdb, or additional
 capability access. Rootfs `.10` then became the disposable discovery base for
 the consolidated credential, DNS, random-device, and KUKSA lifecycle review.
 Rootfs `.11` is the single current integrated candidate for the next unsigned
-rootfs-only FOTA gate.
+rootfs-only FOTA gate. That gate has now passed and the exact candidate is
+frozen; signing remains unauthorized pending explicit approval.
 
 ### R6.1-6.5a.3 — Lifecycle and Failure Matrix
 

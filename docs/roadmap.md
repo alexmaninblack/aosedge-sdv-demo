@@ -243,7 +243,11 @@ KUKSA soft-dependency lifecycle. The targeted Enforcing matrix passed live
 telemetry, KUKSA restart recovery, credential fail-closed, process restart,
 and DNS/TLS fail-safe behavior. Exactly one incremental rootfs `.11` image
 (`946a296b…`) was built and passed clean AArch64, read-only-root, SELinux,
-unit-contract, and effective-policy qualification.
+unit-contract, and effective-policy qualification. Its rootfs-only FOTA
+output was regenerated with boot and incremental-rootfs disabled. The exact
+`128,528,384`-byte SquashFS (`e30406f6…`) passed structural,
+secret-exclusion, and digest validation and is frozen with sanitized unsigned
+candidate metadata (`56c109c3…`).
 Signing, Cloud upload, provider assignment, and provisioned-Unit mutation
 remain unauthorized.
 

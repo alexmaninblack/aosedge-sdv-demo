@@ -115,7 +115,13 @@ verifier. Under a separate Cloud-mutation approval, the replacement rootfs was
 uploaded and installed only on the isolated validation Unit; the demonstration
 Unit remains on `6.1.0`. Provider assignment is stopped because
 the provisioned fixed-context workdirs mount cannot provide the proposed
-per-subtree SELinux label.
+per-subtree SELinux label. The accepted demo nested-store solution and the
+consolidated provider runtime dependency closure are now built into local
+rootfs `6.1.1-maninblack.11`. Its clean disposable boot and targeted
+Enforcing matrix passed. A rootfs-only unsigned FOTA candidate was regenerated
+and frozen at `128,528,384` bytes with SHA-256 `e30406f6…`; boot and
+incremental-rootfs are absent. Signing and every Cloud or provisioned-Unit
+mutation remain pending separate explicit approval.
 
 ## Commands
 

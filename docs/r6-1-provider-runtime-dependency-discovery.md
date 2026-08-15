@@ -6,7 +6,8 @@
 ## Status
 
 - Discovery status: complete
-- Consolidated product delta: side-loaded, built into `.11`, and locally verified
+- Consolidated product delta: side-loaded, built into `.11`, locally verified,
+  and frozen as an unsigned rootfs-only FOTA candidate
 - Cloud, provisioned Units, signing identities, and the main demo VM: unchanged
 - Disposable VM after discovery: SELinux `Enforcing`, no permissive domains,
   audit enabled with no lost records, and root filesystem read-only
@@ -208,6 +209,20 @@ AArch64 with a read-only root, global SELinux `Enforcing`, the fixed-identity
 unit contract, the soft KUKSA dependency, and direct effective-policy rules
 for credentials, DNS, and `urandom`.
 
-The next state-changing gates are generation and validation of the unsigned
-rootfs-only FOTA output, followed by separate approval for signing and later
-Cloud mutation. Neither signing nor Cloud state was touched here.
+The rootfs-only FOTA target was then regenerated from the accepted `.11`
+build. Boot and incremental-rootfs components remained disabled. The exact
+unsigned candidate passed structure, path, secret-exclusion, publication,
+size, and digest gates and was frozen with these values:
+
+```text
+configuration SHA-256: 9bceee031f31e3c0ec3afe2453c51213282d96ca2ed3b2139965038d4a4506b3
+rootfs size: 128528384 bytes
+rootfs SHA-256: e30406f600ada77568d21178e656a34f444973bf121f5a0b537e24efde8ab9d7
+candidate metadata SHA-256: 56c109c30ab1111ba23dffe45634dbd556298f55da79782d867c3ac6be911aa6
+signing state: unsigned
+```
+
+The next state-changing gate is explicit approval to use the OEM signing
+identity for this exact candidate. Cloud upload, assignment, approval, and
+provisioned-Unit mutation remain separate later gates. Neither signing nor
+Cloud state was touched here.
