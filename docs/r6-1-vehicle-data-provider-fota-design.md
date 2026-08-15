@@ -3,7 +3,7 @@
 
 # R6.1 Vehicle-Data Provider FOTA Component Design
 
-- Status: Accepted through the R6.1-5 unsigned gate; local signing approved and pending
+- Status: R6.1-5 complete; accepted provider signed and verified locally
 - Date: 2026-08-15
 - Baseline: AosVM 6.1.0, one `aos-vm-main` Node, provider 0.1.1
 - Depends on: R6/AOS-2, ADR 0005, ADR 0006
@@ -27,7 +27,7 @@ Update Manager is not the default because it is not present in the released
 VM and its compatibility with the current Communication Manager protocol has
 not been demonstrated.
 
-R6.1-1 through R6.1-4 and the unsigned portion of R6.1-5 are complete. The
+R6.1-1 through R6.1-5 are complete. The
 atomic A/B lifecycle passed its exact
 ARM64 tests, corrected incremental image build, disposable non-provisioned boot
 gate, and unsigned bootstrap FOTA regression. Review identified a required
@@ -38,9 +38,10 @@ The real provider interface and reproducible unsigned candidate then passed
 the complete disposable ARM64 offline matrix. The exact accepted digests are
 frozen in the
 [R6.1-5 qualification record](r6-1-offline-provider-qualification.md).
-OEM signing of only the accepted provider candidate is approved. Bootstrap
-deployment or signing, provider upload, Cloud assignment, deprovisioning,
-reprovisioning, and any mutation of the active Unit remain unauthorized.
+Only the accepted provider candidate was signed and verified locally.
+Bootstrap deployment or signing, provider upload, Cloud assignment,
+deprovisioning, reprovisioning, and any mutation of the active Unit remain
+unauthorized.
 
 ## Why R6.1 Exists
 
@@ -826,7 +827,7 @@ R6.1 is complete only when all of these are true:
       accepted R6.1-5 provider candidate; Cloud, provisioning, publication,
       assignment, bootstrap signing, and active-Unit mutations remain
       forbidden.
-- [ ] Reverify the accepted layer, configuration, and envelope witness; sign
+- [x] Reverify the accepted layer, configuration, and envelope witness; sign
       locally, prove that the signed bundle embeds the accepted bytes, verify
       RS256, record sanitized evidence, and stop before Cloud upload.
 

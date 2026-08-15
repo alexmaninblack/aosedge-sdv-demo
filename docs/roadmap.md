@@ -200,9 +200,10 @@ produced a byte-reproducible unsigned candidate. R6.1-5 accepted its exact
 layer, configuration, and reproducibility envelope after real install, live
 telemetry, source-loss, update,
 downgrade, failed-candidate rollback, security, resource, and secret-exclusion
-gates. OEM signing of only that accepted provider candidate is now approved;
-local signing and verification are pending. R6.1-6 must first assign a new
-immutable version to the custom bootstrap and place it on
+gates. R6.1-5 is complete: only that accepted provider candidate was signed,
+and its embedded inputs, signed hashes, and RS256 signature passed the guarded
+local verifier. No Cloud operation was performed. R6.1-6 must first assign a
+new immutable version to the custom bootstrap and place it on
 an isolated validation Unit before any provider assignment. The authorization
 still excludes bootstrap signing or deployment, Cloud catalog mutation,
 deprovisioning, reprovisioning, and active-Unit changes. The accepted R6

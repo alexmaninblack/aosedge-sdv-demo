@@ -95,13 +95,14 @@ regenerated unsigned bootstrap FOTA output all pass. R6.1-3.1 and R6.1-4 are
 complete: the real Python provider conforms to the fixed launcher, health,
 configuration, credential, trust, and packaging interfaces, and its
 reproducible credential-free `0.2.0` candidate passes both local and official
-unsigned validation. The offline portion of R6.1-5 is also complete. A fresh
+unsigned validation. R6.1-5 is complete. A fresh
 disposable ARM64 VM passed the runtime matrix, real install, live telemetry,
 source-loss, update, downgrade, failed-candidate rollback, security, SELinux,
 resource, and secret-exclusion gates. The exact unsigned layer, configuration,
-and reproducibility envelope are frozen. Local OEM signing of only that
-accepted candidate is approved and pending verification; no Cloud or active
-Unit mutation is authorized.
+and reproducibility envelope are frozen. Only that accepted candidate was
+signed with the OEM identity and its RS256 signature, signed hashes, embedded
+layer, and configuration passed the guarded local verifier. No Cloud or active
+Unit mutation was performed or is authorized.
 Bootstrap deployment, Cloud mutation,
 deprovisioning, reprovisioning, and active-Unit changes remain separately
 gated.

@@ -3,21 +3,23 @@
 
 # R6.1 Offline Provider Qualification
 
-- Status: Unsigned candidate accepted; OEM signing approved, local signature pending
+- Status: R6.1-5 complete; accepted provider signed and verified locally
 - Date: 2026-08-15
 - Scope: local and offline only
 - Provider version: `0.2.0`
 - Platform revision: `e972d2bd7f14e27646bb5d7c10c7186ecdecfa9f`
 - Integration implementation revision:
   `c1666615fb37a8bb251011797d698d8056840c98`
+- Signing-gate revision:
+  `0adfb0db30c055307582a0a0dc1fe3f11cb6d3fc`
 
 ## Qualification Boundary
 
-This record completes R6.1-3.1, R6.1-4, and the unsigned portion of R6.1-5.
-No OEM signing identity was accessed, no signature was produced, and no item
-was uploaded, published, assigned, or installed through AosCloud. The
-provisioned demonstration VM, Unit identity, Cloud catalog, Unit Model, Node
-Type, and assignments were not accessed or changed.
+This record completes R6.1-3.1 through R6.1-5. The approved OEM signing
+identity was accessed locally only to sign and verify the accepted provider
+candidate. No item was uploaded, published, assigned, or installed through
+AosCloud. The provisioned demonstration VM, Unit identity, Cloud catalog,
+Unit Model, Node Type, and assignments were not accessed or changed.
 
 The accepted candidate ran only in a fresh, disposable, non-provisioned ARM64
 VM with QEMU user networking restricted from external access. The persistent
@@ -95,12 +97,36 @@ and per-blob decryption information; it validates the downloaded ciphertext,
 decrypts inside the Unit, and then validates the content signature and digest.
 The local R6.1-5 verifier never attempts to unpack a Cloud-encrypted blob.
 
+## Accepted Signed Candidate
+
+The accepted inputs were revalidated immediately before signing. The official
+`aos-signer` composed and signed only provider `0.2.0`. The guarded verifier
+then read both archive levels without extracting them into either repository,
+proved that the embedded layer and both embedded configuration copies were
+byte-identical to the accepted inputs, validated both signed SHA3-512 records,
+and verified the RS256 signature using only the public certificate extracted
+from the approved OEM PKCS#12 identity.
+
+| Evidence | Accepted value |
+| --- | --- |
+| Signed deployment bundle size | 6,599,930 bytes |
+| Signed deployment bundle SHA-256 | `30802d1bcb88a5954cf1e9c6c17573b527efe4f2a62ca3c0c83459f8a2fe35db` |
+| Embedded provider layer SHA-256 | `baf1c29c9264b8f2422dc155540c3b22716bb43d5f80c1cfeb3cc9529f0bf3cb` |
+| Embedded configuration SHA-256 | `cb636649e253510cd1c06d8888a0254fc1bd4b7642de79a9601bb9d5979f0d9a` |
+| Signature algorithm | RS256 |
+| Verification result | `R6_1_SIGNED_PROVIDER=PASS` |
+
+The signed bundle remains a local, ignored build artifact under the accepted
+candidate directory. It is not stored in Git. No private key, certificate,
+password, subject, key identifier, token, or Cloud response is recorded in
+this evidence.
+
 ## Offline Matrix Result
 
 | Gate | Result |
 | --- | --- |
 | Platform repository tests and validators | Pass; 27 tests |
-| Integration repository tests and pinned-input validators | Pass; 56 tests |
+| Integration repository tests and pinned-input validators | Pass; 59 tests |
 | Restricted archive, Image Manager, lifecycle, and recovery matrix | Pass; 40 ARM64 tests |
 | Real provider first install through the production profile | Pass |
 | No-source start and seven-path unavailable state | Pass |
@@ -170,25 +196,27 @@ The fifth issue was reproduced only after correcting the qualification fixture
 so that the bad candidate passes offline preflight and fails after the active
 slot switch. A dedicated ARM64 regression test now protects this exact case.
 
-## Signing Gate
+## Completed Signing Gate
 
-The accepted layer, configuration, and unsigned reproducibility witness are
-frozen at the digests recorded above. R6.1-5 is deliberately not complete
-because the candidate is not signed. Explicit approval to access the OEM
-signing identity was granted on 2026-08-15. That approval covers local signing
-and verification of only this accepted provider candidate; it does not cover
-Cloud upload or mutation.
+The accepted layer, configuration, and unsigned reproducibility witness remain
+frozen at the digests recorded above. Explicit approval to access the OEM
+signing identity was granted on 2026-08-15. It covered local signing and
+verification of only this accepted provider candidate; it did not cover Cloud
+upload or mutation.
 
-The local signing gate must:
+The completed local signing gate:
 
-1. reverify the accepted layer, configuration, and unsigned-envelope digests
+1. reverified the accepted layer, configuration, and unsigned-envelope digests
    before accessing the identity;
-2. sign without copying key material into Git, the builder, or the disposable
+2. signed without copying key material into Git, the builder, or the disposable
    VM;
-3. verify that the signed bundle contains the exact accepted layer and
-   configuration, validate its signed SHA3-512 records, and verify its RS256
+3. verified that the signed bundle contains the exact accepted layer and
+   configuration, validated its signed SHA3-512 records, and verified its RS256
    signature with the approved public certificate;
-4. record only the final bundle size, digest, signature algorithm, and accepted
+4. recorded only the final bundle size, digest, signature algorithm, and accepted
    input digests; and
-5. stop without uploading, publishing, assigning, provisioning, or
+5. stopped without uploading, publishing, assigning, provisioning, or
    changing the active Unit.
+
+R6.1-5 is complete. R6.1-6 remains a separate gate requiring explicit approval
+for bootstrap signing or deployment and every Cloud or active-Unit mutation.
