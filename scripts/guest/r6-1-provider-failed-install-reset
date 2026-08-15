@@ -1,0 +1,73 @@
+#!/bin/sh
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+set -eu
+umask 077
+
+root=/var/aos/workdirs/sm/runtimes/systemd-slot-component
+slot_a="$root/slots/a"
+failure="$root/state/last-failure.json"
+marker="$root/state/.r61-store-fixture"
+schema="$root/.store-schema"
+sibling=/var/aos/workdirs/.r61-store-fixture-sibling/secret
+
+fail() {
+    printf 'R6.1 failed-install reset failed: %s\n' "$*" >&2
+    exit 1
+}
+
+[ "$(id -u)" -eq 0 ] || fail 'this helper must run as root'
+[ "$(uname -m)" = aarch64 ] || fail 'guest is not AArch64'
+grep -qx 'VERSION_ID=6.1.1-maninblack.10' /etc/os-release ||
+    fail 'helper is restricted to the rejected .10 disposable base image'
+[ "$(findmnt -rn -M "$root" -o FSTYPE)" = ext4 ] ||
+    fail 'isolated provider store is not mounted'
+[ ! -e "$root/active" ] && [ ! -L "$root/active" ] ||
+    fail 'an active provider release exists'
+[ ! -e "$root/state/installed.json" ] ||
+    fail 'a committed provider release exists'
+[ ! -e "$root/state/transaction.json" ] ||
+    fail 'an unresolved provider transaction exists'
+[ -d "$slot_a" ] && [ ! -L "$slot_a" ] ||
+    fail 'failed slot A is absent or unsafe'
+[ ! -e "$root/slots/b" ] && [ ! -L "$root/slots/b" ] ||
+    fail 'unexpected slot B exists'
+[ -f "$failure" ] && [ ! -L "$failure" ] ||
+    fail 'first-install failure evidence is absent or unsafe'
+grep -Eq '"candidateVersion"[[:space:]]*:[[:space:]]*"0\.2\.0"' "$failure" ||
+    fail 'failure evidence is not for candidate 0.2.0'
+grep -Eq '"phase"[[:space:]]*:[[:space:]]*"switched"' "$failure" ||
+    fail 'failure evidence is not from the expected switched phase'
+[ "$(cat "$marker")" = r6-1-store-fixture-v1 ] ||
+    fail 'persistent store marker is invalid'
+[ "$(cat "$sibling")" = 'R6.1 sibling access must remain denied.' ] ||
+    fail 'unrelated workdirs fixture is invalid'
+
+marker_sha=$(sha256sum "$marker" | cut -d' ' -f1)
+schema_sha=$(sha256sum "$schema" | cut -d' ' -f1)
+sibling_sha=$(sha256sum "$sibling" | cut -d' ' -f1)
+systemctl stop aos-vehicle-data-provider.service \
+    aos-vehicle-data-provider-selftest@a.service >/dev/null 2>&1 || true
+systemctl reset-failed aos-vehicle-data-provider.service \
+    aos-vehicle-data-provider-selftest@a.service >/dev/null 2>&1 || true
+rm -rf "$slot_a"
+rm -f "$failure"
+rm -rf /tmp/r61-real-provider-020
+rm -rf /tmp/r61-real-provider-030
+rm -rf /tmp/r61-real-provider-040-bad
+sync
+
+[ -z "$(find "$root/slots" -mindepth 1 -print -quit)" ] ||
+    fail 'provider slots were not returned to the pre-install state'
+[ ! -e "$failure" ] && [ ! -L "$failure" ] ||
+    fail 'failed-install evidence was not cleared'
+[ "$(sha256sum "$marker" | cut -d' ' -f1)" = "$marker_sha" ] ||
+    fail 'persistent store marker changed'
+[ "$(sha256sum "$schema" | cut -d' ' -f1)" = "$schema_sha" ] ||
+    fail 'store schema changed'
+[ "$(sha256sum "$sibling" | cut -d' ' -f1)" = "$sibling_sha" ] ||
+    fail 'unrelated workdirs fixture changed'
+
+printf 'RESET_SCOPE=FAILED_FIRST_INSTALL_ONLY\n'
+printf 'R6_1_PROVIDER_FAILED_INSTALL_RESET=PASS\n'

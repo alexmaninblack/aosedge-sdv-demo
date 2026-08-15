@@ -63,6 +63,7 @@ VARIANTS = {
         "port": 10027,
         "mac": "52:54:00:52:61:23",
         "artifactScopes": (
+            "bootstrap-6.1.1-maninblack.11",
             "bootstrap-6.1.1-maninblack.10",
             "bootstrap-6.1.1-maninblack.9",
             "bootstrap-6.1.1-maninblack.8",
@@ -77,6 +78,7 @@ VARIANTS = {
         "port": 10029,
         "mac": "52:54:00:52:61:24",
         "artifactScopes": (
+            "bootstrap-6.1.1-maninblack.11",
             "bootstrap-6.1.1-maninblack.10",
             "bootstrap-6.1.1-maninblack.9",
             "bootstrap-6.1.1-maninblack.8",

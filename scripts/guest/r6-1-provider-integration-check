@@ -5,6 +5,7 @@
 set -eu
 umask 077
 
+scope=${1:-complete}
 root=/var/aos/workdirs/sm/runtimes/systemd-slot-component
 layer=/tmp/provider-0.2.0-arm64.tar
 provider_token=/tmp/r6-provider.token
@@ -23,6 +24,11 @@ fail() {
     printf 'R6.1 provider integration check failed: %s\n' "$*" >&2
     exit 1
 }
+
+case "$scope" in
+    complete|store-delta|policy-discovery) ;;
+    *) fail 'usage: r6-1-provider-integration-check [complete|store-delta|policy-discovery]' ;;
+esac
 
 require_file() {
     [ -f "$1" ] && [ ! -L "$1" ] || fail "unsafe or missing input: $1"
@@ -59,6 +65,11 @@ wait_values() {
 [ "$(id -u)" -eq 0 ] || fail 'this command must run as root'
 [ "$(uname -m)" = aarch64 ] || fail 'guest is not AArch64'
 [ "$(getenforce)" = Enforcing ] || fail 'SELinux is not enforcing'
+if [ "$scope" = policy-discovery ]; then
+    semanage permissive -l 2>/dev/null |
+        grep -q '^[[:space:]]*vehicle_data_provider_t[[:space:]]*$' ||
+        fail 'provider domain is not in the bounded discovery mode'
+fi
 for path in "$layer" "$provider_token" "$reader_token" "$jwt_public" \
     "$reader" "$fixture" "$deny_writer" "$runtime_test"; do
     require_file "$path"
@@ -110,7 +121,15 @@ chmod 0644 "$root/configuration/provider.json"
 install -m 0644 /etc/kuksa-val/CA.pem "$root/trust/viss-ca.pem"
 install -m 0600 "$provider_token" "$root/credentials/kuksa-token"
 install -m 0644 "$jwt_public" "$root/qualification/jwt.key.pub"
-restorecon -RF "$root" >/dev/null
+if [ "$scope" = complete ]; then
+    restorecon -RF "$root" >/dev/null
+else
+    for path in "$root" "$root/slots" "$root/configuration" "$root/trust" \
+        "$root/credentials" "$root/qualification"; do
+        stat -c %C "$path" | grep -q ':vehicle_data_provider_store_t:' ||
+            fail "fixed-context store path has the wrong SELinux type: $path"
+    done
+fi
 
 install -d -m 0755 /run/systemd/system/kuksa-databroker.service.d
 cat >/run/systemd/system/kuksa-databroker.service.d/r61-qualification.conf <<EOF
@@ -124,9 +143,11 @@ systemctl restart kuksa-databroker.service
 wait_active kuksa-databroker.service || fail 'KUKSA did not restart with qualification auth'
 
 chmod 0755 "$runtime_test"
-"$runtime_test" \
-    --gtest_filter='-*RealProviderFirstInstallThroughProductionProfile:*RealProviderUpdateAndRollbackThroughProductionProfile' ||
-    fail 'generic ARM64 Service Manager runtime matrix failed'
+if [ "$scope" = complete ]; then
+    "$runtime_test" \
+        --gtest_filter='-*RealProviderFirstInstallThroughProductionProfile:*RealProviderUpdateAndRollbackThroughProductionProfile' ||
+        fail 'generic ARM64 Service Manager runtime matrix failed'
+fi
 R61_REAL_PROVIDER_PAYLOAD_020="$payload_020" \
     "$runtime_test" \
     --gtest_filter='*RealProviderFirstInstallThroughProductionProfile' ||
@@ -213,7 +234,13 @@ if grep -R -E 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY' "$payload_020" \
     fail 'candidate payload contains private key material'
 fi
 
-if ausearch -m AVC,USER_AVC -ts boot 2>/dev/null | grep -q '^type=AVC'; then
+if [ "$scope" = policy-discovery ]; then
+    avc_count=$(ausearch -m AVC,USER_AVC -ts boot 2>/dev/null |
+        grep -c '^type=AVC' || true)
+    [ "$avc_count" -gt 0 ] ||
+        fail 'policy discovery did not record any SELinux AVC evidence'
+    printf 'DISCOVERY_AVC_COUNT=%s\n' "$avc_count"
+elif ausearch -m AVC,USER_AVC -ts boot 2>/dev/null | grep -q '^type=AVC'; then
     ausearch -m AVC,USER_AVC -ts boot >&2 || true
     fail 'provider qualification produced an SELinux AVC denial'
 fi
@@ -222,4 +249,5 @@ printf 'PROVIDER_VERSION=0.2.0\n'
 printf 'PYTHON=%s\n' "$(/usr/bin/python3 --version 2>&1)"
 printf 'PROVIDER_UID=%s\n' "$(awk '/^Uid:/ {print $2; exit}' "/proc/$(systemctl show -p MainPID --value aos-vehicle-data-provider.service)/status")"
 printf 'PROVIDER_RSS_KIB=%s\n' "$provider_rss"
+printf 'QUALIFICATION_SCOPE=%s\n' "$scope"
 printf 'R6_1_PROVIDER_INTEGRATION=PASS\n'

@@ -1,0 +1,60 @@
+#!/bin/sh
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+set -eu
+umask 077
+
+mode=${1:-}
+domain=vehicle_data_provider_t
+
+fail() {
+    printf 'R6.1 provider-domain discovery failed: %s\n' "$*" >&2
+    exit 1
+}
+
+is_permissive() {
+    semanage permissive -l 2>/dev/null |
+        grep -q "^[[:space:]]*$domain[[:space:]]*$"
+}
+
+[ "$(id -u)" -eq 0 ] || fail 'this helper must run as root'
+[ "$(uname -m)" = aarch64 ] || fail 'guest is not AArch64'
+grep -qx 'VERSION_ID=6.1.1-maninblack.10' /etc/os-release ||
+    fail 'helper is restricted to the rejected .10 disposable base image'
+[ "$(getenforce)" = Enforcing ] || fail 'global SELinux must remain enforcing'
+
+case "$mode" in
+    enable)
+        ! is_permissive || fail 'provider domain is already permissive'
+        mount -o remount,rw / || fail 'cannot remount disposable rootfs writable'
+        semanage permissive -a "$domain" ||
+            fail 'cannot enable provider-domain discovery'
+        is_permissive || fail 'provider domain permissive state was not recorded'
+        ;;
+    disable)
+        is_permissive || fail 'provider domain is not in discovery mode'
+        mount -o remount,rw / || fail 'cannot remount disposable rootfs writable'
+        semanage permissive -d "$domain" ||
+            fail 'cannot restore provider-domain enforcement'
+        ! is_permissive || fail 'provider domain remains permissive'
+        ;;
+    audit-enable)
+        is_permissive || fail 'provider domain is not in discovery mode'
+        mount -o remount,rw / || fail 'cannot remount disposable rootfs writable'
+        semodule -DB || fail 'cannot disable SELinux dontaudit rules for discovery'
+        ;;
+    audit-disable)
+        is_permissive || fail 'provider domain is not in discovery mode'
+        mount -o remount,rw / || fail 'cannot remount disposable rootfs writable'
+        semodule -B || fail 'cannot restore normal SELinux dontaudit rules'
+        ;;
+    *) fail 'usage: r6-1-provider-domain-discovery <enable|disable|audit-enable|audit-disable>' ;;
+esac
+
+[ "$(getenforce)" = Enforcing ] || fail 'global SELinux changed unexpectedly'
+sync
+printf 'GLOBAL_SELINUX=Enforcing\n'
+printf 'PROVIDER_DOMAIN_MODE=%s\n' "$mode"
+printf 'CLEAN_RESTART_REQUIRED=yes\n'
+printf 'R6_1_PROVIDER_DOMAIN_DISCOVERY=PASS\n'

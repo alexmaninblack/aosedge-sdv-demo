@@ -3,10 +3,10 @@
 
 # R6.1-6.5a Demo Isolated Provider Store
 
-- Status: integrated boot/store security qualification passed; failure matrix pending
+- Status: `.11` runtime-dependency closure and clean bootstrap qualification passed
 - Date: 2026-08-15
 - Platform baseline: validation Unit on rootfs `6.1.1-maninblack.2`
-- Current local qualification candidate: `6.1.1-maninblack.10`
+- Current local qualification candidate: `6.1.1-maninblack.11`
 - Provider candidate: signed and locally verified `0.2.0`
 - Cloud scope: isolated validation Unit only
 
@@ -165,6 +165,43 @@ store access, and sibling denial. A clean stop/start preserved and revalidated
 the backing filesystem and fixture content. The recent provider AVC profile
 contains only the deliberately exercised denial on the DAC-open sibling
 `aos_var_run_t` secret; no procfs, userdb, or extra-capability access appears.
+
+## Rootfs `6.1.1-maninblack.11` Runtime Dependency Closure
+
+`.10` remained the disposable discovery base while the complete provider
+lifecycle and dependency surface were reviewed before another image build.
+The resulting `.11` delta is intentionally limited to the provider platform
+boundary:
+
+- read-only access to systemd's unit-private `LoadCredential` files;
+- the pinned refpolicy DNS client interface for hostname-based VISS URIs;
+- direct, unconditional read access to `/dev/urandom` for gRPC TLS while the
+  AosVM `global_ssp` boolean remains off; and
+- a soft, ordered KUKSA dependency so a Databroker restart does not stop the
+  provider lifecycle.
+
+The exact candidate evidence is:
+
+```text
+version: 6.1.1-maninblack.11
+platform revision: a12c0aa7f8a680b35407776b12bcc025970abc73
+manifest SHA-256: b9b49a575798f2bc4a532a794e77352ed21596677ef5aced4304db9e7a87f09e
+build graph SHA-256: 08bb15d68e32cbfce1825563e8207e84c1e3b584d9a48c266338f2c242ca867e
+raw image size: 6997147648 bytes
+raw image SHA-256: 946a296b7200644bc529080f3512712d8b7ec97dedad520146a4f503cf4006a2
+```
+
+Before the image build, the side-loaded candidate passed in global SELinux
+`Enforcing` mode with no permissive domains and a read-only root. Positive DNS
+resolution delivered live VISS telemetry; KUKSA stop/start preserved the same
+provider PID and automatically recovered live values; invalid credentials
+failed closed; `SIGKILL` recovered in four seconds; and DNS/TLS failures
+remained fail-safe. The one incremental `.11` image then passed a clean
+disposable AArch64 boot with direct compiled-policy gates for credentials,
+DNS, and `urandom`.
+
+No signing identity, provisioned Unit, Cloud assignment, validation Unit, or
+demonstration Unit was accessed or changed.
 
 ### Steady-State Loop Support
 
@@ -335,19 +372,19 @@ same version.
 
 ## Rootfs Update and Cloud Scope
 
-`.10` is the current rootfs payload. `.2` remains immutable and installed
+`.11` is the current local rootfs payload. `.2` remains immutable and installed
 evidence; the rejected `.3` through `.9` development images remain local
-evidence only.
+evidence only, and `.10` is retained as the runtime-discovery base.
 The accepted flow is:
 
-1. build and qualify `.10` locally using retained Yocto sources and caches;
+1. build and qualify `.11` locally using retained Yocto sources and caches;
 2. freeze a rootfs-only candidate with new exact digests;
 3. stop for explicit signing approval;
-4. sign and independently verify only the accepted `.10` candidate;
+4. sign and independently verify only the accepted `.11` candidate;
 5. stop for explicit Cloud mutation approval;
-6. upload `.10` only after the validation and demonstration Unit Sets are
+6. upload `.11` only after the validation and demonstration Unit Sets are
    rechecked;
-7. prove through Unit details that `.10` is pending only on the validation Unit;
+7. prove through Unit details that `.11` is pending only on the validation Unit;
 8. approve only the intended architecture;
 9. monitor download, install, activation, reboot, and final online state; and
 10. leave the demonstration Unit unchanged.
@@ -501,8 +538,10 @@ discovery run on the disposable `.9` base produced only the deliberately
 exercised sibling `aos_var_run_t` denial. After restoring the provider domain
 to Enforcing and cleanly restarting the same persistent store, the lifecycle
 passed with that sibling read denied and no procfs, userdb, or additional
-capability access. Rootfs `.10` is the single final integrated candidate for
-clean-image qualification.
+capability access. Rootfs `.10` then became the disposable discovery base for
+the consolidated credential, DNS, random-device, and KUKSA lifecycle review.
+Rootfs `.11` is the single current integrated candidate for the next unsigned
+rootfs-only FOTA gate.
 
 ### R6.1-6.5a.3 — Lifecycle and Failure Matrix
 
@@ -519,7 +558,7 @@ Exit: complete local provider lifecycle passes on the nested filesystem.
 
 ### R6.1-6.5a.4 — Build and Rootfs Qualification
 
-- create rootfs `6.1.1-maninblack.10` without a boot update;
+- create rootfs `6.1.1-maninblack.11` without a boot update;
 - use the retained incremental Yocto builder and preserve all caches;
 - run structural, secret-exclusion, version, kernel-module, mount, systemd,
   SELinux, capacity, restart, and fatal-log gates;
@@ -530,21 +569,21 @@ mutation.
 
 ### R6.1-6.5a.5 — Signing Gate
 
-- request explicit permission for the exact frozen `.10` candidate;
+- request explicit permission for the exact frozen `.11` candidate;
 - reverify all accepted bytes before identity access;
 - sign only the rootfs candidate;
 - independently verify embedded bytes, signed hashes, and RS256;
 - retain sanitized evidence only.
 
-Exit: one signed, locally verified `.10` bundle; no Cloud mutation.
+Exit: one signed, locally verified `.11` bundle; no Cloud mutation.
 
 ### R6.1-6.5a.6 — Validation Unit Deployment
 
 - request explicit permission for the exact Cloud mutation;
 - recheck Unit Set roles, membership, installed versions, and pending versions;
-- upload `.10` and prove validation-only pending scope before approval;
-- install `.10` only on the validation Unit;
-- verify online state, boot `6.1.0`, rootfs `.10`, nested store mount, SELinux,
+- upload `.11` and prove validation-only pending scope before approval;
+- install `.11` only on the validation Unit;
+- verify online state, boot `6.1.0`, rootfs `.11`, nested store mount, SELinux,
   empty slots, service health, clean logs, and restart persistence.
 
 Exit: validation Unit is ready for provider assignment; demonstration Unit is
@@ -571,7 +610,7 @@ mount units. If rootfs is rolled back after provider installation, the backing
 file remains intact but is not mounted, and the underlying empty component
 directory becomes visible.
 
-Therefore `.10 -> .2` is not a transparent provider-preserving rollback. The
+Therefore `.11 -> .2` is not a transparent provider-preserving rollback. The
 accepted rollback procedure must either:
 
 - remove or suspend the provider assignment before rootfs rollback and report
@@ -616,7 +655,7 @@ Stop without automatic retry if:
 - any provider access to sibling `aos_var_run_t` data succeeds;
 - any unexplained AVC, fatal process failure, or read-only remount appears;
 - the provider signed bytes or absolute path assumptions change;
-- Cloud shows `.10` or provider `0.2.0` pending on any Unit other than the
+- Cloud shows `.11` or provider `0.2.0` pending on any Unit other than the
   validation Unit;
 - a rootfs rollback would leave Cloud component state ambiguous; or
 - any action would modify the demonstration Unit without separate approval.
@@ -625,7 +664,7 @@ Stop without automatic retry if:
 
 R6.1-6.5a is complete only when:
 
-- `.10` is installed only on the validation Unit;
+- `.11` is installed only on the validation Unit;
 - boot remains `6.1.0`;
 - the nested provider store is persistent, bounded, correctly labelled, and
   fail-closed;
@@ -650,7 +689,7 @@ the final production vehicle storage architecture.
 4. Unattended boot may run `e2fsck -p`; only status 0 or 1 is accepted.
 5. A random filesystem UUID is created once, recorded atomically, and required
    on every later boot. A committed store is never reformatted automatically.
-6. Provider assignment must be suspended or removed before `.10 -> .2`
+6. Provider assignment must be suspended or removed before `.11 -> .2`
    rollback; transparent rollback across those storage backends is not claimed.
 7. The static, fixture, lifecycle/failure, build, SELinux, capacity, restart,
    fatal-log, and secret-exclusion gates in this document are all required.

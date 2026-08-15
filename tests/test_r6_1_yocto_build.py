@@ -51,14 +51,14 @@ class R61YoctoBuildTests(unittest.TestCase):
 
     def test_project_build_is_pinned_and_credential_free(self) -> None:
         self.assertIn(
-            "a62199936670c7f3dbd0791978872a76ac3871b26de2b64bdf160e3c0777c57e",
+            "b9b49a575798f2bc4a532a794e77352ed21596677ef5aced4304db9e7a87f09e",
             self.content,
         )
         self.assertIn(
-            "12b09c6e447584f79d6627e83e59bb025bff00d6", self.content
+            "a12c0aa7f8a680b35407776b12bcc025970abc73", self.content
         )
         self.assertIn(
-            "1808c6d16d2c906b95cac19bdcbe32051e1a943fd2c6e97d01ddd649a6ed3989",
+            "08bb15d68e32cbfce1825563e8207e84c1e3b584d9a48c266338f2c242ca867e",
             self.content,
         )
         self.assertIn("credential reference present", self.content)

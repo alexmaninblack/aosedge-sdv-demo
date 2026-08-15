@@ -40,7 +40,7 @@ PROJECT_SOURCE_URL = "https://github.com/alexmaninblack/aos-vehicle-platform"
 DOWNLOADS_DIR = "/home/yocto/yocto-cache/downloads"
 SSTATE_DIR = "/home/yocto/yocto-cache/sstate-cache"
 BOOTSTRAP_BASE_VERSION = "6.1.0"
-BOOTSTRAP_ROOTFS_VERSION = "6.1.1-maninblack.10"
+BOOTSTRAP_ROOTFS_VERSION = "6.1.1-maninblack.11"
 
 
 class ManifestError(ValueError):

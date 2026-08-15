@@ -13,6 +13,17 @@ fail() {
     exit 1
 }
 
+require_effective_allow() {
+    source_type=$1
+    target_type=$2
+    object_class=$3
+    permission=$4
+    sesearch --allow -s "$source_type" -t "$target_type" \
+        -c "$object_class" -p "$permission" -ds -dt |
+        grep -q '^[[:space:]]*allow ' ||
+        fail "effective policy is missing ${source_type} -> ${target_type}:${object_class} ${permission}"
+}
+
 probe_namespaces() {
     namespace_root="/tmp/r61-bootstrap-namespaces-$$"
     namespace_bundle="$namespace_root/bundle"
@@ -105,10 +116,10 @@ EOF
 
 case "$variant" in
     upstream|project|candidate) expected_rootfs_version=6.1.0 ;;
-    bootstrap) expected_rootfs_version=6.1.1-maninblack.10 ;;
-    store) expected_rootfs_version=6.1.1-maninblack.10 ;;
+    bootstrap) expected_rootfs_version=6.1.1-maninblack.11 ;;
+    store) expected_rootfs_version=6.1.1-maninblack.11 ;;
     store-side-load) expected_rootfs_version=6.1.1-maninblack.9 ;;
-    validation) expected_rootfs_version=6.1.1-maninblack.10 ;;
+    validation) expected_rootfs_version=6.1.1-maninblack.11 ;;
     *) fail 'usage: r6-1-bootstrap-check <upstream|project|candidate|bootstrap|store|store-side-load|validation>' ;;
 esac
 case "$wait_seconds" in
@@ -295,6 +306,16 @@ else
     grep -qx 'NotifyAccess=main' \
         /usr/lib/systemd/system/aos-vehicle-data-provider.service ||
         fail 'provider readiness sender is ambiguous'
+    grep -qx 'After=network-online.target kuksa-databroker.service' \
+        /usr/lib/systemd/system/aos-vehicle-data-provider.service ||
+        fail 'KUKSA startup ordering is absent'
+    grep -qx 'Wants=network-online.target kuksa-databroker.service' \
+        /usr/lib/systemd/system/aos-vehicle-data-provider.service ||
+        fail 'KUKSA soft dependency is absent'
+    if grep -qx 'Requires=kuksa-databroker.service' \
+        /usr/lib/systemd/system/aos-vehicle-data-provider.service; then
+        fail 'KUKSA remains a hard provider lifecycle dependency'
+    fi
     grep -qx 'Environment=AOS_VEHICLE_DATA_PROVIDER_CONFIGURATION=/var/aos/workdirs/sm/runtimes/systemd-slot-component/configuration/provider.json' \
         /usr/lib/systemd/system/aos-vehicle-data-provider.service ||
         fail 'vehicle integration configuration boundary is missing'
@@ -311,8 +332,8 @@ else
             fail "provider unit does not select aos-vdp: $unit"
         grep -qx 'Group=aos-vdp' "$unit" ||
             fail "provider unit does not select the aos-vdp group: $unit"
-        grep -qx 'CapabilityBoundingSet=CAP_SETGID CAP_SETUID' "$unit" ||
-            fail "provider launcher capability boundary is incorrect: $unit"
+        grep -qx 'CapabilityBoundingSet=' "$unit" ||
+            fail "provider launcher capability set is not empty: $unit"
         grep -qx 'AmbientCapabilities=' "$unit" ||
             fail "provider unit has an ambient capability: $unit"
         ! grep -q '^DynamicUser=' "$unit" ||
@@ -320,9 +341,9 @@ else
         ! grep -q '^NoNewPrivileges=' "$unit" ||
             fail "provider unit applies no_new_privs before the launcher: $unit"
     done
-    grep -qx 'ExecStart=!/usr/libexec/aos-vehicle-data-provider-launcher --self-test %i' \
+    grep -qx 'ExecStart=/usr/libexec/aos-vehicle-data-provider-launcher --self-test %i' \
         /usr/lib/systemd/system/aos-vehicle-data-provider-selftest@.service ||
-        fail 'provider self-test does not use the bounded privilege-drop launcher'
+        fail 'provider self-test does not use the fixed-identity launcher'
     grep -qx 'PrivateNetwork=yes' \
         /usr/lib/systemd/system/aos-vehicle-data-provider-selftest@.service ||
         fail 'provider self-test is not offline'
@@ -395,6 +416,16 @@ else
     if [ "$variant" != bootstrap ]; then
         stat -c %C "$store" | grep -q ':vehicle_data_provider_store_t:' ||
             fail 'project store SELinux type is incorrect'
+    fi
+    require_effective_allow vehicle_data_provider_t initrc_runtime_t dir search
+    require_effective_allow vehicle_data_provider_t initrc_runtime_t file read
+    require_effective_allow vehicle_data_provider_t vehicle_data_provider_t \
+        udp_socket create
+    require_effective_allow vehicle_data_provider_t urandom_device_t \
+        chr_file read
+    if sesearch --allow -s vehicle_data_provider_t -t initrc_runtime_t \
+        -c file -p write -ds -dt | grep -q '^[[:space:]]*allow '; then
+        fail 'effective credential policy permits provider writes'
     fi
 fi
 

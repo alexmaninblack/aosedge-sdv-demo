@@ -8,6 +8,7 @@ umask 077
 generation=${1:-}
 gate_variant=${2:-store}
 security_mode=${3:-enforcing}
+content_mode=${4:-empty}
 fixture_device=/dev/vda
 fixture_block=vda
 fixture_serial=r61-store-fixture
@@ -42,6 +43,12 @@ case "$security_mode" in
     discovery|enforcing) ;;
     *) fail 'security mode must be discovery or enforcing' ;;
 esac
+case "$content_mode" in
+    empty|provider) ;;
+    *) fail 'content mode must be empty or provider' ;;
+esac
+[ "$content_mode" = empty ] || [ "$generation" = restart ] ||
+    fail 'provider content mode is valid only for restart qualification'
 
 [ "$(id -u)" -eq 0 ] || fail 'fixture must run as root'
 [ "$(uname -m)" = aarch64 ] || fail 'fixture guest is not AArch64'
@@ -188,10 +195,12 @@ case "$generation" in
         ;;
 esac
 
-[ -f /tmp/r6-1-bootstrap-check ] && [ ! -L /tmp/r6-1-bootstrap-check ] ||
-    fail 'bootstrap gate helper is missing or unsafe'
-sh /tmp/r6-1-bootstrap-check "$gate_variant" >/dev/null ||
-    fail 'complete .3 bootstrap gate failed on the fixture'
+if [ "$content_mode" = empty ]; then
+    [ -f /tmp/r6-1-bootstrap-check ] && [ ! -L /tmp/r6-1-bootstrap-check ] ||
+        fail 'bootstrap gate helper is missing or unsafe'
+    sh /tmp/r6-1-bootstrap-check "$gate_variant" >/dev/null ||
+        fail 'complete .3 bootstrap gate failed on the fixture'
+fi
 
 install -d -m 0755 "$sibling"
 printf 'R6.1 sibling access must remain denied.\n' >"$sibling/secret"
@@ -202,13 +211,14 @@ chcon -t vehicle_data_provider_store_t "$sibling/secret" >/dev/null 2>&1 || true
 stat -c %C "$sibling/secret" | grep -q ':aos_var_run_t:' ||
     fail 'direct subtree relabel escaped the fixed parent context'
 
-probe_slot="$store/slots/a"
-[ ! -e "$store/active" ] && [ ! -L "$store/active" ] ||
-    fail 'fixture store unexpectedly has an active provider'
-[ ! -e "$probe_slot" ] && [ ! -L "$probe_slot" ] ||
-    fail 'fixture probe slot already exists'
-install -d -m 0755 "$probe_slot/bin" "$probe_slot/config"
-cat >"$probe_slot/bin/vehicle-data-provider" <<'EOF'
+if [ "$content_mode" = empty ]; then
+    probe_slot="$store/slots/a"
+    [ ! -e "$store/active" ] && [ ! -L "$store/active" ] ||
+        fail 'fixture store unexpectedly has an active provider'
+    [ ! -e "$probe_slot" ] && [ ! -L "$probe_slot" ] ||
+        fail 'fixture probe slot already exists'
+    install -d -m 0755 "$probe_slot/bin" "$probe_slot/config"
+    cat >"$probe_slot/bin/vehicle-data-provider" <<'EOF'
 #!/bin/sh
 set -eu
 root=${AOS_VEHICLE_DATA_PROVIDER_ROOT:?}
@@ -226,38 +236,55 @@ else
 fi
 printf 'PROBE_SECURITY_MODEL=PASS\n'
 EOF
-printf '{}\n' >"$probe_slot/config/provider.json"
-printf '%s\n' "$security_mode" >"$probe_slot/config/security-mode"
-chmod 0755 "$probe_slot/bin/vehicle-data-provider"
-chmod 0644 "$probe_slot/config/provider.json" "$probe_slot/config/security-mode"
-systemctl reset-failed "$probe_unit" >/dev/null 2>&1 || true
-probe_status=0
-systemctl start "$probe_unit" >/dev/null 2>&1 || probe_status=$?
-probe_output=$(journalctl -b -u "$probe_unit" --no-pager -o cat 2>&1 || true)
-systemctl reset-failed "$probe_unit" >/dev/null 2>&1 || true
-rm -rf "$probe_slot"
-[ "$probe_status" -eq 0 ] || {
-    printf '%s\n' "$probe_output" >&2
-    fail "provider SELinux access probe failed with status $probe_status"
-}
-printf '%s\n' "$probe_output" | grep -qx 'NON_ROOT_IDENTITY=PASS' ||
-    fail 'provider payload did not prove a non-root runtime identity'
-printf '%s\n' "$probe_output" | grep -qx 'PROBE_SECURITY_MODEL=PASS' ||
-    fail 'provider payload did not complete the store-isolation probe'
-case "$security_mode" in
-    discovery)
-        printf '%s\n' "$probe_output" |
-            grep -qx 'PROBE_SIBLING_ACCESS=ALLOWED_FOR_DISCOVERY' ||
-            fail 'provider discovery did not exercise sibling access'
-        ;;
-    enforcing)
-        printf '%s\n' "$probe_output" |
-            grep -qx 'PROBE_SIBLING_ACCESS=DENIED' ||
-            fail 'provider enforcing probe did not deny sibling access'
-        ;;
-esac
-[ -z "$(find "$store/slots" -mindepth 1 -print -quit)" ] ||
-    fail 'provider access probe did not clean its temporary slot'
+    printf '{}\n' >"$probe_slot/config/provider.json"
+    printf '%s\n' "$security_mode" >"$probe_slot/config/security-mode"
+    chmod 0755 "$probe_slot/bin/vehicle-data-provider"
+    chmod 0644 "$probe_slot/config/provider.json" "$probe_slot/config/security-mode"
+    systemctl reset-failed "$probe_unit" >/dev/null 2>&1 || true
+    probe_status=0
+    systemctl start "$probe_unit" >/dev/null 2>&1 || probe_status=$?
+    probe_output=$(journalctl -b -u "$probe_unit" --no-pager -o cat 2>&1 || true)
+    systemctl reset-failed "$probe_unit" >/dev/null 2>&1 || true
+    rm -rf "$probe_slot"
+    [ "$probe_status" -eq 0 ] || {
+        printf '%s\n' "$probe_output" >&2
+        fail "provider SELinux access probe failed with status $probe_status"
+    }
+    printf '%s\n' "$probe_output" | grep -qx 'NON_ROOT_IDENTITY=PASS' ||
+        fail 'provider payload did not prove a non-root runtime identity'
+    printf '%s\n' "$probe_output" | grep -qx 'PROBE_SECURITY_MODEL=PASS' ||
+        fail 'provider payload did not complete the store-isolation probe'
+    case "$security_mode" in
+        discovery)
+            printf '%s\n' "$probe_output" |
+                grep -qx 'PROBE_SIBLING_ACCESS=ALLOWED_FOR_DISCOVERY' ||
+                fail 'provider discovery did not exercise sibling access'
+            ;;
+        enforcing)
+            printf '%s\n' "$probe_output" |
+                grep -qx 'PROBE_SIBLING_ACCESS=DENIED' ||
+                fail 'provider enforcing probe did not deny sibling access'
+            ;;
+    esac
+    [ -z "$(find "$store/slots" -mindepth 1 -print -quit)" ] ||
+        fail 'provider access probe did not clean its temporary slot'
+else
+    [ -L "$store/active" ] && [ "$(readlink "$store/active")" = slots/b ] ||
+        fail 'provider restart did not preserve the active B slot'
+    for slot in a b; do
+        [ -d "$store/slots/$slot" ] && [ ! -L "$store/slots/$slot" ] ||
+            fail "provider restart did not preserve slot $slot"
+    done
+    grep -Eq '"Version"[[:space:]]*:[[:space:]]*"0\.3\.0"' \
+        "$store/state/installed.json" ||
+        fail 'provider restart did not preserve installed version 0.3.0'
+    grep -Eq '"slot"[[:space:]]*:[[:space:]]*"b"' \
+        "$store/state/installed.json" ||
+        fail 'provider restart did not preserve installed slot B'
+    grep -Eq '"candidateVersion"[[:space:]]*:[[:space:]]*"0\.4\.0"' \
+        "$store/state/last-failure.json" ||
+        fail 'provider restart did not preserve rollback evidence'
+fi
 
 /usr/libexec/aos-vehicle-data-provider-store-check >/dev/null ||
     fail 'store validation failed after the domain probe'
@@ -267,10 +294,19 @@ if journalctl -b --no-pager 2>/dev/null | \
 fi
 
 printf 'GENERATION=%s\n' "$generation"
+printf 'CONTENT_MODE=%s\n' "$content_mode"
 printf 'WORKDIRS=%s\n' "$(findmnt -rn -M "$workdirs" -o SOURCE,FSTYPE,OPTIONS)"
 printf 'STORE=%s\n' "$(findmnt -rn -M "$store" -o SOURCE,FSTYPE,OPTIONS)"
 printf 'DIRECT_RELABEL=DENIED\n'
 printf 'PROVIDER_STORE_ACCESS=ALLOWED\n'
 printf 'PROVIDER_SIBLING_ACCESS=%s\n' \
-    "$( [ "$security_mode" = enforcing ] && printf DENIED || printf DISCOVERY_OBSERVED )"
+    "$(
+        if [ "$content_mode" = provider ]; then
+            printf PREVIOUSLY_QUALIFIED
+        elif [ "$security_mode" = enforcing ]; then
+            printf DENIED
+        else
+            printf DISCOVERY_OBSERVED
+        fi
+    )"
 printf 'R6_1_ISOLATED_STORE_FIXTURE=PASS\n'

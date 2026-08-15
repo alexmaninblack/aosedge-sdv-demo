@@ -84,6 +84,20 @@ ALLOWED_FETCH_SUFFIXES = {
     ".squashfs",
     ".yaml",
 }
+ALLOWED_PACKAGE_FETCHES = {
+    PurePosixPath(
+        "/home/yocto/r61-build/project/yocto/build-main/tmp/work/"
+        "cortexa57-aos-linux/aos-vehicle-data-provider-platform/0.1.0/"
+        "packages-split/aos-vehicle-data-provider-platform/usr/libexec/"
+        "aos-vehicle-data-provider-launcher"
+    ): "side-load-launcher-7cd8de3.bin",
+    PurePosixPath(
+        "/home/yocto/r61-build/project/yocto/build-main/tmp/work/"
+        "qemuarm64-aos-linux/refpolicy-aos/2_20220106+git/"
+        "packages-split/refpolicy-aos/usr/share/selinux/aos/"
+        "vehicle_data_provider.pp"
+    ): "side-load-policy-r61-runtime-delta-v2.bin",
+}
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 ARTIFACT_ROOT = REPOSITORY_ROOT / "artifacts" / "r6-1"
@@ -878,13 +892,18 @@ def validate_fetch_paths(source: str, destination: str) -> tuple[str, Path]:
         source_path.relative_to(GUEST_BUILD_ROOT)
     except ValueError:
         fail("fetch source must be below /home/yocto/r61-build")
-    if ".." in source_path.parts or source_path.suffix not in ALLOWED_FETCH_SUFFIXES:
-        fail("fetch source is not an allowed R6.1 image artifact")
-    allowed_characters = (
-        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._/"
-    )
-    if any(character not in allowed_characters for character in source):
-        fail("fetch source contains an unsafe character")
+    package_destination = ALLOWED_PACKAGE_FETCHES.get(source_path)
+    if package_destination is None:
+        if (
+            ".." in source_path.parts
+            or source_path.suffix not in ALLOWED_FETCH_SUFFIXES
+        ):
+            fail("fetch source is not an allowed R6.1 image artifact")
+        allowed_characters = (
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._/"
+        )
+        if any(character not in allowed_characters for character in source):
+            fail("fetch source contains an unsafe character")
 
     requested_destination = Path(destination).expanduser()
     if not requested_destination.is_absolute():
@@ -895,7 +914,11 @@ def validate_fetch_paths(source: str, destination: str) -> tuple[str, Path]:
         destination_path.relative_to(artifact_root)
     except ValueError:
         fail("fetch destination must be below artifacts/r6-1")
-    if destination_path.suffix != source_path.suffix:
+    if package_destination is not None:
+        expected_destination = (ARTIFACT_ROOT / package_destination).resolve()
+        if destination_path != expected_destination:
+            fail("package fetch destination does not match its guarded path")
+    elif destination_path.suffix != source_path.suffix:
         fail("fetch source and destination suffixes must match")
 
     return str(source_path), destination_path

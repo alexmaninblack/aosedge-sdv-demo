@@ -154,6 +154,35 @@ class R61BuilderTests(unittest.TestCase):
                 "/tmp/main-qemuarm64.img",
             )
 
+    def test_fetch_allows_only_the_pinned_side_load_package_outputs(self) -> None:
+        expected = {
+            source: (BUILDER.ARTIFACT_ROOT / destination).resolve()
+            for source, destination in BUILDER.ALLOWED_PACKAGE_FETCHES.items()
+        }
+        self.assertEqual(len(expected), 2)
+        for source, destination in expected.items():
+            validated_source, validated_destination = BUILDER.validate_fetch_paths(
+                str(source), str(destination)
+            )
+            self.assertEqual(validated_source, str(source))
+            self.assertEqual(validated_destination, destination)
+
+        launcher = next(
+            source
+            for source in expected
+            if source.name == "aos-vehicle-data-provider-launcher"
+        )
+        with self.assertRaisesRegex(BUILDER.BuilderError, "guarded path"):
+            BUILDER.validate_fetch_paths(
+                str(launcher),
+                "artifacts/r6-1/side-load-launcher-unreviewed.bin",
+            )
+        with self.assertRaisesRegex(BUILDER.BuilderError, "allowed"):
+            BUILDER.validate_fetch_paths(
+                str(launcher.parent / "unexpected-launcher"),
+                "artifacts/r6-1/side-load-launcher-7cd8de3.bin",
+            )
+
     def test_builder_tool_bootstrap_is_pinned_and_identity_free(self) -> None:
         script = BUILDER.build_tools_script()
 

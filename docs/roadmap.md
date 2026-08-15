@@ -235,9 +235,15 @@ privilege-drop launcher and dedicated `aos-vdp` identity. `.9` then exposed
 the launcher's missing post-drop `getcap` permission and is rejected. Revision
 `12b09c6` completes the reviewed privilege-drop policy; its package-only
 discovery and Enforcing persistence runs pass. Integrated rootfs `.10`
-(`a39d4c97…`) passes two clean bootstrap boots plus fresh-store and clean
-restart qualification. The lifecycle/failure-injection matrix remains before
-the unsigned candidate can be frozen for signing review.
+(`a39d4c97…`) passed clean bootstrap and persistent-store qualification, then
+served as the disposable discovery base for the complete provider runtime
+boundary. Platform revision `a12c0aa` closes read-only systemd credential
+access, hostname DNS resolution, unconditional gRPC `urandom` access, and the
+KUKSA soft-dependency lifecycle. The targeted Enforcing matrix passed live
+telemetry, KUKSA restart recovery, credential fail-closed, process restart,
+and DNS/TLS fail-safe behavior. Exactly one incremental rootfs `.11` image
+(`946a296b…`) was built and passed clean AArch64, read-only-root, SELinux,
+unit-contract, and effective-policy qualification.
 Signing, Cloud upload, provider assignment, and provisioned-Unit mutation
 remain unauthorized.
 
