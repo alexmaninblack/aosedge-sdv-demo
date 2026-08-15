@@ -33,12 +33,21 @@ on the Mac and was never copied into the disposable guest.
 | Platform source | `e972d2bd7f14e27646bb5d7c10c7186ecdecfa9f` |
 | Project manifest | `e50045fe22588bfe882584fd35d4ee0439eb36712e4bb07a4fb5aed15e0b2748` |
 | Generated Ninja graph | `1b1633cf3074054a6f23f5e86c4da93276fbc123d59ebd10ffbbbba532389d9c` |
-| Disposable image | `2316627cb452c779683001f02cfdc14fccaff40137c797ffc94def94d5c4d32a` |
+| Local disposable VM raw disk; not an OTA/FOTA payload | `2316627cb452c779683001f02cfdc14fccaff40137c797ffc94def94d5c4d32a` |
 | ARM64 runtime qualifier | `f95b051bcbd18bdf1095bc0e373ac9193209b32fb29424d07c552628524a97c0` |
 
-The image is 6,997,147,648 bytes. The runtime qualifier is 25,734,904
-bytes. The guarded fetch verified both guest and host digests and made the
-local image read-only before boot.
+The 6,997,147,648-byte image is a complete local raw VM disk containing the
+partition layout and persistent-disk capacity required to boot AosVM under
+QEMU. It is not a deployment bundle, is never signed as the provider, and is
+not transferred through FOTA or uploaded to AosCloud. The runtime qualifier is
+25,734,904 bytes. The guarded fetch verified both guest and host digests and
+made the local image read-only before boot.
+
+The independently deployable provider update is the 6,616,114-byte compressed
+unsigned envelope recorded below. Signing will add only signature and
+certificate metadata; it will not include the raw VM disk. A separate,
+one-time bootstrap system update is recorded later in this document and
+contains 193,559,688 bytes of boot and compressed rootfs payloads in total.
 
 ## Accepted Unsigned Candidate
 
