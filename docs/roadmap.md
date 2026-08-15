@@ -202,9 +202,10 @@ telemetry, source-loss, update,
 downgrade, failed-candidate rollback, security, resource, and secret-exclusion
 gates. R6.1-5 is complete: only that accepted provider candidate was signed,
 and its embedded inputs, signed hashes, and RS256 signature passed the guarded
-local verifier. No Cloud operation was performed. R6.1-6 must first assign a
-new immutable version to the custom bootstrap and place it on
-an isolated validation Unit before any provider assignment. The authorization
+local verifier. No Cloud operation was performed. R6.1-6 is now in local
+release preparation. It uses a new isolated validation Unit, keeps boot at
+`6.1.0`, and advances only the full rootfs component to the immutable
+`6.1.1-maninblack.1` release before any provider assignment. The authorization
 still excludes bootstrap signing or deployment, Cloud catalog mutation,
 deprovisioning, reprovisioning, and active-Unit changes. The accepted R6
 side-load remains the operational baseline.

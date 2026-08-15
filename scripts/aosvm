@@ -18,18 +18,23 @@ FIRMWARE="QEMU_EFI.fd"
 FIRMWARE_SIZE="2097152"
 FIRMWARE_SHA256="30f7042c23b81c28b8196a76f4af6bcf10046f08049c9d78b4387472c5bbcd10"
 IMAGE_VIRTUAL_SIZE="6997147648"
-OVERLAY="aosvm-main-overlay.qcow2"
-LIFECYCLE_STATE="aosvm-main-lifecycle.json"
-LIFECYCLE_GUARD="aosvm-main-provisioning-lock.json"
-PRE_PROVISION_BACKUP="aosvm-main-pre-provision.qcow2"
-POST_PROVISION_BACKUP="aosvm-main-post-provision.qcow2"
+AOSVM_INSTANCE=${AOSVM_INSTANCE:-main}
+case "$AOSVM_INSTANCE" in
+    main|r6-1-validation) ;;
+    *) printf 'Error: unsupported AosVM instance: %s\n' "$AOSVM_INSTANCE" >&2; exit 1 ;;
+esac
+VM_NAME="aosvm-$AOSVM_INSTANCE"
+OVERLAY="$VM_NAME-overlay.qcow2"
+LIFECYCLE_STATE="$VM_NAME-lifecycle.json"
+LIFECYCLE_GUARD="$VM_NAME-provisioning-lock.json"
+PRE_PROVISION_BACKUP="$VM_NAME-pre-provision.qcow2"
+POST_PROVISION_BACKUP="$VM_NAME-post-provision.qcow2"
 QEMU_QUALIFIED_VERSIONS="11.0.3 11.1.0"
 QEMU_MACHINE="virt-11.0"
 QEMU_CPU="host"
 QEMU_VCPUS="2"
 QEMU_MEMORY_MIB="2048"
-VM_NAME="aosvm-main"
-VM_MAC_ADDRESS="52:54:00:41:4f:53"
+VM_MAC_ADDRESS=${AOSVM_MAC_ADDRESS:-"52:54:00:41:4f:53"}
 GUEST_NETWORK="10.0.0.0/24"
 GUEST_ADDRESS="10.0.0.100"
 GUEST_SSH_PORT="22"
@@ -112,6 +117,12 @@ validate_decimal_range() {
     [ "$decimal_value" -ge "$decimal_minimum" ] &&
         [ "$decimal_value" -le "$decimal_maximum" ] ||
         fail "$decimal_label must be between $decimal_minimum and $decimal_maximum"
+}
+
+validate_mac_address() {
+    printf '%s\n' "$VM_MAC_ADDRESS" |
+        grep -Eq '^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$' ||
+        fail "VM MAC address is invalid"
 }
 
 file_size() {
@@ -1054,6 +1065,7 @@ host_check() {
     validate_decimal_range "$HOST_DNS_PORT" 1024 65535 "Host DNS port"
     validate_decimal_range "$PROVISIONING_HOST_PORT" 1024 65535 \
         "Provisioning host port"
+    validate_mac_address
     [ "$SSH_HOST_PORT" -ne "$HOST_DNS_PORT" ] &&
         [ "$SSH_HOST_PORT" -ne "$PROVISIONING_HOST_PORT" ] &&
         [ "$HOST_DNS_PORT" -ne "$PROVISIONING_HOST_PORT" ] ||

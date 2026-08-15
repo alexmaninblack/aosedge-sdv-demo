@@ -1,0 +1,150 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+"""Validate the unsigned R6.1-6 rootfs-only bootstrap release."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import re
+import sys
+from pathlib import Path
+from typing import Any
+
+import yaml
+
+
+EXPECTED_ROOT = Path("/home/yocto/r61-build/project/output/fota")
+EXPECTED_VERSION = "6.1.1-maninblack.1"
+EXPECTED_CODENAME = "aos-vm-1.0.0-main-qemuarm64-rootfs"
+EXPECTED_MEDIA_TYPE = "application/vnd.aos.image.component.full.v1+squashfs"
+DIGEST_RE = re.compile(r"[0-9a-f]{64}")
+
+
+class BootstrapReleaseError(ValueError):
+    """Raised when the rootfs-only bootstrap candidate is incomplete or unsafe."""
+
+
+def require(condition: bool, message: str) -> None:
+    if not condition:
+        raise BootstrapReleaseError(message)
+
+
+def regular_file(path: Path, label: str) -> None:
+    require(path.is_file() and not path.is_symlink(), f"{label} is missing or unsafe")
+
+
+def sha256(path: Path) -> str:
+    value = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            value.update(block)
+    return value.hexdigest()
+
+
+def validate_output(output_root: Path = EXPECTED_ROOT) -> dict[str, Any]:
+    root = output_root.resolve()
+    require(root == output_root, "bootstrap output must use its canonical path")
+    require(root.is_dir() and not root.is_symlink(), "bootstrap output root is unsafe")
+    config_path = root / "config.yaml"
+    regular_file(config_path, "bootstrap configuration")
+    config_text = config_path.read_text(encoding="utf-8")
+    for forbidden in (
+        "tlsKey",
+        "publish:",
+        ".p12",
+        ".pfx",
+        "BEGIN PRIVATE KEY",
+        "BEGIN CERTIFICATE",
+        "/Users/",
+    ):
+        require(forbidden not in config_text, f"configuration contains {forbidden}")
+    try:
+        config = yaml.safe_load(config_text)
+    except yaml.YAMLError as error:
+        raise BootstrapReleaseError(f"configuration is invalid YAML: {error}") from error
+    require(isinstance(config, dict), "configuration root is not an object")
+    require(config.get("schemaVersion") == 2, "schema version changed")
+    require(config.get("publisher") == {"company": "maninblack"}, "publisher changed")
+    require("publish" not in config, "configuration unexpectedly requests publication")
+    items = config.get("items")
+    require(isinstance(items, list) and len(items) == 1, "release is not rootfs-only")
+    item = items[0]
+    require(isinstance(item, dict), "rootfs item is not an object")
+    identity = item.get("identity")
+    require(isinstance(identity, dict), "rootfs identity is missing")
+    require(identity.get("type") == "component", "rootfs identity type changed")
+    require(identity.get("codename") == EXPECTED_CODENAME, "rootfs codename changed")
+    require(item.get("version") == EXPECTED_VERSION, "rootfs release version changed")
+    require(item.get("sourceFolder") == "rootfs-full", "rootfs source folder changed")
+    images = item.get("images")
+    require(isinstance(images, list) and len(images) == 1, "rootfs image set changed")
+    image = images[0]
+    require(isinstance(image, dict), "rootfs image is not an object")
+    require(image.get("mediaType") == EXPECTED_MEDIA_TYPE, "rootfs media type changed")
+    require(image.get("archInfo") == {"architecture": "arm64"}, "architecture changed")
+    require(image.get("osInfo") == {"os": "linux"}, "operating system changed")
+    relative_name = image.get("path")
+    require(isinstance(relative_name, str), "rootfs image path is missing")
+    relative = Path(relative_name)
+    require(
+        not relative.is_absolute()
+        and len(relative.parts) == 1
+        and ".." not in relative.parts
+        and relative.suffix == ".squashfs",
+        "rootfs image path is unsafe",
+    )
+    artifact = (root / "rootfs-full" / relative).resolve()
+    try:
+        artifact.relative_to(root)
+    except ValueError as error:
+        raise BootstrapReleaseError("rootfs image escaped the output root") from error
+    regular_file(artifact, "rootfs image")
+    require(artifact.stat().st_size > 0, "rootfs image is empty")
+    configuration = item.get("configuration")
+    require(isinstance(configuration, dict), "rootfs runtime configuration is missing")
+    require(
+        configuration.get("runtimes")
+        == [{"codename": EXPECTED_CODENAME, "type": "runtime"}],
+        "rootfs runtime identity changed",
+    )
+
+    observed_files: set[Path] = set()
+    for path in root.rglob("*"):
+        require(not path.is_symlink(), f"bootstrap output contains a symbolic link: {path}")
+        if path.is_file():
+            observed_files.add(path.resolve())
+    require(
+        observed_files == {config_path.resolve(), artifact},
+        "bootstrap output contains stale or unexpected files",
+    )
+    artifact_digest = sha256(artifact)
+    require(DIGEST_RE.fullmatch(artifact_digest) is not None, "invalid rootfs digest")
+    return {
+        "configSha256": sha256(config_path),
+        "rootfsPath": str(artifact.relative_to(root)),
+        "rootfsSha256": artifact_digest,
+        "rootfsSize": artifact.stat().st_size,
+        "version": EXPECTED_VERSION,
+    }
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("output_root", nargs="?", type=Path, default=EXPECTED_ROOT)
+    options = parser.parse_args()
+    try:
+        evidence = validate_output(options.output_root)
+    except (BootstrapReleaseError, OSError) as error:
+        print(f"R6.1 bootstrap release validation failed: {error}", file=sys.stderr)
+        return 1
+    for name in sorted(evidence):
+        print(f"{name}={evidence[name]}")
+    print("R6_1_UNSIGNED_BOOTSTRAP_RELEASE=PASS")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

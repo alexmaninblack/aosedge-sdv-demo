@@ -1,0 +1,24 @@
+#!/bin/sh
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+set -eu
+umask 077
+
+SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+REPOSITORY_ROOT=$(CDPATH='' cd -- "$SCRIPT_DIR/.." && pwd)
+STATE_ROOT="$HOME/Library/Application Support/CarlaAosEdge/AosVM/r6-1-validation"
+
+export AOSVM_INSTANCE=r6-1-validation
+export AOSVM_MAC_ADDRESS=52:54:00:52:36:32
+export AOSVM_LOCAL_ROOT="$REPOSITORY_ROOT/.local/r6-1-validation"
+export AOSVM_RUN_ROOT="$REPOSITORY_ROOT/.run/r6-1-validation"
+export AOSVM_RUNS_ROOT="$REPOSITORY_ROOT/runs/r6-1-validation"
+export AOSVM_BACKUP_ROOT="$STATE_ROOT/backups"
+export AOSVM_GUEST_ACCESS_ROOT="$STATE_ROOT/host-access"
+export AOSVM_PROVISION_ATTEMPT_ROOT="$STATE_ROOT/provisioning"
+export AOSVM_SSH_HOST_PORT=10024
+export AOSVM_HOST_DNS_PORT=18055
+export AOSVM_PROVISIONING_HOST_PORT=18091
+
+exec "$SCRIPT_DIR/aosvm-macos-onboard" "$@"

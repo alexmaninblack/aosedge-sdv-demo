@@ -119,6 +119,22 @@ class R61ManifestTests(unittest.TestCase):
         with self.assertRaisesRegex(VALIDATOR.ManifestError, "FOTA paths"):
             self.validate_modified_project(content)
 
+    def test_rootfs_release_version_is_immutable(self) -> None:
+        content = self.project_content.replace(
+            'ROOTFS_IMAGE_VERSION: "6.1.1-maninblack.1"',
+            'ROOTFS_IMAGE_VERSION: "6.1.2-maninblack.1"',
+        )
+        with self.assertRaisesRegex(VALIDATOR.ManifestError, "rootfs release version"):
+            self.validate_modified_project(content)
+
+    def test_boot_component_must_remain_disabled(self) -> None:
+        marker = "          boot:\n"
+        prefix, suffix = self.project_content.split(marker, 1)
+        suffix = suffix.replace("            enabled: false", "            enabled: true", 1)
+        content = prefix + marker + suffix
+        with self.assertRaisesRegex(VALIDATOR.ManifestError, "boot component"):
+            self.validate_modified_project(content)
+
 
 if __name__ == "__main__":
     unittest.main()

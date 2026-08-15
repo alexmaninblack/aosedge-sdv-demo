@@ -170,12 +170,12 @@ passed. This output is an offline regression artifact only; it was not signed
 or submitted to the Cloud.
 
 The regression output reuses upstream version `6.1.0` and is not a publishable
-custom bootstrap release. R6.1-6 must select a new immutable bootstrap version
-before rebuilding, freezing, signing, or uploading it. That gate must also
-decide whether the qualified deployment contains both boot and full rootfs
-(currently 193,559,688 payload bytes) or a separately qualified rootfs-only
-update (currently 128,372,736 payload bytes). Different bytes must never be
-published under the already installed `6.1.0` component versions.
+custom bootstrap release. R6.1-6 selected a rootfs-only full-image release
+`6.1.1-maninblack.1`; boot remains at `6.1.0` and is omitted from the update.
+The new output must be rebuilt, qualified, and frozen before signing or upload.
+Its expected unsigned payload is approximately 128,372,736 bytes instead of
+the 193,559,688-byte boot-plus-rootfs regression output. Different bytes must
+never be published under an existing component version.
 
 ## Defects Closed During Qualification
 

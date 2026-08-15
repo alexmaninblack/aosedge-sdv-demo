@@ -698,8 +698,9 @@ Cloud gate without using the active Cloud Unit.
 - obtain explicit approval for provisioning, bootstrap, catalog, publication,
   and assignment mutations in the selected isolated scope;
 - select a new immutable bootstrap component version rather than reusing the
-  installed `6.1.0`, then rebuild and freeze that exact release; decide and
-  qualify whether it contains both boot and full rootfs or rootfs only;
+  installed `6.1.0`; the accepted decision is boot `6.1.0` plus a rootfs-only
+  full-image release `6.1.1-maninblack.1`, with no boot or incremental item;
+  rebuild, qualify, and freeze that exact release;
 - install the qualified bootstrap runtime on the validation Unit either by
   provisioning it from the custom complete image or by a separately qualified
   signed full-rootfs FOTA transaction; if the FOTA path is selected, reproduce,
@@ -718,6 +719,9 @@ Cloud gate without using the active Cloud Unit.
 
 Exit: Cloud shows the independent provider component and its exact installed
 version on a validation Unit.
+
+Detailed execution record:
+[R6.1-6 first Cloud deployment](r6-1-first-cloud-deployment.md).
 
 ### R6.1-7 — Prove update and rollback through Cloud
 
@@ -830,6 +834,10 @@ R6.1 is complete only when all of these are true:
 - [x] Reverify the accepted layer, configuration, and envelope witness; sign
       locally, prove that the signed bundle embeds the accepted bytes, verify
       RS256, record sanitized evidence, and stop before Cloud upload.
+- [x] Select a separate validation Unit, rootfs-only bootstrap packaging, and
+      immutable rootfs version `6.1.1-maninblack.1` for R6.1-6.
+- [ ] Complete R6.1-6 local build and qualification, then stop for separate
+      bootstrap-signing and Cloud-mutation approvals.
 
 ## References
 

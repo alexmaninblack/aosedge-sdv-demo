@@ -13,6 +13,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 
 ROOT = Path(__file__).resolve().parents[1]
 LOCK_PATH = ROOT / "components" / "r6-1-source.lock.json"
@@ -37,6 +39,8 @@ PROJECT_SOURCE = "aos-vehicle-platform"
 PROJECT_SOURCE_URL = "https://github.com/alexmaninblack/aos-vehicle-platform"
 DOWNLOADS_DIR = "/home/yocto/yocto-cache/downloads"
 SSTATE_DIR = "/home/yocto/yocto-cache/sstate-cache"
+BOOTSTRAP_BASE_VERSION = "6.1.0"
+BOOTSTRAP_ROOTFS_VERSION = "6.1.1-maninblack.1"
 
 
 class ManifestError(ValueError):
@@ -147,6 +151,11 @@ def validate_project_manifest(
         content = manifest_path.read_text(encoding="utf-8")
     except OSError as error:
         raise ManifestError(f"cannot read project manifest: {error}") from error
+    try:
+        manifest = yaml.safe_load(content)
+    except yaml.YAMLError as error:
+        raise ManifestError(f"project manifest is invalid YAML: {error}") from error
+    require(isinstance(manifest, dict), "project manifest root is not an object")
 
     evidence = source_lock.get("evidence", {}).get("projectMoulinManifest")
     require(isinstance(evidence, dict), "project manifest evidence is missing")
@@ -218,6 +227,63 @@ def validate_project_manifest(
         "project layer is not fixed for both node layer sets",
     )
     require('company: "maninblack"' in content, "project publisher is not owned")
+    variables = manifest.get("variables")
+    require(isinstance(variables, dict), "project variables are missing")
+    require(
+        variables.get("BOOT_IMAGE_VERSION") == BOOTSTRAP_BASE_VERSION,
+        "boot version must remain on the qualified upstream baseline",
+    )
+    require(
+        variables.get("ROOTFS_IMAGE_VERSION") == BOOTSTRAP_ROOTFS_VERSION,
+        "rootfs release version changed",
+    )
+    require(
+        "BUNDLE_IMAGE_VERSION" not in variables,
+        "boot and rootfs versions must remain independently controlled",
+    )
+    try:
+        fota_items = manifest["components"]["fota"]["builder"]["components"][
+            "items"
+        ]
+    except (KeyError, TypeError) as error:
+        raise ManifestError("project FOTA item configuration is missing") from error
+    require(isinstance(fota_items, dict), "project FOTA items are not an object")
+    require(
+        set(fota_items) == {"boot", "rootfs-full", "rootfs-incremental"},
+        "project FOTA item set changed",
+    )
+    require(
+        fota_items["boot"].get("enabled") is False,
+        "boot component must stay disabled for the rootfs-only release",
+    )
+    require(
+        fota_items["boot"].get("version") == "%{BOOT_IMAGE_VERSION}",
+        "boot component version binding changed",
+    )
+    require(
+        fota_items["rootfs-full"].get("enabled") is True,
+        "full rootfs component must be enabled",
+    )
+    require(
+        fota_items["rootfs-full"].get("version")
+        == "%{ROOTFS_IMAGE_VERSION}",
+        "full rootfs version binding changed",
+    )
+    require(
+        fota_items["rootfs-incremental"].get("enabled") is False,
+        "unqualified incremental rootfs component must stay disabled",
+    )
+    require(
+        content.count(
+            '[AOS_ROOTFS_IMAGE_VERSION, "%{ROOTFS_IMAGE_VERSION}"]'
+        )
+        == 1,
+        "rootfs image version is not bound exactly once",
+    )
+    require(
+        content.count('[AOS_BOOT_IMAGE_VERSION, "%{BOOT_IMAGE_VERSION}"]') == 1,
+        "boot image version is not bound exactly once",
+    )
     require("EPAM Systems" not in content, "upstream example publisher remains")
     require(
         'script: "/home/yocto/.local/pipx/venvs/moulin/bin/python '

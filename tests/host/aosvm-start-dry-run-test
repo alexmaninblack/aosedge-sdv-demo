@@ -12,6 +12,16 @@ output_path="$test_root/dry-run-output"
 test_port="41022"
 test_dns_port="41053"
 test_provisioning_port="41089"
+base_image="$repository_root/.cache/aosvm/v6.1.0/qemuarm64/aos-vm-main-qemuarm64.qcow2"
+test_local_root="$test_root/local"
+test_backup_root="$test_root/backups"
+
+mkdir -m 700 "$test_local_root" "$test_backup_root"
+qemu-img create -q -f qcow2 -F qcow2 -b "$base_image" \
+    "$test_local_root/aosvm-main-overlay.qcow2"
+chmod 0600 "$test_local_root/aosvm-main-overlay.qcow2"
+export AOSVM_LOCAL_ROOT="$test_local_root"
+export AOSVM_BACKUP_ROOT="$test_backup_root"
 
 cleanup() {
     rm -r "$test_root"
@@ -56,7 +66,7 @@ grep -Fq "'-m'" "$output_path"
 grep -Fq "'2048'" "$output_path"
 grep -Fq "'-nodefaults'" "$output_path"
 grep -Fq "QEMU_EFI.fd'" "$output_path"
-grep -Fq "file=$repository_root/.local/aosvm-main-overlay.qcow2,if=none,id=aos-image,format=qcow2,cache=writeback" "$output_path"
+grep -Fq "file=$test_local_root/aosvm-main-overlay.qcow2,if=none,id=aos-image,format=qcow2,cache=writeback" "$output_path"
 grep -Fq "'virtio-scsi-pci,id=scsi'" "$output_path"
 grep -Fq "'scsi-hd,drive=aos-image,bootindex=0'" "$output_path"
 grep -Fq "user,id=aosnet,net=10.0.0.0/24,host=10.0.0.1,dns=10.0.0.2,restrict=off,hostfwd=tcp:127.0.0.1:$test_port-10.0.0.100:22" "$output_path"
@@ -212,5 +222,36 @@ if AOSVM_RUN_ROOT="$serial_log_run_root" \
 fi
 
 grep -q 'Existing serial log mode must be 0600' "$test_root/stderr"
+
+validation_output="$test_root/validation-dry-run-output"
+mkdir -m 700 "$test_root/validation-local"
+qemu-img create -q -f qcow2 -F qcow2 -b "$base_image" \
+    "$test_root/validation-local/aosvm-r6-1-validation-overlay.qcow2"
+chmod 0600 \
+    "$test_root/validation-local/aosvm-r6-1-validation-overlay.qcow2"
+AOSVM_INSTANCE=r6-1-validation \
+AOSVM_MAC_ADDRESS=52:54:00:52:36:32 \
+AOSVM_LOCAL_ROOT="$test_root/validation-local" \
+AOSVM_BACKUP_ROOT="$test_root/validation-backups" \
+AOSVM_RUN_ROOT="$test_root/validation-run" \
+AOSVM_RUNS_ROOT="$test_root/validation-runs" \
+AOSVM_SSH_HOST_PORT=41030 \
+AOSVM_HOST_DNS_PORT=41060 \
+AOSVM_PROVISIONING_HOST_PORT=41100 \
+    "$repository_root/scripts/aosvm" start --dry-run >"$validation_output"
+grep -Fq "'-name'" "$validation_output"
+grep -Fq "'aosvm-r6-1-validation'" "$validation_output"
+grep -Fq \
+    "$test_root/validation-local/aosvm-r6-1-validation-overlay.qcow2" \
+    "$validation_output"
+grep -Fq "'virtio-net-pci,netdev=aosnet,mac=52:54:00:52:36:32'" \
+    "$validation_output"
+
+if AOSVM_INSTANCE=unknown "$repository_root/scripts/aosvm" status \
+    >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected an unknown AosVM instance to be rejected.\n' >&2
+    exit 1
+fi
+grep -q 'unsupported AosVM instance' "$test_root/stderr"
 
 printf 'AosVM start dry-run contract tests passed.\n'

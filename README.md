@@ -22,6 +22,7 @@ subscribes to the resulting VSS signals without depending on CARLA.
 - [R6.1-3: atomic lifecycle qualification record](docs/r6-1-atomic-component-lifecycle-qualification.md)
 - [R6.1-3.1: real provider interface-closure plan](docs/r6-1-real-provider-interface-closure.md)
 - [R6.1-5: offline provider qualification and signing gate](docs/r6-1-offline-provider-qualification.md)
+- [R6.1-6: first isolated Cloud deployment](docs/r6-1-first-cloud-deployment.md)
 - [Colleague setup: run and provision AosVM on an Apple Silicon Mac](docs/aosvm-macos-colleague-setup.md)
 - [Reissue AosEdge user certificates on a new Mac](docs/aos-user-certificate-reissue-macos.md)
 - [Licensing and copyright policy](docs/licensing-and-copyright-policy.md)
