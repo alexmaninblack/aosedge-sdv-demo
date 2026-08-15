@@ -301,6 +301,10 @@ not grant the provider broad access to all `aos_var_run_t` data. The builder,
 caches, `.1` incident artifacts, `.2` accepted artifacts, and both persistent
 VM overlays remain retained.
 
+The evidence, alternatives, migration requirements, and questions for platform
+architects are recorded in
+[R6.1 Persistent Store SELinux Architecture Review](r6-1-selinux-persistent-store-architecture.md).
+
 ### R6.1-6.6 — Publish and assign provider `0.2.0`
 
 - reverify the accepted signed provider bundle before upload;

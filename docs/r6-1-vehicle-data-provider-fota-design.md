@@ -313,6 +313,10 @@ process boundary with equivalent least privilege. This finding does not
 invalidate the rootfs runtime, A/B update, Cloud targeting, or `.2` install;
 it blocks the provider payload stage.
 
+The dedicated architecture discussion, alternatives, migration constraints,
+and proposed qualification matrix are maintained in
+[R6.1 Persistent Store SELinux Architecture Review](r6-1-selinux-persistent-store-architecture.md).
+
 ## Update State Machine
 
 | State | Required behavior |
