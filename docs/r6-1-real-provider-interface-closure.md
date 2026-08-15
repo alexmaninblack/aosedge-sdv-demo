@@ -3,8 +3,8 @@
 
 # R6.1-3.1 Real Provider Interface Closure
 
-- Status: Proposed; implementation is not yet authorized
-- Date: 2026-08-14
+- Status: Complete; accepted by the R6.1-5 offline matrix
+- Date: 2026-08-15
 - Depends on: completed R6.1-3 atomic lifecycle
 - Scope: local source, build, and disposable non-provisioned VM work only
 
@@ -140,6 +140,8 @@ synthetic shell payload:
   mutation, credential injection, or second systemd unit;
 - leaves all R6.1-2 and R6.1-3 regressions green.
 
-Completion authorizes planning the unsigned R6.1-4 artifact only. It does not
-authorize OEM signing, Cloud publication, assignment, provisioning, or any
-change to the active demonstration Unit.
+All exit criteria passed on the exact ARM64 bootstrap and are recorded in the
+[offline qualification](r6-1-offline-provider-qualification.md). Completion
+authorized and completed the unsigned R6.1-4 artifact. It does not authorize
+OEM signing, Cloud publication, assignment, provisioning, or any change to the
+active demonstration Unit.

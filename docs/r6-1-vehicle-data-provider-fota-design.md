@@ -3,8 +3,8 @@
 
 # R6.1 Vehicle-Data Provider FOTA Component Design
 
-- Status: Accepted; R6.1-3 complete and R6.1-3.1 awaits review
-- Date: 2026-08-14
+- Status: Accepted through the R6.1-5 unsigned gate; signing approval pending
+- Date: 2026-08-15
 - Baseline: AosVM 6.1.0, one `aos-vm-main` Node, provider 0.1.1
 - Depends on: R6/AOS-2, ADR 0005, ADR 0006
 
@@ -27,15 +27,20 @@ Update Manager is not the default because it is not present in the released
 VM and its compatibility with the current Communication Manager protocol has
 not been demonstrated.
 
-R6.1-1 through R6.1-3 are complete. The atomic A/B lifecycle passed its exact
+R6.1-1 through R6.1-4 and the unsigned portion of R6.1-5 are complete. The
+atomic A/B lifecycle passed its exact
 ARM64 tests, corrected incremental image build, disposable non-provisioned boot
 gate, and unsigned bootstrap FOTA regression. Review identified a required
 R6.1-3.1 interface-closure gate before artifact production: the real Python
 provider must implement the fixed launcher, health, configuration, trust, and
 credential contracts without carrying forward its R6 side-load installer.
-Completion of R6.1-3 does not authorize that implementation, bootstrap
-deployment, provider signing or upload, Cloud assignment, deprovisioning,
-reprovisioning, or any mutation of the active Unit.
+The real provider interface and reproducible unsigned candidate then passed
+the complete disposable ARM64 offline matrix. The exact accepted digests are
+frozen in the
+[R6.1-5 qualification record](r6-1-offline-provider-qualification.md).
+Work is stopped before OEM signing. Bootstrap deployment, provider signing or
+upload, Cloud assignment, deprovisioning, reprovisioning, and any mutation of
+the active Unit remain unauthorized.
 
 ## Why R6.1 Exists
 
@@ -772,8 +777,8 @@ R6.1 is complete only when all of these are true:
       single-Unit risk acceptance if account capacity prevents that option.
 - [x] Preserve the active demonstration Unit's provisioning and identity;
       deprovisioning or reprovisioning requires a new explicit decision.
-- [ ] Confirm the proposed first FOTA release line (`0.2.0`) after artifact
-      compatibility is known.
+- [x] Confirm `0.2.0` as the first FOTA-managed provider release after exact
+      ARM64 artifact and runtime compatibility passed.
 - [x] Authorize R6.1-1; later Cloud and active-Unit mutations still
       require their own explicit gates.
 - [x] Complete R6.1-1 with an accepted runtime ADR, exact Cloud/API and source
@@ -792,7 +797,7 @@ R6.1 is complete only when all of these are true:
       service-layer handling unchanged.
 - [x] Complete R6.1-3 with atomic A/B apply and rollback, recovery from every
       durable transaction phase, restricted archive and payload validation,
-      an exact ARM64 compile and 38-test lifecycle matrix, a corrected
+      an exact ARM64 compile and 40-test lifecycle matrix, a corrected
       incremental bootstrap image, and a disposable guest regression.
 - [x] Insert R6.1-3.1 before artifact production because the real provider does
       not yet implement the fixed launcher commands, configuration/credential
@@ -802,8 +807,13 @@ R6.1 is complete only when all of these are true:
       approval in R6.1-5.
 - [x] Require a validation Unit to run the qualified bootstrap runtime and
       report the new component type before the first provider Cloud assignment.
-- [ ] Review and explicitly authorize local R6.1-3.1 implementation; signing,
-      Cloud, provisioning, and active-Unit mutations remain forbidden.
+- [x] Complete R6.1-3.1 real-provider interface closure and R6.1-4
+      reproducible unsigned artifact production.
+- [x] Complete every unsigned R6.1-5 offline, security, lifecycle, and
+      bootstrap-regression gate and freeze the accepted digests.
+- [ ] Obtain explicit approval to access the OEM signing identity and sign
+      only the accepted R6.1-5 bytes; Cloud, provisioning, publication,
+      assignment, and active-Unit mutations remain forbidden.
 
 ## References
 

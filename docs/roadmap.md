@@ -175,7 +175,8 @@ side-loaded host-daemon lifecycle with a dedicated, independently versioned,
 Cloud-visible Aos FOTA component. The telemetry consumer remains a separate
 SOTA service.
 
-Current gate: R6.1-1 through R6.1-3 are complete. The custom slot-based Service
+Current gate: R6.1-1 through R6.1-4 and the unsigned portion of R6.1-5 are
+complete. The custom slot-based Service
 Manager component runtime is accepted against the exact AosVM 6.1.0 stack. The
 local factory, protocol, CM, storage, and identity gates passed; the Update
 Manager fallback is not selected. The bootstrap now contains the stable
@@ -188,16 +189,18 @@ R6.1-1 established the separate builder, exact source/API baseline, local
 runtime harness, Node/CM reporting proof, storage decision, and accepted ADR.
 R6.1-2 builds and boots the unchanged upstream baseline before adding the
 tracked project Yocto layer. R6.1-3 adds the production atomic lifecycle: the
-exact ARM64 compile and 38-test update/rollback/recovery matrix pass, the
+exact ARM64 compile and 40-test update/rollback/recovery matrix pass, the
 signature-aware incremental Yocto build produced a new image, and the
 disposable non-provisioned guest plus unsigned bootstrap FOTA regressions pass.
 Separate upstream and project Moulin graphs are pinned; the project graph
-contains no signing or upload credential. Plan review inserted R6.1-3.1 before
-artifact production: the actual Python provider must conform to the fixed
-launcher modes, external configuration/trust boundary, systemd credential
-path, and component-native ARM64 dependency layout. R6.1-4 now produces only a
-reproducible unsigned candidate; OEM signing follows offline acceptance and a
-separate approval in R6.1-5. R6.1-6 must first place the qualified bootstrap on
+contains no signing or upload credential. R6.1-3.1 closed the actual Python
+provider's launcher modes, external configuration/trust boundary, systemd
+credential path, and component-native ARM64 dependency layout. R6.1-4
+produced a byte-reproducible unsigned candidate. R6.1-5 accepted its exact
+layer and envelope after real install, live telemetry, source-loss, update,
+downgrade, failed-candidate rollback, security, resource, and secret-exclusion
+gates. Work is stopped before OEM signing and requires explicit approval to
+access the signing identity. R6.1-6 must first place the qualified bootstrap on
 an isolated validation Unit before any provider assignment. The authorization
 still excludes bootstrap deployment, Cloud catalog mutation, signing,
 deprovisioning, reprovisioning, and active-Unit changes. The accepted R6
@@ -206,7 +209,7 @@ side-load remains the operational baseline.
 Detailed draft: [R6.1 FOTA component design and plan](r6-1-vehicle-data-provider-fota-design.md).
 Qualification record: [R6.1-2 bootstrap-image qualification](r6-1-bootstrap-image-qualification.md).
 Atomic lifecycle qualification: [R6.1-3 record](r6-1-atomic-component-lifecycle-qualification.md).
-Next gate: [R6.1-3.1 real provider interface closure](r6-1-real-provider-interface-closure.md).
+Current record: [R6.1-5 offline provider qualification](r6-1-offline-provider-qualification.md).
 
 ## AOS-3 — Deploy the first KUKSA telemetry consumer
 
