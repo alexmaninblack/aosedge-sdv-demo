@@ -47,6 +47,40 @@ The credential-free release manifest SHA-256 is
 The regenerated pinned Ninja graph SHA-256 is
 `d2916a739c6b702aa9218e5496b25a88f834c1bc9374f86297c7075174167650`.
 
+## Validation Unit Concept
+
+The validation Unit is a normal, independently provisioned AosCloud Unit that
+is assigned a validation role in this project. It is not a special AosVM type,
+a second Node inside the demonstration Unit, or a return to a multi-Node
+topology. On the development Mac it is a second single-Main-Node VM with its
+own persistent overlay, System ID, certificates, checkpoints, and Cloud
+identity.
+
+Disposable local VMs prove that an image boots and satisfies local platform,
+security, persistence, and failure-injection gates. They cannot prove the
+Cloud update path. The validation Unit provides an isolated end-to-end target
+for publication, assignment, download, signature verification, installation,
+restart, status reporting, Components visibility, and rollback without
+changing the protected demonstration Unit.
+
+The accepted promotion flow is:
+
+1. build, qualify, freeze, sign, and locally verify immutable release bytes;
+2. provision one new validation Unit from a clean official base;
+3. target only that Unit through an isolated Unit Set or Verification Set when
+   required by the Cloud workflow;
+4. install and qualify rootfs `6.1.1-maninblack.1` on the validation Unit;
+5. install and qualify provider `0.2.0` on the same Unit;
+6. prove update, restart, failure handling, and rollback;
+7. make a separate, explicit promotion decision before assigning any accepted
+   release to the demonstration Unit.
+
+The validation Unit is intended to remain a reusable staging target. Stopping
+its VM makes the Unit offline in AosCloud but must not remove or regenerate its
+identity; restarting the same protected overlay must reconnect the same Unit.
+Every future release should pass this validation path before promotion when
+the target and account capacity permit it.
+
 ## Local Qualification Result
 
 R6.1-6.1 and R6.1-6.2 are complete. The incremental Yocto build reused the
