@@ -104,8 +104,8 @@ EOF
 }
 
 case "$variant" in
-    upstream|project) ;;
-    *) fail 'usage: r6-1-bootstrap-check <upstream|project>' ;;
+    upstream|project|candidate) ;;
+    *) fail 'usage: r6-1-bootstrap-check <upstream|project|candidate>' ;;
 esac
 case "$wait_seconds" in
     ''|*[!0-9]*) fail 'wait timeout must be a decimal integer' ;;
@@ -224,9 +224,21 @@ else
         disabled|static) ;;
         *) fail "provider self-test has unsafe enablement: $selftest_enablement" ;;
     esac
-    grep -qx 'ExecReload=/usr/libexec/aos-vehicle-data-provider-launcher --mark-unavailable' \
+    grep -qx 'ExecReload=/bin/kill -HUP $MAINPID' \
         /usr/lib/systemd/system/aos-vehicle-data-provider.service ||
         fail 'provider reload boundary is missing'
+    grep -qx 'Type=notify' \
+        /usr/lib/systemd/system/aos-vehicle-data-provider.service ||
+        fail 'provider readiness is process-only'
+    grep -qx 'NotifyAccess=main' \
+        /usr/lib/systemd/system/aos-vehicle-data-provider.service ||
+        fail 'provider readiness sender is ambiguous'
+    grep -qx 'Environment=AOS_VEHICLE_DATA_PROVIDER_CONFIGURATION=/var/aos/workdirs/sm/runtimes/systemd-slot-component/configuration/provider.json' \
+        /usr/lib/systemd/system/aos-vehicle-data-provider.service ||
+        fail 'vehicle integration configuration boundary is missing'
+    grep -qx 'Environment=AOS_VEHICLE_DATA_PROVIDER_VISS_CA=/var/aos/workdirs/sm/runtimes/systemd-slot-component/trust/viss-ca.pem' \
+        /usr/lib/systemd/system/aos-vehicle-data-provider.service ||
+        fail 'vehicle trust boundary is missing'
     grep -qx 'DynamicUser=yes' \
         /usr/lib/systemd/system/aos-vehicle-data-provider-selftest@.service ||
         fail 'provider self-test does not use DynamicUser'
@@ -241,7 +253,13 @@ else
         fail 'provider self-test unit was not loaded by PID 1'
 
     store=/var/aos/workdirs/sm/runtimes/systemd-slot-component
-    for path in "$store" "$store/slots" "$store/state" "$store/credentials"; do
+    for path in \
+        "$store" \
+        "$store/slots" \
+        "$store/state" \
+        "$store/credentials" \
+        "$store/configuration" \
+        "$store/trust"; do
         [ -d "$path" ] && [ ! -L "$path" ] ||
             fail "project component store path is absent or unsafe: $path"
     done

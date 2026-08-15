@@ -116,6 +116,29 @@ class R61BuilderTests(unittest.TestCase):
             destination,
             (BUILDER.ARTIFACT_ROOT / "upstream/main-qemuarm64.img").resolve(),
         )
+        source, destination = BUILDER.validate_fetch_paths(
+            "/home/yocto/r61-build/project/qualification/runtime-test.bin",
+            "artifacts/r6-1/qualification/runtime-test.bin",
+        )
+        self.assertEqual(
+            source,
+            "/home/yocto/r61-build/project/qualification/runtime-test.bin",
+        )
+        self.assertEqual(
+            destination,
+            (BUILDER.ARTIFACT_ROOT / "qualification/runtime-test.bin").resolve(),
+        )
+        source, destination = BUILDER.validate_fetch_paths(
+            "/home/yocto/r61-build/project/output/fota/config.yaml",
+            "artifacts/r6-1/fota/config.yaml",
+        )
+        self.assertEqual(
+            source, "/home/yocto/r61-build/project/output/fota/config.yaml"
+        )
+        self.assertEqual(
+            destination,
+            (BUILDER.ARTIFACT_ROOT / "fota/config.yaml").resolve(),
+        )
         with self.assertRaisesRegex(BUILDER.BuilderError, "below /home/yocto"):
             BUILDER.validate_fetch_paths(
                 "/etc/shadow", "artifacts/r6-1/upstream/shadow.img"

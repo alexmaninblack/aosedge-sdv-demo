@@ -1,0 +1,225 @@
+#!/bin/sh
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+set -eu
+umask 077
+
+root=/var/aos/workdirs/sm/runtimes/systemd-slot-component
+layer=/tmp/provider-0.2.0-arm64.tar
+provider_token=/tmp/r6-provider.token
+reader_token=/tmp/r6-reader.token
+jwt_public=/tmp/r6-jwt-public.pem
+reader=/tmp/r6-1-provider-read.py
+fixture=/tmp/r6-1-viss-fixture.py
+deny_writer=/tmp/r6-1-kuksa-deny.py
+runtime_test=/tmp/systemdslotcomponent_test.bin
+payload_020=/tmp/r61-real-provider-020
+payload_030=/tmp/r61-real-provider-030
+payload_040_bad=/tmp/r61-real-provider-040-bad
+expected_layer=baf1c29c9264b8f2422dc155540c3b22716bb43d5f80c1cfeb3cc9529f0bf3cb
+
+fail() {
+    printf 'R6.1 provider integration check failed: %s\n' "$*" >&2
+    exit 1
+}
+
+require_file() {
+    [ -f "$1" ] && [ ! -L "$1" ] || fail "unsafe or missing input: $1"
+}
+
+wait_active() {
+    unit=$1
+    attempt=0
+    while [ "$attempt" -lt 30 ]; do
+        [ "$(systemctl is-active "$unit" 2>/dev/null || true)" = active ] && return 0
+        attempt=$((attempt + 1))
+        sleep 1
+    done
+    systemctl status "$unit" --no-pager >&2 || true
+    return 1
+}
+
+wait_values() {
+    expectation=$1
+    attempt=0
+    while [ "$attempt" -lt 30 ]; do
+        if /usr/bin/python3 -I "$reader" "$expectation" \
+            --token "$reader_token" >/dev/null 2>&1; then
+            /usr/bin/python3 -I "$reader" "$expectation" \
+                --token "$reader_token"
+            return 0
+        fi
+        attempt=$((attempt + 1))
+        sleep 1
+    done
+    return 1
+}
+
+[ "$(id -u)" -eq 0 ] || fail 'this command must run as root'
+[ "$(uname -m)" = aarch64 ] || fail 'guest is not AArch64'
+[ "$(getenforce)" = Enforcing ] || fail 'SELinux is not enforcing'
+for path in "$layer" "$provider_token" "$reader_token" "$jwt_public" \
+    "$reader" "$fixture" "$deny_writer" "$runtime_test"; do
+    require_file "$path"
+done
+[ "$(sha256sum "$layer" | cut -d' ' -f1)" = "$expected_layer" ] ||
+    fail 'provider layer digest mismatch'
+install -d -m 0755 "$root" "$root/slots" "$root/configuration" "$root/trust"
+install -d -m 0700 "$root/credentials" "$root/qualification"
+[ ! -e "$root/active" ] && [ -z "$(find "$root/slots" -mindepth 1 -print -quit)" ] ||
+    fail 'qualification requires an empty provider store'
+
+for path in "$payload_020" "$payload_030" "$payload_040_bad"; do
+    [ ! -e "$path" ] || fail "stale qualification payload exists: $path"
+done
+install -d -m 0755 "$payload_020"
+tar -xf "$layer" -C "$payload_020"
+[ -x "$payload_020/bin/vehicle-data-provider" ] ||
+    fail 'provider entrypoint is absent'
+cp -a "$payload_020" "$payload_030"
+cp -a "$payload_020" "$payload_040_bad"
+sed -i 's/"version": "0.2.0"/"version": "0.3.0"/' \
+    "$payload_030/component.json"
+sed -i 's/"version": "0.2.0"/"version": "0.4.0"/' \
+    "$payload_040_bad/component.json"
+grep -F '"version": "0.3.0"' "$payload_030/component.json" >/dev/null ||
+    fail 'synthetic update metadata was not created'
+grep -F '"version": "0.4.0"' "$payload_040_bad/component.json" >/dev/null ||
+    fail 'synthetic bad-candidate metadata was not created'
+cat >"$payload_040_bad/bin/vehicle-data-provider" <<'EOF'
+#!/bin/sh
+set -eu
+case "${1:-}" in
+    --self-test) exit 0 ;;
+    *) exit 42 ;;
+esac
+EOF
+chmod 0755 "$payload_040_bad/bin/vehicle-data-provider"
+
+cat >"$root/configuration/provider.json" <<'EOF'
+{
+  "schemaVersion": 1,
+  "viss": {
+    "uri": "wss://127.0.0.1:6443",
+    "tlsServerName": "127.0.0.1"
+  }
+}
+EOF
+chmod 0644 "$root/configuration/provider.json"
+install -m 0644 /etc/kuksa-val/CA.pem "$root/trust/viss-ca.pem"
+install -m 0600 "$provider_token" "$root/credentials/kuksa-token"
+install -m 0644 "$jwt_public" "$root/qualification/jwt.key.pub"
+restorecon -RF "$root" >/dev/null
+
+install -d -m 0755 /run/systemd/system/kuksa-databroker.service.d
+cat >/run/systemd/system/kuksa-databroker.service.d/r61-qualification.conf <<EOF
+[Service]
+ExecStart=
+ExecStart=/usr/bin/databroker --vss /usr/share/vss/vss.json --tls-cert /etc/kuksa-val/Server.pem --tls-private-key /etc/kuksa-val/Server.key --jwt-public-key $root/qualification/jwt.key.pub --address=127.0.0.1
+EOF
+chmod 0644 /run/systemd/system/kuksa-databroker.service.d/r61-qualification.conf
+systemctl daemon-reload
+systemctl restart kuksa-databroker.service
+wait_active kuksa-databroker.service || fail 'KUKSA did not restart with qualification auth'
+
+chmod 0755 "$runtime_test"
+"$runtime_test" \
+    --gtest_filter='-*RealProviderFirstInstallThroughProductionProfile:*RealProviderUpdateAndRollbackThroughProductionProfile' ||
+    fail 'generic ARM64 Service Manager runtime matrix failed'
+R61_REAL_PROVIDER_PAYLOAD_020="$payload_020" \
+    "$runtime_test" \
+    --gtest_filter='*RealProviderFirstInstallThroughProductionProfile' ||
+    fail 'real provider first-install runtime gate failed'
+wait_active aos-vehicle-data-provider.service || fail 'provider did not report ready'
+main_pid=$(systemctl show -p MainPID --value aos-vehicle-data-provider.service)
+case "$main_pid" in
+    ''|0|*[!0-9]*) fail 'provider MainPID is invalid' ;;
+esac
+[ "$(awk '/^Uid:/ {print $2; exit}' "/proc/$main_pid/status")" -ne 0 ] ||
+    fail 'provider unexpectedly runs as root'
+wait_values unavailable || fail 'no-source start retained stale KUKSA values'
+
+systemd-run --quiet --unit=r61-viss-fixture.service \
+    --property=Type=simple \
+    --property=Restart=no \
+    /usr/bin/python3 -I "$fixture"
+wait_active r61-viss-fixture.service || fail 'VISS fixture did not start'
+wait_values available || fail 'live VISS values did not reach KUKSA'
+/usr/bin/python3 -I "$deny_writer" --token "$reader_token" ||
+    fail 'read-only KUKSA token obtained provider write access'
+
+systemctl stop r61-viss-fixture.service
+wait_values unavailable || fail 'source loss retained stale KUKSA values'
+systemctl reload aos-vehicle-data-provider.service ||
+    fail 'explicit unavailable reload failed'
+wait_values unavailable || fail 'reload did not keep every path unavailable'
+systemctl restart aos-vehicle-data-provider.service ||
+    fail 'provider restart without source failed'
+wait_active aos-vehicle-data-provider.service ||
+    fail 'provider restart did not report ready'
+wait_values unavailable || fail 'provider restart retained stale KUKSA values'
+
+R61_REAL_PROVIDER_PAYLOAD_030="$payload_030" \
+R61_REAL_PROVIDER_PAYLOAD_040_BAD="$payload_040_bad" \
+    "$runtime_test" \
+    --gtest_filter='*RealProviderUpdateAndRollbackThroughProductionProfile' ||
+    fail 'real provider update and rollback runtime gate failed'
+wait_active aos-vehicle-data-provider.service ||
+    fail 'provider was not restored after bad-candidate rollback'
+wait_values unavailable ||
+    fail 'rollback retained stale KUKSA values'
+/usr/bin/python3 -I - "$root/state/installed.json" <<'PY' ||
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as stream:
+    state = json.load(stream)
+assert state["Version"] == "0.3.0"
+assert state["slot"] == "b"
+PY
+    fail 'updated provider release was not committed'
+/usr/bin/python3 -I - "$root/state/last-failure.json" <<'PY' ||
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as stream:
+    state = json.load(stream)
+assert state["candidateVersion"] == "0.4.0"
+PY
+    fail 'bad-candidate rollback evidence is absent'
+
+systemd-run --quiet --wait --collect --unit=r61-sota-boundary.service \
+    --property=DynamicUser=yes \
+    --property=NoNewPrivileges=yes \
+    --property=ProtectSystem=strict \
+    /bin/sh -c "test ! -w '$root' && test ! -r '$root/credentials/kuksa-token'" ||
+    fail 'SOTA-style DynamicUser crossed the FOTA store or credential boundary'
+
+[ "$(findmnt -n -o OPTIONS / | tr ',' '\n' | grep -c '^ro$')" -eq 1 ] ||
+    fail 'root filesystem is not read-only'
+provider_rss=$(awk '/^VmRSS:/ {print $2; exit}' \
+    "/proc/$(systemctl show -p MainPID --value aos-vehicle-data-provider.service)/status")
+case "$provider_rss" in
+    ''|*[!0-9]*) fail 'provider resident memory is unavailable' ;;
+esac
+[ "$provider_rss" -lt 262144 ] || fail 'provider resident memory exceeds 256 MiB'
+if find "$payload_020" -type f \( -name '*.p12' -o -name '*.pfx' \
+    -o -name '*.key' -o -name '*token*' \) -print -quit | grep -q .; then
+    fail 'candidate payload contains credential-like files'
+fi
+if grep -R -E 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY' "$payload_020" \
+    >/dev/null 2>&1; then
+    fail 'candidate payload contains private key material'
+fi
+
+if ausearch -m AVC,USER_AVC -ts boot 2>/dev/null | grep -q '^type=AVC'; then
+    ausearch -m AVC,USER_AVC -ts boot >&2 || true
+    fail 'provider qualification produced an SELinux AVC denial'
+fi
+
+printf 'PROVIDER_VERSION=0.2.0\n'
+printf 'PYTHON=%s\n' "$(/usr/bin/python3 --version 2>&1)"
+printf 'PROVIDER_UID=%s\n' "$(awk '/^Uid:/ {print $2; exit}' "/proc/$(systemctl show -p MainPID --value aos-vehicle-data-provider.service)/status")"
+printf 'PROVIDER_RSS_KIB=%s\n' "$provider_rss"
+printf 'R6_1_PROVIDER_INTEGRATION=PASS\n'

@@ -52,6 +52,11 @@ READY_TIMEOUT_SECONDS = 180
 VARIANTS = {
     "upstream": {"port": 10024, "mac": "52:54:00:52:61:20"},
     "project": {"port": 10025, "mac": "52:54:00:52:61:21"},
+    "candidate": {
+        "port": 10026,
+        "mac": "52:54:00:52:61:22",
+        "artifactScope": "project",
+    },
 }
 
 
@@ -121,10 +126,15 @@ def create_layout(variant: str, base: str, expected_sha256: str) -> Layout:
     if not base_path.is_absolute():
         base_path = REPOSITORY_ROOT / base_path
     base_path = base_path.resolve()
+    settings = VARIANTS[variant]
+    artifact_scope = str(settings.get("artifactScope", variant))
     try:
-        base_path.relative_to(artifact_root / variant)
+        base_path.relative_to(artifact_root / artifact_scope)
     except ValueError:
-        fail(f"{variant} base image must be below artifacts/r6-1/{variant}")
+        fail(
+            f"{variant} base image must be below "
+            f"artifacts/r6-1/{artifact_scope}"
+        )
     require_regular_file(base_path, "qualification base image")
     if base_path.suffix != ".img":
         fail("qualification base image must use the .img suffix")
@@ -133,7 +143,6 @@ def create_layout(variant: str, base: str, expected_sha256: str) -> Layout:
     if sha256(base_path) != expected_sha256:
         fail("qualification base image SHA-256 mismatch")
 
-    settings = VARIANTS[variant]
     return Layout(
         variant=variant,
         base=base_path,

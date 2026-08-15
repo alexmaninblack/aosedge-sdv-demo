@@ -49,6 +49,15 @@ class R61DisposableVMTests(unittest.TestCase):
                     HELPER.create_layout("project", str(image), digest)
                 with self.assertRaisesRegex(HELPER.QualificationError, "mismatch"):
                     HELPER.create_layout("upstream", str(image), "0" * 64)
+
+                project_image = root / "project" / "candidate.img"
+                project_image.parent.mkdir()
+                project_image.write_bytes(b"r61-candidate-image")
+                project_image.chmod(0o444)
+                candidate = HELPER.create_layout(
+                    "candidate", str(project_image), HELPER.sha256(project_image)
+                )
+                self.assertEqual(candidate.ssh_port, 10026)
             finally:
                 HELPER.ARTIFACT_ROOT = original
 
@@ -127,6 +136,8 @@ class R61DisposableVMTests(unittest.TestCase):
         self.assertIn("empty project store has an active slot", guest_gate)
         self.assertIn("provider self-test does not use DynamicUser", guest_gate)
         self.assertIn("provider reload boundary is missing", guest_gate)
+        self.assertIn("provider readiness is process-only", guest_gate)
+        self.assertIn("vehicle integration configuration boundary is missing", guest_gate)
         self.assertIn("provider systemd unit was not loaded by PID 1", guest_gate)
         self.assertIn("provider self-test unit was not loaded by PID 1", guest_gate)
         self.assertNotIn("systemd-analyze verify", guest_gate)

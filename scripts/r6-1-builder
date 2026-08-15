@@ -76,7 +76,14 @@ ALLOWED_DOWNLOAD_HOSTS = {"cloud-images.ubuntu.com"}
 GUEST_BUILD_ROOT = PurePosixPath("/home/yocto/r61-build")
 MAXIMUM_FETCH_SIZE = 40 * 1024**3
 FETCH_FREE_SPACE_RESERVE = 20 * 1024**3
-ALLOWED_FETCH_SUFFIXES = {".ext4", ".gz", ".img", ".squashfs"}
+ALLOWED_FETCH_SUFFIXES = {
+    ".bin",
+    ".ext4",
+    ".gz",
+    ".img",
+    ".squashfs",
+    ".yaml",
+}
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 ARTIFACT_ROOT = REPOSITORY_ROOT / "artifacts" / "r6-1"
