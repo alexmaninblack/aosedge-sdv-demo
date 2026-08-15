@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+"""Freeze sanitized metadata for an accepted unsigned R6.1-6 rootfs release."""
+
+from __future__ import annotations
+
+import argparse
+import importlib.machinery
+import importlib.util
+import json
+import os
+import sys
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parent
+VALIDATOR = ROOT / "validate-r6-1-bootstrap-release"
+MANIFEST_SHA256 = "f7909fd95c93ac5a3821c921e3371778d489787c8d2cb8444d93ae273cfb1912"
+GRAPH_SHA256 = "d2916a739c6b702aa9218e5496b25a88f834c1bc9374f86297c7075174167650"
+PLATFORM_REVISION = "e972d2bd7f14e27646bb5d7c10c7186ecdecfa9f"
+
+
+def load_validator():
+    loader = importlib.machinery.SourceFileLoader(
+        "r6_1_bootstrap_release_freeze", str(VALIDATOR)
+    )
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    if spec is None:
+        raise RuntimeError("cannot load the bootstrap release validator")
+    module = importlib.util.module_from_spec(spec)
+    loader.exec_module(module)
+    return module
+
+
+RELEASE = load_validator()
+
+
+def freeze(candidate_root: Path) -> dict:
+    root = candidate_root.resolve()
+    candidate_path = root / "candidate.json"
+    if candidate_path.exists() or candidate_path.is_symlink():
+        raise RELEASE.BootstrapReleaseError("candidate metadata already exists")
+    evidence = RELEASE.validate_output(root)
+    config_path = root / "config.yaml"
+    metadata = {
+        "$comment": (
+            "SPDX-FileCopyrightText: 2026 maninblack; "
+            "SPDX-License-Identifier: MIT"
+        ),
+        "componentType": RELEASE.EXPECTED_CODENAME,
+        "config": {
+            "fileName": "config.yaml",
+            "sha256": evidence["configSha256"],
+            "size": config_path.stat().st_size,
+        },
+        "generatedBuildNinjaSha256": GRAPH_SHA256,
+        "manifestSha256": MANIFEST_SHA256,
+        "platformRevision": PLATFORM_REVISION,
+        "rootfs": {
+            "fileName": evidence["rootfsPath"],
+            "sha256": evidence["rootfsSha256"],
+            "size": evidence["rootfsSize"],
+        },
+        "schemaVersion": 1,
+        "signingState": "unsigned",
+        "version": evidence["version"],
+    }
+    descriptor = os.open(
+        candidate_path,
+        os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0),
+        0o600,
+    )
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            json.dump(metadata, stream, indent=2, sort_keys=True)
+            stream.write("\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+    except BaseException:
+        candidate_path.unlink(missing_ok=True)
+        raise
+    return metadata
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("candidate_root", type=Path)
+    options = parser.parse_args()
+    try:
+        metadata = freeze(options.candidate_root)
+    except (RELEASE.BootstrapReleaseError, OSError) as error:
+        print(f"R6.1 bootstrap freeze failed: {error}", file=sys.stderr)
+        return 1
+    print("R6_1_BOOTSTRAP_RELEASE_FROZEN=PASS")
+    print(f"version={metadata['version']}")
+    print(f"rootfsSha256={metadata['rootfs']['sha256']}")
+    print(f"rootfsSize={metadata['rootfs']['size']}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

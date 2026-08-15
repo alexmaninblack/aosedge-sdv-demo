@@ -21,6 +21,7 @@ case "$variant" in
     upstream) ssh_port=10024 ;;
     project) ssh_port=10025 ;;
     candidate) ssh_port=10026 ;;
+    bootstrap) ssh_port=10027 ;;
     *)
         printf 'Unsupported R6.1 qualification variant: %s\n' "$variant" >&2
         exit 2

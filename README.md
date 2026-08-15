@@ -106,7 +106,11 @@ layer, and configuration passed the guarded local verifier. No Cloud or active
 Unit mutation was performed or is authorized.
 Bootstrap deployment, Cloud mutation,
 deprovisioning, reprovisioning, and active-Unit changes remain separately
-gated.
+gated. R6.1-6 local preparation is complete: a dedicated validation VM profile
+is isolated, boot remains `6.1.0`, and the rootfs-only
+`6.1.1-maninblack.1` release passed its incremental build, structural checks,
+two disposable boots, clean restart, and security gates. The unsigned rootfs
+candidate is frozen; work is stopped before bootstrap signing approval.
 
 ## Commands
 

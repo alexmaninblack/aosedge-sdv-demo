@@ -27,7 +27,7 @@ class R61ValidationVMTests(unittest.TestCase):
         self.assertIn('AOSVM_PROVISION_ATTEMPT_ROOT="$STATE_ROOT/provisioning"', self.profile)
 
     def test_profile_uses_nonconflicting_loopback_ports(self) -> None:
-        self.assertIn("AOSVM_SSH_HOST_PORT=10024", self.profile)
+        self.assertIn("AOSVM_SSH_HOST_PORT=10028", self.profile)
         self.assertIn("AOSVM_HOST_DNS_PORT=18055", self.profile)
         self.assertIn("AOSVM_PROVISIONING_HOST_PORT=18091", self.profile)
 

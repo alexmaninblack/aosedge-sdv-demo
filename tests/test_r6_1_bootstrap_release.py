@@ -16,6 +16,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "validate-r6-1-bootstrap-release"
+FREEZE_SCRIPT = ROOT / "scripts" / "freeze-r6-1-bootstrap-release"
 
 
 def load_validator():
@@ -29,6 +30,19 @@ def load_validator():
 
 
 VALIDATOR = load_validator()
+
+
+def load_freezer():
+    loader = importlib.machinery.SourceFileLoader("r6_1_bootstrap_freeze", str(FREEZE_SCRIPT))
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    if spec is None:
+        raise RuntimeError("cannot create bootstrap release freezer module spec")
+    module = importlib.util.module_from_spec(spec)
+    loader.exec_module(module)
+    return module
+
+
+FREEZER = load_freezer()
 
 
 class R61BootstrapReleaseTests(unittest.TestCase):
@@ -108,6 +122,17 @@ class R61BootstrapReleaseTests(unittest.TestCase):
         self.write_config()
         with self.assertRaisesRegex(VALIDATOR.BootstrapReleaseError, "unsafe"):
             self.validate()
+
+    def test_freeze_writes_sanitized_metadata_once(self) -> None:
+        metadata = FREEZER.freeze(self.root)
+        candidate = self.root / "candidate.json"
+        self.assertTrue(candidate.is_file())
+        self.assertEqual(VALIDATOR.EXPECTED_VERSION, metadata["version"])
+        self.assertEqual(0o600, candidate.stat().st_mode & 0o777)
+        with self.assertRaisesRegex(
+            FREEZER.RELEASE.BootstrapReleaseError, "already exists"
+        ):
+            FREEZER.freeze(self.root)
 
 
 if __name__ == "__main__":

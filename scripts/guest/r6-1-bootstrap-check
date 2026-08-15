@@ -104,8 +104,9 @@ EOF
 }
 
 case "$variant" in
-    upstream|project|candidate) ;;
-    *) fail 'usage: r6-1-bootstrap-check <upstream|project|candidate>' ;;
+    upstream|project|candidate) expected_rootfs_version=6.1.0 ;;
+    bootstrap) expected_rootfs_version=6.1.1-maninblack.1 ;;
+    *) fail 'usage: r6-1-bootstrap-check <upstream|project|candidate|bootstrap>' ;;
 esac
 case "$wait_seconds" in
     ''|*[!0-9]*) fail 'wait timeout must be a decimal integer' ;;
@@ -114,7 +115,10 @@ esac
 [ "$(id -u)" -eq 0 ] || fail 'this command must run as root'
 [ "$(uname -m)" = aarch64 ] || fail 'guest architecture is not AArch64'
 grep -qx 'ID=aos-core' /etc/os-release || fail 'guest OS is not AosCore'
-grep -qx 'VERSION_ID=6.1.0' /etc/os-release || fail 'guest OS is not AosCore 6.1.0'
+grep -qx "VERSION_ID=$expected_rootfs_version" /etc/os-release ||
+    fail 'guest rootfs version is not the qualified release'
+grep -qx "VERSION=\"$expected_rootfs_version\"" /etc/aos/version ||
+    fail 'Aos rootfs component version marker is incorrect'
 [ "$(getenforce)" = Enforcing ] || fail 'SELinux is not enforcing'
 [ "$(findmnt -T / -no SOURCE)" = /dev/sda3 ] ||
     fail 'root is not the expected AosVM partition'

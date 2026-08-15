@@ -58,6 +58,21 @@ class R61DisposableVMTests(unittest.TestCase):
                     "candidate", str(project_image), HELPER.sha256(project_image)
                 )
                 self.assertEqual(candidate.ssh_port, 10026)
+
+                bootstrap_image = (
+                    root
+                    / "bootstrap-6.1.1-maninblack.1"
+                    / "main-qemuarm64.img"
+                )
+                bootstrap_image.parent.mkdir()
+                bootstrap_image.write_bytes(b"r61-bootstrap-image")
+                bootstrap_image.chmod(0o444)
+                bootstrap = HELPER.create_layout(
+                    "bootstrap",
+                    str(bootstrap_image),
+                    HELPER.sha256(bootstrap_image),
+                )
+                self.assertEqual(bootstrap.ssh_port, 10027)
             finally:
                 HELPER.ARTIFACT_ROOT = original
 
@@ -101,6 +116,19 @@ class R61DisposableVMTests(unittest.TestCase):
         self.assertIn("no forced termination was used", content)
         self.assertNotIn("kill -9", content)
 
+    def test_restart_artifacts_are_rotated_without_overwrite(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            evidence = root / "bootstrap-boot.json"
+            evidence.write_text("first\n", encoding="utf-8")
+            first = HELPER.rotate_previous_artifact(evidence)
+            self.assertEqual(root / "bootstrap-boot-1.json", first)
+            self.assertEqual("first\n", first.read_text(encoding="utf-8"))
+            evidence.write_text("second\n", encoding="utf-8")
+            second = HELPER.rotate_previous_artifact(evidence)
+            self.assertEqual(root / "bootstrap-boot-2.json", second)
+            self.assertEqual("second\n", second.read_text(encoding="utf-8"))
+
     def test_guest_access_reuses_strict_owned_vm_helper(self) -> None:
         guest_wrapper = (ROOT / "scripts" / "r6-1-guest").read_text(
             encoding="utf-8"
@@ -122,6 +150,8 @@ class R61DisposableVMTests(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn("guest is unexpectedly provisioned", guest_gate)
+        self.assertIn("expected_rootfs_version=6.1.1-maninblack.1", guest_gate)
+        self.assertIn("Aos rootfs component version marker is incorrect", guest_gate)
         self.assertIn('crun run --bundle . "$namespace_container"', guest_gate)
         self.assertIn("required OCI namespaces do not work together", guest_gate)
         self.assertIn('"readonly": true', guest_gate)

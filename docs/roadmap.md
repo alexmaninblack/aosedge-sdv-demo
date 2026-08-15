@@ -202,11 +202,15 @@ telemetry, source-loss, update,
 downgrade, failed-candidate rollback, security, resource, and secret-exclusion
 gates. R6.1-5 is complete: only that accepted provider candidate was signed,
 and its embedded inputs, signed hashes, and RS256 signature passed the guarded
-local verifier. No Cloud operation was performed. R6.1-6 is now in local
-release preparation. It uses a new isolated validation Unit, keeps boot at
-`6.1.0`, and advances only the full rootfs component to the immutable
-`6.1.1-maninblack.1` release before any provider assignment. The authorization
-still excludes bootstrap signing or deployment, Cloud catalog mutation,
+local verifier. No Cloud operation was performed. R6.1-6 local preparation is
+complete. It uses a new isolated validation Unit, keeps boot at `6.1.0`, and
+advances only the full rootfs component to the immutable
+`6.1.1-maninblack.1` release before any provider assignment. The incremental
+build, rootfs-only validator, two disposable boots, clean restart, version,
+runtime, SELinux, empty-store, and secret-exclusion gates passed; the unsigned
+candidate is frozen. Work is stopped before bootstrap signing approval. The
+authorization still excludes bootstrap signing or deployment, Cloud catalog
+mutation,
 deprovisioning, reprovisioning, and active-Unit changes. The accepted R6
 side-load remains the operational baseline.
 

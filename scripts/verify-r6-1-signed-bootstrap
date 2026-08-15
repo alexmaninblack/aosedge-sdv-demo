@@ -1,0 +1,159 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+"""Verify a signed R6.1 rootfs bundle against its accepted candidate."""
+
+from __future__ import annotations
+
+import argparse
+import importlib.machinery
+import importlib.util
+import json
+import sys
+from pathlib import Path, PurePosixPath
+
+
+ROOT = Path(__file__).resolve().parent
+PROVIDER_VERIFIER = ROOT / "verify-r6-1-signed-provider"
+MAX_ROOTFS_SIZE = 256 * 1024 * 1024
+MAX_BUNDLE_OVERHEAD = 32 * 1024 * 1024
+
+
+def load_common_verifier():
+    loader = importlib.machinery.SourceFileLoader(
+        "r6_1_signed_bundle_common", str(PROVIDER_VERIFIER)
+    )
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    if spec is None:
+        raise RuntimeError("cannot load the common signed-bundle verifier")
+    module = importlib.util.module_from_spec(spec)
+    loader.exec_module(module)
+    module.MAX_ARCHIVE_CONTENT = MAX_ROOTFS_SIZE + MAX_BUNDLE_OVERHEAD
+    return module
+
+
+COMMON = load_common_verifier()
+SignedBundleError = COMMON.SignedBundleError
+
+
+def validate(candidate_root: Path, bundle_path: Path, pkcs12_path: Path) -> dict:
+    COMMON.regular_file(candidate_root / "candidate.json", "candidate metadata")
+    COMMON.regular_file(candidate_root / "config.yaml", "accepted configuration")
+    COMMON.regular_file(bundle_path, "signed bundle")
+    COMMON.regular_file(pkcs12_path, "signing certificate")
+
+    candidate = json.loads(
+        (candidate_root / "candidate.json").read_text(encoding="utf-8")
+    )
+    COMMON.require(
+        candidate.get("signingState") == "unsigned",
+        "candidate metadata is not the accepted unsigned record",
+    )
+    COMMON.require(
+        candidate.get("version") == "6.1.1-maninblack.1",
+        "candidate rootfs version changed",
+    )
+    rootfs_record = candidate.get("rootfs")
+    config_record = candidate.get("config")
+    COMMON.require(
+        isinstance(rootfs_record, dict) and isinstance(config_record, dict),
+        "candidate digest records are missing",
+    )
+    rootfs_name = rootfs_record.get("fileName")
+    COMMON.require(isinstance(rootfs_name, str), "candidate rootfs name is missing")
+    relative = PurePosixPath(rootfs_name)
+    COMMON.require(
+        not relative.is_absolute()
+        and ".." not in relative.parts
+        and len(relative.parts) == 2
+        and relative.parts[0] == "rootfs-full"
+        and relative.suffix == ".squashfs",
+        "candidate rootfs path is unsafe",
+    )
+    accepted_rootfs = candidate_root / Path(*relative.parts)
+    COMMON.regular_file(accepted_rootfs, "accepted rootfs")
+    rootfs_size = accepted_rootfs.stat().st_size
+    COMMON.require(0 < rootfs_size <= MAX_ROOTFS_SIZE, "accepted rootfs size is unsafe")
+    COMMON.require(
+        rootfs_size == rootfs_record.get("size"),
+        "accepted rootfs size changed",
+    )
+    COMMON.require(
+        COMMON.file_digest(accepted_rootfs) == rootfs_record.get("sha256"),
+        "accepted rootfs digest changed",
+    )
+    accepted_config = (candidate_root / "config.yaml").read_bytes()
+    COMMON.require(
+        len(accepted_config) == config_record.get("size"),
+        "accepted configuration size changed",
+    )
+    COMMON.require(
+        COMMON.digest(accepted_config) == config_record.get("sha256"),
+        "accepted configuration digest changed",
+    )
+    COMMON.require(
+        bundle_path.stat().st_size <= rootfs_size + MAX_BUNDLE_OVERHEAD,
+        "signed bundle exceeds the accepted size boundary",
+    )
+
+    bundle = bundle_path.read_bytes()
+    outer = COMMON.archive_files(bundle, "signed outer bundle")
+    COMMON.require(
+        set(outer) == {"batch.tar.gz", "config.yaml", "package.sign"},
+        "signed outer bundle layout changed",
+    )
+    COMMON.require(
+        outer["config.yaml"] == accepted_config,
+        "signed outer configuration differs from the accepted bytes",
+    )
+    inner = COMMON.archive_files(outer["batch.tar.gz"], "signed inner bundle")
+    COMMON.require(
+        set(inner) == {"config.yaml", rootfs_name},
+        "signed inner bundle layout changed",
+    )
+    COMMON.require(
+        inner["config.yaml"] == accepted_config,
+        "signed inner configuration differs from the accepted bytes",
+    )
+    COMMON.require(
+        COMMON.digest(inner[rootfs_name]) == rootfs_record.get("sha256")
+        and len(inner[rootfs_name]) == rootfs_size,
+        "signed rootfs differs from the accepted bytes",
+    )
+
+    signing_input, signature, payload = COMMON.parse_signature(outer["package.sign"])
+    COMMON.verify_signed_hashes(payload, outer["batch.tar.gz"], outer["config.yaml"])
+    COMMON.verify_rs256(signing_input, signature, pkcs12_path)
+    return {
+        "bundleSha256": COMMON.digest(bundle),
+        "bundleSize": len(bundle),
+        "configSha256": COMMON.digest(accepted_config),
+        "rootfsSha256": rootfs_record["sha256"],
+        "rootfsSize": rootfs_size,
+        "signatureAlgorithm": "RS256",
+        "version": candidate["version"],
+    }
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--candidate", required=True, type=Path)
+    parser.add_argument("--bundle", required=True, type=Path)
+    parser.add_argument("--pkcs12", required=True, type=Path)
+    options = parser.parse_args()
+    try:
+        evidence = validate(
+            options.candidate.resolve(), options.bundle.resolve(), options.pkcs12.resolve()
+        )
+    except (SignedBundleError, OSError, json.JSONDecodeError) as error:
+        print(f"Signed bootstrap verification failed: {error}", file=sys.stderr)
+        return 1
+    print("R6_1_SIGNED_BOOTSTRAP=PASS")
+    for name in sorted(evidence):
+        print(f"{name}={evidence[name]}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

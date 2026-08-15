@@ -57,6 +57,11 @@ VARIANTS = {
         "mac": "52:54:00:52:61:22",
         "artifactScope": "project",
     },
+    "bootstrap": {
+        "port": 10027,
+        "mac": "52:54:00:52:61:23",
+        "artifactScope": "bootstrap-6.1.1-maninblack.1",
+    },
 }
 
 
@@ -93,6 +98,22 @@ def ensure_private_directory(path: Path) -> None:
     if path.is_symlink() or not path.is_dir():
         fail(f"qualification directory is unsafe: {path}")
     path.chmod(0o700)
+
+
+def rotate_previous_artifact(path: Path) -> Path | None:
+    """Preserve an earlier boot log or evidence before a clean restart."""
+
+    if not path.exists() and not path.is_symlink():
+        return None
+    require_regular_file(path, "previous qualification artifact")
+    for generation in range(1, 1000):
+        rotated = path.with_name(f"{path.stem}-{generation}{path.suffix}")
+        if rotated.is_symlink():
+            fail(f"rotated qualification path is a symbolic link: {rotated}")
+        if not rotated.exists():
+            path.replace(rotated)
+            return rotated
+    fail(f"qualification artifact generation limit reached: {path}")
 
 
 @dataclass(frozen=True)
@@ -344,6 +365,8 @@ def start(layout: Layout, dry_run: bool) -> None:
     if dry_run:
         print(json.dumps(command))
         return
+    rotate_previous_artifact(layout.serial_log)
+    rotate_previous_artifact(layout.evidence)
     subprocess.run(command, check=True)
     deadline = time.monotonic() + 10
     while time.monotonic() < deadline:

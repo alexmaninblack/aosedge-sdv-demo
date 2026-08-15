@@ -3,7 +3,7 @@
 
 # R6.1-6 First Cloud Deployment
 
-- Status: local release preparation in progress; stopped before signing or mutation
+- Status: unsigned bootstrap accepted; stopped before bootstrap signing approval
 - Date started: 2026-08-15
 - Baseline: AosVM `6.1.0`, one Main Node
 - Rootfs release: `6.1.1-maninblack.1`
@@ -47,6 +47,48 @@ The credential-free release manifest SHA-256 is
 The regenerated pinned Ninja graph SHA-256 is
 `d2916a739c6b702aa9218e5496b25a88f834c1bc9374f86297c7075174167650`.
 
+## Local Qualification Result
+
+R6.1-6.1 and R6.1-6.2 are complete. The incremental Yocto build reused the
+retained source, download, shared-state, and build caches. The previous
+`6.1.0` boot-plus-rootfs regression output was preserved separately inside the
+builder before generating a clean release directory.
+
+| Evidence | Accepted value |
+| --- | --- |
+| Integration build checkpoint | `df600fa3fa547a29e4e3970e38e84853cd24847a` |
+| Complete local raw image size; not an OTA payload | 6,997,147,648 bytes |
+| Complete local raw image SHA-256 | `28cc99b8b22f6e77cf6a5f2c7de6ec772eec4a1c8f8eb3ae4aa3b6dbfde5c6e2` |
+| Rootfs-only `config.yaml` size | 608 bytes |
+| Rootfs-only `config.yaml` SHA-256 | `7e46cc3b6ae1b1e279c5a460456802a48be7dce282736023d9265f8656f9ef6e` |
+| Full rootfs payload size | 128,372,736 bytes |
+| Full rootfs payload SHA-256 | `9152f59b052e9779eb89b43d8a52fba6eaa31fe56b4b4507fec8faa16d6e9232` |
+| Frozen candidate metadata size | 841 bytes |
+| Frozen candidate metadata SHA-256 | `7a969e57c53eaae266b97b3db555eb5d7aeea3afa2e9629b8b5bf3f634afa04a` |
+| Boot component marker | `6.1.0`; omitted from the FOTA release |
+| Rootfs component marker | `6.1.1-maninblack.1` |
+
+The release output contains exactly `config.yaml` and one full rootfs
+SquashFS. The structural validator rejected boot, incremental, stale,
+unexpected, unsafe-path, symlink, credential, and publication inputs. The
+complete raw image then passed two disposable, externally restricted ARM64
+boots separated by a clean QMP/ACPI shutdown. Both guest gates passed the
+rootfs version marker, read-only root, writable persistent partitions,
+SELinux, cgroups, namespaces, one component runtime, empty provider store,
+fail-safe launcher and health behavior, secret exclusion, and fatal-log gates.
+
+The restart qualification also closed an evidence-lifecycle defect: disposable
+boot logs and evidence are now rotated by generation instead of being
+overwritten or blocking a second boot. The final disposable VM is stopped.
+The Yocto builder, caches, build tree, and unsigned artifacts remain retained.
+
+The unsigned candidate is frozen outside Git under the ignored R6.1 artifact
+root. Its mode-0600 `candidate.json` records only the accepted manifest, graph,
+platform, configuration, rootfs, version, sizes, and digests. No certificate,
+key, token, Unit identity, Cloud identifier, or user-specific path is stored
+in the record. A dedicated post-signing verifier and negative RSA/payload tests
+are prepared, but no bootstrap signing identity has been accessed.
+
 ## Isolation Profile
 
 | Boundary | Demonstration Unit | R6.1 validation Unit |
@@ -55,7 +97,7 @@ The regenerated pinned Ninja graph SHA-256 is
 | Disk | Existing provisioned overlay | New overlay from official base |
 | Cloud identity | Preserved and untouched | Newly issued during provisioning |
 | Node topology | One Main Node | One Main Node |
-| SSH | `127.0.0.1:10022` | `127.0.0.1:10024` |
+| SSH | `127.0.0.1:10022` | `127.0.0.1:10028` |
 | DNS bridge | `127.0.0.1:18053` | `127.0.0.1:18055` |
 | Provisioning IAM | Not exposed | `127.0.0.1:18091` only during provisioning |
 | MAC | Existing fixed development MAC | Dedicated validation MAC |
@@ -77,7 +119,9 @@ identity with one primary `aos-vm-main` Node.
 - test that default demonstration paths are unchanged;
 - do not create or provision a Cloud Unit.
 
-Exit: the validation profile passes static and dry-run isolation tests.
+Result: pass. The validation profile passes static and dry-run isolation tests;
+the demonstration profile still resolves to its running protected VM, while
+the validation profile remains stopped and unprotected with no Cloud identity.
 
 ### R6.1-6.2 — Build and freeze the rootfs release
 
@@ -92,14 +136,14 @@ Exit: the validation profile passes static and dry-run isolation tests.
 - generate a clean rootfs-only FOTA output;
 - freeze its exact configuration, payload size, and digests.
 
-Exit: one unsigned, locally accepted rootfs-only release is ready for a
-separate signing decision.
+Result: pass. One unsigned, locally accepted rootfs-only release is frozen and
+ready for a separate signing decision.
 
 ### R6.1-6.3 — Bootstrap signing approval gate
 
-Stop for explicit permission to access the OEM identity for this exact rootfs
-candidate. After approval, sign and locally verify only the accepted bytes.
-Do not upload.
+Current gate: stopped for explicit permission to access the OEM identity for
+this exact rootfs candidate. After approval, sign and locally verify only the
+accepted bytes. Do not upload.
 
 ### R6.1-6.4 — Validation Unit and Cloud mutation approval gate
 

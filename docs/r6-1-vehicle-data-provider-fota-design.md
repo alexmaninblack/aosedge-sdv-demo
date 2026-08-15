@@ -836,8 +836,10 @@ R6.1 is complete only when all of these are true:
       RS256, record sanitized evidence, and stop before Cloud upload.
 - [x] Select a separate validation Unit, rootfs-only bootstrap packaging, and
       immutable rootfs version `6.1.1-maninblack.1` for R6.1-6.
-- [ ] Complete R6.1-6 local build and qualification, then stop for separate
+- [x] Complete R6.1-6 local build and qualification, then stop for separate
       bootstrap-signing and Cloud-mutation approvals.
+- [ ] Obtain explicit approval to sign only the frozen rootfs
+      `6.1.1-maninblack.1` candidate; no upload or Unit mutation is included.
 
 ## References
 
