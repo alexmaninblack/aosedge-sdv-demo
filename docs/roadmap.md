@@ -197,12 +197,14 @@ contains no signing or upload credential. R6.1-3.1 closed the actual Python
 provider's launcher modes, external configuration/trust boundary, systemd
 credential path, and component-native ARM64 dependency layout. R6.1-4
 produced a byte-reproducible unsigned candidate. R6.1-5 accepted its exact
-layer and envelope after real install, live telemetry, source-loss, update,
+layer, configuration, and reproducibility envelope after real install, live
+telemetry, source-loss, update,
 downgrade, failed-candidate rollback, security, resource, and secret-exclusion
-gates. Work is stopped before OEM signing and requires explicit approval to
-access the signing identity. R6.1-6 must first place the qualified bootstrap on
+gates. OEM signing of only that accepted provider candidate is now approved;
+local signing and verification are pending. R6.1-6 must first assign a new
+immutable version to the custom bootstrap and place it on
 an isolated validation Unit before any provider assignment. The authorization
-still excludes bootstrap deployment, Cloud catalog mutation, signing,
+still excludes bootstrap signing or deployment, Cloud catalog mutation,
 deprovisioning, reprovisioning, and active-Unit changes. The accepted R6
 side-load remains the operational baseline.
 

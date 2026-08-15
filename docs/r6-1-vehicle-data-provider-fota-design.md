@@ -3,7 +3,7 @@
 
 # R6.1 Vehicle-Data Provider FOTA Component Design
 
-- Status: Accepted through the R6.1-5 unsigned gate; signing approval pending
+- Status: Accepted through the R6.1-5 unsigned gate; local signing approved and pending
 - Date: 2026-08-15
 - Baseline: AosVM 6.1.0, one `aos-vm-main` Node, provider 0.1.1
 - Depends on: R6/AOS-2, ADR 0005, ADR 0006
@@ -38,9 +38,9 @@ The real provider interface and reproducible unsigned candidate then passed
 the complete disposable ARM64 offline matrix. The exact accepted digests are
 frozen in the
 [R6.1-5 qualification record](r6-1-offline-provider-qualification.md).
-Work is stopped before OEM signing. Bootstrap deployment, provider signing or
-upload, Cloud assignment, deprovisioning, reprovisioning, and any mutation of
-the active Unit remain unauthorized.
+OEM signing of only the accepted provider candidate is approved. Bootstrap
+deployment or signing, provider upload, Cloud assignment, deprovisioning,
+reprovisioning, and any mutation of the active Unit remain unauthorized.
 
 ## Why R6.1 Exists
 
@@ -479,10 +479,15 @@ The outputs remain separate:
 | Build lock, digests, SBOM, and provenance | Reproducibility and release evidence |
 
 Build and signing are separate trust stages. The builder produces a verified,
-reproducible unsigned artifact and digest. Signing and Cloud publication use a
-guarded OEM workflow with temporary credential access; the signing identity is
-never committed to the manifest, copied into an image, or retained in a
-builder snapshot.
+reproducible unsigned provider layer, configuration, and envelope witness.
+The official signer recomposes a readable inner archive and signs its hash
+together with the configuration; it does not encrypt the local bundle or sign
+the deterministic unsigned envelope as an opaque file. The post-signing gate
+must prove that the recomposed bundle embeds the exact accepted layer and
+configuration before accepting the final signed-bundle digest. Signing and
+Cloud publication use separate guarded OEM workflows with temporary credential
+access; the signing identity is never committed to the manifest, copied into
+an image, or retained in a builder snapshot.
 
 ## Provisioning Continuity
 
@@ -669,11 +674,14 @@ payload and Aos bundle validation without using any signing credential.
   transition;
 - rerun security, SELinux, rootfs, resource, and secret-exclusion gates;
 - prove coexistence with SOTA services without giving them FOTA privileges;
-- freeze the accepted unsigned payload and envelope digests;
+- freeze the accepted provider layer and configuration as the immutable
+  signing inputs and retain the deterministic unsigned-envelope digest as a
+  reproducibility witness;
 - only after the unsigned matrix passes, stop for explicit approval to access
-  the OEM signing identity, sign those accepted bytes, verify the signature
-  and complete bundle locally, and retain no signing material in Git, logs,
-  artifacts, or the builder VM;
+  the OEM signing identity, let the official signer compose and sign the
+  deployment bundle, verify that its inner layer and configuration are the
+  exact accepted bytes, validate the signed hashes and RS256 signature, and
+  retain no signing material in Git, logs, artifacts, or the builder VM;
 - do not publish or assign the signed candidate in this stage.
 
 Exit: all mandatory tests pass on a disposable single-Node ARM64 VM and one
@@ -688,6 +696,9 @@ Cloud gate without using the active Cloud Unit.
   the demonstration Unit;
 - obtain explicit approval for provisioning, bootstrap, catalog, publication,
   and assignment mutations in the selected isolated scope;
+- select a new immutable bootstrap component version rather than reusing the
+  installed `6.1.0`, then rebuild and freeze that exact release; decide and
+  qualify whether it contains both boot and full rootfs or rootfs only;
 - install the qualified bootstrap runtime on the validation Unit either by
   provisioning it from the custom complete image or by a separately qualified
   signed full-rootfs FOTA transaction; if the FOTA path is selected, reproduce,
@@ -811,9 +822,13 @@ R6.1 is complete only when all of these are true:
       reproducible unsigned artifact production.
 - [x] Complete every unsigned R6.1-5 offline, security, lifecycle, and
       bootstrap-regression gate and freeze the accepted digests.
-- [ ] Obtain explicit approval to access the OEM signing identity and sign
-      only the accepted R6.1-5 bytes; Cloud, provisioning, publication,
-      assignment, and active-Unit mutations remain forbidden.
+- [x] Obtain explicit approval to access the OEM signing identity for only the
+      accepted R6.1-5 provider candidate; Cloud, provisioning, publication,
+      assignment, bootstrap signing, and active-Unit mutations remain
+      forbidden.
+- [ ] Reverify the accepted layer, configuration, and envelope witness; sign
+      locally, prove that the signed bundle embeds the accepted bytes, verify
+      RS256, record sanitized evidence, and stop before Cloud upload.
 
 ## References
 

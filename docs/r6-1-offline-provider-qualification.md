@@ -3,7 +3,7 @@
 
 # R6.1 Offline Provider Qualification
 
-- Status: Unsigned candidate accepted; stopped before OEM signing approval
+- Status: Unsigned candidate accepted; OEM signing approved, local signature pending
 - Date: 2026-08-15
 - Scope: local and offline only
 - Provider version: `0.2.0`
@@ -43,11 +43,15 @@ not transferred through FOTA or uploaded to AosCloud. The runtime qualifier is
 25,734,904 bytes. The guarded fetch verified both guest and host digests and
 made the local image read-only before boot.
 
-The independently deployable provider update is the 6,616,114-byte compressed
-unsigned envelope recorded below. Signing will add only signature and
-certificate metadata; it will not include the raw VM disk. A separate,
+The 6,616,114-byte unsigned envelope recorded below is the deterministic
+compressed input witness for the OEM-to-Cloud bundle, not the payload size
+downloaded by a Unit. The accepted provider layer is 17,756,160 bytes. After
+Cloud ingestion a Unit downloads that layer plus small OCI and cryptographic
+metadata; the exact encrypted transfer size is supplied by Cloud per blob.
+Signing never includes the 6,997,147,648-byte raw VM disk. A separate,
 one-time bootstrap system update is recorded later in this document and
-contains 193,559,688 bytes of boot and compressed rootfs payloads in total.
+currently contains 193,559,688 bytes of boot and compressed rootfs payloads in
+total.
 
 ## Accepted Unsigned Candidate
 
@@ -66,6 +70,30 @@ hash-locked ARM64 dependencies, component metadata, SPDX SBOM, provenance,
 dependency inventory, licenses, and notices. It contains no installer,
 virtual environment, systemd unit, rootfs mutation, credential, private key,
 Unit identity, Cloud token, or user-specific path.
+
+## Signing And Encryption Boundary
+
+The official `aos-signer` does not encrypt the local deployment bundle and
+does not attach a signature to the deterministic unsigned envelope as an
+opaque file. It copies the accepted configuration and layer into a newly
+composed inner `batch.tar.gz`, signs the SHA3-512 hash and size of that inner
+archive together with `config.yaml` using RS256, and creates a readable outer
+`batch.tar.gz` containing the inner archive, configuration, and `package.sign`.
+
+The immutable accepted signing inputs are therefore the provider layer digest,
+size, and configuration digest. The unsigned-envelope digest remains a
+reproducibility witness. The guarded post-signing verifier must read the outer
+and inner archives without extracting them to the repository, prove that the
+embedded layer and configuration are byte-identical to the accepted inputs,
+validate the signed hashes, and verify RS256 with the public certificate from
+the approved OEM PKCS#12 identity. It then records the final signed-bundle
+digest and size.
+
+Content encryption is a later Cloud-to-Unit boundary. Upload uses HTTPS/mTLS.
+After Cloud ingestion, Communication Manager may receive encrypted OCI blobs
+and per-blob decryption information; it validates the downloaded ciphertext,
+decrypts inside the Unit, and then validates the content signature and digest.
+The local R6.1-5 verifier never attempts to unpack a Cloud-encrypted blob.
 
 ## Offline Matrix Result
 
@@ -115,6 +143,14 @@ The structural, identity, canonical-path, and secret-exclusion validator
 passed. This output is an offline regression artifact only; it was not signed
 or submitted to the Cloud.
 
+The regression output reuses upstream version `6.1.0` and is not a publishable
+custom bootstrap release. R6.1-6 must select a new immutable bootstrap version
+before rebuilding, freezing, signing, or uploading it. That gate must also
+decide whether the qualified deployment contains both boot and full rootfs
+(currently 193,559,688 payload bytes) or a separately qualified rootfs-only
+update (currently 128,372,736 payload bytes). Different bytes must never be
+published under the already installed `6.1.0` component versions.
+
 ## Defects Closed During Qualification
 
 The disposable acceptance work found and closed five production-path gaps:
@@ -134,19 +170,25 @@ The fifth issue was reproduced only after correcting the qualification fixture
 so that the bad candidate passes offline preflight and fails after the active
 slot switch. A dedicated ARM64 regression test now protects this exact case.
 
-## Signing Approval Gate
+## Signing Gate
 
-The accepted bytes are frozen at the layer and unsigned-envelope digests
-recorded above. R6.1-5 is deliberately not complete because the candidate is
-not signed.
+The accepted layer, configuration, and unsigned reproducibility witness are
+frozen at the digests recorded above. R6.1-5 is deliberately not complete
+because the candidate is not signed. Explicit approval to access the OEM
+signing identity was granted on 2026-08-15. That approval covers local signing
+and verification of only this accepted provider candidate; it does not cover
+Cloud upload or mutation.
 
-The next action requires explicit approval to access the OEM signing identity
-and sign only this accepted candidate. After approval, the local gate must:
+The local signing gate must:
 
-1. reverify both accepted digests before accessing the identity;
+1. reverify the accepted layer, configuration, and unsigned-envelope digests
+   before accessing the identity;
 2. sign without copying key material into Git, the builder, or the disposable
    VM;
-3. verify the signature and complete bundle locally;
-4. record only sanitized signature evidence; and
-5. stop again without uploading, publishing, assigning, provisioning, or
+3. verify that the signed bundle contains the exact accepted layer and
+   configuration, validate its signed SHA3-512 records, and verify its RS256
+   signature with the approved public certificate;
+4. record only the final bundle size, digest, signature algorithm, and accepted
+   input digests; and
+5. stop without uploading, publishing, assigning, provisioning, or
    changing the active Unit.

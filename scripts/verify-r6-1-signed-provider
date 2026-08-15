@@ -1,0 +1,280 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+"""Verify that a signed R6.1 provider bundle contains the accepted bytes."""
+
+from __future__ import annotations
+
+import argparse
+import base64
+import hashlib
+import io
+import json
+import shutil
+import subprocess
+import sys
+import tarfile
+import tempfile
+from pathlib import Path, PurePosixPath
+
+
+MAX_BUNDLE_SIZE = 32 * 1024 * 1024
+MAX_ARCHIVE_FILES = 64
+MAX_ARCHIVE_CONTENT = 64 * 1024 * 1024
+
+
+class SignedBundleError(ValueError):
+    """Raised when the signed bundle does not match the accepted candidate."""
+
+
+def require(condition: bool, message: str) -> None:
+    if not condition:
+        raise SignedBundleError(message)
+
+
+def regular_file(path: Path, label: str) -> None:
+    require(path.is_file() and not path.is_symlink(), f"{label} is missing or unsafe")
+
+
+def digest(data: bytes, algorithm: str = "sha256") -> str:
+    value = hashlib.new(algorithm)
+    value.update(data)
+    return value.hexdigest()
+
+
+def file_digest(path: Path) -> str:
+    value = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            value.update(block)
+    return value.hexdigest()
+
+
+def archive_name(name: str) -> str:
+    raw = PurePosixPath(name)
+    require(not raw.is_absolute(), f"archive contains an absolute path: {name!r}")
+    parts = [part for part in raw.parts if part != "."]
+    require(
+        parts and all(part not in {"", ".."} for part in parts),
+        f"archive contains an unsafe path: {name!r}",
+    )
+    require(
+        not any(ord(character) < 32 or ord(character) == 127 for character in name),
+        f"archive contains a control character: {name!r}",
+    )
+    return "/".join(parts)
+
+
+def archive_files(data: bytes, label: str) -> dict[str, bytes]:
+    files: dict[str, bytes] = {}
+    total_size = 0
+    try:
+        with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as archive:
+            for member in archive:
+                if member.isdir():
+                    continue
+                require(member.isfile(), f"{label} contains a link or special file")
+                name = archive_name(member.name)
+                require(name not in files, f"{label} contains duplicate path: {name}")
+                require(len(files) < MAX_ARCHIVE_FILES, f"{label} contains too many files")
+                require(member.size >= 0, f"{label} contains an invalid size")
+                total_size += member.size
+                require(
+                    total_size <= MAX_ARCHIVE_CONTENT,
+                    f"{label} is too large after decompression",
+                )
+                source = archive.extractfile(member)
+                require(source is not None, f"cannot read {label} member: {name}")
+                payload = source.read(member.size + 1)
+                require(len(payload) == member.size, f"{label} member has an invalid size: {name}")
+                files[name] = payload
+    except (tarfile.TarError, OSError) as error:
+        raise SignedBundleError(f"cannot read {label}: {error}") from error
+    return files
+
+
+def base64url_decode(value: str) -> bytes:
+    try:
+        return base64.urlsafe_b64decode(value + "=" * (-len(value) % 4))
+    except (ValueError, base64.binascii.Error) as error:
+        raise SignedBundleError("JWT contains invalid base64url data") from error
+
+
+def parse_signature(token: bytes) -> tuple[bytes, bytes, dict[str, object]]:
+    try:
+        encoded = token.decode("ascii").strip()
+        header_part, payload_part, signature_part = encoded.split(".")
+        header = json.loads(base64url_decode(header_part))
+        payload = json.loads(base64url_decode(payload_part))
+    except (UnicodeDecodeError, ValueError, json.JSONDecodeError) as error:
+        raise SignedBundleError("package.sign is not a valid compact JWT") from error
+    require(
+        isinstance(header, dict) and header.get("alg") == "RS256",
+        "package.sign does not use RS256",
+    )
+    require(
+        isinstance(header.get("kid"), str) and header["kid"],
+        "package.sign has no key identifier",
+    )
+    require(isinstance(payload, dict), "package.sign payload is not an object")
+    return f"{header_part}.{payload_part}".encode("ascii"), base64url_decode(signature_part), payload
+
+
+def verify_signed_hashes(payload: dict[str, object], inner: bytes, config: bytes) -> None:
+    records = payload.get("data")
+    require(isinstance(records, list) and len(records) == 2, "package.sign has an unexpected file set")
+    observed: dict[str, dict[str, object]] = {}
+    for record in records:
+        require(isinstance(record, dict), "package.sign contains an invalid file record")
+        name = record.get("name")
+        require(
+            isinstance(name, str) and name not in observed,
+            "package.sign contains an invalid file name",
+        )
+        observed[name] = record
+    expected = {"batch.tar.gz": inner, "config.yaml": config}
+    require(set(observed) == set(expected), "package.sign does not cover the expected files")
+    for name, content in expected.items():
+        record = observed[name]
+        require(record.get("size") == len(content), f"package.sign size mismatch for {name}")
+        require(
+            record.get("hash") == digest(content, "sha3_512"),
+            f"package.sign hash mismatch for {name}",
+        )
+
+
+def verify_rs256(signing_input: bytes, signature: bytes, pkcs12_path: Path) -> None:
+    openssl = shutil.which("openssl")
+    require(openssl is not None, "openssl is required for signature verification")
+    try:
+        certificate = subprocess.run(
+            [openssl, "pkcs12", "-in", str(pkcs12_path), "-clcerts", "-nokeys", "-passin", "pass:"],
+            check=True,
+            input=b"",
+            capture_output=True,
+        ).stdout
+        public_key = subprocess.run(
+            [openssl, "x509", "-pubkey", "-noout"],
+            check=True,
+            input=certificate,
+            capture_output=True,
+        ).stdout
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            public_key_path = root / "public.pem"
+            signature_path = root / "signature.bin"
+            input_path = root / "signed-input"
+            public_key_path.write_bytes(public_key)
+            signature_path.write_bytes(signature)
+            input_path.write_bytes(signing_input)
+            result = subprocess.run(
+                [
+                    openssl,
+                    "dgst",
+                    "-sha256",
+                    "-verify",
+                    str(public_key_path),
+                    "-signature",
+                    str(signature_path),
+                    str(input_path),
+                ],
+                text=True,
+                capture_output=True,
+            )
+    except subprocess.CalledProcessError as error:
+        raise SignedBundleError("cannot read the signing certificate") from error
+    require(result.returncode == 0, "package.sign RS256 verification failed")
+
+
+def validate(candidate_root: Path, bundle_path: Path, pkcs12_path: Path) -> dict[str, object]:
+    regular_file(candidate_root / "candidate.json", "candidate metadata")
+    regular_file(candidate_root / "config.yaml", "accepted configuration")
+    regular_file(bundle_path, "signed bundle")
+    regular_file(pkcs12_path, "signing certificate")
+    require(bundle_path.stat().st_size <= MAX_BUNDLE_SIZE, "signed bundle exceeds the size limit")
+
+    candidate = json.loads((candidate_root / "candidate.json").read_text(encoding="utf-8"))
+    require(candidate.get("signingState") == "unsigned", "candidate metadata is not the accepted unsigned record")
+    layer_record = candidate.get("layer")
+    config_record = candidate.get("config")
+    require(
+        isinstance(layer_record, dict) and isinstance(config_record, dict),
+        "candidate digest records are missing",
+    )
+    layer_name = layer_record.get("fileName")
+    require(isinstance(layer_name, str), "candidate layer name is missing")
+    accepted_layer = candidate_root / layer_name
+    regular_file(accepted_layer, "accepted provider layer")
+    accepted_config = (candidate_root / "config.yaml").read_bytes()
+    accepted_layer_bytes = accepted_layer.read_bytes()
+    require(
+        file_digest(accepted_layer) == layer_record.get("sha256"),
+        "accepted provider layer digest changed",
+    )
+    require(
+        len(accepted_layer_bytes) == layer_record.get("size"),
+        "accepted provider layer size changed",
+    )
+    require(
+        digest(accepted_config) == config_record.get("sha256"),
+        "accepted configuration digest changed",
+    )
+
+    bundle = bundle_path.read_bytes()
+    outer = archive_files(bundle, "signed outer bundle")
+    require(
+        set(outer) == {"batch.tar.gz", "config.yaml", "package.sign"},
+        "signed outer bundle layout changed",
+    )
+    require(
+        outer["config.yaml"] == accepted_config,
+        "signed outer configuration differs from the accepted bytes",
+    )
+    inner = archive_files(outer["batch.tar.gz"], "signed inner bundle")
+    require(set(inner) == {"config.yaml", layer_name}, "signed inner bundle layout changed")
+    require(
+        inner["config.yaml"] == accepted_config,
+        "signed inner configuration differs from the accepted bytes",
+    )
+    require(
+        inner[layer_name] == accepted_layer_bytes,
+        "signed provider layer differs from the accepted bytes",
+    )
+
+    signing_input, signature, payload = parse_signature(outer["package.sign"])
+    verify_signed_hashes(payload, outer["batch.tar.gz"], outer["config.yaml"])
+    verify_rs256(signing_input, signature, pkcs12_path)
+
+    return {
+        "bundleSha256": digest(bundle),
+        "bundleSize": len(bundle),
+        "configSha256": digest(accepted_config),
+        "layerSha256": digest(accepted_layer_bytes),
+        "layerSize": len(accepted_layer_bytes),
+        "signatureAlgorithm": "RS256",
+        "version": candidate.get("version"),
+    }
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--candidate", required=True, type=Path)
+    parser.add_argument("--bundle", required=True, type=Path)
+    parser.add_argument("--pkcs12", required=True, type=Path)
+    options = parser.parse_args()
+    try:
+        evidence = validate(
+            options.candidate.resolve(), options.bundle.resolve(), options.pkcs12.resolve()
+        )
+    except (SignedBundleError, OSError, json.JSONDecodeError) as error:
+        print(f"Signed provider verification failed: {error}", file=sys.stderr)
+        return 1
+    print("R6_1_SIGNED_PROVIDER=PASS")
+    for name in sorted(evidence):
+        print(f"{name}={evidence[name]}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

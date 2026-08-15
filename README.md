@@ -98,9 +98,10 @@ reproducible credential-free `0.2.0` candidate passes both local and official
 unsigned validation. The offline portion of R6.1-5 is also complete. A fresh
 disposable ARM64 VM passed the runtime matrix, real install, live telemetry,
 source-loss, update, downgrade, failed-candidate rollback, security, SELinux,
-resource, and secret-exclusion gates. The exact unsigned layer and envelope
-are frozen. Work is stopped before OEM signing and awaits explicit approval to
-access the signing identity; no Cloud or active Unit mutation is authorized.
+resource, and secret-exclusion gates. The exact unsigned layer, configuration,
+and reproducibility envelope are frozen. Local OEM signing of only that
+accepted candidate is approved and pending verification; no Cloud or active
+Unit mutation is authorized.
 Bootstrap deployment, Cloud mutation,
 deprovisioning, reprovisioning, and active-Unit changes remain separately
 gated.
