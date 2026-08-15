@@ -14,6 +14,7 @@ ACCESS_ROOT=${AOSVM_GUEST_ACCESS_ROOT:-"$LOCAL_ROOT/host-access"}
 PRIVATE_KEY="$ACCESS_ROOT/aosvm-host-ed25519"
 PUBLIC_KEY="$PRIVATE_KEY.pub"
 KNOWN_HOSTS="$ACCESS_ROOT/known_hosts"
+KNOWN_HOSTS_OPTION="UserKnownHostsFile=\"$KNOWN_HOSTS\""
 SSH_PORT=${AOSVM_SSH_HOST_PORT:-10022}
 WAIT_SECONDS=${AOSVM_GUEST_WAIT_SECONDS:-240}
 REMOTE_HOST=127.0.0.1
@@ -137,7 +138,7 @@ password_ssh() {
         -o PreferredAuthentications=password \
         -o PubkeyAuthentication=no \
         -o StrictHostKeyChecking=yes \
-        -o "UserKnownHostsFile=$KNOWN_HOSTS" \
+        -o "$KNOWN_HOSTS_OPTION" \
         -o ConnectTimeout=10 \
         -p "$SSH_PORT" \
         "$REMOTE_USER@$REMOTE_HOST" "$@"
@@ -151,7 +152,7 @@ password_scp() {
         -o PreferredAuthentications=password \
         -o PubkeyAuthentication=no \
         -o StrictHostKeyChecking=yes \
-        -o "UserKnownHostsFile=$KNOWN_HOSTS" \
+        -o "$KNOWN_HOSTS_OPTION" \
         -o ConnectTimeout=10 \
         -P "$SSH_PORT" \
         "$1" "$REMOTE_USER@$REMOTE_HOST:$2"
@@ -167,7 +168,7 @@ run_with_key() {
         -o IdentitiesOnly=yes \
         -o LogLevel=ERROR \
         -o StrictHostKeyChecking=yes \
-        -o "UserKnownHostsFile=$KNOWN_HOSTS" \
+        -o "$KNOWN_HOSTS_OPTION" \
         -o ConnectTimeout=10 \
         -i "$PRIVATE_KEY" \
         -p "$SSH_PORT" \
@@ -190,7 +191,7 @@ copy_with_key() {
         -o IdentitiesOnly=yes \
         -o LogLevel=ERROR \
         -o StrictHostKeyChecking=yes \
-        -o "UserKnownHostsFile=$KNOWN_HOSTS" \
+        -o "$KNOWN_HOSTS_OPTION" \
         -o ConnectTimeout=10 \
         -i "$PRIVATE_KEY" \
         -P "$SSH_PORT" \

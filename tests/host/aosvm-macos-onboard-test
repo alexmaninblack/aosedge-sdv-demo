@@ -90,6 +90,8 @@ grep -q '^  enroll-key ' "$test_root/guest-help"
 grep -q 'remain outside Git' "$test_root/guest-help"
 grep -q 'StrictHostKeyChecking=yes' "$guest"
 grep -q 'BatchMode=yes' "$guest"
+grep -Fq 'KNOWN_HOSTS_OPTION="UserKnownHostsFile=\"$KNOWN_HOSTS\""' "$guest"
+[ "$(grep -c -- '-o "$KNOWN_HOSTS_OPTION"' "$guest")" -eq 4 ]
 grep -q 'only an Ed25519 public key is accepted' \
     "$repository_root/scripts/guest/aosvm-install-host-key"
 

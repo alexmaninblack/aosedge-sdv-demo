@@ -10,11 +10,21 @@ local_root=${AOSVM_LOCAL_ROOT:-"$repository_root/.local"}
 run_root=${AOSVM_RUN_ROOT:-"$repository_root/.run"}
 ssh_host_port=${AOSVM_SSH_HOST_PORT:-10022}
 host_dns_port=${AOSVM_HOST_DNS_PORT:-18053}
+aosvm_instance=${AOSVM_INSTANCE:-main}
+case "$aosvm_instance" in
+    main|r6-1-validation) ;;
+    *)
+        printf 'FAIL: AosVM Phase 13 stopped-state gate: unsupported instance: %s\n' \
+            "$aosvm_instance" >&2
+        exit 1
+        ;;
+esac
+vm_name="aosvm-$aosvm_instance"
 release_dir="$cache_root/aosvm/v6.1.0/qemuarm64"
 main_image="$release_dir/aos-vm-main-qemuarm64.qcow2"
 secondary_image="$release_dir/aos-vm-secondary-qemuarm64.qcow2"
 firmware="$release_dir/QEMU_EFI.fd"
-overlay="$local_root/aosvm-main-overlay.qcow2"
+overlay="$local_root/$vm_name-overlay.qcow2"
 
 fail() {
     printf 'FAIL: AosVM Phase 13 stopped-state gate: %s\n' "$*" >&2
@@ -50,8 +60,8 @@ done
     || fail 'the lifecycle command does not report a clean stopped state'
 
 for runtime_name in \
-    aosvm-main.pid aosvm-main-supervisor.pid aosvm-main-dns.pid \
-    aosvm-main.qmp aosvm-main.serial aosvm-main.lifecycle.lock; do
+    "$vm_name.pid" "$vm_name-supervisor.pid" "$vm_name-dns.pid" \
+    "$vm_name.qmp" "$vm_name.serial" "$vm_name.lifecycle.lock"; do
     [ ! -e "$run_root/$runtime_name" ] && [ ! -L "$run_root/$runtime_name" ] \
         || fail "owned runtime state remains: $run_root/$runtime_name"
 done
@@ -70,7 +80,7 @@ case "$processes" in
         fail 'an owned QEMU process still uses the overlay' ;;
 esac
 case "$processes" in
-    *"$repository_root/scripts/host/aosvm-dns-bridge --listen-address"*) \
+    *"$repository_root/scripts/host/aosvm-dns-bridge --listen-address 127.0.0.1 --listen-port $host_dns_port"*) \
         fail 'an owned DNS bridge process remains' ;;
 esac
 
