@@ -216,7 +216,10 @@ the replacement rootfs only on the validation Unit; the demonstration Unit
 remains online on `6.1.0`. Provider assignment is stopped because the
 provisioned fixed-context workdirs mount cannot supply the proposed per-subtree
 SELinux store label. The accepted R6 side-load remains the operational
-baseline.
+baseline. R6.1-6.5a now records a review-only proposal for a bounded nested
+ext4 provider store that would unblock the demo without relabelling existing
+AosCore workdirs or weakening the provider domain. No implementation is yet
+authorized.
 
 Detailed draft: [R6.1 FOTA component design and plan](r6-1-vehicle-data-provider-fota-design.md).
 Qualification record: [R6.1-2 bootstrap-image qualification](r6-1-bootstrap-image-qualification.md).

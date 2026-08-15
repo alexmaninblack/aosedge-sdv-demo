@@ -305,6 +305,10 @@ The evidence, alternatives, migration requirements, and questions for platform
 architects are recorded in
 [R6.1 Persistent Store SELinux Architecture Review](r6-1-selinux-persistent-store-architecture.md).
 
+The proposed bounded demo workaround is maintained as a separate, review-only
+work package:
+[R6.1-6.5a Demo Isolated Provider Store](r6-1-demo-isolated-provider-store.md).
+
 ### R6.1-6.6 — Publish and assign provider `0.2.0`
 
 - reverify the accepted signed provider bundle before upload;

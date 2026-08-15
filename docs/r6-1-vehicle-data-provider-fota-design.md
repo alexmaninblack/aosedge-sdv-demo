@@ -316,6 +316,9 @@ it blocks the provider payload stage.
 The dedicated architecture discussion, alternatives, migration constraints,
 and proposed qualification matrix are maintained in
 [R6.1 Persistent Store SELinux Architecture Review](r6-1-selinux-persistent-store-architecture.md).
+The proposed demo-only nested-filesystem backend and its gated implementation
+plan are maintained in
+[R6.1-6.5a Demo Isolated Provider Store](r6-1-demo-isolated-provider-store.md).
 
 ## Update State Machine
 
@@ -871,6 +874,8 @@ R6.1 is complete only when all of these are true:
       Cloud mutations defined by R6.1-6.4.
 - [x] Replace the invalid stale-scope `.1` batch with `.2`, prove validation-only
       targeting, and install `.2` without changing the demonstration Unit.
+- [ ] Review and accept or reject the proposed R6.1-6.5a isolated demo store;
+      this checkbox does not authorize implementation.
 - [ ] Resolve and qualify the provider persistent-store SELinux boundary on the
       provisioned fixed-context workdirs mount before provider assignment.
 

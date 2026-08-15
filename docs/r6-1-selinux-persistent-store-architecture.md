@@ -36,12 +36,14 @@ policy is therefore correctly restrictive, but the provisioned filesystem
 cannot represent the label required by that policy. Provider `0.2.0` has not
 been assigned.
 
-This document recommends an initial solution for R6.1: retain the existing
-workdirs logical volume, remove its fixed mount-wide `context=`, enable normal
-ext4 per-inode SELinux labels, and perform a controlled one-time relabel before
-AosCore starts. A dedicated provider logical volume remains the stronger
-production option when independent quota and filesystem-failure isolation are
-required. This recommendation is not yet an implementation authorization.
+For the direct production correction, this document proposes retaining the
+existing workdirs logical volume, removing its fixed mount-wide `context=`,
+enabling normal ext4 per-inode SELinux labels, and performing a controlled
+one-time relabel before AosCore starts. A dedicated provider logical volume
+remains the stronger option when independent quota and filesystem-failure
+isolation are required. To unblock the current demo without relabelling live
+AosCore data, a separate review-only work package proposes a bounded nested
+filesystem. Neither proposal is yet an implementation authorization.
 
 ## Scope
 
@@ -325,14 +327,18 @@ few advantages over a properly designed dedicated logical volume.
 
 For the current R6.1 validation path:
 
-1. select Option A as the proposed implementation;
-2. insert a dedicated work package between rootfs validation and provider
-   assignment;
+1. keep Option A as the proposed direct production correction;
+2. use the separately reviewed nested-filesystem backend to unblock the demo
+   without relabelling existing AosCore data;
 3. build a new immutable rootfs instead of modifying `.2`;
-4. qualify the migration on a copied provisioned overlay;
+4. qualify the backend on an isolated provisioned-storage fixture and copied
+   provisioned overlay;
 5. deploy the new rootfs only to the validation Unit;
 6. assign provider `0.2.0` only after the complete SELinux gate passes;
 7. keep the demonstration Unit unchanged until a separate promotion decision.
+
+The bounded demo proposal is specified in
+[R6.1-6.5a Demo Isolated Provider Store](r6-1-demo-isolated-provider-store.md).
 
 For the production vehicle architecture, retain Option B as a separate storage
 architecture decision driven by capacity, quota, functional-safety, security,
