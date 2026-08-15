@@ -105,9 +105,11 @@ EOF
 
 case "$variant" in
     upstream|project|candidate) expected_rootfs_version=6.1.0 ;;
-    bootstrap) expected_rootfs_version=6.1.1-maninblack.2 ;;
-    validation) expected_rootfs_version=6.1.1-maninblack.2 ;;
-    *) fail 'usage: r6-1-bootstrap-check <upstream|project|candidate|bootstrap|validation>' ;;
+    bootstrap) expected_rootfs_version=6.1.1-maninblack.10 ;;
+    store) expected_rootfs_version=6.1.1-maninblack.10 ;;
+    store-side-load) expected_rootfs_version=6.1.1-maninblack.9 ;;
+    validation) expected_rootfs_version=6.1.1-maninblack.10 ;;
+    *) fail 'usage: r6-1-bootstrap-check <upstream|project|candidate|bootstrap|store|store-side-load|validation>' ;;
 esac
 case "$wait_seconds" in
     ''|*[!0-9]*) fail 'wait timeout must be a decimal integer' ;;
@@ -233,11 +235,42 @@ else
         /usr/lib/systemd/system/aos-vehicle-data-provider.service \
         /usr/lib/systemd/system/aos-vehicle-data-provider-selftest@.service \
         /usr/lib/systemd/system/aos-vehicle-data-provider-bootstrap.service \
-        /usr/lib/tmpfiles.d/aos-vehicle-data-provider.conf \
         /etc/systemd/system/aos-sm.service.d/30-aos-vehicle-data-provider.conf; do
         [ -f "$path" ] && [ ! -L "$path" ] ||
             fail "project platform file is absent or unsafe: $path"
     done
+    case "$variant" in
+        project|candidate)
+            [ -f /usr/lib/tmpfiles.d/aos-vehicle-data-provider.conf ] ||
+                fail 'legacy project tmpfiles configuration is absent'
+            ;;
+        bootstrap|store|store-side-load|validation)
+            for path in \
+                /usr/libexec/aos-vehicle-data-provider-loop \
+                /usr/libexec/aos-vehicle-data-provider-store-layout \
+                /usr/libexec/aos-vehicle-data-provider-store-prepare \
+                /usr/libexec/aos-vehicle-data-provider-store-check \
+                /usr/lib/systemd/system/aos-vehicle-data-provider-store-layout.service \
+                /usr/lib/systemd/system/aos-vehicle-data-provider-store-prepare.service \
+                /usr/lib/systemd/system/aos-vehicle-data-provider-store-attach.service \
+                '/usr/lib/systemd/system/var-aos-workdirs-sm-runtimes-systemd\x2dslot\x2dcomponent.mount' \
+                /usr/lib/aos-vehicle-data-provider/store.conf \
+                /etc/modules-load.d/aos-vehicle-data-provider-loop.conf; do
+                [ -f "$path" ] && [ ! -L "$path" ] ||
+                    fail "isolated store platform file is absent or unsafe: $path"
+            done
+            [ ! -e /usr/lib/tmpfiles.d/aos-vehicle-data-provider.conf ] ||
+                fail 'isolated store layout leaked into global tmpfiles processing'
+            grep -qx loop /etc/modules-load.d/aos-vehicle-data-provider-loop.conf ||
+                fail 'steady-state loop module is not selected'
+            stat -c %C /usr/libexec/aos-vehicle-data-provider-loop | \
+                grep -q ':vehicle_data_provider_store_admin_exec_t:' ||
+                fail 'fixed loop helper SELinux entrypoint type is incorrect'
+            stat -c %C /usr/libexec/aos-vehicle-data-provider-store-prepare | \
+                grep -q ':vehicle_data_provider_store_prepare_exec_t:' ||
+                fail 'store preparation SELinux entrypoint type is incorrect'
+            ;;
+    esac
     [ "$(systemctl is-active aos-vehicle-data-provider.service)" = inactive ] ||
         fail 'empty-store provider service is unexpectedly active'
     [ "$(systemctl is-active 'aos-vehicle-data-provider-selftest@a.service')" = inactive ] ||
@@ -268,9 +301,28 @@ else
     grep -qx 'Environment=AOS_VEHICLE_DATA_PROVIDER_VISS_CA=/var/aos/workdirs/sm/runtimes/systemd-slot-component/trust/viss-ca.pem' \
         /usr/lib/systemd/system/aos-vehicle-data-provider.service ||
         fail 'vehicle trust boundary is missing'
-    grep -qx 'DynamicUser=yes' \
+    grep -q '^aos-vdp:[^:]*:[^:]*:[^:]*:[^:]*:/nonexistent:/bin/false$' \
+        /etc/passwd ||
+        fail 'dedicated non-login provider account is missing'
+    for unit in \
+        /usr/lib/systemd/system/aos-vehicle-data-provider.service \
+        /usr/lib/systemd/system/aos-vehicle-data-provider-selftest@.service; do
+        grep -qx 'User=aos-vdp' "$unit" ||
+            fail "provider unit does not select aos-vdp: $unit"
+        grep -qx 'Group=aos-vdp' "$unit" ||
+            fail "provider unit does not select the aos-vdp group: $unit"
+        grep -qx 'CapabilityBoundingSet=CAP_SETGID CAP_SETUID' "$unit" ||
+            fail "provider launcher capability boundary is incorrect: $unit"
+        grep -qx 'AmbientCapabilities=' "$unit" ||
+            fail "provider unit has an ambient capability: $unit"
+        ! grep -q '^DynamicUser=' "$unit" ||
+            fail "provider unit still uses transition-suppressing DynamicUser: $unit"
+        ! grep -q '^NoNewPrivileges=' "$unit" ||
+            fail "provider unit applies no_new_privs before the launcher: $unit"
+    done
+    grep -qx 'ExecStart=!/usr/libexec/aos-vehicle-data-provider-launcher --self-test %i' \
         /usr/lib/systemd/system/aos-vehicle-data-provider-selftest@.service ||
-        fail 'provider self-test does not use DynamicUser'
+        fail 'provider self-test does not use the bounded privilege-drop launcher'
     grep -qx 'PrivateNetwork=yes' \
         /usr/lib/systemd/system/aos-vehicle-data-provider-selftest@.service ||
         fail 'provider self-test is not offline'
@@ -282,23 +334,45 @@ else
         fail 'provider self-test unit was not loaded by PID 1'
 
     store=/var/aos/workdirs/sm/runtimes/systemd-slot-component
-    for path in \
-        "$store" \
-        "$store/slots" \
-        "$store/state" \
-        "$store/credentials" \
-        "$store/configuration" \
-        "$store/trust"; do
-        [ -d "$path" ] && [ ! -L "$path" ] ||
-            fail "project component store path is absent or unsafe: $path"
-    done
-    [ "$(stat -c %a "$store/state")" = 700 ] || fail 'state directory mode is not 0700'
-    [ "$(stat -c %a "$store/credentials")" = 700 ] ||
-        fail 'credential directory mode is not 0700'
-    [ ! -e "$store/active" ] && [ ! -L "$store/active" ] ||
-        fail 'empty project store has an active slot'
-    [ -z "$(find "$store/slots" -mindepth 1 -print -quit)" ] ||
-        fail 'empty project store contains a payload'
+    if [ "$variant" = bootstrap ]; then
+        [ "$(systemctl is-active \
+            'var-aos-workdirs-sm-runtimes-systemd\x2dslot\x2dcomponent.mount' \
+            2>/dev/null || true)" = inactive ] ||
+            fail 'non-provisioned bootstrap unexpectedly activated the isolated store'
+        [ ! -e /var/aos/workdirs/sm/runtimes/.vehicle-data-provider-store.ext4 ] ||
+            fail 'non-provisioned bootstrap created a store backing file'
+        [ ! -e /var/aos/workdirs/sm/runtimes/.vehicle-data-provider-store.identity ] ||
+            fail 'non-provisioned bootstrap created a store identity'
+    else
+        for path in \
+            "$store" \
+            "$store/slots" \
+            "$store/state" \
+            "$store/credentials" \
+            "$store/configuration" \
+            "$store/trust"; do
+            [ -d "$path" ] && [ ! -L "$path" ] ||
+                fail "project component store path is absent or unsafe: $path"
+        done
+        [ "$(stat -c %a "$store/state")" = 700 ] ||
+            fail 'state directory mode is not 0700'
+        [ "$(stat -c %a "$store/credentials")" = 700 ] ||
+            fail 'credential directory mode is not 0700'
+        [ ! -e "$store/active" ] && [ ! -L "$store/active" ] ||
+            fail 'empty project store has an active slot'
+        [ -z "$(find "$store/slots" -mindepth 1 -print -quit)" ] ||
+            fail 'empty project store contains a payload'
+        if [ "$variant" = store ] || [ "$variant" = store-side-load ] ||
+            [ "$variant" = validation ]; then
+            [ "$(findmnt -rn -M "$store" -o FSTYPE)" = ext4 ] ||
+                fail 'isolated provider store is not a distinct ext4 mount'
+            findmnt -rn -M "$store" -o OPTIONS | tr ',' '\n' | \
+                grep -qx 'context=system_u:object_r:vehicle_data_provider_store_t:s0' ||
+                fail 'isolated provider store mount context is incorrect'
+            /usr/libexec/aos-vehicle-data-provider-store-check >/dev/null ||
+                fail 'isolated provider store check failed'
+        fi
+    fi
 
     health_output=''
     health_status=0
@@ -318,12 +392,18 @@ else
         grep -q ':vehicle_data_provider_exec_t:'; then
         fail 'health controller incorrectly transitions into the payload domain'
     fi
-    stat -c %C "$store" | grep -q ':vehicle_data_provider_store_t:' ||
-        fail 'project store SELinux type is incorrect'
+    if [ "$variant" != bootstrap ]; then
+        stat -c %C "$store" | grep -q ':vehicle_data_provider_store_t:' ||
+            fail 'project store SELinux type is incorrect'
+    fi
 fi
 
 if ausearch -m AVC,USER_AVC -ts boot 2>/dev/null | grep -q '^type=AVC'; then
     fail 'current boot contains an SELinux AVC denial'
+fi
+if journalctl -b --no-pager 2>/dev/null | \
+    grep -Eiq 'ordering cycle|deleted to break ordering cycle'; then
+    fail 'current boot contains a systemd ordering cycle'
 fi
 if journalctl -b --no-pager 2>/dev/null | \
     grep -Eiq 'kernel panic|illegal instruction|out of memory|segmentation fault|core dumped'; then

@@ -128,6 +128,30 @@ In a production vehicle, CAN, SOME/IP, DDS, or an OEM-specific data source
 replaces the CARLA/VISS input. The component boundary, KUKSA contract, FOTA
 lifecycle, and SOTA consumer boundary remain the same.
 
+### Data-plane responsibilities
+
+The provider is a client-side bridge, not a server for application services.
+It maintains two outbound connections with distinct authority:
+
+1. as a VISS client, it receives the development vehicle telemetry exposed by
+   the CARLA-side VISS server;
+2. as a KUKSA client with a path-scoped write credential, it validates,
+   normalizes, maps, timestamps, and publishes that telemetry into the local
+   VSS tree.
+
+An independently deployed Aos service does not connect to CARLA or to the
+provider. It uses its own KUKSA credential to read or subscribe to the VSS
+paths it needs. The provider exposes no listener. If the VISS source is lost,
+the provider reconnects with bounded backoff and marks its owned paths
+`NotAvailable`; it must not substitute stale or fabricated zero values.
+
+KUKSA is therefore the stable in-vehicle data boundary shared by platform
+integration and post-SOP services: the FOTA-managed provider writes, while
+SOTA-managed consumers read or subscribe. In a production program the input
+adapter may use CAN, SOME/IP, DDS, or an OEM abstraction instead of VISS. If
+that platform integration already populates KUKSA directly, a separate bridge
+provider is unnecessary, but the consumer contract remains unchanged.
+
 ## Component Identity and Compatibility
 
 Use a role-based component identity rather than a simulator-specific identity:
@@ -378,8 +402,13 @@ than falsely claiming a successful rollback.
   before activation.
 - Build reproducibly from exact source and dependency locks for `linux/arm64`.
 - Include SBOM, provenance, dependency inventory, and complete notices.
-- Keep process privileges at or below the accepted R6 `DynamicUser`, empty
-  capability set, read-only filesystem, and path-scoped KUKSA authorization.
+- Keep the payload non-root with `no_new_privs`, empty effective, permitted,
+  and inheritable capability sets, a read-only filesystem, and path-scoped
+  KUKSA authorization. On the pinned AosVM SELinux baseline, only the fixed
+  native launcher may temporarily receive bounded `CAP_SETUID` and
+  `CAP_SETGID`; it must enter `vehicle_data_provider_t`, drop to the non-login
+  `aos-vdp` account, verify the restricted identity, and only then execute the
+  payload.
 - Reject payload attempts to add setuid files, capabilities, devices,
   unexpected owners, absolute paths, escaping links, or executable hooks
   outside the declared interface.
@@ -874,8 +903,9 @@ R6.1 is complete only when all of these are true:
       Cloud mutations defined by R6.1-6.4.
 - [x] Replace the invalid stale-scope `.1` batch with `.2`, prove validation-only
       targeting, and install `.2` without changing the demonstration Unit.
-- [ ] Review and accept or reject the proposed R6.1-6.5a isolated demo store;
-      this checkbox does not authorize implementation.
+- [x] Review and accept R6.1-6.5a for local implementation through one frozen
+      unsigned replacement-rootfs candidate; corrective local revisions do not
+      authorize signing or any Cloud/Unit mutation.
 - [ ] Resolve and qualify the provider persistent-store SELinux boundary on the
       provisioned fixed-context workdirs mount before provider assignment.
 

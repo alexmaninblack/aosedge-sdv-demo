@@ -1,0 +1,276 @@
+#!/bin/sh
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+set -eu
+umask 077
+
+generation=${1:-}
+gate_variant=${2:-store}
+security_mode=${3:-enforcing}
+fixture_device=/dev/vda
+fixture_block=vda
+fixture_serial=r61-store-fixture
+fixture_sectors=4194304
+workdirs=/var/aos/workdirs
+store=/var/aos/workdirs/sm/runtimes/systemd-slot-component
+backing=/var/aos/workdirs/sm/runtimes/.vehicle-data-provider-store.ext4
+identity=/var/aos/workdirs/sm/runtimes/.vehicle-data-provider-store.identity
+store_unit='var-aos-workdirs-sm-runtimes-systemd\x2dslot\x2dcomponent.mount'
+persistence_marker="$store/state/.r61-store-fixture"
+sibling=/var/aos/workdirs/.r61-store-fixture-sibling
+probe_unit=aos-vehicle-data-provider-selftest@a.service
+
+fail() {
+    printf 'R6.1 isolated store fixture failed: %s\n' "$*" >&2
+    exit 1
+}
+
+mount_option() {
+    findmnt -rn -M "$1" -o OPTIONS | tr ',' '\n' | grep -qx "$2"
+}
+
+case "$generation" in
+    first|restart) ;;
+    *) fail 'usage: r6-1-store-fixture <first|restart>' ;;
+esac
+case "$gate_variant" in
+    store|store-side-load) ;;
+    *) fail 'bootstrap gate must be store or store-side-load' ;;
+esac
+case "$security_mode" in
+    discovery|enforcing) ;;
+    *) fail 'security mode must be discovery or enforcing' ;;
+esac
+
+[ "$(id -u)" -eq 0 ] || fail 'fixture must run as root'
+[ "$(uname -m)" = aarch64 ] || fail 'fixture guest is not AArch64'
+[ "$(findmnt -rn -M / -o SOURCE)" = /dev/sda3 ] ||
+    fail 'fixture root device changed'
+[ -b "$fixture_device" ] || fail 'fixture data disk is absent'
+[ "$(cat "/sys/class/block/$fixture_block/size")" = "$fixture_sectors" ] ||
+    fail 'fixture data disk size changed'
+observed_serial=$(tr -d '[:space:]' <"/sys/class/block/$fixture_block/serial")
+[ -n "$observed_serial" ] || fail 'fixture data disk serial is unavailable'
+[ "$observed_serial" = "$fixture_serial" ] ||
+    fail 'fixture data disk serial changed'
+[ "$(findmnt -rn -S "$fixture_device" | wc -l | tr -d ' ')" = 0 ] ||
+    fail 'fixture data disk is already mounted unexpectedly'
+
+filesystem_type=$(blkid -p -s TYPE -o value "$fixture_device" 2>/dev/null || true)
+filesystem_label=$(blkid -p -s LABEL -o value "$fixture_device" 2>/dev/null || true)
+case "$generation" in
+    first)
+        [ -z "$filesystem_type" ] || fail 'first-generation data disk is not blank'
+        mkfs.ext4 -q -F -m 0 -L r61-workdirs "$fixture_device" ||
+            fail 'cannot create fixture workdirs filesystem'
+        ;;
+    restart)
+        [ "$filesystem_type" = ext4 ] ||
+            fail 'restart fixture did not preserve ext4 workdirs'
+        [ "$filesystem_label" = r61-workdirs ] ||
+            fail 'restart fixture workdirs label changed'
+        set +e
+        e2fsck -p "$fixture_device"
+        status=$?
+        set -e
+        [ "$status" -eq 0 ] || [ "$status" -eq 1 ] ||
+            fail "fixture workdirs check failed with status $status"
+        ;;
+esac
+
+install -d -m 0755 /dev/aosvg "$workdirs"
+[ ! -e /dev/aosvg/workdirs ] && [ ! -L /dev/aosvg/workdirs ] ||
+    fail 'fixture workdirs device alias already exists'
+ln -s "$fixture_device" /dev/aosvg/workdirs
+
+cat >/run/systemd/system/var-aos-workdirs.mount <<'EOF'
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+[Unit]
+Description=Disposable R6.1 fixed-context workdirs fixture
+Before=aos-vehicle-data-provider-store-prepare.service
+
+[Mount]
+What=/dev/vda
+Where=/var/aos/workdirs
+Type=ext4
+Options=rw,nosuid,nodev,context=system_u:object_r:aos_var_run_t:s0
+
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl daemon-reload
+systemctl reset-failed var-aos-workdirs.mount \
+    aos-vehicle-data-provider-store-prepare.service \
+    aos-vehicle-data-provider-store-attach.service "$store_unit" \
+    aos-vehicle-data-provider-bootstrap.service >/dev/null 2>&1 || true
+systemctl start var-aos-workdirs.mount || fail 'cannot activate fixture workdirs'
+
+[ "$(readlink -f "$(findmnt -rn -M "$workdirs" -o SOURCE)")" = "$fixture_device" ] ||
+    fail 'fixture workdirs source changed'
+[ "$(findmnt -rn -M "$workdirs" -o FSTYPE)" = ext4 ] ||
+    fail 'fixture workdirs is not ext4'
+mount_option "$workdirs" rw || fail 'fixture workdirs is not writable'
+mount_option "$workdirs" 'context=system_u:object_r:aos_var_run_t:s0' ||
+    fail 'fixture workdirs fixed context changed'
+
+case "$generation" in
+    first)
+        [ ! -e "$backing" ] && [ ! -L "$backing" ] ||
+            fail 'first-generation store backing already exists'
+        [ ! -e "$identity" ] && [ ! -L "$identity" ] ||
+            fail 'first-generation store identity already exists'
+        ;;
+    restart)
+        [ -f "$backing" ] && [ ! -L "$backing" ] ||
+            fail 'restart fixture lost the store backing'
+        [ -f "$identity" ] && [ ! -L "$identity" ] ||
+            fail 'restart fixture lost the store identity'
+        ;;
+esac
+
+systemctl start aos-vehicle-data-provider-bootstrap.service ||
+    fail 'production store bootstrap did not start'
+for unit in aos-vehicle-data-provider-store-prepare.service \
+    aos-vehicle-data-provider-store-attach.service "$store_unit" \
+    aos-vehicle-data-provider-bootstrap.service; do
+    [ "$(systemctl is-active "$unit")" = active ] ||
+        fail "production store unit is not active: $unit"
+done
+
+[ -f "$backing" ] && [ ! -L "$backing" ] || fail 'store backing is absent'
+[ "$(stat -c %u:%g "$backing")" = 0:0 ] || fail 'store backing owner changed'
+[ "$(stat -c %a "$backing")" = 600 ] || fail 'store backing mode changed'
+[ "$(stat -c %s "$backing")" = 536870912 ] || fail 'store backing size changed'
+allocated=$(( $(stat -c %b "$backing") * 512 ))
+[ "$allocated" -ge 536870912 ] || fail 'store backing is not fully allocated'
+[ "$(blkid -p -s TYPE -o value "$backing")" = ext4 ] ||
+    fail 'store backing filesystem changed'
+[ "$(blkid -p -s LABEL -o value "$backing")" = aos-vdp-store ] ||
+    fail 'store backing label changed'
+[ -f "$identity" ] && [ ! -L "$identity" ] || fail 'store identity is absent'
+
+[ "$(findmnt -rn -M "$store" -o FSTYPE)" = ext4 ] ||
+    fail 'component store is not a distinct ext4 mount'
+mount_option "$store" rw || fail 'component store is not writable'
+for option in nodev nosuid noatime errors=remount-ro \
+    context=system_u:object_r:vehicle_data_provider_store_t:s0; do
+    mount_option "$store" "$option" || fail "component store option is absent: $option"
+done
+store_source=$(readlink -f "$(findmnt -rn -M "$store" -o SOURCE)")
+case "$store_source" in
+    /dev/loop[0-9]*) ;;
+    *) fail 'component store does not use an isolated loop device' ;;
+esac
+[ -L /run/aos-vehicle-data-provider-store/loop ] ||
+    fail 'runtime loop identity is absent or unsafe'
+[ "$(readlink /run/aos-vehicle-data-provider-store/loop)" = "$store_source" ] ||
+    fail 'runtime loop identity does not match the mounted store source'
+[ "$(losetup -j "$backing" | sed '/^$/d' | wc -l | tr -d ' ')" = 1 ] ||
+    fail 'store backing is not attached exactly once'
+grep -q '^loop ' /proc/modules || fail 'steady-state loop module is not loaded'
+/usr/libexec/aos-vehicle-data-provider-store-check >/dev/null ||
+    fail 'production store validation failed'
+
+case "$generation" in
+    first)
+        [ ! -e "$persistence_marker" ] && [ ! -L "$persistence_marker" ] ||
+            fail 'first-generation persistence marker already exists'
+        printf 'r6-1-store-fixture-v1\n' >"$persistence_marker"
+        chmod 0600 "$persistence_marker"
+        sync
+        ;;
+    restart)
+        [ "$(cat "$persistence_marker")" = r6-1-store-fixture-v1 ] ||
+            fail 'store content did not survive the clean restart'
+        ;;
+esac
+
+[ -f /tmp/r6-1-bootstrap-check ] && [ ! -L /tmp/r6-1-bootstrap-check ] ||
+    fail 'bootstrap gate helper is missing or unsafe'
+sh /tmp/r6-1-bootstrap-check "$gate_variant" >/dev/null ||
+    fail 'complete .3 bootstrap gate failed on the fixture'
+
+install -d -m 0755 "$sibling"
+printf 'R6.1 sibling access must remain denied.\n' >"$sibling/secret"
+chmod 0644 "$sibling/secret"
+stat -c %C "$sibling/secret" | grep -q ':aos_var_run_t:' ||
+    fail 'fixture sibling does not expose the parent fixed context'
+chcon -t vehicle_data_provider_store_t "$sibling/secret" >/dev/null 2>&1 || true
+stat -c %C "$sibling/secret" | grep -q ':aos_var_run_t:' ||
+    fail 'direct subtree relabel escaped the fixed parent context'
+
+probe_slot="$store/slots/a"
+[ ! -e "$store/active" ] && [ ! -L "$store/active" ] ||
+    fail 'fixture store unexpectedly has an active provider'
+[ ! -e "$probe_slot" ] && [ ! -L "$probe_slot" ] ||
+    fail 'fixture probe slot already exists'
+install -d -m 0755 "$probe_slot/bin" "$probe_slot/config"
+cat >"$probe_slot/bin/vehicle-data-provider" <<'EOF'
+#!/bin/sh
+set -eu
+root=${AOS_VEHICLE_DATA_PROVIDER_ROOT:?}
+config="$root/slots/a/config/provider.json"
+[ ! -O "$config" ] || exit 43
+printf 'NON_ROOT_IDENTITY=PASS\n'
+cat "$config" >/dev/null
+mode=$(cat "$root/slots/a/config/security-mode")
+if cat /var/aos/workdirs/.r61-store-fixture-sibling/secret >/dev/null 2>&1; then
+    [ "$mode" = discovery ] || exit 41
+    printf 'PROBE_SIBLING_ACCESS=ALLOWED_FOR_DISCOVERY\n'
+else
+    [ "$mode" = enforcing ] || exit 46
+    printf 'PROBE_SIBLING_ACCESS=DENIED\n'
+fi
+printf 'PROBE_SECURITY_MODEL=PASS\n'
+EOF
+printf '{}\n' >"$probe_slot/config/provider.json"
+printf '%s\n' "$security_mode" >"$probe_slot/config/security-mode"
+chmod 0755 "$probe_slot/bin/vehicle-data-provider"
+chmod 0644 "$probe_slot/config/provider.json" "$probe_slot/config/security-mode"
+systemctl reset-failed "$probe_unit" >/dev/null 2>&1 || true
+probe_status=0
+systemctl start "$probe_unit" >/dev/null 2>&1 || probe_status=$?
+probe_output=$(journalctl -b -u "$probe_unit" --no-pager -o cat 2>&1 || true)
+systemctl reset-failed "$probe_unit" >/dev/null 2>&1 || true
+rm -rf "$probe_slot"
+[ "$probe_status" -eq 0 ] || {
+    printf '%s\n' "$probe_output" >&2
+    fail "provider SELinux access probe failed with status $probe_status"
+}
+printf '%s\n' "$probe_output" | grep -qx 'NON_ROOT_IDENTITY=PASS' ||
+    fail 'provider payload did not prove a non-root runtime identity'
+printf '%s\n' "$probe_output" | grep -qx 'PROBE_SECURITY_MODEL=PASS' ||
+    fail 'provider payload did not complete the store-isolation probe'
+case "$security_mode" in
+    discovery)
+        printf '%s\n' "$probe_output" |
+            grep -qx 'PROBE_SIBLING_ACCESS=ALLOWED_FOR_DISCOVERY' ||
+            fail 'provider discovery did not exercise sibling access'
+        ;;
+    enforcing)
+        printf '%s\n' "$probe_output" |
+            grep -qx 'PROBE_SIBLING_ACCESS=DENIED' ||
+            fail 'provider enforcing probe did not deny sibling access'
+        ;;
+esac
+[ -z "$(find "$store/slots" -mindepth 1 -print -quit)" ] ||
+    fail 'provider access probe did not clean its temporary slot'
+
+/usr/libexec/aos-vehicle-data-provider-store-check >/dev/null ||
+    fail 'store validation failed after the domain probe'
+if journalctl -b --no-pager 2>/dev/null | \
+    grep -Eiq 'kernel panic|illegal instruction|out of memory|segmentation fault|core dumped'; then
+    fail 'fixture boot contains a fatal kernel or process failure'
+fi
+
+printf 'GENERATION=%s\n' "$generation"
+printf 'WORKDIRS=%s\n' "$(findmnt -rn -M "$workdirs" -o SOURCE,FSTYPE,OPTIONS)"
+printf 'STORE=%s\n' "$(findmnt -rn -M "$store" -o SOURCE,FSTYPE,OPTIONS)"
+printf 'DIRECT_RELABEL=DENIED\n'
+printf 'PROVIDER_STORE_ACCESS=ALLOWED\n'
+printf 'PROVIDER_SIBLING_ACCESS=%s\n' \
+    "$( [ "$security_mode" = enforcing ] && printf DENIED || printf DISCOVERY_OBSERVED )"
+printf 'R6_1_ISOLATED_STORE_FIXTURE=PASS\n'

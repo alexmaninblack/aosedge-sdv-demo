@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2026 maninblack
 # SPDX-License-Identifier: MIT
 
-"""Boot an R6.1 image in an isolated, disposable, non-provisioned VM."""
+"""Boot an R6.1 image in an isolated disposable qualification VM."""
 
 from __future__ import annotations
 
@@ -49,6 +49,8 @@ MEMORY_MIB = 2048
 VCPUS = 2
 STOP_TIMEOUT_SECONDS = 90
 READY_TIMEOUT_SECONDS = 180
+STORE_DISK_BYTES = 2 * 1024 * 1024 * 1024
+STORE_DISK_SERIAL = "r61-store-fixture"
 VARIANTS = {
     "upstream": {"port": 10024, "mac": "52:54:00:52:61:20"},
     "project": {"port": 10025, "mac": "52:54:00:52:61:21"},
@@ -60,7 +62,31 @@ VARIANTS = {
     "bootstrap": {
         "port": 10027,
         "mac": "52:54:00:52:61:23",
-        "artifactScope": "bootstrap-6.1.1-maninblack.2",
+        "artifactScopes": (
+            "bootstrap-6.1.1-maninblack.10",
+            "bootstrap-6.1.1-maninblack.9",
+            "bootstrap-6.1.1-maninblack.8",
+            "bootstrap-6.1.1-maninblack.7",
+            "bootstrap-6.1.1-maninblack.6",
+            "bootstrap-6.1.1-maninblack.5",
+            "bootstrap-6.1.1-maninblack.4",
+            "bootstrap-6.1.1-maninblack.3",
+        ),
+    },
+    "store": {
+        "port": 10029,
+        "mac": "52:54:00:52:61:24",
+        "artifactScopes": (
+            "bootstrap-6.1.1-maninblack.10",
+            "bootstrap-6.1.1-maninblack.9",
+            "bootstrap-6.1.1-maninblack.8",
+            "bootstrap-6.1.1-maninblack.7",
+            "bootstrap-6.1.1-maninblack.6",
+            "bootstrap-6.1.1-maninblack.5",
+            "bootstrap-6.1.1-maninblack.4",
+            "bootstrap-6.1.1-maninblack.3",
+        ),
+        "dataDisk": True,
     },
 }
 
@@ -124,6 +150,7 @@ class Layout:
     base: Path
     expected_sha256: str
     overlay: Path
+    data_disk: Path | None
     pid: Path
     qmp: Path
     serial: Path
@@ -148,13 +175,22 @@ def create_layout(variant: str, base: str, expected_sha256: str) -> Layout:
         base_path = REPOSITORY_ROOT / base_path
     base_path = base_path.resolve()
     settings = VARIANTS[variant]
-    artifact_scope = str(settings.get("artifactScope", variant))
-    try:
-        base_path.relative_to(artifact_root / artifact_scope)
-    except ValueError:
+    artifact_scopes = tuple(
+        str(scope)
+        for scope in settings.get(
+            "artifactScopes", (settings.get("artifactScope", variant),)
+        )
+    )
+    if not any(
+        base_path == artifact_root / scope
+        or (artifact_root / scope) in base_path.parents
+        for scope in artifact_scopes
+    ):
         fail(
             f"{variant} base image must be below "
-            f"artifacts/r6-1/{artifact_scope}"
+            + " or ".join(
+                f"artifacts/r6-1/{scope}" for scope in artifact_scopes
+            )
         )
     require_regular_file(base_path, "qualification base image")
     if base_path.suffix != ".img":
@@ -169,6 +205,11 @@ def create_layout(variant: str, base: str, expected_sha256: str) -> Layout:
         base=base_path,
         expected_sha256=expected_sha256,
         overlay=LOCAL_ROOT / f"{variant}.qcow2",
+        data_disk=(
+            LOCAL_ROOT / f"{variant}-workdirs.qcow2"
+            if settings.get("dataDisk") is True
+            else None
+        ),
         pid=RUN_ROOT / f"{variant}.pid",
         qmp=RUN_ROOT / f"{variant}.qmp",
         serial=RUN_ROOT / f"{variant}.serial",
@@ -225,6 +266,8 @@ def resolve_pid(layout: Layout) -> int | None:
         or str(layout.qmp.resolve()) not in command
     ):
         fail("qualification PID is not owned by the expected QEMU process")
+    if layout.data_disk is not None and str(layout.data_disk.resolve()) not in command:
+        fail("qualification PID does not own the expected fixture data disk")
     return pid
 
 
@@ -233,7 +276,7 @@ def qemu_command(layout: Layout, firmware: Path, qemu: str) -> list[str]:
         "user,id=r61net,net=10.0.0.0/24,host=10.0.0.1,dns=10.0.0.2,"
         f"restrict=on,hostfwd=tcp:127.0.0.1:{layout.ssh_port}-10.0.0.100:22"
     )
-    return [
+    command = [
         qemu,
         "-name",
         layout.vm_name,
@@ -254,6 +297,21 @@ def qemu_command(layout: Layout, firmware: Path, qemu: str) -> list[str]:
         "virtio-scsi-pci,id=scsi",
         "-device",
         "scsi-hd,drive=r61image,bootindex=0",
+    ]
+    if layout.data_disk is not None:
+        command.extend(
+            [
+                "-drive",
+                (
+                    f"file={layout.data_disk.resolve()},if=none,id=r61store,"
+                    "format=qcow2,cache=writeback"
+                ),
+                "-device",
+                f"virtio-blk-pci,drive=r61store,serial={STORE_DISK_SERIAL}",
+            ]
+        )
+    command.extend(
+        [
         "-netdev",
         network,
         "-device",
@@ -274,7 +332,9 @@ def qemu_command(layout: Layout, firmware: Path, qemu: str) -> list[str]:
         "-display",
         "none",
         "-daemonize",
-    ]
+        ]
+    )
+    return command
 
 
 def verify_overlay(layout: Layout) -> None:
@@ -302,13 +362,42 @@ def verify_overlay(layout: Layout) -> None:
         fail("qualification overlay does not use the expected read-only raw base")
 
 
+def verify_data_disk(layout: Layout) -> None:
+    if layout.data_disk is None:
+        return
+    require_regular_file(layout.data_disk, "qualification fixture data disk")
+    if stat.S_IMODE(layout.data_disk.stat().st_mode) != 0o600:
+        fail("qualification fixture data disk mode must be 0600")
+    result = subprocess.run(
+        [command_path("qemu-img"), "info", "--output=json", str(layout.data_disk)],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    try:
+        metadata = json.loads(result.stdout)
+    except json.JSONDecodeError as error:
+        fail(f"qualification fixture data disk metadata is invalid: {error}")
+    if (
+        not isinstance(metadata, dict)
+        or metadata.get("format") != "qcow2"
+        or metadata.get("virtual-size") != STORE_DISK_BYTES
+        or metadata.get("backing-filename") is not None
+        or metadata.get("full-backing-filename") is not None
+    ):
+        fail("qualification fixture data disk contract changed")
+
+
 def host_check(layout: Layout) -> tuple[str, Path]:
     if platform.system() != "Darwin" or platform.machine() != "arm64":
         fail("disposable qualification requires an Apple Silicon Mac")
     qemu = command_path("qemu-system-aarch64")
     qemu_version(qemu)
     firmware = verify_firmware()
-    for path in (layout.overlay, layout.pid, layout.qmp, layout.serial):
+    checked_paths = [layout.overlay, layout.pid, layout.qmp, layout.serial]
+    if layout.data_disk is not None:
+        checked_paths.append(layout.data_disk)
+    for path in checked_paths:
         if "," in str(path):
             fail(f"QEMU option path contains a comma: {path}")
     listener = subprocess.run(
@@ -330,6 +419,10 @@ def prepare(layout: Layout) -> None:
     ensure_private_directory(LOG_ROOT)
     if layout.overlay.exists() or layout.overlay.is_symlink():
         fail(f"qualification overlay already exists: {layout.overlay}")
+    if layout.data_disk is not None and (
+        layout.data_disk.exists() or layout.data_disk.is_symlink()
+    ):
+        fail(f"qualification fixture data disk already exists: {layout.data_disk}")
     qemu_img = command_path("qemu-img")
     subprocess.run(
         [
@@ -348,7 +441,24 @@ def prepare(layout: Layout) -> None:
     )
     layout.overlay.chmod(0o600)
     verify_overlay(layout)
+    if layout.data_disk is not None:
+        subprocess.run(
+            [
+                qemu_img,
+                "create",
+                "-q",
+                "-f",
+                "qcow2",
+                str(layout.data_disk),
+                str(STORE_DISK_BYTES),
+            ],
+            check=True,
+        )
+        layout.data_disk.chmod(0o600)
+        verify_data_disk(layout)
     print(f"Prepared disposable {layout.variant} overlay: {layout.overlay}")
+    if layout.data_disk is not None:
+        print(f"Prepared disposable workdirs disk: {layout.data_disk}")
 
 
 def start(layout: Layout, dry_run: bool) -> None:
@@ -356,6 +466,7 @@ def start(layout: Layout, dry_run: bool) -> None:
     if resolve_pid(layout) is not None:
         fail("qualification VM is already running")
     verify_overlay(layout)
+    verify_data_disk(layout)
     ensure_private_directory(RUN_ROOT)
     ensure_private_directory(LOG_ROOT)
     for runtime_path in (layout.pid, layout.qmp, layout.serial):
@@ -466,7 +577,17 @@ def reset_overlay(layout: Layout, confirm: bool) -> None:
         fail("cannot reset a running qualification VM")
     require_regular_file(layout.overlay, "qualification overlay")
     layout.overlay.unlink()
-    print(f"Removed disposable {layout.variant} overlay; it cannot be recovered.")
+    if layout.data_disk is not None:
+        require_regular_file(layout.data_disk, "qualification fixture data disk")
+        layout.data_disk.unlink()
+        print(
+            f"Removed disposable {layout.variant} overlay and owned fixture disk; "
+            "they cannot be recovered."
+        )
+    else:
+        print(
+            f"Removed disposable {layout.variant} overlay; it cannot be recovered."
+        )
 
 
 def parse_args() -> argparse.Namespace:

@@ -51,14 +51,14 @@ class R61YoctoBuildTests(unittest.TestCase):
 
     def test_project_build_is_pinned_and_credential_free(self) -> None:
         self.assertIn(
-            "592ea37f0472a21c960b2d23a0bb63aa31d3c9ad0150adb14f48c41be24476fb",
+            "a62199936670c7f3dbd0791978872a76ac3871b26de2b64bdf160e3c0777c57e",
             self.content,
         )
         self.assertIn(
-            "e972d2bd7f14e27646bb5d7c10c7186ecdecfa9f", self.content
+            "12b09c6e447584f79d6627e83e59bb025bff00d6", self.content
         )
         self.assertIn(
-            "9f95805690e95a4f998997c3052ecde6eb065c5a24e75817fd988ea80d96a8ab",
+            "1808c6d16d2c906b95cac19bdcbe32051e1a943fd2c6e97d01ddd649a6ed3989",
             self.content,
         )
         self.assertIn("credential reference present", self.content)
@@ -69,7 +69,19 @@ class R61YoctoBuildTests(unittest.TestCase):
         self.assertIn("project platform checkout is not clean", self.content)
         self.assertIn("bitbake aos-image-vm", self.content)
         self.assertIn("recalculate task signatures", self.content)
+        self.assertIn("ninja -j 1 conf-aos-vm", self.content)
+        self.assertIn("project Yocto configuration does not match", self.content)
         self.assertIn("r6-1-yocto-build run-project", self.content)
+
+    def test_package_preflight_avoids_the_full_image_target(self) -> None:
+        start = self.content.index("run_project_package_preflight()")
+        end = self.content.index("\nrun_project_fota()", start)
+        preflight = self.content[start:end]
+        self.assertIn(
+            "bitbake aos-vehicle-data-provider-platform refpolicy-aos", preflight
+        )
+        self.assertIn("R6_1_PACKAGE_PREFLIGHT=PASS", preflight)
+        self.assertNotIn("aos-image-vm", preflight)
 
     def test_unsigned_fota_waits_for_the_project_image(self) -> None:
         self.assertIn("project image must pass before the FOTA build", self.content)

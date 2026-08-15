@@ -23,8 +23,8 @@ readonly pid_file="${work_root}/r6-1-upstream-build.pid"
 readonly result_file="${work_root}/r6-1-upstream-build.result"
 readonly project_work_root="/home/yocto/r61-build/project"
 readonly project_manifest="${input_root}/aos-vm-project.pinned.yaml"
-readonly project_manifest_sha256="592ea37f0472a21c960b2d23a0bb63aa31d3c9ad0150adb14f48c41be24476fb"
-readonly project_build_ninja_sha256="9f95805690e95a4f998997c3052ecde6eb065c5a24e75817fd988ea80d96a8ab"
+readonly project_manifest_sha256="a62199936670c7f3dbd0791978872a76ac3871b26de2b64bdf160e3c0777c57e"
+readonly project_build_ninja_sha256="1808c6d16d2c906b95cac19bdcbe32051e1a943fd2c6e97d01ddd649a6ed3989"
 readonly project_log_file="${project_work_root}/r6-1-project-build.log"
 readonly project_pid_file="${project_work_root}/r6-1-project-build.pid"
 readonly project_result_file="${project_work_root}/r6-1-project-build.result"
@@ -33,7 +33,8 @@ readonly project_fota_pid_file="${project_work_root}/r6-1-project-fota.pid"
 readonly project_fota_result_file="${project_work_root}/r6-1-project-fota.result"
 readonly project_platform_checkout="${project_work_root}/yocto/aos-vehicle-platform"
 readonly project_platform_url="https://github.com/alexmaninblack/aos-vehicle-platform"
-readonly project_platform_revision="e972d2bd7f14e27646bb5d7c10c7186ecdecfa9f"
+readonly project_platform_revision="12b09c6e447584f79d6627e83e59bb025bff00d6"
+readonly project_rootfs_version="6.1.1-maninblack.10"
 
 # Non-interactive SSH sessions use the system default PATH and do not include
 # pipx's application directory. Ninja invokes rouge by its generated command
@@ -89,7 +90,7 @@ verify_project_inputs() {
         fail "pinned project manifest digest mismatch"
     grep -F "https://github.com/alexmaninblack/aos-vehicle-platform" \
         "$project_manifest" >/dev/null
-    grep -F "e972d2bd7f14e27646bb5d7c10c7186ecdecfa9f" \
+    grep -F "12b09c6e447584f79d6627e83e59bb025bff00d6" \
         "$project_manifest" >/dev/null
     grep -F '"../aos-vehicle-platform/meta-aos-vehicle-platform"' \
         "$project_manifest" >/dev/null
@@ -120,6 +121,18 @@ ensure_project_platform_revision() {
         fail "project platform checkout does not match the pinned revision"
     [[ -z "$(git -C "$project_platform_checkout" status --porcelain)" ]] ||
         fail "project platform checkout is not clean"
+}
+
+configure_project() {
+    require_regular_file "$project_work_root/build.ninja"
+    (
+        cd "$project_work_root"
+        ninja -j 1 conf-aos-vm
+    )
+    require_regular_file "$project_work_root/yocto/build-main/conf/moulin.conf"
+    grep -Fx "AOS_ROOTFS_IMAGE_VERSION = \"${project_rootfs_version}\"" \
+        "$project_work_root/yocto/build-main/conf/moulin.conf" >/dev/null ||
+        fail "project Yocto configuration does not match the pinned rootfs version"
 }
 
 generate_upstream() {
@@ -168,6 +181,7 @@ generate_project() {
     fi
     [[ "$(sha256sum "$project_work_root/build.ninja" | cut -d' ' -f1)" == "$project_build_ninja_sha256" ]] || \
         fail "generated project build graph digest mismatch"
+    configure_project
     printf 'MANIFEST_SHA256=%s\n' "$project_manifest_sha256"
     printf 'BUILD_NINJA_SHA256=%s\n' "$project_build_ninja_sha256"
     printf 'R6_1_PROJECT_GENERATE=PASS\n'
@@ -234,6 +248,7 @@ run_project() {
     verify_project_inputs
     ensure_project_platform_revision
     require_regular_file "$project_work_root/build.ninja"
+    configure_project
     rm -f "$project_result_file"
     set +e
     (
@@ -261,6 +276,22 @@ run_project() {
     fi
     chmod 0640 "$project_result_file"
     exit "$result"
+}
+
+run_project_package_preflight() {
+    verify_project_inputs
+    ensure_project_platform_revision
+    require_regular_file "$project_work_root/build.ninja"
+    configure_project
+    (
+        cd "${project_work_root}/yocto"
+        set +u
+        # shellcheck disable=SC1091
+        source poky/oe-init-build-env build-main >/dev/null
+        set -u
+        bitbake aos-vehicle-data-provider-platform refpolicy-aos
+    )
+    printf 'R6_1_PACKAGE_PREFLIGHT=PASS\n'
 }
 
 run_project_fota() {
@@ -431,6 +462,9 @@ case "$command_name" in
     run-project)
         run_project
         ;;
+    project-package-preflight)
+        run_project_package_preflight
+        ;;
     run-project-fota)
         run_project_fota
         ;;
@@ -444,6 +478,6 @@ case "$command_name" in
         status_project_fota
         ;;
     *)
-        fail "usage: $0 {verify|generate-upstream|start-upstream|status-upstream|generate-project|start-project|status-project|start-project-fota|status-project-fota}"
+        fail "usage: $0 {verify|generate-upstream|start-upstream|status-upstream|generate-project|project-package-preflight|start-project|status-project|start-project-fota|status-project-fota}"
         ;;
 esac

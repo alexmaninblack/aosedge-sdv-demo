@@ -216,10 +216,30 @@ the replacement rootfs only on the validation Unit; the demonstration Unit
 remains online on `6.1.0`. Provider assignment is stopped because the
 provisioned fixed-context workdirs mount cannot supply the proposed per-subtree
 SELinux store label. The accepted R6 side-load remains the operational
-baseline. R6.1-6.5a now records a review-only proposal for a bounded nested
-ext4 provider store that would unblock the demo without relabelling existing
-AosCore workdirs or weakening the provider domain. No implementation is yet
-authorized.
+baseline. R6.1-6.5a was accepted for local implementation and now adds a
+bounded nested ext4 provider store without relabelling existing AosCore
+workdirs or weakening the provider domain. Static gates and integrated
+boot/store qualification pass; the lifecycle/failure matrix remains pending.
+Rejected `.3` through `.8` candidates recorded
+successively narrower early-boot, service-ordering, loop-helper,
+filesystem-tool, and SELinux-domain findings. After the findings and hashes
+were recorded, selected obsolete disposable overlays were removed during
+bounded disk housekeeping; rejected `.8` and `.9` raw images, documentation,
+and small log evidence remain. A
+bounded diagnostic run on `.6` collected the complete
+remaining AVC profile. `.8` proved the complete Enforcing store path but was
+rejected because the production systemd self-test exposed suppression of the
+provider domain transition by `DynamicUser` and systemd-level
+`NoNewPrivileges`. Platform revision `083997d` added the bounded native
+privilege-drop launcher and dedicated `aos-vdp` identity. `.9` then exposed
+the launcher's missing post-drop `getcap` permission and is rejected. Revision
+`12b09c6` completes the reviewed privilege-drop policy; its package-only
+discovery and Enforcing persistence runs pass. Integrated rootfs `.10`
+(`a39d4c97…`) passes two clean bootstrap boots plus fresh-store and clean
+restart qualification. The lifecycle/failure-injection matrix remains before
+the unsigned candidate can be frozen for signing review.
+Signing, Cloud upload, provider assignment, and provisioned-Unit mutation
+remain unauthorized.
 
 Detailed draft: [R6.1 FOTA component design and plan](r6-1-vehicle-data-provider-fota-design.md).
 Qualification record: [R6.1-2 bootstrap-image qualification](r6-1-bootstrap-image-qualification.md).
