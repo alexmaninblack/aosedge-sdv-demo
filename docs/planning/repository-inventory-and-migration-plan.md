@@ -3,7 +3,7 @@
 
 # Repository Inventory and Migration Plan
 
-- Status: Approved; execution in progress
+- Status: Completed
 - Inventory date: 2026-08-16
 - Scope: local workspace, Git repositories, generated artifacts, and launchers
 - File migration, reviewed post-acceptance deletion, branch consolidation, and guarded VM restart authorized: yes
@@ -19,8 +19,8 @@ provisioned AosVM identities, accepted R6.1 evidence, and incremental Yocto
 build state while removing obsolete experiments and reproducible output.
 
 This document was the review gate before migration. The six review decisions
-below were jointly accepted on 2026-08-16. Execution remains split into the
-guarded phases below; unrelated Cloud mutation is not authorized.
+below were jointly accepted on 2026-08-16. All guarded phases are complete;
+unrelated Cloud mutation remains unauthorized.
 
 ## Execution Status
 
@@ -32,7 +32,7 @@ guarded phases below; unrelated Cloud mutation is not authorized.
 | 3 — functional-service rename | Complete | GitHub/local history preserved; Brake Health package identity and solution lock updated |
 | 4 — branch consolidation | Complete | Both active baselines fast-forwarded to `main`; protective tags created before cleanup |
 | 5 — pre-cleanup acceptance | Complete | CARLA, AosVM, builder, repository, and license gates passed; Main `.1` operational state explicitly accepted |
-| 6–7 — cleanup and regression | Pending | Delete only after Phase 5; repeat smoke checks afterward |
+| 6–7 — cleanup and regression | Complete | Approximately 27 GiB recovered; [post-cleanup acceptance](../qualification/post-cleanup-acceptance.md) passed |
 
 ## Action Vocabulary
 
@@ -442,5 +442,6 @@ rule, doctor, or ignore guard does.
 6. Use compact immutable evidence plus Git history instead of retaining every
    raw local build iteration? Recommendation: yes.
 
-All six decisions were jointly accepted. Cleanup remains gated by the
-pre-cleanup end-to-end acceptance, followed by a post-cleanup smoke regression.
+All six decisions were jointly accepted. Cleanup ran only after pre-cleanup
+end-to-end acceptance and the resulting workspace passed the mandatory
+post-cleanup smoke regression.

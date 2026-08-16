@@ -71,6 +71,12 @@ The isolated Yocto builder disk and caches remain outside Git and should be
 kept for incremental follow-up builds. VM images, overlays, signed artifacts,
 certificates, Unit identities, and raw logs must never be committed.
 
+The reviewed local artifact cleanup recovered approximately `27 GiB` while
+preserving every active dependency and incremental build cache. CARLA, both
+AosVM roles, the builder, all repository gates, and all license gates passed
+the required regression. See the
+[post-cleanup acceptance record](post-cleanup-acceptance.md).
+
 ## Next Authorized Boundary
 
 Documentation cleanup and repository-only validation do not authorize
