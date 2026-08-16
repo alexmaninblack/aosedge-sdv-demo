@@ -9,3 +9,4 @@ assignment, VM restart, or provisioned-Unit change.
 
 - [Roadmap and gates](roadmap.md)
 - [R6.1 vehicle-data integration component plan](r6-1-integration-component-plan.md)
+- [Repository inventory and migration plan](repository-inventory-and-migration-plan.md)
