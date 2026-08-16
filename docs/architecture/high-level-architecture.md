@@ -12,6 +12,19 @@
   distinguished below
 - Cloud or Unit mutation authorized: no
 
+## Visual Authoring Source
+
+The original editable visual model is preserved for subsequent architecture
+iterations together with its matching export:
+
+- [Draw.io source](diagrams/aosedge-demo-hla-authoring-reference.drawio);
+- [PNG export](diagrams/aosedge-demo-hla-authoring-reference.png).
+
+This authoring reference captures an earlier design discussion and still shows
+a driver-indication path. Architecture 1.0 intentionally excludes a production
+driver HMI, so the accepted Mermaid diagram and the normative text below take
+precedence until the visual model is revised and reviewed.
+
 ## Purpose
 
 This document defines the agreed high-level architecture for the AosEdge
