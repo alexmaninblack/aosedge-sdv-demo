@@ -513,9 +513,3 @@ not require changing the core `G0 -> G1 -> G2 -> G3 -> G4` progression.
   documents Cloud-requested service and crash logs.
 - [AosCore common infrastructure](https://docs.aosedge.tech/docs/aos-core/architecture/common-infrastructure/)
   documents log archiving, compression, and Cloud transmission support.
-
-The superseded
-[Post-SOP Emergency Braking and Predictive Brake Health scenario](post-sop-emergency-braking-demo-scenario.md)
-is retained temporarily for traceability. It must not be treated as the current
-scenario or implementation plan where it conflicts with Demo Scenario 1.0 or
-accepted HLA 1.0 decisions.

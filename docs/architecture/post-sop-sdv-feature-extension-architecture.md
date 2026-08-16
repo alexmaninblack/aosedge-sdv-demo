@@ -715,9 +715,9 @@ anomaly locally, and presents an IVI inspection warning without a Cloud round
 trip. Its timestamped incident report synchronizes to the OEM-SP backend
 asynchronously.
 
-The complete audience-visible story, dashboard responsibilities, backend role,
-safety boundary and unresolved presentation decisions are defined in the
-[Emergency Braking and Predictive Brake Health demo scenario](../demo/post-sop-emergency-braking-demo-scenario.md).
+The accepted audience-visible story, dashboard responsibilities, backend role,
+safety boundary and remaining design inputs are defined in
+[Staged Post-SOP Brake Health Demo Scenarios 1.0](../demo/staged-post-sop-brake-health-demo-scenarios.md).
 
 The selected scenario satisfies these architecture criteria:
 
@@ -837,7 +837,7 @@ separate review explicitly approves and records the change.
 ## References
 
 - [AosEdge deployment flows](https://docs.aosedge.tech/docs/aos-core/deployment-flows)
-- [Emergency Braking and Predictive Brake Health demo scenario](../demo/post-sop-emergency-braking-demo-scenario.md)
+- [Staged Post-SOP Brake Health Demo Scenarios 1.0](../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - [AosCloud entities and lifecycle ownership](https://docs.aosedge.tech/docs/aos-cloud/entities/)
 - [AosEdge service update and OEM approval flow](https://docs.aosedge.tech/docs/how-to/updates-and-campaigns/update-service)
 - [AosEdge Service Manager launcher and runtime model](https://docs.aosedge.tech/docs/aos-core/architecture/service-manager/launcher)
