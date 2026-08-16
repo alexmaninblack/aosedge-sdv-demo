@@ -57,6 +57,8 @@ not only the CARLA-to-AosEdge transport bridge.
 ## Governance
 
 - [Licensing and copyright policy](governance/licensing-and-copyright-policy.md)
+- [Development workflow](governance/development-workflow.md) — direct-to-main
+  policy for the current single-developer, single-agent phase.
 
 ## Ownership Rule
 
