@@ -41,6 +41,16 @@ not only the CARLA-to-AosEdge transport bridge.
 - [R6.1 vehicle-data integration component plan](planning/r6-1-integration-component-plan.md)
 - [Repository inventory and migration plan](planning/repository-inventory-and-migration-plan.md)
 
+## Research
+
+- [R9 Demo Foundation Research](research/demo-foundation/README.md) — completed
+  read-only workstreams for the G0 runtime, AosCloud lifecycle, VM recovery,
+  CARLA scenario, Brake Health model, advisory path, functional backend,
+  logging, and demo dashboards.
+- [Integrated research summary](research/demo-foundation/integration-summary.md)
+  — cross-workstream decisions, contradictions, dependencies, risks, and the
+  recommended review gates before implementation.
+
 ## Operations
 
 - [Run AosVM on Apple Silicon](operations/aosvm-arm64-macos.md)

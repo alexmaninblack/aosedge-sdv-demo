@@ -110,6 +110,7 @@ caches live outside Git and are deliberately preserved for incremental builds.
 
 - [Documentation map](docs/README.md)
 - [High-Level Architecture 1.0](docs/architecture/high-level-architecture.md)
+- [R9 Demo Foundation Research](docs/research/demo-foundation/README.md)
 - [Current accepted baseline](docs/qualification/current-baseline.md)
 - [Roadmap and next gates](docs/planning/roadmap.md)
 - [Run AosVM on Apple Silicon](docs/operations/aosvm-arm64-macos.md)
