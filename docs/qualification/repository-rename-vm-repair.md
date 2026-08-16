@@ -37,7 +37,7 @@ After restart:
 Private VM checkpoints, machine identifiers, certificates, and raw logs stay
 outside Git.
 
-## Deferred `.1` Activation on the Demonstration Unit
+## Accepted `.1` Operational State on the Demonstration Unit
 
 The Main demonstration Unit booted `6.1.1-maninblack.1` after its controlled
 restart. The preceding serial record showed `6.1.0`, so the restart activated
@@ -45,8 +45,8 @@ the stale `.1` update that had already been staged by the earlier Verification
 Set scope defect. The repository rename did not deliver a new update and no
 Cloud mutation was performed during this repair.
 
-The Unit identity and registration remain intact, and the Unit is Online. The
-`.1` software state is an observed current state, not a newly accepted release
-decision. Automatic rollback is intentionally prohibited. Pre-cleanup
-end-to-end acceptance must explicitly decide whether to accept `.1` as the
-demonstration baseline or authorize a separate rollback plan.
+The Unit identity and registration remain intact, and the Unit is Online. On
+2026-08-16 the owner accepted `.1` as the current operational demonstration
+baseline after end-to-end verification. This does not approve the stale batch,
+select `.1` for another rollout, or alter the qualification plan for a future
+candidate. See the [acceptance record](pre-cleanup-e2e-acceptance.md).

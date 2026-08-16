@@ -17,7 +17,7 @@ functional-service source.
 | Provider | `0.2.0` is signed and locally verified; not published or assigned |
 | Platform runtime | Service Manager A/B runtime, fixed `aos-vdp` identity, SELinux policy, and bounded demo store are implemented |
 | Rootfs candidate | `6.1.1-maninblack.11` is frozen locally, unsigned, and not uploaded or installed |
-| Installed Units | validation Unit: `.2`; demonstration Unit: `.1` activated from the previously staged defect batch and awaiting acceptance or rollback decision |
+| Installed Units | validation Unit: `.2`; demonstration Unit: `.1`, accepted as the current operational baseline after end-to-end verification |
 
 Candidate `.11` closes the qualified provider runtime dependency chain under
 SELinux Enforcing and remains accepted local evidence. The revised deployment
@@ -26,6 +26,8 @@ adds a separate public vehicle-integration FOTA component and a dependent
 provider successor. Signing, Cloud upload, assignment, and provisioned-Unit
 mutation remain separate approval gates. See the
 [exact current baseline](docs/qualification/current-baseline.md).
+The acceptance records the already running `.1` state without approving its
+stale Verification Batch or selecting it for a new rollout.
 
 ## Architecture
 

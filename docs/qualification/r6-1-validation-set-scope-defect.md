@@ -105,6 +105,9 @@ is available. It is not used as evidence for the targeting defect.
 - The demonstration Unit is online and reports rootfs
   `6.1.1-maninblack.1` after the 2026-08-16 controlled restart activated the
   stale staged slot. No new batch or Cloud mutation caused that activation.
+  The owner subsequently accepted the working `.1` state as the current
+  operational demonstration baseline; the stale batch remains invalid and is
+  not approved by that acceptance.
 - The demonstration Unit remains in the regular `Demo / Release Candidate`
   set.
 - The validation Unit remains the only member of the project Verification Set.

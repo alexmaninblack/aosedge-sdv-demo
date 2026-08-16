@@ -3,8 +3,8 @@
 
 # Current Accepted Baseline
 
-- Recorded: 2026-08-15
-- Scope: local rootfs candidate and already accepted provider component
+- Recorded: 2026-08-16
+- Scope: running Units, local rootfs candidate, and accepted provider component
 - Cloud mutation status: none for candidate `.11` or provider `0.2.0`
 
 ## Running Units
@@ -12,13 +12,16 @@
 | Unit role | Boot | Rootfs | Provider assignment |
 | --- | --- | --- | --- |
 | validation | `6.1.0` | `6.1.1-maninblack.2` | none |
-| demonstration | `6.1.0` | `6.1.1-maninblack.1` | stale `.1` activation under review |
+| demonstration | `6.1.0` | `6.1.1-maninblack.1` | accepted operational baseline; no provider assigned |
 
 Both Units retain their existing provisioned identities. No deprovisioning or
 reprovisioning is required. The demonstration Unit activated a previously
-staged `.1` slot during the guarded repository-rename restart; `.1` is the
-observed software state but is not yet an accepted demonstration release.
-See the [repair record](repository-rename-vm-repair.md).
+staged `.1` slot during the guarded repository-rename restart. End-to-end
+acceptance confirmed it as the current operational demonstration baseline. The
+decision does not approve the stale Verification Batch, make `.1` a rollout
+candidate, or change the qualification requirements for its successor. See the
+[acceptance record](pre-cleanup-e2e-acceptance.md) and
+[repair record](repository-rename-vm-repair.md).
 
 ## Rootfs Candidate `.11`
 

@@ -31,7 +31,7 @@ guarded phases below; unrelated Cloud mutation is not authorized.
 | 2 — add the workspace contract | Complete | `workspace/repositories.json`, `scripts/workspace-doctor`, and automated tests |
 | 3 — functional-service rename | Complete | GitHub/local history preserved; Brake Health package identity and solution lock updated |
 | 4 — branch consolidation | Complete | Both active baselines fast-forwarded to `main`; protective tags created before cleanup |
-| 5 — pre-cleanup acceptance | Pending | Required before any reviewed housekeeping deletion |
+| 5 — pre-cleanup acceptance | Complete | CARLA, AosVM, builder, repository, and license gates passed; Main `.1` operational state explicitly accepted |
 | 6–7 — cleanup and regression | Pending | Delete only after Phase 5; repeat smoke checks afterward |
 
 ## Action Vocabulary
