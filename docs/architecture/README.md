@@ -9,6 +9,9 @@ repository-boundary, detailed-design, or decision context and must not
 contradict it.
 
 - [High-Level Architecture 1.0](high-level-architecture.md)
+- [Demo Scenario Architecture Flows 0.1](demo-scenario-architecture-flows.md)
+  — draft mapping from accepted `G0–G4` scenarios to lifecycle, runtime,
+  observability, recovery, and reset flows.
 - [Post-SOP feature-extension architecture](post-sop-sdv-feature-extension-architecture.md)
 - [Repository and component boundaries](repository-boundaries.md)
 - [R6.1 demo isolated-provider-store design](r6-1-demo-isolated-provider-store.md)

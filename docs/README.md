@@ -16,6 +16,8 @@ not only the CARLA-to-AosEdge transport bridge.
 
 - [High-Level Architecture 1.0](architecture/high-level-architecture.md) —
   normative end-to-end system view.
+- [Demo Scenario Architecture Flows 0.1](architecture/demo-scenario-architecture-flows.md)
+  — draft traceability mapping for the accepted `G0–G4` scenario.
 - [Post-SOP feature-extension architecture](architecture/post-sop-sdv-feature-extension-architecture.md)
   — lifecycle and platform-extension model.
 - [Repository and component boundaries](architecture/repository-boundaries.md)
