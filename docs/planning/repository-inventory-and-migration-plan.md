@@ -30,7 +30,7 @@ guarded phases below; unrelated Cloud mutation is not authorized.
 | 1 — repair AosVM references | Complete | [VM repair record](../qualification/repository-rename-vm-repair.md) |
 | 2 — add the workspace contract | Complete | `workspace/repositories.json`, `scripts/workspace-doctor`, and automated tests |
 | 3 — functional-service rename | Complete | GitHub/local history preserved; Brake Health package identity and solution lock updated |
-| 4 — branch consolidation | Pending | Begin only after Phase 3 cross-repository gates pass |
+| 4 — branch consolidation | Complete | Both active baselines fast-forwarded to `main`; protective tags created before cleanup |
 | 5 — pre-cleanup acceptance | Pending | Required before any reviewed housekeeping deletion |
 | 6–7 — cleanup and regression | Pending | Delete only after Phase 5; repeat smoke checks afterward |
 
@@ -60,9 +60,9 @@ this draft is added.
 | `CarlaSim` | `macos-apple-silicon` | `personal/macos-apple-silicon` | 0 / 0 | clean | 111 GiB |
 | `UnrealEngine5_carla` | `macos-xcode26-compat` | `personal/macos-xcode26-compat` | 0 / 0 | `Engine/Config/DefaultEngine.ini` untracked | 140 GiB |
 | `carla-ego-runtime` | `main` | `origin/main` | 0 / 0 | clean | 76 MiB |
-| `aos-vehicle-platform` | `feature/r6-1-fota-runtime` | same remote branch | 0 / 0 | clean | 781 MiB |
+| `aos-vehicle-platform` | `main` | `origin/main` | 0 / 0 | clean | 781 MiB |
 | `brake-health-service` | `main` | `origin/main` | 0 / 0 | clean | 420 KiB |
-| `aosedge-sdv-demo` | `feature/r6-1-fota-runtime` | same remote branch | 0 / 0 | clean before this draft | 33 GiB |
+| `aosedge-sdv-demo` | `main` | `origin/main` | 0 / 0 | clean before this draft | 33 GiB |
 | `aosedge-docs-ux-prototype` | `main` | `origin/main` | 0 / 0 | clean | 352 KiB |
 
 ### Branch disposition
@@ -71,11 +71,13 @@ this draft is added.
 | --- | --- | --- |
 | `CarlaSim` | `ue5-dev`, `macos-apple-silicon` | Keep both. The macOS branch contains six Apple Silicon commits not in upstream. |
 | `UnrealEngine5_carla` | `ue5-dev-carla`, `macos-xcode26-compat` | Keep both. The compatibility branch contains two required Apple toolchain commits. |
-| `aos-vehicle-platform` | `main`, `feature/r6-1-fota-runtime` | Keep during migration. The feature branch is 44 commits ahead and should become `main` only after its accepted baseline is reviewed. |
-| `aosedge-sdv-demo` | `main` and three stacked feature branches | Keep during repair. The current branch is 61 commits ahead of `main`; the two earlier feature branches are ancestors and can be removed after the current baseline is merged and tagged. |
+| `aos-vehicle-platform` | `main` | The 45-commit feature baseline was fast-forwarded to `main`, tagged, and removed after remote verification. |
+| `aosedge-sdv-demo` | `main` | The 65-commit baseline was fast-forwarded to `main`; all three ancestor feature branches were removed after remote verification. |
 | Other custom repositories | `main` | Keep. |
 
-No branch is proposed for immediate deletion.
+CARLA and Unreal compatibility branches remain long-lived. Historical platform
+and demo feature branches were deleted only after `main` and protective tags
+contained their complete history.
 
 ## External Runtime-State Inventory
 

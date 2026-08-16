@@ -4,7 +4,7 @@
   "schemaVersion": 1,
   "workspace": {
     "solutionDirectory": "aosedge-sdv-demo",
-    "acceptedBranches": ["feature/r6-1-fota-runtime", "main"],
+    "acceptedBranches": ["main"],
     "obsoleteDirectoryNames": ["carla-aosedge-integration"]
   },
   "repositories": [
@@ -49,7 +49,7 @@
       "repository": "https://github.com/alexmaninblack/aos-vehicle-platform.git",
       "remote": "origin",
       "acceptedRevision": "18a17bb53f141342b6b143395c8478fd6fc66d3d",
-      "acceptedBranches": ["feature/r6-1-fota-runtime", "main"],
+      "acceptedBranches": ["main"],
       "allowedDirtyPaths": []
     },
     {
