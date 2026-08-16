@@ -76,6 +76,11 @@ grep -q 'write_attempt_state sdk-started' "$onboard"
 grep -q 'Do not retry automatically' "$onboard"
 grep -q 'checkpoint-pre-provision' "$onboard"
 grep -q 'seal-provisioned' "$onboard"
+grep -Fq 'EXPECTED_GUEST_VERSION_IDS=${AOSVM_EXPECTED_VERSION_IDS:-6.1.0,6.1.1-maninblack.1}' \
+    "$onboard"
+grep -Fq '"$check_mode" "$EXPECTED_GUEST_VERSION_IDS"' "$onboard"
+grep -Fq 'actual_version_id=$(sed' \
+    "$repository_root/scripts/guest/aosvm-onboarding-check"
 if grep -Eq '(aos-user-(admin|sp)\.p12|reissue|install-root)' "$onboard"; then
     printf 'Onboarding must not require certificate recovery, Admin, or SP.\n' >&2
     exit 1

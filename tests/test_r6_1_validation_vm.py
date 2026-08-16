@@ -35,6 +35,11 @@ class R61ValidationVMTests(unittest.TestCase):
         self.assertIn("AOSVM_MAC_ADDRESS=52:54:00:52:36:32", self.profile)
         self.assertIn("validate_mac_address", self.launcher)
 
+    def test_profile_pins_the_accepted_validation_rootfs(self) -> None:
+        self.assertIn(
+            "AOSVM_EXPECTED_VERSION_IDS=6.1.1-maninblack.2", self.profile
+        )
+
     def test_launcher_accepts_only_known_instances(self) -> None:
         self.assertIn("main|r6-1-validation", self.launcher)
         self.assertIn('VM_NAME="aosvm-$AOSVM_INSTANCE"', self.launcher)

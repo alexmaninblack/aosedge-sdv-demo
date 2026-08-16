@@ -1,9 +1,12 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
 
 set -eu
 umask 077
 
 mode=${1:-}
+expected_version_ids=${2:-6.1.0}
 wait_seconds=${AOSVM_ONBOARDING_WAIT_SECONDS:-240}
 
 fail() {
@@ -28,8 +31,23 @@ wait_for_pre_provision_services() {
 [ "$(id -u)" -eq 0 ] || fail 'this command must run as root'
 [ "$(uname -m)" = aarch64 ] || fail 'the guest is not AArch64'
 grep -qx 'ID=aos-core' /etc/os-release || fail 'the guest OS is not AosCore'
-grep -qx 'VERSION_ID=6.1.0' /etc/os-release ||
-    fail 'the guest OS is not AosCore 6.1.0'
+actual_version_id=$(sed -n 's/^VERSION_ID=//p' /etc/os-release)
+[ -n "$actual_version_id" ] || fail 'the guest OS has no AosCore version ID'
+case "$expected_version_ids" in
+    ''|*[!A-Za-z0-9.,_-]*) fail 'the accepted AosCore version set is invalid' ;;
+esac
+version_is_allowed=0
+old_ifs=$IFS
+IFS=,
+for expected_version_id in $expected_version_ids; do
+    if [ "$actual_version_id" = "$expected_version_id" ]; then
+        version_is_allowed=1
+        break
+    fi
+done
+IFS=$old_ifs
+[ "$version_is_allowed" -eq 1 ] ||
+    fail "the guest OS version $actual_version_id is outside the accepted set: $expected_version_ids"
 [ "$(getenforce)" = Enforcing ] || fail 'SELinux is not enforcing'
 [ "$(findmnt -T / -no SOURCE)" = /dev/sda3 ] ||
     fail 'the root filesystem is not the qualified AosVM root partition'
@@ -91,5 +109,5 @@ case "$mode" in
         done
         printf 'PASS: AosVM is provisioned and its core services are active.\n'
         ;;
-    *) fail 'usage: aosvm-onboarding-check <pre-provision|post-provision>' ;;
+    *) fail 'usage: aosvm-onboarding-check <pre-provision|post-provision> [accepted-version-ids]' ;;
 esac

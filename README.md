@@ -17,7 +17,7 @@ functional-service source.
 | Provider | `0.2.0` is signed and locally verified; not published or assigned |
 | Platform runtime | Service Manager A/B runtime, fixed `aos-vdp` identity, SELinux policy, and bounded demo store are implemented |
 | Rootfs candidate | `6.1.1-maninblack.11` is frozen locally, unsigned, and not uploaded or installed |
-| Installed Units | validation Unit: `.2`; demonstration Unit: `6.1.0` |
+| Installed Units | validation Unit: `.2`; demonstration Unit: `.1` activated from the previously staged defect batch and awaiting acceptance or rollback decision |
 
 Candidate `.11` closes the qualified provider runtime dependency chain under
 SELinux Enforcing and remains accepted local evidence. The revised deployment

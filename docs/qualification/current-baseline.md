@@ -12,10 +12,13 @@
 | Unit role | Boot | Rootfs | Provider assignment |
 | --- | --- | --- | --- |
 | validation | `6.1.0` | `6.1.1-maninblack.2` | none |
-| demonstration | `6.1.0` | `6.1.0` | none |
+| demonstration | `6.1.0` | `6.1.1-maninblack.1` | stale `.1` activation under review |
 
 Both Units retain their existing provisioned identities. No deprovisioning or
-reprovisioning is required for the planned update.
+reprovisioning is required. The demonstration Unit activated a previously
+staged `.1` slot during the guarded repository-rename restart; `.1` is the
+observed software state but is not yet an accepted demonstration release.
+See the [repair record](repository-rename-vm-repair.md).
 
 ## Rootfs Candidate `.11`
 

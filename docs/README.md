@@ -51,6 +51,7 @@ not only the CARLA-to-AosEdge transport bridge.
 - [CARLA VISS-to-KUKSA qualification](qualification/carla-viss-to-kuksa.md)
 - [Exact component lock](qualification/component-lock.md)
 - [Validation-set scope defect](qualification/r6-1-validation-set-scope-defect.md)
+- [Repository-rename VM repair](qualification/repository-rename-vm-repair.md)
 
 ## Governance
 

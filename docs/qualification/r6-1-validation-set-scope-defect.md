@@ -102,7 +102,9 @@ is available. It is not used as evidence for the targeting defect.
 ## Current containment
 
 - The architecture approval is `Disapproved` and the batch is `Invalid`.
-- The demonstration Unit is online and still reports installed rootfs `6.1.0`.
+- The demonstration Unit is online and reports rootfs
+  `6.1.1-maninblack.1` after the 2026-08-16 controlled restart activated the
+  stale staged slot. No new batch or Cloud mutation caused that activation.
 - The demonstration Unit remains in the regular `Demo / Release Candidate`
   set.
 - The validation Unit remains the only member of the project Verification Set.
@@ -110,6 +112,11 @@ is available. It is not used as evidence for the targeting defect.
   cancellation operation for the stale Unit pending reference. The component
   version also cannot be deleted while a Unit or Verification Batch references
   it, so `.1` remains an invalid audit record.
+
+The follow-up activation is documented in the
+[repository-rename repair record](repository-rename-vm-repair.md). It does not
+change the original observation below: during the replacement `.2` batch, the
+demonstration Unit remained on `6.1.0`.
 
 ## Replacement-batch result
 

@@ -116,8 +116,10 @@ explicit authorization.
 
 Current stop point: gate 1, documentation review. `.11` is unsigned and local;
 provider `0.2.0` is signed locally but unpublished and unassigned; no
-integration-component artifact exists. The validation Unit remains on `.2`,
-and the demonstration Unit remains on `6.1.0`.
+integration-component artifact exists. The validation Unit remains on `.2`.
+The demonstration Unit activated the previously staged `.1` slot during the
+guarded 2026-08-16 restart; acceptance or rollback of that observed state is
+an explicit pre-cleanup gate.
 
 The detailed design and qualification questions are in
 [the R6.1 integration-component plan](r6-1-integration-component-plan.md).

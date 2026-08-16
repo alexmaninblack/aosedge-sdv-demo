@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
 
 set -eu
 umask 077
@@ -17,6 +19,7 @@ UNIT_CONFIG="$REPOSITORY_ROOT/config/aosvm-single-node-unitconfig.json"
 GUEST_ONBOARDING_CHECK="$REPOSITORY_ROOT/scripts/guest/aosvm-onboarding-check"
 EXPECTED_MODEL_NAME=aos-vm
 EXPECTED_MODEL_VERSION=1.0.0
+EXPECTED_GUEST_VERSION_IDS=${AOSVM_EXPECTED_VERSION_IDS:-6.1.0,6.1.1-maninblack.1}
 
 fail() {
     printf 'Error: %s\n' "$*" >&2
@@ -212,7 +215,8 @@ run_guest_onboarding_check() {
     check_mode=$1
     "$GUEST" copy "$GUEST_ONBOARDING_CHECK" /tmp/aosvm-onboarding-check
     "$GUEST" run chmod 0700 /tmp/aosvm-onboarding-check
-    "$GUEST" run sh /tmp/aosvm-onboarding-check "$check_mode"
+    "$GUEST" run sh /tmp/aosvm-onboarding-check \
+        "$check_mode" "$EXPECTED_GUEST_VERSION_IDS"
     "$GUEST" run rm -f /tmp/aosvm-onboarding-check
 }
 
