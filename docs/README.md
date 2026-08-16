@@ -38,6 +38,7 @@ not only the CARLA-to-AosEdge transport bridge.
 
 - [Roadmap and gates](planning/roadmap.md)
 - [R6.1 vehicle-data integration component plan](planning/r6-1-integration-component-plan.md)
+- [Repository inventory and migration plan](planning/repository-inventory-and-migration-plan.md)
 
 ## Operations
 

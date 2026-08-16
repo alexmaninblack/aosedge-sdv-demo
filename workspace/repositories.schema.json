@@ -1,0 +1,100 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/alexmaninblack/aosedge-sdv-demo/workspace/repositories.schema.json",
+  "title": "AosEdge SDV demo workspace contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "$comment", "schemaVersion", "workspace", "repositories", "launcherPaths", "launchers"],
+  "properties": {
+    "$schema": { "const": "./repositories.schema.json" },
+    "$comment": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "workspace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["solutionDirectory", "acceptedBranches", "obsoleteDirectoryNames"],
+      "properties": {
+        "solutionDirectory": { "const": "aosedge-sdv-demo" },
+        "acceptedBranches": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "obsoleteDirectoryNames": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "repositories": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/repository" }
+    },
+    "launcherPaths": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/launcherPath" }
+    },
+    "launchers": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/launcher" }
+    }
+  },
+  "$defs": {
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "directory", "role", "visibility", "repository", "remote", "acceptedRevision", "acceptedBranches", "allowedDirtyPaths"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "directory": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$" },
+        "role": { "type": "string", "minLength": 1 },
+        "visibility": { "enum": ["public", "private"] },
+        "repository": { "type": "string", "pattern": "^https://github\\.com/" },
+        "remote": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$" },
+        "acceptedRevision": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "acceptedBranches": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "allowedDirtyPaths": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "launcherPath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "base", "path", "kind"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "base": { "enum": ["workspace", "home"] },
+        "path": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["directory", "file", "executable"] }
+      }
+    },
+    "launcher": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "base", "path", "requiredReferences"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "base": { "const": "home" },
+        "path": { "type": "string", "minLength": 1 },
+        "requiredReferences": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z0-9-]+$" }
+        }
+      }
+    }
+  }
+}

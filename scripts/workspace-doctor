@@ -1,0 +1,335 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+"""Read-only qualification of the sibling-repository SDV demo workspace."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+from typing import Any
+
+
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_MANIFEST = REPOSITORY_ROOT / "workspace" / "repositories.json"
+HEX_REVISION = re.compile(r"^[0-9a-f]{40}$")
+SAFE_NAME = re.compile(r"^[A-Za-z0-9._-]+$")
+
+
+class DoctorError(RuntimeError):
+    """Raised when the workspace contract itself is unsafe or malformed."""
+
+
+class Report:
+    def __init__(self) -> None:
+        self.errors = 0
+        self.warnings = 0
+
+    def pass_(self, message: str) -> None:
+        print(f"PASS  {message}")
+
+    def warn(self, message: str) -> None:
+        self.warnings += 1
+        print(f"WARN  {message}")
+
+    def error(self, message: str) -> None:
+        self.errors += 1
+        print(f"ERROR {message}")
+
+
+def require(condition: bool, message: str) -> None:
+    if not condition:
+        raise DoctorError(message)
+
+
+def run_git(repository: Path, arguments: list[str]) -> str:
+    result = subprocess.run(
+        ["git", "-C", str(repository), *arguments],
+        check=False,
+        text=True,
+        capture_output=True,
+    )
+    if result.returncode != 0:
+        detail = result.stderr.strip() or result.stdout.strip() or "unknown Git error"
+        raise DoctorError(f"Git check failed for {repository}: {detail}")
+    return result.stdout.strip()
+
+
+def normalize_repository_url(value: str) -> str:
+    normalized = value.strip().removesuffix("/").removesuffix(".git")
+    if normalized.startswith("git@github.com:"):
+        normalized = "https://github.com/" + normalized[len("git@github.com:") :]
+    return normalized.lower()
+
+
+def load_manifest(path: Path) -> dict[str, Any]:
+    require(path.is_file() and not path.is_symlink(), f"unsafe manifest path: {path}")
+    data = json.loads(path.read_text(encoding="utf-8"))
+    require(isinstance(data, dict), "workspace manifest must be a JSON object")
+    require(data.get("$schema") == "./repositories.schema.json", "unexpected schema reference")
+    require(data.get("schemaVersion") == 1, "unsupported workspace manifest version")
+    workspace = data.get("workspace")
+    repositories = data.get("repositories")
+    launcher_paths = data.get("launcherPaths")
+    launchers = data.get("launchers")
+    require(isinstance(workspace, dict), "workspace section is missing")
+    require(isinstance(repositories, list) and repositories, "repositories are missing")
+    require(isinstance(launcher_paths, list), "launcherPaths must be an array")
+    require(isinstance(launchers, list), "launchers must be an array")
+    require(SAFE_NAME.fullmatch(str(workspace.get("solutionDirectory", ""))) is not None, "unsafe solution directory")
+    for key in ("acceptedBranches", "obsoleteDirectoryNames"):
+        require(isinstance(workspace.get(key), list), f"workspace.{key} must be an array")
+    seen_ids: set[str] = set()
+    seen_directories: set[str] = set()
+    for item in repositories:
+        require(isinstance(item, dict), "repository entry must be an object")
+        identifier = str(item.get("id", ""))
+        directory = str(item.get("directory", ""))
+        require(SAFE_NAME.fullmatch(identifier) is not None, f"unsafe repository id: {identifier}")
+        require(SAFE_NAME.fullmatch(directory) is not None, f"unsafe repository directory: {directory}")
+        require(identifier not in seen_ids, f"duplicate repository id: {identifier}")
+        require(directory not in seen_directories, f"duplicate repository directory: {directory}")
+        seen_ids.add(identifier)
+        seen_directories.add(directory)
+        require(item.get("visibility") in {"public", "private"}, f"invalid visibility for {identifier}")
+        require(str(item.get("repository", "")).startswith("https://github.com/"), f"invalid repository URL for {identifier}")
+        require(SAFE_NAME.fullmatch(str(item.get("remote", ""))) is not None, f"unsafe remote for {identifier}")
+        require(HEX_REVISION.fullmatch(str(item.get("acceptedRevision", ""))) is not None, f"invalid accepted revision for {identifier}")
+        require(isinstance(item.get("acceptedBranches"), list) and item["acceptedBranches"], f"accepted branches are missing for {identifier}")
+        require(isinstance(item.get("allowedDirtyPaths"), list), f"allowedDirtyPaths must be an array for {identifier}")
+    path_ids: set[str] = set()
+    for item in launcher_paths:
+        require(isinstance(item, dict), "launcher path entry must be an object")
+        identifier = str(item.get("id", ""))
+        require(SAFE_NAME.fullmatch(identifier) is not None, f"unsafe launcher path id: {identifier}")
+        require(identifier not in path_ids, f"duplicate launcher path id: {identifier}")
+        path_ids.add(identifier)
+        require(item.get("base") in {"workspace", "home"}, f"invalid launcher path base: {identifier}")
+        require(item.get("kind") in {"directory", "file", "executable"}, f"invalid launcher path kind: {identifier}")
+        require(str(item.get("path", "")) and not Path(str(item["path"])).is_absolute(), f"launcher path must be relative: {identifier}")
+    for item in launchers:
+        require(isinstance(item, dict), "launcher entry must be an object")
+        require(item.get("base") == "home", "launcher base must be home")
+        references = item.get("requiredReferences")
+        require(isinstance(references, list) and references, "launcher references are missing")
+        require(set(references) <= path_ids, f"launcher has an unknown path reference: {item.get('id')}")
+    return data
+
+
+def dirty_paths(repository: Path) -> list[str]:
+    result = subprocess.run(
+        ["git", "-C", str(repository), "status", "--porcelain=v1", "--untracked-files=all"],
+        check=False,
+        text=True,
+        capture_output=True,
+    )
+    if result.returncode != 0:
+        raise DoctorError(f"cannot read Git status for {repository}")
+    values: list[str] = []
+    for line in result.stdout.splitlines():
+        value = line[3:]
+        if " -> " in value:
+            value = value.split(" -> ", 1)[1]
+        values.append(value.strip('"'))
+    return values
+
+
+def check_repository(report: Report, workspace_root: Path, item: dict[str, Any], allow_dirty: bool) -> None:
+    identifier = item["id"]
+    repository = workspace_root / item["directory"]
+    if repository.is_symlink() or not repository.is_dir() or not (repository / ".git").exists():
+        report.error(f"{identifier}: clone is missing or unsafe at {repository}")
+        return
+    try:
+        top_level = Path(run_git(repository, ["rev-parse", "--show-toplevel"]))
+        if top_level.resolve() != repository.resolve():
+            report.error(f"{identifier}: Git top-level does not match {repository}")
+            return
+        revision = run_git(repository, ["rev-parse", "HEAD"])
+        branch = run_git(repository, ["branch", "--show-current"])
+        remote_url = run_git(repository, ["remote", "get-url", item["remote"]])
+        if revision != item["acceptedRevision"]:
+            report.error(f"{identifier}: HEAD {revision} differs from accepted {item['acceptedRevision']}")
+        else:
+            report.pass_(f"{identifier}: accepted revision {revision[:12]}")
+        if branch not in item["acceptedBranches"]:
+            report.error(f"{identifier}: unexpected branch {branch or '(detached)'}")
+        else:
+            report.pass_(f"{identifier}: branch {branch}")
+        if normalize_repository_url(remote_url) != normalize_repository_url(item["repository"]):
+            report.error(f"{identifier}: {item['remote']} URL differs from the workspace contract")
+        else:
+            report.pass_(f"{identifier}: {item['visibility']} remote matches")
+        dirty = dirty_paths(repository)
+        if dirty:
+            allowed = set(item["allowedDirtyPaths"])
+            unexpected = [value for value in dirty if value not in allowed]
+            if unexpected and not allow_dirty:
+                report.error(f"{identifier}: dirty paths: {', '.join(unexpected)}")
+            else:
+                qualifier = "allowed local" if not unexpected else "development override"
+                report.warn(f"{identifier}: {qualifier} dirty paths: {', '.join(dirty)}")
+        else:
+            report.pass_(f"{identifier}: working tree clean")
+    except DoctorError as error:
+        report.error(str(error))
+
+
+def resolve_contract_path(item: dict[str, Any], workspace_root: Path, home_root: Path) -> Path:
+    base = workspace_root if item["base"] == "workspace" else home_root
+    base = Path(os.path.abspath(base))
+    path = Path(os.path.abspath(base / item["path"]))
+    require(path == base or base in path.parents, f"contract path escapes its base: {item['id']}")
+    return path
+
+
+def check_launchers(report: Report, data: dict[str, Any], workspace_root: Path, home_root: Path) -> None:
+    resolved: dict[str, Path] = {}
+    for item in data["launcherPaths"]:
+        try:
+            path = resolve_contract_path(item, workspace_root, home_root)
+        except DoctorError as error:
+            report.error(str(error))
+            continue
+        resolved[item["id"]] = path
+        kind = item["kind"]
+        valid = path.is_dir() if kind == "directory" else path.is_file()
+        if kind == "executable":
+            valid = path.is_file() and os.access(path, os.X_OK)
+        if valid:
+            report.pass_(f"launcher dependency {item['id']}: {path}")
+        else:
+            report.error(f"launcher dependency {item['id']} is missing or has the wrong type: {path}")
+    for item in data["launchers"]:
+        try:
+            launcher = resolve_contract_path(item, workspace_root, home_root)
+        except DoctorError as error:
+            report.error(str(error))
+            continue
+        if launcher.is_symlink() or not launcher.is_file() or not os.access(launcher, os.X_OK):
+            report.error(f"launcher {item['id']} is missing, unsafe, or not executable: {launcher}")
+            continue
+        text = launcher.read_text(encoding="utf-8")
+        missing = [
+            identifier
+            for identifier in item["requiredReferences"]
+            if identifier not in resolved or str(resolved[identifier]) not in text
+        ]
+        if missing:
+            report.error(f"launcher {item['id']} lacks references: {', '.join(missing)}")
+        else:
+            report.pass_(f"launcher {item['id']}: dependencies are explicit and present")
+
+
+def check_solution(report: Report, data: dict[str, Any], workspace_root: Path, allow_dirty: bool) -> None:
+    workspace = data["workspace"]
+    solution = workspace_root / workspace["solutionDirectory"]
+    if solution.resolve() != REPOSITORY_ROOT.resolve():
+        report.error(f"doctor checkout does not match the workspace solution directory: {solution}")
+        return
+    try:
+        branch = run_git(solution, ["branch", "--show-current"])
+        if branch not in workspace["acceptedBranches"]:
+            report.error(f"solution: unexpected branch {branch or '(detached)'}")
+        else:
+            report.pass_(f"solution: branch {branch}")
+        dirty = dirty_paths(solution)
+        if dirty and not allow_dirty:
+            report.error(f"solution: dirty paths: {', '.join(dirty)}")
+        elif dirty:
+            report.warn(f"solution: development override for dirty paths: {', '.join(dirty)}")
+        else:
+            report.pass_("solution: working tree clean")
+    except DoctorError as error:
+        report.error(str(error))
+
+
+def check_old_paths(report: Report, data: dict[str, Any], workspace_root: Path, home_root: Path) -> None:
+    obsolete = data["workspace"]["obsoleteDirectoryNames"]
+    for name in obsolete:
+        if not SAFE_NAME.fullmatch(str(name)):
+            report.error(f"unsafe obsolete directory name in manifest: {name}")
+            continue
+        old_directory = workspace_root / name
+        if old_directory.exists() or old_directory.is_symlink():
+            report.error(f"obsolete repository directory still exists: {old_directory}")
+        else:
+            report.pass_(f"obsolete repository directory is absent: {name}")
+
+    operational_files = [
+        REPOSITORY_ROOT / ".local" / "aosvm-main-provisioning-lock.json",
+        REPOSITORY_ROOT / ".local" / "r6-1-validation" / "aosvm-r6-1-validation-provisioning-lock.json",
+        home_root / "Library/Application Support/CarlaAosEdge/AosVM/backups/aosvm-main-lifecycle.json",
+        home_root / "Library/Application Support/CarlaAosEdge/AosVM/r6-1-validation/backups/aosvm-r6-1-validation-lifecycle.json",
+    ]
+    old_markers = [f"/{name}/" for name in obsolete]
+    for path in operational_files:
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        if any(marker in text for marker in old_markers):
+            report.error(f"obsolete repository path remains in active metadata: {path}")
+        else:
+            report.pass_(f"active metadata uses current repository path: {path.name}")
+
+    overlays = [
+        REPOSITORY_ROOT / ".local" / "aosvm-main-overlay.qcow2",
+        REPOSITORY_ROOT / ".local" / "r6-1-validation" / "aosvm-r6-1-validation-overlay.qcow2",
+    ]
+    qemu_img = shutil.which("qemu-img")
+    for overlay in overlays:
+        if not overlay.exists():
+            continue
+        if qemu_img is None:
+            report.warn(f"qemu-img unavailable; skipped backing-path check: {overlay}")
+            continue
+        result = subprocess.run([qemu_img, "info", "-U", "--output=json", str(overlay)], check=False, text=True, capture_output=True)
+        if result.returncode != 0:
+            report.error(f"cannot inspect active overlay backing path: {overlay}")
+        elif any(marker in result.stdout for marker in old_markers):
+            report.error(f"obsolete repository path remains in active overlay: {overlay}")
+        else:
+            report.pass_(f"active overlay uses current backing path: {overlay.name}")
+
+    process_result = subprocess.run(["ps", "-axo", "command="], check=False, text=True, capture_output=True)
+    if process_result.returncode != 0:
+        report.warn("cannot inspect running process paths")
+    elif any(marker in process_result.stdout for marker in old_markers):
+        report.error("a running process still uses an obsolete repository path")
+    else:
+        report.pass_("running processes contain no obsolete repository path")
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--workspace-root", type=Path, default=REPOSITORY_ROOT.parent)
+    parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    parser.add_argument("--home-root", type=Path, default=Path.home(), help=argparse.SUPPRESS)
+    parser.add_argument("--allow-dirty", action="store_true", help="report unexpected dirty paths as warnings during an in-progress commit")
+    args = parser.parse_args()
+    report = Report()
+    try:
+        data = load_manifest(args.manifest.resolve())
+        workspace_root = args.workspace_root.resolve()
+        home_root = args.home_root.resolve()
+        require(workspace_root.is_dir(), f"workspace root is unavailable: {workspace_root}")
+        check_solution(report, data, workspace_root, args.allow_dirty)
+        for item in data["repositories"]:
+            check_repository(report, workspace_root, item, args.allow_dirty)
+        check_launchers(report, data, workspace_root, home_root)
+        check_old_paths(report, data, workspace_root, home_root)
+    except (DoctorError, json.JSONDecodeError, OSError) as error:
+        report.error(str(error))
+    print(f"Workspace doctor: {report.errors} error(s), {report.warnings} warning(s)")
+    return 1 if report.errors else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

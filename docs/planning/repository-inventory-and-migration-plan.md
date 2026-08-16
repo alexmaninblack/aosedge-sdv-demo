@@ -3,10 +3,11 @@
 
 # Repository Inventory and Migration Plan
 
-- Status: Draft for joint review
+- Status: Approved; execution in progress
 - Inventory date: 2026-08-16
 - Scope: local workspace, Git repositories, generated artifacts, and launchers
-- File migration, deletion, branch deletion, VM restart, and Cloud mutation authorized: no
+- File migration, reviewed post-acceptance deletion, branch consolidation, and guarded VM restart authorized: yes
+- Cloud provisioning, deprovisioning, signing, upload, assignment, or rollback authorized: no
 - HLA baseline: `aosedge-sdv-demo` commit `ace271a`
 
 ## Purpose
@@ -17,8 +18,20 @@ solution-level responsibilities. Preserve the working CARLA launchers,
 provisioned AosVM identities, accepted R6.1 evidence, and incremental Yocto
 build state while removing obsolete experiments and reproducible output.
 
-This document is the review gate before any migration. It records proposed
-actions; it does not authorize them.
+This document was the review gate before migration. The six review decisions
+below were jointly accepted on 2026-08-16. Execution remains split into the
+guarded phases below; unrelated Cloud mutation is not authorized.
+
+## Execution Status
+
+| Phase | Status | Evidence |
+| --- | --- | --- |
+| 0 — approve the map | Complete | Approved plan checkpoint and six accepted review decisions |
+| 1 — repair AosVM references | Complete | [VM repair record](../qualification/repository-rename-vm-repair.md) |
+| 2 — add the workspace contract | Complete | `workspace/repositories.json`, `scripts/workspace-doctor`, and automated tests |
+| 3–4 — repository rename and branch consolidation | Pending | Begin only from clean Phase 2 commits |
+| 5 — pre-cleanup acceptance | Pending | Required before any reviewed housekeeping deletion |
+| 6–7 — cleanup and regression | Pending | Delete only after Phase 5; repeat smoke checks afterward |
 
 ## Action Vocabulary
 
@@ -425,4 +438,5 @@ rule, doctor, or ignore guard does.
 6. Use compact immutable evidence plus Git history instead of retaining every
    raw local build iteration? Recommendation: yes.
 
-No phase after Phase 0 begins until these decisions are jointly accepted.
+All six decisions were jointly accepted. Cleanup remains gated by the
+pre-cleanup end-to-end acceptance, followed by a post-cleanup smoke regression.

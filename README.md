@@ -76,6 +76,18 @@ Do not reset or copy a provisioned overlay. Its disk contains a unique Cloud
 identity and must remain persistent across stops, Mac sleep, and network
 changes.
 
+For the complete sibling-repository workspace, run the read-only doctor before
+a demo or migration:
+
+```sh
+./scripts/workspace-doctor
+```
+
+The machine-readable contract is
+[`workspace/repositories.json`](workspace/repositories.json). It pins each
+sibling checkout, its role, visibility, branch, and accepted revision without
+vendoring repositories or using Git submodules.
+
 ## Local Validation
 
 The safe repository-only gates do not sign, call mutating Cloud APIs, or alter

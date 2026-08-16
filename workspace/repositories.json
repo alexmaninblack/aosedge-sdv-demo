@@ -1,0 +1,101 @@
+{
+  "$schema": "./repositories.schema.json",
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "workspace": {
+    "solutionDirectory": "aosedge-sdv-demo",
+    "acceptedBranches": ["feature/r6-1-fota-runtime", "main"],
+    "obsoleteDirectoryNames": ["carla-aosedge-integration"]
+  },
+  "repositories": [
+    {
+      "id": "carla",
+      "directory": "CarlaSim",
+      "role": "Virtual physical vehicle and CARLA simulator source",
+      "visibility": "public",
+      "repository": "https://github.com/alexmaninblack/carla.git",
+      "remote": "personal",
+      "acceptedRevision": "ac7d882cac496ccbf8b40aa543d6b38513e1173c",
+      "acceptedBranches": ["macos-apple-silicon"],
+      "allowedDirtyPaths": []
+    },
+    {
+      "id": "unreal-engine",
+      "directory": "UnrealEngine5_carla",
+      "role": "Restricted Unreal Engine dependency for the native CARLA editor",
+      "visibility": "private",
+      "repository": "https://github.com/alexmaninblack/UnrealEngine.git",
+      "remote": "personal",
+      "acceptedRevision": "2583a3fd4110bc430416d14820c6df2894ccc619",
+      "acceptedBranches": ["macos-xcode26-compat"],
+      "allowedDirtyPaths": ["Engine/Config/DefaultEngine.ini"]
+    },
+    {
+      "id": "vehicle-gateway",
+      "directory": "carla-ego-runtime",
+      "role": "Simulated Vehicle Gateway ECU, control plane, VSS projection, and VISS server",
+      "visibility": "public",
+      "repository": "https://github.com/alexmaninblack/carla-ego-runtime.git",
+      "remote": "origin",
+      "acceptedRevision": "3fcf1fac52151f30bf04bd3b5c5d67bfd8526aa1",
+      "acceptedBranches": ["main"],
+      "allowedDirtyPaths": []
+    },
+    {
+      "id": "vehicle-platform",
+      "directory": "aos-vehicle-platform",
+      "role": "Domain Controller vehicle integration and OEM platform/FOTA lifecycle",
+      "visibility": "public",
+      "repository": "https://github.com/alexmaninblack/aos-vehicle-platform.git",
+      "remote": "origin",
+      "acceptedRevision": "1c1329d74d6af94f7edaee86ac4d3bedf6d70f5a",
+      "acceptedBranches": ["feature/r6-1-fota-runtime", "main"],
+      "allowedDirtyPaths": []
+    },
+    {
+      "id": "functional-service",
+      "directory": "vehicle-telemetry-service",
+      "role": "Current in-vehicle SOTA service scaffold, pending Brake Health rename",
+      "visibility": "public",
+      "repository": "https://github.com/alexmaninblack/vehicle-telemetry-service.git",
+      "remote": "origin",
+      "acceptedRevision": "f4bd0bf49c7601af31dcad83038999bd74a90f56",
+      "acceptedBranches": ["main"],
+      "allowedDirtyPaths": []
+    },
+    {
+      "id": "documentation-research",
+      "directory": "aosedge-docs-ux-prototype",
+      "role": "Private documentation UX research, outside the demo runtime",
+      "visibility": "private",
+      "repository": "https://github.com/alexmaninblack/aosedge-docs-ux-prototype.git",
+      "remote": "origin",
+      "acceptedRevision": "e9ed99de596f03ced16d467921aaf877d8b7fcc9",
+      "acceptedBranches": ["main"],
+      "allowedDirtyPaths": []
+    }
+  ],
+  "launcherPaths": [
+    { "id": "carla-root", "base": "workspace", "path": "CarlaSim", "kind": "directory" },
+    { "id": "runtime-root", "base": "workspace", "path": "carla-ego-runtime", "kind": "directory" },
+    { "id": "runtime-build", "base": "workspace", "path": "CarlaSim/Build-ego-runtime-m4", "kind": "directory" },
+    { "id": "python", "base": "workspace", "path": "CarlaSim/.venv-m5/bin/python", "kind": "executable" },
+    { "id": "tls", "base": "workspace", "path": "CarlaSim/LocalRuntime/m5/tls", "kind": "directory" },
+    { "id": "unreal-editor", "base": "workspace", "path": "UnrealEngine5_carla/Engine/Binaries/Mac/UnrealEditor.app/Contents/MacOS/UnrealEditor", "kind": "executable" },
+    { "id": "keyboard-app", "base": "home", "path": "Library/Application Support/CARLA Ego Runtime/m6_2/CARLA Keyboard Control.app", "kind": "directory" }
+  ],
+  "launchers": [
+    {
+      "id": "manual-drive",
+      "base": "home",
+      "path": "Library/Application Support/CARLA Ego Runtime/launchers/manual-drive.command",
+      "requiredReferences": ["carla-root", "runtime-root", "runtime-build", "python", "tls", "unreal-editor", "keyboard-app"]
+    },
+    {
+      "id": "route",
+      "base": "home",
+      "path": "Library/Application Support/CARLA Ego Runtime/launchers/route.command",
+      "requiredReferences": ["carla-root", "runtime-root", "runtime-build", "python", "tls", "unreal-editor"]
+    }
+  ]
+}
