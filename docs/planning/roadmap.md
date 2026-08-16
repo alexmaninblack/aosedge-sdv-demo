@@ -124,6 +124,60 @@ an explicit pre-cleanup gate.
 The detailed design and qualification questions are in
 [the R6.1 integration-component plan](r6-1-integration-component-plan.md).
 
+## Demo Design Gates Before Further Implementation
+
+High Level Architecture 1.0 and Demo Scenario 1.0 are the accepted baseline.
+The architecture-flow mapping is the working bridge from that baseline to a
+future requirements package. It does not authorize implementation, Cloud
+assignment, Unit mutation, or reset experiments.
+
+The cross-cutting demo foundation must be resolved before requirements are
+allocated to individual components. Its scope includes the generic G0 runtime,
+the G0-to-G4 desired-state graph, Validation and Demonstration Unit targeting,
+deterministic CARLA stimulus, end-to-end observability, presentation timing,
+and repeatable demo reset.
+
+### Demo Reset Research Gate
+
+Reset to G0 is a mandatory design decision, not an assumed property of the
+current platform. Before the requirements package is accepted, a separate
+research checkpoint must determine:
+
+1. whether a deployed SOTA service can be removed and later installed again
+   through the normal AosCloud desired-state lifecycle;
+2. whether an already applied FOTA component can be removed, downgraded across
+   several accepted versions, or replaced by a higher-version reset release;
+3. how AosCloud represents the G0 state in which the Unit remains provisioned
+   but no demo provider or service is desired;
+4. how dependency-safe reverse transitions from G4 to G0 behave across
+   services, providers, and the generic component runtime;
+5. how a restored golden VM snapshot reconciles with Cloud desired state,
+   deployment history, Unit status, counters, logs, and external dashboards;
+6. how Validation and Demonstration VM snapshots preserve their own unique
+   identity, certificates, and persistent security state without ever running
+   duplicate identities concurrently;
+7. which reset path is fastest, repeatable, supportable, and credible in a
+   time-bounded demonstration.
+
+The checkpoint must compare at least these candidates:
+
+- native desired-state removal or rollback to G0;
+- a forward reset release with a new accepted version;
+- a protected golden G0 VM snapshot combined with explicit Cloud-state
+  reconciliation;
+- provisioning a replacement Unit, retained only as a last-resort fallback.
+
+Exit requires one primary reset mechanism and one fallback, a state-transition
+sequence covering VM, AosCloud, backend, ELK, dashboards, and CARLA, measured
+reset and readiness bounds, and an explicit distinction between a supported
+platform rollback and an out-of-band demo reset. Until this gate is accepted,
+the reset arrows in the architecture-flow draft remain hypotheses and no
+component requirements may depend on a particular reset mechanism.
+
+No reset research execution, Cloud or Unit mutation, snapshot replacement, or
+implementation begins merely because this gate is recorded in the roadmap;
+each such activity requires a later reviewed plan and explicit authorization.
+
 ## AOS-3 — First KUKSA Telemetry Service
 
 Package the ARM64 telemetry consumer as an Aos SOTA service with explicit
