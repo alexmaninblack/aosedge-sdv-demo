@@ -114,19 +114,19 @@
         }
       }
     },
-    "vehicle-telemetry-service": {
+    "brake-health-service": {
       "version": "0.1.0",
       "architectures": ["arm64"],
       "source": {
-        "repository": "https://github.com/alexmaninblack/vehicle-telemetry-service.git",
-        "revision": "f4bd0bf49c7601af31dcad83038999bd74a90f56"
+        "repository": "https://github.com/alexmaninblack/brake-health-service.git",
+        "revision": "dfaff4af63b59d6eb4c7878f6d13ff67adf3fe98"
       },
       "artifact": {
         "kind": "repository-files",
         "files": [
           {
             "path": "packaging/aos/config.yaml",
-            "sha256": "691b21c1697aef9cd4d4b4118ccfabe3b6c746f3f8610adf0f8e06f19ed3e365"
+            "sha256": "c3d16db418140cce2bb976d3294b36f054ef318d6a3b2d0af357ae46d7d68c61"
           },
           {
             "path": "config/compatibility.json",

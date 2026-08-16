@@ -42,7 +42,7 @@ class ComponentLockTests(unittest.TestCase):
 
     def test_missing_architecture_is_rejected(self) -> None:
         value = json.loads(LOCK.read_text(encoding="utf-8"))
-        value["components"]["vehicle-telemetry-service"]["architectures"] = []
+        value["components"]["brake-health-service"]["architectures"] = []
         result = self.run_validator(self.write_mutation(value))
         self.assertNotEqual(0, result.returncode)
         self.assertIn("architectures are missing", result.stderr)

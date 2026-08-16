@@ -48,18 +48,18 @@
       "visibility": "public",
       "repository": "https://github.com/alexmaninblack/aos-vehicle-platform.git",
       "remote": "origin",
-      "acceptedRevision": "1c1329d74d6af94f7edaee86ac4d3bedf6d70f5a",
+      "acceptedRevision": "18a17bb53f141342b6b143395c8478fd6fc66d3d",
       "acceptedBranches": ["feature/r6-1-fota-runtime", "main"],
       "allowedDirtyPaths": []
     },
     {
       "id": "functional-service",
-      "directory": "vehicle-telemetry-service",
-      "role": "Current in-vehicle SOTA service scaffold, pending Brake Health rename",
+      "directory": "brake-health-service",
+      "role": "In-vehicle Brake Health functional service with an independent SOTA lifecycle",
       "visibility": "public",
-      "repository": "https://github.com/alexmaninblack/vehicle-telemetry-service.git",
+      "repository": "https://github.com/alexmaninblack/brake-health-service.git",
       "remote": "origin",
-      "acceptedRevision": "f4bd0bf49c7601af31dcad83038999bd74a90f56",
+      "acceptedRevision": "dfaff4af63b59d6eb4c7878f6d13ff67adf3fe98",
       "acceptedBranches": ["main"],
       "allowedDirtyPaths": []
     },

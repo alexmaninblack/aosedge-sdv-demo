@@ -29,7 +29,8 @@ guarded phases below; unrelated Cloud mutation is not authorized.
 | 0 — approve the map | Complete | Approved plan checkpoint and six accepted review decisions |
 | 1 — repair AosVM references | Complete | [VM repair record](../qualification/repository-rename-vm-repair.md) |
 | 2 — add the workspace contract | Complete | `workspace/repositories.json`, `scripts/workspace-doctor`, and automated tests |
-| 3–4 — repository rename and branch consolidation | Pending | Begin only from clean Phase 2 commits |
+| 3 — functional-service rename | Complete | GitHub/local history preserved; Brake Health package identity and solution lock updated |
+| 4 — branch consolidation | Pending | Begin only after Phase 3 cross-repository gates pass |
 | 5 — pre-cleanup acceptance | Pending | Required before any reviewed housekeeping deletion |
 | 6–7 — cleanup and regression | Pending | Delete only after Phase 5; repeat smoke checks afterward |
 
@@ -60,7 +61,7 @@ this draft is added.
 | `UnrealEngine5_carla` | `macos-xcode26-compat` | `personal/macos-xcode26-compat` | 0 / 0 | `Engine/Config/DefaultEngine.ini` untracked | 140 GiB |
 | `carla-ego-runtime` | `main` | `origin/main` | 0 / 0 | clean | 76 MiB |
 | `aos-vehicle-platform` | `feature/r6-1-fota-runtime` | same remote branch | 0 / 0 | clean | 781 MiB |
-| `vehicle-telemetry-service` | `main` | `origin/main` | 0 / 0 | clean | 420 KiB |
+| `brake-health-service` | `main` | `origin/main` | 0 / 0 | clean | 420 KiB |
 | `aosedge-sdv-demo` | `feature/r6-1-fota-runtime` | same remote branch | 0 / 0 | clean before this draft | 33 GiB |
 | `aosedge-docs-ux-prototype` | `main` | `origin/main` | 0 / 0 | clean | 352 KiB |
 
@@ -213,21 +214,22 @@ repository.
 | Empty local `patches/` and `qualification/` directories | Delete or leave absent | Git does not track them and current source no longer uses them. |
 | `.DS_Store` | Delete | Host noise. |
 
-### `vehicle-telemetry-service` — current generic SOTA scaffold
+### `brake-health-service` — Brake Health SOTA scaffold
 
 | Path or group | Action | Reason or guard |
 | --- | --- | --- |
-| All tracked source, Aos packaging, tests, and governance | Move or rename as one Git repository | The scaffold is clean and correctly isolated, but its generic name no longer communicates the selected Brake Health feature. |
+| All tracked source, Aos packaging, tests, and governance | Keep under the renamed repository | Git and local rename completed with history preserved; package codename and executable now match Brake Health ownership. |
 | `.DS_Store` | Delete | Host noise. |
 
-Recommendation: rename the repository and checkout to `brake-health-service`
-before adding product behavior. It remains the in-vehicle SOTA service owned by
+The repository and checkout were renamed from `vehicle-telemetry-service` to
+`brake-health-service` before adding product behavior. It remains the
+in-vehicle SOTA service owned by
 the Brake Health Function Team. A future `brake-health-cloud` repository may
 own the function backend and product dashboard when their implementation
 starts; they do not belong in the in-vehicle service repository or in the
 vehicle-platform repository.
 
-This rename is a review decision, not an approved action.
+The rename was approved and completed in Phase 3.
 
 ### `aosedge-sdv-demo` — solution, orchestration, and documentation home
 
@@ -360,8 +362,8 @@ images, locks, and local paths remain ignored and are never committed.
 
 ### Phase 3 — Clarify the functional-service repository
 
-1. If approved, rename `vehicle-telemetry-service` to
-   `brake-health-service` on GitHub and locally while preserving history.
+1. Rename `vehicle-telemetry-service` to `brake-health-service` on GitHub and
+   locally while preserving history.
 2. Update only solution locks, repository-boundary documentation, package
    identity, and links required by that decision.
 3. Keep the service independent of CARLA, VISS, platform source, VM scripts,
@@ -429,7 +431,7 @@ rule, doctor, or ignore guard does.
    orchestration, locks, operations, and end-to-end qualification?
    Recommendation: yes.
 3. Rename `vehicle-telemetry-service` to `brake-health-service` before
-   implementation? Recommendation: yes.
+   implementation? Accepted and completed.
 4. Reserve a future separate `brake-health-cloud` repository for backend and
    product dashboard? Recommendation: yes, create it only when implementation
    begins.

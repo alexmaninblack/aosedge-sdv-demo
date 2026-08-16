@@ -4,7 +4,7 @@
 
 This policy applies to the planned public
 `alexmaninblack/aos-vehicle-platform` and
-`alexmaninblack/vehicle-telemetry-service` repositories and to artifacts
+`alexmaninblack/brake-health-service` repositories and to artifacts
 published from them. Existing repositories retain their current licenses and
 notices unless a separate reviewed decision changes them.
 
@@ -61,7 +61,7 @@ Copyright 2026 maninblack
 The initial service `NOTICE` is:
 
 ```text
-Vehicle Telemetry Service
+Brake Health Service
 Copyright 2026 maninblack
 ```
 

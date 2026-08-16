@@ -36,7 +36,7 @@ Use the following repository boundaries:
 | `alexmaninblack/UnrealEngine` | Restricted engine compatibility changes | No, simulation only | Restricted upstream |
 | `alexmaninblack/carla-ego-runtime` | CARLA ego control and VISS 3.1 projection | No, simulation only | Simulation tooling |
 | `alexmaninblack/aos-vehicle-platform` | Vehicle-data platform integration | Yes, except development-only providers | OEM platform/FOTA |
-| `alexmaninblack/vehicle-telemetry-service` | Independently deployed telemetry application | Yes | Aos service/SOTA |
+| `alexmaninblack/brake-health-service` | Independently deployed Brake Health application | Yes | Aos service/SOTA |
 | `alexmaninblack/aosedge-sdv-demo` | VM lifecycle, provisioning, version lock, end-to-end qualification, and demo documentation | No | Solution/demo baseline |
 
 Do not create one repository per executable. Repository boundaries follow
@@ -86,12 +86,12 @@ Private signing keys, access tokens, provisioned identities, production
 certificates, and vehicle-specific configuration are never stored in this
 repository.
 
-### `vehicle-telemetry-service`
+### `brake-health-service`
 
 This repository owns the independently deployable application:
 
 ```text
-vehicle-telemetry-service/
+brake-health-service/
 ├── config/
 ├── packaging/
 │   └── aos/
@@ -153,7 +153,7 @@ without an independent owner, so it is deferred.
 flowchart LR
     CARLA["carla-ego-runtime"] -->|"VISS 3.1"| PLATFORM["aos-vehicle-platform"]
     CONTRACT["versioned vehicle-data contract"] --> PLATFORM
-    CONTRACT --> SERVICE["vehicle-telemetry-service"]
+    CONTRACT --> SERVICE["brake-health-service"]
     PLATFORM -->|"KUKSA / VSS"| SERVICE
     INTEGRATION["aosedge-sdv-demo"] -.->|"pins and qualifies"| CARLA
     INTEGRATION -.->|"pins and qualifies"| PLATFORM
@@ -219,7 +219,7 @@ Detailed rules:
 The platform and service repositories are public and independently validated.
 Provider source, the vehicle-data contract, FOTA packaging, and Yocto
 integration now live in `aos-vehicle-platform`; the service scaffold lives in
-`vehicle-telemetry-service`. This integration repository retains only locks,
+`brake-health-service`. This integration repository retains only locks,
 orchestration, qualification, and sanitized documentation. Completed migration
 plans and fresh-clone evidence remain available through Git history.
 

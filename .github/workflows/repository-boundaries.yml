@@ -28,18 +28,18 @@ jobs:
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           repository: alexmaninblack/aos-vehicle-platform
-          ref: d383be118b5fece6a5e1a700623bc1b69ab13937
+          ref: 18a17bb53f141342b6b143395c8478fd6fc66d3d
           path: workspace/aos-vehicle-platform
-      - name: Check out telemetry service
+      - name: Check out Brake Health service
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
-          repository: alexmaninblack/vehicle-telemetry-service
-          ref: f4bd0bf49c7601af31dcad83038999bd74a90f56
-          path: workspace/vehicle-telemetry-service
+          repository: alexmaninblack/brake-health-service
+          ref: dfaff4af63b59d6eb4c7878f6d13ff67adf3fe98
+          path: workspace/brake-health-service
       - name: Install pinned REUSE validator
         run: |
           python3 -m venv "$RUNNER_TEMP/reuse"
-          "$RUNNER_TEMP/reuse/bin/pip" install 'reuse[charset-normalizer]==6.2.0'
+          "$RUNNER_TEMP/reuse/bin/pip" install 'reuse[charset-normalizer]==5.1.1'
       - name: Qualify clean repository boundaries
         run: >-
           workspace/aosedge-sdv-demo/scripts/qualify-repository-boundaries

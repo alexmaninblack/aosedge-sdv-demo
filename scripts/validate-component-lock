@@ -26,7 +26,7 @@ EXPECTED_COMPONENTS = {
     "vss-carla-source",
     "carla-ego-runtime",
     "aos-vehicle-platform",
-    "vehicle-telemetry-service",
+    "brake-health-service",
 }
 ARTIFACT_KINDS = {"release-archive", "embedded", "git-commit", "repository-files"}
 ARCHITECTURES = {"arm64", "macos-arm64", "any"}

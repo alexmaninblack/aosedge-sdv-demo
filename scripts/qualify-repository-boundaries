@@ -19,7 +19,7 @@ from urllib.parse import urlparse
 REPOSITORIES = {
     "integration": "aosedge-sdv-demo",
     "platform": "aos-vehicle-platform",
-    "service": "vehicle-telemetry-service",
+    "service": "brake-health-service",
     "runtime": "carla-ego-runtime",
 }
 PROHIBITED_SUFFIXES = {
@@ -153,7 +153,7 @@ def _check_licenses(integration: Path, platform: Path, service: Path) -> None:
     )
     expected_notice = {
         platform: "Aos Vehicle Platform\nCopyright 2026 maninblack\n",
-        service: "Vehicle Telemetry Service\nCopyright 2026 maninblack\n",
+        service: "Brake Health Service\nCopyright 2026 maninblack\n",
     }
     for repository, notice in expected_notice.items():
         license_text = (repository / "LICENSE").read_text(encoding="utf-8")
@@ -175,7 +175,10 @@ def _check_dependency_direction(platform: Path, service: Path, integration: Path
     for dependency in platform_dependencies:
         name = str(dependency.get("name", "")).lower()
         _require(
-            "vehicle-telemetry-service" not in name,
+            not any(
+                service_name in name
+                for service_name in ("brake-health-service", "vehicle-telemetry-service")
+            ),
             f"platform depends on service package: {name}",
         )
     for path in _tracked_files(platform):
@@ -184,7 +187,13 @@ def _check_dependency_direction(platform: Path, service: Path, integration: Path
             continue
         text = path.read_text(encoding="utf-8", errors="replace").lower()
         _require(
-            "vehicle-telemetry-service/src" not in text,
+            not any(
+                service_source in text
+                for service_source in (
+                    "brake-health-service/src",
+                    "vehicle-telemetry-service/src",
+                )
+            ),
             f"platform depends on service source: {relative}",
         )
 
@@ -211,6 +220,7 @@ def _check_dependency_direction(platform: Path, service: Path, integration: Path
     prohibited_prefixes = (
         "authorization/",
         "providers/",
+        "src/brake-health-service/",
         "src/vehicle-telemetry-service/",
         "src/carla-viss-kuksa/",
     )
@@ -228,7 +238,6 @@ def _run_project_gates(
     integration = repositories["integration"]
     platform = repositories["platform"]
     service = repositories["service"]
-    workspace_root = integration.parent
 
     _run(["python3", "-B", "tools/validate_contract.py"], platform)
     _run(
@@ -247,14 +256,10 @@ def _run_project_gates(
         ["python3", "-B", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py"],
         integration,
     )
-    _run(
-        [
-            str(integration / "scripts/validate-component-lock"),
-            "--workspace-root",
-            str(workspace_root),
-        ],
-        integration,
-    )
+    # The component lock may intentionally pin an older accepted release than
+    # the current development checkouts. Validate the immutable lock here;
+    # workspace/repositories.json and workspace-doctor qualify current HEADs.
+    _run([str(integration / "scripts/validate-component-lock")], integration)
 
     reuse_env = dict(os.environ)
     reuse_env["REUSE_ENCODING_MODULE"] = "charset_normalizer"

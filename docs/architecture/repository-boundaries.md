@@ -21,7 +21,7 @@ flowchart LR
     subgraph AosVM["AosVM vehicle computer"]
         PROVIDER["vehicle-data provider / OEM FOTA"]
         KUKSA["KUKSA Databroker"]
-        SERVICE["telemetry service / Aos SOTA"]
+        SERVICE["Brake Health service / Aos SOTA"]
         PROVIDER -->|"kuksa.val.v1"| KUKSA
         KUKSA -->|"versioned VSS contract"| SERVICE
     end
@@ -30,7 +30,7 @@ flowchart LR
 ```
 
 CARLA and VISS run on macOS. The provider, KUKSA Databroker, Service Manager
-runtime, SELinux boundary, and deployed telemetry service run in AosVM. The
+runtime, SELinux boundary, and deployed Brake Health service run in AosVM. The
 provider is not part of CARLA and the service never connects to VISS directly.
 
 In a production vehicle, CAN, SOME/IP, DDS, or another OEM provider replaces
@@ -43,7 +43,7 @@ remain the stable service boundary.
 | --- | --- | --- |
 | `carla-ego-runtime` | ego control and VISS projection | simulation tooling |
 | `aos-vehicle-platform` | vehicle-data contract, provider, Service Manager runtime, KUKSA integration, future authorization adapter | OEM platform/FOTA |
-| `vehicle-telemetry-service` | independently deployable telemetry consumer | Aos service/SOTA |
+| `brake-health-service` | independently deployable Brake Health consumer and local analytics | Aos service/SOTA |
 | `aosedge-sdv-demo` | macOS VM lifecycle, provisioning, locks, orchestration, system documentation, and end-to-end qualification | solution/demo baseline |
 
 The integration repository may pin and qualify every component, but it does
