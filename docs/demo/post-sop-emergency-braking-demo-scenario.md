@@ -3,13 +3,18 @@
 
 # Post-SOP Emergency Braking and Predictive Brake Health Demo Scenario
 
-- Status: Accepted baseline
+- Status: Superseded by [Staged Post-SOP Brake Health Demo Scenarios 1.0](staged-post-sop-brake-health-demo-scenarios.md)
 - Version: 1.0
 - Accepted: 2026-08-16
+- Superseded: 2026-08-16
 - Scope: audience-visible story, product behavior, dashboards and backend role
 - Architecture: [Post-SOP SDV Feature Extension Architecture](../architecture/post-sop-sdv-feature-extension-architecture.md)
 - Technical decomposition status: intentionally deferred
 - Cloud or Unit mutation authorized: no
+
+> This document preserves the earlier IVI-oriented scenario for traceability.
+> It is not the current demo baseline and must not drive architecture mapping,
+> storyboard development, or implementation planning.
 
 ## Purpose
 

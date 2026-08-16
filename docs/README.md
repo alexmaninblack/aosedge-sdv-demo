@@ -27,9 +27,8 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Demo
 
-- [Emergency Braking and Brake Health scenario](demo/post-sop-emergency-braking-demo-scenario.md)
-  — the existing scenario baseline, to be realigned with HLA 1.0 in the next
-  dedicated scenario iteration.
+- [Staged Post-SOP Brake Health Demo Scenarios 1.0](demo/staged-post-sop-brake-health-demo-scenarios.md)
+  — accepted five-stage audience-visible baseline.
 - [Demo assets](demo/assets/) — original, license-cleared visual sources and
   exports. Storyboards and presenter materials will be added here only after
   review.
