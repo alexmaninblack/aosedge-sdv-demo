@@ -102,7 +102,7 @@ remove static KUKSA JWTs from service artifacts.
   Adapter.
 - `vehicle-telemetry-service` owns the cloud-managed consumer application and
   its Aos service package.
-- `carla-aosedge-integration` pins and qualifies an exact end-to-end
+- `aosedge-sdv-demo` pins and qualifies an exact end-to-end
   combination but owns none of those component implementations.
 
 The lifecycle-based repository decision and migration gate are defined by

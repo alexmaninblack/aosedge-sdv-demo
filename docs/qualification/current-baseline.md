@@ -69,4 +69,9 @@ certificates, Unit identities, and raw logs must never be committed.
 
 Documentation cleanup and repository-only validation do not authorize
 signing, Cloud upload, assignment, VM restart, or provisioned-Unit mutation.
-Those actions follow the explicit gates in [the roadmap](roadmap.md).
+The revised plan preserves `.11` and provider `0.2.0` as accepted local
+evidence but does not select them for Cloud deployment. The next boundary is
+documentation review of a separate public `vehicle-data-integration` FOTA
+component and a dependent provider successor. Those actions follow the
+explicit gates in [the roadmap](../planning/roadmap.md) and the
+[R6.1 integration-component plan](../planning/r6-1-integration-component-plan.md).

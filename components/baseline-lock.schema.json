@@ -1,7 +1,7 @@
 {
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/alexmaninblack/carla-aosedge-integration/components/baseline-lock.schema.json",
+  "$id": "https://github.com/alexmaninblack/aosedge-sdv-demo/components/baseline-lock.schema.json",
   "title": "CARLA-AosEdge exact component lock",
   "type": "object",
   "additionalProperties": false,

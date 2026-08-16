@@ -840,7 +840,7 @@ Fallback order:
 ## Planned repository layout
 
 ```text
-carla-aosedge-integration/
+aosedge-sdv-demo/
   Brewfile
   README.md
   docs/

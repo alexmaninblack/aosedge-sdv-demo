@@ -17,7 +17,7 @@ from urllib.parse import urlparse
 
 
 REPOSITORIES = {
-    "integration": "carla-aosedge-integration",
+    "integration": "aosedge-sdv-demo",
     "platform": "aos-vehicle-platform",
     "service": "vehicle-telemetry-service",
     "runtime": "carla-ego-runtime",

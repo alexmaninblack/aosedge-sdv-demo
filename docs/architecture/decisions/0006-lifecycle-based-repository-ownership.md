@@ -37,7 +37,7 @@ Use the following repository boundaries:
 | `alexmaninblack/carla-ego-runtime` | CARLA ego control and VISS 3.1 projection | No, simulation only | Simulation tooling |
 | `alexmaninblack/aos-vehicle-platform` | Vehicle-data platform integration | Yes, except development-only providers | OEM platform/FOTA |
 | `alexmaninblack/vehicle-telemetry-service` | Independently deployed telemetry application | Yes | Aos service/SOTA |
-| `alexmaninblack/carla-aosedge-integration` | VM lifecycle, provisioning, version lock, end-to-end qualification, and demo documentation | No | Integration baseline |
+| `alexmaninblack/aosedge-sdv-demo` | VM lifecycle, provisioning, version lock, end-to-end qualification, and demo documentation | No | Solution/demo baseline |
 
 Do not create one repository per executable. Repository boundaries follow
 ownership and release policy. Components that share platform ownership and
@@ -109,7 +109,7 @@ rollback-compatible release metadata, and the application behavior built from
 telemetry. Its releases may advance independently of the vehicle platform
 within the declared compatibility range.
 
-### `carla-aosedge-integration`
+### `aosedge-sdv-demo`
 
 This repository remains the reproducible system integration and demonstration
 workspace. It owns:
@@ -155,7 +155,7 @@ flowchart LR
     CONTRACT["versioned vehicle-data contract"] --> PLATFORM
     CONTRACT --> SERVICE["vehicle-telemetry-service"]
     PLATFORM -->|"KUKSA / VSS"| SERVICE
-    INTEGRATION["carla-aosedge-integration"] -.->|"pins and qualifies"| CARLA
+    INTEGRATION["aosedge-sdv-demo"] -.->|"pins and qualifies"| CARLA
     INTEGRATION -.->|"pins and qualifies"| PLATFORM
     INTEGRATION -.->|"pins and qualifies"| SERVICE
 ```
@@ -180,7 +180,8 @@ third-party files retain their own copyright and license terms; in particular,
 copied or derived COVESA VSS material remains subject to MPL-2.0. Public source
 without an applicable license is a reference only and must not be copied.
 
-Detailed rules: [licensing and copyright policy](../licensing-and-copyright-policy.md).
+Detailed rules:
+[licensing and copyright policy](../../governance/licensing-and-copyright-policy.md).
 
 ## Version and Release Policy
 
@@ -249,4 +250,4 @@ plans and fresh-clone evidence remain available through Git history.
 
 - [ADR 0001: initial repository and artifact boundaries](0001-repository-and-artifact-boundaries.md)
 - [ADR 0005: KUKSA vehicle-data boundary](0005-kuksa-vehicle-data-boundary.md)
-- [Licensing and copyright policy](../licensing-and-copyright-policy.md)
+- [Licensing and copyright policy](../../governance/licensing-and-copyright-policy.md)

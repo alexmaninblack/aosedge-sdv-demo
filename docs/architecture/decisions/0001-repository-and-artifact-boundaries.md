@@ -35,7 +35,7 @@ Maintain these repository boundaries:
 | `alexmaninblack/carla` | Public fork | CARLA changes that may later be proposed upstream |
 | `alexmaninblack/UnrealEngine` | Private/restricted | Epic/CarlaUnreal engine compatibility changes only |
 | `alexmaninblack/carla-ego-runtime` | Public | Ego vehicle lifecycle, control, VSS 6.0 projection, and VISS 3.1 server |
-| `alexmaninblack/carla-aosedge-integration` | Public, after review | AosVM macOS launcher, AOS service packages, VISS consumer/adapter, tests, and integration documentation |
+| `alexmaninblack/aosedge-sdv-demo` | Public | AosVM macOS lifecycle, orchestration, tests, qualification, and solution documentation |
 
 Use one integration repository rather than separate launcher, consumer, and
 adapter repositories during the proof of concept. Split a component only when

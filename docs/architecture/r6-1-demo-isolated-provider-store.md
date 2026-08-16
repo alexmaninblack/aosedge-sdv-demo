@@ -76,7 +76,8 @@ without a provider PID change, invalid-credential fail-closed, process restart,
 and DNS/TLS fail-safe behavior. A clean disposable `.11` boot passed the root,
 component, policy, store, service-order, and secret-exclusion gates.
 
-Exact candidate hashes are recorded in [the current baseline](current-baseline.md).
+Exact candidate hashes are recorded in
+[the current baseline](../qualification/current-baseline.md).
 
 ## Rollback Limitation
 

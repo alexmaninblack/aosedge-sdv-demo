@@ -17,7 +17,7 @@ jobs:
       - name: Check out integration
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
-          path: workspace/carla-aosedge-integration
+          path: workspace/aosedge-sdv-demo
       - name: Check out CARLA ego runtime
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
@@ -42,6 +42,6 @@ jobs:
           "$RUNNER_TEMP/reuse/bin/pip" install 'reuse[charset-normalizer]==6.2.0'
       - name: Qualify clean repository boundaries
         run: >-
-          workspace/carla-aosedge-integration/scripts/qualify-repository-boundaries
+          workspace/aosedge-sdv-demo/scripts/qualify-repository-boundaries
           --workspace-root workspace
           --reuse-command "$RUNNER_TEMP/reuse/bin/reuse"

@@ -63,8 +63,8 @@ Choose a private working directory and clone the current onboarding branch:
 mkdir -p "$HOME/Projects"
 cd "$HOME/Projects"
 git clone --branch feature/r6-1-fota-runtime \
-  https://github.com/alexmaninblack/carla-aosedge-integration.git
-cd carla-aosedge-integration
+  https://github.com/alexmaninblack/aosedge-sdv-demo.git
+cd aosedge-sdv-demo
 ```
 
 Use this branch until the current integration baseline is merged to `main`.

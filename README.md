@@ -1,10 +1,11 @@
-# CARLA–AosEdge Integration
+# AosEdge SDV Demo
 
-This repository makes the Apple Silicon CARLA-to-AosEdge demonstration
-reproducible. It owns macOS AosVM lifecycle, single-Node provisioning,
-component locks, end-to-end qualification, and operational documentation. It
-does not vendor CARLA, Unreal Engine, AosCore, AosVM images, provider source,
-or telemetry-service source.
+This solution repository makes the Apple Silicon AosEdge software-defined
+vehicle demonstration reproducible. It owns macOS AosVM lifecycle, single-Node
+provisioning, cross-project orchestration, component locks, end-to-end
+qualification, demo architecture, and operational documentation. It does not
+vendor CARLA, Unreal Engine, AosCore, AosVM images, provider source, or
+functional-service source.
 
 ## Current Baseline
 
@@ -18,10 +19,13 @@ or telemetry-service source.
 | Rootfs candidate | `6.1.1-maninblack.11` is frozen locally, unsigned, and not uploaded or installed |
 | Installed Units | validation Unit: `.2`; demonstration Unit: `6.1.0` |
 
-Candidate `.11` closes the complete provider runtime dependency chain under
-SELinux Enforcing. Signing, Cloud upload, assignment, and provisioned-Unit
-mutation are intentionally separate approval gates. See the
-[exact current baseline](docs/current-baseline.md).
+Candidate `.11` closes the qualified provider runtime dependency chain under
+SELinux Enforcing and remains accepted local evidence. The revised deployment
+plan does not select `.11` or provider `0.2.0` for Cloud promotion: it first
+adds a separate public vehicle-integration FOTA component and a dependent
+provider successor. Signing, Cloud upload, assignment, and provisioned-Unit
+mutation remain separate approval gates. See the
+[exact current baseline](docs/qualification/current-baseline.md).
 
 ## Architecture
 
@@ -42,13 +46,13 @@ lifecycle. The telemetry consumer follows the independent Aos service/SOTA
 lifecycle. A production vehicle replaces the CARLA/VISS input with its real
 vehicle-network provider while preserving the KUKSA/VSS contract.
 
-Read [architecture and repository ownership](docs/architecture.md) for the
+Read [architecture and repository ownership](docs/architecture/repository-boundaries.md) for the
 complete boundary.
 
 ## Start Here
 
 For a new Apple Silicon Mac, follow the
-[colleague setup guide](docs/aosvm-macos-colleague-setup.md):
+[colleague setup guide](docs/operations/macos-colleague-setup.md):
 
 ```sh
 ./scripts/aosvm-macos-onboard doctor
@@ -90,17 +94,12 @@ caches live outside Git and are deliberately preserved for incremental builds.
 
 ## Documentation
 
-- [Current accepted baseline](docs/current-baseline.md)
-- [Architecture and ownership](docs/architecture.md)
-- [Roadmap and next gates](docs/roadmap.md)
-- [Run AosVM on Apple Silicon](docs/aos-0-arm64-vm.md)
-- [Provision one Main Node](docs/aos-1-single-node-provisioning.md)
-- [CARLA VISS-to-KUKSA qualification](docs/aos-2-carla-kuksa-qualification.md)
-- [Current R6.1 demo-store design](docs/r6-1-demo-isolated-provider-store.md)
-- [Validation-set scope defect](docs/r6-1-validation-set-scope-defect.md)
-- [Exact component lock](docs/component-lock.md)
-- [Licensing and copyright policy](docs/licensing-and-copyright-policy.md)
-- [Architecture decisions](docs/decisions/0001-repository-and-artifact-boundaries.md)
+- [Documentation map](docs/README.md)
+- [High-Level Architecture 1.0](docs/architecture/high-level-architecture.md)
+- [Current accepted baseline](docs/qualification/current-baseline.md)
+- [Roadmap and next gates](docs/planning/roadmap.md)
+- [Run AosVM on Apple Silicon](docs/operations/aosvm-arm64-macos.md)
+- [Architecture decisions](docs/architecture/decisions/0001-repository-and-artifact-boundaries.md)
 
 Completed experimental plans, rejected rootfs iterations, and one-shot
 diagnostic helpers are intentionally absent from the current tree. Git history

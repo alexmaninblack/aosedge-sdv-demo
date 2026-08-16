@@ -3,6 +3,11 @@
 
 # Architecture and Repository Ownership
 
+The normative end-to-end system view, including OEM FOTA/SOTA ownership,
+bidirectional KUKSA/VISS flows, local Brake Health analysis, Cloud reporting,
+and engineering-dashboard boundaries, is defined in
+[High-Level Architecture 1.0](high-level-architecture.md).
+
 ## Runtime Boundary
 
 ```mermaid
@@ -39,7 +44,7 @@ remain the stable service boundary.
 | `carla-ego-runtime` | ego control and VISS projection | simulation tooling |
 | `aos-vehicle-platform` | vehicle-data contract, provider, Service Manager runtime, KUKSA integration, future authorization adapter | OEM platform/FOTA |
 | `vehicle-telemetry-service` | independently deployable telemetry consumer | Aos service/SOTA |
-| `carla-aosedge-integration` | macOS VM lifecycle, provisioning, locks, orchestration, and end-to-end qualification | integration baseline |
+| `aosedge-sdv-demo` | macOS VM lifecycle, provisioning, locks, orchestration, system documentation, and end-to-end qualification | solution/demo baseline |
 
 The integration repository may pin and qualify every component, but it does
 not become the source repository for those components. No Git submodule or
@@ -70,5 +75,6 @@ decision. Rootfs rollback from `.11` to `.2` is not provider-transparent; the
 provider assignment must first be suspended or removed.
 
 See [ADR 0006](decisions/0006-lifecycle-based-repository-ownership.md) for the
-accepted repository decision and [the current baseline](current-baseline.md)
+accepted repository decision and
+[the current baseline](../qualification/current-baseline.md)
 for exact versions and digests.

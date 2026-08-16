@@ -1,7 +1,7 @@
 {
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/alexmaninblack/carla-aosedge-integration/components/r6-1-source-lock.schema.json",
+  "$id": "https://github.com/alexmaninblack/aosedge-sdv-demo/components/r6-1-source-lock.schema.json",
   "title": "R6.1 exact source baseline",
   "type": "object",
   "additionalProperties": false,
