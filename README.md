@@ -38,21 +38,27 @@ stale Verification Batch or selecting it for a new rollout.
 ```text
 Virtual vehicle and Gateway                  AosVM Domain Controller
 
-CARLA -> Vehicle Gateway -> VISS 3.1 -> Vehicle Data Platform Capability
+CARLA -> Vehicle Gateway -> VISS 3.1 -> Vehicle Data Platform Component
+                                           provider + contract +
+                                      Credential Broker + OEM policy
                                                     |
                                                     v
-                                             KUKSA Databroker
+                                      unmodified KUKSA Databroker
                                               /             \
                                              v               v
                                   Brake Health service   Tire Health service
 ```
 
-The Vehicle Data Platform Capability follows the OEM Platform Team/FOTA
+The Vehicle Data Platform Component follows the OEM Platform Team/FOTA
 lifecycle. Brake Health and Tire Health are peer Function Team products
 with independent Service Provider/SOTA lifecycles. The Gateway-to-KUKSA
 contract separates simulated vehicle hardware from service-facing data. A
 production vehicle replaces the CARLA side with real vehicle networks while
 preserving the service contract.
+
+SOTA services use their per-instance Aos identity to obtain short-lived,
+path-scoped KUKSA JWTs from the component-owned broker. They do not carry
+reusable KUKSA tokens or modify Eclipse KUKSA.
 
 Read [architecture and repository ownership](docs/architecture/repository-boundaries.md) for the
 complete boundary.
@@ -122,9 +128,9 @@ python3 -m unittest discover -s tests -p 'test_*.py'
 - [Documentation map](docs/README.md)
 - [Getting started](docs/getting-started/README.md)
 - [Reproduction guide and readiness matrix](docs/getting-started/reproduce-demo.md)
-- [High-Level Architecture 1.2 — review candidate](docs/architecture/high-level-architecture.md)
-- [System Requirements and Traceability 0.2 — review candidate](docs/requirements/system-requirements-and-traceability.md)
-- [Component Decomposition and Interface Register 0.2 — review candidate](docs/requirements/component-decomposition-and-interface-register.md)
+- [High-Level Architecture 1.2 — accepted architecture baseline](docs/architecture/high-level-architecture.md)
+- [System Requirements and Traceability 0.2 — accepted system-requirements baseline](docs/requirements/system-requirements-and-traceability.md)
+- [Component Decomposition and Interface Register 0.2 — accepted component baseline](docs/requirements/component-decomposition-and-interface-register.md)
 - [R9 Demo Foundation Research](docs/research/demo-foundation/README.md)
 - [Current accepted baseline](docs/qualification/current-baseline.md)
 - [Roadmap and next gates](docs/planning/roadmap.md)

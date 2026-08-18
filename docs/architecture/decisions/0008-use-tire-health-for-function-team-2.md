@@ -44,7 +44,7 @@ The in-vehicle service will:
 5. continue local analysis and recommendation generation while Cloud
    connectivity is unavailable; and
 6. request an allowlisted Tire Health advisory through KUKSA, the Vehicle Data
-   Platform Capability, VISS, and the Vehicle Gateway. The current demo shows
+   Platform Component, VISS, and the Vehicle Gateway. The current demo shows
    the result only on the Engineering Telematics Dashboard and does not claim a
    production driver HMI.
 
@@ -62,7 +62,7 @@ a separate decision.
 
 - Function Team 2 remains independent of Function Team 1 and the Brake Health
   product.
-- The shared Vehicle Data Platform Capability must support typed, allowlisted
+- The shared Vehicle Data Platform Component must support typed, allowlisted
   advisory requests rather than a Brake Health-only return path.
 - The Vehicle Gateway advisory handler and Engineering Telematics Dashboard
   must distinguish Brake Health and Tire Health status without becoming a

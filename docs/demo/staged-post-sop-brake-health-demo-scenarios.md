@@ -3,18 +3,19 @@
 
 # Staged Post-SOP Brake and Tire Health Demo Scenarios
 
-- Status: Review candidate incorporating the accepted manufacturing,
-  provisioning, and demo-retirement model
+- Status: Accepted demo-scenario baseline
 - Version: 1.2
 - Prepared: 2026-08-18
+- Accepted: 2026-08-18
 - Owner: Demo Architecture
-- Previous accepted version: 1.0, accepted 2026-08-16
 - Scope: manufacturing output, end-of-line provisioning, audience-visible
   capability evolution, release sequence, dashboards, observability, and
   end-of-demo retirement
 - Architecture alignment: dynamic staged projection of High-Level Architecture
-  1.2; detailed API and sequence mapping remains a later design gate
-- Accepted architecture decision: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md)
+  1.2, with detailed interaction mapping in Demo Scenario Architecture Flows
+  1.1
+- Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md)
+  and [ADR 0010](../architecture/decisions/0010-aos-kuksa-credential-broker.md)
 - Implementation, build, signing, Cloud, or Unit mutation authorized: no
 
 ## Purpose
@@ -28,13 +29,45 @@ The post-SOP portion deliberately starts with a working vehicle rather than a
 broken or incomplete prototype. The vehicle drives, exposes telemetry through
 its Vehicle Gateway, and contains an operational Domain Controller with the
 AosEdge platform substrate. What is initially absent is the Vehicle Data
-Platform Capability payload and all functional SOTA services.
+Platform Component payload and all functional SOTA services.
 
-This Scenario 1.2 review candidate defines what should happen and what an
+Scenario 1.2 defines what should happen and what an
 audience should see. It is the dynamic, stage-by-stage projection of the
 capability-superset model in High-Level Architecture 1.2. It does not yet
 select exact APIs, define every detailed interaction, or authorize
 implementation.
+
+## How to Read the Demonstration Lifecycle
+
+The demonstration uses one canonical set of stage codes. Manufacturing and
+onboarding transitions use `M`, accepted runtime software graphs use `G`, the
+independent Tire Health presentation stage uses `T`, and end-of-run retirement
+uses `R`.
+
+| Code | Meaning | State or outcome |
+| --- | --- | --- |
+| `M0` | Manufacturing output | Two fresh, unprovisioned Domain Controller overlays are created from the immutable OEM Demo Factory Image |
+| `M1` | End-of-line provisioning | Both overlays receive unique Unit identities and connect to AosCloud; this transition establishes `G0` |
+| `G0` | Provisioned SOP substrate | Working vehicle and update-ready Domain Controller, with an empty Vehicle Data Platform slot and no functional services |
+| `G1` | First platform capability | VDP Component v1 exposes the first read-only vehicle-data subset in KUKSA |
+| `G2` | First Brake Health product | Brake Health Service v1 consumes the accepted subset and sends bounded reports |
+| `G3` | Predictive Brake Health product | Backward-compatible VDP Component v2 and Brake Health Service v2 add richer inputs and local prediction |
+| `G4` | Bidirectional Brake Health product | VDP Component v3 and Brake Health Service v3 add a typed, allowlisted local advisory path |
+| `T1` | Independent Tire Health product | Tire Health is delivered through SOTA 2 against the compatible VDP contract while the Brake Health graph remains unchanged |
+| `R0` | Demo retirement and next-run reset | Current Unit identities are retired and provisioned overlays are discarded; the immutable factory image remains |
+
+```mermaid
+flowchart LR
+    M0["M0<br/>manufacture"] --> M1["M1<br/>provision"] --> G0["G0<br/>SOP substrate"]
+    G0 --> G1["G1<br/>VDP v1"] --> G2["G2<br/>Brake Health v1"]
+    G2 --> G3["G3<br/>VDP + Brake Health v2"] --> G4["G4<br/>VDP + Brake Health v3"]
+    G4 --> T1["T1<br/>independent Tire Health"] --> R0["R0<br/>retire run"]
+```
+
+`M1` is a provisioning transition, while `G0` is the resulting first
+post-SOP runtime graph. `T1` follows `G4` in the presentation order because it
+uses the accepted VDP v3 data and advisory contract; it does not depend on the
+Brake Health service, backend, or dashboard.
 
 ## Core Demonstration Claim
 
@@ -45,13 +78,13 @@ contain the lifecycle and execution substrate required to receive the
 provider payload later without another rootfs change.
 
 Consequently, after end-of-line provisioning the OEM can deliver versioned
-Vehicle Data Platform capabilities by FOTA and independently deliver
+Vehicle Data Platform Component releases by FOTA and independently deliver
 functional services by SOTA without reprovisioning the vehicle, changing its
 identity, or redesigning the software architecture established for SOP.
 
 Provisioning and identity creation occur once at the beginning of each
 demonstration run. No reprovisioning or identity replacement occurs during the
-accepted `G0 -> G1 -> G2 -> G3 -> G4` post-SOP progression. End-of-demo
+accepted `G0 -> G1 -> G2 -> G3 -> G4 -> T1` post-SOP progression. End-of-demo
 retirement is an outer demonstration-lab lifecycle, not an OTA rollback of an
 in-field vehicle.
 
@@ -63,16 +96,14 @@ lifecycle mechanisms intentionally built into the SOP platform.
 
 High-Level Architecture 1.2 shows every capability that the target logical
 vehicle architecture can host. This scenario defines when those deployable
-capabilities are absent or present during `M0`, `M1`, `G0–G4`, and `R0`.
+capabilities are absent or present during `M0`, `M1`, `G0–G4`, `T1`, and `R0`.
 
-The current `G0–G4` narrative exercises the shared Vehicle Data Platform
-Capability and Function Team 1 / Service Provider 1 Brake Health lifecycle.
-Function Team 2 / Service Provider 2 and its Tire Health product remain valid
-parts of the target HLA but are intentionally not deployed in the current
-`G0–G4` Brake Health sequence. Their condition model, existing-signal inputs,
-bounded reports/events, advisory proof, backend and dashboard are an
-independent SOTA 2 extension. This separation does not authorize a Function
-Team 2 request for another platform capability in
+The `G0–G4` progression exercises the shared Vehicle Data Platform
+Component and Function Team 1 / Service Provider 1 Brake Health lifecycle.
+`T1` then demonstrates Function Team 2 / Service Provider 2 as an independent
+peer: its condition model, existing-signal inputs, bounded reports/events,
+advisory proof, backend, dashboard, and SOTA 2 lifecycle do not depend on
+Function Team 1. Function Team 2 requests no additional platform capability in
 the current demo.
 
 The Validation Unit and Demonstration Unit are two instances of the same
@@ -91,7 +122,7 @@ simultaneous simulated vehicles unless that topology is later implemented.
 | Official AosEdge release | Immutable upstream release from which the OEM platform image is reproducibly derived |
 | OEM Demo Factory Image | Cloud-unprovisioned OEM image derived from the official AosEdge release; it contains the accepted component runtime but no provider payload, functional service, Unit registration, or Cloud-issued identity certificate |
 | Platform substrate | AosCore, Service Manager, KUKSA, the accepted Vehicle Data Provider component runtime, security, and update support present from SOP |
-| Vehicle Data Platform Capability | FOTA-owned provider payload and versioned contract that exposes an approved subset of vehicle data through KUKSA; stage names use the shorthand Provider v1–v3 |
+| Vehicle Data Platform Component | FOTA-owned platform artifact containing the inbound/outbound providers, versioned KUKSA contract/configuration, Aos–KUKSA Credential Broker and OEM access policy; stage names use the shorthand VDP Component v1–v3 |
 | Brake Health Function Team | Function Team 1 / Service Provider 1: OEM functional vertical that owns the Brake Health service, model, backend, dashboard, and SOTA 1 lifecycle |
 | Tire Health Function Team | Function Team 2 / Service Provider 2: independent peer OEM functional vertical that owns local tire-condition estimation, bounded Cloud reporting, inspection advisory, backend, dashboard, and SOTA 2 lifecycle |
 | Service Provider identity | Function Team Cloud identity used to develop, sign, publish, version, and technically verify its own SOTA artifact; it does not authorize deployment to OEM Units |
@@ -105,7 +136,7 @@ simultaneous simulated vehicles unless that topology is later implemented.
 The Demonstration Unit is not presented as a real production vehicle or fleet.
 It is the controlled production-rollout proxy available in the demo
 environment. Both Units are disposable simulation assets between complete
-demo runs, but their identities remain stable throughout one `G0–G4` run.
+demo runs, but their identities remain stable throughout one `G0–T1` run.
 
 ## Audience-Visible Surfaces
 
@@ -196,76 +227,71 @@ Across the scenarios it evolves from no available vehicle data, to selected
 telemetry, to richer Brake Health inputs and prediction results. Backend data
 is not part of the time-critical local advisory path.
 
-### Tire Health Function Dashboard — Independent SOTA 2 Extension
+### Tire Health Function Dashboard — Independent SOTA 2 Product
 
 High-Level Architecture 1.2 assigns a separate backend and dashboard to
-Function Team 2 / Service Provider 2. They are not audience-visible surfaces
-in the current `G0–G4` Brake Health sequence. The independent Tire Health
-extension will show an estimated condition band, threshold event, service and
-platform versions, Unit role, and online/offline delivery state. It must not
-display hidden simulation truth as a measured production vehicle value or
-couple its data plane to the Brake Health backend.
+Function Team 2 / Service Provider 2. They become audience-visible at `T1`,
+after the `G0–G4` Brake Health progression. The Tire Health dashboard shows an
+estimated condition band, threshold event, service and platform versions, Unit
+role, and online/offline delivery state. It must not display hidden simulation
+truth as a measured production vehicle value or couple its data plane to the
+Brake Health backend.
 
-### Vehicle and Service Log View
+### Native operational logs in the Software Delivery Dashboard
 
-AosEdge provides system and service log collection and Cloud transmission
-mechanisms. The demonstration should expose selected structured provider and
-service logs through the configured Cloud-to-ELK integration.
+AosEdge already provides native collection and Cloud delivery for system,
+service-instance, and crash logs. An authorized AosCloud log request selects
+the Unit, time range, and optional service instance; AosCore collects and
+archives the matching records and returns the result to AosCloud.
 
-`ELK` is the traditional name for the log-analysis stack composed of:
+The stateless OEM Software Delivery Dashboard uses supported AosCloud APIs to
+create explicitly confirmed log requests, show their progress, and present or
+download the resulting evidence. It does not read the Unit journal directly,
+store an independent log archive, or introduce a second log transport.
 
-- **Elasticsearch** — stores and indexes log records for search;
-- **Logstash** — optionally receives, transforms, and forwards log records;
-- **Kibana** — provides the web interface for searching and visualizing the
-  indexed logs.
+The view should expose Unit role, component or service identity, version,
+severity, source timestamp, request status, and failure reason where available.
+It is supporting operational evidence rather than the main proof of vehicle
+behavior. Vehicle telemetry remains authoritative in the Engineering
+Telematics Dashboard, while Brake Health and Tire Health product results remain
+authoritative in their respective functional backends and dashboards.
 
-Modern installations may use Elastic Agent, Beats, or another collector
-instead of Logstash, but `ELK` remains a commonly used shorthand for the
-centralized Elastic logging and visualization environment.
-
-The ELK view should be filtered by Unit, component or service identity,
-version, severity, and timestamp. It should show useful lifecycle and runtime
-events without turning raw logs into the main proof of correct behavior.
-
-ELK contains operational evidence such as provider startup, service readiness,
-errors, and processing decisions. It is not the transport or source of vehicle
-telemetry, and it is not the Brake Health Function Backend.
-
-Direct ELK delivery is treated as a deployment integration of the available
-AosEdge logging pipeline, not as an unverified claim that every AosEdge
-deployment includes an identical ELK backend. Offline retention and retry
-semantics must be verified before the demo claims them.
+Before the demo relies on this view, the current AosCloud API permissions,
+request latency, retention/deletion behavior, online/offline semantics, and
+redaction rules must be qualified.
 
 ## Release Graph Overview
 
 | Stage | Accepted state after the stage | New capability |
 | --- | --- | --- |
-| M0 | `F0 = OEM Demo Factory Image` | Two fresh unprovisioned Domain Controller VM overlays exist; no Cloud Units or credentials exist |
-| M1 | `G0 onboarding complete` | Validation and Demonstration Units have unique identities, certificates, roles, and Cloud connectivity |
-| 1 | `G0 = platform substrate` | Working vehicle and update-ready Domain Controller, but no vehicle provider or Brake Health service |
-| 2 | `G1 = Provider v1` | First read-only subset of vehicle telemetry becomes available in KUKSA |
-| 3 | `G2 = Provider v1 + Service v1` | Selected data reaches the Brake Health Function Backend and Dashboard |
-| 4 | `G3 = Provider v2 + Service v2` | Additional signals support a richer Brake Health model and prediction output |
-| 5 | `G4 = Provider v3 + Service v3` | Local inference can return an allowlisted advisory request to the Vehicle Gateway |
+| M0 | `OEM Demo Factory Image + two fresh overlays` | Two fresh unprovisioned Domain Controller VM overlays exist; no Cloud Units or credentials exist |
+| M1 | `Two provisioned Unit roles` | Validation and Demonstration Units have unique identities, certificates, roles, and Cloud connectivity |
+| G0 | `Initial post-SOP runtime graph` | Working vehicle and update-ready Domain Controller, but no VDP Component or functional service |
+| G1 | `VDP Component v1` | First read-only subset of vehicle telemetry becomes available in KUKSA |
+| G2 | `VDP Component v1 + Brake Health Service v1` | Selected data reaches the Brake Health Function Backend and Dashboard |
+| G3 | `VDP Component v2 + Brake Health Service v2` | Additional signals support a richer Brake Health model and prediction output |
+| G4 | `VDP Component v3 + Brake Health Service v3` | Local inference can return an allowlisted Brake Health advisory request to the Vehicle Gateway |
+| T1 | `G4 graph + Tire Health Service` | Function Team 2 independently adds local tire-condition estimation, bounded reporting, and its typed inspection advisory |
 | R0 | `Retired demo run` | Cloud identities are retired and provisioned overlays are discarded; the immutable factory image remains |
 
 Every graph is composed of immutable, versioned artifacts. Promotion uses the
 same accepted bytes and digests that passed validation; it does not rebuild or
 repackage them during the presentation.
 
-The graph table describes the Function Team 1 Brake Health progression.
-Function Team 2's Tire Health service, backend, and dashboard remain absent
-throughout the `G0–G4` sequence and receive a separate SOTA 2 extension flow.
+`G0–G4` describe the Function Team 1 Brake Health progression. Function Team
+2's Tire Health service, backend, and dashboard remain absent throughout those
+graphs and are added at `T1` through the separate SOTA 2 lifecycle. `T1` is a
+presentation checkpoint, not a dependency on the Brake Health product.
 
 One additional negative-path scenario is part of the target demo but deferred
 from the current executable baseline: native AosCloud rejection of a SOTA
-service whose required Vehicle Data Platform Capability version is absent.
-When enabled, it runs at the beginning of Stage 4 while the Unit still has the
+service whose required Vehicle Data Platform Component version is absent.
+When enabled, it runs at the beginning of `G3` while the Unit still has the
 `G2` graph; it does not add another persistent graph state.
 
 The audience-visible lifecycle moves forward only. Recovery and rollback may
 be qualified before the presentation as engineering evidence, but the normal
-demo does not move backward between `G0–G4` stages.
+demo does not move backward between `G0–G4` or remove `T1` before retirement.
 
 ## M0 — Manufacturing Output
 
@@ -312,7 +338,7 @@ provisioned VM snapshot may be used as its source.
 
 The currently implemented runtime is specific to one Vehicle Data Provider
 component type. This demo may claim independent versioning of that shared
-Vehicle Data Platform Capability, but it must not claim support for arbitrary
+Vehicle Data Platform Component, but it must not claim support for arbitrary
 new provider types without another platform/rootfs release until a generic
 multi-type runtime is implemented and qualified.
 
@@ -350,7 +376,7 @@ and certificate identities before live use.
 - the Validation and Demonstration lanes are visibly separated;
 - `G0` is reached with the runtime ready but provider and services absent.
 
-## Stage 1 — SOP-Ready Vehicle Without Feature Components
+## G0 — SOP-Ready Vehicle Without Feature Components
 
 ### Starting state
 
@@ -361,13 +387,13 @@ The complete demonstration environment is running:
 - the Vehicle Gateway publishes live VISS telemetry;
 - the Engineering Telematics Dashboard displays that telemetry;
 - the Validation and Demonstration Units have the fresh provisioned identities
-  created during M1 and retain them throughout `G0–G4`;
+  created during M1 and retain them throughout `G0–T1`;
 - the Domain Controller contains AosCore, Service Manager, KUKSA, the accepted
   Vehicle Data Provider runtime, security integration, and update support.
 
 The following feature-specific elements are absent:
 
-- no Vehicle Data Platform Capability payload is installed;
+- no Vehicle Data Platform Component payload is installed;
 - no live vehicle values are published into KUKSA;
 - no Brake Health service is installed;
 - no vehicle data reaches the Brake Health Function Backend;
@@ -386,11 +412,11 @@ The audience sees a fully operational vehicle and an online, update-ready
 Domain Controller. The absence of the new capability is explicit and is not
 presented as a platform failure.
 
-## Stage 2 — Platform Team Delivers Provider v1
+## G1 — Platform Team Delivers VDP Component v1
 
 ### Capability
 
-Provider v1 exposes a small, read-only subset of already available vehicle
+VDP Component v1 exposes a small, read-only subset of already available vehicle
 telemetry to KUKSA. The provisional subset is:
 
 - vehicle speed;
@@ -402,7 +428,7 @@ The exact contract is a later design decision.
 
 ### Release flow
 
-1. The Platform Team publishes immutable Provider v1 through the FOTA
+1. The Platform Team publishes immutable VDP Component v1 through the FOTA
    lifecycle.
 2. A fresh verification batch is created for the Validation lane; stale
    batches are never reused after Unit Set membership changes.
@@ -413,32 +439,34 @@ The exact contract is a later design decision.
 4. The Platform Team explicitly authorizes the Validation Unit deployment
    through its OEM identity; the dashboard and orchestrator cannot infer this
    approval from target checks.
-5. Provider v1 is installed and activated on the Validation Unit.
+5. VDP Component v1 is installed and activated on the Validation Unit.
 6. Platform qualification verifies signal mapping, filtering, KUKSA
-   publication, security, restart, source loss, and recovery.
+   publication, the Credential Broker and OEM policy fail-closed behavior,
+   distinct provider authority, restart, source loss, and recovery without
+   modifying upstream KUKSA.
 7. Selected provider lifecycle and runtime logs become available through the
-   AosEdge logging pipeline and the configured ELK view.
-8. The Platform Team accepts the exact Provider v1 version, digest,
+   native AosEdge log request path and the Software Delivery Dashboard.
+8. The Platform Team accepts the exact VDP Component v1 version, digest,
    qualification evidence, and target, and records promotion approval through
    its OEM identity.
-9. AosCloud promotes the same Provider v1 artifact to the Demonstration Unit.
+9. AosCloud promotes the same VDP Component v1 artifact to the Demonstration Unit.
 
 ### Audience-visible proof
 
-- Provider v1 is absent from the Demonstration Unit during validation.
-- The Validation Unit reports Provider v1 as ready.
+- VDP Component v1 is absent from the Demonstration Unit during validation.
+- The Validation Unit reports VDP Component v1 as ready.
 - KUKSA receives only the approved v1 signal subset.
 - No functional service consumes the data yet.
 - The Demonstration Unit receives the exact accepted artifact only after
   approval.
 
-Provider v1 is a platform capability, not a finished customer feature.
+VDP Component v1 is a platform capability, not a finished customer feature.
 
-## Stage 3 — Function Team 1 Delivers Brake Health Service v1
+## G2 — Function Team 1 Delivers Brake Health Service v1
 
 ### Capability
 
-Service v1 is a deliberately simple KUKSA consumer. It reads the Provider v1
+Service v1 is a deliberately simple KUKSA consumer. It reads the VDP Component v1
 subset and converts it into a bounded, low-rate functional report for the
 Brake Health Function Backend. The report may contain selected samples and/or
 aggregates, but it is not an unrestricted continuous raw-sensor stream. The
@@ -451,13 +479,19 @@ advisory.
 
 1. The Brake Health Function Team publishes immutable Service v1 through its
    Service Provider 1 identity in the SOTA 1 lifecycle.
-2. Service v1 declares a dependency on the Provider v1 capability.
+2. Service v1 declares a dependency on VDP Component v1 and its exact requested
+   `kuksa` read paths/modes in Aos service metadata.
 3. The Function Team explicitly authorizes deployment to the Validation Unit
    through an OEM identity.
-4. Service v1 is installed first on the Validation Unit.
-5. Integration validation proves the KUKSA-to-service-to-backend path.
-6. Service logs become available through the configured AosEdge log pipeline
-   and ELK view.
+4. Service v1 is installed first on the Validation Unit. Service Manager
+   registers its permissions and injects a per-instance `AOS_SECRET`.
+5. The VDP-owned Credential Broker validates that identity and the complete
+   request against OEM policy, then issues a short-lived path-scoped JWT;
+   integration validation proves the KUKSA-to-service-to-backend path and
+   rejected excess-permission cases.
+6. Service logs become available through native AosEdge collection and an
+   explicitly requested AosCloud log result in the Software Delivery
+   Dashboard.
 7. Function Team 1 accepts the exact Service v1 artifact and integration
    result and records promotion approval through an OEM identity.
 8. AosCloud promotes the exact accepted Service v1 artifact to the
@@ -468,34 +502,36 @@ advisory.
 - AosCloud remains the software lifecycle system.
 - The Brake Health Function Backend is a separate functional data system.
 - The Function Dashboard receives data only through the deployed service.
-- Removing or stopping Service v1 does not remove Provider v1 or the existing
+- The service has only its approved KUKSA read paths; no reusable token is
+  embedded in its SOTA artifact.
+- Removing or stopping Service v1 does not remove VDP Component v1 or the existing
   Engineering Telematics Dashboard path.
 
-## Stage 4 — Expanded Inputs and Predictive Service v2
+## G3 — Expanded Inputs and Predictive Service v2
 
 ### Deferred native dependency-rejection prelude
 
 This prelude is a planned part of the target demonstration, but it is not
 executed with the current AosCloud release.
 
-Starting from `G2`, the Validation Unit has Provider v1 and Service v1.
+Starting from `G2`, the Validation Unit has VDP Component v1 and Service v1.
 Function Team 1 submits the already prepared Service v2 candidate, which
-declares that it requires Vehicle Data Platform Capability v2. The target
+declares that it requires Vehicle Data Platform Component v2. The target
 native behavior is:
 
 1. AosCloud resolves the candidate's required capability range against the
    authoritative actual component state of the intended Validation Unit.
-2. AosCloud observes Provider v1 rather than the required Provider v2.
+2. AosCloud observes VDP Component v1 rather than the required VDP Component v2.
 3. AosCloud rejects the SOTA request before changing Subject-service desired
    state, creating a validation batch or campaign, or transferring update
    content to the Unit.
 4. The OEM Software Delivery Dashboard shows the authoritative Cloud rejection
    reason, required range, actual version, service identity and target Unit.
-5. The Validation Unit remains on the unchanged `Provider v1 + Service v1`
+5. The Validation Unit remains on the unchanged `VDP Component v1 + Service v1`
    graph.
-6. The Platform Team then follows the normal Provider v2 FOTA flow below.
-7. The identical Service v2 candidate is resubmitted after Provider v2 reports
-   ready; the dependency check succeeds and Stage 4 continues normally.
+6. The Platform Team then follows the normal VDP Component v2 FOTA flow below.
+7. The identical Service v2 candidate is resubmitted after VDP Component v2 reports
+   ready; the dependency check succeeds and `G3` continues normally.
 
 The scenario is activated only after an official AosEdge release exposes the
 Service-to-FOTA-component dependency in its supported Cloud API and signed
@@ -507,7 +543,7 @@ the Software Delivery Dashboard.
 
 After working with the initial data, the Brake Health Function Team determines
 that a richer model needs additional vehicle information that exists on the
-vehicle side but is not part of Provider v1.
+vehicle side but is not part of VDP Component v1.
 
 The Function Team sends the Platform Team a versioned capability request with
 the required signals, quality constraints, timing expectations, and acceptance
@@ -515,7 +551,7 @@ criteria.
 
 ### Candidate input expansion
 
-The provisional Provider v2 inputs may include:
+The provisional VDP Component v2 inputs may include:
 
 - per-wheel speed and wheel-speed asymmetry;
 - brake demand or simulated brake pressure;
@@ -529,23 +565,23 @@ simulated or estimated. The demo must not imply production diagnostic accuracy.
 
 ### Release flow
 
-1. The Platform Team develops Provider v2 as a backward-compatible superset of
-   Provider v1.
-2. Provider v2 is installed on the Validation Unit through FOTA.
+1. The Platform Team develops VDP Component v2 as a backward-compatible superset of
+   VDP Component v1.
+2. VDP Component v2 is installed on the Validation Unit through FOTA.
 3. The Platform Team independently completes platform qualification.
 4. The Brake Health Function Team installs Service v2 through SOTA 1 on the
    same Validation Unit.
-5. Service v2 declares a dependency on the Provider v2 capability.
+5. Service v2 declares a dependency on VDP Component v2.
 6. Both teams perform joint integration and scenario validation.
-7. The Platform Team accepts the exact Provider v2 artifact and qualification
+7. The Platform Team accepts the exact VDP Component v2 artifact and qualification
    through an OEM identity. Function Team 1 separately accepts the exact
    Service v2 artifact, model, and joint integration result through an OEM
    identity.
 8. AosCloud permits promotion only after both owner decisions are recorded for
    the same graph, digests, and targets.
-9. Provider v2 is promoted to the Demonstration Unit first; Service v1 remains
+9. VDP Component v2 is promoted to the Demonstration Unit first; Service v1 remains
    operational against the backward-compatible v1 subset.
-10. After Provider v2 reports ready, Service v2 is promoted to the
+10. After VDP Component v2 reports ready, Service v2 is promoted to the
    Demonstration Unit.
 
 ### Model lifecycle
@@ -559,15 +595,15 @@ that a useful predictive model was trained during the presentation.
 
 ### Audience-visible proof
 
-- Provider v2 and Service v2 iterate independently before combined acceptance.
-- Existing v1 behavior remains available while Provider v2 is installed.
-- New Function Dashboard information appears only after both Provider v2 and
+- VDP Component v2 and Service v2 iterate independently before combined acceptance.
+- Existing v1 behavior remains available while VDP Component v2 is installed.
+- New Function Dashboard information appears only after both VDP Component v2 and
   Service v2 are ready.
 - The dashboard identifies simulated signals and model output clearly.
 - Provider and service logs can be inspected without relying on terminal
   output as the main narrative.
 
-## Stage 5 — Bidirectional Advisory Capability
+## G4 — Bidirectional Advisory Capability
 
 ### Feature request
 
@@ -575,25 +611,25 @@ After validating the predictive behavior, the Brake Health Function Team asks
 for a bounded vehicle-facing capability that can return an inspection advisory
 request to the Vehicle Gateway.
 
-The Platform Team produces Vehicle Data Platform Capability v3. At the
-scenario level this is called Provider v3; its lower-level implementation may
+The Platform Team produces Vehicle Data Platform Component v3. At the
+scenario level this is called VDP Component v3; its lower-level implementation may
 use separate inbound and outbound providers.
 
 ### Release flow
 
-1. Provider v3 adds a strictly allowlisted advisory actuator path and Gateway
+1. VDP Component v3 adds a strictly allowlisted advisory actuator path and Gateway
    status feedback while preserving all accepted v1 and v2 inputs.
-2. Provider v3 is installed and platform-qualified on the Validation Unit.
+2. VDP Component v3 is installed and platform-qualified on the Validation Unit.
 3. Service v3, containing the accepted local inference model, is installed
    through SOTA 1 on the Validation Unit.
 4. Joint validation proves online, offline, failure, restart, and recovery
    behavior.
-5. The Platform Team accepts the exact Provider v3 artifact through an OEM
+5. The Platform Team accepts the exact VDP Component v3 artifact through an OEM
    identity, and Function Team 1 separately accepts the exact Service v3
    artifact and joint integration result through an OEM identity.
 6. AosCloud permits promotion only after both decisions are recorded for the
    exact graph, digests, and targets.
-7. Provider v3 and then Service v3 are promoted in dependency order to the
+7. VDP Component v3 and then Service v3 are promoted in dependency order to the
    Demonstration Unit.
 
 ### Runtime flow
@@ -635,6 +671,62 @@ reception status.
    Backend and appears in the Function Dashboard with its original event time.
 
 The demo does not claim `displayed to driver` or `driver acknowledged`.
+
+## T1 — Function Team 2 Delivers Tire Health Service
+
+### Capability
+
+Function Team 2 independently delivers a Tire Health service through SOTA 2.
+The service consumes only the accepted vehicle-dynamics subset already exposed
+by VDP Component v3. It maintains a bounded, persistent tire-condition
+estimate, produces condition bands and inspection decisions locally, uploads
+only bounded summaries or threshold events, and may request only its typed
+allowlisted Tire Health advisory target.
+
+The scenario uses an explicit accelerated-time or pre-aged tire-degradation
+stimulus because CARLA does not provide production-equivalent live tread wear,
+pressure, temperature, puncture, load, force, or torque measurements. Hidden
+simulation truth is used only for qualification and is never presented as a
+measured vehicle signal.
+
+`T1` follows `G4` in the audience presentation so the required VDP v3 data and
+advisory contract already exist. Tire Health does not depend on the Brake
+Health service, backend, dashboard, model, or SOTA 1 lifecycle.
+
+### Release flow
+
+1. Function Team 2 publishes the immutable Tire Health artifact through its
+   Service Provider 2 identity and SOTA 2 lifecycle.
+2. The service declares its compatible VDP Component range and exact KUKSA
+   read and actuate paths in its Aos service metadata.
+3. Function Team 2 explicitly authorizes deployment to the Validation Unit
+   through an OEM identity.
+4. The Credential Broker verifies the service instance and requested paths
+   against OEM policy before issuing a short-lived scoped KUKSA credential.
+5. Validation proves local estimation, persistent-state continuity, bounded
+   offline reporting, idempotent backend ingestion, advisory isolation, and
+   that the existing Brake Health graph remains unchanged.
+6. Function Team 2 accepts the exact service version, digest, and integration
+   result and records promotion approval through an OEM identity.
+7. AosCloud promotes the identical Tire Health artifact to the Demonstration
+   Unit without rebuilding or changing the Brake Health or VDP artifacts.
+
+### Runtime and audience-visible proof
+
+- CARLA and the Engineering Telematics Dashboard show the accepted native
+  dynamics inputs and clearly labelled accelerated or pre-aged tire stimulus.
+- The Tire Health service reads only its allowed KUKSA paths and performs its
+  condition estimate locally on the Domain Controller.
+- Cloud loss does not stop local estimation or inspection-advisory generation;
+  bounded results synchronize after connectivity returns.
+- The Tire Health Function Dashboard shows condition band, threshold event,
+  original event time, service and VDP versions, Unit role, and delivery state
+  without receiving a continuous raw-telemetry stream.
+- A typed Tire Health advisory follows KUKSA, the allowlisted outbound VDP,
+  VISS Set, and the Gateway handler; the Engineering Telematics Dashboard shows
+  only the factual request and Gateway status, not a production driver HMI.
+- The Brake Health Function Dashboard and SOTA 1 lifecycle remain unchanged,
+  proving that Function Team 2 is an independent peer Service Provider.
 
 ## Deterministic CARLA Visual Scenario
 
@@ -682,8 +774,8 @@ of the normal audience flow.
 
 ## R0 — End-of-Demo Retirement and Next-Run Reset
 
-The complete demo does not reverse the accepted software graph from `G4` to
-`G0`. No artificial provider or rootfs rollback is part of the normal
+The complete demo does not reverse the accepted software graph from `T1` or
+`G4` to `G0`. No artificial provider, service, or rootfs rollback is part of the normal
 presentation. Instead, the two simulated Domain Controller Unit instances
 created for the current run are retired, and the next run represents two newly
 manufactured vehicle computers.
@@ -724,10 +816,10 @@ destructive experiment.
    no provider payload, functional service, Cloud registration, Cloud-issued
    credential, or embedded reusable per-vehicle secret.
 3. The current runtime supports one independently versioned Vehicle Data
-   Platform Capability; arbitrary new provider types are not claimed.
+   Platform Component; arbitrary new provider types are not claimed.
 4. `Validation Unit` and `Demonstration Unit` are used instead of claiming a
    real production vehicle or fleet.
-5. Provider v2 is backward compatible with the Provider v1 contract.
+5. VDP Component v2 is backward compatible with the VDP Component v1 contract.
 6. Every service version is validated on the Validation Unit before promotion.
 7. Joint validation completes before either side of a new combined graph is
    promoted to the Demonstration Unit.
@@ -738,11 +830,11 @@ destructive experiment.
    implemented.
 10. All factory and update artifacts are built and staged before the
     presentation.
-11. Unit identities remain stable throughout `G0–G4`; the complete next-run
+11. Unit identities remain stable throughout `G0–T1`; the complete next-run
     reset retires those identities and creates new ones from fresh overlays.
-12. High-Level Architecture 1.2 is a capability superset; the `G0–G4` sequence
-    exercises Function Team 1 while Function Team 2 is added only through its
-    independent Tire Health SOTA 2 extension.
+12. High-Level Architecture 1.2 is a capability superset; `G0–G4` exercise
+    Function Team 1 and `T1` adds Function Team 2 through its independent Tire
+    Health SOTA 2 lifecycle.
 13. Function Team 1 and Function Team 2 remain independent AosCloud Service
     Providers. Function Team 2 consumes the existing platform contract and
     does not request another capability in the current demo.
@@ -757,24 +849,26 @@ destructive experiment.
     stores and executes the resulting lifecycle transition. The dashboard and
     orchestrator own neither approval nor lifecycle state.
 
-## Items Requiring Resolution Before Detailed Flow Mapping
+## Open Qualification and Implementation Gates
 
-1. Freeze and qualify the Function Team 2 Tire Health scenario required by
-   High-Level Architecture 1.2, including its existing signal subset,
+1. Implement and qualify the accepted `T1` Tire Health scenario, including its
+   existing signal subset,
    accelerated/pre-aged degradation model, persistent state, condition bands,
    bounded backend payload, advisory, hidden qualification truth, and dashboard
    proof.
 2. Define how the single visible CARLA/VISS environment is connected or
    deterministically replayed for the Validation and Demonstration Units; do
    not imply two simultaneous simulated vehicles unless that is implemented.
-3. Confirm the exact Provider v1 and Provider v2 signal subsets.
+3. Confirm the exact VDP Component v1–v3 signal and advisory subsets, including
+   the existing dynamics inputs required by Tire Health.
 4. Select the simulated brake degradation or anomaly and define how CARLA or
    the Vehicle Gateway generates its source values.
 5. Define the exact bounded Service v1 report contract: selected low-rate
    samples, aggregates, or both. Continuous unrestricted raw streaming is
    excluded.
-6. Confirm the AosEdge-to-ELK integration available in the current Cloud
-   environment, including access control, retention, and offline behavior.
+6. Qualify the current AosCloud system, service-instance, and crash-log APIs,
+   including scoped access, request latency, retention/deletion, offline
+   behavior, redaction, and presentation in the Software Delivery Dashboard.
 7. Define the minimum OEM Software Delivery Dashboard views, explicit
    confirmation interaction, team-owner and active-role presentation, and the
    exact OEM-authorized actions that may be invoked without introducing local
@@ -801,19 +895,21 @@ destructive experiment.
 16. When an implementing AosEdge release becomes available, qualify native
     Service-to-FOTA-component dependency declaration and rejection before any
     Subject-service desired-state change, validation batch, campaign, or Unit
-    download, then enable the deferred Stage 4 prelude.
+    download, then enable the deferred `G3` prelude.
 
-No contradiction with High-Level Architecture 1.2 remains after this alignment
-review. The open items above constrain implementation and audience-visible
-claims. They preserve the inner `G0 -> G1 -> G2 -> G3 -> G4` progression and
-the outer `M0 -> M1` onboarding and `R0` retirement lifecycle.
+Detailed interaction mapping now exists in Demo Scenario Architecture Flows
+1.1. The open gates above constrain component requirements, implementation,
+qualification, and audience-visible claims. They preserve the canonical
+`M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> T1 -> R0` presentation order and
+the independence of the two SOTA lifecycles.
 
 ## Reference Basis
 
 - [High-Level Architecture 1.2](../architecture/high-level-architecture.md)
-  defines the current capability-superset architecture review candidate; this
-  scenario defines its staged component presence and lifecycle, while detailed
-  API and interaction mapping remains a later deliverable.
+  defines the accepted capability-superset architecture baseline; this
+  scenario defines its staged component presence and lifecycle, while
+  [Architecture Flows 1.1](../architecture/demo-scenario-architecture-flows.md)
+  defines detailed cross-component interaction mapping.
 - [AosEdge overview](https://docs.aosedge.tech/docs/aos-edge/) describes the
   Cloud-to-edge lifecycle and operational visibility model.
 - [Monitor a Service](https://docs.aosedge.tech/docs/how-to/advanced-service-operation/monitor-service)

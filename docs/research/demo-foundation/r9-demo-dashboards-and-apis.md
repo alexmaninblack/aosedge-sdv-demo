@@ -9,7 +9,7 @@ Status: **research pass complete; implementation not authorized**.
 
 This workstream determines which Software Delivery Dashboard claims can be
 supported by the current public AosCloud API and clarifies authority boundaries
-among the Engineering, Software Delivery, Function, and ELK views.
+among the Engineering, Software Delivery, and Function views.
 
 The sanitized
 [Automotive Orchestration Coverage Matrix](automotive-orchestration-coverage-matrix.md)
@@ -123,7 +123,7 @@ alerts, monitoring, and log-request status with original API timestamps.
 | Provider/service readiness | Cloud status plus separate qualification or application health evidence; install state alone is insufficient |
 | Download progress | Show only actual structured status/campaign data; fine-grained byte progress is not guaranteed |
 | Artifact digest | Component SHA-256 is available; public service-version response does not document an OCI digest |
-| ELK availability | Show log-request state only; API presence does not prove ELK export |
+| Operational logs | Show only authoritative native AosCloud request state and retrieved results; do not imply continuous streaming or an independent log store |
 | Real-time state | Display `last reported`; Unit aggregation can lag and must not be presented as instantaneous |
 
 ## Authority boundaries
@@ -131,10 +131,9 @@ alerts, monitoring, and log-request status with original API timestamps.
 | Surface | Authoritative for | Not authoritative for |
 | --- | --- | --- |
 | Engineering Dashboard | Gateway VISS telemetry and factual advisory request/status | KUKSA delivery, Cloud lifecycle, functional backend |
-| Software Delivery Dashboard | Human-friendly presentation of AosCloud release and Unit state | Vehicle telemetry and prediction results |
+| Software Delivery Dashboard | Human-friendly presentation of AosCloud release, Unit and native log-request/result state | Vehicle telemetry, prediction results or independent log storage |
 | Function Dashboard | Brake Health samples, predictions, reports, backlog and model state from Function Backend | FOTA/SOTA state and Gateway receipt |
 | AosCloud UI/API | Technical lifecycle source and drill-down | Functional telemetry product view |
-| ELK | Selected operational log evidence | Vehicle signal truth or lifecycle authority |
 
 ## Security and robustness
 

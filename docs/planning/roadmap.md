@@ -5,7 +5,7 @@
 
 - Status: Working gate map
 - Updated: 2026-08-18
-- Architecture baseline under review: High-Level Architecture 1.2
+- Accepted architecture baseline: High-Level Architecture 1.2
 - Cloud or Unit mutation authorized: no
 
 ## Purpose
@@ -21,7 +21,7 @@ The current target uses:
 - one OEM Factory Baseline Assembly that reproducibly produces the immutable
   OEM Demo Factory Image artifact;
 - one provider-specific empty-slot runtime in the OEM Demo Factory Image;
-- one independently versioned Vehicle Data Platform Capability FOTA family;
+- one independently versioned Vehicle Data Platform Component FOTA family;
 - two peer OEM functional services with independent SOTA lifecycles;
 - fresh Validation and Demonstration Unit identities per demo run;
 - controlled retirement and disposable-overlay replacement for the normal
@@ -69,17 +69,18 @@ A downstream document may not silently redefine an upstream decision.
 
 ## Active Design Gates
 
-### D0 — Component register review — in review
+### D0 — Component register review — completed 2026-08-18
 
-Confirm component names, responsibilities, current/target state, interfaces,
-owners, lifecycles and repository candidates. The Vehicle Gateway boundary and
-Tire Health service boundary are accepted, as is one backend-plus-dashboard
-Cloud repository per Function Team. Remaining review concerns are the Software
-Delivery Dashboard, Demo Orchestrator, logging integration and deferred
-authorization adapter.
+Component names, responsibilities, current/target state, interfaces, owners,
+lifecycles and repository candidates are accepted in Component Decomposition
+and Interface Register 0.2. This includes the Vehicle Gateway and Tire Health
+boundaries, one backend-plus-dashboard Cloud repository per Function Team,
+stateless Software Delivery Dashboard and Demo Orchestrator boundaries, native
+AosEdge logging ownership, and the ADR 0010 allocation of the Credential Broker
+and OEM policy to `CMP-VDP`.
 
-Exit: Component Decomposition and Interface Register 0.2 is accepted or
-returned with explicit corrections.
+Exit evidence: Component Decomposition and Interface Register 0.2 is the
+accepted component baseline.
 
 ### D1 — Documentation housekeeping — completed 2026-08-18
 
@@ -99,14 +100,16 @@ human-readable package summaries, direct traceability links, the documented
 architecture-change cascade, and the deterministic `docs-check` commit/CI
 gate.
 
-### D2 — Baseline acceptance
+### D2 — Baseline acceptance — completed 2026-08-18
 
-Review HLA 1.2, Scenario 1.2, Architecture Flows 1.1, System Requirements 0.2
-and the Component Register together. Resolve any remaining terminology or
-boundary inconsistency before deriving component requirements.
+HLA 1.2, Scenario 1.2, Architecture Flows 1.1, System Requirements 0.2 and the
+Component Register were jointly reviewed and accepted as one consistent design
+baseline. Deferred platform capabilities and open qualification or
+implementation gates remain explicit and are not presented as current
+behavior.
 
-Exit: accepted documentation versions and unresolved deferred features are
-explicitly recorded.
+Exit evidence: each baseline document records its accepted status and date,
+and the documentation quality gate passes for the complete design chain.
 
 ### D3 — Component requirement packages
 
@@ -155,12 +158,12 @@ These workstreams are sequencing guidance, not authorization to implement:
 | Workstream | Main outcome |
 | --- | --- |
 | `I1` Vehicle stimulus and Gateway | Qualify emergency-braking and explicit accelerated/pre-aged tire stimuli; add typed narrowly scoped advisory handling and dashboard status. |
-| `I2` Factory and Vehicle Data Platform | Freeze the clean factory image and empty slot; implement and qualify the accepted Provider v1-v3 contract. |
+| `I2` Factory and Vehicle Data Platform | Freeze the clean factory image and empty slot; implement and qualify the accepted Component v1-v3 contract, Aos–KUKSA Credential Broker, OEM access policy and KUKSA trust configuration. |
 | `I3` Brake Health product | Build the in-vehicle service, local model, bounded offline reporting, backend and function dashboard. |
 | `I4` Tire Health product | Build the independent persistent condition estimator, bounded reporting, inspection advisory, backend and function dashboard. |
 | `I5` Software delivery experience | Build the Software Delivery Dashboard over authoritative AosCloud APIs and the manufacturing/provisioning/promotion/retirement orchestration. |
-| `I6` Security and operations | Qualify least privilege, secret delivery, operational logs, ELK route, retention and redaction. |
-| `I7` End-to-end release proof | Execute `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> R0` on Validation and Demonstration Units with retained evidence. |
+| `I6` Security and operations | Qualify Aos IAM permission lookup, complete-request policy rejection, short-lived JWT refresh/expiry, distinct provider authority, protected signing material, native AosCloud system/service/crash-log requests, retention/deletion, offline behavior and redaction. |
+| `I7` End-to-end release proof | Execute `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> T1 -> R0` on Validation and Demonstration Units with retained evidence. |
 
 Each workstream requires the relevant component requirements and acceptance
 tests before code or deployment work begins.
@@ -168,20 +171,22 @@ tests before code or deployment work begins.
 ## Deferred Platform Capabilities
 
 - Native AosCloud rejection of a SOTA request whose required Vehicle Data
-  Platform Capability version is absent or incompatible remains blocked on an
+  Platform Component version is absent or incompatible remains blocked on an
   implementing platform release. No project-side admission controller will be
   built as a substitute.
-- The Aos-to-KUKSA Authorization Adapter remains explicit production
-  hardening. Prototype path-scoped tokens are temporary demo fixtures and must
-  not be confused with the target security architecture.
+- Cloud-side pre-transfer rejection of a SOTA service whose requested KUKSA
+  paths exceed OEM policy remains future native platform behavior. The current
+  target enforces this locally and fail closed through the ADR 0010 Credential
+  Broker; it must not be presented as Cloud admission.
 - Production driver HMI, third-party Service Providers, Fleet Operators, a
   production fleet, and production vehicle-network/hardware selection remain
   outside the current demo.
 
 ## Current Stop Point
 
-Documentation housekeeping gate D1 is complete. The current boundary is D0
-component-register review followed by D2 joint baseline acceptance. No new
+Documentation housekeeping gate D1, component-register gate D0, and joint
+baseline gate D2 are complete. The current boundary is D3 component requirement
+packages. No new
 repository, component code, build, signature, Cloud upload, assignment,
 approval, VM restart, provisioning, deprovisioning or Unit mutation is
 authorized by this roadmap.

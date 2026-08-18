@@ -8,10 +8,11 @@ and original demo visual assets. These documents describe what the audience
 sees; they do not redefine the system architecture.
 
 [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.2](staged-post-sop-brake-health-demo-scenarios.md)
-is the current review candidate. It wraps the five-stage
-`G0 -> G1 -> G2 -> G3 -> G4` capability evolution in explicit `M0/M1`
-manufacturing and provisioning plus `R0` end-of-demo retirement, without
-authorizing implementation.
+is the accepted demo-scenario baseline. It defines the canonical
+`M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> T1 -> R0` presentation lifecycle,
+including manufacturing, provisioning, Brake Health evolution, the independent
+Tire Health stage, and end-of-demo retirement, without authorizing
+implementation.
 
 The corresponding
 [Demo Scenario Architecture Flows 1.1](../architecture/demo-scenario-architecture-flows.md)

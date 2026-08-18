@@ -138,7 +138,8 @@ dependency mechanism.
 3. Deliver a higher-version provider reset component that empties or disables
    the provider capability if normal removal/downgrade is unsupported.
 4. Verify actual Unit state matches the G0 manifest.
-5. Reset CARLA, Function Backend, ELK, and dashboard run state separately.
+5. Reset CARLA, Function Backend, bounded AosCloud log-request artifacts, and
+   transient dashboard run state separately.
 
 This is a **forward reset release**, not a rollback.
 

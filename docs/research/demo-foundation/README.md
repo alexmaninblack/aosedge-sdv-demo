@@ -29,7 +29,7 @@ changes.
 | R5 | Brake Health data contract and staged model | [R5](r5-brake-health-data-and-model.md) |
 | R6 | Bidirectional advisory path and security | [R6](r6-bidirectional-advisory-and-security.md) |
 | R7 | Functional Cloud contract and offline operation | [R7](r7-functional-cloud-and-offline.md) |
-| R8 | AosEdge logging and ELK integration | [R8](r8-logging-and-elk.md) |
+| R8 | AosEdge native logging and dashboard presentation | [R8](r8-aosedge-native-logging.md) |
 | R9 | Demo dashboards and AosCloud API feasibility | [R9](r9-demo-dashboards-and-apis.md) |
 | R10 | Native CARLA telemetry inventory and Tire Health design evidence | [R10](r10-carla-telemetry-and-function-team-2.md) |
 

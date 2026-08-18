@@ -3,16 +3,15 @@
 
 # Architecture Documentation
 
-[High-Level Architecture 1.2](high-level-architecture.md) is the current
-end-to-end architecture review candidate based on the accepted visual input.
-Architecture 1.0 remains the previous accepted checkpoint until 1.2 completes
-review. The other documents provide lifecycle, repository-boundary,
-detailed-design, or decision context aligned to the 1.2 review candidate.
+[High-Level Architecture 1.2](high-level-architecture.md) is the accepted
+end-to-end architecture baseline. The other documents provide lifecycle,
+repository-boundary, detailed-design, or decision context aligned to that
+baseline.
 
-- [High-Level Architecture 1.2 — review candidate](high-level-architecture.md)
-- [Demo Scenario Architecture Flows 1.1 — review candidate](demo-scenario-architecture-flows.md)
-  — complete `M0 -> M1 -> G0–G4 -> R0` mapping of Scenario 1.2 to High-Level
-  Architecture 1.2, including the independent Tire Health extension flow.
+- [High-Level Architecture 1.2 — accepted architecture baseline](high-level-architecture.md)
+- [Demo Scenario Architecture Flows 1.1 — accepted architecture-flow baseline](demo-scenario-architecture-flows.md)
+  — complete `M0 -> M1 -> G0–G4 -> T1 -> R0` mapping of Scenario 1.2 to
+  High-Level Architecture 1.2, including the independent Tire Health stage.
 - [Repository and component boundaries](repository-boundaries.md)
 - [Architecture decisions](decisions/)
 - [Diagram sources and exports](diagrams/)

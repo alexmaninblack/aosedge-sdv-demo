@@ -13,7 +13,7 @@ must agree.
 | --- | --- | --- |
 | CARLA physics, maps, native simulator build | `CarlaSim` | vehicle simulation baseline |
 | Vehicle control, CARLA sampling, VSS/VISS, engineering dashboard or deterministic scenario | `carla-ego-runtime` | Vehicle Gateway/demo tooling |
-| Factory-image integration, provider runtime, KUKSA platform contract or Vehicle Data Platform Capability | `aos-vehicle-platform` | Platform Team / FOTA |
+| Factory-image integration, provider runtime, KUKSA platform contract/trust, Credential Broker, OEM access policy or Vehicle Data Platform Component | `aos-vehicle-platform` | Platform Team / FOTA |
 | Brake Health in-vehicle analytics | `brake-health-service` | Function Team 1 / SOTA |
 | Tire Health condition estimation, bounded reporting and inspection advisory | planned `tire-health-service` | Function Team 2 / independent SOTA |
 | Brake Health backend or Function Dashboard | planned `brake-health-cloud` | Function Team 1 Cloud product |

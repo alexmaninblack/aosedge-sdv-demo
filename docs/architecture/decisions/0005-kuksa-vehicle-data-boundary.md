@@ -76,33 +76,26 @@ roles and VSS-facing interface.
 5. Treat the official `kuksa-test-client` as a connectivity and packaging
    reference, not as the final consumer implementation.
 
-## Authorization Adapter Follow-up
+## Authorization Decision Follow-up
 
-The Aos-to-KUKSA Authorization Adapter does not exist in the qualified release.
-Consequently, the Aos IAM `AOS_SECRET` injected into a service cannot currently
-be exchanged for, or directly used as, a KUKSA access token.
+The qualification described by this ADR used separately issued, path-scoped
+KUKSA JWTs because the baseline had no Aos IAM integration. That remains valid
+historical evidence, but it is not the target architecture.
 
-This does not block the prototype. During AOS-2 through AOS-4, use separate,
-short-lived, project-owned KUKSA JWTs with path-scoped permissions:
-
-- the provider receives `provide:<path>` only for the approved telemetry
-  signals;
-- the consumer receives `read:<path>` only for those signals;
-- no private signing key or access token is committed to Git or printed in
-  logs.
-
-Return to the Authorization Adapter as AOS-5, after the end-to-end telemetry
-and initial edge-processing prototype works, and before third-party services,
-actuation, or production credential handling are introduced. AOS-5 must bind
-an Aos-managed service identity to least-privilege KUKSA authorization and
-remove static KUKSA JWTs from service artifacts.
+[ADR 0010](0010-aos-kuksa-credential-broker.md) supersedes the former AOS-5
+standalone Authorization Adapter plan. Upstream KUKSA remains unchanged. The
+Vehicle Data Platform Component instead owns an Aos–KUKSA Credential Broker
+and OEM access policy that exchange an authenticated service instance's
+`AOS_SECRET` for a short-lived, path-scoped KUKSA JWT. The privileged provider
+uses a separate platform credential. No private signing key, secret, or issued
+token may be committed to Git or printed in logs.
 
 ## Repository Ownership
 
 - `carla-ego-runtime` owns the simulation-side VISS projection.
 - `aos-vehicle-platform` owns `carla-kuksa-provider`, KUKSA platform
-  integration, the vehicle-data contract, and the future Authorization
-  Adapter.
+  integration, the vehicle-data contract, and the Aos–KUKSA Credential Broker
+  plus OEM access policy defined by ADR 0010.
 - `brake-health-service` owns the cloud-managed consumer application and
   its Aos service package.
 - `aosedge-sdv-demo` pins and qualifies an exact end-to-end
@@ -126,8 +119,8 @@ The lifecycle-based repository decision and migration gate are defined by
 - A dedicated CARLA-to-KUKSA provider and a private host-to-guest path are
   required.
 - The official demo service needs ARM64 and dependency-layer qualification.
-- Until AOS-5, KUKSA token issuance and rotation remain a project-owned
-  provisioning concern rather than an Aos IAM-integrated flow.
+- The historical prototype-token flow must be replaced by the ADR 0010
+  Aos-IAM-derived credential flow before the target component is accepted.
 - The provider must expose data age and failure state without replacing stale
   values with fabricated zeroes.
 
@@ -138,3 +131,4 @@ The lifecycle-based repository decision and migration gate are defined by
 - [KUKSA authorization model at the pinned Databroker revision](https://github.com/eclipse-kuksa/kuksa-databroker/blob/30e5c13abc496d0b39aaa6c25acebb088b9902e3/doc/authorization.md)
 - [AosEdge service configuration](https://docs.aosedge.tech/docs/reference/file-formats/service-config)
 - [ADR 0006: lifecycle-based repository ownership](0006-lifecycle-based-repository-ownership.md)
+- [ADR 0010: Aos–KUKSA Credential Broker](0010-aos-kuksa-credential-broker.md)

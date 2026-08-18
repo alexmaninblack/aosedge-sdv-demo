@@ -1,15 +1,15 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# R8 — AosEdge Logging and ELK Integration
+# R8 — AosEdge Native Logging
 
 Status: **research pass complete; implementation not authorized**.
 
 ## Decision scope
 
-This workstream determines what AosEdge logging provides today, what an ELK
-view would require, and which evidence belongs in operational logs rather than
-the Engineering or Function dashboards.
+This workstream determines what AosEdge logging provides today, how the demo
+uses it through AosCloud, and which evidence belongs in operational logs rather
+than the Engineering or Function dashboards.
 
 ## Evidence summary
 
@@ -19,9 +19,8 @@ the Engineering or Function dashboards.
 | The Service Manager supports Cloud-requested instance, crash, and system logs with time filtering, compression, splitting, and Cloud transmission. | **PROVEN** |
 | AosCore sends resource monitoring and journal-derived error alerts to AosCloud through the Communication Manager. | **PROVEN** |
 | AosCloud UI supports requesting and downloading service and Unit logs. | **PROVEN** |
-| The public documentation does not establish a built-in continuous AosCloud-to-Elasticsearch export for this deployment. | **PROVEN absence of evidence** |
-| A dedicated export bridge can index selected Cloud-retrieved logs into Elasticsearch without changing the vehicle runtime. | **PROPOSED** |
-| API-driven log request creation, archive retrieval, live retention, and offline behavior in the current Cloud require qualification. | **REQUIRES EXPERIMENT** |
+| AosCloud UI supports explicit Unit, service-instance and crash-log requests and downloadable results. | **PROVEN** |
+| API-driven log request creation, result retrieval, permissions, retention/deletion, and offline behavior in the current Cloud require qualification. | **REQUIRES EXPERIMENT** |
 
 ## Product-native logging path
 
@@ -43,34 +42,21 @@ This path is different from two related paths:
 An informational `provider ready` line is therefore available in a requested
 log archive but is not automatically a real-time Cloud alert.
 
-## ELK integration boundary
+## Accepted demo boundary
 
-`ELK` is an external presentation and search environment:
+The demo uses only the native AosEdge logging path. No demo-owned collector,
+export bridge, secondary log store, or separate log dashboard is introduced.
+The stateless OEM Software Delivery Dashboard uses supported AosCloud APIs to:
 
-- Elasticsearch stores and indexes selected operational records;
-- Logstash or another collector may transform and forward them;
-- Kibana presents searches and dashboards.
+1. create an explicitly confirmed system, service-instance, or crash-log
+   request;
+2. poll the authoritative Cloud request state;
+3. present or download the completed result without retaining an independent
+   archive.
 
-The product documentation proves the vehicle-to-AosCloud log path, not the
-final AosCloud-to-ELK export. The least invasive demo architecture is:
-
-```text
-AosCloud log request/download API
-  -> demo-owned export bridge
-  -> normalization, redaction and correlation
-  -> Elasticsearch index
-  -> small Kibana operational view
-```
-
-The bridge must use a dedicated least-privilege identity and explicit operator
-requests. It must not place a private client certificate in browser code. If
-the current API cannot retrieve the completed archive safely, the fallback is
-to demonstrate requested logs in AosCloud rather than claim an ELK integration
-that does not exist.
-
-A direct Filebeat/journal exporter inside the VM could provide lower latency,
-but it bypasses the product-native Cloud log flow and adds a privileged base
-platform component. It is not recommended for the first lifecycle demo.
+Private client credentials remain in the dashboard backend and never enter
+browser code. If a requested operation is unavailable through the qualified
+API, the original AosCloud UI remains the technical drill-down surface.
 
 ## Required operational events
 
@@ -123,8 +109,9 @@ The export bridge must:
 
 ## Dashboard role
 
-The ELK view is supporting troubleshooting evidence, not the main narrative.
-For a demo stage it should answer only:
+The Software Delivery Dashboard's native-log view is supporting
+troubleshooting evidence, not the main narrative. For a demo stage it should
+answer only:
 
 1. Did the expected provider or service start and report ready?
 2. Did source loss, policy rejection, offline queueing, or reconnect occur?
@@ -145,20 +132,18 @@ Software Delivery Dashboard, and the Function Dashboard.
    journal and requested time window preserve the record.
 5. Verify archive format, compression, ordering, timestamps, duplication, and
    maximum part size.
-6. Prototype redaction and idempotent ingestion into a disposable Elastic
-   index without changing the VM.
-7. Define retention and deletion of demo-generated indices and downloaded
-   archives.
-8. Prove that high log volume cannot exhaust the Unit, the export bridge, or
-   the demo laptop.
+6. Verify that the dashboard does not retain an independent archive and that
+   temporary downloads are bounded and removed according to the demo policy.
+7. Prove that high log volume cannot exhaust the Unit, AosCloud request path,
+   dashboard backend, or demo laptop.
 
-## Historical Impact on Superseded Scenario 1.0
+## Current architecture decision
 
-The scenario's wording that AosEdge provides log collection and Cloud
-transmission is supported. The phrase `configured Cloud-to-ELK integration`
-must remain a target integration, not a baseline platform claim. Until the API
-and export bridge are qualified, AosCloud requested logs are the honest
-fallback evidence surface.
+The scenario's wording that AosEdge provides system/service log collection and
+Cloud transmission is supported. The accepted architecture uses AosCloud as
+the authoritative source and the stateless OEM Software Delivery Dashboard as
+the demo presentation surface. A separate log pipeline, store, or dashboard is
+not part of the demonstration.
 
 ## Sources
 

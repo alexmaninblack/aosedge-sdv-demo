@@ -30,7 +30,7 @@ correct because provisioning changes both guest disk state and AosCloud state.
 | Complete integrity-checked disk recovery assets exist separately for both Unit identities. | **PROVEN** |
 | The checkpoints contain provisioned identity and credential state and must remain private. | **PROVEN** |
 | Current tooling deliberately prevents treating these backups as ordinary demo reset points. | **PROVEN** |
-| A restored disk cannot restore AosCloud desired state, batch history, backend data, ELK data, dashboard caches, or CARLA state. | **PROVEN** |
+| A restored disk cannot restore AosCloud desired state, batch history or native log-request artifacts, functional-backend data, dashboard caches, or CARLA state. | **PROVEN** |
 | On reconnect, AosCore reports actual state and reconciles toward the Cloud's complete current desired state. | **PROVEN** |
 | If Cloud still desires G4, a disk restored to G0 may immediately start reconverging toward G4. | **INFERRED** |
 | Existing post-provision checkpoints are recovery evidence, not proven G0 golden images. | **INFERRED** |
@@ -45,7 +45,7 @@ VM checkpoint contains
 VM checkpoint does not contain
   AosCloud desired graph + verification/campaign state
   Function Backend events
-  ELK indices and downloaded archives
+  AosCloud native log requests and bounded temporary downloads
   dashboard caches
   CARLA scenario seed and actors
 ```
@@ -141,7 +141,7 @@ A complete demo reset includes all of the following:
 - Validation and Demonstration VM actual state;
 - Brake Health service persistent storage and pending functional events;
 - Function Backend demo records;
-- ELK demo indices or filters;
+- AosCloud native log-request artifacts and bounded temporary downloads;
 - dashboard caches and run selection;
 - deterministic CARLA world, actor state, and scenario seed.
 

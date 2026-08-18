@@ -7,9 +7,8 @@ Store accepted, editable architecture sources here together with their
 reviewable SVG or PNG exports. Use stable names and keep the version and status
 in the owning architecture document.
 
-The HLA 1.2 review candidate is maintained as Mermaid source inside
-[`high-level-architecture.md`](../high-level-architecture.md). HLA 1.0 remains
-the previous accepted checkpoint until the 1.2 review is complete.
+The accepted HLA 1.2 architecture baseline is maintained as Mermaid source
+inside [`high-level-architecture.md`](../high-level-architecture.md).
 
 The editable visual model is the primary visual architecture source:
 
@@ -18,14 +17,17 @@ The editable visual model is the primary visual architecture source:
 
 The Draw.io file is authoritative for diagram layout and visual relationships;
 the PNG must be regenerated from it after every accepted visual change. The
-HLA 1.2 review candidate reflects two peer OEM Service Providers, independent
-SOTA lifecycles, the shared FOTA-owned Vehicle Data Platform Capability, the
+accepted HLA 1.2 baseline reflects two peer OEM Service Providers, independent
+SOTA lifecycles, the shared FOTA-owned Vehicle Data Platform Component, the
 Tire Health service, the Factory Baseline Assembly-to-Factory Image and
-factory-installed runtime boundaries, the Software Delivery and ELK
-observation surfaces, and the KUKSA-mediated advisory return.
+factory-installed runtime boundaries, the Software Delivery Dashboard's
+AosCloud lifecycle and native-log views, and the KUKSA-mediated advisory
+return. It keeps Eclipse KUKSA unchanged and shows the Aos–KUKSA Credential
+Broker plus OEM policy inside the FOTA-owned Vehicle Data Platform Component.
 It also distinguishes Service Provider artifact publication, team-owned
 engineering release decisions, OEM-authorized deployment approval, and
 AosCloud lifecycle state/execution as defined by ADR 0009.
+The credential boundary follows ADR 0010.
 Both files are original project material, copyright 2026 maninblack, and
 distributed under the repository MIT license.
 

@@ -79,7 +79,7 @@ The Function Dashboard must visibly label estimated and simulated values.
 | S3 | Requires Data v2 + Advisory v1: reuses S2 inference, requests local advisory, works offline |
 
 This keeps bidirectionality separate from the telemetry schema. The scenario
-may call the combined graph `Provider v3`, while implementation can use
+may call the combined graph `VDP Component v3`, while implementation can use
 separate inbound and outbound providers.
 
 ## P1 and Service v1

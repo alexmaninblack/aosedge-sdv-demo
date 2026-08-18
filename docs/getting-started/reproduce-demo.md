@@ -106,16 +106,17 @@ terminated blindly.
 The accepted evidence and its limitations are recorded in
 [CARLA VISS-to-KUKSA qualification](../qualification/carla-viss-to-kuksa.md).
 This is currently a qualified integration path, not yet the complete staged
-Vehicle Data Platform Capability release flow.
+Vehicle Data Platform Component release flow.
 
 ## What Must Be Built Before a One-Command Full Demo
 
 The active gaps and component states are authoritative in the
 [Component Register](../requirements/component-decomposition-and-interface-register.md)
 and [roadmap](../planning/roadmap.md). Major missing pieces include the clean
-factory baseline, accepted Vehicle Data Platform v1-v3 artifacts, both
+factory baseline, accepted Vehicle Data Platform Component v1-v3 artifacts, both
 functional Cloud products, Tire Health service, Software Delivery
-Dashboard, unified orchestrator, outbound advisory path and end-to-end reset.
+Dashboard, unified orchestrator, Aos–KUKSA Credential Broker/OEM policy,
+outbound advisory path and end-to-end reset.
 
 Do not conceal those gaps with manual state changes or undocumented local
 files. Each completed component should add a reproducible launcher or test,

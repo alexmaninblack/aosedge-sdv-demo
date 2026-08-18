@@ -33,7 +33,7 @@ The architecture separates business decision ownership, authorization, and
 lifecycle execution as follows:
 
 1. The Platform Team owns engineering release decisions for the Vehicle Data
-   Platform Capability and its FOTA lifecycle.
+   Platform Component and its FOTA lifecycle.
 2. Function Team 1 owns engineering release decisions for Brake Health SOTA 1.
    Function Team 2 independently owns the corresponding decisions for Tire
    Health SOTA 2.

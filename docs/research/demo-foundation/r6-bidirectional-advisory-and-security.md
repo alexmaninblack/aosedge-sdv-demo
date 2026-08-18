@@ -23,7 +23,7 @@ in the current AosVM.
 | KUKSA 0.5.0 distinguishes data providers from actuation providers. An actuation provider subscribes to the desired value and tries to apply it to the vehicle. | **PROVEN** |
 | The pinned `kuksa.val.v1` API uses the stored, subscribable `target_value` perspective. KUKSA already marks this perspective deprecated in favor of the non-stored v2 actuation perspective. | **PROVEN** |
 | KUKSA JWT authorization supports separate path-scoped `read`, `actuate`, `provide`, and `create` permissions, RS256 verification, expiry, and audience `kuksa.val`. | **PROVEN** |
-| The planned Aos-to-KUKSA Authorization Adapter is not implemented in this baseline. | **PROVEN** |
+| The ADR 0010 Aos–KUKSA Credential Broker and OEM access policy are not implemented in this baseline; existing tokens are qualification fixtures. | **PROVEN** |
 | A safe prototype can use a narrowly scoped v1 target channel while preserving a migration requirement to `kuksa.val.v2`. | **PROPOSED** |
 
 ## Current boundary
@@ -116,6 +116,16 @@ to make the prototype work. The service and both provider directions should
 use separate credentials so that one compromise does not combine sensor
 publication, advisory request, and Gateway delivery privileges.
 
+ADR 0010 now fixes the target credential architecture. Upstream Eclipse KUKSA
+is not modified. The Vehicle Data Platform Component owns a local
+Aos–KUKSA Credential Broker and FOTA-managed OEM policy. A SOTA service uses
+its per-instance `AOS_SECRET`; the broker calls Aos IAM `GetPermissions` for
+the `kuksa` functional-server ID, compares the complete request against OEM
+policy, and either rejects it or returns a short-lived path-scoped JWT. The
+provider uses a separate platform credential for its accepted
+`provide`/`create` paths. Cloud-side pre-transfer permission admission remains
+a future AosCloud feature and is not claimed by the current design.
+
 ## Failure and safety rules
 
 - Reject every Set path except the exact advisory actuator.
@@ -147,8 +157,9 @@ publication, advisory request, and Gateway delivery privileges.
 
 1. Add the two provisional entries to a scratch VSS overlay and prove the
    pinned Databroker exposes the actuator target and current status correctly.
-2. Generate separate path-scoped test tokens and prove allowed and denied v1
-   operations, expiry, and restart behavior.
+2. Implement the ADR 0010 credential exchange and prove valid/invalid
+   `AOS_SECRET`, allowed/excess path and mode requests, complete-request
+   rejection, expiry, refresh, service removal, and restart behavior.
 3. Determine the minimum permission for the outbound target subscription.
 4. Prototype Set authorization and client authentication on a private Gateway
    route; prove every other path remains read-only.
@@ -168,6 +179,8 @@ that the first implementation uses the pinned v1 target-value compatibility
 path, that VISS Set success is not final actuation evidence, and that the
 Gateway status feedback is mandatory. The target delta includes both VISS
 authorization and a Gateway advisory handler; TLS alone is not sufficient.
+Credential issuance follows ADR 0010 and is part of the Vehicle Data Platform
+Component, not a standalone adapter or a modification to Eclipse KUKSA.
 
 ## Sources
 
@@ -176,3 +189,4 @@ authorization and a Gateway advisory handler; TLS alone is not sufficient.
 - [Eclipse KUKSA Databroker 0.5.0](https://github.com/eclipse-kuksa/kuksa-databroker/tree/0.5.0)
 - [`aos-vehicle-platform` provider architecture](../../../../aos-vehicle-platform/docs/architecture.md)
 - [Current High-Level Architecture 1.2](../../architecture/high-level-architecture.md)
+- [ADR 0010: Aos–KUKSA Credential Broker](../../architecture/decisions/0010-aos-kuksa-credential-broker.md)

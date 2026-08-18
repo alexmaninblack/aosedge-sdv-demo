@@ -22,7 +22,7 @@
         <mxCell id="M7xq5pBXHRRF11vvhjOU-11" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;strokeWidth=2;" value="Domain Controller ECU - QEMU + AosVM&lt;br&gt;logical instance: Validation Unit or Demonstration Unit" vertex="1">
           <mxGeometry height="395" width="1100" x="1060" y="225" as="geometry" />
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-23" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;strokeWidth=2;" value="Vehicle Data Platform Capability (FOTA payload and versioned contract)" vertex="1">
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-23" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;strokeWidth=2;" value="Vehicle Data Platform Component (FOTA artifact and versioned contract)" vertex="1">
           <mxGeometry height="210" width="880" x="1260" y="390" as="geometry" />
         </mxCell>
         <mxCell id="M7xq5pBXHRRF11vvhjOU-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;strokeWidth=2;" value="Virtual Vehicle Platform - CARLA" vertex="1">
@@ -76,6 +76,9 @@
         </mxCell>
         <mxCell id="M7xq5pBXHRRF11vvhjOU-15" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Read/subscribe&lt;br&gt;kuksa.val.v1" vertex="1">
           <mxGeometry height="60" width="150" x="1850" y="420" as="geometry" />
+        </mxCell>
+        <mxCell id="HLA-KUKSA-CREDENTIAL-BROKER" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=10;strokeWidth=1;dashed=1;" value="Aos–KUKSA Credential Broker + OEM policy&lt;br&gt;AOS_SECRET / Aos IAM → short-lived scoped JWT" vertex="1">
+          <mxGeometry height="36" width="340" x="1660" y="482" as="geometry" />
         </mxCell>
         <mxCell id="M7xq5pBXHRRF11vvhjOU-16" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;strokeWidth=2;" value="Simulated In-Vehicle Network" vertex="1">
           <mxGeometry height="210" width="170" x="860" y="390" as="geometry" />
@@ -184,7 +187,7 @@
         <mxCell id="M7xq5pBXHRRF11vvhjOU-39" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Brake Health&lt;br&gt;Function Dashboard" vertex="1">
           <mxGeometry height="60" width="140" x="2025" y="-220" as="geometry" />
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-40" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Development of Vehicle Data Platform Capability" vertex="1">
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-40" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Development of Vehicle Data Platform Component" vertex="1">
           <mxGeometry height="60" width="90" x="910" y="-120" as="geometry" />
         </mxCell>
         <mxCell id="HLA-FACTORY-ASSEMBLY" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="OEM Factory Baseline Assembly&lt;br&gt;produces immutable Factory Image" vertex="1">
@@ -244,7 +247,7 @@
             <mxPoint x="1280" y="-100" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-51" connectable="0" parent="M7xq5pBXHRRF11vvhjOU-50" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Feature request/update for Vehicle Data Platform Capability" vertex="1">
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-51" connectable="0" parent="M7xq5pBXHRRF11vvhjOU-50" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Feature request/update for Vehicle Data Platform Component" vertex="1">
           <mxGeometry relative="1" x="0.2322" y="-1" as="geometry">
             <mxPoint as="offset" />
           </mxGeometry>
@@ -258,7 +261,7 @@
             <mxPoint x="1020" y="250" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="HLA-SOFTWARE-DELIVERY-DASHBOARD" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="OEM Software Delivery Dashboard&lt;br&gt;Cloud state · evidence · owner / role&lt;br&gt;explicit OEM-authorized actions" vertex="1">
+        <mxCell id="HLA-SOFTWARE-DELIVERY-DASHBOARD" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="OEM Software Delivery Dashboard&lt;br&gt;Cloud state · evidence · native logs · owner / role&lt;br&gt;explicit OEM-authorized actions" vertex="1">
           <mxGeometry height="75" width="260" x="560" y="75" as="geometry" />
         </mxCell>
         <mxCell id="HLA-SOFTWARE-DASHBOARD-CLOUD" edge="1" parent="1" source="HLA-SOFTWARE-DELIVERY-DASHBOARD" style="endArrow=classic;startArrow=classic;html=1;rounded=0;dashed=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.1;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" target="M7xq5pBXHRRF11vvhjOU-33" value="">
@@ -269,12 +272,6 @@
               <mxPoint x="1015" y="-60" />
             </Array>
           </mxGeometry>
-        </mxCell>
-        <mxCell id="HLA-ELK" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" value="Vehicle and Service Log View&lt;br&gt;ELK" vertex="1">
-          <mxGeometry height="70" width="190" x="1055" y="-235" as="geometry" />
-        </mxCell>
-        <mxCell id="HLA-CLOUD-ELK" edge="1" parent="1" source="M7xq5pBXHRRF11vvhjOU-33" style="endArrow=classic;html=1;rounded=0;dashed=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="HLA-ELK" value="selected lifecycle and runtime logs">
-          <mxGeometry height="50" relative="1" width="50" as="geometry" />
         </mxCell>
         <mxCell id="j12gpLU1JJJo3LKyeumj-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;" value="Function Team 2 / Service Provider 2 (SOTA)&lt;br&gt;Tire Health" vertex="1">
           <mxGeometry height="115" width="220" x="1600" y="-155" as="geometry" />

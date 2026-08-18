@@ -250,7 +250,7 @@ Function Team 2 / Service Provider 2 will own an independently delivered SOTA
 service that:
 
 1. receives the vehicle-dynamics signals made available through the accepted
-   Vehicle Data Platform Capability;
+   Vehicle Data Platform Component;
 2. processes those signals locally on the Domain Controller;
 3. detects a bounded Vehicle Stability / Low-Friction Event;
 4. retains the event locally while connectivity is unavailable;

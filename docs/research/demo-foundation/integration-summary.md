@@ -49,9 +49,9 @@ Its confidential OEM source remains outside every Git repository.
 | R3 | Native/forward reset first; separate golden image per Unit as out-of-band fallback. | Cloud reconciliation and certificate/identity behavior after restore |
 | R4 | Dedicated frame-driven scenario tick owner; Gateway remains observer; 20-run strict-reset qualification. | Calibrated obstacle, brake, and tolerance values |
 | R5 | P1 four-signal subset; P2 wheel + simulated wear/energy/temperature; transparent equivalent-event projection; P3 adds a separate advisory capability. | Wheel calibration and model/threshold acceptance |
-| R6 | KUKSA v1 target-value compatibility bridge for current VM; one allowlisted advisory; factual Gateway status; planned v2 migration. | Scoped authorization, stale/replay behavior, VISS Set handler |
+| R6 | KUKSA v1 target-value compatibility bridge for current VM; one allowlisted advisory; factual Gateway status; planned v2 migration; ADR 0010 keeps upstream KUKSA unchanged and allocates the Credential Broker/OEM policy to the VDP Component. | Broker/IAM qualification, scoped authorization, stale/replay behavior, VISS Set handler |
 | R7 | Separate lossy bounded S1 samples from durable S2/S3 events; persistent bounded queue; Function Backend never enters local decision path. | Egress policy, credentials, storage persistence, transport |
-| R8 | AosEdge native log request path is real; continuous Cloud-to-ELK export is an external integration, not a baseline claim. | Log API/archive behavior and exporter qualification |
+| R8 | AosEdge native system/service/crash-log request path is real; the demo uses it through the stateless Software Delivery Dashboard without a separate pipeline or store. | Log API permissions, request/result behavior, retention/deletion and offline qualification |
 | R9 | Read-only localhost dashboard backend over public API; explicit target mismatch guard; all write actions deferred. | Least-privilege identity, latency, live field values |
 
 ## Integrated architecture refinements
@@ -132,7 +132,7 @@ R4 deterministic scene -------> R5 signal/model calibration
                                       +----> R6 advisory contract
 
 R2 API map -------------------> R9 Software Delivery Dashboard
-R8 log path ------------------> R9 log-status view / optional ELK bridge
+R8 native log path -----------> R9 Software Delivery Dashboard log view
 ```
 
 This reveals work that can proceed without waiting for a VM build:
@@ -175,7 +175,8 @@ This is sequencing advice for review, not authorization to execute.
    VM.
 2. Calibrate CARLA obstacle/braking/wheel telemetry and complete the 20-run
    repeatability gate.
-3. Qualify KUKSA path-scoped read/provide/actuate tokens and v1 target
+3. Qualify the VDP-owned Aos–KUKSA Credential Broker, OEM policy, distinct
+   provider credential, short-lived read/actuate JWTs, and v1 target
    subscribe/restart behavior in isolation.
 4. Qualify Aos service storage persistence and network policy without Cloud
    promotion.
@@ -200,9 +201,10 @@ provider feature.
 ### Gate 5 — reset and Demonstration promotion
 
 Prove forward/native reset and the golden fallback on Validation. Reset must
-cover Cloud, VM, CARLA, service storage, Function Backend, ELK, and dashboard
-state. Only then create the Demonstration golden image and exercise Campaign
-promotion and reset on that Unit.
+cover Cloud, VM, CARLA, service storage, Function Backend, bounded Cloud log
+request artifacts, and transient dashboard state. Only then create the
+Demonstration golden image and exercise Campaign promotion and reset on that
+Unit.
 
 ## Cross-cutting invariants
 
@@ -218,8 +220,8 @@ promotion and reset on that Unit.
 7. P2 remains backward compatible with P1; P3 does not silently redefine the
    telemetry schema.
 8. Dashboard state is observational; it cannot become desired-state authority.
-9. ELK contains operational evidence, not vehicle telemetry or functional
-   model truth.
+9. Native AosEdge logs contain operational evidence, not vehicle telemetry or
+   functional model truth, and the dashboard stores no independent archive.
 10. Every external write, deployment, approval, VM replacement, or Yocto build
     remains a separately reviewed action.
 
@@ -232,7 +234,7 @@ promotion and reset on that Unit.
 | One generic validation approval | Show Artifact Verification, Fleet Validation, and Campaign separately |
 | Verification Batch target follows current Unit Set | Compare actual pending recipients; stale batches can retain obsolete targets |
 | Reverse provider rollback/remove returns G4 to G0 | Required outcome, mechanism unproven; test forward reset and snapshot fallback |
-| Configured ELK view is an inherent platform feature | AosEdge Cloud log transport is proven; ELK export is a separate integration |
+| A custom log pipeline and store are required for the demo | AosEdge native log collection, Cloud delivery and downloadable results are the accepted path; the Software Delivery Dashboard is a stateless API view |
 | Service dependency on provider is Cloud-enforced | Current release has no documented Service-to-FOTA dependency. Platform Team reports it as roadmap work; defer the native rejection demo, use provider-first ordering and fail-closed service readiness, and add no custom admission gate |
 | Service artifact digest is always available | Component SHA-256 is public; service OCI digest needs live confirmation |
 | Any large brake command can populate ABS/EBA/driver-emergency paths | Preserve standard semantics; derive demo event or use explicit overlay |
@@ -260,8 +262,8 @@ promotion and reset on that Unit.
 5. Accept the pinned KUKSA v1 compatibility bridge plus mandatory v2 migration
    requirement.
 6. Select the first Function Backend transport after egress/credential tests.
-7. Decide whether ELK is required for the first complete demo or remains an
-   optional post-baseline integration.
+7. Qualify native AosCloud log request permissions, latency, result retrieval,
+   retention/deletion and offline behavior for the Software Delivery Dashboard.
 
 ## Research documents
 
@@ -272,5 +274,5 @@ promotion and reset on that Unit.
 - [R5 — Brake Health data and model](r5-brake-health-data-and-model.md)
 - [R6 — Advisory and security](r6-bidirectional-advisory-and-security.md)
 - [R7 — Functional Cloud and offline](r7-functional-cloud-and-offline.md)
-- [R8 — Logging and ELK](r8-logging-and-elk.md)
+- [R8 — AosEdge native logging](r8-aosedge-native-logging.md)
 - [R9 — Dashboards and APIs](r9-demo-dashboards-and-apis.md)

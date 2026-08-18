@@ -3,7 +3,7 @@
 
 # Architecture and Repository Ownership
 
-The current end-to-end review candidate, including shared platform FOTA,
+The accepted end-to-end architecture baseline, including shared platform FOTA,
 independent SOTA lifecycles for two peer OEM functional teams, bidirectional
 KUKSA/VISS flows, local analytics, Cloud reporting, and engineering-dashboard
 boundaries, is defined in
@@ -21,12 +21,16 @@ flowchart LR
 
     subgraph AosVM["AosVM vehicle computer"]
         PROVIDER["vehicle-data provider / OEM FOTA"]
-        KUKSA["KUKSA Databroker"]
+        BROKER["Aos–KUKSA Credential Broker<br/>OEM policy / FOTA"]
+        KUKSA["unmodified Eclipse KUKSA Databroker"]
         SERVICE1["Brake Health service / SOTA 1"]
         SERVICE2["Tire Health service / SOTA 2"]
         PROVIDER -->|"kuksa.val.v1"| KUKSA
         KUKSA -->|"versioned VSS contract"| SERVICE1
         KUKSA -->|"versioned VSS contract"| SERVICE2
+        SERVICE1 -. "AOS_SECRET to short-lived JWT" .-> BROKER
+        SERVICE2 -. "AOS_SECRET to short-lived JWT" .-> BROKER
+        BROKER -. "public verifier" .-> KUKSA
     end
 
     VISS -->|"private verified VISS 3.1 route"| PROVIDER
@@ -46,7 +50,7 @@ remain the stable service boundary.
 | Repository | Owns | Lifecycle |
 | --- | --- | --- |
 | `carla-ego-runtime` | ego control and VISS projection | simulation tooling |
-| `aos-vehicle-platform` | vehicle-data contract, provider, Service Manager runtime, KUKSA integration, future authorization adapter | OEM platform/FOTA |
+| `aos-vehicle-platform` | Vehicle Data Platform Component: providers, contract/configuration, Aos–KUKSA Credential Broker and OEM access policy; plus Service Manager runtime and KUKSA integration | OEM platform/FOTA |
 | `brake-health-service` | Function Team 1 Brake Health consumer and local analytics | Service Provider 1/SOTA 1 |
 | `tire-health-service` | Function Team 2 local tire-condition estimation, bounded reporting, offline state and typed inspection advisory | Service Provider 2/SOTA 2; accepted boundary, repository not yet created |
 | `brake-health-cloud` | Function Team 1 backend and Brake Health Function Dashboard | Function Team 1 Cloud product; accepted boundary, repository not yet created |
@@ -69,9 +73,13 @@ repository, distinct from its in-vehicle SOTA repository.
 - VISS listens only on the macOS loopback path used by the VM bridge.
 - The provider verifies TLS and receives credentials through systemd, not its
   payload or command line.
-- KUKSA is the in-vehicle data interface exposed to services.
-- The current path-scoped KUKSA tokens are a prototype fixture; the future
-  Aos-to-KUKSA Authorization Adapter belongs to `aos-vehicle-platform`.
+- Upstream Eclipse KUKSA remains unchanged as the in-vehicle data interface
+  exposed to services and verifies only the Platform Team's configured public
+  key.
+- The Vehicle Data Platform Component owns the Aos–KUKSA Credential Broker and
+  FOTA-managed OEM access policy. It derives short-lived, path-scoped JWTs from
+  an authenticated Aos service instance's `AOS_SECRET`; prototype tokens are
+  historical qualification fixtures, not the target architecture.
 - VM provisioning identity, OEM signing identity, user certificates, private
   keys, Cloud tokens, and raw operational evidence remain outside Git.
 
@@ -89,6 +97,8 @@ decision. Rootfs rollback from `.11` to `.2` is not provider-transparent; the
 provider assignment must first be suspended or removed.
 
 See [ADR 0006](decisions/0006-lifecycle-based-repository-ownership.md) for the
-accepted repository decision and
+accepted repository decision,
+[ADR 0010](decisions/0010-aos-kuksa-credential-broker.md) for the credential
+boundary, and
 [the current baseline](../qualification/current-baseline.md)
 for exact versions and digests.

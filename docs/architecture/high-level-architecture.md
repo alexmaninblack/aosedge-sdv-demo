@@ -3,15 +3,17 @@
 
 # High-Level Architecture 1.2
 
-- Status: Review candidate based on the accepted visual architecture input
+- Status: Accepted architecture baseline
 - Version: 1.2
 - Prepared: 2026-08-18
+- Accepted: 2026-08-18
 - Owner: System Architecture
 - Previous accepted version: 1.0, accepted 2026-08-16
 - Accepted architecture decisions: [ADR 0008](decisions/0008-use-tire-health-for-function-team-2.md),
-  [ADR 0009](decisions/0009-separate-release-decision-from-cloud-execution.md)
+  [ADR 0009](decisions/0009-separate-release-decision-from-cloud-execution.md),
+  [ADR 0010](decisions/0010-aos-kuksa-credential-broker.md)
 - Scope: CARLA, Vehicle Gateway ECU, AosVM Domain Controller, AosCloud,
-  shared Vehicle Data Platform Capability, two independent OEM Service
+  shared Vehicle Data Platform Component, two independent OEM Service
   Providers, functional backends, and demonstration tooling
 - Implementation status: target architecture; current and planned elements are
   distinguished below
@@ -31,7 +33,7 @@ or reconciled whenever the source changes.
 The visual source defines the component boundaries and principal relationships
 used by Architecture 1.2: two peer OEM Function Teams represented as
 independent AosCloud Service Providers, the shared Vehicle Data Platform
-Capability, the Tire Health function, the Factory Baseline Assembly-to-Factory
+Component, the Tire Health function, the Factory Baseline Assembly-to-Factory
 Image artifact and factory-installed runtime boundaries,
 the Software Delivery and log-observation surfaces, and the explicit typed
 Brake Health and Tire Health advisory paths through KUKSA. It also distinguishes
@@ -50,7 +52,7 @@ provisional Function Team 2 candidate, as accepted in
    organizations and independent AosCloud Service Providers;
 2. adding an independently delivered Tire Health SOTA service with its own
    backend and dashboard;
-3. establishing the FOTA-owned Vehicle Data Platform Capability as a shared
+3. establishing the FOTA-owned Vehicle Data Platform Component as a shared
    vehicle integration layer used by multiple functional services;
 4. separating continuous local condition estimation from bounded Tire Health
    summaries and threshold-event Cloud upload;
@@ -61,14 +63,18 @@ provisional Function Team 2 candidate, as accepted in
 7. distinguishing the build-time OEM Factory Baseline Assembly, its immutable
    pre-SOP OEM Demo Factory Image artifact, and the factory-installed runtime
    graph from the post-SOP FOTA capability payload;
-8. adding the OEM Software Delivery Dashboard and centralized ELK log view as
-   engineering surfaces over authoritative platform state;
+8. adding the OEM Software Delivery Dashboard as the stateless engineering
+   surface over authoritative AosCloud lifecycle state and native log APIs;
 9. clarifying that the same logical Domain Controller architecture is
    instantiated separately as the Validation Unit and Demonstration Unit;
 10. adopting [ADR 0009](decisions/0009-separate-release-decision-from-cloud-execution.md):
     each owning team makes its engineering release decision, an OEM identity
     authorizes deployment to OEM Units, and AosCloud remains the lifecycle
     system of record and execution control plane.
+11. adopting [ADR 0010](decisions/0010-aos-kuksa-credential-broker.md):
+    upstream Eclipse KUKSA remains unchanged, while the Vehicle Data Platform
+    Component owns the Aos–KUKSA Credential Broker and FOTA-managed OEM access
+    policy used to derive short-lived KUKSA JWTs from Aos service identity.
 
 ## Purpose
 
@@ -100,7 +106,7 @@ flowchart TB
 
         subgraph PLATFORM_TEAM["Platform Team"]
             FACTORY_ASSEMBLY["OEM Factory Baseline Assembly<br/>compose · build · qualify · freeze"]
-            PLATFORM_DEV["Development of Vehicle Data<br/>Platform Capability"]
+            PLATFORM_DEV["Development of Vehicle Data<br/>Platform Component"]
         end
 
         AOS_CLOUD(["AosCloud<br/>lifecycle system of record<br/>and execution control plane"])
@@ -117,7 +123,6 @@ flowchart TB
         BRAKE_DASHBOARD["Brake Health<br/>Function Dashboard"]
         TIRE_BACKEND[("Service Provider 2<br/>Tire Health Backend")]
         TIRE_DASHBOARD["Tire Health<br/>Function Dashboard"]
-        ELK[("Vehicle and Service Log View<br/>ELK")]
 
         BRAKE_DEV -. "Feature request:<br/>new or updated vehicle signals" .-> PLATFORM_DEV
         PLATFORM_DEV -- "OEM identity:<br/>publish + approve FOTA" --> AOS_CLOUD
@@ -125,13 +130,12 @@ flowchart TB
         TIRE_DEV -- "SP identity: publish SOTA 2<br/>OEM identity: approve deployment" --> AOS_CLOUD
         BRAKE_BACKEND --> BRAKE_DASHBOARD
         TIRE_BACKEND --> TIRE_DASHBOARD
-        AOS_CLOUD -. "Selected lifecycle<br/>and runtime logs" .-> ELK
     end
 
     subgraph DEMO["Demo / Engineering Workstation — Mac host"]
         direction LR
         CONTROL_UI["Vehicle Control UI<br/>Manual · Autopilot · Safe Stop"]
-        SOFTWARE_DASHBOARD["OEM Software Delivery Dashboard<br/>AosCloud state · targets · evidence<br/>explicit OEM-authorized actions"]
+        SOFTWARE_DASHBOARD["OEM Software Delivery Dashboard<br/>AosCloud state · targets · evidence · logs<br/>explicit OEM-authorized actions"]
         TELEMETRY_DASHBOARD["Engineering Telematics Dashboard<br/>speed · acceleration · pedals · steering<br/>Brake + Tire Health advisory · gateway status"]
     end
 
@@ -167,7 +171,7 @@ flowchart TB
             AOS_CORE["Factory-installed Domain Controller substrate<br/>AosCore · Service Manager · KUKSA<br/>security · update support"]
             COMPONENT_RUNTIME["Preinstalled component runtime<br/>provider-specific · empty slot"]
 
-            subgraph DATA_PLATFORM["Vehicle Data Platform Capability — FOTA payload and versioned contract"]
+            subgraph DATA_PLATFORM["Vehicle Data Platform Component — FOTA payload and versioned contract"]
                 direction TB
 
                 subgraph INBOUND_PATH["Inbound vehicle-data path"]
@@ -194,9 +198,12 @@ flowchart TB
                     OUTBOUND_POLICY --> OUTBOUND
                 end
 
-                CONTRACT["Versioned Vehicle Data Platform<br/>Capability contract"]
+                AUTH["Aos–KUKSA Credential Broker<br/>Aos IAM + OEM access policy<br/>short-lived path-scoped JWT"]
+                CONTRACT["Versioned Vehicle Data Platform<br/>Component contract"]
                 CONTRACT --- KUKSA_ACTUAL
                 CONTRACT --- KUKSA_TARGET
+                AUTH -. "authorizes" .-> READ_API
+                AUTH -. "authorizes" .-> ACTUATE_API
             end
 
             subgraph TIRE_FUNCTION_SERVICE["OEM Functional Service — SOTA 2"]
@@ -207,12 +214,15 @@ flowchart TB
                 BRAKE_SERVICE["Brake Health Service Container<br/>local analytics and advisory decision"]
             end
 
+            BRAKE_SERVICE -. "AOS_SECRET → short-lived JWT" .-> AUTH
+            TIRE_SERVICE -. "AOS_SECRET → short-lived JWT" .-> AUTH
+
             READ_API -- "Read / subscribe" --> TIRE_SERVICE
             READ_API -- "Read / subscribe" --> BRAKE_SERVICE
             BRAKE_SERVICE -- "Brake Health advisory request" --> ACTUATE_API
             TIRE_SERVICE -- "Tire Health advisory request" --> ACTUATE_API
-            TIRE_SERVICE -. "Requires compatible<br/>capability contract" .-> CONTRACT
-            BRAKE_SERVICE -. "Requires compatible<br/>capability contract" .-> CONTRACT
+            TIRE_SERVICE -. "Requires compatible<br/>component contract" .-> CONTRACT
+            BRAKE_SERVICE -. "Requires compatible<br/>component contract" .-> CONTRACT
         end
 
         VISS_SERVER -- "Telemetry and gateway status" --> NETWORK
@@ -240,8 +250,8 @@ flowchart TB
 The diagram is a **capability-superset view** of one logical vehicle
 architecture. A deployable FOTA or SOTA box indicates that the architecture can
 host that element; it does not imply that every element is installed at every
-demonstration stage. The manufacturing, provisioning, `G0–G4`, and retirement
-sequence and the precise presence or absence of each deployable component are
+demonstration stage. The manufacturing, provisioning, `G0–G4`, independent
+`T1` Tire Health, and retirement sequence and the precise presence or absence of each deployable component are
 owned by Demo Scenario 1.2 rather than by this static component diagram.
 
 The logical Domain Controller architecture is instantiated twice for the
@@ -290,8 +300,8 @@ QEMU plus AosVM represents a Domain Controller ECU. It contains:
   identity, security, desired-state management, Service Manager, KUKSA, and
   update support;
 - the preinstalled, provider-specific component runtime with an initially
-  empty Vehicle Data Platform Capability slot;
-- the independently installed FOTA-owned Vehicle Data Platform Capability
+  empty Vehicle Data Platform Component slot;
+- the independently installed FOTA-owned Vehicle Data Platform Component
   payload and its versioned contract;
 - KUKSA Databroker as the preinstalled stable VSS data boundary for services;
 - independently deployed SOTA service containers;
@@ -301,32 +311,32 @@ QEMU plus AosVM represents a Domain Controller ECU. It contains:
 The Domain Controller is not part of CARLA. Its VM boundary represents a
 separate automotive computer even though both sides execute on the same Mac.
 
-The OEM Factory Baseline Assembly is a build-time Platform Team capability,
+The OEM Factory Baseline Assembly is a build-time Platform Team responsibility,
 not software running in the Domain Controller. It reproducibly composes,
 builds, qualifies and freezes the immutable OEM Demo Factory Image artifact.
 Fresh Validation and Demonstration Unit runtime deployments are created from
 that artifact and run the installed component graph; they are not instances
 of the assembly component.
 
-The immutable OEM Factory Image contains no Vehicle Data Platform Capability
+The immutable OEM Factory Image contains no Vehicle Data Platform Component
 payload, functional SOTA service, Cloud registration, Cloud-issued credential,
 or reusable per-vehicle identity. The accepted component runtime is currently
 specific to one provider type and one empty slot; Architecture 1.2 does not
 claim a generic arbitrary-component runtime.
 
-The Vehicle Data Platform Capability payload is the shared
+The Vehicle Data Platform Component payload is the shared
 vehicle-integration layer. It owns the privileged connection to the Vehicle
 Gateway, converts accepted VISS values into the stable KUKSA contract, and
 enforces the narrowly scoped outbound advisory path. The KUKSA executable is
 part of the SOP substrate, while the signal mappings, accepted namespaces, and
-versioned contract exposed through it belong to the FOTA capability.
+versioned contract exposed through it belong to the FOTA component.
 Functional services consume that contract and do not contain vehicle-network
 integration code.
 
 ### OEM systems
 
 AosCloud is the lifecycle system of record and execution control plane for
-provisioning and for the FOTA capability and both SOTA services. It stores the
+provisioning and for the FOTA component and both SOTA services. It stores the
 authoritative desired state, reported actual state, batches, campaigns,
 recorded approvals, audit history, and delivery progress. It does not make an
 owning team's engineering release decision, is not a functional telemetry
@@ -341,10 +351,12 @@ scoped identity. It must not infer approval from a passing test, auto-approve a
 candidate, impersonate an owner, invent a parallel desired state, or become a
 second lifecycle control plane.
 
-The centralized Vehicle and Service Log View uses the configured AosEdge-to-ELK
-pipeline for selected lifecycle and runtime evidence. ELK is neither a vehicle
-telemetry transport nor a functional backend, and the architecture does not
-assume that every AosEdge deployment includes an identical ELK topology.
+AosEdge native logging is an existing platform capability. System, service
+instance, and crash logs are collected by AosCore and delivered to AosCloud in
+response to authorized log requests. The OEM Software Delivery Dashboard uses
+supported AosCloud APIs to request and present that evidence without storing
+its own log archive or introducing a separate collection, transport, or search
+pipeline.
 
 Function Team 1 owns a separate Brake Health Backend and Brake Health Function
 Dashboard. Function Team 2 owns a separate Tire Health Backend and Tire Health
@@ -369,16 +381,18 @@ warning was displayed to or acknowledged by a driver.
 
 ## OEM Ownership and Release Lifecycles
 
-### Platform Team — Vehicle Data Platform Capability, FOTA
+### Platform Team — Vehicle Data Platform Component, FOTA
 
 The Platform Team owns the factory baseline and shared vehicle-facing platform
-capability:
+component:
 
 - OEM Factory Baseline Assembly and Factory Image qualification, including
   the selected provider-specific component runtime and its empty-slot behavior;
 - inbound and outbound vehicle-interface providers;
 - VSS mapping, filtering, and validation;
 - KUKSA integration and stable signal contract;
+- the Aos–KUKSA Credential Broker, protected signing key, and versioned OEM
+  KUKSA access policy;
 - outbound actuator allowlists and enforcement;
 - platform credentials and trust integration without embedding secrets in
   artifacts;
@@ -389,7 +403,7 @@ capability:
 In the current demonstration, Function Team 1 may request a new or extended
 vehicle-data capability. It does not gain permission to ship privileged
 platform integration code. Function Team 2 consumes signals already present in
-the accepted capability contract; a Function Team 2 platform feature request
+the accepted component contract; a Function Team 2 platform feature request
 is possible in a production organization but is not part of this demo.
 
 ### Function Team 1 / Service Provider 1 — Brake Health, SOTA 1
@@ -400,7 +414,7 @@ Service Provider. It owns:
 - the Brake Health service container;
 - local emergency-braking detection, diagnostic analysis, and advisory
   decision logic;
-- the required platform-capability version declaration;
+- the required Vehicle Data Platform Component compatibility declaration;
 - service configuration, state, tests, updates, and rollback;
 - the engineering decision to accept each service candidate and integration
   result; service publication uses the Service Provider 1 identity, while
@@ -420,7 +434,7 @@ Service Provider. It owns:
 - a bounded, persistent and versioned tire-condition estimate;
 - the decision to create a bounded summary or threshold event;
 - the decision to request an allowlisted tire-inspection advisory;
-- its required platform-capability version declaration;
+- its required Vehicle Data Platform Component compatibility declaration;
 - service configuration, state, tests, updates, and rollback;
 - the engineering decision to accept each service candidate and integration
   result; service publication uses the Service Provider 2 identity, while
@@ -441,13 +455,13 @@ thresholds, payload and dashboard representation remain detailed-design items.
 
 The architecture has three independently owned release lifecycles:
 
-1. the Platform Team publishes the Vehicle Data Platform Capability through
+1. the Platform Team publishes the Vehicle Data Platform Component through
    FOTA;
 2. Service Provider 1 publishes the Brake Health service through SOTA 1;
 3. Service Provider 2 publishes the Tire Health service through SOTA 2.
 
 Each SOTA service declares its own dependency on a versioned Vehicle Data
-Platform Capability. The services do not depend on each other and can be
+Platform Component. The services do not depend on each other and can be
 installed, updated, or rolled back independently, subject to their platform
 contract. The platform is qualified through its FOTA lifecycle before a
 dependent service is accepted against it. A service defect creates a new
@@ -472,7 +486,7 @@ recorded for the exact versions, digests, and targets.
 
 The target architecture requires **native AosCloud pre-deployment
 enforcement** of each SOTA-to-FOTA compatibility range. If the intended Unit
-does not yet contain a compatible Vehicle Data Platform Capability, AosCloud
+does not yet contain a compatible Vehicle Data Platform Component, AosCloud
 rejects the SOTA request before it creates a rollout or sends update content to
 the Unit. The current released Cloud/API does not yet expose this cross-type
 dependency. On 2026-08-18 the AosEdge Platform Team identified it as a roadmap
@@ -552,7 +566,7 @@ must not prevent local estimation or advisory generation. State persistence,
 retention, retry behavior and the exact payload are lower-level decisions.
 
 For the current demo, this service must use vehicle data already present in the
-accepted Vehicle Data Platform Capability. It combines native dynamics
+accepted Vehicle Data Platform Component. It combines native dynamics
 evidence with an explicit simulation-only degradation stimulus. That hidden
 qualification truth must not be published as if it were a production vehicle
 measurement.
@@ -637,7 +651,7 @@ Gateway advisory request.
 ### 8. Independent software lifecycle delivery
 
 ```text
-Platform Team -> FOTA artifact + OEM-authorized approval -> AosCloud -> AosCore -> preinstalled component runtime -> Vehicle Data Platform Capability
+Platform Team -> FOTA artifact + OEM-authorized approval -> AosCloud -> AosCore -> preinstalled component runtime -> Vehicle Data Platform Component
 Function Team 1 -> SP identity publishes SOTA 1 + OEM identity approves -> AosCloud -> AosCore -> Brake Health service
 Function Team 2 -> SP identity publishes SOTA 2 + OEM identity approves -> AosCloud -> AosCore -> Tire Health service
 ```
@@ -668,9 +682,17 @@ dependency.
   type and enum bounds, and fails closed.
 - An advisory request cannot become an unrestricted transport tunnel from a
   service container to the Vehicle Gateway.
-- The planned Aos-to-KUKSA Authorization Adapter remains the production target.
-  A bounded prototype token may be used only as a documented demonstration
-  fixture until that adapter exists.
+- Upstream Eclipse KUKSA Databroker remains unchanged and trusts only the
+  public verifier configured by the Platform Team.
+- The Vehicle Data Platform Component's Aos–KUKSA Credential Broker validates
+  a running service's `AOS_SECRET` through Aos IAM, compares the complete
+  requested path/mode set with FOTA-managed OEM policy, fails closed on any
+  excess, and issues only a short-lived path-scoped JWT.
+- Functional services never receive KUKSA `provide` or `create` authority.
+  The Vehicle Data Provider uses a distinct platform credential.
+- Broker signing material, `AOS_SECRET`, and issued JWTs never enter Git,
+  FOTA/SOTA payloads, command lines, or logs. Example/static tokens are
+  qualification history, not the target architecture.
 - Vehicle control remains on its separate authenticated channel and is not
   exposed to either functional service.
 - Functional backends have no AosCore lifecycle authority and cannot act as a
@@ -684,8 +706,9 @@ dependency.
   displays the business decision owner and active Cloud role, and exposes only
   explicitly confirmed mutation actions. It stores no authoritative lifecycle
   state and passing evidence never grants or implies approval.
-- ELK access is separately authenticated and filtered; service logs must not
-  disclose Unit secrets, service tokens, or unrestricted vehicle data.
+- AosCloud log requests and results use scoped authentication; emitted service
+  and platform logs must not disclose Unit secrets, service tokens, or
+  unrestricted vehicle data.
 
 ## Current Baseline and Target Delta
 
@@ -694,7 +717,7 @@ dependency.
 | CARLA and ego runtime | Vehicle state, control, VSS normalization | Preserve unchanged behavior |
 | VISS server | TLS VISS 3.1 Get and Subscribe; write rejected | Add a narrowly scoped advisory Set path and Gateway status |
 | Engineering dashboard | Independent VISS subscriber for live telemetry | Add advisory request and Gateway reception status |
-| Vehicle Data Platform Capability | Inbound VISS-to-KUKSA implementation and qualification evidence exist in project artifacts; it is not yet the accepted empty-service demo baseline | Provide one shared, versioned FOTA capability with inbound telemetry and separately governed outbound advisory directions |
+| Vehicle Data Platform Component | Inbound VISS-to-KUKSA implementation and qualification evidence exist; the Credential Broker and accepted OEM policy are not yet implemented in the clean demo baseline | Provide one shared, versioned FOTA component with inbound telemetry, separately governed outbound advisory directions, and Aos-IAM-derived short-lived KUKSA credentials |
 | Factory Baseline Assembly, OEM Demo Factory Image and Domain Controller substrate | The current build evidence and runtime are provider-specific; installed `.1` and `.2` systems prove an empty provider slot, while the hardened candidate is not yet an accepted clean factory artifact | Qualify the reproducible assembly process and freeze its immutable, unprovisioned OEM image containing AosCore, KUKSA, security, update support, and the selected empty-slot runtime, but no provider payload or functional service |
 | KUKSA contract | Readable telemetry signals | Serve both services and add the versioned advisory actuator and status sensor |
 | Brake Health service | Not yet the accepted final service | Subscribe, analyze locally, actuate advisory, report asynchronously |
@@ -702,7 +725,7 @@ dependency.
 | Service Provider separation | AosCloud lifecycle mechanisms exist; the two target services are not yet accepted as independent deployments | Independent Service Provider identities for publication, team-owned engineering decisions, OEM-authorized deployment approvals, artifacts, dependencies, updates, and rollback |
 | Cross-lifecycle dependency admission | Service-to-layer and component-to-component dependencies exist, but the current released Cloud/API does not expose a Service-to-FOTA-component admission rule | Natively reject an incompatible SOTA request in AosCloud before rollout creation or Unit transfer; deferred until the roadmap feature ships and is qualified |
 | OEM Software Delivery Dashboard | Not implemented; the AosCloud UI and APIs remain authoritative | Provide a stateless view of actual targets, artifact identity, evidence, owner, active Cloud role, validation, promotion, and Unit state; require explicit OEM-authorized confirmation without creating a parallel desired-state store or automatic approval policy |
-| Vehicle and Service Log View | AosEdge log mechanisms exist; the exact Cloud-to-ELK deployment integration is not yet accepted | Show selected, access-controlled lifecycle and runtime evidence without using ELK as a telemetry or functional-data backend |
+| Native operational logs | AosEdge supports Cloud-requested system, service-instance and crash logs | Present selected, access-controlled request status and log evidence in the stateless Software Delivery Dashboard through supported AosCloud APIs |
 | Validation and Demonstration instances | Separate VM roles exist, while the demo has one visible CARLA/Vehicle Gateway/VISS source | Instantiate the same logical Domain Controller architecture twice and define deterministic selection or replay without claiming two simultaneous vehicles |
 | Driver HMI | Not implemented | Remains out of scope |
 | Functional backends | Scenario-level targets | Two separate backends receive derived Brake Health and Tire Health data without entering local decisions or software lifecycle control |
@@ -720,7 +743,7 @@ Architecture 1.2 is aligned only while all of the following remain true:
 2. Both functional services talk to KUKSA, never directly to CARLA or VISS.
 3. Function Team 1 and Function Team 2 are peer OEM organizations and separate
    AosCloud Service Providers.
-4. Only Function Team 1 requests a Vehicle Data Platform Capability extension
+4. Only Function Team 1 requests a Vehicle Data Platform Component extension
    in the current demo; Function Team 2 uses the already available contract.
 5. Tire Health estimates condition locally and sends only bounded summaries or
    threshold events; it does not continuously stream raw sensor data to the Cloud.
@@ -737,7 +760,7 @@ Architecture 1.2 is aligned only while all of the following remain true:
     retain independent ownership, versioning, qualification, update, and
     rollback lifecycles.
 12. The two services do not depend on each other; each is gated only by its
-    declared Vehicle Data Platform Capability contract. Native AosCloud
+    declared Vehicle Data Platform Component contract. Native AosCloud
     pre-deployment enforcement is a deferred target capability and must not be
     claimed against the current release.
 13. Each Brake Health or Tire Health advisory passes through KUKSA, the
@@ -749,7 +772,7 @@ Architecture 1.2 is aligned only while all of the following remain true:
     SOTA payload.
 16. The static diagram is a target capability superset; Demo Scenario 1.2 owns
     component presence and absence at each manufacturing, provisioning,
-    `G0–G4`, and retirement stage.
+    `G0–G4`, `T1`, and retirement stage.
 17. Validation and Demonstration Units are separate instances of the same
     logical Domain Controller architecture; the diagram does not imply two
     simultaneous CARLA vehicles.
@@ -771,7 +794,7 @@ Architecture 1.2 is aligned only while all of the following remain true:
 - claims that a warning was displayed or acknowledged by a driver;
 - autonomous modification of brake ECU calibration or vehicle motion;
 - third-party Service Providers or Fleet Operators;
-- a Function Team 2 request for a new Vehicle Data Platform Capability in the
+- a Function Team 2 request for a new Vehicle Data Platform Component in the
   current demo;
 - continuous raw-sensor streaming to the Tire Health Backend;
 - presentation of simulated tire degradation truth as a measured production
@@ -779,42 +802,25 @@ Architecture 1.2 is aligned only while all of the following remain true:
 - an exact tread-depth claim without a corresponding sensor;
 - a real production fleet campaign;
 - selection of CAN, SOME/IP, DDS, TSN, or production ECU hardware;
-- the final production authorization-adapter implementation;
+- Cloud-side pre-transfer admission for KUKSA path permissions; local
+  credential exchange remains the current fail-closed enforcement point;
 - exact VSS overlay paths, enum values, timing budgets, and retry policy;
 - Cloud or Unit mutation merely by accepting this document.
 
-## Next Design and Planning Gate
+## Acceptance Record and Downstream Ownership
 
-The next plan revision should decompose this architecture in the following
-order:
+High-Level Architecture 1.2 was accepted as the architecture baseline on
+2026-08-18 during D2 joint baseline review. Its downstream projections are:
 
-1. freeze and qualify the clean OEM Factory Image, its provider-specific
-   empty-slot runtime, and the absence of feature payloads and reusable
-   identity;
-2. define the two Domain Controller instances and deterministic selection or
-   replay of the single CARLA/Vehicle Gateway/VISS source;
-3. inventory CARLA/VISS signals already available without additional
-   vehicle-side development;
-4. freeze the Function Team 2 Tire Health input subset, degradation model,
-   persistent state, condition bands, bounded payload and qualification oracle;
-5. define the shared, versioned KUKSA/VSS data contract required by both
-   services;
-6. define and validate the typed Brake Health and Tire Health actuator and
-   Gateway-status contracts, then design the scoped writable VISS/Gateway
-   handler and outbound KUKSA provider security policy;
-7. define the Brake Health and Tire Health service state machines,
-   offline behavior, functional-backend contracts, and functional dashboards;
-8. define the OEM Software Delivery Dashboard contract and qualify the
-   AosEdge-to-ELK observation path without creating new sources of truth;
-9. map platform elements to FOTA, each service to its own SOTA lifecycle,
-   declare both platform-capability dependencies, and qualify native Cloud
-   rejection when the roadmap feature becomes available;
-10. define component, integration, offline, failure, recovery, rollback, and
-    end-to-end acceptance tests;
-11. after Architecture 1.2 acceptance, reconcile the Demo Scenario 1.2
-    storyboard, coverage matrix, and implementation plan against
-    this model.
+1. Demo Scenario 1.2 for audience-visible stage order and component presence;
+2. Architecture Flows 1.1 for detailed lifecycle, runtime, observability, and
+   failure mapping;
+3. System Requirements and Traceability 0.2 for normative system obligations
+   and gap coverage;
+4. Component Decomposition and Interface Register 0.2 for component ownership,
+   interface identifiers, repository allocation, and provisional requirement
+   packages.
 
-This gate authorizes architecture and planning work only. Implementation,
-building, signing, Cloud publication, assignment, or Unit mutation requires
-the separate approvals already defined by the project roadmap.
+The next roadmap boundary is D3 component requirement packages. Acceptance of
+this architecture does not authorize implementation, building, signing, Cloud
+publication, assignment, provisioning, deprovisioning, or Unit mutation.

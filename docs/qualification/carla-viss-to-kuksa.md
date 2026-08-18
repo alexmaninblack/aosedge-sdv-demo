@@ -60,8 +60,13 @@ provider token enter the VM. The provider receives its token through systemd
 
 This issuance flow is intentionally temporary. The tokens expire after seven
 days by default and can be renewed by repeating `prepare` and the guarded
-installation. AOS-5 will replace it with the Aos-to-KUKSA Authorization
-Adapter, including renewal, revocation, and offline policy.
+installation. It is retained only to reproduce the historical qualification.
+The accepted target in
+[ADR 0010](../architecture/decisions/0010-aos-kuksa-credential-broker.md)
+keeps upstream KUKSA unchanged and replaces manually issued service tokens
+with a VDP-owned Credential Broker, FOTA-managed OEM policy, and short-lived
+JWTs derived from authenticated Aos service identity. The provider continues
+to use a distinct platform credential.
 
 ## Build and installation gates
 
