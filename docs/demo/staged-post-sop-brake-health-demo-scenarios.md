@@ -261,6 +261,10 @@ vehicle-computer image manufactured by the OEM. Before SOP, the OEM integrates
 and qualifies its platform layer to create the immutable **OEM Demo Factory
 Image**.
 
+The logical **OEM Factory Baseline Assembly** capability owns this build-time
+composition, qualification and freeze process. Its output is the Factory Image
+artifact; it does not run in the resulting Domain Controller.
+
 That factory image contains:
 
 - the official AosCore baseline;

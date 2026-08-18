@@ -18,6 +18,8 @@ Unit identities.
 
 The current target uses:
 
+- one OEM Factory Baseline Assembly that reproducibly produces the immutable
+  OEM Demo Factory Image artifact;
 - one provider-specific empty-slot runtime in the OEM Demo Factory Image;
 - one independently versioned Vehicle Data Platform Capability FOTA family;
 - two peer OEM functional services with independent SOTA lifecycles;

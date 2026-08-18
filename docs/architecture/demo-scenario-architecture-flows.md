@@ -180,14 +180,16 @@ All flows below preserve these rules:
 sequenceDiagram
     participant UR as Official AosEdge Release
     participant PT as Platform Team
+    participant BA as OEM Factory Baseline Assembly
     participant FI as Immutable OEM Demo Factory Image
     participant OR as Demo Orchestrator
     participant VO as Validation Overlay
     participant DO as Demonstration Overlay
 
-    UR->>PT: Immutable upstream input
-    PT->>PT: Integrate and qualify AosCore, KUKSA, security, update support, empty-slot runtime
-    PT->>FI: Freeze reproducible unprovisioned image and digest
+    UR->>BA: Immutable upstream input
+    PT->>BA: Accepted OEM integration and qualification inputs
+    BA->>BA: Compose, build and qualify AosCore, KUKSA, security, update support, empty-slot runtime
+    BA->>FI: Freeze reproducible unprovisioned image and digest
     OR->>FI: Verify accepted digest and read-only source
     OR->>VO: Create fresh copy-on-write overlay
     OR->>DO: Create separate fresh copy-on-write overlay
@@ -198,6 +200,10 @@ sequenceDiagram
 The factory image contains the provider-specific runtime and an empty component
 store, but no provider payload, SOTA service, Cloud Unit, Cloud certificate,
 KUKSA service token, or other reusable vehicle identity.
+
+`BA` is the build-time logical component. `FI` is its immutable output
+artifact. `VO` and `DO` are separate runtime deployments created from that
+artifact; none is an instance of `BA`.
 
 <a id="af-m0-ob"></a>
 ### `AF-M0-OB` — Manufacturing evidence

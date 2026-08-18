@@ -57,8 +57,9 @@ supplied components may have no project-owned repository at all.
 
 The Validation Unit and Demonstration Unit are two instances of the same
 Domain Controller component graph. They are roles in the demo lifecycle, not
-different software components. Likewise, a fresh overlay is an instance of an
-accepted factory image, not a new component.
+different software components. Each is a runtime deployment created from the
+accepted factory-image artifact; neither is an instance of the build-time
+Factory Baseline Assembly component.
 
 ### Component is not deployment artifact
 
@@ -66,6 +67,12 @@ The Vehicle Data Platform Capability is one platform component delivered in
 independently versioned FOTA artifacts. Brake Health and Vehicle Stability are
 two peer functional components delivered in separate SOTA lifecycles. Version
 changes do not create new logical components.
+
+The `OEM Factory Baseline Assembly` is a build-time logical component. It
+reproducibly produces the immutable `OEM Demo Factory Image` artifact. That
+artifact contains the factory-installed runtime graph and is the source for
+fresh Validation and Demonstration Unit deployments; the artifact is not
+itself a `CMP-*` component.
 
 ### Dashboard is not authority
 
@@ -119,7 +126,7 @@ they interact with its simulated boundaries.
 
 | ID | Component | Responsibility | Owner and lifecycle | Source boundary | State |
 | --- | --- | --- | --- | --- | --- |
-| <a id="cmp-factory"></a>`CMP-FACTORY` | OEM Demo Factory Image | Immutable unprovisioned SOP substrate with no feature payload, Cloud identity or reusable vehicle secret | Platform Team; manufacturing/FOTA baseline | Integration recipes in `aos-vehicle-platform`; immutable image remains outside Git | `EVIDENCE`; clean accepted artifact `NEW` |
+| <a id="cmp-factory"></a>`CMP-FACTORY` | OEM Factory Baseline Assembly | Reproducibly compose, build, qualify and freeze the unprovisioned SOP substrate from identified upstream and OEM integration inputs | Platform Team; pre-SOP manufacturing/build lifecycle | Integration recipes and qualification inputs in `aos-vehicle-platform`; output image remains outside Git | Build evidence `EVIDENCE`; accepted assembly process and output artifact `NEW` |
 | <a id="cmp-runtime"></a>`CMP-RUNTIME` | Provider-Specific Empty-Slot Runtime | Preinstalled Service Manager runtime, bounded provider slot, health and storage boundary for the Vehicle Data Platform payload | Platform Team; factory image | `aos-vehicle-platform` | `EVIDENCE`; final factory qualification required |
 | <a id="cmp-aos-core"></a>`CMP-AOS-CORE` | AosCore and Service Manager | Unit identity, desired state, security, update lifecycle, service execution and status | AosEdge platform | External AosVM/AosCore release | `EXTERNAL / CURRENT` |
 | <a id="cmp-kuksa"></a>`CMP-KUKSA` | KUKSA Databroker | Stable in-vehicle service-facing VSS data boundary | SOP substrate; Platform Team governs the exposed contract | External executable plus configuration/contract in `aos-vehicle-platform` | Executable `CURRENT`; final contract `EXTEND` |
@@ -171,9 +178,9 @@ particular, `CMP-SW-DASH` must not implement a temporary admission controller.
 
 | Item | Kind | Component graph or payload | Lifecycle |
 | --- | --- | --- | --- |
-| Validation Unit (`VU`) | Runtime role/instance | One fresh instance of `CMP-FACTORY`, `CMP-RUNTIME`, `CMP-AOS-CORE`, `CMP-KUKSA`, plus stage-selected payloads | Per demo run |
-| Demonstration Unit (`DU`) | Runtime role/instance | A separate fresh instance of the same accepted graph | Per demo run |
-| OEM Demo Factory Image | Immutable product artifact | `CMP-FACTORY`, including `CMP-RUNTIME`, `CMP-AOS-CORE` and `CMP-KUKSA`, without feature payloads | Manufacturing baseline |
+| Validation Unit (`VU`) | Runtime role/deployment | One fresh deployment created from the accepted OEM Demo Factory Image; runs `CMP-RUNTIME`, `CMP-AOS-CORE`, `CMP-KUKSA` and stage-selected payloads | Per demo run |
+| Demonstration Unit (`DU`) | Runtime role/deployment | A separate fresh deployment created from the same accepted image and running the same stage-selected component graph | Per demo run |
+| OEM Demo Factory Image | Immutable product artifact | Produced by `CMP-FACTORY`; contains `CMP-RUNTIME`, `CMP-AOS-CORE` and `CMP-KUKSA`, without feature payloads or reusable vehicle identity | Manufacturing baseline |
 | Vehicle Data Platform Capability v1-v3 | FOTA artifact family | `CMP-VDP` | Platform Team FOTA |
 | Brake Health Service v1-v3 | SOTA artifact family | `CMP-BHS` | Service Provider 1 / SOTA 1 |
 | Vehicle Stability Event Service | SOTA artifact family | `CMP-EVENT` | Service Provider 2 / SOTA 2 |
@@ -188,7 +195,7 @@ The same accepted artifact bytes and digest move from `VU` qualification to
 | `CarlaSim` | `CMP-CARLA` | Keep simulator source and Apple Silicon port separate from solution code. |
 | `UnrealEngine5_carla` | Restricted build dependency of `CMP-CARLA` | Keep private and outside all public repositories. |
 | `carla-ego-runtime` | `CMP-SCENE`, `CMP-CONTROL`, `CMP-GW`, `CMP-VISS`, `CMP-GW-ADV`, `CMP-ENG-DASH` | One coherent simulated Vehicle Gateway and demo-vehicle tooling boundary. |
-| `aos-vehicle-platform` | `CMP-FACTORY` integration, `CMP-RUNTIME`, `CMP-VDP`, future `CMP-KUKSA-AUTH`, `CMP-KUKSA` contract/configuration | Platform Team source and FOTA boundary. |
+| `aos-vehicle-platform` | `CMP-FACTORY` assembly source, `CMP-RUNTIME`, `CMP-VDP`, future `CMP-KUKSA-AUTH`, `CMP-KUKSA` contract/configuration | Platform Team source and FOTA boundary; immutable Factory Image output remains outside Git. |
 | `brake-health-service` | `CMP-BHS` | Function Team 1 in-vehicle SOTA source only. |
 | Proposed `vehicle-stability-event-service` | `CMP-EVENT` | Function Team 2 in-vehicle SOTA source only; repository not yet created. |
 | Future Function Team 1 Cloud repository | `CMP-BRAKE-BE`, `CMP-BRAKE-DASH` | Name and whether backend/dashboard share one repository require review. |
@@ -265,7 +272,7 @@ below is the single allocation record for exact identifiers.
 | --- | --- | --- | --- |
 | <a id="cr-vehicle-sim"></a>`CR-VEHICLE-SIM` | Provide repeatable braking and low-friction vehicle stimuli, exact source evidence, ground-truth isolation and clean scenario reset. | CARLA vehicle and Scenario Controller | Determinism, source integrity, simulation truth and reset |
 | <a id="cr-gateway"></a>`CR-GATEWAY` | Acquire and normalize vehicle state, expose VISS, arbitrate control, handle bounded advisory status and present the engineering view. | Control UI, Gateway, VISS, Advisory Handler and Engineering Dashboard | Telemetry contract, unavailable data, advisory safety and latency |
-| <a id="cr-factory"></a>`CR-FACTORY` | Produce the clean unprovisioned factory substrate and two identity-safe overlays with a healthy empty capability slot. | Factory Image and Empty-Slot Runtime | Reproducibility, identity absence, overlay uniqueness and reset |
+| <a id="cr-factory"></a>`CR-FACTORY` | Reproducibly assemble the clean unprovisioned Factory Image artifact and use it to create two identity-safe deployments with a healthy empty capability slot. | Factory Baseline Assembly and Empty-Slot Runtime | Reproducibility, artifact immutability, identity absence, overlay uniqueness and reset |
 | <a id="cr-vdp"></a>`CR-VDP` | Deliver the versioned VISS-to-KUKSA data capability and the narrowly allowlisted outbound advisory path. | KUKSA and Vehicle Data Platform Capability | Compatibility, data quality, authorization, FOTA and rollback |
 | <a id="cr-bhs"></a>`CR-BHS` | Run Brake Health analysis locally, report bounded results, operate offline and request only the approved advisory. | Brake Health In-Vehicle Service | Model determinism, reports, compatibility, offline operation and advisory scope |
 | <a id="cr-evt"></a>`CR-EVT` | Detect low-friction events locally and upload bounded event packages through an independent SOTA lifecycle. | Vehicle Stability Event Service | Existing signal contract, event detection, bounded upload and isolation |
@@ -318,10 +325,12 @@ the only normative definitions.
   [authoritative demo surfaces (`SYS-OBS-001`)](system-requirements-and-traceability.md#sys-obs-001), and
   [separate local and Cloud latency (`SYS-TIM-002`)](system-requirements-and-traceability.md#sys-tim-002).
 
-### `CR-FACTORY` — Factory substrate and empty slot
+### `CR-FACTORY` — Factory assembly, artifact and empty slot
 
-- Components: [OEM Demo Factory Image (`CMP-FACTORY`)](#cmp-factory) and
+- Components: [OEM Factory Baseline Assembly (`CMP-FACTORY`)](#cmp-factory) and
   [Provider-Specific Empty-Slot Runtime (`CMP-RUNTIME`)](#cmp-runtime).
+- Produced artifact: immutable `OEM Demo Factory Image`, from which separate
+  Validation and Demonstration Unit runtime deployments are created.
 - Interfaces: [Cloud-to-Unit lifecycle (`IF-LC-004`)](#if-lc-004),
   [runtime enforcement (`IF-LC-006`)](#if-lc-006), and
   [orchestrated VM lifecycle (`IF-DEMO-001`)](#if-demo-001).

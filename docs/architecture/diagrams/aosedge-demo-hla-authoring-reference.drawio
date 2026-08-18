@@ -104,7 +104,7 @@
             <mxPoint x="650" y="530" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-21" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="OEM Factory Image / SOP substrate&lt;br&gt;AosCore · Service Manager · KUKSA&lt;br&gt;security · update support" vertex="1">
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-21" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Factory-installed Domain Controller substrate&lt;br&gt;AosCore · Service Manager · KUKSA&lt;br&gt;security · update support" vertex="1">
           <mxGeometry height="90" width="170" x="1080" y="275" as="geometry" />
         </mxCell>
         <mxCell id="HLA-COMPONENT-RUNTIME" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Preinstalled component runtime&lt;br&gt;provider-specific · empty slot" vertex="1">
@@ -184,8 +184,11 @@
         <mxCell id="M7xq5pBXHRRF11vvhjOU-39" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Brake Health&lt;br&gt;Function Dashboard" vertex="1">
           <mxGeometry height="60" width="140" x="2025" y="-220" as="geometry" />
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-40" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Development of the Vehicle Data Platform Capability" vertex="1">
-          <mxGeometry height="60" width="190" x="800" y="-120" as="geometry" />
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-40" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Development of Vehicle Data Platform Capability" vertex="1">
+          <mxGeometry height="60" width="90" x="910" y="-120" as="geometry" />
+        </mxCell>
+        <mxCell id="HLA-FACTORY-ASSEMBLY" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="OEM Factory Baseline Assembly&lt;br&gt;produces immutable Factory Image" vertex="1">
+          <mxGeometry height="60" width="110" x="790" y="-120" as="geometry" />
         </mxCell>
         <mxCell id="M7xq5pBXHRRF11vvhjOU-41" edge="1" parent="1" source="M7xq5pBXHRRF11vvhjOU-35" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0.25;entryY=0.25;entryDx=0;entryDy=0;entryPerimeter=0;" target="M7xq5pBXHRRF11vvhjOU-33" value="">
           <mxGeometry height="50" relative="1" width="50" as="geometry">

@@ -29,7 +29,8 @@ or reconciled whenever the source changes.
 The visual source defines the component boundaries and principal relationships
 used by Architecture 1.1: two peer OEM Function Teams represented as
 independent AosCloud Service Providers, the shared Vehicle Data Platform
-Capability, the Event-Based Uploader, the OEM Factory Image/runtime boundary,
+Capability, the Event-Based Uploader, the Factory Baseline Assembly-to-Factory
+Image artifact and factory-installed runtime boundaries,
 the Software Delivery and log-observation surfaces, and the explicit Brake
 Health advisory path through KUKSA. The diagram does not introduce a
 production driver HMI; the advisory remains visible on the Engineering
@@ -51,8 +52,9 @@ Architecture 1.1 extends the previous single-function architecture by:
    outbound validation, VISS Set, and the Vehicle Gateway;
 6. limiting the current demo's platform feature-request flow to Function Team
    1, while Function Team 2 consumes the already available data contract;
-7. distinguishing the pre-SOP OEM Factory Image and its provider-specific
-   empty-slot runtime from the post-SOP FOTA capability payload;
+7. distinguishing the build-time OEM Factory Baseline Assembly, its immutable
+   pre-SOP OEM Demo Factory Image artifact, and the factory-installed runtime
+   graph from the post-SOP FOTA capability payload;
 8. adding the OEM Software Delivery Dashboard and centralized ELK log view as
    engineering surfaces over authoritative platform state;
 9. clarifying that the same logical Domain Controller architecture is
@@ -87,6 +89,7 @@ flowchart TB
         direction LR
 
         subgraph PLATFORM_TEAM["Platform Team"]
+            FACTORY_ASSEMBLY["OEM Factory Baseline Assembly<br/>compose · build · qualify · freeze"]
             PLATFORM_DEV["Development of Vehicle Data<br/>Platform Capability"]
         end
 
@@ -151,7 +154,7 @@ flowchart TB
         subgraph DOMAIN["Domain Controller ECU — QEMU + AosVM<br/>logical instance: Validation Unit or Demonstration Unit"]
             direction TB
 
-            AOS_CORE["OEM Factory Image / SOP substrate<br/>AosCore · Service Manager · KUKSA<br/>security · update support"]
+            AOS_CORE["Factory-installed Domain Controller substrate<br/>AosCore · Service Manager · KUKSA<br/>security · update support"]
             COMPONENT_RUNTIME["Preinstalled component runtime<br/>provider-specific · empty slot"]
 
             subgraph DATA_PLATFORM["Vehicle Data Platform Capability — FOTA payload and versioned contract"]
@@ -271,7 +274,8 @@ the transport-specific implementation.
 
 QEMU plus AosVM represents a Domain Controller ECU. It contains:
 
-- the OEM Factory Image / SOP substrate, including AosCore lifecycle,
+- the factory-installed substrate created from the OEM Demo Factory Image,
+  including AosCore lifecycle,
   identity, security, desired-state management, Service Manager, KUKSA, and
   update support;
 - the preinstalled, provider-specific component runtime with an initially
@@ -285,6 +289,13 @@ QEMU plus AosVM represents a Domain Controller ECU. It contains:
 
 The Domain Controller is not part of CARLA. Its VM boundary represents a
 separate automotive computer even though both sides execute on the same Mac.
+
+The OEM Factory Baseline Assembly is a build-time Platform Team capability,
+not software running in the Domain Controller. It reproducibly composes,
+builds, qualifies and freezes the immutable OEM Demo Factory Image artifact.
+Fresh Validation and Demonstration Unit runtime deployments are created from
+that artifact and run the installed component graph; they are not instances
+of the assembly component.
 
 The immutable OEM Factory Image contains no Vehicle Data Platform Capability
 payload, functional SOTA service, Cloud registration, Cloud-issued credential,
@@ -342,10 +353,11 @@ warning was displayed to or acknowledged by a driver.
 
 ### Platform Team — Vehicle Data Platform Capability, FOTA
 
-The Platform Team owns the shared vehicle-facing platform capability:
+The Platform Team owns the factory baseline and shared vehicle-facing platform
+capability:
 
-- OEM Factory Image integration and qualification, including the selected
-  provider-specific component runtime and its empty-slot behavior;
+- OEM Factory Baseline Assembly and Factory Image qualification, including
+  the selected provider-specific component runtime and its empty-slot behavior;
 - inbound and outbound vehicle-interface providers;
 - VSS mapping, filtering, and validation;
 - KUKSA integration and stable signal contract;
@@ -633,7 +645,7 @@ dependency.
 | VISS server | TLS VISS 3.1 Get and Subscribe; write rejected | Add a narrowly scoped advisory Set path and Gateway status |
 | Engineering dashboard | Independent VISS subscriber for live telemetry | Add advisory request and Gateway reception status |
 | Vehicle Data Platform Capability | Inbound VISS-to-KUKSA implementation and qualification evidence exist in project artifacts; it is not yet the accepted empty-service demo baseline | Provide one shared, versioned FOTA capability with inbound telemetry and separately governed outbound advisory directions |
-| OEM Factory Image / Domain Controller substrate | The current runtime is provider-specific; installed `.1` and `.2` systems prove an empty provider slot, while the hardened candidate is not yet an accepted clean factory artifact | Freeze and qualify an immutable, unprovisioned OEM image containing AosCore, KUKSA, security, update support, and the selected empty-slot runtime, but no provider payload or functional service |
+| Factory Baseline Assembly, OEM Demo Factory Image and Domain Controller substrate | The current build evidence and runtime are provider-specific; installed `.1` and `.2` systems prove an empty provider slot, while the hardened candidate is not yet an accepted clean factory artifact | Qualify the reproducible assembly process and freeze its immutable, unprovisioned OEM image containing AosCore, KUKSA, security, update support, and the selected empty-slot runtime, but no provider payload or functional service |
 | KUKSA contract | Readable telemetry signals | Serve both services and add the versioned advisory actuator and status sensor |
 | Brake Health service | Not yet the accepted final service | Subscribe, analyze locally, actuate advisory, report asynchronously |
 | Event-Based Uploader | Not implemented | Detect a selected event locally and send a bounded package to its own backend |
