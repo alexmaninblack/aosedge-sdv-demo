@@ -15,6 +15,7 @@ they do not replace the current HLA.
 - [ADR 0006: Separate Platform and Service Repositories by Lifecycle](0006-lifecycle-based-repository-ownership.md)
 - [ADR 0007: Solution Documentation Home](0007-solution-documentation-home.md)
 - [ADR 0008: Use Tire Health for Function Team 2](0008-use-tire-health-for-function-team-2.md)
+- [ADR 0009: Separate Release Decision Ownership from Cloud Execution](0009-separate-release-decision-from-cloud-execution.md)
 
 The change process and stable-reference rules are defined in
 [Documentation and Requirements Management](../../governance/documentation-and-requirements-management.md).

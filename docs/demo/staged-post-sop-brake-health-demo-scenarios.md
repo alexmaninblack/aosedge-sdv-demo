@@ -14,6 +14,7 @@
   end-of-demo retirement
 - Architecture alignment: dynamic staged projection of High-Level Architecture
   1.2; detailed API and sequence mapping remains a later design gate
+- Accepted architecture decision: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md)
 - Implementation, build, signing, Cloud, or Unit mutation authorized: no
 
 ## Purpose
@@ -93,6 +94,9 @@ simultaneous simulated vehicles unless that topology is later implemented.
 | Vehicle Data Platform Capability | FOTA-owned provider payload and versioned contract that exposes an approved subset of vehicle data through KUKSA; stage names use the shorthand Provider v1–v3 |
 | Brake Health Function Team | Function Team 1 / Service Provider 1: OEM functional vertical that owns the Brake Health service, model, backend, dashboard, and SOTA 1 lifecycle |
 | Tire Health Function Team | Function Team 2 / Service Provider 2: independent peer OEM functional vertical that owns local tire-condition estimation, bounded Cloud reporting, inspection advisory, backend, dashboard, and SOTA 2 lifecycle |
+| Service Provider identity | Function Team Cloud identity used to develop, sign, publish, version, and technically verify its own SOTA artifact; it does not authorize deployment to OEM Units |
+| OEM authorization identity | Cloud identity used by the owning Platform or Function Team to record validation acceptance and deployment or promotion approval affecting OEM Units |
+| AosCloud lifecycle control plane | Authoritative desired/reported actual state, batches, campaigns, recorded approvals, audit history, and update execution; it does not make an owning team's engineering release decision |
 | Validation Unit | Freshly provisioned engineering AosVM for the current demo run, used for qualification and integration |
 | Demonstration Unit | Freshly provisioned production-like AosVM for the current demo run, used as the promotion target after acceptance |
 | Current demo session | Presentation-scoped association, not an Aos identity: session start time and local overlay roles before M1, then the Validation and Demonstration Unit IDs plus that time window |
@@ -161,6 +165,8 @@ Its primary view should show:
 - download, install, activation, readiness, validation, and promotion states;
 - the effective target Units before an approval is accepted;
 - `Waiting for validation`, approval, rejection, and accepted-release states;
+- the owning Platform or Function Team, Service Provider publication identity,
+  active OEM authorization role, and exact action awaiting confirmation;
 - concise qualification results with optional technical drill-down;
 - provider and service log availability.
 
@@ -171,6 +177,12 @@ Demonstration Unit IDs and the same time window. Unit deprovisioning and
 deletion do not imply erasure of Cloud audit records. No separate
 architecture-level run identifier is required; an internal correlation UUID
 remains an optional dashboard implementation detail.
+
+The dashboard and orchestrator do not store authoritative lifecycle state and
+do not turn passing qualification evidence into approval. Every mutation
+affecting an OEM Unit requires an explicit confirmation from the owning team
+and is submitted through an authorized OEM identity; the resulting AosCloud
+record remains authoritative after the local tools exit.
 
 The normal presentation uses this dashboard. The original AosCloud UI remains
 available for technical source-of-truth drill-down.
@@ -398,13 +410,18 @@ The exact contract is a later design decision.
    the effective target from current Unit state and proves that only the
    Validation Unit references the pending batch. Any unexpected Unit blocks
    approval.
-4. Provider v1 is installed and activated on the Validation Unit.
-5. Platform qualification verifies signal mapping, filtering, KUKSA
+4. The Platform Team explicitly authorizes the Validation Unit deployment
+   through its OEM identity; the dashboard and orchestrator cannot infer this
+   approval from target checks.
+5. Provider v1 is installed and activated on the Validation Unit.
+6. Platform qualification verifies signal mapping, filtering, KUKSA
    publication, security, restart, source loss, and recovery.
-6. Selected provider lifecycle and runtime logs become available through the
+7. Selected provider lifecycle and runtime logs become available through the
    AosEdge logging pipeline and the configured ELK view.
-7. Validation is explicitly approved.
-8. The same Provider v1 artifact is promoted to the Demonstration Unit.
+8. The Platform Team accepts the exact Provider v1 version, digest,
+   qualification evidence, and target, and records promotion approval through
+   its OEM identity.
+9. AosCloud promotes the same Provider v1 artifact to the Demonstration Unit.
 
 ### Audience-visible proof
 
@@ -432,15 +449,19 @@ advisory.
 
 ### Release flow
 
-1. The Brake Health Function Team publishes immutable Service v1 through the
-   SOTA 1 lifecycle.
+1. The Brake Health Function Team publishes immutable Service v1 through its
+   Service Provider 1 identity in the SOTA 1 lifecycle.
 2. Service v1 declares a dependency on the Provider v1 capability.
-3. Service v1 is installed first on the Validation Unit.
-4. Integration validation proves the KUKSA-to-service-to-backend path.
-5. Service logs become available through the configured AosEdge log pipeline
+3. The Function Team explicitly authorizes deployment to the Validation Unit
+   through an OEM identity.
+4. Service v1 is installed first on the Validation Unit.
+5. Integration validation proves the KUKSA-to-service-to-backend path.
+6. Service logs become available through the configured AosEdge log pipeline
    and ELK view.
-6. The exact accepted Service v1 artifact is promoted to the Demonstration
-   Unit.
+7. Function Team 1 accepts the exact Service v1 artifact and integration
+   result and records promotion approval through an OEM identity.
+8. AosCloud promotes the exact accepted Service v1 artifact to the
+   Demonstration Unit.
 
 ### Audience-visible proof
 
@@ -516,10 +537,15 @@ simulated or estimated. The demo must not imply production diagnostic accuracy.
    same Validation Unit.
 5. Service v2 declares a dependency on the Provider v2 capability.
 6. Both teams perform joint integration and scenario validation.
-7. The OEM accepts one exact `Provider v2 + Service v2` graph.
-8. Provider v2 is promoted to the Demonstration Unit first; Service v1 remains
+7. The Platform Team accepts the exact Provider v2 artifact and qualification
+   through an OEM identity. Function Team 1 separately accepts the exact
+   Service v2 artifact, model, and joint integration result through an OEM
+   identity.
+8. AosCloud permits promotion only after both owner decisions are recorded for
+   the same graph, digests, and targets.
+9. Provider v2 is promoted to the Demonstration Unit first; Service v1 remains
    operational against the backward-compatible v1 subset.
-9. After Provider v2 reports ready, Service v2 is promoted to the
+10. After Provider v2 reports ready, Service v2 is promoted to the
    Demonstration Unit.
 
 ### Model lifecycle
@@ -562,8 +588,12 @@ use separate inbound and outbound providers.
    through SOTA 1 on the Validation Unit.
 4. Joint validation proves online, offline, failure, restart, and recovery
    behavior.
-5. The exact `Provider v3 + Service v3` graph is accepted.
-6. Provider v3 and then Service v3 are promoted in dependency order to the
+5. The Platform Team accepts the exact Provider v3 artifact through an OEM
+   identity, and Function Team 1 separately accepts the exact Service v3
+   artifact and joint integration result through an OEM identity.
+6. AosCloud permits promotion only after both decisions are recorded for the
+   exact graph, digests, and targets.
+7. Provider v3 and then Service v3 are promoted in dependency order to the
    Demonstration Unit.
 
 ### Runtime flow
@@ -721,6 +751,11 @@ destructive experiment.
 15. Native Cloud rejection of a SOTA service whose required FOTA capability is
     absent is a target demo scenario deferred until the AosEdge roadmap feature
     ships and is qualified. No project-specific admission controller is used.
+16. The owning Platform or Function Team makes each engineering release
+    decision. Function Teams publish through Service Provider identities, all
+    approvals affecting OEM Units use authorized OEM identities, and AosCloud
+    stores and executes the resulting lifecycle transition. The dashboard and
+    orchestrator own neither approval nor lifecycle state.
 
 ## Items Requiring Resolution Before Detailed Flow Mapping
 
@@ -740,8 +775,10 @@ destructive experiment.
    excluded.
 6. Confirm the AosEdge-to-ELK integration available in the current Cloud
    environment, including access control, retention, and offline behavior.
-7. Define the minimum OEM Software Delivery Dashboard views and which approval
-   actions may be initiated from it.
+7. Define the minimum OEM Software Delivery Dashboard views, explicit
+   confirmation interaction, team-owner and active-role presentation, and the
+   exact OEM-authorized actions that may be invoked without introducing local
+   lifecycle state or automatic approval.
 8. Define the versioned model identity and prediction result shown by Service
    v2 before advisory actuation is introduced.
 9. Prove that a fresh verification batch shows only its intended Validation

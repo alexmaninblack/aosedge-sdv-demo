@@ -8,6 +8,8 @@
 - Prepared: 2026-08-18
 - Owner: System Architecture
 - Previous accepted version: 1.0, accepted 2026-08-16
+- Accepted architecture decisions: [ADR 0008](decisions/0008-use-tire-health-for-function-team-2.md),
+  [ADR 0009](decisions/0009-separate-release-decision-from-cloud-execution.md)
 - Scope: CARLA, Vehicle Gateway ECU, AosVM Domain Controller, AosCloud,
   shared Vehicle Data Platform Capability, two independent OEM Service
   Providers, functional backends, and demonstration tooling
@@ -32,9 +34,11 @@ independent AosCloud Service Providers, the shared Vehicle Data Platform
 Capability, the Tire Health function, the Factory Baseline Assembly-to-Factory
 Image artifact and factory-installed runtime boundaries,
 the Software Delivery and log-observation surfaces, and the explicit typed
-Brake Health and Tire Health advisory paths through KUKSA. The diagram does not introduce a
-production driver HMI; the advisory remains visible on the Engineering
-Telematics Dashboard.
+Brake Health and Tire Health advisory paths through KUKSA. It also distinguishes
+team-owned release decisions from the OEM identity used to authorize Cloud
+mutations and from AosCloud lifecycle state and execution. The diagram does not
+introduce a production driver HMI; the advisory remains visible on the
+Engineering Telematics Dashboard.
 
 ## Revision 1.2 Summary
 
@@ -60,7 +64,11 @@ provisional Function Team 2 candidate, as accepted in
 8. adding the OEM Software Delivery Dashboard and centralized ELK log view as
    engineering surfaces over authoritative platform state;
 9. clarifying that the same logical Domain Controller architecture is
-   instantiated separately as the Validation Unit and Demonstration Unit.
+   instantiated separately as the Validation Unit and Demonstration Unit;
+10. adopting [ADR 0009](decisions/0009-separate-release-decision-from-cloud-execution.md):
+    each owning team makes its engineering release decision, an OEM identity
+    authorizes deployment to OEM Units, and AosCloud remains the lifecycle
+    system of record and execution control plane.
 
 ## Purpose
 
@@ -95,7 +103,7 @@ flowchart TB
             PLATFORM_DEV["Development of Vehicle Data<br/>Platform Capability"]
         end
 
-        AOS_CLOUD(["AosCloud"])
+        AOS_CLOUD(["AosCloud<br/>lifecycle system of record<br/>and execution control plane"])
 
         subgraph FUNCTION_TEAM_1["Function Team 1 / Service Provider 1 — SOTA"]
             BRAKE_DEV["Development of<br/>Brake Health Service"]
@@ -112,9 +120,9 @@ flowchart TB
         ELK[("Vehicle and Service Log View<br/>ELK")]
 
         BRAKE_DEV -. "Feature request:<br/>new or updated vehicle signals" .-> PLATFORM_DEV
-        PLATFORM_DEV -- "Publish FOTA artifact" --> AOS_CLOUD
-        BRAKE_DEV -- "Publish SOTA 1" --> AOS_CLOUD
-        TIRE_DEV -- "Publish SOTA 2" --> AOS_CLOUD
+        PLATFORM_DEV -- "OEM identity:<br/>publish + approve FOTA" --> AOS_CLOUD
+        BRAKE_DEV -- "SP identity: publish SOTA 1<br/>OEM identity: approve deployment" --> AOS_CLOUD
+        TIRE_DEV -- "SP identity: publish SOTA 2<br/>OEM identity: approve deployment" --> AOS_CLOUD
         BRAKE_BACKEND --> BRAKE_DASHBOARD
         TIRE_BACKEND --> TIRE_DASHBOARD
         AOS_CLOUD -. "Selected lifecycle<br/>and runtime logs" .-> ELK
@@ -123,7 +131,7 @@ flowchart TB
     subgraph DEMO["Demo / Engineering Workstation — Mac host"]
         direction LR
         CONTROL_UI["Vehicle Control UI<br/>Manual · Autopilot · Safe Stop"]
-        SOFTWARE_DASHBOARD["OEM Software Delivery Dashboard<br/>AosCloud state · targets · validation · promotion"]
+        SOFTWARE_DASHBOARD["OEM Software Delivery Dashboard<br/>AosCloud state · targets · evidence<br/>explicit OEM-authorized actions"]
         TELEMETRY_DASHBOARD["Engineering Telematics Dashboard<br/>speed · acceleration · pedals · steering<br/>Brake + Tire Health advisory · gateway status"]
     end
 
@@ -215,7 +223,7 @@ flowchart TB
 
     CONTROL_UI -- "Separate authenticated<br/>control channel" --> EGO_RUNTIME
     NETWORK -- "Independent read-only<br/>VISS subscription" --> TELEMETRY_DASHBOARD
-    SOFTWARE_DASHBOARD <-->|"API state and<br/>approved actions"| AOS_CLOUD
+    SOFTWARE_DASHBOARD <-->|"API state and explicitly confirmed<br/>OEM-authorized actions"| AOS_CLOUD
 
     AOS_CLOUD <-->|"Provisioning, deployment,<br/>lifecycle and status"| AOS_CORE
     AOS_CORE -. "Install / update<br/>FOTA artifact" .-> COMPONENT_RUNTIME
@@ -317,14 +325,21 @@ integration code.
 
 ### OEM systems
 
-AosCloud supplies provisioning and software lifecycle control for the FOTA
-capability and both SOTA services. It is not a functional telemetry backend and
-does not participate in either service's real-time decision path.
+AosCloud is the lifecycle system of record and execution control plane for
+provisioning and for the FOTA capability and both SOTA services. It stores the
+authoritative desired state, reported actual state, batches, campaigns,
+recorded approvals, audit history, and delivery progress. It does not make an
+owning team's engineering release decision, is not a functional telemetry
+backend, and does not participate in either service's real-time decision path.
 
-The OEM Software Delivery Dashboard is a presentation and scoped-orchestration
-view over authoritative AosCloud APIs. It can display targets, artifact
-identity, validation, promotion, Unit status, and approved actions, but it must
-not invent a parallel desired state or become a second lifecycle authority.
+The OEM Software Delivery Dashboard is a stateless presentation and
+workflow-facilitation view over authoritative AosCloud APIs. It can display
+targets, artifact identity, qualification evidence, validation, promotion,
+Unit status, the current team context, and the Cloud role used for a proposed
+action. It may invoke only an explicitly confirmed operation with the correct
+scoped identity. It must not infer approval from a passing test, auto-approve a
+candidate, impersonate an owner, invent a parallel desired state, or become a
+second lifecycle control plane.
 
 The centralized Vehicle and Service Log View uses the configured AosEdge-to-ELK
 pipeline for selected lifecycle and runtime evidence. ELK is neither a vehicle
@@ -367,7 +382,9 @@ capability:
 - outbound actuator allowlists and enforcement;
 - platform credentials and trust integration without embedding secrets in
   artifacts;
-- platform qualification, compatibility, update, and rollback.
+- platform qualification, compatibility, update, and rollback;
+- the engineering decision to accept each platform candidate, recorded in
+  AosCloud through an authorized OEM identity before deployment or promotion.
 
 In the current demonstration, Function Team 1 may request a new or extended
 vehicle-data capability. It does not gain permission to ship privileged
@@ -385,6 +402,9 @@ Service Provider. It owns:
   decision logic;
 - the required platform-capability version declaration;
 - service configuration, state, tests, updates, and rollback;
+- the engineering decision to accept each service candidate and integration
+  result; service publication uses the Service Provider 1 identity, while
+  deployment approval affecting OEM Units uses an authorized OEM identity;
 - the Brake Health Backend and Brake Health Function Dashboard.
 
 The service consumes the stable KUKSA/VSS contract. It does not depend on
@@ -402,6 +422,9 @@ Service Provider. It owns:
 - the decision to request an allowlisted tire-inspection advisory;
 - its required platform-capability version declaration;
 - service configuration, state, tests, updates, and rollback;
+- the engineering decision to accept each service candidate and integration
+  result; service publication uses the Service Provider 2 identity, while
+  deployment approval affecting OEM Units uses an authorized OEM identity;
 - the Tire Health Backend and Tire Health Function Dashboard.
 
 The service does not continuously stream raw sensor data to the Cloud. It
@@ -432,6 +455,20 @@ version in that service provider's SOTA lifecycle; a platform defect creates a
 new FOTA version. Promotion freezes the exact compatible graph and artifact
 digests accepted on the validation Unit before rollout to the demonstration
 Unit.
+
+Release ownership, Cloud authorization, and execution are deliberately
+separate. A Function Team uses its Service Provider identity to develop, sign,
+publish, version, and technically verify its service artifact. The same
+organizational team records validation acceptance and deployment or promotion
+approval through an authorized OEM identity. The Platform Team records its
+FOTA acceptance through an OEM identity. AosCloud persists those decisions and
+executes the resulting lifecycle transition.
+
+A combined platform-and-service graph has no anonymous single acceptance
+owner. The Platform Team accepts the exact platform candidate, the relevant
+Function Team accepts its exact service candidate and integration result, and
+AosCloud may promote the graph only after every required owner approval is
+recorded for the exact versions, digests, and targets.
 
 The target architecture requires **native AosCloud pre-deployment
 enforcement** of each SOTA-to-FOTA compatibility range. If the intended Unit
@@ -600,13 +637,13 @@ Gateway advisory request.
 ### 8. Independent software lifecycle delivery
 
 ```text
-Platform Team -> FOTA artifact -> AosCloud -> AosCore -> preinstalled component runtime -> Vehicle Data Platform Capability
-Service Provider 1 -> SOTA 1 -> AosCloud -> AosCore -> Brake Health service
-Service Provider 2 -> SOTA 2 -> AosCloud -> AosCore -> Tire Health service
+Platform Team -> FOTA artifact + OEM-authorized approval -> AosCloud -> AosCore -> preinstalled component runtime -> Vehicle Data Platform Capability
+Function Team 1 -> SP identity publishes SOTA 1 + OEM identity approves -> AosCloud -> AosCore -> Brake Health service
+Function Team 2 -> SP identity publishes SOTA 2 + OEM identity approves -> AosCloud -> AosCore -> Tire Health service
 ```
 
-AosCloud delivers and observes all three lifecycles, but it does not merge
-their ownership or release decisions. A service can be changed without
+AosCloud records and executes all three lifecycles, but it does not merge
+their ownership or make their engineering release decisions. A service can be changed without
 rebuilding the other service, and either service can be changed without a new
 FOTA when the installed platform contract already satisfies its declared
 dependency.
@@ -640,9 +677,13 @@ dependency.
   substitute path into CARLA, VISS, or KUKSA.
 - The two Service Providers have separate identities, credentials, artifacts,
   configuration, and Cloud-side functional endpoints.
-- The OEM Software Delivery Dashboard uses scoped AosCloud authentication and
-  exposes only explicitly approved mutation actions; read views do not grant
-  lifecycle authority.
+- Service Provider identities publish and technically verify service artifacts;
+  they do not authorize deployment to OEM Units. Validation acceptance and
+  deployment or promotion actions use authorized OEM identities.
+- The OEM Software Delivery Dashboard uses scoped AosCloud authentication,
+  displays the business decision owner and active Cloud role, and exposes only
+  explicitly confirmed mutation actions. It stores no authoritative lifecycle
+  state and passing evidence never grants or implies approval.
 - ELK access is separately authenticated and filtered; service logs must not
   disclose Unit secrets, service tokens, or unrestricted vehicle data.
 
@@ -658,9 +699,9 @@ dependency.
 | KUKSA contract | Readable telemetry signals | Serve both services and add the versioned advisory actuator and status sensor |
 | Brake Health service | Not yet the accepted final service | Subscribe, analyze locally, actuate advisory, report asynchronously |
 | Tire Health service | Not implemented | Estimate tire condition locally, send bounded summaries/events and request a typed inspection advisory |
-| Service Provider separation | AosCloud lifecycle mechanisms exist; the two target services are not yet accepted as independent deployments | Independent Service Provider identities, artifacts, dependencies, updates, and rollback |
+| Service Provider separation | AosCloud lifecycle mechanisms exist; the two target services are not yet accepted as independent deployments | Independent Service Provider identities for publication, team-owned engineering decisions, OEM-authorized deployment approvals, artifacts, dependencies, updates, and rollback |
 | Cross-lifecycle dependency admission | Service-to-layer and component-to-component dependencies exist, but the current released Cloud/API does not expose a Service-to-FOTA-component admission rule | Natively reject an incompatible SOTA request in AosCloud before rollout creation or Unit transfer; deferred until the roadmap feature ships and is qualified |
-| OEM Software Delivery Dashboard | Not implemented; the AosCloud UI and APIs remain authoritative | Provide a simplified view of actual targets, artifact identity, validation, promotion, and Unit state without creating a parallel desired-state store |
+| OEM Software Delivery Dashboard | Not implemented; the AosCloud UI and APIs remain authoritative | Provide a stateless view of actual targets, artifact identity, evidence, owner, active Cloud role, validation, promotion, and Unit state; require explicit OEM-authorized confirmation without creating a parallel desired-state store or automatic approval policy |
 | Vehicle and Service Log View | AosEdge log mechanisms exist; the exact Cloud-to-ELK deployment integration is not yet accepted | Show selected, access-controlled lifecycle and runtime evidence without using ELK as a telemetry or functional-data backend |
 | Validation and Demonstration instances | Separate VM roles exist, while the demo has one visible CARLA/Vehicle Gateway/VISS source | Instantiate the same logical Domain Controller architecture twice and define deterministic selection or replay without claiming two simultaneous vehicles |
 | Driver HMI | Not implemented | Remains out of scope |
@@ -712,6 +753,17 @@ Architecture 1.2 is aligned only while all of the following remain true:
 17. Validation and Demonstration Units are separate instances of the same
     logical Domain Controller architecture; the diagram does not imply two
     simultaneous CARLA vehicles.
+18. The Platform Team and each Function Team own their engineering release
+    decisions. Function Teams publish through their Service Provider identities,
+    while every approval affecting OEM Unit deployment is recorded through an
+    authorized OEM identity.
+19. AosCloud is the lifecycle system of record and execution control plane;
+    neither the Software Delivery Dashboard nor the Demo Orchestrator stores
+    authoritative lifecycle state, auto-approves evidence, or replaces an
+    owning team's decision.
+20. A combined FOTA/SOTA graph is promoted only after the Platform Team and the
+    relevant Function Team have separately accepted their exact artifacts and
+    the integration result.
 
 ## Out of Scope
 

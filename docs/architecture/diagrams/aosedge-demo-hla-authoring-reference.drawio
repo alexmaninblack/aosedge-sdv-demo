@@ -161,7 +161,7 @@
             <mxPoint x="810" y="280" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-33" parent="1" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;" value="AosCloud" vertex="1">
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-33" parent="1" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;" value="AosCloud&lt;br&gt;lifecycle state + execution" vertex="1">
           <mxGeometry height="140" width="240" x="1030" y="-130" as="geometry" />
         </mxCell>
         <mxCell id="M7xq5pBXHRRF11vvhjOU-34" edge="1" parent="1" source="M7xq5pBXHRRF11vvhjOU-21" style="endArrow=classic;startArrow=classic;html=1;rounded=0;entryX=0.55;entryY=0.95;entryDx=0;entryDy=0;entryPerimeter=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" target="M7xq5pBXHRRF11vvhjOU-33" value="">
@@ -199,7 +199,7 @@
             <mxPoint x="1050" y="60" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-42" connectable="0" parent="M7xq5pBXHRRF11vvhjOU-41" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Publish platform FOTA" vertex="1">
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-42" connectable="0" parent="M7xq5pBXHRRF11vvhjOU-41" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="OEM: FOTA publish + approval" vertex="1">
           <mxGeometry relative="1" x="-0.3085" y="1" as="geometry">
             <mxPoint as="offset" />
           </mxGeometry>
@@ -228,7 +228,7 @@
             <mxPoint x="1540" y="100" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-47" connectable="0" parent="M7xq5pBXHRRF11vvhjOU-46" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Publish SOTA 1" vertex="1">
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-47" connectable="0" parent="M7xq5pBXHRRF11vvhjOU-46" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="SP: publish SOTA 1&lt;br&gt;OEM: approve" vertex="1">
           <mxGeometry relative="1" x="0.0211" y="1" as="geometry">
             <mxPoint as="offset" />
           </mxGeometry>
@@ -258,10 +258,10 @@
             <mxPoint x="1020" y="250" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="HLA-SOFTWARE-DELIVERY-DASHBOARD" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="OEM Software Delivery Dashboard&lt;br&gt;AosCloud state · targets · validation · promotion" vertex="1">
+        <mxCell id="HLA-SOFTWARE-DELIVERY-DASHBOARD" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="OEM Software Delivery Dashboard&lt;br&gt;Cloud state · evidence · owner / role&lt;br&gt;explicit OEM-authorized actions" vertex="1">
           <mxGeometry height="75" width="260" x="560" y="75" as="geometry" />
         </mxCell>
-        <mxCell id="HLA-SOFTWARE-DASHBOARD-CLOUD" edge="1" parent="1" source="HLA-SOFTWARE-DELIVERY-DASHBOARD" style="endArrow=classic;startArrow=classic;html=1;rounded=0;dashed=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.1;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" target="M7xq5pBXHRRF11vvhjOU-33" value="API status and approved actions">
+        <mxCell id="HLA-SOFTWARE-DASHBOARD-CLOUD" edge="1" parent="1" source="HLA-SOFTWARE-DELIVERY-DASHBOARD" style="endArrow=classic;startArrow=classic;html=1;rounded=0;dashed=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.1;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" target="M7xq5pBXHRRF11vvhjOU-33" value="">
           <mxGeometry height="50" relative="1" width="50" as="geometry">
             <Array as="points">
               <mxPoint x="690" y="15" />
@@ -348,7 +348,7 @@
         <mxCell id="HLA-FT2-DEVELOPMENT" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Development of the Tire Health Service" vertex="1">
           <mxGeometry height="60" width="170" x="1625" y="-105" as="geometry" />
         </mxCell>
-        <mxCell id="HLA-SOTA2-CLOUD" edge="1" parent="1" source="j12gpLU1JJJo3LKyeumj-1" style="endArrow=classic;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.8;entryY=0.8;entryDx=0;entryDy=0;entryPerimeter=0;" target="M7xq5pBXHRRF11vvhjOU-33" value="Publish SOTA 2">
+        <mxCell id="HLA-SOTA2-CLOUD" edge="1" parent="1" source="j12gpLU1JJJo3LKyeumj-1" style="endArrow=classic;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.8;entryY=0.8;entryDx=0;entryDy=0;entryPerimeter=0;" target="M7xq5pBXHRRF11vvhjOU-33" value="SP: publish SOTA 2&lt;br&gt;OEM: approve">
           <mxGeometry height="50" relative="1" width="50" as="geometry">
             <Array as="points">
               <mxPoint x="1585" y="-97" />

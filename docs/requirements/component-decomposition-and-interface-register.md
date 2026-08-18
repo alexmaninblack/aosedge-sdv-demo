@@ -11,6 +11,7 @@
 - Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.2](../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - Flow input: [Demo Scenario Architecture Flows 1.1](../architecture/demo-scenario-architecture-flows.md)
 - Requirements input: [System Requirements and Traceability 0.2](system-requirements-and-traceability.md)
+- Accepted architecture decision: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md)
 - Implementation, repository creation, Cloud, or Unit mutation authorized: no
 
 ## Purpose
@@ -89,6 +90,16 @@ Every dashboard is a presentation surface over one authoritative source:
 No dashboard becomes an alternate desired-state database, vehicle-data broker,
 functional backend, or vehicle-control path.
 
+### Release decision is not Cloud execution
+
+The Platform Team and each Function Team own their engineering release
+decisions. A Function Team uses its Service Provider identity to publish and
+technically verify a service artifact, but an approval affecting OEM Units is
+recorded with an authorized OEM identity. AosCloud stores and executes the
+resulting lifecycle transition. The Software Delivery Dashboard and Demo
+Orchestrator may facilitate that interaction, but they own neither the decision
+nor authoritative lifecycle state.
+
 ## State Vocabulary
 
 | State | Meaning |
@@ -164,11 +175,11 @@ or routed through it.
 
 | ID | Component | Responsibility | Owner and lifecycle | Source boundary | State |
 | --- | --- | --- | --- | --- | --- |
-| <a id="cmp-aos-cloud"></a>`CMP-AOS-CLOUD` | AosCloud Lifecycle Authority | Provisioning, Unit/Node state, authoritative desired/actual state, FOTA/SOTA lifecycle, validation and promotion | AosEdge platform / OEM Cloud | External AosCloud service | `EXTERNAL / CURRENT`; exact demo operations require qualification |
-| <a id="cmp-sw-dash"></a>`CMP-SW-DASH` | OEM Software Delivery Dashboard | Simplified presentation and scoped approved actions over current AosCloud state; no parallel desired-state store | Demo solution | `aosedge-sdv-demo` | `NEW` |
+| <a id="cmp-aos-cloud"></a>`CMP-AOS-CLOUD` | AosCloud Lifecycle Control Plane | Provisioning, authoritative Unit/Node desired and reported actual state, batches, campaigns, recorded approvals, audit history, FOTA/SOTA delivery and promotion execution | AosEdge platform / OEM Cloud | External AosCloud service | `EXTERNAL / CURRENT`; exact demo operations require qualification |
+| <a id="cmp-sw-dash"></a>`CMP-SW-DASH` | OEM Software Delivery Dashboard | Stateless presentation of current AosCloud state, qualification evidence, business decision owner and active Cloud role; invoke only explicitly confirmed OEM-authorized actions | Demo solution | `aosedge-sdv-demo` | `NEW` |
 | <a id="cmp-log-pipe"></a>`CMP-LOG-PIPE` | AosEdge Log Collection and Delivery | Select, buffer and transport approved system/service operational logs | AosEdge platform integration | External mechanisms plus deployment configuration; final repository allocation pending | `EXTERNAL / EXTEND` |
 | <a id="cmp-elk"></a>`CMP-ELK` | Vehicle and Service Log View | Access-controlled storage, search and presentation of selected operational evidence | OEM operational environment | External deployment/integration | `NEW` integration; product itself `EXTERNAL` |
-| <a id="cmp-orch"></a>`CMP-ORCH` | Demo Orchestrator | Factory-overlay creation, role binding, provisioning reconciliation, CARLA source selection/replay, release sequencing, evidence correlation, retirement and reset | Demo solution | `aosedge-sdv-demo` | Existing helpers `EVIDENCE`; unified orchestrator `NEW` |
+| <a id="cmp-orch"></a>`CMP-ORCH` | Demo Orchestrator | Factory-overlay creation, role binding, provisioning reconciliation, CARLA source selection/replay, release sequencing, transient evidence correlation, retirement and reset without owning lifecycle state or approval decisions | Demo solution | `aosedge-sdv-demo` | Existing helpers `EVIDENCE`; unified orchestrator `NEW` |
 
 The native future AosCloud SOTA-to-FOTA dependency-admission capability is a
 deferred feature of `CMP-AOS-CLOUD`, not a new project component. In
@@ -247,10 +258,13 @@ not stop local Brake Health or Tire Health analysis and advisory generation.
 | ID | Producer | Consumer | Contract and direction | Authority | State |
 | --- | --- | --- | --- | --- | --- |
 | <a id="if-lc-001"></a>`IF-LC-001` | Platform Team release pipeline | `CMP-AOS-CLOUD` | Immutable, signed and digest-addressed Vehicle Data Platform FOTA artifact | Platform Team artifact plus AosCloud record | `EXTEND / QUALIFY` |
-| <a id="if-lc-002"></a>`IF-LC-002` | Function Team 1 pipeline | `CMP-AOS-CLOUD` | Immutable Brake Health SOTA artifact and compatibility metadata | Service Provider 1 artifact plus AosCloud record | `NEW / QUALIFY` |
-| <a id="if-lc-007"></a>`IF-LC-007` | Function Team 2 pipeline | `CMP-AOS-CLOUD` | Immutable Tire Health SOTA artifact and compatibility metadata | Service Provider 2 artifact plus AosCloud record | `NEW / QUALIFY` |
+| <a id="if-lc-002"></a>`IF-LC-002` | Function Team 1 Service Provider pipeline | `CMP-AOS-CLOUD` | Publish and technically verify immutable Brake Health SOTA artifact and compatibility metadata | Service Provider 1 identity; no OEM Unit deployment approval | `NEW / QUALIFY` |
+| <a id="if-lc-007"></a>`IF-LC-007` | Function Team 2 Service Provider pipeline | `CMP-AOS-CLOUD` | Publish and technically verify immutable Tire Health SOTA artifact and compatibility metadata | Service Provider 2 identity; no OEM Unit deployment approval | `NEW / QUALIFY` |
+| <a id="if-lc-008"></a>`IF-LC-008` | Platform Team release owner | `CMP-AOS-CLOUD` | Explicit FOTA validation acceptance and deployment or promotion approval for exact artifact, digest and target | Platform Team decision through authorized OEM identity | `NEW / QUALIFY` |
+| <a id="if-lc-009"></a>`IF-LC-009` | Function Team 1 release owner | `CMP-AOS-CLOUD` | Explicit Brake Health validation acceptance and deployment or promotion approval for exact service, integration evidence and target | Function Team 1 decision through authorized OEM identity | `NEW / QUALIFY` |
+| <a id="if-lc-010"></a>`IF-LC-010` | Function Team 2 release owner | `CMP-AOS-CLOUD` | Explicit Tire Health validation acceptance and deployment or promotion approval for exact service, integration evidence and target | Function Team 2 decision through authorized OEM identity | `NEW / QUALIFY` |
 | <a id="if-lc-004"></a>`IF-LC-004` | `CMP-AOS-CLOUD` | `CMP-AOS-CORE` | Provisioning, desired state, update delivery, validation, status and retirement | AosCloud and current Unit state | `EXTERNAL / EXTEND` qualification |
-| <a id="if-lc-005"></a>`IF-LC-005` | `CMP-SW-DASH` | `CMP-AOS-CLOUD` | Scoped API reads, effective-target preview and explicitly approved actions | AosCloud; dashboard holds no parallel desired state | `NEW` |
+| <a id="if-lc-005"></a>`IF-LC-005` | `CMP-SW-DASH` | `CMP-AOS-CLOUD` | Scoped API reads, effective-target preview, owner/role display and explicitly confirmed calls using the correct OEM identity | AosCloud; dashboard holds no parallel desired state or approval policy | `NEW` |
 | <a id="if-lc-006"></a>`IF-LC-006` | `CMP-AOS-CORE` | `CMP-RUNTIME` / `CMP-BHS` / `CMP-TIRE` | Install, start, stop, update, rollback, readiness and resource enforcement | Unit actual state | Platform mechanism `CURRENT`; target graph `EXTEND` |
 | <a id="if-obs-001"></a>`IF-OBS-001` | In-vehicle platform and services | `CMP-LOG-PIPE` | Selected structured operational logs with redaction and correlation fields | Originating component plus log policy | `EXTERNAL / EXTEND` |
 | <a id="if-obs-002"></a>`IF-OBS-002` | `CMP-LOG-PIPE` | `CMP-ELK` | Authenticated, buffered Cloud log delivery | Accepted centralized log store | `NEW` integration |
@@ -276,7 +290,7 @@ below is the single allocation record for exact identifiers.
 | <a id="cr-vdp"></a>`CR-VDP` | Deliver the versioned VISS-to-KUKSA data capability and the narrowly allowlisted outbound advisory path. | KUKSA and Vehicle Data Platform Capability | Compatibility, data quality, authorization, FOTA and rollback |
 | <a id="cr-bhs"></a>`CR-BHS` | Run Brake Health analysis locally, report bounded results, operate offline and request only the approved advisory. | Brake Health In-Vehicle Service | Model determinism, reports, compatibility, offline operation and advisory scope |
 | <a id="cr-tire"></a>`CR-TIRE` | Estimate tire condition locally, persist bounded state, upload bounded results and request the typed inspection advisory through an independent SOTA lifecycle. | Tire Health In-Vehicle Service | Existing signal contract, model, persistence, bounded reporting, advisory and isolation |
-| <a id="cr-aos"></a>`CR-AOS` | Provide identity, desired/actual state, FOTA/SOTA lifecycle, dependency behavior, resource enforcement and operational log transport. | AosCore, AosCloud and Log Pipeline | Provisioning, lifecycle authority, validation, rollback, timing and retirement |
+| <a id="cr-aos"></a>`CR-AOS` | Provide identity, authoritative desired/reported actual state, recorded owner approvals, FOTA/SOTA execution, dependency behavior, resource enforcement and operational log transport. | AosCore, AosCloud and Log Pipeline | Provisioning, lifecycle state and execution, OEM-authorized validation, rollback, timing and retirement |
 | <a id="cr-brake-cloud"></a>`CR-BRAKE-CLOUD` | Ingest and present Brake Health reports without entering the local decision path. | Brake Health Backend and Function Dashboard | Idempotency, offline synchronization, evidence and run-data retention |
 | <a id="cr-tire-cloud"></a>`CR-TIRE-CLOUD` | Ingest and present Tire Health summaries/events as an independent Function Team product. | Tire Health Backend and Function Dashboard | Bounded results, idempotency, delivery state and run-data retention |
 | <a id="cr-demo"></a>`CR-DEMO` | Orchestrate manufactured overlays, Unit roles, staged releases, authoritative dashboards, evidence and end-of-run retirement. | Software Delivery Dashboard, Demo Orchestrator and ELK integration | Target safety, source binding, observability, timing and reset |
@@ -371,12 +385,16 @@ the only normative definitions.
   [Tire Health advisory request (`IF-TIRE-002`)](#if-tire-002),
   [KUKSA advisory target (`IF-ADV-002`)](#if-adv-002),
   [outbound VISS Set (`IF-ADV-003`)](#if-adv-003),
-  [platform FOTA artifact (`IF-LC-001`)](#if-lc-001), and
+  [platform FOTA artifact (`IF-LC-001`)](#if-lc-001),
+  [Platform Team OEM-authorized approval (`IF-LC-008`)](#if-lc-008), and
   [runtime enforcement (`IF-LC-006`)](#if-lc-006).
 - Parent requirements: [immutable release candidates (`SYS-REL-001`)](system-requirements-and-traceability.md#sys-rel-001),
   [service capability compatibility (`SYS-REL-003`)](system-requirements-and-traceability.md#sys-rel-003),
   [validate before promotion (`SYS-REL-004`)](system-requirements-and-traceability.md#sys-rel-004),
   [dependent-first rollback (`SYS-REL-005`)](system-requirements-and-traceability.md#sys-rel-005),
+  [team-owned release decisions (`SYS-REL-007`)](system-requirements-and-traceability.md#sys-rel-007),
+  [OEM-authorized deployment approval (`SYS-REL-008`)](system-requirements-and-traceability.md#sys-rel-008),
+  [combined-graph owner gate (`SYS-REL-009`)](system-requirements-and-traceability.md#sys-rel-009),
   [healthy empty capability slot (`SYS-VDP-001`)](system-requirements-and-traceability.md#sys-vdp-001),
   [versioned v1 signal contract (`SYS-VDP-002`)](system-requirements-and-traceability.md#sys-vdp-002),
   [backward-compatible v2 capability (`SYS-VDP-003`)](system-requirements-and-traceability.md#sys-vdp-003),
@@ -394,12 +412,16 @@ the only normative definitions.
 - Interfaces: [Brake Health data subscription (`IF-DATA-002`)](#if-data-002),
   [advisory request (`IF-ADV-001`)](#if-adv-001),
   [functional report (`IF-FUNC-001`)](#if-func-001),
-  [Brake Health SOTA artifact (`IF-LC-002`)](#if-lc-002), and
+  [Brake Health SOTA artifact (`IF-LC-002`)](#if-lc-002),
+  [Function Team 1 OEM-authorized approval (`IF-LC-009`)](#if-lc-009), and
   [runtime enforcement (`IF-LC-006`)](#if-lc-006).
 - Parent requirements: [immutable release candidates (`SYS-REL-001`)](system-requirements-and-traceability.md#sys-rel-001),
   [service capability compatibility (`SYS-REL-003`)](system-requirements-and-traceability.md#sys-rel-003),
   [validate before promotion (`SYS-REL-004`)](system-requirements-and-traceability.md#sys-rel-004),
   [dependent-first rollback (`SYS-REL-005`)](system-requirements-and-traceability.md#sys-rel-005),
+  [team-owned release decisions (`SYS-REL-007`)](system-requirements-and-traceability.md#sys-rel-007),
+  [OEM-authorized deployment approval (`SYS-REL-008`)](system-requirements-and-traceability.md#sys-rel-008),
+  [combined-graph owner gate (`SYS-REL-009`)](system-requirements-and-traceability.md#sys-rel-009),
   [bounded v1 functional report (`SYS-BHS-001`)](system-requirements-and-traceability.md#sys-bhs-001),
   [deterministic v2 inference (`SYS-BHS-002`)](system-requirements-and-traceability.md#sys-bhs-002),
   [allowlisted v3 advisory (`SYS-BHS-003`)](system-requirements-and-traceability.md#sys-bhs-003),
@@ -412,12 +434,16 @@ the only normative definitions.
 - Interfaces: [dynamics subscription (`IF-TIRE-001`)](#if-tire-001),
   [typed inspection advisory (`IF-TIRE-002`)](#if-tire-002),
   [bounded condition result (`IF-TIRE-003`)](#if-tire-003),
-  [Tire Health SOTA artifact (`IF-LC-007`)](#if-lc-007), and
+  [Tire Health SOTA artifact (`IF-LC-007`)](#if-lc-007),
+  [Function Team 2 OEM-authorized approval (`IF-LC-010`)](#if-lc-010), and
   [runtime enforcement (`IF-LC-006`)](#if-lc-006).
 - Parent requirements: [immutable release candidates (`SYS-REL-001`)](system-requirements-and-traceability.md#sys-rel-001),
   [service capability compatibility (`SYS-REL-003`)](system-requirements-and-traceability.md#sys-rel-003),
   [validate before promotion (`SYS-REL-004`)](system-requirements-and-traceability.md#sys-rel-004),
   [dependent-first rollback (`SYS-REL-005`)](system-requirements-and-traceability.md#sys-rel-005),
+  [team-owned release decisions (`SYS-REL-007`)](system-requirements-and-traceability.md#sys-rel-007),
+  [OEM-authorized deployment approval (`SYS-REL-008`)](system-requirements-and-traceability.md#sys-rel-008),
+  [combined-graph owner gate (`SYS-REL-009`)](system-requirements-and-traceability.md#sys-rel-009),
   [existing platform contract only (`SYS-TIRE-001`)](system-requirements-and-traceability.md#sys-tire-001),
   [local persistent condition estimate (`SYS-TIRE-002`)](system-requirements-and-traceability.md#sys-tire-002),
   [explicit simulation model (`SYS-TIRE-003`)](system-requirements-and-traceability.md#sys-tire-003),
@@ -428,11 +454,14 @@ the only normative definitions.
 ### `CR-AOS` — AosCore and AosCloud lifecycle
 
 - Components: [AosCore and Service Manager (`CMP-AOS-CORE`)](#cmp-aos-core),
-  [AosCloud Lifecycle Authority (`CMP-AOS-CLOUD`)](#cmp-aos-cloud), and
+  [AosCloud Lifecycle Control Plane (`CMP-AOS-CLOUD`)](#cmp-aos-cloud), and
   [AosEdge Log Pipeline (`CMP-LOG-PIPE`)](#cmp-log-pipe).
 - Interfaces: [platform FOTA (`IF-LC-001`)](#if-lc-001),
   [Brake Health SOTA (`IF-LC-002`)](#if-lc-002),
   [Tire Health SOTA (`IF-LC-007`)](#if-lc-007),
+  [Platform Team OEM-authorized approval (`IF-LC-008`)](#if-lc-008),
+  [Function Team 1 OEM-authorized approval (`IF-LC-009`)](#if-lc-009),
+  [Function Team 2 OEM-authorized approval (`IF-LC-010`)](#if-lc-010),
   [Cloud-to-Unit lifecycle (`IF-LC-004`)](#if-lc-004),
   [Software Delivery Dashboard API (`IF-LC-005`)](#if-lc-005),
   [runtime enforcement (`IF-LC-006`)](#if-lc-006),
@@ -448,6 +477,9 @@ the only normative definitions.
   [validate before promotion (`SYS-REL-004`)](system-requirements-and-traceability.md#sys-rel-004),
   [dependent-first rollback (`SYS-REL-005`)](system-requirements-and-traceability.md#sys-rel-005),
   [native Cloud dependency rejection (`SYS-REL-006`)](system-requirements-and-traceability.md#sys-rel-006),
+  [team-owned release decisions (`SYS-REL-007`)](system-requirements-and-traceability.md#sys-rel-007),
+  [OEM-authorized deployment approval (`SYS-REL-008`)](system-requirements-and-traceability.md#sys-rel-008),
+  [combined-graph owner gate (`SYS-REL-009`)](system-requirements-and-traceability.md#sys-rel-009),
   [Cloud-authoritative delivery dashboard (`SYS-OBS-002`)](system-requirements-and-traceability.md#sys-obs-002),
   [operational log controls (`SYS-OBS-003`)](system-requirements-and-traceability.md#sys-obs-003),
   [per-run correlation (`SYS-OBS-004`)](system-requirements-and-traceability.md#sys-obs-004),
@@ -492,6 +524,9 @@ Delivery Dashboard.
   [Demo Orchestrator (`CMP-ORCH`)](#cmp-orch), and
   [Vehicle and Service Log View (`CMP-ELK`)](#cmp-elk).
 - Interfaces: [Software Delivery Dashboard API (`IF-LC-005`)](#if-lc-005),
+  [Platform Team OEM-authorized approval (`IF-LC-008`)](#if-lc-008),
+  [Function Team 1 OEM-authorized approval (`IF-LC-009`)](#if-lc-009),
+  [Function Team 2 OEM-authorized approval (`IF-LC-010`)](#if-lc-010),
   [ELK delivery (`IF-OBS-002`)](#if-obs-002), and
   [orchestrated VM lifecycle (`IF-DEMO-001`)](#if-demo-001).
 - Parent requirements: [one identity per overlay (`SYS-ID-001`)](system-requirements-and-traceability.md#sys-id-001),
@@ -501,6 +536,9 @@ Delivery Dashboard.
   [honest single-source presentation (`SYS-SRC-002`)](system-requirements-and-traceability.md#sys-src-002),
   [current effective-target validation (`SYS-REL-002`)](system-requirements-and-traceability.md#sys-rel-002),
   [validate before promotion (`SYS-REL-004`)](system-requirements-and-traceability.md#sys-rel-004),
+  [team-owned release decisions (`SYS-REL-007`)](system-requirements-and-traceability.md#sys-rel-007),
+  [OEM-authorized deployment approval (`SYS-REL-008`)](system-requirements-and-traceability.md#sys-rel-008),
+  [combined-graph owner gate (`SYS-REL-009`)](system-requirements-and-traceability.md#sys-rel-009),
   [authoritative demo surfaces (`SYS-OBS-001`)](system-requirements-and-traceability.md#sys-obs-001),
   [Cloud-authoritative delivery dashboard (`SYS-OBS-002`)](system-requirements-and-traceability.md#sys-obs-002),
   [operational log controls (`SYS-OBS-003`)](system-requirements-and-traceability.md#sys-obs-003),
@@ -550,8 +588,11 @@ Delivery Dashboard.
    repository containing its backend and dashboard: `brake-health-cloud` and
    `tire-health-cloud`. Each remains separate from the corresponding
    in-vehicle SOTA repository.
-5. **Open:** confirm that `CMP-SW-DASH` and `CMP-ORCH` remain solution
-   components in `aosedge-sdv-demo` rather than becoming lifecycle authorities.
+5. **Accepted 2026-08-18:** `CMP-SW-DASH` and `CMP-ORCH` remain stateless
+   solution components in `aosedge-sdv-demo`. Owning teams make engineering
+   release decisions, OEM identities authorize Cloud mutations, and
+   `CMP-AOS-CLOUD` stores and executes lifecycle state as defined by
+   [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md).
 6. **Open:** decide where deployment-specific `CMP-LOG-PIPE` to `CMP-ELK`
    configuration is owned after the actual AosEdge logging topology is
    qualified.
@@ -578,6 +619,10 @@ The register is ready to become the component baseline when reviewers confirm:
    stream, third-party Service Provider, Fleet Operator or production fleet;
 10. the provisional requirement packages can be expanded without changing HLA
     1.2 or the accepted demo scenarios.
+11. team-owned release decisions, Service Provider publication, OEM-authorized
+    deployment approval, AosCloud state/execution, and stateless demo tooling
+    remain distinct as required by
+    [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md).
 
 After acceptance, component requirements shall be written package by package,
 starting with [Vehicle simulation (`CR-VEHICLE-SIM`)](#cr-vehicle-sim) and

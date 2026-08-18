@@ -13,6 +13,7 @@
 - CARLA input: [R10 Native CARLA Vehicle Telemetry Inventory](../research/demo-foundation/r10-carla-telemetry-and-function-team-2.md)
 - Requirements input: [System Requirements and Traceability 0.2](../requirements/system-requirements-and-traceability.md)
 - Component input: [Component Decomposition and Interface Register 0.2](../requirements/component-decomposition-and-interface-register.md)
+- Accepted architecture decision: [ADR 0009](decisions/0009-separate-release-decision-from-cloud-execution.md)
 - Implementation, build, signing, Cloud, or Unit mutation authorized: no
 
 ## Purpose
@@ -94,11 +95,11 @@ uses `AF-TIRE-<type>`.
 | `BRAKE-DASH` | Brake Health Function Dashboard | Function Team 1 | Target |
 | `TIRE-BE` | Tire Health backend | Function Team 2 | Target |
 | `TIRE-DASH` | Tire Health Function Dashboard | Function Team 2 | Target |
-| `AOS-CLOUD` | Provisioning and authoritative FOTA/SOTA desired/actual state | AosCloud | Current platform; exact demo operations require qualification |
-| `SW-DASH` | Simplified OEM Software Delivery Dashboard over AosCloud APIs | Demo solution | Target |
+| `AOS-CLOUD` | Lifecycle system of record and execution control plane: provisioning, desired/reported actual state, batches, campaigns, recorded approvals, audit and FOTA/SOTA delivery | AosCloud | Current platform; exact demo operations require qualification |
+| `SW-DASH` | Stateless OEM Software Delivery Dashboard over AosCloud APIs; shows decision owner and active Cloud role and invokes only explicitly confirmed OEM-authorized actions | Demo solution | Target |
 | `LOG-PIPE` | AosEdge system/service log collection and Cloud delivery | AosCore/AosCloud integration | Platform mechanisms exist; demo route unqualified |
 | `ELK` | Vehicle and Service Log View | OEM operational environment | Target integration |
-| `ORCH` | Demo-session, overlay, Unit binding, replay, and retirement orchestration | `aosedge-sdv-demo` | Target |
+| `ORCH` | Demo-session, overlay, Unit binding, replay, and retirement orchestration without lifecycle-state or approval ownership | `aosedge-sdv-demo` | Target |
 
 The catalogue distinguishes an implemented component from an accepted demo
 capability. Existing provisioned VMs, signed candidates, and local build
@@ -158,7 +159,8 @@ All flows below preserve these rules:
    does not install when that dependency is unmet.
 7. Local analysis continues without Cloud connectivity; functional Cloud
    delivery is asynchronous and bounded.
-8. AosCloud is lifecycle authority, not a functional telemetry backend.
+8. AosCloud is the lifecycle system of record and execution control plane, not
+   the owner of engineering release decisions or a functional telemetry backend.
 9. ELK is operational evidence, not vehicle telemetry or functional product
    data.
 10. Engineering Dashboard evidence proves the Gateway view only; it does not
@@ -170,6 +172,12 @@ All flows below preserve these rules:
 13. Native Cloud rejection of an incompatible SOTA-to-FOTA graph is a target
     capability deferred until a supporting AosEdge release is qualified. No
     temporary project-side admission controller substitutes for it.
+14. The Platform Team and each Function Team own their engineering release
+    decisions. Function Teams publish through Service Provider identities, but
+    approvals affecting OEM Units use authorized OEM identities.
+15. Passing qualification evidence never auto-approves a candidate. A combined
+    FOTA/SOTA graph requires separate explicit acceptance by the Platform Team
+    and the relevant Function Team before AosCloud executes promotion.
 
 ## M0 — Manufacturing Output
 
@@ -359,15 +367,20 @@ sequenceDiagram
     participant VU as Validation Unit
     participant DU as Demonstration Unit
 
+    Note over PT,AC: PT owns the decision and an OEM identity authorizes Cloud mutations
     Note over PT,AC: Immutable Provider v1 is built, signed and staged before the presentation
     PT->>AC: Select Provider v1 artifact and declared target
     AC-->>SD: Fresh verification batch and current Unit references
     SD->>AC: Re-read effective targets immediately before approval
     alt Only current Validation Unit is targeted
+        PT->>SD: Explicitly confirm FOTA validation using OEM identity
+        SD->>AC: Submit PT-owned OEM-authorized validation approval
         AC->>VU: Download, install and activate Provider v1
         VU-->>AC: Exact digest, ready/health and log availability
         PT->>VU: Run platform qualification
         PT->>AC: Record accepted qualification evidence
+        PT->>SD: Accept exact Provider v1 digest for promotion
+        SD->>AC: Submit PT-owned OEM-authorized promotion approval
         AC->>DU: Promote the identical artifact and digest
         DU-->>AC: Provider v1 ready
     else Unexpected or stale target exists
@@ -440,17 +453,24 @@ it to reset the complete demo.
 sequenceDiagram
     participant FT1 as Function Team 1 / Service Provider 1
     participant AC as AosCloud
+    participant SD as Software Delivery Dashboard
     participant VU as Validation Unit
     participant BE as Brake Health Backend
     participant DU as Demonstration Unit
 
+    Note over FT1,AC: FT1 owns the decision while SP publishes and OEM identity approves deployment
     Note over FT1,AC: Immutable Service v1 is built, signed and staged before the presentation
-    FT1->>AC: Select Service v1 requiring Capability v1
+    FT1->>AC: SP identity publishes and selects Service v1 requiring Capability v1
+    AC-->>SD: Candidate batch, VU target and active Cloud role
+    SD->>AC: Re-read effective target and dependency
+    FT1->>SD: Explicitly approve VU deployment using OEM identity
+    SD->>AC: Submit FT1-owned OEM-authorized validation approval
     AC->>VU: Check dependency and install Service v1 through SOTA 1
     VU-->>AC: Service ready with exact version and digest
     VU->>BE: Send bounded v1 functional report
     BE-->>FT1: Ingestion and dashboard evidence
-    FT1->>AC: Accept Service v1 integration result
+    FT1->>SD: Accept exact Service v1 integration result
+    SD->>AC: Submit FT1-owned OEM-authorized promotion approval
     AC->>DU: Promote identical Service v1 artifact
     DU-->>AC: G2 ready, Provider v1 unchanged
 ```
@@ -555,20 +575,21 @@ sequenceDiagram
     participant PT as Platform Team
     participant AC as AosCloud
     participant VU as Validation Unit
-    participant OA as OEM Acceptance
     participant DU as Demonstration Unit
 
     FT1->>PT: Versioned request for additional vehicle data and quality constraints
     PT->>AC: Select backward-compatible Provider v2 FOTA artifact
+    PT->>AC: OEM identity approves Provider v2 validation deployment
     AC->>VU: Install Provider v2
     VU-->>PT: Independent platform qualification evidence
     PT-->>FT1: Accepted capability contract and handoff
-    FT1->>AC: Select Service v2 + model requiring Capability v2
+    FT1->>AC: SP identity publishes and selects Service v2 + model requiring Capability v2
+    FT1->>AC: OEM identity approves Service v2 validation deployment
     AC->>VU: Install Service v2 through SOTA 1
     VU-->>FT1: Local inference and backend integration evidence
-    PT->>OA: Provider v2 digest and qualification
-    FT1->>OA: Service/model digest and joint scenario result
-    OA->>AC: Accept exact Provider v2 + Service v2 graph
+    PT->>AC: OEM identity accepts Provider v2 digest and qualification
+    FT1->>AC: OEM identity accepts Service/model digest and joint scenario result
+    AC->>AC: Require both owner approvals for exact graph
     AC->>DU: Promote Provider v2 first
     DU-->>AC: Provider v2 ready, v1 contract still usable
     AC->>DU: Promote Service v2 second
@@ -576,8 +597,9 @@ sequenceDiagram
 ```
 
 Provider v2 is a backward-compatible superset. Platform qualification finishes
-before functional integration. Neither candidate is promoted until the exact
-combined graph is accepted.
+before functional integration. Neither candidate is promoted until the
+Platform Team and Function Team 1 separately accept their exact artifacts and
+the joint result through authorized OEM identities.
 
 <a id="af-g3-rt"></a>
 ### `AF-G3-RT` — Deterministic local prediction
@@ -649,19 +671,20 @@ sequenceDiagram
     participant PT as Platform Team
     participant AC as AosCloud
     participant VU as Validation Unit
-    participant OA as OEM Acceptance
     participant DU as Demonstration Unit
 
     FT1->>PT: Request one bounded Brake Health advisory capability
     PT->>AC: Select Provider v3 inbound + outbound capability
+    PT->>AC: OEM identity approves Provider v3 validation deployment
     AC->>VU: Install Provider v3 through FOTA
     VU-->>PT: Allowlist, fail-closed, restart and rollback evidence
-    FT1->>AC: Select Service v3 requiring Capability v3
+    FT1->>AC: SP identity publishes and selects Service v3 requiring Capability v3
+    FT1->>AC: OEM identity approves Service v3 validation deployment
     AC->>VU: Install Service v3 through SOTA 1
     VU-->>FT1: Online/offline local inference and Gateway evidence
-    PT->>OA: Provider v3 qualification and digest
-    FT1->>OA: Service v3 integration and scenario evidence
-    OA->>AC: Accept exact Provider v3 + Service v3 graph
+    PT->>AC: OEM identity accepts Provider v3 qualification and digest
+    FT1->>AC: OEM identity accepts Service v3 integration and scenario evidence
+    AC->>AC: Require both owner approvals for exact graph
     AC->>DU: Promote Provider v3 first
     DU-->>AC: Provider v3 ready
     AC->>DU: Promote Service v3 second
@@ -745,11 +768,13 @@ sequenceDiagram
     participant TB as Tire Health Backend
     participant DU as Demonstration Unit
 
-    FT2->>AC: Select immutable Tire Health service requiring an accepted capability version
+    Note over FT2,AC: FT2 owns the decision while SP publishes and OEM identity approves deployment
+    FT2->>AC: SP identity publishes and selects immutable Tire Health service
+    FT2->>AC: OEM identity approves validation deployment against accepted capability
     AC->>VU: Check dependency and install through SOTA 2
     VU-->>FT2: Local model, persistence, advisory, and bounded-report evidence
     VU->>TB: Deliver qualified condition summary or threshold event
-    FT2->>AC: Accept exact service version and scenario result
+    FT2->>AC: OEM identity accepts exact service version and scenario result
     AC->>DU: Promote identical SOTA 2 artifact
     DU-->>AC: Tire Health ready and other lifecycles unchanged
 ```
@@ -872,7 +897,7 @@ flowchart LR
 | CARLA scene | Visible physical stimulus and vehicle motion | Software deployment or functional result |
 | Engineering Dashboard | Gateway VISS telemetry and factual advisory status | KUKSA receipt, service decision, backend delivery, or driver display |
 | AosCloud | Unit desired/actual software state and lifecycle records | Functional vehicle data or local analytic decisions |
-| Software Delivery Dashboard | Simplified presentation and approved orchestration of real AosCloud state | A parallel desired-state database |
+| Software Delivery Dashboard | Stateless presentation of real AosCloud state, evidence, decision owner, active role and explicitly confirmed OEM-authorized operations | A parallel desired-state database, release decision owner or automatic approval policy |
 | ELK | Selected operational and troubleshooting records | Vehicle telemetry or functional product database |
 | Brake Health Dashboard | Brake Health backend data, model result, report state | FOTA/SOTA authority or Gateway receipt |
 | Tire Health Function Dashboard | Function Team 2 condition/event/backend state | Raw continuous vehicle stream, hidden simulation truth, or Brake Health result |
@@ -887,20 +912,27 @@ Every FOTA and SOTA transition uses the same safety pattern:
 
 ```text
 prebuilt immutable candidate
+  -> Service Provider publication for SOTA or Platform Team publication for FOTA
   -> fresh Validation target/batch
   -> effective-target preview immediately before approval
+  -> explicit owner decision through an authorized OEM identity
   -> install only on VU
   -> component or service qualification
   -> integration qualification when applicable
-  -> explicit acceptance tied to versions and digests
+  -> explicit owner acceptance tied to versions, digests and targets
+  -> require every owner approval for a combined FOTA/SOTA graph
   -> re-check DU target and dependency
   -> promote the identical accepted artifact to DU
   -> verify actual state and readiness
 ```
 
-An unexpected Unit, stale pending batch, digest mismatch, unmet dependency, or
-incomplete evidence blocks the transition. The dashboard may initiate only
-explicitly approved actions and must always re-read AosCloud afterward.
+An unexpected Unit, stale pending batch, digest mismatch, unmet dependency,
+incomplete evidence, missing owner decision, wrong Cloud role, or missing
+combined-graph approval blocks the transition. Passing evidence never implies
+approval. The dashboard may invoke only an explicitly confirmed action through
+the correct OEM identity and must always re-read AosCloud afterward. AosCloud
+retains the authoritative lifecycle and audit state after the dashboard or
+orchestrator exits.
 
 <a id="af-x-offline"></a>
 ## `AF-X-OFFLINE` — Connectivity Domains
@@ -1011,10 +1043,13 @@ vehicle rollback or proof of a fleet-wide deletion policy.
 | Brake Health functional report | `BHS` | `BRAKE-BE` / `BRAKE-DASH` | Function Team 1 SOTA/backend |
 | Tire Health summary/event | `TIRE` | `TIRE-BE` / `TIRE-DASH` | Function Team 2 SOTA/backend |
 | Unit desired/actual state | `AOS-CLOUD` / `AOS-CORE` | `SW-DASH` | AosCloud lifecycle |
+| SOTA artifact publication and technical verification | Function Team 1 or 2 through its Service Provider identity | `AOS-CLOUD` | Owning Function Team SOTA lifecycle; no OEM Unit deployment approval |
+| FOTA/SOTA validation acceptance and deployment or promotion approval | Platform Team or owning Function Team through an authorized OEM identity | `AOS-CLOUD` | Team-owned engineering decision recorded and executed by AosCloud |
 | Selected operational logs | Components/services through `LOG-PIPE` | `ELK` | Operational observability |
 
-No backend, dashboard, or functional service becomes an alternate path for
-vehicle control or software lifecycle authority.
+No backend, dashboard, orchestrator, or functional service becomes an
+alternate path for vehicle control, authoritative lifecycle state, or an
+owning team's release decision.
 
 ## Consolidated Gap Register
 
@@ -1036,7 +1071,7 @@ vehicle control or software lifecycle authority.
 | <a id="gap-af-23"></a>`GAP-AF-23` | Tire Health Cloud product | `TIRE` | Implement independent Tire Health backend/dashboard and offline/idempotent ingestion of bounded summaries/events | Function Team 2 |
 | <a id="gap-af-15"></a>`GAP-AF-15` | Least-privilege KUKSA access | all | Define least-privilege KUKSA publish/read/actuate identities and the transition from demo tokens to the authorization adapter | Platform security |
 | <a id="gap-af-16"></a>`GAP-AF-16` | Logs and ELK qualification | all | Qualify AosEdge log collection/export, ELK access, retention, offline and redaction | Operational observability |
-| <a id="gap-af-17"></a>`GAP-AF-17` | Software Delivery Dashboard | all | Implement the Software Delivery Dashboard without a parallel desired-state cache | Demo solution |
+| <a id="gap-af-17"></a>`GAP-AF-17` | Software Delivery Dashboard and release authorization | all | Implement a stateless Software Delivery Dashboard that exposes the team decision owner, active SP/OEM role, exact confirmation and Cloud audit result without a parallel desired-state cache or automatic approval policy | Demo solution + AosCloud integration |
 | <a id="gap-af-18"></a>`GAP-AF-18` | Presentation and timing bounds | all | Define stage durations, timeout budgets, local decision latency and technical/executive presentation modes | Demo experience |
 | <a id="gap-af-19"></a>`GAP-AF-19` | Demo-run correlation and cleanup | `M1/R0` | Define current-run correlation by start time, local overlay roles, Unit IDs, and external-data retention/cleanup boundaries | Demo orchestration + functional teams |
 | <a id="gap-af-20"></a>`GAP-AF-20` | Cross-lifecycle compatibility | `G2–G4/FT2` | Define and prove versioned capability-dependency declaration, current runtime fail-closed behavior, future native Cloud rejection before rollout/transfer, compatibility checks, and safe dependent-first rollback for both SOTA lifecycles | AosEdge Platform Team + Platform Team + both service providers |

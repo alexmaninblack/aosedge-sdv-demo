@@ -10,6 +10,7 @@
 - Architecture input: [High-Level Architecture 1.2](../architecture/high-level-architecture.md)
 - Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.2](../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - Flow input: [Demo Scenario Architecture Flows 1.1](../architecture/demo-scenario-architecture-flows.md)
+- Accepted architecture decision: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md)
 - Implementation, repository creation, signing, Cloud, or Unit mutation authorized: no
 
 ## Purpose
@@ -72,6 +73,13 @@ acceptance even if wording is clarified.
 The two OEM functional teams are peer AosCloud Service Providers and require
 separate source and SOTA lifecycles.
 
+Each Function Team owns the engineering release decision for its service. It
+uses its Service Provider identity to publish and technically verify artifacts,
+but records validation acceptance and any deployment or promotion approval
+affecting OEM Units through an authorized OEM identity. The Platform Team owns
+the corresponding FOTA decision and also records it through an OEM identity.
+AosCloud remains the lifecycle system of record and execution control plane.
+
 | Repository | Ownership boundary | Lifecycle | State |
 | --- | --- | --- | --- |
 | `CarlaSim` | Virtual physical vehicle and upstream simulator behavior | Simulator source | Existing |
@@ -123,6 +131,9 @@ current workspace doctor's validity.
 | <a id="sys-rel-004"></a>`SYS-REL-004` | Validate before promotion | A candidate shall be installed and qualified on the Validation Unit before the identical accepted bytes and digest are promoted to the Demonstration Unit. | `T,I,D` | `GAP-AF-06`, `GAP-AF-20` |
 | <a id="sys-rel-005"></a>`SYS-REL-005` | Dependent-first rollback | Rollback shall remove or roll back a dependent SOTA service before a platform capability on which it depends, while preserving unaffected service and platform lifecycles. | `T,A` | `GAP-AF-05`, `GAP-AF-20` |
 | <a id="sys-rel-006"></a>`SYS-REL-006` | Native Cloud dependency rejection | AosCloud shall natively reject a SOTA request whose declared Vehicle Data Platform Capability range is not satisfied on the intended Unit before changing Subject-service desired state, creating a validation batch or campaign, or transferring update content to the Unit, and shall return an authoritative machine-readable reason. | `T,I,D` | `GAP-AF-20` |
+| <a id="sys-rel-007"></a>`SYS-REL-007` | Team-owned release decisions | The Platform Team shall own every Vehicle Data Platform Capability release decision, Function Team 1 shall own every Brake Health release decision, and Function Team 2 shall own every Tire Health release decision; passing evidence or a dashboard action shall not silently substitute for explicit owner acceptance. | `T,I,D` | `GAP-AF-17` |
+| <a id="sys-rel-008"></a>`SYS-REL-008` | OEM-authorized deployment approval | A Function Team shall use its Service Provider identity to publish and technically verify its service artifact, while every validation acceptance and deployment or promotion approval affecting OEM Units shall be explicitly confirmed through an authorized OEM identity and recorded in AosCloud with the owner, artifact version, digest, target and transition. | `T,I,A,D` | `GAP-AF-06`, `GAP-AF-17` |
+| <a id="sys-rel-009"></a>`SYS-REL-009` | Combined-graph owner gate | AosCloud promotion of a combined FOTA/SOTA graph shall remain blocked until the Platform Team has accepted the exact platform artifact and the relevant Function Team has accepted the exact service artifact and integration result for the same versions, digests and targets. | `T,I,D` | `GAP-AF-17`, `GAP-AF-20` |
 
 [Native Cloud dependency rejection (`SYS-REL-006`)](#sys-rel-006) is
 **deferred and blocked on an implementing AosEdge platform
@@ -182,7 +193,7 @@ requirements after ADR 0008:
 | <a id="sys-sec-002"></a>`SYS-SEC-002` | Authorization-adapter migration | The accepted design shall define migration from prototype tokens to the platform authorization adapter without embedding credentials in artifacts, source, command lines or logs. | `I,T` | `GAP-AF-15` |
 | <a id="sys-sec-003"></a>`SYS-SEC-003` | Fail-closed advisory security | Unauthorized, malformed, stale or replayed advisory requests shall fail closed and produce factual non-driver status evidence. | `T,A` | `GAP-AF-10`, `GAP-AF-15`, `GAP-AF-22` |
 | <a id="sys-obs-001"></a>`SYS-OBS-001` | Authoritative demo surfaces | Every audience claim shall identify its authoritative surface: CARLA for physical stimulus, Engineering Telematics Dashboard for Gateway state, AosCloud for software lifecycle, ELK for operational logs, and each functional dashboard for its own backend data. | `I,D` | `GAP-AF-17` |
-| <a id="sys-obs-002"></a>`SYS-OBS-002` | Cloud-authoritative delivery dashboard | The Software Delivery Dashboard shall read and re-read authoritative AosCloud state and shall not maintain an independent desired-state database. | `T,I` | `GAP-AF-06`, `GAP-AF-17` |
+| <a id="sys-obs-002"></a>`SYS-OBS-002` | Cloud-authoritative delivery dashboard | The Software Delivery Dashboard shall read and re-read authoritative AosCloud state, display the business decision owner and active Cloud role, require explicit confirmation before an OEM-authorized mutation, and shall not maintain an independent desired-state database or automatic approval policy. | `T,I` | `GAP-AF-06`, `GAP-AF-17` |
 | <a id="sys-obs-003"></a>`SYS-OBS-003` | Operational log controls | Operational log delivery shall define access control, redaction, retention, offline buffering and failure visibility before ELK is presented as demo evidence. | `T,I,A` | `GAP-AF-16` |
 | <a id="sys-obs-004"></a>`SYS-OBS-004` | Per-run correlation | Before provisioning, a demo run shall be correlated by start time and local overlay roles; after provisioning it shall be correlated by the two Unit IDs and the same bounded time window. | `T,I` | `GAP-AF-19` |
 | <a id="sys-tim-001"></a>`SYS-TIM-001` | Lifecycle timing bounds | Each lifecycle stage shall have measured normal duration, timeout, stalled-state and recovery criteria for both technical and executive presentation modes. | `T,A,D` | `GAP-AF-18` |
@@ -245,10 +256,10 @@ test.
 | [Vehicle Data Platform (`CR-VDP`)](component-decomposition-and-interface-register.md#cr-vdp) | `aos-vehicle-platform` | Provider v1-v3, KUKSA contract, outbound policy and authorization integration |
 | [Brake Health service (`CR-BHS`)](component-decomposition-and-interface-register.md#cr-bhs) | `brake-health-service` | Service v1-v3 behavior, model, report queue, advisory request and resource limits |
 | [Tire Health service (`CR-TIRE`)](component-decomposition-and-interface-register.md#cr-tire) | proposed `tire-health-service` | Local persistent condition model, bounded summary/event, offline queue, inspection advisory, SOTA 2 metadata and resource limits |
-| [Aos lifecycle (`CR-AOS`)](component-decomposition-and-interface-register.md#cr-aos) | AosCore/AosCloud integration | Provisioning, desired/actual state, FOTA/SOTA lifecycle, targeting, native cross-lifecycle dependency admission and log transport |
+| [Aos lifecycle (`CR-AOS`)](component-decomposition-and-interface-register.md#cr-aos) | AosCore/AosCloud integration | Provisioning, authoritative desired/reported actual state, recorded OEM-authorized approvals, FOTA/SOTA execution, targeting, native cross-lifecycle dependency admission and log transport |
 | [Brake Health Cloud (`CR-BRAKE-CLOUD`)](component-decomposition-and-interface-register.md#cr-brake-cloud) | Function Team 1 | Brake Health backend ingestion, idempotency, retention and function dashboard |
 | [Tire Health Cloud (`CR-TIRE-CLOUD`)](component-decomposition-and-interface-register.md#cr-tire-cloud) | Function Team 2 | Tire condition/event ingestion, idempotency, retention and Function Dashboard |
-| [Demo orchestration (`CR-DEMO`)](component-decomposition-and-interface-register.md#cr-demo) | `aosedge-sdv-demo` | Overlay lifecycle, Unit binding, release orchestration, Software Delivery Dashboard, evidence and retirement |
+| [Demo orchestration (`CR-DEMO`)](component-decomposition-and-interface-register.md#cr-demo) | `aosedge-sdv-demo` | Overlay lifecycle, Unit binding, stateless release workflow facilitation, owner/role-visible Software Delivery Dashboard, evidence and retirement |
 | [Cross-cutting concerns (`CR-CROSS`)](component-decomposition-and-interface-register.md#cr-cross) | Security and operational concerns across owners | Identities, permissions, credentials, authorization adapter, redaction, timing and offline bounds |
 | [End-to-end acceptance (`CR-E2E`)](component-decomposition-and-interface-register.md#cr-e2e) | Cross-repository qualification | Stage acceptance, failure/offline/recovery, latency and traceability evidence |
 
@@ -296,6 +307,9 @@ confirm that:
 8. deferred [native Cloud dependency rejection (`SYS-REL-006`)](#sys-rel-006)
    is not treated as implemented or replaced by custom
    dashboard policy before an implementing AosEdge release is qualified.
+9. team-owned release decisions, Service Provider publication, OEM-authorized
+   deployment approval, and AosCloud state/execution remain distinct as
+   required by [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md).
 
 After acceptance of this document and the Component Decomposition and
 Interface Register, the next document set is the component requirement package

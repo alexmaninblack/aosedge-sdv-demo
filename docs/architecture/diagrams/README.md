@@ -23,6 +23,9 @@ SOTA lifecycles, the shared FOTA-owned Vehicle Data Platform Capability, the
 Tire Health service, the Factory Baseline Assembly-to-Factory Image and
 factory-installed runtime boundaries, the Software Delivery and ELK
 observation surfaces, and the KUKSA-mediated advisory return.
+It also distinguishes Service Provider artifact publication, team-owned
+engineering release decisions, OEM-authorized deployment approval, and
+AosCloud lifecycle state/execution as defined by ADR 0009.
 Both files are original project material, copyright 2026 maninblack, and
 distributed under the repository MIT license.
 
