@@ -1,16 +1,16 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Component Decomposition and Interface Register 0.1
+# Component Decomposition and Interface Register 0.2
 
 - Status: Review candidate
-- Version: 0.1
+- Version: 0.2
 - Prepared: 2026-08-18
 - Owner: System Architecture
-- Architecture input: [High-Level Architecture 1.1](../architecture/high-level-architecture.md)
-- Scenario input: [Staged Post-SOP Brake Health Demo Scenarios 1.1](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Demo Scenario Architecture Flows 1.0](../architecture/demo-scenario-architecture-flows.md)
-- Requirements input: [System Requirements and Traceability 0.1](system-requirements-and-traceability.md)
+- Architecture input: [High-Level Architecture 1.2](../architecture/high-level-architecture.md)
+- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.2](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Demo Scenario Architecture Flows 1.1](../architecture/demo-scenario-architecture-flows.md)
+- Requirements input: [System Requirements and Traceability 0.2](system-requirements-and-traceability.md)
 - Implementation, repository creation, Cloud, or Unit mutation authorized: no
 
 ## Purpose
@@ -31,12 +31,12 @@ surfaces. Those concepts are related, but they are not interchangeable.
 
 ## Source Precedence
 
-1. High-Level Architecture 1.1 owns system boundaries, authorities and
+1. High-Level Architecture 1.2 owns system boundaries, authorities and
    invariants.
-2. Demo Scenario 1.1 owns the audience-visible lifecycle and stage sequence.
-3. Architecture Flows 1.0 owns detailed runtime, lifecycle, observability and
+2. Demo Scenario 1.2 owns the audience-visible lifecycle and stage sequence.
+3. Architecture Flows 1.1 owns detailed runtime, lifecycle, observability and
    failure flows.
-4. System Requirements 0.1 owns normative `SYS-*` obligations and gap
+4. System Requirements 0.2 owns normative `SYS-*` obligations and gap
    traceability.
 5. This register owns stable component and interface identifiers, component
    allocation, implementation state and repository placement candidates.
@@ -64,7 +64,7 @@ Factory Baseline Assembly component.
 ### Component is not deployment artifact
 
 The Vehicle Data Platform Capability is one platform component delivered in
-independently versioned FOTA artifacts. Brake Health and Vehicle Stability are
+independently versioned FOTA artifacts. Brake Health and Tire Health are
 two peer functional components delivered in separate SOTA lifecycles. Version
 changes do not create new logical components.
 
@@ -83,7 +83,7 @@ Every dashboard is a presentation surface over one authoritative source:
 | Engineering Telematics Dashboard | Vehicle Gateway VISS endpoint |
 | OEM Software Delivery Dashboard | AosCloud API and current Unit state |
 | Brake Health Function Dashboard | Function Team 1 backend |
-| Event-Based Data Dashboard | Function Team 2 backend |
+| Tire Health Function Dashboard | Function Team 2 backend |
 | Vehicle and Service Log View | Accepted centralized log store |
 
 No dashboard becomes an alternate desired-state database, vehicle-data broker,
@@ -111,12 +111,12 @@ integration has not been qualified.
 | ID | Component | Responsibility | Owner and lifecycle | Source boundary | State |
 | --- | --- | --- | --- | --- | --- |
 | <a id="cmp-carla"></a>`CMP-CARLA` | CARLA Virtual Physical Vehicle | Vehicle dynamics, road environment, native sensor state and actuators | Vehicle simulation | `CarlaSim`; restricted Unreal dependency remains separate | `CURRENT` |
-| <a id="cmp-scene"></a>`CMP-SCENE` | Deterministic Scenario Controller | Repeatable obstacle/braking stimulus, manual takeover, safe stop, actor cleanup, and future low-friction stimulus | Demo vehicle tooling | `carla-ego-runtime` | Brake scenario `CURRENT`; low-friction `EXTEND` |
+| <a id="cmp-scene"></a>`CMP-SCENE` | Deterministic Scenario Controller | Repeatable obstacle/braking stimulus, manual takeover, safe stop, actor cleanup, and explicit accelerated/pre-aged tire-degradation stimulus | Demo vehicle tooling | `carla-ego-runtime` | Brake scenario `CURRENT`; Tire Health stimulus `EXTEND` |
 | <a id="cmp-control"></a>`CMP-CONTROL` | Vehicle Control UI | Manual/autopilot selection, throttle, brake, steering and safe-stop commands over the separate control channel | Vehicle Gateway tooling | `carla-ego-runtime` | `CURRENT` |
 | <a id="cmp-gw"></a>`CMP-GW` | Vehicle Gateway Runtime | CARLA sampling, control arbitration, signal normalization and Gateway health/state | Vehicle Gateway tooling | `carla-ego-runtime` | `CURRENT / EXTEND` |
 | <a id="cmp-viss"></a>`CMP-VISS` | Vehicle Gateway VISS 3.1 Server | TLS-protected VSS Get/Subscribe and the future narrowly scoped advisory Set contract | Vehicle Gateway tooling | `carla-ego-runtime` | Read path `CURRENT`; write path `EXTEND` |
-| <a id="cmp-gw-adv"></a>`CMP-GW-ADV` | Gateway Advisory Handler | Validate the accepted Brake Health advisory target and publish factual reception/status without claiming driver display | Vehicle Gateway tooling | `carla-ego-runtime` | `NEW` |
-| <a id="cmp-eng-dash"></a>`CMP-ENG-DASH` | Engineering Telematics Dashboard | Independent read-only engineering view of Gateway telemetry and future advisory/status evidence | Demo engineering tooling | `carla-ego-runtime` | Telemetry `CURRENT`; advisory/status `EXTEND` |
+| <a id="cmp-gw-adv"></a>`CMP-GW-ADV` | Gateway Advisory Handler | Validate typed allowlisted Brake Health and Tire Health advisory targets and publish factual reception/status without claiming driver display | Vehicle Gateway tooling | `carla-ego-runtime` | `NEW` |
+| <a id="cmp-eng-dash"></a>`CMP-ENG-DASH` | Engineering Telematics Dashboard | Independent read-only engineering view of Gateway telemetry and typed advisory/status evidence | Demo engineering tooling | `carla-ego-runtime` | Telemetry `CURRENT`; advisory/status `EXTEND` |
 
 `CMP-SCENE`, `CMP-CONTROL`, and `CMP-ENG-DASH` are demonstration tools. They
 must remain outside the logical production vehicle architecture even though
@@ -152,9 +152,9 @@ not participate in the time-critical local advisory decision.
 
 | ID | Component | Responsibility | Owner and lifecycle | Source boundary | State |
 | --- | --- | --- | --- | --- | --- |
-| <a id="cmp-event"></a>`CMP-EVENT` | Vehicle Stability Event In-Vehicle Service | Detect a low-friction event locally from an existing KUKSA contract and upload only a bounded event package | Function Team 2 / Service Provider 2; SOTA 2 | Proposed `vehicle-stability-event-service` | `NEW` |
-| <a id="cmp-event-be"></a>`CMP-EVENT-BE` | Vehicle Stability Event Backend | Idempotent event-package ingestion, persistence and API | Function Team 2; functional Cloud product | Repository decision pending | `NEW` |
-| <a id="cmp-event-dash"></a>`CMP-EVENT-DASH` | Event-Based Data Dashboard | Present event time, state, service/capability version, Unit role and delivery status from the event backend | Function Team 2; functional Cloud product | Repository decision pending | `NEW` |
+| <a id="cmp-tire"></a>`CMP-TIRE` | Tire Health In-Vehicle Service | Maintain a bounded persistent tire-condition estimate from the accepted KUKSA contract, create bounded reports/events, and request the typed inspection advisory | Function Team 2 / Service Provider 2; SOTA 2 | Proposed `tire-health-service` | `NEW` |
+| <a id="cmp-tire-be"></a>`CMP-TIRE-BE` | Tire Health Backend | Idempotent condition-summary/event ingestion, persistence and API | Function Team 2; functional Cloud product | Repository decision pending | `NEW` |
+| <a id="cmp-tire-dash"></a>`CMP-TIRE-DASH` | Tire Health Function Dashboard | Present condition band, event state, service/capability version, Unit role and delivery status from the Tire Health backend | Function Team 2; functional Cloud product | Repository decision pending | `NEW` |
 
 Function Team 2 is a peer of Function Team 1. Its service, backend, dashboard,
 identity and SOTA lifecycle must not be placed inside the Brake Health product
@@ -183,7 +183,7 @@ particular, `CMP-SW-DASH` must not implement a temporary admission controller.
 | OEM Demo Factory Image | Immutable product artifact | Produced by `CMP-FACTORY`; contains `CMP-RUNTIME`, `CMP-AOS-CORE` and `CMP-KUKSA`, without feature payloads or reusable vehicle identity | Manufacturing baseline |
 | Vehicle Data Platform Capability v1-v3 | FOTA artifact family | `CMP-VDP` | Platform Team FOTA |
 | Brake Health Service v1-v3 | SOTA artifact family | `CMP-BHS` | Service Provider 1 / SOTA 1 |
-| Vehicle Stability Event Service | SOTA artifact family | `CMP-EVENT` | Service Provider 2 / SOTA 2 |
+| Tire Health Service | SOTA artifact family | `CMP-TIRE` | Service Provider 2 / SOTA 2 |
 
 The same accepted artifact bytes and digest move from `VU` qualification to
 `DU` promotion. Rebuilding an artifact for promotion is not permitted.
@@ -197,9 +197,9 @@ The same accepted artifact bytes and digest move from `VU` qualification to
 | `carla-ego-runtime` | `CMP-SCENE`, `CMP-CONTROL`, `CMP-GW`, `CMP-VISS`, `CMP-GW-ADV`, `CMP-ENG-DASH` | One coherent simulated Vehicle Gateway and demo-vehicle tooling boundary. |
 | `aos-vehicle-platform` | `CMP-FACTORY` assembly source, `CMP-RUNTIME`, `CMP-VDP`, future `CMP-KUKSA-AUTH`, `CMP-KUKSA` contract/configuration | Platform Team source and FOTA boundary; immutable Factory Image output remains outside Git. |
 | `brake-health-service` | `CMP-BHS` | Function Team 1 in-vehicle SOTA source only. |
-| Proposed `vehicle-stability-event-service` | `CMP-EVENT` | Function Team 2 in-vehicle SOTA source only; repository not yet created. |
+| Proposed `tire-health-service` | `CMP-TIRE` | Function Team 2 in-vehicle SOTA source only; repository not yet created. |
 | Future Function Team 1 Cloud repository | `CMP-BRAKE-BE`, `CMP-BRAKE-DASH` | Name and whether backend/dashboard share one repository require review. |
-| Future Function Team 2 Cloud repository | `CMP-EVENT-BE`, `CMP-EVENT-DASH` | Name and whether backend/dashboard share one repository require review. |
+| Future Function Team 2 Cloud repository | `CMP-TIRE-BE`, `CMP-TIRE-DASH` | Name and whether backend/dashboard share one repository require review. |
 | `aosedge-sdv-demo` | `CMP-SW-DASH`, `CMP-ORCH`, cross-component contracts, qualification and system documentation | Solution integration; must not absorb component product source. |
 | AosEdge/AosCloud | `CMP-AOS-CORE`, `CMP-AOS-CLOUD`, base `CMP-LOG-PIPE` mechanisms | External platform dependency. |
 | OEM operational deployment | `CMP-ELK` and deployment-specific log integration | External environment; configuration ownership still requires a decision. |
@@ -219,8 +219,9 @@ this review candidate.
 | <a id="if-veh-006"></a>`IF-VEH-006` | `CMP-VISS` | `CMP-ENG-DASH` | Independent read-only telemetry and Gateway-status subscription | Gateway VISS contract | Telemetry `CURRENT`; status `EXTEND` |
 | <a id="if-data-001"></a>`IF-DATA-001` | `CMP-VDP` | `CMP-KUKSA` | Validated actual values, availability, freshness and provenance | Versioned Vehicle Data Platform contract | `EVIDENCE / EXTEND` |
 | <a id="if-data-002"></a>`IF-DATA-002` | `CMP-KUKSA` | `CMP-BHS` | `kuksa.val.v1` read/subscribe subset for Brake Health | Vehicle Data Platform contract | `NEW` accepted service contract |
-| <a id="if-data-003"></a>`IF-DATA-003` | `CMP-KUKSA` | `CMP-EVENT` | `kuksa.val.v1` read/subscribe dynamics subset for low-friction detection | Vehicle Data Platform contract | `NEW` accepted service contract |
+| <a id="if-tire-001"></a>`IF-TIRE-001` | `CMP-KUKSA` | `CMP-TIRE` | `kuksa.val.v1` read/subscribe dynamics subset for tire-condition estimation | Vehicle Data Platform contract | `NEW` accepted service contract |
 | <a id="if-adv-001"></a>`IF-ADV-001` | `CMP-BHS` | `CMP-KUKSA` | Allowlisted Brake Health advisory write/actuate request | Brake Health request constrained by platform policy | `NEW` |
+| <a id="if-tire-002"></a>`IF-TIRE-002` | `CMP-TIRE` | `CMP-KUKSA` | Allowlisted Tire Health advisory write/actuate request | Tire Health request constrained by platform policy | `NEW` |
 | <a id="if-adv-002"></a>`IF-ADV-002` | `CMP-KUKSA` | `CMP-VDP` | Advisory target change plus caller authorization context | Vehicle Data Platform outbound contract | `NEW` |
 | <a id="if-adv-003"></a>`IF-ADV-003` | `CMP-VDP` | `CMP-VISS` | Narrow VISS Set request for the accepted advisory target | Platform outbound allowlist | `NEW` |
 | <a id="if-adv-004"></a>`IF-ADV-004` | `CMP-VISS` | `CMP-GW-ADV` | Validated advisory target delivery | Gateway contract | `NEW` |
@@ -235,12 +236,11 @@ prove a production driver display, acknowledgement, or brake actuation.
 | --- | --- | --- | --- | --- | --- |
 | <a id="if-func-001"></a>`IF-FUNC-001` | `CMP-BHS` | `CMP-BRAKE-BE` | Versioned, bounded, idempotent Brake Health report with original event time | Function Team 1 data contract | `NEW` |
 | <a id="if-func-002"></a>`IF-FUNC-002` | `CMP-BRAKE-BE` | `CMP-BRAKE-DASH` | Query/subscription API for persisted Brake Health results | Function Team 1 backend | `NEW` |
-| <a id="if-func-003"></a>`IF-FUNC-003` | `CMP-EVENT` | `CMP-EVENT-BE` | Versioned, bounded, idempotent low-friction event package | Function Team 2 data contract | `NEW` |
-| <a id="if-func-004"></a>`IF-FUNC-004` | `CMP-EVENT-BE` | `CMP-EVENT-DASH` | Query/subscription API for persisted event results | Function Team 2 backend | `NEW` |
+| <a id="if-tire-003"></a>`IF-TIRE-003` | `CMP-TIRE` | `CMP-TIRE-BE` | Versioned, bounded and idempotent tire-condition summary or threshold event | Function Team 2 data contract | `NEW` |
+| <a id="if-tire-004"></a>`IF-TIRE-004` | `CMP-TIRE-BE` | `CMP-TIRE-DASH` | Query/subscription API for persisted Tire Health results | Function Team 2 backend | `NEW` |
 
 Functional Cloud interfaces are asynchronous. Loss of Cloud connectivity must
-not stop local Brake Health analysis, advisory generation, or low-friction
-event detection.
+not stop local Brake Health or Tire Health analysis and advisory generation.
 
 ## Lifecycle and Operational Interface Register
 
@@ -248,10 +248,10 @@ event detection.
 | --- | --- | --- | --- | --- | --- |
 | <a id="if-lc-001"></a>`IF-LC-001` | Platform Team release pipeline | `CMP-AOS-CLOUD` | Immutable, signed and digest-addressed Vehicle Data Platform FOTA artifact | Platform Team artifact plus AosCloud record | `EXTEND / QUALIFY` |
 | <a id="if-lc-002"></a>`IF-LC-002` | Function Team 1 pipeline | `CMP-AOS-CLOUD` | Immutable Brake Health SOTA artifact and compatibility metadata | Service Provider 1 artifact plus AosCloud record | `NEW / QUALIFY` |
-| <a id="if-lc-003"></a>`IF-LC-003` | Function Team 2 pipeline | `CMP-AOS-CLOUD` | Immutable Vehicle Stability Event SOTA artifact and compatibility metadata | Service Provider 2 artifact plus AosCloud record | `NEW / QUALIFY` |
+| <a id="if-lc-007"></a>`IF-LC-007` | Function Team 2 pipeline | `CMP-AOS-CLOUD` | Immutable Tire Health SOTA artifact and compatibility metadata | Service Provider 2 artifact plus AosCloud record | `NEW / QUALIFY` |
 | <a id="if-lc-004"></a>`IF-LC-004` | `CMP-AOS-CLOUD` | `CMP-AOS-CORE` | Provisioning, desired state, update delivery, validation, status and retirement | AosCloud and current Unit state | `EXTERNAL / EXTEND` qualification |
 | <a id="if-lc-005"></a>`IF-LC-005` | `CMP-SW-DASH` | `CMP-AOS-CLOUD` | Scoped API reads, effective-target preview and explicitly approved actions | AosCloud; dashboard holds no parallel desired state | `NEW` |
-| <a id="if-lc-006"></a>`IF-LC-006` | `CMP-AOS-CORE` | `CMP-RUNTIME` / `CMP-BHS` / `CMP-EVENT` | Install, start, stop, update, rollback, readiness and resource enforcement | Unit actual state | Platform mechanism `CURRENT`; target graph `EXTEND` |
+| <a id="if-lc-006"></a>`IF-LC-006` | `CMP-AOS-CORE` | `CMP-RUNTIME` / `CMP-BHS` / `CMP-TIRE` | Install, start, stop, update, rollback, readiness and resource enforcement | Unit actual state | Platform mechanism `CURRENT`; target graph `EXTEND` |
 | <a id="if-obs-001"></a>`IF-OBS-001` | In-vehicle platform and services | `CMP-LOG-PIPE` | Selected structured operational logs with redaction and correlation fields | Originating component plus log policy | `EXTERNAL / EXTEND` |
 | <a id="if-obs-002"></a>`IF-OBS-002` | `CMP-LOG-PIPE` | `CMP-ELK` | Authenticated, buffered Cloud log delivery | Accepted centralized log store | `NEW` integration |
 | <a id="if-demo-001"></a>`IF-DEMO-001` | `CMP-ORCH` | QEMU/AosVM instances | Overlay creation, role binding, start/stop, source selection and safe retirement | Local session manifest plus authoritative Unit state | `EVIDENCE / EXTEND` |
@@ -270,18 +270,36 @@ below is the single allocation record for exact identifiers.
 
 | Package | Human-readable responsibility | Primary components | Requirement themes |
 | --- | --- | --- | --- |
-| <a id="cr-vehicle-sim"></a>`CR-VEHICLE-SIM` | Provide repeatable braking and low-friction vehicle stimuli, exact source evidence, ground-truth isolation and clean scenario reset. | CARLA vehicle and Scenario Controller | Determinism, source integrity, simulation truth and reset |
+| <a id="cr-vehicle-sim"></a>`CR-VEHICLE-SIM` | Provide repeatable braking and explicit accelerated/pre-aged tire stimuli, exact source evidence, hidden ground-truth isolation and clean scenario reset. | CARLA vehicle and Scenario Controller | Determinism, source integrity, simulation truth and reset |
 | <a id="cr-gateway"></a>`CR-GATEWAY` | Acquire and normalize vehicle state, expose VISS, arbitrate control, handle bounded advisory status and present the engineering view. | Control UI, Gateway, VISS, Advisory Handler and Engineering Dashboard | Telemetry contract, unavailable data, advisory safety and latency |
 | <a id="cr-factory"></a>`CR-FACTORY` | Reproducibly assemble the clean unprovisioned Factory Image artifact and use it to create two identity-safe deployments with a healthy empty capability slot. | Factory Baseline Assembly and Empty-Slot Runtime | Reproducibility, artifact immutability, identity absence, overlay uniqueness and reset |
 | <a id="cr-vdp"></a>`CR-VDP` | Deliver the versioned VISS-to-KUKSA data capability and the narrowly allowlisted outbound advisory path. | KUKSA and Vehicle Data Platform Capability | Compatibility, data quality, authorization, FOTA and rollback |
 | <a id="cr-bhs"></a>`CR-BHS` | Run Brake Health analysis locally, report bounded results, operate offline and request only the approved advisory. | Brake Health In-Vehicle Service | Model determinism, reports, compatibility, offline operation and advisory scope |
-| <a id="cr-evt"></a>`CR-EVT` | Detect low-friction events locally and upload bounded event packages through an independent SOTA lifecycle. | Vehicle Stability Event Service | Existing signal contract, event detection, bounded upload and isolation |
+| <a id="cr-tire"></a>`CR-TIRE` | Estimate tire condition locally, persist bounded state, upload bounded results and request the typed inspection advisory through an independent SOTA lifecycle. | Tire Health In-Vehicle Service | Existing signal contract, model, persistence, bounded reporting, advisory and isolation |
 | <a id="cr-aos"></a>`CR-AOS` | Provide identity, desired/actual state, FOTA/SOTA lifecycle, dependency behavior, resource enforcement and operational log transport. | AosCore, AosCloud and Log Pipeline | Provisioning, lifecycle authority, validation, rollback, timing and retirement |
 | <a id="cr-brake-cloud"></a>`CR-BRAKE-CLOUD` | Ingest and present Brake Health reports without entering the local decision path. | Brake Health Backend and Function Dashboard | Idempotency, offline synchronization, evidence and run-data retention |
-| <a id="cr-event-cloud"></a>`CR-EVENT-CLOUD` | Ingest and present low-friction event packages as an independent Function Team product. | Event Backend and Event Dashboard | Bounded events, idempotency, delivery state and run-data retention |
+| <a id="cr-tire-cloud"></a>`CR-TIRE-CLOUD` | Ingest and present Tire Health summaries/events as an independent Function Team product. | Tire Health Backend and Function Dashboard | Bounded results, idempotency, delivery state and run-data retention |
 | <a id="cr-demo"></a>`CR-DEMO` | Orchestrate manufactured overlays, Unit roles, staged releases, authoritative dashboards, evidence and end-of-run retirement. | Software Delivery Dashboard, Demo Orchestrator and ELK integration | Target safety, source binding, observability, timing and reset |
 | <a id="cr-cross"></a>`CR-CROSS` | Define security, authorization, redaction, timing, resource and offline constraints shared by multiple owners. | Cross-component concerns and future Authorization Adapter | Least privilege, fail-closed behavior, evidence controls and latency |
 | <a id="cr-e2e"></a>`CR-E2E` | Prove the complete accepted graph on Validation and Demonstration Units across normal, failure, offline, recovery and retirement paths. | All accepted components | End-to-end acceptance and retained evidence |
+
+## Retired Function Team 2 Identifiers
+
+ADR 0008 replaced the Low-Friction candidate with Tire Health. The old IDs
+remain resolvable for history, but must not be used by new requirements or
+implementation:
+
+| Retired identifier | Replacement |
+| --- | --- |
+| <a id="cmp-event"></a>`CMP-EVENT` | `CMP-TIRE` |
+| <a id="cmp-event-be"></a>`CMP-EVENT-BE` | `CMP-TIRE-BE` |
+| <a id="cmp-event-dash"></a>`CMP-EVENT-DASH` | `CMP-TIRE-DASH` |
+| <a id="if-data-003"></a>`IF-DATA-003` | `IF-TIRE-001` |
+| <a id="if-func-003"></a>`IF-FUNC-003` | `IF-TIRE-003` |
+| <a id="if-func-004"></a>`IF-FUNC-004` | `IF-TIRE-004` |
+| <a id="if-lc-003"></a>`IF-LC-003` | `IF-LC-007` |
+| <a id="cr-evt"></a>`CR-EVT` | `CR-TIRE` |
+| <a id="cr-event-cloud"></a>`CR-EVENT-CLOUD` | `CR-TIRE-CLOUD` |
 
 ## Detailed Package Traceability
 
@@ -297,8 +315,7 @@ the only normative definitions.
 - Parent requirements: [Exact source-to-Unit binding (`SYS-SRC-001`)](system-requirements-and-traceability.md#sys-src-001),
   [honest single-source presentation (`SYS-SRC-002`)](system-requirements-and-traceability.md#sys-src-002),
   [deterministic v2 inference (`SYS-BHS-002`)](system-requirements-and-traceability.md#sys-bhs-002),
-  [local low-friction detection (`SYS-EVT-002`)](system-requirements-and-traceability.md#sys-evt-002),
-  [ground-truth isolation (`SYS-EVT-005`)](system-requirements-and-traceability.md#sys-evt-005), and
+  [explicit Tire Health simulation model (`SYS-TIRE-003`)](system-requirements-and-traceability.md#sys-tire-003), and
   [reset CARLA and preserve factory (`SYS-RET-003`)](system-requirements-and-traceability.md#sys-ret-003).
 
 ### `CR-GATEWAY` — Vehicle Gateway and engineering view
@@ -321,6 +338,7 @@ the only normative definitions.
   [allowlisted outbound advisory (`SYS-VDP-004`)](system-requirements-and-traceability.md#sys-vdp-004),
   [explicit degraded data (`SYS-VDP-005`)](system-requirements-and-traceability.md#sys-vdp-005),
   [allowlisted v3 advisory (`SYS-BHS-003`)](system-requirements-and-traceability.md#sys-bhs-003),
+  [offline Tire Health inspection advisory (`SYS-TIRE-006`)](system-requirements-and-traceability.md#sys-tire-006),
   [fail-closed advisory security (`SYS-SEC-003`)](system-requirements-and-traceability.md#sys-sec-003),
   [authoritative demo surfaces (`SYS-OBS-001`)](system-requirements-and-traceability.md#sys-obs-001), and
   [separate local and Cloud latency (`SYS-TIM-002`)](system-requirements-and-traceability.md#sys-tim-002).
@@ -349,7 +367,8 @@ the only normative definitions.
 - Interfaces: [VISS telemetry input (`IF-VEH-005`)](#if-veh-005),
   [KUKSA publication (`IF-DATA-001`)](#if-data-001),
   [Brake Health subscription (`IF-DATA-002`)](#if-data-002),
-  [Vehicle Stability subscription (`IF-DATA-003`)](#if-data-003),
+  [Tire Health subscription (`IF-TIRE-001`)](#if-tire-001),
+  [Tire Health advisory request (`IF-TIRE-002`)](#if-tire-002),
   [KUKSA advisory target (`IF-ADV-002`)](#if-adv-002),
   [outbound VISS Set (`IF-ADV-003`)](#if-adv-003),
   [platform FOTA artifact (`IF-LC-001`)](#if-lc-001), and
@@ -363,6 +382,8 @@ the only normative definitions.
   [backward-compatible v2 capability (`SYS-VDP-003`)](system-requirements-and-traceability.md#sys-vdp-003),
   [allowlisted outbound advisory (`SYS-VDP-004`)](system-requirements-and-traceability.md#sys-vdp-004),
   [explicit degraded data (`SYS-VDP-005`)](system-requirements-and-traceability.md#sys-vdp-005),
+  [existing Tire Health platform contract (`SYS-TIRE-001`)](system-requirements-and-traceability.md#sys-tire-001),
+  [offline Tire Health inspection advisory (`SYS-TIRE-006`)](system-requirements-and-traceability.md#sys-tire-006),
   [least-privilege KUKSA identities (`SYS-SEC-001`)](system-requirements-and-traceability.md#sys-sec-001),
   [authorization-adapter migration (`SYS-SEC-002`)](system-requirements-and-traceability.md#sys-sec-002), and
   [fail-closed advisory security (`SYS-SEC-003`)](system-requirements-and-traceability.md#sys-sec-003).
@@ -385,22 +406,24 @@ the only normative definitions.
   [offline local continuity (`SYS-BHS-004`)](system-requirements-and-traceability.md#sys-bhs-004), and
   [separate local and Cloud latency (`SYS-TIM-002`)](system-requirements-and-traceability.md#sys-tim-002).
 
-### `CR-EVT` — Vehicle Stability event service
+### `CR-TIRE` — Tire Health in-vehicle service
 
-- Component: [Vehicle Stability Event Service (`CMP-EVENT`)](#cmp-event).
-- Interfaces: [dynamics subscription (`IF-DATA-003`)](#if-data-003),
-  [event package (`IF-FUNC-003`)](#if-func-003),
-  [Vehicle Stability SOTA artifact (`IF-LC-003`)](#if-lc-003), and
+- Component: [Tire Health In-Vehicle Service (`CMP-TIRE`)](#cmp-tire).
+- Interfaces: [dynamics subscription (`IF-TIRE-001`)](#if-tire-001),
+  [typed inspection advisory (`IF-TIRE-002`)](#if-tire-002),
+  [bounded condition result (`IF-TIRE-003`)](#if-tire-003),
+  [Tire Health SOTA artifact (`IF-LC-007`)](#if-lc-007), and
   [runtime enforcement (`IF-LC-006`)](#if-lc-006).
 - Parent requirements: [immutable release candidates (`SYS-REL-001`)](system-requirements-and-traceability.md#sys-rel-001),
   [service capability compatibility (`SYS-REL-003`)](system-requirements-and-traceability.md#sys-rel-003),
   [validate before promotion (`SYS-REL-004`)](system-requirements-and-traceability.md#sys-rel-004),
   [dependent-first rollback (`SYS-REL-005`)](system-requirements-and-traceability.md#sys-rel-005),
-  [existing platform contract only (`SYS-EVT-001`)](system-requirements-and-traceability.md#sys-evt-001),
-  [local low-friction detection (`SYS-EVT-002`)](system-requirements-and-traceability.md#sys-evt-002),
-  [bounded event upload (`SYS-EVT-003`)](system-requirements-and-traceability.md#sys-evt-003),
-  [independent event backend (`SYS-EVT-004`)](system-requirements-and-traceability.md#sys-evt-004), and
-  [ground-truth isolation (`SYS-EVT-005`)](system-requirements-and-traceability.md#sys-evt-005).
+  [existing platform contract only (`SYS-TIRE-001`)](system-requirements-and-traceability.md#sys-tire-001),
+  [local persistent condition estimate (`SYS-TIRE-002`)](system-requirements-and-traceability.md#sys-tire-002),
+  [explicit simulation model (`SYS-TIRE-003`)](system-requirements-and-traceability.md#sys-tire-003),
+  [bounded Cloud reporting (`SYS-TIRE-004`)](system-requirements-and-traceability.md#sys-tire-004),
+  [independent Tire Health product (`SYS-TIRE-005`)](system-requirements-and-traceability.md#sys-tire-005), and
+  [offline inspection advisory (`SYS-TIRE-006`)](system-requirements-and-traceability.md#sys-tire-006).
 
 ### `CR-AOS` — AosCore and AosCloud lifecycle
 
@@ -409,7 +432,7 @@ the only normative definitions.
   [AosEdge Log Pipeline (`CMP-LOG-PIPE`)](#cmp-log-pipe).
 - Interfaces: [platform FOTA (`IF-LC-001`)](#if-lc-001),
   [Brake Health SOTA (`IF-LC-002`)](#if-lc-002),
-  [Vehicle Stability SOTA (`IF-LC-003`)](#if-lc-003),
+  [Tire Health SOTA (`IF-LC-007`)](#if-lc-007),
   [Cloud-to-Unit lifecycle (`IF-LC-004`)](#if-lc-004),
   [Software Delivery Dashboard API (`IF-LC-005`)](#if-lc-005),
   [runtime enforcement (`IF-LC-006`)](#if-lc-006),
@@ -449,14 +472,15 @@ Delivery Dashboard.
   [per-run correlation (`SYS-OBS-004`)](system-requirements-and-traceability.md#sys-obs-004), and
   [clear functional run data (`SYS-RET-002`)](system-requirements-and-traceability.md#sys-ret-002).
 
-### `CR-EVENT-CLOUD` — Vehicle Stability Cloud product
+### `CR-TIRE-CLOUD` — Tire Health Cloud product
 
-- Components: [Vehicle Stability Event Backend (`CMP-EVENT-BE`)](#cmp-event-be)
-  and [Event-Based Data Dashboard (`CMP-EVENT-DASH`)](#cmp-event-dash).
-- Interfaces: [event package (`IF-FUNC-003`)](#if-func-003) and
-  [event dashboard API (`IF-FUNC-004`)](#if-func-004).
-- Parent requirements: [bounded event upload (`SYS-EVT-003`)](system-requirements-and-traceability.md#sys-evt-003),
-  [independent event backend (`SYS-EVT-004`)](system-requirements-and-traceability.md#sys-evt-004),
+- Components: [Tire Health Backend (`CMP-TIRE-BE`)](#cmp-tire-be)
+  and [Tire Health Function Dashboard (`CMP-TIRE-DASH`)](#cmp-tire-dash).
+- Interfaces: [bounded condition result (`IF-TIRE-003`)](#if-tire-003) and
+  [Tire Health dashboard API (`IF-TIRE-004`)](#if-tire-004).
+- Parent requirements: [bounded Cloud reporting (`SYS-TIRE-004`)](system-requirements-and-traceability.md#sys-tire-004),
+  [independent Tire Health product (`SYS-TIRE-005`)](system-requirements-and-traceability.md#sys-tire-005),
+  [offline inspection advisory (`SYS-TIRE-006`)](system-requirements-and-traceability.md#sys-tire-006),
   [authoritative demo surfaces (`SYS-OBS-001`)](system-requirements-and-traceability.md#sys-obs-001),
   [operational log controls (`SYS-OBS-003`)](system-requirements-and-traceability.md#sys-obs-003),
   [per-run correlation (`SYS-OBS-004`)](system-requirements-and-traceability.md#sys-obs-004), and
@@ -518,8 +542,10 @@ Delivery Dashboard.
 2. **Accepted 2026-08-18:** the existing `carla-ego-runtime` repository owns
    deterministic scenario tooling, vehicle control, Gateway behavior, VISS,
    advisory handling and the Engineering Telematics Dashboard.
-3. **Open:** confirm `vehicle-stability-event-service` as the future Function
-   Team 2 in-vehicle repository name and scope before creating it.
+3. **Accepted 2026-08-18:** Function Team 2 owns the Tire Health product
+   selected by ADR 0008. Its in-vehicle SOTA 2 source belongs in the future
+   `tire-health-service` repository; backend and dashboard remain separate
+   Cloud-product components.
 4. **Open:** decide whether each functional backend and dashboard share one
    Cloud-product repository. The recommendation is one repository per Function
    Team Cloud product, separate from its in-vehicle SOTA repository.
@@ -532,11 +558,11 @@ Delivery Dashboard.
    production hardening component rather than being hidden inside prototype
    token files.
 
-## Acceptance Gate for Version 0.1
+## Acceptance Gate for Version 0.2
 
 The register is ready to become the component baseline when reviewers confirm:
 
-1. every HLA 1.1 box has exactly one primary component owner;
+1. every HLA 1.2 box has exactly one primary component owner;
 2. every audience-visible dashboard has exactly one authoritative data source;
 3. the three independent FOTA/SOTA lifecycles remain separated;
 4. Function Team 1 and Function Team 2 are peer product domains;
@@ -544,13 +570,13 @@ The register is ready to become the component baseline when reviewers confirm:
 6. current, engineering-evidence, target, external and deferred states are not
    presented as equivalent;
 7. all runtime, functional Cloud, lifecycle and observability boundaries needed
-   by Scenario 1.1 and the Function Team 2 extension have interface IDs;
+   by Scenario 1.2 and the Function Team 2 extension have interface IDs;
 8. deferred native Cloud dependency admission and authorization-adapter work
    are not presented as implemented;
 9. no component claims a production driver HMI, continuous raw-telemetry Cloud
    stream, third-party Service Provider, Fleet Operator or production fleet;
 10. the provisional requirement packages can be expanded without changing HLA
-    1.1 or the accepted demo scenarios.
+    1.2 or the accepted demo scenarios.
 
 After acceptance, component requirements shall be written package by package,
 starting with [Vehicle simulation (`CR-VEHICLE-SIM`)](#cr-vehicle-sim) and

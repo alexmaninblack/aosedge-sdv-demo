@@ -112,7 +112,7 @@ The active gaps and component states are authoritative in the
 [Component Register](../requirements/component-decomposition-and-interface-register.md)
 and [roadmap](../planning/roadmap.md). Major missing pieces include the clean
 factory baseline, accepted Vehicle Data Platform v1-v3 artifacts, both
-functional Cloud products, Vehicle Stability service, Software Delivery
+functional Cloud products, Tire Health service, Software Delivery
 Dashboard, unified orchestrator, outbound advisory path and end-to-end reset.
 
 Do not conceal those gaps with manual state changes or undocumented local

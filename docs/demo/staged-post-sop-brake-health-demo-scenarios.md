@@ -1,19 +1,19 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Staged Post-SOP Brake Health Demo Scenarios
+# Staged Post-SOP Brake and Tire Health Demo Scenarios
 
 - Status: Review candidate incorporating the accepted manufacturing,
   provisioning, and demo-retirement model
-- Version: 1.1
-- Prepared: 2026-08-17
+- Version: 1.2
+- Prepared: 2026-08-18
 - Owner: Demo Architecture
 - Previous accepted version: 1.0, accepted 2026-08-16
 - Scope: manufacturing output, end-of-line provisioning, audience-visible
   capability evolution, release sequence, dashboards, observability, and
   end-of-demo retirement
 - Architecture alignment: dynamic staged projection of High-Level Architecture
-  1.1; detailed API and sequence mapping remains a later design gate
+  1.2; detailed API and sequence mapping remains a later design gate
 - Implementation, build, signing, Cloud, or Unit mutation authorized: no
 
 ## Purpose
@@ -29,9 +29,9 @@ its Vehicle Gateway, and contains an operational Domain Controller with the
 AosEdge platform substrate. What is initially absent is the Vehicle Data
 Platform Capability payload and all functional SOTA services.
 
-This Scenario 1.1 review candidate defines what should happen and what an
+This Scenario 1.2 review candidate defines what should happen and what an
 audience should see. It is the dynamic, stage-by-stage projection of the
-capability-superset model in High-Level Architecture 1.1. It does not yet
+capability-superset model in High-Level Architecture 1.2. It does not yet
 select exact APIs, define every detailed interaction, or authorize
 implementation.
 
@@ -58,19 +58,20 @@ The demonstration does not claim that no software ever changes after SOP. Its
 claim is that post-SOP functionality is added through the extension and
 lifecycle mechanisms intentionally built into the SOP platform.
 
-## Alignment With High-Level Architecture 1.1
+## Alignment With High-Level Architecture 1.2
 
-High-Level Architecture 1.1 shows every capability that the target logical
+High-Level Architecture 1.2 shows every capability that the target logical
 vehicle architecture can host. This scenario defines when those deployable
 capabilities are absent or present during `M0`, `M1`, `G0–G4`, and `R0`.
 
 The current `G0–G4` narrative exercises the shared Vehicle Data Platform
 Capability and Function Team 1 / Service Provider 1 Brake Health lifecycle.
-Function Team 2 / Service Provider 2 and its Event-Based Uploader remain valid
-parts of the target HLA but are intentionally not deployed in Scenario 1.1.
-Their event, existing-signal inputs, bounded package, backend proof, and
-dashboard will be defined after the CARLA/VISS signal inventory. This deferral
-does not authorize a Function Team 2 request for another platform capability in
+Function Team 2 / Service Provider 2 and its Tire Health product remain valid
+parts of the target HLA but are intentionally not deployed in the current
+`G0–G4` Brake Health sequence. Their condition model, existing-signal inputs,
+bounded reports/events, advisory proof, backend and dashboard are an
+independent SOTA 2 extension. This separation does not authorize a Function
+Team 2 request for another platform capability in
 the current demo.
 
 The Validation Unit and Demonstration Unit are two instances of the same
@@ -91,7 +92,7 @@ simultaneous simulated vehicles unless that topology is later implemented.
 | Platform substrate | AosCore, Service Manager, KUKSA, the accepted Vehicle Data Provider component runtime, security, and update support present from SOP |
 | Vehicle Data Platform Capability | FOTA-owned provider payload and versioned contract that exposes an approved subset of vehicle data through KUKSA; stage names use the shorthand Provider v1–v3 |
 | Brake Health Function Team | Function Team 1 / Service Provider 1: OEM functional vertical that owns the Brake Health service, model, backend, dashboard, and SOTA 1 lifecycle |
-| Event-Based Uploader Function Team | Function Team 2 / Service Provider 2: independent peer OEM functional vertical; Vehicle Stability / Low-Friction Event processing is selected as its detailed-design candidate, while its SOTA 2 stage remains deferred from the Scenario 1.1 sequence |
+| Tire Health Function Team | Function Team 2 / Service Provider 2: independent peer OEM functional vertical that owns local tire-condition estimation, bounded Cloud reporting, inspection advisory, backend, dashboard, and SOTA 2 lifecycle |
 | Validation Unit | Freshly provisioned engineering AosVM for the current demo run, used for qualification and integration |
 | Demonstration Unit | Freshly provisioned production-like AosVM for the current demo run, used as the promotion target after acceptance |
 | Current demo session | Presentation-scoped association, not an Aos identity: session start time and local overlay roles before M1, then the Validation and Demonstration Unit IDs plus that time window |
@@ -137,9 +138,9 @@ VISS endpoint. It initially proves that the physical simulation and Gateway
 telemetry are working even when no data reaches the Domain Controller.
 
 The dashboard shows existing vehicle telemetry such as speed, longitudinal
-acceleration, pedals, and steering. In the final scenario it is extended to
-show the Brake Health advisory request and the Vehicle Gateway reception
-status.
+acceleration, pedals, and steering. In the target scenario set it is extended
+to show typed Brake Health and Tire Health advisory requests and Vehicle
+Gateway reception status.
 
 It is an engineering demonstration tool, not an IVI, Instrument Cluster, or
 production driver HMI.
@@ -183,14 +184,15 @@ Across the scenarios it evolves from no available vehicle data, to selected
 telemetry, to richer Brake Health inputs and prediction results. Backend data
 is not part of the time-critical local advisory path.
 
-### Event-Based Data Dashboard — Deferred From Scenario 1.1
+### Tire Health Function Dashboard — Independent SOTA 2 Extension
 
-High-Level Architecture 1.1 assigns a separate backend and dashboard to
+High-Level Architecture 1.2 assigns a separate backend and dashboard to
 Function Team 2 / Service Provider 2. They are not audience-visible surfaces
-in the current `G0–G4` Brake Health sequence because the Event-Based Uploader
-scenario has not yet been selected. A later scenario revision may add this
-surface without changing the architecture or coupling it to the Brake Health
-backend.
+in the current `G0–G4` Brake Health sequence. The independent Tire Health
+extension will show an estimated condition band, threshold event, service and
+platform versions, Unit role, and online/offline delivery state. It must not
+display hidden simulation truth as a measured production vehicle value or
+couple its data plane to the Brake Health backend.
 
 ### Vehicle and Service Log View
 
@@ -240,9 +242,8 @@ same accepted bytes and digests that passed validation; it does not rebuild or
 repackage them during the presentation.
 
 The graph table describes the Function Team 1 Brake Health progression.
-Function Team 2's Event-Based Uploader, backend, and dashboard remain absent
-throughout Scenario 1.1 and will receive an independent SOTA sequence in a
-later scenario revision.
+Function Team 2's Tire Health service, backend, and dashboard remain absent
+throughout the `G0–G4` sequence and receive a separate SOTA 2 extension flow.
 
 One additional negative-path scenario is part of the target demo but deferred
 from the current executable baseline: native AosCloud rejection of a SOTA
@@ -358,7 +359,7 @@ The following feature-specific elements are absent:
 - no live vehicle values are published into KUKSA;
 - no Brake Health service is installed;
 - no vehicle data reaches the Brake Health Function Backend;
-- no Event-Based Uploader service is installed and no event reaches the
+- no Tire Health service is installed and no Tire Health result reaches the
   Function Team 2 backend.
 
 ### Audience-visible proof
@@ -709,10 +710,9 @@ destructive experiment.
     presentation.
 11. Unit identities remain stable throughout `G0–G4`; the complete next-run
     reset retires those identities and creates new ones from fresh overlays.
-12. High-Level Architecture 1.1 is a capability superset; Scenario 1.1
-    exercises Function Team 1 and keeps Function Team 2 absent until the
-    selected Vehicle Stability / Low-Friction Event candidate is qualified and
-    its independent event-based scenario is defined.
+12. High-Level Architecture 1.2 is a capability superset; the `G0–G4` sequence
+    exercises Function Team 1 while Function Team 2 is added only through its
+    independent Tire Health SOTA 2 extension.
 13. Function Team 1 and Function Team 2 remain independent AosCloud Service
     Providers. Function Team 2 consumes the existing platform contract and
     does not request another capability in the current demo.
@@ -724,10 +724,11 @@ destructive experiment.
 
 ## Items Requiring Resolution Before Detailed Flow Mapping
 
-1. Qualify and define the Function Team 2 Vehicle Stability / Low-Friction
-   local-analytics scenario required by High-Level Architecture 1.1, including
-   its CARLA-accessible input signals, local event rule, backend event, and
-   dashboard proof.
+1. Freeze and qualify the Function Team 2 Tire Health scenario required by
+   High-Level Architecture 1.2, including its existing signal subset,
+   accelerated/pre-aged degradation model, persistent state, condition bands,
+   bounded backend payload, advisory, hidden qualification truth, and dashboard
+   proof.
 2. Define how the single visible CARLA/VISS environment is connected or
    deterministically replayed for the Validation and Demonstration Units; do
    not imply two simultaneous simulated vehicles unless that is implemented.
@@ -765,14 +766,14 @@ destructive experiment.
     Subject-service desired-state change, validation batch, campaign, or Unit
     download, then enable the deferred Stage 4 prelude.
 
-No contradiction with High-Level Architecture 1.1 remains after this alignment
+No contradiction with High-Level Architecture 1.2 remains after this alignment
 review. The open items above constrain implementation and audience-visible
 claims. They preserve the inner `G0 -> G1 -> G2 -> G3 -> G4` progression and
 the outer `M0 -> M1` onboarding and `R0` retirement lifecycle.
 
 ## Reference Basis
 
-- [High-Level Architecture 1.1](../architecture/high-level-architecture.md)
+- [High-Level Architecture 1.2](../architecture/high-level-architecture.md)
   defines the current capability-superset architecture review candidate; this
   scenario defines its staged component presence and lifecycle, while detailed
   API and interaction mapping remains a later deliverable.

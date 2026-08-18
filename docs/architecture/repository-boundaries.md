@@ -7,7 +7,7 @@ The current end-to-end review candidate, including shared platform FOTA,
 independent SOTA lifecycles for two peer OEM functional teams, bidirectional
 KUKSA/VISS flows, local analytics, Cloud reporting, and engineering-dashboard
 boundaries, is defined in
-[High-Level Architecture 1.1](high-level-architecture.md).
+[High-Level Architecture 1.2](high-level-architecture.md).
 
 ## Runtime Boundary
 
@@ -23,7 +23,7 @@ flowchart LR
         PROVIDER["vehicle-data provider / OEM FOTA"]
         KUKSA["KUKSA Databroker"]
         SERVICE1["Brake Health service / SOTA 1"]
-        SERVICE2["Vehicle Stability event service / SOTA 2"]
+        SERVICE2["Tire Health service / SOTA 2"]
         PROVIDER -->|"kuksa.val.v1"| KUKSA
         KUKSA -->|"versioned VSS contract"| SERVICE1
         KUKSA -->|"versioned VSS contract"| SERVICE2
@@ -48,7 +48,7 @@ remain the stable service boundary.
 | `carla-ego-runtime` | ego control and VISS projection | simulation tooling |
 | `aos-vehicle-platform` | vehicle-data contract, provider, Service Manager runtime, KUKSA integration, future authorization adapter | OEM platform/FOTA |
 | `brake-health-service` | Function Team 1 Brake Health consumer and local analytics | Service Provider 1/SOTA 1 |
-| `vehicle-stability-event-service` | Function Team 2 local low-friction event detection, bounded queue and upload client | Service Provider 2/SOTA 2; proposed repository |
+| `tire-health-service` | Function Team 2 local tire-condition estimation, bounded reporting, offline state and typed inspection advisory | Service Provider 2/SOTA 2; proposed repository |
 | `aosedge-sdv-demo` | macOS VM lifecycle, provisioning, locks, orchestration, system documentation, and end-to-end qualification | solution/demo baseline |
 
 The integration repository may pin and qualify every component, but it does

@@ -5,7 +5,7 @@
 
 - Status: Working gate map
 - Updated: 2026-08-18
-- Architecture baseline under review: High-Level Architecture 1.1
+- Architecture baseline under review: High-Level Architecture 1.2
 - Cloud or Unit mutation authorized: no
 
 ## Purpose
@@ -53,15 +53,15 @@ Exact retained versions and limitations remain recorded in the
 
 The following documents form one ordered design chain:
 
-1. [High-Level Architecture 1.1](../architecture/high-level-architecture.md)
+1. [High-Level Architecture 1.2](../architecture/high-level-architecture.md)
    owns boundaries, authorities and invariants.
-2. [Demo Scenario 1.1](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+2. [Demo Scenario 1.2](../demo/staged-post-sop-brake-health-demo-scenarios.md)
    owns the audience-visible stage sequence.
-3. [Architecture Flows 1.0](../architecture/demo-scenario-architecture-flows.md)
+3. [Architecture Flows 1.1](../architecture/demo-scenario-architecture-flows.md)
    owns lifecycle, runtime, observability and failure flows.
-4. [System Requirements and Traceability 0.1](../requirements/system-requirements-and-traceability.md)
+4. [System Requirements and Traceability 0.2](../requirements/system-requirements-and-traceability.md)
    owns `SYS-*` obligations and coverage of all twenty gaps.
-5. [Component Decomposition and Interface Register 0.1](../requirements/component-decomposition-and-interface-register.md)
+5. [Component Decomposition and Interface Register 0.2](../requirements/component-decomposition-and-interface-register.md)
    owns component/interface IDs and provisional requirement-package
    allocation.
 
@@ -76,7 +76,7 @@ owners, lifecycles and repository candidates. In particular, review the new
 Cloud backends and dashboards, Function Team 2 service boundary, Software
 Delivery Dashboard, Demo Orchestrator and logging integration.
 
-Exit: Component Decomposition and Interface Register 0.1 is accepted or
+Exit: Component Decomposition and Interface Register 0.2 is accepted or
 returned with explicit corrections.
 
 ### D1 — Documentation housekeeping — completed 2026-08-18
@@ -99,7 +99,7 @@ gate.
 
 ### D2 — Baseline acceptance
 
-Review HLA 1.1, Scenario 1.1, Architecture Flows 1.0, System Requirements 0.1
+Review HLA 1.2, Scenario 1.2, Architecture Flows 1.1, System Requirements 0.2
 and the Component Register together. Resolve any remaining terminology or
 boundary inconsistency before deriving component requirements.
 
@@ -117,8 +117,8 @@ Create and review packages in this order:
 3. [Aos lifecycle (`CR-AOS`)](../requirements/component-decomposition-and-interface-register.md#cr-aos);
 4. [Brake Health service (`CR-BHS`)](../requirements/component-decomposition-and-interface-register.md#cr-bhs)
    and [Brake Health Cloud (`CR-BRAKE-CLOUD`)](../requirements/component-decomposition-and-interface-register.md#cr-brake-cloud);
-5. [Vehicle Stability service (`CR-EVT`)](../requirements/component-decomposition-and-interface-register.md#cr-evt)
-   and [Vehicle Stability Cloud (`CR-EVENT-CLOUD`)](../requirements/component-decomposition-and-interface-register.md#cr-event-cloud);
+5. [Tire Health service (`CR-TIRE`)](../requirements/component-decomposition-and-interface-register.md#cr-tire)
+   and [Tire Health Cloud (`CR-TIRE-CLOUD`)](../requirements/component-decomposition-and-interface-register.md#cr-tire-cloud);
 6. [Demo orchestration (`CR-DEMO`)](../requirements/component-decomposition-and-interface-register.md#cr-demo),
    [cross-cutting concerns (`CR-CROSS`)](../requirements/component-decomposition-and-interface-register.md#cr-cross)
    and [end-to-end acceptance (`CR-E2E`)](../requirements/component-decomposition-and-interface-register.md#cr-e2e).
@@ -131,7 +131,7 @@ both sides.
 
 ### D4 — Interface contracts and acceptance tests
 
-Freeze the versioned VISS, KUKSA, advisory, functional-report, event-package,
+Freeze the versioned VISS, KUKSA, typed advisory, functional-report/event,
 AosCloud, log and dashboard contracts. Define normal, unavailable, stale,
 malformed, unauthorized, offline, retry, rollback and resource-bound behavior.
 
@@ -152,10 +152,10 @@ These workstreams are sequencing guidance, not authorization to implement:
 
 | Workstream | Main outcome |
 | --- | --- |
-| `I1` Vehicle stimulus and Gateway | Qualify emergency-braking and low-friction stimuli; add narrowly scoped advisory handling and dashboard status. |
+| `I1` Vehicle stimulus and Gateway | Qualify emergency-braking and explicit accelerated/pre-aged tire stimuli; add typed narrowly scoped advisory handling and dashboard status. |
 | `I2` Factory and Vehicle Data Platform | Freeze the clean factory image and empty slot; implement and qualify the accepted Provider v1-v3 contract. |
 | `I3` Brake Health product | Build the in-vehicle service, local model, bounded offline reporting, backend and function dashboard. |
-| `I4` Vehicle Stability product | Build the independent low-friction detector, bounded event upload, backend and event dashboard. |
+| `I4` Tire Health product | Build the independent persistent condition estimator, bounded reporting, inspection advisory, backend and function dashboard. |
 | `I5` Software delivery experience | Build the Software Delivery Dashboard over authoritative AosCloud APIs and the manufacturing/provisioning/promotion/retirement orchestration. |
 | `I6` Security and operations | Qualify least privilege, secret delivery, operational logs, ELK route, retention and redaction. |
 | `I7` End-to-end release proof | Execute `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> R0` on Validation and Demonstration Units with retained evidence. |

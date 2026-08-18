@@ -290,6 +290,18 @@ def metadata(text: str, field: str) -> str | None:
     return match.group(1).strip() if match else None
 
 
+def retired_identifiers(text: str) -> set[str]:
+    """Return stable IDs declared in explicitly labelled retired sections."""
+
+    retired: set[str] = set()
+    section = re.compile(
+        r"(?ms)^#{2,6}\s+Retired[^\n]*\n(.*?)(?=^#{1,6}\s+|\Z)"
+    )
+    for match in section.finditer(text):
+        retired.update(anchor.upper() for anchor in EXPLICIT_ANCHOR.findall(match.group(1)))
+    return retired
+
+
 def check_metadata(root: Path, documents: dict[Path, str]) -> list[Issue]:
     issues: list[Issue] = []
     for relative_path in CANONICAL_DOCUMENTS:
@@ -329,11 +341,22 @@ def check_traceability(root: Path, documents: dict[Path, str], definitions: set[
         root / "docs" / "requirements" / "component-decomposition-and-interface-register.md"
     ).resolve()
     text = documents.get(register, "")
+    retired_register_ids = retired_identifiers(text)
     start = text.find("## Detailed Package Traceability")
     end = text.find(BOUNDARY_DECISION_HEADING, start)
     traceability = text[start:end] if start >= 0 and end > start else ""
     allocated = {value for value in IDENTIFIER.findall(traceability) if value.startswith("SYS-")}
-    system_requirements = {value for value in definitions if value.startswith("SYS-")}
+    retired_system_ids = {
+        value
+        for document in documents.values()
+        for value in retired_identifiers(document)
+        if value.startswith("SYS-")
+    }
+    system_requirements = {
+        value
+        for value in definitions
+        if value.startswith("SYS-") and value not in retired_system_ids
+    }
     for identifier in sorted(system_requirements - allocated):
         issues.append(Issue(relative(root, register), f"system requirement is not allocated: {identifier}"))
 
@@ -344,6 +367,8 @@ def check_traceability(root: Path, documents: dict[Path, str], definitions: set[
     for line_number, line in enumerate(requirements_text.splitlines(), start=1):
         match = re.search(r'<a id="(sys-[a-z0-9-]+)"></a>', line)
         if not match:
+            continue
+        if match.group(1).upper() in retired_identifiers(requirements_text):
             continue
         cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
         if len(cells) != 5 or not cells[1]:
@@ -362,6 +387,8 @@ def check_traceability(root: Path, documents: dict[Path, str], definitions: set[
         match = re.search(r'<a id="(gap-af-\d{2})"></a>', line)
         if not match:
             continue
+        if match.group(1).upper() in retired_identifiers(flows_text):
+            continue
         cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
         if len(cells) != 5 or not cells[1]:
             issues.append(
@@ -374,6 +401,8 @@ def check_traceability(root: Path, documents: dict[Path, str], definitions: set[
     for line_number, line in enumerate(text.splitlines(), start=1):
         match = re.search(r'<a id="(if-[a-z0-9-]+)"></a>', line)
         if not match:
+            continue
+        if match.group(1).upper() in retired_register_ids:
             continue
         cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
         if len(cells) != 6 or not cells[1] or not cells[2]:
@@ -394,6 +423,7 @@ def check_reader_traceability(root: Path, documents: dict[Path, str]) -> list[Is
         root / "docs" / "requirements" / "component-decomposition-and-interface-register.md"
     ).resolve()
     text = documents.get(register, "")
+    retired_register_ids = retired_identifiers(text)
     packages_start = text.find("## Provisional Component Requirement Packages")
     details_start = text.find("## Detailed Package Traceability", packages_start)
     details_end = text.find(BOUNDARY_DECISION_HEADING, details_start)
@@ -419,6 +449,8 @@ def check_reader_traceability(root: Path, documents: dict[Path, str]) -> list[Is
     for line_number, line in enumerate(reader_view.splitlines(), start=1):
         match = re.search(r'<a id="(cr-[a-z0-9-]+)"></a>', line)
         if not match:
+            continue
+        if match.group(1).upper() in retired_register_ids:
             continue
         cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
         if len(cells) != 4 or not cells[1]:

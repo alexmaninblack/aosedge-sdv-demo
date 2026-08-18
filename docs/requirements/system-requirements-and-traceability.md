@@ -1,15 +1,15 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# System Requirements and Traceability 0.1
+# System Requirements and Traceability 0.2
 
 - Status: Review candidate
-- Version: 0.1
+- Version: 0.2
 - Prepared: 2026-08-18
 - Owner: System Architecture
-- Architecture input: [High-Level Architecture 1.1](../architecture/high-level-architecture.md)
-- Scenario input: [Staged Post-SOP Brake Health Demo Scenarios 1.1](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Demo Scenario Architecture Flows 1.0](../architecture/demo-scenario-architecture-flows.md)
+- Architecture input: [High-Level Architecture 1.2](../architecture/high-level-architecture.md)
+- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.2](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Demo Scenario Architecture Flows 1.1](../architecture/demo-scenario-architecture-flows.md)
 - Implementation, repository creation, signing, Cloud, or Unit mutation authorized: no
 
 ## Purpose
@@ -31,9 +31,9 @@ passes its acceptance criteria, and the evidence is retained.
 
 ## Source Precedence
 
-1. High-Level Architecture 1.1 owns boundaries, authority and invariants.
-2. Demo Scenario 1.1 owns the audience-visible stage progression.
-3. Architecture Flows 1.0 owns detailed lifecycle, runtime, observability and
+1. High-Level Architecture 1.2 owns boundaries, authority and invariants.
+2. Demo Scenario 1.2 owns the audience-visible stage progression.
+3. Architecture Flows 1.1 owns detailed lifecycle, runtime, observability and
    failure-flow mapping.
 4. This document owns system requirement identifiers, gap traceability,
    verification intent and the next component-allocation boundary.
@@ -54,7 +54,7 @@ acceptance even if wording is clarified.
 | `SYS-REL` | FOTA/SOTA targeting, dependency, validation and rollback |
 | `SYS-VDP` | Vehicle Data Platform Capability |
 | `SYS-BHS` | Brake Health functional behavior |
-| `SYS-EVT` | Vehicle Stability / Low-Friction event behavior |
+| `SYS-TIRE` | Tire Health estimation, bounded reporting and advisory behavior |
 | `SYS-SEC` | Security and authorization |
 | `SYS-OBS` | Dashboards, logs, correlation and evidence |
 | `SYS-TIM` | Timing and resource bounds |
@@ -78,7 +78,7 @@ separate source and SOTA lifecycles.
 | `carla-ego-runtime` | Vehicle Gateway, control, VSS projection, VISS and Engineering Telematics Dashboard | Gateway tooling | Existing |
 | `aos-vehicle-platform` | Shared Vehicle Data Platform Capability, KUKSA integration, provider runtime and authorization adapter | Platform FOTA | Existing |
 | `brake-health-service` | Function Team 1 on-board Brake Health application and local inference | Service Provider 1 / SOTA 1 | Existing |
-| `vehicle-stability-event-service` | Function Team 2 on-board low-friction event detection, bounded queue and upload client | Service Provider 2 / SOTA 2 | **Proposed repository** |
+| `tire-health-service` | Function Team 2 on-board tire-condition estimation, bounded reporting and inspection advisory | Service Provider 2 / SOTA 2 | **Proposed repository** |
 | `aosedge-sdv-demo` | Cross-repository orchestration, dashboards, system requirements and end-to-end qualification | Demo solution | Existing |
 
 The proposed Function Team 2 repository shall not own CARLA integration,
@@ -135,7 +135,7 @@ defense in depth before and after the native Cloud feature becomes available.
 | <a id="sys-vdp-001"></a>`SYS-VDP-001` | Healthy empty capability slot | The provider-specific runtime shall report a healthy empty slot at G0 and shall support the independently versioned Vehicle Data Platform Capability without claiming arbitrary component-type support. | `T,I` | `GAP-AF-01`, `GAP-AF-05` |
 | <a id="sys-vdp-002"></a>`SYS-VDP-002` | Versioned v1 signal contract | Capability v1 shall expose only its accepted read-only signal subset with defined type, unit, range, cadence, freshness, unavailable-state and provenance behavior. | `T,I` | `GAP-AF-05` |
 | <a id="sys-vdp-003"></a>`SYS-VDP-003` | Backward-compatible v2 capability | Capability v2 shall be a backward-compatible superset of v1 and shall preserve existing v1 consumers while adding the accepted Brake Health inputs. | `T` | `GAP-AF-08` |
-| <a id="sys-vdp-004"></a>`SYS-VDP-004` | Allowlisted outbound advisory | Capability v3 shall provide a narrowly scoped outbound advisory path with an allowlisted KUKSA actuator, validation policy, VISS Set operation and factual Gateway status. | `T,I,D` | `GAP-AF-10` |
+| <a id="sys-vdp-004"></a>`SYS-VDP-004` | Allowlisted outbound advisory | Capability v3 shall provide a narrowly scoped typed advisory path with per-service allowlisted KUKSA actuators, validation policy, VISS Set operation and factual Gateway status. | `T,I,D` | `GAP-AF-10`, `GAP-AF-22` |
 | <a id="sys-vdp-005"></a>`SYS-VDP-005` | Explicit degraded data | Missing, stale, malformed or disconnected source data shall become explicit unavailable/degraded state and shall never be replaced with fabricated normal values. | `T` | `GAP-AF-05`, `GAP-AF-08` |
 
 ### Brake Health function
@@ -147,15 +147,29 @@ defense in depth before and after the native Cloud feature becomes available.
 | <a id="sys-bhs-003"></a>`SYS-BHS-003` | Allowlisted v3 advisory | Service v3 shall request only the accepted Brake Health advisory target and shall not gain arbitrary display-text or vehicle-motion authority. | `T,I` | `GAP-AF-10`, `GAP-AF-15` |
 | <a id="sys-bhs-004"></a>`SYS-BHS-004` | Offline local continuity | Brake Health local inference and advisory shall continue without Cloud connectivity; functional reports shall use bounded retention, retry and idempotent synchronization with original event time. | `T,A,D` | `GAP-AF-11` |
 
-### Function Team 2 event function
+### Tire Health function
 
 | ID | Short name | System requirement | Verification | Gap source |
 | --- | --- | --- | --- | --- |
-| <a id="sys-evt-001"></a>`SYS-EVT-001` | Existing platform contract only | The Vehicle Stability service shall consume only dynamics signals already present in an accepted Vehicle Data Platform Capability and shall not require a new platform feature in the current demo. | `I,T` | `GAP-AF-13` |
-| <a id="sys-evt-002"></a>`SYS-EVT-002` | Local low-friction detection | The service shall detect a Vehicle Stability / Low-Friction Event locally using a versioned input subset, state machine, thresholds and bounded pre/post-event window qualified against repeatable CARLA runs. | `T,A,D` | `GAP-AF-12` |
-| <a id="sys-evt-003"></a>`SYS-EVT-003` | Bounded event upload | The service shall upload a bounded event package rather than an unrestricted continuous raw-telemetry stream and shall retain it within explicit offline, rate and storage limits. | `T,I,A` | `GAP-AF-12`, `GAP-AF-14` |
-| <a id="sys-evt-004"></a>`SYS-EVT-004` | Independent event backend | Function Team 2's backend shall ingest event packages idempotently and its dashboard shall expose event time, status, service version, Unit role and online/offline delivery state. | `T,D` | `GAP-AF-14` |
-| <a id="sys-evt-005"></a>`SYS-EVT-005` | Ground-truth isolation | CARLA ground truth may qualify the detector but shall not be exposed to the service or backend as if it were a production vehicle signal. | `I,T` | `GAP-AF-12`, `GAP-AF-13` |
+| <a id="sys-tire-001"></a>`SYS-TIRE-001` | Existing platform contract only | The Tire Health service shall consume only dynamics signals already present in an accepted Vehicle Data Platform Capability and shall not require a new platform feature request in the current demo. | `I,T` | `GAP-AF-21` |
+| <a id="sys-tire-002"></a>`SYS-TIRE-002` | Local persistent condition estimate | The service shall maintain a bounded, persistent and versioned tire-condition estimate from its accepted input subset and shall produce an estimated condition band rather than claim an exact measured tread depth. | `T,A,D` | `GAP-AF-21` |
+| <a id="sys-tire-003"></a>`SYS-TIRE-003` | Explicit simulation model | The CARLA scenario shall provide a deterministic, clearly labelled accelerated-time or pre-aged tire-degradation stimulus with hidden ground truth used only for qualification. | `T,I,D` | `GAP-AF-21` |
+| <a id="sys-tire-004"></a>`SYS-TIRE-004` | Bounded Cloud reporting | The service shall upload only bounded, versioned and idempotent condition summaries or threshold events and shall retain them within explicit offline, rate and storage limits instead of continuously streaming raw telemetry. | `T,I,A` | `GAP-AF-21`, `GAP-AF-23` |
+| <a id="sys-tire-005"></a>`SYS-TIRE-005` | Independent Tire Health product | Function Team 2's backend shall ingest bounded Tire Health results idempotently and its dashboard shall expose condition band, event time/status, service and capability versions, Unit role and online/offline delivery state. | `T,D` | `GAP-AF-23` |
+| <a id="sys-tire-006"></a>`SYS-TIRE-006` | Offline inspection advisory | Local estimation and inspection-advisory generation shall continue without Cloud connectivity, and the service shall request only its typed allowlisted Tire Health target without vehicle-motion or arbitrary-display authority. | `T,I,A,D` | `GAP-AF-22`, `GAP-AF-23` |
+
+### Retired Function Team 2 candidate requirements
+
+These identifiers remain resolvable for historical links but are not active
+requirements after ADR 0008:
+
+| Retired identifier | Replacement |
+| --- | --- |
+| <a id="sys-evt-001"></a>`SYS-EVT-001` | `SYS-TIRE-001` |
+| <a id="sys-evt-002"></a>`SYS-EVT-002` | `SYS-TIRE-002`, `SYS-TIRE-003` |
+| <a id="sys-evt-003"></a>`SYS-EVT-003` | `SYS-TIRE-004` |
+| <a id="sys-evt-004"></a>`SYS-EVT-004` | `SYS-TIRE-005` |
+| <a id="sys-evt-005"></a>`SYS-EVT-005` | `SYS-TIRE-003` |
 
 ### Security, observability and timing
 
@@ -163,13 +177,13 @@ defense in depth before and after the native Cloud feature becomes available.
 | --- | --- | --- | --- | --- |
 | <a id="sys-sec-001"></a>`SYS-SEC-001` | Least-privilege KUKSA identities | KUKSA publishers, readers and actuators shall use distinct least-privilege identities and path-level permissions appropriate to their lifecycle owners. | `I,T` | `GAP-AF-15` |
 | <a id="sys-sec-002"></a>`SYS-SEC-002` | Authorization-adapter migration | The accepted design shall define migration from prototype tokens to the platform authorization adapter without embedding credentials in artifacts, source, command lines or logs. | `I,T` | `GAP-AF-15` |
-| <a id="sys-sec-003"></a>`SYS-SEC-003` | Fail-closed advisory security | Unauthorized, malformed, stale or replayed advisory requests shall fail closed and produce factual non-driver status evidence. | `T,A` | `GAP-AF-10`, `GAP-AF-15` |
+| <a id="sys-sec-003"></a>`SYS-SEC-003` | Fail-closed advisory security | Unauthorized, malformed, stale or replayed advisory requests shall fail closed and produce factual non-driver status evidence. | `T,A` | `GAP-AF-10`, `GAP-AF-15`, `GAP-AF-22` |
 | <a id="sys-obs-001"></a>`SYS-OBS-001` | Authoritative demo surfaces | Every audience claim shall identify its authoritative surface: CARLA for physical stimulus, Engineering Telematics Dashboard for Gateway state, AosCloud for software lifecycle, ELK for operational logs, and each functional dashboard for its own backend data. | `I,D` | `GAP-AF-17` |
 | <a id="sys-obs-002"></a>`SYS-OBS-002` | Cloud-authoritative delivery dashboard | The Software Delivery Dashboard shall read and re-read authoritative AosCloud state and shall not maintain an independent desired-state database. | `T,I` | `GAP-AF-06`, `GAP-AF-17` |
 | <a id="sys-obs-003"></a>`SYS-OBS-003` | Operational log controls | Operational log delivery shall define access control, redaction, retention, offline buffering and failure visibility before ELK is presented as demo evidence. | `T,I,A` | `GAP-AF-16` |
 | <a id="sys-obs-004"></a>`SYS-OBS-004` | Per-run correlation | Before provisioning, a demo run shall be correlated by start time and local overlay roles; after provisioning it shall be correlated by the two Unit IDs and the same bounded time window. | `T,I` | `GAP-AF-19` |
 | <a id="sys-tim-001"></a>`SYS-TIM-001` | Lifecycle timing bounds | Each lifecycle stage shall have measured normal duration, timeout, stalled-state and recovery criteria for both technical and executive presentation modes. | `T,A,D` | `GAP-AF-18` |
-| <a id="sys-tim-002"></a>`SYS-TIM-002` | Separate local and Cloud latency | Local Brake Health decision and Gateway advisory latency shall be measured separately from Cloud report synchronization latency. | `T,A,D` | `GAP-AF-18` |
+| <a id="sys-tim-002"></a>`SYS-TIM-002` | Separate local and Cloud latency | Local Brake Health and Tire Health decision/Gateway-advisory latency shall be measured separately from Cloud report synchronization latency. | `T,A,D` | `GAP-AF-18` |
 
 ### Retirement and next-run reset
 
@@ -195,17 +209,19 @@ defense in depth before and after the native Cloud feature becomes available.
 | `GAP-AF-09` | `SYS-BHS-002` |
 | `GAP-AF-10` | `SYS-VDP-004`, `SYS-BHS-003`, `SYS-SEC-003` |
 | `GAP-AF-11` | `SYS-BHS-004` |
-| `GAP-AF-12` | `SYS-EVT-002`, `SYS-EVT-003`, `SYS-EVT-005` |
-| `GAP-AF-13` | `SYS-EVT-001`, `SYS-EVT-005` |
-| `GAP-AF-14` | `SYS-EVT-003`, `SYS-EVT-004` |
 | `GAP-AF-15` | `SYS-BHS-003`, `SYS-SEC-001`, `SYS-SEC-002`, `SYS-SEC-003` |
 | `GAP-AF-16` | `SYS-OBS-003` |
 | `GAP-AF-17` | `SYS-OBS-001`, `SYS-OBS-002` |
 | `GAP-AF-18` | `SYS-TIM-001`, `SYS-TIM-002`, `SYS-RET-004` |
 | `GAP-AF-19` | `SYS-OBS-004`, `SYS-RET-001`, `SYS-RET-002` |
 | `GAP-AF-20` | `SYS-REL-001`, `SYS-REL-003`, `SYS-REL-004`, `SYS-REL-005`, deferred `SYS-REL-006` |
+| `GAP-AF-21` | `SYS-TIRE-001`, `SYS-TIRE-002`, `SYS-TIRE-003`, `SYS-TIRE-004` |
+| `GAP-AF-22` | `SYS-VDP-004`, `SYS-TIRE-006`, `SYS-SEC-003` |
+| `GAP-AF-23` | `SYS-TIRE-004`, `SYS-TIRE-005`, `SYS-TIRE-006` |
 
-All twenty architecture-flow gaps have explicit requirement coverage. This
+All twenty active architecture-flow gaps have explicit requirement coverage.
+Retired gaps `GAP-AF-12` through `GAP-AF-14` resolve to their replacements in
+Architecture Flows 1.1. This
 does not mean they are resolved; each remains open until its linked
 requirements have accepted evidence.
 
@@ -213,22 +229,22 @@ requirements have accepted evidence.
 
 The canonical component IDs, interface IDs, repository candidates and package
 boundaries are defined in the
-[Component Decomposition and Interface Register 0.1](component-decomposition-and-interface-register.md).
+[Component Decomposition and Interface Register 0.2](component-decomposition-and-interface-register.md).
 The next derivation step shall expand the following packages. A system
 requirement may allocate obligations to several packages and one integration
 test.
 
 | Package | Primary repository or owner | Main allocation |
 | --- | --- | --- |
-| [Vehicle simulation (`CR-VEHICLE-SIM`)](component-decomposition-and-interface-register.md#cr-vehicle-sim) | `CarlaSim` plus scenario tooling in `carla-ego-runtime` | Deterministic braking and low-friction stimuli, reset, timestamps and ground-truth qualification |
+| [Vehicle simulation (`CR-VEHICLE-SIM`)](component-decomposition-and-interface-register.md#cr-vehicle-sim) | `CarlaSim` plus scenario tooling in `carla-ego-runtime` | Deterministic braking and explicit accelerated/pre-aged tire stimuli, reset, timestamps and hidden ground-truth qualification |
 | [Vehicle Gateway (`CR-GATEWAY`)](component-decomposition-and-interface-register.md#cr-gateway) | `carla-ego-runtime` | Vehicle sampling, VSS/VISS contracts, source status, advisory handler and Engineering Telematics Dashboard |
 | [Factory substrate (`CR-FACTORY`)](component-decomposition-and-interface-register.md#cr-factory) | Platform Team / `aos-vehicle-platform` | Factory image, provider-specific empty-slot runtime, identity absence and overlay creation |
 | [Vehicle Data Platform (`CR-VDP`)](component-decomposition-and-interface-register.md#cr-vdp) | `aos-vehicle-platform` | Provider v1-v3, KUKSA contract, outbound policy and authorization integration |
 | [Brake Health service (`CR-BHS`)](component-decomposition-and-interface-register.md#cr-bhs) | `brake-health-service` | Service v1-v3 behavior, model, report queue, advisory request and resource limits |
-| [Vehicle Stability service (`CR-EVT`)](component-decomposition-and-interface-register.md#cr-evt) | proposed `vehicle-stability-event-service` | Local detector, event window/package, offline queue, SOTA 2 metadata and resource limits |
+| [Tire Health service (`CR-TIRE`)](component-decomposition-and-interface-register.md#cr-tire) | proposed `tire-health-service` | Local persistent condition model, bounded summary/event, offline queue, inspection advisory, SOTA 2 metadata and resource limits |
 | [Aos lifecycle (`CR-AOS`)](component-decomposition-and-interface-register.md#cr-aos) | AosCore/AosCloud integration | Provisioning, desired/actual state, FOTA/SOTA lifecycle, targeting, native cross-lifecycle dependency admission and log transport |
 | [Brake Health Cloud (`CR-BRAKE-CLOUD`)](component-decomposition-and-interface-register.md#cr-brake-cloud) | Function Team 1 | Brake Health backend ingestion, idempotency, retention and function dashboard |
-| [Vehicle Stability Cloud (`CR-EVENT-CLOUD`)](component-decomposition-and-interface-register.md#cr-event-cloud) | Function Team 2 | Low-friction event ingestion, idempotency, retention and event dashboard |
+| [Tire Health Cloud (`CR-TIRE-CLOUD`)](component-decomposition-and-interface-register.md#cr-tire-cloud) | Function Team 2 | Tire condition/event ingestion, idempotency, retention and Function Dashboard |
 | [Demo orchestration (`CR-DEMO`)](component-decomposition-and-interface-register.md#cr-demo) | `aosedge-sdv-demo` | Overlay lifecycle, Unit binding, release orchestration, Software Delivery Dashboard, evidence and retirement |
 | [Cross-cutting concerns (`CR-CROSS`)](component-decomposition-and-interface-register.md#cr-cross) | Security and operational concerns across owners | Identities, permissions, credentials, authorization adapter, redaction, timing and offline bounds |
 | [End-to-end acceptance (`CR-E2E`)](component-decomposition-and-interface-register.md#cr-e2e) | Cross-repository qualification | Stage acceptance, failure/offline/recovery, latency and traceability evidence |
@@ -239,7 +255,7 @@ system requirement and retained evidence identifier.
 
 ## Proposed Function Team 2 Repository Creation Gate
 
-Before creating `vehicle-stability-event-service`, reviewers shall confirm:
+Before creating `tire-health-service`, reviewers shall confirm:
 
 1. the repository name and functional ownership boundary;
 2. public visibility and Apache-2.0 licensing with copyright `maninblack`;
@@ -249,30 +265,30 @@ Before creating `vehicle-stability-event-service`, reviewers shall confirm:
    provider metadata;
 5. no CARLA, VISS, VM, platform-provider or Cloud credential dependency;
 6. a versioned compatibility declaration for the accepted KUKSA contract;
-7. explicit CPU, memory, state, temporary storage, file, process, event-rate
+7. explicit CPU, memory, persistent state, temporary storage, file, process, report-rate
    and offline-queue limits;
 8. addition to `workspace/repositories.json` only after the initial repository
    revision exists and passes its repository gates.
 
 No remote repository creation is authorized by this review candidate.
 
-## Acceptance Gate for Version 0.1
+## Acceptance Gate for Version 0.2
 
 This document is ready to become the requirements baseline only when reviewers
 confirm that:
 
-1. every Architecture Flows 1.0 gap is covered without claiming it is already
+1. every active Architecture Flows 1.1 gap is covered without claiming it is already
    implemented;
 2. requirements are externally observable and testable;
 3. the two Service Providers remain independent peers;
-4. `vehicle-stability-event-service` is the accepted repository name and owns
+4. `tire-health-service` is the accepted repository name and owns
    only the in-vehicle SOTA 2 service;
 5. backend and dashboard repository ownership is intentionally left for a
    separate decision;
 6. no requirement expands vehicle-control, driver-HMI or production-fleet
    scope;
-7. component requirement packages can be derived without changing HLA 1.1 or
-   Demo Scenario 1.1.
+7. component requirement packages can be derived without changing HLA 1.2 or
+   Demo Scenario 1.2.
 8. deferred [native Cloud dependency rejection (`SYS-REL-006`)](#sys-rel-006)
    is not treated as implemented or replaced by custom
    dashboard policy before an implementing AosEdge release is qualified.

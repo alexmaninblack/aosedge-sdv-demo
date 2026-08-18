@@ -14,8 +14,8 @@ manufacturing and provisioning plus `R0` end-of-demo retirement, without
 authorizing implementation.
 
 The corresponding
-[Demo Scenario Architecture Flows 1.0](../architecture/demo-scenario-architecture-flows.md)
-map Scenario 1.1 to High-Level Architecture 1.1, including lifecycle, runtime,
+[Demo Scenario Architecture Flows 1.1](../architecture/demo-scenario-architecture-flows.md)
+map Scenario 1.2 to High-Level Architecture 1.2, including lifecycle, runtime,
 observability, failure and retirement flows. They do not authorize
 implementation.
 

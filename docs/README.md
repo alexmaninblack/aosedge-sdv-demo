@@ -23,10 +23,10 @@ not only the CARLA-to-AosEdge transport bridge.
 ## Architecture
 
 - [Architecture documentation index](architecture/README.md)
-- [High-Level Architecture 1.1 — review candidate](architecture/high-level-architecture.md)
-  — updated end-to-end system view based on the accepted visual input; 1.0 is
+- [High-Level Architecture 1.2 — review candidate](architecture/high-level-architecture.md)
+  — updated end-to-end system view with the accepted Tire Health decision; 1.0 is
   the previous accepted checkpoint until review completes.
-- [Demo Scenario Architecture Flows 1.0 — review candidate](architecture/demo-scenario-architecture-flows.md)
+- [Demo Scenario Architecture Flows 1.1 — review candidate](architecture/demo-scenario-architecture-flows.md)
   — complete manufacturing, provisioning, post-SOP evolution, Function Team 2
   candidate, observability, offline, and retirement mapping.
 - [Repository and component boundaries](architecture/repository-boundaries.md)
@@ -39,7 +39,7 @@ not only the CARLA-to-AosEdge transport bridge.
 ## Demo
 
 - [Demo documentation index](demo/README.md)
-- [Staged Post-SOP Brake Health Demo Scenarios 1.1](demo/staged-post-sop-brake-health-demo-scenarios.md)
+- [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.2](demo/staged-post-sop-brake-health-demo-scenarios.md)
   — manufacturing-to-retirement audience-visible review candidate.
 - [Demo assets](demo/assets/) — original, license-cleared visual sources and
   exports. Storyboards and presenter materials will be added here only after
@@ -47,10 +47,10 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Requirements
 
-- [System Requirements and Traceability 0.1 — review candidate](requirements/system-requirements-and-traceability.md)
+- [System Requirements and Traceability 0.2 — review candidate](requirements/system-requirements-and-traceability.md)
   — system obligations, complete coverage of the twenty Architecture Flows
   gaps, verification intent, repository ownership and component allocation.
-- [Component Decomposition and Interface Register 0.1 — review candidate](requirements/component-decomposition-and-interface-register.md)
+- [Component Decomposition and Interface Register 0.2 — review candidate](requirements/component-decomposition-and-interface-register.md)
   — logical components, implementation state, lifecycle and repository
   boundaries, runtime and Cloud interfaces, and component-package allocation.
 - [Requirements documentation](requirements/README.md)
@@ -75,10 +75,10 @@ not only the CARLA-to-AosEdge transport bridge.
 - [Automotive Orchestration Coverage Matrix](research/demo-foundation/automotive-orchestration-coverage-matrix.md)
   — sanitized dashboard proof catalogue derived from confidential OEM input;
   the source workbook remains outside Git.
-- [Native CARLA telemetry and Function Team 2 decision input](research/demo-foundation/r10-carla-telemetry-and-function-team-2.md)
+- [Native CARLA telemetry and Function Team 2 evidence](research/demo-foundation/r10-carla-telemetry-and-function-team-2.md)
   — native vehicle state, Chaos telemetry, built-in sensors, simulator ground
-  truth, explicit non-capabilities, and candidate local event-analytics
-  concepts to review before selecting the second functional service.
+  truth, explicit non-capabilities, the superseded low-friction candidate, and
+  evidence constraining the accepted Tire Health design.
 
 ## Operations
 

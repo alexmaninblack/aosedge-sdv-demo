@@ -1,11 +1,11 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# High-Level Architecture 1.1
+# High-Level Architecture 1.2
 
 - Status: Review candidate based on the accepted visual architecture input
-- Version: 1.1
-- Prepared: 2026-08-17
+- Version: 1.2
+- Prepared: 2026-08-18
 - Owner: System Architecture
 - Previous accepted version: 1.0, accepted 2026-08-16
 - Scope: CARLA, Vehicle Gateway ECU, AosVM Domain Controller, AosCloud,
@@ -27,29 +27,31 @@ the Mermaid rendering below are reviewable derivatives and must be regenerated
 or reconciled whenever the source changes.
 
 The visual source defines the component boundaries and principal relationships
-used by Architecture 1.1: two peer OEM Function Teams represented as
+used by Architecture 1.2: two peer OEM Function Teams represented as
 independent AosCloud Service Providers, the shared Vehicle Data Platform
-Capability, the Event-Based Uploader, the Factory Baseline Assembly-to-Factory
+Capability, the Tire Health function, the Factory Baseline Assembly-to-Factory
 Image artifact and factory-installed runtime boundaries,
-the Software Delivery and log-observation surfaces, and the explicit Brake
-Health advisory path through KUKSA. The diagram does not introduce a
+the Software Delivery and log-observation surfaces, and the explicit typed
+Brake Health and Tire Health advisory paths through KUKSA. The diagram does not introduce a
 production driver HMI; the advisory remains visible on the Engineering
 Telematics Dashboard.
 
-## Revision 1.1 Summary
+## Revision 1.2 Summary
 
-Architecture 1.1 extends the previous single-function architecture by:
+Architecture 1.2 retains the 1.1 platform and lifecycle model and replaces its
+provisional Function Team 2 candidate, as accepted in
+[ADR 0008](decisions/0008-use-tire-health-for-function-team-2.md):
 
 1. defining Function Team 1 and Function Team 2 as independent peer OEM
    organizations and independent AosCloud Service Providers;
-2. adding an independently delivered Event-Based Uploader SOTA service with
-   its own backend and dashboard;
+2. adding an independently delivered Tire Health SOTA service with its own
+   backend and dashboard;
 3. establishing the FOTA-owned Vehicle Data Platform Capability as a shared
    vehicle integration layer used by multiple functional services;
-4. separating continuous local raw-signal processing from bounded,
-   event-triggered functional Cloud upload;
-5. making the Brake Health advisory return explicitly pass through KUKSA,
-   outbound validation, VISS Set, and the Vehicle Gateway;
+4. separating continuous local condition estimation from bounded Tire Health
+   summaries and threshold-event Cloud upload;
+5. making each typed Brake Health or Tire Health advisory return explicitly
+   pass through KUKSA, outbound validation, VISS Set, and the Vehicle Gateway;
 6. limiting the current demo's platform feature-request flow to Function Team
    1, while Function Team 2 consumes the already available data contract;
 7. distinguishing the build-time OEM Factory Baseline Assembly, its immutable
@@ -71,9 +73,9 @@ The architecture demonstrates how an OEM can add a new vehicle-facing platform
 capability through FOTA and then independently deliver multiple containerized
 functional services through SOTA. The Brake Health service performs local
 analysis and can return an advisory request to the Vehicle Gateway without a
-Cloud round trip. The Event-Based Uploader processes raw signals locally and
-sends only a bounded event package to its functional backend when its local
-event rule triggers.
+Cloud round trip. Tire Health estimates condition locally and sends only
+bounded summaries or threshold events to its functional backend; it can also
+request a local inspection advisory without a Cloud round trip.
 
 This is a logical automotive architecture. All elements currently run on one
 Apple Silicon Mac for the demonstration, but process placement on the Mac must
@@ -81,7 +83,7 @@ not erase the logical separation between the simulated physical vehicle, the
 Vehicle Gateway ECU, the Domain Controller ECU, the OEM Cloud, and engineering
 tools.
 
-## Architecture 1.1 Model
+## Architecture 1.2 Model
 
 ```mermaid
 flowchart TB
@@ -100,21 +102,21 @@ flowchart TB
         end
 
         subgraph FUNCTION_TEAM_2["Function Team 2 / Service Provider 2 — SOTA"]
-            EVENT_DEV["Development of<br/>Event-Based Uploader Service"]
+            TIRE_DEV["Development of<br/>Tire Health Service"]
         end
 
         BRAKE_BACKEND[("Service Provider 1<br/>Brake Health Backend")]
         BRAKE_DASHBOARD["Brake Health<br/>Function Dashboard"]
-        EVENT_BACKEND[("Service Provider 2<br/>Event Backend")]
-        EVENT_DASHBOARD["Event-Based Data<br/>Dashboard"]
+        TIRE_BACKEND[("Service Provider 2<br/>Tire Health Backend")]
+        TIRE_DASHBOARD["Tire Health<br/>Function Dashboard"]
         ELK[("Vehicle and Service Log View<br/>ELK")]
 
         BRAKE_DEV -. "Feature request:<br/>new or updated vehicle signals" .-> PLATFORM_DEV
         PLATFORM_DEV -- "Publish FOTA artifact" --> AOS_CLOUD
         BRAKE_DEV -- "Publish SOTA 1" --> AOS_CLOUD
-        EVENT_DEV -- "Publish SOTA 2" --> AOS_CLOUD
+        TIRE_DEV -- "Publish SOTA 2" --> AOS_CLOUD
         BRAKE_BACKEND --> BRAKE_DASHBOARD
-        EVENT_BACKEND --> EVENT_DASHBOARD
+        TIRE_BACKEND --> TIRE_DASHBOARD
         AOS_CLOUD -. "Selected lifecycle<br/>and runtime logs" .-> ELK
     end
 
@@ -122,7 +124,7 @@ flowchart TB
         direction LR
         CONTROL_UI["Vehicle Control UI<br/>Manual · Autopilot · Safe Stop"]
         SOFTWARE_DASHBOARD["OEM Software Delivery Dashboard<br/>AosCloud state · targets · validation · promotion"]
-        TELEMETRY_DASHBOARD["Engineering Telematics Dashboard<br/>speed · acceleration · pedals · steering<br/>Brake Health advisory · gateway status"]
+        TELEMETRY_DASHBOARD["Engineering Telematics Dashboard<br/>speed · acceleration · pedals · steering<br/>Brake + Tire Health advisory · gateway status"]
     end
 
     subgraph VEHICLE["Virtual Vehicle"]
@@ -189,18 +191,19 @@ flowchart TB
                 CONTRACT --- KUKSA_TARGET
             end
 
-            subgraph EVENT_FUNCTION_SERVICE["OEM Functional Service — SOTA 2"]
-                EVENT_SERVICE["Event-Based Uploader Service Container<br/>local event detection<br/>bounded data-upload decision"]
+            subgraph TIRE_FUNCTION_SERVICE["OEM Functional Service — SOTA 2"]
+                TIRE_SERVICE["Tire Health Service Container<br/>local condition estimation<br/>bounded summary + advisory decision"]
             end
 
             subgraph BRAKE_FUNCTION_SERVICE["OEM Functional Service — SOTA 1"]
                 BRAKE_SERVICE["Brake Health Service Container<br/>local analytics and advisory decision"]
             end
 
-            READ_API -- "Read / subscribe" --> EVENT_SERVICE
+            READ_API -- "Read / subscribe" --> TIRE_SERVICE
             READ_API -- "Read / subscribe" --> BRAKE_SERVICE
             BRAKE_SERVICE -- "Brake Health advisory request" --> ACTUATE_API
-            EVENT_SERVICE -. "Requires compatible<br/>capability contract" .-> CONTRACT
+            TIRE_SERVICE -- "Tire Health advisory request" --> ACTUATE_API
+            TIRE_SERVICE -. "Requires compatible<br/>capability contract" .-> CONTRACT
             BRAKE_SERVICE -. "Requires compatible<br/>capability contract" .-> CONTRACT
         end
 
@@ -218,10 +221,10 @@ flowchart TB
     AOS_CORE -. "Install / update<br/>FOTA artifact" .-> COMPONENT_RUNTIME
     COMPONENT_RUNTIME -. "Host provider payload" .-> DATA_PLATFORM
     AOS_CORE -. "Deploy / update<br/>SOTA 1" .-> BRAKE_SERVICE
-    AOS_CORE -. "Deploy / update<br/>SOTA 2" .-> EVENT_SERVICE
+    AOS_CORE -. "Deploy / update<br/>SOTA 2" .-> TIRE_SERVICE
 
     BRAKE_SERVICE -. "Brake Health report<br/>asynchronous" .-> BRAKE_BACKEND
-    EVENT_SERVICE -. "Bounded event package<br/>after local trigger" .-> EVENT_BACKEND
+    TIRE_SERVICE -. "Bounded condition summary<br/>or threshold event" .-> TIRE_BACKEND
 ```
 
 ### Diagram interpretation
@@ -231,7 +234,7 @@ architecture. A deployable FOTA or SOTA box indicates that the architecture can
 host that element; it does not imply that every element is installed at every
 demonstration stage. The manufacturing, provisioning, `G0–G4`, and retirement
 sequence and the precise presence or absence of each deployable component are
-owned by Demo Scenario 1.1 rather than by this static component diagram.
+owned by Demo Scenario 1.2 rather than by this static component diagram.
 
 The logical Domain Controller architecture is instantiated twice for the
 demonstration: once as the Validation Unit and once as the Demonstration Unit.
@@ -285,7 +288,7 @@ QEMU plus AosVM represents a Domain Controller ECU. It contains:
 - KUKSA Databroker as the preinstalled stable VSS data boundary for services;
 - independently deployed SOTA service containers;
 - the Function Team 1 Brake Health service;
-- the Function Team 2 Event-Based Uploader service.
+- the Function Team 2 Tire Health service.
 
 The Domain Controller is not part of CARLA. Its VM boundary represents a
 separate automotive computer even though both sides execute on the same Mac.
@@ -300,7 +303,7 @@ of the assembly component.
 The immutable OEM Factory Image contains no Vehicle Data Platform Capability
 payload, functional SOTA service, Cloud registration, Cloud-issued credential,
 or reusable per-vehicle identity. The accepted component runtime is currently
-specific to one provider type and one empty slot; Architecture 1.1 does not
+specific to one provider type and one empty slot; Architecture 1.2 does not
 claim a generic arbitrary-component runtime.
 
 The Vehicle Data Platform Capability payload is the shared
@@ -329,8 +332,8 @@ telemetry transport nor a functional backend, and the architecture does not
 assume that every AosEdge deployment includes an identical ELK topology.
 
 Function Team 1 owns a separate Brake Health Backend and Brake Health Function
-Dashboard. Function Team 2 owns a separate Event Backend and Event-Based Data
-Dashboard. The two functional data planes are peers: neither backend is routed
+Dashboard. Function Team 2 owns a separate Tire Health Backend and Tire Health
+Function Dashboard. The two functional data planes are peers: neither backend is routed
 through the other, and neither has authority to deploy software to the Unit.
 
 ### Demo and engineering workstation
@@ -345,7 +348,7 @@ read-only subscriber. It does not connect to CARLA RPC, KUKSA, AosVM, or the
 Cloud backend.
 
 No production driver HMI or Instrument Cluster is implemented in Architecture
-1.1. The engineering dashboard may show that an advisory was requested and
+1.2. The engineering dashboard may show that an advisory was requested and
 received by the Vehicle Gateway, but the demonstration must not claim that the
 warning was displayed to or acknowledged by a driver.
 
@@ -387,25 +390,29 @@ Service Provider. It owns:
 The service consumes the stable KUKSA/VSS contract. It does not depend on
 CARLA, VISS, CAN, or another vehicle-network transport directly.
 
-### Function Team 2 / Service Provider 2 — Event-Based Uploader, SOTA 2
+### Function Team 2 / Service Provider 2 — Tire Health, SOTA 2
 
 Function Team 2 is a peer OEM functional vertical and a separate AosCloud
 Service Provider. It owns:
 
-- the Event-Based Uploader service container;
-- local processing of the raw signals allowed by its KUKSA contract;
-- event detection and the decision to create a bounded event package;
+- the Tire Health service container;
+- local processing of the vehicle-dynamics signals allowed by its KUKSA contract;
+- a bounded, persistent and versioned tire-condition estimate;
+- the decision to create a bounded summary or threshold event;
+- the decision to request an allowlisted tire-inspection advisory;
 - its required platform-capability version declaration;
 - service configuration, state, tests, updates, and rollback;
-- the Event Backend and Event-Based Data Dashboard.
+- the Tire Health Backend and Tire Health Function Dashboard.
 
 The service does not continuously stream raw sensor data to the Cloud. It
-detects its event locally and uploads a deliberately bounded functional event
-package to its own backend when connectivity is available. The selected
-candidate is a **Vehicle Stability / Low-Friction Event** based on native CARLA
-vehicle-dynamics data. Its exact input subset, local detection rule, event
-window, package contents, and dashboard representation remain a later detailed
-design decision.
+estimates tire condition locally and uploads deliberately bounded summaries or
+threshold events to its own backend when connectivity is available. It reports
+an estimated condition band and inspection recommendation, not an exact
+measured tread depth. A clearly labelled accelerated-time or pre-aged tire
+condition makes the transition observable in a short demo. Hidden deterministic
+simulation truth may qualify the model but is not a production signal exposed
+to the service or backend. The exact input subset, state model, persistence,
+thresholds, payload and dashboard representation remain detailed-design items.
 
 ### Lifecycle independence, dependency, and promotion
 
@@ -414,7 +421,7 @@ The architecture has three independently owned release lifecycles:
 1. the Platform Team publishes the Vehicle Data Platform Capability through
    FOTA;
 2. Service Provider 1 publishes the Brake Health service through SOTA 1;
-3. Service Provider 2 publishes the Event-Based Uploader through SOTA 2.
+3. Service Provider 2 publishes the Tire Health service through SOTA 2.
 
 Each SOTA service declares its own dependency on a versioned Vehicle Data
 Platform Capability. The services do not depend on each other and can be
@@ -454,7 +461,7 @@ CARLA vehicle state
   -> validation, normalization and signal selection
   -> KUKSA publish of actual values
   +-> Brake Health service read/subscribe
-  `-> Event-Based Uploader read/subscribe
+  `-> Tire Health service read/subscribe
 ```
 
 The platform provider publishes actual sensor values into KUKSA once. Each
@@ -472,8 +479,8 @@ Vehicle Control UI
 
 The control path is deliberately separate from VISS telemetry and KUKSA. Loss
 of the control client selects the existing safe-stop behavior. The Brake Health
-service and Event-Based Uploader do not control vehicle motion in Architecture
-1.1.
+service and Tire Health service do not control vehicle motion in Architecture
+1.2.
 
 ### 3. Local Brake Health analysis
 
@@ -489,33 +496,34 @@ This path executes entirely inside the Domain Controller. It must continue to
 work without Cloud connectivity and its decision latency must not contain a
 Cloud round trip.
 
-### 4. Local event detection and bounded upload
+### 4. Local Tire Health estimation and bounded reporting
 
 ```text
 KUKSA sensor subscription
-  -> local raw-signal processing
-  -> local event rule
-  -> bounded event package
-  -> Function Team 2 Event Backend when connectivity is available
-  -> Event-Based Data Dashboard
+  -> local vehicle-dynamics processing
+  -> bounded persistent tire-condition model
+  -> estimated condition band and threshold decision
+  -> bounded summary/event to the Tire Health Backend when connected
+  -> Tire Health Function Dashboard
 ```
 
-Event recognition runs inside the Domain Controller and does not require a
-Cloud round trip. The service sends an event package only after the local rule
-triggers; it does not use the functional backend as a continuous raw-sensor
-processor. Connectivity loss may delay upload, but it must not prevent local
-event detection. Retention size, retry behavior, and the exact bounded package
-are lower-level design decisions.
+Condition estimation and the inspection recommendation run inside the Domain
+Controller and do not require a Cloud round trip. The service sends bounded
+summaries and threshold events; it does not use the functional backend as a
+continuous raw-sensor processor. Connectivity loss may delay upload, but it
+must not prevent local estimation or advisory generation. State persistence,
+retention, retry behavior and the exact payload are lower-level decisions.
 
 For the current demo, this service must use vehicle data already present in the
-accepted Vehicle Data Platform Capability. The event and payload will be
-selected after an inventory of CARLA/VISS signals that require no additional
-vehicle-side development.
+accepted Vehicle Data Platform Capability. It combines native dynamics
+evidence with an explicit simulation-only degradation stimulus. That hidden
+qualification truth must not be published as if it were a production vehicle
+measurement.
 
-### 5. Advisory return to the Vehicle Gateway
+### 5. Typed advisory return to the Vehicle Gateway
 
 ```text
-Brake Health service
+Brake Health service or Tire Health service
   -> KUKSA actuate
   -> actuator target
   -> outbound actuation policy and allowlist
@@ -529,7 +537,7 @@ The service does not send a message directly to the dashboard. The engineering
 dashboard observes the Gateway-side advisory and status over VISS. This proves
 that the request completed the round trip back to the simulated vehicle side.
 
-Architecture 1.1 defines the following semantics:
+Architecture 1.2 defines the following semantics:
 
 | Operation | Meaning |
 | --- | --- |
@@ -545,6 +553,8 @@ uses these provisional semantic entries:
 ```text
 Vehicle.OEM.BrakeHealth.Advisory.Request       actuator
 Vehicle.OEM.BrakeHealth.Advisory.GatewayStatus sensor
+Vehicle.OEM.TireHealth.Advisory.Request        actuator
+Vehicle.OEM.TireHealth.Advisory.GatewayStatus  sensor
 ```
 
 The request should be a bounded enum such as `NONE`,
@@ -569,8 +579,8 @@ The dashboard continues to show the already implemented vehicle signals:
 - gear and engine speed;
 - GNSS and simulation health information.
 
-The target extension adds the Brake Health advisory request and Gateway status
-to the same engineering view. The dashboard is an observer and does not
+The target extension adds typed Brake Health and Tire Health advisory requests
+and Gateway statuses to the same engineering view. The dashboard is an observer and does not
 participate in the decision or actuation path.
 
 ### 7. Brake Health functional reporting
@@ -592,7 +602,7 @@ Gateway advisory request.
 ```text
 Platform Team -> FOTA artifact -> AosCloud -> AosCore -> preinstalled component runtime -> Vehicle Data Platform Capability
 Service Provider 1 -> SOTA 1 -> AosCloud -> AosCore -> Brake Health service
-Service Provider 2 -> SOTA 2 -> AosCloud -> AosCore -> Event-Based Uploader
+Service Provider 2 -> SOTA 2 -> AosCloud -> AosCore -> Tire Health service
 ```
 
 AosCloud delivers and observes all three lifecycles, but it does not merge
@@ -614,10 +624,9 @@ dependency.
   status paths.
 - Each functional service receives read access only to its required KUKSA
   sensor paths.
-- Only the Brake Health service receives actuation access, and only to its
-  advisory actuator target.
-- The Event-Based Uploader has no vehicle-actuation permission. Its external
-  egress is limited to its own backend and a bounded event payload.
+- Each service receives actuation access only to its own typed advisory target.
+- The Tire Health service has no vehicle-motion permission. Its external
+  egress is limited to its own backend and bounded functional payloads.
 - The outbound provider accepts only an explicit actuator allowlist, validates
   type and enum bounds, and fails closed.
 - An advisory request cannot become an unrestricted transport tunnel from a
@@ -639,7 +648,7 @@ dependency.
 
 ## Current Baseline and Target Delta
 
-| Area | Current accepted behavior | Architecture 1.1 target |
+| Area | Current accepted behavior | Architecture 1.2 target |
 | --- | --- | --- |
 | CARLA and ego runtime | Vehicle state, control, VSS normalization | Preserve unchanged behavior |
 | VISS server | TLS VISS 3.1 Get and Subscribe; write rejected | Add a narrowly scoped advisory Set path and Gateway status |
@@ -648,22 +657,22 @@ dependency.
 | Factory Baseline Assembly, OEM Demo Factory Image and Domain Controller substrate | The current build evidence and runtime are provider-specific; installed `.1` and `.2` systems prove an empty provider slot, while the hardened candidate is not yet an accepted clean factory artifact | Qualify the reproducible assembly process and freeze its immutable, unprovisioned OEM image containing AosCore, KUKSA, security, update support, and the selected empty-slot runtime, but no provider payload or functional service |
 | KUKSA contract | Readable telemetry signals | Serve both services and add the versioned advisory actuator and status sensor |
 | Brake Health service | Not yet the accepted final service | Subscribe, analyze locally, actuate advisory, report asynchronously |
-| Event-Based Uploader | Not implemented | Detect a selected event locally and send a bounded package to its own backend |
+| Tire Health service | Not implemented | Estimate tire condition locally, send bounded summaries/events and request a typed inspection advisory |
 | Service Provider separation | AosCloud lifecycle mechanisms exist; the two target services are not yet accepted as independent deployments | Independent Service Provider identities, artifacts, dependencies, updates, and rollback |
 | Cross-lifecycle dependency admission | Service-to-layer and component-to-component dependencies exist, but the current released Cloud/API does not expose a Service-to-FOTA-component admission rule | Natively reject an incompatible SOTA request in AosCloud before rollout creation or Unit transfer; deferred until the roadmap feature ships and is qualified |
 | OEM Software Delivery Dashboard | Not implemented; the AosCloud UI and APIs remain authoritative | Provide a simplified view of actual targets, artifact identity, validation, promotion, and Unit state without creating a parallel desired-state store |
 | Vehicle and Service Log View | AosEdge log mechanisms exist; the exact Cloud-to-ELK deployment integration is not yet accepted | Show selected, access-controlled lifecycle and runtime evidence without using ELK as a telemetry or functional-data backend |
 | Validation and Demonstration instances | Separate VM roles exist, while the demo has one visible CARLA/Vehicle Gateway/VISS source | Instantiate the same logical Domain Controller architecture twice and define deterministic selection or replay without claiming two simultaneous vehicles |
 | Driver HMI | Not implemented | Remains out of scope |
-| Functional backends | Scenario-level targets | Two separate backends receive derived Brake Health and event data without entering local decisions or software lifecycle control |
+| Functional backends | Scenario-level targets | Two separate backends receive derived Brake Health and Tire Health data without entering local decisions or software lifecycle control |
 
 The target writable VISS path must not weaken the current read-only guarantee
-for any other signal. A request outside the explicit Brake Health advisory
+for any other signal. A request outside the explicit typed advisory
 contract remains rejected.
 
 ## Architectural Invariants
 
-Architecture 1.1 is aligned only while all of the following remain true:
+Architecture 1.2 is aligned only while all of the following remain true:
 
 1. CARLA represents the physical vehicle; `carla-ego-runtime` represents the
    Vehicle Gateway ECU; AosVM represents a separate Domain Controller ECU.
@@ -672,32 +681,32 @@ Architecture 1.1 is aligned only while all of the following remain true:
    AosCloud Service Providers.
 4. Only Function Team 1 requests a Vehicle Data Platform Capability extension
    in the current demo; Function Team 2 uses the already available contract.
-5. The Event-Based Uploader processes raw signals locally and sends a bounded
-   event package only after its local trigger; it does not continuously stream
-   raw sensor data to the Cloud.
+5. Tire Health estimates condition locally and sends only bounded summaries or
+   threshold events; it does not continuously stream raw sensor data to the Cloud.
 6. Brake Health local analysis and advisory generation do not require Cloud
    connectivity.
-7. Event-Based Uploader event detection does not require Cloud connectivity;
-   its backend synchronization is asynchronous.
-8. AosCloud lifecycle control, Brake Health functional data, and Event-Based
-   Uploader functional data are three distinct Cloud concerns.
+7. Tire Health estimation and advisory generation do not require Cloud
+   connectivity; its backend synchronization is asynchronous.
+8. AosCloud lifecycle control, Brake Health functional data, and Tire Health
+   functional data are three distinct Cloud concerns.
 9. The Engineering Telematics Dashboard talks to the Gateway VISS endpoint,
    never directly to KUKSA or either functional service.
 10. Vehicle control and VISS vehicle-data exchange remain separate channels.
-11. The platform FOTA, Brake Health SOTA 1, and Event-Based Uploader SOTA 2
+11. The platform FOTA, Brake Health SOTA 1, and Tire Health SOTA 2
     retain independent ownership, versioning, qualification, update, and
     rollback lifecycles.
 12. The two services do not depend on each other; each is gated only by its
     declared Vehicle Data Platform Capability contract. Native AosCloud
     pre-deployment enforcement is a deferred target capability and must not be
     claimed against the current release.
-13. A Brake Health advisory passes through KUKSA, the outbound allowlist, VISS
-    Set, and the Vehicle Gateway before the engineering dashboard observes it.
+13. Each Brake Health or Tire Health advisory passes through KUKSA, the
+    outbound allowlist, VISS Set, and the Vehicle Gateway before the engineering
+    dashboard observes it.
 14. The demonstration proves Gateway receipt, not display or acknowledgment by
     a driver.
 15. No secret, Unit identity, or private credential is embedded in a FOTA or
     SOTA payload.
-16. The static diagram is a target capability superset; Demo Scenario 1.1 owns
+16. The static diagram is a target capability superset; Demo Scenario 1.2 owns
     component presence and absence at each manufacturing, provisioning,
     `G0–G4`, and retirement stage.
 17. Validation and Demonstration Units are separate instances of the same
@@ -712,11 +721,10 @@ Architecture 1.1 is aligned only while all of the following remain true:
 - third-party Service Providers or Fleet Operators;
 - a Function Team 2 request for a new Vehicle Data Platform Capability in the
   current demo;
-- continuous raw-sensor streaming to the Event Backend as the Event-Based
-  Uploader's operating model;
-- the detailed Function Team 2 Vehicle Stability / Low-Friction input subset,
-  detection algorithm, event window, bounded payload, and dashboard fields
-  before its CARLA qualification and data-contract design are complete;
+- continuous raw-sensor streaming to the Tire Health Backend;
+- presentation of simulated tire degradation truth as a measured production
+  vehicle signal;
+- an exact tread-depth claim without a corresponding sensor;
 - a real production fleet campaign;
 - selection of CAN, SOME/IP, DDS, TSN, or production ECU hardware;
 - the final production authorization-adapter implementation;
@@ -735,14 +743,14 @@ order:
    replay of the single CARLA/Vehicle Gateway/VISS source;
 3. inventory CARLA/VISS signals already available without additional
    vehicle-side development;
-4. qualify the selected Function Team 2 Vehicle Stability / Low-Friction Event
-   candidate and define its bounded event package;
+4. freeze the Function Team 2 Tire Health input subset, degradation model,
+   persistent state, condition bands, bounded payload and qualification oracle;
 5. define the shared, versioned KUKSA/VSS data contract required by both
    services;
-6. define and validate the Brake Health actuator and Gateway-status contract,
-   then design the scoped writable VISS/Gateway handler and outbound KUKSA
-   provider security policy;
-7. define the Brake Health and Event-Based Uploader service state machines,
+6. define and validate the typed Brake Health and Tire Health actuator and
+   Gateway-status contracts, then design the scoped writable VISS/Gateway
+   handler and outbound KUKSA provider security policy;
+7. define the Brake Health and Tire Health service state machines,
    offline behavior, functional-backend contracts, and functional dashboards;
 8. define the OEM Software Delivery Dashboard contract and qualify the
    AosEdge-to-ELK observation path without creating new sources of truth;
@@ -751,8 +759,8 @@ order:
    rejection when the roadmap feature becomes available;
 10. define component, integration, offline, failure, recovery, rollback, and
     end-to-end acceptance tests;
-11. after Architecture 1.1 acceptance, reconcile the existing Demo Scenario
-    1.1 mapping, storyboard, coverage matrix, and implementation plan against
+11. after Architecture 1.2 acceptance, reconcile the Demo Scenario 1.2
+    storyboard, coverage matrix, and implementation plan against
     this model.
 
 This gate authorizes architecture and planning work only. Implementation,

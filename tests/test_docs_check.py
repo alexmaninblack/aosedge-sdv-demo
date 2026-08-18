@@ -145,17 +145,32 @@ class DocumentationCheckTests(unittest.TestCase):
         self.assertNotEqual(0, result.returncode)
         self.assertIn("detailed package reference must use a named direct link", result.stderr)
 
+    def test_retired_mapping_does_not_retire_replacement_requirement(self) -> None:
+        temporary, root = self.temporary_documentation()
+        self.addCleanup(temporary.cleanup)
+        target = root / "docs" / "requirements" / "component-decomposition-and-interface-register.md"
+        text = target.read_text(encoding="utf-8")
+        prefix, details = text.split("## Detailed Package Traceability", 1)
+        details = details.replace("SYS-TIRE-006", "SYS-TIRE-005")
+        target.write_text(
+            prefix + "## Detailed Package Traceability" + details,
+            encoding="utf-8",
+        )
+        result = self.run_check(root)
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("system requirement is not allocated: SYS-TIRE-006", result.stderr)
+
     def test_stale_canonical_input_version_is_rejected(self) -> None:
         temporary, root = self.temporary_documentation()
         self.addCleanup(temporary.cleanup)
         target = root / "docs" / "architecture" / "high-level-architecture.md"
         text = target.read_text(encoding="utf-8").replace(
-            "- Version: 1.1", "- Version: 1.2", 1
+            "- Version: 1.2", "- Version: 1.3", 1
         )
         target.write_text(text, encoding="utf-8")
         result = self.run_check(root)
         self.assertNotEqual(0, result.returncode)
-        self.assertIn("label does not name target version 1.2", result.stderr)
+        self.assertIn("label does not name target version 1.3", result.stderr)
 
     def test_backup_document_artifact_is_rejected(self) -> None:
         temporary, root = self.temporary_documentation()

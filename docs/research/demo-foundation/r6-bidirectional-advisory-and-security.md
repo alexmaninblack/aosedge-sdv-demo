@@ -175,4 +175,4 @@ authorization and a Gateway advisory handler; TLS alone is not sufficient.
 - [COVESA VISS 3.1 specification](https://github.com/COVESA/vehicle-information-service-specification/tree/v3.1)
 - [Eclipse KUKSA Databroker 0.5.0](https://github.com/eclipse-kuksa/kuksa-databroker/tree/0.5.0)
 - [`aos-vehicle-platform` provider architecture](../../../../aos-vehicle-platform/docs/architecture.md)
-- [Current High-Level Architecture 1.1](../../architecture/high-level-architecture.md)
+- [Current High-Level Architecture 1.2](../../architecture/high-level-architecture.md)

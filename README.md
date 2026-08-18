@@ -44,11 +44,11 @@ CARLA -> Vehicle Gateway -> VISS 3.1 -> Vehicle Data Platform Capability
                                              KUKSA Databroker
                                               /             \
                                              v               v
-                                  Brake Health service   Vehicle Stability service
+                                  Brake Health service   Tire Health service
 ```
 
 The Vehicle Data Platform Capability follows the OEM Platform Team/FOTA
-lifecycle. Brake Health and Vehicle Stability are peer Function Team products
+lifecycle. Brake Health and Tire Health are peer Function Team products
 with independent Service Provider/SOTA lifecycles. The Gateway-to-KUKSA
 contract separates simulated vehicle hardware from service-facing data. A
 production vehicle replaces the CARLA side with real vehicle networks while
@@ -122,9 +122,9 @@ python3 -m unittest discover -s tests -p 'test_*.py'
 - [Documentation map](docs/README.md)
 - [Getting started](docs/getting-started/README.md)
 - [Reproduction guide and readiness matrix](docs/getting-started/reproduce-demo.md)
-- [High-Level Architecture 1.1 — review candidate](docs/architecture/high-level-architecture.md)
-- [System Requirements and Traceability 0.1 — review candidate](docs/requirements/system-requirements-and-traceability.md)
-- [Component Decomposition and Interface Register 0.1 — review candidate](docs/requirements/component-decomposition-and-interface-register.md)
+- [High-Level Architecture 1.2 — review candidate](docs/architecture/high-level-architecture.md)
+- [System Requirements and Traceability 0.2 — review candidate](docs/requirements/system-requirements-and-traceability.md)
+- [Component Decomposition and Interface Register 0.2 — review candidate](docs/requirements/component-decomposition-and-interface-register.md)
 - [R9 Demo Foundation Research](docs/research/demo-foundation/README.md)
 - [Current accepted baseline](docs/qualification/current-baseline.md)
 - [Roadmap and next gates](docs/planning/roadmap.md)

@@ -3,8 +3,8 @@
 
 # R10 — Native CARLA Vehicle Telemetry Inventory
 
-Status: **research complete; Function Team 2 candidate selected for detailed
-design**.
+Status: **research complete; original Function Team 2 candidate superseded by
+ADR 0008**.
 
 ## Purpose and boundary
 
@@ -241,10 +241,10 @@ Thresholds, debounce, event windows, confidence, and severity are service or
 scenario logic. CARLA supplies the inputs; it does not supply these business
 events as finished decisions.
 
-## Function Team 2 candidate decision
+## Historical Function Team 2 candidate
 
-The selected candidate for detailed design is **Vehicle Stability /
-Low-Friction Event Uploader**.
+This research originally recommended **Vehicle Stability / Low-Friction Event
+Uploader** for detailed design.
 
 Function Team 2 / Service Provider 2 will own an independently delivered SOTA
 service that:
@@ -263,20 +263,37 @@ CARLA's per-wheel angular velocity, longitudinal slip, lateral slip angle,
 vehicle motion, steering, and stock friction trigger make this candidate
 technically plausible without inventing a new CARLA sensor.
 
-This is a **candidate commitment**, not an accepted detailed design. The exact
+This was a candidate commitment, not an accepted detailed design. The exact
 input subset, platform-contract dependency, event state machine, thresholds,
 severity/confidence model, pre/post window, bounded Cloud payload, offline
 queue, dashboard fields, and acceptance tolerances remain open.
 
-The Road-Impact, Near-Collision, Lane-Departure, and Impact Recorder concepts
-remain research alternatives only; they are not part of the planned demo
-unless the selected candidate fails its CARLA qualification gate.
+ADR 0008 supersedes this candidate with Tire Health. The low-friction,
+Road-Impact, Near-Collision, Lane-Departure, and Impact Recorder concepts remain
+research alternatives only and are not part of the planned demo.
 
-## Required verification before detailed design acceptance
+## Tire Health interpretation of the inventory
 
-Static source inspection proves API and sensor availability, not signal
-quality for the exact demo vehicle and map. The next CARLA-only experiment
-should:
+The accepted Function Team 2 concept can reuse native vehicle speed,
+acceleration, steering, applied controls, engine state, and per-wheel angular
+velocity and slip as model inputs. CARLA does **not** expose live production-
+equivalent tire pressure, temperature, tread depth, wear, puncture health,
+wheel load, tire force, or wheel torque. Therefore:
+
+1. the service reports an estimated condition band and inspection/replacement
+   recommendation, not an exact measured tread depth;
+2. the scenario provides a clearly labelled accelerated-time or pre-aged tire
+   condition so the transition is visible during a short demo;
+3. deterministic degradation truth is hidden qualification input, not a VISS,
+   KUKSA, service, backend, or dashboard production signal;
+4. the local persistent-state model, input subset, thresholds, payload,
+   offline limits, advisory and acceptance tolerances require detailed design.
+
+## Historical low-friction verification recipe
+
+This recipe is retained only as evidence for the superseded candidate. Static
+source inspection proves API and sensor availability, not signal quality for
+the exact demo vehicle and map:
 
 1. enumerate the actual runtime blueprint library of the packaged Mac build;
 2. record representative values and units from direct vehicle telemetry, IMU,

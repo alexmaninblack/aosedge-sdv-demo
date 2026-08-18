@@ -1,24 +1,24 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Demo Scenario Architecture Flows 1.0
+# Demo Scenario Architecture Flows 1.1
 
 - Status: Review candidate
-- Version: 1.0
-- Prepared: 2026-08-17
+- Version: 1.1
+- Prepared: 2026-08-18
 - Owner: System Architecture
 - Replaces: superseded Scenario 1.0 mapping draft `0.1`
-- Architecture input: [High-Level Architecture 1.1](high-level-architecture.md)
-- Scenario input: [Staged Post-SOP Brake Health Demo Scenarios 1.1](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Architecture input: [High-Level Architecture 1.2](high-level-architecture.md)
+- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.2](../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - CARLA input: [R10 Native CARLA Vehicle Telemetry Inventory](../research/demo-foundation/r10-carla-telemetry-and-function-team-2.md)
-- Requirements input: [System Requirements and Traceability 0.1](../requirements/system-requirements-and-traceability.md)
-- Component input: [Component Decomposition and Interface Register 0.1](../requirements/component-decomposition-and-interface-register.md)
+- Requirements input: [System Requirements and Traceability 0.2](../requirements/system-requirements-and-traceability.md)
+- Component input: [Component Decomposition and Interface Register 0.2](../requirements/component-decomposition-and-interface-register.md)
 - Implementation, build, signing, Cloud, or Unit mutation authorized: no
 
 ## Purpose
 
 This document is the traceability bridge between the static capability model
-in High-Level Architecture 1.1, the audience-visible Demo Scenario 1.1, and the
+in High-Level Architecture 1.2, the audience-visible Demo Scenario 1.2, and the
 next component-requirements package.
 
 It defines how software, data, decisions, evidence, and ownership move through
@@ -45,14 +45,14 @@ OTA rollout.
 
 When the inputs differ, use this order:
 
-1. High-Level Architecture 1.1 owns component boundaries, interfaces,
+1. High-Level Architecture 1.2 owns component boundaries, interfaces,
    authority, security boundaries, and architectural invariants.
-2. Demo Scenario 1.1 owns stage order, component presence, audience-visible
+2. Demo Scenario 1.2 owns stage order, component presence, audience-visible
    proof, and the manufacturing-to-retirement narrative.
 3. This document owns detailed cross-component flow mapping and exposes gaps;
    it does not silently change either source.
-4. R10 owns the current inventory of native CARLA data and records the
-   Vehicle Stability / Low-Friction Event Uploader candidate.
+4. R10 owns the inventory of native CARLA data; ADR 0008 owns the Tire Health
+   selection that supersedes its former low-friction candidate.
 
 A contradiction found here must be resolved in the owning source before it
 becomes a requirement.
@@ -67,19 +67,19 @@ becomes a requirement.
 | `FR` | Failure and recovery | Which layer contains a failure, and how can operation recover without widening authority? |
 
 Stage flow identifiers use `AF-<stage>-<type>`, for example `AF-G3-LC`.
-Cross-stage flows use `AF-X-<name>` and the independent Function Team 2
-candidate uses `AF-FT2-<type>`.
+Cross-stage flows use `AF-X-<name>` and the independent Tire Health extension
+uses `AF-TIRE-<type>`.
 
 ## Architecture Role Catalogue
 
 | ID | Architecture role | Owner | Current or target state |
 | --- | --- | --- | --- |
 | `CARLA` | Virtual physical vehicle, environment, native sensors, and actuators | CARLA repositories | Current |
-| `SCENE` | Deterministic obstacle/braking scenario, manual takeover, safe stop, actor cleanup | `carla-ego-runtime` tooling | Current for the Brake Event scenario; low-friction extension not yet qualified |
+| `SCENE` | Deterministic obstacle/braking scenario, manual takeover, safe stop, actor cleanup, and explicit accelerated/pre-aged tire degradation stimulus | `carla-ego-runtime` tooling | Brake Event current; Tire Health extension target |
 | `CONTROL` | Vehicle Control UI and separate control channel | `carla-ego-runtime` | Current |
 | `GATEWAY` | Vehicle Gateway ECU behavior, CARLA sampling, VSS normalization | `carla-ego-runtime` | Current |
 | `VISS` | TLS VISS 3.1 server | `carla-ego-runtime` | Get/Subscribe current; narrowly scoped Set target |
-| `GW-ADV` | Brake Health advisory handler and factual Gateway status | `carla-ego-runtime` | Target |
+| `GW-ADV` | Typed maintenance-advisory handler and factual Gateway status | `carla-ego-runtime` | Target |
 | `ENG-DASH` | Engineering Telematics Dashboard | `carla-ego-runtime` | Vehicle telemetry current; advisory/status extension target |
 | `FACTORY` | Immutable OEM Demo Factory Image | Platform Team | Target acceptance artifact; no clean accepted image yet |
 | `RUNTIME` | Preinstalled provider-specific empty-slot component runtime | Platform Team / `aos-vehicle-platform` | Engineering evidence exists; final factory-image qualification remains open |
@@ -89,11 +89,11 @@ candidate uses `AF-FT2-<type>`.
 | `DU` | Demonstration Unit, a separate fresh Domain Controller instance | Demo lifecycle | Target per-run role |
 | `VDP` | Vehicle Data Platform Capability payload, inbound/outbound providers and versioned contract | Platform Team, FOTA lifecycle | Inbound engineering candidate exists; accepted v1-v3 graph is target |
 | `BHS` | Brake Health service and versioned local model | Function Team 1 / Service Provider 1, SOTA 1 | Service scaffold exists; accepted v1-v3 behavior is target |
-| `EVENT` | Vehicle Stability / Low-Friction Event Uploader candidate | Function Team 2 / Service Provider 2, SOTA 2 | Selected candidate; detailed design and implementation are target |
+| `TIRE` | Tire Health in-vehicle service | Function Team 2 / Service Provider 2, SOTA 2 | Selected in ADR 0008; detailed design and implementation are target |
 | `BRAKE-BE` | Brake Health functional backend | Function Team 1 | Target |
 | `BRAKE-DASH` | Brake Health Function Dashboard | Function Team 1 | Target |
-| `EVENT-BE` | Function Team 2 event backend | Function Team 2 | Target |
-| `EVENT-DASH` | Event-Based Data Dashboard | Function Team 2 | Target |
+| `TIRE-BE` | Tire Health backend | Function Team 2 | Target |
+| `TIRE-DASH` | Tire Health Function Dashboard | Function Team 2 | Target |
 | `AOS-CLOUD` | Provisioning and authoritative FOTA/SOTA desired/actual state | AosCloud | Current platform; exact demo operations require qualification |
 | `SW-DASH` | Simplified OEM Software Delivery Dashboard over AosCloud APIs | Demo solution | Target |
 | `LOG-PIPE` | AosEdge system/service log collection and Cloud delivery | AosCore/AosCloud integration | Platform mechanisms exist; demo route unqualified |
@@ -133,7 +133,7 @@ flowchart LR
 | `G1` | Unchanged | Provider v1 | Absent | Absent | Absent |
 | `G2` | Unchanged | Provider v1 | Service v1 | Absent | Absent |
 | `G3` | Unchanged | Backward-compatible Provider v2 | Service v2 + model | Absent | Absent |
-| `G4` | Unchanged | Provider v3 inbound + allowlisted outbound | Service v3 | Present | Absent in Scenario 1.1 |
+| `G4` | Unchanged | Provider v3 inbound + allowlisted outbound | Service v3 | Present | Absent in the `G0–G4` Brake Health sequence |
 | `R0` | Retired and unable to reconnect | Overlay discarded | Overlay/backend session state retired | Not applicable | Not applicable |
 
 Function Team 2 is an independent extension flow defined later in this
@@ -152,7 +152,7 @@ All flows below preserve these rules:
    functional services.
 4. VU always receives and qualifies a candidate before the same accepted bytes
    and digest are promoted to DU.
-5. Provider updates use FOTA; Brake Health and Event Uploader updates use their
+5. Provider updates use FOTA; Brake Health and Tire Health updates use their
    independent SOTA lifecycles.
 6. A SOTA service declares a compatible Vehicle Data Platform Capability and
    does not install when that dependency is unmet.
@@ -729,99 +729,112 @@ no IVI or Instrument Cluster and must not claim `displayed to driver` or
 - Define Service v3 state machine, bounded retention, retry and idempotency.
 - Extend the Engineering Dashboard without turning it into an actuator client.
 
-## Function Team 2 Candidate — Vehicle Stability / Low-Friction Event
+## Function Team 2 — Tire Health Extension
 
-This is an independent architecture flow for the selected detailed-design
-candidate. It is **not** part of Scenario 1.1's `G0–G4` stage sequence and does
-not change that document's current acceptance state.
+This is an independent architecture flow accepted by ADR 0008. It is not part
+of the `G0–G4` Brake Health sequence and does not depend on Function Team 1.
 
-<a id="af-ft2-lc"></a>
-### `AF-FT2-LC` — Independent SOTA 2 lifecycle
+<a id="af-tire-lc"></a>
+### `AF-TIRE-LC` — Independent SOTA 2 lifecycle
 
 ```mermaid
 sequenceDiagram
     participant FT2 as Function Team 2 / Service Provider 2
     participant AC as AosCloud
     participant VU as Validation Unit
-    participant EB as Event Backend
+    participant TB as Tire Health Backend
     participant DU as Demonstration Unit
 
-    FT2->>AC: Select immutable Event Uploader requiring an already accepted capability version
+    FT2->>AC: Select immutable Tire Health service requiring an accepted capability version
     AC->>VU: Check dependency and install through SOTA 2
-    VU-->>FT2: Local event qualification and bounded-upload evidence
-    VU->>EB: Deliver qualified low-friction event package
+    VU-->>FT2: Local model, persistence, advisory, and bounded-report evidence
+    VU->>TB: Deliver qualified condition summary or threshold event
     FT2->>AC: Accept exact service version and scenario result
     AC->>DU: Promote identical SOTA 2 artifact
-    DU-->>AC: Event Uploader ready, other service lifecycles unchanged
+    DU-->>AC: Tire Health ready and other lifecycles unchanged
 ```
 
 Function Team 2 does not request a new Vehicle Data Platform Capability in the
-current demo. Its stage can be inserted only after the accepted platform
-contract already contains every required dynamics signal. It has no dependency
-on the Brake Health service and no vehicle-actuation permission.
+current demo. Its extension begins only after the accepted platform contract
+contains every required dynamics signal and typed advisory path.
 
-<a id="af-ft2-rt"></a>
-### `AF-FT2-RT` — Local detection and bounded event upload
+<a id="af-tire-rt"></a>
+### `AF-TIRE-RT` — Local condition estimation, advisory, and bounded reporting
 
 ```mermaid
 flowchart LR
-    FRICTION["CARLA stock low-friction zone"] --> DYNAMICS["Native vehicle + wheel dynamics"]
+    STIMULUS["Explicit accelerated or pre-aged tire stimulus"] --> DYNAMICS["Native vehicle and wheel dynamics"]
     DYNAMICS --> GW["Vehicle Gateway"] --> VISS["VISS"]
     VISS --> VDP["Accepted Vehicle Data Platform Capability"] --> KUKSA["KUKSA actual values"]
-    KUKSA --> EVENT["Vehicle Stability / Low-Friction Event Uploader"]
-    EVENT --> RULE["Local event state machine"]
-    RULE --> PACKAGE["Bounded pre/post event package"]
-    PACKAGE -->|"connected"| EB["Function Team 2 Event Backend"] --> ED["Event-Based Data Dashboard"]
+    KUKSA --> TIRE["Tire Health service"] --> MODEL["Bounded persistent condition model"]
+    MODEL --> RESULT["Estimated condition band and inspection decision"]
+    RESULT --> PACKAGE["Bounded summary or threshold event"]
+    PACKAGE -->|"connected"| TB["Tire Health Backend"] --> TD["Tire Health Function Dashboard"]
     PACKAGE -->|"offline"| QUEUE["Bounded local queue"]
-    QUEUE -. "reconnect" .-> EB
+    QUEUE -. "reconnect" .-> TB
+    RESULT -->|"typed advisory request"| TARGET["KUKSA advisory target"]
+    TARGET --> OUTBOUND["Allowlisted outbound VDP and VISS Set"] --> GWSTATUS["Gateway advisory status"]
 ```
 
-The candidate may analyze native CARLA speed, acceleration, steering,
-per-wheel angular velocity, longitudinal slip, and lateral slip angle, but the
-exact service-facing subset remains a detailed data-contract decision. CARLA
-ground truth may qualify the scenario and event detector; it must not be passed
-to the service as if it were a production vehicle sensor.
+The service may analyze native CARLA speed, acceleration, steering, applied
+controls, engine state, per-wheel angular velocity, longitudinal slip, and
+lateral slip angle. CARLA does not expose live tire tread wear, pressure,
+temperature, puncture health, load, force, or torque as production-equivalent
+measurements. The scenario therefore owns hidden deterministic degradation
+truth used only for qualification; neither the service nor its backend may
+receive it as a production signal.
 
-<a id="af-ft2-ob"></a>
-### `AF-FT2-OB` — Candidate evidence
+<a id="af-tire-ob"></a>
+### `AF-TIRE-OB` — Audience and engineering evidence
 
 | Surface | Required evidence |
 | --- | --- |
-| CARLA scene | Repeatable entry into and exit from the configured low-friction zone |
-| Engineering Dashboard | Source vehicle and wheel dynamics; no claim that this proves service detection |
+| CARLA scene | Repeatable driving with a clearly labelled accelerated/pre-aged tire condition |
+| Engineering Telematics Dashboard | Native source dynamics plus typed Tire Health advisory request and factual Gateway status; no exact tread-depth claim |
 | Software Delivery Dashboard | Independent Service Provider 2 identity, dependency, validation and promotion |
-| Event-Based Data Dashboard | Event time, severity/status, bounded package identity, Unit role, service version, online/offline delivery state |
-| ELK/log view | Selected local detection and queue state without leaking unrestricted raw telemetry |
+| Tire Health Function Dashboard | Estimated condition band, threshold event, bounded payload identity, Unit role, service/capability version, and online/offline delivery state |
+| ELK/log view | Selected model, persistence, queue and decision state without unrestricted raw telemetry or hidden truth |
 | Brake Health Dashboard | Unchanged; no coupling to Function Team 2 data plane |
 
-<a id="af-ft2-fr"></a>
-### `AF-FT2-FR` — Candidate failure boundaries
+<a id="af-tire-fr"></a>
+### `AF-TIRE-FR` — Failure boundaries
 
-- No event is emitted for stale, missing, or internally inconsistent mandatory
-  inputs; the service reports `NOT_EVALUATED` or an equivalent factual state.
-- Cloud/backend loss delays only upload; local detection continues.
-- Queue size, event rate, retry, and retention are bounded.
-- Duplicate upload is handled idempotently by the Event Backend.
+- Stale, missing, or inconsistent mandatory inputs produce `NOT_EVALUATED` or
+  equivalent factual state, not a fabricated health estimate.
+- Cloud/backend loss delays only reporting; local estimation and advisory
+  generation continue from bounded persistent state.
+- Queue size, summary/event rate, retry, retention, and state growth are bounded.
+- Duplicate upload is handled idempotently by the Tire Health Backend.
+- A Tire Health advisory can address only its own allowlisted target and cannot
+  command vehicle motion or arbitrary display text.
 - A Function Team 2 defect creates a new SOTA 2 artifact, not a Brake Health
-  SOTA or platform FOTA, unless evidence proves the platform contract itself is
-  defective.
+  SOTA or platform FOTA unless evidence proves the shared contract defective.
 
-### Function Team 2 qualification gate
+### Tire Health qualification gate
 
-Before adding this flow to an audience scenario:
+Before presenting this flow as a live stage:
 
-1. enumerate and verify the required native CARLA data on the packaged Mac
-   build;
-2. calibrate normal and low-friction runs using the same vehicle, speed,
-   steering/control profile and fixed simulation timing;
-3. prove a distinguishable and repeatable event across at least ten strict
-   resets;
-4. freeze the input subset, event state machine, thresholds, confidence,
-   bounded window and package schema;
-5. prove the required signals already exist in an accepted Vehicle Data
-   Platform Capability;
-6. define the independent backend/dashboard and offline acceptance evidence;
-7. revise Demo Scenario 1.1 before presenting this candidate as a live stage.
+1. freeze the service-facing native signal subset on the packaged Mac build;
+2. define and label the accelerated-time or pre-aged degradation stimulus;
+3. freeze the versioned persistent-state model, condition bands, confidence,
+   advisory thresholds, bounded payload and offline limits;
+4. prove repeatable healthy-to-inspection transitions across at least ten
+   strict scenario resets and separately prove state continuity across service
+   restart;
+5. prove hidden degradation truth is unavailable through VISS, KUKSA, service
+   payloads, backend data, and audience dashboards;
+6. prove the required signals and typed advisory target exist in an accepted
+   Vehicle Data Platform Capability;
+7. qualify the independent backend/dashboard, idempotency and reconnect flow.
+
+### Retired Function Team 2 flow identifiers
+
+| Retired identifier | Replacement | Reason |
+| --- | --- | --- |
+| <a id="af-ft2-lc"></a>`AF-FT2-LC` | `AF-TIRE-LC` | Low-Friction candidate superseded by ADR 0008 |
+| <a id="af-ft2-rt"></a>`AF-FT2-RT` | `AF-TIRE-RT` | Low-Friction candidate superseded by ADR 0008 |
+| <a id="af-ft2-ob"></a>`AF-FT2-OB` | `AF-TIRE-OB` | Low-Friction candidate superseded by ADR 0008 |
+| <a id="af-ft2-fr"></a>`AF-FT2-FR` | `AF-TIRE-FR` | Low-Friction candidate superseded by ADR 0008 |
 
 <a id="af-x-source"></a>
 ## `AF-X-SOURCE` — One Visible Vehicle Source, Two Unit Roles
@@ -851,7 +864,7 @@ flowchart LR
     AC --> SW["Software Delivery Dashboard"]
     UNIT -->|"selected operational logs"| LP["AosEdge log pipeline"] --> ELK["ELK"]
     BHS["Brake Health service"] --> BB["Brake Health Backend"] --> BD["Brake Health Dashboard"]
-    EVENT["Event Uploader"] --> EB["Event Backend"] --> ED["Event-Based Data Dashboard"]
+    TIRE["Tire Health service"] --> TB["Tire Health Backend"] --> TD["Tire Health Function Dashboard"]
 ```
 
 | Surface | Authoritative for | Not authoritative for |
@@ -862,7 +875,7 @@ flowchart LR
 | Software Delivery Dashboard | Simplified presentation and approved orchestration of real AosCloud state | A parallel desired-state database |
 | ELK | Selected operational and troubleshooting records | Vehicle telemetry or functional product database |
 | Brake Health Dashboard | Brake Health backend data, model result, report state | FOTA/SOTA authority or Gateway receipt |
-| Event-Based Data Dashboard | Function Team 2 event/backend state | Raw continuous vehicle stream or Brake Health result |
+| Tire Health Function Dashboard | Function Team 2 condition/event/backend state | Raw continuous vehicle stream, hidden simulation truth, or Brake Health result |
 
 Every audience claim must name the source surface and, where relevant, expose
 technical drill-down to the authoritative system.
@@ -897,7 +910,7 @@ Three connections must be tested independently:
 | Lost connection | Must continue | May be delayed or unavailable |
 | --- | --- | --- |
 | AosCloud lifecycle connection | CARLA, Gateway, KUKSA, installed provider/service local behavior | New deployments, lifecycle reporting, Cloud-requested logs |
-| Functional backend connection | Local Brake Health inference/advisory; local Function Team 2 detection | Functional report/event upload and dashboard refresh |
+| Functional backend connection | Local Brake Health inference/advisory; local Tire Health estimation/advisory | Functional report/event upload and dashboard refresh |
 | Gateway-to-Domain-Controller vehicle link | CARLA and safe vehicle control; AosCore lifecycle | Fresh KUKSA vehicle values and dependent evaluation |
 
 The system must not convert one connectivity loss into fabricated sensor data,
@@ -964,7 +977,7 @@ vehicle rollback or proof of a fleet-wide deletion policy.
 
 ## Scenario-to-Flow Traceability
 
-| Demo Scenario 1.1 claim | Architecture flow coverage |
+| Demo Scenario 1.2 claim | Architecture flow coverage |
 | --- | --- |
 | OEM-integrated SOP substrate enables post-SOP extension | `AF-M0-LC`, `AF-G0-RT` |
 | Two freshly manufactured, unprovisioned vehicle computers | `AF-M0-LC`, `AF-M0-OB` |
@@ -980,8 +993,9 @@ vehicle rollback or proof of a fleet-wide deletion policy.
 | Functional report synchronizes after connectivity returns | `AF-G4-RT`, `AF-G4-FR`, `AF-X-OFFLINE` |
 | Two Unit roles do not imply two simultaneous CARLA vehicles | `AF-X-SOURCE` |
 | Complete reset retires current identities and overlays | `AF-R0-LC`, `AF-R0-OB`, `AF-R0-FR` |
-| Function Team 2 is a peer independent Service Provider | `AF-FT2-LC`, `AF-FT2-FR` |
-| Low-friction analytics occurs locally and only bounded events reach its backend | `AF-FT2-RT`, `AF-FT2-OB`, `AF-X-OFFLINE` |
+| Function Team 2 is a peer independent Service Provider | `AF-TIRE-LC`, `AF-TIRE-FR` |
+| Tire condition is estimated locally and only bounded results reach its backend | `AF-TIRE-RT`, `AF-TIRE-OB`, `AF-X-OFFLINE` |
+| Tire inspection advisory reaches the Gateway without a Cloud round trip | `AF-TIRE-RT`, `AF-TIRE-FR`, `AF-X-OFFLINE` |
 
 ## Interface and Ownership Matrix
 
@@ -990,12 +1004,12 @@ vehicle rollback or proof of a fleet-wide deletion policy.
 | CARLA vehicle and native sensor state | `CARLA` | `GATEWAY` | Vehicle simulation |
 | Vehicle control channel | `CONTROL` | `GATEWAY` / CARLA actuator path | Gateway tooling; separate from VDP |
 | VISS vehicle telemetry | `GATEWAY` / `VISS` | `VDP` and independent `ENG-DASH` | Gateway contract |
-| KUKSA actual values | `VDP` | `BHS` and, later, `EVENT` | Platform FOTA contract |
-| Brake Health advisory target | `BHS` | outbound `VDP` | SOTA request constrained by FOTA allowlist |
+| KUKSA actual values | `VDP` | `BHS` and `TIRE` | Platform FOTA contract |
+| Typed maintenance advisory target | `BHS` or `TIRE` | outbound `VDP` | Each SOTA request constrained by its FOTA allowlist entry |
 | VISS Set advisory | outbound `VDP` | `GW-ADV` | Platform FOTA + Gateway contract |
 | Gateway advisory status | `GW-ADV` / `VISS` | `ENG-DASH` and inbound `VDP` as selected | Gateway contract |
 | Brake Health functional report | `BHS` | `BRAKE-BE` / `BRAKE-DASH` | Function Team 1 SOTA/backend |
-| Low-friction event package | `EVENT` | `EVENT-BE` / `EVENT-DASH` | Function Team 2 SOTA/backend |
+| Tire Health summary/event | `TIRE` | `TIRE-BE` / `TIRE-DASH` | Function Team 2 SOTA/backend |
 | Unit desired/actual state | `AOS-CLOUD` / `AOS-CORE` | `SW-DASH` | AosCloud lifecycle |
 | Selected operational logs | Components/services through `LOG-PIPE` | `ELK` | Operational observability |
 
@@ -1017,9 +1031,9 @@ vehicle control or software lifecycle authority.
 | <a id="gap-af-09"></a>`GAP-AF-09` | Deterministic brake model | `G3` | Define simulated brake-condition source and deterministic model/result contract | Vehicle simulation + Function Team 1 |
 | <a id="gap-af-10"></a>`GAP-AF-10` | Outbound advisory chain | `G4` | Define and implement KUKSA actuator, outbound provider, VISS Set, Gateway handler and factual status | Platform Team + Gateway |
 | <a id="gap-af-11"></a>`GAP-AF-11` | Offline report queue | `G4/X-OFFLINE` | Define bounded local report queue, reconnect, duplicate handling and timing | Function Team 1 |
-| <a id="gap-af-12"></a>`GAP-AF-12` | Low-friction event contract | `FT2` | Calibrate low-friction CARLA stimulus and freeze the local event state machine and bounded package | Function Team 2 + CARLA scenario |
-| <a id="gap-af-13"></a>`GAP-AF-13` | Existing dynamics-signal proof | `FT2` | Prove required dynamics signals already exist in an accepted platform contract; no new FT2 platform request | Platform Team + Function Team 2 |
-| <a id="gap-af-14"></a>`GAP-AF-14` | Function Team 2 Cloud product | `FT2` | Implement independent event backend/dashboard and offline/idempotent ingestion | Function Team 2 |
+| <a id="gap-af-21"></a>`GAP-AF-21` | Tire condition model and stimulus | `TIRE` | Freeze the native input subset, explicit accelerated/pre-aged degradation stimulus, persistent state, condition bands, thresholds, bounded payload and hidden qualification oracle | Function Team 2 + CARLA scenario |
+| <a id="gap-af-22"></a>`GAP-AF-22` | Tire advisory contract | `TIRE` | Define and prove the typed KUKSA-to-VISS-to-Gateway Tire Health advisory and factual status without vehicle-motion or production-HMI authority | Platform Team + Function Team 2 + Gateway |
+| <a id="gap-af-23"></a>`GAP-AF-23` | Tire Health Cloud product | `TIRE` | Implement independent Tire Health backend/dashboard and offline/idempotent ingestion of bounded summaries/events | Function Team 2 |
 | <a id="gap-af-15"></a>`GAP-AF-15` | Least-privilege KUKSA access | all | Define least-privilege KUKSA publish/read/actuate identities and the transition from demo tokens to the authorization adapter | Platform security |
 | <a id="gap-af-16"></a>`GAP-AF-16` | Logs and ELK qualification | all | Qualify AosEdge log collection/export, ELK access, retention, offline and redaction | Operational observability |
 | <a id="gap-af-17"></a>`GAP-AF-17` | Software Delivery Dashboard | all | Implement the Software Delivery Dashboard without a parallel desired-state cache | Demo solution |
@@ -1031,25 +1045,35 @@ These gaps are inputs to the requirements package. They do not authorize
 component implementation and do not imply that every gap belongs in one
 repository.
 
+### Retired Architecture-Flow Gaps
+
+The following former candidate gaps remain resolvable but are no longer active:
+
+| Retired gap | Replacement | Reason |
+| --- | --- | --- |
+| <a id="gap-af-12"></a>`GAP-AF-12` | `GAP-AF-21` | Low-Friction candidate superseded by ADR 0008 |
+| <a id="gap-af-13"></a>`GAP-AF-13` | `GAP-AF-21` | Former dynamics-signal proof folded into the Tire Health model contract |
+| <a id="gap-af-14"></a>`GAP-AF-14` | `GAP-AF-23` | Former event Cloud product replaced by Tire Health Cloud product |
+
 ## Architecture-Flow Acceptance Gate
 
-Architecture Flows 1.0 can be accepted when reviewers confirm that:
+Architecture Flows 1.1 can be accepted when reviewers confirm that:
 
-1. `M0`, `M1`, `G0–G4`, and `R0` match Demo Scenario 1.1;
-2. every component and interface respects High-Level Architecture 1.1;
+1. `M0`, `M1`, `G0–G4`, and `R0` match Demo Scenario 1.2;
+2. every component and interface respects High-Level Architecture 1.2;
 3. VU validation and DU promotion use explicit current targeting and identical
    accepted artifacts;
 4. manufacturing state, Unit identity, software graph, functional data, and
    operational logs have distinct authorities;
 5. the one-CARLA/two-Unit limitation is explicit and not disguised;
-6. local inference/advisory and low-friction detection remain independent of
-   Cloud availability;
+6. Brake and Tire Health local inference/advisory remain independent of Cloud
+   availability;
 7. no flow claims a production driver HMI, production fleet, arbitrary
    component runtime, or unrestricted vehicle actuation;
 8. R0 retires disposable identities and overlays instead of rolling `G4` back
    to `G0`;
-9. Function Team 2 remains an independent candidate flow and does not silently
-   enter Scenario 1.1;
+9. Function Team 2 remains an independent Tire Health flow and does not
+   silently enter the `G0–G4` Brake Health sequence;
 10. every open technical choice is represented as a gap rather than a hidden
     implementation assumption.
 11. `AF-G3-DEP` is visibly deferred, has no project-side substitute, and cannot
@@ -1060,7 +1084,7 @@ Architecture Flows 1.0 can be accepted when reviewers confirm that:
 After this document is accepted, requirements should be derived in this order:
 
 1. end-to-end system requirements for every `AF-*` flow;
-2. versioned vehicle-data, advisory, functional-report, and low-friction event
+2. versioned vehicle-data, typed advisory, and functional-report/event
    interface requirements;
 3. manufacturing, identity, provisioning, targeting, dependency, validation,
    promotion, rollback, retirement, and recovery requirements;

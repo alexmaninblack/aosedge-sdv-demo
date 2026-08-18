@@ -15,7 +15,7 @@ must agree.
 | Vehicle control, CARLA sampling, VSS/VISS, engineering dashboard or deterministic scenario | `carla-ego-runtime` | Vehicle Gateway/demo tooling |
 | Factory-image integration, provider runtime, KUKSA platform contract or Vehicle Data Platform Capability | `aos-vehicle-platform` | Platform Team / FOTA |
 | Brake Health in-vehicle analytics | `brake-health-service` | Function Team 1 / SOTA |
-| Vehicle Stability low-friction analytics | future peer service repository | Function Team 2 / independent SOTA |
+| Tire Health condition estimation, bounded reporting and inspection advisory | future `tire-health-service` | Function Team 2 / independent SOTA |
 | Software Delivery Dashboard, demo orchestration, cross-component contract or end-to-end qualification | `aosedge-sdv-demo` | solution integration |
 | Unreal Engine compatibility required by CARLA | restricted Unreal fork | maintained Apple Silicon dependency branch |
 
@@ -33,8 +33,8 @@ because it is convenient.
 3. Check the relevant runtime and lifecycle sequence in
    [Architecture Flows](../architecture/demo-scenario-architecture-flows.md).
 4. Confirm that the change still fits
-   [High-Level Architecture 1.1](../architecture/high-level-architecture.md)
-   and [Demo Scenario 1.1](../demo/staged-post-sop-brake-health-demo-scenarios.md).
+   [High-Level Architecture 1.2](../architecture/high-level-architecture.md)
+   and [Demo Scenario 1.2](../demo/staged-post-sop-brake-health-demo-scenarios.md).
 
 If the proposed behavior does not fit, change and review the owning design
 document first. A downstream implementation must not silently redefine an

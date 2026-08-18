@@ -14,6 +14,7 @@ they do not replace the current HLA.
 - [ADR 0005: Keep the CARLA Adapter Inside AosVM](0005-kuksa-vehicle-data-boundary.md)
 - [ADR 0006: Separate Platform and Service Repositories by Lifecycle](0006-lifecycle-based-repository-ownership.md)
 - [ADR 0007: Solution Documentation Home](0007-solution-documentation-home.md)
+- [ADR 0008: Use Tire Health for Function Team 2](0008-use-tire-health-for-function-team-2.md)
 
 The change process and stable-reference rules are defined in
 [Documentation and Requirements Management](../../governance/documentation-and-requirements-management.md).

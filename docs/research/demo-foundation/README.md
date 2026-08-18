@@ -31,7 +31,7 @@ changes.
 | R7 | Functional Cloud contract and offline operation | [R7](r7-functional-cloud-and-offline.md) |
 | R8 | AosEdge logging and ELK integration | [R8](r8-logging-and-elk.md) |
 | R9 | Demo dashboards and AosCloud API feasibility | [R9](r9-demo-dashboards-and-apis.md) |
-| R10 | Native CARLA vehicle telemetry inventory and Function Team 2 input | [R10](r10-carla-telemetry-and-function-team-2.md) |
+| R10 | Native CARLA telemetry inventory and Tire Health design evidence | [R10](r10-carla-telemetry-and-function-team-2.md) |
 
 The sanitized
 [Automotive Orchestration Coverage Matrix](automotive-orchestration-coverage-matrix.md)
