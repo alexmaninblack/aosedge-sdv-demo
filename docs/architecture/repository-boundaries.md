@@ -49,6 +49,8 @@ remain the stable service boundary.
 | `aos-vehicle-platform` | vehicle-data contract, provider, Service Manager runtime, KUKSA integration, future authorization adapter | OEM platform/FOTA |
 | `brake-health-service` | Function Team 1 Brake Health consumer and local analytics | Service Provider 1/SOTA 1 |
 | `tire-health-service` | Function Team 2 local tire-condition estimation, bounded reporting, offline state and typed inspection advisory | Service Provider 2/SOTA 2; accepted boundary, repository not yet created |
+| `brake-health-cloud` | Function Team 1 backend and Brake Health Function Dashboard | Function Team 1 Cloud product; accepted boundary, repository not yet created |
+| `tire-health-cloud` | Function Team 2 backend and Tire Health Function Dashboard | Function Team 2 Cloud product; accepted boundary, repository not yet created |
 | `aosedge-sdv-demo` | macOS VM lifecycle, provisioning, locks, orchestration, system documentation, and end-to-end qualification | solution/demo baseline |
 
 The integration repository may pin and qualify every component, but it does
@@ -59,7 +61,8 @@ The planned Function Team 2 repository is intentionally not present in the
 machine-readable workspace contract until its license, initial scaffold and
 accepted revision are reviewed. Its name and in-vehicle SOTA ownership
 boundary are already accepted. Functional backends and dashboards are
-separate products; their repository layout is not decided by this boundary.
+separate products: each Function Team owns one planned Cloud-product
+repository, distinct from its in-vehicle SOTA repository.
 
 ## Trust and Network Boundary
 

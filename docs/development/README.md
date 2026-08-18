@@ -16,13 +16,15 @@ must agree.
 | Factory-image integration, provider runtime, KUKSA platform contract or Vehicle Data Platform Capability | `aos-vehicle-platform` | Platform Team / FOTA |
 | Brake Health in-vehicle analytics | `brake-health-service` | Function Team 1 / SOTA |
 | Tire Health condition estimation, bounded reporting and inspection advisory | planned `tire-health-service` | Function Team 2 / independent SOTA |
+| Brake Health backend or Function Dashboard | planned `brake-health-cloud` | Function Team 1 Cloud product |
+| Tire Health backend or Function Dashboard | planned `tire-health-cloud` | Function Team 2 Cloud product |
 | Software Delivery Dashboard, demo orchestration, cross-component contract or end-to-end qualification | `aosedge-sdv-demo` | solution integration |
 | Unreal Engine compatibility required by CARLA | restricted Unreal fork | maintained Apple Silicon dependency branch |
 
 Backends and function dashboards are separate from their in-vehicle SOTA
-containers. Their final repository allocation is intentionally unresolved in
-the current Component Register; do not place them in this repository merely
-because it is convenient.
+containers. Each Function Team backend and dashboard share its planned Cloud
+repository; do not place them in this solution repository merely because it is
+convenient.
 
 ## Read Before Changing an Interface
 

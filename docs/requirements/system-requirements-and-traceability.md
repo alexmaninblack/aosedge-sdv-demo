@@ -79,6 +79,8 @@ separate source and SOTA lifecycles.
 | `aos-vehicle-platform` | Shared Vehicle Data Platform Capability, KUKSA integration, provider runtime and authorization adapter | Platform FOTA | Existing |
 | `brake-health-service` | Function Team 1 on-board Brake Health application and local inference | Service Provider 1 / SOTA 1 | Existing |
 | `tire-health-service` | Function Team 2 on-board tire-condition estimation, bounded reporting and inspection advisory | Service Provider 2 / SOTA 2 | **Proposed repository** |
+| `brake-health-cloud` | Function Team 1 backend and Function Dashboard | Function Team 1 Cloud product | **Planned repository** |
+| `tire-health-cloud` | Function Team 2 backend and Function Dashboard | Function Team 2 Cloud product | **Planned repository** |
 | `aosedge-sdv-demo` | Cross-repository orchestration, dashboards, system requirements and end-to-end qualification | Demo solution | Existing |
 
 The proposed Function Team 2 repository shall not own CARLA integration,
@@ -87,8 +89,9 @@ provisioning, or AosCloud desired state. It consumes only an accepted,
 versioned KUKSA contract.
 
 The Function Team 1 and Function Team 2 backends and dashboards are distinct
-functional products. Their final repository layout remains a later decision;
-they must not be silently placed inside either in-vehicle service repository.
+functional products. Each backend and its dashboard share one Cloud-product
+repository, `brake-health-cloud` or `tire-health-cloud`, and must not be placed
+inside either in-vehicle service repository.
 
 The proposed repository is not added to `workspace/repositories.json` until it
 exists and its initial accepted revision is available. This preserves the

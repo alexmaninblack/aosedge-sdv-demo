@@ -142,8 +142,8 @@ component runtime.
 | ID | Component | Responsibility | Owner and lifecycle | Source boundary | State |
 | --- | --- | --- | --- | --- | --- |
 | <a id="cmp-bhs"></a>`CMP-BHS` | Brake Health In-Vehicle Service | Read the accepted KUKSA contract, perform local analysis, retain bounded reports and request the allowlisted advisory | Function Team 1 / Service Provider 1; SOTA 1 | `brake-health-service` | Scaffold `CURRENT`; product behavior `NEW` |
-| <a id="cmp-brake-be"></a>`CMP-BRAKE-BE` | Brake Health Backend | Idempotent report ingestion, persistence and API for functional results | Function Team 1; functional Cloud product | Repository decision pending | `NEW` |
-| <a id="cmp-brake-dash"></a>`CMP-BRAKE-DASH` | Brake Health Function Dashboard | Present Brake Health inputs, local result, service/capability versions and online/offline delivery state from the backend | Function Team 1; functional Cloud product | Repository decision pending | `NEW` |
+| <a id="cmp-brake-be"></a>`CMP-BRAKE-BE` | Brake Health Backend | Idempotent report ingestion, persistence and API for functional results | Function Team 1; functional Cloud product | Planned `brake-health-cloud` | `NEW` |
+| <a id="cmp-brake-dash"></a>`CMP-BRAKE-DASH` | Brake Health Function Dashboard | Present Brake Health inputs, local result, service/capability versions and online/offline delivery state from the backend | Function Team 1; functional Cloud product | Planned `brake-health-cloud` | `NEW` |
 
 The backend and dashboard are not part of the in-vehicle SOTA artifact and do
 not participate in the time-critical local advisory decision.
@@ -153,8 +153,8 @@ not participate in the time-critical local advisory decision.
 | ID | Component | Responsibility | Owner and lifecycle | Source boundary | State |
 | --- | --- | --- | --- | --- | --- |
 | <a id="cmp-tire"></a>`CMP-TIRE` | Tire Health In-Vehicle Service | Maintain a bounded persistent tire-condition estimate from the accepted KUKSA contract, create bounded reports/events, and request the typed inspection advisory | Function Team 2 / Service Provider 2; SOTA 2 | Proposed `tire-health-service` | `NEW` |
-| <a id="cmp-tire-be"></a>`CMP-TIRE-BE` | Tire Health Backend | Idempotent condition-summary/event ingestion, persistence and API | Function Team 2; functional Cloud product | Repository decision pending | `NEW` |
-| <a id="cmp-tire-dash"></a>`CMP-TIRE-DASH` | Tire Health Function Dashboard | Present condition band, event state, service/capability version, Unit role and delivery status from the Tire Health backend | Function Team 2; functional Cloud product | Repository decision pending | `NEW` |
+| <a id="cmp-tire-be"></a>`CMP-TIRE-BE` | Tire Health Backend | Idempotent condition-summary/event ingestion, persistence and API | Function Team 2; functional Cloud product | Planned `tire-health-cloud` | `NEW` |
+| <a id="cmp-tire-dash"></a>`CMP-TIRE-DASH` | Tire Health Function Dashboard | Present condition band, event state, service/capability version, Unit role and delivery status from the Tire Health backend | Function Team 2; functional Cloud product | Planned `tire-health-cloud` | `NEW` |
 
 Function Team 2 is a peer of Function Team 1. Its service, backend, dashboard,
 identity and SOTA lifecycle must not be placed inside the Brake Health product
@@ -198,8 +198,8 @@ The same accepted artifact bytes and digest move from `VU` qualification to
 | `aos-vehicle-platform` | `CMP-FACTORY` assembly source, `CMP-RUNTIME`, `CMP-VDP`, future `CMP-KUKSA-AUTH`, `CMP-KUKSA` contract/configuration | Platform Team source and FOTA boundary; immutable Factory Image output remains outside Git. |
 | `brake-health-service` | `CMP-BHS` | Function Team 1 in-vehicle SOTA source only. |
 | Proposed `tire-health-service` | `CMP-TIRE` | Function Team 2 in-vehicle SOTA source only; repository not yet created. |
-| Future Function Team 1 Cloud repository | `CMP-BRAKE-BE`, `CMP-BRAKE-DASH` | Name and whether backend/dashboard share one repository require review. |
-| Future Function Team 2 Cloud repository | `CMP-TIRE-BE`, `CMP-TIRE-DASH` | Name and whether backend/dashboard share one repository require review. |
+| Planned `brake-health-cloud` | `CMP-BRAKE-BE`, `CMP-BRAKE-DASH` | One Function Team 1 Cloud-product repository, separate from the in-vehicle SOTA source; repository not yet created. |
+| Planned `tire-health-cloud` | `CMP-TIRE-BE`, `CMP-TIRE-DASH` | One Function Team 2 Cloud-product repository, separate from the in-vehicle SOTA source; repository not yet created. |
 | `aosedge-sdv-demo` | `CMP-SW-DASH`, `CMP-ORCH`, cross-component contracts, qualification and system documentation | Solution integration; must not absorb component product source. |
 | AosEdge/AosCloud | `CMP-AOS-CORE`, `CMP-AOS-CLOUD`, base `CMP-LOG-PIPE` mechanisms | External platform dependency. |
 | OEM operational deployment | `CMP-ELK` and deployment-specific log integration | External environment; configuration ownership still requires a decision. |
@@ -546,9 +546,10 @@ Delivery Dashboard.
    selected by ADR 0008. Its in-vehicle SOTA 2 source belongs in the future
    `tire-health-service` repository; backend and dashboard remain separate
    Cloud-product components.
-4. **Open:** decide whether each functional backend and dashboard share one
-   Cloud-product repository. The recommendation is one repository per Function
-   Team Cloud product, separate from its in-vehicle SOTA repository.
+4. **Accepted 2026-08-18:** each Function Team owns one Cloud-product
+   repository containing its backend and dashboard: `brake-health-cloud` and
+   `tire-health-cloud`. Each remains separate from the corresponding
+   in-vehicle SOTA repository.
 5. **Open:** confirm that `CMP-SW-DASH` and `CMP-ORCH` remain solution
    components in `aosedge-sdv-demo` rather than becoming lifecycle authorities.
 6. **Open:** decide where deployment-specific `CMP-LOG-PIPE` to `CMP-ELK`

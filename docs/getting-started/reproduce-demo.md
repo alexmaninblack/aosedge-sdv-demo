@@ -36,8 +36,9 @@ workspace/
 
 The planned `tire-health-service` checkout is intentionally not shown because
 its name and in-vehicle SOTA boundary are accepted, but the repository has not
-yet been created and qualified. Functional Cloud product repositories are
-also not shown because their allocation remains an open design decision.
+yet been created and qualified. The planned `brake-health-cloud` and
+`tire-health-cloud` repositories are also omitted because their boundaries are
+accepted but neither repository has been created or qualified.
 
 The machine-readable workspace contract is
 [`workspace/repositories.json`](../../workspace/repositories.json). From the

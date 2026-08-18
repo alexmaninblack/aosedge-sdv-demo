@@ -73,9 +73,10 @@ A downstream document may not silently redefine an upstream decision.
 
 Confirm component names, responsibilities, current/target state, interfaces,
 owners, lifecycles and repository candidates. The Vehicle Gateway boundary and
-Tire Health service boundary are accepted. Remaining review concerns are the
-functional Cloud repositories, Software Delivery Dashboard, Demo Orchestrator,
-logging integration and deferred authorization adapter.
+Tire Health service boundary are accepted, as is one backend-plus-dashboard
+Cloud repository per Function Team. Remaining review concerns are the Software
+Delivery Dashboard, Demo Orchestrator, logging integration and deferred
+authorization adapter.
 
 Exit: Component Decomposition and Interface Register 0.2 is accepted or
 returned with explicit corrections.
