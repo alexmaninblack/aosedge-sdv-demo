@@ -48,7 +48,7 @@
       "visibility": "public",
       "repository": "https://github.com/alexmaninblack/aos-vehicle-platform.git",
       "remote": "origin",
-      "acceptedRevision": "18a17bb53f141342b6b143395c8478fd6fc66d3d",
+      "acceptedRevision": "15b6abb7562b4d0fd4628817e1046ea95b047a0c",
       "acceptedBranches": ["main"],
       "allowedDirtyPaths": []
     },
@@ -59,7 +59,7 @@
       "visibility": "public",
       "repository": "https://github.com/alexmaninblack/brake-health-service.git",
       "remote": "origin",
-      "acceptedRevision": "dfaff4af63b59d6eb4c7878f6d13ff67adf3fe98",
+      "acceptedRevision": "04abe5bacc47e849c6a6fe4fccb64e8a15157d8f",
       "acceptedBranches": ["main"],
       "allowedDirtyPaths": []
     }
