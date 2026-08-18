@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: 2026 maninblack -->
+<!-- SPDX-License-Identifier: MIT -->
+
 # ADR 0001: Repository and Artifact Boundaries
 
 - Status: Superseded in part by ADR 0006

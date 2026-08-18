@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: 2026 maninblack -->
+<!-- SPDX-License-Identifier: MIT -->
+
 # ADR 0002: Run AosVM as a QEMU System VM with HVF
 
 - Status: Accepted for AOS-0

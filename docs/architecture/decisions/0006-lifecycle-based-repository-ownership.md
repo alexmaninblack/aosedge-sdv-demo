@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: 2026 maninblack -->
+<!-- SPDX-License-Identifier: MIT -->
+
 # ADR 0006: Separate Platform and Service Repositories by Lifecycle
 
 - Status: Accepted and implemented

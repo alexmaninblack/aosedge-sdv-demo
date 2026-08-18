@@ -109,7 +109,9 @@ caches live outside Git and are deliberately preserved for incremental builds.
 ## Documentation
 
 - [Documentation map](docs/README.md)
-- [High-Level Architecture 1.0](docs/architecture/high-level-architecture.md)
+- [High-Level Architecture 1.1 — review candidate](docs/architecture/high-level-architecture.md)
+- [System Requirements and Traceability 0.1 — review candidate](docs/requirements/system-requirements-and-traceability.md)
+- [Component Decomposition and Interface Register 0.1 — review candidate](docs/requirements/component-decomposition-and-interface-register.md)
 - [R9 Demo Foundation Research](docs/research/demo-foundation/README.md)
 - [Current accepted baseline](docs/qualification/current-baseline.md)
 - [Roadmap and next gates](docs/planning/roadmap.md)
@@ -123,8 +125,10 @@ retains them when forensic detail is needed.
 ## Security and License
 
 Never commit private keys, certificates, tokens, provisioned identities, VM
-overlays, signing output, or raw operational logs. Public evidence must remain
-sanitized and reproducible.
+overlays, signing output, raw operational logs, or customer/OEM source
+material. The prohibition on confidential source material also applies to
+private repositories. Public evidence must remain sanitized and reproducible;
+see [confidential source handling](docs/governance/confidential-source-handling.md).
 
 Original integration work is MIT-licensed under the exact copyright name
 `maninblack`. Platform and service repositories use Apache-2.0. Third-party

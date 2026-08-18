@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: 2026 maninblack -->
+<!-- SPDX-License-Identifier: MIT -->
+
 # Run AosVM on an Apple Silicon Mac
 
 This guide creates a new, independent AosVM 6.1.0 Main Node on an Apple

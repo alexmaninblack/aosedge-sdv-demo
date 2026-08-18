@@ -38,6 +38,15 @@ credentials/
 id_rsa
 id_ed25519
 
+# Confidential or customer-provided source material. Canonical inputs belong
+# outside every Git worktree; only reviewed, sanitized derivatives are allowed.
+private-inputs/
+customer-inputs/
+confidential-inputs/
+*.customer-confidential.*
+*[Kk]3[Ss]*[Ii]ssue*[Cc]overage*.xlsx
+*[Pp]o[Cc]*[Cc]overage*260728*.xlsx
+
 # Language and tool output
 __pycache__/
 *.py[cod]

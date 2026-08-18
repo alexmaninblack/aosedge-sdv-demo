@@ -62,6 +62,19 @@ derived from Cloud records plus Unit-reported actual state.
 | Stopping a campaign or invalidating a batch prevents further delivery; it does not prove rollback of Units that already applied the update. | **PROVEN limitation** |
 | Service versions and component sequences are monotonic; committed lower-version component installation is not documented as a supported downgrade. | **PROVEN limitation** |
 
+## Platform roadmap update — 2026-08-18
+
+The AosEdge Platform Team stated that native Service-to-FOTA-component
+dependency enforcement is on the platform roadmap but is not implemented in
+the current release. No implementing release or delivery date was committed.
+This is stakeholder roadmap input, not released-API evidence.
+
+The project therefore keeps the native pre-deployment rejection scenario in
+the target demo design but defers its execution. It will not add a temporary
+Software Delivery Dashboard admission controller. Service-side compatibility
+metadata and fail-closed readiness remain the current defense-in-depth
+mechanism until the native Cloud capability is released and qualified.
+
 ## Honest G0–G4 representation
 
 | Stage | Cloud-derived definition |

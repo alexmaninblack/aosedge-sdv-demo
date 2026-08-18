@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: 2026 maninblack -->
+<!-- SPDX-License-Identifier: MIT -->
+
 # ADR 0005: Keep the CARLA Adapter Inside AosVM
 
 - Status: Accepted for prototype planning

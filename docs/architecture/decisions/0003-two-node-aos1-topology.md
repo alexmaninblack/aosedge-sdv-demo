@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: 2026 maninblack -->
+<!-- SPDX-License-Identifier: MIT -->
+
 # ADR 0003: Use the Official Two-Node AosVM Topology in AOS-1
 
 - Status: Superseded by ADR 0004

@@ -3,6 +3,11 @@
 
 # R9 Demo Foundation — Integrated Research Summary
 
+> Status: completed research evidence. References to Scenario 1.0 and a
+> `G4`-to-`G0` reset describe hypotheses evaluated by this research pass, not
+> the current design. Current decisions are owned by High-Level Architecture
+> 1.1, Demo Scenario 1.1, Architecture Flows 1.0 and the requirements set.
+
 Status: **research checkpoint complete; decisions require review; implementation
 not authorized**.
 
@@ -28,6 +33,12 @@ issues that must be resolved before implementation resumes:
 
 These do not invalidate the HLA. They change the implementation order and the
 language used to describe current versus target capability.
+
+The sanitized
+[Automotive Orchestration Coverage Matrix](automotive-orchestration-coverage-matrix.md)
+adds twenty-one automotive proof obligations to this implementation sequence
+and provides the machine-readable input for the Software Delivery Dashboard.
+Its confidential OEM source remains outside every Git repository.
 
 ## Workstream decisions
 
@@ -62,8 +73,10 @@ AosCloud lifecycle for each release
 
 No service is considered ready merely because the container runs. Each Sn must
 fail closed until its required Pn contract is present and compatible. Until a
-native Service-to-FOTA dependency is proven, ordering plus runtime readiness
-and an exact accepted graph manifest form the dependency policy.
+native Service-to-FOTA dependency is released and qualified, provider-first
+ordering, runtime readiness and an exact accepted graph manifest form the
+current dependency policy. They do not implement or simulate Cloud admission;
+the negative rejection scenario remains deferred.
 
 ### Vehicle and functional data plane
 
@@ -220,7 +233,7 @@ promotion and reset on that Unit.
 | Verification Batch target follows current Unit Set | Compare actual pending recipients; stale batches can retain obsolete targets |
 | Reverse provider rollback/remove returns G4 to G0 | Required outcome, mechanism unproven; test forward reset and snapshot fallback |
 | Configured ELK view is an inherent platform feature | AosEdge Cloud log transport is proven; ELK export is a separate integration |
-| Service dependency on provider is Cloud-enforced | No documented Service-to-FOTA dependency; use order/readiness until proven |
+| Service dependency on provider is Cloud-enforced | Current release has no documented Service-to-FOTA dependency. Platform Team reports it as roadmap work; defer the native rejection demo, use provider-first ordering and fail-closed service readiness, and add no custom admission gate |
 | Service artifact digest is always available | Component SHA-256 is public; service OCI digest needs live confirmation |
 | Any large brake command can populate ABS/EBA/driver-emergency paths | Preserve standard semantics; derive demo event or use explicit overlay |
 

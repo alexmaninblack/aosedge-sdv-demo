@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: 2026 maninblack -->
+<!-- SPDX-License-Identifier: MIT -->
+
 # ADR 0004: Start AOS-1 with One Main Node
 
 - Status: Accepted for AOS-1; supersedes ADR 0003

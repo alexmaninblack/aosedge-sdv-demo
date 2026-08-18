@@ -132,7 +132,7 @@ not edit the accepted HLA, scenario, or implementation plan.
 ## Sources
 
 - [Current accepted baseline](../../qualification/current-baseline.md)
-- [Post-SOP extension architecture](../../architecture/post-sop-sdv-feature-extension-architecture.md)
-- [R6.1 component plan](../../planning/r6-1-integration-component-plan.md)
+- [High-Level Architecture 1.1](../../architecture/high-level-architecture.md)
+- [Component Decomposition and Interface Register 0.1](../../requirements/component-decomposition-and-interface-register.md)
 - [`aos-vehicle-platform` Service Manager configuration](https://github.com/alexmaninblack/aos-vehicle-platform/tree/main/meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files)
 - [AosCore architecture](https://docs.aosedge.tech/docs/aos-core/architecture/)

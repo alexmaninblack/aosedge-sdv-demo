@@ -82,8 +82,9 @@ the required regression. See the
 Documentation cleanup and repository-only validation do not authorize
 signing, Cloud upload, assignment, VM restart, or provisioned-Unit mutation.
 The revised plan preserves `.11` and provider `0.2.0` as accepted local
-evidence but does not select them for Cloud deployment. The next boundary is
-documentation review of a separate public `vehicle-data-integration` FOTA
-component and a dependent provider successor. Those actions follow the
-explicit gates in [the roadmap](../planning/roadmap.md) and the
-[R6.1 integration-component plan](../planning/r6-1-integration-component-plan.md).
+evidence but does not select them for Cloud deployment. The current boundary
+is review of the HLA 1.1 design chain, including the
+[Component Decomposition and Interface Register](../requirements/component-decomposition-and-interface-register.md),
+followed by component requirements and a replacement implementation plan.
+Those actions follow the explicit gates in the
+[current roadmap](../planning/roadmap.md).

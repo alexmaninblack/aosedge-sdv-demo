@@ -14,12 +14,12 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Architecture
 
-- [High-Level Architecture 1.0](architecture/high-level-architecture.md) —
-  normative end-to-end system view.
-- [Demo Scenario Architecture Flows 0.1](architecture/demo-scenario-architecture-flows.md)
-  — draft traceability mapping for the accepted `G0–G4` scenario.
-- [Post-SOP feature-extension architecture](architecture/post-sop-sdv-feature-extension-architecture.md)
-  — lifecycle and platform-extension model.
+- [High-Level Architecture 1.1 — review candidate](architecture/high-level-architecture.md)
+  — updated end-to-end system view based on the accepted visual input; 1.0 is
+  the previous accepted checkpoint until review completes.
+- [Demo Scenario Architecture Flows 1.0 — review candidate](architecture/demo-scenario-architecture-flows.md)
+  — complete manufacturing, provisioning, post-SOP evolution, Function Team 2
+  candidate, observability, offline, and retirement mapping.
 - [Repository and component boundaries](architecture/repository-boundaries.md)
   — ownership across the participating repositories.
 - [Architecture decisions](architecture/decisions/) — accepted decisions and
@@ -29,17 +29,28 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Demo
 
-- [Staged Post-SOP Brake Health Demo Scenarios 1.0](demo/staged-post-sop-brake-health-demo-scenarios.md)
-  — accepted five-stage audience-visible baseline.
+- [Staged Post-SOP Brake Health Demo Scenarios 1.1](demo/staged-post-sop-brake-health-demo-scenarios.md)
+  — manufacturing-to-retirement audience-visible review candidate.
 - [Demo assets](demo/assets/) — original, license-cleared visual sources and
   exports. Storyboards and presenter materials will be added here only after
   review.
 
+## Requirements
+
+- [System Requirements and Traceability 0.1 — review candidate](requirements/system-requirements-and-traceability.md)
+  — system obligations, complete coverage of the twenty Architecture Flows
+  gaps, verification intent, repository ownership and component allocation.
+- [Component Decomposition and Interface Register 0.1 — review candidate](requirements/component-decomposition-and-interface-register.md)
+  — logical components, implementation state, lifecycle and repository
+  boundaries, runtime and Cloud interfaces, and component-package allocation.
+- [Requirements documentation](requirements/README.md)
+
 ## Planning
 
-- [Roadmap and gates](planning/roadmap.md)
-- [R6.1 vehicle-data integration component plan](planning/r6-1-integration-component-plan.md)
+- [Current design and delivery roadmap](planning/roadmap.md)
 - [Repository inventory and migration plan](planning/repository-inventory-and-migration-plan.md)
+  — completed workspace migration and cleanup record retained as historical
+  evidence.
 
 ## Research
 
@@ -50,6 +61,13 @@ not only the CARLA-to-AosEdge transport bridge.
 - [Integrated research summary](research/demo-foundation/integration-summary.md)
   — cross-workstream decisions, contradictions, dependencies, risks, and the
   recommended review gates before implementation.
+- [Automotive Orchestration Coverage Matrix](research/demo-foundation/automotive-orchestration-coverage-matrix.md)
+  — sanitized dashboard proof catalogue derived from confidential OEM input;
+  the source workbook remains outside Git.
+- [Native CARLA telemetry and Function Team 2 decision input](research/demo-foundation/r10-carla-telemetry-and-function-team-2.md)
+  — native vehicle state, Chaos telemetry, built-in sensors, simulator ground
+  truth, explicit non-capabilities, and candidate local event-analytics
+  concepts to review before selecting the second functional service.
 
 ## Operations
 
@@ -68,6 +86,8 @@ not only the CARLA-to-AosEdge transport bridge.
 ## Governance
 
 - [Licensing and copyright policy](governance/licensing-and-copyright-policy.md)
+- [Confidential source handling](governance/confidential-source-handling.md)
+  — local-only input policy, sanitization rules, and Git safeguards.
 - [Development workflow](governance/development-workflow.md) — direct-to-main
   policy for the current single-developer, single-agent phase.
 

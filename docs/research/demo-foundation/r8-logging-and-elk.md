@@ -152,7 +152,7 @@ Software Delivery Dashboard, and the Function Dashboard.
 8. Prove that high log volume cannot exhaust the Unit, the export bridge, or
    the demo laptop.
 
-## Impact on Scenario 1.0
+## Historical Impact on Superseded Scenario 1.0
 
 The scenario's wording that AosEdge provides log collection and Cloud
 transmission is supported. The phrase `configured Cloud-to-ELK integration`
@@ -167,4 +167,4 @@ fallback evidence surface.
 - [AosCore Monitoring and Observability](https://docs.aosedge.tech/docs/aos-core/monitoring/)
 - [AosCore Common Infrastructure](https://docs.aosedge.tech/docs/aos-core/architecture/common-infrastructure/)
 - [AosCore alerts and thresholds](https://docs.aosedge.tech/docs/aos-core/monitoring/alerts-and-thresholds)
-- [Demo Scenario 1.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- [Current Demo Scenario 1.1](../../demo/staged-post-sop-brake-health-demo-scenarios.md)

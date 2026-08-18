@@ -1,0 +1,181 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+"""Refuse known confidential OEM source material before commit or push."""
+
+from __future__ import annotations
+
+import argparse
+import fnmatch
+import hashlib
+import io
+import subprocess
+import sys
+import zipfile
+from pathlib import PurePosixPath
+from typing import Optional
+
+
+FORBIDDEN_SHA256 = {
+    "f77ce82f155cfa3b2d38de9e9e3ab61613cfa719399189798f2fe8016302ea44",
+}
+
+FORBIDDEN_PATH_GLOBS = (
+    "*k3s*issue*coverage*.xlsx",
+    "*poc*coverage*260728*.xlsx",
+    "*.customer-confidential.*",
+    "private-inputs/*",
+    "*/private-inputs/*",
+    "customer-inputs/*",
+    "*/customer-inputs/*",
+    "confidential-inputs/*",
+    "*/confidential-inputs/*",
+)
+
+FORBIDDEN_WORKBOOK_SHEETS = frozenset({"K3S_Issues", "More_Issues"})
+MAX_CONTENT_SCAN_BYTES = 10 * 1024 * 1024
+FORBIDDEN_SOURCE_SIZES = frozenset({34210})
+ARCHIVE_SUFFIXES = frozenset({".xlsx", ".xlsm", ".zip"})
+
+
+def run_git(*args: str, input_data: Optional[bytes] = None) -> bytes:
+    return subprocess.run(
+        ["git", *args],
+        check=True,
+        input=input_data,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    ).stdout
+
+
+def normalized_path(path: str) -> str:
+    return str(PurePosixPath(path)).lower()
+
+
+def path_is_forbidden(path: str) -> bool:
+    candidate = normalized_path(path)
+    return any(fnmatch.fnmatch(candidate, pattern) for pattern in FORBIDDEN_PATH_GLOBS)
+
+
+def workbook_has_forbidden_signature(data: bytes) -> bool:
+    try:
+        with zipfile.ZipFile(io.BytesIO(data)) as archive:
+            workbook = archive.read("xl/workbook.xml").decode("utf-8", errors="ignore")
+    except (KeyError, zipfile.BadZipFile, OSError):
+        return False
+    return all(sheet in workbook for sheet in FORBIDDEN_WORKBOOK_SHEETS)
+
+
+def content_is_forbidden(data: bytes) -> bool:
+    if hashlib.sha256(data).hexdigest() in FORBIDDEN_SHA256:
+        return True
+    return workbook_has_forbidden_signature(data)
+
+
+def staged_objects() -> list[tuple[str, bytes]]:
+    paths = run_git(
+        "diff", "--cached", "--name-only", "-z", "--diff-filter=ACMR"
+    ).decode("utf-8", errors="surrogateescape").split("\0")
+    result: list[tuple[str, bytes]] = []
+    for path in filter(None, paths):
+        try:
+            result.append((path, run_git("show", f":{path}")))
+        except subprocess.CalledProcessError:
+            continue
+    return result
+
+
+def tracked_objects() -> list[tuple[str, bytes]]:
+    paths = run_git("ls-files", "-z").decode(
+        "utf-8", errors="surrogateescape"
+    ).split("\0")
+    result: list[tuple[str, bytes]] = []
+    for path in filter(None, paths):
+        try:
+            result.append((path, run_git("show", f":{path}")))
+        except subprocess.CalledProcessError:
+            continue
+    return result
+
+
+def history_objects() -> list[tuple[str, bytes]]:
+    records = run_git("rev-list", "--objects", "--all").decode(
+        "utf-8", errors="surrogateescape"
+    ).splitlines()
+    result: list[tuple[str, bytes]] = []
+    object_paths: dict[str, str] = {}
+    for record in records:
+        object_id, _, path = record.partition(" ")
+        if not path or object_id in object_paths:
+            continue
+        object_paths[object_id] = path
+        if path_is_forbidden(path):
+            result.append((path, b""))
+
+    if not object_paths:
+        return result
+
+    inventory = run_git(
+        "cat-file",
+        "--batch-check=%(objectname) %(objecttype) %(objectsize)",
+        input_data=("\n".join(object_paths) + "\n").encode("ascii"),
+    ).decode("ascii", errors="replace")
+
+    for line in inventory.splitlines():
+        fields = line.split()
+        if len(fields) != 3:
+            continue
+        object_id, object_type, raw_size = fields
+        path = object_paths.get(object_id)
+        if not path or object_type != "blob":
+            continue
+        try:
+            size = int(raw_size)
+            suffix = PurePosixPath(path).suffix.lower()
+            if size <= MAX_CONTENT_SCAN_BYTES and (
+                size in FORBIDDEN_SOURCE_SIZES or suffix in ARCHIVE_SUFFIXES
+            ):
+                result.append((path, run_git("cat-file", "blob", object_id)))
+        except (subprocess.CalledProcessError, ValueError):
+            continue
+    return result
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    scope = parser.add_mutually_exclusive_group(required=True)
+    scope.add_argument("--staged", action="store_true")
+    scope.add_argument("--tracked", action="store_true")
+    scope.add_argument("--history", action="store_true")
+    args = parser.parse_args()
+
+    if args.staged:
+        objects = staged_objects()
+    elif args.tracked:
+        objects = tracked_objects()
+    else:
+        objects = history_objects()
+
+    violations: list[str] = []
+    for path, data in objects:
+        if path_is_forbidden(path) or (data and content_is_forbidden(data)):
+            violations.append(path)
+
+    if violations:
+        print("Confidential-input guard rejected these Git objects:", file=sys.stderr)
+        for path in sorted(set(violations)):
+            print(f"  - {path}", file=sys.stderr)
+        print(
+            "Keep raw customer/OEM input outside Git and commit only a reviewed "
+            "sanitized derivative.",
+            file=sys.stderr,
+        )
+        return 1
+
+    print("Confidential-input guard: PASS")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -11,6 +11,14 @@ This workstream determines which Software Delivery Dashboard claims can be
 supported by the current public AosCloud API and clarifies authority boundaries
 among the Engineering, Software Delivery, Function, and ELK views.
 
+The sanitized
+[Automotive Orchestration Coverage Matrix](automotive-orchestration-coverage-matrix.md)
+is the requirements and evidence catalogue for the Software Delivery
+Dashboard. Its machine-readable contract is
+[`contracts/software-delivery-dashboard/coverage-matrix.v1.json`](../../../contracts/software-delivery-dashboard/coverage-matrix.v1.json).
+The confidential OEM source used to derive the neutral concerns remains
+outside every Git repository.
+
 ## Executive conclusion
 
 A useful read-only Software Delivery Dashboard is feasible. Existing public
@@ -71,6 +79,13 @@ Creating a log request is a POST and is therefore an explicit operator action,
 not part of the read-only poller.
 
 ## Proposed views
+
+### 0. Coverage and proof
+
+Show one card per matrix item, grouped by automotive concern. Each card exposes
+the relevant G-stage, current coverage, proof mode, evidence timestamp, and
+claim boundary. `PARTIAL`, `PLANNED`, `UNKNOWN`, and `DOCUMENTARY_ONLY` must
+never render as a green success state.
 
 ### 1. Release Overview
 

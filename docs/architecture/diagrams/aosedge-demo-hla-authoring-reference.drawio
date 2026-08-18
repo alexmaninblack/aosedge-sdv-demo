@@ -1,25 +1,34 @@
 <mxfile host="Electron">
   <diagram name="Page-1" id="4OqHF0eCg1LNpAgeQD5f">
-    <mxGraphModel dx="849" dy="1558" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="1338" dy="1629" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
+        <mxCell id="HLA-TITLE" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;" value="AosEdge SDV Demo - High-Level Architecture 1.1 (Review Candidate)" vertex="1">
+          <mxGeometry height="40" width="700" x="20" y="-245" as="geometry" />
+        </mxCell>
+        <mxCell id="HLA-SUPERSET-NOTE" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=2;" value="Capability-superset view: deployable FOTA and SOTA boxes show the target architecture, not simultaneous presence at every demo stage. One logical Domain Controller architecture is instantiated as either the Validation Unit or the Demonstration Unit." vertex="1">
+          <mxGeometry height="65" width="670" x="20" y="-200" as="geometry" />
+        </mxCell>
         <mxCell id="M7xq5pBXHRRF11vvhjOU-52" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;strokeWidth=2;" value="OEM" vertex="1">
           <mxGeometry height="290" width="1480" x="730" y="-250" as="geometry" />
         </mxCell>
         <mxCell id="M7xq5pBXHRRF11vvhjOU-30" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=3;verticalAlign=top;" value="Vehicle" vertex="1">
-          <mxGeometry height="360" width="2170" x="20" y="180" as="geometry" />
+          <mxGeometry height="460" width="2170" x="20" y="180" as="geometry" />
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-11" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;strokeWidth=2;" value="Domain Controller ECU - QEMU + AosVM" vertex="1">
-          <mxGeometry height="275" width="1100" x="1060" y="225" as="geometry" />
+        <mxCell id="HLA-DEMO-WORKSTATION" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=2;verticalAlign=top;dashed=1;" value="Demo / Engineering Workstation" vertex="1">
+          <mxGeometry height="120" width="960" x="240" y="50" as="geometry" />
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-23" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;strokeWidth=2;" value="Vehicle Data Provider (FOTA)" vertex="1">
-          <mxGeometry height="100" width="760" x="1260" y="390" as="geometry" />
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-11" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;strokeWidth=2;" value="Domain Controller ECU - QEMU + AosVM&lt;br&gt;logical instance: Validation Unit or Demonstration Unit" vertex="1">
+          <mxGeometry height="395" width="1100" x="1060" y="225" as="geometry" />
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;strokeWidth=2;" value="Virtual Vehicle Platform - Carla" vertex="1">
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-23" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;strokeWidth=2;" value="Vehicle Data Platform Capability (FOTA payload and versioned contract)" vertex="1">
+          <mxGeometry height="210" width="880" x="1260" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;strokeWidth=2;" value="Virtual Vehicle Platform - CARLA" vertex="1">
           <mxGeometry height="180" width="770" x="40" y="320" as="geometry" />
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="CARLA Physical Vehicle Dynamicfs, sensors &amp;amp; actuators" vertex="1">
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="CARLA Physical Vehicle Dynamics, sensors &amp;amp; actuators" vertex="1">
           <mxGeometry height="60" width="120" x="50" y="420" as="geometry" />
         </mxCell>
         <mxCell id="M7xq5pBXHRRF11vvhjOU-3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;strokeWidth=2;" value="Vehicle GW ECU" vertex="1">
@@ -31,7 +40,7 @@
         <mxCell id="M7xq5pBXHRRF11vvhjOU-5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Signal normalization VSS data model" vertex="1">
           <mxGeometry height="60" width="120" x="510" y="420" as="geometry" />
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="VISS 3.1 server" vertex="1">
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="VISS 3.1 server&lt;br&gt;advisory handler and status" vertex="1">
           <mxGeometry height="60" width="120" x="650" y="420" as="geometry" />
         </mxCell>
         <mxCell id="M7xq5pBXHRRF11vvhjOU-7" edge="1" parent="1" source="M7xq5pBXHRRF11vvhjOU-2" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;" target="M7xq5pBXHRRF11vvhjOU-4" value="">
@@ -62,17 +71,20 @@
         <mxCell id="M7xq5pBXHRRF11vvhjOU-13" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Validation, normalization and signal selection" vertex="1">
           <mxGeometry height="60" width="150" x="1470" y="420" as="geometry" />
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-14" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="KUKSA Databroker stable VSS signal&amp;nbsp;" vertex="1">
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-14" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="KUKSA actual-value&lt;br&gt;namespace" vertex="1">
           <mxGeometry height="60" width="150" x="1660" y="420" as="geometry" />
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-15" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Subscribe/read kuksa.val.v1" vertex="1">
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-15" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Read/subscribe&lt;br&gt;kuksa.val.v1" vertex="1">
           <mxGeometry height="60" width="150" x="1850" y="420" as="geometry" />
         </mxCell>
         <mxCell id="M7xq5pBXHRRF11vvhjOU-16" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;strokeWidth=2;" value="Simulated In-Vehicle Network" vertex="1">
-          <mxGeometry height="100" width="170" x="860" y="390" as="geometry" />
+          <mxGeometry height="210" width="170" x="860" y="390" as="geometry" />
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-17" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="VSS-defined signals VISS over TLS/IP" vertex="1">
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-17" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Telemetry and gateway status&lt;br&gt;VISS over TLS/IP" vertex="1">
           <mxGeometry height="60" width="120" x="885" y="420" as="geometry" />
+        </mxCell>
+        <mxCell id="HLA-NETWORK-ADVISORY" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Advisory request&lt;br&gt;VISS Set over TLS/IP" vertex="1">
+          <mxGeometry height="60" width="120" x="885" y="520" as="geometry" />
         </mxCell>
         <mxCell id="M7xq5pBXHRRF11vvhjOU-18" edge="1" parent="1" source="M7xq5pBXHRRF11vvhjOU-4" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="M7xq5pBXHRRF11vvhjOU-5" value="">
           <mxGeometry height="50" relative="1" width="50" as="geometry">
@@ -86,16 +98,22 @@
             <mxPoint x="650" y="530" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-20" edge="1" parent="1" source="M7xq5pBXHRRF11vvhjOU-6" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="M7xq5pBXHRRF11vvhjOU-17" value="">
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-20" edge="1" parent="1" source="M7xq5pBXHRRF11vvhjOU-6" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="M7xq5pBXHRRF11vvhjOU-17" value="Telemetry and status">
           <mxGeometry height="50" relative="1" width="50" as="geometry">
             <mxPoint x="600" y="580" as="sourcePoint" />
             <mxPoint x="650" y="530" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-21" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="AosCore /Service Manager&amp;nbsp;&lt;br&gt;security and lifecycle" vertex="1">
-          <mxGeometry height="60" width="170" x="1080" y="325" as="geometry" />
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-21" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="OEM Factory Image / SOP substrate&lt;br&gt;AosCore · Service Manager · KUKSA&lt;br&gt;security · update support" vertex="1">
+          <mxGeometry height="90" width="170" x="1080" y="275" as="geometry" />
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-22" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;strokeWidth=2;" value="OEM Functional Service (SOTA) - Break Health Service Container" vertex="1">
+        <mxCell id="HLA-COMPONENT-RUNTIME" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Preinstalled component runtime&lt;br&gt;provider-specific · empty slot" vertex="1">
+          <mxGeometry height="75" width="170" x="1080" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="HLA-RUNTIME-HOSTS-FOTA" edge="1" parent="1" source="HLA-COMPONENT-RUNTIME" style="endArrow=classic;html=1;rounded=0;dashed=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" target="M7xq5pBXHRRF11vvhjOU-23" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry" />
+        </mxCell>
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-22" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;strokeWidth=2;" value="OEM Functional Service (SOTA)&lt;br&gt;Brake Health Service Container" vertex="1">
           <mxGeometry height="110" width="290" x="1850" y="265" as="geometry" />
         </mxCell>
         <mxCell id="M7xq5pBXHRRF11vvhjOU-24" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Local analytics and advisory decision" vertex="1">
@@ -134,8 +152,8 @@
             <mxPoint x="1985" y="325" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-31" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Vehicle Control&lt;br&gt;Accelerate/Brake/Right/Left/Autopilot/Manual" vertex="1">
-          <mxGeometry height="85" width="270" x="290" y="205" as="geometry" />
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-31" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Vehicle Control&lt;br&gt;Accelerate / Brake / Left / Right&lt;br&gt;Autopilot / Manual" vertex="1">
+          <mxGeometry height="75" width="270" x="290" y="75" as="geometry" />
         </mxCell>
         <mxCell id="M7xq5pBXHRRF11vvhjOU-32" edge="1" parent="1" source="M7xq5pBXHRRF11vvhjOU-31" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="M7xq5pBXHRRF11vvhjOU-4" value="">
           <mxGeometry height="50" relative="1" width="50" as="geometry">
@@ -152,19 +170,21 @@
             <mxPoint x="1200" y="70" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-35" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;" value="Platform Team (FOTA)" vertex="1">
+        <mxCell id="HLA-AOS-LIFECYCLE-LABEL" connectable="0" parent="M7xq5pBXHRRF11vvhjOU-34" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Provisioning, deployment, lifecycle and status" vertex="1">
+          <mxGeometry relative="1" x="0.15" y="1" as="geometry">
+            <mxPoint x="85" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-35" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;" value="Platform Team" vertex="1">
           <mxGeometry height="110" width="230" x="780" y="-150" as="geometry" />
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-36" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;" value="Function Team (SOTA)" vertex="1">
-          <mxGeometry height="110" width="270" x="1430" y="-115" as="geometry" />
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-38" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" value="Service Provider 1&lt;br&gt;Brake Health Backend" vertex="1">
+          <mxGeometry height="80" width="140" x="2025" y="-120" as="geometry" />
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-38" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" value="Function Team Backend" vertex="1">
-          <mxGeometry height="80" width="120" x="1990" y="-120" as="geometry" />
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-39" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Brake Health&lt;br&gt;Function Dashboard" vertex="1">
+          <mxGeometry height="60" width="140" x="2025" y="-220" as="geometry" />
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-39" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="BreakHealth Function Dashboard" vertex="1">
-          <mxGeometry height="60" width="120" x="1984" y="-220" as="geometry" />
-        </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-40" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Development of the Vehicle Data provider&amp;nbsp;" vertex="1">
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-40" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Development of the Vehicle Data Platform Capability" vertex="1">
           <mxGeometry height="60" width="190" x="800" y="-120" as="geometry" />
         </mxCell>
         <mxCell id="M7xq5pBXHRRF11vvhjOU-41" edge="1" parent="1" source="M7xq5pBXHRRF11vvhjOU-35" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0.25;entryY=0.25;entryDx=0;entryDy=0;entryPerimeter=0;" target="M7xq5pBXHRRF11vvhjOU-33" value="">
@@ -176,25 +196,28 @@
             <mxPoint x="1050" y="60" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-42" connectable="0" parent="M7xq5pBXHRRF11vvhjOU-41" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="FOTA update" vertex="1">
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-42" connectable="0" parent="M7xq5pBXHRRF11vvhjOU-41" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Publish platform FOTA" vertex="1">
           <mxGeometry relative="1" x="-0.3085" y="1" as="geometry">
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-43" edge="1" parent="1" source="M7xq5pBXHRRF11vvhjOU-24" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;" target="M7xq5pBXHRRF11vvhjOU-38" value="">
-          <mxGeometry height="50" relative="1" width="50" as="geometry">
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-43" edge="1" parent="1" source="M7xq5pBXHRRF11vvhjOU-24" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;" target="M7xq5pBXHRRF11vvhjOU-38" value="Brake Health report">
+          <mxGeometry height="50" relative="1" width="50" x="0.3333" y="-15" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="2050" y="130" />
+              <mxPoint x="2095" y="130" />
+            </Array>
             <mxPoint x="1650" y="130" as="sourcePoint" />
             <mxPoint x="1700" y="80" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-44" edge="1" parent="1" source="M7xq5pBXHRRF11vvhjOU-38" style="endArrow=classic;html=1;rounded=0;exitX=0.45;exitY=-0.025;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="M7xq5pBXHRRF11vvhjOU-39" value="">
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-44" edge="1" parent="1" source="M7xq5pBXHRRF11vvhjOU-38" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="M7xq5pBXHRRF11vvhjOU-39" value="">
           <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points" />
             <mxPoint x="1650" y="130" as="sourcePoint" />
             <mxPoint x="1700" y="80" as="targetPoint" />
           </mxGeometry>
-        </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-45" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Development of the Break Health service" vertex="1">
-          <mxGeometry height="60" width="120" x="1505" y="-85" as="geometry" />
         </mxCell>
         <mxCell id="M7xq5pBXHRRF11vvhjOU-46" edge="1" parent="1" source="M7xq5pBXHRRF11vvhjOU-36" style="endArrow=classic;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.875;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" target="M7xq5pBXHRRF11vvhjOU-33" value="">
           <mxGeometry height="50" relative="1" width="50" as="geometry">
@@ -202,29 +225,29 @@
             <mxPoint x="1540" y="100" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-47" connectable="0" parent="M7xq5pBXHRRF11vvhjOU-46" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="SOTA Update" vertex="1">
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-47" connectable="0" parent="M7xq5pBXHRRF11vvhjOU-46" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Publish SOTA 1" vertex="1">
           <mxGeometry relative="1" x="0.0211" y="1" as="geometry">
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-50" edge="1" parent="1" source="M7xq5pBXHRRF11vvhjOU-36" style="endArrow=classic;html=1;rounded=0;exitX=0.25;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="M7xq5pBXHRRF11vvhjOU-35" value="">
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-50" edge="1" parent="1" source="M7xq5pBXHRRF11vvhjOU-36" style="endArrow=classic;html=1;rounded=0;exitX=0;exitY=0.25;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="M7xq5pBXHRRF11vvhjOU-35" value="">
           <mxGeometry height="50" relative="1" width="50" as="geometry">
             <Array as="points">
-              <mxPoint x="1500" y="-200" />
-              <mxPoint x="1190" y="-200" />
-              <mxPoint x="895" y="-200" />
+              <mxPoint x="1310" y="-126.25" />
+              <mxPoint x="1310" y="25" />
+              <mxPoint x="895" y="25" />
             </Array>
             <mxPoint x="1230" y="-50" as="sourcePoint" />
             <mxPoint x="1280" y="-100" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-51" connectable="0" parent="M7xq5pBXHRRF11vvhjOU-50" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="&amp;nbsp;Feature request/update for vehicle data producer&amp;nbsp;" vertex="1">
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-51" connectable="0" parent="M7xq5pBXHRRF11vvhjOU-50" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Feature request/update for Vehicle Data Platform Capability" vertex="1">
           <mxGeometry relative="1" x="0.2322" y="-1" as="geometry">
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-53" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Telematics dashboard&lt;br&gt;(Break Health service Notification visible here along side ith other tlematics)" vertex="1">
-          <mxGeometry height="120" width="160" x="864" y="210" as="geometry" />
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-53" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Engineering Telematics Dashboard&lt;br&gt;base telemetry + Brake Health advisory and gateway status" vertex="1">
+          <mxGeometry height="75" width="190" x="850" y="75" as="geometry" />
         </mxCell>
         <mxCell id="M7xq5pBXHRRF11vvhjOU-54" edge="1" parent="1" source="M7xq5pBXHRRF11vvhjOU-17" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="M7xq5pBXHRRF11vvhjOU-53" value="">
           <mxGeometry height="50" relative="1" width="50" as="geometry">
@@ -232,18 +255,128 @@
             <mxPoint x="1020" y="250" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-55" edge="1" parent="1" source="M7xq5pBXHRRF11vvhjOU-24" style="endArrow=classic;html=1;rounded=0;entryX=1;entryY=0.75;entryDx=0;entryDy=0;exitX=0.75;exitY=1;exitDx=0;exitDy=0;" target="M7xq5pBXHRRF11vvhjOU-23" value="">
+        <mxCell id="HLA-SOFTWARE-DELIVERY-DASHBOARD" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="OEM Software Delivery Dashboard&lt;br&gt;AosCloud state · targets · validation · promotion" vertex="1">
+          <mxGeometry height="75" width="260" x="560" y="75" as="geometry" />
+        </mxCell>
+        <mxCell id="HLA-SOFTWARE-DASHBOARD-CLOUD" edge="1" parent="1" source="HLA-SOFTWARE-DELIVERY-DASHBOARD" style="endArrow=classic;startArrow=classic;html=1;rounded=0;dashed=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.1;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" target="M7xq5pBXHRRF11vvhjOU-33" value="API status and approved actions">
           <mxGeometry height="50" relative="1" width="50" as="geometry">
             <Array as="points">
-              <mxPoint x="2080" y="465" />
+              <mxPoint x="690" y="15" />
+              <mxPoint x="1015" y="15" />
+              <mxPoint x="1015" y="-60" />
             </Array>
-            <mxPoint x="2080" y="370" as="sourcePoint" />
-            <mxPoint x="2010" y="430" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-56" connectable="0" parent="M7xq5pBXHRRF11vvhjOU-55" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Driver Indication" vertex="1">
+        <mxCell id="HLA-ELK" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" value="Vehicle and Service Log View&lt;br&gt;ELK" vertex="1">
+          <mxGeometry height="70" width="190" x="1055" y="-235" as="geometry" />
+        </mxCell>
+        <mxCell id="HLA-CLOUD-ELK" edge="1" parent="1" source="M7xq5pBXHRRF11vvhjOU-33" style="endArrow=classic;html=1;rounded=0;dashed=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="HLA-ELK" value="selected lifecycle and runtime logs">
+          <mxGeometry height="50" relative="1" width="50" as="geometry" />
+        </mxCell>
+        <mxCell id="j12gpLU1JJJo3LKyeumj-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;" value="Function Team 2 / Service Provider 2 (SOTA)&lt;br&gt;Event-Based Uploader" vertex="1">
+          <mxGeometry height="115" width="220" x="1600" y="-155" as="geometry" />
+        </mxCell>
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-55" edge="1" parent="1" source="M7xq5pBXHRRF11vvhjOU-24" style="endArrow=classic;html=1;rounded=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=0.75;exitY=1;exitDx=0;exitDy=0;" target="HLA-OUT-API" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="2080" y="550" />
+            </Array>
+            <mxPoint x="2080" y="370" as="sourcePoint" />
+            <mxPoint x="1925" y="520" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-56" connectable="0" parent="M7xq5pBXHRRF11vvhjOU-55" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Brake Health advisory request" vertex="1">
           <mxGeometry relative="1" x="-0.3375" as="geometry">
             <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-36" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;" value="Function Team 1 / Service Provider 1 (SOTA)&lt;br&gt;Brake Health" vertex="1">
+          <mxGeometry height="115" width="220" x="1350" y="-155" as="geometry" />
+        </mxCell>
+        <mxCell id="j12gpLU1JJJo3LKyeumj-2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;strokeWidth=2;" value="OEM Functional Service (SOTA)&lt;br&gt;Event-Based Uploader Service Container" vertex="1">
+          <mxGeometry height="110" width="290" x="1540" y="265" as="geometry" />
+        </mxCell>
+        <mxCell id="j12gpLU1JJJo3LKyeumj-3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Local event detection and bounded data-upload decision" vertex="1">
+          <mxGeometry height="60" width="120" x="1690" y="305" as="geometry" />
+        </mxCell>
+        <mxCell id="j12gpLU1JJJo3LKyeumj-4" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" value="Service Provider 2&lt;br&gt;Event Backend" vertex="1">
+          <mxGeometry height="80" width="140" x="1845" y="-120" as="geometry" />
+        </mxCell>
+        <mxCell id="j12gpLU1JJJo3LKyeumj-5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Event-Based Data Dashboard" vertex="1">
+          <mxGeometry height="60" width="140" x="1845" y="-220" as="geometry" />
+        </mxCell>
+        <mxCell id="j12gpLU1JJJo3LKyeumj-6" edge="1" parent="1" source="j12gpLU1JJJo3LKyeumj-4" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="j12gpLU1JJJo3LKyeumj-5" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="1860" y="-120" as="sourcePoint" />
+            <mxPoint x="1516" y="82" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="j12gpLU1JJJo3LKyeumj-7" edge="1" parent="1" source="j12gpLU1JJJo3LKyeumj-3" style="endArrow=classic;html=1;rounded=0;exitX=0.75;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;" target="j12gpLU1JJJo3LKyeumj-4" value="Bounded event package">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="1780" y="130" />
+              <mxPoint x="1915" y="130" />
+            </Array>
+            <mxPoint x="1820" y="130" as="sourcePoint" />
+            <mxPoint x="1870" y="80" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="j12gpLU1JJJo3LKyeumj-8" edge="1" parent="1" source="M7xq5pBXHRRF11vvhjOU-15" style="endArrow=classic;html=1;rounded=0;exitX=0.25;exitY=0;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="j12gpLU1JJJo3LKyeumj-3" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="1887.5" y="335" />
+            </Array>
+            <mxPoint x="1040" y="120" as="sourcePoint" />
+            <mxPoint x="1090" y="70" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-45" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Development of the Brake Health Service" vertex="1">
+          <mxGeometry height="60" width="170" x="1375" y="-105" as="geometry" />
+        </mxCell>
+        <mxCell id="HLA-FT2-DEVELOPMENT" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Development of the Event-Based Uploader Service" vertex="1">
+          <mxGeometry height="60" width="170" x="1625" y="-105" as="geometry" />
+        </mxCell>
+        <mxCell id="HLA-SOTA2-CLOUD" edge="1" parent="1" source="j12gpLU1JJJo3LKyeumj-1" style="endArrow=classic;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.8;entryY=0.8;entryDx=0;entryDy=0;entryPerimeter=0;" target="M7xq5pBXHRRF11vvhjOU-33" value="Publish SOTA 2">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="1585" y="-97" />
+              <mxPoint x="1585" y="-18" />
+            </Array>
+            <mxPoint x="1600" y="-97" as="sourcePoint" />
+            <mxPoint x="1270" y="-25" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="HLA-OUT-API" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Actuate/write target&lt;br&gt;kuksa.val.v1" vertex="1">
+          <mxGeometry height="60" width="150" x="1850" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="HLA-OUT-TARGET" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="KUKSA advisory-target&lt;br&gt;namespace" vertex="1">
+          <mxGeometry height="60" width="150" x="1660" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="HLA-OUT-POLICY" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Outbound validation&lt;br&gt;and allowlist" vertex="1">
+          <mxGeometry height="60" width="150" x="1470" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="HLA-OUT-PROVIDER" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Outbound Vehicle Interface Provider&lt;br&gt;VISS Set Client" vertex="1">
+          <mxGeometry height="60" width="150" x="1280" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="HLA-OUT-EDGE-1" edge="1" parent="1" source="HLA-OUT-API" style="endArrow=classic;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="HLA-OUT-TARGET" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry" />
+        </mxCell>
+        <mxCell id="HLA-OUT-EDGE-2" edge="1" parent="1" source="HLA-OUT-TARGET" style="endArrow=classic;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="HLA-OUT-POLICY" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry" />
+        </mxCell>
+        <mxCell id="HLA-OUT-EDGE-3" edge="1" parent="1" source="HLA-OUT-POLICY" style="endArrow=classic;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="HLA-OUT-PROVIDER" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry" />
+        </mxCell>
+        <mxCell id="HLA-OUT-EDGE-4" edge="1" parent="1" source="HLA-OUT-PROVIDER" style="endArrow=classic;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="HLA-NETWORK-ADVISORY" value="VISS Set">
+          <mxGeometry height="50" relative="1" width="50" as="geometry" />
+        </mxCell>
+        <mxCell id="HLA-OUT-EDGE-5" edge="1" parent="1" source="HLA-NETWORK-ADVISORY" style="endArrow=classic;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.75;entryDx=0;entryDy=0;" target="M7xq5pBXHRRF11vvhjOU-6" value="Advisory request">
+          <mxGeometry height="50" relative="1" width="50" x="-0.15" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="830" y="550" />
+              <mxPoint x="830" y="465" />
+            </Array>
           </mxGeometry>
         </mxCell>
       </root>

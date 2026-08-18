@@ -1,216 +1,169 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Roadmap
+# Current Design and Delivery Roadmap
 
-The roadmap separates simulation, OEM platform/FOTA, Cloud service/SOTA, and
-authorization lifecycles. A completed experiment is not a supported path; only
-the current accepted baseline and the gates below remain active.
+- Status: Working gate map
+- Updated: 2026-08-18
+- Architecture baseline under review: High-Level Architecture 1.1
+- Cloud or Unit mutation authorized: no
 
-## Completed
+## Purpose
 
-### AOS-0 — Native Apple Silicon AosVM
+This roadmap identifies the current design baseline and the order in which the
+demonstration may move from architecture into implementation. It replaces the
+obsolete R6.1 plan that proposed a separate `vehicle-data-integration`
+component, a generic component runtime, and a `G4`-to-`G0` reset on retained
+Unit identities.
 
-The official AosVM 6.1.0 `qemuarm64` Main Node boots with QEMU system
-virtualization and Apple Hypervisor Framework acceleration. Guest kernel,
-storage, SELinux, OCI, networking, DNS mobility, clean shutdown, persistence,
-and recovery gates pass.
+The current target uses:
 
-### AOS-1 — One Persistent Main Node
+- one provider-specific empty-slot runtime in the OEM Demo Factory Image;
+- one independently versioned Vehicle Data Platform Capability FOTA family;
+- two peer OEM functional services with independent SOTA lifecycles;
+- fresh Validation and Demonstration Unit identities per demo run;
+- controlled retirement and disposable-overlay replacement for the normal
+  next-run reset.
 
-The official SDK provisioned exactly one Main Node. Its identity persists on
-the protected VM overlay, normal launches expose no provisioning listener, and
-the official Hello World service completed install, log, removal, and restart
-qualification.
+## Completed Engineering Foundations
 
-### Repository Ownership Split
+The following achievements are retained as engineering evidence. They do not
+by themselves prove the final manufacturing-to-retirement demonstration:
 
-Platform, service, simulation, and integration code live in separate
-repositories according to their release lifecycle. The versioned vehicle-data
-contract belongs to `aos-vehicle-platform`; this repository pins and qualifies
-the complete graph.
+1. native CARLA and Unreal Engine operation on Apple Silicon;
+2. Vehicle Gateway control, VSS normalization, TLS VISS 3.1 read/subscription,
+   and the Engineering Telematics Dashboard;
+3. deterministic emergency-braking scenario, manual takeover, safe stop and
+   actor cleanup;
+4. official AArch64 AosVM boot under QEMU/HVF;
+5. single-Main-Node provisioning, persistent identity, DNS mobility and
+   lifecycle safety tooling;
+6. live CARLA/VISS-to-KUKSA provider qualification evidence;
+7. provider-specific empty-slot runtime, isolated store and SELinux evidence
+   in local rootfs candidate `.11`;
+8. immutable local provider `0.2.0` evidence;
+9. repository ownership split, workspace contract and post-cleanup acceptance.
 
-### AOS-2 — CARLA to KUKSA
+Exact retained versions and limitations remain recorded in the
+[current accepted engineering baseline](../qualification/current-baseline.md).
 
-The platform provider subscribes to the host-only CARLA VISS 3.1 endpoint and
-publishes the seven accepted VSS signals to KUKSA. Live telemetry, stale and
-source-loss behavior, TLS, credential isolation, restart continuity, and
-Cloud-identity continuity pass.
+## Current Documentation Baseline
 
-### R6.1 Local Platform and Provider Qualification
+The following documents form one ordered design chain:
 
-The provider is now an independently versioned OEM FOTA component. Provider
-`0.2.0` passed deterministic packaging, official unsigned validation, ARM64
-lifecycle/recovery tests, live telemetry, rollback, SELinux, resource, and
-secret-exclusion gates. Its accepted bytes were signed and independently
-verified locally, but were not published or assigned.
+1. [High-Level Architecture 1.1](../architecture/high-level-architecture.md)
+   owns boundaries, authorities and invariants.
+2. [Demo Scenario 1.1](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+   owns the audience-visible stage sequence.
+3. [Architecture Flows 1.0](../architecture/demo-scenario-architecture-flows.md)
+   owns lifecycle, runtime, observability and failure flows.
+4. [System Requirements and Traceability 0.1](../requirements/system-requirements-and-traceability.md)
+   owns `SYS-*` obligations and coverage of all twenty gaps.
+5. [Component Decomposition and Interface Register 0.1](../requirements/component-decomposition-and-interface-register.md)
+   owns component/interface IDs and provisional requirement-package
+   allocation.
 
-The Service Manager component runtime, atomic A/B store, fixed `aos-vdp`
-identity, systemd credential boundary, SELinux policy, DNS/TLS behavior, and
-soft KUKSA dependency are integrated into rootfs candidate
-`6.1.1-maninblack.11`. The candidate passed clean disposable boot and targeted
-Enforcing qualification. Its rootfs-only unsigned FOTA output is frozen.
+A downstream document may not silently redefine an upstream decision.
 
-## Active R6.1 Gates
+## Active Design Gates
 
-The deployment plan now separates public vehicle-integration material from
-the provider executable. The separate OEM FOTA component is provisionally
-named `vehicle-data-integration`; it owns the model-level provider endpoint
-configuration, VISS trust anchor, and KUKSA public verifier. It never owns the
-KUKSA provider token or another secret. Provider successor `0.2.1` will name a
-compatible integration-component version through the Aos FOTA
-`runtimeDependencies` manifest field.
+### D0 — Component register review — in review
 
-Frozen rootfs `.11` and signed provider `0.2.0` remain accepted local evidence.
-They are not modified, re-signed under the same versions, published, assigned,
-or selected for the revised deployment. The next rootfs candidate is
-provisionally `.12`; its final version is fixed only when its inputs and output
-are frozen.
+Confirm component names, responsibilities, current/target state, interfaces,
+owners, lifecycles and repository candidates. In particular, review the new
+Cloud backends and dashboards, Function Team 2 service boundary, Software
+Delivery Dashboard, Demo Orchestrator and logging integration.
 
-Each implementation gate requires the previous result. Signing, Cloud
-publication, assignment, VM mutation, and promotion each require fresh
-explicit authorization.
+Exit: Component Decomposition and Interface Register 0.1 is accepted or
+returned with explicit corrections.
 
-1. Review and accept the integration-component architecture, file ownership,
-   secret boundary, version compatibility, activation ordering, health,
-   rollback, and recovery contracts. This is the current gate and changes
-   documentation only.
-2. Implement and host-test a second, independently reported component runtime
-   for `vehicle-data-integration`. It must use a separate A/B store, validate
-   the complete public payload before activation, switch atomically, and
-   coordinate KUKSA and provider readiness without containing a credential.
-3. Build deterministic unsigned `vehicle-data-integration` `0.1.0` packaging
-   with the model-level external provider configuration, VISS CA, and KUKSA
-   public verifier. Unit-specific settings remain outside the shared FOTA
-   artifact.
-4. Produce provider successor `0.2.1` without changing the accepted application
-   behavior, and add a signed `runtimeDependencies` constraint on the
-   compatible integration component. Keep signed `0.2.0` immutable.
-5. Run the complete host-side matrix for both component runtimes, archive
-   validation, compatibility, dependency absence, concurrent desired state,
-   activation ordering, failed update, interrupted update, rollback, recovery,
-   expired or missing token, and secret exclusion. Resolve the full matrix
-   before starting another Yocto build.
-6. Incrementally build the next rootfs candidate from the preserved builder
-   and caches. Qualify clean AArch64 boot, read-only root, SELinux Enforcing,
-   both reported component types, independent stores, KUKSA verifier
-   activation, provider credential isolation, and unchanged Unit identity.
-7. Freeze and independently reverify the new rootfs, integration component,
-   and provider candidates. Record exact source revisions, sizes, digests,
-   manifests, and sanitized evidence.
-8. After explicit approval, sign and independently verify only the accepted
-   digests. Signing does not authorize Cloud upload or Unit mutation.
-9. After separate approval, checkpoint the validation Unit, deploy the new
-   rootfs only to that Unit, and verify boot, storage, SELinux, runtimes,
-   restart, and Cloud inventory.
-10. Publish and assign the integration component and provider only to the
-    validation Unit. Prove that an absent or incompatible integration component
-    blocks provider installation, and that missing or invalid credentials
-    prevent provider activation without entering a FOTA artifact.
-11. Demonstrate CARLA telemetry through VISS, the provider, KUKSA, and the
-    consumer; also prove source loss, recovery, restart, independent component
-    update, compatible rollback, and dependency-safe rollback ordering.
-12. Decide separately whether to promote the accepted combination to the
-    demonstration Unit. The validation-set scope defect must remain accounted
-    for during every assignment decision.
+### D1 — Documentation housekeeping — completed 2026-08-18
 
-Current stop point: gate 1, documentation review. `.11` is unsigned and local;
-provider `0.2.0` is signed locally but unpublished and unassigned; no
-integration-component artifact exists. The validation Unit remains on `.2`.
-The demonstration Unit activated the previously staged `.1` slot during the
-guarded 2026-08-16 restart; acceptance or rollback of that observed state is
-an explicit pre-cleanup gate.
+Remove superseded active design documents and unreferenced generated files;
+retain ADRs, research evidence, qualification records and operations manuals
+with clear authority labels. Validate indexes, internal links and source
+precedence.
 
-The detailed design and qualification questions are in
-[the R6.1 integration-component plan](r6-1-integration-component-plan.md).
+Exit: the documentation tree presents one current design chain without broken
+links or competing active plans.
 
-## Demo Design Gates Before Further Implementation
+### D2 — Baseline acceptance
 
-High Level Architecture 1.0 and Demo Scenario 1.0 are the accepted baseline.
-The architecture-flow mapping is the working bridge from that baseline to a
-future requirements package. It does not authorize implementation, Cloud
-assignment, Unit mutation, or reset experiments.
+Review HLA 1.1, Scenario 1.1, Architecture Flows 1.0, System Requirements 0.1
+and the Component Register together. Resolve any remaining terminology or
+boundary inconsistency before deriving component requirements.
 
-The cross-cutting demo foundation must be resolved before requirements are
-allocated to individual components. Its scope includes the generic G0 runtime,
-the G0-to-G4 desired-state graph, Validation and Demonstration Unit targeting,
-deterministic CARLA stimulus, end-to-end observability, presentation timing,
-and repeatable demo reset.
+Exit: accepted documentation versions and unresolved deferred features are
+explicitly recorded.
 
-### Demo Reset Research Gate
+### D3 — Component requirement packages
 
-Reset to G0 is a mandatory design decision, not an assumed property of the
-current platform. Before the requirements package is accepted, a separate
-research checkpoint must determine:
+Create and review packages in this order:
 
-1. whether a deployed SOTA service can be removed and later installed again
-   through the normal AosCloud desired-state lifecycle;
-2. whether an already applied FOTA component can be removed, downgraded across
-   several accepted versions, or replaced by a higher-version reset release;
-3. how AosCloud represents the G0 state in which the Unit remains provisioned
-   but no demo provider or service is desired;
-4. how dependency-safe reverse transitions from G4 to G0 behave across
-   services, providers, and the generic component runtime;
-5. how a restored golden VM snapshot reconciles with Cloud desired state,
-   deployment history, Unit status, counters, logs, and external dashboards;
-6. how Validation and Demonstration VM snapshots preserve their own unique
-   identity, certificates, and persistent security state without ever running
-   duplicate identities concurrently;
-7. which reset path is fastest, repeatable, supportable, and credible in a
-   time-bounded demonstration.
+1. `CR-VEHICLE-SIM` and `CR-GATEWAY`;
+2. `CR-FACTORY` and `CR-VDP`;
+3. `CR-AOS`;
+4. `CR-BHS` and `CR-BRAKE-CLOUD`;
+5. `CR-EVT` and `CR-EVENT-CLOUD`;
+6. `CR-DEMO`, `CR-CROSS` and `CR-E2E`.
 
-The checkpoint must compare at least these candidates:
+Every component requirement must cite its parent `SYS-*` requirement, relevant
+`AF-*` flow, interface ID, verification method and required evidence.
 
-- native desired-state removal or rollback to G0;
-- a forward reset release with a new accepted version;
-- a protected golden G0 VM snapshot combined with explicit Cloud-state
-  reconciliation;
-- provisioning a replacement Unit, retained only as a last-resort fallback.
+Exit: every system obligation is allocated and every interface has an owner on
+both sides.
 
-Exit requires one primary reset mechanism and one fallback, a state-transition
-sequence covering VM, AosCloud, backend, ELK, dashboards, and CARLA, measured
-reset and readiness bounds, and an explicit distinction between a supported
-platform rollback and an out-of-band demo reset. Until this gate is accepted,
-the reset arrows in the architecture-flow draft remain hypotheses and no
-component requirements may depend on a particular reset mechanism.
+### D4 — Interface contracts and acceptance tests
 
-No reset research execution, Cloud or Unit mutation, snapshot replacement, or
-implementation begins merely because this gate is recorded in the roadmap;
-each such activity requires a later reviewed plan and explicit authorization.
+Freeze the versioned VISS, KUKSA, advisory, functional-report, event-package,
+AosCloud, log and dashboard contracts. Define normal, unavailable, stale,
+malformed, unauthorized, offline, retry, rollback and resource-bound behavior.
 
-## AOS-3 — First KUKSA Telemetry Service
+Exit: tests can be written without inventing missing architecture decisions.
 
-Package the ARM64 telemetry consumer as an Aos SOTA service with explicit
-resources and a compatible vehicle-data contract. Deploy, observe, update,
-stop, restart, and roll it back through AosCloud without any CARLA dependency
-inside the service.
+### D5 — Implementation plan
 
-Exit: a Cloud-managed service consumes live KUKSA telemetry and exposes useful
-English health and data-age logs.
+Build a new implementation plan from the accepted component packages. Reuse
+existing qualified code and artifacts only where their exact contracts match
+the accepted design. Do not revive the superseded R6.1 two-component plan.
 
-## AOS-4 — Useful Edge Processing
+Exit: independently reviewable implementation increments, repository changes,
+build boundaries and authorization gates are defined.
 
-Add bounded trip statistics and driving-event detection, define exactly which
-state persists across service updates, and prove update/rollback behavior.
+## Future Implementation Workstreams
 
-## AOS-5 — Aos-to-KUKSA Authorization Adapter
+These workstreams are sequencing guidance, not authorization to implement:
 
-Replace the temporary path-scoped KUKSA token fixture with a platform-owned
-adapter that maps Aos service identity to short-lived least-privilege KUKSA
-authorization. This is mandatory before third-party services, actuation, or
-production credential handling.
+| Workstream | Main outcome |
+| --- | --- |
+| `I1` Vehicle stimulus and Gateway | Qualify emergency-braking and low-friction stimuli; add narrowly scoped advisory handling and dashboard status. |
+| `I2` Factory and Vehicle Data Platform | Freeze the clean factory image and empty slot; implement and qualify the accepted Provider v1-v3 contract. |
+| `I3` Brake Health product | Build the in-vehicle service, local model, bounded offline reporting, backend and function dashboard. |
+| `I4` Vehicle Stability product | Build the independent low-friction detector, bounded event upload, backend and event dashboard. |
+| `I5` Software delivery experience | Build the Software Delivery Dashboard over authoritative AosCloud APIs and the manufacturing/provisioning/promotion/retirement orchestration. |
+| `I6` Security and operations | Qualify least privilege, secret delivery, operational logs, ELK route, retention and redaction. |
+| `I7` End-to-end release proof | Execute `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> R0` on Validation and Demonstration Units with retained evidence. |
 
-## Optional AOS-6 — Legacy AOS VIS Compatibility
+Each workstream requires the relevant component requirements and acceptance
+tests before code or deployment work begins.
 
-Add a legacy AOS VIS mapping only if a concrete compatibility requirement
-justifies a second vehicle-data abstraction.
+## Deferred Platform Capabilities
 
-## Deferred
+- Native AosCloud rejection of a SOTA request whose required Vehicle Data
+  Platform Capability version is absent or incompatible remains blocked on an
+  implementing platform release. No project-side admission controller will be
+  built as a substitute.
+- The Aos-to-KUKSA Authorization Adapter remains explicit production
+  hardening. Prototype path-scoped tokens are temporary demo fixtures and must
+  not be confused with the target security architecture.
+- Production driver HMI, third-party Service Providers, Fleet Operators, a
+  production fleet, and production vehicle-network/hardware selection remain
+  outside the current demo.
 
-- production provider-store architecture and migration from the demo nested
-  ext4 backend;
-- Secondary or additional AosVM Nodes;
-- cameras, LiDAR, radar, and ultrasonic data;
-- ROS 2 integration;
-- upstreaming CARLA, Unreal Engine, or AosEdge changes;
-- self-hosted AosCloud.
+## Current Stop Point
+
+Documentation housekeeping gate D1 is complete. The current boundary is D0
+component-register review followed by D2 joint baseline acceptance. No new
+repository, component code, build, signature, Cloud upload, assignment,
+approval, VM restart, provisioning, deprovisioning or Unit mutation is
+authorized by this roadmap.

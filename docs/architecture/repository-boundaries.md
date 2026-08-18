@@ -3,10 +3,11 @@
 
 # Architecture and Repository Ownership
 
-The normative end-to-end system view, including OEM FOTA/SOTA ownership,
-bidirectional KUKSA/VISS flows, local Brake Health analysis, Cloud reporting,
-and engineering-dashboard boundaries, is defined in
-[High-Level Architecture 1.0](high-level-architecture.md).
+The current end-to-end review candidate, including shared platform FOTA,
+independent SOTA lifecycles for two peer OEM functional teams, bidirectional
+KUKSA/VISS flows, local analytics, Cloud reporting, and engineering-dashboard
+boundaries, is defined in
+[High-Level Architecture 1.1](high-level-architecture.md).
 
 ## Runtime Boundary
 
@@ -21,17 +22,20 @@ flowchart LR
     subgraph AosVM["AosVM vehicle computer"]
         PROVIDER["vehicle-data provider / OEM FOTA"]
         KUKSA["KUKSA Databroker"]
-        SERVICE["Brake Health service / Aos SOTA"]
+        SERVICE1["Brake Health service / SOTA 1"]
+        SERVICE2["Vehicle Stability event service / SOTA 2"]
         PROVIDER -->|"kuksa.val.v1"| KUKSA
-        KUKSA -->|"versioned VSS contract"| SERVICE
+        KUKSA -->|"versioned VSS contract"| SERVICE1
+        KUKSA -->|"versioned VSS contract"| SERVICE2
     end
 
     VISS -->|"private verified VISS 3.1 route"| PROVIDER
 ```
 
 CARLA and VISS run on macOS. The provider, KUKSA Databroker, Service Manager
-runtime, SELinux boundary, and deployed Brake Health service run in AosVM. The
-provider is not part of CARLA and the service never connects to VISS directly.
+runtime, SELinux boundary, and independently deployed functional services run
+in AosVM. The provider is not part of CARLA and neither service connects to
+VISS directly.
 
 In a production vehicle, CAN, SOME/IP, DDS, or another OEM provider replaces
 the simulation-specific VISS provider. KUKSA and the versioned VSS contract
@@ -43,12 +47,18 @@ remain the stable service boundary.
 | --- | --- | --- |
 | `carla-ego-runtime` | ego control and VISS projection | simulation tooling |
 | `aos-vehicle-platform` | vehicle-data contract, provider, Service Manager runtime, KUKSA integration, future authorization adapter | OEM platform/FOTA |
-| `brake-health-service` | independently deployable Brake Health consumer and local analytics | Aos service/SOTA |
+| `brake-health-service` | Function Team 1 Brake Health consumer and local analytics | Service Provider 1/SOTA 1 |
+| `vehicle-stability-event-service` | Function Team 2 local low-friction event detection, bounded queue and upload client | Service Provider 2/SOTA 2; proposed repository |
 | `aosedge-sdv-demo` | macOS VM lifecycle, provisioning, locks, orchestration, system documentation, and end-to-end qualification | solution/demo baseline |
 
 The integration repository may pin and qualify every component, but it does
 not become the source repository for those components. No Git submodule or
 private local checkout path is part of a public baseline.
+
+The proposed Function Team 2 repository is intentionally not present in the
+machine-readable workspace contract until its name, license, initial scaffold
+and accepted revision are reviewed. Functional backends and dashboards are
+separate products; their repository layout is not decided by this boundary.
 
 ## Trust and Network Boundary
 

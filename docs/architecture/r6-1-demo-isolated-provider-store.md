@@ -3,10 +3,12 @@
 
 # R6.1 Demo Isolated Provider Store
 
-- Status: implemented and qualified in unsigned rootfs candidate `.11`
+- Status: retained engineering design evidence for unsigned rootfs candidate `.11`; not the current HLA source
 - Provider: signed and locally verified `0.2.0`, not published or assigned
-- Validation Unit: rootfs `.2`
-- Demonstration Unit: rootfs `6.1.0`
+- Unit versions below are the qualification-time snapshot; current state is in
+  [Current Accepted Baseline](../qualification/current-baseline.md)
+- Validation Unit at qualification: rootfs `.2`
+- Demonstration Unit at qualification: rootfs `6.1.0`
 
 ## Decision
 

@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: 2026 maninblack -->
+<!-- SPDX-License-Identifier: MIT -->
+
 # AOS-0: Boot Official ARM64 AosVM on Apple Silicon
 
 ## Objective
