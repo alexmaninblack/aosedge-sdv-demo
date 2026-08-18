@@ -117,10 +117,6 @@ a provisioned VM:
 python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
-The isolated Yocto builder and disposable qualification VM are managed by
-`scripts/r6-1-builder` and `scripts/r6-1-disposable-vm`. Their disks and build
-caches live outside Git and are deliberately preserved for incremental builds.
-
 ## Documentation
 
 - [Documentation map](docs/README.md)
