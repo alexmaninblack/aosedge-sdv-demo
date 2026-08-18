@@ -15,7 +15,7 @@ must agree.
 | Vehicle control, CARLA sampling, VSS/VISS, engineering dashboard or deterministic scenario | `carla-ego-runtime` | Vehicle Gateway/demo tooling |
 | Factory-image integration, provider runtime, KUKSA platform contract or Vehicle Data Platform Capability | `aos-vehicle-platform` | Platform Team / FOTA |
 | Brake Health in-vehicle analytics | `brake-health-service` | Function Team 1 / SOTA |
-| Tire Health condition estimation, bounded reporting and inspection advisory | future `tire-health-service` | Function Team 2 / independent SOTA |
+| Tire Health condition estimation, bounded reporting and inspection advisory | planned `tire-health-service` | Function Team 2 / independent SOTA |
 | Software Delivery Dashboard, demo orchestration, cross-component contract or end-to-end qualification | `aosedge-sdv-demo` | solution integration |
 | Unreal Engine compatibility required by CARLA | restricted Unreal fork | maintained Apple Silicon dependency branch |
 
@@ -68,9 +68,17 @@ Before commit, run the deterministic documentation and repository gates:
 
 ```sh
 ./scripts/docs-check
-./scripts/qualify-repository-boundaries
+python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
 The documentation gate checks navigation, anchors, stable identifiers,
 canonical metadata, readable package traceability and stale artifacts. The
-repository gate also checks workspace and confidentiality boundaries.
+cross-repository boundary gate additionally requires clean sibling checkouts
+and the pinned REUSE validator. CI runs it automatically. To reproduce it
+manually, provide both required inputs:
+
+```sh
+./scripts/qualify-repository-boundaries \
+  --workspace-root .. \
+  --reuse-command /path/to/reuse
+```

@@ -257,7 +257,8 @@ system requirement and retained evidence identifier.
 
 Before creating `tire-health-service`, reviewers shall confirm:
 
-1. the repository name and functional ownership boundary;
+1. the initial source layout conforms to the accepted repository name and
+   in-vehicle SOTA ownership boundary;
 2. public visibility and Apache-2.0 licensing with copyright `maninblack`;
 3. a `main`-only workflow for the current single-developer phase;
 4. an ARM64 Aos service scaffold equivalent in quality to

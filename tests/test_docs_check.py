@@ -172,6 +172,28 @@ class DocumentationCheckTests(unittest.TestCase):
         self.assertNotEqual(0, result.returncode)
         self.assertIn("label does not name target version 1.3", result.stderr)
 
+    def test_stale_versioned_canonical_index_link_is_rejected(self) -> None:
+        temporary, root = self.temporary_documentation()
+        self.addCleanup(temporary.cleanup)
+        target = root / "docs" / "demo" / "README.md"
+        text = target.read_text(encoding="utf-8").replace(
+            "Demo Scenarios 1.2", "Demo Scenarios 1.1", 1
+        )
+        target.write_text(text, encoding="utf-8")
+        result = self.run_check(root)
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("versioned canonical link label is stale", result.stderr)
+
+    def test_local_obsidian_preferences_must_be_ignored(self) -> None:
+        temporary, root = self.temporary_documentation()
+        self.addCleanup(temporary.cleanup)
+        target = root / ".gitignore"
+        text = target.read_text(encoding="utf-8").replace(".obsidian/\n", "", 1)
+        target.write_text(text, encoding="utf-8")
+        result = self.run_check(root)
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("must ignore local Obsidian preferences", result.stderr)
+
     def test_backup_document_artifact_is_rejected(self) -> None:
         temporary, root = self.temporary_documentation()
         self.addCleanup(temporary.cleanup)

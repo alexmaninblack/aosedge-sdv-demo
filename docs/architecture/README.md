@@ -5,10 +5,9 @@
 
 [High-Level Architecture 1.2](high-level-architecture.md) is the current
 end-to-end architecture review candidate based on the accepted visual input.
-Architecture 1.0 remains the previous accepted checkpoint until 1.1 completes
+Architecture 1.0 remains the previous accepted checkpoint until 1.2 completes
 review. The other documents provide lifecycle, repository-boundary,
-detailed-design, or decision context and will be reconciled only after the 1.1
-architecture is accepted.
+detailed-design, or decision context aligned to the 1.2 review candidate.
 
 - [High-Level Architecture 1.2 — review candidate](high-level-architecture.md)
 - [Demo Scenario Architecture Flows 1.1 — review candidate](demo-scenario-architecture-flows.md)

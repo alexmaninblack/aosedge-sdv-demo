@@ -304,6 +304,7 @@ def retired_identifiers(text: str) -> set[str]:
 
 def check_metadata(root: Path, documents: dict[Path, str]) -> list[Issue]:
     issues: list[Issue] = []
+    canonical_paths = {(root / path).resolve() for path in CANONICAL_DOCUMENTS}
     for relative_path in CANONICAL_DOCUMENTS:
         path = (root / relative_path).resolve()
         text = documents.get(path)
@@ -330,6 +331,22 @@ def check_metadata(root: Path, documents: dict[Path, str]) -> list[Issue]:
                     Issue(
                         relative_path.as_posix(),
                         f"{label} label does not name target version {target_version}: {title}",
+                    )
+                )
+    for source, text in documents.items():
+        for title, raw_target in MARKDOWN_LINK.findall(text):
+            destination, _ = resolve_local_target(root, source, raw_target)
+            if destination not in canonical_paths:
+                continue
+            target_text = documents.get(destination)
+            target_version = metadata(target_text or "", "Version")
+            named_versions = re.findall(r"\b\d+\.\d+\b", title)
+            if target_version and named_versions and target_version not in named_versions:
+                issues.append(
+                    Issue(
+                        relative(root, source),
+                        "versioned canonical link label is stale: "
+                        f"{title} names {', '.join(named_versions)}, target is {target_version}",
                     )
                 )
     return issues
@@ -502,6 +519,8 @@ def check_hygiene(root: Path, documents: dict[Path, str]) -> list[Issue]:
     ignored = gitignore.read_text(encoding="utf-8") if gitignore.is_file() else ""
     if not re.search(r"(?m)^\.DS_Store$", ignored):
         issues.append(Issue(".gitignore", "must ignore macOS .DS_Store artifacts"))
+    if not re.search(r"(?m)^\.obsidian/$", ignored):
+        issues.append(Issue(".gitignore", "must ignore local Obsidian preferences"))
     return issues
 
 

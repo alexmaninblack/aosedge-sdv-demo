@@ -830,6 +830,22 @@ qmp_command() {
     "$QMP_HELPER" "$QMP_SOCKET_PATH" "$qmp_action"
 }
 
+reject_untracked_runtime() {
+    command -v lsof >/dev/null 2>&1 || return 0
+    runtime_evidence=''
+    if [ -f "$OVERLAY_PATH" ] &&
+       lsof -nP "$OVERLAY_PATH" >/dev/null 2>&1; then
+        runtime_evidence="the active overlay is open"
+    elif lsof -nP -iTCP:"$SSH_HOST_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
+        runtime_evidence="the expected SSH host port is listening"
+    elif lsof -nP -iTCP:"$HOST_DNS_PORT" -sTCP:LISTEN >/dev/null 2>&1 ||
+         lsof -nP -iUDP:"$HOST_DNS_PORT" >/dev/null 2>&1; then
+        runtime_evidence="the expected DNS bridge port is active"
+    fi
+    [ -z "$runtime_evidence" ] ||
+        fail "VM runtime metadata is missing while $runtime_evidence. Refusing to report a stopped VM or perform lifecycle actions; reconcile the live process through a controlled maintenance restart."
+}
+
 wait_for_process_exit() {
     wait_pid=$1
     wait_seconds=$2
@@ -1529,6 +1545,7 @@ vm_status() {
             [ ! -e "$stale_path" ] && [ ! -L "$stale_path" ] ||
                 fail "VM is stopped but ambiguous runtime state remains: $stale_path"
         done
+        reject_untracked_runtime
         printf 'AosVM Main Node is stopped.\n'
         return
     fi
@@ -1658,6 +1675,7 @@ vm_stop() {
             [ ! -e "$stale_path" ] && [ ! -L "$stale_path" ] ||
                 fail "VM has no PID but ambiguous runtime state remains: $stale_path"
         done
+        reject_untracked_runtime
         release_lifecycle_lock
         trap - EXIT HUP INT TERM
         printf 'AosVM Main Node is already stopped.\n'

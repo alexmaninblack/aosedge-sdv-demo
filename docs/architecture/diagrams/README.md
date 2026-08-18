@@ -9,7 +9,7 @@ in the owning architecture document.
 
 The HLA 1.2 review candidate is maintained as Mermaid source inside
 [`high-level-architecture.md`](../high-level-architecture.md). HLA 1.0 remains
-the previous accepted checkpoint until the 1.1 review is complete.
+the previous accepted checkpoint until the 1.2 review is complete.
 
 The editable visual model is the primary visual architecture source:
 

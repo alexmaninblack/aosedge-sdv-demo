@@ -72,9 +72,10 @@ A downstream document may not silently redefine an upstream decision.
 ### D0 — Component register review — in review
 
 Confirm component names, responsibilities, current/target state, interfaces,
-owners, lifecycles and repository candidates. In particular, review the new
-Cloud backends and dashboards, Function Team 2 service boundary, Software
-Delivery Dashboard, Demo Orchestrator and logging integration.
+owners, lifecycles and repository candidates. The Vehicle Gateway boundary and
+Tire Health service boundary are accepted. Remaining review concerns are the
+functional Cloud repositories, Software Delivery Dashboard, Demo Orchestrator,
+logging integration and deferred authorization adapter.
 
 Exit: Component Decomposition and Interface Register 0.2 is accepted or
 returned with explicit corrections.

@@ -28,7 +28,7 @@ not only the CARLA-to-AosEdge transport bridge.
   the previous accepted checkpoint until review completes.
 - [Demo Scenario Architecture Flows 1.1 — review candidate](architecture/demo-scenario-architecture-flows.md)
   — complete manufacturing, provisioning, post-SOP evolution, Function Team 2
-  candidate, observability, offline, and retirement mapping.
+  Tire Health extension, observability, offline, and retirement mapping.
 - [Repository and component boundaries](architecture/repository-boundaries.md)
   — ownership across the participating repositories.
 - [Architecture decisions](architecture/decisions/) — accepted decisions and

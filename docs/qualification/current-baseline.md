@@ -23,6 +23,22 @@ candidate, or change the qualification requirements for its successor. See the
 [acceptance record](pre-cleanup-e2e-acceptance.md) and
 [repair record](repository-rename-vm-repair.md).
 
+### Host lifecycle-control caveat recorded 2026-08-18
+
+Both Unit QEMU processes and their loopback DNS bridges remain running, but
+their repository-local `.run` PID and QMP/serial socket paths were removed
+while the processes were alive. The overlays and provisioning locks remain
+present and must not be reset, copied or reprovisioned. The lifecycle helper
+now rejects this state instead of reporting the VM as stopped.
+
+Recovery requires a controlled maintenance window: verify the exact QEMU,
+overlay, Unit identity and Cloud state; request a clean shutdown inside each
+guest; prove the old processes exited and the overlays are consistent; then
+start each VM through its normal lifecycle helper and rerun status, smoke and
+Cloud-online checks. This is a host control-state repair, not deprovisioning or
+identity replacement. Until that window is explicitly authorized, both VMs
+remain online and no lifecycle mutation is permitted.
+
 ## Rootfs Candidate `.11`
 
 | Item | Accepted value |

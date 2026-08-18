@@ -11,6 +11,10 @@ test_runs_root="$test_root/runs"
 test_local_root="$test_root/local"
 
 cleanup() {
+    if [ -n "${untracked_pid:-}" ] && kill -0 "$untracked_pid" 2>/dev/null; then
+        kill "$untracked_pid" >/dev/null 2>&1 || true
+        wait "$untracked_pid" 2>/dev/null || true
+    fi
     if [ -n "${unrelated_pid:-}" ] && kill -0 "$unrelated_pid" 2>/dev/null; then
         kill "$unrelated_pid" >/dev/null 2>&1 || true
         wait "$unrelated_pid" 2>/dev/null || true
@@ -24,6 +28,8 @@ run_lifecycle() {
     AOSVM_RUN_ROOT="$test_run_root" \
     AOSVM_RUNS_ROOT="$test_runs_root" \
     AOSVM_LOCAL_ROOT="$test_local_root" \
+    AOSVM_SSH_HOST_PORT=19022 \
+    AOSVM_HOST_DNS_PORT=19053 \
         "$repository_root/scripts/aosvm" "$@"
 }
 
@@ -31,6 +37,19 @@ run_lifecycle status >"$test_root/stopped-status"
 grep -qx 'AosVM Main Node is stopped.' "$test_root/stopped-status"
 
 mkdir -p "$test_local_root"
+: >"$test_local_root/aosvm-main-overlay.qcow2"
+tail -f "$test_local_root/aosvm-main-overlay.qcow2" >/dev/null 2>&1 &
+untracked_pid=$!
+if run_lifecycle status >"$test_root/stdout" 2>"$test_root/stderr"; then
+    printf 'Expected an open overlay without runtime metadata to be rejected.\n' >&2
+    exit 1
+fi
+grep -q 'VM runtime metadata is missing' "$test_root/stderr"
+kill "$untracked_pid"
+wait "$untracked_pid" 2>/dev/null || true
+untracked_pid=''
+rm "$test_local_root/aosvm-main-overlay.qcow2"
+
 ln -s "$repository_root/.local/aosvm-main-overlay.qcow2" \
     "$test_local_root/aosvm-main-overlay.qcow2"
 

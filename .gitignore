@@ -53,5 +53,8 @@ __pycache__/
 .venv/
 build/
 
+# Local documentation-tool preferences
+.obsidian/
+
 # Optional developer checkout locations; never part of the shared lock
 config/component-paths.local.json

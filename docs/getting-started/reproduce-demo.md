@@ -34,9 +34,10 @@ workspace/
 └── brake-health-service/      Function Team 1 in-vehicle SOTA source
 ```
 
-Future Function Team 2 and Cloud product repositories are intentionally not
-shown as existing checkouts. Their names and boundaries are still design
-decisions.
+The planned `tire-health-service` checkout is intentionally not shown because
+its name and in-vehicle SOTA boundary are accepted, but the repository has not
+yet been created and qualified. Functional Cloud product repositories are
+also not shown because their allocation remains an open design decision.
 
 The machine-readable workspace contract is
 [`workspace/repositories.json`](../../workspace/repositories.json). From the

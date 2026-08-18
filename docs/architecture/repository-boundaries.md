@@ -48,16 +48,17 @@ remain the stable service boundary.
 | `carla-ego-runtime` | ego control and VISS projection | simulation tooling |
 | `aos-vehicle-platform` | vehicle-data contract, provider, Service Manager runtime, KUKSA integration, future authorization adapter | OEM platform/FOTA |
 | `brake-health-service` | Function Team 1 Brake Health consumer and local analytics | Service Provider 1/SOTA 1 |
-| `tire-health-service` | Function Team 2 local tire-condition estimation, bounded reporting, offline state and typed inspection advisory | Service Provider 2/SOTA 2; proposed repository |
+| `tire-health-service` | Function Team 2 local tire-condition estimation, bounded reporting, offline state and typed inspection advisory | Service Provider 2/SOTA 2; accepted boundary, repository not yet created |
 | `aosedge-sdv-demo` | macOS VM lifecycle, provisioning, locks, orchestration, system documentation, and end-to-end qualification | solution/demo baseline |
 
 The integration repository may pin and qualify every component, but it does
 not become the source repository for those components. No Git submodule or
 private local checkout path is part of a public baseline.
 
-The proposed Function Team 2 repository is intentionally not present in the
-machine-readable workspace contract until its name, license, initial scaffold
-and accepted revision are reviewed. Functional backends and dashboards are
+The planned Function Team 2 repository is intentionally not present in the
+machine-readable workspace contract until its license, initial scaffold and
+accepted revision are reviewed. Its name and in-vehicle SOTA ownership
+boundary are already accepted. Functional backends and dashboards are
 separate products; their repository layout is not decided by this boundary.
 
 ## Trust and Network Boundary
