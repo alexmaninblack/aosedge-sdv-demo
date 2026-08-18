@@ -171,8 +171,8 @@ authorization and a Gateway advisory handler; TLS alone is not sufficient.
 
 ## Sources
 
-- [`carla-ego-runtime` VISS compatibility profile](https://github.com/alexmaninblack/carla-ego-runtime/blob/main/docs/viss-profile.md)
+- [`carla-ego-runtime` VISS compatibility profile](../../../../carla-ego-runtime/docs/viss-profile.md)
 - [COVESA VISS 3.1 specification](https://github.com/COVESA/vehicle-information-service-specification/tree/v3.1)
 - [Eclipse KUKSA Databroker 0.5.0](https://github.com/eclipse-kuksa/kuksa-databroker/tree/0.5.0)
-- [`aos-vehicle-platform` provider architecture](https://github.com/alexmaninblack/aos-vehicle-platform/blob/main/docs/architecture.md)
+- [`aos-vehicle-platform` provider architecture](../../../../aos-vehicle-platform/docs/architecture.md)
 - [Current High-Level Architecture 1.1](../../architecture/high-level-architecture.md)

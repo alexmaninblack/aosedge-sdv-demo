@@ -190,7 +190,7 @@ but remain release-qualification gates on the pinned VM.
 
 ## Sources
 
-- [`brake-health-service` architecture](https://github.com/alexmaninblack/brake-health-service/blob/main/docs/architecture.md)
+- [`brake-health-service` architecture](../../../../brake-health-service/docs/architecture.md)
 - [AosEdge Service Manager launcher and persistence](https://docs.aosedge.tech/docs/aos-core/architecture/service-manager/launcher)
 - [AosEdge Service configuration schema](https://docs.aosedge.tech/docs/reference/core-component-configs/core-service-config)
 - [AosEdge Network Manager](https://docs.aosedge.tech/docs/aos-core/architecture/service-manager/network-manager)

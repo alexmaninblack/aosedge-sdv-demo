@@ -184,8 +184,8 @@ only the deployed software graph changes.
 
 ## Sources
 
-- [`carla-ego-runtime` M6 configuration](https://github.com/alexmaninblack/carla-ego-runtime/blob/main/config/m6_2_town10hd_handover.json)
-- [`carla-ego-runtime` external control contract](https://github.com/alexmaninblack/carla-ego-runtime/blob/main/docs/external-control-contract.md)
+- [`carla-ego-runtime` M6 configuration](../../../../carla-ego-runtime/config/m6_2_town10hd_handover.json)
+- [`carla-ego-runtime` external control contract](../../../../carla-ego-runtime/docs/external-control-contract.md)
 - [Post-cleanup acceptance](../../qualification/post-cleanup-acceptance.md)
 - [CARLA synchrony, timestep, and determinism](https://carla.readthedocs.io/en/latest/adv_synchrony_timestep/)
 - [CARLA Python API](https://carla.readthedocs.io/en/latest/python_api/)

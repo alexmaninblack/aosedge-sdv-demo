@@ -28,7 +28,9 @@ class DocumentationCheckTests(unittest.TestCase):
 
     def temporary_documentation(self) -> tuple[tempfile.TemporaryDirectory[str], Path]:
         temporary = tempfile.TemporaryDirectory()
-        root = Path(temporary.name)
+        workspace = Path(temporary.name)
+        root = workspace / "aosedge-sdv-demo"
+        root.mkdir()
         shutil.copy2(ROOT / ".gitignore", root / ".gitignore")
         shutil.copy2(ROOT / "README.md", root / "README.md")
         shutil.copy2(ROOT / "THIRD_PARTY_NOTICES.md", root / "THIRD_PARTY_NOTICES.md")
@@ -42,6 +44,30 @@ class DocumentationCheckTests(unittest.TestCase):
             coverage / "coverage-matrix.v1.json",
         )
         shutil.copytree(ROOT / "docs", root / "docs", ignore=shutil.ignore_patterns(".DS_Store"))
+        sibling_files = (
+            ("carla-ego-runtime", "docs/carla-setup-macos.md"),
+            ("carla-ego-runtime", "docs/macos-launchers.md"),
+            ("carla-ego-runtime", "docs/brake-event-scenario.md"),
+            ("carla-ego-runtime", "config/m6_2_town10hd_handover.json"),
+            ("carla-ego-runtime", "docs/external-control-contract.md"),
+            ("carla-ego-runtime", "docs/viss-profile.md"),
+            ("carla-ego-runtime", "docs/telemetry-contract.md"),
+            ("aos-vehicle-platform", "docs/architecture.md"),
+            (
+                "aos-vehicle-platform",
+                "contracts/vehicle-telemetry-profile/README.md",
+            ),
+            (
+                "aos-vehicle-platform",
+                "meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files/sm.cfg",
+            ),
+            ("brake-health-service", "docs/architecture.md"),
+        )
+        for repository, relative_path in sibling_files:
+            source = ROOT.parent / repository / relative_path
+            destination = workspace / repository / relative_path
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, destination)
         return temporary, root
 
     def test_current_documentation_passes(self) -> None:
@@ -154,6 +180,20 @@ class DocumentationCheckTests(unittest.TestCase):
         result = self.run_check(root)
         self.assertNotEqual(0, result.returncode)
         self.assertIn("semicolon in sequenceDiagram source is prohibited", result.stderr)
+
+    def test_workspace_github_link_is_rejected(self) -> None:
+        temporary, root = self.temporary_documentation()
+        self.addCleanup(temporary.cleanup)
+        target = root / "docs" / "getting-started" / "README.md"
+        target.write_text(
+            target.read_text(encoding="utf-8")
+            + "\n[Bad workspace link]"
+            + "(https://github.com/alexmaninblack/carla-ego-runtime/blob/main/README.md)\n",
+            encoding="utf-8",
+        )
+        result = self.run_check(root)
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("workspace repository link must use the local sibling checkout", result.stderr)
 
 
 if __name__ == "__main__":

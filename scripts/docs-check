@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 import urllib.error
@@ -61,6 +62,63 @@ class Issue:
 
     def render(self) -> str:
         return f"{self.path}: {self.message}"
+
+
+@dataclass(frozen=True)
+class WorkspaceRepository:
+    directory: str
+    path: Path
+    github_path: str | None
+
+
+def github_repository_path(url: str) -> str | None:
+    parsed = urlsplit(url)
+    if parsed.scheme not in {"http", "https"} or parsed.netloc.lower() != "github.com":
+        return None
+    path = parsed.path.rstrip("/")
+    if path.endswith(".git"):
+        path = path[:-4]
+    parts = [part for part in path.split("/") if part]
+    if len(parts) < 2:
+        return None
+    return "/".join(parts[:2]).lower()
+
+
+def workspace_repositories(root: Path) -> tuple[WorkspaceRepository, ...]:
+    manifest = root / "workspace" / "repositories.json"
+    if not manifest.is_file():
+        return ()
+    data = json.loads(manifest.read_text(encoding="utf-8"))
+    repositories: list[WorkspaceRepository] = []
+    for item in data.get("repositories", []):
+        directory = item.get("directory")
+        repository = item.get("repository")
+        if not isinstance(directory, str) or not directory:
+            continue
+        repositories.append(
+            WorkspaceRepository(
+                directory=directory,
+                path=(root.parent / directory).resolve(),
+                github_path=(
+                    github_repository_path(repository)
+                    if isinstance(repository, str)
+                    else None
+                ),
+            )
+        )
+    return tuple(repositories)
+
+
+def workspace_repository_for_url(
+    repositories: tuple[WorkspaceRepository, ...], url: str
+) -> WorkspaceRepository | None:
+    target = github_repository_path(url)
+    if target is None:
+        return None
+    return next(
+        (repository for repository in repositories if repository.github_path == target),
+        None,
+    )
 
 
 def markdown_documents(root: Path) -> dict[Path, str]:
@@ -124,12 +182,22 @@ def check_links(
     graph = {path: set() for path in documents}
     external: set[str] = set()
     anchor_cache = {path: anchors(text) for path, text in documents.items()}
+    repositories = workspace_repositories(root)
     for source, text in documents.items():
         for _, raw in MARKDOWN_LINK.findall(text):
             target = link_target(raw)
             scheme = urlsplit(target).scheme.lower()
             if scheme in {"http", "https"}:
                 external.add(target)
+                repository = workspace_repository_for_url(repositories, target)
+                if repository is not None:
+                    issues.append(
+                        Issue(
+                            relative(root, source),
+                            "workspace repository link must use the local sibling "
+                            f"checkout {repository.directory}: {target}",
+                        )
+                    )
                 continue
             if scheme in {"mailto", "data"}:
                 continue
@@ -137,22 +205,33 @@ def check_links(
                 issues.append(Issue(relative(root, source), f"unsupported link: {target}"))
                 continue
             destination, fragment = resolve_local_target(root, source, raw)
-            try:
-                destination.relative_to(root.resolve())
-            except ValueError:
+            inside_root = destination.is_relative_to(root.resolve())
+            sibling = next(
+                (
+                    repository
+                    for repository in repositories
+                    if destination.is_relative_to(repository.path)
+                ),
+                None,
+            )
+            if not inside_root and sibling is None:
                 issues.append(Issue(relative(root, source), f"link leaves repository: {target}"))
                 continue
             if not destination.exists():
                 issues.append(Issue(relative(root, source), f"missing link target: {target}"))
                 continue
             if destination.suffix.lower() == ".md":
-                if destination not in documents:
+                if inside_root and destination not in documents:
                     issues.append(
                         Issue(relative(root, source), f"Markdown target was not scanned: {target}")
                     )
                     continue
-                graph[source].add(destination)
-                if fragment and fragment not in anchor_cache[destination]:
+                if inside_root:
+                    graph[source].add(destination)
+                    target_anchors = anchor_cache[destination]
+                else:
+                    target_anchors = anchors(destination.read_text(encoding="utf-8"))
+                if fragment and fragment not in target_anchors:
                     issues.append(
                         Issue(relative(root, source), f"missing anchor in {target}")
                     )

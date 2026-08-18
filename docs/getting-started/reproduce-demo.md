@@ -49,6 +49,11 @@ solution repository, check the workspace without changing it:
 The doctor reports missing, divergent or dirty repositories and stale
 generated launchers. It never clones, updates or cleans another repository.
 
+Documentation links into participating repositories use this sibling layout.
+For seamless navigation in a Markdown knowledge-base application, open the
+workspace parent directory—not only this repository—as the documentation
+workspace or vault.
+
 ## Prerequisites and Access
 
 - Apple Silicon Mac with sufficient disk space for Unreal Engine, CARLA and
@@ -78,9 +83,9 @@ identity.
 The operator-facing launcher and its exact prerequisites are owned by the
 Vehicle Gateway repository:
 
-- [native CARLA setup on macOS](https://github.com/alexmaninblack/carla-ego-runtime/blob/main/docs/carla-setup-macos.md);
-- [macOS desktop launchers](https://github.com/alexmaninblack/carla-ego-runtime/blob/main/docs/macos-launchers.md);
-- [deterministic brake-event scenario](https://github.com/alexmaninblack/carla-ego-runtime/blob/main/docs/brake-event-scenario.md).
+- [native CARLA setup on macOS](../../../carla-ego-runtime/docs/carla-setup-macos.md);
+- [macOS desktop launchers](../../../carla-ego-runtime/docs/macos-launchers.md);
+- [deterministic brake-event scenario](../../../carla-ego-runtime/docs/brake-event-scenario.md).
 
 The installer creates three operator applications:
 

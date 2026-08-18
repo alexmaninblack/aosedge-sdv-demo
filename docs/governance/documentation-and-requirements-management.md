@@ -134,6 +134,22 @@ External HTTP links are intentionally separated from the commit gate:
 
 Network failures must not make the deterministic repository gate flaky.
 
+### Workspace and external link policy
+
+- Links to files owned by a repository declared in
+  [`workspace/repositories.json`](../../workspace/repositories.json) use a
+  relative filesystem path to that sibling checkout. The local gate verifies
+  that the checkout and target exist and rejects a GitHub web link to the same
+  owned repository.
+- HTTPS links remain appropriate for genuine external or upstream sources
+  that are not part of the workspace contract.
+- A repository clone URL in an installation procedure remains HTTPS because
+  its purpose is to create the checkout before local links can work.
+
+Cross-repository links assume the accepted sibling workspace layout. A reader
+using Obsidian or a similar knowledge-base application should open the
+workspace parent directory as the vault so those links remain navigable.
+
 ## Review and Retirement
 
 Before accepting a documentation change:

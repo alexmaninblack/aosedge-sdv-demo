@@ -253,8 +253,8 @@ identity, P3 advisory semantics, and cross-surface trace correlation.
 
 ## Sources
 
-- [`carla-ego-runtime` telemetry contract](https://github.com/alexmaninblack/carla-ego-runtime/blob/main/docs/telemetry-contract.md)
-- [`aos-vehicle-platform` telemetry profile](https://github.com/alexmaninblack/aos-vehicle-platform/tree/main/contracts/vehicle-telemetry-profile)
+- [`carla-ego-runtime` telemetry contract](../../../../carla-ego-runtime/docs/telemetry-contract.md)
+- [`aos-vehicle-platform` telemetry profile](../../../../aos-vehicle-platform/contracts/vehicle-telemetry-profile/)
 - [Current CARLA-to-KUKSA qualification](../../qualification/carla-viss-to-kuksa.md)
 - [COVESA VSS 6.0 wheel signals](https://raw.githubusercontent.com/COVESA/vehicle_signal_specification/v6.0/spec/Chassis/Wheel.vspec)
 - [COVESA VSS 6.0 chassis signals](https://raw.githubusercontent.com/COVESA/vehicle_signal_specification/v6.0/spec/Chassis/Chassis.vspec)
