@@ -123,8 +123,8 @@ Run the deterministic local gate with:
 
 It validates local files and anchors, identifier definitions and references,
 requirement allocation, interface rows, canonical metadata, documentation-map
-reachability, SPDX headers, stale paths and personal absolute paths. It does
-not mutate documents or external systems.
+reachability, Mermaid fence/compatibility rules, SPDX headers, stale paths and
+personal absolute paths. It does not mutate documents or external systems.
 
 External HTTP links are intentionally separated from the commit gate:
 

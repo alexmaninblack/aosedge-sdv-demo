@@ -141,6 +141,20 @@ class DocumentationCheckTests(unittest.TestCase):
         self.assertNotEqual(0, result.returncode)
         self.assertIn("unexpected documentation artifact type", result.stderr)
 
+    def test_mermaid_semicolon_is_rejected(self) -> None:
+        temporary, root = self.temporary_documentation()
+        self.addCleanup(temporary.cleanup)
+        target = root / "docs" / "architecture" / "demo-scenario-architecture-flows.md"
+        text = target.read_text(encoding="utf-8").replace(
+            "AC->>VU: Check dependency and install through SOTA 2",
+            "AC->>VU: Check dependency; install through SOTA 2",
+            1,
+        )
+        target.write_text(text, encoding="utf-8")
+        result = self.run_check(root)
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("semicolon in sequenceDiagram source is prohibited", result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

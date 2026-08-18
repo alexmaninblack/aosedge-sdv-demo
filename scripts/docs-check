@@ -393,6 +393,69 @@ def check_hygiene(root: Path, documents: dict[Path, str]) -> list[Issue]:
     return issues
 
 
+def check_mermaid(root: Path, documents: dict[Path, str]) -> tuple[list[Issue], int]:
+    """Check fenced Mermaid structure and conservative cross-renderer syntax."""
+
+    issues: list[Issue] = []
+    diagram_count = 0
+    for path, text in documents.items():
+        inside = False
+        diagram_start = 0
+        diagram_type_seen = False
+        diagram_type = ""
+        for line_number, line in enumerate(text.splitlines(), start=1):
+            stripped = line.strip()
+            if not inside and stripped == "```mermaid":
+                inside = True
+                diagram_start = line_number
+                diagram_type_seen = False
+                diagram_type = ""
+                diagram_count += 1
+                continue
+            if inside and stripped.startswith("```"):
+                if not diagram_type_seen:
+                    issues.append(
+                        Issue(
+                            f"{relative(root, path)}:{diagram_start}",
+                            "empty Mermaid diagram",
+                        )
+                    )
+                inside = False
+                continue
+            if not inside or not stripped:
+                continue
+            if not diagram_type_seen:
+                diagram_type_seen = True
+                diagram_type = stripped.split(maxsplit=1)[0]
+                declaration = (
+                    r"^(?:flowchart|graph)\s+(?:TB|TD|BT|RL|LR)$|"
+                    r"^sequenceDiagram$"
+                )
+                if not re.match(declaration, stripped):
+                    issues.append(
+                        Issue(
+                            f"{relative(root, path)}:{line_number}",
+                            f"unsupported Mermaid diagram declaration: {stripped}",
+                        )
+                    )
+            if diagram_type == "sequenceDiagram" and ";" in line:
+                issues.append(
+                    Issue(
+                        f"{relative(root, path)}:{line_number}",
+                        "semicolon in sequenceDiagram source is prohibited "
+                        "for cross-renderer compatibility",
+                    )
+                )
+        if inside:
+            issues.append(
+                Issue(
+                    f"{relative(root, path)}:{diagram_start}",
+                    "unclosed Mermaid code fence",
+                )
+            )
+    return issues, diagram_count
+
+
 def check_external_links(urls: set[str]) -> list[Issue]:
     issues: list[Issue] = []
     for url in sorted(urls):
@@ -419,7 +482,9 @@ def check_external_links(urls: set[str]) -> list[Issue]:
     return issues
 
 
-def check_repository(root: Path, include_external: bool = False) -> tuple[list[Issue], int, int]:
+def check_repository(
+    root: Path, include_external: bool = False
+) -> tuple[list[Issue], int, int, int]:
     root = root.resolve()
     documents = markdown_documents(root)
     issues, graph, external = check_links(root, documents)
@@ -430,9 +495,16 @@ def check_repository(root: Path, include_external: bool = False) -> tuple[list[I
     issues.extend(check_traceability(root, documents, definitions))
     issues.extend(check_reader_traceability(root, documents))
     issues.extend(check_hygiene(root, documents))
+    mermaid_issues, diagram_count = check_mermaid(root, documents)
+    issues.extend(mermaid_issues)
     if include_external:
         issues.extend(check_external_links(external))
-    return sorted(issues, key=lambda issue: (issue.path, issue.message)), len(documents), len(definitions)
+    return (
+        sorted(issues, key=lambda issue: (issue.path, issue.message)),
+        len(documents),
+        len(definitions),
+        diagram_count,
+    )
 
 
 def main() -> int:
@@ -445,7 +517,9 @@ def main() -> int:
         help=argparse.SUPPRESS,
     )
     args = parser.parse_args()
-    issues, document_count, identifier_count = check_repository(args.root, args.external)
+    issues, document_count, identifier_count, diagram_count = check_repository(
+        args.root, args.external
+    )
     if issues:
         for issue in issues:
             print(f"ERROR {issue.render()}", file=sys.stderr)
@@ -453,7 +527,8 @@ def main() -> int:
         return 1
     print(
         "Documentation quality gate: PASS "
-        f"({document_count} Markdown documents, {identifier_count} stable identifiers)"
+        f"({document_count} Markdown documents, {identifier_count} stable identifiers, "
+        f"{diagram_count} Mermaid diagrams)"
     )
     return 0
 

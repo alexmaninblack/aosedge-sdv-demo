@@ -111,12 +111,12 @@ manufacturing and deployment sequence described here.
 flowchart LR
     M0["M0<br/>two unprovisioned factory overlays"]
     M1["M1<br/>two unique Online Units"]
-    G0["G0<br/>SOP substrate; empty capability slot"]
+    G0["G0<br/>SOP substrate<br/>empty capability slot"]
     G1["G1<br/>Provider v1"]
     G2["G2<br/>Provider v1 + Brake Health v1"]
     G3["G3<br/>Provider v2 + Brake Health v2"]
     G4["G4<br/>Provider v3 + Brake Health v3"]
-    R0["R0<br/>Units retired; overlays discarded"]
+    R0["R0<br/>Units retired<br/>overlays discarded"]
 
     M0 -->|"provision once"| M1 --> G0
     G0 -->|"FOTA v1"| G1
@@ -440,13 +440,13 @@ sequenceDiagram
 
     Note over FT1,AC: Immutable Service v1 is built, signed and staged before the presentation
     FT1->>AC: Select Service v1 requiring Capability v1
-    AC->>VU: Check dependency; install Service v1 through SOTA 1
+    AC->>VU: Check dependency and install Service v1 through SOTA 1
     VU-->>AC: Service ready with exact version and digest
     VU->>BE: Send bounded v1 functional report
     BE-->>FT1: Ingestion and dashboard evidence
     FT1->>AC: Accept Service v1 integration result
     AC->>DU: Promote identical Service v1 artifact
-    DU-->>AC: G2 ready; Provider v1 unchanged
+    DU-->>AC: G2 ready, Provider v1 unchanged
 ```
 
 Service v1 can be updated, stopped, or rolled back without rebuilding or
@@ -564,7 +564,7 @@ sequenceDiagram
     FT1->>OA: Service/model digest and joint scenario result
     OA->>AC: Accept exact Provider v2 + Service v2 graph
     AC->>DU: Promote Provider v2 first
-    DU-->>AC: Provider v2 ready; v1 contract still usable
+    DU-->>AC: Provider v2 ready, v1 contract still usable
     AC->>DU: Promote Service v2 second
     DU-->>AC: G3 ready
 ```
@@ -741,12 +741,12 @@ sequenceDiagram
     participant DU as Demonstration Unit
 
     FT2->>AC: Select immutable Event Uploader requiring an already accepted capability version
-    AC->>VU: Check dependency; install through SOTA 2
+    AC->>VU: Check dependency and install through SOTA 2
     VU-->>FT2: Local event qualification and bounded-upload evidence
     VU->>EB: Deliver qualified low-friction event package
     FT2->>AC: Accept exact service version and scenario result
     AC->>DU: Promote identical SOTA 2 artifact
-    DU-->>AC: Event Uploader ready; other service lifecycles unchanged
+    DU-->>AC: Event Uploader ready, other service lifecycles unchanged
 ```
 
 Function Team 2 does not request a new Vehicle Data Platform Capability in the
@@ -919,7 +919,7 @@ sequenceDiagram
     DU-->>AC: Offline
     OR->>AC: Deprovision both Units using accepted Cloud operation
     AC-->>OR: Old identities/certificates rejected
-    OR->>AC: Delete Unit records; handle Unit-owned Nodes by qualified API semantics
+    OR->>AC: Delete Unit records and handle Unit-owned Nodes by qualified API semantics
     OR->>FB: Clear/archive current-session functional data by Unit IDs + time window
     OR->>CS: Reset actors, route, deterministic seed and local evidence
     OR->>OR: Discard both provisioned overlays and run-specific host state
