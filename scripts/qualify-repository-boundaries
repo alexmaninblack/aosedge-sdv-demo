@@ -256,6 +256,7 @@ def _run_project_gates(
         ["python3", "-B", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py"],
         integration,
     )
+    _run([str(integration / "scripts" / "docs-check")], integration)
     # The component lock may intentionally pin an older accepted release than
     # the current development checkouts. Validate the immutable lock here;
     # workspace/repositories.json and workspace-doctor qualify current HEADs.

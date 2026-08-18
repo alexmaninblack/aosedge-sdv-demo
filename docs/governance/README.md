@@ -6,3 +6,4 @@
 - [Licensing and copyright policy](licensing-and-copyright-policy.md)
 - [Confidential source handling](confidential-source-handling.md)
 - [Development workflow](development-workflow.md)
+- [Documentation and requirements management](documentation-and-requirements-management.md)

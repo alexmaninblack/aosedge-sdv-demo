@@ -19,6 +19,12 @@ Map the story to existing system boundaries, authorities and directions. If a
 new component, authority or trust boundary is required, revise and review the
 High-Level Architecture before continuing.
 
+Classify the change using
+[Documentation and Requirements Management](../governance/documentation-and-requirements-management.md):
+level A changes presentation only, level B changes behavior within accepted
+boundaries, and level C changes architecture. Level C starts as a proposed ADR
+and uses a short-lived architecture branch for the complete document cascade.
+
 ## 3. Add Architecture Flows
 
 Describe normal, validation, promotion, unavailable, offline, failure and

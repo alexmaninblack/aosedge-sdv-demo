@@ -7,6 +7,7 @@
   provisioning, and demo-retirement model
 - Version: 1.1
 - Prepared: 2026-08-17
+- Owner: Demo Architecture
 - Previous accepted version: 1.0, accepted 2026-08-16
 - Scope: manufacturing output, end-of-line provisioning, audience-visible
   capability evolution, release sequence, dashboards, observability, and

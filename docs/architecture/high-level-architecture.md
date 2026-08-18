@@ -6,6 +6,7 @@
 - Status: Review candidate based on the accepted visual architecture input
 - Version: 1.1
 - Prepared: 2026-08-17
+- Owner: System Architecture
 - Previous accepted version: 1.0, accepted 2026-08-16
 - Scope: CARLA, Vehicle Gateway ECU, AosVM Domain Controller, AosCloud,
   shared Vehicle Data Platform Capability, two independent OEM Service

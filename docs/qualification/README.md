@@ -13,4 +13,7 @@ qualification procedures, and sanitized defect evidence.
 - [Post-cleanup acceptance](post-cleanup-acceptance.md)
 - [CARLA VISS-to-KUKSA qualification](carla-viss-to-kuksa.md)
 - [Exact component lock](component-lock.md)
+- [R6.1 isolated-provider-store qualification design](r6-1-demo-isolated-provider-store.md)
+  — retained engineering evidence for local candidate `.11`, not an active
+  architecture source.
 - [Validation-set scope defect](r6-1-validation-set-scope-defect.md)

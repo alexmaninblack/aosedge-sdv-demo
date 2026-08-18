@@ -15,7 +15,5 @@ architecture is accepted.
   — complete `M0 -> M1 -> G0–G4 -> R0` mapping of Scenario 1.1 to High-Level
   Architecture 1.1, including the independent Function Team 2 candidate flow.
 - [Repository and component boundaries](repository-boundaries.md)
-- [R6.1 demo isolated-provider-store design](r6-1-demo-isolated-provider-store.md)
-  — retained engineering evidence for candidate `.11`, not the current HLA.
 - [Architecture decisions](decisions/)
 - [Diagram sources and exports](diagrams/)

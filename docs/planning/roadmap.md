@@ -90,6 +90,11 @@ Validate indexes, internal links and source precedence.
 Exit: the documentation tree presents one current design chain without broken
 links or competing active plans.
 
+The completed gate also establishes stable identifier anchors,
+human-readable package summaries, direct traceability links, the documented
+architecture-change cascade, and the deterministic `docs-check` commit/CI
+gate.
+
 ### D2 — Baseline acceptance
 
 Review HLA 1.1, Scenario 1.1, Architecture Flows 1.0, System Requirements 0.1
@@ -103,12 +108,18 @@ explicitly recorded.
 
 Create and review packages in this order:
 
-1. `CR-VEHICLE-SIM` and `CR-GATEWAY`;
-2. `CR-FACTORY` and `CR-VDP`;
-3. `CR-AOS`;
-4. `CR-BHS` and `CR-BRAKE-CLOUD`;
-5. `CR-EVT` and `CR-EVENT-CLOUD`;
-6. `CR-DEMO`, `CR-CROSS` and `CR-E2E`.
+1. [Vehicle simulation (`CR-VEHICLE-SIM`)](../requirements/component-decomposition-and-interface-register.md#cr-vehicle-sim)
+   and [Vehicle Gateway (`CR-GATEWAY`)](../requirements/component-decomposition-and-interface-register.md#cr-gateway);
+2. [Factory substrate (`CR-FACTORY`)](../requirements/component-decomposition-and-interface-register.md#cr-factory)
+   and [Vehicle Data Platform (`CR-VDP`)](../requirements/component-decomposition-and-interface-register.md#cr-vdp);
+3. [Aos lifecycle (`CR-AOS`)](../requirements/component-decomposition-and-interface-register.md#cr-aos);
+4. [Brake Health service (`CR-BHS`)](../requirements/component-decomposition-and-interface-register.md#cr-bhs)
+   and [Brake Health Cloud (`CR-BRAKE-CLOUD`)](../requirements/component-decomposition-and-interface-register.md#cr-brake-cloud);
+5. [Vehicle Stability service (`CR-EVT`)](../requirements/component-decomposition-and-interface-register.md#cr-evt)
+   and [Vehicle Stability Cloud (`CR-EVENT-CLOUD`)](../requirements/component-decomposition-and-interface-register.md#cr-event-cloud);
+6. [Demo orchestration (`CR-DEMO`)](../requirements/component-decomposition-and-interface-register.md#cr-demo),
+   [cross-cutting concerns (`CR-CROSS`)](../requirements/component-decomposition-and-interface-register.md#cr-cross)
+   and [end-to-end acceptance (`CR-E2E`)](../requirements/component-decomposition-and-interface-register.md#cr-e2e).
 
 Every component requirement must cite its parent `SYS-*` requirement, relevant
 `AF-*` flow, interface ID, verification method and required evidence.

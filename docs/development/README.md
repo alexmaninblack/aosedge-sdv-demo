@@ -63,3 +63,14 @@ raw Cloud logs, customer material or machine-specific absolute paths.
 
 For a new audience-visible behavior, use
 [Add or Change a Demo Scenario](add-demo-scenario.md).
+
+Before commit, run the deterministic documentation and repository gates:
+
+```sh
+./scripts/docs-check
+./scripts/qualify-repository-boundaries
+```
+
+The documentation gate checks navigation, anchors, stable identifiers,
+canonical metadata, readable package traceability and stale artifacts. The
+repository gate also checks workspace and confidentiality boundaries.

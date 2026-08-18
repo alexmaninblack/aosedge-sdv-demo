@@ -6,7 +6,7 @@
 - Status: retained engineering design evidence for unsigned rootfs candidate `.11`; not the current HLA source
 - Provider: signed and locally verified `0.2.0`, not published or assigned
 - Unit versions below are the qualification-time snapshot; current state is in
-  [Current Accepted Baseline](../qualification/current-baseline.md)
+  [Current Accepted Baseline](current-baseline.md)
 - Validation Unit at qualification: rootfs `.2`
 - Demonstration Unit at qualification: rootfs `6.1.0`
 
@@ -79,7 +79,7 @@ and DNS/TLS fail-safe behavior. A clean disposable `.11` boot passed the root,
 component, policy, store, service-order, and secret-exclusion gates.
 
 Exact candidate hashes are recorded in
-[the current baseline](../qualification/current-baseline.md).
+[the current baseline](current-baseline.md).
 
 ## Rollback Limitation
 

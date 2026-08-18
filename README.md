@@ -110,6 +110,7 @@ The safe repository-only gates do not sign, call mutating Cloud APIs, or alter
 a provisioned VM:
 
 ```sh
+./scripts/docs-check
 ./scripts/validate-component-lock
 ./scripts/validate-r6-1-source-lock
 ./scripts/validate-r6-1-manifest

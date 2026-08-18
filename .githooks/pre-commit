@@ -4,4 +4,5 @@
 
 set -eu
 repo_root=$(git rev-parse --show-toplevel)
-exec "$repo_root/scripts/guard-confidential-inputs" --staged
+"$repo_root/scripts/guard-confidential-inputs" --staged
+exec "$repo_root/scripts/docs-check"

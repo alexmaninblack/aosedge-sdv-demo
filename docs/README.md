@@ -22,6 +22,7 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Architecture
 
+- [Architecture documentation index](architecture/README.md)
 - [High-Level Architecture 1.1 — review candidate](architecture/high-level-architecture.md)
   — updated end-to-end system view based on the accepted visual input; 1.0 is
   the previous accepted checkpoint until review completes.
@@ -37,6 +38,7 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Demo
 
+- [Demo documentation index](demo/README.md)
 - [Staged Post-SOP Brake Health Demo Scenarios 1.1](demo/staged-post-sop-brake-health-demo-scenarios.md)
   — manufacturing-to-retirement audience-visible review candidate.
 - [Demo assets](demo/assets/) — original, license-cleared visual sources and
@@ -55,6 +57,7 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Planning
 
+- [Planning documentation index](planning/README.md)
 - [Current design and delivery roadmap](planning/roadmap.md)
 - [Repository inventory and migration plan](planning/repository-inventory-and-migration-plan.md)
   — completed workspace migration and cleanup record retained as historical
@@ -79,6 +82,7 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Operations
 
+- [Operations documentation index](operations/README.md)
 - [Run AosVM on Apple Silicon](operations/aosvm-apple-silicon.md) — canonical
   install, lifecycle and guarded provisioning guide.
 
@@ -90,6 +94,7 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Qualification
 
+- [Qualification documentation index](qualification/README.md)
 - [Current accepted baseline](qualification/current-baseline.md)
 - [CARLA VISS-to-KUKSA qualification](qualification/carla-viss-to-kuksa.md)
 - [Exact component lock](qualification/component-lock.md)
@@ -100,11 +105,15 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Governance
 
+- [Governance documentation index](governance/README.md)
 - [Licensing and copyright policy](governance/licensing-and-copyright-policy.md)
 - [Confidential source handling](governance/confidential-source-handling.md)
   — local-only input policy, sanitization rules, and Git safeguards.
 - [Development workflow](governance/development-workflow.md) — direct-to-main
   policy for the current single-developer, single-agent phase.
+- [Documentation and requirements management](governance/documentation-and-requirements-management.md)
+  — human-readable traceability, stable identifiers, quality gates and the
+  architecture-change cascade.
 
 ## Ownership Rule
 

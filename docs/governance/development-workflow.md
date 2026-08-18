@@ -43,3 +43,12 @@ following becomes true:
 
 Until then, branch creation adds coordination overhead without improving the
 current single-writer workflow.
+
+## Architecture Change Exception
+
+A level-C change that modifies an authority, trust boundary, component,
+interface, lifecycle or data direction uses a short-lived architecture branch
+even during the single-writer phase. The complete impacted documentation
+cascade is reviewed and passes `docs-check` before merge, so `main` never
+contains a partially migrated architecture baseline. See
+[Documentation and Requirements Management](documentation-and-requirements-management.md).

@@ -6,11 +6,13 @@
 - Status: Review candidate
 - Version: 1.0
 - Prepared: 2026-08-17
+- Owner: System Architecture
 - Replaces: superseded Scenario 1.0 mapping draft `0.1`
 - Architecture input: [High-Level Architecture 1.1](high-level-architecture.md)
 - Scenario input: [Staged Post-SOP Brake Health Demo Scenarios 1.1](../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - CARLA input: [R10 Native CARLA Vehicle Telemetry Inventory](../research/demo-foundation/r10-carla-telemetry-and-function-team-2.md)
-- Requirements status: not yet derived
+- Requirements input: [System Requirements and Traceability 0.1](../requirements/system-requirements-and-traceability.md)
+- Component input: [Component Decomposition and Interface Register 0.1](../requirements/component-decomposition-and-interface-register.md)
 - Implementation, build, signing, Cloud, or Unit mutation authorized: no
 
 ## Purpose
@@ -171,6 +173,7 @@ All flows below preserve these rules:
 
 ## M0 — Manufacturing Output
 
+<a id="af-m0-lc"></a>
 ### `AF-M0-LC` — Factory-image and overlay creation
 
 ```mermaid
@@ -196,6 +199,7 @@ The factory image contains the provider-specific runtime and an empty component
 store, but no provider payload, SOTA service, Cloud Unit, Cloud certificate,
 KUKSA service token, or other reusable vehicle identity.
 
+<a id="af-m0-ob"></a>
 ### `AF-M0-OB` — Manufacturing evidence
 
 | Evidence owner | Audience proof |
@@ -206,6 +210,7 @@ KUKSA service token, or other reusable vehicle identity.
 | Software Delivery Dashboard | Both instances show `Manufactured / Awaiting provisioning`; no Cloud Unit ID exists |
 | Component inventory | Empty provider store and no functional service payload |
 
+<a id="af-m0-fr"></a>
 ### `AF-M0-FR` — Failure containment
 
 - A digest mismatch blocks overlay creation.
@@ -226,6 +231,7 @@ KUKSA service token, or other reusable vehicle identity.
 
 ## M1 — End-of-Line Provisioning
 
+<a id="af-m1-lc"></a>
 ### `AF-M1-LC` — Provisioning and lane assignment
 
 ```mermaid
@@ -253,6 +259,7 @@ sequenceDiagram
 Provisioning is a once-per-overlay identity operation. VU and DU retain their
 identities throughout `G0–G4`; no FOTA or SOTA step reprovisions them.
 
+<a id="af-m1-ob"></a>
 ### `AF-M1-OB` — Provisioning evidence
 
 | Surface | Required evidence |
@@ -265,6 +272,7 @@ identities throughout `G0–G4`; no FOTA or SOTA step reprovisions them.
 Before M1 the session is correlated by start time and local overlay roles.
 After M1 it is bound to the two Unit IDs and the same time window.
 
+<a id="af-m1-fr"></a>
 ### `AF-M1-FR` — Fail-closed provisioning
 
 - After the SDK begins, an uncertain or partial result is preserved for
@@ -284,6 +292,7 @@ After M1 it is bound to the two Unit IDs and the same time window.
 
 ## G0 — Provisioned SOP Substrate Without Feature Payloads
 
+<a id="af-g0-rt"></a>
 ### `AF-G0-RT` — Working vehicle, empty Domain Controller feature graph
 
 ```mermaid
@@ -300,6 +309,7 @@ The vehicle is healthy and visibly operational. The Domain Controller is
 online and update-ready, but the provider slot is empty. Absence of vehicle
 data in KUKSA is a deliberate accepted state, not a platform fault.
 
+<a id="af-g0-ob"></a>
 ### `AF-G0-OB` — Baseline proof
 
 | Surface | Required evidence |
@@ -310,6 +320,7 @@ data in KUKSA is a deliberate accepted state, not a platform fault.
 | KUKSA qualification probe | No live provider-owned values; no fabricated zeros |
 | Functional dashboards | Explicit `feature not deployed`, not a transport error |
 
+<a id="af-g0-fr"></a>
 ### `AF-G0-FR` — Baseline failure boundaries
 
 - Vehicle-control failure invokes the existing Gateway safe-stop behavior and
@@ -331,6 +342,7 @@ data in KUKSA is a deliberate accepted state, not a platform fault.
 
 ## G1 — Vehicle Data Platform Capability v1
 
+<a id="af-g1-lc"></a>
 ### `AF-G1-LC` — FOTA validation and promotion
 
 ```mermaid
@@ -361,6 +373,7 @@ Current Unit Set membership alone is not accepted as target proof. The
 dashboard derives effective scope from current Unit pending-batch state and
 blocks stale or unexpected membership before approval.
 
+<a id="af-g1-rt"></a>
 ### `AF-G1-RT` — First vehicle-data path into KUKSA
 
 ```mermaid
@@ -375,6 +388,7 @@ flowchart LR
 Provider v1 is read-only toward the vehicle. It publishes only the accepted v1
 subset and has no VISS Set or vehicle-control permission.
 
+<a id="af-g1-ob"></a>
 ### `AF-G1-OB` — Platform-capability proof
 
 | Surface | Required evidence |
@@ -386,6 +400,7 @@ subset and has no VISS Set or vehicle-control permission.
 | ELK/log view | Selected provider startup, ready, source-loss, and recovery evidence |
 | Brake Health Dashboard | Still `service not deployed` |
 
+<a id="af-g1-fr"></a>
 ### `AF-G1-FR` — Provider failure and rollback
 
 ```text
@@ -412,6 +427,7 @@ it to reset the complete demo.
 
 ## G2 — Brake Health Service v1
 
+<a id="af-g2-lc"></a>
 ### `AF-G2-LC` — Independent SOTA 1 delivery
 
 ```mermaid
@@ -436,6 +452,7 @@ sequenceDiagram
 Service v1 can be updated, stopped, or rolled back without rebuilding or
 replacing Provider v1.
 
+<a id="af-g2-rt"></a>
 ### `AF-G2-RT` — Bounded functional reporting
 
 ```mermaid
@@ -450,6 +467,7 @@ flowchart LR
 Service v1 performs no prediction and requests no advisory. Its backend does
 not connect directly to CARLA, VISS, KUKSA, or AosCloud.
 
+<a id="af-g2-ob"></a>
 ### `AF-G2-OB` — First functional-service proof
 
 | Surface | Required evidence |
@@ -460,6 +478,7 @@ not connect directly to CARLA, VISS, KUKSA, or AosCloud.
 | ELK/log view | Service start, KUKSA subscription, backend connection, bounded error evidence |
 | AosCloud | Service instance state and resource monitoring |
 
+<a id="af-g2-fr"></a>
 ### `AF-G2-FR` — Service and backend isolation
 
 - An unmet capability dependency blocks Service v1 installation or start.
@@ -480,6 +499,7 @@ not connect directly to CARLA, VISS, KUKSA, or AosCloud.
 
 ## G3 — Capability v2 and Predictive Brake Health Service v2
 
+<a id="af-g3-dep"></a>
 ### `AF-G3-DEP` — Deferred native cross-lifecycle rejection
 
 This negative-path flow is part of the target demo design but is not executable
@@ -520,6 +540,7 @@ The existing service-side compatibility file and fail-closed readiness check
 remain defense in depth. The Software Delivery Dashboard does not recreate the
 roadmap feature.
 
+<a id="af-g3-lc"></a>
 ### `AF-G3-LC` — Feature request, independent qualification, joint acceptance
 
 ```mermaid
@@ -552,6 +573,7 @@ Provider v2 is a backward-compatible superset. Platform qualification finishes
 before functional integration. Neither candidate is promoted until the exact
 combined graph is accepted.
 
+<a id="af-g3-rt"></a>
 ### `AF-G3-RT` — Deterministic local prediction
 
 ```mermaid
@@ -569,6 +591,7 @@ graphs. Model development and training occur before the presentation; the live
 demo performs deterministic inference only. Native, derived, estimated, and
 simulated-component inputs are visibly distinguished.
 
+<a id="af-g3-ob"></a>
 ### `AF-G3-OB` — Predictive-function proof
 
 | Surface | Required evidence |
@@ -579,6 +602,7 @@ simulated-component inputs are visibly distinguished.
 | Brake Health Dashboard | New inputs, provenance labels, model version/digest, result, confidence/quality, original event time |
 | ELK/log view | Provider mapping/readiness and service model-load/inference decisions without secrets or unrestricted raw payloads |
 
+<a id="af-g3-fr"></a>
 ### `AF-G3-FR` — Independent defect ownership and reverse dependency
 
 ```text
@@ -610,6 +634,7 @@ Rollback from v2 graph
 
 ## G4 — Bidirectional Advisory Capability
 
+<a id="af-g4-lc"></a>
 ### `AF-G4-LC` — Capability v3 and Service v3 promotion
 
 ```mermaid
@@ -640,6 +665,7 @@ sequenceDiagram
 Scenario language may call the combined capability Provider v3 even if the
 implementation packages inbound and outbound providers separately.
 
+<a id="af-g4-rt"></a>
 ### `AF-G4-RT` — Local advisory round trip
 
 ```mermaid
@@ -661,6 +687,7 @@ The advisory path ends at factual Gateway receipt/status. The demo implements
 no IVI or Instrument Cluster and must not claim `displayed to driver` or
 `driver acknowledged`.
 
+<a id="af-g4-ob"></a>
 ### `AF-G4-OB` — Advisory and offline proof
 
 | Surface | Required evidence |
@@ -672,6 +699,7 @@ no IVI or Instrument Cluster and must not claim `displayed to driver` or
 | ELK/log view | Selected inference, policy, delivery, queue and reconnection records |
 | AosCloud | Software state remains observable; it is not in the local decision path |
 
+<a id="af-g4-fr"></a>
 ### `AF-G4-FR` — Fail-closed actuation and offline continuity
 
 - An unauthorized path, type, enum, stale command, or malformed request is
@@ -701,6 +729,7 @@ This is an independent architecture flow for the selected detailed-design
 candidate. It is **not** part of Scenario 1.1's `G0–G4` stage sequence and does
 not change that document's current acceptance state.
 
+<a id="af-ft2-lc"></a>
 ### `AF-FT2-LC` — Independent SOTA 2 lifecycle
 
 ```mermaid
@@ -725,6 +754,7 @@ current demo. Its stage can be inserted only after the accepted platform
 contract already contains every required dynamics signal. It has no dependency
 on the Brake Health service and no vehicle-actuation permission.
 
+<a id="af-ft2-rt"></a>
 ### `AF-FT2-RT` — Local detection and bounded event upload
 
 ```mermaid
@@ -746,6 +776,7 @@ exact service-facing subset remains a detailed data-contract decision. CARLA
 ground truth may qualify the scenario and event detector; it must not be passed
 to the service as if it were a production vehicle sensor.
 
+<a id="af-ft2-ob"></a>
 ### `AF-FT2-OB` — Candidate evidence
 
 | Surface | Required evidence |
@@ -757,6 +788,7 @@ to the service as if it were a production vehicle sensor.
 | ELK/log view | Selected local detection and queue state without leaking unrestricted raw telemetry |
 | Brake Health Dashboard | Unchanged; no coupling to Function Team 2 data plane |
 
+<a id="af-ft2-fr"></a>
 ### `AF-FT2-FR` — Candidate failure boundaries
 
 - No event is emitted for stale, missing, or internally inconsistent mandatory
@@ -785,6 +817,7 @@ Before adding this flow to an audience scenario:
 6. define the independent backend/dashboard and offline acceptance evidence;
 7. revise Demo Scenario 1.1 before presenting this candidate as a live stage.
 
+<a id="af-x-source"></a>
 ## `AF-X-SOURCE` — One Visible Vehicle Source, Two Unit Roles
 
 The architecture contains two Domain Controller instances but only one visible
@@ -802,6 +835,7 @@ replay orchestrator is a demo responsibility, not a new production ECU.
 
 Selection between the two modes remains an open detailed-design decision.
 
+<a id="af-x-obs"></a>
 ## `AF-X-OBS` — Cross-Stage Evidence Architecture
 
 ```mermaid
@@ -827,6 +861,7 @@ flowchart LR
 Every audience claim must name the source surface and, where relevant, expose
 technical drill-down to the authoritative system.
 
+<a id="af-x-release"></a>
 ## `AF-X-RELEASE` — Common Validation and Promotion Pattern
 
 Every FOTA and SOTA transition uses the same safety pattern:
@@ -848,6 +883,7 @@ An unexpected Unit, stale pending batch, digest mismatch, unmet dependency, or
 incomplete evidence blocks the transition. The dashboard may initiate only
 explicitly approved actions and must always re-read AosCloud afterward.
 
+<a id="af-x-offline"></a>
 ## `AF-X-OFFLINE` — Connectivity Domains
 
 Three connections must be tested independently:
@@ -863,6 +899,7 @@ unbounded buffering, widened authorization, or an implicit vehicle command.
 
 ## R0 — End-of-Demo Retirement and Next-Run Reset
 
+<a id="af-r0-lc"></a>
 ### `AF-R0-LC` — Controlled retirement
 
 ```mermaid
@@ -889,6 +926,7 @@ sequenceDiagram
     OR->>FI: Verify immutable factory image unchanged
 ```
 
+<a id="af-r0-ob"></a>
 ### `AF-R0-OB` — Retirement evidence
 
 - both Units reached `Offline` before deprovisioning;
@@ -902,6 +940,7 @@ sequenceDiagram
 - the immutable factory image and digest remain unchanged;
 - CARLA has no scenario-owned actor or sensor leak.
 
+<a id="af-r0-fr"></a>
 ### `AF-R0-FR` — Partial-failure rules
 
 - Do not delete a local overlay while its VM is running or while Cloud identity
@@ -959,28 +998,28 @@ vehicle control or software lifecycle authority.
 
 ## Consolidated Gap Register
 
-| Gap ID | Flow | Unresolved design or proof | Requirements owner |
-| --- | --- | --- | --- |
-| `GAP-AF-01` | `M0` | Freeze and qualify the clean unprovisioned OEM Demo Factory Image with empty provider slot and no reusable identity | Platform Team |
-| `GAP-AF-02` | `M0/M1` | Prove unique first-boot and provisioned identities for two overlays | Platform Team + demo orchestration |
-| `GAP-AF-03` | `M1/R0` | Qualify provisioning, partial-result reconciliation, deprovision, certificate rejection, Unit/Node deletion and audit retention | AosCloud integration |
-| `GAP-AF-04` | `G0/X-SOURCE` | Select live binding or deterministic replay for one CARLA source and two Unit roles | Demo architecture |
-| `GAP-AF-05` | `G1` | Freeze Provider v1 signal, freshness, readiness, health and rollback contract | Platform Team |
-| `GAP-AF-06` | `G1/X-RELEASE` | Implement effective-target preview and stale-batch protection from current Unit pending-batch state | Software Delivery Dashboard |
-| `GAP-AF-07` | `G2` | Define and implement Service v1, bounded report, backend, dashboard, retry and idempotency | Function Team 1 |
-| `GAP-AF-08` | `G3` | Define Provider v2 inputs, provenance and backward compatibility | Platform Team + Function Team 1 |
-| `GAP-AF-09` | `G3` | Define simulated brake-condition source and deterministic model/result contract | Vehicle simulation + Function Team 1 |
-| `GAP-AF-10` | `G4` | Define and implement KUKSA actuator, outbound provider, VISS Set, Gateway handler and factual status | Platform Team + Gateway |
-| `GAP-AF-11` | `G4/X-OFFLINE` | Define bounded local report queue, reconnect, duplicate handling and timing | Function Team 1 |
-| `GAP-AF-12` | `FT2` | Calibrate low-friction CARLA stimulus and freeze the local event state machine and bounded package | Function Team 2 + CARLA scenario |
-| `GAP-AF-13` | `FT2` | Prove required dynamics signals already exist in an accepted platform contract; no new FT2 platform request | Platform Team + Function Team 2 |
-| `GAP-AF-14` | `FT2` | Implement independent event backend/dashboard and offline/idempotent ingestion | Function Team 2 |
-| `GAP-AF-15` | all | Define least-privilege KUKSA publish/read/actuate identities and the transition from demo tokens to the authorization adapter | Platform security |
-| `GAP-AF-16` | all | Qualify AosEdge log collection/export, ELK access, retention, offline and redaction | Operational observability |
-| `GAP-AF-17` | all | Implement the Software Delivery Dashboard without a parallel desired-state cache | Demo solution |
-| `GAP-AF-18` | all | Define stage durations, timeout budgets, local decision latency and technical/executive presentation modes | Demo experience |
-| `GAP-AF-19` | `M1/R0` | Define current-run correlation by start time, local overlay roles, Unit IDs, and external-data retention/cleanup boundaries | Demo orchestration + functional teams |
-| `GAP-AF-20` | `G2–G4/FT2` | Define and prove versioned capability-dependency declaration, current runtime fail-closed behavior, future native Cloud rejection before rollout/transfer, compatibility checks, and safe dependent-first rollback for both SOTA lifecycles | AosEdge Platform Team + Platform Team + both service providers |
+| Gap ID | Short name | Flow | Unresolved design or proof | Requirements owner |
+| --- | --- | --- | --- | --- |
+| <a id="gap-af-01"></a>`GAP-AF-01` | Clean factory baseline | `M0` | Freeze and qualify the clean unprovisioned OEM Demo Factory Image with empty provider slot and no reusable identity | Platform Team |
+| <a id="gap-af-02"></a>`GAP-AF-02` | Unique overlay identities | `M0/M1` | Prove unique first-boot and provisioned identities for two overlays | Platform Team + demo orchestration |
+| <a id="gap-af-03"></a>`GAP-AF-03` | Provisioning and retirement qualification | `M1/R0` | Qualify provisioning, partial-result reconciliation, deprovision, certificate rejection, Unit/Node deletion and audit retention | AosCloud integration |
+| <a id="gap-af-04"></a>`GAP-AF-04` | One source, two Unit roles | `G0/X-SOURCE` | Select live binding or deterministic replay for one CARLA source and two Unit roles | Demo architecture |
+| <a id="gap-af-05"></a>`GAP-AF-05` | Provider v1 contract | `G1` | Freeze Provider v1 signal, freshness, readiness, health and rollback contract | Platform Team |
+| <a id="gap-af-06"></a>`GAP-AF-06` | Effective-target preview | `G1/X-RELEASE` | Implement effective-target preview and stale-batch protection from current Unit pending-batch state | Software Delivery Dashboard |
+| <a id="gap-af-07"></a>`GAP-AF-07` | Brake Health v1 product | `G2` | Define and implement Service v1, bounded report, backend, dashboard, retry and idempotency | Function Team 1 |
+| <a id="gap-af-08"></a>`GAP-AF-08` | Provider v2 compatibility | `G3` | Define Provider v2 inputs, provenance and backward compatibility | Platform Team + Function Team 1 |
+| <a id="gap-af-09"></a>`GAP-AF-09` | Deterministic brake model | `G3` | Define simulated brake-condition source and deterministic model/result contract | Vehicle simulation + Function Team 1 |
+| <a id="gap-af-10"></a>`GAP-AF-10` | Outbound advisory chain | `G4` | Define and implement KUKSA actuator, outbound provider, VISS Set, Gateway handler and factual status | Platform Team + Gateway |
+| <a id="gap-af-11"></a>`GAP-AF-11` | Offline report queue | `G4/X-OFFLINE` | Define bounded local report queue, reconnect, duplicate handling and timing | Function Team 1 |
+| <a id="gap-af-12"></a>`GAP-AF-12` | Low-friction event contract | `FT2` | Calibrate low-friction CARLA stimulus and freeze the local event state machine and bounded package | Function Team 2 + CARLA scenario |
+| <a id="gap-af-13"></a>`GAP-AF-13` | Existing dynamics-signal proof | `FT2` | Prove required dynamics signals already exist in an accepted platform contract; no new FT2 platform request | Platform Team + Function Team 2 |
+| <a id="gap-af-14"></a>`GAP-AF-14` | Function Team 2 Cloud product | `FT2` | Implement independent event backend/dashboard and offline/idempotent ingestion | Function Team 2 |
+| <a id="gap-af-15"></a>`GAP-AF-15` | Least-privilege KUKSA access | all | Define least-privilege KUKSA publish/read/actuate identities and the transition from demo tokens to the authorization adapter | Platform security |
+| <a id="gap-af-16"></a>`GAP-AF-16` | Logs and ELK qualification | all | Qualify AosEdge log collection/export, ELK access, retention, offline and redaction | Operational observability |
+| <a id="gap-af-17"></a>`GAP-AF-17` | Software Delivery Dashboard | all | Implement the Software Delivery Dashboard without a parallel desired-state cache | Demo solution |
+| <a id="gap-af-18"></a>`GAP-AF-18` | Presentation and timing bounds | all | Define stage durations, timeout budgets, local decision latency and technical/executive presentation modes | Demo experience |
+| <a id="gap-af-19"></a>`GAP-AF-19` | Demo-run correlation and cleanup | `M1/R0` | Define current-run correlation by start time, local overlay roles, Unit IDs, and external-data retention/cleanup boundaries | Demo orchestration + functional teams |
+| <a id="gap-af-20"></a>`GAP-AF-20` | Cross-lifecycle compatibility | `G2–G4/FT2` | Define and prove versioned capability-dependency declaration, current runtime fail-closed behavior, future native Cloud rejection before rollout/transfer, compatibility checks, and safe dependent-first rollback for both SOTA lifecycles | AosEdge Platform Team + Platform Team + both service providers |
 
 These gaps are inputs to the requirements package. They do not authorize
 component implementation and do not imply that every gap belongs in one

@@ -1,0 +1,462 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+"""Validate documentation navigation, references, metadata, and traceability."""
+
+from __future__ import annotations
+
+import argparse
+import re
+import sys
+import urllib.error
+import urllib.request
+from collections import Counter, deque
+from dataclasses import dataclass
+from pathlib import Path
+from urllib.parse import unquote, urlsplit
+
+
+CANONICAL_DOCUMENTS = (
+    Path("docs/architecture/high-level-architecture.md"),
+    Path("docs/demo/staged-post-sop-brake-health-demo-scenarios.md"),
+    Path("docs/architecture/demo-scenario-architecture-flows.md"),
+    Path("docs/requirements/system-requirements-and-traceability.md"),
+    Path("docs/requirements/component-decomposition-and-interface-register.md"),
+)
+REQUIRED_METADATA = ("Status", "Version", "Prepared", "Owner")
+ALLOWED_STATUSES = ("draft", "review candidate", "accepted", "superseded")
+ALLOWED_DOC_SUFFIXES = {".md", ".png", ".drawio"}
+OBSOLETE_NAME = re.compile(
+    r"(?i)(?:\.bak$|~$|(?:^|[-_.])(?:old|backup|copy|tmp)(?:[-_.]|$))"
+)
+PERSONAL_PATH = "/Users/" + "alexagizim"
+EXPLICIT_ANCHOR = re.compile(r'<a\s+id=["\']([^"\']+)["\']\s*></a>', re.I)
+HEADING = re.compile(r"^#{1,6}\s+(.+?)\s*$", re.M)
+MARKDOWN_LINK = re.compile(r"!?\[([^\]]*)\]\(([^)]+)\)")
+INPUT_LINK = re.compile(
+    r"^- ([A-Za-z][A-Za-z ]+ input): \[([^\]]+)\]\(([^)]+)\)\s*$",
+    re.M,
+)
+IDENTIFIER = re.compile(
+    r"\b(?:"
+    r"GAP-AF-\d{2}|"
+    r"SYS-[A-Z][A-Z0-9]*-\d{3}|"
+    r"CMP-[A-Z0-9]+(?:-[A-Z0-9]+)*|"
+    r"IF-[A-Z0-9]+-\d{3}|"
+    r"AF-[A-Z0-9]+(?:-[A-Z0-9]+)+|"
+    r"CR-[A-Z0-9]+(?:-[A-Z0-9]+)*"
+    r")\b"
+)
+STABLE_ANCHOR = re.compile(
+    r"^(?:gap-af-\d{2}|sys-[a-z0-9]+-\d{3}|cmp-[a-z0-9-]+|"
+    r"if-[a-z0-9]+-\d{3}|af-[a-z0-9-]+|cr-[a-z0-9-]+)$"
+)
+
+
+@dataclass(frozen=True)
+class Issue:
+    path: str
+    message: str
+
+    def render(self) -> str:
+        return f"{self.path}: {self.message}"
+
+
+def markdown_documents(root: Path) -> dict[Path, str]:
+    paths = [*sorted(root.glob("*.md")), *sorted((root / "docs").rglob("*.md"))]
+    return {
+        path.resolve(): path.read_text(encoding="utf-8")
+        for path in paths
+        if path.is_file()
+    }
+
+
+def relative(root: Path, path: Path) -> str:
+    try:
+        return path.resolve().relative_to(root.resolve()).as_posix()
+    except ValueError:
+        return str(path)
+
+
+def github_slug(value: str) -> str:
+    value = re.sub(r"<[^>]+>", "", value)
+    value = value.replace("`", "").replace("*", "").replace("_", "")
+    value = value.lower().strip()
+    value = re.sub(r"[^\w\s-]", "", value)
+    return re.sub(r"[\s-]+", "-", value).strip("-")
+
+
+def anchors(text: str) -> set[str]:
+    values = {value.lower() for value in EXPLICIT_ANCHOR.findall(text)}
+    generated: Counter[str] = Counter()
+    for heading in HEADING.findall(text):
+        base = github_slug(heading)
+        if not base:
+            continue
+        suffix = generated[base]
+        generated[base] += 1
+        values.add(base if suffix == 0 else f"{base}-{suffix}")
+    return values
+
+
+def link_target(raw: str) -> str:
+    value = raw.strip()
+    if value.startswith("<") and ">" in value:
+        return value[1 : value.index(">")]
+    return value.split(maxsplit=1)[0]
+
+
+def resolve_local_target(root: Path, source: Path, raw: str) -> tuple[Path, str]:
+    target = unquote(link_target(raw))
+    path_part, _, fragment = target.partition("#")
+    destination = source if not path_part else (source.parent / path_part)
+    destination = destination.resolve()
+    if destination.is_dir():
+        destination = destination / "README.md"
+    return destination, fragment.lower()
+
+
+def check_links(
+    root: Path, documents: dict[Path, str]
+) -> tuple[list[Issue], dict[Path, set[Path]], set[str]]:
+    issues: list[Issue] = []
+    graph = {path: set() for path in documents}
+    external: set[str] = set()
+    anchor_cache = {path: anchors(text) for path, text in documents.items()}
+    for source, text in documents.items():
+        for _, raw in MARKDOWN_LINK.findall(text):
+            target = link_target(raw)
+            scheme = urlsplit(target).scheme.lower()
+            if scheme in {"http", "https"}:
+                external.add(target)
+                continue
+            if scheme in {"mailto", "data"}:
+                continue
+            if scheme or target.startswith("//"):
+                issues.append(Issue(relative(root, source), f"unsupported link: {target}"))
+                continue
+            destination, fragment = resolve_local_target(root, source, raw)
+            try:
+                destination.relative_to(root.resolve())
+            except ValueError:
+                issues.append(Issue(relative(root, source), f"link leaves repository: {target}"))
+                continue
+            if not destination.exists():
+                issues.append(Issue(relative(root, source), f"missing link target: {target}"))
+                continue
+            if destination.suffix.lower() == ".md":
+                if destination not in documents:
+                    issues.append(
+                        Issue(relative(root, source), f"Markdown target was not scanned: {target}")
+                    )
+                    continue
+                graph[source].add(destination)
+                if fragment and fragment not in anchor_cache[destination]:
+                    issues.append(
+                        Issue(relative(root, source), f"missing anchor in {target}")
+                    )
+    return issues, graph, external
+
+
+def check_reachability(
+    root: Path, documents: dict[Path, str], graph: dict[Path, set[Path]]
+) -> list[Issue]:
+    start = (root / "docs" / "README.md").resolve()
+    if start not in documents:
+        return [Issue("docs/README.md", "documentation map is missing")]
+    reached = {start}
+    queue = deque([start])
+    while queue:
+        source = queue.popleft()
+        for destination in graph.get(source, set()):
+            if destination not in reached:
+                reached.add(destination)
+                queue.append(destination)
+    return [
+        Issue(relative(root, path), "document is not reachable from docs/README.md")
+        for path in sorted(documents)
+        if path != (root / "README.md").resolve()
+        and path.is_relative_to((root / "docs").resolve())
+        and path not in reached
+    ]
+
+
+def check_identifiers(root: Path, documents: dict[Path, str]) -> tuple[list[Issue], set[str]]:
+    issues: list[Issue] = []
+    definitions: dict[str, list[Path]] = {}
+    references: dict[str, set[Path]] = {}
+    for path, text in documents.items():
+        for value in EXPLICIT_ANCHOR.findall(text):
+            normalized = value.lower()
+            if STABLE_ANCHOR.fullmatch(normalized):
+                identifier = normalized.upper()
+                definitions.setdefault(identifier, []).append(path)
+        for identifier in IDENTIFIER.findall(text):
+            references.setdefault(identifier, set()).add(path)
+    for identifier, paths in sorted(definitions.items()):
+        if len(paths) != 1:
+            rendered = ", ".join(relative(root, path) for path in paths)
+            issues.append(Issue(rendered, f"duplicate identifier definition: {identifier}"))
+    for identifier, paths in sorted(references.items()):
+        if identifier not in definitions:
+            rendered = ", ".join(relative(root, path) for path in sorted(paths))
+            issues.append(Issue(rendered, f"undefined identifier: {identifier}"))
+    return issues, set(definitions)
+
+
+def metadata(text: str, field: str) -> str | None:
+    match = re.search(rf"^- {re.escape(field)}: (.+)$", text, re.M)
+    return match.group(1).strip() if match else None
+
+
+def check_metadata(root: Path, documents: dict[Path, str]) -> list[Issue]:
+    issues: list[Issue] = []
+    for relative_path in CANONICAL_DOCUMENTS:
+        path = (root / relative_path).resolve()
+        text = documents.get(path)
+        if text is None:
+            issues.append(Issue(relative_path.as_posix(), "canonical document is missing"))
+            continue
+        for field in REQUIRED_METADATA:
+            if not metadata(text, field):
+                issues.append(Issue(relative_path.as_posix(), f"missing metadata: {field}"))
+        status = (metadata(text, "Status") or "").lower()
+        if status and not status.startswith(ALLOWED_STATUSES):
+            issues.append(Issue(relative_path.as_posix(), f"unsupported status: {status}"))
+        prepared = metadata(text, "Prepared") or ""
+        if prepared and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", prepared):
+            issues.append(Issue(relative_path.as_posix(), f"invalid Prepared date: {prepared}"))
+        for label, title, raw_target in INPUT_LINK.findall(text):
+            destination, _ = resolve_local_target(root, path, raw_target)
+            target_text = documents.get(destination)
+            if target_text is None:
+                continue
+            target_version = metadata(target_text, "Version")
+            if target_version and target_version not in title:
+                issues.append(
+                    Issue(
+                        relative_path.as_posix(),
+                        f"{label} label does not name target version {target_version}: {title}",
+                    )
+                )
+    return issues
+
+
+def check_traceability(root: Path, documents: dict[Path, str], definitions: set[str]) -> list[Issue]:
+    issues: list[Issue] = []
+    register = (
+        root / "docs" / "requirements" / "component-decomposition-and-interface-register.md"
+    ).resolve()
+    text = documents.get(register, "")
+    start = text.find("## Detailed Package Traceability")
+    end = text.find("## Boundary Decisions Requiring Review", start)
+    traceability = text[start:end] if start >= 0 and end > start else ""
+    allocated = {value for value in IDENTIFIER.findall(traceability) if value.startswith("SYS-")}
+    system_requirements = {value for value in definitions if value.startswith("SYS-")}
+    for identifier in sorted(system_requirements - allocated):
+        issues.append(Issue(relative(root, register), f"system requirement is not allocated: {identifier}"))
+
+    requirements = (
+        root / "docs" / "requirements" / "system-requirements-and-traceability.md"
+    ).resolve()
+    requirements_text = documents.get(requirements, "")
+    for line_number, line in enumerate(requirements_text.splitlines(), start=1):
+        match = re.search(r'<a id="(sys-[a-z0-9-]+)"></a>', line)
+        if not match:
+            continue
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) != 5 or not cells[1]:
+            issues.append(
+                Issue(
+                    f"{relative(root, requirements)}:{line_number}",
+                    f"requirement {match.group(1).upper()} must have a short name",
+                )
+            )
+
+    flows = (
+        root / "docs" / "architecture" / "demo-scenario-architecture-flows.md"
+    ).resolve()
+    flows_text = documents.get(flows, "")
+    for line_number, line in enumerate(flows_text.splitlines(), start=1):
+        match = re.search(r'<a id="(gap-af-\d{2})"></a>', line)
+        if not match:
+            continue
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) != 5 or not cells[1]:
+            issues.append(
+                Issue(
+                    f"{relative(root, flows)}:{line_number}",
+                    f"gap {match.group(1).upper()} must have a short name",
+                )
+            )
+
+    for line_number, line in enumerate(text.splitlines(), start=1):
+        match = re.search(r'<a id="(if-[a-z0-9-]+)"></a>', line)
+        if not match:
+            continue
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) != 6 or not cells[1] or not cells[2]:
+            issues.append(
+                Issue(
+                    f"{relative(root, register)}:{line_number}",
+                    f"interface {match.group(1).upper()} must have producer and consumer",
+                )
+            )
+    return issues
+
+
+def check_reader_traceability(root: Path, documents: dict[Path, str]) -> list[Issue]:
+    """Keep the component-package reader view useful without losing exact links."""
+
+    issues: list[Issue] = []
+    register = (
+        root / "docs" / "requirements" / "component-decomposition-and-interface-register.md"
+    ).resolve()
+    text = documents.get(register, "")
+    packages_start = text.find("## Provisional Component Requirement Packages")
+    details_start = text.find("## Detailed Package Traceability", packages_start)
+    details_end = text.find("## Boundary Decisions Requiring Review", details_start)
+    if packages_start < 0 or details_start < 0 or details_end < 0:
+        issues.append(Issue(relative(root, register), "component package traceability sections are missing"))
+        return issues
+
+    reader_view = text[packages_start:details_start]
+    if "| Package | Human-readable responsibility |" not in reader_view:
+        issues.append(Issue(relative(root, register), "component package reader view is missing"))
+    reader_system_ids = sorted(
+        {value for value in IDENTIFIER.findall(reader_view) if value.startswith("SYS-")}
+    )
+    if reader_system_ids:
+        issues.append(
+            Issue(
+                relative(root, register),
+                "reader view contains unexplained system identifiers: "
+                + ", ".join(reader_system_ids),
+            )
+        )
+
+    for line_number, line in enumerate(reader_view.splitlines(), start=1):
+        match = re.search(r'<a id="(cr-[a-z0-9-]+)"></a>', line)
+        if not match:
+            continue
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) != 4 or not cells[1]:
+            issues.append(
+                Issue(
+                    f"{relative(root, register)}:{line_number}",
+                    f"package {match.group(1).upper()} must have a human-readable responsibility",
+                )
+            )
+
+    details = text[details_start:details_end]
+    unlinked_details = MARKDOWN_LINK.sub("", details)
+    unlinked_system_ids = sorted(
+        {value for value in IDENTIFIER.findall(unlinked_details) if value.startswith("SYS-")}
+    )
+    for identifier in unlinked_system_ids:
+        issues.append(
+            Issue(
+                relative(root, register),
+                f"detailed package reference must use a named direct link: {identifier}",
+            )
+        )
+    return issues
+
+
+def check_hygiene(root: Path, documents: dict[Path, str]) -> list[Issue]:
+    issues: list[Issue] = []
+    docs_root = root / "docs"
+    for path in sorted(docs_root.rglob("*")):
+        if not path.is_file():
+            continue
+        if path.name == ".DS_Store":
+            continue
+        elif path.suffix.lower() not in ALLOWED_DOC_SUFFIXES:
+            issues.append(Issue(relative(root, path), "unexpected documentation artifact type"))
+        elif OBSOLETE_NAME.search(path.name):
+            issues.append(Issue(relative(root, path), "obsolete or backup-style artifact name"))
+    for path, text in documents.items():
+        if path.is_relative_to(docs_root.resolve()):
+            if "SPDX-FileCopyrightText:" not in text[:500]:
+                issues.append(Issue(relative(root, path), "missing SPDX copyright header"))
+            if "SPDX-License-Identifier:" not in text[:500]:
+                issues.append(Issue(relative(root, path), "missing SPDX license header"))
+        if PERSONAL_PATH in text:
+            issues.append(Issue(relative(root, path), "personal absolute path is prohibited"))
+        if "file:///" in text:
+            issues.append(Issue(relative(root, path), "file URL is prohibited"))
+    gitignore = root / ".gitignore"
+    ignored = gitignore.read_text(encoding="utf-8") if gitignore.is_file() else ""
+    if not re.search(r"(?m)^\.DS_Store$", ignored):
+        issues.append(Issue(".gitignore", "must ignore macOS .DS_Store artifacts"))
+    return issues
+
+
+def check_external_links(urls: set[str]) -> list[Issue]:
+    issues: list[Issue] = []
+    for url in sorted(urls):
+        request = urllib.request.Request(url, method="HEAD", headers={"User-Agent": "aosedge-docs-check/1"})
+        try:
+            with urllib.request.urlopen(request, timeout=10) as response:
+                if response.status >= 400:
+                    issues.append(Issue(url, f"HTTP {response.status}"))
+        except urllib.error.HTTPError as error:
+            if error.code in {403, 405}:
+                try:
+                    request = urllib.request.Request(
+                        url, method="GET", headers={"User-Agent": "aosedge-docs-check/1"}
+                    )
+                    with urllib.request.urlopen(request, timeout=10):
+                        pass
+                    continue
+                except (urllib.error.URLError, TimeoutError) as retry_error:
+                    issues.append(Issue(url, f"external check failed: {retry_error}"))
+                    continue
+            issues.append(Issue(url, f"HTTP {error.code}"))
+        except (urllib.error.URLError, TimeoutError) as error:
+            issues.append(Issue(url, f"external check failed: {error}"))
+    return issues
+
+
+def check_repository(root: Path, include_external: bool = False) -> tuple[list[Issue], int, int]:
+    root = root.resolve()
+    documents = markdown_documents(root)
+    issues, graph, external = check_links(root, documents)
+    issues.extend(check_reachability(root, documents, graph))
+    identifier_issues, definitions = check_identifiers(root, documents)
+    issues.extend(identifier_issues)
+    issues.extend(check_metadata(root, documents))
+    issues.extend(check_traceability(root, documents, definitions))
+    issues.extend(check_reader_traceability(root, documents))
+    issues.extend(check_hygiene(root, documents))
+    if include_external:
+        issues.extend(check_external_links(external))
+    return sorted(issues, key=lambda issue: (issue.path, issue.message)), len(documents), len(definitions)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--external", action="store_true", help="also check HTTP(S) links")
+    parser.add_argument(
+        "--root",
+        type=Path,
+        default=Path(__file__).resolve().parents[1],
+        help=argparse.SUPPRESS,
+    )
+    args = parser.parse_args()
+    issues, document_count, identifier_count = check_repository(args.root, args.external)
+    if issues:
+        for issue in issues:
+            print(f"ERROR {issue.render()}", file=sys.stderr)
+        print(f"Documentation quality gate: {len(issues)} error(s)", file=sys.stderr)
+        return 1
+    print(
+        "Documentation quality gate: PASS "
+        f"({document_count} Markdown documents, {identifier_count} stable identifiers)"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
