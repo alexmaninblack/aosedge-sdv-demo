@@ -25,6 +25,7 @@ CANONICAL_DOCUMENTS = (
     Path("docs/requirements/system-requirements-and-traceability.md"),
     Path("docs/requirements/component-decomposition-and-interface-register.md"),
 )
+BOUNDARY_DECISION_HEADING = "## Boundary Decision Status"
 REQUIRED_METADATA = ("Status", "Version", "Prepared", "Owner")
 ALLOWED_STATUSES = ("draft", "review candidate", "accepted", "superseded")
 ALLOWED_DOC_SUFFIXES = {".md", ".png", ".drawio"}
@@ -329,7 +330,7 @@ def check_traceability(root: Path, documents: dict[Path, str], definitions: set[
     ).resolve()
     text = documents.get(register, "")
     start = text.find("## Detailed Package Traceability")
-    end = text.find("## Boundary Decisions Requiring Review", start)
+    end = text.find(BOUNDARY_DECISION_HEADING, start)
     traceability = text[start:end] if start >= 0 and end > start else ""
     allocated = {value for value in IDENTIFIER.findall(traceability) if value.startswith("SYS-")}
     system_requirements = {value for value in definitions if value.startswith("SYS-")}
@@ -395,7 +396,7 @@ def check_reader_traceability(root: Path, documents: dict[Path, str]) -> list[Is
     text = documents.get(register, "")
     packages_start = text.find("## Provisional Component Requirement Packages")
     details_start = text.find("## Detailed Package Traceability", packages_start)
-    details_end = text.find("## Boundary Decisions Requiring Review", details_start)
+    details_end = text.find(BOUNDARY_DECISION_HEADING, details_start)
     if packages_start < 0 or details_start < 0 or details_end < 0:
         issues.append(Issue(relative(root, register), "component package traceability sections are missing"))
         return issues

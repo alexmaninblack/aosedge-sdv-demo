@@ -508,24 +508,29 @@ Delivery Dashboard.
   Architecture Flow. The package proves integration; it does not replace the
   more specific allocations above.
 
-## Boundary Decisions Requiring Review
+## Boundary Decision Status
 
-1. Confirm the component IDs and the separation between logical components,
-   deployable artifacts, repositories and Unit instances.
-2. Confirm that the existing `carla-ego-runtime` repository remains the owner
-   of scenario tooling, Gateway behavior, VISS, advisory handling and the
-   Engineering Telematics Dashboard.
-3. Confirm `vehicle-stability-event-service` as the future Function Team 2
-   in-vehicle repository name and scope before creating it.
-4. Decide whether each functional backend and dashboard share one Cloud-product
-   repository. The recommendation is one repository per Function Team Cloud
-   product, separate from its in-vehicle SOTA repository.
-5. Confirm that `CMP-SW-DASH` and `CMP-ORCH` remain solution components in
-   `aosedge-sdv-demo` rather than becoming lifecycle authorities.
-6. Decide where deployment-specific `CMP-LOG-PIPE` to `CMP-ELK` configuration
-   is owned after the actual AosEdge logging topology is qualified.
-7. Confirm that `CMP-KUKSA-AUTH` remains an explicit deferred production
-   hardening component rather than being hidden inside prototype token files.
+1. **Accepted 2026-08-18:** logical components, repositories, immutable
+   deployable artifacts and runtime deployments are separate concepts.
+   `CMP-FACTORY` is the build-time OEM Factory Baseline Assembly, the OEM Demo
+   Factory Image is its artifact, and `VU`/`DU` are deployments created from
+   that artifact.
+2. **Accepted 2026-08-18:** the existing `carla-ego-runtime` repository owns
+   deterministic scenario tooling, vehicle control, Gateway behavior, VISS,
+   advisory handling and the Engineering Telematics Dashboard.
+3. **Open:** confirm `vehicle-stability-event-service` as the future Function
+   Team 2 in-vehicle repository name and scope before creating it.
+4. **Open:** decide whether each functional backend and dashboard share one
+   Cloud-product repository. The recommendation is one repository per Function
+   Team Cloud product, separate from its in-vehicle SOTA repository.
+5. **Open:** confirm that `CMP-SW-DASH` and `CMP-ORCH` remain solution
+   components in `aosedge-sdv-demo` rather than becoming lifecycle authorities.
+6. **Open:** decide where deployment-specific `CMP-LOG-PIPE` to `CMP-ELK`
+   configuration is owned after the actual AosEdge logging topology is
+   qualified.
+7. **Open:** confirm that `CMP-KUKSA-AUTH` remains an explicit deferred
+   production hardening component rather than being hidden inside prototype
+   token files.
 
 ## Acceptance Gate for Version 0.1
 
