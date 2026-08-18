@@ -81,8 +81,11 @@ returned with explicit corrections.
 
 Remove superseded active design documents and unreferenced generated files;
 retain ADRs, research evidence, qualification records and operations manuals
-with clear authority labels. Validate indexes, internal links and source
-precedence.
+with clear authority labels. Provide task-oriented entry paths for running
+AosVM, reproducing the current demonstration, understanding the system,
+modifying components and adding scenarios. Keep the current repeatable
+engineering paths visibly separate from the unfinished full staged demo.
+Validate indexes, internal links and source precedence.
 
 Exit: the documentation tree presents one current design chain without broken
 links or competing active plans.

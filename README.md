@@ -1,11 +1,17 @@
 # AosEdge SDV Demo
 
-This solution repository makes the Apple Silicon AosEdge software-defined
-vehicle demonstration reproducible. It owns macOS AosVM lifecycle, single-Node
-provisioning, cross-project orchestration, component locks, end-to-end
-qualification, demo architecture, and operational documentation. It does not
-vendor CARLA, Unreal Engine, AosCore, AosVM images, provider source, or
-functional-service source.
+This is the solution-integration repository for the Apple Silicon AosEdge
+software-defined vehicle demonstration. It owns the system architecture,
+audience-visible scenarios, macOS AosVM lifecycle, cross-project contracts,
+workspace locks, orchestration, qualification and operator documentation. It
+does not vendor CARLA, Unreal Engine, AosCore, AosVM images, platform-component
+source or functional-service source.
+
+The standalone AosVM path and the CARLA engineering demonstration are
+repeatable on the qualified workspace. The complete staged FOTA/SOTA story is
+the current design and implementation target, not yet a one-command
+fresh-checkout demo. See the
+[reproduction readiness matrix](docs/getting-started/reproduce-demo.md).
 
 ## Current Baseline
 
@@ -20,11 +26,9 @@ functional-service source.
 | Installed Units | validation Unit: `.2`; demonstration Unit: `.1`, accepted as the current operational baseline after end-to-end verification |
 
 Candidate `.11` closes the qualified provider runtime dependency chain under
-SELinux Enforcing and remains accepted local evidence. The revised deployment
-plan does not select `.11` or provider `0.2.0` for Cloud promotion: it first
-adds a separate public vehicle-integration FOTA component and a dependent
-provider successor. Signing, Cloud upload, assignment, and provisioned-Unit
-mutation remain separate approval gates. See the
+SELinux Enforcing and remains accepted local evidence. It is not the accepted
+clean factory artifact or selected for Cloud promotion. Signing, Cloud upload,
+assignment, and provisioned-Unit mutation remain separate approval gates. See the
 [exact current baseline](docs/qualification/current-baseline.md).
 The acceptance records the already running `.1` state without approving its
 stale Verification Batch or selecting it for a new rollout.
@@ -32,29 +36,39 @@ stale Verification Batch or selecting it for a new rollout.
 ## Architecture
 
 ```text
-macOS development host                         AosVM vehicle computer
+Virtual vehicle and Gateway                  AosVM Domain Controller
 
-CARLA -> VISS 3.1 -- private VM route --> vehicle-data provider
-                                             |
-                                             v
-                                      KUKSA Databroker
-                                             |
-                                             v
-                                      Aos service container
+CARLA -> Vehicle Gateway -> VISS 3.1 -> Vehicle Data Platform Capability
+                                                    |
+                                                    v
+                                             KUKSA Databroker
+                                              /             \
+                                             v               v
+                                  Brake Health service   Vehicle Stability service
 ```
 
-The vehicle-data provider and KUKSA integration follow the OEM platform/FOTA
-lifecycle. The telemetry consumer follows the independent Aos service/SOTA
-lifecycle. A production vehicle replaces the CARLA/VISS input with its real
-vehicle-network provider while preserving the KUKSA/VSS contract.
+The Vehicle Data Platform Capability follows the OEM Platform Team/FOTA
+lifecycle. Brake Health and Vehicle Stability are peer Function Team products
+with independent Service Provider/SOTA lifecycles. The Gateway-to-KUKSA
+contract separates simulated vehicle hardware from service-facing data. A
+production vehicle replaces the CARLA side with real vehicle networks while
+preserving the service contract.
 
 Read [architecture and repository ownership](docs/architecture/repository-boundaries.md) for the
 complete boundary.
 
 ## Start Here
 
-For a new Apple Silicon Mac, follow the
-[colleague setup guide](docs/operations/macos-colleague-setup.md):
+Choose the path that matches your goal in [Getting Started](docs/getting-started/README.md):
+
+- run AosVM on an Apple Silicon Mac;
+- reproduce the currently available engineering demonstration;
+- understand the architecture;
+- modify an existing component;
+- add a demo scenario.
+
+For AosVM itself, follow the canonical
+[Apple Silicon guide](docs/operations/aosvm-apple-silicon.md):
 
 ```sh
 ./scripts/aosvm-macos-onboard doctor
@@ -109,13 +123,16 @@ caches live outside Git and are deliberately preserved for incremental builds.
 ## Documentation
 
 - [Documentation map](docs/README.md)
+- [Getting started](docs/getting-started/README.md)
+- [Reproduction guide and readiness matrix](docs/getting-started/reproduce-demo.md)
 - [High-Level Architecture 1.1 — review candidate](docs/architecture/high-level-architecture.md)
 - [System Requirements and Traceability 0.1 — review candidate](docs/requirements/system-requirements-and-traceability.md)
 - [Component Decomposition and Interface Register 0.1 — review candidate](docs/requirements/component-decomposition-and-interface-register.md)
 - [R9 Demo Foundation Research](docs/research/demo-foundation/README.md)
 - [Current accepted baseline](docs/qualification/current-baseline.md)
 - [Roadmap and next gates](docs/planning/roadmap.md)
-- [Run AosVM on Apple Silicon](docs/operations/aosvm-arm64-macos.md)
+- [Run AosVM on Apple Silicon](docs/operations/aosvm-apple-silicon.md)
+- [Development map](docs/development/README.md)
 - [Architecture decisions](docs/architecture/decisions/0001-repository-and-artifact-boundaries.md)
 
 Completed experimental plans, rejected rootfs iterations, and one-shot

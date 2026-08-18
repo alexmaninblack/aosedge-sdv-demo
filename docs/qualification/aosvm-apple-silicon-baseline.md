@@ -1,7 +1,12 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# AOS-0: Boot Official ARM64 AosVM on Apple Silicon
+# AOS-0 Qualification Record: Official ARM64 AosVM on Apple Silicon
+
+This is the detailed, dated qualification record behind the current macOS
+support claim. It is retained as engineering evidence, not as the user setup
+guide. For a new installation, follow
+[Run AosVM on an Apple Silicon Mac](../operations/aosvm-apple-silicon.md).
 
 ## Objective
 

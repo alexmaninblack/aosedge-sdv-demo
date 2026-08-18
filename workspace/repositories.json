@@ -62,17 +62,6 @@
       "acceptedRevision": "dfaff4af63b59d6eb4c7878f6d13ff67adf3fe98",
       "acceptedBranches": ["main"],
       "allowedDirtyPaths": []
-    },
-    {
-      "id": "documentation-research",
-      "directory": "aosedge-docs-ux-prototype",
-      "role": "Private documentation UX research, outside the demo runtime",
-      "visibility": "private",
-      "repository": "https://github.com/alexmaninblack/aosedge-docs-ux-prototype.git",
-      "remote": "origin",
-      "acceptedRevision": "e9ed99de596f03ced16d467921aaf877d8b7fcc9",
-      "acceptedBranches": ["main"],
-      "allowedDirtyPaths": []
     }
   ],
   "launcherPaths": [

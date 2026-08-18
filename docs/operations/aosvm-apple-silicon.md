@@ -8,6 +8,11 @@ Silicon Mac. It uses QEMU with Apple's Hypervisor Framework, not VirtualBox.
 The result has its own persistent disk and, if provisioned, its own cloud Unit
 identity.
 
+This is the canonical setup and operating guide for AosVM on Apple Silicon.
+It can be followed independently of CARLA. To reproduce the larger SDV demo,
+complete this guide first and then return to the
+[getting-started paths](../getting-started/README.md).
+
 Do not copy another person's VM overlay, checkpoints, SSH access directory, or
 provisioning state. A provisioned disk contains a unique Unit identity and must
 never be cloned while the original Unit exists.
@@ -58,19 +63,17 @@ If it prints no path, install Homebrew from its official site:
 The onboarding helper intentionally does not execute the remote Homebrew
 installer itself because that installer may request administrator approval.
 
-## Step 2: Clone the integration repository
+## Step 2: Clone the solution repository
 
-Choose a private working directory and clone the current onboarding branch:
+Choose a private working directory and clone the accepted `main` baseline:
 
 ```sh
 mkdir -p "$HOME/Projects"
 cd "$HOME/Projects"
-git clone --branch feature/r6-1-fota-runtime \
+git clone --branch main \
   https://github.com/alexmaninblack/aosedge-sdv-demo.git
 cd aosedge-sdv-demo
 ```
-
-Use this branch until the current integration baseline is merged to `main`.
 
 Do not place a `.p12` file in the repository. The repository ignores common
 key formats, but the correct location is still `~/.aos/security`.
@@ -160,7 +163,7 @@ Normal mode exposes only these host-loopback services:
 Nothing is exposed on the Mac's LAN address, and the cloud provisioning port
 is absent in normal mode.
 
-At this point the colleague has a working local AosVM. Stop here if cloud
+At this point the operator has a working local AosVM. Stop here if cloud
 registration is not required.
 
 ## Step 7: Verify readiness for cloud provisioning

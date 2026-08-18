@@ -1,7 +1,12 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# AOS-1: Register and Provision One Main Node
+# AOS-1 Qualification Record: Register and Provision One Main Node
+
+This document records the dated AOS-1 execution and its accepted evidence. It
+is not the primary provisioning procedure. New operators should follow the
+guarded provisioning steps in
+[Run AosVM on an Apple Silicon Mac](../operations/aosvm-apple-silicon.md).
 
 ## Objective
 

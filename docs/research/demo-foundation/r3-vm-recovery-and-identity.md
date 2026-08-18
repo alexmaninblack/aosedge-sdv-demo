@@ -154,7 +154,7 @@ and never describe snapshot replacement as production rollback.
 
 ## Sources
 
-- [Single-node provisioning and checkpoint policy](../../operations/single-node-provisioning.md)
+- [Single-node provisioning and checkpoint policy](../../qualification/aosvm-single-node-provisioning.md)
 - [VM relocation and identity repair evidence](../../qualification/repository-rename-vm-repair.md)
 - [AosCore Unit status reconciliation](https://docs.aosedge.tech/docs/aos-core/architecture/cm/unit-status-handler)
 - [AosCore deployment flows](https://docs.aosedge.tech/docs/aos-core/deployment-flows)

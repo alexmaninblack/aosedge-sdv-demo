@@ -34,6 +34,11 @@ unrelated Cloud mutation remains unauthorized.
 | 5 — pre-cleanup acceptance | Complete | CARLA, AosVM, builder, repository, and license gates passed; Main `.1` operational state explicitly accepted |
 | 6–7 — cleanup and regression | Complete | Approximately 27 GiB recovered; [post-cleanup acceptance](../qualification/post-cleanup-acceptance.md) passed |
 
+The separate `aosedge-docs-ux-prototype` experiment was retired on
+2026-08-18. It is no longer part of the active workspace contract or local
+demo workspace. Its historical inventory entry below is retained only to
+explain what was reviewed during this completed migration.
+
 ## Action Vocabulary
 
 | Action | Meaning |
@@ -264,8 +269,7 @@ occupy about 2.8 GiB and are also retained as private recovery assets.
 
 | Path or group | Action | Reason or guard |
 | --- | --- | --- |
-| Entire tracked repository | Keep separate for the current review cycle | It is not a demo runtime component and must not be mixed into the solution repository. |
-| Repository after findings are accepted upstream | Archive or retain as a labelled experiment | Separate future decision. |
+| Entire tracked repository | Retired after the review cycle | The prototype is obsolete and is not a demo runtime, development or onboarding dependency. |
 
 ## Duplicate and Absolute-Path Findings
 
@@ -312,7 +316,6 @@ flowchart LR
     DEMO -. "pins and qualifies" .-> GW
     DEMO -. "pins and qualifies" .-> PLATFORM
     DEMO -. "pins and qualifies" .-> SERVICE
-    DOCS["aosedge-docs-ux-prototype<br/>separate research"]
 ```
 
 `aosedge-sdv-demo` should add a machine-readable sibling-repository manifest

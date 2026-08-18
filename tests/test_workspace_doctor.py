@@ -36,7 +36,7 @@ class WorkspaceDoctorTests(unittest.TestCase):
         for path in (MANIFEST, SCHEMA, DOCTOR):
             self.assertNotIn("/Users/" + "alexagizim", path.read_text(encoding="utf-8"))
 
-    def test_manifest_covers_runtime_and_research_boundaries(self) -> None:
+    def test_manifest_covers_runtime_and_component_boundaries(self) -> None:
         identifiers = {item["id"] for item in self.manifest["repositories"]}
         self.assertEqual(
             {
@@ -45,7 +45,6 @@ class WorkspaceDoctorTests(unittest.TestCase):
                 "vehicle-gateway",
                 "vehicle-platform",
                 "functional-service",
-                "documentation-research",
             },
             identifiers,
         )

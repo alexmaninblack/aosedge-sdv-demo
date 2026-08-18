@@ -12,6 +12,14 @@ from `carla-aosedge-integration` after the solution boundary was accepted in
 ADR 0007. The repository name now reflects its ownership of the complete demo,
 not only the CARLA-to-AosEdge transport bridge.
 
+## Start Here
+
+- [Choose a task](getting-started/README.md) — run AosVM, reproduce the current
+  demo, understand the system, modify a component or add a scenario.
+- [Reproduction guide and readiness matrix](getting-started/reproduce-demo.md)
+  — what works today, required repositories and access, and what remains a
+  target.
+
 ## Architecture
 
 - [High-Level Architecture 1.1 — review candidate](architecture/high-level-architecture.md)
@@ -71,9 +79,14 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Operations
 
-- [Run AosVM on Apple Silicon](operations/aosvm-arm64-macos.md)
-- [Provision one Main Node](operations/single-node-provisioning.md)
-- [Colleague setup on macOS](operations/macos-colleague-setup.md)
+- [Run AosVM on Apple Silicon](operations/aosvm-apple-silicon.md) — canonical
+  install, lifecycle and guarded provisioning guide.
+
+## Development
+
+- [Development map](development/README.md) — choose the owning repository and
+  trace a change through architecture, requirements and interfaces.
+- [Add or change a demo scenario](development/add-demo-scenario.md)
 
 ## Qualification
 
@@ -82,6 +95,8 @@ not only the CARLA-to-AosEdge transport bridge.
 - [Exact component lock](qualification/component-lock.md)
 - [Validation-set scope defect](qualification/r6-1-validation-set-scope-defect.md)
 - [Repository-rename VM repair](qualification/repository-rename-vm-repair.md)
+- [AOS-0 Apple Silicon qualification record](qualification/aosvm-apple-silicon-baseline.md)
+- [AOS-1 single-Main-Node qualification record](qualification/aosvm-single-node-provisioning.md)
 
 ## Governance
 
