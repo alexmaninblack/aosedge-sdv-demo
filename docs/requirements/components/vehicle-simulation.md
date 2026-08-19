@@ -3,7 +3,7 @@
 
 # Vehicle Simulation Component Requirements
 
-- Status: Draft
+- Status: D3 design-reviewed
 - Package: [`CR-VEHICLE-SIM`](../component-decomposition-and-interface-register.md#cr-vehicle-sim)
 - Version: 0.4
 - Prepared: 2026-08-19
@@ -141,7 +141,7 @@ hidden-truth isolation require live integration evidence.
 - Components: [CARLA (`CMP-CARLA`)](../component-decomposition-and-interface-register.md#cmp-carla) and [Scenario Controller (`CMP-SCENE`)](../component-decomposition-and-interface-register.md#cmp-scene)
 - Interfaces: [CARLA state (`IF-VEH-001`)](../component-decomposition-and-interface-register.md#if-veh-001)
 - Required evidence: immutable effective configuration plus source/run/frame metadata in the result manifest
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `PARTIAL`; CARLA and frame/run identity exist, while selected Unit attribution is owned jointly with demo orchestration
 
 Acceptance requires incompatible source/map preflight failure, non-empty and
@@ -162,7 +162,7 @@ retained frame range to exactly one selected Unit or replay target.
 - Components: [CARLA (`CMP-CARLA`)](../component-decomposition-and-interface-register.md#cmp-carla) and [Scenario Controller (`CMP-SCENE`)](../component-decomposition-and-interface-register.md#cmp-scene)
 - Interfaces: [Gateway commands (`IF-VEH-003`)](../component-decomposition-and-interface-register.md#if-veh-003) and [CARLA state (`IF-VEH-001`)](../component-decomposition-and-interface-register.md#if-veh-001)
 - Required evidence: phase transitions, obstacle identity, brake-onset frame/speed/gap and immutable profile
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `CURRENT`
 
 Acceptance rejects an obstacle created after controlled motion begins, an
@@ -183,7 +183,7 @@ calibration tolerance.
 - Components: [Scenario Controller (`CMP-SCENE`)](../component-decomposition-and-interface-register.md#cmp-scene), jointly with [Vehicle Gateway (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw)
 - Interface: [Gateway commands (`IF-VEH-003`)](../component-decomposition-and-interface-register.md#if-veh-003)
 - Required evidence: stable actor/run identity, monotonic mode generation, aborted-attempt record and continuous frame range
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `CURRENT`
 
 Acceptance covers restart, manual takeover during an active attempt, completion
@@ -204,7 +204,7 @@ vehicle or tick owner.
 - Components: [Scenario Controller (`CMP-SCENE`)](../component-decomposition-and-interface-register.md#cmp-scene)
 - Interfaces: [CARLA state (`IF-VEH-001`)](../component-decomposition-and-interface-register.md#if-veh-001)
 - Required evidence: structured result and exact failure-reason list
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `CURRENT`; repeated-run statistical acceptance remains a D4 qualification definition
 
 ### Explicit Tire Health simulation stimulus
@@ -221,7 +221,7 @@ vehicle or tick owner.
 - Components: [CARLA (`CMP-CARLA`)](../component-decomposition-and-interface-register.md#cmp-carla) and [Scenario Controller (`CMP-SCENE`)](../component-decomposition-and-interface-register.md#cmp-scene)
 - Interfaces: [CARLA state (`IF-VEH-001`)](../component-decomposition-and-interface-register.md#if-veh-001); the hidden truth is explicitly outside this interface
 - Required evidence: model/version, initial condition, applied stimulus, hidden expected condition and proof that the production signal tree excludes that truth
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `TARGET`
 
 Acceptance must distinguish native dynamics inputs, derived values and
@@ -243,7 +243,7 @@ a future architecture change introduces a corresponding sensor.
 - Components: [CARLA (`CMP-CARLA`)](../component-decomposition-and-interface-register.md#cmp-carla) and [Scenario Controller (`CMP-SCENE`)](../component-decomposition-and-interface-register.md#cmp-scene)
 - Interface: [Gateway commands (`IF-VEH-003`)](../component-decomposition-and-interface-register.md#if-veh-003)
 - Required evidence: actor/sensor inventory, settings restoration, cleanup status and no leaked run-local secret
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `PARTIAL`; normal interactive cleanup is implemented, while a complete repeatable R0 proof is not yet accepted
 
 Factory-image preservation is outside this package. It is independently
@@ -264,7 +264,7 @@ under [preserve immutable factory artifact (`SYS-RET-005`)](../system-requiremen
 - Components: [CARLA (`CMP-CARLA`)](../component-decomposition-and-interface-register.md#cmp-carla) and [Scenario Controller (`CMP-SCENE`)](../component-decomposition-and-interface-register.md#cmp-scene)
 - Interface: [CARLA state (`IF-VEH-001`)](../component-decomposition-and-interface-register.md#if-veh-001)
 - Required evidence: selected role, Unit or replay target, bounded frame/trace range and presentation label
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `PARTIAL`; current runs identify CARLA but do not yet implement VU/DU selection or replay
 
 ### Context-aware obstacle and reset lifecycle
@@ -287,7 +287,7 @@ under [preserve immutable factory artifact (`SYS-RET-005`)](../system-requiremen
 - Components: [CARLA (`CMP-CARLA`)](../component-decomposition-and-interface-register.md#cmp-carla) and [Scenario Controller (`CMP-SCENE`)](../component-decomposition-and-interface-register.md#cmp-scene), jointly with [Vehicle Gateway (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw)
 - Interface: [Gateway commands (`IF-VEH-003`)](../component-decomposition-and-interface-register.md#if-veh-003)
 - Required evidence: complete source-mode/context/target-mode matrix, obstacle inventory, actor identity, reset generation, zero-motion reset and injected cleanup/reset failures
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `PARTIAL`; scenario restart, same-actor continuity and manual abort exist, but the obstacle is currently session-lived and Scenario/brake-event Manual to Autopilot does not yet perform the accepted cleanup/reset
 
 Acceptance requires every matrix row to be deterministic and idempotent where
@@ -313,7 +313,7 @@ obstacle avoidance are explicitly outside this package's recovery claims.
 - Components: [CARLA (`CMP-CARLA`)](../component-decomposition-and-interface-register.md#cmp-carla)
 - Interfaces: [CARLA state (`IF-VEH-001`)](../component-decomposition-and-interface-register.md#if-veh-001) and [Gateway commands (`IF-VEH-003`)](../component-decomposition-and-interface-register.md#if-veh-003)
 - Required evidence: canonical manifest, digest, source/API inventory comparison and live installed-actor/sensor reconciliation
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `PARTIAL`; R10 provides the pinned source inventory, but no accepted selected-profile manifest or runtime reconciliation exists
 
 Acceptance distinguishes installed vehicle hardware from CARLA-wide optional
@@ -338,7 +338,7 @@ does not populate.
 - Components: [CARLA (`CMP-CARLA`)](../component-decomposition-and-interface-register.md#cmp-carla), jointly with [Gateway (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw)
 - Interfaces: [CARLA state (`IF-VEH-001`)](../component-decomposition-and-interface-register.md#if-veh-001) and [Gateway commands (`IF-VEH-003`)](../component-decomposition-and-interface-register.md#if-veh-003)
 - Required evidence: manifest-to-runtime coverage report, positive and unavailable signal fixtures, actuator accepted/rejected/applied-state fixtures and negative proof for qualification-only truth
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `PARTIAL`; the current Gateway consumes a scalar and wheel subset and controls throttle/brake/steer, while complete installed-profile coverage and gear/reverse/handbrake accounting are not frozen
 
 Acceptance requires every manifest entry to resolve to delivered, explicitly
@@ -391,14 +391,19 @@ Physical dynamics and actual actor cleanup remain integration obligations.
 | Transition truth | [Context lifecycle (`REQ-VEHICLE-SIM-008`)](#req-vehicle-sim-008) | Explicit context and generation expose every reset discontinuity | Unit matrix plus live dashboard inspection |
 | Hardware completeness | [Hardware profile (`REQ-VEHICLE-SIM-009`)](#req-vehicle-sim-009) and [complete boundary (`REQ-VEHICLE-SIM-010`)](#req-vehicle-sim-010) | Every installed signal and actuator is versioned and accounted without confusing optional CARLA APIs with installed hardware | Manifest unit/contract checks plus live reconciliation |
 
-## Package Acceptance
+## D3 Review Closure and Product Acceptance
 
-This package can be accepted when all ten requirements have reviewed
-acceptance criteria, the source-selection owner closes the VU/DU attribution
-boundary, the Tire Health stimulus design is accepted, repeated live Brake
-Event qualification passes, cleanup failure/recovery is proved, every `UT-*`
-obligation is implemented or has a reviewed exception, and the repository and
-documentation gates pass.
+The component boundary, ten requirement obligations, interface ownership,
+verification levels and stable `UT-VEHICLE-SIM-*` obligations were
+design-reviewed on 2026-08-19 and are accepted as input to D4. This closes the
+`CR-VEHICLE-SIM` D3 package; it does not claim that every target behavior is
+implemented or qualified.
+
+Product acceptance remains open until the source-selection owner closes the
+VU/DU attribution boundary, the Tire Health stimulus design is accepted,
+repeated live Brake Event qualification passes, cleanup failure/recovery is
+proved, every `UT-*` obligation is green or has a reviewed exception, and the
+repository and documentation gates pass.
 
 ## Open Issues
 

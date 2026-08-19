@@ -3,7 +3,7 @@
 
 # Factory Substrate Component Requirements
 
-- Status: Reviewed draft
+- Status: D3 design-reviewed
 - Package: [`CR-FACTORY`](../component-decomposition-and-interface-register.md#cr-factory)
 - Version: 0.2
 - Prepared: 2026-08-19
@@ -187,7 +187,7 @@ redacted comparison or digests.
 - Architecture flow: [Factory-image and overlay creation (`AF-M0-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-m0-lc)
 - Components: [Factory Assembly (`CMP-FACTORY`)](../component-decomposition-and-interface-register.md#cmp-factory)
 - Required evidence: validated source lock, build manifest, tool versions and output manifest
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `PARTIAL`; `.11` has a source lock and one accepted output digest, while independent rebuild equivalence is not yet accepted
 
 Acceptance rejects an ambient branch, uncommitted build input, mutable external
@@ -209,7 +209,7 @@ record cannot identify every effective integration input.
 - Components: [Factory Assembly (`CMP-FACTORY`)](../component-decomposition-and-interface-register.md#cmp-factory) and [Empty-Slot Runtime (`CMP-RUNTIME`)](../component-decomposition-and-interface-register.md#cmp-runtime)
 - Interfaces: [Cloud-to-Unit lifecycle (`IF-LC-004`)](../component-decomposition-and-interface-register.md#if-lc-004) and [runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006)
 - Required evidence: machine-readable artifact manifest and negative cross-type installation tests
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `PARTIAL`; the bytes and component types exist, while one normative factory artifact manifest is not yet accepted
 
 Acceptance requires the rootfs envelope to target the factory-installed rootfs
@@ -231,7 +231,7 @@ provider-specific runtime. Neither may be labelled as the Factory Image.
 - Architecture flows: [Factory-image and overlay creation (`AF-M0-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-m0-lc) and [Manufacturing evidence (`AF-M0-OB`)](../../architecture/demo-scenario-architecture-flows.md#af-m0-ob)
 - Components: [Factory Assembly (`CMP-FACTORY`)](../component-decomposition-and-interface-register.md#cmp-factory), [AosCore (`CMP-AOS-CORE`)](../component-decomposition-and-interface-register.md#cmp-aos-core), [KUKSA (`CMP-KUKSA`)](../component-decomposition-and-interface-register.md#cmp-kuksa) and [Empty-Slot Runtime (`CMP-RUNTIME`)](../component-decomposition-and-interface-register.md#cmp-runtime)
 - Required evidence: image-content manifest, forbidden-content scan and clean guest-state qualification
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `EVIDENCE`; the `.11` disposable bootstrap gate proved the intended absence set and must be repeated on the accepted Factory Image
 
 ### Immutable bootable Factory Image
@@ -248,7 +248,7 @@ provider-specific runtime. Neither may be labelled as the Factory Image.
 - Components: [Factory Assembly (`CMP-FACTORY`)](../component-decomposition-and-interface-register.md#cmp-factory)
 - Interface: [Orchestrated VM lifecycle (`IF-DEMO-001`)](../component-decomposition-and-interface-register.md#if-demo-001)
 - Required evidence: raw-image format, partition/boot proof, size, digest, read-only state and qcow2 backing-chain validation
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `EVIDENCE`; `.11` provides a matching full raw image but has not completed factory acceptance
 
 ### Healthy provider-specific empty slot
@@ -266,7 +266,7 @@ provider-specific runtime. Neither may be labelled as the Factory Image.
 - Components: [Empty-Slot Runtime (`CMP-RUNTIME`)](../component-decomposition-and-interface-register.md#cmp-runtime)
 - Interface: [Runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006)
 - Required evidence: runtime inventory, empty filesystem/state checks, inactive systemd state and health result
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `CURRENT / QUALIFY`
 
 ### Atomic component lifecycle
@@ -284,7 +284,7 @@ provider-specific runtime. Neither may be labelled as the Factory Image.
 - Components: [Empty-Slot Runtime (`CMP-RUNTIME`)](../component-decomposition-and-interface-register.md#cmp-runtime)
 - Interface: [Runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006)
 - Required evidence: blocking runtime C++ suite plus disposable guest apply/revert/recovery qualification
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `CURRENT / QUALIFY`; the implementation and test sources exist, while final Factory Image evidence remains open
 
 ### Bounded security and storage
@@ -302,7 +302,7 @@ provider-specific runtime. Neither may be labelled as the Factory Image.
 - Components: [Empty-Slot Runtime (`CMP-RUNTIME`)](../component-decomposition-and-interface-register.md#cmp-runtime)
 - Interface: [Runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006)
 - Required evidence: source gate, policy build, guest identity/capability/SELinux checks and negative store qualification
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `CURRENT / QUALIFY`; the 512 MiB nested ext4 store is accepted only as a demonstration backend
 
 ### Identity-safe fresh deployments
@@ -319,7 +319,7 @@ provider-specific runtime. Neither may be labelled as the Factory Image.
 - Components: [Factory Assembly (`CMP-FACTORY`)](../component-decomposition-and-interface-register.md#cmp-factory), jointly with `CR-AOS` and `CR-DEMO`
 - Interface: [Orchestrated VM lifecycle (`IF-DEMO-001`)](../component-decomposition-and-interface-register.md#if-demo-001)
 - Required evidence: redacted two-overlay identity comparison, no provisioning material before M1 and later distinct Cloud Unit/Node evidence
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `TARGET`; existing provisioned `.1/.2` overlays are not valid proof for this requirement
 
 ### Pre-provision runtime availability
@@ -334,7 +334,7 @@ provider-specific runtime. Neither may be labelled as the Factory Image.
 - Architecture flows: [Factory-image and overlay creation (`AF-M0-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-m0-lc) and [Working vehicle, empty feature graph (`AF-G0-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-g0-rt)
 - Components: [Factory Assembly (`CMP-FACTORY`)](../component-decomposition-and-interface-register.md#cmp-factory) and [Empty-Slot Runtime (`CMP-RUNTIME`)](../component-decomposition-and-interface-register.md#cmp-runtime)
 - Required evidence: M0 image manifest, pre-provision runtime inventory and absence of a rootfs-update action in M0-M1 evidence
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `TARGET acceptance`; `.11` proves the intended content, while the final Factory Image has not been accepted
 
 A later post-SOP rootfs FOTA remains permitted for a platform/runtime fix or
@@ -354,7 +354,7 @@ presented as installation of the Vehicle Data Platform Component.
 - Components: [Factory Assembly (`CMP-FACTORY`)](../component-decomposition-and-interface-register.md#cmp-factory), jointly with `CR-DEMO`
 - Interface: [Orchestrated VM lifecycle (`IF-DEMO-001`)](../component-decomposition-and-interface-register.md#if-demo-001)
 - Required evidence: pre/post-reset base digest, exact retired-overlay inventory and next-run overlay backing-chain proof
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `TARGET`
 
 ### Native IAM credential substrate
@@ -376,7 +376,7 @@ presented as installation of the Vehicle Data Platform Component.
   permission-handler positive/negative contract test, PKCS#11 module discovery,
   protected-sign operation using a disposable per-Unit test key, and forbidden
   key/token/content scan
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `GAP / PARTIAL`; the stock handler and generic key
   facilities exist in AosCore, but the live demo IAM configuration does not
   enable the handler and no accepted broker signing-key binding is configured
@@ -390,15 +390,15 @@ deployment exists and must be retired with that deployment.
 
 | Unit-test obligation | Requirements proved | Behavior and branches | Isolation / doubles | Required assertions | Repository / suite | State |
 | --- | --- | --- | --- | --- | --- | --- |
-| <a id="ut-factory-001"></a>`UT-FACTORY-001` — Source-lock validation | [`REQ-FACTORY-001`](#req-factory-001) | Exact pins, dirty/missing/wrong inputs, unsafe paths and manifest mismatch | Temporary repositories and build-manifest fixtures | Only the complete accepted lock passes; no ambient input is silently accepted | `aosedge-sdv-demo` manifest/build validators | Draft |
-| <a id="ut-factory-002"></a>`UT-FACTORY-002` — Artifact-type separation | [`REQ-FACTORY-002`](#req-factory-002), [`REQ-FACTORY-004`](#req-factory-004) | Factory raw image, rootfs envelope and provider component positive/negative type combinations | Synthetic release metadata and small image fixtures | Wrong target runtime/type/digest or cross-type label is rejected | `aosedge-sdv-demo` release validators | Draft |
-| <a id="ut-factory-003"></a>`UT-FACTORY-003` — Clean-content policy | [`REQ-FACTORY-003`](#req-factory-003) | Allowed platform files and forbidden identity, credential, provider and service content | Synthetic filesystem manifests | Every forbidden class fails without printing content; accepted empty graph passes | `aosedge-sdv-demo` factory image validator | Draft |
-| <a id="ut-factory-004"></a>`UT-FACTORY-004` — Empty runtime contract | [`REQ-FACTORY-005`](#req-factory-005), [`REQ-FACTORY-009`](#req-factory-009) | Exact runtime type/count/configuration; empty, malformed and unexpected active states | Service Manager configuration and state fixtures | One accepted empty runtime passes; duplicate/generic/wrong type or active payload fails | `aos-vehicle-platform` layer tests | Draft |
-| <a id="ut-factory-005"></a>`UT-FACTORY-005` — Atomic A/B lifecycle | [`REQ-FACTORY-006`](#req-factory-006) | First install, A-to-B update, idempotence, interruption, unsafe archive, downgrade, digest mismatch, stop and recovery | Filesystem sandbox, fake profile/health and archive fixtures | Previous accepted slot remains recoverable; unsafe candidate never becomes active | `systemdslotcomponent_test` C++ suite | Draft |
-| <a id="ut-factory-006"></a>`UT-FACTORY-006` — Security/store source gate | [`REQ-FACTORY-007`](#req-factory-007) | Identity, capabilities, systemd, SELinux, store size/mount/path and fail-closed rules | Recipe, policy and configuration fixtures | Missing or weakened boundary blocks the normal repository gate | `aos-vehicle-platform` `test_r6_1_layer.py` | Draft |
-| <a id="ut-factory-007"></a>`UT-FACTORY-007` — Fresh-overlay guard | [`REQ-FACTORY-008`](#req-factory-008) | New overlay, reused/provisioned/locked overlay, wrong backing file and duplicate redacted identity | Temporary qcow2 metadata and identity-digest fixtures | Only a fresh overlay backed by the accepted digest is eligible for M1 | `aosedge-sdv-demo` lifecycle tests | Draft |
-| <a id="ut-factory-008"></a>`UT-FACTORY-008` — Immutable reset guard | [`REQ-FACTORY-010`](#req-factory-010) | Exact run overlays, missing reconciliation, unexpected target and changed base digest | Temporary lifecycle manifest and fake image metadata | Reset never targets the base and fails on unresolved identity or changed digest | `aosedge-sdv-demo` lifecycle tests | Draft |
-| <a id="ut-factory-009"></a>`UT-FACTORY-009` — IAM substrate configuration | [`REQ-FACTORY-003`](#req-factory-003), [`REQ-FACTORY-011`](#req-factory-011) | Permission handler enabled/disabled/absent, accepted PKCS#11 module references, forbidden file-key fallback and key/token content | IAM and certificate-module configuration fixtures plus filesystem manifests | Only the enabled native handler and non-secret protected-key seam pass; any baked key/token or fallback file path fails without printing content | `aos-vehicle-platform` layer and image-policy tests | Draft |
+| <a id="ut-factory-001"></a>`UT-FACTORY-001` — Source-lock validation | [`REQ-FACTORY-001`](#req-factory-001) | Exact pins, dirty/missing/wrong inputs, unsafe paths and manifest mismatch | Temporary repositories and build-manifest fixtures | Only the complete accepted lock passes; no ambient input is silently accepted | `aosedge-sdv-demo` manifest/build validators | D3 design-reviewed |
+| <a id="ut-factory-002"></a>`UT-FACTORY-002` — Artifact-type separation | [`REQ-FACTORY-002`](#req-factory-002), [`REQ-FACTORY-004`](#req-factory-004) | Factory raw image, rootfs envelope and provider component positive/negative type combinations | Synthetic release metadata and small image fixtures | Wrong target runtime/type/digest or cross-type label is rejected | `aosedge-sdv-demo` release validators | D3 design-reviewed |
+| <a id="ut-factory-003"></a>`UT-FACTORY-003` — Clean-content policy | [`REQ-FACTORY-003`](#req-factory-003) | Allowed platform files and forbidden identity, credential, provider and service content | Synthetic filesystem manifests | Every forbidden class fails without printing content; accepted empty graph passes | `aosedge-sdv-demo` factory image validator | D3 design-reviewed |
+| <a id="ut-factory-004"></a>`UT-FACTORY-004` — Empty runtime contract | [`REQ-FACTORY-005`](#req-factory-005), [`REQ-FACTORY-009`](#req-factory-009) | Exact runtime type/count/configuration; empty, malformed and unexpected active states | Service Manager configuration and state fixtures | One accepted empty runtime passes; duplicate/generic/wrong type or active payload fails | `aos-vehicle-platform` layer tests | D3 design-reviewed |
+| <a id="ut-factory-005"></a>`UT-FACTORY-005` — Atomic A/B lifecycle | [`REQ-FACTORY-006`](#req-factory-006) | First install, A-to-B update, idempotence, interruption, unsafe archive, downgrade, digest mismatch, stop and recovery | Filesystem sandbox, fake profile/health and archive fixtures | Previous accepted slot remains recoverable; unsafe candidate never becomes active | `systemdslotcomponent_test` C++ suite | D3 design-reviewed |
+| <a id="ut-factory-006"></a>`UT-FACTORY-006` — Security/store source gate | [`REQ-FACTORY-007`](#req-factory-007) | Identity, capabilities, systemd, SELinux, store size/mount/path and fail-closed rules | Recipe, policy and configuration fixtures | Missing or weakened boundary blocks the normal repository gate | `aos-vehicle-platform` `test_r6_1_layer.py` | D3 design-reviewed |
+| <a id="ut-factory-007"></a>`UT-FACTORY-007` — Fresh-overlay guard | [`REQ-FACTORY-008`](#req-factory-008) | New overlay, reused/provisioned/locked overlay, wrong backing file and duplicate redacted identity | Temporary qcow2 metadata and identity-digest fixtures | Only a fresh overlay backed by the accepted digest is eligible for M1 | `aosedge-sdv-demo` lifecycle tests | D3 design-reviewed |
+| <a id="ut-factory-008"></a>`UT-FACTORY-008` — Immutable reset guard | [`REQ-FACTORY-010`](#req-factory-010) | Exact run overlays, missing reconciliation, unexpected target and changed base digest | Temporary lifecycle manifest and fake image metadata | Reset never targets the base and fails on unresolved identity or changed digest | `aosedge-sdv-demo` lifecycle tests | D3 design-reviewed |
+| <a id="ut-factory-009"></a>`UT-FACTORY-009` — IAM substrate configuration | [`REQ-FACTORY-003`](#req-factory-003), [`REQ-FACTORY-011`](#req-factory-011) | Permission handler enabled/disabled/absent, accepted PKCS#11 module references, forbidden file-key fallback and key/token content | IAM and certificate-module configuration fixtures plus filesystem manifests | Only the enabled native handler and non-secret protected-key seam pass; any baked key/token or fallback file path fails without printing content | `aos-vehicle-platform` layer and image-policy tests | D3 design-reviewed |
 
 All runtime C++ cases required by `UT-FACTORY-005` shall be executed as a
 blocking build/qualification gate. Merely compiling those tests into the Yocto
@@ -439,10 +439,17 @@ build tree is not acceptance evidence.
 | Decide whether the existing `.11` full raw image can pass Factory Image acceptance unchanged or a newly versioned candidate is required | Build time and final artifact version | Platform Team | After no-build content, identity and runtime gates |
 | Production provider-store backend remains undecided | No impact on demo acceptance if nested ext4 remains explicitly demo-only | OEM platform architecture | Outside current demo |
 
-## Package Acceptance
+## D3 Review Closure and Product Acceptance
 
-This draft is ready for acceptance only when the artifact/lifecycle model is
-reviewed, all requirements have measurable D4 cases, the current implementation
-states are confirmed, and no provisioned `.1` or `.2` image is presented as a
-manufacturing source. Acceptance of this document does not authorize a Yocto
-build, signing, Cloud upload, VM restart, provisioning or Unit mutation.
+The artifact/lifecycle model, eleven requirement obligations, interface
+ownership, verification levels and stable `UT-FACTORY-*` obligations were
+design-reviewed on 2026-08-19 and are accepted as input to D4. This closes the
+`CR-FACTORY` D3 package. The recorded `CURRENT`, `EVIDENCE`, `PARTIAL`, `GAP`
+and `TARGET` labels remain authoritative and prevent design review from being
+misread as implementation or image acceptance.
+
+Product acceptance remains open until D4 defines measurable cases, the
+effective Factory Image contents and current implementation states are
+qualified, and no provisioned `.1` or `.2` image is presented as a
+manufacturing source. This closure does not authorize a Yocto build, signing,
+Cloud upload, VM restart, provisioning or Unit mutation.

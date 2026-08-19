@@ -135,6 +135,10 @@ Create and review packages in this order:
    [cross-cutting concerns (`CR-CROSS`)](../requirements/component-decomposition-and-interface-register.md#cr-cross)
    and [end-to-end acceptance (`CR-E2E`)](../requirements/component-decomposition-and-interface-register.md#cr-e2e).
 
+Groups 1 and 2 were design-reviewed and closed on 2026-08-19. Their target,
+partial and qualification states remain open for D4 and implementation. The
+next package in sequence is Aos lifecycle (`CR-AOS`).
+
 Create every package from the
 [component requirement package template](../requirements/components/template.md).
 Every component requirement must cite its named parent `SYS-*` requirement,
@@ -205,10 +209,10 @@ tests before code or deployment work begins.
 
 Documentation housekeeping gate D1, component-register gate D0, and joint
 baseline gate D2 are complete. The current boundary is D3 component requirement
-packages. Vehicle Simulation 0.4 and Vehicle Gateway 0.5 are draft packages;
-Factory Substrate 0.2 and Vehicle Data Platform 0.1 are reviewed drafts. Their
-`CURRENT` and `EVIDENCE` labels
-describe verified implementation evidence and do not mean that the packages
-are accepted. No new repository, component code, build, signature, Cloud
-upload, assignment, approval, VM restart, provisioning, deprovisioning or Unit
-mutation is authorized by this roadmap.
+packages. Vehicle Simulation 0.4, Vehicle Gateway 0.6, Factory Substrate 0.2
+and Vehicle Data Platform 0.3 have completed D3 design review; their
+`CURRENT`, `EVIDENCE`, `PARTIAL`, `GAP` and `TARGET` labels continue to describe
+implementation and qualification truth rather than component acceptance. The
+next package is Aos lifecycle (`CR-AOS`). No new repository, component code,
+build, signature, Cloud upload, assignment, approval, VM restart,
+provisioning, deprovisioning or Unit mutation is authorized by this roadmap.

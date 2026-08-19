@@ -311,10 +311,13 @@ interface substitutes for it.
 
 ## Provisional Component Requirement Packages
 
-This allocation is the bridge to the next document set. It does not yet define
-component-level normative requirements. The reader view explains the purpose
-of each package without requiring another document. The detailed traceability
-below is the single allocation record for exact identifiers.
+This allocation is the bridge to the component requirement documents. It does
+not itself define component-level normative requirements. `CR-VEHICLE-SIM`,
+`CR-GATEWAY`, `CR-FACTORY` and `CR-VDP` have completed D3 design review in the
+[component package set](components/README.md); the remaining allocations are
+provisional until their package review closes. The reader view explains each
+purpose without requiring another document, while the detailed traceability
+below remains the single allocation record for exact identifiers.
 
 | Package | Human-readable responsibility | Primary components | Requirement themes |
 | --- | --- | --- | --- |
@@ -728,9 +731,10 @@ The baseline was accepted on 2026-08-19 after reviewers confirmed:
 15. OEM approval remains an explicit final decision after evidence review,
     never an automatic result of tests or a Dashboard-owned state transition.
 
-Following acceptance, component requirements shall be written package by package,
-starting with [Vehicle simulation (`CR-VEHICLE-SIM`)](#cr-vehicle-sim) and
-[Vehicle Gateway (`CR-GATEWAY`)](#cr-gateway). Each requirement shall cite a
-named and linked parent System Requirement, Architecture Flow and interface,
-plus a verification method and retained evidence. Implementation planning
-begins only after the relevant package and acceptance tests are reviewed.
+Component requirements are written and reviewed package by package. Vehicle
+Simulation, Vehicle Gateway, Factory Substrate and Vehicle Data Platform have
+completed D3 design review; [Aos lifecycle (`CR-AOS`)](#cr-aos) is next. Each
+requirement shall cite a named and linked parent System Requirement,
+Architecture Flow and interface, plus a verification method and retained
+evidence. Implementation planning begins only after the relevant package and
+acceptance tests are reviewed.

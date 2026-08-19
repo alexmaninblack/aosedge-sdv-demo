@@ -3,7 +3,7 @@
 
 # Vehicle Gateway Component Requirements
 
-- Status: Draft
+- Status: D3 design-reviewed
 - Package: [`CR-GATEWAY`](../component-decomposition-and-interface-register.md#cr-gateway)
 - Version: 0.6
 - Prepared: 2026-08-19
@@ -163,7 +163,7 @@ decisions they exercise.
 - Components: [Gateway (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw)
 - Interfaces: [CARLA state (`IF-VEH-001`)](../component-decomposition-and-interface-register.md#if-veh-001) and [normalized model (`IF-VEH-004`)](../component-decomposition-and-interface-register.md#if-veh-004)
 - Required evidence: frame-aligned snapshot fixtures, rejection counters and live frame correlation
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `CURRENT`
 
 ### Truthful normalization and provenance
@@ -181,7 +181,7 @@ decisions they exercise.
 - Components: [Gateway (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw)
 - Interfaces: [CARLA state (`IF-VEH-001`)](../component-decomposition-and-interface-register.md#if-veh-001) and [normalized model (`IF-VEH-004`)](../component-decomposition-and-interface-register.md#if-veh-004)
 - Required evidence: normal, limit, sign, non-finite and contradictory-value fixtures
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `CURRENT`
 
 ### Bounded latest-value and unavailable behavior
@@ -198,7 +198,7 @@ decisions they exercise.
 - Components: [Gateway (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw) and [VISS (`CMP-VISS`)](../component-decomposition-and-interface-register.md#cmp-viss)
 - Interface: [normalized model (`IF-VEH-004`)](../component-decomposition-and-interface-register.md#if-veh-004)
 - Required evidence: store ordering, GNSS freshness, optional-value omission and unavailable read results
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `CURRENT` for data points; complete source-level degraded status belongs to `REQ-GATEWAY-009`
 
 ### Bounded TLS VISS read service
@@ -215,7 +215,7 @@ decisions they exercise.
 - Components: [VISS (`CMP-VISS`)](../component-decomposition-and-interface-register.md#cmp-viss)
 - Interfaces: [platform VISS (`IF-VEH-005`)](../component-decomposition-and-interface-register.md#if-veh-005) and [engineering subscription (`IF-VEH-006`)](../component-decomposition-and-interface-register.md#if-veh-006)
 - Required evidence: protocol suite, real TLS loopback suite and bounded-delivery metrics
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `CURRENT` for the loopback read profile; D4 must freeze the private in-vehicle trust/authentication profile
 
 ### Source identity and selected-Unit evidence
@@ -232,7 +232,7 @@ decisions they exercise.
 - Components: [Gateway (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw), [VISS (`CMP-VISS`)](../component-decomposition-and-interface-register.md#cmp-viss) and [Engineering Dashboard (`CMP-ENG-DASH`)](../component-decomposition-and-interface-register.md#cmp-eng-dash)
 - Interfaces: [normalized model (`IF-VEH-004`)](../component-decomposition-and-interface-register.md#if-veh-004), [platform VISS (`IF-VEH-005`)](../component-decomposition-and-interface-register.md#if-veh-005) and [engineering subscription (`IF-VEH-006`)](../component-decomposition-and-interface-register.md#if-veh-006)
 - Required evidence: VISS metadata plus orchestrator-owned selected Unit/replay binding
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `PARTIAL`
 
 ### Authenticated fail-safe vehicle control
@@ -250,7 +250,7 @@ decisions they exercise.
 - Components: [Control UI (`CMP-CONTROL`)](../component-decomposition-and-interface-register.md#cmp-control) and [Gateway (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw)
 - Interfaces: [control requests (`IF-VEH-002`)](../component-decomposition-and-interface-register.md#if-veh-002) and [CARLA commands (`IF-VEH-003`)](../component-decomposition-and-interface-register.md#if-veh-003)
 - Required evidence: isolated state-machine suite, local socket permission/lifecycle test and live safe-stop observation
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `CURRENT`
 
 ### Continuous manual/autopilot handover
@@ -270,7 +270,7 @@ decisions they exercise.
 - Components: [Control UI (`CMP-CONTROL`)](../component-decomposition-and-interface-register.md#cmp-control) and [Gateway (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw), jointly with [Scenario Controller (`CMP-SCENE`)](../component-decomposition-and-interface-register.md#cmp-scene)
 - Interfaces: [control requests (`IF-VEH-002`)](../component-decomposition-and-interface-register.md#if-veh-002) and [CARLA commands (`IF-VEH-003`)](../component-decomposition-and-interface-register.md#if-veh-003)
 - Required evidence: mode-transition suite, stable actor/run/frame identity and visual handover acceptance
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `PARTIAL`; current same-actor handover, lane validation and automatic-to-manual blend exist, while context-aware obstacle cleanup/reset before Autopilot does not
 
 ### Independent engineering telemetry view
@@ -288,7 +288,7 @@ decisions they exercise.
 - Components: [Engineering Dashboard (`CMP-ENG-DASH`)](../component-decomposition-and-interface-register.md#cmp-eng-dash) and [VISS (`CMP-VISS`)](../component-decomposition-and-interface-register.md#cmp-viss)
 - Interface: [engineering subscription (`IF-VEH-006`)](../component-decomposition-and-interface-register.md#if-veh-006)
 - Required evidence: dashboard command, observed VISS-only connection, factual labels and negative inspection for control/KUKSA/Cloud coupling
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `CURRENT` for telemetry; advisory/status extension belongs to `REQ-GATEWAY-011`
 
 ### Explicit source-loss state
@@ -305,7 +305,7 @@ decisions they exercise.
 - Components: [Gateway (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw), [VISS (`CMP-VISS`)](../component-decomposition-and-interface-register.md#cmp-viss) and [Engineering Dashboard (`CMP-ENG-DASH`)](../component-decomposition-and-interface-register.md#cmp-eng-dash)
 - Interfaces: [normalized model (`IF-VEH-004`)](../component-decomposition-and-interface-register.md#if-veh-004), [platform VISS (`IF-VEH-005`)](../component-decomposition-and-interface-register.md#if-veh-005) and [engineering subscription (`IF-VEH-006`)](../component-decomposition-and-interface-register.md#if-veh-006)
 - Required evidence: point omission/unavailable tests, source disconnect/stale/recovery fixtures and dashboard state
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `PARTIAL`
 
 ### Authoritative QM advisory Set boundary
@@ -328,7 +328,7 @@ decisions they exercise.
   path/type/value, missing identity, stale, replay, excessive-rate,
   cross-service, arbitrary-write, throttle, brake, steer, gear and other
   safety/motion negative cases with no side effects
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `TARGET`; current all-Set rejection remains correct until this contract is accepted
 
 ### Factual advisory status
@@ -346,7 +346,7 @@ decisions they exercise.
 - Components: [Advisory Handler (`CMP-GW-ADV`)](../component-decomposition-and-interface-register.md#cmp-gw-adv), [VISS (`CMP-VISS`)](../component-decomposition-and-interface-register.md#cmp-viss) and [Engineering Dashboard (`CMP-ENG-DASH`)](../component-decomposition-and-interface-register.md#cmp-eng-dash)
 - Interfaces: [advisory status (`IF-ADV-005`)](../component-decomposition-and-interface-register.md#if-adv-005) and [engineering subscription (`IF-VEH-006`)](../component-decomposition-and-interface-register.md#if-veh-006)
 - Required evidence: status transition fixtures, VISS subscription result and factual dashboard labels
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `TARGET`
 
 ### Local advisory latency evidence
@@ -364,7 +364,7 @@ decisions they exercise.
 - Components: [Advisory Handler (`CMP-GW-ADV`)](../component-decomposition-and-interface-register.md#cmp-gw-adv), [VISS (`CMP-VISS`)](../component-decomposition-and-interface-register.md#cmp-viss) and [Engineering Dashboard (`CMP-ENG-DASH`)](../component-decomposition-and-interface-register.md#cmp-eng-dash)
 - Interfaces: [advisory delivery (`IF-ADV-004`)](../component-decomposition-and-interface-register.md#if-adv-004), [advisory status (`IF-ADV-005`)](../component-decomposition-and-interface-register.md#if-adv-005) and [engineering subscription (`IF-VEH-006`)](../component-decomposition-and-interface-register.md#if-veh-006)
 - Required evidence: deterministic clock fixtures and correlated end-to-end local latency record distinct from backend synchronization
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `TARGET`
 
 ### Truthful mode/context engineering projection
@@ -384,7 +384,7 @@ decisions they exercise.
 - Components: [Gateway (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw), [VISS (`CMP-VISS`)](../component-decomposition-and-interface-register.md#cmp-viss) and [Engineering Dashboard (`CMP-ENG-DASH`)](../component-decomposition-and-interface-register.md#cmp-eng-dash)
 - Interfaces: [normalized model (`IF-VEH-004`)](../component-decomposition-and-interface-register.md#if-veh-004) and [engineering subscription (`IF-VEH-006`)](../component-decomposition-and-interface-register.md#if-veh-006)
 - Required evidence: state/path/type fixtures, monotonic generation checks, reset discontinuity sequence, dashboard rendering and negative proof that the dashboard is not a control client
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `TARGET`; current controller status contains part of the state outside VISS, but the accepted engineering projection and dashboard fields do not exist
 
 ### Complete hardware-profile accounting
@@ -405,7 +405,7 @@ decisions they exercise.
 - Components: [Gateway (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw), jointly with [CARLA (`CMP-CARLA`)](../component-decomposition-and-interface-register.md#cmp-carla)
 - Interfaces: [CARLA state (`IF-VEH-001`)](../component-decomposition-and-interface-register.md#if-veh-001) and [normalized model (`IF-VEH-004`)](../component-decomposition-and-interface-register.md#if-veh-004)
 - Required evidence: manifest digest and schema validation, manifest-to-adapter coverage report, optional/unavailable/unsupported cases and qualification-truth rejection
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `PARTIAL`; the current adapter maps an accepted scalar and wheel subset, but it is not driven by or reconciled against a canonical installed-hardware manifest
 
 Acceptance does not require every ingested hardware value to be published by
@@ -429,7 +429,7 @@ profile before the Platform Team selects a narrower service-facing contract.
 - Components: [Gateway (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw), [Control UI (`CMP-CONTROL`)](../component-decomposition-and-interface-register.md#cmp-control) and [CARLA (`CMP-CARLA`)](../component-decomposition-and-interface-register.md#cmp-carla)
 - Interfaces: [control request (`IF-VEH-002`)](../component-decomposition-and-interface-register.md#if-veh-002), [Gateway commands (`IF-VEH-003`)](../component-decomposition-and-interface-register.md#if-veh-003) and [CARLA state (`IF-VEH-001`)](../component-decomposition-and-interface-register.md#if-veh-001)
 - Required evidence: capability-versus-authority matrix, valid/invalid command fixtures, command/result/applied-state correlation and negative tests proving that functional services have no vehicle-motion authority
-- Requirement state: Draft
+- Requirement state: D3 design-reviewed
 - Implementation state: `PARTIAL`; throttle/brake/steer control and applied-control sampling exist, while the complete declared actuator set and execution-status contract are not frozen
 
 ## Unit-Test Obligations
@@ -485,14 +485,20 @@ profile before the Platform Team selects a narrower service-facing contract.
 | Transition truth | [Transition projection (`REQ-GATEWAY-013`)](#req-gateway-013) | Mode, context, generation and discontinuity remain explicit | Contract sequence and live dashboard inspection |
 | Hardware completeness | [Hardware accounting (`REQ-GATEWAY-014`)](#req-gateway-014) and [actuator traceability (`REQ-GATEWAY-015`)](#req-gateway-015) | Complete physical profile is accounted before service-facing selection; actuator capability never expands authority silently | Manifest coverage, negative authority matrix and live applied-state comparison |
 
-## Package Acceptance
+## D3 Review Closure and Product Acceptance
 
-This package can be accepted when all requirements have reviewed measurable
-criteria, D4 freezes the source/VISS/control/mode-context/advisory/status
-contracts, explicit source-loss and VU/DU binding are qualified, the typed
-advisory and factual dashboard extension pass their complete negative matrix,
-all `UT-*` obligations are green, and live CARLA plus Validation-Unit
-integration evidence is retained.
+The component boundary, fifteen requirement obligations, interface ownership,
+verification levels and stable `UT-GATEWAY-*` obligations were design-reviewed
+on 2026-08-19 and are accepted as input to D4. This closes the `CR-GATEWAY` D3
+package; it does not claim that the target advisory path, complete manifest
+coverage or every transition behavior is implemented.
+
+Product acceptance remains open until D4 freezes the
+source/VISS/control/mode-context/advisory/status contracts, explicit
+source-loss and VU/DU binding are qualified, the typed advisory and factual
+dashboard extension pass their complete negative matrix, all `UT-*`
+obligations are green, and live CARLA plus Validation-Unit integration
+evidence is retained.
 
 ## Open Issues
 

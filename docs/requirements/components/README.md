@@ -21,10 +21,10 @@ of unexplained identifiers.
 
 | Order | Package | File | Requirement / unit-test prefix | State |
 | --- | --- | --- | --- | --- |
-| 1 | [`CR-VEHICLE-SIM`](../component-decomposition-and-interface-register.md#cr-vehicle-sim) | [Vehicle Simulation 0.4](vehicle-simulation.md) | `VEHICLE-SIM` | Draft |
-| 1 | [`CR-GATEWAY`](../component-decomposition-and-interface-register.md#cr-gateway) | [Vehicle Gateway 0.6](vehicle-gateway.md) | `GATEWAY` | Draft |
-| 2 | [`CR-FACTORY`](../component-decomposition-and-interface-register.md#cr-factory) | [Factory Substrate 0.2](factory-substrate.md) | `FACTORY` | Reviewed draft |
-| 2 | [`CR-VDP`](../component-decomposition-and-interface-register.md#cr-vdp) | [Vehicle Data Platform 0.2](vehicle-data-platform.md) | `VDP` | Reviewed draft |
+| 1 | [`CR-VEHICLE-SIM`](../component-decomposition-and-interface-register.md#cr-vehicle-sim) | [Vehicle Simulation 0.4](vehicle-simulation.md) | `VEHICLE-SIM` | D3 design-reviewed |
+| 1 | [`CR-GATEWAY`](../component-decomposition-and-interface-register.md#cr-gateway) | [Vehicle Gateway 0.6](vehicle-gateway.md) | `GATEWAY` | D3 design-reviewed |
+| 2 | [`CR-FACTORY`](../component-decomposition-and-interface-register.md#cr-factory) | [Factory Substrate 0.2](factory-substrate.md) | `FACTORY` | D3 design-reviewed |
+| 2 | [`CR-VDP`](../component-decomposition-and-interface-register.md#cr-vdp) | [Vehicle Data Platform 0.3](vehicle-data-platform.md) | `VDP` | D3 design-reviewed |
 | 3 | [`CR-AOS`](../component-decomposition-and-interface-register.md#cr-aos) | `aos-lifecycle.md` | `AOS` | Not started |
 | 4 | [`CR-BHS`](../component-decomposition-and-interface-register.md#cr-bhs) | `brake-health-service.md` | `BHS` | Not started |
 | 4 | [`CR-BRAKE-CLOUD`](../component-decomposition-and-interface-register.md#cr-brake-cloud) | `brake-health-cloud.md` | `BRAKE-CLOUD` | Not started |
@@ -36,6 +36,12 @@ of unexplained identifiers.
 
 The files listed above are created only when work begins on the corresponding
 package. Their absence therefore means “not started,” not a broken link.
+
+`D3 design-reviewed` means that the component boundary, requirement
+obligations, interface ownership, verification levels and stable unit-test
+obligations are accepted as input to D4. It does not mean that target behavior
+is implemented, qualified or authorized for deployment; each package keeps
+those states and open gates explicit.
 
 ## Stable Identifier Rules
 
