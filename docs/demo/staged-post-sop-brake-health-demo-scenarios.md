@@ -4,7 +4,7 @@
 # Staged Post-SOP Brake and Tire Health Demo Scenarios
 
 - Status: Accepted demo-scenario baseline
-- Version: 1.2
+- Version: 1.3
 - Prepared: 2026-08-18
 - Accepted: 2026-08-18
 - Owner: Demo Architecture
@@ -13,7 +13,7 @@
   end-of-demo retirement
 - Architecture alignment: dynamic staged projection of High-Level Architecture
   1.2, with detailed interaction mapping in Demo Scenario Architecture Flows
-  1.1
+  1.2
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md)
   and [ADR 0010](../architecture/decisions/0010-aos-kuksa-credential-broker.md)
 - Implementation, build, signing, Cloud, or Unit mutation authorized: no
@@ -31,7 +31,7 @@ its Vehicle Gateway, and contains an operational Domain Controller with the
 AosEdge platform substrate. What is initially absent is the Vehicle Data
 Platform Component payload and all functional SOTA services.
 
-Scenario 1.2 defines what should happen and what an
+Scenario 1.3 defines what should happen and what an
 audience should see. It is the dynamic, stage-by-stage projection of the
 capability-superset model in High-Level Architecture 1.2. It does not yet
 select exact APIs, define every detailed interaction, or authorize
@@ -304,6 +304,14 @@ The logical **OEM Factory Baseline Assembly** capability owns this build-time
 composition, qualification and freeze process. Its output is the Factory Image
 artifact; it does not run in the resulting Domain Controller.
 
+The assembly may also produce a rootfs FOTA envelope from the same rootfs
+content. That optional envelope exists to retrofit or maintain an older
+already provisioned Unit through AosVM's rootfs A/B mechanism. The normal demo
+does not use it at M0 or M1: every newly manufactured overlay already contains
+the accepted empty-slot runtime before provisioning. The later Vehicle Data
+Platform Component is a separate post-SOP FOTA artifact installed into that
+runtime.
+
 That factory image contains:
 
 - the official AosCore baseline;
@@ -331,10 +339,12 @@ the qualified first-boot identity-generation mechanism rather than embedding a
 fixed identity that would be duplicated by every overlay.
 
 The current `.1` and `.2` installed rootfs versions prove that this runtime can
-exist with an empty provider slot. Candidate `.11` adds the most complete
-local hardening, but it is not yet the accepted factory image. A clean,
-unprovisioned factory artifact must be frozen and qualified separately; no
-provisioned VM snapshot may be used as its source.
+exist with an empty provider slot. The `.11` build adds the most complete local
+hardening and produced both a full unprovisioned raw VM image and a separate
+unsigned rootfs FOTA candidate. The raw image is Factory Image engineering
+evidence; the rootfs envelope is only an optional retrofit artifact. Neither
+has yet completed Factory Image acceptance, and no provisioned VM snapshot may
+be used as a manufacturing source.
 
 The currently implemented runtime is specific to one Vehicle Data Provider
 component type. This demo may claim independent versioning of that shared
@@ -751,6 +761,44 @@ placement, and a safe failure mode if the expected braking trigger does not
 occur. Random city traffic may remain visible outside the controlled segment
 only if it cannot change the event timing or outcome.
 
+## Drive-Mode and World-Context Transitions
+
+The interactive vehicle has four control modes—`SCENARIO`, `MANUAL`,
+`AUTOPILOT`, and `SAFE_STOP`—and two independent world contexts:
+
+- `FREE_DRIVE`, with no scenario-owned obstacle; and
+- `BRAKE_EVENT`, with the deterministic obstacle and scenario evidence active.
+
+The same ego actor, synchronous clock owner, Gateway telemetry stream and run
+identity remain active across every transition. A reset may reposition that
+actor, but it must increment an explicit reset/scenario generation and expose
+the resulting discontinuity rather than present teleportation as physical
+vehicle motion.
+
+| Requested transition | Required audience-visible behavior |
+| --- | --- |
+| `SCENARIO -> MANUAL` | Mark an unfinished scripted attempt `ABORTED`; retain the current ego position and `BRAKE_EVENT` obstacle so the operator can perform manual braking. |
+| `SCENARIO -> AUTOPILOT` | Mark an unfinished attempt `ABORTED`, select safe stop, remove scenario-owned obstacle state, reset the same ego actor to an accepted free-drive start with zero motion, then enable Autopilot only after lane/alignment validation. |
+| `AUTOPILOT -> MANUAL` | Disable Traffic Manager and blend into manual control in place without overlapping throttle and brake. |
+| `AUTOPILOT -> SCENARIO` | Select safe stop, disable Traffic Manager, prepare the canonical obstacle, reset the same ego actor and start a new scenario generation. |
+| `MANUAL -> SCENARIO` | Select safe stop, prepare the canonical obstacle, reset the same ego actor and start a new scenario generation. |
+| `MANUAL -> AUTOPILOT` in `FREE_DRIVE` | Hand over in place after lane/alignment validation. |
+| `MANUAL -> AUTOPILOT` in `BRAKE_EVENT` | Select safe stop, remove scenario-owned obstacle state, reset the same ego actor to the accepted free-drive start with zero motion, then enable Autopilot. |
+| Any mode `-> SAFE_STOP` | Stop safely without implicitly resetting position, world context or scenario evidence. |
+| `SCENARIO -> SCENARIO` | Mark an unfinished attempt `ABORTED`, reset canonical scenario state and start a new generation. |
+
+Scenario `PASS`, `FAIL` or collision selects `SAFE_STOP`. Restarting the
+scenario or transitioning to Autopilot provides deterministic recovery from a
+blocked position. Reverse gear is deliberately outside the current manual
+control scope; the demo must not depend on reverse for recovery. Autopilot is
+CARLA Traffic Manager with automatic lane change disabled, so the demo makes
+no obstacle-avoidance claim and removes the brake-event obstacle before
+free-drive Autopilot begins.
+
+The Engineering Telematics Dashboard shall show the current control mode,
+world context, scenario state/result, generation and reset/discontinuity state
+as explicitly simulator-derived engineering facts.
+
 ## Prebuilt Demo and Runtime Duration
 
 All source changes, builds, model training, tests, artifact signing, and Cloud
@@ -848,6 +896,9 @@ destructive experiment.
     approvals affecting OEM Units use authorized OEM identities, and AosCloud
     stores and executes the resulting lifecycle transition. The dashboard and
     orchestrator own neither approval nor lifecycle state.
+17. Interactive CARLA mode transitions follow the accepted drive-mode/world-
+    context matrix; manual takeover preserves the brake event, while Autopilot
+    never inherits the scenario obstacle and no reverse-control claim is made.
 
 ## Open Qualification and Implementation Gates
 
@@ -896,9 +947,12 @@ destructive experiment.
     Service-to-FOTA-component dependency declaration and rejection before any
     Subject-service desired-state change, validation batch, campaign, or Unit
     download, then enable the deferred `G3` prelude.
+17. Implement and qualify the complete drive-mode/world-context transition
+    matrix, dynamic obstacle lifecycle, reset/discontinuity evidence and
+    Engineering Telematics Dashboard presentation.
 
 Detailed interaction mapping now exists in Demo Scenario Architecture Flows
-1.1. The open gates above constrain component requirements, implementation,
+1.2. The open gates above constrain component requirements, implementation,
 qualification, and audience-visible claims. They preserve the canonical
 `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> T1 -> R0` presentation order and
 the independence of the two SOTA lifecycles.
@@ -908,7 +962,7 @@ the independence of the two SOTA lifecycles.
 - [High-Level Architecture 1.2](../architecture/high-level-architecture.md)
   defines the accepted capability-superset architecture baseline; this
   scenario defines its staged component presence and lifecycle, while
-  [Architecture Flows 1.1](../architecture/demo-scenario-architecture-flows.md)
+  [Architecture Flows 1.2](../architecture/demo-scenario-architecture-flows.md)
   defines detailed cross-component interaction mapping.
 - [AosEdge overview](https://docs.aosedge.tech/docs/aos-edge/) describes the
   Cloud-to-edge lifecycle and operational visibility model.

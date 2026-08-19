@@ -252,7 +252,7 @@ architecture. A deployable FOTA or SOTA box indicates that the architecture can
 host that element; it does not imply that every element is installed at every
 demonstration stage. The manufacturing, provisioning, `G0–G4`, independent
 `T1` Tire Health, and retirement sequence and the precise presence or absence of each deployable component are
-owned by Demo Scenario 1.2 rather than by this static component diagram.
+owned by Demo Scenario 1.3 rather than by this static component diagram.
 
 The logical Domain Controller architecture is instantiated twice for the
 demonstration: once as the Validation Unit and once as the Demonstration Unit.
@@ -323,6 +323,16 @@ payload, functional SOTA service, Cloud registration, Cloud-issued credential,
 or reusable per-vehicle identity. The accepted component runtime is currently
 specific to one provider type and one empty slot; Architecture 1.2 does not
 claim a generic arbitrary-component runtime.
+
+A pinned OEM build may emit both the complete bootable Factory Image and a
+separate rootfs platform-update envelope from the same rootfs content. These
+are different lifecycle artifacts. Fresh M0 deployments use the complete
+unprovisioned Factory Image and already contain the empty-slot runtime before
+M1 provisioning. The rootfs envelope uses the factory-installed AosVM rootfs
+A/B mechanism only to retrofit or maintain an older provisioned Unit; it is
+not required to introduce the initial runtime in the normal manufacturing
+flow. The post-SOP Vehicle Data Platform Component remains a third, separately
+versioned FOTA artifact installed through that runtime.
 
 The Vehicle Data Platform Component payload is the shared
 vehicle-integration layer. It owns the privileged connection to the Vehicle
@@ -770,7 +780,7 @@ Architecture 1.2 is aligned only while all of the following remain true:
     a driver.
 15. No secret, Unit identity, or private credential is embedded in a FOTA or
     SOTA payload.
-16. The static diagram is a target capability superset; Demo Scenario 1.2 owns
+16. The static diagram is a target capability superset; Demo Scenario 1.3 owns
     component presence and absence at each manufacturing, provisioning,
     `G0–G4`, `T1`, and retirement stage.
 17. Validation and Demonstration Units are separate instances of the same
@@ -812,14 +822,19 @@ Architecture 1.2 is aligned only while all of the following remain true:
 High-Level Architecture 1.2 was accepted as the architecture baseline on
 2026-08-18 during D2 joint baseline review. Its downstream projections are:
 
-1. Demo Scenario 1.2 for audience-visible stage order and component presence;
-2. Architecture Flows 1.1 for detailed lifecycle, runtime, observability, and
+1. Demo Scenario 1.3 for audience-visible stage order and component presence;
+2. Architecture Flows 1.2 for detailed lifecycle, runtime, observability, and
    failure mapping;
-3. System Requirements and Traceability 0.2 for normative system obligations
+3. System Requirements and Traceability 0.5 for normative system obligations
    and gap coverage;
-4. Component Decomposition and Interface Register 0.2 for component ownership,
+4. Component Decomposition and Interface Register 0.5 for component ownership,
    interface identifiers, repository allocation, and provisional requirement
-   packages.
+packages.
+
+The architecture was revalidated against the explicit drive-mode/world-context
+transition contract added downstream in Scenario 1.3 and Architecture Flows
+1.2. That refinement changes component behavior and allocation, but not the
+HLA 1.2 boundaries, authorities or interfaces.
 
 The next roadmap boundary is D3 component requirement packages. Acceptance of
 this architecture does not authorize implementation, building, signing, Cloud

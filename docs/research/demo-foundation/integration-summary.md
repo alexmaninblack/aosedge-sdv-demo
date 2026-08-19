@@ -6,7 +6,7 @@
 > Status: completed research evidence. References to Scenario 1.0 and a
 > `G4`-to-`G0` reset describe hypotheses evaluated by this research pass, not
 > the current design. Current decisions are owned by High-Level Architecture
-> 1.2, Demo Scenario 1.2, Architecture Flows 1.1 and the requirements set.
+> 1.2, Demo Scenario 1.3, Architecture Flows 1.2 and the requirements set.
 
 Status: **research checkpoint complete; decisions require review; implementation
 not authorized**.

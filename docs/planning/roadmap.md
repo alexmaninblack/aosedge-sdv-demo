@@ -55,13 +55,13 @@ The following documents form one ordered design chain:
 
 1. [High-Level Architecture 1.2](../architecture/high-level-architecture.md)
    owns boundaries, authorities and invariants.
-2. [Demo Scenario 1.2](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+2. [Demo Scenario 1.3](../demo/staged-post-sop-brake-health-demo-scenarios.md)
    owns the audience-visible stage sequence.
-3. [Architecture Flows 1.1](../architecture/demo-scenario-architecture-flows.md)
+3. [Architecture Flows 1.2](../architecture/demo-scenario-architecture-flows.md)
    owns lifecycle, runtime, observability and failure flows.
-4. [System Requirements and Traceability 0.2](../requirements/system-requirements-and-traceability.md)
-   owns `SYS-*` obligations and coverage of all twenty gaps.
-5. [Component Decomposition and Interface Register 0.2](../requirements/component-decomposition-and-interface-register.md)
+4. [System Requirements and Traceability 0.5](../requirements/system-requirements-and-traceability.md)
+   owns `SYS-*` obligations and coverage of all twenty-one gaps.
+5. [Component Decomposition and Interface Register 0.5](../requirements/component-decomposition-and-interface-register.md)
    owns component/interface IDs and provisional requirement-package
    allocation.
 
@@ -79,8 +79,9 @@ stateless Software Delivery Dashboard and Demo Orchestrator boundaries, native
 AosEdge logging ownership, and the ADR 0010 allocation of the Credential Broker
 and OEM policy to `CMP-VDP`.
 
-Exit evidence: Component Decomposition and Interface Register 0.2 is the
-accepted component baseline.
+Exit evidence: Component Decomposition and Interface Register 0.3 closed D0;
+the accepted register has since advanced to 0.4 through controlled downstream
+refinement.
 
 ### D1 — Documentation housekeeping — completed 2026-08-18
 
@@ -102,11 +103,14 @@ gate.
 
 ### D2 — Baseline acceptance — completed 2026-08-18
 
-HLA 1.2, Scenario 1.2, Architecture Flows 1.1, System Requirements 0.2 and the
-Component Register were jointly reviewed and accepted as one consistent design
-baseline. Deferred platform capabilities and open qualification or
-implementation gates remain explicit and are not presented as current
-behavior.
+HLA 1.2, Scenario 1.3, Architecture Flows 1.2, System Requirements 0.5 and the
+Component Register 0.5 form one consistent design baseline. Scenario 1.3 and
+Flows 1.2 add the accepted drive-mode/world-context transition contract;
+Requirements and Register 0.4 allocate it to Vehicle Simulation, Vehicle
+Gateway and the Engineering Dashboard. HLA 1.2 was revalidated because no
+boundary, authority or interface changed. Deferred platform capabilities and
+open qualification or implementation gates remain explicit and are not
+presented as current behavior.
 
 Exit evidence: each baseline document records its accepted status and date,
 and the documentation quality gate passes for the complete design chain.
@@ -128,17 +132,28 @@ Create and review packages in this order:
    [cross-cutting concerns (`CR-CROSS`)](../requirements/component-decomposition-and-interface-register.md#cr-cross)
    and [end-to-end acceptance (`CR-E2E`)](../requirements/component-decomposition-and-interface-register.md#cr-e2e).
 
-Every component requirement must cite its parent `SYS-*` requirement, relevant
-`AF-*` flow, interface ID, verification method and required evidence.
+Create every package from the
+[component requirement package template](../requirements/components/template.md).
+Every component requirement must cite its named parent `SYS-*` requirement,
+relevant `AF-*` flow, component and interface definitions, verification levels
+and required evidence. Owned executable logic must also define stable `UT-*`
+unit-test obligations covering applicable normal, boundary, malformed,
+unavailable and recovery behavior. External executables and packages with no
+owned executable logic may record a reasoned unit-test exception and allocate
+their proof to contract, integration, qualification or end-to-end verification.
 
-Exit: every system obligation is allocated and every interface has an owner on
-both sides.
+Exit: every system obligation is allocated, every interface has an owner on
+both sides, every component requirement has complete verification
+traceability, and every owned unit of behavior has a unit-test obligation or a
+reviewed exception.
 
 ### D4 — Interface contracts and acceptance tests
 
 Freeze the versioned VISS, KUKSA, typed advisory, functional-report/event,
-AosCloud, log and dashboard contracts. Define normal, unavailable, stale,
-malformed, unauthorized, offline, retry, rollback and resource-bound behavior.
+AosCloud, log and dashboard contracts. Define executable cases, fixtures,
+suites and evidence locations for normal, unavailable, stale, malformed,
+unauthorized, offline, retry, rollback and resource-bound behavior. D4 refines
+how D3 obligations are proved; it does not silently change component behavior.
 
 Exit: tests can be written without inventing missing architecture decisions.
 
@@ -186,7 +201,9 @@ tests before code or deployment work begins.
 
 Documentation housekeeping gate D1, component-register gate D0, and joint
 baseline gate D2 are complete. The current boundary is D3 component requirement
-packages. No new
-repository, component code, build, signature, Cloud upload, assignment,
-approval, VM restart, provisioning, deprovisioning or Unit mutation is
-authorized by this roadmap.
+packages. Vehicle Simulation 0.4, Vehicle Gateway 0.5 and Factory Substrate 0.1
+are draft packages awaiting review; their `CURRENT` and `EVIDENCE` labels
+describe verified implementation evidence and do not mean that the packages
+are accepted. No new repository, component code, build, signature, Cloud
+upload, assignment, approval, VM restart, provisioning, deprovisioning or Unit
+mutation is authorized by this roadmap.

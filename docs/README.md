@@ -25,7 +25,7 @@ not only the CARLA-to-AosEdge transport bridge.
 - [Architecture documentation index](architecture/README.md)
 - [High-Level Architecture 1.2 — accepted architecture baseline](architecture/high-level-architecture.md)
   — accepted end-to-end system view with the Tire Health decision.
-- [Demo Scenario Architecture Flows 1.1 — accepted architecture-flow baseline](architecture/demo-scenario-architecture-flows.md)
+- [Demo Scenario Architecture Flows 1.2 — accepted architecture-flow baseline](architecture/demo-scenario-architecture-flows.md)
   — complete manufacturing, provisioning, post-SOP evolution, Function Team 2
   `T1` Tire Health stage, observability, offline, and retirement mapping.
 - [Repository and component boundaries](architecture/repository-boundaries.md)
@@ -38,7 +38,7 @@ not only the CARLA-to-AosEdge transport bridge.
 ## Demo
 
 - [Demo documentation index](demo/README.md)
-- [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.2](demo/staged-post-sop-brake-health-demo-scenarios.md)
+- [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.3](demo/staged-post-sop-brake-health-demo-scenarios.md)
   — accepted manufacturing-to-retirement audience-visible baseline.
 - [Demo assets](demo/assets/) — original, license-cleared visual sources and
   exports. Storyboards and presenter materials will be added here only after
@@ -46,12 +46,15 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Requirements
 
-- [System Requirements and Traceability 0.2 — accepted system-requirements baseline](requirements/system-requirements-and-traceability.md)
-  — system obligations, complete coverage of the twenty Architecture Flows
+- [System Requirements and Traceability 0.5 — accepted system-requirements baseline](requirements/system-requirements-and-traceability.md)
+  — system obligations, complete coverage of the twenty-one Architecture Flows
   gaps, verification intent, repository ownership and component allocation.
-- [Component Decomposition and Interface Register 0.2 — accepted component baseline](requirements/component-decomposition-and-interface-register.md)
+- [Component Decomposition and Interface Register 0.5 — accepted component baseline](requirements/component-decomposition-and-interface-register.md)
   — logical components, implementation state, lifecycle and repository
   boundaries, runtime and Cloud interfaces, and component-package allocation.
+- [Component requirement packages and template](requirements/components/README.md)
+  — ordered D3 work, human-readable component requirements, unit-test
+  obligations and verification traceability.
 - [Requirements documentation](requirements/README.md)
 
 ## Planning

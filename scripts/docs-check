@@ -47,12 +47,16 @@ IDENTIFIER = re.compile(
     r"CMP-[A-Z0-9]+(?:-[A-Z0-9]+)*|"
     r"IF-[A-Z0-9]+-\d{3}|"
     r"AF-[A-Z0-9]+(?:-[A-Z0-9]+)+|"
-    r"CR-[A-Z0-9]+(?:-[A-Z0-9]+)*"
+    r"CR-[A-Z0-9]+(?:-[A-Z0-9]+)*|"
+    r"REQ-[A-Z0-9]+(?:-[A-Z0-9]+)*-\d{3}|"
+    r"UT-[A-Z0-9]+(?:-[A-Z0-9]+)*-\d{3}"
     r")\b"
 )
 STABLE_ANCHOR = re.compile(
     r"^(?:gap-af-\d{2}|sys-[a-z0-9]+-\d{3}|cmp-[a-z0-9-]+|"
-    r"if-[a-z0-9]+-\d{3}|af-[a-z0-9-]+|cr-[a-z0-9-]+)$"
+    r"if-[a-z0-9]+-\d{3}|af-[a-z0-9-]+|cr-[a-z0-9-]+|"
+    r"req-[a-z0-9]+(?:-[a-z0-9]+)*-\d{3}|"
+    r"ut-[a-z0-9]+(?:-[a-z0-9]+)*-\d{3})$"
 )
 
 
@@ -493,6 +497,39 @@ def check_reader_traceability(root: Path, documents: dict[Path, str]) -> list[Is
     return issues
 
 
+def check_component_requirement_packages(
+    root: Path, documents: dict[Path, str]
+) -> list[Issue]:
+    """Reject a concrete component requirement without a linked SYS parent."""
+
+    issues: list[Issue] = []
+    packages = (root / "docs" / "requirements" / "components").resolve()
+    for path, text in sorted(documents.items()):
+        if path.parent != packages or path.name in {"README.md", "template.md"}:
+            continue
+        matches = list(re.finditer(r'<a id="(req-[a-z0-9-]+)"></a>', text))
+        verification = text.find("## Verification Traceability")
+        for index, match in enumerate(matches):
+            end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+            if verification > match.end():
+                end = min(end, verification)
+            section = text[match.end():end]
+            parent_links = [
+                target
+                for _, target in MARKDOWN_LINK.findall(section)
+                if "#sys-" in target.lower()
+            ]
+            if not parent_links:
+                line_number = text.count("\n", 0, match.start()) + 1
+                issues.append(
+                    Issue(
+                        f"{relative(root, path)}:{line_number}",
+                        f"component requirement {match.group(1).upper()} must link at least one parent system requirement",
+                    )
+                )
+    return issues
+
+
 def check_hygiene(root: Path, documents: dict[Path, str]) -> list[Issue]:
     issues: list[Issue] = []
     docs_root = root / "docs"
@@ -625,6 +662,7 @@ def check_repository(
     issues.extend(check_metadata(root, documents))
     issues.extend(check_traceability(root, documents, definitions))
     issues.extend(check_reader_traceability(root, documents))
+    issues.extend(check_component_requirement_packages(root, documents))
     issues.extend(check_hygiene(root, documents))
     mermaid_issues, diagram_count = check_mermaid(root, documents)
     issues.extend(mermaid_issues)

@@ -1,23 +1,23 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# System Requirements and Traceability 0.2
+# System Requirements and Traceability 0.5
 
 - Status: Accepted system-requirements baseline
-- Version: 0.2
-- Prepared: 2026-08-18
-- Accepted: 2026-08-18
+- Version: 0.5
+- Prepared: 2026-08-19
+- Accepted: 2026-08-19
 - Owner: System Architecture
 - Architecture input: [High-Level Architecture 1.2](../architecture/high-level-architecture.md)
-- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.2](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Demo Scenario Architecture Flows 1.1](../architecture/demo-scenario-architecture-flows.md)
+- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.3](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Demo Scenario Architecture Flows 1.2](../architecture/demo-scenario-architecture-flows.md)
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md)
   and [ADR 0010](../architecture/decisions/0010-aos-kuksa-credential-broker.md)
 - Implementation, repository creation, signing, Cloud, or Unit mutation authorized: no
 
 ## Purpose
 
-This document converts the accepted architecture-flow model and its twenty
+This document converts the accepted architecture-flow model and its twenty-one
 open gaps into reviewable system requirements and an allocation plan for
 component requirements.
 
@@ -35,8 +35,8 @@ passes its acceptance criteria, and the evidence is retained.
 ## Source Precedence
 
 1. High-Level Architecture 1.2 owns boundaries, authority and invariants.
-2. Demo Scenario 1.2 owns the audience-visible stage progression.
-3. Architecture Flows 1.1 owns detailed lifecycle, runtime, observability and
+2. Demo Scenario 1.3 owns the audience-visible stage progression.
+3. Architecture Flows 1.2 owns detailed lifecycle, runtime, observability and
    failure-flow mapping.
 4. This document owns system requirement identifiers, gap traceability,
    verification intent and the next component-allocation boundary.
@@ -54,6 +54,7 @@ acceptance even if wording is clarified.
 | `SYS-MFG` | Factory image and manufacturing output |
 | `SYS-ID` | Provisioning, identity and Cloud registration |
 | `SYS-SRC` | CARLA source and Unit binding |
+| `SYS-CTRL` | Vehicle control safety and continuous mode handover |
 | `SYS-REL` | FOTA/SOTA targeting, dependency, validation and rollback |
 | `SYS-VDP` | Vehicle Data Platform Component |
 | `SYS-BHS` | Brake Health functional behavior |
@@ -127,6 +128,8 @@ current workspace doctor's validity.
 | --- | --- | --- | --- | --- |
 | <a id="sys-src-001"></a>`SYS-SRC-001` | Exact source-to-Unit binding | Each qualification or demonstration observation shall identify the exact CARLA/VISS source, target Unit and frame/trace range, using either exclusive live binding or deterministic versioned replay. | `T,I,D` | `GAP-AF-04` |
 | <a id="sys-src-002"></a>`SYS-SRC-002` | Honest single-source presentation | The demo shall not imply that two simulated vehicles were running simultaneously when one CARLA/Gateway source was reused sequentially. | `I,D` | `GAP-AF-04` |
+| <a id="sys-src-003"></a>`SYS-SRC-003` | Versioned vehicle hardware profile | The selected virtual vehicle shall have one digest-addressed Vehicle Hardware Capability Manifest that identifies the CARLA revision and ego blueprint and classifies every installed signal, sensor and actuator with its type, unit, frame, cadence or command range, availability semantics and provenance; a capability that CARLA can theoretically create but that is not installed in the selected profile shall be declared `NOT_INSTALLED` rather than implied to exist. | `T,I` | Accepted HLA and native-CARLA-inventory baseline correction |
+| <a id="sys-src-004"></a>`SYS-SRC-004` | Complete Simulator–Gateway accounting | Across the selected hardware profile, the Simulator and Gateway shall account for every declared capability without silent loss: installed state shall be delivered or explicitly unavailable/unsupported; actuator commands shall be accepted or rejected with bounded status and the actually applied control state shall be observable; simulator ground truth and qualification-only oracle state shall remain outside the production vehicle-data interface. | `T,I,A` | Accepted HLA and native-CARLA-inventory baseline correction |
 | <a id="sys-rel-001"></a>`SYS-REL-001` | Immutable release candidates | Every FOTA and SOTA candidate shall be immutable and identified by version and digest before presentation-time deployment. | `I` | `GAP-AF-05`, `GAP-AF-07`, `GAP-AF-20` |
 | <a id="sys-rel-002"></a>`SYS-REL-002` | Current effective-target validation | Immediately before approval, the delivery workflow shall derive effective targets from current Unit pending-batch state and shall block stale, missing or unexpected targets. | `T,I` | `GAP-AF-06` |
 | <a id="sys-rel-003"></a>`SYS-REL-003` | Service capability compatibility | Each SOTA service artifact shall carry a versioned Vehicle Data Platform Component compatibility range and shall fail closed at startup/readiness when the installed capability is absent or incompatible. | `T,I` | `GAP-AF-20` |
@@ -143,6 +146,20 @@ release**. The Platform Team reported the capability as roadmap work on
 2026-08-18, without an available release or date. No project-side admission
 controller is an acceptable substitute. `SYS-REL-003` remains required as
 defense in depth before and after the native Cloud feature becomes available.
+
+### Vehicle control and handover
+
+`SYS-CTRL-001` and `SYS-CTRL-002` are corrective allocations discovered while
+deriving the first component packages. `SYS-CTRL-003` records the subsequently
+accepted Scenario 1.3 and Architecture Flows 1.2 mode/context refinement. The
+set does not add a demo stage, authority, architectural boundary or data
+direction.
+
+| ID | Short name | System requirement | Verification | Gap source |
+| --- | --- | --- | --- | --- |
+| <a id="sys-ctrl-001"></a>`SYS-CTRL-001` | Fail-safe exclusive vehicle control | The vehicle-control path shall remain separate from VISS/KUKSA vehicle-data paths, permit exactly one authenticated control owner, reject invalid, replayed, out-of-mode or simultaneous throttle/brake commands, enforce bounded command and ownership deadlines, and select safe stop on startup, timeout, release, disconnect, applicable focus loss, shutdown or controller failure. No functional SOTA service shall gain vehicle-motion authority. | `T,I,D` | Accepted HLA/flow baseline correction |
+| <a id="sys-ctrl-002"></a>`SYS-CTRL-002` | Continuous control-mode handover | Transitions among manual, autopilot, scripted scenario and safe stop shall preserve one ego actor, one synchronous clock owner, the active run/frame identity and uninterrupted Gateway telemetry; transitions shall be pedal-safe and bounded, and manual takeover of an unfinished scripted attempt shall record an abort rather than a false pass or failure. | `T,I,D` | Accepted HLA/flow baseline correction |
+| <a id="sys-ctrl-003"></a>`SYS-CTRL-003` | Deterministic mode/context transition | The solution shall implement the complete `AF-X-DRIVE` matrix with independent drive-mode and `FREE_DRIVE`/`BRAKE_EVENT` world-context state: manual takeover shall retain brake-event position and obstacle; entry to Scenario shall perform a canonical reset and new generation; entry to Autopilot from brake-event context shall safe-stop, remove scenario-owned obstacle state, reset the same actor to an accepted free-drive start with zero motion and validate lane alignment before enabling Traffic Manager; safe stop alone shall not reset context. Any failed transition shall remain in safe stop without partial mode activation. Reverse and Autopilot obstacle avoidance shall not be required or claimed. | `T,I,D` | `GAP-AF-24` |
 
 ### Vehicle Data Platform Component
 
@@ -200,6 +217,7 @@ requirements after ADR 0008:
 | <a id="sys-obs-002"></a>`SYS-OBS-002` | Cloud-authoritative delivery dashboard | The Software Delivery Dashboard shall read and re-read authoritative AosCloud lifecycle and native-log state, display the business decision owner and active Cloud role, require explicit confirmation before an OEM-authorized mutation or log request, and shall not maintain an independent desired-state database, log archive or automatic approval policy. | `T,I` | `GAP-AF-06`, `GAP-AF-16`, `GAP-AF-17` |
 | <a id="sys-obs-003"></a>`SYS-OBS-003` | Operational log controls | Before native system, service-instance or crash logs are presented as demo evidence, the solution shall qualify scoped AosCloud API access, request latency and failure visibility, retention/deletion, online/offline behavior, redaction, and source timestamps. | `T,I,A` | `GAP-AF-16` |
 | <a id="sys-obs-004"></a>`SYS-OBS-004` | Per-run correlation | Before provisioning, a demo run shall be correlated by start time and local overlay roles; after provisioning it shall be correlated by the two Unit IDs and the same bounded time window. | `T,I` | `GAP-AF-19` |
+| <a id="sys-obs-005"></a>`SYS-OBS-005` | Truthful control-transition evidence | The Gateway engineering projection and Engineering Telematics Dashboard shall expose the current drive mode, world context, scenario state/result, generation and reset/discontinuity state as simulator-derived facts so that reset teleportation is never interpreted as physical vehicle motion. | `T,I,D` | `GAP-AF-24` |
 | <a id="sys-tim-001"></a>`SYS-TIM-001` | Lifecycle timing bounds | Each lifecycle stage shall have measured normal duration, timeout, stalled-state and recovery criteria for both technical and executive presentation modes. | `T,A,D` | `GAP-AF-18` |
 | <a id="sys-tim-002"></a>`SYS-TIM-002` | Separate local and Cloud latency | Local Brake Health and Tire Health decision/Gateway-advisory latency shall be measured separately from Cloud report synchronization latency. | `T,A,D` | `GAP-AF-18` |
 
@@ -209,14 +227,15 @@ requirements after ADR 0008:
 | --- | --- | --- | --- | --- |
 | <a id="sys-ret-001"></a>`SYS-RET-001` | Retire Units and overlays | R0 shall stop both Units, perform qualified Cloud deprovisioning and deletion, prove retired credentials cannot reconnect, and discard only the corresponding provisioned overlays after reconciliation succeeds. | `T,I,A` | `GAP-AF-03`, `GAP-AF-19` |
 | <a id="sys-ret-002"></a>`SYS-RET-002` | Clear functional run data | Functional backends and dashboards shall clear or archive run-scoped data using exact Unit IDs and the bounded session time window without deleting authoritative Cloud audit history. | `T,I` | `GAP-AF-19` |
-| <a id="sys-ret-003"></a>`SYS-RET-003` | Reset CARLA and preserve factory | R0 shall reset CARLA actors and local run evidence and shall prove that the immutable factory image and digest remain unchanged for the next M0. | `T,I` | `GAP-AF-01`, `GAP-AF-04` |
+| <a id="sys-ret-003"></a>`SYS-RET-003` | Reset vehicle simulation state | R0 shall safe-stop the ego vehicle, remove only scenario-owned CARLA actors and sensors, restore changed CARLA world and Traffic Manager settings, clear run-local simulation evidence and report incomplete cleanup before the next run. | `T,I` | `GAP-AF-04` |
 | <a id="sys-ret-004"></a>`SYS-RET-004` | No rollback or fleet claim | The normal demo reset shall not be presented as a G4-to-G0 OTA rollback or as a production-fleet vehicle deletion policy. | `I,D` | `GAP-AF-03`, `GAP-AF-18` |
+| <a id="sys-ret-005"></a>`SYS-RET-005` | Preserve immutable factory artifact | R0 shall not modify or replace the accepted OEM Demo Factory Image; after provisioned overlays are retired and discarded, the system shall verify and retain the same immutable factory-image digest as the source for the next M0 deployments. | `T,I` | `GAP-AF-01`, `GAP-AF-19` |
 
 ## Gap Coverage Matrix
 
 | Gap | Governing system requirements |
 | --- | --- |
-| `GAP-AF-01` | `SYS-MFG-001`, `SYS-MFG-002`, `SYS-VDP-001`, `SYS-RET-003` |
+| `GAP-AF-01` | `SYS-MFG-001`, `SYS-MFG-002`, `SYS-VDP-001`, `SYS-RET-005` |
 | `GAP-AF-02` | `SYS-MFG-003`, `SYS-ID-001` |
 | `GAP-AF-03` | `SYS-ID-002`, `SYS-ID-003`, `SYS-ID-004`, `SYS-RET-001`, `SYS-RET-004` |
 | `GAP-AF-04` | `SYS-SRC-001`, `SYS-SRC-002`, `SYS-RET-003` |
@@ -231,15 +250,16 @@ requirements after ADR 0008:
 | `GAP-AF-16` | `SYS-OBS-003` |
 | `GAP-AF-17` | `SYS-REL-007`, `SYS-REL-008`, `SYS-REL-009`, `SYS-OBS-001`, `SYS-OBS-002` |
 | `GAP-AF-18` | `SYS-TIM-001`, `SYS-TIM-002`, `SYS-RET-004` |
-| `GAP-AF-19` | `SYS-OBS-004`, `SYS-RET-001`, `SYS-RET-002` |
+| `GAP-AF-19` | `SYS-OBS-004`, `SYS-RET-001`, `SYS-RET-002`, `SYS-RET-005` |
 | `GAP-AF-20` | `SYS-REL-001`, `SYS-REL-003`, `SYS-REL-004`, `SYS-REL-005`, deferred `SYS-REL-006` |
 | `GAP-AF-21` | `SYS-TIRE-001`, `SYS-TIRE-002`, `SYS-TIRE-003`, `SYS-TIRE-004` |
 | `GAP-AF-22` | `SYS-VDP-004`, `SYS-TIRE-006`, `SYS-SEC-003` |
 | `GAP-AF-23` | `SYS-TIRE-004`, `SYS-TIRE-005`, `SYS-TIRE-006` |
+| `GAP-AF-24` | `SYS-CTRL-003`, `SYS-OBS-005` |
 
-All twenty active architecture-flow gaps have explicit requirement coverage.
+All twenty-one active architecture-flow gaps have explicit requirement coverage.
 Retired gaps `GAP-AF-12` through `GAP-AF-14` resolve to their replacements in
-Architecture Flows 1.1. This
+Architecture Flows 1.2. This
 does not mean they are resolved; each remains open until its linked
 requirements have accepted evidence.
 
@@ -247,23 +267,23 @@ requirements have accepted evidence.
 
 The canonical component IDs, interface IDs, repository candidates and package
 boundaries are defined in the
-[Component Decomposition and Interface Register 0.2](component-decomposition-and-interface-register.md).
+[Component Decomposition and Interface Register 0.5](component-decomposition-and-interface-register.md).
 The next derivation step shall expand the following packages. A system
 requirement may allocate obligations to several packages and one integration
 test.
 
 | Package | Primary repository or owner | Main allocation |
 | --- | --- | --- |
-| [Vehicle simulation (`CR-VEHICLE-SIM`)](component-decomposition-and-interface-register.md#cr-vehicle-sim) | `CarlaSim` plus scenario tooling in `carla-ego-runtime` | Deterministic braking and explicit accelerated/pre-aged tire stimuli, reset, timestamps and hidden ground-truth qualification |
-| [Vehicle Gateway (`CR-GATEWAY`)](component-decomposition-and-interface-register.md#cr-gateway) | `carla-ego-runtime` | Vehicle sampling, VSS/VISS contracts, source status, advisory handler and Engineering Telematics Dashboard |
-| [Factory substrate (`CR-FACTORY`)](component-decomposition-and-interface-register.md#cr-factory) | Platform Team / `aos-vehicle-platform` | Factory image, provider-specific empty-slot runtime, identity absence and overlay creation |
+| [Vehicle simulation (`CR-VEHICLE-SIM`)](component-decomposition-and-interface-register.md#cr-vehicle-sim) | `CarlaSim` plus scenario tooling in `carla-ego-runtime` | Versioned vehicle hardware profile, complete installed signal/actuator boundary, deterministic braking and tire stimuli, reset, timestamps and isolated hidden-ground-truth qualification |
+| [Vehicle Gateway (`CR-GATEWAY`)](component-decomposition-and-interface-register.md#cr-gateway) | `carla-ego-runtime` | Complete hardware-profile accounting, actuator-command/applied-state traceability, vehicle sampling, VSS/VISS contracts, source status, advisory handler and Engineering Telematics Dashboard |
+| [Factory substrate (`CR-FACTORY`)](component-decomposition-and-interface-register.md#cr-factory) | Platform Team / `aos-vehicle-platform` | Factory image, provider-specific empty-slot runtime, identity absence, overlay creation and immutable artifact preservation |
 | [Vehicle Data Platform (`CR-VDP`)](component-decomposition-and-interface-register.md#cr-vdp) | `aos-vehicle-platform` | Component v1-v3, KUKSA contract/trust, outbound policy, Credential Broker and OEM access policy |
 | [Brake Health service (`CR-BHS`)](component-decomposition-and-interface-register.md#cr-bhs) | `brake-health-service` | Service v1-v3 behavior, model, report queue, advisory request and resource limits |
 | [Tire Health service (`CR-TIRE`)](component-decomposition-and-interface-register.md#cr-tire) | proposed `tire-health-service` | Local persistent condition model, bounded summary/event, offline queue, inspection advisory, SOTA 2 metadata and resource limits |
 | [Aos lifecycle (`CR-AOS`)](component-decomposition-and-interface-register.md#cr-aos) | AosCore/AosCloud integration | Provisioning, authoritative desired/reported actual state, recorded OEM-authorized approvals, FOTA/SOTA execution, targeting, native cross-lifecycle dependency admission and log transport |
 | [Brake Health Cloud (`CR-BRAKE-CLOUD`)](component-decomposition-and-interface-register.md#cr-brake-cloud) | Function Team 1 | Brake Health backend ingestion, idempotency, retention and function dashboard |
 | [Tire Health Cloud (`CR-TIRE-CLOUD`)](component-decomposition-and-interface-register.md#cr-tire-cloud) | Function Team 2 | Tire condition/event ingestion, idempotency, retention and Function Dashboard |
-| [Demo orchestration (`CR-DEMO`)](component-decomposition-and-interface-register.md#cr-demo) | `aosedge-sdv-demo` | Overlay lifecycle, Unit binding, stateless release workflow facilitation, owner/role-visible Software Delivery Dashboard, evidence and retirement |
+| [Demo orchestration (`CR-DEMO`)](component-decomposition-and-interface-register.md#cr-demo) | `aosedge-sdv-demo` | Overlay lifecycle, Unit binding, stateless release workflow facilitation, owner/role-visible Software Delivery Dashboard, evidence, retirement and factory-digest verification |
 | [Cross-cutting concerns (`CR-CROSS`)](component-decomposition-and-interface-register.md#cr-cross) | Security and operational concerns across owners | Identities, permissions, credentials, redaction, timing and offline bounds; broker ownership remains in `CR-VDP` |
 | [End-to-end acceptance (`CR-E2E`)](component-decomposition-and-interface-register.md#cr-e2e) | Cross-repository qualification | Stage acceptance, failure/offline/recovery, latency and traceability evidence |
 
@@ -291,12 +311,18 @@ Before creating `tire-health-service`, reviewers shall confirm:
 
 No remote repository creation is authorized by acceptance of this baseline.
 
-## Acceptance Record for Version 0.2
+## Acceptance Record for Version 0.5
 
-Version 0.2 was accepted as the system-requirements baseline on 2026-08-18
-after reviewers confirmed that:
+Version 0.5 preserves the accepted Version 0.4 corrective baseline and adds the
+agreed versioned Vehicle Hardware Capability Manifest and complete
+Simulator–Gateway accounting obligations. HLA 1.2 was revalidated without
+semantic revision because the existing CARLA/Gateway boundary, authority,
+lifecycle and data directions remain unchanged.
 
-1. every active Architecture Flows 1.1 gap is covered without claiming it is already
+The corrective baseline was accepted on 2026-08-18 after reviewers confirmed
+that:
+
+1. every active Architecture Flows 1.2 gap is covered without claiming it is already
    implemented;
 2. requirements are externally observable and testable;
 3. the two Service Providers remain independent peers;
@@ -308,13 +334,28 @@ after reviewers confirmed that:
 6. no requirement expands vehicle-control, driver-HMI or production-fleet
    scope;
 7. component requirement packages can be derived without changing HLA 1.2 or
-   Demo Scenario 1.2.
+   Demo Scenario 1.3.
 8. deferred [native Cloud dependency rejection (`SYS-REL-006`)](#sys-rel-006)
    is not treated as implemented or replaced by custom
    dashboard policy before an implementing AosEdge release is qualified.
 9. team-owned release decisions, Service Provider publication, OEM-authorized
    deployment approval, and AosCloud state/execution remain distinct as
    required by [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md).
+10. fail-safe exclusive control and continuous mode handover now have stable,
+    testable `SYS-CTRL-*` parents without expanding functional-service
+    authority or changing the accepted audience scenario.
+11. simulator cleanup is owned independently from factory-image preservation;
+    the two remain coordinated only by the cross-system R0 lifecycle.
+12. all Scenario, Manual, Autopilot and Safe Stop transitions have explicit
+    world-context, obstacle, reset, failure and evidence semantics without
+    adding reverse or obstacle-avoidance claims.
+13. every installed hardware-equivalent signal, sensor and actuator is defined
+    by one digest-addressed selected-vehicle profile rather than by the entire
+    set of capabilities CARLA could theoretically instantiate;
+14. complete Simulator–Gateway accounting, applied-control feedback and
+    qualification-ground-truth isolation are required without implying that
+    every native value is published through VSS/VISS or that every physical
+    actuator is authorized for the current Control UI.
 
 Following acceptance of this document and the Component Decomposition and
 Interface Register, D3 expands the component requirement packages listed above.

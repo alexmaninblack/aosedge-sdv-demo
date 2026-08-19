@@ -39,10 +39,11 @@ name and a direct link to its canonical definition:
 Exact source-to-Unit binding (SYS-SRC-001)
 ```
 
-An unexplained `SYS-*`, `CMP-*`, `IF-*`, `AF-*`, `GAP-*` or `CR-*` token is
-allowed only in a definition table, detailed traceability appendix, test or
-machine-readable report. Inclusive identifier ranges are prohibited in the
-reader view because they hide the obligations they represent.
+An unexplained `SYS-*`, `CMP-*`, `IF-*`, `AF-*`, `GAP-*`, `CR-*`, `REQ-*` or
+`UT-*` token is allowed only in a definition table, detailed traceability
+appendix, test or machine-readable report. Inclusive identifier ranges are
+prohibited in the reader view because they hide the obligations they
+represent.
 
 Reader-view tables explain purpose, ownership and behavior. Detailed
 traceability is kept in a separate section of the same document.
@@ -53,6 +54,9 @@ traceability is kept in a separate section of the same document.
   metadata, not in the filename.
 - Every stable engineering identifier has a permanent lowercase HTML anchor.
 - An identifier is never reused for a different concept.
+- Component requirements use `REQ-<PACKAGE>-NNN`; stable isolated unit-test
+  obligations use `UT-<PACKAGE>-NNN`. Implementation-specific test names may
+  change while their accepted obligation mapping remains stable.
 - Editorial clarification that preserves semantics keeps the identifier.
 - A material semantic replacement receives a new identifier. The old entry is
   marked `RETIRED`, records the replacement and remains resolvable while any
@@ -94,6 +98,46 @@ document changed. It is still reviewed against the new upstream baseline and
 its input metadata advances to that baseline. This records that the document
 was revalidated without falsely claiming a semantic revision.
 
+### As-built discoveries
+
+Implementation review can expose behavior that is useful and tested but has no
+accepted parent requirement. That behavior is marked `UNALLOCATED` while the
+team makes one explicit decision:
+
+1. **adopt** it by adding a measurable parent requirement and allocating it to
+   the affected packages;
+2. **constrain** it to the narrower behavior actually intended by the accepted
+   baseline; or
+3. **remove** it when it is accidental, unsafe or outside scope.
+
+An unallocated behavior cannot be silently accepted merely because code and
+tests already exist. A corrective requirement version may be used when the
+accepted HLA, scenario and flows already require the behavior and no authority,
+boundary, lifecycle or data direction changes. The correction records its
+source, updates every affected package and revalidates unaffected canonical
+documents without artificial semantic version bumps.
+
+### Change impact record
+
+Every normative change records the following compact review block in the
+commit, pull request or working review note. The block is evidence for the
+cascade; it is not a new permanent design document.
+
+```text
+Change: <one-sentence behavior or baseline correction>
+Class: <A, B, C, or corrective baseline>
+Owning source: <canonical document and stable ID>
+Affected: <documents, packages, contracts and tests changed>
+Revalidated: <canonical documents checked with no semantic change>
+Retired: <obsolete IDs/files, or none>
+Evidence: <checks and review results>
+```
+
+The same stable requirement ID is retained for a wording clarification that
+does not change observable behavior. A changed obligation receives a new
+version of its owning document; a removed obligation remains resolvable through
+an explicit retirement mapping rather than disappearing from active links.
+
 ## Architecture Change Workflow
 
 Level-C work starts as one Architecture Decision Record with status
@@ -133,6 +177,22 @@ External HTTP links are intentionally separated from the commit gate:
 ```
 
 Network failures must not make the deterministic repository gate flaky.
+
+### Component verification policy
+
+The reusable
+[component requirement package template](../requirements/components/template.md)
+separates unit, component, contract, integration and end-to-end verification.
+D3 states which levels and stable unit-test obligations are required. D4
+freezes executable contracts, cases, fixtures, suites and evidence locations.
+
+Owned executable decisions, transformations, validators and state transitions
+require deterministic unit-test obligations. Those tests isolate external
+systems and do not start Unreal Engine, CARLA, QEMU, AosCloud or a real KUKSA
+Databroker. An unchanged external executable or a no-code package may record a
+reasoned unit-test exception and prove its obligation at another verification
+level. Neither an integration test nor a code-coverage percentage silently
+replaces required isolated behavioral proof.
 
 ### Workspace and external link policy
 

@@ -36,7 +36,7 @@ convenient.
    [Architecture Flows](../architecture/demo-scenario-architecture-flows.md).
 4. Confirm that the change still fits
    [High-Level Architecture 1.2](../architecture/high-level-architecture.md)
-   and [Demo Scenario 1.2](../demo/staged-post-sop-brake-health-demo-scenarios.md).
+   and [Demo Scenario 1.3](../demo/staged-post-sop-brake-health-demo-scenarios.md).
 
 If the proposed behavior does not fit, change and review the owning design
 document first. A downstream implementation must not silently redefine an

@@ -1,17 +1,17 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Component Decomposition and Interface Register 0.2
+# Component Decomposition and Interface Register 0.5
 
 - Status: Accepted component baseline
-- Version: 0.2
-- Prepared: 2026-08-18
-- Accepted: 2026-08-18
+- Version: 0.5
+- Prepared: 2026-08-19
+- Accepted: 2026-08-19
 - Owner: System Architecture
 - Architecture input: [High-Level Architecture 1.2](../architecture/high-level-architecture.md)
-- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.2](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Demo Scenario Architecture Flows 1.1](../architecture/demo-scenario-architecture-flows.md)
-- Requirements input: [System Requirements and Traceability 0.2](system-requirements-and-traceability.md)
+- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.3](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Demo Scenario Architecture Flows 1.2](../architecture/demo-scenario-architecture-flows.md)
+- Requirements input: [System Requirements and Traceability 0.5](system-requirements-and-traceability.md)
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md)
   and [ADR 0010](../architecture/decisions/0010-aos-kuksa-credential-broker.md)
 - Implementation, repository creation, Cloud, or Unit mutation authorized: no
@@ -36,10 +36,10 @@ surfaces. Those concepts are related, but they are not interchangeable.
 
 1. High-Level Architecture 1.2 owns system boundaries, authorities and
    invariants.
-2. Demo Scenario 1.2 owns the audience-visible lifecycle and stage sequence.
-3. Architecture Flows 1.1 owns detailed runtime, lifecycle, observability and
+2. Demo Scenario 1.3 owns the audience-visible lifecycle and stage sequence.
+3. Architecture Flows 1.2 owns detailed runtime, lifecycle, observability and
    failure flows.
-4. System Requirements 0.2 owns normative `SYS-*` obligations and gap
+4. System Requirements 0.5 owns normative `SYS-*` obligations and gap
    traceability.
 5. This register owns stable component and interface identifiers, component
    allocation, implementation state and repository placement candidates.
@@ -78,6 +78,13 @@ reproducibly produces the immutable `OEM Demo Factory Image` artifact. That
 artifact contains the factory-installed runtime graph and is the source for
 fresh Validation and Demonstration Unit deployments; the artifact is not
 itself a `CMP-*` component.
+
+The same pinned assembly may also produce a rootfs platform-update envelope.
+That envelope targets the AosVM rootfs A/B runtime for retrofit or later
+platform maintenance of an already manufactured Unit. It is not the Factory
+Image and it is not the independently delivered Vehicle Data Platform
+Component. In the normal manufacturing flow, the empty-slot runtime is already
+present in the Factory Image before provisioning.
 
 ### Dashboard is not authority
 
@@ -124,13 +131,13 @@ integration has not been qualified.
 
 | ID | Component | Responsibility | Owner and lifecycle | Source boundary | State |
 | --- | --- | --- | --- | --- | --- |
-| <a id="cmp-carla"></a>`CMP-CARLA` | CARLA Virtual Physical Vehicle | Vehicle dynamics, road environment, native sensor state and actuators | Vehicle simulation | `CarlaSim`; restricted Unreal dependency remains separate | `CURRENT` |
-| <a id="cmp-scene"></a>`CMP-SCENE` | Deterministic Scenario Controller | Repeatable obstacle/braking stimulus, manual takeover, safe stop, actor cleanup, and explicit accelerated/pre-aged tire-degradation stimulus | Demo vehicle tooling | `carla-ego-runtime` | Brake scenario `CURRENT`; Tire Health stimulus `EXTEND` |
+| <a id="cmp-carla"></a>`CMP-CARLA` | CARLA Virtual Physical Vehicle | Vehicle dynamics, road environment, versioned installed-hardware capability manifest, native sensor state and actuators | Vehicle simulation | `CarlaSim`; restricted Unreal dependency remains separate | Native behavior `CURRENT`; accepted manifest `EXTEND` |
+| <a id="cmp-scene"></a>`CMP-SCENE` | Deterministic Scenario Controller | Repeatable obstacle/braking stimulus, explicit free-drive/brake-event context, context-aware mode transition/reset, actor cleanup, and accelerated/pre-aged tire-degradation stimulus | Demo vehicle tooling | `carla-ego-runtime` | Brake scenario core `CURRENT`; complete context matrix and Tire Health stimulus `EXTEND` |
 | <a id="cmp-control"></a>`CMP-CONTROL` | Vehicle Control UI | Manual/autopilot selection, throttle, brake, steering and safe-stop commands over the separate control channel | Vehicle Gateway tooling | `carla-ego-runtime` | `CURRENT` |
-| <a id="cmp-gw"></a>`CMP-GW` | Vehicle Gateway Runtime | CARLA sampling, control arbitration, signal normalization and Gateway health/state | Vehicle Gateway tooling | `carla-ego-runtime` | `CURRENT / EXTEND` |
+| <a id="cmp-gw"></a>`CMP-GW` | Vehicle Gateway Runtime | Complete CARLA hardware-profile accounting, control arbitration, applied-control feedback, signal normalization and Gateway health/state | Vehicle Gateway tooling | `carla-ego-runtime` | `CURRENT / EXTEND` |
 | <a id="cmp-viss"></a>`CMP-VISS` | Vehicle Gateway VISS 3.1 Server | TLS-protected VSS Get/Subscribe and the future narrowly scoped advisory Set contract | Vehicle Gateway tooling | `carla-ego-runtime` | Read path `CURRENT`; write path `EXTEND` |
 | <a id="cmp-gw-adv"></a>`CMP-GW-ADV` | Gateway Advisory Handler | Validate typed allowlisted Brake Health and Tire Health advisory targets and publish factual reception/status without claiming driver display | Vehicle Gateway tooling | `carla-ego-runtime` | `NEW` |
-| <a id="cmp-eng-dash"></a>`CMP-ENG-DASH` | Engineering Telematics Dashboard | Independent read-only engineering view of Gateway telemetry and typed advisory/status evidence | Demo engineering tooling | `carla-ego-runtime` | Telemetry `CURRENT`; advisory/status `EXTEND` |
+| <a id="cmp-eng-dash"></a>`CMP-ENG-DASH` | Engineering Telematics Dashboard | Independent read-only engineering view of Gateway telemetry, drive-mode/world-context/reset facts and typed advisory/status evidence | Demo engineering tooling | `carla-ego-runtime` | Telemetry `CURRENT`; transition and advisory/status `EXTEND` |
 
 `CMP-SCENE`, `CMP-CONTROL`, and `CMP-ENG-DASH` are demonstration tools. They
 must remain outside the logical production vehicle architecture even though
@@ -192,6 +199,7 @@ particular, `CMP-SW-DASH` must not implement a temporary admission controller.
 | Validation Unit (`VU`) | Runtime role/deployment | One fresh deployment created from the accepted OEM Demo Factory Image; runs `CMP-RUNTIME`, `CMP-AOS-CORE`, `CMP-KUKSA` and stage-selected payloads | Per demo run |
 | Demonstration Unit (`DU`) | Runtime role/deployment | A separate fresh deployment created from the same accepted image and running the same stage-selected component graph | Per demo run |
 | OEM Demo Factory Image | Immutable product artifact | Produced by `CMP-FACTORY`; contains `CMP-RUNTIME`, `CMP-AOS-CORE` and `CMP-KUKSA`, without feature payloads or reusable vehicle identity | Manufacturing baseline |
+| Rootfs platform-update envelope | FOTA artifact family | Optional complete rootfs payload containing a later or retrofit Platform Team baseline; targets the factory-installed AosVM rootfs A/B runtime | Platform Team rootfs FOTA; not part of normal M0-M1 |
 | Vehicle Data Platform Component v1-v3 | FOTA artifact family | `CMP-VDP` | Platform Team FOTA |
 | Brake Health Service v1-v3 | SOTA artifact family | `CMP-BHS` | Service Provider 1 / SOTA 1 |
 | Tire Health Service | SOTA artifact family | `CMP-TIRE` | Service Provider 2 / SOTA 2 |
@@ -221,9 +229,9 @@ acceptance of this baseline.
 
 | ID | Producer | Consumer | Contract and direction | Authority | State |
 | --- | --- | --- | --- | --- | --- |
-| <a id="if-veh-001"></a>`IF-VEH-001` | `CMP-CARLA` | `CMP-GW` | Native CARLA vehicle, dynamics and sensor state | CARLA runtime state | `CURRENT` |
+| <a id="if-veh-001"></a>`IF-VEH-001` | `CMP-CARLA` | `CMP-GW` | Vehicle Hardware Capability Manifest plus frame-coherent state and availability for every installed hardware-equivalent signal/sensor; excludes qualification-only ground truth | CARLA runtime state and accepted hardware profile | Existing subset `CURRENT`; complete manifest/accounting `EXTEND` |
 | <a id="if-veh-002"></a>`IF-VEH-002` | `CMP-CONTROL` | `CMP-GW` | Authenticated manual/autopilot/safe-stop control request | Gateway control state | `CURRENT` |
-| <a id="if-veh-003"></a>`IF-VEH-003` | `CMP-GW` | `CMP-CARLA` | CARLA actuator/control commands | Gateway control arbitration | `CURRENT` |
+| <a id="if-veh-003"></a>`IF-VEH-003` | `CMP-GW` | `CMP-CARLA` | Commands for every actuator declared in the selected hardware profile, with accepted/rejected execution status and applied-control state returning through `IF-VEH-001` | Gateway control arbitration; CARLA applied state | Throttle/brake/steer `CURRENT`; complete declared set/status `EXTEND` |
 | <a id="if-veh-004"></a>`IF-VEH-004` | `CMP-GW` | `CMP-VISS` | Normalized VSS signal model and source status | Gateway VSS projection | `CURRENT / EXTEND` |
 | <a id="if-veh-005"></a>`IF-VEH-005` | `CMP-VISS` | `CMP-VDP` | TLS VISS 3.1 Get/Subscribe for accepted telemetry and status paths | Gateway VISS contract | `EVIDENCE`; freeze v1-v3 contract |
 | <a id="if-veh-006"></a>`IF-VEH-006` | `CMP-VISS` | `CMP-ENG-DASH` | Independent read-only telemetry and Gateway-status subscription | Gateway VISS contract | Telemetry `CURRENT`; status `EXTEND` |
@@ -286,9 +294,9 @@ below is the single allocation record for exact identifiers.
 
 | Package | Human-readable responsibility | Primary components | Requirement themes |
 | --- | --- | --- | --- |
-| <a id="cr-vehicle-sim"></a>`CR-VEHICLE-SIM` | Provide repeatable braking and explicit accelerated/pre-aged tire stimuli, exact source evidence, hidden ground-truth isolation and clean scenario reset. | CARLA vehicle and Scenario Controller | Determinism, source integrity, simulation truth and reset |
-| <a id="cr-gateway"></a>`CR-GATEWAY` | Acquire and normalize vehicle state, expose VISS, arbitrate control, handle bounded advisory status and present the engineering view. | Control UI, Gateway, VISS, Advisory Handler and Engineering Dashboard | Telemetry contract, unavailable data, advisory safety and latency |
-| <a id="cr-factory"></a>`CR-FACTORY` | Reproducibly assemble the clean unprovisioned Factory Image artifact and use it to create two identity-safe deployments with a healthy empty capability slot. | Factory Baseline Assembly and Empty-Slot Runtime | Reproducibility, artifact immutability, identity absence, overlay uniqueness and reset |
+| <a id="cr-vehicle-sim"></a>`CR-VEHICLE-SIM` | Define the installed Vehicle Hardware Capability Manifest, provide every declared physical signal/actuator behavior, repeatable braking and tire stimuli, exact source evidence, hidden ground-truth isolation and clean CARLA scenario reset. | CARLA vehicle and Scenario Controller | Hardware-profile completeness, determinism, source integrity, simulation truth and reset |
+| <a id="cr-gateway"></a>`CR-GATEWAY` | Account for the complete hardware profile, distinguish actuator capability from authority, acquire and normalize vehicle state, expose VISS, arbitrate control, handle bounded advisory status and present the engineering view. | Control UI, Gateway, VISS, Advisory Handler and Engineering Dashboard | Hardware coverage, telemetry contract, unavailable data, control traceability, advisory safety and latency |
+| <a id="cr-factory"></a>`CR-FACTORY` | Reproducibly assemble and preserve the clean unprovisioned Factory Image artifact and use it to create two identity-safe deployments with a healthy empty capability slot. | Factory Baseline Assembly and Empty-Slot Runtime | Reproducibility, artifact immutability, identity absence, overlay uniqueness and preservation |
 | <a id="cr-vdp"></a>`CR-VDP` | Deliver the versioned VISS-to-KUKSA data capability, narrowly allowlisted outbound advisory path, and Aos-IAM-derived least-privilege KUKSA credentials. | KUKSA and Vehicle Data Platform Component | Compatibility, data quality, credential brokering, OEM policy, FOTA and rollback |
 | <a id="cr-bhs"></a>`CR-BHS` | Run Brake Health analysis locally, report bounded results, operate offline and request only the approved advisory. | Brake Health In-Vehicle Service | Model determinism, reports, compatibility, offline operation and advisory scope |
 | <a id="cr-tire"></a>`CR-TIRE` | Estimate tire condition locally, persist bounded state, upload bounded results and request the typed inspection advisory through an independent SOTA lifecycle. | Tire Health In-Vehicle Service | Existing signal contract, model, persistence, bounded reporting, advisory and isolation |
@@ -330,9 +338,14 @@ the only normative definitions.
   [Gateway actuator commands (`IF-VEH-003`)](#if-veh-003).
 - Parent requirements: [Exact source-to-Unit binding (`SYS-SRC-001`)](system-requirements-and-traceability.md#sys-src-001),
   [honest single-source presentation (`SYS-SRC-002`)](system-requirements-and-traceability.md#sys-src-002),
+  [versioned vehicle hardware profile (`SYS-SRC-003`)](system-requirements-and-traceability.md#sys-src-003),
+  [complete Simulator–Gateway accounting (`SYS-SRC-004`)](system-requirements-and-traceability.md#sys-src-004),
+  [continuous control-mode handover (`SYS-CTRL-002`)](system-requirements-and-traceability.md#sys-ctrl-002),
+  [deterministic mode/context transition (`SYS-CTRL-003`)](system-requirements-and-traceability.md#sys-ctrl-003),
   [deterministic v2 inference (`SYS-BHS-002`)](system-requirements-and-traceability.md#sys-bhs-002),
-  [explicit Tire Health simulation model (`SYS-TIRE-003`)](system-requirements-and-traceability.md#sys-tire-003), and
-  [reset CARLA and preserve factory (`SYS-RET-003`)](system-requirements-and-traceability.md#sys-ret-003).
+  [explicit Tire Health simulation model (`SYS-TIRE-003`)](system-requirements-and-traceability.md#sys-tire-003),
+  [truthful control-transition evidence (`SYS-OBS-005`)](system-requirements-and-traceability.md#sys-obs-005), and
+  [reset vehicle simulation state (`SYS-RET-003`)](system-requirements-and-traceability.md#sys-ret-003).
 
 ### `CR-GATEWAY` — Vehicle Gateway and engineering view
 
@@ -351,12 +364,18 @@ the only normative definitions.
   [factual Gateway status (`IF-ADV-005`)](#if-adv-005).
 - Parent requirements: [exact source-to-Unit binding (`SYS-SRC-001`)](system-requirements-and-traceability.md#sys-src-001),
   [honest single-source presentation (`SYS-SRC-002`)](system-requirements-and-traceability.md#sys-src-002),
+  [versioned vehicle hardware profile (`SYS-SRC-003`)](system-requirements-and-traceability.md#sys-src-003),
+  [complete Simulator–Gateway accounting (`SYS-SRC-004`)](system-requirements-and-traceability.md#sys-src-004),
+  [fail-safe exclusive vehicle control (`SYS-CTRL-001`)](system-requirements-and-traceability.md#sys-ctrl-001),
+  [continuous control-mode handover (`SYS-CTRL-002`)](system-requirements-and-traceability.md#sys-ctrl-002),
+  [deterministic mode/context transition (`SYS-CTRL-003`)](system-requirements-and-traceability.md#sys-ctrl-003),
   [allowlisted outbound advisory (`SYS-VDP-004`)](system-requirements-and-traceability.md#sys-vdp-004),
   [explicit degraded data (`SYS-VDP-005`)](system-requirements-and-traceability.md#sys-vdp-005),
   [allowlisted v3 advisory (`SYS-BHS-003`)](system-requirements-and-traceability.md#sys-bhs-003),
   [offline Tire Health inspection advisory (`SYS-TIRE-006`)](system-requirements-and-traceability.md#sys-tire-006),
   [fail-closed advisory security (`SYS-SEC-003`)](system-requirements-and-traceability.md#sys-sec-003),
-  [authoritative demo surfaces (`SYS-OBS-001`)](system-requirements-and-traceability.md#sys-obs-001), and
+  [authoritative demo surfaces (`SYS-OBS-001`)](system-requirements-and-traceability.md#sys-obs-001),
+  [truthful control-transition evidence (`SYS-OBS-005`)](system-requirements-and-traceability.md#sys-obs-005), and
   [separate local and Cloud latency (`SYS-TIM-002`)](system-requirements-and-traceability.md#sys-tim-002).
 
 ### `CR-FACTORY` — Factory assembly, artifact and empty slot
@@ -374,7 +393,7 @@ the only normative definitions.
   [one identity per overlay (`SYS-ID-001`)](system-requirements-and-traceability.md#sys-id-001),
   [reconcile partial provisioning (`SYS-ID-002`)](system-requirements-and-traceability.md#sys-id-002),
   [healthy empty capability slot (`SYS-VDP-001`)](system-requirements-and-traceability.md#sys-vdp-001), and
-  [reset CARLA and preserve factory (`SYS-RET-003`)](system-requirements-and-traceability.md#sys-ret-003).
+  [preserve immutable factory artifact (`SYS-RET-005`)](system-requirements-and-traceability.md#sys-ret-005).
 
 ### `CR-VDP` — Vehicle Data Platform Component
 
@@ -556,7 +575,8 @@ Delivery Dashboard.
   [lifecycle timing bounds (`SYS-TIM-001`)](system-requirements-and-traceability.md#sys-tim-001),
   [retire Units and overlays (`SYS-RET-001`)](system-requirements-and-traceability.md#sys-ret-001),
   [clear functional run data (`SYS-RET-002`)](system-requirements-and-traceability.md#sys-ret-002),
-  [reset CARLA and preserve factory (`SYS-RET-003`)](system-requirements-and-traceability.md#sys-ret-003), and
+  [reset vehicle simulation state (`SYS-RET-003`)](system-requirements-and-traceability.md#sys-ret-003),
+  [preserve immutable factory artifact (`SYS-RET-005`)](system-requirements-and-traceability.md#sys-ret-005), and
   [no rollback or fleet claim (`SYS-RET-004`)](system-requirements-and-traceability.md#sys-ret-004).
 
 ### `CR-CROSS` — Cross-cutting security and operations
@@ -621,10 +641,15 @@ Delivery Dashboard.
    FOTA. Upstream `CMP-KUKSA` remains unchanged and validates short-lived JWTs
    with the Platform Team's public verifier.
 
-## Acceptance Record for Version 0.2
+## Acceptance Record for Version 0.5
 
-Version 0.2 was accepted as the component baseline on 2026-08-18 after
-reviewers confirmed:
+Version 0.5 preserves the accepted Version 0.4 component baseline and refines
+`CMP-CARLA`, `CMP-GW`, `IF-VEH-001`, `IF-VEH-003`, `CR-VEHICLE-SIM` and
+`CR-GATEWAY` with the agreed selected-hardware manifest, complete coverage,
+applied-control feedback and ground-truth-isolation obligations. No component,
+interface direction, owner, lifecycle or authority changed.
+
+The corrective baseline was accepted on 2026-08-18 after reviewers confirmed:
 
 1. every HLA 1.2 box has exactly one primary component owner;
 2. every audience-visible dashboard has exactly one authoritative data source;
@@ -634,7 +659,7 @@ reviewers confirmed:
 6. current, engineering-evidence, target, external and deferred states are not
    presented as equivalent;
 7. all runtime, functional Cloud, lifecycle and observability boundaries needed
-   by Scenario 1.2, including the `T1` Function Team 2 stage, have interface
+   by Scenario 1.3, including the `T1` Function Team 2 stage, have interface
    IDs;
 8. deferred native Cloud dependency admission and the not-yet-implemented
    Credential Broker are not presented as current behavior;

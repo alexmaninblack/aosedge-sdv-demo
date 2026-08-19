@@ -9,8 +9,8 @@ repository-boundary, detailed-design, or decision context aligned to that
 baseline.
 
 - [High-Level Architecture 1.2 — accepted architecture baseline](high-level-architecture.md)
-- [Demo Scenario Architecture Flows 1.1 — accepted architecture-flow baseline](demo-scenario-architecture-flows.md)
-  — complete `M0 -> M1 -> G0–G4 -> T1 -> R0` mapping of Scenario 1.2 to
+- [Demo Scenario Architecture Flows 1.2 — accepted architecture-flow baseline](demo-scenario-architecture-flows.md)
+  — complete `M0 -> M1 -> G0–G4 -> T1 -> R0` mapping of Scenario 1.3 to
   High-Level Architecture 1.2, including the independent Tire Health stage.
 - [Repository and component boundaries](repository-boundaries.md)
 - [Architecture decisions](decisions/)

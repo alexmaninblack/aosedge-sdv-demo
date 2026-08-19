@@ -1,18 +1,18 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Demo Scenario Architecture Flows 1.1
+# Demo Scenario Architecture Flows 1.2
 
 - Status: Accepted architecture-flow baseline
-- Version: 1.1
+- Version: 1.2
 - Prepared: 2026-08-18
 - Accepted: 2026-08-18
 - Owner: System Architecture
 - Architecture input: [High-Level Architecture 1.2](high-level-architecture.md)
-- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.2](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.3](../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - CARLA input: [R10 Native CARLA Vehicle Telemetry Inventory](../research/demo-foundation/r10-carla-telemetry-and-function-team-2.md)
-- Requirements input: [System Requirements and Traceability 0.2](../requirements/system-requirements-and-traceability.md)
-- Component input: [Component Decomposition and Interface Register 0.2](../requirements/component-decomposition-and-interface-register.md)
+- Requirements input: [System Requirements and Traceability 0.5](../requirements/system-requirements-and-traceability.md)
+- Component input: [Component Decomposition and Interface Register 0.5](../requirements/component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0009](decisions/0009-separate-release-decision-from-cloud-execution.md)
   and [ADR 0010](decisions/0010-aos-kuksa-credential-broker.md)
 - Implementation, build, signing, Cloud, or Unit mutation authorized: no
@@ -20,7 +20,7 @@
 ## Purpose
 
 This document is the traceability bridge between the static capability model
-in High-Level Architecture 1.2, the audience-visible Demo Scenario 1.2, and the
+in High-Level Architecture 1.2, the audience-visible Demo Scenario 1.3, and the
 next component-requirements package.
 
 It defines how software, data, decisions, evidence, and ownership move through
@@ -52,7 +52,7 @@ When the inputs differ, use this order:
 
 1. High-Level Architecture 1.2 owns component boundaries, interfaces,
    authority, security boundaries, and architectural invariants.
-2. Demo Scenario 1.2 owns stage order, component presence, audience-visible
+2. Demo Scenario 1.3 owns stage order, component presence, audience-visible
    proof, and the manufacturing-to-retirement narrative.
 3. This document owns detailed cross-component flow mapping and exposes gaps;
    it does not silently change either source.
@@ -81,7 +81,7 @@ not change.
 | ID | Architecture role | Owner | Current or target state |
 | --- | --- | --- | --- |
 | `CARLA` | Virtual physical vehicle, environment, native sensors, and actuators | CARLA repositories | Current |
-| `SCENE` | Deterministic obstacle/braking scenario, manual takeover, safe stop, actor cleanup, and explicit accelerated/pre-aged tire degradation stimulus | `carla-ego-runtime` tooling | Brake Event current; `T1` stimulus target |
+| `SCENE` | Deterministic obstacle/braking scenario, explicit free-drive/brake-event world context, manual takeover, safe stop, actor cleanup, and accelerated/pre-aged tire degradation stimulus | `carla-ego-runtime` tooling | Brake Event core current; complete context-transition matrix and `T1` stimulus target |
 | `CONTROL` | Vehicle Control UI and separate control channel | `carla-ego-runtime` | Current |
 | `GATEWAY` | Vehicle Gateway ECU behavior, CARLA sampling, VSS normalization | `carla-ego-runtime` | Current |
 | `VISS` | TLS VISS 3.1 server | `carla-ego-runtime` | Get/Subscribe current; narrowly scoped Set target |
@@ -399,6 +399,51 @@ data in KUKSA is a deliberate accepted state, not a platform fault.
 - Define how the one visible CARLA/Gateway source is bound to the selected Unit
   or deterministically replayed without implying two simultaneous vehicles.
 - Implement the Software Delivery Dashboard baseline view.
+
+<a id="af-x-drive"></a>
+### `AF-X-DRIVE` — Drive-mode and world-context transitions
+
+Drive mode and simulated-world context are related but independent state. The
+controller remains the only ego actor and synchronous-clock owner throughout.
+
+```mermaid
+flowchart LR
+    SS["SAFE_STOP<br/>no implicit reset"]
+    SC["SCENARIO<br/>BRAKE_EVENT context"]
+    MN["MANUAL<br/>FREE_DRIVE or BRAKE_EVENT"]
+    AP["AUTOPILOT<br/>FREE_DRIVE context"]
+    SC -->|"abort attempt, keep obstacle and position"| MN
+    MN -->|"prepare obstacle, reset, new generation"| SC
+    AP -->|"disable Traffic Manager, prepare obstacle, reset"| SC
+    SC -->|"abort, remove obstacle, reset to free-drive start"| AP
+    MN -->|"free drive in-place, brake event cleanup and reset"| AP
+    AP -->|"disable Traffic Manager, bounded blend"| MN
+    SC --> SS
+    MN --> SS
+    AP --> SS
+```
+
+| Transition | Ordered flow |
+| --- | --- |
+| Scenario to Manual | Record an unfinished attempt as `ABORTED`; retain ego pose and the `BRAKE_EVENT` obstacle; begin manual control without replacing actor, clock, run or telemetry identity. |
+| Scenario or brake-event Manual to Autopilot | Record an unfinished attempt as `ABORTED`; select safe stop; remove scenario-owned obstacle state; reset the same actor to the accepted free-drive start with zero linear/angular motion; increment reset generation; validate lane/alignment; enable Traffic Manager. |
+| Free-drive Manual to Autopilot | Validate lane/alignment and hand over in place without a world reset. |
+| Autopilot to Manual | Disable Traffic Manager before accepting manual actuation and apply the bounded pedal-safe blend. |
+| Manual or Autopilot to Scenario | Select safe stop; disable Traffic Manager if active; prepare the canonical obstacle; reset the same actor; clear attempt-local evidence; increment scenario/reset generation; start a new attempt. |
+| Scenario to Scenario | Mark an unfinished attempt `ABORTED`, then perform the same canonical reset and start a new generation. |
+| Any mode to Safe Stop | Stop the vehicle without deleting scenario state, changing world context or claiming a reset. |
+
+`PASS`, `FAIL` or collision selects safe stop. A Scenario restart or transition
+to Autopilot is the deterministic recovery path from a blocked position.
+Reverse control is outside the current contract. Traffic Manager automatic
+lane changing is disabled, so obstacle avoidance is not claimed and the
+brake-event obstacle cannot remain when free-drive Autopilot is enabled.
+
+The Gateway/VISS engineering projection exposes drive mode, world context,
+scenario state/result, generation and reset/discontinuity state. The
+Engineering Telematics Dashboard presents those facts without joining the
+control path. A failed obstacle cleanup, reset or lane validation leaves the
+vehicle in safe stop and does not partially activate the requested mode.
 
 ## G1 — Vehicle Data Platform Component v1
 
@@ -1054,12 +1099,13 @@ vehicle rollback or proof of a fleet-wide deletion policy.
 
 ## Scenario-to-Flow Traceability
 
-| Demo Scenario 1.2 claim | Architecture flow coverage |
+| Demo Scenario 1.3 claim | Architecture flow coverage |
 | --- | --- |
 | OEM-integrated SOP substrate enables post-SOP extension | `AF-M0-LC`, `AF-G0-RT` |
 | Two freshly manufactured, unprovisioned vehicle computers | `AF-M0-LC`, `AF-M0-OB` |
 | Unique one-time provisioning into Validation and Demonstration lanes | `AF-M1-LC`, `AF-M1-OB`, `AF-M1-FR` |
 | Working vehicle and Gateway telemetry before provider payload | `AF-G0-RT`, `AF-G0-OB` |
+| Deterministic manual, Autopilot and scripted transition behavior | `AF-X-DRIVE`, `AF-G0-FR`, `AF-X-OBS` |
 | First narrow Vehicle Data Platform Component validated before promotion | `AF-G1-LC`, `AF-G1-RT`, `AF-X-RELEASE` |
 | Service v1 is an independent SOTA consumer with bounded backend reporting | `AF-G2-LC`, `AF-G2-RT`, `AF-G2-FR` |
 | Platform Team and Function Team 1 independently iterate v2 | `AF-G3-LC`, `AF-G3-FR` |
@@ -1122,6 +1168,7 @@ owning team's release decision.
 | <a id="gap-af-18"></a>`GAP-AF-18` | Presentation and timing bounds | all | Define stage durations, timeout budgets, local decision latency and technical/executive presentation modes | Demo experience |
 | <a id="gap-af-19"></a>`GAP-AF-19` | Demo-run correlation and cleanup | `M1/R0` | Define current-run correlation by start time, local overlay roles, Unit IDs, and external-data retention/cleanup boundaries | Demo orchestration + functional teams |
 | <a id="gap-af-20"></a>`GAP-AF-20` | Cross-lifecycle compatibility | `G2–G4/T1` | Define and prove versioned capability-dependency declaration, current runtime fail-closed behavior, future native Cloud rejection before rollout/transfer, compatibility checks, and safe dependent-first rollback for both SOTA lifecycles | AosEdge Platform Team + Platform Team + both service providers |
+| <a id="gap-af-24"></a>`GAP-AF-24` | Drive-mode context transition qualification | `G0/X-DRIVE` | Implement and qualify dynamic obstacle ownership, context-aware reset/cleanup, complete transition and failure matrices, discontinuity evidence, dashboard state and recovery without reverse | Vehicle simulation + Vehicle Gateway |
 
 These gaps are inputs to the requirements package. They do not authorize
 component implementation and do not imply that every gap belongs in one
@@ -1139,10 +1186,12 @@ The following former candidate gaps remain resolvable but are no longer active:
 
 ## Architecture-Flow Acceptance Record
 
-Architecture Flows 1.1 was accepted as the detailed flow baseline on
+Architecture Flows 1.2 preserves the accepted Version 1.1 lifecycle and data
+flows and adds the accepted `AF-X-DRIVE` behavior without changing HLA
+boundaries, authority, lifecycle or data direction. It was accepted on
 2026-08-18 after reviewers confirmed that:
 
-1. `M0`, `M1`, `G0–G4`, `T1`, and `R0` match Demo Scenario 1.2;
+1. `M0`, `M1`, `G0–G4`, `T1`, and `R0` match Demo Scenario 1.3;
 2. every component and interface respects High-Level Architecture 1.2;
 3. VU validation and DU promotion use explicit current targeting and identical
    accepted artifacts;
@@ -1161,10 +1210,13 @@ Architecture Flows 1.1 was accepted as the detailed flow baseline on
     implementation assumption.
 11. `AF-G3-DEP` is visibly deferred, has no project-side substitute, and cannot
     be presented until the native AosCloud roadmap capability is qualified.
+12. the drive-mode/world-context transition matrix has one actor and clock
+    owner, explicit obstacle lifecycle and reset evidence, and no reverse or
+    Autopilot obstacle-avoidance claim.
 
 ## Downstream Component Requirement Gate
 
-The accepted System Requirements and Traceability 0.2 covers every active
+The accepted System Requirements and Traceability 0.5 covers every active
 `AF-*` flow and allocates the resulting obligations to provisional component
 packages. D3 now expands those packages in this order:
 

@@ -101,6 +101,21 @@ class DocumentationCheckTests(unittest.TestCase):
         self.assertNotEqual(0, result.returncode)
         self.assertIn("undefined identifier: SYS-FAKE-999", result.stderr)
 
+    def test_component_requirement_and_unit_test_ids_are_checked(self) -> None:
+        for identifier in ("REQ-FAKE-999", "UT-FAKE-999"):
+            with self.subTest(identifier=identifier):
+                temporary, root = self.temporary_documentation()
+                self.addCleanup(temporary.cleanup)
+                target = root / "docs" / "getting-started" / "README.md"
+                target.write_text(
+                    target.read_text(encoding="utf-8")
+                    + f"\nUndefined component-level identifier: `{identifier}`.\n",
+                    encoding="utf-8",
+                )
+                result = self.run_check(root)
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn(f"undefined identifier: {identifier}", result.stderr)
+
     def test_orphan_document_is_rejected(self) -> None:
         temporary, root = self.temporary_documentation()
         self.addCleanup(temporary.cleanup)
@@ -145,6 +160,24 @@ class DocumentationCheckTests(unittest.TestCase):
         self.assertNotEqual(0, result.returncode)
         self.assertIn("detailed package reference must use a named direct link", result.stderr)
 
+    def test_component_requirement_without_linked_system_parent_is_rejected(self) -> None:
+        temporary, root = self.temporary_documentation()
+        self.addCleanup(temporary.cleanup)
+        target = root / "docs" / "requirements" / "components" / "vehicle-gateway.md"
+        text = target.read_text(encoding="utf-8").replace(
+            "[Fail-safe exclusive vehicle control (`SYS-CTRL-001`)]"
+            "(../system-requirements-and-traceability.md#sys-ctrl-001)",
+            "**missing parent for test**",
+            1,
+        )
+        target.write_text(text, encoding="utf-8")
+        result = self.run_check(root)
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn(
+            "component requirement REQ-GATEWAY-006 must link at least one parent system requirement",
+            result.stderr,
+        )
+
     def test_retired_mapping_does_not_retire_replacement_requirement(self) -> None:
         temporary, root = self.temporary_documentation()
         self.addCleanup(temporary.cleanup)
@@ -177,7 +210,7 @@ class DocumentationCheckTests(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         target = root / "docs" / "demo" / "README.md"
         text = target.read_text(encoding="utf-8").replace(
-            "Demo Scenarios 1.2", "Demo Scenarios 1.1", 1
+            "Demo Scenarios 1.3", "Demo Scenarios 1.2", 1
         )
         target.write_text(text, encoding="utf-8")
         result = self.run_check(root)
