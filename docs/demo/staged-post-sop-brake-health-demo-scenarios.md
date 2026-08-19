@@ -4,16 +4,17 @@
 # Staged Post-SOP Brake and Tire Health Demo Scenarios
 
 - Status: Accepted demo-scenario baseline
-- Version: 1.5
+- Version: 1.6
 - Prepared: 2026-08-19
 - Accepted: 2026-08-19
+- Supersedes: 1.5
 - Owner: Demo Architecture
 - Scope: manufacturing output, end-of-line provisioning, audience-visible
   capability evolution, release sequence, dashboards, observability, and
   end-of-demo retirement
 - Architecture alignment: dynamic staged projection of High-Level Architecture
   1.4, with detailed interaction mapping in Demo Scenario Architecture Flows
-  1.4
+  1.5
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0010](../architecture/decisions/0010-aos-kuksa-credential-broker.md), and
   [ADR 0011](../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
@@ -865,22 +866,41 @@ The controlled retirement sequence is:
 3. wait until AosCloud reports both Units as `Offline`;
 4. invoke the accepted Cloud-side Unit deprovisioning operation;
 5. prove that the retired identities and certificates cannot reconnect;
-6. delete the corresponding Unit records through AosCloud; Nodes are treated
+6. reconcile each Unit's membership at the point required by the qualified
+   AosCloud contract; an explicit removal may precede Unit deletion, while an
+   API that owns automatic removal still requires an authoritative final
+   re-read rather than an assumption;
+7. delete the corresponding Unit records through AosCloud; Nodes are treated
    as Unit-owned resources unless the qualified API flow explicitly requires
    a separate operation;
-7. discard the two provisioned overlays and their run-specific host access
+8. re-read active Unit inventory plus the persistent Verification and
+   Demonstration Unit Sets, and prove that both retired Unit IDs are absent and
+   both set memberships are empty;
+9. discard the two provisioned overlays and their run-specific host access
    state without modifying the immutable OEM Demo Factory Image;
-8. clear or archive functional backend and dashboard data associated with the
+10. clear or archive functional backend and dashboard data associated with the
    retired Validation and Demonstration Unit IDs and the current session time
    window, while retaining the authoritative Cloud audit history;
-9. reset the CARLA scenario, actors, route, and deterministic seed;
-10. begin the next run by creating two new overlays from the same accepted
-    factory image and provisioning two new identities.
+11. reset the CARLA scenario, actors, route, and deterministic seed;
+12. begin the next run by creating two new overlays from the same accepted
+    factory image, provisioning new Unit and Node identities, assigning the
+    new Validation Unit to the Verification Unit Set and the new Demonstration
+    Unit to the Demonstration Unit Set, and proving exact disjoint membership
+    before any release lifecycle begins.
+
+The Unit Set objects are controlled Cloud configuration and remain available
+between runs; only their Unit memberships are run-scoped. A Unit progresses
+through separately evidenced `Offline`, deprovisioned, and deleted outcomes:
+after deletion it is absent from the active Unit inventory, while authoritative
+Cloud audit history remains. No verification batch, Fleet Validation Batch,
+Campaign, or effective-target assumption from the retired run may be reused
+after the new membership is established.
 
 This is a demonstration-lab retirement workflow, not a production OTA factory
 reset or a normal in-field vehicle rollback. The exact deprovision/delete
-ordering, certificate invalidation behavior, Unit-owned Node cleanup, audit
-retention, and failure recovery must be qualified first on disposable Units.
+ordering, certificate invalidation behavior, Unit-owned Node cleanup, Unit Set
+membership behavior, audit retention, and failure recovery must be qualified
+first on disposable Units.
 The existing Validation and Demonstration identities must not be used for that
 destructive experiment.
 
@@ -990,7 +1010,7 @@ destructive experiment.
     Engineering Telematics Dashboard presentation.
 
 Detailed interaction mapping now exists in Demo Scenario Architecture Flows
-1.4. The open gates above constrain component requirements, implementation,
+1.5. The open gates above constrain component requirements, implementation,
 qualification, and audience-visible claims. They preserve the canonical
 `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> T1 -> R0` presentation order and
 the independence of the two SOTA lifecycles.
@@ -1000,7 +1020,7 @@ the independence of the two SOTA lifecycles.
 - [High-Level Architecture 1.4](../architecture/high-level-architecture.md)
   defines the accepted capability-superset architecture baseline; this
   scenario defines its staged component presence and lifecycle, while
-  [Architecture Flows 1.4](../architecture/demo-scenario-architecture-flows.md)
+  [Architecture Flows 1.5](../architecture/demo-scenario-architecture-flows.md)
   defines detailed cross-component interaction mapping.
 - [AosEdge overview](https://docs.aosedge.tech/docs/aos-edge/) describes the
   Cloud-to-edge lifecycle and operational visibility model.

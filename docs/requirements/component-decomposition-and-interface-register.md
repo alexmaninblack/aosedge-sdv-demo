@@ -1,17 +1,18 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Component Decomposition and Interface Register 0.7
+# Component Decomposition and Interface Register 0.8
 
 - Status: Accepted component baseline
-- Version: 0.7
+- Version: 0.8
 - Prepared: 2026-08-19
 - Accepted: 2026-08-19
+- Supersedes: 0.7
 - Owner: System Architecture
 - Architecture input: [High-Level Architecture 1.4](../architecture/high-level-architecture.md)
-- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.5](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Demo Scenario Architecture Flows 1.4](../architecture/demo-scenario-architecture-flows.md)
-- Requirements input: [System Requirements and Traceability 0.7](system-requirements-and-traceability.md)
+- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.6](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Demo Scenario Architecture Flows 1.5](../architecture/demo-scenario-architecture-flows.md)
+- Requirements input: [System Requirements and Traceability 0.8](system-requirements-and-traceability.md)
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0010](../architecture/decisions/0010-aos-kuksa-credential-broker.md), and
   [ADR 0011](../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
@@ -37,10 +38,10 @@ surfaces. Those concepts are related, but they are not interchangeable.
 
 1. High-Level Architecture 1.4 owns system boundaries, authorities and
    invariants.
-2. Demo Scenario 1.5 owns the audience-visible lifecycle and stage sequence.
-3. Architecture Flows 1.4 owns detailed runtime, lifecycle, observability and
+2. Demo Scenario 1.6 owns the audience-visible lifecycle and stage sequence.
+3. Architecture Flows 1.5 owns detailed runtime, lifecycle, observability and
    failure flows.
-4. System Requirements 0.7 owns normative `SYS-*` obligations and gap
+4. System Requirements 0.8 owns normative `SYS-*` obligations and gap
    traceability.
 5. This register owns stable component and interface identifiers, component
    allocation, implementation state and repository placement candidates.
@@ -327,10 +328,10 @@ below remains the single allocation record for exact identifiers.
 | <a id="cr-vdp"></a>`CR-VDP` | Deliver the versioned VISS-to-KUKSA data capability, defense-in-depth outbound QM advisory path, and least-privilege short-lived KUKSA credentials derived from native Aos identity. | KUKSA and Vehicle Data Platform Component | Compatibility, data quality, outbound validation, thin credential translation, provider identity, FOTA and rollback |
 | <a id="cr-bhs"></a>`CR-BHS` | Run Brake Health analysis locally, report bounded results, operate offline and request only the approved advisory. | Brake Health In-Vehicle Service | Model determinism, reports, compatibility, offline operation and advisory scope |
 | <a id="cr-tire"></a>`CR-TIRE` | Estimate tire condition locally, persist bounded state, upload bounded results and request the typed inspection advisory through an independent SOTA lifecycle. | Tire Health In-Vehicle Service | Existing signal contract, model, persistence, bounded reporting, advisory and isolation |
-| <a id="cr-aos"></a>`CR-AOS` | Provide identity, authoritative desired/reported actual state, recorded owner approvals, FOTA/SOTA execution, dependency behavior, resource enforcement and native operational-log collection/delivery. | AosCore and AosCloud | Provisioning, lifecycle state and execution, OEM-authorized validation, rollback, native logging, timing and retirement |
+| <a id="cr-aos"></a>`CR-AOS` | Provide identity, authoritative desired/reported actual and Unit Set state, recorded owner approvals, FOTA/SOTA execution, dependency behavior, resource enforcement and native operational-log collection/delivery. | AosCore and AosCloud | Provisioning, lifecycle state and execution, Unit Set contracts, OEM-authorized validation, rollback, native logging, timing and retirement |
 | <a id="cr-brake-cloud"></a>`CR-BRAKE-CLOUD` | Ingest and present Brake Health reports without entering the local decision path. | Brake Health Backend and Function Dashboard | Idempotency, offline synchronization, evidence and run-data retention |
 | <a id="cr-tire-cloud"></a>`CR-TIRE-CLOUD` | Ingest and present Tire Health summaries/events as an independent Function Team product. | Tire Health Backend and Function Dashboard | Bounded results, idempotency, delivery state and run-data retention |
-| <a id="cr-demo"></a>`CR-DEMO` | Orchestrate manufactured overlays, Unit roles, staged releases, evidence-backed final OEM approval presentation, authoritative dashboards and end-of-run retirement. | Software Delivery Dashboard and Demo Orchestrator | Target safety, source binding, decision-basis presentation, native logs, observability, timing and reset |
+| <a id="cr-demo"></a>`CR-DEMO` | Orchestrate manufactured overlays, Unit roles and Unit Set membership, staged releases, evidence-backed final OEM approval presentation, authoritative dashboards, ordered retirement and next-run provisioning. | Software Delivery Dashboard and Demo Orchestrator | Target safety, source binding, membership reconciliation, decision-basis presentation, native logs, observability, timing and reset |
 | <a id="cr-cross"></a>`CR-CROSS` | Define security, authorization, redaction, timing, resource and offline constraints shared by multiple owners. | Cross-component concerns; the Credential Broker itself remains allocated to `CMP-VDP` | Least privilege, fail-closed behavior, evidence controls and latency |
 | <a id="cr-e2e"></a>`CR-E2E` | Prove the complete accepted graph on Validation and Demonstration Units across normal, failure, offline, recovery and retirement paths. | All accepted components | End-to-end acceptance and retained evidence |
 
@@ -547,8 +548,9 @@ the only normative definitions.
   [Cloud-authoritative delivery dashboard (`SYS-OBS-002`)](system-requirements-and-traceability.md#sys-obs-002),
   [operational log controls (`SYS-OBS-003`)](system-requirements-and-traceability.md#sys-obs-003),
   [per-run correlation (`SYS-OBS-004`)](system-requirements-and-traceability.md#sys-obs-004),
-  [lifecycle timing bounds (`SYS-TIM-001`)](system-requirements-and-traceability.md#sys-tim-001), and
-  [retire Units and overlays (`SYS-RET-001`)](system-requirements-and-traceability.md#sys-ret-001).
+  [lifecycle timing bounds (`SYS-TIM-001`)](system-requirements-and-traceability.md#sys-tim-001),
+  [retire Units and overlays (`SYS-RET-001`)](system-requirements-and-traceability.md#sys-ret-001), and
+  [reconcile Unit Sets for the next run (`SYS-RET-006`)](system-requirements-and-traceability.md#sys-ret-006).
 
 [Native Cloud dependency rejection (`SYS-REL-006`)](system-requirements-and-traceability.md#sys-rel-006)
 remains deferred and is allocated only to
@@ -612,8 +614,9 @@ Delivery Dashboard.
   [retire Units and overlays (`SYS-RET-001`)](system-requirements-and-traceability.md#sys-ret-001),
   [clear functional run data (`SYS-RET-002`)](system-requirements-and-traceability.md#sys-ret-002),
   [reset vehicle simulation state (`SYS-RET-003`)](system-requirements-and-traceability.md#sys-ret-003),
-  [preserve immutable factory artifact (`SYS-RET-005`)](system-requirements-and-traceability.md#sys-ret-005), and
-  [no rollback or fleet claim (`SYS-RET-004`)](system-requirements-and-traceability.md#sys-ret-004).
+  [preserve immutable factory artifact (`SYS-RET-005`)](system-requirements-and-traceability.md#sys-ret-005),
+  [no rollback or fleet claim (`SYS-RET-004`)](system-requirements-and-traceability.md#sys-ret-004), and
+  [reconcile Unit Sets for the next run (`SYS-RET-006`)](system-requirements-and-traceability.md#sys-ret-006).
 
 ### `CR-CROSS` — Cross-cutting security and operations
 
@@ -689,6 +692,17 @@ Delivery Dashboard.
    owning-team acceptance and active OEM role before exposing the final OEM
    approval action. It owns neither the decision, evidence nor lifecycle
    state, and passing tests never auto-approve.
+
+## Acceptance Record for Version 0.8
+
+Version 0.8 preserves the accepted Version 0.7 component graph and clarifies
+the retirement boundary. `CR-AOS` owns qualification of authoritative
+deprovisioning, deletion, Unit Set state and membership APIs. `CR-DEMO` owns
+VM shutdown, ordered API use, partial-result reconciliation, overlay disposal,
+next-run provisioning, new identity binding and fresh lifecycle-object guards.
+`CR-E2E` proves the complete `R0 -> M0 -> M1` cycle.
+
+No HLA component or interface is added by Version 0.8.
 
 ## Acceptance Record for Version 0.7
 

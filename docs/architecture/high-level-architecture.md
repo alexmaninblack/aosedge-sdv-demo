@@ -860,7 +860,7 @@ Architecture 1.4 is aligned only while all of the following remain true:
     a driver.
 15. No secret, Unit identity, or private credential is embedded in a FOTA or
     SOTA payload.
-16. The static diagram is a target capability superset; Demo Scenario 1.5 owns
+16. The static diagram is a target capability superset; Demo Scenario 1.6 owns
     component presence and absence at each manufacturing, provisioning,
     `G0–G4`, `T1`, and retirement stage.
 17. Validation and Demonstration Units are separate instances of the same
@@ -924,14 +924,14 @@ Architecture 1.4 is aligned only while all of the following remain true:
 High-Level Architecture 1.4 was accepted as the architecture baseline on
 2026-08-19 after the ADR 0011 QM-containment and evidence-backed approval
 decision. Its downstream
-projections are:
+current downstream review projections are:
 
-1. Demo Scenario 1.5 for audience-visible stage order and component presence;
-2. Architecture Flows 1.4 for detailed lifecycle, runtime, observability, and
+1. Demo Scenario 1.6 for audience-visible stage order and component presence;
+2. Architecture Flows 1.5 for detailed lifecycle, runtime, observability, and
    failure mapping;
-3. System Requirements and Traceability 0.7 for normative system obligations
+3. System Requirements and Traceability 0.8 for normative system obligations
    and gap coverage;
-4. Component Decomposition and Interface Register 0.7 for component ownership,
+4. Component Decomposition and Interface Register 0.8 for component ownership,
    interface identifiers, repository allocation, and provisional requirement
    packages.
 

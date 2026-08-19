@@ -260,4 +260,4 @@ identity, P3 advisory semantics, and cross-surface trace correlation.
 - [COVESA VSS 6.0 chassis signals](https://raw.githubusercontent.com/COVESA/vehicle_signal_specification/v6.0/spec/Chassis/Chassis.vspec)
 - [COVESA VSS 6.0 ADAS signals](https://raw.githubusercontent.com/COVESA/vehicle_signal_specification/v6.0/spec/ADAS/ADAS.vspec)
 - [Aerodynamic and Thermal Modelling of Disc Brakes](https://www.mdpi.com/1996-1073/13/1/203)
-- [Current Demo Scenario 1.5](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- [Current Demo Scenario 1.6](../../demo/staged-post-sop-brake-health-demo-scenarios.md)

@@ -28,10 +28,10 @@ a newcomer from interpreting a target architecture as a finished launcher.
 Read the accepted design chain in this order:
 
 1. [High-Level Architecture 1.4](../architecture/high-level-architecture.md)
-2. [Demo Scenario 1.5](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-3. [Demo Scenario Architecture Flows 1.4](../architecture/demo-scenario-architecture-flows.md)
-4. [System Requirements and Traceability 0.7](../requirements/system-requirements-and-traceability.md)
-5. [Component Decomposition and Interface Register 0.7](../requirements/component-decomposition-and-interface-register.md)
+2. [Demo Scenario 1.6](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+3. [Demo Scenario Architecture Flows 1.5](../architecture/demo-scenario-architecture-flows.md)
+4. [System Requirements and Traceability 0.8](../requirements/system-requirements-and-traceability.md)
+5. [Component Decomposition and Interface Register 0.8](../requirements/component-decomposition-and-interface-register.md)
 
 The [current baseline](../qualification/current-baseline.md) states which
 parts have accepted implementation evidence and which remain targets.

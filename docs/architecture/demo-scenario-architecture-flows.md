@@ -1,18 +1,19 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Demo Scenario Architecture Flows 1.4
+# Demo Scenario Architecture Flows 1.5
 
 - Status: Accepted architecture-flow baseline
-- Version: 1.4
+- Version: 1.5
 - Prepared: 2026-08-19
 - Accepted: 2026-08-19
+- Supersedes: 1.4
 - Owner: System Architecture
 - Architecture input: [High-Level Architecture 1.4](high-level-architecture.md)
-- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.5](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.6](../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - CARLA input: [R10 Native CARLA Vehicle Telemetry Inventory](../research/demo-foundation/r10-carla-telemetry-and-function-team-2.md)
-- Requirements input: [System Requirements and Traceability 0.7](../requirements/system-requirements-and-traceability.md)
-- Component input: [Component Decomposition and Interface Register 0.7](../requirements/component-decomposition-and-interface-register.md)
+- Requirements input: [System Requirements and Traceability 0.8](../requirements/system-requirements-and-traceability.md)
+- Component input: [Component Decomposition and Interface Register 0.8](../requirements/component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0009](decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0010](decisions/0010-aos-kuksa-credential-broker.md), and
   [ADR 0011](decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
@@ -53,7 +54,7 @@ When the inputs differ, use this order:
 
 1. High-Level Architecture 1.4 owns component boundaries, interfaces,
    authority, security boundaries, and architectural invariants.
-2. Demo Scenario 1.5 owns stage order, component presence, audience-visible
+2. Demo Scenario 1.6 owns stage order, component presence, audience-visible
    proof, and the manufacturing-to-retirement narrative.
 3. This document owns detailed cross-component flow mapping and exposes gaps;
    it does not silently change either source.
@@ -1089,11 +1090,15 @@ sequenceDiagram
     DU-->>AC: Offline
     OR->>AC: Deprovision both Units using accepted Cloud operation
     AC-->>OR: Old identities/certificates rejected
+    OR->>AC: Reconcile Unit Set membership using qualified API ordering
     OR->>AC: Delete Unit records and handle Unit-owned Nodes by qualified API semantics
+    OR->>AC: Re-read active Units and persistent Unit Sets
+    AC-->>OR: Retired Unit IDs absent and both memberships empty
     OR->>FB: Clear/archive current-session functional data by Unit IDs + time window
     OR->>CS: Reset actors, route, deterministic seed and local evidence
     OR->>OR: Discard both provisioned overlays and run-specific host state
     OR->>FI: Verify immutable factory image unchanged
+    Note over OR,AC: Next M1 provisions new identities and assigns each new Unit to its correct set
 ```
 
 <a id="af-r0-ob"></a>
@@ -1101,8 +1106,11 @@ sequenceDiagram
 
 - both Units reached `Offline` before deprovisioning;
 - deprovisioning and deletion results are recorded separately;
+- deleted Unit IDs are absent from active Unit inventory;
 - retired certificates cannot reconnect;
 - Unit/Node cleanup matches the qualified API semantics;
+- the persistent Verification and Demonstration Unit Sets contain no retired
+  Unit and both memberships are empty;
 - Cloud lifecycle audit history is retained;
 - functional backend/dashboard data is cleared or archived by the exact Unit
   IDs and session time window;
@@ -1119,9 +1127,15 @@ sequenceDiagram
   reconciliation.
 - Unit deletion is not assumed to delete Nodes unless the qualified API proves
   ownership semantics.
+- Unit deletion is not assumed to clear Unit Set membership unless the
+  qualified API proves that behavior; unresolved membership preserves the
+  Cloud records and overlays for reconciliation.
 - Functional-data cleanup never erases authoritative Cloud audit evidence.
 - A failed retirement blocks the next live run from reusing the old identity;
   it does not modify the immutable factory image.
+- The next M1 creates new Unit and Node identities, assigns them to the correct
+  disjoint persistent Unit Sets and uses only fresh lifecycle objects after
+  membership changes.
 
 R0 is a demonstration-lab operation on disposable Units, not a production
 vehicle rollback or proof of a fleet-wide deletion policy.
@@ -1196,7 +1210,7 @@ owning team's release decision.
 | <a id="gap-af-16"></a>`GAP-AF-16` | Native log API qualification | all | Qualify AosEdge system/service/crash-log requests, scoped AosCloud API access, latency, retention/deletion, online/offline behavior, redaction and dashboard presentation | Operational observability + Software Delivery Dashboard |
 | <a id="gap-af-17"></a>`GAP-AF-17` | Software Delivery Dashboard and release authorization | all | Implement a stateless Software Delivery Dashboard that exposes exact artifact/metadata digests, requested permissions, target, required evidence and freshness, owning-team acceptance, active SP/OEM role, blocked reasons, final confirmation and Cloud audit result without a parallel state/evidence cache or automatic approval policy | Demo solution + AosCloud integration |
 | <a id="gap-af-18"></a>`GAP-AF-18` | Presentation and timing bounds | all | Define stage durations, timeout budgets, local decision latency and technical/executive presentation modes | Demo experience |
-| <a id="gap-af-19"></a>`GAP-AF-19` | Demo-run correlation and cleanup | `M1/R0` | Define current-run correlation by start time, local overlay roles, Unit IDs, and external-data retention/cleanup boundaries | Demo orchestration + functional teams |
+| <a id="gap-af-19"></a>`GAP-AF-19` | Demo-run correlation and cleanup | `M1/R0` | Define current-run correlation by start time, local overlay roles and Unit IDs; reconcile persistent Unit Sets to empty at R0; assign new identities to the correct sets at the next M1; and define external-data retention/cleanup boundaries | Demo orchestration + AosCloud integration + functional teams |
 | <a id="gap-af-20"></a>`GAP-AF-20` | Cross-lifecycle compatibility | `G2–G4/T1` | Define and prove versioned capability-dependency declaration, current runtime fail-closed behavior, future native Cloud rejection before rollout/transfer, compatibility checks, and safe dependent-first rollback for both SOTA lifecycles | AosEdge Platform Team + Platform Team + both service providers |
 | <a id="gap-af-24"></a>`GAP-AF-24` | Drive-mode context transition qualification | `G0/X-DRIVE` | Implement and qualify dynamic obstacle ownership, context-aware reset/cleanup, complete transition and failure matrices, discontinuity evidence, dashboard state and recovery without reverse | Vehicle simulation + Vehicle Gateway |
 
@@ -1214,7 +1228,16 @@ The following former candidate gaps remain resolvable but are no longer active:
 | <a id="gap-af-13"></a>`GAP-AF-13` | `GAP-AF-21` | Former dynamics-signal proof folded into the Tire Health model contract |
 | <a id="gap-af-14"></a>`GAP-AF-14` | `GAP-AF-23` | Former event Cloud product replaced by Tire Health Cloud product |
 
-## Architecture-Flow Acceptance Record
+## Architecture-Flow Acceptance Record for Version 1.5
+
+Architecture Flows 1.5 preserves accepted Version 1.4 behavior and makes the
+cross-run lifecycle explicit. `AF-R0-LC` now separates deprovisioning from Unit
+deletion, proves persistent Unit Sets empty, and hands the next cycle to M1,
+where new identities are assigned to the correct disjoint sets. VM shutdown,
+sequencing and overlay disposal remain Demo Orchestrator responsibilities;
+AosCloud remains authoritative for lifecycle and membership state.
+
+## Architecture-Flow Acceptance Record for Version 1.4
 
 Architecture Flows 1.4 preserves the accepted Version 1.3 lifecycle and data
 flows, adds `AF-X-QM`, and makes the complete evidence basis preceding final
@@ -1256,7 +1279,7 @@ after reviewers confirmed that:
 
 ## Downstream Component Requirement Gate
 
-The accepted System Requirements and Traceability 0.7 covers every active
+The System Requirements and Traceability 0.8 review candidate covers every active
 `AF-*` flow and allocates the resulting obligations to provisional component
 packages. D3 now expands those packages in this order:
 

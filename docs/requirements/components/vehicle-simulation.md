@@ -9,10 +9,10 @@
 - Prepared: 2026-08-19
 - Owner: Vehicle Simulation / Demo Vehicle Tooling
 - Architecture input: [High-Level Architecture 1.4](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 1.5](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 1.4](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 0.7](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 0.7](../component-decomposition-and-interface-register.md)
+- Scenario input: [Demo Scenarios 1.6](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 1.5](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 0.8](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 0.8](../component-decomposition-and-interface-register.md)
 - Implementation baseline: `CarlaSim@ac7d882c` and `carla-ego-runtime@22864c5`
 
 ## Purpose
