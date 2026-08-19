@@ -5,9 +5,10 @@
 
 - Status: D3 design-reviewed
 - Package: [`CR-TIRE`](../component-decomposition-and-interface-register.md#cr-tire)
-- Version: 0.1
+- Version: 0.2
 - Prepared: 2026-08-19
 - Accepted: 2026-08-19
+- Supersedes: 0.1
 - Owner: Function Team 2 / Service Provider 2 / SOTA 2
 - Architecture input: [High-Level Architecture 1.4](../../architecture/high-level-architecture.md)
 - Scenario input: [Demo Scenarios 1.7](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
@@ -52,7 +53,7 @@ promotion affecting OEM Units.
 
 | Question | Answer |
 | --- | --- |
-| What this package owns | One immutable ARM64 Tire Health v1.0 service candidate, exact VDP v3 compatibility declaration, least-privilege KUKSA client use, bounded persistent synthetic condition estimate, bounded functional-message queue, typed inspection advisory, health, resources, logs and tests |
+| What this package owns | One immutable ARM64 Tire Health v1.0 service candidate, exact VDP v3 compatibility declaration, least-privilege KUKSA client use, bounded persistent synthetic condition estimate, accepted provisional resource envelope, bounded functional-message queue, typed inspection advisory, health, logs and tests |
 | What this package does not own | CARLA stimulus or hidden truth, VISS, VDP/KUKSA/Credential Broker implementation, Gateway enforcement, Aos lifecycle execution, Tire Health backend/dashboard, Cloud dependency admission, production tire diagnostics or driver HMI |
 | Intended result | A second independent SOTA product runs beside Brake Health, derives a local tire-condition band, survives Cloud loss, sends bounded results and requests only its approved inspection advisory |
 | Accountable lifecycle owner | Function Team 2; Service Provider 2 publishes, and an authorized OEM identity approves validation and promotion through SOTA 2 |
@@ -116,6 +117,48 @@ promotion affecting OEM Units.
 | Functional backend transport | `IF-TIRE-003` defines direction; schema, authentication, queue and acknowledgement absent | `NEW` |
 | Typed advisory request | VDP/Gateway target is accepted design; no Tire service request implementation | `NEW` |
 | Unit tests and quality gate | No Tire repository or test suite | `NEW` |
+
+## Accepted Provisional Resource Envelope
+
+Tire Health deliberately uses a different resource profile from Brake Health.
+Brake Health requires burst-oriented event-window buffering and processing;
+Tire Health performs a lower-rate continuous incremental estimate, retains a
+slightly larger persistent model state, and never stores or transfers a normal
+raw-telemetry stream.
+
+The Tire Health v1.0 candidate shall start with this accepted provisional
+logical envelope:
+
+| Resource | Tire Health v1.0 | Design intent |
+| --- | ---: | --- |
+| CPU units | 150 | Lower than the current provisional Brake Health value of 250 |
+| RAM | 16 MiB | Small estimator and transport runtime; must be confirmed with the selected implementation |
+| Persistent model state | 2 MiB | Versioned cumulative condition state and bounded functional queue metadata |
+| Temporary storage | 2 MiB | No Brake-style high-detail event-window buffering |
+| Open files | 32 | One service process, local state, KUKSA/backend connections and logs |
+| Processes | 8 | Deliberately smaller process budget than Brake Health |
+
+The exact mapping of this logical envelope into the supported Aos service
+metadata fields remains a D4 contract task. Measurement may prove that a
+selected language/runtime cannot fit. Such a result does not permit silent
+quota inflation: Function Team 2 must either optimize the implementation or
+review a Level-B resource-envelope change with updated evidence and dashboard
+metadata.
+
+Application-level bounds are separate from platform-enforced Aos quotas:
+
+- a periodic `TireConditionSummary` is emitted no more often than once per 30
+  seconds during normal operation;
+- a threshold/change event may be emitted immediately and is not delayed until
+  the next periodic summary;
+- the offline functional queue accepts at most 256 messages or 2 MiB of encoded
+  payload, whichever limit is reached first;
+- overflow handling is deterministic, visible and finalized with the D4 queue
+  contract; it must not silently fabricate successful delivery.
+
+These values are part of the prepared candidate metadata shown before
+publication. They are not the CPU, memory or storage limits of the separate
+Mac-hosted Tire Health Cloud container.
 
 ## Testability Boundary
 
@@ -274,7 +317,7 @@ not a hidden simulator oracle.
 <a id="req-tire-007"></a>
 
 - ID: `REQ-TIRE-007`
-- Statement: Normal operation shall send only bounded, versioned and idempotent tire-condition summaries and threshold/change events with original event time, Unit/source correlation and service/VDP versions; it shall not continuously stream raw vehicle telemetry.
+- Statement: Normal operation shall send only bounded, versioned and idempotent tire-condition summaries and threshold/change events with original event time, Unit/source correlation and service/VDP versions; periodic summaries shall be emitted no more often than once per 30 seconds, threshold/change events may be emitted immediately, and the service shall not continuously stream raw vehicle telemetry.
 - Parents: [bounded Cloud reporting (`SYS-TIRE-004`)](../system-requirements-and-traceability.md#sys-tire-004) and [independent Tire product (`SYS-TIRE-005`)](../system-requirements-and-traceability.md#sys-tire-005)
 - Flows: [Tire runtime (`AF-TIRE-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-rt) and [observability (`AF-TIRE-OB`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-ob)
 - Verification: Unit, Component, Contract, Integration, End-to-end
@@ -298,7 +341,7 @@ not a hidden simulator oracle.
 <a id="req-tire-009"></a>
 
 - ID: `REQ-TIRE-009`
-- Statement: Cloud/backend loss shall not stop valid local estimation or advisory generation; unsent derived messages shall use bounded persistent retention, backoff and idempotent reconnect synchronization while preserving original event times and explicit overflow/drop evidence.
+- Statement: Cloud/backend loss shall not stop valid local estimation or advisory generation; unsent derived messages shall use bounded persistent retention of at most 256 messages or 2 MiB encoded payload, whichever is reached first, plus backoff and idempotent reconnect synchronization while preserving original event times and explicit overflow/drop evidence.
 - Parents: [bounded reporting (`SYS-TIRE-004`)](../system-requirements-and-traceability.md#sys-tire-004) and [offline advisory (`SYS-TIRE-006`)](../system-requirements-and-traceability.md#sys-tire-006)
 - Flow: [offline continuity (`AF-X-OFFLINE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-offline)
 - Verification: Unit, Component, Integration, Analysis, End-to-end
@@ -322,7 +365,7 @@ not a hidden simulator oracle.
 <a id="req-tire-011"></a>
 
 - ID: `REQ-TIRE-011`
-- Statement: The service shall expose truthful health/readiness, declare and remain within qualified CPU, memory, storage, file and process bounds, stop safely on quota/resource failure, and shall not degrade VDP, Brake Health or vehicle control.
+- Statement: The service shall expose truthful health/readiness, declare the accepted provisional envelope of 150 CPU units, 16 MiB RAM, 2 MiB persistent model state, 2 MiB temporary storage, 32 open files and 8 processes, remain within the subsequently qualified metadata mapping of those bounds, stop safely on quota/resource failure, and shall not degrade VDP, Brake Health or vehicle control.
 - Parents: [independent Tire product (`SYS-TIRE-005`)](../system-requirements-and-traceability.md#sys-tire-005) and [QM containment (`SYS-SEC-007`)](../system-requirements-and-traceability.md#sys-sec-007)
 - Flow: [Tire failure boundaries (`AF-TIRE-FR`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-fr)
 - Verification: Unit, Component, Integration
@@ -360,6 +403,21 @@ Each obligation must execute deterministically without CARLA, QEMU, AosCloud,
 a real KUKSA Databroker, network access or credentials. Integration and
 end-to-end tests supplement these obligations; they do not replace them.
 
+## D3 Acceptance Record for Version 0.2
+
+Version 0.2 was accepted after review confirmed that Tire Health must not reuse
+the Brake Health resource profile merely for convenience. The accepted
+provisional profile reflects lower CPU, temporary-storage, file and process
+demand, while preserving a slightly larger persistent model-state allowance.
+It also freezes the normal summary cadence and offline queue capacity as
+separate application-level bounds.
+
+Acceptance does not claim that the values have passed runtime measurement or
+that every logical field maps one-to-one to current Aos service metadata. D4
+must prove the mapping and fit on the selected implementation. Any required
+increase follows the documented Level-B change process rather than silently
+changing candidate metadata.
+
 ## Open D4 Gates
 
 | Gate | Why it blocks implementation acceptance | Owner |
@@ -367,10 +425,10 @@ end-to-end tests supplement these obligations; they do not replace them.
 | Exact VDP v3 Tire input paths, types, units, cadence, quality and freshness | Blocks subscription contract and compatibility metadata | Platform Team + Function Team 2 |
 | Accelerated/pre-aged stimulus, service-visible initial estimate and hidden qualification oracle | Blocks honest deterministic demonstration without oracle leakage | Vehicle Simulation + Function Team 2 |
 | Synthetic estimator, state schema, bands, confidence, thresholds and tolerance | Blocks deterministic model/state tests | Function Team 2 |
-| Summary/event schemas, authentication, idempotency key, rate/size and acknowledgement | Blocks service-to-backend contract | Function Team 2 + future `CR-TIRE-CLOUD` |
+| Summary/event schemas, authentication, idempotency key, rate/size and acknowledgement | Blocks service-to-backend contract | Function Team 2 + `CR-TIRE-CLOUD` |
 | Tire advisory target, payload, debounce/hysteresis, freshness and Gateway correlation | Blocks typed outbound request | Function Team 2 + Platform Team + Gateway |
 | Queue/state capacity, retention, retry/backoff, overflow and future migration policy | Blocks offline and uninstall qualification | Function Team 2 |
-| CPU/RAM/storage/file/process quotas and health/readiness endpoint | Blocks resource and failure-isolation acceptance | Function Team 2 + Aos integration |
+| Mapping and runtime qualification of the accepted provisional CPU/RAM/state/tmp/file/process envelope, plus health/readiness endpoint | Blocks resource and failure-isolation acceptance; any increase requires a reviewed Level-B change | Function Team 2 + Aos integration |
 | Local decision and Cloud synchronization timing budgets plus log schema/redaction | Blocks observability and timing acceptance | Function Team 2 + Demo experience |
 | Native Cloud service-to-VDP dependency admission | Deferred platform roadmap item; does not block v1.0 when sequencing, OEM evidence and fail-closed readiness are proved | AosEdge Platform Team |
 

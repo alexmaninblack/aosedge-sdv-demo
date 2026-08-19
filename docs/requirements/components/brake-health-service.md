@@ -153,18 +153,18 @@ executable against controlled real adjacent components.
 
 | Requirement | Plain-language obligation | Verification levels | State |
 | --- | --- | --- | --- |
-| [Immutable versioned service product (`REQ-BHS-001`)](#req-bhs-001) | Produce credential-free immutable ARM64 v1-v3 service candidates with exact metadata | Unit, Component, Contract, Integration | Review draft |
-| [Compatibility and fail-closed readiness (`REQ-BHS-002`)](#req-bhs-002) | Start only with a compatible installed Vehicle Data Platform contract | Unit, Component, Contract, Integration | Review draft |
-| [Least-privilege KUKSA credential lifecycle (`REQ-BHS-003`)](#req-bhs-003) | Acquire and refresh only current IAM-derived path-scoped authority | Unit, Component, Contract, Integration | Review draft |
-| [Validated KUKSA subscription (`REQ-BHS-004`)](#req-bhs-004) | Consume only accepted paths and make data quality/freshness explicit | Unit, Component, Contract, Integration | Review draft |
-| [Bounded v1 Brake Telemetry Window (`REQ-BHS-005`)](#req-bhs-005) | Preserve bounded pre-trigger context and transfer one ordered pre/active/post braking event without continuous Cloud streaming | Unit, Component, Contract, Integration, End-to-end | Review draft |
-| [Deterministic v2 edge assessment (`REQ-BHS-006`)](#req-bhs-006) | Run an immutable synthetic model locally and replace normal v1 window upload with derived assessments/events | Unit, Component, Contract, Analysis, End-to-end | Review draft |
-| [Degraded and invalid-input behavior (`REQ-BHS-007`)](#req-bhs-007) | Never convert missing, stale or malformed input into a healthy result | Unit, Component, Contract, Integration | Review draft |
-| [Typed v3 maintenance advisory (`REQ-BHS-008`)](#req-bhs-008) | Request only the accepted non-safety Brake Health advisory | Unit, Component, Contract, Integration, End-to-end | Review draft |
-| [Offline local continuity and bounded synchronization (`REQ-BHS-009`)](#req-bhs-009) | Keep local analysis/advisory active and synchronize reports safely after reconnect | Unit, Component, Integration, Analysis, End-to-end | Review draft |
-| [Rollback-safe persistent state (`REQ-BHS-010`)](#req-bhs-010) | Preserve a valid dependent-first rollback path across service versions | Unit, Component, Integration, Analysis | Review draft |
-| [Health, resources and failure isolation (`REQ-BHS-011`)](#req-bhs-011) | Expose truthful readiness and stay inside qualified quotas without affecting VDP | Unit, Component, Integration | Review draft |
-| [Redacted native logs and separated timing (`REQ-BHS-012`)](#req-bhs-012) | Emit useful secret-free evidence and measure local latency separately from Cloud sync | Unit, Component, Integration, Analysis, End-to-end | Review draft |
+| [Immutable versioned service product (`REQ-BHS-001`)](#req-bhs-001) | Produce credential-free immutable ARM64 v1-v3 service candidates with exact metadata | Unit, Component, Contract, Integration | D3 design-reviewed |
+| [Compatibility and fail-closed readiness (`REQ-BHS-002`)](#req-bhs-002) | Start only with a compatible installed Vehicle Data Platform contract | Unit, Component, Contract, Integration | D3 design-reviewed |
+| [Least-privilege KUKSA credential lifecycle (`REQ-BHS-003`)](#req-bhs-003) | Acquire and refresh only current IAM-derived path-scoped authority | Unit, Component, Contract, Integration | D3 design-reviewed |
+| [Validated KUKSA subscription (`REQ-BHS-004`)](#req-bhs-004) | Consume only accepted paths and make data quality/freshness explicit | Unit, Component, Contract, Integration | D3 design-reviewed |
+| [Bounded v1 Brake Telemetry Window (`REQ-BHS-005`)](#req-bhs-005) | Preserve bounded pre-trigger context and transfer one ordered pre/active/post braking event without continuous Cloud streaming | Unit, Component, Contract, Integration, End-to-end | D3 design-reviewed |
+| [Deterministic v2 edge assessment (`REQ-BHS-006`)](#req-bhs-006) | Run an immutable synthetic model locally and replace normal v1 window upload with derived assessments/events | Unit, Component, Contract, Analysis, End-to-end | D3 design-reviewed |
+| [Degraded and invalid-input behavior (`REQ-BHS-007`)](#req-bhs-007) | Never convert missing, stale or malformed input into a healthy result | Unit, Component, Contract, Integration | D3 design-reviewed |
+| [Typed v3 maintenance advisory (`REQ-BHS-008`)](#req-bhs-008) | Request only the accepted non-safety Brake Health advisory | Unit, Component, Contract, Integration, End-to-end | D3 design-reviewed |
+| [Offline local continuity and bounded synchronization (`REQ-BHS-009`)](#req-bhs-009) | Keep local analysis/advisory active and synchronize reports safely after reconnect | Unit, Component, Integration, Analysis, End-to-end | D3 design-reviewed |
+| [Rollback-safe persistent state (`REQ-BHS-010`)](#req-bhs-010) | Preserve a valid dependent-first rollback path across service versions | Unit, Component, Integration, Analysis | D3 design-reviewed |
+| [Health, resources and failure isolation (`REQ-BHS-011`)](#req-bhs-011) | Expose truthful readiness and stay inside qualified quotas without affecting VDP | Unit, Component, Integration | D3 design-reviewed |
+| [Redacted native logs and separated timing (`REQ-BHS-012`)](#req-bhs-012) | Emit useful secret-free evidence and measure local latency separately from Cloud sync | Unit, Component, Integration, Analysis, End-to-end | D3 design-reviewed |
 
 ## Detailed Requirements
 
@@ -181,7 +181,7 @@ executable against controlled real adjacent components.
 - Interfaces: [Brake Health SOTA (`IF-LC-002`)](../component-decomposition-and-interface-register.md#if-lc-002) and [Function Team 1 approval (`IF-LC-009`)](../component-decomposition-and-interface-register.md#if-lc-009)
 - Verification levels: Unit, Component, Contract, Integration
 - Required evidence: reproducible unsigned staging result, secret-negative scan, exact artifact/metadata digests, architecture and release manifest
-- State: Review draft; scaffold packaging exists, product candidates do not
+- State: D3 design-reviewed; scaffold packaging exists, product candidates do not
 
 Acceptance requires repeatable bytes from identical inputs, different identity
 for changed content, no private key/token/Unit identity, complete third-party
@@ -200,7 +200,7 @@ notices, English product content and no CARLA/VISS/platform source dependency.
 - Interfaces: [data subscription (`IF-DATA-002`)](../component-decomposition-and-interface-register.md#if-data-002) and [runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006)
 - Verification levels: Unit, Component, Contract, Integration
 - Required evidence: compatible and incompatible manifests, readiness/status reason, absence of report/advisory side effects and compatible recovery
-- State: Review draft; compatibility file exists, runtime enforcement does not
+- State: D3 design-reviewed; compatibility file exists, runtime enforcement does not
 
 This requirement must not be presented as native Cloud admission. After an
 implementing platform release is qualified, Cloud rejection and service
@@ -219,7 +219,7 @@ readiness remain separate controls.
 - Interfaces: [credential request (`IF-AUTH-001`)](../component-decomposition-and-interface-register.md#if-auth-001) and [short-lived credential (`IF-AUTH-003`)](../component-decomposition-and-interface-register.md#if-auth-003)
 - Verification levels: Unit, Component, Contract, Integration
 - Required evidence: exact request paths/modes, token lifetime/refresh trace, invalid/stale/revoked negatives and secret-negative logs/artifacts/state
-- State: Review draft; architecture documented, implementation absent
+- State: D3 design-reviewed; architecture documented, implementation absent
 
 Acceptance rejects permission widening, reusable packaged tokens, refresh after
 permission removal, fallback anonymous access and any separate service-policy
@@ -238,7 +238,7 @@ database in this repository.
 - Interface: [Brake Health data subscription (`IF-DATA-002`)](../component-decomposition-and-interface-register.md#if-data-002)
 - Verification levels: Unit, Component, Contract, Integration
 - Required evidence: accepted path manifest and fixtures for valid, boundary, malformed, stale, reordered, unavailable and reconnect cases
-- State: Review draft
+- State: D3 design-reviewed
 
 ### Bounded v1 Brake Telemetry Window
 
@@ -253,7 +253,7 @@ database in this repository.
 - Interface: [functional message family (`IF-FUNC-001`)](../component-decomposition-and-interface-register.md#if-func-001)
 - Verification levels: Unit, Component, Contract, Integration, End-to-end
 - Required evidence: trigger/pre/active/post timelines, schema and maximum window/chunk/queue sizes, golden fixtures, duplicate/reconnect proof, original-sample-time preservation and backend reconstruction/acknowledgement correlation
-- State: Review draft; exact trigger and window contract is open
+- State: D3 design-reviewed; exact trigger and window contract is open
 
 Trigger activation/clear, minimum active time, post-trigger extension,
 overlap/merge, debounce and maximum-window behavior shall be deterministic.
@@ -274,7 +274,7 @@ an unbounded local capture.
 - Interfaces: [data subscription (`IF-DATA-002`)](../component-decomposition-and-interface-register.md#if-data-002) and [functional message family (`IF-FUNC-001`)](../component-decomposition-and-interface-register.md#if-func-001)
 - Verification levels: Unit, Component, Contract, Analysis, End-to-end
 - Required evidence: model/config/input/output digests, golden normal/degraded/invalid fixtures, repeated and reordered execution, provenance/result schemas, local latency distribution and proof that normal v2 operation emits no v1 window chunks
-- State: Review draft; synthetic model contract and exact inputs are open
+- State: D3 design-reviewed; synthetic model contract and exact inputs are open
 
 No live training, nondeterministic network model call, mutable downloaded
 model or Cloud result may be part of the local decision path. The synthetic
@@ -296,7 +296,7 @@ accuracy, remaining-useful-life or safety-function claim.
 - Interfaces: [data subscription (`IF-DATA-002`)](../component-decomposition-and-interface-register.md#if-data-002), [functional message family (`IF-FUNC-001`)](../component-decomposition-and-interface-register.md#if-func-001) and [advisory request (`IF-ADV-001`)](../component-decomposition-and-interface-register.md#if-adv-001)
 - Verification levels: Unit, Component, Contract, Integration
 - Required evidence: complete invalid/degraded fixture matrix, emitted result/reason and proof of no advisory side effect
-- State: Review draft
+- State: D3 design-reviewed
 
 ### Typed v3 maintenance advisory
 
@@ -311,7 +311,7 @@ accuracy, remaining-useful-life or safety-function claim.
 - Interfaces: [advisory request (`IF-ADV-001`)](../component-decomposition-and-interface-register.md#if-adv-001) and [functional message family (`IF-FUNC-001`)](../component-decomposition-and-interface-register.md#if-func-001)
 - Verification levels: Unit, Component, Contract, Integration, End-to-end
 - Required evidence: exact path/mode/payload fixtures, threshold/debounce behavior, request/backend-fact correlation and negative proof for every prohibited authority
-- State: Review draft; target and payload are open
+- State: D3 design-reviewed; target and payload are open
 
 The accepted audience claim ends at Gateway `RECEIVED`, `REJECTED` or `FAILED`
 status in the Engineering Telematics Dashboard. It is not driver display or
@@ -330,7 +330,7 @@ acknowledgement.
 - Interface: [functional message family (`IF-FUNC-001`)](../component-decomposition-and-interface-register.md#if-func-001)
 - Verification levels: Unit, Component, Integration, Analysis, End-to-end
 - Required evidence: disconnect/reconnect timelines during each v1 window phase and v2/v3 messaging, bounded queue/disk use, overflow fact, retry schedule, duplicate-safe acknowledgement, reconstruction/resume identity and unchanged local decision/advisory latency
-- State: Review draft
+- State: D3 design-reviewed
 
 ### Rollback-safe persistent state
 
@@ -345,7 +345,7 @@ acknowledgement.
 - Interface: [runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006)
 - Verification levels: Unit, Component, Integration, Analysis
 - Required evidence: state compatibility matrix, forward/backward fixtures, interrupted transition and service-first rollback sequence
-- State: Review draft; scaffold has no persistent state
+- State: D3 design-reviewed; scaffold has no persistent state
 
 ### Health, resources and failure isolation
 
@@ -360,7 +360,7 @@ acknowledgement.
 - Interface: [runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006)
 - Verification levels: Unit, Component, Integration
 - Required evidence: readiness state matrix, resource measurements and limit faults, restart policy and adjacent-component continuity
-- State: Review draft; scaffold quotas are provisional
+- State: D3 design-reviewed; scaffold quotas are provisional
 
 ### Redacted native logs and separated timing
 
@@ -375,22 +375,22 @@ acknowledgement.
 - Interfaces: [functional message family (`IF-FUNC-001`)](../component-decomposition-and-interface-register.md#if-func-001), [advisory request (`IF-ADV-001`)](../component-decomposition-and-interface-register.md#if-adv-001) and [runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006)
 - Verification levels: Unit, Component, Integration, Analysis, End-to-end
 - Required evidence: log schema, secret/raw-data negative scan, source/monotonic timestamp fixtures and separate local/synchronization latency distributions
-- State: Review draft
+- State: D3 design-reviewed
 
 ## Unit-Test Obligations
 
 | Unit-test obligation | Requirements proved | Behavior and branches | Isolation / doubles | Required assertions | Repository / suite | State |
 | --- | --- | --- | --- | --- | --- | --- |
-| <a id="ut-bhs-001"></a>`UT-BHS-001` — Artifact and metadata integrity | [`REQ-BHS-001`](#req-bhs-001) | Reproducible staging, metadata completeness, changed input, forbidden credentials/boundaries | Temporary filesystem and deterministic fixture manifest | Stable digests, correct ARM64 metadata, no secrets/CARLA/VISS/platform coupling | `brake-health-service` packaging tests | Review draft |
-| <a id="ut-bhs-002"></a>`UT-BHS-002` — Compatibility readiness | [`REQ-BHS-002`](#req-bhs-002), [`REQ-BHS-011`](#req-bhs-011) | Compatible, missing, lower/upper boundary, malformed contract, recovery | Fake installed-capability reader and readiness sink | Ready only for complete compatible contract; exact blocked reason; no report/advisory | `brake-health-service` unit suite | Review draft |
-| <a id="ut-bhs-003"></a>`UT-BHS-003` — Credential lifecycle | [`REQ-BHS-003`](#req-bhs-003) | Issue, reject, expiry, refresh, permission removal, malformed token result | Fake broker, controllable clock and KUKSA transport | Exact paths/modes, bounded refresh, no access after rejection/removal, no secret persistence/logging | `brake-health-service` unit suite | Review draft |
-| <a id="ut-bhs-004"></a>`UT-BHS-004` — Subscription and temporal validation | [`REQ-BHS-004`](#req-bhs-004), [`REQ-BHS-007`](#req-bhs-007) | Valid, boundary, wrong type/unit/range, stale, reordered, unavailable, reconnect | Fake KUKSA stream and clocks | Accepted sample sequence or explicit degraded reason; no fabricated value/advisory | `brake-health-service` unit suite | Review draft |
-| <a id="ut-bhs-005"></a>`UT-BHS-005` — v1 event-window state machine | [`REQ-BHS-005`](#req-bhs-005) | No trigger, trigger/clear, pre/active/post bounds, overlap/merge, debounce, maximum duration, chunk boundaries, duplicate/resume, malformed input | Fake KUKSA stream, clocks, bounded ring/queue stores and fake backend | Exact samples/phases and one event identity; ordered idempotent chunks; exactly one completion; original times; explicit size/overflow; no continuous no-trigger upload | `brake-health-service` unit/contract suite | Review draft |
-| <a id="ut-bhs-006"></a>`UT-BHS-006` — Deterministic model and derived-data transition | [`REQ-BHS-006`](#req-bhs-006), [`REQ-BHS-007`](#req-bhs-007) | Golden normal/degraded inputs, thresholds/change events, boundaries, repeat/reorder, invalid model/config | Immutable synthetic-model fixtures, deterministic clock and fake backend | Schema-stable assessment/event, provenance, quality/reason, no network/training side effect and no normal v1 window output | `brake-health-service` model/contract suite | Review draft |
-| <a id="ut-bhs-007"></a>`UT-BHS-007` — Advisory decision and payload | [`REQ-BHS-008`](#req-bhs-008) | Thresholds, hysteresis/debounce, stale/low-quality result, duplicate, prohibited targets/types | Fake KUKSA actuator client and clock | Only accepted typed target/payload, bounded correlation/freshness, no motion/text/arbitrary write | `brake-health-service` unit/contract suite | Review draft |
-| <a id="ut-bhs-008"></a>`UT-BHS-008` — Offline queue and synchronization | [`REQ-BHS-009`](#req-bhs-009) | Disconnect during v1 pre/active/post/chunk completion and v2/v3 messages, capacity boundary, overflow, retry/backoff, restart, duplicate acknowledgement, reconnect | In-memory/temp persistent stores, fake backend and clocks | Bounded bytes/items, explicit overflow, same v1 window/chunk resume identity, original times, idempotent replay, unchanged local assessment/advisory path | `brake-health-service` unit suite | Review draft |
-| <a id="ut-bhs-009"></a>`UT-BHS-009` — State and rollback compatibility | [`REQ-BHS-010`](#req-bhs-010) | v1/v2/v3 state, upgrade, downgrade, incompatible state, interrupted migration | Versioned state fixtures and failure injection | Read/migrate/quarantine result, no silent loss, service-first stop/rollback precondition | `brake-health-service` state suite | Review draft |
-| <a id="ut-bhs-010"></a>`UT-BHS-010` — Health, resources, logs and timing | [`REQ-BHS-011`](#req-bhs-011), [`REQ-BHS-012`](#req-bhs-012) | Ready/degraded/error, ring/window/queue/resource limits, crash/restart, secret/raw-value log inputs, trigger/local/Cloud clocks | Health/log sinks, fake resource monitor and clocks | Factual state, bounded output, redaction and separated trigger-first-chunk/local/advisory/synchronization latency fields without adjacent-component side effects | `brake-health-service` unit/component suite | Review draft |
+| <a id="ut-bhs-001"></a>`UT-BHS-001` — Artifact and metadata integrity | [`REQ-BHS-001`](#req-bhs-001) | Reproducible staging, metadata completeness, changed input, forbidden credentials/boundaries | Temporary filesystem and deterministic fixture manifest | Stable digests, correct ARM64 metadata, no secrets/CARLA/VISS/platform coupling | `brake-health-service` packaging tests | D3 design-reviewed |
+| <a id="ut-bhs-002"></a>`UT-BHS-002` — Compatibility readiness | [`REQ-BHS-002`](#req-bhs-002), [`REQ-BHS-011`](#req-bhs-011) | Compatible, missing, lower/upper boundary, malformed contract, recovery | Fake installed-capability reader and readiness sink | Ready only for complete compatible contract; exact blocked reason; no report/advisory | `brake-health-service` unit suite | D3 design-reviewed |
+| <a id="ut-bhs-003"></a>`UT-BHS-003` — Credential lifecycle | [`REQ-BHS-003`](#req-bhs-003) | Issue, reject, expiry, refresh, permission removal, malformed token result | Fake broker, controllable clock and KUKSA transport | Exact paths/modes, bounded refresh, no access after rejection/removal, no secret persistence/logging | `brake-health-service` unit suite | D3 design-reviewed |
+| <a id="ut-bhs-004"></a>`UT-BHS-004` — Subscription and temporal validation | [`REQ-BHS-004`](#req-bhs-004), [`REQ-BHS-007`](#req-bhs-007) | Valid, boundary, wrong type/unit/range, stale, reordered, unavailable, reconnect | Fake KUKSA stream and clocks | Accepted sample sequence or explicit degraded reason; no fabricated value/advisory | `brake-health-service` unit suite | D3 design-reviewed |
+| <a id="ut-bhs-005"></a>`UT-BHS-005` — v1 event-window state machine | [`REQ-BHS-005`](#req-bhs-005) | No trigger, trigger/clear, pre/active/post bounds, overlap/merge, debounce, maximum duration, chunk boundaries, duplicate/resume, malformed input | Fake KUKSA stream, clocks, bounded ring/queue stores and fake backend | Exact samples/phases and one event identity; ordered idempotent chunks; exactly one completion; original times; explicit size/overflow; no continuous no-trigger upload | `brake-health-service` unit/contract suite | D3 design-reviewed |
+| <a id="ut-bhs-006"></a>`UT-BHS-006` — Deterministic model and derived-data transition | [`REQ-BHS-006`](#req-bhs-006), [`REQ-BHS-007`](#req-bhs-007) | Golden normal/degraded inputs, thresholds/change events, boundaries, repeat/reorder, invalid model/config | Immutable synthetic-model fixtures, deterministic clock and fake backend | Schema-stable assessment/event, provenance, quality/reason, no network/training side effect and no normal v1 window output | `brake-health-service` model/contract suite | D3 design-reviewed |
+| <a id="ut-bhs-007"></a>`UT-BHS-007` — Advisory decision and payload | [`REQ-BHS-008`](#req-bhs-008) | Thresholds, hysteresis/debounce, stale/low-quality result, duplicate, prohibited targets/types | Fake KUKSA actuator client and clock | Only accepted typed target/payload, bounded correlation/freshness, no motion/text/arbitrary write | `brake-health-service` unit/contract suite | D3 design-reviewed |
+| <a id="ut-bhs-008"></a>`UT-BHS-008` — Offline queue and synchronization | [`REQ-BHS-009`](#req-bhs-009) | Disconnect during v1 pre/active/post/chunk completion and v2/v3 messages, capacity boundary, overflow, retry/backoff, restart, duplicate acknowledgement, reconnect | In-memory/temp persistent stores, fake backend and clocks | Bounded bytes/items, explicit overflow, same v1 window/chunk resume identity, original times, idempotent replay, unchanged local assessment/advisory path | `brake-health-service` unit suite | D3 design-reviewed |
+| <a id="ut-bhs-009"></a>`UT-BHS-009` — State and rollback compatibility | [`REQ-BHS-010`](#req-bhs-010) | v1/v2/v3 state, upgrade, downgrade, incompatible state, interrupted migration | Versioned state fixtures and failure injection | Read/migrate/quarantine result, no silent loss, service-first stop/rollback precondition | `brake-health-service` state suite | D3 design-reviewed |
+| <a id="ut-bhs-010"></a>`UT-BHS-010` — Health, resources, logs and timing | [`REQ-BHS-011`](#req-bhs-011), [`REQ-BHS-012`](#req-bhs-012) | Ready/degraded/error, ring/window/queue/resource limits, crash/restart, secret/raw-value log inputs, trigger/local/Cloud clocks | Health/log sinks, fake resource monitor and clocks | Factual state, bounded output, redaction and separated trigger-first-chunk/local/advisory/synchronization latency fields without adjacent-component side effects | `brake-health-service` unit/component suite | D3 design-reviewed |
 
 Every obligation is blocking, deterministic and credential-free. Existing
 scaffold tests are useful evidence for `UT-BHS-001`, but they do not satisfy

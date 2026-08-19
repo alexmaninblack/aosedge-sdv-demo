@@ -144,11 +144,10 @@ Create and review packages in this order:
    [cross-cutting concerns (`CR-CROSS`)](../requirements/component-decomposition-and-interface-register.md#cr-cross)
    and [end-to-end acceptance (`CR-E2E`)](../requirements/component-decomposition-and-interface-register.md#cr-e2e).
 
-Groups 1 through 3, Brake Health service (`CR-BHS`), Brake Health Cloud
-(`CR-BRAKE-CLOUD`) and Tire Health service (`CR-TIRE`) were design-reviewed
-and closed on 2026-08-19. Their target, partial and qualification states remain
-open for D4 and implementation. Tire Health Cloud (`CR-TIRE-CLOUD`) is the
-next package.
+Groups 1 through 5 were design-reviewed and closed on 2026-08-19. Their target,
+partial and qualification states remain open for D4 and implementation. Demo
+orchestration (`CR-DEMO`) is the next package, followed by the cross-cutting
+(`CR-CROSS`) and end-to-end acceptance (`CR-E2E`) packages.
 
 Create every package from the
 [component requirement package template](../requirements/components/template.md).

@@ -28,8 +28,8 @@ of unexplained identifiers.
 | 3 | [`CR-AOS`](../component-decomposition-and-interface-register.md#cr-aos) | [Aos Lifecycle 0.1](aos-lifecycle.md) | `AOS` | D3 design-reviewed |
 | 4 | [`CR-BHS`](../component-decomposition-and-interface-register.md#cr-bhs) | [Brake Health Service 0.1](brake-health-service.md) | `BHS` | D3 design-reviewed |
 | 4 | [`CR-BRAKE-CLOUD`](../component-decomposition-and-interface-register.md#cr-brake-cloud) | [Brake Health Cloud Product 0.1](brake-health-cloud.md) | `BRAKE-CLOUD` | D3 design-reviewed |
-| 5 | [`CR-TIRE`](../component-decomposition-and-interface-register.md#cr-tire) | [Tire Health Service 0.1](tire-health-service.md) | `TIRE` | D3 design-reviewed |
-| 5 | [`CR-TIRE-CLOUD`](../component-decomposition-and-interface-register.md#cr-tire-cloud) | `tire-health-cloud.md` | `TIRE-CLOUD` | Not started |
+| 5 | [`CR-TIRE`](../component-decomposition-and-interface-register.md#cr-tire) | [Tire Health Service 0.2](tire-health-service.md) | `TIRE` | D3 design-reviewed |
+| 5 | [`CR-TIRE-CLOUD`](../component-decomposition-and-interface-register.md#cr-tire-cloud) | [Tire Health Cloud Product 0.1](tire-health-cloud.md) | `TIRE-CLOUD` | D3 design-reviewed |
 | 6 | [`CR-DEMO`](../component-decomposition-and-interface-register.md#cr-demo) | `demo-orchestration.md` | `DEMO` | Not started |
 | 6 | [`CR-CROSS`](../component-decomposition-and-interface-register.md#cr-cross) | `cross-cutting.md` | `CROSS` | Not started |
 | 6 | [`CR-E2E`](../component-decomposition-and-interface-register.md#cr-e2e) | `end-to-end-acceptance.md` | `E2E` | Not started |

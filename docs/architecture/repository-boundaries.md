@@ -54,7 +54,7 @@ remain the stable service boundary.
 | `brake-health-service` | Function Team 1 Brake Health consumer and local analytics | Service Provider 1/SOTA 1 |
 | `tire-health-service` | Function Team 2 local tire-condition estimation, bounded reporting, offline state and typed inspection advisory | Service Provider 2/SOTA 2; accepted boundary, repository not yet created |
 | `brake-health-cloud` | Function Team 1 backend and Brake Health Function Dashboard | Function Team 1 Cloud product; accepted boundary, repository not yet created |
-| `tire-health-cloud` | Function Team 2 backend and Tire Health Function Dashboard | Function Team 2 Cloud product; accepted boundary, repository not yet created |
+| `tire-health-cloud` | Function Team 2 backend, separated Tire Health candidate/data views, native ARM64 local-demo container and native Keychain-backed release-helper integration | Function Team 2 Cloud product; separate volume, API/helper identity and state from Brake Health; accepted boundary, repository not yet created |
 | `aosedge-sdv-demo` | macOS VM lifecycle, provisioning, locks, orchestration, system documentation, and end-to-end qualification | solution/demo baseline |
 
 The integration repository may pin and qualify every component, but it does

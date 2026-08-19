@@ -291,22 +291,22 @@ components.
 
 | Requirement | Plain-language obligation | Verification levels | State |
 | --- | --- | --- | --- |
-| [Separated product views (`REQ-BRAKE-CLOUD-001`)](#req-brake-cloud-001) | Keep release presentation, runtime data and lifecycle authority visibly distinct | Unit, Component, Integration, End-to-end | Review draft |
-| [Prepared candidate catalogue (`REQ-BRAKE-CLOUD-002`)](#req-brake-cloud-002) | Present immutable v1-v3 candidates without live build or source changes | Unit, Component, Contract, Integration | Review draft |
-| [Complete candidate metadata (`REQ-BRAKE-CLOUD-003`)](#req-brake-cloud-003) | Show purpose, digests, compatibility, KUKSA access, quotas and outputs before signing | Unit, Component, Contract | Review draft |
-| [Explicit protected signing and publication (`REQ-BRAKE-CLOUD-004`)](#req-brake-cloud-004) | Delegate a confirmed action to the protected release pipeline and preserve the exact signed digest | Unit, Component, Integration, End-to-end | Review draft |
-| [No lifecycle authority (`REQ-BRAKE-CLOUD-005`)](#req-brake-cloud-005) | Never own OEM approval, desired state, targeting, deployment or promotion | Unit, Component, Integration | Review draft |
-| [Idempotent v1 reconstruction (`REQ-BRAKE-CLOUD-006`)](#req-brake-cloud-006) | Reconstruct one finite pre/active/post braking window from ordered or retried chunks | Unit, Component, Contract, Integration | Review draft |
-| [Live v1 presentation (`REQ-BRAKE-CLOUD-007`)](#req-brake-cloud-007) | Show a factual growing then completed v1 window | Unit, Component, Integration, End-to-end | Review draft |
-| [Derived v2 data product (`REQ-BRAKE-CLOUD-008`)](#req-brake-cloud-008) | Present assessments/events instead of a normal high-detail v1 stream | Unit, Component, Contract, Integration, End-to-end | Review draft |
-| [Correlated v3 advisory fact (`REQ-BRAKE-CLOUD-009`)](#req-brake-cloud-009) | Present the backend advisory fact without claiming Gateway/driver display authority | Unit, Component, Contract, Integration, End-to-end | Review draft |
-| [Offline synchronization and recovery (`REQ-BRAKE-CLOUD-010`)](#req-brake-cloud-010) | Preserve original times and converge idempotently after reconnect | Unit, Component, Integration, End-to-end | Review draft |
-| [Run, Unit and source correlation (`REQ-BRAKE-CLOUD-011`)](#req-brake-cloud-011) | Bind every accepted result to the exact run, Unit role and source evidence | Unit, Component, Contract, Integration | Review draft |
-| [Honest VU/DU evidence (`REQ-BRAKE-CLOUD-012`)](#req-brake-cloud-012) | Never imply two simultaneous CARLA vehicles when one source is reused | Unit, Component, Integration, End-to-end | Review draft |
-| [Run-scoped retention and clearing (`REQ-BRAKE-CLOUD-013`)](#req-brake-cloud-013) | Archive or clear only exact functional run data without touching Cloud audit state | Unit, Component, Integration | Review draft |
-| [Failure and freshness visibility (`REQ-BRAKE-CLOUD-014`)](#req-brake-cloud-014) | Show invalid, stale, partial, offline and failed states without fabricated success | Unit, Component, Integration, End-to-end | Review draft |
-| [Mac-local ARM64 container deployment (`REQ-BRAKE-CLOUD-015`)](#req-brake-cloud-015) | Run backend and static dashboard in one health-checked ARM64 container with persistent data | Unit, Component, Integration | Review draft |
-| [Local network and signing isolation (`REQ-BRAKE-CLOUD-016`)](#req-brake-cloud-016) | Keep browser local, authenticate VM ingestion and keep Keychain signing outside Docker | Unit, Component, Integration, End-to-end | Review draft |
+| [Separated product views (`REQ-BRAKE-CLOUD-001`)](#req-brake-cloud-001) | Keep release presentation, runtime data and lifecycle authority visibly distinct | Unit, Component, Integration, End-to-end | D3 design-reviewed |
+| [Prepared candidate catalogue (`REQ-BRAKE-CLOUD-002`)](#req-brake-cloud-002) | Present immutable v1-v3 candidates without live build or source changes | Unit, Component, Contract, Integration | D3 design-reviewed |
+| [Complete candidate metadata (`REQ-BRAKE-CLOUD-003`)](#req-brake-cloud-003) | Show purpose, digests, compatibility, KUKSA access, quotas and outputs before signing | Unit, Component, Contract | D3 design-reviewed |
+| [Explicit protected signing and publication (`REQ-BRAKE-CLOUD-004`)](#req-brake-cloud-004) | Delegate a confirmed action to the protected release pipeline and preserve the exact signed digest | Unit, Component, Integration, End-to-end | D3 design-reviewed |
+| [No lifecycle authority (`REQ-BRAKE-CLOUD-005`)](#req-brake-cloud-005) | Never own OEM approval, desired state, targeting, deployment or promotion | Unit, Component, Integration | D3 design-reviewed |
+| [Idempotent v1 reconstruction (`REQ-BRAKE-CLOUD-006`)](#req-brake-cloud-006) | Reconstruct one finite pre/active/post braking window from ordered or retried chunks | Unit, Component, Contract, Integration | D3 design-reviewed |
+| [Live v1 presentation (`REQ-BRAKE-CLOUD-007`)](#req-brake-cloud-007) | Show a factual growing then completed v1 window | Unit, Component, Integration, End-to-end | D3 design-reviewed |
+| [Derived v2 data product (`REQ-BRAKE-CLOUD-008`)](#req-brake-cloud-008) | Present assessments/events instead of a normal high-detail v1 stream | Unit, Component, Contract, Integration, End-to-end | D3 design-reviewed |
+| [Correlated v3 advisory fact (`REQ-BRAKE-CLOUD-009`)](#req-brake-cloud-009) | Present the backend advisory fact without claiming Gateway/driver display authority | Unit, Component, Contract, Integration, End-to-end | D3 design-reviewed |
+| [Offline synchronization and recovery (`REQ-BRAKE-CLOUD-010`)](#req-brake-cloud-010) | Preserve original times and converge idempotently after reconnect | Unit, Component, Integration, End-to-end | D3 design-reviewed |
+| [Run, Unit and source correlation (`REQ-BRAKE-CLOUD-011`)](#req-brake-cloud-011) | Bind every accepted result to the exact run, Unit role and source evidence | Unit, Component, Contract, Integration | D3 design-reviewed |
+| [Honest VU/DU evidence (`REQ-BRAKE-CLOUD-012`)](#req-brake-cloud-012) | Never imply two simultaneous CARLA vehicles when one source is reused | Unit, Component, Integration, End-to-end | D3 design-reviewed |
+| [Run-scoped retention and clearing (`REQ-BRAKE-CLOUD-013`)](#req-brake-cloud-013) | Archive or clear only exact functional run data without touching Cloud audit state | Unit, Component, Integration | D3 design-reviewed |
+| [Failure and freshness visibility (`REQ-BRAKE-CLOUD-014`)](#req-brake-cloud-014) | Show invalid, stale, partial, offline and failed states without fabricated success | Unit, Component, Integration, End-to-end | D3 design-reviewed |
+| [Mac-local ARM64 container deployment (`REQ-BRAKE-CLOUD-015`)](#req-brake-cloud-015) | Run backend and static dashboard in one health-checked ARM64 container with persistent data | Unit, Component, Integration | D3 design-reviewed |
+| [Local network and signing isolation (`REQ-BRAKE-CLOUD-016`)](#req-brake-cloud-016) | Keep browser local, authenticate VM ingestion and keep Keychain signing outside Docker | Unit, Component, Integration, End-to-end | D3 design-reviewed |
 
 ## Detailed Requirements
 
@@ -323,7 +323,7 @@ components.
 - Interfaces: [`IF-FUNC-002`](../component-decomposition-and-interface-register.md#if-func-002), adjacent [`IF-LC-002`](../component-decomposition-and-interface-register.md#if-lc-002)
 - Verification levels: Unit / Component / Integration / End-to-end
 - Required evidence: view/authority labels, access-control matrix and negative UI/API tests
-- State: Review draft
+- State: D3 design-reviewed
 
 #### Acceptance criteria
 
@@ -344,7 +344,7 @@ components.
 - Interfaces: adjacent [`IF-LC-002`](../component-decomposition-and-interface-register.md#if-lc-002)
 - Verification levels: Unit / Component / Contract / Integration
 - Required evidence: signed catalogue manifest, digest verification and absence of build/source mutation controls
-- State: Review draft
+- State: D3 design-reviewed
 
 #### Acceptance criteria
 
@@ -365,7 +365,7 @@ components.
 - Interfaces: adjacent [`IF-LC-002`](../component-decomposition-and-interface-register.md#if-lc-002)
 - Verification levels: Unit / Component / Contract
 - Required evidence: catalogue-schema conformance and UI snapshot for all three candidates
-- State: Review draft
+- State: D3 design-reviewed
 
 #### Acceptance criteria
 
@@ -386,7 +386,7 @@ components.
 - Interfaces: [`IF-LC-002`](../component-decomposition-and-interface-register.md#if-lc-002)
 - Verification levels: Unit / Component / Integration / End-to-end
 - Required evidence: confirmation record, helper result, absence-of-key inspection and exact VU/DU signed digest comparison
-- State: Review draft
+- State: D3 design-reviewed
 
 #### Acceptance criteria
 
@@ -408,7 +408,7 @@ components.
 - Interfaces: out-of-package [`IF-LC-005`](../component-decomposition-and-interface-register.md#if-lc-005), [`IF-LC-009`](../component-decomposition-and-interface-register.md#if-lc-009)
 - Verification levels: Unit / Component / Integration
 - Required evidence: API/permission inventory and negative tests proving lifecycle mutations are absent
-- State: Review draft
+- State: D3 design-reviewed
 
 #### Acceptance criteria
 
@@ -429,7 +429,7 @@ components.
 - Interfaces: [`IF-FUNC-001`](../component-decomposition-and-interface-register.md#if-func-001)
 - Verification levels: Unit / Component / Contract / Integration
 - Required evidence: reconstruction suite covering reordered, duplicate, missing, conflicting and late messages
-- State: Review draft
+- State: D3 design-reviewed
 
 #### Acceptance criteria
 
@@ -450,7 +450,7 @@ components.
 - Interfaces: [`IF-FUNC-002`](../component-decomposition-and-interface-register.md#if-func-002)
 - Verification levels: Unit / Component / Integration / End-to-end
 - Required evidence: deterministic progress-state tests and VU/DU dashboard capture
-- State: Review draft
+- State: D3 design-reviewed
 
 #### Acceptance criteria
 
@@ -471,7 +471,7 @@ components.
 - Interfaces: [`IF-FUNC-001`](../component-decomposition-and-interface-register.md#if-func-001), [`IF-FUNC-002`](../component-decomposition-and-interface-register.md#if-func-002)
 - Verification levels: Unit / Component / Contract / Integration / End-to-end
 - Required evidence: v2 fixtures, absence-of-normal-v1-window assertion and dashboard comparison
-- State: Review draft
+- State: D3 design-reviewed
 
 #### Acceptance criteria
 
@@ -492,7 +492,7 @@ components.
 - Interfaces: [`IF-FUNC-001`](../component-decomposition-and-interface-register.md#if-func-001), [`IF-FUNC-002`](../component-decomposition-and-interface-register.md#if-func-002)
 - Verification levels: Unit / Component / Contract / Integration / End-to-end
 - Required evidence: correlation fixtures and paired Function/Engineering dashboard proof
-- State: Review draft
+- State: D3 design-reviewed
 
 #### Acceptance criteria
 
@@ -513,7 +513,7 @@ components.
 - Interfaces: [`IF-FUNC-001`](../component-decomposition-and-interface-register.md#if-func-001), [`IF-FUNC-002`](../component-decomposition-and-interface-register.md#if-func-002)
 - Verification levels: Unit / Component / Integration / End-to-end
 - Required evidence: disconnect/queue/reconnect tests with duplicate and delayed delivery
-- State: Review draft
+- State: D3 design-reviewed
 
 #### Acceptance criteria
 
@@ -534,7 +534,7 @@ components.
 - Interfaces: [`IF-FUNC-001`](../component-decomposition-and-interface-register.md#if-func-001), [`IF-FUNC-002`](../component-decomposition-and-interface-register.md#if-func-002)
 - Verification levels: Unit / Component / Contract / Integration
 - Required evidence: schema constraints, cross-Unit collision tests and retained correlation record
-- State: Review draft
+- State: D3 design-reviewed
 
 #### Acceptance criteria
 
@@ -555,7 +555,7 @@ components.
 - Interfaces: [`IF-FUNC-002`](../component-decomposition-and-interface-register.md#if-func-002)
 - Verification levels: Unit / Component / Integration / End-to-end
 - Required evidence: role/source labels and a VU-then-DU or replay-twice demo record
-- State: Review draft
+- State: D3 design-reviewed
 
 #### Acceptance criteria
 
@@ -576,7 +576,7 @@ components.
 - Interfaces: [`IF-FUNC-002`](../component-decomposition-and-interface-register.md#if-func-002)
 - Verification levels: Unit / Component / Integration
 - Required evidence: dry-run, scoped-delete, unrelated-run preservation and audit-boundary tests
-- State: Review draft
+- State: D3 design-reviewed
 
 #### Acceptance criteria
 
@@ -597,7 +597,7 @@ components.
 - Interfaces: [`IF-FUNC-001`](../component-decomposition-and-interface-register.md#if-func-001), [`IF-FUNC-002`](../component-decomposition-and-interface-register.md#if-func-002)
 - Verification levels: Unit / Component / Integration / End-to-end
 - Required evidence: fault-state matrix, state-transition tests and audience-visible negative path
-- State: Review draft
+- State: D3 design-reviewed
 
 #### Acceptance criteria
 
@@ -618,7 +618,7 @@ components.
 - Interfaces: [`IF-FUNC-001`](../component-decomposition-and-interface-register.md#if-func-001), [`IF-FUNC-002`](../component-decomposition-and-interface-register.md#if-func-002)
 - Verification levels: Unit / Component / Integration
 - Required evidence: pinned ARM64 image digest, SBOM/license evidence, Compose/config inspection, health/restart test and volume persistence/clear test
-- State: Review draft
+- State: D3 design-reviewed
 
 #### Acceptance criteria
 
@@ -641,7 +641,7 @@ components.
 - Interfaces: [`IF-FUNC-001`](../component-decomposition-and-interface-register.md#if-func-001), [`IF-FUNC-002`](../component-decomposition-and-interface-register.md#if-func-002), adjacent [`IF-LC-002`](../component-decomposition-and-interface-register.md#if-lc-002)
 - Verification levels: Unit / Component / Integration / End-to-end
 - Required evidence: listener inspection, LAN negative probe, VU/DU authenticated ingestion, unauthorized-client rejection, helper/key inspection and network-change recovery
-- State: Review draft
+- State: D3 design-reviewed
 
 #### Acceptance criteria
 

@@ -171,22 +171,22 @@ if project-owned executable lifecycle logic is later moved into `CR-AOS`.
 
 | Requirement | Plain-language obligation | Verification levels | Design state | Platform state |
 | --- | --- | --- | --- | --- |
-| [Unique provisioning and lane binding (`REQ-AOS-001`)](#req-aos-001) | Create exactly one Unit/Main Node identity per fresh overlay and bind the two roles | Contract, Integration, End-to-end | Review draft | `PARTIAL` |
-| [Partial provisioning reconciliation (`REQ-AOS-002`)](#req-aos-002) | Preserve and reconcile uncertain results instead of blind retry | Contract, Integration, Analysis | Review draft | `TARGET` |
-| [Authoritative Unit state and run correlation (`REQ-AOS-003`)](#req-aos-003) | Expose current identity, lane, connection, desired/actual graph and source time | Contract, Integration, End-to-end | Review draft | `PARTIAL` |
-| [Distinct immutable lifecycle objects (`REQ-AOS-004`)](#req-aos-004) | Keep candidate verification, fleet validation and campaign identity/state separate | Contract, Integration, Inspection | Review draft | `EXTERNAL / EXTEND` |
-| [Effective-recipient truth (`REQ-AOS-005`)](#req-aos-005) | Make pending recipients provable and block stale or unexpected targets | Contract, Integration, Analysis, End-to-end | Review draft | `GAP / PARTIAL` |
-| [Validation-first identical promotion (`REQ-AOS-006`)](#req-aos-006) | Qualify on VU before promoting identical accepted bytes to DU | Contract, Integration, End-to-end | Review draft | `PARTIAL` |
-| [Recorded owner and OEM approval (`REQ-AOS-007`)](#req-aos-007) | Separate SP publication, team acceptance and explicit OEM-authorized mutation | Contract, Integration, Audit, End-to-end | Review draft | `TARGET / QUALIFY` |
-| [Combined-graph owner gate (`REQ-AOS-008`)](#req-aos-008) | Require all owners for the exact FOTA/SOTA graph before promotion | Contract, Integration, End-to-end | Review draft | `TARGET / QUALIFY` |
-| [Desired/actual reconciliation and bounded execution (`REQ-AOS-009`)](#req-aos-009) | Converge through Service Manager with factual state, health and resource enforcement | Contract, Component, Integration | Review draft | Platform mechanism `CURRENT`; target graph `EXTEND` |
-| [Compatibility metadata and fail-closed runtime (`REQ-AOS-010`)](#req-aos-010) | Preserve service capability requirements and expose actual platform version to readiness logic | Contract, Integration, End-to-end | Review draft | `PARTIAL` |
-| [Deferred native dependency admission (`REQ-AOS-011`)](#req-aos-011) | Reject incompatible SOTA in Cloud before desired-state change or transfer | Contract, Integration, Inspection | Review draft | `DEFERRED` |
-| [Dependent-first rollback and recovery (`REQ-AOS-012`)](#req-aos-012) | Remove/rollback dependent SOTA before its FOTA capability while preserving unrelated lifecycles | Contract, Integration, Analysis, End-to-end | Review draft | `PARTIAL / UNQUALIFIED` |
-| [Native operational-log lifecycle (`REQ-AOS-013`)](#req-aos-013) | Provide scoped factual system/service/crash-log requests and results | Contract, Integration, Analysis | Review draft | Product path `CURRENT`; API behavior `TARGET / QUALIFY` |
-| [Bounded lifecycle timing and offline state (`REQ-AOS-014`)](#req-aos-014) | Define normal, timeout, stalled, offline and recovery criteria | Contract, Integration, Analysis, End-to-end | Review draft | `TARGET` |
-| [Qualified identity retirement (`REQ-AOS-015`)](#req-aos-015) | Expose separate deprovision/delete outcomes, reject old credentials and retain audit | Contract, Integration, Analysis, End-to-end | Review draft | `TARGET` |
-| [Unit Set isolation and run-scoped membership (`REQ-AOS-016`)](#req-aos-016) | Expose authoritative isolated Unit Set state and qualified membership operations | Contract, Integration, Analysis, End-to-end | Review draft | `PARTIAL / TARGET` |
+| [Unique provisioning and lane binding (`REQ-AOS-001`)](#req-aos-001) | Create exactly one Unit/Main Node identity per fresh overlay and bind the two roles | Contract, Integration, End-to-end | D3 design-reviewed | `PARTIAL` |
+| [Partial provisioning reconciliation (`REQ-AOS-002`)](#req-aos-002) | Preserve and reconcile uncertain results instead of blind retry | Contract, Integration, Analysis | D3 design-reviewed | `TARGET` |
+| [Authoritative Unit state and run correlation (`REQ-AOS-003`)](#req-aos-003) | Expose current identity, lane, connection, desired/actual graph and source time | Contract, Integration, End-to-end | D3 design-reviewed | `PARTIAL` |
+| [Distinct immutable lifecycle objects (`REQ-AOS-004`)](#req-aos-004) | Keep candidate verification, fleet validation and campaign identity/state separate | Contract, Integration, Inspection | D3 design-reviewed | `EXTERNAL / EXTEND` |
+| [Effective-recipient truth (`REQ-AOS-005`)](#req-aos-005) | Make pending recipients provable and block stale or unexpected targets | Contract, Integration, Analysis, End-to-end | D3 design-reviewed | `GAP / PARTIAL` |
+| [Validation-first identical promotion (`REQ-AOS-006`)](#req-aos-006) | Qualify on VU before promoting identical accepted bytes to DU | Contract, Integration, End-to-end | D3 design-reviewed | `PARTIAL` |
+| [Recorded owner and OEM approval (`REQ-AOS-007`)](#req-aos-007) | Separate SP publication, team acceptance and explicit OEM-authorized mutation | Contract, Integration, Audit, End-to-end | D3 design-reviewed | `TARGET / QUALIFY` |
+| [Combined-graph owner gate (`REQ-AOS-008`)](#req-aos-008) | Require all owners for the exact FOTA/SOTA graph before promotion | Contract, Integration, End-to-end | D3 design-reviewed | `TARGET / QUALIFY` |
+| [Desired/actual reconciliation and bounded execution (`REQ-AOS-009`)](#req-aos-009) | Converge through Service Manager with factual state, health and resource enforcement | Contract, Component, Integration | D3 design-reviewed | Platform mechanism `CURRENT`; target graph `EXTEND` |
+| [Compatibility metadata and fail-closed runtime (`REQ-AOS-010`)](#req-aos-010) | Preserve service capability requirements and expose actual platform version to readiness logic | Contract, Integration, End-to-end | D3 design-reviewed | `PARTIAL` |
+| [Deferred native dependency admission (`REQ-AOS-011`)](#req-aos-011) | Reject incompatible SOTA in Cloud before desired-state change or transfer | Contract, Integration, Inspection | D3 design-reviewed | `DEFERRED` |
+| [Dependent-first rollback and recovery (`REQ-AOS-012`)](#req-aos-012) | Remove/rollback dependent SOTA before its FOTA capability while preserving unrelated lifecycles | Contract, Integration, Analysis, End-to-end | D3 design-reviewed | `PARTIAL / UNQUALIFIED` |
+| [Native operational-log lifecycle (`REQ-AOS-013`)](#req-aos-013) | Provide scoped factual system/service/crash-log requests and results | Contract, Integration, Analysis | D3 design-reviewed | Product path `CURRENT`; API behavior `TARGET / QUALIFY` |
+| [Bounded lifecycle timing and offline state (`REQ-AOS-014`)](#req-aos-014) | Define normal, timeout, stalled, offline and recovery criteria | Contract, Integration, Analysis, End-to-end | D3 design-reviewed | `TARGET` |
+| [Qualified identity retirement (`REQ-AOS-015`)](#req-aos-015) | Expose separate deprovision/delete outcomes, reject old credentials and retain audit | Contract, Integration, Analysis, End-to-end | D3 design-reviewed | `TARGET` |
+| [Unit Set isolation and run-scoped membership (`REQ-AOS-016`)](#req-aos-016) | Expose authoritative isolated Unit Set state and qualified membership operations | Contract, Integration, Analysis, End-to-end | D3 design-reviewed | `PARTIAL / TARGET` |
 
 ## Detailed Requirements
 
@@ -203,7 +203,7 @@ if project-owned executable lifecycle logic is later moved into `CR-AOS`.
 - Interface: [Cloud-to-Unit lifecycle (`IF-LC-004`)](../component-decomposition-and-interface-register.md#if-lc-004)
 - Verification levels: Contract, Integration, End-to-end
 - Required evidence: redacted overlay/Unit/Node/certificate uniqueness, exact role/Unit Set binding and stable identity across accepted restarts
-- State: Review draft; existing one-Unit provisioning is implementation evidence, not final two-Unit acceptance
+- State: D3 design-reviewed; existing one-Unit provisioning is implementation evidence, not final two-Unit acceptance
 
 Acceptance requires two different Unit and Node identities from two fresh
 overlays, exactly one current-run lane per Unit and stable bindings throughout
@@ -223,7 +223,7 @@ additional Node or ambiguous role blocks M1.
 - Interface: [Cloud-to-Unit lifecycle (`IF-LC-004`)](../component-decomposition-and-interface-register.md#if-lc-004)
 - Verification levels: Contract, Integration, Analysis
 - Required evidence: operation/result correlation, post-timeout Cloud/guest re-read, explicit reconciliation decision and preservation of unresolved overlay/records
-- State: Review draft
+- State: D3 design-reviewed
 
 Acceptance covers success, timeout before response, response loss after Cloud
 creation, one-Unit success/one-Unit failure and interrupted cleanup. Only a
@@ -242,7 +242,7 @@ proven no-identity result may return an overlay to the unprovisioned state.
 - Interfaces: [Cloud-to-Unit lifecycle (`IF-LC-004`)](../component-decomposition-and-interface-register.md#if-lc-004) and [Software Delivery API (`IF-LC-005`)](../component-decomposition-and-interface-register.md#if-lc-005)
 - Verification levels: Contract, Integration, End-to-end
 - Required evidence: authoritative pre-action snapshot and post-action re-read tied to Unit IDs and the bounded run time window
-- State: Review draft
+- State: D3 design-reviewed
 
 Acceptance reports absent, stale, conflicting or eventually consistent state
 as `UNKNOWN` or blocked. Installed state alone does not prove application
@@ -261,7 +261,7 @@ readiness, and Unit Set membership alone does not prove update targeting.
 - Interfaces: [Platform FOTA (`IF-LC-001`)](../component-decomposition-and-interface-register.md#if-lc-001), [Brake SOTA (`IF-LC-002`)](../component-decomposition-and-interface-register.md#if-lc-002), [Tire SOTA (`IF-LC-007`)](../component-decomposition-and-interface-register.md#if-lc-007) and [Cloud-to-Unit lifecycle (`IF-LC-004`)](../component-decomposition-and-interface-register.md#if-lc-004)
 - Verification levels: Contract, Integration, Inspection
 - Required evidence: exact candidate/version/digest or documented artifact identity plus separate verification, validation and campaign records
-- State: Review draft
+- State: D3 design-reviewed
 
 Acceptance rejects mutable candidate bytes, reused identity for different
 content, conflated batch/campaign status or any display that presents artifact
@@ -280,7 +280,7 @@ verification as vehicle validation.
 - Interfaces: [Cloud-to-Unit lifecycle (`IF-LC-004`)](../component-decomposition-and-interface-register.md#if-lc-004) and [Software Delivery API (`IF-LC-005`)](../component-decomposition-and-interface-register.md#if-lc-005)
 - Verification levels: Contract, Integration, Analysis, End-to-end
 - Required evidence: intended Unit Set, every current Unit pending-batch reference, batch/campaign identity, mismatch result and fresh corrected-batch proof
-- State: Review draft; current API requires recipient derivation because Verification Batch has no direct target-Unit list
+- State: D3 design-reviewed; current API requires recipient derivation because Verification Batch has no direct target-Unit list
 
 Acceptance never infers effective targets from current Unit Set membership
 alone. Missing pending references, an unexpected Unit, stale batch or changed
@@ -299,7 +299,7 @@ membership blocks the action and requires a fresh reconciled lifecycle object.
 - Interfaces: [Cloud-to-Unit lifecycle (`IF-LC-004`)](../component-decomposition-and-interface-register.md#if-lc-004) and the applicable FOTA/SOTA interface
 - Verification levels: Contract, Integration, End-to-end
 - Required evidence: VU actual state/readiness, accepted validation record, candidate identity comparison, campaign target and DU actual state/readiness
-- State: Review draft
+- State: D3 design-reviewed
 
 Acceptance rejects DU-first delivery, rebuilt promotion content, changed
 metadata/permissions, missing VU result, unsuccessful Campaign Unit result or
@@ -318,7 +318,7 @@ an actual-state mismatch after promotion.
 - Interfaces: [Platform approval (`IF-LC-008`)](../component-decomposition-and-interface-register.md#if-lc-008), [Brake approval (`IF-LC-009`)](../component-decomposition-and-interface-register.md#if-lc-009), [Tire approval (`IF-LC-010`)](../component-decomposition-and-interface-register.md#if-lc-010) and [Software Delivery API (`IF-LC-005`)](../component-decomposition-and-interface-register.md#if-lc-005)
 - Verification levels: Contract, Integration, Audit, End-to-end
 - Required evidence: role/permission matrix, complete decision basis, explicit confirmation, immutable Cloud audit result and authoritative post-action re-read
-- State: Review draft
+- State: D3 design-reviewed
 
 Acceptance blocks wrong role, SP-only deployment approval, missing or stale
 evidence, mismatched digests/permissions/target or missing team acceptance.
@@ -338,7 +338,7 @@ approval state.
 - Interfaces: [Platform approval (`IF-LC-008`)](../component-decomposition-and-interface-register.md#if-lc-008), [Brake approval (`IF-LC-009`)](../component-decomposition-and-interface-register.md#if-lc-009) and [Tire approval (`IF-LC-010`)](../component-decomposition-and-interface-register.md#if-lc-010)
 - Verification levels: Contract, Integration, End-to-end
 - Required evidence: per-owner acceptance records bound to one graph manifest, negative missing-owner/mismatch cases and ordered DU promotion
-- State: Review draft; exact native enforcement in the current Cloud requires qualification
+- State: D3 design-reviewed; exact native enforcement in the current Cloud requires qualification
 
 Acceptance rejects one-owner approval, mismatched FOTA/SOTA identity, stale
 integration evidence or promotion of the service before the required platform
@@ -357,7 +357,7 @@ capability reports ready.
 - Interfaces: [Cloud-to-Unit lifecycle (`IF-LC-004`)](../component-decomposition-and-interface-register.md#if-lc-004) and [runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006)
 - Verification levels: Contract, Component, Integration
 - Required evidence: desired/actual/status sequence, Service Manager instance/resource state, health/readiness evidence, errors and reconnect convergence
-- State: Review draft
+- State: D3 design-reviewed
 
 Acceptance covers install/start/stop/restart/removal, bounded resource failure,
 Unit disconnect/reconnect and current-state re-read. The system must preserve
@@ -377,7 +377,7 @@ lifecycle operations remain unavailable.
 - Interfaces: [Cloud-to-Unit lifecycle (`IF-LC-004`)](../component-decomposition-and-interface-register.md#if-lc-004) and [runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006)
 - Verification levels: Contract, Integration, End-to-end
 - Required evidence: declared range, installed version, compatible/incompatible readiness result and exact accepted graph manifest
-- State: Review draft
+- State: D3 design-reviewed
 
 Acceptance requires compatible startup and fail-closed incompatible readiness
 without claiming that this service-side check is native Cloud admission.
@@ -413,7 +413,7 @@ policy database may be presented as satisfying this requirement.
 - Interfaces: [Cloud-to-Unit lifecycle (`IF-LC-004`)](../component-decomposition-and-interface-register.md#if-lc-004) and [runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006)
 - Verification levels: Contract, Integration, Analysis, End-to-end
 - Required evidence: ordered service-first transition, previous-state recovery, unaffected-service continuity and post-failure desired/actual re-read
-- State: Review draft; SOTA removal is proven, pre-Apply FOTA revert is documented, committed component downgrade/removal remains unqualified
+- State: D3 design-reviewed; SOTA removal is proven, pre-Apply FOTA revert is documented, committed component downgrade/removal remains unqualified
 
 Acceptance distinguishes cancel/invalidate, pre-Apply revert, SOTA removal and
 post-Apply recovery. Stopping a campaign or invalidating a batch must not be
@@ -432,7 +432,7 @@ presented as rollback of Units that already applied an update.
 - Interface: [Native logs (`IF-OBS-001`)](../component-decomposition-and-interface-register.md#if-obs-001)
 - Verification levels: Contract, Integration, Analysis
 - Required evidence: scoped role matrix, request/poll/result/error sequence, archive metadata, timestamps, latency, retention/deletion and disconnect/reconnect results with secret-negative inspection
-- State: Review draft
+- State: D3 design-reviewed
 
 Acceptance never presents requested archives as a continuous live stream and
 never requires the Software Delivery Dashboard to retain an independent log
@@ -452,7 +452,7 @@ technical drill-down.
 - Interfaces: [Cloud-to-Unit lifecycle (`IF-LC-004`)](../component-decomposition-and-interface-register.md#if-lc-004), [Software Delivery API (`IF-LC-005`)](../component-decomposition-and-interface-register.md#if-lc-005) and [native logs (`IF-OBS-001`)](../component-decomposition-and-interface-register.md#if-obs-001)
 - Verification levels: Contract, Integration, Analysis, End-to-end
 - Required evidence: source timestamps, stage duration distributions, accepted timeouts, stalled/error reason and bounded retry/recovery outcome
-- State: Review draft
+- State: D3 design-reviewed
 
 Acceptance distinguishes Unit offline, Cloud eventual consistency, request
 timeout and platform failure. Cloud loss prevents new lifecycle/log requests
@@ -471,7 +471,7 @@ but does not falsely claim that already installed local vehicle functions stop.
 - Interfaces: [Cloud-to-Unit lifecycle (`IF-LC-004`)](../component-decomposition-and-interface-register.md#if-lc-004) and [Software Delivery API (`IF-LC-005`)](../component-decomposition-and-interface-register.md#if-lc-005)
 - Verification levels: Contract, Integration, Analysis, End-to-end
 - Required evidence: Offline state, separate deprovision/delete results, retired-certificate reconnect rejection, Node result, retained audit and overlay-release authorization
-- State: Review draft
+- State: D3 design-reviewed
 
 Acceptance keeps an uncertain deprovision or delete result authoritative and
 visible so `CR-DEMO` preserves the corresponding Cloud record and overlay. It
@@ -491,7 +491,7 @@ vehicle rollback or fleet-deletion policy.
 - Interfaces: [Cloud-to-Unit lifecycle (`IF-LC-004`)](../component-decomposition-and-interface-register.md#if-lc-004) and [Software Delivery API (`IF-LC-005`)](../component-decomposition-and-interface-register.md#if-lc-005)
 - Verification levels: Contract, Integration, Analysis, End-to-end
 - Required evidence: designated set identifiers and roles, pre-M1 empty membership, exact VU/DU membership and disjointness, fresh batch/validation/campaign identities, pending-recipient and Campaign-target reconciliation, and post-R0 empty membership
-- State: Review draft; isolated fresh-batch behavior has evidence, while complete persistent-set and campaign qualification remains target work
+- State: D3 design-reviewed; isolated fresh-batch behavior has evidence, while complete persistent-set and campaign qualification remains target work
 
 Acceptance proves the external platform contract needed for exactly one
 current Validation Unit in the Verification Unit Set, exactly one current
