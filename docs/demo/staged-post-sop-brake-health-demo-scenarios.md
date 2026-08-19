@@ -3,18 +3,17 @@
 
 # Staged Post-SOP Brake and Tire Health Demo Scenarios
 
-- Status: Accepted demo-scenario baseline
-- Version: 1.6
+- Status: Review candidate
+- Version: 1.7
 - Prepared: 2026-08-19
-- Accepted: 2026-08-19
-- Supersedes: 1.5
+- Proposed successor to: 1.6
 - Owner: Demo Architecture
 - Scope: manufacturing output, end-of-line provisioning, audience-visible
   capability evolution, release sequence, dashboards, observability, and
   end-of-demo retirement
 - Architecture alignment: dynamic staged projection of High-Level Architecture
   1.4, with detailed interaction mapping in Demo Scenario Architecture Flows
-  1.5
+  1.6
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0010](../architecture/decisions/0010-aos-kuksa-credential-broker.md), and
   [ADR 0011](../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
@@ -33,7 +32,7 @@ its Vehicle Gateway, and contains an operational Domain Controller with the
 AosEdge platform substrate. What is initially absent is the Vehicle Data
 Platform Component payload and all functional SOTA services.
 
-Scenario 1.5 defines what should happen and what an
+Scenario 1.7 defines what should happen and what an
 audience should see. It is the dynamic, stage-by-stage projection of the
 capability-superset model in High-Level Architecture 1.4. It does not yet
 select exact APIs, define every detailed interaction, or authorize
@@ -52,9 +51,9 @@ uses `R`.
 | `M1` | End-of-line provisioning | Both overlays receive unique Unit identities and connect to AosCloud; this transition establishes `G0` |
 | `G0` | Provisioned SOP substrate | Working vehicle and update-ready Domain Controller, with an empty Vehicle Data Platform slot and no functional services |
 | `G1` | First platform capability | VDP Component v1 exposes the first read-only vehicle-data subset in KUKSA |
-| `G2` | First Brake Health product | Brake Health Service v1 consumes the accepted subset and sends bounded reports |
-| `G3` | Predictive Brake Health product | Backward-compatible VDP Component v2 and Brake Health Service v2 add richer inputs and local prediction |
-| `G4` | Bidirectional Brake Health product | VDP Component v3 and Brake Health Service v3 add a typed, allowlisted local advisory path |
+| `G2` | First Brake Health product | Brake Health Service v1 captures bounded pre-trigger, braking and post-trigger telemetry windows and transfers them to its backend |
+| `G3` | Edge-analytics Brake Health product | Backward-compatible VDP Component v2 and Brake Health Service v2 add local synthetic assessment and derived-event Cloud reporting |
+| `G4` | Bidirectional Brake Health product | VDP Component v3 and Brake Health Service v3 add a typed, allowlisted local advisory path while reporting the derived result and advisory fact to the backend |
 | `T1` | Independent Tire Health product | Tire Health is delivered through SOTA 2 against the compatible VDP contract while the Brake Health graph remains unchanged |
 | `R0` | Demo retirement and next-run reset | Current Unit identities are retired and provisioned overlays are discarded; the immutable factory image remains |
 
@@ -241,9 +240,10 @@ available for technical source-of-truth drill-down.
 This dashboard belongs to the Brake Health Function Team. It receives data
 from the team's backend, not directly from CARLA, VISS, KUKSA, or AosCloud.
 
-Across the scenarios it evolves from no available vehicle data, to selected
-telemetry, to richer Brake Health inputs and prediction results. Backend data
-is not part of the time-critical local advisory path.
+Across the scenarios it evolves from no available vehicle data, to a growing
+and completed v1 `BrakeTelemetryWindow`, to v2/v3 derived assessments/events
+and the correlated v3 advisory fact. Backend data is not part of the
+time-critical local advisory path.
 
 ### Tire Health Function Dashboard — Independent SOTA 2 Product
 
@@ -286,9 +286,9 @@ redaction rules must be qualified.
 | M1 | `Two provisioned Unit roles` | Validation and Demonstration Units have unique identities, certificates, roles, and Cloud connectivity |
 | G0 | `Initial post-SOP runtime graph` | Working vehicle and update-ready Domain Controller, but no VDP Component or functional service |
 | G1 | `VDP Component v1` | First read-only subset of vehicle telemetry becomes available in KUKSA |
-| G2 | `VDP Component v1 + Brake Health Service v1` | Selected data reaches the Brake Health Function Backend and Dashboard |
-| G3 | `VDP Component v2 + Brake Health Service v2` | Additional signals support a richer Brake Health model and prediction output |
-| G4 | `VDP Component v3 + Brake Health Service v3` | Local inference can return an allowlisted Brake Health advisory request to the Vehicle Gateway |
+| G2 | `VDP Component v1 + Brake Health Service v1` | One bounded pre/active/post braking-event window appears live in the Brake Health Backend and Dashboard |
+| G3 | `VDP Component v2 + Brake Health Service v2` | A synthetic on-board model replaces normal high-detail window upload with derived assessments/events |
+| G4 | `VDP Component v3 + Brake Health Service v3` | Local assessment can return an allowlisted advisory request to the Vehicle Gateway and report the correlated fact to the backend |
 | T1 | `G4 graph + Tire Health Service` | Function Team 2 independently adds local tire-condition estimation, bounded reporting, and its typed inspection advisory |
 | R0 | `Retired demo run` | Cloud identities are retired and provisioned overlays are discarded; the immutable factory image remains |
 
@@ -496,14 +496,31 @@ VDP Component v1 is a platform capability, not a finished customer feature.
 
 ### Capability
 
-Service v1 is a deliberately simple KUKSA consumer. It reads the VDP Component v1
-subset and converts it into a bounded, low-rate functional report for the
-Brake Health Function Backend. The report may contain selected samples and/or
-aggregates, but it is not an unrestricted continuous raw-sensor stream. The
-Function Dashboard visualizes the received data and its freshness.
+Service v1 is a deliberately simple event recorder rather than a diagnostic
+model. It continuously reads the accepted VDP Component v1 KUKSA subset into a
+bounded in-memory ring buffer but does not continuously upload vehicle data.
+When the accepted braking trigger becomes active, the service creates one
+finite `BrakeTelemetryWindow` containing a configurable bounded interval
+before the trigger, the complete braking episode, and a configurable bounded
+interval after the trigger clears.
+
+To make the acquisition visible while the vehicle is braking, the service
+starts the backend transfer when the trigger occurs. The first idempotent
+chunk contains the pre-trigger buffer, subsequent ordered chunks contain the
+active braking and post-trigger samples, and one completion record closes the
+window with its sample count, time bounds and completion state. The backend
+reconstructs one finite versioned event from these chunks, and the Function
+Dashboard visualizes the growing window and its freshness.
+
+Overlapping or closely spaced trigger activity is handled by a deterministic
+merge/debounce rule so one physical episode is not silently presented as
+multiple unrelated windows. Buffer, window, chunk, queue and retention limits
+are explicit. This is selected high-detail event telemetry, not an
+unrestricted continuous raw-sensor stream.
 
 This version performs no predictive diagnostics and does not request an
-advisory.
+advisory. Its purpose is to create the evidence from which Function Team 1
+could develop a later model outside the live vehicle demonstration.
 
 ### Release flow
 
@@ -520,25 +537,32 @@ advisory.
    into a short-lived path-scoped JWT, and rejects invalid, stale, malformed or
    VDP-contract-incompatible permissions. Integration validation proves the
    KUKSA-to-service-to-backend path and the fail-closed cases.
-6. Service logs become available through native AosEdge collection and an
+6. A deterministic CARLA braking episode proves that the pre-trigger buffer
+   appears first, live braking chunks follow while the maneuver is visible,
+   the post-trigger tail closes the same event, and the backend reconstructs
+   exactly one bounded window.
+7. Service logs become available through native AosEdge collection and an
    explicitly requested AosCloud log result in the Software Delivery
    Dashboard.
-7. Function Team 1 accepts the exact Service v1 artifact and integration
+8. Function Team 1 accepts the exact Service v1 artifact and integration
    result and records promotion approval through an OEM identity.
-8. AosCloud promotes the exact accepted Service v1 artifact to the
+9. AosCloud promotes the exact accepted Service v1 artifact to the
    Demonstration Unit.
 
 ### Audience-visible proof
 
 - AosCloud remains the software lifecycle system.
 - The Brake Health Function Backend is a separate functional data system.
-- The Function Dashboard receives data only through the deployed service.
+- During visible CARLA braking, the Function Dashboard begins with the
+  pre-trigger history, grows with live and post-trigger samples, and closes
+  one correlated `BrakeTelemetryWindow`.
+- The Function Dashboard receives that data only through the deployed service.
 - The service has only its approved KUKSA read paths; no reusable token is
   embedded in its SOTA artifact.
 - Removing or stopping Service v1 does not remove VDP Component v1 or the existing
   Engineering Telematics Dashboard path.
 
-## G3 — Expanded Inputs and Predictive Service v2
+## G3 — Expanded Inputs and Edge-Analytics Service v2
 
 ### Deferred native dependency-rejection prelude
 
@@ -572,9 +596,10 @@ the Software Delivery Dashboard.
 
 ### Feature request
 
-After working with the initial data, the Brake Health Function Team determines
-that a richer model needs additional vehicle information that exists on the
-vehicle side but is not part of VDP Component v1.
+After working with the braking-event windows collected by Service v1, the
+Brake Health Function Team determines that its next local model needs
+additional vehicle information that exists on the vehicle side but is not
+part of VDP Component v1.
 
 The Function Team sends the Platform Team a versioned capability request with
 the required signals, quality constraints, timing expectations, and acceptance
@@ -592,7 +617,11 @@ The provisional VDP Component v2 inputs may include:
 - cumulative braking-energy or pad-wear proxy.
 
 Signals not produced by CARLA as real sensors must be clearly labelled as
-simulated or estimated. The demo must not imply production diagnostic accuracy.
+simulated or estimated. Exact diagnostic mathematics is not an audience claim:
+the demonstration may use a deliberately simple synthetic model, provided it
+is deterministic, versioned, testable, and causally driven by the visible
+CARLA braking episode. The demo must not imply production diagnostic accuracy,
+validated remaining useful life, or a safety function.
 
 ### Release flow
 
@@ -615,19 +644,30 @@ simulated or estimated. The demo must not imply production diagnostic accuracy.
 10. After VDP Component v2 reports ready, Service v2 is promoted to the
    Demonstration Unit.
 
-### Model lifecycle
+### Model and Cloud-data lifecycle
 
-Data gathered during earlier work may be used by the Function Team to develop
-and validate its model outside the live vehicle demonstration. The resulting
-model is versioned and packaged with Service v2.
+Data gathered through the Service v1 windows may be used by Function Team 1 to
+develop and validate its model outside the live vehicle demonstration. The
+resulting synthetic demo model and its configuration are versioned and
+packaged with Service v2.
 
 The live presentation demonstrates deterministic inference. It does not claim
-that a useful predictive model was trained during the presentation.
+that a production predictive model was trained during the presentation or
+that the synthetic model diagnoses a real brake system.
+
+Service v2 consumes the accepted braking signals locally and emits a bounded
+`BrakeHealthAssessment` plus threshold/change `BrakeHealthEvent` messages.
+Normal v2 operation no longer uploads the high-detail Service v1 telemetry
+window. A future explicitly authorized diagnostic capture may be designed
+separately, but it is not part of this demo baseline.
 
 ### Audience-visible proof
 
 - VDP Component v2 and Service v2 iterate independently before combined acceptance.
 - Existing v1 behavior remains available while VDP Component v2 is installed.
+- The Function Dashboard changes visibly from a growing high-detail v1 window
+  to bounded v2 assessments/events, proving that processing moved into the
+  vehicle and normal Cloud traffic was reduced.
 - New Function Dashboard information appears only after both VDP Component v2 and
   Service v2 are ready.
 - The dashboard identifies simulated signals and model output clearly.
@@ -703,10 +743,14 @@ safety-critical operations.
 3. Service v3 performs local inference without a Cloud request.
 4. The advisory reaches the Vehicle Gateway.
 5. The Engineering Telematics Dashboard shows the advisory and Gateway status.
-6. The functional report remains pending locally if the backend is
+6. The derived assessment/event and advisory fact remain pending locally if the backend is
    unavailable.
-7. After connectivity returns, the report synchronizes to the Function
-   Backend and appears in the Function Dashboard with its original event time.
+7. After connectivity returns, those functional messages synchronize to the Function
+   Backend and appear in the Function Dashboard with their original event times.
+
+Service v3 also sends the derived assessment/event and the correlated advisory
+fact to the Function Backend. The backend remains outside the local decision
+path and cannot authorize, suppress or modify the advisory.
 
 The demo does not claim `displayed to driver` or `driver acknowledged`.
 
@@ -971,9 +1015,10 @@ destructive experiment.
    the existing dynamics inputs required by Tire Health.
 4. Select the simulated brake degradation or anomaly and define how CARLA or
    the Vehicle Gateway generates its source values.
-5. Define the exact bounded Service v1 report contract: selected low-rate
-   samples, aggregates, or both. Continuous unrestricted raw streaming is
-   excluded.
+5. Define the exact bounded Service v1 braking-event contract: trigger and
+   clear rules, pre/active/post durations, signal sampling, merge/debounce,
+   ordered chunk/completion schemas, reconstruction/resume, and all memory,
+   queue and size limits. Continuous unrestricted raw streaming is excluded.
 6. Qualify the current AosCloud system, service-instance, and crash-log APIs,
    including scoped access, request latency, retention/deletion, offline
    behavior, redaction, and presentation in the Software Delivery Dashboard.
@@ -982,8 +1027,10 @@ destructive experiment.
    evidence completeness/freshness, team acceptance, active OEM role, blocked
    reasons, final explicit confirmation and post-action Cloud re-read, without
    introducing local lifecycle state or automatic approval.
-8. Define the versioned model identity and prediction result shown by Service
-   v2 before advisory actuation is introduced.
+8. Define the versioned synthetic model identity, deterministic
+   `BrakeHealthAssessment` and threshold/change `BrakeHealthEvent` shown by
+   Service v2, including proof that normal v2 operation no longer emits v1
+   high-detail windows, before advisory actuation is introduced.
 9. Prove that a fresh verification batch shows only its intended Validation
    Unit before approval; never reuse a stale batch after Unit Set changes.
 10. Freeze and qualify a clean, unprovisioned OEM Demo Factory Image with an
@@ -1010,17 +1057,32 @@ destructive experiment.
     Engineering Telematics Dashboard presentation.
 
 Detailed interaction mapping now exists in Demo Scenario Architecture Flows
-1.5. The open gates above constrain component requirements, implementation,
+1.6. The open gates above constrain component requirements, implementation,
 qualification, and audience-visible claims. They preserve the canonical
 `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> T1 -> R0` presentation order and
 the independence of the two SOTA lifecycles.
+
+## Review Notes for Version 1.7
+
+Version 1.7 preserves HLA 1.4 component boundaries, lifecycle owners and the
+accepted `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> T1 -> R0` order. It
+refines only the Brake Health product evolution:
+
+1. v1 is an event-triggered recorder with bounded pre-trigger, active-braking
+   and post-trigger telemetry rather than a low-rate report;
+2. v2 uses a versioned deterministic synthetic demo model on-board and sends
+   derived assessments/events rather than normal v1 high-detail windows;
+3. v3 retains the v2 backend result, adds the correlated advisory fact, and
+   keeps the Cloud outside the local advisory path; and
+4. no production diagnostic-accuracy, remaining-useful-life, safety or driver-
+   HMI claim is added.
 
 ## Reference Basis
 
 - [High-Level Architecture 1.4](../architecture/high-level-architecture.md)
   defines the accepted capability-superset architecture baseline; this
   scenario defines its staged component presence and lifecycle, while
-  [Architecture Flows 1.5](../architecture/demo-scenario-architecture-flows.md)
+  [Architecture Flows 1.6](../architecture/demo-scenario-architecture-flows.md)
   defines detailed cross-component interaction mapping.
 - [AosEdge overview](https://docs.aosedge.tech/docs/aos-edge/) describes the
   Cloud-to-edge lifecycle and operational visibility model.

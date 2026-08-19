@@ -1,18 +1,17 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Component Decomposition and Interface Register 0.8
+# Component Decomposition and Interface Register 0.9
 
-- Status: Accepted component baseline
-- Version: 0.8
+- Status: Review candidate
+- Version: 0.9
 - Prepared: 2026-08-19
-- Accepted: 2026-08-19
-- Supersedes: 0.7
+- Proposed successor to: 0.8
 - Owner: System Architecture
 - Architecture input: [High-Level Architecture 1.4](../architecture/high-level-architecture.md)
-- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.6](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Demo Scenario Architecture Flows 1.5](../architecture/demo-scenario-architecture-flows.md)
-- Requirements input: [System Requirements and Traceability 0.8](system-requirements-and-traceability.md)
+- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.7](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Demo Scenario Architecture Flows 1.6](../architecture/demo-scenario-architecture-flows.md)
+- Requirements input: [System Requirements and Traceability 0.9](system-requirements-and-traceability.md)
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0010](../architecture/decisions/0010-aos-kuksa-credential-broker.md), and
   [ADR 0011](../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
@@ -38,10 +37,10 @@ surfaces. Those concepts are related, but they are not interchangeable.
 
 1. High-Level Architecture 1.4 owns system boundaries, authorities and
    invariants.
-2. Demo Scenario 1.6 owns the audience-visible lifecycle and stage sequence.
-3. Architecture Flows 1.5 owns detailed runtime, lifecycle, observability and
+2. Demo Scenario 1.7 owns the audience-visible lifecycle and stage sequence.
+3. Architecture Flows 1.6 owns detailed runtime, lifecycle, observability and
    failure flows.
-4. System Requirements 0.8 owns normative `SYS-*` obligations and gap
+4. System Requirements 0.9 owns normative `SYS-*` obligations and gap
    traceability.
 5. This register owns stable component and interface identifiers, component
    allocation, implementation state and repository placement candidates.
@@ -182,9 +181,9 @@ component runtime.
 
 | ID | Component | Responsibility | Owner and lifecycle | Source boundary | State |
 | --- | --- | --- | --- | --- | --- |
-| <a id="cmp-bhs"></a>`CMP-BHS` | Brake Health In-Vehicle Service | QM-domain maintenance application: read the accepted KUKSA contract, perform local analysis, retain bounded reports and request only the typed non-safety advisory; no safety goal or motion authority | Function Team 1 / Service Provider 1; SOTA 1 | `brake-health-service` | Scaffold `CURRENT`; product behavior `NEW` |
-| <a id="cmp-brake-be"></a>`CMP-BRAKE-BE` | Brake Health Backend | Idempotent report ingestion, persistence and API for functional results | Function Team 1; functional Cloud product | Planned `brake-health-cloud` | `NEW` |
-| <a id="cmp-brake-dash"></a>`CMP-BRAKE-DASH` | Brake Health Function Dashboard | Present Brake Health inputs, local result, service/capability versions and online/offline delivery state from the backend | Function Team 1; functional Cloud product | Planned `brake-health-cloud` | `NEW` |
+| <a id="cmp-bhs"></a>`CMP-BHS` | Brake Health In-Vehicle Service | QM-domain maintenance application: v1 records bounded pre/active/post braking-event windows, v2 performs synthetic local assessment and sends derived events, and v3 requests only the typed non-safety advisory; no safety goal or motion authority | Function Team 1 / Service Provider 1; SOTA 1 | `brake-health-service` | Scaffold `CURRENT`; product behavior `NEW` |
+| <a id="cmp-brake-be"></a>`CMP-BRAKE-BE` | Brake Health Backend | Idempotently reconstruct and persist v1 event windows, ingest v2/v3 derived assessments/events/advisory facts, and expose the Function Team API | Function Team 1; functional Cloud product | Planned `brake-health-cloud` | `NEW` |
+| <a id="cmp-brake-dash"></a>`CMP-BRAKE-DASH` | Brake Health Function Dashboard | Present the v1 growing/completed telemetry window and the v2/v3 derived data product, service/capability/model versions and online/offline delivery state from the backend | Function Team 1; functional Cloud product | Planned `brake-health-cloud` | `NEW` |
 
 The backend and dashboard are not part of the in-vehicle SOTA artifact and do
 not participate in the time-critical local advisory decision.
@@ -281,8 +280,8 @@ display, acknowledgement, vehicle-motion or brake actuation.
 
 | ID | Producer | Consumer | Contract and direction | Authority | State |
 | --- | --- | --- | --- | --- | --- |
-| <a id="if-func-001"></a>`IF-FUNC-001` | `CMP-BHS` | `CMP-BRAKE-BE` | Versioned, bounded, idempotent Brake Health report with original event time | Function Team 1 data contract | `NEW` |
-| <a id="if-func-002"></a>`IF-FUNC-002` | `CMP-BRAKE-BE` | `CMP-BRAKE-DASH` | Query/subscription API for persisted Brake Health results | Function Team 1 backend | `NEW` |
+| <a id="if-func-001"></a>`IF-FUNC-001` | `CMP-BHS` | `CMP-BRAKE-BE` | Versioned bounded Brake Health message family: ordered/idempotent v1 `BrakeTelemetryWindow` chunks plus completion, and idempotent v2/v3 `BrakeHealthAssessment`, threshold/change `BrakeHealthEvent`, and correlated advisory fact; preserve original sample/event times | Function Team 1 data contract | `NEW` |
+| <a id="if-func-002"></a>`IF-FUNC-002` | `CMP-BRAKE-BE` | `CMP-BRAKE-DASH` | Query/subscription API for reconstructed v1 windows and persisted v2/v3 Brake Health derived results | Function Team 1 backend | `NEW` |
 | <a id="if-tire-003"></a>`IF-TIRE-003` | `CMP-TIRE` | `CMP-TIRE-BE` | Versioned, bounded and idempotent tire-condition summary or threshold event | Function Team 2 data contract | `NEW` |
 | <a id="if-tire-004"></a>`IF-TIRE-004` | `CMP-TIRE-BE` | `CMP-TIRE-DASH` | Query/subscription API for persisted Tire Health results | Function Team 2 backend | `NEW` |
 
@@ -326,10 +325,10 @@ below remains the single allocation record for exact identifiers.
 | <a id="cr-gateway"></a>`CR-GATEWAY` | Account for the complete hardware profile, distinguish actuator capability from authority, expose VISS, arbitrate control, enforce the authoritative QM-channel advisory boundary and present factual engineering status. | Control UI, Gateway, VISS, Advisory Handler and Engineering Dashboard | Hardware coverage, telemetry contract, unavailable data, control traceability, deny-by-default QM containment and latency |
 | <a id="cr-factory"></a>`CR-FACTORY` | Reproducibly assemble and preserve the clean unprovisioned Factory Image artifact, enable stock Aos IAM permission handling and its non-secret PKCS#11 seam, and create two identity-safe deployments with a healthy empty capability slot. | Factory Baseline Assembly and Empty-Slot Runtime | Reproducibility, artifact immutability, IAM substrate, identity/key absence, overlay uniqueness and preservation |
 | <a id="cr-vdp"></a>`CR-VDP` | Deliver the versioned VISS-to-KUKSA data capability, defense-in-depth outbound QM advisory path, and least-privilege short-lived KUKSA credentials derived from native Aos identity. | KUKSA and Vehicle Data Platform Component | Compatibility, data quality, outbound validation, thin credential translation, provider identity, FOTA and rollback |
-| <a id="cr-bhs"></a>`CR-BHS` | Run Brake Health analysis locally, report bounded results, operate offline and request only the approved advisory. | Brake Health In-Vehicle Service | Model determinism, reports, compatibility, offline operation and advisory scope |
+| <a id="cr-bhs"></a>`CR-BHS` | Capture bounded v1 braking-event windows, move synthetic assessment and derived reporting on-board in v2, operate offline, and request only the approved v3 advisory. | Brake Health In-Vehicle Service | Trigger/window determinism, model/data-product evolution, compatibility, offline operation and advisory scope |
 | <a id="cr-tire"></a>`CR-TIRE` | Estimate tire condition locally, persist bounded state, upload bounded results and request the typed inspection advisory through an independent SOTA lifecycle. | Tire Health In-Vehicle Service | Existing signal contract, model, persistence, bounded reporting, advisory and isolation |
 | <a id="cr-aos"></a>`CR-AOS` | Provide identity, authoritative desired/reported actual and Unit Set state, recorded owner approvals, FOTA/SOTA execution, dependency behavior, resource enforcement and native operational-log collection/delivery. | AosCore and AosCloud | Provisioning, lifecycle state and execution, Unit Set contracts, OEM-authorized validation, rollback, native logging, timing and retirement |
-| <a id="cr-brake-cloud"></a>`CR-BRAKE-CLOUD` | Ingest and present Brake Health reports without entering the local decision path. | Brake Health Backend and Function Dashboard | Idempotency, offline synchronization, evidence and run-data retention |
+| <a id="cr-brake-cloud"></a>`CR-BRAKE-CLOUD` | Reconstruct and present v1 Brake Telemetry Windows and ingest/present v2/v3 derived Brake Health messages without entering the local decision path. | Brake Health Backend and Function Dashboard | Chunk reconstruction, idempotency, data-product evolution, offline synchronization, evidence and run-data retention |
 | <a id="cr-tire-cloud"></a>`CR-TIRE-CLOUD` | Ingest and present Tire Health summaries/events as an independent Function Team product. | Tire Health Backend and Function Dashboard | Bounded results, idempotency, delivery state and run-data retention |
 | <a id="cr-demo"></a>`CR-DEMO` | Orchestrate manufactured overlays, Unit roles and Unit Set membership, staged releases, evidence-backed final OEM approval presentation, authoritative dashboards, ordered retirement and next-run provisioning. | Software Delivery Dashboard and Demo Orchestrator | Target safety, source binding, membership reconciliation, decision-basis presentation, native logs, observability, timing and reset |
 | <a id="cr-cross"></a>`CR-CROSS` | Define security, authorization, redaction, timing, resource and offline constraints shared by multiple owners. | Cross-component concerns; the Credential Broker itself remains allocated to `CMP-VDP` | Least privilege, fail-closed behavior, evidence controls and latency |
@@ -474,7 +473,7 @@ the only normative definitions.
   [advisory request (`IF-ADV-001`)](#if-adv-001),
   [credential request (`IF-AUTH-001`)](#if-auth-001),
   [short-lived JWT or rejection (`IF-AUTH-003`)](#if-auth-003),
-  [functional report (`IF-FUNC-001`)](#if-func-001),
+  [versioned functional message family (`IF-FUNC-001`)](#if-func-001),
   [Brake Health SOTA artifact (`IF-LC-002`)](#if-lc-002),
   [Function Team 1 OEM-authorized approval (`IF-LC-009`)](#if-lc-009), and
   [runtime enforcement (`IF-LC-006`)](#if-lc-006).
@@ -485,8 +484,9 @@ the only normative definitions.
   [team-owned release decisions (`SYS-REL-007`)](system-requirements-and-traceability.md#sys-rel-007),
   [OEM-authorized deployment approval (`SYS-REL-008`)](system-requirements-and-traceability.md#sys-rel-008),
   [combined-graph owner gate (`SYS-REL-009`)](system-requirements-and-traceability.md#sys-rel-009),
-  [bounded v1 functional report (`SYS-BHS-001`)](system-requirements-and-traceability.md#sys-bhs-001),
-  [deterministic v2 inference (`SYS-BHS-002`)](system-requirements-and-traceability.md#sys-bhs-002),
+  [bounded v1 Brake Telemetry Window (`SYS-BHS-005`)](system-requirements-and-traceability.md#sys-bhs-005),
+  [deterministic v2 edge assessment (`SYS-BHS-002`)](system-requirements-and-traceability.md#sys-bhs-002),
+  [derived v2 Cloud data product (`SYS-BHS-006`)](system-requirements-and-traceability.md#sys-bhs-006),
   [allowlisted v3 advisory (`SYS-BHS-003`)](system-requirements-and-traceability.md#sys-bhs-003),
   [offline local continuity (`SYS-BHS-004`)](system-requirements-and-traceability.md#sys-bhs-004), and
   [separate local and Cloud latency (`SYS-TIM-002`)](system-requirements-and-traceability.md#sys-tim-002).
@@ -561,9 +561,10 @@ Delivery Dashboard.
 
 - Components: [Brake Health Backend (`CMP-BRAKE-BE`)](#cmp-brake-be) and
   [Brake Health Function Dashboard (`CMP-BRAKE-DASH`)](#cmp-brake-dash).
-- Interfaces: [functional report (`IF-FUNC-001`)](#if-func-001) and
+- Interfaces: [versioned functional message family (`IF-FUNC-001`)](#if-func-001) and
   [dashboard query API (`IF-FUNC-002`)](#if-func-002).
-- Parent requirements: [bounded v1 functional report (`SYS-BHS-001`)](system-requirements-and-traceability.md#sys-bhs-001),
+- Parent requirements: [bounded v1 Brake Telemetry Window (`SYS-BHS-005`)](system-requirements-and-traceability.md#sys-bhs-005),
+  [derived v2 Cloud data product (`SYS-BHS-006`)](system-requirements-and-traceability.md#sys-bhs-006),
   [offline local continuity (`SYS-BHS-004`)](system-requirements-and-traceability.md#sys-bhs-004),
   [authoritative demo surfaces (`SYS-OBS-001`)](system-requirements-and-traceability.md#sys-obs-001),
   [operational log controls (`SYS-OBS-003`)](system-requirements-and-traceability.md#sys-obs-003),
@@ -692,6 +693,15 @@ Delivery Dashboard.
    owning-team acceptance and active OEM role before exposing the final OEM
    approval action. It owns neither the decision, evidence nor lifecycle
    state, and passing tests never auto-approve.
+
+## Review Notes for Version 0.9
+
+Version 0.9 preserves the accepted component graph and repositories. It
+clarifies `CMP-BHS`, `CMP-BRAKE-BE`, `CMP-BRAKE-DASH`, `CR-BHS`,
+`CR-BRAKE-CLOUD`, `IF-FUNC-001`, and `IF-FUNC-002` for the v1 event-window and
+v2/v3 derived-message family. These are contract refinements inside the
+existing Function Team 1 direction and authority, not new interfaces or
+components.
 
 ## Acceptance Record for Version 0.8
 

@@ -55,13 +55,13 @@ The following documents form one ordered design chain:
 
 1. [High-Level Architecture 1.4](../architecture/high-level-architecture.md)
    owns boundaries, authorities and invariants.
-2. [Demo Scenario 1.6](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-   owns the audience-visible stage sequence.
-3. [Architecture Flows 1.5](../architecture/demo-scenario-architecture-flows.md)
-   owns lifecycle, runtime, observability and failure flows.
-4. [System Requirements and Traceability 0.8](../requirements/system-requirements-and-traceability.md)
+2. [Demo Scenario 1.7](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+   is the current review candidate for the audience-visible stage sequence.
+3. [Architecture Flows 1.6](../architecture/demo-scenario-architecture-flows.md)
+   is the current review candidate for lifecycle, runtime, observability and failure flows.
+4. [System Requirements and Traceability 0.9](../requirements/system-requirements-and-traceability.md)
    owns `SYS-*` obligations and coverage of all twenty-one gaps.
-5. [Component Decomposition and Interface Register 0.8](../requirements/component-decomposition-and-interface-register.md)
+5. [Component Decomposition and Interface Register 0.9](../requirements/component-decomposition-and-interface-register.md)
    owns component/interface IDs and provisional requirement-package
    allocation.
 
@@ -119,6 +119,14 @@ Scenario 1.6, Architecture Flows 1.5, System Requirements 0.8 and Component
 Register 0.8 are the current accepted cascade. They preserve the accepted
 topology and add the explicit `R0 -> M0 -> M1` Unit Set reconciliation and
 responsibility split accepted during `CR-AOS` review.
+
+Scenario 1.7, Architecture Flows 1.6, System Requirements 0.9 and Component
+Register 0.9 are the current `CR-BHS` review-candidate cascade. They preserve
+the accepted topology and replace the former v1 low-rate report narrative with
+a bounded pre/active/post `BrakeTelemetryWindow`, make v2 a clearly labelled
+synthetic on-board assessment with derived-only normal Cloud reporting, and
+retain v3 advisory plus correlated backend facts. The accepted predecessor
+remains the fallback until this candidate and CR-BHS complete review.
 
 Exit evidence: each baseline document records its accepted status and date,
 and the documentation quality gate passes for the complete design chain.

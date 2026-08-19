@@ -152,4 +152,4 @@ not part of the demonstration.
 - [AosCore Monitoring and Observability](https://docs.aosedge.tech/docs/aos-core/monitoring/)
 - [AosCore Common Infrastructure](https://docs.aosedge.tech/docs/aos-core/architecture/common-infrastructure/)
 - [AosCore alerts and thresholds](https://docs.aosedge.tech/docs/aos-core/monitoring/alerts-and-thresholds)
-- [Current Demo Scenario 1.6](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- [Current Demo Scenario 1.7](../../demo/staged-post-sop-brake-health-demo-scenarios.md)

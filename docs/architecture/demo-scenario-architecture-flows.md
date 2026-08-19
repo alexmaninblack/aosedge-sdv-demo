@@ -1,19 +1,18 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Demo Scenario Architecture Flows 1.5
+# Demo Scenario Architecture Flows 1.6
 
-- Status: Accepted architecture-flow baseline
-- Version: 1.5
+- Status: Review candidate
+- Version: 1.6
 - Prepared: 2026-08-19
-- Accepted: 2026-08-19
-- Supersedes: 1.4
+- Proposed successor to: 1.5
 - Owner: System Architecture
 - Architecture input: [High-Level Architecture 1.4](high-level-architecture.md)
-- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.6](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.7](../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - CARLA input: [R10 Native CARLA Vehicle Telemetry Inventory](../research/demo-foundation/r10-carla-telemetry-and-function-team-2.md)
-- Requirements input: [System Requirements and Traceability 0.8](../requirements/system-requirements-and-traceability.md)
-- Component input: [Component Decomposition and Interface Register 0.8](../requirements/component-decomposition-and-interface-register.md)
+- Requirements input: [System Requirements and Traceability 0.9](../requirements/system-requirements-and-traceability.md)
+- Component input: [Component Decomposition and Interface Register 0.9](../requirements/component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0009](decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0010](decisions/0010-aos-kuksa-credential-broker.md), and
   [ADR 0011](decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
@@ -22,7 +21,7 @@
 ## Purpose
 
 This document is the traceability bridge between the static capability model
-in High-Level Architecture 1.4, the audience-visible Demo Scenario 1.5, and the
+in High-Level Architecture 1.4, the audience-visible Demo Scenario 1.7, and the
 next component-requirements package.
 
 It defines how software, data, decisions, evidence, and ownership move through
@@ -33,8 +32,8 @@ M0 manufacturing
   -> M1 end-of-line provisioning
   -> G0 provisioned SOP substrate
   -> G1 Vehicle Data Platform Component v1
-  -> G2 Brake Health Service v1
-  -> G3 VDP Component v2 + predictive Service v2
+  -> G2 Brake Health Service v1 event-window acquisition
+  -> G3 VDP Component v2 + edge-analytics Service v2
   -> G4 bidirectional VDP Component v3 + Service v3
   -> T1 independent Tire Health Service
   -> R0 retirement of the current demo run
@@ -54,7 +53,7 @@ When the inputs differ, use this order:
 
 1. High-Level Architecture 1.4 owns component boundaries, interfaces,
    authority, security boundaries, and architectural invariants.
-2. Demo Scenario 1.6 owns stage order, component presence, audience-visible
+2. Demo Scenario 1.7 owns stage order, component presence, audience-visible
    proof, and the manufacturing-to-retirement narrative.
 3. This document owns detailed cross-component flow mapping and exposes gaps;
    it does not silently change either source.
@@ -564,8 +563,8 @@ sequenceDiagram
     SD->>AC: Submit FT1-owned OEM-authorized validation approval
     AC->>VU: Check dependency and install Service v1 through SOTA 1
     VU-->>AC: Service ready with exact version and digest
-    VU->>BE: Send bounded v1 functional report
-    BE-->>FT1: Ingestion and dashboard evidence
+    VU->>BE: Send bounded v1 BrakeTelemetryWindow chunks
+    BE-->>FT1: Reconstructed window and live dashboard evidence
     FT1->>SD: Accept exact Service v1 integration result
     SD->>AC: Submit FT1-owned OEM-authorized promotion approval
     AC->>DU: Promote identical Service v1 artifact
@@ -576,20 +575,28 @@ Service v1 can be updated, stopped, or rolled back without rebuilding or
 replacing VDP Component v1.
 
 <a id="af-g2-rt"></a>
-### `AF-G2-RT` — Bounded functional reporting
+### `AF-G2-RT` — Bounded braking-event acquisition
 
 ```mermaid
 flowchart LR
     VISS["Gateway VISS"] --> P1["VDP Component v1"] --> KUKSA["KUKSA v1 contract"]
-    KUKSA -->|"read / subscribe"| S1["Brake Health Service v1"]
-    S1 -->|"bounded selected data / aggregates"| BE["Brake Health Backend"]
-    BE --> BD["Brake Health Function Dashboard"]
+    KUKSA -->|"continuous local read / subscribe"| S1["Brake Health Service v1"]
+    S1 --> RING["Bounded pre-trigger ring buffer"]
+    RING --> TRIGGER["Accepted braking trigger"]
+    TRIGGER --> WINDOW["Pre + braking + post BrakeTelemetryWindow"]
+    WINDOW -->|"ordered idempotent chunks + completion"| BE["Brake Health Backend"]
+    BE --> BD["Growing then completed event window"]
     S1 -->|"stdout / stderr"| NLOG["AosCore native log collection"]
     NLOG -->|"requested service logs"| AC["AosCloud"] --> SW["Software Delivery Dashboard"]
 ```
 
-Service v1 performs no prediction and requests no advisory. Its backend does
-not connect directly to CARLA, VISS, KUKSA, or AosCloud.
+`S1` owns `RING`, `TRIGGER`, and `WINDOW`; those
+labels expose its internal dataflow rather than additional deployable
+components. The first chunk emitted when braking begins contains the bounded
+pre-trigger history, active and post-trigger chunks follow in order, and one
+completion record closes the finite event. Service v1 performs no prediction
+and requests no advisory. Its backend does not connect directly to CARLA,
+VISS, KUKSA, or AosCloud.
 
 <a id="af-g2-ob"></a>
 ### `AF-G2-OB` — First functional-service proof
@@ -597,7 +604,7 @@ not connect directly to CARLA, VISS, KUKSA, or AosCloud.
 | Surface | Required evidence |
 | --- | --- |
 | Software Delivery Dashboard | VDP Component v1 unchanged; independent Service v1 dependency, validation and promotion; selected native service-log request/status/result |
-| Brake Health Dashboard | Selected values/aggregates, source Unit role, event time, freshness, service version, connectivity state |
+| Brake Health Dashboard | A growing then completed `BrakeTelemetryWindow`, pre/active/post phase, source Unit role, event time, freshness, chunk/completion state and service version |
 | Engineering Dashboard | Vehicle/Gateway telemetry remains independent and live |
 | AosCloud | Service instance state and resource monitoring |
 
@@ -610,18 +617,22 @@ not connect directly to CARLA, VISS, KUKSA, or AosCloud.
 - Backend loss cannot stop local KUKSA consumption or the vehicle data path.
 - Queue/retry/drop behavior must be bounded and factual; unbounded storage is
   prohibited.
-- Duplicate delivery and original event-time preservation are service/backend
-  contract responsibilities.
+- In-progress and completed windows use bounded local persistence; reconnect
+  resumes by event identity and chunk sequence rather than restarting an
+  unrelated event.
+- Duplicate delivery, deterministic trigger merge/debounce and original
+  sample/event-time preservation are service/backend contract responsibilities.
 
 ### G2 requirement inputs
 
-- Define the exact v1 functional report: selected samples, aggregates, or both.
+- Define the exact v1 trigger, pre/post durations, sampling contract, merge and
+  debounce rules, chunk/completion schema and all memory/storage/size bounds.
 - Define the service's exact `kuksa` read paths/modes, IAM registration,
   Credential Broker refresh behavior, and component dependency expression.
 - Implement backend idempotency, retention, offline, and freshness behavior.
 - Implement the first Brake Health Dashboard state.
 
-## G3 — VDP Component v2 and Predictive Brake Health Service v2
+## G3 — VDP Component v2 and Edge-Analytics Brake Health Service v2
 
 <a id="af-g3-dep"></a>
 ### `AF-G3-DEP` — Deferred native cross-lifecycle rejection
@@ -700,22 +711,32 @@ Platform Team and Function Team 1 separately accept their exact artifacts and
 the joint result through authorized OEM identities.
 
 <a id="af-g3-rt"></a>
-### `AF-G3-RT` — Deterministic local prediction
+### `AF-G3-RT` — Deterministic local assessment and derived reporting
 
 ```mermaid
 flowchart LR
     SCENE["Deterministic CARLA braking event"] --> GW["Vehicle Gateway"]
     GW --> VISS["Base + expanded vehicle data"]
     VISS --> P2["VDP Component v2"] --> KUKSA["Backward-compatible v1 + v2 values"]
-    KUKSA --> S2["Brake Health Service v2 + versioned model"]
-    S2 --> RESULT["Local health / prediction result"]
-    RESULT --> BE["Brake Health Backend"] --> BD["Brake Health Dashboard"]
+    KUKSA --> S2["Brake Health Service v2 + versioned synthetic model"]
+    S2 --> RESULT["Local BrakeHealthAssessment"]
+    RESULT --> EVENT["Bounded threshold / change BrakeHealthEvent"]
+    RESULT --> BE["Brake Health Backend"]
+    EVENT --> BE
+    BE --> BD["Derived assessments and events"]
 ```
 
 The same CARLA stimulus and condition profile are replayed when comparing
 graphs. Model development and training occur before the presentation; the live
-demo performs deterministic inference only. Native, derived, estimated, and
-simulated-component inputs are visibly distinguished.
+demo performs deterministic inference only. The model may be deliberately
+synthetic because platform evolution, not production brake-diagnostic
+accuracy, is the claim. It must remain versioned, testable, causally driven by
+the visible CARLA braking episode, and labelled as a demo model. Native,
+derived, estimated, and simulated-component inputs are visibly distinguished.
+
+Normal v2 operation sends bounded assessments and threshold/change events,
+not the high-detail v1 telemetry window. This change in Cloud data product is
+part of the audience-visible proof that processing moved into the vehicle.
 
 <a id="af-g3-ob"></a>
 ### `AF-G3-OB` — Predictive-function proof
@@ -725,7 +746,7 @@ simulated-component inputs are visibly distinguished.
 | CARLA scene | Same bounded route, obstacle, braking profile, and cleanup behavior |
 | Engineering Dashboard | Physical maneuver and source data remain visible |
 | Software Delivery Dashboard | Feature request, VDP Component qualification, component handoff, Service integration, exact graph acceptance, ordered promotion, and selected native provider/service log evidence |
-| Brake Health Dashboard | New inputs, provenance labels, model version/digest, result, confidence/quality, original event time |
+| Brake Health Dashboard | Derived assessment/event rather than the v1 raw window, provenance labels, model version/digest, result, confidence/quality and original event time |
 
 <a id="af-g3-fr"></a>
 ### `AF-G3-FR` — Independent defect ownership and reverse dependency
@@ -750,8 +771,9 @@ Rollback from v2 graph
 - Freeze VDP Component v2 signals and provenance using the native CARLA inventory.
 - Define the simulated brake-condition model separately from native CARLA
   telemetry.
-- Define model identity, input schema, deterministic output, resource bounds,
-  and stale/missing-data behavior.
+- Define synthetic model identity, input schema, deterministic assessment/event
+  outputs, resource bounds, and stale/missing-data behavior without claiming
+  production diagnostic accuracy.
 - Define the exact accepted-graph record and promotion checks.
 - Qualify `AF-G3-DEP` against the first AosEdge release that exposes native
   Service-to-FOTA-component dependency admission; keep the flow disabled until
@@ -805,7 +827,8 @@ flowchart LR
     GWADV -->|"request + factual status"| VISS
     VISS --> ENG["Engineering Telematics Dashboard"]
 
-    S3 --> QUEUE["Bounded local report queue"]
+    S3 --> RESULT["Derived assessment / event + advisory fact"]
+    RESULT --> QUEUE["Bounded local functional-data queue"]
     QUEUE -. "when connected" .-> BE["Brake Health Backend"] --> BD["Brake Health Dashboard"]
 ```
 
@@ -821,7 +844,7 @@ no IVI or Instrument Cluster and must not claim `displayed to driver` or
 | CARLA scene | Deterministic hard-braking stimulus executes safely |
 | Engineering Dashboard | Advisory request, Gateway `RECEIVED`/`REJECTED`/`FAILED` status, correlation, and local elapsed time |
 | Software Delivery Dashboard | VDP Component v3 and Service v3 dependency, validation, exact graph, ordered promotion, Unit connectivity, and selected native inference/policy/queue log evidence |
-| Brake Health Dashboard | Pending/offline report state, later synchronized result, original event time and model version |
+| Brake Health Dashboard | Pending/offline derived assessment/event and advisory-fact state, later synchronized result, original event time and model version |
 | AosCloud | Software state remains observable; it is not in the local decision path |
 
 <a id="af-g4-fr"></a>
@@ -833,8 +856,9 @@ no IVI or Instrument Cluster and must not claim `displayed to driver` or
   commands.
 - Loss of Cloud connectivity does not stop KUKSA subscription, local inference,
   or the Gateway advisory round trip.
-- A functional report remains in a bounded local queue and synchronizes with
-  its original event time after connectivity returns.
+- Derived assessments/events and the correlated advisory fact remain in a
+  bounded local queue and synchronize with their original event times after
+  connectivity returns.
 - Failure of the functional backend cannot authorize or suppress the local
   advisory.
 - Rollback follows Service v3 first, then VDP Component v3 when required.
@@ -1177,7 +1201,7 @@ vehicle rollback or proof of a fleet-wide deletion policy.
 | Gateway advisory status | `GW-ADV` / `VISS` | `ENG-DASH` and inbound `VDP` as selected | Gateway contract |
 | Aos service identity and requested KUKSA permissions | `AOS-CORE` / Aos IAM | `VDP` Credential Broker | `AOS_SECRET` is instance-bound and never persisted in an artifact |
 | Short-lived KUKSA credential | `VDP` Credential Broker | `BHS` or `TIRE` | Exact currently registered IAM permission set mapped within the installed VDP contract; upstream KUKSA verifies the public key |
-| Brake Health functional report | `BHS` | `BRAKE-BE` / `BRAKE-DASH` | Function Team 1 SOTA/backend |
+| Brake Health message family: v1 event windows, v2/v3 derived results and advisory facts | `BHS` | `BRAKE-BE` / `BRAKE-DASH` | Function Team 1 SOTA/backend |
 | Tire Health summary/event | `TIRE` | `TIRE-BE` / `TIRE-DASH` | Function Team 2 SOTA/backend |
 | Unit desired/actual state | `AOS-CLOUD` / `AOS-CORE` | `SW-DASH` | AosCloud lifecycle |
 | SOTA artifact publication and technical verification | Function Team 1 or 2 through its Service Provider identity | `AOS-CLOUD` | Owning Function Team SOTA lifecycle; no OEM Unit deployment approval |
@@ -1198,11 +1222,11 @@ owning team's release decision.
 | <a id="gap-af-04"></a>`GAP-AF-04` | One source, two Unit roles | `G0/X-SOURCE` | Select live binding or deterministic replay for one CARLA source and two Unit roles | Demo architecture |
 | <a id="gap-af-05"></a>`GAP-AF-05` | VDP Component v1 contract | `G1` | Freeze VDP Component v1 signal, freshness, readiness, health and rollback contract | Platform Team |
 | <a id="gap-af-06"></a>`GAP-AF-06` | Effective-target preview | `G1/X-RELEASE` | Implement effective-target preview and stale-batch protection from current Unit pending-batch state | Software Delivery Dashboard |
-| <a id="gap-af-07"></a>`GAP-AF-07` | Brake Health v1 product | `G2` | Define and implement Service v1, bounded report, backend, dashboard, retry and idempotency | Function Team 1 |
+| <a id="gap-af-07"></a>`GAP-AF-07` | Brake Health v1 product | `G2` | Define and implement Service v1 trigger/ring-buffer/window state machine, ordered chunk/completion contract, backend reconstruction, live dashboard, retry/resume and idempotency | Function Team 1 |
 | <a id="gap-af-08"></a>`GAP-AF-08` | VDP Component v2 compatibility | `G3` | Define VDP Component v2 inputs, provenance and backward compatibility | Platform Team + Function Team 1 |
-| <a id="gap-af-09"></a>`GAP-AF-09` | Deterministic brake model | `G3` | Define simulated brake-condition source and deterministic model/result contract | Vehicle simulation + Function Team 1 |
+| <a id="gap-af-09"></a>`GAP-AF-09` | Deterministic brake model | `G3` | Define simulated brake-condition source, versioned synthetic model, deterministic assessment/event contract and derived-only normal Cloud behavior without a production-accuracy claim | Vehicle simulation + Function Team 1 |
 | <a id="gap-af-10"></a>`GAP-AF-10` | Outbound advisory chain and QM containment | `G4/T1/X-QM` | Define and implement typed KUKSA target, VDP defense-in-depth policy, restricted VISS Set, authoritative Gateway QM-channel policy, factual status, and negative motion/safety/arbitrary-write proof | Platform Team + Gateway |
-| <a id="gap-af-11"></a>`GAP-AF-11` | Offline report queue | `G4/X-OFFLINE` | Define bounded local report queue, reconnect, duplicate handling and timing | Function Team 1 |
+| <a id="gap-af-11"></a>`GAP-AF-11` | Offline functional-data queue | `G2–G4/X-OFFLINE` | Define bounded persistence for in-progress/completed v1 windows and v2/v3 derived messages, reconnect/resume, duplicate handling and timing | Function Team 1 |
 | <a id="gap-af-21"></a>`GAP-AF-21` | Tire condition model and stimulus | `T1` | Freeze the native input subset, explicit accelerated/pre-aged degradation stimulus, persistent state, condition bands, thresholds, bounded payload and hidden qualification oracle | Function Team 2 + CARLA scenario |
 | <a id="gap-af-22"></a>`GAP-AF-22` | Tire advisory contract | `T1` | Define and prove the typed KUKSA-to-VISS-to-Gateway Tire Health advisory and factual status without vehicle-motion or production-HMI authority | Platform Team + Function Team 2 + Gateway |
 | <a id="gap-af-23"></a>`GAP-AF-23` | Tire Health Cloud product | `T1` | Implement independent Tire Health backend/dashboard and offline/idempotent ingestion of bounded summaries/events | Function Team 2 |
@@ -1227,6 +1251,15 @@ The following former candidate gaps remain resolvable but are no longer active:
 | <a id="gap-af-12"></a>`GAP-AF-12` | `GAP-AF-21` | Low-Friction candidate superseded by ADR 0008 |
 | <a id="gap-af-13"></a>`GAP-AF-13` | `GAP-AF-21` | Former dynamics-signal proof folded into the Tire Health model contract |
 | <a id="gap-af-14"></a>`GAP-AF-14` | `GAP-AF-23` | Former event Cloud product replaced by Tire Health Cloud product |
+
+## Architecture-Flow Review Notes for Version 1.6
+
+Version 1.6 preserves the accepted topology and lifecycle flow while exposing
+the complete Brake Health data-product transition. `AF-G2-RT` now proves the
+ring-buffer/trigger/chunk/completion path, `AF-G3-RT` proves synthetic local
+assessment and derived-only normal Cloud messages, and `AF-G4-RT` carries the
+derived result plus advisory fact to the backend independently from the local
+advisory round trip. No new HLA component or authority is introduced.
 
 ## Architecture-Flow Acceptance Record for Version 1.5
 
@@ -1279,7 +1312,7 @@ after reviewers confirmed that:
 
 ## Downstream Component Requirement Gate
 
-The System Requirements and Traceability 0.8 review candidate covers every active
+The System Requirements and Traceability 0.9 review candidate covers every active
 `AF-*` flow and allocates the resulting obligations to provisional component
 packages. D3 now expands those packages in this order:
 

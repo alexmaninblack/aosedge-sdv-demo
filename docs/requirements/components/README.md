@@ -26,7 +26,7 @@ of unexplained identifiers.
 | 2 | [`CR-FACTORY`](../component-decomposition-and-interface-register.md#cr-factory) | [Factory Substrate 0.2](factory-substrate.md) | `FACTORY` | D3 design-reviewed |
 | 2 | [`CR-VDP`](../component-decomposition-and-interface-register.md#cr-vdp) | [Vehicle Data Platform 0.3](vehicle-data-platform.md) | `VDP` | D3 design-reviewed |
 | 3 | [`CR-AOS`](../component-decomposition-and-interface-register.md#cr-aos) | [Aos Lifecycle 0.1](aos-lifecycle.md) | `AOS` | D3 design-reviewed |
-| 4 | [`CR-BHS`](../component-decomposition-and-interface-register.md#cr-bhs) | `brake-health-service.md` | `BHS` | Not started |
+| 4 | [`CR-BHS`](../component-decomposition-and-interface-register.md#cr-bhs) | [Brake Health Service 0.1](brake-health-service.md) | `BHS` | Review draft |
 | 4 | [`CR-BRAKE-CLOUD`](../component-decomposition-and-interface-register.md#cr-brake-cloud) | `brake-health-cloud.md` | `BRAKE-CLOUD` | Not started |
 | 5 | [`CR-TIRE`](../component-decomposition-and-interface-register.md#cr-tire) | `tire-health-service.md` | `TIRE` | Not started |
 | 5 | [`CR-TIRE-CLOUD`](../component-decomposition-and-interface-register.md#cr-tire-cloud) | `tire-health-cloud.md` | `TIRE-CLOUD` | Not started |

@@ -219,7 +219,7 @@ class DocumentationCheckTests(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         target = root / "docs" / "demo" / "README.md"
         text = target.read_text(encoding="utf-8").replace(
-            "Demo Scenarios 1.6", "Demo Scenarios 1.5", 1
+            "Demo Scenarios 1.7", "Demo Scenarios 1.6", 1
         )
         target.write_text(text, encoding="utf-8")
         result = self.run_check(root)

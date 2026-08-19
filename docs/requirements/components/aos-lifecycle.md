@@ -9,10 +9,10 @@
 - Prepared: 2026-08-19
 - Owner: AosEdge Platform integration / OEM lifecycle qualification
 - Architecture input: [High-Level Architecture 1.4](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 1.6](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 1.5](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 0.8](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 0.8](../component-decomposition-and-interface-register.md)
+- Scenario input: [Demo Scenarios 1.7](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 1.6](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 0.9](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 0.9](../component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0004](../../architecture/decisions/0004-single-main-node-for-aos1.md), [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md), [ADR 0010](../../architecture/decisions/0010-aos-kuksa-credential-broker.md) and [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
 
 ## Purpose
