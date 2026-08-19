@@ -5,6 +5,7 @@
 
 - Status: Accepted for architecture and requirements
 - Date: 2026-08-18
+- Amended: 2026-08-19
 - Supersedes: the future standalone Authorization Adapter and static-token
   target described by ADR 0005 and ADR 0006
 
@@ -17,11 +18,13 @@ authorization implementation would create an unnecessary project-owned
 variant and a difficult upgrade boundary.
 
 Aos Service Manager already registers a service's declared functional-server
-permissions with Aos IAM and supplies an opaque `AOS_SECRET` to the running
-service instance. The missing integration boundary is therefore credential
-translation: authenticate that running Aos service instance, constrain its
-requested KUKSA paths against OEM policy, and issue a credential that the
-unchanged KUKSA verifier already understands.
+permissions with Aos IAM and supplies an opaque, per-instance `AOS_SECRET` to
+the running service. Aos IAM owns that secret and permission lifecycle; the
+project must not reproduce it in a second identity store. The missing
+integration boundary is therefore narrow credential translation: authenticate
+the running Aos service instance through IAM, translate the registered KUKSA
+permissions into the token model understood by the unchanged KUKSA verifier,
+and issue a short-lived credential.
 
 ## Decision
 
@@ -30,38 +33,52 @@ unchanged KUKSA verifier already understands.
    Component**. The functional capability it provides may still be described
    as a vehicle-data capability, but `Component` is the canonical architecture
    and lifecycle name.
-3. Implement the **Aos–KUKSA Credential Broker** and the versioned **OEM KUKSA
-   access policy** as internal responsibilities of `CMP-VDP`, not as a
-   separate SOTA service or standalone logical component.
-4. Deliver and qualify the broker, policy, KUKSA contract/configuration,
+3. Implement the **Aos–KUKSA Credential Broker** as a thin internal
+   responsibility of `CMP-VDP`, not as a separate identity provider, SOTA
+   service, or standalone logical component.
+4. Deliver and qualify the broker, KUKSA contract/configuration,
    inbound/outbound providers, and signal validation together through the
-   Platform Team's OEM FOTA lifecycle.
+   Platform Team's OEM FOTA lifecycle. Do not create a project-owned
+   per-service credential database or duplicate the Aos IAM permission
+   lifecycle.
 5. Let each SOTA service declare its requested KUKSA paths and `r`, `w`, or
    `rw` modes in Aos service metadata under the `kuksa` functional-server
    entry. Service Manager registers those permissions and injects a
    per-instance `AOS_SECRET`.
 6. The service presents `AOS_SECRET` to the local broker. The broker calls Aos
-   IAM `GetPermissions(secret, "kuksa")`, obtains the authenticated service
-   instance and requested permissions, and compares the entire request with
-   the OEM policy for that service identity.
-7. Reject the entire request when the secret is invalid, the identity is not
-   allowed, or any path/mode exceeds OEM policy. On success, issue a
-   short-lived, path-scoped KUKSA JWT. Map `r` to KUKSA `read`, `w` to KUKSA
-   `actuate`, and `rw` to both. Never silently trim an excessive request.
-8. Use a separate platform credential for the privileged Vehicle Data
-   Provider's KUKSA `provide`/`create` rights. A SOTA service credential must
-   never grant provider authority.
-9. Configure KUKSA to trust only the broker's public verifier. Protect the
-   signing key as platform state; never place it, `AOS_SECRET`, or issued JWTs
-   in Git, FOTA/SOTA payloads, command lines, or logs.
-10. Keep token lifetime short and refresh while the Aos service identity
+   IAM `GetPermissions(secret, "kuksa")` and accepts only the authenticated,
+   currently registered permissions returned by IAM. It shall reject an
+   invalid secret, unknown mode, malformed path, or permission outside the
+   versioned KUKSA contract exposed by the installed VDP release.
+7. On success, issue a short-lived, path-scoped KUKSA JWT. Map `r` to KUKSA
+   `read`, `w` to KUKSA `actuate`, and `rw` to both. Never widen or silently
+   rewrite the IAM-returned permission set.
+8. Do not implement a second local per-service OEM allowlist in the broker.
+   Service metadata is published through the Service Provider lifecycle and
+   deployment to OEM Units is explicitly authorized with an OEM identity. A
+   future native AosCloud permission-admission feature may add an independent
+   pre-transfer upper bound when it becomes available and is qualified.
+9. Use a separate short-lived platform credential for the privileged Vehicle
+   Data Provider's KUKSA `provide`/`create` rights. The exact FOTA-component
+   identity binding is a design and qualification gate because the provider is
+   not a SOTA instance and does not automatically receive `AOS_SECRET`. A
+   functional SOTA credential must never grant provider authority.
+10. Configure KUKSA to trust only the broker's public verifier. Protect the
+    signing key through the Aos platform's IAM/certificate-module and PKCS#11
+    integration rather than a project-owned key file. The Factory Image
+    contains only the non-secret integration seam; per-Unit key material is
+    established after manufacturing and is never baked into the image or a
+    FOTA/SOTA payload.
+11. Keep token lifetime short and refresh while the Aos service identity
     remains valid. Service removal or permission unregistration prevents
     renewal; the residual authorization window is bounded by token expiry.
-11. Treat Cloud-side rejection of incompatible service permissions before
+12. Treat Cloud-side rejection of incompatible service permissions before
     Unit transfer as a future native AosCloud admission feature. In the
-    current platform, the authoritative fail-closed enforcement point is the
-    local credential exchange. The demo must not claim pre-deployment Cloud
-    rejection until a released API supports and qualifies it.
+    current platform, the authoritative runtime permissions are those
+    registered by Service Manager and returned by Aos IAM, while the broker is
+    the fail-closed translation point into KUKSA. The demo must not claim
+    independent pre-deployment Cloud policy rejection until a released API
+    supports and qualifies it.
 
 ## Credential Flow
 
@@ -77,13 +94,13 @@ sequenceDiagram
     SM-->>S: Inject per-instance AOS_SECRET
     S->>B: Request KUKSA credential using AOS_SECRET
     B->>IAM: GetPermissions(secret, kuksa)
-    IAM-->>B: Service identity and requested paths/modes
-    B->>B: Compare complete request with OEM access policy
-    alt request is allowed
+    IAM-->>B: Registered service identity and paths/modes
+    B->>B: Validate mapping against installed VDP contract
+    alt secret and mapping are valid
         B-->>S: Short-lived path-scoped JWT
         S->>K: Read or actuate with JWT
         K->>K: Verify signature, audience, expiry and paths
-    else request exceeds policy
+    else invalid, stale or unsupported permission
         B-->>S: Reject without token
     end
 ```
@@ -92,10 +109,13 @@ sequenceDiagram
 
 - KUKSA remains an upgradeable external dependency rather than a project
   fork.
-- Aos identity and service metadata become the source of runtime identity and
-  requested permissions; OEM FOTA policy remains the independent upper bound.
+- Aos IAM and Service Manager remain the source of runtime service identity,
+  instance secrets and registered permissions; the project does not create a
+  parallel identity or per-service policy database.
 - Functional services can be delivered independently by SOTA, but cannot
-  expand their vehicle-data authority by changing their own metadata.
+  receive KUKSA authority beyond their currently registered metadata and the
+  installed VDP contract. OEM review and deployment authorization remain
+  explicit lifecycle decisions.
 - The broker is a platform security boundary and requires key protection,
   local authenticated transport, expiry/refresh handling, audit-safe logs,
   negative tests, and fail-closed startup/readiness behavior.
@@ -104,12 +124,13 @@ sequenceDiagram
 
 ## Repository Ownership
 
-- `aos-vehicle-platform` owns the broker, OEM policy schema/data, KUKSA trust
-  configuration, component packaging, tests, and qualification evidence.
+- `aos-vehicle-platform` owns the thin broker, KUKSA trust configuration,
+  platform-component credential integration, component packaging, tests, and
+  qualification evidence.
 - each functional service repository owns only its requested `kuksa`
   permissions and the client-side credential refresh behavior;
 - `aosedge-sdv-demo` pins and qualifies the complete graph but owns neither
-  the broker nor service authorization policy.
+  the broker nor the Aos identity/permission lifecycle.
 
 ## References
 

@@ -115,8 +115,9 @@ The active gaps and component states are authoritative in the
 and [roadmap](../planning/roadmap.md). Major missing pieces include the clean
 factory baseline, accepted Vehicle Data Platform Component v1-v3 artifacts, both
 functional Cloud products, Tire Health service, Software Delivery
-Dashboard, unified orchestrator, Aos–KUKSA Credential Broker/OEM policy,
-outbound advisory path and end-to-end reset.
+Dashboard, unified orchestrator, thin Aos–KUKSA Credential Broker, native IAM
+and protected signing integration, provider platform identity, outbound
+advisory path and end-to-end reset.
 
 Do not conceal those gaps with manual state changes or undocumented local
 files. Each completed component should add a reproducible launcher or test,

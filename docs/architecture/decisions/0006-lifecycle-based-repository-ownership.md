@@ -17,7 +17,8 @@ Vehicle platform components are selected and integrated as part of a vehicle
 program. They may be updated after start of production (SOP), but only through
 an OEM-controlled platform or FOTA lifecycle with system-level qualification.
 Examples are the Vehicle Data Provider, KUKSA configuration and trust setup,
-the Aos–KUKSA Credential Broker, and the OEM KUKSA access policy.
+the thin Aos–KUKSA Credential Broker, and provider platform-identity
+integration.
 
 Cloud-managed services are applications deployed on top of that platform.
 They can be developed, replaced, rolled back, and updated through the Aos
@@ -76,8 +77,8 @@ It will contain:
 - non-secret KUKSA and platform configuration;
 - system-level packaging and lifecycle definitions;
 - provider conformance and integration tests;
-- the Aos–KUKSA Credential Broker, OEM access policy, and their integration
-  and negative-test evidence as defined by ADR 0010.
+- the thin Aos–KUKSA Credential Broker, provider platform-identity integration,
+  and their negative-test evidence as defined by ADR 0010.
 
 The CARLA provider is development-only, but it implements the same platform
 role that CAN, SOME/IP, DDS, or OEM-specific providers perform in a production
@@ -124,7 +125,7 @@ workspace. It owns:
 - end-to-end tests across CARLA, the platform, AosVM, and the service;
 - architecture decisions and sanitized acceptance evidence.
 
-It does not own provider, credential-broker, OEM access-policy, or
+It does not own provider, credential-broker, provider-identity, or
 telemetry-service source.
 It may contain test fixtures and orchestration code, but must consume released
 component artifacts or explicitly pinned sibling checkouts.
@@ -207,7 +208,7 @@ Detailed rules:
 ## Update Channels and Gates
 
 - Vehicle Data Provider, KUKSA platform configuration, Aos–KUKSA Credential
-  Broker, and OEM access-policy changes follow the OEM platform/FOTA
+  Broker, and provider platform-identity changes follow the OEM platform/FOTA
   qualification path even if their implementation can technically be packaged
   as a container.
 - Telemetry consumer changes follow the Aos service/SOTA path and cannot
@@ -216,9 +217,11 @@ Detailed rules:
   baseline until a compatible service is qualified or the previous contract
   remains available during migration.
 - ADR 0010 replaces the former standalone AOS-5 Authorization Adapter plan.
-  The broker and OEM policy are responsibilities inside the Vehicle Data
-  Platform Component; their absence does not justify moving authorization
-  policy or reusable KUKSA credentials into a functional service.
+  The broker and provider-identity integration are responsibilities inside the
+  Vehicle Data Platform Component. Aos IAM remains authoritative for SOTA
+  instance identity and registered permissions; their absence does not justify
+  moving a parallel identity/policy store or reusable KUKSA credentials into a
+  functional service.
 
 ## Migration Result
 

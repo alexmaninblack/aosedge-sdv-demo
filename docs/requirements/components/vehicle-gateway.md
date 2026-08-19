@@ -8,11 +8,11 @@
 - Version: 0.5
 - Prepared: 2026-08-19
 - Owner: Vehicle Gateway Tooling
-- Architecture input: [High-Level Architecture 1.2](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 1.3](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 1.2](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 0.5](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 0.5](../component-decomposition-and-interface-register.md)
+- Architecture input: [High-Level Architecture 1.3](../../architecture/high-level-architecture.md)
+- Scenario input: [Demo Scenarios 1.4](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 1.3](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 0.6](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 0.6](../component-decomposition-and-interface-register.md)
 - Implementation baseline: `carla-ego-runtime@22864c5` against `CarlaSim@ac7d882c`
 
 ## Purpose

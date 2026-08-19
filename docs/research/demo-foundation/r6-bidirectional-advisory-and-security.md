@@ -23,7 +23,7 @@ in the current AosVM.
 | KUKSA 0.5.0 distinguishes data providers from actuation providers. An actuation provider subscribes to the desired value and tries to apply it to the vehicle. | **PROVEN** |
 | The pinned `kuksa.val.v1` API uses the stored, subscribable `target_value` perspective. KUKSA already marks this perspective deprecated in favor of the non-stored v2 actuation perspective. | **PROVEN** |
 | KUKSA JWT authorization supports separate path-scoped `read`, `actuate`, `provide`, and `create` permissions, RS256 verification, expiry, and audience `kuksa.val`. | **PROVEN** |
-| The ADR 0010 Aos–KUKSA Credential Broker and OEM access policy are not implemented in this baseline; existing tokens are qualification fixtures. | **PROVEN** |
+| The ADR 0010 thin Aos–KUKSA Credential Broker, protected signing integration and provider platform-identity binding are not implemented in this baseline; existing tokens are qualification fixtures. | **PROVEN** |
 | A safe prototype can use a narrowly scoped v1 target channel while preserving a migration requirement to `kuksa.val.v2`. | **PROPOSED** |
 
 ## Current boundary
@@ -117,14 +117,16 @@ use separate credentials so that one compromise does not combine sensor
 publication, advisory request, and Gateway delivery privileges.
 
 ADR 0010 now fixes the target credential architecture. Upstream Eclipse KUKSA
-is not modified. The Vehicle Data Platform Component owns a local
-Aos–KUKSA Credential Broker and FOTA-managed OEM policy. A SOTA service uses
-its per-instance `AOS_SECRET`; the broker calls Aos IAM `GetPermissions` for
-the `kuksa` functional-server ID, compares the complete request against OEM
-policy, and either rejects it or returns a short-lived path-scoped JWT. The
-provider uses a separate platform credential for its accepted
-`provide`/`create` paths. Cloud-side pre-transfer permission admission remains
-a future AosCloud feature and is not claimed by the current design.
+is not modified. Aos Service Manager and IAM own each SOTA instance's
+`AOS_SECRET` and registered permissions. The Vehicle Data Platform Component's
+thin broker calls `GetPermissions` for the `kuksa` functional-server ID and
+maps only the current, VDP-contract-compatible result into a short-lived JWT;
+it has no parallel service identity or per-service policy store. The provider
+uses a separately bound short-lived platform credential for its accepted
+`provide`/`create` paths. Its exact FOTA identity binding and the per-Unit
+IAM/PKCS#11 signing-key integration remain qualification gates. Cloud-side
+pre-transfer permission admission remains a future AosCloud feature and is not
+claimed by the current design.
 
 ## Failure and safety rules
 
@@ -188,5 +190,5 @@ Component, not a standalone adapter or a modification to Eclipse KUKSA.
 - [COVESA VISS 3.1 specification](https://github.com/COVESA/vehicle-information-service-specification/tree/v3.1)
 - [Eclipse KUKSA Databroker 0.5.0](https://github.com/eclipse-kuksa/kuksa-databroker/tree/0.5.0)
 - [`aos-vehicle-platform` provider architecture](../../../../aos-vehicle-platform/docs/architecture.md)
-- [Current High-Level Architecture 1.2](../../architecture/high-level-architecture.md)
+- [Current High-Level Architecture 1.3](../../architecture/high-level-architecture.md)
 - [ADR 0010: Aos–KUKSA Credential Broker](../../architecture/decisions/0010-aos-kuksa-credential-broker.md)

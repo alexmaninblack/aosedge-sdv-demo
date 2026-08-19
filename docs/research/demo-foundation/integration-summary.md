@@ -6,7 +6,7 @@
 > Status: completed research evidence. References to Scenario 1.0 and a
 > `G4`-to-`G0` reset describe hypotheses evaluated by this research pass, not
 > the current design. Current decisions are owned by High-Level Architecture
-> 1.2, Demo Scenario 1.3, Architecture Flows 1.2 and the requirements set.
+> 1.3, Demo Scenario 1.4, Architecture Flows 1.3 and the requirements set.
 
 Status: **research checkpoint complete; decisions require review; implementation
 not authorized**.
@@ -49,7 +49,7 @@ Its confidential OEM source remains outside every Git repository.
 | R3 | Native/forward reset first; separate golden image per Unit as out-of-band fallback. | Cloud reconciliation and certificate/identity behavior after restore |
 | R4 | Dedicated frame-driven scenario tick owner; Gateway remains observer; 20-run strict-reset qualification. | Calibrated obstacle, brake, and tolerance values |
 | R5 | P1 four-signal subset; P2 wheel + simulated wear/energy/temperature; transparent equivalent-event projection; P3 adds a separate advisory capability. | Wheel calibration and model/threshold acceptance |
-| R6 | KUKSA v1 target-value compatibility bridge for current VM; one allowlisted advisory; factual Gateway status; planned v2 migration; ADR 0010 keeps upstream KUKSA unchanged and allocates the Credential Broker/OEM policy to the VDP Component. | Broker/IAM qualification, scoped authorization, stale/replay behavior, VISS Set handler |
+| R6 | KUKSA v1 target-value compatibility bridge for current VM; one allowlisted advisory; factual Gateway status; planned v2 migration; ADR 0010 keeps upstream KUKSA unchanged and allocates the thin native-IAM Credential Broker and provider identity integration to the VDP Component. | Broker/IAM/PKCS#11 qualification, provider identity binding, scoped authorization, stale/replay behavior, VISS Set handler |
 | R7 | Separate lossy bounded S1 samples from durable S2/S3 events; persistent bounded queue; Function Backend never enters local decision path. | Egress policy, credentials, storage persistence, transport |
 | R8 | AosEdge native system/service/crash-log request path is real; the demo uses it through the stateless Software Delivery Dashboard without a separate pipeline or store. | Log API permissions, request/result behavior, retention/deletion and offline qualification |
 | R9 | Read-only localhost dashboard backend over public API; explicit target mismatch guard; all write actions deferred. | Least-privilege identity, latency, live field values |
@@ -175,9 +175,10 @@ This is sequencing advice for review, not authorization to execute.
    VM.
 2. Calibrate CARLA obstacle/braking/wheel telemetry and complete the 20-run
    repeatability gate.
-3. Qualify the VDP-owned Aos–KUKSA Credential Broker, OEM policy, distinct
-   provider credential, short-lived read/actuate JWTs, and v1 target
-   subscribe/restart behavior in isolation.
+3. Qualify the VDP-owned thin Aos–KUKSA Credential Broker against native IAM
+   permissions, per-Unit PKCS#11 signing, separately bound provider credential,
+   short-lived read/actuate JWTs, and v1 target subscribe/restart behavior in
+   isolation.
 4. Qualify Aos service storage persistence and network policy without Cloud
    promotion.
 

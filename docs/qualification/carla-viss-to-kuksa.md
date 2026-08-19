@@ -64,9 +64,13 @@ installation. It is retained only to reproduce the historical qualification.
 The accepted target in
 [ADR 0010](../architecture/decisions/0010-aos-kuksa-credential-broker.md)
 keeps upstream KUKSA unchanged and replaces manually issued service tokens
-with a VDP-owned Credential Broker, FOTA-managed OEM policy, and short-lived
-JWTs derived from authenticated Aos service identity. The provider continues
-to use a distinct platform credential.
+with a thin VDP-owned Credential Broker and short-lived JWTs derived from the
+permissions currently registered by Service Manager in Aos IAM. The broker
+stores no parallel identity or per-service policy. Its per-Unit signing key is
+protected through the Aos IAM/certificate-module and PKCS#11 integration. The
+provider replaces this static qualification token with a separately bound
+short-lived platform credential; that exact FOTA-component identity mechanism
+remains a design and qualification gate.
 
 ## Build and installation gates
 

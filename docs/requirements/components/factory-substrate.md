@@ -5,14 +5,14 @@
 
 - Status: Reviewed draft
 - Package: [`CR-FACTORY`](../component-decomposition-and-interface-register.md#cr-factory)
-- Version: 0.1
+- Version: 0.2
 - Prepared: 2026-08-19
 - Owner: Platform Team / pre-SOP OEM Factory Baseline Assembly
-- Architecture input: [High-Level Architecture 1.2](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 1.3](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 1.2](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 0.5](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 0.5](../component-decomposition-and-interface-register.md)
+- Architecture input: [High-Level Architecture 1.3](../../architecture/high-level-architecture.md)
+- Scenario input: [Demo Scenarios 1.4](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 1.3](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 0.6](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 0.6](../component-decomposition-and-interface-register.md)
 - Implementation evidence: `aos-vehicle-platform@15b6abb`, with local
   candidate `.11` pinned to `a12c0aa`
 
@@ -36,8 +36,8 @@ from the accepted OEM Demo Factory Image before provisioning.
 
 | Question | Answer |
 | --- | --- |
-| What this package owns | Reproducible pre-SOP composition, the full bootable Factory Image, its immutable evidence, clean identity-free content, and the provider-specific empty-slot runtime |
-| What this package does not own | Cloud provisioning transactions, Vehicle Data Platform payload behavior, functional SOTA services, demo-stage orchestration or production storage selection |
+| What this package owns | Reproducible pre-SOP composition, the full bootable Factory Image, its immutable evidence, clean identity/key-free content, enabled stock Aos IAM permission handling, the non-secret IAM/PKCS#11 broker-key seam, and the provider-specific empty-slot runtime |
+| What this package does not own | Cloud provisioning transactions, per-Unit key creation, Credential Broker behavior, provider-identity binding, Vehicle Data Platform payload behavior, functional SOTA services, demo-stage orchestration or production storage selection |
 | Intended result | Two fresh unprovisioned Domain Controller deployments can be created from one accepted image and later receive the Vehicle Data Platform Component without another rootfs update |
 | Accountable lifecycle owner | Platform Team; pre-SOP factory/build lifecycle and later platform/rootfs FOTA lifecycle when explicitly required |
 | Primary repository | `aos-vehicle-platform`; release metadata and qualification orchestration in `aosedge-sdv-demo`; image bytes remain outside Git |
@@ -50,7 +50,7 @@ lifecycle object.
 
 | Artifact | Contents | Normal lifecycle | Installed through | Role in this demo |
 | --- | --- | --- | --- | --- |
-| OEM Demo Factory Image | Complete bootable, unprovisioned VM disk with AosCore, KUKSA and the empty-slot runtime | Pre-SOP manufacturing | Fresh read-only base plus a new copy-on-write overlay | Required source for M0 |
+| OEM Demo Factory Image | Complete bootable, unprovisioned VM disk with AosCore, enabled stock IAM permission handling, KUKSA, non-secret IAM/PKCS#11 integration seam and the empty-slot runtime; no per-Unit key or token | Pre-SOP manufacturing | Fresh read-only base plus a new copy-on-write overlay | Required source for M0 |
 | Rootfs platform-update envelope | Complete rootfs payload containing a selected platform revision | Post-SOP platform/rootfs FOTA | The factory-installed AosVM rootfs A/B runtime | Optional retrofit or later platform maintenance; not used to add the initial runtime in the normal M0-M1 flow |
 | Vehicle Data Platform Component | Independently versioned provider payload and its component metadata | Post-SOP component FOTA | The provider-specific `systemd-slot-component` A/B runtime | Required at G1 and later |
 
@@ -68,6 +68,9 @@ accepted Factory Image.
 - [OEM Factory Baseline Assembly (`CMP-FACTORY`)](../component-decomposition-and-interface-register.md#cmp-factory), including pinned upstream and OEM integration inputs, build, qualification and freeze;
 - the complete bootable OEM Demo Factory Image and its manifest/digest;
 - [Provider-Specific Empty-Slot Runtime (`CMP-RUNTIME`)](../component-decomposition-and-interface-register.md#cmp-runtime), including Service Manager registration, A/B state, launcher, health, systemd, storage and SELinux integration;
+- stock Aos IAM permission-handler enablement and the non-secret
+  IAM/certificate-module and PKCS#11 configuration seam required by the future
+  Credential Broker;
 - proof that the factory image contains no provisioned identity, reusable
   vehicle secret, provider payload or functional service;
 - the factory-side contract required for distinct first-boot identities in
@@ -78,8 +81,11 @@ accepted Factory Image.
 
 - the AosCloud provisioning transaction and Cloud-side Unit/Node lifecycle,
   owned by `CR-AOS` and invoked by `CR-DEMO`;
-- the Vehicle Data Platform executable, signal contract, Credential Broker and
-  OEM access policy, owned by `CR-VDP`;
+- the Vehicle Data Platform executable, signal contract, thin Credential
+  Broker, provider platform-identity binding and KUKSA token issuance, owned by
+  `CR-VDP`;
+- per-Unit broker signing-key generation or provisioning, which is a later
+  identity/security lifecycle and must not be baked into the Factory Image;
 - a generic runtime for arbitrary future component types;
 - production vehicle storage architecture;
 - signing, publishing or assigning a rootfs update during normal M0-M1.
@@ -93,6 +99,8 @@ accepted Factory Image.
 | Host overlay lifecycle | Demo Orchestration | Creates only fresh overlays from the verified read-only base | M0 fails without modifying the Factory Image |
 | First-boot identity generation | AosVM plus OEM integration | No baked reusable identity; fresh instances generate distinct local identities | Provisioning is blocked and the candidate is rejected |
 | Aos provisioning | `CR-AOS` | Exactly one unique Unit/Main Node identity per fresh overlay | The deployment is quarantined; the Factory Image is not modified |
+| Aos IAM permission handling | AosCore plus OEM factory integration | Stock permission handler enabled and reachable; no project-owned service secret store | SOTA services cannot obtain KUKSA credentials and the factory candidate is rejected |
+| Signing-key facility | Aos IAM/certificate module plus PKCS#11 integration | Non-secret module/configuration seam in the image; per-Unit key established later | Broker readiness fails closed; no file-key fallback or baked key is permitted |
 
 ## Current Implementation Baseline
 
@@ -105,6 +113,8 @@ accepted Factory Image.
 | Security boundary | Fixed `aos-vdp` identity, empty capabilities, SELinux transition, systemd credentials and bounded access | `CURRENT / QUALIFY` |
 | Demonstration store | 512 MiB nested ext4 inside encrypted Aos workdirs | `CURRENT` for demo; production backend intentionally undecided |
 | Clean unprovisioned checks | No provisioning marker, Aos user PIN, credential-like file, provider payload or functional service in disposable candidate boot | `EVIDENCE`; repeat on the accepted Factory Image |
+| Stock Aos IAM permission handler | The deployed AosCore build contains the handler, but live `.1`/`.2` `/etc/aos/iam.cfg` does not enable it and the parser default is disabled | `GAP`; Factory Image configuration and boot qualification required |
+| IAM/PKCS#11 broker signing seam | AosCore supplies generic IAM certificate-module and PKCS#11 facilities; no accepted broker module/key binding is configured in the current candidate | `PARTIAL EXTERNAL CAPABILITY`; non-secret integration and per-Unit key lifecycle qualification required |
 | Source lock and repository gates | `.11` pinned to `a12c0aa`; build-affecting Yocto-layer files are unchanged at current `main`; 35 Python tests and the 81-file quality gate pass | `CURRENT`; output reproducibility proof remains open |
 | Distinct fresh overlays | Existing `.1` and `.2` Units have different provisioned identities but are not derived acceptance evidence for the unprovisioned `.11` raw image | `TARGET` |
 
@@ -133,6 +143,7 @@ redacted comparison or digests.
 | --- | --- | --- | --- | --- | --- |
 | [Cloud-to-Unit lifecycle (`IF-LC-004`)](../component-decomposition-and-interface-register.md#if-lc-004) | Later inbound | Rootfs or component desired state after provisioning | AosCloud/AosCore lifecycle | Not used to add the initial runtime in M0-M1; later update failures retain the previous accepted slot | AosCloud desired state and Unit actual state |
 | [Runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006) | In/Out | Prepare, apply, start, stop, revert, health and inventory | Fixed provider-specific runtime contract | Reject unsupported type, unsafe payload or invalid state without changing the active release | AosCore Service Manager actual state |
+| [Broker IAM/PKCS#11 substrate (`IF-AUTH-005`)](../component-decomposition-and-interface-register.md#if-auth-005) | Later outbound | Enabled permission lookup and protected signing operation without exporting key bytes | Aos IAM/certificate-module and PKCS#11 integration | Broker remains unready; no local file-key fallback | AosCore IAM and per-Unit platform key lifecycle |
 | [Orchestrated VM lifecycle (`IF-DEMO-001`)](../component-decomposition-and-interface-register.md#if-demo-001) | Out | Verified image digest, fresh-overlay creation and role handoff | M0/R0 lifecycle contract | Reject missing/mutable base, reused overlay or unresolved identity | Factory manifest plus orchestrator session evidence |
 
 ## Verification Strategy
@@ -151,7 +162,7 @@ redacted comparison or digests.
 | --- | --- | --- | --- |
 | [Pinned factory assembly (`REQ-FACTORY-001`)](#req-factory-001) | Rebuild from identified upstream and OEM inputs | `PARTIAL` | Unit, Contract, Component |
 | [Distinct build artifacts (`REQ-FACTORY-002`)](#req-factory-002) | Never confuse Factory Image, rootfs FOTA and provider component FOTA | `PARTIAL` | Unit, Contract, Inspection |
-| [Clean SOP substrate (`REQ-FACTORY-003`)](#req-factory-003) | Ship runtime but no payload, service or reusable identity | `EVIDENCE` | Unit, Component, Integration |
+| [Clean SOP substrate (`REQ-FACTORY-003`)](#req-factory-003) | Ship runtime and security seams but no payload, service, reusable identity or signing key | `EVIDENCE / EXTEND` | Unit, Component, Integration |
 | [Immutable bootable Factory Image (`REQ-FACTORY-004`)](#req-factory-004) | Freeze a complete bootable image by digest | `EVIDENCE` | Unit, Component, Integration |
 | [Healthy provider-specific empty slot (`REQ-FACTORY-005`)](#req-factory-005) | Report one safe empty capability slot at G0 | `CURRENT / QUALIFY` | Unit, Component, Integration |
 | [Atomic component lifecycle (`REQ-FACTORY-006`)](#req-factory-006) | Install and recover provider payloads without corrupting the active slot | `CURRENT / QUALIFY` | Unit, Component, Integration |
@@ -159,6 +170,7 @@ redacted comparison or digests.
 | [Identity-safe fresh deployments (`REQ-FACTORY-008`)](#req-factory-008) | Create two overlays without duplicating local or Cloud identity | `TARGET` | Unit, Integration, End-to-end |
 | [Pre-provision runtime availability (`REQ-FACTORY-009`)](#req-factory-009) | Start M1 with runtime already in the manufactured image | `TARGET acceptance` | Inspection, Integration, End-to-end |
 | [Factory artifact preservation (`REQ-FACTORY-010`)](#req-factory-010) | R0 discards overlays but retains the exact Factory Image | `TARGET` | Unit, Integration, End-to-end |
+| [Native IAM credential substrate (`REQ-FACTORY-011`)](#req-factory-011) | Enable stock service-instance permission handling and a non-secret protected-key integration seam before provisioning | `GAP / PARTIAL` | Unit, Component, Integration |
 
 ## Detailed Requirements
 
@@ -210,9 +222,11 @@ provider-specific runtime. Neither may be labelled as the Factory Image.
 
 - ID: `REQ-FACTORY-003`
 - Statement: The Factory Image shall contain AosCore, KUKSA, security/update
-  support and the provider-specific empty-slot runtime but no active provider
-  payload, functional service, Cloud registration, provisioned identity,
-  reusable credential or vehicle-specific mutable state.
+  support, enabled stock IAM permission handling, a non-secret IAM/PKCS#11
+  integration seam and the provider-specific empty-slot runtime but no active
+  provider payload, functional service, Cloud registration, provisioned
+  identity, signing key, static token, reusable credential or vehicle-specific
+  mutable state.
 - Parent system requirement: [Clean SOP substrate (`SYS-MFG-002`)](../system-requirements-and-traceability.md#sys-mfg-002)
 - Architecture flows: [Factory-image and overlay creation (`AF-M0-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-m0-lc) and [Manufacturing evidence (`AF-M0-OB`)](../../architecture/demo-scenario-architecture-flows.md#af-m0-ob)
 - Components: [Factory Assembly (`CMP-FACTORY`)](../component-decomposition-and-interface-register.md#cmp-factory), [AosCore (`CMP-AOS-CORE`)](../component-decomposition-and-interface-register.md#cmp-aos-core), [KUKSA (`CMP-KUKSA`)](../component-decomposition-and-interface-register.md#cmp-kuksa) and [Empty-Slot Runtime (`CMP-RUNTIME`)](../component-decomposition-and-interface-register.md#cmp-runtime)
@@ -343,6 +357,35 @@ presented as installation of the Vehicle Data Platform Component.
 - Requirement state: Draft
 - Implementation state: `TARGET`
 
+### Native IAM credential substrate
+
+<a id="req-factory-011"></a>
+
+- ID: `REQ-FACTORY-011`
+- Statement: Before provisioning, the Factory Image shall enable the stock Aos
+  IAM permission handler used by Service Manager for per-instance service
+  secrets and shall contain the accepted non-secret IAM/certificate-module and
+  PKCS#11 integration required for broker signing operations. It shall not
+  contain a broker signing key, static provider/service token, project-owned
+  service-secret database or a fallback file-key path.
+- Parent system requirements: [Clean SOP substrate (`SYS-MFG-002`)](../system-requirements-and-traceability.md#sys-mfg-002), [KUKSA verifier and token lifetime (`SYS-SEC-004`)](../system-requirements-and-traceability.md#sys-sec-004), and [native-IAM-derived SOTA KUKSA credentials (`SYS-SEC-006`)](../system-requirements-and-traceability.md#sys-sec-006)
+- Architecture flows: [Factory-image and overlay creation (`AF-M0-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-m0-lc), [working vehicle, empty feature graph (`AF-G0-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-g0-rt), and [cross-cutting credential flow (`AF-X-AUTH`)](../../architecture/demo-scenario-architecture-flows.md#af-x-auth)
+- Components: [Factory Assembly (`CMP-FACTORY`)](../component-decomposition-and-interface-register.md#cmp-factory) and [AosCore (`CMP-AOS-CORE`)](../component-decomposition-and-interface-register.md#cmp-aos-core)
+- Interface: [Broker IAM/PKCS#11 substrate (`IF-AUTH-005`)](../component-decomposition-and-interface-register.md#if-auth-005)
+- Required evidence: effective IAM configuration, boot/readiness proof,
+  permission-handler positive/negative contract test, PKCS#11 module discovery,
+  protected-sign operation using a disposable per-Unit test key, and forbidden
+  key/token/content scan
+- Requirement state: Draft
+- Implementation state: `GAP / PARTIAL`; the stock handler and generic key
+  facilities exist in AosCore, but the live demo IAM configuration does not
+  enable the handler and no accepted broker signing-key binding is configured
+
+This requirement qualifies native platform facilities; it does not authorize
+the Factory package to mint service identities or to own the broker's runtime
+translation rules. Per-Unit signing material is created only after a fresh
+deployment exists and must be retired with that deployment.
+
 ## Unit-Test Obligations
 
 | Unit-test obligation | Requirements proved | Behavior and branches | Isolation / doubles | Required assertions | Repository / suite | State |
@@ -355,6 +398,7 @@ presented as installation of the Vehicle Data Platform Component.
 | <a id="ut-factory-006"></a>`UT-FACTORY-006` — Security/store source gate | [`REQ-FACTORY-007`](#req-factory-007) | Identity, capabilities, systemd, SELinux, store size/mount/path and fail-closed rules | Recipe, policy and configuration fixtures | Missing or weakened boundary blocks the normal repository gate | `aos-vehicle-platform` `test_r6_1_layer.py` | Draft |
 | <a id="ut-factory-007"></a>`UT-FACTORY-007` — Fresh-overlay guard | [`REQ-FACTORY-008`](#req-factory-008) | New overlay, reused/provisioned/locked overlay, wrong backing file and duplicate redacted identity | Temporary qcow2 metadata and identity-digest fixtures | Only a fresh overlay backed by the accepted digest is eligible for M1 | `aosedge-sdv-demo` lifecycle tests | Draft |
 | <a id="ut-factory-008"></a>`UT-FACTORY-008` — Immutable reset guard | [`REQ-FACTORY-010`](#req-factory-010) | Exact run overlays, missing reconciliation, unexpected target and changed base digest | Temporary lifecycle manifest and fake image metadata | Reset never targets the base and fails on unresolved identity or changed digest | `aosedge-sdv-demo` lifecycle tests | Draft |
+| <a id="ut-factory-009"></a>`UT-FACTORY-009` — IAM substrate configuration | [`REQ-FACTORY-003`](#req-factory-003), [`REQ-FACTORY-011`](#req-factory-011) | Permission handler enabled/disabled/absent, accepted PKCS#11 module references, forbidden file-key fallback and key/token content | IAM and certificate-module configuration fixtures plus filesystem manifests | Only the enabled native handler and non-secret protected-key seam pass; any baked key/token or fallback file path fails without printing content | `aos-vehicle-platform` layer and image-policy tests | Draft |
 
 All runtime C++ cases required by `UT-FACTORY-005` shall be executed as a
 blocking build/qualification gate. Merely compiling those tests into the Yocto
@@ -374,12 +418,13 @@ build tree is not acceptance evidence.
 | [`REQ-FACTORY-008`](#req-factory-008) | [`UT-FACTORY-007`](#ut-factory-007) | N/A; cross-deployment property | Overlay handoff contract | Two fresh overlays/identities | M0-M1 VU/DU evidence |
 | [`REQ-FACTORY-009`](#req-factory-009) | [`UT-FACTORY-004`](#ut-factory-004) | Pre-provision inventory | Manufacturing stage contract | Fresh image boot | No M0-M1 rootfs update |
 | [`REQ-FACTORY-010`](#req-factory-010) | [`UT-FACTORY-008`](#ut-factory-008) | Base metadata gate | Retirement contract | Overlay-only discard proof | R0 then next M0 |
+| [`REQ-FACTORY-011`](#req-factory-011) | [`UT-FACTORY-009`](#ut-factory-009) | Effective IAM and module configuration | `IF-AUTH-005` conformance | Disposable protected-key and service-secret lifecycle qualification | G0 security-readiness evidence |
 
 ## Cross-Cutting Constraints
 
 | Concern | Applicable obligation | Component response | Verification |
 | --- | --- | --- | --- |
-| Security and least privilege | [`REQ-FACTORY-003`](#req-factory-003), [`REQ-FACTORY-007`](#req-factory-007) | No reusable identity; fixed non-root runtime and fail-closed policy | Source, component and guest gates |
+| Security and least privilege | [`REQ-FACTORY-003`](#req-factory-003), [`REQ-FACTORY-007`](#req-factory-007), [`REQ-FACTORY-011`](#req-factory-011) | No reusable identity/key; enabled native IAM permission lifecycle; fixed non-root runtime and fail-closed policy | Source, component and guest gates |
 | Privacy and redaction | [`REQ-FACTORY-008`](#req-factory-008) | Compare identity uniqueness without retaining or printing secret values | Redacted integration evidence |
 | Resource bounds | [`REQ-FACTORY-007`](#req-factory-007) | Fixed payload/free-space limits and bounded demo store | Runtime and store negative tests |
 | Timing | [`REQ-FACTORY-006`](#req-factory-006) | Bounded start/stop/health operations | D4 runtime timing cases |

@@ -7,7 +7,7 @@ This directory owns audience-visible scenarios, storyboards, presenter flows,
 and original demo visual assets. These documents describe what the audience
 sees; they do not redefine the system architecture.
 
-[Staged Post-SOP Brake and Tire Health Demo Scenarios 1.3](staged-post-sop-brake-health-demo-scenarios.md)
+[Staged Post-SOP Brake and Tire Health Demo Scenarios 1.4](staged-post-sop-brake-health-demo-scenarios.md)
 is the accepted demo-scenario baseline. It defines the canonical
 `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> T1 -> R0` presentation lifecycle,
 including manufacturing, provisioning, Brake Health evolution, the independent
@@ -15,8 +15,8 @@ Tire Health stage, and end-of-demo retirement, without authorizing
 implementation.
 
 The corresponding
-[Demo Scenario Architecture Flows 1.2](../architecture/demo-scenario-architecture-flows.md)
-map Scenario 1.3 to High-Level Architecture 1.2, including lifecycle, runtime,
+[Demo Scenario Architecture Flows 1.3](../architecture/demo-scenario-architecture-flows.md)
+map Scenario 1.4 to High-Level Architecture 1.3, including lifecycle, runtime,
 observability, failure and retirement flows. They do not authorize
 implementation.
 

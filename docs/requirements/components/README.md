@@ -23,8 +23,8 @@ of unexplained identifiers.
 | --- | --- | --- | --- | --- |
 | 1 | [`CR-VEHICLE-SIM`](../component-decomposition-and-interface-register.md#cr-vehicle-sim) | [Vehicle Simulation 0.4](vehicle-simulation.md) | `VEHICLE-SIM` | Draft |
 | 1 | [`CR-GATEWAY`](../component-decomposition-and-interface-register.md#cr-gateway) | [Vehicle Gateway 0.5](vehicle-gateway.md) | `GATEWAY` | Draft |
-| 2 | [`CR-FACTORY`](../component-decomposition-and-interface-register.md#cr-factory) | [Factory Substrate 0.1](factory-substrate.md) | `FACTORY` | Reviewed draft |
-| 2 | [`CR-VDP`](../component-decomposition-and-interface-register.md#cr-vdp) | `vehicle-data-platform.md` | `VDP` | Not started |
+| 2 | [`CR-FACTORY`](../component-decomposition-and-interface-register.md#cr-factory) | [Factory Substrate 0.2](factory-substrate.md) | `FACTORY` | Reviewed draft |
+| 2 | [`CR-VDP`](../component-decomposition-and-interface-register.md#cr-vdp) | [Vehicle Data Platform 0.1](vehicle-data-platform.md) | `VDP` | Reviewed draft |
 | 3 | [`CR-AOS`](../component-decomposition-and-interface-register.md#cr-aos) | `aos-lifecycle.md` | `AOS` | Not started |
 | 4 | [`CR-BHS`](../component-decomposition-and-interface-register.md#cr-bhs) | `brake-health-service.md` | `BHS` | Not started |
 | 4 | [`CR-BRAKE-CLOUD`](../component-decomposition-and-interface-register.md#cr-brake-cloud) | `brake-health-cloud.md` | `BRAKE-CLOUD` | Not started |

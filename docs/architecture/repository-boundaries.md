@@ -7,7 +7,7 @@ The accepted end-to-end architecture baseline, including shared platform FOTA,
 independent SOTA lifecycles for two peer OEM functional teams, bidirectional
 KUKSA/VISS flows, local analytics, Cloud reporting, and engineering-dashboard
 boundaries, is defined in
-[High-Level Architecture 1.2](high-level-architecture.md).
+[High-Level Architecture 1.3](high-level-architecture.md).
 
 ## Runtime Boundary
 
@@ -21,7 +21,7 @@ flowchart LR
 
     subgraph AosVM["AosVM vehicle computer"]
         PROVIDER["vehicle-data provider / OEM FOTA"]
-        BROKER["Aos–KUKSA Credential Broker<br/>OEM policy / FOTA"]
+        BROKER["Thin Aos–KUKSA Credential Broker<br/>native IAM permissions / FOTA"]
         KUKSA["unmodified Eclipse KUKSA Databroker"]
         SERVICE1["Brake Health service / SOTA 1"]
         SERVICE2["Tire Health service / SOTA 2"]
@@ -50,7 +50,7 @@ remain the stable service boundary.
 | Repository | Owns | Lifecycle |
 | --- | --- | --- |
 | `carla-ego-runtime` | ego control and VISS projection | simulation tooling |
-| `aos-vehicle-platform` | Vehicle Data Platform Component: providers, contract/configuration, Aos–KUKSA Credential Broker and OEM access policy; plus Service Manager runtime and KUKSA integration | OEM platform/FOTA |
+| `aos-vehicle-platform` | Vehicle Data Platform Component: providers, contract/configuration, thin Aos–KUKSA Credential Broker and provider platform-identity integration; plus Service Manager/IAM substrate, provider runtime and KUKSA integration | OEM platform/FOTA |
 | `brake-health-service` | Function Team 1 Brake Health consumer and local analytics | Service Provider 1/SOTA 1 |
 | `tire-health-service` | Function Team 2 local tire-condition estimation, bounded reporting, offline state and typed inspection advisory | Service Provider 2/SOTA 2; accepted boundary, repository not yet created |
 | `brake-health-cloud` | Function Team 1 backend and Brake Health Function Dashboard | Function Team 1 Cloud product; accepted boundary, repository not yet created |
@@ -76,10 +76,12 @@ repository, distinct from its in-vehicle SOTA repository.
 - Upstream Eclipse KUKSA remains unchanged as the in-vehicle data interface
   exposed to services and verifies only the Platform Team's configured public
   key.
-- The Vehicle Data Platform Component owns the Aos–KUKSA Credential Broker and
-  FOTA-managed OEM access policy. It derives short-lived, path-scoped JWTs from
-  an authenticated Aos service instance's `AOS_SECRET`; prototype tokens are
-  historical qualification fixtures, not the target architecture.
+- Aos Service Manager and IAM own SOTA instance identity, `AOS_SECRET` and
+  registered permissions. The Vehicle Data Platform Component's thin broker
+  translates only that current IAM result into short-lived, path-scoped JWTs;
+  it stores no parallel identity or per-service policy. The provider uses a
+  separately bound platform identity, while prototype static tokens remain
+  historical qualification fixtures only.
 - VM provisioning identity, OEM signing identity, user certificates, private
   keys, Cloud tokens, and raw operational evidence remain outside Git.
 

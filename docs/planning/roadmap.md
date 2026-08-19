@@ -4,8 +4,8 @@
 # Current Design and Delivery Roadmap
 
 - Status: Working gate map
-- Updated: 2026-08-18
-- Accepted architecture baseline: High-Level Architecture 1.2
+- Updated: 2026-08-19
+- Accepted architecture baseline: High-Level Architecture 1.3
 - Cloud or Unit mutation authorized: no
 
 ## Purpose
@@ -53,15 +53,15 @@ Exact retained versions and limitations remain recorded in the
 
 The following documents form one ordered design chain:
 
-1. [High-Level Architecture 1.2](../architecture/high-level-architecture.md)
+1. [High-Level Architecture 1.3](../architecture/high-level-architecture.md)
    owns boundaries, authorities and invariants.
-2. [Demo Scenario 1.3](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+2. [Demo Scenario 1.4](../demo/staged-post-sop-brake-health-demo-scenarios.md)
    owns the audience-visible stage sequence.
-3. [Architecture Flows 1.2](../architecture/demo-scenario-architecture-flows.md)
+3. [Architecture Flows 1.3](../architecture/demo-scenario-architecture-flows.md)
    owns lifecycle, runtime, observability and failure flows.
-4. [System Requirements and Traceability 0.5](../requirements/system-requirements-and-traceability.md)
+4. [System Requirements and Traceability 0.6](../requirements/system-requirements-and-traceability.md)
    owns `SYS-*` obligations and coverage of all twenty-one gaps.
-5. [Component Decomposition and Interface Register 0.5](../requirements/component-decomposition-and-interface-register.md)
+5. [Component Decomposition and Interface Register 0.6](../requirements/component-decomposition-and-interface-register.md)
    owns component/interface IDs and provisional requirement-package
    allocation.
 
@@ -76,8 +76,9 @@ lifecycles and repository candidates are accepted in Component Decomposition
 and Interface Register 0.2. This includes the Vehicle Gateway and Tire Health
 boundaries, one backend-plus-dashboard Cloud repository per Function Team,
 stateless Software Delivery Dashboard and Demo Orchestrator boundaries, native
-AosEdge logging ownership, and the ADR 0010 allocation of the Credential Broker
-and OEM policy to `CMP-VDP`.
+AosEdge logging ownership, and the ADR 0010 allocation of the thin Credential
+Broker and provider platform-identity integration to `CMP-VDP`, while native
+Aos IAM retains SOTA instance identity and permission ownership.
 
 Exit evidence: Component Decomposition and Interface Register 0.3 closed D0;
 the accepted register has since advanced to 0.4 through controlled downstream
@@ -103,12 +104,12 @@ gate.
 
 ### D2 — Baseline acceptance — completed 2026-08-18
 
-HLA 1.2, Scenario 1.3, Architecture Flows 1.2, System Requirements 0.5 and the
-Component Register 0.5 form one consistent design baseline. Scenario 1.3 and
-Flows 1.2 add the accepted drive-mode/world-context transition contract;
+HLA 1.3, Scenario 1.4, Architecture Flows 1.3, System Requirements 0.6 and the
+Component Register 0.6 form one consistent design baseline. Scenario 1.4 and
+Flows 1.3 retain the accepted drive-mode/world-context transition contract;
 Requirements and Register 0.4 allocate it to Vehicle Simulation, Vehicle
-Gateway and the Engineering Dashboard. HLA 1.2 was revalidated because no
-boundary, authority or interface changed. Deferred platform capabilities and
+Gateway and the Engineering Dashboard. HLA 1.3 also corrects the native Aos
+IAM credential authority and Factory/VDP security seam. Deferred platform capabilities and
 open qualification or implementation gates remain explicit and are not
 presented as current behavior.
 
@@ -173,11 +174,11 @@ These workstreams are sequencing guidance, not authorization to implement:
 | Workstream | Main outcome |
 | --- | --- |
 | `I1` Vehicle stimulus and Gateway | Qualify emergency-braking and explicit accelerated/pre-aged tire stimuli; add typed narrowly scoped advisory handling and dashboard status. |
-| `I2` Factory and Vehicle Data Platform | Freeze the clean factory image and empty slot; implement and qualify the accepted Component v1-v3 contract, Aos–KUKSA Credential Broker, OEM access policy and KUKSA trust configuration. |
+| `I2` Factory and Vehicle Data Platform | Freeze the clean factory image with enabled stock IAM permission handling and a non-secret PKCS#11 seam; implement and qualify the accepted Component v1-v3 contract, thin Aos–KUKSA Credential Broker, provider platform identity and KUKSA trust configuration. |
 | `I3` Brake Health product | Build the in-vehicle service, local model, bounded offline reporting, backend and function dashboard. |
 | `I4` Tire Health product | Build the independent persistent condition estimator, bounded reporting, inspection advisory, backend and function dashboard. |
 | `I5` Software delivery experience | Build the Software Delivery Dashboard over authoritative AosCloud APIs and the manufacturing/provisioning/promotion/retirement orchestration. |
-| `I6` Security and operations | Qualify Aos IAM permission lookup, complete-request policy rejection, short-lived JWT refresh/expiry, distinct provider authority, protected signing material, native AosCloud system/service/crash-log requests, retention/deletion, offline behavior and redaction. |
+| `I6` Security and operations | Qualify native Aos IAM instance/permission lifecycle, exact contract-bounded translation, short-lived JWT refresh/expiry, provider identity binding, per-Unit PKCS#11 signing, native AosCloud system/service/crash-log requests, retention/deletion, offline behavior and redaction. |
 | `I7` End-to-end release proof | Execute `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> T1 -> R0` on Validation and Demonstration Units with retained evidence. |
 
 Each workstream requires the relevant component requirements and acceptance
@@ -190,9 +191,10 @@ tests before code or deployment work begins.
   implementing platform release. No project-side admission controller will be
   built as a substitute.
 - Cloud-side pre-transfer rejection of a SOTA service whose requested KUKSA
-  paths exceed OEM policy remains future native platform behavior. The current
-  target enforces this locally and fail closed through the ADR 0010 Credential
-  Broker; it must not be presented as Cloud admission.
+  paths exceed an independent OEM upper bound remains future native platform
+  behavior. The current broker validates native IAM identity and registered
+  permissions against the installed VDP contract; it must not be presented as
+  a second OEM-policy database or as Cloud admission.
 - Production driver HMI, third-party Service Providers, Fleet Operators, a
   production fleet, and production vehicle-network/hardware selection remain
   outside the current demo.
@@ -201,8 +203,9 @@ tests before code or deployment work begins.
 
 Documentation housekeeping gate D1, component-register gate D0, and joint
 baseline gate D2 are complete. The current boundary is D3 component requirement
-packages. Vehicle Simulation 0.4, Vehicle Gateway 0.5 and Factory Substrate 0.1
-are draft packages awaiting review; their `CURRENT` and `EVIDENCE` labels
+packages. Vehicle Simulation 0.4 and Vehicle Gateway 0.5 are draft packages;
+Factory Substrate 0.2 and Vehicle Data Platform 0.1 are reviewed drafts. Their
+`CURRENT` and `EVIDENCE` labels
 describe verified implementation evidence and do not mean that the packages
 are accepted. No new repository, component code, build, signature, Cloud
 upload, assignment, approval, VM restart, provisioning, deprovisioning or Unit

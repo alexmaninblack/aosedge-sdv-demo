@@ -1,17 +1,17 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Component Decomposition and Interface Register 0.5
+# Component Decomposition and Interface Register 0.6
 
 - Status: Accepted component baseline
-- Version: 0.5
+- Version: 0.6
 - Prepared: 2026-08-19
 - Accepted: 2026-08-19
 - Owner: System Architecture
-- Architecture input: [High-Level Architecture 1.2](../architecture/high-level-architecture.md)
-- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.3](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Demo Scenario Architecture Flows 1.2](../architecture/demo-scenario-architecture-flows.md)
-- Requirements input: [System Requirements and Traceability 0.5](system-requirements-and-traceability.md)
+- Architecture input: [High-Level Architecture 1.3](../architecture/high-level-architecture.md)
+- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.4](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Demo Scenario Architecture Flows 1.3](../architecture/demo-scenario-architecture-flows.md)
+- Requirements input: [System Requirements and Traceability 0.6](system-requirements-and-traceability.md)
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md)
   and [ADR 0010](../architecture/decisions/0010-aos-kuksa-credential-broker.md)
 - Implementation, repository creation, Cloud, or Unit mutation authorized: no
@@ -34,12 +34,12 @@ surfaces. Those concepts are related, but they are not interchangeable.
 
 ## Source Precedence
 
-1. High-Level Architecture 1.2 owns system boundaries, authorities and
+1. High-Level Architecture 1.3 owns system boundaries, authorities and
    invariants.
-2. Demo Scenario 1.3 owns the audience-visible lifecycle and stage sequence.
-3. Architecture Flows 1.2 owns detailed runtime, lifecycle, observability and
+2. Demo Scenario 1.4 owns the audience-visible lifecycle and stage sequence.
+3. Architecture Flows 1.3 owns detailed runtime, lifecycle, observability and
    failure flows.
-4. System Requirements 0.5 owns normative `SYS-*` obligations and gap
+4. System Requirements 0.6 owns normative `SYS-*` obligations and gap
    traceability.
 5. This register owns stable component and interface identifiers, component
    allocation, implementation state and repository placement candidates.
@@ -68,8 +68,11 @@ Factory Baseline Assembly component.
 
 The Vehicle Data Platform Component is one logical platform component delivered
 in independently versioned FOTA artifacts. It owns the inbound/outbound
-providers, versioned KUKSA contract/configuration, Aos–KUKSA Credential Broker,
-and OEM access policy. Brake Health and Tire Health are
+providers, versioned KUKSA contract/configuration, thin Aos–KUKSA Credential
+Broker, and provider platform-credential integration. Aos Service Manager and
+IAM retain the SOTA identity, secret and registered-permission lifecycle; no
+parallel project-owned identity or per-service policy store is added. Brake
+Health and Tire Health are
 two peer functional components delivered in separate SOTA lifecycles. Version
 changes do not create new logical components.
 
@@ -147,11 +150,11 @@ they interact with its simulated boundaries.
 
 | ID | Component | Responsibility | Owner and lifecycle | Source boundary | State |
 | --- | --- | --- | --- | --- | --- |
-| <a id="cmp-factory"></a>`CMP-FACTORY` | OEM Factory Baseline Assembly | Reproducibly compose, build, qualify and freeze the unprovisioned SOP substrate from identified upstream and OEM integration inputs | Platform Team; pre-SOP manufacturing/build lifecycle | Integration recipes and qualification inputs in `aos-vehicle-platform`; output image remains outside Git | Build evidence `EVIDENCE`; accepted assembly process and output artifact `NEW` |
+| <a id="cmp-factory"></a>`CMP-FACTORY` | OEM Factory Baseline Assembly | Reproducibly compose, build, qualify and freeze the unprovisioned SOP substrate, including enabled stock Aos IAM permission handling and the non-secret IAM/PKCS#11 signing-key integration seam | Platform Team; pre-SOP manufacturing/build lifecycle | Integration recipes and qualification inputs in `aos-vehicle-platform`; output image remains outside Git | Build evidence `EVIDENCE`; accepted assembly process and output artifact `NEW` |
 | <a id="cmp-runtime"></a>`CMP-RUNTIME` | Provider-Specific Empty-Slot Runtime | Preinstalled Service Manager runtime, bounded provider slot, health and storage boundary for the Vehicle Data Platform payload | Platform Team; factory image | `aos-vehicle-platform` | `EVIDENCE`; final factory qualification required |
 | <a id="cmp-aos-core"></a>`CMP-AOS-CORE` | AosCore and Service Manager | Unit identity, desired state, security, update lifecycle, service execution and status | AosEdge platform | External AosVM/AosCore release | `EXTERNAL / CURRENT` |
 | <a id="cmp-kuksa"></a>`CMP-KUKSA` | Eclipse KUKSA Databroker | Stable in-vehicle service-facing VSS data boundary and verification of broker-issued JWTs using a configured public key | External Eclipse component in the SOP substrate; Platform Team governs integration and exposed contract | Unmodified external executable; configuration/contract in `aos-vehicle-platform` | Executable `CURRENT`; final contract/trust integration `EXTEND` |
-| <a id="cmp-vdp"></a>`CMP-VDP` | Vehicle Data Platform Component | Privileged VISS client, signal selection, validation, normalization, KUKSA actual-value publication, versioned contract, allowlisted outbound advisory path, Aos–KUKSA Credential Broker, and FOTA-managed OEM access policy | Platform Team; independent FOTA | `aos-vehicle-platform` | Inbound `EVIDENCE`; accepted v1-v3 graph and credential flow `EXTEND` |
+| <a id="cmp-vdp"></a>`CMP-VDP` | Vehicle Data Platform Component | Privileged VISS client, signal selection, validation, normalization, KUKSA actual-value publication, versioned contract, allowlisted outbound advisory path, thin Aos–KUKSA Credential Broker, and separate provider platform-credential integration | Platform Team; independent FOTA | `aos-vehicle-platform` | Inbound `EVIDENCE`; accepted v1-v3 graph and credential flow `EXTEND` |
 
 `CMP-RUNTIME` is provider-specific and hosts one bounded component type. This
 register makes no claim that the current runtime is a generic arbitrary
@@ -214,7 +217,7 @@ The same accepted artifact bytes and digest move from `VU` qualification to
 | `CarlaSim` | `CMP-CARLA` | Keep simulator source and Apple Silicon port separate from solution code. |
 | `UnrealEngine5_carla` | Restricted build dependency of `CMP-CARLA` | Keep private and outside all public repositories. |
 | `carla-ego-runtime` | `CMP-SCENE`, `CMP-CONTROL`, `CMP-GW`, `CMP-VISS`, `CMP-GW-ADV`, `CMP-ENG-DASH` | One coherent simulated Vehicle Gateway and demo-vehicle tooling boundary. |
-| `aos-vehicle-platform` | `CMP-FACTORY` assembly source, `CMP-RUNTIME`, `CMP-VDP` including the Credential Broker and OEM policy, and `CMP-KUKSA` contract/trust configuration | Platform Team source and FOTA boundary; immutable Factory Image output remains outside Git. |
+| `aos-vehicle-platform` | `CMP-FACTORY` assembly source, `CMP-RUNTIME`, `CMP-VDP` including the thin Credential Broker and provider platform-credential integration, and `CMP-KUKSA` contract/trust configuration | Platform Team source and FOTA boundary; immutable Factory Image output remains outside Git. |
 | `brake-health-service` | `CMP-BHS` | Function Team 1 in-vehicle SOTA source only. |
 | Proposed `tire-health-service` | `CMP-TIRE` | Function Team 2 in-vehicle SOTA source only; repository not yet created. |
 | Planned `brake-health-cloud` | `CMP-BRAKE-BE`, `CMP-BRAKE-DASH` | One Function Team 1 Cloud-product repository, separate from the in-vehicle SOTA source; repository not yet created. |
@@ -246,8 +249,10 @@ acceptance of this baseline.
 | <a id="if-adv-005"></a>`IF-ADV-005` | `CMP-GW-ADV` | `CMP-VISS` | Factual received/rejected/status signal | Gateway state | `NEW` |
 | <a id="if-auth-001"></a>`IF-AUTH-001` | `CMP-BHS` / `CMP-TIRE` | `CMP-VDP` Credential Broker | Local credential request using the per-instance `AOS_SECRET`; no reusable KUKSA token in the service artifact | Running Aos service identity | `NEW` |
 | <a id="if-auth-002"></a>`IF-AUTH-002` | `CMP-VDP` Credential Broker | `CMP-AOS-CORE` IAM | `GetPermissions(secret, "kuksa")` request and authenticated service identity plus declared path/mode response | Aos IAM registration made by Service Manager | `EXTERNAL / EXTEND` qualification |
-| <a id="if-auth-003"></a>`IF-AUTH-003` | `CMP-VDP` Credential Broker | `CMP-BHS` / `CMP-TIRE` | Complete-request rejection or short-lived, path-scoped KUKSA JWT after OEM-policy comparison | OEM access policy inside the signed FOTA component | `NEW` |
-| <a id="if-auth-004"></a>`IF-AUTH-004` | `CMP-VDP` | `CMP-KUKSA` | Public verifier, audience and trust configuration for broker-issued JWTs; private signing material never crosses this interface | Platform trust configuration | `EXTEND` |
+| <a id="if-auth-003"></a>`IF-AUTH-003` | `CMP-VDP` Credential Broker | `CMP-BHS` / `CMP-TIRE` | Rejection or short-lived, path-scoped KUKSA JWT that exactly maps the currently registered IAM permissions and installed VDP contract | Aos IAM result plus VDP contract; no parallel service policy store | `NEW` |
+| <a id="if-auth-004"></a>`IF-AUTH-004` | `CMP-VDP` | `CMP-KUKSA` | Public verifier, audience and trust configuration for broker-issued JWTs; private signing material remains per-Unit platform state protected through IAM/certificate-module and PKCS#11 integration | Platform trust configuration | `EXTEND` |
+| <a id="if-auth-005"></a>`IF-AUTH-005` | `CMP-AOS-CORE` / factory security substrate | `CMP-VDP` Credential Broker | Enabled permission-handler availability and access to a per-Unit platform-protected signing operation; no signing key bytes cross into the component artifact | Aos IAM/certificate-module and PKCS#11 integration | `NEW / QUALIFY` |
+| <a id="if-auth-006"></a>`IF-AUTH-006` | `CMP-AOS-CORE` / platform identity facility | privileged provider inside `CMP-VDP` | Short-lived provider credential limited to accepted KUKSA `provide`/`create` paths | Separate FOTA-component identity binding; exact mechanism unresolved | `NEW / DESIGN GATE` |
 
 The advisory chain proves only request handling and Gateway state. It does not
 prove a production driver display, acknowledgement, or brake actuation.
@@ -296,8 +301,8 @@ below is the single allocation record for exact identifiers.
 | --- | --- | --- | --- |
 | <a id="cr-vehicle-sim"></a>`CR-VEHICLE-SIM` | Define the installed Vehicle Hardware Capability Manifest, provide every declared physical signal/actuator behavior, repeatable braking and tire stimuli, exact source evidence, hidden ground-truth isolation and clean CARLA scenario reset. | CARLA vehicle and Scenario Controller | Hardware-profile completeness, determinism, source integrity, simulation truth and reset |
 | <a id="cr-gateway"></a>`CR-GATEWAY` | Account for the complete hardware profile, distinguish actuator capability from authority, acquire and normalize vehicle state, expose VISS, arbitrate control, handle bounded advisory status and present the engineering view. | Control UI, Gateway, VISS, Advisory Handler and Engineering Dashboard | Hardware coverage, telemetry contract, unavailable data, control traceability, advisory safety and latency |
-| <a id="cr-factory"></a>`CR-FACTORY` | Reproducibly assemble and preserve the clean unprovisioned Factory Image artifact and use it to create two identity-safe deployments with a healthy empty capability slot. | Factory Baseline Assembly and Empty-Slot Runtime | Reproducibility, artifact immutability, identity absence, overlay uniqueness and preservation |
-| <a id="cr-vdp"></a>`CR-VDP` | Deliver the versioned VISS-to-KUKSA data capability, narrowly allowlisted outbound advisory path, and Aos-IAM-derived least-privilege KUKSA credentials. | KUKSA and Vehicle Data Platform Component | Compatibility, data quality, credential brokering, OEM policy, FOTA and rollback |
+| <a id="cr-factory"></a>`CR-FACTORY` | Reproducibly assemble and preserve the clean unprovisioned Factory Image artifact, enable stock Aos IAM permission handling and its non-secret PKCS#11 seam, and create two identity-safe deployments with a healthy empty capability slot. | Factory Baseline Assembly and Empty-Slot Runtime | Reproducibility, artifact immutability, IAM substrate, identity/key absence, overlay uniqueness and preservation |
+| <a id="cr-vdp"></a>`CR-VDP` | Deliver the versioned VISS-to-KUKSA data capability, narrowly allowlisted outbound advisory path, and least-privilege short-lived KUKSA credentials derived from native Aos identity. | KUKSA and Vehicle Data Platform Component | Compatibility, data quality, thin credential translation, provider identity, FOTA and rollback |
 | <a id="cr-bhs"></a>`CR-BHS` | Run Brake Health analysis locally, report bounded results, operate offline and request only the approved advisory. | Brake Health In-Vehicle Service | Model determinism, reports, compatibility, offline operation and advisory scope |
 | <a id="cr-tire"></a>`CR-TIRE` | Estimate tire condition locally, persist bounded state, upload bounded results and request the typed inspection advisory through an independent SOTA lifecycle. | Tire Health In-Vehicle Service | Existing signal contract, model, persistence, bounded reporting, advisory and isolation |
 | <a id="cr-aos"></a>`CR-AOS` | Provide identity, authoritative desired/reported actual state, recorded owner approvals, FOTA/SOTA execution, dependency behavior, resource enforcement and native operational-log collection/delivery. | AosCore and AosCloud | Provisioning, lifecycle state and execution, OEM-authorized validation, rollback, native logging, timing and retirement |
@@ -386,6 +391,7 @@ the only normative definitions.
   Validation and Demonstration Unit runtime deployments are created.
 - Interfaces: [Cloud-to-Unit lifecycle (`IF-LC-004`)](#if-lc-004),
   [runtime enforcement (`IF-LC-006`)](#if-lc-006),
+  [broker IAM/PKCS#11 substrate (`IF-AUTH-005`)](#if-auth-005), and
   [orchestrated VM lifecycle (`IF-DEMO-001`)](#if-demo-001).
 - Parent requirements: [reproducible factory image (`SYS-MFG-001`)](system-requirements-and-traceability.md#sys-mfg-001),
   [clean SOP substrate (`SYS-MFG-002`)](system-requirements-and-traceability.md#sys-mfg-002),
@@ -410,6 +416,8 @@ the only normative definitions.
   [Aos IAM permission lookup (`IF-AUTH-002`)](#if-auth-002),
   [short-lived JWT or rejection (`IF-AUTH-003`)](#if-auth-003),
   [KUKSA verifier configuration (`IF-AUTH-004`)](#if-auth-004),
+  [broker IAM/PKCS#11 substrate (`IF-AUTH-005`)](#if-auth-005),
+  [provider platform credential (`IF-AUTH-006`)](#if-auth-006),
   [platform FOTA artifact (`IF-LC-001`)](#if-lc-001),
   [Platform Team OEM-authorized approval (`IF-LC-008`)](#if-lc-008), and
   [runtime enforcement (`IF-LC-006`)](#if-lc-006).
@@ -428,7 +436,7 @@ the only normative definitions.
   [existing Tire Health platform contract (`SYS-TIRE-001`)](system-requirements-and-traceability.md#sys-tire-001),
   [offline Tire Health inspection advisory (`SYS-TIRE-006`)](system-requirements-and-traceability.md#sys-tire-006),
   [least-privilege KUKSA identities (`SYS-SEC-001`)](system-requirements-and-traceability.md#sys-sec-001),
-  [Aos-IAM-derived KUKSA credentials (`SYS-SEC-002`)](system-requirements-and-traceability.md#sys-sec-002),
+  [native-IAM-derived SOTA KUKSA credentials (`SYS-SEC-006`)](system-requirements-and-traceability.md#sys-sec-006),
   [fail-closed advisory security (`SYS-SEC-003`)](system-requirements-and-traceability.md#sys-sec-003),
   [KUKSA verifier and token lifetime (`SYS-SEC-004`)](system-requirements-and-traceability.md#sys-sec-004), and
   [separate provider authority (`SYS-SEC-005`)](system-requirements-and-traceability.md#sys-sec-005).
@@ -581,13 +589,13 @@ Delivery Dashboard.
 
 ### `CR-CROSS` — Cross-cutting security and operations
 
-- Component focus: all components. The Aos–KUKSA Credential Broker and OEM
-  policy are internal responsibilities of
+- Component focus: all components. The thin Aos–KUKSA Credential Broker is an
+  internal responsibility of
   [Vehicle Data Platform Component (`CMP-VDP`)](#cmp-vdp), not a separate
   logical component.
 - Interface focus: every trust, resource, timing, log and offline boundary.
 - Parent requirements: [least-privilege KUKSA identities (`SYS-SEC-001`)](system-requirements-and-traceability.md#sys-sec-001),
-  [Aos-IAM-derived KUKSA credentials (`SYS-SEC-002`)](system-requirements-and-traceability.md#sys-sec-002),
+  [native-IAM-derived SOTA KUKSA credentials (`SYS-SEC-006`)](system-requirements-and-traceability.md#sys-sec-006),
   [fail-closed advisory security (`SYS-SEC-003`)](system-requirements-and-traceability.md#sys-sec-003),
   [KUKSA verifier and token lifetime (`SYS-SEC-004`)](system-requirements-and-traceability.md#sys-sec-004),
   [separate provider authority (`SYS-SEC-005`)](system-requirements-and-traceability.md#sys-sec-005),
@@ -635,23 +643,26 @@ Delivery Dashboard.
    independent log archive. Emitting teams own useful, redacted log content;
    API permissions, latency, retention/deletion, and offline behavior remain
    qualification requirements rather than repository-allocation decisions.
-7. **Accepted 2026-08-18:** ADR 0010 removes the previously proposed separate
-   authorization-component concept. The Aos–KUKSA Credential Broker and OEM access
-   policy are explicit internal responsibilities of `CMP-VDP`, delivered by
-   FOTA. Upstream `CMP-KUKSA` remains unchanged and validates short-lived JWTs
-   with the Platform Team's public verifier.
+7. **Amended 2026-08-19:** ADR 0010 removes the previously proposed separate
+   authorization-component concept and the duplicate local per-service OEM
+   policy store. The thin Aos–KUKSA Credential Broker is an internal
+   responsibility of `CMP-VDP`; Service Manager and Aos IAM own SOTA instance
+   identity, `AOS_SECRET` and registered permissions. Upstream `CMP-KUKSA`
+   remains unchanged and validates short-lived JWTs with the Platform Team's
+   public verifier. The provider's separate platform identity remains a
+   qualification gate.
 
-## Acceptance Record for Version 0.5
+## Acceptance Record for Version 0.6
 
-Version 0.5 preserves the accepted Version 0.4 component baseline and refines
-`CMP-CARLA`, `CMP-GW`, `IF-VEH-001`, `IF-VEH-003`, `CR-VEHICLE-SIM` and
-`CR-GATEWAY` with the agreed selected-hardware manifest, complete coverage,
-applied-control feedback and ground-truth-isolation obligations. No component,
-interface direction, owner, lifecycle or authority changed.
+Version 0.6 preserves the accepted Version 0.5 component graph and corrects
+the credential ownership boundary. It adds `IF-AUTH-005` for the factory
+IAM/PKCS#11 substrate and `IF-AUTH-006` for the provider's separate platform
+credential, while removing the duplicate per-service OEM policy store from
+`CMP-VDP`.
 
-The corrective baseline was accepted on 2026-08-18 after reviewers confirmed:
+The baseline was accepted on 2026-08-19 after reviewers confirmed:
 
-1. every HLA 1.2 box has exactly one primary component owner;
+1. every HLA 1.3 box has exactly one primary component owner;
 2. every audience-visible dashboard has exactly one authoritative data source;
 3. the three independent FOTA/SOTA lifecycles remain separated;
 4. Function Team 1 and Function Team 2 are peer product domains;
@@ -659,18 +670,24 @@ The corrective baseline was accepted on 2026-08-18 after reviewers confirmed:
 6. current, engineering-evidence, target, external and deferred states are not
    presented as equivalent;
 7. all runtime, functional Cloud, lifecycle and observability boundaries needed
-   by Scenario 1.3, including the `T1` Function Team 2 stage, have interface
+   by Scenario 1.4, including the `T1` Function Team 2 stage, have interface
    IDs;
 8. deferred native Cloud dependency admission and the not-yet-implemented
    Credential Broker are not presented as current behavior;
 9. no component claims a production driver HMI, continuous raw-telemetry Cloud
    stream, third-party Service Provider, Fleet Operator or production fleet;
 10. the provisional requirement packages can be expanded without changing HLA
-    1.2 or the accepted demo scenarios.
+    1.3 or the accepted demo scenarios.
 11. team-owned release decisions, Service Provider publication, OEM-authorized
     deployment approval, AosCloud state/execution, and stateless demo tooling
     remain distinct as required by
     [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md).
+12. Service Manager and Aos IAM own SOTA instance identity, `AOS_SECRET` and
+    registered permissions; the VDP broker has no parallel identity or
+    per-service policy store.
+13. the Factory Image supplies only the enabled IAM permission handler and
+    non-secret signing-key seam, while per-Unit key material and static tokens
+    remain outside immutable artifacts.
 
 Following acceptance, component requirements shall be written package by package,
 starting with [Vehicle simulation (`CR-VEHICLE-SIM`)](#cr-vehicle-sim) and

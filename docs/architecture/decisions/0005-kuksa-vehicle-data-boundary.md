@@ -84,18 +84,20 @@ historical evidence, but it is not the target architecture.
 
 [ADR 0010](0010-aos-kuksa-credential-broker.md) supersedes the former AOS-5
 standalone Authorization Adapter plan. Upstream KUKSA remains unchanged. The
-Vehicle Data Platform Component instead owns an Aos–KUKSA Credential Broker
-and OEM access policy that exchange an authenticated service instance's
-`AOS_SECRET` for a short-lived, path-scoped KUKSA JWT. The privileged provider
-uses a separate platform credential. No private signing key, secret, or issued
-token may be committed to Git or printed in logs.
+Vehicle Data Platform Component instead owns a thin Aos–KUKSA Credential
+Broker that validates a service instance's `AOS_SECRET` through Aos IAM and
+maps only its currently registered, VDP-contract-compatible permissions into a
+short-lived KUKSA JWT. Aos IAM retains the service identity/secret lifecycle;
+no parallel per-service policy store is added. The privileged provider uses a
+separately bound short-lived platform credential. No private signing key,
+secret, or issued token may be committed to Git or printed in logs.
 
 ## Repository Ownership
 
 - `carla-ego-runtime` owns the simulation-side VISS projection.
 - `aos-vehicle-platform` owns `carla-kuksa-provider`, KUKSA platform
-  integration, the vehicle-data contract, and the Aos–KUKSA Credential Broker
-  plus OEM access policy defined by ADR 0010.
+  integration, the vehicle-data contract, and the thin Aos–KUKSA Credential
+  Broker plus provider platform-identity integration defined by ADR 0010.
 - `brake-health-service` owns the cloud-managed consumer application and
   its Aos service package.
 - `aosedge-sdv-demo` pins and qualifies an exact end-to-end

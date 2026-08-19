@@ -4,16 +4,16 @@
 # Staged Post-SOP Brake and Tire Health Demo Scenarios
 
 - Status: Accepted demo-scenario baseline
-- Version: 1.3
-- Prepared: 2026-08-18
-- Accepted: 2026-08-18
+- Version: 1.4
+- Prepared: 2026-08-19
+- Accepted: 2026-08-19
 - Owner: Demo Architecture
 - Scope: manufacturing output, end-of-line provisioning, audience-visible
   capability evolution, release sequence, dashboards, observability, and
   end-of-demo retirement
 - Architecture alignment: dynamic staged projection of High-Level Architecture
-  1.2, with detailed interaction mapping in Demo Scenario Architecture Flows
-  1.2
+  1.3, with detailed interaction mapping in Demo Scenario Architecture Flows
+  1.3
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md)
   and [ADR 0010](../architecture/decisions/0010-aos-kuksa-credential-broker.md)
 - Implementation, build, signing, Cloud, or Unit mutation authorized: no
@@ -31,9 +31,9 @@ its Vehicle Gateway, and contains an operational Domain Controller with the
 AosEdge platform substrate. What is initially absent is the Vehicle Data
 Platform Component payload and all functional SOTA services.
 
-Scenario 1.3 defines what should happen and what an
+Scenario 1.4 defines what should happen and what an
 audience should see. It is the dynamic, stage-by-stage projection of the
-capability-superset model in High-Level Architecture 1.2. It does not yet
+capability-superset model in High-Level Architecture 1.3. It does not yet
 select exact APIs, define every detailed interaction, or authorize
 implementation.
 
@@ -92,9 +92,9 @@ The demonstration does not claim that no software ever changes after SOP. Its
 claim is that post-SOP functionality is added through the extension and
 lifecycle mechanisms intentionally built into the SOP platform.
 
-## Alignment With High-Level Architecture 1.2
+## Alignment With High-Level Architecture 1.3
 
-High-Level Architecture 1.2 shows every capability that the target logical
+High-Level Architecture 1.3 shows every capability that the target logical
 vehicle architecture can host. This scenario defines when those deployable
 capabilities are absent or present during `M0`, `M1`, `G0–G4`, `T1`, and `R0`.
 
@@ -121,8 +121,8 @@ simultaneous simulated vehicles unless that topology is later implemented.
 | Domain Controller | QEMU plus AosVM representing a separate vehicle ECU |
 | Official AosEdge release | Immutable upstream release from which the OEM platform image is reproducibly derived |
 | OEM Demo Factory Image | Cloud-unprovisioned OEM image derived from the official AosEdge release; it contains the accepted component runtime but no provider payload, functional service, Unit registration, or Cloud-issued identity certificate |
-| Platform substrate | AosCore, Service Manager, KUKSA, the accepted Vehicle Data Provider component runtime, security, and update support present from SOP |
-| Vehicle Data Platform Component | FOTA-owned platform artifact containing the inbound/outbound providers, versioned KUKSA contract/configuration, Aos–KUKSA Credential Broker and OEM access policy; stage names use the shorthand VDP Component v1–v3 |
+| Platform substrate | AosCore, Service Manager, enabled stock IAM permission handling, KUKSA, the accepted Vehicle Data Provider component runtime, security/update support, and the non-secret IAM/PKCS#11 broker-key integration seam present from SOP |
+| Vehicle Data Platform Component | FOTA-owned platform artifact containing the inbound/outbound providers, versioned KUKSA contract/configuration and thin Aos–KUKSA Credential Broker; stage names use the shorthand VDP Component v1–v3 |
 | Brake Health Function Team | Function Team 1 / Service Provider 1: OEM functional vertical that owns the Brake Health service, model, backend, dashboard, and SOTA 1 lifecycle |
 | Tire Health Function Team | Function Team 2 / Service Provider 2: independent peer OEM functional vertical that owns local tire-condition estimation, bounded Cloud reporting, inspection advisory, backend, dashboard, and SOTA 2 lifecycle |
 | Service Provider identity | Function Team Cloud identity used to develop, sign, publish, version, and technically verify its own SOTA artifact; it does not authorize deployment to OEM Units |
@@ -229,7 +229,7 @@ is not part of the time-critical local advisory path.
 
 ### Tire Health Function Dashboard — Independent SOTA 2 Product
 
-High-Level Architecture 1.2 assigns a separate backend and dashboard to
+High-Level Architecture 1.3 assigns a separate backend and dashboard to
 Function Team 2 / Service Provider 2. They become audience-visible at `T1`,
 after the `G0–G4` Brake Health progression. The Tire Health dashboard shows an
 estimated condition band, threshold event, service and platform versions, Unit
@@ -451,9 +451,9 @@ The exact contract is a later design decision.
    approval from target checks.
 5. VDP Component v1 is installed and activated on the Validation Unit.
 6. Platform qualification verifies signal mapping, filtering, KUKSA
-   publication, the Credential Broker and OEM policy fail-closed behavior,
-   distinct provider authority, restart, source loss, and recovery without
-   modifying upstream KUKSA.
+   publication, the Credential Broker's fail-closed IAM translation, distinct
+   provider authority, restart, source loss, and recovery without modifying
+   upstream KUKSA or introducing a second identity/policy database.
 7. Selected provider lifecycle and runtime logs become available through the
    native AosEdge log request path and the Software Delivery Dashboard.
 8. The Platform Team accepts the exact VDP Component v1 version, digest,
@@ -495,10 +495,11 @@ advisory.
    through an OEM identity.
 4. Service v1 is installed first on the Validation Unit. Service Manager
    registers its permissions and injects a per-instance `AOS_SECRET`.
-5. The VDP-owned Credential Broker validates that identity and the complete
-   request against OEM policy, then issues a short-lived path-scoped JWT;
-   integration validation proves the KUKSA-to-service-to-backend path and
-   rejected excess-permission cases.
+5. The VDP-owned Credential Broker validates `AOS_SECRET` through Aos IAM,
+   translates only the service instance's currently registered permissions
+   into a short-lived path-scoped JWT, and rejects invalid, stale, malformed or
+   VDP-contract-incompatible permissions. Integration validation proves the
+   KUKSA-to-service-to-backend path and the fail-closed cases.
 6. Service logs become available through native AosEdge collection and an
    explicitly requested AosCloud log result in the Software Delivery
    Dashboard.
@@ -711,8 +712,9 @@ Health service, backend, dashboard, model, or SOTA 1 lifecycle.
    read and actuate paths in its Aos service metadata.
 3. Function Team 2 explicitly authorizes deployment to the Validation Unit
    through an OEM identity.
-4. The Credential Broker verifies the service instance and requested paths
-   against OEM policy before issuing a short-lived scoped KUKSA credential.
+4. The Credential Broker verifies the service instance through Aos IAM and
+   maps only the currently registered, VDP-contract-compatible paths into a
+   short-lived scoped KUKSA credential.
 5. Validation proves local estimation, persistent-state continuity, bounded
    offline reporting, idempotent backend ingestion, advisory isolation, and
    that the existing Brake Health graph remains unchanged.
@@ -880,7 +882,7 @@ destructive experiment.
     presentation.
 11. Unit identities remain stable throughout `G0–T1`; the complete next-run
     reset retires those identities and creates new ones from fresh overlays.
-12. High-Level Architecture 1.2 is a capability superset; `G0–G4` exercise
+12. High-Level Architecture 1.3 is a capability superset; `G0–G4` exercise
     Function Team 1 and `T1` adds Function Team 2 through its independent Tire
     Health SOTA 2 lifecycle.
 13. Function Team 1 and Function Team 2 remain independent AosCloud Service
@@ -952,17 +954,17 @@ destructive experiment.
     Engineering Telematics Dashboard presentation.
 
 Detailed interaction mapping now exists in Demo Scenario Architecture Flows
-1.2. The open gates above constrain component requirements, implementation,
+1.3. The open gates above constrain component requirements, implementation,
 qualification, and audience-visible claims. They preserve the canonical
 `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> T1 -> R0` presentation order and
 the independence of the two SOTA lifecycles.
 
 ## Reference Basis
 
-- [High-Level Architecture 1.2](../architecture/high-level-architecture.md)
+- [High-Level Architecture 1.3](../architecture/high-level-architecture.md)
   defines the accepted capability-superset architecture baseline; this
   scenario defines its staged component presence and lifecycle, while
-  [Architecture Flows 1.2](../architecture/demo-scenario-architecture-flows.md)
+  [Architecture Flows 1.3](../architecture/demo-scenario-architecture-flows.md)
   defines detailed cross-component interaction mapping.
 - [AosEdge overview](https://docs.aosedge.tech/docs/aos-edge/) describes the
   Cloud-to-edge lifecycle and operational visibility model.

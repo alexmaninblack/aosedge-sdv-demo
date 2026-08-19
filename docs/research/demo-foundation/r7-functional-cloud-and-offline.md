@@ -194,5 +194,5 @@ but remain release-qualification gates on the pinned VM.
 - [AosEdge Service Manager launcher and persistence](https://docs.aosedge.tech/docs/aos-core/architecture/service-manager/launcher)
 - [AosEdge Service configuration schema](https://docs.aosedge.tech/docs/reference/core-component-configs/core-service-config)
 - [AosEdge Network Manager](https://docs.aosedge.tech/docs/aos-core/architecture/service-manager/network-manager)
-- [Current High-Level Architecture 1.2](../../architecture/high-level-architecture.md)
-- [Current Demo Scenario 1.3](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- [Current High-Level Architecture 1.3](../../architecture/high-level-architecture.md)
+- [Current Demo Scenario 1.4](../../demo/staged-post-sop-brake-health-demo-scenarios.md)

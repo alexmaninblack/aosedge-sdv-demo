@@ -52,6 +52,15 @@ class DocumentationCheckTests(unittest.TestCase):
             ("carla-ego-runtime", "docs/external-control-contract.md"),
             ("carla-ego-runtime", "docs/viss-profile.md"),
             ("carla-ego-runtime", "docs/telemetry-contract.md"),
+            ("carla-ego-runtime", "docs/m6-2-live-handover.md"),
+            ("carla-ego-runtime", "config/brake_event_hybrid_town10hd.json"),
+            ("carla-ego-runtime", "tests/brake_event_scenario_test.py"),
+            ("carla-ego-runtime", "tests/external_control_protocol_test.py"),
+            ("carla-ego-runtime", "tests/gnss_test.cpp"),
+            ("carla-ego-runtime", "tests/m5_tools_test.py"),
+            ("carla-ego-runtime", "tests/vehicle_state_test.cpp"),
+            ("carla-ego-runtime", "tests/viss_protocol_test.cpp"),
+            ("carla-ego-runtime", "tests/vss_projection_test.cpp"),
             ("aos-vehicle-platform", "docs/architecture.md"),
             (
                 "aos-vehicle-platform",
@@ -198,19 +207,19 @@ class DocumentationCheckTests(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         target = root / "docs" / "architecture" / "high-level-architecture.md"
         text = target.read_text(encoding="utf-8").replace(
-            "- Version: 1.2", "- Version: 1.3", 1
+            "- Version: 1.3", "- Version: 1.4", 1
         )
         target.write_text(text, encoding="utf-8")
         result = self.run_check(root)
         self.assertNotEqual(0, result.returncode)
-        self.assertIn("label does not name target version 1.3", result.stderr)
+        self.assertIn("label does not name target version 1.4", result.stderr)
 
     def test_stale_versioned_canonical_index_link_is_rejected(self) -> None:
         temporary, root = self.temporary_documentation()
         self.addCleanup(temporary.cleanup)
         target = root / "docs" / "demo" / "README.md"
         text = target.read_text(encoding="utf-8").replace(
-            "Demo Scenarios 1.3", "Demo Scenarios 1.2", 1
+            "Demo Scenarios 1.4", "Demo Scenarios 1.3", 1
         )
         target.write_text(text, encoding="utf-8")
         result = self.run_check(root)

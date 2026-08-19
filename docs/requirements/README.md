@@ -3,11 +3,11 @@
 
 # Requirements Documentation
 
-- [System Requirements and Traceability 0.5 — accepted system-requirements baseline](system-requirements-and-traceability.md)
+- [System Requirements and Traceability 0.6 — accepted system-requirements baseline](system-requirements-and-traceability.md)
   — system obligations, coverage of all Architecture Flows gaps, verification
   intent, repository ownership and allocation to future component requirement
   packages.
-- [Component Decomposition and Interface Register 0.5 — accepted component baseline](component-decomposition-and-interface-register.md)
+- [Component Decomposition and Interface Register 0.6 — accepted component baseline](component-decomposition-and-interface-register.md)
   — stable logical-component and interface identifiers, current/target state,
   lifecycle ownership, repository candidates and the review gate before
   component requirements.
