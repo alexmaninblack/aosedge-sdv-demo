@@ -25,7 +25,7 @@ not only the CARLA-to-AosEdge transport bridge.
 - [Architecture documentation index](architecture/README.md)
 - [High-Level Architecture 1.4 — accepted architecture baseline](architecture/high-level-architecture.md)
   — accepted end-to-end system view with the Tire Health decision.
-- [Demo Scenario Architecture Flows 1.6 — Brake Health evolution review candidate](architecture/demo-scenario-architecture-flows.md)
+- [Demo Scenario Architecture Flows 1.6 — accepted architecture-flow baseline](architecture/demo-scenario-architecture-flows.md)
   — complete manufacturing, provisioning, post-SOP evolution, Function Team 2
   `T1` Tire Health stage, observability, offline, and retirement mapping.
 - [Repository and component boundaries](architecture/repository-boundaries.md)
@@ -39,17 +39,17 @@ not only the CARLA-to-AosEdge transport bridge.
 
 - [Demo documentation index](demo/README.md)
 - [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.7](demo/staged-post-sop-brake-health-demo-scenarios.md)
-  — review candidate adding the v1 event-window, v2 edge-assessment and v3 advisory/data evolution.
+  — accepted baseline adding the v1 event-window, v2 edge-assessment and v3 advisory/data evolution.
 - [Demo assets](demo/assets/) — original, license-cleared visual sources and
   exports. Storyboards and presenter materials will be added here only after
   review.
 
 ## Requirements
 
-- [System Requirements and Traceability 0.9 — Brake Health evolution review candidate](requirements/system-requirements-and-traceability.md)
+- [System Requirements and Traceability 0.9 — accepted system-requirements baseline](requirements/system-requirements-and-traceability.md)
   — system obligations, complete coverage of the twenty-one Architecture Flows
   gaps, verification intent, repository ownership and component allocation.
-- [Component Decomposition and Interface Register 0.9 — Brake Health evolution review candidate](requirements/component-decomposition-and-interface-register.md)
+- [Component Decomposition and Interface Register 0.9 — accepted component baseline](requirements/component-decomposition-and-interface-register.md)
   — logical components, implementation state, lifecycle and repository
   boundaries, runtime and Cloud interfaces, and component-package allocation.
 - [Component requirement packages and template](requirements/components/README.md)

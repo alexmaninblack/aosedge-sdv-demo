@@ -3,7 +3,7 @@
 
 # Brake Health In-Vehicle Service Component Requirements
 
-- Status: Review draft
+- Status: D3 design-reviewed
 - Package: [`CR-BHS`](../component-decomposition-and-interface-register.md#cr-bhs)
 - Version: 0.1
 - Prepared: 2026-08-19

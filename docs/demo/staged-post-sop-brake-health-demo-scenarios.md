@@ -3,10 +3,11 @@
 
 # Staged Post-SOP Brake and Tire Health Demo Scenarios
 
-- Status: Review candidate
+- Status: Accepted demo-scenario baseline
 - Version: 1.7
 - Prepared: 2026-08-19
-- Proposed successor to: 1.6
+- Accepted: 2026-08-19
+- Supersedes: 1.6
 - Owner: Demo Architecture
 - Scope: manufacturing output, end-of-line provisioning, audience-visible
   capability evolution, release sequence, dashboards, observability, and
@@ -1062,7 +1063,7 @@ qualification, and audience-visible claims. They preserve the canonical
 `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> T1 -> R0` presentation order and
 the independence of the two SOTA lifecycles.
 
-## Review Notes for Version 1.7
+## Acceptance Record for Version 1.7
 
 Version 1.7 preserves HLA 1.4 component boundaries, lifecycle owners and the
 accepted `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> T1 -> R0` order. It

@@ -56,9 +56,9 @@ The following documents form one ordered design chain:
 1. [High-Level Architecture 1.4](../architecture/high-level-architecture.md)
    owns boundaries, authorities and invariants.
 2. [Demo Scenario 1.7](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-   is the current review candidate for the audience-visible stage sequence.
+   owns the accepted audience-visible stage sequence.
 3. [Architecture Flows 1.6](../architecture/demo-scenario-architecture-flows.md)
-   is the current review candidate for lifecycle, runtime, observability and failure flows.
+   owns the accepted lifecycle, runtime, observability and failure flows.
 4. [System Requirements and Traceability 0.9](../requirements/system-requirements-and-traceability.md)
    owns `SYS-*` obligations and coverage of all twenty-one gaps.
 5. [Component Decomposition and Interface Register 0.9](../requirements/component-decomposition-and-interface-register.md)
@@ -115,18 +115,14 @@ Deferred platform capabilities and
 open qualification or implementation gates remain explicit and are not
 presented as current behavior.
 
-Scenario 1.6, Architecture Flows 1.5, System Requirements 0.8 and Component
-Register 0.8 are the current accepted cascade. They preserve the accepted
-topology and add the explicit `R0 -> M0 -> M1` Unit Set reconciliation and
-responsibility split accepted during `CR-AOS` review.
-
 Scenario 1.7, Architecture Flows 1.6, System Requirements 0.9 and Component
-Register 0.9 are the current `CR-BHS` review-candidate cascade. They preserve
+Register 0.9 are the current accepted cascade. They preserve
 the accepted topology and replace the former v1 low-rate report narrative with
 a bounded pre/active/post `BrakeTelemetryWindow`, make v2 a clearly labelled
 synthetic on-board assessment with derived-only normal Cloud reporting, and
-retain v3 advisory plus correlated backend facts. The accepted predecessor
-remains the fallback until this candidate and CR-BHS complete review.
+retain v3 advisory plus correlated backend facts. They also preserve the
+explicit `R0 -> M0 -> M1` Unit Set reconciliation and responsibility split
+accepted during `CR-AOS` review.
 
 Exit evidence: each baseline document records its accepted status and date,
 and the documentation quality gate passes for the complete design chain.
@@ -148,10 +144,10 @@ Create and review packages in this order:
    [cross-cutting concerns (`CR-CROSS`)](../requirements/component-decomposition-and-interface-register.md#cr-cross)
    and [end-to-end acceptance (`CR-E2E`)](../requirements/component-decomposition-and-interface-register.md#cr-e2e).
 
-Groups 1 through 3 were design-reviewed and closed on 2026-08-19. Their target,
-partial and qualification states remain open for D4 and implementation. The
-next packages are Brake Health service (`CR-BHS`) and Brake Health Cloud
-(`CR-BRAKE-CLOUD`).
+Groups 1 through 3 and Brake Health service (`CR-BHS`) were design-reviewed
+and closed on 2026-08-19. Their target, partial and qualification states remain
+open for D4 and implementation. Brake Health Cloud (`CR-BRAKE-CLOUD`) is the
+next package.
 
 Create every package from the
 [component requirement package template](../requirements/components/template.md).
@@ -227,8 +223,9 @@ packages. Vehicle Simulation 0.4, Vehicle Gateway 0.6, Factory Substrate 0.2
 and Vehicle Data Platform 0.3 have completed D3 design review; their
 `CURRENT`, `EVIDENCE`, `PARTIAL`, `GAP` and `TARGET` labels continue to describe
 implementation and qualification truth rather than component acceptance. Aos
-Lifecycle (`CR-AOS`) 0.1 has completed D3 design review. Brake Health service
-(`CR-BHS`) is the current package under review. No new repository, component
-code, build, signature, Cloud upload, assignment, approval, VM
+Lifecycle (`CR-AOS`) 0.1 and Brake Health Service (`CR-BHS`) 0.1 have
+completed D3 design review. Brake Health Cloud (`CR-BRAKE-CLOUD`) is the
+current package under review. No new repository, component code, build,
+signature, Cloud upload, assignment, approval, VM
 restart, provisioning, deprovisioning or Unit mutation is authorized by this
 roadmap.

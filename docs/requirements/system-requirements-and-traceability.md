@@ -3,10 +3,11 @@
 
 # System Requirements and Traceability 0.9
 
-- Status: Review candidate
+- Status: Accepted system-requirements baseline
 - Version: 0.9
 - Prepared: 2026-08-19
-- Proposed successor to: 0.8
+- Accepted: 2026-08-19
+- Supersedes: 0.8
 - Owner: System Architecture
 - Architecture input: [High-Level Architecture 1.4](../architecture/high-level-architecture.md)
 - Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.7](../demo/staged-post-sop-brake-health-demo-scenarios.md)
@@ -343,7 +344,7 @@ Before creating `tire-health-service`, reviewers shall confirm:
 
 No remote repository creation is authorized by acceptance of this baseline.
 
-## Review Notes for Version 0.9
+## Acceptance Record for Version 0.9
 
 Version 0.9 retires the accepted low-rate `SYS-BHS-001` report concept while
 preserving its anchor. `SYS-BHS-005` defines the bounded v1 braking-event

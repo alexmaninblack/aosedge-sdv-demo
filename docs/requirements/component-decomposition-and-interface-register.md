@@ -3,10 +3,11 @@
 
 # Component Decomposition and Interface Register 0.9
 
-- Status: Review candidate
+- Status: Accepted component baseline
 - Version: 0.9
 - Prepared: 2026-08-19
-- Proposed successor to: 0.8
+- Accepted: 2026-08-19
+- Supersedes: 0.8
 - Owner: System Architecture
 - Architecture input: [High-Level Architecture 1.4](../architecture/high-level-architecture.md)
 - Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.7](../demo/staged-post-sop-brake-health-demo-scenarios.md)
@@ -694,7 +695,7 @@ Delivery Dashboard.
    approval action. It owns neither the decision, evidence nor lifecycle
    state, and passing tests never auto-approve.
 
-## Review Notes for Version 0.9
+## Acceptance Record for Version 0.9
 
 Version 0.9 preserves the accepted component graph and repositories. It
 clarifies `CMP-BHS`, `CMP-BRAKE-BE`, `CMP-BRAKE-DASH`, `CR-BHS`,

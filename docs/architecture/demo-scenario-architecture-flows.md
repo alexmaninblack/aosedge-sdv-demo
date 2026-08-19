@@ -3,10 +3,11 @@
 
 # Demo Scenario Architecture Flows 1.6
 
-- Status: Review candidate
+- Status: Accepted architecture-flow baseline
 - Version: 1.6
 - Prepared: 2026-08-19
-- Proposed successor to: 1.5
+- Accepted: 2026-08-19
+- Supersedes: 1.5
 - Owner: System Architecture
 - Architecture input: [High-Level Architecture 1.4](high-level-architecture.md)
 - Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.7](../demo/staged-post-sop-brake-health-demo-scenarios.md)
@@ -1252,7 +1253,7 @@ The following former candidate gaps remain resolvable but are no longer active:
 | <a id="gap-af-13"></a>`GAP-AF-13` | `GAP-AF-21` | Former dynamics-signal proof folded into the Tire Health model contract |
 | <a id="gap-af-14"></a>`GAP-AF-14` | `GAP-AF-23` | Former event Cloud product replaced by Tire Health Cloud product |
 
-## Architecture-Flow Review Notes for Version 1.6
+## Architecture-Flow Acceptance Record for Version 1.6
 
 Version 1.6 preserves the accepted topology and lifecycle flow while exposing
 the complete Brake Health data-product transition. `AF-G2-RT` now proves the
@@ -1312,7 +1313,7 @@ after reviewers confirmed that:
 
 ## Downstream Component Requirement Gate
 
-The System Requirements and Traceability 0.9 review candidate covers every active
+The accepted System Requirements and Traceability 0.9 baseline covers every active
 `AF-*` flow and allocates the resulting obligations to provisional component
 packages. D3 now expands those packages in this order:
 
