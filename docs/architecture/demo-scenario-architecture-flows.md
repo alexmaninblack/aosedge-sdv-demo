@@ -36,15 +36,16 @@ M0 manufacturing
   -> G2 Brake Health Service v1 event-window acquisition
   -> G3 VDP Component v2 + edge-analytics Service v2
   -> G4 bidirectional VDP Component v3 + Service v3
-  -> T1 independent Tire Health Service
+  -> T1 independent Tire Health Service v1.0
   -> R0 retirement of the current demo run
 ```
 
 `M0` and `M1` describe manufacturing and onboarding, `G0–G4` describe the
-accepted substrate and Brake Health software graphs, `T1` adds the independent
-Tire Health SOTA 2 product, and `R0` retires the complete current run. `T1`
-follows `G4` in the presentation because it uses the accepted VDP v3 contract;
-it does not depend on Function Team 1. The next-run reset retires the two
+accepted substrate and Brake Health software graphs, `T1` adds one mature
+Tire Health Service v1.0 SOTA 2 product, and `R0` retires the complete current
+run. `T1` follows `G4` in the presentation because it uses the accepted VDP v3
+contract; it does not depend on Function Team 1 or repeat the three-version
+Brake Health evolution. The next-run reset retires the two
 current Units and discards their provisioned overlays; it is not a reverse OTA
 rollout.
 
@@ -143,7 +144,7 @@ flowchart LR
 | `G2` | Unchanged | VDP Component v1 | Service v1 | Absent | Absent |
 | `G3` | Unchanged | Backward-compatible VDP Component v2 | Service v2 + model | Absent | Absent |
 | `G4` | Unchanged | VDP Component v3 inbound + allowlisted outbound | Service v3 | Present | Absent in the `G0–G4` Brake Health sequence |
-| `T1` | Unchanged | VDP Component v3 unchanged | Service v3 unchanged | Brake and Tire typed targets present | Tire Health service present through independent SOTA 2 |
+| `T1` | Unchanged | VDP Component v3 unchanged | Service v3 unchanged | Brake and Tire typed targets present | Tire Health Service v1.0 present through independent SOTA 2 |
 | `R0` | Retired and unable to reconnect | Overlay discarded | Overlay/backend session state retired | Not applicable | Not applicable |
 
 Function Team 2 is the independent `T1` flow defined later in this document.
@@ -559,11 +560,11 @@ sequenceDiagram
     Note over FT1,AC: Immutable Service v1 is built, signed and staged before the presentation
     FT1->>AC: SP identity publishes and selects Service v1 requiring VDP Component v1
     AC-->>SD: Candidate batch, VU target and active Cloud role
-    SD->>AC: Re-read effective target and dependency
+    SD->>AC: Re-read effective target and observed VDP v1 evidence
     FT1->>SD: Explicitly approve VU deployment using OEM identity
     SD->>AC: Submit FT1-owned OEM-authorized validation approval
-    AC->>VU: Check dependency and install Service v1 through SOTA 1
-    VU-->>AC: Service ready with exact version and digest
+    AC->>VU: Install Service v1 through SOTA 1
+    VU-->>AC: Service readiness verifies VDP v1 and reports exact digest
     VU->>BE: Send bounded v1 BrakeTelemetryWindow chunks
     BE-->>FT1: Reconstructed window and live dashboard evidence
     FT1->>SD: Accept exact Service v1 integration result
@@ -873,13 +874,14 @@ no IVI or Instrument Cluster and must not claim `displayed to driver` or
 - Define Service v3 state machine, bounded retention, retry and idempotency.
 - Extend the Engineering Dashboard without turning it into an actuator client.
 
-## T1 — Independent Tire Health Service
+## T1 — Independent Tire Health Service v1.0
 
 This is the independent presentation stage accepted by ADR 0008. It follows
-`G4` because the complete Tire Health scenario uses the accepted VDP v3 data
-and advisory contract. It does not depend on Function Team 1, Brake Health
-Service v3, or the Brake Health Cloud product; the existing `G4` graph remains
-unchanged while SOTA 2 adds Tire Health.
+`G4` because one mature Tire Health Service v1.0 candidate uses the accepted
+VDP v3 data and advisory contract. It does not depend on Function Team 1,
+Brake Health Service v3, or the Brake Health Cloud product; the existing `G4`
+graph remains unchanged while SOTA 2 adds a second Function Team product and
+lifecycle.
 
 <a id="af-tire-lc"></a>
 ### `AF-TIRE-LC` — Independent SOTA 2 lifecycle
@@ -893,9 +895,10 @@ sequenceDiagram
     participant DU as Demonstration Unit
 
     Note over FT2,AC: FT2 owns the decision while SP publishes and OEM identity approves deployment
-    FT2->>AC: SP identity publishes and selects immutable Tire Health service
-    FT2->>AC: OEM identity approves validation deployment against accepted capability
-    AC->>VU: Check dependency and install through SOTA 2
+    FT2->>AC: SP identity publishes immutable Tire Health Service v1.0
+    FT2->>AC: OEM identity approves after reviewing VDP v3 compatibility evidence
+    AC->>VU: Install the selected service through SOTA 2
+    VU-->>FT2: Readiness verifies installed VDP v3 contract or fails closed
     VU-->>FT2: Local model, persistence, advisory, and bounded-report evidence
     VU->>TB: Deliver qualified condition summary or threshold event
     FT2->>AC: OEM identity accepts exact service version and scenario result
@@ -905,7 +908,9 @@ sequenceDiagram
 
 Function Team 2 does not request a new Vehicle Data Platform Component in the
 current demo. `T1` begins only after the accepted VDP v3 contract contains every
-required dynamics signal and typed advisory path.
+required dynamics signal and typed advisory path. The sequence above is
+release ordering and service-side readiness, not a claim of native Cloud-side
+dependency admission in the current AosEdge release.
 
 <a id="af-tire-rt"></a>
 ### `AF-TIRE-RT` — Local condition estimation, advisory, and bounded reporting

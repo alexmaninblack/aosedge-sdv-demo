@@ -39,7 +39,8 @@ not only the CARLA-to-AosEdge transport bridge.
 
 - [Demo documentation index](demo/README.md)
 - [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.7](demo/staged-post-sop-brake-health-demo-scenarios.md)
-  — accepted baseline adding the v1 event-window, v2 edge-assessment and v3 advisory/data evolution.
+  — accepted baseline combining Brake Health v1-v3 evolution with one mature
+  independent Tire Health v1.0 product on VDP v3.
 - [Demo assets](demo/assets/) — original, license-cleared visual sources and
   exports. Storyboards and presenter materials will be added here only after
   review.

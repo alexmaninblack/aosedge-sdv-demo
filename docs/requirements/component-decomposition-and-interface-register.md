@@ -201,7 +201,7 @@ not participate in the time-critical local advisory decision.
 
 | ID | Component | Responsibility | Owner and lifecycle | Source boundary | State |
 | --- | --- | --- | --- | --- | --- |
-| <a id="cmp-tire"></a>`CMP-TIRE` | Tire Health In-Vehicle Service | QM-domain maintenance application: maintain a bounded persistent tire-condition estimate, create bounded reports/events, and request only the typed non-safety inspection advisory; no safety goal or motion authority | Function Team 2 / Service Provider 2; SOTA 2 | Proposed `tire-health-service` | `NEW` |
+| <a id="cmp-tire"></a>`CMP-TIRE` | Tire Health In-Vehicle Service | One mature v1.0 QM-domain maintenance product on accepted VDP v3: maintain a bounded persistent tire-condition estimate, create bounded reports/events, and request only the typed non-safety inspection advisory; no safety goal or motion authority | Function Team 2 / Service Provider 2; SOTA 2 | Proposed `tire-health-service` | `NEW` |
 | <a id="cmp-tire-be"></a>`CMP-TIRE-BE` | Tire Health Backend | Idempotent condition-summary/event ingestion, persistence and API | Function Team 2; functional Cloud product | Planned `tire-health-cloud` | `NEW` |
 | <a id="cmp-tire-dash"></a>`CMP-TIRE-DASH` | Tire Health Function Dashboard | Present condition band, event state, service/capability version, Unit role and delivery status from the Tire Health backend | Function Team 2; functional Cloud product | Planned `tire-health-cloud` | `NEW` |
 
@@ -231,7 +231,7 @@ particular, `CMP-SW-DASH` must not implement a temporary admission controller.
 | Rootfs platform-update envelope | FOTA artifact family | Optional complete rootfs payload containing a later or retrofit Platform Team baseline; targets the factory-installed AosVM rootfs A/B runtime | Platform Team rootfs FOTA; not part of normal M0-M1 |
 | Vehicle Data Platform Component v1-v3 | FOTA artifact family | `CMP-VDP` | Platform Team FOTA |
 | Brake Health Service v1-v3 | SOTA artifact family | `CMP-BHS` | Service Provider 1 / SOTA 1 |
-| Tire Health Service | SOTA artifact family | `CMP-TIRE` | Service Provider 2 / SOTA 2 |
+| Tire Health Service v1.0 | One immutable SOTA candidate in the current demo | `CMP-TIRE`; requires accepted VDP Component v3 | Service Provider 2 / SOTA 2 |
 
 The same accepted artifact bytes and digest move from `VU` qualification to
 `DU` promotion. Rebuilding an artifact for promotion is not permitted.
@@ -335,7 +335,7 @@ below remains the single allocation record for exact identifiers.
 | <a id="cr-factory"></a>`CR-FACTORY` | Reproducibly assemble and preserve the clean unprovisioned Factory Image artifact, enable stock Aos IAM permission handling and its non-secret PKCS#11 seam, and create two identity-safe deployments with a healthy empty capability slot. | Factory Baseline Assembly and Empty-Slot Runtime | Reproducibility, artifact immutability, IAM substrate, identity/key absence, overlay uniqueness and preservation |
 | <a id="cr-vdp"></a>`CR-VDP` | Deliver the versioned VISS-to-KUKSA data capability, defense-in-depth outbound QM advisory path, and least-privilege short-lived KUKSA credentials derived from native Aos identity. | KUKSA and Vehicle Data Platform Component | Compatibility, data quality, outbound validation, thin credential translation, provider identity, FOTA and rollback |
 | <a id="cr-bhs"></a>`CR-BHS` | Capture bounded v1 braking-event windows, move synthetic assessment and derived reporting on-board in v2, operate offline, and request only the approved v3 advisory. | Brake Health In-Vehicle Service | Trigger/window determinism, model/data-product evolution, compatibility, offline operation and advisory scope |
-| <a id="cr-tire"></a>`CR-TIRE` | Estimate tire condition locally, persist bounded state, upload bounded results and request the typed inspection advisory through an independent SOTA lifecycle. | Tire Health In-Vehicle Service | Existing signal contract, model, persistence, bounded reporting, advisory and isolation |
+| <a id="cr-tire"></a>`CR-TIRE` | Deliver one mature Tire Health v1.0 product on accepted VDP v3: estimate condition locally, persist bounded state, upload bounded results and request the typed inspection advisory through an independent SOTA lifecycle. | Tire Health In-Vehicle Service | Exact VDP v3 prerequisite, model, persistence, bounded reporting, advisory and multi-tenant isolation |
 | <a id="cr-aos"></a>`CR-AOS` | Provide identity, authoritative desired/reported actual and Unit Set state, recorded owner approvals, FOTA/SOTA execution, dependency behavior, resource enforcement and native operational-log collection/delivery. | AosCore and AosCloud | Provisioning, lifecycle state and execution, Unit Set contracts, OEM-authorized validation, rollback, native logging, timing and retirement |
 | <a id="cr-brake-cloud"></a>`CR-BRAKE-CLOUD` | Reconstruct and present v1 Brake Telemetry Windows; ingest/present v2/v3 derived messages; expose a separate prepared-candidate view that delegates protected sign/publish actions; and run as a Mac-local ARM64 container without entering the vehicle decision path or owning OEM lifecycle state. | Brake Health Backend and Function Dashboard | Candidate integrity, protected publication delegation, chunk reconstruction, idempotency, data-product evolution, offline synchronization, local hosting, evidence and run-data retention |
 | <a id="cr-tire-cloud"></a>`CR-TIRE-CLOUD` | Ingest and present Tire Health summaries/events as an independent Function Team product. | Tire Health Backend and Function Dashboard | Bounded results, idempotency, delivery state and run-data retention |
@@ -709,6 +709,13 @@ Delivery Dashboard.
     Brake Health Backend. The Mac-local ARM64 container and native Keychain
     helper are deployment refinements, not new HLA components or lifecycle
     authorities.
+11. **Accepted 2026-08-19:** `CMP-TIRE` is one mature Tire Health Service v1.0
+    candidate requiring accepted VDP Component v3. It does not repeat the
+    Brake Health v1-v3 product evolution. Its purpose is to prove a second
+    independent Function Team, Service Provider identity, functional data
+    product and SOTA lifecycle on the shared platform. Release sequencing,
+    evidence-backed OEM approval and service-side fail-closed readiness do not
+    claim or replace the deferred native AosCloud dependency-admission feature.
 
 ## Acceptance Record for Version 1.0
 
@@ -719,6 +726,11 @@ ARM64 local-demo container, persistent functional data and native macOS
 Keychain helper. `CMP-BRAKE-BE` remains authoritative only for functional
 data; AosCloud and the OEM Software Delivery Dashboard retain lifecycle state,
 targeting, approval, deployment and promotion authority.
+
+The accepted Tire Health clarification preserves the same component and
+interface graph: `CMP-TIRE` has one v1.0 candidate on VDP v3. Brake Health owns
+the multi-version evolution story; Tire Health owns the independent second-
+provider lifecycle story.
 
 ## Acceptance Record for Version 0.9
 

@@ -116,7 +116,7 @@ open qualification or implementation gates remain explicit and are not
 presented as current behavior.
 
 Scenario 1.7, Architecture Flows 1.6, System Requirements 0.9 and Component
-Register 0.9 are the current accepted cascade. They preserve
+Register 1.0 are the current accepted cascade. They preserve
 the accepted topology and replace the former v1 low-rate report narrative with
 a bounded pre/active/post `BrakeTelemetryWindow`, make v2 a clearly labelled
 synthetic on-board assessment with derived-only normal Cloud reporting, and
@@ -144,9 +144,10 @@ Create and review packages in this order:
    [cross-cutting concerns (`CR-CROSS`)](../requirements/component-decomposition-and-interface-register.md#cr-cross)
    and [end-to-end acceptance (`CR-E2E`)](../requirements/component-decomposition-and-interface-register.md#cr-e2e).
 
-Groups 1 through 3 and Brake Health service (`CR-BHS`) were design-reviewed
+Groups 1 through 3, Brake Health service (`CR-BHS`), Brake Health Cloud
+(`CR-BRAKE-CLOUD`) and Tire Health service (`CR-TIRE`) were design-reviewed
 and closed on 2026-08-19. Their target, partial and qualification states remain
-open for D4 and implementation. Brake Health Cloud (`CR-BRAKE-CLOUD`) is the
+open for D4 and implementation. Tire Health Cloud (`CR-TIRE-CLOUD`) is the
 next package.
 
 Create every package from the

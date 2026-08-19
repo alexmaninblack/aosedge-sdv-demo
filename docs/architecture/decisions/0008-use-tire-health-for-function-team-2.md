@@ -32,6 +32,14 @@ Function Team 2 / Service Provider 2 will own an independently delivered
 **Tire Health In-Vehicle Service** and a separate Tire Health backend and
 dashboard.
 
+The current demonstration uses one immutable mature **Tire Health Service
+v1.0** candidate after VDP Component v3 has been accepted. `v1.0` is the first
+Tire Health product release even though its capability set includes local
+condition estimation, bounded Cloud reporting, offline continuity, and a typed
+inspection advisory. Tire Health does not repeat the Brake Health v1-v3
+evolution; it demonstrates a second independent Function Team, Service
+Provider identity and SOTA lifecycle on the shared platform.
+
 The in-vehicle service will:
 
 1. consume an accepted versioned subset of vehicle-dynamics signals through
@@ -62,6 +70,10 @@ a separate decision.
 
 - Function Team 2 remains independent of Function Team 1 and the Brake Health
   product.
+- The Tire Health Service v1.0 candidate declares VDP v3 compatibility and
+  fails closed at readiness when that contract is absent or incompatible. The
+  current demo relies on release sequencing and OEM-reviewed evidence and does
+  not claim native pre-transfer Cloud dependency rejection.
 - The shared Vehicle Data Platform Component must support typed, allowlisted
   advisory requests rather than a Brake Health-only return path.
 - The Vehicle Gateway advisory handler and Engineering Telematics Dashboard

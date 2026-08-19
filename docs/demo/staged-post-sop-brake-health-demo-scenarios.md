@@ -55,7 +55,7 @@ uses `R`.
 | `G2` | First Brake Health product | Brake Health Service v1 captures bounded pre-trigger, braking and post-trigger telemetry windows and transfers them to its backend |
 | `G3` | Edge-analytics Brake Health product | Backward-compatible VDP Component v2 and Brake Health Service v2 add local synthetic assessment and derived-event Cloud reporting |
 | `G4` | Bidirectional Brake Health product | VDP Component v3 and Brake Health Service v3 add a typed, allowlisted local advisory path while reporting the derived result and advisory fact to the backend |
-| `T1` | Independent Tire Health product | Tire Health is delivered through SOTA 2 against the compatible VDP contract while the Brake Health graph remains unchanged |
+| `T1` | Independent Tire Health product | One mature Tire Health Service v1.0 candidate is delivered through SOTA 2 against the accepted VDP v3 contract while the Brake Health graph remains unchanged |
 | `R0` | Demo retirement and next-run reset | Current Unit identities are retired and provisioned overlays are discarded; the immutable factory image remains |
 
 ```mermaid
@@ -67,9 +67,12 @@ flowchart LR
 ```
 
 `M1` is a provisioning transition, while `G0` is the resulting first
-post-SOP runtime graph. `T1` follows `G4` in the presentation order because it
-uses the accepted VDP v3 data and advisory contract; it does not depend on the
-Brake Health service, backend, or dashboard.
+post-SOP runtime graph. `T1` follows `G4` in the presentation order because its
+single Tire Health Service v1.0 candidate uses the accepted VDP v3 data and
+advisory contract; it does not depend on the Brake Health service, backend, or
+dashboard. Tire Health does not repeat the three-version Brake Health product
+evolution. It demonstrates a second independent Function Team and Service
+Provider lifecycle on a sufficiently capable shared vehicle-data platform.
 
 ## Core Demonstration Claim
 
@@ -250,11 +253,12 @@ time-critical local advisory path.
 
 High-Level Architecture 1.4 assigns a separate backend and dashboard to
 Function Team 2 / Service Provider 2. They become audience-visible at `T1`,
-after the `G0–G4` Brake Health progression. The Tire Health dashboard shows an
-estimated condition band, threshold event, service and platform versions, Unit
-role, and online/offline delivery state. It must not display hidden simulation
-truth as a measured production vehicle value or couple its data plane to the
-Brake Health backend.
+after the `G0–G4` Brake Health progression. The dashboard presents the one
+prepared Tire Health Service v1.0 candidate and shows its estimated condition
+band, threshold event, service and VDP v3 versions, Unit role, and
+online/offline delivery state. It must not display hidden simulation truth as
+a measured production vehicle value or couple its data plane to the Brake
+Health backend.
 
 ### Native operational logs in the Software Delivery Dashboard
 
@@ -290,7 +294,7 @@ redaction rules must be qualified.
 | G2 | `VDP Component v1 + Brake Health Service v1` | One bounded pre/active/post braking-event window appears live in the Brake Health Backend and Dashboard |
 | G3 | `VDP Component v2 + Brake Health Service v2` | A synthetic on-board model replaces normal high-detail window upload with derived assessments/events |
 | G4 | `VDP Component v3 + Brake Health Service v3` | Local assessment can return an allowlisted advisory request to the Vehicle Gateway and report the correlated fact to the backend |
-| T1 | `G4 graph + Tire Health Service` | Function Team 2 independently adds local tire-condition estimation, bounded reporting, and its typed inspection advisory |
+| T1 | `G4 graph + Tire Health Service v1.0` | Function Team 2 independently adds one mature local tire-condition product with bounded reporting and its typed inspection advisory |
 | R0 | `Retired demo run` | Cloud identities are retired and provisioned overlays are discarded; the immutable factory image remains |
 
 Every graph is composed of immutable, versioned artifacts. Promotion uses the
@@ -755,13 +759,15 @@ path and cannot authorize, suppress or modify the advisory.
 
 The demo does not claim `displayed to driver` or `driver acknowledged`.
 
-## T1 — Function Team 2 Delivers Tire Health Service
+## T1 — Function Team 2 Delivers Tire Health Service v1.0
 
 ### Capability
 
-Function Team 2 independently delivers a Tire Health service through SOTA 2.
-The service consumes only the accepted vehicle-dynamics subset already exposed
-by VDP Component v3. It maintains a bounded, persistent tire-condition
+Function Team 2 independently delivers one mature Tire Health Service v1.0
+candidate through SOTA 2. This is the first Tire Health product release, not a
+hidden `v3` following two omitted Tire releases. It consumes only the accepted
+vehicle-dynamics subset already exposed by VDP Component v3. It maintains a
+bounded, persistent tire-condition
 estimate, produces condition bands and inspection decisions locally, uploads
 only bounded summaries or threshold events, and may request only its typed
 allowlisted Tire Health advisory target.
@@ -774,13 +780,23 @@ measured vehicle signal.
 
 `T1` follows `G4` in the audience presentation so the required VDP v3 data and
 advisory contract already exist. Tire Health does not depend on the Brake
-Health service, backend, dashboard, model, or SOTA 1 lifecycle.
+Health service, backend, dashboard, model, or SOTA 1 lifecycle. Brake Health
+demonstrates multi-version product evolution; Tire Health demonstrates a
+second independent Function Team, Service Provider identity, data product and
+SOTA lifecycle sharing the accepted platform.
+
+The multi-tenancy claim is deliberately bounded and visible: Tire Health v1.0
+and Brake Health v3 run as separate service instances on the same Domain
+Controller, with distinct Service Provider publication identities, service
+metadata, IAM-derived KUKSA permissions, resource quotas, SOTA lifecycles,
+functional backends and dashboards. The demo does not claim third-party
+provider onboarding, fleet-operator tenancy or safety-domain consolidation.
 
 ### Release flow
 
-1. Function Team 2 publishes the immutable Tire Health artifact through its
+1. Function Team 2 publishes the immutable Tire Health Service v1.0 artifact through its
    Service Provider 2 identity and SOTA 2 lifecycle.
-2. The service declares its compatible VDP Component range and exact KUKSA
+2. The service declares VDP Component v3 compatibility and its exact KUKSA
    read and actuate paths in its Aos service metadata.
 3. Function Team 2 explicitly authorizes deployment to the Validation Unit
    through an OEM identity.
@@ -792,8 +808,16 @@ Health service, backend, dashboard, model, or SOTA 1 lifecycle.
    that the existing Brake Health graph remains unchanged.
 6. Function Team 2 accepts the exact service version, digest, and integration
    result and records promotion approval through an OEM identity.
-7. AosCloud promotes the identical Tire Health artifact to the Demonstration
+7. AosCloud promotes the identical Tire Health Service v1.0 artifact to the Demonstration
    Unit without rebuilding or changing the Brake Health or VDP artifacts.
+
+The current AosCloud release is not claimed to reject an incompatible service
+before desired-state change or content transfer. Until the native dependency-
+admission roadmap feature is available and qualified, the demo sequences Tire
+Health after accepted VDP v3, presents compatibility evidence before OEM
+approval, and requires the service to fail closed at readiness if the installed
+contract is absent or incompatible. No project-side admission controller is
+introduced.
 
 ### Runtime and audience-visible proof
 
