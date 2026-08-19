@@ -1,13 +1,13 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Component Decomposition and Interface Register 0.9
+# Component Decomposition and Interface Register 1.0
 
 - Status: Accepted component baseline
-- Version: 0.9
+- Version: 1.0
 - Prepared: 2026-08-19
 - Accepted: 2026-08-19
-- Supersedes: 0.8
+- Supersedes: 0.9
 - Owner: System Architecture
 - Architecture input: [High-Level Architecture 1.4](../architecture/high-level-architecture.md)
 - Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.7](../demo/staged-post-sop-brake-health-demo-scenarios.md)
@@ -99,11 +99,19 @@ Every dashboard is a presentation surface over one authoritative source:
 | --- | --- |
 | Engineering Telematics Dashboard | Vehicle Gateway VISS endpoint |
 | OEM Software Delivery Dashboard | AosCloud lifecycle and native log APIs plus current Unit state |
-| Brake Health Function Dashboard | Function Team 1 backend |
+| Brake Health Function Dashboard — Vehicle Data view | Function Team 1 backend |
+| Brake Health Function Dashboard — Release Candidates view | Immutable prepared catalogue plus Function Team 1 release-pipeline result; never OEM lifecycle state |
 | Tire Health Function Dashboard | Function Team 2 backend |
 
 No dashboard becomes an alternate desired-state database, vehicle-data broker,
 functional backend, or vehicle-control path.
+
+The two Brake Health views may be hosted in one web application for the demo,
+but they remain logically separated. `Vehicle Data` reads only the functional
+backend. `Release Candidates` presents immutable prepared service metadata and
+delegates an explicitly confirmed sign/publish request to the Function Team 1
+pipeline. It does not hold a private signing key, approve deployment or become
+an AosCloud state store.
 
 The Software Delivery Dashboard must make the decision basis visible: exact
 artifact and metadata digests, requested permissions, effective target,
@@ -184,7 +192,7 @@ component runtime.
 | --- | --- | --- | --- | --- | --- |
 | <a id="cmp-bhs"></a>`CMP-BHS` | Brake Health In-Vehicle Service | QM-domain maintenance application: v1 records bounded pre/active/post braking-event windows, v2 performs synthetic local assessment and sends derived events, and v3 requests only the typed non-safety advisory; no safety goal or motion authority | Function Team 1 / Service Provider 1; SOTA 1 | `brake-health-service` | Scaffold `CURRENT`; product behavior `NEW` |
 | <a id="cmp-brake-be"></a>`CMP-BRAKE-BE` | Brake Health Backend | Idempotently reconstruct and persist v1 event windows, ingest v2/v3 derived assessments/events/advisory facts, and expose the Function Team API | Function Team 1; functional Cloud product | Planned `brake-health-cloud` | `NEW` |
-| <a id="cmp-brake-dash"></a>`CMP-BRAKE-DASH` | Brake Health Function Dashboard | Present the v1 growing/completed telemetry window and the v2/v3 derived data product, service/capability/model versions and online/offline delivery state from the backend | Function Team 1; functional Cloud product | Planned `brake-health-cloud` | `NEW` |
+| <a id="cmp-brake-dash"></a>`CMP-BRAKE-DASH` | Brake Health Function Dashboard | Host two separated views: present v1 growing/completed windows and v2/v3 derived data only from the backend; present immutable prepared v1-v3 candidate purpose/digests/permissions/quotas/compatibility and delegate explicit sign/publish actions to the protected Function Team pipeline without owning keys, OEM approval or lifecycle state | Function Team 1; functional Cloud product | Planned `brake-health-cloud` | `NEW` |
 
 The backend and dashboard are not part of the in-vehicle SOTA artifact and do
 not participate in the time-critical local advisory decision.
@@ -238,7 +246,7 @@ The same accepted artifact bytes and digest move from `VU` qualification to
 | `aos-vehicle-platform` | `CMP-FACTORY` assembly source, `CMP-RUNTIME`, `CMP-VDP` including the thin Credential Broker and provider platform-credential integration, and `CMP-KUKSA` contract/trust configuration | Platform Team source and FOTA boundary; immutable Factory Image output remains outside Git. |
 | `brake-health-service` | `CMP-BHS` | Function Team 1 in-vehicle SOTA source only. |
 | Proposed `tire-health-service` | `CMP-TIRE` | Function Team 2 in-vehicle SOTA source only; repository not yet created. |
-| Planned `brake-health-cloud` | `CMP-BRAKE-BE`, `CMP-BRAKE-DASH` | One Function Team 1 Cloud-product repository, separate from the in-vehicle SOTA source; repository not yet created. |
+| Planned `brake-health-cloud` | `CMP-BRAKE-BE`, `CMP-BRAKE-DASH` | One Function Team 1 Cloud-product repository, separate from the in-vehicle SOTA source; owns the native ARM64 local-demo container and the native macOS release-helper integration, while private keys remain in Keychain; repository not yet created. |
 | Planned `tire-health-cloud` | `CMP-TIRE-BE`, `CMP-TIRE-DASH` | One Function Team 2 Cloud-product repository, separate from the in-vehicle SOTA source; repository not yet created. |
 | `aosedge-sdv-demo` | `CMP-SW-DASH`, `CMP-ORCH`, cross-component contracts, qualification and system documentation | Solution integration; must not absorb component product source. |
 | AosEdge/AosCloud | `CMP-AOS-CORE`, `CMP-AOS-CLOUD`, including native system/service/crash-log collection, Cloud delivery and storage | External platform dependency. |
@@ -329,7 +337,7 @@ below remains the single allocation record for exact identifiers.
 | <a id="cr-bhs"></a>`CR-BHS` | Capture bounded v1 braking-event windows, move synthetic assessment and derived reporting on-board in v2, operate offline, and request only the approved v3 advisory. | Brake Health In-Vehicle Service | Trigger/window determinism, model/data-product evolution, compatibility, offline operation and advisory scope |
 | <a id="cr-tire"></a>`CR-TIRE` | Estimate tire condition locally, persist bounded state, upload bounded results and request the typed inspection advisory through an independent SOTA lifecycle. | Tire Health In-Vehicle Service | Existing signal contract, model, persistence, bounded reporting, advisory and isolation |
 | <a id="cr-aos"></a>`CR-AOS` | Provide identity, authoritative desired/reported actual and Unit Set state, recorded owner approvals, FOTA/SOTA execution, dependency behavior, resource enforcement and native operational-log collection/delivery. | AosCore and AosCloud | Provisioning, lifecycle state and execution, Unit Set contracts, OEM-authorized validation, rollback, native logging, timing and retirement |
-| <a id="cr-brake-cloud"></a>`CR-BRAKE-CLOUD` | Reconstruct and present v1 Brake Telemetry Windows and ingest/present v2/v3 derived Brake Health messages without entering the local decision path. | Brake Health Backend and Function Dashboard | Chunk reconstruction, idempotency, data-product evolution, offline synchronization, evidence and run-data retention |
+| <a id="cr-brake-cloud"></a>`CR-BRAKE-CLOUD` | Reconstruct and present v1 Brake Telemetry Windows; ingest/present v2/v3 derived messages; expose a separate prepared-candidate view that delegates protected sign/publish actions; and run as a Mac-local ARM64 container without entering the vehicle decision path or owning OEM lifecycle state. | Brake Health Backend and Function Dashboard | Candidate integrity, protected publication delegation, chunk reconstruction, idempotency, data-product evolution, offline synchronization, local hosting, evidence and run-data retention |
 | <a id="cr-tire-cloud"></a>`CR-TIRE-CLOUD` | Ingest and present Tire Health summaries/events as an independent Function Team product. | Tire Health Backend and Function Dashboard | Bounded results, idempotency, delivery state and run-data retention |
 | <a id="cr-demo"></a>`CR-DEMO` | Orchestrate manufactured overlays, Unit roles and Unit Set membership, staged releases, evidence-backed final OEM approval presentation, authoritative dashboards, ordered retirement and next-run provisioning. | Software Delivery Dashboard and Demo Orchestrator | Target safety, source binding, membership reconciliation, decision-basis presentation, native logs, observability, timing and reset |
 | <a id="cr-cross"></a>`CR-CROSS` | Define security, authorization, redaction, timing, resource and offline constraints shared by multiple owners. | Cross-component concerns; the Credential Broker itself remains allocated to `CMP-VDP` | Least privilege, fail-closed behavior, evidence controls and latency |
@@ -562,8 +570,9 @@ Delivery Dashboard.
 
 - Components: [Brake Health Backend (`CMP-BRAKE-BE`)](#cmp-brake-be) and
   [Brake Health Function Dashboard (`CMP-BRAKE-DASH`)](#cmp-brake-dash).
-- Interfaces: [versioned functional message family (`IF-FUNC-001`)](#if-func-001) and
-  [dashboard query API (`IF-FUNC-002`)](#if-func-002).
+- Interfaces: [versioned functional message family (`IF-FUNC-001`)](#if-func-001),
+  [dashboard query API (`IF-FUNC-002`)](#if-func-002), and the delegated
+  [Brake Health SOTA publication boundary (`IF-LC-002`)](#if-lc-002).
 - Parent requirements: [bounded v1 Brake Telemetry Window (`SYS-BHS-005`)](system-requirements-and-traceability.md#sys-bhs-005),
   [derived v2 Cloud data product (`SYS-BHS-006`)](system-requirements-and-traceability.md#sys-bhs-006),
   [offline local continuity (`SYS-BHS-004`)](system-requirements-and-traceability.md#sys-bhs-004),
@@ -694,6 +703,22 @@ Delivery Dashboard.
    owning-team acceptance and active OEM role before exposing the final OEM
    approval action. It owns neither the decision, evidence nor lifecycle
    state, and passing tests never auto-approve.
+10. **Accepted 2026-08-19:** `CMP-BRAKE-DASH` may host separated `Release
+    Candidates` and `Vehicle Data` views. The former delegates explicit
+    sign/publish actions to the Function Team 1 pipeline; the latter reads the
+    Brake Health Backend. The Mac-local ARM64 container and native Keychain
+    helper are deployment refinements, not new HLA components or lifecycle
+    authorities.
+
+## Acceptance Record for Version 1.0
+
+Version 1.0 preserves the accepted component graph, repository boundaries and
+interface identifiers. It expands `CMP-BRAKE-DASH` and `CR-BRAKE-CLOUD` with
+the accepted prepared-candidate view, protected delegated publication, native
+ARM64 local-demo container, persistent functional data and native macOS
+Keychain helper. `CMP-BRAKE-BE` remains authoritative only for functional
+data; AosCloud and the OEM Software Delivery Dashboard retain lifecycle state,
+targeting, approval, deployment and promotion authority.
 
 ## Acceptance Record for Version 0.9
 

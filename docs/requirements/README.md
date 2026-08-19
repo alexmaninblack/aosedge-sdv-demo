@@ -7,7 +7,7 @@
   — system obligations, coverage of all Architecture Flows gaps, verification
   intent, repository ownership and allocation to future component requirement
   packages.
-- [Component Decomposition and Interface Register 0.9 — accepted component baseline](component-decomposition-and-interface-register.md)
+- [Component Decomposition and Interface Register 1.0 — accepted component baseline](component-decomposition-and-interface-register.md)
   — stable logical-component and interface identifiers, current/target state,
   lifecycle ownership, repository candidates and the review gate before
   component requirements.

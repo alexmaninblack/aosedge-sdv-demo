@@ -12,7 +12,7 @@
 - Scenario input: [Demo Scenarios 1.7](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - Flow input: [Architecture Flows 1.6](../../architecture/demo-scenario-architecture-flows.md)
 - System-requirements input: [System Requirements 0.9](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 0.9](../component-decomposition-and-interface-register.md)
+- Component-register input: [Component Register 1.0](../component-decomposition-and-interface-register.md)
 - Implementation baseline: `CarlaSim@ac7d882c` and `carla-ego-runtime@22864c5`
 
 ## Purpose

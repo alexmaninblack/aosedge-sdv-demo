@@ -61,7 +61,7 @@ The following documents form one ordered design chain:
    owns the accepted lifecycle, runtime, observability and failure flows.
 4. [System Requirements and Traceability 0.9](../requirements/system-requirements-and-traceability.md)
    owns `SYS-*` obligations and coverage of all twenty-one gaps.
-5. [Component Decomposition and Interface Register 0.9](../requirements/component-decomposition-and-interface-register.md)
+5. [Component Decomposition and Interface Register 1.0](../requirements/component-decomposition-and-interface-register.md)
    owns component/interface IDs and provisional requirement-package
    allocation.
 

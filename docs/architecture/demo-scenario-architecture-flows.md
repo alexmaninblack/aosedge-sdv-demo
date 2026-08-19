@@ -13,7 +13,7 @@
 - Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.7](../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - CARLA input: [R10 Native CARLA Vehicle Telemetry Inventory](../research/demo-foundation/r10-carla-telemetry-and-function-team-2.md)
 - Requirements input: [System Requirements and Traceability 0.9](../requirements/system-requirements-and-traceability.md)
-- Component input: [Component Decomposition and Interface Register 0.9](../requirements/component-decomposition-and-interface-register.md)
+- Component input: [Component Decomposition and Interface Register 1.0](../requirements/component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0009](decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0010](decisions/0010-aos-kuksa-credential-broker.md), and
   [ADR 0011](decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)

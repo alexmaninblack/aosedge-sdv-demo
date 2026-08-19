@@ -300,7 +300,7 @@ requirements have accepted evidence.
 
 The canonical component IDs, interface IDs, repository candidates and package
 boundaries are defined in the
-[Component Decomposition and Interface Register 0.9](component-decomposition-and-interface-register.md).
+[Component Decomposition and Interface Register 1.0](component-decomposition-and-interface-register.md).
 The next derivation step shall expand the following packages. A system
 requirement may allocate obligations to several packages and one integration
 test.

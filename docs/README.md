@@ -49,7 +49,7 @@ not only the CARLA-to-AosEdge transport bridge.
 - [System Requirements and Traceability 0.9 — accepted system-requirements baseline](requirements/system-requirements-and-traceability.md)
   — system obligations, complete coverage of the twenty-one Architecture Flows
   gaps, verification intent, repository ownership and component allocation.
-- [Component Decomposition and Interface Register 0.9 — accepted component baseline](requirements/component-decomposition-and-interface-register.md)
+- [Component Decomposition and Interface Register 1.0 — accepted component baseline](requirements/component-decomposition-and-interface-register.md)
   — logical components, implementation state, lifecycle and repository
   boundaries, runtime and Cloud interfaces, and component-package allocation.
 - [Component requirement packages and template](requirements/components/README.md)

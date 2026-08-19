@@ -931,7 +931,7 @@ current downstream review projections are:
    failure mapping;
 3. System Requirements and Traceability 0.9 for normative system obligations
    and gap coverage;
-4. Component Decomposition and Interface Register 0.9 for component ownership,
+4. Component Decomposition and Interface Register 1.0 for component ownership,
    interface identifiers, repository allocation, and provisional requirement
    packages.
 

@@ -133,7 +133,7 @@ python3 -m unittest discover -s tests -p 'test_*.py'
 - [Reproduction guide and readiness matrix](docs/getting-started/reproduce-demo.md)
 - [High-Level Architecture 1.4 — accepted architecture baseline](docs/architecture/high-level-architecture.md)
 - [System Requirements and Traceability 0.9 — accepted system-requirements baseline](docs/requirements/system-requirements-and-traceability.md)
-- [Component Decomposition and Interface Register 0.9 — accepted component baseline](docs/requirements/component-decomposition-and-interface-register.md)
+- [Component Decomposition and Interface Register 1.0 — accepted component baseline](docs/requirements/component-decomposition-and-interface-register.md)
 - [R9 Demo Foundation Research](docs/research/demo-foundation/README.md)
 - [Current accepted baseline](docs/qualification/current-baseline.md)
 - [Roadmap and next gates](docs/planning/roadmap.md)

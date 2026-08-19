@@ -3,16 +3,17 @@
 
 # Brake Health Cloud Product Component Requirements
 
-- Status: D3 review draft
+- Status: D3 design-reviewed
 - Package: [`CR-BRAKE-CLOUD`](../component-decomposition-and-interface-register.md#cr-brake-cloud)
 - Version: 0.1
 - Prepared: 2026-08-19
+- Accepted: 2026-08-19
 - Owner: Function Team 1 / Service Provider 1 functional Cloud product
 - Architecture input: [High-Level Architecture 1.4](../../architecture/high-level-architecture.md)
 - Scenario input: [Demo Scenarios 1.7](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - Flow input: [Architecture Flows 1.6](../../architecture/demo-scenario-architecture-flows.md)
 - System-requirements input: [System Requirements 0.9](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 0.9](../component-decomposition-and-interface-register.md)
+- Component-register input: [Component Register 1.0](../component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md) and [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
 - Implementation baseline: no `brake-health-cloud` repository or executable exists
 - Implementation, repository creation, signing, Cloud, or Unit mutation authorized: no
@@ -706,14 +707,14 @@ contain keys, tokens, raw certificates or unrestricted telemetry dumps.
 | Observability | [REQ-BRAKE-CLOUD-001](#req-brake-cloud-001), [REQ-BRAKE-CLOUD-014](#req-brake-cloud-014) | Backend is authoritative only for functional data; every non-current state is visible | Component, integration, demo |
 | Local hosting | [REQ-BRAKE-CLOUD-015](#req-brake-cloud-015), [REQ-BRAKE-CLOUD-016](#req-brake-cloud-016) | Native ARM64 container, persistent volume, loopback UI, authenticated VM route and native Keychain helper | Packaging, component, integration |
 
-## Package Acceptance
+## D3 Acceptance Record
 
-The package is ready for D3 acceptance when:
+Version 0.1 was accepted for D3 after reviewers confirmed that:
 
 1. the two-view UI decision is accepted without creating a new lifecycle authority;
-2. Component Register responsibility for `CMP-BRAKE-DASH` and
-   `CR-BRAKE-CLOUD` is updated to include the prepared candidate catalogue and
-   delegated presenter controls;
+2. Component Register 1.0 includes the prepared candidate catalogue and
+   delegated presenter controls within `CMP-BRAKE-DASH` and
+   `CR-BRAKE-CLOUD` without creating a new lifecycle authority;
 3. all sixteen requirements and fourteen stable unit-test obligations are accepted;
 4. the split between protected Function Team signing/publication and OEM
    Software Delivery approval is accepted;
