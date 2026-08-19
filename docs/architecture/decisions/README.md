@@ -17,6 +17,7 @@ they do not replace the current HLA.
 - [ADR 0008: Use Tire Health for Function Team 2](0008-use-tire-health-for-function-team-2.md)
 - [ADR 0009: Separate Release Decision Ownership from Cloud Execution](0009-separate-release-decision-from-cloud-execution.md)
 - [ADR 0010: Derive KUKSA Credentials from Aos IAM Without Forking KUKSA](0010-aos-kuksa-credential-broker.md)
+- [ADR 0011: Contain QM Services at the Gateway and Make OEM Approval Evidence-Backed](0011-qm-service-containment-and-evidence-backed-oem-approval.md)
 
 The change process and stable-reference rules are defined in
 [Documentation and Requirements Management](../../governance/documentation-and-requirements-management.md).

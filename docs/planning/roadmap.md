@@ -5,7 +5,7 @@
 
 - Status: Working gate map
 - Updated: 2026-08-19
-- Accepted architecture baseline: High-Level Architecture 1.3
+- Accepted architecture baseline: High-Level Architecture 1.4
 - Cloud or Unit mutation authorized: no
 
 ## Purpose
@@ -53,15 +53,15 @@ Exact retained versions and limitations remain recorded in the
 
 The following documents form one ordered design chain:
 
-1. [High-Level Architecture 1.3](../architecture/high-level-architecture.md)
+1. [High-Level Architecture 1.4](../architecture/high-level-architecture.md)
    owns boundaries, authorities and invariants.
-2. [Demo Scenario 1.4](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+2. [Demo Scenario 1.5](../demo/staged-post-sop-brake-health-demo-scenarios.md)
    owns the audience-visible stage sequence.
-3. [Architecture Flows 1.3](../architecture/demo-scenario-architecture-flows.md)
+3. [Architecture Flows 1.4](../architecture/demo-scenario-architecture-flows.md)
    owns lifecycle, runtime, observability and failure flows.
-4. [System Requirements and Traceability 0.6](../requirements/system-requirements-and-traceability.md)
+4. [System Requirements and Traceability 0.7](../requirements/system-requirements-and-traceability.md)
    owns `SYS-*` obligations and coverage of all twenty-one gaps.
-5. [Component Decomposition and Interface Register 0.6](../requirements/component-decomposition-and-interface-register.md)
+5. [Component Decomposition and Interface Register 0.7](../requirements/component-decomposition-and-interface-register.md)
    owns component/interface IDs and provisional requirement-package
    allocation.
 
@@ -104,12 +104,14 @@ gate.
 
 ### D2 — Baseline acceptance — completed 2026-08-18
 
-HLA 1.3, Scenario 1.4, Architecture Flows 1.3, System Requirements 0.6 and the
-Component Register 0.6 form one consistent design baseline. Scenario 1.4 and
-Flows 1.3 retain the accepted drive-mode/world-context transition contract;
+HLA 1.4, Scenario 1.5, Architecture Flows 1.4, System Requirements 0.7 and the
+Component Register 0.7 form one consistent design baseline. Scenario 1.5 and
+Flows 1.4 retain the accepted drive-mode/world-context transition contract;
 Requirements and Register 0.4 allocate it to Vehicle Simulation, Vehicle
-Gateway and the Engineering Dashboard. HLA 1.3 also corrects the native Aos
-IAM credential authority and Factory/VDP security seam. Deferred platform capabilities and
+Gateway and the Engineering Dashboard. HLA 1.4 also preserves the native Aos
+IAM credential authority, classifies both services as QM, makes Gateway
+containment authoritative and requires evidence-backed final OEM approval.
+Deferred platform capabilities and
 open qualification or implementation gates remain explicit and are not
 presented as current behavior.
 

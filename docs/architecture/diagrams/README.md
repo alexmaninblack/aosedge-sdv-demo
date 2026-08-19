@@ -7,7 +7,7 @@ Store accepted, editable architecture sources here together with their
 reviewable SVG or PNG exports. Use stable names and keep the version and status
 in the owning architecture document.
 
-The accepted HLA 1.3 architecture baseline is maintained as Mermaid source
+The accepted HLA 1.4 architecture baseline is maintained as Mermaid source
 inside [`high-level-architecture.md`](../high-level-architecture.md).
 
 The editable visual model is the primary visual architecture source:
@@ -17,7 +17,7 @@ The editable visual model is the primary visual architecture source:
 
 The Draw.io file is authoritative for diagram layout and visual relationships;
 the PNG must be regenerated from it after every accepted visual change. The
-accepted HLA 1.3 baseline reflects two peer OEM Service Providers, independent
+accepted HLA 1.4 baseline reflects two peer OEM Service Providers, independent
 SOTA lifecycles, the shared FOTA-owned Vehicle Data Platform Component, the
 Tire Health service, the Factory Baseline Assembly-to-Factory Image and
 factory-installed runtime boundaries, the Software Delivery Dashboard's
@@ -29,7 +29,8 @@ substrate and no duplicate per-service policy store.
 It also distinguishes Service Provider artifact publication, team-owned
 engineering release decisions, OEM-authorized deployment approval, and
 AosCloud lifecycle state/execution as defined by ADR 0009.
-The credential boundary follows ADR 0010.
+The credential boundary follows ADR 0010. QM-service containment and the
+evidence-backed final OEM approval follow ADR 0011.
 Both files are original project material, copyright 2026 maninblack, and
 distributed under the repository MIT license.
 

@@ -1,26 +1,27 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Demo Scenario Architecture Flows 1.3
+# Demo Scenario Architecture Flows 1.4
 
 - Status: Accepted architecture-flow baseline
-- Version: 1.3
+- Version: 1.4
 - Prepared: 2026-08-19
 - Accepted: 2026-08-19
 - Owner: System Architecture
-- Architecture input: [High-Level Architecture 1.3](high-level-architecture.md)
-- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.4](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Architecture input: [High-Level Architecture 1.4](high-level-architecture.md)
+- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.5](../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - CARLA input: [R10 Native CARLA Vehicle Telemetry Inventory](../research/demo-foundation/r10-carla-telemetry-and-function-team-2.md)
-- Requirements input: [System Requirements and Traceability 0.6](../requirements/system-requirements-and-traceability.md)
-- Component input: [Component Decomposition and Interface Register 0.6](../requirements/component-decomposition-and-interface-register.md)
-- Accepted architecture decisions: [ADR 0009](decisions/0009-separate-release-decision-from-cloud-execution.md)
-  and [ADR 0010](decisions/0010-aos-kuksa-credential-broker.md)
+- Requirements input: [System Requirements and Traceability 0.7](../requirements/system-requirements-and-traceability.md)
+- Component input: [Component Decomposition and Interface Register 0.7](../requirements/component-decomposition-and-interface-register.md)
+- Accepted architecture decisions: [ADR 0009](decisions/0009-separate-release-decision-from-cloud-execution.md),
+  [ADR 0010](decisions/0010-aos-kuksa-credential-broker.md), and
+  [ADR 0011](decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
 - Implementation, build, signing, Cloud, or Unit mutation authorized: no
 
 ## Purpose
 
 This document is the traceability bridge between the static capability model
-in High-Level Architecture 1.3, the audience-visible Demo Scenario 1.4, and the
+in High-Level Architecture 1.4, the audience-visible Demo Scenario 1.5, and the
 next component-requirements package.
 
 It defines how software, data, decisions, evidence, and ownership move through
@@ -50,9 +51,9 @@ rollout.
 
 When the inputs differ, use this order:
 
-1. High-Level Architecture 1.3 owns component boundaries, interfaces,
+1. High-Level Architecture 1.4 owns component boundaries, interfaces,
    authority, security boundaries, and architectural invariants.
-2. Demo Scenario 1.4 owns stage order, component presence, audience-visible
+2. Demo Scenario 1.5 owns stage order, component presence, audience-visible
    proof, and the manufacturing-to-retirement narrative.
 3. This document owns detailed cross-component flow mapping and exposes gaps;
    it does not silently change either source.
@@ -992,7 +993,7 @@ flowchart LR
 | CARLA scene | Visible physical stimulus and vehicle motion | Software deployment or functional result |
 | Engineering Dashboard | Gateway VISS telemetry and factual advisory status | KUKSA receipt, service decision, backend delivery, or driver display |
 | AosCloud | Unit desired/actual software state and lifecycle records | Functional vehicle data or local analytic decisions |
-| Software Delivery Dashboard | Stateless presentation of real AosCloud lifecycle state, native log requests/results, evidence, decision owner, active role and explicitly confirmed OEM-authorized operations | A parallel desired-state database, independent log store, release decision owner or automatic approval policy |
+| Software Delivery Dashboard | Stateless presentation of real AosCloud lifecycle state, native log requests/results, exact artifact/metadata digests, requested permissions, target, validation evidence, owning-team acceptance, active OEM role and the final explicitly confirmed OEM-authorized operation | A parallel desired-state database, independent evidence/log store, release decision owner or automatic approval policy |
 | Brake Health Dashboard | Brake Health backend data, model result, report state | FOTA/SOTA authority or Gateway receipt |
 | Tire Health Function Dashboard | Function Team 2 condition/event/backend state | Raw continuous vehicle stream, hidden simulation truth, or Brake Health result |
 
@@ -1007,9 +1008,11 @@ Every FOTA and SOTA transition uses the same safety pattern:
 ```text
 prebuilt immutable candidate
   -> Service Provider publication for SOTA or Platform Team publication for FOTA
+  -> bind exact artifact digest + metadata digest + requested permissions
   -> fresh Validation target/batch
   -> effective-target preview immediately before approval
-  -> explicit owner decision through an authorized OEM identity
+  -> show required validation evidence and owning-team acceptance
+  -> explicit final owner decision through an authorized OEM identity
   -> install only on VU
   -> component or service qualification
   -> integration qualification when applicable
@@ -1020,13 +1023,35 @@ prebuilt immutable candidate
   -> verify actual state and readiness
 ```
 
-An unexpected Unit, stale pending batch, digest mismatch, unmet dependency,
-incomplete evidence, missing owner decision, wrong Cloud role, or missing
-combined-graph approval blocks the transition. Passing evidence never implies
-approval. The dashboard may invoke only an explicitly confirmed action through
-the correct OEM identity and must always re-read AosCloud afterward. AosCloud
-retains the authoritative lifecycle and audit state after the dashboard or
-orchestrator exits.
+An unexpected Unit, stale pending batch, artifact or metadata digest mismatch,
+unexpected permission, unmet dependency, incomplete/stale/failed evidence,
+missing owning-team acceptance, wrong Cloud role, or missing combined-graph
+approval blocks the transition. Passing evidence never implies approval. The
+dashboard presents the complete decision basis and enables only the final
+explicitly confirmed action through the correct OEM identity; it must always
+re-read AosCloud afterward. AosCloud retains the authoritative lifecycle and
+audit state after the dashboard or orchestrator exits.
+
+<a id="af-x-qm"></a>
+## `AF-X-QM` — QM Advisory Containment
+
+```mermaid
+flowchart LR
+    SVC["QM Brake or Tire Health service"] -->|"typed maintenance advisory"| K["KUKSA target"]
+    K --> VDP["VDP outbound policy<br/>defense in depth"]
+    VDP -->|"restricted QM-origin channel"| GW["Vehicle Gateway<br/>authoritative enforcement"]
+    GW -->|"accepted/rejected factual status"| ENG["Engineering Telematics Dashboard"]
+    GW -. "deny" .-> MOTION["throttle · brake · steer · gear<br/>motion or safety-critical operation"]
+```
+
+The two functional services are QM-domain applications and produce only typed
+maintenance/inspection advisories. Aos IAM and KUKSA scopes constrain each
+service, and the VDP performs a second contract check. Neither is a
+functional-safety argument. The Gateway knows that this route originates from
+the QM Domain Controller and is the final authoritative boundary: it validates
+target, type, range, freshness, rate and correlation and rejects arbitrary VSS
+writes and every motion or safety-critical operation. No accepted flow depends
+on the advisory for hazard mitigation.
 
 <a id="af-x-offline"></a>
 ## `AF-X-OFFLINE` — Connectivity Domains
@@ -1103,7 +1128,7 @@ vehicle rollback or proof of a fleet-wide deletion policy.
 
 ## Scenario-to-Flow Traceability
 
-| Demo Scenario 1.4 claim | Architecture flow coverage |
+| Demo Scenario 1.5 claim | Architecture flow coverage |
 | --- | --- |
 | OEM-integrated SOP substrate enables post-SOP extension | `AF-M0-LC`, `AF-G0-RT` |
 | Two freshly manufactured, unprovisioned vehicle computers | `AF-M0-LC`, `AF-M0-OB` |
@@ -1116,6 +1141,7 @@ vehicle rollback or proof of a fleet-wide deletion policy.
 | An incompatible Service v2 is rejected natively before any Unit delivery | deferred `AF-G3-DEP`; blocked on an implementing AosEdge release |
 | Same deterministic CARLA event supports comparable local inference | `AF-G3-RT`, `AF-G3-OB`, `AF-X-SOURCE` |
 | Local advisory reaches the Gateway without a Cloud round trip | `AF-G4-RT`, `AF-G4-FR`, `AF-X-OFFLINE` |
+| QM services cannot reach motion or safety-critical operations | `AF-G4-RT`, `AF-TIRE-RT`, `AF-X-QM` |
 | No driver-HMI claim; Engineering Dashboard shows factual Gateway status | `AF-G4-OB`, `AF-X-OBS` |
 | Functional report synchronizes after connectivity returns | `AF-G4-RT`, `AF-G4-FR`, `AF-X-OFFLINE` |
 | Two Unit roles do not imply two simultaneous CARLA vehicles | `AF-X-SOURCE` |
@@ -1132,8 +1158,8 @@ vehicle rollback or proof of a fleet-wide deletion policy.
 | Vehicle control channel | `CONTROL` | `GATEWAY` / CARLA actuator path | Gateway tooling; separate from VDP |
 | VISS vehicle telemetry | `GATEWAY` / `VISS` | `VDP` and independent `ENG-DASH` | Gateway contract |
 | KUKSA actual values | `VDP` | `BHS` and `TIRE` | Platform FOTA contract |
-| Typed maintenance advisory target | `BHS` or `TIRE` | outbound `VDP` | Each SOTA request constrained by its FOTA allowlist entry |
-| VISS Set advisory | outbound `VDP` | `GW-ADV` | Platform FOTA + Gateway contract |
+| Typed QM maintenance advisory target | `BHS` or `TIRE` | outbound `VDP` | Each SOTA request constrained by its FOTA allowlist entry; no safety or motion authority |
+| Restricted QM-origin VISS Set advisory | outbound `VDP` | `GW-ADV` | Platform FOTA defense in depth + authoritative Gateway contract |
 | Gateway advisory status | `GW-ADV` / `VISS` | `ENG-DASH` and inbound `VDP` as selected | Gateway contract |
 | Aos service identity and requested KUKSA permissions | `AOS-CORE` / Aos IAM | `VDP` Credential Broker | `AOS_SECRET` is instance-bound and never persisted in an artifact |
 | Short-lived KUKSA credential | `VDP` Credential Broker | `BHS` or `TIRE` | Exact currently registered IAM permission set mapped within the installed VDP contract; upstream KUKSA verifies the public key |
@@ -1141,7 +1167,7 @@ vehicle rollback or proof of a fleet-wide deletion policy.
 | Tire Health summary/event | `TIRE` | `TIRE-BE` / `TIRE-DASH` | Function Team 2 SOTA/backend |
 | Unit desired/actual state | `AOS-CLOUD` / `AOS-CORE` | `SW-DASH` | AosCloud lifecycle |
 | SOTA artifact publication and technical verification | Function Team 1 or 2 through its Service Provider identity | `AOS-CLOUD` | Owning Function Team SOTA lifecycle; no OEM Unit deployment approval |
-| FOTA/SOTA validation acceptance and deployment or promotion approval | Platform Team or owning Function Team through an authorized OEM identity | `AOS-CLOUD` | Team-owned engineering decision recorded and executed by AosCloud |
+| FOTA/SOTA validation acceptance and deployment or promotion approval | Platform Team or owning Function Team through an authorized OEM identity | `AOS-CLOUD` | Exact artifact/metadata digests, permissions, target, evidence and team acceptance are presented before the explicit final decision; AosCloud records and executes it |
 | Native system/service/crash logs | `AOS-CORE` / `AOS-CLOUD` | `SW-DASH` through supported AosCloud APIs | Operational observability; AosCloud remains authoritative and the dashboard stores no independent archive |
 
 No backend, dashboard, orchestrator, or functional service becomes an
@@ -1161,14 +1187,14 @@ owning team's release decision.
 | <a id="gap-af-07"></a>`GAP-AF-07` | Brake Health v1 product | `G2` | Define and implement Service v1, bounded report, backend, dashboard, retry and idempotency | Function Team 1 |
 | <a id="gap-af-08"></a>`GAP-AF-08` | VDP Component v2 compatibility | `G3` | Define VDP Component v2 inputs, provenance and backward compatibility | Platform Team + Function Team 1 |
 | <a id="gap-af-09"></a>`GAP-AF-09` | Deterministic brake model | `G3` | Define simulated brake-condition source and deterministic model/result contract | Vehicle simulation + Function Team 1 |
-| <a id="gap-af-10"></a>`GAP-AF-10` | Outbound advisory chain | `G4` | Define and implement KUKSA actuator, outbound provider, VISS Set, Gateway handler and factual status | Platform Team + Gateway |
+| <a id="gap-af-10"></a>`GAP-AF-10` | Outbound advisory chain and QM containment | `G4/T1/X-QM` | Define and implement typed KUKSA target, VDP defense-in-depth policy, restricted VISS Set, authoritative Gateway QM-channel policy, factual status, and negative motion/safety/arbitrary-write proof | Platform Team + Gateway |
 | <a id="gap-af-11"></a>`GAP-AF-11` | Offline report queue | `G4/X-OFFLINE` | Define bounded local report queue, reconnect, duplicate handling and timing | Function Team 1 |
 | <a id="gap-af-21"></a>`GAP-AF-21` | Tire condition model and stimulus | `T1` | Freeze the native input subset, explicit accelerated/pre-aged degradation stimulus, persistent state, condition bands, thresholds, bounded payload and hidden qualification oracle | Function Team 2 + CARLA scenario |
 | <a id="gap-af-22"></a>`GAP-AF-22` | Tire advisory contract | `T1` | Define and prove the typed KUKSA-to-VISS-to-Gateway Tire Health advisory and factual status without vehicle-motion or production-HMI authority | Platform Team + Function Team 2 + Gateway |
 | <a id="gap-af-23"></a>`GAP-AF-23` | Tire Health Cloud product | `T1` | Implement independent Tire Health backend/dashboard and offline/idempotent ingestion of bounded summaries/events | Function Team 2 |
 | <a id="gap-af-15"></a>`GAP-AF-15` | Least-privilege KUKSA access | all | Enable and qualify stock Aos IAM permission handling; implement the thin VDP-owned Aos–KUKSA Credential Broker without a parallel identity/policy store; integrate a platform-protected IAM/PKCS#11 signing key, short token lifetime/refresh, separate provider identity binding and fail-closed negative cases without modifying upstream KUKSA | Platform Team / `aos-vehicle-platform` |
 | <a id="gap-af-16"></a>`GAP-AF-16` | Native log API qualification | all | Qualify AosEdge system/service/crash-log requests, scoped AosCloud API access, latency, retention/deletion, online/offline behavior, redaction and dashboard presentation | Operational observability + Software Delivery Dashboard |
-| <a id="gap-af-17"></a>`GAP-AF-17` | Software Delivery Dashboard and release authorization | all | Implement a stateless Software Delivery Dashboard that exposes the team decision owner, active SP/OEM role, exact confirmation and Cloud audit result without a parallel desired-state cache or automatic approval policy | Demo solution + AosCloud integration |
+| <a id="gap-af-17"></a>`GAP-AF-17` | Software Delivery Dashboard and release authorization | all | Implement a stateless Software Delivery Dashboard that exposes exact artifact/metadata digests, requested permissions, target, required evidence and freshness, owning-team acceptance, active SP/OEM role, blocked reasons, final confirmation and Cloud audit result without a parallel state/evidence cache or automatic approval policy | Demo solution + AosCloud integration |
 | <a id="gap-af-18"></a>`GAP-AF-18` | Presentation and timing bounds | all | Define stage durations, timeout budgets, local decision latency and technical/executive presentation modes | Demo experience |
 | <a id="gap-af-19"></a>`GAP-AF-19` | Demo-run correlation and cleanup | `M1/R0` | Define current-run correlation by start time, local overlay roles, Unit IDs, and external-data retention/cleanup boundaries | Demo orchestration + functional teams |
 | <a id="gap-af-20"></a>`GAP-AF-20` | Cross-lifecycle compatibility | `G2–G4/T1` | Define and prove versioned capability-dependency declaration, current runtime fail-closed behavior, future native Cloud rejection before rollout/transfer, compatibility checks, and safe dependent-first rollback for both SOTA lifecycles | AosEdge Platform Team + Platform Team + both service providers |
@@ -1190,13 +1216,13 @@ The following former candidate gaps remain resolvable but are no longer active:
 
 ## Architecture-Flow Acceptance Record
 
-Architecture Flows 1.3 preserves the accepted Version 1.2 lifecycle and data
-flows and corrects the credential authority in `AF-X-AUTH` without changing
-vehicle-data direction or functional ownership. It was accepted on 2026-08-19
+Architecture Flows 1.4 preserves the accepted Version 1.3 lifecycle and data
+flows, adds `AF-X-QM`, and makes the complete evidence basis preceding final
+OEM approval explicit. It was accepted on 2026-08-19
 after reviewers confirmed that:
 
-1. `M0`, `M1`, `G0–G4`, `T1`, and `R0` match Demo Scenario 1.4;
-2. every component and interface respects High-Level Architecture 1.3;
+1. `M0`, `M1`, `G0–G4`, `T1`, and `R0` match Demo Scenario 1.5;
+2. every component and interface respects High-Level Architecture 1.4;
 3. VU validation and DU promotion use explicit current targeting and identical
    accepted artifacts;
 4. manufacturing state, Unit identity, software graph, functional data, and
@@ -1223,10 +1249,14 @@ after reviewers confirmed that:
 14. the Factory substrate provides the enabled permission-handler and
     non-secret IAM/PKCS#11 seam, while Unit-specific signing material and
     static provider tokens remain outside image and payload artifacts.
+15. both functional services remain QM, the Gateway is the final authoritative
+    channel boundary, and no advisory is relied upon for a safety goal; and
+16. a Dashboard approval control represents the final evidence-backed OEM
+    decision, never the validation process or an automatic policy.
 
 ## Downstream Component Requirement Gate
 
-The accepted System Requirements and Traceability 0.6 covers every active
+The accepted System Requirements and Traceability 0.7 covers every active
 `AF-*` flow and allocates the resulting obligations to provisional component
 packages. D3 now expands those packages in this order:
 

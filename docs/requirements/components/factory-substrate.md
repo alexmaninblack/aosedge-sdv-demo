@@ -8,11 +8,11 @@
 - Version: 0.2
 - Prepared: 2026-08-19
 - Owner: Platform Team / pre-SOP OEM Factory Baseline Assembly
-- Architecture input: [High-Level Architecture 1.3](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 1.4](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 1.3](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 0.6](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 0.6](../component-decomposition-and-interface-register.md)
+- Architecture input: [High-Level Architecture 1.4](../../architecture/high-level-architecture.md)
+- Scenario input: [Demo Scenarios 1.5](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 1.4](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 0.7](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 0.7](../component-decomposition-and-interface-register.md)
 - Implementation evidence: `aos-vehicle-platform@15b6abb`, with local
   candidate `.11` pinned to `a12c0aa`
 

@@ -207,19 +207,19 @@ class DocumentationCheckTests(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         target = root / "docs" / "architecture" / "high-level-architecture.md"
         text = target.read_text(encoding="utf-8").replace(
-            "- Version: 1.3", "- Version: 1.4", 1
+            "- Version: 1.4", "- Version: 1.5", 1
         )
         target.write_text(text, encoding="utf-8")
         result = self.run_check(root)
         self.assertNotEqual(0, result.returncode)
-        self.assertIn("label does not name target version 1.4", result.stderr)
+        self.assertIn("label does not name target version 1.5", result.stderr)
 
     def test_stale_versioned_canonical_index_link_is_rejected(self) -> None:
         temporary, root = self.temporary_documentation()
         self.addCleanup(temporary.cleanup)
         target = root / "docs" / "demo" / "README.md"
         text = target.read_text(encoding="utf-8").replace(
-            "Demo Scenarios 1.4", "Demo Scenarios 1.3", 1
+            "Demo Scenarios 1.5", "Demo Scenarios 1.4", 1
         )
         target.write_text(text, encoding="utf-8")
         result = self.run_check(root)

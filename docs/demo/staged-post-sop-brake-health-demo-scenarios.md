@@ -4,7 +4,7 @@
 # Staged Post-SOP Brake and Tire Health Demo Scenarios
 
 - Status: Accepted demo-scenario baseline
-- Version: 1.4
+- Version: 1.5
 - Prepared: 2026-08-19
 - Accepted: 2026-08-19
 - Owner: Demo Architecture
@@ -12,10 +12,11 @@
   capability evolution, release sequence, dashboards, observability, and
   end-of-demo retirement
 - Architecture alignment: dynamic staged projection of High-Level Architecture
-  1.3, with detailed interaction mapping in Demo Scenario Architecture Flows
-  1.3
-- Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md)
-  and [ADR 0010](../architecture/decisions/0010-aos-kuksa-credential-broker.md)
+  1.4, with detailed interaction mapping in Demo Scenario Architecture Flows
+  1.4
+- Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md),
+  [ADR 0010](../architecture/decisions/0010-aos-kuksa-credential-broker.md), and
+  [ADR 0011](../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
 - Implementation, build, signing, Cloud, or Unit mutation authorized: no
 
 ## Purpose
@@ -31,9 +32,9 @@ its Vehicle Gateway, and contains an operational Domain Controller with the
 AosEdge platform substrate. What is initially absent is the Vehicle Data
 Platform Component payload and all functional SOTA services.
 
-Scenario 1.4 defines what should happen and what an
+Scenario 1.5 defines what should happen and what an
 audience should see. It is the dynamic, stage-by-stage projection of the
-capability-superset model in High-Level Architecture 1.3. It does not yet
+capability-superset model in High-Level Architecture 1.4. It does not yet
 select exact APIs, define every detailed interaction, or authorize
 implementation.
 
@@ -92,9 +93,9 @@ The demonstration does not claim that no software ever changes after SOP. Its
 claim is that post-SOP functionality is added through the extension and
 lifecycle mechanisms intentionally built into the SOP platform.
 
-## Alignment With High-Level Architecture 1.3
+## Alignment With High-Level Architecture 1.4
 
-High-Level Architecture 1.3 shows every capability that the target logical
+High-Level Architecture 1.4 shows every capability that the target logical
 vehicle architecture can host. This scenario defines when those deployable
 capabilities are absent or present during `M0`, `M1`, `G0–G4`, `T1`, and `R0`.
 
@@ -125,8 +126,10 @@ simultaneous simulated vehicles unless that topology is later implemented.
 | Vehicle Data Platform Component | FOTA-owned platform artifact containing the inbound/outbound providers, versioned KUKSA contract/configuration and thin Aos–KUKSA Credential Broker; stage names use the shorthand VDP Component v1–v3 |
 | Brake Health Function Team | Function Team 1 / Service Provider 1: OEM functional vertical that owns the Brake Health service, model, backend, dashboard, and SOTA 1 lifecycle |
 | Tire Health Function Team | Function Team 2 / Service Provider 2: independent peer OEM functional vertical that owns local tire-condition estimation, bounded Cloud reporting, inspection advisory, backend, dashboard, and SOTA 2 lifecycle |
+| QM functional service | Brake Health or Tire Health application in the non-safety QM domain; its maintenance advisory is not a safety warning or vehicle-motion command |
 | Service Provider identity | Function Team Cloud identity used to develop, sign, publish, version, and technically verify its own SOTA artifact; it does not authorize deployment to OEM Units |
 | OEM authorization identity | Cloud identity used by the owning Platform or Function Team to record validation acceptance and deployment or promotion approval affecting OEM Units |
+| Evidence-backed OEM approval | Final explicit OEM decision bound to the exact artifact and metadata digests, requested permissions, target, required validation evidence, and owning-team acceptance; passing evidence never auto-approves |
 | AosCloud lifecycle control plane | Authoritative desired/reported actual state, batches, campaigns, recorded approvals, audit history, and update execution; it does not make an owning team's engineering release decision |
 | Validation Unit | Freshly provisioned engineering AosVM for the current demo run, used for qualification and integration |
 | Demonstration Unit | Freshly provisioned production-like AosVM for the current demo run, used as the promotion target after acceptance |
@@ -193,12 +196,15 @@ Its primary view should show:
 - Validation and Demonstration Unit lanes;
 - current and target platform and service versions;
 - exact artifact identities and compact digest evidence;
+- exact service-metadata digest and requested KUKSA permissions;
 - download, install, activation, readiness, validation, and promotion states;
 - the effective target Units before an approval is accepted;
 - `Waiting for validation`, approval, rejection, and accepted-release states;
 - the owning Platform or Function Team, Service Provider publication identity,
   active OEM authorization role, and exact action awaiting confirmation;
 - concise qualification results with optional technical drill-down;
+- owning-team acceptance and completeness/freshness of every required evidence
+  item before the final OEM approval control is enabled;
 - provider and service log availability.
 
 The dashboard must distinguish active state from retained audit history. Before
@@ -215,6 +221,17 @@ affecting an OEM Unit requires an explicit confirmation from the owning team
 and is submitted through an authorized OEM identity; the resulting AosCloud
 record remains authoritative after the local tools exit.
 
+For the demo, that final decision is intentionally represented by an approval
+button. The button is not the validation process. Before it can be used, the
+dashboard must show the exact candidate artifact and metadata digests,
+requested permissions, target, required validation evidence, owning-team
+acceptance and active OEM role. Missing, failed, stale or mismatched evidence
+blocks the action. The Dashboard submits the explicit decision to AosCloud and
+then re-reads authoritative lifecycle state.
+This approval demonstrates a reviewed release decision, not a claim that the
+button itself makes software safe or provides a functional-safety
+certification.
+
 The normal presentation uses this dashboard. The original AosCloud UI remains
 available for technical source-of-truth drill-down.
 
@@ -229,7 +246,7 @@ is not part of the time-critical local advisory path.
 
 ### Tire Health Function Dashboard — Independent SOTA 2 Product
 
-High-Level Architecture 1.3 assigns a separate backend and dashboard to
+High-Level Architecture 1.4 assigns a separate backend and dashboard to
 Function Team 2 / Service Provider 2. They become audience-visible at `T1`,
 after the `G0–G4` Brake Health progression. The Tire Health dashboard shows an
 estimated condition band, threshold event, service and platform versions, Unit
@@ -447,8 +464,10 @@ The exact contract is a later design decision.
    Validation Unit references the pending batch. Any unexpected Unit blocks
    approval.
 4. The Platform Team explicitly authorizes the Validation Unit deployment
-   through its OEM identity; the dashboard and orchestrator cannot infer this
-   approval from target checks.
+   through its OEM identity after the Dashboard shows the exact artifact and
+   metadata digests, requested permissions, target, required evidence and
+   Platform Team acceptance; the dashboard and orchestrator cannot infer this
+   approval from target checks or passing tests.
 5. VDP Component v1 is installed and activated on the Validation Unit.
 6. Platform qualification verifies signal mapping, filtering, KUKSA
    publication, the Credential Broker's fail-closed IAM translation, distinct
@@ -667,6 +686,13 @@ demonstration implements no IVI or Instrument Cluster. It proves only that the
 request reaches the Vehicle Gateway and that the Gateway publishes a factual
 reception status.
 
+Brake Health and Tire Health are QM-domain applications in this demo. Their
+outputs are maintenance/inspection advisories, not safety warnings. The VDP
+outbound allowlist is defense in depth; the Vehicle Gateway is the final
+authoritative boundary for the QM-origin channel and rejects arbitrary VSS
+writes and all throttle, brake, steering, gear, vehicle-motion or
+safety-critical operations.
+
 ### Offline proof
 
 1. The Demonstration Unit loses Cloud connectivity while local vehicle
@@ -882,7 +908,7 @@ destructive experiment.
     presentation.
 11. Unit identities remain stable throughout `G0–T1`; the complete next-run
     reset retires those identities and creates new ones from fresh overlays.
-12. High-Level Architecture 1.3 is a capability superset; `G0–G4` exercise
+12. High-Level Architecture 1.4 is a capability superset; `G0–G4` exercise
     Function Team 1 and `T1` adds Function Team 2 through its independent Tire
     Health SOTA 2 lifecycle.
 13. Function Team 1 and Function Team 2 remain independent AosCloud Service
@@ -901,6 +927,15 @@ destructive experiment.
 17. Interactive CARLA mode transitions follow the accepted drive-mode/world-
     context matrix; manual takeover preserves the brake event, while Autopilot
     never inherits the scenario obstacle and no reverse-control claim is made.
+18. Brake Health and Tire Health are QM-domain maintenance/inspection
+    applications. They have no allocated safety goal, direct driver-HMI claim,
+    vehicle-motion authority or safety-critical actuator access.
+19. The Vehicle Gateway, not the VDP allowlist alone, is the final
+    authoritative containment boundary for the QM-origin advisory channel.
+20. The visible OEM approval button is only the final explicit decision after
+    exact artifact/metadata identity, requested permissions, target,
+    validation evidence and owning-team acceptance are shown and matched.
+    Passing evidence never auto-approves, and AosCloud remains authoritative.
 
 ## Open Qualification and Implementation Gates
 
@@ -922,10 +957,11 @@ destructive experiment.
 6. Qualify the current AosCloud system, service-instance, and crash-log APIs,
    including scoped access, request latency, retention/deletion, offline
    behavior, redaction, and presentation in the Software Delivery Dashboard.
-7. Define the minimum OEM Software Delivery Dashboard views, explicit
-   confirmation interaction, team-owner and active-role presentation, and the
-   exact OEM-authorized actions that may be invoked without introducing local
-   lifecycle state or automatic approval.
+7. Define the minimum OEM Software Delivery Dashboard views and exact evidence
+   dossier: artifact and metadata digests, requested permissions, target,
+   evidence completeness/freshness, team acceptance, active OEM role, blocked
+   reasons, final explicit confirmation and post-action Cloud re-read, without
+   introducing local lifecycle state or automatic approval.
 8. Define the versioned model identity and prediction result shown by Service
    v2 before advisory actuation is introduced.
 9. Prove that a fresh verification batch shows only its intended Validation
@@ -954,17 +990,17 @@ destructive experiment.
     Engineering Telematics Dashboard presentation.
 
 Detailed interaction mapping now exists in Demo Scenario Architecture Flows
-1.3. The open gates above constrain component requirements, implementation,
+1.4. The open gates above constrain component requirements, implementation,
 qualification, and audience-visible claims. They preserve the canonical
 `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> T1 -> R0` presentation order and
 the independence of the two SOTA lifecycles.
 
 ## Reference Basis
 
-- [High-Level Architecture 1.3](../architecture/high-level-architecture.md)
+- [High-Level Architecture 1.4](../architecture/high-level-architecture.md)
   defines the accepted capability-superset architecture baseline; this
   scenario defines its staged component presence and lifecycle, while
-  [Architecture Flows 1.3](../architecture/demo-scenario-architecture-flows.md)
+  [Architecture Flows 1.4](../architecture/demo-scenario-architecture-flows.md)
   defines detailed cross-component interaction mapping.
 - [AosEdge overview](https://docs.aosedge.tech/docs/aos-edge/) describes the
   Cloud-to-edge lifecycle and operational visibility model.

@@ -5,14 +5,15 @@
 
 - Status: Draft
 - Package: [`CR-GATEWAY`](../component-decomposition-and-interface-register.md#cr-gateway)
-- Version: 0.5
+- Version: 0.6
 - Prepared: 2026-08-19
 - Owner: Vehicle Gateway Tooling
-- Architecture input: [High-Level Architecture 1.3](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 1.4](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 1.3](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 0.6](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 0.6](../component-decomposition-and-interface-register.md)
+- Architecture input: [High-Level Architecture 1.4](../../architecture/high-level-architecture.md)
+- Scenario input: [Demo Scenarios 1.5](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 1.4](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 0.7](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 0.7](../component-decomposition-and-interface-register.md)
+- Accepted architecture decision: [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
 - Implementation baseline: `carla-ego-runtime@22864c5` against `CarlaSim@ac7d882c`
 
 ## Purpose
@@ -25,6 +26,11 @@ allowlisted advisory Set requests. It also preserves the implemented separate
 vehicle-control and telemetry-dashboard behavior while specifying the
 still-missing advisory return, factual Gateway status and local-latency
 evidence.
+
+For Brake Health and Tire Health, the Domain Controller route is a QM-origin
+channel. VDP validation is defense in depth; this Gateway package owns the
+final authoritative deny-by-default boundary and never exposes vehicle-motion
+or safety-critical authority to either service.
 
 ## Reader Summary
 
@@ -134,7 +140,7 @@ decisions they exercise.
 | [Continuous manual/autopilot handover (`REQ-GATEWAY-007`)](#req-gateway-007) | Switch modes without replacing actor, clock or telemetry and wait for the accepted world-context transition | `PARTIAL` | Unit, Integration, End-to-end |
 | [Independent engineering telemetry view (`REQ-GATEWAY-008`)](#req-gateway-008) | Show Gateway facts without joining the control or service path | `CURRENT` | Unit, Component, End-to-end |
 | [Explicit source-loss state (`REQ-GATEWAY-009`)](#req-gateway-009) | Turn missing, stale or disconnected input into degraded/unavailable status | `PARTIAL` | Unit, Contract, Integration |
-| [Typed allowlisted advisory Set (`REQ-GATEWAY-010`)](#req-gateway-010) | Accept only authenticated Brake/Tire advisory targets and reject everything else | `TARGET` | Unit, Component, Contract, Integration |
+| [Authoritative QM advisory Set boundary (`REQ-GATEWAY-010`)](#req-gateway-010) | Accept only typed non-safety Brake/Tire advisories and reject arbitrary VSS, motion and safety-critical operations | `TARGET` | Unit, Component, Contract, Integration |
 | [Factual advisory status (`REQ-GATEWAY-011`)](#req-gateway-011) | Publish received/rejected Gateway state without a driver-display claim | `TARGET` | Unit, Contract, End-to-end |
 | [Local advisory latency evidence (`REQ-GATEWAY-012`)](#req-gateway-012) | Measure local advisory delivery independently of Cloud synchronization | `TARGET` | Unit, Integration, End-to-end |
 | [Truthful mode/context engineering projection (`REQ-GATEWAY-013`)](#req-gateway-013) | Expose mode, context, scenario generation/result and reset discontinuity without joining the control path | `TARGET` | Unit, Contract, Integration, End-to-end |
@@ -302,21 +308,26 @@ decisions they exercise.
 - Requirement state: Draft
 - Implementation state: `PARTIAL`
 
-### Typed allowlisted advisory Set
+### Authoritative QM advisory Set boundary
 
 <a id="req-gateway-010"></a>
 
 - ID: `REQ-GATEWAY-010`
-- Statement: The VISS endpoint and Gateway Advisory Handler shall accept Set
-  only for the versioned Brake Health and Tire Health advisory targets from the
-  authorized platform path, validate target, type, enum/value, freshness and
-  replay identity, and reject every other Set without changing vehicle motion
-  or another VSS value.
-- Parent system requirements: [allowlisted outbound advisory (`SYS-VDP-004`)](../system-requirements-and-traceability.md#sys-vdp-004), [allowlisted Brake Health advisory (`SYS-BHS-003`)](../system-requirements-and-traceability.md#sys-bhs-003), [offline Tire Health advisory (`SYS-TIRE-006`)](../system-requirements-and-traceability.md#sys-tire-006) and [fail-closed advisory security (`SYS-SEC-003`)](../system-requirements-and-traceability.md#sys-sec-003)
-- Architecture flows: [G4 advisory runtime (`AF-G4-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-g4-rt) and [Tire Health runtime (`AF-TIRE-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-rt)
+- Statement: The VISS endpoint and Gateway Advisory Handler shall treat the
+  Domain Controller advisory route as QM-origin and shall be the final
+  authoritative boundary. It shall accept Set only for the Platform-owned,
+  versioned Brake Health and Tire Health non-safety advisory targets; validate
+  target, type, enum/value, freshness, rate, correlation and replay identity;
+  and reject arbitrary VSS writes and every throttle, brake, steering, gear,
+  vehicle-motion or safety-critical operation without changing vehicle state.
+- Parent system requirements: [allowlisted outbound advisory (`SYS-VDP-004`)](../system-requirements-and-traceability.md#sys-vdp-004), [allowlisted Brake Health advisory (`SYS-BHS-003`)](../system-requirements-and-traceability.md#sys-bhs-003), [offline Tire Health advisory (`SYS-TIRE-006`)](../system-requirements-and-traceability.md#sys-tire-006), [fail-closed advisory security (`SYS-SEC-003`)](../system-requirements-and-traceability.md#sys-sec-003), and [QM service and Gateway containment (`SYS-SEC-007`)](../system-requirements-and-traceability.md#sys-sec-007)
+- Architecture flows: [G4 advisory runtime (`AF-G4-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-g4-rt), [Tire Health runtime (`AF-TIRE-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-rt), and [QM advisory containment (`AF-X-QM`)](../../architecture/demo-scenario-architecture-flows.md#af-x-qm)
 - Components: [VISS (`CMP-VISS`)](../component-decomposition-and-interface-register.md#cmp-viss) and [Advisory Handler (`CMP-GW-ADV`)](../component-decomposition-and-interface-register.md#cmp-gw-adv)
 - Interfaces: [outbound advisory Set (`IF-ADV-003`)](../component-decomposition-and-interface-register.md#if-adv-003) and [advisory delivery (`IF-ADV-004`)](../component-decomposition-and-interface-register.md#if-adv-004)
-- Required evidence: positive contract cases for each typed target plus wrong path/type/value, missing identity, stale, replay and vehicle-control negative cases
+- Required evidence: positive contract cases for each typed target plus wrong
+  path/type/value, missing identity, stale, replay, excessive-rate,
+  cross-service, arbitrary-write, throttle, brake, steer, gear and other
+  safety/motion negative cases with no side effects
 - Requirement state: Draft
 - Implementation state: `TARGET`; current all-Set rejection remains correct until this contract is accepted
 
@@ -434,7 +445,7 @@ profile before the Platform Team selects a narrower service-facing contract.
 | <a id="ut-gateway-007"></a>`UT-GATEWAY-007` — control deadlines and safe stop | [Fail-safe control (`REQ-GATEWAY-006`)](#req-gateway-006) | Startup, command timeout, ownership timeout, release, disconnect and shutdown | Existing control state-machine tests | `CURRENT` |
 | <a id="ut-gateway-008"></a>`UT-GATEWAY-008` — live handover decisions | [Continuous handover (`REQ-GATEWAY-007`)](#req-gateway-007) | Lane/alignment gating, idempotent modes, complete context transition outcomes, scenario generation, pedal-safe blend and bounded metrics | Existing handover/protocol tests cover same-actor modes and blend but not the complete context matrix | `PARTIAL` |
 | <a id="ut-gateway-009"></a>`UT-GATEWAY-009` — engineering dashboard facts | [Engineering view (`REQ-GATEWAY-008`)](#req-gateway-008), [source loss (`REQ-GATEWAY-009`)](#req-gateway-009) | Connection, rates, event latency, escape-sequence handling and manifest extraction | [`m5_tools_test.py`](../../../../carla-ego-runtime/tests/m5_tools_test.py) | `CURRENT` for existing health; explicit source-state contract `PARTIAL` |
-| <a id="ut-gateway-010"></a>`UT-GATEWAY-010` — advisory authentication and allowlist | [Advisory Set (`REQ-GATEWAY-010`)](#req-gateway-010) | Correct Brake/Tire target and wrong path/type/value/identity/stale/replay rejection with no side effects | No implementation | `TARGET` |
+| <a id="ut-gateway-010"></a>`UT-GATEWAY-010` — authoritative QM-channel policy | [Advisory Set (`REQ-GATEWAY-010`)](#req-gateway-010) | Correct Brake/Tire target plus wrong caller/path/type/value, stale/replay/rate/correlation, arbitrary VSS and all motion/safety-operation negatives with no side effects | No implementation | `TARGET` |
 | <a id="ut-gateway-011"></a>`UT-GATEWAY-011` — advisory status state machine | [Factual status (`REQ-GATEWAY-011`)](#req-gateway-011) | Accepted/rejected reasons, correlation, bounded state, reconnect and prohibited HMI claims | No implementation | `TARGET` |
 | <a id="ut-gateway-012"></a>`UT-GATEWAY-012` — advisory timing | [Local latency (`REQ-GATEWAY-012`)](#req-gateway-012) | Source/Gateway clock order, correlation, missing/negative/non-finite latency and Cloud separation | No implementation | `TARGET` |
 | <a id="ut-gateway-013"></a>`UT-GATEWAY-013` — mode/context projection | [Transition projection (`REQ-GATEWAY-013`)](#req-gateway-013) | Path/type/value mapping, generation monotonicity, discontinuity lifetime, dashboard states and read-only separation | No implementation | `TARGET` |

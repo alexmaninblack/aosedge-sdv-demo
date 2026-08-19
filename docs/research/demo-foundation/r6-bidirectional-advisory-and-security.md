@@ -190,5 +190,5 @@ Component, not a standalone adapter or a modification to Eclipse KUKSA.
 - [COVESA VISS 3.1 specification](https://github.com/COVESA/vehicle-information-service-specification/tree/v3.1)
 - [Eclipse KUKSA Databroker 0.5.0](https://github.com/eclipse-kuksa/kuksa-databroker/tree/0.5.0)
 - [`aos-vehicle-platform` provider architecture](../../../../aos-vehicle-platform/docs/architecture.md)
-- [Current High-Level Architecture 1.3](../../architecture/high-level-architecture.md)
+- [Current High-Level Architecture 1.4](../../architecture/high-level-architecture.md)
 - [ADR 0010: Aos–KUKSA Credential Broker](../../architecture/decisions/0010-aos-kuksa-credential-broker.md)

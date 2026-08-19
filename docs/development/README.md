@@ -35,8 +35,8 @@ convenient.
 3. Check the relevant runtime and lifecycle sequence in
    [Architecture Flows](../architecture/demo-scenario-architecture-flows.md).
 4. Confirm that the change still fits
-   [High-Level Architecture 1.3](../architecture/high-level-architecture.md)
-   and [Demo Scenario 1.4](../demo/staged-post-sop-brake-health-demo-scenarios.md).
+   [High-Level Architecture 1.4](../architecture/high-level-architecture.md)
+   and [Demo Scenario 1.5](../demo/staged-post-sop-brake-health-demo-scenarios.md).
 
 If the proposed behavior does not fit, change and review the owning design
 document first. A downstream implementation must not silently redefine an

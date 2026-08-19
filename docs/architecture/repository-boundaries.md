@@ -7,7 +7,7 @@ The accepted end-to-end architecture baseline, including shared platform FOTA,
 independent SOTA lifecycles for two peer OEM functional teams, bidirectional
 KUKSA/VISS flows, local analytics, Cloud reporting, and engineering-dashboard
 boundaries, is defined in
-[High-Level Architecture 1.3](high-level-architecture.md).
+[High-Level Architecture 1.4](high-level-architecture.md).
 
 ## Runtime Boundary
 

@@ -5,15 +5,15 @@
 
 - Status: Reviewed draft
 - Package: [`CR-VDP`](../component-decomposition-and-interface-register.md#cr-vdp)
-- Version: 0.1
+- Version: 0.2
 - Prepared: 2026-08-19
 - Owner: Platform Team / independent component FOTA
-- Architecture input: [High-Level Architecture 1.3](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 1.4](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 1.3](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 0.6](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 0.6](../component-decomposition-and-interface-register.md)
-- Accepted architecture decision: [ADR 0010](../../architecture/decisions/0010-aos-kuksa-credential-broker.md)
+- Architecture input: [High-Level Architecture 1.4](../../architecture/high-level-architecture.md)
+- Scenario input: [Demo Scenarios 1.5](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 1.4](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 0.7](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 0.7](../component-decomposition-and-interface-register.md)
+- Accepted architecture decisions: [ADR 0010](../../architecture/decisions/0010-aos-kuksa-credential-broker.md) and [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
 - Implementation evidence: `aos-vehicle-platform@15b6abb`; provider `0.2.0`
   source pinned to `e972d2bd7f14e27646bb5d7c10c7186ecdecfa9f`
 
@@ -30,6 +30,11 @@ IAM create, register, resolve and invalidate each service instance's
 `AOS_SECRET` and declared permissions. The Credential Broker consumes that
 native result; it does not create a parallel identity store or duplicate
 per-service OEM policy database.
+
+Aos IAM/KUKSA permission mapping is a cybersecurity least-privilege mechanism
+inside the QM domain, not a functional-safety argument. Neither successful
+credential issuance nor this component's outbound validation grants safety or
+vehicle-motion authority.
 
 ## Reader Summary
 
@@ -107,7 +112,7 @@ supporting AosEdge release is available and qualified.
 | [Versioned v1 data contract (`REQ-VDP-002`)](#req-vdp-002) | Publish only the accepted first read-only subset with explicit quality | `PARTIAL` |
 | [Backward-compatible v2 (`REQ-VDP-003`)](#req-vdp-003) | Add Brake Health inputs without breaking v1 consumers | `TARGET` |
 | [Explicit degraded state (`REQ-VDP-004`)](#req-vdp-004) | Never substitute fabricated normal values | `CURRENT / EXTEND` |
-| [Typed outbound v3 advisory (`REQ-VDP-005`)](#req-vdp-005) | Permit only accepted Brake/Tire advisory targets | `TARGET` |
+| [Defense-in-depth outbound v3 advisory (`REQ-VDP-005`)](#req-vdp-005) | Permit only typed QM Brake/Tire advisories; Gateway remains authoritative | `TARGET` |
 | [Native-IAM credential translation (`REQ-VDP-006`)](#req-vdp-006) | Translate current IAM permissions without a parallel identity/policy store | `TARGET` |
 | [Protected signing and KUKSA trust (`REQ-VDP-007`)](#req-vdp-007) | Use per-Unit protected key and public verifier only | `TARGET` |
 | [Separate provider authority (`REQ-VDP-008`)](#req-vdp-008) | Give provider only bounded short-lived provide/create authority | `DESIGN GATE` |
@@ -163,16 +168,19 @@ value.
 - Verification: unit, component, integration and end-to-end
 
 <a id="req-vdp-005"></a>
-### Typed outbound v3 advisory
+### Defense-in-depth outbound v3 advisory
 
 VDP v3 shall accept only the versioned Brake Health and Tire Health advisory
 targets, authorized callers, types and enum/range values; map them to the
 narrow VISS Set contract; and expose factual accepted/rejected/Gateway status.
 It shall not provide arbitrary display text, arbitrary VSS writes or
-vehicle-motion authority.
+vehicle-motion authority. These services are QM-domain applications. This VDP
+check is defense in depth and shall not be presented as the authoritative
+vehicle-side or functional-safety boundary; the Vehicle Gateway independently
+enforces the final deny-by-default QM-channel policy.
 
-- Parents: [`SYS-VDP-004`](../system-requirements-and-traceability.md#sys-vdp-004), [`SYS-SEC-003`](../system-requirements-and-traceability.md#sys-sec-003)
-- Flows: [`AF-G4-RT`](../../architecture/demo-scenario-architecture-flows.md#af-g4-rt), [`AF-TIRE-RT`](../../architecture/demo-scenario-architecture-flows.md#af-tire-rt)
+- Parents: [`SYS-VDP-004`](../system-requirements-and-traceability.md#sys-vdp-004), [`SYS-SEC-003`](../system-requirements-and-traceability.md#sys-sec-003), [`SYS-SEC-007`](../system-requirements-and-traceability.md#sys-sec-007)
+- Flows: [`AF-G4-RT`](../../architecture/demo-scenario-architecture-flows.md#af-g4-rt), [`AF-TIRE-RT`](../../architecture/demo-scenario-architecture-flows.md#af-tire-rt), [`AF-X-QM`](../../architecture/demo-scenario-architecture-flows.md#af-x-qm)
 - Verification: unit, contract, integration and end-to-end
 
 <a id="req-vdp-006"></a>
@@ -249,7 +257,7 @@ service lifecycles remain unchanged.
 | --- | --- | --- |
 | <a id="ut-vdp-001"></a>`UT-VDP-001` — Artifact and contract identity | `REQ-VDP-001`, `REQ-VDP-002`, `REQ-VDP-003`, `REQ-VDP-010` | Exact version/digest/runtime type, v1-v3 schema compatibility, wrong target and forbidden rebuild inputs |
 | <a id="ut-vdp-002"></a>`UT-VDP-002` — Signal quality state machine | `REQ-VDP-002`, `REQ-VDP-004` | Valid/invalid/range/stale/disconnect/reconnect transitions, source time and no fabricated value |
-| <a id="ut-vdp-003"></a>`UT-VDP-003` — Advisory policy | `REQ-VDP-005` | Each accepted Brake/Tire request plus unknown caller/path/type/value, replay and vehicle-motion negatives |
+| <a id="ut-vdp-003"></a>`UT-VDP-003` — Defense-in-depth advisory policy | `REQ-VDP-005` | Each accepted Brake/Tire request plus unknown caller/path/type/value, stale/replay/rate/correlation and vehicle-motion/safety negatives; prove Gateway still enforces independently |
 | <a id="ut-vdp-004"></a>`UT-VDP-004` — IAM permission mapping | `REQ-VDP-006` | Invalid/stale secrets, exact `r`/`w`/`rw` mapping, malformed path/mode, contract excess, no widening and no retained secret |
 | <a id="ut-vdp-005"></a>`UT-VDP-005` — JWT lifecycle and redaction | `REQ-VDP-007`, `REQ-VDP-009` | Claims, audience, expiry/refresh, permission removal, clock bounds, missing signer/verifier and no secret/token logging |
 | <a id="ut-vdp-006"></a>`UT-VDP-006` — Provider credential lifecycle | `REQ-VDP-008` | After identity mechanism acceptance: obtain, renew, revoke, excessive scope, unavailable identity and no static-token fallback |
