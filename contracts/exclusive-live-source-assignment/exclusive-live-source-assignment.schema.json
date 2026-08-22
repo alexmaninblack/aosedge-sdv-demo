@@ -1,0 +1,111 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:exclusive-live-source-assignment:schema:v1",
+  "title": "Exclusive Live-Source Assignment Contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "$comment",
+    "schemaVersion",
+    "contractId",
+    "contractVersion",
+    "decision",
+    "audienceModel",
+    "technicalAssignment",
+    "orderedFlow",
+    "evidence",
+    "failurePolicy",
+    "deferred"
+  ],
+  "properties": {
+    "$schema": { "const": "./exclusive-live-source-assignment.schema.json" },
+    "$comment": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "contractId": { "const": "aosedge-demo-exclusive-live-source-assignment" },
+    "contractVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "decision": { "const": "D4-005" },
+    "audienceModel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["vehicles", "currentVehicleCount", "primaryAction", "primaryUiProhibitedTerms", "technicalDetails", "roleInVehicleDataPath"],
+      "properties": {
+        "vehicles": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["vehicleRole", "unitRole", "purpose"],
+            "properties": {
+              "vehicleRole": { "enum": ["VALIDATION_VEHICLE", "DEMONSTRATION_VEHICLE"] },
+              "unitRole": { "enum": ["VALIDATION_UNIT", "DEMONSTRATION_UNIT"] },
+              "purpose": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "currentVehicleCount": { "const": 1 },
+        "primaryAction": { "const": "Continue with Demonstration Vehicle" },
+        "primaryUiProhibitedTerms": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "enum": ["ATTACH CARLA", "DETACH CARLA", "SWITCH VM", "SOURCE BINDING"] }
+        },
+        "technicalDetails": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "roleInVehicleDataPath": { "const": false }
+      }
+    },
+    "technicalAssignment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["owner", "cloudLifecycleOwner", "bothUnitsMayRemainCloudOnline", "oneActiveBinding", "states", "selectedPeerPolicy", "authenticationDecision"],
+      "properties": {
+        "owner": { "const": "Host Demo Orchestrator" },
+        "cloudLifecycleOwner": { "const": "AosCloud" },
+        "bothUnitsMayRemainCloudOnline": { "const": true },
+        "oneActiveBinding": { "const": true },
+        "states": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "enum": ["DETACHED", "ATTACHING", "ATTACHED", "DETACHING", "FAILED"] }
+        },
+        "selectedPeerPolicy": { "type": "string", "minLength": 1 },
+        "authenticationDecision": { "const": "D4-006" }
+      }
+    },
+    "orderedFlow": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceFields", "targetFields", "rangeFields", "exclusiveProof"],
+      "properties": {
+        "sourceFields": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "targetFields": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "rangeFields": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "exclusiveProof": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "failurePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["safeStop", "blockNextAssignment", "conditions"],
+      "properties": {
+        "safeStop": { "const": true },
+        "blockNextAssignment": { "const": true },
+        "conditions": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "deferred": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "enum": ["TELEMETRY_REPLAY", "SECOND_SIMULATED_VEHICLE"] }
+    }
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:simulator-control-context:schema:v1",
+  "title": "Simulator Control and Context Contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "$comment",
+    "schemaVersion",
+    "contractId",
+    "contractVersion",
+    "decision",
+    "states",
+    "transitions",
+    "projection",
+    "resetSemantics",
+    "reversePolicy"
+  ],
+  "properties": {
+    "$schema": { "const": "./simulator-control-context.schema.json" },
+    "$comment": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "contractId": { "const": "aosedge-demo-simulator-control-context" },
+    "contractVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "decision": { "const": "D4-004" },
+    "states": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["driveModes", "worldContexts"],
+      "properties": {
+        "driveModes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "enum": ["SAFE_STOP", "SCENARIO", "MANUAL", "AUTOPILOT"] }
+        },
+        "worldContexts": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "enum": ["FREE_DRIVE", "BRAKE_EVENT"] }
+        }
+      }
+    },
+    "transitions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "sourceMode", "sourceContext", "targetMode", "targetContext", "reset", "obstacle", "unfinishedScenario"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
+          "sourceMode": { "enum": ["ANY", "SAFE_STOP", "SCENARIO", "MANUAL", "AUTOPILOT"] },
+          "sourceContext": { "enum": ["ANY", "FREE_DRIVE", "BRAKE_EVENT"] },
+          "targetMode": { "enum": ["SAFE_STOP", "SCENARIO", "MANUAL", "AUTOPILOT"] },
+          "targetContext": { "enum": ["UNCHANGED", "FREE_DRIVE", "BRAKE_EVENT"] },
+          "reset": { "enum": ["NONE", "CANONICAL_FREE_DRIVE", "CANONICAL_BRAKE_EVENT"] },
+          "obstacle": { "enum": ["UNCHANGED", "RETAIN", "REMOVE", "PREPARE"] },
+          "unfinishedScenario": { "enum": ["NOT_APPLICABLE", "UNCHANGED", "ABORT"] },
+          "notes": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "projection": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "dataType", "semantics"],
+        "properties": {
+          "path": { "type": "string", "pattern": "^Vehicle\\.CarlaSimulation\\." },
+          "dataType": { "enum": ["string", "uint64", "boolean"] },
+          "allowedValues": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string" } },
+          "semantics": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "resetSemantics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sameActor", "safeStopFirst", "zeroMotion", "generation", "discontinuity"],
+      "properties": {
+        "sameActor": { "const": true },
+        "safeStopFirst": { "const": true },
+        "zeroMotion": { "const": true },
+        "generation": { "type": "string", "minLength": 1 },
+        "discontinuity": { "type": "string", "minLength": 1 }
+      }
+    },
+    "reversePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["physicalCapabilityDeclared", "firstDemoControlUiAuthorized", "recovery"],
+      "properties": {
+        "physicalCapabilityDeclared": { "const": true },
+        "firstDemoControlUiAuthorized": { "const": false },
+        "recovery": { "type": "array", "minItems": 2, "uniqueItems": true, "items": { "enum": ["SCENARIO_RESTART", "AUTOPILOT_CONTEXT_RESET"] } }
+      }
+    }
+  }
+}

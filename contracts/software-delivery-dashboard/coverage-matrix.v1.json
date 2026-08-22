@@ -2,7 +2,7 @@
   "$schema": "./coverage-matrix.schema.json",
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "schemaVersion": 1,
-  "matrixVersion": "0.1-review",
+  "matrixVersion": "0.2-review",
   "title": "Automotive Orchestration Coverage Matrix",
   "provenance": {
     "classification": "SANITIZED_DERIVATIVE",
@@ -11,9 +11,12 @@
     "directQuotesIncluded": false
   },
   "statusDefinitions": {
+    "UNKNOWN": "Required source data or evidence is absent, ambiguous, incomplete, or cannot be refreshed.",
     "PARTIAL": "Reusable evidence exists, but the complete proof is not accepted.",
     "PLANNED": "The proof is defined but no accepted evidence exists yet.",
-    "DOCUMENTARY_ONLY": "The concern requires policy, compatibility, or support evidence rather than a short live demonstration."
+    "DOCUMENTARY_ONLY": "The concern requires policy, compatibility, or support evidence rather than a short live demonstration.",
+    "ACCEPTED": "Accepted evidence is bound to an exact evidence ID, subject version and digest, platform release, configuration digest, and verification time.",
+    "STALE": "Previously accepted evidence no longer matches the current subject, platform release, configuration, or qualification baseline and is not current proof."
   },
   "items": [
     {
@@ -23,10 +26,10 @@
       "demoStages": ["G1", "G2", "G3", "G4"],
       "proofModes": ["LIVE_DEMO", "CONTROLLED_QUALIFICATION"],
       "dashboardSection": "release_control",
-      "dashboardEvidence": ["artifact_unit_timeline", "active_instance_count", "transition_duration", "failure_reason"],
-      "acceptanceCriterion": "Every requested transition reaches one unambiguous state within a recorded bound and never exposes two active instances.",
+      "dashboardEvidence": ["artifact_unit_timeline", "active_instance_count", "requested_and_observed_state", "failure_reason"],
+      "acceptanceCriterion": "Every requested transition reaches one unambiguous authoritative state or an explicit unresolved state and never exposes two active instances.",
       "currentStatus": "PARTIAL",
-      "claimBoundary": "Existing lifecycle evidence does not yet prove the complete G0-G4 graph or dashboard presentation."
+      "claimBoundary": "Existing lifecycle evidence does not yet prove the complete G0-G4 graph or dashboard presentation; Cloud transition duration is not a first-demo vehicle KPI."
     },
     {
       "id": "AO-02",
@@ -79,14 +82,14 @@
     {
       "id": "AO-06",
       "theme": "resource_governance",
-      "concern": "Explicit CPU, memory, storage, and network budgets with observed use against limits.",
-      "demoStages": ["G0", "G1", "G2", "G3", "G4"],
+      "concern": "AosCore-enforced per-service resource quotas with observed use and isolation between two in-vehicle service tenants.",
+      "demoStages": ["T1"],
       "proofModes": ["LIVE_DEMO", "CONTROLLED_QUALIFICATION"],
       "dashboardSection": "runtime_assurance",
-      "dashboardEvidence": ["requested_limits", "steady_state_usage", "peak_usage", "threshold_verdict"],
-      "acceptanceCriterion": "Every deployed component declares a resource budget and remains within the accepted steady-state and peak thresholds.",
-      "currentStatus": "PARTIAL",
-      "claimBoundary": "Some provider resource evidence exists; a complete cross-component budget view does not."
+      "dashboardEvidence": ["approved_brake_and_tire_quotas", "tire_cpu_usage_and_cap", "aoscore_status_or_alert", "brake_control_tenant_result", "platform_health", "post_load_tire_recovery"],
+      "acceptanceCriterion": "The actual Tire service reaches but cannot exceed its approved CPU quota under AosCore enforcement, while Brake processes the deterministic event without restart and the platform remains healthy; Tire returns to normal after the load stops.",
+      "currentStatus": "PLANNED",
+      "claimBoundary": "The first live proof covers CPU isolation between one Aos-managed service instance per Service Provider. Mac-local backends, aggregate multi-service-per-provider quotas, and audience-visible memory, storage, PID, or network saturation are excluded."
     },
     {
       "id": "AO-07",
@@ -108,9 +111,9 @@
       "proofModes": ["LIVE_DEMO", "CONTROLLED_QUALIFICATION"],
       "dashboardSection": "release_control",
       "dashboardEvidence": ["desired_state_graph", "dependency_constraint", "required_actual_version", "native_cloud_rejection", "zero_unit_transfer", "activation_order", "readiness_result"],
-      "acceptanceCriterion": "After the roadmap capability is released, AosCloud rejects an incompatible service before Subject-service desired-state change or Unit transfer; service readiness remains fail-closed defense in depth.",
+      "acceptanceCriterion": "Existing component-to-component and service-to-layer dependencies remain visible as supported platform capabilities. After the cross-lifecycle roadmap capability is released, AosCloud rejects a service whose required FOTA Vehicle Data Platform Component version is absent before Subject-service desired-state change or Unit transfer; service readiness remains fail-closed defense in depth.",
       "currentStatus": "PLANNED",
-      "claimBoundary": "The current released Cloud/API has no documented Service-to-FOTA-component dependency. Native rejection is deferred to the AosEdge roadmap release; no project-side admission controller is planned."
+      "claimBoundary": "The current released Cloud/API supports component-to-component and service-to-layer dependencies but has no documented Service-to-FOTA Vehicle Data Platform Component admission rule. Only that cross-lifecycle rejection is deferred to the AosEdge roadmap release; no project-side admission controller is planned."
     },
     {
       "id": "AO-09",

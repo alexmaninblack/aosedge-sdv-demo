@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "contractId": "aosedge-demo-typed-qm-advisory",
+  "contractVersion": "1.0.0",
+  "decision": "D4-008",
+  "inputs": {
+    "vdpCompatibilityContractVersion": "1.0.0",
+    "vdpCompatibilitySha256": "4c00a3848eb2c961b048e74d3d1253bdc43e47c1467f64e62653046ba39ba12c",
+    "vssVersion": "6.0",
+    "vissVersion": "3.1",
+    "kuksaApi": "kuksa.val.v1"
+  },
+  "encoding": {
+    "vssDatatype": "string",
+    "mediaType": "application/json",
+    "characterEncoding": "UTF-8",
+    "canonicalization": "RFC8785",
+    "requestSchema": "./qm-advisory-request.schema.json",
+    "statusSchema": "./qm-advisory-status.schema.json",
+    "maxRequestBytes": 2048,
+    "maxStatusBytes": 1024,
+    "arbitraryDisplayTextAllowed": false,
+    "rationale": "The current primitive kuksa.val.v1 Datapoint does not expose a VSS struct value. One schema-bound string preserves one-leaf atomicity without changing Eclipse KUKSA."
+  },
+  "endpoints": [
+    {
+      "id": "BRAKE_HEALTH_ADVISORY",
+      "ownerService": "BRAKE_HEALTH",
+      "compatibleServiceVersions": ["3.0.0"],
+      "requestPath": "Vehicle.OEM.BrakeHealth.Advisory.Request",
+      "requestEntryType": "actuator",
+      "statusPath": "Vehicle.OEM.BrakeHealth.Advisory.GatewayStatus",
+      "statusEntryType": "sensor",
+      "recommendations": ["INSPECTION_RECOMMENDED"],
+      "setReasonCodes": ["PREDICTED_BRAKE_DEGRADATION"],
+      "clearReasonCodes": ["CONDITION_CLEARED"]
+    },
+    {
+      "id": "TIRE_HEALTH_ADVISORY",
+      "ownerService": "TIRE_HEALTH",
+      "compatibleServiceVersions": ["1.0.0"],
+      "requestPath": "Vehicle.OEM.TireHealth.Advisory.Request",
+      "requestEntryType": "actuator",
+      "statusPath": "Vehicle.OEM.TireHealth.Advisory.GatewayStatus",
+      "statusEntryType": "sensor",
+      "recommendations": ["TIRE_INSPECTION_RECOMMENDED", "TIRE_REPLACEMENT_RECOMMENDED"],
+      "setReasonCodes": ["PREDICTED_TIRE_WEAR"],
+      "clearReasonCodes": ["CONDITION_CLEARED"]
+    }
+  ],
+  "authority": {
+    "kuksaWriteSuccessMeans": "The exact actuator target was accepted by KUKSA; Gateway application is not implied.",
+    "vissSetSuccessMeans": "The exact VISS request passed protocol handling; Gateway application is not implied.",
+    "authoritativeApplicationEvidence": "GatewayStatus state APPLIED or CLEARED for the same requestId, producerEpoch and sequence.",
+    "gatewayFinalAuthority": true,
+    "engineeringDashboardWriteAllowed": false,
+    "serviceCrossEndpointWriteAllowed": false,
+    "arbitraryVssWriteAllowed": false,
+    "vehicleMotionAuthorityAllowed": false
+  },
+  "temporalPolicy": {
+    "maxGatewayAcceptanceAgeMs": 2000,
+    "maxLeaseMs": 30000,
+    "minRefreshIntervalMs": 10000,
+    "minStateChangeIntervalMs": 1000,
+    "minimumReplayRetentionMs": 300000,
+    "minimumReplayCacheEntriesPerEndpoint": 256,
+    "explicitClearRequired": true,
+    "automaticExpiryRequired": true
+  },
+  "replayPolicy": {
+    "identityFields": ["requestId", "producerEpoch", "sequence"],
+    "identicalDuplicateBehavior": "IDEMPOTENT_NO_NEW_EFFECT",
+    "conflictingDuplicateBehavior": "REJECT_REPLAY_DETECTED",
+    "sequenceRollbackBehavior": "REJECT_SEQUENCE_ROLLBACK",
+    "expiredTargetAfterRestartBehavior": "REJECT_STALE_AND_DO_NOT_REAPPLY",
+    "validDuplicateAfterRestartBehavior": "IDEMPOTENT_RECONCILIATION_ONLY"
+  },
+  "gatewayStates": ["RECEIVED", "APPLIED", "CLEARED", "REJECTED", "EXPIRED", "FAILED"],
+  "gatewayReasons": [
+    "NONE",
+    "UNAUTHORIZED_SOURCE",
+    "UNAUTHORIZED_PATH",
+    "INVALID_SCHEMA",
+    "INVALID_VALUE",
+    "STALE_REQUEST",
+    "REPLAY_DETECTED",
+    "SEQUENCE_ROLLBACK",
+    "RATE_LIMITED",
+    "QM_POLICY_DENIED",
+    "INTERNAL_ERROR"
+  ],
+  "dataFlow": [
+    "SERVICE_WRITES_OWN_KUKSA_TARGET",
+    "KUKSA_ENFORCES_D4_009_PATH_PERMISSION",
+    "VDP_VALIDATES_AND_FORWARDS_EXACT_VISS_SET",
+    "GATEWAY_REVALIDATES_AND_APPLIES_OR_REJECTS",
+    "GATEWAY_PUBLISHES_AUTHORITATIVE_STATUS",
+    "VDP_PUBLISHES_READ_ONLY_KUKSA_STATUS",
+    "ENGINEERING_DASHBOARD_READS_VISS_REQUEST_AND_STATUS"
+  ],
+  "offlinePolicy": {
+    "externalConnectivityRequiredForLocalAdvisory": false,
+    "aosCloudRequiredForLocalAdvisory": false,
+    "functionalBackendRequiredForLocalAdvisory": false,
+    "internalChainRequired": ["KUKSA", "VDP", "VISS", "GATEWAY"],
+    "backendSynchronizationAfterReconnectOwnedBy": ["D4-017", "D4-019"]
+  },
+  "deferred": {
+    "exactModelDecisionAndHysteresis": ["D4-016", "D4-018"],
+    "credentialIssuanceAndRefresh": "D4-009",
+    "productionDriverHmi": true,
+    "functionalSafetyClaim": true,
+    "vssStructWireEncoding": "Reconsider only after the selected KUKSA and VISS implementations prove end-to-end atomic struct support."
+  }
+}
+

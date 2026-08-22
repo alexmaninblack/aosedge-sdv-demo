@@ -1,0 +1,167 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:viss-trust-telemetry-profile:schema:v1",
+  "title": "VISS Trust and Telemetry Profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "$comment", "schemaVersion", "contractId", "contractVersion", "decision", "standards", "transport", "credentialLifecycle", "peerRoles", "selectedUnitGate", "timing", "limits", "operations", "dataSemantics", "paths", "excludedCapabilities"],
+  "properties": {
+    "$schema": { "const": "./viss-trust-telemetry-profile.schema.json" },
+    "$comment": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "contractId": { "const": "aosedge-demo-viss-trust-telemetry-profile" },
+    "contractVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "decision": { "const": "D4-006" },
+    "standards": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["viss", "vss", "projectOverlay"],
+      "properties": {
+        "viss": { "const": "3.1" },
+        "vss": { "const": "6.0" },
+        "projectOverlay": { "const": "Vehicle.CarlaSimulation.*" }
+      }
+    },
+    "transport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["uri", "tlsServerName", "bindAddress", "webSocketSubprotocol", "minimumTlsVersion", "mutualTls", "unencryptedWebSocket"],
+      "properties": {
+        "uri": { "const": "wss://10.0.0.1:6443" },
+        "tlsServerName": { "const": "127.0.0.1" },
+        "bindAddress": { "const": "127.0.0.1" },
+        "webSocketSubprotocol": { "const": "VISSv3" },
+        "minimumTlsVersion": { "const": "TLS1.2" },
+        "mutualTls": { "const": true },
+        "unencryptedWebSocket": { "const": false }
+      }
+    },
+    "credentialLifecycle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unitUnique", "created", "stored", "delivered", "excludedFrom", "retiredAtR0", "productionHardening"],
+      "properties": {
+        "unitUnique": { "const": true },
+        "created": { "const": "per-Unit onboarding after Cloud Unit and Node identity are known" },
+        "stored": { "const": "root-owned persistent Unit credential outside Factory Image and FOTA payload" },
+        "delivered": { "const": "systemd LoadCredential" },
+        "excludedFrom": { "type": "array", "uniqueItems": true, "items": { "enum": ["FACTORY_IMAGE", "FOTA_COMPONENT", "GIT", "LOGS", "DASHBOARD"] } },
+        "retiredAtR0": { "const": true },
+        "productionHardening": { "const": "future non-exportable TPM/PKCS11 client key; not required by first-demo Python VISS client" }
+      }
+    },
+    "peerRoles": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "maxConcurrentConnections", "allowedOperations", "setPolicy", "availability"],
+        "properties": {
+          "role": { "enum": ["SELECTED_PLATFORM_UNIT", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"] },
+          "maxConcurrentConnections": { "const": 1 },
+          "allowedOperations": { "type": "array", "uniqueItems": true, "items": { "enum": ["GET", "SUBSCRIBE", "UNSUBSCRIBE"] } },
+          "setPolicy": { "enum": ["DENY_UNTIL_D4_008", "ALWAYS_DENY"] },
+          "availability": { "enum": ["LIVE_DEMO", "QUALIFICATION_ONLY"] }
+        }
+      }
+    },
+    "selectedUnitGate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exclusiveRole", "selectedIdentity", "reject", "engineeringDashboardException"],
+      "properties": {
+        "exclusiveRole": { "const": "SELECTED_PLATFORM_UNIT" },
+        "selectedIdentity": { "type": "array", "uniqueItems": true, "items": { "enum": ["UnitId", "NodeId", "clientCertificateFingerprint", "assignmentGeneration"] } },
+        "reject": { "type": "array", "uniqueItems": true, "items": { "enum": ["NON_SELECTED_UNIT", "UNKNOWN_CLIENT", "EXPIRED_CLIENT", "REVOKED_CLIENT", "ADDITIONAL_UNIT_SESSION", "IDENTITY_MISMATCH"] } },
+        "engineeringDashboardException": { "const": "separately authenticated read-only peer; never a Unit binding" }
+      }
+    },
+    "timing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subscriptionPeriodMs", "freshnessTimeoutMs", "reconnectInitialMs", "reconnectMaximumMs"],
+      "properties": {
+        "subscriptionPeriodMs": { "const": 50 },
+        "freshnessTimeoutMs": { "const": 250 },
+        "reconnectInitialMs": { "const": 500 },
+        "reconnectMaximumMs": { "const": 10000 }
+      }
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maximumRoleConnections", "maximumSubscriptionsPerConnection", "minimumSubscriptionPeriodMs", "maximumSubscriptionPeriodMs", "maximumPendingMessagesPerClient", "maximumMessageBytes"],
+      "properties": {
+        "maximumRoleConnections": { "const": 3 },
+        "maximumSubscriptionsPerConnection": { "const": 16 },
+        "minimumSubscriptionPeriodMs": { "const": 50 },
+        "maximumSubscriptionPeriodMs": { "const": 60000 },
+        "maximumPendingMessagesPerClient": { "const": 8 },
+        "maximumMessageBytes": { "const": 262144 }
+      }
+    },
+    "operations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["supported", "setBeforeD4008", "responsePriority", "eventOverflow", "missedPeriods"],
+      "properties": {
+        "supported": { "type": "array", "uniqueItems": true, "items": { "enum": ["GET", "SUBSCRIBE", "UNSUBSCRIBE"] } },
+        "setBeforeD4008": { "const": "DENY_ALL_WITHOUT_SIDE_EFFECT" },
+        "responsePriority": { "const": "PROTOCOL_RESPONSES_BEFORE_SUBSCRIPTION_EVENTS" },
+        "eventOverflow": { "const": "DROP_NEW_EVENT_AND_INCREMENT_COUNTER" },
+        "missedPeriods": { "const": "COALESCE_TO_CURRENT_SNAPSHOT" }
+      }
+    },
+    "dataSemantics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["store", "atomicity", "disconnect", "stale", "recovery", "healthSeparation", "sourceStates"],
+      "properties": {
+        "store": { "const": "one latest complete frame; no history queue" },
+        "atomicity": { "const": "mandatory malformed frame rejected; optional invalid path unavailable" },
+        "disconnect": { "const": "immediate atomic KUKSA NotAvailable for selected VDP subset" },
+        "stale": { "const": "atomic KUKSA NotAvailable after freshnessTimeoutMs without a valid snapshot" },
+        "recovery": { "const": "LIVE only after one complete valid snapshot with matching contract/source/generation and monotonic frame" },
+        "healthSeparation": { "const": "provider process may be HEALTHY while vehicle data readiness is NOT_READY or STALE" },
+        "sourceStates": { "type": "array", "uniqueItems": true, "items": { "enum": ["STARTING", "AUTHENTICATING", "LIVE", "STALE", "DISCONNECTED", "AUTHENTICATION_FAILED", "CONTRACT_MISMATCH"] } }
+      }
+    },
+    "paths": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/path" }
+    },
+    "excludedCapabilities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["capabilityId", "disposition", "reason"],
+        "properties": {
+          "capabilityId": { "type": "string", "minLength": 1 },
+          "disposition": { "enum": ["QUALIFICATION_ONLY", "DEMO_VISUALIZATION", "NOT_INSTALLED", "UNSUPPORTED"] },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "path": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "dataType", "unit", "namespace", "cadence", "access", "implementationState", "capabilityIds"],
+      "properties": {
+        "path": { "type": "string", "pattern": "^Vehicle\\." },
+        "dataType": { "enum": ["string", "boolean", "uint8", "int8", "uint32", "uint64", "float", "double"] },
+        "unit": { "type": "string", "minLength": 1 },
+        "namespace": { "enum": ["VSS_6_0", "CARLA_SIMULATION_OVERLAY"] },
+        "cadence": { "enum": ["STATIC", "PER_SIMULATION_FRAME", "GNSS_SENSOR", "EVENT"] },
+        "access": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["SELECTED_PLATFORM_UNIT", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"] } },
+        "implementationState": { "enum": ["CURRENT", "PARTIAL", "TARGET"] },
+        "capabilityIds": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+      }
+    }
+  }
+}

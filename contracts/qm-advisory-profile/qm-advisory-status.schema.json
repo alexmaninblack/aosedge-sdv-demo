@@ -1,0 +1,67 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:qm-advisory-status:schema:v1",
+  "title": "QM Maintenance Advisory Gateway Status",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "requestId",
+    "producerEpoch",
+    "sequence",
+    "state",
+    "reason",
+    "gatewayObservedAt",
+    "activeRecommendation",
+    "activeReasonCode",
+    "activeUntil"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "requestId": { "$ref": "#/$defs/uuid" },
+    "producerEpoch": { "$ref": "#/$defs/uuid" },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "state": { "enum": ["RECEIVED", "APPLIED", "CLEARED", "REJECTED", "EXPIRED", "FAILED"] },
+    "reason": {
+      "enum": [
+        "NONE",
+        "UNAUTHORIZED_SOURCE",
+        "UNAUTHORIZED_PATH",
+        "INVALID_SCHEMA",
+        "INVALID_VALUE",
+        "STALE_REQUEST",
+        "REPLAY_DETECTED",
+        "SEQUENCE_ROLLBACK",
+        "RATE_LIMITED",
+        "QM_POLICY_DENIED",
+        "INTERNAL_ERROR"
+      ]
+    },
+    "gatewayObservedAt": { "type": "string", "format": "date-time" },
+    "activeRecommendation": {
+      "enum": [
+        "NONE",
+        "INSPECTION_RECOMMENDED",
+        "TIRE_INSPECTION_RECOMMENDED",
+        "TIRE_REPLACEMENT_RECOMMENDED"
+      ]
+    },
+    "activeReasonCode": {
+      "enum": ["NONE", "PREDICTED_BRAKE_DEGRADATION", "PREDICTED_TIRE_WEAR"]
+    },
+    "activeUntil": {
+      "oneOf": [
+        { "type": "string", "format": "date-time" },
+        { "type": "null" }
+      ]
+    }
+  },
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    }
+  }
+}
+

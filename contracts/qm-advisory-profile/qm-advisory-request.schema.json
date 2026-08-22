@@ -1,0 +1,72 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:qm-advisory-request:schema:v1",
+  "title": "QM Maintenance Advisory Request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "requestId",
+    "producerEpoch",
+    "sequence",
+    "operation",
+    "reasonCode",
+    "decisionId",
+    "serviceVersion",
+    "modelVersion",
+    "issuedAt",
+    "expiresAt"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "requestId": { "$ref": "#/$defs/uuid" },
+    "producerEpoch": { "$ref": "#/$defs/uuid" },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "operation": { "enum": ["SET", "CLEAR"] },
+    "recommendation": {
+      "enum": [
+        "INSPECTION_RECOMMENDED",
+        "TIRE_INSPECTION_RECOMMENDED",
+        "TIRE_REPLACEMENT_RECOMMENDED"
+      ]
+    },
+    "reasonCode": {
+      "enum": [
+        "PREDICTED_BRAKE_DEGRADATION",
+        "PREDICTED_TIRE_WEAR",
+        "CONDITION_CLEARED"
+      ]
+    },
+    "decisionId": { "type": "string", "minLength": 1, "maxLength": 96, "pattern": "^[A-Za-z0-9._:-]+$" },
+    "serviceVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "modelVersion": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[A-Za-z0-9._-]+$" },
+    "issuedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "operation": { "const": "SET" } }, "required": ["operation"] },
+      "then": {
+        "required": ["recommendation"],
+        "properties": {
+          "reasonCode": { "enum": ["PREDICTED_BRAKE_DEGRADATION", "PREDICTED_TIRE_WEAR"] }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "operation": { "const": "CLEAR" } }, "required": ["operation"] },
+      "then": {
+        "not": { "required": ["recommendation"] },
+        "properties": { "reasonCode": { "const": "CONDITION_CLEARED" } }
+      }
+    }
+  ],
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    }
+  }
+}
+

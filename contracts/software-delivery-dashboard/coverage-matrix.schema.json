@@ -40,11 +40,14 @@
     "statusDefinitions": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["PARTIAL", "PLANNED", "DOCUMENTARY_ONLY"],
+      "required": ["UNKNOWN", "PARTIAL", "PLANNED", "DOCUMENTARY_ONLY", "ACCEPTED", "STALE"],
       "properties": {
+        "UNKNOWN": { "type": "string", "minLength": 1 },
         "PARTIAL": { "type": "string", "minLength": 1 },
         "PLANNED": { "type": "string", "minLength": 1 },
-        "DOCUMENTARY_ONLY": { "type": "string", "minLength": 1 }
+        "DOCUMENTARY_ONLY": { "type": "string", "minLength": 1 },
+        "ACCEPTED": { "type": "string", "minLength": 1 },
+        "STALE": { "type": "string", "minLength": 1 }
       }
     },
     "items": {
@@ -77,7 +80,7 @@
           "type": "array",
           "minItems": 1,
           "uniqueItems": true,
-          "items": { "enum": ["G0", "G1", "G2", "G3", "G4", "CROSS_STAGE"] }
+          "items": { "enum": ["M0", "M1", "G0", "G1", "G2", "G3", "G4", "T1", "R0", "CROSS_STAGE"] }
         },
         "proofModes": {
           "type": "array",
@@ -95,8 +98,46 @@
           "items": { "type": "string", "pattern": "^[a-z0-9_]+$" }
         },
         "acceptanceCriterion": { "type": "string", "minLength": 1 },
-        "currentStatus": { "enum": ["PARTIAL", "PLANNED", "DOCUMENTARY_ONLY"] },
-        "claimBoundary": { "type": "string", "minLength": 1 }
+        "currentStatus": { "enum": ["UNKNOWN", "PARTIAL", "PLANNED", "DOCUMENTARY_ONLY", "ACCEPTED", "STALE"] },
+        "claimBoundary": { "type": "string", "minLength": 1 },
+        "acceptedEvidence": { "$ref": "#/$defs/acceptedEvidence" },
+        "staleReason": { "type": "string", "minLength": 1 }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "currentStatus": { "const": "ACCEPTED" } },
+            "required": ["currentStatus"]
+          },
+          "then": { "required": ["acceptedEvidence"] }
+        },
+        {
+          "if": {
+            "properties": { "currentStatus": { "const": "STALE" } },
+            "required": ["currentStatus"]
+          },
+          "then": { "required": ["acceptedEvidence", "staleReason"] }
+        }
+      ]
+    },
+    "acceptedEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidenceId",
+        "verifiedAt",
+        "subjectVersion",
+        "subjectDigest",
+        "platformRelease",
+        "configurationDigest"
+      ],
+      "properties": {
+        "evidenceId": { "type": "string", "minLength": 1 },
+        "verifiedAt": { "type": "string", "format": "date-time" },
+        "subjectVersion": { "type": "string", "minLength": 1 },
+        "subjectDigest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "platformRelease": { "type": "string", "minLength": 1 },
+        "configurationDigest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
       }
     }
   }

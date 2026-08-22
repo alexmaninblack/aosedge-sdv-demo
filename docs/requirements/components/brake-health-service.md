@@ -5,15 +5,18 @@
 
 - Status: D3 design-reviewed
 - Package: [`CR-BHS`](../component-decomposition-and-interface-register.md#cr-bhs)
-- Version: 0.1
-- Prepared: 2026-08-19
+- Version: 0.4
+- Prepared: 2026-08-21
 - Owner: Function Team 1 / Service Provider 1 / SOTA 1
 - Architecture input: [High-Level Architecture 1.4](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 1.7](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 1.6](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 0.9](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 1.0](../component-decomposition-and-interface-register.md)
+- Scenario input: [Demo Scenarios 1.9](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 1.8](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 1.0](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 1.1](../component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md), [ADR 0010](../../architecture/decisions/0010-aos-kuksa-credential-broker.md) and [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
+- Reviewed D4 working direction: [D4-003 deterministic stimuli and calibration](../d4-decision-register.md#d4-003)
+- Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
+- Accepted D4 advisory input: [D4-008 Typed QM Advisory Profile](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - Implementation baseline: `brake-health-service@04abe5b`
 
 ## Purpose
@@ -164,7 +167,7 @@ executable against controlled real adjacent components.
 | [Offline local continuity and bounded synchronization (`REQ-BHS-009`)](#req-bhs-009) | Keep local analysis/advisory active and synchronize reports safely after reconnect | Unit, Component, Integration, Analysis, End-to-end | D3 design-reviewed |
 | [Rollback-safe persistent state (`REQ-BHS-010`)](#req-bhs-010) | Preserve a valid dependent-first rollback path across service versions | Unit, Component, Integration, Analysis | D3 design-reviewed |
 | [Health, resources and failure isolation (`REQ-BHS-011`)](#req-bhs-011) | Expose truthful readiness and stay inside qualified quotas without affecting VDP | Unit, Component, Integration | D3 design-reviewed |
-| [Redacted native logs and separated timing (`REQ-BHS-012`)](#req-bhs-012) | Emit useful secret-free evidence and measure local latency separately from Cloud sync | Unit, Component, Integration, Analysis, End-to-end | D3 design-reviewed |
+| [Redacted native logs and separated chronology (`REQ-BHS-012`)](#req-bhs-012) | Emit useful secret-free evidence and preserve local event/advisory chronology separately from Cloud sync | Unit, Component, Integration, Analysis, End-to-end | D3 design-reviewed |
 
 ## Detailed Requirements
 
@@ -192,15 +195,15 @@ notices, English product content and no CARLA/VISS/platform source dependency.
 <a id="req-bhs-002"></a>
 
 - ID: `REQ-BHS-002`
-- Statement: Each service version shall declare its supported Vehicle Data Platform contract range, verify the installed contract and required paths before becoming ready, and remain fail-closed with a machine-readable reason when the capability is absent, incompatible or incomplete.
+- Statement: Each service version shall declare and enforce the D4-007 range—Brake v1 on VDP v1-v3, Brake v2 on v2-v3 and Brake v3 only on v3—verify installed identity/capabilities plus its D4-016 read and D4-008 advisory paths before readiness, and remain process-healthy but functionally `NOT_READY` with a machine-readable reason when the capability is absent, incompatible or incomplete. It shall produce no functional report/advisory and shall not crash-loop.
 - Rationale: Current AosCloud releases do not yet provide native pre-transfer Service-to-FOTA admission, so service readiness remains required defense in depth.
 - Parent system requirement: [Service capability compatibility (`SYS-REL-003`)](../system-requirements-and-traceability.md#sys-rel-003)
 - Architecture flows: [Service isolation (`AF-G2-FR`)](../../architecture/demo-scenario-architecture-flows.md#af-g2-fr), [deferred native rejection (`AF-G3-DEP`)](../../architecture/demo-scenario-architecture-flows.md#af-g3-dep) and [joint v2 lifecycle (`AF-G3-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-g3-lc)
 - Component: [Brake Health service (`CMP-BHS`)](../component-decomposition-and-interface-register.md#cmp-bhs)
 - Interfaces: [data subscription (`IF-DATA-002`)](../component-decomposition-and-interface-register.md#if-data-002) and [runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006)
 - Verification levels: Unit, Component, Contract, Integration
-- Required evidence: compatible and incompatible manifests, readiness/status reason, absence of report/advisory side effects and compatible recovery
-- State: D3 design-reviewed; compatibility file exists, runtime enforcement does not
+- Required evidence: compatible and incompatible manifests, readiness/status reason, absence of report/advisory side effects, no restart loop and automatic recovery after a compatible VDP change
+- State: D3 design-reviewed; D4-007 ranges and readiness behavior accepted, runtime enforcement not implemented
 
 This requirement must not be presented as native Cloud admission. After an
 implementing platform release is qualified, Cloud rejection and service
@@ -214,7 +217,7 @@ readiness remain separate controls.
 - Statement: The running service shall present only its per-instance `AOS_SECRET` to the local Credential Broker, request exactly the installed-version KUKSA paths/modes it needs, use only the returned short-lived JWT, refresh it within bounded time and fail closed on rejection, expiry, removal or malformed response without persisting or logging either secret.
 - Rationale: A SOTA service must use native Aos instance identity without embedding credentials or creating a second identity/policy model.
 - Parent system requirements: [Least-privilege KUKSA identities (`SYS-SEC-001`)](../system-requirements-and-traceability.md#sys-sec-001), [KUKSA verifier and token lifetime (`SYS-SEC-004`)](../system-requirements-and-traceability.md#sys-sec-004) and [native-IAM-derived credentials (`SYS-SEC-006`)](../system-requirements-and-traceability.md#sys-sec-006)
-- Architecture flows: [Service v1 runtime (`AF-G2-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-g2-rt), [QM containment (`AF-X-QM`)](../../architecture/demo-scenario-architecture-flows.md#af-x-qm) and [offline domains (`AF-X-OFFLINE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-offline)
+- Architecture flows: [Service v1 runtime (`AF-G2-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-g2-rt) and [QM containment (`AF-X-QM`)](../../architecture/demo-scenario-architecture-flows.md#af-x-qm)
 - Component: [Brake Health service (`CMP-BHS`)](../component-decomposition-and-interface-register.md#cmp-bhs)
 - Interfaces: [credential request (`IF-AUTH-001`)](../component-decomposition-and-interface-register.md#if-auth-001) and [short-lived credential (`IF-AUTH-003`)](../component-decomposition-and-interface-register.md#if-auth-003)
 - Verification levels: Unit, Component, Contract, Integration
@@ -233,7 +236,7 @@ database in this repository.
 - Statement: The service shall read or subscribe only to the accepted version-specific KUKSA paths, validate type, unit, range, source/event time, quality and freshness, preserve source order or explicitly handle reordering, and expose connection/subscription state without connecting directly to VISS or CARLA.
 - Rationale: Functional results are valid only when their input contract and temporal quality are explicit.
 - Parent system requirements: [Bounded v1 Brake Telemetry Window (`SYS-BHS-005`)](../system-requirements-and-traceability.md#sys-bhs-005) and [deterministic v2 edge assessment (`SYS-BHS-002`)](../system-requirements-and-traceability.md#sys-bhs-002)
-- Architecture flows: [Service v1 runtime (`AF-G2-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-g2-rt), [v2 edge assessment (`AF-G3-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-g3-rt) and [offline domains (`AF-X-OFFLINE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-offline)
+- Architecture flows: [Service v1 runtime (`AF-G2-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-g2-rt) and [v2 edge assessment (`AF-G3-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-g3-rt)
 - Component: [Brake Health service (`CMP-BHS`)](../component-decomposition-and-interface-register.md#cmp-bhs)
 - Interface: [Brake Health data subscription (`IF-DATA-002`)](../component-decomposition-and-interface-register.md#if-data-002)
 - Verification levels: Unit, Component, Contract, Integration
@@ -273,7 +276,7 @@ an unbounded local capture.
 - Component: [Brake Health service (`CMP-BHS`)](../component-decomposition-and-interface-register.md#cmp-bhs)
 - Interfaces: [data subscription (`IF-DATA-002`)](../component-decomposition-and-interface-register.md#if-data-002) and [functional message family (`IF-FUNC-001`)](../component-decomposition-and-interface-register.md#if-func-001)
 - Verification levels: Unit, Component, Contract, Analysis, End-to-end
-- Required evidence: model/config/input/output digests, golden normal/degraded/invalid fixtures, repeated and reordered execution, provenance/result schemas, local latency distribution and proof that normal v2 operation emits no v1 window chunks
+- Required evidence: model/config/input/output digests, golden normal/degraded/invalid fixtures, repeated and reordered execution, provenance/result schemas, correlated local chronology and proof that normal v2 operation emits no v1 window chunks
 - State: D3 design-reviewed; synthetic model contract and exact inputs are open
 
 No live training, nondeterministic network model call, mutable downloaded
@@ -282,6 +285,12 @@ model must be causally driven by the visible CARLA braking episode and explicit
 enough for deterministic tests, but D3 does not prescribe a scientifically
 validated wear or failure-prediction algorithm and permits no production
 accuracy, remaining-useful-life or safety-function claim.
+
+The CARLA/Gateway boundary shall not fabricate brake-pad wear, temperature,
+pressure or a health result for this service. D4-003 freezes the visible native
+braking episode as the causal stimulus; the service-owned synthetic assessment
+and its exact input/threshold contract remain to be frozen under D4-016. Hidden
+scenario truth shall not be used as a service input.
 
 ### Degraded and invalid-input behavior
 
@@ -303,33 +312,35 @@ accuracy, remaining-useful-life or safety-function claim.
 <a id="req-bhs-008"></a>
 
 - ID: `REQ-BHS-008`
-- Statement: Service v3 shall retain the v2 derived assessment/event behavior, request only the accepted typed Brake Health maintenance advisory when the deterministic result satisfies versioned thresholds and quality rules, send the correlated advisory fact through the functional message family, include bounded freshness and correlation fields, and shall have no code or permission path for arbitrary text, arbitrary VSS/KUKSA write, vehicle motion or safety-critical actuation.
+- Statement: Service v3 shall retain the v2 derived assessment/event behavior and, when the D4-016 deterministic result satisfies its later-frozen thresholds and quality rules, write only a D4-008 canonical Request to `Vehicle.OEM.BrakeHealth.Advisory.Request`. It shall use persistent producer epoch and monotonic sequence, unique request/decision correlation, explicit `SET`/`CLEAR`, only `INSPECTION_RECOMMENDED` and `PREDICTED_BRAKE_DEGRADATION`, the accepted freshness/lease/rate bounds, and shall have no code or permission path for arbitrary text, Tire target, arbitrary VSS/KUKSA write, vehicle motion or safety-critical actuation.
 - Rationale: The demo needs a local offline-capable maintenance indication while preserving authoritative platform and Gateway containment.
 - Parent system requirements: [Allowlisted v3 advisory (`SYS-BHS-003`)](../system-requirements-and-traceability.md#sys-bhs-003), [fail-closed advisory security (`SYS-SEC-003`)](../system-requirements-and-traceability.md#sys-sec-003) and [QM service and Gateway containment (`SYS-SEC-007`)](../system-requirements-and-traceability.md#sys-sec-007)
 - Architecture flows: [v3 lifecycle (`AF-G4-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-g4-lc), [local advisory (`AF-G4-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-g4-rt), [advisory proof (`AF-G4-OB`)](../../architecture/demo-scenario-architecture-flows.md#af-g4-ob) and [fail-closed advisory (`AF-G4-FR`)](../../architecture/demo-scenario-architecture-flows.md#af-g4-fr)
 - Component: [Brake Health service (`CMP-BHS`)](../component-decomposition-and-interface-register.md#cmp-bhs)
 - Interfaces: [advisory request (`IF-ADV-001`)](../component-decomposition-and-interface-register.md#if-adv-001) and [functional message family (`IF-FUNC-001`)](../component-decomposition-and-interface-register.md#if-func-001)
 - Verification levels: Unit, Component, Contract, Integration, End-to-end
-- Required evidence: exact path/mode/payload fixtures, threshold/debounce behavior, request/backend-fact correlation and negative proof for every prohibited authority
-- State: D3 design-reviewed; target and payload are open
+- Required evidence: exact Request/Status schema fixtures, D4-016 threshold/debounce behavior, request/backend-fact correlation, duplicate/replay/clear/expiry/restart cases and negative proof for every prohibited authority
+- Executable contract: [Typed QM Advisory Profile 1.0.0](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
+- State: D3 design-reviewed; D4-008 interface accepted, while D4-016 owns model decision thresholds and hysteresis
 
-The accepted audience claim ends at Gateway `RECEIVED`, `REJECTED` or `FAILED`
-status in the Engineering Telematics Dashboard. It is not driver display or
-acknowledgement.
+The accepted audience claim ends at the matching factual Gateway Status,
+including `APPLIED`, `CLEARED`, `REJECTED`, `EXPIRED` or `FAILED`, in the
+Engineering Telematics Dashboard. KUKSA/VISS Set success is not application
+evidence, and no status is driver display or acknowledgement.
 
 ### Offline local continuity and bounded synchronization
 
 <a id="req-bhs-009"></a>
 
 - ID: `REQ-BHS-009`
-- Statement: Loss of functional-backend or Cloud connectivity shall not stop KUKSA consumption, local assessment or an otherwise authorized advisory. In-progress/completed v1 chunks and v2/v3 derived messages shall enter bounded persistent state/queues with explicit capacity, overflow, retry/backoff, acknowledgement and idempotent resume/replay behavior while preserving original sample/event times.
+- Statement: Loss of the vehicle external-connectivity domain shall not stop KUKSA consumption, local assessment or an otherwise authorized advisory. The single demo fault removes Unit-to-AosCloud and functional-backend transport together; in-progress/completed v1 chunks and v2/v3 derived messages shall enter bounded persistent state/queues with explicit capacity, overflow, retry/backoff, acknowledgement and idempotent resume behavior while preserving original sample/event times.
 - Rationale: The primary value of on-board analysis is timely local behavior independent of coverage.
 - Parent system requirement: [Offline local continuity (`SYS-BHS-004`)](../system-requirements-and-traceability.md#sys-bhs-004)
-- Architecture flows: [service isolation (`AF-G2-FR`)](../../architecture/demo-scenario-architecture-flows.md#af-g2-fr), [local advisory (`AF-G4-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-g4-rt), [offline proof (`AF-G4-OB`)](../../architecture/demo-scenario-architecture-flows.md#af-g4-ob), [offline continuity (`AF-G4-FR`)](../../architecture/demo-scenario-architecture-flows.md#af-g4-fr) and [connectivity domains (`AF-X-OFFLINE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-offline)
+- Architecture flows: [service isolation (`AF-G2-FR`)](../../architecture/demo-scenario-architecture-flows.md#af-g2-fr), [local advisory (`AF-G4-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-g4-rt), [offline proof (`AF-G4-OB`)](../../architecture/demo-scenario-architecture-flows.md#af-g4-ob), [offline continuity (`AF-G4-FR`)](../../architecture/demo-scenario-architecture-flows.md#af-g4-fr) and [targeted vehicle external-connectivity loss (`AF-X-OFFLINE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-offline)
 - Component: [Brake Health service (`CMP-BHS`)](../component-decomposition-and-interface-register.md#cmp-bhs)
 - Interface: [functional message family (`IF-FUNC-001`)](../component-decomposition-and-interface-register.md#if-func-001)
-- Verification levels: Unit, Component, Integration, Analysis, End-to-end
-- Required evidence: disconnect/reconnect timelines during each v1 window phase and v2/v3 messaging, bounded queue/disk use, overflow fact, retry schedule, duplicate-safe acknowledgement, reconstruction/resume identity and unchanged local decision/advisory latency
+- Verification levels: Unit, Component, Integration, Analysis, End-to-end; the single vehicle fault proves both local continuity and functional-backend delay/reconnect
+- Required evidence: disconnect/reconnect timelines during each v1 window phase and v2/v3 messaging, bounded queue/disk use, overflow fact, retry schedule, duplicate-safe acknowledgement, reconstruction/resume identity and unchanged local decision/advisory behavior
 - State: D3 design-reviewed
 
 ### Rollback-safe persistent state
@@ -354,27 +365,27 @@ acknowledgement.
 - ID: `REQ-BHS-011`
 - Statement: The service shall expose process health and functional readiness separately, remain within qualified CPU, memory, storage, state, temporary-storage, file, process, capture/chunk and derived-message-rate bounds, and on crash, resource exhaustion or backend failure shall not stop the Vehicle Data Platform, KUKSA or unrelated services.
 - Rationale: Aos lifecycle state must not report a running but unusable or unbounded functional service as accepted.
-- Parent system requirements: [Service capability compatibility (`SYS-REL-003`)](../system-requirements-and-traceability.md#sys-rel-003) and [offline local continuity (`SYS-BHS-004`)](../system-requirements-and-traceability.md#sys-bhs-004)
-- Architecture flows: [service isolation (`AF-G2-FR`)](../../architecture/demo-scenario-architecture-flows.md#af-g2-fr), [v2 failure ownership (`AF-G3-FR`)](../../architecture/demo-scenario-architecture-flows.md#af-g3-fr) and [runtime enforcement (`AF-X-RELEASE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-release)
+- Parent system requirements: [Service capability compatibility (`SYS-REL-003`)](../system-requirements-and-traceability.md#sys-rel-003), [offline local continuity (`SYS-BHS-004`)](../system-requirements-and-traceability.md#sys-bhs-004) and [AosCore-enforced service-tenant isolation (`SYS-RES-001`)](../system-requirements-and-traceability.md#sys-res-001)
+- Architecture flows: [service isolation (`AF-G2-FR`)](../../architecture/demo-scenario-architecture-flows.md#af-g2-fr), [v2 failure ownership (`AF-G3-FR`)](../../architecture/demo-scenario-architecture-flows.md#af-g3-fr), [runtime enforcement (`AF-X-RELEASE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-release) and [AosCore tenant isolation (`AF-TIRE-RES`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-res)
 - Component: [Brake Health service (`CMP-BHS`)](../component-decomposition-and-interface-register.md#cmp-bhs)
 - Interface: [runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006)
 - Verification levels: Unit, Component, Integration
-- Required evidence: readiness state matrix, resource measurements and limit faults, restart policy and adjacent-component continuity
+- Required evidence: readiness state matrix, resource measurements and limit faults, restart policy and adjacent-component continuity; during the prepared Tire CPU saturation proof, Brake remains ready without restart and processes the deterministic CARLA event/result/advisory
 - State: D3 design-reviewed; scaffold quotas are provisional
 
-### Redacted native logs and separated timing
+### Redacted native logs and separated chronology
 
 <a id="req-bhs-012"></a>
 
 - ID: `REQ-BHS-012`
-- Statement: The service shall emit bounded English structured logs and metrics sufficient to correlate version, v1 window/phase/chunk state, model, input-quality state, derived result, queue state and advisory request without secrets or raw sample values, and shall measure v1 trigger-to-first-chunk, v2 input-to-result, v3 result-to-advisory and backend synchronization latency separately using source and monotonic timestamps.
+- Statement: The service shall emit bounded English structured logs and metrics sufficient to correlate version, v1 window/phase/chunk state, model, input-quality state, derived result, queue state and advisory request without secrets or raw sample values. It shall preserve distinct source-event, local result/advisory and backend receipt/synchronization timestamps so the Cloud path is never presented as part of the on-board decision path; quantitative latency benchmarking is deferred.
 - Rationale: Technical evidence must diagnose local behavior without leaking credentials or conflating Cloud delay with on-board response.
-- Parent system requirements: [Operational log controls (`SYS-OBS-003`)](../system-requirements-and-traceability.md#sys-obs-003) and [separate local and Cloud latency (`SYS-TIM-002`)](../system-requirements-and-traceability.md#sys-tim-002)
-- Architecture flows: [first-service proof (`AF-G2-OB`)](../../architecture/demo-scenario-architecture-flows.md#af-g2-ob), [edge-analytics proof (`AF-G3-OB`)](../../architecture/demo-scenario-architecture-flows.md#af-g3-ob), [advisory proof (`AF-G4-OB`)](../../architecture/demo-scenario-architecture-flows.md#af-g4-ob) and [connectivity domains (`AF-X-OFFLINE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-offline)
+- Parent system requirements: [Operational log controls (`SYS-OBS-003`)](../system-requirements-and-traceability.md#sys-obs-003) and [separate on-board and Cloud chronology (`SYS-TIM-002`)](../system-requirements-and-traceability.md#sys-tim-002)
+- Architecture flows: [first-service proof (`AF-G2-OB`)](../../architecture/demo-scenario-architecture-flows.md#af-g2-ob), [edge-analytics proof (`AF-G3-OB`)](../../architecture/demo-scenario-architecture-flows.md#af-g3-ob) and [advisory proof (`AF-G4-OB`)](../../architecture/demo-scenario-architecture-flows.md#af-g4-ob)
 - Component: [Brake Health service (`CMP-BHS`)](../component-decomposition-and-interface-register.md#cmp-bhs)
 - Interfaces: [functional message family (`IF-FUNC-001`)](../component-decomposition-and-interface-register.md#if-func-001), [advisory request (`IF-ADV-001`)](../component-decomposition-and-interface-register.md#if-adv-001) and [runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006)
 - Verification levels: Unit, Component, Integration, Analysis, End-to-end
-- Required evidence: log schema, secret/raw-data negative scan, source/monotonic timestamp fixtures and separate local/synchronization latency distributions
+- Required evidence: log schema, secret/raw-data negative scan, timestamp/correlation fixtures and separate on-board/backend chronology
 - State: D3 design-reviewed
 
 ## Unit-Test Obligations
@@ -390,7 +401,7 @@ acknowledgement.
 | <a id="ut-bhs-007"></a>`UT-BHS-007` — Advisory decision and payload | [`REQ-BHS-008`](#req-bhs-008) | Thresholds, hysteresis/debounce, stale/low-quality result, duplicate, prohibited targets/types | Fake KUKSA actuator client and clock | Only accepted typed target/payload, bounded correlation/freshness, no motion/text/arbitrary write | `brake-health-service` unit/contract suite | D3 design-reviewed |
 | <a id="ut-bhs-008"></a>`UT-BHS-008` — Offline queue and synchronization | [`REQ-BHS-009`](#req-bhs-009) | Disconnect during v1 pre/active/post/chunk completion and v2/v3 messages, capacity boundary, overflow, retry/backoff, restart, duplicate acknowledgement, reconnect | In-memory/temp persistent stores, fake backend and clocks | Bounded bytes/items, explicit overflow, same v1 window/chunk resume identity, original times, idempotent replay, unchanged local assessment/advisory path | `brake-health-service` unit suite | D3 design-reviewed |
 | <a id="ut-bhs-009"></a>`UT-BHS-009` — State and rollback compatibility | [`REQ-BHS-010`](#req-bhs-010) | v1/v2/v3 state, upgrade, downgrade, incompatible state, interrupted migration | Versioned state fixtures and failure injection | Read/migrate/quarantine result, no silent loss, service-first stop/rollback precondition | `brake-health-service` state suite | D3 design-reviewed |
-| <a id="ut-bhs-010"></a>`UT-BHS-010` — Health, resources, logs and timing | [`REQ-BHS-011`](#req-bhs-011), [`REQ-BHS-012`](#req-bhs-012) | Ready/degraded/error, ring/window/queue/resource limits, crash/restart, secret/raw-value log inputs, trigger/local/Cloud clocks | Health/log sinks, fake resource monitor and clocks | Factual state, bounded output, redaction and separated trigger-first-chunk/local/advisory/synchronization latency fields without adjacent-component side effects | `brake-health-service` unit/component suite | D3 design-reviewed |
+| <a id="ut-bhs-010"></a>`UT-BHS-010` — Health, resources, logs and chronology | [`REQ-BHS-011`](#req-bhs-011), [`REQ-BHS-012`](#req-bhs-012) | Ready/degraded/error, ring/window/queue/resource limits, crash/restart, secret/raw-value log inputs and local/Cloud timestamps | Health/log sinks, fake resource monitor and clocks | Factual state, bounded output, redaction and separated source/result/advisory/synchronization chronology without adjacent-component side effects | `brake-health-service` unit/component suite | D3 design-reviewed |
 
 Every obligation is blocking, deterministic and credential-free. Existing
 scaffold tests are useful evidence for `UT-BHS-001`, but they do not satisfy
@@ -412,7 +423,7 @@ accepted behavior.
 | [`REQ-BHS-009`](#req-bhs-009) | [`UT-BHS-008`](#ut-bhs-008) | Restarted process with queue | Report/ack/idempotency schema | Backend/Cloud disconnect/reconnect | `AF-G4-OB` offline/local proof |
 | [`REQ-BHS-010`](#req-bhs-010) | [`UT-BHS-009`](#ut-bhs-009) | State format process matrix | State/version compatibility manifest | Service-first rollback sequence | N/A; recovery supports accepted flow |
 | [`REQ-BHS-011`](#req-bhs-011) | [`UT-BHS-002`](#ut-bhs-002), [`UT-BHS-010`](#ut-bhs-010) | Health/resource/fault suite | Readiness/status schema | Aos resource and adjacent continuity | G2-G4 actual-state evidence |
-| [`REQ-BHS-012`](#req-bhs-012) | [`UT-BHS-010`](#ut-bhs-010) | Log/timestamp process output | Structured log/metric schema | Native log request and timed faults | Technical timing/evidence view |
+| [`REQ-BHS-012`](#req-bhs-012) | [`UT-BHS-010`](#ut-bhs-010) | Log/timestamp process output | Structured log/metric schema | Native log request and correlated faults | Technical chronology/evidence view |
 
 ## Cross-Cutting Constraints
 
@@ -422,7 +433,7 @@ accepted behavior.
 | QM containment | [`REQ-BHS-008`](#req-bhs-008) | Maintenance request only; no safety goal, HMI, motion or arbitrary write authority | Prohibited-permission/source scan and end-to-end Gateway status |
 | Privacy and redaction | [`REQ-BHS-005`](#req-bhs-005), [`REQ-BHS-006`](#req-bhs-006), [`REQ-BHS-012`](#req-bhs-012) | Bounded event-only v1 capture, derived-only normal v2/v3 output and structured redacted evidence rather than continuous raw streaming | Window/message schema size, no-trigger/no-v1-output cases, content allowlist and secret/raw-log negative scan |
 | Resource bounds | [`REQ-BHS-009`](#req-bhs-009), [`REQ-BHS-011`](#req-bhs-011) | Fixed queue/quotas and explicit overflow/resource state | Boundary/fault injection plus Aos enforcement |
-| Timing | [`REQ-BHS-006`](#req-bhs-006), [`REQ-BHS-012`](#req-bhs-012) | Deterministic model and separate local versus synchronization latency | Controlled clocks and measured integration runs |
+| Chronology | [`REQ-BHS-006`](#req-bhs-006), [`REQ-BHS-012`](#req-bhs-012) | Deterministic model plus distinct source, local result/advisory and synchronization timestamps; no first-demo performance KPI | Controlled clocks and correlated integration runs |
 | Offline and recovery | [`REQ-BHS-009`](#req-bhs-009), [`REQ-BHS-010`](#req-bhs-010) | Local decision continuity, bounded replay and versioned rollback-safe state | Disconnect/restart/reconnect and state matrix |
 | Observability | [`REQ-BHS-011`](#req-bhs-011), [`REQ-BHS-012`](#req-bhs-012) | Separate process health/readiness and bounded native log evidence | Component state matrix and native log integration |
 
@@ -453,12 +464,12 @@ approval, Cloud mutation or VM changes.
 | Exact Aos metadata representation of KUKSA paths/modes; current SDK read-mode enum/default inconsistency | Blocks least-privilege packaging proof | AosEdge Platform Team + Platform Team | D4 SDK/metadata qualification |
 | Credential Broker request/JWT/refresh protocol | Blocks `REQ-BHS-003` implementation | Platform Team + Function Team 1 | D4 authorization contract |
 | Native Service-to-FOTA dependency admission unavailable in current release | Pre-transfer rejection remains deferred; service readiness still required | AosEdge Platform Team | Official release qualification |
-| v2 synthetic model, accepted additional inputs, provenance, assessment/event schemas, thresholds and deterministic numeric tolerance | Blocks `REQ-BHS-006`/`007` | Function Team 1 + Vehicle Simulation + Platform Team | D4 synthetic-model and derived-data contract |
-| v3 advisory target, payload, thresholds, debounce/hysteresis, freshness and correlation | Blocks `REQ-BHS-008` | Function Team 1 + Platform Team + Gateway | D4 advisory contract |
+| v2 service-owned synthetic model, accepted native/derived inputs, provenance, assessment/event schemas, thresholds and deterministic numeric tolerance | Blocks `REQ-BHS-006`/`007`; CARLA/Gateway synthetic pad-wear/temperature/pressure inputs are explicitly excluded | Function Team 1 + Platform Team | [`D4-016`](../d4-decision-register.md#d4-016); D4-003 has closed the stimulus/source-boundary question |
+| D4-016 Brake model thresholds and decision hysteresis that trigger the accepted advisory envelope | D4-008 closes the transport/target contract; model decision policy still blocks complete `REQ-BHS-008` behavior | Function Team 1 | [`D4-016`](../d4-decision-register.md#d4-016) |
 | Whether service consumes factual Gateway status or only emits a correlated request | Affects service state machine but not Engineering Dashboard authority | Function Team 1 + Gateway | D4 advisory response decision |
 | Ring-buffer and per-version queue capacity, in-progress-window persistence, overflow, retention, retry/backoff and persistent format | Blocks `REQ-BHS-005`/`009`/`010` | Function Team 1 | D4 offline/state contract |
 | Health/readiness API and measured CPU/RAM/storage/state budgets | Blocks `REQ-BHS-011` acceptance | Function Team 1 + Aos integration | D4 resource qualification |
-| Structured log schema, redaction and timing budget | Blocks `REQ-BHS-012` | Function Team 1 + Demo experience | D4 observability/timing contract |
+| Structured log schema, redaction and chronology fields | Blocks `REQ-BHS-012` | Function Team 1 + Demo experience | D4 observability/chronology contract |
 | Packaging guide still names a separate FOTA-managed OEM policy | Conflicts with ADR 0010 and could mislead implementation | Function Team 1 | Correct before D4 implementation starts |
 
 ## Change Rules

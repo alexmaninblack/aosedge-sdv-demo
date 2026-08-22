@@ -1,18 +1,18 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Component Decomposition and Interface Register 1.0
+# Component Decomposition and Interface Register 1.1
 
 - Status: Accepted component baseline
-- Version: 1.0
-- Prepared: 2026-08-19
-- Accepted: 2026-08-19
-- Supersedes: 0.9
+- Version: 1.1
+- Prepared: 2026-08-20
+- Accepted: 2026-08-20
+- Supersedes: 1.0
 - Owner: System Architecture
 - Architecture input: [High-Level Architecture 1.4](../architecture/high-level-architecture.md)
-- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.7](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Demo Scenario Architecture Flows 1.6](../architecture/demo-scenario-architecture-flows.md)
-- Requirements input: [System Requirements and Traceability 0.9](system-requirements-and-traceability.md)
+- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 1.9](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Demo Scenario Architecture Flows 1.8](../architecture/demo-scenario-architecture-flows.md)
+- Requirements input: [System Requirements and Traceability 1.0](system-requirements-and-traceability.md)
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0010](../architecture/decisions/0010-aos-kuksa-credential-broker.md), and
   [ADR 0011](../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
@@ -38,10 +38,10 @@ surfaces. Those concepts are related, but they are not interchangeable.
 
 1. High-Level Architecture 1.4 owns system boundaries, authorities and
    invariants.
-2. Demo Scenario 1.7 owns the audience-visible lifecycle and stage sequence.
-3. Architecture Flows 1.6 owns detailed runtime, lifecycle, observability and
+2. Demo Scenario 1.9 owns the audience-visible lifecycle and stage sequence.
+3. Architecture Flows 1.8 owns detailed runtime, lifecycle, observability and
    failure flows.
-4. System Requirements 0.9 owns normative `SYS-*` obligations and gap
+4. System Requirements 1.0 owns normative `SYS-*` obligations and gap
    traceability.
 5. This register owns stable component and interface identifiers, component
    allocation, implementation state and repository placement candidates.
@@ -98,7 +98,8 @@ Every dashboard is a presentation surface over one authoritative source:
 | Dashboard | Authoritative source |
 | --- | --- |
 | Engineering Telematics Dashboard | Vehicle Gateway VISS endpoint |
-| OEM Software Delivery Dashboard | AosCloud lifecycle and native log APIs plus current Unit state |
+| OEM Software Delivery Dashboard — Platform Releases view | Immutable Platform Team candidate catalogue plus protected publication-pipeline result |
+| OEM Software Delivery Dashboard — Delivery and Approvals views | AosCloud lifecycle and native log APIs plus current Unit state |
 | Brake Health Function Dashboard — Vehicle Data view | Function Team 1 backend |
 | Brake Health Function Dashboard — Release Candidates view | Immutable prepared catalogue plus Function Team 1 release-pipeline result; never OEM lifecycle state |
 | Tire Health Function Dashboard | Function Team 2 backend |
@@ -113,12 +114,16 @@ delegates an explicitly confirmed sign/publish request to the Function Team 1
 pipeline. It does not hold a private signing key, approve deployment or become
 an AosCloud state store.
 
-The Software Delivery Dashboard must make the decision basis visible: exact
-artifact and metadata digests, requested permissions, effective target,
-required evidence and freshness, owning-team acceptance and active OEM role.
-Its approval control is only the final explicit OEM decision; passing evidence
-does not approve and the Dashboard stores neither evidence nor lifecycle state
-as an authority.
+The Software Delivery Dashboard must keep Platform publication and Unit
+delivery visibly separate. Its Platform Releases view presents only the
+prebuilt content-frozen catalogue and delegates one explicitly confirmed
+sign/publish request to the protected Platform Team pipeline. Its Delivery and
+Approvals views make the decision basis visible: exact artifact and metadata
+digests, requested permissions, effective target, required evidence and
+freshness, owning-team acceptance and active OEM role. The later approval
+control is only the final explicit OEM decision; passing evidence does not
+approve and the Dashboard stores neither evidence nor lifecycle state as an
+authority.
 
 ### Release decision is not Cloud execution
 
@@ -129,6 +134,12 @@ recorded with an authorized OEM identity. AosCloud stores and executes the
 resulting lifecycle transition. The Software Delivery Dashboard and Demo
 Orchestrator may facilitate that interaction, but they own neither the decision
 nor authoritative lifecycle state.
+
+The identity names above define roles and authority, not credential reuse. The
+API client certificate/credential and artifact-signing key/certificate may be
+distinct even when operated by the same role. Their exact mapping, certificate
+chains, protected storage and SDK operations are a D4 contract; no document may
+assume they are the same credential until that contract is qualified.
 
 ### QM service is not safety authority
 
@@ -176,7 +187,7 @@ they interact with its simulated boundaries.
 
 | ID | Component | Responsibility | Owner and lifecycle | Source boundary | State |
 | --- | --- | --- | --- | --- | --- |
-| <a id="cmp-factory"></a>`CMP-FACTORY` | OEM Factory Baseline Assembly | Reproducibly compose, build, qualify and freeze the unprovisioned SOP substrate, including enabled stock Aos IAM permission handling and the non-secret IAM/PKCS#11 signing-key integration seam | Platform Team; pre-SOP manufacturing/build lifecycle | Integration recipes and qualification inputs in `aos-vehicle-platform`; output image remains outside Git | Build evidence `EVIDENCE`; accepted assembly process and output artifact `NEW` |
+| <a id="cmp-factory"></a>`CMP-FACTORY` | OEM Factory Baseline Assembly | Reproducibly compose, build, qualify and freeze the unprovisioned SOP substrate, including one stock Aos IAM configuration with `enablePermissionsHandler: true`, no pre-populated service permission/secret state, and the dedicated non-secret `kuksa-jwt` certificate-module/PKCS#11 plus verifier-preparation wiring without a key or shared verifier | Platform Team; pre-SOP manufacturing/build lifecycle | Integration recipes and qualification inputs in `aos-vehicle-platform`; output image remains outside Git | Build evidence `EVIDENCE`; D4-009 and D4-010.1 factory contracts decided, accepted successor assembly and output artifact `NEW` |
 | <a id="cmp-runtime"></a>`CMP-RUNTIME` | Provider-Specific Empty-Slot Runtime | Preinstalled Service Manager runtime, bounded provider slot, health and storage boundary for the Vehicle Data Platform payload | Platform Team; factory image | `aos-vehicle-platform` | `EVIDENCE`; final factory qualification required |
 | <a id="cmp-aos-core"></a>`CMP-AOS-CORE` | AosCore and Service Manager | Unit identity, desired state, security, update lifecycle, service execution and status | AosEdge platform | External AosVM/AosCore release | `EXTERNAL / CURRENT` |
 | <a id="cmp-kuksa"></a>`CMP-KUKSA` | Eclipse KUKSA Databroker | Stable in-vehicle service-facing VSS data boundary and verification of broker-issued JWTs using a configured public key | External Eclipse component in the SOP substrate; Platform Team governs integration and exposed contract | Unmodified external executable; configuration/contract in `aos-vehicle-platform` | Executable `CURRENT`; final contract/trust integration `EXTEND` |
@@ -214,12 +225,15 @@ or routed through it.
 | ID | Component | Responsibility | Owner and lifecycle | Source boundary | State |
 | --- | --- | --- | --- | --- | --- |
 | <a id="cmp-aos-cloud"></a>`CMP-AOS-CLOUD` | AosCloud Lifecycle Control Plane | Provisioning, authoritative Unit/Node desired and reported actual state, batches, campaigns, recorded approvals, audit history, FOTA/SOTA delivery and promotion execution | AosEdge platform / OEM Cloud | External AosCloud service | `EXTERNAL / CURRENT`; exact demo operations require qualification |
-| <a id="cmp-sw-dash"></a>`CMP-SW-DASH` | OEM Software Delivery Dashboard | Stateless presentation of authoritative AosCloud state/logs plus exact artifact/metadata digests, requested permissions, target, evidence status, owning-team acceptance and active OEM role; expose only the final explicitly confirmed OEM-authorized action and then re-read Cloud state | Demo solution | `aosedge-sdv-demo` | `NEW` |
-| <a id="cmp-orch"></a>`CMP-ORCH` | Demo Orchestrator | Factory-overlay creation, role binding, provisioning reconciliation, CARLA source selection/replay, release sequencing, transient evidence correlation, retirement and reset without owning lifecycle state or approval decisions | Demo solution | `aosedge-sdv-demo` | Existing helpers `EVIDENCE`; unified orchestrator `NEW` |
+| <a id="cmp-sw-dash"></a>`CMP-SW-DASH` | OEM Software Delivery Dashboard | Stateless Platform Releases catalogue and protected publication delegation for prebuilt VDP candidates, including exact Factory Image/runtime compatibility and distinct prepared/signed/AosCloud identities, plus authoritative AosCloud state/logs, exact artifact/metadata digests, requested permissions, target, evidence status, owning-team acceptance and active OEM role; expose only explicitly confirmed actions and then re-read Cloud state | Demo solution | `aosedge-sdv-demo` | `NEW` |
+| <a id="cmp-orch"></a>`CMP-ORCH` | Demo Orchestrator | Factory-overlay creation, role binding, provisioning reconciliation, sequential exclusive live CARLA source handover, release sequencing, transient evidence correlation, retirement and reset without owning lifecycle state or approval decisions; its trusted macOS launcher starts and supervises the non-root session-scoped native helper boundary; telemetry replay is deferred | Demo solution | `aosedge-sdv-demo` | Existing helpers `EVIDENCE`; unified orchestrator and session helper `NEW` |
 
-The native future AosCloud SOTA-to-FOTA dependency-admission capability is a
-deferred feature of `CMP-AOS-CLOUD`, not a new project component. In
-particular, `CMP-SW-DASH` must not implement a temporary admission controller.
+The native future AosCloud admission of a SOTA service against a required FOTA
+Vehicle Data Platform Component version is a deferred feature of
+`CMP-AOS-CLOUD`, not a new project component. Released component-to-component
+and service-to-layer dependency mechanisms remain external platform
+capabilities. In particular, `CMP-SW-DASH` must not implement a temporary
+admission controller.
 
 ## Runtime Roles and Deployable Products
 
@@ -276,8 +290,8 @@ acceptance of this baseline.
 | <a id="if-auth-001"></a>`IF-AUTH-001` | `CMP-BHS` / `CMP-TIRE` | `CMP-VDP` Credential Broker | Local credential request using the per-instance `AOS_SECRET`; no reusable KUKSA token in the service artifact | Running Aos service identity | `NEW` |
 | <a id="if-auth-002"></a>`IF-AUTH-002` | `CMP-VDP` Credential Broker | `CMP-AOS-CORE` IAM | `GetPermissions(secret, "kuksa")` request and authenticated service identity plus declared path/mode response | Aos IAM registration made by Service Manager | `EXTERNAL / EXTEND` qualification |
 | <a id="if-auth-003"></a>`IF-AUTH-003` | `CMP-VDP` Credential Broker | `CMP-BHS` / `CMP-TIRE` | Rejection or short-lived, path-scoped KUKSA JWT that exactly maps the currently registered IAM permissions and installed VDP contract | Aos IAM result plus VDP contract; no parallel service policy store | `NEW` |
-| <a id="if-auth-004"></a>`IF-AUTH-004` | `CMP-VDP` | `CMP-KUKSA` | Public verifier, audience and trust configuration for broker-issued JWTs; private signing material remains per-Unit platform state protected through IAM/certificate-module and PKCS#11 integration | Platform trust configuration | `EXTEND` |
-| <a id="if-auth-005"></a>`IF-AUTH-005` | `CMP-AOS-CORE` / factory security substrate | `CMP-VDP` Credential Broker | Enabled permission-handler availability and access to a per-Unit platform-protected signing operation; no signing key bytes cross into the component artifact | Aos IAM/certificate-module and PKCS#11 integration | `NEW / QUALIFY` |
+| <a id="if-auth-004"></a>`IF-AUTH-004` | `CMP-VDP` | `CMP-KUKSA` | One atomically prepared per-Unit public verifier loaded at KUKSA process start; broker-issued JWTs use `RS256`, audience `kuksa.val`, bounded expiry and path permissions. The pinned KUKSA does not enforce `iss`; no shared verifier, JWKS or hot reload is claimed | Per-Unit Platform trust state established after provisioning | `D4-010.1 DECIDED / EXTEND` |
+| <a id="if-auth-005"></a>`IF-AUTH-005` | `CMP-AOS-CORE` / factory security substrate | `CMP-VDP` Credential Broker | Permission handler explicitly enabled by the shared Factory Image IAM configuration independent of provisioning state, runtime service identity/permission lookup, and direct access to one per-Unit non-exported RSA signing operation in the dedicated `kuksa-jwt` PKCS#11 token; no pre-populated permission/secret, signing key bytes or shared verifier cross into an artifact | Stock Aos IAM plus dedicated certificate-module and PKCS#11 integration; D4-009 and D4-010.1 decided | `NEW / QUALIFY` |
 | <a id="if-auth-006"></a>`IF-AUTH-006` | `CMP-AOS-CORE` / platform identity facility | privileged provider inside `CMP-VDP` | Short-lived provider credential limited to accepted KUKSA `provide`/`create` paths | Separate FOTA-component identity binding; exact mechanism unresolved | `NEW / DESIGN GATE` |
 
 The advisory chain proves only QM maintenance-request handling and Gateway
@@ -290,9 +304,9 @@ display, acknowledgement, vehicle-motion or brake actuation.
 | ID | Producer | Consumer | Contract and direction | Authority | State |
 | --- | --- | --- | --- | --- | --- |
 | <a id="if-func-001"></a>`IF-FUNC-001` | `CMP-BHS` | `CMP-BRAKE-BE` | Versioned bounded Brake Health message family: ordered/idempotent v1 `BrakeTelemetryWindow` chunks plus completion, and idempotent v2/v3 `BrakeHealthAssessment`, threshold/change `BrakeHealthEvent`, and correlated advisory fact; preserve original sample/event times | Function Team 1 data contract | `NEW` |
-| <a id="if-func-002"></a>`IF-FUNC-002` | `CMP-BRAKE-BE` | `CMP-BRAKE-DASH` | Query/subscription API for reconstructed v1 windows and persisted v2/v3 Brake Health derived results | Function Team 1 backend | `NEW` |
+| <a id="if-func-002"></a>`IF-FUNC-002` | `CMP-BRAKE-BE` | `CMP-BRAKE-DASH` / `CMP-ORCH` | Query/subscription API for reconstructed v1 windows and persisted v2/v3 Brake Health derived results, plus an exact preview-and-delete administration operation for current-run cleanup | Function Team 1 backend | `NEW` |
 | <a id="if-tire-003"></a>`IF-TIRE-003` | `CMP-TIRE` | `CMP-TIRE-BE` | Versioned, bounded and idempotent tire-condition summary or threshold event | Function Team 2 data contract | `NEW` |
-| <a id="if-tire-004"></a>`IF-TIRE-004` | `CMP-TIRE-BE` | `CMP-TIRE-DASH` | Query/subscription API for persisted Tire Health results | Function Team 2 backend | `NEW` |
+| <a id="if-tire-004"></a>`IF-TIRE-004` | `CMP-TIRE-BE` | `CMP-TIRE-DASH` / `CMP-ORCH` | Query/subscription API for persisted Tire Health results, plus an exact preview-and-delete administration operation for current-run cleanup | Function Team 2 backend | `NEW` |
 
 Functional Cloud interfaces are asynchronous. Loss of Cloud connectivity must
 not stop local Brake Health or Tire Health analysis and advisory generation.
@@ -310,13 +324,15 @@ not stop local Brake Health or Tire Health analysis and advisory generation.
 | <a id="if-lc-004"></a>`IF-LC-004` | `CMP-AOS-CLOUD` | `CMP-AOS-CORE` | Provisioning, desired state, update delivery, validation, status and retirement | AosCloud and current Unit state | `EXTERNAL / EXTEND` qualification |
 | <a id="if-lc-005"></a>`IF-LC-005` | `CMP-SW-DASH` | `CMP-AOS-CLOUD` | Scoped API reads; exact digest/permissions/target/evidence/team-acceptance/role presentation; blocked-reason display; final explicitly confirmed call; authoritative post-action re-read | AosCloud; dashboard holds no parallel desired/evidence state, release decision or automatic approval policy | `NEW` |
 | <a id="if-lc-006"></a>`IF-LC-006` | `CMP-AOS-CORE` | `CMP-RUNTIME` / `CMP-BHS` / `CMP-TIRE` | Install, start, stop, update, rollback, readiness and resource enforcement | Unit actual state | Platform mechanism `CURRENT`; target graph `EXTEND` |
-| <a id="if-obs-001"></a>`IF-OBS-001` | `CMP-SW-DASH` / `CMP-AOS-CLOUD` | `CMP-AOS-CLOUD` / `CMP-SW-DASH` | Explicit operator request plus authoritative system, service-instance or crash-log status/result through supported AosCloud APIs; dashboard keeps no independent archive | AosCloud request and stored-log state | Native platform path `EXTERNAL / CURRENT`; dashboard presentation `NEW / QUALIFY` |
-| <a id="if-demo-001"></a>`IF-DEMO-001` | `CMP-ORCH` | QEMU/AosVM instances | Overlay creation, role binding, start/stop, source selection and safe retirement | Local session manifest plus authoritative Unit state | `EVIDENCE / EXTEND` |
+| <a id="if-obs-001"></a>`IF-OBS-001` | `CMP-SW-DASH` / `CMP-AOS-CLOUD` | `CMP-AOS-CLOUD` / `CMP-SW-DASH` | Explicit operator request plus authoritative system, service-instance or crash-log request/status/result/file through supported AosCloud APIs; dashboard keeps no second archive and removes bounded temporary downloads | Cloud-retained AosCloud request and related stored file, subject to qualified deletion/retention behavior | Native platform storage/API path `EXTERNAL / CURRENT`; dashboard presentation and live-policy qualification `NEW / QUALIFY` |
+| <a id="if-demo-001"></a>`IF-DEMO-001` | `CMP-ORCH` | Native macOS helper, QEMU/AosVM instances and CARLA/Gateway launchers | Launcher-owned non-root session boundary, overlay creation, role binding, start/stop, source selection and safe retirement | Authenticated local session, allowlisted operations, local session manifest plus authoritative Unit state | `EVIDENCE / EXTEND` |
 
-Native SOTA-to-FOTA compatibility admission is a future behavior on
-`IF-LC-004`. Until an implementing AosEdge release is available and qualified,
-the corresponding negative-path demo remains `DEFERRED` and no local
-interface substitutes for it.
+Native admission of a SOTA service against a required FOTA Vehicle Data
+Platform Component version is a future behavior on `IF-LC-004`. Until an
+implementing AosEdge release is available and qualified, the corresponding
+negative-path demo remains `DEFERRED` and no local interface substitutes for
+it. Existing component-to-component and service-to-layer dependency contracts
+remain available through their native platform paths.
 
 ## Provisional Component Requirement Packages
 
@@ -331,16 +347,16 @@ below remains the single allocation record for exact identifiers.
 | Package | Human-readable responsibility | Primary components | Requirement themes |
 | --- | --- | --- | --- |
 | <a id="cr-vehicle-sim"></a>`CR-VEHICLE-SIM` | Define the installed Vehicle Hardware Capability Manifest, provide every declared physical signal/actuator behavior, repeatable braking and tire stimuli, exact source evidence, hidden ground-truth isolation and clean CARLA scenario reset. | CARLA vehicle and Scenario Controller | Hardware-profile completeness, determinism, source integrity, simulation truth and reset |
-| <a id="cr-gateway"></a>`CR-GATEWAY` | Account for the complete hardware profile, distinguish actuator capability from authority, expose VISS, arbitrate control, enforce the authoritative QM-channel advisory boundary and present factual engineering status. | Control UI, Gateway, VISS, Advisory Handler and Engineering Dashboard | Hardware coverage, telemetry contract, unavailable data, control traceability, deny-by-default QM containment and latency |
-| <a id="cr-factory"></a>`CR-FACTORY` | Reproducibly assemble and preserve the clean unprovisioned Factory Image artifact, enable stock Aos IAM permission handling and its non-secret PKCS#11 seam, and create two identity-safe deployments with a healthy empty capability slot. | Factory Baseline Assembly and Empty-Slot Runtime | Reproducibility, artifact immutability, IAM substrate, identity/key absence, overlay uniqueness and preservation |
+| <a id="cr-gateway"></a>`CR-GATEWAY` | Account for the complete hardware profile, distinguish actuator capability from authority, expose VISS, arbitrate control, enforce the authoritative QM-channel advisory boundary and present factual engineering status. | Control UI, Gateway, VISS, Advisory Handler and Engineering Dashboard | Hardware coverage, telemetry contract, unavailable data, control traceability, deny-by-default QM containment and chronology |
+| <a id="cr-factory"></a>`CR-FACTORY` | Reproducibly assemble and preserve the clean unprovisioned Factory Image artifact, enable stock Aos IAM permission handling, carry the dedicated non-secret per-Unit signer/verifier preparation seam without key material, and create two identity-safe deployments with a healthy empty capability slot. | Factory Baseline Assembly and Empty-Slot Runtime | Reproducibility, artifact immutability, IAM substrate, identity/key/shared-verifier absence, overlay uniqueness and preservation |
 | <a id="cr-vdp"></a>`CR-VDP` | Deliver the versioned VISS-to-KUKSA data capability, defense-in-depth outbound QM advisory path, and least-privilege short-lived KUKSA credentials derived from native Aos identity. | KUKSA and Vehicle Data Platform Component | Compatibility, data quality, outbound validation, thin credential translation, provider identity, FOTA and rollback |
 | <a id="cr-bhs"></a>`CR-BHS` | Capture bounded v1 braking-event windows, move synthetic assessment and derived reporting on-board in v2, operate offline, and request only the approved v3 advisory. | Brake Health In-Vehicle Service | Trigger/window determinism, model/data-product evolution, compatibility, offline operation and advisory scope |
 | <a id="cr-tire"></a>`CR-TIRE` | Deliver one mature Tire Health v1.0 product on accepted VDP v3: estimate condition locally, persist bounded state, upload bounded results and request the typed inspection advisory through an independent SOTA lifecycle. | Tire Health In-Vehicle Service | Exact VDP v3 prerequisite, model, persistence, bounded reporting, advisory and multi-tenant isolation |
-| <a id="cr-aos"></a>`CR-AOS` | Provide identity, authoritative desired/reported actual and Unit Set state, recorded owner approvals, FOTA/SOTA execution, dependency behavior, resource enforcement and native operational-log collection/delivery. | AosCore and AosCloud | Provisioning, lifecycle state and execution, Unit Set contracts, OEM-authorized validation, rollback, native logging, timing and retirement |
-| <a id="cr-brake-cloud"></a>`CR-BRAKE-CLOUD` | Reconstruct and present v1 Brake Telemetry Windows; ingest/present v2/v3 derived messages; expose a separate prepared-candidate view that delegates protected sign/publish actions; and run as a Mac-local ARM64 container without entering the vehicle decision path or owning OEM lifecycle state. | Brake Health Backend and Function Dashboard | Candidate integrity, protected publication delegation, chunk reconstruction, idempotency, data-product evolution, offline synchronization, local hosting, evidence and run-data retention |
-| <a id="cr-tire-cloud"></a>`CR-TIRE-CLOUD` | Present one prepared Tire v1.0 candidate, delegate protected publication and ingest/present real bounded Tire Health results as an independent Mac-local Function Team product without owning OEM lifecycle state. | Tire Health Backend and Function Dashboard | Candidate integrity, protected publication delegation, idempotency, delivery/freshness, product isolation, local hosting and run-data retention |
-| <a id="cr-demo"></a>`CR-DEMO` | Orchestrate manufactured overlays, Unit roles and Unit Set membership, staged releases, evidence-backed final OEM approval presentation, authoritative dashboards, ordered retirement and next-run provisioning. | Software Delivery Dashboard and Demo Orchestrator | Target safety, source binding, membership reconciliation, decision-basis presentation, native logs, observability, timing and reset |
-| <a id="cr-cross"></a>`CR-CROSS` | Define security, authorization, redaction, timing, resource and offline constraints shared by multiple owners. | Cross-component concerns; the Credential Broker itself remains allocated to `CMP-VDP` | Least privilege, fail-closed behavior, evidence controls and latency |
+| <a id="cr-aos"></a>`CR-AOS` | Provide identity, authoritative desired/reported actual and Unit Set state, recorded owner approvals, FOTA/SOTA execution, dependency behavior, resource enforcement and native operational-log collection/delivery. | AosCore and AosCloud | Provisioning, lifecycle state and execution, Unit Set contracts, OEM-authorized validation, rollback, native logging and retirement |
+| <a id="cr-brake-cloud"></a>`CR-BRAKE-CLOUD` | Reconstruct and present v1 Brake Telemetry Windows; ingest/present v2/v3 derived messages; expose a separate prepared-candidate view that delegates protected sign/publish actions; and run as a Mac-local ARM64 container without entering the vehicle decision path or owning OEM lifecycle state. | Brake Health Backend and Function Dashboard | Candidate integrity, protected publication delegation, chunk reconstruction, idempotency, data-product evolution, offline synchronization, local hosting, current-run persistence and complete R0 deletion |
+| <a id="cr-tire-cloud"></a>`CR-TIRE-CLOUD` | Present one prepared Tire v1.0 candidate, delegate protected publication and ingest/present real bounded Tire Health results as an independent Mac-local Function Team product without owning OEM lifecycle state. | Tire Health Backend and Function Dashboard | Candidate integrity, protected publication delegation, idempotency, delivery/freshness, product isolation, local hosting, current-run persistence and complete R0 deletion |
+| <a id="cr-demo"></a>`CR-DEMO` | Orchestrate manufactured overlays, Unit roles and Unit Set membership; present the immutable Platform candidate catalogue and delegate protected FOTA publication; facilitate staged releases, evidence-backed final OEM approval, authoritative dashboards, ordered retirement and next-run provisioning. | Software Delivery Dashboard and Demo Orchestrator | Candidate integrity, protected publication, target safety, source binding, membership reconciliation, decision-basis presentation, native logs, observability and reset |
+| <a id="cr-cross"></a>`CR-CROSS` | Define security, authorization, redaction, chronology, resource and offline constraints shared by multiple owners. | Cross-component concerns; the Credential Broker itself remains allocated to `CMP-VDP` | Least privilege, fail-closed behavior, evidence controls and chronology |
 | <a id="cr-e2e"></a>`CR-E2E` | Prove the complete accepted graph on Validation and Demonstration Units across normal, failure, offline, recovery and retirement paths. | All accepted components | End-to-end acceptance and retained evidence |
 
 ## Retired Function Team 2 Identifiers
@@ -413,7 +429,7 @@ the only normative definitions.
   [QM service and Gateway containment (`SYS-SEC-007`)](system-requirements-and-traceability.md#sys-sec-007),
   [authoritative demo surfaces (`SYS-OBS-001`)](system-requirements-and-traceability.md#sys-obs-001),
   [truthful control-transition evidence (`SYS-OBS-005`)](system-requirements-and-traceability.md#sys-obs-005), and
-  [separate local and Cloud latency (`SYS-TIM-002`)](system-requirements-and-traceability.md#sys-tim-002).
+  [separate on-board and Cloud chronology (`SYS-TIM-002`)](system-requirements-and-traceability.md#sys-tim-002).
 
 ### `CR-FACTORY` — Factory assembly, artifact and empty slot
 
@@ -498,7 +514,8 @@ the only normative definitions.
   [derived v2 Cloud data product (`SYS-BHS-006`)](system-requirements-and-traceability.md#sys-bhs-006),
   [allowlisted v3 advisory (`SYS-BHS-003`)](system-requirements-and-traceability.md#sys-bhs-003),
   [offline local continuity (`SYS-BHS-004`)](system-requirements-and-traceability.md#sys-bhs-004), and
-  [separate local and Cloud latency (`SYS-TIM-002`)](system-requirements-and-traceability.md#sys-tim-002).
+  [separate on-board and Cloud chronology (`SYS-TIM-002`)](system-requirements-and-traceability.md#sys-tim-002), and
+  [AosCore-enforced service-tenant isolation (`SYS-RES-001`)](system-requirements-and-traceability.md#sys-res-001).
 
 ### `CR-TIRE` — Tire Health in-vehicle service
 
@@ -523,7 +540,8 @@ the only normative definitions.
   [explicit simulation model (`SYS-TIRE-003`)](system-requirements-and-traceability.md#sys-tire-003),
   [bounded Cloud reporting (`SYS-TIRE-004`)](system-requirements-and-traceability.md#sys-tire-004),
   [independent Tire Health product (`SYS-TIRE-005`)](system-requirements-and-traceability.md#sys-tire-005), and
-  [offline inspection advisory (`SYS-TIRE-006`)](system-requirements-and-traceability.md#sys-tire-006).
+  [offline inspection advisory (`SYS-TIRE-006`)](system-requirements-and-traceability.md#sys-tire-006), and
+  [AosCore-enforced service-tenant isolation (`SYS-RES-001`)](system-requirements-and-traceability.md#sys-res-001).
 
 ### `CR-AOS` — AosCore and AosCloud lifecycle
 
@@ -557,7 +575,7 @@ the only normative definitions.
   [Cloud-authoritative delivery dashboard (`SYS-OBS-002`)](system-requirements-and-traceability.md#sys-obs-002),
   [operational log controls (`SYS-OBS-003`)](system-requirements-and-traceability.md#sys-obs-003),
   [per-run correlation (`SYS-OBS-004`)](system-requirements-and-traceability.md#sys-obs-004),
-  [lifecycle timing bounds (`SYS-TIM-001`)](system-requirements-and-traceability.md#sys-tim-001),
+  [AosCore-enforced service-tenant isolation (`SYS-RES-001`)](system-requirements-and-traceability.md#sys-res-001),
   [retire Units and overlays (`SYS-RET-001`)](system-requirements-and-traceability.md#sys-ret-001), and
   [reconcile Unit Sets for the next run (`SYS-RET-006`)](system-requirements-and-traceability.md#sys-ret-006).
 
@@ -601,19 +619,28 @@ Delivery Dashboard.
 
 - Components: [Software Delivery Dashboard (`CMP-SW-DASH`)](#cmp-sw-dash)
   and [Demo Orchestrator (`CMP-ORCH`)](#cmp-orch).
-- Interfaces: [Software Delivery Dashboard API (`IF-LC-005`)](#if-lc-005),
+- Interfaces: delegated [Platform FOTA publication (`IF-LC-001`)](#if-lc-001),
+  [Cloud-to-Unit lifecycle (`IF-LC-004`)](#if-lc-004),
+  [Software Delivery Dashboard API (`IF-LC-005`)](#if-lc-005),
   [Platform Team OEM-authorized approval (`IF-LC-008`)](#if-lc-008),
   [Function Team 1 OEM-authorized approval (`IF-LC-009`)](#if-lc-009),
   [Function Team 2 OEM-authorized approval (`IF-LC-010`)](#if-lc-010),
-  [native log API (`IF-OBS-001`)](#if-obs-001), and
-  [orchestrated VM lifecycle (`IF-DEMO-001`)](#if-demo-001).
+  [native log API (`IF-OBS-001`)](#if-obs-001),
+  [orchestrated VM lifecycle (`IF-DEMO-001`)](#if-demo-001), and the exact
+  current-run cleanup operations on [Brake Health dashboard API
+  (`IF-FUNC-002`)](#if-func-002) and [Tire Health dashboard API
+  (`IF-TIRE-004`)](#if-tire-004).
 - Parent requirements: [one identity per overlay (`SYS-ID-001`)](system-requirements-and-traceability.md#sys-id-001),
   [reconcile partial provisioning (`SYS-ID-002`)](system-requirements-and-traceability.md#sys-id-002),
   [prove current Unit state (`SYS-ID-003`)](system-requirements-and-traceability.md#sys-id-003),
+  [qualify identity retirement (`SYS-ID-004`)](system-requirements-and-traceability.md#sys-id-004),
+  [unique fresh overlays (`SYS-MFG-003`)](system-requirements-and-traceability.md#sys-mfg-003),
   [exact source-to-Unit binding (`SYS-SRC-001`)](system-requirements-and-traceability.md#sys-src-001),
   [honest single-source presentation (`SYS-SRC-002`)](system-requirements-and-traceability.md#sys-src-002),
+  [immutable release candidates (`SYS-REL-001`)](system-requirements-and-traceability.md#sys-rel-001),
   [current effective-target validation (`SYS-REL-002`)](system-requirements-and-traceability.md#sys-rel-002),
   [validate before promotion (`SYS-REL-004`)](system-requirements-and-traceability.md#sys-rel-004),
+  deferred [native Cloud dependency rejection (`SYS-REL-006`)](system-requirements-and-traceability.md#sys-rel-006),
   [team-owned release decisions (`SYS-REL-007`)](system-requirements-and-traceability.md#sys-rel-007),
   [OEM-authorized deployment approval (`SYS-REL-008`)](system-requirements-and-traceability.md#sys-rel-008),
   [combined-graph owner gate (`SYS-REL-009`)](system-requirements-and-traceability.md#sys-rel-009),
@@ -623,7 +650,8 @@ Delivery Dashboard.
   [visible approval decision basis (`SYS-OBS-006`)](system-requirements-and-traceability.md#sys-obs-006),
   [operational log controls (`SYS-OBS-003`)](system-requirements-and-traceability.md#sys-obs-003),
   [per-run correlation (`SYS-OBS-004`)](system-requirements-and-traceability.md#sys-obs-004),
-  [lifecycle timing bounds (`SYS-TIM-001`)](system-requirements-and-traceability.md#sys-tim-001),
+  [targeted vehicle external-connectivity continuity (`SYS-OBS-007`)](system-requirements-and-traceability.md#sys-obs-007),
+  [AosCore-enforced service-tenant isolation (`SYS-RES-001`)](system-requirements-and-traceability.md#sys-res-001),
   [retire Units and overlays (`SYS-RET-001`)](system-requirements-and-traceability.md#sys-ret-001),
   [clear functional run data (`SYS-RET-002`)](system-requirements-and-traceability.md#sys-ret-002),
   [reset vehicle simulation state (`SYS-RET-003`)](system-requirements-and-traceability.md#sys-ret-003),
@@ -637,7 +665,10 @@ Delivery Dashboard.
   internal responsibility of
   [Vehicle Data Platform Component (`CMP-VDP`)](#cmp-vdp), not a separate
   logical component.
-- Interface focus: every trust, resource, timing, log and offline boundary.
+- Interface focus: every trust, resource, chronology and log boundary plus one
+  targeted Demonstration Unit external-connectivity fault. It interrupts
+  Unit-to-AosCloud and installed service-to-functional-backend paths together;
+  presenter-control and simulated in-vehicle link loss are not demo scenarios.
 - Parent requirements: [least-privilege KUKSA identities (`SYS-SEC-001`)](system-requirements-and-traceability.md#sys-sec-001),
   [native-IAM-derived SOTA KUKSA credentials (`SYS-SEC-006`)](system-requirements-and-traceability.md#sys-sec-006),
   [fail-closed advisory security (`SYS-SEC-003`)](system-requirements-and-traceability.md#sys-sec-003),
@@ -646,8 +677,9 @@ Delivery Dashboard.
   [QM service and Gateway containment (`SYS-SEC-007`)](system-requirements-and-traceability.md#sys-sec-007),
   [operational log controls (`SYS-OBS-003`)](system-requirements-and-traceability.md#sys-obs-003),
   [per-run correlation (`SYS-OBS-004`)](system-requirements-and-traceability.md#sys-obs-004),
-  [lifecycle timing bounds (`SYS-TIM-001`)](system-requirements-and-traceability.md#sys-tim-001), and
-  [separate local and Cloud latency (`SYS-TIM-002`)](system-requirements-and-traceability.md#sys-tim-002).
+  [separate on-board and Cloud chronology (`SYS-TIM-002`)](system-requirements-and-traceability.md#sys-tim-002), and
+  [targeted vehicle external-connectivity continuity (`SYS-OBS-007`)](system-requirements-and-traceability.md#sys-obs-007), and
+  [AosCore-enforced service-tenant isolation (`SYS-RES-001`)](system-requirements-and-traceability.md#sys-res-001).
 
 ### `CR-E2E` — End-to-end acceptance
 
@@ -683,19 +715,22 @@ Delivery Dashboard.
 6. **Accepted 2026-08-18:** no separate log pipeline or external log-view
    component is part of the demo. AosCore and AosCloud own native system,
    service-instance, and crash-log collection, delivery, and authoritative
-   storage. The stateless `CMP-SW-DASH` uses supported AosCloud APIs to create
-   explicitly confirmed requests and present their status/results without an
-   independent log archive. Emitting teams own useful, redacted log content;
-   API permissions, latency, retention/deletion, and offline behavior remain
-   qualification requirements rather than repository-allocation decisions.
+   Cloud-retained request/result storage. The stateless `CMP-SW-DASH` uses
+   supported AosCloud APIs to create explicitly confirmed requests and present
+   their status/results/files without a second archive; any temporary download
+   is bounded and removed. Emitting teams own useful, redacted log content.
+   Live API permissions, progress/failure visibility, exact retention duration, deletion effect,
+   and offline behavior remain qualification requirements rather than
+   repository-allocation decisions; indefinite retention is not claimed.
 7. **Amended 2026-08-19:** ADR 0010 removes the previously proposed separate
    authorization-component concept and the duplicate local per-service OEM
    policy store. The thin Aos–KUKSA Credential Broker is an internal
    responsibility of `CMP-VDP`; Service Manager and Aos IAM own SOTA instance
    identity, `AOS_SECRET` and registered permissions. Upstream `CMP-KUKSA`
    remains unchanged and validates short-lived JWTs with the Platform Team's
-   public verifier. The provider's separate platform identity remains a
-   qualification gate.
+   per-Unit public verifier. D4-010.1 fixes one RSA/RS256 key and verifier per
+   provisioning lifecycle, no live rotation, and no `iss` enforcement claim;
+   the provider's separate platform identity remains a qualification gate.
 8. **Accepted 2026-08-19:** ADR 0011 classifies both functional services as
    QM-domain maintenance/inspection applications. `CMP-VDP` validates outbound
    advisories as defense in depth, while `CMP-GW-ADV` is the final
@@ -724,6 +759,97 @@ Delivery Dashboard.
     `CMP-TIRE-BE`; it owns neither keys, OEM approval nor lifecycle state. The
     Mac-local ARM64 container, dedicated persistent volume and native Keychain
     helper remain isolated from their Brake Health peers.
+13. **Accepted 2026-08-19:** `CMP-SW-DASH` adds a `Platform Releases` view for
+    exactly the prebuilt, content-frozen VDP v1-v3 candidates and delegates an
+    explicitly confirmed sign/publish request to the protected Platform Team
+    pipeline. The helper is an internal deployment refinement, not a new HLA
+    component, authority or repository. Private keys, source edits,
+    compilation, Yocto/rootfs/container builds, packaging/metadata generation,
+    model training, full qualification runs and repackaging remain outside the
+    browser and presentation flow; technical
+    publication remains distinct from later OEM-authorized Unit deployment
+    and promotion approval.
+14. **Accepted 2026-08-20:** the trusted `CMP-ORCH` macOS demo launcher starts
+    the native helper under the logged-in non-root user for one authenticated
+    demo session before starting the dashboard backend and browser. The helper
+    is not a persistent `launchd`/login service, exposes only allowlisted
+    operations, is supervised by the launcher and exits on orderly session end
+    or a bounded launcher-loss/orphan condition. This is an internal deployment
+    refinement of `CMP-ORCH` and `IF-DEMO-001`, not a new HLA component,
+    authority or repository.
+15. **Accepted 2026-08-20:** the sanitized coverage contract uses the explicit
+    evidence states `UNKNOWN`, `PARTIAL`, `PLANNED`, `DOCUMENTARY_ONLY`,
+    `ACCEPTED` and `STALE`. `ACCEPTED` requires a concrete evidence ID and
+    verification time bound to the exact subject version/digest, AosEdge
+    platform release and configuration digest. Any baseline mismatch converts
+    the presentation to `STALE` with a reason. Deferred native dependency
+    admission remains disabled and cannot be replaced by local dashboard
+    logic. This refines `CMP-SW-DASH` evidence presentation without adding a
+    component, authority or repository.
+16. **Accepted 2026-08-20:** the `CMP-SW-DASH` Platform Releases catalogue
+    contains exactly the prebuilt, tested and content-frozen VDP v1-v3
+    candidates. Each candidate binds its unsigned artifact/metadata digests to
+    the exact compatible OEM Demo Factory Image digest and component-runtime
+    version. The view preserves distinct prepared, signed and AosCloud
+    component-version identities and shows their verified mapping without
+    treating technical publication as Validation deployment or OEM promotion
+    approval. Mismatched bytes, baseline, evidence or identity block
+    publication without an in-demo build fallback. This adds no HLA component,
+    authority or repository.
+17. **Accepted 2026-08-20:** connectivity is separated into vehicle external,
+    presenter control-plane and simulated in-vehicle domains. Automotive
+    offline/reconnect claims apply only to the Unit's external connectivity;
+    the Mac Dashboard/Native Helper connection to AosCloud is an available
+    demo precondition whose loss blocks administrative operations without a
+    `Unit offline` label. `REQ-DEMO-019` retains `UNCERTAIN` only for defensive
+    reconciliation after a helper/process interruption or lost local result,
+    and requires an independent AosCloud re-read before `PUBLISHED`. This
+    refines `CMP-SW-DASH` and `IF-LC-005` without adding a component, authority
+    or repository.
+18. **Accepted 2026-08-20:** `CR-DEMO` 0.1 completes D3 design review for
+    `CMP-SW-DASH` and `CMP-ORCH` with eighteen active requirements and sixteen
+    defined unit-test obligations. Retired `REQ-DEMO-012` and `UT-DEMO-012`
+    remain traceable. The accepted package preserves the component graph,
+    interfaces, repository allocation and authority boundaries; it authorizes
+    D4 contract design only, not implementation or external operations.
+19. **Accepted 2026-08-20:** the only deliberate connectivity fault in the
+    first demo is one atomic loss of Demonstration Unit external connectivity.
+    A single stateful control interrupts Unit-to-AosCloud and installed
+    service-to-functional-backend paths together; presenter-to-AosCloud and
+    simulated in-vehicle links remain available. `CR-CROSS` proves the shared
+    continuity/claim boundary and `CR-E2E` executes the fault; no separate
+    per-channel control, component, interface or runtime service is added.
+20. **Accepted 2026-08-20:** `CR-DEMO` 0.2 adds `REQ-DEMO-020` and
+    `UT-DEMO-018` for the single stateful `Vehicle External Connectivity`
+    control. The control applies and restores the complete dual-path fault
+    policy atomically, proves excluded paths remain available and rejects
+    partial state as success. `CR-DEMO` now contains nineteen active
+    requirements and seventeen active unit-test obligations; no lifecycle
+    authority or product component is added.
+21. **Accepted 2026-08-20:** the first audience-visible resource proof uses a
+    prepared bounded CPU-load profile inside the actual Tire Health service
+    instance. AosCore/Service Manager remains the sole in-vehicle enforcement
+    and monitoring authority and caps Tire at its independently approved
+    quota; Brake Health is the control tenant and must remain ready and process
+    the deterministic CARLA event while the shared platform remains healthy.
+    No project resource manager is introduced. Mac-local functional backends
+    and aggregate quota enforcement across multiple services owned by one
+    Service Provider are outside this proof. `CR-DEMO` 0.3 adds
+    `REQ-DEMO-021` and `UT-DEMO-019` and now contains twenty active
+    requirements and eighteen active unit-test obligations.
+
+## Acceptance Record for Version 1.1
+
+Version 1.1 preserves the Version 1.0 graph and adds no component, interface,
+repository or authority. It updates the `CR-CROSS` allocation for
+[`SYS-OBS-007`](system-requirements-and-traceability.md#sys-obs-007): one
+stateful demo control interrupts the Demonstration Unit's AosCloud and
+functional-backend paths together while keeping presenter-to-AosCloud and the
+simulated in-vehicle network available. It also allocates
+[`SYS-RES-001`](system-requirements-and-traceability.md#sys-res-001) across
+`CR-AOS`, `CR-BHS`, `CR-TIRE`, `CR-DEMO`, `CR-CROSS` and `CR-E2E` without
+adding a component, interface, repository or authority: AosCore caps the Tire
+service CPU quota while Brake and the platform graph remain healthy.
 
 ## Acceptance Record for Version 1.0
 
@@ -742,6 +868,24 @@ provider lifecycle story. `CMP-TIRE-DASH` and `CR-TIRE-CLOUD` add the accepted
 prepared-candidate view, protected delegated publication, real bounded-result
 presentation, Mac-local ARM64 container, dedicated persistent data and native
 macOS Keychain helper without changing HLA ownership or authority.
+
+The accepted Platform release clarification also preserves the same component
+and interface graph. `CMP-SW-DASH` now explicitly presents the prepared VDP
+v1-v3 catalogue and delegates protected publication over `IF-LC-001`; it owns
+neither signing keys, the Platform Team release decision, OEM Unit approval nor
+AosCloud lifecycle state. The register was revalidated against Demo Scenario
+1.8 and Architecture Flows 1.7 without adding a component, interface or
+repository.
+
+The accepted Demo Orchestration 0.3, Cross-Cutting Security and Operations 0.1
+and End-to-End Acceptance 0.1 packages close D3 group 6. They preserve the
+accepted graph and authority boundaries while defining safe run setup,
+authoritative Cloud presentation, evidence-backed lifecycle controls,
+sequential VU/DU use, one atomic vehicle-external-connectivity button, one
+AosCore-enforced Tire CPU isolation proof, ordered R0 retirement and the
+complete acceptance-state/evidence model. Exact machine-readable assertions,
+thresholds, tolerances and qualification procedures remain D4 work; this
+acceptance authorizes no implementation or external mutation.
 
 ## Acceptance Record for Version 0.9
 
@@ -795,9 +939,11 @@ The baseline was accepted on 2026-08-19 after reviewers confirmed:
 12. Service Manager and Aos IAM own SOTA instance identity, `AOS_SECRET` and
     registered permissions; the VDP broker has no parallel identity or
     per-service policy store.
-13. the Factory Image supplies only the enabled IAM permission handler and
-    non-secret signing-key seam, while per-Unit key material and static tokens
-    remain outside immutable artifacts.
+13. the Factory Image supplies one IAM configuration with
+    `enablePermissionsHandler: true` independent of provisioning state, no
+    pre-populated service permission or `AOS_SECRET`, and a non-secret
+    signing-key seam, while per-Unit key material and static tokens remain
+    outside immutable artifacts.
 14. both functional services remain QM and no component treats IAM/KUKSA
     permissions as a safety case or bypasses authoritative Gateway
     containment; and

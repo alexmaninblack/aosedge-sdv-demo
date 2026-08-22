@@ -21,18 +21,18 @@ of unexplained identifiers.
 
 | Order | Package | File | Requirement / unit-test prefix | State |
 | --- | --- | --- | --- | --- |
-| 1 | [`CR-VEHICLE-SIM`](../component-decomposition-and-interface-register.md#cr-vehicle-sim) | [Vehicle Simulation 0.4](vehicle-simulation.md) | `VEHICLE-SIM` | D3 design-reviewed |
-| 1 | [`CR-GATEWAY`](../component-decomposition-and-interface-register.md#cr-gateway) | [Vehicle Gateway 0.6](vehicle-gateway.md) | `GATEWAY` | D3 design-reviewed |
+| 1 | [`CR-VEHICLE-SIM`](../component-decomposition-and-interface-register.md#cr-vehicle-sim) | [Vehicle Simulation 0.8](vehicle-simulation.md) | `VEHICLE-SIM` | D3 design-reviewed; D4-002, D4-004 and D4-005 accepted, D4-003 working direction reviewed |
+| 1 | [`CR-GATEWAY`](../component-decomposition-and-interface-register.md#cr-gateway) | [Vehicle Gateway 1.1](vehicle-gateway.md) | `GATEWAY` | D3 design-reviewed; D4-002, D4-004, D4-005, D4-006 and D4-008 contracts accepted |
 | 2 | [`CR-FACTORY`](../component-decomposition-and-interface-register.md#cr-factory) | [Factory Substrate 0.2](factory-substrate.md) | `FACTORY` | D3 design-reviewed |
-| 2 | [`CR-VDP`](../component-decomposition-and-interface-register.md#cr-vdp) | [Vehicle Data Platform 0.3](vehicle-data-platform.md) | `VDP` | D3 design-reviewed |
-| 3 | [`CR-AOS`](../component-decomposition-and-interface-register.md#cr-aos) | [Aos Lifecycle 0.1](aos-lifecycle.md) | `AOS` | D3 design-reviewed |
-| 4 | [`CR-BHS`](../component-decomposition-and-interface-register.md#cr-bhs) | [Brake Health Service 0.1](brake-health-service.md) | `BHS` | D3 design-reviewed |
-| 4 | [`CR-BRAKE-CLOUD`](../component-decomposition-and-interface-register.md#cr-brake-cloud) | [Brake Health Cloud Product 0.1](brake-health-cloud.md) | `BRAKE-CLOUD` | D3 design-reviewed |
-| 5 | [`CR-TIRE`](../component-decomposition-and-interface-register.md#cr-tire) | [Tire Health Service 0.2](tire-health-service.md) | `TIRE` | D3 design-reviewed |
-| 5 | [`CR-TIRE-CLOUD`](../component-decomposition-and-interface-register.md#cr-tire-cloud) | [Tire Health Cloud Product 0.1](tire-health-cloud.md) | `TIRE-CLOUD` | D3 design-reviewed |
-| 6 | [`CR-DEMO`](../component-decomposition-and-interface-register.md#cr-demo) | `demo-orchestration.md` | `DEMO` | Not started |
-| 6 | [`CR-CROSS`](../component-decomposition-and-interface-register.md#cr-cross) | `cross-cutting.md` | `CROSS` | Not started |
-| 6 | [`CR-E2E`](../component-decomposition-and-interface-register.md#cr-e2e) | `end-to-end-acceptance.md` | `E2E` | Not started |
+| 2 | [`CR-VDP`](../component-decomposition-and-interface-register.md#cr-vdp) | [Vehicle Data Platform 0.7](vehicle-data-platform.md) | `VDP` | D3 design-reviewed; D4-002, D4-006, D4-007 and D4-008 contracts accepted |
+| 3 | [`CR-AOS`](../component-decomposition-and-interface-register.md#cr-aos) | [Aos Lifecycle 0.2](aos-lifecycle.md) | `AOS` | D3 design-reviewed; D4-007 compatibility contract accepted |
+| 4 | [`CR-BHS`](../component-decomposition-and-interface-register.md#cr-bhs) | [Brake Health Service 0.4](brake-health-service.md) | `BHS` | D3 design-reviewed; D4-003 working direction plus D4-007 and D4-008 contracts recorded |
+| 4 | [`CR-BRAKE-CLOUD`](../component-decomposition-and-interface-register.md#cr-brake-cloud) | [Brake Health Cloud Product 0.2](brake-health-cloud.md) | `BRAKE-CLOUD` | D3 design-reviewed; D4-007 compatibility contract recorded |
+| 5 | [`CR-TIRE`](../component-decomposition-and-interface-register.md#cr-tire) | [Tire Health Service 0.5](tire-health-service.md) | `TIRE` | D3 design-reviewed; D4-003 working direction plus D4-007 and D4-008 contracts recorded |
+| 5 | [`CR-TIRE-CLOUD`](../component-decomposition-and-interface-register.md#cr-tire-cloud) | [Tire Health Cloud Product 0.2](tire-health-cloud.md) | `TIRE-CLOUD` | D3 design-reviewed; D4-007 compatibility/dashboard behavior recorded |
+| 6 | [`CR-DEMO`](../component-decomposition-and-interface-register.md#cr-demo) | [Demo Orchestration 0.5](demo-orchestration.md) | `DEMO` | D3 design-reviewed; D4-005 contract accepted |
+| 6 | [`CR-CROSS`](../component-decomposition-and-interface-register.md#cr-cross) | [Cross-Cutting Security and Operations 0.3](cross-cutting.md) | `CROSS` | D3 design-reviewed; D4-006 and D4-008 contracts accepted |
+| 6 | [`CR-E2E`](../component-decomposition-and-interface-register.md#cr-e2e) | [End-to-End Acceptance 0.4](end-to-end-acceptance.md) | `E2E` | D3 design-reviewed; D4-005, D4-006 and D4-008 contracts accepted |
 
 The files listed above are created only when work begins on the corresponding
 package. Their absence therefore means “not started,” not a broken link.
@@ -42,6 +42,11 @@ obligations, interface ownership, verification levels and stable unit-test
 obligations are accepted as input to D4. It does not mean that target behavior
 is implemented, qualified or authorized for deployment; each package keeps
 those states and open gates explicit.
+
+Shared D4 questions are consolidated in the
+[D4 Interface and Qualification Decision Register](../d4-decision-register.md).
+Package `Open D4 Gates` and `Open Issues` sections remain the requirement-owner
+source, while one `D4-*` ID controls each cross-package decision.
 
 ## Stable Identifier Rules
 

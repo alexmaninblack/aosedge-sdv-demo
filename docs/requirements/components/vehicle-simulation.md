@@ -5,14 +5,18 @@
 
 - Status: D3 design-reviewed
 - Package: [`CR-VEHICLE-SIM`](../component-decomposition-and-interface-register.md#cr-vehicle-sim)
-- Version: 0.4
-- Prepared: 2026-08-19
+- Version: 0.8
+- Prepared: 2026-08-21
 - Owner: Vehicle Simulation / Demo Vehicle Tooling
 - Architecture input: [High-Level Architecture 1.4](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 1.7](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 1.6](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 0.9](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 1.0](../component-decomposition-and-interface-register.md)
+- Scenario input: [Demo Scenarios 1.9](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 1.8](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 1.0](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 1.1](../component-decomposition-and-interface-register.md)
+- Accepted D4 decision: [D4-002 Vehicle Hardware Capability Profile](../d4-decision-register.md#d4-002)
+- Reviewed D4 working direction: [D4-003 deterministic stimuli and calibration](../d4-decision-register.md#d4-003)
+- Accepted D4 control decision: [D4-004 Simulator Control and Context Contract](../../../contracts/simulator-control-context/simulator-control-context.v1.json)
+- Accepted D4 source decision: [D4-005 Exclusive Live-Source Assignment](../../../contracts/exclusive-live-source-assignment/exclusive-live-source-assignment.v1.json)
 - Implementation baseline: `CarlaSim@ac7d882c` and `carla-ego-runtime@22864c5`
 
 ## Purpose
@@ -51,8 +55,8 @@ remain to be implemented.
 - [Vehicle Control UI (`CMP-CONTROL`)](../component-decomposition-and-interface-register.md#cmp-control) authentication and arbitration;
 - [Vehicle Gateway Runtime (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw) signal normalization and VISS;
 - Brake Health or Tire Health inference and Cloud reporting;
-- selection of live switching versus deterministic replay between the one
-  visible vehicle source and two Unit roles;
+- orchestration of the accepted sequential live binding between the one
+  visible vehicle source and the two Unit roles;
 - a production tire-physics or remaining-useful-life claim.
 
 ### Dependencies and assumptions
@@ -62,7 +66,7 @@ remain to be implemented.
 | Native Apple Silicon CARLA baseline | Vehicle Simulation | Accepted repository revision, map and server/API compatibility | Scenario preflight fails before actor creation |
 | Gateway actuator interface | Vehicle Gateway | [Gateway actuator commands (`IF-VEH-003`)](../component-decomposition-and-interface-register.md#if-veh-003) | Scenario enters safe stop or fails without inventing control |
 | Town and vehicle profile | Demo Vehicle Tooling | Versioned configuration and deterministic fixed step | Qualification result is rejected as non-reproducible |
-| Source-to-Unit selection | Demo Orchestration | Exact selected Unit and bounded frame or trace range | Evidence cannot be attributed and the stage fails |
+| Source-to-Unit selection | Demo Orchestration | Exact sequential live selected Unit, generation and bounded frame range | Evidence cannot be attributed and the stage fails |
 
 ## Current Implementation Baseline
 
@@ -70,11 +74,12 @@ remain to be implemented.
 | --- | --- | --- |
 | Native CARLA physical vehicle and wheel telemetry | `CarlaSim@ac7d882c`; behavioral source pin `385927b6` in the checked-in scenario profile | `CURRENT` |
 | Native capability inventory | [R10 native CARLA inventory](../../research/demo-foundation/r10-carla-telemetry-and-function-team-2.md) distinguishes direct state, attachable sensors, ground truth and unavailable data | Source research `CURRENT`; selected installed-profile manifest and runtime qualification `TARGET` |
+| Selected installed-hardware contract | [Vehicle Hardware Capability Profile 1.0.0](../../../contracts/vehicle-hardware-profile/vehicle-hardware-capability-profile.v1.json), SHA-256 `ac0ba26464219482dcb41e56ebbc1538489e13bd6c84725dbc124e59514cb7e5` | D4-002 contract `ACCEPTED`; live reconciliation and complete adapter implementation `TARGET / PARTIAL` |
 | Stationary-obstacle braking state machine | [Brake-event design and evidence](../../../../carla-ego-runtime/docs/brake-event-scenario.md) and [hybrid profile](../../../../carla-ego-runtime/config/brake_event_hybrid_town10hd.json) | `CURRENT` |
 | Scripted/manual/autopilot/safe-stop continuity | [Live handover design](../../../../carla-ego-runtime/docs/m6-2-live-handover.md) | `CURRENT` jointly with `CR-GATEWAY` |
 | Scenario result and cleanup manifest | Brake onset, deceleration, gap, collision, actor and process evidence in the existing launcher workflow | `CURRENT`; repeated-run qualification remains open |
-| Accelerated/pre-aged Tire Health stimulus | No accepted model or checked-in scenario exists | `TARGET` |
-| Exact source-to-Unit binding | Run, ego and frame identifiers exist; binding to VU/DU or versioned replay is not implemented | `PARTIAL` |
+| Pre-aged Tire Health dynamics stimulus | D4-003 selects `preaged-tire-dynamics-v1`, with `HEALTHY` and `PRE_AGED` profiles and a symmetric four-wheel friction reduction; implementation and calibration remain open | Working direction `REVIEWED`; implementation `TARGET` |
+| Exact source-to-Unit binding | Run, ego and frame identifiers exist; sequential live VU attach/detach, reset/new generation and DU attach/detach are not implemented | `PARTIAL` |
 
 The current implementation baseline was checked on 2026-08-18 using the
 existing native build: all 18 registered `carla-ego-runtime` tests passed. This
@@ -89,9 +94,12 @@ existing test suite. Live CARLA physics, actor spawning, collision callbacks,
 visual motion and full cleanup are integration or end-to-end concerns and are
 not represented as unit tests.
 
-The Tire Health stimulus shall follow the same split: deterministic model and
-state transitions are unit-testable; CARLA application, resulting dynamics and
-hidden-truth isolation require live integration evidence.
+The Tire Health stimulus shall follow the same split: deterministic profile
+selection, physics-control application/restoration and state transitions are
+unit-testable; CARLA application, resulting dynamics and hidden-truth isolation
+require live integration evidence. Calibration and qualification runs occur
+before a demonstration; the live demo executes only the frozen qualified
+configuration.
 
 ## Interface Summary
 
@@ -146,7 +154,8 @@ hidden-truth isolation require live integration evidence.
 
 Acceptance requires incompatible source/map preflight failure, non-empty and
 monotonic frame identity for a successful run, and an unambiguous link from the
-retained frame range to exactly one selected Unit or replay target.
+retained frame range to exactly one selected Unit. Telemetry replay is deferred
+beyond the first implementation.
 
 ### Deterministic stationary-obstacle braking
 
@@ -182,8 +191,9 @@ calibration tolerance.
 - Architecture flow: [working vehicle baseline (`AF-G0-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-g0-rt)
 - Components: [Scenario Controller (`CMP-SCENE`)](../component-decomposition-and-interface-register.md#cmp-scene), jointly with [Vehicle Gateway (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw)
 - Interface: [Gateway commands (`IF-VEH-003`)](../component-decomposition-and-interface-register.md#if-veh-003)
+- Executable contract: [Simulator Control and Context 1.0.0](../../../contracts/simulator-control-context/simulator-control-context.v1.json)
 - Required evidence: stable actor/run identity, monotonic mode generation, aborted-attempt record and continuous frame range
-- Requirement state: D3 design-reviewed
+- Requirement state: D3 design-reviewed; D4-004 contract accepted
 - Implementation state: `CURRENT`
 
 Acceptance covers restart, manual takeover during an active attempt, completion
@@ -212,17 +222,27 @@ vehicle or tick owner.
 <a id="req-vehicle-sim-005"></a>
 
 - ID: `REQ-VEHICLE-SIM-005`
-- Statement: The Tire Health scenario shall apply a deterministic, versioned
-  accelerated-time or pre-aged tire-degradation model and shall keep its true
-  simulated condition available only to qualification, never as an ordinary
-  VISS/KUKSA production signal consumed by the Tire Health service.
+- Statement: The Tire Health scenario shall implement the versioned
+  `preaged-tire-dynamics-v1` stimulus with `HEALTHY` and `PRE_AGED` profiles.
+  `PRE_AGED` shall apply one calibrated symmetric relative reduction to the
+  `friction_force_multiplier` of all four wheels before motion, read back the
+  applied control, execute one deterministic low-speed
+  acceleration/stabilization/left-right-steering/moderate-braking exercise,
+  and restore and verify the complete original `VehiclePhysicsControl` on
+  completion, exit or failure. The exact profile and multiplier shall remain
+  qualification-only truth and shall never enter the Gateway, VISS, KUKSA,
+  service, backend or dashboard data path.
 - Parent system requirement: [Explicit simulation model (`SYS-TIRE-003`)](../system-requirements-and-traceability.md#sys-tire-003)
 - Architecture flow: [Tire Health runtime (`AF-TIRE-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-rt)
 - Components: [CARLA (`CMP-CARLA`)](../component-decomposition-and-interface-register.md#cmp-carla) and [Scenario Controller (`CMP-SCENE`)](../component-decomposition-and-interface-register.md#cmp-scene)
 - Interfaces: [CARLA state (`IF-VEH-001`)](../component-decomposition-and-interface-register.md#if-veh-001); the hidden truth is explicitly outside this interface
-- Required evidence: model/version, initial condition, applied stimulus, hidden expected condition and proof that the production signal tree excludes that truth
-- Requirement state: D3 design-reviewed
-- Implementation state: `TARGET`
+- Required evidence: stimulus version, original/applied/restored physics-control
+  digests, profile identity in qualification evidence only, native dynamics,
+  collision/cleanup result and proof that the production signal tree excludes
+  the profile and multiplier
+- Requirement state: D3 design-reviewed; D4-003 working direction reviewed
+- Implementation state: `TARGET`; schema, implementation, calibration,
+  frozen tolerances and passing repeat series remain open
 
 Acceptance must distinguish native dynamics inputs, derived values and
 simulation-only truth. An exact measured tread-depth claim is prohibited unless
@@ -263,9 +283,10 @@ under [preserve immutable factory artifact (`SYS-RET-005`)](../system-requiremen
 - Architecture flow: [one visible source (`AF-X-SOURCE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-source)
 - Components: [CARLA (`CMP-CARLA`)](../component-decomposition-and-interface-register.md#cmp-carla) and [Scenario Controller (`CMP-SCENE`)](../component-decomposition-and-interface-register.md#cmp-scene)
 - Interface: [CARLA state (`IF-VEH-001`)](../component-decomposition-and-interface-register.md#if-veh-001)
-- Required evidence: selected role, Unit or replay target, bounded frame/trace range and presentation label
-- Requirement state: D3 design-reviewed
-- Implementation state: `PARTIAL`; current runs identify CARLA but do not yet implement VU/DU selection or replay
+- Executable contract: [Exclusive Live-Source Assignment 1.0.0](../../../contracts/exclusive-live-source-assignment/exclusive-live-source-assignment.v1.json)
+- Required evidence: selected role, Unit, bounded live frame range and presentation label
+- Requirement state: D3 design-reviewed; D4-005 contract accepted
+- Implementation state: `PARTIAL`; current runs identify CARLA but do not yet implement VU/DU selection and sequential live handover
 
 ### Context-aware obstacle and reset lifecycle
 
@@ -286,8 +307,9 @@ under [preserve immutable factory artifact (`SYS-RET-005`)](../system-requiremen
 - Architecture flow: [drive-mode and world-context transitions (`AF-X-DRIVE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-drive)
 - Components: [CARLA (`CMP-CARLA`)](../component-decomposition-and-interface-register.md#cmp-carla) and [Scenario Controller (`CMP-SCENE`)](../component-decomposition-and-interface-register.md#cmp-scene), jointly with [Vehicle Gateway (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw)
 - Interface: [Gateway commands (`IF-VEH-003`)](../component-decomposition-and-interface-register.md#if-veh-003)
+- Executable contract: [Simulator Control and Context 1.0.0](../../../contracts/simulator-control-context/simulator-control-context.v1.json)
 - Required evidence: complete source-mode/context/target-mode matrix, obstacle inventory, actor identity, reset generation, zero-motion reset and injected cleanup/reset failures
-- Requirement state: D3 design-reviewed
+- Requirement state: D3 design-reviewed; D4-004 contract accepted
 - Implementation state: `PARTIAL`; scenario restart, same-actor continuity and manual abort exist, but the obstacle is currently session-lived and Scenario/brake-event Manual to Autopilot does not yet perform the accepted cleanup/reset
 
 Acceptance requires every matrix row to be deterministic and idempotent where
@@ -302,19 +324,25 @@ obstacle avoidance are explicitly outside this package's recovery claims.
 - ID: `REQ-VEHICLE-SIM-009`
 - Statement: The Vehicle Simulation shall produce one canonical,
   digest-addressed Vehicle Hardware Capability Manifest for the selected ego
-  profile. It shall identify the CARLA revision, vehicle blueprint and every
-  installed state source, sensor and actuator with type, unit, coordinate
-  frame, expected cadence or command range, availability behavior and one of
-  `NATIVE_STATE`, `INSTALLED_SENSOR`, `SIMULATED_COMPONENT_STATE` or
-  `QUALIFICATION_ONLY` provenance. A CARLA sensor blueprint or API that is not
-  instantiated in the selected profile shall be declared `NOT_INSTALLED`.
+  profile. It shall conform to the accepted
+  [schema](../../../contracts/vehicle-hardware-profile/vehicle-hardware-capability-profile.schema.json)
+  and exact [profile 1.0.0](../../../contracts/vehicle-hardware-profile/vehicle-hardware-capability-profile.v1.json).
+  The profile identifies the checked CARLA source and runtime-compatibility
+  revisions, Unreal Engine 5 Chaos, `vehicle.lincoln.mkz`, and every declared
+  state source, sensor and actuator with installation, provenance, type, unit,
+  frame, cadence or command range, availability and Gateway disposition.
+  Optional CARLA facilities that are not instantiated are `NOT_INSTALLED`;
+  qualification-only and demo-visualization facilities are explicitly outside
+  the production vehicle-data interface.
 - Parent system requirement: [Versioned vehicle hardware profile (`SYS-SRC-003`)](../system-requirements-and-traceability.md#sys-src-003)
 - Architecture flow: [working vehicle baseline (`AF-G0-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-g0-rt)
 - Components: [CARLA (`CMP-CARLA`)](../component-decomposition-and-interface-register.md#cmp-carla)
 - Interfaces: [CARLA state (`IF-VEH-001`)](../component-decomposition-and-interface-register.md#if-veh-001) and [Gateway commands (`IF-VEH-003`)](../component-decomposition-and-interface-register.md#if-veh-003)
-- Required evidence: canonical manifest, digest, source/API inventory comparison and live installed-actor/sensor reconciliation
-- Requirement state: D3 design-reviewed
-- Implementation state: `PARTIAL`; R10 provides the pinned source inventory, but no accepted selected-profile manifest or runtime reconciliation exists
+- Required evidence: exact accepted manifest digest, schema validation,
+  source/API inventory comparison and live installed-actor/sensor reconciliation
+- Requirement state: D3 design-reviewed; D4-002 contract accepted
+- Implementation state: `PARTIAL`; the manifest and source inventory are
+  accepted, while live runtime reconciliation is not implemented or qualified
 
 Acceptance distinguishes installed vehicle hardware from CARLA-wide optional
 capabilities and from scenario/world ground truth. It prohibits permanent
@@ -328,17 +356,19 @@ does not populate.
 - ID: `REQ-VEHICLE-SIM-010`
 - Statement: For every capability declared installed by the accepted manifest,
   the Simulator shall provide frame-coherent value and availability state to
-  the Gateway or an explicit unsupported reason; it shall execute or
-  explicitly reject each declared actuator command and return the actually
-  applied control state. Qualification-only oracle state, exact scenario truth
-  and uninstalled sensor output shall not appear on the production
-  Simulator–Gateway vehicle-data interface.
+  the Gateway or an explicit unavailable/reviewed-unsupported reason. It shall
+  execute or explicitly reject throttle, brake, steering, handbrake,
+  transmission/reverse/manual-shift and vehicle-light commands and return the
+  actually applied control state. Physical capability does not grant operator
+  or service authority. Qualification-only oracle state, scenario truth,
+  demo-only camera output and uninstalled sensor output shall not appear on the
+  production Simulator–Gateway vehicle-data interface.
 - Parent system requirement: [Complete Simulator–Gateway accounting (`SYS-SRC-004`)](../system-requirements-and-traceability.md#sys-src-004)
 - Architecture flows: [working vehicle baseline (`AF-G0-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-g0-rt) and [one visible source (`AF-X-SOURCE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-source)
 - Components: [CARLA (`CMP-CARLA`)](../component-decomposition-and-interface-register.md#cmp-carla), jointly with [Gateway (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw)
 - Interfaces: [CARLA state (`IF-VEH-001`)](../component-decomposition-and-interface-register.md#if-veh-001) and [Gateway commands (`IF-VEH-003`)](../component-decomposition-and-interface-register.md#if-veh-003)
 - Required evidence: manifest-to-runtime coverage report, positive and unavailable signal fixtures, actuator accepted/rejected/applied-state fixtures and negative proof for qualification-only truth
-- Requirement state: D3 design-reviewed
+- Requirement state: D3 design-reviewed; D4-002 contract accepted
 - Implementation state: `PARTIAL`; the current Gateway consumes a scalar and wheel subset and controls throttle/brake/steer, while complete installed-profile coverage and gear/reverse/handbrake accounting are not frozen
 
 Acceptance requires every manifest entry to resolve to delivered, explicitly
@@ -358,7 +388,7 @@ profile does not grant the current Control UI authority to use it.
 | <a id="ut-vehicle-sim-006"></a>`UT-VEHICLE-SIM-006` — tire stimulus model | [Tire stimulus (`REQ-VEHICLE-SIM-005`)](#req-vehicle-sim-005) | Initial condition, deterministic progression, threshold boundaries, reset and hidden-truth separation | No implementation | `TARGET` |
 | <a id="ut-vehicle-sim-007"></a>`UT-VEHICLE-SIM-007` — cleanup reconciliation | [Cleanup (`REQ-VEHICLE-SIM-006`)](#req-vehicle-sim-006) | Normal, interrupted, partially failed and repeated cleanup with owned versus foreign actors | Launcher cleanup checks exist; actor/sensor reconciliation test is missing | `PARTIAL` |
 | <a id="ut-vehicle-sim-008"></a>`UT-VEHICLE-SIM-008` — mode/context transition matrix | [Context lifecycle (`REQ-VEHICLE-SIM-008`)](#req-vehicle-sim-008) | Every source mode/context/target mode, repeated requests, obstacle create/remove, same-actor reset, abort, collision and injected cleanup/reset failures | Existing scenario-generation and manual-abort tests cover only part of the matrix | `PARTIAL` |
-| <a id="ut-vehicle-sim-009"></a>`UT-VEHICLE-SIM-009` — capability-manifest validation | [Hardware profile (`REQ-VEHICLE-SIM-009`)](#req-vehicle-sim-009) | Required identity/schema fields, unique capabilities, units/frames/ranges, provenance classes, digest stability and installed/not-installed distinction | No canonical manifest implementation | `TARGET` |
+| <a id="ut-vehicle-sim-009"></a>`UT-VEHICLE-SIM-009` — capability-manifest validation | [Hardware profile (`REQ-VEHICLE-SIM-009`)](#req-vehicle-sim-009) | Required identity/schema fields, unique capabilities, units/frames/ranges, provenance classes, digest stability and installed/not-installed distinction | Canonical profile/schema accepted; repository validator and live reconciliation remain missing | `PARTIAL` |
 | <a id="ut-vehicle-sim-010"></a>`UT-VEHICLE-SIM-010` — signal/actuator coverage and truth isolation | [Complete boundary (`REQ-VEHICLE-SIM-010`)](#req-vehicle-sim-010) | Every manifest entry accounted, signal unavailable behavior, command accept/reject/applied state and qualification-only negative cases | Existing scalar/control tests cover only the current subset | `PARTIAL` |
 
 All obligations use deterministic fakes and require no live CARLA process.
@@ -374,7 +404,7 @@ Physical dynamics and actual actor cleanup remain integration obligations.
 | [Bounded result (`REQ-VEHICLE-SIM-004`)](#req-vehicle-sim-004) | [`UT-VEHICLE-SIM-004`](#ut-vehicle-sim-004) | Structured result schema | D4 evidence schema | Accepted repeated-run calibration | Not separately required |
 | [Tire stimulus (`REQ-VEHICLE-SIM-005`)](#req-vehicle-sim-005) | [`UT-VEHICLE-SIM-006`](#ut-vehicle-sim-006) | Versioned stimulus component | Hidden-truth/production-data separation | Live dynamics response | T1 condition-estimation proof |
 | [Cleanup (`REQ-VEHICLE-SIM-006`)](#req-vehicle-sim-006) | [`UT-VEHICLE-SIM-007`](#ut-vehicle-sim-007) | Cleanup manifest | Owned-actor inventory schema | Interrupted and repeated cleanup | R0 retirement evidence |
-| [Honest source (`REQ-VEHICLE-SIM-007`)](#req-vehicle-sim-007) | Reasoned N/A: presentation/source selection is cross-component | Role-labelled result | Source-selection contract | Sequential VU/DU or replay qualification | `AF-X-SOURCE` audience evidence |
+| [Honest source (`REQ-VEHICLE-SIM-007`)](#req-vehicle-sim-007) | Reasoned N/A: presentation/source selection is cross-component | Role-labelled result | Live handover contract | Sequential VU attach/detach, reset and DU attach/detach qualification | `AF-X-SOURCE` audience evidence |
 | [Context lifecycle (`REQ-VEHICLE-SIM-008`)](#req-vehicle-sim-008) | [`UT-VEHICLE-SIM-008`](#ut-vehicle-sim-008) | Context/obstacle/reset state machine | `AF-X-DRIVE` transition fixture | Live all-transition matrix | G0 mode/context/dashboard evidence |
 | [Hardware profile (`REQ-VEHICLE-SIM-009`)](#req-vehicle-sim-009) | [`UT-VEHICLE-SIM-009`](#ut-vehicle-sim-009) | Canonical manifest and digest | Manifest/schema/coverage contract | Live actor/sensor reconciliation | G0 hardware-profile evidence |
 | [Complete boundary (`REQ-VEHICLE-SIM-010`)](#req-vehicle-sim-010) | [`UT-VEHICLE-SIM-010`](#ut-vehicle-sim-010) | Runtime coverage report | `IF-VEH-001`/`IF-VEH-003` complete fixtures | Live signal/control comparison | G0 no-silent-loss evidence |
@@ -409,12 +439,12 @@ repository and documentation gates pass.
 
 | Issue | Impact | Owner | Decision gate |
 | --- | --- | --- | --- |
-| Choose live source switching or deterministic replay for VU/DU | Blocks complete `REQ-VEHICLE-SIM-001` and `REQ-VEHICLE-SIM-007` | Demo Orchestration + Vehicle Simulation | D4 source contract |
-| Define the accelerated/pre-aged Tire Health stimulus and hidden truth | Blocks `REQ-VEHICLE-SIM-005` and `UT-VEHICLE-SIM-006` | Vehicle Simulation + Function Team 2 | Tire Health component design before implementation |
-| Freeze repeated-run count and calibration tolerances | Blocks final acceptance of the existing braking implementation | Vehicle Simulation | D4 qualification plan |
+| Implement and qualify the accepted sequential VU/DU live-source assignment and bounded frame evidence | Blocks complete `REQ-VEHICLE-SIM-001` and `REQ-VEHICLE-SIM-007`; contract choice is closed | Demo Orchestration + Vehicle Simulation | Accepted [`D4-005`](../d4-decision-register.md#d4-005), followed by implementation and qualification |
+| Implement the reviewed `preaged-tire-dynamics-v1` stimulus, schema, physics restoration and oracle-negative proof | Blocks `REQ-VEHICLE-SIM-005` and `UT-VEHICLE-SIM-006` | Vehicle Simulation + Function Team 2 | [`D4-003`](../d4-decision-register.md#d4-003) closure |
+| Calibrate exact Tire values and absolute tolerances, then pass the frozen Brake 20/20 and Tire 10+10 strict-reset qualification series | Blocks final stimulus acceptance; calibration runs are not acceptance runs | Vehicle Simulation + both Function Teams | [`D4-003`](../d4-decision-register.md#d4-003) closure and D4-026 overall qualification |
 | Define reconciliation after partial actor/sensor cleanup | Blocks complete R0 reset proof | Vehicle Simulation + Demo Orchestration | D4 failure/recovery cases |
-| Implement the accepted dynamic obstacle and context-aware reset matrix | Blocks complete `REQ-VEHICLE-SIM-008` and honest transition evidence | Vehicle Simulation + Vehicle Gateway | D4 `AF-X-DRIVE` contract and implementation |
-| Freeze the selected Vehicle Hardware Capability Manifest and runtime reconciliation | Blocks `REQ-VEHICLE-SIM-009`, `REQ-VEHICLE-SIM-010` and complete `IF-VEH-001`/`IF-VEH-003` qualification | Vehicle Simulation + Vehicle Gateway | D4 hardware-profile and boundary contract |
+| Implement the accepted dynamic obstacle, transactional activation and context-aware reset matrix | Blocks complete `REQ-VEHICLE-SIM-008` and honest transition evidence; contract choice is closed | Vehicle Simulation + Vehicle Gateway | Accepted [`D4-004`](../d4-decision-register.md#d4-004), followed by implementation and qualification |
+| Implement schema enforcement, live installed-actor/sensor reconciliation and remaining target signal/actuator coverage against the accepted profile | Blocks complete `REQ-VEHICLE-SIM-009`, `REQ-VEHICLE-SIM-010` and `IF-VEH-001`/`IF-VEH-003` qualification; the contract itself is no longer open | Vehicle Simulation + Vehicle Gateway | Accepted [`D4-002`](../d4-decision-register.md#d4-002), followed by implementation and live qualification |
 
 ## Change Rules
 

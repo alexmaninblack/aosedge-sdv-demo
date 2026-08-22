@@ -5,15 +5,19 @@
 
 - Status: D3 design-reviewed
 - Package: [`CR-VDP`](../component-decomposition-and-interface-register.md#cr-vdp)
-- Version: 0.3
-- Prepared: 2026-08-19
+- Version: 0.7
+- Prepared: 2026-08-21
 - Owner: Platform Team / independent component FOTA
 - Architecture input: [High-Level Architecture 1.4](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 1.7](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 1.6](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 0.9](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 1.0](../component-decomposition-and-interface-register.md)
+- Scenario input: [Demo Scenarios 1.9](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 1.8](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 1.0](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 1.1](../component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0010](../../architecture/decisions/0010-aos-kuksa-credential-broker.md) and [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
+- Accepted D4 input: [D4-002 Vehicle Hardware Capability Profile](../d4-decision-register.md#d4-002)
+- Accepted D4 VISS input: [D4-006 VISS Trust and Telemetry Profile](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
+- Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
+- Accepted D4 advisory input: [D4-008 Typed QM Advisory Profile](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - Implementation evidence: `aos-vehicle-platform@15b6abb`; provider `0.2.0`
   source pinned to `e972d2bd7f14e27646bb5d7c10c7186ecdecfa9f`
 
@@ -42,7 +46,7 @@ vehicle-motion authority.
 | --- | --- |
 | What this package owns | VDP v1-v3 artifacts, VISS client, signal validation/normalization, KUKSA contract/configuration, outbound advisory validation, thin Credential Broker, KUKSA public verifier, and provider platform-credential integration |
 | What this package does not own | Factory Image, Aos SOTA identity/secret registration, a duplicate service-policy database, functional-service metadata, Cloud deployment approval, KUKSA executable fork, Gateway implementation or functional backends |
-| Factory dependency | Healthy provider-specific empty slot, enabled stock IAM permission handler, KUKSA executable, and non-secret IAM/PKCS#11 signing-key seam |
+| Factory dependency | Healthy provider-specific empty slot, shared stock IAM configuration with `enablePermissionsHandler: true` independent of provisioning state and no pre-populated service permission/secret state, KUKSA executable, and dedicated non-secret `kuksa-jwt` certificate-module/PKCS#11 plus verifier-preparation wiring without a signing key or shared verifier |
 | Intended lifecycle | Immutable component FOTA: Validation Unit first, then identical accepted bytes promoted to Demonstration Unit |
 | Current state | Inbound provider and FOTA/runtime qualification evidence exist; accepted v1-v3 graph, thin broker, outbound path and provider identity binding remain work |
 
@@ -78,7 +82,7 @@ supporting AosEdge release is available and qualified.
 | KUKSA executable | External Eclipse KUKSA 0.5.0 using `kuksa.val.v1` | Keep unchanged; change only contract and verifier configuration |
 | Provider credential | Host-generated static qualification JWT delivered through systemd credentials | Historical qualification only; replace with the accepted short-lived platform identity flow |
 | SOTA credential broker | Not implemented | Implement thin IAM translation only |
-| Signing key integration | Generic Aos IAM/certificate-module and PKCS#11 capability exists; no accepted broker binding | Qualify per-Unit protected-key operation; never use a baked or repository file key |
+| Signing key integration | Generic Aos IAM/certificate-module and PKCS#11 capability exists; no accepted `kuksa-jwt` binding is configured | Implement D4-010.1: unique RSA key after provisioning, atomic public-verifier preparation, direct PKCS#11 `RS256` signing and no baked/file key |
 | Outbound advisory | Not implemented | Add typed, allowlisted v3 KUKSA-to-VISS-to-Gateway path |
 
 ## Testability Boundary
@@ -100,7 +104,7 @@ evidence.
 
 | Interface | Direction at VDP | Data or command | Failure behavior | Authority |
 | --- | --- | --- | --- | --- |
-| [`IF-VEH-005`](../component-decomposition-and-interface-register.md#if-veh-005) | In | TLS VISS Get/Subscribe values, metadata and source state | Mark affected data unavailable; bounded reconnect; never fabricate zero | Vehicle Gateway VISS |
+| [`IF-VEH-005`](../component-decomposition-and-interface-register.md#if-veh-005) | In | mTLS VISS Get/Subscribe values, metadata and source state as the exact selected Unit peer | Mark affected data unavailable; bounded reconnect; never fabricate zero | Vehicle Gateway VISS plus D4-005/D4-006 selected-Unit assignment |
 | [`IF-DATA-001`](../component-decomposition-and-interface-register.md#if-data-001) | Out | Validated actual values, freshness and provenance into KUKSA | Reject invalid values and expose explicit availability | Installed VDP contract plus source state |
 | [`IF-ADV-002`](../component-decomposition-and-interface-register.md#if-adv-002) | In | Typed Brake/Tire KUKSA advisory targets | Reject unknown caller/path/type/value, stale or replayed request | Aos IAM permission plus installed VDP contract |
 | [`IF-ADV-003`](../component-decomposition-and-interface-register.md#if-adv-003) | Out | Narrow typed VISS Set request and correlated status | Reject contract excess; no arbitrary VSS tunnel | Vehicle Gateway is final enforcement authority |
@@ -145,7 +149,7 @@ digest-addressed component FOTA artifact targeting only the accepted
 provider-specific runtime. The exact accepted bytes shall move from Validation
 to Demonstration without rebuild.
 
-- Parents: [`SYS-REL-001`](../system-requirements-and-traceability.md#sys-rel-001), [`SYS-REL-004`](../system-requirements-and-traceability.md#sys-rel-004), [`SYS-REL-007`](../system-requirements-and-traceability.md#sys-rel-007), [`SYS-REL-008`](../system-requirements-and-traceability.md#sys-rel-008)
+- Parents: [`SYS-REL-001`](../system-requirements-and-traceability.md#sys-rel-001), [`SYS-REL-004`](../system-requirements-and-traceability.md#sys-rel-004), [`SYS-REL-007`](../system-requirements-and-traceability.md#sys-rel-007), [`SYS-REL-010`](../system-requirements-and-traceability.md#sys-rel-010)
 - Flows: [`AF-G1-LC`](../../architecture/demo-scenario-architecture-flows.md#af-g1-lc), [`AF-X-RELEASE`](../../architecture/demo-scenario-architecture-flows.md#af-x-release)
 - Components: [Vehicle Data Platform (`CMP-VDP`)](../component-decomposition-and-interface-register.md#cmp-vdp), [AosCloud (`CMP-AOS-CLOUD`)](../component-decomposition-and-interface-register.md#cmp-aos-cloud), [AosCore (`CMP-AOS-CORE`)](../component-decomposition-and-interface-register.md#cmp-aos-core) and [Empty-Slot Runtime (`CMP-RUNTIME`)](../component-decomposition-and-interface-register.md#cmp-runtime)
 - Interfaces: [platform FOTA (`IF-LC-001`)](../component-decomposition-and-interface-register.md#if-lc-001), [Platform Team approval (`IF-LC-008`)](../component-decomposition-and-interface-register.md#if-lc-008) and [runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006)
@@ -158,7 +162,12 @@ to Demonstration without rebuild.
 
 VDP v1 shall expose exactly the accepted first read-only subset with defined
 VSS/KUKSA path, type, unit, range, cadence, timestamp, freshness, availability
-and provenance semantics. No service shall see CARLA-only qualification truth.
+and provenance semantics. Every selected input shall resolve to an installed
+and Gateway-accounted entry in the accepted
+[Vehicle Hardware Capability Profile](../../../contracts/vehicle-hardware-profile/vehicle-hardware-capability-profile.v1.json).
+The service-facing subset may be narrower than the physical profile, but it
+shall not imply that an unselected or `NOT_INSTALLED` capability is available.
+No service shall see CARLA-only qualification or demo-visualization truth.
 
 - Parents: [`SYS-VDP-002`](../system-requirements-and-traceability.md#sys-vdp-002), [`SYS-SRC-004`](../system-requirements-and-traceability.md#sys-src-004)
 - Flow: [`AF-G1-RT`](../../architecture/demo-scenario-architecture-flows.md#af-g1-rt)
@@ -166,13 +175,16 @@ and provenance semantics. No service shall see CARLA-only qualification truth.
 - Interfaces: [VISS input (`IF-VEH-005`)](../component-decomposition-and-interface-register.md#if-veh-005) and [KUKSA publication (`IF-DATA-001`)](../component-decomposition-and-interface-register.md#if-data-001)
 - Verification: unit, contract, integration and end-to-end
 - Required evidence: v1 manifest and fixture digest, positive/negative publication results and explicit quality/unavailable-state evidence
-- Requirement state: D3 design-reviewed
+- Executable input contract: [VISS Trust and Telemetry Profile 1.0.0](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
+- Executable output contract: [VDP Compatibility Profile 1.0.0](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
+- Requirement state: D3 design-reviewed; D4-002, D4-006 and the exact D4-007 v1 subset accepted
 
 <a id="req-vdp-003"></a>
 ### Backward-compatible v2
 
-VDP v2 shall be a backward-compatible superset of v1, add only the accepted
-Brake Health inputs and preserve the behavior of every supported v1 consumer.
+VDP v2 shall be the strict backward-compatible D4-007 superset of v1. It adds
+exactly four standard wheel-speed and four standard wheel-angular-speed paths
+and preserves the behavior of every supported v1 consumer.
 
 - Parent: [`SYS-VDP-003`](../system-requirements-and-traceability.md#sys-vdp-003)
 - Flow: [`AF-G3-RT`](../../architecture/demo-scenario-architecture-flows.md#af-g3-rt)
@@ -180,7 +192,8 @@ Brake Health inputs and preserve the behavior of every supported v1 consumer.
 - Interfaces: [VISS input (`IF-VEH-005`)](../component-decomposition-and-interface-register.md#if-veh-005), [KUKSA publication (`IF-DATA-001`)](../component-decomposition-and-interface-register.md#if-data-001) and [Brake subscription (`IF-DATA-002`)](../component-decomposition-and-interface-register.md#if-data-002)
 - Verification: unit, contract, integration and end-to-end
 - Required evidence: v1/v2 compatibility report, unchanged v1 fixtures and live v1 consumer operation on v2
-- Requirement state: D3 design-reviewed
+- Executable output contract: [VDP Compatibility Profile 1.0.0](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
+- Requirement state: D3 design-reviewed; D4-007 staged subset accepted
 
 <a id="req-vdp-004"></a>
 ### Explicit degraded state
@@ -202,9 +215,13 @@ value.
 <a id="req-vdp-005"></a>
 ### Defense-in-depth outbound v3 advisory
 
-VDP v3 shall accept only the versioned Brake Health and Tire Health advisory
-targets, authorized callers, types and enum/range values; map them to the
-narrow VISS Set contract; and expose factual accepted/rejected/Gateway status.
+VDP v3 shall preserve the complete v1/v2 path set, add the accepted four
+longitudinal-slip and four lateral-slip-angle paths, and accept only the
+two D4-008 Brake Health and Tire Health schema-bound advisory targets,
+authorized callers, size, canonical encoding, endpoint-specific enums,
+freshness/lease, request identity, rate and replay rules; map them to the
+narrow VISS Set contract; and publish the read-only factual Gateway Status back
+into KUKSA without treating KUKSA/VISS Set success as application success.
 It shall not provide arbitrary display text, arbitrary VSS writes or
 vehicle-motion authority. These services are QM-domain applications. This VDP
 check is defense in depth and shall not be presented as the authoritative
@@ -217,7 +234,9 @@ enforces the final deny-by-default QM-channel policy.
 - Interfaces: [KUKSA advisory target (`IF-ADV-002`)](../component-decomposition-and-interface-register.md#if-adv-002), [outbound VISS Set (`IF-ADV-003`)](../component-decomposition-and-interface-register.md#if-adv-003) and [Gateway status (`IF-ADV-005`)](../component-decomposition-and-interface-register.md#if-adv-005)
 - Verification: unit, contract, integration and end-to-end
 - Required evidence: complete allow/deny matrix, correlated VISS/Gateway status and proof of independent authoritative Gateway rejection
-- Requirement state: D3 design-reviewed
+- Executable compatibility contract: [VDP Compatibility Profile 1.0.0](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
+- Executable advisory contract: [Typed QM Advisory Profile 1.0.0](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
+- Requirement state: D3 design-reviewed; D4-007 graph and D4-008 advisory contract accepted
 
 <a id="req-vdp-006"></a>
 ### Native-IAM credential translation
@@ -241,20 +260,27 @@ identity or per-service policy database.
 <a id="req-vdp-007"></a>
 ### Protected signing and KUKSA trust
 
-The broker shall sign through the accepted per-Unit Aos
-IAM/certificate-module and PKCS#11 facility without reading or exporting key
-bytes. KUKSA shall trust only the configured public verifier and shall validate
-issuer, audience, expiry and path permissions. Missing key/trust state shall
-keep the broker unready. Signing keys, `AOS_SECRET` and JWTs shall not enter
-Git, image/update artifacts, command lines or logs.
+Successful provisioning shall create one unique RSA key pair for the Unit in
+the dedicated `kuksa-jwt` PKCS#11 token. A Platform preparation service shall
+atomically install only its public verifier before the Broker and KUKSA start.
+The broker shall sign bounded short-lived `RS256` JWTs through the protected
+PKCS#11 operation without reading or exporting key bytes. The pinned
+unmodified KUKSA shall trust that single verifier and validate signature,
+fixed audience `kuksa.val`, expiry and path permissions; it does not enforce
+`iss`, so that claim is informational only. Missing or malformed key/trust
+state shall keep both dependents unready. Signing keys, shared static
+verifiers, `AOS_SECRET` and JWTs shall not enter Git, image/update artifacts,
+command lines or logs. The first demo has no live rotation: permission removal
+prevents renewal, the next provisioning lifecycle creates a new key, and R0
+destroys the retired key with its VM overlay.
 
 - Parent: [`SYS-SEC-004`](../system-requirements-and-traceability.md#sys-sec-004)
 - Flow: [`AF-X-AUTH`](../../architecture/demo-scenario-architecture-flows.md#af-x-auth)
 - Components: [Vehicle Data Platform Credential Broker (`CMP-VDP`)](../component-decomposition-and-interface-register.md#cmp-vdp), [AosCore (`CMP-AOS-CORE`)](../component-decomposition-and-interface-register.md#cmp-aos-core) and [KUKSA (`CMP-KUKSA`)](../component-decomposition-and-interface-register.md#cmp-kuksa)
 - Interfaces: [KUKSA verifier (`IF-AUTH-004`)](../component-decomposition-and-interface-register.md#if-auth-004) and [protected signing substrate (`IF-AUTH-005`)](../component-decomposition-and-interface-register.md#if-auth-005)
 - Verification: unit, contract, integration and inspection
-- Required evidence: disposable per-Unit protected-sign result, public-verifier conformance and secret/key/token-negative artifact and log scans
-- Requirement state: D3 design-reviewed
+- Required evidence: distinct Validation/Demonstration verifier fingerprints, protected-sign result, same-Unit accept and cross-Unit reject, audience/expiry/scope negatives, fail-closed start ordering, permission-removal renewal denial, next-provisioning key replacement, and secret/key/token/shared-verifier-negative artifact and log scans
+- Requirement state: D4-010.1 decided; implementation and live qualification open
 
 <a id="req-vdp-008"></a>
 ### Separate provider authority
@@ -276,24 +302,27 @@ renewal, revocation and failure behavior are accepted and qualified.
 <a id="req-vdp-009"></a>
 ### Readiness and resource bounds
 
-The component shall remain unready and fail closed when VISS, KUKSA, IAM,
-protected signing, provider identity, contract or storage dependencies are
-missing or inconsistent. CPU, memory, file/process count, storage, reconnect,
-queue, token and log volume shall be bounded, and logs shall contain only
-factual redacted state.
+The component shall keep process health separate from vehicle-data readiness
+and remain unready or fail closed when its selected-Unit VISS identity, source,
+assignment generation, KUKSA, IAM, protected signing, provider identity,
+contract or storage dependencies are missing, stale or inconsistent. Source
+disconnect/staleness shall make the selected published subset atomically
+`NotAvailable`, and recovery shall require the complete valid D4-006 snapshot.
+CPU, memory, file/process count, storage, reconnect, queue, token and log volume
+shall be bounded, and logs shall contain only factual redacted state.
 
-- Parents: [`SYS-SEC-003`](../system-requirements-and-traceability.md#sys-sec-003), [`SYS-OBS-003`](../system-requirements-and-traceability.md#sys-obs-003), [`SYS-TIM-001`](../system-requirements-and-traceability.md#sys-tim-001)
+- Parents: [`SYS-SEC-003`](../system-requirements-and-traceability.md#sys-sec-003), [`SYS-OBS-003`](../system-requirements-and-traceability.md#sys-obs-003)
 - Flows: [`AF-G0-FR`](../../architecture/demo-scenario-architecture-flows.md#af-g0-fr), [`AF-X-OBS`](../../architecture/demo-scenario-architecture-flows.md#af-x-obs)
 - Components: [Vehicle Data Platform (`CMP-VDP`)](../component-decomposition-and-interface-register.md#cmp-vdp), [KUKSA (`CMP-KUKSA`)](../component-decomposition-and-interface-register.md#cmp-kuksa) and [AosCore (`CMP-AOS-CORE`)](../component-decomposition-and-interface-register.md#cmp-aos-core)
 - Interfaces: [VISS input (`IF-VEH-005`)](../component-decomposition-and-interface-register.md#if-veh-005), [KUKSA publication (`IF-DATA-001`)](../component-decomposition-and-interface-register.md#if-data-001), [IAM permission lookup (`IF-AUTH-002`)](../component-decomposition-and-interface-register.md#if-auth-002) and [runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006)
 - Verification: unit, component, integration and end-to-end
 - Required evidence: bounded resource and retry metrics, readiness transitions, redacted native logs and dependency fault/recovery results
-- Requirement state: D3 design-reviewed
+- Requirement state: D3 design-reviewed; D4-006 source-readiness contract accepted
 
 <a id="req-vdp-010"></a>
 ### Compatibility and rollback
 
-Each release shall publish a machine-readable contract version and compatible
+Each release shall publish the D4-007 installed-identity fields and compatible
 service range. Update, restart, interruption and rollback shall preserve the
 previous accepted component until commit; any incompatible dependent service
 shall be stopped or rolled back before the platform component, while unrelated
@@ -305,7 +334,8 @@ service lifecycles remain unchanged.
 - Interfaces: [platform FOTA (`IF-LC-001`)](../component-decomposition-and-interface-register.md#if-lc-001) and [runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006)
 - Verification: unit, contract, integration and end-to-end
 - Required evidence: machine-readable compatibility range, dependent-first stop/rollback ordering, previous-slot recovery and unrelated-service continuity
-- Requirement state: D3 design-reviewed
+- Executable compatibility contract: [VDP Compatibility Profile 1.0.0](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
+- Requirement state: D3 design-reviewed; compatibility identity and ranges accepted by D4-007
 
 ## Requirement Acceptance Criteria
 
@@ -321,7 +351,7 @@ requirement semantics.
 | [`REQ-VDP-004`](#req-vdp-004) | Valid source data preserves source time and produces the corresponding quality state | Future, stale, malformed, out-of-range or out-of-order input cannot appear as a normal value | Disconnect clears or marks affected state by contract; reconnect resumes only after valid fresh input |
 | [`REQ-VDP-005`](#req-vdp-005) | An authorized, fresh, typed Brake or Tire advisory maps to exactly one narrow VISS Set request with correlation | Wrong caller/path/type/value, arbitrary text/VSS, replay, rate excess and all motion/safety commands are rejected with no Set side effect | VISS/Gateway rejection is reported factually; Gateway independently denies requests outside its own QM-channel policy |
 | [`REQ-VDP-006`](#req-vdp-006) | A current registered `AOS_SECRET` maps its exact valid `r`, `w` or `rw` paths into one short-lived JWT | Invalid/stale secret, malformed mode/path or any permission outside the installed contract rejects the complete exchange without silent trimming | IAM unavailability issues no token; recovery requires a fresh IAM result and no retained service secret |
-| [`REQ-VDP-007`](#req-vdp-007) | The broker signs through the accepted per-Unit protected operation and KUKSA validates issuer, audience, expiry and path permissions | Wrong verifier, audience, claims, expiry or file-key configuration is rejected | Missing key/module/verifier keeps the broker unready; key bytes, secrets and JWTs never enter artifacts, commands or logs |
+| [`REQ-VDP-007`](#req-vdp-007) | Each provisioned Unit has a distinct protected RSA signer; its KUKSA validates `RS256` signature, audience `kuksa.val`, expiry and path permissions with the matching public verifier | Wrong/cross-Unit verifier, audience, expiry, scope or file-key configuration is rejected; no `iss` enforcement is claimed | Missing key/module/verifier keeps Broker and KUKSA unready; permission removal prevents renewal; next provisioning replaces the key; R0 overlay discard destroys it; key bytes, secrets, shared verifiers and JWTs never enter artifacts, commands or logs |
 | [`REQ-VDP-008`](#req-vdp-008) | The provider obtains and renews only the accepted short-lived provide/create scope | Excessive, stale, revoked or service-derived credentials cannot publish | Identity service loss disables publication and recovery requires a newly valid credential; static-token fallback is prohibited |
 | [`REQ-VDP-009`](#req-vdp-009) | All mandatory dependencies and resource limits produce ready state and bounded normal operation | Queue, reconnect, file/process, storage, token or log limits reject or degrade work without unbounded growth | Any inconsistent mandatory dependency produces fail-closed unready state; bounded recovery is factual and secret-free |
 | [`REQ-VDP-010`](#req-vdp-010) | Supported services remain compatible across the declared contract range and identical accepted bytes promote | Unsupported service/component combinations are detected before a destructive transition | Interruption preserves the prior slot; incompatible dependents stop or roll back before VDP while unrelated services remain unchanged |
@@ -391,7 +421,7 @@ signing, Cloud upload, VM restart, provisioning or Unit mutation.
 | --- | --- | --- |
 | Exact provider platform identity binding | A FOTA provider does not automatically receive the SOTA `AOS_SECRET`; static token reuse is prohibited | Platform Team plus Aos platform architecture |
 | Exact broker signing module/key lifecycle | Generic Aos IAM/certificate-module and PKCS#11 facilities exist, but the accepted per-Unit broker binding is not configured or qualified | Platform Team plus Aos security architecture |
-| Final v1-v3 signal/advisory contract | Current profile is engineering evidence, not the accepted staged demo contract | Platform Team plus Gateway and Function Teams |
+| Implement and qualify selected-Unit mTLS, readiness and atomic unavailable/recovery semantics | D4-006 contract is accepted but the current provider uses the historical server-authenticated profile | Platform Team plus Gateway and Demo Orchestration |
 | Native Cloud permission admission | Platform roadmap capability is not released; no project-side substitute is allowed | AosEdge Platform Team |
 
 ## Change Rules

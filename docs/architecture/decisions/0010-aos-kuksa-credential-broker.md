@@ -63,15 +63,20 @@ and issue a short-lived credential.
    identity binding is a design and qualification gate because the provider is
    not a SOTA instance and does not automatically receive `AOS_SECRET`. A
    functional SOTA credential must never grant provider authority.
-10. Configure KUKSA to trust only the broker's public verifier. Protect the
-    signing key through the Aos platform's IAM/certificate-module and PKCS#11
-    integration rather than a project-owned key file. The Factory Image
-    contains only the non-secret integration seam; per-Unit key material is
-    established after manufacturing and is never baked into the image or a
-    FOTA/SOTA payload.
+10. Configure KUKSA to trust only the Unit's public verifier. As frozen by
+    D4-010.1, the Factory Image contains the dedicated non-secret `kuksa-jwt`
+    certificate-module/PKCS#11 and verifier-preparation wiring, but no signing
+    key or shared verifier. Provisioning creates one non-exported RSA signer;
+    only its verifier is installed before Broker/KUKSA startup. The broker
+    signs `RS256` directly through PKCS#11. The pinned KUKSA enforces
+    signature, audience `kuksa.val`, expiry and path permissions, but is not
+    claimed to enforce `iss`.
 11. Keep token lifetime short and refresh while the Aos service identity
     remains valid. Service removal or permission unregistration prevents
     renewal; the residual authorization window is bounded by token expiry.
+    The first demo performs no live key rotation: the next provisioning
+    lifecycle creates a new signer, and R0 overlay destruction retires the old
+    key after Cloud reconciliation.
 12. Treat Cloud-side rejection of incompatible service permissions before
     Unit transfer as a future native AosCloud admission feature. In the
     current platform, the authoritative runtime permissions are those

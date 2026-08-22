@@ -1,0 +1,217 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:vdp-compatibility-profile:schema:v1",
+  "title": "Vehicle Data Platform Component Compatibility Profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "$comment",
+    "schemaVersion",
+    "contractId",
+    "contractVersion",
+    "decision",
+    "sourceProfile",
+    "componentVersions",
+    "serviceCompatibility",
+    "installedIdentity",
+    "readinessContract",
+    "admissionBoundary"
+  ],
+  "properties": {
+    "$schema": { "const": "./vdp-compatibility-profile.schema.json" },
+    "$comment": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "contractId": { "const": "aosedge-demo-vdp-compatibility" },
+    "contractVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "decision": { "const": "D4-007" },
+    "sourceProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contractId", "contractVersion", "sha256"],
+      "properties": {
+        "contractId": { "const": "aosedge-demo-viss-trust-telemetry" },
+        "contractVersion": { "const": "1.0.0" },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "componentVersions": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "contractVersion", "inherits", "readPaths", "addedReadPaths", "capabilities"],
+        "properties": {
+          "id": { "enum": ["VDP_V1", "VDP_V2", "VDP_V3"] },
+          "contractVersion": { "enum": ["1.0.0", "2.0.0", "3.0.0"] },
+          "inherits": { "enum": ["NONE", "VDP_V1", "VDP_V2"] },
+          "readPaths": { "$ref": "#/$defs/pathList" },
+          "addedReadPaths": { "$ref": "#/$defs/pathList" },
+          "capabilities": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "INBOUND_BASE_DYNAMICS",
+                "INBOUND_WHEEL_SPEEDS",
+                "INBOUND_WHEEL_SLIP",
+                "OUTBOUND_BRAKE_HEALTH_ADVISORY",
+                "OUTBOUND_TIRE_HEALTH_ADVISORY"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "serviceCompatibility": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["serviceId", "serviceVersion", "compatibleVdpVersions", "requiredCapabilities", "modelInputDecision"],
+        "properties": {
+          "serviceId": { "enum": ["BRAKE_HEALTH", "TIRE_HEALTH"] },
+          "serviceVersion": { "enum": ["1.0.0", "2.0.0", "3.0.0"] },
+          "compatibleVdpVersions": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "enum": ["VDP_V1", "VDP_V2", "VDP_V3"] }
+          },
+          "requiredCapabilities": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "INBOUND_BASE_DYNAMICS",
+                "INBOUND_WHEEL_SPEEDS",
+                "INBOUND_WHEEL_SLIP",
+                "OUTBOUND_BRAKE_HEALTH_ADVISORY",
+                "OUTBOUND_TIRE_HEALTH_ADVISORY"
+              ]
+            }
+          },
+          "modelInputDecision": { "enum": ["D4-016", "D4-018"] }
+        }
+      }
+    },
+    "installedIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requiredFields", "comparisonRule"],
+      "properties": {
+        "requiredFields": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "componentId",
+              "semanticVersion",
+              "artifactSha256",
+              "metadataSha256",
+              "vdpContractVersion",
+              "vdpContractSha256",
+              "vehicleHardwareProfileSha256",
+              "vissProfileSha256",
+              "capabilityManifestSha256"
+            ]
+          }
+        },
+        "comparisonRule": { "type": "string", "minLength": 1 }
+      }
+    },
+    "readinessContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["processHealthSeparated", "overallStates", "facets", "reasonCodes", "notReadyEffects", "reevaluationTriggers", "dashboardGuidance"],
+      "properties": {
+        "processHealthSeparated": { "const": true },
+        "overallStates": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "enum": ["STARTING", "READY", "NOT_READY"] }
+        },
+        "facets": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "enum": ["INBOUND_DATA", "SERVICE_ACCESS", "OUTBOUND_ADVISORY"] }
+        },
+        "reasonCodes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "NONE",
+              "COMPONENT_ABSENT",
+              "COMPONENT_VERSION_UNSUPPORTED",
+              "CONTRACT_ID_MISMATCH",
+              "CONTRACT_DIGEST_MISMATCH",
+              "CAPABILITY_MANIFEST_MALFORMED",
+              "REQUIRED_PATH_MISSING",
+              "REQUIRED_PATH_INCOMPATIBLE",
+              "REQUIRED_CAPABILITY_MISSING",
+              "SERVICE_ACCESS_DENIED",
+              "TELEMETRY_STALE",
+              "TELEMETRY_DISCONNECTED",
+              "ADVISORY_UNAVAILABLE"
+            ]
+          }
+        },
+        "notReadyEffects": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "enum": ["NO_FUNCTIONAL_RESULT", "NO_ADVISORY", "NO_CRASH_LOOP"] }
+        },
+        "reevaluationTriggers": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "enum": ["COMPONENT_IDENTITY_CHANGE", "CAPABILITY_CHANGE", "SOURCE_RECOVERY", "ACCESS_CHANGE"] }
+        },
+        "dashboardGuidance": {
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["category", "reasonCodes", "owner", "action"],
+            "properties": {
+              "category": { "enum": ["INCOMPATIBLE_VDP", "SOURCE_UNAVAILABLE", "ACCESS_CONFIGURATION"] },
+              "reasonCodes": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": { "type": "string" }
+              },
+              "owner": { "enum": ["PLATFORM_TEAM", "VEHICLE_DATA_OPERATIONS", "OEM_INTEGRATION"] },
+              "action": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    },
+    "admissionBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nativePreTransferAdmissionAvailable", "projectAdmissionProxyAllowed", "runtimeDefenseRequired", "dashboardMayMutateCloudLifecycle"],
+      "properties": {
+        "nativePreTransferAdmissionAvailable": { "const": false },
+        "projectAdmissionProxyAllowed": { "const": false },
+        "runtimeDefenseRequired": { "const": true },
+        "dashboardMayMutateCloudLifecycle": { "const": false }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "pathList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^Vehicle\\." }
+    }
+  }
+}

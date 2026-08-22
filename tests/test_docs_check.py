@@ -37,12 +37,7 @@ class DocumentationCheckTests(unittest.TestCase):
         shutil.copy2(ROOT / "LICENSE", root / "LICENSE")
         (root / "workspace").mkdir()
         shutil.copy2(ROOT / "workspace" / "repositories.json", root / "workspace" / "repositories.json")
-        coverage = root / "contracts" / "software-delivery-dashboard"
-        coverage.mkdir(parents=True)
-        shutil.copy2(
-            ROOT / "contracts" / "software-delivery-dashboard" / "coverage-matrix.v1.json",
-            coverage / "coverage-matrix.v1.json",
-        )
+        shutil.copytree(ROOT / "contracts", root / "contracts")
         shutil.copytree(ROOT / "docs", root / "docs", ignore=shutil.ignore_patterns(".DS_Store"))
         sibling_files = (
             ("carla-ego-runtime", "docs/carla-setup-macos.md"),
@@ -219,7 +214,7 @@ class DocumentationCheckTests(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         target = root / "docs" / "demo" / "README.md"
         text = target.read_text(encoding="utf-8").replace(
-            "Demo Scenarios 1.7", "Demo Scenarios 1.6", 1
+            "Demo Scenarios 1.9", "Demo Scenarios 1.8", 1
         )
         target.write_text(text, encoding="utf-8")
         result = self.run_check(root)
@@ -251,8 +246,8 @@ class DocumentationCheckTests(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         target = root / "docs" / "architecture" / "demo-scenario-architecture-flows.md"
         text = target.read_text(encoding="utf-8").replace(
-            "AC->>VU: Check dependency and install through SOTA 2",
-            "AC->>VU: Check dependency; install through SOTA 2",
+            "AC->>VU: Install the selected service through SOTA 2",
+            "AC->>VU: Install the selected service; through SOTA 2",
             1,
         )
         target.write_text(text, encoding="utf-8")

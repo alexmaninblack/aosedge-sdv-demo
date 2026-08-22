@@ -72,20 +72,25 @@ and deletion must never occur as background polling side effects.
 | Component SHA-256 evidence | `/update-components/{id}/` |
 | Monitoring | `/units/{id}/monitoring/`, `/units/{id}/monitoring/dashboard/` |
 | Alerts | `/alerts/` |
-| Existing log requests | `/service-logs/`, `/unit-logs/` |
+| Native log requests and stored results | `GET /service-logs/`, `GET /service-logs/{item_id}/`, `GET /service-logs/{item_id}/download-log-file/` and the corresponding `/unit-logs/` operations |
 | Audit/action history | `/metrics/` |
 
-Creating a log request is a POST and is therefore an explicit operator action,
-not part of the read-only poller.
+Creating a log request is a POST and deleting a request with its related files
+is a DELETE. Both are explicit operator actions, not part of the read-only
+poller. Authenticated inspection of the current API contract confirms list,
+create, detail, download and delete operations for both Unit and Service logs;
+live permission and retention-policy qualification remains required.
 
 ## Proposed views
 
 ### 0. Coverage and proof
 
 Show one card per matrix item, grouped by automotive concern. Each card exposes
-the relevant G-stage, current coverage, proof mode, evidence timestamp, and
-claim boundary. `PARTIAL`, `PLANNED`, `UNKNOWN`, and `DOCUMENTARY_ONLY` must
-never render as a green success state.
+the relevant G-stage, current coverage, proof mode, evidence identity,
+timestamp, bound subject/platform/configuration baseline, and claim boundary.
+`PARTIAL`, `PLANNED`, `UNKNOWN`, `DOCUMENTARY_ONLY`, and `STALE` must never
+render as a green success state. `ACCEPTED` requires an exact current evidence
+binding and becomes `STALE` when any bound baseline changes.
 
 ### 1. Release Overview
 
@@ -123,7 +128,7 @@ alerts, monitoring, and log-request status with original API timestamps.
 | Provider/service readiness | Cloud status plus separate qualification or application health evidence; install state alone is insufficient |
 | Download progress | Show only actual structured status/campaign data; fine-grained byte progress is not guaranteed |
 | Artifact digest | Component SHA-256 is available; public service-version response does not document an OCI digest |
-| Operational logs | Show only authoritative native AosCloud request state and retrieved results; do not imply continuous streaming or an independent log store |
+| Operational logs | Show the authoritative Cloud-retained AosCloud request/result/file state; do not imply continuous streaming, indefinite retention or an independent dashboard archive |
 | Real-time state | Display `last reported`; Unit aggregation can lag and must not be presented as instantaneous |
 
 ## Authority boundaries
@@ -131,7 +136,7 @@ alerts, monitoring, and log-request status with original API timestamps.
 | Surface | Authoritative for | Not authoritative for |
 | --- | --- | --- |
 | Engineering Dashboard | Gateway VISS telemetry and factual advisory request/status | KUKSA delivery, Cloud lifecycle, functional backend |
-| Software Delivery Dashboard | Human-friendly presentation of AosCloud release, Unit and native log-request/result state | Vehicle telemetry, prediction results or independent log storage |
+| Software Delivery Dashboard | Human-friendly presentation of AosCloud release, Unit and Cloud-retained native log-request/result/file state | Vehicle telemetry, prediction results or a second log archive |
 | Function Dashboard | Brake Health samples, predictions, reports, backlog and model state from Function Backend | FOTA/SOTA state and Gateway receipt |
 | AosCloud UI/API | Technical lifecycle source and drill-down | Functional telemetry product view |
 
@@ -152,8 +157,11 @@ alerts, monitoring, and log-request status with original API timestamps.
 ## Required experiments
 
 1. Test localhost backend mTLS without exporting private key material.
-2. Measure latency and eventual consistency for every proposed GET endpoint.
-3. Verify target derivation against pending batch IDs on both Units.
+2. Qualify freshness, pagination and eventual-consistency behavior for every
+   proposed GET endpoint; API duration is not a vehicle-performance KPI.
+3. Verify target derivation against FOTA/SOTA pending batch IDs across a
+   completely paginated applicable Fleet/OEM Unit inventory, including an
+   unexpected recipient outside the intended Unit Set.
 4. Capture actual pending/install/run-state strings during one harmless update.
 5. Confirm service-version identity and digest evidence exposed in the live
    environment.

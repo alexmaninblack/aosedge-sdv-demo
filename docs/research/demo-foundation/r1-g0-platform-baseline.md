@@ -5,6 +5,21 @@
 
 Status: **research pass complete; implementation not authorized**.
 
+## Accepted disposition — 2026-08-21
+
+The generic-runtime recommendation below is retained as historical research
+but is superseded by HLA 1.4, Component Register 1.1, `CR-FACTORY` 0.2 and
+[`D4-001`](../../requirements/d4-decision-register.md#d4-001). The accepted
+demo architecture deliberately uses one provider-specific empty-slot runtime
+for the single Vehicle Data Platform Component. It does not require a generic
+multi-provider runtime in the OEM Demo Factory Image.
+
+Candidate `.11` is not rejected because its runtime is provider-specific. It
+remains engineering evidence and requires a successor Factory Image only
+because the later accepted stock-IAM, protected-signing, normative-manifest,
+reproducibility and fresh-overlay qualification obligations are incomplete.
+No implementation or build is authorized by this disposition.
+
 ## Decision scope
 
 This workstream answers three questions:
@@ -133,6 +148,6 @@ not edit the accepted HLA, scenario, or implementation plan.
 
 - [Current accepted baseline](../../qualification/current-baseline.md)
 - [High-Level Architecture 1.4](../../architecture/high-level-architecture.md)
-- [Component Decomposition and Interface Register 1.0](../../requirements/component-decomposition-and-interface-register.md)
+- [Component Decomposition and Interface Register 1.1](../../requirements/component-decomposition-and-interface-register.md)
 - [`aos-vehicle-platform` Service Manager configuration](../../../../aos-vehicle-platform/meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files/sm.cfg)
 - [AosCore architecture](https://docs.aosedge.tech/docs/aos-core/architecture/)

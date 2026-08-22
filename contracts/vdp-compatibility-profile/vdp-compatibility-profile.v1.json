@@ -1,0 +1,230 @@
+{
+  "$schema": "./vdp-compatibility-profile.schema.json",
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "contractId": "aosedge-demo-vdp-compatibility",
+  "contractVersion": "1.0.0",
+  "decision": "D4-007",
+  "sourceProfile": {
+    "contractId": "aosedge-demo-viss-trust-telemetry",
+    "contractVersion": "1.0.0",
+    "sha256": "24484919d916ade153111fd6075d06cecdf77d0bed7cfd016c0a4163e1b8fd53"
+  },
+  "componentVersions": [
+    {
+      "id": "VDP_V1",
+      "contractVersion": "1.0.0",
+      "inherits": "NONE",
+      "readPaths": [
+        "Vehicle.Speed",
+        "Vehicle.Acceleration.Longitudinal",
+        "Vehicle.Acceleration.Lateral",
+        "Vehicle.Acceleration.Vertical",
+        "Vehicle.Chassis.Accelerator.PedalPosition",
+        "Vehicle.Chassis.Brake.PedalPosition",
+        "Vehicle.Chassis.Axle.Row1.SteeringAngle"
+      ],
+      "addedReadPaths": [
+        "Vehicle.Speed",
+        "Vehicle.Acceleration.Longitudinal",
+        "Vehicle.Acceleration.Lateral",
+        "Vehicle.Acceleration.Vertical",
+        "Vehicle.Chassis.Accelerator.PedalPosition",
+        "Vehicle.Chassis.Brake.PedalPosition",
+        "Vehicle.Chassis.Axle.Row1.SteeringAngle"
+      ],
+      "capabilities": ["INBOUND_BASE_DYNAMICS"]
+    },
+    {
+      "id": "VDP_V2",
+      "contractVersion": "2.0.0",
+      "inherits": "VDP_V1",
+      "readPaths": [
+        "Vehicle.Speed",
+        "Vehicle.Acceleration.Longitudinal",
+        "Vehicle.Acceleration.Lateral",
+        "Vehicle.Acceleration.Vertical",
+        "Vehicle.Chassis.Accelerator.PedalPosition",
+        "Vehicle.Chassis.Brake.PedalPosition",
+        "Vehicle.Chassis.Axle.Row1.SteeringAngle",
+        "Vehicle.Chassis.Axle.Row1.Wheel.Left.AngularSpeed",
+        "Vehicle.Chassis.Axle.Row1.Wheel.Right.AngularSpeed",
+        "Vehicle.Chassis.Axle.Row2.Wheel.Left.AngularSpeed",
+        "Vehicle.Chassis.Axle.Row2.Wheel.Right.AngularSpeed",
+        "Vehicle.Chassis.Axle.Row1.Wheel.Left.Speed",
+        "Vehicle.Chassis.Axle.Row1.Wheel.Right.Speed",
+        "Vehicle.Chassis.Axle.Row2.Wheel.Left.Speed",
+        "Vehicle.Chassis.Axle.Row2.Wheel.Right.Speed"
+      ],
+      "addedReadPaths": [
+        "Vehicle.Chassis.Axle.Row1.Wheel.Left.AngularSpeed",
+        "Vehicle.Chassis.Axle.Row1.Wheel.Right.AngularSpeed",
+        "Vehicle.Chassis.Axle.Row2.Wheel.Left.AngularSpeed",
+        "Vehicle.Chassis.Axle.Row2.Wheel.Right.AngularSpeed",
+        "Vehicle.Chassis.Axle.Row1.Wheel.Left.Speed",
+        "Vehicle.Chassis.Axle.Row1.Wheel.Right.Speed",
+        "Vehicle.Chassis.Axle.Row2.Wheel.Left.Speed",
+        "Vehicle.Chassis.Axle.Row2.Wheel.Right.Speed"
+      ],
+      "capabilities": ["INBOUND_BASE_DYNAMICS", "INBOUND_WHEEL_SPEEDS"]
+    },
+    {
+      "id": "VDP_V3",
+      "contractVersion": "3.0.0",
+      "inherits": "VDP_V2",
+      "readPaths": [
+        "Vehicle.Speed",
+        "Vehicle.Acceleration.Longitudinal",
+        "Vehicle.Acceleration.Lateral",
+        "Vehicle.Acceleration.Vertical",
+        "Vehicle.Chassis.Accelerator.PedalPosition",
+        "Vehicle.Chassis.Brake.PedalPosition",
+        "Vehicle.Chassis.Axle.Row1.SteeringAngle",
+        "Vehicle.Chassis.Axle.Row1.Wheel.Left.AngularSpeed",
+        "Vehicle.Chassis.Axle.Row1.Wheel.Right.AngularSpeed",
+        "Vehicle.Chassis.Axle.Row2.Wheel.Left.AngularSpeed",
+        "Vehicle.Chassis.Axle.Row2.Wheel.Right.AngularSpeed",
+        "Vehicle.Chassis.Axle.Row1.Wheel.Left.Speed",
+        "Vehicle.Chassis.Axle.Row1.Wheel.Right.Speed",
+        "Vehicle.Chassis.Axle.Row2.Wheel.Left.Speed",
+        "Vehicle.Chassis.Axle.Row2.Wheel.Right.Speed",
+        "Vehicle.CarlaSimulation.ChaosWheel.Row1.Left.LongitudinalSlip",
+        "Vehicle.CarlaSimulation.ChaosWheel.Row1.Right.LongitudinalSlip",
+        "Vehicle.CarlaSimulation.ChaosWheel.Row2.Left.LongitudinalSlip",
+        "Vehicle.CarlaSimulation.ChaosWheel.Row2.Right.LongitudinalSlip",
+        "Vehicle.CarlaSimulation.ChaosWheel.Row1.Left.LateralSlipAngle",
+        "Vehicle.CarlaSimulation.ChaosWheel.Row1.Right.LateralSlipAngle",
+        "Vehicle.CarlaSimulation.ChaosWheel.Row2.Left.LateralSlipAngle",
+        "Vehicle.CarlaSimulation.ChaosWheel.Row2.Right.LateralSlipAngle"
+      ],
+      "addedReadPaths": [
+        "Vehicle.CarlaSimulation.ChaosWheel.Row1.Left.LongitudinalSlip",
+        "Vehicle.CarlaSimulation.ChaosWheel.Row1.Right.LongitudinalSlip",
+        "Vehicle.CarlaSimulation.ChaosWheel.Row2.Left.LongitudinalSlip",
+        "Vehicle.CarlaSimulation.ChaosWheel.Row2.Right.LongitudinalSlip",
+        "Vehicle.CarlaSimulation.ChaosWheel.Row1.Left.LateralSlipAngle",
+        "Vehicle.CarlaSimulation.ChaosWheel.Row1.Right.LateralSlipAngle",
+        "Vehicle.CarlaSimulation.ChaosWheel.Row2.Left.LateralSlipAngle",
+        "Vehicle.CarlaSimulation.ChaosWheel.Row2.Right.LateralSlipAngle"
+      ],
+      "capabilities": [
+        "INBOUND_BASE_DYNAMICS",
+        "INBOUND_WHEEL_SPEEDS",
+        "INBOUND_WHEEL_SLIP",
+        "OUTBOUND_BRAKE_HEALTH_ADVISORY",
+        "OUTBOUND_TIRE_HEALTH_ADVISORY"
+      ]
+    }
+  ],
+  "serviceCompatibility": [
+    {
+      "serviceId": "BRAKE_HEALTH",
+      "serviceVersion": "1.0.0",
+      "compatibleVdpVersions": ["VDP_V1", "VDP_V2", "VDP_V3"],
+      "requiredCapabilities": ["INBOUND_BASE_DYNAMICS"],
+      "modelInputDecision": "D4-016"
+    },
+    {
+      "serviceId": "BRAKE_HEALTH",
+      "serviceVersion": "2.0.0",
+      "compatibleVdpVersions": ["VDP_V2", "VDP_V3"],
+      "requiredCapabilities": ["INBOUND_BASE_DYNAMICS", "INBOUND_WHEEL_SPEEDS"],
+      "modelInputDecision": "D4-016"
+    },
+    {
+      "serviceId": "BRAKE_HEALTH",
+      "serviceVersion": "3.0.0",
+      "compatibleVdpVersions": ["VDP_V3"],
+      "requiredCapabilities": [
+        "INBOUND_BASE_DYNAMICS",
+        "INBOUND_WHEEL_SPEEDS",
+        "OUTBOUND_BRAKE_HEALTH_ADVISORY"
+      ],
+      "modelInputDecision": "D4-016"
+    },
+    {
+      "serviceId": "TIRE_HEALTH",
+      "serviceVersion": "1.0.0",
+      "compatibleVdpVersions": ["VDP_V3"],
+      "requiredCapabilities": [
+        "INBOUND_BASE_DYNAMICS",
+        "INBOUND_WHEEL_SPEEDS",
+        "INBOUND_WHEEL_SLIP",
+        "OUTBOUND_TIRE_HEALTH_ADVISORY"
+      ],
+      "modelInputDecision": "D4-018"
+    }
+  ],
+  "installedIdentity": {
+    "requiredFields": [
+      "componentId",
+      "semanticVersion",
+      "artifactSha256",
+      "metadataSha256",
+      "vdpContractVersion",
+      "vdpContractSha256",
+      "vehicleHardwareProfileSha256",
+      "vissProfileSha256",
+      "capabilityManifestSha256"
+    ],
+    "comparisonRule": "A service is compatible only when every required identity field is present, the contract identity matches the accepted profile and all required paths and capabilities exist with unchanged semantics. Unknown future VDP versions fail closed until explicitly added."
+  },
+  "readinessContract": {
+    "processHealthSeparated": true,
+    "overallStates": ["STARTING", "READY", "NOT_READY"],
+    "facets": ["INBOUND_DATA", "SERVICE_ACCESS", "OUTBOUND_ADVISORY"],
+    "reasonCodes": [
+      "NONE",
+      "COMPONENT_ABSENT",
+      "COMPONENT_VERSION_UNSUPPORTED",
+      "CONTRACT_ID_MISMATCH",
+      "CONTRACT_DIGEST_MISMATCH",
+      "CAPABILITY_MANIFEST_MALFORMED",
+      "REQUIRED_PATH_MISSING",
+      "REQUIRED_PATH_INCOMPATIBLE",
+      "REQUIRED_CAPABILITY_MISSING",
+      "SERVICE_ACCESS_DENIED",
+      "TELEMETRY_STALE",
+      "TELEMETRY_DISCONNECTED",
+      "ADVISORY_UNAVAILABLE"
+    ],
+    "notReadyEffects": ["NO_FUNCTIONAL_RESULT", "NO_ADVISORY", "NO_CRASH_LOOP"],
+    "reevaluationTriggers": ["COMPONENT_IDENTITY_CHANGE", "CAPABILITY_CHANGE", "SOURCE_RECOVERY", "ACCESS_CHANGE"],
+    "dashboardGuidance": [
+      {
+        "category": "INCOMPATIBLE_VDP",
+        "reasonCodes": [
+          "COMPONENT_ABSENT",
+          "COMPONENT_VERSION_UNSUPPORTED",
+          "CONTRACT_ID_MISMATCH",
+          "CONTRACT_DIGEST_MISMATCH",
+          "CAPABILITY_MANIFEST_MALFORMED",
+          "REQUIRED_PATH_MISSING",
+          "REQUIRED_PATH_INCOMPATIBLE",
+          "REQUIRED_CAPABILITY_MISSING",
+          "ADVISORY_UNAVAILABLE"
+        ],
+        "owner": "PLATFORM_TEAM",
+        "action": "Request the Platform Team to install a compatible Vehicle Data Platform Component; show required and actual versions plus missing paths/capabilities."
+      },
+      {
+        "category": "SOURCE_UNAVAILABLE",
+        "reasonCodes": ["TELEMETRY_STALE", "TELEMETRY_DISCONNECTED"],
+        "owner": "VEHICLE_DATA_OPERATIONS",
+        "action": "Show source unavailable or stale; do not mislabel a transient data/connectivity problem as a required VDP upgrade."
+      },
+      {
+        "category": "ACCESS_CONFIGURATION",
+        "reasonCodes": ["SERVICE_ACCESS_DENIED"],
+        "owner": "OEM_INTEGRATION",
+        "action": "Review approved service metadata and current KUKSA permission mapping; do not widen access automatically."
+      }
+    ]
+  },
+  "admissionBoundary": {
+    "nativePreTransferAdmissionAvailable": false,
+    "projectAdmissionProxyAllowed": false,
+    "runtimeDefenseRequired": true,
+    "dashboardMayMutateCloudLifecycle": false
+  }
+}

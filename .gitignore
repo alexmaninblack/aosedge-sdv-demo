@@ -56,5 +56,8 @@ build/
 # Local documentation-tool preferences
 .obsidian/
 
+# Local brainstorming artifacts; intentionally never committed
+/Brainstorming/
+
 # Optional developer checkout locations; never part of the shared lock
 config/component-paths.local.json

@@ -4,7 +4,7 @@
 # Current Design and Delivery Roadmap
 
 - Status: Working gate map
-- Updated: 2026-08-19
+- Updated: 2026-08-20
 - Accepted architecture baseline: High-Level Architecture 1.4
 - Cloud or Unit mutation authorized: no
 
@@ -55,13 +55,13 @@ The following documents form one ordered design chain:
 
 1. [High-Level Architecture 1.4](../architecture/high-level-architecture.md)
    owns boundaries, authorities and invariants.
-2. [Demo Scenario 1.7](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+2. [Demo Scenario 1.9](../demo/staged-post-sop-brake-health-demo-scenarios.md)
    owns the accepted audience-visible stage sequence.
-3. [Architecture Flows 1.6](../architecture/demo-scenario-architecture-flows.md)
+3. [Architecture Flows 1.8](../architecture/demo-scenario-architecture-flows.md)
    owns the accepted lifecycle, runtime, observability and failure flows.
-4. [System Requirements and Traceability 0.9](../requirements/system-requirements-and-traceability.md)
-   owns `SYS-*` obligations and coverage of all twenty-one gaps.
-5. [Component Decomposition and Interface Register 1.0](../requirements/component-decomposition-and-interface-register.md)
+4. [System Requirements and Traceability 1.0](../requirements/system-requirements-and-traceability.md)
+   owns `SYS-*` obligations and coverage of all twenty-two gaps.
+5. [Component Decomposition and Interface Register 1.1](../requirements/component-decomposition-and-interface-register.md)
    owns component/interface IDs and provisional requirement-package
    allocation.
 
@@ -115,14 +115,17 @@ Deferred platform capabilities and
 open qualification or implementation gates remain explicit and are not
 presented as current behavior.
 
-Scenario 1.7, Architecture Flows 1.6, System Requirements 0.9 and Component
-Register 1.0 are the current accepted cascade. They preserve
+Scenario 1.9, Architecture Flows 1.8, System Requirements 1.0 and Component
+Register 1.1 are the current accepted cascade. They preserve
 the accepted topology and replace the former v1 low-rate report narrative with
 a bounded pre/active/post `BrakeTelemetryWindow`, make v2 a clearly labelled
 synthetic on-board assessment with derived-only normal Cloud reporting, and
 retain v3 advisory plus correlated backend facts. They also preserve the
 explicit `R0 -> M0 -> M1` Unit Set reconciliation and responsibility split
-accepted during `CR-AOS` review.
+accepted during `CR-AOS` review. They additionally define one atomic first-
+demo vehicle-connectivity fault: Demonstration Unit-to-AosCloud and installed
+service-to-functional-backend paths are interrupted together, while presenter-
+to-AosCloud and simulated in-vehicle connectivity remain available.
 
 Exit evidence: each baseline document records its accepted status and date,
 and the documentation quality gate passes for the complete design chain.
@@ -144,10 +147,14 @@ Create and review packages in this order:
    [cross-cutting concerns (`CR-CROSS`)](../requirements/component-decomposition-and-interface-register.md#cr-cross)
    and [end-to-end acceptance (`CR-E2E`)](../requirements/component-decomposition-and-interface-register.md#cr-e2e).
 
-Groups 1 through 5 were design-reviewed and closed on 2026-08-19. Their target,
-partial and qualification states remain open for D4 and implementation. Demo
-orchestration (`CR-DEMO`) is the next package, followed by the cross-cutting
-(`CR-CROSS`) and end-to-end acceptance (`CR-E2E`) packages.
+Groups 1 through 5 were design-reviewed and closed on 2026-08-19. Demo
+Orchestration (`CR-DEMO`) 0.3 and Cross-Cutting Security and Operations
+(`CR-CROSS`) 0.1 were design-reviewed and closed on 2026-08-20. End-to-End
+Acceptance (`CR-E2E`) 0.1 was design-reviewed and closed on 2026-08-21. Their
+target, partial and qualification states remain open for D4 and
+implementation. The next documentation activity is detailed D4 contract,
+threshold, tolerance and qualification planning; it is not implementation
+authorization.
 
 Create every package from the
 [component requirement package template](../requirements/components/template.md).
@@ -165,6 +172,12 @@ traceability, and every owned unit of behavior has a unit-test obligation or a
 reviewed exception.
 
 ### D4 — Interface contracts and acceptance tests
+
+Use the
+[D4 Interface and Qualification Decision Register 0.8](../requirements/d4-decision-register.md)
+as the single sequencing and decision-control surface. Package-level open
+issues remain authoritative owner inputs; repeated questions are resolved once
+under a shared stable `D4-*` ID and then cascaded to every consumer.
 
 Freeze the versioned VISS, KUKSA, typed advisory, functional-report/event,
 AosCloud, log and dashboard contracts. Define executable cases, fixtures,
@@ -190,12 +203,13 @@ These workstreams are sequencing guidance, not authorization to implement:
 | Workstream | Main outcome |
 | --- | --- |
 | `I1` Vehicle stimulus and Gateway | Qualify emergency-braking and explicit accelerated/pre-aged tire stimuli; add typed narrowly scoped advisory handling and dashboard status. |
-| `I2` Factory and Vehicle Data Platform | Freeze the clean factory image with enabled stock IAM permission handling and a non-secret PKCS#11 seam; implement and qualify the accepted Component v1-v3 contract, thin Aos–KUKSA Credential Broker, provider platform identity and KUKSA trust configuration. |
+| `I2` Factory and Vehicle Data Platform | Build and freeze the clean factory image with one IAM configuration containing `enablePermissionsHandler: true` for both modes, no pre-populated service permission/secret state, and the D4-010.1 dedicated non-secret `kuksa-jwt` PKCS#11/verifier-preparation wiring but no key/shared verifier; implement and qualify unique per-Unit signer bootstrap, atomic verifier preparation, the accepted Component v1-v3 contract, thin Aos–KUKSA Credential Broker, still-open provider platform identity and KUKSA trust configuration. |
 | `I3` Brake Health product | Build the in-vehicle service, local model, bounded offline reporting, backend and function dashboard. |
 | `I4` Tire Health product | Build the independent persistent condition estimator, bounded reporting, inspection advisory, backend and function dashboard. |
 | `I5` Software delivery experience | Build the Software Delivery Dashboard over authoritative AosCloud APIs and the manufacturing/provisioning/promotion/retirement orchestration. |
-| `I6` Security and operations | Qualify native Aos IAM instance/permission lifecycle, exact contract-bounded translation, short-lived JWT refresh/expiry, provider identity binding, per-Unit PKCS#11 signing, native AosCloud system/service/crash-log requests, retention/deletion, offline behavior and redaction. |
+| `I6` Security and operations | Qualify native Aos IAM instance/permission lifecycle, exact contract-bounded translation, short-lived JWT refresh/expiry and renewal denial, D4-010.1 unique per-Unit PKCS#11 signing and verifier startup/cross-Unit rejection/overlay retirement, still-open provider identity binding, native AosCloud system/service/crash-log requests, exact retention duration, deletion effect, offline behavior, redaction and bounded temporary-download removal. |
 | `I7` End-to-end release proof | Execute `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> T1 -> R0` on Validation and Demonstration Units with retained evidence. |
+| `I8` Edge Runtime Performance Qualification — deferred | After the first demo, benchmark VM power-on to AosCore readiness, Unit reconnect to service readiness, deployment-to-container readiness, crash/power-cycle recovery, offline continuation, reconnect synchronization, local event-to-advisory processing and CPU/RAM/storage/startup overhead. Cloud authentication, signing, approval and operator-interaction duration are not vehicle-performance KPIs. |
 
 Each workstream requires the relevant component requirements and acceptance
 tests before code or deployment work begins.
@@ -217,15 +231,13 @@ tests before code or deployment work begins.
 
 ## Current Stop Point
 
-Documentation housekeeping gate D1, component-register gate D0, and joint
-baseline gate D2 are complete. The current boundary is D3 component requirement
-packages. Vehicle Simulation 0.4, Vehicle Gateway 0.6, Factory Substrate 0.2
-and Vehicle Data Platform 0.3 have completed D3 design review; their
-`CURRENT`, `EVIDENCE`, `PARTIAL`, `GAP` and `TARGET` labels continue to describe
-implementation and qualification truth rather than component acceptance. Aos
-Lifecycle (`CR-AOS`) 0.1 and Brake Health Service (`CR-BHS`) 0.1 have
-completed D3 design review. Brake Health Cloud (`CR-BRAKE-CLOUD`) is the
-current package under review. No new repository, component code, build,
-signature, Cloud upload, assignment, approval, VM
-restart, provisioning, deprovisioning or Unit mutation is authorized by this
-roadmap.
+Documentation housekeeping gate D1, component-register gate D0, joint
+baseline gate D2 and all D3 package reviews are complete. Group 6 now includes
+design-reviewed Demo Orchestration (`CR-DEMO`) 0.3, Cross-Cutting Security and
+Operations (`CR-CROSS`) 0.1 and End-to-End Acceptance (`CR-E2E`) 0.1. Their
+`CURRENT`, `EVIDENCE`, `PARTIAL`, `GAP`, `TARGET` and open D4 labels still
+describe implementation and qualification truth rather than implementation
+acceptance. Detailed D4 contract and qualification planning is the current
+stop point. No new repository, component code, build, signature, Cloud upload,
+assignment, approval, VM restart, provisioning, deprovisioning or Unit
+mutation is authorized by this roadmap.

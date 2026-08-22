@@ -69,11 +69,15 @@ dependency enforcement is on the platform roadmap but is not implemented in
 the current release. No implementing release or delivery date was committed.
 This is stakeholder roadmap input, not released-API evidence.
 
-The project therefore keeps the native pre-deployment rejection scenario in
-the target demo design but defers its execution. It will not add a temporary
-Software Delivery Dashboard admission controller. Service-side compatibility
-metadata and fail-closed readiness remain the current defense-in-depth
-mechanism until the native Cloud capability is released and qualified.
+The project therefore keeps only the native cross-lifecycle pre-deployment
+rejection scenario in the target demo design but defers its execution. This
+does not defer or replace the released component-to-component runtime-
+dependency and service-to-layer dependency mechanisms. The project will not
+add a temporary Software Delivery Dashboard admission controller. Provider-
+first ordering, OEM validation, service-side compatibility metadata and fail-
+closed readiness remain the current controls until the native Service-to-FOTA
+Vehicle Data Platform Component gate is released and qualified; they shall not
+be presented as equivalent to that future Cloud admission.
 
 ## Honest G0–G4 representation
 
@@ -116,7 +120,8 @@ recorded pending recipients with the intended set and block on any mismatch.
 
 ## Dependency policy
 
-Because a documented Service-to-FOTA-component dependency is absent, use:
+Because a documented Service-to-FOTA Vehicle Data Platform Component
+dependency is absent, use:
 
 1. strict release ordering: provider first, service second;
 2. a versioned application capability contract;

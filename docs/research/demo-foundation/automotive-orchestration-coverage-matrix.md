@@ -43,15 +43,18 @@ The machine-readable input is
 
 | Status | Meaning |
 | --- | --- |
+| `UNKNOWN` | Required source data or evidence is absent, ambiguous, incomplete, or cannot be refreshed. |
 | `PARTIAL` | Reusable evidence exists, but the complete dashboard proof or end-to-end capability is not accepted. |
 | `PLANNED` | The demo or qualification work is defined but no accepted proof exists yet. |
 | `DOCUMENTARY_ONLY` | The concern cannot be proven by a short live demo and requires policy, compatibility, or support evidence. |
+| `ACCEPTED` | A concrete evidence ID is current for the exact subject version/digest, platform release, configuration digest, and verification time. |
+| `STALE` | Previously accepted evidence no longer matches the current baseline and is not current proof. |
 
 ## Coverage matrix
 
 | ID | Automotive concern | Demo stages | Proof mode | Software Delivery Dashboard evidence | Current status |
 | --- | --- | --- | --- | --- | --- |
-| AO-01 | Deterministic software lifecycle with explicit download, install, activation, stop, update, and single-active-instance state | G1–G4 | Live + qualification | Artifact and Unit state timeline, active instance count, transition duration, failure reason | PARTIAL |
+| AO-01 | Deterministic software lifecycle with explicit download, install, activation, stop, update, and single-active-instance state | G1–G4 | Live + qualification | Artifact and Unit state timeline, active instance count, requested/observed authoritative state, failure reason; no Cloud-duration KPI | PARTIAL |
 | AO-02 | Per-service persistent storage with declared ownership, quota, isolation, update survival, and removal policy | G2–G4 | Qualification | Storage declaration, owner, quota, persistence test, cross-service denial result | PLANNED |
 | AO-03 | Predictable recovery after ignition-like power loss, restart, and interrupted update without identity or accepted state loss | G0, G2–G4 | Live + qualification | Before/after desired state, restart recovery result, state checksum, Unit identity continuity | PARTIAL |
 | AO-04 | Bounded platform and service startup/readiness suitable for an automotive boot sequence | G0–G2 | Qualification | Boot-to-platform-ready and service-ready timings with accepted threshold and sample count | PARTIAL |

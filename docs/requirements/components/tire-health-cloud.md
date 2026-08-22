@@ -5,16 +5,17 @@
 
 - Status: D3 design-reviewed
 - Package: [`CR-TIRE-CLOUD`](../component-decomposition-and-interface-register.md#cr-tire-cloud)
-- Version: 0.1
+- Version: 0.2
 - Prepared: 2026-08-19
 - Accepted: 2026-08-19
 - Owner: Function Team 2 / Service Provider 2 functional Cloud product
 - Architecture input: [High-Level Architecture 1.4](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 1.7](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 1.6](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 0.9](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 1.0](../component-decomposition-and-interface-register.md)
+- Scenario input: [Demo Scenarios 1.9](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 1.8](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 1.0](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 1.1](../component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0008](../../architecture/decisions/0008-use-tire-health-for-function-team-2.md), [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md), and [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
+- Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
 - Implementation baseline: no `tire-health-cloud` repository or executable exists
 - Implementation, repository creation, signing, Cloud, or Unit mutation authorized: no
 
@@ -124,9 +125,11 @@ before the demo. No source modification or build occurs while presenting.
 
 The catalogue presents declared compatibility and observed service-readiness
 evidence. It shall not claim that the current AosCloud release natively rejects
-an incompatible SOTA before desired-state change or transfer. Native
-dependency admission remains deferred; release sequencing, OEM-reviewed
-evidence and service-side fail-closed readiness remain explicit.
+an incompatible SOTA before desired-state change or transfer. Only native
+Service-to-FOTA VDP Component admission remains deferred; released component-
+to-component and service-to-layer dependency mechanisms remain supported.
+Release sequencing, OEM-reviewed evidence and service-side fail-closed
+readiness remain explicit.
 
 The catalogue also shows the accepted provisional in-vehicle envelope from
 `CR-TIRE` 0.2: 150 CPU units, 16 MiB RAM, 2 MiB persistent model state, 2 MiB
@@ -155,19 +158,20 @@ flowchart LR
     CLOUD -->|"authoritative candidate/verification state"| OEM
     OEM -->|"explicit OEM-authorized VU deployment"| CLOUD
     CLOUD --> VU
-    CARLA -->|"exclusive live binding or deterministic replay"| VU
+    CARLA -->|"exclusive live Validation binding"| VU
     VU -->|"real bounded Tire messages"| BE
     BE --> VD
     OEM -->|"accept evidence and promote same digest"| CLOUD
     CLOUD --> DU
-    CARLA -->|"sequential rebind or same replay"| DU
+    CARLA -->|"reset, then exclusive Demonstration binding"| DU
     DU -->|"real bounded Tire messages"| BE
     DU -. "factual advisory path" .-> ENG
 ```
 
 The current environment has one visible CARLA/Gateway/VISS source, not two
 simultaneous vehicles. VU and DU evidence therefore uses exclusive sequential
-binding or the same deterministic replay. `CR-DEMO` owns the exact mechanism;
+live binding with an explicit detach and deterministic reset between roles;
+telemetry replay is deferred. `CR-DEMO` owns the exact handover mechanism;
 this product preserves supplied run, Unit and source correlation and must not
 imply concurrent vehicle evidence.
 
@@ -184,7 +188,7 @@ imply concurrent vehicle evidence.
 - explicit confirmation-gated delegation of sign/publish to Function Team 2;
 - separated Release Candidates and Vehicle Data views;
 - empty, current, delayed, stale, offline, duplicate, invalid and failed states;
-- run-scoped retention, archive/clear preview and exact deletion scope;
+- current-run persistence, exact preview/delete action and complete R0 deletion scope;
 - native `linux/arm64` backend/dashboard container, health endpoint and graceful restart;
 - dedicated persistent volume and application namespace isolated from Brake Health;
 - loopback-only browser UI and authenticated allowlisted VM ingestion route;
@@ -198,8 +202,9 @@ imply concurrent vehicle evidence.
 - signing-key custody or use inside browser/container;
 - OEM validation acceptance, deployment approval, target calculation or promotion;
 - desired-state, Unit, batch, Campaign, approval or native-log database;
-- a local substitute for deferred AosCloud dependency admission;
-- CARLA control, source replay/switching, VISS, KUKSA, VDP or Gateway implementation;
+- a local substitute for deferred AosCloud Service-to-FOTA VDP Component admission;
+- CARLA control, sequential live source handover, deferred telemetry replay,
+  VISS, KUKSA, VDP or Gateway implementation;
 - local tire estimation, advisory authorization or time-critical decision logic;
 - direct access to hidden tire-degradation truth or continuous raw telemetry;
 - Brake Health backend/data/dashboard/storage/helper integration;
@@ -213,12 +218,12 @@ imply concurrent vehicle evidence.
 | Tire functional messages | [`CR-TIRE`](tire-health-service.md) | Accepted bounded summary/event schema, authentication and idempotency identity | Reject/quarantine invalid input; never fabricate a dashboard result |
 | Prepared immutable v1.0 candidate | [`CR-TIRE`](tire-health-service.md) release pipeline | ARM64 payload, metadata, unit/contract tests and unsigned digests frozen before presentation | Candidate cannot be selected or signed |
 | Function Team 2 release pipeline | [`IF-LC-007`](../component-decomposition-and-interface-register.md#if-lc-007) | Explicit confirmation, protected key handling, SP2 identity and machine-readable result | Show failure/uncertain state; no Cloud success claim |
-| AosCloud and OEM delivery surface | [`CR-AOS`](aos-lifecycle.md) and future `CR-DEMO` | Authoritative verification, target, approval, deployment and promotion | Release view stops at pipeline result and directs presenter to authoritative surface |
-| VDP v3 compatibility | [`CR-VDP`](vehicle-data-platform.md) and [`CR-TIRE`](tire-health-service.md) | Candidate range plus fail-closed service readiness | Display declared/actual evidence; do not implement admission control |
-| Run and Unit correlation | Future `CR-DEMO` | Bounded time window, VU/DU IDs/roles and selected/replayed source | Quarantine as unassigned and exclude from success views |
+| AosCloud and OEM delivery surface | [`CR-AOS`](aos-lifecycle.md) and [`CR-DEMO`](demo-orchestration.md) | Authoritative verification, target, approval, deployment and promotion | Release view stops at pipeline result and directs presenter to authoritative surface |
+| VDP v3 compatibility | [`CR-VDP`](vehicle-data-platform.md) and [`CR-TIRE`](tire-health-service.md) | D4-007 candidate range, installed identity and fail-closed service readiness | Display declared/actual evidence and Platform Team handoff for real incompatibility; do not implement admission control |
+| Run and Unit correlation | [`CR-DEMO`](demo-orchestration.md) | Bounded time window, VU/DU IDs/roles and exact sequential live source/generation/frame binding | Quarantine as unassigned and exclude from success views |
 | Engineering advisory evidence | [`CR-GATEWAY`](vehicle-gateway.md) | Gateway VISS remains authoritative for request/status | Function view cannot claim Gateway receipt or driver display |
 | Apple Silicon runtime | Docker Desktop on the demo Mac | Native ARM64 engine, dedicated volume and healthy container runtime | Launcher reports blocked; no functional-data success claim |
-| QEMU-to-container route | Future `CR-DEMO` plus this package | Authenticated selected-Unit ingestion without LAN exposure | Unit data stays queued and dashboard shows offline |
+| QEMU-to-container route | [`CR-DEMO`](demo-orchestration.md) plus this package | Authenticated selected-Unit ingestion without LAN exposure | Unit data stays queued and dashboard shows offline |
 | Function Team 2 Keychain helper | Function Team 2 release owner | Native authenticated helper; key non-exportable to browser/container | Sign/publish control disabled with factual reason |
 
 ## Current Implementation Baseline
@@ -261,7 +266,7 @@ packaged product and protected helper against controlled adjacent components.
 | Interface | Direction | Data or command | Contract/version | Failure behavior | Authority |
 | --- | --- | --- | --- | --- | --- |
 | [Tire result (`IF-TIRE-003`)](../component-decomposition-and-interface-register.md#if-tire-003) | In | Versioned bounded/idempotent condition summary or threshold event | Function Team 2 schema | Reject/quarantine invalid input; acknowledge only durable accepted state | Tire service result plus backend acknowledgement |
-| [Tire dashboard API (`IF-TIRE-004`)](../component-decomposition-and-interface-register.md#if-tire-004) | Out | Persisted Tire results, correlation and delivery/freshness state | Versioned query/subscription API | Expose stale/offline/error state; never synthesize current values | Tire Health Backend |
+| [Tire dashboard API (`IF-TIRE-004`)](../component-decomposition-and-interface-register.md#if-tire-004) | Bidirectional | Persisted Tire results, correlation and delivery/freshness state, plus exact current-run cleanup preview/delete | Versioned query/subscription and administration API | Expose stale/offline/error state; reject unsafe cleanup scope; never synthesize current values | Tire Health Backend |
 | [Tire SOTA publication (`IF-LC-007`)](../component-decomposition-and-interface-register.md#if-lc-007) | Delegated adjacent action | Explicit request to sign/publish v1.0 plus structured result | Function Team 2 pipeline | Cancel/failure produces no success; uncertain result requires reconciliation | SP2 pipeline and AosCloud verification record |
 | [Function Team 2 OEM approval (`IF-LC-010`)](../component-decomposition-and-interface-register.md#if-lc-010) | Out of package / handoff | Candidate/digest available for later OEM review | OEM Software Delivery Dashboard | No local approval control or inferred approval | Function Team 2 decision through authorized OEM identity |
 
@@ -273,7 +278,7 @@ packaged product and protected helper against controlled adjacent components.
 | Component | Prove packaged backend/dashboard through public APIs and browser behavior | Controlled producer, storage and helper stub | Yes | Backend/UI health and persistence suite |
 | Contract | Prove `IF-TIRE-003`, `IF-TIRE-004` and release-helper schemas | Digest-addressed shared fixtures | Yes | Producer/consumer conformance and negatives |
 | Integration | Prove real Tire v1.0 ingestion and protected helper delegation | Validation environment with accepted adjacent revisions and test credentials | Yes | `T1` integration records |
-| End-to-end | Prove publication, VU result and same-digest DU promotion without fabricated data | One source used sequentially or by replay | Yes | `AF-TIRE-*`, `AF-X-SOURCE`, and offline evidence |
+| End-to-end | Prove publication, VU result and same-digest DU promotion without fabricated data | One live source used sequentially with proven detach/reset | Yes | `AF-TIRE-*`, `AF-X-SOURCE`, and offline evidence |
 
 ## Requirement Summary
 
@@ -289,7 +294,7 @@ packaged product and protected helper against controlled adjacent components.
 | [Offline convergence (`REQ-TIRE-CLOUD-008`)](#req-tire-cloud-008) | Preserve original time and converge idempotently after reconnect | Unit, Component, Integration, End-to-end | D3 design-reviewed |
 | [Run, Unit and source correlation (`REQ-TIRE-CLOUD-009`)](#req-tire-cloud-009) | Bind every accepted result to exact run, Unit role and source evidence | Unit, Component, Contract, Integration | D3 design-reviewed |
 | [Honest VU/DU evidence (`REQ-TIRE-CLOUD-010`)](#req-tire-cloud-010) | Never imply two simultaneous vehicles when one CARLA source is reused | Unit, Component, Integration, End-to-end | D3 design-reviewed |
-| [Run-scoped retention (`REQ-TIRE-CLOUD-011`)](#req-tire-cloud-011) | Archive/clear exact functional run data without touching Cloud audit state | Unit, Component, Integration | D3 design-reviewed |
+| [Complete current-run deletion (`REQ-TIRE-CLOUD-011`)](#req-tire-cloud-011) | Delete all exact functional run data without touching Cloud audit state | Unit, Component, Integration | D3 design-reviewed |
 | [Failure and freshness visibility (`REQ-TIRE-CLOUD-012`)](#req-tire-cloud-012) | Show invalid, stale, offline and failed states without fabricated success | Unit, Component, Integration, End-to-end | D3 design-reviewed |
 | [Mac-local ARM64 deployment (`REQ-TIRE-CLOUD-013`)](#req-tire-cloud-013) | Run one health-checked backend/dashboard container with dedicated persistence | Unit, Component, Integration | D3 design-reviewed |
 | [Multi-product network/signing isolation (`REQ-TIRE-CLOUD-014`)](#req-tire-cloud-014) | Isolate Tire from Brake state/credentials while keeping browser local and VM ingestion authenticated | Unit, Component, Integration, End-to-end | D3 design-reviewed |
@@ -333,7 +338,8 @@ packaged product and protected helper against controlled adjacent components.
 - State: D3 design-reviewed; exact D4 metadata schema remains open
 
 The view explains that Service Provider publication is not OEM deployment
-approval and that native pre-transfer dependency admission is deferred.
+approval and that native pre-transfer Service-to-FOTA VDP Component admission
+is deferred.
 
 ### Protected signing and publication
 
@@ -379,7 +385,7 @@ pipeline/AosCloud; a browser timeout must not cause blind republishing.
 <a id="req-tire-cloud-007"></a>
 
 - ID: `REQ-TIRE-CLOUD-007`
-- Statement: The Vehicle Data view shall present only backend records: estimated condition band, confidence/quality, threshold/change event, local inspection decision, original event and receipt time, service/model/VDP versions, Unit role and delivery/freshness state; it shall not display continuous raw telemetry, hidden truth, exact tread depth or Gateway/driver acknowledgement.
+- Statement: The Vehicle Data view shall present only backend records: estimated condition band, confidence/quality, threshold/change event, local inspection decision, original event and receipt time, service/model/VDP versions, Unit role and delivery/freshness state. When the service reports D4-007 `INCOMPATIBLE_VDP`, it shall instead show required and actual VDP identity, missing capability/path facts and a non-mutating action message directing the operator to the Platform Team. It shall keep stale/disconnected/access-denied reasons distinct and shall not display continuous raw telemetry, hidden truth, exact tread depth or Gateway/driver acknowledgement.
 - Parents: [independent Tire product (`SYS-TIRE-005`)](../system-requirements-and-traceability.md#sys-tire-005) and [authoritative surfaces (`SYS-OBS-001`)](../system-requirements-and-traceability.md#sys-obs-001)
 - Flow: [Tire observability (`AF-TIRE-OB`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-ob)
 - Verification: Unit, Component, Integration, End-to-end
@@ -391,9 +397,9 @@ pipeline/AosCloud; a browser timeout must not cause blind republishing.
 <a id="req-tire-cloud-008"></a>
 
 - ID: `REQ-TIRE-CLOUD-008`
-- Statement: Delayed and retried messages after vehicle/backend disconnection shall converge idempotently while preserving original event time separately from receipt/synchronization time; the dashboard shall show offline/delayed/synchronized states and retention failure explicitly.
+- Statement: Delayed and retried messages after functional-backend transport disconnection shall converge idempotently while preserving original event time separately from receipt/synchronization time; the dashboard shall show delayed/synchronized states and retention failure explicitly.
 - Parents: [bounded Tire reporting (`SYS-TIRE-004`)](../system-requirements-and-traceability.md#sys-tire-004) and [offline Tire advisory (`SYS-TIRE-006`)](../system-requirements-and-traceability.md#sys-tire-006)
-- Flow: [offline continuity (`AF-X-OFFLINE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-offline)
+- Flows: [Tire failure ownership (`AF-TIRE-FR`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-fr) and [targeted vehicle external-connectivity loss (`AF-X-OFFLINE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-offline)
 - Verification: Unit, Component, Integration, End-to-end
 - Evidence: disconnect/restart/reconnect sequence, duplicates and time-field proof
 - State: D3 design-reviewed
@@ -403,7 +409,7 @@ pipeline/AosCloud; a browser timeout must not cause blind republishing.
 <a id="req-tire-cloud-009"></a>
 
 - ID: `REQ-TIRE-CLOUD-009`
-- Statement: Every accepted result and query shall be scoped by the current bounded run window, exact Unit identity and role, service instance/version and selected source/replay correlation; unbound or ambiguous input shall be quarantined and excluded from audience success views.
+- Statement: Every accepted result and query shall be scoped by the current bounded run window, exact Unit identity and role, service instance/version and sequential live source/generation/frame correlation; unbound or ambiguous input shall be quarantined and excluded from audience success views.
 - Parents: [exact source binding (`SYS-SRC-001`)](../system-requirements-and-traceability.md#sys-src-001) and [per-run correlation (`SYS-OBS-004`)](../system-requirements-and-traceability.md#sys-obs-004)
 - Flow: [one visible source (`AF-X-SOURCE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-source)
 - Verification: Unit, Component, Contract, Integration
@@ -415,23 +421,23 @@ pipeline/AosCloud; a browser timeout must not cause blind republishing.
 <a id="req-tire-cloud-010"></a>
 
 - ID: `REQ-TIRE-CLOUD-010`
-- Statement: The dashboard shall label whether VU and DU evidence came from exclusive sequential live binding or deterministic replay and shall block comparison when source overlap, missing replay identity or ambiguous binding could imply two simultaneous CARLA vehicles.
+- Statement: The dashboard shall label VU and DU evidence as separate exclusive sequential live bindings, including detach/reset/new-generation boundaries, and shall block comparison when overlap, uncertain cleanup or ambiguous binding could imply two simultaneous CARLA vehicles. Telemetry replay is outside the first implementation.
 - Parent: [honest single-source presentation (`SYS-SRC-002`)](../system-requirements-and-traceability.md#sys-src-002)
 - Flow: [one visible source (`AF-X-SOURCE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-source)
 - Verification: Unit, Component, Integration, End-to-end
-- Evidence: live/replay/overlap/ambiguous presentation-state fixtures
+- Evidence: ordered live VU/reset/DU, overlap, uncertain-detach/reset and ambiguous presentation-state fixtures
 - State: D3 design-reviewed
 
-### Run-scoped retention
+### Complete current-run deletion
 
 <a id="req-tire-cloud-011"></a>
 
 - ID: `REQ-TIRE-CLOUD-011`
-- Statement: The backend shall apply bounded run-scoped functional-data retention and provide previewed archive/clear operations requiring an exact non-wildcard selector; those operations shall not call AosCloud or erase Cloud audit/lifecycle state, Brake Health data or unrelated Tire runs.
+- Statement: The backend shall persist Tire Health results only as needed for the active demo run and shall provide a previewed permanent-delete operation requiring the exact current-run Validation and Demonstration Unit IDs plus a bounded time selector. After successful R0 it shall retain no Tire Health demo-run summary, event, advisory or dashboard history; deletion shall not call AosCloud or erase Cloud audit/lifecycle state, Brake Health data or unrelated data.
 - Parents: [clear functional run data (`SYS-RET-002`)](../system-requirements-and-traceability.md#sys-ret-002) and [bounded Tire reporting (`SYS-TIRE-004`)](../system-requirements-and-traceability.md#sys-tire-004)
 - Flow: [Tire failure boundaries (`AF-TIRE-FR`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-fr)
 - Verification: Unit, Component, Integration
-- Evidence: dry run, exact row/object counts, unrelated-run/Brake negative proof and restart result
+- Evidence: exact preview, complete selected-row/object deletion, empty-dashboard result, unrelated-data/Brake negative proof and restart result
 - State: D3 design-reviewed
 
 ### Failure and freshness visibility
@@ -480,8 +486,8 @@ pipeline/AosCloud; a browser timeout must not cause blind republishing.
 | <a id="ut-tire-cloud-004"></a>`UT-TIRE-CLOUD-004` | `REQ-TIRE-CLOUD-006` | Durable idempotent summary/event ingestion; conflicting duplicate quarantine |
 | <a id="ut-tire-cloud-005"></a>`UT-TIRE-CLOUD-005` | `REQ-TIRE-CLOUD-007`, `012` | Exact factual presentation, all freshness/failure states and raw/oracle/Gateway negative claims |
 | <a id="ut-tire-cloud-006"></a>`UT-TIRE-CLOUD-006` | `REQ-TIRE-CLOUD-008` | Disconnect/restart/reconnect convergence with original/receipt times and retention failure |
-| <a id="ut-tire-cloud-007"></a>`UT-TIRE-CLOUD-007` | `REQ-TIRE-CLOUD-009`, `010` | Run/Unit/source isolation and honest sequential/replay presentation |
-| <a id="ut-tire-cloud-008"></a>`UT-TIRE-CLOUD-008` | `REQ-TIRE-CLOUD-011` | Preview and exact scoped clear/archive; wildcard/unrelated/Brake data unchanged |
+| <a id="ut-tire-cloud-007"></a>`UT-TIRE-CLOUD-007` | `REQ-TIRE-CLOUD-009`, `010` | Run/Unit/source isolation and honest sequential live VU/reset/DU presentation |
+| <a id="ut-tire-cloud-008"></a>`UT-TIRE-CLOUD-008` | `REQ-TIRE-CLOUD-011` | Preview and complete exact current-run deletion; wildcard rejected; unrelated and Brake data unchanged; dashboard empty |
 | <a id="ut-tire-cloud-009"></a>`UT-TIRE-CLOUD-009` | `REQ-TIRE-CLOUD-013` | ARM64 immutable image, health, dedicated volume, restart and secret/path policy |
 | <a id="ut-tire-cloud-010"></a>`UT-TIRE-CLOUD-010` | `REQ-TIRE-CLOUD-014` | Loopback UI, authenticated VM path, SP2 helper and Brake/Tire port/volume/credential isolation |
 
@@ -500,10 +506,10 @@ keys, tokens, raw certificates, unrestricted telemetry or hidden truth.
 | `REQ-TIRE-CLOUD-005` | `UT-001` | API/permission inventory | N/A | No lifecycle mutation | Negative authority proof |
 | `REQ-TIRE-CLOUD-006` | `UT-004` | Packaged ingestion | `IF-TIRE-003` fixtures | Real Tire v1.0 | `AF-TIRE-RT` |
 | `REQ-TIRE-CLOUD-007` | `UT-005` | Dashboard states | `IF-TIRE-004` fixtures | Real result | `AF-TIRE-OB` |
-| `REQ-TIRE-CLOUD-008` | `UT-006` | Restart/convergence | Timing/idempotency fixtures | Disconnect/reconnect | `AF-X-OFFLINE` |
+| `REQ-TIRE-CLOUD-008` | `UT-006` | Restart/convergence | Timing/idempotency fixtures | Functional-backend disconnect/reconnect | Required; `AF-X-OFFLINE` vehicle fault |
 | `REQ-TIRE-CLOUD-009` | `UT-007` | Correlation queries | Identity fields | VU/DU records | N/A |
-| `REQ-TIRE-CLOUD-010` | `UT-007` | Source labels | N/A | Selected source mode | `AF-X-SOURCE` |
-| `REQ-TIRE-CLOUD-011` | `UT-008` | Retention API | N/A | R0 preparation | N/A |
+| `REQ-TIRE-CLOUD-010` | `UT-007` | Source labels | N/A | Sequential live binding | `AF-X-SOURCE` |
+| `REQ-TIRE-CLOUD-011` | `UT-008` | Exact deletion API | N/A | R0 cleanup | N/A |
 | `REQ-TIRE-CLOUD-012` | `UT-005` | State matrix | N/A | Fault recovery | `AF-TIRE-FR` |
 | `REQ-TIRE-CLOUD-013` | `UT-009` | ARM64 container/health/volume | Packaging boundary | Docker restart | N/A |
 | `REQ-TIRE-CLOUD-014` | `UT-010` | Local/isolation policy | Ingestion/helper auth | VU/DU route + Brake peer | Network/offline presentation |
@@ -516,7 +522,7 @@ keys, tokens, raw certificates, unrestricted telemetry or hidden truth.
 | Multi-tenancy | Separate repository, container, volume, API namespace, helper identity, backend data and failure boundary from Brake Health | Unit, component, simultaneous integration |
 | Redaction | Allowlisted structured fields; no secrets, raw certificates, unrestricted telemetry or hidden truth | Unit, component, analysis |
 | Resource bounds | Message/page/storage/retention/upload limits frozen at D4 | Unit, load, integration |
-| Timing | Preserve event/receipt/sync times; never present Cloud latency as local advisory latency | Unit, analysis, end-to-end |
+| Chronology | Preserve event/receipt/sync times; never present Cloud delivery as part of the local advisory path | Unit, analysis, end-to-end |
 | Offline | Idempotent reconnect and explicit delayed/offline/retention state | Unit, integration, end-to-end |
 | Local hosting | Native ARM64 container, dedicated volume, loopback UI, authenticated VM route, native Keychain helper | Packaging, component, integration |
 
@@ -530,8 +536,8 @@ keys, tokens, raw certificates, unrestricted telemetry or hidden truth.
 | Protected SP2 helper protocol and Keychain identity selection | Publication integration and security | Function Team 2 release owner |
 | Docker startup/minimum version, container/volume/port names and collision policy with Brake Cloud | Launcher and simultaneous products | `CR-DEMO` + both Function Teams |
 | QEMU guest-visible authenticated route without LAN exposure | Real functional ingestion | `CR-DEMO` + Function Team 2 |
-| Run retention/archive/clear bounds and next-run policy | Storage sizing and R0 | Function Team 2 + Demo owner |
-| Exact live source rebinding versus deterministic replay | VU/DU labels and correlation | `CR-DEMO` |
+| Exact current-run deletion selector and completeness proof | Storage cleanup and R0 | Function Team 2 + Demo owner |
+| Exact sequential live VU attach/detach, deterministic reset/new generation and DU attach/detach | VU/DU labels and correlation | `CR-DEMO` |
 | Native AosCloud service-to-VDP admission | Deferred negative scenario only; not a local product responsibility | AosEdge Platform Team |
 
 ## D3 Acceptance Record

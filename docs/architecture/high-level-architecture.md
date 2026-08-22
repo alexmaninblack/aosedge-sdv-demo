@@ -64,6 +64,25 @@ adopts [ADR 0011](decisions/0011-qm-service-containment-and-evidence-backed-oem-
 5. the Dashboard remains stateless, while AosCloud records and executes the
    authorized decision.
 
+The accepted D4-009 Platform Team clarification later corrected the factory
+configuration without changing this topology: `enablePermissionsHandler`
+shall be explicitly `true` in the single IAM configuration and is independent
+of provisioning state. Provisioning does not toggle or select that setting;
+Service Manager and IAM still create per-instance permissions and `AOS_SECRET`
+state only for running SOTA services. Because the current evidence images omit
+the setting, the successor OEM Demo Factory Image must be rebuilt with it.
+
+The accepted D4-010.1 signing decision also preserves the topology while
+freezing the per-Unit trust lifecycle. The Factory Image carries only the
+dedicated non-secret `kuksa-jwt` certificate-module/PKCS#11 and verifier
+preparation wiring. Provisioning creates a unique RSA signer; only its public
+verifier is installed before the Broker and unmodified KUKSA start. The first
+demo uses one signer per provisioning lifecycle with no hot reload or live
+rotation, and R0 destroys the retired signer with its VM overlay. The pinned
+KUKSA enforces signature, audience `kuksa.val`, expiry and path permissions;
+it is not credited with validating `iss`. Provider identity and artifact
+publication credentials remain separate open parts of D4-010.
+
 ## Revision 1.3 Summary
 
 Architecture 1.3 preserves the component and lifecycle topology of 1.2 and
@@ -76,9 +95,11 @@ corrects the Aos-to-KUKSA credential authority as amended in
    currently registered IAM permissions to short-lived KUKSA JWTs;
 3. no project-owned identity store or duplicate per-service OEM allowlist is
    added to the broker;
-4. the Factory Image enables the stock Aos IAM permission handler and carries
-   only the non-secret IAM/PKCS#11 integration seam for the broker signing
-   key; per-Unit key material is established after manufacturing;
+4. the Factory Image carries one stock Aos IAM configuration with
+   `enablePermissionsHandler: true` for both provisioning and normal modes; it
+   carries no pre-populated service permission, identity or `AOS_SECRET`, and
+   only the non-secret IAM/PKCS#11 integration seam for the broker signing key,
+   while per-Unit key material is established after manufacturing;
 5. the privileged FOTA provider uses a separate short-lived platform
    credential, whose exact identity binding remains a qualification gate; and
 6. native pre-transfer Cloud permission admission remains deferred until a
@@ -295,14 +316,14 @@ architecture. A deployable FOTA or SOTA box indicates that the architecture can
 host that element; it does not imply that every element is installed at every
 demonstration stage. The manufacturing, provisioning, `G0–G4`, independent
 `T1` Tire Health, and retirement sequence and the precise presence or absence of each deployable component are
-owned by Demo Scenario 1.5 rather than by this static component diagram.
+owned by Demo Scenario 1.9 rather than by this static component diagram.
 
 The logical Domain Controller architecture is instantiated twice for the
 demonstration: once as the Validation Unit and once as the Demonstration Unit.
 The diagram intentionally does not duplicate the full ECU graph. The current
-demo has one visible CARLA/Vehicle Gateway/VISS environment; connection or
-deterministic replay between that source and the selected Unit remains a
-detailed demonstration-design decision.
+demo has one visible live CARLA/Vehicle Gateway/VISS environment and uses
+sequential exclusive binding: Validation first, then detach/reset and
+Demonstration. Telemetry replay is deferred beyond the first implementation.
 
 ## System Boundaries
 
@@ -409,10 +430,13 @@ or parallel desired state, or become a second lifecycle control plane.
 
 AosEdge native logging is an existing platform capability. System, service
 instance, and crash logs are collected by AosCore and delivered to AosCloud in
-response to authorized log requests. The OEM Software Delivery Dashboard uses
-supported AosCloud APIs to request and present that evidence without storing
-its own log archive or introducing a separate collection, transport, or search
-pipeline.
+response to authorized log requests. AosCloud retains the request record and
+resulting downloadable archive in Cloud storage subject to the deployed Cloud
+deletion and retention policy. The OEM Software Delivery Dashboard uses
+supported AosCloud APIs to request and present that authoritative stored
+evidence without keeping a second archive or introducing a separate
+collection, transport, or search pipeline. The architecture does not claim
+indefinite retention.
 
 Function Team 1 owns a separate Brake Health Backend and Brake Health Function
 Dashboard. Function Team 2 owns a separate Tire Health Backend and Tire Health
@@ -444,8 +468,10 @@ component:
 
 - OEM Factory Baseline Assembly and Factory Image qualification, including
   the selected provider-specific component runtime, its empty-slot behavior,
-  the enabled stock Aos IAM permission handler, and the non-secret
-  IAM/PKCS#11 integration seam used by the future broker;
+  an explicit `enablePermissionsHandler: true` in the single stock Aos IAM
+  configuration, absence of pre-populated service permission/secret state,
+  and the dedicated non-secret `kuksa-jwt` certificate-module/PKCS#11 plus
+  public-verifier preparation wiring used by the future broker;
 - inbound and outbound vehicle-interface providers;
 - VSS mapping, filtering, and validation;
 - KUKSA integration and stable signal contract;
@@ -612,8 +638,9 @@ KUKSA sensor subscription
 ```
 
 This path executes entirely inside the Domain Controller. It must continue to
-work without Cloud connectivity and its decision latency must not contain a
-Cloud round trip.
+work without Cloud connectivity; no Cloud round trip may be part of the local
+decision path. Quantitative on-board performance benchmarking is deferred
+beyond the first demo.
 
 ### 4. Local Tire Health estimation and bounded reporting
 
@@ -763,7 +790,9 @@ dependency.
 - An advisory request cannot become an unrestricted transport tunnel from a
   service container to the Vehicle Gateway.
 - Upstream Eclipse KUKSA Databroker remains unchanged and trusts only the
-  public verifier configured by the Platform Team.
+  per-Unit public verifier prepared after provisioning. It loads one verifier
+  at process start, validates `RS256` signature, audience `kuksa.val`, expiry
+  and path permissions, and is not claimed to enforce `iss`.
 - The Vehicle Data Platform Component's Aos–KUKSA Credential Broker validates
   a running service's `AOS_SECRET` through Aos IAM and translates only the
   currently registered path/mode set into a short-lived KUKSA JWT. It rejects
@@ -775,10 +804,15 @@ dependency.
 - Functional services never receive KUKSA `provide` or `create` authority.
   The Vehicle Data Provider uses a separate short-lived platform credential;
   its exact FOTA-component identity binding remains a qualification gate.
-- Broker signing material is protected through the Aos IAM/certificate-module
-  and PKCS#11 integration. It, `AOS_SECRET`, and issued JWTs never enter Git,
-  Factory Images, FOTA/SOTA payloads, command lines, or logs. Example/static
-  tokens are qualification history, not the target architecture.
+- Broker signing material is a unique per-Unit RSA key created after
+  provisioning in the dedicated Aos `kuksa-jwt` certificate-module/PKCS#11
+  token. Only its public verifier is exported atomically. The key,
+  `AOS_SECRET`, issued JWTs and any shared static verifier never enter Git,
+  Factory Images, FOTA/SOTA payloads, command lines, or logs. Broker and KUKSA
+  fail closed before verifier preparation. The first demo has no live key
+  rotation; a fresh provisioning lifecycle creates a new key, and R0 overlay
+  destruction retires it. Example/static tokens are qualification history,
+  not the target architecture.
 - Vehicle control remains on its separate authenticated channel and is not
   exposed to either functional service.
 - Functional backends have no AosCore lifecycle authority and cannot act as a
@@ -808,7 +842,7 @@ dependency.
 | VISS server | TLS VISS 3.1 Get and Subscribe; write rejected | Add a narrowly scoped QM advisory Set path and Gateway status; Gateway remains the authoritative deny-by-default boundary for motion and safety-critical operations |
 | Engineering dashboard | Independent VISS subscriber for live telemetry | Add advisory request and Gateway reception status |
 | Vehicle Data Platform Component | Inbound VISS-to-KUKSA implementation and qualification evidence exist; the thin Credential Broker and provider platform-identity binding are not yet implemented in the clean demo baseline | Provide one shared, versioned FOTA component with inbound telemetry, separately governed outbound advisory directions, and short-lived KUKSA credentials derived from Aos IAM without a parallel identity or per-service policy store |
-| Factory Baseline Assembly, OEM Demo Factory Image and Domain Controller substrate | The current build evidence and runtime are provider-specific; the live `.1`/`.2` IAM configuration does not enable the permissions handler, installed systems prove an empty provider slot, and the hardened candidate is not yet an accepted clean factory artifact | Qualify the reproducible assembly process and freeze its immutable, unprovisioned OEM image containing AosCore, KUKSA, security/update support, enabled stock IAM permission handling, a non-secret IAM/PKCS#11 signing-key seam, and the selected empty-slot runtime, but no provider payload, functional service, reusable identity or key |
+| Factory Baseline Assembly, OEM Demo Factory Image and Domain Controller substrate | The current build evidence and runtime are provider-specific; the stock provisioning and normal IAM services share one configuration, live `.1`/`.2` remain permission-handler-disabled after provisioning, installed systems prove an empty provider slot, and the hardened candidate is not yet an accepted clean factory artifact | Rebuild and qualify the immutable, unprovisioned OEM image with AosCore, KUKSA, security/update support, one IAM configuration containing `enablePermissionsHandler: true`, no pre-populated service permissions or secrets, dedicated non-secret `kuksa-jwt` certificate-module/PKCS#11 and verifier-preparation wiring, and the selected empty-slot runtime, but no provider payload, functional service, reusable identity, signing key or shared verifier |
 | KUKSA contract | Readable telemetry signals | Serve both services and add the versioned advisory actuator and status sensor |
 | Brake Health service | Not yet the accepted final service | Subscribe, analyze locally, actuate advisory, report asynchronously |
 | Tire Health service | Not implemented | Estimate tire condition locally, send bounded summaries/events and request a typed inspection advisory |
@@ -816,7 +850,7 @@ dependency.
 | Cross-lifecycle dependency admission | Service-to-layer and component-to-component dependencies exist, but the current released Cloud/API does not expose a Service-to-FOTA-component admission rule | Natively reject an incompatible SOTA request in AosCloud before rollout creation or Unit transfer; deferred until the roadmap feature ships and is qualified |
 | OEM Software Delivery Dashboard | Not implemented; the AosCloud UI and APIs remain authoritative | Provide a stateless view of exact artifact/metadata digests, requested permissions, actual targets, evidence, owning-team acceptance, active OEM role, validation, promotion and Unit state; expose explicit final OEM approval only after prerequisites match, without a parallel state store or automatic approval policy |
 | Native operational logs | AosEdge supports Cloud-requested system, service-instance and crash logs | Present selected, access-controlled request status and log evidence in the stateless Software Delivery Dashboard through supported AosCloud APIs |
-| Validation and Demonstration instances | Separate VM roles exist, while the demo has one visible CARLA/Vehicle Gateway/VISS source | Instantiate the same logical Domain Controller architecture twice and define deterministic selection or replay without claiming two simultaneous vehicles |
+| Validation and Demonstration instances | Separate VM roles exist, while the demo has one visible CARLA/Vehicle Gateway/VISS source | Instantiate the same logical Domain Controller architecture twice and implement sequential exclusive live Validation attach/detach, deterministic reset and Demonstration attach/detach without claiming two simultaneous vehicles; defer telemetry replay |
 | Driver HMI | Not implemented | Remains out of scope |
 | Functional backends | Scenario-level targets | Two separate backends receive derived Brake Health and Tire Health data without entering local decisions or software lifecycle control |
 
@@ -860,7 +894,7 @@ Architecture 1.4 is aligned only while all of the following remain true:
     a driver.
 15. No secret, Unit identity, or private credential is embedded in a FOTA or
     SOTA payload.
-16. The static diagram is a target capability superset; Demo Scenario 1.7 owns
+16. The static diagram is a target capability superset; Demo Scenario 1.9 owns
     component presence and absence at each manufacturing, provisioning,
     `G0–G4`, `T1`, and retirement stage.
 17. Validation and Demonstration Units are separate instances of the same
@@ -881,10 +915,15 @@ Architecture 1.4 is aligned only while all of the following remain true:
     `AOS_SECRET` and registered permissions. The VDP Credential Broker only
     performs contract-bounded translation to a short-lived KUKSA JWT and owns
     no parallel identity or per-service policy database.
-22. The Factory Image contains the enabled stock IAM permission handler and
-    non-secret IAM/PKCS#11 integration seam, but no per-Unit signing key or
-    static provider/service token. The FOTA provider uses a separately bound
-    short-lived platform credential.
+22. The Factory Image contains one IAM configuration with
+    `enablePermissionsHandler: true` in both provisioning and normal modes,
+    plus dedicated non-secret `kuksa-jwt` certificate-module/PKCS#11 and
+    verifier-preparation wiring, but no pre-populated service permission,
+    `AOS_SECRET`, per-Unit signing key, shared static verifier or static
+    provider/service token. Provisioning does not toggle the handler; it
+    creates a unique Unit signer and verifier before Broker/KUKSA startup. The
+    first demo performs no live rotation, and the FOTA provider uses a
+    separately bound short-lived platform credential.
 23. Brake Health and Tire Health remain QM-domain maintenance/inspection
     applications with no allocated safety goal, direct driver-HMI claim,
     vehicle-motion authority or safety-critical actuator access.
@@ -923,15 +962,14 @@ Architecture 1.4 is aligned only while all of the following remain true:
 
 High-Level Architecture 1.4 was accepted as the architecture baseline on
 2026-08-19 after the ADR 0011 QM-containment and evidence-backed approval
-decision. Its downstream
-current downstream review projections are:
+decision. Its current downstream review projections are:
 
-1. Demo Scenario 1.7 for audience-visible stage order and component presence;
-2. Architecture Flows 1.6 for detailed lifecycle, runtime, observability, and
+1. Demo Scenario 1.9 for audience-visible stage order and component presence;
+2. Architecture Flows 1.8 for detailed lifecycle, runtime, observability, and
    failure mapping;
-3. System Requirements and Traceability 0.9 for normative system obligations
+3. System Requirements and Traceability 1.0 for normative system obligations
    and gap coverage;
-4. Component Decomposition and Interface Register 1.0 for component ownership,
+4. Component Decomposition and Interface Register 1.1 for component ownership,
    interface identifiers, repository allocation, and provisional requirement
    packages.
 

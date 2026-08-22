@@ -59,8 +59,9 @@ Before committing a derivative, confirm all of the following:
 - the customer is not identified;
 - no cell, sentence, screenshot, or distinctive internal label was copied;
 - each concern is paraphrased as a general automotive requirement;
-- current evidence is labelled `PARTIAL`, `PLANNED`, or
-  `DOCUMENTARY_ONLY` honestly;
+- current evidence is labelled `UNKNOWN`, `PARTIAL`, `PLANNED`,
+  `DOCUMENTARY_ONLY`, `ACCEPTED`, or `STALE` honestly, and `ACCEPTED` is bound
+  to exact current evidence without exposing the confidential source;
 - claim boundaries state what the demo cannot prove;
 - the confidential-input guard passes for staged content and history.
 

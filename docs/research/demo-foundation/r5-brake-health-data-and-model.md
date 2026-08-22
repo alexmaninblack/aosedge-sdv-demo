@@ -5,6 +5,14 @@
 
 Status: **research pass complete; implementation not authorized**.
 
+> Historical research note: the early recommendation below placed simulated
+> pad wear and temperature proxies in the vehicle-data path. The reviewed D4
+> design supersedes that placement: D4-002 defines the native installed vehicle
+> boundary, D4-003 uses only the visible native braking episode as stimulus,
+> and the service-owned synthetic assessment is to be frozen under D4-016.
+> Synthetic pad wear, temperature, pressure or health shall not be added as
+> native CARLA/Gateway data merely to support the demo model.
+
 ## Decision scope
 
 This workstream defines the P1/P2/P3 data progression, where simulated brake
@@ -260,4 +268,4 @@ identity, P3 advisory semantics, and cross-surface trace correlation.
 - [COVESA VSS 6.0 chassis signals](https://raw.githubusercontent.com/COVESA/vehicle_signal_specification/v6.0/spec/Chassis/Chassis.vspec)
 - [COVESA VSS 6.0 ADAS signals](https://raw.githubusercontent.com/COVESA/vehicle_signal_specification/v6.0/spec/ADAS/ADAS.vspec)
 - [Aerodynamic and Thermal Modelling of Disc Brakes](https://www.mdpi.com/1996-1073/13/1/203)
-- [Current Demo Scenario 1.7](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- [Current Demo Scenario 1.9](../../demo/staged-post-sop-brake-health-demo-scenarios.md)

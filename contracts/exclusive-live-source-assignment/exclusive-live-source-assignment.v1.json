@@ -1,0 +1,58 @@
+{
+  "$schema": "./exclusive-live-source-assignment.schema.json",
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "contractId": "aosedge-demo-exclusive-live-source-assignment",
+  "contractVersion": "1.0.0",
+  "decision": "D4-005",
+  "audienceModel": {
+    "vehicles": [
+      {
+        "vehicleRole": "VALIDATION_VEHICLE",
+        "unitRole": "VALIDATION_UNIT",
+        "purpose": "Engineering validation vehicle for qualification before promotion."
+      },
+      {
+        "vehicleRole": "DEMONSTRATION_VEHICLE",
+        "unitRole": "DEMONSTRATION_UNIT",
+        "purpose": "Field-like demonstration vehicle receiving only accepted promoted releases."
+      }
+    ],
+    "currentVehicleCount": 1,
+    "primaryAction": "Continue with Demonstration Vehicle",
+    "primaryUiProhibitedTerms": ["ATTACH CARLA", "DETACH CARLA", "SWITCH VM", "SOURCE BINDING"],
+    "technicalDetails": ["Unit ID", "Node ID", "Unit Set", "source identity", "assignment state", "generation", "bounded frame range"],
+    "roleInVehicleDataPath": false
+  },
+  "technicalAssignment": {
+    "owner": "Host Demo Orchestrator",
+    "cloudLifecycleOwner": "AosCloud",
+    "bothUnitsMayRemainCloudOnline": true,
+    "oneActiveBinding": true,
+    "states": ["DETACHED", "ATTACHING", "ATTACHED", "DETACHING", "FAILED"],
+    "selectedPeerPolicy": "Gateway/VISS accepts the exact currently selected authenticated Unit peer, rejects other, unknown, ambiguous or additional Unit peers, and separately permits the D4-006 authenticated read-only Engineering Dashboard peer.",
+    "authenticationDecision": "D4-006"
+  },
+  "orderedFlow": [
+    "Re-read exact Validation Unit and Demonstration Unit identities and disjoint Unit Set roles.",
+    "Select Validation Unit, authorize only its authenticated peer, establish one VISS session and record the first monotonic frame.",
+    "Execute Validation Vehicle qualification and retain its bounded source frame range.",
+    "Enter safe stop, close the Validation Unit VISS session, clear selection and prove that no source consumer remains attached.",
+    "Execute the D4-004 canonical reset with no Unit attached and verify a new Reset Generation and first post-reset frame.",
+    "Select Demonstration Unit, authorize only its authenticated peer, establish one VISS session and prove the current baseline vehicle operation.",
+    "Promote the identical accepted artifact while the Demonstration Vehicle is current, preserving the qualified QM in-motion update claim.",
+    "On completion or R0, enter safe stop, detach the Demonstration Unit and reconcile the source gate before cleanup."
+  ],
+  "evidence": {
+    "sourceFields": ["hardwareProfileDigest", "CARLARunId", "egoVehicleId", "ResetGeneration"],
+    "targetFields": ["vehicleRole", "unitRole", "UnitId", "NodeId", "UnitSetId", "authenticatedPeerIdentity"],
+    "rangeFields": ["firstFrameId", "lastFrameId", "firstSimulationTime", "lastSimulationTime"],
+    "exclusiveProof": ["exactlyOneAcceptedUnitPeer", "nonSelectedUnitPeerRejected", "authenticatedReadOnlyDashboardIndependent", "confirmedDetach", "noOverlappingFrameRanges", "newResetGenerationBeforeNextAssignment"]
+  },
+  "failurePolicy": {
+    "safeStop": true,
+    "blockNextAssignment": true,
+    "conditions": ["unexpectedPeer", "moreThanOneSession", "uncertainDetach", "overlappingFrameRanges", "identityMismatch", "resetFailure", "nonMonotonicFrames"]
+  },
+  "deferred": ["TELEMETRY_REPLAY", "SECOND_SIMULATED_VEHICLE"]
+}

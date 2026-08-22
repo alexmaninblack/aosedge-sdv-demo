@@ -30,7 +30,7 @@ flowchart LR
         KUKSA -->|"versioned VSS contract"| SERVICE2
         SERVICE1 -. "AOS_SECRET to short-lived JWT" .-> BROKER
         SERVICE2 -. "AOS_SECRET to short-lived JWT" .-> BROKER
-        BROKER -. "public verifier" .-> KUKSA
+        BROKER -. "per-Unit RS256 verifier" .-> KUKSA
     end
 
     VISS -->|"private verified VISS 3.1 route"| PROVIDER

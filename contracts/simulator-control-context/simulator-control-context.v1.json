@@ -1,0 +1,110 @@
+{
+  "$schema": "./simulator-control-context.schema.json",
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "contractId": "aosedge-demo-simulator-control-context",
+  "contractVersion": "1.0.0",
+  "decision": "D4-004",
+  "states": {
+    "driveModes": ["SAFE_STOP", "SCENARIO", "MANUAL", "AUTOPILOT"],
+    "worldContexts": ["FREE_DRIVE", "BRAKE_EVENT"]
+  },
+  "transitions": [
+    {
+      "id": "scenario-to-manual",
+      "sourceMode": "SCENARIO",
+      "sourceContext": "BRAKE_EVENT",
+      "targetMode": "MANUAL",
+      "targetContext": "UNCHANGED",
+      "reset": "NONE",
+      "obstacle": "RETAIN",
+      "unfinishedScenario": "ABORT",
+      "notes": "Preserve actor, pose, clock, telemetry identity and braking context for operator-generated braking."
+    },
+    {
+      "id": "brake-context-to-autopilot",
+      "sourceMode": "ANY",
+      "sourceContext": "BRAKE_EVENT",
+      "targetMode": "AUTOPILOT",
+      "targetContext": "FREE_DRIVE",
+      "reset": "CANONICAL_FREE_DRIVE",
+      "obstacle": "REMOVE",
+      "unfinishedScenario": "ABORT",
+      "notes": "Safe-stop, remove scenario-owned obstacle state, reset zero motion, validate lane alignment and then enable Traffic Manager."
+    },
+    {
+      "id": "free-manual-to-autopilot",
+      "sourceMode": "MANUAL",
+      "sourceContext": "FREE_DRIVE",
+      "targetMode": "AUTOPILOT",
+      "targetContext": "UNCHANGED",
+      "reset": "NONE",
+      "obstacle": "UNCHANGED",
+      "unfinishedScenario": "NOT_APPLICABLE",
+      "notes": "Validate lane alignment and hand over in place."
+    },
+    {
+      "id": "autopilot-to-manual",
+      "sourceMode": "AUTOPILOT",
+      "sourceContext": "FREE_DRIVE",
+      "targetMode": "MANUAL",
+      "targetContext": "UNCHANGED",
+      "reset": "NONE",
+      "obstacle": "UNCHANGED",
+      "unfinishedScenario": "NOT_APPLICABLE",
+      "notes": "Disable Traffic Manager before accepting manual actuation and use the bounded pedal-safe blend."
+    },
+    {
+      "id": "any-to-scenario",
+      "sourceMode": "ANY",
+      "sourceContext": "ANY",
+      "targetMode": "SCENARIO",
+      "targetContext": "BRAKE_EVENT",
+      "reset": "CANONICAL_BRAKE_EVENT",
+      "obstacle": "PREPARE",
+      "unfinishedScenario": "ABORT",
+      "notes": "Safe-stop, disable Traffic Manager when active, prepare the canonical obstacle, reset zero motion, clear attempt-local evidence and start a new scenario generation."
+    },
+    {
+      "id": "any-to-safe-stop",
+      "sourceMode": "ANY",
+      "sourceContext": "ANY",
+      "targetMode": "SAFE_STOP",
+      "targetContext": "UNCHANGED",
+      "reset": "NONE",
+      "obstacle": "UNCHANGED",
+      "unfinishedScenario": "UNCHANGED",
+      "notes": "Stop without implicitly changing world context, deleting the obstacle or claiming a reset."
+    }
+  ],
+  "projection": [
+    { "path": "Vehicle.CarlaSimulation.Control.ActiveMode", "dataType": "string", "allowedValues": ["SAFE_STOP", "SCENARIO", "MANUAL", "AUTOPILOT"], "semantics": "Mode actually applied after every required context operation succeeds." },
+    { "path": "Vehicle.CarlaSimulation.Control.RequestedMode", "dataType": "string", "allowedValues": ["SAFE_STOP", "SCENARIO", "MANUAL", "AUTOPILOT"], "semantics": "Latest accepted requested target; it may differ from ActiveMode while PREPARING." },
+    { "path": "Vehicle.CarlaSimulation.Control.TransitionState", "dataType": "string", "allowedValues": ["STABLE", "PREPARING", "FAILED"], "semantics": "World/control transition transaction state; failure leaves ActiveMode SAFE_STOP and preserves an explicit reason." },
+    { "path": "Vehicle.CarlaSimulation.Control.Generation", "dataType": "uint64", "semantics": "Monotonic transaction generation incremented for every accepted non-idempotent request, Scenario reselection and controller-forced safe stop." },
+    { "path": "Vehicle.CarlaSimulation.Control.LastReason", "dataType": "string", "semantics": "Stable machine-readable reason for the current or most recent transition outcome." },
+    { "path": "Vehicle.CarlaSimulation.World.Context", "dataType": "string", "allowedValues": ["FREE_DRIVE", "BRAKE_EVENT"], "semantics": "Last fully confirmed simulated-world context; FAILED means it shall not be treated as a newly requested context." },
+    { "path": "Vehicle.CarlaSimulation.Scenario.Id", "dataType": "string", "semantics": "Configured scenario identifier or an empty value when no scenario is selected." },
+    { "path": "Vehicle.CarlaSimulation.Scenario.State", "dataType": "string", "allowedValues": ["IDLE", "PREPARING", "RUNNING", "COMPLETE", "ABORTED", "ERROR"], "semantics": "Lifecycle state of the current or most recent scenario generation." },
+    { "path": "Vehicle.CarlaSimulation.Scenario.Phase", "dataType": "string", "semantics": "Current deterministic scenario phase or an empty value outside an active scenario." },
+    { "path": "Vehicle.CarlaSimulation.Scenario.Result", "dataType": "string", "allowedValues": ["NONE", "PASS", "FAIL", "ABORTED"], "semantics": "Terminal result for the current or most recent scenario generation." },
+    { "path": "Vehicle.CarlaSimulation.Scenario.Generation", "dataType": "uint64", "semantics": "Monotonic generation incremented exactly once for every canonical Scenario start or restart." },
+    { "path": "Vehicle.CarlaSimulation.Reset.Generation", "dataType": "uint64", "semantics": "Monotonic generation incremented only after a canonical physical reset completes successfully." },
+    { "path": "Vehicle.CarlaSimulation.Reset.InProgress", "dataType": "boolean", "semantics": "True from safe-stop entry until reset and post-reset verification complete or fail." },
+    { "path": "Vehicle.CarlaSimulation.Reset.Reason", "dataType": "string", "semantics": "Machine-readable reason for the latest completed or failed reset attempt." },
+    { "path": "Vehicle.CarlaSimulation.Reset.FrameId", "dataType": "uint64", "semantics": "First complete CARLA frame published after the latest successful reset." },
+    { "path": "Vehicle.CarlaSimulation.Reset.Discontinuity", "dataType": "boolean", "semantics": "True on the first complete post-reset snapshot; clients also compare Reset.Generation so the discontinuity cannot be missed." }
+  ],
+  "resetSemantics": {
+    "sameActor": true,
+    "safeStopFirst": true,
+    "zeroMotion": true,
+    "generation": "Increment Reset.Generation only after transform and zero linear/angular motion are verified; failed resets do not claim a new generation.",
+    "discontinuity": "Publish Reset.Discontinuity on the first complete post-reset snapshot and retain Reset.Generation plus Reset.FrameId as durable detection evidence."
+  },
+  "reversePolicy": {
+    "physicalCapabilityDeclared": true,
+    "firstDemoControlUiAuthorized": false,
+    "recovery": ["SCENARIO_RESTART", "AUTOPILOT_CONTEXT_RESET"]
+  }
+}

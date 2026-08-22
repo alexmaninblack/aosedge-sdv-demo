@@ -20,7 +20,9 @@ than the Engineering or Function dashboards.
 | AosCore sends resource monitoring and journal-derived error alerts to AosCloud through the Communication Manager. | **PROVEN** |
 | AosCloud UI supports requesting and downloading service and Unit logs. | **PROVEN** |
 | AosCloud UI supports explicit Unit, service-instance and crash-log requests and downloadable results. | **PROVEN** |
-| API-driven log request creation, result retrieval, permissions, retention/deletion, and offline behavior in the current Cloud require qualification. | **REQUIRES EXPERIMENT** |
+| AosCloud persists downloaded Unit logs as encrypted BLOB objects; the current API exposes separate Unit- and Service-log request list, create, detail, download and delete operations. | **PROVEN** |
+| The current API contract states that deleting a log request also deletes its related files. | **PROVEN** |
+| Live role enforcement, request progress/failure behavior, exact Cloud retention duration, deletion effect and offline behavior in the qualified demo tenant require qualification. | **REQUIRES EXPERIMENT** |
 
 ## Product-native logging path
 
@@ -30,7 +32,7 @@ provider/service stdout and stderr
   -> Aos Service Manager log provider
   -> on-demand Cloud log request
   -> compressed log parts over Communication Manager
-  -> AosCloud log record and downloadable archive
+  -> Cloud-retained AosCloud request record and downloadable archive
 ```
 
 This path is different from two related paths:
@@ -51,8 +53,8 @@ The stateless OEM Software Delivery Dashboard uses supported AosCloud APIs to:
 1. create an explicitly confirmed system, service-instance, or crash-log
    request;
 2. poll the authoritative Cloud request state;
-3. present or download the completed result without retaining an independent
-   archive.
+3. present or download the completed Cloud-retained result without retaining
+   an independent dashboard archive.
 
 Private client credentials remain in the dashboard backend and never enter
 browser code. If a requested operation is unavailable through the qualified
@@ -96,15 +98,18 @@ Never log private keys, bearer tokens, `AOS_SECRET`, PKCS#12 paths, certificate
 subjects, unrestricted request bodies, public VINs, or raw high-rate telemetry.
 Use pseudonymous Unit and run identifiers suitable for the demonstration.
 
-The export bridge must:
+The native-log dashboard and any bounded temporary download handling must:
 
 - enforce an event and field allowlist;
-- redact again before indexing;
+- redact before presentation;
 - cap record and archive sizes;
-- use separate indices or tags for validation and demonstration Units;
-- retain only the short window required for the demo and review;
+- preserve explicit validation/demonstration Unit identity;
+- treat the Cloud request record and related archive as authoritative while
+  retained by AosCloud;
+- never describe the Cloud-retained result as an indefinite archive unless the
+  deployed Cloud retention policy is separately qualified;
+- remove any temporary Mac-local copy after bounded presentation/download use;
 - record the source log request ID and source time range;
-- make duplicate ingestion idempotent;
 - expose data age so a downloaded archive is not presented as a live stream.
 
 ## Dashboard role
@@ -122,28 +127,33 @@ Software Delivery Dashboard, and the Function Dashboard.
 
 ## Required experiments
 
-1. Enumerate and exercise the live API endpoints for creating a service or
-   Unit log request, polling completion, and downloading all archive parts.
-2. Confirm permissions for a dedicated read/log-request identity and separate
+1. Exercise the proven Unit- and Service-log API operations end to end: create,
+   poll, download and delete the request with its related files.
+2. Confirm live permissions for a dedicated read/log-request identity and separate
    read-only dashboard identity.
-3. Measure the latency from an informational service log line to downloadable
-   Cloud archive availability.
+3. Confirm eventual availability and factual progress/failure state from an
+   informational service log line to a downloadable Cloud archive; do not use
+   retrieval duration as a vehicle-performance KPI.
 4. Repeat across temporary Unit/Cloud disconnection and establish whether the
    journal and requested time window preserve the record.
 5. Verify archive format, compression, ordering, timestamps, duplication, and
    maximum part size.
-6. Verify that the dashboard does not retain an independent archive and that
-   temporary downloads are bounded and removed according to the demo policy.
+6. Determine the deployed Cloud retention policy and prove the visible effect
+   of explicit deletion; verify that the dashboard does not retain an
+   independent archive and that temporary downloads are bounded and removed.
 7. Prove that high log volume cannot exhaust the Unit, AosCloud request path,
    dashboard backend, or demo laptop.
 
 ## Current architecture decision
 
-The scenario's wording that AosEdge provides system/service log collection and
-Cloud transmission is supported. The accepted architecture uses AosCloud as
-the authoritative source and the stateless OEM Software Delivery Dashboard as
-the demo presentation surface. A separate log pipeline, store, or dashboard is
-not part of the demonstration.
+The scenario's wording that AosEdge provides system/service log collection,
+Cloud transmission and Cloud-retained downloadable results is supported. The
+accepted architecture uses the AosCloud request record and related stored
+archive as authoritative while retained by the Cloud, and the stateless OEM
+Software Delivery Dashboard as the demo presentation surface. A separate log
+pipeline, store, or dashboard is not part of the demonstration. `Permanent`
+in the storage architecture is a persistence class, not a demo claim of
+unlimited retention.
 
 ## Sources
 
@@ -152,4 +162,7 @@ not part of the demonstration.
 - [AosCore Monitoring and Observability](https://docs.aosedge.tech/docs/aos-core/monitoring/)
 - [AosCore Common Infrastructure](https://docs.aosedge.tech/docs/aos-core/architecture/common-infrastructure/)
 - [AosCore alerts and thresholds](https://docs.aosedge.tech/docs/aos-core/monitoring/alerts-and-thresholds)
-- [Current Demo Scenario 1.7](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- [AosCloud storage components](https://docs.aosedge.tech/docs/aos-cloud/components-view/storage-components)
+- [AosCloud API v11](https://api.aoscloud.io/api/v11/docs#/)
+- [AosCloud audit actions](https://docs.aosedge.tech/docs/reference/misc/audit-actions)
+- [Current Demo Scenario 1.9](../../demo/staged-post-sop-brake-health-demo-scenarios.md)

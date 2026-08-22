@@ -1,0 +1,192 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:vehicle-hardware-capability-profile:schema:v1",
+  "title": "Vehicle Hardware Capability Profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "$comment",
+    "schemaVersion",
+    "profileId",
+    "profileVersion",
+    "decision",
+    "lifecycle",
+    "identity",
+    "capabilities",
+    "excludedControlModes"
+  ],
+  "properties": {
+    "$schema": { "const": "./vehicle-hardware-capability-profile.schema.json" },
+    "$comment": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "profileId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9.-]+$" },
+    "profileVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "decision": { "const": "D4-002" },
+    "lifecycle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "owner", "gatewayCoOwner"],
+      "properties": {
+        "state": { "const": "ACCEPTED_CONTRACT" },
+        "owner": { "const": "Vehicle Simulation" },
+        "gatewayCoOwner": { "const": "Vehicle Gateway" }
+      }
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "carlaRepositoryCommit",
+        "carlaRuntimeCompatibilityCommit",
+        "carlaSourceLabel",
+        "physicsEngine",
+        "egoBlueprint"
+      ],
+      "properties": {
+        "carlaRepositoryCommit": { "$ref": "#/$defs/gitCommit" },
+        "carlaRuntimeCompatibilityCommit": { "$ref": "#/$defs/gitCommit" },
+        "carlaSourceLabel": { "type": "string", "minLength": 1 },
+        "physicsEngine": { "const": "Unreal Engine 5 Chaos" },
+        "egoBlueprint": { "const": "vehicle.lincoln.mkz" }
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/capability" }
+    },
+    "excludedControlModes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "enum": ["SCENARIO", "MANUAL", "AUTOPILOT", "SAFE_STOP"] }
+    }
+  },
+  "$defs": {
+    "gitCommit": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "capability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "installation",
+        "provenance",
+        "dataType",
+        "unit",
+        "frame",
+        "cadence",
+        "availability",
+        "source",
+        "gateway"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9_.-]+$" },
+        "kind": {
+          "enum": ["CONFIGURATION", "SIGNAL", "SENSOR", "ACTUATOR", "ORACLE", "VISUALIZATION"]
+        },
+        "installation": {
+          "enum": ["INSTALLED", "SCENARIO_OWNED", "NOT_INSTALLED", "NATIVE_UNAVAILABLE"]
+        },
+        "provenance": {
+          "enum": [
+            "NATIVE_STATE",
+            "INSTALLED_SENSOR",
+            "DERIVED_STATE",
+            "SIMULATED_COMPONENT_STATE",
+            "QUALIFICATION_ONLY",
+            "DEMO_VISUALIZATION"
+          ]
+        },
+        "dataType": {
+          "enum": [
+            "boolean",
+            "integer",
+            "number",
+            "string",
+            "enum",
+            "vector3",
+            "pose6d",
+            "box3d",
+            "wheel4",
+            "control"
+          ]
+        },
+        "unit": { "type": "string", "minLength": 1 },
+        "frame": { "type": "string", "minLength": 1 },
+        "cadence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mode"],
+          "properties": {
+            "mode": {
+              "enum": ["STARTUP", "PER_SIMULATION_FRAME", "SENSOR_TICK", "EVENT", "COMMAND", "STATIC"]
+            },
+            "nominalHz": { "type": "number", "exclusiveMinimum": 0 }
+          }
+        },
+        "range": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["minimum", "maximum"],
+          "properties": {
+            "minimum": { "type": "number" },
+            "maximum": { "type": "number" }
+          }
+        },
+        "availability": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "AVAILABLE",
+              "UNAVAILABLE",
+              "STALE",
+              "MALFORMED",
+              "DISCONNECTED",
+              "REJECTED",
+              "NOT_INSTALLED",
+              "UNSUPPORTED"
+            ]
+          }
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["api", "evidence"],
+          "properties": {
+            "api": { "type": "string", "minLength": 1 },
+            "evidence": { "type": "string", "minLength": 1 }
+          }
+        },
+        "gateway": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["disposition", "implementationState"],
+          "properties": {
+            "disposition": {
+              "enum": [
+                "RETAINED_NATIVE",
+                "NORMALIZED",
+                "EXPLICIT_UNAVAILABLE",
+                "REVIEWED_UNSUPPORTED",
+                "EXCLUDED_QUALIFICATION",
+                "EXCLUDED_DEMO",
+                "NOT_INSTALLED"
+              ]
+            },
+            "implementationState": { "enum": ["CURRENT", "PARTIAL", "TARGET", "NOT_APPLICABLE"] },
+            "appliedStateCapability": { "type": "string", "pattern": "^[a-z][a-z0-9_.-]+$" }
+          }
+        },
+        "notes": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

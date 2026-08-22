@@ -5,17 +5,20 @@
 
 - Status: D3 design-reviewed
 - Package: [`CR-TIRE`](../component-decomposition-and-interface-register.md#cr-tire)
-- Version: 0.2
-- Prepared: 2026-08-19
+- Version: 0.5
+- Prepared: 2026-08-21
 - Accepted: 2026-08-19
 - Supersedes: 0.1
 - Owner: Function Team 2 / Service Provider 2 / SOTA 2
 - Architecture input: [High-Level Architecture 1.4](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 1.7](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 1.6](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 0.9](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 1.0](../component-decomposition-and-interface-register.md)
+- Scenario input: [Demo Scenarios 1.9](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 1.8](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 1.0](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 1.1](../component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0008](../../architecture/decisions/0008-use-tire-health-for-function-team-2.md), [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md), [ADR 0010](../../architecture/decisions/0010-aos-kuksa-credential-broker.md), and [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
+- Reviewed D4 working direction: [D4-003 deterministic stimuli and calibration](../d4-decision-register.md#d4-003)
+- Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
+- Accepted D4 advisory input: [D4-008 Typed QM Advisory Profile](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - Implementation baseline: no `tire-health-service` repository or executable exists
 - Implementation, repository creation, signing, Cloud, or Unit mutation authorized: no
 
@@ -54,7 +57,7 @@ promotion affecting OEM Units.
 | Question | Answer |
 | --- | --- |
 | What this package owns | One immutable ARM64 Tire Health v1.0 service candidate, exact VDP v3 compatibility declaration, least-privilege KUKSA client use, bounded persistent synthetic condition estimate, accepted provisional resource envelope, bounded functional-message queue, typed inspection advisory, health, logs and tests |
-| What this package does not own | CARLA stimulus or hidden truth, VISS, VDP/KUKSA/Credential Broker implementation, Gateway enforcement, Aos lifecycle execution, Tire Health backend/dashboard, Cloud dependency admission, production tire diagnostics or driver HMI |
+| What this package does not own | CARLA stimulus or hidden truth, VISS, VDP/KUKSA/Credential Broker implementation, Gateway enforcement, Aos lifecycle execution, Tire Health backend/dashboard, native Cloud Service-to-FOTA VDP Component admission, production tire diagnostics or driver HMI |
 | Intended result | A second independent SOTA product runs beside Brake Health, derives a local tire-condition band, survives Cloud loss, sends bounded results and requests only its approved inspection advisory |
 | Accountable lifecycle owner | Function Team 2; Service Provider 2 publishes, and an authorized OEM identity approves validation and promotion through SOTA 2 |
 | Primary repository | Proposed public `tire-health-service`; repository creation remains a later implementation action |
@@ -89,7 +92,8 @@ promotion affecting OEM Units.
 - arbitrary KUKSA/VSS writes, display text, throttle, brake, steering, gear or
   safety-critical vehicle operation;
 - backend ingestion, persistence or Tire Health Function Dashboard;
-- SOTA target selection, OEM approval, native Cloud dependency admission or
+- SOTA target selection, OEM approval, native Cloud Service-to-FOTA VDP
+  Component admission or
   AosCloud execution;
 - production driver HMI, functional-safety certification or production
   predictive-maintenance accuracy.
@@ -101,9 +105,9 @@ promotion affecting OEM Units.
 | Accepted VDP Component v3 contract | `CR-VDP` | Exact compatible contract, required read paths, typed Tire advisory target, units, quality, freshness and factual Gateway status | Service remains not ready, produces no accepted condition result, and sends no advisory |
 | Native Aos service identity and IAM permissions | `CR-AOS` plus VDP Credential Broker | Current instance registered, valid `AOS_SECRET`, exact `kuksa` path/mode permissions | Credential request fails closed; no reusable or widened authority |
 | Deterministic Tire Health stimulus | `CR-VEHICLE-SIM`, `CR-GATEWAY`, `CR-VDP` | Versioned accelerated/pre-aged scenario and accepted native signal provenance; hidden truth remains inaccessible | Qualification is invalid; service must not infer success from oracle data |
-| Tire Health backend contract | Future `CR-TIRE-CLOUD` | Authenticated bounded summary/event schemas and idempotent acknowledgement | Messages remain in the bounded queue; local estimate/advisory continues |
+| Tire Health backend contract | [`CR-TIRE-CLOUD`](tire-health-cloud.md) | Authenticated bounded summary/event schemas and idempotent acknowledgement | Messages remain in the bounded queue; local estimate/advisory continues |
 | Aos runtime and resource enforcement | `CR-AOS` | SOTA install/start/stop/uninstall/readiness and declared quotas enforced | Service reports unavailable/error; VDP and Brake Health remain active |
-| One source and two Unit roles | Future `CR-DEMO` | Exact sequential VU/DU source binding or deterministic replay correlation | Evidence is incomplete and cannot support promotion |
+| One source and two Unit roles | [`CR-DEMO`](demo-orchestration.md) | Exact sequential live VU attach/run/detach, deterministic reset/new generation and DU attach/run/detach correlation | Evidence is incomplete and cannot support promotion |
 
 ## Current Implementation Baseline
 
@@ -218,7 +222,7 @@ executable against controlled adjacent components.
 | [Offline continuity and synchronization (`REQ-TIRE-009`)](#req-tire-009) | Keep local estimation/advisory active and synchronize safely after reconnect | Unit, Component, Integration, Analysis, End-to-end | D3 design-reviewed |
 | [Safe uninstall and future state compatibility (`REQ-TIRE-010`)](#req-tire-010) | Remove or replace Tire Health without changing VDP or Brake Health and retain explicit state compatibility | Unit, Component, Integration, Analysis | D3 design-reviewed |
 | [Health, resources and tenant isolation (`REQ-TIRE-011`)](#req-tire-011) | Stay inside qualified quotas and isolate failures from other services | Unit, Component, Integration | D3 design-reviewed |
-| [Redacted logs and separated timing (`REQ-TIRE-012`)](#req-tire-012) | Emit useful secret-free evidence and separate local latency from Cloud sync | Unit, Component, Integration, Analysis, End-to-end | D3 design-reviewed |
+| [Redacted logs and separated chronology (`REQ-TIRE-012`)](#req-tire-012) | Emit useful secret-free evidence and preserve local result/advisory chronology separately from Cloud sync | Unit, Component, Integration, Analysis, End-to-end | D3 design-reviewed |
 
 ## Detailed Requirements
 
@@ -244,17 +248,26 @@ source change, compilation or repackaging is permitted.
 <a id="req-tire-002"></a>
 
 - ID: `REQ-TIRE-002`
-- Statement: Service v1.0 shall declare the accepted VDP Component v3 compatibility range, verify the installed contract and every mandatory read/advisory path before readiness, and remain fail-closed with a machine-readable reason when the contract is absent, incompatible or incomplete.
+- Statement: Service v1.0 shall declare the accepted VDP Component v3-only compatibility range, verify the installed identity, capability manifest and every mandatory D4-018 read/D4-008 advisory path before readiness, and remain process-healthy but functionally `NOT_READY` with a machine-readable reason when the contract is absent, incompatible or incomplete. It shall produce no condition result or advisory and shall not crash-loop.
 - Rationale: Release sequencing and OEM evidence do not replace runtime compatibility enforcement.
 - Parent: [service capability compatibility (`SYS-REL-003`)](../system-requirements-and-traceability.md#sys-rel-003)
 - Flows: [Tire lifecycle (`AF-TIRE-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-lc) and [failure boundaries (`AF-TIRE-FR`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-fr)
 - Verification: Unit, Component, Contract, Integration
-- Evidence: compatible/incompatible manifests, readiness reasons and absence of result/advisory side effects
-- State: D3 design-reviewed; design only
+- Evidence: compatible/incompatible manifests, readiness reasons, absence of result/advisory side effects and automatic transition to `READY` after compatible VDP v3 appears
+- State: D3 design-reviewed; D4-007 compatibility and readiness behavior accepted
 
 This is service defense in depth, not native pre-transfer AosCloud admission.
 The latter remains deferred until an implementing AosEdge release is available
 and qualified; no project-side substitute is permitted.
+
+When backend connectivity exists, the service shall publish its structured
+readiness status separately from Tire condition results. If VDP v1/v2 is
+installed, the Tire Health Function Dashboard shall identify
+`INCOMPATIBLE_VDP`, show required v3 and actual v1/v2 plus missing
+paths/capabilities, and direct the operator to the Platform Team. It shall not
+use this guidance for `TELEMETRY_STALE`, `TELEMETRY_DISCONNECTED` or
+`SERVICE_ACCESS_DENIED`. A later compatible VDP v3 identity/capability change
+shall trigger re-evaluation and automatic readiness without SOTA reinstall.
 
 ### Least-privilege KUKSA credential lifecycle
 
@@ -284,6 +297,11 @@ Candidate inputs may include native vehicle speed, acceleration, steering,
 applied controls, per-wheel angular velocity, longitudinal slip and lateral
 slip angle. Unsupported tire measurements shall not be fabricated.
 
+For D4-003, the qualification harness may know whether `HEALTHY` or
+`PRE_AGED` was selected and the applied four-wheel friction multiplier. The
+service, Gateway, VISS/KUKSA path, functional backend and dashboard shall not
+receive either value; the service observes only the resulting native dynamics.
+
 ### Bounded persistent local condition estimate
 
 <a id="req-tire-005"></a>
@@ -299,6 +317,11 @@ slip angle. Unsupported tire measurements shall not be fabricated.
 The demo may use a labelled accelerated or pre-aged initial condition, but the
 service must reach its result from observable inputs and service-owned state,
 not a hidden simulator oracle.
+
+The presenter may identify the prepared vehicle condition to explain the
+demonstration, while the service result must remain reproducible from the
+accepted native signal sequence alone. The exact estimator, bands, confidence
+and persistence rules remain owned by D4-018 rather than the stimulus profile.
 
 ### Explicit degraded behavior
 
@@ -329,21 +352,22 @@ not a hidden simulator oracle.
 <a id="req-tire-008"></a>
 
 - ID: `REQ-TIRE-008`
-- Statement: When the accepted local state meets the frozen advisory policy, the service shall request only its typed VDP v3 Tire Health inspection target with bounded value, severity/reason, freshness and correlation and shall never issue arbitrary text or a vehicle-motion command.
+- Statement: When the D4-018 local state meets its later-frozen advisory policy, the service shall write only a D4-008 canonical Request to `Vehicle.OEM.TireHealth.Advisory.Request`. It shall use persistent producer epoch and monotonic sequence, unique request/decision correlation, explicit `SET`/`CLEAR`, only the accepted Tire inspection/replacement recommendations and predicted-wear reason, the accepted freshness/lease/rate bounds, and shall never issue arbitrary text, the Brake target, an arbitrary VSS write or a vehicle-motion command.
 - Parents: [allowlisted outbound advisory (`SYS-VDP-004`)](../system-requirements-and-traceability.md#sys-vdp-004), [offline Tire advisory (`SYS-TIRE-006`)](../system-requirements-and-traceability.md#sys-tire-006), and [QM containment (`SYS-SEC-007`)](../system-requirements-and-traceability.md#sys-sec-007)
 - Flows: [Tire runtime (`AF-TIRE-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-rt) and [QM containment (`AF-X-QM`)](../../architecture/demo-scenario-architecture-flows.md#af-x-qm)
 - Verification: Unit, Component, Contract, Integration, End-to-end
-- Evidence: allowlisted target fixture, malformed/unauthorized negatives, correlation and factual Gateway status
-- State: D3 design-reviewed; target payload and policy remain D4 gates
+- Evidence: Request/Status schema fixtures, malformed/cross-target/stale/replay/rate negatives, explicit clear/expiry, restart idempotency, correlation and factual Gateway status
+- Executable contract: [Typed QM Advisory Profile 1.0.0](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
+- State: D3 design-reviewed; D4-008 interface accepted, while D4-018 owns model decision thresholds and hysteresis
 
 ### Offline continuity and synchronization
 
 <a id="req-tire-009"></a>
 
 - ID: `REQ-TIRE-009`
-- Statement: Cloud/backend loss shall not stop valid local estimation or advisory generation; unsent derived messages shall use bounded persistent retention of at most 256 messages or 2 MiB encoded payload, whichever is reached first, plus backoff and idempotent reconnect synchronization while preserving original event times and explicit overflow/drop evidence.
+- Statement: Loss of the vehicle external-connectivity domain shall not stop valid local estimation or advisory generation. The single demo fault removes Unit-to-AosCloud and functional-backend transport together; unsent derived messages shall use bounded persistent retention of at most 256 messages or 2 MiB encoded payload, whichever is reached first, plus backoff and idempotent reconnect synchronization while preserving original event times and explicit overflow/drop evidence.
 - Parents: [bounded reporting (`SYS-TIRE-004`)](../system-requirements-and-traceability.md#sys-tire-004) and [offline advisory (`SYS-TIRE-006`)](../system-requirements-and-traceability.md#sys-tire-006)
-- Flow: [offline continuity (`AF-X-OFFLINE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-offline)
+- Flows: [Tire failure ownership (`AF-TIRE-FR`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-fr) and [targeted vehicle external-connectivity loss (`AF-X-OFFLINE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-offline)
 - Verification: Unit, Component, Integration, Analysis, End-to-end
 - Evidence: disconnect/restart/reconnect sequence, bounded-state measurement, duplicate proof and original-time dashboard result
 - State: D3 design-reviewed; capacities, retention and retry remain D4 gates
@@ -366,22 +390,22 @@ not a hidden simulator oracle.
 
 - ID: `REQ-TIRE-011`
 - Statement: The service shall expose truthful health/readiness, declare the accepted provisional envelope of 150 CPU units, 16 MiB RAM, 2 MiB persistent model state, 2 MiB temporary storage, 32 open files and 8 processes, remain within the subsequently qualified metadata mapping of those bounds, stop safely on quota/resource failure, and shall not degrade VDP, Brake Health or vehicle control.
-- Parents: [independent Tire product (`SYS-TIRE-005`)](../system-requirements-and-traceability.md#sys-tire-005) and [QM containment (`SYS-SEC-007`)](../system-requirements-and-traceability.md#sys-sec-007)
-- Flow: [Tire failure boundaries (`AF-TIRE-FR`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-fr)
+- Parents: [independent Tire product (`SYS-TIRE-005`)](../system-requirements-and-traceability.md#sys-tire-005), [QM containment (`SYS-SEC-007`)](../system-requirements-and-traceability.md#sys-sec-007) and [AosCore-enforced service-tenant isolation (`SYS-RES-001`)](../system-requirements-and-traceability.md#sys-res-001)
+- Flows: [Tire failure boundaries (`AF-TIRE-FR`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-fr) and [AosCore tenant isolation (`AF-TIRE-RES`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-res)
 - Verification: Unit, Component, Integration
-- Evidence: quota/load/crash matrix, restart status and unaffected Brake/VDP evidence
+- Evidence: quota/load/crash matrix, restart status and unaffected Brake/VDP evidence. The first audience proof uses one prebuilt, bounded, qualification-only CPU-load profile inside the actual Tire instance; it is neither privileged nor a new service or resource manager and must stop cleanly without reinstall or restart.
 - State: D3 design-reviewed; budgets remain D4 measurement gates
 
-### Redacted logs and separated timing
+### Redacted logs and separated chronology
 
 <a id="req-tire-012"></a>
 
 - ID: `REQ-TIRE-012`
-- Statement: The service shall emit bounded structured English logs with Unit/service/version/correlation and factual state transitions while redacting secrets/tokens and shall measure local input-to-condition/advisory latency separately from backend synchronization latency.
-- Parents: [native operational logs (`SYS-OBS-001`)](../system-requirements-and-traceability.md#sys-obs-001), [operational log controls (`SYS-OBS-003`)](../system-requirements-and-traceability.md#sys-obs-003), and [separate timing (`SYS-TIM-002`)](../system-requirements-and-traceability.md#sys-tim-002)
+- Statement: The service shall emit bounded structured English logs with Unit/service/version/correlation and factual state transitions while redacting secrets/tokens, and shall preserve distinct source-event, local condition/advisory and backend receipt/synchronization timestamps. The first demo shall prove chronology and Cloud independence without a quantitative latency benchmark.
+- Parents: [native operational logs (`SYS-OBS-001`)](../system-requirements-and-traceability.md#sys-obs-001), [operational log controls (`SYS-OBS-003`)](../system-requirements-and-traceability.md#sys-obs-003), and [separate on-board and Cloud chronology (`SYS-TIM-002`)](../system-requirements-and-traceability.md#sys-tim-002)
 - Flow: [Tire observability (`AF-TIRE-OB`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-ob)
 - Verification: Unit, Component, Integration, Analysis, End-to-end
-- Evidence: redaction fixtures, native-log retrieval record and separated latency report
+- Evidence: redaction fixtures, native-log retrieval record and separated on-board/backend chronology
 - State: D3 design-reviewed
 
 ## Stable Unit-Test Obligations
@@ -396,8 +420,8 @@ not a hidden simulator oracle.
 | <a id="ut-tire-006"></a>`UT-TIRE-006` | `REQ-TIRE-007`, `REQ-TIRE-009` | Bounded result rate/size, queue overflow, retry, idempotency and original event time |
 | <a id="ut-tire-007"></a>`UT-TIRE-007` | `REQ-TIRE-008` | Only the accepted typed target succeeds; malformed/arbitrary/motion requests fail |
 | <a id="ut-tire-008"></a>`UT-TIRE-008` | `REQ-TIRE-010` | Failed install/uninstall leaves unrelated state intact and state-version policy is explicit |
-| <a id="ut-tire-009"></a>`UT-TIRE-009` | `REQ-TIRE-011` | Health/readiness truth, quota failure and isolation from VDP/Brake test doubles |
-| <a id="ut-tire-010"></a>`UT-TIRE-010` | `REQ-TIRE-012` | Secret redaction, bounded logs and separate local/Cloud timing fields |
+| <a id="ut-tire-009"></a>`UT-TIRE-009` | `REQ-TIRE-011` | Health/readiness truth, bounded prepared CPU-load start/stop and rejection states, quota failure and isolation from VDP/Brake test doubles; real cgroup enforcement remains integration proof |
+| <a id="ut-tire-010"></a>`UT-TIRE-010` | `REQ-TIRE-012` | Secret redaction, bounded logs and separate on-board/Cloud chronology fields |
 
 Each obligation must execute deterministically without CARLA, QEMU, AosCloud,
 a real KUKSA Databroker, network access or credentials. Integration and
@@ -422,14 +446,14 @@ changing candidate metadata.
 
 | Gate | Why it blocks implementation acceptance | Owner |
 | --- | --- | --- |
-| Exact VDP v3 Tire input paths, types, units, cadence, quality and freshness | Blocks subscription contract and compatibility metadata | Platform Team + Function Team 2 |
+| Exact D4-018 model-consumed subset of the accepted VDP v3 paths, plus estimator cadence/quality/freshness bounds | D4-007 freezes the published v3 superset and compatibility; D4-018 still blocks the service model/subscription contract | Platform Team + Function Team 2 |
 | Accelerated/pre-aged stimulus, service-visible initial estimate and hidden qualification oracle | Blocks honest deterministic demonstration without oracle leakage | Vehicle Simulation + Function Team 2 |
 | Synthetic estimator, state schema, bands, confidence, thresholds and tolerance | Blocks deterministic model/state tests | Function Team 2 |
 | Summary/event schemas, authentication, idempotency key, rate/size and acknowledgement | Blocks service-to-backend contract | Function Team 2 + `CR-TIRE-CLOUD` |
-| Tire advisory target, payload, debounce/hysteresis, freshness and Gateway correlation | Blocks typed outbound request | Function Team 2 + Platform Team + Gateway |
+| D4-018 Tire decision thresholds and hysteresis that trigger the accepted advisory envelope | D4-008 closes target/payload/freshness/replay/Gateway correlation; model decision policy remains open | Function Team 2 |
 | Queue/state capacity, retention, retry/backoff, overflow and future migration policy | Blocks offline and uninstall qualification | Function Team 2 |
 | Mapping and runtime qualification of the accepted provisional CPU/RAM/state/tmp/file/process envelope, plus health/readiness endpoint | Blocks resource and failure-isolation acceptance; any increase requires a reviewed Level-B change | Function Team 2 + Aos integration |
-| Local decision and Cloud synchronization timing budgets plus log schema/redaction | Blocks observability and timing acceptance | Function Team 2 + Demo experience |
+| Source/local/backend chronology fields plus log schema/redaction | Blocks observability and chronology acceptance | Function Team 2 + Demo experience |
 | Native Cloud service-to-VDP dependency admission | Deferred platform roadmap item; does not block v1.0 when sequencing, OEM evidence and fail-closed readiness are proved | AosEdge Platform Team |
 
 ## Change Rules
