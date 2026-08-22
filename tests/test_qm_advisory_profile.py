@@ -23,6 +23,7 @@ class QmAdvisoryProfileTest(unittest.TestCase):
 
     def test_contract_identity_and_exact_endpoints_are_frozen(self) -> None:
         self.assertEqual("D4-008", self.profile["decision"])
+        self.assertEqual("1.0.1", self.profile["contractVersion"])
         self.assertEqual(
             {"BRAKE_HEALTH_ADVISORY", "TIRE_HEALTH_ADVISORY"},
             set(self.endpoints),
@@ -32,6 +33,16 @@ class QmAdvisoryProfileTest(unittest.TestCase):
         self.assertEqual(2, len(request_paths))
         self.assertEqual(2, len(status_paths))
         self.assertTrue(request_paths.isdisjoint(status_paths))
+
+    def test_authorization_provenance_uses_current_release_decision(self) -> None:
+        self.assertIn(
+            "KUKSA_ENFORCES_D4_027_PATH_PERMISSION",
+            self.profile["dataFlow"],
+        )
+        self.assertEqual(
+            "D4-027",
+            self.profile["deferred"]["credentialIssuanceAndRefresh"],
+        )
 
     def test_services_cannot_share_or_cross_write_targets(self) -> None:
         brake = self.endpoints["BRAKE_HEALTH_ADVISORY"]

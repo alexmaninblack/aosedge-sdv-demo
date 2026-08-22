@@ -1,0 +1,200 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "title": "AosEdge Demo Artifact Publication Credential Profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "contractId",
+    "contractVersion",
+    "decision",
+    "scope",
+    "toolBaseline",
+    "credentialCustody",
+    "profiles",
+    "helperBoundary",
+    "operation",
+    "authoritySeparation",
+    "diagnostics"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "$comment": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "contractId": { "const": "aosedge-demo-artifact-publication-profile" },
+    "contractVersion": { "const": "1.0.0" },
+    "decision": { "const": "D4-010.3" },
+    "scope": { "const": "CURRENT_DEMO" },
+    "toolBaseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tool",
+        "version",
+        "configurationSchemaVersion",
+        "credentialRelationship",
+        "pkcs12PasswordMode",
+        "nativeKeychainOperation",
+        "nativePkcs11Operation",
+        "privateKeyLoadedIntoProcessMemory"
+      ],
+      "properties": {
+        "tool": { "const": "aos-signer" },
+        "version": { "const": "2.0.1" },
+        "configurationSchemaVersion": { "const": 2 },
+        "credentialRelationship": { "const": "SAME_PKCS12_PER_PROFILE_FOR_SIGN_AND_MTLS_UPLOAD" },
+        "pkcs12PasswordMode": { "const": "EMPTY_PASSWORD" },
+        "nativeKeychainOperation": { "const": false },
+        "nativePkcs11Operation": { "const": false },
+        "privateKeyLoadedIntoProcessMemory": { "const": true }
+      }
+    },
+    "credentialCustody": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "credentialCount",
+        "localDirectory",
+        "requiredFileMode",
+        "gitTracked",
+        "callerPathAllowed",
+        "allowedConsumers",
+        "forbiddenConsumers",
+        "futureHardening"
+      ],
+      "properties": {
+        "credentialCount": { "const": 3 },
+        "localDirectory": { "const": "~/.aos/security" },
+        "requiredFileMode": { "const": "0600" },
+        "gitTracked": { "const": false },
+        "callerPathAllowed": { "const": false },
+        "allowedConsumers": {
+          "type": "array",
+          "const": ["SESSION_SCOPED_NATIVE_HELPER"]
+        },
+        "forbiddenConsumers": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string" }
+        },
+        "futureHardening": { "type": "string", "minLength": 1 }
+      }
+    },
+    "profiles": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "profileId",
+          "owner",
+          "cloudRole",
+          "lifecycle",
+          "allowedItemTypes",
+          "allowedCandidateIds",
+          "approvalAuthority"
+        ],
+        "properties": {
+          "profileId": { "type": "string", "minLength": 1 },
+          "owner": { "type": "string", "minLength": 1 },
+          "cloudRole": { "enum": ["OEM", "SERVICE_PROVIDER_1", "SERVICE_PROVIDER_2"] },
+          "lifecycle": { "enum": ["FOTA", "SOTA_1", "SOTA_2"] },
+          "allowedItemTypes": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "enum": ["component", "service"] }
+          },
+          "allowedCandidateIds": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "approvalAuthority": { "const": false }
+        }
+      }
+    },
+    "helperBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "implementation",
+        "lifetime",
+        "runsAsRoot",
+        "persistentDaemon",
+        "callerMaySelectProfile",
+        "callerMaySelectCredentialPath",
+        "callerMaySelectCloudUrl",
+        "profileBinding",
+        "inputBinding"
+      ],
+      "properties": {
+        "implementation": { "const": "ONE_COMMON_NATIVE_HELPER" },
+        "lifetime": { "const": "ONE_AUTHENTICATED_DEMO_SESSION" },
+        "runsAsRoot": { "const": false },
+        "persistentDaemon": { "const": false },
+        "callerMaySelectProfile": { "const": false },
+        "callerMaySelectCredentialPath": { "const": false },
+        "callerMaySelectCloudUrl": { "const": false },
+        "profileBinding": { "type": "string", "minLength": 1 },
+        "inputBinding": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string" } }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "states",
+        "presentationTimeBuild",
+        "digestReverification",
+        "publishedRequiresAuthoritativeCloudRead",
+        "lostResultState",
+        "blindRetryAllowed",
+        "terminalFailureHasNoSuccessState"
+      ],
+      "properties": {
+        "states": {
+          "type": "array",
+          "const": ["PREPARED", "SIGNING", "SIGNED", "PUBLISHING", "PUBLISHED", "FAILED", "UNCERTAIN"]
+        },
+        "presentationTimeBuild": { "const": false },
+        "digestReverification": { "const": true },
+        "publishedRequiresAuthoritativeCloudRead": { "const": true },
+        "lostResultState": { "const": "UNCERTAIN" },
+        "blindRetryAllowed": { "const": false },
+        "terminalFailureHasNoSuccessState": { "const": true }
+      }
+    },
+    "authoritySeparation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "technicalPublicationIsApproval",
+        "servicePublicationRole",
+        "fotaPublicationRole",
+        "unitDeploymentApprovalRole",
+        "automaticApprovalAllowed"
+      ],
+      "properties": {
+        "technicalPublicationIsApproval": { "const": false },
+        "servicePublicationRole": { "const": "MATCHING_SERVICE_PROVIDER" },
+        "fotaPublicationRole": { "const": "PLATFORM_TEAM_OEM" },
+        "unitDeploymentApprovalRole": { "const": "AUTHORIZED_OEM" },
+        "automaticApprovalAllowed": { "const": false }
+      }
+    },
+    "diagnostics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowed", "forbidden"],
+      "properties": {
+        "allowed": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string" } },
+        "forbidden": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string" } }
+      }
+    }
+  }
+}

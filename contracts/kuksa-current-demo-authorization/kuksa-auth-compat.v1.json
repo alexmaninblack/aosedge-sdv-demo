@@ -1,0 +1,190 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "contractVersion": "1.4.0",
+  "decision": "D4-027.8",
+  "protocol": "aos-kuksa-auth-compat/v1",
+  "transport": {
+    "socketType": "UNIX_STREAM",
+    "socketPathInService": "/run/aosedge/platform/kuksa-auth/request.sock",
+    "encoding": "UTF-8",
+    "framing": "ONE_LF_TERMINATED_JSON_REQUEST_AND_RESPONSE_THEN_SERVER_CLOSE",
+    "invalidUtf8": "REJECT",
+    "duplicateObjectMembers": "REJECT",
+    "trailingObjects": "REJECT"
+  },
+  "authority": {
+    "fixedResource": "kuksa",
+    "resourceInRequest": false,
+    "callerIdentityInRequest": false,
+    "callerAuthorityInRequest": false,
+    "callerCorrelationIdAllowed": false,
+    "authoritativeDecision": "AOS_IAM_GET_PERMISSIONS"
+  },
+  "operations": ["status", "issue"],
+  "renewalOperation": "issue",
+  "responseStatuses": ["ready", "issued", "rejected"],
+  "rejectionCodes": [
+    "INVALID_REQUEST",
+    "DENIED",
+    "POLICY_UNSUPPORTED",
+    "IAM_UNAVAILABLE",
+    "SIGNER_UNAVAILABLE",
+    "TIME_UNTRUSTED",
+    "BUSY",
+    "INTERNAL_ERROR"
+  ],
+  "deniedDisclosure": "COMBINE_INVALID_STALE_INACTIVE_IDENTITY_AND_ABSENT_AUTHORITY",
+  "correlationIdOwner": "CMP-KAC",
+  "humanReadableErrorAllowed": false,
+  "jwtProfile": {
+    "algorithm": "RS256",
+    "issuer": "aosedge-kuksa-auth-compat",
+    "audience": ["kuksa.val"],
+    "subjectSource": "AOS_IAM_INSTANCE_IDENT",
+    "requiredClaims": ["sub", "iss", "aud", "iat", "exp", "scope"],
+    "scopeEncoding": "SPACE_SEPARATED_ACTION_COLON_EXACT_VSS_PATH",
+    "wildcardsAllowed": false,
+    "callerSelectedClaimsAllowed": false,
+    "serviceActionsAllowed": ["read", "actuate"],
+    "serviceActionsForbidden": ["provide", "create"]
+  },
+  "permissionMapping": {
+    "source": "AOS_IAM_GET_PERMISSIONS_RESPONSE_FOR_FIXED_KUKSA_RESOURCE",
+    "supportedModes": {
+      "r": ["read"],
+      "rw": ["actuate"]
+    },
+    "unsupportedModes": ["w"],
+    "unsupportedModeReason": "KUKSA_ACTUATE_INCLUDES_READ_AND_WOULD_WIDEN_WRITE_ONLY_AUTHORITY",
+    "completeSetPolicy": "REJECT_WHOLE_ISSUE_NO_PARTIAL_TRIMMING"
+  },
+  "timing": {
+    "ttlSeconds": 300,
+    "renewAfterSecondsFromIssue": 180,
+    "renewalReserveSeconds": 120,
+    "renewalRequiresFreshIamLookup": true,
+    "renewalRequiresKuksaReconnect": true,
+    "expiredTokenPolicy": "DELETE_DISCONNECT_AND_NOT_READY",
+    "terminalRenewalRejectionPolicy": "DELETE_AND_DISCONNECT_IMMEDIATELY",
+    "transientRenewalFailurePolicy": "RETRY_WITH_CURRENT_TOKEN_ONLY_UNTIL_EXPIRY",
+    "instantRevocationClaimed": false,
+    "cloudRequiredForRenewal": false
+  },
+  "signerVerifier": {
+    "keyLifecycleOwner": "AOS_IAM_SELF_SIGNED_CERTIFICATE_MODULE",
+    "certificateModule": "kuksa-jwt",
+    "keyAlgorithm": "RSA",
+    "keyScope": "UNIQUE_PER_UNIT_PROVISIONING_LIFECYCLE",
+    "privateKeyExportAllowed": false,
+    "fileKeyFallbackAllowed": false,
+    "preparationService": "aos-kuksa-verifier-prepare.service",
+    "publicVerifierPath": "/run/aos-kuksa-verifier/kuksa-jwt-public.pem",
+    "publicVerifierOwnership": "root:root",
+    "publicVerifierMode": "0444",
+    "publicVerifierWrite": "ATOMIC_REPLACE",
+    "preparationRequiresProtectedSignVerifySelfTest": true,
+    "kuksaStartupArgument": "--jwt-public-key=/run/aos-kuksa-verifier/kuksa-jwt-public.pem",
+    "kuksaMissingVerifierPolicy": "DO_NOT_START_FAIL_CLOSED",
+    "helperStartupRequiresPreparation": true,
+    "verifierReloadPolicy": "KUKSA_PROCESS_RESTART",
+    "rebootPolicy": "REPREPARE_VERIFIER_FROM_EXISTING_UNIT_KEY_AND_START_EMPTY_HELPER_STATE",
+    "deprovisionPolicy": "STOP_HELPER_AND_KUKSA_AND_PREVENT_ISSUANCE",
+    "r0KeyRetirementPolicy": "DISCARD_PROVISIONED_VM_OVERLAY_AFTER_CLOUD_RECONCILIATION",
+    "liveRotationInFirstDemo": false,
+    "crossUnitTokenAcceptance": "REJECT"
+  },
+  "trustworthyTime": {
+    "initialAuthority": "SYSTEMD_TIMESYNCD_NTP_SYNCHRONIZED_ONCE_PER_BOOT",
+    "stableWindowSeconds": 10,
+    "wallClockSource": "CLOCK_REALTIME_UTC",
+    "scheduleClockSource": "CLOCK_BOOTTIME",
+    "bootLocalAnchorPath": "/run/aos-kuksa-auth-compat/time-anchor.json",
+    "bootLocalAnchorOwnership": "aos-kac:aos-kac",
+    "bootLocalAnchorMode": "0600",
+    "bootLocalAnchorMustMatchCurrentBootId": true,
+    "anchorPersistsAcrossProcessRestart": true,
+    "anchorPersistsAcrossVmReboot": false,
+    "maximumWallToBootClockDeviationSeconds": 5,
+    "externalConnectivityLossAfterTrustRevokesTrust": false,
+    "clockDiscontinuityPolicy": "TIME_UNTRUSTED_STOP_KUKSA_DELETE_TOKENS_AND_BLOCK_ISSUANCE",
+    "recoveryPolicy": "REQUIRE_NEW_NTP_SYNC_AND_STABLE_WINDOW_THEN_RESTART_KUKSA_AND_REISSUE",
+    "offlineColdBootPolicy": "AUTHORIZATION_NOT_READY_UNTIL_TIME_SYNC",
+    "unrelatedAosCoreServicesBlocked": false,
+    "cloudApiRequired": false
+  },
+  "operationalBounds": {
+    "maxRequestFrameBytes": 16384,
+    "maxResponseFrameBytes": 32768,
+    "maxJwtBytes": 16384,
+    "maxPermissionEntries": 64,
+    "maxVssPathBytes": 512,
+    "maxConcurrentRequests": 4,
+    "socketBacklog": 8,
+    "perPeerRate": {
+      "requestsPerMinute": 12,
+      "burst": 4
+    },
+    "globalRate": {
+      "requestsPerMinute": 30,
+      "burst": 10
+    },
+    "timeoutsSeconds": {
+      "requestRead": 2,
+      "iamOperation": 3,
+      "signOperation": 3,
+      "wholeRequest": 8
+    },
+    "oversizeRequestPolicy": "INVALID_REQUEST",
+    "oversizeAuthorityOrJwtPolicy": "POLICY_UNSUPPORTED_NO_PARTIAL_TRIMMING",
+    "rateOrConcurrencyPolicy": "BUSY"
+  },
+  "retry": {
+    "backoffSeconds": [1, 2, 4, 8, 16, 30],
+    "maximumBackoffSeconds": 30,
+    "jitterPercent": 20,
+    "hardStopAtJwtExpiry": true,
+    "noTokenStateMayContinueBoundedRetry": true,
+    "retryableCodes": [
+      "IAM_UNAVAILABLE",
+      "SIGNER_UNAVAILABLE",
+      "TIME_UNTRUSTED",
+      "BUSY"
+    ],
+    "nonRetryableCodes": [
+      "INVALID_REQUEST",
+      "DENIED",
+      "POLICY_UNSUPPORTED",
+      "INTERNAL_ERROR"
+    ]
+  },
+  "processEnvelope": {
+    "memoryMaxBytes": 67108864,
+    "cpuQuotaPercent": 10,
+    "tasksMax": 32,
+    "limitNoFile": 128,
+    "restrictAddressFamilies": ["AF_UNIX"],
+    "ambientCapabilities": [],
+    "noNewPrivileges": true,
+    "protectSystem": "strict",
+    "privateTmp": true,
+    "tcpIpAllowed": false,
+    "resourceLimitFailurePolicy": "FAIL_HELPER_CLOSED_WITHOUT_STOPPING_UNRELATED_AOSCORE_SERVICES"
+  },
+  "diagnostics": {
+    "allowedFields": ["eventCode", "correlationId", "outcome", "retryable"],
+    "forbiddenContent": [
+      "AOS_SECRET",
+      "JWT",
+      "PERMISSION_CONTENT",
+      "VSS_PATH",
+      "JWT_CLAIMS",
+      "SIGNING_INPUT",
+      "PRIVATE_KEY_INFORMATION",
+      "RAW_PROTOCOL_FRAME"
+    ],
+    "freeTextProtocolErrorAllowed": false,
+    "highCardinalityIdentityLabelsAllowed": false
+  },
+  "requestSchema": "kuksa-auth-request.schema.json",
+  "responseSchema": "kuksa-auth-response.schema.json"
+}

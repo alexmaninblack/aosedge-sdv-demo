@@ -82,22 +82,26 @@ The qualification described by this ADR used separately issued, path-scoped
 KUKSA JWTs because the baseline had no Aos IAM integration. That remains valid
 historical evidence, but it is not the target architecture.
 
-[ADR 0010](0010-aos-kuksa-credential-broker.md) supersedes the former AOS-5
-standalone Authorization Adapter plan. Upstream KUKSA remains unchanged. The
-Vehicle Data Platform Component instead owns a thin Aos–KUKSA Credential
-Broker that validates a service instance's `AOS_SECRET` through Aos IAM and
-maps only its currently registered, VDP-contract-compatible permissions into a
-short-lived KUKSA JWT. Aos IAM retains the service identity/secret lifecycle;
-no parallel per-service policy store is added. The privileged provider uses a
-separately bound short-lived platform credential. No private signing key,
-secret, or issued token may be committed to Git or printed in logs.
+[ADR 0010](0010-aos-kuksa-credential-broker.md) superseded the former AOS-5
+standalone Authorization Adapter plan for the 1.3/1.4 architecture. Proposed
+[ADR 0013](0013-current-release-kuksa-authorization-compatibility.md) now
+corrects that later ownership without changing this ADR's CARLA/VISS/KUKSA
+data boundary: upstream KUKSA remains unchanged and factory-installed outside
+the VDP FOTA payload; a removable current-release helper outside the VDP and
+SOTA artifacts derives only active Aos IAM permissions into Service-private
+short-lived JWTs. For the first demo, the privileged Provider is a fixed,
+OEM-qualified trusted platform integration; it does not participate in the
+Service JWT exchange, and Service credentials cannot grant Provider authority.
+No private signing key, secret, or issued token may be committed to Git or
+printed in logs.
 
 ## Repository Ownership
 
 - `carla-ego-runtime` owns the simulation-side VISS projection.
 - `aos-vehicle-platform` owns `carla-kuksa-provider`, KUKSA platform
-  integration, the vehicle-data contract, and the thin Aos–KUKSA Credential
-  Broker plus provider platform-identity integration defined by ADR 0010.
+  integration, the vehicle-data contract, the separately packaged removable
+  current-release authorization helper, and the fixed OEM-trusted Provider
+  integration. The helper is not part of the VDP FOTA artifact.
 - `brake-health-service` owns the cloud-managed consumer application and
   its Aos service package.
 - `aosedge-sdv-demo` pins and qualifies an exact end-to-end
@@ -121,8 +125,9 @@ The lifecycle-based repository decision and migration gate are defined by
 - A dedicated CARLA-to-KUKSA provider and a private host-to-guest path are
   required.
 - The official demo service needs ARM64 and dependency-layer qualification.
-- The historical prototype-token flow must be replaced by the ADR 0010
-  Aos-IAM-derived credential flow before the target component is accepted.
+- The historical prototype-token flow must be replaced by the proposed ADR
+  0013 current-release compatibility flow before the target integration is
+  accepted.
 - The provider must expose data age and failure state without replacing stale
   values with fabricated zeroes.
 
@@ -134,3 +139,4 @@ The lifecycle-based repository decision and migration gate are defined by
 - [AosEdge service configuration](https://docs.aosedge.tech/docs/reference/file-formats/service-config)
 - [ADR 0006: lifecycle-based repository ownership](0006-lifecycle-based-repository-ownership.md)
 - [ADR 0010: Aos–KUKSA Credential Broker](0010-aos-kuksa-credential-broker.md)
+- [ADR 0013: Current-release KUKSA authorization compatibility](0013-current-release-kuksa-authorization-compatibility.md)

@@ -21,6 +21,12 @@
 - [Typed QM Advisory Profile](qm-advisory-profile/README.md)
   — exact Brake/Tire Request and Gateway Status paths, schema-bound envelopes,
   freshness, replay/rate limits, clear/expiry and final Gateway authority.
+- [Current-Demo KUKSA Authorization Exchange](kuksa-current-demo-authorization/README.md)
+  — strict current-release Service-bootstrap to compatibility-helper local
+  request, readiness, issuance and rejection protocol.
+- [Artifact Publication Credential Profile](artifact-publication-profile/README.md)
+  — role-bound Platform OEM, Brake SP1 and Tire SP2 signing/publication
+  profiles, current `aos-signer` compatibility limits and helper isolation.
 - [Software Delivery Dashboard Contracts](software-delivery-dashboard/README.md)
   — sanitized coverage catalogue and evidence-state schema.
 

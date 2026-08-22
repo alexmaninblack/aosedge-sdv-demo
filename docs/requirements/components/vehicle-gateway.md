@@ -8,11 +8,11 @@
 - Version: 1.1
 - Prepared: 2026-08-21
 - Owner: Vehicle Gateway Tooling
-- Architecture input: [High-Level Architecture 1.4](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 1.9](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 1.8](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 1.0](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 1.1](../component-decomposition-and-interface-register.md)
+- Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
+- Scenario input: [Demo Scenarios 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.0](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.0](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 2.0](../component-decomposition-and-interface-register.md)
 - Accepted architecture decision: [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
 - Accepted D4 decision: [D4-002 Vehicle Hardware Capability Profile](../d4-decision-register.md#d4-002)
 - Accepted D4 control decision: [D4-004 Simulator Control and Context Contract](../../../contracts/simulator-control-context/simulator-control-context.v1.json)
@@ -344,7 +344,7 @@ decisions they exercise.
   path/type/value, missing identity, stale, replay, excessive-rate,
   cross-service, arbitrary-write, throttle, brake, steer, gear and other
   safety/motion negative cases with no side effects
-- Executable contract: [Typed QM Advisory Profile 1.0.0](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
+- Executable contract: [Typed QM Advisory Profile 1.0.1](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - Requirement state: D3 design-reviewed; D4-008 contract accepted
 - Implementation state: `TARGET`; current all-Set rejection remains correct until the complete accepted endpoints and negative matrix are implemented
 

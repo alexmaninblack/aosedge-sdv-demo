@@ -5,7 +5,7 @@
 
 - Status: Working gate map
 - Updated: 2026-08-20
-- Accepted architecture baseline: High-Level Architecture 1.4
+- Current architecture review candidate: High-Level Architecture 1.5
 - Cloud or Unit mutation authorized: no
 
 ## Purpose
@@ -53,15 +53,15 @@ Exact retained versions and limitations remain recorded in the
 
 The following documents form one ordered design chain:
 
-1. [High-Level Architecture 1.4](../architecture/high-level-architecture.md)
+1. [High-Level Architecture 1.5](../architecture/high-level-architecture.md)
    owns boundaries, authorities and invariants.
-2. [Demo Scenario 1.9](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+2. [Demo Scenario 2.0](../demo/staged-post-sop-brake-health-demo-scenarios.md)
    owns the accepted audience-visible stage sequence.
-3. [Architecture Flows 1.8](../architecture/demo-scenario-architecture-flows.md)
+3. [Architecture Flows 2.0](../architecture/demo-scenario-architecture-flows.md)
    owns the accepted lifecycle, runtime, observability and failure flows.
-4. [System Requirements and Traceability 1.0](../requirements/system-requirements-and-traceability.md)
+4. [System Requirements and Traceability 2.0](../requirements/system-requirements-and-traceability.md)
    owns `SYS-*` obligations and coverage of all twenty-two gaps.
-5. [Component Decomposition and Interface Register 1.1](../requirements/component-decomposition-and-interface-register.md)
+5. [Component Decomposition and Interface Register 2.0](../requirements/component-decomposition-and-interface-register.md)
    owns component/interface IDs and provisional requirement-package
    allocation.
 
@@ -115,7 +115,7 @@ Deferred platform capabilities and
 open qualification or implementation gates remain explicit and are not
 presented as current behavior.
 
-Scenario 1.9, Architecture Flows 1.8, System Requirements 1.0 and Component
+Scenario 2.0, Architecture Flows 2.0, System Requirements 2.0 and Component
 Register 1.1 are the current accepted cascade. They preserve
 the accepted topology and replace the former v1 low-rate report narrative with
 a bounded pre/active/post `BrakeTelemetryWindow`, make v2 a clearly labelled
@@ -174,7 +174,7 @@ reviewed exception.
 ### D4 — Interface contracts and acceptance tests
 
 Use the
-[D4 Interface and Qualification Decision Register 0.8](../requirements/d4-decision-register.md)
+[D4 Interface and Qualification Decision Register 1.0](../requirements/d4-decision-register.md)
 as the single sequencing and decision-control surface. Package-level open
 issues remain authoritative owner inputs; repeated questions are resolved once
 under a shared stable `D4-*` ID and then cascaded to every consumer.
@@ -203,11 +203,11 @@ These workstreams are sequencing guidance, not authorization to implement:
 | Workstream | Main outcome |
 | --- | --- |
 | `I1` Vehicle stimulus and Gateway | Qualify emergency-braking and explicit accelerated/pre-aged tire stimuli; add typed narrowly scoped advisory handling and dashboard status. |
-| `I2` Factory and Vehicle Data Platform | Build and freeze the clean factory image with one IAM configuration containing `enablePermissionsHandler: true` for both modes, no pre-populated service permission/secret state, and the D4-010.1 dedicated non-secret `kuksa-jwt` PKCS#11/verifier-preparation wiring but no key/shared verifier; implement and qualify unique per-Unit signer bootstrap, atomic verifier preparation, the accepted Component v1-v3 contract, thin Aos–KUKSA Credential Broker, still-open provider platform identity and KUKSA trust configuration. |
-| `I3` Brake Health product | Build the in-vehicle service, local model, bounded offline reporting, backend and function dashboard. |
-| `I4` Tire Health product | Build the independent persistent condition estimator, bounded reporting, inspection advisory, backend and function dashboard. |
-| `I5` Software delivery experience | Build the Software Delivery Dashboard over authoritative AosCloud APIs and the manufacturing/provisioning/promotion/retirement orchestration. |
-| `I6` Security and operations | Qualify native Aos IAM instance/permission lifecycle, exact contract-bounded translation, short-lived JWT refresh/expiry and renewal denial, D4-010.1 unique per-Unit PKCS#11 signing and verifier startup/cross-Unit rejection/overlay retirement, still-open provider identity binding, native AosCloud system/service/crash-log requests, exact retention duration, deletion effect, offline behavior, redaction and bounded temporary-download removal. |
+| `I2` Factory and Vehicle Data Platform | Build and freeze the clean factory image with one IAM configuration containing `enablePermissionsHandler: true` for both modes, no pre-populated service permission/secret state, unmodified KUKSA, the separately packaged removable `CMP-KAC`, and the D4-010.1 dedicated non-secret `kuksa-jwt` PKCS#11/verifier-preparation wiring but no key/shared verifier. Qualify unique per-Unit signer bootstrap and atomic verifier preparation; independently implement and qualify the accepted VDP Component v1-v3 contract and its fixed OEM-trusted Provider integration through FOTA. |
+| `I3` Brake Health product | Build the in-vehicle service, local model, bounded offline reporting, backend and function dashboard, including the release client surface statically pre-bound to D4-010.3 profile `brake-sp1`. |
+| `I4` Tire Health product | Build the independent persistent condition estimator, bounded reporting, inspection advisory, backend and function dashboard, including the release client surface statically pre-bound to D4-010.3 profile `tire-sp2`. |
+| `I5` Software delivery experience | Build the Software Delivery Dashboard over authoritative AosCloud APIs and the manufacturing/provisioning/promotion/retirement orchestration. Implement one session-scoped non-root native publication helper with separate fixed `platform-oem`, `brake-sp1` and `tire-sp2` surfaces; enforce the current local mode-`0600` PKCS#12 custody boundary, independent Cloud reconciliation and strict separation between technical publication and OEM approval. |
+| `I6` Security and operations | Qualify native Aos IAM instance/permission lifecycle, `CMP-KAC` fixed-resource translation, short-lived JWT refresh/expiry and renewal denial, D4-010.1 unique per-Unit PKCS#11 signing and verifier startup/cross-Unit rejection/overlay retirement, the explicit trusted-Provider scope boundary, native AosCloud system/service/crash-log requests, exact retention duration, deletion effect, offline behavior, redaction and bounded temporary-download removal. |
 | `I7` End-to-end release proof | Execute `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> T1 -> R0` on Validation and Demonstration Units with retained evidence. |
 | `I8` Edge Runtime Performance Qualification — deferred | After the first demo, benchmark VM power-on to AosCore readiness, Unit reconnect to service readiness, deployment-to-container readiness, crash/power-cycle recovery, offline continuation, reconnect synchronization, local event-to-advisory processing and CPU/RAM/storage/startup overhead. Cloud authentication, signing, approval and operator-interaction duration are not vehicle-performance KPIs. |
 

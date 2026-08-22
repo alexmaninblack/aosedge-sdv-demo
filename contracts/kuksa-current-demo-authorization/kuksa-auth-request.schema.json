@@ -1,0 +1,27 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:kuksa-auth-request:schema:v1",
+  "title": "Current-Demo KUKSA Authorization Request",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["protocol", "operation"],
+      "properties": {
+        "protocol": { "const": "aos-kuksa-auth-compat/v1" },
+        "operation": { "const": "status" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["protocol", "operation", "aosSecret"],
+      "properties": {
+        "protocol": { "const": "aos-kuksa-auth-compat/v1" },
+        "operation": { "const": "issue" },
+        "aosSecret": { "type": "string", "minLength": 1 }
+      }
+    }
+  ]
+}

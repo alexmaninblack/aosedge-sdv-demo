@@ -3,13 +3,19 @@
 
 # ADR 0010: Derive KUKSA Credentials from Aos IAM Without Forking KUKSA
 
-- Status: Accepted for architecture and requirements
+- Status: Accepted historical baseline for HLA 1.3/1.4; proposed supersession
+  by [ADR 0013](0013-current-release-kuksa-authorization-compatibility.md)
 - Date: 2026-08-18
 - Amended: 2026-08-19
 - Supersedes: the future standalone Authorization Adapter and static-token
   target described by ADR 0005 and ADR 0006
 
 ## Context
+
+> Historical note: the mapping in item 7 below is not current implementation
+> authority. D4-027.4 supersedes it with non-widening `r -> read`,
+> `rw -> actuate`, and rejection of `w` because pinned KUKSA actuation already
+> includes read.
 
 Eclipse KUKSA Databroker is an externally supplied platform dependency. The
 pinned release validates JWTs with a configured public key; it does not expose

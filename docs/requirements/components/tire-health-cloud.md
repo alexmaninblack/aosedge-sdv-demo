@@ -5,17 +5,18 @@
 
 - Status: D3 design-reviewed
 - Package: [`CR-TIRE-CLOUD`](../component-decomposition-and-interface-register.md#cr-tire-cloud)
-- Version: 0.2
+- Version: 0.3
 - Prepared: 2026-08-19
 - Accepted: 2026-08-19
 - Owner: Function Team 2 / Service Provider 2 functional Cloud product
-- Architecture input: [High-Level Architecture 1.4](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 1.9](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 1.8](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 1.0](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 1.1](../component-decomposition-and-interface-register.md)
+- Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
+- Scenario input: [Demo Scenarios 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.0](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.0](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 2.0](../component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0008](../../architecture/decisions/0008-use-tire-health-for-function-team-2.md), [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md), and [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
 - Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
+- Accepted D4 publication input: [D4-010.3 Artifact Publication Credential Profile](../../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
 - Implementation baseline: no `tire-health-cloud` repository or executable exists
 - Implementation, repository creation, signing, Cloud, or Unit mutation authorized: no
 
@@ -30,14 +31,16 @@ Dashboard.
 
 The product demonstrates bounded OEM-internal multi-tenancy. It is separate
 from Brake Health Cloud in repository, service-provider publication identity,
-release helper, container, persistent volume, API namespace, functional data,
-dashboard and failure boundary. Both products may share the same Apple Silicon
-host and Docker Desktop engine, but they do not share lifecycle authority,
-credentials or application state.
+fixed helper profile/credential binding, container, persistent volume, API
+namespace, functional data, dashboard and failure boundary. Both products may
+share the same Apple Silicon host, Docker Desktop engine and common native
+helper implementation, but they do not share lifecycle authority, credentials
+or application state.
 
 The demonstration is **presenter-controlled and system-executed**. The
 presenter explicitly requests signing and publication of the one already-built
-candidate. A protected Function Team 2 pipeline performs those actions,
+candidate. The common native helper surface pre-bound to `tire-sp2` performs
+those technical actions,
 AosCloud owns technical verification and lifecycle state, and the OEM Software
 Delivery Dashboard owns the separate OEM-authorized validation deployment and
 promotion interaction. Runtime ingestion and dashboard results are automatic
@@ -84,7 +87,7 @@ flowchart TB
             TIRE --- TDATA
             BRAKE --- BDATA
         end
-        THELPER["Function Team 2 native macOS release helper<br/>Keychain-backed signing"]
+        THELPER["Common native publication helper<br/>fixed tire-sp2 profile"]
         QEMU["QEMU<br/>selected VU or DU"]
     end
 
@@ -110,9 +113,13 @@ a QEMU guest-visible host route without requiring exposure to the office,
 home, customer or public LAN. The exact Docker/QEMU route is a D4 experiment
 and qualification gate rather than an assumed behavior.
 
-The native macOS release helper keeps Function Team 2 signing credentials in
-the login Keychain. No private key, reusable certificate bundle or OEM
-lifecycle credential is copied or mounted into the container.
+The dashboard delegates publication to the common session-scoped native macOS
+helper surface pre-bound to D4-010.3 profile `tire-sp2`. In the current
+`aos-signer` 2.0.1 compatibility path, only that helper may read the fixed
+local mode-`0600` passwordless PKCS#12 used for both signing and mTLS upload.
+The file remains outside Git, the browser, Docker, every VM, every artifact and
+all logs; this current implementation is not described as Keychain-backed or
+non-exportable.
 
 ## Prepared Release Catalogue
 
@@ -192,7 +199,9 @@ imply concurrent vehicle evidence.
 - native `linux/arm64` backend/dashboard container, health endpoint and graceful restart;
 - dedicated persistent volume and application namespace isolated from Brake Health;
 - loopback-only browser UI and authenticated allowlisted VM ingestion route;
-- native Keychain-backed Function Team 2 release helper;
+- client integration with the common native publication helper pre-bound to
+  `tire-sp2`, with its local PKCS#12 excluded from Git, the browser, container
+  and logs;
 - unit tests, contract fixtures, health, logs and metrics for all owned logic.
 
 ### Out of scope
@@ -217,14 +226,14 @@ imply concurrent vehicle evidence.
 | --- | --- | --- | --- |
 | Tire functional messages | [`CR-TIRE`](tire-health-service.md) | Accepted bounded summary/event schema, authentication and idempotency identity | Reject/quarantine invalid input; never fabricate a dashboard result |
 | Prepared immutable v1.0 candidate | [`CR-TIRE`](tire-health-service.md) release pipeline | ARM64 payload, metadata, unit/contract tests and unsigned digests frozen before presentation | Candidate cannot be selected or signed |
-| Function Team 2 release pipeline | [`IF-LC-007`](../component-decomposition-and-interface-register.md#if-lc-007) | Explicit confirmation, protected key handling, SP2 identity and machine-readable result | Show failure/uncertain state; no Cloud success claim |
+| Function Team 2 release pipeline | [`IF-LC-007`](../component-decomposition-and-interface-register.md#if-lc-007) | Explicit confirmation, D4-010.3 `tire-sp2` binding, exact candidate/digests, protected local mode-`0600` PKCS#12 and machine-readable result | Wrong profile/candidate/path/URL or custody failure blocks before signing; ambiguous result becomes `UNCERTAIN` and is reconciled without blind retry |
 | AosCloud and OEM delivery surface | [`CR-AOS`](aos-lifecycle.md) and [`CR-DEMO`](demo-orchestration.md) | Authoritative verification, target, approval, deployment and promotion | Release view stops at pipeline result and directs presenter to authoritative surface |
 | VDP v3 compatibility | [`CR-VDP`](vehicle-data-platform.md) and [`CR-TIRE`](tire-health-service.md) | D4-007 candidate range, installed identity and fail-closed service readiness | Display declared/actual evidence and Platform Team handoff for real incompatibility; do not implement admission control |
 | Run and Unit correlation | [`CR-DEMO`](demo-orchestration.md) | Bounded time window, VU/DU IDs/roles and exact sequential live source/generation/frame binding | Quarantine as unassigned and exclude from success views |
 | Engineering advisory evidence | [`CR-GATEWAY`](vehicle-gateway.md) | Gateway VISS remains authoritative for request/status | Function view cannot claim Gateway receipt or driver display |
 | Apple Silicon runtime | Docker Desktop on the demo Mac | Native ARM64 engine, dedicated volume and healthy container runtime | Launcher reports blocked; no functional-data success claim |
 | QEMU-to-container route | [`CR-DEMO`](demo-orchestration.md) plus this package | Authenticated selected-Unit ingestion without LAN exposure | Unit data stays queued and dashboard shows offline |
-| Function Team 2 Keychain helper | Function Team 2 release owner | Native authenticated helper; key non-exportable to browser/container | Sign/publish control disabled with factual reason |
+| Native `tire-sp2` publication helper | Function Team 2 release owner | Common session-scoped helper available through a local authenticated boundary; fixed PKCS#12 exists with mode `0600` outside Git and every browser/container/VM/artifact | Sign/publish control disabled with a factual reason |
 
 ## Current Implementation Baseline
 
@@ -346,12 +355,12 @@ is deferred.
 <a id="req-tire-cloud-004"></a>
 
 - ID: `REQ-TIRE-CLOUD-004`
-- Statement: After explicit presenter confirmation, the dashboard shall delegate exactly one selected v1.0 sign/publish request to an authenticated native Function Team 2 helper, expose pending/success/failure/uncertain states, preserve the exact resulting signed digest and never access or export private key material.
-- Parents: [immutable candidates (`SYS-REL-001`)](../system-requirements-and-traceability.md#sys-rel-001) and [OEM-authorized deployment approval (`SYS-REL-008`)](../system-requirements-and-traceability.md#sys-rel-008)
+- Statement: After explicit presenter confirmation, the dashboard shall delegate exactly one prepared Tire Health v1.0 candidate and its verified payload/metadata digests to the common native helper surface pre-bound to D4-010.3 profile `tire-sp2`. The request shall contain no profile, credential path, candidate path or Cloud URL. The helper shall use installed `aos-signer` 2.0.1 and the fixed local mode-`0600` passwordless PKCS#12 for both signing and mTLS upload, shall never expose private-key or PKCS#12 material to the browser/backend and shall preserve the resulting signed artifact digest for unchanged VU-to-DU promotion evidence. `PUBLISHED` requires an independent AosCloud re-read; lost or ambiguous results become `UNCERTAIN` and are reconciled without blind retry.
+- Parents: [immutable candidates (`SYS-REL-001`)](../system-requirements-and-traceability.md#sys-rel-001), [role-bound protected publication (`SYS-REL-011`)](../system-requirements-and-traceability.md#sys-rel-011), and [OEM-authorized deployment approval (`SYS-REL-008`)](../system-requirements-and-traceability.md#sys-rel-008)
 - Flow: [Tire lifecycle (`AF-TIRE-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-lc)
 - Verification: Unit, Component, Integration, End-to-end
-- Evidence: confirm/cancel/failure/timeout/reconciliation records, helper authentication and signed digest
-- State: D3 design-reviewed
+- Evidence: D4-010.3 contract/schema validation; confirmation record; exact `tire-sp2` binding; wrong-profile/candidate/type/path/URL negatives; local file mode/location/exclusion proof; helper result; independent Cloud re-read; no-blind-retry and absence-of-key/PKCS#12-output inspection; exact VU/DU signed digest comparison
+- State: D3 design-reviewed; D4-010.3 accepted; exact helper request/result and Cloud reconciliation lookup remain implementation gates
 
 Retries after an uncertain result require reconciliation with the Function Team
 pipeline/AosCloud; a browser timeout must not cause blind republishing.
@@ -469,12 +478,12 @@ pipeline/AosCloud; a browser timeout must not cause blind republishing.
 <a id="req-tire-cloud-014"></a>
 
 - ID: `REQ-TIRE-CLOUD-014`
-- Statement: Browser access shall be loopback-only; selected-Unit ingestion shall be authenticated and allowlisted without LAN exposure; the native Function Team 2 helper shall use only its Keychain-backed SP2 identity; and Tire processes/configuration shall not read Brake Health ports, volumes, API state, helper authority or credentials.
+- Statement: Browser access shall be loopback-only; selected-Unit ingestion shall be authenticated and allowlisted without LAN exposure; confirmed signing/publication shall be delegated only to the authenticated common native helper surface pre-bound to `tire-sp2`; the PKCS#12 shall remain outside the Docker image, configuration, container, volume and browser; the helper shall reject caller-selected profile/path/URL input; and Tire processes/configuration shall not read Brake Health ports, volumes, API state, helper authority or credentials.
 - Parents: [independent Tire product (`SYS-TIRE-005`)](../system-requirements-and-traceability.md#sys-tire-005), [least privilege (`SYS-SEC-001`)](../system-requirements-and-traceability.md#sys-sec-001), and [QM containment (`SYS-SEC-007`)](../system-requirements-and-traceability.md#sys-sec-007)
 - Flows: [Tire lifecycle (`AF-TIRE-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-lc) and [failure boundaries (`AF-TIRE-FR`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-fr)
 - Verification: Unit, Component, Integration, End-to-end
-- Evidence: listener/auth/helper/volume policy tests, unauthorized/LAN probes and simultaneous Brake/Tire isolation run
-- State: D3 design-reviewed
+- Evidence: listener/auth/helper/profile/filesystem/volume policy tests, unauthorized/LAN probes and simultaneous Brake/Tire isolation run
+- State: D3 design-reviewed; D4-010.3 accepted
 
 ## Stable Unit-Test Obligations
 
@@ -482,14 +491,14 @@ pipeline/AosCloud; a browser timeout must not cause blind republishing.
 | --- | --- | --- |
 | <a id="ut-tire-cloud-001"></a>`UT-TIRE-CLOUD-001` | `REQ-TIRE-CLOUD-001`, `005` | Correct view/source/authority labels and no lifecycle store/API/control |
 | <a id="ut-tire-cloud-002"></a>`UT-TIRE-CLOUD-002` | `REQ-TIRE-CLOUD-002`, `003` | Exactly one valid v1.0 entry; malformed/missing metadata and hidden alternate candidates fail |
-| <a id="ut-tire-cloud-003"></a>`UT-TIRE-CLOUD-003` | `REQ-TIRE-CLOUD-004` | Confirm/cancel/success/failure/timeout/uncertain flow with no key exposure or blind retry |
+| <a id="ut-tire-cloud-003"></a>`UT-TIRE-CLOUD-003` | `REQ-TIRE-CLOUD-004` | Confirm/cancel/success/failure/timeout/uncertain flow, exact `tire-sp2` binding, wrong profile/candidate/type/path/URL rejection, independent Cloud re-read and no key/PKCS#12 exposure or blind retry |
 | <a id="ut-tire-cloud-004"></a>`UT-TIRE-CLOUD-004` | `REQ-TIRE-CLOUD-006` | Durable idempotent summary/event ingestion; conflicting duplicate quarantine |
 | <a id="ut-tire-cloud-005"></a>`UT-TIRE-CLOUD-005` | `REQ-TIRE-CLOUD-007`, `012` | Exact factual presentation, all freshness/failure states and raw/oracle/Gateway negative claims |
 | <a id="ut-tire-cloud-006"></a>`UT-TIRE-CLOUD-006` | `REQ-TIRE-CLOUD-008` | Disconnect/restart/reconnect convergence with original/receipt times and retention failure |
 | <a id="ut-tire-cloud-007"></a>`UT-TIRE-CLOUD-007` | `REQ-TIRE-CLOUD-009`, `010` | Run/Unit/source isolation and honest sequential live VU/reset/DU presentation |
 | <a id="ut-tire-cloud-008"></a>`UT-TIRE-CLOUD-008` | `REQ-TIRE-CLOUD-011` | Preview and complete exact current-run deletion; wildcard rejected; unrelated and Brake data unchanged; dashboard empty |
 | <a id="ut-tire-cloud-009"></a>`UT-TIRE-CLOUD-009` | `REQ-TIRE-CLOUD-013` | ARM64 immutable image, health, dedicated volume, restart and secret/path policy |
-| <a id="ut-tire-cloud-010"></a>`UT-TIRE-CLOUD-010` | `REQ-TIRE-CLOUD-014` | Loopback UI, authenticated VM path, SP2 helper and Brake/Tire port/volume/credential isolation |
+| <a id="ut-tire-cloud-010"></a>`UT-TIRE-CLOUD-010` | `REQ-TIRE-CLOUD-014` | Loopback UI, authenticated VM path, fixed `tire-sp2` helper, PKCS#12 mode/exclusion and Brake/Tire port/volume/credential isolation |
 
 Every obligation is deterministic and runnable without personal credentials,
 network access or a real Cloud, VM or simulator. Output shall not contain
@@ -502,7 +511,7 @@ keys, tokens, raw certificates, unrestricted telemetry or hidden truth.
 | `REQ-TIRE-CLOUD-001` | `UT-001` | Two-view authority suite | N/A | Backend/helper boundary | `AF-TIRE-OB` |
 | `REQ-TIRE-CLOUD-002` | `UT-002` | Catalogue loading | Candidate manifest | Prepared v1.0 artifact | N/A |
 | `REQ-TIRE-CLOUD-003` | `UT-002` | Metadata UI | Service metadata/catalogue | N/A | N/A |
-| `REQ-TIRE-CLOUD-004` | `UT-003` | Helper client | Helper schema | Test signing/publication | Exact digest flow |
+| `REQ-TIRE-CLOUD-004` | `UT-003` | Helper client | D4-010.3 profile/helper conformance | Test signing/publication and Cloud reconciliation | Exact digest flow |
 | `REQ-TIRE-CLOUD-005` | `UT-001` | API/permission inventory | N/A | No lifecycle mutation | Negative authority proof |
 | `REQ-TIRE-CLOUD-006` | `UT-004` | Packaged ingestion | `IF-TIRE-003` fixtures | Real Tire v1.0 | `AF-TIRE-RT` |
 | `REQ-TIRE-CLOUD-007` | `UT-005` | Dashboard states | `IF-TIRE-004` fixtures | Real result | `AF-TIRE-OB` |
@@ -524,7 +533,7 @@ keys, tokens, raw certificates, unrestricted telemetry or hidden truth.
 | Resource bounds | Message/page/storage/retention/upload limits frozen at D4 | Unit, load, integration |
 | Chronology | Preserve event/receipt/sync times; never present Cloud delivery as part of the local advisory path | Unit, analysis, end-to-end |
 | Offline | Idempotent reconnect and explicit delayed/offline/retention state | Unit, integration, end-to-end |
-| Local hosting | Native ARM64 container, dedicated volume, loopback UI, authenticated VM route, native Keychain helper | Packaging, component, integration |
+| Local hosting | Native ARM64 container, dedicated volume, loopback UI, authenticated VM route and native D4-010.3 `tire-sp2` helper boundary | Packaging, component, contract, integration |
 
 ## Open D4 Gates
 
@@ -533,7 +542,7 @@ keys, tokens, raw certificates, unrestricted telemetry or hidden truth.
 | Exact `IF-TIRE-003/004` schemas, bounds, authentication and acknowledgement | Backend/service contract and fixtures | Function Team 2 |
 | Condition/event dashboard fields, chart/state presentation and terminology | Audience UI and snapshot tests | Function Team 2 |
 | Backend technology, API transport and storage schema | Repository scaffold and component tests | Function Team 2 |
-| Protected SP2 helper protocol and Keychain identity selection | Publication integration and security | Function Team 2 release owner |
+| Exact common-helper request/result transport, D4-010.3 `tire-sp2` configuration and authoritative Cloud reconciliation lookup | Publication integration; accepted profile/custody semantics are closed | Function Team 2 security/release owner + Demo Solution |
 | Docker startup/minimum version, container/volume/port names and collision policy with Brake Cloud | Launcher and simultaneous products | `CR-DEMO` + both Function Teams |
 | QEMU guest-visible authenticated route without LAN exposure | Real functional ingestion | `CR-DEMO` + Function Team 2 |
 | Exact current-run deletion selector and completeness proof | Storage cleanup and R0 | Function Team 2 + Demo owner |
@@ -546,8 +555,9 @@ The package was design-reviewed and accepted on 2026-08-19. Acceptance fixes
 the following boundaries for implementation planning:
 
 1. Tire Health Cloud is a Function Team 2 product isolated from Brake Health
-   in repository, container, persistent volume, API namespace, release helper,
-   Service Provider identity, data and failure boundary.
+   in repository, container, persistent volume, API namespace, fixed helper
+   profile/credential binding, Service Provider identity, data and failure
+   boundary; the native helper implementation itself is common.
 2. The presentation catalogue contains exactly one immutable Tire Health v1.0
    candidate; source editing, building and repackaging are outside the demo.
 3. Release Candidates and Vehicle Data are separate views. The former delegates
@@ -558,13 +568,19 @@ the following boundaries for implementation planning:
 5. The dashboard does not fabricate Tire results, expose continuous raw
    telemetry or hidden truth, or claim Gateway acceptance or driver display.
 6. The demo product is hosted locally on the Apple Silicon Mac as a native
-   ARM64 container with dedicated persistence, loopback browser access and a
-   separate Keychain-backed native release helper.
+   ARM64 container with dedicated persistence and loopback browser access. It
+   delegates publication to the common native helper pre-bound to `tire-sp2`;
+   the current file-backed PKCS#12 remains outside Docker and the browser.
 7. The fourteen component requirements and ten stable unit-test obligations
    are accepted as the D3 verification baseline.
 
+Version 0.3 was revalidated on 2026-08-22 after D4-010.3 accepted the
+role-bound publication profile, current `aos-signer` 2.0.1 file-backed
+PKCS#12 limitation and independent Cloud reconciliation rule. Technical
+publication remains separate from OEM approval.
+
 Exact message/API schemas, storage technology, container/network names,
-QEMU-to-container routing, helper protocol and retention values remain D4
+QEMU-to-container routing, helper transport and retention values remain D4
 gates. This acceptance does not create a repository or artifact and does not
 authorize signing, publication, Cloud mutation or Unit mutation.
 

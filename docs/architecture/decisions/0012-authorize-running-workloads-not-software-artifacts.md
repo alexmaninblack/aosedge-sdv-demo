@@ -5,7 +5,9 @@
 
 - Status: Accepted as a technology-neutral security architecture input
 - Date: 2026-08-21
-- AosEdge mapping: Open under `D4-010.2`
+- Current demo mapping: SOTA Service workloads follow this model through
+  ADR 0013; the OEM-qualified VDP is an explicit trusted-platform exception
+  recorded under `D4-010.2`
 
 ## Context
 
@@ -155,6 +157,23 @@ identity. Before `D4-010.2` is accepted, the project shall determine:
 Until that mapping is accepted, this ADR is a binding security constraint but
 does not close `D4-010.2` or authorize implementation of a project-specific
 identity substitute.
+
+### Current-demo scope resolution
+
+For the first demo, [ADR 0013](0013-current-release-kuksa-authorization-compatibility.md)
+applies this workload model to independently delivered Brake Health and Tire
+Health SOTA instances through active Aos IAM authority and short-lived KUKSA
+JWTs.
+
+The VDP is instead accepted as part of the OEM-qualified trusted platform. Its
+Provider-side KUKSA connectivity is fixed Platform Team integration delivered
+through the signed, evidence-backed FOTA lifecycle. The demo does not add
+dynamic Provider IAM/JWT, per-component attestation, or containment of a
+malicious or substituted VDP. This closes the current-demo `D4-010.2` action by
+an explicit scope and trust assumption; it does not prove or invalidate the
+stricter technology-neutral model above. Any future scenario with third-party,
+independently distrusted, or mutually isolated providers must reopen that
+mapping and satisfy this ADR before claiming secure workload authorization.
 
 ## Rejected Alternatives
 

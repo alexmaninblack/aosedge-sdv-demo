@@ -39,15 +39,16 @@ stale Verification Batch or selecting it for a new rollout.
 Virtual vehicle and Gateway                  AosVM Domain Controller
 
 CARLA -> Vehicle Gateway -> VISS 3.1 -> Vehicle Data Platform Component
-                                           provider + contract +
-                                         thin Credential Broker
+                                           provider + contract
                                                     |
-AosCore Service Manager/IAM ------------------------+  (instance permissions)
                                                     v
                                       unmodified KUKSA Databroker
                                               /             \
                                              v               v
                                   Brake Health service   Tire Health service
+
+AosCore Service Manager/IAM -> platform credential boundary -> Service-private JWT
+                               current release: removable helper
 ```
 
 The Vehicle Data Platform Component follows the OEM Platform Team/FOTA
@@ -58,10 +59,12 @@ production vehicle replaces the CARLA side with real vehicle networks while
 preserving the service contract.
 
 Service Manager and Aos IAM own each SOTA instance identity, secret and
-registered permissions. Services use that identity to obtain short-lived,
-path-scoped KUKSA JWTs from the component-owned thin broker. They do not carry
-reusable KUKSA tokens, create a parallel identity/policy store, or modify
-Eclipse KUKSA.
+registered permissions. The permanent target keeps credential preparation
+platform-controlled and implementation-neutral. The current release uses a
+separately packaged removable helper outside the VDP and both SOTA artifacts
+to derive short-lived, Service-private, path-scoped KUKSA JWTs. Services do not
+carry reusable KUKSA tokens, select their own authority, create a parallel
+identity/policy store, or modify Eclipse KUKSA.
 
 Read [architecture and repository ownership](docs/architecture/repository-boundaries.md) for the
 complete boundary.
@@ -131,9 +134,9 @@ python3 -m unittest discover -s tests -p 'test_*.py'
 - [Documentation map](docs/README.md)
 - [Getting started](docs/getting-started/README.md)
 - [Reproduction guide and readiness matrix](docs/getting-started/reproduce-demo.md)
-- [High-Level Architecture 1.4 — accepted architecture baseline](docs/architecture/high-level-architecture.md)
-- [System Requirements and Traceability 1.0 — accepted system-requirements baseline](docs/requirements/system-requirements-and-traceability.md)
-- [Component Decomposition and Interface Register 1.1 — accepted component baseline](docs/requirements/component-decomposition-and-interface-register.md)
+- [High-Level Architecture 1.5 — architecture review candidate](docs/architecture/high-level-architecture.md)
+- [System Requirements and Traceability 2.0 — review candidate](docs/requirements/system-requirements-and-traceability.md)
+- [Component Decomposition and Interface Register 2.0 — review candidate](docs/requirements/component-decomposition-and-interface-register.md)
 - [R9 Demo Foundation Research](docs/research/demo-foundation/README.md)
 - [Current accepted baseline](docs/qualification/current-baseline.md)
 - [Roadmap and next gates](docs/planning/roadmap.md)

@@ -1,0 +1,61 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:kuksa-auth-response:schema:v1",
+  "title": "Current-Demo KUKSA Authorization Response",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["protocol", "status", "correlationId"],
+      "properties": {
+        "protocol": { "const": "aos-kuksa-auth-compat/v1" },
+        "status": { "const": "ready" },
+        "correlationId": { "type": "string", "minLength": 1 }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocol",
+        "status",
+        "correlationId",
+        "token",
+        "expiresAtUnixSeconds",
+        "renewAfterUnixSeconds"
+      ],
+      "properties": {
+        "protocol": { "const": "aos-kuksa-auth-compat/v1" },
+        "status": { "const": "issued" },
+        "correlationId": { "type": "string", "minLength": 1 },
+        "token": { "type": "string", "minLength": 1 },
+        "expiresAtUnixSeconds": { "type": "integer", "minimum": 0 },
+        "renewAfterUnixSeconds": { "type": "integer", "minimum": 0 }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["protocol", "status", "correlationId", "code", "retryable"],
+      "properties": {
+        "protocol": { "const": "aos-kuksa-auth-compat/v1" },
+        "status": { "const": "rejected" },
+        "correlationId": { "type": "string", "minLength": 1 },
+        "code": {
+          "enum": [
+            "INVALID_REQUEST",
+            "DENIED",
+            "POLICY_UNSUPPORTED",
+            "IAM_UNAVAILABLE",
+            "SIGNER_UNAVAILABLE",
+            "TIME_UNTRUSTED",
+            "BUSY",
+            "INTERNAL_ERROR"
+          ]
+        },
+        "retryable": { "type": "boolean" }
+      }
+    }
+  ]
+}

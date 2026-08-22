@@ -13,7 +13,8 @@ must agree.
 | --- | --- | --- |
 | CARLA physics, maps, native simulator build | `CarlaSim` | vehicle simulation baseline |
 | Vehicle control, CARLA sampling, VSS/VISS, engineering dashboard or deterministic scenario | `carla-ego-runtime` | Vehicle Gateway/demo tooling |
-| Factory-image integration, provider runtime, native IAM/PKCS#11 seam, KUKSA platform contract/trust, thin Credential Broker, provider platform identity or Vehicle Data Platform Component | `aos-vehicle-platform` | Platform Team / FOTA |
+| Factory-image integration, native IAM/PKCS#11 seam, unmodified KUKSA trust and removable current-release `CMP-KAC` (`authorization/aos-kuksa-compat/`) | `aos-vehicle-platform` | Platform Team / pre-SOP factory and system integration |
+| Vehicle Data Provider runtime, signal/advisory contract or Vehicle Data Platform Component | `aos-vehicle-platform` | Platform Team / post-SOP FOTA |
 | Brake Health in-vehicle analytics | `brake-health-service` | Function Team 1 / SOTA |
 | Tire Health condition estimation, bounded reporting and inspection advisory | planned `tire-health-service` | Function Team 2 / independent SOTA |
 | Brake Health backend or Function Dashboard | planned `brake-health-cloud` | Function Team 1 Cloud product |
@@ -35,8 +36,8 @@ convenient.
 3. Check the relevant runtime and lifecycle sequence in
    [Architecture Flows](../architecture/demo-scenario-architecture-flows.md).
 4. Confirm that the change still fits
-   [High-Level Architecture 1.4](../architecture/high-level-architecture.md)
-   and [Demo Scenario 1.9](../demo/staged-post-sop-brake-health-demo-scenarios.md).
+   [High-Level Architecture 1.5](../architecture/high-level-architecture.md)
+   and [Demo Scenario 2.0](../demo/staged-post-sop-brake-health-demo-scenarios.md).
 
 If the proposed behavior does not fit, change and review the owning design
 document first. A downstream implementation must not silently redefine an

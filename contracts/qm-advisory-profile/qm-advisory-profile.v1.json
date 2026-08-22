@@ -3,7 +3,7 @@
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "schemaVersion": 1,
   "contractId": "aosedge-demo-typed-qm-advisory",
-  "contractVersion": "1.0.0",
+  "contractVersion": "1.0.1",
   "decision": "D4-008",
   "inputs": {
     "vdpCompatibilityContractVersion": "1.0.0",
@@ -94,7 +94,7 @@
   ],
   "dataFlow": [
     "SERVICE_WRITES_OWN_KUKSA_TARGET",
-    "KUKSA_ENFORCES_D4_009_PATH_PERMISSION",
+    "KUKSA_ENFORCES_D4_027_PATH_PERMISSION",
     "VDP_VALIDATES_AND_FORWARDS_EXACT_VISS_SET",
     "GATEWAY_REVALIDATES_AND_APPLIES_OR_REJECTS",
     "GATEWAY_PUBLISHES_AUTHORITATIVE_STATUS",
@@ -110,10 +110,9 @@
   },
   "deferred": {
     "exactModelDecisionAndHysteresis": ["D4-016", "D4-018"],
-    "credentialIssuanceAndRefresh": "D4-009",
+    "credentialIssuanceAndRefresh": "D4-027",
     "productionDriverHmi": true,
     "functionalSafetyClaim": true,
     "vssStructWireEncoding": "Reconsider only after the selected KUKSA and VISS implementations prove end-to-end atomic struct support."
   }
 }
-

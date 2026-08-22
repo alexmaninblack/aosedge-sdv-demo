@@ -5,6 +5,11 @@
 
 Status: **research pass complete; implementation not authorized**.
 
+> Current disposition: the KUKSA/VISS evidence in this report remains valid,
+> but its ADR 0010 recommendation is superseded for the HLA 1.5 review
+> candidate. Proposed ADR 0013 places removable `CMP-KAC` outside VDP and
+> treats the first-demo Provider as OEM-qualified trusted platform integration.
+
 ## Decision scope
 
 This workstream determines how Brake Health Service v3 can request a bounded
@@ -181,8 +186,11 @@ that the first implementation uses the pinned v1 target-value compatibility
 path, that VISS Set success is not final actuation evidence, and that the
 Gateway status feedback is mandatory. The target delta includes both VISS
 authorization and a Gateway advisory handler; TLS alone is not sufficient.
-Credential issuance follows ADR 0010 and is part of the Vehicle Data Platform
-Component, not a standalone adapter or a modification to Eclipse KUKSA.
+Current-release Service credential issuance follows proposed ADR 0013 and
+D4-027 through separately packaged removable `CMP-KAC`, outside the Vehicle
+Data Platform Component and without modifying Eclipse KUKSA. The first-demo
+Provider remains fixed OEM-trusted platform integration rather than a dynamic
+Service-style authorization flow.
 
 ## Sources
 
@@ -190,5 +198,5 @@ Component, not a standalone adapter or a modification to Eclipse KUKSA.
 - [COVESA VISS 3.1 specification](https://github.com/COVESA/vehicle-information-service-specification/tree/v3.1)
 - [Eclipse KUKSA Databroker 0.5.0](https://github.com/eclipse-kuksa/kuksa-databroker/tree/0.5.0)
 - [`aos-vehicle-platform` provider architecture](../../../../aos-vehicle-platform/docs/architecture.md)
-- [Current High-Level Architecture 1.4](../../architecture/high-level-architecture.md)
+- [Current High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
 - [ADR 0010: Aos–KUKSA Credential Broker](../../architecture/decisions/0010-aos-kuksa-credential-broker.md)

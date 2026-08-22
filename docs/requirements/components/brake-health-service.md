@@ -3,17 +3,18 @@
 
 # Brake Health In-Vehicle Service Component Requirements
 
-- Status: D3 design-reviewed
+- Status: D3 review candidate
 - Package: [`CR-BHS`](../component-decomposition-and-interface-register.md#cr-bhs)
-- Version: 0.4
+- Version: 0.5
 - Prepared: 2026-08-21
 - Owner: Function Team 1 / Service Provider 1 / SOTA 1
-- Architecture input: [High-Level Architecture 1.4](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 1.9](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 1.8](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 1.0](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 1.1](../component-decomposition-and-interface-register.md)
-- Accepted architecture decisions: [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md), [ADR 0010](../../architecture/decisions/0010-aos-kuksa-credential-broker.md) and [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
+- Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
+- Scenario input: [Demo Scenarios 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.0](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.0](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 2.0](../component-decomposition-and-interface-register.md)
+- Accepted architecture decisions: [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md), [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md), [ADR 0012](../../architecture/decisions/0012-authorize-running-workloads-not-software-artifacts.md) and [ADR 0013](../../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md)
+- Previous accepted package: Version 0.4
 - Reviewed D4 working direction: [D4-003 deterministic stimuli and calibration](../d4-decision-register.md#d4-003)
 - Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
 - Accepted D4 advisory input: [D4-008 Typed QM Advisory Profile](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
@@ -41,7 +42,7 @@ deployment or promotion affecting OEM Units.
 | Question | Answer |
 | --- | --- |
 | What this package owns | Service v1-v3 application behavior, KUKSA client use, v1 pre-trigger/event/post-trigger recorder, deterministic synthetic v2 assessment, bounded functional message queue, typed v3 advisory request, service packaging, compatibility, resources, health, logs and tests |
-| What this package does not own | CARLA or brake-condition ground truth, VISS, Vehicle Data Platform provider/broker/policy, KUKSA executable/trust, Gateway advisory enforcement, Aos lifecycle execution, backend persistence or functional dashboard |
+| What this package does not own | CARLA or brake-condition ground truth, VISS, Vehicle Data Platform Provider/policy, KUKSA executable/trust, `CMP-KAC` implementation, Gateway advisory enforcement, Aos lifecycle execution, backend persistence or functional dashboard |
 | Intended result | The same independently deployable SOTA product progresses from finite high-detail event windows to on-board derived assessments/events and finally to an offline-capable typed maintenance advisory |
 | Accountable lifecycle owner | Function Team 1; Service Provider 1 publishes, authorized OEM identity approves validation and promotion through SOTA 1 |
 | Primary repository | [`brake-health-service` architecture](../../../../brake-health-service/docs/architecture.md) |
@@ -52,8 +53,9 @@ deployment or promotion affecting OEM Units.
 
 - ARM64 Aos service packaging and immutable Service v1-v3 release metadata;
 - declared Vehicle Data Platform compatibility range and fail-closed readiness;
-- per-instance `AOS_SECRET` use at the local Credential Broker boundary;
-- short-lived path-scoped KUKSA credential refresh and rejection handling;
+- fixed-resource bootstrap with per-instance `AOS_SECRET` at the local
+  `CMP-KAC` boundary;
+- private volatile short-lived KUKSA JWT consumption, refresh and rejection handling;
 - accepted KUKSA read/subscription inputs and data-quality handling;
 - v1 bounded ring buffer, braking trigger, pre/active/post event-window state
   machine and ordered/idempotent chunk transfer;
@@ -67,7 +69,7 @@ deployment or promotion affecting OEM Units.
 ### Out of scope
 
 - simulator signals, hidden qualification truth or obstacle/braking scenario;
-- VISS transport, KUKSA publication, OEM policy or Credential Broker implementation;
+- VISS transport, KUKSA publication, OEM policy or `CMP-KAC` implementation;
 - KUKSA Databroker modification or an embedded reusable KUKSA token;
 - arbitrary VSS/KUKSA writes, display text, throttle, brake, steer, gear or any
   safety-critical or vehicle-motion command;
@@ -80,7 +82,7 @@ deployment or promotion affecting OEM Units.
 | Dependency or assumption | Owner | Required state | Failure consequence |
 | --- | --- | --- | --- |
 | Accepted Vehicle Data Platform contract | `CR-VDP` | Exact compatible version, KUKSA paths, types, units, quality and freshness behavior | Service remains not ready and produces no accepted report/advisory |
-| Native Aos service identity and IAM permissions | `CR-AOS` plus `CR-VDP` Credential Broker | Current instance registered, valid `AOS_SECRET`, exact `kuksa` path/mode permissions | Credential request fails closed; no cached privilege extension |
+| Native Aos service identity and IAM permissions | `CR-AOS` plus `CR-KAC` | Current instance registered, valid `AOS_SECRET`, fixed `kuksa` bootstrap resource and exact registered path/mode permissions | Bootstrap/JWT acquisition fails closed; no cached privilege extension |
 | Deterministic Brake Health stimulus and input truth | `CR-VEHICLE-SIM`, `CR-GATEWAY`, `CR-VDP` | Versioned scenario/profile and accepted provenance labels | Model qualification is invalid; no audience prediction claim |
 | Brake Health backend contract | `CR-BRAKE-CLOUD` | Versioned authenticated endpoint, v1 chunk/completion reconstruction, v2/v3 derived-message schemas and idempotent acknowledgement | Functional messages remain in bounded local queue; local assessment/advisory continues |
 | Aos runtime and resource enforcement | `CR-AOS` | Service install/start/stop/update state and declared quotas enforced | Service reports unavailable/error; platform and vehicle-data path remain active |
@@ -101,21 +103,20 @@ deployment or promotion affecting OEM Units.
 | v3 advisory request | Current package intentionally requests read-only `kuksa`; no target or write permission | `NEW` and blocked on accepted platform contract |
 | Unit tests and quality gate | Four scaffold/boundary tests and repository quality gate pass | `CURRENT` foundation; product obligations below are not implemented |
 
-The packaging guide still says that the Credential Broker compares a request
-with a separate FOTA-managed OEM policy. That wording conflicts with accepted
-ADR 0010: Service Manager/Aos IAM registered permissions plus the installed
-VDP contract are authoritative, and no parallel per-service policy database is
-allowed. The source documentation must be corrected before implementation is
-accepted; the scaffold is not evidence of the obsolete policy model.
+The source packaging guide still reflects an obsolete caller-selected
+permission request and separate-policy model. Before implementation acceptance,
+it must use the fixed-resource `CMP-KAC` bootstrap: the Service supplies no
+paths, operations, subject, audience, TTL or claims, and the helper derives the
+JWT only from the current Aos IAM result.
 
 ## Testability Boundary
 
-Owned logic shall be separated from KUKSA transport, credential acquisition,
+Owned logic shall be separated from KUKSA transport, authorization bootstrap,
 backend transport, persistence, clocks and model loading. Unit tests inject:
 
 - KUKSA samples, quality, source/event timestamps, braking-trigger transitions
   and connection transitions;
-- Credential Broker success, rejection, expiry and refresh results;
+- `CMP-KAC` private-JWT success, rejection, expiry and refresh results;
 - immutable model bytes/configuration and deterministic numeric fixtures;
 - monotonic and wall-clock test clocks without sleeping;
 - bounded ring-buffer/window/chunk storage, backend acknowledgement, retry and
@@ -134,8 +135,8 @@ executable against controlled real adjacent components.
 | Interface | Direction | Data or command | Contract/version | Failure behavior | Authority |
 | --- | --- | --- | --- | --- | --- |
 | [Brake Health data subscription (`IF-DATA-002`)](../component-decomposition-and-interface-register.md#if-data-002) | In | Accepted KUKSA read/subscribe values, quality and timestamps | Versioned Vehicle Data Platform contract over `kuksa.val.v1` | Missing/stale/malformed/disconnected input becomes explicit degraded/unavailable state | KUKSA values published by accepted VDP contract |
-| [Credential request (`IF-AUTH-001`)](../component-decomposition-and-interface-register.md#if-auth-001) | Out | Per-instance `AOS_SECRET`, resource and requested path/mode set | Local Credential Broker contract | Rejection, timeout or invalid response yields no KUKSA connection | Current Aos service instance identity |
-| [Short-lived credential (`IF-AUTH-003`)](../component-decomposition-and-interface-register.md#if-auth-003) | In | Rejection or short-lived path-scoped KUKSA JWT | Aos IAM result plus installed VDP contract | Fail closed; do not persist, log or widen token authority | Aos IAM and VDP contract |
+| [Fixed-resource bootstrap (`IF-AUTH-007`)](../component-decomposition-and-interface-register.md#if-auth-007) | Out | Per-instance `AOS_SECRET` plus fixed `kuksa` resource; no caller-selected authority | Local `CMP-KAC` contract | Rejection, timeout or invalid response yields no KUKSA connection | Current Aos service instance identity |
+| [Private JWT or rejection (`IF-AUTH-009`)](../component-decomposition-and-interface-register.md#if-auth-009) | In | Rejection or short-lived path-scoped KUKSA JWT through a Service-private volatile location | Current Aos IAM result translated by `CMP-KAC` | Fail closed; never persist, log or widen token authority | Aos IAM result and protected platform signer |
 | [Functional message family (`IF-FUNC-001`)](../component-decomposition-and-interface-register.md#if-func-001) | Out | Ordered/idempotent v1 `BrakeTelemetryWindow` chunks plus completion; v2/v3 `BrakeHealthAssessment`, threshold/change `BrakeHealthEvent`, and correlated advisory fact | Function Team 1 contract | Resume/queue within fixed bounds, retry by policy, expose overflow/drop; never block local assessment | Service result; backend acknowledgement owns ingestion state |
 | [Advisory request (`IF-ADV-001`)](../component-decomposition-and-interface-register.md#if-adv-001) | Out | Typed Brake Health maintenance-advisory target and correlated payload | Accepted v3 VDP/KUKSA advisory contract | Invalid/unavailable/unauthorized path yields no alternate write or motion command | Service requests; VDP and Gateway enforce |
 | [Brake Health SOTA (`IF-LC-002`)](../component-decomposition-and-interface-register.md#if-lc-002) | Out from release pipeline | Immutable ARM64 service artifact and compatibility/permission metadata | Service Provider 1 publication contract | Technical failure creates no OEM Unit deployment | Function Team 1 artifact; SP publication |
@@ -146,10 +147,10 @@ executable against controlled real adjacent components.
 
 | Level | Purpose | Dependency boundary | Required | Planned evidence |
 | --- | --- | --- | --- | --- |
-| Unit | Prove all owned decisions, validation and state transitions | Deterministic fakes for KUKSA, broker, backend, storage, clocks and model | Yes | `UT-BHS-*` suite in `brake-health-service` |
+| Unit | Prove all owned decisions, validation and state transitions | Deterministic fakes for KUKSA, KAC result, backend, storage, clocks and model | Yes | `UT-BHS-*` suite in `brake-health-service` |
 | Component | Prove packaged executable and service-local configuration | Controlled in-process or containerized doubles plus built ARM64 artifact | Yes | Process/readiness/resource/restart and contract-fixture suite |
 | Contract | Prove schemas, compatibility, permissions, model identity, reports and advisory payload | Versioned fixtures shared with `CR-VDP` and `CR-BRAKE-CLOUD` | Yes | Digest-addressed conformance fixtures and negative cases |
-| Integration | Prove real KUKSA/broker/backend/Aos runtime boundaries | Validation Unit with accepted adjacent revisions | Yes | G2/G3/G4 integration records and fault matrix |
+| Integration | Prove real KUKSA/KAC/backend/Aos runtime boundaries | Validation Unit with accepted adjacent revisions | Yes | G2/G3/G4 integration records and fault matrix |
 | End-to-end | Prove local result, offline continuity and advisory presentation | Validation then identical Demonstration promotion | Yes | `AF-G2-*`, `AF-G3-*`, `AF-G4-*` evidence |
 
 ## Requirement Summary
@@ -158,7 +159,7 @@ executable against controlled real adjacent components.
 | --- | --- | --- | --- |
 | [Immutable versioned service product (`REQ-BHS-001`)](#req-bhs-001) | Produce credential-free immutable ARM64 v1-v3 service candidates with exact metadata | Unit, Component, Contract, Integration | D3 design-reviewed |
 | [Compatibility and fail-closed readiness (`REQ-BHS-002`)](#req-bhs-002) | Start only with a compatible installed Vehicle Data Platform contract | Unit, Component, Contract, Integration | D3 design-reviewed |
-| [Least-privilege KUKSA credential lifecycle (`REQ-BHS-003`)](#req-bhs-003) | Acquire and refresh only current IAM-derived path-scoped authority | Unit, Component, Contract, Integration | D3 design-reviewed |
+| [Fixed-resource KUKSA authorization lifecycle (`REQ-BHS-013`)](#req-bhs-013) | Bootstrap without caller-selected authority and use only private volatile IAM-derived JWTs | Unit, Component, Contract, Integration | D3 review candidate |
 | [Validated KUKSA subscription (`REQ-BHS-004`)](#req-bhs-004) | Consume only accepted paths and make data quality/freshness explicit | Unit, Component, Contract, Integration | D3 design-reviewed |
 | [Bounded v1 Brake Telemetry Window (`REQ-BHS-005`)](#req-bhs-005) | Preserve bounded pre-trigger context and transfer one ordered pre/active/post braking event without continuous Cloud streaming | Unit, Component, Contract, Integration, End-to-end | D3 design-reviewed |
 | [Deterministic v2 edge assessment (`REQ-BHS-006`)](#req-bhs-006) | Run an immutable synthetic model locally and replace normal v1 window upload with derived assessments/events | Unit, Component, Contract, Analysis, End-to-end | D3 design-reviewed |
@@ -209,24 +210,15 @@ This requirement must not be presented as native Cloud admission. After an
 implementing platform release is qualified, Cloud rejection and service
 readiness remain separate controls.
 
-### Least-privilege KUKSA credential lifecycle
+### Retired: Caller-selected KUKSA credential lifecycle
 
 <a id="req-bhs-003"></a>
 
 - ID: `REQ-BHS-003`
-- Statement: The running service shall present only its per-instance `AOS_SECRET` to the local Credential Broker, request exactly the installed-version KUKSA paths/modes it needs, use only the returned short-lived JWT, refresh it within bounded time and fail closed on rejection, expiry, removal or malformed response without persisting or logging either secret.
-- Rationale: A SOTA service must use native Aos instance identity without embedding credentials or creating a second identity/policy model.
-- Parent system requirements: [Least-privilege KUKSA identities (`SYS-SEC-001`)](../system-requirements-and-traceability.md#sys-sec-001), [KUKSA verifier and token lifetime (`SYS-SEC-004`)](../system-requirements-and-traceability.md#sys-sec-004) and [native-IAM-derived credentials (`SYS-SEC-006`)](../system-requirements-and-traceability.md#sys-sec-006)
-- Architecture flows: [Service v1 runtime (`AF-G2-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-g2-rt) and [QM containment (`AF-X-QM`)](../../architecture/demo-scenario-architecture-flows.md#af-x-qm)
-- Component: [Brake Health service (`CMP-BHS`)](../component-decomposition-and-interface-register.md#cmp-bhs)
-- Interfaces: [credential request (`IF-AUTH-001`)](../component-decomposition-and-interface-register.md#if-auth-001) and [short-lived credential (`IF-AUTH-003`)](../component-decomposition-and-interface-register.md#if-auth-003)
-- Verification levels: Unit, Component, Contract, Integration
-- Required evidence: exact request paths/modes, token lifetime/refresh trace, invalid/stale/revoked negatives and secret-negative logs/artifacts/state
-- State: D3 design-reviewed; architecture documented, implementation absent
-
-Acceptance rejects permission widening, reusable packaged tokens, refresh after
-permission removal, fallback anonymous access and any separate service-policy
-database in this repository.
+- Disposition: Retired by Version 0.5 and replaced by
+  [`REQ-BHS-013`](#req-bhs-013). The Service no longer requests paths, modes or
+  JWT claims from a broker inside VDP.
+- Historical parent: [`SYS-SEC-001`](../system-requirements-and-traceability.md#sys-sec-001)
 
 ### Validated KUKSA subscription
 
@@ -320,7 +312,7 @@ scenario truth shall not be used as a service input.
 - Interfaces: [advisory request (`IF-ADV-001`)](../component-decomposition-and-interface-register.md#if-adv-001) and [functional message family (`IF-FUNC-001`)](../component-decomposition-and-interface-register.md#if-func-001)
 - Verification levels: Unit, Component, Contract, Integration, End-to-end
 - Required evidence: exact Request/Status schema fixtures, D4-016 threshold/debounce behavior, request/backend-fact correlation, duplicate/replay/clear/expiry/restart cases and negative proof for every prohibited authority
-- Executable contract: [Typed QM Advisory Profile 1.0.0](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
+- Executable contract: [Typed QM Advisory Profile 1.0.1](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - State: D3 design-reviewed; D4-008 interface accepted, while D4-016 owns model decision thresholds and hysteresis
 
 The accepted audience claim ends at the matching factual Gateway Status,
@@ -388,13 +380,43 @@ evidence, and no status is driver display or acknowledgement.
 - Required evidence: log schema, secret/raw-data negative scan, timestamp/correlation fixtures and separate on-board/backend chronology
 - State: D3 design-reviewed
 
+### Fixed-resource KUKSA authorization lifecycle
+
+<a id="req-bhs-013"></a>
+
+- ID: `REQ-BHS-013`
+- Statement: The Service shall request the platform-owned `kuksa-auth-client`
+  resource. Its compatibility bootstrap, and not the analytics application,
+  shall read the current per-instance `AOS_SECRET`, call the mounted private
+  Unix socket for the implicit fixed `kuksa` resource and atomically maintain
+  only `/run/aosedge/secrets/kuksa/token.jwt` in the Service-private tmpfs. The
+  bootstrap shall start analytics with only `KUKSA_TOKEN_FILE`, without
+  `AOS_SECRET`; it shall not submit paths, operations, subject, audience, TTL or
+  claims. It shall consume only the `r -> read` and `rw -> actuate` profile,
+  renew a 300-second JWT at 180 seconds, atomically replace the token and
+  reconnect/recreate every KUKSA subscription with the replacement. It shall
+  fail closed on rejection, malformed response, expiry, permission removal,
+  stop/unregistration, container replacement or VM restart. Terminal denial
+  deletes and disconnects immediately; transient failure may use the current
+  token only until expiry. Neither credential shall be persisted or logged.
+- Rationale: The Service uses native Aos instance authority while the
+  current-release translation remains outside VDP and outside the Service
+  product.
+- Parent system requirements: [Least-privilege KUKSA identities (`SYS-SEC-001`)](../system-requirements-and-traceability.md#sys-sec-001), [KUKSA verifier and token lifetime (`SYS-SEC-004`)](../system-requirements-and-traceability.md#sys-sec-004) and [current-release KUKSA authorization compatibility (`SYS-SEC-008`)](../system-requirements-and-traceability.md#sys-sec-008)
+- Architecture flows: [Service v1 runtime (`AF-G2-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-g2-rt), [authorization (`AF-X-AUTH`)](../../architecture/demo-scenario-architecture-flows.md#af-x-auth) and [QM containment (`AF-X-QM`)](../../architecture/demo-scenario-architecture-flows.md#af-x-qm)
+- Component: [Brake Health service (`CMP-BHS`)](../component-decomposition-and-interface-register.md#cmp-bhs)
+- Interfaces: [fixed-resource bootstrap (`IF-AUTH-007`)](../component-decomposition-and-interface-register.md#if-auth-007) and [private JWT or rejection (`IF-AUTH-009`)](../component-decomposition-and-interface-register.md#if-auth-009)
+- Verification levels: Unit, Component, Contract, Integration
+- Required evidence: no-caller-selected-authority negative cases, bounded refresh/expiry trace, stop/unregister/reboot cleanup, cross-Service isolation and secret/JWT-negative artifacts/logs/state
+- State: D3 review candidate
+
 ## Unit-Test Obligations
 
 | Unit-test obligation | Requirements proved | Behavior and branches | Isolation / doubles | Required assertions | Repository / suite | State |
 | --- | --- | --- | --- | --- | --- | --- |
 | <a id="ut-bhs-001"></a>`UT-BHS-001` — Artifact and metadata integrity | [`REQ-BHS-001`](#req-bhs-001) | Reproducible staging, metadata completeness, changed input, forbidden credentials/boundaries | Temporary filesystem and deterministic fixture manifest | Stable digests, correct ARM64 metadata, no secrets/CARLA/VISS/platform coupling | `brake-health-service` packaging tests | D3 design-reviewed |
 | <a id="ut-bhs-002"></a>`UT-BHS-002` — Compatibility readiness | [`REQ-BHS-002`](#req-bhs-002), [`REQ-BHS-011`](#req-bhs-011) | Compatible, missing, lower/upper boundary, malformed contract, recovery | Fake installed-capability reader and readiness sink | Ready only for complete compatible contract; exact blocked reason; no report/advisory | `brake-health-service` unit suite | D3 design-reviewed |
-| <a id="ut-bhs-003"></a>`UT-BHS-003` — Credential lifecycle | [`REQ-BHS-003`](#req-bhs-003) | Issue, reject, expiry, refresh, permission removal, malformed token result | Fake broker, controllable clock and KUKSA transport | Exact paths/modes, bounded refresh, no access after rejection/removal, no secret persistence/logging | `brake-health-service` unit suite | D3 design-reviewed |
+| <a id="ut-bhs-013"></a>`UT-BHS-013` — Fixed-resource authorization lifecycle | [`REQ-BHS-013`](#req-bhs-013) | Named-resource bootstrap, private-socket request, reject caller-selected authority, atomic token replacement, 300-second expiry, renewal at 180 seconds, reconnect/subscription recreation, permission removal, stop/replace/unregister/reboot and malformed delivery | Fake KAC result, private tmpfs/token file, controllable clock and KUKSA transport | Analytics receives `KUKSA_TOKEN_FILE` but no `AOS_SECRET`; no caller-selected claims; exact renewal/reconnect; no access after rejection/removal/expiry; cross-Service denial and no secret/JWT persistence/logging | `brake-health-service` unit suite | D3 review candidate |
 | <a id="ut-bhs-004"></a>`UT-BHS-004` — Subscription and temporal validation | [`REQ-BHS-004`](#req-bhs-004), [`REQ-BHS-007`](#req-bhs-007) | Valid, boundary, wrong type/unit/range, stale, reordered, unavailable, reconnect | Fake KUKSA stream and clocks | Accepted sample sequence or explicit degraded reason; no fabricated value/advisory | `brake-health-service` unit suite | D3 design-reviewed |
 | <a id="ut-bhs-005"></a>`UT-BHS-005` — v1 event-window state machine | [`REQ-BHS-005`](#req-bhs-005) | No trigger, trigger/clear, pre/active/post bounds, overlap/merge, debounce, maximum duration, chunk boundaries, duplicate/resume, malformed input | Fake KUKSA stream, clocks, bounded ring/queue stores and fake backend | Exact samples/phases and one event identity; ordered idempotent chunks; exactly one completion; original times; explicit size/overflow; no continuous no-trigger upload | `brake-health-service` unit/contract suite | D3 design-reviewed |
 | <a id="ut-bhs-006"></a>`UT-BHS-006` — Deterministic model and derived-data transition | [`REQ-BHS-006`](#req-bhs-006), [`REQ-BHS-007`](#req-bhs-007) | Golden normal/degraded inputs, thresholds/change events, boundaries, repeat/reorder, invalid model/config | Immutable synthetic-model fixtures, deterministic clock and fake backend | Schema-stable assessment/event, provenance, quality/reason, no network/training side effect and no normal v1 window output | `brake-health-service` model/contract suite | D3 design-reviewed |
@@ -408,13 +430,15 @@ scaffold tests are useful evidence for `UT-BHS-001`, but they do not satisfy
 the product obligations until assertions and implementation cover the complete
 accepted behavior.
 
+<a id="ut-bhs-003"></a>`UT-BHS-003` is retired with `REQ-BHS-003` and is
+replaced by [`UT-BHS-013`](#ut-bhs-013).
+
 ## Verification Traceability
 
 | Requirement | Unit obligations | Component proof | Contract proof | Integration proof | End-to-end proof |
 | --- | --- | --- | --- | --- | --- |
 | [`REQ-BHS-001`](#req-bhs-001) | [`UT-BHS-001`](#ut-bhs-001) | Built ARM64 process/package | Artifact/metadata schema | SOTA install/start/stop | N/A; packaging is supporting evidence |
 | [`REQ-BHS-002`](#req-bhs-002) | [`UT-BHS-002`](#ut-bhs-002) | Readiness process state | VDP compatibility fixtures | Compatible/incompatible Unit graph | G2/G3 blocked/ready evidence |
-| [`REQ-BHS-003`](#req-bhs-003) | [`UT-BHS-003`](#ut-bhs-003) | Client/broker process boundary | Request/JWT/error schema | Real Aos IAM, broker and KUKSA | G2/G4 permission evidence |
 | [`REQ-BHS-004`](#req-bhs-004) | [`UT-BHS-004`](#ut-bhs-004) | Packaged subscription client | KUKSA path/type/time fixtures | Real KUKSA disconnect/reconnect | G2/G3 input-quality evidence |
 | [`REQ-BHS-005`](#req-bhs-005) | [`UT-BHS-005`](#ut-bhs-005) | Packaged ring-buffer/window process | Shared trigger/chunk/completion fixtures | Real backend live reconstruction and resume | `AF-G2-OB` growing/completed dashboard window |
 | [`REQ-BHS-006`](#req-bhs-006) | [`UT-BHS-006`](#ut-bhs-006) | Packaged synthetic-model execution | Model/input/assessment/event fixture digest | Accepted VDP v2 signal stream and backend | `AF-G3-OB` derived-only repeated result |
@@ -424,12 +448,13 @@ accepted behavior.
 | [`REQ-BHS-010`](#req-bhs-010) | [`UT-BHS-009`](#ut-bhs-009) | State format process matrix | State/version compatibility manifest | Service-first rollback sequence | N/A; recovery supports accepted flow |
 | [`REQ-BHS-011`](#req-bhs-011) | [`UT-BHS-002`](#ut-bhs-002), [`UT-BHS-010`](#ut-bhs-010) | Health/resource/fault suite | Readiness/status schema | Aos resource and adjacent continuity | G2-G4 actual-state evidence |
 | [`REQ-BHS-012`](#req-bhs-012) | [`UT-BHS-010`](#ut-bhs-010) | Log/timestamp process output | Structured log/metric schema | Native log request and correlated faults | Technical chronology/evidence view |
+| [`REQ-BHS-013`](#req-bhs-013) | [`UT-BHS-013`](#ut-bhs-013) | Service-private bootstrap/delivery boundary | `IF-AUTH-007`/`009` and JWT fixture schema | Real Aos IAM, `CMP-KAC` and KUKSA | G2/G4 permission, restart and removal evidence |
 
 ## Cross-Cutting Constraints
 
 | Concern | Applicable obligation | Component response | Verification |
 | --- | --- | --- | --- |
-| Security and least privilege | [`REQ-BHS-003`](#req-bhs-003), [`REQ-BHS-008`](#req-bhs-008) | Native per-instance identity, exact path/mode request, short token, typed advisory only | Unit negatives, contract fixtures and real IAM/KUKSA integration |
+| Security and least privilege | [`REQ-BHS-013`](#req-bhs-013), [`REQ-BHS-008`](#req-bhs-008) | Native per-instance identity, fixed-resource bootstrap, private short-lived token and typed advisory only | Unit negatives, contract fixtures and real IAM/KAC/KUKSA integration |
 | QM containment | [`REQ-BHS-008`](#req-bhs-008) | Maintenance request only; no safety goal, HMI, motion or arbitrary write authority | Prohibited-permission/source scan and end-to-end Gateway status |
 | Privacy and redaction | [`REQ-BHS-005`](#req-bhs-005), [`REQ-BHS-006`](#req-bhs-006), [`REQ-BHS-012`](#req-bhs-012) | Bounded event-only v1 capture, derived-only normal v2/v3 output and structured redacted evidence rather than continuous raw streaming | Window/message schema size, no-trigger/no-v1-output cases, content allowlist and secret/raw-log negative scan |
 | Resource bounds | [`REQ-BHS-009`](#req-bhs-009), [`REQ-BHS-011`](#req-bhs-011) | Fixed queue/quotas and explicit overflow/resource state | Boundary/fault injection plus Aos enforcement |
@@ -437,23 +462,26 @@ accepted behavior.
 | Offline and recovery | [`REQ-BHS-009`](#req-bhs-009), [`REQ-BHS-010`](#req-bhs-010) | Local decision continuity, bounded replay and versioned rollback-safe state | Disconnect/restart/reconnect and state matrix |
 | Observability | [`REQ-BHS-011`](#req-bhs-011), [`REQ-BHS-012`](#req-bhs-012) | Separate process health/readiness and bounded native log evidence | Component state matrix and native log integration |
 
-## D3 Review Readiness
+## D3 Acceptance Record and Version 0.5 Delta
 
-This 0.1 package is ready for joint review when reviewers agree that:
+The previously accepted package established that:
 
 1. the in-vehicle service, backend/dashboard and Vehicle Data Platform remain separate products and repositories;
 2. v1-v3 are one independent SOTA product family with explicit compatibility, not three architecture components;
 3. v1 is a bounded pre/active/post braking-event recorder, v2 moves a clearly labelled synthetic assessment on-board and normally emits derived data only, and v3 adds the typed advisory while retaining the v2 backend result;
 4. local assessment and advisory do not depend on Cloud connectivity;
-5. Aos IAM plus the installed VDP contract are authoritative and no duplicate policy database is introduced;
+5. Aos IAM is authoritative, `CMP-KAC` only translates its current result, and no duplicate policy database or caller-selected JWT authority is introduced;
 6. the advisory is a typed QM maintenance request with no driver-HMI, safety or motion claim;
 7. every owned behavior has a stable deterministic unit-test obligation;
 8. current scaffold evidence is not presented as implemented product behavior;
 9. the open interface/model/resource decisions below are resolved in D4 before implementation claims acceptance.
 
-D3 closure will accept the component requirement and verification design. It
-will not authorize service implementation, signing, upload, deployment, OEM
-approval, Cloud mutation or VM changes.
+Version 0.5 is a review candidate. It retires `REQ-BHS-003`/`UT-BHS-003`, adds
+`REQ-BHS-013`/`UT-BHS-013`, and replaces caller-selected broker requests with
+fixed-resource `CMP-KAC` bootstrap and private volatile JWT delivery. All
+functional v1-v3 semantics remain unchanged. Acceptance will not authorize
+service implementation, signing, upload, deployment, OEM approval, Cloud
+mutation or VM changes.
 
 ## Open Issues
 
@@ -462,7 +490,7 @@ approval, Cloud mutation or VM changes.
 | Exact v1 KUKSA paths, trigger/clear rule, cadence/freshness, pre/post durations, overlap/debounce, maximum window/chunk/queue sizes and completion schema | Blocks `REQ-BHS-004`/`005` contracts | Function Team 1 + Platform Team | D4 event-window contract |
 | Backend transport, authentication, ordered chunk reconstruction/resume, acknowledgement and endpoint discovery | Blocks `REQ-BHS-005`/`009` implementation | Function Team 1 Cloud + Security | Before functional transport design |
 | Exact Aos metadata representation of KUKSA paths/modes; current SDK read-mode enum/default inconsistency | Blocks least-privilege packaging proof | AosEdge Platform Team + Platform Team | D4 SDK/metadata qualification |
-| Credential Broker request/JWT/refresh protocol | Blocks `REQ-BHS-003` implementation | Platform Team + Function Team 1 | D4 authorization contract |
+| Implement and qualify the complete accepted D4-027 named-resource/private-socket/tmpfs, strict-wire, JWT mapping, 300/180-second timing, per-Unit signer/verifier, trustworthy-time, retry and resource/failure boundary | Blocks `REQ-BHS-013` acceptance, but no D4-027 design question remains | Platform Team + Function Team 1 | D4-027 implementation and qualification |
 | Native Service-to-FOTA dependency admission unavailable in current release | Pre-transfer rejection remains deferred; service readiness still required | AosEdge Platform Team | Official release qualification |
 | v2 service-owned synthetic model, accepted native/derived inputs, provenance, assessment/event schemas, thresholds and deterministic numeric tolerance | Blocks `REQ-BHS-006`/`007`; CARLA/Gateway synthetic pad-wear/temperature/pressure inputs are explicitly excluded | Function Team 1 + Platform Team | [`D4-016`](../d4-decision-register.md#d4-016); D4-003 has closed the stimulus/source-boundary question |
 | D4-016 Brake model thresholds and decision hysteresis that trigger the accepted advisory envelope | D4-008 closes the transport/target contract; model decision policy still blocks complete `REQ-BHS-008` behavior | Function Team 1 | [`D4-016`](../d4-decision-register.md#d4-016) |
@@ -470,7 +498,7 @@ approval, Cloud mutation or VM changes.
 | Ring-buffer and per-version queue capacity, in-progress-window persistence, overflow, retention, retry/backoff and persistent format | Blocks `REQ-BHS-005`/`009`/`010` | Function Team 1 | D4 offline/state contract |
 | Health/readiness API and measured CPU/RAM/storage/state budgets | Blocks `REQ-BHS-011` acceptance | Function Team 1 + Aos integration | D4 resource qualification |
 | Structured log schema, redaction and chronology fields | Blocks `REQ-BHS-012` | Function Team 1 + Demo experience | D4 observability/chronology contract |
-| Packaging guide still names a separate FOTA-managed OEM policy | Conflicts with ADR 0010 and could mislead implementation | Function Team 1 | Correct before D4 implementation starts |
+| Packaging guide still describes caller-selected paths and a separate FOTA-managed OEM policy | Conflicts with ADR 0013 and could mislead implementation | Function Team 1 | Correct before D4 implementation starts |
 
 ## Change Rules
 

@@ -23,16 +23,17 @@ of unexplained identifiers.
 | --- | --- | --- | --- | --- |
 | 1 | [`CR-VEHICLE-SIM`](../component-decomposition-and-interface-register.md#cr-vehicle-sim) | [Vehicle Simulation 0.8](vehicle-simulation.md) | `VEHICLE-SIM` | D3 design-reviewed; D4-002, D4-004 and D4-005 accepted, D4-003 working direction reviewed |
 | 1 | [`CR-GATEWAY`](../component-decomposition-and-interface-register.md#cr-gateway) | [Vehicle Gateway 1.1](vehicle-gateway.md) | `GATEWAY` | D3 design-reviewed; D4-002, D4-004, D4-005, D4-006 and D4-008 contracts accepted |
-| 2 | [`CR-FACTORY`](../component-decomposition-and-interface-register.md#cr-factory) | [Factory Substrate 0.2](factory-substrate.md) | `FACTORY` | D3 design-reviewed |
-| 2 | [`CR-VDP`](../component-decomposition-and-interface-register.md#cr-vdp) | [Vehicle Data Platform 0.7](vehicle-data-platform.md) | `VDP` | D3 design-reviewed; D4-002, D4-006, D4-007 and D4-008 contracts accepted |
-| 3 | [`CR-AOS`](../component-decomposition-and-interface-register.md#cr-aos) | [Aos Lifecycle 0.2](aos-lifecycle.md) | `AOS` | D3 design-reviewed; D4-007 compatibility contract accepted |
-| 4 | [`CR-BHS`](../component-decomposition-and-interface-register.md#cr-bhs) | [Brake Health Service 0.4](brake-health-service.md) | `BHS` | D3 design-reviewed; D4-003 working direction plus D4-007 and D4-008 contracts recorded |
-| 4 | [`CR-BRAKE-CLOUD`](../component-decomposition-and-interface-register.md#cr-brake-cloud) | [Brake Health Cloud Product 0.2](brake-health-cloud.md) | `BRAKE-CLOUD` | D3 design-reviewed; D4-007 compatibility contract recorded |
-| 5 | [`CR-TIRE`](../component-decomposition-and-interface-register.md#cr-tire) | [Tire Health Service 0.5](tire-health-service.md) | `TIRE` | D3 design-reviewed; D4-003 working direction plus D4-007 and D4-008 contracts recorded |
-| 5 | [`CR-TIRE-CLOUD`](../component-decomposition-and-interface-register.md#cr-tire-cloud) | [Tire Health Cloud Product 0.2](tire-health-cloud.md) | `TIRE-CLOUD` | D3 design-reviewed; D4-007 compatibility/dashboard behavior recorded |
-| 6 | [`CR-DEMO`](../component-decomposition-and-interface-register.md#cr-demo) | [Demo Orchestration 0.5](demo-orchestration.md) | `DEMO` | D3 design-reviewed; D4-005 contract accepted |
-| 6 | [`CR-CROSS`](../component-decomposition-and-interface-register.md#cr-cross) | [Cross-Cutting Security and Operations 0.3](cross-cutting.md) | `CROSS` | D3 design-reviewed; D4-006 and D4-008 contracts accepted |
-| 6 | [`CR-E2E`](../component-decomposition-and-interface-register.md#cr-e2e) | [End-to-End Acceptance 0.4](end-to-end-acceptance.md) | `E2E` | D3 design-reviewed; D4-005, D4-006 and D4-008 contracts accepted |
+| 2 | [`CR-FACTORY`](../component-decomposition-and-interface-register.md#cr-factory) | [Factory Substrate 0.4](factory-substrate.md) | `FACTORY` | D3 review candidate; separately packaged `CMP-KAC` factory seam added |
+| 2 | [`CR-KAC`](../component-decomposition-and-interface-register.md#cr-kac) | [Current-Release KUKSA Authorization Compatibility 0.8](kuksa-authorization-compatibility.md) | `KAC` | Review candidate; complete D4-027.1 through D4-027.8 current-release helper contract accepted |
+| 2 | [`CR-VDP`](../component-decomposition-and-interface-register.md#cr-vdp) | [Vehicle Data Platform 0.8](vehicle-data-platform.md) | `VDP` | D3 review candidate; Service authorization removed and trusted OEM Provider integration recorded |
+| 3 | [`CR-AOS`](../component-decomposition-and-interface-register.md#cr-aos) | [Aos Lifecycle 0.3](aos-lifecycle.md) | `AOS` | D3 review candidate; `CMP-KAC` IAM lookup and D4-010.3 publication/approval separation recorded |
+| 4 | [`CR-BHS`](../component-decomposition-and-interface-register.md#cr-bhs) | [Brake Health Service 0.5](brake-health-service.md) | `BHS` | D3 review candidate; fixed-resource KAC bootstrap recorded |
+| 4 | [`CR-BRAKE-CLOUD`](../component-decomposition-and-interface-register.md#cr-brake-cloud) | [Brake Health Cloud Product 0.3](brake-health-cloud.md) | `BRAKE-CLOUD` | D3 design-reviewed; D4-007 compatibility and D4-010.3 publication profiles recorded |
+| 5 | [`CR-TIRE`](../component-decomposition-and-interface-register.md#cr-tire) | [Tire Health Service 0.6](tire-health-service.md) | `TIRE` | D3 review candidate; fixed-resource KAC bootstrap recorded |
+| 5 | [`CR-TIRE-CLOUD`](../component-decomposition-and-interface-register.md#cr-tire-cloud) | [Tire Health Cloud Product 0.3](tire-health-cloud.md) | `TIRE-CLOUD` | D3 design-reviewed; D4-007 compatibility and D4-010.3 publication profiles recorded |
+| 6 | [`CR-DEMO`](../component-decomposition-and-interface-register.md#cr-demo) | [Demo Orchestration 0.6](demo-orchestration.md) | `DEMO` | D3 design-reviewed; D4-005 source assignment and D4-010.3 publication profiles accepted |
+| 6 | [`CR-CROSS`](../component-decomposition-and-interface-register.md#cr-cross) | [Cross-Cutting Security and Operations 0.4](cross-cutting.md) | `CROSS` | D3 review candidate; KAC, trusted Provider and D4-010.3 publication boundaries recorded |
+| 6 | [`CR-E2E`](../component-decomposition-and-interface-register.md#cr-e2e) | [End-to-End Acceptance 0.5](end-to-end-acceptance.md) | `E2E` | D3 review candidate; KAC lifecycle, trusted Provider and D4-010.3 publication proof recorded |
 
 The files listed above are created only when work begins on the corresponding
 package. Their absence therefore means “not started,” not a broken link.

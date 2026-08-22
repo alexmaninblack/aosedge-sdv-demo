@@ -3,11 +3,13 @@
 
 # Architecture and Repository Ownership
 
-The accepted end-to-end architecture baseline, including shared platform FOTA,
+The current end-to-end architecture review candidate, including shared platform FOTA,
 independent SOTA lifecycles for two peer OEM functional teams, bidirectional
 KUKSA/VISS flows, local analytics, Cloud reporting, and engineering-dashboard
-boundaries, is defined in
-[High-Level Architecture 1.4](high-level-architecture.md).
+boundaries, is proposed in
+[High-Level Architecture 1.5](high-level-architecture.md). High-Level
+Architecture 1.4 remains the accepted baseline until the complete class-C
+cascade is reviewed.
 
 ## Runtime Boundary
 
@@ -20,17 +22,19 @@ flowchart LR
     end
 
     subgraph AosVM["AosVM vehicle computer"]
-        PROVIDER["vehicle-data provider / OEM FOTA"]
-        BROKER["Thin Aos–KUKSA Credential Broker<br/>native IAM permissions / FOTA"]
+        IAM["Aos Service Manager / IAM<br/>active Service authority"]
+        PROVIDER["Vehicle Data Platform Component<br/>provider / OEM FOTA"]
+        HELPER["Platform-controlled Service credential boundary<br/>current-release removable helper"]
         KUKSA["unmodified Eclipse KUKSA Databroker"]
         SERVICE1["Brake Health service / SOTA 1"]
         SERVICE2["Tire Health service / SOTA 2"]
         PROVIDER -->|"kuksa.val.v1"| KUKSA
         KUKSA -->|"versioned VSS contract"| SERVICE1
         KUKSA -->|"versioned VSS contract"| SERVICE2
-        SERVICE1 -. "AOS_SECRET to short-lived JWT" .-> BROKER
-        SERVICE2 -. "AOS_SECRET to short-lived JWT" .-> BROKER
-        BROKER -. "per-Unit RS256 verifier" .-> KUKSA
+        SERVICE1 -. "current release:<br/>AOS_SECRET + fixed resource" .-> HELPER
+        SERVICE2 -. "current release:<br/>AOS_SECRET + fixed resource" .-> HELPER
+        HELPER -. "GetPermissions" .-> IAM
+        HELPER -. "Service-private short-lived JWT trust" .-> KUKSA
     end
 
     VISS -->|"private verified VISS 3.1 route"| PROVIDER
@@ -50,11 +54,11 @@ remain the stable service boundary.
 | Repository | Owns | Lifecycle |
 | --- | --- | --- |
 | `carla-ego-runtime` | ego control and VISS projection | simulation tooling |
-| `aos-vehicle-platform` | Vehicle Data Platform Component: providers, contract/configuration, thin Aos–KUKSA Credential Broker and provider platform-identity integration; plus Service Manager/IAM substrate, provider runtime and KUKSA integration | OEM platform/FOTA |
+| `aos-vehicle-platform` | Vehicle Data Platform Component source and FOTA payload; factory/rootfs integration for unmodified KUKSA, Service Manager/IAM, the current-release removable `aos-kuksa-auth-compat` helper under `authorization/aos-kuksa-compat/`, and the OEM-trusted Provider-side KUKSA integration | OEM Platform Team; VDP FOTA and separately governed factory/system-integration artifacts |
 | `brake-health-service` | Function Team 1 Brake Health consumer and local analytics | Service Provider 1/SOTA 1 |
 | `tire-health-service` | Function Team 2 local tire-condition estimation, bounded reporting, offline state and typed inspection advisory | Service Provider 2/SOTA 2; accepted boundary, repository not yet created |
-| `brake-health-cloud` | Function Team 1 backend and Brake Health Function Dashboard | Function Team 1 Cloud product; accepted boundary, repository not yet created |
-| `tire-health-cloud` | Function Team 2 backend, separated Tire Health candidate/data views, native ARM64 local-demo container and native Keychain-backed release-helper integration | Function Team 2 Cloud product; separate volume, API/helper identity and state from Brake Health; accepted boundary, repository not yet created |
+| `brake-health-cloud` | Function Team 1 backend, Brake Health Function Dashboard and client integration with the common publication helper surface pre-bound to `brake-sp1` | Function Team 1 Cloud product; its current local PKCS#12 remains outside the repository, browser and container; accepted boundary, repository not yet created |
+| `tire-health-cloud` | Function Team 2 backend, separated Tire Health candidate/data views, native ARM64 local-demo container and client integration with the common publication helper surface pre-bound to `tire-sp2` | Function Team 2 Cloud product; separate volume, API/helper identity and state from Brake Health; its current local PKCS#12 remains outside the repository, browser and container; accepted boundary, repository not yet created |
 | `aosedge-sdv-demo` | macOS VM lifecycle, provisioning, locks, orchestration, system documentation, and end-to-end qualification | solution/demo baseline |
 
 The integration repository may pin and qualify every component, but it does
@@ -74,16 +78,29 @@ repository, distinct from its in-vehicle SOTA repository.
 - The provider verifies TLS and receives credentials through systemd, not its
   payload or command line.
 - Upstream Eclipse KUKSA remains unchanged as the in-vehicle data interface
-  exposed to services and verifies only the Platform Team's configured public
-  key.
+  exposed to services, is factory-installed outside the VDP FOTA payload, and
+  verifies only the Platform Team's configured current-release public key.
 - Aos Service Manager and IAM own SOTA instance identity, `AOS_SECRET` and
-  registered permissions. The Vehicle Data Platform Component's thin broker
-  translates only that current IAM result into short-lived, path-scoped JWTs;
-  it stores no parallel identity or per-service policy. The provider uses a
-  separately bound platform identity, while prototype static tokens remain
-  historical qualification fixtures only.
+  registered permissions. The separately packaged current-release helper
+  translates only that current IAM result into short-lived, Service-private,
+  path-scoped JWTs; it is outside the VDP and SOTA artifacts, accepts no
+  caller-selected authority and stores no parallel identity or per-Service
+  policy. The Provider is an OEM-qualified trusted platform component; its
+  fixed KUKSA connection configuration is owned by the Platform Team and is
+  not a dynamic IAM/JWT or untrusted-Provider isolation boundary. Prototype
+  static tokens remain historical qualification fixtures only.
+- The future native AosCore credential interface is intentionally not assigned
+  to a repository until its released contract is inspected. Successful native
+  migration deletes the current helper package and compatibility wiring.
 - VM provisioning identity, OEM signing identity, user certificates, private
   keys, Cloud tokens, and raw operational evidence remain outside Git.
+- D4-010.3 technical artifact publication is implemented once in the
+  session-scoped native demo helper, while the Platform, Brake and Tire
+  dashboard surfaces are statically pre-bound to `platform-oem`, `brake-sp1`
+  and `tire-sp2` respectively. The installed `aos-signer` 2.0.1 path uses one
+  local mode-`0600` passwordless PKCS#12 per profile for signing and mTLS
+  upload; no repository owns or stores those files, and publication never
+  performs OEM deployment approval.
 
 ## Update Boundary
 
@@ -100,7 +117,7 @@ provider assignment must first be suspended or removed.
 
 See [ADR 0006](decisions/0006-lifecycle-based-repository-ownership.md) for the
 accepted repository decision,
-[ADR 0010](decisions/0010-aos-kuksa-credential-broker.md) for the credential
-boundary, and
+[proposed ADR 0013](decisions/0013-current-release-kuksa-authorization-compatibility.md)
+for the credential boundary correction, and
 [the current baseline](../qualification/current-baseline.md)
 for exact versions and digests.

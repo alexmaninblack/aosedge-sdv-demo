@@ -5,18 +5,19 @@
 
 - Status: D3 design-reviewed
 - Package: [`CR-DEMO`](../component-decomposition-and-interface-register.md#cr-demo)
-- Version: 0.5
+- Version: 0.6
 - Prepared: 2026-08-19
 - Accepted: 2026-08-20
 - Owner: Demo Solution Team
-- Architecture input: [High-Level Architecture 1.4](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 1.9](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 1.8](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 1.0](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 1.1](../component-decomposition-and-interface-register.md)
+- Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
+- Scenario input: [Demo Scenarios 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.0](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.0](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 2.0](../component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md) and [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
 - Accepted D4 source decision: [D4-005 Exclusive Live-Source Assignment](../../../contracts/exclusive-live-source-assignment/exclusive-live-source-assignment.v1.json)
 - Accepted D4 VISS decision: [D4-006 VISS Trust and Telemetry Profile](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
+- Accepted D4 publication decision: [D4-010.3 Artifact Publication Credential Profile](../../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
 - Implementation, signing, Cloud, Unit, VM, or CARLA mutation authorized: no
 
 ## Purpose
@@ -80,9 +81,9 @@ flowchart LR
     SW --> API["Narrow local application boundary"]
     API --> H
     H --> OR["Demo Orchestrator<br/>native host authority"]
-    H --> PH["Protected Platform release helper<br/>Keychain-backed OEM identity"]
+    H --> PH["Protected Platform publication<br/>fixed platform-oem profile"]
     PH --> AC
-    H --> AC["AosCloud API<br/>Keychain-backed identity"]
+    H --> AC["AosCloud API<br/>scoped authenticated identity"]
     OR --> VU["Validation VM"]
     OR --> DU["Demonstration VM"]
     OR --> XC["Atomic vehicle external-connectivity control"]
@@ -94,8 +95,8 @@ flowchart LR
 
 The browser is never given private keys, reusable certificates, VM shell
 authority or arbitrary command execution. The local application boundary is
-authenticated, loopback-only and allowlists exact operations. Keychain-backed
-Cloud access and host VM/process control remain native to macOS; they are not
+authenticated, loopback-only and allowlists exact operations. Publication
+credentials and host VM/process control remain native to macOS; they are not
 mounted into a browser or an untrusted container. Whether the UI/backend is a
 native process or an ARM64 container plus native helper is a D4 packaging
 decision, not a new logical component.
@@ -110,13 +111,14 @@ or after a bounded orphan/idle condition. A later move to persistent `launchd`
 operation would require a separate architecture and security review.
 
 An `OEM identity` or `Service Provider identity` names the accountable Cloud
-role; it does not assert that API client authentication and artifact signing
-use the same certificate, key pair or SDK operation. D4 shall freeze a
-credential profile for Platform FOTA, Brake SOTA and Tire SOTA that identifies
-the API-authentication credential, artifact-signing credential, certificate
-chain/role, protected storage, helper/SDK operation and returned verification
-record. Until that profile is qualified, credentials remain logically
-separate and no key or certificate reuse is assumed.
+role. D4-010.3 freezes three non-interchangeable technical-publication
+profiles: `platform-oem`, `brake-sp1` and `tire-sp2`. The installed
+`aos-signer` 2.0.1 compatibility path uses the same passwordless PKCS#12 per
+profile for signing and mTLS upload. The three mode-`0600` files stay under
+`~/.aos/security`, outside Git and every browser/container/VM/artifact, and
+only the session helper may read their fixed allowlisted paths. This does not
+make technical publication an OEM Unit-approval action; any separate Cloud API
+session credential remains governed by its own qualified operation boundary.
 
 The dashboard is stateless with respect to authoritative lifecycle and log
 state. Platform candidate signing/publication is performed by the protected
@@ -190,7 +192,7 @@ than retaining it as demo-run history.
 | Vehicle Data Platform compatibility | `CR-VDP` plus services | Declared range and fail-closed readiness | Display mismatch and block accepted-graph promotion |
 | CARLA/Gateway lifecycle | `CR-VEHICLE-SIM` and `CR-GATEWAY` | Qualified start, source identity, scenario/reset and advisory status boundaries | Source-dependent stage blocked; no second simulated vehicle claim |
 | Functional backend cleanup | `CR-BRAKE-CLOUD` and `CR-TIRE-CLOUD` | Exact run/Unit/time selector with preview | R0 remains incomplete; Cloud audit remains untouched |
-| Local credential custody | macOS Keychain and role-specific helpers | Exact OEM role selected and credentials not exposed to browser/process logs | Mutating control disabled with factual reason |
+| Publication credential custody | D4-010.3 role-bound native-helper profiles | Exact pre-bound profile, local mode-`0600` PKCS#12, no caller-selected path and no browser/container/VM/artifact/log exposure | Sign/publish control disabled with factual reason |
 | Native Service-to-FOTA VDP Component admission | Future AosCloud release | Current release still supports component-to-component and service-to-layer dependencies but not this cross-lifecycle rule | Negative scenario remains visibly deferred; no local substitute |
 
 ## Current Implementation Baseline
@@ -202,7 +204,7 @@ than retaining it as demo-run history.
 | Single-Node onboarding | `scripts/aosvm-macos-onboard` has preflight, exactly-once attempt journal and post-provision verification | `EVIDENCE`; dual-role orchestration and partial cross-Unit reconciliation are `NEW` |
 | Unit Set lifecycle | Previous qualification proves APIs and exposes stale-target risk | `PARTIAL`; persistent-set assignment/reconciliation workflow is `NEW / QUALIFY` |
 | Software Delivery Dashboard | Sanitized coverage matrix/schema and documentation exist | Executable dashboard, Cloud read model and approval flow are `NEW` |
-| Platform Releases catalogue/helper | Existing provider/component signing evidence and Keychain-backed identity access exist separately | Unified v1-v3 catalogue, protected helper protocol and live publication flow are `NEW / QUALIFY` |
+| Platform Releases catalogue/helper | Installed `aos-signer` 2.0.1 and local OEM/SP PKCS#12 inputs exist as separate evidence | D4-010.3 profile enforcement, unified v1-v3 catalogue, protected helper protocol and live publication flow are `NEW / QUALIFY` |
 | Cloud lifecycle adapter | User certificate setup and read-only qualification utilities exist | Normalized scoped dashboard API and confirmed mutation seam are `NEW / QUALIFY` |
 | Source binding | One CARLA/Gateway source and two Units exist | Sequential exclusive live VU-to-DU handover and evidence are `NEW`; telemetry replay is deferred |
 | Vehicle external-connectivity control | No accepted atomic dual-path fault control exists | One stateful control, exact fault-scope probes and synchronized restore are `NEW / QUALIFY` |
@@ -220,8 +222,8 @@ Dashboard rendering uses a normalized read model independent of the AosCloud
 transport. Approval gates, target comparison, stage state, freshness and claim
 labels are pure deterministic decisions over versioned fixtures. The
 orchestrator separates operation planning from execution and receives injected
-Cloud, QEMU, CARLA/Gateway, functional-backend, filesystem, clock and Keychain
-adapters.
+Cloud, QEMU, CARLA/Gateway, functional-backend, filesystem, clock and
+credential-profile adapters.
 
 Unit tests run without Unreal, CARLA, QEMU, AosCloud, Docker, credentials or
 network access. They inject current/stale/conflicting Cloud snapshots, two role
@@ -234,7 +236,7 @@ the real supported APIs and launchers.
 | Interface | Direction | Data or command | Contract/version | Failure behavior | Authority |
 | --- | --- | --- | --- | --- | --- |
 | [Software Delivery API (`IF-LC-005`)](../component-decomposition-and-interface-register.md#if-lc-005) | Bidirectional | Scoped reads, decision basis, one confirmed mutation and post-action re-read | D4 normalized AosCloud adapter | Block/`UNKNOWN` on missing, stale or unauthorized state | AosCloud current state |
-| [Platform FOTA publication (`IF-LC-001`)](../component-decomposition-and-interface-register.md#if-lc-001) | Delegated adjacent action | Exact selected unsigned VDP candidate plus protected sign/publish result and signed digest | Platform Team pipeline/helper contract | Cancel/failure produces no success; uncertain result requires Cloud reconciliation | Platform Team OEM identity and AosCloud verification record |
+| [Platform FOTA publication (`IF-LC-001`)](../component-decomposition-and-interface-register.md#if-lc-001) | Delegated adjacent action | Exact selected unsigned VDP candidate plus D4-010.3 `platform-oem` sign/publish result and signed digest | [Artifact Publication Credential Profile 1.0.0](../../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json) | Wrong profile/candidate, cancel or failure produces no success; uncertain result requires Cloud reconciliation | Platform Team OEM technical-publication identity and AosCloud verification record; no Unit approval |
 | [Cloud-to-Unit lifecycle (`IF-LC-004`)](../component-decomposition-and-interface-register.md#if-lc-004) | External adjacent action | Provisioning, desired state, update delivery, status and retirement | Qualified AosCloud/AosCore contract | Uncertain or unsupported result blocks continuation and requires reconciliation | AosCloud and current Unit state |
 | [Platform approval (`IF-LC-008`)](../component-decomposition-and-interface-register.md#if-lc-008) | Handoff | Exact FOTA decision basis and final OEM confirmation | Platform release contract | No mutation without current owner acceptance and OEM role | Platform Team decision plus AosCloud record |
 | [Brake approval (`IF-LC-009`)](../component-decomposition-and-interface-register.md#if-lc-009) | Handoff | Exact Brake SOTA decision basis and final OEM confirmation | Function Team 1 release contract | Same fail-closed behavior | Function Team 1 decision plus AosCloud record |
@@ -251,7 +253,7 @@ the real supported APIs and launchers.
 | Unit | Prove dashboard gates, target comparison, stage state, operation plans and recovery branches | All external systems replaced by deterministic doubles | Yes | `UT-DEMO-*` suite |
 | Component | Prove local UI/API/orchestrator package, auth, persistence and restart | Controlled fake Cloud/VM/source adapters | Yes | Browser/API/launcher component suite |
 | Contract | Prove AosCloud normalization, run manifest, helper and cleanup APIs | Versioned fixtures/conformance harnesses | Yes | D4 contract suites and digests |
-| Integration | Prove real Keychain/API, two launchers, Unit Sets, source switching and R0 operations | Dedicated non-production demo environment | Yes | Exact revisions, IDs and redacted operation records |
+| Integration | Prove real D4-010.3 credential profiles/API, two launchers, Unit Sets, source switching and R0 operations | Dedicated non-production demo environment | Yes | Exact revisions, IDs and redacted operation records |
 | End-to-end | Prove the complete staged run on VU then DU and clean R0 | Accepted target graph | Yes | `CR-E2E` retained evidence |
 
 ## Requirement Summary
@@ -485,13 +487,13 @@ the real supported APIs and launchers.
 <a id="req-demo-016"></a>
 
 - ID: `REQ-DEMO-016`
-- Statement: The trusted macOS demo launcher shall start a session-scoped native helper under the logged-in non-root user before starting the dashboard backend and opening the browser. The product shall expose browser access only on loopback through an authenticated session, keep private keys, reusable certificates, Keychain access and host authority in the native helper boundary, allowlist exact Cloud/VM/source/cleanup operations, reject arbitrary shell/path/URL input and redact all UI, journal and log output. The helper shall not be installed as a persistent `launchd` or login service, shall accept no operation outside its authenticated demo session, and shall stop on orderly demo completion or after a bounded launcher-loss/orphan condition.
-- Parents: [Cloud-authoritative dashboard (`SYS-OBS-002`)](../system-requirements-and-traceability.md#sys-obs-002) and [authoritative surfaces (`SYS-OBS-001`)](../system-requirements-and-traceability.md#sys-obs-001)
+- Statement: The trusted macOS demo launcher shall start a session-scoped native helper under the logged-in non-root user before starting the dashboard backend and opening the browser. The product shall expose browser access only on loopback through an authenticated session, keep private keys, reusable certificates, credential-store access and host authority in the native helper boundary, allowlist exact Cloud/VM/source/cleanup operations, reject arbitrary shell/path/URL input and redact all UI, journal and log output. For D4-010.3 publication, the helper alone may read the fixed role-bound mode-`0600` PKCS#12 paths; the caller may not select a profile, credential path, candidate path or Cloud URL. The helper shall not be installed as a persistent `launchd` or login service, shall accept no operation outside its authenticated demo session, and shall stop on orderly demo completion or after a bounded launcher-loss/orphan condition.
+- Parents: [Cloud-authoritative dashboard (`SYS-OBS-002`)](../system-requirements-and-traceability.md#sys-obs-002), [authoritative surfaces (`SYS-OBS-001`)](../system-requirements-and-traceability.md#sys-obs-001) and [role-bound protected publication (`SYS-REL-011`)](../system-requirements-and-traceability.md#sys-rel-011)
 - Flow: [evidence architecture (`AF-X-OBS`)](../../architecture/demo-scenario-architecture-flows.md#af-x-obs)
 - Components/interfaces: `CMP-SW-DASH`, `CMP-ORCH`, `IF-LC-005`, `IF-DEMO-001`
 - Verification: Unit, Component, Integration
-- Evidence: launcher/helper/backend/browser startup and shutdown order, non-root process identity, no-persistent-service inspection, listener/session/CSRF/allowlist/path/secret-negative tests, launcher-loss/orphan timeout and Keychain boundary inspection
-- State: D3 design-reviewed; exact dashboard packaging, helper transport/session protocol and supervision timeout remain D4 gates
+- Evidence: launcher/helper/backend/browser startup and shutdown order, non-root process identity, no-persistent-service inspection, listener/session/CSRF/allowlist/profile/path/URL/secret-negative tests, publication-file mode/location/exclusion proof, launcher-loss/orphan timeout and credential-boundary inspection
+- State: D3 design-reviewed; D4-010.3 publication profile accepted; exact dashboard packaging, helper transport/session protocol and supervision timeout remain D4 gates
 
 ### Honest coverage and deferred claims
 
@@ -524,13 +526,13 @@ the real supported APIs and launchers.
 <a id="req-demo-019"></a>
 
 - ID: `REQ-DEMO-019`
-- Statement: After explicit Platform Team confirmation, the Platform Releases view shall delegate exactly one selected prepared candidate plus its verified artifact/metadata digests and Factory Image/runtime binding to an authenticated native helper, and shall preserve the verified identity mapping from prepared candidate through signed artifact/metadata digests to the returned AosCloud component object/version. Presenter Mac/Native Helper connectivity to AosCloud is a required demo precondition: if unavailable, signing/publication is blocked with a factual infrastructure error and is neither presented nor tested as automotive offline behavior. `PUBLISHED` requires an independent authoritative AosCloud re-read. A helper/process interruption or lost local result persistence may produce `UNCERTAIN` and require reconciliation, but this defensive state is not a Dashboard-to-Cloud offline feature. The view shall never access/export private key material and shall visibly separate technical publication from later Validation deployment and promotion approval.
-- Parents: [immutable candidates (`SYS-REL-001`)](../system-requirements-and-traceability.md#sys-rel-001), [team-owned release decisions (`SYS-REL-007`)](../system-requirements-and-traceability.md#sys-rel-007) and [Cloud-authoritative dashboard (`SYS-OBS-002`)](../system-requirements-and-traceability.md#sys-obs-002)
+- Statement: After explicit Platform Team confirmation, the Platform Releases view shall delegate exactly one selected prepared VDP v1-v3 candidate plus its verified artifact/metadata digests and Factory Image/runtime binding to the authenticated common native helper surface pre-bound to D4-010.3 profile `platform-oem`. The request shall contain no profile, credential path, candidate path or Cloud URL. The helper shall use the fixed local mode-`0600` PKCS#12 with installed `aos-signer` 2.0.1 for both signing and mTLS upload and preserve the verified identity mapping from prepared candidate through signed artifact/metadata digests to the returned AosCloud component object/version. Presenter Mac/Native Helper connectivity to AosCloud is a required demo precondition: if unavailable, signing/publication is blocked with a factual infrastructure error and is neither presented nor tested as automotive offline behavior. `PUBLISHED` requires an independent authoritative AosCloud re-read. A helper/process interruption or lost local result persistence shall produce `UNCERTAIN` and require reconciliation without blind retry. The view shall never access/export private key or PKCS#12 material and shall visibly separate technical publication from later Validation deployment and promotion approval.
+- Parents: [immutable candidates (`SYS-REL-001`)](../system-requirements-and-traceability.md#sys-rel-001), [team-owned release decisions (`SYS-REL-007`)](../system-requirements-and-traceability.md#sys-rel-007), [role-bound protected publication (`SYS-REL-011`)](../system-requirements-and-traceability.md#sys-rel-011) and [Cloud-authoritative dashboard (`SYS-OBS-002`)](../system-requirements-and-traceability.md#sys-obs-002)
 - Flow: [common release (`AF-X-RELEASE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-release)
 - Components/interfaces: `CMP-SW-DASH`, `IF-LC-001`, `IF-LC-005`
 - Verification: Unit, Component, Integration, End-to-end
-- Evidence: connectivity preflight/block, confirm/cancel/success/failure, helper/process interruption and lost-local-result reconciliation, independent authoritative Cloud re-read, helper authentication, no-key proof and exact prepared/signed/Cloud identity chain
-- State: D3 design-reviewed; exact signing SDK/envelope, credential profiles, helper/result schema, AosCloud publication/verification API and reconciliation lookup remain D4 gates
+- Evidence: contract-schema validation, exact `platform-oem` binding, wrong-profile/candidate/type/path/URL negatives, file-mode and exclusion proof, connectivity preflight/block, confirm/cancel/success/failure, helper/process interruption and lost-local-result reconciliation, no-blind-retry proof, independent authoritative Cloud re-read, helper authentication, no-key/PKCS#12-output proof and exact prepared/signed/Cloud identity chain
+- State: D3 design-reviewed; D4-010.3 signing tool/profile/custody/state-machine contract accepted; exact helper request/result schema and AosCloud publication/reconciliation lookup remain implementation D4 gates
 
 ### Atomic vehicle external-connectivity control
 
@@ -572,12 +574,12 @@ the real supported APIs and launchers.
 | <a id="ut-demo-008"></a>`UT-DEMO-008` — Confirmed action state machine | `REQ-DEMO-008` | Cancel, success, failure, timeout, response loss, duplicate click, recovery | Mutation adapter, journal and clock doubles | One request identity; no auto approval/retry; post-read required | `aosedge-sdv-demo` | Draft |
 | <a id="ut-demo-009"></a>`UT-DEMO-009` — VU-to-DU promotion gate | `REQ-DEMO-009` | DU-first, changed digest, missing owner, stale evidence, target change, success | Release graph and Cloud fixtures | Only identical accepted bytes reach current DU target | `aosedge-sdv-demo` | Draft |
 | <a id="ut-demo-010"></a>`UT-DEMO-010` — Source lock and evidence | `REQ-DEMO-010` | VU attach/run/detach, reset/new generation, DU attach/run/detach, overlap, uncertain detach/reset, wrong frame range and orchestrator restart | Live source/handover fixtures | One exact live binding; VU always precedes DU; detach and reset are proven; overlap/ambiguity blocks; honest label | `aosedge-sdv-demo` | Draft |
-| <a id="ut-demo-011"></a>`UT-DEMO-011` — Native log request | `REQ-DEMO-011` | Scope/role confirm, pending, failed, offline, redaction, retained result, download and delete | Log API/Keychain/storage fixtures | Authoritative Cloud state; related-file deletion; bounded temporary removal; no second archive, secret or indefinite claim | `aosedge-sdv-demo` | Draft |
+| <a id="ut-demo-011"></a>`UT-DEMO-011` — Native log request | `REQ-DEMO-011` | Scope/role confirm, pending, failed, offline, redaction, retained result, download and delete | Log API/credential/storage fixtures | Authoritative Cloud state; related-file deletion; bounded temporary removal; no second archive, secret or indefinite claim | `aosedge-sdv-demo` | Draft |
 | <a id="ut-demo-013"></a>`UT-DEMO-013` — Retirement planner | `REQ-DEMO-013`, `015` | All success plus failure at each ordered side effect, including response loss | Cloud/VM/journal doubles | No unsafe next action; uncertain state preserved only until reconciled; successful journal removed | `aosedge-sdv-demo` | Draft |
 | <a id="ut-demo-014"></a>`UT-DEMO-014` — Scoped cleanup | `REQ-DEMO-014` | Preview, exact delete, wildcard, unrelated run, actor leak, open overlay | Backend/CARLA/filesystem doubles | All current-run functional data removed; unrelated data, factory and Cloud audit untouched; dashboards empty | `aosedge-sdv-demo` | Draft |
-| <a id="ut-demo-015"></a>`UT-DEMO-015` — Local application boundary | `REQ-DEMO-016` | Launcher startup/shutdown, non-root identity, no persistent daemon, loopback/non-loopback, auth/CSRF, launcher loss/orphan timeout, arbitrary command/path/URL and secret fixtures | Launcher/process/HTTP/helper/Keychain/listener doubles | Correct session order and termination; unauthorized input rejected; no root, persistent helper, key/browser/shell leakage | `aosedge-sdv-demo` | Draft |
+| <a id="ut-demo-015"></a>`UT-DEMO-015` — Local application boundary | `REQ-DEMO-016` | Launcher startup/shutdown, non-root identity, no persistent daemon, loopback/non-loopback, auth/CSRF, launcher loss/orphan timeout, arbitrary profile/command/path/URL and secret fixtures | Launcher/process/HTTP/helper/credential-profile/listener doubles | Correct session order and termination; unauthorized input rejected; no root, persistent helper, key/PKCS#12/browser/shell leakage | `aosedge-sdv-demo` | Draft |
 | <a id="ut-demo-016"></a>`UT-DEMO-016` — Platform candidate catalogue | `REQ-DEMO-018` | Exact v1-v3 set; missing/duplicate/alternate entry; incomplete metadata; changed artifact/metadata/Factory Image digest; wrong runtime; broken contract compatibility; incomplete identity mapping | Catalogue/schema/release-result fixtures | Exactly three complete frozen baseline-compatible entries; prepared/signed/Cloud identities remain distinct and linked; mismatch blocks; no edit/compile/build/package/metadata/model/test endpoint | `aosedge-sdv-demo` | Draft |
-| <a id="ut-demo-017"></a>`UT-DEMO-017` — Protected Platform publication | `REQ-DEMO-019` | Presenter-connectivity preflight, confirm/cancel/success/failure, helper/process interruption, lost local result, `UNCERTAIN` reconciliation, duplicate request and wrong helper identity | Helper/Keychain/Cloud result doubles | Unavailable control plane blocks without a Unit-offline label; one exact candidate; `PUBLISHED` only after independent Cloud re-read; no key access/blind retry; publication distinct from approval | `aosedge-sdv-demo` | Draft |
+| <a id="ut-demo-017"></a>`UT-DEMO-017` — Protected Platform publication | `REQ-DEMO-019` | Presenter-connectivity preflight, confirm/cancel/success/failure, helper/process interruption, lost local result, `UNCERTAIN` reconciliation, duplicate request, wrong profile/candidate/type/path/URL and helper identity | D4-010.3 helper/profile/Cloud result doubles | Unavailable control plane blocks without a Unit-offline label; only `platform-oem` and exact VDP candidate pass; `PUBLISHED` only after independent Cloud re-read; no key/PKCS#12 access or blind retry; publication distinct from approval | `aosedge-sdv-demo` | Draft |
 | <a id="ut-demo-018"></a>`UT-DEMO-018` — Atomic vehicle connectivity | `REQ-DEMO-020` | Disconnect/restore, duplicate click, partial apply/remove, missing backend, stale probe and restart while transitioning | Fault-planner, channel-probe, Cloud and backend fixtures | One visible control; both external channel classes change together; excluded paths stay available; partial state never reports success; restore reconciles the same Unit and queued messages | `aosedge-sdv-demo` | Draft |
 | <a id="ut-demo-019"></a>`UT-DEMO-019` — Tenant-isolation proof state | `REQ-DEMO-021` | Start/stop, duplicate request, wrong service, missing/stale quota or metric, uncapped/over-quota result, Tire restart, Brake degradation/restart, platform degradation and partial evidence | Load-control, AosCloud monitoring, Brake event and platform-health fixtures | No project quota mutation; success only for exact Tire service/digest capped at approved quota with healthy Brake/platform and clean post-stop recovery; excluded Mac-backend and aggregate-provider claims remain visible | `aosedge-sdv-demo` | Draft |
 
@@ -609,10 +611,10 @@ proof; they do not replace these isolated decisions and failure branches.
 | `REQ-DEMO-013` | `UT-004`, `UT-013` | Retirement state machine | Retirement API fixtures | Real qualified deletion | R0 lifecycle |
 | `REQ-DEMO-014` | `UT-014` | Cleanup planner | Backend/scenario cleanup contracts | Exact real run cleanup | R0 evidence |
 | `REQ-DEMO-015` | `UT-003`, `UT-008`, `UT-013` | Restart/reconcile | Journal schema | Interrupted-operation drills | Recovery path |
-| `REQ-DEMO-016` | `UT-015` | Local app package | Helper/auth protocol | Listener/Keychain proof | Security boundary |
+| `REQ-DEMO-016` | `UT-015` | Local app package | Helper/auth plus D4-010.3 profile contract | Listener/credential-custody proof | Security boundary |
 | `REQ-DEMO-017` | `UT-006` | Coverage/claim view | Coverage schema | Accepted evidence links | Honest audience narrative |
 | `REQ-DEMO-018` | `UT-016` | Platform Releases view | Candidate catalogue schema | Prepared v1-v3 inputs | G1/G3/G4 candidate proof |
-| `REQ-DEMO-019` | `UT-017` | Publication state machine | Protected helper/result schema | Test sign/publish and Cloud verify | Exact signed digest handoff |
+| `REQ-DEMO-019` | `UT-017` | Publication state machine | D4-010.3 profile plus protected helper/result schema | Test sign/publish and Cloud reconcile | Exact signed digest handoff |
 | `REQ-DEMO-020` | `UT-018` | Connectivity-control state machine | Atomic fault-plan and probe schema | Real dual-path block/restore with excluded-path probes | `AF-X-OFFLINE` same-Unit and backend-synchronization proof |
 | `REQ-DEMO-021` | `UT-019` | Isolation-proof state machine | Load-control and quota/monitoring evidence schema | Real Tire cgroup CPU cap with concurrent Brake/platform continuity | `AF-TIRE-RES` audience proof |
 
@@ -621,7 +623,7 @@ proof; they do not replace these isolated decisions and failure branches.
 | Concern | Component response | Verification |
 | --- | --- | --- |
 | Authority | Team decision, OEM authorization, AosCloud state and dashboard facilitation remain separate | Unit, API inspection, integration |
-| Credentials | Role-specific Keychain use; no browser/container secret mount or journal/log value | Unit, secret scan, integration |
+| Credentials | Three D4-010.3 role-bound local PKCS#12 profiles; no caller selector, Git/browser/container/VM/artifact mount or journal/log value | Unit, contract, mode/path inspection, secret scan, integration |
 | Publication separation | Protected FOTA sign/publish is distinct from evidence-backed validation/promotion approval | Unit, UI/API inspection, integration |
 | Target safety | Current pending recipients derived immediately before confirmation | Unit, contract, integration |
 | Privacy/redaction | Allowlisted IDs/digests/status; no token, private certificate, confidential source or unrestricted raw log | Unit, static guard, inspection |
@@ -638,7 +640,6 @@ proof; they do not replace these isolated decisions and failure branches.
 | --- | --- | --- |
 | Exact supported AosCloud read/mutation/log endpoints, schemas, roles and idempotency behavior | Dashboard adapter and safe operations | Demo Solution + AosEdge Platform Team |
 | Native versus ARM64-container dashboard packaging, narrow local helper transport/session protocol and launcher supervision timeout | Local deployment and security tests; helper remains non-root and session-scoped in either packaging | Demo Solution |
-| Role-specific credential profile: API client certificate versus artifact-signing key/certificate, chain, storage, SDK operation and verification record for Platform FOTA, Brake SOTA and Tire SOTA | Prevent credential-purpose ambiguity and prove correct OEM/SP authority | Platform Team + both Function Teams + AosEdge security/API owners |
 | Platform v1-v3 catalogue schema, release-storage layout, Factory Image/runtime binding, metadata canonicalization and prepared/signed/AosCloud identity mapping | Platform Releases implementation and evidence | Platform Team + Demo Solution |
 | Accepted factory artifact, two-overlay naming/location and per-run host-state layout | M0 and R0 | Platform Team + Demo Solution |
 | Qualified two-Unit provisioning, Node ownership and uncertain-result reconciliation | M1 and R0 | Demo Solution + AosEdge Platform Team |
@@ -672,6 +673,16 @@ repository mutation, signing, Cloud calls, VM operations, provisioning,
 deprovisioning, CARLA control or data deletion.
 
 ## D3 Acceptance Record
+
+Version 0.6 was revalidated on 2026-08-22 after D4-010.3 accepted the
+current-demo artifact-publication profile. `REQ-DEMO-016`, `REQ-DEMO-019`,
+`UT-DEMO-015` and `UT-DEMO-017` now bind Platform FOTA publication to
+`platform-oem`, forbid caller-selected profile/path/URL input and record the
+installed `aos-signer` 2.0.1 file-backed PKCS#12 limitation. Three local
+mode-`0600` credentials remain outside Git, dashboards, containers, VM images
+and deployable artifacts; `PUBLISHED` still requires an independent Cloud
+re-read and never grants OEM Unit approval. Exact helper wire/result and Cloud
+reconciliation lookup remain implementation gates.
 
 Version 0.3 was revalidated on 2026-08-20 after the service-tenant isolation
 proof was accepted. `REQ-DEMO-021` and `UT-DEMO-019` define one bounded

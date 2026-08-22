@@ -1,18 +1,18 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# High-Level Architecture 1.4
+# High-Level Architecture 1.5
 
-- Status: Accepted architecture baseline
-- Version: 1.4
-- Prepared: 2026-08-19
-- Accepted: 2026-08-19
+- Status: Review candidate
+- Version: 1.5
+- Prepared: 2026-08-22
 - Owner: System Architecture
-- Previous accepted version: 1.0, accepted 2026-08-16
+- Previous accepted version: 1.4, accepted 2026-08-19
 - Accepted architecture decisions: [ADR 0008](decisions/0008-use-tire-health-for-function-team-2.md),
   [ADR 0009](decisions/0009-separate-release-decision-from-cloud-execution.md),
-  [ADR 0010](decisions/0010-aos-kuksa-credential-broker.md),
-  [ADR 0011](decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
+  [ADR 0011](decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
+  [ADR 0012](decisions/0012-authorize-running-workloads-not-software-artifacts.md)
+- Proposed architecture change: [ADR 0013](decisions/0013-current-release-kuksa-authorization-compatibility.md)
 - Scope: CARLA, Vehicle Gateway ECU, AosVM Domain Controller, AosCloud,
   shared Vehicle Data Platform Component, two independent OEM Service
   Providers, functional backends, and demonstration tooling
@@ -32,12 +32,16 @@ the Mermaid rendering below are reviewable derivatives and must be regenerated
 or reconciled whenever the source changes.
 
 The visual source defines the component boundaries and principal relationships
-used by Architecture 1.4: two peer OEM Function Teams represented as
+used by Architecture 1.5: two peer OEM Function Teams represented as
 independent AosCloud Service Providers, the shared Vehicle Data Platform
 Component, the Tire Health function, the Factory Baseline Assembly-to-Factory
 Image artifact and factory-installed runtime boundaries,
 the Software Delivery and log-observation surfaces, and the explicit typed
-Brake Health and Tire Health advisory paths through KUKSA. It also distinguishes
+Brake Health and Tire Health advisory paths through KUKSA. It separates the
+factory-installed Eclipse KUKSA resource-server boundary from the FOTA-owned
+Vehicle Data Platform Component and shows the current-release authorization
+helper only as a removable compatibility overlay below a permanent,
+implementation-neutral platform credential boundary. It also distinguishes
 team-owned release decisions from the OEM identity used to authorize Cloud
 mutations and from AosCloud lifecycle state and execution. It also identifies
 both functional services as QM-domain applications, the Gateway as the final
@@ -45,6 +49,36 @@ authoritative containment boundary, and OEM approval as an evidence-backed
 final decision rather than a bare dashboard action. The diagram does not
 introduce a production driver HMI; the advisory remains visible on the
 Engineering Telematics Dashboard.
+
+## Revision 1.5 Summary
+
+Architecture 1.5 preserves the vehicle, Cloud, FOTA/SOTA and QM-containment
+topology of 1.4 while proposing the authorization-boundary correction in
+[ADR 0013](decisions/0013-current-release-kuksa-authorization-compatibility.md):
+
+1. Eclipse KUKSA is a stable factory-installed resource server outside the
+   independently updated Vehicle Data Platform Component;
+2. the permanent target architecture requires platform-controlled Service
+   credentials derived from immutable OEM-approved metadata and active
+   workload state, but does not guess the future native AosCore interface;
+3. the current demo uses a removable compatibility helper outside the VDP and
+   both SOTA Service artifacts;
+4. the helper uses current native `AOS_SECRET` and `GetPermissions` behavior,
+   derives all JWT claims itself and exposes only a Service-private short-lived
+   credential;
+5. Services connect directly to unmodified KUKSA after credential preparation,
+   so IAM and the helper are not in the vehicle-data or advisory path;
+6. VM reboot reconstructs authority from active platform state rather than a
+   persisted authorization cache, while stop/removal prevents renewal; and
+7. the VDP Provider is part of the OEM-qualified trusted platform and uses a
+   fixed platform-internal KUKSA integration path; the first demo adds no
+   dynamic Provider IAM/JWT, per-component attestation, or untrusted-Provider
+   isolation claim; and
+8. D4-010.3 binds technical artifact publication to three independent profiles:
+   Platform OEM for VDP FOTA, Service Provider 1 for Brake Health SOTA and
+   Service Provider 2 for Tire Health SOTA. One session-scoped native helper
+   implementation may be reused, but every dashboard surface is pre-bound to
+   one profile and technical publication never performs OEM Unit approval.
 
 ## Revision 1.4 Summary
 
@@ -64,7 +98,7 @@ adopts [ADR 0011](decisions/0011-qm-service-containment-and-evidence-backed-oem-
 5. the Dashboard remains stateless, while AosCloud records and executes the
    authorized decision.
 
-The accepted D4-009 Platform Team clarification later corrected the factory
+The permission-handler portion preserved by D4-027 corrected the factory
 configuration without changing this topology: `enablePermissionsHandler`
 shall be explicitly `true` in the single IAM configuration and is independent
 of provisioning state. Provisioning does not toggle or select that setting;
@@ -76,12 +110,15 @@ The accepted D4-010.1 signing decision also preserves the topology while
 freezing the per-Unit trust lifecycle. The Factory Image carries only the
 dedicated non-secret `kuksa-jwt` certificate-module/PKCS#11 and verifier
 preparation wiring. Provisioning creates a unique RSA signer; only its public
-verifier is installed before the Broker and unmodified KUKSA start. The first
+verifier is installed before `CMP-KAC` and unmodified KUKSA start. The first
 demo uses one signer per provisioning lifecycle with no hot reload or live
 rotation, and R0 destroys the retired signer with its VM overlay. The pinned
 KUKSA enforces signature, audience `kuksa.val`, expiry and path permissions;
-it is not credited with validating `iss`. Provider identity and artifact
-publication credentials remain separate open parts of D4-010.
+it is not credited with validating `iss`. The separate accepted D4-010.3
+publication profile uses three local, role-bound current-release PKCS#12
+credentials behind one session-scoped native-helper contract. This does not
+add an HLA component or authority. Dynamic Provider authorization remains
+outside the first-demo gate.
 
 ## Revision 1.3 Summary
 
@@ -160,7 +197,7 @@ not erase the logical separation between the simulated physical vehicle, the
 Vehicle Gateway ECU, the Domain Controller ECU, the OEM Cloud, and engineering
 tools.
 
-## Architecture 1.4 Model
+## Architecture 1.5 Model
 
 ```mermaid
 flowchart TB
@@ -231,7 +268,7 @@ flowchart TB
         subgraph DOMAIN["Domain Controller ECU — QEMU + AosVM<br/>logical instance: Validation Unit or Demonstration Unit"]
             direction TB
 
-            AOS_CORE["Factory-installed Domain Controller substrate<br/>AosCore · Service Manager · KUKSA<br/>security · update support"]
+            AOS_CORE["Factory-installed Domain Controller substrate<br/>AosCore · Service Manager / IAM<br/>security · update support"]
             COMPONENT_RUNTIME["Preinstalled component runtime<br/>provider-specific · empty slot"]
 
             subgraph DATA_PLATFORM["Vehicle Data Platform Component — FOTA payload and versioned contract"]
@@ -241,33 +278,41 @@ flowchart TB
                     direction LR
                     INBOUND["Vehicle Interface Provider<br/>VISS subscribe client"]
                     INBOUND_POLICY["Inbound validation<br/>normalization · signal selection"]
-                    KUKSA_ACTUAL["KUKSA actual-value<br/>namespace"]
-                    READ_API["Read / subscribe<br/>kuksa.val.v1"]
 
                     INBOUND --> INBOUND_POLICY
-                    INBOUND_POLICY -- "Publish actual values" --> KUKSA_ACTUAL
-                    KUKSA_ACTUAL --> READ_API
                 end
 
                 subgraph OUTBOUND_PATH["Outbound QM advisory path — defense in depth"]
                     direction RL
-                    ACTUATE_API["Actuate / write target<br/>kuksa.val.v1"]
-                    KUKSA_TARGET["KUKSA advisory-target<br/>namespace"]
                     OUTBOUND_POLICY["Outbound validation<br/>and allowlist"]
                     OUTBOUND["Outbound Vehicle Interface Provider<br/>VISS Set client"]
 
-                    ACTUATE_API --> KUKSA_TARGET
-                    KUKSA_TARGET --> OUTBOUND_POLICY
                     OUTBOUND_POLICY --> OUTBOUND
                 end
 
-                AUTH["Aos–KUKSA Credential Broker<br/>Aos IAM permissions → short-lived<br/>path-scoped KUKSA JWT"]
                 CONTRACT["Versioned Vehicle Data Platform<br/>Component contract"]
-                CONTRACT --- KUKSA_ACTUAL
-                CONTRACT --- KUKSA_TARGET
-                AUTH -. "authorizes" .-> READ_API
-                AUTH -. "authorizes" .-> ACTUATE_API
             end
+
+            subgraph KUKSA_RESOURCE_SERVER["Eclipse KUKSA Databroker — stable factory-installed resource server"]
+                direction TB
+                KUKSA_ACTUAL["KUKSA actual-value<br/>namespace"]
+                READ_API["Read / subscribe<br/>kuksa.val.v1"]
+                ACTUATE_API["Actuate / write target<br/>kuksa.val.v1"]
+                KUKSA_TARGET["KUKSA advisory-target<br/>namespace"]
+
+                KUKSA_ACTUAL --> READ_API
+                ACTUATE_API --> KUKSA_TARGET
+            end
+
+            INBOUND_POLICY -- "Publish actual values" --> KUKSA_ACTUAL
+            KUKSA_TARGET --> OUTBOUND_POLICY
+            CONTRACT --- KUKSA_ACTUAL
+            CONTRACT --- KUKSA_TARGET
+
+            AUTH["Platform-controlled Service credential boundary<br/>current-release overlay: removable compatibility helper"]
+            AUTH -. "GetPermissions<br/>current native IAM authority" .-> AOS_CORE
+            AUTH -. "Service-private short-lived JWT trust" .-> READ_API
+            AUTH -. "Service-private short-lived JWT trust" .-> ACTUATE_API
 
             subgraph TIRE_FUNCTION_SERVICE["QM OEM Functional Service — SOTA 2"]
                 TIRE_SERVICE["Tire Health Service Container<br/>local condition estimation<br/>bounded summary + advisory decision"]
@@ -277,9 +322,8 @@ flowchart TB
                 BRAKE_SERVICE["Brake Health Service Container<br/>local analytics and advisory decision"]
             end
 
-            BRAKE_SERVICE -. "AOS_SECRET → short-lived JWT" .-> AUTH
-            TIRE_SERVICE -. "AOS_SECRET → short-lived JWT" .-> AUTH
-            AUTH -. "GetPermissions<br/>native IAM authority" .-> AOS_CORE
+            BRAKE_SERVICE -. "current release:<br/>AOS_SECRET + fixed resource" .-> AUTH
+            TIRE_SERVICE -. "current release:<br/>AOS_SECRET + fixed resource" .-> AUTH
 
             READ_API -- "Read / subscribe" --> TIRE_SERVICE
             READ_API -- "Read / subscribe" --> BRAKE_SERVICE
@@ -316,7 +360,7 @@ architecture. A deployable FOTA or SOTA box indicates that the architecture can
 host that element; it does not imply that every element is installed at every
 demonstration stage. The manufacturing, provisioning, `G0–G4`, independent
 `T1` Tire Health, and retirement sequence and the precise presence or absence of each deployable component are
-owned by Demo Scenario 1.9 rather than by this static component diagram.
+owned by Demo Scenario 2.0 rather than by this static component diagram.
 
 The logical Domain Controller architecture is instantiated twice for the
 demonstration: once as the Validation Unit and once as the Demonstration Unit.
@@ -384,9 +428,12 @@ of the assembly component.
 
 The immutable OEM Factory Image contains no Vehicle Data Platform Component
 payload, functional SOTA service, Cloud registration, Cloud-issued credential,
-or reusable per-vehicle identity. The accepted component runtime is currently
-specific to one provider type and one empty slot; Architecture 1.4 does not
-claim a generic arbitrary-component runtime.
+or reusable per-vehicle identity. For the current release it may contain the
+separately packaged removable authorization helper and non-secret
+signer/verifier preparation wiring, but no pre-populated Service authority,
+`AOS_SECRET`, JWT, private signer or shared production credential. The accepted
+component runtime is currently specific to one provider type and one empty
+slot; Architecture 1.5 does not claim a generic arbitrary-component runtime.
 
 A pinned OEM build may emit both the complete bootable Factory Image and a
 separate rootfs platform-update envelope from the same rootfs content. These
@@ -455,7 +502,7 @@ read-only subscriber. It does not connect to CARLA RPC, KUKSA, AosVM, or the
 Cloud backend.
 
 No production driver HMI or Instrument Cluster is implemented in Architecture
-1.3. The engineering dashboard may show that an advisory was requested and
+1.5. The engineering dashboard may show that an advisory was requested and
 received by the Vehicle Gateway, but the demonstration must not claim that the
 warning was displayed to or acknowledged by a driver.
 
@@ -471,12 +518,15 @@ component:
   an explicit `enablePermissionsHandler: true` in the single stock Aos IAM
   configuration, absence of pre-populated service permission/secret state,
   and the dedicated non-secret `kuksa-jwt` certificate-module/PKCS#11 plus
-  public-verifier preparation wiring used by the future broker;
+  public-verifier preparation wiring used by the current-release compatibility
+  helper;
 - inbound and outbound vehicle-interface providers;
 - VSS mapping, filtering, and validation;
-- KUKSA integration and stable signal contract;
-- the thin Aos–KUKSA Credential Broker, KUKSA public-verifier configuration,
-  and platform-protected signing-key integration;
+- factory-installed unmodified KUKSA integration and its stable signal
+  contract, outside the VDP FOTA payload;
+- the separately packaged removable current-release authorization helper,
+  KUKSA public-verifier configuration and platform-protected signing-key
+  integration, outside the VDP FOTA payload and both SOTA artifacts;
 - outbound actuator allowlists and enforcement;
 - short-lived platform credentials and trust integration without embedding
   secrets in artifacts;
@@ -625,7 +675,7 @@ Vehicle Control UI
 The control path is deliberately separate from VISS telemetry and KUKSA. Loss
 of the control client selects the existing safe-stop behavior. The Brake Health
 service and Tire Health service are QM-domain applications and do not control
-vehicle motion in Architecture 1.4.
+vehicle motion in Architecture 1.5.
 
 ### 3. Local Brake Health analysis
 
@@ -683,7 +733,7 @@ The service does not send a message directly to the dashboard. The engineering
 dashboard observes the Gateway-side advisory and status over VISS. This proves
 that the request completed the round trip back to the simulated vehicle side.
 
-Architecture 1.4 defines the following semantics:
+Architecture 1.5 defines the following semantics:
 
 | Operation | Meaning |
 | --- | --- |
@@ -753,9 +803,9 @@ Gateway advisory request.
 ### 8. Independent software lifecycle delivery
 
 ```text
-Platform Team -> FOTA artifact + OEM-authorized approval -> AosCloud -> AosCore -> preinstalled component runtime -> Vehicle Data Platform Component
-Function Team 1 -> SP identity publishes SOTA 1 + OEM identity approves -> AosCloud -> AosCore -> Brake Health service
-Function Team 2 -> SP identity publishes SOTA 2 + OEM identity approves -> AosCloud -> AosCore -> Tire Health service
+Platform Team -> platform-oem signs/publishes FOTA + separate OEM-authorized approval -> AosCloud -> AosCore -> preinstalled component runtime -> Vehicle Data Platform Component
+Function Team 1 -> brake-sp1 signs/publishes SOTA 1 + OEM identity approves -> AosCloud -> AosCore -> Brake Health service
+Function Team 2 -> tire-sp2 signs/publishes SOTA 2 + OEM identity approves -> AosCloud -> AosCore -> Tire Health service
 ```
 
 AosCloud records and executes all three lifecycles, but it does not merge
@@ -768,8 +818,14 @@ dependency.
 
 - The Vehicle Gateway VISS endpoint uses TLS and a private route intended for
   the simulated in-vehicle connection.
-- Unit identity, private keys, certificates, provider credentials, and service
-  tokens never enter Git or deployable public artifacts.
+- Unit identity, private keys, certificates, trusted Provider connection
+  material and Service credentials never enter Git or deployable public artifacts.
+- Current-demo artifact-publication credentials are three distinct
+  passwordless PKCS#12 files, mode `0600`, stored locally outside Git under
+  `~/.aos/security` and readable only by the session-scoped native helper.
+  The installed `aos-signer` 2.0.1 loads the selected key into that native
+  process; it is therefore not described as Keychain-backed or non-exportable.
+  No browser, dashboard container, VM image or deployable artifact receives it.
 - The immutable OEM Factory Image contains no Cloud registration, Cloud-issued
   credential, reusable per-vehicle secret, or fixed identity that would be
   duplicated across Unit instances.
@@ -789,30 +845,49 @@ dependency.
   arbitrary VSS writes and every vehicle-motion or safety-critical operation.
 - An advisory request cannot become an unrestricted transport tunnel from a
   service container to the Vehicle Gateway.
-- Upstream Eclipse KUKSA Databroker remains unchanged and trusts only the
-  per-Unit public verifier prepared after provisioning. It loads one verifier
-  at process start, validates `RS256` signature, audience `kuksa.val`, expiry
-  and path permissions, and is not claimed to enforce `iss`.
-- The Vehicle Data Platform Component's Aos–KUKSA Credential Broker validates
-  a running service's `AOS_SECRET` through Aos IAM and translates only the
-  currently registered path/mode set into a short-lived KUKSA JWT. It rejects
-  invalid, stale, malformed or contract-incompatible permissions and never
-  widens the IAM result.
+- Upstream Eclipse KUKSA Databroker remains an unchanged, factory-installed
+  resource server outside the VDP FOTA payload. In the current release it
+  trusts only the per-Unit public verifier prepared after provisioning, loads
+  one verifier at process start, validates `RS256` signature, audience
+  `kuksa.val`, expiry and path permissions, and is not claimed to enforce
+  `iss`.
+- The permanent platform credential boundary derives Service authority from
+  immutable OEM-approved Service metadata and active workload state, prepares
+  credentials outside untrusted application logic and does not prescribe the
+  future native AosCore interface.
+- The removable current-release compatibility helper is separate from the VDP
+  and both SOTA artifacts. A Service bootstrap presents only its active native
+  `AOS_SECRET` and a fixed KUKSA resource identifier. The helper resolves
+  currently registered permissions through Aos IAM, derives all supported JWT
+  claims itself and exposes a short-lived JWT through a Service-private
+  volatile location. A caller cannot select paths, operations, subject,
+  audience, TTL, claims or signing payload.
 - Aos IAM and Service Manager remain authoritative for SOTA instance identity,
-  secret registration and permission invalidation. The broker stores neither
-  service identities nor a duplicate per-service OEM policy database.
+  secret registration and permission invalidation. The helper stores neither
+  Service identities nor a duplicate per-Service OEM policy database. It
+  starts empty after VM reboot and reconstructs authority from active platform
+  state; stop, removal or unregistration prevents further issuance or renewal.
+- Once a credential is prepared, each Service connects directly to KUKSA. Aos
+  IAM and the helper are not in the telemetry, analytics, advisory or Cloud
+  data path.
 - Functional services never receive KUKSA `provide` or `create` authority.
-  The Vehicle Data Provider uses a separate short-lived platform credential;
-  its exact FOTA-component identity binding remains a qualification gate.
-- Broker signing material is a unique per-Unit RSA key created after
+  The Vehicle Data Provider is part of the OEM-qualified trusted platform and
+  receives only the provider-side KUKSA access required by its versioned
+  contract. Any fixed credential, protected local endpoint, or equivalent
+  KUKSA configuration is platform integration rather than a separate dynamic
+  authorization architecture. The demo does not claim containment of a
+  malicious or substituted VDP.
+- Current-release helper signing material is a unique per-Unit RSA key created after
   provisioning in the dedicated Aos `kuksa-jwt` certificate-module/PKCS#11
   token. Only its public verifier is exported atomically. The key,
   `AOS_SECRET`, issued JWTs and any shared static verifier never enter Git,
-  Factory Images, FOTA/SOTA payloads, command lines, or logs. Broker and KUKSA
-  fail closed before verifier preparation. The first demo has no live key
-  rotation; a fresh provisioning lifecycle creates a new key, and R0 overlay
-  destruction retires it. Example/static tokens are qualification history,
-  not the target architecture.
+  Factory Images, FOTA/SOTA payloads, command lines, or logs. The helper and
+  KUKSA fail closed before verifier preparation. The first demo has no live
+  key rotation; a fresh provisioning lifecycle creates a new key, and R0
+  overlay destruction retires it. Example/static tokens are qualification
+  history, not the target architecture. Native migration removes this
+  compatibility-only wiring after the released AosCore contract passes the
+  same acceptance suite.
 - Vehicle control remains on its separate authenticated channel and is not
   exposed to either functional service.
 - Functional backends have no AosCore lifecycle authority and cannot act as a
@@ -836,13 +911,13 @@ dependency.
 
 ## Current Baseline and Target Delta
 
-| Area | Current accepted behavior | Architecture 1.4 target |
+| Area | Current accepted behavior | Architecture 1.5 target |
 | --- | --- | --- |
 | CARLA and ego runtime | Vehicle state, control, VSS normalization | Preserve unchanged behavior |
 | VISS server | TLS VISS 3.1 Get and Subscribe; write rejected | Add a narrowly scoped QM advisory Set path and Gateway status; Gateway remains the authoritative deny-by-default boundary for motion and safety-critical operations |
 | Engineering dashboard | Independent VISS subscriber for live telemetry | Add advisory request and Gateway reception status |
-| Vehicle Data Platform Component | Inbound VISS-to-KUKSA implementation and qualification evidence exist; the thin Credential Broker and provider platform-identity binding are not yet implemented in the clean demo baseline | Provide one shared, versioned FOTA component with inbound telemetry, separately governed outbound advisory directions, and short-lived KUKSA credentials derived from Aos IAM without a parallel identity or per-service policy store |
-| Factory Baseline Assembly, OEM Demo Factory Image and Domain Controller substrate | The current build evidence and runtime are provider-specific; the stock provisioning and normal IAM services share one configuration, live `.1`/`.2` remain permission-handler-disabled after provisioning, installed systems prove an empty provider slot, and the hardened candidate is not yet an accepted clean factory artifact | Rebuild and qualify the immutable, unprovisioned OEM image with AosCore, KUKSA, security/update support, one IAM configuration containing `enablePermissionsHandler: true`, no pre-populated service permissions or secrets, dedicated non-secret `kuksa-jwt` certificate-module/PKCS#11 and verifier-preparation wiring, and the selected empty-slot runtime, but no provider payload, functional service, reusable identity, signing key or shared verifier |
+| Vehicle Data Platform Component | Inbound VISS-to-KUKSA implementation and qualification evidence exist | Provide one shared, versioned OEM-trusted FOTA component with inbound telemetry and separately governed outbound advisory directions; exclude Service JWT issuance, dynamic Provider IAM/JWT and untrusted-Provider isolation from the first demo |
+| Factory Baseline Assembly, OEM Demo Factory Image and Domain Controller substrate | The current build evidence and runtime are provider-specific; the stock provisioning and normal IAM services share one configuration, live `.1`/`.2` remain permission-handler-disabled after provisioning, installed systems prove an empty provider slot, and the hardened candidate is not yet an accepted clean factory artifact | Rebuild and qualify the immutable, unprovisioned OEM image with AosCore, factory-installed unmodified KUKSA, security/update support, one IAM configuration containing `enablePermissionsHandler: true`, the separately packaged removable current-release helper, non-secret `kuksa-jwt` signer/verifier preparation and the selected empty-slot runtime, but no VDP payload, functional Service, pre-populated authority, reusable identity, signing key, JWT or shared production credential |
 | KUKSA contract | Readable telemetry signals | Serve both services and add the versioned advisory actuator and status sensor |
 | Brake Health service | Not yet the accepted final service | Subscribe, analyze locally, actuate advisory, report asynchronously |
 | Tire Health service | Not implemented | Estimate tire condition locally, send bounded summaries/events and request a typed inspection advisory |
@@ -860,7 +935,7 @@ contract remains rejected.
 
 ## Architectural Invariants
 
-Architecture 1.4 is aligned only while all of the following remain true:
+Architecture 1.5 is aligned only while all of the following remain true:
 
 1. CARLA represents the physical vehicle; `carla-ego-runtime` represents the
    Vehicle Gateway ECU; AosVM represents a separate Domain Controller ECU.
@@ -894,7 +969,7 @@ Architecture 1.4 is aligned only while all of the following remain true:
     a driver.
 15. No secret, Unit identity, or private credential is embedded in a FOTA or
     SOTA payload.
-16. The static diagram is a target capability superset; Demo Scenario 1.9 owns
+16. The static diagram is a target capability superset; Demo Scenario 2.0 owns
     component presence and absence at each manufacturing, provisioning,
     `G0–G4`, `T1`, and retirement stage.
 17. Validation and Demonstration Units are separate instances of the same
@@ -912,18 +987,21 @@ Architecture 1.4 is aligned only while all of the following remain true:
     relevant Function Team have separately accepted their exact artifacts and
     the integration result.
 21. Aos Service Manager and IAM own each SOTA instance's identity,
-    `AOS_SECRET` and registered permissions. The VDP Credential Broker only
-    performs contract-bounded translation to a short-lived KUKSA JWT and owns
-    no parallel identity or per-service policy database.
+    `AOS_SECRET` and registered permissions. The permanent platform credential
+    boundary is implementation-neutral. Its removable current-release helper
+    is outside the VDP and SOTA artifacts, derives authority only from active
+    IAM state, allows no caller-selected authority and owns no parallel
+    identity or per-Service policy database.
 22. The Factory Image contains one IAM configuration with
     `enablePermissionsHandler: true` in both provisioning and normal modes,
     plus dedicated non-secret `kuksa-jwt` certificate-module/PKCS#11 and
     verifier-preparation wiring, but no pre-populated service permission,
     `AOS_SECRET`, per-Unit signing key, shared static verifier or static
     provider/service token. Provisioning does not toggle the handler; it
-    creates a unique Unit signer and verifier before Broker/KUKSA startup. The
-    first demo performs no live rotation, and the FOTA provider uses a
-    separately bound short-lived platform credential.
+    creates a unique Unit signer and verifier before current-release helper and
+    KUKSA startup. The first demo performs no live Service-signing rotation.
+    Provider-side KUKSA access is trusted OEM platform integration and is not a
+    separate dynamic authorization gate.
 23. Brake Health and Tire Health remain QM-domain maintenance/inspection
     applications with no allocated safety goal, direct driver-HMI claim,
     vehicle-motion authority or safety-critical actuator access.
@@ -953,30 +1031,36 @@ Architecture 1.4 is aligned only while all of the following remain true:
 - selection of CAN, SOME/IP, DDS, TSN, or production ECU hardware;
 - Cloud-side pre-transfer admission against an independent OEM KUKSA
   permission upper bound; the current runtime uses Service Manager/IAM
-  registration and contract-bounded broker translation without a duplicate
+  registration and current-release helper translation without a duplicate
   policy database;
+- dynamic IAM/JWT authorization, per-component attestation, or malicious/
+  substituted-Provider containment for the OEM-qualified VDP; provider-side
+  KUKSA connectivity is trusted platform integration in the first demo;
+- a guessed future native AosCore credential path, API, token lifetime or
+  rotation contract;
 - exact VSS overlay paths, enum values, timing budgets, and retry policy;
 - Cloud or Unit mutation merely by accepting this document.
 
 ## Acceptance Record and Downstream Ownership
 
-High-Level Architecture 1.4 was accepted as the architecture baseline on
-2026-08-19 after the ADR 0011 QM-containment and evidence-backed approval
-decision. Its current downstream review projections are:
+High-Level Architecture 1.5 is a review candidate based on proposed ADR 0013.
+The previously accepted architecture baseline remains 1.4 until the complete
+class-C cascade is reviewed. The proposed downstream review projections are:
 
-1. Demo Scenario 1.9 for audience-visible stage order and component presence;
-2. Architecture Flows 1.8 for detailed lifecycle, runtime, observability, and
+1. Demo Scenario 2.0 for audience-visible stage order and component presence;
+2. Architecture Flows 2.0 for detailed lifecycle, runtime, observability, and
    failure mapping;
-3. System Requirements and Traceability 1.0 for normative system obligations
+3. System Requirements and Traceability 2.0 for normative system obligations
    and gap coverage;
-4. Component Decomposition and Interface Register 1.1 for component ownership,
+4. Component Decomposition and Interface Register 2.0 for component ownership,
    interface identifiers, repository allocation, and provisional requirement
    packages.
 
-Revision 1.4 keeps the 1.3 credential model unchanged. It classifies the two
-functional services as QM, makes Gateway containment authoritative, and makes
-the evidence behind the final OEM approval visible and testable.
+Revision 1.5 replaces the 1.3/1.4 permanent VDP-owned credential model with an
+implementation-neutral platform boundary and a removable current-release
+compatibility overlay. It does not yet accept the downstream scenario,
+requirements, interface or D4 cascade.
 
-The next roadmap boundary is D3 component requirement packages. Acceptance of
-this architecture does not authorize implementation, building, signing, Cloud
-publication, assignment, provisioning, deprovisioning, or Unit mutation.
+Review of this architecture does not authorize implementation, building,
+signing, Cloud publication, assignment, provisioning, deprovisioning or Unit
+mutation.

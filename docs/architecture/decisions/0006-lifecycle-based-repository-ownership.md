@@ -17,8 +17,10 @@ Vehicle platform components are selected and integrated as part of a vehicle
 program. They may be updated after start of production (SOP), but only through
 an OEM-controlled platform or FOTA lifecycle with system-level qualification.
 Examples are the Vehicle Data Provider, KUKSA configuration and trust setup,
-the thin Aos–KUKSA Credential Broker, and provider platform-identity
-integration.
+the removable current-release KUKSA authorization helper, and Provider
+platform-identity integration. Proposed ADR 0013 separates that helper's
+factory/system package from the Vehicle Data Platform FOTA artifact while
+retaining common OEM Platform Team repository ownership.
 
 Cloud-managed services are applications deployed on top of that platform.
 They can be developed, replaced, rolled back, and updated through the Aos
@@ -57,7 +59,7 @@ This repository owns vehicle-computer integration:
 ```text
 aos-vehicle-platform/
 ├── authorization/
-│   └── aos-kuksa/
+│   └── kuksa-current-release-compatibility/
 ├── config/
 │   └── kuksa/
 ├── contracts/
@@ -77,8 +79,9 @@ It will contain:
 - non-secret KUKSA and platform configuration;
 - system-level packaging and lifecycle definitions;
 - provider conformance and integration tests;
-- the thin Aos–KUKSA Credential Broker, provider platform-identity integration,
-  and their negative-test evidence as defined by ADR 0010.
+- the separately packaged removable current-release KUKSA authorization
+  helper, the still-open Provider platform-identity integration, and their
+  negative-test evidence as proposed by ADR 0013.
 
 The CARLA provider is development-only, but it implements the same platform
 role that CAN, SOME/IP, DDS, or OEM-specific providers perform in a production
@@ -207,21 +210,24 @@ Detailed rules:
 
 ## Update Channels and Gates
 
-- Vehicle Data Provider, KUKSA platform configuration, Aos–KUKSA Credential
-  Broker, and provider platform-identity changes follow the OEM platform/FOTA
-  qualification path even if their implementation can technically be packaged
-  as a container.
+- Vehicle Data Provider, KUKSA platform configuration, the separately packaged
+  current-release authorization helper, and Provider platform-identity changes
+  follow OEM Platform Team qualification even though the VDP FOTA and
+  factory/system-integration artifacts retain different replacement and
+  retirement paths.
 - Telemetry consumer changes follow the Aos service/SOTA path and cannot
   silently expand platform permissions or require an image modification.
 - A breaking platform contract change cannot reach an accepted integration
   baseline until a compatible service is qualified or the previous contract
   remains available during migration.
-- ADR 0010 replaces the former standalone AOS-5 Authorization Adapter plan.
-  The broker and provider-identity integration are responsibilities inside the
-  Vehicle Data Platform Component. Aos IAM remains authoritative for SOTA
-  instance identity and registered permissions; their absence does not justify
-  moving a parallel identity/policy store or reusable KUKSA credentials into a
-  functional service.
+- ADR 0010 replaced the former standalone AOS-5 Authorization Adapter plan for
+  the 1.3/1.4 baseline. Proposed ADR 0013 corrects the later component
+  placement: the current helper is a removable factory/system package outside
+  the VDP FOTA payload, while the first-demo Provider path is explicitly
+  trusted OEM platform integration rather than a dynamic authorization gate.
+  Aos IAM remains authoritative for SOTA instance identity and registered
+  permissions; their absence does not justify moving a parallel identity/policy
+  store or reusable KUKSA credentials into a functional Service.
 
 ## Migration Result
 
@@ -260,4 +266,5 @@ plans and fresh-clone evidence remain available through Git history.
 - [ADR 0001: initial repository and artifact boundaries](0001-repository-and-artifact-boundaries.md)
 - [ADR 0005: KUKSA vehicle-data boundary](0005-kuksa-vehicle-data-boundary.md)
 - [ADR 0010: Aos–KUKSA Credential Broker](0010-aos-kuksa-credential-broker.md)
+- [ADR 0013: Current-release KUKSA authorization compatibility](0013-current-release-kuksa-authorization-compatibility.md)
 - [Licensing and copyright policy](../../governance/licensing-and-copyright-policy.md)

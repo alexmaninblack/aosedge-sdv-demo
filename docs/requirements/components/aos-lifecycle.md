@@ -3,18 +3,20 @@
 
 # Aos Lifecycle Component Requirements
 
-- Status: D3 design-reviewed
+- Status: D3 review candidate
 - Package: [`CR-AOS`](../component-decomposition-and-interface-register.md#cr-aos)
-- Version: 0.2
+- Version: 0.3
 - Prepared: 2026-08-21
 - Owner: AosEdge Platform integration / OEM lifecycle qualification
-- Architecture input: [High-Level Architecture 1.4](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 1.9](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 1.8](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 1.0](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 1.1](../component-decomposition-and-interface-register.md)
-- Accepted architecture decisions: [ADR 0004](../../architecture/decisions/0004-single-main-node-for-aos1.md), [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md), [ADR 0010](../../architecture/decisions/0010-aos-kuksa-credential-broker.md) and [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
+- Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
+- Scenario input: [Demo Scenarios 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.0](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.0](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 2.0](../component-decomposition-and-interface-register.md)
+- Accepted architecture decisions: [ADR 0004](../../architecture/decisions/0004-single-main-node-for-aos1.md), [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md), [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md), [ADR 0012](../../architecture/decisions/0012-authorize-running-workloads-not-software-artifacts.md) and [ADR 0013](../../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md)
+- Previous accepted package: Version 0.2
 - Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
+- Accepted D4 publication input: [D4-010.3 Artifact Publication Credential Profile](../../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
 
 ## Purpose
 
@@ -81,6 +83,7 @@ affecting OEM Units.
 | Verification and Demonstration Unit Set separation | Existing qualification proved that corrected topology plus a fresh batch can isolate the Validation Unit, while stale-batch behavior remains hazardous | `PARTIAL`; persistent set configuration, run-scoped membership and complete campaign targeting remain `TARGET / QUALIFY` |
 | Effective target truth | [Stale-batch scope defect](../../qualification/r6-1-validation-set-scope-defect.md) proves Unit Set membership alone is unsafe | `GAP`; pending-recipient reconciliation required before approval |
 | Team decision, Service Provider publication and OEM-authorized approval separation | Accepted architecture and role research | `TARGET / QUALIFY`; current account-specific approval paths are not complete proof |
+| Role-bound technical publication | D4-010.3 contract and installed `aos-signer` 2.0.1 inspection | `DECIDED / IMPLEMENTATION OPEN`; `platform-oem`, `brake-sp1` and `tire-sp2` are distinct pre-bound profiles, each using a local mode-`0600` PKCS#12 in the current compatibility path; publication still requires an authoritative Cloud re-read and grants no Unit approval |
 | Native system/service/crash logging | [R8 native logging research](../../research/demo-foundation/r8-aosedge-native-logging.md) and Hello World log retrieval | Collection, Cloud storage and Unit/Service log API contract `CURRENT`; live permissions, progress/failure visibility, exact retention duration, deletion effect and offline behavior `TARGET / QUALIFY` |
 | Component-to-component dependencies | Official component-manifest contract provides predecessor/version constraints and `runtimeDependencies`; update state includes dependency waiting | `EXTERNAL / CURRENT`; preserve and qualify where used rather than reimplement |
 | Service-to-layer dependencies | Official service-configuration contract provides version-bounded layer dependencies; Cloud prevents deletion of a layer still required by service versions | `EXTERNAL / CURRENT`; preserve and qualify where used rather than reimplement |
@@ -159,7 +162,7 @@ if project-owned executable lifecycle logic is later moved into `CR-AOS`.
 | [Software Delivery API (`IF-LC-005`)](../component-decomposition-and-interface-register.md#if-lc-005) | Out/read plus explicitly confirmed action | Scoped lifecycle reads, final mutations and authoritative post-action re-read | Missing/ambiguous/stale data remains blocked or `UNKNOWN` | AosCloud; dashboard has no parallel lifecycle authority |
 | [Runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006) | Out from AosCore | Install, start, stop, update, rollback, readiness and resource enforcement | Failed candidate/service reports error and preserves qualified recovery state | Service Manager actual state |
 | [Native logs (`IF-OBS-001`)](../component-decomposition-and-interface-register.md#if-obs-001) | Bidirectional | Explicit system/service/crash-log request, status, Cloud-retained result, download and delete | Offline, permission, timeout, retention and deletion states remain factual | AosCloud request and related stored-file state |
-| [IAM permission lookup (`IF-AUTH-002`)](../component-decomposition-and-interface-register.md#if-auth-002) | Out from Aos IAM | `GetPermissions` result for a running SOTA instance | Invalid/stale/unregistered secret returns no permission result | Service Manager registration and Aos IAM |
+| [IAM permission lookup (`IF-AUTH-008`)](../component-decomposition-and-interface-register.md#if-auth-008) | Out from Aos IAM | `GetPermissions` result for a running SOTA instance and fixed `kuksa` resource | Invalid/stale/unregistered secret returns no permission result | Service Manager registration and Aos IAM; `CMP-KAC` only translates the current result |
 
 ## Verification Strategy
 
@@ -315,15 +318,15 @@ an actual-state mismatch after promotion.
 <a id="req-aos-007"></a>
 
 - ID: `REQ-AOS-007`
-- Statement: AosCloud integration shall distinguish Service Provider publication, owning-team acceptance and the final explicitly confirmed OEM-authorized validation/deployment/promotion action, and shall record the active role, owner, exact artifact/metadata identity, requested permissions, effective target, evidence status/freshness and resulting transition.
+- Statement: AosCloud integration shall distinguish technical publication through fixed D4-010.3 profile `platform-oem`, `brake-sp1` or `tire-sp2`, owning-team acceptance and the final explicitly confirmed OEM-authorized validation/deployment/promotion action. It shall record the active role, owner, exact artifact/metadata identity, requested permissions, effective target, evidence status/freshness and resulting transition. `PUBLISHED` is accepted only after an independent authoritative Cloud re-read; an ambiguous publication is reconciled without blind retry and never implies Unit approval.
 - Rationale: Passing tests and dashboard buttons do not own release decisions or authorize OEM Unit mutation by themselves.
-- Parent system requirements: [Team-owned release decisions (`SYS-REL-007`)](../system-requirements-and-traceability.md#sys-rel-007), [OEM-authorized deployment (`SYS-REL-008`)](../system-requirements-and-traceability.md#sys-rel-008) and [evidence-backed approval (`SYS-REL-010`)](../system-requirements-and-traceability.md#sys-rel-010)
+- Parent system requirements: [Team-owned release decisions (`SYS-REL-007`)](../system-requirements-and-traceability.md#sys-rel-007), [OEM-authorized deployment (`SYS-REL-008`)](../system-requirements-and-traceability.md#sys-rel-008), [evidence-backed approval (`SYS-REL-010`)](../system-requirements-and-traceability.md#sys-rel-010) and [role-bound protected publication (`SYS-REL-011`)](../system-requirements-and-traceability.md#sys-rel-011)
 - Architecture flows: [Common release flow (`AF-X-RELEASE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-release), [Brake SOTA (`AF-G2-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-g2-lc) and [Tire SOTA (`AF-TIRE-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-lc)
 - Components: [AosCloud (`CMP-AOS-CLOUD`)](../component-decomposition-and-interface-register.md#cmp-aos-cloud)
 - Interfaces: [Platform approval (`IF-LC-008`)](../component-decomposition-and-interface-register.md#if-lc-008), [Brake approval (`IF-LC-009`)](../component-decomposition-and-interface-register.md#if-lc-009), [Tire approval (`IF-LC-010`)](../component-decomposition-and-interface-register.md#if-lc-010) and [Software Delivery API (`IF-LC-005`)](../component-decomposition-and-interface-register.md#if-lc-005)
 - Verification levels: Contract, Integration, Audit, End-to-end
-- Required evidence: role/permission matrix, complete decision basis, explicit confirmation, immutable Cloud audit result and authoritative post-action re-read
-- State: D3 design-reviewed
+- Required evidence: D4-010.3 profile binding, role/permission matrix, complete decision basis, explicit confirmation, prepared/signed/Cloud identity chain, independent Cloud publication re-read, immutable Cloud audit result and authoritative post-approval re-read
+- State: D3 design-reviewed; D4-010.3 profile/custody/publication-state decision accepted; exact Cloud endpoint/role qualification remains open
 
 Acceptance blocks wrong role, SP-only deployment approval, missing or stale
 evidence, mismatched digests/permissions/target or missing team acceptance.
@@ -555,7 +558,7 @@ to this package requires stable `UT-AOS-*` IDs before implementation begins.
 | Vehicle external-connectivity lifecycle behavior | [`REQ-AOS-002`](#req-aos-002), [`REQ-AOS-009`](#req-aos-009), [`REQ-AOS-015`](#req-aos-015) | Explicit uncertain/offline state and operation-specific reconciliation for the Unit-to-AosCloud portion of the atomic vehicle fault | Integration and same-Unit disconnect/reconnect evidence |
 | Service-tenant resource isolation | [`REQ-AOS-009`](#req-aos-009) | AosCore/Service Manager is the sole in-vehicle quota-enforcement and monitoring authority; no project resource manager | Actual Tire cgroup CPU cap, Cloud-reported usage/status and unaffected Brake/platform evidence |
 
-## D3 Acceptance Record
+## D3 Acceptance Record and Version 0.3 Delta
 
 This 0.1 package was design-reviewed on 2026-08-19 after reviewers agreed that:
 
@@ -573,9 +576,12 @@ This 0.1 package was design-reviewed on 2026-08-19 after reviewers agreed that:
     Brake and the platform graph remain healthy, using external-platform
     contract/integration evidence rather than project-owned scheduler logic.
 
-D3 design review accepts the requirement and verification design as D4 input.
-It does not claim platform-feature implementation or authorize provisioning,
-Cloud mutation, update, rollback, log request, retirement or VM changes.
+Version 0.2 preserved that acceptance. Version 0.3 is a review candidate that
+replaces the retired authorization-interface reference with `IF-AUTH-008` and
+makes clear that Aos IAM remains authoritative while `CMP-KAC` only translates
+its current result. No `REQ-AOS-*` lifecycle semantics change. It does not
+claim platform-feature implementation or authorize provisioning, Cloud
+mutation, update, rollback, log request, retirement or VM changes.
 
 ## Open Issues
 

@@ -20,6 +20,8 @@ they do not replace the current HLA.
 - [ADR 0011: Contain QM Services at the Gateway and Make OEM Approval Evidence-Backed](0011-qm-service-containment-and-evidence-backed-oem-approval.md)
 - [ADR 0012: Authorize Running Workloads, Not Software Artifacts](0012-authorize-running-workloads-not-software-artifacts.md)
 - [ADR 0013: Use a Removable Current-Release KUKSA Authorization Compatibility Layer](0013-current-release-kuksa-authorization-compatibility.md)
+  — proposed class-C boundary correction; not yet an accepted implementation
+  authorization.
 
 The change process and stable-reference rules are defined in
 [Documentation and Requirements Management](../../governance/documentation-and-requirements-management.md).

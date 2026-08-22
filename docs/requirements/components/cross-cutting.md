@@ -3,19 +3,20 @@
 
 # Cross-Cutting Security and Operations Requirements
 
-- Status: D3 design-reviewed
+- Status: D3 review candidate
 - Package: [`CR-CROSS`](../component-decomposition-and-interface-register.md#cr-cross)
-- Version: 0.3
+- Version: 0.4
 - Prepared: 2026-08-21
-- Accepted: 2026-08-20
+- Previous accepted package: Version 0.3
 - Owner: System Architecture with Platform, Gateway, Function and Demo Solution owners
-- Architecture input: [High-Level Architecture 1.4](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 1.9](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 1.8](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 1.0](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 1.1](../component-decomposition-and-interface-register.md)
+- Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
+- Scenario input: [Demo Scenarios 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.0](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.0](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 2.0](../component-decomposition-and-interface-register.md)
 - Accepted D4 VISS trust decision: [D4-006 VISS Trust and Telemetry Profile](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
 - Accepted D4 advisory decision: [D4-008 Typed QM Advisory Profile](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
+- Accepted D4 publication decision: [D4-010.3 Artifact Publication Credential Profile](../../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
 
 ## Purpose
 
@@ -25,7 +26,7 @@ a deployable component, a shared runtime daemon, a second identity provider, a
 parallel policy database or a new lifecycle authority.
 
 The package closes the seams between component owners: Aos service identity to
-KUKSA authorization, per-Unit key custody, provider privilege separation, the
+KUKSA authorization, per-Unit key custody, trusted Provider boundary, the
 complete QM advisory path, native log evidence, run correlation, chronology,
 targeted vehicle external-connectivity continuity and AosCore-enforced service-
 tenant isolation. Each product owner retains its
@@ -37,7 +38,7 @@ acceptance over those owner boundaries.
 | Question | Answer |
 | --- | --- |
 | What this package owns | Cross-component invariants, shared negative matrices and qualification evidence |
-| What this package does not own | Product logic, AosCore/AosCloud or KUKSA source, a broker component, credentials, desired state, functional data or deployment approval |
+| What this package does not own | Product logic, AosCore/AosCloud or KUKSA source, `CMP-KAC`, credentials, desired state, functional data or deployment approval |
 | Intended result | Independent owners can evolve their components without widening authority, leaking secrets, misrepresenting vehicle external-connectivity state or breaking another tenant |
 | Accountable lifecycle owner | System Architecture accepts the shared contract; each component owner implements its allocated part through its existing lifecycle |
 | Primary repository or external source | No product repository; shared contract fixtures and qualification orchestration belong in `aosedge-sdv-demo` |
@@ -48,7 +49,9 @@ acceptance over those owner boundaries.
 
 - one authoritative Aos-to-KUKSA identity and permission chain;
 - per-Unit signer/verifier lifecycle without artifact-baked secrets;
-- separation of privileged provider and functional-service authority;
+- role-bound artifact-publication credential custody without browser,
+  container, VM, artifact or repository exposure;
+- separation of trusted OEM Provider integration and functional-Service authority;
 - defense-in-depth VDP checks plus authoritative Gateway QM containment;
 - native operational-log evidence controls and redaction;
 - consistent run, Unit, source and message correlation across surfaces;
@@ -64,7 +67,7 @@ acceptance over those owner boundaries.
 ### Out of scope
 
 - changing upstream Eclipse KUKSA, AosCore or AosCloud;
-- creating a separate authorization adapter or local per-service policy store;
+- embedding an authorization helper in VDP or creating a local per-service policy store;
 - replacing Aos IAM, Service Manager identity or native permission lifecycle;
 - functional-safety certification, driver HMI, motion authority or a safety
   argument for the QM services;
@@ -88,11 +91,12 @@ acceptance over those owner boundaries.
 | --- | --- | --- | --- |
 | Aos Service Manager and IAM permission lifecycle | External AosEdge platform | Per-instance identity, `AOS_SECRET` and registered `kuksa` permissions are authoritative | No SOTA KUKSA credential is issued |
 | Unmodified Eclipse KUKSA | Platform Team integration / upstream Eclipse | Accepted verifier, audience and path-level authorization | KUKSA access fails closed |
-| Vehicle Data Platform Credential Broker | Platform Team / `CMP-VDP` | Thin IAM translation only; no parallel identity/policy store | Services remain not ready; no static-token fallback |
+| KUKSA Authorization Compatibility helper | Platform Team / `CMP-KAC` | Separate removable fixed-resource IAM translation; no parallel identity/policy store and no telemetry proxy | Services remain not ready; no static-token fallback |
 | Gateway QM advisory handler | Vehicle Gateway owner | Final deny-by-default typed non-safety boundary | Advisory is rejected with factual status |
 | Native Aos logging path | AosCore/AosCloud | Scoped request, status, result, retention and deletion behavior qualified | Evidence is unavailable or explicitly unqualified |
 | Aos Service Manager/container runtime | External AosEdge platform | Enforces and monitors accepted service-instance quotas through its runtime/cgroup mechanisms | Tenant-isolation proof cannot be accepted |
 | Owner service resource contracts | Brake and Tire service owners | D4 freezes independently approved quotas and application overflow/recovery behavior | Combined graph cannot be accepted |
+| Artifact publication profiles | Platform, Function Team release owners and Demo Solution | D4-010.3 fixed `platform-oem`, `brake-sp1` and `tire-sp2` bindings with independent Cloud reconciliation | Sign/publish remains disabled or `UNCERTAIN`; OEM approval is never inferred |
 
 ## Testability Boundary
 
@@ -115,13 +119,14 @@ dependency.
 
 | Interface | Direction | Data or command | Failure behavior | Authority |
 | --- | --- | --- | --- | --- |
-| [`IF-AUTH-001`–`003`](../component-decomposition-and-interface-register.md#if-auth-001) | Service ↔ VDP broker ↔ Aos IAM | Per-instance secret validation, registered permissions and short-lived JWT | Reject without token; no cached/static fallback | Aos service identity and IAM result, bounded by VDP contract |
-| [`IF-AUTH-004`–`006`](../component-decomposition-and-interface-register.md#if-auth-004) | Platform security substrate → VDP/KUKSA | Verifier, protected signing operation and separate provider credential | Not ready; no key bytes or privilege reuse | Per-Unit platform trust and distinct provider identity |
+| [`IF-AUTH-007`–`009`](../component-decomposition-and-interface-register.md#if-auth-007) | Service ↔ `CMP-KAC` ↔ Aos IAM | Named-resource/private-Unix-socket bootstrap, current registered permissions and atomic private-tmpfs short-lived JWT | Reject without token; no cached/static fallback; analytics never receives `AOS_SECRET` | Aos Service identity and current IAM result; mount/group/peer checks are defense in depth |
+| [`IF-AUTH-010`](../component-decomposition-and-interface-register.md#if-auth-010) | Platform security substrate → `CMP-KAC`/KUKSA | Permission handler, protected signing operation and public verifier preparation | Not ready; no key bytes or privilege reuse | Per-Unit platform trust |
 | [`IF-ADV-001`](../component-decomposition-and-interface-register.md#if-adv-001), [`IF-TIRE-002`](../component-decomposition-and-interface-register.md#if-tire-002), [`IF-ADV-002`–`005`](../component-decomposition-and-interface-register.md#if-adv-002) | QM services → KUKSA → VDP → VISS → Gateway | Typed Brake/Tire maintenance advisory and factual result | Fail closed at every boundary; Gateway is final authority | IAM/KUKSA scope, VDP contract, then Gateway QM policy |
 | [`IF-OBS-001`](../component-decomposition-and-interface-register.md#if-obs-001) | Software Delivery Dashboard ↔ AosCloud | Native log request/status/result/file | Explicit unavailable/failed state and bounded temporary cleanup | AosCloud-retained request and file state |
 | [`IF-DEMO-001`](../component-decomposition-and-interface-register.md#if-demo-001) | Orchestrator → local actors | Run/role/source binding and session boundary | Ambiguity blocks the affected operation | Local run manifest plus authoritative Unit state |
 | [`IF-FUNC-001`](../component-decomposition-and-interface-register.md#if-func-001), [`IF-TIRE-003`](../component-decomposition-and-interface-register.md#if-tire-003) | In-vehicle service → functional backend | Correlated bounded messages with original event time | Bounded queue/retry or explicit loss/degraded state | Function Team data contract |
 | [`IF-LC-006`](../component-decomposition-and-interface-register.md#if-lc-006) | AosCore → VDP and services | Runtime lifecycle, readiness and resource enforcement | Explicit failed/degraded instance state | Unit actual state |
+| [`IF-LC-001`](../component-decomposition-and-interface-register.md#if-lc-001), [`IF-LC-002`](../component-decomposition-and-interface-register.md#if-lc-002), [`IF-LC-007`](../component-decomposition-and-interface-register.md#if-lc-007) | Platform/Function release views → common native publication helper → AosCloud | Exact prepared candidate and fixed role-bound publication profile | Reject caller-selected profile/path/URL or candidate mismatch; reconcile ambiguity without blind retry | Technical publication identity and authoritative AosCloud re-read; no OEM Unit approval |
 
 ## Verification Strategy
 
@@ -139,7 +144,8 @@ dependency.
 | --- | --- | --- | --- |
 | [Native identity and least privilege (`REQ-CROSS-001`)](#req-cross-001) | Preserve one Aos-authoritative service identity and exact KUKSA permissions | Unit, Contract, Integration | D3 design-reviewed |
 | [Per-Unit KUKSA trust lifecycle (`REQ-CROSS-002`)](#req-cross-002) | Protect one signer per Unit provisioning lifecycle, prepare only its public verifier and bound JWT issue/refresh/retirement | Unit, Component, Contract, Integration | D4-010.1 decided; implementation open |
-| [Separate provider authority (`REQ-CROSS-003`)](#req-cross-003) | Never grant privileged provider rights through a functional service identity | Unit, Contract, Integration | D3 design-reviewed |
+| [Trusted Provider and Service-authority separation (`REQ-CROSS-010`)](#req-cross-010) | Keep trusted OEM Provider integration unreachable through functional Service credentials | Contract, Integration, Review | D3 review candidate |
+| [Role-bound protected artifact publication (`REQ-CROSS-011`)](#req-cross-011) | Keep Platform, Brake and Tire technical-publication credentials non-interchangeable and outside product/runtime boundaries | Unit, Contract, Integration, Audit | D4-010.3 decided; implementation open |
 | [End-to-end QM advisory containment (`REQ-CROSS-004`)](#req-cross-004) | Reject every unauthorized or unsafe advisory at layered boundaries | Unit, Contract, Integration, End-to-end | D3 design-reviewed |
 | [Controlled native-log evidence (`REQ-CROSS-005`)](#req-cross-005) | Present useful scoped logs without secrets, false retention or a second archive | Unit, Contract, Integration | D3 design-reviewed |
 | [Cross-surface run correlation (`REQ-CROSS-006`)](#req-cross-006) | Bind facts to the exact run, role, Unit and source without global history | Unit, Contract, Integration, End-to-end | D3 design-reviewed |
@@ -154,17 +160,17 @@ dependency.
 <a id="req-cross-001"></a>
 
 - ID: `REQ-CROSS-001`
-- Statement: The accepted component graph shall derive each running SOTA instance's KUKSA authority from its current Aos identity and registered path/mode permissions, narrow that result to the installed VDP contract, and issue no broader or reusable authority.
-- Parents: [least-privilege identities (`SYS-SEC-001`)](../system-requirements-and-traceability.md#sys-sec-001) and [native-IAM-derived credentials (`SYS-SEC-006`)](../system-requirements-and-traceability.md#sys-sec-006)
+- Statement: The accepted component graph shall derive each running SOTA instance's KUKSA authority from its current Aos identity and registered path/mode permissions through fixed-resource `CMP-KAC` bootstrap, and issue no caller-selected, broader or reusable authority.
+- Parents: [least-privilege identities (`SYS-SEC-001`)](../system-requirements-and-traceability.md#sys-sec-001) and [current-release KUKSA authorization compatibility (`SYS-SEC-008`)](../system-requirements-and-traceability.md#sys-sec-008)
 - Flow: [Aos-to-KUKSA credential flow (`AF-X-AUTH`)](../../architecture/demo-scenario-architecture-flows.md#af-x-auth)
-- Components: [`CMP-AOS-CORE`](../component-decomposition-and-interface-register.md#cmp-aos-core), [`CMP-VDP`](../component-decomposition-and-interface-register.md#cmp-vdp), [`CMP-KUKSA`](../component-decomposition-and-interface-register.md#cmp-kuksa), [`CMP-BHS`](../component-decomposition-and-interface-register.md#cmp-bhs), [`CMP-TIRE`](../component-decomposition-and-interface-register.md#cmp-tire)
-- Interfaces: `IF-AUTH-001` through `IF-AUTH-003`
+- Components: [`CMP-AOS-CORE`](../component-decomposition-and-interface-register.md#cmp-aos-core), [`CMP-KAC`](../component-decomposition-and-interface-register.md#cmp-kac), [`CMP-KUKSA`](../component-decomposition-and-interface-register.md#cmp-kuksa), [`CMP-BHS`](../component-decomposition-and-interface-register.md#cmp-bhs), [`CMP-TIRE`](../component-decomposition-and-interface-register.md#cmp-tire)
+- Interfaces: `IF-AUTH-007` through `IF-AUTH-009`
 - State: D3 design-reviewed; target integration
 
 #### Acceptance criteria
 
-1. Exact registered Brake and Tire read/write permissions produce only the corresponding short-lived scopes.
-2. Invalid/stale secret, unknown mode, malformed path, contract excess, removed permission or cross-service identity produces no token.
+1. Exact registered Brake and Tire mode `r` produces only `read:<path>` and `rw` only `actuate:<path>`; `w`, wildcards and provider actions produce no token.
+2. Invalid/stale secret, caller-selected authority, unknown mode, malformed path, removed permission or cross-Service identity produces no token; no partial trimming is allowed.
 3. No component stores a parallel service identity/policy database or persists/logs the secret or JWT.
 
 ### Per-Unit KUKSA trust lifecycle
@@ -174,9 +180,11 @@ dependency.
 - ID: `REQ-CROSS-002`
 - Statement: Successful provisioning shall give each Unit one unique
   non-exported RSA signer in the dedicated `kuksa-jwt` PKCS#11 token and shall
-  atomically prepare only its public verifier before the Broker and KUKSA
-  start. Broker JWTs shall be short-lived `RS256` tokens with fixed audience
-  `kuksa.val`, bounded expiry and path permissions; the pinned KUKSA is not
+  atomically prepare only its public verifier before `CMP-KAC` and KUKSA
+  start. Helper JWTs shall be `RS256` tokens with fixed audience `kuksa.val`,
+  300-second expiry, renewal at 180 seconds and exact path permissions; every
+  successful renewal shall reconnect/recreate KUKSA subscriptions with the
+  replacement token. The pinned KUKSA is not
   claimed to enforce `iss`. Permission removal shall prevent renewal, the
   first demo shall not perform live rotation, the next provisioning lifecycle
   shall create a new signer, and R0 shall destroy the retired signer with the
@@ -185,15 +193,15 @@ dependency.
   or log.
 - Parent: [KUKSA verifier and token lifetime (`SYS-SEC-004`)](../system-requirements-and-traceability.md#sys-sec-004)
 - Flow: [`AF-X-AUTH`](../../architecture/demo-scenario-architecture-flows.md#af-x-auth)
-- Components: `CMP-FACTORY`, `CMP-AOS-CORE`, `CMP-VDP`, `CMP-KUKSA`
-- Interfaces: `IF-AUTH-004`, `IF-AUTH-005`
+- Components: `CMP-FACTORY`, `CMP-AOS-CORE`, `CMP-KAC`, `CMP-KUKSA`
+- Interface: `IF-AUTH-010`
 - State: D4-010.1 decided; implementation and live qualification remain open
 
 #### Acceptance criteria
 
 1. VU and DU expose different public-key fingerprints; same-Unit JWTs pass and
    cross-Unit JWTs fail.
-2. Missing/malformed preparation state prevents Broker/KUKSA startup; expired,
+2. Missing/malformed preparation state prevents `CMP-KAC`/KUKSA startup; expired,
    wrong-audience, wrong-signature, excessive-scope and non-renewable
    credentials fail without data/advisory side effects.
 3. Reprovisioning changes the signer, and deprovision plus reconciled R0
@@ -202,23 +210,73 @@ dependency.
 4. Artifact, filesystem, process, command, environment and log inspection
    finds no private key, shared static verifier or reusable token.
 
-### Separate provider authority
+### Retired: Dynamic Provider authority
 
 <a id="req-cross-003"></a>
 
 - ID: `REQ-CROSS-003`
-- Statement: The privileged provider inside `CMP-VDP` shall use a separately bound short-lived platform credential limited to accepted KUKSA `provide`/`create` paths; no SOTA service credential shall acquire, inherit or renew provider authority.
-- Parent: [separate provider authority (`SYS-SEC-005`)](../system-requirements-and-traceability.md#sys-sec-005)
+- Disposition: Retired by Version 0.4 and replaced by
+  [`REQ-CROSS-010`](#req-cross-010). Dynamic Provider IAM/JWT and malicious or
+  substituted Provider containment are outside the first-demo claim.
+- Historical parent: [`SYS-SEC-005`](../system-requirements-and-traceability.md#sys-sec-005)
+
+### Trusted Provider and Service-authority separation
+
+<a id="req-cross-010"></a>
+
+- ID: `REQ-CROSS-010`
+- Statement: The VDP Provider shall be treated as an OEM-qualified trusted
+  platform integration with a fixed bounded KUKSA-side connection mechanism.
+  Brake and Tire Service bootstrap/JWT material shall never grant, inherit or
+  emulate Provider publication authority. The first demo shall explicitly
+  avoid claims of dynamic Provider IAM/JWT, per-component attestation or
+  containment of a malicious/substituted Provider.
+- Parents: [least-privilege identities (`SYS-SEC-001`)](../system-requirements-and-traceability.md#sys-sec-001) and [fail-closed advisory security (`SYS-SEC-003`)](../system-requirements-and-traceability.md#sys-sec-003)
 - Flow: [`AF-X-AUTH`](../../architecture/demo-scenario-architecture-flows.md#af-x-auth)
-- Components: `CMP-AOS-CORE`, `CMP-VDP`, `CMP-KUKSA`
-- Interface: `IF-AUTH-006`
-- State: D3 design-reviewed; exact FOTA-component identity binding remains a D4 architecture/qualification gate
+- Components: `CMP-VDP`, `CMP-KUKSA`, `CMP-KAC`, `CMP-BHS`, `CMP-TIRE`
+- State: D3 review candidate
 
 #### Acceptance criteria
 
-1. The accepted provider identity obtains only its declared platform paths and loses them on revocation/expiry.
-2. Brake/Tire identities and invalid provider bindings cannot obtain `provide`/`create` authority.
-3. Identity-service unavailability yields explicit not-ready state and never a static-token fallback.
+1. The exact Provider/configuration is qualified on both Unit roles against the accepted VDP data/advisory contract.
+2. Brake/Tire `AOS_SECRET`, private JWT and bootstrap resources cannot be reused as Provider authority.
+3. Documentation and dashboard evidence state the trusted-Provider assumption and do not claim malicious-Provider containment.
+
+### Role-bound protected artifact publication
+
+<a id="req-cross-011"></a>
+
+- ID: `REQ-CROSS-011`
+- Statement: Current-demo technical artifact publication shall use exactly
+  three non-interchangeable profiles: `platform-oem` for VDP v1-v3 FOTA,
+  `brake-sp1` for Brake Health v1-v3 SOTA and `tire-sp2` for Tire Health v1.0
+  SOTA. One session-scoped non-root native helper may implement them, but each
+  dashboard surface shall be pre-bound to one profile and shall never supply a
+  profile, credential path, arbitrary candidate path or Cloud URL. The current
+  `aos-signer` 2.0.1 path shall keep one mode-`0600` local passwordless PKCS#12
+  per profile outside Git, browser, containers, VMs, artifacts and logs. Only
+  an independent AosCloud re-read may establish `PUBLISHED`; ambiguity shall
+  become `UNCERTAIN` without blind retry, and publication shall never perform
+  OEM deployment approval.
+- Parent: [role-bound protected publication (`SYS-REL-011`)](../system-requirements-and-traceability.md#sys-rel-011)
+- Flow: [`AF-X-RELEASE`](../../architecture/demo-scenario-architecture-flows.md#af-x-release)
+- Components: `CMP-SW-DASH`, `CMP-BRAKE-DASH`, `CMP-TIRE-DASH`, `CMP-ORCH`,
+  `CMP-AOS-CLOUD`
+- Interfaces: `IF-LC-001`, `IF-LC-002`, `IF-LC-007`
+- Executable contract: [Artifact Publication Credential Profile 1.0.0](../../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
+- State: D4-010.3 decided; exact helper request/result transport and Cloud
+  reconciliation lookup remain implementation gates
+
+#### Acceptance criteria
+
+1. Wrong profile, artifact type, candidate identity, caller-selected path/URL
+   or missing local custody prerequisite fails before signing.
+2. No private key, PKCS#12, raw tool output or credential selector reaches a
+   dashboard, container, VM, artifact, repository or log.
+3. `PUBLISHED` binds the exact prepared/signed/Cloud identity chain only after
+   authoritative re-read; timeout/interruption never causes blind retry.
+4. Successful technical publication exposes no Unit target or approval side
+   effect and cannot replace owning-team acceptance or OEM authorization.
 
 ### End-to-end QM advisory containment
 
@@ -230,7 +288,7 @@ dependency.
 - Flow: [QM advisory containment (`AF-X-QM`)](../../architecture/demo-scenario-architecture-flows.md#af-x-qm)
 - Components: `CMP-BHS`, `CMP-TIRE`, `CMP-KUKSA`, `CMP-VDP`, `CMP-VISS`, `CMP-GW-ADV`, `CMP-ENG-DASH`
 - Interfaces: `IF-ADV-001` through `IF-ADV-005` and `IF-TIRE-002`
-- Executable contract: [Typed QM Advisory Profile 1.0.0](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
+- Executable contract: [Typed QM Advisory Profile 1.0.1](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - State: D3 design-reviewed; D4-008 contract accepted, implementation and qualification open
 
 #### Acceptance criteria
@@ -348,9 +406,10 @@ repositories and are composed by the cross-package contract/integration gate.
 
 | Cross requirement | Reused unit obligations |
 | --- | --- |
-| `REQ-CROSS-001` | [`UT-VDP-004`](vehicle-data-platform.md#ut-vdp-004), [`UT-BHS-003`](brake-health-service.md#ut-bhs-003), [`UT-TIRE-003`](tire-health-service.md#ut-tire-003) |
-| `REQ-CROSS-002` | [`UT-FACTORY-009`](factory-substrate.md#ut-factory-009), [`UT-VDP-005`](vehicle-data-platform.md#ut-vdp-005) |
-| `REQ-CROSS-003` | [`UT-VDP-006`](vehicle-data-platform.md#ut-vdp-006) |
+| `REQ-CROSS-001` | [`UT-KAC-001`–`006`](kuksa-authorization-compatibility.md#ut-kac-001), [`UT-BHS-013`](brake-health-service.md#ut-bhs-013), [`UT-TIRE-013`](tire-health-service.md#ut-tire-013) |
+| `REQ-CROSS-002` | [`UT-FACTORY-009`](factory-substrate.md#ut-factory-009), [`UT-KAC-003`–`007`](kuksa-authorization-compatibility.md#ut-kac-003) |
+| `REQ-CROSS-010` | [`UT-VDP-008`](vehicle-data-platform.md#ut-vdp-008), [`UT-KAC-010`](kuksa-authorization-compatibility.md#ut-kac-010), [`UT-BHS-001`](brake-health-service.md#ut-bhs-001), [`UT-TIRE-001`](tire-health-service.md#ut-tire-001) |
+| `REQ-CROSS-011` | [`UT-DEMO-015`](demo-orchestration.md#ut-demo-015), [`UT-DEMO-017`](demo-orchestration.md#ut-demo-017), [`UT-BRAKE-CLOUD-003`](brake-health-cloud.md#ut-brake-cloud-003), [`UT-BRAKE-CLOUD-014`](brake-health-cloud.md#ut-brake-cloud-014), [`UT-TIRE-CLOUD-003`](tire-health-cloud.md#ut-tire-cloud-003), [`UT-TIRE-CLOUD-010`](tire-health-cloud.md#ut-tire-cloud-010) |
 | `REQ-CROSS-004` | [`UT-VDP-003`](vehicle-data-platform.md#ut-vdp-003), [`UT-GATEWAY-010`](vehicle-gateway.md#ut-gateway-010), [`UT-GATEWAY-011`](vehicle-gateway.md#ut-gateway-011), [`UT-BHS-007`](brake-health-service.md#ut-bhs-007), [`UT-TIRE-007`](tire-health-service.md#ut-tire-007) |
 | `REQ-CROSS-005` | [`UT-DEMO-011`](demo-orchestration.md#ut-demo-011), [`UT-BHS-010`](brake-health-service.md#ut-bhs-010), [`UT-TIRE-010`](tire-health-service.md#ut-tire-010) |
 | `REQ-CROSS-006` | [`UT-DEMO-001`](demo-orchestration.md#ut-demo-001), [`UT-GATEWAY-003`](vehicle-gateway.md#ut-gateway-003), [`UT-BRAKE-CLOUD-009`](brake-health-cloud.md#ut-brake-cloud-009), [`UT-TIRE-CLOUD-007`](tire-health-cloud.md#ut-tire-cloud-007) |
@@ -362,9 +421,10 @@ repositories and are composed by the cross-package contract/integration gate.
 
 | Requirement | Unit proof | Contract proof | Integration proof | End-to-end proof |
 | --- | --- | --- | --- | --- |
-| `REQ-CROSS-001` | Reused owner obligations | `IF-AUTH-001`–`003` conformance | Real Service Manager/IAM, both services and KUKSA | `CR-E2E` G2/T1 authorization |
+| `REQ-CROSS-001` | Reused owner obligations | `IF-AUTH-007`–`009` conformance | Real Service Manager/IAM, `CMP-KAC`, both services and KUKSA | `CR-E2E` G2/T1 authorization |
 | `REQ-CROSS-002` | Reused owner obligations | JWT/trust/key-custody profile | Independent VU/DU signer/verifier lifecycle | `CR-E2E` issue/expiry/revocation |
-| `REQ-CROSS-003` | Reused owner obligation | Provider identity/scope contract | Real provider issue/renew/revoke and SOTA negatives | `CR-E2E` G1/G3 readiness |
+| `REQ-CROSS-010` | Reused owner obligations | Trusted Provider/Service separation contract | Real trusted Provider connection plus SOTA credential-reuse negatives | `CR-E2E` G1/G3 readiness under the declared trust assumption |
+| `REQ-CROSS-011` | Reused owner obligations | D4-010.3 profile/custody/helper conformance | Three fixed profile paths, credential-exclusion proof and authoritative Cloud reconciliation | `AT-E2E-003` publication/approval separation |
 | `REQ-CROSS-004` | Reused owner obligations | Full advisory positive/negative matrix | Real KUKSA→VDP→Gateway chain with bypass injection | G4/T1 accepted and rejected advisories |
 | `REQ-CROSS-005` | Reused owner obligations | Log API/redaction/retention contract | Scoped native request/result/download/delete | Operational evidence view |
 | `REQ-CROSS-006` | Reused owner obligations | Correlation-field and cleanup contracts | Sequential VU/reset/DU plus both backends | Cross-surface evidence and R0 |
@@ -376,9 +436,10 @@ repositories and are composed by the cross-package contract/integration gate.
 
 | Concern | Required invariant | Primary enforcement | Independent proof |
 | --- | --- | --- | --- |
-| Identity | One Aos identity/permission authority | Service Manager/IAM + thin VDP broker | Exact-scope and cross-service negatives |
+| Identity | One Aos identity/permission authority | Service Manager/IAM + removable `CMP-KAC` translation | Fixed-resource, exact-scope and cross-Service negatives |
 | Secret custody | No artifact-baked or exposed private material | Per-Unit platform-protected operation | Image/package/process/log scans |
-| Provider privilege | Functional identity never becomes provider | Separate platform credential | Excess-scope and identity-substitution negatives |
+| Artifact publication | Fixed non-interchangeable Platform/Brake/Tire profiles; current local PKCS#12 readable only by the native helper; publication is not approval | D4-010.3 helper boundary plus AosCloud authoritative re-read | Wrong-profile/path/URL/candidate negatives, custody scan, interruption reconciliation and no-approval-side-effect proof |
+| Provider boundary | Functional identity never becomes Provider authority | Trusted OEM Provider integration separated from Service bootstrap/JWT | Credential-reuse negatives and explicit first-demo trust claim |
 | QM containment | No arbitrary or motion/safety operation | Gateway final boundary | Upstream-bypass negative matrix |
 | Logs/privacy | Native scoped evidence only | AosCore/AosCloud + emitting owners | Redaction, retention and bounded-download qualification |
 | Correlation | Exact run/role/Unit/source binding | Orchestrator and producer contracts | Cross-Unit/cross-team collision cases |
@@ -399,9 +460,10 @@ repositories and are composed by the cross-package contract/integration gate.
 
 | Gate | Impact | Owner |
 | --- | --- | --- |
-| Exact Aos IAM `GetPermissions` request/response and `kuksa` mode mapping | `REQ-CROSS-001` contract | Platform Team + Aos IAM owner |
-| Implement and qualify the accepted D4-010.1 per-Unit signer/verifier preparation, startup, renewal-denial, cross-Unit rejection and overlay-retirement lifecycle | `REQ-CROSS-002` | Platform Team + Aos security owner |
-| FOTA-component provider identity binding | `REQ-CROSS-003` | Platform Team + Aos architecture |
+| Implement and qualify the accepted D4-027.1–.6 fixed-resource IAM lookup, non-widening permission mapping, private JWT delivery/timing and D4-010.1 per-Unit signer/verifier lifecycle | `REQ-CROSS-001`, `REQ-CROSS-002` | Platform Team + Aos IAM/security owner |
+| Implement and qualify the complete accepted D4-027.7/.8 trustworthy-time, retry, rate, queue, process-resource and redaction envelope | `REQ-CROSS-001`, `REQ-CROSS-002` | Platform Team + Aos security owner |
+| Exact trusted Provider connection/configuration qualification | `REQ-CROSS-010`; dynamic Provider IAM/JWT is not a first-demo gate | Platform Team |
+| Exact common publication-helper request/result transport and AosCloud reconciliation lookup | `REQ-CROSS-011`; D4-010.3 profile/custody/state semantics are accepted | Demo Solution + Platform/Function Team release owners + AosCloud integration |
 | Typed Brake/Tire targets, values, correlation, freshness, rate and replay bounds | `REQ-CROSS-004` | Gateway + Platform + Function Teams |
 | Native log API roles, retention, deletion, offline and redaction behavior | `REQ-CROSS-005` | AosCloud integration + emitting owners |
 | Shared correlation and timestamp field schemas | `REQ-CROSS-006`, `007` | Demo Solution + Gateway + Function Teams |
@@ -409,7 +471,7 @@ repositories and are composed by the cross-package contract/integration gate.
 | Exact Brake/Tire service-metadata-to-AosCore quota mapping, CPU units and pass/fail tolerance, Cloud usage/status or alert API, prepared Tire in-instance load trigger and Brake/platform unaffected thresholds | `REQ-CROSS-009` | AosCore integration + both Function Teams + Demo Solution |
 | Versioned shared fixture catalogue and conformance harness layout | All contract proofs | System Architecture + repository owners |
 
-## Package Acceptance
+## Package Acceptance and Version 0.4 Delta
 
 The package is ready for D3 acceptance when:
 
@@ -427,7 +489,13 @@ The package is ready for D3 acceptance when:
 7. open D4 values are visible and no target behavior is presented as current;
 8. the documentation quality gate passes.
 
-Acceptance authorizes D4 shared-contract design only. It does not authorize
+Version 0.4 is a review candidate that moves Service authorization from VDP to
+`CMP-KAC`, replaces retired authorization interfaces, retires dynamic Provider
+authorization, adds `REQ-CROSS-010`, and records the accepted D4-010.3
+role-bound artifact-publication invariant as `REQ-CROSS-011`. All QM,
+observability, connectivity, chronology and resource-isolation requirements
+remain unchanged. Acceptance
+authorizes D4 shared-contract design only. It does not authorize
 implementation, repository creation, signing, AosCloud calls, VM operations,
 provisioning, CARLA control or data deletion.
 
@@ -443,8 +511,8 @@ only starts and stops a prepared bounded in-instance load; it never sets or
 enforces quotas. Mac-local backends and aggregate multi-service-per-provider
 quota enforcement are explicitly outside the claim.
 
-This acceptance closes D3 design review for `CR-CROSS` and authorizes only D4
-shared-contract design. It does not authorize implementation, signing,
+That acceptance remains the Version 0.3 baseline. Version 0.4 requires explicit
+review before it replaces it and does not authorize implementation, signing,
 AosCloud mutation, VM operations, provisioning, CARLA control or data deletion.
 
 ## Change Rules

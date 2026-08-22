@@ -36,7 +36,8 @@ The project owner confirmed the following on 2026-08-22:
 3. retire materially changed identifiers rather than silently reusing them;
    and
 4. do not define a future native AosCore interface until its released contract
-   is inspected, while keeping the VDP Provider gate independent and open.
+   is inspected, and treat the VDP Provider as an OEM-qualified trusted
+   platform component rather than adding a dynamic Provider IAM/JWT gate.
 
 ## Non-Negotiable Boundaries
 
@@ -47,41 +48,40 @@ The project owner confirmed the following on 2026-08-22:
   signing payload.
 - KUKSA remains unmodified and enforces supported JWT paths and operations.
 - Services connect directly to KUKSA after credential preparation.
-- The VDP Provider credential is a separate open design gate.
+- Provider-side KUKSA access is fixed OEM platform integration. The first demo
+  adds no dynamic Provider IAM/JWT, per-component attestation, or
+  malicious/substituted-Provider containment claim.
 - No future native interface, path or rotation behavior is guessed.
 - No real secret, JWT, private key or confidential Platform Team material may
   enter Git, logs, fixtures or dashboard evidence.
 
-## Reserved Identifier Allocations
+## Canonical Identifier Allocations
 
-The following identifiers are reserved by the accepted cascade decision but
-are not yet normative component or requirement definitions. Their anchors live
-temporarily in this active plan so references remain deterministic during the
-class-C transition. C3 moves each anchor and definition to its canonical owner
-in the same change that removes it from this section.
+The following identifiers have now been allocated to their canonical owners by
+C3. This table is navigation only and defines no competing anchors.
 
 | Reserved identifier | Planned canonical owner and meaning |
 | --- | --- |
-| <a id="cmp-kac"></a>`CMP-KAC` | Component register — transitional current-release KUKSA authorization compatibility helper |
-| <a id="cr-kac"></a>`CR-KAC` | Component package index — helper requirements and verification package |
+| [`CMP-KAC`](../../requirements/component-decomposition-and-interface-register.md#cmp-kac) | Component register — transitional current-release KUKSA authorization compatibility helper |
+| [`CR-KAC`](../../requirements/component-decomposition-and-interface-register.md#cr-kac) | Component package index — helper requirements and verification package |
 | Security successor after `SYS-SEC-006` | System requirements — current-release compatibility authority and lifecycle; its accepted successor ID is activated together with canonical allocation in C3 |
-| <a id="if-auth-007"></a>`IF-AUTH-007` | Interface register — Service bootstrap to helper |
-| <a id="if-auth-008"></a>`IF-AUTH-008` | Interface register — helper to Aos IAM `GetPermissions` |
-| <a id="if-auth-009"></a>`IF-AUTH-009` | Interface register — helper rejection or Service-private JWT delivery |
-| <a id="if-auth-010"></a>`IF-AUTH-010` | Interface register — current-release signer and verifier preparation |
-| <a id="req-bhs-013"></a>`REQ-BHS-013` | Brake Health package — fixed-resource bootstrap and private JWT consumption |
-| <a id="req-tire-013"></a>`REQ-TIRE-013` | Tire Health package — fixed-resource bootstrap and private JWT consumption |
+| [`IF-AUTH-007`](../../requirements/component-decomposition-and-interface-register.md#if-auth-007) | Interface register — Service bootstrap to helper |
+| [`IF-AUTH-008`](../../requirements/component-decomposition-and-interface-register.md#if-auth-008) | Interface register — helper to Aos IAM `GetPermissions` |
+| [`IF-AUTH-009`](../../requirements/component-decomposition-and-interface-register.md#if-auth-009) | Interface register — helper rejection or Service-private JWT delivery |
+| [`IF-AUTH-010`](../../requirements/component-decomposition-and-interface-register.md#if-auth-010) | Interface register — current-release signer and verifier preparation |
+| [`REQ-BHS-013`](../../requirements/components/brake-health-service.md#req-bhs-013) | Brake Health package — fixed-resource bootstrap and private JWT consumption |
+| [`REQ-TIRE-013`](../../requirements/components/tire-health-service.md#req-tire-013) | Tire Health package — fixed-resource bootstrap and private JWT consumption |
 
 ## Phase Status
 
 | Phase | Scope | State |
 | --- | --- | --- |
 | C0 | Protect baseline, classify change and establish branch | Complete |
-| C1 | ADR, Draw.io, HLA and repository boundaries | Not started |
-| C2 | Demo Scenario and Architecture Flows | Not started |
-| C3 | System requirements, components, interfaces and CR packages | Not started |
-| C4 | D4 decisions, executable contracts and acceptance | Not started |
-| C5 | Reader navigation, tests, stale-reference audit and quality gates | Not started |
+| C1 | ADR, Draw.io, HLA and repository boundaries | Complete — reviewed 2026-08-22 |
+| C2 | Demo Scenario and Architecture Flows | Complete — reviewed 2026-08-22 |
+| C3 | System requirements, components, interfaces and CR packages | Complete — documentation gate green 2026-08-22 |
+| C4 | D4 decisions, executable contracts and acceptance | In progress — register boundary updated; executable contract open |
+| C5 | Reader navigation, tests, stale-reference audit and quality gates | In progress — indexes updated and documentation gate green; full audit pending C4 |
 | C6 | Final review, ADR acceptance, merge and active-plan cleanup | Not started |
 | T1 | Current-release detailed technical design | Blocked by accepted C1–C4 baseline |
 | I1 | Source implementation and isolated unit tests | Not authorized |
@@ -109,11 +109,29 @@ HLA or requirement changes begin.
 2. Remove the permanent Credential Broker from the VDP boundary.
 3. Show the permanent implementation-neutral platform credential boundary.
 4. Show `CMP-KAC` only as a dashed/current-release compatibility overlay.
-5. Preserve unmodified KUKSA and the separate open VDP Provider lane.
+5. Preserve unmodified KUKSA and record the VDP Provider as trusted OEM
+   platform integration, separate from SOTA Service authorization.
 6. Update HLA, repository boundaries and architecture navigation.
 7. Mark ADR 0010 superseded only after ADR 0013 and the cascade are accepted.
 
 Exit: no active target-architecture text assigns Service JWT issuance to VDP.
+
+Review snapshot, 2026-08-22: the Draw.io source and matching PNG, HLA 1.5,
+repository boundaries, architecture navigation and ADR 0005/0006 revalidation
+are prepared. Downstream scenario, flow, requirement, package and research
+documents intentionally still declare accepted HLA 1.4 input until C2–C5.
+The documentation gate therefore reports only the expected stale HLA-input
+labels at this checkpoint; no identifier, local-link, Mermaid, Draw.io XML or
+formatting defect is present. The project owner reviewed and accepted C1 on
+2026-08-22.
+
+Post-review clarification, 2026-08-22: the project owner accepted the VDP as
+an OEM-qualified trusted platform component for the first demo. HLA 1.5, ADR
+0012/0013 and repository boundaries now close the former Provider identity
+gate by explicit scope and trust assumption. No Draw.io topology change is
+required because the diagram already shows the Provider inside the trusted
+Vehicle Data Platform Component; the change removes a textual open gate rather
+than adding or moving a component.
 
 ## C2 — Audience and Runtime Behavior
 
@@ -129,6 +147,18 @@ Exit: no active target-architecture text assigns Service JWT issuance to VDP.
 
 Exit: HLA, scenario and sequence diagrams describe one runtime model.
 
+Review snapshot, 2026-08-22: Demo Scenario 2.0 and Architecture Flows 2.0 are
+prepared as review candidates. They preserve the accepted M0–R0 product and
+release narrative while replacing the VDP-owned broker actor with the
+separately packaged current-release helper, direct Service-to-KUKSA access and
+explicit renewal, failure, reboot, stop, unregistration, removal and offline
+semantics. The project owner additionally closed the former Provider gate by
+treating VDP as an OEM-qualified trusted platform component; C3/C4 retire the
+dynamic Provider-credential obligations and retain fixed integration evidence.
+The documentation gate reports only expected downstream/index
+version-label mismatches while C3–C5 remain pending; no Mermaid, identifier,
+local-link, Draw.io XML or formatting defect is reported.
+
 ## C3 — Normative Allocation
 
 ### Stable identifier transitions
@@ -141,18 +171,28 @@ Exit: HLA, scenario and sequence diagrams describe one runtime model.
 | `IF-AUTH-003` | `IF-AUTH-009` — helper rejection or Service-private JWT delivery |
 | `IF-AUTH-004` | Covered by direct Service-to-KUKSA access plus `IF-AUTH-009/010` |
 | `IF-AUTH-005` | `IF-AUTH-010` — temporary signer and verifier preparation |
+| `SYS-SEC-005` | Retire dynamic Provider-credential obligation; replace it with the explicit OEM-trusted platform assumption and fixed Provider integration evidence |
+| `IF-AUTH-006` | Retire without a dynamic-authorization successor; Provider-side KUKSA connectivity is internal Platform Team integration |
 | `REQ-VDP-006` | Remove Service JWT responsibility from `CR-VDP`; allocate it to `CR-KAC` |
+| `REQ-VDP-007` | Retire VDP-owned signing/verifier responsibility; allocate it to `CR-KAC` and the Factory substrate |
+| `REQ-VDP-008` | Retire short-lived Provider-credential lifecycle; retain only trusted Provider connection/configuration qualification in `CR-VDP` |
+| `REQ-VDP-011` | New trusted OEM Provider integration and qualification obligation; no dynamic Provider IAM/JWT in the first demo |
 | `REQ-BHS-003` | `REQ-BHS-013` — fixed-resource bootstrap and private credential consumption |
 | `REQ-TIRE-003` | `REQ-TIRE-013` — fixed-resource bootstrap and private credential consumption |
 
-Retain `SYS-SEC-004` with current-release scope, `SYS-SEC-005` and
-`IF-AUTH-006` as the independent Provider gate, and the accepted QM/OEM policy
-requirements.
+Retain `SYS-SEC-004` with current-release scope and the accepted QM/OEM policy
+requirements. Retire `SYS-SEC-005`, `IF-AUTH-006` and `REQ-VDP-008` without a
+dynamic-authorization successor: Provider connectivity becomes a trusted
+Platform Team integration obligation, while Service credentials never grant
+provider authority.
 
 ### Package changes
 
 - add transitional component `CMP-KAC` and component package `CR-KAC`;
 - remove IAM lookup and Service JWT issuance from `CR-VDP`;
+- replace the former dynamic Provider-credential package with an explicit
+  OEM-trusted Provider integration assumption plus fixed KUKSA connection and
+  FOTA qualification evidence in `CR-VDP`;
 - narrow Brake/Tire credential integration so applications do not choose
   authority or construct claims;
 - update `CR-FACTORY` for current-release helper packaging, clean reboot and
@@ -170,8 +210,11 @@ Exit: each new obligation has one component owner and verification allocation.
 1. Preserve `D4-009` as superseded history and introduce `D4-027` for the
    current-release compatibility contract.
 2. Add deferred `D4-X04` for the future native AosCore JWT delivery assessment.
-3. Keep `D4-010.2` open for VDP Provider authority and clarify the temporary
-   current-release scope of signer/verifier decisions.
+3. Resolve the first-demo scope through the explicit OEM-trusted VDP
+   assumption, defer the generic `D4-010.2` native workload target, and clarify
+   that D4-010.1 signer/verifier decisions apply to SOTA Service JWT
+   compatibility while the separate D4-010.3 contract governs host-side
+   artifact-publication credentials and grants no runtime KUKSA authority.
 4. Create `contracts/kuksa-current-demo-authorization/` with:
 
    - request, response and error schemas;
@@ -181,8 +224,30 @@ Exit: each new obligation has one component owner and verification allocation.
    - TTL, renewal, restart, stop and removal behavior; and
    - credential-location and logging/redaction rules.
 
-5. Update active machine-readable references to D4-009 without changing
+5. Update active machine-readable references from D4-009 to D4-027 without changing
    unrelated QM advisory semantics.
+
+Progress snapshot, 2026-08-22: `D4-027.1` is accepted. It freezes the separate
+`aos-kuksa-auth-compat` package/unit, dedicated unprivileged `aos-kac:aos-kac`
+process, provisioning/IAM/signer startup boundary, absence of VDP and global
+Service Manager dependencies, and independently removable package seam.
+`D4-027.2` is also accepted: one host Unix socket, platform-owned
+`kuksa-auth-client` resource, defense-in-depth group/peer checks,
+bootstrap-only `AOS_SECRET` use, atomic mode-`0400` JWT delivery in a
+Service-private tmpfs and deletion on stop/replacement/removal/reboot. Wire
+schemas are accepted in `D4-027.3`: strict one-request/one-response JSON,
+`status`/`issue`, implicit resource `kuksa`, fixed response/error enums and
+KAC-generated correlation. D4-027.4/.5 additionally freeze non-widening
+`r -> read` and `rw -> actuate` mapping, reject `w`/wildcards/provider actions,
+and set a 300-second TTL with renewal at 180 seconds plus mandatory KUKSA
+reconnect/subscription recreation. D4-027.6 now also freezes the protected
+per-Unit signer, exact verifier-preparation service/runtime path, mandatory
+KUKSA verifier argument, reboot reconstruction, cross-Unit rejection and R0
+retirement. D4-027.7 adds the one-sync-per-boot time gate, 10-second stability,
+UTC/boottime split, same-boot anchor, offline continuation and fail-closed
+five-second discontinuity handling. D4-027.8 closes exact size, concurrency,
+rate, timeout, retry, process-resource and redaction limits. D4-027 is complete;
+no source implementation is authorized by documentation alone.
 
 Exit: executable contracts and negative fixtures exist before source coding.
 
@@ -220,15 +285,22 @@ Exit: `main` contains one accepted baseline with no competing active model.
 After the architecture and normative boundaries are accepted, freeze a
 separate executable technical design covering:
 
-- helper process owner, packaging and startup ordering;
-- local transport and peer isolation;
-- exact request/response/error formats;
-- permission translation and supported KUKSA claims;
-- signer/verifier preparation, TTL, renewal margin and trustworthy time;
+- helper process owner, packaging and top-level startup ordering — accepted in
+  `D4-027.1`; T1 shall materialize, not reopen, that boundary;
+- local transport, peer isolation and private credential delivery — accepted
+  in `D4-027.2`; T1 shall materialize, not reopen, that boundary;
+- exact request/response/error formats — accepted in `D4-027.3` and
+  materialized under `contracts/kuksa-current-demo-authorization/`;
+- permission translation and supported KUKSA claims — accepted in D4-027.4;
+- TTL, renewal margin and reconnect behavior — accepted in D4-027.5;
+- signer/verifier preparation — accepted in D4-027.6 and to be materialized,
+  not reopened;
+- trustworthy time — accepted in D4-027.7 and to be materialized, not reopened;
+- operational bounds, retry and diagnostics — accepted in D4-027.8 and to be
+  materialized, not reopened;
 - Service-private volatile credential path and file permissions;
 - restart, reboot, stop, removal and offline behavior;
-- network allowlists and rate/queue bounds;
-- safe logging and diagnostics; and
+- the accepted network/process bounds and safe diagnostics;
 - deletion seams for migration to native AosCore support.
 
 The accepted technical decisions move into `CR-KAC`, the D4 register and
@@ -242,7 +314,8 @@ Implementation begins only after T1 review. The current-release sequence is:
 1. implement and isolate-test `CMP-KAC`;
 2. implement shared Brake/Tire compatibility bootstrap code outside analytics;
 3. integrate helper packaging into the OEM Demo Factory Image;
-4. close the independent VDP Provider credential gate;
+4. integrate and qualify the trusted Provider-side KUKSA connection as part of
+   the Platform Team FOTA package, without a dynamic IAM/JWT subsystem;
 5. integrate Services with unmodified KUKSA; and
 6. run contract, integration, security-negative and E2E acceptance.
 

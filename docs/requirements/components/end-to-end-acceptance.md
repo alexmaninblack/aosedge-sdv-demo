@@ -3,19 +3,21 @@
 
 # End-to-End Acceptance Requirements
 
-- Status: D3 design-reviewed
+- Status: D3 review candidate
 - Package: [`CR-E2E`](../component-decomposition-and-interface-register.md#cr-e2e)
-- Version: 0.4
+- Version: 0.5
 - Prepared: 2026-08-21
 - Owner: System Acceptance with Platform, Function, Gateway and Demo Solution teams
-- Architecture input: [High-Level Architecture 1.4](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 1.9](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 1.8](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 1.0](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 1.1](../component-decomposition-and-interface-register.md)
+- Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
+- Scenario input: [Demo Scenarios 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.0](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.0](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 2.0](../component-decomposition-and-interface-register.md)
+- Previous accepted package: Version 0.4
 - Accepted D4 source decision: [D4-005 Exclusive Live-Source Assignment](../../../contracts/exclusive-live-source-assignment/exclusive-live-source-assignment.v1.json)
 - Accepted D4 VISS decision: [D4-006 VISS Trust and Telemetry Profile](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
 - Accepted D4 advisory decision: [D4-008 Typed QM Advisory Profile](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
+- Accepted D4 publication decision: [D4-010.3 Artifact Publication Credential Profile](../../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
 - Implementation, signing, Cloud, Unit, VM or CARLA mutation authorized: no
 
 ## Purpose
@@ -84,7 +86,7 @@ bindings and the scope of claims that may be shown to an audience.
 | Validation and Demonstration lanes | AosCloud/OEM + Demo Solution | Fresh Units, exact disjoint Unit Set membership and current authoritative state | Every Unit-affecting action is blocked |
 | One live CARLA/Gateway source | Simulator/Gateway owner | Exclusive attach, detach, canonical reset and new generation are provable | Next Unit role cannot attach |
 | Authoritative Cloud and functional surfaces | AosCloud and Function Teams | Current scoped APIs and honest unavailable/stale states | Claim remains unproved or explicitly unavailable |
-| Native KUKSA/Aos security and runtime | Platform/AosEdge | Accepted identity, permission, signer, provider and quota mechanisms | Service readiness or affected proof fails closed |
+| Native KUKSA/Aos security and runtime | Platform/AosEdge | Accepted identity/permission, `CMP-KAC`, signer/verifier, trusted Provider integration and quota mechanisms | Service readiness or affected proof fails closed |
 | R0 qualified destructive operations | AosCloud integration + Demo Solution | Exact selectors, preview, ordering, reconciliation and recovery | Records/overlays are preserved for reconciliation; next run is blocked |
 
 ## Testability Boundary
@@ -106,7 +108,7 @@ parallel desired state or become an in-vehicle dependency.
 | [`IF-VEH-001`–`006`](../component-decomposition-and-interface-register.md#if-veh-001) | CARLA ↔ Gateway/VISS/Dashboard | Vehicle profile, applied control, VSS telemetry, source generation and factual state | Safe stop, unavailable/degraded state or stage block | CARLA/Gateway actual state |
 | [`IF-DATA-001`–`002`](../component-decomposition-and-interface-register.md#if-data-001), [`IF-TIRE-001`](../component-decomposition-and-interface-register.md#if-tire-001) | VDP/KUKSA → services | Versioned read contracts and data quality | Service not ready or `NOT_EVALUATED`; no fabricated normal state | Installed VDP contract and KUKSA |
 | [`IF-ADV-001`–`005`](../component-decomposition-and-interface-register.md#if-adv-001), [`IF-TIRE-002`](../component-decomposition-and-interface-register.md#if-tire-002) | Services → KUKSA/VDP/VISS/Gateway | Typed QM maintenance advisories and factual status | Fail closed; Gateway remains final authority | IAM/KUKSA, VDP defense in depth and Gateway policy |
-| [`IF-AUTH-001`–`006`](../component-decomposition-and-interface-register.md#if-auth-001) | Services/VDP ↔ Aos IAM/KUKSA | Per-instance identity, scoped JWT, verifier and separate provider authority | No credential/readiness; no static fallback | Aos IAM plus installed platform contract |
+| [`IF-AUTH-007`–`010`](../component-decomposition-and-interface-register.md#if-auth-007) | Services ↔ `CMP-KAC` ↔ Aos IAM/KUKSA security substrate | Fixed-resource bootstrap, private volatile scoped JWT and verifier/signer lifecycle | No credential/readiness; no cached/static fallback | Aos IAM result plus per-Unit platform trust; Provider remains a separate trusted OEM integration |
 | [`IF-FUNC-001`–`002`](../component-decomposition-and-interface-register.md#if-func-001), [`IF-TIRE-003`–`004`](../component-decomposition-and-interface-register.md#if-tire-003) | Services ↔ functional Cloud products | Bounded, versioned, idempotent results and exact cleanup | Queue/degraded/loss state is explicit | Owning Function Team contract |
 | [`IF-LC-001`–`010`](../component-decomposition-and-interface-register.md#if-lc-001) | Teams/Dashboard/AosCloud/AosCore | Publication, approval, desired/actual state, targeting, runtime and quota enforcement | Mutation blocked or reconciled from authoritative state | Owning team decision, OEM identity and AosCloud/AosCore state |
 | [`IF-OBS-001`](../component-decomposition-and-interface-register.md#if-obs-001) | Dashboard ↔ AosCloud | Native log request/status/result/file | Explicit unavailable/failed/expired state; no second archive | AosCloud-retained state |
@@ -206,10 +208,10 @@ native log archive.
 <a id="req-e2e-003"></a>
 ### Authoritative release governance
 
-- Statement: Every FOTA/SOTA stage shall bind the exact candidate and metadata, effective recipients, validation evidence, owning-team acceptance and active authorized OEM role; AosCloud shall record and execute the explicit decision, the dashboard shall re-read authoritative state, and the identical accepted digest shall reach DU only after VU acceptance.
-- Parents: [`SYS-REL-002`–`010`](../system-requirements-and-traceability.md#sys-rel-002) and [`SYS-OBS-002`](../system-requirements-and-traceability.md#sys-obs-002), [`SYS-OBS-006`](../system-requirements-and-traceability.md#sys-obs-006)
+- Statement: Every FOTA/SOTA stage shall bind the exact candidate and metadata, effective recipients, validation evidence, owning-team acceptance and active authorized OEM role. Technical publication shall use only the release surface's fixed D4-010.3 profile — `platform-oem`, `brake-sp1` or `tire-sp2` — and shall reach `PUBLISHED` only after independent AosCloud re-read; ambiguity shall enter `UNCERTAIN` and shall not be blindly retried. AosCloud shall separately record and execute the explicit OEM decision, and the identical accepted digest shall reach DU only after VU acceptance.
+- Parents: [`SYS-REL-002`–`011`](../system-requirements-and-traceability.md#sys-rel-002) and [`SYS-OBS-002`](../system-requirements-and-traceability.md#sys-obs-002), [`SYS-OBS-006`](../system-requirements-and-traceability.md#sys-obs-006)
 - Flows: [`AF-X-RELEASE`](../../architecture/demo-scenario-architecture-flows.md#af-x-release), all stage lifecycle flows
-- Acceptance: stale/unprovable recipients, wrong role, missing owner, changed digest, incomplete/stale evidence or post-action mismatch blocks progression. Existing AosEdge component-to-component and service-to-layer dependency mechanisms remain accepted platform capabilities. Only native Cloud admission of a SOTA service against a required FOTA Vehicle Data Platform Component version remains visibly deferred until an implementing release is qualified; no local substitute is accepted.
+- Acceptance: wrong publication profile/candidate/type/path/URL, local credential custody failure, missing independent publication re-read, stale/unprovable recipients, wrong OEM role, missing owner, changed digest, incomplete/stale evidence or post-action mismatch blocks progression. Technical publication never counts as deployment approval. Existing AosEdge component-to-component and service-to-layer dependency mechanisms remain accepted platform capabilities. Only native Cloud admission of a SOTA service against a required FOTA Vehicle Data Platform Component version remains visibly deferred until an implementing release is qualified; no local substitute is accepted.
 
 <a id="req-e2e-004"></a>
 ### G1 platform data capability
@@ -255,10 +257,10 @@ native log archive.
 <a id="req-e2e-009"></a>
 ### Cross-stage security and truthful evidence
 
-- Statement: Across all stages, accepted evidence shall prove native Aos-derived least-privilege KUKSA authority, protected per-Unit signing, separate provider authority, Gateway-final QM containment, native scoped logs, exact run/Unit/source correlation and distinct source/local/receipt/synchronization chronology without secrets, false retention, false latency or widened claims.
-- Parents: [`SYS-SEC-001`](../system-requirements-and-traceability.md#sys-sec-001), [`SYS-SEC-003`–`007`](../system-requirements-and-traceability.md#sys-sec-003), [`SYS-OBS-001`–`006`](../system-requirements-and-traceability.md#sys-obs-001), [`SYS-TIM-002`](../system-requirements-and-traceability.md#sys-tim-002)
+- Statement: Across all stages, accepted evidence shall prove native Aos-derived least-privilege KUKSA authority through fixed-resource `CMP-KAC` bootstrap, private volatile short-lived JWT delivery, protected per-Unit signing, stop/removal/reboot cleanup, trusted OEM Provider separation, Gateway-final QM containment, native scoped logs, exact run/Unit/source correlation and distinct source/local/receipt/synchronization chronology without secrets, false retention, false latency or widened claims. The first demo shall not claim dynamic Provider IAM/JWT or malicious/substituted-Provider containment.
+- Parents: [`SYS-SEC-001`](../system-requirements-and-traceability.md#sys-sec-001), [`SYS-SEC-003`](../system-requirements-and-traceability.md#sys-sec-003), [`SYS-SEC-004`](../system-requirements-and-traceability.md#sys-sec-004), [`SYS-SEC-007`](../system-requirements-and-traceability.md#sys-sec-007), [`SYS-SEC-008`](../system-requirements-and-traceability.md#sys-sec-008), [`SYS-OBS-001`–`006`](../system-requirements-and-traceability.md#sys-obs-001), [`SYS-TIM-002`](../system-requirements-and-traceability.md#sys-tim-002)
 - Flows: `AF-X-AUTH`, `AF-X-QM`, `AF-X-OBS`, `AF-X-SOURCE`
-- Acceptance: invalid/stale/excess identities and unsafe advisory requests fail without side effects; dashboard evidence is authoritative or explicitly unavailable/stale/deferred.
+- Acceptance: invalid/stale/cross-Service identities, caller-selected authority, expiry, permission removal and unsafe advisory requests fail without side effects; reboot, Service stop/unregistration and R0 remove volatile authorization state; trusted Provider evidence is separate and bounded to the declared first-demo assumption; dashboard evidence is authoritative or explicitly unavailable/stale/deferred.
 
 <a id="req-e2e-010"></a>
 ### R0 retirement and next-run readiness
@@ -284,11 +286,11 @@ native log archive.
 | `SYS-ID-001..004` | `REQ-E2E-002`, `010`, `011` |
 | `SYS-SRC-001..004` | `REQ-E2E-002`, `009`, `011` |
 | `SYS-CTRL-001..003` | `REQ-E2E-002`, `009` |
-| `SYS-REL-001..010` | `REQ-E2E-001`, `003`, `004..008`, `011`; `SYS-REL-006` remains deferred |
+| `SYS-REL-001..011` | `REQ-E2E-001`, `003`, `004..008`, `011`; `SYS-REL-006` remains deferred |
 | `SYS-VDP-001..005` | `REQ-E2E-002`, `004`, `006`, `007`, `008` |
 | active Brake requirements `SYS-BHS-002..006` excluding retired `SYS-BHS-001` | `REQ-E2E-005`, `006`, `007` |
 | `SYS-TIRE-001..006` | `REQ-E2E-008` |
-| active Security requirements `SYS-SEC-001`, `003..007` | `REQ-E2E-005`, `007`, `008`, `009` |
+| active Security requirements `SYS-SEC-001`, `003`, `004`, `007`, `008` | `REQ-E2E-005`, `007`, `008`, `009` |
 | `SYS-OBS-001..007` | `REQ-E2E-002`, `003`, `007`, `009`, `011` |
 | `SYS-TIM-002` | `REQ-E2E-007`, `009` |
 | `SYS-RES-001` | `REQ-E2E-008` |
@@ -303,13 +305,13 @@ remain linkable historical records and are not active acceptance inputs.
 | --- | --- | --- | --- |
 | <a id="at-e2e-001"></a>`AT-E2E-001` — M0 preflight | `REQ-E2E-001` | Controlled qualification + live inspection | Exact clean factory/candidate identities and two fresh overlays; mismatch blocks |
 | <a id="at-e2e-002"></a>`AT-E2E-002` — M1/G0 baseline | `REQ-E2E-002`, `009` | Live demo | Fresh identities/sets, empty feature graph and one honest working vehicle source |
-| <a id="at-e2e-003"></a>`AT-E2E-003` — Common release gate | `REQ-E2E-003`, `011` | Live positive + controlled negatives | Exact recipients/roles/evidence; VU first; identical DU promotion; deferred feature labelled honestly |
+| <a id="at-e2e-003"></a>`AT-E2E-003` — Common release gate | `REQ-E2E-003`, `011` | Live positive + controlled negatives | Exact fixed publication profile/candidate/digests, independent Cloud publication re-read, exact recipients/roles/evidence, separate OEM approval, VU first, identical DU promotion and deferred feature labelled honestly |
 | <a id="at-e2e-004"></a>`AT-E2E-004` — G1 platform capability | `REQ-E2E-004` | Live demo | VDP v1 data reaches KUKSA with factual quality and accepted graph state |
 | <a id="at-e2e-005"></a>`AT-E2E-005` — G2 Brake v1 | `REQ-E2E-005` | Live demo | Bounded event window reaches Function Team 1 product independently |
 | <a id="at-e2e-006"></a>`AT-E2E-006` — G3 joint evolution | `REQ-E2E-003`, `006` | Live demo + controlled compatibility negatives | Backward-compatible VDP v2 and deterministic derived-only Brake v2 behavior |
 | <a id="at-e2e-007"></a>`AT-E2E-007` — G4 advisory/offline | `REQ-E2E-007`, `009` | Live demo | Typed advisory, atomic external disconnect, local continuity and same-Unit convergence |
 | <a id="at-e2e-008"></a>`AT-E2E-008` — T1 peer/isolation | `REQ-E2E-008`, `009` | Live demo | Independent Tire SOTA 2 plus AosCore cap with unaffected Brake/platform |
-| <a id="at-e2e-009"></a>`AT-E2E-009` — Cross-stage negative matrix | `REQ-E2E-009`, `011` | Controlled qualification | Identity, permission, QM, stale-evidence and unsafe-action cases fail closed |
+| <a id="at-e2e-009"></a>`AT-E2E-009` — Cross-stage negative matrix | `REQ-E2E-009`, `011` | Controlled qualification | Fixed-resource bootstrap, identity/permission, expiry, stop/removal/reboot, cross-Service, trusted-Provider separation, QM, stale-evidence and unsafe-action cases fail closed |
 | <a id="at-e2e-010"></a>`AT-E2E-010` — R0 retirement | `REQ-E2E-010`, `011` | Live positive retirement | Cloud identities retired, functional/local state clean, factory unchanged, next run unblocked |
 | <a id="at-e2e-011"></a>`AT-E2E-011` — Interruption/reconciliation | `REQ-E2E-003`, `010`, `011` | Disposable controlled qualification | Every uncertain external mutation is reconciled without blind retry or unsafe cleanup |
 
@@ -334,7 +336,7 @@ remain linkable historical records and are not active acceptance inputs.
 | Concern | Acceptance invariant | Verification |
 | --- | --- | --- |
 | Authority | Team acceptance, OEM authorization, AosCloud execution and dashboard presentation remain distinct | Role/audit matrix and stage preflight |
-| Security | No secret or widened permission enters evidence; Gateway remains final QM boundary | Contract negatives and `AT-E2E-009` |
+| Security | No secret, caller-selected authority or widened permission enters evidence; `CMP-KAC` state is volatile; Provider trust remains explicit; Gateway remains final QM boundary | Contract negatives and `AT-E2E-009` |
 | Resources | AosCore alone caps the actual Tire service; Brake/platform remain healthy | `AT-E2E-008` |
 | Connectivity | Only vehicle external connectivity is faulted; presenter and in-vehicle paths remain available | `AT-E2E-007` |
 | Chronology | Source, local decision, backend receipt and synchronization times remain distinct; no Cloud-duration KPI | Message/evidence inspection |
@@ -357,6 +359,7 @@ remain linkable historical records and are not active acceptance inputs.
 | Gate | Impact | Owner |
 | --- | --- | --- |
 | Exact stage entry/exit assertions and machine-readable evidence dossier schema | Every `AT-E2E-*` verdict | System Acceptance + Demo Solution |
+| Exact common-helper request/result transport and authoritative AosCloud publication-reconciliation lookup | Implements accepted D4-010.3 profile/custody/state semantics for `AT-E2E-003`; decision itself is closed | Demo Solution + Platform/Function Team release owners + AosCloud integration |
 | In-motion VDP/service update continuity: allowed readiness gap, recovery timeout, unchanged actor/generation/control ownership and uninterrupted Gateway/VISS evidence | `REQ-E2E-003..008` and `E2E-D3` | Platform + Function Teams + Gateway + Demo Solution |
 | Qualify the bounded offline mechanism, authoritative post-204 state, retired-credential reconnect test and exact stop/deprovision/delete order required by the corrected offline-only R0 design | `REQ-E2E-010`, `AT-E2E-010` and `REQ-DEMO-013` | AosCloud integration + Demo Solution |
 | Exact division between live audience steps and controlled qualification evidence | Presentation length, safety and repeatability | Demo owner + all engineering owners |
@@ -366,7 +369,7 @@ remain linkable historical records and are not active acceptance inputs.
 | Sanitized qualification dossier retention/location and confidential-evidence handling | Auditability without demo-run history or secret leakage | System Acceptance + Security |
 | Final presenter duration and optional-step policy | Which accepted proofs fit one audience session without weakening claims | Demo owner |
 
-## Package Acceptance
+## Package Acceptance and Version 0.5 Delta
 
 The package was accepted for D3 design review on 2026-08-21 after reviewers
 confirmed that:
@@ -387,7 +390,10 @@ confirmed that:
    explicit authorization; and
 8. the documentation quality gate passes.
 
-D3 acceptance authorizes only detailed D4 acceptance-contract design. It
+Version 0.5 is a review candidate that replaces retired authorization
+interfaces, adds `CMP-KAC` bootstrap/reboot/removal proof and records the
+trusted OEM Provider assumption. Stage order and functional acceptance claims
+are unchanged. D3 acceptance authorizes only detailed D4 acceptance-contract design. It
 will not authorize implementation, signing, Cloud calls, VM operations,
 provisioning, deployment, CARLA control, retirement or data deletion.
 

@@ -104,22 +104,41 @@ active and registered. Service stop, removal or unregistration prevents new
 issuance and renewal; an already issued self-contained JWT expires within its
 bounded lifetime.
 
+D4-027.4/.5 fix that boundary for the current demo: IAM `r` maps only to
+KUKSA `read`, IAM `rw` only to KUKSA `actuate`, and IAM `w`, wildcard or
+provider authority fails closed. JWT lifetime is 300 seconds and renewal starts
+at 180 seconds through a fresh IAM lookup. Replacement requires the Service to
+reconnect and recreate KUKSA subscriptions; terminal denial disconnects the
+cooperating Service immediately, while no instant cryptographic revocation is
+claimed for a previously issued token before its signed expiry.
+
 VM reboot does not restore an authorization cache as authoritative state. The
 helper restarts empty and reconstructs authority from current Service Manager
 and Aos IAM state. Already authorized local operation may continue without
 Unit-to-Cloud connectivity within the accepted credential lifetime and renewal
 model, but no Cloud connection is required in the local data path.
 
-### Keep the VDP Provider lane separate
+### Treat the VDP Provider as trusted OEM platform integration
 
 The VDP remains responsible for VISS ingestion, validation, normalization,
 signal selection, KUKSA Provider behavior and the typed outbound QM advisory
 path. It does not issue Service JWTs.
 
-Authentication and authorization of the trusted VDP Provider's KUKSA
-`provide/create` operations remain a separate open decision under
-`IF-AUTH-006` and `D4-010.2`. Closing the SOTA Service compatibility design does
-not silently close that Provider gate.
+For the first demo, the VDP is part of the OEM-qualified trusted platform. Its
+provider-side KUKSA `provide/create` access is fixed platform integration
+delivered and validated through the Platform Team's signed, evidence-backed
+FOTA lifecycle. The project adds no dynamic Provider IAM/JWT exchange,
+per-component attestation, or isolation between untrusted providers. Any
+required fixed credential, protected local endpoint, or equivalent KUKSA
+configuration remains an implementation detail of that trusted platform path,
+not a second authorization architecture.
+
+Service JWTs never grant provider authority. The versioned VDP contract,
+signal validation, outbound allowlist and authoritative Vehicle Gateway policy
+remain in force, but the demo does not claim containment of a malicious or
+substituted VDP. C3 retires `IF-AUTH-006`, `SYS-SEC-005` and `REQ-VDP-008` as
+dynamic Provider-authorization obligations; C4 records `D4-010.2` as closed by
+this explicit trust assumption rather than by a new credential mechanism.
 
 ### Migrate only to a released native contract
 
@@ -148,8 +167,16 @@ and does not invent a provisional native API.
 - A temporary trusted component is added to the OEM Demo Factory Image and
   must receive explicit requirements, contracts, tests and retirement
   evidence.
-- Current-release signer, verifier, transport, JWT profile, TTL, renewal and
-  private credential-location details must be frozen before implementation.
+- D4-027 is fully frozen. D4-027.2 has
+  frozen the local Unix-socket, named-resource and private-tmpfs boundary;
+  D4-027.3 the strict wire schemas; D4-027.4 the permission/JWT profile; and
+  D4-027.5 the 300/180-second lifetime and renewal boundary; and D4-027.6 the
+  protected per-Unit signer, exact verifier-preparation service/runtime path,
+  mandatory KUKSA verifier argument and fail-closed reboot lifecycle; and
+  D4-027.7 the one-sync-per-boot trustworthy-time gate, UTC/boottime split,
+  ordinary offline continuation and clock-discontinuity recovery; and
+  D4-027.8 the exact frame, permission/path/JWT, concurrency, backlog, rate,
+  timeout, retry, process-resource and redaction envelope.
 - The architecture remains compatible with native platform evolution without
   claiming that compatibility will require no Service changes.
 
@@ -169,15 +196,17 @@ and does not invent a provisional native API.
 This proposed ADR does not authorize implementation. The active change plan
 and D4 must still freeze:
 
-- local Service-to-helper transport and peer isolation;
-- exact request, response and error schemas;
-- pinned KUKSA JWT claims and permission representation;
-- TTL and renewal margin;
-- Unit-local signer and KUKSA verifier preparation;
-- Service-private volatile credential path and permissions;
-- network allowlists, rate and queue bounds;
-- failure, restart, offline and trustworthy-time behavior; and
-- the independent VDP Provider access mechanism.
+- executable evidence that the Provider path remains fixed OEM-trusted
+  platform integration and cannot be obtained through a Service JWT.
+
+Accepted D4-027.1 through D4-027.8 inputs are not open gates: the helper is a
+separate unprivileged removable package; approved Services reach only its
+private Unix socket through a platform-owned named resource; the compatibility
+bootstrap alone reads `AOS_SECRET`; and the JWT exists only in that Service's
+private volatile tmpfs. The strict versioned protocol exposes only `status`,
+`issue`, fixed response/error enums and KAC-generated correlation. IAM modes
+map only as `r -> read` and `rw -> actuate`; JWTs live 300 seconds, renew at
+180 seconds and require KUKSA reconnect/subscription recreation.
 
 ## Acceptance Conditions
 
@@ -189,4 +218,3 @@ temporary compatibility overlay.
 
 Acceptance of this ADR does not authorize source implementation, image builds,
 artifact signing, provisioning, deprovisioning or Cloud mutation.
-

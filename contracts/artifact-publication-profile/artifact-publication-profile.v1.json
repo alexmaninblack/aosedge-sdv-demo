@@ -1,0 +1,127 @@
+{
+  "$schema": "./artifact-publication-profile.schema.json",
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "contractId": "aosedge-demo-artifact-publication-profile",
+  "contractVersion": "1.0.0",
+  "decision": "D4-010.3",
+  "scope": "CURRENT_DEMO",
+  "toolBaseline": {
+    "tool": "aos-signer",
+    "version": "2.0.1",
+    "configurationSchemaVersion": 2,
+    "credentialRelationship": "SAME_PKCS12_PER_PROFILE_FOR_SIGN_AND_MTLS_UPLOAD",
+    "pkcs12PasswordMode": "EMPTY_PASSWORD",
+    "nativeKeychainOperation": false,
+    "nativePkcs11Operation": false,
+    "privateKeyLoadedIntoProcessMemory": true
+  },
+  "credentialCustody": {
+    "credentialCount": 3,
+    "localDirectory": "~/.aos/security",
+    "requiredFileMode": "0600",
+    "gitTracked": false,
+    "callerPathAllowed": false,
+    "allowedConsumers": ["SESSION_SCOPED_NATIVE_HELPER"],
+    "forbiddenConsumers": [
+      "GIT",
+      "BROWSER",
+      "DASHBOARD_BACKEND",
+      "DOCKER_IMAGE",
+      "DOCKER_CONTAINER",
+      "DOCKER_VOLUME",
+      "VM_IMAGE",
+      "FOTA_ARTIFACT",
+      "SOTA_ARTIFACT",
+      "LOG",
+      "JOURNAL",
+      "UI_RESULT"
+    ],
+    "futureHardening": "Replace file-backed PKCS12 use with Keychain or PKCS11 non-exportable operations when a qualified Aos signing client supports them without changing the dashboard-to-helper contract."
+  },
+  "profiles": [
+    {
+      "profileId": "platform-oem",
+      "owner": "Platform Team",
+      "cloudRole": "OEM",
+      "lifecycle": "FOTA",
+      "allowedItemTypes": ["component"],
+      "allowedCandidateIds": ["VDP_V1", "VDP_V2", "VDP_V3"],
+      "approvalAuthority": false
+    },
+    {
+      "profileId": "brake-sp1",
+      "owner": "Function Team 1",
+      "cloudRole": "SERVICE_PROVIDER_1",
+      "lifecycle": "SOTA_1",
+      "allowedItemTypes": ["service"],
+      "allowedCandidateIds": ["BRAKE_HEALTH_V1", "BRAKE_HEALTH_V2", "BRAKE_HEALTH_V3"],
+      "approvalAuthority": false
+    },
+    {
+      "profileId": "tire-sp2",
+      "owner": "Function Team 2",
+      "cloudRole": "SERVICE_PROVIDER_2",
+      "lifecycle": "SOTA_2",
+      "allowedItemTypes": ["service"],
+      "allowedCandidateIds": ["TIRE_HEALTH_V1_0"],
+      "approvalAuthority": false
+    }
+  ],
+  "helperBoundary": {
+    "implementation": "ONE_COMMON_NATIVE_HELPER",
+    "lifetime": "ONE_AUTHENTICATED_DEMO_SESSION",
+    "runsAsRoot": false,
+    "persistentDaemon": false,
+    "callerMaySelectProfile": false,
+    "callerMaySelectCredentialPath": false,
+    "callerMaySelectCloudUrl": false,
+    "profileBinding": "Each authenticated dashboard surface is pre-bound to one profile; no generic role selector exists in the request.",
+    "inputBinding": [
+      "candidateId",
+      "preparedArtifactDigest",
+      "preparedMetadataDigest",
+      "catalogueVersion",
+      "explicitConfirmationId",
+      "correlationId"
+    ]
+  },
+  "operation": {
+    "states": ["PREPARED", "SIGNING", "SIGNED", "PUBLISHING", "PUBLISHED", "FAILED", "UNCERTAIN"],
+    "presentationTimeBuild": false,
+    "digestReverification": true,
+    "publishedRequiresAuthoritativeCloudRead": true,
+    "lostResultState": "UNCERTAIN",
+    "blindRetryAllowed": false,
+    "terminalFailureHasNoSuccessState": true
+  },
+  "authoritySeparation": {
+    "technicalPublicationIsApproval": false,
+    "servicePublicationRole": "MATCHING_SERVICE_PROVIDER",
+    "fotaPublicationRole": "PLATFORM_TEAM_OEM",
+    "unitDeploymentApprovalRole": "AUTHORIZED_OEM",
+    "automaticApprovalAllowed": false
+  },
+  "diagnostics": {
+    "allowed": [
+      "correlationId",
+      "profileId",
+      "candidateId",
+      "preparedArtifactDigest",
+      "preparedMetadataDigest",
+      "signedBundleDigest",
+      "cloudObjectIdentity",
+      "state",
+      "errorCode"
+    ],
+    "forbidden": [
+      "privateKey",
+      "pkcs12Bytes",
+      "credentialPath",
+      "certificateBytes",
+      "sessionSecret",
+      "requestHeader",
+      "rawToolOutput"
+    ]
+  }
+}

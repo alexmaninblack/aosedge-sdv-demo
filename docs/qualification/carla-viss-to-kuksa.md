@@ -64,7 +64,7 @@ installation. It is retained only to reproduce the historical qualification.
 The accepted target in
 [ADR 0010](../architecture/decisions/0010-aos-kuksa-credential-broker.md)
 keeps upstream KUKSA unchanged and replaces manually issued service tokens
-with a thin VDP-owned Credential Broker and short-lived JWTs derived from the
+with the separate removable `CMP-KAC` helper and short-lived JWTs derived from the
 permissions currently registered by Service Manager in Aos IAM. The broker
 stores no parallel identity or per-service policy. Its per-Unit signing key is
 protected through the Aos IAM/certificate-module and PKCS#11 integration. The

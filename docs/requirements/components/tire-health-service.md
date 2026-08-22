@@ -3,19 +3,18 @@
 
 # Tire Health In-Vehicle Service Component Requirements
 
-- Status: D3 design-reviewed
+- Status: D3 review candidate
 - Package: [`CR-TIRE`](../component-decomposition-and-interface-register.md#cr-tire)
-- Version: 0.5
+- Version: 0.6
 - Prepared: 2026-08-21
-- Accepted: 2026-08-19
-- Supersedes: 0.1
+- Previous accepted package: Version 0.5
 - Owner: Function Team 2 / Service Provider 2 / SOTA 2
-- Architecture input: [High-Level Architecture 1.4](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 1.9](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 1.8](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 1.0](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 1.1](../component-decomposition-and-interface-register.md)
-- Accepted architecture decisions: [ADR 0008](../../architecture/decisions/0008-use-tire-health-for-function-team-2.md), [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md), [ADR 0010](../../architecture/decisions/0010-aos-kuksa-credential-broker.md), and [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
+- Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
+- Scenario input: [Demo Scenarios 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.0](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.0](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 2.0](../component-decomposition-and-interface-register.md)
+- Accepted architecture decisions: [ADR 0008](../../architecture/decisions/0008-use-tire-health-for-function-team-2.md), [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md), [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md), [ADR 0012](../../architecture/decisions/0012-authorize-running-workloads-not-software-artifacts.md) and [ADR 0013](../../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md)
 - Reviewed D4 working direction: [D4-003 deterministic stimuli and calibration](../d4-decision-register.md#d4-003)
 - Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
 - Accepted D4 advisory input: [D4-008 Typed QM Advisory Profile](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
@@ -57,7 +56,7 @@ promotion affecting OEM Units.
 | Question | Answer |
 | --- | --- |
 | What this package owns | One immutable ARM64 Tire Health v1.0 service candidate, exact VDP v3 compatibility declaration, least-privilege KUKSA client use, bounded persistent synthetic condition estimate, accepted provisional resource envelope, bounded functional-message queue, typed inspection advisory, health, logs and tests |
-| What this package does not own | CARLA stimulus or hidden truth, VISS, VDP/KUKSA/Credential Broker implementation, Gateway enforcement, Aos lifecycle execution, Tire Health backend/dashboard, native Cloud Service-to-FOTA VDP Component admission, production tire diagnostics or driver HMI |
+| What this package does not own | CARLA stimulus or hidden truth, VISS, VDP/KUKSA/`CMP-KAC` implementation, Gateway enforcement, Aos lifecycle execution, Tire Health backend/dashboard, native Cloud Service-to-FOTA VDP Component admission, production tire diagnostics or driver HMI |
 | Intended result | A second independent SOTA product runs beside Brake Health, derives a local tire-condition band, survives Cloud loss, sends bounded results and requests only its approved inspection advisory |
 | Accountable lifecycle owner | Function Team 2; Service Provider 2 publishes, and an authorized OEM identity approves validation and promotion through SOTA 2 |
 | Primary repository | Proposed public `tire-health-service`; repository creation remains a later implementation action |
@@ -68,8 +67,9 @@ promotion affecting OEM Units.
 
 - reproducible credential-free ARM64 Aos service packaging for one v1.0 candidate;
 - exact VDP Component v3 compatibility and fail-closed startup/readiness;
-- per-instance `AOS_SECRET` use at the local Credential Broker boundary;
-- short-lived path-scoped KUKSA credential acquisition, refresh and rejection;
+- fixed-resource bootstrap with per-instance `AOS_SECRET` at the local
+  `CMP-KAC` boundary;
+- private volatile short-lived KUKSA JWT acquisition, refresh and rejection;
 - validated subscription to the accepted native vehicle-dynamics subset;
 - explicit source quality, freshness, timestamp and unavailable-state handling;
 - bounded persistent versioned tire-condition state and deterministic synthetic
@@ -85,7 +85,7 @@ promotion affecting OEM Units.
 
 - creating the accelerated/pre-aged CARLA stimulus or its hidden qualification truth;
 - direct CARLA, VISS, Gateway or simulator-oracle access;
-- KUKSA Databroker, VDP provider, Credential Broker or Gateway implementation;
+- KUKSA Databroker, VDP Provider, `CMP-KAC` or Gateway implementation;
 - continuous raw vehicle-telemetry upload or Cloud-side model training;
 - exact measured tread depth, pressure, temperature, puncture, load, force or
   torque claims unsupported by the selected CARLA vehicle profile;
@@ -103,7 +103,7 @@ promotion affecting OEM Units.
 | Dependency or assumption | Owner | Required state | Failure consequence |
 | --- | --- | --- | --- |
 | Accepted VDP Component v3 contract | `CR-VDP` | Exact compatible contract, required read paths, typed Tire advisory target, units, quality, freshness and factual Gateway status | Service remains not ready, produces no accepted condition result, and sends no advisory |
-| Native Aos service identity and IAM permissions | `CR-AOS` plus VDP Credential Broker | Current instance registered, valid `AOS_SECRET`, exact `kuksa` path/mode permissions | Credential request fails closed; no reusable or widened authority |
+| Native Aos service identity and IAM permissions | `CR-AOS` plus `CR-KAC` | Current instance registered, valid `AOS_SECRET`, fixed `kuksa` bootstrap resource and exact registered path/mode permissions | Bootstrap/JWT acquisition fails closed; no reusable or widened authority |
 | Deterministic Tire Health stimulus | `CR-VEHICLE-SIM`, `CR-GATEWAY`, `CR-VDP` | Versioned accelerated/pre-aged scenario and accepted native signal provenance; hidden truth remains inaccessible | Qualification is invalid; service must not infer success from oracle data |
 | Tire Health backend contract | [`CR-TIRE-CLOUD`](tire-health-cloud.md) | Authenticated bounded summary/event schemas and idempotent acknowledgement | Messages remain in the bounded queue; local estimate/advisory continues |
 | Aos runtime and resource enforcement | `CR-AOS` | SOTA install/start/stop/uninstall/readiness and declared quotas enforced | Service reports unavailable/error; VDP and Brake Health remain active |
@@ -116,7 +116,7 @@ promotion affecting OEM Units.
 | Repository and source boundary | Component Register allocates proposed `tire-health-service`; repository does not exist | `NEW` |
 | ARM64 Aos service candidate | No payload, metadata, build or secret-negative scan | `NEW` |
 | VDP v3 compatibility declaration | Accepted architecture and flow require it; no machine-readable service metadata exists | `NEW` |
-| KUKSA credential and subscription client | Accepted broker architecture exists; no Tire client implementation | `NEW` |
+| KUKSA authorization and subscription client | Accepted `CMP-KAC` fixed-resource bootstrap architecture exists; no Tire client implementation | `NEW` |
 | Persistent condition estimator | ADR 0008 and system requirements define the boundary; model/state contract absent | `NEW` |
 | Functional backend transport | `IF-TIRE-003` defines direction; schema, authentication, queue and acknowledgement absent | `NEW` |
 | Typed advisory request | VDP/Gateway target is accepted design; no Tire service request implementation | `NEW` |
@@ -166,12 +166,12 @@ Mac-hosted Tire Health Cloud container.
 
 ## Testability Boundary
 
-Owned logic shall be separated from KUKSA transport, credential acquisition,
+Owned logic shall be separated from KUKSA transport, authorization bootstrap,
 backend transport, persistence, clocks and model configuration. Unit tests
 inject:
 
 - accepted, stale, missing, malformed and reordered dynamics samples;
-- Credential Broker success, rejection, expiry and refresh results;
+- `CMP-KAC` private-JWT success, rejection, expiry and refresh results;
 - deterministic model/configuration bytes and numeric fixtures;
 - persistent-state versions, corruption, capacity and restart outcomes;
 - backend acknowledgement, duplicate, disconnect, retry and overflow faults;
@@ -189,8 +189,8 @@ executable against controlled adjacent components.
 | Interface | Direction | Data or command | Contract/version | Failure behavior | Authority |
 | --- | --- | --- | --- | --- | --- |
 | [Tire dynamics subscription (`IF-TIRE-001`)](../component-decomposition-and-interface-register.md#if-tire-001) | In | Accepted KUKSA vehicle/wheel dynamics, quality and timestamps | VDP Component v3 over `kuksa.val.v1` | Missing/stale/malformed input yields `NOT_EVALUATED` or explicit degraded state | Values published by accepted VDP contract |
-| [Credential request (`IF-AUTH-001`)](../component-decomposition-and-interface-register.md#if-auth-001) | Out | Per-instance `AOS_SECRET`, resource and requested path/mode set | Local Credential Broker contract | Rejection/timeout yields no KUKSA connection | Current Aos service instance identity |
-| [Short-lived credential (`IF-AUTH-003`)](../component-decomposition-and-interface-register.md#if-auth-003) | In | Rejection or path-scoped short-lived KUKSA JWT | Aos IAM result plus installed VDP contract | Fail closed; never persist, log or widen authority | Aos IAM and VDP contract |
+| [Fixed-resource bootstrap (`IF-AUTH-007`)](../component-decomposition-and-interface-register.md#if-auth-007) | Out | Per-instance `AOS_SECRET` plus fixed `kuksa` resource; no caller-selected authority | Local `CMP-KAC` contract | Rejection/timeout yields no KUKSA connection | Current Aos service instance identity |
+| [Private JWT or rejection (`IF-AUTH-009`)](../component-decomposition-and-interface-register.md#if-auth-009) | In | Rejection or path-scoped short-lived KUKSA JWT through a Service-private volatile location | Current Aos IAM result translated by `CMP-KAC` | Fail closed; never persist, log or widen authority | Aos IAM result and protected platform signer |
 | [Tire functional result (`IF-TIRE-003`)](../component-decomposition-and-interface-register.md#if-tire-003) | Out | Versioned/idempotent condition summary or threshold event | Function Team 2 contract | Queue within fixed bounds; expose overflow/drop; never block local estimate | Service result; backend acknowledgement owns ingestion state |
 | [Tire advisory request (`IF-TIRE-002`)](../component-decomposition-and-interface-register.md#if-tire-002) | Out | Typed Tire inspection advisory and correlation | Accepted VDP v3/KUKSA target | Invalid/unavailable/unauthorized path yields no alternate write | Service requests; VDP and Gateway enforce |
 | [Tire Health SOTA (`IF-LC-007`)](../component-decomposition-and-interface-register.md#if-lc-007) | Out from release pipeline | Immutable v1.0 ARM64 artifact plus compatibility/permission metadata | Service Provider 2 publication | Technical failure creates no OEM Unit deployment | Function Team 2 artifact; SP publication |
@@ -201,10 +201,10 @@ executable against controlled adjacent components.
 
 | Level | Purpose | Dependency boundary | Required | Planned evidence |
 | --- | --- | --- | --- | --- |
-| Unit | Prove all service-owned decisions, validation and state transitions | Deterministic fakes for KUKSA, broker, backend, storage, clocks and model | Yes | `UT-TIRE-*` suite in `tire-health-service` |
+| Unit | Prove all service-owned decisions, validation and state transitions | Deterministic fakes for KUKSA, KAC result, backend, storage, clocks and model | Yes | `UT-TIRE-*` suite in `tire-health-service` |
 | Component | Prove packaged executable and local configuration | Controlled doubles plus built ARM64 artifact | Yes | Process/readiness/resource/restart/uninstall suite |
 | Contract | Prove VDP v3 paths, permissions, state schema, results and advisory payload | Digest-addressed fixtures shared with VDP and Tire Cloud | Yes | Positive/negative conformance fixtures |
-| Integration | Prove real KUKSA/broker/backend/Aos runtime boundaries | Validation Unit with accepted adjacent revisions | Yes | `T1` integration and fault records |
+| Integration | Prove real KUKSA/KAC/backend/Aos runtime boundaries | Validation Unit with accepted adjacent revisions | Yes | `T1` integration and fault records |
 | End-to-end | Prove local result, Cloud-loss continuity, advisory and independent SOTA promotion | Validation then identical Demonstration promotion | Yes | `AF-TIRE-*` evidence |
 
 ## Requirement Summary
@@ -213,7 +213,7 @@ executable against controlled adjacent components.
 | --- | --- | --- | --- |
 | [One immutable mature v1.0 candidate (`REQ-TIRE-001`)](#req-tire-001) | Produce exactly one prepared credential-free ARM64 Tire Health candidate for this demo | Unit, Component, Contract, Integration | D3 design-reviewed |
 | [VDP v3 compatibility and fail-closed readiness (`REQ-TIRE-002`)](#req-tire-002) | Run only against the accepted VDP v3 contract without claiming native Cloud admission | Unit, Component, Contract, Integration | D3 design-reviewed |
-| [Least-privilege KUKSA credential lifecycle (`REQ-TIRE-003`)](#req-tire-003) | Acquire and refresh only current IAM-derived path-scoped authority | Unit, Component, Contract, Integration | D3 design-reviewed |
+| [Fixed-resource KUKSA authorization lifecycle (`REQ-TIRE-013`)](#req-tire-013) | Bootstrap without caller-selected authority and use only private volatile IAM-derived JWTs | Unit, Component, Contract, Integration | D3 review candidate |
 | [Validated native dynamics subscription (`REQ-TIRE-004`)](#req-tire-004) | Consume only accepted dynamics and never consume hidden simulation truth | Unit, Component, Contract, Integration | D3 design-reviewed |
 | [Bounded persistent local condition estimate (`REQ-TIRE-005`)](#req-tire-005) | Deterministically maintain a versioned synthetic condition band without exact tread claims | Unit, Component, Analysis, End-to-end | D3 design-reviewed |
 | [Explicit degraded behavior (`REQ-TIRE-006`)](#req-tire-006) | Never turn stale, missing or inconsistent data into a healthy result | Unit, Component, Contract, Integration | D3 design-reviewed |
@@ -269,17 +269,15 @@ use this guidance for `TELEMETRY_STALE`, `TELEMETRY_DISCONNECTED` or
 `SERVICE_ACCESS_DENIED`. A later compatible VDP v3 identity/capability change
 shall trigger re-evaluation and automatic readiness without SOTA reinstall.
 
-### Least-privilege KUKSA credential lifecycle
+### Retired: Caller-selected KUKSA credential lifecycle
 
 <a id="req-tire-003"></a>
 
 - ID: `REQ-TIRE-003`
-- Statement: The service shall use its current per-instance `AOS_SECRET` to request only its declared VDP v3 KUKSA read and Tire advisory permissions, hold only a short-lived JWT in memory, refresh it before expiry, and fail closed after rejection, expiry, permission removal or instance replacement.
-- Parents: [least privilege (`SYS-SEC-001`)](../system-requirements-and-traceability.md#sys-sec-001), [KUKSA verifier (`SYS-SEC-004`)](../system-requirements-and-traceability.md#sys-sec-004), and [native-IAM translation (`SYS-SEC-006`)](../system-requirements-and-traceability.md#sys-sec-006)
-- Flow: [QM advisory containment (`AF-X-QM`)](../../architecture/demo-scenario-architecture-flows.md#af-x-qm)
-- Verification: Unit, Component, Contract, Integration
-- Evidence: permission matrix, expiry/refresh/revocation fixtures, secret-negative logs and package scan
-- State: D3 design-reviewed; design only
+- Disposition: Retired by Version 0.6 and replaced by
+  [`REQ-TIRE-013`](#req-tire-013). The Service no longer requests paths, modes
+  or JWT claims from a broker inside VDP.
+- Historical parent: [`SYS-SEC-001`](../system-requirements-and-traceability.md#sys-sec-001)
 
 ### Validated native dynamics subscription
 
@@ -357,7 +355,7 @@ and persistence rules remain owned by D4-018 rather than the stimulus profile.
 - Flows: [Tire runtime (`AF-TIRE-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-rt) and [QM containment (`AF-X-QM`)](../../architecture/demo-scenario-architecture-flows.md#af-x-qm)
 - Verification: Unit, Component, Contract, Integration, End-to-end
 - Evidence: Request/Status schema fixtures, malformed/cross-target/stale/replay/rate negatives, explicit clear/expiry, restart idempotency, correlation and factual Gateway status
-- Executable contract: [Typed QM Advisory Profile 1.0.0](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
+- Executable contract: [Typed QM Advisory Profile 1.0.1](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - State: D3 design-reviewed; D4-008 interface accepted, while D4-018 owns model decision thresholds and hysteresis
 
 ### Offline continuity and synchronization
@@ -408,13 +406,39 @@ and persistence rules remain owned by D4-018 rather than the stimulus profile.
 - Evidence: redaction fixtures, native-log retrieval record and separated on-board/backend chronology
 - State: D3 design-reviewed
 
+### Fixed-resource KUKSA authorization lifecycle
+
+<a id="req-tire-013"></a>
+
+- ID: `REQ-TIRE-013`
+- Statement: The Service shall request the platform-owned `kuksa-auth-client`
+  resource. Its compatibility bootstrap, and not the analytics application,
+  shall read the current per-instance `AOS_SECRET`, call the mounted private
+  Unix socket for the implicit fixed `kuksa` resource and atomically maintain
+  only `/run/aosedge/secrets/kuksa/token.jwt` in the Service-private tmpfs. The
+  bootstrap shall start analytics with only `KUKSA_TOKEN_FILE`, without
+  `AOS_SECRET`; it shall not submit paths, operations, subject, audience, TTL or
+  claims. It shall consume only the `r -> read` and `rw -> actuate` profile,
+  renew a 300-second JWT at 180 seconds, atomically replace the token and
+  reconnect/recreate every KUKSA subscription with the replacement. It shall
+  fail closed on rejection, malformed response, expiry, permission removal,
+  stop/unregistration, container replacement or VM restart. Terminal denial
+  deletes and disconnects immediately; transient failure may use the current
+  token only until expiry. Neither credential shall be persisted or logged.
+- Parents: [least privilege (`SYS-SEC-001`)](../system-requirements-and-traceability.md#sys-sec-001), [KUKSA verifier (`SYS-SEC-004`)](../system-requirements-and-traceability.md#sys-sec-004), and [current-release KUKSA authorization compatibility (`SYS-SEC-008`)](../system-requirements-and-traceability.md#sys-sec-008)
+- Flows: [Tire runtime (`AF-TIRE-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-rt), [authorization (`AF-X-AUTH`)](../../architecture/demo-scenario-architecture-flows.md#af-x-auth) and [QM advisory containment (`AF-X-QM`)](../../architecture/demo-scenario-architecture-flows.md#af-x-qm)
+- Interfaces: [fixed-resource bootstrap (`IF-AUTH-007`)](../component-decomposition-and-interface-register.md#if-auth-007) and [private JWT or rejection (`IF-AUTH-009`)](../component-decomposition-and-interface-register.md#if-auth-009)
+- Verification: Unit, Component, Contract, Integration
+- Evidence: no-caller-selected-authority negative cases, bounded refresh/expiry trace, stop/unregister/reboot cleanup, cross-Service isolation and secret/JWT-negative artifacts/logs/state
+- State: D3 review candidate
+
 ## Stable Unit-Test Obligations
 
 | Test obligation | Requirement coverage | Required proof |
 | --- | --- | --- |
 | <a id="ut-tire-001"></a>`UT-TIRE-001` | `REQ-TIRE-001` | Reproducible candidate identity, changed-content digest and secret-negative package scan |
 | <a id="ut-tire-002"></a>`UT-TIRE-002` | `REQ-TIRE-002` | Compatible v3 readiness and absent/incompatible/incomplete fail-closed reasons |
-| <a id="ut-tire-003"></a>`UT-TIRE-003` | `REQ-TIRE-003` | Exact permission request, expiry/refresh/revocation and no token persistence/logging |
+| <a id="ut-tire-013"></a>`UT-TIRE-013` | `REQ-TIRE-013` | Named-resource/private-socket bootstrap; analytics receives only `KUKSA_TOKEN_FILE`; reject caller-selected authority; atomic private-tmpfs delivery; 300-second expiry and renewal at 180 seconds; reconnect/subscription recreation; terminal/transient failure; stop/replace/unregister/reboot cleanup; cross-Service isolation and no credential persistence/logging |
 | <a id="ut-tire-004"></a>`UT-TIRE-004` | `REQ-TIRE-004`, `REQ-TIRE-006` | Path/type/unit/quality/freshness validation and oracle-negative boundary |
 | <a id="ut-tire-005"></a>`UT-TIRE-005` | `REQ-TIRE-005` | Deterministic model vectors, bounded state, persistence restart and band transition |
 | <a id="ut-tire-006"></a>`UT-TIRE-006` | `REQ-TIRE-007`, `REQ-TIRE-009` | Bounded result rate/size, queue overflow, retry, idempotency and original event time |
@@ -427,7 +451,10 @@ Each obligation must execute deterministically without CARLA, QEMU, AosCloud,
 a real KUKSA Databroker, network access or credentials. Integration and
 end-to-end tests supplement these obligations; they do not replace them.
 
-## D3 Acceptance Record for Version 0.2
+<a id="ut-tire-003"></a>`UT-TIRE-003` is retired with `REQ-TIRE-003` and is
+replaced by [`UT-TIRE-013`](#ut-tire-013).
+
+## D3 Acceptance Record and Version 0.6 Delta
 
 Version 0.2 was accepted after review confirmed that Tire Health must not reuse
 the Brake Health resource profile merely for convenience. The accepted
@@ -441,6 +468,12 @@ that every logical field maps one-to-one to current Aos service metadata. D4
 must prove the mapping and fit on the selected implementation. Any required
 increase follows the documented Level-B change process rather than silently
 changing candidate metadata.
+
+Version 0.5 preserved that accepted functional and resource model. Version 0.6
+is a review candidate that retires `REQ-TIRE-003`/`UT-TIRE-003`, adds
+`REQ-TIRE-013`/`UT-TIRE-013`, and replaces caller-selected broker requests with
+fixed-resource `CMP-KAC` bootstrap and private volatile JWT delivery. Tire
+Health functional behavior, quotas and single-release demo role are unchanged.
 
 ## Open D4 Gates
 

@@ -5,17 +5,18 @@
 
 - Status: D3 design-reviewed
 - Package: [`CR-BRAKE-CLOUD`](../component-decomposition-and-interface-register.md#cr-brake-cloud)
-- Version: 0.2
+- Version: 0.3
 - Prepared: 2026-08-19
 - Accepted: 2026-08-19
 - Owner: Function Team 1 / Service Provider 1 functional Cloud product
-- Architecture input: [High-Level Architecture 1.4](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 1.9](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 1.8](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 1.0](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 1.1](../component-decomposition-and-interface-register.md)
+- Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
+- Scenario input: [Demo Scenarios 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.0](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.0](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 2.0](../component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md) and [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
 - Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
+- Accepted D4 publication input: [D4-010.3 Artifact Publication Credential Profile](../../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
 - Implementation baseline: no `brake-health-cloud` repository or executable exists
 - Implementation, repository creation, signing, Cloud, or Unit mutation authorized: no
 
@@ -54,8 +55,11 @@ is physically hosted on the same Apple Silicon Mac as CARLA and QEMU. The
 backend and static dashboard are packaged as one native `linux/arm64` Docker
 container with a dedicated persistent data volume. A browser remains a
 separate host application. The protected release helper remains a separate
-native macOS process so that signing credentials can stay in the login
-Keychain rather than being copied or mounted into the container.
+native macOS process. Under D4-010.3, this dashboard surface is pre-bound to
+`brake-sp1`; only that helper may read the fixed local mode-`0600` passwordless
+PKCS#12 used by installed `aos-signer` 2.0.1. The credential is never copied
+or mounted into the container and is not described as Keychain-backed or
+non-exportable.
 
 ## Reader Summary
 
@@ -87,7 +91,7 @@ flowchart TB
             DATA[("Dedicated persistent<br/>functional-data volume")]
             PRODUCT --- DATA
         end
-        HELPER["Native macOS release helper<br/>Keychain-backed signing"]
+        HELPER["Common native publication helper<br/>fixed brake-sp1 profile"]
         QEMU["QEMU<br/>selected VU or DU"]
     end
 
@@ -194,8 +198,8 @@ source/Unit/run correlation supplied to it.
   graceful stop/restart behavior;
 - loopback-only browser exposure and an authenticated, allowlisted QEMU
   guest-to-host functional-ingestion route without LAN exposure;
-- a native macOS release helper that uses the login Keychain and exposes no
-  reusable private key or certificate material to the container;
+- client integration with the common native helper pre-bound to `brake-sp1`,
+  with its local PKCS#12 excluded from Git, the browser, container and logs;
 - unit tests, contract fixtures, health, logs and operational metrics for owned logic.
 
 ### Out of scope
@@ -221,7 +225,7 @@ source/Unit/run correlation supplied to it.
 | --- | --- | --- | --- |
 | Versioned functional messages | [`CR-BHS`](brake-health-service.md) | Accepted v1 chunk/completion and v2/v3 derived schemas, authentication and idempotency identifiers | Reject/quarantine invalid input; never fabricate a dashboard result |
 | Prepared immutable candidates | [`CR-BHS`](brake-health-service.md) release pipeline | v1-v3 ARM64 payload, metadata and tests frozen before the presentation | Candidate cannot be selected or signed |
-| Signing and publication pipeline | Function Team 1 / [`IF-LC-002`](../component-decomposition-and-interface-register.md#if-lc-002) | Explicit confirmation, protected key handling, Service Provider 1 identity and machine-readable result | Display failure; no Cloud success claim or retry without a new explicit action |
+| Signing and publication pipeline | Function Team 1 / [`IF-LC-002`](../component-decomposition-and-interface-register.md#if-lc-002) | Explicit confirmation, D4-010.3 `brake-sp1` binding, exact candidate/digests, protected local mode-`0600` PKCS#12 and machine-readable result | Wrong profile/candidate/path/URL or custody failure blocks before signing; ambiguous result becomes `UNCERTAIN` and is reconciled without blind retry |
 | AosCloud and OEM delivery surface | [`CR-AOS`](aos-lifecycle.md) and [`CR-DEMO`](demo-orchestration.md) | Authoritative verification, target, approval, deployment and promotion state | Release view stops at the last verified pipeline result and directs the presenter to the authoritative surface |
 | VDP compatibility | [`CR-VDP`](vehicle-data-platform.md) and [`CR-BHS`](brake-health-service.md) | Candidate-declared range and fail-closed service readiness | Display declared/actual evidence; do not implement local admission control |
 | Run and Unit correlation | [`CR-DEMO`](demo-orchestration.md) | Bounded run time, VU/DU identities, Unit roles and exact sequential live source/generation/frame binding | Data is quarantined as unassigned and excluded from audience success views |
@@ -229,7 +233,7 @@ source/Unit/run correlation supplied to it.
 | Engineering advisory evidence | [`CR-GATEWAY`](vehicle-gateway.md) | Gateway VISS is authoritative for v3 advisory receipt/status | Function dashboard shows only its correlated backend fact, never a driver-display claim |
 | Apple Silicon container runtime | Docker Desktop on the demo Mac | Running native ARM64 engine, available named volume and health-capable container runtime | Launcher reports blocked; no dashboard/runtime-data success claim |
 | QEMU-to-container route | [`CR-DEMO`](demo-orchestration.md) plus this package | Authenticated selected-Unit ingestion reaches the backend without LAN exposure | Integration gate fails; Unit data stays queued and the dashboard shows offline |
-| macOS Keychain release helper | Function Team 1 release owner | Native helper available through a local authenticated boundary; key remains non-exportable to browser/container | Sign/publish control is disabled with a factual reason |
+| Native `brake-sp1` publication helper | Function Team 1 release owner | Common session-scoped helper available through a local authenticated boundary; fixed PKCS#12 exists with mode `0600` outside Git and every browser/container/VM/artifact | Sign/publish control is disabled with a factual reason |
 
 ## Current Implementation Baseline
 
@@ -310,7 +314,7 @@ components.
 | [Complete current-run deletion (`REQ-BRAKE-CLOUD-013`)](#req-brake-cloud-013) | Delete all exact current-run functional data without touching Cloud audit state | Unit, Component, Integration | D3 design-reviewed |
 | [Failure and freshness visibility (`REQ-BRAKE-CLOUD-014`)](#req-brake-cloud-014) | Show invalid, stale, partial, offline and failed states without fabricated success | Unit, Component, Integration, End-to-end | D3 design-reviewed |
 | [Mac-local ARM64 container deployment (`REQ-BRAKE-CLOUD-015`)](#req-brake-cloud-015) | Run backend and static dashboard in one health-checked ARM64 container with persistent data | Unit, Component, Integration | D3 design-reviewed |
-| [Local network and signing isolation (`REQ-BRAKE-CLOUD-016`)](#req-brake-cloud-016) | Keep browser local, authenticate VM ingestion and keep Keychain signing outside Docker | Unit, Component, Integration, End-to-end | D3 design-reviewed |
+| [Local network and signing isolation (`REQ-BRAKE-CLOUD-016`)](#req-brake-cloud-016) | Keep browser local, authenticate VM ingestion and keep the `brake-sp1` credential outside Docker | Unit, Component, Integration, End-to-end | D3 design-reviewed; D4-010.3 accepted |
 
 ## Detailed Requirements
 
@@ -382,22 +386,23 @@ components.
 <a id="req-brake-cloud-004"></a>
 
 - ID: `REQ-BRAKE-CLOUD-004`
-- Statement: The Release Candidates view shall require explicit presenter confirmation before delegating signing and publication to an isolated Function Team 1 pipeline, shall never expose private-key material to the browser/backend, and shall retain the resulting signed artifact digest for unchanged VU-to-DU promotion evidence.
+- Statement: The Release Candidates view shall require explicit presenter confirmation before delegating exactly one prepared Brake Health v1-v3 candidate and its verified payload/metadata digests to the common native helper surface pre-bound to D4-010.3 profile `brake-sp1`. The request shall contain no profile, credential path, candidate path or Cloud URL. The helper shall use installed `aos-signer` 2.0.1 and the fixed local mode-`0600` passwordless PKCS#12 for both signing and mTLS upload, shall never expose private-key or PKCS#12 material to the browser/backend and shall preserve the resulting signed artifact digest for unchanged VU-to-DU promotion evidence. `PUBLISHED` requires an independent AosCloud re-read; lost or ambiguous results become `UNCERTAIN` and are reconciled without blind retry.
 - Rationale: A visible manual decision is required while cryptographic custody and actual publication remain in their proper boundary.
-- Parent system requirements: [Immutable release candidates (`SYS-REL-001`)](../system-requirements-and-traceability.md#sys-rel-001), [OEM-authorized deployment approval (`SYS-REL-008`)](../system-requirements-and-traceability.md#sys-rel-008), [Validate before promotion (`SYS-REL-004`)](../system-requirements-and-traceability.md#sys-rel-004)
+- Parent system requirements: [Immutable release candidates (`SYS-REL-001`)](../system-requirements-and-traceability.md#sys-rel-001), [role-bound protected publication (`SYS-REL-011`)](../system-requirements-and-traceability.md#sys-rel-011), [OEM-authorized deployment approval (`SYS-REL-008`)](../system-requirements-and-traceability.md#sys-rel-008), [Validate before promotion (`SYS-REL-004`)](../system-requirements-and-traceability.md#sys-rel-004)
 - Architecture flow: [Independent SOTA 1 delivery (`AF-G2-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-g2-lc)
 - Components: [`CMP-BRAKE-DASH`](../component-decomposition-and-interface-register.md#cmp-brake-dash), adjacent Function Team 1 pipeline
 - Interfaces: [`IF-LC-002`](../component-decomposition-and-interface-register.md#if-lc-002)
 - Verification levels: Unit / Component / Integration / End-to-end
-- Required evidence: confirmation record, helper result, absence-of-key inspection and exact VU/DU signed digest comparison
-- State: D3 design-reviewed
+- Required evidence: D4-010.3 contract/schema validation; confirmation record; exact `brake-sp1` binding; wrong-profile/candidate/type/path/URL negatives; local file mode/location/exclusion proof; helper result; independent Cloud re-read; no-blind-retry and absence-of-key/PKCS#12-output inspection; exact VU/DU signed digest comparison
+- State: D3 design-reviewed; D4-010.3 accepted; exact helper request/result and Cloud reconciliation lookup remain implementation gates
 
 #### Acceptance criteria
 
 1. Cancelled confirmation causes no signing or publication request.
 2. A helper timeout or uncertain result is shown as requiring reconciliation and is never converted into success.
 3. The digest shown after signing is the digest later observed for both VU and DU; no rebuild or re-sign occurs between them.
-4. The helper runs as a native macOS process and uses Keychain-backed credentials without copying key material into Docker configuration, image, volume, browser storage or application logs.
+4. The common helper runs as a native macOS process pre-bound to `brake-sp1`; it alone may read the fixed mode-`0600` PKCS#12, and no key, certificate bundle or caller-selected path enters Docker configuration, image, volume, browser storage or application logs.
+5. Technical SP1 publication does not perform OEM Validation deployment or Demonstration promotion approval.
 
 ### No lifecycle authority
 
@@ -637,22 +642,22 @@ components.
 <a id="req-brake-cloud-016"></a>
 
 - ID: `REQ-BRAKE-CLOUD-016`
-- Statement: The local deployment shall publish the browser/dashboard boundary only on host loopback, accept functional ingestion only from authenticated allowlisted service identities through the qualified QEMU guest-visible host route, reject LAN and unauthorized access, and delegate confirmed signing/publication only to the native Keychain-backed macOS helper.
+- Statement: The local deployment shall publish the browser/dashboard boundary only on host loopback, accept functional ingestion only from authenticated allowlisted service identities through the qualified QEMU guest-visible host route, reject LAN and unauthorized access, and delegate confirmed signing/publication only to the authenticated common native helper surface pre-bound to `brake-sp1`. The PKCS#12 shall remain outside the Docker image, configuration, container, volume and browser, and the helper shall reject caller-selected profile/path/URL input.
 - Rationale: Hosting the Cloud product locally must not expose it whenever the Mac changes office, home or customer networks or weaken signing-key custody.
-- Parent system requirements: [Authoritative demo surfaces (`SYS-OBS-001`)](../system-requirements-and-traceability.md#sys-obs-001), [Per-run correlation (`SYS-OBS-004`)](../system-requirements-and-traceability.md#sys-obs-004)
+- Parent system requirements: [Authoritative demo surfaces (`SYS-OBS-001`)](../system-requirements-and-traceability.md#sys-obs-001), [Per-run correlation (`SYS-OBS-004`)](../system-requirements-and-traceability.md#sys-obs-004), [role-bound protected publication (`SYS-REL-011`)](../system-requirements-and-traceability.md#sys-rel-011)
 - Architecture flows: [Common release flow (`AF-X-RELEASE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-release) and [one visible source, two Unit roles (`AF-X-SOURCE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-source)
 - Components: [`CMP-BRAKE-BE`](../component-decomposition-and-interface-register.md#cmp-brake-be), [`CMP-BRAKE-DASH`](../component-decomposition-and-interface-register.md#cmp-brake-dash), adjacent native Function Team 1 release helper
 - Interfaces: [`IF-FUNC-001`](../component-decomposition-and-interface-register.md#if-func-001), [`IF-FUNC-002`](../component-decomposition-and-interface-register.md#if-func-002), adjacent [`IF-LC-002`](../component-decomposition-and-interface-register.md#if-lc-002)
 - Verification levels: Unit / Component / Integration
-- Required evidence: listener inspection, LAN negative probe, VU/DU authenticated ingestion, unauthorized-client rejection, helper/key inspection and network-change recovery
-- State: D3 design-reviewed
+- Required evidence: listener inspection, LAN negative probe, VU/DU authenticated ingestion, unauthorized-client rejection, helper/profile/file-mode/exclusion inspection, caller-selector negatives and network-change recovery
+- State: D3 design-reviewed; D4-010.3 accepted
 
 #### Acceptance criteria
 
 1. Browser/dashboard publication is bound to `127.0.0.1` and is not reachable through active Mac LAN addresses.
 2. The selected VU or DU reaches the ingestion endpoint through the qualified guest-visible host route without opening a wildcard/LAN listener.
 3. Missing, stale, malformed or unauthorized functional credentials are rejected and produce no accepted backend record.
-4. The container contacts the native helper only through the accepted local authenticated boundary; the helper accepts no LAN request and returns no private key.
+4. The container contacts the native helper only through the accepted local authenticated boundary; the helper accepts no LAN request and returns no private key, PKCS#12, credential path or raw tool output.
 5. Docker, route or helper loss becomes a visible blocked/offline state and recovers without relabelling stale data as current.
 
 ## Unit-Test Obligations
@@ -661,7 +666,7 @@ components.
 | --- | --- | --- | --- | --- | --- | --- |
 | <a id="ut-brake-cloud-001"></a>`UT-BRAKE-CLOUD-001` — View/authority separation | [REQ-BRAKE-CLOUD-001](#req-brake-cloud-001), [REQ-BRAKE-CLOUD-005](#req-brake-cloud-005) | Allowed data sources/actions and prohibited lifecycle mutations | Backend, pipeline and Cloud doubles | Correct labels/routes; no approval/desired-state store or mutation | Planned `brake-health-cloud` unit suite | Draft |
 | <a id="ut-brake-cloud-002"></a>`UT-BRAKE-CLOUD-002` — Candidate catalogue integrity | [REQ-BRAKE-CLOUD-002](#req-brake-cloud-002), [REQ-BRAKE-CLOUD-003](#req-brake-cloud-003) | Valid v1-v3, missing field, changed bytes, invalid permission/quota/range | Immutable catalogue fixtures | Enable only exact valid candidates; no build/mutation path | Planned catalogue suite | Draft |
-| <a id="ut-brake-cloud-003"></a>`UT-BRAKE-CLOUD-003` — Explicit release action | [REQ-BRAKE-CLOUD-004](#req-brake-cloud-004) | Confirm, cancel, success, failure, timeout, uncertain result, retry | Release-helper fake and deterministic clock | One explicit call; no key exposure; exact resulting digest; no false success | Planned release-workspace suite | Draft |
+| <a id="ut-brake-cloud-003"></a>`UT-BRAKE-CLOUD-003` — Explicit release action | [REQ-BRAKE-CLOUD-004](#req-brake-cloud-004) | Confirm, cancel, success, failure, timeout, uncertain result, wrong profile/candidate/type/path/URL and retry attempt | D4-010.3 helper/profile fake, Cloud result fake and deterministic clock | Only `brake-sp1` plus an exact catalogue candidate passes; no key/PKCS#12 exposure or blind retry; exact resulting digest; `PUBLISHED` only after Cloud re-read | Planned release-workspace suite | Draft |
 | <a id="ut-brake-cloud-004"></a>`UT-BRAKE-CLOUD-004` — v1 reconstruction | [REQ-BRAKE-CLOUD-006](#req-brake-cloud-006) | Ordered/reordered, duplicate, missing, conflicting, cross-run and completion cases | Message fixtures and transactional store fake | One coherent window; durable ack; quarantine conflicts | Planned backend suite | Draft |
 | <a id="ut-brake-cloud-005"></a>`UT-BRAKE-CLOUD-005` — v1 presentation states | [REQ-BRAKE-CLOUD-007](#req-brake-cloud-007) | Empty, growing, delayed, complete, stale and disconnected | Backend-query fixtures | Exact phases/counts/version/role/times and no premature complete | Planned dashboard state suite | Draft |
 | <a id="ut-brake-cloud-006"></a>`UT-BRAKE-CLOUD-006` — v2 derived product | [REQ-BRAKE-CLOUD-008](#req-brake-cloud-008) | Assessment/event normal, duplicate, invalid provenance/model and forbidden normal-v1 presentation | v2 contract fixtures | Idempotent result; visible provenance; no v1 stream claim | Planned backend/dashboard suite | Draft |
@@ -672,7 +677,7 @@ components.
 | <a id="ut-brake-cloud-011"></a>`UT-BRAKE-CLOUD-011` — Exact run deletion | [REQ-BRAKE-CLOUD-013](#req-brake-cloud-013) | Preview, exact delete, empty/wildcard selector, incomplete deletion and unrelated data | Multi-run store fixture | All selected records removed, dashboard empty, unrelated rows unchanged and no Cloud call | Planned backend suite | Draft |
 | <a id="ut-brake-cloud-012"></a>`UT-BRAKE-CLOUD-012` — Failure/freshness state machine | [REQ-BRAKE-CLOUD-014](#req-brake-cloud-014) | Every accepted state and transition, malformed input, dependency loss/recovery | Deterministic clocks and dependency fakes | Explicit reason/time; no fabricated current/success state | Planned backend/dashboard suite | Draft |
 | <a id="ut-brake-cloud-013"></a>`UT-BRAKE-CLOUD-013` — Container manifest and persistence policy | [REQ-BRAKE-CLOUD-015](#req-brake-cloud-015) | ARM64 platform, immutable image, health, volume, secret and path policy | Parsed Docker/Compose fixtures and in-memory storage | Correct platform/bind/volume; reject embedded secrets, writable app paths and personal paths | Planned packaging suite | Draft |
-| <a id="ut-brake-cloud-014"></a>`UT-BRAKE-CLOUD-014` — Local boundary policy | [REQ-BRAKE-CLOUD-016](#req-brake-cloud-016) | Loopback, authenticated ingestion, helper identity, unauthorized/LAN and dependency transitions | Listener/identity/helper/network doubles | Allow only accepted local/Unit paths; no LAN or key exposure; factual recovery state | Planned deployment-policy suite | Draft |
+| <a id="ut-brake-cloud-014"></a>`UT-BRAKE-CLOUD-014` — Local boundary policy | [REQ-BRAKE-CLOUD-016](#req-brake-cloud-016) | Loopback, authenticated ingestion, helper/profile identity, PKCS#12 mode/exclusion, unauthorized/LAN and dependency transitions | Listener/identity/helper/profile/filesystem/network doubles | Allow only accepted local/Unit paths and fixed `brake-sp1`; no LAN, caller selector or key/PKCS#12 exposure; factual recovery state | Planned deployment-policy suite | Draft |
 
 Every obligation is deterministic, blocking and runnable without personal
 credentials, network access or a real Cloud/VM/simulator. Test output shall not
@@ -685,7 +690,7 @@ contain keys, tokens, raw certificates or unrestricted telemetry dumps.
 | [REQ-BRAKE-CLOUD-001](#req-brake-cloud-001) | [UT-001](#ut-brake-cloud-001) | Required; two-view route/authority suite | N/A; internal presentation boundary | Required; real backend and release-helper boundary | Required; `AF-X-OBS` |
 | [REQ-BRAKE-CLOUD-002](#req-brake-cloud-002) | [UT-002](#ut-brake-cloud-002) | Required; catalogue load/inspection | Required; candidate manifest | Required; prepared v1-v3 artifacts | N/A; implementation readiness proof |
 | [REQ-BRAKE-CLOUD-003](#req-brake-cloud-003) | [UT-002](#ut-brake-cloud-002) | Required; metadata UI | Required; service metadata/catalogue | N/A; no live system needed | N/A; D3 metadata proof |
-| [REQ-BRAKE-CLOUD-004](#req-brake-cloud-004) | [UT-003](#ut-brake-cloud-003) | Required; release-helper client | N/A; helper contract included in integration | Required; test signing/publication | Required; G2/G3/G4 exact digest |
+| [REQ-BRAKE-CLOUD-004](#req-brake-cloud-004) | [UT-003](#ut-brake-cloud-003) | Required; release-helper client | Required; D4-010.3 profile/helper conformance | Required; test signing/publication and Cloud reconciliation | Required; G2/G3/G4 exact digest |
 | [REQ-BRAKE-CLOUD-005](#req-brake-cloud-005) | [UT-001](#ut-brake-cloud-001) | Required; permission/API inventory | N/A; absence/authority proof | Required; no lifecycle mutation capability | N/A; negative boundary proof |
 | [REQ-BRAKE-CLOUD-006](#req-brake-cloud-006) | [UT-004](#ut-brake-cloud-004) | Required; packaged ingestion | Required; `IF-FUNC-001` v1 fixtures | Required; Service v1 | Required; `AF-G2-RT` |
 | [REQ-BRAKE-CLOUD-007](#req-brake-cloud-007) | [UT-005](#ut-brake-cloud-005) | Required; dashboard state | N/A; uses proven API | Required; real growing/completed window | Required; `AF-G2-OB` |
@@ -709,9 +714,18 @@ contain keys, tokens, raw certificates or unrestricted telemetry dumps.
 | Chronology | [Separate on-board and Cloud chronology (`SYS-TIM-002`)](../system-requirements-and-traceability.md#sys-tim-002) | Preserve event/receipt/sync times and never present backend delivery as part of the local advisory path | Unit, analysis, end-to-end |
 | Offline and recovery | [REQ-BRAKE-CLOUD-010](#req-brake-cloud-010) | Idempotent reconnect and explicit delayed/offline state | Unit, integration, end-to-end |
 | Observability | [REQ-BRAKE-CLOUD-001](#req-brake-cloud-001), [REQ-BRAKE-CLOUD-014](#req-brake-cloud-014) | Backend is authoritative only for functional data; every non-current state is visible | Component, integration, demo |
-| Local hosting | [REQ-BRAKE-CLOUD-015](#req-brake-cloud-015), [REQ-BRAKE-CLOUD-016](#req-brake-cloud-016) | Native ARM64 container, persistent volume, loopback UI, authenticated VM route and native Keychain helper | Packaging, component, integration |
+| Local hosting | [REQ-BRAKE-CLOUD-015](#req-brake-cloud-015), [REQ-BRAKE-CLOUD-016](#req-brake-cloud-016) | Native ARM64 container, persistent volume, loopback UI, authenticated VM route and native D4-010.3 `brake-sp1` helper boundary | Packaging, component, contract, integration |
 
 ## D3 Acceptance Record
+
+Version 0.3 was revalidated on 2026-08-22 after D4-010.3 accepted the
+current-demo artifact-publication profile. `REQ-BRAKE-CLOUD-004`,
+`REQ-BRAKE-CLOUD-016`, `UT-BRAKE-CLOUD-003` and `UT-BRAKE-CLOUD-014` now bind
+the Release Candidates surface to `brake-sp1`, record the installed
+`aos-signer` 2.0.1 file-backed PKCS#12 limitation and forbid caller-selected
+profile/path/URL input. The credential remains outside Git, the browser,
+Docker, VM images and artifacts; technical SP1 publication still has no OEM
+Unit-approval authority.
 
 Version 0.1 was accepted for D3 after reviewers confirmed that:
 
@@ -737,7 +751,7 @@ artifact, call AosCloud or mutate either Unit.
 | Exact `IF-FUNC-001` schemas, message/field/size bounds and authentication | Backend, service and contract tests | Function Team 1 | Before implementation starts |
 | Exact v1 pre/active/post display and chart fields | Dashboard fixtures and presentation | Function Team 1 | Before UI implementation |
 | Backend technology, storage engine, API transport and deployment environment | Repository scaffold and component tests | Function Team 1 | D4 technical design |
-| Protected local signing helper protocol and key custody | Release Workspace integration | Function Team 1 security/release owner | Before signing implementation |
+| Exact common-helper request/result transport, D4-010.3 `brake-sp1` configuration and authoritative Cloud reconciliation lookup | Release Workspace integration; accepted profile/custody semantics are closed | Function Team 1 security/release owner + Demo Solution | Before signing implementation |
 | Exact Docker Desktop startup/wait behavior and accepted minimum version | Demo launcher and colleague reproduction | `CR-DEMO` plus Function Team 1 | Before launcher implementation |
 | Exact QEMU guest-visible host to loopback-published Docker route | Functional ingestion without LAN exposure | `CR-DEMO` plus Function Team 1 | D4 network experiment before implementation is accepted |
 | Exact SQLite schema, Docker volume name/location, backup and migration policy | Restart, reset and service-version evolution | Function Team 1 | D4 storage design |

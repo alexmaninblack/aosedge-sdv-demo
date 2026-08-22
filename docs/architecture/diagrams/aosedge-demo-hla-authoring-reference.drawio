@@ -4,7 +4,7 @@
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="HLA-TITLE" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;" value="AosEdge SDV Demo - High-Level Architecture 1.4" vertex="1">
+        <mxCell id="HLA-TITLE" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;" value="AosEdge SDV Demo - High-Level Architecture 1.5" vertex="1">
           <mxGeometry height="40" width="700" x="20" y="-245" as="geometry" />
         </mxCell>
         <mxCell id="HLA-SUPERSET-NOTE" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=2;" value="Capability-superset view: deployable FOTA and SOTA boxes show the target architecture, not simultaneous presence at every demo stage. One logical Domain Controller architecture is instantiated as either the Validation Unit or the Demonstration Unit." vertex="1">
@@ -22,8 +22,11 @@
         <mxCell id="M7xq5pBXHRRF11vvhjOU-11" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;strokeWidth=2;" value="Domain Controller ECU - QEMU + AosVM&lt;br&gt;logical instance: Validation Unit or Demonstration Unit" vertex="1">
           <mxGeometry height="395" width="1100" x="1060" y="225" as="geometry" />
         </mxCell>
-        <mxCell id="M7xq5pBXHRRF11vvhjOU-23" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;strokeWidth=2;" value="Vehicle Data Platform Component (FOTA artifact and versioned contract)" vertex="1">
-          <mxGeometry height="210" width="880" x="1260" y="390" as="geometry" />
+        <mxCell id="M7xq5pBXHRRF11vvhjOU-23" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;strokeWidth=2;fontSize=10;" value="Vehicle Data Platform Component (FOTA)&lt;br&gt;versioned vehicle-data contract" vertex="1">
+          <mxGeometry height="210" width="360" x="1260" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="HLA-KUKSA-DATABROKER" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;strokeWidth=2;fontSize=10;" value="Eclipse KUKSA Databroker&lt;br&gt;stable factory-installed resource server" vertex="1">
+          <mxGeometry height="210" width="360" x="1640" y="390" as="geometry" />
         </mxCell>
         <mxCell id="M7xq5pBXHRRF11vvhjOU-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;strokeWidth=2;" value="Virtual Vehicle Platform - CARLA" vertex="1">
           <mxGeometry height="180" width="770" x="40" y="320" as="geometry" />
@@ -77,8 +80,31 @@
         <mxCell id="M7xq5pBXHRRF11vvhjOU-15" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Read/subscribe&lt;br&gt;kuksa.val.v1" vertex="1">
           <mxGeometry height="60" width="150" x="1850" y="420" as="geometry" />
         </mxCell>
-        <mxCell id="HLA-KUKSA-CREDENTIAL-BROKER" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=10;strokeWidth=1;dashed=1;" value="Thin Aos–KUKSA Credential Broker&lt;br&gt;registered IAM permissions → short-lived scoped JWT" vertex="1">
-          <mxGeometry height="36" width="340" x="1660" y="482" as="geometry" />
+        <mxCell id="HLA-KUKSA-CREDENTIAL-BROKER" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=10;strokeWidth=1;dashed=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="Platform-controlled Service credential boundary&lt;br&gt;&lt;b&gt;current-release overlay:&lt;/b&gt; removable JWT helper&lt;br&gt;Aos IAM lookup → Service-private JWT" vertex="1">
+          <mxGeometry height="80" width="250" x="1260" y="285" as="geometry" />
+        </mxCell>
+        <mxCell id="HLA-KAC-IAM" edge="1" parent="1" source="HLA-KUKSA-CREDENTIAL-BROKER" style="endArrow=classic;html=1;rounded=0;dashed=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="M7xq5pBXHRRF11vvhjOU-21" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry" />
+        </mxCell>
+        <mxCell id="HLA-KAC-KUKSA" edge="1" parent="1" source="HLA-KUKSA-CREDENTIAL-BROKER" style="endArrow=classic;html=1;rounded=0;dashed=1;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.15;entryDx=0;entryDy=0;" target="HLA-KUKSA-DATABROKER" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="1580" y="345" />
+              <mxPoint x="1580" y="420" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="HLA-KAC-TIRE" edge="1" parent="1" source="HLA-KUKSA-CREDENTIAL-BROKER" style="endArrow=classic;html=1;rounded=0;dashed=1;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" target="j12gpLU1JJJo3LKyeumj-2" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry" />
+        </mxCell>
+        <mxCell id="HLA-KAC-BRAKE" edge="1" parent="1" source="HLA-KUKSA-CREDENTIAL-BROKER" style="endArrow=classic;html=1;rounded=0;dashed=1;exitX=1;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="M7xq5pBXHRRF11vvhjOU-22" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="1520" y="380" />
+              <mxPoint x="2145" y="380" />
+              <mxPoint x="2145" y="320" />
+            </Array>
+          </mxGeometry>
         </mxCell>
         <mxCell id="M7xq5pBXHRRF11vvhjOU-16" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;strokeWidth=2;" value="Simulated In-Vehicle Network" vertex="1">
           <mxGeometry height="210" width="170" x="860" y="390" as="geometry" />

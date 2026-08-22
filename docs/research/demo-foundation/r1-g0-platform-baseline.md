@@ -147,7 +147,7 @@ not edit the accepted HLA, scenario, or implementation plan.
 ## Sources
 
 - [Current accepted baseline](../../qualification/current-baseline.md)
-- [High-Level Architecture 1.4](../../architecture/high-level-architecture.md)
-- [Component Decomposition and Interface Register 1.1](../../requirements/component-decomposition-and-interface-register.md)
+- [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
+- [Component Decomposition and Interface Register 2.0](../../requirements/component-decomposition-and-interface-register.md)
 - [`aos-vehicle-platform` Service Manager configuration](../../../../aos-vehicle-platform/meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files/sm.cfg)
 - [AosCore architecture](https://docs.aosedge.tech/docs/aos-core/architecture/)
