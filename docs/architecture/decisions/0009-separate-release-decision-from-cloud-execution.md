@@ -54,11 +54,12 @@ lifecycle execution as follows:
    operation with the correct scoped identity. They must not infer approval from
    a passing test, auto-approve a candidate, impersonate a team, or maintain a
    parallel desired-state database.
-7. A combined FOTA/SOTA graph requires separate owner decisions. The Platform
-   Team accepts the platform candidate, the relevant Function Team accepts its
-   service candidate and integration result, and promotion proceeds only when
-   every required approval is recorded for the exact versions, digests, and
-   targets. A generic anonymous `OEM Acceptance` does not replace those gates.
+7. Related FOTA and SOTA releases keep separate candidates, owner acceptance,
+   OEM authorization, Cloud objects, Campaign/results and readiness. A
+   dependent Service may proceed only after the required provider release is
+   actually ready, but there is no combined approval, Campaign or atomic
+   rollback. A generic anonymous `OEM Acceptance` does not replace either
+   artifact's exact gates.
 
 ## Consequences
 

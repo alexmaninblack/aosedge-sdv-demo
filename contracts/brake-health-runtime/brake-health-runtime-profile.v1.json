@@ -1,0 +1,119 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "contractId": "aosedge-demo-brake-health-runtime",
+  "contractVersion": "1.0.0",
+  "lifecycleState": "ACCEPTED",
+  "decision": "D4-016.5",
+  "versions": {
+    "1.0.0": {"requiredVdp": ["VDP_V1", "VDP_V2", "VDP_V3"], "modelRequired": false, "advisoryRequired": false},
+    "2.0.0": {"requiredVdp": ["VDP_V2", "VDP_V3"], "modelRequired": true, "advisoryRequired": false},
+    "3.0.0": {"requiredVdp": ["VDP_V3"], "modelRequired": true, "advisoryRequired": true}
+  },
+  "readiness": {
+    "processAuthority": "AOSCORE_SERVICE_MANAGER",
+    "processStates": ["STARTING", "RUNNING", "STOPPED", "FAILED"],
+    "applicationModes": ["STARTING", "OPERATIONAL", "DEGRADED", "NOT_READY"],
+    "analyticsStates": ["NOT_READY", "READY"],
+    "analyticsReasons": ["STARTING", "VDP_INCOMPATIBLE", "KUKSA_AUTH_UNAVAILABLE", "KUKSA_DATA_UNAVAILABLE", "STORAGE_UNAVAILABLE", "STATE_INVALID", "NONE"],
+    "episodeOutcomeReasons": ["INPUT_QUALITY_INSUFFICIENT"],
+    "backendStates": ["CONNECTED", "DISCONNECTED", "BACKLOG", "OVERFLOW"],
+    "advisoryStates": ["NOT_APPLICABLE", "NOT_READY", "READY", "DEGRADED"],
+    "advisoryReasons": ["SERVICE_VERSION_NO_ADVISORY", "KUKSA_WRITE_UNAUTHORIZED", "VDP_V3_INCOMPATIBLE", "VISS_OR_GATEWAY_UNAVAILABLE", "NONE"],
+    "advisoryCommandOutcomes": ["APPLIED", "CLEARED", "REJECTED", "EXPIRED", "FAILED"],
+    "singleAdvisoryCommandOutcomeChangesCapabilityReadiness": false,
+    "applicationModeRule": {
+      "OPERATIONAL": "PROCESS_RUNNING_AND_ANALYTICS_READY_AND_ALL_VERSION_REQUIRED_CAPABILITIES_READY",
+      "DEGRADED": "PROCESS_RUNNING_AND_ANALYTICS_READY_AND_BACKEND_OR_VERSION_REQUIRED_ADVISORY_UNAVAILABLE",
+      "NOT_READY": "PROCESS_NOT_RUNNING_OR_ANALYTICS_NOT_READY"
+    },
+    "deploymentAcceptanceRules": {
+      "1.0.0": "PROCESS_RUNNING_AND_ANALYTICS_READY",
+      "2.0.0": "PROCESS_RUNNING_AND_ANALYTICS_READY",
+      "3.0.0": "PROCESS_RUNNING_AND_ANALYTICS_READY_AND_ADVISORY_READY_AT_LEAST_ONCE"
+    },
+    "capabilityStateMayTriggerAosProcessRestart": false,
+    "backendConnectivityRequiredForServiceReady": false,
+    "aosCloudConnectivityRequiredForServiceReady": false,
+    "invalidStateMayReportReady": false
+  },
+  "aosRequestedQuotas": {
+    "cpuLimit": 250,
+    "cpuLimitUnit": "DMIPS",
+    "ramLimit": "16MiB",
+    "storageLimit": "8MiB",
+    "stateLimit": "1MiB",
+    "tmpLimit": "8MiB",
+    "noFileLimit": 64,
+    "pidsLimit": 16,
+    "enforcementAuthority": "AOSCORE",
+    "qualified": false,
+    "signerVersion": "2.0.1",
+    "signedNativeCpuField": "cpuDmipsLimit",
+    "liveRuntimeMappingQualified": false,
+    "qualificationDecision": "D4-023"
+  },
+  "quotaQualification": {
+    "intentionalSaturationTarget": "TIRE_HEALTH_SERVICE",
+    "brakeHealthRole": "HEALTHY_CONTROL_TENANT",
+    "intentionalResource": "CPU",
+    "cpuExpectedBehavior": "THROTTLE_AT_LIMIT_WITHOUT_STOP_RESTART_OR_REDEPLOYMENT",
+    "nonCpuOverrunDemonstratedInFirstDemo": false,
+    "authoritativeEvidence": "AOSCORE_TO_AOSCLOUD_INSTANCE_MONITORING_AND_ALERTS"
+  },
+  "ownedBounds": {
+    "v1WindowSpoolBytes": 4194304,
+    "v1WindowCount": 8,
+    "v2V3OutboxBytes": 1048576,
+    "v2V3OutboxMessages": 64,
+    "modelStateBytes": 65536,
+    "logRecordBytes": 2048,
+    "logRecordsPerMinute": 60
+  },
+  "stateCompatibility": {
+    "v1ToV2": {
+      "modelStateStart": "CREATE_PRECONDITIONED_MODEL_STATE_AND_START_V2_ANALYTICS_IMMEDIATELY",
+      "legacySpoolHandling": "RETAIN_AND_DRAIN_IN_BACKGROUND",
+      "legacySpoolDeletion": "ONLY_AFTER_DURABLE_BACKEND_ACK_OR_R0_RESET",
+      "legacySpoolMayGateV2Analytics": false
+    },
+    "v2ToV3": {
+      "modelState": "REUSE_EXACT_MODEL_STATE",
+      "advisoryState": "CREATE_OR_REUSE_PERSISTENT_ADVISORY_EPOCH_SEQUENCE",
+      "persistedInspectionBehavior": "APPLY_ACCEPTED_D4_016_4_ONE_TIME_ACTIVATION"
+    },
+    "v3ForwardRepair": "READ_SAME_SCHEMA_OR_EXPLICITLY_MIGRATE_WITH_JOURNAL",
+    "arbitraryBackwardServiceSelectionClaimed": false,
+    "unknownSchemaBehavior": "QUARANTINE_AND_NOT_READY_STATE",
+    "modelConfigDigestMismatchBehavior": "QUARANTINE_AND_NOT_READY_STATE",
+    "silentResetAllowed": false,
+    "r0Behavior": "REMOVE_WITH_DISPOSABLE_UNIT_OVERLAY"
+  },
+  "nativeLogging": {
+    "transport": "STDOUT_STDERR_TO_AOSCORE_NATIVE_LOG_COLLECTION",
+    "independentLogArchiveAllowed": false,
+    "language": "ENGLISH",
+    "format": "ONE_COMPACT_JSON_OBJECT_PER_LINE",
+    "allowedFields": ["schemaVersion", "eventType", "severity", "observedAt", "unitSystemUid", "serviceVersion", "serviceArtifactSha256", "vdpContractVersion", "modelVersion", "sourceEventId", "assessmentId", "requestId", "previousState", "currentState", "reasonCode", "count"],
+    "forbiddenFields": ["aosSecret", "jwt", "privateKey", "certificate", "vin", "rawProtocolFrame", "rawTelemetrySample", "arbitraryPayload"],
+    "eventTypes": ["SERVICE_STARTED", "SERVICE_STOPPED", "READINESS_CHANGED", "VDP_CONTRACT_ACCEPTED", "VDP_CONTRACT_REJECTED", "KUKSA_AUTH_CHANGED", "KUKSA_SUBSCRIPTION_CHANGED", "WINDOW_TRIGGERED", "WINDOW_COMPLETED", "WINDOW_DROPPED_QUEUE_FULL", "ASSESSMENT_CREATED", "ASSESSMENT_SKIPPED_INPUT_QUALITY", "CONDITION_BAND_CHANGED", "BACKEND_SYNC_CHANGED", "DERIVED_OUTBOX_FULL", "ADVISORY_REQUESTED", "ADVISORY_GATEWAY_STATUS", "STATE_RECOVERED", "STATE_QUARANTINED"],
+    "perChunkSuccessLogAllowed": false,
+    "repeatedEventBehavior": "RATE_LIMIT_AND_EMIT_AGGREGATED_COUNT",
+    "serviceMayClaimCpuOrRamQuotaExceeded": false,
+    "resourceQuotaEvidenceAuthority": "AOSCORE_NATIVE_RESOURCE_EVIDENCE",
+    "sourceLocalAndBackendTimesMustRemainDistinct": true
+  },
+  "failureIsolation": {
+    "serviceProvidesResourceManager": false,
+    "cpuQuotaEnforcementThrottlesAtLimit": true,
+    "cpuQuotaEnforcementMayStopOrRestartThisService": false,
+    "cpuQuotaEnforcementMayStopOrDegradePeerService": false,
+    "nonCpuQuotaOverrunBehaviorClaimed": false,
+    "serviceCrashMayStopVdp": false,
+    "serviceCrashMayStopKuksa": false,
+    "serviceCrashMayStopPeerService": false,
+    "backendFailureMayStopLocalAnalytics": false,
+    "outboxOverflowMayStopLocalAdvisory": false,
+    "restartMustRecoverOrExplicitlyQuarantinePersistentState": true
+  }
+}

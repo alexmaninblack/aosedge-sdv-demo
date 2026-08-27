@@ -28,7 +28,7 @@ and uses a short-lived architecture branch for the complete document cascade.
 ## 3. Add Architecture Flows
 
 Describe normal, validation, promotion, unavailable, offline, failure and
-cleanup paths. Separate Validation and Demonstration Units and preserve the
+cleanup paths. Separate Validation and Production Units and preserve the
 independence of Platform/FOTA and each Function Team/SOTA lifecycle.
 
 ## 4. Derive System Requirements and Gaps
@@ -57,13 +57,32 @@ Version the relevant VISS, KUKSA, Cloud, report, event, log and dashboard
 contracts. Specify unavailable, stale, malformed, unauthorized, offline and
 retry behavior before implementing either side.
 
-## 8. Implement in the Owning Repositories
+## 8. Review Audience-Visible UI Mockups
+
+Inventory the launcher/controller, engineering dashboard, OEM delivery views,
+Function Team views and every other interface the presenter or audience can
+see. Before implementing a new view or changing an existing one, review a
+low-fidelity mockup and state flow that identify:
+
+- the audience and actor using the surface;
+- the authoritative source of every displayed fact;
+- the owner and confirmation boundary of every action;
+- the relevant component, interface and requirement IDs; and
+- normal plus applicable blocked, submitting, uncertain/reconciling, failed,
+  incomplete, stale, offline and redacted states.
+
+Unchanged parts of an existing interface may be reused by reference. The
+mockups define presentation and interaction intent; accepted architecture,
+requirements and versioned contracts remain authoritative for behavior. Do
+not start the affected UI implementation until this review gate is accepted.
+
+## 9. Implement in the Owning Repositories
 
 Build and test each component independently, then qualify its interfaces.
 Promote the same accepted artifact bytes and digest from the Validation Unit
-to the Demonstration Unit. Do not rebuild a release for promotion.
+to the Production Unit. Do not rebuild a release for promotion.
 
-## 9. Add Reproduction and Acceptance Material
+## 10. Add Reproduction and Acceptance Material
 
 Update operator instructions, workspace locks, component state, sanitized
 evidence and the reset procedure. A scenario is complete only when another

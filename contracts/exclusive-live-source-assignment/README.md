@@ -10,14 +10,19 @@
 This contract separates the audience story from the first-demo implementation
 constraint:
 
-- the audience sees a **Validation Vehicle** and a **Demonstration Vehicle**;
+- the audience sees a **Test Vehicle** and a **Production Vehicle**;
 - AosCloud manages the corresponding **Validation Unit** and
-  **Demonstration Unit** Domain Controllers;
+  **Production Unit** Domain Controllers;
 - the host-side demo implementation assigns one live CARLA/Gateway source
   sequentially and exclusively to those Units.
 
 - [JSON Schema](exclusive-live-source-assignment.schema.json)
 - [Accepted contract 1.0.0](exclusive-live-source-assignment.v1.json)
+
+`Test Vehicle` is a display label only. The contract's stable internal
+`VALIDATION_VEHICLE` role maps to it at the Representation Layer; technical
+Unit, API and evidence terminology remains `Validation Unit` / `VU` in the
+`Verification Unit Set`.
 
 The primary UI never presents attach/detach, VM plumbing or source-gate
 operations as vehicle behavior. It exposes one `CURRENT VEHICLE`, retains

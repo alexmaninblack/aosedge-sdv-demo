@@ -128,13 +128,16 @@ dependency is absent, use:
 3. fail-closed service startup/readiness when the required provider contract
    is missing or incompatible;
 4. an exact accepted Pn+Sn graph manifest;
-5. reverse service-first reset ordering.
+5. dependent-Service-first recovery ordering.
 
 A mixed Deployment Bundle may later strengthen coordinated delivery, but its
 failure and rollback atomicity must be proved before it becomes the demo's
 dependency mechanism.
 
-## Reset recommendation
+## Historical reset candidate — superseded by D4-015
+
+The following candidate records the research path that preceded the accepted
+D4-015 decision. It is not the current demo reset or recovery contract.
 
 ### Primary candidate — forward/native reset
 
@@ -153,6 +156,22 @@ This is a **forward reset release**, not a rollback.
 Restore the correct per-Unit golden image only after Cloud target state is G0
 or while the VM remains isolated. Enforce single-active-copy identity and the
 reconciliation controls defined by R3.
+
+## Accepted D4-015 recovery and retirement refinement
+
+- Normal `R0` retires the disposable Units and overlays; it does not reverse
+  the accepted `G4/T1` software graph.
+- A dependent SOTA Service is removed first through Subject-service
+  unassignment and its absence is proved before VDP recovery.
+- Before FOTA `ApplyUpdate`, `RevertUpdate` may be used. After Apply, recovery
+  is a new signed forward-repair FOTA version, qualified on VU before DU.
+- Stopping a Campaign or invalidating a batch is not rollback of a Unit that
+  already applied the update. Arbitrary previous-Service-Version selection is
+  not a qualified current-demo contract.
+- R0 uses offline-only deprovision, a fresh post-`204` read, old-credential
+  rejection, exact `system_uid` Unit Set removal, Unit deletion and proof that
+  Unit-owned Nodes become inaccessible. API v11 exposes no standalone Node
+  deletion operation.
 
 ## Required experiments
 

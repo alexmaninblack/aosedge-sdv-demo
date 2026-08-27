@@ -1,0 +1,46 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:brake-health-event:schema:v1",
+  "title": "Brake Health Condition Band Change Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "contractVersion", "messageType", "eventId", "assessmentId", "sourceEventId", "unitSystemUid", "unitRole", "serviceVersion", "serviceArtifactSha256", "modelId", "modelVersion", "modelConfigSha256", "provenance", "content", "contentSha256"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "contractVersion": {"const": "1.0.0"},
+    "messageType": {"const": "BRAKE_HEALTH_EVENT"},
+    "eventId": {"$ref": "#/$defs/uuid5"},
+    "assessmentId": {"$ref": "#/$defs/uuid5"},
+    "sourceEventId": {"$ref": "#/$defs/uuid4"},
+    "unitSystemUid": {"type": "string", "minLength": 1, "maxLength": 128},
+    "unitRole": {"enum": ["VALIDATION", "PRODUCTION"]},
+    "serviceVersion": {"enum": ["2.0.0", "3.0.0"]},
+    "serviceArtifactSha256": {"$ref": "#/$defs/sha256"},
+    "modelId": {"const": "brake-condition-demo-v1"},
+    "modelVersion": {"const": "1.0.0"},
+    "modelConfigSha256": {"$ref": "#/$defs/sha256"},
+    "provenance": {"const": "DEMO_SYNTHETIC"},
+    "content": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["eventType", "reasonCode", "previousBand", "currentBand", "conditionScore", "effectiveAt", "quality"],
+      "properties": {
+        "eventType": {"const": "BRAKE_CONDITION_BAND_CHANGED"},
+        "reasonCode": {"const": "SYNTHETIC_ACCUMULATED_STRESS_THRESHOLD"},
+        "previousBand": {"$ref": "#/$defs/band"},
+        "currentBand": {"$ref": "#/$defs/band"},
+        "conditionScore": {"type": "integer", "minimum": 0, "maximum": 100},
+        "effectiveAt": {"type": "string", "format": "date-time"},
+        "quality": {"const": "VALID_DEMO_SYNTHETIC"}
+      }
+    },
+    "contentSha256": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {
+    "uuid4": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
+    "uuid5": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "band": {"enum": ["GOOD", "MONITOR", "INSPECTION_RECOMMENDED"]}
+  }
+}

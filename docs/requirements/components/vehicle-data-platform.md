@@ -48,7 +48,7 @@ vehicle-motion authority.
 | What this package owns | VDP v1-v3 artifacts, trusted OEM Provider, VISS client, signal validation/normalization, versioned KUKSA data contract and outbound advisory validation |
 | What this package does not own | Factory Image, KUKSA executable, KUKSA Authorization Compatibility helper, SOTA identity/JWT lifecycle, functional-service metadata, Cloud deployment approval, Gateway implementation or functional backends |
 | Factory dependency | Healthy provider-specific empty slot, unmodified KUKSA and the separately packaged authorization compatibility substrate required by SOTA services |
-| Intended lifecycle | Immutable component FOTA: Validation Unit first, then identical accepted bytes promoted to Demonstration Unit |
+| Intended lifecycle | Immutable component FOTA: Platform Team validates and accepts on Validation Unit first; OEM Release Authority authorizes identical accepted bytes for Production rollout, where readiness confirms delivery health rather than a second product test |
 | Current state | Inbound Provider and FOTA/runtime qualification evidence exist; accepted v1-v3 graph, outbound path and final trusted Provider connection qualification remain work |
 
 ## Component and Authorization Boundary
@@ -75,7 +75,7 @@ as the generic workload-authorization model.
 | Capability | Current evidence | Required disposition |
 | --- | --- | --- |
 | Inbound provider | Provider `0.2.0`, seven-path profile `0.1.1`, VISS TLS, KUKSA publication, source timestamps, unavailable-state handling and reconnect qualification | Reuse and align to accepted v1-v3 contract |
-| Component FOTA | Immutable package, local signature verification, A/B runtime lifecycle and rollback evidence | Freeze final artifact schema and Validation-to-Demonstration flow |
+| Component FOTA | Immutable package, local signature verification, A/B runtime lifecycle and pre-Apply revert evidence | Freeze final artifact schema, post-Apply forward-repair contract and Validation-to-Production flow |
 | KUKSA executable | External Eclipse KUKSA 0.5.0 using `kuksa.val.v1` | Keep unchanged; change only contract and verifier configuration |
 | Trusted Provider connection | Host-generated qualification credential delivered through systemd credentials | Treat as OEM platform integration; freeze and qualify the final non-service mechanism without adding Provider IAM/JWT exchange in the first demo |
 | SOTA authorization compatibility | Not implemented | Owned by separate `CR-KAC`; not delivered in the VDP FOTA artifact |
@@ -83,7 +83,7 @@ as the generic workload-authorization model.
 
 ## Testability Boundary
 
-Owned mapping, freshness, advisory validation, readiness, retry and rollback
+Owned mapping, freshness, advisory validation, readiness, retry and recovery
 decisions shall be testable without
 CARLA, QEMU, AosCloud or a real KUKSA Databroker. VISS, KUKSA, component
 runtime, persistence and clocks are deterministic test seams. The unmodified
@@ -111,7 +111,7 @@ obligations and shall not be replaced by mocks in acceptance evidence.
 | Component | Prove Provider and outbound-path behavior through packaged boundaries | Disposable guest with controlled VISS/KUKSA doubles | Yes | Component readiness, failure and recovery report |
 | Contract | Prove v1-v3 data/advisory compatibility and runtime type | Versioned schemas, fixtures and conformance harness | Yes | D4 contract-suite result and fixture digests |
 | Integration | Prove trusted Provider-to-KUKSA connection and A/B lifecycle | Disposable AosVM and controlled adjacent real components | Yes | Exact revisions, configuration and redacted integration record |
-| End-to-end | Prove validation-first FOTA, independent SOTA consumers, offline operation, advisory and identical promotion bytes | Complete Validation and Demonstration lanes | Yes | G1-G4/T1 lifecycle and runtime evidence |
+| End-to-end | Prove validation-first FOTA, independent SOTA consumers, offline operation, advisory and identical promotion bytes | Complete Validation and Production lanes | Yes | G1-G4/T1 lifecycle and runtime evidence |
 
 ## Requirement Summary
 
@@ -123,7 +123,7 @@ obligations and shall not be replaced by mocks in acceptance evidence.
 | [Explicit degraded state (`REQ-VDP-004`)](#req-vdp-004) | Never substitute fabricated normal values | Unit, Component, Integration, End-to-end | D3 design-reviewed | `CURRENT / EXTEND` |
 | [Defense-in-depth outbound v3 advisory (`REQ-VDP-005`)](#req-vdp-005) | Permit only typed QM Brake/Tire advisories; Gateway remains authoritative | Unit, Contract, Integration, End-to-end | D3 design-reviewed | `TARGET` |
 | [Readiness and resource bounds (`REQ-VDP-009`)](#req-vdp-009) | Fail closed and remain bounded under dependency/resource failures | Unit, Component, Integration, End-to-end | D3 design-reviewed | `PARTIAL` |
-| [Compatibility and rollback (`REQ-VDP-010`)](#req-vdp-010) | Preserve supported services and rollback dependent-first | Unit, Contract, Integration, End-to-end | D3 design-reviewed | `TARGET / PARTIAL` |
+| [Compatibility and dependent-first recovery (`REQ-VDP-010`)](#req-vdp-010) | Remove dependent Services first, then use pre-Apply revert or post-Apply forward repair | Unit, Contract, Integration, End-to-end | D4-015 design accepted; live qualification open | `TARGET / PARTIAL` |
 | [Trusted OEM Provider integration (`REQ-VDP-011`)](#req-vdp-011) | Qualify the Provider as an OEM platform integration without creating service authority | Contract, Integration, End-to-end | D3 review candidate | `PARTIAL` |
 
 ## Detailed Requirements
@@ -134,14 +134,21 @@ obligations and shall not be replaced by mocks in acceptance evidence.
 The Platform Team shall build each VDP release as an immutable, versioned and
 digest-addressed component FOTA artifact targeting only the accepted
 provider-specific runtime. The exact accepted bytes shall move from Validation
-to Demonstration without rebuild.
+to Production without rebuild. On both Units, the factory-installed OEM
+Component Runtime inside AosCore Service Manager shall apply the Platform FOTA
+only after fresh Gateway evidence satisfies the accepted Safe Stop policy; the
+vehicle shall remain stopped until exact component readiness is proven and
+driving shall resume only through an explicit control action. The VDP payload
+being updated is neither the source of Safe Stop evidence nor the enforcement
+point.
 
 - Parents: [`SYS-REL-001`](../system-requirements-and-traceability.md#sys-rel-001), [`SYS-REL-004`](../system-requirements-and-traceability.md#sys-rel-004), [`SYS-REL-007`](../system-requirements-and-traceability.md#sys-rel-007), [`SYS-REL-010`](../system-requirements-and-traceability.md#sys-rel-010)
 - Flows: [`AF-G1-LC`](../../architecture/demo-scenario-architecture-flows.md#af-g1-lc), [`AF-X-RELEASE`](../../architecture/demo-scenario-architecture-flows.md#af-x-release)
 - Components: [Vehicle Data Platform (`CMP-VDP`)](../component-decomposition-and-interface-register.md#cmp-vdp), [AosCloud (`CMP-AOS-CLOUD`)](../component-decomposition-and-interface-register.md#cmp-aos-cloud), [AosCore (`CMP-AOS-CORE`)](../component-decomposition-and-interface-register.md#cmp-aos-core) and [Empty-Slot Runtime (`CMP-RUNTIME`)](../component-decomposition-and-interface-register.md#cmp-runtime)
-- Interfaces: [platform FOTA (`IF-LC-001`)](../component-decomposition-and-interface-register.md#if-lc-001), [Platform Team approval (`IF-LC-008`)](../component-decomposition-and-interface-register.md#if-lc-008) and [runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006)
+- Interfaces: [platform FOTA (`IF-LC-001`)](../component-decomposition-and-interface-register.md#if-lc-001), [Platform Team approval (`IF-LC-008`)](../component-decomposition-and-interface-register.md#if-lc-008), [runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006) and [Platform-update vehicle state (`IF-VEH-007`)](../component-decomposition-and-interface-register.md#if-veh-007)
 - Verification: unit, contract, integration and end-to-end
-- Required evidence: exact artifact/metadata digests, approval basis, target, runtime type, accepted Validation result and identical Demonstration bytes
+- Executable contract: [Platform FOTA Safe Stop 1.0.1](../../../contracts/platform-fota-safe-stop/platform-fota-safe-stop-profile.v1.json)
+- Required evidence: exact artifact/metadata digests, approval basis, target, runtime type, accepted Validation result, identical Production bytes, current Gateway Safe Stop evidence, runtime waiting/apply reasons and AosCore readiness sequence on both Units
 - Requirement state: D3 design-reviewed
 
 <a id="req-vdp-002"></a>
@@ -262,7 +269,10 @@ dependencies are missing, stale or inconsistent. Source
 disconnect/staleness shall make the selected published subset atomically
 `NotAvailable`, and recovery shall require the complete valid D4-006 snapshot.
 CPU, memory, file/process count, storage, reconnect, queue and log volume
-shall be bounded, and logs shall contain only factual redacted state.
+shall be bounded, and logs shall contain only structured allowlisted factual
+events such as provider start/readiness, VISS/KUKSA connection transitions and
+typed advisory validation/result. Credentials, tokens, certificates, VIN,
+raw protocol frames and raw/high-rate telemetry shall never be logged.
 
 - Parents: [`SYS-SEC-003`](../system-requirements-and-traceability.md#sys-sec-003), [`SYS-OBS-003`](../system-requirements-and-traceability.md#sys-obs-003)
 - Flows: [`AF-G0-FR`](../../architecture/demo-scenario-architecture-flows.md#af-g0-fr), [`AF-X-OBS`](../../architecture/demo-scenario-architecture-flows.md#af-x-obs)
@@ -273,22 +283,27 @@ shall be bounded, and logs shall contain only factual redacted state.
 - Requirement state: D3 design-reviewed; D4-006 source-readiness contract accepted
 
 <a id="req-vdp-010"></a>
-### Compatibility and rollback
+### Compatibility and dependent-first recovery
 
 Each release shall publish the D4-007 installed-identity fields and compatible
-service range. Update, restart, interruption and rollback shall preserve the
-previous accepted component until commit; any incompatible dependent service
-shall be stopped or rolled back before the platform component, while unrelated
-service lifecycles remain unchanged.
+service range. Update, restart and interruption shall preserve the previous
+accepted component until FOTA commit. Recovery shall remove an incompatible
+dependent Service through Subject-service unassignment and prove it absent
+before changing the platform component. Before `ApplyUpdate`, the qualified
+transaction may use `RevertUpdate`; after Apply, the Platform Team shall issue
+a new signed forward-repair FOTA version, qualify it on VU before PU, and only
+then permit Service reassignment. Unrelated Service lifecycles remain
+unchanged; arbitrary component downgrade and previous-Service-Version
+selection are not claimed.
 
 - Parents: [`SYS-REL-003`](../system-requirements-and-traceability.md#sys-rel-003), [`SYS-REL-005`](../system-requirements-and-traceability.md#sys-rel-005)
 - Flows: [`AF-G3-LC`](../../architecture/demo-scenario-architecture-flows.md#af-g3-lc), [`AF-G3-FR`](../../architecture/demo-scenario-architecture-flows.md#af-g3-fr)
 - Components: [Vehicle Data Platform (`CMP-VDP`)](../component-decomposition-and-interface-register.md#cmp-vdp), [AosCore (`CMP-AOS-CORE`)](../component-decomposition-and-interface-register.md#cmp-aos-core) and [Empty-Slot Runtime (`CMP-RUNTIME`)](../component-decomposition-and-interface-register.md#cmp-runtime)
 - Interfaces: [platform FOTA (`IF-LC-001`)](../component-decomposition-and-interface-register.md#if-lc-001) and [runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006)
 - Verification: unit, contract, integration and end-to-end
-- Required evidence: machine-readable compatibility range, dependent-first stop/rollback ordering, previous-slot recovery and unrelated-service continuity
+- Required evidence: machine-readable compatibility range, dependent-Service removal and absence, pre-Apply revert, post-Apply forward-repair identity, VU qualification, blocked PU on VU failure, safe Service reassignment and unrelated-service continuity
 - Executable compatibility contract: [VDP Compatibility Profile 1.0.0](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
-- Requirement state: D3 design-reviewed; compatibility identity and ranges accepted by D4-007
+- Requirement state: D4-007 compatibility identity/ranges and D4-015 recovery design accepted; live recovery matrix remains open
 
 <a id="req-vdp-011"></a>
 ### Trusted OEM Provider integration
@@ -318,7 +333,7 @@ requirement semantics.
 
 | Requirement | Positive acceptance | Boundary or malformed acceptance | Dependency/failure/recovery acceptance |
 | --- | --- | --- | --- |
-| [`REQ-VDP-001`](#req-vdp-001) | Exact version, digest, runtime type and bytes are retained from Validation acceptance through Demonstration promotion | Wrong target, type, version/digest mismatch or rebuilt promotion bytes are rejected before apply | Interrupted or unhealthy candidate never replaces the previous accepted slot |
+| [`REQ-VDP-001`](#req-vdp-001) | Exact version, digest, runtime type and bytes are retained from Validation acceptance through Production promotion, and the OEM Component Runtime applies each FOTA only after proven Safe Stop | Wrong target, type, version/digest mismatch, rebuilt promotion bytes or absent/stale/moving evidence cannot cross the destructive runtime gate | Interrupted or unhealthy candidate never replaces the previous accepted slot; restart requires fresh evidence and the vehicle remains stopped until explicit recovery/resume |
 | [`REQ-VDP-002`](#req-vdp-002) | Every accepted v1 path has the frozen type, unit, cadence, freshness, provenance and availability semantics | Unknown path, wrong type/range or qualification-only truth is rejected without widening the contract | Missing/stale source becomes explicit unavailable state and recovers only from a valid fresh sample |
 | [`REQ-VDP-003`](#req-vdp-003) | Every v1 fixture and consumer remains valid after the accepted v2 Brake input subset is added | Duplicate, incompatible or semantically changed v1 definitions fail compatibility validation | A failed v2 candidate preserves the accepted v1 release and consumer operation |
 | [`REQ-VDP-004`](#req-vdp-004) | Valid source data preserves source time and produces the corresponding quality state | Future, stale, malformed, out-of-range or out-of-order input cannot appear as a normal value | Disconnect clears or marks affected state by contract; reconnect resumes only after valid fresh input |
@@ -360,7 +375,7 @@ required integration evidence.
 | [`REQ-VDP-004`](#req-vdp-004) | [`UT-VDP-002`](#ut-vdp-002), [`UT-VDP-007`](#ut-vdp-007) | Quality/readiness state | Quality and freshness fixtures | VISS loss/recovery | Offline/degraded evidence |
 | [`REQ-VDP-005`](#req-vdp-005) | [`UT-VDP-003`](#ut-vdp-003) | Outbound adapter status | Typed advisory negative matrix | KUKSA-to-Gateway round trip | G4/T1 advisory evidence |
 | [`REQ-VDP-009`](#req-vdp-009) | [`UT-VDP-002`](#ut-vdp-002), [`UT-VDP-007`](#ut-vdp-007) | Resource/readiness metrics | Limits and state schema | Dependency/resource fault injection | Bounded offline/recovery evidence |
-| [`REQ-VDP-010`](#req-vdp-010) | [`UT-VDP-001`](#ut-vdp-001), [`UT-VDP-007`](#ut-vdp-007) | Update/recovery state | Compatibility and rollback fixtures | Dependent-first rollback | G3 failure/recovery and promotion |
+| [`REQ-VDP-010`](#req-vdp-010) | [`UT-VDP-001`](#ut-vdp-001), [`UT-VDP-007`](#ut-vdp-007) | Update/recovery state | Compatibility, pre-Apply revert and forward-repair fixtures | Dependent-Service removal, VU repair and reassignment | G3 failure/recovery and promotion |
 | [`REQ-VDP-011`](#req-vdp-011) | [`UT-VDP-008`](#ut-vdp-008) | Provider readiness and configuration identity | VDP data/advisory contract | Real Provider-to-KUKSA connection on both Unit roles | G1-G4/T1 publication continuity under the declared trust assumption |
 
 ## Cross-Cutting Constraints
@@ -386,7 +401,7 @@ explicit review before it replaces that baseline.
 
 Product acceptance remains open until the gates below are resolved, D4
 contracts are executable, required unit/component/contract/integration tests
-are green, and identical accepted bytes complete Validation-to-Demonstration
+are green, and identical accepted bytes complete Validation-to-Production
 promotion. This closure does not authorize implementation, image rebuild,
 signing, Cloud upload, VM restart, provisioning or Unit mutation.
 

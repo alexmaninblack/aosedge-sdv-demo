@@ -118,6 +118,7 @@ decisions they exercise.
 | [Normalized VSS model (`IF-VEH-004`)](../component-decomposition-and-interface-register.md#if-veh-004) | Internal out | Frame-aligned VSS values and source status | Telemetry `CURRENT`; explicit source/advisory status `EXTEND` | No fabricated zero for unavailable optional data | Gateway projection |
 | [Platform VISS read connection (`IF-VEH-005`)](../component-decomposition-and-interface-register.md#if-veh-005) | Out | TLS Get/Subscribe for accepted telemetry and status paths | Read path `CURRENT`; D4 contract freeze required | Bounded errors/queues; slow or failed client cannot block simulation | Gateway VISS read contract |
 | [Engineering subscription (`IF-VEH-006`)](../component-decomposition-and-interface-register.md#if-veh-006) | Out | Read-only telemetry and status subscription | Telemetry `CURRENT`; advisory/status `EXTEND` | Dashboard shows disconnected/stale and cannot mutate Gateway | Gateway VISS contract |
+| [Platform-update vehicle state (`IF-VEH-007`)](../component-decomposition-and-interface-register.md#if-veh-007) | Out | Read-only applied mode, transition/reset state and factual stop signals for the OEM Component Runtime | `TARGET`; contract accepted | Missing/stale/reset-discontinuous evidence remains explicit and cannot be interpreted as stopped | Gateway facts; runtime evaluates Safe Stop policy |
 | [Outbound advisory Set (`IF-ADV-003`)](../component-decomposition-and-interface-register.md#if-adv-003) | In | Narrow typed VISS Set request from the Vehicle Data Platform outbound provider | `TARGET` | Unauthorized path, identity, type, value, stale or replayed request fails closed | Platform outbound allowlist and Gateway write contract |
 | [Advisory delivery (`IF-ADV-004`)](../component-decomposition-and-interface-register.md#if-adv-004) | Internal in | Validated typed Brake or Tire advisory target | `TARGET` | Reject unknown path/type/value, stale/replay and unauthorized source | Gateway contract |
 | [Advisory status (`IF-ADV-005`)](../component-decomposition-and-interface-register.md#if-adv-005) | Internal out | Factual received/rejected/status signal | `TARGET` | Never claim displayed or acknowledged | Gateway state |
@@ -140,7 +141,7 @@ decisions they exercise.
 | [Truthful normalization and provenance (`REQ-GATEWAY-002`)](#req-gateway-002) | Convert native values to defined physical/VSS semantics | `CURRENT` | Unit, Contract, Integration |
 | [Bounded latest-value and unavailable behavior (`REQ-GATEWAY-003`)](#req-gateway-003) | Retain only the newest frame and never fabricate missing values | `CURRENT / PARTIAL` | Unit, Contract, Integration |
 | [Bounded TLS VISS read service (`REQ-GATEWAY-004`)](#req-gateway-004) | Serve the accepted read/subscribe profile without blocking simulation | `CURRENT / PARTIAL` | Unit, Component, Contract |
-| [Source identity and selected-Unit evidence (`REQ-GATEWAY-005`)](#req-gateway-005) | Carry run/ego/generation/frame identity through sequential exclusive live VU and DU bindings | `PARTIAL` | Unit, Integration, End-to-end |
+| [Source identity and selected-Unit evidence (`REQ-GATEWAY-005`)](#req-gateway-005) | Carry run/ego/generation/frame identity through sequential exclusive live VU and PU bindings | `PARTIAL` | Unit, Integration, End-to-end |
 | [Authenticated fail-safe vehicle control (`REQ-GATEWAY-006`)](#req-gateway-006) | Permit one valid owner and safe-stop on invalid or lost control | `CURRENT` | Unit, Component, Integration |
 | [Continuous manual/autopilot handover (`REQ-GATEWAY-007`)](#req-gateway-007) | Switch modes without replacing actor, clock or telemetry and wait for the accepted world-context transition | `PARTIAL` | Unit, Integration, End-to-end |
 | [Independent engineering telemetry view (`REQ-GATEWAY-008`)](#req-gateway-008) | Show Gateway facts without joining the control or service path | `CURRENT` | Unit, Component, End-to-end |
@@ -385,7 +386,7 @@ decisions they exercise.
 - Components: [Advisory Handler (`CMP-GW-ADV`)](../component-decomposition-and-interface-register.md#cmp-gw-adv), [VISS (`CMP-VISS`)](../component-decomposition-and-interface-register.md#cmp-viss) and [Engineering Dashboard (`CMP-ENG-DASH`)](../component-decomposition-and-interface-register.md#cmp-eng-dash)
 - Interfaces: [advisory delivery (`IF-ADV-004`)](../component-decomposition-and-interface-register.md#if-adv-004), [advisory status (`IF-ADV-005`)](../component-decomposition-and-interface-register.md#if-adv-005) and [engineering subscription (`IF-VEH-006`)](../component-decomposition-and-interface-register.md#if-veh-006)
 - Required evidence: deterministic timestamp fixtures and a correlated local chronology record distinct from backend synchronization
-- Requirement state: D3 design-reviewed; D4-008 request/status chronology accepted
+- Requirement state: D4-024 shared correlation/chronology design reviewed; implementation and live qualification remain open
 - Implementation state: `TARGET`
 
 ### Truthful mode/context engineering projection
@@ -396,16 +397,19 @@ decisions they exercise.
 - Statement: The Gateway engineering projection shall publish the current
   drive mode, `FREE_DRIVE`/`BRAKE_EVENT` context, scenario state/result,
   scenario/reset generation and an explicit reset/discontinuity indication
-  through simulator-specific read-only VSS paths. The Engineering Telematics
-  Dashboard shall show those facts without issuing control commands and
+  through simulator-specific read-only VSS paths. The same projection plus
+  factual speed, throttle and brake shall be available through a separately
+  bounded platform-runtime read role for Safe Stop evaluation; Gateway
+  publishes facts and shall not decide whether a Platform update may apply.
+  The Engineering Telematics Dashboard shall show those facts without issuing control commands and
   without presenting a reset teleport as physical motion or adding them to an
   accepted production VDP signal subset by implication.
 - Parent system requirement: [Truthful control-transition evidence (`SYS-OBS-005`)](../system-requirements-and-traceability.md#sys-obs-005)
 - Architecture flows: [drive-mode/world-context transitions (`AF-X-DRIVE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-drive) and [cross-stage evidence (`AF-X-OBS`)](../../architecture/demo-scenario-architecture-flows.md#af-x-obs)
-- Components: [Gateway (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw), [VISS (`CMP-VISS`)](../component-decomposition-and-interface-register.md#cmp-viss) and [Engineering Dashboard (`CMP-ENG-DASH`)](../component-decomposition-and-interface-register.md#cmp-eng-dash)
-- Interfaces: [normalized model (`IF-VEH-004`)](../component-decomposition-and-interface-register.md#if-veh-004) and [engineering subscription (`IF-VEH-006`)](../component-decomposition-and-interface-register.md#if-veh-006)
-- Required evidence: state/path/type fixtures, monotonic generation checks, reset discontinuity sequence, dashboard rendering and negative proof that the dashboard is not a control client
-- Executable contract: [Simulator Control and Context 1.0.0](../../../contracts/simulator-control-context/simulator-control-context.v1.json)
+- Components: [Gateway (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw), [VISS (`CMP-VISS`)](../component-decomposition-and-interface-register.md#cmp-viss), [OEM Component Runtime (`CMP-RUNTIME`)](../component-decomposition-and-interface-register.md#cmp-runtime) and [Engineering Dashboard (`CMP-ENG-DASH`)](../component-decomposition-and-interface-register.md#cmp-eng-dash)
+- Interfaces: [normalized model (`IF-VEH-004`)](../component-decomposition-and-interface-register.md#if-veh-004), [engineering subscription (`IF-VEH-006`)](../component-decomposition-and-interface-register.md#if-veh-006) and [Platform-update vehicle state (`IF-VEH-007`)](../component-decomposition-and-interface-register.md#if-veh-007)
+- Required evidence: state/path/type/freshness fixtures, monotonic generation checks, reset discontinuity sequence, runtime-role allowlist, dashboard rendering and negative proof that neither the dashboard nor Gateway owns the update decision
+- Executable contracts: [Simulator Control and Context 1.0.0](../../../contracts/simulator-control-context/simulator-control-context.v1.json) and [Platform FOTA Safe Stop 1.0.1](../../../contracts/platform-fota-safe-stop/platform-fota-safe-stop-profile.v1.json)
 - Requirement state: D3 design-reviewed; D4-004 contract accepted
 - Implementation state: `TARGET`; current controller status contains part of the state outside VISS, but the accepted engineering projection and dashboard fields do not exist
 
@@ -488,7 +492,7 @@ profile before the Platform Team selects a narrower service-facing contract.
 | [Normalization (`REQ-GATEWAY-002`)](#req-gateway-002) | [`UT-GATEWAY-001`](#ut-gateway-001), [`UT-GATEWAY-003`](#ut-gateway-003) | Runtime projection | VSS path/type/unit fixtures | Live telemetry comparison | G1/G3 telemetry evidence |
 | [Latest/unavailable (`REQ-GATEWAY-003`)](#req-gateway-003) | [`UT-GATEWAY-001`](#ut-gateway-001), [`UT-GATEWAY-002`](#ut-gateway-002), [`UT-GATEWAY-003`](#ut-gateway-003) | Store/status metrics | Unavailable VISS cases | Source interruption | Owner qualification only; not a first-demo connectivity step |
 | [VISS read (`REQ-GATEWAY-004`)](#req-gateway-004) | [`UT-GATEWAY-004`](#ut-gateway-004), [`UT-GATEWAY-005`](#ut-gateway-005) | Existing TLS network test | D4 VISS conformance suite | Real platform client | G1 live values |
-| [Source identity (`REQ-GATEWAY-005`)](#req-gateway-005) | [`UT-GATEWAY-003`](#ut-gateway-003) | VISS metadata | D4 live-handover schema | Sequential selected VU then DU | `AF-X-SOURCE` evidence |
+| [Source identity (`REQ-GATEWAY-005`)](#req-gateway-005) | [`UT-GATEWAY-003`](#ut-gateway-003) | VISS metadata | D4 live-handover schema | Sequential selected VU then PU | `AF-X-SOURCE` evidence |
 | [Fail-safe control (`REQ-GATEWAY-006`)](#req-gateway-006) | [`UT-GATEWAY-006`](#ut-gateway-006), [`UT-GATEWAY-007`](#ut-gateway-007) | Existing Unix socket test | Control protocol suite | Live safe-stop cases | G0 vehicle operation |
 | [Continuous handover (`REQ-GATEWAY-007`)](#req-gateway-007) | [`UT-GATEWAY-008`](#ut-gateway-008) | Controller/UI status | Mode/control contract | Live visual handover | G0 vehicle operation |
 | [Engineering view (`REQ-GATEWAY-008`)](#req-gateway-008) | [`UT-GATEWAY-009`](#ut-gateway-009) | Dashboard process/manifest | Read-only VISS subscription | Live telemetry | G0/G4/T1 factual surface |
@@ -523,7 +527,7 @@ coverage or every transition behavior is implemented.
 
 Product acceptance remains open until the remaining D4 work freezes the
 source-handover/VISS/control-mode/advisory/status contracts, explicit
-source-loss and VU/DU binding are qualified, the typed advisory and factual
+source-loss and VU/PU binding are qualified, the typed advisory and factual
 dashboard extension pass their complete negative matrix, all `UT-*`
 obligations are green, and live CARLA plus Validation-Unit integration
 evidence is retained.
@@ -535,7 +539,7 @@ evidence is retained.
 | Implement and qualify the accepted mTLS roles, selected-Unit gate and per-Unit credential lifecycle | Blocks final `REQ-GATEWAY-004` security acceptance; contract choice is closed | Vehicle Gateway + Platform Team + Demo Orchestration | Accepted [`D4-006`](../d4-decision-register.md#d4-006) |
 | Implement and qualify the accepted source-status projection, 250 ms freshness and recovery semantics | Blocks complete `REQ-GATEWAY-009`; contract choice is closed | Vehicle Gateway + Platform Team | Accepted [`D4-006`](../d4-decision-register.md#d4-006) |
 | Implement and qualify the accepted typed Brake/Tire Request/Status targets, schema, freshness, lease, rate, replay and clear/expiry behavior | Contract choice is closed; blocks `REQ-GATEWAY-010` through `REQ-GATEWAY-012` implementation acceptance | Vehicle Gateway + Platform Team + Function Teams | Accepted [`D4-008`](../d4-decision-register.md#d4-008) |
-| Implement and qualify the accepted selected-Unit gate, independent read-only Dashboard peer and bounded VU/DU frame ranges | Blocks complete `REQ-GATEWAY-005`; both contract choices are closed | Demo Orchestration + Vehicle Gateway | Accepted [`D4-005`](../d4-decision-register.md#d4-005) and [`D4-006`](../d4-decision-register.md#d4-006), followed by live qualification |
+| Implement and qualify the accepted selected-Unit gate, independent read-only Dashboard peer and bounded VU/PU frame ranges | Blocks complete `REQ-GATEWAY-005`; both contract choices are closed | Demo Orchestration + Vehicle Gateway | Accepted [`D4-005`](../d4-decision-register.md#d4-005) and [`D4-006`](../d4-decision-register.md#d4-006), followed by live qualification |
 | Implement the accepted mode/context/scenario/reset VSS projection and context-aware transactional activation | Blocks complete `REQ-GATEWAY-007`, `REQ-GATEWAY-013` and `UT-GATEWAY-008`/`013`; contract choice is closed | Vehicle Gateway + Vehicle Simulation | Accepted [`D4-004`](../d4-decision-register.md#d4-004), followed by implementation and qualification |
 | Implement live profile reconciliation and remaining target adapter/actuator coverage against the accepted manifest | Blocks complete `REQ-GATEWAY-014`, `REQ-GATEWAY-015` and `IF-VEH-001`/`IF-VEH-003` qualification; the profile decision itself is closed | Vehicle Gateway + Vehicle Simulation | Accepted [`D4-002`](../d4-decision-register.md#d4-002), followed by implementation and live qualification |
 

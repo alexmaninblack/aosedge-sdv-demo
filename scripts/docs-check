@@ -28,7 +28,7 @@ CANONICAL_DOCUMENTS = (
 BOUNDARY_DECISION_HEADING = "## Boundary Decision Status"
 REQUIRED_METADATA = ("Status", "Version", "Prepared", "Owner")
 ALLOWED_STATUSES = ("draft", "review candidate", "accepted", "superseded")
-ALLOWED_DOC_SUFFIXES = {".md", ".png", ".drawio"}
+ALLOWED_DOC_SUFFIXES = {".md", ".png", ".jpg", ".jpeg", ".drawio", ".html"}
 OBSOLETE_NAME = re.compile(
     r"(?i)(?:\.bak$|~$|(?:^|[-_.])(?:old|backup|copy|tmp)(?:[-_.]|$))"
 )
@@ -49,14 +49,16 @@ IDENTIFIER = re.compile(
     r"AF-[A-Z0-9]+(?:-[A-Z0-9]+)+|"
     r"CR-[A-Z0-9]+(?:-[A-Z0-9]+)*|"
     r"REQ-[A-Z0-9]+(?:-[A-Z0-9]+)*-\d{3}|"
-    r"UT-[A-Z0-9]+(?:-[A-Z0-9]+)*-\d{3}"
+    r"UT-[A-Z0-9]+(?:-[A-Z0-9]+)*-\d{3}|"
+    r"UI-(?:INT|AT|TRC)-\d{3}"
     r")\b"
 )
 STABLE_ANCHOR = re.compile(
     r"^(?:gap-af-\d{2}|sys-[a-z0-9]+-\d{3}|cmp-[a-z0-9-]+|"
     r"if-[a-z0-9]+-\d{3}|af-[a-z0-9-]+|cr-[a-z0-9-]+|"
     r"req-[a-z0-9]+(?:-[a-z0-9]+)*-\d{3}|"
-    r"ut-[a-z0-9]+(?:-[a-z0-9]+)*-\d{3})$"
+    r"ut-[a-z0-9]+(?:-[a-z0-9]+)*-\d{3}|"
+    r"ui-(?:int|at|trc)-\d{3})$"
 )
 
 
@@ -127,7 +129,11 @@ def workspace_repository_for_url(
 
 
 def markdown_documents(root: Path) -> dict[Path, str]:
-    paths = [*sorted(root.glob("*.md")), *sorted((root / "docs").rglob("*.md"))]
+    paths = [
+        *sorted(root.glob("*.md")),
+        *sorted((root / "docs").rglob("*.md")),
+        *sorted((root / "contracts").rglob("*.md")),
+    ]
     return {
         path.resolve(): path.read_text(encoding="utf-8")
         for path in paths
@@ -530,6 +536,141 @@ def check_component_requirement_packages(
     return issues
 
 
+def ui_numbered_anchors(text: str, prefix: str) -> set[int]:
+    pattern = re.compile(rf'<a id="{re.escape(prefix)}-(\d{{3}})"></a>')
+    return {int(value) for value in pattern.findall(text)}
+
+
+def expanded_ui_interaction_references(text: str) -> set[int]:
+    references = {int(value) for value in re.findall(r"UI-INT-(\d{3})", text)}
+    ranges = re.compile(
+        r"UI-INT-(\d{3})`?\s*[–-]\s*`?(?:UI-INT-)?(\d{3})"
+    )
+    for start_text, end_text in ranges.findall(text):
+        start = int(start_text)
+        end = int(end_text)
+        if end >= start:
+            references.update(range(start, end + 1))
+    return references
+
+
+def check_ui_traceability(root: Path, documents: dict[Path, str]) -> list[Issue]:
+    """Require complete stable interaction-to-acceptance-case coverage."""
+
+    issues: list[Issue] = []
+    specification = (
+        root
+        / "docs"
+        / "demo"
+        / "mockups"
+        / "aosedge-demo-interaction-specification.md"
+    ).resolve()
+    text = documents.get(specification)
+    if text is None:
+        return [
+            Issue(
+                relative(root, specification),
+                "interaction specification is missing",
+            )
+        ]
+
+    path = relative(root, specification)
+    interactions = ui_numbered_anchors(text, "ui-int")
+    cases = ui_numbered_anchors(text, "ui-at")
+    expected_interactions = set(range(1, 80))
+    expected_cases = set(range(1, 51))
+
+    for value in sorted(expected_interactions - interactions):
+        issues.append(Issue(path, f"missing UI interaction definition: UI-INT-{value:03d}"))
+    for value in sorted(interactions - expected_interactions):
+        issues.append(Issue(path, f"unexpected UI interaction definition: UI-INT-{value:03d}"))
+    for value in sorted(expected_cases - cases):
+        issues.append(Issue(path, f"missing UI acceptance case: UI-AT-{value:03d}"))
+    for value in sorted(cases - expected_cases):
+        issues.append(Issue(path, f"unexpected UI acceptance case: UI-AT-{value:03d}"))
+
+    section_start = text.find("## 9. Traceability and UI Acceptance Cases")
+    if section_start < 0:
+        issues.append(Issue(path, "UI traceability section is missing"))
+        return issues
+    traceability = text[section_start:]
+    covered = expanded_ui_interaction_references(traceability)
+    for value in sorted(interactions - covered):
+        issues.append(Issue(path, f"UI interaction is not covered: UI-INT-{value:03d}"))
+
+    case_rows: dict[int, str] = {}
+    for line in traceability.splitlines():
+        match = re.search(r'<a id="ui-at-(\d{3})"></a>', line)
+        if match:
+            case_rows[int(match.group(1))] = line
+    for value in sorted(cases):
+        row = case_rows.get(value, "")
+        if not expanded_ui_interaction_references(row):
+            issues.append(
+                Issue(path, f"UI acceptance case has no interaction coverage: UI-AT-{value:03d}")
+            )
+
+    register = (
+        root
+        / "docs"
+        / "demo"
+        / "mockups"
+        / "aosedge-demo-ui-traceability-register.md"
+    ).resolve()
+    register_text = documents.get(register)
+    register_path = relative(root, register)
+    if register_text is None:
+        issues.append(Issue(register_path, "UI traceability register is missing"))
+        return issues
+
+    register_rows: dict[int, list[tuple[int, list[str]]]] = {}
+    for line_number, line in enumerate(register_text.splitlines(), start=1):
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) != 5:
+            continue
+        match = re.search(r"\[`UI-INT-(\d{3})`\]\([^)]*#ui-int-\1\)", cells[0])
+        if not match:
+            continue
+        value = int(match.group(1))
+        register_rows.setdefault(value, []).append((line_number, cells))
+
+    register_ids = set(register_rows)
+    for value in sorted(expected_interactions - register_ids):
+        issues.append(
+            Issue(register_path, f"missing UI traceability row: UI-INT-{value:03d}")
+        )
+    for value in sorted(register_ids - expected_interactions):
+        issues.append(
+            Issue(register_path, f"unexpected UI traceability row: UI-INT-{value:03d}")
+        )
+    for value, rows in sorted(register_rows.items()):
+        if len(rows) != 1:
+            issues.append(
+                Issue(register_path, f"duplicate UI traceability row: UI-INT-{value:03d}")
+            )
+            continue
+        line_number, cells = rows[0]
+        location = f"{register_path}:{line_number}"
+        upstream = cells[1].lower()
+        if not any(anchor in upstream for anchor in ("#d4-", "#req-", "#sys-", "#adr-")):
+            issues.append(
+                Issue(location, f"UI-INT-{value:03d} traceability row has no linked upstream owner")
+            )
+        if "UI-I0-" not in cells[2]:
+            issues.append(
+                Issue(location, f"UI-INT-{value:03d} traceability row has no I0 surface")
+            )
+        if "UI-AT-" not in cells[3]:
+            issues.append(
+                Issue(location, f"UI-INT-{value:03d} traceability row has no acceptance case")
+            )
+        if cells[4] not in {"`DESIGNED`", "`IMPLEMENTED`", "`QUALIFIED`"}:
+            issues.append(
+                Issue(location, f"UI-INT-{value:03d} traceability row has invalid status")
+            )
+    return issues
+
+
 def check_hygiene(root: Path, documents: dict[Path, str]) -> list[Issue]:
     issues: list[Issue] = []
     docs_root = root / "docs"
@@ -663,6 +804,7 @@ def check_repository(
     issues.extend(check_traceability(root, documents, definitions))
     issues.extend(check_reader_traceability(root, documents))
     issues.extend(check_component_requirement_packages(root, documents))
+    issues.extend(check_ui_traceability(root, documents))
     issues.extend(check_hygiene(root, documents))
     mermaid_issues, diagram_count = check_mermaid(root, documents)
     issues.extend(mermaid_issues)

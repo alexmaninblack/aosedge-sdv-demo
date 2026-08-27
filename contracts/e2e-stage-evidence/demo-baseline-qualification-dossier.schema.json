@@ -1,0 +1,157 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:demo-baseline-qualification-dossier:schema:v2",
+  "title": "Demo Baseline Qualification Dossier Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "contractVersion", "dossierId", "dossierType",
+    "designation", "supersedesDossierId", "startedAt", "completedAt",
+    "baseline", "acceptanceCases", "overallVerdict", "claimBoundaryCodes",
+    "excludedClaimCodes", "cleanup", "authoritativeAuditReferences",
+    "humanReview", "qualificationDecision", "files", "sealed", "sealedAt",
+    "dossierContentSha256"
+  ],
+  "properties": {
+    "schemaVersion": {"const": 2},
+    "contractVersion": {"const": "2.0.0"},
+    "dossierId": {"type": "string", "format": "uuid"},
+    "dossierType": {"const": "DEMO_BASELINE_QUALIFICATION"},
+    "designation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["designatedBeforeStart", "designatedAt", "designationRecordSha256"],
+      "properties": {
+        "designatedBeforeStart": {"const": true},
+        "designatedAt": {"type": "string", "format": "date-time"},
+        "designationRecordSha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "supersedesDossierId": {"oneOf": [{"type": "string", "format": "uuid"}, {"type": "null"}]},
+    "startedAt": {"type": "string", "format": "date-time"},
+    "completedAt": {"type": "string", "format": "date-time"},
+    "baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "factoryImageSha256", "aosCoreRelease", "aosCloudApiContractVersion",
+        "repositoryRevision", "artifacts", "configurationSha256",
+        "contractCatalogueSha256", "validationUnitBindingSha256",
+        "productionUnitBindingSha256", "sourceBindingSha256"
+      ],
+      "properties": {
+        "factoryImageSha256": {"$ref": "#/$defs/sha256"},
+        "aosCoreRelease": {"type": "string", "minLength": 1, "maxLength": 128},
+        "aosCloudApiContractVersion": {"type": "string", "minLength": 1, "maxLength": 64},
+        "repositoryRevision": {"type": "string", "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$"},
+        "artifacts": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/artifact"}},
+        "configurationSha256": {"$ref": "#/$defs/sha256"},
+        "contractCatalogueSha256": {"$ref": "#/$defs/sha256"},
+        "validationUnitBindingSha256": {"$ref": "#/$defs/sha256"},
+        "productionUnitBindingSha256": {"$ref": "#/$defs/sha256"},
+        "sourceBindingSha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "acceptanceCases": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["acceptanceCaseId", "verdict", "stageRecordSha256"],
+        "properties": {
+          "acceptanceCaseId": {"type": "string", "pattern": "^AT-E2E-[0-9]{3}$"},
+          "verdict": {"enum": ["NOT_EVALUATED", "PASSED", "FAILED", "ABORTED"]},
+          "stageRecordSha256": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/sha256"}}
+        }
+      }
+    },
+    "overallVerdict": {"enum": ["INCOMPLETE", "PASSED", "FAILED", "ABORTED"]},
+    "claimBoundaryCodes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/code"}},
+    "excludedClaimCodes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/code"}},
+    "cleanup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["r0Verdict", "proofRecordSha256"],
+      "properties": {
+        "r0Verdict": {"enum": ["NOT_EVALUATED", "PASSED", "FAILED", "UNCERTAIN"]},
+        "proofRecordSha256": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/sha256"}}
+      }
+    },
+    "authoritativeAuditReferences": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sourceType", "objectFingerprintSha256", "referenceFingerprintSha256"],
+        "properties": {
+          "sourceType": {"$ref": "#/$defs/code"},
+          "objectFingerprintSha256": {"$ref": "#/$defs/sha256"},
+          "referenceFingerprintSha256": {"$ref": "#/$defs/sha256"}
+        }
+      }
+    },
+    "humanReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome", "reviewRecordSha256"],
+      "properties": {
+        "outcome": {"enum": ["ACCEPTED", "REJECTED"]},
+        "reviewRecordSha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "qualificationDecision": {"enum": ["QUALIFIED", "NOT_QUALIFIED"]},
+    "files": {
+      "type": "array",
+      "minItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["relativePath", "sha256"],
+        "properties": {
+          "relativePath": {"type": "string", "pattern": "^(manifest.json|summary.md|human-review.json|checksums.sha256|stages/[A-Za-z0-9._/-]+\\.json|evidence/[A-Za-z0-9._/-]+\\.json)$"},
+          "sha256": {"$ref": "#/$defs/sha256"}
+        }
+      }
+    },
+    "sealed": {"const": true},
+    "sealedAt": {"type": "string", "format": "date-time"},
+    "dossierContentSha256": {"$ref": "#/$defs/sha256"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"overallVerdict": {"const": "PASSED"}}, "required": ["overallVerdict"]},
+      "then": {"properties": {"cleanup": {"properties": {"r0Verdict": {"const": "PASSED"}}}}}
+    },
+    {
+      "if": {"properties": {"qualificationDecision": {"const": "QUALIFIED"}}, "required": ["qualificationDecision"]},
+      "then": {
+        "properties": {
+          "overallVerdict": {"const": "PASSED"},
+          "cleanup": {"properties": {"r0Verdict": {"const": "PASSED"}}},
+          "humanReview": {"properties": {"outcome": {"const": "ACCEPTED"}}}
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["owner", "component", "version", "artifactSha256", "metadataSha256"],
+      "properties": {
+        "owner": {"$ref": "#/$defs/code"},
+        "component": {"$ref": "#/$defs/code"},
+        "version": {"type": "string", "minLength": 1, "maxLength": 64},
+        "artifactSha256": {"$ref": "#/$defs/sha256"},
+        "metadataSha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "code": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Z0-9_./:-]+$"},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

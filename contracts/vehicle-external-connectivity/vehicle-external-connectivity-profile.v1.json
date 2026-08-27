@@ -1,0 +1,193 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "contractId": "aosedge-demo-vehicle-external-connectivity",
+  "contractVersion": "1.0.0",
+  "lifecycleState": "DESIGN_REVIEWED",
+  "decision": "D4-022",
+  "acceptedSubdecisions": [
+    {"id": "D4-022.1", "accepted": "2026-08-23"},
+    {"id": "D4-022.2", "accepted": "2026-08-23"},
+    {"id": "D4-022.3", "accepted": "2026-08-23"},
+    {"id": "D4-022.4", "accepted": "2026-08-23"}
+  ],
+  "target": {
+    "selector": "CURRENTLY_SELECTED_VEHICLE_ROLE_FROM_CURRENT_RUN_JOURNAL",
+    "allowedRoles": ["VALIDATION", "PRODUCTION"],
+    "otherRunningVmAffected": false
+  },
+  "networkPlanes": {
+    "vehicle": {
+      "qemuNetdevId": "vehicle-net",
+      "guestInterfaceRole": "vehicle0",
+      "purpose": "VDP_TO_VISS_GATEWAY_ONLY",
+      "defaultRouteAllowed": false,
+      "cloudDnsAllowed": false,
+      "remainsUpDuringExternalConnectivityFault": true
+    },
+    "external": {
+      "qemuNetdevId": "external-net",
+      "guestInterfaceRole": "external0",
+      "purpose": "AOSCLOUD_AND_BRAKE_TIRE_BACKENDS",
+      "ownsDefaultRouteAndDns": true,
+      "qmpLinkControlAllowed": true
+    }
+  },
+  "controlMechanism": {
+    "operation": "QMP_SET_LINK_EXTERNAL_NET_ONLY",
+    "caller": "NATIVE_HELPER_FIXED_ALLOWLIST_OPERATION",
+    "qmpSocketSelectedFromCurrentJournal": true,
+    "browserReceivesQmpSocketOrArbitraryCommand": false,
+    "qmpAndSerialRemainOutOfBand": true,
+    "macosFirewallRuleRequired": false,
+    "guestFirewallMutationRequired": false
+  },
+  "implementationImpact": {
+    "upstreamAosCoreSourceChangeRequired": false,
+    "oemDemoFactoryImageNetworkConfigurationChangeRequired": true,
+    "qemuLauncherChangeRequired": true,
+    "preSopOemConfiguration": true
+  },
+  "uiAndProbeStateMachine": {
+    "states": ["ONLINE", "TRANSITIONING", "OFFLINE", "RECOVERING", "FAILED_PARTIAL"],
+    "singleVisibleControl": true,
+    "perChannelControlsExposed": false,
+    "buttonDisabledDuringTransitionOrRecovery": true,
+    "singleProbeMayDeclareSuccess": false,
+    "onlineRequires": [
+      "SELECTED_VM_EXTERNAL_QMP_LINK_UP",
+      "SAME_SELECTED_UNIT_AOSCLOUD_ONLINE",
+      "SELECTED_VM_VEHICLE_VISS_TELEMETRY_CURRENT",
+      "MAC_DASHBOARD_AOSCLOUD_REACHABLE",
+      "OTHER_VM_STATE_UNCHANGED"
+    ],
+    "offlineRequires": [
+      "SELECTED_VM_EXTERNAL_QMP_LINK_DOWN",
+      "SELECTED_UNIT_AOSCLOUD_OFFLINE",
+      "POST_DISCONNECT_BRAKE_TIRE_EVENT_NOT_RECEIVED_BY_BACKENDS",
+      "SAME_EVENT_REACHED_LOCAL_VISS_KUKSA_ANALYTICS",
+      "LOCAL_ADVISORY_VISIBLE_ON_ENGINEERING_TELEMATICS_DASHBOARD",
+      "SELECTED_VM_VEHICLE_VISS_TELEMETRY_CURRENT",
+      "MAC_DASHBOARD_AOSCLOUD_REACHABLE",
+      "OTHER_VM_EXTERNAL_LINK_AND_CLOUD_STATE_UNCHANGED"
+    ],
+    "functionDashboardOfflinePresentation": [
+      "LAST_ACTUALLY_RECEIVED_RESULT",
+      "VEHICLE_EXTERNAL_CONNECTIVITY_UNAVAILABLE",
+      "NO_FABRICATED_CURRENT_RESULT"
+    ],
+    "recoveredOnlineRequires": [
+      "SELECTED_VM_EXTERNAL_QMP_LINK_UP",
+      "SAME_UNIT_UUID_AND_SYSTEM_UID_AOSCLOUD_ONLINE",
+      "NO_REPROVISION_REINSTALL_OR_SERVICE_RESTART",
+      "BOUNDED_MESSAGES_SYNCHRONIZED_IDEMPOTENTLY",
+      "ORIGINAL_EVENT_TIME_SEPARATE_FROM_RECEIPT_AND_SYNCHRONIZATION_TIME",
+      "OTHER_VM_AND_IN_VEHICLE_PATH_UNCHANGED"
+    ],
+    "anyMismatchState": "FAILED_PARTIAL",
+    "normativePresentationRole": "PRODUCTION"
+  },
+  "transitionAndRecovery": {
+    "commandSemantics": "SET_EXACT_DESIRED_STATE_NEVER_TOGGLE",
+    "desiredStates": ["ONLINE", "OFFLINE"],
+    "sameDesiredStateRequest": "PROBE_THEN_IDEMPOTENT_NO_OP",
+    "intentJournaledBeforeQmp": true,
+    "intentJournalFields": [
+      "CORRELATION_ID",
+      "SELECTED_ROLE",
+      "UNIT_UUID",
+      "SYSTEM_UID",
+      "QEMU_PID",
+      "QMP_SOCKET",
+      "EXTERNAL_NETDEV_ID",
+      "LAST_CONFIRMED_STATE",
+      "DESIRED_STATE"
+    ],
+    "lostQmpResponse": {
+      "treatedAsSuccess": false,
+      "automaticBlindRetryAllowed": false,
+      "reconcileAllAcceptedProbesFirst": true,
+      "explicitIdempotentReissueAllowedAfterReconciliation": true,
+      "mixedOrAmbiguousResult": "FAILED_PARTIAL"
+    },
+    "compensation": {
+      "trigger": "FORBIDDEN_SIDE_EFFECT_OR_PARTIAL_TRANSITION",
+      "target": "LAST_CONFIRMED_STATE",
+      "sameExactSelectorRequired": true,
+      "successRequiresFullProbeSet": true,
+      "failedOrUnprovenCompensationState": "FAILED_PARTIAL"
+    },
+    "restartDuringTransition": {
+      "mutationBeforeJournalAndProbeReconciliationAllowed": false,
+      "classifyAsOneOf": ["ONLINE", "OFFLINE", "FAILED_PARTIAL"],
+      "reprovisionReinstallOrServiceRestartAllowed": false
+    },
+    "recovery": {
+      "sameUnitAndInstalledGraphRequired": true,
+      "queuedMessageSynchronization": "BOUNDED_IDEMPOTENT",
+      "originalEventTimePreserved": true,
+      "receiptAndSynchronizationTimesRecordedSeparately": true
+    },
+    "timeouts": {
+      "unboundedWaitAllowed": false,
+      "qmpAcknowledgementSeconds": 5,
+      "cloudAndBackendBoundsSource": "D4_022_4_LIVE_QUALIFIED_PROFILE",
+      "purpose": "OPERATIONAL_FAILURE_BOUND_NOT_AUDIENCE_PERFORMANCE_KPI",
+      "timeoutState": "FAILED_PARTIAL"
+    },
+    "qemuCapabilityEvidence": {
+      "qualifiedVersion": "11.0.3",
+      "setLinkSupported": true,
+      "dedicatedQueryNetdevSupported": false,
+      "queryRxFilterReportsLinkState": false,
+      "singleQemuQueryMayDeclareSuccess": false
+    }
+  },
+  "qualificationPlan": {
+    "designPlanAccepted": true,
+    "implementationAndLiveEvidenceState": "OPEN_GATE_AFTER_IMPLEMENTATION",
+    "preconditions": [
+      "VALIDATION_AND_PRODUCTION_VMS_RUNNING_CONCURRENTLY",
+      "DISTINCT_CURRENT_UNIT_UUID_SYSTEM_UID_NODE_ID",
+      "CORRECT_DISJOINT_UNIT_SET_MEMBERSHIP",
+      "BOTH_UNITS_AOSCLOUD_ONLINE",
+      "CARLA_GATEWAY_VISS_KUKSA_PATH_CURRENT",
+      "EXPECTED_VDP_BRAKE_TIRE_GRAPH_INSTALLED",
+      "ALL_THREE_MAC_DASHBOARD_CONTAINERS_READY"
+    ],
+    "liveCyclesPerRole": 2,
+    "liveRoles": ["VALIDATION", "PRODUCTION"],
+    "eachOfflineCycleRequires": [
+      "NEW_DETERMINISTIC_CARLA_EVENT_AFTER_DISCONNECT",
+      "SELECTED_UNIT_AOSCLOUD_OFFLINE",
+      "NO_NEW_SELECTED_UNIT_BRAKE_TIRE_BACKEND_RECEIPT",
+      "LOCAL_ANALYTICS_AND_ADVISORY_CONTINUE",
+      "ENGINEERING_TELEMATICS_DASHBOARD_SHOWS_LOCAL_RESULT",
+      "OTHER_VM_REMAINS_ONLINE_AND_UNCHANGED"
+    ],
+    "eachRestoreCycleRequires": [
+      "SAME_UNIT_UUID_SYSTEM_UID_NODE_ID_ONLINE",
+      "SAME_INSTALLED_SOFTWARE_GRAPH_AND_VERSIONS",
+      "NO_REPROVISION_REINSTALL_OR_SERVICE_RESTART",
+      "QUEUED_MESSAGES_SYNCHRONIZED_WITHOUT_LOGICAL_DUPLICATES",
+      "ORIGINAL_EVENT_TIME_DISTINCT_FROM_RECEIPT_AND_SYNCHRONIZATION_TIME",
+      "OTHER_VM_AND_IN_VEHICLE_PATH_UNCHANGED"
+    ],
+    "controlledNegativeCases": [
+      "LOST_QMP_RESPONSE",
+      "DASHBOARD_OR_HELPER_RESTART_DURING_TRANSITION",
+      "DUPLICATE_ACHIEVED_STATE_REQUEST",
+      "STALE_OR_CONTRADICTORY_PROBES",
+      "FORBIDDEN_OTHER_VM_OR_VEHICLE_PATH_EFFECT",
+      "FAILED_OR_UNPROVEN_COMPENSATION"
+    ],
+    "boundQualification": {
+      "qmpAcknowledgementSeconds": 5,
+      "cloudConvergenceAndBackendSynchronization": "FREEZE_FROM_LIVE_EVIDENCE_BEFORE_ACCEPTANCE",
+      "audiencePerformanceKpi": false,
+      "unboundedWaitAllowed": false
+    },
+    "retainedEvidence": "ONE_SANITIZED_QUALIFICATION_RECORD",
+    "ordinaryDemoRunHistoryRetained": false
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aosedge-demo.invalid/contracts/platform-fota-safe-stop-profile.schema.json",
+  "title": "AosEdge Demo Platform FOTA Safe Stop Profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "contractId", "contractVersion", "lifecycleState", "architectureDecision", "scope", "authority", "evidence", "policy", "gate", "runtimeState", "recovery", "reasonCodes", "observability", "qualification"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "$comment": {"type": "string"},
+    "schemaVersion": {"const": 1},
+    "contractId": {"const": "aosedge-demo-platform-fota-safe-stop"},
+    "contractVersion": {"const": "1.0.1"},
+    "lifecycleState": {"type": "string"},
+    "architectureDecision": {"const": "ADR-0014"},
+    "scope": {"type": "object"},
+    "authority": {"type": "object"},
+    "evidence": {"type": "object"},
+    "policy": {
+      "type": "object",
+      "required": ["activeMode", "transitionState", "maximumSpeedKmh", "maximumThrottlePercent", "minimumBrakePercent", "consecutiveSamples", "maximumSampleAgeMs", "expectedSamplePeriodMs", "resetInProgressAllowed", "resetDiscontinuityAllowed", "missingOrContradictoryEvidence", "stoppedInAnotherMode"],
+      "properties": {
+        "activeMode": {"const": "SAFE_STOP"},
+        "transitionState": {"const": "STABLE"},
+        "maximumSpeedKmh": {"type": "number", "minimum": 0},
+        "maximumThrottlePercent": {"type": "number", "minimum": 0, "maximum": 100},
+        "minimumBrakePercent": {"type": "number", "minimum": 0, "maximum": 100},
+        "consecutiveSamples": {"type": "integer", "minimum": 2},
+        "maximumSampleAgeMs": {"type": "integer", "minimum": 1},
+        "expectedSamplePeriodMs": {"type": "integer", "minimum": 1},
+        "resetInProgressAllowed": {"const": false},
+        "resetDiscontinuityAllowed": {"const": false},
+        "missingOrContradictoryEvidence": {"const": "NOT_SAFE"},
+        "stoppedInAnotherMode": {"const": "NOT_SAFE"}
+      },
+      "additionalProperties": false
+    },
+    "gate": {"type": "object"},
+    "runtimeState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["durablePhase", "nativeAosStateWhileWaiting", "terminalSuccessState", "terminalFailureState", "singleTransaction", "sameCandidateRetry", "differentCandidateWhileActive", "firstInstallBehaviorWhileWaiting", "replacementBehaviorWhileWaiting", "removalBehaviorWhileWaiting"],
+      "properties": {
+        "durablePhase": {"const": "WAITING_FOR_SAFE_STOP"},
+        "nativeAosStateWhileWaiting": {"const": "ACTIVATING"},
+        "terminalSuccessState": {"const": "ACTIVE"},
+        "terminalFailureState": {"const": "FAILED"},
+        "singleTransaction": {"const": true},
+        "sameCandidateRetry": {"const": "IDEMPOTENT_REATTACH"},
+        "differentCandidateWhileActive": {"const": "REJECT"},
+        "firstInstallBehaviorWhileWaiting": {"const": "EMPTY_SLOT_REMAINS_EMPTY"},
+        "replacementBehaviorWhileWaiting": {"const": "PREVIOUS_HEALTHY_RELEASE_REMAINS_ACTIVE"},
+        "removalBehaviorWhileWaiting": {"const": "CURRENT_HEALTHY_RELEASE_REMAINS_ACTIVE"}
+      }
+    },
+    "recovery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reusePersistedSafeStopEvidence", "freshEvidenceAfterRestartRequired", "firstInstallRecoveryBehavior", "replacementRecoveryBehavior", "removalRecoveryBehavior", "resumeSameCandidateOnly", "safeStopLossBeforeDestructiveApply", "safeStopLossDuringDestructiveApply", "staleOrUnavailableVehicleState"],
+      "properties": {
+        "reusePersistedSafeStopEvidence": {"const": false},
+        "freshEvidenceAfterRestartRequired": {"const": true},
+        "firstInstallRecoveryBehavior": {"const": "EMPTY_SLOT_REMAINS_EMPTY"},
+        "replacementRecoveryBehavior": {"const": "RESTORE_PREVIOUS_HEALTHY_RELEASE"},
+        "removalRecoveryBehavior": {"const": "RESTORE_CURRENT_HEALTHY_RELEASE"},
+        "resumeSameCandidateOnly": {"const": true},
+        "safeStopLossBeforeDestructiveApply": {"const": "RETURN_TO_WAITING"},
+        "safeStopLossDuringDestructiveApply": {"const": "FAIL_AND_ROLL_BACK"},
+        "staleOrUnavailableVehicleState": {"const": "WAIT_OR_FAIL_CLOSED_WITHIN_BOUND"}
+      }
+    },
+    "reasonCodes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+    "observability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authoritativeLifecycleState", "structuredReasonSource", "vehicleFactSource", "audienceWaitingInterpretation", "interpretationIsNativeCloudState", "uiMayEnforceOrInventState", "credentialsOrRawSecretsInEvidence"],
+      "properties": {
+        "authoritativeLifecycleState": {"const": "AOSCORE_AOSCLOUD"},
+        "structuredReasonSource": {"const": "OEM_COMPONENT_RUNTIME_NATIVE_AOS_LOGS"},
+        "vehicleFactSource": {"const": "VEHICLE_GATEWAY"},
+        "audienceWaitingInterpretation": {"const": "DERIVED_FROM_NATIVE_ACTIVATING_STATE_AND_FRESH_GATEWAY_NOT_SAFE_STOP"},
+        "interpretationIsNativeCloudState": {"const": false},
+        "uiMayEnforceOrInventState": {"const": false},
+        "credentialsOrRawSecretsInEvidence": {"const": false}
+      }
+    },
+    "qualification": {"type": "object"}
+  }
+}

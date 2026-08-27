@@ -14,8 +14,9 @@ not implement a safety function and must not become a route to vehicle-motion
 or safety-critical actuation.
 
 A Function Team publishes and technically verifies its service through its
-Service Provider identity, while an authorized OEM identity approves a
-deployment affecting OEM Units. A demo dashboard can make the final approval
+Service Provider identity and accepts the exact Validation result. Independent
+OEM Release Authority uses an authorized OEM identity to approve a deployment
+affecting OEM Units. A demo dashboard can make the final approval
 look like one button press. Without an explicit evidence model, that visual
 shortcut could falsely imply that approval is an arbitrary UI action rather
 than the recorded conclusion of engineering validation and acceptance.
@@ -43,7 +44,8 @@ than the recorded conclusion of engineering validation and acceptance.
    service-metadata digest, including its requested permissions. The owning
    Function Team completes validation and integration testing and explicitly
    accepts the exact candidate and evidence.
-7. Before an authorized OEM identity confirms deployment or promotion, the
+7. Before independent OEM Release Authority confirms Test deployment or
+   Production rollout through an authorized OEM identity, the
    Software Delivery Dashboard shall present the exact artifact and metadata
    identities, requested permissions, target, required validation evidence,
    owning-team acceptance and active OEM role. Missing, stale, mismatched or
@@ -63,9 +65,10 @@ than the recorded conclusion of engineering validation and acceptance.
 
 - The demo can truthfully show an approval button while also showing the
   validation dossier that makes the decision reviewable and auditable.
-- Function Teams retain engineering ownership of their candidates; the OEM
-  role remains the authority for deployment to OEM Units; AosCloud remains the
-  lifecycle system of record and execution control plane.
+- Function Teams retain engineering ownership and Validation acceptance for
+  their candidates; independent OEM Release Authority remains responsible for
+  deployment authorization to OEM Units; AosCloud remains the lifecycle system
+  of record and execution control plane.
 - The Dashboard requires an evidence/prerequisite view, not only action and
   progress controls.
 - The Gateway contract and negative tests become the authoritative proof that

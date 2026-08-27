@@ -147,10 +147,14 @@ A complete demo reset includes all of the following:
 
 ## Impact on planning
 
-The scenario's reset outcome remains a requirement but is not demonstrated.
-The implementation plan must treat native reset and golden restore as separate
-qualification paths, require identity exclusivity and Cloud reconciliation,
-and never describe snapshot replacement as production rollback.
+The later accepted D4-015 decision supersedes ordinary snapshot reset for the
+demo. Normal `R0` deprovisions and deletes the disposable Cloud Units through
+qualified APIs, proves Unit Set cleanup and Unit-owned Node disappearance, and
+then disposes stopped overlays while preserving the factory image. Protected
+checkpoints remain exceptional recovery evidence only. Engineering update
+recovery separately distinguishes pre-Apply FOTA `RevertUpdate`, post-Apply
+signed forward repair, and dependent-first SOTA removal; snapshot replacement
+is never described as production rollback.
 
 ## Sources
 

@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "checkedAt": "2026-08-22T20:00:00Z",
+  "architecture": "arm64",
+  "macosVersion": "26.5.2",
+  "macosBuild": "25F84",
+  "dockerDesktopVersion": "4.87.0",
+  "dockerEngineVersion": "29.7.2",
+  "dockerComposeVersion": "5.4.0",
+  "qemuVersion": "11.0.3",
+  "hostCompatibilityState": "COMPATIBLE_UNQUALIFIED",
+  "portsAvailable": [18080, 18081, 18082, 18091, 18092, 18600],
+  "imagesDigestPinned": true,
+  "protectedFilesModeValid": true,
+  "helperProfilesReady": ["platform-oem", "brake-sp1", "tire-sp2"],
+  "lanListenersAbsent": true,
+  "result": "PASS"
+}

@@ -8,7 +8,7 @@
 > the current design. Current decisions are owned by High-Level Architecture
 > 1.5, Demo Scenario 2.0, Architecture Flows 2.0 and the requirements set.
 > In particular, the R6 recommendation that placed the credential broker and
-> dynamic Provider identity inside VDP is superseded by proposed ADR 0013 and
+> dynamic Provider identity inside VDP is superseded by accepted ADR 0013 and
 > D4-027; its source-level KUKSA/VISS findings remain research evidence.
 
 Status: **research checkpoint complete; decisions require review; implementation
@@ -54,7 +54,7 @@ Its confidential OEM source remains outside every Git repository.
 | R5 | P1 four-signal subset; P2 wheel + simulated wear/energy/temperature; transparent equivalent-event projection; P3 adds a separate advisory capability. | Wheel calibration and model/threshold acceptance |
 | R6 | KUKSA v1 target-value compatibility bridge, one typed advisory and factual Gateway status remain valid evidence. The former VDP-owned broker/provider-identity recommendation is superseded: `CMP-KAC` is separate removable factory/system integration and the Provider is trusted OEM platform integration for the first demo. | D4-027 KAC contract, IAM/PKCS#11 qualification, Service scope enforcement, stale/replay behavior, VISS Set handler |
 | R7 | Separate lossy bounded S1 samples from durable S2/S3 events; persistent bounded queue; Function Backend never enters local decision path. | Egress policy, credentials, storage persistence, transport |
-| R8 | AosEdge native system/service/crash-log request path is real; AosCloud retains request records and downloadable results in Cloud storage, and the demo presents them through the stateless Software Delivery Dashboard without a second pipeline or archive. | Live permissions, progress/failure behavior, exact retention duration, delete effect and offline qualification |
+| R8 | AosEdge native system/service/crash-log request path is real. D4-014 supersedes the original single-dashboard allocation: OEM Unit system/VDP logs appear in Software Delivery, while SP1/SP2 Service logs appear in their matching Function Dashboard; no second pipeline/archive exists. | Live identifiers, permissions/ownership, states/file shape, delete effect, retention-policy exposure and offline/reconnect qualification |
 | R9 | Read-only localhost dashboard backend over public API; explicit target mismatch guard; all write actions deferred. | Least-privilege identity, freshness/eventual consistency and live field values |
 
 ## Integrated architecture refinements
@@ -238,7 +238,7 @@ Unit.
 | Produced baseline already has generic post-SOP substrate | Retain as target SOP premise, label current demo implementation gap |
 | One generic validation approval | Show Artifact Verification, Fleet Validation, and Campaign separately |
 | Verification Batch target follows current Unit Set | Compare actual pending recipients; stale batches can retain obsolete targets |
-| Reverse provider rollback/remove returns G4 to G0 | Required outcome, mechanism unproven; test forward reset and snapshot fallback |
+| Reverse provider rollback/remove returns G4 to G0 | Superseded by D4-015: the normal demo retires Units rather than reversing G4; engineering recovery removes dependent SOTA first, uses `RevertUpdate` only before FOTA Apply, and uses a new VU-qualified signed forward-repair release after Apply |
 | A custom log pipeline and store are required for the demo | AosEdge native log collection, Cloud delivery and Cloud-retained downloadable results are the accepted path; the Software Delivery Dashboard is a stateless API view with no second archive |
 | Service dependency on provider is Cloud-enforced | Current release has no documented Service-to-FOTA dependency. Platform Team reports it as roadmap work; defer the native rejection demo, use provider-first ordering and fail-closed service readiness, and add no custom admission gate |
 | Service artifact digest is always available | Component SHA-256 is public; service OCI digest needs live confirmation |
@@ -267,9 +267,10 @@ Unit.
 5. Accept the pinned KUKSA v1 compatibility bridge plus mandatory v2 migration
    requirement.
 6. Select the first Function Backend transport after egress/credential tests.
-7. Qualify native AosCloud log request permissions, progress/failure state, result retrieval,
-   exact retention duration, explicit deletion effect, offline behavior and
-   bounded temporary-download removal for the Software Delivery Dashboard.
+7. Qualify D4-014 role-scoped AosCloud Unit/Service log identifiers,
+   permissions/ownership, verbatim states, result/file retrieval, retention-
+   policy exposure, explicit deletion effect, offline/reconnect behavior and
+   bounded temporary-download removal across the OEM and Function Dashboards.
 
 ## Research documents
 

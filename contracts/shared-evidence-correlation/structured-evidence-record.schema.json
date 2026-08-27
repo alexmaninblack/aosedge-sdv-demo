@@ -1,0 +1,87 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:structured-evidence-record:schema:v1",
+  "title": "Sanitized Dashboard Evidence Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "recordId", "recordType", "owner", "sourceAuthority",
+    "sourceComponent", "observedAt", "eventType", "state", "reasonCode",
+    "correlation", "sourceReference", "evidenceStatus", "contentSha256"
+  ],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "recordId": {"type": "string", "format": "uuid"},
+    "recordType": {
+      "enum": ["LIFECYCLE", "VEHICLE_SOURCE", "FUNCTION_EVENT", "ADVISORY", "CONNECTIVITY", "RESOURCE_ISOLATION"]
+    },
+    "owner": {
+      "enum": ["DEMO_SOLUTION", "PLATFORM_TEAM", "BRAKE_FUNCTION_TEAM", "TIRE_FUNCTION_TEAM"]
+    },
+    "sourceAuthority": {
+      "enum": ["AOSCLOUD_API", "VEHICLE_GATEWAY", "BRAKE_FUNCTION_BACKEND", "TIRE_FUNCTION_BACKEND", "QUALIFICATION_DOSSIER"]
+    },
+    "sourceComponent": {"$ref": "#/$defs/boundedCode"},
+    "observedAt": {"type": "string", "format": "date-time"},
+    "eventType": {"$ref": "#/$defs/boundedCode"},
+    "state": {"$ref": "#/$defs/boundedCode"},
+    "reasonCode": {"$ref": "#/$defs/boundedCode"},
+    "correlation": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "vehicleRole": {"enum": ["VALIDATION", "PRODUCTION"]},
+        "vehicleAlias": {"enum": ["Validation Vehicle", "Production Vehicle"]},
+        "unitBindingSha256": {"$ref": "#/$defs/sha256"},
+        "nodeBindingSha256": {"$ref": "#/$defs/sha256"},
+        "sourceGeneration": {"type": "integer", "minimum": 0},
+        "sourceFrameStart": {"type": "integer", "minimum": 0},
+        "sourceFrameEnd": {"type": "integer", "minimum": 0},
+        "domainId": {"$ref": "#/$defs/boundedId"},
+        "serviceVersion": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "serviceArtifactSha256": {"$ref": "#/$defs/sha256"},
+        "currentRunStartTime": {"type": "string", "format": "date-time"},
+        "factoryImageSha256": {"$ref": "#/$defs/sha256"},
+        "overlaySha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "sourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceType", "requestOrRecordFingerprintSha256", "fetchedAt", "freshnessState"],
+      "properties": {
+        "sourceType": {"enum": ["AOSCLOUD_API", "GATEWAY_EVENT", "FUNCTION_BACKEND_RECORD", "QUALIFICATION_RECORD"]},
+        "requestOrRecordFingerprintSha256": {"$ref": "#/$defs/sha256"},
+        "fetchedAt": {"type": "string", "format": "date-time"},
+        "freshnessState": {"enum": ["FRESH", "STALE", "UNKNOWN"]}
+      }
+    },
+    "details": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "summaryCode": {"$ref": "#/$defs/boundedCode"},
+        "objectType": {"$ref": "#/$defs/boundedCode"},
+        "objectVersion": {"type": "string", "maxLength": 64},
+        "objectDigestSha256": {"$ref": "#/$defs/sha256"},
+        "quantity": {"type": "number"},
+        "unit": {"$ref": "#/$defs/boundedCode"},
+        "verdict": {"enum": ["PASS", "FAIL", "INCONCLUSIVE", "NOT_READY", "UNKNOWN"]}
+      }
+    },
+    "evidenceStatus": {"enum": ["COMPLETE", "INCOMPLETE", "REDACTED", "UNKNOWN"]},
+    "omittedFieldClasses": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"enum": ["PRIVATE_IDENTIFIER", "SENSITIVE_PAYLOAD", "CREDENTIAL", "RAW_RESPONSE", "RAW_TELEMETRY"]}
+    },
+    "contentSha256": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {
+    "boundedId": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._:-]+$"},
+    "boundedCode": {"type": "string", "minLength": 1, "maxLength": 96, "pattern": "^[A-Z0-9_./:-]+$"},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

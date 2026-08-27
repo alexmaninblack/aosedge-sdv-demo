@@ -20,5 +20,19 @@ map Scenario 2.0 to High-Level Architecture 1.5, including lifecycle, runtime,
 observability, failure and retirement flows. They do not authorize
 implementation.
 
-No storyboard or presenter flow is accepted yet. Those are separate next
-steps after architecture mapping.
+The [AosEdge Demo Interaction Specification 2.5](mockups/aosedge-demo-interaction-specification.md)
+is the accepted presenter-interaction contract. It fixes the composed
+workspace, team perspectives, current-vehicle handover, release stories,
+Details, action/authority semantics, failure/recovery states and UI acceptance
+cases, including the title-selected right-hand global Demo Lifecycle page and
+bounded Qualification Status, fixed team context and version-only release
+scrolling. Its [UI Traceability Register 1.1](mockups/aosedge-demo-ui-traceability-register.md)
+links every stable interaction rule to its owner, surface and acceptance case.
+The accepted clickable HTML is a derived review artifact; it may not replace
+or redefine the accepted scenario, architecture, requirements or contracts.
+
+The current I0 register is the
+[Audience-Visible Interface Register and Mockup Gate](mockups/README.md). It
+records the accepted surface inventory, navigation/authority split and required
+visible states while implementation and presenter-Mac qualification remain
+open.

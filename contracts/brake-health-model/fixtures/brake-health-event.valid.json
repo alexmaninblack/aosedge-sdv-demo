@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "messageType": "BRAKE_HEALTH_EVENT",
+  "eventId": "6b471c10-7ad6-530b-b5f4-d4b9f9107a8b",
+  "assessmentId": "59e854e8-596b-568b-8a18-12c44fb3a88c",
+  "sourceEventId": "4cba2d80-c04a-4d24-9f03-f4a85d56da13",
+  "unitSystemUid": "demo-unit-validation-001",
+  "unitRole": "VALIDATION",
+  "serviceVersion": "2.0.0",
+  "serviceArtifactSha256": "3333333333333333333333333333333333333333333333333333333333333333",
+  "modelId": "brake-condition-demo-v1",
+  "modelVersion": "1.0.0",
+  "modelConfigSha256": "4444444444444444444444444444444444444444444444444444444444444444",
+  "provenance": "DEMO_SYNTHETIC",
+  "content": {
+    "eventType": "BRAKE_CONDITION_BAND_CHANGED",
+    "reasonCode": "SYNTHETIC_ACCUMULATED_STRESS_THRESHOLD",
+    "previousBand": "MONITOR",
+    "currentBand": "INSPECTION_RECOMMENDED",
+    "conditionScore": 38,
+    "effectiveAt": "2026-08-22T12:00:00.500Z",
+    "quality": "VALID_DEMO_SYNTHETIC"
+  },
+  "contentSha256": "710cb2ec7bb5ec2a77ad553a1b3dc40df0a96dcbe420e04a31e0e1a07b66f1ef"
+}

@@ -18,7 +18,7 @@ machine.
 - [Accepted contract 1.0.0](artifact-publication-profile.v1.json)
 
 The contract deliberately distinguishes technical signing/publication from
-the later OEM-authorized Validation deployment or Demonstration promotion.
+the later OEM-authorized Validation deployment or Production promotion.
 It also records the current-release limitation honestly: installed
 `aos-signer` 2.0.1 uses one passwordless PKCS#12 file per profile for both
 bundle signing and mTLS upload and does not use macOS Keychain or PKCS#11 as a

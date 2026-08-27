@@ -17,11 +17,15 @@ they do not replace the current HLA.
 - [ADR 0008: Use Tire Health for Function Team 2](0008-use-tire-health-for-function-team-2.md)
 - [ADR 0009: Separate Release Decision Ownership from Cloud Execution](0009-separate-release-decision-from-cloud-execution.md)
 - [ADR 0010: Derive KUKSA Credentials from Aos IAM Without Forking KUKSA](0010-aos-kuksa-credential-broker.md)
+  — superseded historical HLA 1.3/1.4 baseline retained for traceability.
 - [ADR 0011: Contain QM Services at the Gateway and Make OEM Approval Evidence-Backed](0011-qm-service-containment-and-evidence-backed-oem-approval.md)
 - [ADR 0012: Authorize Running Workloads, Not Software Artifacts](0012-authorize-running-workloads-not-software-artifacts.md)
 - [ADR 0013: Use a Removable Current-Release KUKSA Authorization Compatibility Layer](0013-current-release-kuksa-authorization-compatibility.md)
-  — proposed class-C boundary correction; not yet an accepted implementation
-  authorization.
+  — accepted current-release authorization boundary; implementation and live
+  qualification remain separately gated.
+- [ADR 0014: Enforce Platform FOTA Safe Stop in the OEM Component Runtime](0014-enforce-platform-fota-safe-stop-in-oem-component-runtime.md)
+  — accepted vehicle-state boundary and application policy; implementation and
+  live qualification remain open.
 
 The change process and stable-reference rules are defined in
 [Documentation and Requirements Management](../../governance/documentation-and-requirements-management.md).

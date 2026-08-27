@@ -1,0 +1,33 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:qualification-status:schema:v1",
+  "title": "Current Demo Qualification Status",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "contractVersion", "status", "currentDossierId",
+    "currentDossierSha256", "currentBaselineSha256", "evaluatedAt",
+    "machineVerdict", "humanVerdict", "sanitizedReasonCodes"
+  ],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "contractVersion": {"const": "1.0.0"},
+    "status": {"enum": ["ABSENT", "QUALIFIED", "STALE", "WITHDRAWN", "NOT_QUALIFIED"]},
+    "currentDossierId": {"oneOf": [{"type": "string", "format": "uuid"}, {"type": "null"}]},
+    "currentDossierSha256": {"oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+    "currentBaselineSha256": {"oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+    "evaluatedAt": {"type": "string", "format": "date-time"},
+    "machineVerdict": {"enum": ["PASSED", "FAILED", "ABORTED", "INCOMPLETE", "NOT_EVALUATED"]},
+    "humanVerdict": {"enum": ["ACCEPTED", "REJECTED", "NOT_EVALUATED"]},
+    "sanitizedReasonCodes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/code"}
+    }
+  },
+  "$defs": {
+    "code": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Z0-9_./:-]+$"},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

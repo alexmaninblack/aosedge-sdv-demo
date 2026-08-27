@@ -1,0 +1,155 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "mapId": "aosedge-demo-e2e-stage-map",
+  "identity": ["acceptanceCaseId", "stageId", "stageInstanceKey", "targetOrArtifactCorrelationSha256"],
+  "defaultInstanceKey": "DEFAULT",
+  "releaseTemplate": {
+    "acceptanceCaseId": "AT-E2E-003",
+    "instances": ["VDP_V1", "BRAKE_V1", "VDP_V2", "BRAKE_V2", "VDP_V3", "BRAKE_V3", "TIRE_V1"],
+    "stages": [
+      {"stageId": "AT-E2E-003/S01", "actionType": "VERIFY_PREPARED_CANDIDATE_OWNER_EVIDENCE_AND_DIGESTS"},
+      {"stageId": "AT-E2E-003/S02", "actionType": "PROTECTED_SIGN_AND_PUBLISH"},
+      {"stageId": "AT-E2E-003/S03", "actionType": "REREAD_CLOUD_PUBLICATION_IDENTITY_AND_FRESH_BATCH"},
+      {"stageId": "AT-E2E-003/S04", "actionType": "OEM_TECHNICAL_VERIFICATION_APPROVAL"},
+      {"stageId": "AT-E2E-003/S05", "actionType": "REREAD_VU_INSTALL_READINESS_AND_DU_ABSENCE"},
+      {"stageId": "AT-E2E-003/S06", "actionType": "RUN_CANDIDATE_SPECIFIC_VU_VALIDATION_EXERCISE"},
+      {"stageId": "AT-E2E-003/S07", "actionType": "OEM_FLEET_VALIDATION_ACCEPTANCE"},
+      {"stageId": "AT-E2E-003/S08", "actionType": "CREATE_EXACT_DU_CAMPAIGN"},
+      {"stageId": "AT-E2E-003/S09", "actionType": "OEM_DU_CAMPAIGN_APPROVAL"},
+      {"stageId": "AT-E2E-003/S10", "actionType": "REREAD_IDENTICAL_DU_CANDIDATE_AND_READINESS"}
+    ],
+    "jointGraphRules": [
+      "VDP_V2_AND_BRAKE_V2_BOTH_COMPLETE_S01_THROUGH_S06_BEFORE_AT_E2E_006_S01",
+      "VDP_V3_AND_BRAKE_V3_BOTH_COMPLETE_S01_THROUGH_S06_BEFORE_AT_E2E_007_S01",
+      "BOTH_OWNER_ACCEPTANCES_REQUIRED_BEFORE_EITHER_JOINT_GRAPH_INSTANCE_S07",
+      "VDP_INSTANCE_COMPLETES_S07_THROUGH_S10_BEFORE_DEPENDENT_SERVICE_INSTANCE_S07_THROUGH_S10"
+    ]
+  },
+  "acceptanceCases": [
+    {
+      "acceptanceCaseId": "AT-E2E-001",
+      "fixedStages": [
+        {"stageId": "AT-E2E-001/S01", "actionType": "VERIFY_FACTORY_AND_PREPARED_CANDIDATE_BASELINE"},
+        {"stageId": "AT-E2E-001/S02", "actionType": "CREATE_EXACT_TWO_FRESH_ROLE_OVERLAYS"},
+        {"stageId": "AT-E2E-001/S03", "actionType": "REREAD_AND_EVALUATE_M0_EXIT"}
+      ]
+    },
+    {
+      "acceptanceCaseId": "AT-E2E-002",
+      "fixedStages": [
+        {"stageId": "AT-E2E-002/S01", "actionType": "BOOT_VALIDATION_OVERLAY"},
+        {"stageId": "AT-E2E-002/S02", "actionType": "PROVISION_VALIDATION_UNIT"},
+        {"stageId": "AT-E2E-002/S03", "actionType": "ASSIGN_VU_TO_VERIFICATION_UNIT_SET"},
+        {"stageId": "AT-E2E-002/S04", "actionType": "BOOT_PRODUCTION_OVERLAY"},
+        {"stageId": "AT-E2E-002/S05", "actionType": "PROVISION_PRODUCTION_UNIT"},
+        {"stageId": "AT-E2E-002/S06", "actionType": "ASSIGN_PU_TO_PRODUCTION_UNIT_SET"},
+        {"stageId": "AT-E2E-002/S07", "actionType": "ATTACH_EXCLUSIVE_LIVE_SOURCE_TO_VU"},
+        {"stageId": "AT-E2E-002/S08", "actionType": "RUN_AND_EVALUATE_G0_BASELINE_VEHICLE"}
+      ]
+    },
+    {
+      "acceptanceCaseId": "AT-E2E-003",
+      "usesTemplate": "releaseTemplate",
+      "requiredInstances": ["VDP_V1", "BRAKE_V1", "VDP_V2", "BRAKE_V2", "VDP_V3", "BRAKE_V3", "TIRE_V1"]
+    },
+    {
+      "acceptanceCaseId": "AT-E2E-004",
+      "requiresReleaseInstance": "VDP_V1",
+      "fixedStages": [
+        {"stageId": "AT-E2E-004/S01", "actionType": "RUN_AND_EVALUATE_G1_VDP_V1_DATA_PATH"}
+      ]
+    },
+    {
+      "acceptanceCaseId": "AT-E2E-005",
+      "requiresReleaseInstance": "BRAKE_V1",
+      "fixedStages": [
+        {"stageId": "AT-E2E-005/S01", "actionType": "RUN_DETERMINISTIC_BRAKE_EVENT"},
+        {"stageId": "AT-E2E-005/S02", "actionType": "REREAD_AND_EVALUATE_V1_WINDOW_BACKEND_AND_DASHBOARD"}
+      ]
+    },
+    {
+      "acceptanceCaseId": "AT-E2E-006",
+      "requiresReleaseInstances": ["VDP_V2", "BRAKE_V2"],
+      "fixedStages": [
+        {"stageId": "AT-E2E-006/S01", "actionType": "RUN_JOINT_VDP_V2_BRAKE_V2_VALIDATION_ON_VU"},
+        {"stageId": "AT-E2E-006/S02", "actionType": "RUN_AND_EVALUATE_G3_DERIVED_ONLY_BEHAVIOR_ON_DU"}
+      ]
+    },
+    {
+      "acceptanceCaseId": "AT-E2E-007",
+      "requiresReleaseInstances": ["VDP_V3", "BRAKE_V3"],
+      "fixedStages": [
+        {"stageId": "AT-E2E-007/S01", "actionType": "RUN_JOINT_VDP_V3_BRAKE_V3_VALIDATION_ON_VU"},
+        {"stageId": "AT-E2E-007/S02", "actionType": "RUN_AND_EVALUATE_ONLINE_DU_ADVISORY"},
+        {"stageId": "AT-E2E-007/S03", "actionType": "SET_DU_EXTERNAL_CONNECTIVITY_OFFLINE"},
+        {"stageId": "AT-E2E-007/S04", "actionType": "RUN_AND_EVALUATE_OFFLINE_LOCAL_DECISION_AND_ADVISORY"},
+        {"stageId": "AT-E2E-007/S05", "actionType": "SET_DU_EXTERNAL_CONNECTIVITY_ONLINE"},
+        {"stageId": "AT-E2E-007/S06", "actionType": "REREAD_AND_EVALUATE_ACKNOWLEDGED_SYNCHRONIZATION"}
+      ]
+    },
+    {
+      "acceptanceCaseId": "AT-E2E-008",
+      "requiresReleaseInstance": "TIRE_V1",
+      "fixedStages": [
+        {"stageId": "AT-E2E-008/S01", "actionType": "RUN_DETERMINISTIC_TIRE_EXERCISE"},
+        {"stageId": "AT-E2E-008/S02", "actionType": "REREAD_AND_EVALUATE_TIRE_PRODUCT_AND_ADVISORY"},
+        {"stageId": "AT-E2E-008/S03", "actionType": "START_FIXED_TIRE_CPU_ISOLATION_PROOF"},
+        {"stageId": "AT-E2E-008/S04", "actionType": "RUN_BRAKE_CONTROL_EVENT_AND_COLLECT_BOUND_SATURATION_EVIDENCE"},
+        {"stageId": "AT-E2E-008/S05", "actionType": "STOP_FIXED_TIRE_CPU_ISOLATION_PROOF"},
+        {"stageId": "AT-E2E-008/S06", "actionType": "REREAD_AND_EVALUATE_TIRE_RECOVERY_AND_UNAFFECTED_GRAPH"}
+      ]
+    },
+    {
+      "acceptanceCaseId": "AT-E2E-009",
+      "parameterizedTemplate": {
+        "instanceSource": "ALL_STABLE_NEGATIVE_VECTOR_IDS_FROM_ACCEPTED_OWNER_CONTRACTS",
+        "stages": [
+          {"stageId": "AT-E2E-009/S01", "actionType": "VERIFY_NEGATIVE_VECTOR_PRECONDITIONS"},
+          {"stageId": "AT-E2E-009/S02", "actionType": "INJECT_EXACTLY_ONE_CONTROLLED_NEGATIVE_VECTOR"},
+          {"stageId": "AT-E2E-009/S03", "actionType": "REREAD_AND_PROVE_FAIL_CLOSED_WITHOUT_SIDE_EFFECT"}
+        ]
+      }
+    },
+    {
+      "acceptanceCaseId": "AT-E2E-010",
+      "fixedStages": [
+        {"stageId": "AT-E2E-010/S01", "actionType": "FREEZE_NEW_ACTIONS_CAPTURE_FINAL_IDENTITIES_AND_DETACH_SOURCE"},
+        {"stageId": "AT-E2E-010/S20", "actionType": "CLEAN_EXACT_BRAKE_CURRENT_UNIT_DATA"},
+        {"stageId": "AT-E2E-010/S21", "actionType": "CLEAN_EXACT_TIRE_CURRENT_UNIT_DATA"},
+        {"stageId": "AT-E2E-010/S22", "actionType": "STOP_FUNCTION_BACKENDS_AND_RESET_EMPTY_OWNED_VOLUMES"},
+        {"stageId": "AT-E2E-010/S23", "actionType": "RESET_AND_SHUT_DOWN_CARLA_CONTROLLER_AND_GATEWAY"},
+        {"stageId": "AT-E2E-010/S24", "actionType": "DELETE_RUN_SPECIFIC_ACCESS_MATERIAL_AND_OVERLAYS"},
+        {"stageId": "AT-E2E-010/S25", "actionType": "VERIFY_FACTORY_DIGEST_AND_NEXT_M0_READINESS"},
+        {"stageId": "AT-E2E-010/S26", "actionType": "DELETE_CURRENT_RUN_JOURNAL_LAST"}
+      ],
+      "perRoleTemplate": {
+        "instances": ["VALIDATION", "PRODUCTION"],
+        "order": ["VALIDATION", "PRODUCTION"],
+        "stages": [
+          {"stageId": "AT-E2E-010/S10", "actionType": "SET_UNIT_EXTERNAL_CONNECTIVITY_OFFLINE"},
+          {"stageId": "AT-E2E-010/S11", "actionType": "DEPROVISION_UNIT_ONCE"},
+          {"stageId": "AT-E2E-010/S12", "actionType": "PROVE_OLD_UNIT_CREDENTIAL_CANNOT_RECONNECT"},
+          {"stageId": "AT-E2E-010/S13", "actionType": "STOP_VM_AND_PROVE_OVERLAY_UNHELD"},
+          {"stageId": "AT-E2E-010/S14", "actionType": "DELETE_EXACT_CURRENT_UNIT_NATIVE_LOG_REQUESTS"},
+          {"stageId": "AT-E2E-010/S15", "actionType": "REMOVE_SYSTEM_UID_FROM_EXACT_ROLE_UNIT_SET"},
+          {"stageId": "AT-E2E-010/S16", "actionType": "DELETE_UNIT_ONCE"},
+          {"stageId": "AT-E2E-010/S17", "actionType": "PROVE_UNIT_AND_UNIT_OWNED_NODE_ABSENT"}
+        ]
+      }
+    },
+    {
+      "acceptanceCaseId": "AT-E2E-011",
+      "parameterizedTemplate": {
+        "instanceSource": "ALL_EXTERNAL_MUTATION_CLASSES_USED_BY_ACCEPTED_STAGE_MAP",
+        "stages": [
+          {"stageId": "AT-E2E-011/S01", "actionType": "VERIFY_INTERRUPTION_CASE_PRECONDITIONS"},
+          {"stageId": "AT-E2E-011/S02", "actionType": "INJECT_EXACT_LOST_RESPONSE_OR_PROCESS_INTERRUPTION"},
+          {"stageId": "AT-E2E-011/S03", "actionType": "RESTART_AND_AUTHORITATIVELY_RECONCILE"},
+          {"stageId": "AT-E2E-011/S04", "actionType": "PROVE_NO_BLIND_RETRY_AND_SAFE_CONTINUATION_OR_BLOCK"}
+        ]
+      }
+    }
+  ]
+}

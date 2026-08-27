@@ -1,0 +1,127 @@
+{
+  "$schema": "./platform-fota-safe-stop-profile.schema.json",
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "contractId": "aosedge-demo-platform-fota-safe-stop",
+  "contractVersion": "1.0.1",
+  "lifecycleState": "DESIGN_ACCEPTED_IMPLEMENTATION_OPEN",
+  "architectureDecision": "ADR-0014",
+  "scope": {
+    "updateType": "PLATFORM_COMPONENT_FOTA",
+    "componentType": "vehicle-data-provider",
+    "serviceSotaMotionGate": false,
+    "firstInstall": true,
+    "replacement": true,
+    "removal": true
+  },
+  "authority": {
+    "releaseAuthorization": "OEM_RELEASE_AUTHORITY_THROUGH_AOSCLOUD",
+    "desiredAndActualLifecycle": "AOSCLOUD_AOSCORE",
+    "physicalStateSource": "VEHICLE_GATEWAY",
+    "applicationEnforcement": "FACTORY_INSTALLED_OEM_COMPONENT_RUNTIME",
+    "presentationOnly": "DEMO_UI",
+    "forbiddenSources": ["AOSCLOUD_MOTION_INFERENCE", "DEMO_UI_DECISION", "VDP_BEING_UPDATED", "KUKSA", "FUNCTIONAL_SERVICE"]
+  },
+  "evidence": {
+    "requiredPaths": [
+      "Vehicle.CarlaSimulation.Control.ActiveMode",
+      "Vehicle.CarlaSimulation.Control.TransitionState",
+      "Vehicle.CarlaSimulation.Control.Generation",
+      "Vehicle.CarlaSimulation.Reset.Generation",
+      "Vehicle.CarlaSimulation.Reset.InProgress",
+      "Vehicle.CarlaSimulation.Reset.Discontinuity",
+      "Vehicle.Speed",
+      "Vehicle.Chassis.Accelerator.PedalPosition",
+      "Vehicle.Chassis.Brake.PedalPosition"
+    ],
+    "transportBoundary": "VEHICLE_STATE_PROVIDER_INTERFACE_WITH_GATEWAY_VISS_CURRENT_DEMO_ADAPTER",
+    "runtimeReadRole": "PLATFORM_UPDATE_RUNTIME_READ_ONLY",
+    "currentVehicleOnly": true,
+    "selectedVehicleAssignmentRequired": true
+  },
+  "policy": {
+    "activeMode": "SAFE_STOP",
+    "transitionState": "STABLE",
+    "maximumSpeedKmh": 0.3,
+    "maximumThrottlePercent": 0.5,
+    "minimumBrakePercent": 95.0,
+    "consecutiveSamples": 12,
+    "maximumSampleAgeMs": 250,
+    "expectedSamplePeriodMs": 50,
+    "resetInProgressAllowed": false,
+    "resetDiscontinuityAllowed": false,
+    "missingOrContradictoryEvidence": "NOT_SAFE",
+    "stoppedInAnotherMode": "NOT_SAFE"
+  },
+  "gate": {
+    "replacementStopInstanceBeforeDestructiveStop": true,
+    "removalStopInstanceBeforeDestructiveStop": true,
+    "firstInstallStartInstanceBeforeActivation": true,
+    "replacementStartInstanceRevalidationBeforeActivation": true,
+    "continuousValidationThroughDestructiveApply": true,
+    "automaticDrivingResume": false,
+    "waitTimeoutSeconds": 480,
+    "aosCoreNodeStatusTimeoutUpperBoundSeconds": 600,
+    "unboundedWaitAllowed": false
+  },
+  "runtimeState": {
+    "durablePhase": "WAITING_FOR_SAFE_STOP",
+    "nativeAosStateWhileWaiting": "ACTIVATING",
+    "terminalSuccessState": "ACTIVE",
+    "terminalFailureState": "FAILED",
+    "singleTransaction": true,
+    "sameCandidateRetry": "IDEMPOTENT_REATTACH",
+    "differentCandidateWhileActive": "REJECT",
+    "firstInstallBehaviorWhileWaiting": "EMPTY_SLOT_REMAINS_EMPTY",
+    "replacementBehaviorWhileWaiting": "PREVIOUS_HEALTHY_RELEASE_REMAINS_ACTIVE",
+    "removalBehaviorWhileWaiting": "CURRENT_HEALTHY_RELEASE_REMAINS_ACTIVE"
+  },
+  "recovery": {
+    "reusePersistedSafeStopEvidence": false,
+    "freshEvidenceAfterRestartRequired": true,
+    "firstInstallRecoveryBehavior": "EMPTY_SLOT_REMAINS_EMPTY",
+    "replacementRecoveryBehavior": "RESTORE_PREVIOUS_HEALTHY_RELEASE",
+    "removalRecoveryBehavior": "RESTORE_CURRENT_HEALTHY_RELEASE",
+    "resumeSameCandidateOnly": true,
+    "safeStopLossBeforeDestructiveApply": "RETURN_TO_WAITING",
+    "safeStopLossDuringDestructiveApply": "FAIL_AND_ROLL_BACK",
+    "staleOrUnavailableVehicleState": "WAIT_OR_FAIL_CLOSED_WITHIN_BOUND"
+  },
+  "reasonCodes": [
+    "waiting_for_safe_stop",
+    "vehicle_state_unavailable",
+    "vehicle_state_stale",
+    "vehicle_state_contradictory",
+    "safe_stop_transition_incomplete",
+    "safe_stop_lost_during_apply",
+    "safe_stop_timeout",
+    "candidate_rejected_while_transaction_active",
+    "component_active"
+  ],
+  "observability": {
+    "authoritativeLifecycleState": "AOSCORE_AOSCLOUD",
+    "structuredReasonSource": "OEM_COMPONENT_RUNTIME_NATIVE_AOS_LOGS",
+    "vehicleFactSource": "VEHICLE_GATEWAY",
+    "audienceWaitingInterpretation": "DERIVED_FROM_NATIVE_ACTIVATING_STATE_AND_FRESH_GATEWAY_NOT_SAFE_STOP",
+    "interpretationIsNativeCloudState": false,
+    "uiMayEnforceOrInventState": false,
+    "credentialsOrRawSecretsInEvidence": false
+  },
+  "qualification": {
+    "roles": ["TEST", "PRODUCTION"],
+    "cases": [
+      "FIRST_INSTALL_WHILE_MOVING_WAITS",
+      "REPLACEMENT_WHILE_MOVING_KEEPS_OLD_RELEASE_ACTIVE",
+      "REMOVAL_WHILE_MOVING_DOES_NOT_STOP_PROVIDER",
+      "ZERO_SPEED_OUTSIDE_SAFE_STOP_IS_REJECTED",
+      "STALE_OR_CONTRADICTORY_EVIDENCE_IS_REJECTED",
+      "EXPLICIT_SAFE_STOP_RELEASES_GATE",
+      "SAFE_STOP_LOSS_DURING_APPLY_ROLLS_BACK",
+      "WAIT_TIMEOUT_FAILS_CLOSED",
+      "VM_RESTART_WHILE_WAITING_REQUIRES_FRESH_EVIDENCE",
+      "READINESS_PRECEDES_EXPLICIT_DRIVING_RESUME"
+    ],
+    "implementationState": "OPEN",
+    "liveEvidenceState": "OPEN"
+  }
+}

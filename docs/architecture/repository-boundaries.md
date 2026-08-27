@@ -117,7 +117,7 @@ provider assignment must first be suspended or removed.
 
 See [ADR 0006](decisions/0006-lifecycle-based-repository-ownership.md) for the
 accepted repository decision,
-[proposed ADR 0013](decisions/0013-current-release-kuksa-authorization-compatibility.md)
+[accepted ADR 0013](decisions/0013-current-release-kuksa-authorization-compatibility.md)
 for the credential boundary correction, and
 [the current baseline](../qualification/current-baseline.md)
 for exact versions and digests.

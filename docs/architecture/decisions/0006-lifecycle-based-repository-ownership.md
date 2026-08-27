@@ -18,7 +18,7 @@ program. They may be updated after start of production (SOP), but only through
 an OEM-controlled platform or FOTA lifecycle with system-level qualification.
 Examples are the Vehicle Data Provider, KUKSA configuration and trust setup,
 the removable current-release KUKSA authorization helper, and Provider
-platform-identity integration. Proposed ADR 0013 separates that helper's
+platform-identity integration. Accepted ADR 0013 separates that helper's
 factory/system package from the Vehicle Data Platform FOTA artifact while
 retaining common OEM Platform Team repository ownership.
 
@@ -81,7 +81,7 @@ It will contain:
 - provider conformance and integration tests;
 - the separately packaged removable current-release KUKSA authorization
   helper, the still-open Provider platform-identity integration, and their
-  negative-test evidence as proposed by ADR 0013.
+  negative-test evidence as defined by ADR 0013.
 
 The CARLA provider is development-only, but it implements the same platform
 role that CAN, SOME/IP, DDS, or OEM-specific providers perform in a production
@@ -112,7 +112,7 @@ CARLA libraries, contain a CARLA or VISS endpoint, understand CAN or SOME/IP,
 or depend on the implementation layout of `aos-vehicle-platform`.
 
 Its repository owns the Aos service manifest, service tests, resource limits,
-rollback-compatible release metadata, and the application behavior built from
+recovery-compatible release metadata, and the application behavior built from
 telemetry. Its releases may advance independently of the vehicle platform
 within the declared compatibility range.
 
@@ -198,7 +198,7 @@ Detailed rules:
   authorization changes require a platform major version.
 - Service releases use semantic versions plus Aos package versions and declare
   the supported vehicle-data contract range. A service release must be
-  independently deployable and rollbackable.
+  independently deployable and recoverable.
 - Integration releases pin exact Git commits, published versions, and artifact
   digests in a tracked lock file. They represent tested demonstrations, not a
   vehicle update artifact.
@@ -221,7 +221,7 @@ Detailed rules:
   baseline until a compatible service is qualified or the previous contract
   remains available during migration.
 - ADR 0010 replaced the former standalone AOS-5 Authorization Adapter plan for
-  the 1.3/1.4 baseline. Proposed ADR 0013 corrects the later component
+  the 1.3/1.4 baseline. Accepted ADR 0013 corrects the later component
   placement: the current helper is a removable factory/system package outside
   the VDP FOTA payload, while the first-demo Provider path is explicitly
   trusted OEM platform integration rather than a dynamic authorization gate.

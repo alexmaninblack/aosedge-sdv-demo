@@ -1,0 +1,118 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:e2e-stage-record:schema:v1",
+  "title": "Atomic End-to-End Acceptance Stage Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "contractVersion", "acceptanceCaseId", "stageId",
+    "stageInstanceKey", "stageVersion", "correlationRecordSha256", "entryAssertions", "action",
+    "authoritativeReRead", "exitAssertions", "orchestrationState",
+    "acceptanceVerdict", "sanitizedEvidenceRecordIds", "startedAt",
+    "completedAt", "claimBoundaryCodes"
+  ],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "contractVersion": {"const": "1.0.0"},
+    "acceptanceCaseId": {"type": "string", "pattern": "^AT-E2E-[0-9]{3}$"},
+    "stageId": {"type": "string", "pattern": "^AT-E2E-[0-9]{3}/S[0-9]{2}$"},
+    "stageInstanceKey": {"$ref": "#/$defs/code"},
+    "stageVersion": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "correlationRecordSha256": {"$ref": "#/$defs/sha256"},
+    "entryAssertions": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/assertion"}},
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actionType", "targetFingerprintSha256", "operationFingerprintSha256", "state", "submittedAt"],
+      "properties": {
+        "actionType": {"$ref": "#/$defs/code"},
+        "targetFingerprintSha256": {"$ref": "#/$defs/sha256"},
+        "operationFingerprintSha256": {"$ref": "#/$defs/sha256"},
+        "state": {"enum": ["NOT_SUBMITTED", "SUBMITTED", "RESPONSE_RECEIVED", "RESPONSE_LOST", "REJECTED"]},
+        "submittedAt": {"oneOf": [{"type": "string", "format": "date-time"}, {"type": "null"}]}
+      }
+    },
+    "authoritativeReRead": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceAuthority", "requestFingerprintSha256", "fetchedAt", "freshnessState", "evidenceRecordIds"],
+      "properties": {
+        "sourceAuthority": {"$ref": "#/$defs/code"},
+        "requestFingerprintSha256": {"$ref": "#/$defs/sha256"},
+        "fetchedAt": {"oneOf": [{"type": "string", "format": "date-time"}, {"type": "null"}]},
+        "freshnessState": {"enum": ["NOT_READ", "FRESH", "STALE", "UNKNOWN"]},
+        "evidenceRecordIds": {"type": "array", "uniqueItems": true, "items": {"type": "string", "format": "uuid"}}
+      }
+    },
+    "exitAssertions": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/assertion"}},
+    "orchestrationState": {"enum": ["READY", "BLOCKED", "SUBMITTING", "UNCERTAIN", "RECONCILING", "COMPLETED"]},
+    "acceptanceVerdict": {"enum": ["NOT_EVALUATED", "PASSED", "FAILED", "ABORTED"]},
+    "sanitizedEvidenceRecordIds": {"type": "array", "uniqueItems": true, "items": {"type": "string", "format": "uuid"}},
+    "startedAt": {"oneOf": [{"type": "string", "format": "date-time"}, {"type": "null"}]},
+    "completedAt": {"oneOf": [{"type": "string", "format": "date-time"}, {"type": "null"}]},
+    "claimBoundaryCodes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/code"}}
+  },
+  "$defs": {
+    "assertion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assertionId", "predicate", "required", "expected", "actual",
+        "freshnessRequirement", "outcome", "reasonCode", "evidenceReferences"
+      ],
+      "properties": {
+        "assertionId": {"type": "string", "pattern": "^AT-E2E-[0-9]{3}/S[0-9]{2}/(ENTRY|EXIT)/A[0-9]{2}$"},
+        "predicate": {
+          "enum": [
+            "EXISTS", "ABSENT", "EQUALS", "NOT_EQUALS", "STATE_IS",
+            "STATE_IN", "COUNT_EQUALS", "SET_EQUALS", "DIGEST_EQUALS",
+            "UNCHANGED", "CAUSALLY_LINKED", "SEQUENCE_COMPLETE",
+            "NO_FORBIDDEN_FIELDS"
+          ]
+        },
+        "required": {"type": "boolean"},
+        "expected": {"$ref": "#/$defs/comparisonValue"},
+        "actual": {"$ref": "#/$defs/comparisonValue"},
+        "freshnessRequirement": {"enum": ["CURRENT_AUTHORITATIVE_READ", "PROFILE_BOUND", "NOT_APPLICABLE"]},
+        "outcome": {"enum": ["NOT_EVALUATED", "PASSED", "FAILED", "UNKNOWN"]},
+        "reasonCode": {"$ref": "#/$defs/code"},
+        "evidenceReferences": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/evidenceReference"}}
+      }
+    },
+    "comparisonValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["valueType", "displayCode", "canonicalValueSha256"],
+      "properties": {
+        "valueType": {"enum": ["NONE", "STRING", "NUMBER", "BOOLEAN", "SET", "STATE", "DIGEST"]},
+        "displayCode": {"$ref": "#/$defs/code"},
+        "sanitizedScalar": {"type": ["string", "number", "boolean", "null"], "maxLength": 256},
+        "canonicalValueSha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "evidenceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidenceRecordId", "sourceAuthority", "owner", "subjectFingerprintSha256",
+        "observedAt", "fetchedAt", "requestOrRecordFingerprintSha256",
+        "contentSha256", "freshnessState", "correlationRecordSha256"
+      ],
+      "properties": {
+        "evidenceRecordId": {"type": "string", "format": "uuid"},
+        "sourceAuthority": {"$ref": "#/$defs/code"},
+        "owner": {"$ref": "#/$defs/code"},
+        "subjectFingerprintSha256": {"$ref": "#/$defs/sha256"},
+        "observedAt": {"type": "string", "format": "date-time"},
+        "fetchedAt": {"type": "string", "format": "date-time"},
+        "requestOrRecordFingerprintSha256": {"$ref": "#/$defs/sha256"},
+        "contentSha256": {"$ref": "#/$defs/sha256"},
+        "freshnessState": {"enum": ["FRESH", "STALE", "UNKNOWN"]},
+        "correlationRecordSha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "code": {"type": "string", "minLength": 1, "maxLength": 96, "pattern": "^[A-Z0-9_./:-]+$"},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

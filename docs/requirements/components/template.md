@@ -78,7 +78,7 @@ replaces an owned unit-test obligation.
 | Component | Prove the packaged executable through its public boundary | Controlled dependencies and fixtures | Yes / No with rationale | Component-suite report and logs |
 | Contract | Prove producer and consumer agree on schema, semantics, errors and versioning | Versioned fixtures or conformance harness | Yes / No with rationale | Contract-suite result and fixture digest |
 | Integration | Prove behavior with real adjacent components | Named integration environment | Yes / No with rationale | Integration record and exact revisions |
-| End-to-end | Prove the accepted audience-visible flow | Validation then Demonstration lane | Yes / No with rationale | Qualification record and dashboard evidence |
+| End-to-end | Prove the accepted audience-visible flow | Validation then Production lane | Yes / No with rationale | Qualification record and dashboard evidence |
 
 Unit tests are necessary for owned logic but are not sufficient acceptance
 evidence for an interface or complete demo flow. Integration and end-to-end

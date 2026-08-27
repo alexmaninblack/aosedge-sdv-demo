@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "systemUids": ["demo-system-20260822", "validation-system-20260822"],
+  "recordCounts": {"messages": 6, "assessments": 2, "events": 2, "advisories": 1, "functionStatus": 2, "quarantine": 0},
+  "recordSetSha256": "9876543210abcdef9876543210abcdef9876543210abcdef9876543210abcdef",
+  "confirmationToken": "review-candidate-token-not-a-real-secret-9876543210",
+  "expiresAt": "2026-08-22T20:01:00Z"
+}

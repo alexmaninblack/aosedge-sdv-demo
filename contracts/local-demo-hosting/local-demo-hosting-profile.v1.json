@@ -1,0 +1,210 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "contractId": "aosedge-demo-local-hosting",
+  "contractVersion": "1.0.0",
+  "lifecycleState": "DESIGN_REVIEWED",
+  "decision": "D4-020",
+  "qualifiedHostCandidate": {
+    "architecture": "arm64",
+    "observedMacosVersion": "26.5.2",
+    "observedMacosBuild": "25F84",
+    "exactMacosVersionIsUniversalGate": false,
+    "dockerDesktopVersion": "4.87.0",
+    "dockerEngineVersion": "29.7.2",
+    "dockerComposeVersion": "5.4.0",
+    "qemuVersion": "11.0.3",
+    "qualifiedQemuVersions": ["11.0.3", "11.1.0"],
+    "qualificationState": "OBSERVED_NOT_YET_ACCEPTED"
+  },
+  "hostQualificationPolicy": {
+    "states": ["QUALIFIED", "COMPATIBLE_UNQUALIFIED", "INCOMPATIBLE"],
+    "officialDemoRequires": "QUALIFIED",
+    "developmentMayUse": "COMPATIBLE_UNQUALIFIED",
+    "engineeringOverrideMustBeExplicitAndVisible": true,
+    "engineeringOverrideAllowedDuringOfficialPresentation": false,
+    "newVersionRequiresFullQualificationAndManifestUpdate": true,
+    "newVersionRequiresContainerRebuild": false,
+    "requiredCapabilities": [
+      "APPLE_SILICON_ARM64",
+      "HVF_AND_QUALIFIED_QEMU_MACHINE_CONTRACT",
+      "DOCKER_NATIVE_ARM64",
+      "COMPOSE_NO_BUILD_PULL_NEVER_WAIT",
+      "REQUIRED_NETWORK_VOLUME_AND_SECURITY_FEATURES"
+    ]
+  },
+  "presentation": {
+    "buildDuringDemoAllowed": false,
+    "pullDuringDemoAllowed": false,
+    "repackageDuringDemoAllowed": false,
+    "requiredComposeInvocation": ["docker", "compose", "up", "--detach", "--no-build", "--pull", "never", "--wait"],
+    "imageReferenceRule": "IMMUTABLE_SHA256_DIGEST_ONLY",
+    "latestTagAllowed": false,
+    "softwareDeliveryDashboardStoresAuthoritativeLifecycleState": false,
+    "authoritativeLifecycleStateSource": "AOSCLOUD",
+    "currentRunJournalOwner": "NATIVE_DEMO_ORCHESTRATOR"
+  },
+  "containers": [
+    {
+      "id": "SOFTWARE_DELIVERY",
+      "name": "aosedge-demo-software-delivery",
+      "uiBind": "127.0.0.1:18080",
+      "persistentVolume": "NONE",
+      "network": "aosedge-demo-software-delivery-v1",
+      "helperProfile": "platform-oem",
+      "functionalIngestion": "NONE"
+    },
+    {
+      "id": "BRAKE_CLOUD",
+      "name": "aosedge-demo-brake-cloud",
+      "uiBind": "127.0.0.1:18081",
+      "ingestionBind": "127.0.0.1:18091",
+      "guestUrl": "http://10.0.0.1:18091/api/v1/brake/messages",
+      "persistentVolume": "aosedge_demo_brake_cloud_v1",
+      "network": "aosedge-demo-brake-cloud-v1",
+      "helperProfile": "brake-sp1"
+    },
+    {
+      "id": "TIRE_CLOUD",
+      "name": "aosedge-demo-tire-cloud",
+      "uiBind": "127.0.0.1:18082",
+      "ingestionBind": "127.0.0.1:18092",
+      "guestUrl": "http://10.0.0.1:18092/api/v1/tire/messages",
+      "persistentVolume": "aosedge_demo_tire_cloud_v1",
+      "network": "aosedge-demo-tire-cloud-v1",
+      "helperProfile": "tire-sp2"
+    }
+  ],
+  "localDemoContainerMinimumSecurityHygiene": {
+    "scope": "LOCAL_TRUSTED_MACOS_DEMO_ONLY",
+    "productionDeploymentArchitectureClaimed": false,
+    "loopbackOnlyPublishedPorts": true,
+    "privilegedModeAllowed": false,
+    "hostNetworkAllowed": false,
+    "dockerSocketMountAllowed": false,
+    "broadHostFilesystemMountAllowed": false,
+    "protectedP12MountAllowed": false,
+    "realCredentialsEmbeddedInImagesOrFrontendAllowed": false,
+    "browserReceivesCredentialOrHelperCapability": false,
+    "functionDataVolumesSeparated": true,
+    "runAsNonRootWhenSupportedWithoutAdditionalDemoComplexity": true,
+    "healthcheckRequired": true,
+    "restartPolicy": "unless-stopped",
+    "notRequiredForFirstDemo": [
+      "READ_ONLY_ROOT_FILESYSTEM",
+      "DEDICATED_TMPFS_POLICY_AND_LIMITS",
+      "LOCAL_CONTAINER_AUTHENTICATION_OR_RBAC",
+      "BROWSER_TO_BACKEND_TLS",
+      "PRODUCTION_SECRET_MANAGER",
+      "PRODUCTION_GRADE_CONTAINER_SECURITY_QUALIFICATION"
+    ],
+    "primarySecurityClaimsRemain": [
+      "SIGNED_FOTA_AND_SOTA_ARTIFACTS",
+      "AOSCLOUD_LIFECYCLE_AND_OEM_APPROVAL",
+      "AOSCORE_SERVICE_ISOLATION_AND_QUOTAS",
+      "IN_VEHICLE_SERVICE_PERMISSION_ENFORCEMENT"
+    ]
+  },
+  "nativeHelper": {
+    "processName": "aosedge-demo-native-helper",
+    "runsAs": "CURRENT_NON_ROOT_MACOS_USER",
+    "supervisor": "DEMO_LAUNCHER_PROCESS_GROUP",
+    "launchdInstallRequired": false,
+    "bind": "127.0.0.1:18600",
+    "tlsRequired": false,
+    "sessionCapabilityBits": 256,
+    "sessionCapabilityDelivery": "SEPARATE_MODE_0400_FILE_PER_CONTAINER_BACKEND",
+    "sessionDirectoryMode": "0700",
+    "sessionFileMode": "0400",
+    "browserAccessAllowed": false,
+    "callerMaySelectCredentialPath": false,
+    "callerMaySelectCloudUrl": false,
+    "callerMaySelectProfile": false,
+    "callerMaySelectArbitraryCandidatePath": false,
+    "callerMaySelectHttpMethodOrApiPath": false,
+    "callerMayRequestArbitraryShellCommand": false,
+    "profiles": [
+      {"id": "platform-oem", "allowedProducts": ["VDP_COMPONENT"], "allowedOperations": ["SIGN_PUBLISH", "CLOUD_READ", "OEM_VALIDATE", "OEM_PROMOTE", "R0_LIFECYCLE"]},
+      {"id": "brake-sp1", "allowedProducts": ["BRAKE_HEALTH_SERVICE"], "allowedOperations": ["SIGN_PUBLISH", "OWN_SERVICE_LOG_READ", "OWN_SERVICE_LOG_DELETE"]},
+      {"id": "tire-sp2", "allowedProducts": ["TIRE_HEALTH_SERVICE"], "allowedOperations": ["SIGN_PUBLISH", "OWN_SERVICE_LOG_READ", "OWN_SERVICE_LOG_DELETE"]}
+    ],
+    "storesLifecycleAuthorityState": false,
+    "publishedRequiresIndependentCloudRead": true,
+    "ambiguousMutationState": "UNCERTAIN",
+    "blindRetryAllowed": false,
+    "terminationDeletesSessionCapabilities": true,
+    "protectedCredentialsRemainOutsideGitDockerVmImagesAndArtifacts": true
+  },
+  "functionalBackendTransport": {
+    "scope": "LOCAL_ISOLATED_DEMO_ROUTE",
+    "trustedEnvironment": "ONE_CONTROLLED_DEMO_MAC",
+    "protocol": "HTTP_1_1",
+    "clientAuthenticationRequired": false,
+    "perUnitCredentialLifecycleRequired": false,
+    "systemUidUsage": "CORRELATION_ONLY_NOT_AUTHENTICATED_IDENTITY",
+    "productionAuthenticationOwner": "EACH_FUNCTION_TEAM",
+    "productionBackendSecurityClaimed": false,
+    "localRouteTrustIsNotProductionAuthentication": true,
+    "separateApiNamespacePerFunctionTeam": true,
+    "crossFunctionMessageSchemaRejected": true,
+    "doesNotChangeSotaIamKuksaOrGatewaySecurity": true
+  },
+  "qemuGuestRoute": {
+    "networkBackend": "QEMU_USER_NETWORK",
+    "bothVmsMayRunConcurrently": true,
+    "eachVmUsesIndependentNetworkNamespace": true,
+    "guestNetwork": "10.0.0.0/24",
+    "guestAddress": "10.0.0.100",
+    "guestVisibleHost": "10.0.0.1",
+    "sameGuestAddressAcrossIndependentNetworksAllowed": true,
+    "hostSideControlEndpointsMustBeUniquePerVm": true,
+    "carlaGatewayLiveSourceAssignment": "EXACTLY_ONE_VM_AT_A_TIME",
+    "hostBrowserAndIngestionBindsAreLoopbackOnly": true,
+    "hostfwdForFunctionalIngestionRequired": false,
+    "validationAndProductionMayUseSameGuestAddressInIndependentQemuNetworks": true,
+    "sharedFunctionalBackendsAcceptConcurrentVmClients": true,
+    "backendCorrelationField": "system_uid",
+    "sourceIpIsAuthenticatedUnitIdentity": false,
+    "vehicleExternalConnectivityControl": {
+      "controlCount": 1,
+      "scope": "CURRENTLY_SELECTED_VEHICLE_ONLY",
+      "mechanismDecision": "D4-022.1_DUAL_NETWORK_QMP_EXTERNAL_LINK",
+      "vehicleVissGatewayPlaneRemainsUp": true,
+      "externalCloudAndFunctionBackendPlaneChangesTogether": true,
+      "disconnects": ["UNIT_TO_AOSCLOUD", "BRAKE_SERVICE_TO_BACKEND", "TIRE_SERVICE_TO_BACKEND"],
+      "preserves": ["OTHER_VM_EXTERNAL_CONNECTIVITY", "CARLA_GATEWAY_VISS_KUKSA_LOCAL_CHAIN", "LOCAL_ANALYTICS_AND_ADVISORY", "MAC_DASHBOARD_TO_AOSCLOUD"]
+    },
+    "routeQualificationState": "TO_BE_PROVEN_WITH_BOTH_VMS",
+    "requiredPositiveProbes": ["VU_BRAKE_POST", "DU_BRAKE_POST", "VU_TIRE_POST", "DU_TIRE_POST"],
+    "requiredNegativeProbes": ["CROSS_FUNCTION_MESSAGE_SCHEMA_REJECTED", "LAN_LISTENER_ABSENT"]
+  },
+  "startup": {
+    "scope": "LOCAL_DEMO_SUPPORT_STACK_ONLY",
+    "vmProvisioningOrCloudLifecycleIncluded": false,
+    "order": ["PREFLIGHT", "NATIVE_HELPER", "CONTAINERS", "HEALTHCHECKS", "BROWSER_SURFACES"],
+    "preflightFailsClosed": true,
+    "requiredChecks": ["QUALIFIED_TOOLCHAIN_MANIFEST", "ARM64_HVF", "NO_PORT_COLLISION", "IMAGE_DIGESTS_PRESENT", "PROTECTED_FILES_MODE", "HELPER_PROFILES_READY", "DOCKER_ARM64", "VOLUMES_OWNED", "NO_LAN_BIND"],
+    "partialStartupCleanupRequired": true,
+    "containerHealthTimeoutSeconds": 60
+  },
+  "shutdown": {
+    "order": ["DISABLE_BROWSER_ACTIONS", "STOP_CONTAINERS", "STOP_NATIVE_HELPER", "DELETE_SESSION_CAPABILITIES"],
+    "partialStartupFailureDeletesFunctionalData": false,
+    "persistentFunctionalVolumesRetainedUntilR0": true,
+    "r0UsesExactBackendCleanupBeforeVolumeReset": true,
+    "dockerVolumeDeletionDuringNormalShutdownAllowed": false,
+    "historicalDemoRunArchiveRequired": false,
+    "postShutdownHelperSessionCapabilitiesAndListenersRemain": false
+  },
+  "implementationQualificationGates": [
+    "CLEAN_STARTUP",
+    "SAFE_PARTIAL_STARTUP_FAILURE",
+    "CONTAINER_RESTART_PRESERVES_CURRENT_DATA",
+    "HELPER_LOSS_BLOCKS_PROTECTED_ACTIONS",
+    "NORMAL_SHUTDOWN_RETAINS_FUNCTION_DATA",
+    "R0_CLEANS_ONLY_CURRENT_DEMO_STATE",
+    "NO_POST_SHUTDOWN_HELPER_CAPABILITY_OR_LISTENER",
+    "BOTH_VMS_FUNCTION_BACKEND_ROUTE",
+    "LAN_LISTENER_ABSENT"
+  ]
+}

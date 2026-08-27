@@ -182,6 +182,108 @@ class DocumentationCheckTests(unittest.TestCase):
             result.stderr,
         )
 
+    def test_uncovered_ui_interaction_is_rejected(self) -> None:
+        temporary, root = self.temporary_documentation()
+        self.addCleanup(temporary.cleanup)
+        target = (
+            root
+            / "docs"
+            / "demo"
+            / "mockups"
+            / "aosedge-demo-interaction-specification.md"
+        )
+        text = target.read_text(encoding="utf-8").replace(
+            "| `UI-INT-065` |", "| `UI-INT-064` |", 1
+        )
+        target.write_text(text, encoding="utf-8")
+        result = self.run_check(root)
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("UI interaction is not covered: UI-INT-065", result.stderr)
+
+    def test_ui_acceptance_case_without_interaction_is_rejected(self) -> None:
+        temporary, root = self.temporary_documentation()
+        self.addCleanup(temporary.cleanup)
+        target = (
+            root
+            / "docs"
+            / "demo"
+            / "mockups"
+            / "aosedge-demo-interaction-specification.md"
+        )
+        text = target.read_text(encoding="utf-8").replace(
+            "| `UI-INT-072` |", "| No interaction |", 1
+        )
+        target.write_text(text, encoding="utf-8")
+        result = self.run_check(root)
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn(
+            "UI acceptance case has no interaction coverage: UI-AT-043",
+            result.stderr,
+        )
+
+    def test_missing_ui_traceability_register_row_is_rejected(self) -> None:
+        temporary, root = self.temporary_documentation()
+        self.addCleanup(temporary.cleanup)
+        target = (
+            root
+            / "docs"
+            / "demo"
+            / "mockups"
+            / "aosedge-demo-ui-traceability-register.md"
+        )
+        lines = target.read_text(encoding="utf-8").splitlines()
+        target.write_text(
+            "\n".join(line for line in lines if "[`UI-INT-079`]" not in line) + "\n",
+            encoding="utf-8",
+        )
+        result = self.run_check(root)
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("missing UI traceability row: UI-INT-079", result.stderr)
+
+    def test_ui_traceability_row_requires_owner_surface_case_and_status(self) -> None:
+        mutations = (
+            (
+                "[D4-026.8](../../requirements/d4-decision-register.md#d4-026-8), "
+                "[`REQ-DEMO-022`](../../requirements/components/demo-orchestration.md#req-demo-022)",
+                "No owner",
+                "UI-INT-007 traceability row has no linked upstream owner",
+            ),
+            (
+                "[`UI-I0-004`](README.md#ui-i0-004), "
+                "[`UI-I0-005`](README.md#ui-i0-005), "
+                "[`UI-I0-006`](README.md#ui-i0-006)",
+                "No surface",
+                "UI-INT-007 traceability row has no I0 surface",
+            ),
+            (
+                "[`UI-AT-004`](aosedge-demo-interaction-specification.md#ui-at-004)",
+                "No case",
+                "UI-INT-007 traceability row has no acceptance case",
+            ),
+            (
+                "| `DESIGNED` |\n| [`UI-INT-002`]",
+                "| `UNKNOWN` |\n| [`UI-INT-002`]",
+                "UI-INT-001 traceability row has invalid status",
+            ),
+        )
+        for old, new, expected in mutations:
+            with self.subTest(expected=expected):
+                temporary, root = self.temporary_documentation()
+                self.addCleanup(temporary.cleanup)
+                target = (
+                    root
+                    / "docs"
+                    / "demo"
+                    / "mockups"
+                    / "aosedge-demo-ui-traceability-register.md"
+                )
+                text = target.read_text(encoding="utf-8")
+                self.assertIn(old, text)
+                target.write_text(text.replace(old, new, 1), encoding="utf-8")
+                result = self.run_check(root)
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn(expected, result.stderr)
+
     def test_retired_mapping_does_not_retire_replacement_requirement(self) -> None:
         temporary, root = self.temporary_documentation()
         self.addCleanup(temporary.cleanup)

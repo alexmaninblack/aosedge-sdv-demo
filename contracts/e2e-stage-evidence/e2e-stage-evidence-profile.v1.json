@@ -1,0 +1,431 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "contractId": "aosedge-e2e-stage-evidence",
+  "contractVersion": "1.4.0",
+  "lifecycleState": "DESIGN_REVIEWED",
+  "decision": "D4-025",
+  "acceptedSubdecisions": [
+    {"id": "D4-025.1", "accepted": "2026-08-23"},
+    {"id": "D4-025.2", "accepted": "2026-08-23"},
+    {"id": "D4-025.3", "accepted": "2026-08-23"},
+    {"id": "D4-025.4", "accepted": "2026-08-23"},
+    {"id": "D4-025.5", "accepted": "2026-08-23"}
+  ],
+  "pendingSubdecisions": [],
+  "hierarchy": {
+    "stableAcceptanceCaseIds": "AT-E2E-001_THROUGH_AT-E2E-011",
+    "acceptanceCasesRenumbered": false,
+    "atomicStageIdPattern": "AT-E2E-NNN/SNN",
+    "complexAcceptanceCaseContainsOrderedAtomicStages": true,
+    "eachAtomicStageHasExactlyOneBoundedAction": true,
+    "topLevelCaseVerdictComposedFromAtomicStageVerdicts": true
+  },
+  "atomicStageRecord": {
+    "schema": "e2e-stage-record.schema.json",
+    "requiredSections": [
+      "ACCEPTANCE_CASE_AND_STAGE_IDENTITY",
+      "D4_024_CORRELATION_DIGEST",
+      "ENTRY_ASSERTIONS",
+      "ONE_BOUNDED_ACTION",
+      "AUTHORITATIVE_RE_READ",
+      "EXIT_ASSERTIONS",
+      "ORCHESTRATION_STATE",
+      "ACCEPTANCE_VERDICT",
+      "SANITIZED_EVIDENCE_REFERENCES",
+      "START_AND_COMPLETION_TIMES",
+      "CLAIM_BOUNDARY"
+    ]
+  },
+  "stateSeparation": {
+    "authoritativeExternalState": "VERBATIM_OWNER_STATE_WITH_SOURCE_IDENTITY_AND_TIME",
+    "orchestrationStates": ["READY", "BLOCKED", "SUBMITTING", "UNCERTAIN", "RECONCILING", "COMPLETED"],
+    "acceptanceVerdicts": ["NOT_EVALUATED", "PASSED", "FAILED", "ABORTED"],
+    "externalStateMayBeReplacedByOrchestrationOrVerdict": false
+  },
+  "progressionRules": {
+    "blockedSubmitsAction": false,
+    "timeoutOrLostResponseState": "UNCERTAIN",
+    "timeoutOrLostResponseAssignsVerdictAutomatically": false,
+    "uncertainAllowsBlindRetry": false,
+    "reconciliationRequiresAuthoritativeReRead": true,
+    "passedRequiresAllMandatoryExitAssertions": true,
+    "failedMeansProvenMismatch": true,
+    "abortedMeansIntentionallyStoppedAttemptWithoutSuccessClaim": true,
+    "topLevelCasePassesWithAnyMandatoryStageNotPassed": false
+  },
+  "retentionBoundary": {
+    "ordinaryDemoRunHistoryRetained": false,
+    "stageRecordsRetainedOnlyForExplicitFormalQualificationOrAcceptanceRun": true
+  },
+  "assertionsAndEvidence": {
+    "predicates": [
+      "EXISTS",
+      "ABSENT",
+      "EQUALS",
+      "NOT_EQUALS",
+      "STATE_IS",
+      "STATE_IN",
+      "COUNT_EQUALS",
+      "SET_EQUALS",
+      "DIGEST_EQUALS",
+      "UNCHANGED",
+      "CAUSALLY_LINKED",
+      "SEQUENCE_COMPLETE",
+      "NO_FORBIDDEN_FIELDS"
+    ],
+    "assertionRequires": [
+      "STABLE_ASSERTION_ID",
+      "PREDICATE",
+      "MANDATORY_OR_OPTIONAL",
+      "EXPECTED_SANITIZED_VALUE_OR_DIGEST",
+      "ACTUAL_SANITIZED_VALUE_OR_DIGEST",
+      "EVIDENCE_REFERENCES",
+      "FRESHNESS_REQUIREMENT",
+      "OUTCOME",
+      "FIXED_REASON_CODE"
+    ],
+    "evidenceReferenceRequires": [
+      "D4_024_EVIDENCE_RECORD_ID",
+      "AUTHORITATIVE_OWNER_AND_SOURCE",
+      "SUBJECT_FINGERPRINT",
+      "OBSERVED_AND_FETCHED_TIMES",
+      "REQUEST_OR_RECORD_FINGERPRINT",
+      "CONTENT_DIGEST",
+      "FRESHNESS_STATE",
+      "CORRELATION_DIGEST"
+    ],
+    "evidenceMustMatchStage": ["UNIT", "ROLE", "SOURCE", "SERVICE", "ARTIFACT"],
+    "mutationRereadMustOccurAfterAction": true,
+    "successfulHttpResponseAloneIsAuthoritativeEvidence": false,
+    "screenshotAloneIsProof": false,
+    "operatorStatementAloneIsProof": false,
+    "rawExternalResponseCopiedIntoStageRecord": false,
+    "mandatoryEntryMustPassBeforeAction": true,
+    "failedEntryState": "BLOCKED_WITH_PROVEN_MISMATCH",
+    "unknownStaleOrConflictingEntryState": "BLOCKED_WITHOUT_SYSTEM_FAILURE_CLAIM",
+    "mandatoryExitMustPassForStagePass": true,
+    "provenExitMismatchVerdict": "FAILED",
+    "missingOrAmbiguousPostActionReread": "UNCERTAIN_OR_RECONCILING_NO_AUTOMATIC_VERDICT",
+    "optionalAssertionAffectsVerdict": false,
+    "optionalAssertionAlwaysDisplayed": true
+  },
+  "demoBaselineQualificationDossier": {
+    "schema": "demo-baseline-qualification-dossier.schema.json",
+    "qualificationRunName": "DEMO_SOLUTION_QUALIFICATION_RUN",
+    "dossierName": "DEMO_BASELINE_QUALIFICATION_DOSSIER",
+    "purpose": "DECIDE_IF_THE_EXACT_COMPLETED_DEMO_BASELINE_IS_READY_FOR_AUDIENCE_PRESENTATION",
+    "isPerArtifactReleaseApproval": false,
+    "isCreatedForOrdinaryAudienceDemo": false,
+    "mustBeDesignatedBeforeRunStart": true,
+    "postHocSuccessfulRunSelectionAllowed": false,
+    "layout": [
+      "manifest.json",
+      "summary.md",
+      "stages/*.json",
+      "evidence/*.json",
+      "human-review.json",
+      "checksums.sha256"
+    ],
+    "manifestBinds": [
+      "FACTORY_IMAGE",
+      "AOSCORE_RELEASE",
+      "AOSCLOUD_API_CONTRACT",
+      "REPOSITORY_REVISION",
+      "VDP_BRAKE_TIRE_ARTIFACT_AND_METADATA_DIGESTS",
+      "CONFIGURATION_AND_CONTRACT_CATALOGUE_DIGESTS",
+      "VU_PU_AND_SOURCE_BINDING_FINGERPRINTS",
+      "AT_E2E_CASE_STAGE_RECORD_DIGESTS_AND_VERDICTS",
+      "CLAIM_BOUNDARY_AND_EXCLUDED_CLAIMS",
+      "R0_CLEANUP_RESULT",
+      "AUTHORITATIVE_AUDIT_REFERENCE_FINGERPRINTS"
+    ],
+    "summaryMayAddFactsNotPresentInMachineRecords": false,
+    "copiesAosCloudSystemOfRecord": false,
+    "screenshotsAreProof": false,
+    "forbiddenContent": [
+      "RAW_TELEMETRY",
+      "FUNCTIONAL_PAYLOADS",
+      "RAW_CLOUD_RESPONSES_OR_LOGS",
+      "CREDENTIALS_OR_AUTHORIZATION_HEADERS",
+      "JWT",
+      "CERTIFICATE_OR_PRIVATE_KEY",
+      "VIN",
+      "FULL_UNIT_NODE_OR_SYSTEM_UID"
+    ],
+    "preSealChecks": ["SCHEMA_VALIDATION", "FORBIDDEN_DATA_SCAN", "DIGEST_AND_REFERENCE_VERIFICATION"],
+    "sealedDossierImmutable": true,
+    "correctionCreatesNewVersionWithSupersedesDossierId": true,
+    "states": ["INCOMPLETE", "PASSED", "FAILED", "ABORTED"],
+    "passRequiresR0CleanupPass": true,
+    "uncertainCleanupState": "INCOMPLETE",
+    "exactRetentionLocationAndReplacementPolicyOwnedBy": "D4_026_5"
+  },
+  "exactStageMap": {
+    "map": "e2e-stage-map.v1.json",
+    "stageRecordIdentity": ["acceptanceCaseId", "stageId", "stageInstanceKey", "targetOrArtifactCorrelationSha256"],
+    "parameterizationPreventsCopiedReleaseRows": true,
+    "fixedReleaseInstances": ["VDP_V1", "BRAKE_V1", "VDP_V2", "BRAKE_V2", "VDP_V3", "BRAKE_V3", "TIRE_V1"],
+    "negativeInstanceSource": "STABLE_OWNER_CONTRACT_VECTOR_IDS",
+    "retirementRoleInstances": ["VALIDATION", "PRODUCTION"],
+    "interruptionInstanceSource": "EXTERNAL_MUTATION_CLASSES_IN_ACCEPTED_STAGE_MAP",
+    "jointGraphPromotionOrder": "BOTH_VU_OWNER_ACCEPTANCES_THEN_VDP_DU_PROMOTION_THEN_DEPENDENT_SERVICE_DU_PROMOTION"
+  },
+  "qualificationModesAndCaseAllocation": {
+    "acceptedDecisions": ["D4-026.1", "D4-026.2", "D4-026.3"],
+    "modes": [
+      "STATIC_CONFORMANCE",
+      "CONTROLLED_DISPOSABLE_QUALIFICATION",
+      "LIVE_BASELINE_POSITIVE",
+      "AUDIENCE_PRESENTATION"
+    ],
+    "staticConformance": {
+      "isIntegratedAcceptanceCaseVerdict": false,
+      "requiredEvidence": [
+        "ALL_APPLICABLE_SCHEMA_CONTRACT_UNIT_AND_CONFORMANCE_SUITES_PASS",
+        "PREPARED_CANDIDATE_DIGEST_METADATA_PERMISSION_AND_DEPENDENCY_CHECKS_PASS",
+        "CONTROLLED_SYNTHETIC_EVIDENCE_FRAMEWORK_RUN_PASSES"
+      ]
+    },
+    "controlledDisposableQualification": {
+      "requiredAcceptanceCases": ["AT-E2E-009", "AT-E2E-011"],
+      "negativeInstances": "ALL_STABLE_NEGATIVE_VECTOR_IDS_FROM_ACCEPTED_OWNER_CONTRACTS",
+      "interruptionInstances": "ALL_EXTERNAL_MUTATION_CLASSES_USED_BY_ACCEPTED_STAGE_MAP",
+      "oneVectorPerInstance": true,
+      "nextInstanceRequiresProvenRestoredPreconditionOrFreshDisposableVehicleIdentity": true,
+      "unitUsingAttemptRequiresProvenCleanupOrR0": true,
+      "forbiddenDestructiveTargets": [
+        "STABLE_OEM_SP_CERTIFICATES",
+        "IMMUTABLE_FACTORY_IMAGE",
+        "PREPARED_ARTIFACT_CATALOGUE",
+        "PERSISTENT_VERIFICATION_AND_PRODUCTION_UNIT_SET_OBJECTS",
+        "AOSCLOUD_AUDIT_HISTORY"
+      ]
+    },
+    "liveBaselinePositive": {
+      "requiredAcceptanceCases": [
+        "AT-E2E-001",
+        "AT-E2E-002",
+        "AT-E2E-003",
+        "AT-E2E-004",
+        "AT-E2E-005",
+        "AT-E2E-006",
+        "AT-E2E-007",
+        "AT-E2E-008",
+        "AT-E2E-010"
+      ],
+      "requiredReleaseInstances": ["VDP_V1", "BRAKE_V1", "VDP_V2", "BRAKE_V2", "VDP_V3", "BRAKE_V3", "TIRE_V1"],
+      "requiredRetirementRoleInstances": ["VALIDATION", "PRODUCTION"],
+      "inMotionUpdateClaimMandatory": true,
+      "inMotionNumericBoundOwnedBy": "D4-026.4"
+    },
+    "audiencePresentation": {
+      "createsQualificationVerdictOrDossier": false,
+      "runsDestructiveOrNegativeVectors": false,
+      "currentAuthoritativePreflightsRemainMandatory": true
+    },
+    "dossierPassRequires": [
+      "STATIC_CONFORMANCE_PASS",
+      "ALL_REQUIRED_AT_E2E_009_INSTANCES_PASS",
+      "ALL_REQUIRED_AT_E2E_011_INSTANCES_PASS",
+      "ALL_LIVE_BASELINE_POSITIVE_CASES_AND_INSTANCES_PASS",
+      "POSITIVE_R0_PASS",
+      "EXACT_BASELINE_BINDING_MATCH",
+      "FORBIDDEN_DATA_SCAN_PASS"
+    ]
+  },
+  "repeatabilityToleranceAndHumanAcceptance": {
+    "decision": "D4-026.4",
+    "ownerSpecificSeriesAreNotMultipliedBySystemCycles": true,
+    "ownerSpecificSeries": {
+      "brakeStimulus": "D4-003_20_OF_20_STRICT_RESET_RUNS",
+      "tireStimulus": "D4-003_10_HEALTHY_PLUS_10_PRE_AGED_STRICT_RESET_RUNS",
+      "vehicleConnectivity": "D4-022_TWO_CYCLES_PER_ROLE",
+      "tireCpuIsolation": "D4-023_CHARACTERIZATION_TWO_INDEPENDENT_VU_PASSES_ONE_DU_REHEARSAL",
+      "negativeVectors": "ONE_PASS_PER_REQUIRED_AT_E2E_009_INSTANCE",
+      "interruptionClasses": "ONE_PASS_PER_REQUIRED_AT_E2E_011_INSTANCE"
+    },
+    "liveBaselinePositive": {
+      "requiredConsecutiveCompleteCycles": 2,
+      "completeSequence": ["M0", "M1", "G0", "G1", "G2", "G3", "G4", "T1", "R0"],
+      "cycleBRequiresCycleAReadyForM0": true,
+      "cycleBUsesFreshVehicleIdentities": true,
+      "cycleBUsesUnchangedBoundBaseline": true,
+      "cycleBR0MustEndReadyForM0": true,
+      "thirdProvisioningCycleRequired": false,
+      "failedAbortedIncompleteUncertainOrStaleBreaksConsecutiveness": true,
+      "cherryPickingRepeatedFailedStagesIntoPassingDossierAllowed": false
+    },
+    "humanPresenterAcceptance": {
+      "required": true,
+      "usesCycle": "LIVE_BASELINE_POSITIVE_CYCLE_B",
+      "createsFifthExecutionMode": false,
+      "humanPresenterUsesReviewedLauncherDashboardsAndInstructions": true,
+      "minimumHumanReviewers": 1,
+      "acceptedGate": "HUMAN_PRESENTER_REHEARSAL_ACCEPTED",
+      "qualificationFormula": "MACHINE_PASSED_AND_HUMAN_ACCEPTED",
+      "machinePassWithoutHumanAcceptanceQualifies": false,
+      "humanRejectMayVetoMachinePass": true,
+      "humanAcceptMayOverrideNonPassingMachineVerdict": false,
+      "machineHumanConflictPolicy": "FAIL_CLOSED_NOT_QUALIFIED",
+      "hiddenStateInjectionSourceEditCompilationDirectDatabaseOrTerminalOnlyLifecycleShortcutAllowed": false,
+      "humanRejectionRequiresSanitizedReasonAndAffectedDefectRequirementTestFollowUp": true,
+      "failureBlocksReadyForAudienceClaim": true
+    },
+    "tolerancePolicy": {
+      "exactEquality": ["DIGEST", "VERSION", "IDENTITY", "MEMBERSHIP", "RECIPIENT", "PERMISSION", "COUNT", "SEQUENCE"],
+      "zeroTolerance": ["SECURITY_VIOLATION", "ISOLATION_BREACH", "CLEANUP_RESIDUE", "FORBIDDEN_SIDE_EFFECT"],
+      "carlaPhysicalBoundsSource": "D4-003_FROZEN_PROFILES",
+      "connectivityBoundsSource": "D4-022_BOUND_PROFILE",
+      "resourceBoundsSource": "D4-023_BOUND_PROFILE",
+      "arbitraryGlobalPercentageToleranceAllowed": false,
+      "cloudOperationDurationIsPerformanceKpi": false,
+      "crossClockAbsoluteLatencyClaimAllowed": false
+    },
+    "inMotionReadiness": {
+      "separateGaps": ["VDP_KUKSA", "BRAKE_SERVICE", "TIRE_SERVICE"],
+      "valuesProducedBy": "POST_IMPLEMENTATION_VU_CHARACTERIZATION",
+      "characterizationRunsIncludedInPassFailPopulation": false,
+      "baselineSpecificMaximaFrozenBeforeFormalQualification": true,
+      "bothLiveCyclesMustMeetFrozenMaxima": true,
+      "continuousEvidence": ["SAME_CARLA_ACTOR_AND_GENERATION", "VEHICLE_CONTROL", "GATEWAY_VISS", "ENGINEERING_DASHBOARD"],
+      "isAutomotiveRealtimeOrPerformanceClaim": false,
+      "broaderPerformanceQualification": "DEFERRED_I8"
+    }
+  },
+  "qualificationDossierRetentionStatusAndReplacement": {
+    "decision": "D4-026.5",
+    "dossierManifestSchema": "demo-baseline-qualification-dossier.schema.json",
+    "humanReviewSchema": "human-presenter-review.schema.json",
+    "qualificationStatusSchema": "qualification-status.schema.json",
+    "paths": {
+      "candidate": ".local/qualification/candidate/",
+      "current": ".local/qualification/current/",
+      "status": ".local/qualification/qualification-status.json"
+    },
+    "gitIgnored": true,
+    "automaticRemoteUploadAllowed": false,
+    "currentStatusVocabulary": ["ABSENT", "QUALIFIED", "STALE", "WITHDRAWN", "NOT_QUALIFIED"],
+    "dashboardReadsBoundedStatusAndSanitizedReasonCodesOnly": true,
+    "dashboardReadsRawDossierEvidenceOrSecrets": false,
+    "replacement": {
+      "candidateMustPassSchemaForbiddenDataDigestReferenceR0AndHumanReviewChecks": true,
+      "candidateSealedBeforeReplacement": true,
+      "atomicCurrentReplacementRequired": true,
+      "previousCurrentPreservedUntilNewCurrentVerified": true,
+      "previousCurrentDeletedAfterVerifiedReplacement": true,
+      "dossierHistoryRetained": false,
+      "failedAttemptRecordsMayBeCherryPickedIntoLaterCandidate": false
+    },
+    "failedCandidate": {
+      "reconciliationRequiredBeforeCleanup": true,
+      "temporaryCandidateDeletedAfterReconciliation": true,
+      "sanitizedIncidentRetentionRequiresExplicitOperatorAction": true,
+      "replacesCurrentDossier": false
+    },
+    "humanPolicy": {
+      "acceptedHumanRejectionStatus": "NOT_QUALIFIED",
+      "currentQualificationMayBeWithdrawnByHumanReviewer": true,
+      "withdrawalStatus": "WITHDRAWN",
+      "withdrawalMayBeReversedByStatusEditOrOlderDossierRestore": false,
+      "newCompleteQualificationRequiredAfterWithdrawal": true
+    },
+    "r0PreservesCurrentDossierAndShortStatus": true,
+    "baselineMismatchStatus": "STALE",
+    "baselineMismatchMutatesSealedDossier": false,
+    "audiencePresentationCreatesOrModifiesQualificationDossier": false,
+    "statusIsSecondLifecycleAuthority": false
+  },
+  "audiencePresentationPolicy": {
+    "decision": "D4-026.6",
+    "mode": "AUDIENCE_PRESENTATION",
+    "plannedCoreNarrativeMinutes": 30,
+    "reservedAudienceSlotMinutes": 45,
+    "questionAndAnswerInsideReservedAudienceSlot": false,
+    "timingIsAosCloudOrVehiclePerformanceKpi": false,
+    "realCloudWaitStateMustRemainVisible": true,
+    "cloudWaitMayBeHiddenConvertedToReplayOrPresentedAsVehicleKpi": false,
+    "impracticalWaitDashboardInteractionOrNarrationMayCauseHumanRejection": true,
+    "machineQualificationAutomaticallyFailsBecauseCloudWaitIsSlow": false,
+    "mandatoryCoreStory": [
+      "M0_M1_FRESH_VU_PU_PROVISIONING_AND_DISJOINT_UNIT_SET_ASSIGNMENT",
+      "G0_NORMALLY_OPERATING_VEHICLE_WITHOUT_POST_SOP_VDP_OR_SERVICES",
+      "G1_VDP_V1_VU_QUALIFICATION_OWNER_OEM_ACCEPTANCE_AND_IDENTICAL_DU_PROMOTION",
+      "G2_BRAKE_V1_BRAKE_WINDOW_TELEMETRY_AND_BACKEND_RESULT",
+      "G3_VDP_V2_AND_BRAKE_V2_LOCAL_ANALYSIS_AND_DERIVED_EVENT",
+      "G4_VDP_V3_AND_BRAKE_V3_LOCAL_ADVISORY_WITH_VEHICLE_EXTERNAL_CONNECTIVITY_LOSS_AND_RESTORE",
+      "T1_INDEPENDENT_TIRE_LIFECYCLE_RESULT_AND_AOSCORE_RESOURCE_ISOLATION",
+      "R0_RETIRE_UNITS_EMPTY_SETS_DELETE_OVERLAYS_AND_RUN_DATA_READY_FOR_M0"
+    ],
+    "mandatoryLifecycleControls": [
+      "CURRENT_PREFLIGHTS",
+      "VU_VALIDATION",
+      "TEAM_ACCEPTANCE",
+      "OEM_AUTHORIZATION",
+      "EFFECTIVE_RECIPIENT_SET_EQUALITY",
+      "AUTHORITATIVE_POST_ACTION_REREAD",
+      "R0_GATES"
+    ],
+    "presenterUiMaySummarizeMandatoryControls": true,
+    "presenterUiMaySkipPreapproveOrSimulateMandatoryControls": false,
+    "optionalExtensions": [
+      "CLOUD_AUDIT_OR_LOG_DRILLDOWN",
+      "ADDITIONAL_CARLA_MANUAL_OR_AUTOPILOT_RUNS",
+      "REPEATED_BRAKE_OR_TIRE_EVENTS",
+      "DEEP_ARTIFACT_METADATA_PERMISSION_JWT_QUOTA_OR_EVIDENCE_VIEWS"
+    ],
+    "optionalExtensionMayReplaceMandatoryGate": false,
+    "forbiddenAudienceSteps": [
+      "SECURITY_NEGATIVE_VECTORS",
+      "DESTRUCTIVE_QUALIFICATION",
+      "INTERRUPTION_MATRIX",
+      "SOURCE_EDITING",
+      "COMPILATION",
+      "QUALIFICATION_FRAMEWORK_EXECUTION"
+    ],
+    "createsOrModifiesQualificationDossier": false,
+    "implementationMockupsMeasuredRehearsalAndRealBaselineQualificationRemainOpen": true
+  },
+  "verdictCompositionAndQualification": {
+    "stageVerdictRules": {
+      "entryBlockedBeforeAction": {"orchestrationState": "BLOCKED", "acceptanceVerdict": "NOT_EVALUATED"},
+      "provenMandatoryExitMismatch": "FAILED",
+      "intentionalStopWithProvenSafeAbort": "ABORTED",
+      "unknownActionResult": {"orchestrationState": "UNCERTAIN_OR_RECONCILING", "acceptanceVerdict": "NOT_EVALUATED"},
+      "allMandatoryExitAssertionsPassed": "PASSED",
+      "optionalAssertionAffectsVerdict": false
+    },
+    "acceptanceCasePrecedence": [
+      "ANY_MANDATORY_STAGE_FAILED_MEANS_FAILED",
+      "ELSE_ANY_MANDATORY_STAGE_ABORTED_MEANS_ABORTED",
+      "ELSE_ANY_MANDATORY_STAGE_NOT_EVALUATED_OR_INCOMPLETE_MEANS_NOT_EVALUATED",
+      "ELSE_ALL_MANDATORY_STAGES_AND_REQUIRED_INSTANCES_PASSED_MEANS_PASSED"
+    ],
+    "manualVerdictOverrideAllowed": false,
+    "oemApprovalAutomaticallyPassesStageOrCase": false,
+    "dossierVerdictRules": {
+      "allD4026RequiredCasesAndR0Passed": "PASSED",
+      "anyProvenFailedCase": "FAILED",
+      "intentionalAbortWithoutFailure": "ABORTED",
+      "blockedMissingStaleUncertainOrUnreconciledStage": "INCOMPLETE",
+      "passRequiresForbiddenDataScanPass": true,
+      "requiredCaseAndModeSetOwnedBy": "D4_026"
+    },
+    "frameworkQualification": [
+      "ALL_STAGE_ASSERTION_EVIDENCE_AND_DOSSIER_SCHEMAS_VALIDATE",
+      "AT_E2E_001_THROUGH_011_MAP_COMPLETE",
+      "ALL_TEMPLATE_INSTANCES_RESOLVE_WITHOUT_DUPLICATE_COMPOSITE_IDENTITY",
+      "DEPENDENCY_GRAPH_HAS_NO_CYCLE_OR_MISSING_DEPENDENCY",
+      "FULL_VERDICT_TRUTH_TABLE_PASSES",
+      "MISSING_STALE_CONFLICTING_EVIDENCE_FIXTURES_PASS",
+      "DIGEST_TAMPERING_AND_BROKEN_REFERENCE_TESTS_PASS",
+      "FORBIDDEN_DATA_NEGATIVE_SCAN_PASSES",
+      "INTERRUPTED_STAGE_RECORD_WRITE_RECOVERS_SAFELY",
+      "SUMMARY_IS_DETERMINISTIC_AND_DERIVED_ONLY_FROM_MACHINE_RECORDS",
+      "SEALED_DOSSIER_MUTATION_IS_REJECTED",
+      "ONE_CONTROLLED_SYNTHETIC_FRAMEWORK_RUN_PASSES_BEFORE_REAL_OPERATIONS"
+    ],
+    "implementationAndRealBaselineApplicationRemainOpen": true,
+    "designReviewAuthorizesImplementationOrExternalMutation": false
+  }
+}

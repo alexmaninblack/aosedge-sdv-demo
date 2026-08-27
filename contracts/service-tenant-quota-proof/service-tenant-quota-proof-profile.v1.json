@@ -1,0 +1,293 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "contractId": "aosedge-demo-service-tenant-quota-proof",
+  "contractVersion": "1.0.0",
+  "lifecycleState": "DESIGN_REVIEWED",
+  "decision": "D4-023",
+  "acceptedSubdecisions": [
+    {"id": "D4-023.1", "accepted": "2026-08-23"},
+    {"id": "D4-023.2", "accepted": "2026-08-23"},
+    {"id": "D4-023.3", "accepted": "2026-08-23"},
+    {"id": "D4-023.4", "accepted": "2026-08-23"},
+    {"id": "D4-023.5", "accepted": "2026-08-23"},
+    {"id": "D4-023.6", "accepted": "2026-08-23"}
+  ],
+  "authority": {
+    "quotaRequester": "OWNING_FUNCTION_TEAM_IN_SOTA_SERVICE_METADATA",
+    "approvalAuthority": "OEM_AFTER_VALIDATION_EVIDENCE",
+    "inVehicleEnforcementAuthority": "AOSCORE_SERVICE_MANAGER",
+    "dashboardAuthority": "READ_ONLY_PRESENTATION",
+    "demoOrchestratorMaySetOverrideOrEnforceQuotas": false,
+    "projectResourceManagerAllowed": false
+  },
+  "serviceMetadata": {
+    "path": "configuration.quotas",
+    "fields": [
+      "cpuLimit",
+      "ramLimit",
+      "storageLimit",
+      "stateLimit",
+      "tmpLimit",
+      "noFileLimit",
+      "pidsLimit"
+    ],
+    "exactServiceVersionAndArtifactDigestRequired": true,
+    "cpuLimitMayBePresentedAsCpuPercentBeforeNativeMappingQualification": false,
+    "cpuLimitUnit": "DMIPS",
+    "sizeFieldNativeUnit": "BYTES",
+    "signerVersion": "2.0.1",
+    "signedNativeCpuField": "cpuDmipsLimit",
+    "nativeFieldToRuntimeMappingDesignAccepted": true,
+    "liveOciAndCgroupMappingQualified": false
+  },
+  "dashboardPresentation": {
+    "required": [
+      "SERVICE_PROVIDER",
+      "SERVICE_VERSION",
+      "SERVICE_ARTIFACT_DIGEST",
+      "OEM_APPROVED_QUOTA_METADATA",
+      "AOSCORE_AOSCLOUD_RESOURCE_STATE_OR_EVIDENCE"
+    ],
+    "mayClaimSelfEnforcementByService": false,
+    "mayClaimEnforcementByDashboardOrOrchestrator": false
+  },
+  "firstDemoScope": {
+    "intentionallySaturatedService": "TIRE_HEALTH_SERVICE",
+    "intentionallySaturatedResource": "CPU",
+    "nonCpuExhaustionPresentedToAudience": false,
+    "brakeHealthRole": "UNLOADED_CONTROL_TENANT"
+  },
+  "approvedRequestedEnvelopes": {
+    "brakeHealth": {
+      "cpuLimit": 250,
+      "ramLimit": "16MiB",
+      "storageLimit": "8MiB",
+      "stateLimit": "1MiB",
+      "tmpLimit": "8MiB",
+      "noFileLimit": 64,
+      "pidsLimit": 16
+    },
+    "tireHealth": {
+      "cpuLimit": 150,
+      "ramLimit": "16MiB",
+      "storageLimit": "4MiB",
+      "stateLimit": "2MiB",
+      "tmpLimit": "2MiB",
+      "noFileLimit": 32,
+      "pidsLimit": 8
+    },
+    "tireStorageOwnership": {
+      "storageLimit": "PERSISTENT_OUTBOX_AND_SUPPORTING_DATABASE_METADATA",
+      "stateLimit": "VERSIONED_TIRE_MODEL_STATE",
+      "tmpLimit": "TEMPORARY_COMPUTATION_ONLY"
+    },
+    "networkQuotaRequested": false,
+    "silentInflationAllowed": false,
+    "insufficientEnvelopeRequiresReviewedChangeWithMeasurements": true
+  },
+  "mappingAcceptance": {
+    "signerInputAndSignedNativeConfigMustMatch": true,
+    "postDeploymentInspect": [
+      "OCI_CPU_QUOTA_PERIOD_OR_CGROUP_V2_CPU_MAX",
+      "CGROUP_V2_MEMORY_MAX",
+      "CGROUP_V2_PIDS_MAX",
+      "OPEN_FILE_LIMIT",
+      "STORAGE_STATE_AND_TMP_MOUNTS_OR_QUOTA",
+      "NODE_DMIPS_CAPACITY_USED_FOR_CPU_MAPPING"
+    ],
+    "unsupportedOrUnobservedFieldMayBePresentedAsEnforced": false,
+    "declaredDmipsAndObservedCpuUtilizationShownSeparately": true,
+    "firstDemoExhaustionScope": ["TIRE_CPU"]
+  },
+  "tireCpuLoadControl": {
+    "dashboardControl": "START_CPU_ISOLATION_PROOF",
+    "owner": "FUNCTION_TEAM_2",
+    "dashboardToBackend": "TIRE_FUNCTION_DASHBOARD_TO_MAC_LOCAL_TIRE_BACKEND",
+    "backendToService": "SERVICE_INITIATED_EXISTING_OUTBOUND_TIRE_BACKEND_ROUTE",
+    "commandBinding": ["CURRENT_SYSTEM_UID", "TIRE_SERVICE_VERSION", "TIRE_SERVICE_ARTIFACT_DIGEST", "FIXED_LOAD_PROFILE_ID"],
+    "fixedLoadProfileId": "TIRE_CPU_ISOLATION_PROOF_V1",
+    "commands": ["START_FIXED_CPU_LOAD", "STOP_FIXED_CPU_LOAD"],
+    "arbitraryShellAllowed": false,
+    "callerSelectedThreadsAllowed": false,
+    "callerSelectedIntensityAllowed": false,
+    "callerSelectedDurationAllowed": false,
+    "workerLocation": "INSIDE_ACTUAL_TIRE_SERVICE_INSTANCE_AND_SAME_AOS_MANAGED_CGROUP",
+    "separateLoadServiceOrContainerAllowed": false,
+    "maximumConcurrentWorkers": 1,
+    "duplicateStartBehavior": "IDEMPOTENT_RETURN_CURRENT_STATE",
+    "states": ["INACTIVE", "STARTING", "ACTIVE", "STOPPING", "AUTO_STOPPED", "FAILED"],
+    "dashboardOrBackendLossBehavior": "AUTO_STOP_AFTER_BOUNDED_LEASE_EXPIRY",
+    "absoluteSafetyCeilingSeconds": 180,
+    "normalProofDuration": "QUALIFIED_WITH_AUTHORITATIVE_MONITORING_CADENCE_IN_D4_023_4",
+    "serviceOrVmRestartState": "INACTIVE_NO_PERSISTENCE_NO_RESUME",
+    "serviceReportedStateProvesQuotaEnforcement": false,
+    "externalConnectivityRequiredToStartOrMaintainLoad": true,
+    "offlineDashboardControlEnabled": false,
+    "sshExecCrunExecSignalOrAdministratorBypassAllowed": false
+  },
+  "authoritativeEvidence": {
+    "approvedQuotaSource": "AOSCLOUD_SERVICE_VERSION_CONFIGURATION_REREAD_BOUND_TO_LOCALLY_VERIFIED_SIGNED_CONFIG_CHAIN",
+    "currentInstanceSource": "AOSCLOUD_CURRENT_SELECTED_UNIT_ACTUAL_STATE",
+    "cloudReadEndpoints": [
+      "/api/v11/units/{unitId}/monitoring/",
+      "/api/v11/units/{unitId}/monitoring/dashboard/",
+      "/api/v11/alerts/"
+    ],
+    "requiredCloudBinding": [
+      "CURRENT_SYSTEM_UID",
+      "CURRENT_NODE_ID",
+      "TIRE_SERVICE_ID",
+      "TIRE_SERVICE_VERSION",
+      "TIRE_SERVICE_INSTANCE",
+      "TIRE_SERVICE_ARTIFACT_DIGEST_CHAIN"
+    ],
+    "requiredAudienceFacts": [
+      "APPROVED_CPU_LIMIT_DMIPS",
+      "CURRENT_INSTANCE_CPU_USAGE_DMIPS",
+      "SOURCE_TIMESTAMP_AND_FRESHNESS",
+      "CURRENT_INSTANCE_STATE"
+    ],
+    "instanceQuotaAlertRole": "SUPPLEMENTARY_FACT_NOT_REQUIRED_FOR_PASS",
+    "cloudApiExposesRawCgroupCapOrThrottleCounters": false,
+    "technicalAcceptanceEvidence": [
+      "EXACT_TIRE_INSTANCE_CGROUP_BINDING",
+      "CGROUP_V2_CPU_MAX",
+      "CGROUP_V2_CPU_STAT_THROTTLE_COUNTER_DELTA",
+      "NO_TIRE_INSTANCE_RESTART_OR_REPLACEMENT"
+    ],
+    "technicalEvidenceCollection": "READ_ONLY_QUALIFICATION_OUTSIDE_SERVICE_AND_BACKEND_SELF_REPORT",
+    "technicalEvidenceBoundTo": [
+      "OEM_FACTORY_IMAGE_DIGEST",
+      "AOSCORE_RELEASE",
+      "TIRE_SERVICE_ARTIFACT_DIGEST",
+      "SIGNED_SERVICE_CONFIGURATION_DIGEST",
+      "NODE_DMIPS_CAPACITY"
+    ],
+    "technicalEvidenceMustBeRecollectedDuringEveryAudienceDemo": false,
+    "serviceOrBackendLoadStateMayProveEnforcement": false,
+    "dashboardMayConflateCloudAndQualificationEvidence": false,
+    "missingStaleAmbiguousOrMismatchedEvidenceState": "UNKNOWN_BLOCK_PASS",
+    "numericalToleranceAndSampleCountDecision": "D4-023.5",
+    "finalPassCriteriaFrozen": true
+  },
+  "verdictAndThresholds": {
+    "evaluationMode": "SAMPLE_DRIVEN_NOT_FIXED_DURATION",
+    "freshConsecutiveCloudSamplesPerPhase": 3,
+    "phases": ["PRE_LOAD_BASELINE", "SATURATION", "POST_STOP_RECOVERY"],
+    "cloudSampleFreshnessBound": "DERIVED_FROM_LIVE_MONITORING_CADENCE_AND_FROZEN_IN_QUALIFICATION_PROFILE",
+    "saturationBandDmips": "MEASURED_AND_FROZEN_PER_BOUND_BASELINE",
+    "recoveryBandDmips": "MEASURED_AND_FROZEN_PER_BOUND_BASELINE",
+    "cgroupMappingTolerance": "MEASURED_RUNTIME_ROUNDING_ONLY_AND_FROZEN_PER_BOUND_BASELINE",
+    "arbitraryPercentToleranceAllowed": false,
+    "qualificationProfileBoundTo": [
+      "OEM_FACTORY_IMAGE_DIGEST",
+      "AOSCORE_RELEASE",
+      "TIRE_SERVICE_ARTIFACT_DIGEST",
+      "SIGNED_SERVICE_CONFIGURATION_DIGEST",
+      "NODE_DMIPS_CAPACITY"
+    ],
+    "passRequires": [
+      "EXACT_TIRE_INSTANCE_AND_APPROVED_150_DMIPS_BINDING",
+      "THREE_FRESH_CLOUD_SAMPLES_IN_SATURATION_BAND",
+      "QUALIFIED_CGROUP_CAP_AND_THROTTLE_COUNTER_DELTA",
+      "SAME_TIRE_INSTANCE_WITHOUT_RESTART_OR_REDEPLOY",
+      "BRAKE_READY_NO_RESTART_AND_ONE_DETERMINISTIC_EVENT_COMPLETED",
+      "VDP_KUKSA_GATEWAY_AOSCORE_HEALTHY_AND_UNIT_ONLINE",
+      "THREE_FRESH_POST_STOP_SAMPLES_IN_RECOVERY_BAND",
+      "NO_TIRE_REINSTALL_OR_RESTART_DURING_RECOVERY"
+    ],
+    "brakeEventTimingRule": "EXISTING_DETERMINISTIC_SCENARIO_TIMEOUT_NO_NEW_LATENCY_KPI",
+    "failConditions": [
+      "CGROUP_CAP_OR_DMIPS_MAPPING_MISMATCH",
+      "OBSERVED_USAGE_OUTSIDE_QUALIFIED_CAP_TOLERANCE",
+      "TIRE_INSTANCE_RESTART_REPLACEMENT_OR_REDEPLOY",
+      "BRAKE_RESTART_NOT_READY_OR_EVENT_FAILURE",
+      "VDP_KUKSA_GATEWAY_AOSCORE_OR_UNIT_DEGRADATION",
+      "POST_STOP_RECOVERY_FAILURE"
+    ],
+    "inconclusiveConditions": [
+      "MISSING_STALE_OR_INCOMPLETE_CLOUD_SAMPLES",
+      "AMBIGUOUS_OR_LOST_INSTANCE_BINDING",
+      "LOAD_AUTO_STOPPED_BY_LEASE_OR_SAFETY_CEILING_BEFORE_COMPLETE_EVIDENCE",
+      "INCOMPLETE_OR_STALE_QUALIFICATION_EVIDENCE"
+    ],
+    "notReadyConditions": [
+      "SELECTED_UNIT_EXTERNALLY_OFFLINE",
+      "WRONG_OR_UNKNOWN_TIRE_SERVICE_VERSION",
+      "MISSING_OR_STALE_BOUND_QUALIFICATION_PROFILE"
+    ],
+    "instanceQuotaAlertAffectsVerdictByItself": false,
+    "quantitativeLatencyKpiIntroduced": false,
+    "baselineSpecificNumericalValuesProducedDuringQualification": true
+  },
+  "qualificationPlan": {
+    "staticContractQualification": [
+      "EXACT_SIGNER_INPUT_AND_SIGNED_BRAKE_TIRE_QUOTAS",
+      "DASHBOARD_AND_ORCHESTRATOR_HAVE_NO_QUOTA_MUTATION_API",
+      "FIXED_LOAD_COMMAND_AND_NEGATIVE_BINDING_MATRIX",
+      "PASS_FAIL_INCONCLUSIVE_NOT_READY_STATE_MACHINE"
+    ],
+    "validationUnitCharacterizationCycles": 3,
+    "characterizationCyclePhases": [
+      "THREE_FRESH_BASELINE_SAMPLES",
+      "START_FIXED_TIRE_LOAD",
+      "THREE_FRESH_SATURATION_SAMPLES",
+      "CGROUP_CAP_AND_THROTTLE_DELTA",
+      "CONCURRENT_DETERMINISTIC_BRAKE_EVENT",
+      "STOP_FIXED_TIRE_LOAD",
+      "THREE_FRESH_RECOVERY_SAMPLES"
+    ],
+    "freezeQualificationProfileAfterCharacterization": true,
+    "profileMayBeAdjustedDuringIndependentQualification": false,
+    "independentValidationUnitQualificationCycles": 2,
+    "requiredIndependentValidationPasses": 2,
+    "inconclusiveCountsAsPass": false,
+    "failBlocksQualification": true,
+    "validationUnitLiveFaultCases": [
+      "DUPLICATE_START_STOP",
+      "BACKEND_LEASE_LOSS",
+      "ABSOLUTE_180_SECOND_CEILING",
+      "TIRE_SERVICE_RESTART",
+      "VM_RESTART",
+      "STALE_CLOUD_MONITORING",
+      "IDENTITY_OR_PROFILE_MISMATCH",
+      "SELECTED_UNIT_EXTERNALLY_OFFLINE"
+    ],
+    "productionUnitRehearsalCycles": 1,
+    "requiredProductionUnitPasses": 1,
+    "sameSignedTireArtifactAndFrozenProfileRequired": true,
+    "retainedDossierCount": 1,
+    "ordinaryDemoRunHistoryRetained": false,
+    "retainedDossierFields": [
+      "BOUND_BASELINE_DIGESTS",
+      "NODE_DMIPS_CAPACITY",
+      "APPROVED_QUOTAS",
+      "NORMALIZED_CLOUD_SAMPLES_AND_TIMESTAMPS",
+      "CGROUP_CAP_AND_COUNTERS_BEFORE_DURING_AFTER",
+      "TIRE_INSTANCE_CONTINUITY",
+      "BRAKE_EVENT_CORRELATION",
+      "VDP_KUKSA_GATEWAY_AOSCORE_HEALTH",
+      "PER_CYCLE_AND_OVERALL_VERDICTS"
+    ],
+    "forbiddenDossierContent": [
+      "CREDENTIAL",
+      "PRIVATE_KEY",
+      "FULL_PRIVATE_CLOUD_IDENTIFIER",
+      "RAW_VEHICLE_TELEMETRY",
+      "ORDINARY_DEMO_RUN_HISTORY"
+    ],
+    "requalificationTriggers": [
+      "OEM_FACTORY_IMAGE_DIGEST_CHANGE",
+      "AOSCORE_RELEASE_CHANGE",
+      "CONTAINER_RUNTIME_OR_CGROUP_MAPPING_CHANGE",
+      "TIRE_ARTIFACT_OR_LOAD_WORKER_CHANGE",
+      "SIGNED_QUOTA_OR_SERVICE_CONFIGURATION_CHANGE",
+      "NODE_DMIPS_CAPACITY_CHANGE",
+      "AOSCLOUD_MONITORING_API_OR_CADENCE_CHANGE"
+    ],
+    "freshProvisioningIdentityAloneInvalidatesTechnicalProfile": false,
+    "implementationAndLiveEvidenceStillRequired": true,
+    "acceptanceAuthorizesBuildLoadDeploymentCloudOrVmMutation": false
+  }
+}

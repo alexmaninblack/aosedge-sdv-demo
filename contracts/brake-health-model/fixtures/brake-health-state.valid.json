@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "modelId": "brake-condition-demo-v1",
+  "modelVersion": "1.0.0",
+  "modelConfigSha256": "4444444444444444444444444444444444444444444444444444444444444444",
+  "profile": "DEMO_PRECONDITIONED",
+  "generation": 1,
+  "wearIndex": 62,
+  "conditionScore": 38,
+  "conditionBand": "INSPECTION_RECOMMENDED",
+  "lastAppliedSourceEventId": "4cba2d80-c04a-4d24-9f03-f4a85d56da13",
+  "lastAssessmentId": "59e854e8-596b-568b-8a18-12c44fb3a88c",
+  "recentSourceEventIds": ["4cba2d80-c04a-4d24-9f03-f4a85d56da13"],
+  "producerEpoch": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  "nextAdvisorySequence": 1
+}

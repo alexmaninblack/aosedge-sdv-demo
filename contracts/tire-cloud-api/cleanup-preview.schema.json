@@ -1,0 +1,29 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:tire-cloud-cleanup-preview:schema:v1",
+  "title": "Tire Cloud Current-Run Cleanup Preview",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "systemUids", "recordCounts", "recordSetSha256", "confirmationToken", "expiresAt"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "systemUids": {"type": "array", "minItems": 2, "maxItems": 2, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._:-]+$"}},
+    "recordCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["messages", "assessments", "events", "advisories", "functionStatus", "quarantine"],
+      "properties": {
+        "messages": {"type": "integer", "minimum": 0},
+        "assessments": {"type": "integer", "minimum": 0},
+        "events": {"type": "integer", "minimum": 0},
+        "advisories": {"type": "integer", "minimum": 0},
+        "functionStatus": {"type": "integer", "minimum": 0},
+        "quarantine": {"type": "integer", "minimum": 0}
+      }
+    },
+    "recordSetSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "confirmationToken": {"type": "string", "minLength": 32, "maxLength": 512},
+    "expiresAt": {"type": "string", "format": "date-time"}
+  }
+}

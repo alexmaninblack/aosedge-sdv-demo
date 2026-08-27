@@ -174,7 +174,7 @@ claimed by the current design.
    reconnect, and restart cases.
 6. Measure event-to-Gateway-status latency with Cloud connectivity present and
    absent.
-7. Prove service/provider rollback does not replay a previously stored v1
+7. Prove Service removal/reassignment and Provider recovery do not replay a previously stored v1
    target.
 8. Design and qualify the `kuksa.val.v2` migration before treating v1 target
    semantics as a production pattern.
@@ -186,7 +186,7 @@ that the first implementation uses the pinned v1 target-value compatibility
 path, that VISS Set success is not final actuation evidence, and that the
 Gateway status feedback is mandatory. The target delta includes both VISS
 authorization and a Gateway advisory handler; TLS alone is not sufficient.
-Current-release Service credential issuance follows proposed ADR 0013 and
+Current-release Service credential issuance follows accepted ADR 0013 and
 D4-027 through separately packaged removable `CMP-KAC`, outside the Vehicle
 Data Platform Component and without modifying Eclipse KUKSA. The first-demo
 Provider remains fixed OEM-trusted platform integration rather than a dynamic

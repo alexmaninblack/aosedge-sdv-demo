@@ -1,0 +1,29 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:brake-health-state:schema:v1",
+  "title": "Brake Health Local Model State",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "modelId", "modelVersion", "modelConfigSha256", "profile", "generation", "wearIndex", "conditionScore", "conditionBand", "lastAppliedSourceEventId", "lastAssessmentId", "recentSourceEventIds", "producerEpoch", "nextAdvisorySequence"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "modelId": {"const": "brake-condition-demo-v1"},
+    "modelVersion": {"const": "1.0.0"},
+    "modelConfigSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "profile": {"const": "DEMO_PRECONDITIONED"},
+    "generation": {"type": "integer", "minimum": 0},
+    "wearIndex": {"type": "integer", "minimum": 0, "maximum": 100},
+    "conditionScore": {"type": "integer", "minimum": 0, "maximum": 100},
+    "conditionBand": {"enum": ["GOOD", "MONITOR", "INSPECTION_RECOMMENDED"]},
+    "lastAppliedSourceEventId": {"oneOf": [{"$ref": "#/$defs/uuid4"}, {"type": "null"}]},
+    "lastAssessmentId": {"oneOf": [{"$ref": "#/$defs/uuid5"}, {"type": "null"}]},
+    "recentSourceEventIds": {"type": "array", "maxItems": 64, "uniqueItems": true, "items": {"$ref": "#/$defs/uuid4"}},
+    "producerEpoch": {"$ref": "#/$defs/uuid4"},
+    "nextAdvisorySequence": {"type": "integer", "minimum": 1}
+  },
+  "$defs": {
+    "uuid4": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
+    "uuid5": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"}
+  }
+}

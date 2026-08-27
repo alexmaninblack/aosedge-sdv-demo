@@ -48,17 +48,20 @@ log archive but is not automatically a real-time Cloud alert.
 
 The demo uses only the native AosEdge logging path. No demo-owned collector,
 export bridge, secondary log store, or separate log dashboard is introduced.
-The stateless OEM Software Delivery Dashboard uses supported AosCloud APIs to:
+The later D4-014 allocation refines this research boundary. Role-scoped
+dashboard adapters use supported AosCloud APIs to:
 
-1. create an explicitly confirmed system, service-instance, or crash-log
-   request;
+1. create an explicitly confirmed OEM Unit system/VDP request or matching
+   SP1/SP2-owned service-instance/crash-log request;
 2. poll the authoritative Cloud request state;
 3. present or download the completed Cloud-retained result without retaining
    an independent dashboard archive.
 
-Private client credentials remain in the dashboard backend and never enter
-browser code. If a requested operation is unavailable through the qualified
-API, the original AosCloud UI remains the technical drill-down surface.
+The OEM Software Delivery Dashboard owns Unit-log presentation; each Function
+Dashboard owns only its Service Provider's Service-log presentation. Private
+client credentials remain behind fixed backend/helper allowlists and never
+enter browser code. If a requested operation is unavailable through the
+qualified API, the original AosCloud UI remains the technical drill-down.
 
 ## Required operational events
 
@@ -114,9 +117,8 @@ The native-log dashboard and any bounded temporary download handling must:
 
 ## Dashboard role
 
-The Software Delivery Dashboard's native-log view is supporting
-troubleshooting evidence, not the main narrative. For a demo stage it should
-answer only:
+The role-matching dashboard's native-log view is supporting troubleshooting
+evidence, not the main narrative. For a demo stage it should answer only:
 
 1. Did the expected provider or service start and report ready?
 2. Did source loss, policy rejection, offline queueing, or reconnect occur?
@@ -138,9 +140,9 @@ Software Delivery Dashboard, and the Function Dashboard.
    journal and requested time window preserve the record.
 5. Verify archive format, compression, ordering, timestamps, duplication, and
    maximum part size.
-6. Determine the deployed Cloud retention policy and prove the visible effect
-   of explicit deletion; verify that the dashboard does not retain an
-   independent archive and that temporary downloads are bounded and removed.
+6. Determine whether the deployed Cloud retention policy can be exposed; the
+   current API cannot, so display that limitation. Prove explicit deletion and
+   verify no independent archive plus bounded temporary removal.
 7. Prove that high log volume cannot exhaust the Unit, AosCloud request path,
    dashboard backend, or demo laptop.
 
@@ -149,11 +151,11 @@ Software Delivery Dashboard, and the Function Dashboard.
 The scenario's wording that AosEdge provides system/service log collection,
 Cloud transmission and Cloud-retained downloadable results is supported. The
 accepted architecture uses the AosCloud request record and related stored
-archive as authoritative while retained by the Cloud, and the stateless OEM
-Software Delivery Dashboard as the demo presentation surface. A separate log
-pipeline, store, or dashboard is not part of the demonstration. `Permanent`
-in the storage architecture is a persistence class, not a demo claim of
-unlimited retention.
+archive as authoritative while retained. D4-014 allocates Unit system/VDP logs
+to the OEM Software Delivery Dashboard and Service-owned logs to the matching
+Function Dashboard. A separate pipeline or store is not part of the demo.
+`Permanent` in the storage architecture is a persistence class, not a claim
+of unlimited retention.
 
 ## Sources
 

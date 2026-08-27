@@ -95,7 +95,7 @@ local inference
   -> commit durable event with event_id
   -> local advisory continues immediately
   -> asynchronous uploader batches pending events
-  -> authenticated backend accepts at least once
+  -> local demo backend accepts and persists idempotently
   -> backend deduplicates by event_id
   -> local queue records acknowledgement and compacts safely
 ```
@@ -154,8 +154,8 @@ therefore distinguishes:
 
 - A process restart reopens and validates the queue before resuming uploads.
 - An SOTA update must preserve the queue or migrate it transactionally.
-- A rollback must be able to read the previous state or leave a versioned
-  spool for a compatible recovery tool.
+- Removal/reassignment or forward-repair recovery must be able to read the
+  previous state or leave a versioned spool for a compatible recovery tool.
 - A corrupt record is quarantined within the byte limit and does not prevent
   later valid records from syncing.
 - Clock discontinuities are recorded; ordering relies on event identity and a
@@ -167,8 +167,9 @@ therefore distinguishes:
 
 1. Confirm generated `offlineTTL` and public-connection policy for the actual
    service version returned by AosCloud.
-2. Prove `/storage/` contents survive service restart, S1→S2 update, rollback,
-   Unit reboot, and temporary Cloud loss on the pinned AosVM.
+2. Prove `/storage/` contents survive service restart, S1→S2 update,
+   removal/reassignment recovery, Unit reboot, and temporary Cloud loss on the
+   pinned AosVM.
 3. Measure a realistic event envelope and select queue byte/record limits.
 4. Prove backend idempotency under duplicate, timeout-after-commit, reordered,
    and partial-batch cases.

@@ -48,7 +48,7 @@ remain to be implemented.
 - explicit simulation-only truth needed to qualify Tire Health without exposing
   that truth as a production vehicle measurement;
 - CARLA-side source identity, frame range and result evidence used by the
-  selected Validation or Demonstration Unit binding.
+  selected Validation or Production Unit binding.
 
 ### Out of scope
 
@@ -79,7 +79,7 @@ remain to be implemented.
 | Scripted/manual/autopilot/safe-stop continuity | [Live handover design](../../../../carla-ego-runtime/docs/m6-2-live-handover.md) | `CURRENT` jointly with `CR-GATEWAY` |
 | Scenario result and cleanup manifest | Brake onset, deceleration, gap, collision, actor and process evidence in the existing launcher workflow | `CURRENT`; repeated-run qualification remains open |
 | Pre-aged Tire Health dynamics stimulus | D4-003 selects `preaged-tire-dynamics-v1`, with `HEALTHY` and `PRE_AGED` profiles and a symmetric four-wheel friction reduction; implementation and calibration remain open | Working direction `REVIEWED`; implementation `TARGET` |
-| Exact source-to-Unit binding | Run, ego and frame identifiers exist; sequential live VU attach/detach, reset/new generation and DU attach/detach are not implemented | `PARTIAL` |
+| Exact source-to-Unit binding | Run, ego and frame identifiers exist; sequential live VU attach/detach, reset/new generation and PU attach/detach are not implemented | `PARTIAL` |
 
 The current implementation baseline was checked on 2026-08-18 using the
 existing native build: all 18 registered `carla-ego-runtime` tests passed. This
@@ -116,7 +116,7 @@ configuration.
 | Component | Prove the scenario process, configuration and artifact/result lifecycle | Controlled CARLA adapter or live isolated CARLA session | Yes | Scenario controller status, result and cleanup artifacts |
 | Contract | Prove expected CARLA revision/API, state shape and control shape | Version and fixture checks | Yes | Frozen D4 CARLA/Gateway contract evidence |
 | Integration | Prove obstacle, braking, collision sensor, tire stimulus and cleanup in live CARLA | Pinned Town, vehicle and fixed-step profile | Yes | Repeatable live-run qualification records |
-| End-to-end | Prove selected source attribution during G0, G3, T1 and R0 | Full demo Validation and Demonstration lanes | Yes | Stage evidence with Unit, run and frame/trace range |
+| End-to-end | Prove selected source attribution during G0, G3, T1 and R0 | Full demo Validation and Production lanes | Yes | Stage evidence with Unit, run and frame/trace range |
 
 ## Requirement Summary
 
@@ -277,7 +277,7 @@ under [preserve immutable factory artifact (`SYS-RET-005`)](../system-requiremen
 
 - ID: `REQ-VEHICLE-SIM-007`
 - Statement: When the same CARLA source is used sequentially for Validation and
-  Demonstration roles, the scenario evidence and audience surfaces shall show
+  Production roles, the scenario evidence and audience surfaces shall show
   the selected role and shall not imply that two vehicles run simultaneously.
 - Parent system requirement: [Honest single-source presentation (`SYS-SRC-002`)](../system-requirements-and-traceability.md#sys-src-002)
 - Architecture flow: [one visible source (`AF-X-SOURCE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-source)
@@ -286,7 +286,7 @@ under [preserve immutable factory artifact (`SYS-RET-005`)](../system-requiremen
 - Executable contract: [Exclusive Live-Source Assignment 1.0.0](../../../contracts/exclusive-live-source-assignment/exclusive-live-source-assignment.v1.json)
 - Required evidence: selected role, Unit, bounded live frame range and presentation label
 - Requirement state: D3 design-reviewed; D4-005 contract accepted
-- Implementation state: `PARTIAL`; current runs identify CARLA but do not yet implement VU/DU selection and sequential live handover
+- Implementation state: `PARTIAL`; current runs identify CARLA but do not yet implement VU/PU selection and sequential live handover
 
 ### Context-aware obstacle and reset lifecycle
 
@@ -404,7 +404,7 @@ Physical dynamics and actual actor cleanup remain integration obligations.
 | [Bounded result (`REQ-VEHICLE-SIM-004`)](#req-vehicle-sim-004) | [`UT-VEHICLE-SIM-004`](#ut-vehicle-sim-004) | Structured result schema | D4 evidence schema | Accepted repeated-run calibration | Not separately required |
 | [Tire stimulus (`REQ-VEHICLE-SIM-005`)](#req-vehicle-sim-005) | [`UT-VEHICLE-SIM-006`](#ut-vehicle-sim-006) | Versioned stimulus component | Hidden-truth/production-data separation | Live dynamics response | T1 condition-estimation proof |
 | [Cleanup (`REQ-VEHICLE-SIM-006`)](#req-vehicle-sim-006) | [`UT-VEHICLE-SIM-007`](#ut-vehicle-sim-007) | Cleanup manifest | Owned-actor inventory schema | Interrupted and repeated cleanup | R0 retirement evidence |
-| [Honest source (`REQ-VEHICLE-SIM-007`)](#req-vehicle-sim-007) | Reasoned N/A: presentation/source selection is cross-component | Role-labelled result | Live handover contract | Sequential VU attach/detach, reset and DU attach/detach qualification | `AF-X-SOURCE` audience evidence |
+| [Honest source (`REQ-VEHICLE-SIM-007`)](#req-vehicle-sim-007) | Reasoned N/A: presentation/source selection is cross-component | Role-labelled result | Live handover contract | Sequential VU attach/detach, reset and PU attach/detach qualification | `AF-X-SOURCE` audience evidence |
 | [Context lifecycle (`REQ-VEHICLE-SIM-008`)](#req-vehicle-sim-008) | [`UT-VEHICLE-SIM-008`](#ut-vehicle-sim-008) | Context/obstacle/reset state machine | `AF-X-DRIVE` transition fixture | Live all-transition matrix | G0 mode/context/dashboard evidence |
 | [Hardware profile (`REQ-VEHICLE-SIM-009`)](#req-vehicle-sim-009) | [`UT-VEHICLE-SIM-009`](#ut-vehicle-sim-009) | Canonical manifest and digest | Manifest/schema/coverage contract | Live actor/sensor reconciliation | G0 hardware-profile evidence |
 | [Complete boundary (`REQ-VEHICLE-SIM-010`)](#req-vehicle-sim-010) | [`UT-VEHICLE-SIM-010`](#ut-vehicle-sim-010) | Runtime coverage report | `IF-VEH-001`/`IF-VEH-003` complete fixtures | Live signal/control comparison | G0 no-silent-loss evidence |
@@ -430,7 +430,7 @@ design-reviewed on 2026-08-19 and are accepted as input to D4. This closes the
 implemented or qualified.
 
 Product acceptance remains open until the source-selection owner closes the
-VU/DU attribution boundary, the Tire Health stimulus design is accepted,
+VU/PU attribution boundary, the Tire Health stimulus design is accepted,
 repeated live Brake Event qualification passes, cleanup failure/recovery is
 proved, every `UT-*` obligation is green or has a reviewed exception, and the
 repository and documentation gates pass.
@@ -439,7 +439,7 @@ repository and documentation gates pass.
 
 | Issue | Impact | Owner | Decision gate |
 | --- | --- | --- | --- |
-| Implement and qualify the accepted sequential VU/DU live-source assignment and bounded frame evidence | Blocks complete `REQ-VEHICLE-SIM-001` and `REQ-VEHICLE-SIM-007`; contract choice is closed | Demo Orchestration + Vehicle Simulation | Accepted [`D4-005`](../d4-decision-register.md#d4-005), followed by implementation and qualification |
+| Implement and qualify the accepted sequential VU/PU live-source assignment and bounded frame evidence | Blocks complete `REQ-VEHICLE-SIM-001` and `REQ-VEHICLE-SIM-007`; contract choice is closed | Demo Orchestration + Vehicle Simulation | Accepted [`D4-005`](../d4-decision-register.md#d4-005), followed by implementation and qualification |
 | Implement the reviewed `preaged-tire-dynamics-v1` stimulus, schema, physics restoration and oracle-negative proof | Blocks `REQ-VEHICLE-SIM-005` and `UT-VEHICLE-SIM-006` | Vehicle Simulation + Function Team 2 | [`D4-003`](../d4-decision-register.md#d4-003) closure |
 | Calibrate exact Tire values and absolute tolerances, then pass the frozen Brake 20/20 and Tire 10+10 strict-reset qualification series | Blocks final stimulus acceptance; calibration runs are not acceptance runs | Vehicle Simulation + both Function Teams | [`D4-003`](../d4-decision-register.md#d4-003) closure and D4-026 overall qualification |
 | Define reconciliation after partial actor/sensor cleanup | Blocks complete R0 reset proof | Vehicle Simulation + Demo Orchestration | D4 failure/recovery cases |

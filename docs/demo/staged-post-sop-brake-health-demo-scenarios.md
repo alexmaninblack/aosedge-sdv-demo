@@ -3,9 +3,10 @@
 
 # Staged Post-SOP Brake and Tire Health Demo Scenarios
 
-- Status: Review candidate
+- Status: Accepted
 - Version: 2.0
 - Prepared: 2026-08-22
+- Accepted: 2026-08-26
 - Previous accepted version: 1.9
 - Owner: Demo Architecture
 - Scope: manufacturing output, end-of-line provisioning, audience-visible
@@ -15,11 +16,10 @@
   1.5, with detailed interaction mapping in Demo Scenario Architecture Flows
   2.0
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md),
-  [ADR 0011](../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
+  [ADR 0011](../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
+  [ADR 0013](../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md),
+  [ADR 0014](../architecture/decisions/0014-enforce-platform-fota-safe-stop-in-oem-component-runtime.md)
 - Accepted publication decision: [D4-010.3 Artifact Publication Credential Profile](../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
-- Proposed architecture change: [ADR 0013](../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md),
-  which supersedes ADR 0010 only after the complete documentation cascade is
-  accepted
 - Implementation, build, signing, Cloud, or Unit mutation authorized: no
 
 ## Purpose
@@ -113,21 +113,37 @@ advisory proof, backend, dashboard, and SOTA 2 lifecycle do not depend on
 Function Team 1. Function Team 2 requests no additional platform capability in
 the current demo.
 
-The Validation Unit and Demonstration Unit are two instances of the same
+The Validation Unit and Production Unit are two instances of the same
 logical Domain Controller architecture. The first demo implementation has one
 visible live CARLA/Vehicle Gateway/VISS source and binds it sequentially and
 exclusively: first to Validation, then after explicit detach and deterministic
-scenario reset to Demonstration. Telemetry-trace replay is deferred, and the
+scenario reset to Production. Telemetry-trace replay is deferred, and the
 demo must not imply two simultaneous simulated vehicles.
 
-Audience language treats those instances as the **Validation Vehicle** and
-the **Demonstration Vehicle** and marks exactly one `CURRENT VEHICLE`. The
-presenter advances with `Continue with Demonstration Vehicle`; the primary
+Audience language treats those instances as the **Test Vehicle** and
+the **Production Vehicle** and marks exactly one `CURRENT VEHICLE`. The
+presenter advances with `Continue with Production Vehicle`; the primary
 experience does not expose CARLA attach/detach, VM switching or source-gate
 plumbing as vehicle behavior. Both underlying Units may remain Online in
 AosCloud. Exact Unit/Node/Unit Set and bounded source/frame evidence remain
 available in technical details, while logical vehicle role stays outside the
 in-vehicle VSS/KUKSA data path.
+
+For every Vehicle Data Platform Component FOTA, OEM Release Authority may
+authorize the exact Test or Production rollout while the current vehicle is
+moving. The factory-installed OEM Component Runtime inside AosCore Service
+Manager then waits until fresh Gateway facts prove the accepted Safe Stop
+policy. A first-install VDP slot remains empty while waiting; a replacement
+keeps the previous healthy VDP release active. The vehicle remains stopped
+through application and readiness.
+AosCloud records and delivers the authorized update but is not claimed to know
+whether the vehicle is moving; the OEM Component Runtime in the Unit enforces
+the Safe Stop application condition. The Demo UI presents native `ACTIVATING`,
+factual Gateway state and a clearly derived `Waiting for Safe Stop before
+application` explanation. It obtains native runtime reason codes only through
+the explicit on-demand log flow. Brake
+Health and Tire Health are QM Service SOTA and may be updated while the vehicle
+moves. Their other release gates remain unchanged.
 
 ## Demonstration Roles and Terms
 
@@ -146,18 +162,22 @@ in-vehicle VSS/KUKSA data path.
 | Tire Health Function Team | Function Team 2 / Service Provider 2: independent peer OEM functional vertical that owns local tire-condition estimation, bounded Cloud reporting, inspection advisory, backend, dashboard, and SOTA 2 lifecycle |
 | QM functional service | Brake Health or Tire Health application in the non-safety QM domain; its maintenance advisory is not a safety warning or vehicle-motion command |
 | Service Provider identity | Function Team Cloud identity used to develop, sign, publish, version, and technically verify its own SOTA artifact; it does not authorize deployment to OEM Units |
-| OEM authorization identity | Cloud identity used by the owning Platform or Function Team to record validation acceptance and deployment or promotion approval affecting OEM Units |
-| Evidence-backed OEM approval | Final explicit OEM decision bound to the exact artifact and metadata digests, requested permissions, target, required validation evidence, and owning-team acceptance; passing evidence never auto-approves |
+| OEM Cloud identity context | One OEM Cloud certificate context used through non-interchangeable operation profiles: an owning producer team records its exact Test result acceptance, while the independent OEM Release Authority separately uses the delivery profile to authorize an exact Test deployment or Production rollout |
+| Evidence-backed OEM Release Authority authorization | Final explicit governance decision bound to the exact artifact and metadata digests, requested permissions, target, required validation evidence, and owning-team acceptance; passing evidence never auto-authorizes |
 | AosCloud lifecycle control plane | Authoritative desired/reported actual state, batches, campaigns, recorded approvals, audit history, and update execution; it does not make an owning team's engineering release decision |
+| Test Vehicle | Audience-facing Representation Layer name for the current Validation Unit in the Verification Unit Set; technical architecture, API and evidence retain `Validation Unit` / `VU` |
 | Validation Unit | Freshly provisioned engineering AosVM for the current demo run, used for qualification and integration |
-| Demonstration Unit | Freshly provisioned production-like AosVM for the current demo run, used as the promotion target after acceptance |
-| Current demo session | Presentation-scoped association, not an Aos identity: session start time and local overlay roles before M1, then the Validation and Demonstration Unit IDs plus that time window |
+| Production Unit | Freshly provisioned production-like AosVM for the current demo run, used as the promotion target after acceptance |
+| Current demo session | Presentation-scoped association, not an Aos identity: session start time and local overlay roles before M1, then the Validation and Production Unit IDs plus that time window |
 | Demo retirement | Controlled Cloud deprovisioning and Unit deletion followed by disposal of the corresponding provisioned VM overlays |
 
-The Demonstration Unit is not presented as a real production vehicle or fleet.
-It is the controlled production-rollout proxy available in the demo
-environment. Both Units are disposable simulation assets between complete
-demo runs, but their identities remain stable throughout one `G0–T1` run.
+The **Production Vehicle** is the business-facing role of a vehicle that has
+left manufacturing with the approved SOP baseline. It may still be in OEM or
+dealer inventory, be awaiting sale, or already operate with a customer. The
+demo implements that role with one fresh **Production Unit** VM. This mapping
+does not claim that the demonstration updates a real customer fleet. Both demo
+Units are disposable simulation assets between complete runs, while their
+identities remain stable throughout one `G0–T1` run.
 
 ## Cross-Cutting Service Credential Behavior
 
@@ -248,7 +268,7 @@ not invent or cache authoritative release state independently.
 Its primary view should show:
 
 - the current demo session and manufacturing/provisioning state;
-- Validation and Demonstration Unit lanes;
+- Validation and Production Unit lanes;
 - current and target platform and service versions;
 - exact artifact identities and compact digest evidence;
 - exact service-metadata digest and requested KUKSA permissions;
@@ -256,7 +276,8 @@ Its primary view should show:
 - the effective target Units before an approval is accepted;
 - `Waiting for validation`, approval, rejection, and accepted-release states;
 - the owning Platform or Function Team, Service Provider publication identity,
-  active OEM authorization role, and exact action awaiting confirmation;
+  active independent OEM Release Authority context, and exact action awaiting
+  confirmation;
 - the fixed technical-publication profile — `platform-oem`, `brake-sp1` or
   `tire-sp2` — and a visible boundary between publication and OEM approval;
 - concise qualification results with optional technical drill-down;
@@ -267,7 +288,7 @@ Its primary view should show:
 The dashboard must distinguish active state from retained audit history. Before
 provisioning, it identifies the current session by its start time and the two
 local overlay roles. After M1, it binds that view to the Validation and
-Demonstration Unit IDs and the same time window. Unit deprovisioning and
+Production Unit IDs and the same time window. Unit deprovisioning and
 deletion do not imply erasure of Cloud audit records. No separate
 architecture-level run identifier is required; an internal correlation UUID
 remains an optional dashboard implementation detail.
@@ -277,6 +298,18 @@ do not turn passing qualification evidence into approval. Every mutation
 affecting an OEM Unit requires an explicit confirmation from the owning team
 and is submitted through an authorized OEM identity; the resulting AosCloud
 record remains authoritative after the local tools exit.
+
+Platform, Brake and Tire remain independent internal OEM producer teams even
+when one presenter operates their views. Their fixed publication profiles may
+sign, publish and reconcile different candidates or Cloud objects without a
+demo-wide operation lock. An active or uncertain action blocks another action
+only when both address the same candidate/digest/profile, Batch, Campaign,
+Unit, Unit Set or resulting Cloud object. Provisioning, Unit identity
+retirement, live-source handover/reset and R0 freeze/cleanup are deliberately
+run-exclusive. Read-only team switching and fresh authoritative reads remain
+available in every case. A busy local helper delays only the requested action,
+is never presented as an AosCloud restriction and never submits automatically
+after capacity returns.
 
 For the demo, that final decision is intentionally represented by an approval
 button. The button is not the validation process. Before it can be used, the
@@ -294,7 +327,7 @@ available for technical source-of-truth drill-down.
 
 Presenter Mac/Native Helper connectivity to AosCloud is a prerequisite for the
 Software Delivery Dashboard and is not an offline demo scenario. The only
-deliberate connectivity fault in this demo is loss of the Demonstration Unit's
+deliberate connectivity fault in this demo is loss of the Production Unit's
 external vehicle connectivity. It interrupts both the Unit-to-AosCloud path
 and installed services' paths to their functional backends. The presenter
 control plane and the simulated in-vehicle CARLA/Gateway/VISS/KUKSA paths
@@ -321,21 +354,25 @@ online/offline delivery state. It must not display hidden simulation truth as
 a measured production vehicle value or couple its data plane to the Brake
 Health backend.
 
-### Native operational logs in the Software Delivery Dashboard
+### Role-scoped native operational logs
 
 AosEdge already provides native collection and Cloud delivery for system,
 service-instance, and crash logs. An authorized AosCloud log request selects
 the Unit, time range, and optional service instance; AosCore collects and
 archives the matching records and returns the result to AosCloud. AosCloud
-retains the request record and downloadable result according to its deployed
-deletion and retention policy.
+retains the request record and downloadable result while its deployed tenant
+policy retains them. The current public API does not expose that retention
+policy.
 
-The stateless OEM Software Delivery Dashboard uses supported AosCloud APIs to
-create explicitly confirmed log requests, show their progress, and present or
-download the resulting Cloud-retained evidence. It does not read the Unit
-journal directly, store an independent dashboard archive, or introduce a
-second log transport. The demo does not claim that Cloud retention is
-indefinite.
+The stateless OEM Software Delivery Dashboard uses `/api/v11/unit-logs/`
+through `oem-delivery` only for AosCore, VDP and other Unit system evidence.
+The Brake and Tire Function Dashboards use `/api/v11/service-logs/` through
+separate SP1 and SP2 operational contexts only for their own service-instance
+and crash evidence. Each request is explicitly confirmed, Cloud states remain
+verbatim and no browser receives a Cloud credential. No surface reads the Unit
+journal directly, stores an independent raw archive, or introduces a second
+log transport. The demo says `Retention policy not exposed by current API`
+and claims neither a fixed nor an indefinite duration.
 
 The view should expose Unit role, component or service identity, version,
 severity, source timestamp, request status, and failure reason where available.
@@ -344,16 +381,17 @@ behavior. Vehicle telemetry remains authoritative in the Engineering
 Telematics Dashboard, while Brake Health and Tire Health product results remain
 authoritative in their respective functional backends and dashboards.
 
-Before the demo relies on this view, the current AosCloud API permissions,
-request progress/failure visibility, exact retention duration, deletion effect, online/offline
-semantics, and redaction rules must be qualified.
+Before the demo relies on these views, exact Unit/Node/time identifiers,
+OEM/SP permissions and ownership filters, create-response cardinality,
+documented progress/failure/empty states, file/archive bounds, deletion effect,
+online/offline/reconnect behavior and allowlisted redaction must be qualified.
 
 ## Release Graph Overview
 
 | Stage | Accepted state after the stage | New capability |
 | --- | --- | --- |
 | M0 | `OEM Demo Factory Image + two fresh overlays` | Two fresh unprovisioned Domain Controller VM overlays exist; no Cloud Units or credentials exist |
-| M1 | `Two provisioned Unit roles` | Validation and Demonstration Units have unique identities, certificates, roles, and Cloud connectivity |
+| M1 | `Two provisioned Unit roles` | Validation and Production Units have unique identities, certificates, roles, and Cloud connectivity |
 | G0 | `Initial post-SOP runtime graph` | Working vehicle and update-ready Domain Controller, but no VDP Component or functional service |
 | G1 | `VDP Component v1` | First read-only subset of vehicle telemetry becomes available in KUKSA |
 | G2 | `VDP Component v1 + Brake Health Service v1` | One bounded pre/active/post braking-event window appears live in the Brake Health Backend and Dashboard |
@@ -377,11 +415,21 @@ service whose required Vehicle Data Platform Component version is absent.
 When enabled, it runs at the beginning of `G3` while the Unit still has the
 `G2` graph; it does not add another persistent graph state.
 
-The audience-visible lifecycle moves forward only. Recovery and rollback may
-be qualified before the presentation as engineering evidence, but the normal
-demo does not move backward between `G0–G4` or remove `T1` before retirement.
+The audience-visible lifecycle moves forward only. Engineering qualification
+distinguishes FOTA `RevertUpdate` before `ApplyUpdate`, a new signed
+forward-repair FOTA after Apply, and SOTA Subject-service removal. Stopping a
+Campaign or invalidating a batch is not rollback of an already-applied Unit.
+The normal demo does not move backward between `G0–G4` or remove `T1` before
+retirement.
 
 ## M0 — Manufacturing Output
+
+Before M0, `Start or Restore Demo Environment` is an operator preflight rather
+than a lifecycle stage. At local `READY_FOR_M0` it starts and checks the
+accepted Mac support stack without requiring vehicle overlays or Cloud Units.
+During an active run it may restore only the exact existing current-run VMs and
+requires fresh proof that their existing Units are Online. It never creates a
+vehicle, provisions, changes identity or advances the lifecycle.
 
 The immutable official AosEdge release is an upstream input, not the complete
 vehicle-computer image manufactured by the OEM. Before SOP, the OEM integrates
@@ -423,8 +471,8 @@ It intentionally contains no:
 - vehicle-specific mutable runtime state.
 
 At the beginning of a demo run, two new copy-on-write VM overlays are created
-from this immutable image. One represents the Validation vehicle computer and
-one represents the Demonstration vehicle computer. The factory image itself
+from this immutable image. One represents the Test Vehicle computer and
+one represents the Production vehicle computer. The factory image itself
 remains read-only and is never provisioned or modified.
 
 Each new instance must establish distinct local system, Node, SSH, and network
@@ -453,7 +501,9 @@ multi-type runtime is implemented and qualified.
 - no Cloud registration, Cloud-issued certificate, provider payload, or
   functional service exists;
 - the Software Delivery Dashboard identifies both instances as
-  `Manufactured / Awaiting provisioning`.
+  `Manufactured / Awaiting provisioning`;
+- the shared header shows `Current Vehicle: Not assigned`; and
+- M1 has not started automatically.
 
 ## M1 — End-of-Line Provisioning
 
@@ -462,8 +512,10 @@ official Aos provisioning SDK. Provisioning creates the Unit and Main Node,
 registers the instance's unique identity, generates its certificates, and
 enables secure Cloud connectivity. After both Units are Online:
 
-1. one Unit is assigned to the Validation lane and its dedicated Unit Set;
-2. one Unit is assigned to the Demonstration lane and its dedicated Unit Set;
+1. the Test Vehicle Unit is assigned only to the persistent Verification Unit
+   Set;
+2. the Production Vehicle Unit is assigned only to the persistent Production
+   Unit Set;
 3. the dashboard verifies the exact Unit identities and target membership;
 4. both Units report the accepted platform/runtime inventory;
 5. both provider stores remain empty and no functional service is assigned.
@@ -477,7 +529,8 @@ and certificate identities before live use.
 
 - each vehicle computer changes from `Awaiting provisioning` to `Online`;
 - the two Units have different identities and explicit roles;
-- the Validation and Demonstration lanes are visibly separated;
+- the Test and Production Vehicle roles are visibly separated, while exact
+  Verification and Production Unit Set names remain available in Details;
 - `G0` is reached with the runtime ready but provider and services absent.
 
 ## G0 — SOP-Ready Vehicle Without Feature Components
@@ -490,11 +543,17 @@ The complete demonstration environment is running:
 - the Vehicle Control UI can use manual or autopilot mode;
 - the Vehicle Gateway publishes live VISS telemetry;
 - the Engineering Telematics Dashboard displays that telemetry;
-- the Validation and Demonstration Units have the fresh provisioned identities
+- the Validation and Production Units have the fresh provisioned identities
   created during M1 and retain them throughout `G0–T1`;
 - the Domain Controller contains AosCore, Service Manager, KUKSA, the accepted
   Vehicle Data Provider runtime, the empty current-release authorization
   helper, security integration, and update support.
+
+After M1 proves both identities and exact disjoint Unit Set membership, the
+Test Vehicle becomes the initial exclusive Current Vehicle. The fresh
+CARLA/Gateway binding and Engineering Telematics proof establish G0; G0 is a
+visible baseline state, not another provisioning mutation or team release
+action.
 
 The following feature-specific elements are absent:
 
@@ -552,12 +611,20 @@ The exact contract is a later design decision.
    pending-batch references and proves exact Unit-ID set equality. Any
    unexpected or missing Unit, incomplete enumeration or insufficient API
    visibility blocks approval.
-5. The Platform Team explicitly authorizes the Validation Unit deployment
-   through its OEM identity after the Dashboard shows the exact artifact and
-   metadata digests, requested permissions, target, required evidence and
-   Platform Team acceptance; the dashboard and orchestrator cannot infer this
-   approval from target checks or passing tests.
-6. VDP Component v1 is installed and activated on the Validation Unit.
+5. Independent OEM Release Authority authorizes the Validation Unit deployment
+   through the OEM delivery context after the Dashboard shows the exact
+   artifact and metadata digests, requested permissions, target and the
+   completed pre-deployment evidence for the prepared candidate; the dashboard
+   and orchestrator cannot infer this authorization from target checks or
+   passing internal tests.
+6. AosCloud delivers the candidate while the vehicle may still move. Because
+   v1 is the first install, the OEM Component Runtime leaves the VDP slot empty
+   and AosCore remains `ACTIVATING`; the UI combines that native state with the
+   factual Gateway condition into `Waiting for Safe Stop before application`.
+   The presenter then uses the Vehicle Controller to enter Safe Stop;
+   fresh Gateway evidence confirms the accepted stable condition, after which
+   the runtime installs and activates VDP Component v1 while the vehicle
+   remains stopped.
 7. Platform qualification verifies signal mapping, filtering, KUKSA
    publication through the OEM-trusted Provider integration, restart, source
    loss, and recovery without modifying upstream KUKSA. Service credential
@@ -566,17 +633,28 @@ The exact contract is a later design decision.
 8. Selected provider lifecycle and runtime logs become available through the
    native AosEdge log request path and the Software Delivery Dashboard.
 9. The Platform Team accepts the exact VDP Component v1 version, digest,
-   qualification evidence, and target, and records promotion approval through
-   its OEM identity.
-10. AosCloud promotes the same VDP Component v1 artifact to the Demonstration Unit.
+   Validation Unit qualification evidence and integration result.
+10. OEM Release Authority separately reviews that owning-team acceptance and
+    the applicable verification, validation, integration and homologation
+    evidence, then authorizes rollout of the unchanged artifact to the
+    Production Unit.
+11. After explicit source handover, the presenter first shows normal baseline
+    driving on the Production Vehicle. OEM Release Authority authorizes the
+    unchanged rollout, AosCloud delivers it, and the OEM Component Runtime
+    visibly leaves the first-install VDP slot empty while waiting. The
+    presenter then enters Safe Stop and the runtime applies the candidate while
+    stopped.
+    Driving resumes only by explicit Vehicle Controller
+    action after VDP readiness is confirmed, and the released capability is
+    shown in ordinary operation rather than validated a second time.
 
 ### Audience-visible proof
 
-- VDP Component v1 is absent from the Demonstration Unit during validation.
+- VDP Component v1 is absent from the Production Unit during validation.
 - The Validation Unit reports VDP Component v1 as ready.
 - KUKSA receives only the approved v1 signal subset.
 - No functional service consumes the data yet.
-- The Demonstration Unit receives the exact accepted artifact only after
+- The Production Unit receives the exact accepted artifact only after
   approval.
 
 VDP Component v1 is a platform capability, not a finished customer feature.
@@ -586,12 +664,15 @@ VDP Component v1 is a platform capability, not a finished customer feature.
 ### Capability
 
 Service v1 is a deliberately simple event recorder rather than a diagnostic
-model. It continuously reads the accepted VDP Component v1 KUKSA subset into a
-bounded in-memory ring buffer but does not continuously upload vehicle data.
-When the accepted braking trigger becomes active, the service creates one
-finite `BrakeTelemetryWindow` containing a configurable bounded interval
-before the trigger, the complete braking episode, and a configurable bounded
-interval after the trigger clears.
+model. It reads its six accepted Brake acquisition signals from VDP Component
+v1, excluding the available steering-angle path, and selects every third
+complete valid 30 Hz source frame into a 10 Hz bounded in-memory ring
+buffer, and does not continuously upload vehicle data. It calls the observed
+condition `HARD_BRAKING_EPISODE_V1`, not native ABS/AEB/EBS activation. The
+trigger requires speed at least 10 km/h and brake pedal at least 50% for
+200 ms. It creates one finite `BrakeTelemetryWindow` containing 3 seconds
+before the trigger, no more than 10 seconds ACTIVE and 2 seconds after clear,
+bounded to 15 seconds or 150 accepted samples.
 
 To make the acquisition visible while the vehicle is braking, the service
 starts the backend transfer when the trigger occurs. The first idempotent
@@ -601,11 +682,21 @@ window with its sample count, time bounds and completion state. The backend
 reconstructs one finite versioned event from these chunks, and the Function
 Dashboard visualizes the growing window and its freshness.
 
-Overlapping or closely spaced trigger activity is handled by a deterministic
-merge/debounce rule so one physical episode is not silently presented as
-multiple unrelated windows. Buffer, window, chunk, queue and retention limits
-are explicit. This is selected high-detail event telemetry, not an
-unrestricted continuous raw-sensor stream.
+ACTIVE clears after 500 ms with brake pedal below 10% or speed below 0.5 km/h.
+A qualifying trigger during POST returns to ACTIVE under the same event
+identity. The unacknowledged local queue is limited to eight windows or 4 MiB
+encoded data and never evicts an existing retained window. Capacity rejection
+is explicit as `WINDOW_DROPPED_QUEUE_FULL`. This is selected high-detail event
+telemetry, not an unrestricted continuous raw-sensor stream.
+
+Each triggered event is represented by the accepted D4-016.2 logical chunks
+and completion: at most ten samples and 64 KiB canonical uncompressed JSON per
+chunk, RFC-8785/SHA-256 commitments and no `demoRunId`. After trigger, the
+Service first stores the event crash-safely in its bounded private filesystem
+spool. It does not send before durability or delete before D4-017 durable
+backend acknowledgement. Restart, graceful stop, corrupt storage and
+unavailable/full storage remain explicit states rather than a fabricated
+successful window.
 
 This version performs no predictive diagnostics and does not request an
 advisory. Its purpose is to create the evidence from which Function Team 1
@@ -619,8 +710,9 @@ could develop a later model outside the live vehicle demonstration.
    records the technical verification result.
 2. Service v1 declares a dependency on VDP Component v1 and its exact requested
    `kuksa` read paths/modes in Aos service metadata.
-3. Only after technical publication/verification, the Function Team explicitly
-   authorizes deployment to the Validation Unit through an OEM identity.
+3. Only after technical publication/verification and review of the prepared
+   candidate's pre-deployment evidence does independent OEM Release Authority
+   authorize deployment to the Validation Unit.
 4. Service v1 is installed first on the Validation Unit. Service Manager
    registers its permissions and injects a per-instance `AOS_SECRET`.
 5. The Service compatibility bootstrap presents only that instance-bound
@@ -640,10 +732,14 @@ could develop a later model outside the live vehicle demonstration.
 8. Service logs become available through native AosEdge collection and an
    explicitly requested AosCloud log result in the Software Delivery
    Dashboard.
-9. Function Team 1 accepts the exact Service v1 artifact and integration
-   result and records promotion approval through an OEM identity.
-10. AosCloud promotes the exact accepted Service v1 artifact to the
-   Demonstration Unit.
+9. Function Team 1 accepts the exact Service v1 artifact and Validation Unit
+   integration result.
+10. OEM Release Authority separately reviews that acceptance and authorizes
+    rollout of the unchanged Service v1 artifact to the Production Unit.
+11. AosCloud promotes the exact accepted Service v1 artifact to the Production
+    Unit. The Production Vehicle then runs normally; the visible CARLA braking
+    episode and backend window demonstrate released behavior and are not a
+    second validation cycle.
 
 ### Audience-visible proof
 
@@ -729,28 +825,41 @@ validated remaining useful life, or a safety function.
    and delegates its explicitly confirmed protected sign/publish operation to
    the common native helper pre-bound to `platform-oem`;
    AosCloud records technical verification of the exact signed digest.
-3. Only after technical publication/verification, the Platform Team
-   separately authorizes deployment through an OEM identity, and AosCloud
-   installs VDP Component v2 on the Validation Unit through FOTA.
+3. Only after technical publication/verification and pre-deployment evidence
+   review does independent OEM Release Authority authorize Test Vehicle
+   deployment. AosCloud delivers VDP Component v2 while the vehicle may move;
+   the OEM Component Runtime waits with the current release active. The
+   presenter enters Safe Stop, fresh Gateway evidence satisfies the policy and
+   the runtime installs it on the Validation Unit through FOTA while stopped.
 4. The Platform Team independently completes platform qualification.
 5. The Brake Health Function Team selects the frozen Service v2 candidate in
    its Release Candidates view; the common native helper pre-bound to `brake-sp1`
    signs and publishes the exact payload/metadata digests through SOTA 1, and
    AosCloud records technical verification.
 6. Service v2 declares a dependency on VDP Component v2. After publication,
-   Function Team 1 separately authorizes deployment to the Validation Unit
-   through an OEM identity, and only then does AosCloud install Service v2.
+   OEM Release Authority separately authorizes deployment to the Validation
+   Unit, and only then does AosCloud install Service v2.
 7. Both teams perform joint integration and scenario validation.
-8. The Platform Team accepts the exact VDP Component v2 artifact and qualification
-   through an OEM identity. Function Team 1 separately accepts the exact
-   Service v2 artifact, model, and joint integration result through an OEM
-   identity.
-9. AosCloud permits promotion only after both owner decisions are recorded for
-   the same graph, digests, and targets.
-10. VDP Component v2 is promoted to the Demonstration Unit first; Service v1 remains
-   operational against the backward-compatible v1 subset.
-11. After VDP Component v2 reports ready, Service v2 is promoted to the
-   Demonstration Unit.
+8. The Platform Team accepts the exact VDP Component v2 artifact and
+   qualification. Function Team 1 separately accepts the exact Service v2
+   artifact, model and joint Validation Unit integration result.
+9. OEM Release Authority reviews and separately authorizes the exact VDP v2
+   Production rollout. This decision does not authorize Service v2 and creates
+   no combined release group.
+10. The Production Vehicle first shows its current baseline in motion and is
+    then placed in Safe Stop. VDP Component v2 is promoted to the Production
+    Unit first and applied by AosCore while stopped; Service v1 remains
+    operational against the backward-compatible v1 subset.
+11. After VDP Component v2 reports actually ready, OEM Release Authority
+    separately reviews and authorizes the unchanged accepted Service v2 for
+    Production. Service v2 retains its own Campaign, target and result.
+12. Service v2 is promoted to the Production Unit. As a QM Service SOTA, this
+    update may be shown after explicit drive resume while the vehicle is
+    moving. Its derived events are shown as released live behavior, not
+    Production validation.
+13. The read-only G3 capability milestone becomes complete only after both
+    independent releases are ready and live v2 behavior is observed. It is not
+    an AosCloud lifecycle object or approval result.
 
 ### Model and Cloud-data lifecycle
 
@@ -769,9 +878,33 @@ Normal v2 operation no longer uploads the high-detail Service v1 telemetry
 window. A future explicitly authorized diagnostic capture may be designed
 separately, but it is not part of this demo baseline.
 
+The local model is the immutable digest-bound
+`brake-condition-demo-v1`. It consumes speed, longitudinal acceleration,
+brake pedal, steering angle and four linear plus four angular wheel speeds
+from VDP v2/v3. Its `DEMO_PRECONDITIONED` accumulated-use baseline is
+synthetic and explicitly visible in release metadata and dashboard
+provenance; it is not CARLA or vehicle ground truth. One eligible completed
+braking episode produces an assessment, while a separate event appears only
+for a condition-band transition. Invalid/insufficient input never advances
+the synthetic condition or produces a healthy result.
+
+The exact D4-016.3 numeric/model/message contract and D4-016.4 advisory policy
+are accepted, with D4-003 live calibration still required. D4-016.4 covers both
+a new transition into `INSPECTION_RECOMMENDED` and one-time v3 activation from
+an already-persisted active v2 condition without fabricating another assessment
+or band-change event. D4-016.5 runtime and evidence behavior is also accepted
+in the [D4-016 decision record](../requirements/d4-decision-register.md#d4-016);
+D4-023 still qualifies the requested quotas and Tire CPU-isolation proof.
+The [D4-017 Brake Cloud API review candidate](../../contracts/brake-cloud-api/README.md)
+separately owns the isolated local demo delivery, durable acknowledgement,
+backend persistence, queries and exact current-Unit cleanup. Production
+functional-backend authentication remains Function Team 1-owned and out of
+scope; the `system_uid` is correlation data, not authenticated backend identity.
+
 ### Audience-visible proof
 
-- VDP Component v2 and Service v2 iterate independently before combined acceptance.
+- VDP Component v2 and Service v2 retain independent acceptance, authorization,
+  Campaign and readiness chains; G3 is only their derived capability summary.
 - Existing v1 behavior remains available while VDP Component v2 is installed.
 - The Function Dashboard changes visibly from a growing high-detail v1 window
   to bounded v2 assessments/events, proving that processing moved into the
@@ -802,26 +935,38 @@ use separate inbound and outbound providers.
    explicitly confirmed protected sign/publish operation to the common native
    helper pre-bound to `platform-oem`; AosCloud records
    technical verification of the exact signed digest.
-3. Only after technical publication/verification, the Platform Team
-   separately authorizes deployment through an OEM identity, and AosCloud
-   installs VDP Component v3 on the Validation Unit through FOTA.
+3. Only after technical publication/verification and pre-deployment evidence
+   review does independent OEM Release Authority authorize Test Vehicle
+   deployment. AosCloud delivers VDP Component v3 while the vehicle may move;
+   the OEM Component Runtime waits with the current release active. The
+   presenter enters Safe Stop, fresh Gateway evidence satisfies the policy and
+   the runtime installs it on the Validation Unit through FOTA while stopped.
 4. The Platform Team independently completes platform qualification.
 5. Function Team 1 selects the frozen Service v3 candidate containing the
    accepted local inference model. The common native helper pre-bound to
    `brake-sp1`
    signs and publishes the exact payload/metadata digests through SOTA 1, and
    AosCloud records technical verification.
-6. Function Team 1 separately authorizes Service v3 deployment through an OEM
-   identity; only then does AosCloud install it on the Validation Unit.
+6. OEM Release Authority separately authorizes Service v3 deployment to the
+   Test Vehicle; only then does AosCloud install it on the Validation Unit.
 7. Joint validation proves online, offline, failure, restart, and recovery
    behavior.
-8. The Platform Team accepts the exact VDP Component v3 artifact through an OEM
-   identity, and Function Team 1 separately accepts the exact Service v3
-   artifact and joint integration result through an OEM identity.
-9. AosCloud permits promotion only after both decisions are recorded for the
-   exact graph, digests, and targets.
-10. VDP Component v3 and then Service v3 are promoted in dependency order to the
-   Demonstration Unit.
+8. The Platform Team accepts the exact VDP Component v3 artifact, and Function
+   Team 1 separately accepts the exact Service v3 artifact and joint Validation
+   Unit integration result.
+9. OEM Release Authority separately authorizes the exact accepted VDP v3 for
+   Production; this decision does not authorize Service v3 or create a group
+   deployment.
+10. The Production Vehicle shows its current baseline and receives the
+    authorized VDP Component v3 first. The OEM Component Runtime waits with the
+    current release active until the presenter enters Safe Stop, then applies
+    it while stopped.
+11. After VDP v3 readiness is proven, OEM Release Authority separately
+    authorizes Service v3 Production rollout. The presenter explicitly resumes
+    driving and the independent QM Service v3 SOTA may be promoted in motion.
+12. The subsequent advisory and backend state show ordinary released operation,
+    not another validation. Only then does the derived G4 milestone become
+    complete; G4 is not a Cloud object or combined approval.
 
 ### Runtime flow
 
@@ -857,12 +1002,12 @@ safety-critical operations.
 ### Offline proof
 
 1. The presenter uses the single stateful `Vehicle External Connectivity`
-   control. One transition blocks both the Demonstration Unit's AosCloud
+   control. One transition blocks both the Production Unit's AosCloud
    connection and every installed service's connection to its functional
    backend. The presenter control plane and simulated in-vehicle network
    remain available; no per-channel switches are exposed.
 2. The Software Delivery Dashboard re-reads AosCloud and shows the
-   Demonstration Unit as offline; lifecycle and native-log actions for that
+   Production Unit as offline; lifecycle and native-log actions for that
    Unit remain unavailable rather than appearing successful.
 3. A deterministic CARLA braking scenario produces the required signal
    sequence.
@@ -903,6 +1048,14 @@ pressure, temperature, puncture, load, force, or torque measurements. Hidden
 simulation truth is used only for qualification and is never presented as a
 measured vehicle signal.
 
+The D4-018 review candidate uses exactly 15 VDP v3 paths: speed, lateral
+acceleration, steering, four wheel speeds, four longitudinal slips and four
+lateral-slip angles. It proposes a deterministic local condition score and
+band with immediate worsening and three-episode improvement hysteresis. Those
+values become accepted only after D4-003 proves 10/10 `HEALTHY` and 10/10
+`PRE_AGED` live separations without exposing the oracle. See
+[Tire Health In-Vehicle Product Contract](../../contracts/tire-health-model/README.md).
+
 `T1` follows `G4` in the audience presentation so the required VDP v3 data and
 advisory contract already exist. Tire Health does not depend on the Brake
 Health service, backend, dashboard, model, or SOTA 1 lifecycle. Brake Health
@@ -925,8 +1078,9 @@ provider onboarding, fleet-operator tenancy or safety-domain consolidation.
    technical verification.
 2. The service declares VDP Component v3 compatibility and its exact KUKSA
    read and actuate paths in its Aos service metadata.
-3. Only after technical publication/verification, Function Team 2 explicitly
-   authorizes deployment to the Validation Unit through an OEM identity.
+3. Only after technical publication/verification and review of the prepared
+   candidate's pre-deployment evidence does independent OEM Release Authority
+   authorize deployment to the Validation Unit.
 4. The Tire Service bootstrap presents its instance-bound `AOS_SECRET` and the
    same fixed KUKSA resource identifier to the current-release helper. The
    helper resolves the active registered authority through Aos IAM, maps only
@@ -936,10 +1090,14 @@ provider onboarding, fleet-operator tenancy or safety-domain consolidation.
 5. Validation proves local estimation, persistent-state continuity, bounded
    offline reporting, idempotent backend ingestion, advisory isolation, and
    that the existing Brake Health graph remains unchanged.
-6. Function Team 2 accepts the exact service version, digest, and integration
-   result and records promotion approval through an OEM identity.
-7. AosCloud promotes the identical Tire Health Service v1.0 artifact to the Demonstration
-   Unit without rebuilding or changing the Brake Health or VDP artifacts.
+6. Function Team 2 accepts the exact service version, digest and Validation
+   Unit integration result.
+7. OEM Release Authority separately reviews that acceptance and authorizes
+   rollout to the Production Unit.
+8. AosCloud promotes the identical Tire Health Service v1.0 artifact to the
+   Production Unit without rebuilding or changing the Brake Health or VDP
+   artifacts. Production driving shows the released condition result,
+   advisory and tenant isolation behavior; it is not a second test cycle.
 
 The current AosCloud release is not claimed to reject an incompatible service
 before desired-state change or content transfer. Until the native dependency-
@@ -966,20 +1124,44 @@ introduced.
 - The Brake Health Function Dashboard and SOTA 1 lifecycle remain unchanged,
   proving that Function Team 2 is an independent peer Service Provider.
 - The Software Delivery Dashboard shows the independently approved Brake and
-  Tire service CPU quotas and current AosCore-reported usage/status. The
-  presenter starts one prepared, bounded CPU-load profile inside the actual
-  Tire Health service instance. AosCore caps that instance at its own quota;
-  no project-specific resource manager participates.
+  Tire service CPU quotas, fresh exact-instance AosCloud CPU usage in DMIPS and
+  current instance state. A quota alert is supplementary. Separately labelled
+  sanitized qualification evidence proves the bound Tire cgroup cap and
+  throttling counters; Tire Function control status alone is not enforcement
+  evidence. Baseline, saturation and recovery each require three consecutive
+  fresh Cloud samples, using bands and cgroup tolerance measured for the exact
+  current baseline rather than arbitrary percentages. The UI distinguishes
+  `PASS`, `FAIL`, `INCONCLUSIVE` and `NOT_READY`; a quota alert alone never
+  determines the result. The
+  presenter uses the Tire Function Dashboard's single `Start CPU Isolation
+  Proof` action. Its Mac-local backend supplies only the fixed, identity-bound
+  command over the Tire Service's existing outbound route, and the prepared
+  worker runs inside the actual Tire instance and its Aos-managed cgroup.
+  AosCore caps that instance at its own quota; no project-specific resource
+  manager, extra load container or administrative bypass participates.
 - While Tire Health is held at its CPU quota, the same deterministic CARLA
   scenario produces a Brake Health result and advisory, Brake Health remains
   ready without restart, and VDP, KUKSA, Gateway and AosCore remain healthy.
   Stopping the prepared load returns Tire Health to normal operation without
   reinstalling or restarting either service.
+- The load accepts no presenter-selected intensity, thread count or duration,
+  runs as one worker at most, stops after backend-lease loss or an absolute
+  180-second ceiling and always returns to `INACTIVE` after Service/VM restart.
+  Its reported state is a control fact, not proof of quota enforcement.
 - This proof is deliberately bounded to two Aos-managed service instances,
   one per Service Provider, on the same Domain Controller. The Mac-local
   functional backends use separate host-container limits and are not part of
   the AosCore tenant-isolation claim. Aggregate quota enforcement across
   several services owned by one Service Provider is also not claimed.
+
+The proposed [D4-019 Tire Cloud API](../../contracts/tire-cloud-api/README.md)
+accepts derived results/readiness only and keeps its identity, database,
+volume and reset operation separate from Brake. The proposed
+[D4-020 local-hosting contract](../../contracts/local-demo-hosting/README.md)
+uses three prebuilt Mac-hosted ARM64 containers, loopback-only browser ports,
+one profile-bound native publication helper and separate local Brake/Tire
+ingestion routes without per-Unit backend credentials. These remain review
+candidates with an explicit live two-VM route gate.
 
 ## Deterministic CARLA Visual Scenario
 
@@ -1061,13 +1243,19 @@ the full qualification suite. The live demo performs only:
 - visible validation and approval;
 - promotion of the accepted artifact graph;
 - deterministic runtime execution;
-- optional targeted Demonstration-Unit-to-AosCloud loss and same-Unit recovery;
+- one mandatory targeted Production-Unit external-connectivity loss that
+  interrupts its AosCloud and installed functional-backend paths together,
+  followed by same-Unit recovery;
 - retirement of the current demo run and reset of external demo data.
 
-The final storyboard should define concise executive and technical variants.
-Long builds and raw terminal output are never part of the normal audience
-flow, but Cloud lifecycle duration is not presented as a vehicle-performance
-KPI.
+The final storyboard shall implement the accepted D4-026.6 30-minute core
+narrative inside a 45-minute reserved audience slot, with Q&A separate. Cloud
+audit/log drill-down, extra CARLA runs, repeated events and deeper metadata,
+permission, quota or evidence views are optional extensions. Mandatory
+lifecycle gates may be summarized but never skipped, pre-approved or
+simulated. Long builds and raw terminal output are never part of the normal
+audience flow, and Cloud lifecycle duration is not presented as a vehicle-
+performance KPI.
 
 ## R0 — End-of-Demo Retirement and Next-Run Reset
 
@@ -1077,6 +1265,10 @@ presentation. Instead, the two simulated Domain Controller Unit instances
 created for the current run are retired, and the next run represents two newly
 manufactured vehicle computers.
 
+R0 is available after a completed, failed or presenter-aborted run and does not
+require a `QUALIFIED` verdict. It is cleanup and identity retirement, not a
+claim that the interrupted run passed.
+
 The controlled retirement sequence is:
 
 1. block new lifecycle actions and stop or close current-run execution only as
@@ -1084,39 +1276,49 @@ The controlled retirement sequence is:
    audit history;
 2. complete the final authoritative online read, then place both Units offline
    through a qualified bounded local connectivity or VM lifecycle operation;
-3. wait until AosCloud reports each Unit `Offline`, invoke the accepted
-   AosCloud API deprovisioning operation, and reconcile its response plus the
-   resulting authoritative Unit state separately for each Unit;
+3. wait until AosCloud reports each Unit `Offline`, then through the fixed
+   `oem-delivery` role invoke
+   `DELETE /api/v11/units/{unit_uuid}/deprovision/` with
+   `units_deprovision`; treat `204 No Content` as an acknowledged request, not
+   as inferred final state, and perform a fresh Unit read for each Unit;
 4. perform the qualified bounded reconnect attempt and prove that the retired
    identities and certificates cannot return either Unit to `Online`; this is
    a credential-retirement check, not reprovisioning;
 5. leave both Units offline, stop both VM instances cleanly, and prove that no
    QEMU process holds either overlay;
-6. reconcile each Unit's membership at the point required by the qualified
-   AosCloud contract; an explicit removal may precede Unit deletion, while an
-   API that owns automatic removal still requires an authoritative final
-   re-read rather than an assumption;
-7. delete the corresponding Unit records through the qualified AosCloud API;
-   Nodes are treated as Unit-owned resources unless the qualified API flow
-   explicitly requires a separate operation;
-8. re-read active Unit inventory plus the persistent Verification and
-   Demonstration Unit Sets, and prove that both retired Unit IDs are absent and
-   both set memberships are empty;
-9. permanently delete all functional backend/dashboard data for the exact
+6. delete only the exact native-log request IDs created during the current run
+   and prove that every corresponding detail and file download is unavailable;
+   an uncertain delete blocks later Unit-record deletion;
+7. remove each current `system_uid` from its exact role Unit Set with
+   `DELETE /api/v11/unit-sets/{set_uuid}/units/remove/` and body
+   `{"system_uids":["..."]}`, then re-read both memberships;
+8. delete each Unit record with `DELETE /api/v11/units/{unit_uuid}/` under
+   `units_delete`; API v11 exposes no standalone Node-delete operation, so the
+   demo must not invent one;
+9. re-read active Unit inventory, each deleted Unit detail, its nested Nodes,
+   and both persistent Unit Sets. Prove both Units absent, both memberships
+   empty, and Unit-owned Nodes inaccessible. A remaining reachable Node blocks
+   R0 and is treated as a platform issue;
+10. permanently delete all functional backend/dashboard data for the exact
    retired Unit IDs and current-session time window, leaving no local demo-run
    telemetry, event, advisory or dashboard history while preserving
    authoritative AosCloud lifecycle and audit history;
-10. discard the two provisioned overlays and their run-specific host access
+11. discard the two provisioned overlays and their run-specific host access
    state, including helper runtime state and every Service-private JWT, without
    modifying the immutable OEM Demo Factory Image;
-11. reset the CARLA scenario, actors, route, and deterministic seed;
-12. remove the minimal redacted recovery journal after all R0 outcomes are
-    reconciled successfully;
-13. begin the next run by creating two new overlays from the same accepted
-    factory image, provisioning new Unit and Node identities, assigning the
-    new Validation Unit to the Verification Unit Set and the new Demonstration
-    Unit to the Demonstration Unit Set, and proving exact disjoint membership
-    before any release lifecycle begins.
+12. reset the CARLA scenario, actors, route, and deterministic seed;
+13. remove the minimal redacted bounded current-operation registry after all
+    R0 outcomes are reconciled successfully;
+14. prove local `READY_FOR_M0`: no current overlays, local run identity,
+    Current Vehicle, active source or run-owned data remains; both persistent
+    Unit Sets are empty, the retired Units/Nodes are absent and rejected
+    credentials cannot reconnect; the accepted Factory Image is unchanged.
+
+Successful R0 stops at `READY_FOR_M0`. It does not create overlays, provision
+Units or begin another run automatically. The next cycle requires a later
+explicit M0 action followed by a separate M1 action. If any proof is missing,
+the visible result is `Reset incomplete · Recovery required`; bounded recovery
+material is retained and the next M0 remains blocked.
 
 The Unit Set objects are controlled Cloud configuration and remain available
 between runs; only their Unit memberships are run-scoped. A Unit progresses
@@ -1125,6 +1327,11 @@ after deletion it is absent from the active Unit inventory, while authoritative
 Cloud audit history remains. No verification batch, Fleet Validation Batch,
 Campaign, or effective-target assumption from the retired run may be reused
 after the new membership is established.
+
+A timeout or lost destructive response enters `UNCERTAIN` and then
+`RECONCILING`; it never causes a blind retry. A `404` is accepted as absence
+only after the authenticated role and an independent visibility check prove
+that access denial is not being masked as not found.
 
 This is a demonstration-lab retirement workflow, not a production OTA factory
 reset or a normal in-field vehicle rollback. All Cloud-side actions in this
@@ -1135,7 +1342,7 @@ no-content success response, reconnect-test boundary, deprovision/delete
 ordering, certificate invalidation behavior, Unit-owned Node cleanup, Unit Set
 membership behavior, audit retention, and failure recovery must be qualified
 first on disposable Units.
-The existing Validation and Demonstration identities must not be used for that
+The existing Validation and Production identities must not be used for that
 destructive experiment.
 
 ## Consistency Decisions Already Accepted
@@ -1147,12 +1354,18 @@ destructive experiment.
    credential, or embedded reusable per-vehicle secret.
 3. The current runtime supports one independently versioned Vehicle Data
    Platform Component; arbitrary new provider types are not claimed.
-4. `Validation Unit` and `Demonstration Unit` are used instead of claiming a
-   real production vehicle or fleet.
+4. Technical lifecycle and evidence use `Validation Unit` and `Production
+   Unit` for the two actual Cloud/runtime roles. The Representation Layer calls
+   them `Test Vehicle` and `Production Vehicle`; the latter represents the
+   post-validation field rollout target but is not a claim that the VM is a
+   physical road vehicle or that one demo Unit proves fleet-scale behavior.
 5. VDP Component v2 is backward compatible with the VDP Component v1 contract.
 6. Every service version is validated on the Validation Unit before promotion.
-7. Joint validation completes before either side of a new combined graph is
-   promoted to the Demonstration Unit.
+7. VDP and dependent Service retain separate owner acceptance, OEM Release
+   Authority authorization, Campaign and readiness state. Production applies
+   VDP first; only its fresh
+   actual readiness enables the Service rollout. G3/G4 are derived capability
+   milestones, not combined Cloud release groups.
 8. A prepared model is delivered with the service; live operation performs
    local inference rather than presentation-time training.
 9. The final Brake Health advisory is visible only as a request and Gateway
@@ -1176,11 +1389,13 @@ destructive experiment.
 15. Native Cloud rejection of a SOTA service whose required FOTA capability is
     absent is a target demo scenario deferred until the AosEdge roadmap feature
     ships and is qualified. No project-specific admission controller is used.
-16. The owning Platform or Function Team makes each engineering release
-    decision. Function Teams publish through Service Provider identities, all
-    approvals affecting OEM Units use authorized OEM identities, and AosCloud
-    stores and executes the resulting lifecycle transition. The dashboard and
-    orchestrator own neither approval nor lifecycle state.
+16. The owning Platform or Function Team publishes its candidate and accepts
+    the exact Test result. Function Teams publish through their separate
+    Service Provider identities; the independent OEM Release Authority then
+    uses the authorized OEM delivery context to authorize each exact Test or
+    Production Unit operation. AosCloud stores and executes the resulting
+    lifecycle transition. The dashboard and orchestrator own neither decision
+    nor lifecycle state.
 17. Interactive CARLA mode transitions follow the accepted drive-mode/world-
     context matrix; manual takeover preserves the brake event, while Autopilot
     never inherits the scenario obstacle and no reverse-control claim is made.
@@ -1217,7 +1432,7 @@ destructive experiment.
    proof.
 2. Implement and qualify sequential exclusive live CARLA/VISS handover:
    Validation attach/run/detach, deterministic scenario reset, then
-   Demonstration attach/run/detach. Telemetry-trace replay remains deferred;
+   Production attach/run/detach. Telemetry-trace replay remains deferred;
    do not imply two simultaneous simulated vehicles.
 3. Confirm the exact VDP Component v1–v3 signal and advisory subsets, including
    the existing dynamics inputs required by Tire Health.
@@ -1227,10 +1442,13 @@ destructive experiment.
    clear rules, pre/active/post durations, signal sampling, merge/debounce,
    ordered chunk/completion schemas, reconstruction/resume, and all memory,
    queue and size limits. Continuous unrestricted raw streaming is excluded.
-6. Qualify the current AosCloud system, service-instance, and crash-log APIs,
-   including scoped access, request progress/failure visibility, exact retention duration,
-   explicit deletion effect, offline behavior, redaction, bounded temporary
-   downloads, and presentation in the Software Delivery Dashboard.
+6. Qualify the current AosCloud role-scoped system, service-instance and
+   crash-log APIs: OEM `unit-logs` in the Software Delivery Dashboard and
+   SP1/SP2 `service-logs` in the matching Function Dashboard. Cover exact
+   identifiers, permissions/ownership, response cardinality, verbatim states,
+   file/archive bounds, explicit deletion effect, offline/reconnect behavior,
+   redaction and bounded temporary downloads; state that API retention policy
+   is not exposed.
 7. Define the minimum OEM Software Delivery Dashboard views and exact evidence
    dossier, including the Platform Releases candidate catalogue, protected
    Platform Team sign/publish handoff, artifact and metadata digests, requested
@@ -1249,9 +1467,11 @@ destructive experiment.
     identity that would be duplicated across instances.
 11. Prove that two fresh overlays create different system, Node, SSH, and
     certificate identities.
-12. Qualify Cloud deprovision, Unit deletion, old-certificate rejection, Node
-    cleanup, retained audit history, and partial-failure recovery on disposable
-    Units.
+12. Live-qualify offline-only Cloud deprovision, post-`204` Unit re-read,
+    old-certificate rejection, exact `system_uid` Unit Set removal, Unit
+    deletion, Unit-owned Node disappearance without a standalone Node-delete
+    call, retained audit history, authorization-masked `404`, and
+    partial-failure reconciliation on disposable Units.
 13. Define current-session naming, binding to the two Unit IDs and time window,
     Unit Set assignment, and external data-retention rules. An internal UUID is
     optional and is not an architecture identity.
@@ -1297,7 +1517,7 @@ qualification, and audience-visible claims. They preserve the canonical
 `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> T1 -> R0` presentation order and
 the independence of the two SOTA lifecycles.
 
-## Review Delta for Version 2.0
+## Acceptance Record and Delta for Version 2.0
 
 Version 2.0 preserves the accepted stage order, product behavior, two SOTA
 lifecycles, FOTA sequence, dashboards, offline proof and retirement flow from
@@ -1307,12 +1527,18 @@ from the VDP Component, and introducing the current-release helper only as
 removable platform infrastructure. It adds common bootstrap, renewal, failure,
 reboot, stop and removal semantics for both Services without turning
 credential preparation into an audience-facing feature or changing the
-functional data path. Acceptance remains pending the complete C2 review.
+functional data path. The complete C2 cascade was accepted on 2026-08-26.
+
+The 2026-08-25 Level-B revalidation further clarifies that the three producer
+teams may operate independently on disjoint release resources. It introduces
+no new stage, actor, authority, component or Cloud state; exact conflicts and
+run-exclusive provisioning/source/retirement operations remain guarded by the
+Demo Orchestrator.
 
 ## Acceptance Record for Version 1.9
 
 Version 1.9 preserves HLA 1.4, the accepted stage order and all component and
-lifecycle owners. It defines one targeted loss of the Demonstration Unit's
+lifecycle owners. It defines one targeted loss of the Production Unit's
 external vehicle connectivity: Unit-to-AosCloud and service-to-functional-
 backend paths are interrupted together, while presenter-to-AosCloud and
 simulated in-vehicle paths remain available. The demo proves local behavior,
@@ -1366,7 +1592,7 @@ refines only the Brake Health product evolution:
 ## Reference Basis
 
 - [High-Level Architecture 1.5](../architecture/high-level-architecture.md)
-  defines the review-candidate capability-superset architecture baseline; this
+  defines the accepted capability-superset architecture baseline; this
   scenario defines its staged component presence and lifecycle, while
   [Architecture Flows 2.0](../architecture/demo-scenario-architecture-flows.md)
   defines detailed cross-component interaction mapping.

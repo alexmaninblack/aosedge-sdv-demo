@@ -1,0 +1,85 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "contractId": "aosedge-demo-brake-health-advisory-policy",
+  "contractVersion": "1.0.0",
+  "lifecycleState": "ACCEPTED",
+  "decision": "D4-016.4",
+  "inputs": {
+    "modelContractVersion": "1.0.0",
+    "qmAdvisoryContractVersion": "1.0.1",
+    "serviceVersion": "3.0.0",
+    "compatibleVdpVersion": "VDP_V3"
+  },
+  "trigger": {
+    "assessmentQuality": "VALID_DEMO_SYNTHETIC",
+    "requiredCurrentBand": "INSPECTION_RECOMMENDED",
+    "acceptedCauses": [
+      "NEW_BAND_TRANSITION",
+      "V3_ACTIVATION_WITH_PERSISTED_ACTIVE_CONDITION"
+    ],
+    "acceptedEventType": "BRAKE_CONDITION_BAND_CHANGED",
+    "acceptedTransition": ["GOOD_OR_MONITOR", "INSPECTION_RECOMMENDED"],
+    "eventWithoutAssessmentAllowed": false,
+    "staleOrInvalidAssessmentAllowed": false,
+    "activationWithPersistedCondition": {
+      "enabled": true,
+      "requiredPersistedBand": "INSPECTION_RECOMMENDED",
+      "decisionIdSource": "LAST_ACCEPTED_ASSESSMENT_ID",
+      "requiresNoRecordedAdvisoryForDecisionId": true,
+      "createsSyntheticAssessmentOrBandChangeEvent": false,
+      "persistsDecisionToRequestBindingBeforeWrite": true
+    }
+  },
+  "request": {
+    "path": "Vehicle.OEM.BrakeHealth.Advisory.Request",
+    "operation": "SET",
+    "recommendation": "INSPECTION_RECOMMENDED",
+    "reasonCode": "PREDICTED_BRAKE_DEGRADATION",
+    "decisionIdSource": "ASSESSMENT_ID",
+    "requestIdNamespaceUuid": "894e102e-5380-5c9d-a6f7-46f00b234725",
+    "requestIdNameFields": ["producerEpoch", "sequence", "operation", "decisionId"],
+    "leaseMs": 30000,
+    "refreshIntervalMs": 20000,
+    "minimumStateChangeIntervalMs": 1000,
+    "sameRequestRetryUsesIdenticalBytes": true,
+    "refreshUsesNewSequenceAndRequestId": true
+  },
+  "clear": {
+    "supported": true,
+    "operation": "CLEAR",
+    "reasonCode": "CONDITION_CLEARED",
+    "currentMonotonicModelProducesClear": false,
+    "acceptedFutureCause": "VALID_NON_INSPECTION_ASSESSMENT_AFTER_ACCEPTED_STATE_MIGRATION",
+    "serviceStopCreatesSyntheticClear": false,
+    "crashCreatesSyntheticClear": false,
+    "noRefreshUsesGatewayExpiry": true
+  },
+  "status": {
+    "path": "Vehicle.OEM.BrakeHealth.Advisory.GatewayStatus",
+    "serviceSubscribesReadOnly": true,
+    "correlationFields": ["requestId", "producerEpoch", "sequence"],
+    "applicationEvidenceStates": ["APPLIED", "CLEARED"],
+    "terminalFailureStates": ["REJECTED", "EXPIRED", "FAILED"],
+    "kuksaWriteMeansApplied": false,
+    "vissSetMeansApplied": false,
+    "driverAcknowledgementClaimAllowed": false
+  },
+  "persistence": {
+    "producerEpochPersistent": true,
+    "sequenceMonotonicPersistent": true,
+    "requestPersistedBeforeWrite": true,
+    "gatewayStatusPersistedWithCorrelation": true,
+    "ambiguousWriteBehavior": "RETRY_IDENTICAL_REQUEST_THEN_RECONCILE_STATUS",
+    "restartBehavior": "READ_STATUS_THEN_REFRESH_OR_RETRY_WITHOUT_SEQUENCE_REUSE",
+    "databaseRuntimeRequired": false
+  },
+  "authority": {
+    "externalConnectivityRequired": false,
+    "internalChainRequired": ["KUKSA", "VDP", "VISS", "GATEWAY"],
+    "alternateTargetAllowed": false,
+    "arbitraryTextAllowed": false,
+    "vehicleMotionAllowed": false,
+    "gatewayFinalAuthority": true
+  }
+}

@@ -3,9 +3,9 @@
 
 # Brake Health Cloud Product Component Requirements
 
-- Status: D3 design-reviewed
+- Status: D3 design-reviewed; D4 contract review in progress
 - Package: [`CR-BRAKE-CLOUD`](../component-decomposition-and-interface-register.md#cr-brake-cloud)
-- Version: 0.3
+- Version: 0.4
 - Prepared: 2026-08-19
 - Accepted: 2026-08-19
 - Owner: Function Team 1 / Service Provider 1 functional Cloud product
@@ -17,6 +17,8 @@
 - Accepted architecture decisions: [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md) and [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
 - Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
 - Accepted D4 publication input: [D4-010.3 Artifact Publication Credential Profile](../../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
+- Accepted D4 v1 logical input: [D4-016.1/.2 decision](../d4-decision-register.md#d4-016) and [Brake Telemetry Window Contract](../../../contracts/brake-telemetry-window/README.md)
+- Prepared D4 product/hosting review candidates: [Brake Cloud API](../../../contracts/brake-cloud-api/README.md) and [Local Demo Hosting and VM Route](../../../contracts/local-demo-hosting/README.md)
 - Implementation baseline: no `brake-health-cloud` repository or executable exists
 - Implementation, repository creation, signing, Cloud, or Unit mutation authorized: no
 
@@ -37,7 +39,7 @@ and promotion interaction. Runtime ingestion, reconstruction, persistence and
 dashboard updates are automatic and shall never be replaced by manually
 fabricated results.
 
-The Function Dashboard may be delivered as one web application with two
+The Function Dashboard may be delivered as one web application with three
 visually and logically separated views:
 
 1. **Release Candidates** presents the immutable prepared v1, v2 and v3
@@ -65,10 +67,10 @@ non-exportable.
 
 | Question | Answer |
 | --- | --- |
-| What this package owns | Brake Health functional-message ingestion, idempotent v1 window reconstruction, v2/v3 derived-result persistence, query/subscription APIs, version-aware functional presentation, prepared candidate catalogue and presenter controls that delegate signing/publication to the Function Team pipeline |
-| What this package does not own | In-vehicle Brake Health behavior, model training, CARLA/VISS/KUKSA, artifact compilation during the demo, signing-key custody, AosCloud state, OEM approval, Unit targeting, deployment, promotion, native logs, Engineering Telematics Dashboard or production driver HMI |
-| Intended result | A presenter can explain and publish each already-built service version, then show the real change from v1 braking windows to v2 derived health and v3 advisory facts on Validation and Demonstration Units |
-| Accountable lifecycle owner | Function Team 1 owns the service release decision; Service Provider 1 publishes; an authorized OEM identity approves Unit deployment and promotion outside this product |
+| What this package owns | Brake Health functional-message ingestion, idempotent v1 window reconstruction, v2/v3 derived-result persistence, query/subscription APIs, version-aware functional presentation, prepared candidate catalogue, presenter controls that delegate signing/publication, and an SP1-scoped Service Logs view over native AosCloud service/crash-log records |
+| What this package does not own | In-vehicle Brake Health behavior, model training, CARLA/VISS/KUKSA, artifact compilation during the demo, signing-key custody, authoritative AosCloud log storage or Unit lifecycle state, OEM approval, Unit targeting, deployment, promotion, system/VDP or other-team logs, Engineering Telematics Dashboard or production driver HMI |
+| Intended result | A presenter can explain and publish each already-built service version, then show the real change from v1 braking windows to v2 derived health and v3 advisory facts on Validation and Production Units |
+| Accountable lifecycle owner | Function Team 1 publishes and accepts the exact Validation Unit result; independent OEM Release Authority authorizes Test deployment and Production rollout outside this product |
 | Primary repository | Planned public `brake-health-cloud`; it will own the ARM64 container, backend, embedded static dashboard and local demo deployment definition; repository creation remains a later implementation action |
 
 ## Product Views and Authority
@@ -77,7 +79,8 @@ non-exportable.
 | --- | --- | --- | --- |
 | Release Candidates | Prepared v1-v3 purpose, bytes/metadata digest, requested KUKSA resources, quotas, architecture, required VDP range, functional output and explicit sign/publish controls | Immutable candidate catalogue plus Function Team 1 release pipeline result | No source edit/build, private key in browser, OEM approval or invented Cloud state |
 | Vehicle Data | Growing/completed v1 windows; v2/v3 assessment, event and advisory facts; Unit role; source/event time; delivery state | Brake Health Backend | No direct CARLA, VISS, KUKSA or AosCloud query and no manually injected success result |
-| OEM Software Delivery Dashboard | Technical verification, exact target, evidence, active OEM role, validation deployment and promotion | AosCloud and current Unit state | Not implemented by `CR-BRAKE-CLOUD` |
+| Service Logs | Explicit SP1-scoped service-instance/crash-log request, verbatim Cloud state and sanitized bounded preview | AosCloud `/api/v11/service-logs/` through the separate SP1 operational context | No system log, SP2 log, browser credential, second archive or claimed retention duration |
+| OEM Software Delivery Dashboard | Technical verification, exact target/evidence, owning-team Validation acceptance and independent OEM Release Authority actions for Test deployment and Production rollout | AosCloud and current Unit state | Not implemented by `CR-BRAKE-CLOUD` |
 | Engineering Telematics Dashboard | Vehicle/Gateway telemetry and factual v3 advisory receipt/status | Vehicle Gateway VISS endpoint | Not implemented by `CR-BRAKE-CLOUD`; no production driver-display claim |
 
 ## Local Demo Deployment Topology
@@ -92,11 +95,11 @@ flowchart TB
             PRODUCT --- DATA
         end
         HELPER["Common native publication helper<br/>fixed brake-sp1 profile"]
-        QEMU["QEMU<br/>selected VU or DU"]
+        QEMU["QEMU<br/>selected VU or PU"]
     end
 
     BROWSER -->|"loopback HTTP"| PRODUCT
-    QEMU -->|"authenticated functional ingestion<br/>through guest-visible host path"| PRODUCT
+    QEMU -->|"local demo functional ingestion<br/>through guest-visible host path"| PRODUCT
     PRODUCT -->|"explicit confirmed request only"| HELPER
     HELPER -->|"Service Provider publication"| CLOUD["AosCloud"]
 ```
@@ -106,10 +109,12 @@ kept as a development fallback, but it is not a second supported presentation
 architecture and must execute the same application, contracts and tests.
 
 The container exposes the dashboard/API only on a host loopback listener. The
-VM-to-backend route uses the QEMU guest-visible host path and an authenticated,
-allowlisted ingestion endpoint; it must not require a listener exposed to the
-office, home or customer LAN. The exact Docker/QEMU route is a D4 experiment
-and qualification gate rather than an assumed behavior.
+VM-to-backend route uses the isolated QEMU guest-visible host path and must not
+require a listener exposed to the office, home or customer LAN. The first demo
+adds no per-Unit functional-backend credential lifecycle and makes no
+production backend-authentication claim; that responsibility belongs to
+Function Team 1. D4-020 defines the exact proposed Docker/QEMU route as a
+review candidate and live two-VM qualification gate.
 
 One demo launcher, owned later by `CR-DEMO`, starts or verifies Docker Desktop,
 starts the product container, waits for its health endpoint, starts the native
@@ -124,7 +129,7 @@ presentation. Live source modification or compilation is outside the demo.
 The unsigned payload and metadata have stable digests before selection; the
 signed envelope receives its exact digest when the presenter explicitly
 invokes signing. The identical accepted signed bytes and digest are used for
-Validation Unit qualification and Demonstration Unit promotion.
+Validation Unit qualification and Production Unit promotion.
 
 | Candidate | Declared VDP compatibility | Requested KUKSA capability | Functional Cloud product | Vehicle-side advisory |
 | --- | --- | --- | --- | --- |
@@ -147,7 +152,7 @@ flowchart LR
     CLOUD["AosCloud<br/>system of record and execution"]
     OEM["OEM Software Delivery Dashboard"]
     VU["Validation Unit"]
-    DU["Demonstration Unit"]
+    PU["Production Unit"]
     CARLA["One CARLA / Gateway / VISS source"]
     BE["Brake Health Backend"]
     VD["Function Dashboard<br/>Vehicle Data"]
@@ -162,14 +167,14 @@ flowchart LR
     VU -->|"real functional messages"| BE
     BE --> VD
     OEM -->|"accept evidence and promote the same digest"| CLOUD
-    CLOUD --> DU
-    CARLA -->|"reset, then exclusive Demonstration binding"| DU
-    DU -->|"real functional messages"| BE
-    DU -. "v3 factual advisory path" .-> ENG
+    CLOUD --> PU
+    CARLA -->|"reset, then exclusive Production binding"| PU
+    PU -->|"real functional messages"| BE
+    PU -. "v3 factual advisory path" .-> ENG
 ```
 
 The current demonstration has one visible CARLA/Vehicle Gateway/VISS source,
-not two simultaneous vehicles. Validation and Demonstration evidence therefore
+not two simultaneous vehicles. Validation and Production evidence therefore
 uses exclusive sequential live binding with an explicit detach and
 deterministic reset between roles. Telemetry replay is deferred. `CR-DEMO`
 owns the handover mechanism; this package must preserve the exact
@@ -179,7 +184,7 @@ source/Unit/run correlation supplied to it.
 
 ### In scope
 
-- authenticated ingestion of the versioned `IF-FUNC-001` message family;
+- local-demo ingestion of the versioned `IF-FUNC-001` message family;
 - schema, version, size, Unit, run, source-time and correlation validation;
 - idempotent ordered reconstruction of v1 event-window chunks and completion;
 - automatic persistence and query/subscription of growing and completed v1 windows;
@@ -196,8 +201,8 @@ source/Unit/run correlation supplied to it.
   dashboard, with immutable application image and runtime configuration;
 - a dedicated persistent SQLite data volume, explicit health endpoint and
   graceful stop/restart behavior;
-- loopback-only browser exposure and an authenticated, allowlisted QEMU
-  guest-to-host functional-ingestion route without LAN exposure;
+- loopback-only browser exposure and an isolated QEMU guest-to-host
+  functional-ingestion route without LAN exposure;
 - client integration with the common native helper pre-bound to `brake-sp1`,
   with its local PKCS#12 excluded from Git, the browser, container and logs;
 - unit tests, contract fixtures, health, logs and operational metrics for owned logic.
@@ -218,21 +223,23 @@ source/Unit/run correlation supplied to it.
 - live model training or claims of production diagnostic accuracy.
 - Docker Desktop implementation or licensing, production public-Cloud hosting,
   Internet exposure, LAN access or multi-host high availability;
+- production functional-backend authentication, client certificates and
+  credential provisioning/rotation/revocation, which belong to Function Team 1;
 
 ### Dependencies and assumptions
 
 | Dependency or assumption | Owner | Required state | Failure consequence |
 | --- | --- | --- | --- |
-| Versioned functional messages | [`CR-BHS`](brake-health-service.md) | Accepted v1 chunk/completion and v2/v3 derived schemas, authentication and idempotency identifiers | Reject/quarantine invalid input; never fabricate a dashboard result |
+| Versioned functional messages | [`CR-BHS`](brake-health-service.md) | Accepted v1 chunk/completion and v2/v3 derived schemas and idempotency identifiers | Reject/quarantine invalid input; never fabricate a dashboard result |
 | Prepared immutable candidates | [`CR-BHS`](brake-health-service.md) release pipeline | v1-v3 ARM64 payload, metadata and tests frozen before the presentation | Candidate cannot be selected or signed |
 | Signing and publication pipeline | Function Team 1 / [`IF-LC-002`](../component-decomposition-and-interface-register.md#if-lc-002) | Explicit confirmation, D4-010.3 `brake-sp1` binding, exact candidate/digests, protected local mode-`0600` PKCS#12 and machine-readable result | Wrong profile/candidate/path/URL or custody failure blocks before signing; ambiguous result becomes `UNCERTAIN` and is reconciled without blind retry |
 | AosCloud and OEM delivery surface | [`CR-AOS`](aos-lifecycle.md) and [`CR-DEMO`](demo-orchestration.md) | Authoritative verification, target, approval, deployment and promotion state | Release view stops at the last verified pipeline result and directs the presenter to the authoritative surface |
 | VDP compatibility | [`CR-VDP`](vehicle-data-platform.md) and [`CR-BHS`](brake-health-service.md) | Candidate-declared range and fail-closed service readiness | Display declared/actual evidence; do not implement local admission control |
-| Run and Unit correlation | [`CR-DEMO`](demo-orchestration.md) | Bounded run time, VU/DU identities, Unit roles and exact sequential live source/generation/frame binding | Data is quarantined as unassigned and excluded from audience success views |
-| One source, two Unit roles | [`CR-DEMO`](demo-orchestration.md) | VU attach/run/detach, deterministic reset/new generation and DU attach/run/detach | Evidence is incomplete; dashboard must not imply two simultaneous CARLA vehicles |
+| Run and Unit correlation | [`CR-DEMO`](demo-orchestration.md) | Bounded run time, VU/PU identities, Unit roles and exact sequential live source/generation/frame binding | Data is quarantined as unassigned and excluded from audience success views |
+| One source, two Unit roles | [`CR-DEMO`](demo-orchestration.md) | VU attach/run/detach, deterministic reset/new generation and PU attach/run/detach | Evidence is incomplete; dashboard must not imply two simultaneous CARLA vehicles |
 | Engineering advisory evidence | [`CR-GATEWAY`](vehicle-gateway.md) | Gateway VISS is authoritative for v3 advisory receipt/status | Function dashboard shows only its correlated backend fact, never a driver-display claim |
 | Apple Silicon container runtime | Docker Desktop on the demo Mac | Running native ARM64 engine, available named volume and health-capable container runtime | Launcher reports blocked; no dashboard/runtime-data success claim |
-| QEMU-to-container route | [`CR-DEMO`](demo-orchestration.md) plus this package | Authenticated selected-Unit ingestion reaches the backend without LAN exposure | Integration gate fails; Unit data stays queued and the dashboard shows offline |
+| QEMU-to-container route | [`CR-DEMO`](demo-orchestration.md) plus this package | Selected VU/PU reaches the correct local endpoint without LAN exposure; reported `system_uid` is correlation-only | Integration gate fails; Unit data stays queued and the dashboard shows offline |
 | Native `brake-sp1` publication helper | Function Team 1 release owner | Common session-scoped helper available through a local authenticated boundary; fixed PKCS#12 exists with mode `0600` outside Git and every browser/container/VM/artifact | Sign/publish control is disabled with a factual reason |
 
 ## Current Implementation Baseline
@@ -282,8 +289,9 @@ components.
 | --- | --- | --- | --- | --- | --- |
 | [Functional message family (`IF-FUNC-001`)](../component-decomposition-and-interface-register.md#if-func-001) | In | v1 ordered chunks/completion; v2/v3 assessments/events/advisory facts | Versioned Function Team 1 schema | Reject/quarantine invalid input; acknowledge only durable accepted state; retry remains bounded in vehicle | Service result plus backend acknowledgement |
 | [Function dashboard API (`IF-FUNC-002`)](../component-decomposition-and-interface-register.md#if-func-002) | Bidirectional | Reconstructed v1 windows and persisted v2/v3 results/status, plus exact current-run cleanup preview/delete | Versioned query/subscription and administration API | Expose stale/disconnected/partial state; reject unsafe cleanup scope; never synthesize current values | Brake Health Backend |
+| [Native Service logs (`IF-OBS-001`)](../component-decomposition-and-interface-register.md#if-obs-001) | Bidirectional / delegated | Explicit SP1-owned service/crash list/create/read/download/delete | OpenAPI v11 `6.1.26` through separate `brake-sp1` operational allowlist | Wrong owner/type blocks; verbatim Cloud states; bounded sanitized temporary preview only | AosCloud request/file state while retained |
 | [Brake Health SOTA publication (`IF-LC-002`)](../component-decomposition-and-interface-register.md#if-lc-002) | Delegated adjacent action | Explicit request to sign/publish one selected immutable candidate; structured result | Function Team 1 release-pipeline contract | Cancel/failure produces no success state; uncertain result requires reconciliation | Service Provider 1 pipeline and AosCloud verification record |
-| [Function Team 1 OEM approval (`IF-LC-009`)](../component-decomposition-and-interface-register.md#if-lc-009) | Out of package / handoff | Candidate identity and digest are available for later OEM review | OEM Software Delivery Dashboard contract | No local approval control or inferred approval | Function Team 1 decision through authorized OEM identity |
+| [Function Team 1 acceptance and OEM Release Authority authorization (`IF-LC-009`)](../component-decomposition-and-interface-register.md#if-lc-009) | Out of package / handoff | Candidate identity and digest are available for Test authorization; accepted Test result is available for Production authorization | OEM Software Delivery Dashboard contract | No local approval control or inferred authorization | Function Team 1 acceptance plus independent Release Authority decisions |
 
 ## Verification Strategy
 
@@ -293,7 +301,7 @@ components.
 | Component | Prove packaged backend and dashboard through public APIs and browser behavior | Controlled service producer, storage and release-helper stub | Yes | Backend/UI component suite and health evidence |
 | Contract | Prove `IF-FUNC-001`, `IF-FUNC-002` and release-helper schema agreement | Digest-addressed shared fixtures | Yes | Producer/consumer conformance and negative fixtures |
 | Integration | Prove real Service v1-v3 ingestion and protected release-helper delegation | Validation environment with accepted adjacent revisions; non-production test credentials | Yes | G2/G3/G4 integration records |
-| End-to-end | Prove presenter-controlled publication, VU evidence and same-digest DU promotion without fake runtime data | One live CARLA source used sequentially with proven detach/reset | Yes | `AF-G2-*`, `AF-G3-*`, `AF-G4-*`, `AF-X-SOURCE` and `AF-X-OBS` evidence |
+| End-to-end | Prove presenter-controlled publication, VU evidence and same-digest PU promotion without fake runtime data | One live CARLA source used sequentially with proven detach/reset | Yes | `AF-G2-*`, `AF-G3-*`, `AF-G4-*`, `AF-X-SOURCE` and `AF-X-OBS` evidence |
 
 ## Requirement Summary
 
@@ -310,9 +318,9 @@ components.
 | [Correlated v3 advisory fact (`REQ-BRAKE-CLOUD-009`)](#req-brake-cloud-009) | Present the backend advisory fact without claiming Gateway/driver display authority | Unit, Component, Contract, Integration, End-to-end | D3 design-reviewed |
 | [Offline synchronization and recovery (`REQ-BRAKE-CLOUD-010`)](#req-brake-cloud-010) | Preserve original times and converge idempotently after reconnect | Unit, Component, Integration, End-to-end | D3 design-reviewed |
 | [Run, Unit and source correlation (`REQ-BRAKE-CLOUD-011`)](#req-brake-cloud-011) | Bind every accepted result to the exact run, Unit role and source evidence | Unit, Component, Contract, Integration | D3 design-reviewed |
-| [Honest VU/DU evidence (`REQ-BRAKE-CLOUD-012`)](#req-brake-cloud-012) | Never imply two simultaneous CARLA vehicles when one source is reused | Unit, Component, Integration, End-to-end | D3 design-reviewed |
+| [Honest VU/PU evidence (`REQ-BRAKE-CLOUD-012`)](#req-brake-cloud-012) | Never imply two simultaneous CARLA vehicles when one source is reused | Unit, Component, Integration, End-to-end | D3 design-reviewed |
 | [Complete current-run deletion (`REQ-BRAKE-CLOUD-013`)](#req-brake-cloud-013) | Delete all exact current-run functional data without touching Cloud audit state | Unit, Component, Integration | D3 design-reviewed |
-| [Failure and freshness visibility (`REQ-BRAKE-CLOUD-014`)](#req-brake-cloud-014) | Show invalid, stale, partial, offline and failed states without fabricated success | Unit, Component, Integration, End-to-end | D3 design-reviewed |
+| [Failure, freshness and Service-log visibility (`REQ-BRAKE-CLOUD-014`)](#req-brake-cloud-014) | Show functional failures plus role-scoped native Service-log evidence without fabricated success or a second archive | Unit, Component, Integration, End-to-end | D3 design-reviewed; D4-014 design accepted |
 | [Mac-local ARM64 container deployment (`REQ-BRAKE-CLOUD-015`)](#req-brake-cloud-015) | Run backend and static dashboard in one health-checked ARM64 container with persistent data | Unit, Component, Integration | D3 design-reviewed |
 | [Local network and signing isolation (`REQ-BRAKE-CLOUD-016`)](#req-brake-cloud-016) | Keep browser local, authenticate VM ingestion and keep the `brake-sp1` credential outside Docker | Unit, Component, Integration, End-to-end | D3 design-reviewed; D4-010.3 accepted |
 
@@ -344,15 +352,15 @@ components.
 <a id="req-brake-cloud-002"></a>
 
 - ID: `REQ-BRAKE-CLOUD-002`
-- Statement: The Release Candidates view shall expose exactly the prepared Brake Health v1, v2 and v3 immutable candidates and shall provide no source-edit, build or repackage operation during the presentation.
+- Statement: The Release Candidates view shall expose exactly the Brake Health v1, v2 and v3 entries pinned by the Demo Release Set to producer-owned canonical manifests and immutable prepared artifacts in the local content-addressed store; it shall provide no source-edit, build, metadata-generation, package-content regeneration or fallback operation during the presentation.
 - Rationale: The demo shows post-SOP delivery, not a live software-development exercise.
 - Parent system requirement: [Immutable release candidates (`SYS-REL-001`)](../system-requirements-and-traceability.md#sys-rel-001)
 - Architecture flow: [Independent SOTA 1 delivery (`AF-G2-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-g2-lc)
 - Components: [`CMP-BRAKE-DASH`](../component-decomposition-and-interface-register.md#cmp-brake-dash), adjacent [`CMP-BHS`](../component-decomposition-and-interface-register.md#cmp-bhs)
 - Interfaces: adjacent [`IF-LC-002`](../component-decomposition-and-interface-register.md#if-lc-002)
 - Verification levels: Unit / Component / Contract / Integration
-- Required evidence: signed catalogue manifest, digest verification and absence of build/source mutation controls
-- State: D3 design-reviewed
+- Required evidence: three producer manifests, pinned release-set entries, prepared/manifest digest verification, content-addressed-store resolution and absence of build/source/metadata mutation controls
+- State: D3 design-reviewed; D4-013 catalogue and storage design accepted; schema implementation remains open
 
 #### Acceptance criteria
 
@@ -365,7 +373,7 @@ components.
 <a id="req-brake-cloud-003"></a>
 
 - ID: `REQ-BRAKE-CLOUD-003`
-- Statement: Before signing, the Release Candidates view shall present the candidate purpose, version, payload and metadata digests, ARM64 architecture, requested KUKSA paths/modes, Aos quotas, required VDP compatibility range, functional output types and v2/v3 synthetic-model identity where applicable.
+- Statement: Before signing, the Release Candidates view shall present the producer candidate ID, semantic version, prepared artifact SHA-256, RFC-8785 canonical manifest SHA-256, ARM64 architecture, requested KUKSA paths/modes, Aos quotas, required VDP compatibility range, functional output types and v2/v3 synthetic-model identity where applicable.
 - Rationale: The audience must see what changes between versions and what authority/resources each candidate requests.
 - Parent system requirements: [Service capability compatibility (`SYS-REL-003`)](../system-requirements-and-traceability.md#sys-rel-003), [Evidence-backed final OEM approval (`SYS-REL-010`)](../system-requirements-and-traceability.md#sys-rel-010)
 - Architecture flow: [Predictive-function proof (`AF-G3-OB`)](../../architecture/demo-scenario-architecture-flows.md#af-g3-ob)
@@ -386,37 +394,37 @@ components.
 <a id="req-brake-cloud-004"></a>
 
 - ID: `REQ-BRAKE-CLOUD-004`
-- Statement: The Release Candidates view shall require explicit presenter confirmation before delegating exactly one prepared Brake Health v1-v3 candidate and its verified payload/metadata digests to the common native helper surface pre-bound to D4-010.3 profile `brake-sp1`. The request shall contain no profile, credential path, candidate path or Cloud URL. The helper shall use installed `aos-signer` 2.0.1 and the fixed local mode-`0600` passwordless PKCS#12 for both signing and mTLS upload, shall never expose private-key or PKCS#12 material to the browser/backend and shall preserve the resulting signed artifact digest for unchanged VU-to-DU promotion evidence. `PUBLISHED` requires an independent AosCloud re-read; lost or ambiguous results become `UNCERTAIN` and are reconciled without blind retry.
+- Statement: The Release Candidates view shall require explicit presenter confirmation before delegating only one pinned Brake Health candidate ID and expected prepared/manifest SHA-256 values to the common native helper pre-bound to `brake-sp1`; it shall send no profile, credential path, candidate path or Cloud URL. The helper shall resolve and re-hash the allowlisted content-addressed input, use `aos-signer` 2.0.1 and the fixed mode-`0600` PKCS#12, compute the exact signed/uploaded-file SHA-256 and bind the authenticated response to the unique AosCloud Service UUID/version and independently re-read Service Version configuration. Because API 6.1.26 exposes no service-artifact digest, the UI shall label the signed digest as locally verified and shall not call it Cloud-confirmed. Interruption or response loss persists only the current `.run/publication/` receipt, becomes `UNCERTAIN` and is reconciled without blind retry. VU and PU use the same Cloud Service Version; promotion performs no rebuild, re-sign or re-upload.
 - Rationale: A visible manual decision is required while cryptographic custody and actual publication remain in their proper boundary.
 - Parent system requirements: [Immutable release candidates (`SYS-REL-001`)](../system-requirements-and-traceability.md#sys-rel-001), [role-bound protected publication (`SYS-REL-011`)](../system-requirements-and-traceability.md#sys-rel-011), [OEM-authorized deployment approval (`SYS-REL-008`)](../system-requirements-and-traceability.md#sys-rel-008), [Validate before promotion (`SYS-REL-004`)](../system-requirements-and-traceability.md#sys-rel-004)
 - Architecture flow: [Independent SOTA 1 delivery (`AF-G2-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-g2-lc)
 - Components: [`CMP-BRAKE-DASH`](../component-decomposition-and-interface-register.md#cmp-brake-dash), adjacent Function Team 1 pipeline
 - Interfaces: [`IF-LC-002`](../component-decomposition-and-interface-register.md#if-lc-002)
 - Verification levels: Unit / Component / Integration / End-to-end
-- Required evidence: D4-010.3 contract/schema validation; confirmation record; exact `brake-sp1` binding; wrong-profile/candidate/type/path/URL negatives; local file mode/location/exclusion proof; helper result; independent Cloud re-read; no-blind-retry and absence-of-key/PKCS#12-output inspection; exact VU/DU signed digest comparison
-- State: D3 design-reviewed; D4-010.3 accepted; exact helper request/result and Cloud reconciliation lookup remain implementation gates
+- Required evidence: D4-010.3 and D4-013 contract/schema validation; confirmation record; exact `brake-sp1` and release-set binding; wrong-profile/candidate/type/path/URL negatives; content-addressed-store and file-exclusion proof; prepared/signed/Service-Version mapping; independent configuration re-read; visible missing-Cloud-digest limitation; current-receipt recovery, no-blind-retry and absence-of-key/PKCS#12-output inspection; same VU/PU Cloud Service Version proof
+- State: D3 design-reviewed; D4-010.3 and D4-013 designs accepted; exact schema implementation plus signer and live SOTA qualification remain open
 
 #### Acceptance criteria
 
 1. Cancelled confirmation causes no signing or publication request.
 2. A helper timeout or uncertain result is shown as requiring reconciliation and is never converted into success.
-3. The digest shown after signing is the digest later observed for both VU and DU; no rebuild or re-sign occurs between them.
+3. The locally verified signed/uploaded digest remains bound to the same Cloud Service Version used by both VU and PU; the UI does not claim that the current Cloud API or Unit reports that service-artifact digest, and no rebuild, re-sign or re-upload occurs between lanes.
 4. The common helper runs as a native macOS process pre-bound to `brake-sp1`; it alone may read the fixed mode-`0600` PKCS#12, and no key, certificate bundle or caller-selected path enters Docker configuration, image, volume, browser storage or application logs.
-5. Technical SP1 publication does not perform OEM Validation deployment or Demonstration promotion approval.
+5. Technical SP1 publication does not perform OEM Validation deployment or Production promotion approval.
 
 ### No lifecycle authority
 
 <a id="req-brake-cloud-005"></a>
 
 - ID: `REQ-BRAKE-CLOUD-005`
-- Statement: The Brake Health Cloud product shall not approve, target, install, validate, promote or roll back Unit software and shall direct those actions and authoritative states to AosCloud through the OEM Software Delivery Dashboard.
+- Statement: The Brake Health Cloud product shall not approve, target, install, validate, promote or roll back Unit software and shall direct those actions and authoritative states to AosCloud through the OEM Software Delivery Dashboard. Its only direct AosCloud operational surface is the D4-014 role-routed `service-logs` list/create/read/download/delete contract for SP1-owned records; it shall keep no independent log state or raw archive.
 - Rationale: Function data and convenient candidate selection must not become an alternate lifecycle control plane.
 - Parent system requirements: [Team-owned release decisions (`SYS-REL-007`)](../system-requirements-and-traceability.md#sys-rel-007), [Cloud-authoritative delivery dashboard (`SYS-OBS-002`)](../system-requirements-and-traceability.md#sys-obs-002)
 - Architecture flow: [Cross-stage evidence (`AF-X-OBS`)](../../architecture/demo-scenario-architecture-flows.md#af-x-obs)
 - Components: [`CMP-BRAKE-BE`](../component-decomposition-and-interface-register.md#cmp-brake-be), [`CMP-BRAKE-DASH`](../component-decomposition-and-interface-register.md#cmp-brake-dash)
 - Interfaces: out-of-package [`IF-LC-005`](../component-decomposition-and-interface-register.md#if-lc-005), [`IF-LC-009`](../component-decomposition-and-interface-register.md#if-lc-009)
 - Verification levels: Unit / Component / Integration
-- Required evidence: API/permission inventory and negative tests proving lifecycle mutations are absent
+- Required evidence: API/permission inventory, lifecycle-mutation negatives, fixed Service-log allowlist and absence of independent log storage
 - State: D3 design-reviewed
 
 #### Acceptance criteria
@@ -430,19 +438,19 @@ components.
 <a id="req-brake-cloud-006"></a>
 
 - ID: `REQ-BRAKE-CLOUD-006`
-- Statement: The Backend shall durably accept, validate, deduplicate and reconstruct each v1 `BrakeTelemetryWindow` from bounded pre-trigger, active-braking and post-trigger chunks plus exactly one completion record without duplicating samples or completing across different event, Unit, service, contract or run identities.
+- Statement: The Backend shall consume the accepted [Brake Telemetry Window Contract](../../../contracts/brake-telemetry-window/README.md) and durably accept, validate, deduplicate and reconstruct each v1 `HARD_BRAKING_EPISODE_V1` from bounded PRE/ACTIVE/POST `WINDOW_CHUNK` messages plus exactly one `WINDOW_COMPLETION`, without duplicating samples or combining different event, Unit, Service-artifact or VDP-contract identities. It shall verify RFC-8785/SHA-256 content/window commitments, treat an identical `(eventId, chunkIndex)` plus digest as a retry, reject/quarantine the same key with different content, and never require a project `demoRunId`.
 - Rationale: Retry and reconnect must produce one truthful finite braking episode.
 - Parent system requirement: [Bounded v1 Brake Telemetry Window (`SYS-BHS-005`)](../system-requirements-and-traceability.md#sys-bhs-005)
 - Architecture flow: [Bounded braking-event acquisition (`AF-G2-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-g2-rt)
 - Components: [`CMP-BRAKE-BE`](../component-decomposition-and-interface-register.md#cmp-brake-be)
 - Interfaces: [`IF-FUNC-001`](../component-decomposition-and-interface-register.md#if-func-001)
 - Verification levels: Unit / Component / Contract / Integration
-- Required evidence: reconstruction suite covering reordered, duplicate, missing, conflicting and late messages
-- State: D3 design-reviewed
+- Required evidence: shared golden schemas/fixtures plus reconstruction suite covering ordered/reordered, duplicate, missing, conflicting, corrupt and late messages
+- State: D3 design-reviewed; D4-016.2 logical schema accepted and D4-017 local-transport/durable-ack protocol prepared as a review candidate; production backend authentication is out of scope
 
 #### Acceptance criteria
 
-1. Duplicate identical chunks and completion records are idempotently acknowledged.
+1. Duplicate identical chunks and completion records are idempotently handled; D4-017 freezes the exact durable acknowledgement response.
 2. Missing chunks keep the window incomplete; conflicting duplicates are rejected/quarantined.
 3. Completion is accepted only after all declared chunks and phase bounds are durable and consistent.
 
@@ -451,15 +459,15 @@ components.
 <a id="req-brake-cloud-007"></a>
 
 - ID: `REQ-BRAKE-CLOUD-007`
-- Statement: The Vehicle Data view shall present a v1 window as growing while accepted chunks arrive and completed only after the Backend accepts the completion record, with visible pre/active/post phases, service version, Unit role, original event time and delivery state.
+- Statement: The Vehicle Data view shall present a v1 window as growing while accepted chunks arrive and terminal only after the Backend accepts the completion record, with visible PRE/ACTIVE/POST samples, speed, longitudinal acceleration, accelerator/brake pedal positions, Service/VDP versions, Unit role, original event time, delivery state and one of the D4-016.1/.2 completion states. It shall label the event `HARD_BRAKING_EPISODE_V1` and never imply native ABS/AEB/EBS activation or brake-component health.
 - Rationale: The first service version visibly proves event-focused Cloud data collection.
 - Parent system requirements: [Bounded v1 Brake Telemetry Window (`SYS-BHS-005`)](../system-requirements-and-traceability.md#sys-bhs-005), [Authoritative demo surfaces (`SYS-OBS-001`)](../system-requirements-and-traceability.md#sys-obs-001)
 - Architecture flow: [First functional-service proof (`AF-G2-OB`)](../../architecture/demo-scenario-architecture-flows.md#af-g2-ob)
 - Components: [`CMP-BRAKE-BE`](../component-decomposition-and-interface-register.md#cmp-brake-be), [`CMP-BRAKE-DASH`](../component-decomposition-and-interface-register.md#cmp-brake-dash)
 - Interfaces: [`IF-FUNC-002`](../component-decomposition-and-interface-register.md#if-func-002)
 - Verification levels: Unit / Component / Integration / End-to-end
-- Required evidence: deterministic progress-state tests and VU/DU dashboard capture
-- State: D3 design-reviewed
+- Required evidence: deterministic progress-state tests and VU/PU dashboard capture
+- State: D3 design-reviewed; D4-017 factual v1 query/presentation contract prepared for review
 
 #### Acceptance criteria
 
@@ -480,7 +488,7 @@ components.
 - Interfaces: [`IF-FUNC-001`](../component-decomposition-and-interface-register.md#if-func-001), [`IF-FUNC-002`](../component-decomposition-and-interface-register.md#if-func-002)
 - Verification levels: Unit / Component / Contract / Integration / End-to-end
 - Required evidence: v2 fixtures, absence-of-normal-v1-window assertion and dashboard comparison
-- State: D3 design-reviewed
+- State: D3 design-reviewed; D4-017 v2 derived-message ingestion/presentation contract prepared for review
 
 #### Acceptance criteria
 
@@ -501,7 +509,7 @@ components.
 - Interfaces: [`IF-FUNC-001`](../component-decomposition-and-interface-register.md#if-func-001), [`IF-FUNC-002`](../component-decomposition-and-interface-register.md#if-func-002)
 - Verification levels: Unit / Component / Contract / Integration / End-to-end
 - Required evidence: correlation fixtures and paired Function/Engineering dashboard proof
-- State: D3 design-reviewed
+- State: D3 design-reviewed; D4-017 v3 advisory-fact ingestion/presentation contract prepared for review
 
 #### Acceptance criteria
 
@@ -522,7 +530,7 @@ components.
 - Interfaces: [`IF-FUNC-001`](../component-decomposition-and-interface-register.md#if-func-001), [`IF-FUNC-002`](../component-decomposition-and-interface-register.md#if-func-002)
 - Verification levels: Unit / Component / Integration / End-to-end
 - Required evidence: disconnect/queue/reconnect tests with duplicate and delayed delivery
-- State: D3 design-reviewed
+- State: D4-017 retry/durable-ack and D4-024 shared evidence design reviewed; implementation and live qualification remain open
 
 #### Acceptance criteria
 
@@ -536,39 +544,39 @@ components.
 
 - ID: `REQ-BRAKE-CLOUD-011`
 - Statement: Every accepted functional record and dashboard observation shall carry the bounded demo run, exact Unit ID and role, service/contract/model versions, source event identity and original/receipt times sufficient to correlate it with CARLA, Gateway and lifecycle evidence.
-- Rationale: Similar repeated braking scenarios must remain attributable across VU and DU phases.
+- Rationale: Similar repeated braking scenarios must remain attributable across VU and PU phases.
 - Parent system requirement: [Per-run correlation (`SYS-OBS-004`)](../system-requirements-and-traceability.md#sys-obs-004)
 - Architecture flow: [Cross-stage evidence (`AF-X-OBS`)](../../architecture/demo-scenario-architecture-flows.md#af-x-obs)
 - Components: [`CMP-BRAKE-BE`](../component-decomposition-and-interface-register.md#cmp-brake-be), [`CMP-BRAKE-DASH`](../component-decomposition-and-interface-register.md#cmp-brake-dash)
 - Interfaces: [`IF-FUNC-001`](../component-decomposition-and-interface-register.md#if-func-001), [`IF-FUNC-002`](../component-decomposition-and-interface-register.md#if-func-002)
 - Verification levels: Unit / Component / Contract / Integration
 - Required evidence: schema constraints, cross-Unit collision tests and retained correlation record
-- State: D3 design-reviewed
+- State: D3 design-reviewed; D4-017 common correlation fields and exact Unit-scoped queries prepared for review
 
 #### Acceptance criteria
 
 1. Records missing exact Unit/run binding are excluded from audience success views.
-2. VU and DU records with otherwise equal event identifiers cannot collide.
+2. VU and PU records with otherwise equal event identifiers cannot collide.
 3. Query filters can select one run, Unit role, service version and bounded time range exactly.
 
-### Honest VU/DU evidence
+### Honest VU/PU evidence
 
 <a id="req-brake-cloud-012"></a>
 
 - ID: `REQ-BRAKE-CLOUD-012`
-- Statement: The Function Dashboard shall present Validation and Demonstration observations as separate sequential live source bindings with distinct execution intervals and generation/frame ranges, and shall not imply that two CARLA vehicles were simultaneously connected when one source was reused. Telemetry replay is outside the first implementation.
+- Statement: The Function Dashboard shall present Validation and Production observations as separate sequential live source bindings with distinct execution intervals and generation/frame ranges, and shall not imply that two CARLA vehicles were simultaneously connected when one source was reused. Telemetry replay is outside the first implementation.
 - Rationale: The demo must show honest qualification/promotion evidence despite one visible simulated vehicle source.
 - Parent system requirements: [Exact source-to-Unit binding (`SYS-SRC-001`)](../system-requirements-and-traceability.md#sys-src-001), [Honest single-source presentation (`SYS-SRC-002`)](../system-requirements-and-traceability.md#sys-src-002)
 - Architecture flow: [One visible source, two Unit roles (`AF-X-SOURCE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-source)
 - Components: [`CMP-BRAKE-DASH`](../component-decomposition-and-interface-register.md#cmp-brake-dash)
 - Interfaces: [`IF-FUNC-002`](../component-decomposition-and-interface-register.md#if-func-002)
 - Verification levels: Unit / Component / Integration / End-to-end
-- Required evidence: role/source/generation labels and an ordered VU attach/run/detach, reset, then DU attach/run/detach demo record
+- Required evidence: role/source/generation labels and an ordered VU attach/run/detach, reset, then PU attach/run/detach demo record
 - State: D3 design-reviewed
 
 #### Acceptance criteria
 
-1. VU and DU observations show distinct Unit IDs and execution intervals.
+1. VU and PU observations show distinct Unit IDs and execution intervals.
 2. Reused live-source identity, deterministic reset boundary and new generation are labelled explicitly.
 3. Any overlap or ambiguous source binding blocks a comparative success claim.
 
@@ -577,7 +585,7 @@ components.
 <a id="req-brake-cloud-013"></a>
 
 - ID: `REQ-BRAKE-CLOUD-013`
-- Statement: The Backend shall provide a preview/count for an exact non-wildcard selector and then permanently delete all telemetry windows, assessments, events, advisory facts and dashboard-visible records for the current run's exact Validation and Demonstration Unit IDs and bounded run time. After successful R0 it shall retain no Brake Health demo-run history and shall leave authoritative AosCloud lifecycle/audit state untouched.
+- Statement: The Backend shall provide a preview/count for an exact non-wildcard selector and then permanently delete all telemetry windows, assessments, events, advisory facts and dashboard-visible records for the current run's exact Validation and Production Unit IDs and bounded run time. After successful R0 it shall retain no Brake Health demo-run history and shall leave authoritative AosCloud lifecycle/audit state untouched.
 - Rationale: The next demo needs an empty functional product view; authoritative lifecycle history belongs to AosCloud rather than to this demo backend.
 - Parent system requirement: [Clear functional run data (`SYS-RET-002`)](../system-requirements-and-traceability.md#sys-ret-002)
 - Architecture flow: [Controlled retirement (`AF-R0-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-r0-lc)
@@ -585,7 +593,7 @@ components.
 - Interfaces: [`IF-FUNC-002`](../component-decomposition-and-interface-register.md#if-func-002)
 - Verification levels: Unit / Component / Integration
 - Required evidence: exact preview, complete current-run deletion, empty-dashboard result, unrelated-data preservation and Cloud audit-boundary tests
-- State: D3 design-reviewed
+- State: D3 design-reviewed; D4-017 exact current-Unit reset preview/execute contract prepared for review
 
 #### Acceptance criteria
 
@@ -593,26 +601,27 @@ components.
 2. Data outside the exact selected Unit IDs and time window remains unchanged.
 3. The operation neither calls nor claims deletion of AosCloud audit/lifecycle records.
 
-### Failure and freshness visibility
+### Failure, freshness and Service-log visibility
 
 <a id="req-brake-cloud-014"></a>
 
 - ID: `REQ-BRAKE-CLOUD-014`
-- Statement: The Backend and Function Dashboard shall distinguish current, growing, complete, delayed, stale, duplicate, partial, quarantined, offline and failed states and shall never transform dependency failure, missing data or manually selected candidate state into a runtime success result.
+- Statement: The Backend and Function Dashboard shall distinguish current, growing, complete, delayed, stale, duplicate, partial, quarantined, offline and failed functional states and shall never transform dependency failure, missing data or manually selected candidate state into a runtime success result. A separate Service Logs view shall use only the role-routed `/api/v11/service-logs/` adapter under the SP1 operational context for Service Provider 1-owned service-instance/crash records; preserve documented Cloud states verbatim; sanitize allowlisted structured events; remove bounded temporary downloads; and show `Retention policy not exposed by current API` without keeping a second archive.
 - Rationale: A convincing demo must remain truthful during expected faults and transitions.
-- Parent system requirements: [Authoritative demo surfaces (`SYS-OBS-001`)](../system-requirements-and-traceability.md#sys-obs-001), [Separate on-board and Cloud chronology (`SYS-TIM-002`)](../system-requirements-and-traceability.md#sys-tim-002)
+- Parent system requirements: [Authoritative demo surfaces (`SYS-OBS-001`)](../system-requirements-and-traceability.md#sys-obs-001), [Operational log controls (`SYS-OBS-003`)](../system-requirements-and-traceability.md#sys-obs-003), [Separate on-board and Cloud chronology (`SYS-TIM-002`)](../system-requirements-and-traceability.md#sys-tim-002)
 - Architecture flow: [Service and backend isolation (`AF-G2-FR`)](../../architecture/demo-scenario-architecture-flows.md#af-g2-fr)
 - Components: [`CMP-BRAKE-BE`](../component-decomposition-and-interface-register.md#cmp-brake-be), [`CMP-BRAKE-DASH`](../component-decomposition-and-interface-register.md#cmp-brake-dash)
-- Interfaces: [`IF-FUNC-001`](../component-decomposition-and-interface-register.md#if-func-001), [`IF-FUNC-002`](../component-decomposition-and-interface-register.md#if-func-002)
+- Interfaces: [`IF-FUNC-001`](../component-decomposition-and-interface-register.md#if-func-001), [`IF-FUNC-002`](../component-decomposition-and-interface-register.md#if-func-002), [`IF-OBS-001`](../component-decomposition-and-interface-register.md#if-obs-001)
 - Verification levels: Unit / Component / Integration / End-to-end
-- Required evidence: fault-state matrix, state-transition tests and audience-visible negative path
-- State: D3 design-reviewed
+- Required evidence: functional fault-state matrix; SP1/SP2/system ownership negatives; Service-log create-array, verbatim-state, redaction, download/delete and online/offline/reconnect fixtures; audience-visible negative path
+- State: D3 design-reviewed; D4-014 design accepted, live log-lifecycle qualification remains required
 
 #### Acceptance criteria
 
 1. Every non-current state has an explicit reason and authoritative timestamp.
 2. Backend or subscription loss preserves the last factual state but marks it stale/offline.
 3. Candidate selection or publication alone cannot create a functional window, assessment, event or advisory fact.
+4. The Service Logs view cannot request or display Unit system logs or another Service Provider's records and never stores raw downloaded history.
 
 ### Mac-local ARM64 container deployment
 
@@ -627,7 +636,7 @@ components.
 - Interfaces: [`IF-FUNC-001`](../component-decomposition-and-interface-register.md#if-func-001), [`IF-FUNC-002`](../component-decomposition-and-interface-register.md#if-func-002)
 - Verification levels: Unit / Component / Integration
 - Required evidence: pinned ARM64 image digest, SBOM/license evidence, Compose/config inspection, health/restart test and volume persistence/clear test
-- State: D3 design-reviewed
+- State: D3 design-reviewed; D4-020 exact ARM64 container/port/volume baseline prepared for review
 
 #### Acceptance criteria
 
@@ -635,28 +644,28 @@ components.
 2. Application code and static dashboard are immutable in the image; SQLite/run data is stored only in the dedicated external volume.
 3. Health remains failed until schema initialization and required read/write checks succeed, and becomes failed on unrecoverable backend/storage state.
 4. Restart preserves accepted current-run data and explicit synchronization state until R0; the separate exact reset operation then satisfies `REQ-BRAKE-CLOUD-013` by deleting it completely.
-5. No signing key, client certificate, one-time token or personal absolute path exists in image layers, Compose files, health output or the functional-data volume.
+5. No signing key, publication credential, per-Unit backend client credential or personal absolute path exists in image layers, Compose files, health output or the functional-data volume.
 
 ### Local network and signing isolation
 
 <a id="req-brake-cloud-016"></a>
 
 - ID: `REQ-BRAKE-CLOUD-016`
-- Statement: The local deployment shall publish the browser/dashboard boundary only on host loopback, accept functional ingestion only from authenticated allowlisted service identities through the qualified QEMU guest-visible host route, reject LAN and unauthorized access, and delegate confirmed signing/publication only to the authenticated common native helper surface pre-bound to `brake-sp1`. The PKCS#12 shall remain outside the Docker image, configuration, container, volume and browser, and the helper shall reject caller-selected profile/path/URL input.
+- Statement: The local deployment shall publish the browser/dashboard boundary only on host loopback and accept first-demo functional messages only through the qualified isolated QEMU guest-visible host route without LAN exposure. It shall validate the Brake schema, bounds and current VU/PU correlation while explicitly treating reported `system_uid` as correlation rather than authenticated backend identity. Production functional-backend authentication and credential lifecycle belong to Function Team 1 and are outside the first-demo claim. Confirmed signing/publication shall still use only the authenticated common native helper surface pre-bound to `brake-sp1`; the PKCS#12 shall remain outside the Docker image, configuration, container, volume and browser, and the helper shall reject caller-selected profile/path/URL input.
 - Rationale: Hosting the Cloud product locally must not expose it whenever the Mac changes office, home or customer networks or weaken signing-key custody.
 - Parent system requirements: [Authoritative demo surfaces (`SYS-OBS-001`)](../system-requirements-and-traceability.md#sys-obs-001), [Per-run correlation (`SYS-OBS-004`)](../system-requirements-and-traceability.md#sys-obs-004), [role-bound protected publication (`SYS-REL-011`)](../system-requirements-and-traceability.md#sys-rel-011)
 - Architecture flows: [Common release flow (`AF-X-RELEASE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-release) and [one visible source, two Unit roles (`AF-X-SOURCE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-source)
 - Components: [`CMP-BRAKE-BE`](../component-decomposition-and-interface-register.md#cmp-brake-be), [`CMP-BRAKE-DASH`](../component-decomposition-and-interface-register.md#cmp-brake-dash), adjacent native Function Team 1 release helper
 - Interfaces: [`IF-FUNC-001`](../component-decomposition-and-interface-register.md#if-func-001), [`IF-FUNC-002`](../component-decomposition-and-interface-register.md#if-func-002), adjacent [`IF-LC-002`](../component-decomposition-and-interface-register.md#if-lc-002)
 - Verification levels: Unit / Component / Integration
-- Required evidence: listener inspection, LAN negative probe, VU/DU authenticated ingestion, unauthorized-client rejection, helper/profile/file-mode/exclusion inspection, caller-selector negatives and network-change recovery
-- State: D3 design-reviewed; D4-010.3 accepted
+- Required evidence: listener inspection, LAN negative probe, VU/PU local-route ingestion, malformed/cross-function schema rejection, explicit no-backend-security-claim label, helper/profile/file-mode/exclusion inspection, caller-selector negatives and network-change recovery
+- State: D3 design-reviewed; D4-010.3 accepted and D4-020 helper/local-route profile prepared for review; live two-VM route qualification remains required
 
 #### Acceptance criteria
 
 1. Browser/dashboard publication is bound to `127.0.0.1` and is not reachable through active Mac LAN addresses.
-2. The selected VU or DU reaches the ingestion endpoint through the qualified guest-visible host route without opening a wildcard/LAN listener.
-3. Missing, stale, malformed or unauthorized functional credentials are rejected and produce no accepted backend record.
+2. The selected VU or PU reaches the ingestion endpoint through the qualified guest-visible host route without opening a wildcard/LAN listener.
+3. Missing, stale, malformed, oversized or cross-function messages are rejected and produce no accepted backend record; `system_uid` is never displayed as cryptographically authenticated.
 4. The container contacts the native helper only through the accepted local authenticated boundary; the helper accepts no LAN request and returns no private key, PKCS#12, credential path or raw tool output.
 5. Docker, route or helper loss becomes a visible blocked/offline state and recovers without relabelling stale data as current.
 
@@ -667,17 +676,17 @@ components.
 | <a id="ut-brake-cloud-001"></a>`UT-BRAKE-CLOUD-001` — View/authority separation | [REQ-BRAKE-CLOUD-001](#req-brake-cloud-001), [REQ-BRAKE-CLOUD-005](#req-brake-cloud-005) | Allowed data sources/actions and prohibited lifecycle mutations | Backend, pipeline and Cloud doubles | Correct labels/routes; no approval/desired-state store or mutation | Planned `brake-health-cloud` unit suite | Draft |
 | <a id="ut-brake-cloud-002"></a>`UT-BRAKE-CLOUD-002` — Candidate catalogue integrity | [REQ-BRAKE-CLOUD-002](#req-brake-cloud-002), [REQ-BRAKE-CLOUD-003](#req-brake-cloud-003) | Valid v1-v3, missing field, changed bytes, invalid permission/quota/range | Immutable catalogue fixtures | Enable only exact valid candidates; no build/mutation path | Planned catalogue suite | Draft |
 | <a id="ut-brake-cloud-003"></a>`UT-BRAKE-CLOUD-003` — Explicit release action | [REQ-BRAKE-CLOUD-004](#req-brake-cloud-004) | Confirm, cancel, success, failure, timeout, uncertain result, wrong profile/candidate/type/path/URL and retry attempt | D4-010.3 helper/profile fake, Cloud result fake and deterministic clock | Only `brake-sp1` plus an exact catalogue candidate passes; no key/PKCS#12 exposure or blind retry; exact resulting digest; `PUBLISHED` only after Cloud re-read | Planned release-workspace suite | Draft |
-| <a id="ut-brake-cloud-004"></a>`UT-BRAKE-CLOUD-004` — v1 reconstruction | [REQ-BRAKE-CLOUD-006](#req-brake-cloud-006) | Ordered/reordered, duplicate, missing, conflicting, cross-run and completion cases | Message fixtures and transactional store fake | One coherent window; durable ack; quarantine conflicts | Planned backend suite | Draft |
+| <a id="ut-brake-cloud-004"></a>`UT-BRAKE-CLOUD-004` — v1 reconstruction | [REQ-BRAKE-CLOUD-006](#req-brake-cloud-006) | Ordered/reordered, duplicate, missing, conflicting, corrupt, cross-Unit/Service/VDP and completion cases | Shared D4-016.2 fixtures and transactional store fake | One coherent digest-verified window; no premature completion; idempotent retry; quarantine conflicts; exact D4-017 durable ack review candidate | Planned backend suite | D4-016.2 contract accepted; D4-017 ack review candidate prepared |
 | <a id="ut-brake-cloud-005"></a>`UT-BRAKE-CLOUD-005` — v1 presentation states | [REQ-BRAKE-CLOUD-007](#req-brake-cloud-007) | Empty, growing, delayed, complete, stale and disconnected | Backend-query fixtures | Exact phases/counts/version/role/times and no premature complete | Planned dashboard state suite | Draft |
 | <a id="ut-brake-cloud-006"></a>`UT-BRAKE-CLOUD-006` — v2 derived product | [REQ-BRAKE-CLOUD-008](#req-brake-cloud-008) | Assessment/event normal, duplicate, invalid provenance/model and forbidden normal-v1 presentation | v2 contract fixtures | Idempotent result; visible provenance; no v1 stream claim | Planned backend/dashboard suite | Draft |
 | <a id="ut-brake-cloud-007"></a>`UT-BRAKE-CLOUD-007` — v3 advisory fact | [REQ-BRAKE-CLOUD-009](#req-brake-cloud-009) | Correlated, missing, conflicting and duplicate advisory facts | v3 fixtures | Correct association and explicit no-driver/Gateway authority label | Planned backend/dashboard suite | Draft |
 | <a id="ut-brake-cloud-008"></a>`UT-BRAKE-CLOUD-008` — Offline convergence | [REQ-BRAKE-CLOUD-010](#req-brake-cloud-010) | Disconnect, delayed/out-of-order, duplicate reconnect, restart and retention expiry | Transport/store fake and clocks | Same identity converges; original/receipt time separation; visible failures | Planned backend suite | Draft |
-| <a id="ut-brake-cloud-009"></a>`UT-BRAKE-CLOUD-009` — Correlation isolation | [REQ-BRAKE-CLOUD-011](#req-brake-cloud-011) | Missing binding, equal IDs on VU/DU, wrong role and range filters | Run/Unit/source fixtures | No collision or unassigned success; exact query scope | Planned backend suite | Draft |
-| <a id="ut-brake-cloud-010"></a>`UT-BRAKE-CLOUD-010` — Honest source presentation | [REQ-BRAKE-CLOUD-012](#req-brake-cloud-012) | Sequential live VU/reset/DU, overlap, uncertain detach/reset and ambiguous binding | Source/run evidence fixtures | Correct labels and generation boundaries; overlap/ambiguity blocks comparison | Planned dashboard state suite | Draft |
+| <a id="ut-brake-cloud-009"></a>`UT-BRAKE-CLOUD-009` — Correlation isolation | [REQ-BRAKE-CLOUD-011](#req-brake-cloud-011) | Missing binding, equal IDs on VU/PU, wrong role and range filters | Run/Unit/source fixtures | No collision or unassigned success; exact query scope | Planned backend suite | Draft |
+| <a id="ut-brake-cloud-010"></a>`UT-BRAKE-CLOUD-010` — Honest source presentation | [REQ-BRAKE-CLOUD-012](#req-brake-cloud-012) | Sequential live VU/reset/PU, overlap, uncertain detach/reset and ambiguous binding | Source/run evidence fixtures | Correct labels and generation boundaries; overlap/ambiguity blocks comparison | Planned dashboard state suite | Draft |
 | <a id="ut-brake-cloud-011"></a>`UT-BRAKE-CLOUD-011` — Exact run deletion | [REQ-BRAKE-CLOUD-013](#req-brake-cloud-013) | Preview, exact delete, empty/wildcard selector, incomplete deletion and unrelated data | Multi-run store fixture | All selected records removed, dashboard empty, unrelated rows unchanged and no Cloud call | Planned backend suite | Draft |
-| <a id="ut-brake-cloud-012"></a>`UT-BRAKE-CLOUD-012` — Failure/freshness state machine | [REQ-BRAKE-CLOUD-014](#req-brake-cloud-014) | Every accepted state and transition, malformed input, dependency loss/recovery | Deterministic clocks and dependency fakes | Explicit reason/time; no fabricated current/success state | Planned backend/dashboard suite | Draft |
+| <a id="ut-brake-cloud-012"></a>`UT-BRAKE-CLOUD-012` — Failure/freshness and Service-log state machine | [REQ-BRAKE-CLOUD-014](#req-brake-cloud-014) | Every functional state plus SP1-owned service/crash logs, cross-owner/system negatives, documented log states, array response, redaction, download/delete and offline/reconnect | Deterministic clocks, dependency and role-scoped log API fakes | Explicit reason/time; exact endpoint/owner; no fabricated state, browser credential, secret, second archive or retention-duration claim | Planned backend/dashboard suite | Draft |
 | <a id="ut-brake-cloud-013"></a>`UT-BRAKE-CLOUD-013` — Container manifest and persistence policy | [REQ-BRAKE-CLOUD-015](#req-brake-cloud-015) | ARM64 platform, immutable image, health, volume, secret and path policy | Parsed Docker/Compose fixtures and in-memory storage | Correct platform/bind/volume; reject embedded secrets, writable app paths and personal paths | Planned packaging suite | Draft |
-| <a id="ut-brake-cloud-014"></a>`UT-BRAKE-CLOUD-014` — Local boundary policy | [REQ-BRAKE-CLOUD-016](#req-brake-cloud-016) | Loopback, authenticated ingestion, helper/profile identity, PKCS#12 mode/exclusion, unauthorized/LAN and dependency transitions | Listener/identity/helper/profile/filesystem/network doubles | Allow only accepted local/Unit paths and fixed `brake-sp1`; no LAN, caller selector or key/PKCS#12 exposure; factual recovery state | Planned deployment-policy suite | Draft |
+| <a id="ut-brake-cloud-014"></a>`UT-BRAKE-CLOUD-014` — Local boundary policy | [REQ-BRAKE-CLOUD-016](#req-brake-cloud-016) | Loopback, isolated local ingestion, schema/function separation, correlation-only `system_uid`, helper/profile identity, PKCS#12 exclusion, LAN and dependency transitions | Listener/message/helper/profile/filesystem/network doubles | Accept valid VU/PU Brake messages only on the local route; reject malformed/cross-function input; claim no backend client authentication; enforce fixed `brake-sp1`, no LAN/caller selector/key exposure and factual recovery | Planned deployment-policy suite | Draft |
 
 Every obligation is deterministic, blocking and runnable without personal
 credentials, network access or a real Cloud/VM/simulator. Test output shall not
@@ -687,7 +696,7 @@ contain keys, tokens, raw certificates or unrestricted telemetry dumps.
 
 | Requirement | Unit obligations | Component proof | Contract proof | Integration proof | End-to-end proof |
 | --- | --- | --- | --- | --- | --- |
-| [REQ-BRAKE-CLOUD-001](#req-brake-cloud-001) | [UT-001](#ut-brake-cloud-001) | Required; two-view route/authority suite | N/A; internal presentation boundary | Required; real backend and release-helper boundary | Required; `AF-X-OBS` |
+| [REQ-BRAKE-CLOUD-001](#req-brake-cloud-001) | [UT-001](#ut-brake-cloud-001) | Required; three-view route/authority suite | N/A; internal presentation boundary | Required; real backend, log and release-helper boundaries | Required; `AF-X-OBS` |
 | [REQ-BRAKE-CLOUD-002](#req-brake-cloud-002) | [UT-002](#ut-brake-cloud-002) | Required; catalogue load/inspection | Required; candidate manifest | Required; prepared v1-v3 artifacts | N/A; implementation readiness proof |
 | [REQ-BRAKE-CLOUD-003](#req-brake-cloud-003) | [UT-002](#ut-brake-cloud-002) | Required; metadata UI | Required; service metadata/catalogue | N/A; no live system needed | N/A; D3 metadata proof |
 | [REQ-BRAKE-CLOUD-004](#req-brake-cloud-004) | [UT-003](#ut-brake-cloud-003) | Required; release-helper client | Required; D4-010.3 profile/helper conformance | Required; test signing/publication and Cloud reconciliation | Required; G2/G3/G4 exact digest |
@@ -697,12 +706,12 @@ contain keys, tokens, raw certificates or unrestricted telemetry dumps.
 | [REQ-BRAKE-CLOUD-008](#req-brake-cloud-008) | [UT-006](#ut-brake-cloud-006) | Required; derived view | Required; v2 fixtures | Required; Service v2 | Required; `AF-G3-RT/OB` |
 | [REQ-BRAKE-CLOUD-009](#req-brake-cloud-009) | [UT-007](#ut-brake-cloud-007) | Required; advisory fact view | Required; v3 fixtures | Required; Service v3 plus Engineering evidence | Required; `AF-G4-RT/OB` |
 | [REQ-BRAKE-CLOUD-010](#req-brake-cloud-010) | [UT-008](#ut-brake-cloud-008) | Required; packaged restart/convergence | N/A; timing/retry is integration behavior | Required; functional-backend disconnect/reconnect | Required; `AF-X-OFFLINE` vehicle fault |
-| [REQ-BRAKE-CLOUD-011](#req-brake-cloud-011) | [UT-009](#ut-brake-cloud-009) | Required; query/correlation | Required; identity fields | Required; VU/DU records | N/A; supports cross-stage evidence |
+| [REQ-BRAKE-CLOUD-011](#req-brake-cloud-011) | [UT-009](#ut-brake-cloud-009) | Required; query/correlation | Required; identity fields | Required; VU/PU records | N/A; supports cross-stage evidence |
 | [REQ-BRAKE-CLOUD-012](#req-brake-cloud-012) | [UT-010](#ut-brake-cloud-010) | Required; source-label state | N/A; presentation rule | Required; sequential live binding | Required; `AF-X-SOURCE` |
 | [REQ-BRAKE-CLOUD-013](#req-brake-cloud-013) | [UT-011](#ut-brake-cloud-011) | Required; retention API | N/A; package-local operation | Required; next-run reset | N/A; operational acceptance |
-| [REQ-BRAKE-CLOUD-014](#req-brake-cloud-014) | [UT-012](#ut-brake-cloud-012) | Required; full state matrix | N/A; statuses carried by proven APIs | Required; dependency faults | Required; G2/G4 negative paths |
+| [REQ-BRAKE-CLOUD-014](#req-brake-cloud-014) | [UT-012](#ut-brake-cloud-012) | Required; full functional/log state matrix | Required; D4-014 Service-log role/API fixtures | Required; dependency faults plus live SP1 ownership/lifecycle qualification | Required; G2/G4 negative paths and selected log evidence |
 | [REQ-BRAKE-CLOUD-015](#req-brake-cloud-015) | [UT-013](#ut-brake-cloud-013) | Required; real ARM64 container/health/volume | N/A; packaging boundary | Required; Docker Desktop restart and reset | N/A; host deployment qualification |
-| [REQ-BRAKE-CLOUD-016](#req-brake-cloud-016) | [UT-014](#ut-brake-cloud-014) | Required; listener/helper boundary | Required; ingestion/helper authentication | Required; real VU/DU route and LAN negative probe | Not part of the first-demo connectivity scenario |
+| [REQ-BRAKE-CLOUD-016](#req-brake-cloud-016) | [UT-014](#ut-brake-cloud-014) | Required; listener/helper boundary | Required; ingestion/helper authentication | Required; real VU/PU route and LAN negative probe | Not part of the first-demo connectivity scenario |
 
 ## Cross-Cutting Constraints
 
@@ -713,7 +722,7 @@ contain keys, tokens, raw certificates or unrestricted telemetry dumps.
 | Resource bounds | [Bounded v1 window (`SYS-BHS-005`)](../system-requirements-and-traceability.md#sys-bhs-005), [Offline continuity (`SYS-BHS-004`)](../system-requirements-and-traceability.md#sys-bhs-004) | Message, window, page, queue, retention and upload bounds frozen at D4 | Unit, load, integration |
 | Chronology | [Separate on-board and Cloud chronology (`SYS-TIM-002`)](../system-requirements-and-traceability.md#sys-tim-002) | Preserve event/receipt/sync times and never present backend delivery as part of the local advisory path | Unit, analysis, end-to-end |
 | Offline and recovery | [REQ-BRAKE-CLOUD-010](#req-brake-cloud-010) | Idempotent reconnect and explicit delayed/offline state | Unit, integration, end-to-end |
-| Observability | [REQ-BRAKE-CLOUD-001](#req-brake-cloud-001), [REQ-BRAKE-CLOUD-014](#req-brake-cloud-014) | Backend is authoritative only for functional data; every non-current state is visible | Component, integration, demo |
+| Observability | [REQ-BRAKE-CLOUD-001](#req-brake-cloud-001), [REQ-BRAKE-CLOUD-014](#req-brake-cloud-014) | Backend is authoritative only for functional data; AosCloud is authoritative for SP1 Service-log state/file while retained; every non-current state is visible | Component, integration, demo |
 | Local hosting | [REQ-BRAKE-CLOUD-015](#req-brake-cloud-015), [REQ-BRAKE-CLOUD-016](#req-brake-cloud-016) | Native ARM64 container, persistent volume, loopback UI, authenticated VM route and native D4-010.3 `brake-sp1` helper boundary | Packaging, component, contract, integration |
 
 ## D3 Acceptance Record
@@ -729,14 +738,14 @@ Unit-approval authority.
 
 Version 0.1 was accepted for D3 after reviewers confirmed that:
 
-1. the two-view UI decision is accepted without creating a new lifecycle authority;
+1. the three-view UI decision is accepted without creating a new lifecycle authority or log archive;
 2. Component Register 1.0 includes the prepared candidate catalogue and
    delegated presenter controls within `CMP-BRAKE-DASH` and
    `CR-BRAKE-CLOUD` without creating a new lifecycle authority;
 3. all sixteen requirements and fourteen stable unit-test obligations are accepted;
 4. the split between protected Function Team signing/publication and OEM
    Software Delivery approval is accepted;
-5. the v1/v2/v3 dashboard products and same-digest VU-to-DU rule are accepted;
+5. the v1/v2/v3 dashboard products and same-digest VU-to-PU rule are accepted;
 6. exact D4 schema, retention, authentication and performance decisions are
    assigned without being misrepresented as implemented behavior;
 7. the documentation gate passes.
@@ -746,9 +755,14 @@ artifact, call AosCloud or mutate either Unit.
 
 ## Open Issues for D4
 
+The D4-017 API/storage/reset and D4-020 hosting/helper/route packages now
+provide exact review candidates for the former undefined design choices. Rows
+below that concern those choices are retained as review or live-qualification
+gates; they no longer mean that no design has been proposed.
+
 | Issue | Impact | Owner | Decision gate |
 | --- | --- | --- | --- |
-| Exact `IF-FUNC-001` schemas, message/field/size bounds and authentication | Backend, service and contract tests | Function Team 1 | Before implementation starts |
+| D4-017 `IF-FUNC-001` local transport, endpoint discovery, retry/backoff and durable acknowledgement | D4-016.2 has frozen logical schemas/field/size/digest bounds; delivery and backend completion still block integration; production authentication is intentionally out of scope | Function Team 1 | Before transport implementation starts |
 | Exact v1 pre/active/post display and chart fields | Dashboard fixtures and presentation | Function Team 1 | Before UI implementation |
 | Backend technology, storage engine, API transport and deployment environment | Repository scaffold and component tests | Function Team 1 | D4 technical design |
 | Exact common-helper request/result transport, D4-010.3 `brake-sp1` configuration and authoritative Cloud reconciliation lookup | Release Workspace integration; accepted profile/custody semantics are closed | Function Team 1 security/release owner + Demo Solution | Before signing implementation |
@@ -756,7 +770,7 @@ artifact, call AosCloud or mutate either Unit.
 | Exact QEMU guest-visible host to loopback-published Docker route | Functional ingestion without LAN exposure | `CR-DEMO` plus Function Team 1 | D4 network experiment before implementation is accepted |
 | Exact SQLite schema, Docker volume name/location, backup and migration policy | Restart, reset and service-version evolution | Function Team 1 | D4 storage design |
 | Exact current-run deletion selector and completeness proof | Storage cleanup and R0 | Function Team 1 plus Demo owner | Before end-to-end qualification |
-| Exact sequential live VU attach/detach, deterministic reset/new generation and DU attach/detach | VU/DU evidence labels and orchestration | `CR-DEMO` | Before source-orchestrator implementation |
+| Exact sequential live VU attach/detach, deterministic reset/new generation and PU attach/detach | VU/PU evidence labels and orchestration | `CR-DEMO` | Before source-orchestrator implementation |
 | Native AosCloud service-to-VDP admission | Negative dependency scenario | AosEdge platform | Deferred until an official implementing release is available |
 
 ## Change Rules

@@ -243,7 +243,7 @@ The rename was approved and completed in Phase 3.
 | Path or group | Action | Reason or guard |
 | --- | --- | --- |
 | All tracked architecture, demo, planning, operations, qualification, locks, manifests, scripts, and tests | Keep | Correct system-level owner and reproducibility boundary. |
-| `.local/aosvm-main-overlay.qcow2` and Main provisioning lock | Keep and repair first | Unique demonstration Unit identity and persistent state. |
+| `.local/aosvm-main-overlay.qcow2` and Main provisioning lock | Keep and repair first | Unique production Unit identity and persistent state. |
 | `.local/r6-1-validation/` identity overlay and lock | Keep and repair first | Unique validation Unit identity and persistent state. |
 | `.cache/aosvm/v6.1.0/` | Keep | Official base image backing both identity overlays. Replaceable, but currently required. |
 | `.local/r6-1-qualification/store-workdirs.qcow2` | Delete with the obsolete `store` fixture after evidence is retained | Disposable 2 GiB qualification data disk; it is not the Yocto builder. |

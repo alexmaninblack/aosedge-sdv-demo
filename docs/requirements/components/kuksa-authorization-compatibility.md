@@ -12,7 +12,7 @@
 - Scenario input: [Demo Scenarios 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - Flow input: [Architecture Flows 2.0](../../architecture/demo-scenario-architecture-flows.md)
 - System requirements input: [System Requirements 2.0](../system-requirements-and-traceability.md)
-- Proposed authority: [ADR 0013](../../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md)
+- Accepted authority: [ADR 0013](../../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md)
 - Implementation, build, signing, Cloud, or Unit mutation authorized: no
 
 ## Purpose and Boundary
@@ -137,7 +137,7 @@ D4-010.1 lifecycle for the current compatibility helper:
 - reboot recreates the volatile verifier from the existing Unit key and starts
   the helper with empty state; KUKSA restart is required to load a verifier;
   and
-- VU and DU fingerprints differ, cross-Unit JWTs fail, live rotation is
+- VU and PU fingerprints differ, cross-Unit JWTs fail, live rotation is
   deferred, and R0 retires the key by discarding the provisioned overlay after
   Cloud reconciliation.
 
@@ -395,7 +395,7 @@ integration and end-to-end obligations.
 | Component | Process/package isolation, private credential location, startup/readiness, empty restart and teardown |
 | Contract | `IF-AUTH-007`–`010` schemas, errors, pinned JWT fixtures, permissions and lifecycle cases |
 | Integration | Real Service Manager/IAM, per-Unit signer/verifier, unmodified KUKSA, two independent SOTA instances and direct Service access |
-| End-to-end | VU before DU, restart/reboot, stop/removal, targeted vehicle offline operation, R0 destruction and fresh next-run authority |
+| End-to-end | VU before PU, restart/reboot, stop/removal, targeted vehicle offline operation, R0 destruction and fresh next-run authority |
 
 ## Open D4 Gates
 

@@ -1,0 +1,118 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "contractId": "aosedge-demo-brake-health-model",
+  "contractVersion": "1.0.0",
+  "lifecycleState": "ACCEPTED",
+  "decision": "D4-016.3",
+  "model": {
+    "id": "brake-condition-demo-v1",
+    "version": "1.0.0",
+    "profile": "DEMO_PRECONDITIONED",
+    "provenance": "DEMO_SYNTHETIC",
+    "networkInferenceAllowed": false,
+    "liveTrainingAllowed": false,
+    "productionDiagnosticClaimAllowed": false,
+    "remainingUsefulLifeClaimAllowed": false,
+    "safetyFunctionClaimAllowed": false
+  },
+  "input": {
+    "compatibleVdpVersions": ["VDP_V2", "VDP_V3"],
+    "sourceEventType": "HARD_BRAKING_EPISODE_V1",
+    "retainedCadenceHz": 10,
+    "freshnessTimeoutMs": 250,
+    "paths": [
+      "Vehicle.Speed",
+      "Vehicle.Acceleration.Longitudinal",
+      "Vehicle.Chassis.Brake.PedalPosition",
+      "Vehicle.Chassis.Axle.Row1.SteeringAngle",
+      "Vehicle.Chassis.Axle.Row1.Wheel.Left.AngularSpeed",
+      "Vehicle.Chassis.Axle.Row1.Wheel.Right.AngularSpeed",
+      "Vehicle.Chassis.Axle.Row2.Wheel.Left.AngularSpeed",
+      "Vehicle.Chassis.Axle.Row2.Wheel.Right.AngularSpeed",
+      "Vehicle.Chassis.Axle.Row1.Wheel.Left.Speed",
+      "Vehicle.Chassis.Axle.Row1.Wheel.Right.Speed",
+      "Vehicle.Chassis.Axle.Row2.Wheel.Left.Speed",
+      "Vehicle.Chassis.Axle.Row2.Wheel.Right.Speed"
+    ],
+    "excludedVdpV2Paths": [
+      "Vehicle.Acceleration.Lateral",
+      "Vehicle.Acceleration.Vertical",
+      "Vehicle.Chassis.Accelerator.PedalPosition"
+    ]
+  },
+  "eligibility": {
+    "acceptedTerminalStates": ["COMPLETE"],
+    "minimumActiveSamples": 5,
+    "minimumStraightActiveSamples": 5,
+    "maximumAbsoluteSteeringAngleDegrees": 5,
+    "minimumStraightSampleSpeedKph": 10,
+    "invalidResultFact": "ASSESSMENT_SKIPPED_INPUT_QUALITY",
+    "invalidInputAdvancesState": false,
+    "invalidInputProducesHealthyResult": false
+  },
+  "features": {
+    "arithmetic": "INTEGER_BASIS_POINTS_ROUND_HALF_UP",
+    "peakDeceleration": {"normalizationMps2": 8, "weightPercent": 30},
+    "activeDuration": {"normalizationSeconds": 5, "weightPercent": 20},
+    "speedReduction": {"normalizationKph": 40, "weightPercent": 15},
+    "meanBrakeEffort": {"baselinePercent": 50, "normalizationSpanPercent": 50, "weightPercent": 15},
+    "wheelDispersion": {
+      "normalizationRatio": 0.15,
+      "minimumLinearDenominatorKph": 5,
+      "minimumAngularDenominatorDegreesPerSecond": 30,
+      "useAbsoluteAngularSpeed": true,
+      "aggregation": "MAX_OF_LINEAR_AND_ANGULAR_MAXIMA",
+      "weightPercent": 20
+    },
+    "minimumQualifiedEpisodeLoadBps": 5000
+  },
+  "condition": {
+    "initialWearIndex": 54,
+    "initialConditionScore": 46,
+    "initialBand": "MONITOR",
+    "baseWearIncrement": 4,
+    "variableWearIncrement": 6,
+    "maximumWearIndex": 100,
+    "conditionScoreFormula": "100_MINUS_WEAR_INDEX",
+    "monotonicWear": true,
+    "bands": [
+      {"id": "GOOD", "minimumScore": 70, "maximumScore": 100},
+      {"id": "MONITOR", "minimumScore": 40, "maximumScore": 69},
+      {"id": "INSPECTION_RECOMMENDED", "minimumScore": 0, "maximumScore": 39}
+    ]
+  },
+  "messages": {
+    "assessmentType": "BRAKE_HEALTH_ASSESSMENT",
+    "eventType": "BRAKE_CONDITION_BAND_CHANGED",
+    "encoding": "UTF-8_JSON",
+    "canonicalization": "RFC8785",
+    "digest": "SHA-256",
+    "maximumCanonicalMessageBytes": 16384,
+    "assessmentIdNamespaceUuid": "7a879c3c-0f87-5b08-9d41-f49ab9d4e052",
+    "assessmentIdNameFields": ["unitSystemUid", "sourceEventId", "modelConfigSha256"],
+    "eventIdNamespaceUuid": "b5942c7e-8767-5e34-a432-c5fc7b606a49",
+    "eventIdNameFields": ["assessmentId", "eventType", "currentBand"],
+    "sameKeySameDigestBehavior": "IDEMPOTENT_RETRY",
+    "sameKeyDifferentDigestBehavior": "CONFLICT_QUARANTINE",
+    "normalV1WindowUploadAllowed": false
+  },
+  "state": {
+    "root": "/storage/brake-health/model-state/v1",
+    "outboxRoot": "/storage/brake-health/v2/outbox",
+    "stateFile": "state.json",
+    "maximumStateBytes": 65536,
+    "recentSourceEventLedgerEntries": 64,
+    "maximumUnacknowledgedMessages": 64,
+    "maximumOutboxBytes": 1048576,
+    "writeProtocol": "JOURNAL_THEN_ATOMIC_STATE_REPLACE_THEN_COMMIT_MARKER",
+    "directoryMode": "0700",
+    "fileMode": "0600",
+    "databaseRuntimeRequired": false,
+    "sourceEventMayAdvanceStateOnce": true,
+    "overflowFact": "DERIVED_OUTBOX_FULL",
+    "overflowStopsLocalAssessment": false,
+    "conflictReadiness": "NOT_READY_STATE",
+    "r0RemovalOwner": "DISPOSABLE_UNIT_OVERLAY"
+  }
+}

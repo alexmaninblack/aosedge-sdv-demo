@@ -1,0 +1,200 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "contractId": "aosedge-demo-brake-cloud-api",
+  "contractVersion": "1.0.0",
+  "lifecycleState": "ACCEPTED",
+  "decision": "D4-017",
+  "transport": {
+    "protocol": "HTTP_1_1",
+    "scope": "LOCAL_ISOLATED_DEMO_ROUTE",
+    "authentication": "OUT_OF_SCOPE_FOR_FIRST_DEMO",
+    "applicationLayerAuthenticationImplemented": false,
+    "productionAuthenticationOwner": "FUNCTION_TEAM_1",
+    "productionBackendSecurityClaimed": false,
+    "clientCredentialProvisioningRequired": false,
+    "lanExposureAllowed": false,
+    "publicNetworkExposureAllowed": false,
+    "networkIsolationQualificationDecision": "D4-020",
+    "messageSystemUidUsage": "CORRELATION_ONLY_NOT_AUTHENTICATED_IDENTITY",
+    "endpoint": "/api/v1/brake/messages",
+    "method": "POST",
+    "logicalMessagesPerRequest": 1,
+    "requestContentType": "application/json",
+    "optionalContentEncoding": "gzip",
+    "compressionChangesLogicalDigest": false,
+    "maximumWireRequestBytes": 131072,
+    "requestTimeoutSeconds": 10,
+    "deliveryExecution": "ASYNCHRONOUS_FROM_BOUNDED_PERSISTENT_OUTBOX",
+    "deliveryMayBlockKuksaConsumption": false,
+    "deliveryMayBlockLocalAnalytics": false,
+    "deliveryMayBlockLocalAdvisory": false
+  },
+  "messageKinds": [
+    {
+      "messageType": "WINDOW_CHUNK",
+      "idempotencyKeyFields": ["unitSystemUid", "messageType", "eventId", "content.chunkIndex"],
+      "maximumCanonicalBytes": 65536
+    },
+    {
+      "messageType": "WINDOW_COMPLETION",
+      "idempotencyKeyFields": ["unitSystemUid", "messageType", "eventId"],
+      "maximumCanonicalBytes": 65536
+    },
+    {
+      "messageType": "BRAKE_HEALTH_ASSESSMENT",
+      "idempotencyKeyFields": ["unitSystemUid", "messageType", "assessmentId"],
+      "maximumCanonicalBytes": 16384
+    },
+    {
+      "messageType": "BRAKE_HEALTH_EVENT",
+      "requiredEventType": "BRAKE_CONDITION_BAND_CHANGED",
+      "idempotencyKeyFields": ["unitSystemUid", "messageType", "eventId"],
+      "maximumCanonicalBytes": 16384
+    },
+    {
+      "messageType": "BRAKE_ADVISORY_FACT",
+      "idempotencyKeyFields": ["unitSystemUid", "messageType", "requestId", "gatewayState"],
+      "maximumCanonicalBytes": 16384
+    }
+  ],
+  "acknowledgement": {
+    "successStates": ["DURABLE_ACCEPTED", "DUPLICATE_ACCEPTED"],
+    "deleteLocalOnlyAfterMatchingDurableAck": true,
+    "messageKeyDigest": "SHA256_OF_RFC8785_IDEMPOTENCY_KEY_ARRAY",
+    "acknowledgementKeyField": "messageKeySha256",
+    "duplicateReusesOriginalReceiptIdAndReceivedAt": true,
+    "windowLocalDeleteRule": "ALL_EXPECTED_CHUNKS_AND_SINGLE_COMPLETION_HAVE_MATCHING_DURABLE_ACK",
+    "conflictLocalDisposition": "DELIVERY_CONFLICT_RETAIN_NO_AUTOMATIC_RETRY",
+    "businessMeaning": "EXACT_LOGICAL_MESSAGE_DURABLY_STORED_ONLY",
+    "gatewayApplicationAcknowledged": false,
+    "driverReceiptAcknowledged": false,
+    "oemAcceptanceAcknowledged": false,
+    "sameKeySameDigestHttpStatus": 200,
+    "newDurableMessageHttpStatus": 201,
+    "sameKeyDifferentDigestHttpStatus": 409,
+    "invalidMessageHttpStatus": 422,
+    "tooLargeHttpStatus": 413,
+    "temporarilyUnavailableHttpStatus": 503,
+    "responseBeforeTransactionCommitAllowed": false
+  },
+  "retry": {
+    "retryableHttpStatuses": [408, 425, 429, 500, 502, 503, 504],
+    "ambiguousOutcomeReusesIdenticalLogicalBytes": true,
+    "initialBackoffSeconds": 1,
+    "multiplier": 2,
+    "maximumBackoffSeconds": 30,
+    "jitterPercent": 20,
+    "serverRetryAfterMayIncreaseDelay": true,
+    "retryDeletesOrRewritesSourceTimestamp": false
+  },
+  "persistence": {
+    "engine": "SQLITE",
+    "runtimeAndMigrationsLocation": "IMMUTABLE_BRAKE_BACKEND_CONTAINER_IMAGE",
+    "databasePath": "/data/brake-health.sqlite",
+    "databaseStorage": "DEDICATED_EXTERNAL_DOCKER_PERSISTENT_VOLUME",
+    "dashboardDirectDatabaseAccessAllowed": false,
+    "journalMode": "WAL",
+    "synchronous": "FULL",
+    "foreignKeys": true,
+    "busyTimeoutMilliseconds": 5000,
+    "writeConcurrency": "SINGLE_SERIALIZED_WRITER",
+    "ingestionTransactionIncludes": ["IDEMPOTENCY_CHECK", "CANONICAL_MESSAGE_INSERT", "TYPED_PROJECTION_UPDATE", "DURABLE_RECEIPT_INSERT"],
+    "schemaVersionTable": "schema_version",
+    "tables": ["messages", "window_chunks", "window_completions", "assessments", "condition_events", "advisory_facts", "quarantine"],
+    "migrationPolicy": "FORWARD_ONLY_PACKAGED_TRANSACTIONAL_BEFORE_READY",
+    "unknownNewerSchemaBehavior": "NOT_READY_NO_DESTRUCTIVE_RESET",
+    "automaticDowngradeAllowed": false,
+    "walCheckpointPolicy": "BOUNDED_WITHOUT_WEAKENING_COMMITTED_ACKNOWLEDGEMENT",
+    "conflictingDuplicateDisposition": "QUARANTINE",
+    "persistentVolumeOwner": "BRAKE_CLOUD_ONLY",
+    "ordinaryContainerRestartPreservesData": true,
+    "ordinaryDockerDesktopRestartPreservesData": true,
+    "containerReplacementWithinRunPreservesData": true,
+    "historicalDemoRunArchive": false,
+    "separateDatabaseBackupRequired": false,
+    "r0Removal": "CLEAN_CURRENT_UNIT_RECORDS_THEN_RESET_OWNED_VOLUME",
+    "failureHttpStatus": 503,
+    "failureCreatesDurableAcknowledgement": false,
+    "readinessRule": "DATABASE_OPEN_AND_SCHEMA_SUPPORTED_AND_MIGRATIONS_COMPLETE_AND_READ_WRITE_PROBE_PASSES"
+  },
+  "query": {
+    "basePath": "/api/v1/brake",
+    "routes": [
+      "/units/{systemUid}/windows",
+      "/units/{systemUid}/assessments",
+      "/units/{systemUid}/events",
+      "/units/{systemUid}/advisories",
+      "/stream"
+    ],
+    "backendHealthRoutes": ["/health/live", "/health/ready"],
+    "liveUpdateMechanism": "SERVER_SENT_EVENTS",
+    "dashboardAuthority": "FUNCTIONAL_BACKEND_RECORDS_ONLY",
+    "unitServiceReadinessAuthority": "AOSCLOUD_AND_AOSCORE_VIA_SOFTWARE_DELIVERY_DASHBOARD",
+    "currentUnitSelector": "EXACT_CURRENT_VALIDATION_OR_PRODUCTION_SYSTEM_UID",
+    "pagination": "BOUNDED_STABLE_ORDER_WITH_EXPLICIT_CURSOR_OR_OFFSET",
+    "sseRole": "CHANGE_NOTIFICATION_ONLY_NOT_STATE_AUTHORITY",
+    "sseReconnectBehavior": "AUTHORITATIVE_REST_REREAD"
+  },
+  "cleanup": {
+    "previewEndpoint": "/api/v1/brake/admin/current-run/cleanup-preview",
+    "executeEndpoint": "/api/v1/brake/admin/current-run/cleanup",
+    "accessBoundary": "LOCAL_DEMO_ORCHESTRATOR_ONLY",
+    "browserAccessAllowed": false,
+    "guestIngestionRouteAccessAllowed": false,
+    "lanAccessAllowed": false,
+    "selectorSource": "CURRENT_RUN_PROVISIONING_JOURNAL",
+    "requiredSelector": "EXACT_CURRENT_VALIDATION_AND_PRODUCTION_SYSTEM_UIDS",
+    "exactSystemUidCount": 2,
+    "wildcardAllowed": false,
+    "emptySelectorAllowed": false,
+    "emptyMatchingRecordSetAllowed": true,
+    "confirmationTokenTtlSeconds": 60,
+    "tokenBinds": ["sortedSystemUids", "recordCounts", "recordSetSha256", "expiresAt"],
+    "executeRequiresExactPreviewToken": true,
+    "stalePreviewBehavior": "REJECT_IF_RECORD_COUNTS_OR_RECORD_SET_DIGEST_CHANGED",
+    "deleteTransactionIncludes": [
+      "MESSAGES",
+      "WINDOWS",
+      "ASSESSMENTS",
+      "EVENTS",
+      "ADVISORIES",
+      "QUARANTINE"
+    ],
+    "transactionScope": "ONE_SQLITE_TRANSACTION",
+    "postDeleteProof": "ZERO_MATCHING_ROWS_AND_UNCHANGED_NONMATCHING_DIGEST",
+    "ambiguousResultReconciliation": "AUTHORITATIVE_ZERO_COUNT_AND_NONMATCHING_DIGEST_REREAD",
+    "blindRepeatAllowed": false,
+    "deletesAosCloudAudit": false,
+    "deletesTireBackendData": false,
+    "deletesCloudUnitsOrNodes": false,
+    "deletesVmOrOverlay": false,
+    "mustCompleteBeforeVolumeReset": true,
+    "overallResetOrderingDecision": "D4-021"
+  },
+  "presentation": {
+    "requiredCommonFields": [
+      "unitSystemUid",
+      "unitRole",
+      "serviceVersion",
+      "serviceArtifactSha256",
+      "vdpContractVersion",
+      "sourceEventTime",
+      "backendReceivedAt",
+      "deliveryState"
+    ],
+    "v1Views": ["GROWING_WINDOW", "TERMINAL_WINDOW"],
+    "v2Views": ["ASSESSMENT", "CONDITION_BAND_CHANGE"],
+    "v3Views": ["ASSESSMENT", "CONDITION_BAND_CHANGE", "ADVISORY_FACT"],
+    "requiredAuthorityLabels": [
+      "FUNCTIONAL_DATA_FROM_BRAKE_BACKEND",
+      "UNIT_AND_SERVICE_STATE_FROM_AOSCLOUD"
+    ],
+    "forbiddenClaims": [
+      "DRIVER_ACKNOWLEDGED",
+      "GATEWAY_APPLIED_WITHOUT_STATUS",
+      "CLOUD_DECIDED_BRAKE_HEALTH",
+      "AOSCORE_READINESS_DERIVED_FROM_FUNCTIONAL_DATA"
+    ]
+  }
+}

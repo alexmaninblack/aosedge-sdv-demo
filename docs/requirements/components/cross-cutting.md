@@ -17,6 +17,7 @@
 - Accepted D4 VISS trust decision: [D4-006 VISS Trust and Telemetry Profile](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
 - Accepted D4 advisory decision: [D4-008 Typed QM Advisory Profile](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - Accepted D4 publication decision: [D4-010.3 Artifact Publication Credential Profile](../../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
+- Accepted D4 Cloud authority decision: [D4-011 Cloud Role and Action Matrix](../d4-decision-register.md#d4-011)
 
 ## Purpose
 
@@ -56,7 +57,7 @@ acceptance over those owner boundaries.
 - native operational-log evidence controls and redaction;
 - consistent run, Unit, source and message correlation across surfaces;
 - separate source, local-decision and Cloud-receipt chronology;
-- one atomic Demonstration Unit external-connectivity loss/restoration control
+- one atomic Production Unit external-connectivity loss/restoration control
   that interrupts Unit-to-AosCloud and installed service-to-functional-backend
   paths together while presenter-to-AosCloud and the simulated in-vehicle
   network remain available; and
@@ -93,10 +94,11 @@ acceptance over those owner boundaries.
 | Unmodified Eclipse KUKSA | Platform Team integration / upstream Eclipse | Accepted verifier, audience and path-level authorization | KUKSA access fails closed |
 | KUKSA Authorization Compatibility helper | Platform Team / `CMP-KAC` | Separate removable fixed-resource IAM translation; no parallel identity/policy store and no telemetry proxy | Services remain not ready; no static-token fallback |
 | Gateway QM advisory handler | Vehicle Gateway owner | Final deny-by-default typed non-safety boundary | Advisory is rejected with factual status |
-| Native Aos logging path | AosCore/AosCloud | Scoped request, status, result, retention and deletion behavior qualified | Evidence is unavailable or explicitly unqualified |
+| Native Aos logging path | AosCore/AosCloud | OEM Unit logs and SP1/SP2 Service logs are role-separated; request, status, result, deletion and offline behavior qualified; retention explicitly not exposed when absent from API | Evidence is unavailable or explicitly unqualified |
 | Aos Service Manager/container runtime | External AosEdge platform | Enforces and monitors accepted service-instance quotas through its runtime/cgroup mechanisms | Tenant-isolation proof cannot be accepted |
 | Owner service resource contracts | Brake and Tire service owners | D4 freezes independently approved quotas and application overflow/recovery behavior | Combined graph cannot be accepted |
 | Artifact publication profiles | Platform, Function Team release owners and Demo Solution | D4-010.3 fixed `platform-oem`, `brake-sp1` and `tire-sp2` bindings with independent Cloud reconciliation | Sign/publish remains disabled or `UNCERTAIN`; OEM approval is never inferred |
+| OEM delivery authority | OEM administration and Demo Solution | D4-011 separate `oem-delivery` context with `/users/me/` role/effective-permission preflight and authoritative post-read | Lifecycle mutation remains blocked or `UNCERTAIN`; publisher presence never satisfies delivery authority |
 
 ## Testability Boundary
 
@@ -122,11 +124,12 @@ dependency.
 | [`IF-AUTH-007`–`009`](../component-decomposition-and-interface-register.md#if-auth-007) | Service ↔ `CMP-KAC` ↔ Aos IAM | Named-resource/private-Unix-socket bootstrap, current registered permissions and atomic private-tmpfs short-lived JWT | Reject without token; no cached/static fallback; analytics never receives `AOS_SECRET` | Aos Service identity and current IAM result; mount/group/peer checks are defense in depth |
 | [`IF-AUTH-010`](../component-decomposition-and-interface-register.md#if-auth-010) | Platform security substrate → `CMP-KAC`/KUKSA | Permission handler, protected signing operation and public verifier preparation | Not ready; no key bytes or privilege reuse | Per-Unit platform trust |
 | [`IF-ADV-001`](../component-decomposition-and-interface-register.md#if-adv-001), [`IF-TIRE-002`](../component-decomposition-and-interface-register.md#if-tire-002), [`IF-ADV-002`–`005`](../component-decomposition-and-interface-register.md#if-adv-002) | QM services → KUKSA → VDP → VISS → Gateway | Typed Brake/Tire maintenance advisory and factual result | Fail closed at every boundary; Gateway is final authority | IAM/KUKSA scope, VDP contract, then Gateway QM policy |
-| [`IF-OBS-001`](../component-decomposition-and-interface-register.md#if-obs-001) | Software Delivery Dashboard ↔ AosCloud | Native log request/status/result/file | Explicit unavailable/failed state and bounded temporary cleanup | AosCloud-retained request and file state |
+| [`IF-OBS-001`](../component-decomposition-and-interface-register.md#if-obs-001) | OEM Software Delivery / Brake / Tire Dashboard ↔ AosCloud | Role-scoped Unit-log or Service-log request/status/result/file | Exact endpoint/owner filtering, verbatim state, explicit unavailable/failed state and bounded temporary cleanup | AosCloud request and file state while retained; API exposes no retention policy |
 | [`IF-DEMO-001`](../component-decomposition-and-interface-register.md#if-demo-001) | Orchestrator → local actors | Run/role/source binding and session boundary | Ambiguity blocks the affected operation | Local run manifest plus authoritative Unit state |
 | [`IF-FUNC-001`](../component-decomposition-and-interface-register.md#if-func-001), [`IF-TIRE-003`](../component-decomposition-and-interface-register.md#if-tire-003) | In-vehicle service → functional backend | Correlated bounded messages with original event time | Bounded queue/retry or explicit loss/degraded state | Function Team data contract |
 | [`IF-LC-006`](../component-decomposition-and-interface-register.md#if-lc-006) | AosCore → VDP and services | Runtime lifecycle, readiness and resource enforcement | Explicit failed/degraded instance state | Unit actual state |
 | [`IF-LC-001`](../component-decomposition-and-interface-register.md#if-lc-001), [`IF-LC-002`](../component-decomposition-and-interface-register.md#if-lc-002), [`IF-LC-007`](../component-decomposition-and-interface-register.md#if-lc-007) | Platform/Function release views → common native publication helper → AosCloud | Exact prepared candidate and fixed role-bound publication profile | Reject caller-selected profile/path/URL or candidate mismatch; reconcile ambiguity without blind retry | Technical publication identity and authoritative AosCloud re-read; no OEM Unit approval |
+| [`IF-LC-005`](../component-decomposition-and-interface-register.md#if-lc-005), [`IF-LC-008`](../component-decomposition-and-interface-register.md#if-lc-008)–[`010`](../component-decomposition-and-interface-register.md#if-lc-010) | Software Delivery Dashboard → AosCloud | Active `oem-delivery` role/effective-permission preflight, exact confirmed lifecycle mutation and authoritative post-read | Wrong role/permission or ambiguous result blocks; no blind retry or server-idempotency claim | Owning-team acceptance plus separately authenticated OEM delivery authority; AosCloud remains system of record |
 
 ## Verification Strategy
 
@@ -136,7 +139,7 @@ dependency.
 | Component | Prove each packaged component exposes the required security/operational behavior | Controlled fixtures and fake adjacent services | Yes | Owner-package component reports |
 | Contract | Prove every producer/consumer agrees on identity, schema, error, time and limit semantics | Versioned cross-owner fixture catalogue | Yes | Cross-package conformance report and fixture digest |
 | Integration | Prove layered enforcement and recovery with real adjacent components | Accepted Validation environment | Yes | Negative matrix, disconnect/reconnect, resource and log evidence |
-| End-to-end | Prove audience claims without widening them | VU before identical DU promotion | Yes, allocated to `CR-E2E` | Stage and failure-path acceptance record |
+| End-to-end | Prove audience claims without widening them | VU before identical PU promotion | Yes, allocated to `CR-E2E` | Stage and failure-path acceptance record |
 
 ## Requirement Summary
 
@@ -147,9 +150,9 @@ dependency.
 | [Trusted Provider and Service-authority separation (`REQ-CROSS-010`)](#req-cross-010) | Keep trusted OEM Provider integration unreachable through functional Service credentials | Contract, Integration, Review | D3 review candidate |
 | [Role-bound protected artifact publication (`REQ-CROSS-011`)](#req-cross-011) | Keep Platform, Brake and Tire technical-publication credentials non-interchangeable and outside product/runtime boundaries | Unit, Contract, Integration, Audit | D4-010.3 decided; implementation open |
 | [End-to-end QM advisory containment (`REQ-CROSS-004`)](#req-cross-004) | Reject every unauthorized or unsafe advisory at layered boundaries | Unit, Contract, Integration, End-to-end | D3 design-reviewed |
-| [Controlled native-log evidence (`REQ-CROSS-005`)](#req-cross-005) | Present useful scoped logs without secrets, false retention or a second archive | Unit, Contract, Integration | D3 design-reviewed |
-| [Cross-surface run correlation (`REQ-CROSS-006`)](#req-cross-006) | Bind facts to the exact run, role, Unit and source without global history | Unit, Contract, Integration, End-to-end | D3 design-reviewed |
-| [Separated on-board and Cloud chronology (`REQ-CROSS-007`)](#req-cross-007) | Preserve event, decision and synchronization times without a false latency claim | Unit, Contract, Integration, End-to-end | D3 design-reviewed |
+| [Controlled native-log evidence (`REQ-CROSS-005`)](#req-cross-005) | Present role-separated OEM/SP logs without secrets, false retention or a second archive | Unit, Contract, Integration | D4-014 design accepted; live qualification open |
+| [Cross-surface run correlation (`REQ-CROSS-006`)](#req-cross-006) | Bind facts to the exact run, role, Unit and source without global history | Unit, Contract, Integration, End-to-end | D4-024 design reviewed; implementation/live qualification open |
+| [Separated on-board and Cloud chronology (`REQ-CROSS-007`)](#req-cross-007) | Preserve event, decision and synchronization times without a false latency claim | Unit, Contract, Integration, End-to-end | D4-024 design reviewed; implementation/live qualification open |
 | [Targeted vehicle external-connectivity continuity (`REQ-CROSS-008`)](#req-cross-008) | Keep the installed graph active while one atomic fault interrupts AosCloud and functional-backend paths, then reconnect and synchronize | Contract, Integration, End-to-end | D3 design-reviewed |
 | [AosCore service-tenant isolation (`REQ-CROSS-009`)](#req-cross-009) | Cap a prepared Tire CPU load at its own quota while Brake and the platform remain healthy | Unit, Component, Contract, Integration, End-to-end | D3 design-reviewed |
 
@@ -199,7 +202,7 @@ dependency.
 
 #### Acceptance criteria
 
-1. VU and DU expose different public-key fingerprints; same-Unit JWTs pass and
+1. VU and PU expose different public-key fingerprints; same-Unit JWTs pass and
    cross-Unit JWTs fail.
 2. Missing/malformed preparation state prevents `CMP-KAC`/KUKSA startup; expired,
    wrong-audience, wrong-signature, excessive-scope and non-renewable
@@ -302,34 +305,34 @@ dependency.
 <a id="req-cross-005"></a>
 
 - ID: `REQ-CROSS-005`
-- Statement: Cross-component operational evidence shall use the native AosCore/AosCloud log path with scoped request and result visibility, structured redaction, source time, qualified Cloud retention/deletion behavior and bounded removal of temporary local downloads; no demo component shall create a second archive.
+- Statement: Cross-component operational evidence shall use the native AosCore/AosCloud log path. OEM system/VDP evidence shall use `unit-logs` through `oem-delivery`, while Brake and Tire service/crash evidence shall use `service-logs` through distinct SP1/SP2 operational contexts and matching Function Dashboards. Requests shall preserve verbatim Cloud states, structured allowlisted redaction and source time; temporary downloads shall be bounded and removed, and no demo component shall create a second archive. Because the current API does not expose retention policy, the demo shall state that fact rather than claim a duration.
 - Parent: [operational log controls (`SYS-OBS-003`)](../system-requirements-and-traceability.md#sys-obs-003)
 - Flow: [cross-stage evidence (`AF-X-OBS`)](../../architecture/demo-scenario-architecture-flows.md#af-x-obs)
-- Components: `CMP-AOS-CORE`, `CMP-AOS-CLOUD`, `CMP-SW-DASH` and every emitting owner
+- Components: `CMP-AOS-CORE`, `CMP-AOS-CLOUD`, `CMP-SW-DASH`, `CMP-BRAKE-DASH`, `CMP-TIRE-DASH` and every emitting owner
 - Interface: `IF-OBS-001`
-- State: D3 design-reviewed; exact live API permission, retention and deletion behavior remain D4 qualification gates
+- State: D3 design-reviewed; D4-014 design accepted, live identifier/permission/state/file/deletion/offline qualification remains required
 
 #### Acceptance criteria
 
-1. A scoped request presents authoritative pending/success/failure state and its source scope/time without claiming indefinite retention.
-2. Secret, token, private-certificate and unrestricted raw-telemetry fixtures do not appear in accepted logs or the dashboard.
-3. Temporary downloads are bounded and deleted, while Cloud-owned audit/log state is not silently copied or erased by the demo.
+1. OEM Unit-log and SP1/SP2 Service-log requests cannot cross their endpoint, owner or dashboard boundary and present documented Cloud states without invented success/timeout labels.
+2. Secret, token, private-certificate, VIN and unrestricted or high-rate raw-telemetry fixtures do not appear in accepted logs or dashboard previews.
+3. Temporary downloads are bounded and deleted, while Cloud-owned audit/log state is not silently copied; R0 deletes only exact current-run request IDs and proves their detail/file unavailable afterward.
 
 ### Cross-surface run correlation
 
 <a id="req-cross-006"></a>
 
 - ID: `REQ-CROSS-006`
-- Statement: Every audience-visible functional or operational fact shall be attributable before provisioning to one bounded start time and overlay role, and afterward to the exact VU/DU Unit ID, role, source generation/frame evidence and same bounded session window; successful R0 shall remove demo-owned run data without creating a historical run database.
+- Statement: Every audience-visible functional or operational fact shall be attributable before provisioning to one bounded start time and overlay role, and afterward to the exact VU/PU Unit ID, role, source generation/frame evidence and same bounded session window; successful R0 shall remove demo-owned run data without creating a historical run database.
 - Parent: [per-run correlation (`SYS-OBS-004`)](../system-requirements-and-traceability.md#sys-obs-004)
 - Flows: [one source/two roles (`AF-X-SOURCE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-source) and [`AF-X-OBS`](../../architecture/demo-scenario-architecture-flows.md#af-x-obs)
 - Components: `CMP-ORCH`, `CMP-GW`, `CMP-BRAKE-BE`, `CMP-TIRE-BE`, all dashboards
 - Interfaces: `IF-DEMO-001`, `IF-VEH-004`–`006`, `IF-FUNC-001`/`002`, `IF-TIRE-003`/`004`
-- State: D3 design-reviewed
+- State: D4-024 design reviewed; implementation and live qualification remain open
 
 #### Acceptance criteria
 
-1. Equal event IDs from VU and DU or two Function Teams cannot collide because Unit role/source binding remains explicit.
+1. Equal event IDs from VU and PU or two Function Teams cannot collide because Unit role/source binding remains explicit.
 2. Missing, conflicting, stale or cross-run correlation prevents a success/accepted presentation.
 3. After successful R0, functional dashboards are empty for the retired run while AosCloud-owned lifecycle/audit history remains outside demo storage.
 
@@ -343,20 +346,21 @@ dependency.
 - Flows: [`AF-X-QM`](../../architecture/demo-scenario-architecture-flows.md#af-x-qm) and owner-package backend transport/recovery flows
 - Components: Gateway, both services, both functional backends and dashboards
 - Interfaces: `IF-ADV-005`, `IF-FUNC-001`, `IF-TIRE-003`
-- State: D3 design-reviewed
+- State: D4-024 design reviewed; implementation and live qualification remain open
 
 #### Acceptance criteria
 
 1. Normal online evidence preserves an internally consistent causal order without requiring synchronized receipt times.
 2. During the vehicle external-connectivity proof, delayed functional messages preserve original event/decision times and record later receipt/synchronization separately.
 3. Missing/inconsistent chronology is explicit and no UI derives a Cloud-operation or vehicle KPI from it.
+4. The accepted evidence is explicitly limited to demo causal linkage and reconnect behavior; it makes no production clock-synchronization, worst-case latency, real-time, network or safety claim.
 
 ### Targeted vehicle external-connectivity continuity
 
 <a id="req-cross-008"></a>
 
 - ID: `REQ-CROSS-008`
-- Statement: One stateful demo control shall atomically block or restore the Demonstration Unit's external vehicle connectivity. The disconnected state shall block both Unit-to-AosCloud and installed service-to-functional-backend paths while presenter-to-AosCloud, the simulated in-vehicle network and the installed on-board graph remain available. The Software Delivery Dashboard shall show authoritative offline/online state, reachable Function Dashboards shall show delayed/offline and later synchronized results, local inference/advisory shall continue, and reconnect shall use the same Unit and installed graph without reprovisioning, reinstalling or restarting. No separate per-channel fault control shall be exposed.
+- Statement: One stateful demo control shall atomically block or restore the currently selected Validation or Production Unit's external vehicle connectivity; the normative `G4/X-OFFLINE` presentation uses PU. D4-022.1 shall change only that Unit's external QEMU plane. The disconnected state shall block both selected-Unit-to-AosCloud and installed service-to-functional-backend paths while the other VM, presenter-to-AosCloud, the simulated in-vehicle QEMU plane and the installed on-board graph remain available. The helper shall set an exact desired state rather than toggle, persist intent before mutation, never treat a lost response as success or retry it blindly, reconcile after restart, and compensate a partial/forbidden effect only to the last confirmed state. The Software Delivery Dashboard shall show authoritative offline/online state, reachable Function Dashboards shall show delayed/offline and later synchronized results, local inference/advisory shall continue, and reconnect shall use the same Unit and installed graph without reprovisioning, reinstalling or restarting. No separate per-channel fault control shall be exposed.
 - Parent: [targeted vehicle external-connectivity continuity (`SYS-OBS-007`)](../system-requirements-and-traceability.md#sys-obs-007)
 - Flow: [targeted vehicle external-connectivity loss (`AF-X-OFFLINE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-offline)
 - Components: `CMP-AOS-CORE`, `CMP-AOS-CLOUD`, installed `CMP-VDP`/services, `CMP-SW-DASH`, and qualification orchestration
@@ -365,21 +369,22 @@ dependency.
 
 #### Acceptance criteria
 
-1. One visible control transition proves that DU-to-AosCloud and all installed service-to-functional-backend traffic are blocked together; partial or independently switched channel states are rejected. Presenter-to-AosCloud and simulated in-vehicle connections remain available.
-2. AosCloud reports DU offline and affected lifecycle/log actions unavailable, while a deterministic CARLA event still reaches local inference, the advisory chain and Engineering Telematics Dashboard; reachable Function Dashboards receive no new result and show delayed/offline state.
+1. One visible control transition proves that the selected Unit's AosCloud and all installed service-to-functional-backend traffic are blocked together; partial or independently switched channel states are rejected. The other VM, presenter-to-AosCloud and simulated in-vehicle connections remain available.
+2. AosCloud reports the selected Unit offline and affected lifecycle/log actions unavailable, while a deterministic CARLA event still reaches local inference, the advisory chain and Engineering Telematics Dashboard; reachable Function Dashboards receive no new result and show delayed/offline state. The normative presentation selects PU.
 3. One restore transition makes AosCloud report the same Unit and installed versions online without provisioning, reinstall or service/provider restart and synchronizes bounded functional messages idempotently with original and receipt times distinct; no presenter-loss or in-vehicle-loss claim is shown.
+4. Duplicate achieved-state requests are probed no-ops; lost responses and restarts reconcile before any explicit idempotent reissue, and failed/unproven compensation remains `FAILED/PARTIAL` rather than fabricating success.
 
 ### AosCore service-tenant isolation
 
 <a id="req-cross-009"></a>
 
 - ID: `REQ-CROSS-009`
-- Statement: Brake Health and Tire Health shall carry independently approved service quotas in their accepted Aos metadata, while AosCore/Service Manager remains the sole in-vehicle enforcement and monitoring authority. The first audience proof shall run one prebuilt bounded CPU-load profile inside the actual Tire Health service instance until it reaches its own quota. AosCore shall cap that instance and expose authoritative usage/status or alert evidence through AosCloud; at the same time Brake Health shall remain ready without restart and shall process the deterministic CARLA event, while VDP, KUKSA, Gateway and AosCore remain healthy. Stopping the load shall return Tire to normal without reinstall or restart. No project resource manager shall be added.
+- Statement: Brake Health and Tire Health shall carry independently approved service quotas in their accepted Aos metadata, while AosCore/Service Manager remains the sole in-vehicle enforcement and monitoring authority. The first audience proof shall use the Tire Function Dashboard and its backend to deliver only one fixed, identity-bound, idempotent start/stop profile over the actual Tire Service's existing outbound backend route. At most one worker shall run inside the actual Tire Aos-managed cgroup, with no caller-selected load parameters, separate load container, administrative bypass or persistence/resume across restart; backend-lease loss and a 180-second ceiling stop it. AosCore shall cap that instance and expose authoritative usage/status or alert evidence through AosCloud; at the same time Brake Health shall remain ready without restart and shall process the deterministic CARLA event, while VDP, KUKSA, Gateway and AosCore remain healthy. Stopping the load shall return Tire to normal without reinstall or restart. Function Team control status is not quota proof, and no project resource manager shall be added.
 - Parent: [AosCore-enforced service-tenant isolation (`SYS-RES-001`)](../system-requirements-and-traceability.md#sys-res-001)
 - Flows: [AosCore tenant isolation (`AF-TIRE-RES`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-res) and [common release/runtime enforcement (`AF-X-RELEASE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-release)
 - Components: `CMP-AOS-CORE`, `CMP-AOS-CLOUD`, `CMP-TIRE`, `CMP-BHS`, `CMP-VDP`, `CMP-KUKSA`, `CMP-GW`, `CMP-SW-DASH`, `CMP-ORCH`
 - Interfaces: `IF-LC-005`, `IF-LC-006`, `IF-DEMO-001`
-- State: D3 design-reviewed; exact quota mapping, CPU unit/tolerance, monitoring API and prepared load-control contract remain D4 gates
+- State: D3 design-reviewed; D4-023 design reviewed through D4-023.6; implementation and the complete live qualification dossier remain acceptance gates
 
 #### Acceptance criteria
 
@@ -397,6 +402,19 @@ dependency.
    rather than extra audience controls. Mac-local backends are not presented
    as AosCore tenants, and no aggregate multi-service-per-provider claim is
    made.
+5. The audience view uses fresh exact-instance AosCloud monitoring in DMIPS;
+   a quota alert is supplementary. A separately labelled sanitized read-only
+   cgroup `cpu.max`/`cpu.stat` record proves technical enforcement and is bound
+   to the exact Factory Image, AosCore, Tire artifact, signed configuration and
+   Node DMIPS baseline. Service/backend control status is never proof, and
+   missing, stale or mismatched evidence blocks `PASS`.
+6. Baseline, saturation and recovery each require three consecutive fresh
+   samples. Exact freshness, DMIPS bands and runtime rounding tolerance come
+   from the bound qualification profile, never an arbitrary percentage.
+   Mapping/cap, restart, peer/platform or recovery failure is `FAIL`;
+   incomplete evidence is `INCONCLUSIVE`; an offline/wrong-version/stale-profile
+   start is `NOT_READY`. Brake completion uses the existing scenario timeout,
+   not a new latency KPI.
 
 ## Reused Owner-Package Unit Obligations
 
@@ -422,14 +440,14 @@ repositories and are composed by the cross-package contract/integration gate.
 | Requirement | Unit proof | Contract proof | Integration proof | End-to-end proof |
 | --- | --- | --- | --- | --- |
 | `REQ-CROSS-001` | Reused owner obligations | `IF-AUTH-007`–`009` conformance | Real Service Manager/IAM, `CMP-KAC`, both services and KUKSA | `CR-E2E` G2/T1 authorization |
-| `REQ-CROSS-002` | Reused owner obligations | JWT/trust/key-custody profile | Independent VU/DU signer/verifier lifecycle | `CR-E2E` issue/expiry/revocation |
+| `REQ-CROSS-002` | Reused owner obligations | JWT/trust/key-custody profile | Independent VU/PU signer/verifier lifecycle | `CR-E2E` issue/expiry/revocation |
 | `REQ-CROSS-010` | Reused owner obligations | Trusted Provider/Service separation contract | Real trusted Provider connection plus SOTA credential-reuse negatives | `CR-E2E` G1/G3 readiness under the declared trust assumption |
 | `REQ-CROSS-011` | Reused owner obligations | D4-010.3 profile/custody/helper conformance | Three fixed profile paths, credential-exclusion proof and authoritative Cloud reconciliation | `AT-E2E-003` publication/approval separation |
 | `REQ-CROSS-004` | Reused owner obligations | Full advisory positive/negative matrix | Real KUKSA→VDP→Gateway chain with bypass injection | G4/T1 accepted and rejected advisories |
 | `REQ-CROSS-005` | Reused owner obligations | Log API/redaction/retention contract | Scoped native request/result/download/delete | Operational evidence view |
-| `REQ-CROSS-006` | Reused owner obligations | Correlation-field and cleanup contracts | Sequential VU/reset/DU plus both backends | Cross-surface evidence and R0 |
+| `REQ-CROSS-006` | Reused owner obligations | Correlation-field and cleanup contracts | Sequential VU/reset/PU plus both backends | Cross-surface evidence and R0 |
 | `REQ-CROSS-007` | Reused owner obligations | Timestamp semantics and delayed-delivery fixtures | Owner-qualified backend delay/reconnect correlation | Local advisory versus delayed Cloud result |
-| `REQ-CROSS-008` | Reused owner obligations plus external-platform exception | Atomic fault scope, state and synchronization contract | DU external-connectivity loss, local continuity, backend delay/synchronization and same-Unit reconnect | One accepted G4 offline/online scenario |
+| `REQ-CROSS-008` | Reused owner obligations plus external-platform exception | Atomic fault scope, state and synchronization contract | PU external-connectivity loss, local continuity, backend delay/synchronization and same-Unit reconnect | One accepted G4 offline/online scenario |
 | `REQ-CROSS-009` | Reused owner obligations plus external-platform exception | Approved service metadata, load-control and quota/monitoring evidence schemas | Actual Tire cgroup CPU cap plus concurrent Brake/platform continuity | `AF-TIRE-RES` bounded audience proof and clean recovery |
 
 ## Cross-Cutting Constraint Matrix
@@ -439,12 +457,13 @@ repositories and are composed by the cross-package contract/integration gate.
 | Identity | One Aos identity/permission authority | Service Manager/IAM + removable `CMP-KAC` translation | Fixed-resource, exact-scope and cross-Service negatives |
 | Secret custody | No artifact-baked or exposed private material | Per-Unit platform-protected operation | Image/package/process/log scans |
 | Artifact publication | Fixed non-interchangeable Platform/Brake/Tire profiles; current local PKCS#12 readable only by the native helper; publication is not approval | D4-010.3 helper boundary plus AosCloud authoritative re-read | Wrong-profile/path/URL/candidate negatives, custody scan, interruption reconciliation and no-approval-side-effect proof |
+| OEM delivery actions | Publisher identity never becomes delivery authority; exact D4-011 `oem-delivery` role/permission is current for every mutation | `/users/me/` preflight plus AosCloud action and authoritative post-read | Wrong-role/missing-permission/error-class/response-loss fixtures and no-blind-retry proof |
 | Provider boundary | Functional identity never becomes Provider authority | Trusted OEM Provider integration separated from Service bootstrap/JWT | Credential-reuse negatives and explicit first-demo trust claim |
 | QM containment | No arbitrary or motion/safety operation | Gateway final boundary | Upstream-bypass negative matrix |
 | Logs/privacy | Native scoped evidence only | AosCore/AosCloud + emitting owners | Redaction, retention and bounded-download qualification |
 | Correlation | Exact run/role/Unit/source binding | Orchestrator and producer contracts | Cross-Unit/cross-team collision cases |
 | Chronology | Event/local/receipt/sync times remain distinct | Message contracts and dashboards | Delayed/out-of-order reconnect cases |
-| Vehicle external connectivity | One control interrupts DU-to-AosCloud and service-to-functional-backend paths together; presenter and in-vehicle paths remain available | Demo Orchestrator fault harness, AosCloud/AosCore state and Function Team queues/backends | Atomic fault-scope proof, local advisory, delayed dashboards, synchronization and same-Unit reconnect |
+| Vehicle external connectivity | One control changes only the selected VU/PU external QEMU plane and interrupts its AosCloud/service-backend paths together; the other VM, presenter and in-vehicle plane remain available; normative presentation uses PU | Demo Orchestrator/native-helper fixed QMP operation, AosCloud/AosCore state and Function Team queues/backends | Exact selected-role/netdev proof, local advisory, delayed dashboards, synchronization and same-Unit reconnect |
 | Service resources | AosCore is the sole in-vehicle enforcement/monitor authority; applications declare quotas and own bounded behavior | Aos Service Manager/container runtime/cgroups | Tire CPU cap, authoritative Cloud evidence, concurrent Brake event and healthy platform graph |
 
 ## D3 Review Decisions
@@ -453,7 +472,7 @@ repositories and are composed by the cross-package contract/integration gate.
 | --- | --- | --- |
 | `CROSS-D1` — Package nature | `CR-CROSS` is a no-code assurance package, not a deployable component, shared runtime service, identity provider, policy store or product repository | **Confirmed 2026-08-20** |
 | `CROSS-D2` — Test ownership | Reuse owner-package unit obligations rather than duplicate them as `UT-CROSS-*`; keep shared versioned fixtures and orchestration in `aosedge-sdv-demo`; prove composition through contract/integration gates and pass their evidence to `CR-E2E` without duplicating the negative matrix | **Confirmed 2026-08-20** |
-| `CROSS-D3` — Connectivity allocation | The only deliberate first-demo fault is one atomic loss of Demonstration Unit external connectivity: Unit-to-AosCloud and installed service-to-functional-backend paths are interrupted/restored together by one stateful control; presenter-to-AosCloud and simulated in-vehicle links remain available; separate per-channel switches are prohibited | **Confirmed 2026-08-20** |
+| `CROSS-D3` — Connectivity allocation | The only deliberate first-demo fault is one atomic loss of Production Unit external connectivity: Unit-to-AosCloud and installed service-to-functional-backend paths are interrupted/restored together by one stateful control; presenter-to-AosCloud and simulated in-vehicle links remain available; separate per-channel switches are prohibited | **Confirmed 2026-08-20** |
 | `CROSS-D4` — Resource allocation | Use one prepared bounded CPU load inside the actual Tire instance; AosCore/Service Manager alone enforces and monitors its approved quota; Brake is the healthy control tenant. The Dashboard only presents authoritative state. Mac-local backends and aggregate multi-service-per-provider quotas are outside the claim; memory/storage/PID/network limits remain qualification evidence | **Confirmed 2026-08-20** |
 
 ## Open D4 Gates
@@ -466,9 +485,9 @@ repositories and are composed by the cross-package contract/integration gate.
 | Exact common publication-helper request/result transport and AosCloud reconciliation lookup | `REQ-CROSS-011`; D4-010.3 profile/custody/state semantics are accepted | Demo Solution + Platform/Function Team release owners + AosCloud integration |
 | Typed Brake/Tire targets, values, correlation, freshness, rate and replay bounds | `REQ-CROSS-004` | Gateway + Platform + Function Teams |
 | Native log API roles, retention, deletion, offline and redaction behavior | `REQ-CROSS-005` | AosCloud integration + emitting owners |
-| Shared correlation and timestamp field schemas | `REQ-CROSS-006`, `007` | Demo Solution + Gateway + Function Teams |
-| Atomic DU external-connectivity control, dual-path fault mechanism, excluded-path probes, functional-message synchronization and same-Unit reconnect contract | `REQ-CROSS-008` | Demo Solution + AosCloud and both Function Team integrations |
-| Exact Brake/Tire service-metadata-to-AosCore quota mapping, CPU units and pass/fail tolerance, Cloud usage/status or alert API, prepared Tire in-instance load trigger and Brake/platform unaffected thresholds | `REQ-CROSS-009` | AosCore integration + both Function Teams + Demo Solution |
+| Implement and live-qualify the complete design-reviewed D4-024 correlation, chronology, sanitized projection, ordering/anomaly and qualification contract | `REQ-CROSS-006`, `007` | Demo Solution + Gateway + Function Teams |
+| Atomic PU external-connectivity control, dual-path fault mechanism, excluded-path probes, functional-message synchronization and same-Unit reconnect contract | `REQ-CROSS-008` | Demo Solution + AosCloud and both Function Team integrations |
+| Implement and live-qualify design-reviewed D4-023, including profile characterization/freeze, two independent VU passes, fault matrix, one PU rehearsal and sanitized retained dossier | `REQ-CROSS-009` | AosCore integration + both Function Teams + Demo Solution |
 | Versioned shared fixture catalogue and conformance harness layout | All contract proofs | System Architecture + repository owners |
 
 ## Package Acceptance and Version 0.4 Delta

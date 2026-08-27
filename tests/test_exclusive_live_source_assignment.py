@@ -23,8 +23,12 @@ class ExclusiveLiveSourceAssignmentContractTest(unittest.TestCase):
         self.assertEqual("1.0.0", self.contract["contractVersion"])
         vehicles = self.contract["audienceModel"]["vehicles"]
         self.assertEqual(
-            {"VALIDATION_VEHICLE", "DEMONSTRATION_VEHICLE"},
+            {"VALIDATION_VEHICLE", "PRODUCTION_VEHICLE"},
             {item["vehicleRole"] for item in vehicles},
+        )
+        self.assertEqual(
+            {"VALIDATION_UNIT", "PRODUCTION_UNIT"},
+            {item["unitRole"] for item in vehicles},
         )
         self.assertEqual(1, self.contract["audienceModel"]["currentVehicleCount"])
 
@@ -33,6 +37,17 @@ class ExclusiveLiveSourceAssignmentContractTest(unittest.TestCase):
         self.assertIn("ATTACH CARLA", prohibited)
         self.assertIn("SOURCE BINDING", prohibited)
         self.assertFalse(self.contract["audienceModel"]["roleInVehicleDataPath"])
+
+    def test_audience_sources_use_test_vehicle_label(self) -> None:
+        audience_sources = [
+            ROOT / "docs" / "architecture" / "high-level-architecture.md",
+            ROOT / "docs" / "demo" / "mockups" / "aosedge-demo-interaction-specification.md",
+            ROOT / "docs" / "demo" / "mockups" / "aosedge-demo-linear-flow-mockup.html",
+        ]
+        for source in audience_sources:
+            rendered_source = source.read_text(encoding="utf-8")
+            self.assertIn("Test Vehicle", rendered_source, source)
+            self.assertNotIn("Validation Vehicle", rendered_source, source)
 
     def test_assignment_is_exclusive_while_both_units_may_be_cloud_online(self) -> None:
         assignment = self.contract["technicalAssignment"]

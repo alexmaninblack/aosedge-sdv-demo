@@ -40,14 +40,14 @@
             "additionalProperties": false,
             "required": ["vehicleRole", "unitRole", "purpose"],
             "properties": {
-              "vehicleRole": { "enum": ["VALIDATION_VEHICLE", "DEMONSTRATION_VEHICLE"] },
-              "unitRole": { "enum": ["VALIDATION_UNIT", "DEMONSTRATION_UNIT"] },
+              "vehicleRole": { "enum": ["VALIDATION_VEHICLE", "PRODUCTION_VEHICLE"] },
+              "unitRole": { "enum": ["VALIDATION_UNIT", "PRODUCTION_UNIT"] },
               "purpose": { "type": "string", "minLength": 1 }
             }
           }
         },
         "currentVehicleCount": { "const": 1 },
-        "primaryAction": { "const": "Continue with Demonstration Vehicle" },
+        "primaryAction": { "const": "Continue with Production Vehicle" },
         "primaryUiProhibitedTerms": {
           "type": "array",
           "uniqueItems": true,

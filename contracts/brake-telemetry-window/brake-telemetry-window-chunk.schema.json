@@ -1,0 +1,63 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:brake-telemetry-window-chunk:schema:v1",
+  "title": "Brake Telemetry Window Chunk",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "contractVersion", "messageType", "eventType", "eventId", "unitSystemUid", "unitRole", "serviceVersion", "serviceArtifactSha256", "vdpContractVersion", "vdpContractSha256", "content", "contentSha256"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "contractVersion": { "const": "1.0.0" },
+    "messageType": { "const": "WINDOW_CHUNK" },
+    "eventType": { "const": "HARD_BRAKING_EPISODE_V1" },
+    "eventId": { "$ref": "#/$defs/uuid4" },
+    "unitSystemUid": { "$ref": "#/$defs/boundedId" },
+    "unitRole": { "enum": ["VALIDATION", "PRODUCTION"] },
+    "serviceVersion": { "$ref": "#/$defs/semver" },
+    "serviceArtifactSha256": { "$ref": "#/$defs/sha256" },
+    "vdpContractVersion": { "$ref": "#/$defs/semver" },
+    "vdpContractSha256": { "$ref": "#/$defs/sha256" },
+    "content": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["chunkIndex", "firstSampleIndex", "sampleCount", "samples"],
+      "properties": {
+        "chunkIndex": { "type": "integer", "minimum": 0, "maximum": 14 },
+        "firstSampleIndex": { "type": "integer", "minimum": 0, "maximum": 149 },
+        "sampleCount": { "type": "integer", "minimum": 1, "maximum": 10 },
+        "samples": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10,
+          "items": { "$ref": "#/$defs/sample" }
+        }
+      }
+    },
+    "contentSha256": { "$ref": "#/$defs/sha256" }
+  },
+  "$defs": {
+    "uuid4": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" },
+    "boundedId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._:-]+$" },
+    "semver": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "sample": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sampleIndex", "sourceTimestamp", "phase", "quality", "maxSourceAgeMs", "speedKph", "longitudinalAccelerationMps2", "lateralAccelerationMps2", "verticalAccelerationMps2", "acceleratorPedalPercent", "brakePedalPercent"],
+      "properties": {
+        "sampleIndex": { "type": "integer", "minimum": 0, "maximum": 149 },
+        "sourceTimestamp": { "type": "string", "format": "date-time" },
+        "phase": { "enum": ["PRE", "ACTIVE", "POST"] },
+        "quality": { "const": "VALID_COMPLETE_FRAME" },
+        "maxSourceAgeMs": { "type": "integer", "minimum": 0, "maximum": 250 },
+        "speedKph": { "type": "number", "minimum": 0, "maximum": 1000 },
+        "longitudinalAccelerationMps2": { "type": "number", "minimum": -100, "maximum": 100 },
+        "lateralAccelerationMps2": { "type": "number", "minimum": -100, "maximum": 100 },
+        "verticalAccelerationMps2": { "type": "number", "minimum": -100, "maximum": 100 },
+        "acceleratorPedalPercent": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "brakePedalPercent": { "type": "integer", "minimum": 0, "maximum": 100 }
+      }
+    }
+  }
+}

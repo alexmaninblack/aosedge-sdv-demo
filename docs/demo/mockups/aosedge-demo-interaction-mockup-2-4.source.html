@@ -1,0 +1,327 @@
+<!-- SPDX-FileCopyrightText: 2026 maninblack -->
+<!-- SPDX-License-Identifier: MIT -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AosEdge Software Evolution Demo — Icon-Integrated Mockup</title>
+  <style>
+    :root {
+      --ink:#172033; --muted:#66728a; --line:#dce2ec; --soft:#f6f8fb;
+      --blue:#1f5f99; --blue-soft:#eaf3fb; --navy:#203d6b; --green:#287a57;
+      --green-soft:#e9f6ef; --amber:#a56213; --amber-soft:#fff4df;
+      --red:#a83d48; --red-soft:#fff0f1; --purple:#6654b6; --purple-soft:#f1efff;
+      --shadow:0 12px 34px rgba(27,44,76,.12); --radius:12px;
+    }
+    *{box-sizing:border-box}
+    html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#eef2f7;color:var(--ink);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    button{font:inherit}
+    button:focus-visible{outline:3px solid rgba(31,95,153,.28);outline-offset:2px}
+    .app{height:100vh;min-width:1180px;display:grid;grid-template-rows:76px minmax(0,1fr)}
+    .shared-header{z-index:5;display:grid;grid-template-columns:minmax(430px,1fr) auto;gap:18px;align-items:center;padding:10px 16px;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 3px 12px rgba(22,32,51,.06)}
+    .brand-row{display:flex;align-items:center;gap:12px;min-width:0}
+    .title-button{border:0;background:transparent;padding:4px 2px;text-align:left;cursor:pointer;min-width:0}
+    .title-button strong{display:block;font-size:16px;white-space:nowrap}
+    .title-button>span{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+    .vehicle-pill{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;border:1px solid var(--line);border-radius:999px;background:var(--soft);padding:7px 11px;font-size:12px;font-weight:700}
+    .vehicle-pill.test{border-color:#9dc3d9;background:#eef7fb}.vehicle-pill.production{border-color:#a9d4bf;background:#f0f8f4}.vehicle-pill.transition{border-color:#e0bf8c;background:#fff8eb}
+    .ui-icon{width:18px;height:18px;object-fit:contain;display:inline-block;vertical-align:middle;flex:0 0 auto}.vehicle-icon{width:22px;height:22px}.button-icon{width:14px;height:14px}
+    .icon-label,.backend-title,.summary-label,.release-heading{display:inline-flex;align-items:center;gap:6px;min-width:0}.summary-label{gap:4px}.summary-label .ui-icon{width:13px;height:13px}.release-heading .ui-icon{width:20px;height:20px}
+    .qualification-new-icon{width:38px;height:38px;object-fit:contain;display:block}.lifecycle-title-icon{width:22px;height:22px;object-fit:contain;display:inline-block;flex:0 0 auto}
+    .team-tabs{display:flex;gap:8px;align-items:stretch}
+    .team-tab{width:168px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:8px 10px;display:grid;grid-template-columns:26px 1fr;gap:8px;text-align:left;cursor:pointer;color:var(--ink)}
+    .team-tab:hover{border-color:#aebbd0}.team-tab.active{border-color:#7186d8;background:#f3f4ff;box-shadow:inset 0 0 0 1px #a7b2ed}
+    .team-icon{width:26px;height:26px;display:grid;place-items:center}.team-icon img{width:26px;height:26px;object-fit:contain}
+    .team-tab b{display:block;font-size:12px;line-height:1.2}.team-tab small{display:block;color:var(--muted);font-size:10px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .workspace{min-height:0;display:grid;grid-template-columns:minmax(560px,1fr) minmax(590px,1fr);overflow:hidden}
+    .vehicle-evidence{min-width:0;min-height:0;display:grid;grid-template-rows:minmax(0,55fr) minmax(0,45fr);background:#101720;border-right:1px solid #cfd7e4}
+    .surface{position:relative;min-width:0;min-height:0;overflow:hidden}
+    .surface-label{position:absolute;z-index:2;left:10px;top:9px;display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:7px;background:rgba(13,20,31,.82);color:#fff;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+    .surface-label-icon{width:12px;height:12px;object-fit:contain;filter:brightness(0) invert(1);opacity:.92}
+    .carla{background:#171c22}.carla img{width:100%;height:100%;display:block;object-fit:cover;object-position:center 60%}
+    .carla-overlay{position:absolute;right:10px;bottom:10px;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+    .dark-chip{padding:5px 8px;border-radius:999px;background:rgba(16,24,36,.82);color:#fff;font-size:10px;font-weight:700;border:1px solid rgba(255,255,255,.2)}
+    .lower-surfaces{min-height:0;display:grid;grid-template-columns:1fr 1fr;background:#f7f8fa}
+    .controller{background:#f3f3f5;border-right:1px solid #cfd7e4;padding:34px 12px 10px;color:#273043;display:flex;flex-direction:column;gap:8px}
+    .launcher-strip{display:flex;gap:6px}.launcher-strip button{flex:1;min-width:0;padding:6px 7px;border:1px solid #cfd5df;border-radius:7px;background:#fff;font-size:9px;font-weight:700;color:#46526a;cursor:pointer}
+    .controller-status{border:1px solid #e1a4a8;background:#fff0f1;color:#9f4049;border-radius:8px;padding:7px 9px;text-align:center;font-size:10px;font-weight:800}
+    .controller-status.ready{border-color:#98ceb1;background:#edf8f2;color:#277451}
+    .mode-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.mode-grid button,.controller-actions button{border:1px solid #cfd5df;border-radius:7px;background:#fff;padding:7px 5px;font-size:9px;font-weight:800;color:#48536a;cursor:pointer}.mode-grid button.active{border-color:#5896c7;background:#eaf4fc;color:#1f6096}.controller-actions button,.backend-body button{display:inline-flex;align-items:center;justify-content:center;gap:5px}
+    .manual-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}.manual-grid button{padding:6px 3px;border:1px solid #d7dce4;border-radius:6px;background:#fff;color:#5c6678;font-size:9px;cursor:pointer}.manual-grid button:nth-child(1){grid-column:2}.manual-grid button:nth-child(2){grid-column:1}.manual-grid button:nth-child(3){grid-column:2}.manual-grid button:nth-child(4){grid-column:3}
+    .controller-actions{margin-top:auto;display:grid;grid-template-columns:1fr 1fr;gap:6px}.controller-actions button.primary{border-color:#d56569;background:#fff1f1;color:#a33b43}.controller-actions button.connected{border-color:#79b49a;background:#edf8f2;color:#287451}.controller-actions button.offline{border-color:#d49b5a;background:#fff4e5;color:#955a17}
+    .mini-facts{display:grid;grid-template-columns:1fr auto;gap:3px 8px;font-size:9px;color:#697386}.mini-facts b{color:#273043;text-align:right}
+    .engineering{background:#111827}.engineering>img{width:100%;height:100%;display:block;object-fit:cover;object-position:top center;filter:saturate(.92)}
+    .engineering .surface-label{background:rgba(18,27,42,.9)}
+    .engineering-overlay{position:absolute;left:8px;right:8px;bottom:8px;background:rgba(18,27,42,.92);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#eef3fb;padding:7px 9px;display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font:9px/1.25 ui-monospace,SFMono-Regular,Menlo,monospace}
+    .engineering-overlay span{color:#9fb0c9}.engineering-overlay b{color:#fff;text-align:right}.engineering-overlay .good{color:#7ee0a8}.engineering-overlay .warn{color:#ffd17c}
+    .browser-shell{position:relative;min-width:0;min-height:0;background:#f8fafc;overflow:hidden}
+    .browser-region{height:100%;min-height:0;overflow:hidden}
+    .global-page{height:100%;overflow-y:auto;overscroll-behavior:contain;padding:18px 20px 34px;scrollbar-gutter:stable}
+    .team-page{height:100%;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+    .team-context{flex:0 0 auto;padding:10px 20px 0;background:#f8fafc;border-bottom:1px solid #dfe5ee;box-shadow:0 5px 12px rgba(27,44,76,.04);z-index:3}
+    .release-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:2px 20px 34px;scrollbar-gutter:stable}
+    .page-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:14px}.page-head h1{font-size:21px;margin:0 0 5px}.page-head p{margin:0;color:var(--muted);font-size:12px;line-height:1.4}.mockup-tag{flex:0 0 auto;border-radius:999px;border:1px solid #d6ddea;background:#fff;padding:6px 9px;color:#6e788b;font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+    .team-heading{display:flex;align-items:baseline;gap:7px;min-width:0;margin:0 0 8px;white-space:nowrap}.team-heading h1{flex:0 0 auto;font-size:17px;line-height:1.2;margin:0}.team-heading p{min-width:0;margin:0;color:var(--muted);font-size:10px;line-height:1.2;overflow:hidden;text-overflow:ellipsis}
+    .authority-band{display:grid;grid-template-columns:28px minmax(0,1fr);gap:8px;align-items:center;padding:6px 9px;margin-bottom:8px;background:#fff8e9;border:1px solid #edd7a4;border-radius:9px}.authority-icon{width:28px;height:28px;display:grid;place-items:center}.authority-icon img{width:28px;height:28px;object-fit:contain}.authority-copy{display:flex;align-items:baseline;gap:5px;min-width:0;white-space:nowrap;overflow:hidden}.authority-copy b{flex:0 0 auto;font-size:10px}.authority-copy p{min-width:0;margin:0;color:#755e39;font-size:9px;line-height:1.25;overflow:hidden;text-overflow:ellipsis}
+    .summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:11px 0}.summary-card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px}.summary-card label{display:block;color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.05em}.summary-card b{display:block;font-size:12px;margin-top:5px}.summary-card small{display:block;color:var(--muted);font-size:9px;margin-top:3px}.team-context .summary-grid{gap:7px;margin:0 0 8px}.team-context .summary-card{padding:7px 9px;border-radius:8px}.team-context .summary-card label{font-size:8px}.team-context .summary-card b{font-size:11px;margin-top:3px}.team-context .summary-card small{font-size:8px;margin-top:2px}
+    .backend-card{background:#fff;border:1px solid var(--line);border-radius:11px;padding:11px 12px;margin-bottom:12px}.backend-card.isolation-card{position:sticky;top:-7px;z-index:4;border-color:#bdc7ef;background:#f8f8ff;box-shadow:0 5px 14px rgba(46,56,112,.08)}.team-context .backend-card{padding:7px 9px;margin-bottom:8px;border-radius:8px}.team-context .backend-card.isolation-card{position:static;box-shadow:none}.backend-head{display:flex;justify-content:space-between;gap:10px;align-items:center}.backend-head b{font-size:12px}.team-context .backend-head b{font-size:10px}.status-badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 7px;font-size:9px;font-weight:800;background:var(--green-soft);color:var(--green)}.status-badge.offline{background:var(--amber-soft);color:var(--amber)}.backend-body{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-top:8px}.team-context .backend-body{align-items:center;margin-top:4px}.backend-body p{margin:0;color:var(--muted);font-size:10px;line-height:1.4}.team-context .backend-body p{font-size:8.5px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.backend-body button,.ghost-button{border:1px solid #cad3e1;background:#fff;color:#3e4b62;border-radius:7px;padding:6px 8px;font-size:9px;font-weight:800;cursor:pointer}.team-context .backend-body button{padding:5px 7px;font-size:8px}.backend-body button:disabled{opacity:.5;cursor:not-allowed}.isolation-facts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.team-context .isolation-facts{gap:4px;margin-top:5px}.isolation-facts span{font-size:9px;border:1px solid #d7dcef;background:#fff;border-radius:999px;padding:5px 7px}.team-context .isolation-facts span{font-size:8px;padding:3px 5px}.isolation-facts b{color:var(--green)}.isolation-facts .loaded{color:var(--amber)}
+    .release-card{background:#fff;border:1px solid var(--line);border-radius:12px;margin:12px 0;overflow:hidden;box-shadow:0 3px 10px rgba(27,44,76,.04)}
+    .release-head{display:grid;grid-template-columns:38px 1fr auto;gap:10px;align-items:center;padding:12px 13px;border-bottom:1px solid #e6ebf2}.release-badge{width:38px;height:38px;border-radius:10px;background:var(--blue-soft);color:var(--blue);display:grid;place-items:center;font-size:11px;font-weight:900}.release-head h2{font-size:14px;margin:0}.release-head p{font-size:10px;color:var(--muted);margin:3px 0 0}.release-state{font-size:9px;font-weight:800;border-radius:999px;padding:5px 8px;background:var(--soft);color:#657086;white-space:nowrap}.release-state.live{background:var(--green-soft);color:var(--green)}.release-state.waiting{background:var(--amber-soft);color:var(--amber)}
+    .story{padding:3px 12px 8px}.story-row{position:relative;display:grid;grid-template-columns:28px 1fr;gap:10px;padding:10px 0}.story-row:not(:last-child)::after{content:"";position:absolute;left:13px;top:38px;bottom:-5px;width:2px;background:#e3e8f0}.story-mark{width:28px;height:28px;border-radius:8px;background:#eef1f5;color:#8490a4;display:grid;place-items:center;font-size:10px;font-weight:900;z-index:1}.story-row.complete .story-mark{background:var(--green-soft);color:var(--green)}.story-row.active .story-mark{background:var(--purple-soft);color:var(--purple);box-shadow:0 0 0 2px rgba(102,84,182,.12)}.story-row.blocked .story-mark,.story-row.waiting .story-mark{background:var(--amber-soft);color:var(--amber)}
+    .story-content{min-width:0}.story-title{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.story-title b{font-size:11px}.actor{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#778297;white-space:nowrap}.story-content p{margin:3px 0 0;color:var(--muted);font-size:10px;line-height:1.35}.story-actions{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}.button{display:inline-flex;align-items:center;justify-content:center;gap:5px;border:1px solid #cbd4e2;border-radius:7px;background:#fff;color:#354158;padding:6px 9px;font-size:9px;font-weight:800;cursor:pointer}.button.primary{background:var(--navy);border-color:var(--navy);color:#fff}.button.primary .ui-icon{filter:brightness(0) invert(1)}.button.warn{background:#fff6e8;border-color:#deb976;color:#8c5b16}.button:disabled{cursor:not-allowed;opacity:.52}.inline-message{margin-top:7px;border-radius:7px;padding:6px 8px;background:var(--amber-soft);color:#845611;font-size:9px;line-height:1.35}.inline-message.info{background:var(--blue-soft);color:#235d8c}.inline-message.success{background:var(--green-soft);color:#256c4c}
+    .lifecycle-block{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0}.lifecycle-block h2{font-size:14px;margin:0 0 5px}.lifecycle-block>p{font-size:10px;color:var(--muted);margin:0 0 11px}.qualification{display:grid;grid-template-columns:42px 1fr auto;gap:10px;align-items:center}.qualification-icon{width:42px;height:42px;border-radius:11px;background:var(--green-soft);color:var(--green);display:grid;place-items:center;font-weight:900}.qualification b{font-size:13px}.qualification p{font-size:10px;color:var(--muted);margin:3px 0 0}.freshness{font-size:9px;color:#6e7a8d;text-align:right}.lifecycle-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.life-step{border:1px solid var(--line);border-radius:10px;padding:11px;background:#fbfcfe}.life-step.done{border-color:#aad3bd;background:#f1faf5}.life-step.active{border-color:#91acd3;background:#f2f7fd}.life-step-head{display:grid;grid-template-columns:32px 1fr;gap:8px;align-items:center}.life-step-head img{width:30px;height:30px;object-fit:contain}.life-step label{font-size:9px;font-weight:900;color:#758196}.life-step b{display:block;font-size:11px;margin-top:3px}.life-step p{font-size:9px;color:var(--muted);line-height:1.35;min-height:36px}.life-step button{width:100%}
+    .modal-layer{position:absolute;inset:0;z-index:20;background:rgba(25,34,50,.34);display:none;align-items:flex-start;justify-content:center;padding:30px 26px;overflow:auto}.modal-layer.open{display:flex}.modal{width:min(620px,100%);background:#fff;border-radius:14px;box-shadow:var(--shadow);overflow:hidden}.modal-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;padding:15px 16px;border-bottom:1px solid var(--line)}.modal-head h2{font-size:16px;margin:0}.modal-head p{font-size:10px;color:var(--muted);margin:4px 0 0}.close-modal{width:30px;height:30px;border:1px solid #d5dce7;border-radius:8px;background:#fff;cursor:pointer;font-size:16px;color:#566176}.modal-body{padding:15px 16px}.modal-summary{border-radius:9px;background:var(--blue-soft);color:#244f77;padding:10px 11px;font-size:11px;line-height:1.45;margin-bottom:12px}.detail-grid{display:grid;grid-template-columns:145px 1fr;border:1px solid var(--line);border-radius:9px;overflow:hidden}.detail-grid dt,.detail-grid dd{margin:0;padding:8px 9px;border-bottom:1px solid #e8ecf2;font-size:10px}.detail-grid dt{background:#f7f9fc;color:#66728a;font-weight:700}.detail-grid dd{color:#28354b;overflow-wrap:anywhere}.detail-grid dt:last-of-type,.detail-grid dd:last-of-type{border-bottom:0}.modal-actions{display:flex;justify-content:flex-end;gap:7px;padding:12px 16px;border-top:1px solid var(--line);background:#fafbfd}.toast{position:absolute;right:16px;bottom:16px;z-index:30;max-width:390px;background:#172033;color:#fff;border-radius:9px;padding:10px 12px;font-size:10px;box-shadow:var(--shadow);opacity:0;transform:translateY(8px);pointer-events:none;transition:.18s}.toast.show{opacity:1;transform:none}
+    @media(max-height:850px){.app{grid-template-rows:68px minmax(0,1fr)}.shared-header{padding:7px 13px}.controller{padding-top:31px;gap:5px}.launcher-strip button,.mode-grid button,.controller-actions button{padding:5px 4px}.manual-grid{display:none}.engineering-overlay{font-size:8px}.team-context{padding-top:7px}.global-page{padding-top:13px}.story-row{padding:8px 0}}
+  </style>
+</head>
+<body>
+  <main class="app" aria-label="AosEdge demo interaction mockup">
+    <header class="shared-header">
+      <div class="brand-row">
+        <button class="title-button" id="globalNav" aria-label="Open Demo Lifecycle">
+          <strong>AosEdge Software Evolution Demo</strong>
+          <span>Open the run-wide Demo Lifecycle</span>
+        </button>
+        <div class="vehicle-pill" id="vehiclePill"><img class="ui-icon vehicle-icon" src="icons/image2.png" alt=""><span id="vehiclePillLabel">Current vehicle · Not assigned</span></div>
+      </div>
+      <nav class="team-tabs" aria-label="OEM producer perspectives">
+        <button class="team-tab active" data-team="platform"><span class="team-icon"><img src="icons/image4.png" alt=""></span><span><b>Platform Team</b><small>Prepared</small></span></button>
+        <button class="team-tab" data-team="brake"><span class="team-icon"><img src="icons/image8.png" alt=""></span><span><b>Brake Team</b><small>Prepared</small></span></button>
+        <button class="team-tab" data-team="tire"><span class="team-icon"><img src="icons/image11.png" alt=""></span><span><b>Tire Team</b><small>Prepared</small></span></button>
+      </nav>
+    </header>
+
+    <section class="workspace">
+      <aside class="vehicle-evidence" aria-label="Fixed vehicle evidence workspace">
+        <section class="surface carla">
+          <span class="surface-label">CARLA · Native vehicle scene</span>
+          <img id="carlaImage" src="source-screenshots/carla-simulator-live.jpeg" alt="Live CARLA vehicle scene">
+          <div class="carla-overlay"><span class="dark-chip" id="carlaVehicle">No vehicle assigned</span><span class="dark-chip" id="carlaMotion">Safe Stop</span></div>
+        </section>
+        <div class="lower-surfaces">
+          <section class="surface controller" aria-label="Vehicle Controller">
+            <span class="surface-label">Vehicle Controller · Native</span>
+            <div class="launcher-strip">
+              <button data-action="launcher-start">Start or Restore Environment</button>
+              <button data-action="restore-layout">Restore workspace layout</button>
+            </div>
+            <div class="controller-status" id="controllerStatus">SAFE STOP — SELECT A DRIVING MODE</div>
+            <div class="mode-grid">
+              <button data-mode="SCENARIO">Scenario</button><button data-mode="MANUAL">Manual</button><button data-mode="AUTOPILOT">Autopilot</button>
+            </div>
+            <div class="manual-grid"><button data-drive="throttle">↑ Throttle</button><button data-drive="left">← Left</button><button data-drive="brake">↓ Brake</button><button data-drive="right">Right →</button></div>
+            <div class="mini-facts"><span>Driving mode</span><b id="modeFact">Not selected</b><span>Gear</span><b id="gearFact">Drive</b><span>External connectivity</span><b id="connectivityFact">Connected</b></div>
+            <div class="controller-actions">
+              <button data-action="scenario-restart">Restart current drive</button><button data-action="gear-toggle">Gear: Drive</button>
+              <button class="primary" data-action="safe-stop"><img class="button-icon" src="icons/vehicle-safe-stop.png" alt="Safe Stop">Enter Safe Stop</button><button class="connected" data-action="connectivity"><img class="button-icon" src="icons/connectivity-available.png" alt="Connectivity available">Vehicle external connectivity · ON</button>
+            </div>
+          </section>
+          <section class="surface engineering" aria-label="Engineering Telematics Dashboard">
+            <span class="surface-label"><img class="surface-label-icon" src="icons/vehicle-signals-vss.png" alt="">Engineering Telematics · Native</span>
+            <img id="engineeringImage" src="source-screenshots/engineering-telematics-dashboard-live.png" alt="Engineering telematics dashboard">
+            <div class="engineering-overlay" id="engineeringOverlay"></div>
+          </section>
+        </div>
+      </aside>
+
+      <section class="browser-shell" aria-label="Browser release workspace">
+        <div class="browser-region" id="browserRegion"></div>
+        <div class="modal-layer" id="modalLayer" role="presentation"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><header class="modal-head"><div><h2 id="modalTitle"></h2><p id="modalSubtitle"></p></div><button class="close-modal" data-action="modal-close" aria-label="Close">×</button></header><div class="modal-body" id="modalBody"></div><footer class="modal-actions" id="modalActions"></footer></section></div>
+        <div class="toast" id="toast" role="status" aria-live="polite"></div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const releases = {
+      platform: [
+        {id:'platform-1', version:1, title:'Vehicle Data Platform Component v1', short:'Brake telemetry foundation', description:'Adds the brake-related read capability required by Brake Health v1.'},
+        {id:'platform-2', version:2, title:'Vehicle Data Platform Component v2', short:'On-board analysis inputs', description:'Adds richer signals for on-board brake condition analysis.'},
+        {id:'platform-3', version:3, title:'Vehicle Data Platform Component v3', short:'Driver advisory and tire inputs', description:'Adds in-vehicle advisory write-back and the data required by Tire Health.'}
+      ],
+      brake: [
+        {id:'brake-1', version:1, title:'Brake Health Service v1', short:'Brake event windows to backend', description:'Captures a bounded pre/post braking window and sends raw event data to the Brake backend.', dependency:1},
+        {id:'brake-2', version:2, title:'Brake Health Service v2', short:'On-board brake condition', description:'Produces derived brake-condition events on the vehicle and reduces raw cloud traffic.', dependency:2},
+        {id:'brake-3', version:3, title:'Brake Health Service v3', short:'Driver maintenance advisory', description:'Adds a driver-facing brake maintenance advisory and publishes the derived result to the backend.', dependency:3}
+      ],
+      tire: [
+        {id:'tire-1', version:1, title:'Tire Health Service v1', short:'Independent tire health release', description:'Analyzes tire condition locally, generates an in-vehicle advisory and reports a derived event.', dependency:3}
+      ]
+    };
+
+    const state = {
+      view:'platform', selectedTeam:'platform', environmentReady:false, m0:false, m1:false, ended:false,
+      currentVehicle:null, vehicleTransition:false, safeStop:true, mode:null, gear:'Drive', connectivity:true,
+      tireLoad:false, eventCounter:{brake:0,tire:0}, pendingPlatform:null,
+      installed:{test:{platform:0,brake:0,tire:0},production:{platform:0,brake:0,tire:0}},
+      progress:{}, scroll:{platform:0,brake:0,tire:0,global:0}
+    };
+    Object.values(releases).flat().forEach(r=>state.progress[r.id]=0);
+
+    const $ = (s,root=document)=>root.querySelector(s);
+    const $$ = (s,root=document)=>[...root.querySelectorAll(s)];
+    const browser = $('#browserRegion');
+    let lastFocus=null, confirmTask=null, toastTimer=null;
+
+    function esc(v){return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+    function iconMarkup(number,alt='',className='ui-icon'){return `<img class="${className}" src="icons/image${number}.png" alt="${esc(alt)}">`;}
+    const customIconFiles={EVIDENCE:'qualification-evidence.png',SAFE:'vehicle-safe-stop.png',LINK:'connectivity-available.png',SIGNAL:'vehicle-signals-vss.png',LOG:'operational-logs.png',QUOTA:'service-quota-isolation.png',RESET:'end-reset-demo.png',REC:'recovery-reconcile.png'};
+    function customIconMarkup(key,alt='',className='ui-icon'){return `<img class="${className}" src="icons/${customIconFiles[key]}" alt="${esc(alt)}">`;}
+    function teamIconNumber(team){return team==='platform'?4:team==='brake'?8:11;}
+    function releaseIconNumber(team,release){if(team==='platform')return 4;if(team==='tire')return 11;return release.version===2?9:release.version===3?10:8;}
+    function summaryLabel(icon,label){return `<span class="summary-label">${typeof icon==='number'?iconMarkup(icon,''):customIconMarkup(icon,'')}<span>${label}</span></span>`;}
+    function teamName(t){return t==='platform'?'OEM Platform Team':t==='brake'?'OEM Brake Function Team':'OEM Tire Function Team';}
+    function vehicleName(v=state.currentVehicle){return v==='test'?'Test Vehicle':v==='production'?'Production Vehicle':'Not assigned';}
+    function currentReleaseStatus(team){const ps=releases[team].map(r=>state.progress[r.id]);if(ps.some(p=>p===2||p===7))return 'Waiting';if(ps.some(p=>p===8))return 'Production live';if(ps.some(p=>p>0))return 'Release in progress';return 'Prepared';}
+    function releaseState(p){if(p===8)return ['Production live','live'];if(p===2||p===7)return ['Waiting','waiting'];if(p===0)return ['Prepared',''];return ['Release in progress',''];}
+    function currentScroller(){return state.view==='global'?$('.global-page',browser):$('.release-scroll',browser);}
+    function saveScroll(){const scroller=currentScroller();if(scroller)state.scroll[state.view]=scroller.scrollTop;}
+    function navigate(view){saveScroll();state.view=view;if(view!=='global')state.selectedTeam=view;render(false);}
+    function showToast(message){const t=$('#toast');t.textContent=message;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2600);}
+
+    function renderHeader(){
+      const pill=$('#vehiclePill');$('#vehiclePillLabel').textContent=`Current vehicle · ${state.vehicleTransition?'Switching…':vehicleName()}`;pill.className='vehicle-pill '+(state.vehicleTransition?'transition':state.currentVehicle||'');
+      $$('.team-tab').forEach(b=>{const team=b.dataset.team;b.classList.toggle('active',state.view===team);$('small',b).textContent=currentReleaseStatus(team);});
+    }
+
+    function renderVehicle(){
+      $('#carlaVehicle').textContent=vehicleName();$('#carlaMotion').textContent=state.safeStop?'Safe Stop':`${state.mode||'Driving'} · Moving`;
+      $('#modeFact').textContent=state.mode?state.mode[0]+state.mode.slice(1).toLowerCase():'Not selected';$('#gearFact').textContent=state.gear;$('#connectivityFact').textContent=state.connectivity?'Connected':'Offline from external world';
+      const status=$('#controllerStatus');status.textContent=state.safeStop?'SAFE STOP — VEHICLE STATIONARY':`${state.mode||'DRIVING'} — VEHICLE MOVING`;status.classList.toggle('ready',!state.safeStop);
+      $$('[data-mode]').forEach(b=>b.classList.toggle('active',state.mode===b.dataset.mode));
+      const stop=$('[data-action="safe-stop"]');stop.innerHTML=`${customIconMarkup('SAFE','Safe Stop','button-icon')}<span>${state.safeStop?'Resume selected drive':'Enter Safe Stop'}</span>`;
+      const con=$('[data-action="connectivity"]');con.innerHTML=`${state.connectivity?customIconMarkup('LINK','Connectivity available','button-icon'):iconMarkup(12,'Connectivity lost','button-icon')}<span>Vehicle external connectivity · ${state.connectivity?'ON':'OFF'}</span>`;con.classList.toggle('connected',state.connectivity);con.classList.toggle('offline',!state.connectivity);
+      $('[data-action="gear-toggle"]').textContent=`Gear: ${state.gear}`;
+      const inst=state.currentVehicle?state.installed[state.currentVehicle]:{platform:0,brake:0,tire:0};
+      const advisory=inst.tire?'Tire condition OK':inst.brake>=3?'Brake maintenance advisory ready':'None';
+      $('#engineeringOverlay').innerHTML=`<span>Current vehicle</span><b>${vehicleName()}</b><span>Gateway / VSS</span><b class="good">${state.currentVehicle?'LIVE':'NO UNIT'}</b><span>Speed</span><b>${state.safeStop?'0.0':'34.0'} km/h</b><span>Brake</span><b>${state.safeStop?'100':'12'}%</b><span>Driver advisory</span><b>${advisory}</b><span>External link</span><b class="${state.connectivity?'good':'warn'}">${state.connectivity?'CONNECTED':'OFFLINE'}</b>`;
+    }
+
+    function authorityBand(){return `<section class="authority-band"><div class="authority-icon">${iconMarkup(7,'OEM Release Authority')}</div><div class="authority-copy"><b>OEM Release Authority</b><p>— Independent from producer teams; reviews required evidence and authorizes the exact Test or Production deployment.</p></div></section>`;}
+
+    function renderGlobal(){
+      const phase=state.ended?'R0 complete':state.m1?'G0 ready':state.m0?'M0 complete':'Ready for M0';
+      browser.innerHTML=`<div class="global-page"><div class="page-head"><div><h1>Demo Lifecycle</h1><p>Run-wide qualification, preparation, current lifecycle and terminal reset.</p></div><span class="mockup-tag">Icon-integrated mockup</span></div>
+      <section class="lifecycle-block"><div class="qualification"><div class="qualification-icon">${customIconMarkup('EVIDENCE','Qualification evidence','qualification-new-icon')}</div><div><b>Qualification Status · QUALIFIED</b><p>Current bounded qualification evidence is valid for an official audience presentation. There is no manual green override.</p></div><div class="freshness">Source: qualification record<br>Freshness: current</div></div></section>
+      <section class="lifecycle-block"><h2>Prepare Demo</h2><p>The native Presenter Launcher prepares the local workspace. M0 and M1 create the visible vehicle lifecycle baseline.</p><div class="lifecycle-steps">
+        <div class="life-step ${state.m0||state.m1?'done':'active'}"><div class="life-step-head">${iconMarkup(6,'Manufacturing result')}<div><label>M0 · MANUFACTURING RESULT</label><b>Two clean OEM factory VMs</b></div></div><p>Test and Production vehicle VMs exist from the qualified factory image and are not provisioned.</p><button class="button ${!state.m0&&!state.m1?'primary':''}" data-action="global-m0" ${state.m0||state.m1?'disabled':''}>${state.m0||state.m1?'M0 complete':'Create M0 vehicles'}</button></div>
+        <div class="life-step ${state.m1?'done':state.m0?'active':''}"><div class="life-step-head">${iconMarkup(1,'AosCloud')}<div><label>M1 · PROVISION</label><b>Provision and assign Units</b></div></div><p>Create fresh Unit and Node identities, then assign the exact Test and Production Unit Sets.</p><button class="button ${state.m0&&!state.m1?'primary':''}" data-action="global-m1" ${!state.m0||state.m1?'disabled':''}>${state.m1?'M1 complete':'Provision through AosCloud'}</button></div>
+        <div class="life-step ${state.m1&&!state.ended?'done':''}"><div class="life-step-head">${iconMarkup(3,'AosCore')}<div><label>G0 · BASELINE</label><b>Managed baseline ready</b></div></div><p>Both Units are online; Test Vehicle is audience-current. No post-SOP VDP or Services are installed.</p><button class="button" disabled>${state.m1&&!state.ended?'G0 established':'Waiting for M1'}</button></div>
+      </div></section>
+      <section class="lifecycle-block"><h2>Current global lifecycle</h2><div class="summary-grid"><div class="summary-card"><label>${summaryLabel(13,'Lifecycle')}</label><b>${phase}</b><small>Derived from accepted run state</small></div><div class="summary-card"><label>${summaryLabel(2,'Current vehicle')}</label><b>${vehicleName()}</b><small>One audience evidence context</small></div><div class="summary-card"><label>${summaryLabel(state.connectivity?'LINK':12,'Vehicle connectivity')}</label><b>${state.connectivity?'Connected':'External world unavailable'}</b><small>Presenter-to-AosCloud remains available</small></div></div><button class="ghost-button" data-action="recheck">Recheck current authoritative state</button></section>
+      <section class="lifecycle-block"><h2 class="icon-label">${customIconMarkup('RESET','End and reset demo','lifecycle-title-icon')}<span>End and Reset Demo (R0)</span></h2><p>Deprovision and remove both Cloud Units, discard mutable VMs and finish the run. R0 does not start another run and no demo-run history is retained by this UI.</p><button class="button ${state.m1&&!state.ended?'warn':''}" data-action="global-r0" ${!state.m1||state.ended?'disabled':''}>${state.ended?'R0 complete':'End and reset demo'}</button></section>
+      <section class="lifecycle-block"><h2 class="icon-label">${customIconMarkup('REC','Recovery and reconcile','lifecycle-title-icon')}<span>Global recovery</span></h2><p>Recovery re-reads authoritative AosCloud and local helper state. It never turns an uncertain operation into success by assumption.</p><button class="ghost-button" data-action="reconcile">Reconcile interrupted operation</button></section></div>`;
+    }
+
+    function backendPanel(team){
+      const current=state.currentVehicle?state.installed[state.currentVehicle]:{platform:0,brake:0,tire:0};
+      if(team==='platform')return `<section class="backend-card"><div class="backend-head"><b class="backend-title">${iconMarkup(4,'')}<span>Platform capability view</span></b><span class="status-badge">AosEdge state current</span></div><div class="backend-body"><p>Shows the exact VDP capability currently reported for the Current Vehicle. Platform component Details do not contain Service quotas.</p><button data-action="logs" data-team="platform" ${current.platform?'':'disabled'}>${customIconMarkup('LOG','Operational logs','button-icon')}<span>Operational Logs</span></button></div></section>`;
+      const connected=state.connectivity;const installed=state.currentVehicle?state.installed[state.currentVehicle][team]:0;const events=state.eventCounter[team];
+      const backend=`<section class="backend-card"><div class="backend-head"><b class="backend-title">${iconMarkup(teamIconNumber(team),'')}<span>${team==='brake'?'Brake Health':'Tire Health'} Function Backend</span></b><span class="status-badge ${connected?'':'offline'}">${connected?'Connected · '+events+' derived events':'No new cloud events'}</span></div><div class="backend-body"><p>${connected?(installed?`Released v${installed} is active on the ${vehicleName()}. A live exercise correlates CARLA, Engineering Telematics, the in-vehicle Service and this backend.`:'No released Service is active on the Current Vehicle yet.'):'The vehicle is offline from the external world. Local analysis and driver advisory remain available; buffered queue occupancy is not observable here.'}</p><div><button data-action="logs" data-team="${team}" ${installed?'':'disabled'}>${customIconMarkup('LOG','Operational logs','button-icon')}<span>Operational Logs</span></button></div></div></section>`;
+      if(team!=='tire')return backend;
+      return backend+`<section class="backend-card isolation-card"><div class="backend-head"><b class="backend-title">${customIconMarkup('QUOTA','Service quota isolation')}<span>Runtime Isolation Evidence</span></b><span class="status-badge ${state.tireLoad?'offline':''}">${state.tireLoad?'Tire throttled at quota':'Ready for proof'}</span></div><div class="isolation-facts"><span>Tire CPU <b class="${state.tireLoad?'loaded':''}">${state.tireLoad?'100% · throttled':'18%'}</b></span><span>Brake <b>Healthy</b></span><span>Platform <b>Healthy</b></span><span>Scope <b>Qualified VM baseline</b></span></div><div class="backend-body"><p>AosCore enforces each Service quota. Reaching the Tire limit throttles that tenant; it does not stop Tire Health or consume Brake Health resources.</p><button data-action="tire-load" ${installed?'':'disabled'}>${customIconMarkup('QUOTA','Service quota isolation','button-icon')}<span>${state.tireLoad?'Stop isolation proof':'Run isolation proof'}</span></button></div></section>`;
+    }
+
+    function stageRows(team,r){
+      const p=state.progress[r.id];
+      const rows=[
+        {range:[0,0],title:'Prepared candidate',actor:teamName(team),text:'Review the already-built immutable artifact, sign it with the producer credential and submit it to AosCloud.',action:'release-publish',label:'Sign & submit candidate'},
+        {range:[1,2],title:'Authorize and deliver to Test Vehicle',actor:'OEM Release Authority + AosCloud',text:'Release Authority reviews the exact evidence and target. AosCloud executes the authorized delivery.',action:'release-test',label:state.currentVehicle==='test'?'Authorize Test deployment':'Continue testing on Test Vehicle'},
+        {range:[3,4],title:'Validate on Test Vehicle',actor:teamName(team),text:'The owning producer team exercises the real vehicle behavior, reviews evidence and accepts the exact tested result.',action:p===3?'release-run-test':'release-accept-test',label:p===3?'Run Test Vehicle exercise':'Accept Test evidence'},
+        {range:[5,7],title:'Release to Production Vehicle',actor:'Producer handover + OEM Release Authority',text:'After producer acceptance, hand over to the Production Vehicle. Release Authority authorizes; AosCloud executes.',action:p===5?'release-handover':p===6?'release-production':'none',label:p===5?'Continue with Production Vehicle':p===6?'Authorize Production deployment':'Waiting for application'},
+        {range:[8,8],title:'Production operation',actor:'Production Vehicle',text:'Show the released capability working in motion. This is live operation, not a second validation lane.',action:'release-live',label:'Run live vehicle exercise'}
+      ];
+      const activeIndex=p===0?0:p<=2?1:p<=4?2:p<=7?3:4;
+      return rows.map((row,i)=>{
+        const complete=i<activeIndex||(i===4&&p===8);let cls=complete?'complete':i===activeIndex?'active':'';let msg='';
+        if(i===1&&p===2&&team==='platform'){cls='waiting';msg=platformWaitingMessage(r,'test');}
+        if(i===3&&p===7&&team==='platform'){cls='waiting';msg=platformWaitingMessage(r,'production');}
+        if(i===1&&p===1&&team!=='platform'&&!dependencyMet(team,r,'test')){cls='blocked';msg=dependencyMessage(r,'test');}
+        if(i===3&&p===6&&team!=='platform'&&!dependencyMet(team,r,'production')){cls='blocked';msg=dependencyMessage(r,'production');}
+        const actionVisible=i===activeIndex&&row.action!=='none'&&!(p===2||p===7);
+        const actionIcon=row.action==='release-publish'?(team==='platform'?iconMarkup(4,'','button-icon'):iconMarkup(5,'','button-icon')):row.action==='release-test'||row.action==='release-production'?iconMarkup(7,'','button-icon'):row.action==='release-accept-test'?customIconMarkup('EVIDENCE','Qualification evidence','button-icon'):row.action==='release-run-test'||row.action==='release-handover'||row.action==='release-live'?iconMarkup(2,'','button-icon'):'';
+        return `<div class="story-row ${cls}"><div class="story-mark">${complete?'✓':i+1}</div><div class="story-content"><div class="story-title"><b>${row.title}</b><span class="actor">${row.actor}</span></div><p>${row.text}</p>${msg}<div class="story-actions"><button class="button" data-action="details" data-release="${r.id}" data-stage="${i}">Details</button>${actionVisible?`<button class="button primary" data-action="${row.action}" data-release="${r.id}">${actionIcon}<span>${row.label}</span></button>`:''}</div></div></div>`;
+      }).join('');
+    }
+
+    function platformWaitingMessage(r,target){
+      const previous=state.installed[target].platform;
+      if(!state.pendingPlatform||state.pendingPlatform.release!==r.id||state.pendingPlatform.target!==target)return '';
+      const slot=previous?`VDP v${previous} remains healthy and active until replacement.`:'First-install component slot remains empty until application.';
+      return `<div class="inline-message"><b>AosEdge Platform: ACTIVATING</b><br>Vehicle Gateway: Safe Stop not established<br><b>Waiting for Safe Stop before application</b> · derived UI explanation<br>${slot} Use <b>Enter Safe Stop</b> in the Vehicle Controller.</div>`;
+    }
+    function dependencyMet(team,r,target){return team==='platform'||state.installed[target].platform>=r.dependency;}
+    function dependencyMessage(r,target){return `<div class="inline-message"><b>Deployment blocked by demo dependency check.</b><br>${r.title} requires Vehicle Data Platform Component v${r.dependency}; ${vehicleName(target)} currently reports v${state.installed[target].platform||'—'}. The candidate remains visible and publishable.</div>`;}
+
+    function renderTeam(team){
+      const unit=state.currentVehicle?state.installed[state.currentVehicle]:{platform:0,brake:0,tire:0};
+      const description=team==='platform'?'Builds and releases the shared Vehicle Data Platform Component.':team==='brake'?'Develops and releases predictive brake-maintenance Services.':'Develops and releases predictive tire-maintenance Services.';
+      browser.innerHTML=`<div class="team-page"><div class="team-context"><div class="team-heading"><h1>${teamName(team)}</h1><p>— ${description}</p></div>${authorityBand()}
+      <div class="summary-grid"><div class="summary-card"><label>${summaryLabel(2,'Current Vehicle')}</label><b>${vehicleName()}</b><small>Audience evidence context</small></div><div class="summary-card"><label>${summaryLabel(teamIconNumber(team),'Reported by AosEdge')}</label><b>${team==='platform'?`VDP v${unit.platform||'—'}`:`Service v${unit[team]||'—'}`}</b><small>Current observed vehicle state</small></div><div class="summary-card"><label>${summaryLabel(13,'Team lifecycle')}</label><b>${currentReleaseStatus(team)}</b><small>Independent from other teams</small></div></div>
+      ${backendPanel(team)}</div>
+      <div class="release-scroll" aria-label="${teamName(team)} versions and release stages">${releases[team].map(r=>{const [label,cls]=releaseState(state.progress[r.id]);return `<article class="release-card" id="${r.id}"><header class="release-head"><div class="release-badge">v${r.version}</div><div><h2 class="release-heading">${iconMarkup(releaseIconNumber(team,r),'')}<span>${r.title}</span></h2><p>${r.short} · ${r.description}</p></div><span class="release-state ${cls}">${label}</span></header><div class="story">${stageRows(team,r)}</div></article>`;}).join('')}</div></div>`;
+    }
+
+    function render(captureScroll=true){if(captureScroll)saveScroll();const y=state.scroll[state.view]||0;renderHeader();renderVehicle();state.view==='global'?renderGlobal():renderTeam(state.view);requestAnimationFrame(()=>{const scroller=currentScroller();if(scroller)scroller.scrollTop=y;});}
+
+    function releaseById(id){for(const [team,list] of Object.entries(releases)){const release=list.find(r=>r.id===id);if(release)return {team,release};}return null;}
+    function openModal(title,subtitle,summary,details,actions=''){lastFocus=document.activeElement;$('#modalTitle').textContent=title;$('#modalSubtitle').textContent=subtitle;$('#modalBody').innerHTML=`<div class="modal-summary">${summary}</div><dl class="detail-grid">${details.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${v}</dd>`).join('')}</dl>`;$('#modalActions').innerHTML=actions||`<button class="button primary" data-action="modal-close">Close</button>`;$('#modalLayer').classList.add('open');requestAnimationFrame(()=>$('.close-modal').focus());}
+    function closeModal(){if(!$('#modalLayer').classList.contains('open'))return;$('#modalLayer').classList.remove('open');confirmTask=null;if(lastFocus)lastFocus.focus();}
+    function openDetails(id,stage){
+      const found=releaseById(id);if(!found)return;const {team,release:r}=found;const service=team!=='platform';const target=state.currentVehicle||'test';const source=team==='platform'?'AosCloud component state + Vehicle Gateway':'AosCloud Service state + Function backend';
+      const access=team==='platform'?'OEM-owned provider capability; no Service quota is displayed.':team==='brake'?`Read brake-window data; v3 may write the approved driver advisory path.`:'Read tire dynamics; write the approved tire-maintenance advisory path.';
+      const quota=team==='brake'?'CPU 35% · Memory 192 MiB · Storage 64 MiB':team==='tire'?'CPU 20% · Memory 128 MiB · Storage 48 MiB':'Not applicable to the Platform Component';
+      openModal(`${r.title} · Details`,`Read-only · stage ${Number(stage)+1} of 5`,r.description,[['Producer',teamName(team)],['Prepared artifact',`${r.id}.oci · already built · immutable candidate`],['Integrity','Digest sha256: 8e1…'+r.version+'c4 · signature status shown without private material'],['Dependency',service?`Vehicle Data Platform Component v${r.dependency} or newer`:'OEM component runtime and Safe Stop gate'],['Access / permissions',access],['Service quota',quota],['Current target',vehicleName(target)],['Observed state',`Test v${state.installed.test[team]||'—'} · Production v${state.installed.production[team]||'—'}`],['Evidence','Exact candidate, target and accepted verification/validation evidence'],['Source and freshness',`${source} · current mockup read`]]);
+    }
+    function confirmAction(title,summary,details,fn){confirmTask=fn;openModal(title,'Protected action · explicit confirmation required',summary,details,`<button class="button" data-action="modal-close">Cancel</button><button class="button primary" data-action="confirm">Confirm exact action</button>`);}
+    function blockedDependency(team,r,target){openModal('Deployment blocked','Dependency check · no deployment mutation','The candidate remains available, but the exact target does not satisfy its telemetry dependency.',[['Candidate',r.title],['Target',vehicleName(target)],['Required',`Vehicle Data Platform Component v${r.dependency}`],['Currently reported',`Vehicle Data Platform Component v${state.installed[target].platform||'—'}`],['Source','Fresh AosEdge target state read before authorization'],['Safe next step',`Ask the OEM Platform Team to release VDP v${r.dependency}, then recheck the target.`]]);}
+
+    function performRelease(action,id){
+      const found=releaseById(id);if(!found)return;const {team,release:r}=found;const p=state.progress[id];
+      if(!state.m1||state.ended){openModal('Action blocked','Lifecycle guard · no release mutation','The managed G0 baseline is not available.',[['Required','Complete M0 and M1 on the Demo Lifecycle page'],['Current lifecycle',state.ended?'R0 complete':'Not prepared'],['Safe next step','Open the demo title and prepare a new qualified run.']]);return;}
+      if(action==='release-publish'&&p===0){confirmAction('Sign and submit candidate',`${teamName(team)} will sign the already-built immutable candidate and submit it to AosCloud.`,[['Actor',teamName(team)],['Candidate',r.title],['Credential scope',team==='platform'?'OEM':'Dedicated '+teamName(team)+' Service Provider'],['Compilation','None · artifact is already built'],['Result source','AosCloud artifact state']],()=>{state.progress[id]=1;showToast(`${r.title} submitted. AosCloud reports the candidate received.`);render();});}
+      if(action==='release-test'&&p===1){if(state.currentVehicle!=='test'){confirmAction('Continue testing on Test Vehicle','Change only the audience-current vehicle context. No release state is changed.',[['From',vehicleName()],['To','Test Vehicle'],['Cloud Units','Both may remain Online'],['Live evidence','Cleared until the Test Vehicle sources are current']],()=>{state.currentVehicle='test';state.safeStop=true;state.mode=null;showToast('Test Vehicle is now the Current Vehicle.');render();});return;}if(team!=='platform'&&!dependencyMet(team,r,'test')){blockedDependency(team,r,'test');return;}confirmAction('Authorize Test Vehicle deployment','OEM Release Authority authorizes this exact candidate and target after reviewing accepted evidence. AosCloud executes the delivery.',[['Decision actor','OEM Release Authority'],['Candidate',r.title],['Target','Test Vehicle'],['Target Unit Set','Verification Unit Set · freshly read · 1 current Unit'],['Effective batch recipients','1 Unit · exact match with intended recipient set'],['Evidence','Verification, validation, integration and applicable homologation evidence'],['Executor','AosCloud']],()=>{state.progress[id]=2;if(team==='platform'){state.pendingPlatform={release:id,target:'test'};if(state.safeStop)completePlatformApplication();}else setTimeout(()=>completeServiceApplication(team,r,'test'),650);render();});}
+      if(action==='release-run-test'&&p===3){state.mode='SCENARIO';state.safeStop=false;state.progress[id]=4;addLiveEvent(team);showToast(`Test Vehicle exercise completed for ${r.title}.`);render();}
+      if(action==='release-accept-test'&&p===4){confirmAction('Accept exact Test evidence',`${teamName(team)} accepts the tested result and hands over a production-ready evidence set.`,[['Actor',teamName(team)],['Candidate',r.title],['Test target','Test Vehicle'],['Evidence scope','Exact deployed artifact and live vehicle exercise'],['Next authority','OEM Release Authority for Production']],()=>{state.progress[id]=5;render();});}
+      if(action==='release-handover'&&p===5){confirmAction('Continue with Production Vehicle','Switch the single audience evidence context after Test acceptance. This does not deploy software by itself.',[['From','Test Vehicle'],['To','Production Vehicle'],['Test result','Accepted'],['Production state','Read fresh after handover']],()=>{state.currentVehicle='production';state.safeStop=false;state.mode='AUTOPILOT';state.progress[id]=6;showToast('Production Vehicle is now current and continues normal driving.');render();});}
+      if(action==='release-production'&&p===6){if(team!=='platform'&&!dependencyMet(team,r,'production')){blockedDependency(team,r,'production');return;}confirmAction('Authorize Production deployment','OEM Release Authority authorizes the exact tested candidate for the Production Vehicle. AosCloud executes the rollout.',[['Decision actor','OEM Release Authority'],['Candidate',r.title],['Target','Production Vehicle'],['Target Unit Set','Demonstration Unit Set · freshly read · 1 current Unit'],['Effective batch recipients','1 Unit · exact match with intended recipient set'],['Accepted Test evidence','Present and current'],['Executor','AosCloud']],()=>{state.progress[id]=7;if(team==='platform'){state.pendingPlatform={release:id,target:'production'};if(state.safeStop)completePlatformApplication();}else setTimeout(()=>completeServiceApplication(team,r,'production'),650);render();});}
+      if(action==='release-live'&&p===8){state.mode='AUTOPILOT';state.safeStop=false;addLiveEvent(team);showToast(`${r.title} is operating live on the Production Vehicle.`);render();}
+    }
+
+    function completeServiceApplication(team,r,target){if(state.progress[r.id]!==2&&state.progress[r.id]!==7)return;state.installed[target][team]=r.version;state.progress[r.id]=state.progress[r.id]===2?3:8;render();showToast(`AosEdge reports ${r.title} active on the ${vehicleName(target)}.`);}
+    function completePlatformApplication(){const pending=state.pendingPlatform;if(!pending||!state.safeStop)return;const found=releaseById(pending.release);if(!found)return;const {release:r}=found;state.installed[pending.target].platform=r.version;state.progress[r.id]=state.progress[r.id]===2?3:8;state.pendingPlatform=null;render();showToast(`AosEdge reports ${r.title} active. Vehicle remains in Safe Stop.`);}
+    function addLiveEvent(team){if(team==='platform')return;if(!state.currentVehicle||!state.installed[state.currentVehicle][team])return;if(state.connectivity)state.eventCounter[team]++;}
+
+    function controllerAction(action,el){
+      if(action==='launcher-start'){state.environmentReady=true;showToast('Local demo environment and workspace surfaces are ready.');return;}
+      if(action==='restore-layout'){showToast('Accepted local window geometry restored. No lifecycle state changed.');return;}
+      if(action==='safe-stop'){if(state.safeStop){if(!state.mode)state.mode='AUTOPILOT';state.safeStop=false;showToast('Vehicle drive resumed.');}else{state.safeStop=true;showToast('Vehicle Gateway reports Safe Stop established.');completePlatformApplication();}render();return;}
+      if(action==='scenario-restart'){if(!state.currentVehicle){showToast('Assign a Current Vehicle through M1 first.');return;}state.mode='SCENARIO';state.safeStop=false;addLiveEvent(state.selectedTeam);render();showToast('Deterministic CARLA scenario restarted.');return;}
+      if(action==='gear-toggle'){state.gear=state.gear==='Drive'?'Reverse':'Drive';render();return;}
+      if(action==='connectivity'){state.connectivity=!state.connectivity;render();showToast(state.connectivity?'Vehicle external connectivity restored; bounded synchronization may resume.':'Vehicle disconnected from AosCloud and both Function backends; in-vehicle paths remain active.');return;}
+      if(action==='tire-load'){state.tireLoad=!state.tireLoad;render();showToast(state.tireLoad?'Tire tenant is at its CPU quota and is throttled; Brake remains healthy.':'Tire isolation load stopped.');return;}
+      if(action==='recheck'){showToast('Fresh AosCloud and vehicle state read completed.');return;}
+      if(action==='reconcile'){showToast('No unresolved external operation found. Authoritative state is consistent.');return;}
+      if(action==='logs'){const team=el.dataset.team;openModal(`${teamName(team)} · Operational Logs`,'Explicit on-demand request · no second log archive','Logs are requested only for this selected scope. The UI shows the native AosCloud result and does not retain an independent history.',[['Requested by',teamName(team)],['Scope',team==='platform'?'Current Component and Unit':'Current Service instance and owning provider'],['Source','AosCloud native log delivery'],['Disclosure','Sanitized allowlist; credentials and unrestricted raw responses are excluded'],['Retention','No additional Demo UI archive']]);return;}
+      if(action==='global-m0'){if(!state.environmentReady){openModal('M0 blocked','Environment prerequisite · no lifecycle mutation','The local Presenter Launcher has not confirmed the environment and workspace surfaces.',[['Safe next step','Use Start or Restore Environment in Vehicle Controller'],['Lifecycle effect','None']]);return;}confirmAction('Create M0 manufacturing result','Create two clean unprovisioned OEM factory VMs from the qualified image.',[['Actor','Demo Orchestrator'],['Result','Test and Production vehicle VMs'],['Identity','No Unit or Node identity yet'],['Cloud mutation','None']],()=>{state.m0=true;state.ended=false;render();});return;}
+      if(action==='global-m1'){confirmAction('Provision M1 baseline','Provision both vehicles and assign each fresh Unit to its exact release Unit Set.',[['Actor','OEM lifecycle operator'],['Test Vehicle','Fresh Unit/Node identity → Verification Unit Set'],['Production Vehicle','Fresh Unit/Node identity → Demonstration Unit Set'],['Result','G0 managed baseline; Test Vehicle becomes current']],()=>{state.m1=true;state.currentVehicle='test';state.safeStop=true;state.mode=null;render();});return;}
+      if(action==='global-r0'){confirmAction('End and reset demo','This is a terminal reset: deprovision and delete both Units, discard mutable VMs and leave no current vehicle.',[['Actor','OEM lifecycle operator'],['Cloud result','Units deprovisioned and removed'],['Local result','Mutable VMs discarded'],['History','Demo UI retains no demo-run history'],['Next run','Must begin explicitly from M0/M1']],()=>{state.ended=true;state.m0=false;state.m1=false;state.currentVehicle=null;state.safeStop=true;state.mode=null;state.pendingPlatform=null;state.installed={test:{platform:0,brake:0,tire:0},production:{platform:0,brake:0,tire:0}};Object.keys(state.progress).forEach(k=>state.progress[k]=0);render();});return;}
+    }
+
+    document.addEventListener('click',e=>{
+      const tab=e.target.closest('.team-tab');if(tab){navigate(tab.dataset.team);return;}
+      const mode=e.target.closest('[data-mode]');if(mode){state.mode=mode.dataset.mode;state.safeStop=false;render();showToast(`${mode.textContent} control selected.`);return;}
+      const drive=e.target.closest('[data-drive]');if(drive){if(state.mode!=='MANUAL'){showToast('Select Manual control first.');return;}state.safeStop=drive.dataset.drive==='brake';render();return;}
+      const b=e.target.closest('[data-action]');if(!b)return;const a=b.dataset.action;
+      if(a==='modal-close'){closeModal();return;}if(a==='confirm'){const task=confirmTask;closeModal();if(task)task();return;}
+      if(a==='details'){openDetails(b.dataset.release,b.dataset.stage);return;}
+      if(a.startsWith('release-')){performRelease(a,b.dataset.release);return;}
+      controllerAction(a,b);
+    });
+    $('#globalNav').addEventListener('click',()=>navigate('global'));
+    document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+    render();
+  </script>
+</body>
+</html>

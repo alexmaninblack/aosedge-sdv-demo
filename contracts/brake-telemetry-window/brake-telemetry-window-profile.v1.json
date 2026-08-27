@@ -1,0 +1,88 @@
+{
+  "$schema": "./brake-telemetry-window-profile.schema.json",
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "contractId": "aosedge-demo-brake-telemetry-window",
+  "contractVersion": "1.0.0",
+  "decision": "D4-016",
+  "acceptedSubdecisions": ["D4-016.1", "D4-016.2"],
+  "eventType": "HARD_BRAKING_EPISODE_V1",
+  "input": {
+    "sourceCadenceHz": 30,
+    "retainedCadenceHz": 10,
+    "selection": "EVERY_THIRD_COMPLETE_VALID_FRAME",
+    "freshnessTimeoutMs": 250,
+    "paths": [
+      "Vehicle.Speed",
+      "Vehicle.Acceleration.Longitudinal",
+      "Vehicle.Acceleration.Lateral",
+      "Vehicle.Acceleration.Vertical",
+      "Vehicle.Chassis.Accelerator.PedalPosition",
+      "Vehicle.Chassis.Brake.PedalPosition"
+    ],
+    "excludedAvailableVdpV1Paths": [
+      "Vehicle.Chassis.Axle.Row1.SteeringAngle"
+    ],
+    "mandatoryTriggerPaths": [
+      "Vehicle.Speed",
+      "Vehicle.Acceleration.Longitudinal",
+      "Vehicle.Chassis.Brake.PedalPosition"
+    ]
+  },
+  "trigger": {
+    "minimumSpeedKph": 10.0,
+    "minimumBrakePedalPercent": 50,
+    "activationHoldMs": 200,
+    "clearBrakePedalBelowPercent": 10,
+    "clearSpeedBelowKph": 0.5,
+    "clearHoldMs": 500,
+    "longitudinalAccelerationIsTrigger": false,
+    "postRetriggerBehavior": "RETURN_TO_ACTIVE_SAME_EVENT",
+    "maxDurationRetriggerBehavior": "SUPPRESS_UNTIL_CLEAR"
+  },
+  "window": {
+    "preSeconds": 3,
+    "maximumActiveSeconds": 10,
+    "postSeconds": 2,
+    "maximumTotalSeconds": 15,
+    "maximumSamples": 150,
+    "phases": ["PRE", "ACTIVE", "POST"],
+    "terminalStates": [
+      "COMPLETE",
+      "TRUNCATED_MAX_DURATION",
+      "INCOMPLETE_SOURCE_GAP",
+      "ABORTED_SERVICE_STOP",
+      "ABORTED_RESTART"
+    ]
+  },
+  "messages": {
+    "encoding": "UTF-8_JSON",
+    "canonicalization": "RFC8785",
+    "digest": "SHA-256",
+    "maximumSamplesPerChunk": 10,
+    "maximumCanonicalMessageBytes": 65536,
+    "chunkIdempotencyKey": ["eventId", "chunkIndex"],
+    "completionIdempotencyKey": ["eventId", "messageType"],
+    "embeddedCompression": "NONE"
+  },
+  "spool": {
+    "root": "/storage/brake-health/v1/events",
+    "maximumUnacknowledgedWindows": 8,
+    "maximumEncodedBytes": 4194304,
+    "admissionPolicy": "PRESERVE_RETAINED_REJECT_NEW",
+    "overflowFact": "WINDOW_DROPPED_QUEUE_FULL",
+    "directoryMode": "0700",
+    "fileMode": "0600",
+    "states": [
+      "CAPTURING",
+      "READY_TO_SEND",
+      "WAITING_ACK",
+      "ACKNOWLEDGED",
+      "QUARANTINED"
+    ],
+    "writeProtocol": "TEMP_FSYNC_ATOMIC_RENAME_DIRECTORY_FSYNC",
+    "sendBeforeDurable": false,
+    "deleteBeforeAllDurableAcks": false,
+    "databaseRuntimeRequired": false
+  }
+}

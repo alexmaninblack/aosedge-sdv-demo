@@ -3,8 +3,8 @@
 
 # ADR 0010: Derive KUKSA Credentials from Aos IAM Without Forking KUKSA
 
-- Status: Accepted historical baseline for HLA 1.3/1.4; proposed supersession
-  by [ADR 0013](0013-current-release-kuksa-authorization-compatibility.md)
+- Status: Superseded by [ADR 0013](0013-current-release-kuksa-authorization-compatibility.md);
+  retained as the accepted historical baseline for HLA 1.3/1.4
 - Date: 2026-08-18
 - Amended: 2026-08-19
 - Supersedes: the future standalone Authorization Adapter and static-token

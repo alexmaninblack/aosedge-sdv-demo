@@ -4,8 +4,8 @@
 # Current Design and Delivery Roadmap
 
 - Status: Working gate map
-- Updated: 2026-08-20
-- Current architecture review candidate: High-Level Architecture 1.5
+- Updated: 2026-08-27
+- Current accepted architecture: High-Level Architecture 1.5
 - Cloud or Unit mutation authorized: no
 
 ## Purpose
@@ -23,7 +23,7 @@ The current target uses:
 - one provider-specific empty-slot runtime in the OEM Demo Factory Image;
 - one independently versioned Vehicle Data Platform Component FOTA family;
 - two peer OEM functional services with independent SOTA lifecycles;
-- fresh Validation and Demonstration Unit identities per demo run;
+- fresh Validation and Production Unit identities per demo run;
 - controlled retirement and disposable-overlay replacement for the normal
   next-run reset.
 
@@ -72,13 +72,15 @@ A downstream document may not silently redefine an upstream decision.
 ### D0 — Component register review — completed 2026-08-18
 
 Component names, responsibilities, current/target state, interfaces, owners,
-lifecycles and repository candidates are accepted in Component Decomposition
-and Interface Register 0.2. This includes the Vehicle Gateway and Tire Health
+lifecycles and repository candidates were first accepted in Component
+Decomposition and Interface Register 0.2. This includes the Vehicle Gateway and Tire Health
 boundaries, one backend-plus-dashboard Cloud repository per Function Team,
 stateless Software Delivery Dashboard and Demo Orchestrator boundaries, native
-AosEdge logging ownership, and the ADR 0010 allocation of the thin Credential
-Broker and provider platform-identity integration to `CMP-VDP`, while native
-Aos IAM retains SOTA instance identity and permission ownership.
+AosEdge logging ownership. The historical ADR 0010 VDP-owned Credential Broker
+allocation was subsequently superseded by accepted ADR 0013: removable
+`CMP-KAC` is separate factory/system integration, VDP owns no Service JWT
+issuance, and native Aos IAM retains SOTA instance identity and permission
+ownership.
 
 Exit evidence: Component Decomposition and Interface Register 0.3 closed D0;
 the accepted register has since advanced to 0.4 through controlled downstream
@@ -115,15 +117,15 @@ Deferred platform capabilities and
 open qualification or implementation gates remain explicit and are not
 presented as current behavior.
 
-Scenario 2.0, Architecture Flows 2.0, System Requirements 2.0 and Component
-Register 1.1 are the current accepted cascade. They preserve
+HLA 1.5, Scenario 2.0, Architecture Flows 2.0, System Requirements 2.0 and
+Component Register 2.0 are the current accepted cascade. They preserve
 the accepted topology and replace the former v1 low-rate report narrative with
 a bounded pre/active/post `BrakeTelemetryWindow`, make v2 a clearly labelled
 synthetic on-board assessment with derived-only normal Cloud reporting, and
 retain v3 advisory plus correlated backend facts. They also preserve the
 explicit `R0 -> M0 -> M1` Unit Set reconciliation and responsibility split
 accepted during `CR-AOS` review. They additionally define one atomic first-
-demo vehicle-connectivity fault: Demonstration Unit-to-AosCloud and installed
+demo vehicle-connectivity fault: Production Unit-to-AosCloud and installed
 service-to-functional-backend paths are interrupted together, while presenter-
 to-AosCloud and simulated in-vehicle connectivity remain available.
 
@@ -147,14 +149,15 @@ Create and review packages in this order:
    [cross-cutting concerns (`CR-CROSS`)](../requirements/component-decomposition-and-interface-register.md#cr-cross)
    and [end-to-end acceptance (`CR-E2E`)](../requirements/component-decomposition-and-interface-register.md#cr-e2e).
 
-Groups 1 through 5 were design-reviewed and closed on 2026-08-19. Demo
-Orchestration (`CR-DEMO`) 0.3 and Cross-Cutting Security and Operations
-(`CR-CROSS`) 0.1 were design-reviewed and closed on 2026-08-20. End-to-End
-Acceptance (`CR-E2E`) 0.1 was design-reviewed and closed on 2026-08-21. Their
-target, partial and qualification states remain open for D4 and
-implementation. The next documentation activity is detailed D4 contract,
-threshold, tolerance and qualification planning; it is not implementation
-authorization.
+Groups 1 through 5 established design-reviewed baselines on 2026-08-19;
+subsequent security and exact-contract deltas retain their per-package review
+state in the component-package index rather than inheriting acceptance. Demo
+Orchestration (`CR-DEMO`) is revalidated as 1.1; Cross-Cutting Security and
+Operations (`CR-CROSS`) remains a review candidate at 0.4; End-to-End
+Acceptance (`CR-E2E`) 0.8 is D3 design-reviewed as of 2026-08-27. Their target,
+partial and qualification states remain open. The complete D4-026.1–.20
+interaction/qualification design and D4-027.1–.8 compatibility-helper contract
+are accepted, but implementation and live qualification are not authorized.
 
 Create every package from the
 [component requirement package template](../requirements/components/template.md).
@@ -182,7 +185,8 @@ under a shared stable `D4-*` ID and then cascaded to every consumer.
 Freeze the versioned VISS, KUKSA, typed advisory, functional-report/event,
 AosCloud, log and dashboard contracts. Define executable cases, fixtures,
 suites and evidence locations for normal, unavailable, stale, malformed,
-unauthorized, offline, retry, rollback and resource-bound behavior. D4 refines
+unauthorized, offline, retry, pre-Apply revert, post-Apply forward repair,
+SOTA removal and resource-bound behavior. D4 refines
 how D3 obligations are proved; it does not silently change component behavior.
 
 Exit: tests can be written without inventing missing architecture decisions.
@@ -193,8 +197,38 @@ Build a new implementation plan from the accepted component packages. Reuse
 existing qualified code and artifacts only where their exact contracts match
 the accepted design. Do not revive the superseded R6.1 two-component plan.
 
+Before any audience-visible interface is implemented or materially changed,
+complete an **Audience-Visible UI Mockup Gate**. Produce and review
+low-fidelity mockups plus state-transition flows for the launcher/controller,
+Engineering Telematics Dashboard, OEM Software Delivery Dashboard, Brake
+Health Function Dashboard, Tire Health Function Dashboard and every other
+presenter- or audience-visible interface introduced by the implementation
+plan. Existing interface areas that remain unchanged may be reused by
+reference; every new or changed view, control and visible state must be
+mocked.
+
+Each mockup must identify its actor, purpose, authoritative data source,
+protected action owner and relevant component/interface/requirement IDs. It
+must cover the normal path and every applicable blocked, submitting,
+uncertain/reconciling, failed, incomplete, stale, offline and redacted state.
+This is an interaction and information-architecture review, not a visual-
+polish exercise. Mockups remain derived views of accepted requirements and
+contracts; they must not create a second behavior specification or a second
+source of lifecycle state.
+
+The I0 surface register 0.14, Interaction Specification 2.5 and UI
+Traceability Register 1.1 are accepted. The standalone HTML review artifact is
+reconciled to that contract, including fixed team context and version-only
+scrolling. The
+[Demo Implementation Plan 1.0](active/demo-implementation-plan.md) is the
+current D5 review candidate and decomposes the accepted baseline into bounded
+repository-owned increments. The older linear-flow HTML remains
+comparison-only and is not an implementation baseline.
+
 Exit: independently reviewable implementation increments, repository changes,
-build boundaries and authorization gates are defined.
+build boundaries and authorization gates are defined; the complete visible-
+surface inventory and all new or changed low-fidelity mockups/state flows are
+reviewed before the affected UI implementation begins.
 
 ## Future Implementation Workstreams
 
@@ -202,17 +236,20 @@ These workstreams are sequencing guidance, not authorization to implement:
 
 | Workstream | Main outcome |
 | --- | --- |
+| `I0` Audience experience and UI mockups | Accepted surface register 0.14, Interaction Specification 2.5, UI Traceability Register 1.1 and reconciled standalone HTML review artifact with fixed team context/version-only scrolling; next freeze the implementation plan and reviewable UI increments. This gate precedes the UI portions of `I1`, `I3`, `I4` and `I5`. |
 | `I1` Vehicle stimulus and Gateway | Qualify emergency-braking and explicit accelerated/pre-aged tire stimuli; add typed narrowly scoped advisory handling and dashboard status. |
 | `I2` Factory and Vehicle Data Platform | Build and freeze the clean factory image with one IAM configuration containing `enablePermissionsHandler: true` for both modes, no pre-populated service permission/secret state, unmodified KUKSA, the separately packaged removable `CMP-KAC`, and the D4-010.1 dedicated non-secret `kuksa-jwt` PKCS#11/verifier-preparation wiring but no key/shared verifier. Qualify unique per-Unit signer bootstrap and atomic verifier preparation; independently implement and qualify the accepted VDP Component v1-v3 contract and its fixed OEM-trusted Provider integration through FOTA. |
 | `I3` Brake Health product | Build the in-vehicle service, local model, bounded offline reporting, backend and function dashboard, including the release client surface statically pre-bound to D4-010.3 profile `brake-sp1`. |
 | `I4` Tire Health product | Build the independent persistent condition estimator, bounded reporting, inspection advisory, backend and function dashboard, including the release client surface statically pre-bound to D4-010.3 profile `tire-sp2`. |
-| `I5` Software delivery experience | Build the Software Delivery Dashboard over authoritative AosCloud APIs and the manufacturing/provisioning/promotion/retirement orchestration. Implement one session-scoped non-root native publication helper with separate fixed `platform-oem`, `brake-sp1` and `tire-sp2` surfaces; enforce the current local mode-`0600` PKCS#12 custody boundary, independent Cloud reconciliation and strict separation between technical publication and OEM approval. |
-| `I6` Security and operations | Qualify native Aos IAM instance/permission lifecycle, `CMP-KAC` fixed-resource translation, short-lived JWT refresh/expiry and renewal denial, D4-010.1 unique per-Unit PKCS#11 signing and verifier startup/cross-Unit rejection/overlay retirement, the explicit trusted-Provider scope boundary, native AosCloud system/service/crash-log requests, exact retention duration, deletion effect, offline behavior, redaction and bounded temporary-download removal. |
-| `I7` End-to-end release proof | Execute `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> T1 -> R0` on Validation and Demonstration Units with retained evidence. |
+| `I5` Software delivery experience | Build the Software Delivery Dashboard over authoritative AosCloud APIs and the manufacturing/provisioning/promotion/retirement orchestration. Implement one session-scoped non-root native publication helper with separate fixed `platform-oem`, `brake-sp1` and `tire-sp2` surfaces; enforce the current local mode-`0600` PKCS#12 custody boundary, independent Cloud reconciliation and strict separation between technical publication and OEM approval. Add the single D4-020/D4-026.15 `Start or Restore Demo Environment` preflight: support-stack readiness with no VM/Unit dependency at `READY_FOR_M0`, one shared session-scoped DNS bridge, exact safe stale-runtime recovery and exact active-run VM restoration with per-role local/DNS/AosCore/Cloud readiness and fresh dual-Unit Online proof without creation or reprovisioning. Implement D4-026.17/`.19` and `REQ-DEMO-023`: Presenter Launcher-owned measured physical header/native/browser workspace composition, visibility/readability proof and safe local layout restoration, with shared-header meaning/navigation owned by the stateless Dashboard read model, fixed team context, version-only scrolling, independent team scroll restoration and no native-window embedding or lifecycle mutation. Implement D4-026.18/`REQ-DEMO-024`: title-selected right-hand Demo Lifecycle view for bounded Qualification Status, M0/M1/G0, current lifecycle/recovery and R0, with no fourth producer or duplication of native launcher actions. Keep M0 creation and M1 provisioning as separate explicit operations. Implement the D4-015 R0 planner with offline-only deprovision, post-`204` re-read, old-credential rejection, exact `system_uid` Unit Set removal, Unit deletion, Unit-owned Node-disappearance proof and no invented Node-delete operation; stop at `READY_FOR_M0` without automatically starting the next run. |
+| `I6` Security and operations | Qualify native Aos IAM instance/permission lifecycle, `CMP-KAC` fixed-resource translation, short-lived JWT refresh/expiry and renewal denial, D4-010.1 unique per-Unit PKCS#11 signing and verifier startup/cross-Unit rejection/overlay retirement, the explicit trusted-Provider scope boundary, D4-014 OEM Unit-log versus SP1/SP2 Service-log role routing, exact identifiers/states/file bounds, deletion and offline/reconnect behavior, retention-policy exposure, redaction and bounded temporary-download removal. |
+| `I7` End-to-end release proof | Execute `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> T1 -> R0` on Validation and Production Units with retained evidence. |
 | `I8` Edge Runtime Performance Qualification — deferred | After the first demo, benchmark VM power-on to AosCore readiness, Unit reconnect to service readiness, deployment-to-container readiness, crash/power-cycle recovery, offline continuation, reconnect synchronization, local event-to-advisory processing and CPU/RAM/storage/startup overhead. Cloud authentication, signing, approval and operator-interaction duration are not vehicle-performance KPIs. |
 
 Each workstream requires the relevant component requirements and acceptance
-tests before code or deployment work begins.
+tests before code or deployment work begins. Any workstream that creates or
+changes an audience-visible interface additionally requires its accepted `I0`
+mockup and state-flow package before UI code begins.
 
 ## Deferred Platform Capabilities
 
@@ -231,13 +268,26 @@ tests before code or deployment work begins.
 
 ## Current Stop Point
 
-Documentation housekeeping gate D1, component-register gate D0, joint
-baseline gate D2 and all D3 package reviews are complete. Group 6 now includes
-design-reviewed Demo Orchestration (`CR-DEMO`) 0.3, Cross-Cutting Security and
-Operations (`CR-CROSS`) 0.1 and End-to-End Acceptance (`CR-E2E`) 0.1. Their
-`CURRENT`, `EVIDENCE`, `PARTIAL`, `GAP`, `TARGET` and open D4 labels still
-describe implementation and qualification truth rather than implementation
-acceptance. Detailed D4 contract and qualification planning is the current
-stop point. No new repository, component code, build, signature, Cloud upload,
-assignment, approval, VM restart, provisioning, deprovisioning or Unit
-mutation is authorized by this roadmap.
+Documentation housekeeping gate D1, component-register gate D0 and joint
+baseline gate D2 are complete. HLA 1.5, Scenario 2.0, Architecture Flows 2.0,
+System Requirements 2.0, Component Register 2.0, ADR 0013 and ADR 0014 form the
+accepted design baseline. The shared D4 contract and qualification decisions
+are design-reviewed through D4-026.20 and D4-027.8; CR-E2E 0.8 completed D3
+design review on 2026-08-27 while its implementation and live-qualification
+gates remain open;
+`D4-003` remains deliberately `RESEARCHING` only for implementation-time Tire
+stimulus, calibration values and independent physical qualification series.
+That empirical work belongs to I1 before audience presentation and is not a
+missing invitation to invent values in design.
+
+The standalone HTML review mockup is reconciled to Interaction Specification
+2.5. The current next gate is review of
+[Demo Implementation Plan 1.0](active/demo-implementation-plan.md), followed
+by explicit authorization of one bounded first increment. No product UI,
+component, Cloud or VM implementation is authorized by creating that plan.
+Existing `CURRENT`, `EVIDENCE`,
+`PARTIAL`, `GAP`, `TARGET` and implementation/qualification labels remain
+truthful gates rather than implementation acceptance. No new repository,
+component code, build, signature, Cloud upload, assignment, approval, VM
+restart, provisioning, deprovisioning or Unit mutation is authorized by this
+roadmap.

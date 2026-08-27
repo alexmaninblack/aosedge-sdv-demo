@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "receiptId": "a710d749-49a3-4df0-b364-3cfb349cbbf1",
+  "messageKeySha256": "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+  "contentSha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+  "state": "DURABLE_ACCEPTED",
+  "receivedAt": "2026-08-22T20:00:00Z"
+}

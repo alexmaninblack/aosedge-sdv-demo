@@ -7,9 +7,9 @@ Store accepted, editable architecture sources here together with their
 reviewable SVG or PNG exports. Use stable names and keep the version and status
 in the owning architecture document.
 
-The HLA 1.5 architecture review candidate is maintained as Mermaid source
-inside [`high-level-architecture.md`](../high-level-architecture.md). HLA 1.4
-remains the accepted baseline until the complete class-C cascade is reviewed.
+The accepted HLA 1.5 architecture is maintained as Mermaid source inside
+[`high-level-architecture.md`](../high-level-architecture.md), with the Draw.io
+source below as the primary visual-authoring artifact.
 
 The editable visual model is the primary visual architecture source:
 
@@ -18,7 +18,7 @@ The editable visual model is the primary visual architecture source:
 
 The Draw.io file is authoritative for diagram layout and visual relationships;
 the PNG must be regenerated from it after every accepted visual change. The
-HLA 1.5 review candidate reflects two peer OEM Service Providers, independent
+accepted HLA 1.5 visual reflects two peer OEM Service Providers, independent
 SOTA lifecycles, the shared FOTA-owned Vehicle Data Platform Component, the
 Tire Health service, the Factory Baseline Assembly-to-Factory Image and
 factory-installed runtime boundaries, the Software Delivery Dashboard's
@@ -29,12 +29,12 @@ boundary and a visually subordinate current-release overlay: a removable
 helper outside the VDP and both SOTA artifacts that translates active native
 Aos IAM permissions into Service-private short-lived JWTs without a duplicate
 per-Service policy store.
-It also distinguishes Service Provider artifact publication, team-owned
-engineering release decisions, OEM-authorized deployment approval, and
-AosCloud lifecycle state/execution as defined by ADR 0009.
-The proposed credential correction follows ADR 0013 and supersedes the ADR
-0010 placement only when the full cascade is accepted. QM-service containment and the
-evidence-backed final OEM approval follow ADR 0011.
+It also distinguishes Service Provider artifact publication, producer-owned
+engineering acceptance, independent OEM Release Authority authorization, and
+AosCloud lifecycle state/execution as defined by ADR 0009. The accepted
+credential correction follows ADR 0013 and supersedes ADR 0010. QM-service
+containment and evidence-backed Release Authority authorization follow ADR
+0011, while OEM-runtime Platform FOTA Safe Stop enforcement follows ADR 0014.
 Both files are original project material, copyright 2026 maninblack, and
 distributed under the repository MIT license.
 

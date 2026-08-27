@@ -13,13 +13,13 @@
         "purpose": "Engineering validation vehicle for qualification before promotion."
       },
       {
-        "vehicleRole": "DEMONSTRATION_VEHICLE",
-        "unitRole": "DEMONSTRATION_UNIT",
-        "purpose": "Field-like demonstration vehicle receiving only accepted promoted releases."
+        "vehicleRole": "PRODUCTION_VEHICLE",
+        "unitRole": "PRODUCTION_UNIT",
+        "purpose": "Production-vehicle representative receiving only accepted promoted releases."
       }
     ],
     "currentVehicleCount": 1,
-    "primaryAction": "Continue with Demonstration Vehicle",
+    "primaryAction": "Continue with Production Vehicle",
     "primaryUiProhibitedTerms": ["ATTACH CARLA", "DETACH CARLA", "SWITCH VM", "SOURCE BINDING"],
     "technicalDetails": ["Unit ID", "Node ID", "Unit Set", "source identity", "assignment state", "generation", "bounded frame range"],
     "roleInVehicleDataPath": false
@@ -34,14 +34,14 @@
     "authenticationDecision": "D4-006"
   },
   "orderedFlow": [
-    "Re-read exact Validation Unit and Demonstration Unit identities and disjoint Unit Set roles.",
+    "Re-read exact Validation Unit and Production Unit identities and disjoint Unit Set roles.",
     "Select Validation Unit, authorize only its authenticated peer, establish one VISS session and record the first monotonic frame.",
     "Execute Validation Vehicle qualification and retain its bounded source frame range.",
     "Enter safe stop, close the Validation Unit VISS session, clear selection and prove that no source consumer remains attached.",
     "Execute the D4-004 canonical reset with no Unit attached and verify a new Reset Generation and first post-reset frame.",
-    "Select Demonstration Unit, authorize only its authenticated peer, establish one VISS session and prove the current baseline vehicle operation.",
-    "Promote the identical accepted artifact while the Demonstration Vehicle is current, preserving the qualified QM in-motion update claim.",
-    "On completion or R0, enter safe stop, detach the Demonstration Unit and reconcile the source gate before cleanup."
+    "Select Production Unit, authorize only its authenticated peer, establish one VISS session and prove the current baseline vehicle operation.",
+    "Promote the identical accepted artifact while the Production Vehicle is current, preserving the qualified QM in-motion update claim.",
+    "On completion or R0, enter safe stop, detach the Production Unit and reconcile the source gate before cleanup."
   ],
   "evidence": {
     "sourceFields": ["hardwareProfileDigest", "CARLARunId", "egoVehicleId", "ResetGeneration"],

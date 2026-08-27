@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "modelId": "tire-condition-demo-v1",
+  "modelConfigSha256": "2222222222222222222222222222222222222222222222222222222222222222",
+  "conditionScore": 34,
+  "conditionBand": "REPLACEMENT_RECOMMENDED",
+  "confidencePercent": 100,
+  "betterBandCandidate": "NONE",
+  "betterBandEpisodeCount": 0,
+  "lastAppliedSourceExerciseId": "a671fe3e-07b7-4bb8-b1d6-6d86a988b61f",
+  "lastAssessmentId": "8c6e4a48-9561-5dd8-8036-8a842d92cec8",
+  "recentSourceExerciseIds": ["a671fe3e-07b7-4bb8-b1d6-6d86a988b61f"],
+  "producerEpoch": "ef7bbf30-daf0-41ad-96bf-b7f081f7d7df",
+  "nextAdvisorySequence": 2
+}

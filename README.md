@@ -23,7 +23,7 @@ fresh-checkout demo. See the
 | Provider | `0.2.0` is signed and locally verified; not published or assigned |
 | Platform runtime | Service Manager A/B runtime, fixed `aos-vdp` identity, SELinux policy, and bounded demo store are implemented |
 | Rootfs candidate | `6.1.1-maninblack.11` is frozen locally, unsigned, and not uploaded or installed |
-| Installed Units | validation Unit: `.2`; demonstration Unit: `.1`, accepted as the current operational baseline after end-to-end verification |
+| Installed Units | validation Unit: `.2`; production Unit: `.1`, accepted as the current operational baseline after end-to-end verification |
 
 Candidate `.11` closes the qualified provider runtime dependency chain under
 SELinux Enforcing and remains accepted local evidence. It is not the accepted
@@ -134,9 +134,9 @@ python3 -m unittest discover -s tests -p 'test_*.py'
 - [Documentation map](docs/README.md)
 - [Getting started](docs/getting-started/README.md)
 - [Reproduction guide and readiness matrix](docs/getting-started/reproduce-demo.md)
-- [High-Level Architecture 1.5 — architecture review candidate](docs/architecture/high-level-architecture.md)
-- [System Requirements and Traceability 2.0 — review candidate](docs/requirements/system-requirements-and-traceability.md)
-- [Component Decomposition and Interface Register 2.0 — review candidate](docs/requirements/component-decomposition-and-interface-register.md)
+- [High-Level Architecture 1.5 — accepted](docs/architecture/high-level-architecture.md)
+- [System Requirements and Traceability 2.0 — accepted](docs/requirements/system-requirements-and-traceability.md)
+- [Component Decomposition and Interface Register 2.0 — accepted](docs/requirements/component-decomposition-and-interface-register.md)
 - [R9 Demo Foundation Research](docs/research/demo-foundation/README.md)
 - [Current accepted baseline](docs/qualification/current-baseline.md)
 - [Roadmap and next gates](docs/planning/roadmap.md)

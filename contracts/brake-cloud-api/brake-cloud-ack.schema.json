@@ -1,0 +1,18 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:brake-cloud-ack:schema:v1",
+  "title": "Brake Cloud Durable Acknowledgement",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "contractVersion", "receiptId", "messageKeySha256", "contentSha256", "state", "receivedAt"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "contractVersion": {"const": "1.0.0"},
+    "receiptId": {"type": "string", "format": "uuid"},
+    "messageKeySha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "contentSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "state": {"enum": ["DURABLE_ACCEPTED", "DUPLICATE_ACCEPTED"]},
+    "receivedAt": {"type": "string", "format": "date-time"}
+  }
+}

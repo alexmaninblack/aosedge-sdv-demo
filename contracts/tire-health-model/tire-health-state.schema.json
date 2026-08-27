@@ -1,0 +1,24 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:tire-health-state:schema:v1",
+  "title": "Tire Health Persistent State",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "modelId", "modelConfigSha256", "conditionScore", "conditionBand", "confidencePercent", "betterBandCandidate", "betterBandEpisodeCount", "lastAppliedSourceExerciseId", "lastAssessmentId", "recentSourceExerciseIds", "producerEpoch", "nextAdvisorySequence"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "modelId": {"const": "tire-condition-demo-v1"},
+    "modelConfigSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "conditionScore": {"type": "integer", "minimum": 0, "maximum": 100},
+    "conditionBand": {"enum": ["NOT_EVALUATED", "GOOD", "INSPECTION_RECOMMENDED", "REPLACEMENT_RECOMMENDED"]},
+    "confidencePercent": {"type": "integer", "minimum": 0, "maximum": 100},
+    "betterBandCandidate": {"enum": ["NONE", "GOOD", "INSPECTION_RECOMMENDED"]},
+    "betterBandEpisodeCount": {"type": "integer", "minimum": 0, "maximum": 3},
+    "lastAppliedSourceExerciseId": {"type": "string", "format": "uuid"},
+    "lastAssessmentId": {"type": "string", "format": "uuid"},
+    "recentSourceExerciseIds": {"type": "array", "maxItems": 128, "uniqueItems": true, "items": {"type": "string", "format": "uuid"}},
+    "producerEpoch": {"type": "string", "format": "uuid"},
+    "nextAdvisorySequence": {"type": "integer", "minimum": 1}
+  }
+}

@@ -128,16 +128,17 @@ alerts, monitoring, and log-request status with original API timestamps.
 | Provider/service readiness | Cloud status plus separate qualification or application health evidence; install state alone is insufficient |
 | Download progress | Show only actual structured status/campaign data; fine-grained byte progress is not guaranteed |
 | Artifact digest | Component SHA-256 is available; public service-version response does not document an OCI digest |
-| Operational logs | Show the authoritative Cloud-retained AosCloud request/result/file state; do not imply continuous streaming, indefinite retention or an independent dashboard archive |
+| Operational logs | D4-014 supersedes the original single-surface assumption: OEM Unit logs belong to Software Delivery, SP1/SP2 Service logs to matching Function Dashboards; Cloud request/file remains authoritative while retained, with no continuous-stream, second-archive or retention-duration claim |
 | Real-time state | Display `last reported`; Unit aggregation can lag and must not be presented as instantaneous |
+| CPU quota enforcement | Present exact per-instance Cloud monitoring in DMIPS and factual alerts, but do not claim that these expose raw cgroup enforcement counters. Bind a separate sanitized read-only cgroup-cap/throttle qualification record to the exact Factory/AosCore/Service/configuration/Node-DMIPS baseline; stale or missing evidence blocks the claim |
 
 ## Authority boundaries
 
 | Surface | Authoritative for | Not authoritative for |
 | --- | --- | --- |
 | Engineering Dashboard | Gateway VISS telemetry and factual advisory request/status | KUKSA delivery, Cloud lifecycle, functional backend |
-| Software Delivery Dashboard | Human-friendly presentation of AosCloud release, Unit and Cloud-retained native log-request/result/file state | Vehicle telemetry, prediction results or a second log archive |
-| Function Dashboard | Brake Health samples, predictions, reports, backlog and model state from Function Backend | FOTA/SOTA state and Gateway receipt |
+| Software Delivery Dashboard | Human-friendly presentation of AosCloud release, Unit and OEM-scoped Unit system/VDP log state | Vehicle telemetry, prediction results, SP Service logs or a second log archive |
+| Function Dashboard | Functional records from its backend plus its own SP-owned Service-log state | FOTA/SOTA state, system/other-team logs or Gateway receipt |
 | AosCloud UI/API | Technical lifecycle source and drill-down | Functional telemetry product view |
 
 ## Security and robustness

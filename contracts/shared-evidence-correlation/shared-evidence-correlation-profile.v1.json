@@ -1,0 +1,277 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "contractId": "aosedge-shared-evidence-correlation",
+  "contractVersion": "1.0.0",
+  "lifecycleState": "DESIGN_REVIEWED",
+  "decision": "D4-024",
+  "acceptedSubdecisions": [
+    {"id": "D4-024.1", "accepted": "2026-08-23"},
+    {"id": "D4-024.2", "accepted": "2026-08-23"},
+    {"id": "D4-024.3", "accepted": "2026-08-23"},
+    {"id": "D4-024.4", "accepted": "2026-08-23"},
+    {"id": "D4-024.5", "accepted": "2026-08-23"}
+  ],
+  "pendingSubdecisions": [],
+  "canonicalCorrelationContext": {
+    "audienceVisibleGlobalDemoRunIdIntroduced": false,
+    "historicalDemoRunDatabaseAllowed": false,
+    "preProvisioningCorrelation": [
+      "CURRENT_RUN_START_TIME",
+      "OVERLAY_ROLE",
+      "FACTORY_IMAGE_DIGEST",
+      "OVERLAY_DIGEST"
+    ],
+    "postProvisioningOperationalCorrelation": [
+      "VEHICLE_ROLE",
+      "SYSTEM_UID",
+      "AOSCLOUD_UNIT_UUID",
+      "MAIN_NODE_UUID",
+      "SOURCE_GENERATION",
+      "SOURCE_FRAME_OR_EVENT_RANGE",
+      "BOUNDED_CURRENT_SESSION_WINDOW"
+    ],
+    "functionMessageCorrelation": [
+      "unitSystemUid",
+      "unitRole",
+      "serviceVersion",
+      "serviceArtifactSha256",
+      "vdpContractVersion",
+      "vdpContractSha256",
+      "sourceExerciseOrGenerationEvent",
+      "eventIdOrAssessmentIdOrRequestId"
+    ],
+    "cloudUnitAndNodeUuidsSentToFunctionBackends": false,
+    "localRunCorrelationSentToFunctionBackends": false,
+    "functionToCloudMappingAuthority": "CURRENT_AOSCLOUD_STATE_JOINED_BY_SYSTEM_UID",
+    "collisionNamespace": [
+      "FUNCTION_TEAM",
+      "UNIT_SYSTEM_UID",
+      "MESSAGE_TYPE",
+      "DOMAIN_IDENTIFIER"
+    ],
+    "jsonWireNaming": "CAMEL_CASE",
+    "aosCloudAdapterFieldNaming": "ADAPTER_LOCAL_MAPPING_ONLY",
+    "forbiddenCorrelationContent": [
+      "VIN",
+      "CREDENTIAL",
+      "JWT",
+      "PRIVATE_CERTIFICATE_OR_KEY",
+      "RAW_CLOUD_RESPONSE"
+    ],
+    "missingStaleConflictingOrCrossRunBinding": "UNKNOWN_OR_BLOCKED_NEVER_SUCCESS",
+    "successfulR0DeletesDemoOwnedCurrentRunCorrelation": true,
+    "successfulR0DeletesAosCloudOwnedAuditHistory": false
+  },
+  "chronology": {
+    "wireTimestampFormat": "RFC3339_UTC",
+    "timestampRoles": {
+      "sourceEventTime": {
+        "authority": "GATEWAY_SOURCE_CAPTURE",
+        "mustBind": ["SOURCE_GENERATION", "SOURCE_FRAME_OR_EVENT"],
+        "immutableAcrossRetry": true
+      },
+      "localDecisionAt": {
+        "authority": "FUNCTION_SERVICE_INSTANCE",
+        "existingSemanticFields": ["assessedAt", "effectiveAt", "issuedAt"],
+        "immutableAcrossRetry": true
+      },
+      "gatewayObservedAt": {
+        "authority": "VEHICLE_GATEWAY",
+        "meaning": "REQUEST_RECEIVED_REJECTED_OR_APPLIED"
+      },
+      "backendReceivedAt": {
+        "authority": "OWNING_FUNCTION_BACKEND",
+        "meaning": "FIRST_DURABLE_ACCEPT",
+        "duplicateReusesOriginalValue": true
+      },
+      "synchronizationCompletedAt": {
+        "authority": "OWNING_FUNCTION_BACKEND",
+        "requires": ["SERVICE_OUTBOX_DRAIN_WATERMARK", "PRODUCER_EPOCH", "HIGHEST_ACKNOWLEDGED_SEQUENCE"],
+        "reconnectTimeAloneIsSufficient": false
+      }
+    },
+    "causalProofUses": [
+      "DOMAIN_IDENTIFIERS",
+      "PRODUCER_EPOCH",
+      "SEQUENCE",
+      "SOURCE_GENERATION_AND_FRAME",
+      "EXPLICIT_STATUS_TRANSITIONS"
+    ],
+    "crossClockWallTimeComparisonProvesCausality": false,
+    "retryMayRewriteSourceDecisionOrGatewayTime": false,
+    "offlineReconnectChangesOriginalEventOrDecisionTime": false,
+    "dashboardLabels": [
+      "VEHICLE_EVENT",
+      "LOCAL_DECISION",
+      "GATEWAY_ACTION",
+      "CLOUD_RECEIVED",
+      "SYNCHRONIZED"
+    ],
+    "missingOrContradictoryOwnerLocalChronology": "UNKNOWN_OR_INCOMPLETE",
+    "clockDifferenceAloneIsFailure": false,
+    "latencyKpiCalculated": false,
+    "claimBoundary": {
+      "proves": [
+        "DEMO_CAUSAL_LINKAGE",
+        "DEMO_LOCAL_DECISION_PATH_SEPARATION",
+        "DEMO_DELAYED_DELIVERY_AND_RECONNECT_SYNCHRONIZATION"
+      ],
+      "doesNotProve": [
+        "PRODUCTION_CLOCK_SYNCHRONIZATION",
+        "WORST_CASE_OR_END_TO_END_LATENCY",
+        "REAL_TIME_DEADLINE_COMPLIANCE",
+        "PRODUCTION_NETWORK_BEHAVIOR",
+        "AUTOMOTIVE_SAFETY_SUITABILITY"
+      ]
+    }
+  },
+  "structuredEvidence": {
+    "schema": "structured-evidence-record.schema.json",
+    "purpose": "SANITIZED_CURRENT_STATE_DASHBOARD_PROJECTION",
+    "isSystemOfRecord": false,
+    "isAosCloudLogReplacement": false,
+    "createsHistoricalEvidenceArchive": false,
+    "authoritativeSourceTypes": [
+      "AOSCLOUD_API",
+      "VEHICLE_GATEWAY",
+      "BRAKE_FUNCTION_BACKEND",
+      "TIRE_FUNCTION_BACKEND",
+      "QUALIFICATION_DOSSIER"
+    ],
+    "recordTypes": [
+      "LIFECYCLE",
+      "VEHICLE_SOURCE",
+      "FUNCTION_EVENT",
+      "ADVISORY",
+      "CONNECTIVITY",
+      "RESOURCE_ISOLATION"
+    ],
+    "freeFormLogMessageIsEvidence": false,
+    "unknownFieldsAutomaticallyDisplayed": false,
+    "redactionBeforeBrowserUiState": true,
+    "exactBindingCheckedBeforeFingerprintProjection": true,
+    "audienceIdentity": ["VEHICLE_ALIAS", "SHORT_FINGERPRINT"],
+    "fullCloudUnitOrNodeIdInAudienceRecord": false,
+    "forbiddenBeforeProjection": [
+      "SECRET",
+      "JWT",
+      "AUTHORIZATION_HEADER",
+      "PRIVATE_KEY_OR_CERTIFICATE",
+      "VIN",
+      "RAW_CLOUD_RESPONSE",
+      "UNRESTRICTED_RAW_TELEMETRY"
+    ],
+    "missingOrRejectedEvidenceVisibleAs": ["INCOMPLETE", "REDACTED", "UNKNOWN"],
+    "silentOmissionAllowed": false,
+    "successfulR0DeletesCurrentDemoOwnedRecords": true,
+    "retainedException": "ONE_SANITIZED_BASELINE_BOUND_QUALIFICATION_DOSSIER_WHEN_REQUIRED_BY_ITS_OWNER_CONTRACT"
+  },
+  "orderingAndAnomalies": {
+    "idempotentDuplicate": {
+      "matchRequires": ["IDEMPOTENCY_KEY", "CONTENT_SHA256"],
+      "result": "REUSE_ORIGINAL_RECEIPT_AND_RESULT",
+      "createsDashboardRowOrSecondAction": false
+    },
+    "idempotencyConflict": {
+      "condition": "SAME_KEY_DIFFERENT_CONTENT_SHA256",
+      "result": "REJECT_IDEMPOTENCY_CONFLICT",
+      "mayReplaceAcceptedRecord": false
+    },
+    "stateChangingOrder": ["PRODUCER_EPOCH", "SEQUENCE"],
+    "backendReceiptTimeDeterminesStateOrder": false,
+    "serviceRestart": {
+      "createsNewProducerEpoch": true,
+      "sequenceRestartsWithinNewEpoch": true,
+      "oldEpochLateEvidenceMayBeAccepted": true,
+      "oldEpochLateEvidenceMayMutateCurrentStateOrAdvisory": false
+    },
+    "reconnectRetry": {
+      "onlyUnacknowledgedMessages": true,
+      "preservesIdentifiersContentAndSourceTimes": true,
+      "synchronizationRequiresAllSequencesThroughDeclaredWatermarkAcknowledged": true
+    },
+    "outOfOrderRecord": {
+      "discardedSilently": false,
+      "presentationState": "DELAYED_OR_OUT_OF_ORDER",
+      "mayRollBackCurrentDashboardState": false
+    },
+    "gatewayDuplicate": {
+      "sameRequestIdAndContent": "RETURN_CURRENT_OR_ORIGINAL_RESULT",
+      "sameRequestIdDifferentContent": "REJECT_IDEMPOTENCY_CONFLICT"
+    },
+    "rejectedAsStaleOrCrossRun": [
+      "SEQUENCE_ROLLBACK_WITHIN_EPOCH",
+      "UNKNOWN_OR_RETIRED_SOURCE_GENERATION",
+      "RETIRED_CURRENT_RUN_BINDING"
+    ],
+    "timestampHandling": {
+      "invalidRfc3339Utc": "REJECT_SCHEMA",
+      "impossibleOwnerLocalOrder": "REJECT_CHRONOLOGY",
+      "crossClockDifference": "CLOCK_UNVERIFIED_OR_CLOCK_ANOMALY",
+      "crossClockDifferenceMayChangeCausalOrder": false
+    },
+    "dashboard": {
+      "duplicateRowsCreated": false,
+      "ignoredDuplicateCountVisible": true,
+      "conflictAndOutOfOrderStatesVisible": true
+    },
+    "claimBoundaryRemainsDemoOnly": true
+  },
+  "qualificationPlan": {
+    "staticContractTests": [
+      "CLOSED_JSON_SCHEMAS",
+      "REQUIRED_CORRELATION_AND_TIMESTAMP_FIELDS",
+      "CAMEL_CASE_WIRE_NAMES",
+      "IDEMPOTENCY_NAMESPACES",
+      "FORBIDDEN_FIELD_NEGATIVE_SCAN",
+      "NO_GLOBAL_DEMO_RUN_ID"
+    ],
+    "ownerComponentTests": [
+      "GATEWAY_SOURCE_GENERATION_FRAME_AND_ADVISORY_STATUS",
+      "BRAKE_AND_TIRE_RETRY_IMMUTABILITY",
+      "SERVICE_RESTART_CREATES_NEW_PRODUCER_EPOCH",
+      "BACKEND_DUPLICATE_CONFLICT_AND_OUT_OF_ORDER",
+      "DASHBOARD_REDACTION_BEFORE_BROWSER_STATE",
+      "SYNCHRONIZATION_REQUIRES_ACKNOWLEDGED_WATERMARK"
+    ],
+    "controlledNegativeCases": [
+      "WRONG_SYSTEM_UID_OR_VEHICLE_ROLE",
+      "UNKNOWN_SOURCE_GENERATION",
+      "RETIRED_RUN_MESSAGE",
+      "SAME_KEY_DIFFERENT_DIGEST",
+      "SEQUENCE_ROLLBACK",
+      "LATE_OLD_EPOCH_MESSAGE",
+      "INVALID_TIMESTAMP",
+      "IMPOSSIBLE_OWNER_LOCAL_CHRONOLOGY",
+      "RECONNECT_WITHOUT_ACKNOWLEDGED_WATERMARK",
+      "FORBIDDEN_OR_UNKNOWN_UI_FIELD"
+    ],
+    "clockAnomaliesUseFixturesWithoutChangingMacOrVmClock": true,
+    "validationUnitIntegration": [
+      "NORMAL_ONLINE_BRAKE_AND_TIRE_CHAIN",
+      "SERVICE_RESTART_AND_NEW_EPOCH",
+      "ATOMIC_VEHICLE_EXTERNAL_CONNECTIVITY_LOSS",
+      "LOCAL_DECISION_WHILE_OFFLINE",
+      "RECONNECT_IMMUTABLE_RETRY_AND_ACKNOWLEDGED_SYNCHRONIZATION",
+      "NO_DUPLICATE_DASHBOARD_ROWS_OR_CURRENT_STATE_ROLLBACK"
+    ],
+    "productionUnitRehearsals": [
+      "ONE_COMPLETE_NORMAL_CHAIN",
+      "ONE_COMPLETE_OFFLINE_RECONNECT_CHAIN"
+    ],
+    "productionUsesSameReviewedContractsAndPreparedArtifactsAsValidation": true,
+    "passRequires": [
+      "EXACT_UNIT_ROLE_SOURCE_AND_FUNCTION_TEAM_BINDING",
+      "VALID_CAUSAL_CHAIN",
+      "IDEMPOTENCY_AND_ORDERING_MATRIX_PASS",
+      "NO_FORBIDDEN_DATA_IN_BROWSER_STATE",
+      "R0_REMOVES_CURRENT_RUN_RECORDS",
+      "NO_SEPARATE_DEMO_HISTORY_DATABASE"
+    ],
+    "evidenceDestination": "D4_025_DEMO_BASELINE_QUALIFICATION_DOSSIER",
+    "separateD4024HistoricalArchiveCreated": false,
+    "implementationAndLiveQualificationRemainOpen": true,
+    "designReviewAuthorizesImplementationPublicationCloudOrVmMutation": false
+  }
+}

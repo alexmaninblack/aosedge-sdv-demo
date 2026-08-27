@@ -1,0 +1,43 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:brake-telemetry-window-profile:schema:v1",
+  "title": "Brake Telemetry Window Profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "contractId", "contractVersion", "decision", "acceptedSubdecisions", "eventType", "input", "trigger", "window", "messages", "spool"],
+  "properties": {
+    "$schema": { "const": "./brake-telemetry-window-profile.schema.json" },
+    "$comment": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "contractId": { "const": "aosedge-demo-brake-telemetry-window" },
+    "contractVersion": { "const": "1.0.0" },
+    "decision": { "const": "D4-016" },
+    "acceptedSubdecisions": { "type": "array", "const": ["D4-016.1", "D4-016.2"] },
+    "eventType": { "const": "HARD_BRAKING_EPISODE_V1" },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceCadenceHz", "retainedCadenceHz", "selection", "freshnessTimeoutMs", "paths", "excludedAvailableVdpV1Paths", "mandatoryTriggerPaths"],
+      "properties": {
+        "sourceCadenceHz": { "const": 30 },
+        "retainedCadenceHz": { "const": 10 },
+        "selection": { "const": "EVERY_THIRD_COMPLETE_VALID_FRAME" },
+        "freshnessTimeoutMs": { "const": 250 },
+        "paths": { "type": "array", "minItems": 6, "maxItems": 6, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "excludedAvailableVdpV1Paths": { "type": "array", "const": ["Vehicle.Chassis.Axle.Row1.SteeringAngle"] },
+        "mandatoryTriggerPaths": { "type": "array", "minItems": 3, "maxItems": 3, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "trigger": { "$ref": "#/$defs/closedObject" },
+    "window": { "$ref": "#/$defs/closedObject" },
+    "messages": { "$ref": "#/$defs/closedObject" },
+    "spool": { "$ref": "#/$defs/closedObject" }
+  },
+  "$defs": {
+    "closedObject": {
+      "type": "object",
+      "minProperties": 1
+    }
+  }
+}

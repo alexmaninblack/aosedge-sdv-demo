@@ -3,12 +3,12 @@
 
 # ADR 0013: Use a Removable Current-Release KUKSA Authorization Compatibility Layer
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-08-22
+- Accepted: 2026-08-26
 - Change class: C — authority, trust boundary, component ownership and interfaces
-- Supersedes on acceptance: [ADR 0010](0010-aos-kuksa-credential-broker.md)
+- Supersedes: [ADR 0010](0010-aos-kuksa-credential-broker.md)
 - Security input: [ADR 0012](0012-authorize-running-workloads-not-software-artifacts.md)
-- Execution plan: [KUKSA JWT current-release change plan](../../planning/active/kuksa-jwt-current-release-change-plan.md)
 
 ## Context
 
@@ -191,10 +191,10 @@ and does not invent a provisional native API.
 - Guess and emulate the future native AosCore mounted-file contract.
 - Wait for the future platform release before progressing with the demo.
 
-## Open Detailed-Design Gates
+## Remaining Implementation Gates
 
-This proposed ADR does not authorize implementation. The active change plan
-and D4 must still freeze:
+This accepted ADR does not authorize implementation. Before implementation,
+the component package and qualification plan must still provide:
 
 - executable evidence that the Provider path remains fixed OEM-trusted
   platform integration and cannot be obtained through a Service JWT.
@@ -208,13 +208,13 @@ private volatile tmpfs. The strict versioned protocol exposes only `status`,
 map only as `r -> read` and `rw -> actuate`; JWTs live 300 seconds, renew at
 180 seconds and require KUKSA reconnect/subscription recreation.
 
-## Acceptance Conditions
+## Acceptance Record
 
-This ADR may become `Accepted` only when the complete class-C documentation
-cascade agrees on the boundary, every retired identifier links to a successor,
-the current-release executable contracts exist, documentation tests pass and
-the reader-visible HLA clearly distinguishes the permanent model from the
-temporary compatibility overlay.
+Accepted on 2026-08-26 after the complete class-C documentation cascade was
+reconciled, retired identifiers were linked to successors, D4-027.1 through
+D4-027.8 and the current-release executable contracts were frozen,
+documentation checks passed, and the HLA distinguished the permanent model
+from the temporary compatibility overlay.
 
 Acceptance of this ADR does not authorize source implementation, image builds,
 artifact signing, provisioning, deprovisioning or Cloud mutation.
