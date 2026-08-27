@@ -220,9 +220,10 @@ The I0 surface register 0.14, Interaction Specification 2.5 and UI
 Traceability Register 1.1 are accepted. The standalone HTML review artifact is
 reconciled to that contract, including fixed team context and version-only
 scrolling. The
-[Demo Implementation Plan 1.0](active/demo-implementation-plan.md) is the
-current D5 review candidate and decomposes the accepted baseline into bounded
-repository-owned increments. The older linear-flow HTML remains
+[Demo Implementation Plan 1.1](active/demo-implementation-plan.md) is the
+accepted D5 sequencing model and decomposes the baseline into bounded,
+parallel repository-owned lanes and independently authorized work packets. The
+older linear-flow HTML remains
 comparison-only and is not an implementation baseline.
 
 Exit: independently reviewable implementation increments, repository changes,
@@ -281,10 +282,11 @@ That empirical work belongs to I1 before audience presentation and is not a
 missing invitation to invent values in design.
 
 The standalone HTML review mockup is reconciled to Interaction Specification
-2.5. The current next gate is review of
-[Demo Implementation Plan 1.0](active/demo-implementation-plan.md), followed
-by explicit authorization of one bounded first increment. No product UI,
-component, Cloud or VM implementation is authorized by creating that plan.
+2.5. [Demo Implementation Plan 1.1](active/demo-implementation-plan.md) is
+accepted. The current next gate is preparation and review of the three `P0`
+work packets for `L-UI`, `L-VEH` and `L-PLATFORM`, followed by independent
+authorization of exact code packets. No product UI, component, Cloud or VM
+implementation is authorized by accepting the sequencing plan.
 Existing `CURRENT`, `EVIDENCE`,
 `PARTIAL`, `GAP`, `TARGET` and implementation/qualification labels remain
 truthful gates rather than implementation acceptance. No new repository,

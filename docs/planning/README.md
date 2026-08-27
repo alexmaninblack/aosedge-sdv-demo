@@ -8,7 +8,7 @@ gates. A plan does not itself authorize a build, signature, Cloud mutation,
 assignment, VM restart, or provisioned-Unit change.
 
 - [Current design and delivery roadmap](roadmap.md)
-- [Demo Implementation Plan 1.0 review candidate](active/demo-implementation-plan.md)
+- [Accepted Demo Implementation Plan 1.1](active/demo-implementation-plan.md)
   — bounded implementation increments, repository ownership, dependencies,
   verification and per-increment authorization gates.
 - [Repository inventory and migration plan](repository-inventory-and-migration-plan.md)

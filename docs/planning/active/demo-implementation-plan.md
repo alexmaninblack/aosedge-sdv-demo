@@ -4,7 +4,7 @@
 # Demo Implementation Plan
 
 - Status: D5 review candidate
-- Version: 1.0
+- Version: 1.1
 - Prepared: 2026-08-27
 - Owner: Demo Solution Team with Platform, Gateway and Function Team owners
 - Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
@@ -109,6 +109,187 @@ flowchart LR
 parallel after separate authorization. The graph does not serialize
 independent Platform, Brake and Tire engineering work; it only records the
 shared evidence needed before integrated deployment and qualification.
+
+## Parallel Execution Operating Model
+
+### Coordination topology
+
+The implementation uses one Integration Coordinator and up to three concurrent
+worker instances. The limit is an execution-control choice, not an
+architectural restriction. Workers rotate between lanes as one wave reaches
+its fan-in gate.
+
+| Role | Owns | Must not own |
+| --- | --- | --- |
+| Integration Coordinator | Accepted baseline, work-packet approval, shared-contract control, cross-repository dependency view, merge order, integration gates and user-facing status | Unreviewed product behavior, silent contract changes or automatic external mutations |
+| Repository worker | One authorized work packet in one repository ownership boundary, its unit tests and its completion packet | Another worker's repository, shared-contract acceptance, `main` integration or live Cloud/VM/CARLA authority |
+| Integration runner | Approved composed tests after component fan-in; normally performed by the Coordinator | Product fixes during a qualification run or bypass of a failed component gate |
+| Operator | Explicitly confirms signing, publication, Cloud, VM, Unit, CARLA and destructive operations when a qualified increment reaches that gate | Delegating open-ended mutation authority to a worker |
+
+The Integration Coordinator remains active while workers run. It reviews
+dependency questions, receives blocked-state reports and keeps unrelated lanes
+moving. A worker never waits on another worker by editing that worker's source
+or inventing a temporary incompatible interface.
+
+### Allocation rule
+
+Parallel work is allocated by repository ownership boundary rather than by the
+number of logical `CMP-*` components. Components that share a repository and
+frequently touch the same build, configuration or test surfaces stay under one
+worker. Two concurrent writers in one repository are prohibited unless a
+separate review proves disjoint directories, disjoint build outputs and a
+single named integration owner.
+
+The default lane ownership is:
+
+| Lane | Increments and repository boundary | Default worker scope |
+| --- | --- | --- |
+| `L-UI` | `IMP-01`, then UI part of `IMP-06`; `aosedge-sdv-demo` | Presenter application, fixtures and read-adapter boundary only |
+| `L-VEH` | `IMP-02`; primarily `carla-ego-runtime`, with `CarlaSim` only when its hardware model must change | Scenario, controls, Gateway, VISS, advisories and Engineering Dashboard |
+| `L-PLATFORM` | `IMP-03`; `aos-vehicle-platform` | Factory/runtime/KAC/KUKSA integration and VDP v1-v3 |
+| `L-BRAKE` | `IMP-04`; `brake-health-service` and, after creation approval, `brake-health-cloud` | Brake in-vehicle and Cloud product boundary |
+| `L-TIRE` | `IMP-05`; proposed Tire repositories after creation approval | Tire in-vehicle and Cloud product boundary |
+| `L-LIFECYCLE` | non-UI part of `IMP-06` and `IMP-07`; `aosedge-sdv-demo` | Authoritative reads, protected helper and lifecycle orchestration |
+| `L-E2E` | `IMP-08`; integration repository plus read-only evidence from owners | Composition, qualification and human acceptance only |
+
+`L-UI` and `L-LIFECYCLE` share the integration repository and therefore do not
+write it concurrently by default. The Coordinator may sequence them or approve
+an exact directory split only after their application boundary is known.
+
+### Work packet and branch isolation
+
+Every worker starts from a reviewed work packet. It contains:
+
+1. one stable work-packet ID and owning increment/lane;
+2. repository, accepted base commit, dedicated `codex/imp-*` branch and
+   isolated worktree;
+3. exact writable paths and explicit read-only dependencies;
+4. in-scope `REQ-*`, `UT-*`, `IF-*`, contract versions and UI rules;
+5. required fixtures, test commands and exit evidence;
+6. allowed local processes and reserved ports/volumes, if any;
+7. forbidden changes and external-operation boundary; and
+8. escalation owner for a missing or conflicting design decision.
+
+The worker must begin from a clean worktree and record unexpected pre-existing
+state rather than removing or absorbing it. Generated output is written only
+to reviewed ignored/build locations. A worker commits only its own packet and
+does not push directly to another lane or to `main`.
+
+Suggested branch names are descriptive rather than permanent identifiers:
+
+- `codex/imp-01-presenter-shell`;
+- `codex/imp-02-vehicle-gateway`;
+- `codex/imp-03-platform-vdp`;
+- `codex/imp-04-brake-health`;
+- `codex/imp-05-tire-health`; and
+- `codex/imp-06-cloud-read-model`.
+
+Each repository branches from its own reviewed accepted revision; a solution-
+repository commit must never be treated as the base commit of a sibling
+product repository.
+
+### Contract freeze and change requests
+
+The work packet pins every consumed contract by repository revision, semantic
+version and content digest. Shared contracts in `aosedge-sdv-demo` are
+read-only worker inputs. Producer and consumer workers may independently build
+against the same fixtures, but neither may silently change the contract to make
+its local tests pass.
+
+When implementation exposes a contract problem, the worker produces a bounded
+change request containing:
+
+- the failing contract/requirement and reproducible case;
+- producer and consumer impact;
+- proposed compatible or breaking resolution;
+- required Level A, B or C cascade; and
+- whether unrelated work can continue safely.
+
+The Coordinator either resolves the request through the accepted change
+control or marks only affected packets `BLOCKED`. A changed shared contract is
+merged and repinned before affected workers rebase or restart; ad hoc dual
+contract variants are prohibited.
+
+### Parallel waves
+
+| Wave | Concurrent worker assignments | Fan-in outcome |
+| --- | --- | --- |
+| `P0` — Readiness | Coordinator freezes work packets; workers may perform read-only repository assessments | Clean bases, exact deltas, test commands and contract digests are reviewed |
+| `P1` — Foundations | `L-UI` implements `IMP-01`; `L-VEH` implements the authorized `IMP-02` slice; `L-PLATFORM` implements `IMP-03` only after its package gates close | Presenter shell, vehicle/Gateway contract and platform/VDP artifacts pass isolated gates |
+| `P2` — Independent products | `L-BRAKE` implements `IMP-04`; `L-TIRE` implements `IMP-05`; the third worker performs the authorized `IMP-06` read-model slice | Both Function Team products and authoritative read projections pass contract tests independently |
+| `P3` — Lifecycle integration | One worker owns `L-LIFECYCLE`; other workers fix only defects routed back to their owning repositories | Protected operations pass fixture, interruption and reconciliation gates without live mutation |
+| `P4` — Live composition | Coordinator runs authorized Test Vehicle integration first, then identical Production rollout and `IMP-08` qualification | Machine and human acceptance for the exact baseline; successful R0 |
+
+Wave membership is not a global product release order. A lane may advance to
+its next isolated packet when its own dependencies pass. Fan-in occurs only
+where the dependency graph requires composed evidence.
+
+### Worker completion packet
+
+A worker reports completion with one reviewable packet rather than a prose
+claim. The packet records:
+
+- branch and commit SHA;
+- changed files and confirmed repository boundary;
+- implemented and explicitly unimplemented requirements;
+- exact test commands and results;
+- contract versions/digests and fixture results;
+- generated artifact identities where applicable;
+- open gaps, assumptions and change requests;
+- confirmation that no forbidden external operation occurred; and
+- the recommended next fan-in or owner action.
+
+`IMPLEMENTED` requires the isolated completion packet to pass. It does not mean
+the component is integrated or qualified. The Coordinator changes a packet to
+`QUALIFIED` only after its required composed evidence passes.
+
+### Fan-in and integration gates
+
+Integration proceeds through five gates; a later gate cannot compensate for a
+failed earlier one:
+
+1. **Repository gate:** unit/static/package tests and secret/license checks
+   pass in the owning repository.
+2. **Contract gate:** producer and consumer suites pass independently against
+   the same pinned fixtures and negative vectors.
+3. **Host composition gate:** UI, local backends, adapters and simulated
+   vehicle boundaries work without AosCloud/Unit mutation.
+4. **Test Vehicle gate:** the exact integrated graph is deployed, exercised,
+   accepted by its owning team and retained as the Production decision basis.
+5. **Production/E2E gate:** identical accepted artifacts are authorized for
+   Production, released behavior and failure claims are proved, and R0 passes.
+
+When fan-in fails, the defect returns to the one owning lane. Integration code
+must not patch around a component defect or create a second authority/state
+store. Unaffected lanes remain eligible to continue.
+
+### Shared-resource concurrency
+
+Code, fixtures and isolated tests may run in parallel. The following shared
+resources require explicit allocation even before live qualification:
+
+- one repository worktree and build-output namespace per worker;
+- unique local backend ports, Compose project names and volumes;
+- no reuse of another worker's credential path or helper socket;
+- one selected live CARLA/Gateway source at a time; and
+- no shared Test/Production VM or AosCloud Unit/Unit Set mutation from a
+  worker packet.
+
+Live provisioning, source handover/reset, identity retirement and R0 remain
+run-exclusive. Other Cloud operations may be concurrent only after `IMP-07`
+proves their exact disjoint resource-conflict keys. Parallel implementation is
+never evidence that live external operations are safe to parallelize.
+
+### Blocked, failed and interrupted workers
+
+A blocked worker commits no speculative workaround. It preserves its branch,
+test output and minimal sanitized diagnostic evidence, then reports the exact
+gate to the Coordinator. The slot may be reassigned to an unrelated ready lane.
+
+If a worker is interrupted, a replacement starts only from the reviewed branch
+and completion packet, re-runs the packet's tests and confirms repository
+ownership before editing. Uncommitted partial state is not treated as a valid
+handoff.
 
 ## Implementation Increments
 
@@ -276,20 +457,31 @@ shared evidence needed before integrated deployment and qualification.
   to show. This proves the bounded demo solution, not production-fleet or
   safety certification.
 
-## First Increment Recommendation
+## First Parallel Batch Recommendation
 
-After this plan is reviewed, authorize only `IMP-01` first. It is the smallest
-useful implementation slice, validates the accepted presenter interaction
-model in real code and does not depend on unresolved platform builds,
-repository creation, credentials or external mutations. In parallel, perform
-the read-only `IMP-02` current-code assessment so its exact code delta can be
-reviewed next; assessment does not authorize edits.
+After this plan is reviewed, start `P0` with three concurrent read-only work-
+packet preparations for `L-UI`, `L-VEH` and `L-PLATFORM`. Their purpose is to
+freeze clean bases, exact deltas, writable paths, test commands and contract
+digests; assessment does not authorize code edits.
 
-Before `IMP-01` authorization, its review record shall name the selected UI
+The first code batch may then authorize independently:
+
+1. `IMP-01` fixture-only presenter shell in `L-UI`;
+2. one exact `IMP-02` Vehicle/Gateway implementation slice in `L-VEH`; and
+3. `IMP-03` in `L-PLATFORM` only after the latest Factory/KAC/VDP/Cross package
+   gates and exact implementation parameters close.
+
+If `IMP-03` remains blocked, its worker slot moves to an unrelated ready packet
+rather than creating a speculative Platform implementation. `IMP-04` or
+`IMP-05` may enter that slot only after their own contract and repository-
+creation gates close.
+
+Before `IMP-01` authorization, its work packet shall name the selected UI
 technology, application entry point, exact files, local run command, test
 command, asset strategy and the boundary between fixture adapters and future
-live adapters. Those choices are implementation details and must not alter the
-accepted interaction contract.
+live adapters. Equivalent exact work packets are required for `IMP-02` and
+`IMP-03`. These choices are implementation details and must not alter accepted
+contracts or interaction behavior.
 
 ## Change Control During Implementation
 
@@ -309,7 +501,8 @@ disjoint.
 
 ## Plan Acceptance Gate
 
-Version 1.0 is accepted for implementation sequencing only when reviewers
+Version 1.1 is accepted for parallel implementation sequencing only when
+reviewers
 confirm that:
 
 1. every increment has one bounded outcome and exact repository ownership;
@@ -320,7 +513,14 @@ confirm that:
 5. demo-time work uses only prebuilt frozen artifacts;
 6. no planned Dashboard/helper owns AosCloud lifecycle state or OEM approval;
 7. every external mutation remains separately authorized and reconciled; and
-8. `IMP-01` is the only recommended first code authorization.
+8. one Coordinator plus at most three workers, one-writer-per-repository and
+   isolated worktree rules are accepted;
+9. work packets pin exact contracts and completion packets provide reviewable
+   evidence rather than prose success claims;
+10. the five fan-in gates preserve component, contract, host, Test Vehicle and
+    Production/E2E truth; and
+11. `P0` prepares `L-UI`, `L-VEH` and `L-PLATFORM`, while each subsequent code
+    packet still requires independent authorization.
 
 Acceptance of this plan will not itself change any increment from `PLANNED` or
 `BLOCKED` to `AUTHORIZED`.
