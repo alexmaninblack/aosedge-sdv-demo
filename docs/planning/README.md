@@ -20,6 +20,14 @@ assignment, VM restart, or provisioned-Unit change.
   separate code-packet review; Platform is baseline-ready while its code
   packets remain blocked. Product implementation and external operations
   remain unauthorized until their exact packet is accepted.
+- Authorized P1 work packets:
+  [Presenter UI implementation](active/work-packets/p1-ui-presenter-shell.md)
+  and
+  [Vehicle/Gateway wheel-unit correction](active/work-packets/p1-vehicle-gateway-wheel-units.md).
+  Both are stored in Git as reviewable execution-control records and were
+  explicitly authorized on 2026-08-28. Their authorization is limited to the
+  exact repository, paths, dependencies, commands, tests and exclusions in
+  each packet; it does not authorize push, merge or live external operations.
 - [Repository inventory and migration plan](repository-inventory-and-migration-plan.md)
   — completed migration and local-cleanup execution record.
 

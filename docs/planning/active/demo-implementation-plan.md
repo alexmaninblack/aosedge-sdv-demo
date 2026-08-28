@@ -3,7 +3,7 @@
 
 # Demo Implementation Plan
 
-- Status: P0 completed; first P1 code packets ready for review
+- Status: P0 completed; first two P1 code packets authorized
 - Version: 1.2
 - Prepared: 2026-08-27
 - Accepted: 2026-08-28
@@ -310,8 +310,7 @@ handoff.
 
 ### `IMP-01` — Fixture-only presenter application shell
 
-- State: `READY_FOR_REVIEW`; P0 produced the exact code packet, but product
-  implementation still requires separate authorization.
+- State: `AUTHORIZED` through `WP-P1-UI-001` on 2026-08-28.
 - Repository: `aosedge-sdv-demo` only.
 - Scope: implement the accepted full-screen composition and right-hand
   Dashboard structure from the standalone review mockup, including fixed
@@ -332,7 +331,7 @@ handoff.
 ### `IMP-02` — Vehicle stimulus, control and Gateway evidence
 
 - State: `PLANNED` overall; the bounded `IMP-02A` wheel angular-speed semantics
-  slice is `READY_FOR_REVIEW` and still requires separate authorization.
+  slice is `AUTHORIZED` through `WP-P1-VEH-001` on 2026-08-28.
 - Repositories: `CarlaSim` only if the installed hardware model itself needs a
   change; otherwise `carla-ego-runtime` for scenario, controller, Gateway,
   VISS, advisory and Engineering Dashboard changes.
@@ -475,8 +474,10 @@ The completed packets are:
 
 The first P1 code batch may now be reviewed and authorized independently:
 
-1. `IMP-01` fixture-only presenter shell in `L-UI`;
-2. `IMP-02A` frozen VSS wheel angular-speed semantics in `L-VEH`; and
+1. [`WP-P1-UI-001`](work-packets/p1-ui-presenter-shell.md) for the `IMP-01`
+   fixture-only presenter shell in `L-UI`;
+2. [`WP-P1-VEH-001`](work-packets/p1-vehicle-gateway-wheel-units.md) for the
+   `IMP-02A` frozen VSS wheel angular-speed semantics in `L-VEH`; and
 3. continued design/package review in `L-PLATFORM`, with no `IMP-03` code until
    the latest Factory/KAC/VDP/Cross gates and exact implementation parameters
    close.
