@@ -20,7 +20,7 @@ describe("presentation reducer", () => {
 
   it("derives a milestone without writing lifecycle state", () => {
     const fixture = fixtureById("production");
-    expect(deriveMilestone(fixture.teams.platform, fixture.teams.brake)).toBe("G3 capability · 2 of 2 releases ready");
-    expect(fixture.global.milestone).toBe("G3 capability · 2 of 2 releases ready");
+    expect(deriveMilestone(fixture.teams.platform, fixture.teams.brake)).toBe("Platform and Brake release progress · 2 of 2 releases ready");
+    expect(fixture.global.milestone).toBe("Platform and Brake release progress · 2 of 2 releases ready");
   });
 });

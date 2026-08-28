@@ -30,7 +30,7 @@ const cases: UiCase[] = [
   { id: 24, title: "Disclosure, redaction and copy boundary", fixture: "ready", expected: "credentials, raw responses, private paths and private identities are excluded", interaction: "details" },
   { id: 25, title: "Perspective and evidence isolation", fixture: "ready", view: "brake", expected: "Current released Brake evidence remains separate from Platform and Tire state" },
   { id: 26, title: "Runtime Isolation Evidence", fixture: "ready", view: "tire", expected: "Runtime Isolation Evidence" },
-  { id: 27, title: "Operational Logs workflow", fixture: "ready", view: "brake", expected: "This fixture cannot request, refresh or delete an external log", interaction: "logs" },
+  { id: 27, title: "Platform/Operational Logs workflow", fixture: "ready", view: "brake", expected: "This fixture cannot request, refresh or delete an external log", interaction: "logs" },
   { id: 28, title: "Separate state layers and source attribution", fixture: "uncertain", view: "global", expected: "authoritative reconciliation required" },
   { id: 29, title: "Scoped vocabulary and safe next action", fixture: "failed", view: "tire", expected: "Tire-owned fixture source unavailable" },
   { id: 30, title: "Known progress without resubmission", fixture: "submitting", expected: "VDP v1 · SUBMITTING" },
@@ -48,10 +48,10 @@ const cases: UiCase[] = [
   { id: 42, title: "Test reference versus current Production evidence", fixture: "production", expected: "Current vehicle · Production Vehicle" },
   { id: 43, title: "Incomplete or contradictory evidence chain", fixture: "stale", expected: "STALE" },
   { id: 44, title: "Lifecycle-aware environment preflight", fixture: "ready", view: "global", expected: "Qualification Status · QUALIFIED" },
-  { id: 45, title: "M0 manufacturing output", fixture: "m0", view: "global", expected: "Manufacturing output" },
-  { id: 46, title: "M1 provisioning establishes G0", fixture: "m1", view: "global", expected: "Provision managed vehicles" },
-  { id: 47, title: "R0 terminal reset and recovery", fixture: "r0", view: "global", expected: "R0 complete · READY_FOR_M0" },
-  { id: 48, title: "Independent VDP/Brake releases and derived milestones", fixture: "production", view: "global", expected: "G3 capability · 2 of 2 releases ready" },
+  { id: 45, title: "M0 manufacturing output", fixture: "m0", view: "global", expected: "Produce Test and Production Vehicles" },
+  { id: 46, title: "M1 provisioning establishes G0", fixture: "m1", view: "global", expected: "Bring Vehicles Under AosEdge Management" },
+  { id: 47, title: "R0 terminal reset and recovery", fixture: "r0", view: "global", expected: "Demo reset complete · Ready to create vehicles" },
+  { id: 48, title: "Independent VDP/Brake releases and derived milestones", fixture: "production", view: "global", expected: "Platform and Brake release progress · 2 of 2 releases ready" },
   { id: 49, title: "Composed workspace ownership and local restoration", fixture: "ready", expected: "Browser content intentionally absent" },
   { id: 50, title: "Global Demo Lifecycle page and Qualification Status", fixture: "ready", view: "global", expected: "Demo Lifecycle" },
 ];
@@ -67,7 +67,7 @@ for (const uiCase of cases) {
     await page.goto(`/?fixture=${uiCase.fixture}`);
     await selectView(page, uiCase.view);
     if (uiCase.interaction === "details") await page.getByRole("button", { name: "Details" }).first().click();
-    if (uiCase.interaction === "logs") await page.getByRole("button", { name: /Operational Logs/ }).first().click();
+    if (uiCase.interaction === "logs") await page.getByRole("button", { name: /Platform Logs|Operational Logs/ }).first().click();
     if (uiCase.interaction === "action") await page.getByRole("button", { name: "Sign and submit prepared candidate" }).first().click();
     await expect(page.getByText(uiCase.expected, { exact: false }).first()).toBeVisible();
     await expect(page.getByText(/FIXTURE ONLY/)).toBeVisible();

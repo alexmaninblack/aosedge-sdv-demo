@@ -20,7 +20,7 @@ export function PresenterApp() {
   return (
     <div className="app-shell">
       <SharedHeader snapshot={snapshot} perspective={presentation.perspective} onNavigate={navigate} />
-      <div className="fixture-ribbon" role="note"><strong>FIXTURE ONLY</strong><span>{snapshot.fixtureLabel} · {snapshot.fixtureId}</span></div>
+      <div className="fixture-ribbon" role="note"><strong>FIXTURE ONLY</strong><span>{snapshot.fixtureLabel}</span></div>
       <PresenterWorkspace snapshot={snapshot}>
         {presentation.actionNotice ? <div className="action-notice" role="status">{presentation.actionNotice}</div> : null}
         {presentation.perspective === "global"

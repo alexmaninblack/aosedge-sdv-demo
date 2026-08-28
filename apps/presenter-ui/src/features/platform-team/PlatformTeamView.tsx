@@ -20,7 +20,7 @@ export function PlatformEvidence({ team, assetFailure, onLogs }: { team: TeamVie
     <section className="evidence-panel">
       <div className="evidence-head"><b><Icon name="platform" label="Platform" broken={assetFailure} />{team.evidenceTitle}</b><StatusBadge status={team.backendStatus} /></div>
       <p>{team.evidenceBody}</p>
-      <div className="evidence-actions"><button className="button" type="button" onClick={onLogs}><Icon name="logs" label="Operational Logs" broken={assetFailure} /> Operational Logs</button></div>
+      <div className="evidence-actions"><button className="button" type="button" onClick={onLogs}><Icon name="logs" label="Platform Logs" broken={assetFailure} /> Platform Logs</button></div>
       <SourceStamp observed={team.source} />
     </section>
   );

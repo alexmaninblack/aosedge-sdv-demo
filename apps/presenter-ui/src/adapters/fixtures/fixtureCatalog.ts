@@ -90,7 +90,7 @@ function release(
       digest: `sha256:${String(version).repeat(8)}…${team}-reviewed`,
       dependency: dependency ?? "OEM component runtime and fresh Safe Stop evidence",
       access: isPlatform
-        ? "OEM-owned provider capability; no Service quota applies."
+        ? "OEM-owned provider capability; no Service quota or VDP-owned application/log store."
         : "Read only the approved vehicle signals and write only the reviewed advisory path.",
       ...(isPlatform ? {} : { quota: team === "brake" ? "CPU 35% · Memory 192 MiB · Storage 64 MiB" : "CPU 20% · Memory 128 MiB · Storage 48 MiB" }),
       target: "Test Vehicle · Verification Unit Set",
@@ -150,7 +150,7 @@ function baseSnapshot(): PresenterSnapshot {
       manufactured: true,
       provisioned: true,
       recovery: "No interrupted operation",
-      milestone: "G3 capability · 0 of 2 releases ready",
+      milestone: "Platform and Brake release progress · 0 of 2 releases ready",
     },
     teams: {
       platform: team(
@@ -162,7 +162,7 @@ function baseSnapshot(): PresenterSnapshot {
           release("platform", 3, "Tire telemetry and controlled advisory path"),
         ],
         "Platform capability view",
-        "Shows the exact VDP capability reported for the Current Vehicle. Service quota fields are intentionally absent.",
+        "Shows the exact VDP capability reported for the Current Vehicle. Service quota fields and VDP-owned application/log stores are intentionally absent.",
       ),
       brake: team(
         "brake",
@@ -272,7 +272,7 @@ const catalog: Record<string, () => PresenterSnapshot> = {
       teamValue.releases[0]!.stages.forEach((stage) => { stage.state = "complete"; });
     }
     value.global.stage = "ACTIVE";
-    value.global.milestone = "G3 capability · 2 of 2 releases ready";
+    value.global.milestone = "Platform and Brake release progress · 2 of 2 releases ready";
     return value;
   },
   "safe-stop": () => {
@@ -329,7 +329,7 @@ const catalog: Record<string, () => PresenterSnapshot> = {
     value.global.stage = "R0";
     value.global.manufactured = false;
     value.global.provisioned = false;
-    value.global.recovery = "R0 complete · READY_FOR_M0 · no automatic M0 or M1";
+    value.global.recovery = "Demo reset complete · Ready to create vehicles · no automatic vehicle creation or provisioning";
     return value;
   },
   recovery: () => {

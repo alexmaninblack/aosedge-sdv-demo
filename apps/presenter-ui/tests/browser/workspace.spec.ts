@@ -48,15 +48,33 @@ test("broken project icons fall back to labelled text without hiding state", asy
   await expect(page.getByText("Platform Team", { exact: true }).first()).toBeVisible();
 });
 
-test("Platform details omit Service quota while Brake details include it", async ({ page }) => {
+test("Platform details omit Service quota and VDP store while Brake details include Service quota", async ({ page }) => {
   await page.goto("/?fixture=ready");
+  await expect(page.getByText("Service quota fields and VDP-owned application/log stores are intentionally absent.")).toBeVisible();
   await page.getByRole("button", { name: "Details" }).first().click();
   await expect(page.getByRole("dialog")).not.toContainText("Approved Service quota");
+  await expect(page.getByRole("dialog")).toContainText("no Service quota or VDP-owned application/log store");
   await page.keyboard.press("Escape");
   await page.locator('[data-team="brake"]').click();
   await page.getByRole("button", { name: "Details" }).first().click();
   await expect(page.getByRole("dialog")).toContainText("Approved Service quota");
   await expect(page.getByRole("dialog")).toContainText("private identities are excluded");
+});
+
+test("Platform Logs and Service Operational Logs retain distinct scopes", async ({ page }) => {
+  await page.goto("/?fixture=ready");
+  await page.getByRole("button", { name: "Platform Logs" }).click();
+  await expect(page.getByRole("dialog")).toContainText("Platform Team · Platform Logs");
+  await expect(page.getByRole("dialog")).toContainText("Current Unit/system/VDP");
+  await expect(page.getByRole("dialog")).toContainText("Native systemd journal via AosEdge/AosCloud log delivery");
+  await expect(page.getByRole("dialog")).toContainText("No VDP or Demo UI log store");
+  await page.keyboard.press("Escape");
+
+  await page.locator('[data-team="brake"]').click();
+  await page.getByRole("button", { name: "Operational Logs" }).click();
+  await expect(page.getByRole("dialog")).toContainText("Brake Team · Operational Logs");
+  await expect(page.getByRole("dialog")).toContainText("Current Service instance and owning provider");
+  await expect(page.getByRole("dialog")).toContainText("AosCloud native Service-log delivery representation");
 });
 
 test("fixture action confirms locally and makes no external request", async ({ page }) => {
@@ -67,4 +85,18 @@ test("fixture action confirms locally and makes no external request", async ({ p
   await page.getByRole("button", { name: "Confirm fixture presentation" }).click();
   await expect(page.getByRole("status")).toContainText("no external operation submitted");
   expect(offOriginRequests).toEqual([]);
+});
+
+test("Demo Lifecycle uses audience language while internal lifecycle codes stay hidden", async ({ page }) => {
+  await page.goto("/?fixture=ready");
+  await page.getByRole("button", { name: /AosEdge Software Evolution Demo/ }).click();
+  const lifecycle = page.getByTestId("global-lifecycle-page");
+  await expect(lifecycle).toContainText("Produce Test and Production Vehicles");
+  await expect(lifecycle).toContainText("Bring Vehicles Under AosEdge Management");
+  await expect(lifecycle).toContainText("Managed Vehicles Ready");
+  await expect(lifecycle).not.toContainText("READY_FOR_M0");
+  await expect(lifecycle.getByText("M0", { exact: true })).toHaveCount(0);
+  await expect(lifecycle.getByText("M1", { exact: true })).toHaveCount(0);
+  await expect(lifecycle.getByText("G0", { exact: true })).toHaveCount(0);
+  await expect(lifecycle.getByText("R0", { exact: true })).toHaveCount(0);
 });
