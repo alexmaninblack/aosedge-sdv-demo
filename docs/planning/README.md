@@ -11,6 +11,12 @@ assignment, VM restart, or provisioned-Unit change.
 - [Accepted Demo Implementation Plan 1.1](active/demo-implementation-plan.md)
   — bounded implementation increments, repository ownership, dependencies,
   verification and per-increment authorization gates.
+- Accepted P0 work packets:
+  [UI readiness](active/work-packets/p0-ui-readiness.md),
+  [Vehicle/Gateway readiness](active/work-packets/p0-vehicle-gateway-readiness.md)
+  and [Platform readiness](active/work-packets/p0-platform-readiness.md).
+  They are ready for separate execution authorization but authorize no
+  implementation or external operation by themselves.
 - [Repository inventory and migration plan](repository-inventory-and-migration-plan.md)
   — completed migration and local-cleanup execution record.
 

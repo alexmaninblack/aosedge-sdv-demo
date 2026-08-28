@@ -282,11 +282,13 @@ That empirical work belongs to I1 before audience presentation and is not a
 missing invitation to invent values in design.
 
 The standalone HTML review mockup is reconciled to Interaction Specification
-2.5. [Demo Implementation Plan 1.1](active/demo-implementation-plan.md) is
-accepted. The current next gate is preparation and review of the three `P0`
-work packets for `L-UI`, `L-VEH` and `L-PLATFORM`, followed by independent
-authorization of exact code packets. No product UI, component, Cloud or VM
-implementation is authorized by accepting the sequencing plan.
+2.5. [Demo Implementation Plan 1.1](active/demo-implementation-plan.md) and the
+three `P0` readiness work packets for `L-UI`, `L-VEH` and `L-PLATFORM` are
+accepted. The current next gate is separate authorization and execution of
+those read-only readiness packets, followed by review and independent
+authorization of the exact code packets they produce. No product UI,
+component, Cloud or VM implementation is authorized by accepting the
+sequencing plan or readiness packets.
 Existing `CURRENT`, `EVIDENCE`,
 `PARTIAL`, `GAP`, `TARGET` and implementation/qualification labels remain
 truthful gates rather than implementation acceptance. No new repository,

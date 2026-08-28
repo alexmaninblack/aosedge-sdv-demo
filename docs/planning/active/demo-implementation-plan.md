@@ -3,9 +3,10 @@
 
 # Demo Implementation Plan
 
-- Status: D5 review candidate
+- Status: D5 parallel implementation sequencing accepted
 - Version: 1.1
 - Prepared: 2026-08-27
+- Accepted: 2026-08-27
 - Owner: Demo Solution Team with Platform, Gateway and Function Team owners
 - Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
@@ -463,6 +464,12 @@ After this plan is reviewed, start `P0` with three concurrent read-only work-
 packet preparations for `L-UI`, `L-VEH` and `L-PLATFORM`. Their purpose is to
 freeze clean bases, exact deltas, writable paths, test commands and contract
 digests; assessment does not authorize code edits.
+
+The prepared review candidates are:
+
+1. accepted [`WP-P0-UI-001`](work-packets/p0-ui-readiness.md);
+2. accepted [`WP-P0-VEH-001`](work-packets/p0-vehicle-gateway-readiness.md); and
+3. accepted [`WP-P0-PLATFORM-001`](work-packets/p0-platform-readiness.md).
 
 The first code batch may then authorize independently:
 
