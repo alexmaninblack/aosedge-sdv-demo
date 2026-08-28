@@ -6,8 +6,8 @@
 - ID: `WP-P0-VEH-001`
 - Lane: `L-VEH`
 - Parent increment: `IMP-02`
-- Review state: `ACCEPTED`
-- Version: 0.2
+- Review state: `COMPLETED — READY_FOR_CODE_PACKET`
+- Version: 0.3
 - Prepared: 2026-08-27
 - Updated: 2026-08-28
 - Accepted: 2026-08-28
@@ -15,7 +15,7 @@
 - Authorized: 2026-08-28
 - Product implementation, live CARLA, network, Cloud, VM or Unit mutation
   authorized: no
-- Parent plan: [Demo Implementation Plan 1.1](../demo-implementation-plan.md)
+- Parent plan: [Demo Implementation Plan 1.2](../demo-implementation-plan.md)
 
 ## Objective
 
@@ -23,6 +23,55 @@ Assess the accepted CARLA/Gateway implementation against the reviewed Vehicle
 Simulation and Vehicle Gateway packages, then produce one exact first
 `IMP-02` code packet. The P0 worker does not modify either repository and does
 not launch CARLA.
+
+## P0 Execution Result
+
+- Completed: 2026-08-28
+- Exit state: `READY_FOR_CODE_PACKET` for `IMP-02A`
+- Product implementation authorized by this result: no
+
+All three frozen revisions and every frozen contract digest matched. The
+dependency-free build and all 16 CTest entries passed; the unchanged local
+Unix-socket test required the already accepted local socket permission. All 47
+selected shared-contract tests also passed. No live CARLA, Cloud, VM, Unit,
+network or product mutation occurred.
+
+The assessment found one smallest deterministic contract correction that can
+be implemented wholly in `carla-ego-runtime` without live CARLA:
+
+### `IMP-02A` — Frozen VSS wheel angular-speed semantics
+
+The runtime samples wheel angular speed in radians per second but currently
+projects the unchanged values into frozen VSS paths whose unit is degrees per
+second. The Engineering Telematics output also labels the values as `rad/s`.
+The reviewed slice converts only at the VSS boundary and keeps the normalized
+internal sample in radians per second.
+
+Exact future writable files:
+
+- `src/vss.cpp`;
+- `tests/vss_projection_test.cpp`;
+- `src/viss_client.cpp`;
+- `tests/product_language_test.py`;
+- `docs/telemetry-contract.md`; and
+- `docs/brake-event-scenario.md`.
+
+The existing `20.0 rad/s` fixture shall produce approximately
+`1145.9155902616465 deg/s` while preserving the existing `23.76 km/h` linear-
+speed assertion. The slice uses branch `codex/imp-02-vehicle-gateway` from
+`22864c5bfd15f70827fdfc2a374686d00487481b`, after the owning worktree is clean.
+
+The current untracked `tools/__pycache__/external_control_protocol.cpython-312.pyc`
+is classified as generated local output and must be removed or otherwise
+explicitly dispositioned before the implementation branch starts; it is not
+product input and shall not be committed.
+
+Broader hardware coverage, transactional mode/context behavior, selected-Unit
+mTLS/source evidence, typed advisories, Safe Stop facts, connectivity UI/wire
+integration and live CARLA qualification remain later `IMP-02` slices. Tire
+stimulus values remain gated by D4-003 empirical calibration and must not be
+invented. `CarlaSim` needs no change unless later live evidence proves an
+actual physical-model or API defect.
 
 ## Repositories and Baselines
 

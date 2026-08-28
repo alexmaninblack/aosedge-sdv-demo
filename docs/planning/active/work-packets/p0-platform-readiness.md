@@ -6,8 +6,8 @@
 - ID: `WP-P0-PLATFORM-001`
 - Lane: `L-PLATFORM`
 - Parent increment: `IMP-03`
-- Review state: `ACCEPTED`; code packet remains `BLOCKED`
-- Version: 0.2
+- Review state: `COMPLETED — BASELINE_READY`; code packets remain `BLOCKED`
+- Version: 0.3
 - Prepared: 2026-08-27
 - Updated: 2026-08-28
 - Accepted: 2026-08-28
@@ -15,7 +15,7 @@
 - Authorized: 2026-08-28
 - Product implementation, Yocto/image/component build, signing, Cloud, VM or
   Unit mutation authorized: no
-- Parent plan: [Demo Implementation Plan 1.1](../demo-implementation-plan.md)
+- Parent plan: [Demo Implementation Plan 1.2](../demo-implementation-plan.md)
 
 ## Objective
 
@@ -24,6 +24,48 @@ decomposition for Factory Assembly, OEM Component Runtime, removable KUKSA
 authorization compatibility helper and VDP v1-v3. P0 must not implement the
 target or silently treat newer local documentation as an accepted product
 revision.
+
+## P0 Execution Result
+
+- Completed: 2026-08-28
+- Exit state: `BASELINE_READY`
+- `IMP-03` implementation state: `BLOCKED`
+
+The assessment recommends
+`5c2a7d0704fac93ba0a285cf533c17847d88633e` as the exact Platform evidence
+baseline. It is a clean local `main` three documentation-only commits ahead of
+the current local `origin/main` reference
+`15b6abb7562b4d0fd4628817e1046ea95b047a0c`; only the five previously reviewed
+Markdown files differ. Formal acceptance still requires the reviewed
+fast-forward/push and the corresponding solution pin/evidence cascade. The
+historical `.11` image and Provider `0.2.0` artifact pins remain immutable and
+must not be repinned to this documentation revision.
+
+All frozen requirement/contract digests and preserved `.11` artifact digests
+matched. The 35 Python tests and the quality gate for 81 tracked files passed.
+No source, recipe, image, component, key, JWT, Cloud, VM or Unit operation was
+performed.
+
+Reusable current implementation evidence includes the provider-specific A/B
+runtime, bounded 512 MiB ext4 store, fixed `aos-vdp` identity, systemd/SELinux
+boundaries and the seven-path inbound Provider. The following target behavior
+is absent and must not be presented as implemented:
+
+- factory configuration with `enablePermissionsHandler: true`;
+- the removable `authorization/aos-kuksa-compat/` package and all KAC signer,
+  verifier, permission-mapping and JWT-lifecycle behavior;
+- OEM Component Runtime `WaitingForSafeStop` application gating;
+- VDP v2/v3 capability increments, typed outbound advisory path and complete
+  readiness/resource recovery; and
+- exact selected-Unit mTLS and trusted OEM Provider integration.
+
+The future Platform work remains decomposed into three independently reviewed
+code packets: KAC, successor Factory/runtime and VDP v1-v3. None may enter
+implementation until `CR-FACTORY` 0.4, `CR-KAC` 0.8, `CR-VDP` 0.8 and
+`CR-CROSS` 0.4 plus the exact IAM ownership, KUKSA/Provider connection,
+selected-Unit credential, Safe Stop adapter, packaging and artifact parameters
+are accepted. Platform/VDP design review may continue in parallel with any
+separately authorized UI and Vehicle/Gateway implementation lanes.
 
 ## Repository and Baseline Gate
 

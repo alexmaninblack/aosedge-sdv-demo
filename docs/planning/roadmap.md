@@ -220,7 +220,7 @@ The I0 surface register 0.14, Interaction Specification 2.5 and UI
 Traceability Register 1.1 are accepted. The standalone HTML review artifact is
 reconciled to that contract, including fixed team context and version-only
 scrolling. The
-[Demo Implementation Plan 1.1](active/demo-implementation-plan.md) is the
+[Demo Implementation Plan 1.2](active/demo-implementation-plan.md) is the
 accepted D5 sequencing model and decomposes the baseline into bounded,
 parallel repository-owned lanes and independently authorized work packets. The
 older linear-flow HTML remains
@@ -282,13 +282,14 @@ That empirical work belongs to I1 before audience presentation and is not a
 missing invitation to invent values in design.
 
 The standalone HTML review mockup is reconciled to Interaction Specification
-2.5. [Demo Implementation Plan 1.1](active/demo-implementation-plan.md) and the
-three `P0` readiness work packets for `L-UI`, `L-VEH` and `L-PLATFORM` are
-accepted. Their parallel read-only assessment and local-test execution was
-authorized on 2026-08-28. The current next gate is review and independent
-authorization of the exact code packets they produce. No product UI,
-component, Cloud or VM implementation is authorized by the sequencing plan,
-readiness packets or their P0 execution.
+2.5. [Demo Implementation Plan 1.2](active/demo-implementation-plan.md) records
+completion of the three parallel `P0` assessments for `L-UI`, `L-VEH` and
+`L-PLATFORM` on 2026-08-28. `IMP-01` and the bounded `IMP-02A` wheel angular-
+speed correction are ready for independent code-packet review and explicit
+authorization. Platform is `BASELINE_READY`, while `IMP-03` remains blocked
+for the named Factory/KAC/VDP/Cross package decisions and exact integration
+parameters. No product UI, component, Cloud or VM implementation is
+authorized by the sequencing plan, readiness packets or their P0 completion.
 Existing `CURRENT`, `EVIDENCE`,
 `PARTIAL`, `GAP`, `TARGET` and implementation/qualification labels remain
 truthful gates rather than implementation acceptance. No new repository,

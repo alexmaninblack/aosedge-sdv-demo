@@ -8,16 +8,18 @@ gates. A plan does not itself authorize a build, signature, Cloud mutation,
 assignment, VM restart, or provisioned-Unit change.
 
 - [Current design and delivery roadmap](roadmap.md)
-- [Accepted Demo Implementation Plan 1.1](active/demo-implementation-plan.md)
+- [Accepted Demo Implementation Plan 1.2](active/demo-implementation-plan.md)
   — bounded implementation increments, repository ownership, dependencies,
   verification and per-increment authorization gates.
-- Accepted P0 work packets:
+- Completed P0 work packets:
   [UI readiness](active/work-packets/p0-ui-readiness.md),
   [Vehicle/Gateway readiness](active/work-packets/p0-vehicle-gateway-readiness.md)
   and [Platform readiness](active/work-packets/p0-platform-readiness.md).
-  Their P0 read-only assessment and local-test execution was authorized on
-  2026-08-28; product implementation and external operations remain
-  unauthorized.
+  Their P0 read-only assessment and local-test execution completed on
+  2026-08-28. UI and the first bounded Vehicle/Gateway slice are ready for
+  separate code-packet review; Platform is baseline-ready while its code
+  packets remain blocked. Product implementation and external operations
+  remain unauthorized until their exact packet is accepted.
 - [Repository inventory and migration plan](repository-inventory-and-migration-plan.md)
   — completed migration and local-cleanup execution record.
 

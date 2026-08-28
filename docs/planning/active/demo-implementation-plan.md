@@ -3,10 +3,11 @@
 
 # Demo Implementation Plan
 
-- Status: D5 parallel implementation sequencing accepted
-- Version: 1.1
+- Status: P0 completed; first P1 code packets ready for review
+- Version: 1.2
 - Prepared: 2026-08-27
-- Accepted: 2026-08-27
+- Accepted: 2026-08-28
+- Updated: 2026-08-28
 - Owner: Demo Solution Team with Platform, Gateway and Function Team owners
 - Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
@@ -296,8 +297,8 @@ handoff.
 
 ### `IMP-00` — Freeze and assess the implementation baseline
 
-- State: `READY_FOR_REVIEW`; documentation-only freeze is part of this plan
-  commit, product implementation is not.
+- State: `QUALIFIED`; all three P0 assessments completed on 2026-08-28 and no
+  product implementation was in scope.
 - Repositories: all accepted workspace repositories, read-only.
 - Outcome: record current revisions, existing behavior, reusable evidence,
   exact gaps and dirty-worktree ownership without changing product code.
@@ -309,7 +310,8 @@ handoff.
 
 ### `IMP-01` — Fixture-only presenter application shell
 
-- State: `PLANNED`; recommended first code increment after plan review.
+- State: `READY_FOR_REVIEW`; P0 produced the exact code packet, but product
+  implementation still requires separate authorization.
 - Repository: `aosedge-sdv-demo` only.
 - Scope: implement the accepted full-screen composition and right-hand
   Dashboard structure from the standalone review mockup, including fixed
@@ -329,7 +331,8 @@ handoff.
 
 ### `IMP-02` — Vehicle stimulus, control and Gateway evidence
 
-- State: `PLANNED`.
+- State: `PLANNED` overall; the bounded `IMP-02A` wheel angular-speed semantics
+  slice is `READY_FOR_REVIEW` and still requires separate authorization.
 - Repositories: `CarlaSim` only if the installed hardware model itself needs a
   change; otherwise `carla-ego-runtime` for scenario, controller, Gateway,
   VISS, advisory and Engineering Dashboard changes.
@@ -458,37 +461,40 @@ handoff.
   to show. This proves the bounded demo solution, not production-fleet or
   safety certification.
 
-## First Parallel Batch Recommendation
+## First Parallel Batch Result and P1 Recommendation
 
-After this plan is reviewed, start `P0` with three concurrent read-only work-
-packet preparations for `L-UI`, `L-VEH` and `L-PLATFORM`. Their purpose is to
-freeze clean bases, exact deltas, writable paths, test commands and contract
-digests; assessment does not authorize code edits.
+`P0` completed on 2026-08-28 with three concurrent read-only assessments. It
+froze clean evidence bases, exact deltas, writable paths, test commands and
+contract digests without authorizing or changing product code.
 
-The prepared review candidates are:
+The completed packets are:
 
 1. accepted [`WP-P0-UI-001`](work-packets/p0-ui-readiness.md);
 2. accepted [`WP-P0-VEH-001`](work-packets/p0-vehicle-gateway-readiness.md); and
 3. accepted [`WP-P0-PLATFORM-001`](work-packets/p0-platform-readiness.md).
 
-The first code batch may then authorize independently:
+The first P1 code batch may now be reviewed and authorized independently:
 
 1. `IMP-01` fixture-only presenter shell in `L-UI`;
-2. one exact `IMP-02` Vehicle/Gateway implementation slice in `L-VEH`; and
-3. `IMP-03` in `L-PLATFORM` only after the latest Factory/KAC/VDP/Cross package
-   gates and exact implementation parameters close.
+2. `IMP-02A` frozen VSS wheel angular-speed semantics in `L-VEH`; and
+3. continued design/package review in `L-PLATFORM`, with no `IMP-03` code until
+   the latest Factory/KAC/VDP/Cross gates and exact implementation parameters
+   close.
 
-If `IMP-03` remains blocked, its worker slot moves to an unrelated ready packet
-rather than creating a speculative Platform implementation. `IMP-04` or
-`IMP-05` may enter that slot only after their own contract and repository-
-creation gates close.
+While the two authorized code workers execute independently, the Integration
+Coordinator and solution owner may continue Platform/VDP decisions and prepare
+its three exact packets. This work is documentation/design review only and
+must not create speculative KAC, Factory/runtime or VDP implementation. If a
+third code worker becomes available, it moves only to another independently
+authorized packet; `IMP-04` or `IMP-05` may enter that slot only after their
+own contract and repository-creation gates close.
 
-Before `IMP-01` authorization, its work packet shall name the selected UI
-technology, application entry point, exact files, local run command, test
-command, asset strategy and the boundary between fixture adapters and future
-live adapters. Equivalent exact work packets are required for `IMP-02` and
-`IMP-03`. These choices are implementation details and must not alter accepted
-contracts or interaction behavior.
+Before code starts, the Coordinator converts each P0 result into a separately
+accepted authorization record that pins the current repository base, exact
+writable files, commands, tests, exclusions and completion evidence. P0
+readiness is not code authorization. The Platform result remains
+`BASELINE_READY` rather than `READY_FOR_CODE_PACKET` until its named decisions
+close.
 
 ## Change Control During Implementation
 
