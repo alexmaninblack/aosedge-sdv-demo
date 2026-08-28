@@ -332,7 +332,9 @@ handoff.
 ### `IMP-02` — Vehicle stimulus, control and Gateway evidence
 
 - State: `PLANNED` overall; the bounded `IMP-02A` wheel angular-speed semantics
-  slice is `AUTHORIZED` through `WP-P1-VEH-001` on 2026-08-28.
+  slice is `IMPLEMENTED` through `WP-P1-VEH-001` on 2026-08-28. Remaining
+  Gateway superset, advisory, trust, Safe Stop and live qualification work is
+  not implied by that completed slice.
 - Repositories: `CarlaSim` only if the installed hardware model itself needs a
   change; otherwise `carla-ego-runtime` for scenario, controller, Gateway,
   VISS, advisory and Engineering Dashboard changes.

@@ -6,11 +6,12 @@
 - ID: `WP-P1-VEH-001`
 - Lane: `L-VEH`
 - Increment: `IMP-02A`
-- Review state: `ACCEPTED — AUTHORIZED`
-- Version: 0.2
+- Review state: `COMPLETED — IMPLEMENTED`
+- Version: 0.3
 - Prepared: 2026-08-28
 - Accepted: 2026-08-28
 - Authorized: 2026-08-28
+- Implemented and accepted: 2026-08-28
 - Implementation authorized: yes — only the bounded scope in this packet
 - External operations authorized: no
 - Parent plan: [Demo Implementation Plan 1.2](../demo-implementation-plan.md)
@@ -85,6 +86,35 @@ The completion packet records the branch and commit, exact changed files,
 conversion/tolerance evidence, full test counts, any sandbox-only socket
 restriction, unchanged repository boundaries and confirmation that no
 forbidden operation occurred.
+
+## Completion Record
+
+- Implementation commit:
+  `d05ac2dbf89f341215e12770feab0ec23b3c2394`.
+- Final repository relationship: the Integration Coordinator fast-forwarded
+  `carla-ego-runtime/main` from the frozen base to the accepted implementation
+  commit.
+- Exact change boundary: the six authorized files only; `git diff --check`
+  passed and the feature worktree was clean at acceptance.
+- Conversion evidence: the normalized sample remains `20.0 rad/s`; the VSS
+  projection test proves `1145.9155902616465 deg/s` within `1.0e-12`, while
+  retaining the exact `23.76 km/h` linear-speed assertion.
+- Verification: fresh Release configuration and build passed; all 16 CTest
+  entries passed. The Unix-socket-only `external_control_protocol` entry
+  passed when rerun outside the filesystem sandbox after the sandbox denied
+  socket binding. Both product-language tests passed.
+- Current-contract revalidation: all eight tests for accepted VISS Trust and
+  Telemetry Profile 1.1 passed. Its later trusted-runtime and Safe Stop
+  additions do not change the frozen wheel angular-speed semantics.
+- Existing checkout ownership: the unrelated generated
+  `tools/__pycache__/` in the original checkout was preserved and was not
+  committed.
+- External operations: none. No live CARLA, Cloud, VM, Unit, signing,
+  provisioning, publication or network operation occurred.
+
+`WP-P1-VEH-001` therefore exits `IMPLEMENTED`. It is not `QUALIFIED`: the
+remaining Gateway superset, typed advisory, trust, Safe Stop and live CARLA
+qualification work remains in later `IMP-02` increments.
 
 ## Explicit Exclusions
 
