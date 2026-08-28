@@ -1,0 +1,1 @@
+export { GlobalLifecyclePage } from "./GlobalLifecyclePage";
