@@ -284,11 +284,11 @@ missing invitation to invent values in design.
 The standalone HTML review mockup is reconciled to Interaction Specification
 2.5. [Demo Implementation Plan 1.1](active/demo-implementation-plan.md) and the
 three `P0` readiness work packets for `L-UI`, `L-VEH` and `L-PLATFORM` are
-accepted. The current next gate is separate authorization and execution of
-those read-only readiness packets, followed by review and independent
+accepted. Their parallel read-only assessment and local-test execution was
+authorized on 2026-08-28. The current next gate is review and independent
 authorization of the exact code packets they produce. No product UI,
-component, Cloud or VM implementation is authorized by accepting the
-sequencing plan or readiness packets.
+component, Cloud or VM implementation is authorized by the sequencing plan,
+readiness packets or their P0 execution.
 Existing `CURRENT`, `EVIDENCE`,
 `PARTIAL`, `GAP`, `TARGET` and implementation/qualification labels remain
 truthful gates rather than implementation acceptance. No new repository,

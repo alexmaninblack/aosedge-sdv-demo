@@ -11,7 +11,8 @@
 - Prepared: 2026-08-27
 - Updated: 2026-08-28
 - Accepted: 2026-08-28
-- Execution authorized: no
+- Execution authorized: yes — P0 read-only assessment and local tests only
+- Authorized: 2026-08-28
 - Product implementation, live CARLA, network, Cloud, VM or Unit mutation
   authorized: no
 - Parent plan: [Demo Implementation Plan 1.1](../demo-implementation-plan.md)

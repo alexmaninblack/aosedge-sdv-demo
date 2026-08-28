@@ -15,8 +15,9 @@ assignment, VM restart, or provisioned-Unit change.
   [UI readiness](active/work-packets/p0-ui-readiness.md),
   [Vehicle/Gateway readiness](active/work-packets/p0-vehicle-gateway-readiness.md)
   and [Platform readiness](active/work-packets/p0-platform-readiness.md).
-  They are ready for separate execution authorization but authorize no
-  implementation or external operation by themselves.
+  Their P0 read-only assessment and local-test execution was authorized on
+  2026-08-28; product implementation and external operations remain
+  unauthorized.
 - [Repository inventory and migration plan](repository-inventory-and-migration-plan.md)
   — completed migration and local-cleanup execution record.
 
