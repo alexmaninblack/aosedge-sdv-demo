@@ -3,7 +3,7 @@
 
 # Demo Implementation Plan
 
-- Status: P0 completed; first two P1 code packets authorized
+- Status: P0 completed; Presenter UI implemented; Vehicle/Gateway P1 under review
 - Version: 1.2
 - Prepared: 2026-08-27
 - Accepted: 2026-08-28
@@ -310,7 +310,8 @@ handoff.
 
 ### `IMP-01` — Fixture-only presenter application shell
 
-- State: `AUTHORIZED` through `WP-P1-UI-001` on 2026-08-28.
+- State: `IMPLEMENTED` through `WP-P1-UI-001` on 2026-08-28; native/live
+  integration and qualification remain in later increments.
 - Repository: `aosedge-sdv-demo` only.
 - Scope: implement the accepted full-screen composition and right-hand
   Dashboard structure from the standalone review mockup, including fixed
