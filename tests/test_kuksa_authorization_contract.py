@@ -22,7 +22,7 @@ class KuksaAuthorizationContractTest(unittest.TestCase):
 
     def test_contract_identity_and_framing_are_frozen(self) -> None:
         self.assertEqual("D4-027.8", self.profile["decision"])
-        self.assertEqual("1.6.0", self.profile["contractVersion"])
+        self.assertEqual("1.7.0", self.profile["contractVersion"])
         self.assertEqual("aos-kuksa-auth-compat/v1", self.profile["protocol"])
         self.assertEqual("UNIX_STREAM", self.profile["transport"]["socketType"])
         self.assertEqual("REJECT", self.profile["transport"]["duplicateObjectMembers"])
@@ -250,8 +250,8 @@ class KuksaAuthorizationContractTest(unittest.TestCase):
 
     def test_process_envelope_and_diagnostics_are_fail_closed(self) -> None:
         process = self.profile["processEnvelope"]
-        self.assertEqual(67108864, process["memoryMaxBytes"])
-        self.assertEqual(10, process["cpuQuotaPercent"])
+        self.assertNotIn("memoryMaxBytes", process)
+        self.assertNotIn("cpuQuotaPercent", process)
         self.assertEqual(32, process["tasksMax"])
         self.assertEqual(128, process["limitNoFile"])
         self.assertEqual(["AF_UNIX", "AF_INET"], process["restrictAddressFamilies"])

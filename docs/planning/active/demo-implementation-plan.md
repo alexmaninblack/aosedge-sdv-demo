@@ -354,7 +354,8 @@ handoff.
 
 ### `IMP-03` — Factory substrate, current-release security and VDP family
 
-- State: `BLOCKED`; `CR-FACTORY` 0.5, `CR-KAC` 0.11, `CR-VDP` 0.9 and
+- State: `AUTHORIZED FOR ISOLATED SOURCE IMPLEMENTATION`; `CR-FACTORY` 0.5,
+  `CR-KAC` 0.12, `CR-VDP` 0.9 and
   `CR-CROSS` 0.4 were accepted on 2026-08-28 and Platform baseline
   `bdc72aba97a83c9868d454588189ef139710a6d7` was reconciled to `origin/main`.
   `IMP-03-IAM-001` fixes OEM Factory Image ownership and the product-layer
@@ -375,7 +376,18 @@ handoff.
   delivery, pinned SoftHSM/OpenSSL provider/token parameters and separate
   least-privilege KAC/verifier-preparation SELinux domains, with no automatic
   policy widening or hardware-HSM claim.
-  The remaining exact implementation parameters remain open.
+  The bounded Factory/runtime source packet
+  [`WP-P1-PLATFORM-FACTORY-RUNTIME-001`](work-packets/p1-platform-factory-runtime.md)
+  is accepted and authorized. It may be
+  implemented in isolation but may not merge until the independent KAC
+  package exists and the combined source gates pass. The corrected KAC source
+  packet [`WP-P1-PLATFORM-KAC-001`](work-packets/p1-platform-kac.md) is also
+  accepted and authorized without unmeasured CPU/RAM ceilings. The VDP v1-v3
+  source packet
+  [`WP-P1-PLATFORM-VDP-001`](work-packets/p1-platform-vdp-family.md) is
+  accepted and authorized. Merge of the interdependent branches plus every
+  dependency download, artifact/image build and live qualification remains
+  blocked until its separate gate is explicitly authorized.
 - Repository: `aos-vehicle-platform`.
 - Scope: build the successor OEM Demo Factory Image with stock Aos IAM
   `enablePermissionsHandler: true`, no provisioned identity or pre-populated
@@ -494,23 +506,22 @@ The completed packets are:
 2. accepted [`WP-P0-VEH-001`](work-packets/p0-vehicle-gateway-readiness.md); and
 3. accepted [`WP-P0-PLATFORM-001`](work-packets/p0-platform-readiness.md).
 
-The first P1 code batch may now be reviewed and authorized independently:
+The first P1 code batch has the following current state:
 
 1. [`WP-P1-UI-001`](work-packets/p1-ui-presenter-shell.md) for the `IMP-01`
-   fixture-only presenter shell in `L-UI`;
+   fixture-only presenter shell in `L-UI` is `IMPLEMENTED`;
 2. [`WP-P1-VEH-001`](work-packets/p1-vehicle-gateway-wheel-units.md) for the
-   `IMP-02A` frozen VSS wheel angular-speed semantics in `L-VEH`; and
-3. continued design/package review in `L-PLATFORM`, with no `IMP-03` code until
-   the latest Factory/KAC/VDP/Cross gates and exact implementation parameters
-   close.
+   `IMP-02A` frozen VSS wheel angular-speed semantics in `L-VEH` is
+   `IMPLEMENTED`; and
+3. the Factory/runtime, KAC and VDP family source packets in `L-PLATFORM` are
+   accepted and independently authorized. Their combined merge, dependency
+   retrieval, artifact/image build and live qualification remain gated.
 
-While the two authorized code workers execute independently, the Integration
-Coordinator and solution owner may continue Platform/VDP decisions and prepare
-its three exact packets. This work is documentation/design review only and
-must not create speculative KAC, Factory/runtime or VDP implementation. If a
-third code worker becomes available, it moves only to another independently
-authorized packet; `IMP-04` or `IMP-05` may enter that slot only after their
-own contract and repository-creation gates close.
+The three Platform source workers may execute independently in their reviewed
+ownership boundaries. The Integration Coordinator does not merge any branch
+until required package dependencies exist and the combined source gates pass.
+`IMP-04` or `IMP-05` may enter a free slot only after their own contract and
+repository-creation gates close.
 
 Before code starts, the Coordinator converts each P0 result into a separately
 accepted authorization record that pins the current repository base, exact

@@ -6,8 +6,8 @@
 - ID: `WP-P0-PLATFORM-001`
 - Lane: `L-PLATFORM`
 - Parent increment: `IMP-03`
-- Review state: `COMPLETED — BASELINE_ACCEPTED`; code packets remain `BLOCKED`
-- Version: 0.11
+- Review state: `COMPLETED — BASELINE_ACCEPTED`; P1 source packets accepted separately
+- Version: 0.12
 - Prepared: 2026-08-27
 - Updated: 2026-08-28
 - Accepted: 2026-08-28
@@ -29,7 +29,8 @@ revision.
 
 - Completed: 2026-08-28
 - Exit state: `BASELINE_ACCEPTED`
-- `IMP-03` implementation state: `BLOCKED`
+- `IMP-03` state at P0 exit: `BLOCKED`; three bounded P1 source packets were
+  subsequently accepted on 2026-08-28
 
 P0 first selected `5c2a7d0704fac93ba0a285cf533c17847d88633e` as the
 source-evidence candidate because its delta from the previous accepted
@@ -64,7 +65,7 @@ is absent and must not be presented as implemented:
 
 The future Platform work remains decomposed into three independently reviewed
 code packets: KAC, successor Factory/runtime and VDP v1-v3. `CR-FACTORY` 0.5,
-`CR-KAC` 0.11, `CR-VDP` 0.9 and `CR-CROSS` 0.4 were accepted on 2026-08-28.
+`CR-KAC` 0.12, `CR-VDP` 0.9 and `CR-CROSS` 0.4 were accepted on 2026-08-28.
 IAM ownership plus KAC package/process, signer/verifier, Service-bootstrap,
 native-IAM loopback, minimum trustworthy-time, exact
 filesystem/SELinux/PKCS#11 parameters and the OEM Component Runtime Safe Stop
@@ -73,11 +74,10 @@ authorization system is also accepted in `IMP-03-VDP-001`, and the exact
 selected-Unit VISS mTLS enrollment and atomic handover boundary is accepted in
 `IMP-03-VDP-002`. The minimum fixed Provider credential materialization is
 accepted in `IMP-03-VDP-003`, and the immutable prebuilt VDP v1-v3 artifact
-family is accepted in `IMP-03-VDP-004`. Implementation remains blocked until
-the final Factory build/image qualification parameters are accepted.
-Platform/VDP
-design review may continue in parallel with any separately authorized UI and
-Vehicle/Gateway implementation lanes.
+family is accepted in `IMP-03-VDP-004`. The subsequent Factory/runtime, KAC
+and VDP P1 packets authorize only isolated source implementation. Their
+interdependent merge plus every dependency download, artifact/image build and
+live qualification remains separately gated.
 
 ## Accepted Implementation Parameters
 
@@ -598,7 +598,7 @@ are frozen.
 The latest packages were design-reviewed on 2026-08-28:
 
 - [Factory Substrate 0.5](../../../requirements/components/factory-substrate.md);
-- [KUKSA Authorization Compatibility 0.11](../../../requirements/components/kuksa-authorization-compatibility.md);
+- [KUKSA Authorization Compatibility 0.12](../../../requirements/components/kuksa-authorization-compatibility.md);
 - [Vehicle Data Platform 0.9](../../../requirements/components/vehicle-data-platform.md); and
 - [Cross-Cutting 0.4](../../../requirements/components/cross-cutting.md).
 
@@ -618,10 +618,10 @@ implementation. Exact package-owned implementation parameters remain the
 | Frozen file/contract | SHA-256 |
 | --- | --- |
 | Factory Substrate requirements | `fa450e7847beb7cfb5b5f09dea35a4e9bbf99412031336abafb4500a879ffc66` |
-| KAC requirements | `79c7d1a178f75272f61fd20d98c9c7d41cbc712eef4c014b3f7d0a2453646bc2` |
+| KAC requirements | `ab0d6bf039d94d52b82ff77c6bcf74ffe397f9f2b6110f8be032ed07198c3e39` |
 | VDP requirements | `acc1692c8147ef9a5236a29c01ae311afb4df6290d71b804611cf468423518a9` |
 | Cross-Cutting requirements | `c8d2d15c4a1806511a99408dc341eb785c748109e7c4c9ebd9ad8ae1f9811f59` |
-| KUKSA current-demo authorization v1 | `0c19245e6a6e1187ec31dbaaaf23d1f5dee4b3b8c438f1d0c3b9899bf08e4f0b` |
+| KUKSA current-demo authorization v1 | `1ddd097976dc8606533307bf2f0f0619b166a295a38391e593340487b8d2931c` |
 | VDP Compatibility v1 | `8e58e18e9d99a13409af6813e573cbe1c690e439ad746224426801f6b080c871` |
 | VISS Trust and Telemetry v1 | `4a1a2bd804c3a49f707b5e640632bd8a0357901f59e4615c340622b043d4c12c` |
 | QM Advisory v1 | `f7ae78148fb3b3265c8b773117126665afb1edd97a73f59db5a1f3af7c223487` |
@@ -693,8 +693,9 @@ The worker returns:
 
 P0 exited `BASELINE_ACCEPTED` at
 `bdc72aba97a83c9868d454588189ef139710a6d7` with reconciled remote/main state
-and updated solution pins. `IMP-03` remains `BLOCKED` until each exact KAC,
-Factory/runtime and VDP code packet is accepted. Any product-code delta,
-missing immutable evidence, contract conflict or need to build, sign or use a
-VM before its separate gate is escalated to the Platform owner and Integration
-Coordinator.
+and updated solution pins. The exact Factory/runtime, KAC and VDP source
+packets were subsequently accepted; they do not retroactively expand P0 or
+authorize their combined merge, dependency retrieval, build, signing or VM
+qualification. Any boundary expansion, missing immutable evidence, contract
+conflict or external operation is escalated to the Platform owner and
+Integration Coordinator.

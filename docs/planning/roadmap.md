@@ -152,7 +152,7 @@ Create and review packages in this order:
 Groups 1 through 5 established design-reviewed baselines on 2026-08-19;
 subsequent security and exact-contract deltas retain their per-package review
 state in the component-package index rather than inheriting acceptance.
-Factory 0.5, KUKSA Authorization Compatibility 0.11, Vehicle Data Platform 0.9
+Factory 0.5, KUKSA Authorization Compatibility 0.12, Vehicle Data Platform 0.9
 and Cross-Cutting Security and Operations 0.4 were design-reviewed on
 2026-08-28. Demo Orchestration (`CR-DEMO`) is revalidated as 1.1 and
 End-to-End Acceptance (`CR-E2E`) 0.8 is D3 design-reviewed as of 2026-08-27.

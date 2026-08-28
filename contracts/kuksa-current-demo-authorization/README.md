@@ -9,7 +9,7 @@ accepted `D4-027.3` through
 It defines the temporary current-AosCore exchange between the Brake/Tire
 compatibility bootstrap and `CMP-KAC`; it is not a future native AosCore API.
 
-- [protocol profile 1.6.0](kuksa-auth-compat.v1.json)
+- [protocol profile 1.7.0](kuksa-auth-compat.v1.json)
 - [request schema](kuksa-auth-request.schema.json)
 - [response schema](kuksa-auth-response.schema.json)
 
@@ -101,12 +101,14 @@ The helper accepts at most 16-KiB requests, 32-KiB responses, 16-KiB JWTs,
 64 exact permissions and 512-byte paths. It permits four concurrent requests,
 an eight-connection backlog, bounded per-peer/global token-bucket rates and an
 eight-second whole-request deadline. Retry uses 1/2/4/8/16/30-second backoff
-with ±20% jitter and never crosses JWT expiry. The process is capped at 64 MiB,
-10% CPU, 32 tasks and 128 file descriptors. It exposes only its private Unix
-socket, permits `AF_INET` solely for the fixed TLS loopback IAM client, denies
-external IP traffic and logs only fixed event code, correlation, outcome and
-retryability. Secrets, tokens, claims, paths, permission content, signing
-input and raw frames are forbidden.
+with ±20% jitter and never crosses JWT expiry. The process is capped at 32
+tasks and 128 file descriptors. The first demo deliberately sets no unmeasured
+CPU or memory ceiling for this temporary platform helper; Brake and Tire SOTA
+instances remain the only quota-controlled tenants. KAC exposes only its
+private Unix socket, permits `AF_INET` solely for the fixed TLS loopback IAM
+client, denies external IP traffic and logs only fixed event code,
+correlation, outcome and retryability. Secrets, tokens, claims, paths,
+permission content, signing input and raw frames are forbidden.
 
 D4-027 is complete. Implementation still requires the broader D4 and change
 plan gates; this contract itself authorizes no source, image or Unit mutation.

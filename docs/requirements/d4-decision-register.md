@@ -836,8 +836,10 @@ Already accepted:
     `AF_INET` client exception required by the released Aos IAM public gRPC
     endpoint: fixed TLS loopback `127.0.0.1:8090`, Aos CA trust and expected
     server name `main`, with no DNS, caller-selected endpoint, external IP or
-    TCP listener. It retains 64-MiB memory, 10%-CPU, 32-task and
-    128-descriptor envelopes and emits only fixed redacted diagnostics.
+    TCP listener. It retains 32-task and 128-descriptor envelopes, applies no
+    unmeasured CPU/RAM ceiling to the temporary platform helper, and emits
+    only fixed redacted diagnostics. Brake and Tire SOTA instances remain the
+    only quota-controlled tenants.
 
 ### <a id="d4-027-1"></a>D4-027.1 Decision Record — Helper Package, Process and Startup Boundary
 
@@ -898,6 +900,7 @@ D4-027.8. D4-027 has no remaining subdecision.
 - Decision state: `DECIDED`
 - Accepted: 2026-08-22
 - Native-IAM transport correction accepted: 2026-08-28
+- CPU/RAM envelope correction accepted: 2026-08-28
 - Owners: Platform Team / Aos IAM and security owners / both Function Teams
 
 The accepted current-release local transport and credential-delivery boundary
@@ -1167,8 +1170,10 @@ The accepted current-release operational envelope is:
 5. retry waits 1, 2, 4, 8, 16 and then at most 30 seconds, each with ±20%
    jitter. With an existing JWT it stops at signed expiry. Without a JWT it may
    continue the capped retry while the Service remains `NOT_READY`;
-6. systemd limits the helper to 64 MiB memory, 10% CPU, 32 tasks and 128 file
-   descriptors. It has no ambient capability, uses only `AF_UNIX` and
+6. systemd limits the helper to 32 tasks and 128 file descriptors. It applies
+   no unmeasured CPU or memory ceiling to this temporary platform helper and
+   does not present it as an AosCore quota-controlled tenant. It has no
+   ambient capability, uses only `AF_UNIX` and
    `AF_INET`, `NoNewPrivileges`, strict protected system content and private
    temporary storage. `AF_INET` is allowed solely for the fixed outbound TLS
    client to the released native Aos IAM public gRPC endpoint at
@@ -1181,9 +1186,10 @@ The accepted current-release operational envelope is:
    JWT, permission content, VSS path, claims, signing input, private-key
    information, raw protocol frames, free-text protocol errors or
    high-cardinality identity labels; and
-8. these numbers are the accepted first-demo envelope. Measurement may prove
-   a reviewed change necessary, but implementation shall not widen them
-   silently or truncate authority to fit.
+8. these numbers are the accepted first-demo envelope. CPU/RAM use is observed
+   during qualification for bounded-growth defects but has no fixed current-
+   demo ceiling. Measurement may prove a reviewed limit necessary, but
+   implementation shall not add one silently or truncate authority to fit.
 
 The 2026-08-28 transport correction reconciles this envelope with the pinned
 AosCore implementation, whose `IAMPublicPermissionsService/GetPermissions`

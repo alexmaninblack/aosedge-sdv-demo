@@ -1,6 +1,6 @@
 {
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
-  "contractVersion": "1.6.0",
+  "contractVersion": "1.7.0",
   "decision": "D4-027.8",
   "protocol": "aos-kuksa-auth-compat/v1",
   "transport": {
@@ -197,8 +197,6 @@
     ]
   },
   "processEnvelope": {
-    "memoryMaxBytes": 67108864,
-    "cpuQuotaPercent": 10,
     "tasksMax": 32,
     "limitNoFile": 128,
     "restrictAddressFamilies": ["AF_UNIX", "AF_INET"],

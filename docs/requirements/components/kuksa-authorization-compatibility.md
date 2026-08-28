@@ -1,10 +1,10 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Current-Release KUKSA Authorization Compatibility 0.11
+# Current-Release KUKSA Authorization Compatibility 0.12
 
 - Status: D3 design-reviewed
-- Version: 0.11
+- Version: 0.12
 - Prepared: 2026-08-22
 - Accepted: 2026-08-28
 - Owner: Platform Team
@@ -216,10 +216,12 @@ bounds:
   JWT expiry;
 - `IAM_UNAVAILABLE`, `SIGNER_UNAVAILABLE`, `TIME_UNTRUSTED` and `BUSY` are
   retryable; the other four fixed codes are non-retryable;
-- systemd bounds of 64 MiB, 10% CPU, 32 tasks and 128 descriptors, with only
-  `AF_UNIX` plus `AF_INET` for the fixed outbound native-IAM client,
+- systemd bounds of 32 tasks and 128 descriptors, with only `AF_UNIX` plus
+  `AF_INET` for the fixed outbound native-IAM client,
   no ambient capabilities, `NoNewPrivileges`, strict system protection and
-  private temporary storage. The sole TCP exception is TLS loopback
+  private temporary storage. No unmeasured CPU or memory ceiling is imposed
+  on this temporary platform helper; Brake and Tire remain the only
+  quota-controlled SOTA tenants. The sole TCP exception is TLS loopback
   `127.0.0.1:8090` using the Aos CA and expected server name `main`; no TCP
   listener, DNS, caller-selected endpoint or external IP access is allowed;
   and
@@ -400,8 +402,10 @@ not observe Service telemetry, analytics results or advisory payloads.
   queueing, response size, timeout and resource use using the exact D4-027.8
   16/32/16-KiB frame/response/JWT, 64-permission, 512-byte-path,
   four-concurrent/eight-backlog, 12/30-per-minute and 2/3/3/8-second limits. It
-  shall run within 64 MiB, 10% CPU, 32 tasks and 128 descriptors with only
-  `AF_UNIX` and the fixed `AF_INET` TLS-loopback IAM client exception; expose
+  shall run within 32 tasks and 128 descriptors with only `AF_UNIX` and the
+  fixed `AF_INET` TLS-loopback IAM client exception. It shall have no
+  unmeasured CPU or memory ceiling and shall not be presented as an AosCore
+  quota-controlled tenant; expose
   no TCP listener; deny DNS, caller-configurable endpoints and external IP
   access; fail closed under excess;
   run in the exact `aos_kuksa_auth_compat_t` domain while verifier preparation
@@ -443,7 +447,7 @@ not observe Service telemetry, analytics results or advisory payloads.
 | <a id="ut-kac-006"></a>`UT-KAC-006` | `REQ-KAC-007`, `REQ-KAC-008` | Empty helper process restart and VM reboot, online synchronization/stable-window reconstruction, cold offline `NOT_READY`, stop/replace/unregister/remove denial, tmpfs deletion, no persisted-token or time-anchor recovery |
 | <a id="ut-kac-007"></a>`UT-KAC-007` | `REQ-KAC-001`, `REQ-KAC-004`, `REQ-KAC-007` | Exact RSA-2048/one-key/self-signed `kuksa-jwt` module, `aos-kuksa` token, pinned SoftHSM/provider paths and separate PIN pass only through private systemd credentials; protected sign/verify preparation publishes only the atomic mode-`0444` public verifier; missing/malformed verifier blocks KUKSA and helper; shared `.usrpin`, PIN in URI/environment/arguments/logs, private/file-key fallback, wrong Unit/verifier/signing context or persisted helper state rejects; reboot reconstructs the verifier and fresh provisioning uses distinct trust state |
 | <a id="ut-kac-008"></a>`UT-KAC-008` | `REQ-KAC-008` | Cloud/backend reachability is absent from local authorization dependencies and the fixed IAM loopback remains available during targeted vehicle external-connectivity loss |
-| <a id="ut-kac-009"></a>`UT-KAC-009` | `REQ-KAC-006`, `REQ-KAC-009` | Exact frame/JWT/permission/path boundaries ±1, four-concurrent/eight-backlog and per-peer/global token-bucket boundaries, every 2/3/3/8-second timeout, retry schedule/jitter/expiry cutoff, 64-MiB/10%-CPU/32-task/128-FD limits, exact verifier/runtime/socket paths, owners and modes, separate KAC/preparation SELinux domains, private Unix listener plus fixed outbound IAM loopback only, no capabilities/shell/TCP listener/DNS/external IP/arbitrary `/var/aos`/Service tmpfs/systemd management, initial SoftHSM read/open/lock only and no automatic `audit2allow` widening; invalid UTF-8/JSON/duplicate/unknown/trailing frames and every retryable/non-retryable mapping fail closed; only fixed low-cardinality codes/correlation are emitted and diagnostic output is fully redacted |
+| <a id="ut-kac-009"></a>`UT-KAC-009` | `REQ-KAC-006`, `REQ-KAC-009` | Exact frame/JWT/permission/path boundaries ±1, four-concurrent/eight-backlog and per-peer/global token-bucket boundaries, every 2/3/3/8-second timeout, retry schedule/jitter/expiry cutoff, 32-task/128-FD limits and explicit absence of unmeasured CPU/RAM ceilings, exact verifier/runtime/socket paths, owners and modes, separate KAC/preparation SELinux domains, private Unix listener plus fixed outbound IAM loopback only, no capabilities/shell/TCP listener/DNS/external IP/arbitrary `/var/aos`/Service tmpfs/systemd management, initial SoftHSM read/open/lock only and no automatic `audit2allow` widening; invalid UTF-8/JSON/duplicate/unknown/trailing frames and every retryable/non-retryable mapping fail closed; only fixed low-cardinality codes/correlation are emitted and diagnostic output is fully redacted |
 | <a id="ut-kac-010"></a>`UT-KAC-010` | `REQ-KAC-001`, `REQ-KAC-010` | Packaging/dependency inspection proves the exact package/unit/user boundary, no VDP/SOTA business-code ownership, no root/public-listener/global-Service-Manager dependency and one removable native-migration seam |
 
 Unit tests use fake IAM, protected-signer and clock adapters plus private
@@ -480,6 +484,15 @@ VDP remains an OEM-qualified trusted platform component, Service credentials
 cannot grant provider authority, and malicious/substituted-Provider containment
 is outside the accepted claim.
 
+## Review Record for Version 0.12
+
+Version 0.12 incorporates contract profile 1.7.0 and the accepted resource-
+envelope correction. It removes the unmeasured 64-MiB and 10%-CPU ceilings
+from the temporary platform helper while retaining deterministic request,
+concurrency, rate, deadline, task, descriptor, network, sandbox and redaction
+bounds. Brake and Tire SOTA instances remain the only quota-controlled
+tenants in the first demo.
+
 ## Review Record for Version 0.11
 
 Version 0.11 incorporates accepted `IMP-03-KAC-006` and contract profile
@@ -489,6 +502,7 @@ SELinux domains and the initial no-create/delete/rename backend boundary. It
 also records that SoftHSM is a current-demo software-token choice, not evidence
 of hardware-HSM physical isolation, and requires a separate review instead of
 automatic SELinux widening if pinned integration needs more access.
+Version 0.11 was superseded by Version 0.12.
 
 ## Review Record for Version 0.10
 
