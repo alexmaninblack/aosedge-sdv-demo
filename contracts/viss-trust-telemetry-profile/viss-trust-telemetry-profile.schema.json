@@ -40,9 +40,11 @@
     "credentialLifecycle": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["unitUnique", "created", "stored", "delivered", "excludedFrom", "retiredAtR0", "productionHardening"],
+      "required": ["unitUnique", "purposeBound", "separateForRoles", "created", "stored", "delivered", "excludedFrom", "retiredAtR0", "productionHardening"],
       "properties": {
         "unitUnique": { "const": true },
+        "purposeBound": { "const": true },
+        "separateForRoles": { "type": "array", "uniqueItems": true, "items": { "enum": ["SELECTED_PLATFORM_UNIT", "PLATFORM_UPDATE_RUNTIME"] } },
         "created": { "const": "per-Unit onboarding after Cloud Unit and Node identity are known" },
         "stored": { "const": "root-owned persistent Unit credential outside Factory Image and FOTA payload" },
         "delivered": { "const": "systemd LoadCredential" },
@@ -53,13 +55,13 @@
     },
     "peerRoles": {
       "type": "array",
-      "minItems": 3,
+      "minItems": 4,
       "items": {
         "type": "object",
         "additionalProperties": false,
         "required": ["role", "maxConcurrentConnections", "allowedOperations", "setPolicy", "availability"],
         "properties": {
-          "role": { "enum": ["SELECTED_PLATFORM_UNIT", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"] },
+          "role": { "enum": ["SELECTED_PLATFORM_UNIT", "PLATFORM_UPDATE_RUNTIME", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"] },
           "maxConcurrentConnections": { "const": 1 },
           "allowedOperations": { "type": "array", "uniqueItems": true, "items": { "enum": ["GET", "SUBSCRIBE", "UNSUBSCRIBE"] } },
           "setPolicy": { "enum": ["DENY_UNTIL_D4_008", "ALWAYS_DENY"] },
@@ -70,9 +72,11 @@
     "selectedUnitGate": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["exclusiveRole", "selectedIdentity", "reject", "engineeringDashboardException"],
+      "required": ["selectedBoundRoles", "maximumConnectionsPerSelectedRole", "distinctCredentialPerSelectedRole", "selectedIdentity", "reject", "engineeringDashboardException"],
       "properties": {
-        "exclusiveRole": { "const": "SELECTED_PLATFORM_UNIT" },
+        "selectedBoundRoles": { "type": "array", "uniqueItems": true, "items": { "enum": ["SELECTED_PLATFORM_UNIT", "PLATFORM_UPDATE_RUNTIME"] } },
+        "maximumConnectionsPerSelectedRole": { "const": 1 },
+        "distinctCredentialPerSelectedRole": { "const": true },
         "selectedIdentity": { "type": "array", "uniqueItems": true, "items": { "enum": ["UnitId", "NodeId", "clientCertificateFingerprint", "assignmentGeneration"] } },
         "reject": { "type": "array", "uniqueItems": true, "items": { "enum": ["NON_SELECTED_UNIT", "UNKNOWN_CLIENT", "EXPIRED_CLIENT", "REVOKED_CLIENT", "ADDITIONAL_UNIT_SESSION", "IDENTITY_MISMATCH"] } },
         "engineeringDashboardException": { "const": "separately authenticated read-only peer; never a Unit binding" }
@@ -94,7 +98,7 @@
       "additionalProperties": false,
       "required": ["maximumRoleConnections", "maximumSubscriptionsPerConnection", "minimumSubscriptionPeriodMs", "maximumSubscriptionPeriodMs", "maximumPendingMessagesPerClient", "maximumMessageBytes"],
       "properties": {
-        "maximumRoleConnections": { "const": 3 },
+        "maximumRoleConnections": { "const": 4 },
         "maximumSubscriptionsPerConnection": { "const": 16 },
         "minimumSubscriptionPeriodMs": { "const": 50 },
         "maximumSubscriptionPeriodMs": { "const": 60000 },
@@ -158,7 +162,7 @@
         "unit": { "type": "string", "minLength": 1 },
         "namespace": { "enum": ["VSS_6_0", "CARLA_SIMULATION_OVERLAY"] },
         "cadence": { "enum": ["STATIC", "PER_SIMULATION_FRAME", "GNSS_SENSOR", "EVENT"] },
-        "access": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["SELECTED_PLATFORM_UNIT", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"] } },
+        "access": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["SELECTED_PLATFORM_UNIT", "PLATFORM_UPDATE_RUNTIME", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"] } },
         "implementationState": { "enum": ["CURRENT", "PARTIAL", "TARGET"] },
         "capabilityIds": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
       }

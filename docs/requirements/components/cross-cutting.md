@@ -3,10 +3,11 @@
 
 # Cross-Cutting Security and Operations Requirements
 
-- Status: D3 review candidate
+- Status: D3 design-reviewed
 - Package: [`CR-CROSS`](../component-decomposition-and-interface-register.md#cr-cross)
 - Version: 0.4
 - Prepared: 2026-08-21
+- Accepted: 2026-08-28
 - Previous accepted package: Version 0.3
 - Owner: System Architecture with Platform, Gateway, Function and Demo Solution owners
 - Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
@@ -121,7 +122,7 @@ dependency.
 
 | Interface | Direction | Data or command | Failure behavior | Authority |
 | --- | --- | --- | --- | --- |
-| [`IF-AUTH-007`–`009`](../component-decomposition-and-interface-register.md#if-auth-007) | Service ↔ `CMP-KAC` ↔ Aos IAM | Named-resource/private-Unix-socket bootstrap, current registered permissions and atomic private-tmpfs short-lived JWT | Reject without token; no cached/static fallback; analytics never receives `AOS_SECRET` | Aos Service identity and current IAM result; mount/group/peer checks are defense in depth |
+| [`IF-AUTH-007`–`009`](../component-decomposition-and-interface-register.md#if-auth-007) | Service ↔ `CMP-KAC` ↔ Aos IAM | Named-resource/private-Unix-socket bootstrap, fixed TLS loopback `127.0.0.1:8090` native-IAM lookup, current registered permissions and atomic private-tmpfs short-lived JWT | Reject without token; no cached/static fallback, DNS/external IAM destination or KAC TCP listener; analytics never receives `AOS_SECRET` | Aos Service identity and current IAM result; mount/group/peer and fixed-loopback restrictions are defense in depth |
 | [`IF-AUTH-010`](../component-decomposition-and-interface-register.md#if-auth-010) | Platform security substrate → `CMP-KAC`/KUKSA | Permission handler, protected signing operation and public verifier preparation | Not ready; no key bytes or privilege reuse | Per-Unit platform trust |
 | [`IF-ADV-001`](../component-decomposition-and-interface-register.md#if-adv-001), [`IF-TIRE-002`](../component-decomposition-and-interface-register.md#if-tire-002), [`IF-ADV-002`–`005`](../component-decomposition-and-interface-register.md#if-adv-002) | QM services → KUKSA → VDP → VISS → Gateway | Typed Brake/Tire maintenance advisory and factual result | Fail closed at every boundary; Gateway is final authority | IAM/KUKSA scope, VDP contract, then Gateway QM policy |
 | [`IF-OBS-001`](../component-decomposition-and-interface-register.md#if-obs-001) | OEM Software Delivery / Brake / Tire Dashboard ↔ AosCloud | Role-scoped Unit-log or Service-log request/status/result/file | Exact endpoint/owner filtering, verbatim state, explicit unavailable/failed state and bounded temporary cleanup | AosCloud request and file state while retained; API exposes no retention policy |
@@ -147,7 +148,7 @@ dependency.
 | --- | --- | --- | --- |
 | [Native identity and least privilege (`REQ-CROSS-001`)](#req-cross-001) | Preserve one Aos-authoritative service identity and exact KUKSA permissions | Unit, Contract, Integration | D3 design-reviewed |
 | [Per-Unit KUKSA trust lifecycle (`REQ-CROSS-002`)](#req-cross-002) | Protect one signer per Unit provisioning lifecycle, prepare only its public verifier and bound JWT issue/refresh/retirement | Unit, Component, Contract, Integration | D4-010.1 decided; implementation open |
-| [Trusted Provider and Service-authority separation (`REQ-CROSS-010`)](#req-cross-010) | Keep trusted OEM Provider integration unreachable through functional Service credentials | Contract, Integration, Review | D3 review candidate |
+| [Trusted Provider and Service-authority separation (`REQ-CROSS-010`)](#req-cross-010) | Keep trusted OEM Provider integration unreachable through functional Service credentials | Contract, Integration, Review | D3 design-reviewed |
 | [Role-bound protected artifact publication (`REQ-CROSS-011`)](#req-cross-011) | Keep Platform, Brake and Tire technical-publication credentials non-interchangeable and outside product/runtime boundaries | Unit, Contract, Integration, Audit | D4-010.3 decided; implementation open |
 | [End-to-end QM advisory containment (`REQ-CROSS-004`)](#req-cross-004) | Reject every unauthorized or unsafe advisory at layered boundaries | Unit, Contract, Integration, End-to-end | D3 design-reviewed |
 | [Controlled native-log evidence (`REQ-CROSS-005`)](#req-cross-005) | Present role-separated OEM/SP logs without secrets, false retention or a second archive | Unit, Contract, Integration | D4-014 design accepted; live qualification open |
@@ -237,7 +238,7 @@ dependency.
 - Parents: [least-privilege identities (`SYS-SEC-001`)](../system-requirements-and-traceability.md#sys-sec-001) and [fail-closed advisory security (`SYS-SEC-003`)](../system-requirements-and-traceability.md#sys-sec-003)
 - Flow: [`AF-X-AUTH`](../../architecture/demo-scenario-architecture-flows.md#af-x-auth)
 - Components: `CMP-VDP`, `CMP-KUKSA`, `CMP-KAC`, `CMP-BHS`, `CMP-TIRE`
-- State: D3 review candidate
+- State: D3 design-reviewed
 
 #### Acceptance criteria
 
@@ -291,7 +292,7 @@ dependency.
 - Flow: [QM advisory containment (`AF-X-QM`)](../../architecture/demo-scenario-architecture-flows.md#af-x-qm)
 - Components: `CMP-BHS`, `CMP-TIRE`, `CMP-KUKSA`, `CMP-VDP`, `CMP-VISS`, `CMP-GW-ADV`, `CMP-ENG-DASH`
 - Interfaces: `IF-ADV-001` through `IF-ADV-005` and `IF-TIRE-002`
-- Executable contract: [Typed QM Advisory Profile 1.0.1](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
+- Executable contract: [Typed QM Advisory Profile 1.0.2](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - State: D3 design-reviewed; D4-008 contract accepted, implementation and qualification open
 
 #### Acceptance criteria
@@ -508,15 +509,15 @@ The package is ready for D3 acceptance when:
 7. open D4 values are visible and no target behavior is presented as current;
 8. the documentation quality gate passes.
 
-Version 0.4 is a review candidate that moves Service authorization from VDP to
-`CMP-KAC`, replaces retired authorization interfaces, retires dynamic Provider
-authorization, adds `REQ-CROSS-010`, and records the accepted D4-010.3
-role-bound artifact-publication invariant as `REQ-CROSS-011`. All QM,
+Version 0.4 was design-reviewed on 2026-08-28. It moves Service authorization
+from VDP to `CMP-KAC`, replaces retired authorization interfaces, retires
+dynamic Provider authorization, adds `REQ-CROSS-010`, and records the accepted
+D4-010.3 role-bound artifact-publication invariant as `REQ-CROSS-011`. All QM,
 observability, connectivity, chronology and resource-isolation requirements
-remain unchanged. Acceptance
-authorizes D4 shared-contract design only. It does not authorize
-implementation, repository creation, signing, AosCloud calls, VM operations,
-provisioning, CARLA control or data deletion.
+remain unchanged. Acceptance authorizes the shared architectural requirement
+baseline only. It does not authorize implementation, repository creation,
+signing, AosCloud calls, VM operations, provisioning, CARLA control or data
+deletion.
 
 ## D3 Acceptance Record
 
@@ -530,9 +531,14 @@ only starts and stops a prepared bounded in-instance load; it never sets or
 enforces quotas. Mac-local backends and aggregate multi-service-per-provider
 quota enforcement are explicitly outside the claim.
 
-That acceptance remains the Version 0.3 baseline. Version 0.4 requires explicit
-review before it replaces it and does not authorize implementation, signing,
-AosCloud mutation, VM operations, provisioning, CARLA control or data deletion.
+Version 0.4 was accepted as the current architectural requirement baseline on
+2026-08-28. It does not authorize implementation, signing, AosCloud mutation,
+VM operations, provisioning, CARLA control or data deletion.
+
+The same-day native-IAM transport correction preserves the package version and
+authority model. Cross-component qualification now proves that KAC's only
+`AF_INET` use is fixed TLS loopback `127.0.0.1:8090`, while DNS, external IP
+and any KAC TCP listener remain denied.
 
 ## Change Rules
 

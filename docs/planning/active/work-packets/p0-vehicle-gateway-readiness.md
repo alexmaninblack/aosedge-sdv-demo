@@ -105,14 +105,14 @@ paths.
 | Frozen file/contract | SHA-256 |
 | --- | --- |
 | Vehicle Simulation requirements | `fdae4928e99c361b6682d49cd90674584eb5634147fbd9ccca5134588595b5c4` |
-| Vehicle Gateway requirements | `dded73a7a0c890b4b9b9020a07e635d4d8459b04f685749ed0df20543f36f3c1` |
+| Vehicle Gateway requirements | `670828913038514773de4f03145b6a9e68476bade38e8e27b91430b875b3f56e` |
 | Simulator Control Context v1 | `7517d811c04c89ee5b502a9716a8f664ce5c2290abe9ffde6fa1351d9ba9c938` |
 | Exclusive Live Source v1 | `9434ec3a8abb6a9ef3e283b4d0a505f7dbb4f848b37232df83d8e21a899d4ce2` |
 | Vehicle External Connectivity v1 | `50caf96fdc847e24ac48e13686f38e8b56cdef24c8b701879566627150a83911` |
 | Vehicle Hardware Capability v1 | `ac0ba26464219482dcb41e56ebbc1538489e13bd6c84725dbc124e59514cb7e5` |
-| VISS Trust and Telemetry v1 | `24484919d916ade153111fd6075d06cecdf77d0bed7cfd016c0a4163e1b8fd53` |
-| QM Advisory v1 | `5f50d5f27693d31a9726e78d52b5a039a43f9fa4e0368cac2fc7571508487614` |
-| Platform FOTA Safe Stop v1 | `b2a84027ab0465b034c236a8ecbf7cd50edbb1851453c8f0b1066be9af2a69b8` |
+| VISS Trust and Telemetry v1 | `4a1a2bd804c3a49f707b5e640632bd8a0357901f59e4615c340622b043d4c12c` |
+| QM Advisory v1 | `f7ae78148fb3b3265c8b773117126665afb1edd97a73f59db5a1f3af7c223487` |
+| Platform FOTA Safe Stop v1 | `b92cd31c9b5066ca5b79c526134c3a059fcda0738cd668f3c96c6b51a0396c66` |
 
 ## Exact P0 Tasks
 

@@ -16,7 +16,7 @@ class PlatformFotaSafeStopContractTest(unittest.TestCase):
         cls.profile = json.loads(PROFILE.read_text(encoding="utf-8"))
 
     def test_authority_is_runtime_owned_and_not_cloud_or_ui_owned(self) -> None:
-        self.assertEqual("1.0.1", self.profile["contractVersion"])
+        self.assertEqual("1.1.0", self.profile["contractVersion"])
         authority = self.profile["authority"]
         self.assertEqual("VEHICLE_GATEWAY", authority["physicalStateSource"])
         self.assertEqual("FACTORY_INSTALLED_OEM_COMPONENT_RUNTIME", authority["applicationEnforcement"])
@@ -26,6 +26,11 @@ class PlatformFotaSafeStopContractTest(unittest.TestCase):
         self.assertIn("KUKSA", authority["forbiddenSources"])
 
     def test_safe_stop_requires_mode_transition_and_factual_evidence(self) -> None:
+        evidence = self.profile["evidence"]
+        self.assertEqual("PLATFORM_UPDATE_RUNTIME", evidence["runtimeReadRole"])
+        self.assertTrue(evidence["purposeBoundCredentialRequired"])
+        self.assertTrue(evidence["distinctMonotonicFrameRequired"])
+        self.assertIn("Vehicle.CarlaSimulation.FrameId", evidence["requiredPaths"])
         policy = self.profile["policy"]
         self.assertEqual("SAFE_STOP", policy["activeMode"])
         self.assertEqual("STABLE", policy["transitionState"])
@@ -62,6 +67,25 @@ class PlatformFotaSafeStopContractTest(unittest.TestCase):
             "CURRENT_HEALTHY_RELEASE_REMAINS_ACTIVE",
             state["removalBehaviorWhileWaiting"],
         )
+
+    def test_waiting_worker_is_asynchronous_bounded_and_never_persists_samples(self) -> None:
+        implementation = self.profile["runtimeImplementation"]
+        self.assertEqual("VehicleStateProviderItf", implementation["vehicleStateInterface"])
+        self.assertEqual(
+            "VISS_3_1_MTLS_PLATFORM_UPDATE_RUNTIME_ROLE",
+            implementation["transportAdapter"],
+        )
+        self.assertEqual("PURE_SAFE_STOP_POLICY", implementation["policyEvaluator"])
+        self.assertEqual("ASYNCHRONOUS_BOUNDED_WORKER", implementation["waitingExecution"])
+        self.assertFalse(implementation["runtimeMutexHeldWhileWaiting"])
+        self.assertEqual(
+            "DURABLE_WAIT_THEN_RETURN_ACTIVATING",
+            implementation["startInstanceWaitingResult"],
+        )
+        self.assertTrue(implementation["singleWorker"])
+        self.assertEqual("BOUNDED_CANCEL_AND_JOIN", implementation["stopCancellation"])
+        self.assertEqual("TRANSACTION_METADATA_ONLY", implementation["persistedContent"])
+        self.assertFalse(implementation["persistedSamplesAllowed"])
 
     def test_restart_and_safe_stop_loss_fail_closed(self) -> None:
         recovery = self.profile["recovery"]

@@ -4,8 +4,8 @@
 # VISS Trust and Telemetry Profile
 
 - Decision: [`D4-006`](../../docs/requirements/d4-decision-register.md#d4-006)
-- Contract version: 1.0.0
-- Accepted contract SHA-256: `24484919d916ade153111fd6075d06cecdf77d0bed7cfd016c0a4163e1b8fd53`
+- Contract version: 1.1.0
+- Accepted contract SHA-256: `4a1a2bd804c3a49f707b5e640632bd8a0357901f59e4615c340622b043d4c12c`
 - Lifecycle state: accepted contract; implementation and live qualification remain open
 
 This contract freezes the private in-vehicle VISS trust boundary, authenticated
@@ -13,11 +13,17 @@ peer roles, read-only operation profile, timing and failure semantics, and the
 complete Gateway engineering-path superset derived from D4-002 and D4-004.
 
 - [JSON Schema](viss-trust-telemetry-profile.schema.json)
-- [Accepted contract 1.0.0](viss-trust-telemetry-profile.v1.json)
+- [Accepted contract 1.1.0](viss-trust-telemetry-profile.v1.json)
 
-The selected Platform Unit and the independent Engineering Telematics
-Dashboard are different authenticated peer roles. D4-005 exclusivity applies
-to Unit peers only; the read-only Engineering Dashboard may remain connected.
+The selected Platform Unit, its purpose-bound Platform Update Runtime and the
+independent Engineering Telematics Dashboard are different authenticated peer
+roles. The two selected-Unit roles use distinct per-Unit credentials and permit
+one connection each; D4-005 binds both to the same current Unit and assignment
+generation. The read-only Engineering Dashboard may remain connected.
+
+`PLATFORM_UPDATE_RUNTIME` is permanently read-only and can access only the ten
+paths required by the Platform FOTA Safe Stop contract, including `FrameId`.
+It receives no general VDP telemetry or QM advisory authority.
 
 Every D4-002 hardware capability is either mapped to one or more exact VISS
 paths/applied-state paths or retained as an explicit excluded/unavailable

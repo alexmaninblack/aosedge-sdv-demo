@@ -39,6 +39,9 @@ not only the CARLA-to-AosEdge transport bridge.
 ## Demo
 
 - [Demo documentation index](demo/README.md)
+- [AosEdge Demo Walkthrough and Review Guide](demo/aosedge-demo-walkthrough.md)
+  — human-readable companion for following the clickable mockup chapter by
+  chapter and collecting colleague feedback.
 - [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.0](demo/staged-post-sop-brake-health-demo-scenarios.md)
   — accepted baseline combining Brake Health v1-v3 evolution with one mature
   independent Tire Health v1.0 product on VDP v3.

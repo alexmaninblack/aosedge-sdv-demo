@@ -118,7 +118,7 @@ decisions they exercise.
 | [Normalized VSS model (`IF-VEH-004`)](../component-decomposition-and-interface-register.md#if-veh-004) | Internal out | Frame-aligned VSS values and source status | Telemetry `CURRENT`; explicit source/advisory status `EXTEND` | No fabricated zero for unavailable optional data | Gateway projection |
 | [Platform VISS read connection (`IF-VEH-005`)](../component-decomposition-and-interface-register.md#if-veh-005) | Out | TLS Get/Subscribe for accepted telemetry and status paths | Read path `CURRENT`; D4 contract freeze required | Bounded errors/queues; slow or failed client cannot block simulation | Gateway VISS read contract |
 | [Engineering subscription (`IF-VEH-006`)](../component-decomposition-and-interface-register.md#if-veh-006) | Out | Read-only telemetry and status subscription | Telemetry `CURRENT`; advisory/status `EXTEND` | Dashboard shows disconnected/stale and cannot mutate Gateway | Gateway VISS contract |
-| [Platform-update vehicle state (`IF-VEH-007`)](../component-decomposition-and-interface-register.md#if-veh-007) | Out | Read-only applied mode, transition/reset state and factual stop signals for the OEM Component Runtime | `TARGET`; contract accepted | Missing/stale/reset-discontinuous evidence remains explicit and cannot be interpreted as stopped | Gateway facts; runtime evaluates Safe Stop policy |
+| [Platform-update vehicle state (`IF-VEH-007`)](../component-decomposition-and-interface-register.md#if-veh-007) | Out | Purpose-bound `PLATFORM_UPDATE_RUNTIME` mTLS role exposing only `FrameId`, applied mode, transition/reset state and factual stop signals for the OEM Component Runtime | `TARGET`; contract accepted | Missing/stale/reset-discontinuous or repeated-frame evidence remains explicit and cannot be interpreted as stopped | Gateway facts; runtime evaluates Safe Stop policy |
 | [Outbound advisory Set (`IF-ADV-003`)](../component-decomposition-and-interface-register.md#if-adv-003) | In | Narrow typed VISS Set request from the Vehicle Data Platform outbound provider | `TARGET` | Unauthorized path, identity, type, value, stale or replayed request fails closed | Platform outbound allowlist and Gateway write contract |
 | [Advisory delivery (`IF-ADV-004`)](../component-decomposition-and-interface-register.md#if-adv-004) | Internal in | Validated typed Brake or Tire advisory target | `TARGET` | Reject unknown path/type/value, stale/replay and unauthorized source | Gateway contract |
 | [Advisory status (`IF-ADV-005`)](../component-decomposition-and-interface-register.md#if-adv-005) | Internal out | Factual received/rejected/status signal | `TARGET` | Never claim displayed or acknowledged | Gateway state |
@@ -214,8 +214,11 @@ decisions they exercise.
 - ID: `REQ-GATEWAY-004`
 - Statement: The Gateway shall expose the accepted VISS 3.1 Get, Subscribe and
   Unsubscribe subset over mutual TLS 1.2 or newer, require the `VISSv3`
-  subprotocol and authenticate exactly the selected Unit, independent
-  read-only Engineering Dashboard and qualification-client roles. It shall
+  subprotocol and authenticate exactly the selected Unit VDP peer, its
+  distinct purpose-bound read-only Platform Update Runtime, independent
+  read-only Engineering Dashboard and qualification-client roles. Each of the
+  two selected-Unit roles shall be limited to one connection and the runtime
+  role to the ten Safe Stop paths. It shall
   reject unknown, additional and non-selected Unit peers, bound clients,
   subscriptions and pending messages, return protocol-valid errors and
   prevent a slow subscriber from blocking CARLA frame processing.
@@ -223,7 +226,7 @@ decisions they exercise.
 - Architecture flows: [G1 telemetry runtime (`AF-G1-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-g1-rt) and [cross-stage evidence (`AF-X-OBS`)](../../architecture/demo-scenario-architecture-flows.md#af-x-obs)
 - Components: [VISS (`CMP-VISS`)](../component-decomposition-and-interface-register.md#cmp-viss)
 - Interfaces: [platform VISS (`IF-VEH-005`)](../component-decomposition-and-interface-register.md#if-veh-005) and [engineering subscription (`IF-VEH-006`)](../component-decomposition-and-interface-register.md#if-veh-006)
-- Executable contract: [VISS Trust and Telemetry Profile 1.0.0](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
+- Executable contract: [VISS Trust and Telemetry Profile 1.1.0](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
 - Required evidence: protocol suite, real mTLS suite, role/selected-Unit negative matrix and bounded-delivery metrics
 - Requirement state: D3 design-reviewed; D4-006 contract accepted
 - Implementation state: `PARTIAL`; current server-authenticated read profile must add accepted mTLS roles and selected-Unit enforcement
@@ -319,7 +322,7 @@ decisions they exercise.
 - Components: [Gateway (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw), [VISS (`CMP-VISS`)](../component-decomposition-and-interface-register.md#cmp-viss) and [Engineering Dashboard (`CMP-ENG-DASH`)](../component-decomposition-and-interface-register.md#cmp-eng-dash)
 - Interfaces: [normalized model (`IF-VEH-004`)](../component-decomposition-and-interface-register.md#if-veh-004), [platform VISS (`IF-VEH-005`)](../component-decomposition-and-interface-register.md#if-veh-005) and [engineering subscription (`IF-VEH-006`)](../component-decomposition-and-interface-register.md#if-veh-006)
 - Required evidence: point omission/unavailable tests, source disconnect/stale/recovery fixtures and dashboard state
-- Executable contract: [VISS Trust and Telemetry Profile 1.0.0](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
+- Executable contract: [VISS Trust and Telemetry Profile 1.1.0](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
 - Requirement state: D3 design-reviewed; D4-006 contract accepted
 - Implementation state: `PARTIAL`; exact states and timing are accepted, implementation and live qualification remain open
 
@@ -345,7 +348,7 @@ decisions they exercise.
   path/type/value, missing identity, stale, replay, excessive-rate,
   cross-service, arbitrary-write, throttle, brake, steer, gear and other
   safety/motion negative cases with no side effects
-- Executable contract: [Typed QM Advisory Profile 1.0.1](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
+- Executable contract: [Typed QM Advisory Profile 1.0.2](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - Requirement state: D3 design-reviewed; D4-008 contract accepted
 - Implementation state: `TARGET`; current all-Set rejection remains correct until the complete accepted endpoints and negative matrix are implemented
 
@@ -398,8 +401,9 @@ decisions they exercise.
   drive mode, `FREE_DRIVE`/`BRAKE_EVENT` context, scenario state/result,
   scenario/reset generation and an explicit reset/discontinuity indication
   through simulator-specific read-only VSS paths. The same projection plus
-  factual speed, throttle and brake shall be available through a separately
-  bounded platform-runtime read role for Safe Stop evaluation; Gateway
+  factual speed, throttle and brake shall be available with monotonic
+  `FrameId` through the distinct purpose-bound `PLATFORM_UPDATE_RUNTIME` mTLS
+  role for Safe Stop evaluation; Gateway
   publishes facts and shall not decide whether a Platform update may apply.
   The Engineering Telematics Dashboard shall show those facts without issuing control commands and
   without presenting a reset teleport as physical motion or adding them to an
@@ -409,7 +413,7 @@ decisions they exercise.
 - Components: [Gateway (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw), [VISS (`CMP-VISS`)](../component-decomposition-and-interface-register.md#cmp-viss), [OEM Component Runtime (`CMP-RUNTIME`)](../component-decomposition-and-interface-register.md#cmp-runtime) and [Engineering Dashboard (`CMP-ENG-DASH`)](../component-decomposition-and-interface-register.md#cmp-eng-dash)
 - Interfaces: [normalized model (`IF-VEH-004`)](../component-decomposition-and-interface-register.md#if-veh-004), [engineering subscription (`IF-VEH-006`)](../component-decomposition-and-interface-register.md#if-veh-006) and [Platform-update vehicle state (`IF-VEH-007`)](../component-decomposition-and-interface-register.md#if-veh-007)
 - Required evidence: state/path/type/freshness fixtures, monotonic generation checks, reset discontinuity sequence, runtime-role allowlist, dashboard rendering and negative proof that neither the dashboard nor Gateway owns the update decision
-- Executable contracts: [Simulator Control and Context 1.0.0](../../../contracts/simulator-control-context/simulator-control-context.v1.json) and [Platform FOTA Safe Stop 1.0.1](../../../contracts/platform-fota-safe-stop/platform-fota-safe-stop-profile.v1.json)
+- Executable contracts: [Simulator Control and Context 1.0.0](../../../contracts/simulator-control-context/simulator-control-context.v1.json) and [Platform FOTA Safe Stop 1.1.0](../../../contracts/platform-fota-safe-stop/platform-fota-safe-stop-profile.v1.json)
 - Requirement state: D3 design-reviewed; D4-004 contract accepted
 - Implementation state: `TARGET`; current controller status contains part of the state outside VISS, but the accepted engineering projection and dashboard fields do not exist
 

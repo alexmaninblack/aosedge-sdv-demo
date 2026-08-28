@@ -7,6 +7,13 @@ This directory owns audience-visible scenarios, storyboards, presenter flows,
 and original demo visual assets. These documents describe what the audience
 sees; they do not redefine the system architecture.
 
+Start a colleague or stakeholder review with the
+[AosEdge Demo Walkthrough and Review Guide](aosedge-demo-walkthrough.md) and the
+[clickable interaction mockup](mockups/aosedge-demo-interaction-mockup-2-4.html).
+The guide explains where to look, what action occurs, what the audience should
+observe and what each chapter demonstrates without requiring the reader to
+first study the technical specifications below.
+
 [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.0](staged-post-sop-brake-health-demo-scenarios.md)
 is the accepted demo-scenario baseline. It defines the canonical
 `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> T1 -> R0` presentation lifecycle,

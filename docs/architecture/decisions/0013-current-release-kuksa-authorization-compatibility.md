@@ -79,7 +79,9 @@ For each active SOTA Service instance:
    the current Service Manager;
 2. the bootstrap presents only that secret and a fixed KUKSA functional-server
    resource identifier to `CMP-KAC`;
-3. `CMP-KAC` calls Aos IAM `GetPermissions`;
+3. `CMP-KAC` calls Aos IAM `GetPermissions`; for the pinned current release,
+   this uses only the released public gRPC interface over fixed TLS loopback
+   `127.0.0.1:8090`, with Aos CA trust and expected server name `main`;
 4. it validates and maps the authenticated instance's registered permissions
    to the exact claims supported by the pinned KUKSA release;
 5. it derives the issuer-controlled audience, lifetime and remaining claims;
@@ -96,6 +98,11 @@ never written to demo evidence or logs.
 After credential preparation, Brake Health and Tire Health connect directly
 to KUKSA. Aos IAM and `CMP-KAC` do not enter the telemetry, analytics, advisory
 or Cloud-data path.
+
+The loopback IAM client is the sole KAC TCP exception. KAC exposes no TCP
+listener and performs no DNS lookup, accepts no caller-configured endpoint and
+may not reach an external IP. Targeted loss of the vehicle's external
+connectivity therefore does not remove the inside-Unit IAM authority path.
 
 ### Bind credentials to the active Service lifecycle
 
@@ -173,10 +180,21 @@ and does not invent a provisional native API.
   D4-027.5 the 300/180-second lifetime and renewal boundary; and D4-027.6 the
   protected per-Unit signer, exact verifier-preparation service/runtime path,
   mandatory KUKSA verifier argument and fail-closed reboot lifecycle; and
-  D4-027.7 the one-sync-per-boot trustworthy-time gate, UTC/boottime split,
-  ordinary offline continuation and clock-discontinuity recovery; and
+  D4-027.7 the minimum current-release one-sync-per-boot time gate,
+  UTC/boottime split, pre-issue/pre-renew deviation rejection, ordinary offline
+  continuation and explicit native-platform requalification obligation; and
   D4-027.8 the exact frame, permission/path/JWT, concurrency, backlog, rate,
   timeout, retry, process-resource and redaction envelope.
+- The D4-027.8 process envelope is corrected for the released native IAM
+  transport: `AF_UNIX` remains the Service-facing transport, while `AF_INET`
+  is permitted only for fixed TLS loopback `127.0.0.1:8090`; no public KAC
+  endpoint or external-connectivity dependency is introduced.
+- Current-demo integration additionally freezes private systemd-only delivery
+  of the separate `kuksa-jwt` PIN, exact runtime owners/modes, pinned
+  SoftHSM/OpenSSL provider and token selection, separate least-privilege KAC
+  and verifier-preparation SELinux domains and a stop-for-review rule instead
+  of automatic policy widening. Direct SoftHSM use is a removable demo choice,
+  not a hardware-HSM physical-isolation claim.
 - The architecture remains compatible with native platform evolution without
   claiming that compatibility will require no Service changes.
 
@@ -218,3 +236,9 @@ from the temporary compatibility overlay.
 
 Acceptance of this ADR does not authorize source implementation, image builds,
 artifact signing, provisioning, deprovisioning or Cloud mutation.
+
+On 2026-08-28, read-only inspection of the pinned AosCore release confirmed
+that its public permissions interface is gRPC on port `8090`. The accepted
+implementation clarification above replaces the unimplementable
+`AF_UNIX`-only KAC sandbox assumption without changing the permanent
+architecture, authority owner or Service-facing Unix-socket contract.

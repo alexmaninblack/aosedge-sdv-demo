@@ -48,7 +48,7 @@
       "visibility": "public",
       "repository": "https://github.com/alexmaninblack/aos-vehicle-platform.git",
       "remote": "origin",
-      "acceptedRevision": "15b6abb7562b4d0fd4628817e1046ea95b047a0c",
+      "acceptedRevision": "bdc72aba97a83c9868d454588189ef139710a6d7",
       "acceptedBranches": ["main"],
       "allowedDirtyPaths": []
     },

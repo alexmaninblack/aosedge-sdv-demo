@@ -1,11 +1,12 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Current-Release KUKSA Authorization Compatibility 0.8
+# Current-Release KUKSA Authorization Compatibility 0.11
 
-- Status: Review candidate
-- Version: 0.8
+- Status: D3 design-reviewed
+- Version: 0.11
 - Prepared: 2026-08-22
+- Accepted: 2026-08-28
 - Owner: Platform Team
 - Package: [`CR-KAC`](../component-decomposition-and-interface-register.md#cr-kac)
 - Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
@@ -141,26 +142,65 @@ D4-010.1 lifecycle for the current compatibility helper:
   deferred, and R0 retires the key by discarding the provisioned overlay after
   Cloud reconciliation.
 
+## Accepted Filesystem, SELinux and PKCS#11 Boundary
+
+[`IMP-03-KAC-006`](../../planning/active/work-packets/p0-platform-readiness.md#imp-03-kac-006)
+freezes the smallest current-demo integration boundary:
+
+- PKCS#11 module `kuksa-jwt` uses RSA-2048, one self-signed key and exact
+  SoftHSM token label `aos-kuksa`; the pinned paths are
+  `/usr/lib/softhsm/libsofthsm2.so` and
+  `/usr/lib/ossl-modules/pkcs11.so`;
+- its separate root-owned mode-`0600` PIN source is
+  `/var/aos/iam/.kuksa-jwt-pin`, never the shared AosCore `.usrpin`; KAC and
+  verifier preparation receive it only through systemd `LoadCredential`, and
+  no PIN may appear in a URI, environment, process argument or log;
+- `/run/aos-kuksa-verifier` is root-owned mode `0755`; verifier preparation
+  atomically replaces only its mode-`0444` public verifier. The KAC runtime
+  directory is `/run/aos-kuksa-auth-compat`, owned
+  `aos-kac:aos-kuksa-clients` mode `0750`, with a mode-`0660` socket of the
+  same ownership;
+- KAC has no persistent working/state directory, writes only its own runtime
+  directory and cannot read Service-private token tmpfs locations;
+- KAC runs as `aos_kuksa_auth_compat_t`; the short root-owned preparation unit
+  runs as `aos_kuksa_verifier_prepare_t` with no network. Neither receives a
+  shell, capabilities, arbitrary `/var/aos`, DNS/external network, verifier
+  modification or systemd-management access; and
+- initial SoftHSM backend access is limited to read/open/lock operations.
+  Create, delete or rename is not pre-authorized; if the pinned implementation
+  proves it necessary, implementation stops for a separate review rather than
+  widening policy through generated `audit2allow` output.
+
+Direct KAC-to-SoftHSM access is accepted only for this removable demo helper.
+It does not claim hardware-HSM physical isolation or production
+non-extractability, and it does not justify a separate signer daemon.
+
 ## Accepted Trustworthy-Time Boundary
 
 [`D4-027.7`](../d4-decision-register.md#d4-027-7) freezes the time source and
-clock-discontinuity behavior:
+minimum current-release issue/renew gate:
 
 - each boot requires one successful `systemd-timesyncd` NTP synchronization
   and a 10-second stable window before authorization becomes ready;
 - JWT epoch claims use UTC `CLOCK_REALTIME`; renewal and retry scheduling use
   `CLOCK_BOOTTIME`;
-- a current-boot-ID-bound mode-`0600` anchor at
-  `/run/aos-kuksa-auth-compat/time-anchor.json` survives helper process restart
-  but never VM reboot;
+- immediately before every issue or renewal, the helper compares elapsed wall
+  and boot clocks and returns `TIME_UNTRUSTED` when their deviation is greater
+  than five seconds;
 - normal loss of external connectivity after synchronization does not revoke
   time trust or require continuous NTP, Cloud or backend access;
-- more than five seconds of wall/boot-clock deviation yields
-  `TIME_UNTRUSTED`, blocks issue/renew, stops KUKSA and makes bootstraps
-  disconnect and delete private tokens; and
-- recovery requires another NTP sync and stable window, KUKSA restart and
-  fresh JWTs. A cold offline boot remains `NOT_READY` without blocking
+- the temporary helper deliberately adds no separate time-guard service,
+  anchor, continuous monitor, KUKSA lifecycle controller or instant token
+  revocation; an already issued JWT may remain usable only until signed expiry;
+  and
+- recovery requires synchronized time and another stable window before issue
+  or renewal resumes. A cold offline boot remains `NOT_READY` without blocking
   unrelated AosCore services.
+
+This is a minimum compatibility implementation, not the production native
+time-security design. The future released AosCore contract must be requalified
+for trustworthy time, bounded credential invalidation and recovery before
+`CMP-KAC` is deleted.
 
 ## Accepted Operational Envelope
 
@@ -177,8 +217,12 @@ bounds:
 - `IAM_UNAVAILABLE`, `SIGNER_UNAVAILABLE`, `TIME_UNTRUSTED` and `BUSY` are
   retryable; the other four fixed codes are non-retryable;
 - systemd bounds of 64 MiB, 10% CPU, 32 tasks and 128 descriptors, with only
-  `AF_UNIX`, no ambient capabilities or TCP/IP, `NoNewPrivileges`, strict
-  system protection and private temporary storage; and
+  `AF_UNIX` plus `AF_INET` for the fixed outbound native-IAM client,
+  no ambient capabilities, `NoNewPrivileges`, strict system protection and
+  private temporary storage. The sole TCP exception is TLS loopback
+  `127.0.0.1:8090` using the Aos CA and expected server name `main`; no TCP
+  listener, DNS, caller-selected endpoint or external IP access is allowed;
+  and
 - fixed low-cardinality diagnostics only. Secret, JWT, permission/path/claim,
   signing/key and raw-frame content is forbidden.
 
@@ -187,7 +231,7 @@ bounds:
 | Interface | Direction | Required behavior |
 | --- | --- | --- |
 | [`IF-AUTH-007`](../component-decomposition-and-interface-register.md#if-auth-007) | Service bootstrap → `CMP-KAC` | Named-resource-mounted private Unix socket; instance-bound `AOS_SECRET`; implicit fixed `kuksa` resource; no caller-selected authority |
-| [`IF-AUTH-008`](../component-decomposition-and-interface-register.md#if-auth-008) | `CMP-KAC` → Aos IAM | Native `GetPermissions` lookup against current active Service state |
+| [`IF-AUTH-008`](../component-decomposition-and-interface-register.md#if-auth-008) | `CMP-KAC` → Aos IAM | Native `GetPermissions` lookup against current active Service state over fixed TLS loopback `127.0.0.1:8090`, Aos CA trust and expected server name `main`; no DNS, caller-selected endpoint or external IP |
 | [`IF-AUTH-009`](../component-decomposition-and-interface-register.md#if-auth-009) | `CMP-KAC` → requesting Service instance | Same-connection rejection or short-lived JWT; bootstrap atomically maintains a private tmpfs token file |
 | [`IF-AUTH-010`](../component-decomposition-and-interface-register.md#if-auth-010) | Factory/Aos security substrate → `CMP-KAC` and KUKSA | Permission-handler availability, protected signing, atomic verifier preparation and fail-closed lifecycle |
 
@@ -208,6 +252,9 @@ not observe Service telemetry, analytics results or advisory payloads.
   changing the permanent KUKSA or Service permission model after a released
   native AosCore contract is qualified. It shall have no VDP dependency,
   public listener, root fallback or global `aos-sm.service` hard dependency.
+  Its only writable host location shall be its volatile runtime directory; it
+  shall have no persistent state directory or access to Service-private token
+  storage.
 - Parents: [`SYS-MFG-002`](../system-requirements-and-traceability.md#sys-mfg-002),
   [`SYS-SEC-008`](../system-requirements-and-traceability.md#sys-sec-008)
 - Flow: [`AF-M0-LC`](../../architecture/demo-scenario-architecture-flows.md#af-m0-lc),
@@ -236,8 +283,12 @@ not observe Service telemetry, analytics results or advisory payloads.
 
 - Statement: For every issuance or renewal attempt, the helper shall call native
   Aos IAM `GetPermissions` with the presented instance credential and fixed
-  resource and shall treat only that current result as authoritative. It shall
-  store no parallel Service identity, allowlist, permission database or
+  resource through the pinned
+  `IAMPublicPermissionsService/GetPermissions` gRPC interface at fixed
+  `127.0.0.1:8090`. The client shall use TLS, the Aos CA and expected server
+  name `main`, without DNS, caller-configurable endpoint or any external IP,
+  and shall treat only the current IAM result as authoritative. It shall store
+  no parallel Service identity, allowlist, permission database or
   caller-supplied policy.
 - Parent: [`SYS-SEC-008`](../system-requirements-and-traceability.md#sys-sec-008)
 - Interface: [`IF-AUTH-008`](../component-decomposition-and-interface-register.md#if-auth-008)
@@ -296,8 +347,10 @@ not observe Service telemetry, analytics results or advisory payloads.
   usable only until signed expiry; no instant-revocation claim is allowed and
   renewal shall require no Cloud connection. JWT epoch claims shall use trusted
   UTC `CLOCK_REALTIME`, while renewal/retry scheduling shall use
-  `CLOCK_BOOTTIME`; a clock discontinuity shall follow D4-027.7 and shall never
-  extend the accepted lifetime. Retryable failures shall use the accepted
+  `CLOCK_BOOTTIME`; immediately before issue/renew the helper shall reject more
+  than five seconds of elapsed-clock deviation as `TIME_UNTRUSTED`. It shall
+  not claim instant revocation or extend the signed lifetime. Retryable
+  failures shall use the accepted
   1/2/4/8/16/30-second backoff with ±20% jitter and shall never retry beyond
   the current JWT's `exp`; terminal codes shall not retry.
 - Parents: [`SYS-SEC-004`](../system-requirements-and-traceability.md#sys-sec-004),
@@ -314,9 +367,11 @@ not observe Service telemetry, analytics results or advisory payloads.
   tmpfs/token and prevent issuance or renewal. Restart shall request a new
   credential rather than recover a persisted token. R0 overlay disposal shall
   destroy all current-run helper state and Unit-specific signing material
-  without modifying the Factory Image. A boot-local time anchor may restore a
-  helper process in the same boot but shall not cross VM reboot; a cold offline
-  boot remains authorization `NOT_READY` until time synchronization succeeds.
+  without modifying the Factory Image. The temporary helper shall not persist
+  a time anchor; after process or VM restart it shall satisfy the accepted
+  synchronization and stable-window gate before new issue/renew operations. A
+  cold offline boot remains authorization `NOT_READY` until time
+  synchronization succeeds.
 - Parents: [`SYS-SEC-008`](../system-requirements-and-traceability.md#sys-sec-008),
   [`SYS-RET-001`](../system-requirements-and-traceability.md#sys-ret-001),
   [`SYS-RET-005`](../system-requirements-and-traceability.md#sys-ret-005)
@@ -331,7 +386,9 @@ not observe Service telemetry, analytics results or advisory payloads.
   authorized Service-to-KUKSA operation while the Service instance remains
   active and trustworthy time was established earlier in the same boot. Loss
   of fresh NTP packets after that gate shall not revoke trust by itself. The
-  helper shall require no Cloud round trip in the local credential path.
+  helper shall require no Cloud round trip in the local credential path; the
+  fixed `127.0.0.1:8090` Aos IAM loopback call shall remain inside the Unit
+  when vehicle external connectivity is removed.
 - Parents: [`SYS-SEC-008`](../system-requirements-and-traceability.md#sys-sec-008),
   [`SYS-OBS-007`](../system-requirements-and-traceability.md#sys-obs-007)
 - Flow: [`AF-X-OFFLINE`](../../architecture/demo-scenario-architecture-flows.md#af-x-offline)
@@ -344,7 +401,15 @@ not observe Service telemetry, analytics results or advisory payloads.
   16/32/16-KiB frame/response/JWT, 64-permission, 512-byte-path,
   four-concurrent/eight-backlog, 12/30-per-minute and 2/3/3/8-second limits. It
   shall run within 64 MiB, 10% CPU, 32 tasks and 128 descriptors with only
-  `AF_UNIX`; fail closed under excess;
+  `AF_UNIX` and the fixed `AF_INET` TLS-loopback IAM client exception; expose
+  no TCP listener; deny DNS, caller-configurable endpoints and external IP
+  access; fail closed under excess;
+  run in the exact `aos_kuksa_auth_compat_t` domain while verifier preparation
+  runs in the separate networkless `aos_kuksa_verifier_prepare_t` domain;
+  receive the separate `kuksa-jwt` PIN only as a private systemd credential;
+  use the pinned SoftHSM/OpenSSL provider and exact `aos-kuksa` token without
+  file-key fallback; pre-authorize no SoftHSM create/delete/rename operations
+  and never auto-widen SELinux policy from audit output;
   strictly reject invalid UTF-8, unknown or duplicate fields and trailing
   objects; emit no free-text protocol diagnostics;
   and never expose `AOS_SECRET`, JWT, private key, signing input or full
@@ -371,14 +436,14 @@ not observe Service telemetry, analytics results or advisory payloads.
 | ID | Requirement coverage | Required isolated proof |
 | --- | --- | --- |
 | <a id="ut-kac-001"></a>`UT-KAC-001` | `REQ-KAC-002` | Accept exact `status`/`issue` schemas only from an admitted Unix-socket peer; `issue` carries only current `AOS_SECRET` and implicit fixed `kuksa`; reject unknown/duplicate fields, extra frames, caller-selected authority, unauthorized group/resource access and cross-peer response access |
-| <a id="ut-kac-002"></a>`UT-KAC-002` | `REQ-KAC-003` | Invoke IAM on every issue/renew path; reject invalid, stale, inactive and unavailable results; prove no retained policy source |
+| <a id="ut-kac-002"></a>`UT-KAC-002` | `REQ-KAC-003` | Invoke IAM on every issue/renew path only through TLS `127.0.0.1:8090` with Aos CA and expected server name `main`; reject wrong endpoint/name/trust, DNS/external destination, invalid, stale, inactive and unavailable results; prove no retained policy source |
 | <a id="ut-kac-003"></a>`UT-KAC-003` | `REQ-KAC-004` | Exact `r -> read` and `rw -> actuate` mapping; reject `w`, wildcard, `provide`, `create`, malformed, unsupported or broadened authority as one complete transaction; prove pinned claims |
 | <a id="ut-kac-004"></a>`UT-KAC-004` | `REQ-KAC-005` | Exact `ready`/`issued`/`rejected` envelopes, KAC-generated correlation, same-connection delivery, atomic mode-`0400` token replacement in private tmpfs, scrubbed analytics environment, cross-Service denial and absence from the direct Service-to-KUKSA path |
-| <a id="ut-kac-005"></a>`UT-KAC-005` | `REQ-KAC-006`, `REQ-KAC-008` | Controlled UTC/boottime clocks, per-boot NTP gate, 10-second stable window, 300-second lifetime, renewal at 180 seconds, 120-second reserve, fresh IAM lookup, atomic replace plus reconnect/subscription recreation, ordinary offline continuation, ±5-second boundary and larger forward/backward discontinuity fail-closed behavior |
-| <a id="ut-kac-006"></a>`UT-KAC-006` | `REQ-KAC-007`, `REQ-KAC-008` | Same-boot helper restart from matching boot-local anchor, boot-ID mismatch, empty VM reboot, online reconstruction, cold offline `NOT_READY`, stop/replace/unregister/remove denial, tmpfs deletion and no persisted-token recovery |
-| <a id="ut-kac-007"></a>`UT-KAC-007` | `REQ-KAC-001`, `REQ-KAC-004`, `REQ-KAC-007` | Protected sign/verify preparation publishes only the atomic mode-`0444` public verifier; missing/malformed verifier blocks KUKSA and helper; no private/file-key fallback exists; reboot reconstructs the verifier; wrong Unit/verifier/signing context rejects and fresh provisioning uses distinct trust state |
-| <a id="ut-kac-008"></a>`UT-KAC-008` | `REQ-KAC-008` | Cloud/backend reachability is absent from local authorization dependencies |
-| <a id="ut-kac-009"></a>`UT-KAC-009` | `REQ-KAC-006`, `REQ-KAC-009` | Exact frame/JWT/permission/path boundaries ±1, four-concurrent/eight-backlog and per-peer/global token-bucket boundaries, every 2/3/3/8-second timeout, retry schedule/jitter/expiry cutoff, 64-MiB/10%-CPU/32-task/128-FD limits, invalid UTF-8/JSON/duplicate/unknown/trailing frames and every retryable/non-retryable mapping fail closed; only fixed low-cardinality codes/correlation are emitted and diagnostic output is fully redacted |
+| <a id="ut-kac-005"></a>`UT-KAC-005` | `REQ-KAC-006`, `REQ-KAC-008` | Controlled UTC/boottime clocks, per-boot NTP gate, 10-second stable window, 300-second lifetime, renewal at 180 seconds, 120-second reserve, fresh IAM lookup, atomic replace plus reconnect/subscription recreation, ordinary offline continuation, exact ±5-second issue/renew boundary, larger forward/backward deviation rejection, no continuous-monitor/KUKSA-stop claim and already-issued-token use bounded only by signed expiry |
+| <a id="ut-kac-006"></a>`UT-KAC-006` | `REQ-KAC-007`, `REQ-KAC-008` | Empty helper process restart and VM reboot, online synchronization/stable-window reconstruction, cold offline `NOT_READY`, stop/replace/unregister/remove denial, tmpfs deletion, no persisted-token or time-anchor recovery |
+| <a id="ut-kac-007"></a>`UT-KAC-007` | `REQ-KAC-001`, `REQ-KAC-004`, `REQ-KAC-007` | Exact RSA-2048/one-key/self-signed `kuksa-jwt` module, `aos-kuksa` token, pinned SoftHSM/provider paths and separate PIN pass only through private systemd credentials; protected sign/verify preparation publishes only the atomic mode-`0444` public verifier; missing/malformed verifier blocks KUKSA and helper; shared `.usrpin`, PIN in URI/environment/arguments/logs, private/file-key fallback, wrong Unit/verifier/signing context or persisted helper state rejects; reboot reconstructs the verifier and fresh provisioning uses distinct trust state |
+| <a id="ut-kac-008"></a>`UT-KAC-008` | `REQ-KAC-008` | Cloud/backend reachability is absent from local authorization dependencies and the fixed IAM loopback remains available during targeted vehicle external-connectivity loss |
+| <a id="ut-kac-009"></a>`UT-KAC-009` | `REQ-KAC-006`, `REQ-KAC-009` | Exact frame/JWT/permission/path boundaries ±1, four-concurrent/eight-backlog and per-peer/global token-bucket boundaries, every 2/3/3/8-second timeout, retry schedule/jitter/expiry cutoff, 64-MiB/10%-CPU/32-task/128-FD limits, exact verifier/runtime/socket paths, owners and modes, separate KAC/preparation SELinux domains, private Unix listener plus fixed outbound IAM loopback only, no capabilities/shell/TCP listener/DNS/external IP/arbitrary `/var/aos`/Service tmpfs/systemd management, initial SoftHSM read/open/lock only and no automatic `audit2allow` widening; invalid UTF-8/JSON/duplicate/unknown/trailing frames and every retryable/non-retryable mapping fail closed; only fixed low-cardinality codes/correlation are emitted and diagnostic output is fully redacted |
 | <a id="ut-kac-010"></a>`UT-KAC-010` | `REQ-KAC-001`, `REQ-KAC-010` | Packaging/dependency inspection proves the exact package/unit/user boundary, no VDP/SOTA business-code ownership, no root/public-listener/global-Service-Manager dependency and one removable native-migration seam |
 
 Unit tests use fake IAM, protected-signer and clock adapters plus private
@@ -415,11 +480,46 @@ VDP remains an OEM-qualified trusted platform component, Service credentials
 cannot grant provider authority, and malicious/substituted-Provider containment
 is outside the accepted claim.
 
+## Review Record for Version 0.11
+
+Version 0.11 incorporates accepted `IMP-03-KAC-006` and contract profile
+1.6.0: exact filesystem owners/modes, private systemd PIN delivery, pinned
+SoftHSM/OpenSSL provider and token parameters, separate KAC/verifier-preparation
+SELinux domains and the initial no-create/delete/rename backend boundary. It
+also records that SoftHSM is a current-demo software-token choice, not evidence
+of hardware-HSM physical isolation, and requires a separate review instead of
+automatic SELinux widening if pinned integration needs more access.
+
+## Review Record for Version 0.10
+
+Version 0.10 incorporates the accepted D4-027.7 current-release simplification
+and contract profile 1.5.0. The temporary helper keeps the per-boot sync and
+stable-window gate, UTC/boottime split and issue/renew deviation check, while
+removing the anchor, continuous monitor and KUKSA/token lifecycle controller.
+The stronger trustworthy-time and invalidation outcome remains a native
+AosCore migration qualification obligation rather than throw-away helper
+implementation.
+Version 0.10 was superseded the same day by Version 0.11.
+
+## Review Record for Version 0.9
+
+Version 0.9 incorporates the D4-027.8 native-IAM transport correction and
+contract profile 1.4.1. Source inspection of the pinned AosCore release proved
+that `IAMPublicPermissionsService/GetPermissions` is exposed through the public
+gRPC endpoint on port `8090`, so the earlier `AF_UNIX`-only process envelope
+was not implementable without changing Aos IAM and Service Manager. The
+accepted correction permits only fixed TLS loopback `127.0.0.1:8090`, trusts
+the Aos CA, expects server name `main`, and forbids DNS, caller-selected
+endpoints, external IP access and any KAC TCP listener. Version 0.9 was
+design-reviewed on 2026-08-28 and superseded the same day by Version 0.10.
+
 ## Review Record for Version 0.8
 
 Version 0.8 incorporates D4-027.8 and contract profile 1.4.0: exact size,
 permission/path, concurrency, backlog, rate, timeout, retry, systemd resource
-and redaction bounds. D4-027 is complete; implementation has not begun.
+and redaction bounds. D4-027 is complete. Version 0.8 was design-reviewed on
+2026-08-28 and was superseded the same day by Version 0.9 after pinned-source
+transport inspection; implementation had not begun.
 
 ## Review Record for Version 0.7
 

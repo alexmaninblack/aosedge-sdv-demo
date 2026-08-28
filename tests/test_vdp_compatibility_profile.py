@@ -27,7 +27,8 @@ class VdpCompatibilityProfileTest(unittest.TestCase):
 
     def test_identity_and_versions_are_frozen(self) -> None:
         self.assertEqual("D4-007", self.contract["decision"])
-        self.assertEqual("1.0.0", self.contract["contractVersion"])
+        self.assertEqual("1.0.1", self.contract["contractVersion"])
+        self.assertEqual("1.1.0", self.contract["sourceProfile"]["contractVersion"])
         self.assertEqual({"VDP_V1", "VDP_V2", "VDP_V3"}, set(self.versions))
 
     def test_component_versions_are_strict_additive_supersets(self) -> None:

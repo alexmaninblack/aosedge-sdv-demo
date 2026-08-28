@@ -3,7 +3,7 @@
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "schemaVersion": 1,
   "contractId": "aosedge-demo-viss-trust-telemetry-profile",
-  "contractVersion": "1.0.0",
+  "contractVersion": "1.1.0",
   "decision": "D4-006",
   "standards": { "viss": "3.1", "vss": "6.0", "projectOverlay": "Vehicle.CarlaSimulation.*" },
   "transport": {
@@ -17,6 +17,8 @@
   },
   "credentialLifecycle": {
     "unitUnique": true,
+    "purposeBound": true,
+    "separateForRoles": ["SELECTED_PLATFORM_UNIT", "PLATFORM_UPDATE_RUNTIME"],
     "created": "per-Unit onboarding after Cloud Unit and Node identity are known",
     "stored": "root-owned persistent Unit credential outside Factory Image and FOTA payload",
     "delivered": "systemd LoadCredential",
@@ -26,17 +28,20 @@
   },
   "peerRoles": [
     { "role": "SELECTED_PLATFORM_UNIT", "maxConcurrentConnections": 1, "allowedOperations": ["GET", "SUBSCRIBE", "UNSUBSCRIBE"], "setPolicy": "DENY_UNTIL_D4_008", "availability": "LIVE_DEMO" },
+    { "role": "PLATFORM_UPDATE_RUNTIME", "maxConcurrentConnections": 1, "allowedOperations": ["GET", "SUBSCRIBE", "UNSUBSCRIBE"], "setPolicy": "ALWAYS_DENY", "availability": "LIVE_DEMO" },
     { "role": "ENGINEERING_DASHBOARD", "maxConcurrentConnections": 1, "allowedOperations": ["GET", "SUBSCRIBE", "UNSUBSCRIBE"], "setPolicy": "ALWAYS_DENY", "availability": "LIVE_DEMO" },
     { "role": "QUALIFICATION_CLIENT", "maxConcurrentConnections": 1, "allowedOperations": ["GET", "SUBSCRIBE", "UNSUBSCRIBE"], "setPolicy": "ALWAYS_DENY", "availability": "QUALIFICATION_ONLY" }
   ],
   "selectedUnitGate": {
-    "exclusiveRole": "SELECTED_PLATFORM_UNIT",
+    "selectedBoundRoles": ["SELECTED_PLATFORM_UNIT", "PLATFORM_UPDATE_RUNTIME"],
+    "maximumConnectionsPerSelectedRole": 1,
+    "distinctCredentialPerSelectedRole": true,
     "selectedIdentity": ["UnitId", "NodeId", "clientCertificateFingerprint", "assignmentGeneration"],
     "reject": ["NON_SELECTED_UNIT", "UNKNOWN_CLIENT", "EXPIRED_CLIENT", "REVOKED_CLIENT", "ADDITIONAL_UNIT_SESSION", "IDENTITY_MISMATCH"],
     "engineeringDashboardException": "separately authenticated read-only peer; never a Unit binding"
   },
   "timing": { "subscriptionPeriodMs": 50, "freshnessTimeoutMs": 250, "reconnectInitialMs": 500, "reconnectMaximumMs": 10000 },
-  "limits": { "maximumRoleConnections": 3, "maximumSubscriptionsPerConnection": 16, "minimumSubscriptionPeriodMs": 50, "maximumSubscriptionPeriodMs": 60000, "maximumPendingMessagesPerClient": 8, "maximumMessageBytes": 262144 },
+  "limits": { "maximumRoleConnections": 4, "maximumSubscriptionsPerConnection": 16, "minimumSubscriptionPeriodMs": 50, "maximumSubscriptionPeriodMs": 60000, "maximumPendingMessagesPerClient": 8, "maximumMessageBytes": 262144 },
   "operations": {
     "supported": ["GET", "SUBSCRIBE", "UNSUBSCRIBE"],
     "setBeforeD4008": "DENY_ALL_WITHOUT_SIDE_EFFECT",
@@ -54,12 +59,12 @@
     "sourceStates": ["STARTING", "AUTHENTICATING", "LIVE", "STALE", "DISCONNECTED", "AUTHENTICATION_FAILED", "CONTRACT_MISMATCH"]
   },
   "paths": [
-    { "path": "Vehicle.Speed", "dataType": "float", "unit": "km/h", "namespace": "VSS_6_0", "cadence": "PER_SIMULATION_FRAME", "access": ["SELECTED_PLATFORM_UNIT", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "CURRENT", "capabilityIds": ["vehicle.velocity.world", "vehicle.speed"] },
+    { "path": "Vehicle.Speed", "dataType": "float", "unit": "km/h", "namespace": "VSS_6_0", "cadence": "PER_SIMULATION_FRAME", "access": ["SELECTED_PLATFORM_UNIT", "PLATFORM_UPDATE_RUNTIME", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "CURRENT", "capabilityIds": ["vehicle.velocity.world", "vehicle.speed"] },
     { "path": "Vehicle.Acceleration.Longitudinal", "dataType": "float", "unit": "m/s^2", "namespace": "VSS_6_0", "cadence": "PER_SIMULATION_FRAME", "access": ["SELECTED_PLATFORM_UNIT", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "CURRENT", "capabilityIds": ["vehicle.acceleration"] },
     { "path": "Vehicle.Acceleration.Lateral", "dataType": "float", "unit": "m/s^2", "namespace": "VSS_6_0", "cadence": "PER_SIMULATION_FRAME", "access": ["SELECTED_PLATFORM_UNIT", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "CURRENT", "capabilityIds": ["vehicle.acceleration"] },
     { "path": "Vehicle.Acceleration.Vertical", "dataType": "float", "unit": "m/s^2", "namespace": "VSS_6_0", "cadence": "PER_SIMULATION_FRAME", "access": ["SELECTED_PLATFORM_UNIT", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "CURRENT", "capabilityIds": ["vehicle.acceleration"] },
-    { "path": "Vehicle.Chassis.Accelerator.PedalPosition", "dataType": "uint8", "unit": "percent", "namespace": "VSS_6_0", "cadence": "PER_SIMULATION_FRAME", "access": ["SELECTED_PLATFORM_UNIT", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "CURRENT", "capabilityIds": ["vehicle.control.applied", "actuator.throttle"] },
-    { "path": "Vehicle.Chassis.Brake.PedalPosition", "dataType": "uint8", "unit": "percent", "namespace": "VSS_6_0", "cadence": "PER_SIMULATION_FRAME", "access": ["SELECTED_PLATFORM_UNIT", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "CURRENT", "capabilityIds": ["vehicle.control.applied", "actuator.brake"] },
+    { "path": "Vehicle.Chassis.Accelerator.PedalPosition", "dataType": "uint8", "unit": "percent", "namespace": "VSS_6_0", "cadence": "PER_SIMULATION_FRAME", "access": ["SELECTED_PLATFORM_UNIT", "PLATFORM_UPDATE_RUNTIME", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "CURRENT", "capabilityIds": ["vehicle.control.applied", "actuator.throttle"] },
+    { "path": "Vehicle.Chassis.Brake.PedalPosition", "dataType": "uint8", "unit": "percent", "namespace": "VSS_6_0", "cadence": "PER_SIMULATION_FRAME", "access": ["SELECTED_PLATFORM_UNIT", "PLATFORM_UPDATE_RUNTIME", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "CURRENT", "capabilityIds": ["vehicle.control.applied", "actuator.brake"] },
     { "path": "Vehicle.Chassis.Axle.Row1.SteeringAngle", "dataType": "float", "unit": "degrees", "namespace": "VSS_6_0", "cadence": "PER_SIMULATION_FRAME", "access": ["SELECTED_PLATFORM_UNIT", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "CURRENT", "capabilityIds": ["vehicle.front_wheel.steer_angles", "actuator.steering"] },
     { "path": "Vehicle.Powertrain.Transmission.CurrentGear", "dataType": "int8", "unit": "dimensionless", "namespace": "VSS_6_0", "cadence": "PER_SIMULATION_FRAME", "access": ["SELECTED_PLATFORM_UNIT", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "CURRENT", "capabilityIds": ["vehicle.control.applied", "actuator.transmission"] },
     { "path": "Vehicle.Powertrain.CombustionEngine.Speed", "dataType": "float", "unit": "rpm", "namespace": "VSS_6_0", "cadence": "PER_SIMULATION_FRAME", "access": ["SELECTED_PLATFORM_UNIT", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "CURRENT", "capabilityIds": ["vehicle.engine.rpm"] },
@@ -79,7 +84,7 @@
     { "path": "Vehicle.CarlaSimulation.ProfileVersion", "dataType": "string", "unit": "identifier", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "STATIC", "access": ["SELECTED_PLATFORM_UNIT", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "CURRENT", "capabilityIds": [] },
     { "path": "Vehicle.CarlaSimulation.RunId", "dataType": "string", "unit": "identifier", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "STATIC", "access": ["SELECTED_PLATFORM_UNIT", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "CURRENT", "capabilityIds": [] },
     { "path": "Vehicle.CarlaSimulation.EgoVehicleId", "dataType": "string", "unit": "identifier", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "STATIC", "access": ["SELECTED_PLATFORM_UNIT", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "CURRENT", "capabilityIds": ["vehicle.actor.identity"] },
-    { "path": "Vehicle.CarlaSimulation.FrameId", "dataType": "uint64", "unit": "frame", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "PER_SIMULATION_FRAME", "access": ["SELECTED_PLATFORM_UNIT", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "CURRENT", "capabilityIds": [] },
+    { "path": "Vehicle.CarlaSimulation.FrameId", "dataType": "uint64", "unit": "frame", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "PER_SIMULATION_FRAME", "access": ["SELECTED_PLATFORM_UNIT", "PLATFORM_UPDATE_RUNTIME", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "CURRENT", "capabilityIds": [] },
     { "path": "Vehicle.CarlaSimulation.SimulationTime", "dataType": "double", "unit": "s", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "PER_SIMULATION_FRAME", "access": ["SELECTED_PLATFORM_UNIT", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "CURRENT", "capabilityIds": [] },
     { "path": "Vehicle.CarlaSimulation.GnssFrameId", "dataType": "uint64", "unit": "frame", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "GNSS_SENSOR", "access": ["SELECTED_PLATFORM_UNIT", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "CURRENT", "capabilityIds": ["vehicle.gnss.position"] },
     { "path": "Vehicle.CarlaSimulation.GnssSimulationTime", "dataType": "double", "unit": "s", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "GNSS_SENSOR", "access": ["SELECTED_PLATFORM_UNIT", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "CURRENT", "capabilityIds": ["vehicle.gnss.position"] },
@@ -133,10 +138,10 @@
     { "path": "Vehicle.CarlaSimulation.ChaosWheel.Row2.Left.LongitudinalSlip", "dataType": "double", "unit": "ratio", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "PER_SIMULATION_FRAME", "access": ["SELECTED_PLATFORM_UNIT", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "CURRENT", "capabilityIds": ["vehicle.wheel.longitudinal_slip"] },
     { "path": "Vehicle.CarlaSimulation.ChaosWheel.Row2.Right.LongitudinalSlip", "dataType": "double", "unit": "ratio", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "PER_SIMULATION_FRAME", "access": ["SELECTED_PLATFORM_UNIT", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "CURRENT", "capabilityIds": ["vehicle.wheel.longitudinal_slip"] },
 
-    { "path": "Vehicle.CarlaSimulation.Control.ActiveMode", "dataType": "string", "unit": "enum", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "EVENT", "access": ["ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "TARGET", "capabilityIds": [] },
+    { "path": "Vehicle.CarlaSimulation.Control.ActiveMode", "dataType": "string", "unit": "enum", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "EVENT", "access": ["PLATFORM_UPDATE_RUNTIME", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "TARGET", "capabilityIds": [] },
     { "path": "Vehicle.CarlaSimulation.Control.RequestedMode", "dataType": "string", "unit": "enum", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "EVENT", "access": ["ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "TARGET", "capabilityIds": [] },
-    { "path": "Vehicle.CarlaSimulation.Control.TransitionState", "dataType": "string", "unit": "enum", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "EVENT", "access": ["ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "TARGET", "capabilityIds": [] },
-    { "path": "Vehicle.CarlaSimulation.Control.Generation", "dataType": "uint64", "unit": "generation", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "EVENT", "access": ["ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "TARGET", "capabilityIds": [] },
+    { "path": "Vehicle.CarlaSimulation.Control.TransitionState", "dataType": "string", "unit": "enum", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "EVENT", "access": ["PLATFORM_UPDATE_RUNTIME", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "TARGET", "capabilityIds": [] },
+    { "path": "Vehicle.CarlaSimulation.Control.Generation", "dataType": "uint64", "unit": "generation", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "EVENT", "access": ["PLATFORM_UPDATE_RUNTIME", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "TARGET", "capabilityIds": [] },
     { "path": "Vehicle.CarlaSimulation.Control.LastReason", "dataType": "string", "unit": "enum", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "EVENT", "access": ["ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "TARGET", "capabilityIds": [] },
     { "path": "Vehicle.CarlaSimulation.World.Context", "dataType": "string", "unit": "enum", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "EVENT", "access": ["ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "TARGET", "capabilityIds": [] },
     { "path": "Vehicle.CarlaSimulation.Scenario.Id", "dataType": "string", "unit": "identifier", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "EVENT", "access": ["ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "TARGET", "capabilityIds": [] },
@@ -144,11 +149,11 @@
     { "path": "Vehicle.CarlaSimulation.Scenario.Phase", "dataType": "string", "unit": "enum", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "EVENT", "access": ["ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "TARGET", "capabilityIds": [] },
     { "path": "Vehicle.CarlaSimulation.Scenario.Result", "dataType": "string", "unit": "enum", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "EVENT", "access": ["ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "TARGET", "capabilityIds": [] },
     { "path": "Vehicle.CarlaSimulation.Scenario.Generation", "dataType": "uint64", "unit": "generation", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "EVENT", "access": ["ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "TARGET", "capabilityIds": [] },
-    { "path": "Vehicle.CarlaSimulation.Reset.Generation", "dataType": "uint64", "unit": "generation", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "EVENT", "access": ["ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "TARGET", "capabilityIds": [] },
-    { "path": "Vehicle.CarlaSimulation.Reset.InProgress", "dataType": "boolean", "unit": "boolean", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "EVENT", "access": ["ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "TARGET", "capabilityIds": [] },
+    { "path": "Vehicle.CarlaSimulation.Reset.Generation", "dataType": "uint64", "unit": "generation", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "EVENT", "access": ["PLATFORM_UPDATE_RUNTIME", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "TARGET", "capabilityIds": [] },
+    { "path": "Vehicle.CarlaSimulation.Reset.InProgress", "dataType": "boolean", "unit": "boolean", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "EVENT", "access": ["PLATFORM_UPDATE_RUNTIME", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "TARGET", "capabilityIds": [] },
     { "path": "Vehicle.CarlaSimulation.Reset.Reason", "dataType": "string", "unit": "enum", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "EVENT", "access": ["ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "TARGET", "capabilityIds": [] },
     { "path": "Vehicle.CarlaSimulation.Reset.FrameId", "dataType": "uint64", "unit": "frame", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "EVENT", "access": ["ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "TARGET", "capabilityIds": [] },
-    { "path": "Vehicle.CarlaSimulation.Reset.Discontinuity", "dataType": "boolean", "unit": "boolean", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "EVENT", "access": ["ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "TARGET", "capabilityIds": [] }
+    { "path": "Vehicle.CarlaSimulation.Reset.Discontinuity", "dataType": "boolean", "unit": "boolean", "namespace": "CARLA_SIMULATION_OVERLAY", "cadence": "EVENT", "access": ["PLATFORM_UPDATE_RUNTIME", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"], "implementationState": "TARGET", "capabilityIds": [] }
   ],
   "excludedCapabilities": [
     { "capabilityId": "oracle.speed_limit", "disposition": "QUALIFICATION_ONLY", "reason": "Map oracle is not production vehicle telemetry." },

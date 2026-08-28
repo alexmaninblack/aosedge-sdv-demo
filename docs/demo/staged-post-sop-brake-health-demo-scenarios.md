@@ -364,6 +364,12 @@ retains the request record and downloadable result while its deployed tenant
 policy retains them. The current public API does not expose that retention
 policy.
 
+VDP owns no log storage. Its allowlisted diagnostics enter standard
+output/error under the native systemd unit and therefore the local system
+journal; the platform log-delivery path is the only remote access used by the
+demo. Neither the Software Delivery Dashboard nor VDP creates a second file,
+database, archive or retention policy.
+
 The stateless OEM Software Delivery Dashboard uses `/api/v11/unit-logs/`
 through `oem-delivery` only for AosCore, VDP and other Unit system evidence.
 The Brake and Tire Function Dashboards use `/api/v11/service-logs/` through
@@ -454,8 +460,10 @@ That factory image contains:
 - Service Manager, factory-installed unmodified KUKSA, security, and update
   support;
 - the accepted `systemd-slot-component` runtime for the Vehicle Data Provider;
-- its launcher, health, systemd, storage, and SELinux integration;
-- an empty provider component store;
+- its launcher, health, systemd, OEM Component Runtime A/B working-storage,
+  and SELinux integration;
+- an empty VDP component slot; the Runtime A/B working storage contains no
+  installed VDP payload;
 - the separately packaged current-release KUKSA authorization compatibility
   helper and its non-secret startup, signer and public-verifier preparation
   wiring.
@@ -518,7 +526,7 @@ enables secure Cloud connectivity. After both Units are Online:
    Unit Set;
 3. the dashboard verifies the exact Unit identities and target membership;
 4. both Units report the accepted platform/runtime inventory;
-5. both provider stores remain empty and no functional service is assigned.
+5. both VDP component slots remain empty and no functional service is assigned.
 
 Provisioning must fail closed after the SDK begins: an uncertain partial
 result is preserved for reconciliation and is never retried automatically.
@@ -1463,7 +1471,7 @@ destructive experiment.
 9. Prove that a fresh verification batch shows only its intended Validation
    Unit before approval; never reuse a stale batch after Unit Set changes.
 10. Freeze and qualify a clean, unprovisioned OEM Demo Factory Image with an
-    empty provider store, no Cloud registration or credential, and no fixed
+    empty VDP component slot, no Cloud registration or credential, and no fixed
     identity that would be duplicated across instances.
 11. Prove that two fresh overlays create different system, Node, SSH, and
     certificate identities.

@@ -5,6 +5,11 @@
 
 Status: **research pass complete; implementation not authorized**.
 
+> Terminology note: this historical research uses `provider store` for the
+> source-level runtime path known at the time. The accepted architecture calls
+> it **OEM Component Runtime A/B working storage**. It is not a logical VDP
+> application, telemetry or log store.
+
 ## Accepted disposition — 2026-08-21
 
 The generic-runtime recommendation below is retained as historical research

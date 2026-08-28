@@ -424,7 +424,7 @@ the real supported APIs and launchers.
 - Flow: [common release (`AF-X-RELEASE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-release)
 - Components/interfaces: `CMP-SW-DASH`, `CMP-ORCH`, `CMP-RUNTIME`, `CMP-GW`, `IF-LC-005`, `IF-LC-006`, `IF-VEH-007`
 - Verification: Unit, Contract, Integration, End-to-end
-- Executable contract: [Platform FOTA Safe Stop 1.0.1](../../../contracts/platform-fota-safe-stop/platform-fota-safe-stop-profile.v1.json)
+- Executable contract: [Platform FOTA Safe Stop 1.1.0](../../../contracts/platform-fota-safe-stop/platform-fota-safe-stop-profile.v1.json)
 - Evidence: per-artifact Verification Batch identity and `{VU}` pending-recipient proof, Test-deployment Release Authority decision, VU actual/readiness and owning-team acceptance, valid Fleet Validation Batch, unchanged digest identity, Production-rollout Release Authority decision, Campaign with sole Production Unit Set target, Campaign per-Unit result and PU rollout/readiness confirmation; for G3/G4, distinct VDP/Brake chains, provider-first readiness, prior-compatible-Service continuity, derived `0/2`/`1/2`/`2/2` milestone and no-group/no-cross-team-rollback negatives; plus native `ACTIVATING`, first-install-empty/replacement-active behavior, derived waiting explanation, on-demand runtime reasons and fresh Gateway Safe Stop evidence for Platform FOTA or in-motion evidence for QM Service SOTA
 - State: D3 design-reviewed; D4-012 staged-target design accepted; live Campaign response-shape qualification remains required
 

@@ -24,7 +24,7 @@ CONTROL_CONTRACT = (
     / "simulator-control-context.v1.json"
 )
 ACCEPTED_CONTRACT_SHA256 = (
-    "24484919d916ade153111fd6075d06cecdf77d0bed7cfd016c0a4163e1b8fd53"
+    "4a1a2bd804c3a49f707b5e640632bd8a0357901f59e4615c340622b043d4c12c"
 )
 
 
@@ -38,7 +38,7 @@ class VissTrustTelemetryProfileTest(unittest.TestCase):
 
     def test_identity_standards_and_schema_are_frozen(self) -> None:
         self.assertEqual("D4-006", self.contract["decision"])
-        self.assertEqual("1.0.0", self.contract["contractVersion"])
+        self.assertEqual("1.1.0", self.contract["contractVersion"])
         self.assertEqual(
             {"viss": "3.1", "vss": "6.0", "projectOverlay": "Vehicle.CarlaSimulation.*"},
             self.contract["standards"],
@@ -61,6 +61,11 @@ class VissTrustTelemetryProfileTest(unittest.TestCase):
 
         lifecycle = self.contract["credentialLifecycle"]
         self.assertTrue(lifecycle["unitUnique"])
+        self.assertTrue(lifecycle["purposeBound"])
+        self.assertEqual(
+            {"SELECTED_PLATFORM_UNIT", "PLATFORM_UPDATE_RUNTIME"},
+            set(lifecycle["separateForRoles"]),
+        )
         self.assertTrue(lifecycle["retiredAtR0"])
         self.assertEqual("systemd LoadCredential", lifecycle["delivered"])
         self.assertEqual(
@@ -71,7 +76,12 @@ class VissTrustTelemetryProfileTest(unittest.TestCase):
     def test_peer_roles_preserve_one_selected_unit_and_read_only_dashboard(self) -> None:
         roles = {item["role"]: item for item in self.contract["peerRoles"]}
         self.assertEqual(
-            {"SELECTED_PLATFORM_UNIT", "ENGINEERING_DASHBOARD", "QUALIFICATION_CLIENT"},
+            {
+                "SELECTED_PLATFORM_UNIT",
+                "PLATFORM_UPDATE_RUNTIME",
+                "ENGINEERING_DASHBOARD",
+                "QUALIFICATION_CLIENT",
+            },
             set(roles),
         )
         self.assertEqual(
@@ -79,17 +89,50 @@ class VissTrustTelemetryProfileTest(unittest.TestCase):
             set(roles["SELECTED_PLATFORM_UNIT"]["allowedOperations"]),
         )
         self.assertEqual("DENY_UNTIL_D4_008", roles["SELECTED_PLATFORM_UNIT"]["setPolicy"])
+        self.assertEqual("ALWAYS_DENY", roles["PLATFORM_UPDATE_RUNTIME"]["setPolicy"])
         self.assertEqual("ALWAYS_DENY", roles["ENGINEERING_DASHBOARD"]["setPolicy"])
         self.assertEqual("ALWAYS_DENY", roles["QUALIFICATION_CLIENT"]["setPolicy"])
 
         gate = self.contract["selectedUnitGate"]
-        self.assertEqual("SELECTED_PLATFORM_UNIT", gate["exclusiveRole"])
+        self.assertEqual(
+            {"SELECTED_PLATFORM_UNIT", "PLATFORM_UPDATE_RUNTIME"},
+            set(gate["selectedBoundRoles"]),
+        )
+        self.assertEqual(1, gate["maximumConnectionsPerSelectedRole"])
+        self.assertTrue(gate["distinctCredentialPerSelectedRole"])
         self.assertEqual(
             {"UnitId", "NodeId", "clientCertificateFingerprint", "assignmentGeneration"},
             set(gate["selectedIdentity"]),
         )
         self.assertIn("NON_SELECTED_UNIT", gate["reject"])
         self.assertIn("ADDITIONAL_UNIT_SESSION", gate["reject"])
+
+    def test_platform_update_runtime_has_only_safe_stop_read_paths(self) -> None:
+        runtime_paths = {
+            item["path"]
+            for item in self.contract["paths"]
+            if "PLATFORM_UPDATE_RUNTIME" in item["access"]
+        }
+        self.assertEqual(
+            {
+                "Vehicle.CarlaSimulation.FrameId",
+                "Vehicle.CarlaSimulation.Control.ActiveMode",
+                "Vehicle.CarlaSimulation.Control.TransitionState",
+                "Vehicle.CarlaSimulation.Control.Generation",
+                "Vehicle.CarlaSimulation.Reset.Generation",
+                "Vehicle.CarlaSimulation.Reset.InProgress",
+                "Vehicle.CarlaSimulation.Reset.Discontinuity",
+                "Vehicle.Speed",
+                "Vehicle.Chassis.Accelerator.PedalPosition",
+                "Vehicle.Chassis.Brake.PedalPosition",
+            },
+            runtime_paths,
+        )
+        roles = {item["role"]: item for item in self.contract["peerRoles"]}
+        self.assertEqual(
+            {"GET", "SUBSCRIBE", "UNSUBSCRIBE"},
+            set(roles["PLATFORM_UPDATE_RUNTIME"]["allowedOperations"]),
+        )
 
     def test_timing_queue_and_recovery_semantics_are_bounded(self) -> None:
         self.assertEqual(
