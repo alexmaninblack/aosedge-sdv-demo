@@ -19,7 +19,7 @@
 - Team-context decision: [D4-026.19 Fixed Team Context and Version-Only Scrolling](../../requirements/d4-decision-register.md#d4-026-19)
 - Icon/terminal boundary decision: [D4-026.20 Icon Vocabulary and Native Terminal Boundary](../../requirements/d4-decision-register.md#d4-026-20)
 - Platform FOTA enforcement decision: [ADR 0014](../../architecture/decisions/0014-enforce-platform-fota-safe-stop-in-oem-component-runtime.md)
-- Platform FOTA Safe Stop contract: [1.0.1](../../../contracts/platform-fota-safe-stop/README.md)
+- Platform FOTA Safe Stop contract: [1.1.0](../../../contracts/platform-fota-safe-stop/README.md)
 - Surface register: [I0 Audience-Visible Interface Register](README.md)
 - UI traceability: [AosEdge Demo UI Traceability Register](aosedge-demo-ui-traceability-register.md)
 - Current clickable review artifact derived from this contract:
@@ -1367,6 +1367,9 @@ Tire CPU-proof status is labelled as a demo proof control, not quota-
 enforcement evidence. Vehicle Data Platform Component Details contain no
 Service-quota or substitute component-resource table; they explain the data
 contract, compatibility, Safe Stop policy, lifecycle and integrity instead.
+They also contain no VDP application-store view: the persistent
+slots/state/credentials tree belongs to OEM Component Runtime A/B working
+storage and stores no VDP telemetry history or log archive.
 Unsupported or unobserved Service limits remain `UNKNOWN`, never `enforced`.
 
 ### 6.6 Runtime-isolation evidence
@@ -1454,7 +1457,8 @@ through release Details.
 
 ### <a id="ui-int-048"></a>UI-INT-048 — Context-bound Operational Logs overlay
 
-Native operational logs use a separate `Operational logs` secondary action,
+Native operational logs use a separate secondary action labelled `Platform
+Logs` for Platform scope and `Operational Logs` for Brake/Tire Service scope,
 not Details, Engineering Telematics, Function-backend evidence or a browser
 tab. The action appears only for an installed/running release in the `Test
 Vehicle validation` or `Production rollout and live operation` stage. It opens
@@ -1467,6 +1471,12 @@ arbitrary Unit ID, Service, path, query, credential or Cloud endpoint. Platform
 uses only accepted Unit/system/VDP scope; Brake uses only Brake Service scope;
 Tire uses only Tire Service scope. No team can inspect another Function Team's
 Service logs.
+
+VDP diagnostics are standard output/error records captured by the native
+systemd journal. VDP owns no log file, database, archive or retention policy.
+The overlay delegates the fixed Platform request to the accepted
+AosEdge/AosCloud delivery path and retains no second copy after the bounded
+view is closed or deleted.
 
 The overlay owns this bounded workflow:
 
@@ -1524,7 +1534,8 @@ The review accepts:
    with no Service quota or substitute resource table for VDP Components;
 4. one separate sticky Runtime Isolation Evidence panel during the Tire proof,
    leaving Engineering Telematics limited to Gateway/KUKSA vehicle evidence;
-5. one separate context-bound, role-scoped Operational Logs overlay at Test
+5. one separate context-bound, role-scoped logs overlay labelled `Platform
+   Logs` for Platform scope and `Operational Logs` for Brake/Tire scope at Test
    validation and Production live-operation stages, using native AosCloud log
    delivery without ELK, a second archive or unrestricted raw output; and
 6. the accepted allowlist, redaction, team-isolation and bounded-copy policy.
@@ -2279,7 +2290,7 @@ diagnostic surfaces without turning them into alternate lifecycle paths:
 | <a id="ui-at-024"></a>`UI-AT-024` — Disclosure, redaction and copy boundary | `UI-INT-045`, `UI-INT-047` | `FIXTURE`, `INTEGRATED` | Pre-browser allowlisting/redaction and copy of only reviewed non-secret identifiers/digests/fingerprints |
 | <a id="ui-at-025"></a>`UI-AT-025` — Perspective and evidence isolation | `UI-INT-046` | `FIXTURE`, `INTEGRATED` | Platform, Brake and Tire projections remain disjoint; Release Authority receives only its bounded decision summary |
 | <a id="ui-at-026"></a>`UI-AT-026` — Runtime Isolation Evidence | `UI-INT-044` | `FIXTURE`, `INTEGRATED`, `HUMAN` | Separate sticky Tire-proof panel combines platform enforcement evidence, same-instance continuity, Brake control and recovery |
-| <a id="ui-at-027"></a>`UI-AT-027` — Operational Logs workflow | `UI-INT-048` | `FIXTURE`, `INTEGRATED`, `HUMAN` | Parameterized Platform/Brake/Tire fixed-scope request, status re-read, bounded sanitized result and exact deletion |
+| <a id="ui-at-027"></a>`UI-AT-027` — Platform/Operational Logs workflow | `UI-INT-048` | `FIXTURE`, `INTEGRATED`, `HUMAN` | Parameterized Platform/Brake/Tire fixed-scope request, status re-read, bounded sanitized result and exact deletion |
 
 Mandatory negatives cover modal lifecycle actions, opening-as-refresh, cached
 green state, collapsed unverified digests, browser-held private identities or

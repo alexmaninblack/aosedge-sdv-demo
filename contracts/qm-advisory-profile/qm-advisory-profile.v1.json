@@ -3,11 +3,11 @@
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "schemaVersion": 1,
   "contractId": "aosedge-demo-typed-qm-advisory",
-  "contractVersion": "1.0.1",
+  "contractVersion": "1.0.2",
   "decision": "D4-008",
   "inputs": {
-    "vdpCompatibilityContractVersion": "1.0.0",
-    "vdpCompatibilitySha256": "4c00a3848eb2c961b048e74d3d1253bdc43e47c1467f64e62653046ba39ba12c",
+    "vdpCompatibilityContractVersion": "1.0.1",
+    "vdpCompatibilitySha256": "8e58e18e9d99a13409af6813e573cbe1c690e439ad746224426801f6b080c871",
     "vssVersion": "6.0",
     "vissVersion": "3.1",
     "kuksaApi": "kuksa.val.v1"

@@ -8,7 +8,9 @@ This directory is the canonical cross-component contract for
 the additive Vehicle Data Platform Component v1-v3 graph, service compatibility
 ranges, installed-capability identity and fail-closed readiness behavior.
 
-- [accepted profile](vdp-compatibility-profile.v1.json)
+- [accepted profile 1.0.1](vdp-compatibility-profile.v1.json) — metadata-only
+  repin to VISS Trust and Telemetry Profile 1.1.0; the VDP v1-v3 capability
+  graph and service compatibility semantics are unchanged
 - [JSON schema](vdp-compatibility-profile.schema.json)
 
 The profile selects only paths already accepted by the
@@ -21,4 +23,3 @@ a SOTA service that requires a newer FOTA VDP Component. Therefore this
 contract requires fail-closed service readiness and factual dashboard guidance,
 but prohibits a project-built Cloud-admission substitute. A service can be
 installed and process-healthy while its functional readiness is `NOT_READY`.
-

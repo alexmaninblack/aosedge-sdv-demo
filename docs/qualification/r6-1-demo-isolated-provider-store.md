@@ -3,6 +3,11 @@
 
 # R6.1 Demo Isolated Provider Store
 
+> Historical implementation name: in the current architecture this filesystem
+> is **OEM Component Runtime A/B working storage** for slots, transaction state
+> and private credential sources. It is not a VDP application store, telemetry
+> store, log store or audience-visible platform capability.
+
 - Status: retained engineering design evidence for unsigned rootfs candidate `.11`; not the current HLA source
 - Provider: signed and locally verified `0.2.0`, not published or assigned
 - Unit versions below are the qualification-time snapshot; current state is in
@@ -12,8 +17,8 @@
 
 ## Decision
 
-Use a bounded nested ext4 filesystem for the demonstration provider component
-store. It preserves the accepted SELinux boundary without relabelling the
+Use a bounded nested ext4 filesystem for the demonstration OEM Component
+Runtime A/B working storage. It preserves the accepted SELinux boundary without relabelling the
 existing AosCore workdirs filesystem or waiting for the production storage
 architecture decision.
 

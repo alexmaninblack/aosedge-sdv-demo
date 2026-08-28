@@ -4,13 +4,13 @@
   "title": "AosEdge Demo Platform FOTA Safe Stop Profile",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "contractId", "contractVersion", "lifecycleState", "architectureDecision", "scope", "authority", "evidence", "policy", "gate", "runtimeState", "recovery", "reasonCodes", "observability", "qualification"],
+  "required": ["schemaVersion", "contractId", "contractVersion", "lifecycleState", "architectureDecision", "scope", "authority", "evidence", "policy", "gate", "runtimeState", "runtimeImplementation", "recovery", "reasonCodes", "observability", "qualification"],
   "properties": {
     "$schema": {"type": "string"},
     "$comment": {"type": "string"},
     "schemaVersion": {"const": 1},
     "contractId": {"const": "aosedge-demo-platform-fota-safe-stop"},
-    "contractVersion": {"const": "1.0.1"},
+    "contractVersion": {"const": "1.1.0"},
     "lifecycleState": {"type": "string"},
     "architectureDecision": {"const": "ADR-0014"},
     "scope": {"type": "object"},
@@ -51,6 +51,23 @@
         "firstInstallBehaviorWhileWaiting": {"const": "EMPTY_SLOT_REMAINS_EMPTY"},
         "replacementBehaviorWhileWaiting": {"const": "PREVIOUS_HEALTHY_RELEASE_REMAINS_ACTIVE"},
         "removalBehaviorWhileWaiting": {"const": "CURRENT_HEALTHY_RELEASE_REMAINS_ACTIVE"}
+      }
+    },
+    "runtimeImplementation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["vehicleStateInterface", "transportAdapter", "policyEvaluator", "waitingExecution", "runtimeMutexHeldWhileWaiting", "startInstanceWaitingResult", "singleWorker", "stopCancellation", "persistedContent", "persistedSamplesAllowed"],
+      "properties": {
+        "vehicleStateInterface": {"const": "VehicleStateProviderItf"},
+        "transportAdapter": {"const": "VISS_3_1_MTLS_PLATFORM_UPDATE_RUNTIME_ROLE"},
+        "policyEvaluator": {"const": "PURE_SAFE_STOP_POLICY"},
+        "waitingExecution": {"const": "ASYNCHRONOUS_BOUNDED_WORKER"},
+        "runtimeMutexHeldWhileWaiting": {"const": false},
+        "startInstanceWaitingResult": {"const": "DURABLE_WAIT_THEN_RETURN_ACTIVATING"},
+        "singleWorker": {"const": true},
+        "stopCancellation": {"const": "BOUNDED_CANCEL_AND_JOIN"},
+        "persistedContent": {"const": "TRANSACTION_METADATA_ONLY"},
+        "persistedSamplesAllowed": {"const": false}
       }
     },
     "recovery": {

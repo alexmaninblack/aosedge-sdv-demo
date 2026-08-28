@@ -23,7 +23,8 @@ class QmAdvisoryProfileTest(unittest.TestCase):
 
     def test_contract_identity_and_exact_endpoints_are_frozen(self) -> None:
         self.assertEqual("D4-008", self.profile["decision"])
-        self.assertEqual("1.0.1", self.profile["contractVersion"])
+        self.assertEqual("1.0.2", self.profile["contractVersion"])
+        self.assertEqual("1.0.1", self.profile["inputs"]["vdpCompatibilityContractVersion"])
         self.assertEqual(
             {"BRAKE_HEALTH_ADVISORY", "TIRE_HEALTH_ADVISORY"},
             set(self.endpoints),

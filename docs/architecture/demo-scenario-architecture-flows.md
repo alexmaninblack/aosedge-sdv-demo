@@ -262,6 +262,13 @@ permission lifecycle. The helper owns no parallel Service identity or policy
 database. Once preparation succeeds, the Service talks directly to KUKSA; the
 helper is not a proxy or data-path intermediary.
 
+In the pinned current release, the `H -> IAM` arrow is the native
+`IAMPublicPermissionsService/GetPermissions` gRPC call over fixed TLS loopback
+`127.0.0.1:8090`, using the Aos CA and expected server name `main`. The helper
+does not use DNS, accept a caller-selected endpoint, reach an external IP or
+expose a TCP listener. This inside-Unit loopback remains available when the
+demo removes the vehicle's external connectivity.
+
 ### Renewal, failure, reboot, stop and removal behavior
 
 ```mermaid
@@ -369,15 +376,15 @@ artifact; none is an instance of `BA`.
 | Local overlay inventory | Exactly two fresh overlays with Test and Production audience roles; neither has a Cloud identity or Current Vehicle assignment |
 | Identity preflight | Different system, Node-seed, SSH, hostname/network, and first-boot identity material as applicable |
 | Software Delivery Dashboard | Both instances show `Manufactured / Awaiting provisioning`; no Cloud Unit ID exists |
-| Component inventory | Empty provider store and no functional service payload |
+| Component inventory | Empty VDP component slot and no functional service payload; OEM Component Runtime A/B working storage contains no installed VDP payload |
 | Security inventory | Helper package and non-secret preparation wiring present; no active Service authority, JWT or signing key |
 
 <a id="af-m0-fr"></a>
 ### `AF-M0-FR` — Failure containment
 
 - A digest mismatch blocks overlay creation.
-- A non-empty provider store or embedded Cloud credential rejects the factory
-  image.
+- An installed payload in the VDP component slot or an embedded Cloud
+  credential rejects the factory image.
 - Pre-populated Service authority, `AOS_SECRET`, JWT, private signer, or shared
   production verifier rejects the factory image.
 - Duplicate local identity material rejects both overlays before provisioning.
@@ -1381,7 +1388,7 @@ The repeatable audience handover and update-state presentation extension is
 accepted by [D4-026.8](../requirements/d4-decision-register.md#d4-026-8).
 The selected Unit peer, independent read-only Dashboard peer, mTLS identity,
 source readiness and telemetry-path superset are fixed by the
-[VISS Trust and Telemetry Profile 1.0.0](../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json).
+[VISS Trust and Telemetry Profile 1.1.0](../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json).
 
 <a id="af-x-obs"></a>
 ## `AF-X-OBS` — Cross-Stage Evidence Architecture
@@ -1755,7 +1762,7 @@ owning team's release decision.
 | <a id="gap-af-21"></a>`GAP-AF-21` | Tire condition model and stimulus | `T1` | Freeze the native input subset, explicit accelerated/pre-aged degradation stimulus, persistent state, condition bands, thresholds, bounded payload and hidden qualification oracle | Function Team 2 + CARLA scenario |
 | <a id="gap-af-22"></a>`GAP-AF-22` | Tire advisory contract | `T1` | Define and prove the typed KUKSA-to-VISS-to-Gateway Tire Health advisory and factual status without vehicle-motion or production-HMI authority | Platform Team + Function Team 2 + Gateway |
 | <a id="gap-af-23"></a>`GAP-AF-23` | Tire Health Cloud product | `T1` | Implement independent Tire Health backend/dashboard and offline/idempotent ingestion of bounded summaries/events | Function Team 2 |
-| <a id="gap-af-15"></a>`GAP-AF-15` | Least-privilege KUKSA Service access | all | Build and qualify the Factory Image with stock Aos IAM `enablePermissionsHandler: true`, factory-installed unmodified KUKSA, separately packaged removable `CMP-KAC`, and no pre-populated Service authority or secret; materialize the complete D4-027 fixed-resource peer-isolated bootstrap, current `AOS_SECRET`/`GetPermissions` mapping, pinned JWT profile, private volatile delivery, bounded lifetime/renewal, exact protected per-Unit signer/verifier preparation, one-sync-per-boot trustworthy time, ordinary offline continuation, fail-closed clock-discontinuity/reboot path and exact bounded/redacted process envelope; qualify cross-instance/Unit rejection and Provider-side KUKSA connectivity only as OEM-trusted platform integration, with no dynamic Provider IAM/JWT or untrusted-Provider isolation claim | Platform Team / `aos-vehicle-platform` |
+| <a id="gap-af-15"></a>`GAP-AF-15` | Least-privilege KUKSA Service access | all | Build and qualify the Factory Image with stock Aos IAM `enablePermissionsHandler: true`, factory-installed unmodified KUKSA, separately packaged removable `CMP-KAC`, and no pre-populated Service authority or secret; materialize the complete D4-027 fixed-resource peer-isolated bootstrap, current `AOS_SECRET`/`GetPermissions` mapping, pinned JWT profile, private volatile delivery, bounded lifetime/renewal, exact protected per-Unit signer/verifier preparation, minimum current-release one-sync-per-boot and pre-issue/pre-renew time gate, ordinary offline continuation and exact bounded/redacted process envelope; qualify the stronger native trustworthy-time/invalidation outcome only when migrating to the released native AosCore contract, plus cross-instance/Unit rejection and Provider-side KUKSA connectivity only as OEM-trusted platform integration, with no dynamic Provider IAM/JWT or untrusted-Provider isolation claim | Platform Team / `aos-vehicle-platform` |
 | <a id="gap-af-16"></a>`GAP-AF-16` | Native log API qualification | all | Implement D4-014 role routing and qualify exact Unit/Node/time identifiers, OEM `unit-logs` and SP1/SP2 `service-logs` permissions/ownership, create-array and verbatim lifecycle states, file/archive bounds, delete effect, online/offline/reconnect behavior, allowlisted redaction and bounded temporary removal. State that current API exposes no retention policy; make no vehicle-performance claim | Operational observability + OEM and both Function Dashboards |
 | <a id="gap-af-17"></a>`GAP-AF-17` | Software Delivery Dashboard and release authorization | all | Implement a stateless Software Delivery Dashboard with prepared candidate catalogues and D4-010.3 sign/publish delegation pre-bound to `platform-oem`, `brake-sp1` or `tire-sp2`; preserve exact artifact/metadata digests, requested permissions, target, required evidence/freshness, owning-team acceptance, active SP/OEM role, blocked reasons, final confirmation and independent Cloud re-read without browser-held credentials, caller-selected profile/path/URL, parallel state/evidence cache, blind retry or automatic approval policy | Demo solution + Platform/Function Team pipelines + AosCloud integration |
 | <a id="gap-af-19"></a>`GAP-AF-19` | Demo-run correlation and cleanup | `M1/R0` | Define current-run correlation by start time, local overlay roles and Unit IDs; reconcile persistent Unit Sets to empty at R0; assign new identities to the correct sets at the next M1; and define external-data retention/cleanup boundaries | Demo orchestration + AosCloud integration + functional teams |
@@ -1872,8 +1879,9 @@ after reviewers confirmed that:
     owner, explicit obstacle lifecycle and reset evidence, and no reverse or
     Autopilot obstacle-avoidance claim.
 13. Service Manager and Aos IAM own SOTA instance identity, `AOS_SECRET` and
-    registered permissions; the VDP broker only translates them into bounded
-    KUKSA credentials and stores no parallel identity or per-service policy.
+    registered permissions; the removable `CMP-KAC` helper only translates
+    them into bounded KUKSA credentials and stores no parallel identity or
+    per-service policy. VDP remains outside this authorization path.
 14. the Factory substrate provides one IAM configuration with
     `enablePermissionsHandler: true` in provisioning and normal modes, no
     pre-populated service permission or `AOS_SECRET`, and a non-secret

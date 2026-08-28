@@ -122,7 +122,7 @@ dependency.
 
 | Interface | Direction | Data or command | Failure behavior | Authority |
 | --- | --- | --- | --- | --- |
-| [`IF-AUTH-007`–`009`](../component-decomposition-and-interface-register.md#if-auth-007) | Service ↔ `CMP-KAC` ↔ Aos IAM | Named-resource/private-Unix-socket bootstrap, current registered permissions and atomic private-tmpfs short-lived JWT | Reject without token; no cached/static fallback; analytics never receives `AOS_SECRET` | Aos Service identity and current IAM result; mount/group/peer checks are defense in depth |
+| [`IF-AUTH-007`–`009`](../component-decomposition-and-interface-register.md#if-auth-007) | Service ↔ `CMP-KAC` ↔ Aos IAM | Named-resource/private-Unix-socket bootstrap, fixed TLS loopback `127.0.0.1:8090` native-IAM lookup, current registered permissions and atomic private-tmpfs short-lived JWT | Reject without token; no cached/static fallback, DNS/external IAM destination or KAC TCP listener; analytics never receives `AOS_SECRET` | Aos Service identity and current IAM result; mount/group/peer and fixed-loopback restrictions are defense in depth |
 | [`IF-AUTH-010`](../component-decomposition-and-interface-register.md#if-auth-010) | Platform security substrate → `CMP-KAC`/KUKSA | Permission handler, protected signing operation and public verifier preparation | Not ready; no key bytes or privilege reuse | Per-Unit platform trust |
 | [`IF-ADV-001`](../component-decomposition-and-interface-register.md#if-adv-001), [`IF-TIRE-002`](../component-decomposition-and-interface-register.md#if-tire-002), [`IF-ADV-002`–`005`](../component-decomposition-and-interface-register.md#if-adv-002) | QM services → KUKSA → VDP → VISS → Gateway | Typed Brake/Tire maintenance advisory and factual result | Fail closed at every boundary; Gateway is final authority | IAM/KUKSA scope, VDP contract, then Gateway QM policy |
 | [`IF-OBS-001`](../component-decomposition-and-interface-register.md#if-obs-001) | OEM Software Delivery / Brake / Tire Dashboard ↔ AosCloud | Role-scoped Unit-log or Service-log request/status/result/file | Exact endpoint/owner filtering, verbatim state, explicit unavailable/failed state and bounded temporary cleanup | AosCloud request and file state while retained; API exposes no retention policy |
@@ -292,7 +292,7 @@ dependency.
 - Flow: [QM advisory containment (`AF-X-QM`)](../../architecture/demo-scenario-architecture-flows.md#af-x-qm)
 - Components: `CMP-BHS`, `CMP-TIRE`, `CMP-KUKSA`, `CMP-VDP`, `CMP-VISS`, `CMP-GW-ADV`, `CMP-ENG-DASH`
 - Interfaces: `IF-ADV-001` through `IF-ADV-005` and `IF-TIRE-002`
-- Executable contract: [Typed QM Advisory Profile 1.0.1](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
+- Executable contract: [Typed QM Advisory Profile 1.0.2](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - State: D3 design-reviewed; D4-008 contract accepted, implementation and qualification open
 
 #### Acceptance criteria
@@ -534,6 +534,11 @@ quota enforcement are explicitly outside the claim.
 Version 0.4 was accepted as the current architectural requirement baseline on
 2026-08-28. It does not authorize implementation, signing, AosCloud mutation,
 VM operations, provisioning, CARLA control or data deletion.
+
+The same-day native-IAM transport correction preserves the package version and
+authority model. Cross-component qualification now proves that KAC's only
+`AF_INET` use is fixed TLS loopback `127.0.0.1:8090`, while DNS, external IP
+and any KAC TCP listener remain denied.
 
 ## Change Rules
 

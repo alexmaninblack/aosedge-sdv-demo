@@ -2,12 +2,12 @@
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "schemaVersion": 1,
   "contractId": "aosedge-demo-brake-health-advisory-policy",
-  "contractVersion": "1.0.0",
+  "contractVersion": "1.0.1",
   "lifecycleState": "ACCEPTED",
   "decision": "D4-016.4",
   "inputs": {
     "modelContractVersion": "1.0.0",
-    "qmAdvisoryContractVersion": "1.0.1",
+    "qmAdvisoryContractVersion": "1.0.2",
     "serviceVersion": "3.0.0",
     "compatibleVdpVersion": "VDP_V3"
   },

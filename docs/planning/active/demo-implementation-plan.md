@@ -351,10 +351,28 @@ handoff.
 
 ### `IMP-03` — Factory substrate, current-release security and VDP family
 
-- State: `BLOCKED`; `CR-FACTORY` 0.4, `CR-KAC` 0.8, `CR-VDP` 0.8 and
+- State: `BLOCKED`; `CR-FACTORY` 0.5, `CR-KAC` 0.11, `CR-VDP` 0.9 and
   `CR-CROSS` 0.4 were accepted on 2026-08-28 and Platform baseline
   `bdc72aba97a83c9868d454588189ef139710a6d7` was reconciled to `origin/main`.
-  The exact implementation parameters remain open.
+  `IMP-03-IAM-001` fixes OEM Factory Image ownership and the product-layer
+  build-time enablement of the native IAM Permission Handler.
+  `IMP-03-KAC-001` fixes the separate C++/Yocto/systemd helper boundary and its
+  direct native IAM v6 permission lookup without the secret-logging wrapper.
+  `IMP-03-KAC-002` fixes dedicated per-Unit PKCS#11 signer creation through
+  native provisioning, SoftHSM token/PIN separation, atomic public-verifier
+  preparation and reboot/R0 trust lifecycle.
+  `IMP-03-KAC-003` fixes the native Aos named-resource definition, private Unix
+  transport and per-Function-Team Service-bootstrap ownership boundary.
+  `IMP-03-KAC-004` corrects the sandbox for the released native IAM transport:
+  fixed TLS loopback `127.0.0.1:8090` with Aos CA/server-name verification,
+  no DNS, external IP, caller-selected endpoint or KAC TCP listener.
+  `IMP-03-KAC-005` fixes the minimum per-boot time synchronization and
+  pre-issue/pre-renew clock gate without a throw-away lifecycle controller.
+  `IMP-03-KAC-006` fixes exact runtime paths/owners/modes, private systemd PIN
+  delivery, pinned SoftHSM/OpenSSL provider/token parameters and separate
+  least-privilege KAC/verifier-preparation SELinux domains, with no automatic
+  policy widening or hardware-HSM claim.
+  The remaining exact implementation parameters remain open.
 - Repository: `aos-vehicle-platform`.
 - Scope: build the successor OEM Demo Factory Image with stock Aos IAM
   `enablePermissionsHandler: true`, no provisioned identity or pre-populated

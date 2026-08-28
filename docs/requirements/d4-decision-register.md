@@ -360,23 +360,25 @@ though the assignment and audience contract are decided.
 - Accepted: 2026-08-21
 - Owners: Vehicle Gateway / Platform Team
 - Canonical contract:
-  [VISS Trust and Telemetry Profile 1.0.0](../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
+  [VISS Trust and Telemetry Profile 1.1.0](../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
 - Accepted contract SHA-256:
-  `24484919d916ade153111fd6075d06cecdf77d0bed7cfd016c0a4163e1b8fd53`
+  `4a1a2bd804c3a49f707b5e640632bd8a0357901f59e4615c340622b043d4c12c`
 
 The accepted contract freezes:
 
 1. The private in-vehicle boundary uses VISS 3.1 over `wss`, TLS 1.2 or later,
    server verification and mutual TLS. Plain WebSocket and unauthenticated
    clients are rejected.
-2. Three authenticated peer roles exist: one selected Platform Unit,
-   a permanently read-only Engineering Telematics Dashboard and a read-only
-   qualification client. D4-005 exclusivity applies to Unit peers only; the
-   independent Engineering Dashboard may remain connected.
-3. The selected Unit is bound by exact Unit ID, Node ID, client-certificate
-   fingerprint and assignment generation. A non-selected, additional,
-   expired, revoked, unknown or mismatched Unit peer is rejected even when
-   that Unit remains Online in AosCloud.
+2. Four authenticated peer roles exist: one selected Platform Unit, its
+   purpose-bound read-only Platform Update Runtime, a permanently read-only
+   Engineering Telematics Dashboard and a read-only qualification client. The
+   two selected-Unit roles use distinct credentials and permit one connection
+   each; the independent Engineering Dashboard may remain connected.
+3. Both selected-Unit roles are bound by exact Unit ID, Node ID,
+   client-certificate fingerprint and assignment generation. A non-selected,
+   additional, expired, revoked, unknown or mismatched Unit peer is rejected
+   even when that Unit remains Online in AosCloud. The runtime role receives
+   only the ten Safe Stop paths and no advisory or general VDP authority.
 4. Each provisioned Unit has a unique client identity created only after its
    Cloud Unit/Node identity is known. Its private key is absent from the
    Factory Image, FOTA components, Git, logs and dashboards, is stored as a
@@ -422,9 +424,9 @@ Consequences:
 - Accepted: 2026-08-21
 - Owners: Platform Team / Function Team 1 / Function Team 2
 - Canonical contract:
-  [VDP Compatibility Profile 1.0.0](../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
+  [VDP Compatibility Profile 1.0.1](../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
 - Accepted contract SHA-256:
-  `4c00a3848eb2c961b048e74d3d1253bdc43e47c1467f64e62653046ba39ba12c`
+  `8e58e18e9d99a13409af6813e573cbe1c690e439ad746224426801f6b080c871`
 
 The accepted compatibility contract freezes:
 
@@ -480,9 +482,9 @@ Consequences:
 - Accepted: 2026-08-21
 - Owners: Vehicle Gateway / Platform Team / Function Team 1 / Function Team 2
 - Canonical contract:
-  [Typed QM Advisory Profile 1.0.1](../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
+  [Typed QM Advisory Profile 1.0.2](../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - Profile SHA-256:
-  `5f50d5f27693d31a9726e78d52b5a039a43f9fa4e0368cac2fc7571508487614`
+  `f7ae78148fb3b3265c8b773117126665afb1edd97a73f59db5a1f3af7c223487`
 - Request-schema SHA-256:
   `f2102fd948734a714160efb8ee09885107d58da1daabd95771dce56785149910`
 - Status-schema SHA-256:
@@ -490,9 +492,10 @@ Consequences:
 
 The accepted advisory contract freezes:
 
-Profile `1.0.1` is a metadata-only provenance revision: it replaces the
-retired `D4-009` authorization reference with `D4-027`. No advisory path,
-schema, payload, authority, timing or replay semantic changed from `1.0.0`.
+Profile `1.0.2` is a metadata-only repin to VDP Compatibility Profile 1.0.1.
+Profile `1.0.1` replaced the retired `D4-009` authorization reference with
+`D4-027`. Neither revision changed an advisory path, schema, payload,
+authority, timing or replay semantic from `1.0.0`.
 
 1. Exactly two OEM-overlay actuator paths exist:
    `Vehicle.OEM.BrakeHealth.Advisory.Request` for Brake Health v3 and
@@ -816,26 +819,31 @@ Already accepted:
     KUKSA. Reboot reconstructs the volatile verifier, Unit fingerprints differ,
     live rotation is outside the first demo, and R0 retires the key with the
     provisioned overlay.
-15. trustworthy time requires one successful `systemd-timesyncd` NTP
+15. the temporary helper requires one successful `systemd-timesyncd` NTP
     synchronization and 10 stable seconds per boot. UTC claims use
-    `CLOCK_REALTIME`; scheduling uses `CLOCK_BOOTTIME`. A boot-ID-bound anchor
-    survives helper restart only within that boot. Normal external-connectivity
-    loss does not revoke trust, while a wall/boot-clock deviation above five
-    seconds stops KUKSA, removes cooperating Service tokens and blocks issuance
-    until a new synchronization and stable window complete. Cold offline boot
+    `CLOCK_REALTIME`; scheduling uses `CLOCK_BOOTTIME`. Before every issue or
+    renewal it rejects more than five seconds of elapsed-clock deviation as
+    `TIME_UNTRUSTED`. It adds no anchor, continuous monitor or KUKSA lifecycle
+    controller; an already issued token can remain usable only until signed
+    expiry. Normal external-connectivity loss does not revoke trust, recovery
+    requires synchronized time plus a new stable window, and cold offline boot
     leaves authorization `NOT_READY` without blocking unrelated AosCore work.
 16. strict operational bounds cap frames, authority/JWT size, concurrency,
     backlog, per-peer/global rate, dependency and whole-request time, retry
     cadence and process resources. Excess input fails without trimming;
     transient retries use 1/2/4/8/16/30-second backoff with ±20% jitter and
-    never cross JWT expiry. The helper has only `AF_UNIX`, 64-MiB memory,
-    10%-CPU, 32-task and 128-descriptor envelopes, and emits only fixed
-    redacted diagnostics.
+    never cross JWT expiry. The helper has only `AF_UNIX` plus the narrow
+    `AF_INET` client exception required by the released Aos IAM public gRPC
+    endpoint: fixed TLS loopback `127.0.0.1:8090`, Aos CA trust and expected
+    server name `main`, with no DNS, caller-selected endpoint, external IP or
+    TCP listener. It retains 64-MiB memory, 10%-CPU, 32-task and
+    128-descriptor envelopes and emits only fixed redacted diagnostics.
 
 ### <a id="d4-027-1"></a>D4-027.1 Decision Record — Helper Package, Process and Startup Boundary
 
 - Decision state: `DECIDED`
 - Accepted: 2026-08-22
+- Current-release simplification accepted: 2026-08-28
 - Owners: Platform Team / Aos IAM and security owners
 
 The accepted current-release deployment boundary is:
@@ -850,8 +858,11 @@ The accepted current-release deployment boundary is:
    contains no `AOS_SECRET`, JWT, Service permission record, private key,
    shared verifier or functional data;
 3. the process runs as dedicated `aos-kac:aos-kac`, with no root fallback,
-   ambient capability or public listener. Access to the local Aos IAM client
-   endpoint and protected signer shall be granted narrowly to this identity;
+   ambient capability or public listener. Access to the released local Aos IAM
+   public gRPC endpoint is fixed to TLS loopback `127.0.0.1:8090`, trusted by
+   the Aos CA with expected server name `main`; DNS, caller configuration and
+   external IP destinations are forbidden. Access to that client endpoint and
+   the protected signer shall be granted narrowly to this identity;
    inability to do so on the pinned release blocks implementation and reopens
    this decision rather than silently broadening privilege;
 4. the unit is inactive in an unprovisioned Factory Image and uses the same
@@ -886,6 +897,7 @@ D4-027.8. D4-027 has no remaining subdecision.
 
 - Decision state: `DECIDED`
 - Accepted: 2026-08-22
+- Native-IAM transport correction accepted: 2026-08-28
 - Owners: Platform Team / Aos IAM and security owners / both Function Teams
 
 The accepted current-release local transport and credential-delivery boundary
@@ -1092,7 +1104,7 @@ upstream KUKSA.
 - Machine-readable contract:
   [`kuksa-auth-compat.v1.json`](../../contracts/kuksa-current-demo-authorization/kuksa-auth-compat.v1.json)
 
-The accepted current-release trustworthy-time boundary is:
+The accepted minimum current-release trustworthy-time boundary is:
 
 1. each VM boot requires one successful `systemd-timesyncd` NTP
    synchronization followed by a 10-second stable window before `CMP-KAC`
@@ -1100,36 +1112,37 @@ The accepted current-release trustworthy-time boundary is:
 2. JWT `iat` and `exp` use UTC `CLOCK_REALTIME`. Renewal, retry and stability
    scheduling use `CLOCK_BOOTTIME` and therefore do not rely on mutable wall
    time;
-3. after the stable window, the helper atomically maintains a non-secret,
-   current-boot-ID-bound anchor at
-   `/run/aos-kuksa-auth-compat/time-anchor.json`, owned by
-   `aos-kac:aos-kac` and mode `0600`. The anchor may restore helper state after
-   process restart in the same boot, but `/run` deletion and boot-ID mismatch
-   forbid reuse after VM reboot;
+3. immediately before every issue or renewal, the helper compares elapsed
+   `CLOCK_REALTIME` with elapsed `CLOCK_BOOTTIME`. A deviation greater than
+   five seconds in either direction rejects that operation as
+   `TIME_UNTRUSTED`;
 4. loss of Unit external connectivity after trust is established does not by
    itself revoke time trust and does not add a Cloud, backend or continuous-NTP
    dependency to local renewal;
-5. the helper compares elapsed `CLOCK_REALTIME` with elapsed
-   `CLOCK_BOOTTIME`. A deviation greater than five seconds in either direction
-   is a clock discontinuity and makes the authorization domain
-   `TIME_UNTRUSTED`;
-6. on discontinuity, no issue or renewal succeeds, KUKSA is stopped through
-   fail-closed systemd wiring, and cooperating Service bootstraps disconnect
-   and delete their private JWTs. Unrelated AosCore services are not stopped;
-7. recovery requires a new successful NTP synchronization and another
-   10-second stable window, followed by KUKSA restart and fresh JWT issuance;
-   no old bootstrap token is restored; and
-8. a VM that cold-boots without external time synchronization keeps KUKSA
+5. the temporary helper adds no separate time-guard service, anchor file,
+   continuous clock monitor, KUKSA stop/restart controller or instant token
+   revocation. An already issued self-contained JWT may remain usable only
+   until its signed expiry, consistently with D4-027.5;
+6. after an untrusted-time rejection, new issue and renewal remain blocked
+   until synchronized time and another 10-second stable window are observed;
+7. a VM that cold-boots without external time synchronization keeps KUKSA
    authorization `NOT_READY`. The first demo does not claim offline cold-boot
-   authorization continuity.
+   authorization continuity; and
+8. the released native AosCore solution must be requalified for trustworthy
+   time, bounded credential invalidation and recovery before `CMP-KAC` is
+   removed. This record preserves the target security outcome without
+   inventing the future native mechanism.
 
-This gate is required because pinned KUKSA validates JWT epoch claims against
-the VM wall clock; KUKSA has no independent trusted-time source.
+This minimum gate is required because pinned KUKSA validates JWT epoch claims
+against the VM wall clock. The deliberately omitted production-strength time
+lifecycle belongs to the future native platform contract, not to this
+temporary compatibility helper.
 
 ### <a id="d4-027-8"></a>D4-027.8 Decision Record — Operational Bounds, Retry and Redaction
 
 - Decision state: `DECIDED`
 - Accepted: 2026-08-22
+- Native-IAM transport correction accepted: 2026-08-28
 - Owners: Platform Team / both Function Teams
 - Machine-readable contract:
   [`kuksa-auth-compat.v1.json`](../../contracts/kuksa-current-demo-authorization/kuksa-auth-compat.v1.json)
@@ -1155,10 +1168,14 @@ The accepted current-release operational envelope is:
    jitter. With an existing JWT it stops at signed expiry. Without a JWT it may
    continue the capped retry while the Service remains `NOT_READY`;
 6. systemd limits the helper to 64 MiB memory, 10% CPU, 32 tasks and 128 file
-   descriptors. It has no ambient capability or TCP/IP family, uses only
-   `AF_UNIX`, `NoNewPrivileges`, strict protected system content and private
-   temporary storage. Limit failure closes the helper without stopping
-   unrelated AosCore services;
+   descriptors. It has no ambient capability, uses only `AF_UNIX` and
+   `AF_INET`, `NoNewPrivileges`, strict protected system content and private
+   temporary storage. `AF_INET` is allowed solely for the fixed outbound TLS
+   client to the released native Aos IAM public gRPC endpoint at
+   `127.0.0.1:8090`; trust comes from the Aos CA and certificate verification
+   expects server name `main`. The helper has no TCP listener, DNS lookup,
+   caller-configurable endpoint or external IP access. Limit or network-policy
+   failure closes the helper without stopping unrelated AosCore services;
 7. diagnostic output may contain only fixed event code, KAC-generated
    correlation ID, outcome and retryability. It may not contain `AOS_SECRET`,
    JWT, permission content, VSS path, claims, signing input, private-key
@@ -1167,6 +1184,14 @@ The accepted current-release operational envelope is:
 8. these numbers are the accepted first-demo envelope. Measurement may prove
    a reviewed change necessary, but implementation shall not widen them
    silently or truncate authority to fit.
+
+The 2026-08-28 transport correction reconciles this envelope with the pinned
+AosCore implementation, whose `IAMPublicPermissionsService/GetPermissions`
+interface is a TLS-capable gRPC listener on port `8090`. Replacing it with a
+Unix-domain socket would require an invasive Aos IAM/Service Manager change.
+The fixed loopback client exception therefore preserves native IAM authority
+without creating a public KAC endpoint or adding a dependency on vehicle
+external connectivity.
 
 D4-027 is now complete and authorizes no source, image, Cloud or Unit mutation
 by itself. Implementation remains governed by the active change plan and the
@@ -3443,6 +3468,15 @@ bounded sanitized result and exact deletion, with R0 fallback cleanup. It adds
 no ELK path, second archive, arbitrary selector, raw Cloud response or
 unrestricted log output.
 
+VDP is a trusted native platform component rather than a quota-managed SOTA
+tenant. Its diagnostics originate only from standard output/error captured by
+the native systemd journal; VDP owns no log file, log database or archive. The
+Platform action uses the fixed label `Platform Logs` and delegates only the
+accepted Unit/system/VDP request scope to AosEdge/AosCloud delivery. VDP
+Details show neither a Service quota nor a substitute component-resource or
+storage table. The persistent slots/state/credentials tree belongs to OEM
+Component Runtime A/B working storage, not to VDP application state.
+
 This Level-B decision closes Interaction Specification Section 6 and changes
 no HLA component ownership or authoritative source. It authorizes no UI
 implementation, CPU load, log request, Cloud mutation or vehicle operation.
@@ -3785,7 +3819,7 @@ implementation work. They do not block the current D4 sequence.
 | --- | --- | --- | --- |
 | <a id="d4-x01"></a>`D4-X01` — Native Service-to-VDP admission | AosCloud-native rejection of a SOTA service against a missing/incompatible FOTA Vehicle Data Platform Component version | Official implementing release plus API and disposable qualification evidence | `DEFERRED` |
 | <a id="d4-x02"></a>`D4-X02` — Native pre-transfer permission upper bound | Cloud-native rejection when service metadata requests KUKSA access outside an independently configured OEM upper bound | Official platform contract and implementing release; no project admission proxy | `DEFERRED` |
-| <a id="d4-x03"></a>`D4-X03` — Production provider store | Production vehicle storage backend replacing the explicitly demo-only nested ext4 store | OEM production architecture programme | `DEFERRED` |
+| <a id="d4-x03"></a>`D4-X03` — Production OEM Component Runtime storage | Production runtime-storage backend replacing the explicitly demo-only nested ext4 A/B working storage; this is not VDP application or log storage | OEM production architecture programme | `DEFERRED` |
 | <a id="d4-x04"></a>`D4-X04` — Native AosCore Service JWT delivery | Replace and delete `CMP-KAC` only after a released native AosCore contract provides equivalent active-instance authorization, private delivery, renewal, stop/removal/reboot/offline behavior and passes the same negative suite | Official implementing release, inspected interface and disposable migration qualification | `DEFERRED` |
 
 ## Source-Package Coverage

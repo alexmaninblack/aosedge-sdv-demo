@@ -3,7 +3,7 @@
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "schemaVersion": 1,
   "contractId": "aosedge-demo-platform-fota-safe-stop",
-  "contractVersion": "1.0.1",
+  "contractVersion": "1.1.0",
   "lifecycleState": "DESIGN_ACCEPTED_IMPLEMENTATION_OPEN",
   "architectureDecision": "ADR-0014",
   "scope": {
@@ -24,6 +24,7 @@
   },
   "evidence": {
     "requiredPaths": [
+      "Vehicle.CarlaSimulation.FrameId",
       "Vehicle.CarlaSimulation.Control.ActiveMode",
       "Vehicle.CarlaSimulation.Control.TransitionState",
       "Vehicle.CarlaSimulation.Control.Generation",
@@ -34,8 +35,10 @@
       "Vehicle.Chassis.Accelerator.PedalPosition",
       "Vehicle.Chassis.Brake.PedalPosition"
     ],
-    "transportBoundary": "VEHICLE_STATE_PROVIDER_INTERFACE_WITH_GATEWAY_VISS_CURRENT_DEMO_ADAPTER",
-    "runtimeReadRole": "PLATFORM_UPDATE_RUNTIME_READ_ONLY",
+    "transportBoundary": "VISS_3_1_MTLS_VIA_VEHICLE_STATE_PROVIDER_ADAPTER",
+    "runtimeReadRole": "PLATFORM_UPDATE_RUNTIME",
+    "purposeBoundCredentialRequired": true,
+    "distinctMonotonicFrameRequired": true,
     "currentVehicleOnly": true,
     "selectedVehicleAssignmentRequired": true
   },
@@ -75,6 +78,18 @@
     "firstInstallBehaviorWhileWaiting": "EMPTY_SLOT_REMAINS_EMPTY",
     "replacementBehaviorWhileWaiting": "PREVIOUS_HEALTHY_RELEASE_REMAINS_ACTIVE",
     "removalBehaviorWhileWaiting": "CURRENT_HEALTHY_RELEASE_REMAINS_ACTIVE"
+  },
+  "runtimeImplementation": {
+    "vehicleStateInterface": "VehicleStateProviderItf",
+    "transportAdapter": "VISS_3_1_MTLS_PLATFORM_UPDATE_RUNTIME_ROLE",
+    "policyEvaluator": "PURE_SAFE_STOP_POLICY",
+    "waitingExecution": "ASYNCHRONOUS_BOUNDED_WORKER",
+    "runtimeMutexHeldWhileWaiting": false,
+    "startInstanceWaitingResult": "DURABLE_WAIT_THEN_RETURN_ACTIVATING",
+    "singleWorker": true,
+    "stopCancellation": "BOUNDED_CANCEL_AND_JOIN",
+    "persistedContent": "TRANSACTION_METADATA_ONLY",
+    "persistedSamplesAllowed": false
   },
   "recovery": {
     "reusePersistedSafeStopEvidence": false,

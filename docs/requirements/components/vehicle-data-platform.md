@@ -5,7 +5,7 @@
 
 - Status: D3 design-reviewed
 - Package: [`CR-VDP`](../component-decomposition-and-interface-register.md#cr-vdp)
-- Version: 0.8
+- Version: 0.9
 - Prepared: 2026-08-21
 - Accepted: 2026-08-28
 - Owner: Platform Team / independent component FOTA
@@ -15,7 +15,7 @@
 - System-requirements input: [System Requirements 2.0](../system-requirements-and-traceability.md)
 - Component-register input: [Component Register 2.0](../component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md), [ADR 0012](../../architecture/decisions/0012-authorize-running-workloads-not-software-artifacts.md) and [ADR 0013](../../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md)
-- Previous accepted package: Version 0.7, design-reviewed on 2026-08-19
+- Previous accepted package: Version 0.8, design-reviewed on 2026-08-28
 - Accepted D4 input: [D4-002 Vehicle Hardware Capability Profile](../d4-decision-register.md#d4-002)
 - Accepted D4 VISS input: [D4-006 VISS Trust and Telemetry Profile](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
 - Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
@@ -123,7 +123,7 @@ obligations and shall not be replaced by mocks in acceptance evidence.
 | [Backward-compatible v2 (`REQ-VDP-003`)](#req-vdp-003) | Add Brake Health inputs without breaking v1 consumers | Unit, Contract, Integration, End-to-end | D3 design-reviewed | `TARGET` |
 | [Explicit degraded state (`REQ-VDP-004`)](#req-vdp-004) | Never substitute fabricated normal values | Unit, Component, Integration, End-to-end | D3 design-reviewed | `CURRENT / EXTEND` |
 | [Defense-in-depth outbound v3 advisory (`REQ-VDP-005`)](#req-vdp-005) | Permit only typed QM Brake/Tire advisories; Gateway remains authoritative | Unit, Contract, Integration, End-to-end | D3 design-reviewed | `TARGET` |
-| [Readiness and resource bounds (`REQ-VDP-009`)](#req-vdp-009) | Fail closed and remain bounded under dependency/resource failures | Unit, Component, Integration, End-to-end | D3 design-reviewed | `PARTIAL` |
+| [Readiness and bounded operation (`REQ-VDP-009`)](#req-vdp-009) | Fail closed on inconsistent dependencies without adding a tenant quota or VDP-owned state/log store | Unit, Component, Integration, End-to-end | D3 design-reviewed | `PARTIAL` |
 | [Compatibility and dependent-first recovery (`REQ-VDP-010`)](#req-vdp-010) | Remove dependent Services first, then use pre-Apply revert or post-Apply forward repair | Unit, Contract, Integration, End-to-end | D4-015 design accepted; live qualification open | `TARGET / PARTIAL` |
 | [Trusted OEM Provider integration (`REQ-VDP-011`)](#req-vdp-011) | Qualify the Provider as an OEM platform integration without creating service authority | Contract, Integration, End-to-end | D3 design-reviewed | `PARTIAL` |
 
@@ -148,7 +148,7 @@ point.
 - Components: [Vehicle Data Platform (`CMP-VDP`)](../component-decomposition-and-interface-register.md#cmp-vdp), [AosCloud (`CMP-AOS-CLOUD`)](../component-decomposition-and-interface-register.md#cmp-aos-cloud), [AosCore (`CMP-AOS-CORE`)](../component-decomposition-and-interface-register.md#cmp-aos-core) and [Empty-Slot Runtime (`CMP-RUNTIME`)](../component-decomposition-and-interface-register.md#cmp-runtime)
 - Interfaces: [platform FOTA (`IF-LC-001`)](../component-decomposition-and-interface-register.md#if-lc-001), [Platform Team approval (`IF-LC-008`)](../component-decomposition-and-interface-register.md#if-lc-008), [runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006) and [Platform-update vehicle state (`IF-VEH-007`)](../component-decomposition-and-interface-register.md#if-veh-007)
 - Verification: unit, contract, integration and end-to-end
-- Executable contract: [Platform FOTA Safe Stop 1.0.1](../../../contracts/platform-fota-safe-stop/platform-fota-safe-stop-profile.v1.json)
+- Executable contract: [Platform FOTA Safe Stop 1.1.0](../../../contracts/platform-fota-safe-stop/platform-fota-safe-stop-profile.v1.json)
 - Required evidence: exact artifact/metadata digests, approval basis, target, runtime type, accepted Validation result, identical Production bytes, current Gateway Safe Stop evidence, runtime waiting/apply reasons and AosCore readiness sequence on both Units
 - Requirement state: D3 design-reviewed
 
@@ -170,8 +170,8 @@ No service shall see CARLA-only qualification or demo-visualization truth.
 - Interfaces: [VISS input (`IF-VEH-005`)](../component-decomposition-and-interface-register.md#if-veh-005) and [KUKSA publication (`IF-DATA-001`)](../component-decomposition-and-interface-register.md#if-data-001)
 - Verification: unit, contract, integration and end-to-end
 - Required evidence: v1 manifest and fixture digest, positive/negative publication results and explicit quality/unavailable-state evidence
-- Executable input contract: [VISS Trust and Telemetry Profile 1.0.0](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
-- Executable output contract: [VDP Compatibility Profile 1.0.0](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
+- Executable input contract: [VISS Trust and Telemetry Profile 1.1.0](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
+- Executable output contract: [VDP Compatibility Profile 1.0.1](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
 - Requirement state: D3 design-reviewed; D4-002, D4-006 and the exact D4-007 v1 subset accepted
 
 <a id="req-vdp-003"></a>
@@ -187,7 +187,7 @@ and preserves the behavior of every supported v1 consumer.
 - Interfaces: [VISS input (`IF-VEH-005`)](../component-decomposition-and-interface-register.md#if-veh-005), [KUKSA publication (`IF-DATA-001`)](../component-decomposition-and-interface-register.md#if-data-001) and [Brake subscription (`IF-DATA-002`)](../component-decomposition-and-interface-register.md#if-data-002)
 - Verification: unit, contract, integration and end-to-end
 - Required evidence: v1/v2 compatibility report, unchanged v1 fixtures and live v1 consumer operation on v2
-- Executable output contract: [VDP Compatibility Profile 1.0.0](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
+- Executable output contract: [VDP Compatibility Profile 1.0.1](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
 - Requirement state: D3 design-reviewed; D4-007 staged subset accepted
 
 <a id="req-vdp-004"></a>
@@ -229,8 +229,8 @@ enforces the final deny-by-default QM-channel policy.
 - Interfaces: [KUKSA advisory target (`IF-ADV-002`)](../component-decomposition-and-interface-register.md#if-adv-002), [outbound VISS Set (`IF-ADV-003`)](../component-decomposition-and-interface-register.md#if-adv-003) and [Gateway status (`IF-ADV-005`)](../component-decomposition-and-interface-register.md#if-adv-005)
 - Verification: unit, contract, integration and end-to-end
 - Required evidence: complete allow/deny matrix, correlated VISS/Gateway status and proof of independent authoritative Gateway rejection
-- Executable compatibility contract: [VDP Compatibility Profile 1.0.0](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
-- Executable advisory contract: [Typed QM Advisory Profile 1.0.1](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
+- Executable compatibility contract: [VDP Compatibility Profile 1.0.1](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
+- Executable advisory contract: [Typed QM Advisory Profile 1.0.2](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - Requirement state: D3 design-reviewed; D4-007 graph and D4-008 advisory contract accepted
 
 <a id="req-vdp-006"></a>
@@ -261,26 +261,38 @@ service and Service JWTs cannot grant Provider authority.
 - Historical parent: [`SYS-SEC-005`](../system-requirements-and-traceability.md#sys-sec-005)
 
 <a id="req-vdp-009"></a>
-### Readiness and resource bounds
+### Readiness, bounded operation and native logs
 
 The component shall keep process health separate from vehicle-data readiness
 and remain unready or fail closed when its selected-Unit VISS identity, source,
-assignment generation, KUKSA, trusted Provider connection, contract or storage
-dependencies are missing, stale or inconsistent. Source
+assignment generation, KUKSA, trusted Provider connection, contract or active
+runtime state is missing, stale or inconsistent. Source
 disconnect/staleness shall make the selected published subset atomically
 `NotAvailable`, and recovery shall require the complete valid D4-006 snapshot.
-CPU, memory, file/process count, storage, reconnect, queue and log volume
-shall be bounded, and logs shall contain only structured allowlisted factual
-events such as provider start/readiness, VISS/KUKSA connection transitions and
-typed advisory validation/result. Credentials, tokens, certificates, VIN,
-raw protocol frames and raw/high-rate telemetry shall never be logged.
+VDP is a trusted OEM platform component rather than an Aos SOTA tenant: it
+shall have no Service CPU/RAM quota, substitute resource manager or
+component-resource table. Its implementation shall nevertheless use fixed
+process/connection/endpoint topology, current-state rather than telemetry
+history, and bounded reconnect/backoff, queues, files and diagnostics without
+unbounded growth. It shall persist no application telemetry or analytics
+state. The OEM Component Runtime owns its A/B payload, transaction and private
+credential working storage.
+
+VDP diagnostics shall use standard output/error under its systemd unit and the
+native local system journal. Authorized remote viewing shall use only the
+existing AosEdge/AosCloud log-request and delivery path. VDP and the Demo UI
+shall create no separate log file, database, archive or retention policy. Logs
+shall contain only structured allowlisted factual events such as provider
+start/readiness, VISS/KUKSA connection transitions and typed advisory
+validation/result. Credentials, tokens, certificates, VIN, raw protocol
+frames and raw/high-rate telemetry shall never be logged.
 
 - Parents: [`SYS-SEC-003`](../system-requirements-and-traceability.md#sys-sec-003), [`SYS-OBS-003`](../system-requirements-and-traceability.md#sys-obs-003)
 - Flows: [`AF-G0-FR`](../../architecture/demo-scenario-architecture-flows.md#af-g0-fr), [`AF-X-OBS`](../../architecture/demo-scenario-architecture-flows.md#af-x-obs)
 - Components: [Vehicle Data Platform (`CMP-VDP`)](../component-decomposition-and-interface-register.md#cmp-vdp), [KUKSA (`CMP-KUKSA`)](../component-decomposition-and-interface-register.md#cmp-kuksa) and [AosCore (`CMP-AOS-CORE`)](../component-decomposition-and-interface-register.md#cmp-aos-core)
 - Interfaces: [VISS input (`IF-VEH-005`)](../component-decomposition-and-interface-register.md#if-veh-005), [KUKSA publication (`IF-DATA-001`)](../component-decomposition-and-interface-register.md#if-data-001) and [runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006)
 - Verification: unit, component, integration and end-to-end
-- Required evidence: bounded resource and retry metrics, readiness transitions, redacted native logs and dependency fault/recovery results
+- Required evidence: fixed-topology/bounded-growth and retry qualification, readiness transitions, local-journal generation plus native platform log-delivery evidence, absence of a VDP application/log store and dependency fault/recovery results
 - Requirement state: D3 design-reviewed; D4-006 source-readiness contract accepted
 
 <a id="req-vdp-010"></a>
@@ -303,7 +315,7 @@ selection are not claimed.
 - Interfaces: [platform FOTA (`IF-LC-001`)](../component-decomposition-and-interface-register.md#if-lc-001) and [runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006)
 - Verification: unit, contract, integration and end-to-end
 - Required evidence: machine-readable compatibility range, dependent-Service removal and absence, pre-Apply revert, post-Apply forward-repair identity, VU qualification, blocked PU on VU failure, safe Service reassignment and unrelated-service continuity
-- Executable compatibility contract: [VDP Compatibility Profile 1.0.0](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
+- Executable compatibility contract: [VDP Compatibility Profile 1.0.1](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
 - Requirement state: D4-007 compatibility identity/ranges and D4-015 recovery design accepted; live recovery matrix remains open
 
 <a id="req-vdp-011"></a>
@@ -339,7 +351,7 @@ requirement semantics.
 | [`REQ-VDP-003`](#req-vdp-003) | Every v1 fixture and consumer remains valid after the accepted v2 Brake input subset is added | Duplicate, incompatible or semantically changed v1 definitions fail compatibility validation | A failed v2 candidate preserves the accepted v1 release and consumer operation |
 | [`REQ-VDP-004`](#req-vdp-004) | Valid source data preserves source time and produces the corresponding quality state | Future, stale, malformed, out-of-range or out-of-order input cannot appear as a normal value | Disconnect clears or marks affected state by contract; reconnect resumes only after valid fresh input |
 | [`REQ-VDP-005`](#req-vdp-005) | An authorized, fresh, typed Brake or Tire advisory maps to exactly one narrow VISS Set request with correlation | Wrong caller/path/type/value, arbitrary text/VSS, replay, rate excess and all motion/safety commands are rejected with no Set side effect | VISS/Gateway rejection is reported factually; Gateway independently denies requests outside its own QM-channel policy |
-| [`REQ-VDP-009`](#req-vdp-009) | All mandatory dependencies and resource limits produce ready state and bounded normal operation | Queue, reconnect, file/process, storage or log limits reject or degrade work without unbounded growth | Any inconsistent mandatory dependency produces fail-closed unready state; bounded recovery is factual and secret-free |
+| [`REQ-VDP-009`](#req-vdp-009) | All mandatory dependencies produce ready state; fixed topology, current-state processing and bounded retry remain stable without a tenant quota | Unbounded queue/history/log creation, a VDP-owned application/log store or bypass of native log delivery fails qualification | Any inconsistent mandatory dependency produces fail-closed unready state; bounded recovery and platform-delivered logs remain factual and secret-free |
 | [`REQ-VDP-010`](#req-vdp-010) | Supported services remain compatible across the declared contract range and identical accepted bytes promote | Unsupported service/component combinations are detected before a destructive transition | Interruption preserves the prior slot; incompatible dependents stop or roll back before VDP while unrelated services remain unchanged |
 | [`REQ-VDP-011`](#req-vdp-011) | The exact trusted OEM Provider/configuration publishes and consumes only the accepted VDP contract on both Unit roles | A SOTA Service JWT/bootstrap resource cannot be reused as Provider authority; out-of-contract Provider behavior fails qualification | Missing or inconsistent trusted Provider connection keeps the VDP unready; no dynamic Provider IAM/JWT fallback is introduced |
 
@@ -350,7 +362,7 @@ requirement semantics.
 | <a id="ut-vdp-001"></a>`UT-VDP-001` — Artifact and contract identity | `REQ-VDP-001`, `REQ-VDP-002`, `REQ-VDP-003`, `REQ-VDP-010` | Exact version/digest/runtime type, v1-v3 schema compatibility, wrong target and forbidden rebuild inputs |
 | <a id="ut-vdp-002"></a>`UT-VDP-002` — Signal quality state machine | `REQ-VDP-002`, `REQ-VDP-004` | Valid/invalid/range/stale/disconnect/reconnect transitions, source time and no fabricated value |
 | <a id="ut-vdp-003"></a>`UT-VDP-003` — Defense-in-depth advisory policy | `REQ-VDP-005` | Each accepted Brake/Tire request plus unknown caller/path/type/value, stale/replay/rate/correlation and vehicle-motion/safety negatives; prove Gateway still enforces independently |
-| <a id="ut-vdp-007"></a>`UT-VDP-007` — Readiness and recovery | `REQ-VDP-004`, `REQ-VDP-009`, `REQ-VDP-010` | Dependency loss/recovery, bounded reconnect/resources, update interruption and previous-slot preservation |
+| <a id="ut-vdp-007"></a>`UT-VDP-007` — Readiness and recovery | `REQ-VDP-004`, `REQ-VDP-009`, `REQ-VDP-010` | Dependency loss/recovery, bounded reconnect/current-state operation, native-log redaction, no application/log store, update interruption and previous-slot preservation |
 | <a id="ut-vdp-008"></a>`UT-VDP-008` — Trusted Provider contract | `REQ-VDP-011` | Exact Provider/configuration identity, accepted data/advisory paths, no Service JWT/bootstrap dependency and fail-closed missing/inconsistent connection |
 
 Retired obligations keep their anchors for traceability:
@@ -375,7 +387,7 @@ required integration evidence.
 | [`REQ-VDP-003`](#req-vdp-003) | [`UT-VDP-001`](#ut-vdp-001) | v2 provider output | v1/v2 compatibility suite | v1 consumer on v2 component | G3 compatibility evidence |
 | [`REQ-VDP-004`](#req-vdp-004) | [`UT-VDP-002`](#ut-vdp-002), [`UT-VDP-007`](#ut-vdp-007) | Quality/readiness state | Quality and freshness fixtures | VISS loss/recovery | Offline/degraded evidence |
 | [`REQ-VDP-005`](#req-vdp-005) | [`UT-VDP-003`](#ut-vdp-003) | Outbound adapter status | Typed advisory negative matrix | KUKSA-to-Gateway round trip | G4/T1 advisory evidence |
-| [`REQ-VDP-009`](#req-vdp-009) | [`UT-VDP-002`](#ut-vdp-002), [`UT-VDP-007`](#ut-vdp-007) | Resource/readiness metrics | Limits and state schema | Dependency/resource fault injection | Bounded offline/recovery evidence |
+| [`REQ-VDP-009`](#req-vdp-009) | [`UT-VDP-002`](#ut-vdp-002), [`UT-VDP-007`](#ut-vdp-007) | Readiness and fixed-topology inspection | State/logging/no-store contract | Dependency fault and native-log delivery | Bounded offline/recovery evidence without a VDP quota claim |
 | [`REQ-VDP-010`](#req-vdp-010) | [`UT-VDP-001`](#ut-vdp-001), [`UT-VDP-007`](#ut-vdp-007) | Update/recovery state | Compatibility, pre-Apply revert and forward-repair fixtures | Dependent-Service removal, VU repair and reassignment | G3 failure/recovery and promotion |
 | [`REQ-VDP-011`](#req-vdp-011) | [`UT-VDP-008`](#ut-vdp-008) | Provider readiness and configuration identity | VDP data/advisory contract | Real Provider-to-KUKSA connection on both Unit roles | G1-G4/T1 publication continuity under the declared trust assumption |
 
@@ -386,10 +398,10 @@ required integration evidence.
 | QM containment | [`REQ-VDP-005`](#req-vdp-005) | Defense-in-depth typed advisory validation; no motion or safety authority; Gateway remains final authority | Complete unit/contract negative matrix plus Gateway integration |
 | Security boundary | [`REQ-VDP-005`](#req-vdp-005), [`REQ-VDP-011`](#req-vdp-011) | Trusted OEM Provider integration is separated from SOTA-service authorization; Gateway remains final QM write authority | Contract, integration and explicit trust-assumption review |
 | Privacy and redaction | [`REQ-VDP-009`](#req-vdp-009), [`REQ-VDP-011`](#req-vdp-011) | No Provider connection material or service JWT/bootstrap material in source, artifacts, commands or logs | Repository/image scan and negative log tests |
-| Resource bounds | [`REQ-VDP-009`](#req-vdp-009) | Bounded CPU, memory, queues, reconnect, storage and log volume | Component metrics and fault injection |
+| Operational boundedness | [`REQ-VDP-009`](#req-vdp-009) | No tenant quota; fixed topology, current-state processing, bounded retry/queues and no VDP-owned application or log store | Component soak/fault evidence and native-log inspection |
 | Timing and freshness | [`REQ-VDP-004`](#req-vdp-004), [`REQ-VDP-005`](#req-vdp-005) | Source-time preservation plus advisory freshness/replay limits | Deterministic-clock unit cases and live timing evidence |
 | Offline and recovery | [`REQ-VDP-004`](#req-vdp-004), [`REQ-VDP-009`](#req-vdp-009), [`REQ-VDP-010`](#req-vdp-010) | Explicit degraded state, fail-closed dependencies and previous-slot recovery | Unit, component, integration and end-to-end fault cases |
-| Observability | [`REQ-VDP-005`](#req-vdp-005), [`REQ-VDP-009`](#req-vdp-009) | Factual accepted/rejected/readiness state through native logs and agreed status contracts | Native Aos log retrieval and dashboard evidence |
+| Observability | [`REQ-VDP-005`](#req-vdp-005), [`REQ-VDP-009`](#req-vdp-009) | Factual accepted/rejected/readiness state enters the system journal and is retrieved only through native AosEdge log delivery | Local journal plus native AosCloud request/delivery and dashboard evidence; no second archive |
 
 ## D3 Review Closure and Product Acceptance
 
@@ -397,8 +409,10 @@ Version 0.7 and its ten requirement obligations were design-reviewed on
 2026-08-19. Version 0.8 was design-reviewed on 2026-08-28. It moves Service
 authorization and KUKSA trust out of VDP, retires dynamic Provider IAM/JWT for
 the first demo and adds the trusted OEM Provider integration obligation
-`REQ-VDP-011`. Version 0.8 replaces Version 0.7 as the current architectural
-requirement baseline.
+`REQ-VDP-011`. Version 0.9, accepted on 2026-08-28, clarifies native journal
+and AosEdge log delivery, removes a false tenant-quota expectation and assigns
+A/B working storage to the OEM Component Runtime rather than to VDP. Version
+0.9 replaces Version 0.8 as the current architectural requirement baseline.
 
 Product acceptance remains open until the gates below are resolved, D4
 contracts are executable, required unit/component/contract/integration tests

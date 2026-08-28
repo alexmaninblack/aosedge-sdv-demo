@@ -3,12 +3,12 @@
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "schemaVersion": 1,
   "contractId": "aosedge-demo-vdp-compatibility",
-  "contractVersion": "1.0.0",
+  "contractVersion": "1.0.1",
   "decision": "D4-007",
   "sourceProfile": {
     "contractId": "aosedge-demo-viss-trust-telemetry",
-    "contractVersion": "1.0.0",
-    "sha256": "24484919d916ade153111fd6075d06cecdf77d0bed7cfd016c0a4163e1b8fd53"
+    "contractVersion": "1.1.0",
+    "sha256": "4a1a2bd804c3a49f707b5e640632bd8a0357901f59e4615c340622b043d4c12c"
   },
   "componentVersions": [
     {

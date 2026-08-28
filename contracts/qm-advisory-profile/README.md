@@ -8,9 +8,10 @@ This directory is the canonical cross-component contract for
 the two non-safety QM maintenance-advisory paths, schema-bound Request/Status
 envelopes, authority, freshness, replay/rate limits and clear/expiry behavior.
 
-- [accepted profile 1.0.1](qm-advisory-profile.v1.json) — metadata-only
-  provenance update from retired `D4-009` to current-release `D4-027`; the
-  advisory wire contract and authority semantics are unchanged
+- [accepted profile 1.0.2](qm-advisory-profile.v1.json) — metadata-only
+  repin to VDP Compatibility Profile 1.0.1. Profile 1.0.1 replaced the
+  retired `D4-009` authorization reference with current-release `D4-027`;
+  neither revision changed advisory wire or authority semantics
 - [Request schema](qm-advisory-request.schema.json)
 - [Gateway Status schema](qm-advisory-status.schema.json)
 

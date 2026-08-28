@@ -4,10 +4,11 @@
 # Brake Health v3 Advisory Policy
 
 - Decision: D4-016.4 accepted 2026-08-23
-- Contract version: 1.0.0
+- Contract version: 1.0.1 (dependency-only repin to Typed QM Advisory 1.0.2;
+  Brake Health policy semantics are unchanged)
 - Reuses: [Typed QM Advisory Profile](../qm-advisory-profile/README.md)
 - Accepted policy SHA-256:
-  `1fb25510f60e01a1a498a00386d33de4c2eb659a0ee3db3be41928076bd7dca1`
+  `13216b51647525d48b83eb79bd47444ccb392d1a51a7ffd18b593d4c91f52467`
 
 This accepted policy binds the accepted synthetic Brake Health assessment to the
 already accepted D4-008 Brake advisory endpoint. It adds no new actuator,

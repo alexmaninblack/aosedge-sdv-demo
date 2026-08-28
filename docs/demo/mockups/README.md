@@ -260,6 +260,13 @@ authoritative status recheck, sanitized bounded result and exact deletion use
 native AosCloud delivery without ELK, a second archive, arbitrary selectors or
 unrestricted raw output.
 
+The Platform perspective labels this secondary action `Platform Logs`. VDP
+diagnostics originate in standard output/error captured by the native systemd
+journal and are requested only through AosEdge/AosCloud delivery. VDP and the
+Demo UI own no log store or second archive. VDP Details also contain no
+application-store presentation: the slots/state/credentials filesystem is OEM
+Component Runtime A/B working storage and remains an implementation detail.
+
 The complete contract is fixed by
 [Interaction Specification 2.5, Section 6](aosedge-demo-interaction-specification.md#6-details-modal-and-disclosed-information)
 and [D4-026.11](../../requirements/d4-decision-register.md#d4-026-11).

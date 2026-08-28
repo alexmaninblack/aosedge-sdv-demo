@@ -44,9 +44,13 @@ has fresh, stable and complete Safe Stop evidence from the Vehicle Gateway.
 ### Use a platform-owned vehicle-state boundary
 
 The Vehicle Gateway shall expose the accepted read-only control-state
-projection and factual vehicle values. A runtime-internal
-`VehicleStateProvider` shall isolate transport and demo-specific integration
-from the lifecycle state machine. The runtime shall not depend on the VDP
+projection and factual vehicle values. A distinct purpose-bound per-Unit
+`PLATFORM_UPDATE_RUNTIME` mTLS role shall permit one connection and only the
+ten Safe Stop paths, using a credential separate from the VDP peer and bound
+to the same selected Unit and assignment generation. A runtime-internal
+`VehicleStateProviderItf` with a VISS 3.1 transport adapter shall isolate
+transport and demo-specific integration from the pure lifecycle policy. The
+runtime shall not depend on the VDP
 being updated, KUKSA, either functional Service, AosCloud motion inference or
 the Demo UI for this evidence.
 
@@ -56,7 +60,8 @@ The runtime-owned Safe Stop policy shall require, at minimum:
 - transition state `STABLE`;
 - fresh factual speed at or below the accepted threshold;
 - zero throttle and applied brake hold;
-- the complete condition for the accepted consecutive-sample window; and
+- the complete condition for the accepted consecutive-sample window using
+  distinct monotonic `FrameId` values rather than repeated cached reads; and
 - no stale, missing, contradictory or reset-discontinuous evidence.
 
 The versioned Platform FOTA Safe Stop contract owns the exact thresholds,
@@ -82,7 +87,11 @@ vehicle-state source as stopped.
 
 The runtime transaction state machine shall add a durable
 `WaitingForSafeStop` phase between candidate preparation and destructive
-activation. After VM or runtime restart, old evidence is never reused as
+activation. Only transaction metadata is durable; Safe Stop samples are never
+persisted. One bounded asynchronous worker shall return native `Activating`
+after the durable wait is established, shall not hold the runtime's main mutex
+while waiting and shall be cancelled and joined within a bound during runtime
+stop. After VM or runtime restart, old evidence is never reused as
 current. Where a prior healthy provider exists, the runtime shall restore it;
 for a first install, the slot shall remain empty. The runtime then reconstructs
 the pending transaction, obtains fresh evidence and either resumes the same

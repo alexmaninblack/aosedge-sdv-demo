@@ -32,7 +32,7 @@
       "required": ["contractId", "contractVersion", "sha256"],
       "properties": {
         "contractId": { "const": "aosedge-demo-viss-trust-telemetry" },
-        "contractVersion": { "const": "1.0.0" },
+        "contractVersion": { "const": "1.1.0" },
         "sha256": { "$ref": "#/$defs/sha256" }
       }
     },

@@ -245,7 +245,7 @@ native log archive.
 - Statement: `M1/G0` shall prove one unique Unit/Main Node and per-Unit VISS client identity per overlay, exact disjoint Verification/Production Unit Set membership, current online/graph state, a healthy empty VDP slot, a working authenticated CARLA/Gateway/VISS/Engineering Dashboard path and one exclusive selected-Unit live-source assignment. The audience sees Test Vehicle and Production Vehicle, exactly one `CURRENT VEHICLE`, and a plain `Continue with Production Vehicle` transition; Test Vehicle maps only at the Representation Layer to the technical Validation Unit in the Verification Unit Set. Technical details preserve exact Unit/source/certificate-fingerprint evidence without presenting host assignment plumbing as in-vehicle behavior or implying two simultaneous live vehicles.
 - Parents: [`SYS-ID-001`–`004`](../system-requirements-and-traceability.md#sys-id-001), [`SYS-SRC-001`–`004`](../system-requirements-and-traceability.md#sys-src-001), [`SYS-CTRL-001`–`003`](../system-requirements-and-traceability.md#sys-ctrl-001), [`SYS-VDP-001`](../system-requirements-and-traceability.md#sys-vdp-001)
 - Flows: `AF-M1-*`, `AF-G0-*`, [`AF-X-SOURCE`](../../architecture/demo-scenario-architecture-flows.md#af-x-source), [`AF-X-DRIVE`](../../architecture/demo-scenario-architecture-flows.md#af-x-drive)
-- Executable contracts: [Exclusive Live-Source Assignment 1.0.0](../../../contracts/exclusive-live-source-assignment/exclusive-live-source-assignment.v1.json) and [VISS Trust and Telemetry Profile 1.0.0](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
+- Executable contracts: [Exclusive Live-Source Assignment 1.0.0](../../../contracts/exclusive-live-source-assignment/exclusive-live-source-assignment.v1.json) and [VISS Trust and Telemetry Profile 1.1.0](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
 - Acceptance: partial provisioning, crossed/stale Unit membership, ambiguous source ownership, failed canonical reset or non-empty feature state blocks the next stage.
 
 <a id="req-e2e-003"></a>
@@ -262,8 +262,8 @@ native log archive.
 - Statement: The accepted VDP v1 FOTA candidate shall be validated on VU and promoted identically to PU, with both OEM-runtime applications occurring only after the accepted Safe Stop policy is proven from fresh Gateway facts. It shall become ready only with its accepted VISS contract and publish the exact v1 read-only signal subset into KUKSA with factual quality, freshness, availability and provenance. Each vehicle resumes driving only through an explicit post-readiness control action.
 - Parents: [`SYS-VDP-001`](../system-requirements-and-traceability.md#sys-vdp-001), [`SYS-VDP-002`](../system-requirements-and-traceability.md#sys-vdp-002), [`SYS-VDP-005`](../system-requirements-and-traceability.md#sys-vdp-005), [`SYS-REL-004`](../system-requirements-and-traceability.md#sys-rel-004)
 - Flows: `AF-G1-*`, `AF-X-RELEASE`, `AF-X-SOURCE`
-- Executable VISS input: [VISS Trust and Telemetry Profile 1.0.0](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
-- Executable Safe Stop contract: [Platform FOTA Safe Stop 1.0.1](../../../contracts/platform-fota-safe-stop/platform-fota-safe-stop-profile.v1.json)
+- Executable VISS input: [VISS Trust and Telemetry Profile 1.1.0](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
+- Executable Safe Stop contract: [Platform FOTA Safe Stop 1.1.0](../../../contracts/platform-fota-safe-stop/platform-fota-safe-stop-profile.v1.json)
 - Acceptance: a non-selected or unauthenticated Unit is rejected; missing/stale/malformed source data becomes atomically unavailable and recovers only from a complete valid snapshot; moving/stale/reset-discontinuous update evidence cannot cross the runtime gate; no service is required at G1 and no fabricated normal value is accepted.
 
 <a id="req-e2e-005"></a>

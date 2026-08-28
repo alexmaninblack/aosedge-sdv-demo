@@ -4,7 +4,7 @@
 # Platform FOTA Safe Stop Contract
 
 - Architecture decision: [ADR 0014](../../docs/architecture/decisions/0014-enforce-platform-fota-safe-stop-in-oem-component-runtime.md)
-- Contract version: 1.0.1
+- Contract version: 1.1.0
 - Lifecycle state: design accepted; implementation and live qualification are open
 
 This contract fixes the Safe Stop evidence, policy, lifecycle gate and recovery
@@ -17,7 +17,20 @@ It does not make AosCloud, the Demo UI, KUKSA or the VDP being updated a source
 of physical-motion authority.
 
 - [JSON Schema](platform-fota-safe-stop-profile.schema.json)
-- [Accepted profile 1.0.1](platform-fota-safe-stop-profile.v1.json)
+- [Accepted profile 1.1.0](platform-fota-safe-stop-profile.v1.json)
+
+The runtime uses a purpose-bound per-Unit `PLATFORM_UPDATE_RUNTIME` mTLS
+identity, distinct from the VDP's selected-Unit identity. A transport-only
+VISS adapter implements `VehicleStateProviderItf`; the Safe Stop evaluator
+remains a pure policy component. `FrameId` is part of every accepted snapshot,
+so the twelve-sample window requires twelve distinct monotonic CARLA frames
+rather than repeated reads of one cached state.
+
+Waiting is a single asynchronous bounded runtime transaction. The durable
+record contains transaction metadata, never Safe Stop samples; the runtime
+does not hold its main mutex while waiting, and shutdown performs bounded
+cancel-and-join. The current healthy VDP remains active during replacement or
+removal waiting, while first install exposes no active capability.
 
 While Safe Stop is not yet established, AosCore's native lifecycle state is
 `ACTIVATING`. A first install leaves the empty VDP slot empty; a replacement

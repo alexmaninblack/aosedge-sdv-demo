@@ -327,7 +327,7 @@ scenario truth shall not be used as a service input.
 - Interfaces: [advisory request (`IF-ADV-001`)](../component-decomposition-and-interface-register.md#if-adv-001) and [functional message family (`IF-FUNC-001`)](../component-decomposition-and-interface-register.md#if-func-001)
 - Verification levels: Unit, Component, Contract, Integration, End-to-end
 - Required evidence: exact Request/Status schema fixtures, D4-016 threshold/debounce behavior, request/backend-fact correlation, duplicate/replay/clear/expiry/restart cases and negative proof for every prohibited authority
-- Executable contract: [Typed QM Advisory Profile 1.0.1](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
+- Executable contract: [Typed QM Advisory Profile 1.0.2](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - State: D3 design-reviewed; D4-008 interface and exact D4-016.4 v3 policy accepted; real KUKSA/VDP/VISS/Gateway qualification remains open
 
 The accepted audience claim ends at the matching factual Gateway Status,
