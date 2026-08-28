@@ -151,13 +151,15 @@ Create and review packages in this order:
 
 Groups 1 through 5 established design-reviewed baselines on 2026-08-19;
 subsequent security and exact-contract deltas retain their per-package review
-state in the component-package index rather than inheriting acceptance. Demo
-Orchestration (`CR-DEMO`) is revalidated as 1.1; Cross-Cutting Security and
-Operations (`CR-CROSS`) remains a review candidate at 0.4; End-to-End
-Acceptance (`CR-E2E`) 0.8 is D3 design-reviewed as of 2026-08-27. Their target,
-partial and qualification states remain open. The complete D4-026.1–.20
-interaction/qualification design and D4-027.1–.8 compatibility-helper contract
-are accepted, but implementation and live qualification are not authorized.
+state in the component-package index rather than inheriting acceptance.
+Factory 0.4, KUKSA Authorization Compatibility 0.8, Vehicle Data Platform 0.8
+and Cross-Cutting Security and Operations 0.4 were design-reviewed on
+2026-08-28. Demo Orchestration (`CR-DEMO`) is revalidated as 1.1 and
+End-to-End Acceptance (`CR-E2E`) 0.8 is D3 design-reviewed as of 2026-08-27.
+Their target, partial, implementation and qualification states remain open.
+The complete D4-026.1–.20 interaction/qualification design and D4-027.1–.8
+compatibility-helper contract are accepted, but implementation and live
+qualification are not authorized.
 
 Create every package from the
 [component requirement package template](../requirements/components/template.md).
@@ -286,9 +288,10 @@ The standalone HTML review mockup is reconciled to Interaction Specification
 completion of the three parallel `P0` assessments for `L-UI`, `L-VEH` and
 `L-PLATFORM` on 2026-08-28. `IMP-01` and the bounded `IMP-02A` wheel angular-
 speed correction are ready for independent code-packet review and explicit
-authorization. Platform is `BASELINE_READY`, while `IMP-03` remains blocked
-for the named Factory/KAC/VDP/Cross package decisions and exact integration
-parameters. No product UI, component, Cloud or VM implementation is
+authorization. Platform baseline
+`bdc72aba97a83c9868d454588189ef139710a6d7` is accepted, while `IMP-03`
+remains blocked for the named exact integration parameters. No product UI,
+component, Cloud or VM implementation is
 authorized by the sequencing plan, readiness packets or their P0 completion.
 Existing `CURRENT`, `EVIDENCE`,
 `PARTIAL`, `GAP`, `TARGET` and implementation/qualification labels remain

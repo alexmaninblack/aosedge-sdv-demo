@@ -351,9 +351,10 @@ handoff.
 
 ### `IMP-03` — Factory substrate, current-release security and VDP family
 
-- State: `BLOCKED` until the latest `CR-FACTORY`, `CR-KAC`, `CR-VDP` and
-  `CR-CROSS` deltas are formally accepted and their exact implementation
-  parameters are frozen.
+- State: `BLOCKED`; `CR-FACTORY` 0.4, `CR-KAC` 0.8, `CR-VDP` 0.8 and
+  `CR-CROSS` 0.4 were accepted on 2026-08-28 and Platform baseline
+  `bdc72aba97a83c9868d454588189ef139710a6d7` was reconciled to `origin/main`.
+  The exact implementation parameters remain open.
 - Repository: `aos-vehicle-platform`.
 - Scope: build the successor OEM Demo Factory Image with stock Aos IAM
   `enablePermissionsHandler: true`, no provisioned identity or pre-populated
@@ -493,9 +494,9 @@ own contract and repository-creation gates close.
 Before code starts, the Coordinator converts each P0 result into a separately
 accepted authorization record that pins the current repository base, exact
 writable files, commands, tests, exclusions and completion evidence. P0
-readiness is not code authorization. The Platform result remains
-`BASELINE_READY` rather than `READY_FOR_CODE_PACKET` until its named decisions
-close.
+readiness is not code authorization. The Platform baseline is accepted, while
+`IMP-03` remains `BLOCKED` rather than `READY_FOR_CODE_PACKET` until its named
+implementation parameters close.
 
 ## Change Control During Implementation
 

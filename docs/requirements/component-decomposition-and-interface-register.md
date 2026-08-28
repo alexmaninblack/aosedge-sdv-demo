@@ -361,11 +361,12 @@ remain available through their native platform paths.
 
 This allocation is the bridge to the component requirement documents. It does
 not itself define component-level normative requirements. `CR-VEHICLE-SIM`,
-`CR-GATEWAY`, `CR-FACTORY` and `CR-VDP` have completed D3 design review in the
-[component package set](components/README.md); the remaining allocations are
-provisional until their package review closes. The reader view explains each
-purpose without requiring another document, while the detailed traceability
-below remains the single allocation record for exact identifiers.
+`CR-VEHICLE-SIM`, `CR-GATEWAY`, `CR-FACTORY`, `CR-KAC`, `CR-VDP`, `CR-DEMO`,
+`CR-CROSS` and `CR-E2E` have completed D3 design review in the
+[component package set](components/README.md); the remaining allocations retain
+their own recorded review state. The reader view explains each purpose without
+requiring another document, while the detailed traceability below remains the
+single allocation record for exact identifiers.
 
 | Package | Human-readable responsibility | Primary components | Requirement themes |
 | --- | --- | --- | --- |

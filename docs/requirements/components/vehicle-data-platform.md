@@ -3,10 +3,11 @@
 
 # Vehicle Data Platform Component Requirements
 
-- Status: D3 review candidate
+- Status: D3 design-reviewed
 - Package: [`CR-VDP`](../component-decomposition-and-interface-register.md#cr-vdp)
 - Version: 0.8
 - Prepared: 2026-08-21
+- Accepted: 2026-08-28
 - Owner: Platform Team / independent component FOTA
 - Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
@@ -19,7 +20,7 @@
 - Accepted D4 VISS input: [D4-006 VISS Trust and Telemetry Profile](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
 - Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
 - Accepted D4 advisory input: [D4-008 Typed QM Advisory Profile](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
-- Implementation evidence: `aos-vehicle-platform@15b6abb`; provider `0.2.0`
+- Implementation evidence: `aos-vehicle-platform@bdc72ab`; provider `0.2.0`
   source pinned to `e972d2bd7f14e27646bb5d7c10c7186ecdecfa9f`
 
 ## Purpose
@@ -124,7 +125,7 @@ obligations and shall not be replaced by mocks in acceptance evidence.
 | [Defense-in-depth outbound v3 advisory (`REQ-VDP-005`)](#req-vdp-005) | Permit only typed QM Brake/Tire advisories; Gateway remains authoritative | Unit, Contract, Integration, End-to-end | D3 design-reviewed | `TARGET` |
 | [Readiness and resource bounds (`REQ-VDP-009`)](#req-vdp-009) | Fail closed and remain bounded under dependency/resource failures | Unit, Component, Integration, End-to-end | D3 design-reviewed | `PARTIAL` |
 | [Compatibility and dependent-first recovery (`REQ-VDP-010`)](#req-vdp-010) | Remove dependent Services first, then use pre-Apply revert or post-Apply forward repair | Unit, Contract, Integration, End-to-end | D4-015 design accepted; live qualification open | `TARGET / PARTIAL` |
-| [Trusted OEM Provider integration (`REQ-VDP-011`)](#req-vdp-011) | Qualify the Provider as an OEM platform integration without creating service authority | Contract, Integration, End-to-end | D3 review candidate | `PARTIAL` |
+| [Trusted OEM Provider integration (`REQ-VDP-011`)](#req-vdp-011) | Qualify the Provider as an OEM platform integration without creating service authority | Contract, Integration, End-to-end | D3 design-reviewed | `PARTIAL` |
 
 ## Detailed Requirements
 
@@ -323,7 +324,7 @@ grant Provider publication authority.
 - Interfaces: [KUKSA publication (`IF-DATA-001`)](../component-decomposition-and-interface-register.md#if-data-001) and [KUKSA advisory target (`IF-ADV-002`)](../component-decomposition-and-interface-register.md#if-adv-002)
 - Verification: contract, integration and end-to-end
 - Required evidence: exact Provider/configuration identity, accepted publish/advisory contract, successful qualification on both Unit roles, separation from Service JWT/bootstrap material and explicit statement of the first-demo trust assumption
-- Requirement state: D3 review candidate
+- Requirement state: D3 design-reviewed
 
 ## Requirement Acceptance Criteria
 
@@ -393,11 +394,11 @@ required integration evidence.
 ## D3 Review Closure and Product Acceptance
 
 Version 0.7 and its ten requirement obligations were design-reviewed on
-2026-08-19. Version 0.8 is a new review candidate: it moves Service
+2026-08-19. Version 0.8 was design-reviewed on 2026-08-28. It moves Service
 authorization and KUKSA trust out of VDP, retires dynamic Provider IAM/JWT for
 the first demo and adds the trusted OEM Provider integration obligation
-`REQ-VDP-011`. The prior acceptance record is preserved; Version 0.8 requires
-explicit review before it replaces that baseline.
+`REQ-VDP-011`. Version 0.8 replaces Version 0.7 as the current architectural
+requirement baseline.
 
 Product acceptance remains open until the gates below are resolved, D4
 contracts are executable, required unit/component/contract/integration tests

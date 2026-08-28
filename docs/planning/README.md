@@ -17,8 +17,9 @@ assignment, VM restart, or provisioned-Unit change.
   and [Platform readiness](active/work-packets/p0-platform-readiness.md).
   Their P0 read-only assessment and local-test execution completed on
   2026-08-28. UI and the first bounded Vehicle/Gateway slice are ready for
-  separate code-packet review; Platform is baseline-ready while its code
-  packets remain blocked. Product implementation and external operations
+  separate code-packet review; Platform baseline is accepted while its code
+  packets remain blocked for exact implementation parameters. Product
+  implementation and external operations
   remain unauthorized until their exact packet is accepted.
 - Authorized P1 work packets:
   [Presenter UI implementation](active/work-packets/p1-ui-presenter-shell.md)

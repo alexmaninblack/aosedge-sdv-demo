@@ -6,8 +6,8 @@
 - ID: `WP-P0-PLATFORM-001`
 - Lane: `L-PLATFORM`
 - Parent increment: `IMP-03`
-- Review state: `COMPLETED — BASELINE_READY`; code packets remain `BLOCKED`
-- Version: 0.3
+- Review state: `COMPLETED — BASELINE_ACCEPTED`; code packets remain `BLOCKED`
+- Version: 0.4
 - Prepared: 2026-08-27
 - Updated: 2026-08-28
 - Accepted: 2026-08-28
@@ -28,23 +28,25 @@ revision.
 ## P0 Execution Result
 
 - Completed: 2026-08-28
-- Exit state: `BASELINE_READY`
+- Exit state: `BASELINE_ACCEPTED`
 - `IMP-03` implementation state: `BLOCKED`
 
-The assessment recommends
-`5c2a7d0704fac93ba0a285cf533c17847d88633e` as the exact Platform evidence
-baseline. It is a clean local `main` three documentation-only commits ahead of
-the current local `origin/main` reference
-`15b6abb7562b4d0fd4628817e1046ea95b047a0c`; only the five previously reviewed
-Markdown files differ. Formal acceptance still requires the reviewed
-fast-forward/push and the corresponding solution pin/evidence cascade. The
-historical `.11` image and Provider `0.2.0` artifact pins remain immutable and
-must not be repinned to this documentation revision.
+P0 first selected `5c2a7d0704fac93ba0a285cf533c17847d88633e` as the
+source-evidence candidate because its delta from the previous accepted
+revision was documentation-only. The accepted reconciliation then aligned the
+Platform documentation to the current KAC, trusted Provider and Factory
+boundaries and produced final baseline
+`bdc72aba97a83c9868d454588189ef139710a6d7`. Platform `main` and `origin/main`
+are equal at that revision, and the solution repository pin/evidence cascade
+records it. The historical `.11` image and Provider `0.2.0` artifact pins
+remain immutable and were not repinned to this documentation revision.
 
-All frozen requirement/contract digests and preserved `.11` artifact digests
-matched. The 35 Python tests and the quality gate for 81 tracked files passed.
-No source, recipe, image, component, key, JWT, Cloud, VM or Unit operation was
-performed.
+All P0-frozen requirement/contract digests and preserved `.11` artifact digests
+matched during the read-only assessment. After package acceptance, the four
+requirement files were deliberately repinned below. At the final Platform
+baseline, 35 Python tests and the quality gate for 82 tracked files passed. No
+product source, recipe, image, component, key, JWT, Cloud, VM or Unit operation
+was performed.
 
 Reusable current implementation evidence includes the provider-specific A/B
 runtime, bounded 512 MiB ext4 store, fixed `aos-vdp` identity, systemd/SELinux
@@ -60,57 +62,50 @@ is absent and must not be presented as implemented:
 - exact selected-Unit mTLS and trusted OEM Provider integration.
 
 The future Platform work remains decomposed into three independently reviewed
-code packets: KAC, successor Factory/runtime and VDP v1-v3. None may enter
-implementation until `CR-FACTORY` 0.4, `CR-KAC` 0.8, `CR-VDP` 0.8 and
-`CR-CROSS` 0.4 plus the exact IAM ownership, KUKSA/Provider connection,
-selected-Unit credential, Safe Stop adapter, packaging and artifact parameters
-are accepted. Platform/VDP design review may continue in parallel with any
-separately authorized UI and Vehicle/Gateway implementation lanes.
+code packets: KAC, successor Factory/runtime and VDP v1-v3. `CR-FACTORY` 0.4,
+`CR-KAC` 0.8, `CR-VDP` 0.8 and `CR-CROSS` 0.4 were accepted on 2026-08-28.
+Implementation remains blocked until the exact IAM ownership, KUKSA/Provider
+connection, selected-Unit credential, Safe Stop adapter, packaging and
+artifact parameters are accepted. Platform/VDP design review may continue in
+parallel with any separately authorized UI and Vehicle/Gateway implementation
+lanes.
 
 ## Repository and Baseline Gate
 
 | Item | Value |
 | --- | --- |
 | Repository | `aos-vehicle-platform` |
-| Accepted workspace revision | `15b6abb7562b4d0fd4628817e1046ea95b047a0c` |
-| Current clean local `main` | `5c2a7d0704fac93ba0a285cf533c17847d88633e` |
-| Remote relationship | local `main` is three commits ahead of `origin/main` |
+| Accepted workspace revision | `bdc72aba97a83c9868d454588189ef139710a6d7` |
+| Current clean local `main` | `bdc72aba97a83c9868d454588189ef139710a6d7` |
+| Remote relationship | `main` equals `origin/main` |
 | Future branch | `codex/imp-03-platform-vdp`, only after package and base acceptance |
 | P0 writable paths | none |
 
-The three local commits are:
+The original three candidate commits were:
 
 1. `51d3fce` — factory and rootfs artifact clarification;
 2. `03c3065` — native Aos IAM credential-lifecycle documentation; and
 3. `5c2a7d0` — QM Gateway boundary documentation.
 
-The diff from the accepted revision changes only `README.md`,
-`authorization/aos-kuksa/README.md`, `docs/aos2-provider-design.md`,
-`docs/architecture.md` and `meta-aos-vehicle-platform/README.md`. P0 must still
-decide explicitly whether `5c2a7d0` becomes the new accepted repository base
-and identify the exact Level B pin/evidence updates. It must not push or update
-the workspace lock.
-
-`5c2a7d0` is the preferred baseline candidate because the repository is clean,
-the delta is documentation-only and the current repository tests and quality
-gate pass. P0 accepts it as the new evidence baseline only after independently
-confirming those facts and producing the complete pin cascade. The Platform
-`main`, remote and solution locks must then be reconciled through one reviewed
-documentation change before a code branch is created. Any product-code delta
-or evidence mismatch retains `15b6abb` and opens a bounded change request.
+The accepted reconciliation commit `bdc72ab` updates those five documentation
+files and adds the planned `authorization/aos-kuksa-compat/README.md` boundary.
+It contains no product-code, recipe, configuration or artifact delta. The
+repository remote and solution lock are reconciled; a future code packet may
+use the accepted revision only after its remaining implementation parameters
+are frozen.
 
 ## Design Gates
 
-The latest packages remain review candidates and therefore block a code
-authorization:
+The latest packages were design-reviewed on 2026-08-28:
 
 - [Factory Substrate 0.4](../../../requirements/components/factory-substrate.md);
 - [KUKSA Authorization Compatibility 0.8](../../../requirements/components/kuksa-authorization-compatibility.md);
 - [Vehicle Data Platform 0.8](../../../requirements/components/vehicle-data-platform.md); and
 - [Cross-Cutting 0.4](../../../requirements/components/cross-cutting.md).
 
-P0 may identify exact parameters and inconsistencies but cannot declare these
-packages accepted.
+Their acceptance freezes architectural requirements but does not authorize
+implementation. Exact package-owned implementation parameters remain the
+`IMP-03` gate.
 
 ## Frozen Requirements and Contracts
 
@@ -123,10 +118,10 @@ packages accepted.
 
 | Frozen file/contract | SHA-256 |
 | --- | --- |
-| Factory Substrate requirements | `3e9459f1ccf30565ef043c929ab2348ccb725c01b2995d5873ee13a0da11d8a8` |
-| KAC requirements | `6613bb1a70be031958244c0a8aa97789eced86d8bc90f4e5faaf43bf119541d2` |
-| VDP requirements | `94a655608456c136e53cfc5631254b79f96798989bb5863f3b2caebf56587320` |
-| Cross-Cutting requirements | `2ba07bef40674097410e1c601e34a67c7aa7b77fcda1c186bd4d9d29d54de403` |
+| Factory Substrate requirements | `168bbcc075baee6ace66fa2468cfc7f0953efe31a2baa8437bcd259e12602cef` |
+| KAC requirements | `9cc4f459caeba4724bf7217c8cdb113190e216ea8d977e429ae296f2007e42ae` |
+| VDP requirements | `c6ab37f26d188ca6f887e3f9c8325bb72511a4047cbcbca844fce9ba7719c959` |
+| Cross-Cutting requirements | `419c4ea1c75c08c553565c3ad168bf6ff167ac439db1709d288572caee650175` |
 | KUKSA current-demo authorization v1 | `0b1d407a40208aa7135f45d0ba83ce9064cde321d652e1b6ebdf1a1f5b175972` |
 | VDP Compatibility v1 | `4c00a3848eb2c961b048e74d3d1253bdc43e47c1467f64e62653046ba39ba12c` |
 | VISS Trust and Telemetry v1 | `24484919d916ade153111fd6075d06cecdf77d0bed7cfd016c0a4163e1b8fd53` |
@@ -166,10 +161,10 @@ python3 -m unittest discover -s tests -p 'test_*.py'
 python3 tools/quality_gate.py
 ```
 
-Baseline evidence on 2026-08-27: 35 tests passed and the repository quality
-gate passed for 81 tracked files at local `5c2a7d0`. These checks do not prove
-the target Factory Image, KAC, Safe Stop runtime or VDP v1-v3, and no image or
-component was built.
+Baseline evidence on 2026-08-28: 35 tests passed and the repository quality
+gate passed for 82 tracked files at accepted `bdc72ab`. These checks do not
+prove the target Factory Image, KAC, Safe Stop runtime or VDP v1-v3, and no
+image or component was built.
 
 ## Forbidden Work
 
@@ -197,11 +192,10 @@ The worker returns:
 
 ## Exit and Escalation
 
-P0 exits `BASELINE_READY` when one repository revision and its pin cascade are
-unambiguous. The expected result is accepted `5c2a7d0`, reconciled remote/main
-state and updated solution pins; otherwise the packet retains `15b6abb` with a
-change request. `IMP-03` remains `BLOCKED` until the latest Factory, KAC, VDP
-and Cross-Cutting packages and each exact code packet are accepted. A code
-delta between the two candidate revisions, missing immutable evidence,
-contract conflict or any need to build/sign/use a VM is escalated to the
-Platform owner and Integration Coordinator.
+P0 exited `BASELINE_ACCEPTED` at
+`bdc72aba97a83c9868d454588189ef139710a6d7` with reconciled remote/main state
+and updated solution pins. `IMP-03` remains `BLOCKED` until each exact KAC,
+Factory/runtime and VDP code packet is accepted. Any product-code delta,
+missing immutable evidence, contract conflict or need to build, sign or use a
+VM before its separate gate is escalated to the Platform owner and Integration
+Coordinator.

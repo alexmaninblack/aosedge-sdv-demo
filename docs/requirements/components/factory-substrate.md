@@ -3,10 +3,11 @@
 
 # Factory Substrate Component Requirements
 
-- Status: D3 review candidate
+- Status: D3 design-reviewed
 - Package: [`CR-FACTORY`](../component-decomposition-and-interface-register.md#cr-factory)
 - Version: 0.4
 - Prepared: 2026-08-19
+- Accepted: 2026-08-28
 - Owner: Platform Team / pre-SOP OEM Factory Baseline Assembly
 - Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
@@ -14,7 +15,7 @@
 - System-requirements input: [System Requirements 2.0](../system-requirements-and-traceability.md)
 - Component-register input: [Component Register 2.0](../component-decomposition-and-interface-register.md)
 - Previous accepted package: Version 0.3
-- Implementation evidence: `aos-vehicle-platform@15b6abb`, with local
+- Implementation evidence: `aos-vehicle-platform@bdc72ab`, with local
   candidate `.11` pinned to `a12c0aa`
 
 ## Purpose
@@ -489,11 +490,11 @@ build tree is not acceptance evidence.
 ## D3 Review Closure and Product Acceptance
 
 Version 0.3 and its eleven requirement obligations were design-reviewed on
-2026-08-19. Version 0.4 is a review candidate that adds the separately packaged
-removable `CMP-KAC` factory seam, replaces retired authorization-interface
-references and removes dynamic Provider authorization from the first-demo
-factory gate. The previous acceptance record remains preserved until Version
-0.4 is explicitly accepted.
+2026-08-19. Version 0.4 was design-reviewed on 2026-08-28. It adds the
+separately packaged removable `CMP-KAC` factory seam, replaces retired
+authorization-interface references and removes dynamic Provider authorization
+from the first-demo factory gate. Version 0.4 replaces Version 0.3 as the
+current architectural requirement baseline.
 
 Product acceptance remains open until D4 defines measurable cases, the
 effective Factory Image contents and current implementation states are

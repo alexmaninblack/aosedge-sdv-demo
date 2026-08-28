@@ -3,9 +3,10 @@
 
 # Current-Release KUKSA Authorization Compatibility 0.8
 
-- Status: Review candidate
+- Status: D3 design-reviewed
 - Version: 0.8
 - Prepared: 2026-08-22
+- Accepted: 2026-08-28
 - Owner: Platform Team
 - Package: [`CR-KAC`](../component-decomposition-and-interface-register.md#cr-kac)
 - Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
@@ -419,7 +420,9 @@ is outside the accepted claim.
 
 Version 0.8 incorporates D4-027.8 and contract profile 1.4.0: exact size,
 permission/path, concurrency, backlog, rate, timeout, retry, systemd resource
-and redaction bounds. D4-027 is complete; implementation has not begun.
+and redaction bounds. D4-027 is complete. Version 0.8 was design-reviewed on
+2026-08-28 and is the current architectural requirement baseline;
+implementation has not begun.
 
 ## Review Record for Version 0.7
 
