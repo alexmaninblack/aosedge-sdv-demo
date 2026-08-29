@@ -78,7 +78,7 @@ after its static and isolated gates pass.
 | Scenario, controller, Gateway, VISS, advisory handler and Engineering Telematics Dashboard | `carla-ego-runtime` | Existing implementation is extended rather than replaced. |
 | Factory assembly, OEM Component Runtime, removable `CMP-KAC`, KUKSA integration and VDP v1-v3 | `aos-vehicle-platform` | Factory/System artifacts and VDP FOTA retain separate lifecycle identities. |
 | Brake in-vehicle service | `brake-health-service` | Existing scaffold is assessed and extended. |
-| Brake backend and Function Dashboard | `brake-health-cloud` | Public governance-only baseline `6da2926`; product implementation requires its own work packet. |
+| Brake backend and Function Dashboard | `brake-health-cloud` | Isolated foundation `68fe61b` over public baseline `6da2926`; data packet is proposed/review required. |
 | Tire in-vehicle service | proposed `tire-health-service` | Repository creation requires its own explicit authorization. |
 | Tire backend and Function Dashboard | planned `tire-health-cloud` | Repository creation requires its own explicit authorization. |
 | Presenter UI, native helper, VM/Unit orchestration and E2E qualification | `aosedge-sdv-demo` | Integration repository; must not absorb product source owned above. |
@@ -454,6 +454,12 @@ handoff.
   exact npm workspace, loopback backend/SQLite foundation and fixture-only
   three-view Dashboard shell; D4 ingestion, helper, container and live
   integrations remain later gates.
+- The next bounded Cloud packet,
+  [`WP-P1-BRAKE-CLOUD-DATA-001`](work-packets/p1-brake-cloud-data.md), is
+  `PROPOSED — REVIEW REQUIRED`. It grants no branch, source edit, dependency,
+  commit or product-operation authority. Its exact source-only data boundary
+  excludes synchronization completion, source-generation/run binding and
+  Test/Production comparative-success claims pending D4-024.
 - Scope: implement the prepared Brake v1-v3 candidates, bounded v1
   pre/active/post window, v2 synthetic local assessment and derived-only
   reporting, v3 typed maintenance advisory, bounded offline queue, backend,

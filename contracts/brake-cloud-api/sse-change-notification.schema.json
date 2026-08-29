@@ -1,0 +1,23 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:brake-cloud-sse-change-notification:schema:v1",
+  "title": "Brake Cloud SSE Change Notification",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "contractVersion", "notificationType", "unitSystemUid", "changedResources", "emittedAt"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "contractVersion": {"const": "1.0.0"},
+    "notificationType": {"const": "BRAKE_DATA_CHANGED"},
+    "unitSystemUid": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._:-]+$"},
+    "changedResources": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": {"enum": ["WINDOW", "ASSESSMENT", "EVENT", "ADVISORY"]}
+    },
+    "emittedAt": {"type": "string", "format": "date-time"}
+  }
+}

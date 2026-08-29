@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "systemUids": ["production-system-20260822", "validation-system-20260822"],
+  "deletedRecordCounts": {
+    "messages": 18,
+    "windows": 2,
+    "assessments": 4,
+    "events": 2,
+    "advisories": 1,
+    "quarantine": 0
+  },
+  "remainingMatchingRecordCounts": {
+    "messages": 0,
+    "windows": 0,
+    "assessments": 0,
+    "events": 0,
+    "advisories": 0,
+    "quarantine": 0
+  },
+  "nonmatchingRecordSetSha256": "5555555555555555555555555555555555555555555555555555555555555555",
+  "completedAt": "2026-08-22T20:00:30Z"
+}

@@ -2018,9 +2018,14 @@ not itself authorize artifact publication, Cloud mutation or Unit deployment.
 - SQLite persistence accepted: 2026-08-23
 - Dashboard query and authority boundary accepted: 2026-08-23
 - Exact current-run cleanup accepted: 2026-08-23
+- Brake Cloud data-contract clarifications accepted: 2026-08-29
+- Query/SSE/Admin API 1.0.0 annex accepted: 2026-08-29
+- Advisory fixture erratum accepted: 2026-08-29
 - Owners: Function Team 1 / Demo Solution local integration
 - Machine-readable contract:
   [Brake Health Cloud API 1.0.0](../../contracts/brake-cloud-api/README.md)
+- Query/SSE/Admin wire annex:
+  [Brake Cloud Query/SSE/Admin API 1.0.0](../../contracts/brake-cloud-api/brake-cloud-query-admin-profile.v1.json)
 
 The proposed exact decision is:
 
@@ -2056,7 +2061,11 @@ The proposed exact decision is:
    chunk and its single completion have matching durable ACKs. `409` leaves
    the local source in `DELIVERY_CONFLICT`, stops automatic retry and deletes
    nothing. ACK proves durable exact storage only—not Gateway application,
-   driver receipt or OEM acceptance.
+   driver receipt or OEM acceptance. A schema-valid completion is durably
+   stored and ACKed even when declared chunks are missing; this receipt is not
+   a terminal-window claim. The projection remains `PARTIAL` until all chunk
+   indices exist and ordered digests, counts, phases and `windowSha256`
+   validate. An inconsistent combined set is quarantined and non-terminal.
 5. SQLite runtime and forward-only transactional migrations are packaged in
    the immutable Brake backend image; `/data/brake-health.sqlite` lives in a
    dedicated external Docker persistent volume inaccessible to the Dashboard.
@@ -2067,12 +2076,22 @@ The proposed exact decision is:
    or same-run container replacement preserves data. Database failure returns
    `503`, creates no ACK and leaves the Service outbox authoritative. This is a
    current-demo store, not an AosCloud mirror, historical archive or separately
-   backed-up database.
+   backed-up database. The implemented foundation's `001_initialize.sql` and
+   its historic `schema_migrations` ledger are immutable. Migration
+   `002_brake_data.sql` transactionally creates `schema_version`, copies the v1
+   ledger row, drops the legacy ledger, creates the Brake data schema, records
+   v2 and sets `user_version = 2`. The runner uses `schema_version` when present
+   and otherwise the legacy ledger. Any v2 failure rolls the whole transition
+   back to the intact v1 ledger and `user_version = 1`.
 6. The Dashboard reads functional windows, assessments, events and advisory
-   facts only from bounded, stably ordered Brake backend REST queries for the
-   exact current Validation or Production Unit. SSE is change notification,
-   never state authority; reconnect or a detected gap causes an authoritative
-   REST re-read. Backend `/health/live` and `/health/ready` describe only the
+   facts only through the closed Brake Cloud Query/SSE/Admin API 1.0.0 annex.
+   The four exact-Unit REST collections use stable resource-specific descending
+   keys and opaque RFC-8785/base64url keyset cursors, with limit 50 by default
+   and 100 maximum; malformed or cross-scope cursors are closed `400` errors.
+   The accepted `VALIDATION` wire role is labelled **Test Vehicle** in every
+   user-facing surface. SSE is change notification, never state authority;
+   every notification, reconnect, detected gap or backend restart causes an
+   authoritative REST re-read. Backend `/health/live` and `/health/ready` describe only the
    local process/database. Unit and Service lifecycle/readiness remain
    AosCloud/AosCore authority and are shown by the Software Delivery Dashboard.
    The UI labels both authorities explicitly. It shows exact Unit role/system
@@ -2081,10 +2100,13 @@ The proposed exact decision is:
    v3 correlated advisory facts. It does not invent Gateway application,
    driver acknowledgement, Cloud inference or AosCore readiness from
    functional data.
-7. Only the local Demo Orchestrator may use the reset admin endpoints; they are
-   unavailable to the browser, guest ingestion route and LAN. It obtains the
-   exact current Validation and Production `system_uid` values from the
-   current-run provisioning journal, previews counts and record-set digest,
+7. Only the local Demo Orchestrator may use the reset admin endpoints over the
+   separate mode-`0600` Unix-domain HTTP composition root; they are unavailable
+   to the browser, guest ingestion route and LAN. It obtains the exact current
+   Test Vehicle (`VALIDATION` on the wire) and Production Vehicle `system_uid`
+   values from the current-run provisioning journal. The sorted two-UID
+   selector contains no `demoRunId` or time range. It previews counts and
+   record-set digest,
    obtains explicit confirmation and executes with a 60-second token binding
    those exact facts. Missing, wildcard or non-two-Unit selectors are rejected;
    an exact selector with no matching rows is an idempotent success. Any new or
@@ -2095,6 +2117,13 @@ The proposed exact decision is:
    by authoritative re-read, never blind repetition. Cleanup deletes no Tire
    data, AosCloud audit/Unit/Node state or VM/overlay state; it must succeed
    before the Brake volume reset, while D4-021 owns overall R0 ordering.
+8. The accepted advisory fixture's former placeholder `contentSha256` was an
+   editorial conformance defect, not a wire-contract change. RFC-8785 of the
+   unchanged `content` object yields
+   `56500a4db40505e7a1c03ba37830f03b9a406cb54db8e1a81790f907431e703a`;
+   the corrected whole-fixture SHA-256 is
+   `a2dc0c016d5281c9accead1d6447600d4a2c3736acaef1f725a2831efe334cad`.
+   Brake Cloud API remains version 1.0.0.
 
 ### D4-018 Accepted Decision Record — Tire In-Vehicle Product
 

@@ -1,0 +1,153 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:brake-cloud-query-page:schema:v1",
+  "title": "Brake Cloud Unit-Scoped Query Page",
+  "oneOf": [
+    {"$ref": "#/$defs/windowPage"},
+    {"$ref": "#/$defs/assessmentPage"},
+    {"$ref": "#/$defs/eventPage"},
+    {"$ref": "#/$defs/advisoryPage"}
+  ],
+  "$defs": {
+    "windowPage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "contractVersion", "resourceType", "unitSystemUid", "unitRole", "limit", "items", "nextCursor"],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "contractVersion": {"const": "1.0.0"},
+        "resourceType": {"const": "WINDOW"},
+        "unitSystemUid": {"$ref": "#/$defs/boundedId"},
+        "unitRole": {"$ref": "#/$defs/unitRole"},
+        "limit": {"$ref": "#/$defs/limit"},
+        "items": {"type": "array", "maxItems": 100, "items": {"$ref": "#/$defs/windowItem"}},
+        "nextCursor": {"$ref": "#/$defs/nullableCursor"}
+      }
+    },
+    "assessmentPage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "contractVersion", "resourceType", "unitSystemUid", "unitRole", "limit", "items", "nextCursor"],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "contractVersion": {"const": "1.0.0"},
+        "resourceType": {"const": "ASSESSMENT"},
+        "unitSystemUid": {"$ref": "#/$defs/boundedId"},
+        "unitRole": {"$ref": "#/$defs/unitRole"},
+        "limit": {"$ref": "#/$defs/limit"},
+        "items": {"type": "array", "maxItems": 100, "items": {"$ref": "#/$defs/assessmentItem"}},
+        "nextCursor": {"$ref": "#/$defs/nullableCursor"}
+      }
+    },
+    "eventPage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "contractVersion", "resourceType", "unitSystemUid", "unitRole", "limit", "items", "nextCursor"],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "contractVersion": {"const": "1.0.0"},
+        "resourceType": {"const": "EVENT"},
+        "unitSystemUid": {"$ref": "#/$defs/boundedId"},
+        "unitRole": {"$ref": "#/$defs/unitRole"},
+        "limit": {"$ref": "#/$defs/limit"},
+        "items": {"type": "array", "maxItems": 100, "items": {"$ref": "#/$defs/eventItem"}},
+        "nextCursor": {"$ref": "#/$defs/nullableCursor"}
+      }
+    },
+    "advisoryPage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "contractVersion", "resourceType", "unitSystemUid", "unitRole", "limit", "items", "nextCursor"],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "contractVersion": {"const": "1.0.0"},
+        "resourceType": {"const": "ADVISORY"},
+        "unitSystemUid": {"$ref": "#/$defs/boundedId"},
+        "unitRole": {"$ref": "#/$defs/unitRole"},
+        "limit": {"$ref": "#/$defs/limit"},
+        "items": {"type": "array", "maxItems": 100, "items": {"$ref": "#/$defs/advisoryItem"}},
+        "nextCursor": {"$ref": "#/$defs/nullableCursor"}
+      }
+    },
+    "windowItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["eventId", "unitSystemUid", "unitRole", "serviceVersion", "serviceArtifactSha256", "vdpContractVersion", "vdpContractSha256", "windowStartTimestamp", "backendReceivedAt", "deliveryState", "projectionState", "terminalState", "receivedChunkCount", "expectedChunkCount", "receivedSampleCount", "phaseSampleCounts", "completionContentSha256", "windowSha256"],
+      "properties": {
+        "eventId": {"$ref": "#/$defs/uuid4"},
+        "unitSystemUid": {"$ref": "#/$defs/boundedId"},
+        "unitRole": {"$ref": "#/$defs/unitRole"},
+        "serviceVersion": {"$ref": "#/$defs/semver"},
+        "serviceArtifactSha256": {"$ref": "#/$defs/sha256"},
+        "vdpContractVersion": {"$ref": "#/$defs/semver"},
+        "vdpContractSha256": {"$ref": "#/$defs/sha256"},
+        "windowStartTimestamp": {"type": "string", "format": "date-time"},
+        "backendReceivedAt": {"type": "string", "format": "date-time"},
+        "deliveryState": {"enum": ["RECEIVING", "DELAYED", "CONFLICT", "DURABLY_RECEIVED"]},
+        "projectionState": {"enum": ["GROWING", "PARTIAL", "TERMINAL", "QUARANTINED"]},
+        "terminalState": {"oneOf": [{"enum": ["COMPLETE", "TRUNCATED_MAX_DURATION", "INCOMPLETE_SOURCE_GAP", "ABORTED_SERVICE_STOP", "ABORTED_RESTART"]}, {"type": "null"}]},
+        "receivedChunkCount": {"type": "integer", "minimum": 0, "maximum": 15},
+        "expectedChunkCount": {"oneOf": [{"type": "integer", "minimum": 1, "maximum": 15}, {"type": "null"}]},
+        "receivedSampleCount": {"type": "integer", "minimum": 0, "maximum": 150},
+        "phaseSampleCounts": {"$ref": "#/$defs/phaseSampleCounts"},
+        "completionContentSha256": {"$ref": "#/$defs/nullableSha256"},
+        "windowSha256": {"$ref": "#/$defs/nullableSha256"}
+      }
+    },
+    "assessmentItem": {"$ref": "#/$defs/messageItemAssessment"},
+    "eventItem": {"$ref": "#/$defs/messageItemEvent"},
+    "advisoryItem": {"$ref": "#/$defs/messageItemAdvisory"},
+    "messageItemAssessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceEventTime", "backendReceivedAt", "deliveryState", "message"],
+      "properties": {
+        "sourceEventTime": {"type": "string", "format": "date-time"},
+        "backendReceivedAt": {"type": "string", "format": "date-time"},
+        "deliveryState": {"enum": ["DURABLY_RECEIVED", "DELAYED", "CONFLICT"]},
+        "message": {"$ref": "../brake-health-model/brake-health-assessment.schema.json"}
+      }
+    },
+    "messageItemEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceEventTime", "backendReceivedAt", "deliveryState", "message"],
+      "properties": {
+        "sourceEventTime": {"type": "string", "format": "date-time"},
+        "backendReceivedAt": {"type": "string", "format": "date-time"},
+        "deliveryState": {"enum": ["DURABLY_RECEIVED", "DELAYED", "CONFLICT"]},
+        "message": {"$ref": "../brake-health-model/brake-health-event.schema.json"}
+      }
+    },
+    "messageItemAdvisory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceEventTime", "backendReceivedAt", "deliveryState", "message"],
+      "properties": {
+        "sourceEventTime": {"type": "string", "format": "date-time"},
+        "backendReceivedAt": {"type": "string", "format": "date-time"},
+        "deliveryState": {"enum": ["DURABLY_RECEIVED", "DELAYED", "CONFLICT"]},
+        "message": {"$ref": "brake-advisory-fact.schema.json"}
+      }
+    },
+    "phaseSampleCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["PRE", "ACTIVE", "POST"],
+      "properties": {
+        "PRE": {"type": "integer", "minimum": 0, "maximum": 30},
+        "ACTIVE": {"type": "integer", "minimum": 0, "maximum": 100},
+        "POST": {"type": "integer", "minimum": 0, "maximum": 20}
+      }
+    },
+    "boundedId": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._:-]+$"},
+    "uuid4": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
+    "semver": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "nullableSha256": {"oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+    "unitRole": {"enum": ["VALIDATION", "PRODUCTION"]},
+    "limit": {"type": "integer", "minimum": 1, "maximum": 100},
+    "nullableCursor": {"oneOf": [{"type": "string", "minLength": 1, "maxLength": 2048, "pattern": "^[A-Za-z0-9_-]+$"}, {"type": "null"}]}
+  }
+}

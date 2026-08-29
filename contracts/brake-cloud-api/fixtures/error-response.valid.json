@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "errorCode": "INVALID_CURSOR",
+  "message": "cursor is invalid for this Unit and resource",
+  "retryable": false
+}

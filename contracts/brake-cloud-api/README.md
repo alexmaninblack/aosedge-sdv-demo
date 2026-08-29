@@ -10,7 +10,7 @@
   durable acknowledgement, persistence, Dashboard query/authority and exact
   current-run cleanup accepted 2026-08-23
 
-This package freezes the proposed current-demo transport boundary between the
+This package freezes the accepted current-demo transport boundary between the
 Brake Health in-vehicle Service and the Mac-hosted Brake Health Cloud product.
 It does not change the accepted logical Brake messages. Canonical message bytes
 and their SHA-256 remain authoritative even when HTTP content encoding is used.
@@ -36,12 +36,17 @@ SOTA delivery, OEM approval, Aos IAM/KUKSA authorization or Gateway policy.
 
 The backend stores only current-demo functional records. It is not an
 AosCloud mirror, lifecycle authority or long-term demo-run archive. The local
-Demo Orchestrator obtains the exact current Validation and Production
-`system_uid` values from the current-run provisioning journal and performs an
-explicit preview/confirm/execute reset. The admin endpoints are unavailable to
-the browser, guest ingestion route and LAN. Wildcard, missing or non-two-Unit
-selectors are rejected. An empty matching dataset is a valid idempotent result,
-but the two exact Unit identities are still mandatory.
+Demo Orchestrator obtains the exact current Test Vehicle and Production
+Vehicle `system_uid` values from the current-run provisioning journal and
+performs an explicit preview/confirm/execute reset. The accepted wire enum
+`VALIDATION` and its provisioning identity map to the user-facing label **Test
+Vehicle**; human-facing product text must use only that label.
+The cleanup selector is exactly those two sorted Unit UIDs and contains no
+`demoRunId`, start time or end time. The admin endpoints use a separate
+mode-`0600` Unix-domain HTTP composition root and are unavailable to the
+browser, guest ingestion route and LAN. Wildcard, missing or non-two-Unit
+selectors are rejected. An empty matching dataset is a valid idempotent
+result, but the two exact Unit identities are still mandatory.
 
 The 60-second preview token binds the two sorted identities, record counts,
 record-set digest and expiry. Execute is rejected when new records make the
@@ -66,10 +71,20 @@ full, locked beyond timeout or migration failure returns `503`, creates no ACK
 and leaves the Service outbox authoritative. No historical run archive or
 separate backup belongs to the first demo.
 
+Foundation migration `001_initialize.sql` is immutable and retains its
+historic `schema_migrations` ledger. Data migration `002_brake_data.sql`
+performs the complete ledger transition and Brake data schema creation in one
+transaction: create `schema_version`, copy the v1 ledger row, drop
+`schema_migrations`, create the data tables and indexes, insert the v2 ledger
+row, and set `PRAGMA user_version = 2`. The runner selects `schema_version`
+when it exists and otherwise the legacy ledger, so a v1 database upgrades
+without rewriting history and any v2 failure rolls back to the intact v1
+ledger and `user_version = 1`.
+
 Files:
 
 - [`brake-cloud-api-profile.v1.json`](brake-cloud-api-profile.v1.json) — exact
-  review-candidate endpoint, scope, acknowledgement, persistence,
+  accepted endpoint, scope, acknowledgement, persistence,
   retry, query and reset rules;
 - [`brake-cloud-ack.schema.json`](brake-cloud-ack.schema.json) — closed durable
   acknowledgement schema;
@@ -78,10 +93,24 @@ Files:
   Gateway Status;
 - [`cleanup-preview.schema.json`](cleanup-preview.schema.json) — closed reset
   preview and confirmation-token schema;
+- [`brake-cloud-query-admin-profile.v1.json`](brake-cloud-query-admin-profile.v1.json)
+  — exact bounded REST pagination, closed error mapping, notification-only SSE
+  and separate local-admin transport;
+- [`query-page.schema.json`](query-page.schema.json),
+  [`error-response.schema.json`](error-response.schema.json) and
+  [`sse-change-notification.schema.json`](sse-change-notification.schema.json)
+  — closed browser-query responses;
+- [`cleanup-preview-request.schema.json`](cleanup-preview-request.schema.json),
+  [`cleanup-execute-request.schema.json`](cleanup-execute-request.schema.json)
+  and [`cleanup-result.schema.json`](cleanup-result.schema.json) — closed
+  two-UID admin request/result messages with no run identifier or time range;
 - [`fixtures/brake-cloud-ack.valid.json`](fixtures/brake-cloud-ack.valid.json)
   [`fixtures/brake-advisory-fact.valid.json`](fixtures/brake-advisory-fact.valid.json)
   and [`fixtures/cleanup-preview.valid.json`](fixtures/cleanup-preview.valid.json)
-  — conformance fixtures.
+  — ingestion/preview conformance fixtures; and
+- the query page, closed error, SSE notification, cleanup preview request,
+  cleanup execute request and cleanup result files under `fixtures/`
+  — Query/SSE/Admin 1.0.0 annex conformance fixtures.
 
 Backend idempotency is namespaced by the correlation-only `unitSystemUid` and
 the exact canonical `messageType` before its message-specific identity. A
@@ -101,11 +130,22 @@ matching durable acknowledgement. `409` leaves the source in
 receipt proves durable storage of exact logical content only; it proves no
 Gateway application, driver receipt or OEM acceptance.
 
+A schema-valid completion is itself durably stored and acknowledged even when
+some declared chunks have not arrived. That receipt does not make the window
+terminal: its projection remains `PARTIAL` until every declared chunk index is
+present and the ordered chunk digests, sample and phase counts, terminal state
+and `windowSha256` all validate. Any inconsistent combined set is quarantined
+and remains non-terminal. Durable message receipt and terminal window
+projection are therefore separate factual states.
+
 The Brake Dashboard obtains functional windows, assessments, events and
-advisory facts only through bounded, stably ordered Brake backend REST queries
-for the exact current Validation or Production Unit. Server-Sent Events are
-change notifications only: after reconnect or any detected gap, the Dashboard
-re-reads authoritative REST state. `/health/live` and `/health/ready` describe
+advisory facts only through the accepted 1.0.0 annex's bounded keyset-paginated
+REST queries for the exact current Test or Production Unit. `VALIDATION` is
+the wire identity for the Test Vehicle; the Dashboard label remains **Test
+Vehicle**. Server-Sent Events contain change notifications only. After every
+notification, every reconnect, any detected gap or backend restart, the
+Dashboard re-reads authoritative REST state; no SSE ID or payload is state
+authority. `/health/live` and `/health/ready` describe
 the local backend process and database only. They are not Unit or Service
 readiness. AosCloud/AosCore lifecycle and readiness remain authoritative and
 are shown by the separate Software Delivery Dashboard. The UI labels these two
@@ -114,3 +154,16 @@ Brake records.
 
 This accepted design contract authorizes no repository creation, backend
 implementation, signing, Cloud call, Unit mutation or deployment by itself.
+
+## Accepted Fixture Erratum — 2026-08-29
+
+The originally accepted
+`fixtures/brake-advisory-fact.valid.json` contained a placeholder
+`contentSha256` of 64 `3` characters. The schema and wire contract are
+unchanged. RFC-8785 canonicalization of the fixture's existing `content`
+object yields the corrected SHA-256
+`56500a4db40505e7a1c03ba37830f03b9a406cb54db8e1a81790f907431e703a`.
+With only that value corrected and the file's existing formatting preserved,
+the complete fixture SHA-256 is
+`a2dc0c016d5281c9accead1d6447600d4a2c3736acaef1f725a2831efe334cad`.
+This is an accepted fixture erratum, not a Brake Cloud API version change.

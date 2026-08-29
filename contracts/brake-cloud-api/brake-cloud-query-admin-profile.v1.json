@@ -1,0 +1,131 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "profileId": "aosedge-demo-brake-cloud-query-admin",
+  "contractVersion": "1.0.0",
+  "lifecycleState": "ACCEPTED",
+  "decision": "D4-017",
+  "acceptedClarifications": [
+    "BC-DATA-DEC-03",
+    "BC-DATA-DEC-05",
+    "BC-DATA-DEC-06"
+  ],
+  "rest": {
+    "transport": "HTTP_1_1",
+    "basePath": "/api/v1/brake",
+    "requestContentType": "application/json",
+    "responseContentType": "application/json",
+    "unitSelector": "EXACT_PATH_SYSTEM_UID",
+    "userFacingUnitRoleLabels": {"VALIDATION": "Test Vehicle", "PRODUCTION": "Production Vehicle"},
+    "unknownUnitBehavior": "200_EMPTY_PAGE",
+    "routes": [
+      {
+        "resourceType": "WINDOW",
+        "method": "GET",
+        "path": "/units/{systemUid}/windows",
+        "order": ["windowStartTimestamp_DESC", "eventId_DESC"]
+      },
+      {
+        "resourceType": "ASSESSMENT",
+        "method": "GET",
+        "path": "/units/{systemUid}/assessments",
+        "order": ["assessedAt_DESC", "assessmentId_DESC"]
+      },
+      {
+        "resourceType": "EVENT",
+        "method": "GET",
+        "path": "/units/{systemUid}/events",
+        "order": ["effectiveAt_DESC", "eventId_DESC"]
+      },
+      {
+        "resourceType": "ADVISORY",
+        "method": "GET",
+        "path": "/units/{systemUid}/advisories",
+        "order": ["recordedAt_DESC", "requestId_DESC", "gatewayState_DESC"]
+      }
+    ],
+    "pagination": {
+      "style": "OPAQUE_KEYSET_CURSOR",
+      "limitQueryParameter": "limit",
+      "cursorQueryParameter": "cursor",
+      "defaultLimit": 50,
+      "maximumLimit": 100,
+      "minimumLimit": 1,
+      "cursorEncoding": "BASE64URL_NO_PADDING_OF_RFC8785_JSON_ARRAY",
+      "cursorFields": ["unitSystemUid", "resourceType", "primaryOrderValue", "identityTieBreakers"],
+      "cursorIsOpaqueToClient": true,
+      "snapshotIsolationClaimed": false,
+      "malformedOrScopeMismatchedCursor": "400_INVALID_CURSOR",
+      "endOfCollection": "nextCursor_NULL"
+    },
+    "responseSchema": "query-page.schema.json",
+    "cacheControl": "no-store"
+  },
+  "errors": {
+    "schema": "error-response.schema.json",
+    "contentType": "application/json",
+    "mappings": [
+      {"errorCode": "INVALID_REQUEST", "httpStatus": 400, "retryable": false},
+      {"errorCode": "INVALID_CURSOR", "httpStatus": 400, "retryable": false},
+      {"errorCode": "NOT_FOUND", "httpStatus": 404, "retryable": false},
+      {"errorCode": "CONTENT_CONFLICT", "httpStatus": 409, "retryable": false},
+      {"errorCode": "PREVIEW_STALE", "httpStatus": 409, "retryable": false},
+      {"errorCode": "PREVIEW_TOKEN_EXPIRED", "httpStatus": 409, "retryable": false},
+      {"errorCode": "PAYLOAD_TOO_LARGE", "httpStatus": 413, "retryable": false},
+      {"errorCode": "UNPROCESSABLE_MESSAGE", "httpStatus": 422, "retryable": false},
+      {"errorCode": "TEMPORARILY_UNAVAILABLE", "httpStatus": 503, "retryable": true}
+    ]
+  },
+  "sse": {
+    "method": "GET",
+    "path": "/api/v1/brake/stream",
+    "systemUidQueryParameter": "systemUid",
+    "systemUidRule": "EXACT_ONE_CURRENT_VALIDATION_OR_PRODUCTION_SYSTEM_UID",
+    "responseContentType": "text/event-stream",
+    "cacheControl": "no-store",
+    "eventName": "brake-data-changed",
+    "dataSchema": "sse-change-notification.schema.json",
+    "eventId": "MONOTONIC_UNSIGNED_DECIMAL_PER_BACKEND_PROCESS",
+    "statePayloadAllowed": false,
+    "replayOrResumeAuthority": false,
+    "lastEventIdIsStateAuthority": false,
+    "clientRuleAfterEveryNotification": "AUTHORITATIVE_REST_REREAD",
+    "clientRuleAfterEveryReconnect": "AUTHORITATIVE_REST_REREAD_BEFORE_CURRENT_PRESENTATION",
+    "clientRuleAfterGapOrBackendRestart": "DISCARD_CONTINUITY_CLAIM_AND_AUTHORITATIVE_REST_REREAD",
+    "backpressureBehavior": "CLOSE_CONNECTION_CLIENT_RECONNECTS_AND_REREADS_REST"
+  },
+  "admin": {
+    "transport": "HTTP_1_1_OVER_UNIX_DOMAIN_SOCKET",
+    "socketPath": "/run/brake-health-cloud/admin.sock",
+    "socketMode": "0600",
+    "compositionRoot": "SEPARATE_FROM_BROWSER_QUERY_AND_GUEST_INGESTION_LISTENERS",
+    "accessBoundary": "LOCAL_DEMO_ORCHESTRATOR_ONLY",
+    "browserAccessAllowed": false,
+    "guestIngestionRouteAccessAllowed": false,
+    "lanAccessAllowed": false,
+    "requestContentType": "application/json",
+    "responseContentType": "application/json",
+    "maximumRequestBytes": 4096,
+    "selector": "EXACT_SORTED_CURRENT_VALIDATION_AND_PRODUCTION_SYSTEM_UIDS",
+    "selectorSource": "CURRENT_RUN_PROVISIONING_JOURNAL",
+    "demoRunIdFieldAllowed": false,
+    "runTimeRangeFieldAllowed": false,
+    "preview": {
+      "method": "POST",
+      "path": "/api/v1/brake/admin/current-run/cleanup-preview",
+      "requestSchema": "cleanup-preview-request.schema.json",
+      "responseSchema": "cleanup-preview.schema.json",
+      "successHttpStatus": 200
+    },
+    "execute": {
+      "method": "POST",
+      "path": "/api/v1/brake/admin/current-run/cleanup",
+      "requestSchema": "cleanup-execute-request.schema.json",
+      "responseSchema": "cleanup-result.schema.json",
+      "successHttpStatus": 200,
+      "transaction": "ONE_SQLITE_TRANSACTION",
+      "staleOrExpiredTokenBehavior": "409_CLOSED_ERROR_NO_DELETE",
+      "ambiguousResponseBehavior": "AUTHORITATIVE_PREVIEW_REREAD_NO_BLIND_REPEAT"
+    }
+  }
+}

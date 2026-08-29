@@ -1,0 +1,28 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:brake-cloud-error-response:schema:v1",
+  "title": "Brake Cloud Closed Error Response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "contractVersion", "errorCode", "message", "retryable"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "contractVersion": {"const": "1.0.0"},
+    "errorCode": {
+      "enum": [
+        "INVALID_REQUEST",
+        "INVALID_CURSOR",
+        "NOT_FOUND",
+        "CONTENT_CONFLICT",
+        "PREVIEW_STALE",
+        "PREVIEW_TOKEN_EXPIRED",
+        "PAYLOAD_TOO_LARGE",
+        "UNPROCESSABLE_MESSAGE",
+        "TEMPORARILY_UNAVAILABLE"
+      ]
+    },
+    "message": {"type": "string", "minLength": 1, "maxLength": 256},
+    "retryable": {"type": "boolean"}
+  }
+}

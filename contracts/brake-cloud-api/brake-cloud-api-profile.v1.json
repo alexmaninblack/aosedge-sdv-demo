@@ -65,6 +65,11 @@
     "acknowledgementKeyField": "messageKeySha256",
     "duplicateReusesOriginalReceiptIdAndReceivedAt": true,
     "windowLocalDeleteRule": "ALL_EXPECTED_CHUNKS_AND_SINGLE_COMPLETION_HAVE_MATCHING_DURABLE_ACK",
+    "completionReceiptMeaning": "SCHEMA_VALID_COMPLETION_DURABLY_STORED_INDEPENDENT_OF_WINDOW_PROJECTION",
+    "completionReceiptMayPrecedeTerminalProjection": true,
+    "terminalProjectionRule": "ALL_DECLARED_CHUNK_INDICES_PRESENT_AND_ORDERED_DIGESTS_COUNTS_PHASES_AND_WINDOW_SHA256_VALID",
+    "missingChunkProjectionState": "PARTIAL_NON_TERMINAL",
+    "inconsistentCombinedWindowDisposition": "QUARANTINE_NON_TERMINAL",
     "conflictLocalDisposition": "DELIVERY_CONFLICT_RETAIN_NO_AUTOMATIC_RETRY",
     "businessMeaning": "EXACT_LOGICAL_MESSAGE_DURABLY_STORED_ONLY",
     "gatewayApplicationAcknowledged": false,
@@ -101,7 +106,10 @@
     "writeConcurrency": "SINGLE_SERIALIZED_WRITER",
     "ingestionTransactionIncludes": ["IDEMPOTENCY_CHECK", "CANONICAL_MESSAGE_INSERT", "TYPED_PROJECTION_UPDATE", "DURABLE_RECEIPT_INSERT"],
     "schemaVersionTable": "schema_version",
-    "tables": ["messages", "window_chunks", "window_completions", "assessments", "condition_events", "advisory_facts", "quarantine"],
+    "foundationMigrationOne": "IMMUTABLE_001_INITIALIZE_WITH_SCHEMA_MIGRATIONS_LEDGER",
+    "dataMigrationTwo": "TRANSACTIONALLY_CREATE_SCHEMA_VERSION_COPY_V1_LEDGER_DROP_SCHEMA_MIGRATIONS_CREATE_DATA_SCHEMA_RECORD_V2_AND_SET_USER_VERSION_2",
+    "migrationRunnerLedgerSelection": "SCHEMA_VERSION_IF_PRESENT_ELSE_SCHEMA_MIGRATIONS",
+    "tables": ["messages", "receipts", "window_chunks", "window_completions", "windows", "assessments", "condition_events", "advisory_facts", "quarantine"],
     "migrationPolicy": "FORWARD_ONLY_PACKAGED_TRANSACTIONAL_BEFORE_READY",
     "unknownNewerSchemaBehavior": "NOT_READY_NO_DESTRUCTIVE_RESET",
     "automaticDowngradeAllowed": false,
@@ -132,9 +140,10 @@
     "dashboardAuthority": "FUNCTIONAL_BACKEND_RECORDS_ONLY",
     "unitServiceReadinessAuthority": "AOSCLOUD_AND_AOSCORE_VIA_SOFTWARE_DELIVERY_DASHBOARD",
     "currentUnitSelector": "EXACT_CURRENT_VALIDATION_OR_PRODUCTION_SYSTEM_UID",
-    "pagination": "BOUNDED_STABLE_ORDER_WITH_EXPLICIT_CURSOR_OR_OFFSET",
+    "pagination": "BOUNDED_STABLE_ORDER_WITH_OPAQUE_KEYSET_CURSOR",
     "sseRole": "CHANGE_NOTIFICATION_ONLY_NOT_STATE_AUTHORITY",
-    "sseReconnectBehavior": "AUTHORITATIVE_REST_REREAD"
+    "sseReconnectBehavior": "AUTHORITATIVE_REST_REREAD",
+    "wireAnnex": "brake-cloud-query-admin-profile.v1.json"
   },
   "cleanup": {
     "previewEndpoint": "/api/v1/brake/admin/current-run/cleanup-preview",
@@ -145,6 +154,8 @@
     "lanAccessAllowed": false,
     "selectorSource": "CURRENT_RUN_PROVISIONING_JOURNAL",
     "requiredSelector": "EXACT_CURRENT_VALIDATION_AND_PRODUCTION_SYSTEM_UIDS",
+    "selectorContainsDemoRunId": false,
+    "selectorContainsRunTimeRange": false,
     "exactSystemUidCount": 2,
     "wildcardAllowed": false,
     "emptySelectorAllowed": false,
@@ -170,7 +181,8 @@
     "deletesCloudUnitsOrNodes": false,
     "deletesVmOrOverlay": false,
     "mustCompleteBeforeVolumeReset": true,
-    "overallResetOrderingDecision": "D4-021"
+    "overallResetOrderingDecision": "D4-021",
+    "wireAnnex": "brake-cloud-query-admin-profile.v1.json"
   },
   "presentation": {
     "requiredCommonFields": [
@@ -186,6 +198,10 @@
     "v1Views": ["GROWING_WINDOW", "TERMINAL_WINDOW"],
     "v2Views": ["ASSESSMENT", "CONDITION_BAND_CHANGE"],
     "v3Views": ["ASSESSMENT", "CONDITION_BAND_CHANGE", "ADVISORY_FACT"],
+    "userFacingUnitRoleLabels": {
+      "VALIDATION": "Test Vehicle",
+      "PRODUCTION": "Production Vehicle"
+    },
     "requiredAuthorityLabels": [
       "FUNCTIONAL_DATA_FROM_BRAKE_BACKEND",
       "UNIT_AND_SERVICE_STATE_FROM_AOSCLOUD"

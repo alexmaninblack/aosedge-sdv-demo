@@ -1,0 +1,52 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:brake-cloud-cleanup-result:schema:v1",
+  "title": "Brake Cloud Current-Unit Cleanup Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "contractVersion", "systemUids", "deletedRecordCounts", "remainingMatchingRecordCounts", "nonmatchingRecordSetSha256", "completedAt"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "contractVersion": {"const": "1.0.0"},
+    "systemUids": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._:-]+$"}
+    },
+    "deletedRecordCounts": {"$ref": "#/$defs/recordCounts"},
+    "remainingMatchingRecordCounts": {"$ref": "#/$defs/zeroRecordCounts"},
+    "nonmatchingRecordSetSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "completedAt": {"type": "string", "format": "date-time"}
+  },
+  "$defs": {
+    "recordCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["messages", "windows", "assessments", "events", "advisories", "quarantine"],
+      "properties": {
+        "messages": {"type": "integer", "minimum": 0},
+        "windows": {"type": "integer", "minimum": 0},
+        "assessments": {"type": "integer", "minimum": 0},
+        "events": {"type": "integer", "minimum": 0},
+        "advisories": {"type": "integer", "minimum": 0},
+        "quarantine": {"type": "integer", "minimum": 0}
+      }
+    },
+    "zeroRecordCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["messages", "windows", "assessments", "events", "advisories", "quarantine"],
+      "properties": {
+        "messages": {"const": 0},
+        "windows": {"const": 0},
+        "assessments": {"const": 0},
+        "events": {"const": 0},
+        "advisories": {"const": 0},
+        "quarantine": {"const": 0}
+      }
+    }
+  }
+}

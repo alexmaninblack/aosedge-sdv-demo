@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "resourceType": "WINDOW",
+  "unitSystemUid": "demo-unit-validation-001",
+  "unitRole": "VALIDATION",
+  "limit": 50,
+  "items": [
+    {
+      "eventId": "11111111-2222-4333-8444-555555555555",
+      "unitSystemUid": "demo-unit-validation-001",
+      "unitRole": "VALIDATION",
+      "serviceVersion": "1.0.0",
+      "serviceArtifactSha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "vdpContractVersion": "1.0.0",
+      "vdpContractSha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "windowStartTimestamp": "2026-08-22T12:00:00.000Z",
+      "backendReceivedAt": "2026-08-22T12:00:15.000Z",
+      "deliveryState": "DURABLY_RECEIVED",
+      "projectionState": "TERMINAL",
+      "terminalState": "COMPLETE",
+      "receivedChunkCount": 2,
+      "expectedChunkCount": 2,
+      "receivedSampleCount": 20,
+      "phaseSampleCounts": {"PRE": 10, "ACTIVE": 5, "POST": 5},
+      "completionContentSha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "windowSha256": "4444444444444444444444444444444444444444444444444444444444444444"
+    }
+  ],
+  "nextCursor": null
+}

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "systemUids": ["demo-system-20260822", "validation-system-20260822"],
+  "systemUids": ["production-system-20260822", "validation-system-20260822"],
   "recordCounts": {
     "messages": 18,
     "windows": 2,
