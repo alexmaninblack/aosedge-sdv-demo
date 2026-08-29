@@ -33,6 +33,15 @@ class PlatformFotaSafeStopContractTest(unittest.TestCase):
         self.assertTrue(evidence["sourceTimestampRequired"])
         self.assertTrue(evidence["sourceFreshnessCheckedAtAcquisition"])
         self.assertIn("Vehicle.CarlaSimulation.FrameId", evidence["requiredPaths"])
+        controller_group = {
+            "Vehicle.CarlaSimulation.Control.ActiveMode",
+            "Vehicle.CarlaSimulation.Control.TransitionState",
+            "Vehicle.CarlaSimulation.Control.Generation",
+            "Vehicle.CarlaSimulation.Reset.Generation",
+            "Vehicle.CarlaSimulation.Reset.InProgress",
+            "Vehicle.CarlaSimulation.Reset.Discontinuity",
+        }
+        self.assertTrue(controller_group.issubset(evidence["requiredPaths"]))
         policy = self.profile["policy"]
         self.assertEqual("SAFE_STOP", policy["activeMode"])
         self.assertEqual("STABLE", policy["transitionState"])
@@ -48,6 +57,7 @@ class PlatformFotaSafeStopContractTest(unittest.TestCase):
             policy["maximumSampleAgeMs"],
         )
         self.assertEqual("NOT_SAFE", policy["stoppedInAnotherMode"])
+        self.assertEqual("NOT_SAFE", policy["missingOrContradictoryEvidence"])
         self.assertFalse(policy["resetInProgressAllowed"])
         self.assertFalse(policy["resetDiscontinuityAllowed"])
 

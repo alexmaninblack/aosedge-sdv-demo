@@ -3,7 +3,7 @@
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "schemaVersion": 1,
   "contractId": "aosedge-demo-simulator-control-context",
-  "contractVersion": "1.0.0",
+  "contractVersion": "1.1.0",
   "decision": "D4-004",
   "states": {
     "driveModes": ["SAFE_STOP", "SCENARIO", "MANUAL", "AUTOPILOT"],
@@ -95,6 +95,76 @@
     { "path": "Vehicle.CarlaSimulation.Reset.FrameId", "dataType": "uint64", "semantics": "First complete CARLA frame published after the latest successful reset." },
     { "path": "Vehicle.CarlaSimulation.Reset.Discontinuity", "dataType": "boolean", "semantics": "True on the first complete post-reset snapshot; clients also compare Reset.Generation so the discontinuity cannot be missed." }
   ],
+  "controllerGatewayHandoff": {
+    "transport": {
+      "addressFamily": "AF_UNIX",
+      "socketType": "SOCK_DGRAM",
+      "recordEncoding": "UTF-8_JSON",
+      "oneAtomicRecordPerCompletedFrame": true,
+      "controllerSend": "NON_BLOCKING",
+      "runtimeDirectoryMode": "0700",
+      "socketMode": "0600",
+      "linuxPeerCredentialsRequired": true,
+      "maximumDatagramBytes": 4096,
+      "rejectTruncatedOrOversizeBeforeJson": true,
+      "streamProtocol": false,
+      "reconnectProtocol": false,
+      "historyOrReplay": false
+    },
+    "record": {
+      "schemaVersion": 1,
+      "additionalProperties": false,
+      "requiredFields": [
+        "schemaVersion",
+        "runId",
+        "egoActorId",
+        "frameId",
+        "simulationTime",
+        "activeMode",
+        "transitionState",
+        "controlGeneration",
+        "resetGeneration",
+        "resetInProgress",
+        "resetDiscontinuity"
+      ],
+      "fieldTypes": {
+        "schemaVersion": "uint32",
+        "runId": "non-empty-string",
+        "egoActorId": "uint64",
+        "frameId": "uint64",
+        "simulationTime": "finite-nonnegative-number",
+        "activeMode": "drive-mode-enum",
+        "transitionState": "transition-state-enum",
+        "controlGeneration": "uint64",
+        "resetGeneration": "uint64",
+        "resetInProgress": "boolean",
+        "resetDiscontinuity": "boolean"
+      }
+    },
+    "join": {
+      "matchKeys": ["frameId", "simulationTime"],
+      "exactMatchRequired": true,
+      "maximumUnmatchedPhysicalRecords": 4,
+      "maximumUnmatchedControlRecords": 4,
+      "maximumResidenceMs": 250,
+      "residenceClock": "HOST_MONOTONIC_FROM_FIRST_RECEIPT",
+      "exactMatchRemovesBoth": true,
+      "malformedDuplicateOrOutOfOrder": "DISCARD",
+      "overflowOrExpiry": "EVICT_OLDEST_UNMATCHED",
+      "missingFactBehavior": "OMIT_ALL_SIX_CONTROL_RESET_FACTS_FOR_FRAME",
+      "diagnosticState": "BOUNDED_COUNTER_ONLY",
+      "lastKnownReuse": false,
+      "safeStopFreshnessPolicy": false
+    },
+    "resetEmission": {
+      "preResetCompletedFrame": "MAY_REPORT_PREPARING_AND_IN_PROGRESS_WITH_CURRENT_GENERATION",
+      "blockingWithoutFrame": "EMIT_NOTHING",
+      "firstPostResetCompletedFrame": "INCREMENTED_RESET_GENERATION_NEW_CONTROL_GENERATION_AS_APPLICABLE_IN_PROGRESS_FALSE_DISCONTINUITY_TRUE",
+      "nextCompletedFrame": "DISCONTINUITY_FALSE",
+      "failedResetWithoutFrame": "NO_RESET_SUCCESS_EVIDENCE",
+      "uiOperationStateSeparate": true
+    }
+  },
   "resetSemantics": {
     "sameActor": true,
     "safeStopFirst": true,

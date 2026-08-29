@@ -191,7 +191,7 @@ calibration tolerance.
 - Architecture flow: [working vehicle baseline (`AF-G0-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-g0-rt)
 - Components: [Scenario Controller (`CMP-SCENE`)](../component-decomposition-and-interface-register.md#cmp-scene), jointly with [Vehicle Gateway (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw)
 - Interface: [Gateway commands (`IF-VEH-003`)](../component-decomposition-and-interface-register.md#if-veh-003)
-- Executable contract: [Simulator Control and Context 1.0.0](../../../contracts/simulator-control-context/simulator-control-context.v1.json)
+- Executable contract: [Simulator Control and Context 1.1.0](../../../contracts/simulator-control-context/simulator-control-context.v1.json)
 - Required evidence: stable actor/run identity, monotonic mode generation, aborted-attempt record and continuous frame range
 - Requirement state: D3 design-reviewed; D4-004 contract accepted
 - Implementation state: `CURRENT`
@@ -302,13 +302,20 @@ under [preserve immutable factory artifact (`SYS-RET-005`)](../system-requiremen
   scenario-owned obstacle state and reset the same actor to the accepted
   free-drive start before Traffic Manager can be enabled. Safe stop alone
   shall not reset context. A failed cleanup or reset shall leave safe stop
-  active and shall not partially activate the requested mode.
+  active and shall not partially activate the requested mode. Only a real
+  completed CARLA frame may carry transition/reset facts: the last such frame
+  before a blocking reset may show `PREPARING`, reset in progress and current
+  generations; no frame is fabricated while blocked; the first real successful
+  post-reset frame carries the incremented reset generation, a new control
+  generation where applicable, reset not in progress and one-frame
+  discontinuity, which clears on the next real frame. A failed reset without a
+  completed frame creates no reset-success evidence.
 - Parent system requirements: [Deterministic mode/context transition (`SYS-CTRL-003`)](../system-requirements-and-traceability.md#sys-ctrl-003) and [truthful control-transition evidence (`SYS-OBS-005`)](../system-requirements-and-traceability.md#sys-obs-005)
 - Architecture flow: [drive-mode and world-context transitions (`AF-X-DRIVE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-drive)
 - Components: [CARLA (`CMP-CARLA`)](../component-decomposition-and-interface-register.md#cmp-carla) and [Scenario Controller (`CMP-SCENE`)](../component-decomposition-and-interface-register.md#cmp-scene), jointly with [Vehicle Gateway (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw)
 - Interface: [Gateway commands (`IF-VEH-003`)](../component-decomposition-and-interface-register.md#if-veh-003)
-- Executable contract: [Simulator Control and Context 1.0.0](../../../contracts/simulator-control-context/simulator-control-context.v1.json)
-- Required evidence: complete source-mode/context/target-mode matrix, obstacle inventory, actor identity, reset generation, zero-motion reset and injected cleanup/reset failures
+- Executable contract: [Simulator Control and Context 1.1.0](../../../contracts/simulator-control-context/simulator-control-context.v1.json)
+- Required evidence: complete source-mode/context/target-mode matrix, obstacle inventory, actor identity, exact frame/time-attributed controller records, reset/control generation sequence, zero-motion reset, no fabricated blocking-reset frame, exactly one real discontinuity frame and injected cleanup/reset failures
 - Requirement state: D3 design-reviewed; D4-004 contract accepted
 - Implementation state: `PARTIAL`; scenario restart, same-actor continuity and manual abort exist, but the obstacle is currently session-lived and Scenario/brake-event Manual to Autopilot does not yet perform the accepted cleanup/reset
 
@@ -387,7 +394,7 @@ profile does not grant the current Control UI authority to use it.
 | <a id="ut-vehicle-sim-005"></a>`UT-VEHICLE-SIM-005` — hybrid attempt accounting | [Hybrid ownership (`REQ-VEHICLE-SIM-003`)](#req-vehicle-sim-003) | Restart, abort on manual takeover, completion to safe stop, actor/run continuity | Existing mode-generation tests; full attempt ledger needs an explicit case | `PARTIAL` |
 | <a id="ut-vehicle-sim-006"></a>`UT-VEHICLE-SIM-006` — tire stimulus model | [Tire stimulus (`REQ-VEHICLE-SIM-005`)](#req-vehicle-sim-005) | Initial condition, deterministic progression, threshold boundaries, reset and hidden-truth separation | No implementation | `TARGET` |
 | <a id="ut-vehicle-sim-007"></a>`UT-VEHICLE-SIM-007` — cleanup reconciliation | [Cleanup (`REQ-VEHICLE-SIM-006`)](#req-vehicle-sim-006) | Normal, interrupted, partially failed and repeated cleanup with owned versus foreign actors | Launcher cleanup checks exist; actor/sensor reconciliation test is missing | `PARTIAL` |
-| <a id="ut-vehicle-sim-008"></a>`UT-VEHICLE-SIM-008` — mode/context transition matrix | [Context lifecycle (`REQ-VEHICLE-SIM-008`)](#req-vehicle-sim-008) | Every source mode/context/target mode, repeated requests, obstacle create/remove, same-actor reset, abort, collision and injected cleanup/reset failures | Existing scenario-generation and manual-abort tests cover only part of the matrix | `PARTIAL` |
+| <a id="ut-vehicle-sim-008"></a>`UT-VEHICLE-SIM-008` — mode/context transition and reset emission | [Context lifecycle (`REQ-VEHICLE-SIM-008`)](#req-vehicle-sim-008) | Every source mode/context/target mode, repeated requests, obstacle create/remove, same-actor reset, abort, collision, real-frame-only PREPARING/post-reset sequence, exactly one discontinuity frame, failed-reset no-evidence behavior and injected cleanup/reset failures | Existing scenario-generation and manual-abort tests cover only part of the matrix | `PARTIAL` |
 | <a id="ut-vehicle-sim-009"></a>`UT-VEHICLE-SIM-009` — capability-manifest validation | [Hardware profile (`REQ-VEHICLE-SIM-009`)](#req-vehicle-sim-009) | Required identity/schema fields, unique capabilities, units/frames/ranges, provenance classes, digest stability and installed/not-installed distinction | Canonical profile/schema accepted; repository validator and live reconciliation remain missing | `PARTIAL` |
 | <a id="ut-vehicle-sim-010"></a>`UT-VEHICLE-SIM-010` — signal/actuator coverage and truth isolation | [Complete boundary (`REQ-VEHICLE-SIM-010`)](#req-vehicle-sim-010) | Every manifest entry accounted, signal unavailable behavior, command accept/reject/applied state and qualification-only negative cases | Existing scalar/control tests cover only the current subset | `PARTIAL` |
 
@@ -405,7 +412,7 @@ Physical dynamics and actual actor cleanup remain integration obligations.
 | [Tire stimulus (`REQ-VEHICLE-SIM-005`)](#req-vehicle-sim-005) | [`UT-VEHICLE-SIM-006`](#ut-vehicle-sim-006) | Versioned stimulus component | Hidden-truth/production-data separation | Live dynamics response | T1 condition-estimation proof |
 | [Cleanup (`REQ-VEHICLE-SIM-006`)](#req-vehicle-sim-006) | [`UT-VEHICLE-SIM-007`](#ut-vehicle-sim-007) | Cleanup manifest | Owned-actor inventory schema | Interrupted and repeated cleanup | R0 retirement evidence |
 | [Honest source (`REQ-VEHICLE-SIM-007`)](#req-vehicle-sim-007) | Reasoned N/A: presentation/source selection is cross-component | Role-labelled result | Live handover contract | Sequential VU attach/detach, reset and PU attach/detach qualification | `AF-X-SOURCE` audience evidence |
-| [Context lifecycle (`REQ-VEHICLE-SIM-008`)](#req-vehicle-sim-008) | [`UT-VEHICLE-SIM-008`](#ut-vehicle-sim-008) | Context/obstacle/reset state machine | `AF-X-DRIVE` transition fixture | Live all-transition matrix | G0 mode/context/dashboard evidence |
+| [Context lifecycle (`REQ-VEHICLE-SIM-008`)](#req-vehicle-sim-008) | [`UT-VEHICLE-SIM-008`](#ut-vehicle-sim-008) | Context/obstacle/reset state machine | `AF-X-DRIVE` transition plus controller-handoff reset fixtures | Live all-transition matrix | G0 mode/context/dashboard evidence |
 | [Hardware profile (`REQ-VEHICLE-SIM-009`)](#req-vehicle-sim-009) | [`UT-VEHICLE-SIM-009`](#ut-vehicle-sim-009) | Canonical manifest and digest | Manifest/schema/coverage contract | Live actor/sensor reconciliation | G0 hardware-profile evidence |
 | [Complete boundary (`REQ-VEHICLE-SIM-010`)](#req-vehicle-sim-010) | [`UT-VEHICLE-SIM-010`](#ut-vehicle-sim-010) | Runtime coverage report | `IF-VEH-001`/`IF-VEH-003` complete fixtures | Live signal/control comparison | G0 no-silent-loss evidence |
 

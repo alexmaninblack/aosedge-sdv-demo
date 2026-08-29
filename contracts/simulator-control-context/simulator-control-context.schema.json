@@ -15,6 +15,7 @@
     "states",
     "transitions",
     "projection",
+    "controllerGatewayHandoff",
     "resetSemantics",
     "reversePolicy"
   ],
@@ -74,6 +75,93 @@
           "dataType": { "enum": ["string", "uint64", "boolean"] },
           "allowedValues": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string" } },
           "semantics": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "controllerGatewayHandoff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["transport", "record", "join", "resetEmission"],
+      "properties": {
+        "transport": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["addressFamily", "socketType", "recordEncoding", "oneAtomicRecordPerCompletedFrame", "controllerSend", "runtimeDirectoryMode", "socketMode", "linuxPeerCredentialsRequired", "maximumDatagramBytes", "rejectTruncatedOrOversizeBeforeJson", "streamProtocol", "reconnectProtocol", "historyOrReplay"],
+          "properties": {
+            "addressFamily": { "const": "AF_UNIX" },
+            "socketType": { "const": "SOCK_DGRAM" },
+            "recordEncoding": { "const": "UTF-8_JSON" },
+            "oneAtomicRecordPerCompletedFrame": { "const": true },
+            "controllerSend": { "const": "NON_BLOCKING" },
+            "runtimeDirectoryMode": { "const": "0700" },
+            "socketMode": { "const": "0600" },
+            "linuxPeerCredentialsRequired": { "const": true },
+            "maximumDatagramBytes": { "const": 4096 },
+            "rejectTruncatedOrOversizeBeforeJson": { "const": true },
+            "streamProtocol": { "const": false },
+            "reconnectProtocol": { "const": false },
+            "historyOrReplay": { "const": false }
+          }
+        },
+        "record": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["schemaVersion", "additionalProperties", "requiredFields", "fieldTypes"],
+          "properties": {
+            "schemaVersion": { "const": 1 },
+            "additionalProperties": { "const": false },
+            "requiredFields": {
+              "const": ["schemaVersion", "runId", "egoActorId", "frameId", "simulationTime", "activeMode", "transitionState", "controlGeneration", "resetGeneration", "resetInProgress", "resetDiscontinuity"]
+            },
+            "fieldTypes": {
+              "const": {
+                "schemaVersion": "uint32",
+                "runId": "non-empty-string",
+                "egoActorId": "uint64",
+                "frameId": "uint64",
+                "simulationTime": "finite-nonnegative-number",
+                "activeMode": "drive-mode-enum",
+                "transitionState": "transition-state-enum",
+                "controlGeneration": "uint64",
+                "resetGeneration": "uint64",
+                "resetInProgress": "boolean",
+                "resetDiscontinuity": "boolean"
+              }
+            }
+          }
+        },
+        "join": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["matchKeys", "exactMatchRequired", "maximumUnmatchedPhysicalRecords", "maximumUnmatchedControlRecords", "maximumResidenceMs", "residenceClock", "exactMatchRemovesBoth", "malformedDuplicateOrOutOfOrder", "overflowOrExpiry", "missingFactBehavior", "diagnosticState", "lastKnownReuse", "safeStopFreshnessPolicy"],
+          "properties": {
+            "matchKeys": { "const": ["frameId", "simulationTime"] },
+            "exactMatchRequired": { "const": true },
+            "maximumUnmatchedPhysicalRecords": { "const": 4 },
+            "maximumUnmatchedControlRecords": { "const": 4 },
+            "maximumResidenceMs": { "const": 250 },
+            "residenceClock": { "const": "HOST_MONOTONIC_FROM_FIRST_RECEIPT" },
+            "exactMatchRemovesBoth": { "const": true },
+            "malformedDuplicateOrOutOfOrder": { "const": "DISCARD" },
+            "overflowOrExpiry": { "const": "EVICT_OLDEST_UNMATCHED" },
+            "missingFactBehavior": { "const": "OMIT_ALL_SIX_CONTROL_RESET_FACTS_FOR_FRAME" },
+            "diagnosticState": { "const": "BOUNDED_COUNTER_ONLY" },
+            "lastKnownReuse": { "const": false },
+            "safeStopFreshnessPolicy": { "const": false }
+          }
+        },
+        "resetEmission": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["preResetCompletedFrame", "blockingWithoutFrame", "firstPostResetCompletedFrame", "nextCompletedFrame", "failedResetWithoutFrame", "uiOperationStateSeparate"],
+          "properties": {
+            "preResetCompletedFrame": { "const": "MAY_REPORT_PREPARING_AND_IN_PROGRESS_WITH_CURRENT_GENERATION" },
+            "blockingWithoutFrame": { "const": "EMIT_NOTHING" },
+            "firstPostResetCompletedFrame": { "const": "INCREMENTED_RESET_GENERATION_NEW_CONTROL_GENERATION_AS_APPLICABLE_IN_PROGRESS_FALSE_DISCONTINUITY_TRUE" },
+            "nextCompletedFrame": { "const": "DISCONTINUITY_FALSE" },
+            "failedResetWithoutFrame": { "const": "NO_RESET_SUCCESS_EVIDENCE" },
+            "uiOperationStateSeparate": { "const": true }
+          }
         }
       }
     },

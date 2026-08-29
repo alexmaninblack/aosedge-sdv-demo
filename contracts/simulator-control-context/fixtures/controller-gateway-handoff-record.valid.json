@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "runId": "demo-run-2026-08-29",
+  "egoActorId": 42,
+  "frameId": 5201,
+  "simulationTime": 260.05,
+  "activeMode": "SCENARIO",
+  "transitionState": "STABLE",
+  "controlGeneration": 13,
+  "resetGeneration": 5,
+  "resetInProgress": false,
+  "resetDiscontinuity": true
+}

@@ -244,5 +244,7 @@ No generated artifact or out-of-boundary path was committed.
 
 `IMPLEMENTED` means only that the isolated projection core is complete. It does
 not make `IF-VEH-007` operational or qualified. The frame-coherent live
-controller handoff, selected-Unit mTLS identity/role assignment, live CARLA
-qualification, push and merge remain separately reviewed future work.
+controller handoff is the separately reviewed
+[WP-P1-VEH-GATEWAY-CONTROLLER-CPP-001](p1-vehicle-gateway-controller-cpp.md).
+Selected-Unit mTLS identity/role assignment, live CARLA qualification, push and
+merge remain separately reviewed future work.

@@ -26,6 +26,15 @@ remains a pure policy component. `FrameId` is part of every accepted snapshot,
 so the twelve-sample window requires twelve distinct monotonic CARLA frames
 rather than repeated reads of one cached state.
 
+The six controller/reset paths are a single frame-coherent Gateway fact group
+under the
+[Simulator Control and Context Contract](../simulator-control-context/simulator-control-context.v1.json).
+If the local controller record cannot be joined to the physical snapshot by
+exact frame ID and simulation time, the whole group is absent. Such a snapshot
+is incomplete and therefore follows the profile's existing
+`missingOrContradictoryEvidence = NOT_SAFE` rule. The local 250-ms join bound is
+not the OEM Runtime's Safe Stop freshness limit and cannot authorize an update.
+
 Version 1.1.1 clarifies the accepted freshness semantics. Every admitted
 sample must carry source time and be no older than 250 ms when it is acquired.
 The twelve-sample history proves only consecutive stability; it is not reused
