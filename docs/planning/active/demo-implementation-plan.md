@@ -405,10 +405,12 @@ handoff.
   source-complete on isolated commit `6712333`, with all owned tests and source
   gates passing; it remains unmerged and not qualified. The evidence-only
   [`WP-DEP-P1-PLATFORM-KAC-001`](work-packets/p1-platform-kac-dependency-acquisition.md)
-  completed Gate A and froze provisional lock `92714c3f` for the exact
+  is complete. Gate A froze provisional lock `92714c3f` for the exact
   native/target gRPC, Protobuf, OpenSSL, SoftHSM and official PKCS#11 Provider
-  selections and module paths. KAC compilation remains blocked pending the
-  separately reviewed Gate B exact source/license fetch and offline evidence.
+  selections and module paths. Gate B then fetched exactly those inputs and
+  reproduced the fetch with `BB_NO_NETWORK=1`; final report `e4f692f9` and
+  evidence manifest `b3a56b47` record the successful result. KAC compilation
+  and recipe integration remain a separate explicit authorization gate.
   Merge of the interdependent branches plus every artifact/image build and
   live qualification remains blocked until its separate gate is explicitly
   authorized.
@@ -576,11 +578,12 @@ The first P1 code batch has the following current state:
 3. the IAM/Safe Stop Factory/runtime packet in `L-PLATFORM` is `IMPLEMENTED`
    at isolated commit `4d88006`; its pinned offline C++ compile and all 51
    applicable Runtime/VISS/Safe Stop tests passed twice. The KAC source packet
-   is accepted but dependency-blocked; the KAC Factory-integration packet is
-   explicitly blocked on exact resource/signer inputs; and the VDP family is
+   is accepted and its exact dependency acquisition is complete, but KAC
+   compile and recipe integration remain separately gated; the KAC
+   Factory-integration packet is explicitly blocked on exact resource/signer
+   inputs; and the VDP family is
    source-complete at isolated commit `6712333`. Their combined merge,
-   dependency retrieval, artifact/image build and live qualification remain
-   gated;
+   artifact/image build and live qualification remain gated;
 4. the first Brake Service core packet is source-complete at isolated commit
    `7c0a658`; and
 5. the Brake Cloud foundation packet is source-complete at isolated commit

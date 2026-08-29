@@ -6,9 +6,10 @@
 - ID: `WP-DEP-P1-PLATFORM-KAC-001`
 - Lane: `L-PLATFORM-DEPENDENCIES`
 - Increment: `IMP-03-KAC-DEPENDENCIES`
-- State: `GATE A COMPLETED — GATE B REVIEW REQUIRED`
+- State: `COMPLETED`
 - Prepared: 2026-08-28
 - Gate A accepted and completed: 2026-08-29
+- Gate B accepted and completed: 2026-08-29
 - Product repositories: read-only
 - Product implementation, compile, image build and live operation authorized:
   no
@@ -156,14 +157,41 @@ and sstate remain empty. The Builder and its DNS bridge were stopped cleanly.
 No compile, install, product or documentation edit, artifact/image build or
 live operation occurred.
 
-The completion record for the whole packet still requires Gate B exact
-source/license payload verification, offline refetch evidence, cache inventory
-and proposed governance entries. Gate A completion authorizes neither KAC
-compilation nor dependency inclusion in a Factory Image.
+## Gate B Completion Record
+
+- Final report:
+  `evidence/gate-b-final-report.json`
+- Final report SHA-256:
+  `e4f692f9daa035123d92b6b488a1fb5730cbcd7656795e71f05d1370cbdbfb5d`
+- Cache inventory SHA-256:
+  `06cd34677f999657129f6c8100533ff1ea583b04c5ea85a54d727b41e9832e16`
+- Evidence manifest SHA-256:
+  `b3a56b470f0cd3a1e96ba6d1cbe5376cdbe59a67fb974c0e7eca25809bc63b72`
+- Proposed `DEPENDENCIES.json` delta SHA-256:
+  `e682f8e76e4cd88bbce78019db53323b02d20b796e0e561a00a64ab6ce214ce7`
+- Proposed `THIRD_PARTY_NOTICES.md` delta SHA-256:
+  `772c86a2323a1dcf176e68736de767373408c202528864a114d926ee9f78e97a`
+
+Gate B fetched exactly the seven locked target/native recipe selections and
+then repeated the same forced fetch with effective `BB_NO_NETWORK=1`. All Git
+revisions, recursive submodule closures, source archives and license checksums
+matched the accepted lock. The dedicated cache contains 22 canonical Git
+repositories and `5,278,737,914` bytes. Its inventory also records one
+unreferenced BitBake temporary duplicate of the same Protobuf origin from an
+earlier interrupted attempt and an empty uninative metadata directory; neither
+was used by the successful offline fetch and neither adds a source input.
+
+The proposed dependency and notice deltas are evidence only and were not
+applied. No dependency or KAC compile, package installation, product or
+governance edit, artifact/image build or live operation occurred. The Builder
+and DNS bridge were stopped cleanly. The whole evidence-only acquisition
+packet is therefore complete; KAC/dependency compile and recipe integration
+remain a separate explicit gate.
 
 ## Authorization Gate
 
-The operator accepted Gate A on 2026-08-29, and it completed with the evidence
-above. Gate B exact payload fetch still requires separate acceptance of the
-provisional lock. No later compile, install, product edit, artifact/image build
-or live operation is authorized by that acceptance.
+The operator accepted Gate A and Gate B on 2026-08-29, and both completed with
+the evidence above. That acceptance authorizes no later compile, recipe or
+product integration, install, governance application, artifact/image build or
+live operation. Those actions require a separately reviewed and explicitly
+accepted work packet.
