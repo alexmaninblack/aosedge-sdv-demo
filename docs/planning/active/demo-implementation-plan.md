@@ -461,8 +461,14 @@ handoff.
   [`WP-P1-BRAKE-CLOUD-DATA-001`](work-packets/p1-brake-cloud-data.md), is
   `PROPOSED — REVIEW REQUIRED`. It grants no branch, source edit, dependency,
   commit or product-operation authority. Its exact source-only data boundary
-  excludes synchronization completion, source-generation/run binding and
-  Test/Production comparative-success claims pending D4-024.
+  consumes an injected current Test/Production Unit context sourced from the
+  provisioning journal, while live context wiring remains deferred. It stores
+  later out-of-order chunks without projecting them before authoritative
+  window start, keeps VDP provenance nullable until exact assessment
+  correlation and binds cleanup to an explicit canonical row set plus a
+  process-local confirmation key. It excludes synchronization completion,
+  source-generation/run binding and Test/Production comparative-success claims
+  pending D4-024.
 - Scope: implement the prepared Brake v1-v3 candidates, bounded v1
   pre/active/post window, v2 synthetic local assessment and derived-only
   reporting, v3 typed maintenance advisory, bounded offline queue, backend,

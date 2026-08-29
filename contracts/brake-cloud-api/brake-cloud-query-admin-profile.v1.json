@@ -10,6 +10,18 @@
     "BC-DATA-DEC-05",
     "BC-DATA-DEC-06"
   ],
+  "currentUnitContext": {
+    "schema": "current-unit-context.schema.json",
+    "injection": "REQUIRED_EXPLICIT_APPLICATION_INPUT",
+    "acceptedSource": "CURRENT_RUN_PROVISIONING_JOURNAL",
+    "exactRoles": ["VALIDATION", "PRODUCTION"],
+    "exactUnitCount": 2,
+    "distinctSystemUidsRequired": true,
+    "cloudLifecycleOrReadinessFieldsAllowed": false,
+    "cloudLookupOrInferenceAllowed": false,
+    "liveProvisioningJournalAdapter": "DEFERRED_TO_BRAKE_CLOUD_INTEGRATION_001",
+    "missingOrInvalidBehavior": "503_CURRENT_UNIT_CONTEXT_UNAVAILABLE"
+  },
   "rest": {
     "transport": "HTTP_1_1",
     "basePath": "/api/v1/brake",
@@ -17,7 +29,9 @@
     "responseContentType": "application/json",
     "unitSelector": "EXACT_PATH_SYSTEM_UID",
     "userFacingUnitRoleLabels": {"VALIDATION": "Test Vehicle", "PRODUCTION": "Production Vehicle"},
-    "unknownUnitBehavior": "200_EMPTY_PAGE",
+    "currentUnitAuthorization": "PATH_SYSTEM_UID_MUST_EQUAL_ONE_IN_INJECTED_CURRENT_UNIT_CONTEXT",
+    "emptyCurrentUnitBehavior": "200_EMPTY_PAGE_WITH_CONTEXT_ROLE",
+    "nonCurrentUnitBehavior": "404_UNIT_NOT_CURRENT",
     "routes": [
       {
         "resourceType": "WINDOW",
@@ -59,7 +73,23 @@
       "endOfCollection": "nextCursor_NULL"
     },
     "responseSchema": "query-page.schema.json",
-    "cacheControl": "no-store"
+    "cacheControl": "no-store",
+    "windowProjectionVisibility": {
+      "outOfOrderChunkPersistence": "DURABLE_ACK_ALLOWED",
+      "visibleOnlyAfterAuthoritativeStart": true,
+      "authoritativeStartSources": ["CHUNK_INDEX_0_FIRST_SAMPLE_SOURCE_TIMESTAMP", "WINDOW_COMPLETION_WINDOW_START_TIMESTAMP"],
+      "bothSourcesMustMatchWhenPresent": true,
+      "laterChunkBeforeAuthoritativeStart": "PERSIST_WITHHOLD_WINDOW_QUERY_PROJECTION_AND_SSE_CHANGE",
+      "mismatchDisposition": "QUARANTINE_NON_TERMINAL"
+    },
+    "eventVdpProvenance": {
+      "initialState": "PENDING_ASSESSMENT_CORRELATION",
+      "pendingContractVersion": null,
+      "pendingContractSha256": null,
+      "correlationRequiredFields": ["unitSystemUid", "assessmentId", "sourceEventId", "serviceVersion", "serviceArtifactSha256", "modelId", "modelVersion", "modelConfigSha256"],
+      "correlatedState": "CORRELATED_ASSESSMENT",
+      "inferenceFromServiceVersionOrNearbyRecordAllowed": false
+    }
   },
   "errors": {
     "schema": "error-response.schema.json",
@@ -68,19 +98,23 @@
       {"errorCode": "INVALID_REQUEST", "httpStatus": 400, "retryable": false},
       {"errorCode": "INVALID_CURSOR", "httpStatus": 400, "retryable": false},
       {"errorCode": "NOT_FOUND", "httpStatus": 404, "retryable": false},
+      {"errorCode": "UNIT_NOT_CURRENT", "httpStatus": 404, "retryable": false},
       {"errorCode": "CONTENT_CONFLICT", "httpStatus": 409, "retryable": false},
       {"errorCode": "PREVIEW_STALE", "httpStatus": 409, "retryable": false},
       {"errorCode": "PREVIEW_TOKEN_EXPIRED", "httpStatus": 409, "retryable": false},
       {"errorCode": "PAYLOAD_TOO_LARGE", "httpStatus": 413, "retryable": false},
       {"errorCode": "UNPROCESSABLE_MESSAGE", "httpStatus": 422, "retryable": false},
-      {"errorCode": "TEMPORARILY_UNAVAILABLE", "httpStatus": 503, "retryable": true}
+      {"errorCode": "TEMPORARILY_UNAVAILABLE", "httpStatus": 503, "retryable": true},
+      {"errorCode": "CURRENT_UNIT_CONTEXT_UNAVAILABLE", "httpStatus": 503, "retryable": true}
     ]
   },
   "sse": {
     "method": "GET",
     "path": "/api/v1/brake/stream",
     "systemUidQueryParameter": "systemUid",
-    "systemUidRule": "EXACT_ONE_CURRENT_VALIDATION_OR_PRODUCTION_SYSTEM_UID",
+    "systemUidRule": "EXACT_ONE_UNIT_FROM_INJECTED_CURRENT_UNIT_CONTEXT",
+    "missingContextBehavior": "503_CURRENT_UNIT_CONTEXT_UNAVAILABLE_NO_STREAM",
+    "nonCurrentUnitBehavior": "404_UNIT_NOT_CURRENT_NO_STREAM",
     "responseContentType": "text/event-stream",
     "cacheControl": "no-store",
     "eventName": "brake-data-changed",
@@ -108,8 +142,60 @@
     "maximumRequestBytes": 4096,
     "selector": "EXACT_SORTED_CURRENT_VALIDATION_AND_PRODUCTION_SYSTEM_UIDS",
     "selectorSource": "CURRENT_RUN_PROVISIONING_JOURNAL",
+    "selectorMustEqualInjectedCurrentUnitContext": true,
     "demoRunIdFieldAllowed": false,
     "runTimeRangeFieldAllowed": false,
+    "recordSetDigest": {
+      "algorithm": "SHA256_OF_RFC8785_CANONICAL_JSON",
+      "selectedRows": "EXACT_SYSTEM_UID_EQUALITY_FOR_BOTH_CONTEXT_UNITS",
+      "topLevelShape": "ARRAY_OF_TABLE_NAME_AND_ROW_ARRAY_PAIRS",
+      "logicalTableOrder": ["messages", "windows", "assessments", "events", "advisories", "quarantine"],
+      "includeEmptyTableArrays": true,
+      "rowOrder": "LEXICOGRAPHIC_ASCENDING_RFC8785_CANONICAL_ROW_UTF8_BYTES",
+      "tables": [
+        {
+          "name": "messages",
+          "fields": ["unitSystemUid", "messageType", "messageIdentity", "messageKeySha256", "contentSha256", "canonicalMessageSha256", "backendReceivedAt", "receiptId", "receiptReceivedAt"]
+        },
+        {
+          "name": "windows",
+          "fields": ["unitSystemUid", "eventId", "projectionState", "terminalState", "receivedChunkCount", "expectedChunkCount", "receivedSampleCount", "windowStartTimestamp", "completionContentSha256", "windowSha256", "lastBackendReceivedAt"]
+        },
+        {
+          "name": "assessments",
+          "fields": ["unitSystemUid", "assessmentId", "sourceEventId", "contentSha256", "backendReceivedAt"]
+        },
+        {
+          "name": "events",
+          "fields": ["unitSystemUid", "eventId", "assessmentId", "sourceEventId", "contentSha256", "backendReceivedAt"]
+        },
+        {
+          "name": "advisories",
+          "fields": ["unitSystemUid", "requestId", "gatewayState", "contentSha256", "backendReceivedAt"]
+        },
+        {
+          "name": "quarantine",
+          "fields": ["unitSystemUid", "messageType", "messageIdentity", "messageKeySha256", "attemptedContentSha256", "reasonCode", "quarantinedAt"]
+        }
+      ],
+      "fieldValuesEncodedAs": "JSON_ARRAY_IN_DECLARED_FIELD_ORDER",
+      "duplicateJsonObjectKeyBehavior": "REJECT_BEFORE_CANONICALIZATION",
+      "nonmatchingDigestUsesSameShapeAndComplementRows": true
+    },
+    "confirmationToken": {
+      "format": "v1.BASE64URL_NO_PADDING_RFC8785_PAYLOAD.BASE64URL_NO_PADDING_HMAC_SHA256",
+      "payload": ["brake-cleanup-preview-v1", "sortedSystemUids", "recordCounts", "recordSetSha256", "expiresAt"],
+      "key": "RANDOM_256_BIT_PROCESS_LOCAL_NOT_PERSISTED_NOT_LOGGED_NOT_RETURNED",
+      "comparison": "CONSTANT_TIME",
+      "ttlSeconds": 60,
+      "maximumLength": 1024,
+      "malformedBehavior": "409_PREVIEW_TOKEN_EXPIRED",
+      "badMacBehavior": "409_PREVIEW_TOKEN_EXPIRED",
+      "previousProcessOrRestartBehavior": "409_PREVIEW_TOKEN_EXPIRED",
+      "previousProcessOrRestartNextAction": "NEW_PREVIEW_REQUIRED",
+      "validMacChangedCurrentRowSetBehavior": "409_PREVIEW_STALE",
+      "failureDeletesRecords": false
+    },
     "preview": {
       "method": "POST",
       "path": "/api/v1/brake/admin/current-run/cleanup-preview",
@@ -124,7 +210,9 @@
       "responseSchema": "cleanup-result.schema.json",
       "successHttpStatus": 200,
       "transaction": "ONE_SQLITE_TRANSACTION",
-      "staleOrExpiredTokenBehavior": "409_CLOSED_ERROR_NO_DELETE",
+      "malformedBadMacExpiredOrPreviousProcessTokenBehavior": "409_PREVIEW_TOKEN_EXPIRED",
+      "validMacChangedCurrentRowSetBehavior": "409_PREVIEW_STALE",
+      "tokenFailureDeletesRecords": false,
       "ambiguousResponseBehavior": "AUTHORITATIVE_PREVIEW_REREAD_NO_BLIND_REPEAT"
     }
   }

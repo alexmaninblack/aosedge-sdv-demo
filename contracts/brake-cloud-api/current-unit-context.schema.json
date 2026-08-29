@@ -1,0 +1,42 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:brake-cloud-current-unit-context:schema:v1",
+  "title": "Brake Cloud Injected Current Unit Context",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "contractVersion", "source", "testUnit", "productionUnit"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "contractVersion": {"const": "1.0.0"},
+    "source": {"const": "CURRENT_RUN_PROVISIONING_JOURNAL"},
+    "testUnit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["systemUid", "unitRole", "userFacingRole"],
+      "properties": {
+        "systemUid": {"$ref": "#/$defs/systemUid"},
+        "unitRole": {"const": "VALIDATION"},
+        "userFacingRole": {"const": "Test Vehicle"}
+      }
+    },
+    "productionUnit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["systemUid", "unitRole", "userFacingRole"],
+      "properties": {
+        "systemUid": {"$ref": "#/$defs/systemUid"},
+        "unitRole": {"const": "PRODUCTION"},
+        "userFacingRole": {"const": "Production Vehicle"}
+      }
+    }
+  },
+  "$defs": {
+    "systemUid": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$"
+    }
+  }
+}

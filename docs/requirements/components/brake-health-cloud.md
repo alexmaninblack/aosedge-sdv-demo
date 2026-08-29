@@ -308,7 +308,7 @@ of a real signing key or AosCloud account.
 Unit tests inject:
 
 - valid, duplicate, missing, reordered, corrupt and incompatible functional messages;
-- deterministic clocks, Unit IDs, run windows, source/event/receipt times and roles;
+- deterministic clocks, an injected closed Current Unit context, source/event/receipt times and roles;
 - in-memory transactional storage with restart and failure points;
 - release catalogue entries and malformed digest, permission, quota or compatibility metadata;
 - signing/publication helper results including confirmation cancellation,
@@ -329,7 +329,7 @@ components.
 | Interface | Direction | Data or command | Contract/version | Failure behavior | Authority |
 | --- | --- | --- | --- | --- | --- |
 | [Functional message family (`IF-FUNC-001`)](../component-decomposition-and-interface-register.md#if-func-001) | In | v1 ordered chunks/completion; v2/v3 assessments/events/advisory facts | Versioned Function Team 1 schema | Reject/quarantine invalid input; acknowledge only durable accepted state; retry remains bounded in vehicle | Service result plus backend acknowledgement |
-| [Function dashboard API (`IF-FUNC-002`)](../component-decomposition-and-interface-register.md#if-func-002) | Bidirectional | Reconstructed v1 windows and persisted v2/v3 results/status, plus exact current-run cleanup preview/delete | Versioned query/subscription and administration API | Expose stale/disconnected/partial state; reject unsafe cleanup scope; never synthesize current values | Brake Health Backend |
+| [Function dashboard API (`IF-FUNC-002`)](../component-decomposition-and-interface-register.md#if-func-002) | Bidirectional | CurrentUnitContext-scoped reconstructed v1 windows and persisted v2/v3 results/status, plus exact current-Unit cleanup preview/delete | Versioned query/subscription and administration API | Expose truthful empty/pending/partial state; reject non-current scope and unsafe cleanup; never synthesize Unit, Cloud or VDP provenance | Brake Health Backend |
 | [Native Service logs (`IF-OBS-001`)](../component-decomposition-and-interface-register.md#if-obs-001) | Bidirectional / delegated | Explicit SP1-owned service/crash list/create/read/download/delete | OpenAPI v11 `6.1.26` through separate `brake-sp1` operational allowlist | Wrong owner/type blocks; verbatim Cloud states; bounded sanitized temporary preview only | AosCloud request/file state while retained |
 | [Brake Health SOTA publication (`IF-LC-002`)](../component-decomposition-and-interface-register.md#if-lc-002) | Delegated adjacent action | Explicit request to sign/publish one selected immutable candidate; structured result | Function Team 1 release-pipeline contract | Cancel/failure produces no success state; uncertain result requires reconciliation | Service Provider 1 pipeline and AosCloud verification record |
 | [Function Team 1 acceptance and OEM Release Authority authorization (`IF-LC-009`)](../component-decomposition-and-interface-register.md#if-lc-009) | Out of package / handoff | Candidate identity and digest are available for Test authorization; accepted Test result is available for Production authorization | OEM Software Delivery Dashboard contract | No local approval control or inferred authorization | Function Team 1 acceptance plus independent Release Authority decisions |
@@ -492,7 +492,7 @@ components.
 #### Acceptance criteria
 
 1. Duplicate identical chunks and completion records are idempotently handled; D4-017 freezes the exact durable acknowledgement response.
-2. Missing chunks keep the window incomplete; conflicting duplicates are rejected/quarantined.
+2. Missing chunks keep the window incomplete; conflicting duplicates are rejected/quarantined. A valid out-of-order chunk is durably persisted and ACKed but remains absent from window queries until chunk 0 or completion supplies the authoritative window start.
 3. A schema-valid completion is durably accepted and acknowledged independently
    of projection completeness. The window remains `PARTIAL` and non-terminal
    until every declared chunk index, ordered digest, count, phase bound and
@@ -504,7 +504,7 @@ components.
 <a id="req-brake-cloud-007"></a>
 
 - ID: `REQ-BRAKE-CLOUD-007`
-- Statement: The Vehicle Data view shall present a v1 window as growing while accepted chunks arrive and terminal only after the Backend has durably accepted the completion record and validated every declared chunk index plus the ordered digest/count/phase/window commitments, with visible PRE/ACTIVE/POST samples, speed, longitudinal acceleration, accelerator/brake pedal positions, Service/VDP versions, Unit role, original event time, delivery state and one of the D4-016.1/.2 completion states. It shall label the event `HARD_BRAKING_EPISODE_V1` and never imply native ABS/AEB/EBS activation or brake-component health.
+- Statement: The Vehicle Data view shall present a v1 window only after chunk 0 or completion establishes an authoritative start, as growing while later accepted chunks arrive, and terminal only after the Backend has durably accepted the completion record and validated every declared chunk index plus the ordered digest/count/phase/window commitments. It shall show visible PRE/ACTIVE/POST samples, speed, longitudinal acceleration, accelerator/brake pedal positions, Service/VDP versions, Unit role, original event time, delivery state and one of the D4-016.1/.2 completion states. It shall label the event `HARD_BRAKING_EPISODE_V1` and never imply native ABS/AEB/EBS activation or brake-component health.
 - Rationale: The first service version visibly proves event-focused Cloud data collection.
 - Parent system requirements: [Bounded v1 Brake Telemetry Window (`SYS-BHS-005`)](../system-requirements-and-traceability.md#sys-bhs-005), [Authoritative demo surfaces (`SYS-OBS-001`)](../system-requirements-and-traceability.md#sys-obs-001)
 - Architecture flow: [First functional-service proof (`AF-G2-OB`)](../../architecture/demo-scenario-architecture-flows.md#af-g2-ob)
@@ -516,7 +516,9 @@ components.
 
 #### Acceptance criteria
 
-1. The first accepted pre-trigger chunk makes the window visible before completion.
+1. Accepted chunk 0 makes the window visible before completion; completion may
+   also establish the authoritative start. An accepted later chunk received
+   first remains stored but hidden until one of those start facts arrives.
 2. UI phase and sample counts derive from persisted backend state.
 3. Disconnection leaves the last state visibly stale/offline rather than complete or current.
 
@@ -539,6 +541,10 @@ components.
 
 1. v2 derived messages with valid identity are durably idempotent.
 2. Native, derived, estimated and simulated provenance labels remain visible.
+   Because `BrakeHealthEvent` carries no VDP fields, its query projection keeps
+   VDP version/digest `null` and explicitly pending until the exact assessment
+   correlates by Unit, assessment/source IDs, Service artifact and model facts;
+   it never infers provenance from version or record proximity.
 3. A normal v2 session does not appear as a v1 raw/high-detail window stream.
 
 ### Correlated v3 advisory fact
@@ -591,7 +597,7 @@ components.
 <a id="req-brake-cloud-011"></a>
 
 - ID: `REQ-BRAKE-CLOUD-011`
-- Statement: Every accepted functional record and dashboard observation shall carry the exact Unit ID and role, service/contract/model versions, source event identity and original/receipt times sufficient for later correlation with CARLA, Gateway and lifecycle evidence. Run/source-generation binding is external orchestration evidence and is not invented as a Brake message, cleanup selector or data-packet success claim.
+- Statement: Every accepted functional record and dashboard observation shall carry the exact Unit ID and role, service/contract/model versions, source event identity and original/receipt times sufficient for later correlation with CARLA, Gateway and lifecycle evidence. Query, SSE and cleanup scope shall use an explicitly injected closed Current Unit context containing exactly the provisioning-journal Test and Production UIDs/roles, without inventing Cloud lifecycle/readiness state. Live journal wiring and run/source-generation binding are external integration evidence and are not invented as Brake messages or data-packet success claims.
 - Rationale: Similar repeated braking scenarios must remain attributable across VU and PU phases.
 - Parent system requirement: [Per-run correlation (`SYS-OBS-004`)](../system-requirements-and-traceability.md#sys-obs-004)
 - Architecture flow: [Cross-stage evidence (`AF-X-OBS`)](../../architecture/demo-scenario-architecture-flows.md#af-x-obs)
@@ -607,6 +613,8 @@ components.
 
 1. Records missing an exact Unit binding are excluded from audience success views;
    absence of later run/source-generation evidence blocks a composed success claim.
+   A current context UID with no data yields a truthful empty page; a UID outside
+   the context or absent/invalid context cannot yield a current page or SSE stream.
 2. VU and PU records with otherwise equal event identifiers cannot collide.
 3. Query filters select one exact Unit with stable resource-specific ordering;
    run and source-generation selection is outside the data API.
@@ -639,7 +647,7 @@ components.
 <a id="req-brake-cloud-013"></a>
 
 - ID: `REQ-BRAKE-CLOUD-013`
-- Statement: The Backend shall provide a preview/count for an exact non-wildcard selector and then permanently delete all telemetry windows, assessments, events, advisory facts and dashboard-visible records for the exact current Test Vehicle and Production Vehicle Unit IDs obtained from the provisioning journal. `VALIDATION` remains the internal wire role for the user-facing Test Vehicle. The selector contains the two sorted `system_uid` values only, with no `demoRunId` or time range. After successful R0 it shall retain no matching Brake Health functional history and shall leave authoritative AosCloud lifecycle/audit state untouched.
+- Statement: The Backend shall provide a preview/count for an exact non-wildcard selector and then permanently delete all telemetry windows, assessments, events, advisory facts and dashboard-visible records for the exact current Test Vehicle and Production Vehicle Unit IDs supplied by the injected provisioning-journal context. `VALIDATION` remains the internal wire role for the user-facing Test Vehicle. The selector contains the two sorted `system_uid` values only, with no `demoRunId` or time range. Preview shall compute the accepted RFC8785 canonical six-logical-table row-set digest and issue a 60-second, maximum-1024-character process-local HMAC token. Malformed, bad-MAC, expired and previous-process/restart tokens return `409 PREVIEW_TOKEN_EXPIRED`; only a valid-MAC token whose bound current row set changed returns `409 PREVIEW_STALE`. Both require a new preview and delete nothing. After successful R0 it shall retain no matching Brake Health functional history and shall leave authoritative AosCloud lifecycle/audit state untouched.
 - Rationale: The next demo needs an empty functional product view; authoritative lifecycle history belongs to AosCloud rather than to this demo backend.
 - Parent system requirement: [Clear functional run data (`SYS-RET-002`)](../system-requirements-and-traceability.md#sys-ret-002)
 - Architecture flow: [Controlled retirement (`AF-R0-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-r0-lc)
@@ -654,6 +662,11 @@ components.
 1. An empty, wildcard, unsorted, non-two-UID or unresolved Unit selector is rejected.
 2. Data outside the exact selected Unit IDs remains unchanged.
 3. The operation neither calls nor claims deletion of AosCloud audit/lifecycle records.
+4. Execute maps malformed, bad-MAC, expired and pre-restart tokens to `409
+   PREVIEW_TOKEN_EXPIRED`, and maps only a valid-MAC token with a changed
+   current row set to `409 PREVIEW_STALE`, without deletion; preview and
+   post-delete nonmatching digests use the same frozen table/field/order
+   canonicalization.
 
 ### Failure, freshness and Service-log visibility
 
@@ -730,14 +743,14 @@ components.
 | <a id="ut-brake-cloud-001"></a>`UT-BRAKE-CLOUD-001` — View/authority separation | [REQ-BRAKE-CLOUD-001](#req-brake-cloud-001), [REQ-BRAKE-CLOUD-005](#req-brake-cloud-005) | Allowed data sources/actions and prohibited lifecycle mutations | Backend, pipeline and Cloud doubles | Correct labels/routes; no approval/desired-state store or mutation | `brake-health-cloud` unit suite | Design accepted; implementation open |
 | <a id="ut-brake-cloud-002"></a>`UT-BRAKE-CLOUD-002` — Candidate catalogue integrity | [REQ-BRAKE-CLOUD-002](#req-brake-cloud-002), [REQ-BRAKE-CLOUD-003](#req-brake-cloud-003) | Valid v1-v3, missing field, changed bytes, invalid permission/quota/range | Immutable catalogue fixtures | Enable only exact valid candidates; no build/mutation path | Planned catalogue suite | Design accepted; implementation open |
 | <a id="ut-brake-cloud-003"></a>`UT-BRAKE-CLOUD-003` — Explicit release action | [REQ-BRAKE-CLOUD-004](#req-brake-cloud-004) | Confirm, cancel, success, failure, timeout, uncertain result, wrong profile/candidate/type/path/URL and retry attempt | D4-010.3 helper/profile fake, Cloud result fake and deterministic clock | Only `brake-sp1` plus an exact catalogue candidate passes; no key/PKCS#12 exposure or blind retry; exact resulting digest; `PUBLISHED` only after Cloud re-read | Planned release-workspace suite | Design accepted; implementation open |
-| <a id="ut-brake-cloud-004"></a>`UT-BRAKE-CLOUD-004` — v1 reconstruction | [REQ-BRAKE-CLOUD-006](#req-brake-cloud-006) | Ordered/reordered, duplicate, missing, conflicting, corrupt, cross-Unit/Service/VDP and completion-before-chunks cases | Shared D4-016.2 fixtures and transactional store fake | Completion receipt may be durably ACKed while projection stays `PARTIAL`; one terminal digest-verified window only after the complete consistent set; idempotent retry; inconsistent set quarantined non-terminal | Planned backend suite | D4-016.2 and D4-017 accepted; implementation proposed in `BRAKE-CLOUD-DATA-001` |
-| <a id="ut-brake-cloud-005"></a>`UT-BRAKE-CLOUD-005` — v1 presentation states | [REQ-BRAKE-CLOUD-007](#req-brake-cloud-007) | Empty, growing, delayed, complete, stale and disconnected | Backend-query fixtures | Exact phases/counts/version/role/times and no premature complete | Planned dashboard state suite | Design accepted; implementation open |
-| <a id="ut-brake-cloud-006"></a>`UT-BRAKE-CLOUD-006` — v2 derived product | [REQ-BRAKE-CLOUD-008](#req-brake-cloud-008) | Assessment/event normal, duplicate, invalid provenance/model and forbidden normal-v1 presentation | v2 contract fixtures | Idempotent result; visible provenance; no v1 stream claim | Planned backend/dashboard suite | Design accepted; implementation open |
+| <a id="ut-brake-cloud-004"></a>`UT-BRAKE-CLOUD-004` — v1 reconstruction | [REQ-BRAKE-CLOUD-006](#req-brake-cloud-006) | Ordered/reordered, duplicate, missing, conflicting, corrupt, cross-Unit/Service/VDP, later-chunk-first and completion-before-chunks cases | Shared D4-016.2 fixtures and transactional store fake | Later chunk and completion may be durably ACKed; no window query/SSE projection before chunk 0 or completion establishes start; one terminal digest-verified window only after the complete consistent set; mismatch quarantined non-terminal | Planned backend suite | D4-016.2 and D4-017 accepted; implementation proposed in `BRAKE-CLOUD-DATA-001` |
+| <a id="ut-brake-cloud-005"></a>`UT-BRAKE-CLOUD-005` — v1 presentation states | [REQ-BRAKE-CLOUD-007](#req-brake-cloud-007) | Empty, pre-start hidden, growing, delayed, complete, stale and disconnected | Backend-query fixtures plus CurrentUnitContext | Exact context role/phases/counts/version/times; truthful current-Unit empty page; no pre-start or premature-terminal projection | Planned dashboard state suite | Design accepted; implementation open |
+| <a id="ut-brake-cloud-006"></a>`UT-BRAKE-CLOUD-006` — v2 derived product | [REQ-BRAKE-CLOUD-008](#req-brake-cloud-008) | Assessment/event normal, duplicate, missing/exact assessment correlation, invalid provenance/model and forbidden normal-v1 presentation | v2 contract fixtures | Event VDP provenance stays null/pending until exact assessment match, then copies exact fields; no inference or v1 stream claim | Planned backend/dashboard suite | Design accepted; implementation open |
 | <a id="ut-brake-cloud-007"></a>`UT-BRAKE-CLOUD-007` — v3 advisory fact | [REQ-BRAKE-CLOUD-009](#req-brake-cloud-009) | Correlated, missing, conflicting and duplicate advisory facts | v3 fixtures | Correct association and explicit no-driver/Gateway authority label | Planned backend/dashboard suite | Design accepted; implementation open |
 | <a id="ut-brake-cloud-008"></a>`UT-BRAKE-CLOUD-008` — Delayed/out-of-order data handling | [REQ-BRAKE-CLOUD-010](#req-brake-cloud-010) | Delayed/out-of-order messages, duplicate identity, restart and retention expiry | Store fake and deterministic source/local/receipt clocks | Same identity remains idempotent; original/local/receipt time separation; duplicate/out-of-order facts visible; no synchronization-complete or outbox-drained claim | Planned backend suite | Source-only subset proposed in `BRAKE-CLOUD-DATA-001`; reconnect/drain qualification deferred |
-| <a id="ut-brake-cloud-009"></a>`UT-BRAKE-CLOUD-009` — Unit correlation isolation | [REQ-BRAKE-CLOUD-011](#req-brake-cloud-011) | Missing Unit binding, equal IDs on Test/Production Units and wrong role | Exact Unit/source-message fixtures | No cross-Unit collision or unassigned success; exact Unit query scope; no fabricated run/source-generation binding | Planned backend suite | Unit subset proposed in `BRAKE-CLOUD-DATA-001`; composed binding deferred under D4-024 |
+| <a id="ut-brake-cloud-009"></a>`UT-BRAKE-CLOUD-009` — Unit correlation isolation | [REQ-BRAKE-CLOUD-011](#req-brake-cloud-011) | Missing/invalid CurrentUnitContext, duplicate UIDs/roles, matching empty Unit, non-current UID, equal IDs on Test/Production Units and wrong role | Injected context plus exact Unit/source-message fixtures | Truthful current empty page/SSE scope; no Cloud-state lookup/inference, cross-Unit collision, non-current success or fabricated run/source-generation binding | Planned backend suite | Unit subset proposed in `BRAKE-CLOUD-DATA-001`; live journal wiring and composed binding deferred |
 | <a id="ut-brake-cloud-010"></a>`UT-BRAKE-CLOUD-010` — Honest source presentation | [REQ-BRAKE-CLOUD-012](#req-brake-cloud-012) | Sequential live Test/reset/Production, overlap, uncertain detach/reset and ambiguous binding | Source/run evidence fixtures | Correct labels and generation boundaries; overlap/ambiguity blocks comparison | Planned dashboard state suite | Excluded from `BRAKE-CLOUD-DATA-001`; deferred until D4-024 binding/watermark acceptance |
-| <a id="ut-brake-cloud-011"></a>`UT-BRAKE-CLOUD-011` — Exact current-Unit deletion | [REQ-BRAKE-CLOUD-013](#req-brake-cloud-013) | Preview/execute, exact sorted Test+Production UIDs, empty/wildcard/unsorted/non-two-UID selector, stale/expired token, incomplete deletion and unrelated data | Multi-Unit store fixture | All selected records removed, zero matching rows, unchanged nonmatching digest and no Cloud call; no `demoRunId` or time selector | Planned backend suite | D4-017 annex accepted; implementation proposed in `BRAKE-CLOUD-DATA-001` |
+| <a id="ut-brake-cloud-011"></a>`UT-BRAKE-CLOUD-011` — Exact current-Unit deletion | [REQ-BRAKE-CLOUD-013](#req-brake-cloud-013) | Preview/execute, exact context UIDs, empty/wildcard/unsorted/non-two-UID selector, Unicode/numeric/duplicate-key canonicalization, token lengths 1024/1025, malformed/bad-MAC/expired/pre-restart token, valid-MAC changed rows, incomplete deletion and unrelated data | Multi-Unit store, RFC8785 vectors, deterministic clock and process-key seam | Exact six-table field/order digest; process-local HMAC/constant-time validation; malformed/bad-MAC/expired/pre-restart maps to `409 PREVIEW_TOKEN_EXPIRED`, changed current row set maps to `409 PREVIEW_STALE`; selected rows removed, zero matching rows, unchanged nonmatching digest and no Cloud call/run/time selector | Planned backend suite | D4-017 annex accepted; implementation proposed in `BRAKE-CLOUD-DATA-001` |
 | <a id="ut-brake-cloud-012"></a>`UT-BRAKE-CLOUD-012` — Failure/freshness and Service-log state machine | [REQ-BRAKE-CLOUD-014](#req-brake-cloud-014) | Every functional state plus SP1-owned service/crash logs, cross-owner/system negatives, documented log states, array response, redaction, download/delete and offline/reconnect | Deterministic clocks, dependency and role-scoped log API fakes | Explicit reason/time; exact endpoint/owner; no fabricated state, browser credential, secret, second archive or retention-duration claim | Planned backend/dashboard suite | Design accepted; implementation open |
 | <a id="ut-brake-cloud-013"></a>`UT-BRAKE-CLOUD-013` — Container manifest and persistence policy | [REQ-BRAKE-CLOUD-015](#req-brake-cloud-015) | ARM64 platform, immutable image, health, volume, secret and path policy | Parsed Docker/Compose fixtures and in-memory storage | Correct platform/bind/volume; reject embedded secrets, writable app paths and personal paths | Planned packaging suite | Design accepted; implementation open |
 | <a id="ut-brake-cloud-014"></a>`UT-BRAKE-CLOUD-014` — Local boundary policy | [REQ-BRAKE-CLOUD-016](#req-brake-cloud-016) | Loopback, isolated local ingestion, schema/function separation, correlation-only `system_uid`, helper/profile identity, PKCS#12 exclusion, LAN and dependency transitions | Listener/message/helper/profile/filesystem/network doubles | Accept valid VU/PU Brake messages only on the local route; reject malformed/cross-function input; claim no backend client authentication; enforce fixed `brake-sp1`, no LAN/caller selector/key exposure and factual recovery | Planned deployment-policy suite | Design accepted; implementation open |

@@ -36,11 +36,19 @@ SOTA delivery, OEM approval, Aos IAM/KUKSA authorization or Gateway policy.
 
 The backend stores only current-demo functional records. It is not an
 AosCloud mirror, lifecycle authority or long-term demo-run archive. The local
-Demo Orchestrator obtains the exact current Test Vehicle and Production
-Vehicle `system_uid` values from the current-run provisioning journal and
-performs an explicit preview/confirm/execute reset. The accepted wire enum
+application receives a closed `CurrentUnitContext` containing exactly the
+current Test Vehicle and Production Vehicle `system_uid` and wire roles from
+the provisioning journal. It is explicit injected input, not a backend Cloud
+lookup, lifecycle/readiness assertion or inferred current Unit. Its live
+provisioning-journal adapter remains deferred to
+`BRAKE-CLOUD-INTEGRATION-001`. The accepted wire enum
 `VALIDATION` and its provisioning identity map to the user-facing label **Test
 Vehicle**; human-facing product text must use only that label.
+Only a UID in that context may produce a query page or SSE stream. A matching
+current UID with no rows truthfully returns an empty page with the context
+role; a non-current UID is `404 UNIT_NOT_CURRENT`, and missing/invalid context
+is `503 CURRENT_UNIT_CONTEXT_UNAVAILABLE` without a stream. The Demo
+Orchestrator uses the same exact context for preview/confirm/execute reset.
 The cleanup selector is exactly those two sorted Unit UIDs and contains no
 `demoRunId`, start time or end time. The admin endpoints use a separate
 mode-`0600` Unix-domain HTTP composition root and are unavailable to the
@@ -49,8 +57,19 @@ selectors are rejected. An empty matching dataset is a valid idempotent
 result, but the two exact Unit identities are still mandatory.
 
 The 60-second preview token binds the two sorted identities, record counts,
-record-set digest and expiry. Execute is rejected when new records make the
-preview stale. One SQLite transaction removes only matching Brake messages,
+record-set digest and expiry. The digest is SHA-256 of one RFC8785 canonical
+array containing all six logical table blocks in fixed order—messages,
+windows, assessments, events, advisories and quarantine—including empty
+blocks, the annex's exact row fields and rows sorted by their canonical UTF-8
+bytes. The nonmatching digest uses the same representation over complement
+rows. Duplicate JSON object keys are rejected before canonicalization.
+The token is a versioned RFC8785 payload plus HMAC-SHA256, bounded to 1024
+characters, under a random 256-bit process-local key that is never persisted,
+logged or returned. A malformed token, bad MAC, expired token or token from a
+previous process/restart returns `409 PREVIEW_TOKEN_EXPIRED` and requires a new
+preview. Only a structurally valid, valid-MAC token whose bound current row set
+has changed returns `409 PREVIEW_STALE`. Both failures delete nothing. One SQLite
+transaction removes only matching Brake messages,
 windows, assessments, events, advisory facts and quarantine records. Success
 proves zero matching rows and an unchanged nonmatching-data digest. If the
 response is lost, the Orchestrator reconciles by authoritative re-read instead
@@ -93,6 +112,8 @@ Files:
   Gateway Status;
 - [`cleanup-preview.schema.json`](cleanup-preview.schema.json) — closed reset
   preview and confirmation-token schema;
+- [`current-unit-context.schema.json`](current-unit-context.schema.json) —
+  closed injected current Test/Production Unit identity and role context;
 - [`brake-cloud-query-admin-profile.v1.json`](brake-cloud-query-admin-profile.v1.json)
   — exact bounded REST pagination, closed error mapping, notification-only SSE
   and separate local-admin transport;
@@ -104,12 +125,16 @@ Files:
   [`cleanup-execute-request.schema.json`](cleanup-execute-request.schema.json)
   and [`cleanup-result.schema.json`](cleanup-result.schema.json) — closed
   two-UID admin request/result messages with no run identifier or time range;
+- [`rfc8785-edge-vectors.schema.json`](rfc8785-edge-vectors.schema.json) —
+  closed Unicode ordering, number serialization and duplicate-key edge-vector
+  package;
 - [`fixtures/brake-cloud-ack.valid.json`](fixtures/brake-cloud-ack.valid.json)
   [`fixtures/brake-advisory-fact.valid.json`](fixtures/brake-advisory-fact.valid.json)
   and [`fixtures/cleanup-preview.valid.json`](fixtures/cleanup-preview.valid.json)
   — ingestion/preview conformance fixtures; and
 - the query page, closed error, SSE notification, cleanup preview request,
-  cleanup execute request and cleanup result files under `fixtures/`
+  cleanup execute request, cleanup result, Current Unit context, pending VDP
+  provenance and RFC8785 edge files under `fixtures/`
   — Query/SSE/Admin 1.0.0 annex conformance fixtures.
 
 Backend idempotency is namespaced by the correlation-only `unitSystemUid` and
@@ -138,6 +163,14 @@ and `windowSha256` all validate. Any inconsistent combined set is quarantined
 and remains non-terminal. Durable message receipt and terminal window
 projection are therefore separate factual states.
 
+An out-of-order chunk with index greater than zero is also durably persisted
+and ACKed, but it does not create or expose a window query projection. A
+window becomes query-visible only after an authoritative start exists from
+chunk 0's first sample timestamp or the completion's
+`windowStartTimestamp`. When both arrive, they must match; mismatch is
+quarantined and non-terminal. No window-change SSE notification is emitted for
+a still-hidden later chunk.
+
 The Brake Dashboard obtains functional windows, assessments, events and
 advisory facts only through the accepted 1.0.0 annex's bounded keyset-paginated
 REST queries for the exact current Test or Production Unit. `VALIDATION` is
@@ -151,6 +184,14 @@ readiness. AosCloud/AosCore lifecycle and readiness remain authoritative and
 are shown by the separate Software Delivery Dashboard. The UI labels these two
 authorities explicitly and never derives AosCore readiness from functional
 Brake records.
+
+`BrakeHealthEvent` does not carry VDP contract fields. Its query projection
+therefore exposes `null` version/digest with
+`PENDING_ASSESSMENT_CORRELATION` until the exact assessment matches Unit,
+assessment/source IDs, Service version/artifact and model identity/config.
+Only then may the projection copy the assessment's exact VDP version/digest
+and become `CORRELATED_ASSESSMENT`; Service-version or nearby-record inference
+is forbidden.
 
 This accepted design contract authorizes no repository creation, backend
 implementation, signing, Cloud call, Unit mutation or deployment by itself.

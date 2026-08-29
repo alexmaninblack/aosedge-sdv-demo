@@ -5,9 +5,10 @@
   "title": "Brake Cloud Current-Run Cleanup Preview",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "systemUids", "recordCounts", "recordSetSha256", "confirmationToken", "expiresAt"],
+  "required": ["schemaVersion", "contractVersion", "systemUids", "recordCounts", "recordSetSha256", "confirmationToken", "expiresAt"],
   "properties": {
     "schemaVersion": {"const": 1},
+    "contractVersion": {"const": "1.0.0"},
     "systemUids": {
       "type": "array",
       "minItems": 2,
@@ -29,7 +30,7 @@
       }
     },
     "recordSetSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-    "confirmationToken": {"type": "string", "minLength": 32, "maxLength": 512},
+    "confirmationToken": {"type": "string", "minLength": 32, "maxLength": 1024},
     "expiresAt": {"type": "string", "format": "date-time"}
   }
 }

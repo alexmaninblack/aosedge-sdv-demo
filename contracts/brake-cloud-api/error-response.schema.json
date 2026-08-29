@@ -14,12 +14,14 @@
         "INVALID_REQUEST",
         "INVALID_CURSOR",
         "NOT_FOUND",
+        "UNIT_NOT_CURRENT",
         "CONTENT_CONFLICT",
         "PREVIEW_STALE",
         "PREVIEW_TOKEN_EXPIRED",
         "PAYLOAD_TOO_LARGE",
         "UNPROCESSABLE_MESSAGE",
-        "TEMPORARILY_UNAVAILABLE"
+        "TEMPORARILY_UNAVAILABLE",
+        "CURRENT_UNIT_CONTEXT_UNAVAILABLE"
       ]
     },
     "message": {"type": "string", "minLength": 1, "maxLength": 256},

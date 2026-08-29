@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "canonicalVectors": [
+    {
+      "id": "RFC8785_UNICODE_UTF16_ORDER",
+      "rawInputJson": "{\"€\":\"Euro Sign\",\"\\r\":\"Carriage Return\",\"דּ\":\"Hebrew Letter Dalet With Dagesh\",\"1\":\"One\",\"😀\":\"Emoji: Grinning Face\",\"\":\"Control\",\"ö\":\"Latin Small Letter O With Diaeresis\"}",
+      "canonicalJson": "{\"\\r\":\"Carriage Return\",\"1\":\"One\",\"\":\"Control\",\"ö\":\"Latin Small Letter O With Diaeresis\",\"€\":\"Euro Sign\",\"😀\":\"Emoji: Grinning Face\",\"דּ\":\"Hebrew Letter Dalet With Dagesh\"}",
+      "canonicalSha256": "5e321556d22018a9656991a9e94f77ec175fa193e52a2429d312f8419ec8b08c"
+    },
+    {
+      "id": "RFC8785_NUMBER_SERIALIZATION",
+      "rawInputJson": "[333333333.33333329,1E30,4.50,2e-3,0.000000000000000000000000001]",
+      "canonicalJson": "[333333333.3333333,1e+30,4.5,0.002,1e-27]",
+      "canonicalSha256": "7c6bc86d861387d823ae596b79ca0b26567dddc22a77acb1f4e06d441f555adf"
+    }
+  ],
+  "rejectedRawJson": [
+    {
+      "id": "DUPLICATE_OBJECT_KEY",
+      "rawInputJson": "{\"unitSystemUid\":\"one\",\"unitSystemUid\":\"two\"}",
+      "errorCode": "DUPLICATE_JSON_KEY"
+    }
+  ]
+}

@@ -2021,6 +2021,7 @@ not itself authorize artifact publication, Cloud mutation or Unit deployment.
 - Brake Cloud data-contract clarifications accepted: 2026-08-29
 - Query/SSE/Admin API 1.0.0 annex accepted: 2026-08-29
 - Advisory fixture erratum accepted: 2026-08-29
+- Independent Brake Data review corrections accepted: 2026-08-29
 - Owners: Function Team 1 / Demo Solution local integration
 - Machine-readable contract:
   [Brake Health Cloud API 1.0.0](../../contracts/brake-cloud-api/README.md)
@@ -2065,7 +2066,11 @@ The proposed exact decision is:
    stored and ACKed even when declared chunks are missing; this receipt is not
    a terminal-window claim. The projection remains `PARTIAL` until all chunk
    indices exist and ordered digests, counts, phases and `windowSha256`
-   validate. An inconsistent combined set is quarantined and non-terminal.
+   validate. An out-of-order chunk is persisted and durably ACKed, but its
+   window is withheld from Query/SSE projection until the authoritative start
+   is known from chunk 0 or from completion `windowStartTimestamp`; if both are
+   present they must match. An inconsistent combined set is quarantined and
+   non-terminal.
 5. SQLite runtime and forward-only transactional migrations are packaged in
    the immutable Brake backend image; `/data/brake-health.sqlite` lives in a
    dedicated external Docker persistent volume inaccessible to the Dashboard.
@@ -2085,6 +2090,13 @@ The proposed exact decision is:
    back to the intact v1 ledger and `user_version = 1`.
 6. The Dashboard reads functional windows, assessments, events and advisory
    facts only through the closed Brake Cloud Query/SSE/Admin API 1.0.0 annex.
+   The backend receives a closed `CurrentUnitContext` input containing exactly
+   the current Test Vehicle (`VALIDATION` on the wire) and Production Vehicle
+   Unit UIDs/roles from the current-run provisioning journal. It does not query
+   or infer Unit, lifecycle, readiness or Cloud state; live context wiring is
+   deferred to the integration packet. Missing or invalid context is `503` and
+   opens no SSE stream. A valid context makes an empty current-Unit page a
+   truthful `200`; a non-current Unit is `404`.
    The four exact-Unit REST collections use stable resource-specific descending
    keys and opaque RFC-8785/base64url keyset cursors, with limit 50 by default
    and 100 maximum; malformed or cross-scope cursors are closed `400` errors.
@@ -2099,16 +2111,26 @@ The proposed exact decision is:
    delivery state: v1 growing/terminal windows, v2 assessments/band changes and
    v3 correlated advisory facts. It does not invent Gateway application,
    driver acknowledgement, Cloud inference or AosCore readiness from
-   functional data.
+   functional data. Query event projection carries nullable VDP provenance in
+   `PENDING_ASSESSMENT_CORRELATION` until exact assessment correlation is
+   available; service/model versions and digests are never inferred from Unit,
+   receipt, time or release state.
 7. Only the local Demo Orchestrator may use the reset admin endpoints over the
    separate mode-`0600` Unix-domain HTTP composition root; they are unavailable
    to the browser, guest ingestion route and LAN. It obtains the exact current
    Test Vehicle (`VALIDATION` on the wire) and Production Vehicle `system_uid`
-   values from the current-run provisioning journal. The sorted two-UID
+   values from the injected `CurrentUnitContext`, whose source is the
+   current-run provisioning journal. The sorted two-UID
    selector contains no `demoRunId` or time range. It previews counts and
-   record-set digest,
+   an RFC-8785/SHA-256 record-set digest over the explicitly ordered logical
+   tables and fields frozen in the API annex, including empty table blocks,
    obtains explicit confirmation and executes with a 60-second token binding
-   those exact facts. Missing, wildcard or non-two-Unit selectors are rejected;
+   those exact facts. The token is authenticated by a random, process-local,
+   non-persisted HMAC key and is bounded to 1024 characters. Malformed,
+   bad-MAC, expired and previous-process/restart tokens return `409
+   PREVIEW_TOKEN_EXPIRED`; only a structurally valid, valid-MAC token whose
+   bound current row set changed returns `409 PREVIEW_STALE`. Both require a
+   new preview and delete nothing. Missing, wildcard or non-two-Unit selectors are rejected;
    an exact selector with no matching rows is an idempotent success. Any new or
    changed record makes the preview stale and blocks execution. One SQLite
    transaction removes only matching Brake messages, windows, assessments,

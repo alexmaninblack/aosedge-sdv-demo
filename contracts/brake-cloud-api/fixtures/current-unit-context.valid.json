@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "source": "CURRENT_RUN_PROVISIONING_JOURNAL",
+  "testUnit": {
+    "systemUid": "validation-system-20260822",
+    "unitRole": "VALIDATION",
+    "userFacingRole": "Test Vehicle"
+  },
+  "productionUnit": {
+    "systemUid": "production-system-20260822",
+    "unitRole": "PRODUCTION",
+    "userFacingRole": "Production Vehicle"
+  }
+}

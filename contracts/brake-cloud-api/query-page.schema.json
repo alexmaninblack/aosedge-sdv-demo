@@ -112,13 +112,32 @@
     "messageItemEvent": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["sourceEventTime", "backendReceivedAt", "deliveryState", "message"],
+      "required": ["sourceEventTime", "backendReceivedAt", "deliveryState", "vdpProvenanceState", "vdpContractVersion", "vdpContractSha256", "message"],
       "properties": {
         "sourceEventTime": {"type": "string", "format": "date-time"},
         "backendReceivedAt": {"type": "string", "format": "date-time"},
         "deliveryState": {"enum": ["DURABLY_RECEIVED", "DELAYED", "CONFLICT"]},
+        "vdpProvenanceState": {"enum": ["PENDING_ASSESSMENT_CORRELATION", "CORRELATED_ASSESSMENT"]},
+        "vdpContractVersion": {"$ref": "#/$defs/nullableSemver"},
+        "vdpContractSha256": {"$ref": "#/$defs/nullableSha256"},
         "message": {"$ref": "../brake-health-model/brake-health-event.schema.json"}
-      }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "vdpProvenanceState": {"const": "PENDING_ASSESSMENT_CORRELATION"},
+            "vdpContractVersion": {"type": "null"},
+            "vdpContractSha256": {"type": "null"}
+          }
+        },
+        {
+          "properties": {
+            "vdpProvenanceState": {"const": "CORRELATED_ASSESSMENT"},
+            "vdpContractVersion": {"$ref": "#/$defs/semver"},
+            "vdpContractSha256": {"$ref": "#/$defs/sha256"}
+          }
+        }
+      ]
     },
     "messageItemAdvisory": {
       "type": "object",
@@ -144,6 +163,7 @@
     "boundedId": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._:-]+$"},
     "uuid4": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
     "semver": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "nullableSemver": {"oneOf": [{"$ref": "#/$defs/semver"}, {"type": "null"}]},
     "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "nullableSha256": {"oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
     "unitRole": {"enum": ["VALIDATION", "PRODUCTION"]},

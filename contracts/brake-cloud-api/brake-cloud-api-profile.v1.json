@@ -70,6 +70,9 @@
     "terminalProjectionRule": "ALL_DECLARED_CHUNK_INDICES_PRESENT_AND_ORDERED_DIGESTS_COUNTS_PHASES_AND_WINDOW_SHA256_VALID",
     "missingChunkProjectionState": "PARTIAL_NON_TERMINAL",
     "inconsistentCombinedWindowDisposition": "QUARANTINE_NON_TERMINAL",
+    "outOfOrderChunkPersistence": "DURABLE_ACK_ALLOWED",
+    "windowProjectionVisibilityRequires": "CHUNK_INDEX_0_OR_COMPLETION_AUTHORITATIVE_START",
+    "preStartLaterChunkQueryVisibility": "WITHHELD_NO_SSE_CHANGE",
     "conflictLocalDisposition": "DELIVERY_CONFLICT_RETAIN_NO_AUTOMATIC_RETRY",
     "businessMeaning": "EXACT_LOGICAL_MESSAGE_DURABLY_STORED_ONLY",
     "gatewayApplicationAcknowledged": false,
@@ -126,6 +129,14 @@
     "failureCreatesDurableAcknowledgement": false,
     "readinessRule": "DATABASE_OPEN_AND_SCHEMA_SUPPORTED_AND_MIGRATIONS_COMPLETE_AND_READ_WRITE_PROBE_PASSES"
   },
+  "currentUnitContext": {
+    "schema": "current-unit-context.schema.json",
+    "injection": "REQUIRED_EXPLICIT_APPLICATION_INPUT",
+    "source": "CURRENT_RUN_PROVISIONING_JOURNAL",
+    "exactRoles": ["VALIDATION", "PRODUCTION"],
+    "cloudStateFieldsOrInferenceAllowed": false,
+    "liveWiring": "DEFERRED_TO_BRAKE_CLOUD_INTEGRATION_001"
+  },
   "query": {
     "basePath": "/api/v1/brake",
     "routes": [
@@ -140,10 +151,14 @@
     "dashboardAuthority": "FUNCTIONAL_BACKEND_RECORDS_ONLY",
     "unitServiceReadinessAuthority": "AOSCLOUD_AND_AOSCORE_VIA_SOFTWARE_DELIVERY_DASHBOARD",
     "currentUnitSelector": "EXACT_CURRENT_VALIDATION_OR_PRODUCTION_SYSTEM_UID",
+    "currentUnitSelectorAuthority": "INJECTED_CURRENT_UNIT_CONTEXT",
+    "truthfulEmptyPageRule": "ONLY_MATCHING_CONTEXT_UNIT_MAY_RETURN_200_EMPTY",
+    "nonCurrentUnitRule": "404_UNIT_NOT_CURRENT",
     "pagination": "BOUNDED_STABLE_ORDER_WITH_OPAQUE_KEYSET_CURSOR",
     "sseRole": "CHANGE_NOTIFICATION_ONLY_NOT_STATE_AUTHORITY",
     "sseReconnectBehavior": "AUTHORITATIVE_REST_REREAD",
-    "wireAnnex": "brake-cloud-query-admin-profile.v1.json"
+    "wireAnnex": "brake-cloud-query-admin-profile.v1.json",
+    "eventVdpProvenanceRule": "NULL_PENDING_UNTIL_EXACT_ASSESSMENT_CORRELATION_NEVER_INFER"
   },
   "cleanup": {
     "previewEndpoint": "/api/v1/brake/admin/current-run/cleanup-preview",
@@ -154,6 +169,7 @@
     "lanAccessAllowed": false,
     "selectorSource": "CURRENT_RUN_PROVISIONING_JOURNAL",
     "requiredSelector": "EXACT_CURRENT_VALIDATION_AND_PRODUCTION_SYSTEM_UIDS",
+    "selectorAuthority": "INJECTED_CURRENT_UNIT_CONTEXT",
     "selectorContainsDemoRunId": false,
     "selectorContainsRunTimeRange": false,
     "exactSystemUidCount": 2,
@@ -161,7 +177,16 @@
     "emptySelectorAllowed": false,
     "emptyMatchingRecordSetAllowed": true,
     "confirmationTokenTtlSeconds": 60,
+    "confirmationTokenMaximumLength": 1024,
     "tokenBinds": ["sortedSystemUids", "recordCounts", "recordSetSha256", "expiresAt"],
+    "recordSetDigestProfile": "QUERY_ADMIN_ANNEX_RFC8785_EXPLICIT_LOGICAL_ROWS",
+    "confirmationTokenFormat": "PROCESS_LOCAL_HMAC_SHA256_OVER_RFC8785_PAYLOAD",
+    "backendRestartRequiresNewPreview": true,
+    "tokenFailureMapping": {
+      "malformedOrBadMac": "409_PREVIEW_TOKEN_EXPIRED",
+      "previousProcessOrRestart": "409_PREVIEW_TOKEN_EXPIRED",
+      "validMacWithChangedCurrentRowSet": "409_PREVIEW_STALE"
+    },
     "executeRequiresExactPreviewToken": true,
     "stalePreviewBehavior": "REJECT_IF_RECORD_COUNTS_OR_RECORD_SET_DIGEST_CHANGED",
     "deleteTransactionIncludes": [
