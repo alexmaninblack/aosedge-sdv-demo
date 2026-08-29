@@ -6,8 +6,9 @@
 - ID: `WP-DEP-P1-PLATFORM-KAC-001`
 - Lane: `L-PLATFORM-DEPENDENCIES`
 - Increment: `IMP-03-KAC-DEPENDENCIES`
-- State: `PROPOSED — REVIEW REQUIRED BEFORE NETWORK ACQUISITION`
+- State: `GATE A COMPLETED — GATE B REVIEW REQUIRED`
 - Prepared: 2026-08-28
+- Gate A accepted and completed: 2026-08-29
 - Product repositories: read-only
 - Product implementation, compile, image build and live operation authorized:
   no
@@ -127,18 +128,42 @@ Stop without substituting or guessing if:
   is required; or
 - any credential or secret is encountered.
 
-## Completion Record
+## Gate A Completion Record
 
-The result must contain exact source identities and hashes, resolved recipe
-metadata, license evidence, target paths, offline-refetch result, cache
-inventory, proposed governance entries and all stop conditions encountered.
-Completion authorizes neither KAC implementation nor dependency inclusion in a
-Factory Image.
+- Dedicated cache:
+  `/home/yocto/.dependency-cache/wp-p1-platform-kac-001`
+- Provisional lock:
+  `evidence/provisional-dependency-lock.json`
+- Provisional lock SHA-256:
+  `92714c3fb020c7e3975c54618887b35c82ce9b6d8bc55abd3148aa96aa5f06a4`
+- Evidence summary SHA-256:
+  `e759ce570d79215573e93c44ede61fc0248be55d8d1ea9811057c86c55dffa80`
+- Evidence manifest SHA-256:
+  `be84c425488eb3852688cfe7d0a8d11fef3369fbeb1b99ec06038d2dba7259d1`
+
+Gate A resolved the exact native/target recipe selections under
+`BB_NO_NETWORK=1`: gRPC 1.60.1, Protobuf 4.25.8, OpenSSL 3.2.6, SoftHSM 2.6.1
+and the official `pkcs11-provider` 1.0. The frozen lock includes their exact
+Git/archive identities, submodule closures, recipe metadata and hashes. It
+proves ownership of `/usr/lib/ossl-modules/pkcs11.so` and
+`/usr/lib/softhsm/libsofthsm2.so` for the selected target composition.
+
+The only network metadata acquisitions were the two exact frozen revisions
+`aos_core_api@af3552a0a5eb0237eff7f5f183780ca46c339cd3` and
+`aos_core_lib_cpp@60cb83535f773762c61ac5f544b31b7b88c502e3`. Every other
+input came from a verified local checkout or cache. Dedicated Gate B downloads
+and sstate remain empty. The Builder and its DNS bridge were stopped cleanly.
+No compile, install, product or documentation edit, artifact/image build or
+live operation occurred.
+
+The completion record for the whole packet still requires Gate B exact
+source/license payload verification, offline refetch evidence, cache inventory
+and proposed governance entries. Gate A completion authorizes neither KAC
+compilation nor dependency inclusion in a Factory Image.
 
 ## Authorization Gate
 
-This packet records the exact blocker and safe acquisition boundary. Gate A
-network metadata acquisition, private cache creation and isolated Builder
-execution require explicit operator acceptance after review of this file.
-Gate B exact payload fetch requires separate acceptance of the provisional
-lock produced by Gate A.
+The operator accepted Gate A on 2026-08-29, and it completed with the evidence
+above. Gate B exact payload fetch still requires separate acceptance of the
+provisional lock. No later compile, install, product edit, artifact/image build
+or live operation is authorized by that acceptance.

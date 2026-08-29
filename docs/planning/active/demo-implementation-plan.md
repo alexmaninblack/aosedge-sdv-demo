@@ -403,14 +403,15 @@ handoff.
   source packet
   [`WP-P1-PLATFORM-VDP-001`](work-packets/p1-platform-vdp-family.md) is
   source-complete on isolated commit `6712333`, with all owned tests and source
-  gates passing; it remains unmerged and not qualified. KAC source work is
-  blocked before compilation because the exact native/target C++ dependency
-  set is not yet frozen. The proposed evidence-only
+  gates passing; it remains unmerged and not qualified. The evidence-only
   [`WP-DEP-P1-PLATFORM-KAC-001`](work-packets/p1-platform-kac-dependency-acquisition.md)
-  captures the required acquisition boundary and still requires explicit
-  review before network access. Merge of the interdependent branches plus
-  every dependency download, artifact/image build and live qualification
-  remains blocked until its separate gate is explicitly authorized.
+  completed Gate A and froze provisional lock `92714c3f` for the exact
+  native/target gRPC, Protobuf, OpenSSL, SoftHSM and official PKCS#11 Provider
+  selections and module paths. KAC compilation remains blocked pending the
+  separately reviewed Gate B exact source/license fetch and offline evidence.
+  Merge of the interdependent branches plus every artifact/image build and
+  live qualification remains blocked until its separate gate is explicitly
+  authorized.
 - Repository: `aos-vehicle-platform`.
 - Scope: build the successor OEM Demo Factory Image with stock Aos IAM
   `enablePermissionsHandler: true`, no provisioned identity or pre-populated
