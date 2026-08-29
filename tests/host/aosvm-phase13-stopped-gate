@@ -13,6 +13,12 @@ host_dns_port=${AOSVM_HOST_DNS_PORT:-18053}
 aosvm_instance=${AOSVM_INSTANCE:-main}
 case "$aosvm_instance" in
     main|r6-1-validation) ;;
+    successor-testing)
+        [ "${AOSVM_SUCCESSOR_PROFILE_VALIDATED:-0}" = 1 ] || {
+            printf 'FAIL: AosVM Phase 13 stopped-state gate: successor profile is not validated\n' >&2
+            exit 1
+        }
+        ;;
     *)
         printf 'FAIL: AosVM Phase 13 stopped-state gate: unsupported instance: %s\n' \
             "$aosvm_instance" >&2
@@ -25,6 +31,11 @@ main_image="$release_dir/aos-vm-main-qemuarm64.qcow2"
 secondary_image="$release_dir/aos-vm-secondary-qemuarm64.qcow2"
 firmware="$release_dir/QEMU_EFI.fd"
 overlay="$local_root/$vm_name-overlay.qcow2"
+successor_image_path=${AOSVM_SUCCESSOR_IMAGE_PATH:-}
+successor_image_format=${AOSVM_SUCCESSOR_IMAGE_FORMAT:-}
+successor_image_size=${AOSVM_SUCCESSOR_IMAGE_SIZE:-}
+successor_image_virtual_size=${AOSVM_SUCCESSOR_IMAGE_VIRTUAL_SIZE:-}
+successor_image_sha256=${AOSVM_SUCCESSOR_IMAGE_SHA256:-}
 
 fail() {
     printf 'FAIL: AosVM Phase 13 stopped-state gate: %s\n' "$*" >&2
@@ -84,29 +95,47 @@ case "$processes" in
         fail 'an owned DNS bridge process remains' ;;
 esac
 
-verify_pinned_file "$main_image" 593428480 \
-    8cbc4bd331650fbae7b54ad5b11b00e36e275cea00298327629e568422023fc4 \
-    'Main Node image'
-verify_pinned_file "$secondary_image" 573833216 \
-    c6b687c180bab7621d5680c6e44894b531edc8a64cd6851afd467cec2dc193f6 \
-    'Secondary Node image'
 verify_pinned_file "$firmware" 2097152 \
     30f7042c23b81c28b8196a76f4af6bcf10046f08049c9d78b4387472c5bbcd10 \
     'QEMU EFI firmware'
+
+if [ "$aosvm_instance" = successor-testing ]; then
+    case "$successor_image_path" in
+        /*) ;;
+        *) fail 'successor image path is not absolute' ;;
+    esac
+    [ "$successor_image_format" = raw ] \
+        || fail 'successor image format is not raw'
+    [ "$successor_image_virtual_size" = 6997147648 ] \
+        || fail 'successor image virtual size changed'
+    verify_pinned_file "$successor_image_path" "$successor_image_size" \
+        "$successor_image_sha256" 'Successor Testing Vehicle image'
+    expected_backing=$(CDPATH='' cd -- "$(dirname -- "$successor_image_path")" && pwd)/$(basename -- "$successor_image_path")
+    expected_backing_format=raw
+else
+    verify_pinned_file "$main_image" 593428480 \
+        8cbc4bd331650fbae7b54ad5b11b00e36e275cea00298327629e568422023fc4 \
+        'Main Node image'
+    verify_pinned_file "$secondary_image" 573833216 \
+        c6b687c180bab7621d5680c6e44894b531edc8a64cd6851afd467cec2dc193f6 \
+        'Secondary Node image'
+    expected_backing=$(CDPATH='' cd -- "$(dirname -- "$main_image")" && pwd)/$(basename -- "$main_image")
+    expected_backing_format=qcow2
+fi
 
 [ ! -L "$overlay" ] && [ -f "$overlay" ] \
     || fail 'the writable overlay is unavailable'
 [ "$(stat -f '%Lp' "$overlay")" = 600 ] \
     || fail 'the writable overlay mode is not 0600'
-expected_backing=$(CDPATH='' cd -- "$(dirname -- "$main_image")" && pwd)/$(basename -- "$main_image")
 overlay_info=$(qemu-img info --output=json "$overlay")
 printf '%s\n' "$overlay_info" | jq -e \
     --arg expected_backing "$expected_backing" \
+    --arg expected_backing_format "$expected_backing_format" \
     '.format == "qcow2" and
      .["virtual-size"] == 6997147648 and
      .["dirty-flag"] == false and
      .["backing-filename"] == $expected_backing and
-     .["backing-filename-format"] == "qcow2" and
+     .["backing-filename-format"] == $expected_backing_format and
      .["format-specific"].data.corrupt == false' >/dev/null \
     || fail 'the overlay metadata does not match the qualified contract'
 qemu-img check "$overlay" >/dev/null \

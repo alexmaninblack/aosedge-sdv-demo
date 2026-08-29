@@ -74,7 +74,9 @@ AOSVM_SUCCESSOR_IMAGE_SHA256=$(printf '%s\n' "$resolved_manifest" | jq -er '.ima
 STATE_ROOT="$HOME/Library/Application Support/CarlaAosEdge/AosVM/successor-testing"
 export AOSVM_MAC_ADDRESS=52:54:00:53:54:30
 export AOSVM_LOCAL_ROOT="$REPOSITORY_ROOT/.local/successor-testing"
-export AOSVM_RUN_ROOT="$REPOSITORY_ROOT/.run/successor-testing"
+# Keep Unix-domain control sockets below macOS's path-length limit even when
+# this launcher is exercised from a deeply nested isolated worktree.
+export AOSVM_RUN_ROOT="/private/tmp/aosvm-successor-testing-runtime"
 export AOSVM_RUNS_ROOT="$REPOSITORY_ROOT/runs/successor-testing"
 export AOSVM_BACKUP_ROOT="$STATE_ROOT/backups"
 export AOSVM_GUEST_ACCESS_ROOT="$STATE_ROOT/host-access"

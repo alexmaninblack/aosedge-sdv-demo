@@ -21,6 +21,7 @@ PROFILE = ROOT / "scripts" / "successor-testing-vm"
 LAUNCHER = ROOT / "scripts" / "aosvm"
 ONBOARD = ROOT / "scripts" / "aosvm-macos-onboard"
 MANIFEST_HELPER = ROOT / "scripts" / "host" / "aosvm-successor-manifest"
+PHASE13_GATE = ROOT / "tests" / "host" / "aosvm-phase13-stopped-gate"
 
 
 class SuccessorTestingVMTests(unittest.TestCase):
@@ -173,8 +174,17 @@ class SuccessorTestingVMTests(unittest.TestCase):
         self.assertIn("AOSVM_HOST_DNS_PORT=18056", source)
         self.assertIn("AOSVM_PROVISIONING_HOST_PORT=18092", source)
         self.assertIn('AOSVM_LOCAL_ROOT="$REPOSITORY_ROOT/.local/successor-testing"', source)
+        self.assertIn('AOSVM_RUN_ROOT="/private/tmp/aosvm-successor-testing-runtime"', source)
         self.assertIn('AOSVM_BACKUP_ROOT="$STATE_ROOT/backups"', source)
         self.assertIn('AOSVM_PROVISION_ATTEMPT_ROOT="$STATE_ROOT/provisioning"', source)
+
+    def test_phase13_gate_accepts_only_manifest_validated_successor_inputs(self) -> None:
+        gate = PHASE13_GATE.read_text(encoding="utf-8")
+        self.assertIn("successor-testing)", gate)
+        self.assertIn('AOSVM_SUCCESSOR_PROFILE_VALIDATED:-0', gate)
+        self.assertIn('successor_image_format" = raw', gate)
+        self.assertIn("'Successor Testing Vehicle image'", gate)
+        self.assertIn("expected_backing_format=raw", gate)
 
     def test_profile_reuses_existing_lifecycle_and_not_offline_harness(self) -> None:
         profile = PROFILE.read_text(encoding="utf-8")
