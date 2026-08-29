@@ -64,7 +64,7 @@ wrapper.
 If accepted, the packet may write only below:
 
 ```text
-<local-workspace-parent>/.dependency-cache/wp-p1-platform-kac-001/
+/home/yocto/.dependency-cache/wp-p1-platform-kac-001/
 ```
 
 with separate `src`, `yocto/downloads`, `yocto/sstate-cache`, `yocto/tmp` and
@@ -72,24 +72,46 @@ with separate `src`, `yocto/downloads`, `yocto/sstate-cache`, `yocto/tmp` and
 Git-managed and must contain no key, PIN, certificate, token or Unit identity.
 All source and product repositories remain read-only.
 
-## Exact Resolution Work
+## Gate A — Metadata Resolution and Provisional Lock
 
-1. Fetch each metadata source at the exact revision above into a new empty
-   cache path and verify its resulting `HEAD`.
-2. Resolve the exact BitBake selections for `grpc`, `grpc-native`, `protobuf`,
+1. Inspect the existing pinned Builder cache offline first. Reuse an existing
+   input only after proving its exact identity against this packet; never treat
+   cache presence as revision or license evidence.
+2. Materialize each metadata source at the exact revision above into the new
+   empty private `src` path, preferring a verified local source and using the
+   network only for an exact missing revision. Verify every resulting `HEAD`.
+3. Resolve the exact BitBake selections for `grpc`, `grpc-native`, `protobuf`,
    `protobuf-native`, `openssl`, `softhsm` and `pkcs11-provider` without
    overriding layer priority or recipe selection.
-3. Record recipe file, `PV`, `SRC_URI`, `SRCREV`, every source checksum,
-   `LICENSE`, `LIC_FILES_CHKSUM`, package splits, target/compiler tuple and the
-   native/target pairing.
-4. Prove that the selected target packages install:
-   `/usr/lib/ossl-modules/pkcs11.so` and
+4. Record recipe file, effective layer priority, `PV`, `PR`, `SRC_URI`,
+   `SRCREV`, every source checksum, `LICENSE`, `LIC_FILES_CHKSUM`, package
+   splits, target/compiler tuple, generator identity and native/target pairing.
+5. Prove from the selected metadata and source-install contract that the
+   target packages own `/usr/lib/ossl-modules/pkcs11.so` and
    `/usr/lib/softhsm/libsofthsm2.so`, or stop.
-5. Only after a complete reviewed lock, fetch exactly these sources and
-   license material, then repeat the fetch test with `BB_NO_NETWORK=1`.
-6. Produce an evidence report and proposed governance delta for
-   `DEPENDENCIES.json` and `THIRD_PARTY_NOTICES.md`; do not apply that delta in
-   this packet.
+6. Produce a provisional dependency lock and stop for separate review. Gate A
+   does not authorize recipe payload fetch beyond the exact metadata needed to
+   create that lock.
+
+## Gate B — Exact Fetch and Offline Evidence
+
+Gate B begins only after the Gate A provisional lock has been reviewed and
+explicitly accepted.
+
+1. Fetch exactly the source and license payloads enumerated by the accepted
+   lock into the dedicated `yocto/downloads` path.
+2. Verify every source identity, archive checksum and license checksum against
+   the accepted lock.
+3. Repeat the exact fetch task with `BB_NO_NETWORK=1`; any missing or changed
+   input fails the gate.
+4. Produce an evidence report, cache inventory and proposed governance delta
+   for `DEPENDENCIES.json` and `THIRD_PARTY_NOTICES.md`; do not apply that delta
+   in this packet.
+
+Neither gate authorizes KAC or dependency compilation, host or target package
+installation, product-repository edits, artifact or image construction, or any
+VM, Unit, provisioning, signing, FOTA or live operation beyond the separately
+accepted isolated Builder execution needed for this evidence-only packet.
 
 ## Stop Conditions
 
@@ -115,6 +137,8 @@ Factory Image.
 
 ## Authorization Gate
 
-This packet records the exact blocker and safe acquisition boundary. Network
-source acquisition and local cache creation require explicit operator
-acceptance after review of this file.
+This packet records the exact blocker and safe acquisition boundary. Gate A
+network metadata acquisition, private cache creation and isolated Builder
+execution require explicit operator acceptance after review of this file.
+Gate B exact payload fetch requires separate acceptance of the provisional
+lock produced by Gate A.
