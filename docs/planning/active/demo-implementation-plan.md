@@ -337,11 +337,13 @@ handoff.
   slice is `IMPLEMENTED` through `WP-P1-VEH-001` on 2026-08-28. Remaining
   Gateway superset, advisory, trust, Safe Stop and live qualification work is
   not implied by that completed slice.
-- The proposed next source-only slice,
+- The next source-only slice,
   [`WP-P1-VEH-002`](work-packets/p1-vehicle-gateway-safe-stop-projection.md),
-  freezes the six missing frame-coherent control/reset VSS projection facts.
-  It remains `PROPOSED — REVIEW REQUIRED`, grants no implementation authority
-  and explicitly does not make the live Safe Stop path operational.
+  is `IMPLEMENTED` at isolated final commit `8af302d`. It adds the six missing
+  frame-coherent control/reset VSS projection facts, passes all 16 core, 18
+  VISS and 21 shared-contract tests, and passed independent review. It does not
+  make the live controller handoff or selected-Unit mTLS Safe Stop path
+  operational or qualified.
 - Repositories: `CarlaSim` only if the installed hardware model itself needs a
   change; otherwise `carla-ego-runtime` for scenario, controller, Gateway,
   VISS, advisory and Engineering Dashboard changes.

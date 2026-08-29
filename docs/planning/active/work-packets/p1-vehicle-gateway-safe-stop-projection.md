@@ -6,12 +6,15 @@
 - ID: `WP-P1-VEH-002`
 - Lane: `L-VEH`
 - Increment: `IMP-02B`
-- State: `PROPOSED — REVIEW REQUIRED`
-- Version: 0.1
+- State: `IMPLEMENTED — ISOLATED SOURCE PROJECTION COMPLETE`
+- Version: 0.2
 - Prepared: 2026-08-29
-- Implementation authorized: no
-- Product repository changes, live CARLA, network, Cloud, VM, Unit, FOTA,
-  signing and qualification authorized: no
+- Accepted: 2026-08-29
+- Implementation authorized: yes — 2026-08-29, only the exact nine-file
+  source boundary and deterministic tests in this packet
+- Completed: 2026-08-29
+- Live CARLA, external network, Cloud, VM, Unit, FOTA, signing, push, merge and
+  live qualification authorized: no
 - Parent plan: [Demo Implementation Plan 1.2](../demo-implementation-plan.md)
 - Previous implemented slice:
   [WP-P1-VEH-001](p1-vehicle-gateway-wheel-units.md)
@@ -217,11 +220,29 @@ operational or qualified Safe Stop path.
 - No product or shared-document file was changed and no live or external
   operation was performed during the assessment.
 
-## Authorization Gate
+## Completion Record
 
-This document records a proposed bounded implementation packet only. It does
-not authorize a branch, worktree, source edit, test requiring additional
-permission, commit, push, merge, product build or live operation. The exact
-outcome, frozen inputs, nine-file boundary, tests, exclusions and partial-exit
-meaning require explicit review and implementation authorization before any
-product work starts.
+- Repository: `carla-ego-runtime`
+- Isolated branch: `codex/imp-02b-safe-stop-projection`
+- Frozen base: `d05ac2dbf89f341215e12770feab0ec23b3c2394`
+- Initial implementation commit: `64d200ab93a62dce0df0c230fa3dd687cdb60c03`
+- Final corrective commit: `8af302dd11c872a564ea7542a126c9886daf2a5a`
+- Cumulative boundary: exactly the nine authorized files; worktree clean
+- Core Release verification: 16 of 16 CTest cases passed
+- VISS Release verification: 18 of 18 CTest cases passed
+- Frozen shared contract verification: 21 of 21 cases passed
+- Independent review: initial default-construction and validator/test-strength
+  findings were corrected in `8af302d`; final re-review found no open issue
+
+The final source makes `SimulatorControlFacts` non-default-constructible,
+requires every fact explicitly, projects the six-path group atomically only on
+the matching physical frame, validates each overlay path against its own exact
+datatype and `sensor` type, and tests every accepted and invalid enum mapping.
+No generated artifact or out-of-boundary path was committed.
+
+## Remaining Gate
+
+`IMPLEMENTED` means only that the isolated projection core is complete. It does
+not make `IF-VEH-007` operational or qualified. The frame-coherent live
+controller handoff, selected-Unit mTLS identity/role assignment, live CARLA
+qualification, push and merge remain separately reviewed future work.
