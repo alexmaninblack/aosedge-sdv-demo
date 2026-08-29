@@ -1,0 +1,216 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+"""Validate and resolve one immutable successor Testing Vehicle image manifest."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import re
+import shutil
+import stat
+import subprocess
+import sys
+from pathlib import Path
+from typing import Any
+
+
+EXPECTED_TOP_LEVEL_KEYS = {"schema", "kind", "vehicleRole", "image"}
+EXPECTED_IMAGE_KEYS = {
+    "path",
+    "format",
+    "version",
+    "sizeBytes",
+    "virtualSizeBytes",
+    "sha256",
+}
+EXPECTED_KIND = "aosedge.successor-testing-launcher.v1"
+VERSION_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$")
+SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+
+
+class ManifestError(RuntimeError):
+    """Raised when a launcher manifest is not an exact immutable selection."""
+
+
+def fail(message: str) -> None:
+    raise ManifestError(message)
+
+
+def reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            fail(f"duplicate JSON property: {key}")
+        result[key] = value
+    return result
+
+
+def open_regular_read_only(path: Path, label: str) -> tuple[int, os.stat_result]:
+    if not path.is_absolute():
+        fail(f"{label} path must be absolute")
+    try:
+        canonical = path.resolve(strict=True)
+    except OSError as error:
+        fail(f"{label} is unavailable: {error}")
+    if canonical != path:
+        fail(f"{label} path must be canonical and must not use symbolic links")
+    flags = os.O_RDONLY
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    try:
+        descriptor = os.open(path, flags)
+    except OSError as error:
+        fail(f"cannot open {label}: {error}")
+    details = os.fstat(descriptor)
+    if not stat.S_ISREG(details.st_mode):
+        os.close(descriptor)
+        fail(f"{label} is not a regular file")
+    if stat.S_IMODE(details.st_mode) & 0o222:
+        os.close(descriptor)
+        fail(f"{label} must be read-only")
+    return descriptor, details
+
+
+def read_and_hash(
+    path: Path, label: str, *, collect: bool = True
+) -> tuple[bytes, str, os.stat_result]:
+    descriptor, details = open_regular_read_only(path, label)
+    digest = hashlib.sha256()
+    chunks: list[bytes] = []
+    try:
+        while chunk := os.read(descriptor, 1024 * 1024):
+            digest.update(chunk)
+            if collect:
+                chunks.append(chunk)
+    finally:
+        os.close(descriptor)
+    return b"".join(chunks), digest.hexdigest(), details
+
+
+def require_positive_integer(value: Any, label: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        fail(f"{label} must be a positive integer")
+    return value
+
+
+def validate_raw_image(path: Path, expected_virtual_size: int) -> None:
+    qemu_img = shutil.which("qemu-img")
+    if qemu_img is None:
+        fail("required command is unavailable: qemu-img")
+    try:
+        result = subprocess.run(
+            [qemu_img, "info", "--output=json", str(path)],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        details = json.loads(result.stdout)
+    except (subprocess.CalledProcessError, json.JSONDecodeError) as error:
+        fail(f"cannot inspect successor raw image: {error}")
+    if (
+        not isinstance(details, dict)
+        or details.get("format") != "raw"
+        or details.get("virtual-size") != expected_virtual_size
+        or details.get("dirty-flag") is not False
+        or "backing-filename" in details
+    ):
+        fail("successor image raw metadata does not match the manifest")
+
+
+def validate_manifest(path_text: str) -> dict[str, Any]:
+    manifest_path = Path(path_text)
+    raw_manifest, manifest_sha256, _ = read_and_hash(
+        manifest_path, "successor manifest"
+    )
+    try:
+        manifest = json.loads(
+            raw_manifest.decode("utf-8"), object_pairs_hook=reject_duplicate_keys
+        )
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        fail(f"successor manifest is not valid UTF-8 JSON: {error}")
+    if not isinstance(manifest, dict):
+        fail("successor manifest must be a JSON object")
+    if set(manifest) != EXPECTED_TOP_LEVEL_KEYS:
+        fail("successor manifest has missing or unknown top-level properties")
+    if manifest["schema"] != 1:
+        fail("successor manifest schema must be 1")
+    if manifest["kind"] != EXPECTED_KIND:
+        fail(f"successor manifest kind must be {EXPECTED_KIND}")
+    if manifest["vehicleRole"] != "Testing Vehicle":
+        fail("successor manifest vehicleRole must be Testing Vehicle")
+
+    image = manifest["image"]
+    if not isinstance(image, dict) or set(image) != EXPECTED_IMAGE_KEYS:
+        fail("successor image has missing or unknown properties")
+    image_path_value = image["path"]
+    if not isinstance(image_path_value, str) or not image_path_value:
+        fail("successor image path must be a non-empty string")
+    if any(ord(character) < 0x20 for character in image_path_value):
+        fail("successor image path contains a control character")
+    if "," in image_path_value:
+        fail("successor image path must not contain a comma")
+    image_path = Path(image_path_value)
+    if image_path.suffix != ".img":
+        fail("successor image must use the .img suffix")
+    if image["format"] != "raw":
+        fail("successor image format must be raw")
+
+    version = image["version"]
+    if not isinstance(version, str) or VERSION_RE.fullmatch(version) is None:
+        fail("successor image version is invalid")
+    size_bytes = require_positive_integer(image["sizeBytes"], "image sizeBytes")
+    virtual_size_bytes = require_positive_integer(
+        image["virtualSizeBytes"], "image virtualSizeBytes"
+    )
+    expected_sha256 = image["sha256"]
+    if not isinstance(expected_sha256, str) or SHA256_RE.fullmatch(expected_sha256) is None:
+        fail("successor image sha256 must be 64 lowercase hexadecimal characters")
+
+    _, actual_sha256, image_details = read_and_hash(
+        image_path, "successor image", collect=False
+    )
+    if image_details.st_size != size_bytes:
+        fail(
+            "successor image size does not match manifest: "
+            f"expected {size_bytes}, found {image_details.st_size}"
+        )
+    if actual_sha256 != expected_sha256:
+        fail("successor image SHA-256 does not match manifest")
+    validate_raw_image(image_path, virtual_size_bytes)
+
+    return {
+        "manifestPath": str(manifest_path),
+        "manifestSha256": manifest_sha256,
+        "image": {
+            "path": str(image_path),
+            "format": "raw",
+            "version": version,
+            "sizeBytes": size_bytes,
+            "virtualSizeBytes": virtual_size_bytes,
+            "sha256": expected_sha256,
+        },
+    }
+
+
+def main() -> int:
+    if len(sys.argv) != 2:
+        print(
+            f"Usage: {Path(sys.argv[0]).name} ABSOLUTE_MANIFEST_PATH",
+            file=sys.stderr,
+        )
+        return 2
+    try:
+        resolved = validate_manifest(sys.argv[1])
+    except ManifestError as error:
+        print(f"Error: {error}", file=sys.stderr)
+        return 1
+    print(json.dumps(resolved, sort_keys=True, separators=(",", ":")))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

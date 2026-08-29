@@ -9,6 +9,7 @@ ASSET_SIZE="381515220"
 ASSET_SHA256="db8fef0188f4ba0930aecafecdfe4ad063a3cf27a48e8649fc5050f9b3117e04"
 ASSET_URL="https://github.com/aosedge/meta-aos-vm/releases/download/v6.1.0/aos-vm-image-qemuarm64-6.1.0.tar.xz"
 MAIN_IMAGE="aos-vm-main-qemuarm64.qcow2"
+MAIN_IMAGE_FORMAT="qcow2"
 MAIN_IMAGE_SIZE="593428480"
 MAIN_IMAGE_SHA256="8cbc4bd331650fbae7b54ad5b11b00e36e275cea00298327629e568422023fc4"
 SECONDARY_IMAGE="aos-vm-secondary-qemuarm64.qcow2"
@@ -19,8 +20,10 @@ FIRMWARE_SIZE="2097152"
 FIRMWARE_SHA256="30f7042c23b81c28b8196a76f4af6bcf10046f08049c9d78b4387472c5bbcd10"
 IMAGE_VIRTUAL_SIZE="6997147648"
 AOSVM_INSTANCE=${AOSVM_INSTANCE:-main}
+AOSVM_ARTIFACT_SOURCE=release
 case "$AOSVM_INSTANCE" in
     main|r6-1-validation) ;;
+    successor-testing) AOSVM_ARTIFACT_SOURCE=successor ;;
     *) printf 'Error: unsupported AosVM instance: %s\n' "$AOSVM_INSTANCE" >&2; exit 1 ;;
 esac
 VM_NAME="aosvm-$AOSVM_INSTANCE"
@@ -66,6 +69,18 @@ PARTIAL_PATH="$ARCHIVE_PATH.partial"
 MAIN_IMAGE_PATH="$RELEASE_DIR/$MAIN_IMAGE"
 SECONDARY_IMAGE_PATH="$RELEASE_DIR/$SECONDARY_IMAGE"
 FIRMWARE_PATH="$RELEASE_DIR/$FIRMWARE"
+
+SUCCESSOR_MANIFEST_PATH=${AOSVM_SUCCESSOR_MANIFEST_PATH:-}
+SUCCESSOR_MANIFEST_SHA256=${AOSVM_SUCCESSOR_MANIFEST_SHA256:-}
+if [ "$AOSVM_ARTIFACT_SOURCE" = successor ]; then
+    RELEASE=${AOSVM_SUCCESSOR_IMAGE_VERSION:-}
+    MAIN_IMAGE_PATH=${AOSVM_SUCCESSOR_IMAGE_PATH:-}
+    MAIN_IMAGE=${MAIN_IMAGE_PATH##*/}
+    MAIN_IMAGE_FORMAT=${AOSVM_SUCCESSOR_IMAGE_FORMAT:-}
+    MAIN_IMAGE_SIZE=${AOSVM_SUCCESSOR_IMAGE_SIZE:-}
+    MAIN_IMAGE_SHA256=${AOSVM_SUCCESSOR_IMAGE_SHA256:-}
+    IMAGE_VIRTUAL_SIZE=${AOSVM_SUCCESSOR_IMAGE_VIRTUAL_SIZE:-}
+fi
 OVERLAY_PATH="$LOCAL_ROOT/$OVERLAY"
 LIFECYCLE_GUARD_PATH="$LOCAL_ROOT/$LIFECYCLE_GUARD"
 LIFECYCLE_STATE_PATH=''
@@ -123,6 +138,39 @@ validate_mac_address() {
     printf '%s\n' "$VM_MAC_ADDRESS" |
         grep -Eq '^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$' ||
         fail "VM MAC address is invalid"
+}
+
+validate_successor_profile() {
+    [ "$AOSVM_ARTIFACT_SOURCE" = successor ] || return
+
+    [ "${AOSVM_SUCCESSOR_PROFILE_VALIDATED:-}" = 1 ] ||
+        fail "Successor Testing Vehicle must be selected through scripts/successor-testing-vm"
+    case "$SUCCESSOR_MANIFEST_PATH" in
+        /*) ;;
+        *) fail "Successor manifest path must be absolute" ;;
+    esac
+    [ ! -L "$SUCCESSOR_MANIFEST_PATH" ] && [ -f "$SUCCESSOR_MANIFEST_PATH" ] ||
+        fail "Successor manifest is not a regular, non-symbolic-link file: $SUCCESSOR_MANIFEST_PATH"
+    printf '%s\n' "$SUCCESSOR_MANIFEST_SHA256" |
+        grep -Eq '^[0-9a-f]{64}$' ||
+        fail "Successor manifest SHA-256 must be 64 lowercase hexadecimal characters"
+    [ "$(file_sha256 "$SUCCESSOR_MANIFEST_PATH")" = "$SUCCESSOR_MANIFEST_SHA256" ] ||
+        fail "Successor manifest changed after profile validation"
+    case "$MAIN_IMAGE_PATH" in
+        /*) ;;
+        *) fail "Successor image path must be absolute" ;;
+    esac
+    [ "$MAIN_IMAGE_FORMAT" = raw ] ||
+        fail "Successor image format must be raw"
+    printf '%s\n' "$MAIN_IMAGE_SHA256" | grep -Eq '^[0-9a-f]{64}$' ||
+        fail "Successor image SHA-256 must be 64 lowercase hexadecimal characters"
+    case "$MAIN_IMAGE_SIZE:$IMAGE_VIRTUAL_SIZE" in
+        *[!0-9:]*|:*|*:) fail "Successor image sizes must be decimal integers" ;;
+    esac
+    [ "$MAIN_IMAGE_SIZE" -gt 0 ] && [ "$IMAGE_VIRTUAL_SIZE" -gt 0 ] ||
+        fail "Successor image sizes must be greater than zero"
+    printf '%s\n' "$RELEASE" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$' ||
+        fail "Successor image version is invalid"
 }
 
 file_size() {
@@ -192,17 +240,30 @@ verify_base_image() {
     base_image_label=$2
 
     base_image_info=$(qemu-img info --output=json "$base_image_path")
-    printf '%s\n' "$base_image_info" | jq -e \
-        --argjson expected_virtual_size "$IMAGE_VIRTUAL_SIZE" \
-        '.format == "qcow2" and
-         .["virtual-size"] == $expected_virtual_size and
-         .["dirty-flag"] == false and
-         .["format-specific"].data.corrupt == false and
-         (has("backing-filename") | not)' >/dev/null ||
-        fail "$base_image_label qcow2 metadata does not match the pinned release"
-
-    qemu-img check "$base_image_path" >/dev/null ||
-        fail "$base_image_label failed qemu-img check"
+    case "$MAIN_IMAGE_FORMAT" in
+        qcow2)
+            printf '%s\n' "$base_image_info" | jq -e \
+                --argjson expected_virtual_size "$IMAGE_VIRTUAL_SIZE" \
+                '.format == "qcow2" and
+                 .["virtual-size"] == $expected_virtual_size and
+                 .["dirty-flag"] == false and
+                 .["format-specific"].data.corrupt == false and
+                 (has("backing-filename") | not)' >/dev/null ||
+                fail "$base_image_label qcow2 metadata does not match the pinned release"
+            qemu-img check "$base_image_path" >/dev/null ||
+                fail "$base_image_label failed qemu-img check"
+            ;;
+        raw)
+            printf '%s\n' "$base_image_info" | jq -e \
+                --argjson expected_virtual_size "$IMAGE_VIRTUAL_SIZE" \
+                '.format == "raw" and
+                 .["virtual-size"] == $expected_virtual_size and
+                 .["dirty-flag"] == false and
+                 (has("backing-filename") | not)' >/dev/null ||
+                fail "$base_image_label raw metadata does not match the manifest"
+            ;;
+        *) fail "Unsupported base image format: $MAIN_IMAGE_FORMAT" ;;
+    esac
 }
 
 absolute_path() {
@@ -235,12 +296,13 @@ verify_overlay() {
     esac
     printf '%s\n' "$overlay_info" | jq -e \
         --arg expected_backing "$expected_backing_path" \
+        --arg expected_backing_format "$MAIN_IMAGE_FORMAT" \
         --argjson expected_virtual_size "$IMAGE_VIRTUAL_SIZE" \
         '.format == "qcow2" and
          .["virtual-size"] == $expected_virtual_size and
          .["dirty-flag"] == false and
          .["backing-filename"] == $expected_backing and
-         .["backing-filename-format"] == "qcow2" and
+         .["backing-filename-format"] == $expected_backing_format and
          .["format-specific"].data.corrupt == false' >/dev/null ||
         fail "Overlay qcow2 metadata or backing file is not the expected value"
 
@@ -449,6 +511,14 @@ install_prepared_file() {
 }
 
 download_archive() {
+    if [ "$AOSVM_ARTIFACT_SOURCE" = successor ]; then
+        printf 'Successor image is selected by the verified local manifest; no download was attempted.\n'
+        printf 'Manifest: %s\n' "$SUCCESSOR_MANIFEST_PATH"
+        printf 'Image version: %s\n' "$RELEASE"
+        printf 'Image SHA-256: %s\n' "$MAIN_IMAGE_SHA256"
+        return
+    fi
+
     require_command curl
     require_command shasum
     require_command stat
@@ -520,7 +590,56 @@ download_archive() {
     printf 'SHA-256: %s\n' "$ASSET_SHA256"
 }
 
+prepare_successor_image() {
+    require_command jq
+    require_command qemu-img
+    require_command shasum
+    require_command stat
+
+    [ "$LOCAL_ROOT" != "/" ] || fail "Local root must not be the filesystem root"
+    verify_lifecycle_state
+    verify_release_file "$MAIN_IMAGE_PATH" "$MAIN_IMAGE_SIZE" \
+        "$MAIN_IMAGE_SHA256" "Successor Testing Vehicle image"
+    [ "$(file_mode "$MAIN_IMAGE_PATH")" = "444" ] ||
+        fail "Successor Testing Vehicle image mode must be 0444"
+    verify_base_image "$MAIN_IMAGE_PATH" "Successor Testing Vehicle image"
+    verify_release_file "$FIRMWARE_PATH" "$FIRMWARE_SIZE" \
+        "$FIRMWARE_SHA256" "QEMU EFI firmware"
+    [ "$(file_mode "$FIRMWARE_PATH")" = "444" ] ||
+        fail "QEMU EFI firmware mode must be 0444"
+
+    ensure_private_directory "$LOCAL_ROOT" "Local VM directory"
+    [ ! -L "$OVERLAY_PATH" ] ||
+        fail "Overlay path must not be a symbolic link: $OVERLAY_PATH"
+    if [ -e "$OVERLAY_PATH" ]; then
+        verify_overlay "$OVERLAY_PATH"
+    else
+        successor_work_dir=$(mktemp -d "$LOCAL_ROOT/.prepare-successor.XXXXXX")
+        successor_overlay_partial="$successor_work_dir/$OVERLAY"
+        absolute_main_image_path=$(absolute_path "$MAIN_IMAGE_PATH")
+        qemu-img create -q -f qcow2 -b "$absolute_main_image_path" \
+            -B "$MAIN_IMAGE_FORMAT" \
+            "$successor_overlay_partial"
+        chmod 0600 "$successor_overlay_partial"
+        verify_overlay "$successor_overlay_partial"
+        mv "$successor_overlay_partial" "$OVERLAY_PATH"
+        rmdir "$successor_work_dir"
+    fi
+    chmod 0600 "$OVERLAY_PATH"
+    verify_overlay "$OVERLAY_PATH"
+
+    printf 'Prepared a fresh successor Testing Vehicle overlay.\n'
+    printf 'Manifest: %s\n' "$SUCCESSOR_MANIFEST_PATH"
+    printf 'Base image: %s\n' "$MAIN_IMAGE_PATH"
+    printf 'Overlay: %s\n' "$OVERLAY_PATH"
+}
+
 prepare_images() {
+    if [ "$AOSVM_ARTIFACT_SOURCE" = successor ]; then
+        prepare_successor_image
+        return
+    fi
+
     require_command awk
     require_command cmp
     require_command jq
@@ -1005,6 +1124,23 @@ verify_start_inputs() {
     require_command shasum
     require_command stat
 
+    if [ "$AOSVM_ARTIFACT_SOURCE" = successor ]; then
+        verify_release_file "$MAIN_IMAGE_PATH" "$MAIN_IMAGE_SIZE" \
+            "$MAIN_IMAGE_SHA256" "Successor Testing Vehicle image"
+        [ "$(file_mode "$MAIN_IMAGE_PATH")" = "444" ] ||
+            fail "Successor Testing Vehicle image mode must be 0444"
+        verify_base_image "$MAIN_IMAGE_PATH" "Successor Testing Vehicle image"
+        verify_release_file "$FIRMWARE_PATH" "$FIRMWARE_SIZE" \
+            "$FIRMWARE_SHA256" "QEMU EFI firmware"
+        [ "$(file_mode "$FIRMWARE_PATH")" = "444" ] ||
+            fail "QEMU EFI firmware mode must be 0444"
+        verify_overlay "$OVERLAY_PATH"
+        [ "$(file_mode "$OVERLAY_PATH")" = "600" ] ||
+            fail "Overlay mode must be 0600"
+        verify_lifecycle_state
+        return
+    fi
+
     verify_archive "$ARCHIVE_PATH"
     verify_release_file "$MAIN_IMAGE_PATH" "$MAIN_IMAGE_SIZE" "$MAIN_IMAGE_SHA256" "Main Node image"
     verify_release_file "$SECONDARY_IMAGE_PATH" "$SECONDARY_IMAGE_SIZE" "$SECONDARY_IMAGE_SHA256" "Secondary Node image"
@@ -1322,7 +1458,8 @@ reset_overlay() {
     reset_new_overlay="$reset_work_dir/$OVERLAY"
     reset_old_overlay="$reset_work_dir/$OVERLAY.old"
     absolute_main_image_path=$(absolute_path "$MAIN_IMAGE_PATH")
-    qemu-img create -q -f qcow2 -b "$absolute_main_image_path" -B qcow2 \
+    qemu-img create -q -f qcow2 -b "$absolute_main_image_path" \
+        -B "$MAIN_IMAGE_FORMAT" \
         "$reset_new_overlay"
     chmod 0600 "$reset_new_overlay"
     verify_overlay "$reset_new_overlay"
@@ -1785,6 +1922,8 @@ dns_check() {
 usage() {
     printf 'Usage: %s <host-check|download|prepare|start [--foreground|--dry-run]|start-provisioning [--foreground|--dry-run]|console|status|smoke-test|dns-check|stop|checkpoint-pre-provision|seal-provisioned|lifecycle-status|reset-overlay --confirm>\n' "$0"
 }
+
+validate_successor_profile
 
 case ${1:-} in
     host-check)

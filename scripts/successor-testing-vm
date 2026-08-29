@@ -1,0 +1,100 @@
+#!/bin/sh
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+set -eu
+umask 077
+
+SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+REPOSITORY_ROOT=$(CDPATH='' cd -- "$SCRIPT_DIR/.." && pwd)
+MANIFEST_HELPER="$SCRIPT_DIR/host/aosvm-successor-manifest"
+
+fail() {
+    printf 'Error: %s\n' "$*" >&2
+    exit 1
+}
+
+usage() {
+    cat <<'EOF'
+Usage: ./scripts/successor-testing-vm --manifest ABSOLUTE_PATH COMMAND
+
+Commands:
+  validate                Validate the immutable manifest and image; do nothing else.
+  doctor                  Run the existing read-only macOS onboarding doctor.
+  setup                   Prepare a fresh online Testing Vehicle overlay.
+  status                  Report the isolated successor Testing Vehicle state.
+  provision-preflight     Run the existing read-only OEM/Cloud preflight.
+  provision --confirm     Provision exactly once through the existing host flow.
+  verify-online           Verify the provisioned Unit through the existing host flow.
+  start                   Start in normal mode without the IAM port forward.
+  stop                    Stop cleanly.
+
+The manifest is mandatory; no image path, digest, size, or version is guessed.
+This profile does not run the offline restrict=on qualification candidate. It
+uses dedicated state and delegates lifecycle, checkpoint, sealing, OEM p12 and
+no-automatic-retry behavior to the already qualified onboarding implementation.
+EOF
+}
+
+[ "${1:-}" = --manifest ] && [ "$#" -ge 3 ] || {
+    usage >&2
+    exit 2
+}
+MANIFEST_PATH=$2
+shift 2
+case "$MANIFEST_PATH" in
+    /*) ;;
+    *) fail "successor manifest path must be absolute" ;;
+esac
+[ -x "$MANIFEST_HELPER" ] ||
+    fail "successor manifest validator is unavailable: $MANIFEST_HELPER"
+command -v jq >/dev/null 2>&1 || fail "required command is unavailable: jq"
+
+resolved_manifest=$($MANIFEST_HELPER "$MANIFEST_PATH")
+
+export AOSVM_INSTANCE=successor-testing
+export AOSVM_SUCCESSOR_PROFILE_VALIDATED=1
+export AOSVM_SUCCESSOR_MANIFEST_PATH
+AOSVM_SUCCESSOR_MANIFEST_PATH=$(printf '%s\n' "$resolved_manifest" | jq -er '.manifestPath')
+export AOSVM_SUCCESSOR_MANIFEST_SHA256
+AOSVM_SUCCESSOR_MANIFEST_SHA256=$(printf '%s\n' "$resolved_manifest" | jq -er '.manifestSha256')
+export AOSVM_SUCCESSOR_IMAGE_PATH
+AOSVM_SUCCESSOR_IMAGE_PATH=$(printf '%s\n' "$resolved_manifest" | jq -er '.image.path')
+export AOSVM_SUCCESSOR_IMAGE_FORMAT
+AOSVM_SUCCESSOR_IMAGE_FORMAT=$(printf '%s\n' "$resolved_manifest" | jq -er '.image.format')
+export AOSVM_SUCCESSOR_IMAGE_VERSION
+AOSVM_SUCCESSOR_IMAGE_VERSION=$(printf '%s\n' "$resolved_manifest" | jq -er '.image.version')
+export AOSVM_SUCCESSOR_IMAGE_SIZE
+AOSVM_SUCCESSOR_IMAGE_SIZE=$(printf '%s\n' "$resolved_manifest" | jq -er '.image.sizeBytes')
+export AOSVM_SUCCESSOR_IMAGE_VIRTUAL_SIZE
+AOSVM_SUCCESSOR_IMAGE_VIRTUAL_SIZE=$(printf '%s\n' "$resolved_manifest" | jq -er '.image.virtualSizeBytes')
+export AOSVM_SUCCESSOR_IMAGE_SHA256
+AOSVM_SUCCESSOR_IMAGE_SHA256=$(printf '%s\n' "$resolved_manifest" | jq -er '.image.sha256')
+
+STATE_ROOT="$HOME/Library/Application Support/CarlaAosEdge/AosVM/successor-testing"
+export AOSVM_MAC_ADDRESS=52:54:00:53:54:30
+export AOSVM_LOCAL_ROOT="$REPOSITORY_ROOT/.local/successor-testing"
+export AOSVM_RUN_ROOT="$REPOSITORY_ROOT/.run/successor-testing"
+export AOSVM_RUNS_ROOT="$REPOSITORY_ROOT/runs/successor-testing"
+export AOSVM_BACKUP_ROOT="$STATE_ROOT/backups"
+export AOSVM_GUEST_ACCESS_ROOT="$STATE_ROOT/host-access"
+export AOSVM_PROVISION_ATTEMPT_ROOT="$STATE_ROOT/provisioning"
+export AOSVM_SSH_HOST_PORT=10030
+export AOSVM_HOST_DNS_PORT=18056
+export AOSVM_PROVISIONING_HOST_PORT=18092
+export AOSVM_EXPECTED_VERSION_IDS="$AOSVM_SUCCESSOR_IMAGE_VERSION"
+
+if [ "${1:-}" = validate ]; then
+    [ "$#" -eq 1 ] || fail "validate does not accept arguments"
+    printf 'Successor Testing Vehicle selection is valid.\n'
+    printf 'Manifest: %s\n' "$AOSVM_SUCCESSOR_MANIFEST_PATH"
+    printf 'Manifest SHA-256: %s\n' "$AOSVM_SUCCESSOR_MANIFEST_SHA256"
+    printf 'Image: %s\n' "$AOSVM_SUCCESSOR_IMAGE_PATH"
+    printf 'Image format: %s\n' "$AOSVM_SUCCESSOR_IMAGE_FORMAT"
+    printf 'Image version: %s\n' "$AOSVM_SUCCESSOR_IMAGE_VERSION"
+    printf 'Image SHA-256: %s\n' "$AOSVM_SUCCESSOR_IMAGE_SHA256"
+    printf 'No VM, network, Cloud, provisioning, signing, or state action was performed.\n'
+    exit 0
+fi
+
+exec "$SCRIPT_DIR/aosvm-macos-onboard" "$@"
