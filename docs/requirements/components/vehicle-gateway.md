@@ -18,6 +18,7 @@
 - Accepted D4 control decision: [D4-004 Simulator Control and Context Contract](../../../contracts/simulator-control-context/simulator-control-context.v1.json)
 - Accepted D4 source decision: [D4-005 Exclusive Live-Source Assignment](../../../contracts/exclusive-live-source-assignment/exclusive-live-source-assignment.v1.json)
 - Accepted D4 VISS decision: [D4-006 VISS Trust and Telemetry Profile](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
+- Accepted D4 Safe Stop freshness decision: [D4-028](../d4-decision-register.md#d4-028)
 - Accepted D4 advisory decision: [D4-008 Typed QM Advisory Profile](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - Implementation baseline: `carla-ego-runtime@22864c5` against `CarlaSim@ac7d882c`
 
@@ -403,7 +404,10 @@ decisions they exercise.
   through simulator-specific read-only VSS paths. The same projection plus
   factual speed, throttle and brake shall be available with monotonic
   `FrameId` through the distinct purpose-bound `PLATFORM_UPDATE_RUNTIME` mTLS
-  role for Safe Stop evaluation; Gateway
+  role for Safe Stop evaluation. The source timestamp shall let the runtime
+  prove that each sample was fresh when acquired and revalidate the latest
+  complete sample at each destructive gate; the retained observation sequence
+  is stability evidence only. Gateway
   publishes facts and shall not decide whether a Platform update may apply.
   The Engineering Telematics Dashboard shall show those facts without issuing control commands and
   without presenting a reset teleport as physical motion or adding them to an
@@ -412,8 +416,8 @@ decisions they exercise.
 - Architecture flows: [drive-mode/world-context transitions (`AF-X-DRIVE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-drive) and [cross-stage evidence (`AF-X-OBS`)](../../architecture/demo-scenario-architecture-flows.md#af-x-obs)
 - Components: [Gateway (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw), [VISS (`CMP-VISS`)](../component-decomposition-and-interface-register.md#cmp-viss), [OEM Component Runtime (`CMP-RUNTIME`)](../component-decomposition-and-interface-register.md#cmp-runtime) and [Engineering Dashboard (`CMP-ENG-DASH`)](../component-decomposition-and-interface-register.md#cmp-eng-dash)
 - Interfaces: [normalized model (`IF-VEH-004`)](../component-decomposition-and-interface-register.md#if-veh-004), [engineering subscription (`IF-VEH-006`)](../component-decomposition-and-interface-register.md#if-veh-006) and [Platform-update vehicle state (`IF-VEH-007`)](../component-decomposition-and-interface-register.md#if-veh-007)
-- Required evidence: state/path/type/freshness fixtures, monotonic generation checks, reset discontinuity sequence, runtime-role allowlist, dashboard rendering and negative proof that neither the dashboard nor Gateway owns the update decision
-- Executable contracts: [Simulator Control and Context 1.0.0](../../../contracts/simulator-control-context/simulator-control-context.v1.json) and [Platform FOTA Safe Stop 1.1.0](../../../contracts/platform-fota-safe-stop/platform-fota-safe-stop-profile.v1.json)
+- Required evidence: state/path/type/freshness fixtures including per-sample acquisition freshness and latest-sample gate-time freshness, monotonic generation checks, reset discontinuity sequence, runtime-role allowlist, dashboard rendering and negative proof that neither the dashboard nor Gateway owns the update decision
+- Executable contracts: [Simulator Control and Context 1.0.0](../../../contracts/simulator-control-context/simulator-control-context.v1.json) and [Platform FOTA Safe Stop 1.1.1](../../../contracts/platform-fota-safe-stop/platform-fota-safe-stop-profile.v1.json)
 - Requirement state: D3 design-reviewed; D4-004 contract accepted
 - Implementation state: `TARGET`; current controller status contains part of the state outside VISS, but the accepted engineering projection and dashboard fields do not exist
 

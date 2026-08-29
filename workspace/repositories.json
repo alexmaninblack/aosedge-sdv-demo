@@ -62,6 +62,17 @@
       "acceptedRevision": "04abe5bacc47e849c6a6fe4fccb64e8a15157d8f",
       "acceptedBranches": ["main"],
       "allowedDirtyPaths": []
+    },
+    {
+      "id": "brake-health-cloud",
+      "directory": "brake-health-cloud",
+      "role": "Function Team 1 Brake Health backend and Function Dashboard",
+      "visibility": "public",
+      "repository": "https://github.com/alexmaninblack/brake-health-cloud.git",
+      "remote": "origin",
+      "acceptedRevision": "6da2926ba96df5e470bfbc3514e983f5d54c3975",
+      "acceptedBranches": ["main"],
+      "allowedDirtyPaths": []
     }
   ],
   "launcherPaths": [

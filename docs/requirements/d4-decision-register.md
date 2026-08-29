@@ -77,6 +77,7 @@ same decision ID rather than create local variants.
 | <a id="d4-003"></a>`D4-003` — Deterministic stimuli and calibration | Freeze Brake obstacle/event stimulus, Tire pre-aged/accelerated stimulus, hidden qualification truth, repeat count and tolerances | Vehicle Simulation + both Function Teams | `CR-VEHICLE-SIM`, `CR-BHS`, `CR-TIRE`, `CR-E2E` | `RESEARCHING` |
 | <a id="d4-004"></a>`D4-004` — Drive-mode and scenario context | Freeze scenario/manual/autopilot transitions, obstacle ownership, reverse/reset behavior, mode/context/status VSS paths and discontinuity semantics | Vehicle Simulation + Gateway | `CR-VEHICLE-SIM`, `CR-GATEWAY`, Engineering Dashboard | `DECIDED` |
 | <a id="d4-005"></a>`D4-005` — Exclusive VU/PU source handover | Freeze attach, prove exclusive binding, detach, canonical reset/new generation and attach-to-next-role protocol without replay or a second simulated vehicle | Demo Solution + Gateway + Vehicle Simulation | Every VU/PU functional proof | `DECIDED` |
+| <a id="d4-028"></a>`D4-028` — Platform FOTA Safe Stop freshness | Distinguish sample freshness at acquisition, stability-history meaning and latest-sample revalidation at destructive runtime gates | Platform Team + Vehicle Gateway + System Acceptance | `CR-FACTORY`, `CR-GATEWAY`, `CR-VDP`, `CR-AOS`, `CR-DEMO`, `CR-E2E` | `DECIDED` |
 
 ### D4-001 Decision Record — Factory Artifact Acceptance
 
@@ -342,6 +343,37 @@ blocks the next assignment. The exact authenticated VISS peer/trust mechanism
 is owned by D4-006. Telemetry replay and a second simulated vehicle remain
 explicitly deferred. Implementation and live qualification remain open even
 though the assignment and audience contract are decided.
+
+### <a id="d4-028-record"></a>D4-028 Decision Record — Platform FOTA Safe Stop Freshness
+
+- Decision state: `DECIDED`
+- Accepted: 2026-08-28
+- Owners: Platform Team / Vehicle Gateway / System Acceptance
+- Canonical contract:
+  [Platform FOTA Safe Stop 1.1.1](../../contracts/platform-fota-safe-stop/platform-fota-safe-stop-profile.v1.json)
+
+The former profile required twelve samples at an expected 50-ms period while
+also saying that every sample was at most 250 ms old at the final evaluation.
+That literal interpretation is impossible: eleven intervals span about
+550 ms. The accepted correction retains all twelve observations and defines
+two distinct uses of time.
+
+1. Every complete sample is source-fresh, at most 250 ms old, when admitted to
+   the window.
+2. The retained twelve-sample sequence proves stability only and is never
+   reused as current vehicle state.
+3. The latest complete sample is at most 250 ms old when the gate opens and is
+   revalidated immediately before every destructive stop, switch, activation
+   or removal step.
+4. Missing, stale, repeated, contradictory or reset-discontinuous evidence
+   remains fail-closed. Loss before destructive apply returns to waiting; loss
+   during apply fails and rolls back.
+
+Reducing the window to six samples was rejected because it weakens the
+accepted stability proof solely to fit an incorrectly scoped freshness rule.
+The correction changes no authority, component ownership, lifecycle direction
+or Service SOTA motion policy. Implementation and live qualification remain
+open.
 
 ## W2 — Vehicle Data, Advisory and Identity Contracts
 
@@ -3837,18 +3869,18 @@ ownership.
 | Package | Consolidated decisions |
 | --- | --- |
 | [`CR-VEHICLE-SIM`](components/vehicle-simulation.md#open-issues) | `D4-002`, `003`, `004`, `005`, `021` |
-| [`CR-GATEWAY`](components/vehicle-gateway.md#open-issues) | `D4-002`, `004`, `005`, `006`, `008` |
-| [`CR-FACTORY`](components/factory-substrate.md#open-issues) | `D4-001`, `010.1`, `027`, `D4-X03` |
+| [`CR-GATEWAY`](components/vehicle-gateway.md#open-issues) | `D4-002`, `004`, `005`, `006`, `008`, `028` |
+| [`CR-FACTORY`](components/factory-substrate.md#open-issues) | `D4-001`, `010.1`, `027`, `028`, `D4-X03` |
 | [`CR-KAC`](components/kuksa-authorization-compatibility.md#open-d4-gates) | `D4-010.1`, `027` |
-| [`CR-VDP`](components/vehicle-data-platform.md#open-design-and-qualification-gates) | `D4-002`, `006`, `007`, `008`, `010.1`, `027`, `D4-X01`, `D4-X02` |
-| [`CR-AOS`](components/aos-lifecycle.md#open-issues) | `D4-010.3`, `011`, `012`, `013`, `014`, `015`, `D4-X01` |
+| [`CR-VDP`](components/vehicle-data-platform.md#open-design-and-qualification-gates) | `D4-002`, `006`, `007`, `008`, `010.1`, `027`, `028`, `D4-X01`, `D4-X02` |
+| [`CR-AOS`](components/aos-lifecycle.md#open-issues) | `D4-010.3`, `011`, `012`, `013`, `014`, `015`, `028`, `D4-X01` |
 | [`CR-BHS`](components/brake-health-service.md#open-issues) | `D4-007`, `008`, `027`, `016`, `023`, `024`, `D4-X01` |
 | [`CR-BRAKE-CLOUD`](components/brake-health-cloud.md#open-issues-for-d4) | `D4-010.3`, `016`, `017`, `020`, `021`, `024`, `D4-X01` |
 | [`CR-TIRE`](components/tire-health-service.md#open-d4-gates) | `D4-003`, `007`, `008`, `027`, `018`, `023`, `024`, `D4-X01` |
 | [`CR-TIRE-CLOUD`](components/tire-health-cloud.md#open-d4-gates) | `D4-010.3`, `018`, `019`, `020`, `021`, `024`, `D4-X01` |
-| [`CR-DEMO`](components/demo-orchestration.md#open-d4-gates) | `D4-005`, `006`, `010.3`, `011`–`015`, `017`, `019`–`026`, `D4-X01` |
+| [`CR-DEMO`](components/demo-orchestration.md#open-d4-gates) | `D4-005`, `006`, `010.3`, `011`–`015`, `017`, `019`–`026`, `028`, `D4-X01` |
 | [`CR-CROSS`](components/cross-cutting.md#open-d4-gates) | `D4-006`, `008`, `010.1`, `010.3`, `027`, `014`, `022`–`025` |
-| [`CR-E2E`](components/end-to-end-acceptance.md#open-d4-gates) | `D4-010.1`, `010.3`, `015`, `022`–`027`, plus accepted owner-package decisions required by each attempted stage |
+| [`CR-E2E`](components/end-to-end-acceptance.md#open-d4-gates) | `D4-010.1`, `010.3`, `015`, `022`–`028`, plus accepted owner-package decisions required by each attempted stage |
 
 ## Decision Record Template
 

@@ -3,7 +3,7 @@
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "schemaVersion": 1,
   "contractId": "aosedge-demo-platform-fota-safe-stop",
-  "contractVersion": "1.1.0",
+  "contractVersion": "1.1.1",
   "lifecycleState": "DESIGN_ACCEPTED_IMPLEMENTATION_OPEN",
   "architectureDecision": "ADR-0014",
   "scope": {
@@ -39,6 +39,8 @@
     "runtimeReadRole": "PLATFORM_UPDATE_RUNTIME",
     "purposeBoundCredentialRequired": true,
     "distinctMonotonicFrameRequired": true,
+    "sourceTimestampRequired": true,
+    "sourceFreshnessCheckedAtAcquisition": true,
     "currentVehicleOnly": true,
     "selectedVehicleAssignmentRequired": true
   },
@@ -50,6 +52,10 @@
     "minimumBrakePercent": 95.0,
     "consecutiveSamples": 12,
     "maximumSampleAgeMs": 250,
+    "maximumSampleAgeScope": "AT_EACH_SAMPLE_ACQUISITION",
+    "latestSampleMaximumAgeMsAtGate": 250,
+    "historyMeaning": "STABILITY_ONLY_NOT_CURRENT_STATE",
+    "destructiveGateRevalidation": "LATEST_COMPLETE_FRESH_SAMPLE",
     "expectedSamplePeriodMs": 50,
     "resetInProgressAllowed": false,
     "resetDiscontinuityAllowed": false,

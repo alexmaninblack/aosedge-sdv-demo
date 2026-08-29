@@ -6,24 +6,33 @@
 - ID: `WP-P1-PLATFORM-FACTORY-RUNTIME-001`
 - Lane: `L-PLATFORM`
 - Increment: `IMP-03-FACTORY-RUNTIME`
-- Review state: `ACCEPTED — AUTHORIZED`
-- Version: 0.1
+- Review state: `IMPLEMENTED — PINNED SOURCE COMPILE/TEST PASSED; IMAGE QUALIFICATION PENDING`
+- Version: 0.3
 - Prepared: 2026-08-28
 - Accepted: 2026-08-28
 - Authorized: 2026-08-28
 - Implementation authorized: yes — only the bounded source scope in this packet
-- Image build, VM, provisioning, signing, FOTA and live qualification authorized: no
+- Bootable image build, demo/disposable VM, provisioning, signing, FOTA and
+  live qualification authorized: no
 - Parent plan: [Demo Implementation Plan 1.2](../demo-implementation-plan.md)
 - Readiness input: [WP-P0-PLATFORM-001](p0-platform-readiness.md)
+- Compile qualification:
+  [WP-QUAL-P1-PLATFORM-RUNTIME-001](p1-platform-runtime-compile-qualification.md)
 
 ## Outcome
 
-Implement the product-layer Factory configuration and the OEM Component
-Runtime Safe Stop source changes required by the accepted successor Factory
-Image. The packet must preserve the existing provider-specific A/B runtime,
-empty VDP slot and bounded 512-MiB working-storage backend while adding the
-native IAM configuration enablement and the accepted Platform FOTA Safe Stop
+Implement only the product-layer IAM configuration and OEM Component Runtime
+Safe Stop source changes required by the accepted successor Factory Image.
+The packet preserves the existing provider-specific A/B runtime, empty VDP
+slot and bounded 512-MiB working-storage backend while adding native IAM
+Permission Handler enablement and the accepted Platform FOTA Safe Stop
 application gate.
+
+KAC named-resource, fixed-Provider signer preparation and final image-package
+composition were removed from this packet on 2026-08-29. They are owned by the
+separate blocked
+[`WP-P1-PLATFORM-KAC-FACTORY-INTEGRATION-001`](p1-platform-kac-factory-integration.md)
+packet and must not be guessed here.
 
 Successful source verification does not qualify or freeze a Factory Image.
 The full image build, disposable-VM checks and live FOTA qualification remain
@@ -49,17 +58,14 @@ repository.
 
 Only the following owned boundaries may change:
 
-- `meta-aos-vehicle-platform/recipes-core/images/aos-image-vm.bbappend`;
 - a new product-owned
   `meta-aos-vehicle-platform/recipes-aos/aos-iamanager/**` bbappend and its
   deterministic build-time configuration validator;
-- `meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files/sm.cfg`, the
-  product-owned named-resource configuration input and
+- `meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files/sm.cfg` and
   `files/systemd-slot-component/**` only for Runtime, Safe Stop
   adapter/evaluator, tests and their build wiring;
 - `meta-aos-vehicle-platform/recipes-aos/aos-vehicle-data-provider-platform/**`
-  only for Factory/runtime systemd, credential-source and image-composition
-  wiring;
+  only for Safe Stop runtime systemd and protected credential-source wiring;
 - `tools/validate_r6_1_layer.py` and package-owned Factory/runtime validators;
 - `tests/test_r6_1_layer.py` and package-owned Factory/runtime tests; and
 - `meta-aos-vehicle-platform/README.md`, `docs/architecture.md` and
@@ -91,9 +97,12 @@ upstream AosCore, KUKSA or another repository stops the packet.
 1. Add a transport-only VISS 3.1 mTLS adapter implementing
    `VehicleStateProviderItf` for the purpose-bound
    `PLATFORM_UPDATE_RUNTIME` role.
-2. Add a pure evaluator for Platform FOTA Safe Stop Profile 1.1.0. It consumes
+2. Add a pure evaluator for Platform FOTA Safe Stop Profile 1.1.1. It consumes
    only the ten accepted Gateway paths and requires 12 distinct monotonic
-   frames, each no older than 250 ms, with:
+   observations. Every admitted frame must be no older than 250 ms when
+   acquired; the accumulated history proves stability only. The latest
+   complete frame must again be no older than 250 ms when the gate opens and
+   immediately before every destructive runtime operation. Every frame has:
    - active mode `SAFE_STOP`;
    - stable transition state;
    - no reset in progress or reset discontinuity;
@@ -114,7 +123,7 @@ upstream AosCore, KUKSA or another repository stops the packet.
 8. Never resume driving automatically; readiness is followed by a separate
    presenter action.
 
-### Credential and image-composition seam
+### Safe Stop credential seam
 
 1. Consume distinct per-Unit `PLATFORM_UPDATE_RUNTIME` VISS material only from
    protected persistent overlay sources delivered with `systemd
@@ -123,19 +132,6 @@ upstream AosCore, KUKSA or another repository stops the packet.
    logs and dashboards, and make missing/inconsistent material fail closed.
 3. Preserve the existing empty VDP component slot and OEM Runtime A/B working
    storage; do not introduce a VDP application/log store.
-4. Register the fixed `kuksa-auth-client` named resource in the product-owned
-   Aos resource configuration: shared count four, the single supplementary
-   group, read-only KAC socket-directory mount and container-private 64-KiB
-   token tmpfs. This transport allocation contains no authority or secret.
-5. Add one post-provision, platform-owned and non-networked preparation step
-   that signs exactly one seven-day fixed Provider JWT from the accepted
-   per-Unit `kuksa-jwt` key into the protected persistent credential source
-   used by `LoadCredential=kuksa-token`. It is not a KAC endpoint, performs no
-   renewal and contains only the accepted v1-v3 Provider path union.
-6. Add the accepted future `aos-kuksa-auth-compat` package to successor image
-   composition only as an integration dependency. The Factory/runtime branch
-   must not merge to `main` until the independently implemented KAC package is
-   present and the combined source gates pass.
 
 ## Required Verification
 
@@ -154,13 +150,54 @@ upstream AosCore, KUKSA or another repository stops the packet.
   accepted gate; and
 - changed files remain entirely inside the writable boundary.
 
-The completion record must distinguish source verification from the later
-pinned AosCore/Yocto compile, image build and disposable-VM qualification.
-The packet cannot claim `QUALIFIED` without those later gates.
+The completion record must distinguish source verification and pinned
+AosCore/Poco/GTest qualification from the later Yocto image build and
+disposable-VM qualification. Passing the pinned C++ suite permits this packet
+to claim `IMPLEMENTED`; it does not make the branch merge-ready or the Factory
+Image `QUALIFIED` without the remaining integration gates.
+
+## Source-Draft Checkpoint
+
+- Recorded: 2026-08-29
+- Isolated branch: `codex/imp-03-factory-runtime`
+- Base: `bdc72aba97a83c9868d454588189ef139710a6d7`
+- Checkpoint commit: `458cd95e2fe281ea96ce357a9863c4c7fb4f6038`
+- Worktree after commit: clean
+
+The checkpoint contains only IAM Permission Handler enablement, Safe Stop
+runtime/adapter/evaluator source, protected Safe Stop credential wiring and
+their package-owned tests/validators. It contains no named-resource guess,
+fixed-Provider signer, KAC package inclusion or generated credential.
+
+At the source-draft checkpoint, available verification passed 37 Python tests,
+the R6.1 layer validator, the 91-file quality gate, Python bytecode compilation,
+`git diff --check` and a strict standalone C++17 compile of the pure Safe Stop
+evaluator. The integrated compile/test gap recorded at that checkpoint was
+subsequently closed by the qualification below.
+
+## Pinned Compile/Test Qualification
+
+- Completed: 2026-08-29
+- Final isolated commit:
+  `4d8800636ded58386e2872a7e415dc1cc322c92c`
+- Final source tree: `db3d316675a0cf0a60574c90634a75207a4a26c4`
+- Toolchain: pinned R6.1 `qemuarm64` / `aarch64-aos-linux` GCC 13.4.0
+- Result: two consecutive clean offline `aos-servicemanager` compiles passed;
+  after each final compile, all 51 applicable tests passed and the two
+  explicitly out-of-scope real-provider/image tests were skipped.
+- Boundary: all 20 changed paths remain in this packet's writable ownership;
+  no upstream or KAC source was modified.
+
+The detailed recipes, cache/configuration hashes, corrective commits and test
+evidence are recorded in
+[`WP-QUAL-P1-PLATFORM-RUNTIME-001`](p1-platform-runtime-compile-qualification.md).
+This closes the source implementation packet but does not authorize integration
+to `main`, image construction or disposable-VM/live FOTA qualification.
 
 ## Explicit Exclusions
 
-- no KAC executable, JWT issuance, Service bootstrap or permission mapping;
+- no KAC executable, named resource, signer/verifier preparation, image-package
+  inclusion, JWT issuance, Service bootstrap or permission mapping;
 - no VDP v1-v3 implementation or artifact build;
 - no upstream AosCore or KUKSA patch;
 - no Demo UI, Cloud API or lifecycle-helper change;
@@ -172,8 +209,9 @@ The packet cannot claim `QUALIFIED` without those later gates.
 
 ## Authorization Gate
 
-The user accepted the exact source outcome, Safe Stop semantics, repository
-base, writable ownership, KAC merge dependency, checks and exclusions on
-2026-08-28. Implementation may begin only in the isolated branch/worktree.
-Any boundary expansion or external operation requires a separately reviewed
-change request.
+The user accepted the exact Safe Stop and IAM source outcome, repository base,
+writable ownership, checks and exclusions on 2026-08-28, accepted the KAC
+integration split on 2026-08-29 and authorized the bounded corrective
+compile/test work on 2026-08-29. Source implementation is complete only in the
+isolated branch/worktree. Integration, image construction and any external or
+live operation require separately reviewed authorization.

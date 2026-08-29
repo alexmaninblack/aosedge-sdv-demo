@@ -3,9 +3,9 @@
 
 # Brake Health In-Vehicle Service Component Requirements
 
-- Status: D4 contract review in progress
+- Status: D4 design accepted; ready for bounded implementation work-packet decomposition
 - Package: [`CR-BHS`](../component-decomposition-and-interface-register.md#cr-bhs)
-- Version: 0.7
+- Version: 0.8
 - Prepared: 2026-08-21
 - Owner: Function Team 1 / Service Provider 1 / SOTA 1
 - Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
@@ -19,7 +19,7 @@
 - Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
 - Accepted D4 advisory input: [D4-008 Typed QM Advisory Profile](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - Accepted D4 v1 contract: [D4-016.1/.2 decision](../d4-decision-register.md#d4-016) and [executable Brake Telemetry Window Contract](../../../contracts/brake-telemetry-window/README.md)
-- Prepared D4 exact contracts: accepted [v2 synthetic model](../../../contracts/brake-health-model/README.md), [v3 advisory policy](../../../contracts/brake-health-advisory-policy/README.md) and [runtime/evidence profile](../../../contracts/brake-health-runtime/README.md); review-candidate [Brake Cloud API](../../../contracts/brake-cloud-api/README.md)
+- Accepted D4 exact contracts: [v2 synthetic model](../../../contracts/brake-health-model/README.md), [v3 advisory policy](../../../contracts/brake-health-advisory-policy/README.md), [runtime/evidence profile](../../../contracts/brake-health-runtime/README.md) and [Brake Cloud API](../../../contracts/brake-cloud-api/README.md)
 - Implementation baseline: `brake-health-service@04abe5b`
 
 ## Purpose
@@ -101,9 +101,9 @@ rollout affecting OEM Units.
 | Resource declaration | 250 DMIPS CPU, 16 MiB RAM, 8 MiB storage, 1 MiB state, 8 MiB tmp, 64 files and 16 processes | D4-023.2 requested envelope accepted; live OCI/cgroup mapping and headroom evidence absent |
 | Executable behavior | Prints one English diagnostic line and exits | `CURRENT`; no product behavior |
 | KUKSA credential and subscription client | Architecture boundary documented; no implementation | `NEW` |
-| v1 event-window recorder and backend transport | Acquisition, logical chunk/completion and local spool contracts accepted; no implementation; D4-017 local transport/durable-ack review candidate prepared, with production backend authentication out of scope | `NEW` |
+| v1 event-window recorder and backend transport | Acquisition, logical chunk/completion, local spool and D4-017 transport/durable-ack contracts accepted; no implementation; production backend authentication remains out of scope | `NEW` |
 | v2 synthetic model, local assessment and derived output | No model, input/output contract or implementation | `NEW` |
-| v3 advisory request | Current package intentionally requests read-only `kuksa`; no target or write permission | `NEW` and blocked on accepted platform contract |
+| v3 advisory request | Current scaffold intentionally requests read-only `kuksa`; no target or write permission | `NEW`; contract accepted, implementation and real platform/Gateway qualification open |
 | Unit tests and quality gate | Four scaffold/boundary tests and repository quality gate pass | `CURRENT` foundation; product obligations below are not implemented |
 
 The source packaging guide still reflects an obsolete caller-selected
@@ -132,6 +132,35 @@ builders must run without
 Unreal Engine, CARLA, QEMU, AosCloud, a real KUKSA Databroker, network access or
 credentials. Component and integration tests then prove the packaged
 executable against controlled real adjacent components.
+
+## Accepted Implementation Decomposition
+
+The accepted implementation remains one `brake-health-service` repository and
+one independently deployable Service product family. Versions v1, v2 and v3
+are immutable release compositions from that codebase, not separate logical
+components or repositories. The implementation baseline is C++17 with CMake so
+the deterministic domain logic can be tested without a VM, KUKSA, KAC, Cloud
+or backend and the ARM64 runtime envelope can be measured rather than hidden
+behind a heavyweight language runtime.
+
+Implementation proceeds through bounded sequential Service packets:
+
+1. `BHS-CORE-001` — domain foundation, v1 event-window state machine, bounded
+   ring buffer/local spool and canonical chunk/completion contract tests;
+2. `BHS-CORE-002` — deterministic v2 model, assessment/event output,
+   persistent state and v1-to-v2 transition;
+3. `BHS-CORE-003` — v3 advisory request lifecycle, matching factual Gateway
+   Status and correlated backend advisory fact;
+4. `BHS-ADAPTERS-001` — KAC/token lifecycle, KUKSA transport, backend durable
+   delivery, bounded offline synchronization, health and structured logs; and
+5. `BHS-PACKAGING-001` — exact v1/v2/v3 composition, metadata, permissions,
+   quotas, compatibility and reproducible unsigned ARM64 Aos artifacts.
+
+These packets are sequential writers in the same repository. The independent
+`brake-health-cloud` repository may be implemented concurrently after its own
+repository-creation and work-packet gates close. `BHS-CORE-001` through the
+pure domain portions of `BHS-CORE-003` do not depend on a working KAC package;
+real KAC/KUKSA/backend integration begins only in `BHS-ADAPTERS-001`.
 
 ## Interface Summary
 
@@ -162,9 +191,9 @@ executable against controlled real adjacent components.
 | --- | --- | --- | --- |
 | [Immutable versioned service product (`REQ-BHS-001`)](#req-bhs-001) | Produce credential-free immutable ARM64 v1-v3 service candidates with exact metadata | Unit, Component, Contract, Integration | D3 design-reviewed |
 | [Compatibility and fail-closed readiness (`REQ-BHS-002`)](#req-bhs-002) | Start only with a compatible installed Vehicle Data Platform contract | Unit, Component, Contract, Integration | D3 design-reviewed |
-| [Fixed-resource KUKSA authorization lifecycle (`REQ-BHS-013`)](#req-bhs-013) | Bootstrap without caller-selected authority and use only private volatile IAM-derived JWTs | Unit, Component, Contract, Integration | D3 review candidate |
+| [Fixed-resource KUKSA authorization lifecycle (`REQ-BHS-013`)](#req-bhs-013) | Bootstrap without caller-selected authority and use only private volatile IAM-derived JWTs | Unit, Component, Contract, Integration | D4 design accepted; implementation/qualification open |
 | [Validated KUKSA subscription (`REQ-BHS-004`)](#req-bhs-004) | Consume only accepted paths and make data quality/freshness explicit | Unit, Component, Contract, Integration | D3 design-reviewed |
-| [Bounded v1 Brake Telemetry Window (`REQ-BHS-005`)](#req-bhs-005) | Detect the accepted hard-braking episode and transfer one fixed 3 s PRE / bounded ACTIVE / 2 s POST window without continuous Cloud streaming | Unit, Component, Contract, Integration, End-to-end | D4-016.1/.2 accepted; D4-017 transport/ack review candidate prepared |
+| [Bounded v1 Brake Telemetry Window (`REQ-BHS-005`)](#req-bhs-005) | Detect the accepted hard-braking episode and transfer one fixed 3 s PRE / bounded ACTIVE / 2 s POST window without continuous Cloud streaming | Unit, Component, Contract, Integration, End-to-end | D4-016.1/.2 and D4-017 transport/ack accepted; implementation/qualification open |
 | [Deterministic v2 edge assessment (`REQ-BHS-006`)](#req-bhs-006) | Run an immutable synthetic model locally and replace normal v1 window upload with derived assessments/events | Unit, Component, Contract, Analysis, End-to-end | D4-016.3 exact contract accepted; D4-003 calibration qualification open |
 | [Degraded and invalid-input behavior (`REQ-BHS-007`)](#req-bhs-007) | Never convert missing, stale or malformed input into a healthy result | Unit, Component, Contract, Integration | D3 design-reviewed |
 | [Typed v3 maintenance advisory (`REQ-BHS-008`)](#req-bhs-008) | Request only the accepted non-safety Brake Health advisory | Unit, Component, Contract, Integration, End-to-end | D3 design-reviewed |
@@ -251,7 +280,7 @@ readiness remain separate controls.
 - Interface: [functional message family (`IF-FUNC-001`)](../component-decomposition-and-interface-register.md#if-func-001)
 - Verification levels: Unit, Component, Contract, Integration, End-to-end
 - Required evidence: exact six-path v1 input manifest; 30-to-10 Hz selection; trigger/clear/POST-reactivation timelines; 3/10/2-second and 150-sample bounds; invalid/stale mandatory-input negatives; terminal-state and queue-overflow fixtures; maximum encoded chunk size; duplicate/reconnect proof; original-sample-time preservation and backend reconstruction/acknowledgement correlation
-- State: D4-016.1 acquisition and D4-016.2 logical-message/local-spool contracts accepted; D4-017 transport and durable backend acknowledgement are prepared as a review candidate
+- State: D4-016.1 acquisition, D4-016.2 logical-message/local-spool and D4-017 transport/durable-ack contracts accepted; implementation and qualification remain open
 
 Accepted terminal states are `COMPLETE`, `TRUNCATED_MAX_DURATION`,
 `INCOMPLETE_SOURCE_GAP`, `ABORTED_SERVICE_STOP` and `ABORTED_RESTART`. A
@@ -423,7 +452,7 @@ evidence, and no status is driver display or acknowledgement.
 - Interfaces: [fixed-resource bootstrap (`IF-AUTH-007`)](../component-decomposition-and-interface-register.md#if-auth-007) and [private JWT or rejection (`IF-AUTH-009`)](../component-decomposition-and-interface-register.md#if-auth-009)
 - Verification levels: Unit, Component, Contract, Integration
 - Required evidence: no-caller-selected-authority negative cases, bounded refresh/expiry trace, stop/unregister/reboot cleanup, cross-Service isolation and secret/JWT-negative artifacts/logs/state
-- State: D3 review candidate
+- State: D4-027-compatible design accepted; implementation and qualification remain open
 
 ## Unit-Test Obligations
 
@@ -431,9 +460,9 @@ evidence, and no status is driver display or acknowledgement.
 | --- | --- | --- | --- | --- | --- | --- |
 | <a id="ut-bhs-001"></a>`UT-BHS-001` — Artifact and metadata integrity | [`REQ-BHS-001`](#req-bhs-001) | Reproducible staging, metadata completeness, changed input, forbidden credentials/boundaries | Temporary filesystem and deterministic fixture manifest | Stable digests, correct ARM64 metadata, no secrets/CARLA/VISS/platform coupling | `brake-health-service` packaging tests | D3 design-reviewed |
 | <a id="ut-bhs-002"></a>`UT-BHS-002` — Compatibility readiness | [`REQ-BHS-002`](#req-bhs-002), [`REQ-BHS-011`](#req-bhs-011) | Compatible, missing, lower/upper boundary, malformed contract, recovery | Fake installed-capability reader and readiness sink | Ready only for complete compatible contract; exact blocked reason; no report/advisory | `brake-health-service` unit suite | D3 design-reviewed |
-| <a id="ut-bhs-013"></a>`UT-BHS-013` — Fixed-resource authorization lifecycle | [`REQ-BHS-013`](#req-bhs-013) | Named-resource bootstrap, private-socket request, reject caller-selected authority, atomic token replacement, 300-second expiry, renewal at 180 seconds, reconnect/subscription recreation, permission removal, stop/replace/unregister/reboot and malformed delivery | Fake KAC result, private tmpfs/token file, controllable clock and KUKSA transport | Analytics receives `KUKSA_TOKEN_FILE` but no `AOS_SECRET`; no caller-selected claims; exact renewal/reconnect; no access after rejection/removal/expiry; cross-Service denial and no secret/JWT persistence/logging | `brake-health-service` unit suite | D3 review candidate |
+| <a id="ut-bhs-013"></a>`UT-BHS-013` — Fixed-resource authorization lifecycle | [`REQ-BHS-013`](#req-bhs-013) | Named-resource bootstrap, private-socket request, reject caller-selected authority, atomic token replacement, 300-second expiry, renewal at 180 seconds, reconnect/subscription recreation, permission removal, stop/replace/unregister/reboot and malformed delivery | Fake KAC result, private tmpfs/token file, controllable clock and KUKSA transport | Analytics receives `KUKSA_TOKEN_FILE` but no `AOS_SECRET`; no caller-selected claims; exact renewal/reconnect; no access after rejection/removal/expiry; cross-Service denial and no secret/JWT persistence/logging | `brake-health-service` unit suite | D4 design accepted; implementation/qualification open |
 | <a id="ut-bhs-004"></a>`UT-BHS-004` — Subscription and temporal validation | [`REQ-BHS-004`](#req-bhs-004), [`REQ-BHS-007`](#req-bhs-007) | Valid, boundary, wrong type/unit/range, stale, reordered, unavailable, reconnect | Fake KUKSA stream and clocks | Accepted sample sequence or explicit degraded reason; no fabricated value/advisory | `brake-health-service` unit suite | D3 design-reviewed |
-| <a id="ut-bhs-005"></a>`UT-BHS-005` — v1 event-window state machine | [`REQ-BHS-005`](#req-bhs-005) | Six-path 30 Hz input; every-third-frame retention; trigger below/at/above 10 km/h, 50%, 200 ms; 500 ms clear; 3/10/2-second bounds; POST reactivation; cap/retrigger suppression; all terminal states; eight-window/4 MiB queue boundary; canonical 64 KiB chunk bound; atomic spool writes; restart/corruption/storage-full; duplicate/resume and invalid input | Fake KUKSA stream, clocks, bounded filesystem spool and fake backend | Exact 10 Hz samples/phases and one UUIDv4 event; no trigger from incomplete/stale input; contract-valid ordered idempotent chunks of at most 10 samples; exactly one completion; verified RFC-8785/SHA-256 digests; no send before durability or delete before durable ack; explicit stop/restart/quarantine/not-ready/overflow facts | `brake-health-service` unit/contract suite plus shared fixtures | D4-016.1/.2 accepted; D4-017 transport/ack review candidate prepared |
+| <a id="ut-bhs-005"></a>`UT-BHS-005` — v1 event-window state machine | [`REQ-BHS-005`](#req-bhs-005) | Six-path 30 Hz input; every-third-frame retention; trigger below/at/above 10 km/h, 50%, 200 ms; 500 ms clear; 3/10/2-second bounds; POST reactivation; cap/retrigger suppression; all terminal states; eight-window/4 MiB queue boundary; canonical 64 KiB chunk bound; atomic spool writes; restart/corruption/storage-full; duplicate/resume and invalid input | Fake KUKSA stream, clocks, bounded filesystem spool and fake backend | Exact 10 Hz samples/phases and one UUIDv4 event; no trigger from incomplete/stale input; contract-valid ordered idempotent chunks of at most 10 samples; exactly one completion; verified RFC-8785/SHA-256 digests; no send before durability or delete before durable ack; explicit stop/restart/quarantine/not-ready/overflow facts | `brake-health-service` unit/contract suite plus shared fixtures | D4-016.1/.2 and D4-017 accepted; implementation/qualification open |
 | <a id="ut-bhs-006"></a>`UT-BHS-006` — Deterministic model and derived-data transition | [`REQ-BHS-006`](#req-bhs-006), [`REQ-BHS-007`](#req-bhs-007) | Golden normal/degraded inputs, thresholds/change events, boundaries, repeat/reorder, invalid model/config | Immutable synthetic-model fixtures, deterministic clock and fake backend | Schema-stable assessment/event, provenance, quality/reason, no network/training side effect and no normal v1 window output | `brake-health-service` model/contract suite | D3 design-reviewed |
 | <a id="ut-bhs-007"></a>`UT-BHS-007` — Advisory decision and payload | [`REQ-BHS-008`](#req-bhs-008) | Thresholds, hysteresis/debounce, stale/low-quality result, duplicate, prohibited targets/types | Fake KUKSA actuator client and clock | Only accepted typed target/payload, bounded correlation/freshness, no motion/text/arbitrary write | `brake-health-service` unit/contract suite | D3 design-reviewed |
 | <a id="ut-bhs-008"></a>`UT-BHS-008` — Offline queue and synchronization | [`REQ-BHS-009`](#req-bhs-009) | Disconnect during v1 pre/active/post/chunk completion and v2/v3 messages, capacity boundary, overflow, retry/backoff, restart, duplicate acknowledgement, reconnect | In-memory/temp persistent stores, fake backend and clocks | Bounded bytes/items, explicit overflow, same v1 window/chunk resume identity, original times, idempotent replay, unchanged local assessment/advisory path | `brake-health-service` unit suite | D3 design-reviewed |
@@ -477,7 +506,7 @@ replaced by [`UT-BHS-013`](#ut-bhs-013).
 | Offline and recovery | [`REQ-BHS-009`](#req-bhs-009), [`REQ-BHS-010`](#req-bhs-010) | Local decision continuity, bounded replay and versioned recovery-safe state | Disconnect/restart/reconnect and state matrix |
 | Observability | [`REQ-BHS-011`](#req-bhs-011), [`REQ-BHS-012`](#req-bhs-012) | Separate process health/readiness and bounded native log evidence | Component state matrix and native log integration |
 
-## D3 Acceptance Record and Version 0.5 Delta
+## Acceptance Record and Version 0.8 Reconciliation
 
 The previously accepted package established that:
 
@@ -491,32 +520,35 @@ The previously accepted package established that:
 8. current scaffold evidence is not presented as implemented product behavior;
 9. the open interface/model/resource decisions below are resolved in D4 before implementation claims acceptance.
 
-Version 0.5 is a review candidate. It retires `REQ-BHS-003`/`UT-BHS-003`, adds
+Version 0.5 introduced the reviewed security delta. It retires
+`REQ-BHS-003`/`UT-BHS-003`, adds
 `REQ-BHS-013`/`UT-BHS-013`, and replaces caller-selected broker requests with
 fixed-resource `CMP-KAC` bootstrap and private volatile JWT delivery. All
-functional v1-v3 semantics remain unchanged. Acceptance will not authorize
-service implementation, signing, upload, deployment, OEM approval, Cloud
-mutation or VM changes.
+functional v1-v3 semantics remain unchanged. Version 0.8 reconciles the
+package with accepted D4-016, D4-017 and D4-027 decisions and records it as
+design accepted. This acceptance authorizes no service implementation,
+signing, upload, deployment, OEM approval, Cloud mutation or VM changes;
+implementation still requires an exact work packet.
 
 ## Open Issues
 
 The D4-016.3/.4/.5 and D4-017 machine-readable packages linked above replace
-the former undefined-design gaps. D4-016.3/.4/.5 are accepted; D4-017 remains
-an explicit review candidate. Live D4-003 calibration, CARLA separation,
+the former undefined-design gaps and are accepted. Live D4-003 calibration,
+CARLA separation,
 Aos quota, KUKSA/Gateway and backend-route qualification remain genuine
 implementation gates after design acceptance.
 
 | Issue | Impact | Owner | Decision gate |
 | --- | --- | --- | --- |
 | D4-016.1/.2 v1 acquisition, logical-message and local-spool implementation/qualification | Design is accepted; executable behavior and shared-fixture conformance remain to be built | Function Team 1 + Platform Team | D4 implementation and qualification |
-| D4-017 local backend transport, ordered reconstruction/resume and acknowledgement review candidate | Human acceptance and live route qualification block `REQ-BHS-005`/`009` implementation acceptance; production backend authentication is Function Team 1-owned and out of scope | Function Team 1 Cloud | D4-017 review plus D4-020 qualification |
+| Implement accepted D4-017 local backend transport, ordered reconstruction/resume and acknowledgement | Executable conformance and live route qualification block `REQ-BHS-005`/`009` implementation acceptance; production backend authentication is Function Team 1-owned and out of scope | Function Team 1 Cloud | D4-017 implementation plus D4-020 qualification |
 | Exact Aos metadata representation of KUKSA paths/modes; current SDK read-mode enum/default inconsistency | Blocks least-privilege packaging proof | AosEdge Platform Team + Platform Team | D4 SDK/metadata qualification |
 | Implement and qualify the complete accepted D4-027 named-resource/private-socket/tmpfs, strict-wire, JWT mapping, 300/180-second timing, per-Unit signer/verifier, trustworthy-time, retry and resource/failure boundary | Blocks `REQ-BHS-013` acceptance, but no D4-027 design question remains | Platform Team + Function Team 1 | D4-027 implementation and qualification |
 | Native Service-to-FOTA dependency admission unavailable in current release | Pre-transfer rejection remains deferred; service readiness still required | AosEdge Platform Team | Official release qualification |
 | Implement and qualify the accepted D4-016.3 exact model contract | Design is accepted; D4-003 calibration/conformance and executable tests still block `REQ-BHS-006`/`007` implementation acceptance | Function Team 1 + Platform Team | [`D4-016`](../d4-decision-register.md#d4-016), coordinated with D4-003 calibration |
 | Implement and qualify the accepted D4-016.4 model-to-advisory activation, lease, refresh and Gateway-status contract | Design is accepted; real upgrade/restart/KUKSA/VDP/VISS/Gateway conformance still blocks complete `REQ-BHS-008` acceptance | Function Team 1 + Platform + Gateway | [`D4-016`](../d4-decision-register.md#d4-016) |
-| Whether service consumes factual Gateway status or only emits a correlated request | Affects service state machine but not Engineering Dashboard authority | Function Team 1 + Gateway | D4 advisory response decision |
-| Per-version v2/v3 queue/state, D4-017 backend acknowledgement and transport retry/backoff | D4-016.3/.5 state behavior is accepted; D4-017 review plus live restart/backend conformance still block `REQ-BHS-009`/`010` | Function Team 1 | D4-016.3/.5 accepted; D4-017 review candidate |
+| Implement matching factual Gateway Status consumption and correlated backend advisory fact | D4-016.4 design is accepted; Engineering Telematics Dashboard remains the audience-visible Gateway authority | Function Team 1 + Gateway | D4-016.4 implementation and real Gateway conformance |
+| Per-version v2/v3 queue/state, D4-017 backend acknowledgement and transport retry/backoff | D4-016.3/.5 and D4-017 behavior is accepted; live restart/backend conformance still blocks `REQ-BHS-009`/`010` | Function Team 1 | Implementation and qualification |
 | Qualify accepted readiness schema and measured CPU/RAM/storage/state budgets | D4-016.5 design is accepted; live D4-023 evidence still blocks `REQ-BHS-011` implementation acceptance | Function Team 1 + Aos integration | D4-023 resource qualification |
 | Implement and qualify accepted structured log schema, redaction and chronology fields | D4-016.5 design is accepted; executable/native-log proof still blocks `REQ-BHS-012` implementation acceptance | Function Team 1 + Demo experience | D4 implementation and observability qualification |
 | Packaging guide still describes caller-selected paths and a separate FOTA-managed OEM policy | Conflicts with ADR 0013 and could mislead implementation | Function Team 1 | Correct before D4 implementation starts |

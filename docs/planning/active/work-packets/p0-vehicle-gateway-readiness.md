@@ -114,6 +114,12 @@ paths.
 | QM Advisory v1 | `f7ae78148fb3b3265c8b773117126665afb1edd97a73f59db5a1f3af7c223487` |
 | Platform FOTA Safe Stop v1 | `b92cd31c9b5066ca5b79c526134c3a059fcda0738cd668f3c96c6b51a0396c66` |
 
+This table is the immutable digest record of the P0 input that was actually
+assessed. The Safe Stop input was subsequently superseded by accepted
+[`D4-028`](../../../requirements/d4-decision-register.md#d4-028) and contract
+1.1.1; its current digest is intentionally not substituted into this
+historical P0 evidence.
+
 ## Exact P0 Tasks
 
 1. Confirm all three revisions, repository cleanliness and frozen digests.

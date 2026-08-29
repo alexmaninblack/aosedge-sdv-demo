@@ -6,13 +6,13 @@
 - Decision: [`D4-016`](../../docs/requirements/d4-decision-register.md#d4-016)
 - Accepted subdecisions: D4-016.1 and D4-016.2
 - Contract version: 1.0.0
-- Lifecycle state: acquisition, logical message and local spool contract accepted;
-  the D4-017 local transport/backend acknowledgement contract is a prepared
-  review candidate; production backend authentication is out of scope
+- Lifecycle state: acquisition, logical message, local spool and D4-017 local
+  transport/backend acknowledgement contracts accepted; production backend
+  authentication is out of scope
 
 This cross-repository contract joins Brake Health Service v1 with the Brake
-Health Backend. D4-017 now proposes the exact transport and durable
-acknowledgement contract for review; this package defines the
+Health Backend. D4-017 freezes the exact transport and durable acknowledgement
+contract; this package defines the
 six-signal acquisition subset, hard-braking trigger, bounded event window,
 logical chunk/completion messages, canonical hashing and service-local durable
 spool behavior.
@@ -53,8 +53,8 @@ transport. The spool uses `0700` directories and `0600` files.
 The PRE ring remains memory-only until trigger. After trigger, no chunk is sent
 before durable storage. A recovered `CAPTURING` event without completion is
 closed as `ABORTED_RESTART`; corrupt retained content becomes `QUARANTINED`.
-An event is deleted only after an acknowledgement conforming to the D4-017
-review candidate proves durable backend storage of all chunks and completion.
+An event is deleted only after an acknowledgement conforming to accepted
+D4-017 proves durable backend storage of all chunks and completion.
 R0 removes remaining spool state with its disposable Unit overlay.
 
 No SQLite, external database or additional persistence runtime is required by

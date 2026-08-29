@@ -31,14 +31,15 @@ workspace/
 ├── UnrealEngine5_carla/       restricted CARLA build dependency
 ├── carla-ego-runtime/         Vehicle Gateway and engineering demo tools
 ├── aos-vehicle-platform/      Domain Controller platform/FOTA source
-└── brake-health-service/      Function Team 1 in-vehicle SOTA source
+├── brake-health-service/      Function Team 1 in-vehicle SOTA source
+└── brake-health-cloud/        Function Team 1 backend/dashboard baseline
 ```
 
 The planned `tire-health-service` checkout is intentionally not shown because
 its name and in-vehicle SOTA boundary are accepted, but the repository has not
-yet been created and qualified. The planned `brake-health-cloud` and
-`tire-health-cloud` repositories are also omitted because their boundaries are
-accepted but neither repository has been created or qualified.
+yet been created and qualified. The planned `tire-health-cloud` repository is
+also omitted. `brake-health-cloud` exists as a governance-only baseline; its
+product implementation and qualification remain open.
 
 The machine-readable workspace contract is
 [`workspace/repositories.json`](../../workspace/repositories.json). From the

@@ -10,15 +10,22 @@
     "$comment": {"type": "string"},
     "schemaVersion": {"const": 1},
     "contractId": {"const": "aosedge-demo-platform-fota-safe-stop"},
-    "contractVersion": {"const": "1.1.0"},
+    "contractVersion": {"const": "1.1.1"},
     "lifecycleState": {"type": "string"},
     "architectureDecision": {"const": "ADR-0014"},
     "scope": {"type": "object"},
     "authority": {"type": "object"},
-    "evidence": {"type": "object"},
+    "evidence": {
+      "type": "object",
+      "required": ["sourceTimestampRequired", "sourceFreshnessCheckedAtAcquisition"],
+      "properties": {
+        "sourceTimestampRequired": {"const": true},
+        "sourceFreshnessCheckedAtAcquisition": {"const": true}
+      }
+    },
     "policy": {
       "type": "object",
-      "required": ["activeMode", "transitionState", "maximumSpeedKmh", "maximumThrottlePercent", "minimumBrakePercent", "consecutiveSamples", "maximumSampleAgeMs", "expectedSamplePeriodMs", "resetInProgressAllowed", "resetDiscontinuityAllowed", "missingOrContradictoryEvidence", "stoppedInAnotherMode"],
+      "required": ["activeMode", "transitionState", "maximumSpeedKmh", "maximumThrottlePercent", "minimumBrakePercent", "consecutiveSamples", "maximumSampleAgeMs", "maximumSampleAgeScope", "latestSampleMaximumAgeMsAtGate", "historyMeaning", "destructiveGateRevalidation", "expectedSamplePeriodMs", "resetInProgressAllowed", "resetDiscontinuityAllowed", "missingOrContradictoryEvidence", "stoppedInAnotherMode"],
       "properties": {
         "activeMode": {"const": "SAFE_STOP"},
         "transitionState": {"const": "STABLE"},
@@ -27,6 +34,10 @@
         "minimumBrakePercent": {"type": "number", "minimum": 0, "maximum": 100},
         "consecutiveSamples": {"type": "integer", "minimum": 2},
         "maximumSampleAgeMs": {"type": "integer", "minimum": 1},
+        "maximumSampleAgeScope": {"const": "AT_EACH_SAMPLE_ACQUISITION"},
+        "latestSampleMaximumAgeMsAtGate": {"type": "integer", "minimum": 1},
+        "historyMeaning": {"const": "STABILITY_ONLY_NOT_CURRENT_STATE"},
+        "destructiveGateRevalidation": {"const": "LATEST_COMPLETE_FRESH_SAMPLE"},
         "expectedSamplePeriodMs": {"type": "integer", "minimum": 1},
         "resetInProgressAllowed": {"const": false},
         "resetDiscontinuityAllowed": {"const": false},

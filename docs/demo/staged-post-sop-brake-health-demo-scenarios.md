@@ -134,8 +134,10 @@ authorize the exact Test or Production rollout while the current vehicle is
 moving. The factory-installed OEM Component Runtime inside AosCore Service
 Manager then waits until fresh Gateway facts prove the accepted Safe Stop
 policy. A first-install VDP slot remains empty while waiting; a replacement
-keeps the previous healthy VDP release active. The vehicle remains stopped
-through application and readiness.
+keeps the previous healthy VDP release active. Samples are fresh when
+acquired, the retained sequence proves stability only, and the latest complete
+sample is revalidated immediately before every destructive runtime step. The
+vehicle remains stopped through application and readiness.
 AosCloud records and delivers the authorized update but is not claimed to know
 whether the vehicle is moving; the OEM Component Runtime in the Unit enforces
 the Safe Stop application condition. The Demo UI presents native `ACTIVATING`,

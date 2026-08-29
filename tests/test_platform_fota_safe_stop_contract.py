@@ -16,7 +16,7 @@ class PlatformFotaSafeStopContractTest(unittest.TestCase):
         cls.profile = json.loads(PROFILE.read_text(encoding="utf-8"))
 
     def test_authority_is_runtime_owned_and_not_cloud_or_ui_owned(self) -> None:
-        self.assertEqual("1.1.0", self.profile["contractVersion"])
+        self.assertEqual("1.1.1", self.profile["contractVersion"])
         authority = self.profile["authority"]
         self.assertEqual("VEHICLE_GATEWAY", authority["physicalStateSource"])
         self.assertEqual("FACTORY_INSTALLED_OEM_COMPONENT_RUNTIME", authority["applicationEnforcement"])
@@ -30,6 +30,8 @@ class PlatformFotaSafeStopContractTest(unittest.TestCase):
         self.assertEqual("PLATFORM_UPDATE_RUNTIME", evidence["runtimeReadRole"])
         self.assertTrue(evidence["purposeBoundCredentialRequired"])
         self.assertTrue(evidence["distinctMonotonicFrameRequired"])
+        self.assertTrue(evidence["sourceTimestampRequired"])
+        self.assertTrue(evidence["sourceFreshnessCheckedAtAcquisition"])
         self.assertIn("Vehicle.CarlaSimulation.FrameId", evidence["requiredPaths"])
         policy = self.profile["policy"]
         self.assertEqual("SAFE_STOP", policy["activeMode"])
@@ -37,6 +39,14 @@ class PlatformFotaSafeStopContractTest(unittest.TestCase):
         self.assertEqual(0.3, policy["maximumSpeedKmh"])
         self.assertEqual(12, policy["consecutiveSamples"])
         self.assertEqual(250, policy["maximumSampleAgeMs"])
+        self.assertEqual("AT_EACH_SAMPLE_ACQUISITION", policy["maximumSampleAgeScope"])
+        self.assertEqual(250, policy["latestSampleMaximumAgeMsAtGate"])
+        self.assertEqual("STABILITY_ONLY_NOT_CURRENT_STATE", policy["historyMeaning"])
+        self.assertEqual("LATEST_COMPLETE_FRESH_SAMPLE", policy["destructiveGateRevalidation"])
+        self.assertGreater(
+            (policy["consecutiveSamples"] - 1) * policy["expectedSamplePeriodMs"],
+            policy["maximumSampleAgeMs"],
+        )
         self.assertEqual("NOT_SAFE", policy["stoppedInAnotherMode"])
         self.assertFalse(policy["resetInProgressAllowed"])
         self.assertFalse(policy["resetDiscontinuityAllowed"])

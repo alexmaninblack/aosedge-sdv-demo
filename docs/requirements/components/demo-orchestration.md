@@ -18,6 +18,7 @@
 - Accepted D4 Cloud authority input: [D4-011 Cloud Role and Action Matrix](../d4-decision-register.md#d4-011)
 - Accepted D4 source decision: [D4-005 Exclusive Live-Source Assignment](../../../contracts/exclusive-live-source-assignment/exclusive-live-source-assignment.v1.json)
 - Accepted D4 VISS decision: [D4-006 VISS Trust and Telemetry Profile](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
+- Accepted D4 Safe Stop freshness decision: [D4-028](../d4-decision-register.md#d4-028)
 - Accepted D4 publication decision: [D4-010.3 Artifact Publication Credential Profile](../../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
 - Accepted D4 qualification/presentation/update-state decision: [D4-026.1–.19](../d4-decision-register.md#d4-026)
 - Accepted D4 run-state and recovery decision: [D4-021 / Demo Run State 1.1.0](../../../contracts/demo-run-state/README.md)
@@ -424,8 +425,8 @@ the real supported APIs and launchers.
 - Flow: [common release (`AF-X-RELEASE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-release)
 - Components/interfaces: `CMP-SW-DASH`, `CMP-ORCH`, `CMP-RUNTIME`, `CMP-GW`, `IF-LC-005`, `IF-LC-006`, `IF-VEH-007`
 - Verification: Unit, Contract, Integration, End-to-end
-- Executable contract: [Platform FOTA Safe Stop 1.1.0](../../../contracts/platform-fota-safe-stop/platform-fota-safe-stop-profile.v1.json)
-- Evidence: per-artifact Verification Batch identity and `{VU}` pending-recipient proof, Test-deployment Release Authority decision, VU actual/readiness and owning-team acceptance, valid Fleet Validation Batch, unchanged digest identity, Production-rollout Release Authority decision, Campaign with sole Production Unit Set target, Campaign per-Unit result and PU rollout/readiness confirmation; for G3/G4, distinct VDP/Brake chains, provider-first readiness, prior-compatible-Service continuity, derived `0/2`/`1/2`/`2/2` milestone and no-group/no-cross-team-rollback negatives; plus native `ACTIVATING`, first-install-empty/replacement-active behavior, derived waiting explanation, on-demand runtime reasons and fresh Gateway Safe Stop evidence for Platform FOTA or in-motion evidence for QM Service SOTA
+- Executable contract: [Platform FOTA Safe Stop 1.1.1](../../../contracts/platform-fota-safe-stop/platform-fota-safe-stop-profile.v1.json)
+- Evidence: per-artifact Verification Batch identity and `{VU}` pending-recipient proof, Test-deployment Release Authority decision, VU actual/readiness and owning-team acceptance, valid Fleet Validation Batch, unchanged digest identity, Production-rollout Release Authority decision, Campaign with sole Production Unit Set target, Campaign per-Unit result and PU rollout/readiness confirmation; for G3/G4, distinct VDP/Brake chains, provider-first readiness, prior-compatible-Service continuity, derived `0/2`/`1/2`/`2/2` milestone and no-group/no-cross-team-rollback negatives; plus native `ACTIVATING`, first-install-empty/replacement-active behavior, derived waiting explanation, on-demand runtime reasons, per-sample acquisition freshness, stability-history evidence and latest Gateway sample revalidation at every destructive Platform FOTA gate or in-motion evidence for QM Service SOTA
 - State: D3 design-reviewed; D4-012 staged-target design accepted; live Campaign response-shape qualification remains required
 
 ### Honest single-source binding

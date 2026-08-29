@@ -231,8 +231,8 @@ repository.
 The repository and checkout were renamed from `vehicle-telemetry-service` to
 `brake-health-service` before adding product behavior. It remains the
 in-vehicle SOTA service owned by
-the Brake Health Function Team. A future `brake-health-cloud` repository may
-own the function backend and product dashboard when their implementation
+the Brake Health Function Team. The `brake-health-cloud` repository owns the
+function backend and product dashboard when their implementation
 starts; they do not belong in the in-vehicle service repository or in the
 vehicle-platform repository.
 
@@ -437,9 +437,9 @@ rule, doctor, or ignore guard does.
    Recommendation: yes.
 3. Rename `vehicle-telemetry-service` to `brake-health-service` before
    implementation? Accepted and completed.
-4. Reserve a future separate `brake-health-cloud` repository for backend and
-   product dashboard? Recommendation: yes, create it only when implementation
-   begins.
+4. Reserve a separate `brake-health-cloud` repository for backend and product
+   dashboard? Accepted and created as governance-only baseline `6da2926` on
+   2026-08-28; product implementation remains separately gated.
 5. Merge the two active R6.1 feature baselines to `main` after the path repair
    and repository-map acceptance? Recommendation: yes.
 6. Use compact immutable evidence plus Git history instead of retaining every

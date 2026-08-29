@@ -3,11 +3,11 @@
 
 # Demo Implementation Plan
 
-- Status: P0 completed; Presenter UI implemented; Vehicle/Gateway P1 under review
+- Status: P1 isolated source implementation in progress; integration remains gated
 - Version: 1.2
 - Prepared: 2026-08-27
 - Accepted: 2026-08-28
-- Updated: 2026-08-28
+- Updated: 2026-08-29
 - Owner: Demo Solution Team with Platform, Gateway and Function Team owners
 - Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
@@ -15,8 +15,10 @@
 - System requirements input: [System Requirements 2.0](../../requirements/system-requirements-and-traceability.md)
 - Component input: [Component Register 2.0](../../requirements/component-decomposition-and-interface-register.md)
 - End-to-end input: [End-to-End Acceptance 0.8](../../requirements/components/end-to-end-acceptance.md)
-- UI inputs: [Surface Register 0.14](../../demo/mockups/README.md), [Interaction Specification 2.5](../../demo/mockups/aosedge-demo-interaction-specification.md), [UI Traceability Register 1.1](../../demo/mockups/aosedge-demo-ui-traceability-register.md)
-- Implementation, repository creation, build, signing, Cloud, Unit, VM or CARLA mutation authorized: no
+- UI inputs: [Surface Register 0.14](../../demo/mockups/README.md), [Interaction Specification 2.5](../../demo/mockups/aosedge-demo-interaction-specification.md), [UI Traceability Register 1.2](../../demo/mockups/aosedge-demo-ui-traceability-register.md)
+- Brake Cloud repository creation completed on 2026-08-28; no additional
+  repository creation, product implementation, build, signing, Cloud, Unit, VM
+  or CARLA mutation is authorized by this plan alone
 
 ## Purpose
 
@@ -76,7 +78,7 @@ after its static and isolated gates pass.
 | Scenario, controller, Gateway, VISS, advisory handler and Engineering Telematics Dashboard | `carla-ego-runtime` | Existing implementation is extended rather than replaced. |
 | Factory assembly, OEM Component Runtime, removable `CMP-KAC`, KUKSA integration and VDP v1-v3 | `aos-vehicle-platform` | Factory/System artifacts and VDP FOTA retain separate lifecycle identities. |
 | Brake in-vehicle service | `brake-health-service` | Existing scaffold is assessed and extended. |
-| Brake backend and Function Dashboard | planned `brake-health-cloud` | Repository creation requires its own explicit authorization. |
+| Brake backend and Function Dashboard | `brake-health-cloud` | Public governance-only baseline `6da2926`; product implementation requires its own work packet. |
 | Tire in-vehicle service | proposed `tire-health-service` | Repository creation requires its own explicit authorization. |
 | Tire backend and Function Dashboard | planned `tire-health-cloud` | Repository creation requires its own explicit authorization. |
 | Presenter UI, native helper, VM/Unit orchestration and E2E qualification | `aosedge-sdv-demo` | Integration repository; must not absorb product source owned above. |
@@ -376,18 +378,32 @@ handoff.
   delivery, pinned SoftHSM/OpenSSL provider/token parameters and separate
   least-privilege KAC/verifier-preparation SELinux domains, with no automatic
   policy widening or hardware-HSM claim.
-  The bounded Factory/runtime source packet
+  The bounded IAM/Safe Stop Factory/runtime source packet
   [`WP-P1-PLATFORM-FACTORY-RUNTIME-001`](work-packets/p1-platform-factory-runtime.md)
-  is accepted and authorized. It may be
-  implemented in isolation but may not merge until the independent KAC
-  package exists and the combined source gates pass. The corrected KAC source
+  is implemented at isolated commit `4d88006`; its pinned R6.1 compile passed
+  twice offline and all 51 applicable Runtime/VISS/Safe Stop tests passed in
+  both final executions. KAC named-resource,
+  fixed-Provider signer preparation and successor-image package composition
+  were split into blocked
+  [`WP-P1-PLATFORM-KAC-FACTORY-INTEGRATION-001`](work-packets/p1-platform-kac-factory-integration.md)
+  on 2026-08-29 and must not be guessed. The completed pinned evidence is in
+  [`WP-QUAL-P1-PLATFORM-RUNTIME-001`](work-packets/p1-platform-runtime-compile-qualification.md);
+  the IAM/Safe Stop branch remains unmerged and its later image/disposable-VM
+  qualification is still a separate authorization gate.
+  The corrected KAC source
   packet [`WP-P1-PLATFORM-KAC-001`](work-packets/p1-platform-kac.md) is also
   accepted and authorized without unmeasured CPU/RAM ceilings. The VDP v1-v3
   source packet
   [`WP-P1-PLATFORM-VDP-001`](work-packets/p1-platform-vdp-family.md) is
-  accepted and authorized. Merge of the interdependent branches plus every
-  dependency download, artifact/image build and live qualification remains
-  blocked until its separate gate is explicitly authorized.
+  source-complete on isolated commit `6712333`, with all owned tests and source
+  gates passing; it remains unmerged and not qualified. KAC source work is
+  blocked before compilation because the exact native/target C++ dependency
+  set is not yet frozen. The proposed evidence-only
+  [`WP-DEP-P1-PLATFORM-KAC-001`](work-packets/p1-platform-kac-dependency-acquisition.md)
+  captures the required acquisition boundary and still requires explicit
+  review before network access. Merge of the interdependent branches plus
+  every dependency download, artifact/image build and live qualification
+  remains blocked until its separate gate is explicitly authorized.
 - Repository: `aos-vehicle-platform`.
 - Scope: build the successor OEM Demo Factory Image with stock Aos IAM
   `enablePermissionsHandler: true`, no provisioned identity or pre-populated
@@ -406,9 +422,33 @@ handoff.
 
 ### `IMP-04` — Brake Health vertical slice
 
-- State: `BLOCKED` until the current `CR-BHS`/D4-017 contract delta and the
-  planned `brake-health-cloud` repository creation are accepted.
-- Repositories: `brake-health-service` and planned `brake-health-cloud`.
+- State: `SOURCE IMPLEMENTATION IN PROGRESS`; `CR-BHS` 0.8 and D4-017 are
+  accepted, and the first bounded Brake Service and Brake Cloud foundation
+  packets are authorized. The Cloud repository-creation gate closed on
+  2026-08-28.
+- Repositories: `brake-health-service` and `brake-health-cloud`.
+- Accepted Service packet order: `BHS-CORE-001` foundation/v1,
+  `BHS-CORE-002` v2, `BHS-CORE-003` v3, `BHS-ADAPTERS-001` external adapters
+  and `BHS-PACKAGING-001` immutable v1-v3 composition. These packets are
+  sequential writers in `brake-health-service`; the separate Cloud repository
+  may proceed concurrently after its own gates close.
+- The first bounded packet,
+  [`WP-P1-BHS-CORE-001`](work-packets/p1-brake-health-core-v1.md), is accepted
+  and source-complete on isolated commit `7c0a658`; the main branch remains at
+  the frozen `brake-health-service` base. It does not authorize packaging,
+  dependency retrieval or external operations.
+- Accepted Cloud packet order: `BRAKE-CLOUD-FOUNDATION-001`,
+  `BRAKE-CLOUD-DATA-001`, `BRAKE-CLOUD-UI-001`,
+  `BRAKE-CLOUD-INTEGRATION-001` and `BRAKE-CLOUD-QUALIFICATION-001`. The
+  public repository baseline is `brake-health-cloud@6da2926`; each product
+  packet remains separately bounded and reviewed.
+- The first bounded Cloud packet,
+  [`WP-P1-BRAKE-CLOUD-FOUNDATION-001`](work-packets/p1-brake-cloud-foundation.md),
+  is source-complete on isolated commit `68fe61b`; the repository main branch
+  remains at its governance-only baseline. The packet implements only the
+  exact npm workspace, loopback backend/SQLite foundation and fixture-only
+  three-view Dashboard shell; D4 ingestion, helper, container and live
+  integrations remain later gates.
 - Scope: implement the prepared Brake v1-v3 candidates, bounded v1
   pre/active/post window, v2 synthetic local assessment and derived-only
   reporting, v3 typed maintenance advisory, bounded offline queue, backend,
@@ -513,22 +553,34 @@ The first P1 code batch has the following current state:
 2. [`WP-P1-VEH-001`](work-packets/p1-vehicle-gateway-wheel-units.md) for the
    `IMP-02A` frozen VSS wheel angular-speed semantics in `L-VEH` is
    `IMPLEMENTED`; and
-3. the Factory/runtime, KAC and VDP family source packets in `L-PLATFORM` are
-   accepted and independently authorized. Their combined merge, dependency
-   retrieval, artifact/image build and live qualification remain gated.
+3. the IAM/Safe Stop Factory/runtime packet in `L-PLATFORM` is `IMPLEMENTED`
+   at isolated commit `4d88006`; its pinned offline C++ compile and all 51
+   applicable Runtime/VISS/Safe Stop tests passed twice. The KAC source packet
+   is accepted but dependency-blocked; the KAC Factory-integration packet is
+   explicitly blocked on exact resource/signer inputs; and the VDP family is
+   source-complete at isolated commit `6712333`. Their combined merge,
+   dependency retrieval, artifact/image build and live qualification remain
+   gated;
+4. the first Brake Service core packet is source-complete at isolated commit
+   `7c0a658`; and
+5. the Brake Cloud foundation packet is source-complete at isolated commit
+   `68fe61b`.
 
-The three Platform source workers may execute independently in their reviewed
-ownership boundaries. The Integration Coordinator does not merge any branch
-until required package dependencies exist and the combined source gates pass.
-`IMP-04` or `IMP-05` may enter a free slot only after their own contract and
-repository-creation gates close.
+The Platform source workers may execute independently only inside their
+reviewed ownership boundaries. The Integration Coordinator does not merge any
+branch until required package dependencies exist, the blocked KAC integration
+inputs are frozen and the combined source gates pass.
+Further `IMP-04` or `IMP-05` packets may enter a free slot only after their own
+contract, repository and packet-authorization gates close.
 
 Before code starts, the Coordinator converts each P0 result into a separately
 accepted authorization record that pins the current repository base, exact
 writable files, commands, tests, exclusions and completion evidence. P0
 readiness is not code authorization. The Platform baseline is accepted, while
 `IMP-03` remains `BLOCKED` rather than `READY_FOR_CODE_PACKET` until its named
-implementation parameters close.
+implementation parameters close. The VDP and IAM/Safe Stop work may still
+produce clearly labelled isolated checkpoints without changing that combined
+`IMP-03` state.
 
 ## Change Control During Implementation
 

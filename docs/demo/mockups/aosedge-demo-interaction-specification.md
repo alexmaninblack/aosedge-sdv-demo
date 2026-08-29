@@ -19,7 +19,7 @@
 - Team-context decision: [D4-026.19 Fixed Team Context and Version-Only Scrolling](../../requirements/d4-decision-register.md#d4-026-19)
 - Icon/terminal boundary decision: [D4-026.20 Icon Vocabulary and Native Terminal Boundary](../../requirements/d4-decision-register.md#d4-026-20)
 - Platform FOTA enforcement decision: [ADR 0014](../../architecture/decisions/0014-enforce-platform-fota-safe-stop-in-oem-component-runtime.md)
-- Platform FOTA Safe Stop contract: [1.1.0](../../../contracts/platform-fota-safe-stop/README.md)
+- Platform FOTA Safe Stop contract: [1.1.1](../../../contracts/platform-fota-safe-stop/README.md)
 - Surface register: [I0 Audience-Visible Interface Register](README.md)
 - UI traceability: [AosEdge Demo UI Traceability Register](aosedge-demo-ui-traceability-register.md)
 - Current clickable review artifact derived from this contract:

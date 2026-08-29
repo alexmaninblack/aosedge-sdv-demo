@@ -45,6 +45,7 @@ class WorkspaceDoctorTests(unittest.TestCase):
                 "vehicle-gateway",
                 "vehicle-platform",
                 "functional-service",
+                "brake-health-cloud",
             },
             identifiers,
         )

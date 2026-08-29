@@ -4,7 +4,7 @@
 # Platform FOTA Safe Stop Contract
 
 - Architecture decision: [ADR 0014](../../docs/architecture/decisions/0014-enforce-platform-fota-safe-stop-in-oem-component-runtime.md)
-- Contract version: 1.1.0
+- Contract version: 1.1.1
 - Lifecycle state: design accepted; implementation and live qualification are open
 
 This contract fixes the Safe Stop evidence, policy, lifecycle gate and recovery
@@ -17,7 +17,7 @@ It does not make AosCloud, the Demo UI, KUKSA or the VDP being updated a source
 of physical-motion authority.
 
 - [JSON Schema](platform-fota-safe-stop-profile.schema.json)
-- [Accepted profile 1.1.0](platform-fota-safe-stop-profile.v1.json)
+- [Accepted profile 1.1.1](platform-fota-safe-stop-profile.v1.json)
 
 The runtime uses a purpose-bound per-Unit `PLATFORM_UPDATE_RUNTIME` mTLS
 identity, distinct from the VDP's selected-Unit identity. A transport-only
@@ -25,6 +25,15 @@ VISS adapter implements `VehicleStateProviderItf`; the Safe Stop evaluator
 remains a pure policy component. `FrameId` is part of every accepted snapshot,
 so the twelve-sample window requires twelve distinct monotonic CARLA frames
 rather than repeated reads of one cached state.
+
+Version 1.1.1 clarifies the accepted freshness semantics. Every admitted
+sample must carry source time and be no older than 250 ms when it is acquired.
+The twelve-sample history proves only consecutive stability; it is not reused
+as current vehicle state. The newest complete sample must again be no older
+than 250 ms when the gate opens and immediately before every destructive
+runtime operation. This deliberately permits a twelve-sample window to span
+more than 250 ms while preventing buffered history from authorizing a current
+transition.
 
 Waiting is a single asynchronous bounded runtime transaction. The durable
 record contains transaction metadata, never Safe Stop samples; the runtime

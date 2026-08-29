@@ -18,6 +18,7 @@
 - Previous accepted package: Version 0.8, design-reviewed on 2026-08-28
 - Accepted D4 input: [D4-002 Vehicle Hardware Capability Profile](../d4-decision-register.md#d4-002)
 - Accepted D4 VISS input: [D4-006 VISS Trust and Telemetry Profile](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
+- Accepted D4 Safe Stop freshness decision: [D4-028](../d4-decision-register.md#d4-028)
 - Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
 - Accepted D4 advisory input: [D4-008 Typed QM Advisory Profile](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - Implementation evidence: `aos-vehicle-platform@bdc72ab`; provider `0.2.0`
@@ -137,7 +138,9 @@ digest-addressed component FOTA artifact targeting only the accepted
 provider-specific runtime. The exact accepted bytes shall move from Validation
 to Production without rebuild. On both Units, the factory-installed OEM
 Component Runtime inside AosCore Service Manager shall apply the Platform FOTA
-only after fresh Gateway evidence satisfies the accepted Safe Stop policy; the
+only after Gateway samples fresh at acquisition form the accepted 12-sample
+stability history and the latest complete sample is fresh at gate opening and
+immediately before every destructive runtime step; the
 vehicle shall remain stopped until exact component readiness is proven and
 driving shall resume only through an explicit control action. The VDP payload
 being updated is neither the source of Safe Stop evidence nor the enforcement
@@ -148,8 +151,8 @@ point.
 - Components: [Vehicle Data Platform (`CMP-VDP`)](../component-decomposition-and-interface-register.md#cmp-vdp), [AosCloud (`CMP-AOS-CLOUD`)](../component-decomposition-and-interface-register.md#cmp-aos-cloud), [AosCore (`CMP-AOS-CORE`)](../component-decomposition-and-interface-register.md#cmp-aos-core) and [Empty-Slot Runtime (`CMP-RUNTIME`)](../component-decomposition-and-interface-register.md#cmp-runtime)
 - Interfaces: [platform FOTA (`IF-LC-001`)](../component-decomposition-and-interface-register.md#if-lc-001), [Platform Team approval (`IF-LC-008`)](../component-decomposition-and-interface-register.md#if-lc-008), [runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006) and [Platform-update vehicle state (`IF-VEH-007`)](../component-decomposition-and-interface-register.md#if-veh-007)
 - Verification: unit, contract, integration and end-to-end
-- Executable contract: [Platform FOTA Safe Stop 1.1.0](../../../contracts/platform-fota-safe-stop/platform-fota-safe-stop-profile.v1.json)
-- Required evidence: exact artifact/metadata digests, approval basis, target, runtime type, accepted Validation result, identical Production bytes, current Gateway Safe Stop evidence, runtime waiting/apply reasons and AosCore readiness sequence on both Units
+- Executable contract: [Platform FOTA Safe Stop 1.1.1](../../../contracts/platform-fota-safe-stop/platform-fota-safe-stop-profile.v1.json)
+- Required evidence: exact artifact/metadata digests, approval basis, target, runtime type, accepted Validation result, identical Production bytes, per-sample acquisition freshness, 12-sample stability history, latest Gateway sample revalidation at every destructive gate, runtime waiting/apply reasons and AosCore readiness sequence on both Units
 - Requirement state: D3 design-reviewed
 
 <a id="req-vdp-002"></a>

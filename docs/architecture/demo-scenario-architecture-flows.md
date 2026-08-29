@@ -1479,8 +1479,11 @@ prebuilt immutable candidate
 AosCloud owns the authorized desired state and delivery records but is not
 claimed to determine whether the vehicle moves. The Platform FOTA Safe Stop
 condition is enforced natively by AosCore inside the Unit and only presented
-by the Demo UI. The in-motion branch applies only to the accepted Brake/Tire QM
-Service SOTA; it is not a general automotive-update claim.
+by the Demo UI. Each admitted sample is fresh when acquired; its retained
+window proves stability only, while the latest complete sample is revalidated
+at every destructive runtime step. The in-motion branch applies only to the
+accepted Brake/Tire QM Service SOTA; it is not a general automotive-update
+claim.
 
 An unexpected Unit, stale pending batch, artifact or metadata digest mismatch,
 unexpected permission, unmet dependency or required-provider readiness,

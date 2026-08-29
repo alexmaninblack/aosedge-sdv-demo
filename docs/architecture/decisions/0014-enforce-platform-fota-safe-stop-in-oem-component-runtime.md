@@ -68,6 +68,14 @@ The versioned Platform FOTA Safe Stop contract owns the exact thresholds,
 freshness, stability window, timeout and reason vocabulary. A stopped vehicle
 in another control mode, including a temporary traffic stop, is not Safe Stop.
 
+Safe Stop profile 1.1.1 defines freshness at two different points. Every
+sample is checked against its source time when admitted into the consecutive
+stability window. The history proves stability only; it is not current-state
+authority. The latest complete sample is checked again when the gate opens and
+immediately before each destructive operation. This keeps the twelve-sample
+window meaningful even though its expected duration exceeds 250 ms, without
+allowing buffered history to authorize a transition.
+
 ### Gate every destructive component transition
 
 For replacement or removal, `StopInstance` shall wait before marking the

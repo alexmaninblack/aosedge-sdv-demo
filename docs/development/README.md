@@ -17,7 +17,7 @@ must agree.
 | Vehicle Data Provider runtime, signal/advisory contract or Vehicle Data Platform Component | `aos-vehicle-platform` | Platform Team / post-SOP FOTA |
 | Brake Health in-vehicle analytics | `brake-health-service` | Function Team 1 / SOTA |
 | Tire Health condition estimation, bounded reporting and inspection advisory | planned `tire-health-service` | Function Team 2 / independent SOTA |
-| Brake Health backend or Function Dashboard | planned `brake-health-cloud` | Function Team 1 Cloud product |
+| Brake Health backend or Function Dashboard | `brake-health-cloud` | Function Team 1 Cloud product; governance baseline exists, product implementation is `NEW` |
 | Tire Health backend or Function Dashboard | planned `tire-health-cloud` | Function Team 2 Cloud product |
 | Software Delivery Dashboard, demo orchestration, cross-component contract or end-to-end qualification | `aosedge-sdv-demo` | solution integration |
 | Unreal Engine compatibility required by CARLA | restricted Unreal fork | maintained Apple Silicon dependency branch |

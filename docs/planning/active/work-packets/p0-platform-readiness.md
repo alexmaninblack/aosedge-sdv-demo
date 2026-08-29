@@ -329,9 +329,11 @@ until the exact P1 package is accepted.
   systemd `LoadCredential`, exclude it from Factory/FOTA/Git/logs/dashboards
   and retire it at R0.
 - Exact read boundary: the role may read only the ten Safe Stop paths in
-  contract 1.1.0. `Vehicle.CarlaSimulation.FrameId` is mandatory so the
+  contract 1.1.1. `Vehicle.CarlaSimulation.FrameId` is mandatory so the
   twelve-sample gate counts distinct monotonic CARLA frames rather than repeat
-  reads of one cached value.
+  reads of one cached value. Each sample is fresh when acquired; the retained
+  history proves stability only, and the latest complete sample is rechecked
+  for 250-ms freshness at every destructive gate.
 - Runtime structure: a transport-only VISS 3.1 mTLS adapter implements
   `VehicleStateProviderItf`; a pure Safe Stop evaluator owns the accepted
   policy and is testable with a fake provider. Neither VDP, KUKSA, AosCloud nor
@@ -626,6 +628,12 @@ implementation. Exact package-owned implementation parameters remain the
 | VISS Trust and Telemetry v1 | `4a1a2bd804c3a49f707b5e640632bd8a0357901f59e4615c340622b043d4c12c` |
 | QM Advisory v1 | `f7ae78148fb3b3265c8b773117126665afb1edd97a73f59db5a1f3af7c223487` |
 | Platform FOTA Safe Stop v1 | `b92cd31c9b5066ca5b79c526134c3a059fcda0738cd668f3c96c6b51a0396c66` |
+
+This table is the immutable digest record of the P0 input that was actually
+assessed. The Safe Stop input was subsequently superseded by accepted
+[`D4-028`](../../../requirements/d4-decision-register.md#d4-028) and contract
+1.1.1; its current digest is intentionally not substituted into this
+historical P0 evidence.
 
 ## Exact P0 Tasks
 
