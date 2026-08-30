@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "sourceValueEncoding": "EXACT_DECIMAL_STRING",
+  "operationOrder": ["NORMATIVE_UNIT_CONVERSION", "REJECT_NON_FINITE", "NORMALIZE_NEGATIVE_ZERO", "SCALE_TO_MILLI", "ROUND_EXACT_HALF_AWAY_FROM_ZERO", "REJECT_ACCEPTED_PATH_RANGE_OR_TARGET_INTEGER_OVERFLOW"],
+  "acceptedCases": [
+    {"id": "speed-below-half", "quantity": "speed", "sourceUnit": "km/h", "targetUnit": "milli-km/h", "sourceValue": "1.2344", "expected": 1234},
+    {"id": "speed-exact-half", "quantity": "speed", "sourceUnit": "km/h", "targetUnit": "milli-km/h", "sourceValue": "1.2345", "expected": 1235},
+    {"id": "speed-above-half", "quantity": "speed", "sourceUnit": "km/h", "targetUnit": "milli-km/h", "sourceValue": "1.2346", "expected": 1235},
+    {"id": "acceleration-below-negative-half", "quantity": "longitudinalAcceleration", "sourceUnit": "m/s^2", "targetUnit": "milli-m/s^2", "sourceValue": "-1.2344", "expected": -1234},
+    {"id": "acceleration-exact-negative-half", "quantity": "longitudinalAcceleration", "sourceUnit": "m/s^2", "targetUnit": "milli-m/s^2", "sourceValue": "-1.2345", "expected": -1235},
+    {"id": "acceleration-above-negative-half", "quantity": "longitudinalAcceleration", "sourceUnit": "m/s^2", "targetUnit": "milli-m/s^2", "sourceValue": "-1.2346", "expected": -1235},
+    {"id": "brake-below-half", "quantity": "brakeEffort", "sourceUnit": "percent", "targetUnit": "milli-percent", "sourceValue": "75.0004", "expected": 75000},
+    {"id": "brake-exact-half", "quantity": "brakeEffort", "sourceUnit": "percent", "targetUnit": "milli-percent", "sourceValue": "75.0005", "expected": 75001},
+    {"id": "brake-above-half", "quantity": "brakeEffort", "sourceUnit": "percent", "targetUnit": "milli-percent", "sourceValue": "75.0006", "expected": 75001},
+    {"id": "steering-below-negative-half", "quantity": "steering", "sourceUnit": "degrees", "targetUnit": "milli-degree", "sourceValue": "-4.9994", "expected": -4999},
+    {"id": "steering-exact-negative-half", "quantity": "steering", "sourceUnit": "degrees", "targetUnit": "milli-degree", "sourceValue": "-4.9995", "expected": -5000},
+    {"id": "steering-above-negative-half", "quantity": "steering", "sourceUnit": "degrees", "targetUnit": "milli-degree", "sourceValue": "-4.9996", "expected": -5000},
+    {"id": "wheel-linear-below-half", "quantity": "wheelLinearSpeed", "sourceUnit": "km/h", "targetUnit": "milli-km/h", "sourceValue": "36.4004", "expected": 36400},
+    {"id": "wheel-linear-exact-half", "quantity": "wheelLinearSpeed", "sourceUnit": "km/h", "targetUnit": "milli-km/h", "sourceValue": "36.4005", "expected": 36401},
+    {"id": "wheel-linear-above-half", "quantity": "wheelLinearSpeed", "sourceUnit": "km/h", "targetUnit": "milli-km/h", "sourceValue": "36.4006", "expected": 36401},
+    {"id": "wheel-angular-below-negative-half", "quantity": "wheelAngularSpeed", "sourceUnit": "degrees/s", "targetUnit": "milli-degree/s", "sourceValue": "-99.9994", "expected": -99999},
+    {"id": "wheel-angular-exact-negative-half", "quantity": "wheelAngularSpeed", "sourceUnit": "degrees/s", "targetUnit": "milli-degree/s", "sourceValue": "-99.9995", "expected": -100000},
+    {"id": "wheel-angular-above-negative-half", "quantity": "wheelAngularSpeed", "sourceUnit": "degrees/s", "targetUnit": "milli-degree/s", "sourceValue": "-99.9996", "expected": -100000},
+    {"id": "negative-zero", "quantity": "longitudinalAcceleration", "sourceUnit": "m/s^2", "targetUnit": "milli-m/s^2", "sourceValue": "-0", "expected": 0}
+  ],
+  "rejectedCases": [
+    {"id": "non-finite-nan", "quantity": "longitudinalAcceleration", "sourceUnit": "m/s^2", "sourceValue": "NaN", "expectedReason": "NON_FINITE_VALUE"},
+    {"id": "non-finite-positive-infinity", "quantity": "wheelAngularSpeed", "sourceUnit": "degrees/s", "sourceValue": "Infinity", "expectedReason": "NON_FINITE_VALUE"},
+    {"id": "accepted-path-range", "quantity": "brakeEffort", "sourceUnit": "percent", "sourceValue": "101", "expectedReason": "OUT_OF_RANGE_VALUE"},
+    {"id": "target-integer-overflow", "quantity": "wheelAngularSpeed", "sourceUnit": "degrees/s", "sourceValue": "9223372036854776", "expectedReason": "OUT_OF_RANGE_VALUE"}
+  ]
+}

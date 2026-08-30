@@ -1842,8 +1842,9 @@ mutation, Unit deletion, VM stop or overlay disposal.
 - Decision state: `ACCEPTED`; D4-016.1 through D4-016.5 accepted
 - D4-016.1/.2 and D4-016.3 structure accepted: 2026-08-22
 - Exact D4-016.3 accepted: 2026-08-23
+- D4-016.3 byte/arithmetic/fixture closure accepted: 2026-08-29
 - Accepted D4-016.3 profile SHA-256:
-  `5d7ca7ebf257a7a34014e70d1f041a624dbd65eac038a6762bdb21d6d38f6ad6`
+  `7749dff2dd340f05ae5f3c90912d65007ad48c52a5136ab0e165a83109d55f53`
 - Exact D4-016.4 accepted: 2026-08-23
 - Accepted D4-016.4 policy SHA-256:
   `1fb25510f60e01a1a498a00386d33de4c2eb659a0ee3db3be41928076bd7dca1`
@@ -1995,8 +1996,8 @@ The accepted structure is:
     later define an explicit compatible migration of accepted v2 state rather
     than silently resetting it.
 
-This accepts the v2 product structure only. The following contracts are now
-prepared as one review candidate for the remaining exact decisions:
+The accepted v2 product structure and its byte/arithmetic closure are recorded
+in these canonical contracts:
 
 - [Brake Health Synthetic Model Contract](../../contracts/brake-health-model/README.md);
 - [Brake Health v3 Advisory Policy](../../contracts/brake-health-advisory-policy/README.md); and
@@ -2004,32 +2005,67 @@ prepared as one review candidate for the remaining exact decisions:
 
 ##### D4-016.3 exact model — accepted
 
-1. Only a `COMPLETE` episode with at least five complete/fresh ACTIVE samples
+1. The canonical input fixture contains the complete retained 10 Hz episode:
+   30 PRE, 30 ACTIVE and 20 POST samples with the exact twelve accepted VDP
+   paths. ACTIVE logical duration is three seconds and its first-to-last
+   timestamp span is 2.9 seconds. Source-window timestamps cover the full
+   80-sample episode.
+2. The adapter performs normative unit conversion before exactly one
+   fixed-point quantization into milli-km/h, milli-m/s², milli-percent,
+   milli-degree, milli-km/h wheel-linear and milli-degree/s wheel-angular
+   values. It rejects non-finite/path-range/integer-overflow input, normalizes
+   negative zero and rounds an exact half away from zero. The core never
+   requantizes.
+3. Only a `COMPLETE` episode with at least five complete/fresh ACTIVE samples
    and five ACTIVE samples at speed at least 10 km/h and absolute steering
-   angle at most 5 degrees is eligible. Other input records
-   `ASSESSMENT_SKIPPED_INPUT_QUALITY` and does not mutate condition state.
-2. Five normalized integer basis-point features are weighted 30% peak
-   deceleration (8 m/s² full scale), 20% ACTIVE duration (5 s), 15% speed
-   reduction (40 km/h), 15% mean brake effort (50–100%) and 20% maximum
-   near-straight wheel dispersion (0.15 ratio). Linear dispersion uses at
-   least 5 km/h denominator; angular dispersion uses absolute angular speeds
-   and at least 30 degrees/s denominator. All positive division uses
-   round-half-up integer arithmetic.
-3. `DEMO_PRECONDITIONED` starts with wear index 54, score 46 and `MONITOR`.
+   angle at most 5 degrees is eligible. Rejection produces only local,
+   non-wire, non-persistent `ASSESSMENT_SKIPPED_INPUT_QUALITY` with one of the
+   eight closed reasons in the model profile and mutates no state, generation,
+   band or recent-event ledger.
+4. Peak deceleration is `max(0, -minimum longitudinal acceleration)` over
+   ACTIVE; duration is ACTIVE count divided by 10 Hz; speed reduction is
+   `max(0, first ACTIVE speed - last ACTIVE speed)`; brake effort is the
+   positive-round-half-up ACTIVE mean; and wheel dispersion is the maximum
+   linear/absolute-angular four-wheel ratio over qualified near-straight
+   ACTIVE samples. Every normalized basis-point feature is clamped before the
+   30/20/15/15/20 weighted load.
+5. `DEMO_PRECONDITIONED` starts with wear index 54, score 46 and `MONITOR`.
    Each eligible episode adds `4 + round_half_up(6 * loadBps / 10000)`, capped
    at wear 100. Score is `100 - wear`. Bands are `GOOD=70..100`,
    `MONITOR=40..69`, `INSPECTION_RECOMMENDED=0..39`. Wear is monotonic.
-4. D4-003 must prove the frozen presenter scenario produces at least 5000 load
-   basis points on every required qualification repeat. The golden result is
+6. The 5000-load value is a D4-003/demo qualification threshold only. Every
+   otherwise eligible lower-load episode still emits its assessment and
+   advances state; an event appears only on a real band crossing. A below-5000
+   scripted run fails calibration and never permits output manipulation. The
+   controlled demo budget is at most seven seconds nominal and at most eight
+   seconds in all 20/20 runs; it is not a production KPI. The golden result is
    load 6750, increment 8 and `MONITOR -> INSPECTION_RECOMMENDED`.
-5. Every eligible source event produces one RFC-8785/SHA-256 assessment of at
+7. Every eligible source event produces one RFC-8785/SHA-256 assessment of at
    most 16 KiB. A separate event is produced only on a band change.
-   Deterministic UUIDv5 identities bind Unit, source event and model config;
-   same key/same digest is a retry and different content is quarantined.
-6. A synchronized journal, atomic state replacement and commit marker make
-   one event advance state exactly once. State is at most 64 KiB with a
-   64-event recent ledger. The derived outbox is at most 64 messages or 1 MiB;
-   overflow records `DERIVED_OUTBOX_FULL` but cannot stop local assessment.
+   UUIDv5 encodes exact ordered UTF-8 fields, rejects CR/LF/NUL, joins with one
+   LF byte and has no trailing LF. It is identification only. Same key/same
+   digest is a retry and different content is quarantined.
+8. `modelArtifactSha256` is the injected immutable deployed Brake Health
+   Service artifact digest containing the compiled model;
+   `modelConfigSha256` is the distinct exact accepted model-profile SHA-256.
+   The core neither discovers/hashes installation nor invents a separate model
+   file. A separately packaged future model requires a versioned contract.
+9. The source window is the first through last retained PRE/ACTIVE/POST sample;
+   features use ACTIVE only and wheel dispersion its qualified subset.
+   `assessedAt` is one injected processing time not earlier than the end and is
+   reused on retry/recovery. Band-event `effectiveAt` equals source-window end,
+   never processing, persistence, transport or backend time.
+10. Assessment plus optional band event is one atomic admission. If the pair
+    exceeds either outbox bound, state/ledger advance once, neither is
+    enqueued, `DERIVED_OUTBOX_FULL` is returned/logged, no later message is
+    fabricated for that applied event and local operation continues.
+11. One synchronized immutable before/after/manifest/disposition journal,
+    atomic state replacement, same-filesystem staged bundle-directory rename
+    and synchronized commit marker make one event advance state exactly once.
+    Recovery accepts only exact current-state equality with journal `before`
+    or `after`; every other combination is quarantined `NOT_READY_STATE` with
+    no double wear/event or silent reset. State is at most 64 KiB with a
+    64-event ledger; the derived outbox is at most 64 messages or 1 MiB.
 
 ##### D4-016.4 v3 advisory policy — accepted
 
@@ -2709,9 +2745,11 @@ live qualification remain required; this decision authorizes no mutation.
 Review in this order so that each downstream decision uses an already reviewed
 upstream contract:
 
-1. `D4-016.3` — **accepted 2026-08-23**: eligibility, integer synthetic Brake
-   model, score/bands, assessment/event schemas and crash-safe state; D4-003
-   still must qualify the calibration values;
+1. `D4-016.3` — **accepted 2026-08-23; byte/arithmetic closure accepted
+   2026-08-29**: complete input/invalid/boundary fixtures, eligibility,
+   fixed-point integer model, score/bands, identities/provenance/timestamps,
+   assessment/event schemas, atomic derived admission and crash-safe state;
+   D4-003 still must qualify the scripted stimulus and demo-only timing budget;
 2. `D4-016.4` — **accepted 2026-08-23**: new-transition and persisted-active-
    condition triggers, sequence, lease/refresh and authoritative Gateway Status;
 3. `D4-016.5` — **accepted 2026-08-23**: Brake readiness axes, requested

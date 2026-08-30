@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "contractVersion": "1.0.0",
   "messageType": "BRAKE_HEALTH_ASSESSMENT",
-  "assessmentId": "59e854e8-596b-568b-8a18-12c44fb3a88c",
+  "assessmentId": "d49ce480-a1ef-5cd2-9e05-fd3783bfd1de",
   "sourceEventId": "4cba2d80-c04a-4d24-9f03-f4a85d56da13",
   "unitSystemUid": "demo-unit-validation-001",
   "unitRole": "VALIDATION",
@@ -12,13 +12,13 @@
   "vdpContractSha256": "2222222222222222222222222222222222222222222222222222222222222222",
   "modelId": "brake-condition-demo-v1",
   "modelVersion": "1.0.0",
-  "modelArtifactSha256": "5555555555555555555555555555555555555555555555555555555555555555",
-  "modelConfigSha256": "4444444444444444444444444444444444444444444444444444444444444444",
+  "modelArtifactSha256": "3333333333333333333333333333333333333333333333333333333333333333",
+  "modelConfigSha256": "7749dff2dd340f05ae5f3c90912d65007ad48c52a5136ab0e165a83109d55f53",
   "provenance": "DEMO_SYNTHETIC",
-  "assessedAt": "2026-08-22T12:00:00.600Z",
+  "assessedAt": "2026-08-22T12:00:08.000Z",
   "content": {
     "sourceWindowStartTimestamp": "2026-08-22T12:00:00.000Z",
-    "sourceWindowEndTimestamp": "2026-08-22T12:00:00.500Z",
+    "sourceWindowEndTimestamp": "2026-08-22T12:00:07.900Z",
     "activeSampleCount": 30,
     "straightActiveSampleCount": 30,
     "features": {
@@ -42,5 +42,5 @@
     "currentBand": "INSPECTION_RECOMMENDED",
     "quality": "VALID_DEMO_SYNTHETIC"
   },
-  "contentSha256": "5df705d06a42e2f4004ff19fb0f833b2e72e3b64b5b862e8b56e3eb8bbd5eab1"
+  "contentSha256": "b1b5858b114898519fa0f4fe600864727df3c9f28c8228b182661ab6f183b932"
 }

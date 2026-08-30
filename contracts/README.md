@@ -36,9 +36,10 @@
   — Brake Health v1 acquisition, bounded event-window messages, canonical
   hashes, idempotency and durable service-local spool behavior.
 - [Brake Health Synthetic Model Contract](brake-health-model/README.md)
-  — accepted D4-016.3 contract for exact v2 inputs, deterministic condition
-  arithmetic, assessment/event messages and crash-safe local state; D4-003
-  calibration remains an implementation-acceptance gate.
+  — accepted D4-016.3 contract with complete 80-sample input and invalid/
+  quantization fixtures, exact condition arithmetic, deterministic identity,
+  atomic derived-message admission and crash-safe local state; D4-003 scripted
+  stimulus and demo-only timing qualification remain implementation gates.
 - [Brake Health v3 Advisory Policy](brake-health-advisory-policy/README.md)
   — accepted D4-016.4 policy binding a new or persisted active synthetic
   assessment to the existing typed QM advisory and authoritative Gateway

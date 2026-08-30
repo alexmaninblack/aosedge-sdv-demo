@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "baseFixture": "brake-health-model-input.valid.json",
+  "mutationLanguage": "JSON_POINTER_REPLACE_REMOVE_REPLACE_SPECIAL_AND_INDEX_RANGE_V1",
+  "fact": "ASSESSMENT_SKIPPED_INPUT_QUALITY",
+  "cases": [
+    {
+      "id": "episode-not-complete",
+      "operations": [{"op": "replace", "path": "/terminalState", "value": "ABORTED_SERVICE_STOP"}],
+      "expectedReason": "EPISODE_NOT_COMPLETE"
+    },
+    {
+      "id": "missing-required-signal",
+      "operations": [{"op": "remove", "path": "/samples/30/signals/Vehicle.Speed"}],
+      "expectedReason": "MISSING_REQUIRED_SIGNAL"
+    },
+    {
+      "id": "stale-sample",
+      "operations": [{"op": "replace", "path": "/samples/30/maxSourceAgeMs", "value": 251}],
+      "expectedReason": "STALE_SAMPLE"
+    },
+    {
+      "id": "non-finite-value",
+      "operations": [{"op": "replace-special", "path": "/samples/30/signals/Vehicle.Acceleration.Longitudinal", "value": "NaN"}],
+      "expectedReason": "NON_FINITE_VALUE"
+    },
+    {
+      "id": "out-of-range-value",
+      "operations": [{"op": "replace", "path": "/samples/30/signals/Vehicle.Chassis.Brake.PedalPosition", "value": 101}],
+      "expectedReason": "OUT_OF_RANGE_VALUE"
+    },
+    {
+      "id": "non-monotonic-source-time",
+      "operations": [{"op": "replace", "path": "/samples/31/sourceTimestamp", "value": "2026-08-22T12:00:03.000Z"}],
+      "expectedReason": "NON_MONOTONIC_SOURCE_TIME"
+    },
+    {
+      "id": "insufficient-active-samples",
+      "operations": [{"op": "replace-index-range", "pathTemplate": "/samples/{index}/phase", "firstIndex": 34, "lastIndex": 59, "value": "POST"}],
+      "expectedReason": "INSUFFICIENT_ACTIVE_SAMPLES"
+    },
+    {
+      "id": "insufficient-qualified-wheel-samples",
+      "operations": [{"op": "replace-index-range", "pathTemplate": "/samples/{index}/signals/Vehicle.Chassis.Axle.Row1.SteeringAngle", "firstIndex": 34, "lastIndex": 59, "value": 6}],
+      "expectedReason": "INSUFFICIENT_QUALIFIED_WHEEL_SAMPLES"
+    }
+  ],
+  "expectedMutation": {
+    "assessmentProduced": false,
+    "eventProduced": false,
+    "stateChanged": false,
+    "generationChanged": false,
+    "bandChanged": false,
+    "recentSourceEventLedgerChanged": false
+  }
+}

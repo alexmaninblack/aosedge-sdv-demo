@@ -21,6 +21,9 @@
     "sourceEventType": "HARD_BRAKING_EPISODE_V1",
     "retainedCadenceHz": 10,
     "freshnessTimeoutMs": 250,
+    "episodeSchema": "brake-health-model-input.schema.json",
+    "goldenEpisodeFixture": "fixtures/brake-health-model-input.valid.json",
+    "sampleOrder": "STRICTLY_INCREASING_SAMPLE_INDEX_AND_SOURCE_TIMESTAMP",
     "paths": [
       "Vehicle.Speed",
       "Vehicle.Acceleration.Longitudinal",
@@ -39,7 +42,40 @@
       "Vehicle.Acceleration.Lateral",
       "Vehicle.Acceleration.Vertical",
       "Vehicle.Chassis.Accelerator.PedalPosition"
-    ]
+    ],
+    "normativeUnits": {
+      "Vehicle.Speed": "km/h",
+      "Vehicle.Acceleration.Longitudinal": "m/s^2",
+      "Vehicle.Chassis.Brake.PedalPosition": "percent",
+      "Vehicle.Chassis.Axle.Row1.SteeringAngle": "degrees",
+      "Vehicle.Chassis.Axle.Row1.Wheel.Left.AngularSpeed": "degrees/s",
+      "Vehicle.Chassis.Axle.Row1.Wheel.Right.AngularSpeed": "degrees/s",
+      "Vehicle.Chassis.Axle.Row2.Wheel.Left.AngularSpeed": "degrees/s",
+      "Vehicle.Chassis.Axle.Row2.Wheel.Right.AngularSpeed": "degrees/s",
+      "Vehicle.Chassis.Axle.Row1.Wheel.Left.Speed": "km/h",
+      "Vehicle.Chassis.Axle.Row1.Wheel.Right.Speed": "km/h",
+      "Vehicle.Chassis.Axle.Row2.Wheel.Left.Speed": "km/h",
+      "Vehicle.Chassis.Axle.Row2.Wheel.Right.Speed": "km/h"
+    },
+    "quantization": {
+      "owner": "VDP_TO_MODEL_ADAPTER",
+      "normativeUnitConversionBeforeQuantization": true,
+      "rejectNonFiniteBeforeQuantization": true,
+      "normalizeNegativeZeroToZero": true,
+      "scale": 1000,
+      "exactHalfBehavior": "AWAY_FROM_ZERO",
+      "rangeAuthority": "ACCEPTED_VDP_PATH_CONTRACT",
+      "rejectTargetIntegerOverflow": true,
+      "coreSecondQuantizationAllowed": false,
+      "fixedPointUnits": {
+        "speed": "milli-km/h",
+        "longitudinalAcceleration": "milli-m/s^2",
+        "brakeEffort": "milli-percent",
+        "steering": "milli-degree",
+        "wheelLinearSpeed": "milli-km/h",
+        "wheelAngularSpeed": "milli-degree/s"
+      }
+    }
   },
   "eligibility": {
     "acceptedTerminalStates": ["COMPLETE"],
@@ -48,11 +84,41 @@
     "maximumAbsoluteSteeringAngleDegrees": 5,
     "minimumStraightSampleSpeedKph": 10,
     "invalidResultFact": "ASSESSMENT_SKIPPED_INPUT_QUALITY",
+    "invalidResultTransport": "LOCAL_NON_WIRE_NON_PERSISTENT",
+    "invalidReasonPriority": [
+      "EPISODE_NOT_COMPLETE",
+      "MISSING_REQUIRED_SIGNAL",
+      "STALE_SAMPLE",
+      "NON_FINITE_VALUE",
+      "OUT_OF_RANGE_VALUE",
+      "NON_MONOTONIC_SOURCE_TIME",
+      "INSUFFICIENT_ACTIVE_SAMPLES",
+      "INSUFFICIENT_QUALIFIED_WHEEL_SAMPLES"
+    ],
+    "invalidInputProducesAssessment": false,
+    "invalidInputProducesEvent": false,
     "invalidInputAdvancesState": false,
+    "invalidInputAdvancesGeneration": false,
+    "invalidInputChangesBand": false,
+    "invalidInputAdvancesRecentSourceEventLedger": false,
     "invalidInputProducesHealthyResult": false
   },
   "features": {
     "arithmetic": "INTEGER_BASIS_POINTS_ROUND_HALF_UP",
+    "normalizedFeatureClampBps": {"minimum": 0, "maximum": 10000},
+    "clampEachFeatureBeforeWeighting": true,
+    "reductionOrder": [
+      "PEAK_DECELERATION",
+      "ACTIVE_DURATION",
+      "SPEED_REDUCTION",
+      "MEAN_BRAKE_EFFORT",
+      "WHEEL_DISPERSION",
+      "WEIGHTED_EPISODE_LOAD"
+    ],
+    "peakDecelerationFormula": "MAX_0_NEGATIVE_MINIMUM_LONGITUDINAL_ACCELERATION_OVER_ACTIVE",
+    "activeDurationFormula": "ACTIVE_SAMPLE_COUNT_DIVIDED_BY_10_HZ",
+    "speedReductionFormula": "MAX_0_FIRST_ACTIVE_SPEED_MINUS_LAST_ACTIVE_SPEED",
+    "meanBrakeEffortFormula": "POSITIVE_ROUND_HALF_UP_SUM_DIVIDED_BY_ACTIVE_SAMPLE_COUNT",
     "peakDeceleration": {"normalizationMps2": 8, "weightPercent": 30},
     "activeDuration": {"normalizationSeconds": 5, "weightPercent": 20},
     "speedReduction": {"normalizationKph": 40, "weightPercent": 15},
@@ -63,9 +129,23 @@
       "minimumAngularDenominatorDegreesPerSecond": 30,
       "useAbsoluteAngularSpeed": true,
       "aggregation": "MAX_OF_LINEAR_AND_ANGULAR_MAXIMA",
+      "sampleScope": "QUALIFIED_NEAR_STRAIGHT_ACTIVE_ONLY",
       "weightPercent": 20
     },
-    "minimumQualifiedEpisodeLoadBps": 5000
+    "minimumQualifiedEpisodeLoadBps": 5000,
+    "minimumQualifiedEpisodeLoadIsRuntimeEligibilityFilter": false
+  },
+  "qualification": {
+    "decision": "D4-003",
+    "minimumEpisodeLoadBps": 5000,
+    "belowMinimumScriptedRunResult": "CALIBRATION_FAILURE_NO_OUTPUT_MANIPULATION",
+    "nominalVisibleResultBudgetMs": 7000,
+    "maximumVisibleResultBudgetMs": 8000,
+    "requiredScriptedRuns": 20,
+    "requiredRunsWithinMaximumBudget": 20,
+    "productionLatencyKpiClaimed": false,
+    "networkLatencyKpiClaimed": false,
+    "safetyTimingClaimed": false
   },
   "condition": {
     "initialWearIndex": 54,
@@ -93,6 +173,17 @@
     "assessmentIdNameFields": ["unitSystemUid", "sourceEventId", "modelConfigSha256"],
     "eventIdNamespaceUuid": "b5942c7e-8767-5e34-a432-c5fc7b606a49",
     "eventIdNameFields": ["assessmentId", "eventType", "currentBand"],
+    "uuidv5NameEncoding": "ORDERED_EXACT_UTF8_FIELDS_JOINED_BY_SINGLE_0A_NO_TRAILING_0A",
+    "uuidv5RejectedFieldBytes": ["00", "0a", "0d"],
+    "uuidv5Purpose": "DETERMINISTIC_IDENTIFICATION_ONLY",
+    "uuidv5AuthenticationOrIntegrityClaimed": false,
+    "modelArtifactSha256Binding": "IMMUTABLE_DEPLOYED_BRAKE_HEALTH_SERVICE_ARTIFACT_CONTAINING_COMPILED_MODEL",
+    "modelConfigSha256Binding": "EXACT_ACCEPTED_MODEL_PROFILE_FILE_SHA256",
+    "artifactDigestsInjectedAsImmutableDeploymentMetadata": true,
+    "coreDiscoversOrHashesInstallation": false,
+    "separateRuntimeModelFileRequired": false,
+    "futureSeparatelyPackagedModelRequiresVersionedContract": true,
+    "assessmentAndOptionalBandEventAdmission": "ATOMIC_PAIR_OR_NEITHER",
     "sameKeySameDigestBehavior": "IDEMPOTENT_RETRY",
     "sameKeyDifferentDigestBehavior": "CONFLICT_QUARANTINE",
     "normalV1WindowUploadAllowed": false
@@ -106,13 +197,38 @@
     "maximumUnacknowledgedMessages": 64,
     "maximumOutboxBytes": 1048576,
     "writeProtocol": "JOURNAL_THEN_ATOMIC_STATE_REPLACE_THEN_COMMIT_MARKER",
+    "journalLayout": "IMMUTABLE_PER_ASSESSMENT_BEFORE_AFTER_MANIFEST_DISPOSITION",
+    "journalDispositions": ["ADMIT", "OVERFLOW_NOT_ENQUEUED"],
+    "admittedMessagePublication": "SAME_FILESYSTEM_STAGED_BUNDLE_DIRECTORY_ATOMIC_RENAME",
+    "synchronizationOrder": [
+      "JOURNAL_FILES_AND_DIRECTORY",
+      "ATOMIC_STATE_REPLACE_AND_STATE_DIRECTORY",
+      "ADMITTED_BUNDLE_FILES_STAGE_DIRECTORY_ATOMIC_RENAME_AND_OUTBOX_DIRECTORY",
+      "ATOMIC_COMMIT_MARKER_AND_JOURNAL_DIRECTORY"
+    ],
+    "recoveryAcceptedCurrentStateMatches": ["JOURNAL_BEFORE", "JOURNAL_AFTER"],
+    "otherRecoveryCombination": "QUARANTINE_NOT_READY_STATE",
+    "silentResetAllowed": false,
     "directoryMode": "0700",
     "fileMode": "0600",
     "databaseRuntimeRequired": false,
     "sourceEventMayAdvanceStateOnce": true,
     "overflowFact": "DERIVED_OUTBOX_FULL",
+    "overflowAdmission": "ADVANCE_STATE_AND_LEDGER_ENQUEUE_NEITHER_ATOMIC_PAIR",
+    "overflowMayFabricateLaterMessageForAppliedSourceEvent": false,
     "overflowStopsLocalAssessment": false,
     "conflictReadiness": "NOT_READY_STATE",
     "r0RemovalOwner": "DISPOSABLE_UNIT_OVERLAY"
+  },
+  "timestamps": {
+    "episodeScope": "FULL_RETAINED_PRE_ACTIVE_POST",
+    "sourceWindowStart": "FIRST_RETAINED_SAMPLE_SOURCE_TIMESTAMP",
+    "sourceWindowEnd": "LAST_RETAINED_SAMPLE_SOURCE_TIMESTAMP",
+    "featureSampleScope": "ACTIVE_ONLY",
+    "wheelFeatureSampleScope": "QUALIFIED_NEAR_STRAIGHT_ACTIVE_ONLY",
+    "assessedAt": "ONE_INJECTED_LOCAL_PROCESSING_TIMESTAMP_NOT_EARLIER_THAN_SOURCE_WINDOW_END",
+    "retryAndRecoveryReuseCommittedAssessedAt": true,
+    "bandChangeEffectiveAt": "SOURCE_WINDOW_END_TIMESTAMP",
+    "processingTransportOrBackendTimeMayBeEffectiveAt": false
   }
 }

@@ -3,10 +3,10 @@
 
 # Brake Health In-Vehicle Service Component Requirements
 
-- Status: D4 design accepted; ready for bounded implementation work-packet decomposition
+- Status: D4 exact v2 contract complete; ready for implementation review
 - Package: [`CR-BHS`](../component-decomposition-and-interface-register.md#cr-bhs)
-- Version: 0.8
-- Prepared: 2026-08-21
+- Version: 0.9
+- Prepared: 2026-08-29
 - Owner: Function Team 1 / Service Provider 1 / SOTA 1
 - Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
@@ -14,7 +14,7 @@
 - System-requirements input: [System Requirements 2.0](../system-requirements-and-traceability.md)
 - Component-register input: [Component Register 2.0](../component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md), [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md), [ADR 0012](../../architecture/decisions/0012-authorize-running-workloads-not-software-artifacts.md) and [ADR 0013](../../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md)
-- Previous accepted package: Version 0.4
+- Previous accepted package: Version 0.8
 - Reviewed D4 working direction: [D4-003 deterministic stimuli and calibration](../d4-decision-register.md#d4-003)
 - Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
 - Accepted D4 advisory input: [D4-008 Typed QM Advisory Profile](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
@@ -305,7 +305,7 @@ storage yields `NOT_READY_STORAGE` rather than volatile-only success.
 <a id="req-bhs-006"></a>
 
 - ID: `REQ-BHS-006`
-- Statement: Service v2 shall apply immutable digest-bound `brake-condition-demo-v1` with the disclosed `DEMO_PRECONDITIONED` profile to each eligible completed D4-016.1 episode. Its exact VDP v2/v3 model subset is speed, longitudinal acceleration, brake-pedal position, steering angle, four wheel-linear-speed paths and four wheel-angular-speed paths; lateral/vertical acceleration and accelerator pedal are excluded. It shall locally derive peak deceleration, braking duration, speed reduction, brake effort and near-straight wheel-speed dispersion, maintain one bounded crash-safe synthetic condition state, and produce one idempotent `BrakeHealthAssessment` plus a `BrakeHealthEvent` only on an accepted band change. Missing/stale/malformed/insufficient input records `ASSESSMENT_SKIPPED_INPUT_QUALITY`, does not advance state and never produces `GOOD`. Restart shall not double-count a source event. Normal v2 operation sends only derived messages, not Service v1 high-detail windows, and local assessment does not require Cloud/backend connectivity.
+- Statement: Service v2 shall apply immutable digest-bound `brake-condition-demo-v1` with the disclosed `DEMO_PRECONDITIONED` profile to each eligible completed D4-016.1 episode. Its exact VDP v2/v3 model subset is speed, longitudinal acceleration, brake-pedal position, steering angle, four wheel-linear-speed paths and four wheel-angular-speed paths; lateral/vertical acceleration and accelerator pedal are excluded. One adapter conversion supplies the accepted fixed-point units; the core performs the exact integer feature reduction over the complete retained PRE/ACTIVE/POST episode, with features restricted to ACTIVE and wheel dispersion to qualified near-straight ACTIVE samples. It shall maintain one bounded crash-safe synthetic condition state and atomically admit one idempotent `BrakeHealthAssessment` plus a `BrakeHealthEvent` only on an actual band change. Invalid input returns only the accepted local/non-wire/non-persistent reason and mutates no state/ledger. Derived-pair overflow advances state/ledger once, enqueues neither and cannot fabricate a later message. Restart shall not double-count a source event, alter its processing timestamp or duplicate a message. Normal v2 operation sends only derived messages, not Service v1 high-detail windows, and local assessment does not require Cloud/backend connectivity.
 - Rationale: The demo proves that post-SOP processing moved from Cloud data exploration into the vehicle and reduced normal Cloud data volume; it does not sell or qualify a production brake-diagnostic algorithm.
 - Parent system requirements: [Deterministic v2 edge assessment (`SYS-BHS-002`)](../system-requirements-and-traceability.md#sys-bhs-002) and [derived v2 Cloud data product (`SYS-BHS-006`)](../system-requirements-and-traceability.md#sys-bhs-006)
 - Architecture flows: [joint v2 lifecycle (`AF-G3-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-g3-lc), [local assessment (`AF-G3-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-g3-rt) and [edge-analytics proof (`AF-G3-OB`)](../../architecture/demo-scenario-architecture-flows.md#af-g3-ob)
@@ -313,7 +313,7 @@ storage yields `NOT_READY_STORAGE` rather than volatile-only success.
 - Interfaces: [data subscription (`IF-DATA-002`)](../component-decomposition-and-interface-register.md#if-data-002) and [functional message family (`IF-FUNC-001`)](../component-decomposition-and-interface-register.md#if-func-001)
 - Verification levels: Unit, Component, Contract, Analysis, End-to-end
 - Required evidence: model/config/input/output digests, golden normal/degraded/invalid fixtures, repeated and reordered execution, provenance/result schemas, correlated local chronology and proof that normal v2 operation emits no v1 window chunks
-- State: D4-016.3 exact numeric model, eligibility/tolerance, derived-message schemas/idempotency and state transaction format accepted; D4-003 calibration and implementation qualification remain open
+- State: D4-016.3 complete input/invalid/boundary fixtures, exact arithmetic, identities/provenance/timestamps, derived-message admission and state recovery accepted; D4-003 scripted-stimulus/demo-timing qualification and implementation review remain open
 
 No live training, nondeterministic network model call, mutable downloaded
 model or Cloud result may be part of the local decision path. The synthetic
@@ -323,10 +323,10 @@ validated wear or failure-prediction algorithm and permits no production
 accuracy, remaining-useful-life or safety-function claim.
 
 The CARLA/Gateway boundary shall not fabricate brake-pad wear, temperature,
-pressure or a health result for this service. D4-003 freezes the visible native
-braking episode as the causal stimulus; the service-owned synthetic assessment
-and its exact input/threshold contract remain to be frozen under D4-016. Hidden
-scenario truth shall not be used as a service input.
+pressure or a health result for this service. D4-003 freezes and qualifies the
+visible native braking episode as the causal stimulus; the service-owned
+synthetic assessment and its exact input/threshold contract are frozen under
+D4-016.3. Hidden scenario truth shall not be used as a service input.
 
 ### Degraded and invalid-input behavior
 
@@ -463,7 +463,7 @@ evidence, and no status is driver display or acknowledgement.
 | <a id="ut-bhs-013"></a>`UT-BHS-013` — Fixed-resource authorization lifecycle | [`REQ-BHS-013`](#req-bhs-013) | Named-resource bootstrap, private-socket request, reject caller-selected authority, atomic token replacement, 300-second expiry, renewal at 180 seconds, reconnect/subscription recreation, permission removal, stop/replace/unregister/reboot and malformed delivery | Fake KAC result, private tmpfs/token file, controllable clock and KUKSA transport | Analytics receives `KUKSA_TOKEN_FILE` but no `AOS_SECRET`; no caller-selected claims; exact renewal/reconnect; no access after rejection/removal/expiry; cross-Service denial and no secret/JWT persistence/logging | `brake-health-service` unit suite | D4 design accepted; implementation/qualification open |
 | <a id="ut-bhs-004"></a>`UT-BHS-004` — Subscription and temporal validation | [`REQ-BHS-004`](#req-bhs-004), [`REQ-BHS-007`](#req-bhs-007) | Valid, boundary, wrong type/unit/range, stale, reordered, unavailable, reconnect | Fake KUKSA stream and clocks | Accepted sample sequence or explicit degraded reason; no fabricated value/advisory | `brake-health-service` unit suite | D3 design-reviewed |
 | <a id="ut-bhs-005"></a>`UT-BHS-005` — v1 event-window state machine | [`REQ-BHS-005`](#req-bhs-005) | Six-path 30 Hz input; every-third-frame retention; trigger below/at/above 10 km/h, 50%, 200 ms; 500 ms clear; 3/10/2-second bounds; POST reactivation; cap/retrigger suppression; all terminal states; eight-window/4 MiB queue boundary; canonical 64 KiB chunk bound; atomic spool writes; restart/corruption/storage-full; duplicate/resume and invalid input | Fake KUKSA stream, clocks, bounded filesystem spool and fake backend | Exact 10 Hz samples/phases and one UUIDv4 event; no trigger from incomplete/stale input; contract-valid ordered idempotent chunks of at most 10 samples; exactly one completion; verified RFC-8785/SHA-256 digests; no send before durability or delete before durable ack; explicit stop/restart/quarantine/not-ready/overflow facts | `brake-health-service` unit/contract suite plus shared fixtures | D4-016.1/.2 and D4-017 accepted; implementation/qualification open |
-| <a id="ut-bhs-006"></a>`UT-BHS-006` — Deterministic model and derived-data transition | [`REQ-BHS-006`](#req-bhs-006), [`REQ-BHS-007`](#req-bhs-007) | Golden normal/degraded inputs, thresholds/change events, boundaries, repeat/reorder, invalid model/config | Immutable synthetic-model fixtures, deterministic clock and fake backend | Schema-stable assessment/event, provenance, quality/reason, no network/training side effect and no normal v1 window output | `brake-health-service` model/contract suite | D3 design-reviewed |
+| <a id="ut-bhs-006"></a>`UT-BHS-006` — Deterministic model and derived-data transition | [`REQ-BHS-006`](#req-bhs-006), [`REQ-BHS-007`](#req-bhs-007) | Complete 80-sample 10 Hz PRE/ACTIVE/POST golden input; every fixed-point below/half/above boundary; exact five reductions/clamps/load/state; all eight invalid reasons; UUID delimiter/forbidden bytes; lower-load assessment; band/no-band paths; pair count/byte overflow; every journal/state/bundle/marker interruption; duplicate/reorder and invalid model/config | Immutable synthetic-model input/invalid/quantization/output/state fixtures, deterministic clocks, injected deployment metadata and bounded temporary filesystem | Exact schema-valid bytes/digests/UUIDv5/timestamps/provenance; wear `54 -> 62`; invalid input has no state/message mutation; atomic pair or neither; exactly-once recovery/quarantine; no later overflow fabrication, second quantization, network/training side effect or normal v1 window output | `brake-health-service` model/contract suite plus shared D4-016.3 fixtures | D4 exact contract complete; implementation review open |
 | <a id="ut-bhs-007"></a>`UT-BHS-007` — Advisory decision and payload | [`REQ-BHS-008`](#req-bhs-008) | Thresholds, hysteresis/debounce, stale/low-quality result, duplicate, prohibited targets/types | Fake KUKSA actuator client and clock | Only accepted typed target/payload, bounded correlation/freshness, no motion/text/arbitrary write | `brake-health-service` unit/contract suite | D3 design-reviewed |
 | <a id="ut-bhs-008"></a>`UT-BHS-008` — Offline queue and synchronization | [`REQ-BHS-009`](#req-bhs-009) | Disconnect during v1 pre/active/post/chunk completion and v2/v3 messages, capacity boundary, overflow, retry/backoff, restart, duplicate acknowledgement, reconnect | In-memory/temp persistent stores, fake backend and clocks | Bounded bytes/items, explicit overflow, same v1 window/chunk resume identity, original times, idempotent replay, unchanged local assessment/advisory path | `brake-health-service` unit suite | D3 design-reviewed |
 | <a id="ut-bhs-009"></a>`UT-BHS-009` — State and recovery compatibility | [`REQ-BHS-010`](#req-bhs-010) | v1/v2/v3 state, upgrade, incompatible state, removal/reassignment, interrupted migration | Versioned state fixtures and failure injection | Read/migrate/quarantine result, no silent loss, dependent-Service removal precondition | `brake-health-service` state suite | D4-015 design accepted |
@@ -524,9 +524,10 @@ Version 0.5 introduced the reviewed security delta. It retires
 `REQ-BHS-003`/`UT-BHS-003`, adds
 `REQ-BHS-013`/`UT-BHS-013`, and replaces caller-selected broker requests with
 fixed-resource `CMP-KAC` bootstrap and private volatile JWT delivery. All
-functional v1-v3 semantics remain unchanged. Version 0.8 reconciles the
-package with accepted D4-016, D4-017 and D4-027 decisions and records it as
-design accepted. This acceptance authorizes no service implementation,
+functional v1-v3 semantics remain unchanged. Version 0.8 reconciled the
+package with accepted D4-016, D4-017 and D4-027 decisions. Version 0.9 records
+the accepted D4-016.3 byte/arithmetic/fixture closure and its exact
+implementation-test obligations. This acceptance authorizes no service implementation,
 signing, upload, deployment, OEM approval, Cloud mutation or VM changes;
 implementation still requires an exact work packet.
 

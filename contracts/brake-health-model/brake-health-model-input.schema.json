@@ -1,0 +1,71 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:brake-health-model-input:schema:v1",
+  "title": "Brake Health Completed Model Episode Input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "contractVersion", "sourceEventType", "sourceEventId", "terminalState", "retainedCadenceHz", "samples"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "contractVersion": {"const": "1.0.0"},
+    "sourceEventType": {"const": "HARD_BRAKING_EPISODE_V1"},
+    "sourceEventId": {"$ref": "#/$defs/uuid4"},
+    "terminalState": {"enum": ["COMPLETE", "TRUNCATED_MAX_DURATION", "INCOMPLETE_SOURCE_GAP", "ABORTED_SERVICE_STOP", "ABORTED_RESTART"]},
+    "retainedCadenceHz": {"const": 10},
+    "samples": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 150,
+      "items": {"$ref": "#/$defs/sample"}
+    }
+  },
+  "$defs": {
+    "uuid4": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
+    "sample": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sampleIndex", "sourceTimestamp", "phase", "quality", "maxSourceAgeMs", "signals"],
+      "properties": {
+        "sampleIndex": {"type": "integer", "minimum": 0, "maximum": 149},
+        "sourceTimestamp": {"type": "string", "format": "date-time"},
+        "phase": {"enum": ["PRE", "ACTIVE", "POST"]},
+        "quality": {"const": "VALID_COMPLETE_FRAME"},
+        "maxSourceAgeMs": {"type": "integer", "minimum": 0, "maximum": 250},
+        "signals": {"$ref": "#/$defs/signals"}
+      }
+    },
+    "signals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "Vehicle.Speed",
+        "Vehicle.Acceleration.Longitudinal",
+        "Vehicle.Chassis.Brake.PedalPosition",
+        "Vehicle.Chassis.Axle.Row1.SteeringAngle",
+        "Vehicle.Chassis.Axle.Row1.Wheel.Left.AngularSpeed",
+        "Vehicle.Chassis.Axle.Row1.Wheel.Right.AngularSpeed",
+        "Vehicle.Chassis.Axle.Row2.Wheel.Left.AngularSpeed",
+        "Vehicle.Chassis.Axle.Row2.Wheel.Right.AngularSpeed",
+        "Vehicle.Chassis.Axle.Row1.Wheel.Left.Speed",
+        "Vehicle.Chassis.Axle.Row1.Wheel.Right.Speed",
+        "Vehicle.Chassis.Axle.Row2.Wheel.Left.Speed",
+        "Vehicle.Chassis.Axle.Row2.Wheel.Right.Speed"
+      ],
+      "properties": {
+        "Vehicle.Speed": {"type": "number"},
+        "Vehicle.Acceleration.Longitudinal": {"type": "number"},
+        "Vehicle.Chassis.Brake.PedalPosition": {"type": "number"},
+        "Vehicle.Chassis.Axle.Row1.SteeringAngle": {"type": "number"},
+        "Vehicle.Chassis.Axle.Row1.Wheel.Left.AngularSpeed": {"type": "number"},
+        "Vehicle.Chassis.Axle.Row1.Wheel.Right.AngularSpeed": {"type": "number"},
+        "Vehicle.Chassis.Axle.Row2.Wheel.Left.AngularSpeed": {"type": "number"},
+        "Vehicle.Chassis.Axle.Row2.Wheel.Right.AngularSpeed": {"type": "number"},
+        "Vehicle.Chassis.Axle.Row1.Wheel.Left.Speed": {"type": "number"},
+        "Vehicle.Chassis.Axle.Row1.Wheel.Right.Speed": {"type": "number"},
+        "Vehicle.Chassis.Axle.Row2.Wheel.Left.Speed": {"type": "number"},
+        "Vehicle.Chassis.Axle.Row2.Wheel.Right.Speed": {"type": "number"}
+      }
+    }
+  }
+}
