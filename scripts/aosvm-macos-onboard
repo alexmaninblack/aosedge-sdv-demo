@@ -10,6 +10,7 @@ REPOSITORY_ROOT=$(CDPATH='' cd -- "$SCRIPT_DIR/.." && pwd)
 AOSVM="$SCRIPT_DIR/aosvm"
 AOS_USER_SETUP="$SCRIPT_DIR/aos-user-setup"
 GUEST="$SCRIPT_DIR/host/aosvm-guest"
+AOS_PROV_COMPAT="$SCRIPT_DIR/host/aos-prov-5-4-2-compat"
 OEM_CERTIFICATE=${AOS_OEM_CERTIFICATE:-"${AOS_USER_ROOT:-$HOME/.aos}/security/aos-user-oem.p12"}
 AOS_PYTHON=${AOS_PYTHON:-"${AOS_USER_ROOT:-$HOME/.aos}/venv/bin/python3"}
 PROVISIONING_ADDRESS=127.0.0.1:${AOSVM_PROVISIONING_HOST_PORT:-18089}
@@ -70,6 +71,8 @@ validate_repository() {
     [ -x "$AOS_USER_SETUP" ] ||
         fail "the Aos user helper is unavailable: $AOS_USER_SETUP"
     [ -x "$GUEST" ] || fail "the guest access helper is unavailable: $GUEST"
+    [ -x "$AOS_PROV_COMPAT" ] && [ ! -L "$AOS_PROV_COMPAT" ] ||
+        fail "the pinned aos-prov compatibility runner is unavailable: $AOS_PROV_COMPAT"
     [ -f "$UNIT_CONFIG" ] && [ ! -L "$UNIT_CONFIG" ] ||
         fail "the single-node configuration is unavailable: $UNIT_CONFIG"
     jq -e \
@@ -563,7 +566,7 @@ provision() {
     printf 'Starting the official single-Node provisioning command exactly once.\n'
     printf 'Private raw output is stored outside Git.\n'
     set +e
-    "$AOS_PYTHON" -m aos_prov provision \
+    "$AOS_PYTHON" "$AOS_PROV_COMPAT" provision \
         -u "$PROVISIONING_ADDRESS" \
         -p "$OEM_CERTIFICATE" \
         --nodes 1 \

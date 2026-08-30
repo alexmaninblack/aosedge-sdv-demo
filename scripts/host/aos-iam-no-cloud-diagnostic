@@ -1,0 +1,138 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+"""Exercise native IAM provisioning RPCs without Cloud, signing, or ApplyCert."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import secrets
+import stat
+import sys
+from typing import Dict, List
+
+from aos_prov_5_4_2_guard import verify
+
+
+EXPECTED_TYPES = ["online", "offline", "iam", "sm", "cm"]
+
+
+def fail(message: str) -> "NoReturn":
+    raise SystemExit(f"Error: {message}")
+
+
+def main() -> int:
+    sys.dont_write_bytecode = True
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--address", required=True)
+    parser.add_argument("--evidence", required=True)
+    arguments = parser.parse_args()
+    if not arguments.address.startswith("127.0.0.1:"):
+        fail("diagnostic address must be loopback")
+    port_text = arguments.address.removeprefix("127.0.0.1:")
+    if not port_text.isdecimal() or not 1024 <= int(port_text) <= 65535:
+        fail("diagnostic port is invalid")
+    evidence = Path(arguments.evidence)
+    if not evidence.is_absolute() or evidence.exists() or evidence.is_symlink():
+        fail("evidence path must be a new absolute path")
+    parent = evidence.parent
+    parent_metadata = parent.lstat()
+    if not stat.S_ISDIR(parent_metadata.st_mode) or stat.S_ISLNK(parent_metadata.st_mode):
+        fail("evidence parent must be a non-symlink directory")
+    if parent_metadata.st_uid != os.getuid():
+        fail("evidence parent must be owned by the current user")
+    if stat.S_IMODE(parent_metadata.st_mode) != 0o700:
+        fail("evidence parent mode must be 0700")
+
+    verify()
+    import grpc
+    from google.protobuf import empty_pb2
+    from aos_prov.communication.unit.v6.generated import iamanager_pb2 as messages
+    from aos_prov.communication.unit.v6.generated import iamanager_pb2_grpc as services
+
+    password = secrets.token_urlsafe(32)
+    results: List[Dict[str, object]] = []
+    with grpc.insecure_channel(arguments.address) as channel:
+        grpc.channel_ready_future(channel).result(timeout=10)
+        nodes = services.IAMPublicNodesServiceStub(channel).GetAllNodeIDs(
+            empty_pb2.Empty(), timeout=5
+        )
+        if len(nodes.ids) != 1 or not nodes.ids[0]:
+            fail("diagnostic requires exactly one nonempty Node ID")
+        node_id = nodes.ids[0]
+        provisioning = services.IAMProvisioningServiceStub(channel)
+        start = provisioning.StartProvisioning(
+            messages.StartProvisioningRequest(node_id=node_id, password=password),
+            timeout=30,
+        )
+        if start.error.message or start.error.aos_code or start.error.exit_code:
+            fail("StartProvisioning returned a nonempty error")
+        cert_types = provisioning.GetCertTypes(
+            messages.GetCertTypesRequest(node_id=node_id), timeout=5
+        )
+        if list(cert_types.types) != EXPECTED_TYPES:
+            fail("GetCertTypes did not return the exact five native types")
+        certificate = services.IAMCertificateServiceStub(channel)
+        for cert_type in EXPECTED_TYPES:
+            response = certificate.CreateKey(
+                messages.CreateKeyRequest(
+                    node_id=node_id,
+                    subject="aosedge-no-cloud-diagnostic",
+                    type=cert_type,
+                    password=password,
+                ),
+                timeout=30,
+            )
+            if response.error.message or response.error.aos_code or response.error.exit_code:
+                fail(f"CreateKey({cert_type}) returned a nonempty error")
+            if response.node_id != node_id or response.type != cert_type:
+                fail(f"CreateKey({cert_type}) response identity changed")
+            csr = response.csr.encode("utf-8")
+            if not response.csr.startswith("-----BEGIN CERTIFICATE REQUEST-----"):
+                fail(f"CreateKey({cert_type}) did not return a PEM CSR")
+            if "-----END CERTIFICATE REQUEST-----" not in response.csr:
+                fail(f"CreateKey({cert_type}) returned an incomplete PEM CSR")
+            results.append(
+                {
+                    "type": cert_type,
+                    "csrLength": len(csr),
+                    "csrSha256": hashlib.sha256(csr).hexdigest(),
+                }
+            )
+            alive = services.IAMPublicNodesServiceStub(channel).GetAllNodeIDs(
+                empty_pb2.Empty(), timeout=5
+            )
+            if list(alive.ids) != [node_id]:
+                fail(f"IAM process did not survive CreateKey({cert_type})")
+
+    payload = {
+        "schema": 1,
+        "kind": "aosedge.no-cloud-iam-diagnostic.v1",
+        "cloudUsed": False,
+        "applyCertUsed": False,
+        "finishProvisioningUsed": False,
+        "certTypes": EXPECTED_TYPES,
+        "results": results,
+        "processSurvived": True,
+    }
+    descriptor = os.open(
+        evidence,
+        os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0),
+        0o600,
+    )
+    with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+        json.dump(payload, stream, sort_keys=True, separators=(",", ":"))
+        stream.write("\n")
+        stream.flush()
+        os.fsync(stream.fileno())
+    print("NO_CLOUD_IAM_DIAGNOSTIC=PASS")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

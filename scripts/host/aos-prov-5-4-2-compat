@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+"""Run pinned aos-prov with a narrow in-memory transition RPC correction."""
+
+from __future__ import annotations
+
+from contextlib import contextmanager
+from contextvars import ContextVar
+import sys
+import time
+from typing import Optional, Tuple
+
+from aos_prov_5_4_2_guard import verify
+
+
+_TRANSITION: ContextVar[Optional[Tuple[str, str, str]]] = ContextVar(
+    "aos_prov_transition", default=None
+)
+_ACCEPTED_DETAILS = {"Socket closed", "Stream removed (Socket closed)"}
+
+
+def should_normalize(
+    *,
+    operation: Optional[str],
+    catch_inactive: bool,
+    service_is_provisioning: bool,
+    status_name: str,
+    details: str,
+    postcondition_passed: bool,
+) -> bool:
+    return (
+        operation in {"start", "finish"}
+        and catch_inactive
+        and service_is_provisioning
+        and status_name == "UNAVAILABLE"
+        and details in _ACCEPTED_DETAILS
+        and postcondition_passed
+    )
+
+
+def install_compatibility() -> None:
+    import grpc
+    from google.protobuf import empty_pb2
+    from aos_prov.communication.unit.v6 import unit_communication_v6 as module
+    from aos_prov.communication.unit.v6.generated import iamanager_pb2 as messages
+    from aos_prov.communication.unit.v6.generated import iamanager_pb2_grpc as services
+    from aos_prov.utils.errors import UnitError
+
+    original_channel = module.unit_communication_channel
+    original_start = module.UnitCommunicationV6.start_provisioning
+    original_finish = module.UnitCommunicationV6.finish_provisioning
+
+    def postcondition(address: str, operation: str, node_id: str) -> bool:
+        deadline = time.monotonic() + 20
+        while time.monotonic() < deadline:
+            try:
+                with grpc.insecure_channel(address) as channel:
+                    grpc.channel_ready_future(channel).result(timeout=2)
+                    if operation == "start":
+                        response = services.IAMProvisioningServiceStub(channel).GetCertTypes(
+                            messages.GetCertTypesRequest(node_id=node_id), timeout=3
+                        )
+                        return bool(response.types)
+                    response = services.IAMPublicIdentityServiceStub(channel).GetSystemInfo(
+                        empty_pb2.Empty(), timeout=3
+                    )
+                    return bool(response.system_id and response.unit_model)
+            except (grpc.FutureTimeoutError, grpc.RpcError):
+                time.sleep(0.25)
+        return False
+
+    @contextmanager
+    def corrected_channel(
+        address,
+        service_func,
+        catch_inactive=False,
+        wait_for_close=False,
+    ):
+        if not catch_inactive:
+            with original_channel(
+                address, service_func, catch_inactive=False, wait_for_close=wait_for_close
+            ) as stub:
+                yield stub
+            return
+        transition = _TRANSITION.get()
+        try:
+            with grpc.insecure_channel(address) as channel:
+                yield service_func(channel)
+        except grpc.RpcError as error:
+            operation, transition_address, node_id = transition or (None, "", "")
+            passed = False
+            if (
+                operation in {"start", "finish"}
+                and transition_address == address
+                and service_func is services.IAMProvisioningServiceStub
+                and error.code() is grpc.StatusCode.UNAVAILABLE
+                and error.details() in _ACCEPTED_DETAILS
+            ):
+                passed = postcondition(address, operation, node_id)
+            if should_normalize(
+                operation=operation,
+                catch_inactive=catch_inactive,
+                service_is_provisioning=service_func
+                is services.IAMProvisioningServiceStub,
+                status_name=getattr(error.code(), "name", ""),
+                details=error.details() or "",
+                postcondition_passed=passed,
+            ):
+                return
+            raise UnitError(
+                f"FAILED! Error occurred: \n{error.code()}: {error.details()}"
+            ) from error
+
+    def start(self, node_id: str, password: str):
+        token = _TRANSITION.set(("start", self._unit_address, node_id))
+        try:
+            return original_start(self, node_id, password)
+        finally:
+            _TRANSITION.reset(token)
+
+    def finish(self, node_id=None, password=None):
+        token = _TRANSITION.set(("finish", self._unit_address, node_id or ""))
+        try:
+            return original_finish(self, node_id, password)
+        finally:
+            _TRANSITION.reset(token)
+
+    module.unit_communication_channel = corrected_channel
+    module.UnitCommunicationV6.start_provisioning = start
+    module.UnitCommunicationV6.finish_provisioning = finish
+
+
+def main() -> int:
+    sys.dont_write_bytecode = True
+    verify()
+    if len(sys.argv) < 2 or sys.argv[1] != "provision":
+        raise SystemExit("Error: compatibility runner accepts only aos-prov provision")
+    if sys.argv.count("--nodes") != 1:
+        raise SystemExit("Error: compatibility runner requires exactly one --nodes")
+    nodes_index = sys.argv.index("--nodes")
+    if nodes_index + 1 >= len(sys.argv) or sys.argv[nodes_index + 1] != "1":
+        raise SystemExit("Error: compatibility runner requires --nodes 1")
+    if sys.argv.count("--check-software") != 1:
+        raise SystemExit(
+            "Error: compatibility runner requires exactly one --check-software"
+        )
+    for forbidden in ("--retry-count", "--retry-delay"):
+        if forbidden in sys.argv:
+            raise SystemExit(f"Error: compatibility runner forbids {forbidden}")
+    install_compatibility()
+    from aos_prov.main import main as aos_prov_main
+
+    aos_prov_main()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

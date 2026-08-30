@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "distribution": "aos-prov",
+  "version": "5.4.2",
+  "files": {
+    "__main__.py": "d64063ae80145eb44ac3697c19cce89771f40370783f420222172f7fda61a378",
+    "commands/provision_v6.py": "a1206ac0f8625f2d8625530dc9a56b741f512d17f4b68f7aecfa3c4ec8386ae2",
+    "communication/unit/common/__init__.py": "a34caaf2a114b3a61204b86ebb8979708f560fd75b63bc75fae641691561824a",
+    "communication/unit/v6/unit_communication_v6.py": "7bdfabaefa4332ac8f2886af5723c863e268c7669444b3ba2c59419aafd7e623",
+    "main.py": "a1f40f4c27ed2c73b1a0e32605354479d8231f0ce24280fc7b4cf57937d2481f"
+  }
+}

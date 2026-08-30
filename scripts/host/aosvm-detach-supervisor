@@ -1,0 +1,127 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+"""Start the tracked AosVM supervisor in a new, terminal-independent session."""
+
+from __future__ import annotations
+
+import argparse
+import os
+from pathlib import Path
+import stat
+import subprocess
+import sys
+
+
+def fail(message: str) -> "NoReturn":
+    raise SystemExit(f"Error: {message}")
+
+
+def absolute_path(value: str, label: str) -> Path:
+    path = Path(value)
+    if not path.is_absolute():
+        fail(f"{label} must be absolute")
+    return path
+
+
+def regular_owned_file(path: Path, mode: int, label: str) -> os.stat_result:
+    try:
+        metadata = path.lstat()
+    except OSError as error:
+        fail(f"cannot inspect {label}: {error}")
+    if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISREG(metadata.st_mode):
+        fail(f"{label} must be a regular non-symlink file")
+    if metadata.st_uid != os.getuid():
+        fail(f"{label} must be owned by the current user")
+    if metadata.st_nlink != 1:
+        fail(f"{label} must have exactly one hard link")
+    if stat.S_IMODE(metadata.st_mode) != mode:
+        fail(f"{label} mode must be {mode:04o}")
+    return metadata
+
+
+def owned_directory(path: Path, label: str) -> None:
+    try:
+        metadata = path.lstat()
+    except OSError as error:
+        fail(f"cannot inspect {label}: {error}")
+    if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISDIR(metadata.st_mode):
+        fail(f"{label} must be a non-symlink directory")
+    if metadata.st_uid != os.getuid():
+        fail(f"{label} must be owned by the current user")
+    try:
+        resolved = path.resolve(strict=True)
+    except OSError as error:
+        fail(f"cannot resolve {label}: {error}")
+    if resolved != path:
+        fail(f"{label} must not contain symbolic-link or noncanonical components")
+
+
+def parse_arguments() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--log", required=True)
+    parser.add_argument("--cwd", required=True)
+    parser.add_argument("command", nargs=argparse.REMAINDER)
+    arguments = parser.parse_args()
+    if not arguments.command or arguments.command[0] != "--":
+        fail("the supervisor command must follow --")
+    arguments.command = arguments.command[1:]
+    if len(arguments.command) < 1:
+        fail("the supervisor command is empty")
+    return arguments
+
+
+def main() -> int:
+    arguments = parse_arguments()
+    helper = absolute_path(__file__, "detacher")
+    regular_owned_file(helper, 0o755, "detacher")
+    log = absolute_path(arguments.log, "supervisor log")
+    cwd = absolute_path(arguments.cwd, "supervisor working directory")
+    executable = absolute_path(arguments.command[0], "supervisor executable")
+    validated_log = regular_owned_file(log, 0o600, "supervisor log")
+    regular_owned_file(executable, 0o755, "supervisor executable")
+    owned_directory(cwd, "supervisor working directory")
+    expected_executable = cwd / "scripts" / "aosvm"
+    if executable != expected_executable:
+        fail("supervisor executable must be cwd/scripts/aosvm")
+    if len(arguments.command) != 3 or arguments.command[1] != "_supervise":
+        fail("only the exact AosVM _supervise command is accepted")
+    if arguments.command[2] not in {"normal", "provisioning"}:
+        fail("the AosVM supervisor mode is invalid")
+
+    flags = os.O_WRONLY | os.O_APPEND
+    flags |= getattr(os, "O_NOFOLLOW", 0)
+    log_fd = os.open(log, flags)
+    try:
+        metadata = os.fstat(log_fd)
+        current = log.lstat()
+        if not stat.S_ISREG(metadata.st_mode) or metadata.st_uid != os.getuid():
+            fail("opened supervisor log changed identity")
+        if (metadata.st_dev, metadata.st_ino) != (
+            validated_log.st_dev,
+            validated_log.st_ino,
+        ):
+            fail("opened supervisor log does not match the pre-open file")
+        if (metadata.st_dev, metadata.st_ino) != (current.st_dev, current.st_ino):
+            fail("opened supervisor log does not match the validated file")
+        if metadata.st_nlink != 1 or stat.S_IMODE(metadata.st_mode) != 0o600:
+            fail("opened supervisor log changed link count or mode")
+        process = subprocess.Popen(
+            arguments.command,
+            cwd=cwd,
+            stdin=subprocess.DEVNULL,
+            stdout=log_fd,
+            stderr=log_fd,
+            close_fds=True,
+            start_new_session=True,
+        )
+    finally:
+        os.close(log_fd)
+    sys.stdout.write(f"{process.pid}\n")
+    sys.stdout.flush()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

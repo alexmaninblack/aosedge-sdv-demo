@@ -92,6 +92,7 @@ DNS_BRIDGE_PID_PATH="$RUN_ROOT/$VM_NAME-dns.pid"
 DNS_BRIDGE_LOG_PATH="$RUNS_ROOT/$VM_NAME-dns.log"
 DNS_BRIDGE_SCRIPT="$REPOSITORY_ROOT/scripts/host/aosvm-dns-bridge"
 QMP_HELPER="$REPOSITORY_ROOT/scripts/host/aosvm-qmp"
+DETACH_SUPERVISOR_HELPER="$REPOSITORY_ROOT/scripts/host/aosvm-detach-supervisor"
 SUPERVISOR_PID_PATH="$RUN_ROOT/$VM_NAME-supervisor.pid"
 SUPERVISOR_LOG_PATH="$RUNS_ROOT/$VM_NAME-supervisor.log"
 LIFECYCLE_LOCK_DIR="$RUN_ROOT/$VM_NAME.lifecycle.lock"
@@ -779,7 +780,8 @@ cleanup_background_start() {
             "/bin/sh $SCRIPT_PATH _supervise normal"|\
             "/bin/sh $SCRIPT_PATH _supervise provisioning")
                 kill -TERM "$BACKGROUND_START_PID" >/dev/null 2>&1 || true
-                wait "$BACKGROUND_START_PID" 2>/dev/null || true
+                wait_for_process_exit "$BACKGROUND_START_PID" \
+                    "$TERM_TIMEOUT_SECONDS" || true
                 ;;
         esac
     fi
@@ -1336,8 +1338,8 @@ start_vm() {
         foreground)
             trap cleanup_foreground_children EXIT
             if [ "$SUPERVISOR_MODE" -eq 1 ]; then
-                # nohup intentionally makes the detached supervisor immune to
-                # a controlling shell hangup. Preserve that contract here.
+                # The tracked detacher creates a terminal-independent session.
+                # Preserve the same fail-safe if an external HUP is delivered.
                 trap '' HUP
             else
                 trap 'cleanup_foreground_children; exit 129' HUP
@@ -1391,9 +1393,17 @@ start_background() {
 
     : >"$SUPERVISOR_LOG_PATH"
     chmod 0600 "$SUPERVISOR_LOG_PATH"
-    nohup "$SCRIPT_PATH" _supervise "$start_network_mode" \
-        >>"$SUPERVISOR_LOG_PATH" 2>&1 </dev/null &
-    supervisor_pid=$!
+    [ ! -L "$DETACH_SUPERVISOR_HELPER" ] &&
+        [ -f "$DETACH_SUPERVISOR_HELPER" ] &&
+        [ -x "$DETACH_SUPERVISOR_HELPER" ] ||
+        fail "The tracked supervisor detacher is unavailable: $DETACH_SUPERVISOR_HELPER"
+    supervisor_pid=$("$DETACH_SUPERVISOR_HELPER" \
+        --log "$SUPERVISOR_LOG_PATH" \
+        --cwd "$REPOSITORY_ROOT" \
+        -- "$SCRIPT_PATH" _supervise "$start_network_mode")
+    case "$supervisor_pid" in
+        ''|*[!0-9]*) fail "Supervisor detacher returned an invalid PID" ;;
+    esac
     BACKGROUND_START_PID=$supervisor_pid
     trap cleanup_background_start EXIT HUP INT TERM
     printf '%s\n' "$supervisor_pid" >"$SUPERVISOR_PID_PATH"
