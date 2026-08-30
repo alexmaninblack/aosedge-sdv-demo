@@ -350,8 +350,10 @@ handoff.
   datagram peer-credential implementation cannot start on the accepted macOS
   Gateway runtime. Core/VISS/shared-contract/sanitizer suites passed; merge is
   blocked pending implementation of the now-accepted bounded D4-004/
-  `IF-VEH-007` framed-stream correction, macOS tests and a pinned
-  `CARLA_EGO_WITH_CARLA=ON` compile. The later selected-Unit
+  `IF-VEH-007` framed-stream correction, macOS tests and one incremental build
+  of the changed Gateway/runtime target with `CARLA_EGO_WITH_CARLA=ON` against
+  the already working pinned local LibCarla. CARLA/Unreal itself is not rebuilt.
+  The later selected-Unit
   mTLS packet is authorized as part of the Demo Interface Train but cannot
   start until that corrected Gateway base is accepted. The exact recommended
   cross-platform stream correction is accepted and authorized in

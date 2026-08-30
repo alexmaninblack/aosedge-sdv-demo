@@ -59,7 +59,7 @@ and must be committed plus rechecked before correction implementation:
 | Vehicle Gateway requirements | `39aaf18675a8b4160f734c075ca411919d99a90071afb19ab9c070e2eeaa2d8e` |
 | Vehicle Simulation requirements | `75c2ba5936afaeb517e754ca5e424adf8f470b08031ec0af1f67b786a3a24fd0` |
 | D4 Decision Register | `91842de2ec12a8f802a9bc2ae402e2db77af76ccf9d248ca1a44463a3943e556` |
-| Component/interface register (`IF-VEH-007`) | `1bb198f8a63074bd2c133b439abd918b6730278fd553339145f1956d53cafb61` |
+| Component/interface register (`IF-VEH-007`) | `b37205720325f127b9d4a020e64c75f97af18ae58ee74c40abe9fc168c7d0dc3` |
 
 Every digest must be rechecked immediately before correction implementation.
 
@@ -85,9 +85,14 @@ documents reliable `LOCAL_PEERCRED`/`getpeereid` only for connected Unix
 `SOCK_STREAM`. The operator accepted the bounded D4-004/IF-VEH-007 correction
 on 2026-08-30; it is now the sole authorized delta over `d4a20c`.
 
-The changed `runtime_carla.cpp` also lacks a full `CARLA_EGO_WITH_CARLA=ON`
-compile proof because the pinned LibCarla CMake package is not currently
-materialized and dependency retrieval was excluded. The candidate remains
+The changed `runtime_carla.cpp` also lacks an incremental
+`CARLA_EGO_WITH_CARLA=ON` target-build proof in this isolated worktree. The
+accepted host already has working pinned LibCarla in the
+`Build-macos-client-v3`/`Build-ego-runtime-m4` configuration. The correction
+must reuse and verify those exact existing headers, libraries and CMake
+settings to build only the changed Gateway/runtime target. It must not rebuild
+CARLA or Unreal, create another LibCarla build or download a dependency. A
+missing/mismatched local input is a stop condition. The candidate remains
 preserved and clean. No merge or push is authorized until both blockers close,
 the corrected target tests pass and this completion record is updated.
 

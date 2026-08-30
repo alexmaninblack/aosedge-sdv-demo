@@ -83,7 +83,7 @@ identity remains the accepted ancestor
 | `CR-DEMO` | 1.1 | `a67e2d37f0f37127b6596a1d1c0e06d36edab7707927878d30da4a5867a02d43` |
 | `CR-AOS` | 0.4 | `485a66ee27287475d7144e01721c5ccbff99b2792cb57fc07124747b43eb50e2` |
 | D4 Decision Register | D4-011, D4-012, D4-014, D4-021 and D4-026 | `91842de2ec12a8f802a9bc2ae402e2db77af76ccf9d248ca1a44463a3943e556` |
-| Component/interface register | `CMP-SW-DASH`, `IF-LC-005`, `IF-OBS-001`, `IF-FUNC-002` | `1bb198f8a63074bd2c133b439abd918b6730278fd553339145f1956d53cafb61` |
+| Component/interface register | `CMP-SW-DASH`, `IF-LC-005`, `IF-OBS-001`, `IF-FUNC-002` | `b37205720325f127b9d4a020e64c75f97af18ae58ee74c40abe9fc168c7d0dc3` |
 | AosCloud lifecycle research | API v11 implementation 6.1.26 | `dac5e0804dc45cbeefeb9afa2c89b8675174f59e3d3c1790445d032e439d5f65` |
 | R6.1 source lock | includes OpenAPI 3.0.3 observed 2026-08-14 | `cf945d31882d5e54c15b57cec675c754779b203343b2e9f49bca243f0345c0af` |
 | Frozen AosCloud OpenAPI bytes | v11 / implementation 6.1.26 | digest recorded only: `a587d7a308cb7c9ea0d274f1c5f2ff4ae3a99e2e492b753436ae6c9e2dbf508a` |

@@ -79,7 +79,7 @@ correction cascade is pinned by the exact digests below.
 | Vehicle Gateway requirements | `39aaf18675a8b4160f734c075ca411919d99a90071afb19ab9c070e2eeaa2d8e` |
 | Vehicle Data Platform requirements | `32dc38aa98fd94edcb52a60f9fe77953c5244cd2e07acfd9fa7ea40af410bfc1` |
 | Factory Substrate requirements | `a3ccea88d138fdbcffbfee52f2561686a637844983201cb65d11a86585bc466d` |
-| Component/interface register | `1bb198f8a63074bd2c133b439abd918b6730278fd553339145f1956d53cafb61` |
+| Component/interface register | `b37205720325f127b9d4a020e64c75f97af18ae58ee74c40abe9fc168c7d0dc3` |
 | System requirements/traceability | `674c888657237b4b2ef013c5b5b584101983203dc30e792327a22354710607bd` |
 | Accepted Platform P0 decisions | `c5a8ce0ecfb79d85687107fa13ea64638e22bbb3f67dd4f004c2c4e8f07f21cb` |
 | Single-node provisioning evidence | `553f8be26c4f29c3e201b5e5d024ad8c57e7a6c2cd35341904b26624a4f15c15` |
@@ -381,7 +381,9 @@ business and security boundary and do not create a separate approval round:
 
 There is no further user decision inside the Gateway-core packet. Its entry
 base is nevertheless blocked until the controller-handoff candidate has a
-qualified macOS transport and full CARLA-enabled compile. Two cross-repository
+qualified macOS transport and targeted incremental CARLA-enabled Gateway/
+runtime build against the existing working local LibCarla. This is not a
+CARLA/Unreal rebuild. Two cross-repository
 items remain intentionally deferred
 after Gateway-core and host-only test completion:
 

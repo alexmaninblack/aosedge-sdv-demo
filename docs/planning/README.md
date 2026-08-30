@@ -47,7 +47,8 @@ assignment, VM restart, or provisioned-Unit change.
   which is offline-only and not started. It owns no signing, Cloud, VM or FOTA
   operation.
 - The [Gateway controller handoff packet](active/work-packets/p1-vehicle-gateway-controller-cpp.md)
-  records the preserved `d4a20c` candidate and its macOS/full-CARLA compile
+  records the preserved `d4a20c` candidate and its macOS/targeted
+  CARLA-enabled Gateway compile
   blockers; its bounded
   [macOS correction packet](active/work-packets/p1-vehicle-gateway-controller-macos-correction.md)
   is accepted/authorized but not started. The [Brake v2 packet](active/work-packets/p1-brake-health-core-v2.md)

@@ -69,9 +69,14 @@ including wrong UID where a bounded subprocess fixture can prove it.
 The corrected candidate must pass all existing 18 core, 20 VISS, 24 shared-
 contract and sanitizer tests plus stream framing, partial frame, EOF,
 backpressure, wrong-peer, oversize/truncation, restart and no-last-known-reuse
-negatives. It also requires a full pinned `CARLA_EGO_WITH_CARLA=ON` compile;
-materializing LibCarla remains a separate dependency gate and no download is
-authorized here.
+negatives. It also requires one incremental build of only the changed
+Gateway/runtime target with `CARLA_EGO_WITH_CARLA=ON`, using the already
+working pinned local LibCarla from the accepted `Build-macos-client-v3`/
+`Build-ego-runtime-m4` configuration. Rebuilding CARLA or Unreal, downloading
+dependencies or creating a new LibCarla build is neither required nor
+authorized. The entry gate first resolves and verifies the exact existing
+headers, libraries and CMake settings used by the working launcher; a missing
+or mismatched local input stops rather than expanding the build.
 
 ## Authorization Gate
 
