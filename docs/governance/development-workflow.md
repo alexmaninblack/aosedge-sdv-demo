@@ -3,6 +3,16 @@
 
 # Development Workflow
 
+## Mandatory Execution Policy
+
+Every implementation, integration, debugging, build and qualification task
+shall follow the
+[Rapid Development and Debugging Policy](rapid-development-and-debugging.md).
+Inside an exact authorized boundary the implementation agent proceeds
+autonomously through reversible diagnosis and local gates. Full builds and
+external mutations remain behind the policy's explicit evidence and human
+authorization boundaries.
+
 ## Current Branching Decision
 
 The custom AosEdge SDV demonstration repositories use a lightweight
