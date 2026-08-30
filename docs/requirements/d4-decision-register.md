@@ -1425,8 +1425,8 @@ and it does not close D4-013 candidate identity or D4-015 recovery semantics.
 <a id="d4-012-1"></a>
 ### D4-012.1 Decision Record — Dedicated Demo Fleet and Unit Set Identity
 
-- Decision state: `DECIDED` for design; one-time Cloud creation and identifier
-  qualification remain open
+- Decision state: `DECIDED`; one-time Cloud creation and identifier
+  qualification completed 2026-08-30
 - Accepted: 2026-08-30
 - Owners: OEM/AosCloud administration / Demo Solution / System Acceptance
 - Supersedes: only the implicit `Default` Fleet and historical Unit Set naming
@@ -1437,9 +1437,9 @@ The demo shall use one dedicated, persistent OEM Cloud topology:
 
 | Cloud object | Exact display title | Required invariant | Identifier state |
 | --- | --- | --- | --- |
-| Fleet | `AosEdge SDV Demo Fleet` | Contains both current demo-role Units and both role Unit Sets | `<AOS_EDGE_SDV_DEMO_FLEET_UUID>` pending one-time creation and authoritative validation |
-| Test role Unit Set | `AosEdge SDV Demo / Test Vehicles` | Belongs to the dedicated Fleet and has `is_validation_set=true` | `<AOS_EDGE_SDV_DEMO_TEST_UNIT_SET_UUID>` pending one-time creation and authoritative validation |
-| Production role Unit Set | `AosEdge SDV Demo / Production Vehicles` | Belongs to the dedicated Fleet and has `is_validation_set=false` | `<AOS_EDGE_SDV_DEMO_PRODUCTION_UNIT_SET_UUID>` pending one-time creation and authoritative validation |
+| Fleet | `AosEdge SDV Demo Fleet` | Contains both current demo-role Units and both role Unit Sets | `52cadaf9-5294-4d32-937f-16e3f441b81b` — live-created and authoritatively validated 2026-08-30 |
+| Test role Unit Set | `AosEdge SDV Demo / Test Vehicles` | Belongs to the dedicated Fleet and has `is_validation_set=true` | `a3399102-3b62-4874-89a4-f2a0206b9ea7` — live-created and authoritatively validated 2026-08-30 |
+| Production role Unit Set | `AosEdge SDV Demo / Production Vehicles` | Belongs to the dedicated Fleet and has `is_validation_set=false` | `a8bfc280-1146-4b99-90cf-3058a5e21730` — live-created and authoritatively validated 2026-08-30 |
 
 `Test Vehicle` is the Cloud and audience-facing vehicle-role term. The Test
 role still implements the technical Validation Unit / Verification Batch lane;
@@ -1463,11 +1463,21 @@ delete these three objects. In each demo cycle it may only:
 
 No UUID is inferred from a title or copied from the historical `Default` Fleet,
 `R6.1 Vehicle Data Validation`, `Demo / Release Candidate`, canary or blue/green
-objects. Until the one-time creation returns and validates all three UUIDs, the
-topology gate is `NOT_READY` and every membership, batch and Campaign mutation
-is blocked. A Unit may retain unrelated OEM classification memberships; exact
-disjointness means that it belongs to exactly one of these two demo-role Unit
-Sets, while D4-012 still requires full Fleet/OEM effective-recipient scanning.
+objects. If any pinned object becomes absent or fails its UUID/title/Fleet/flag
+validation, the topology gate is `NOT_READY` and every membership, batch and
+Campaign mutation is blocked. A Unit may retain unrelated OEM classification
+memberships; exact disjointness means that it belongs to exactly one of these
+two demo-role Unit Sets, while D4-012 still requires full Fleet/OEM
+effective-recipient scanning.
+
+The live bootstrap qualification used the dedicated Fleet Owner
+`aosedge-sdv-demo-fleet-owner`, scoped only to the dedicated Fleet. The
+authoritative accepted `.21` Unit is
+`ba74a1e6-5496-496b-8e4b-e8beb0af27ad` with `system_uid`
+`7cec239e6ab348b4b1c7961186cfd978` and Main Node
+`4f3be6c7-d50e-4c60-ab39-db25a6614358`. The Test role Set contained exactly
+that Unit and the Production role Set was empty. This bootstrap proof does not
+replace the later two-Unit M1 membership and recipient qualification.
 
 ### D4-013 Decision Record — Candidate Identity and Metadata
 
