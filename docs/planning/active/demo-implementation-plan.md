@@ -401,6 +401,11 @@ handoff.
   Cloud publication identity or installed VDP exists. The next Platform gate
   is therefore artifact build and qualification from the already integrated
   source, not another source-family implementation or Factory-image rebuild.
+  The earlier proposed source/recipe/offline-compile boundary in
+  [`WP-P1-PLATFORM-KAC-COMPILE-INTEGRATION-001`](work-packets/p1-platform-kac-compile-integration.md)
+  is retained only as pre-execution planning history; the completed `.21`
+  source/image evidence supersedes it as the current Platform status and the
+  file grants no new execution authority.
 - Repository: `aos-vehicle-platform`.
 - Scope: build the successor OEM Demo Factory Image with stock Aos IAM
   `enablePermissionsHandler: true`, no provisioned identity or pre-populated
@@ -434,6 +439,14 @@ handoff.
   and source-complete on isolated commit `7c0a658`; the main branch remains at
   the frozen `brake-health-service` base. It does not authorize packaging,
   dependency retrieval or external operations.
+- The next source packet,
+  [`WP-P1-BHS-CORE-002`](work-packets/p1-brake-health-core-v2.md), is
+  `DESIGN REVIEW COMPLETE / READY FOR IMPLEMENTATION REVIEW`. It assesses exact
+  commit `7c0a658` as its source base and freezes the smallest v2-only C++
+  domain boundary. All ten byte/arithmetic/input/persistence decisions are
+  accepted and their authoritative contract/fixture digests are refreshed.
+  The packet still grants no branch, product edit or implementation authority;
+  a separate explicit implementation authorization remains required.
 - Accepted Cloud packet order: `BRAKE-CLOUD-FOUNDATION-001`,
   `BRAKE-CLOUD-DATA-001`, `BRAKE-CLOUD-UI-001`,
   `BRAKE-CLOUD-INTEGRATION-001` and `BRAKE-CLOUD-QUALIFICATION-001`. The
@@ -514,18 +527,20 @@ handoff.
   equality, Test-to-Production source handover, connectivity fault/recovery,
   native log requests and dependent-first R0.
 - One-time topology prerequisite: OEM/AosCloud administration, outside this
-  increment, creates `AosEdge SDV Demo Fleet`, validation-enabled
-  `AosEdge SDV Demo / Test Vehicles` and non-validation
-  `AosEdge SDV Demo / Production Vehicles`. Their returned UUIDs remain explicit
-  unresolved placeholders until authoritatively validated and pinned. `IMP-07`
-  implements fail-closed verification plus per-run membership add/remove only;
-  it shall expose no create, rename, reconfigure, move or delete operation for
-  the Fleet or Unit Set objects and shall preserve unrelated classifications.
+  increment, has created Fleet `52cadaf9-5294-4d32-937f-16e3f441b81b`
+  (`AosEdge SDV Demo Fleet`), validation-enabled Test role Unit Set
+  `a3399102-3b62-4874-89a4-f2a0206b9ea7`
+  (`AosEdge SDV Demo / Test Vehicles`) and non-validation Production role Unit
+  Set `a8bfc280-1146-4b99-90cf-3058a5e21730`
+  (`AosEdge SDV Demo / Production Vehicles`). `IMP-07` implements fail-closed
+  identity/property verification plus per-run membership add/remove only; it
+  shall expose no create, rename, reconfigure, move or delete operation for the
+  Fleet or Unit Set objects and shall preserve unrelated classifications.
 - Concurrency rule: operations with disjoint candidate/resource-conflict keys
   may progress independently. Only overlapping resources block; provisioning,
   identity retirement, live-source handover/reset and R0 are run-exclusive.
-- Required tests: unresolved-placeholder and wrong UUID/title/Fleet/validation-
-  flag topology negatives; persistent-object no-mutation proof; helper protocol
+- Required tests: wrong UUID/title/Fleet/validation-flag topology negatives;
+  persistent-object no-mutation proof; helper protocol
   and credential-custody negatives; operation journal/reconciliation;
   response-loss/no-blind-retry; target equality and unrelated-classification
   preservation;
@@ -593,11 +608,10 @@ contract, repository and packet-authorization gates close.
 Before code starts, the Coordinator converts each P0 result into a separately
 accepted authorization record that pins the current repository base, exact
 writable files, commands, tests, exclusions and completion evidence. P0
-readiness is not code authorization. The Platform baseline is accepted, while
-`IMP-03` remains `BLOCKED` rather than `READY_FOR_CODE_PACKET` until its named
-implementation parameters close. The VDP and IAM/Safe Stop work may still
-produce clearly labelled isolated checkpoints without changing that combined
-`IMP-03` state.
+readiness is not code authorization. The Factory/KAC portion of `IMP-03` is
+closed by accepted `.21`; the next Platform boundary is the separately gated
+VDP artifact build/qualification from already integrated source. Proposed
+historical packets grant no residual product or external-operation authority.
 
 ## Change Control During Implementation
 

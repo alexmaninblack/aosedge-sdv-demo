@@ -31,7 +31,7 @@ application gate.
 KAC named-resource, fixed-Provider signer preparation and final image-package
 composition were removed from this packet on 2026-08-29. They are owned by the
 separate blocked
-[`WP-P1-PLATFORM-KAC-FACTORY-INTEGRATION-001`](p1-platform-kac-factory-integration.md)
+[`WP-P1-PLATFORM-KAC-FACTORY-INTEGRATION-002`](p1-platform-kac-factory-integration.md)
 packet and must not be guessed here.
 
 Successful source verification does not qualify or freeze a Factory Image.

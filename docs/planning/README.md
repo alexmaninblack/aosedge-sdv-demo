@@ -11,16 +11,21 @@ assignment, VM restart, or provisioned-Unit change.
 - [Accepted Demo Implementation Plan 1.2](active/demo-implementation-plan.md)
   — bounded implementation increments, repository ownership, dependencies,
   verification and per-increment authorization gates.
+- [Consolidated Implementation Execution Trains](active/infrastructure-first-critical-path-proposal.md)
+  — the Platform Train authorization record and Demo Interface Train review
+  candidate. The Platform Train is authorized from the current Factory
+  checkpoint through offline package proof, controlled fan-in, successor
+  image, one new disposable Test Vehicle, canonical existing-OEM provisioning
+  and exact-Unit online confirmation in AosCloud. The Demo Interface Train is
+  not authorized.
 - Completed P0 work packets:
   [UI readiness](active/work-packets/p0-ui-readiness.md),
   [Vehicle/Gateway readiness](active/work-packets/p0-vehicle-gateway-readiness.md)
   and [Platform readiness](active/work-packets/p0-platform-readiness.md).
   Their P0 read-only assessment and local-test execution completed on
-  2026-08-28. UI and the first bounded Vehicle/Gateway slice are ready for
-  separate code-packet review; Platform baseline is accepted while its code
-  packets remain blocked for exact implementation parameters. Product
-  implementation and external operations
-  remain unauthorized until their exact packet is accepted.
+  2026-08-28. They are retained as the evidence that admitted the later P1
+  work; current authorization state is recorded by the consolidated execution
+  trains and their linked detailed packets.
 - Authorized P1 work packets:
   [Presenter UI implementation](active/work-packets/p1-ui-presenter-shell.md)
   and
@@ -29,6 +34,14 @@ assignment, VM restart, or provisioned-Unit change.
   explicitly authorized on 2026-08-28. Their authorization is limited to the
   exact repository, paths, dependencies, commands, tests and exclusions in
   each packet; it does not authorize push, merge or live external operations.
+- The completed Platform Train provenance includes the
+  [Factory/Runtime source packet](active/work-packets/p1-platform-factory-runtime.md)
+  and its [compile qualification](active/work-packets/p1-platform-runtime-compile-qualification.md),
+  KAC compile/Row2 checkpoints and the
+  [KAC Factory stage](active/work-packets/p1-platform-kac-factory-integration.md).
+  Their source/fan-in/qualification result is accepted Factory baseline `.21`;
+  these historical execution records grant no residual product, Builder, VM
+  or Cloud authority. The Demo Interface Train remains a review candidate.
 - [Repository inventory and migration plan](repository-inventory-and-migration-plan.md)
   — completed migration and local-cleanup execution record.
 
