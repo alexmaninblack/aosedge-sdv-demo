@@ -428,7 +428,10 @@ sequenceDiagram
     PO->>PO: Create different kuksa-jwt signer and prepare public verifier
     PO->>PO: Start KUKSA and empty KAC helper only after trust preparation
     AC-->>SD: Production Unit Online with exact Unit/Node identity
-    OR->>AC: Assign VU and PU to distinct current-run lanes / Unit Sets
+    OR->>AC: Re-read pinned AosEdge SDV Demo Fleet and both role Unit Sets
+    AC-->>OR: Exact UUIDs, titles, shared Fleet and validation flags match
+    Note over OR,AC: Orchestrator never creates, renames, reconfigures, moves or deletes these objects
+    OR->>AC: Assign VU and PU to distinct current-run role Unit Sets
     SD->>AC: Re-read membership, actual inventory and empty feature graph
     AC-->>SD: G0 onboarding complete
 ```
@@ -456,6 +459,9 @@ After M1 it is bound to the two Unit IDs and the same time window.
 - After the SDK begins, an uncertain or partial result is preserved for
   reconciliation; it is never blindly retried.
 - A Unit whose role or Unit Set cannot be proven is not eligible for an update.
+- An unresolved topology UUID placeholder or a pinned Fleet/set UUID, title,
+  Fleet-owner or validation-flag mismatch blocks M1; no fallback to `Default`
+  Fleet or title-based discovery is allowed.
 - Duplicate identity or certificate evidence blocks both Units.
 - Missing, duplicate, exportable, or unverifiable `kuksa-jwt` signer/verifier
   preparation blocks KUKSA/helper readiness and therefore G0 acceptance.
@@ -1638,6 +1644,9 @@ sequenceDiagram
   exposes no standalone Node-delete operation and none is invented;
 - the persistent Verification and Production Unit Sets contain no retired
   Unit and both memberships are empty;
+- the dedicated `AosEdge SDV Demo Fleet` and both one-time Unit Set objects
+  retain their pinned UUIDs, exact titles, shared Fleet relationship and
+  validation flags;
 - Cloud lifecycle audit history is retained;
 - only the exact current-run native-log request IDs are deleted, and each
   matching detail/download is proved unavailable afterward;
@@ -1669,6 +1678,9 @@ sequenceDiagram
 - Unit deletion is not assumed to clear Unit Set membership unless the
   qualified API proves that behavior; unresolved membership preserves the
   Cloud records and overlays for reconciliation.
+- R0 never deletes, renames, reconfigures or moves the dedicated Fleet or either
+  role Unit Set object; failure to prove them retained unchanged blocks
+  `READY_FOR_M0`.
 - Functional-data cleanup never erases authoritative Cloud audit evidence.
 - Native-log cleanup never uses an unbounded selector; uncertain deletion
   preserves the request IDs for reconciliation and blocks Unit deletion.

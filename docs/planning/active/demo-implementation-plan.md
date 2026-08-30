@@ -15,6 +15,7 @@
 - System requirements input: [System Requirements 2.0](../../requirements/system-requirements-and-traceability.md)
 - Component input: [Component Register 2.0](../../requirements/component-decomposition-and-interface-register.md)
 - End-to-end input: [End-to-End Acceptance 0.8](../../requirements/components/end-to-end-acceptance.md)
+- Fleet and Unit Set identity input: [D4-012.1 Dedicated Demo Fleet and Unit Set Identity](../../requirements/d4-decision-register.md#d4-012-1)
 - UI inputs: [Surface Register 0.14](../../demo/mockups/README.md), [Interaction Specification 2.5](../../demo/mockups/aosedge-demo-interaction-specification.md), [UI Traceability Register 1.2](../../demo/mockups/aosedge-demo-ui-traceability-register.md)
 - Brake Cloud repository creation completed on 2026-08-28; no additional
   repository creation, product implementation, build, signing, Cloud, Unit, VM
@@ -526,11 +527,22 @@ handoff.
   owner acceptance, OEM Release Authority authorization, exact recipient
   equality, Test-to-Production source handover, connectivity fault/recovery,
   native log requests and dependent-first R0.
+- One-time topology prerequisite: OEM/AosCloud administration, outside this
+  increment, creates `AosEdge SDV Demo Fleet`, validation-enabled
+  `AosEdge SDV Demo / Test Vehicles` and non-validation
+  `AosEdge SDV Demo / Production Vehicles`. Their returned UUIDs remain explicit
+  unresolved placeholders until authoritatively validated and pinned. `IMP-07`
+  implements fail-closed verification plus per-run membership add/remove only;
+  it shall expose no create, rename, reconfigure, move or delete operation for
+  the Fleet or Unit Set objects and shall preserve unrelated classifications.
 - Concurrency rule: operations with disjoint candidate/resource-conflict keys
   may progress independently. Only overlapping resources block; provisioning,
   identity retirement, live-source handover/reset and R0 are run-exclusive.
-- Required tests: helper protocol and credential-custody negatives, operation
-  journal/reconciliation, response-loss/no-blind-retry, target equality,
+- Required tests: unresolved-placeholder and wrong UUID/title/Fleet/validation-
+  flag topology negatives; persistent-object no-mutation proof; helper protocol
+  and credential-custody negatives; operation journal/reconciliation;
+  response-loss/no-blind-retry; target equality and unrelated-classification
+  preservation;
   authority separation, offline/reconnect and R0 fixtures before any live
   call.
 - External gate: signing, publication, Cloud mutation, VM operation,

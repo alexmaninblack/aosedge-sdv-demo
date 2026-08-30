@@ -307,7 +307,7 @@ in-Unit performance benchmarking is tracked separately in the roadmap.
 | <a id="sys-ret-003"></a>`SYS-RET-003` | Reset vehicle simulation state | R0 shall safe-stop the ego vehicle, remove only scenario-owned CARLA actors and sensors, restore changed CARLA world and Traffic Manager settings, clear run-local simulation evidence and report incomplete cleanup before the next run. | `T,I` | `GAP-AF-04` |
 | <a id="sys-ret-004"></a>`SYS-RET-004` | No rollback or fleet claim | The normal demo reset shall not be presented as a G4-to-G0 OTA rollback or as a production-fleet vehicle deletion policy. | `I,D` | `GAP-AF-03` |
 | <a id="sys-ret-005"></a>`SYS-RET-005` | Preserve immutable factory artifact | R0 shall not modify or replace the accepted OEM Demo Factory Image; after provisioned overlays are retired and discarded, the system shall verify and retain the same immutable factory-image digest as the source for the next M0 deployments. | `T,I` | `GAP-AF-01`, `GAP-AF-19` |
-| <a id="sys-ret-006"></a>`SYS-RET-006` | Reconcile Unit Sets for the next run | R0 shall prove that the persistent Verification and Production Unit Sets contain no retired Unit and are empty after Cloud deprovisioning and Unit deletion. The next M1 shall provision new Unit and Node identities, assign exactly one new Validation Unit and one new Production Unit to their correct disjoint sets, and shall not reuse prior-run batch, validation, Campaign or target assumptions after membership changes. | `T,I,A` | `GAP-AF-03`, `GAP-AF-06`, `GAP-AF-19` |
+| <a id="sys-ret-006"></a>`SYS-RET-006` | Reconcile Unit Sets for the next run | OEM/AosCloud administration shall create and pin once the dedicated `AosEdge SDV Demo Fleet` and its empty `AosEdge SDV Demo / Test Vehicles` and `AosEdge SDV Demo / Production Vehicles` Unit Sets. The Demo Orchestrator shall never create, mutate or delete those object definitions. R0 shall prove that both persistent role sets contain no retired Unit and are empty after Cloud deprovisioning and Unit deletion. The next M1 shall verify the pinned Fleet/set UUIDs, titles and validation flags, provision new Unit and Node identities, assign exactly one new Validation/Test Unit and one new Production Unit to their correct disjoint demo-role sets, and shall not reuse prior-run batch, validation, Campaign or target assumptions after membership changes. | `T,I,A` | `GAP-AF-03`, `GAP-AF-06`, `GAP-AF-19` |
 
 ## Gap Coverage Matrix
 
@@ -447,9 +447,10 @@ new system requirement or lifecycle authority.
 
 Version 0.8 preserves the accepted Version 0.7 requirement set and adds
 [`SYS-RET-006`](#sys-ret-006). The new requirement makes the cross-run boundary
-explicit: R0 proves persistent Unit Sets empty after retirement, while the next
-M1 creates new identities, assigns them to the correct disjoint sets and uses
-only fresh lifecycle objects. Platform-contract obligations are allocated to
+explicit: the dedicated Fleet and role Unit Set objects are created once outside
+the Demo Orchestrator; R0 preserves those objects but proves both memberships
+empty after retirement, while the next M1 creates new identities, assigns them
+to the correct disjoint sets and uses only fresh lifecycle objects. Platform-contract obligations are allocated to
 `CR-AOS`; sequencing, guards and overlay lifecycle are allocated to `CR-DEMO`;
 the complete transition is allocated to `CR-E2E`.
 

@@ -210,8 +210,8 @@ runtime counterparts consistently:
 
 | Audience and business role | Runtime and Cloud role | Meaning |
 | --- | --- | --- |
-| **Test Vehicle** | **Validation Unit** in the Verification Unit Set | Engineering vehicle used to test and qualify a candidate before wider release |
-| **Production Vehicle** | **Production Unit** in the Production Unit Set | Vehicle that has left manufacturing with the approved SOP baseline and may be in OEM or dealer inventory, awaiting sale, or operating with a customer |
+| **Test Vehicle** | **Validation Unit** in the technical Verification Unit Set, titled `AosEdge SDV Demo / Test Vehicles` in AosCloud | Engineering vehicle used to test and qualify a candidate before wider release |
+| **Production Vehicle** | **Production Unit** in the Production Unit Set, titled `AosEdge SDV Demo / Production Vehicles` in AosCloud | Vehicle that has left manufacturing with the approved SOP baseline and may be in OEM or dealer inventory, awaiting sale, or operating with a customer |
 
 `Test Vehicle` is the audience-facing Representation Layer label only. The
 technical architecture, AosCloud/API names, contracts and evidence continue to
@@ -224,6 +224,14 @@ Vehicle role; it is not a claim that the demonstration deploys to an actual
 customer fleet. The word *demonstration* remains reserved for the overall demo,
 its tooling and its evidence—not for the post-validation vehicle lifecycle
 role.
+
+Both persistent role Unit Sets belong to the dedicated
+`AosEdge SDV Demo Fleet`. OEM/AosCloud administration creates the Fleet and the
+two empty Unit Set objects once and pins their returned UUIDs. The Demo
+Orchestrator verifies those immutable object identities and properties but owns
+only run-scoped Unit membership: M1 adds the new Test and Production Units and
+R0 removes them. It never creates, renames, reconfigures or deletes the Fleet or
+either Unit Set.
 
 ## Architecture 1.5 Model
 

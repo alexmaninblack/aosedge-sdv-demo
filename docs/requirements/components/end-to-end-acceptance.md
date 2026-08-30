@@ -21,6 +21,7 @@
 - Accepted D4 advisory decision: [D4-008 Typed QM Advisory Profile](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - Accepted D4 publication decision: [D4-010.3 Artifact Publication Credential Profile](../../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
 - Accepted D4 Cloud authority decision: [D4-011 Cloud Role and Action Matrix](../d4-decision-register.md#d4-011)
+- Accepted D4 topology decision: [D4-012.1 Dedicated Demo Fleet and Unit Set Identity](../d4-decision-register.md#d4-012-1)
 - Accepted D4 qualification decision: [D4-026.1–.20 Qualification, Presentation, Update-State, Workspace and Icon/Terminal Policy](../d4-decision-register.md#d4-026)
 - Implementation, signing, Cloud, Unit, VM or CARLA mutation authorized: no
 
@@ -80,7 +81,10 @@ credentials nor R0-owned state. Fresh per-run overlays, Units, Main Nodes,
 `system_uid` values and vehicle credentials are disposable; Aos IAM Service-
 instance identity and short-lived KUKSA JWT are runtime-derived. Qualification
 and audience runs use these fresh vehicle identities sequentially in the same
-two persistent, empty-at-entry Verification and Production Unit Sets.
+one-time `AosEdge SDV Demo Fleet` and its persistent, empty-at-entry
+validation-enabled `AosEdge SDV Demo / Test Vehicles` and non-validation
+`AosEdge SDV Demo / Production Vehicles` Unit Sets. OEM/AosCloud administration
+creates and pins these objects once; the Demo Orchestrator owns membership only.
 
 D4-026.5 keeps one current sealed local dossier at
 `.local/qualification/current/` and one bounded status at
@@ -243,7 +247,7 @@ native log archive.
 <a id="req-e2e-002"></a>
 ### Provisioned baseline and source truth
 
-- Statement: `M1/G0` shall prove one unique Unit/Main Node and per-Unit VISS client identity per overlay, exact disjoint Verification/Production Unit Set membership, current online/graph state, a healthy empty VDP slot, a working authenticated CARLA/Gateway/VISS/Engineering Dashboard path and one exclusive selected-Unit live-source assignment. The audience sees Test Vehicle and Production Vehicle, exactly one `CURRENT VEHICLE`, and a plain `Continue with Production Vehicle` transition; Test Vehicle maps only at the Representation Layer to the technical Validation Unit in the Verification Unit Set. Technical details preserve exact Unit/source/certificate-fingerprint evidence without presenting host assignment plumbing as in-vehicle behavior or implying two simultaneous live vehicles.
+- Statement: `M1/G0` shall first prove the pinned UUIDs, exact titles, shared Fleet ownership and validation flags of the one-time `AosEdge SDV Demo Fleet` and its Test/Production role Unit Sets, then prove one unique Unit/Main Node and per-Unit VISS client identity per overlay, exact disjoint demo-role membership, current online/graph state, a healthy empty VDP slot, a working authenticated CARLA/Gateway/VISS/Engineering Dashboard path and one exclusive selected-Unit live-source assignment. Unresolved UUID placeholders or topology mismatch block M1. The audience sees Test Vehicle and Production Vehicle, exactly one `CURRENT VEHICLE`, and a plain `Continue with Production Vehicle` transition; Test Vehicle maps only at the Representation Layer to the technical Validation Unit in the validation-enabled `AosEdge SDV Demo / Test Vehicles` set. The Demo Orchestrator never creates, renames, reconfigures, moves or deletes the Fleet or either Unit Set and preserves unrelated OEM classifications. Technical details preserve exact Unit/source/certificate-fingerprint evidence without presenting host assignment plumbing as in-vehicle behavior or implying two simultaneous live vehicles.
 - Parents: [`SYS-ID-001`–`004`](../system-requirements-and-traceability.md#sys-id-001), [`SYS-SRC-001`–`004`](../system-requirements-and-traceability.md#sys-src-001), [`SYS-CTRL-001`–`003`](../system-requirements-and-traceability.md#sys-ctrl-001), [`SYS-VDP-001`](../system-requirements-and-traceability.md#sys-vdp-001)
 - Flows: `AF-M1-*`, `AF-G0-*`, [`AF-X-SOURCE`](../../architecture/demo-scenario-architecture-flows.md#af-x-source), [`AF-X-DRIVE`](../../architecture/demo-scenario-architecture-flows.md#af-x-drive)
 - Executable contracts: [Exclusive Live-Source Assignment 1.0.0](../../../contracts/exclusive-live-source-assignment/exclusive-live-source-assignment.v1.json) and [VISS Trust and Telemetry Profile 1.1.0](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
@@ -311,7 +315,7 @@ native log archive.
 <a id="req-e2e-010"></a>
 ### R0 retirement and next-run readiness
 
-- Statement: After the final stage, R0 shall capture each final Unit UUID/`system_uid`/Main Node/set/state, make both Units authoritatively `Offline`, invoke the offline-only Unit deprovision API through `oem-delivery`, reconcile every no-content result by a fresh Unit read, and prove old credentials cannot return either Unit `Online`. It shall then stop each VM, delete only the exact current-run native-log request IDs, remove each `system_uid` from its exact role Unit Set and re-read membership, delete the Unit records, and prove through active-Unit/detail/nested-Node/set reads that both Units and their Unit-owned Nodes are inaccessible and both sets are empty before functional-data deletion, CARLA/Gateway reset and overlay disposal. API v11 exposes no standalone Node-delete operation and the demo shall not invent one. The unchanged Factory Image digest remains the source for two fresh next-run overlays and identities.
+- Statement: After the final stage, R0 shall capture each final Unit UUID/`system_uid`/Main Node/set/state, make both Units authoritatively `Offline`, invoke the offline-only Unit deprovision API through `oem-delivery`, reconcile every no-content result by a fresh Unit read, and prove old credentials cannot return either Unit `Online`. It shall then stop each VM, delete only the exact current-run native-log request IDs, remove each `system_uid` from its exact role Unit Set and re-read membership, delete the Unit records, and prove through active-Unit/detail/nested-Node/set reads that both Units and their Unit-owned Nodes are inaccessible and both sets are empty before functional-data deletion, CARLA/Gateway reset and overlay disposal. R0 shall also prove that the dedicated Fleet and both empty Unit Set objects retain their pinned identities and properties; it shall never delete or modify them. API v11 exposes no standalone Node-delete operation and the demo shall not invent one. The unchanged Factory Image digest remains the source for two fresh next-run overlays and identities.
 - Parents: [`SYS-RET-001`–`006`](../system-requirements-and-traceability.md#sys-ret-001), [`SYS-ID-004`](../system-requirements-and-traceability.md#sys-id-004)
 - Flows: `AF-R0-LC`, `AF-R0-OB`, `AF-R0-FR`
 - Acceptance: a timeout or lost response enters `UNCERTAIN` then `RECONCILING` and never causes blind retry; an authorization-masked `404` is not absence proof without independently established visibility; a reachable Unit-owned Node or uncertain deprovision/delete/membership state preserves records and overlays and blocks the next run. R0 is never labelled an in-field OTA rollback or fleet policy.

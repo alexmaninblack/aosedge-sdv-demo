@@ -1422,6 +1422,53 @@ This decision authorizes adapter and test design. It does not authorize a live
 membership write, batch approval, validation acceptance or Campaign mutation,
 and it does not close D4-013 candidate identity or D4-015 recovery semantics.
 
+<a id="d4-012-1"></a>
+### D4-012.1 Decision Record — Dedicated Demo Fleet and Unit Set Identity
+
+- Decision state: `DECIDED` for design; one-time Cloud creation and identifier
+  qualification remain open
+- Accepted: 2026-08-30
+- Owners: OEM/AosCloud administration / Demo Solution / System Acceptance
+- Supersedes: only the implicit `Default` Fleet and historical Unit Set naming
+  assumptions used while qualifying D4-012; all D4-012 API, recipient and
+  fresh-object guards remain normative
+
+The demo shall use one dedicated, persistent OEM Cloud topology:
+
+| Cloud object | Exact display title | Required invariant | Identifier state |
+| --- | --- | --- | --- |
+| Fleet | `AosEdge SDV Demo Fleet` | Contains both current demo-role Units and both role Unit Sets | `<AOS_EDGE_SDV_DEMO_FLEET_UUID>` pending one-time creation and authoritative validation |
+| Test role Unit Set | `AosEdge SDV Demo / Test Vehicles` | Belongs to the dedicated Fleet and has `is_validation_set=true` | `<AOS_EDGE_SDV_DEMO_TEST_UNIT_SET_UUID>` pending one-time creation and authoritative validation |
+| Production role Unit Set | `AosEdge SDV Demo / Production Vehicles` | Belongs to the dedicated Fleet and has `is_validation_set=false` | `<AOS_EDGE_SDV_DEMO_PRODUCTION_UNIT_SET_UUID>` pending one-time creation and authoritative validation |
+
+`Test Vehicle` is the Cloud and audience-facing vehicle-role term. The Test
+role still implements the technical Validation Unit / Verification Batch lane;
+renaming the Cloud cohort does not change validation, verification, Fleet
+Validation or acceptance semantics. Technical evidence may therefore say
+`Validation Unit` / `VU` and `Verification Unit Set` while also showing the
+exact Cloud object title and UUID.
+
+The Fleet and both Unit Set objects are created exactly once through a separate
+OEM/AosCloud administrative bootstrap. Their authoritative UUIDs are captured,
+reviewed and pinned in deployment configuration before M1 or any release action
+is enabled. The Demo Orchestrator shall not create, rename, reconfigure, move or
+delete these three objects. In each demo cycle it may only:
+
+1. verify the pinned UUIDs, exact titles, shared Fleet ownership and validation
+   flags through authoritative reads;
+2. add the current Test and Production Unit `system_uid` values to their exact
+   role Unit Sets and re-read complete membership; and
+3. remove those memberships during R0 and prove both sets empty while retaining
+   the Fleet and Unit Set objects.
+
+No UUID is inferred from a title or copied from the historical `Default` Fleet,
+`R6.1 Vehicle Data Validation`, `Demo / Release Candidate`, canary or blue/green
+objects. Until the one-time creation returns and validates all three UUIDs, the
+topology gate is `NOT_READY` and every membership, batch and Campaign mutation
+is blocked. A Unit may retain unrelated OEM classification memberships; exact
+disjointness means that it belongs to exactly one of these two demo-role Unit
+Sets, while D4-012 still requires full Fleet/OEM effective-recipient scanning.
+
 ### D4-013 Decision Record — Candidate Identity and Metadata
 
 - Decision state: `DECIDED` for design; listed signer and live-API

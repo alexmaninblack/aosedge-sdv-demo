@@ -18,6 +18,7 @@
 - Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
 - Accepted D4 publication input: [D4-010.3 Artifact Publication Credential Profile](../../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
 - Accepted D4 Cloud authority input: [D4-011 Cloud Role and Action Matrix](../d4-decision-register.md#d4-011)
+- Accepted D4 topology input: [D4-012.1 Dedicated Demo Fleet and Unit Set Identity](../d4-decision-register.md#d4-012-1)
 - Accepted D4 Safe Stop freshness decision: [D4-028](../d4-decision-register.md#d4-028)
 
 ## Purpose
@@ -71,7 +72,7 @@ an authorized OEM identity to confirm every mutation affecting OEM Units.
 | Immutable FOTA/SOTA candidates | Platform Team or owning Function Team | Accepted version, digest/metadata identity, architecture and requested permissions | Artifact cannot enter validation |
 | Evidence and final-confirmation presentation | `CR-DEMO` | Stateless view over qualified AosCloud APIs with active-role display and authoritative re-read | Approval remains disabled or uses the original AosCloud UI |
 | Runtime/service health | `CR-FACTORY`, `CR-VDP`, `CR-BHS`, `CR-TIRE` | Versioned health/readiness contracts and bounded resources | Unit actual state cannot be accepted as stage-ready |
-| Stable Unit Set configuration and run-scoped membership control | `CR-DEMO` over qualified `CMP-AOS-CLOUD` APIs | One designated Verification Unit Set and one distinct Production Unit Set; no unresolved prior-run membership or lifecycle objects | M1 or any release approval remains blocked |
+| Stable Fleet/Unit Set configuration and run-scoped membership control | OEM/AosCloud administration creates and pins the objects once; `CR-DEMO` uses qualified membership APIs | Dedicated `AosEdge SDV Demo Fleet`; validation-enabled `AosEdge SDV Demo / Test Vehicles`; non-validation `AosEdge SDV Demo / Production Vehicles`; no unresolved placeholder, mismatch, prior-run membership or lifecycle object | M1 or any release approval remains blocked |
 | External platform release | AosEdge Platform Team | Exact Cloud/API/Core versions identified and compatible | Qualification result is invalidated; deferred features remain unavailable |
 
 ## Current Implementation Baseline
@@ -105,23 +106,27 @@ not be used as synonyms:
 | Concept | Meaning in this demo | Lifetime and authority |
 | --- | --- | --- |
 | Validation lane | Demo role for the disposable vehicle computer on which a candidate is qualified first | Exists for one demo run and is bound to exactly one current Validation Unit |
-| Verification Unit Set | AosCloud cohort designated to implement the Validation lane and receive verification delivery | The set object is stable configuration; its membership is authoritative Cloud state and is run-scoped |
+| Test role Unit Set / technical Verification Unit Set | AosCloud cohort titled `AosEdge SDV Demo / Test Vehicles`, designated to implement the Validation lane and receive verification delivery | The validation-enabled set object is created once by OEM/AosCloud administration; its membership is authoritative Cloud state and is run-scoped |
 | Production lane | Demo role representing the already manufactured field vehicle used after candidate acceptance | Exists for one demo run and is bound to exactly one current Production Unit |
-| Production Unit Set | Separate AosCloud cohort used as the Campaign target for accepted promotion | The set object is stable configuration; its membership is authoritative Cloud state and is run-scoped |
+| Production Unit Set | Separate AosCloud cohort titled `AosEdge SDV Demo / Production Vehicles`, used as the Campaign target for accepted promotion | The non-validation set object is created once by OEM/AosCloud administration; its membership is authoritative Cloud state and is run-scoped |
 | Artifact Verification Batch | Candidate/architecture verification object and its approval state | Fresh for the exact candidate; it is not a Unit Set or vehicle-validation result |
 | Fleet Validation Batch | Record of fleet-validation state for the accepted candidate | Fresh for the release candidate and validation decision; it is not the Production target |
 | Campaign | Promotion/execution object bound to an accepted Fleet Validation Batch and the Production Unit Set | Fresh for each promotion attempt; its per-Unit result remains authoritative Cloud evidence |
 
-The two Unit Set objects may remain in AosCloud between demo runs as named,
-controlled configuration. Their memberships do not persist as demo state. At
+The dedicated `AosEdge SDV Demo Fleet` and two Unit Set objects remain in
+AosCloud between demo runs as named, controlled configuration. They are created
+exactly once outside `CR-DEMO`, and their returned UUIDs, exact titles, Fleet
+ownership and validation flags are pinned only after authoritative validation.
+`CR-DEMO` never creates, renames, reconfigures, moves or deletes them. Their
+memberships do not persist as demo state. At
 the start of M1 both sets must be empty of prior-run Units and free of
 unresolved lifecycle references. After fresh provisioning, `CR-DEMO` assigns
-the new Validation Unit to the Verification Unit Set and the new Production
-Unit to the Production Unit Set, then proves exact disjoint membership
+the new Validation/Test Unit to the Test role Unit Set and the new Production
+Unit to the Production role Unit Set, then proves exact disjoint demo-role membership
 before a release begins. R0 uses the qualified Cloud operations and
 authoritative reads to prove that retired Units are absent from both sets and
 that both memberships are empty before `CR-DEMO` may discard local overlays.
-The stable set objects need not be deleted and recreated for every run.
+The stable Fleet and set objects must not be deleted and recreated for every run.
 
 Verification batches, Fleet Validation Batches and Campaigns are never reused
 after candidate identity or Unit Set membership changes. Unit Set membership
@@ -504,14 +509,14 @@ production vehicle rollback/fleet-deletion policy.
 <a id="req-aos-016"></a>
 
 - ID: `REQ-AOS-016`
-- Statement: AosCloud shall expose separately identifiable Verification and Production Unit Set objects, authoritative membership reads, scoped membership add/remove operations using Unit `system_uid`, qualified Unit-deletion effects, pending-recipient references and Campaign targets/results sufficient for `CR-DEMO` to map `system_uid` to Cloud Unit UUID, prove exact disjoint current-run membership, require fresh lifecycle objects after membership changes and prove both sets empty after R0. Unit Set membership shall never use Main Node UUID, and the demo shall not use the all-membership replacement API.
+- Statement: AosCloud shall expose the one-time OEM-administered `AosEdge SDV Demo Fleet`, validation-enabled `AosEdge SDV Demo / Test Vehicles` Unit Set and non-validation `AosEdge SDV Demo / Production Vehicles` Unit Set, plus authoritative membership reads, scoped membership add/remove operations using Unit `system_uid`, qualified Unit-deletion effects, pending-recipient references and Campaign targets/results sufficient for `CR-DEMO` to map `system_uid` to Cloud Unit UUID, prove exact disjoint current-run demo-role membership, require fresh lifecycle objects after membership changes and prove both sets empty after R0. The three returned UUIDs shall be pinned only after authoritative validation; an unresolved placeholder or UUID/title/Fleet/flag mismatch blocks use. `CR-DEMO` shall never create, rename, reconfigure, move or delete these objects. Unit Set membership shall never use Main Node UUID, and the demo shall not use the all-membership replacement API or erase unrelated OEM classifications.
 - Rationale: Persistent Cloud set configuration is reusable, but stale Unit membership or lifecycle objects can silently target retired or unintended vehicles.
 - Parent system requirements: [One identity per overlay (`SYS-ID-001`)](../system-requirements-and-traceability.md#sys-id-001), [prove current Unit state (`SYS-ID-003`)](../system-requirements-and-traceability.md#sys-id-003), [current effective-target validation (`SYS-REL-002`)](../system-requirements-and-traceability.md#sys-rel-002), [validate before promotion (`SYS-REL-004`)](../system-requirements-and-traceability.md#sys-rel-004), [retire Units and overlays (`SYS-RET-001`)](../system-requirements-and-traceability.md#sys-ret-001) and [reconcile Unit Sets for the next run (`SYS-RET-006`)](../system-requirements-and-traceability.md#sys-ret-006)
 - Architecture flows: [Provisioning (`AF-M1-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-m1-lc), [provisioning evidence (`AF-M1-OB`)](../../architecture/demo-scenario-architecture-flows.md#af-m1-ob), [fail-closed provisioning (`AF-M1-FR`)](../../architecture/demo-scenario-architecture-flows.md#af-m1-fr), [FOTA lifecycle (`AF-G1-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-g1-lc), [common release flow (`AF-X-RELEASE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-release), [controlled retirement (`AF-R0-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-r0-lc) and [partial retirement (`AF-R0-FR`)](../../architecture/demo-scenario-architecture-flows.md#af-r0-fr)
 - Components: [AosCloud (`CMP-AOS-CLOUD`)](../component-decomposition-and-interface-register.md#cmp-aos-cloud), jointly with `CR-DEMO`
 - Interfaces: [Cloud-to-Unit lifecycle (`IF-LC-004`)](../component-decomposition-and-interface-register.md#if-lc-004) and [Software Delivery API (`IF-LC-005`)](../component-decomposition-and-interface-register.md#if-lc-005)
 - Verification levels: Contract, Integration, Analysis, End-to-end
-- Required evidence: designated set identifiers and roles, `system_uid`/Cloud Unit UUID/Main Node UUID mapping, scoped add/remove requests and authoritative re-reads, pre-M1 empty membership, exact VU/PU membership and disjointness, fresh batch/validation/campaign identities, pending-recipient and Campaign-target/result reconciliation, and post-R0 empty membership
+- Required evidence: one-time bootstrap receipt; pinned Fleet/set identifiers, exact titles, shared Fleet ownership and validation flags; unresolved-placeholder and wrong-object negatives; `system_uid`/Cloud Unit UUID/Main Node UUID mapping; scoped add/remove requests and authoritative re-reads; pre-M1 empty membership; exact VU/PU demo-role membership and disjointness with unrelated classification preservation; fresh batch/validation/campaign identities; pending-recipient and Campaign-target/result reconciliation; and post-R0 empty membership with all three persistent objects retained unchanged
 - State: D3 design-reviewed; D4-012 API and guard design accepted and isolated fresh-batch behavior evidenced; live membership/permission and Campaign response-shape qualification remains target work
 
 Acceptance proves the external platform contract needed for exactly one

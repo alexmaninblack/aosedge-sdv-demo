@@ -522,13 +522,23 @@ official Aos provisioning SDK. Provisioning creates the Unit and Main Node,
 registers the instance's unique identity, generates its certificates, and
 enables secure Cloud connectivity. After both Units are Online:
 
-1. the Test Vehicle Unit is assigned only to the persistent Verification Unit
-   Set;
-2. the Production Vehicle Unit is assigned only to the persistent Production
-   Unit Set;
-3. the dashboard verifies the exact Unit identities and target membership;
-4. both Units report the accepted platform/runtime inventory;
-5. both VDP component slots remain empty and no functional service is assigned.
+1. the pinned one-time Cloud topology is re-read: `AosEdge SDV Demo Fleet`,
+   validation-enabled `AosEdge SDV Demo / Test Vehicles`, and non-validation
+   `AosEdge SDV Demo / Production Vehicles`; unresolved UUID placeholders or
+   any UUID/title/Fleet/flag mismatch block M1;
+2. the Test Vehicle Unit is assigned to the persistent Test role Unit Set and
+   to no other demo-role set;
+3. the Production Vehicle Unit is assigned to the persistent Production role
+   Unit Set and to no other demo-role set;
+4. unrelated OEM classification memberships may coexist and are preserved;
+5. the dashboard verifies the exact Unit identities and target membership;
+6. both Units report the accepted platform/runtime inventory;
+7. both VDP component slots remain empty and no functional service is assigned.
+
+OEM/AosCloud administration creates the Fleet and two empty Unit Set objects
+once. The Demo Orchestrator never creates, renames, reconfigures, moves or
+deletes them; it owns only the per-run membership add/remove operations and
+their authoritative re-reads.
 
 Provisioning must fail closed after the SDK begins: an uncertain partial
 result is preserved for reconciliation and is never retried automatically.
@@ -1330,8 +1340,9 @@ explicit M0 action followed by a separate M1 action. If any proof is missing,
 the visible result is `Reset incomplete · Recovery required`; bounded recovery
 material is retained and the next M0 remains blocked.
 
-The Unit Set objects are controlled Cloud configuration and remain available
-between runs; only their Unit memberships are run-scoped. A Unit progresses
+The dedicated `AosEdge SDV Demo Fleet` and both role Unit Set objects are
+one-time controlled Cloud configuration and remain available unchanged between
+runs; only their Unit memberships are run-scoped. A Unit progresses
 through separately evidenced `Offline`, deprovisioned, and deleted outcomes:
 after deletion it is absent from the active Unit inventory, while authoritative
 Cloud audit history remains. No verification batch, Fleet Validation Batch,

@@ -13,6 +13,7 @@
 - Flow input: [Architecture Flows 2.0](../../architecture/demo-scenario-architecture-flows.md)
 - Interaction decision: [D4-026.7 Linear Audience Interaction Model](../../requirements/d4-decision-register.md#d4-026-7)
 - Global lifecycle decision: [D4-026.15 M0/M1/G0/R0 Interaction Model](../../requirements/d4-decision-register.md#d4-026-15)
+- Fleet and Unit Set identity decision: [D4-012.1 Dedicated Demo Fleet and Unit Set Identity](../../requirements/d4-decision-register.md#d4-012-1)
 - Capability-milestone decision: [D4-026.16 Independent Releases and Derived G3/G4 Milestones](../../requirements/d4-decision-register.md#d4-026-16)
 - Workspace-ownership decision: [D4-026.17 Workspace Composition and Shared Header Ownership](../../requirements/d4-decision-register.md#d4-026-17)
 - Global-workspace decision: [D4-026.18 Global Lifecycle Workspace and Qualification Status](../../requirements/d4-decision-register.md#d4-026-18)
@@ -473,9 +474,12 @@ was accepted.
 
 ### 3.1 Audience vehicle terminology and global state
 
-The audience UI uses `Test Vehicle` for the technical Validation Unit (`VU`)
-assigned to the Verification Unit Set. It uses `Production Vehicle` for the
-technical Production Unit (`PU`) assigned to the Production Unit Set. The
+The audience UI and dedicated Cloud cohort use `Test Vehicle` for the technical
+Validation Unit (`VU`) assigned to the validation-enabled Unit Set titled
+`AosEdge SDV Demo / Test Vehicles`. It uses `Production Vehicle` for the
+technical Production Unit (`PU`) assigned to the non-validation Unit Set titled
+`AosEdge SDV Demo / Production Vehicles`. Both belong to the one-time
+`AosEdge SDV Demo Fleet`. The
 technical terms remain available in Details and evidence where exact Cloud
 objects are relevant, but they are not the primary audience labels.
 
@@ -1066,10 +1070,13 @@ human-readable Test and Production roles in the main view and keeps full Unit,
 Main Node, `system_uid`, certificate-fingerprint and Unit Set/API evidence in
 `Details`.
 
-Completion requires unique Unit and Main Node identities, both Units freshly
-`Online`, Test assigned only to the persistent Verification Unit Set,
-Production assigned only to the persistent Production Unit Set, and exact
-disjoint membership re-read. The bounded completion then establishes `G0` by
+Completion requires authoritative validation of the pinned one-time Fleet and
+two Unit Set UUIDs, titles, shared Fleet and validation flags; unique Unit and
+Main Node identities; both Units freshly `Online`; Test assigned to the Test
+role set and no other demo-role set; Production assigned to the Production role
+set and no other demo-role set; preservation of unrelated OEM classifications;
+and exact demo-role membership re-read. Unresolved UUID placeholders or any
+object mismatch are `NOT_READY`. The bounded completion then establishes `G0` by
 proving Test as the initial exclusive Current Vehicle, fresh CARLA/Gateway
 binding and Engineering Telematics, while VDP and both Services remain absent.
 `G0` is displayed as the resulting baseline, not as a third provisioning
@@ -1256,9 +1263,11 @@ JSON and does not repeat fields that have no meaning for the selected product
 or stage.
 
 The audience summary uses `Test Vehicle` and `Production Vehicle`. Exact
-AosCloud terms such as Verification Batch, Fleet Validation Batch, Campaign,
-Verification Unit Set and Production Unit Set appear only where they explain a
-real lifecycle decision or inside the technical disclosure.
+AosCloud titles `AosEdge SDV Demo Fleet`, `AosEdge SDV Demo / Test Vehicles`
+and `AosEdge SDV Demo / Production Vehicles`, plus technical terms such as
+Verification Batch, Validation Unit, Fleet Validation Batch and Campaign,
+appear only where they explain a real lifecycle decision or inside the
+technical disclosure.
 
 ### <a id="ui-int-039"></a>UI-INT-039 — Common Details content model
 
