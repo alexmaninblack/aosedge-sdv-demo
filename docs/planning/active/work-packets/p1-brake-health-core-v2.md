@@ -6,8 +6,9 @@
 - ID: `WP-P1-BHS-CORE-002`
 - Lane: `L-BRAKE`
 - Increment: `IMP-04-BHS-CORE-002`
-- State: `DESIGN REVIEW COMPLETE / READY FOR IMPLEMENTATION REVIEW — IMPLEMENTATION NOT AUTHORIZED`
+- State: `IMPLEMENTATION AUTHORIZED — READY / NOT STARTED`
 - Prepared: 2026-08-29
+- Authorized: 2026-08-30
 - Repository: `brake-health-service`
 - Proposed frozen source base:
   `7c0a658ba2106a7274e61296746dcdd3008db26b`
@@ -16,7 +17,7 @@
 
 ## Outcome
 
-After a separate explicit implementation authorization, implement the
+Implement the
 dependency-free C++17 Brake Health v2 domain core over the source-complete v1
 core. The bounded
 increment owns a normalized completed-episode input, deterministic synthetic
@@ -31,8 +32,8 @@ vehicle artifact and grants no implementation authority by itself.
 
 ## Authorization Status and Accepted Review Decisions
 
-This packet is ready for implementation review but is deliberately **not an
-implementation authorization**. The accepted D4-016.3 package and its
+This packet completed implementation review and received its bounded source-
+only implementation authorization on 2026-08-30. The accepted D4-016.3 package and its
 2026-08-29 cascade now freeze the model identity, complete input, conversion,
 arithmetic, eligibility, identity/provenance, timestamps, state/outbox behavior
 and deterministic fixtures needed for independent implementations.
@@ -40,8 +41,9 @@ and deterministic fixtures needed for independent implementations.
 `BHS-V2-RD-01` through `BHS-V2-RD-10` were accepted by the decision owner on
 2026-08-29. Their authoritative contract/fixture cascade is complete and the
 frozen digests below are refreshed. Decision closure and implementation
-authorization remain distinct; no branch or product edit may begin without a
-separate operator authorization.
+authorization remain distinct from every packaging, dependency and external
+gate. Product work begins only after the synchronized readiness record is
+committed and the exact base and writable boundary recheck pass.
 
 | ID | Contract issue | Proposed or accepted closure |
 | --- | --- | --- |
@@ -375,9 +377,9 @@ Brake Service v2 is composed, packaged, deployed, calibrated or qualified.
 
 ## Authorization Gate
 
-`DESIGN REVIEW COMPLETE / READY FOR IMPLEMENTATION REVIEW`. This packet
-authorizes no branch creation, product edit, dependency operation, build,
-commit or external action. `BHS-V2-RD-01` through `BHS-V2-RD-10` are accepted
-and the authoritative contract/fixture digests are refreshed; implementation
-may start only after the writable boundary is reviewed and the operator grants
-a separate explicit implementation authorization.
+`IMPLEMENTATION AUTHORIZED — READY / NOT STARTED`. `BHS-V2-RD-01` through
+`BHS-V2-RD-10`, the exact writable boundary and the authoritative refreshed
+contract/fixture digests were accepted by the operator on 2026-08-30. The
+authorization permits only the dependency-free source/core work, owned tests
+and one isolated local commit described here. Dependency retrieval, packaging,
+deployment, external actions, merge and push remain separately gated.

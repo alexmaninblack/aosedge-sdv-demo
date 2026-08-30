@@ -6,11 +6,14 @@
 - ID: `WP-P1-VEH-GATEWAY-SELECTED-UNIT-MTLS-001`
 - Lane: `L-VEH`
 - Increment: `IMP-02D`
-- State: `REVIEW CANDIDATE — BUNDLED IN DEMO INTERFACE TRAIN; NOT AUTHORIZED`
-- Version: 0.2
+- State: `AUTHORIZED — ENTRY BLOCKED BY CONTROLLER-HANDOFF MACOS CORRECTION`
+- Version: 0.3
 - Prepared: 2026-08-29
-- Product edits, build, dependency retrieval, certificate creation, live CARLA,
-  VM, Unit, Cloud, signing, FOTA, commit, push and merge authorized: no
+- Authorized: 2026-08-30 as part of the bounded Demo Interface Train
+- Product edits and local/offline tests authorized only after the corrected
+  controller-handoff base is accepted; dependency retrieval, retained real
+  certificates, live CARLA, VM, Unit, Cloud, signing, FOTA, push and merge
+  authorized: no
 - Assessment performed: read-only source, contract and requirement inspection
 - Execution train:
   [Consolidated Implementation Execution Trains](../infrastructure-first-critical-path-proposal.md)
@@ -63,21 +66,20 @@ work.
 
 ### Solution source
 
-The frozen solution revision is
-`aosedge-sdv-demo@4bede414b402c4b94bd45a9b4f4caac5992bb390`.
-Current unrelated working-tree edits are not inputs.
+The synchronized solution revision is
+`aosedge-sdv-demo@ce829f0a7300e83ab222fda64defbaf56eccbf9c`.
 
-| Frozen input at `4bede414` | SHA-256 |
+| Frozen input at `ce829f0` | SHA-256 |
 | --- | --- |
 | VISS Trust and Telemetry 1.1.0 | `4a1a2bd804c3a49f707b5e640632bd8a0357901f59e4615c340622b043d4c12c` |
 | Exclusive Live-Source Assignment 1.0.0 | `9434ec3a8abb6a9ef3e283b4d0a505f7dbb4f848b37232df83d8e21a899d4ce2` |
 | Demo Run State 1.1.0 | `3cc284f15b0b81f2c145b64e813c6081e255cf74b883f8feb6111db4bf47dcf2` |
-| D4 Decision Register | `228d9d4ff7f038eb1f4171273d71bb6fa36d86fb5659862946fe954c327aa3b0` |
+| D4 Decision Register | `5ad2a0a922907962c0b0d4712194404696cdc15d15db3d41b82058a0eafcca68` |
 | Vehicle Gateway requirements | `88c008dcb1e452f5fa60152dbdc0dad9d70fbf801cc2b1083574257c38856415` |
-| Vehicle Data Platform requirements | `6650864fd83229a43fcb843c663558844d51e90d1f208c4131501bede9af5fee` |
-| Factory Substrate requirements | `9c8e224c4e0ecdf366a7acb95f2fd310b23cf109dd33bd20232b1982ba361c2d` |
-| Component/interface register | `8a1a4b514dfd086edd74a3329f14e3464a86e9928965ef69691455c64f735ea1` |
-| System requirements/traceability | `bddfb68f92eb4d963848e18eb57aba78c2c9b4472de30e9247117f88d3494193` |
+| Vehicle Data Platform requirements | `32dc38aa98fd94edcb52a60f9fe77953c5244cd2e07acfd9fa7ea40af410bfc1` |
+| Factory Substrate requirements | `a3ccea88d138fdbcffbfee52f2561686a637844983201cb65d11a86585bc466d` |
+| Component/interface register | `85b2c5c1c96007f532a23947c05eedaada32af5509095569f42ef526d965ea89` |
+| System requirements/traceability | `674c888657237b4b2ef013c5b5b584101983203dc30e792327a22354710607bd` |
 | Accepted Platform P0 decisions | `c5a8ce0ecfb79d85687107fa13ea64638e22bbb3f67dd4f004c2c4e8f07f21cb` |
 | Single-node provisioning evidence | `553f8be26c4f29c3e201b5e5d024ad8c57e7a6c2cd35341904b26624a4f15c15` |
 
@@ -102,7 +104,7 @@ Get/Subscribe/Unsubscribe behavior. It does not yet provide D4-006 mTLS:
 - no local assignment-control interface, generation compare-and-swap or
   selected-session closure exists.
 
-The current VDP source at `aos-vehicle-platform@67123333775a696a1143d0281013651b3736f0fd`
+The accepted VDP source at `aos-vehicle-platform@667afb1512cf43ff27f1ab5327293208bf73045b`
 already has partial client-side seams: it can load a client certificate/key
 from the systemd credential directory and reads an external `selectedSource`
 object containing `unitId`, `nodeId`, `clientCertificateSha256`,
@@ -364,20 +366,22 @@ commit. It does not establish live Unit or onboarding qualification.
 
 ## Bundled safe defaults and deferred live blockers
 
-The consolidated Demo Interface Train authorization accepts these five
-recommended technical defaults together. They preserve the already accepted
+The consolidated Demo Interface Train authorization accepted these five
+technical defaults together on 2026-08-30. They preserve the already accepted
 business and security boundary and do not create a separate approval round:
 
 | ID | Bundled default | Status before train authorization |
 | --- | --- | --- |
-| `MTLS-01` | Use one exact URI SAN identity plus lowercase SHA-256 of DER leaf bytes; no CN/OU/IP authority | Frozen recommendation |
-| `MTLS-02` | Use the private same-UID Unix stream CAS interface and exact select/detach/status schema above; start from the journal generation | Frozen recommendation |
-| `MTLS-03` | Require explicit detach before replacement; close selected sessions; apply a per-assignment frame floor; keep Dashboard independent | Frozen recommendation |
-| `MTLS-04` | No automatic first-demo live rotation or mid-session certificate-expiry timer; reconnect revalidates and fingerprint de-enrollment closes active sessions | Frozen recommendation |
-| `MTLS-05` | Implement only the twenty-file Gateway core here; retain server-auth-only loopback solely as an explicit non-demo development mode; use separate bounded packets for onboarding, VDP/Runtime wiring and Orchestrator production | Frozen recommendation |
+| `MTLS-01` | Use one exact URI SAN identity plus lowercase SHA-256 of DER leaf bytes; no CN/OU/IP authority | Accepted |
+| `MTLS-02` | Use the private same-UID Unix stream CAS interface and exact select/detach/status schema above; start from the journal generation | Accepted |
+| `MTLS-03` | Require explicit detach before replacement; close selected sessions; apply a per-assignment frame floor; keep Dashboard independent | Accepted |
+| `MTLS-04` | No automatic first-demo live rotation or mid-session certificate-expiry timer; reconnect revalidates and fingerprint de-enrollment closes active sessions | Accepted |
+| `MTLS-05` | Implement only the twenty-file Gateway core here; retain server-auth-only loopback solely as an explicit non-demo development mode; use separate bounded packets for onboarding, VDP/Runtime wiring and Orchestrator production | Accepted |
 
-There is no further user decision inside the Gateway-core packet if the
-bundle is authorized. Two cross-repository items remain intentionally deferred
+There is no further user decision inside the Gateway-core packet. Its entry
+base is nevertheless blocked until the controller-handoff candidate has a
+qualified macOS transport and full CARLA-enabled compile. Two cross-repository
+items remain intentionally deferred
 after Gateway-core and host-only test completion:
 
 1. a reviewed onboarding/config packet must create the two distinct per-Unit

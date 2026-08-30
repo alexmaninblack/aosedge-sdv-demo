@@ -6,10 +6,11 @@
 - ID: `WP-P1-UI-AOSCLOUD-READONLY-ADAPTERS-001`
 - Lane: `L-UI` / Demo Interface Train
 - Increment: bounded fixture-first slice of `IMP-06`
-- Review state: `REVIEW CANDIDATE — BUNDLED IN DEMO INTERFACE TRAIN; NOT AUTHORIZED`
-- Version: 0.2
+- Review state: `AUTHORIZED — READY / NOT STARTED`
+- Version: 0.3
 - Prepared: 2026-08-29
-- Implementation authorized: no
+- Authorized: 2026-08-30
+- Implementation authorized: yes, only after the synchronized entry gate below passes
 - Product edit, branch/worktree creation, dependency materialization, build,
   network access, live Cloud/backend access, credential use, helper execution,
   signing, publication, VM/Unit operation, SOTA/FOTA, commit, push or merge
@@ -51,37 +52,38 @@ nor authorizes `IMP-07` protected actions.
 | Item | Frozen value |
 | --- | --- |
 | Solution/product repository | `aosedge-sdv-demo` |
-| Exact future branch base | `bcc7975d4aa3e3ed3c6b617abcd47b6bb18c88fd` |
+| Exact future branch base | `ce829f0a7300e83ab222fda64defbaf56eccbf9c` |
 | Required relationship | clean `main`, exact commit above; completed Presenter shell commit `106d340a6fe2e945de055642f2e016355ea6cf91` must be an ancestor |
 | Presenter shell tree | `90abac62816a879060a0d793081726c9cf72b4aa` |
 | Proposed future branch | `codex/imp-06-readonly-adapters` |
 | Proposed isolated worktree | sibling `../aosedge-sdv-demo-imp-06-readonly-adapters` |
 | This proposal's writable boundary | this work-packet file only |
 
-The current solution worktree contains concurrent documentation changes. This
-proposal must not absorb them into a future product branch. A future worker
-creates the isolated worktree from the exact committed base rather than
-copying product or generated files from the current checkout.
+The synchronized solution base is clean and contains the accepted `.21`
+Factory baseline, live demo Cloud topology, Brake v2 contract cascade and
+successor launcher. A future worker creates the isolated worktree from the
+exact committed base rather than copying product or generated files from
+another checkout.
 
 ## Frozen Inputs
 
-All repository file digests in this table are the exact bytes at solution
-commit `bcc7975d4aa3e3ed3c6b617abcd47b6bb18c88fd`, except the explicitly named
-uncommitted orchestration proposal and the Presenter-shell files read from
-commit `106d340a6fe2e945de055642f2e016355ea6cf91`.
+All repository file digests in this table are the exact bytes at synchronized
+solution commit `ce829f0a7300e83ab222fda64defbaf56eccbf9c`. Presenter-shell
+identity remains the accepted ancestor
+`106d340a6fe2e945de055642f2e016355ea6cf91`.
 
 | Input | Version / identity | SHA-256 |
 | --- | --- | --- |
-| Consolidated execution trains | current review-candidate file, 2026-08-29 | Recompute and record at authorized implementation entry; the current working-tree document is not a product input |
+| Consolidated execution trains | synchronized authorization record, 2026-08-30 | `631aa238cf90395f4604001970940c69597796cd1ba7cc04257e7c3b2fdde40f` |
 | Presenter shell completion packet | `WP-P1-UI-001` 0.3 | `e918ced919eed551b539c8bd85e905cda8e2c0b0f4a80429b6788b542609b426` |
 | Presenter lockfile | shell commit `106d340a`; Node 26.0.0 / npm 11.12.1 | `fcb9e6114b021dfa02f93a76d453f2ca06980c780947dbe38ac9a5d378a7364c` |
 | Presenter architecture test | shell commit `106d340a` | `e4b603477473374ff9d3dd2c75cc6044e1683f124c475dad34d733ed2fee3948` |
-| Interaction Specification | 2.5 | `f7578d7a7039fb44f7782775b93dfc8c689001a2e8376cd6be0250d2186b7083` |
+| Interaction Specification | 2.5 | `2adf18fd5037590f55fe2895a4945bcdb53504f74943c8d5f31f0c104d4c7235` |
 | UI Traceability Register | 1.1 | `84cb86ba668b13fb979b1b1df219761a49ed410856629fde712051001cd63bd3` |
-| `CR-DEMO` | 1.1 | `a8beed55da9d323ad7c35a408984272923fb2f103769b71277618da5ed259467` |
-| `CR-AOS` | 0.4 | `7b30e638ded9bd05c1ffe3a1c9933ab0d6bee8bff94f86d35d9514db64068b55` |
-| D4 Decision Register | D4-011, D4-012, D4-014, D4-021 and D4-026 | `cd26226ce4a51cc2ab21bbee8c53157a48b38c518f9ee75bbe518791b067f488` |
-| Component/interface register | `CMP-SW-DASH`, `IF-LC-005`, `IF-OBS-001`, `IF-FUNC-002` | `6ef13549a53688b1aaf22fa1e16c1a67f7552e659cea9d955c3234b31cfe055b` |
+| `CR-DEMO` | 1.1 | `a67e2d37f0f37127b6596a1d1c0e06d36edab7707927878d30da4a5867a02d43` |
+| `CR-AOS` | 0.4 | `485a66ee27287475d7144e01721c5ccbff99b2792cb57fc07124747b43eb50e2` |
+| D4 Decision Register | D4-011, D4-012, D4-014, D4-021 and D4-026 | `5ad2a0a922907962c0b0d4712194404696cdc15d15db3d41b82058a0eafcca68` |
+| Component/interface register | `CMP-SW-DASH`, `IF-LC-005`, `IF-OBS-001`, `IF-FUNC-002` | `85b2c5c1c96007f532a23947c05eedaada32af5509095569f42ef526d965ea89` |
 | AosCloud lifecycle research | API v11 implementation 6.1.26 | `dac5e0804dc45cbeefeb9afa2c89b8675174f59e3d3c1790445d032e439d5f65` |
 | R6.1 source lock | includes OpenAPI 3.0.3 observed 2026-08-14 | `cf945d31882d5e54c15b57cec675c754779b203343b2e9f49bca243f0345c0af` |
 | Frozen AosCloud OpenAPI bytes | v11 / implementation 6.1.26 | digest recorded only: `a587d7a308cb7c9ea0d274f1c5f2ff4ae3a99e2e492b753436ae6c9e2dbf508a` |
@@ -506,10 +508,10 @@ integrated demo are qualified.
 
 ## Authorization Gate
 
-`REVIEW CANDIDATE — BUNDLED IN DEMO INTERFACE TRAIN; NOT AUTHORIZED`.
-This document authorizes no product edit, branch/worktree, dependency
-operation, product test/build, external access, commit or integration action.
-One consolidated train authorization accepts `UI-RO-RD-01` through
-`UI-RO-RD-06` as the explicit deferrals above and authorizes only the exact
-future base and twenty-three-file boundary. Live transport and every mutation
-remain separate packets even after this fixture-first slice is accepted.
+`AUTHORIZED — READY / NOT STARTED`. The operator accepted `UI-RO-RD-01`
+through `UI-RO-RD-06` together on 2026-08-30 and authorized only the exact
+synchronized base, twenty-three-file boundary, offline/local tests and one
+local checkpoint. Product edits start only after the committed packet and
+frozen inputs recheck exactly. Dependency changes, network, live transport,
+credentials, external sources, push, merge and every mutation remain separate
+packets even after this fixture-first slice is completed.

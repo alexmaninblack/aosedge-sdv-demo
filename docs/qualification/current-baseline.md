@@ -85,6 +85,7 @@ The VDP v1-v3 source family is implemented and integrated into the accepted
 | Source-complete checkpoint | `67123333775a696a1143d0281013651b3736f0fd` |
 | Integrated platform commit | `f565251` (`Implement immutable VDP v1-v3 source family`) |
 | Accepted containing source | `667afb1512cf43ff27f1ab5327293208bf73045b` |
+| Platform `main` / `origin/main` | `667afb1512cf43ff27f1ab5327293208bf73045b` (fast-forward synchronized 2026-08-30) |
 | v1/v2/v3 prepared component artifacts | Absent |
 | Signed/published AosCloud component artifacts | Absent |
 | Installed VDP in Factory baseline or Test Unit | Absent |
@@ -110,8 +111,12 @@ logs, manifests and the warm Builder/caches were preserved.
 
 ## Next Authorized Boundary
 
-The next Platform step is to build and qualify the already integrated VDP
-source as three immutable post-SOP component FOTA candidates. This baseline
-record does not authorize signing, Cloud publication, deployment, Production
-membership or rollout. Those actions remain governed by the accepted
-Platform, Demo Orchestration and release-lifecycle gates.
+The next Platform step is the authorized, not-yet-started
+[`WP-P1-PLATFORM-VDP-ARTIFACTS-001`](../planning/active/work-packets/p1-platform-vdp-artifacts.md):
+complete the deployable builder and prepare three deterministic immutable
+post-SOP component FOTA candidates from the already integrated source. The
+existing v1-v3 prebuild is explicitly `notDeployable`, so artifact readiness
+must not be inferred from source completion. This baseline record does not
+authorize signing, Cloud publication, deployment, Production membership or
+rollout. Those actions remain governed by the accepted Platform, Demo
+Orchestration and release-lifecycle gates.

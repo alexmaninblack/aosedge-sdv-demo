@@ -3,7 +3,7 @@
 
 # Consolidated Implementation Execution Trains
 
-- State: `PLATFORM TRAIN COMPLETED IN ACCEPTED .21 — DEMO INTERFACE TRAIN REVIEW CANDIDATE`
+- State: `PLATFORM TRAIN COMPLETED IN ACCEPTED .21 — DEMO INTERFACE TRAIN AUTHORIZED / NOT STARTED`
 - Version: 1.1
 - Prepared: 2026-08-29
 - Owner: Demo Solution Team with Platform, Gateway and UI owners
@@ -26,8 +26,10 @@ for writable boundaries and deterministic tests; no new per-gate planning
 document is required.
 
 Each train receives one explicit consolidated authorization. The Platform
-Train received that authorization on 2026-08-29; the Demo Interface Train did
-not. After authorization,
+Train received that authorization on 2026-08-29. The operator accepted the
+Demo Interface Train and its exact bundled safe defaults on 2026-08-30, but
+product implementation remains held until the synchronized entry bases and
+digests are committed and rechecked. After authorization,
 read-only evidence checks, bounded source edits, offline builds, deterministic
 tests, forced-clean repeats and local checkpoint commits proceed without a
 new operator review at every internal Gate 0/1/2. Those gates remain mandatory
@@ -127,7 +129,7 @@ deployment.
 | --- | --- |
 | Gateway repository/base | `carla-ego-runtime@d4a20c85196ef7df81c78f992f6237c5eca8ff6c`; clean isolated worktree |
 | Completed controller handoff | Same commit above; the completed 14-file implementation remains immutable |
-| Presenter repository/base | `aosedge-sdv-demo@bcc7975d4aa3e3ed3c6b617abcd47b6bb18c88fd`; Presenter shell `106d340a6fe2e945de055642f2e016355ea6cf91` is an ancestor |
+| Presenter repository/base | `aosedge-sdv-demo@ce829f0a7300e83ab222fda64defbaf56eccbf9c`; Presenter shell `106d340a6fe2e945de055642f2e016355ea6cf91` is an ancestor |
 | Detailed execution contracts | [Selected-Unit mTLS](work-packets/p1-vehicle-gateway-selected-unit-mtls.md) and [fixture-first AosCloud read adapters](work-packets/p1-ui-aoscloud-readonly-adapters.md) |
 
 ### Bundled safe defaults
@@ -221,17 +223,21 @@ publication, FOTA/SOTA, push and merge. If the exact disposable target or
 canonical harness is not yet frozen, the train stops before mutation and
 reports the missing identity; it does not guess.
 
-### Demo Interface Train — review candidate, not authorized
+### Demo Interface Train — authorized 2026-08-30; readiness hold
 
-Authorize the sequence under **Train 2**, including the bundled safe defaults,
+The operator authorized the sequence under **Train 2**, including the bundled safe defaults,
 the exact mTLS twenty-file and UI twenty-three-file boundaries, ephemeral test
 credentials, offline/local builds and tests, host-only fixture integration and
 one local checkpoint per repository. It excludes onboarding or retention of
 real certificates, live CARLA/VM/Unit/Cloud/backend access, a live proxy,
 protected mutations, dependency changes, push and merge.
 
-These authorizations are independent. Only the Platform Train is currently
-authorized. The Demo Interface Train remains a review candidate and grants no
-source edit, build, local commit or live action. The Platform authorization
-ends after the exact new disposable Test Vehicle is confirmed online; all
-later integrated-live behavior remains separately gated.
+These authorizations are independent. Both trains have now received their
+bounded authorization. The Demo Interface Train shall not begin product edits
+until its synchronized solution base, frozen digests and work-packet states are
+committed and the clean entry gate passes. Its authorization grants only the
+offline/local source, ephemeral-certificate and test boundaries above; it
+grants no live source, credential retention, external mutation, push or merge.
+The Platform authorization ended after the exact new disposable Test Vehicle
+was confirmed online; all later integrated-live behavior remains separately
+gated.

@@ -6,8 +6,8 @@
 - ID: `WP-P1-VEH-GATEWAY-CONTROLLER-CPP-001`
 - Lane: `L-VEH`
 - Increment: `IMP-02C`
-- State: `IMPLEMENTATION AUTHORIZED — NOT STARTED`
-- Version: 0.2
+- State: `IMPLEMENTATION CANDIDATE EXISTS — QUALIFICATION BLOCKED`
+- Version: 0.3
 - Prepared: 2026-08-29
 - Design review completed: 2026-08-29
 - Product edits within the exact fourteen-path boundary and one isolated local
@@ -46,8 +46,8 @@ The worktree must be created at exact base `8af302d` and clean. The current
 main checkout's untracked `tools/__pycache__/` is neither an input nor an
 authorized deletion. Any base movement or unrelated dirty path stops work.
 
-Frozen solution source ancestor is
-`aosedge-sdv-demo@bcc7975d4aa3e3ed3c6b617abcd47b6bb18c88fd`; the reviewed
+Synchronized solution source is
+`aosedge-sdv-demo@ce829f0a7300e83ab222fda64defbaf56eccbf9c`; the reviewed
 Gateway cascade is identified by the exact content digests below and must be
 committed plus rechecked before any implementation authorization:
 
@@ -58,10 +58,38 @@ committed plus rechecked before any implementation authorization:
 | Platform FOTA Safe Stop 1.1.1 | `5b7087748877295837eb16a8bac02742dbae7328e54ba0b852fed2f5de6d3be9` |
 | Vehicle Gateway requirements | `88c008dcb1e452f5fa60152dbdc0dad9d70fbf801cc2b1083574257c38856415` |
 | Vehicle Simulation requirements | `79050e0b86162d04ab2f670af1238e1b319ebb6b161bb7e54ea9a1745a5003da` |
-| D4 Decision Register | `228d9d4ff7f038eb1f4171273d71bb6fa36d86fb5659862946fe954c327aa3b0` |
-| Component/interface register (`IF-VEH-007`) | `8a1a4b514dfd086edd74a3329f14e3464a86e9928965ef69691455c64f735ea1` |
+| D4 Decision Register | `5ad2a0a922907962c0b0d4712194404696cdc15d15db3d41b82058a0eafcca68` |
+| Component/interface register (`IF-VEH-007`) | `85b2c5c1c96007f532a23947c05eedaada32af5509095569f42ef526d965ea89` |
 
 Every digest must be rechecked immediately before future authorization.
+
+## Independent Candidate Qualification Result
+
+The clean isolated candidate exists at
+`d4a20c85196ef7df81c78f992f6237c5eca8ff6c`, parent `8af302d`, tree
+`f232db0ed28c2a5dc12009aa5197beee646d8703`, and changes exactly the fourteen
+allowed paths. Independent local qualification completed on 2026-08-30:
+
+- 18/18 core, 20/20 VISS and 24/24 shared-contract tests passed;
+- ASan+UBSan core tests passed;
+- socket/loopback, malformed-input, capacity/expiry, reset/generation and
+  no-last-known-reuse cases passed; and
+- the synthetic trace proved all ten VSS paths and atomic omission of the six
+  controller paths when the handoff is missing.
+
+The candidate is not merge-ready. The accepted deployment runs CARLA and the
+Gateway on macOS, but the implementation uses a Linux-only Unix datagram peer-
+credential path and throws on every non-Linux platform. `run_m6.py` enables
+that path unconditionally, so the target Mac fails its startup gate. Darwin
+documents reliable `LOCAL_PEERCRED`/`getpeereid` only for connected Unix
+`SOCK_STREAM`, while this packet froze `SOCK_DGRAM`; changing the transport
+requires a bounded D4-004/IF-VEH-007 correction before product edits.
+
+The changed `runtime_carla.cpp` also lacks a full `CARLA_EGO_WITH_CARLA=ON`
+compile proof because the pinned LibCarla CMake package is not currently
+materialized and dependency retrieval was excluded. The candidate remains
+preserved and clean. No merge or push is authorized until both blockers close,
+the corrected target tests pass and this completion record is updated.
 
 ## Reviewed exact writable boundary
 

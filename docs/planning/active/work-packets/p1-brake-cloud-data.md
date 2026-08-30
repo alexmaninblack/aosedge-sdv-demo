@@ -6,10 +6,11 @@
 - ID: `WP-P1-BRAKE-CLOUD-DATA-001`
 - Lane: `L-BRAKE-CLOUD`
 - Increment: `IMP-04-BRAKE-CLOUD-DATA-001`
-- State: `PROPOSED — REVIEW REQUIRED`
-- Version: 0.1
+- State: `IMPLEMENTATION CANDIDATE QUARANTINED — BOUNDED CORRECTION REQUIRED`
+- Version: 0.2
 - Prepared: 2026-08-29
-- Implementation authorized: no
+- Independent candidate review authorized: yes, completed 2026-08-30
+- Further product correction authorized: no, pending the exact delta below
 - Repository: `brake-health-cloud`
 - Frozen base: `68fe61b292b0b9671b1af0dc1881fe37dc5f97de`
 - Proposed branch: `codex/imp-04-brake-cloud-data`
@@ -328,9 +329,27 @@ success claim are wholly deferred.
 
 ## Authorization Gate
 
-This document is a proposed packet only. It does not authorize creation of the
-branch/worktree, product edits, tests, dependency access or a commit. Reviewers
-must explicitly accept the exact objective, frozen inputs, twenty-two-file
-boundary, v2 ledger transition, query/SSE/admin annex, tests, exclusions and partial-exit
-meaning before implementation begins. Any change outside them returns a
-bounded change request rather than being absorbed into the packet.
+The preserved candidate consists of linear commits `012b60a` and `a4b5b33`
+over exact base `68fe61b`. Its worktree is clean, all nineteen changed paths
+are inside the twenty-two-file boundary, frozen contract digests match, and
+offline typecheck, 19 Node tests, 12 Vitest tests, build and quality gates pass.
+It shall not be discarded or reimplemented.
+
+Independent review nevertheless quarantined the candidate until a separately
+authorized bounded correction closes exactly these defects:
+
+1. reject every invalid `terminalState`/`reasonCode` completion pair with
+   `422`, including all five mismatch negatives;
+2. enforce lowercase 64-hex on every SQLite digest column and prove invalid
+   direct inserts fail;
+3. preserve a projected `CONFLICT` whenever a matching durable content-
+   conflict quarantine exists, even after a later valid completion; and
+4. add the missing closed-schema negatives, `SQLITE_FULL` proof and persistent-
+   conflict regression.
+
+The correction review must also classify transient `SQLITE_BUSY` separately
+from fatal storage faults and resolve the bounded Unit-ID schema inconsistency
+without silently changing the accepted API. No further product edit,
+dependency access, commit, merge or push is authorized by this record.
+Reviewers must accept the exact correction boundary first. Any change outside
+it returns a bounded change request rather than being absorbed into the packet.

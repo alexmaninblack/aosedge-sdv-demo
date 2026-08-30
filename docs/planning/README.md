@@ -12,12 +12,10 @@ assignment, VM restart, or provisioned-Unit change.
   — bounded implementation increments, repository ownership, dependencies,
   verification and per-increment authorization gates.
 - [Consolidated Implementation Execution Trains](active/infrastructure-first-critical-path-proposal.md)
-  — the Platform Train authorization record and Demo Interface Train review
-  candidate. The Platform Train is authorized from the current Factory
-  checkpoint through offline package proof, controlled fan-in, successor
-  image, one new disposable Test Vehicle, canonical existing-OEM provisioning
-  and exact-Unit online confirmation in AosCloud. The Demo Interface Train is
-  not authorized.
+  — the completed Platform Train authorization record and bounded Demo
+  Interface Train authorization. The latter remains on readiness hold until
+  the controller-handoff macOS correction and synchronized entry gates close;
+  it authorizes no live source or external mutation.
 - Completed P0 work packets:
   [UI readiness](active/work-packets/p0-ui-readiness.md),
   [Vehicle/Gateway readiness](active/work-packets/p0-vehicle-gateway-readiness.md)
@@ -41,7 +39,20 @@ assignment, VM restart, or provisioned-Unit change.
   [KAC Factory stage](active/work-packets/p1-platform-kac-factory-integration.md).
   Their source/fan-in/qualification result is accepted Factory baseline `.21`;
   these historical execution records grant no residual product, Builder, VM
-  or Cloud authority. The Demo Interface Train remains a review candidate.
+  or Cloud authority. The Demo Interface Train is separately authorized but
+  remains on the synchronized readiness hold described above.
+- The next Platform execution boundary is the authorized
+  [VDP deployable artifact preparation packet](active/work-packets/p1-platform-vdp-artifacts.md),
+  which is offline-only and not started. It owns no signing, Cloud, VM or FOTA
+  operation.
+- The [Gateway controller handoff packet](active/work-packets/p1-vehicle-gateway-controller-cpp.md)
+  records the preserved `d4a20c` candidate and its macOS/full-CARLA compile
+  blockers; its bounded
+  [macOS correction packet](active/work-packets/p1-vehicle-gateway-controller-macos-correction.md)
+  remains a review candidate. The [Brake v2 packet](active/work-packets/p1-brake-health-core-v2.md)
+  is source-only authorized/not started; the
+  [Brake Cloud Data packet](active/work-packets/p1-brake-cloud-data.md) preserves
+  its existing candidate in quarantine pending a bounded correction.
 - [Repository inventory and migration plan](repository-inventory-and-migration-plan.md)
   — completed migration and local-cleanup execution record.
 
