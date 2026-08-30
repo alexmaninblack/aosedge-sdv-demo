@@ -1,7 +1,9 @@
+import type { ReadObservation, ReadObservationState } from "./sourceObservation";
+
 export type TeamId = "platform" | "brake" | "tire";
 export type Perspective = "global" | TeamId;
 export type VehicleRole = "not-assigned" | "test" | "production" | "changing" | "unavailable";
-export type ObservationState = "CURRENT" | "STALE" | "UNAVAILABLE" | "ERROR";
+export type ObservationState = ReadObservationState | "UNAVAILABLE" | "ERROR";
 export type StageState =
   | "complete"
   | "current"
@@ -71,6 +73,8 @@ export interface TeamView {
   evidenceTitle: string;
   evidenceBody: string;
   backendStatus: string;
+  logs?: ReadObservation<readonly NativeLogView[]>;
+  brakeResources?: ReadObservation<readonly BrakeResourceView[]>;
   quota?: string;
   isolation?: {
     status: string;
@@ -95,6 +99,86 @@ export interface GlobalLifecycleView {
   milestone: string;
 }
 
+export type AudienceVehicleRole = "TEST" | "PRODUCTION";
+
+export interface SessionView {
+  routeContext: "oem-delivery-read" | "brake-sp1-read";
+  role: string;
+  ownerFingerprint: string;
+  effectivePermissions: readonly string[];
+}
+
+export interface VehicleBindingView {
+  role: AudienceVehicleRole;
+  label: "Test Vehicle" | "Production Vehicle";
+  wireRole: "VALIDATION" | "PRODUCTION";
+  systemUidFingerprint: string;
+  unitFingerprint: string;
+  mainNodeFingerprint: string;
+  unitSetFingerprint: string;
+}
+
+export interface UnitView {
+  role: AudienceVehicleRole;
+  connectionState: string;
+  reportedState: string;
+  desiredSoftware: readonly string[];
+  actualSoftware: readonly string[];
+  pendingBatchFingerprints: readonly string[];
+}
+
+export interface UnitSetView {
+  role: AudienceVehicleRole;
+  title: string;
+  isValidationSet: boolean;
+  memberUnitFingerprints: readonly string[];
+  complete: boolean;
+}
+
+export interface ReleaseObjectView {
+  kind: "CANDIDATE" | "VERIFICATION_BATCH" | "FLEET_VALIDATION_BATCH" | "CAMPAIGN";
+  fingerprint: string;
+  state: string;
+  targetFingerprints: readonly string[];
+  result?: string;
+  unresolvedShape?: "unit_ids" | "units_ids";
+}
+
+export interface NativeLogView {
+  family: "unit-logs" | "service-logs";
+  owner: "OEM" | "BRAKE_SP1";
+  scopeFingerprint: string;
+  requestFingerprint: string;
+  cloudState: "created" | "sent" | "waiting unit" | "receiving" | "done" | "error" | "empty log has been provided";
+  metadata: readonly string[];
+  retentionNotice: "Retention policy not exposed by current API";
+}
+
+export interface BrakeResourceView {
+  role: AudienceVehicleRole;
+  resourceType: "windows" | "assessments" | "events" | "advisories";
+  state: string;
+  count: number;
+  sourceTime: string | null;
+  backendReceivedAt: string | null;
+  vdpVersion: string | null;
+  vdpDigest: string | null;
+}
+
+export interface ReadOnlyPresenterView {
+  contractClass: "CONTRACT_SYNTHETIC";
+  session: ReadObservation<SessionView>;
+  brakeSession: ReadObservation<SessionView>;
+  bindings: ReadObservation<readonly VehicleBindingView[]>;
+  units: ReadObservation<readonly UnitView[]>;
+  unitSets: ReadObservation<readonly UnitSetView[]>;
+  releases: ReadObservation<readonly ReleaseObjectView[]>;
+  unitLogs: ReadObservation<readonly NativeLogView[]>;
+  serviceLogs: ReadObservation<readonly NativeLogView[]>;
+  brake: ReadObservation<readonly BrakeResourceView[]>;
+  notificationRereads: number;
+}
+
 export interface PresenterSnapshot {
   fixtureId: string;
   fixtureLabel: string;
@@ -106,6 +190,7 @@ export interface PresenterSnapshot {
   assetFailure: boolean;
   eventChain: string[];
   redactionNotice: string;
+  readOnly?: ReadOnlyPresenterView;
 }
 
 export interface PresentationState {

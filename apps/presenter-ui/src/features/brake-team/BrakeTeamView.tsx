@@ -16,13 +16,21 @@ export function BrakeSummaries({ team, vehicleLabel }: { team: TeamView; vehicle
 }
 
 export function BrakeEvidence({ team, assetFailure, onLogs }: { team: TeamView; assetFailure: boolean; onLogs: () => void }) {
+  const resources = team.brakeResources;
   return (
     <section className="evidence-panel">
       <div className="evidence-head"><b><Icon name="brake" label="Brake" broken={assetFailure} />{team.evidenceTitle}</b><StatusBadge status={team.backendStatus} /></div>
       <p>{team.evidenceBody}</p>
+      {resources ? (
+        <div className="isolation-facts" data-testid="brake-read-projection">
+          {resources.value?.map((item) => (
+            <span key={item.resourceType}>{item.resourceType} <b>{item.state} · {item.count}</b></span>
+          )) ?? <span>Brake state <b>{resources.state} · {resources.transport}</b></span>}
+        </div>
+      ) : null}
       <div className="isolation-facts"><span>Approved quota <b>{team.quota}</b></span></div>
       <div className="evidence-actions"><button className="button" type="button" onClick={onLogs}><Icon name="logs" label="Operational Logs" broken={assetFailure} /> Operational Logs</button></div>
-      <SourceStamp observed={team.source} />
+      {resources ? <SourceStamp observed={resources} /> : <SourceStamp observed={team.source} />}
     </section>
   );
 }

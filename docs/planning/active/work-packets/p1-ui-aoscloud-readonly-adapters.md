@@ -7,9 +7,10 @@
 - Lane: `L-UI` / Demo Interface Train
 - Increment: bounded fixture-first slice of `IMP-06`
 - Review state: `AUTHORIZED — READY / NOT STARTED`
-- Version: 0.3
+- Version: 0.4
 - Prepared: 2026-08-29
 - Authorized: 2026-08-30
+- Rebaselined: 2026-08-30
 - Implementation authorized: yes, only after the synchronized entry gate below passes
 - Product edit, branch/worktree creation, dependency materialization, build,
   network access, live Cloud/backend access, credential use, helper execution,
@@ -52,7 +53,7 @@ nor authorizes `IMP-07` protected actions.
 | Item | Frozen value |
 | --- | --- |
 | Solution/product repository | `aosedge-sdv-demo` |
-| Exact future branch base | `107031a353308fc670d4a477e302e7a6bd278e55` |
+| Exact future branch base | `ebc144fd95e4a0f9485ddb9c4ab91834ee227388` |
 | Required relationship | clean `main`, exact commit above; completed Presenter shell commit `106d340a6fe2e945de055642f2e016355ea6cf91` must be an ancestor |
 | Presenter shell tree | `90abac62816a879060a0d793081726c9cf72b4aa` |
 | Proposed future branch | `codex/imp-06-readonly-adapters` |
@@ -68,7 +69,7 @@ another checkout.
 ## Frozen Inputs
 
 All repository file digests in this table are the exact accepted bytes after
-solution readiness commit `107031a353308fc670d4a477e302e7a6bd278e55`. Presenter-shell
+solution governance commit `ebc144fd95e4a0f9485ddb9c4ab91834ee227388`. Presenter-shell
 identity remains the accepted ancestor
 `106d340a6fe2e945de055642f2e016355ea6cf91`.
 
