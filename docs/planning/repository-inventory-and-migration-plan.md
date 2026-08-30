@@ -247,19 +247,20 @@ The rename was approved and completed in Phase 3.
 | `.local/r6-1-validation/` identity overlay and lock | Keep and repair first | Unique validation Unit identity and persistent state. |
 | `.cache/aosvm/v6.1.0/` | Keep | Official base image backing both identity overlays. Replaceable, but currently required. |
 | `.local/r6-1-qualification/store-workdirs.qcow2` | Delete with the obsolete `store` fixture after evidence is retained | Disposable 2 GiB qualification data disk; it is not the Yocto builder. |
-| `.local/r6-1-qualification/bootstrap.qcow2` | Keep and repair first | Disposable qualification overlay for accepted `.11`. |
+| `.local/r6-1-qualification/bootstrap.qcow2` | Historical cleanup candidate when present | Disposable `.11` qualification overlay; not part of the accepted `.21` baseline. |
 | Other qualification qcow2 overlays | Archive required metadata, then delete | Stale experiments; several already reference missing backing files. |
-| `artifacts/r6-1/bootstrap-6.1.1-maninblack.11/` | Keep locally | Current frozen unsigned rootfs candidate and exact metadata. Never commit. |
+| `artifacts/r6-1/bootstrap-6.1.1-maninblack.11/` | Retain only as historical evidence when present | Superseded unsigned rootfs candidate and exact metadata; `.21` is the accepted Factory baseline. Never commit artifact bytes. |
 | `.2` signed batch and compact candidate metadata | Archive | Historical deployed validation update evidence. |
 | `.2`, `.10`, and `upstream` raw 6.5–6.8 GiB images | Delete after all overlay references are removed and digests retained | Superseded raw outputs; not the incremental Yocto cache. |
 | Old `fota-r6-1-5*`, side-load binaries, and superseded qualification binaries | Archive compact metadata/digests, then delete payloads | Old implementation cycles, not selected by the current baseline. |
 | `runs/` | Archive only selected sanitized JSON evidence, then delete raw logs | Contains historical logs and old absolute paths. |
 | `.run/` | Delete while all VMs are stopped | Stale PID, socket, and supervisor state; regenerated on start. |
 
-The current 27 GiB `artifacts/r6-1` tree is dominated by four raw images. The
-accepted `.11` image is retained. Removing only superseded raw images after
-dependency repair should recover roughly 20 GiB without sacrificing
-incremental Yocto build state.
+This inventory captured the earlier 27 GiB cleanup boundary. `.11` is now
+historical rather than accepted-current evidence; `.21`, its compact evidence
+and the incremental Builder/caches are the assets that must be preserved.
+Superseded image cleanup is governed by the current exact-path/open-handle
+procedure rather than the old size estimate.
 
 The real incremental builder below Application Support occupies about 62 GiB
 and is explicitly retained. The four standalone pre/post-provision backups
@@ -402,9 +403,10 @@ images, locks, and local paths remain ignored and are never committed.
 3. Delete obsolete provider builds, old raw rootfs images, stale runtime
    state, old CARLA milestone builds, and raw run logs in small reviewed sets.
 4. Recheck disk use and all Git working trees after each set.
-5. Never delete the two provisioned identity overlays, their private recovery
-   backups, `.11`, the official AosVM base image, the Application Support Yocto
-   builder, active CARLA builds, or Unreal editor output.
+5. Never delete the current accepted `.21` image/evidence, the Application
+   Support Yocto Builder/caches, active CARLA builds or Unreal editor output;
+   historical assets are removed only through the exact-path/open-handle
+   cleanup procedure.
 
 Expected safe recovery is approximately 23–25 GiB, mostly from superseded raw
 VM images and old native builds. The exact total is measured after each set.

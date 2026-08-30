@@ -3,7 +3,7 @@
 
 # Vehicle Data Platform Component Requirements
 
-- Status: D3 design-reviewed
+- Status: D3 design-reviewed; v1-v3 source integrated, artifacts absent
 - Package: [`CR-VDP`](../component-decomposition-and-interface-register.md#cr-vdp)
 - Version: 0.9
 - Prepared: 2026-08-21
@@ -21,8 +21,11 @@
 - Accepted D4 Safe Stop freshness decision: [D4-028](../d4-decision-register.md#d4-028)
 - Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
 - Accepted D4 advisory input: [D4-008 Typed QM Advisory Profile](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
-- Implementation evidence: `aos-vehicle-platform@bdc72ab`; provider `0.2.0`
-  source pinned to `e972d2bd7f14e27646bb5d7c10c7186ecdecfa9f`
+- Implementation evidence: source-complete checkpoint
+  `67123333775a696a1143d0281013651b3736f0fd`, integrated as `f565251` in
+  accepted Factory-source revision
+  `aos-vehicle-platform@667afb1512cf43ff27f1ab5327293208bf73045b`;
+  no v1/v2/v3 prepared artifact exists
 
 ## Purpose
 
@@ -51,7 +54,7 @@ vehicle-motion authority.
 | What this package does not own | Factory Image, KUKSA executable, KUKSA Authorization Compatibility helper, SOTA identity/JWT lifecycle, functional-service metadata, Cloud deployment approval, Gateway implementation or functional backends |
 | Factory dependency | Healthy provider-specific empty slot, unmodified KUKSA and the separately packaged authorization compatibility substrate required by SOTA services |
 | Intended lifecycle | Immutable component FOTA: Platform Team validates and accepts on Validation Unit first; OEM Release Authority authorizes identical accepted bytes for Production rollout, where readiness confirms delivery health rather than a second product test |
-| Current state | Inbound Provider and FOTA/runtime qualification evidence exist; accepted v1-v3 graph, outbound path and final trusted Provider connection qualification remain work |
+| Current state | VDP v1-v3 source, manifests, inbound/outbound logic and packaging validators are integrated in the accepted `.21` source history; prepared ARM64 artifacts, digests, signatures, Cloud publication and live FOTA qualification are absent |
 
 ## Component and Authorization Boundary
 
@@ -76,12 +79,12 @@ as the generic workload-authorization model.
 
 | Capability | Current evidence | Required disposition |
 | --- | --- | --- |
-| Inbound provider | Provider `0.2.0`, seven-path profile `0.1.1`, VISS TLS, KUKSA publication, source timestamps, unavailable-state handling and reconnect qualification | Reuse and align to accepted v1-v3 contract |
-| Component FOTA | Immutable package, local signature verification, A/B runtime lifecycle and pre-Apply revert evidence | Freeze final artifact schema, post-Apply forward-repair contract and Validation-to-Production flow |
+| Inbound provider | Integrated v1-v3 source family with the v1 seven-path base profile, VISS TLS, KUKSA publication, source timestamps, unavailable-state handling and reconnect behavior | Build and qualify the exact ARM64 artifacts against `.21` |
+| Component FOTA | Integrated release manifests, packaging/build validation and accepted Factory A/B runtime contract; no prepared component bytes exist | Produce and freeze three immutable candidates before any signing or Cloud action |
 | KUKSA executable | External Eclipse KUKSA 0.5.0 using `kuksa.val.v1` | Keep unchanged; change only contract and verifier configuration |
-| Trusted Provider connection | Host-generated qualification credential delivered through systemd credentials | Treat as OEM platform integration; freeze and qualify the final non-service mechanism without adding Provider IAM/JWT exchange in the first demo |
-| SOTA authorization compatibility | Not implemented | Owned by separate `CR-KAC`; not delivered in the VDP FOTA artifact |
-| Outbound advisory | Not implemented | Add typed, allowlisted v3 KUKSA-to-VISS-to-Gateway path |
+| Trusted Provider connection | Integrated systemd-credential source path using the accepted KUKSA CA contract | Qualify with the packaged VDP artifact; do not add Provider IAM/JWT exchange |
+| SOTA authorization compatibility | Implemented separately in accepted `.21` Factory substrate | Owned by `CR-KAC`; not delivered in the VDP FOTA artifact |
+| Outbound advisory | Typed, allowlisted v3 source path integrated at `f565251` | Qualify in the v3 artifact and live Gateway path |
 
 ## Testability Boundary
 

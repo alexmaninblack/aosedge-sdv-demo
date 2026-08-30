@@ -3,7 +3,7 @@
 
 # Factory Substrate Component Requirements
 
-- Status: D3 design-reviewed
+- Status: D3 design-reviewed; `.21` Factory baseline accepted
 - Package: [`CR-FACTORY`](../component-decomposition-and-interface-register.md#cr-factory)
 - Version: 0.5
 - Prepared: 2026-08-19
@@ -16,8 +16,10 @@
 - Component-register input: [Component Register 2.0](../component-decomposition-and-interface-register.md)
 - Accepted D4 Safe Stop freshness decision: [D4-028](../d4-decision-register.md#d4-028)
 - Previous accepted package: Version 0.4
-- Implementation evidence: `aos-vehicle-platform@bdc72ab`, with local
-  candidate `.11` pinned to `a12c0aa`
+- Implementation evidence:
+  `aos-vehicle-platform@667afb1512cf43ff27f1ab5327293208bf73045b`,
+  accepted image `6.1.1-maninblack.21` SHA-256
+  `80e0c0dc4f7f9c51a25d3461047e2e3d85bf540059c7052af3944ce8650e19e1`
 
 ## Purpose
 
@@ -53,16 +55,16 @@ lifecycle object.
 
 | Artifact | Contents | Normal lifecycle | Installed through | Role in this demo |
 | --- | --- | --- | --- | --- |
-| OEM Demo Factory Image | Complete bootable, unprovisioned VM disk with AosCore, one IAM configuration containing `enablePermissionsHandler: true`, unmodified KUKSA, separately packaged removable `CMP-KAC`, dedicated non-secret `kuksa-jwt` certificate-module/PKCS#11 and public-verifier preparation wiring, the empty-slot runtime with the accepted read-only Gateway vehicle-state provider and Platform FOTA Safe Stop policy, and D4-022.1 two-plane networking (`vehicle0` without default route/Cloud DNS plus `external0` owning default route/DNS); no pre-populated service permission, `AOS_SECRET`, per-Unit key, shared static verifier or token. The handler, Safe Stop policy and network-plane settings are independent of provisioning state. | Pre-SOP manufacturing | Fresh read-only base plus a new copy-on-write overlay | Required source for M0; successor image build required |
+| OEM Demo Factory Image | Complete bootable, unprovisioned VM disk with AosCore, one IAM configuration containing `enablePermissionsHandler: true`, unmodified KUKSA, separately packaged removable `CMP-KAC`, dedicated non-secret `kuksa-jwt` certificate-module/PKCS#11 and public-verifier preparation wiring, the empty-slot runtime with the accepted read-only Gateway vehicle-state provider and Platform FOTA Safe Stop policy, and D4-022.1 two-plane networking (`vehicle0` without default route/Cloud DNS plus `external0` owning default route/DNS); no pre-populated service permission, `AOS_SECRET`, per-Unit key, shared static verifier or token. The handler, Safe Stop policy and network-plane settings are independent of provisioning state. | Pre-SOP manufacturing | Fresh read-only base plus a new copy-on-write overlay | Required source for M0; accepted baseline is `6.1.1-maninblack.21` |
 | Rootfs platform-update envelope | Complete rootfs payload containing a selected platform revision | Post-SOP platform/rootfs FOTA | The factory-installed AosVM rootfs A/B runtime | Optional retrofit or later platform maintenance; not used to add the initial runtime in the normal M0-M1 flow |
 | Vehicle Data Platform Component | Independently versioned provider payload and its component metadata | Post-SOP component FOTA | The provider-specific `systemd-slot-component` A/B runtime | Required at G1 and later |
 
-The `.11` Yocto build produced both a full raw VM image and an unsigned rootfs
-FOTA candidate from the same rootfs content. The full raw image is engineering
-evidence for the future Factory Image acceptance. The rootfs envelope is an
-upgrade artifact for an older Unit; it is not the Vehicle Data Platform
-Component and it is not required when manufacturing a fresh Unit from the
-accepted Factory Image.
+The historical `.11` Yocto build produced both a full raw VM image and an
+unsigned rootfs FOTA candidate from the same rootfs content. Those bytes remain
+engineering evidence only. The accepted manufacturing input is now the
+immutable `.21` raw Factory image. A rootfs envelope is an upgrade artifact for
+an older Unit; it is not the Vehicle Data Platform Component and it is not
+required when manufacturing a fresh Unit from the accepted Factory Image.
 
 ## Component Boundary
 
@@ -114,24 +116,20 @@ accepted Factory Image.
 
 | Capability | Evidence | State |
 | --- | --- | --- |
-| Full bootable `.11` raw image | `main-qemuarm64.img`, 6,997,147,648 bytes, SHA-256 `946a296b7200644bc529080f3512712d8b7ec97dedad520146a4f503cf4006a2`; clean AArch64 boot through a disposable qcow2 overlay | `EVIDENCE`; preserved unchanged but rejected as the final Factory Image by [`D4-001`](../d4-decision-register.md#d4-001) because the later IAM/protected-signing factory contract is not complete |
-| Separate `.11` rootfs FOTA candidate | Full rootfs payload, 128,528,384 bytes, SHA-256 `e30406f600ada77568d21178e656a34f444973bf121f5a0b537e24efde8ab9d7`; unsigned and uninstalled | `EVIDENCE`; optional retrofit artifact only |
-| Provider-specific runtime | `systemd-slot-component`, reported provider type, one active instance, A/B implementation and persistent recovery | `CURRENT / QUALIFY` |
-| Platform FOTA Safe Stop runtime gate | Current runtime prepares and immediately activates and has no vehicle-state provider, durable waiting state or stop/start gate | `ADR 0014 DESIGN ACCEPTED / IMPLEMENTATION GAP`; implement and qualify the accepted contract in the successor Factory Image |
-| Empty-slot behavior | Provider service inactive, launcher and health fail safely, no active slot or payload | `CURRENT / QUALIFY` |
-| Security boundary | Fixed `aos-vdp` identity, empty capabilities, SELinux transition, systemd credentials and bounded access | `CURRENT / QUALIFY` |
-| OEM Component Runtime A/B working storage | 512 MiB nested ext4 inside encrypted Aos workdirs for slots, transaction state and private credential sources | `CURRENT` for demo; not a VDP application/log store, and the production runtime-storage backend remains intentionally undecided |
-| Clean unprovisioned checks | No provisioning marker, Aos user PIN, credential-like file, provider payload or functional service in disposable candidate boot | `EVIDENCE`; repeat on the accepted Factory Image |
-| Stock Aos IAM permission handler | The deployed AosCore build contains the handler, but the current shared `/etc/aos/iam.cfg` omits `enablePermissionsHandler`; live `.1`/`.2` therefore remain disabled after provisioning | `D4-027 PARTIALLY DECIDED / IMPLEMENTATION GAP`; rebuild the successor Factory Image with the accepted shared setting explicitly `true` and qualify both IAM modes plus runtime registration/lookup |
-| IAM/PKCS#11 compatibility-helper signing seam | AosCore supplies generic IAM certificate-module and PKCS#11 facilities; no dedicated `kuksa-jwt` binding, atomic per-Unit verifier preparation or lifecycle ordering is configured in the current candidate | `D4-010.1 DECIDED / IMPLEMENTATION GAP`; add the accepted non-secret wiring and qualify per-Unit creation/signing/cross-Unit rejection and overlay retirement |
-| Source lock and repository gates | `.11` pinned to `a12c0aa`; build-affecting Yocto-layer files are unchanged at current `main`; 35 Python tests and the 81-file quality gate pass | `CURRENT`; `D4-001` accepts exact release digest plus controlled canonical rebuild equivalence, while the successor qualification remains open |
-| Distinct fresh overlays | Existing `.1` and `.2` Units have different provisioned identities but are not derived acceptance evidence for the unprovisioned `.11` raw image | `TARGET` |
+| Accepted bootable Factory image | `.21`, 6,997,147,648 bytes, SHA-256 `80e0c0dc4f7f9c51a25d3461047e2e3d85bf540059c7052af3944ce8650e19e1`; frozen rootfs SHA-256 `32290e8f45632b3993ef0dc61b23be8a508bfd4d94f97f6ab65c80cbbad8d00b` | `ACCEPTED FACTORY BASELINE` |
+| Source lock | `aos-vehicle-platform@667afb1512cf43ff27f1ab5327293208bf73045b`, tree `164f907bf041dbc99df24d2ebe7b0e5d2bbaeab0` | `ACCEPTED`; controlled same-source reproducibility remains a final-dossier obligation |
+| Provider-specific runtime and Safe Stop gate | `systemd-slot-component` A/B runtime, durable waiting state and Gateway vehicle-state Safe Stop provider are installed; active VDP slot remains empty | `ACCEPTED FACTORY SUBSTRATE`; live FOTA qualification belongs to the later VDP artifacts |
+| Empty-slot behavior | VDP executable absent, service inactive, no active slot or installed component; strict TLS/JWT read reports `Vehicle.Speed: NotAvailable` | `ACCEPTED / EXPECTED FACTORY STATE` |
+| Security and IAM/KAC substrate | Shared native Permission Handler configuration, dedicated per-Unit `kuksa-jwt` PKCS#11 identity, atomic verifier preparation, bounded systemd/SELinux domains and native CA trust | `ACCEPTED`; first-create, idempotent reuse, normal restart and zero-scoped-AVC evidence passed |
+| OEM Component Runtime A/B working storage | 512 MiB nested ext4 inside encrypted Aos workdirs for slots, transaction state and private credential sources | `ACCEPTED` for demo; not a VDP application/log store, and production runtime storage remains deferred `D4-X03` |
+| Clean unprovisioned checks | Offline Enforcing boot, no provisioning marker, issued key/PIN, provider payload, functional service or reusable secret; factory chain correctly gated | `PASS` |
+| Provisioning and normal-mode checks | One official SDK attempt succeeded; IAM/CM/SM/TLS/verifier/provider/auth/broker all successful with zero restarts; final scoped AVC set empty | `PASS` |
+| Historical `.11` raw/rootfs candidates | Prior raw image and unsigned rootfs FOTA evidence | `HISTORICAL EVIDENCE`; neither is a current candidate or M0 input |
+| VDP component artifacts | VDP v1-v3 source is integrated, but no prepared/signed/published/installed v1-v3 artifact exists | `ABSENT / NEXT POST-SOP ARTIFACT GATE` |
 
-The installed `.1` and `.2` rootfs versions prove that an earlier form of the
-runtime can exist with an empty provider slot. They are already provisioned and
-must never be used as a Factory Image source. Candidate `.11` adds the accepted
-hardening but remains engineering evidence until this package's factory gates
-pass.
+Provisioned overlays and Cloud Units are acceptance evidence, never Factory
+Image sources. Every new M0 instance starts from the unchanged read-only `.21`
+image and a fresh copy-on-write overlay.
 
 ## Testability Boundary
 
@@ -198,7 +196,9 @@ redacted comparison or digests.
 - Components: [Factory Assembly (`CMP-FACTORY`)](../component-decomposition-and-interface-register.md#cmp-factory)
 - Required evidence: validated source lock, build manifest, tool versions and output manifest
 - Requirement state: D3 design-reviewed
-- Implementation state: `PARTIAL`; `.11` has a source lock and one accepted output digest, while independent rebuild equivalence is not yet accepted
+- Implementation state: `IMPLEMENTED / ACCEPTED OUTPUT`; `.21` has exact
+  source, tree, size, image/rootfs digests and retained build evidence;
+  independent same-source rebuild equivalence remains a final-dossier proof
 
 Acceptance rejects an ambient branch, uncommitted build input, mutable external
 download, personal absolute path in release metadata or a candidate whose
@@ -243,7 +243,8 @@ provider-specific runtime. Neither may be labelled as the Factory Image.
 - Components: [Factory Assembly (`CMP-FACTORY`)](../component-decomposition-and-interface-register.md#cmp-factory), [AosCore (`CMP-AOS-CORE`)](../component-decomposition-and-interface-register.md#cmp-aos-core), [KUKSA (`CMP-KUKSA`)](../component-decomposition-and-interface-register.md#cmp-kuksa) and [Empty-Slot Runtime (`CMP-RUNTIME`)](../component-decomposition-and-interface-register.md#cmp-runtime)
 - Required evidence: image-content manifest, forbidden-content scan and clean guest-state qualification
 - Requirement state: D3 design-reviewed
-- Implementation state: `EVIDENCE`; the `.11` disposable bootstrap gate proved the intended absence set and must be repeated on the accepted Factory Image
+- Implementation state: `PASS`; the accepted `.21` offline image scan and
+  unprovisioned boot prove the required absence set
 
 ### Immutable bootable Factory Image
 
@@ -260,7 +261,8 @@ provider-specific runtime. Neither may be labelled as the Factory Image.
 - Interface: [Orchestrated VM lifecycle (`IF-DEMO-001`)](../component-decomposition-and-interface-register.md#if-demo-001)
 - Required evidence: raw-image format, partition/boot proof, size, digest, read-only state and qcow2 backing-chain validation
 - Requirement state: D3 design-reviewed
-- Implementation state: `EVIDENCE`; `.11` provides a matching full raw image but has not completed factory acceptance
+- Implementation state: `ACCEPTED`; `.21` is the complete bootable read-only
+  Factory image with frozen size and digest
 
 ### Healthy provider-specific empty slot
 
@@ -367,7 +369,8 @@ provider-specific runtime. Neither may be labelled as the Factory Image.
 - Components: [Factory Assembly (`CMP-FACTORY`)](../component-decomposition-and-interface-register.md#cmp-factory) and [Empty-Slot Runtime (`CMP-RUNTIME`)](../component-decomposition-and-interface-register.md#cmp-runtime)
 - Required evidence: M0 image manifest, pre-provision runtime inventory and absence of a rootfs-update action in M0-M1 evidence
 - Requirement state: D3 design-reviewed
-- Implementation state: `TARGET acceptance`; `.11` proves the intended content, while the final Factory Image has not been accepted
+- Implementation state: `ACCEPTED`; `.21` contains the empty-slot runtime
+  before provisioning and M0-M1 requires no rootfs update
 
 A later post-SOP rootfs FOTA remains permitted for a platform/runtime fix or
 retrofit. Such an update is a separate Platform Team lifecycle and must not be
@@ -465,10 +468,10 @@ presented as installation of the Vehicle Data Platform Component.
   `NOT_READY`, fail-closed start ordering, and
   forbidden key/token/shared-verifier content scan
 - Requirement state: complete D4-027.1 through D4-027.8 package, transport, wire, non-widening JWT mapping, 300/180-second lifetime/renewal, exact per-Unit signer/verifier preparation, trustworthy-time behavior and operational bounds plus D4-010.1 lifecycle accepted
-- Implementation state: `GAP / PARTIAL`; the stock handler and generic key
-  facilities exist in AosCore, but the successor Factory Image has not yet
-  been rebuilt with the setting, dedicated module and verifier-preparation
-  wiring
+- Implementation state: `IMPLEMENTED / FACTORY-QUALIFIED` in accepted `.21`;
+  the shared native handler configuration, dedicated module,
+  verifier-preparation wiring and bounded runtime chain passed unprovisioned,
+  post-provision and clean normal-mode qualification
 
 This requirement qualifies native platform facilities; it does not authorize
 the Factory package to mint Service identities or to own the helper's runtime
@@ -483,11 +486,11 @@ deployment exists and must be retired with that deployment.
 | <a id="ut-factory-002"></a>`UT-FACTORY-002` — Artifact-type separation | [`REQ-FACTORY-002`](#req-factory-002), [`REQ-FACTORY-004`](#req-factory-004) | Factory raw image, rootfs envelope and provider component positive/negative type combinations | Synthetic release metadata and small image fixtures | Wrong target runtime/type/digest or cross-type label is rejected | `aosedge-sdv-demo` release validators | D3 design-reviewed |
 | <a id="ut-factory-003"></a>`UT-FACTORY-003` — Clean-content policy | [`REQ-FACTORY-003`](#req-factory-003) | Allowed platform files and forbidden identity, credential, provider and service content | Synthetic filesystem manifests | Every forbidden class fails without printing content; accepted empty graph passes | `aosedge-sdv-demo` factory image validator | D3 design-reviewed |
 | <a id="ut-factory-004"></a>`UT-FACTORY-004` — Empty runtime contract | [`REQ-FACTORY-005`](#req-factory-005), [`REQ-FACTORY-009`](#req-factory-009) | Exact runtime type/count/configuration; empty, malformed and unexpected active states | Service Manager configuration and state fixtures | One accepted empty runtime passes; duplicate/generic/wrong type or active payload fails | `aos-vehicle-platform` layer tests | D3 design-reviewed |
-| <a id="ut-factory-005"></a>`UT-FACTORY-005` — Atomic A/B lifecycle and Safe Stop gate | [`REQ-FACTORY-006`](#req-factory-006) | First install, A-to-B update, removal, idempotence, interruption, unsafe archive, downgrade, digest mismatch, moving/stale/reset evidence, timeout, Safe Stop loss and restart while waiting | Filesystem sandbox, fake profile/health/archive plus vehicle-state provider and monotonic-clock fixtures | While waiting, a first-install slot stays empty, a replacement keeps the previous healthy slot active and a removal keeps the current healthy slot active; every admitted sample is fresh at acquisition, the 12-sample history proves stability only, the latest complete sample is fresh at gate opening and immediately before each destructive step, restart never reuses evidence and an unsafe candidate never becomes active | `systemdslotcomponent_test` C++ suite | A/B D3 design-reviewed; D4-028 Safe Stop extension accepted, implementation open |
+| <a id="ut-factory-005"></a>`UT-FACTORY-005` — Atomic A/B lifecycle and Safe Stop gate | [`REQ-FACTORY-006`](#req-factory-006) | First install, A-to-B update, removal, idempotence, interruption, unsafe archive, downgrade, digest mismatch, moving/stale/reset evidence, timeout, Safe Stop loss and restart while waiting | Filesystem sandbox, fake profile/health/archive plus vehicle-state provider and monotonic-clock fixtures | While waiting, a first-install slot stays empty, a replacement keeps the previous healthy slot active and a removal keeps the current healthy slot active; every admitted sample is fresh at acquisition, the 12-sample history proves stability only, the latest complete sample is fresh at gate opening and immediately before each destructive step, restart never reuses evidence and an unsafe candidate never becomes active | `systemdslotcomponent_test` C++ suite | Runtime implementation and Factory compile/test gate passed; live FOTA qualification awaits prepared VDP artifacts |
 | <a id="ut-factory-006"></a>`UT-FACTORY-006` — Security/runtime-storage source gate | [`REQ-FACTORY-007`](#req-factory-007) | Identity, capabilities, systemd, SELinux, A/B working-storage size/mount/path and fail-closed rules | Recipe, policy and configuration fixtures | Missing or weakened boundary blocks the normal repository gate | `aos-vehicle-platform` `test_r6_1_layer.py` | D3 design-reviewed |
 | <a id="ut-factory-007"></a>`UT-FACTORY-007` — Fresh-overlay guard | [`REQ-FACTORY-008`](#req-factory-008) | New overlay, reused/provisioned/locked overlay, wrong backing file and duplicate redacted identity | Temporary qcow2 metadata and identity-digest fixtures | Only a fresh overlay backed by the accepted digest is eligible for M1 | `aosedge-sdv-demo` lifecycle tests | D3 design-reviewed |
 | <a id="ut-factory-008"></a>`UT-FACTORY-008` — Immutable reset guard | [`REQ-FACTORY-010`](#req-factory-010) | Exact run overlays, missing reconciliation, unexpected target and changed base digest | Temporary lifecycle manifest and fake image metadata | Reset never targets the base and fails on unresolved identity or changed digest | `aosedge-sdv-demo` lifecycle tests | D3 design-reviewed |
-| <a id="ut-factory-009"></a>`UT-FACTORY-009` — IAM, local transport and signer substrate configuration | [`REQ-FACTORY-003`](#req-factory-003), [`REQ-FACTORY-011`](#req-factory-011) | Shared configuration with handler true/false/absent, both IAM modes, exact helper/verifier directory and socket owners/modes, `kuksa-auth-client` mount/group/private-tmpfs resource, fixed TLS `127.0.0.1:8090` IAM client with Aos CA/server-name verification, pre-populated permission/secret fixtures, exact `kuksa-jwt` RSA-2048/one-key/self-signed module, `aos-kuksa` token, separate PIN, pinned SoftHSM/provider and preparation-service references, separate SELinux domains, startup time gate and D4-027.8 systemd envelope, missing ordering, forbidden file-key fallback, baked key/shared-verifier and key/token content | IAM, named-resource, systemd, SELinux and certificate-module configuration fixtures plus filesystem manifests | Both modes use `enablePermissionsHandler: true`; exact non-secret helper/socket/resource/signer/verifier/minimum-time/bounds wiring exists with no anchor, continuous time monitor or KUKSA lifecycle controller; wrong IAM endpoint/name/trust, DNS, external IP, writable or caller-selected host mount, KAC TCP listener, shared `.usrpin`, PIN outside private systemd credentials, persistent helper state, Service tmpfs access, SoftHSM create/delete/rename, automatic `audit2allow`, false/absent handler, generated mode switch, baked permission/secret/key/shared-verifier/token, widened resources, missing fail-closed ordering or fallback file path fails without printing content | `aos-vehicle-platform` layer and image-policy tests | Complete D4-027 plus D4-010.1 and `IMP-03-KAC-006` accepted; successor-image implementation open |
+| <a id="ut-factory-009"></a>`UT-FACTORY-009` — IAM, local transport and signer substrate configuration | [`REQ-FACTORY-003`](#req-factory-003), [`REQ-FACTORY-011`](#req-factory-011) | Shared configuration with handler true/false/absent, both IAM modes, exact helper/verifier directory and socket owners/modes, `kuksa-auth-client` mount/group/private-tmpfs resource, fixed TLS `127.0.0.1:8090` IAM client with Aos CA/server-name verification, pre-populated permission/secret fixtures, exact `kuksa-jwt` RSA-2048/one-key/self-signed module, `aos-kuksa` token, separate PIN, pinned SoftHSM/provider and preparation-service references, separate SELinux domains, startup time gate and D4-027.8 systemd envelope, missing ordering, forbidden file-key fallback, baked key/shared-verifier and key/token content | IAM, named-resource, systemd, SELinux and certificate-module configuration fixtures plus filesystem manifests | Both modes use `enablePermissionsHandler: true`; exact non-secret helper/socket/resource/signer/verifier/minimum-time/bounds wiring exists with no anchor, continuous time monitor or KUKSA lifecycle controller; wrong IAM endpoint/name/trust, DNS, external IP, writable or caller-selected host mount, KAC TCP listener, shared `.usrpin`, PIN outside private systemd credentials, persistent helper state, Service tmpfs access, SoftHSM create/delete/rename, automatic `audit2allow`, false/absent handler, generated mode switch, baked permission/secret/key/shared-verifier/token, widened resources, missing fail-closed ordering or fallback file path fails without printing content | `aos-vehicle-platform` layer and image-policy tests | Implemented and qualified in accepted `.21`; clean first-create, idempotent reuse, restart-count and scoped-AVC gates passed |
 
 All runtime C++ cases required by `UT-FACTORY-005` shall be executed as a
 blocking build/qualification gate. Merely compiling those tests into the Yocto
@@ -544,15 +547,15 @@ factory component. It makes the exact KAC sandbox build input implementable by
 allowing fixed TLS loopback `127.0.0.1:8090` only, while retaining denial of
 DNS, external IP and KAC TCP listeners.
 
-Product acceptance remains open until D4 defines measurable cases, the
-effective Factory Image contents and current implementation states are
-qualified, and no provisioned `.1` or `.2` image is presented as a
-manufacturing source. This closure does not authorize a Yocto build, signing,
-Cloud upload, VM restart, provisioning or Unit mutation.
+Factory acceptance is resolved by `.21` for the current demo baseline. No
+provisioned overlay or Cloud Unit may be presented as a manufacturing source.
+This requirement record does not authorize signing, Cloud upload, later VM
+mutation or VDP deployment.
 
 [`D4-001`](../d4-decision-register.md#d4-001) was accepted on 2026-08-21. It
-keeps `.11` as immutable engineering evidence, requires a new successor only
-after the IAM/protected-signing contracts are frozen, prohibits post-build
-patching and defines exact release-digest identity plus controlled canonical
-rebuild equivalence. The successor version/digest, two-overlay evidence and
-qualification result remain future outputs rather than design-review claims.
+keeps `.11` as immutable historical engineering evidence, required a
+successor only after the IAM/protected-signing contracts were frozen,
+prohibits post-build patching and defines exact release-digest identity plus
+controlled canonical rebuild equivalence. The successor implementation output
+is accepted `.21`; same-source rebuild equivalence remains a separate dossier
+proof rather than a reason to change the accepted image bytes.

@@ -3,104 +3,115 @@
 
 # Current Accepted Baseline
 
-- Recorded: 2026-08-16
-- Scope: running Units, local rootfs candidate, and accepted provider component
-- Cloud mutation status: none for candidate `.11` or provider `0.2.0`
+- Recorded: 2026-08-30
+- Factory baseline: `6.1.1-maninblack.21`
+- Scope: immutable OEM Demo Factory Image, one qualified Test Vehicle Unit,
+  pinned demo Cloud topology and VDP source/artifact boundary
+- Cloud mutation status: `.21` is assigned to the Test Vehicles Unit Set;
+  the Production Vehicles Unit Set is intentionally empty
 
-## Running Units
-
-| Unit role | Boot | Rootfs | Provider assignment |
-| --- | --- | --- | --- |
-| validation | `6.1.0` | `6.1.1-maninblack.2` | none |
-| demonstration | `6.1.0` | `6.1.1-maninblack.1` | accepted operational baseline; no provider assigned |
-
-Both Units retain their existing provisioned identities. No deprovisioning or
-reprovisioning is required. The demonstration Unit activated a previously
-staged `.1` slot during the guarded repository-rename restart. End-to-end
-acceptance confirmed it as the current operational demonstration baseline. The
-decision does not approve the stale Verification Batch, make `.1` a rollout
-candidate, or change the qualification requirements for its successor. See the
-[acceptance record](pre-cleanup-e2e-acceptance.md) and
-[repair record](repository-rename-vm-repair.md).
-
-### Host lifecycle-control caveat recorded 2026-08-18
-
-Both Unit QEMU processes and their loopback DNS bridges remain running, but
-their repository-local `.run` PID and QMP/serial socket paths were removed
-while the processes were alive. The overlays and provisioning locks remain
-present and must not be reset, copied or reprovisioned. The lifecycle helper
-now rejects this state instead of reporting the VM as stopped.
-
-Recovery requires a controlled maintenance window: verify the exact QEMU,
-overlay, Unit identity and Cloud state; request a clean shutdown inside each
-guest; prove the old processes exited and the overlays are consistent; then
-start each VM through its normal lifecycle helper and rerun status, smoke and
-Cloud-online checks. This is a host control-state repair, not deprovisioning or
-identity replacement. Until that window is explicitly authorized, both VMs
-remain online and no lifecycle mutation is permitted.
-
-## Rootfs Candidate `.11`
+## Accepted OEM Demo Factory Image `.21`
 
 | Item | Accepted value |
 | --- | --- |
-| Platform build revision | `a12c0aa7f8a680b35407776b12bcc025970abc73` |
+| Platform source revision | `667afb1512cf43ff27f1ab5327293208bf73045b` |
+| Platform source tree | `164f907bf041dbc99df24d2ebe7b0e5d2bbaeab0` |
+| Image version | `6.1.1-maninblack.21` |
 | Raw image size | `6,997,147,648` bytes |
-| Raw image SHA-256 | `946a296b7200644bc529080f3512712d8b7ec97dedad520146a4f503cf4006a2` |
-| FOTA manifest SHA-256 | `b9b49a575798f2bc4a532a794e77352ed21596677ef5aced4304db9e7a87f09e` |
-| Moulin graph SHA-256 | `08bb15d68e32cbfce1825563e8207e84c1e3b584d9a48c266338f2c242ca867e` |
-| FOTA config SHA-256 | `9bceee031f31e3c0ec3afe2453c51213282d96ca2ed3b2139965038d4a4506b3` |
-| Rootfs payload size | `128,528,384` bytes |
-| Rootfs payload SHA-256 | `e30406f600ada77568d21178e656a34f444973bf121f5a0b537e24efde8ab9d7` |
-| Candidate metadata SHA-256 | `56c109c30ab1111ba23dffe45634dbd556298f55da79782d867c3ac6be911aa6` |
+| Raw image SHA-256 | `80e0c0dc4f7f9c51a25d3461047e2e3d85bf540059c7052af3944ce8650e19e1` |
+| Frozen rootfs SHA-256 | `32290e8f45632b3993ef0dc61b23be8a508bfd4d94f97f6ab65c80cbbad8d00b` |
+| Factory payload state | Provider-specific runtime present; VDP slot empty |
 
-The candidate contains only the full rootfs payload. Boot and incremental
-rootfs artifacts are absent. The accepted payload is frozen, unsigned, and has
-not been uploaded, assigned, or installed.
+`.21` is the current accepted Factory baseline for fresh read-only backing
+images and new copy-on-write overlays. It supersedes `.11` as the current
+candidate. It does not turn a provisioned overlay or Cloud Unit into a
+manufacturing source.
 
-## Provider `0.2.0`
+The accepted evidence includes an offline Enforcing boot with restricted QEMU
+networking, correct unprovisioned lifecycle gating, no VDP payload, no scoped
+AVCs and clean shutdown. The single official SDK provisioning attempt then
+succeeded. In normal mode IAM, CM, SM, TLS preparation, KUKSA verifier,
+Provider credential preparation, authorization helper and broker all reached
+the expected successful state with zero restarts. Provider credential
+first-create and idempotent reuse both completed with clean teardown, the
+strict TLS/JWT KUKSA read returned `Vehicle.Speed: NotAvailable`, and the final
+scoped AVC set was empty. `NotAvailable` is the required Factory result because
+no VDP component is installed to publish a value.
 
-| Item | Accepted value |
+The retained local Builder, package manifest, candidate/rootfs digests,
+offline evidence, provisioning checkpoints and online evidence remain outside
+Git. A controlled same-source reproducibility rebuild remains a separate
+D4-001 dossier obligation; it does not change which immutable image is the
+accepted working Factory baseline.
+
+## Qualified Test Vehicle Unit
+
+| Cloud identity | Accepted value |
 | --- | --- |
-| Source revision | `e972d2bd7f14e27646bb5d7c10c7186ecdecfa9f` |
-| Layer SHA-256 | `baf1c29c9264b8f2422dc155540c3b22716bb43d5f80c1cfeb3cc9529f0bf3cb` |
-| Signed bundle size | `6,599,930` bytes |
-| Signed bundle SHA-256 | `30802d1bcb88a5954cf1e9c6c17573b527efe4f2a62ca3c0c83459f8a2fe35db` |
+| Unit UUID | `ba74a1e6-5496-496b-8e4b-e8beb0af27ad` |
+| `system_uid` / native Node ID | `7cec239e6ab348b4b1c7961186cfd978` |
+| Primary Main Node UUID | `4f3be6c7-d50e-4c60-ab39-db25a6614358` |
+| Unit state at acceptance | `provisioned` / `Online` |
+| Node state at acceptance | `provisioned`, primary `aos-vm-main` |
+| Demo role | Test Vehicle |
 
-The exact provider candidate is signed and locally verified. It has not been
-published to the component catalog or assigned to a Unit.
+This Unit is qualification evidence for `.21` and the current Test Vehicle
+lane. It is not the Factory Image itself and is not a Production Vehicle.
 
-## Qualified Behavior
+## Persistent Demo Cloud Topology
 
-Candidate `.11` passed clean AArch64 boot, read-only root, SELinux Enforcing,
-component runtime, nested-store, fixed non-root identity, empty capability,
-systemd credential, hostname DNS, gRPC random-device, soft KUKSA dependency,
-process recovery, invalid-credential fail-closed, DNS/TLS fail-safe, and
-secret-exclusion gates.
+These objects were created once through the OEM/AosCloud administrative
+bootstrap and authoritatively validated on 2026-08-30. Their identifiers are
+pinned configuration, not values inferred from titles. The documentation
+provenance checkpoint that first recorded the live identifiers is `661868c`.
 
-The 512 MiB nested ext4 store is a bounded demonstration backend inside the
-encrypted Aos workdirs volume. It preserves the provider SELinux boundary but
-does not select the production vehicle storage architecture.
+| Cloud object | Exact title | UUID | Invariant |
+| --- | --- | --- | --- |
+| Fleet | `AosEdge SDV Demo Fleet` | `52cadaf9-5294-4d32-937f-16e3f441b81b` | Persistent demo Fleet |
+| Test role Unit Set | `AosEdge SDV Demo / Test Vehicles` | `a3399102-3b62-4874-89a4-f2a0206b9ea7` | `is_validation_set=true`; contains the current `.21` Test Unit |
+| Production role Unit Set | `AosEdge SDV Demo / Production Vehicles` | `a8bfc280-1146-4b99-90cf-3058a5e21730` | `is_validation_set=false`; currently empty |
 
-## Preserved Local Build State
+The Demo Orchestrator verifies these three persistent objects and manages only
+run-scoped Unit membership. It never creates, renames, reconfigures, moves or
+deletes the Fleet or Unit Set definitions.
 
-The isolated Yocto builder disk and caches remain outside Git and should be
-kept for incremental follow-up builds. VM images, overlays, signed artifacts,
-certificates, Unit identities, and raw logs must never be committed.
+## VDP Source and Artifact Boundary
 
-The reviewed local artifact cleanup recovered approximately `27 GiB` while
-preserving every active dependency and incremental build cache. CARLA, both
-AosVM roles, the builder, all repository gates, and all license gates passed
-the required regression. See the
-[post-cleanup acceptance record](post-cleanup-acceptance.md).
+The VDP v1-v3 source family is implemented and integrated into the accepted
+`.21` platform source history:
+
+| Item | Current state |
+| --- | --- |
+| Source-complete checkpoint | `67123333775a696a1143d0281013651b3736f0fd` |
+| Integrated platform commit | `f565251` (`Implement immutable VDP v1-v3 source family`) |
+| Accepted containing source | `667afb1512cf43ff27f1ab5327293208bf73045b` |
+| v1/v2/v3 prepared component artifacts | Absent |
+| Signed/published AosCloud component artifacts | Absent |
+| Installed VDP in Factory baseline or Test Unit | Absent |
+
+Source integration is therefore complete, but artifact production is not.
+No VDP v1/v2/v3 ARM64 candidate, canonical artifact/metadata digest,
+signature, publication identity or FOTA installation may be claimed yet.
+Artifact build, qualification, signing, publication and Test-to-Production
+promotion remain later explicit lifecycle steps. The Factory image must keep
+the VDP slot empty.
+
+## Superseded and Historical Evidence
+
+`.1`, `.2`, `.11`, provider `0.2.0` and the intermediate `.17`-`.20` images
+remain historical engineering and debugging evidence only. In particular,
+`.11` is not the current Factory candidate or baseline. Its qualification
+records may retain exact historical version, digest and behavior statements;
+they shall not be used as current M0 input or Cloud deployment authority.
+
+The legacy and intermediate Cloud Units and their large local IMG/QCOW2
+artifacts were retired under explicit authorization. Git history, compact
+logs, manifests and the warm Builder/caches were preserved.
 
 ## Next Authorized Boundary
 
-Documentation cleanup and repository-only validation do not authorize
-signing, Cloud upload, assignment, VM restart, or provisioned-Unit mutation.
-The revised plan preserves `.11` and provider `0.2.0` as accepted local
-evidence but does not select them for Cloud deployment. The current boundary
-is review of the HLA 1.2 design chain, including the
-[Component Decomposition and Interface Register](../requirements/component-decomposition-and-interface-register.md),
-followed by component requirements and a replacement implementation plan.
-Those actions follow the explicit gates in the
-[current roadmap](../planning/roadmap.md).
+The next Platform step is to build and qualify the already integrated VDP
+source as three immutable post-SOP component FOTA candidates. This baseline
+record does not authorize signing, Cloud publication, deployment, Production
+membership or rollout. Those actions remain governed by the accepted
+Platform, Demo Orchestration and release-lifecycle gates.

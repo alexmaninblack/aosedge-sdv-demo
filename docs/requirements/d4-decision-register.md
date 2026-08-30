@@ -135,6 +135,28 @@ Consequences:
   health and unchanged backing-image digest against the successor candidate;
 - retain production provider-store selection as deferred `D4-X03` work.
 
+#### D4-001 Qualification Resolution — Accepted Factory Baseline `.21`
+
+The successor qualification completed on 2026-08-30. The current accepted OEM
+Demo Factory baseline is `6.1.1-maninblack.21`, built from
+`aos-vehicle-platform@667afb1512cf43ff27f1ab5327293208bf73045b`
+(tree `164f907bf041dbc99df24d2ebe7b0e5d2bbaeab0`). Its immutable raw-image
+identity is `6,997,147,648` bytes with SHA-256
+`80e0c0dc4f7f9c51a25d3461047e2e3d85bf540059c7052af3944ce8650e19e1`;
+the frozen rootfs SHA-256 is
+`32290e8f45632b3993ef0dc61b23be8a508bfd4d94f97f6ab65c80cbbad8d00b`.
+
+Offline Enforcing qualification, clean unprovisioned gating, secret-negative
+and empty-VDP checks passed. One official SDK attempt then provisioned a fresh
+Unit, and the complete Factory KUKSA substrate reached the accepted normal-mode
+state with zero restarts, a successful first-create and idempotent Provider
+credential path, strict TLS/JWT `Vehicle.Speed: NotAvailable` and zero scoped
+AVCs. `.21` therefore supersedes `.11` as the current Factory candidate and
+working baseline. `.11` remains historical engineering evidence only. The
+controlled same-source reproducibility rebuild required by item 6 remains a
+separate final-dossier proof and does not authorize changing the accepted
+`.21` bytes.
+
 ### D4-002 Decision Record — Vehicle Hardware Capability Profile
 
 - Decision state: `DECIDED`
@@ -654,7 +676,7 @@ Historical consequences were:
 
 - the earlier two-configuration, provisioning-state-selected recommendation
   is withdrawn;
-- the current `.1`, `.2` and `.11` evidence remains useful but none of those
+- the historical `.1`, `.2` and `.11` evidence remains useful but none of those
   images is the accepted Factory Image while its effective configuration
   leaves the permission handler disabled;
 - the correction belongs to the pre-SOP OEM Factory Baseline Assembly and

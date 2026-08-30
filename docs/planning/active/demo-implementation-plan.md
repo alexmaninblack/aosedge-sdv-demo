@@ -364,7 +364,7 @@ handoff.
 
 ### `IMP-03` — Factory substrate, current-release security and VDP family
 
-- State: `AUTHORIZED FOR ISOLATED SOURCE IMPLEMENTATION`; `CR-FACTORY` 0.5,
+- State: `FACTORY BASELINE ACCEPTED / VDP ARTIFACT BUILD OPEN`; `CR-FACTORY` 0.5,
   `CR-KAC` 0.12, `CR-VDP` 0.9 and
   `CR-CROSS` 0.4 were accepted on 2026-08-28 and Platform baseline
   `bdc72aba97a83c9868d454588189ef139710a6d7` was reconciled to `origin/main`.
@@ -386,35 +386,21 @@ handoff.
   delivery, pinned SoftHSM/OpenSSL provider/token parameters and separate
   least-privilege KAC/verifier-preparation SELinux domains, with no automatic
   policy widening or hardware-HSM claim.
-  The bounded IAM/Safe Stop Factory/runtime source packet
-  [`WP-P1-PLATFORM-FACTORY-RUNTIME-001`](work-packets/p1-platform-factory-runtime.md)
-  is implemented at isolated commit `4d88006`; its pinned R6.1 compile passed
-  twice offline and all 51 applicable Runtime/VISS/Safe Stop tests passed in
-  both final executions. KAC named-resource,
-  fixed-Provider signer preparation and successor-image package composition
-  were split into blocked
-  [`WP-P1-PLATFORM-KAC-FACTORY-INTEGRATION-001`](work-packets/p1-platform-kac-factory-integration.md)
-  on 2026-08-29 and must not be guessed. The completed pinned evidence is in
-  [`WP-QUAL-P1-PLATFORM-RUNTIME-001`](work-packets/p1-platform-runtime-compile-qualification.md);
-  the IAM/Safe Stop branch remains unmerged and its later image/disposable-VM
-  qualification is still a separate authorization gate.
-  The corrected KAC source
-  packet [`WP-P1-PLATFORM-KAC-001`](work-packets/p1-platform-kac.md) is also
-  accepted and authorized without unmeasured CPU/RAM ceilings. The VDP v1-v3
-  source packet
+  Factory/runtime, IAM and KAC source have now been integrated and qualified in
+  accepted Factory baseline `6.1.1-maninblack.21`, source
+  `667afb1512cf43ff27f1ab5327293208bf73045b`, image SHA-256
+  `80e0c0dc4f7f9c51a25d3461047e2e3d85bf540059c7052af3944ce8650e19e1`.
+  Offline unprovisioned and single-attempt online provisioning gates passed;
+  the complete normal-mode Factory KUKSA chain passed with zero restarts and
+  scoped AVCs while the VDP slot remained intentionally empty.
+  The VDP v1-v3 packet
   [`WP-P1-PLATFORM-VDP-001`](work-packets/p1-platform-vdp-family.md) is
-  source-complete on isolated commit `6712333`, with all owned tests and source
-  gates passing; it remains unmerged and not qualified. The evidence-only
-  [`WP-DEP-P1-PLATFORM-KAC-001`](work-packets/p1-platform-kac-dependency-acquisition.md)
-  is complete. Gate A froze provisional lock `92714c3f` for the exact
-  native/target gRPC, Protobuf, OpenSSL, SoftHSM and official PKCS#11 Provider
-  selections and module paths. Gate B then fetched exactly those inputs and
-  reproduced the fetch with `BB_NO_NETWORK=1`; final report `e4f692f9` and
-  evidence manifest `b3a56b47` record the successful result. KAC compilation
-  and recipe integration remain a separate explicit authorization gate.
-  Merge of the interdependent branches plus every artifact/image build and
-  live qualification remains blocked until its separate gate is explicitly
-  authorized.
+  source-complete at `67123333775a696a1143d0281013651b3736f0fd` and integrated
+  through `f565251` in the accepted `.21` source history. No prepared ARM64
+  v1/v2/v3 component artifact, canonical artifact/metadata digest, signature,
+  Cloud publication identity or installed VDP exists. The next Platform gate
+  is therefore artifact build and qualification from the already integrated
+  source, not another source-family implementation or Factory-image rebuild.
 - Repository: `aos-vehicle-platform`.
 - Scope: build the successor OEM Demo Factory Image with stock Aos IAM
   `enablePermissionsHandler: true`, no provisioned identity or pre-populated
@@ -587,15 +573,11 @@ The first P1 code batch has the following current state:
 2. [`WP-P1-VEH-001`](work-packets/p1-vehicle-gateway-wheel-units.md) for the
    `IMP-02A` frozen VSS wheel angular-speed semantics in `L-VEH` is
    `IMPLEMENTED`; and
-3. the IAM/Safe Stop Factory/runtime packet in `L-PLATFORM` is `IMPLEMENTED`
-   at isolated commit `4d88006`; its pinned offline C++ compile and all 51
-   applicable Runtime/VISS/Safe Stop tests passed twice. The KAC source packet
-   is accepted and its exact dependency acquisition is complete, but KAC
-   compile and recipe integration remain separately gated; the KAC
-   Factory-integration packet is explicitly blocked on exact resource/signer
-   inputs; and the VDP family is
-   source-complete at isolated commit `6712333`. Their combined merge,
-   artifact/image build and live qualification remain gated;
+3. the integrated Factory/runtime/IAM/KAC substrate in `L-PLATFORM` is accepted
+   as Factory baseline `.21` at source `667afb1512cf`; the VDP family is
+   source-complete at `67123333775a` and integrated through `f565251`, but its
+   three prepared component artifacts, digests, signing/publication identities
+   and live FOTA qualification are still absent and remain the next gate;
 4. the first Brake Service core packet is source-complete at isolated commit
    `7c0a658`; and
 5. the Brake Cloud foundation packet is source-complete at isolated commit

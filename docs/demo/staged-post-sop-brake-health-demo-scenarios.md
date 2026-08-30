@@ -490,13 +490,14 @@ identity before Cloud registration. The factory artifact must therefore retain
 the qualified first-boot identity-generation mechanism rather than embedding a
 fixed identity that would be duplicated by every overlay.
 
-The current `.1` and `.2` installed rootfs versions prove that this runtime can
-exist with an empty provider slot. The `.11` build adds the most complete local
-hardening and produced both a full unprovisioned raw VM image and a separate
-unsigned rootfs FOTA candidate. The raw image is Factory Image engineering
-evidence; the rootfs envelope is only an optional retrofit artifact. Neither
-has yet completed Factory Image acceptance, and no provisioned VM snapshot may
-be used as a manufacturing source.
+The accepted `6.1.1-maninblack.21` image is the current immutable OEM Demo
+Factory baseline. It contains the qualified provider-specific empty-slot
+runtime and Factory KUKSA substrate but no VDP payload. Its offline
+unprovisioned and single-attempt online provisioning qualification passed;
+strict TLS/JWT reading returns `Vehicle.Speed: NotAvailable` exactly because
+the Factory slot is empty. Historical `.1`, `.2` and `.11` images remain
+engineering evidence only. No provisioned VM snapshot or Cloud Unit may be
+used as a manufacturing source.
 
 The currently implemented runtime is specific to one Vehicle Data Provider
 component type. This demo may claim independent versioning of that shared
