@@ -3,7 +3,7 @@
 
 # Brake Health Cloud Product Component Requirements
 
-- Status: D4 design accepted; source foundation complete; next bounded data packet proposed for review
+- Status: D4 design accepted; source foundation complete; bounded Data candidate correction authorized/not started
 - Package: [`CR-BRAKE-CLOUD`](../component-decomposition-and-interface-register.md#cr-brake-cloud)
 - Version: 0.5
 - Prepared: 2026-08-19
@@ -23,8 +23,9 @@
   foundation commit `68fe61b292b0b9671b1af0dc1881fe37dc5f97de` over governance
   base `6da2926ba96df5e470bfbc3514e983f5d54c3975`
 - Repository creation completed: 2026-08-28; the bounded foundation packet is
-  complete and `BRAKE-CLOUD-DATA-001` is `PROPOSED — REVIEW REQUIRED` only;
-  signing, Cloud, container, VM or Unit mutation is not authorized
+  complete and preserved Data candidate `a4b5b33` has an exact source-only
+  correction authorized on 2026-08-30; signing, Cloud, container, VM or Unit
+  mutation is not authorized
 
 ## Purpose
 

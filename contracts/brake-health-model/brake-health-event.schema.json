@@ -13,7 +13,7 @@
     "eventId": {"$ref": "#/$defs/uuid5"},
     "assessmentId": {"$ref": "#/$defs/uuid5"},
     "sourceEventId": {"$ref": "#/$defs/uuid4"},
-    "unitSystemUid": {"type": "string", "minLength": 1, "maxLength": 128},
+    "unitSystemUid": {"$ref": "#/$defs/boundedId"},
     "unitRole": {"enum": ["VALIDATION", "PRODUCTION"]},
     "serviceVersion": {"enum": ["2.0.0", "3.0.0"]},
     "serviceArtifactSha256": {"$ref": "#/$defs/sha256"},
@@ -38,6 +38,7 @@
     "contentSha256": {"$ref": "#/$defs/sha256"}
   },
   "$defs": {
+    "boundedId": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._:-]+$"},
     "uuid4": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
     "uuid5": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
     "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},

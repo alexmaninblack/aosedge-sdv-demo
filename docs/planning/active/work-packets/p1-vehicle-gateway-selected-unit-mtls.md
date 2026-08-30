@@ -6,7 +6,7 @@
 - ID: `WP-P1-VEH-GATEWAY-SELECTED-UNIT-MTLS-001`
 - Lane: `L-VEH`
 - Increment: `IMP-02D`
-- State: `AUTHORIZED — ENTRY BLOCKED BY CONTROLLER-HANDOFF MACOS CORRECTION`
+- State: `AUTHORIZED — ENTRY SEQUENCED AFTER CONTROLLER-HANDOFF MACOS CORRECTION`
 - Version: 0.3
 - Prepared: 2026-08-29
 - Authorized: 2026-08-30 as part of the bounded Demo Interface Train
@@ -66,25 +66,26 @@ work.
 
 ### Solution source
 
-The synchronized solution revision is
-`aosedge-sdv-demo@ce829f0a7300e83ab222fda64defbaf56eccbf9c`.
+The committed solution readiness parent is
+`aosedge-sdv-demo@107031a353308fc670d4a477e302e7a6bd278e55`; the accepted
+correction cascade is pinned by the exact digests below.
 
-| Frozen input at `ce829f0` | SHA-256 |
+| Frozen input after `107031a` | SHA-256 |
 | --- | --- |
 | VISS Trust and Telemetry 1.1.0 | `4a1a2bd804c3a49f707b5e640632bd8a0357901f59e4615c340622b043d4c12c` |
 | Exclusive Live-Source Assignment 1.0.0 | `9434ec3a8abb6a9ef3e283b4d0a505f7dbb4f848b37232df83d8e21a899d4ce2` |
 | Demo Run State 1.1.0 | `3cc284f15b0b81f2c145b64e813c6081e255cf74b883f8feb6111db4bf47dcf2` |
-| D4 Decision Register | `5ad2a0a922907962c0b0d4712194404696cdc15d15db3d41b82058a0eafcca68` |
-| Vehicle Gateway requirements | `88c008dcb1e452f5fa60152dbdc0dad9d70fbf801cc2b1083574257c38856415` |
+| D4 Decision Register | `91842de2ec12a8f802a9bc2ae402e2db77af76ccf9d248ca1a44463a3943e556` |
+| Vehicle Gateway requirements | `39aaf18675a8b4160f734c075ca411919d99a90071afb19ab9c070e2eeaa2d8e` |
 | Vehicle Data Platform requirements | `32dc38aa98fd94edcb52a60f9fe77953c5244cd2e07acfd9fa7ea40af410bfc1` |
 | Factory Substrate requirements | `a3ccea88d138fdbcffbfee52f2561686a637844983201cb65d11a86585bc466d` |
-| Component/interface register | `85b2c5c1c96007f532a23947c05eedaada32af5509095569f42ef526d965ea89` |
+| Component/interface register | `1bb198f8a63074bd2c133b439abd918b6730278fd553339145f1956d53cafb61` |
 | System requirements/traceability | `674c888657237b4b2ef013c5b5b584101983203dc30e792327a22354710607bd` |
 | Accepted Platform P0 decisions | `c5a8ce0ecfb79d85687107fa13ea64638e22bbb3f67dd4f004c2c4e8f07f21cb` |
 | Single-node provisioning evidence | `553f8be26c4f29c3e201b5e5d024ad8c57e7a6c2cd35341904b26624a4f15c15` |
 
-Every digest and both product commits must be rechecked immediately before a
-future implementation authorization.
+Every digest and both product commits must be rechecked immediately before
+implementation starts.
 
 ## Read-only current-state result
 
@@ -159,7 +160,7 @@ The Host Demo Orchestrator owns durable current-run identity references and
 the assignment operation. The Gateway owns transport admission and its
 in-memory current selection. The proposed handoff is one private local
 `AF_UNIX/SOCK_STREAM` control socket, separate from vehicle control and the
-controller-facts datagram socket:
+controller-facts framed stream:
 
 - pathname is explicit and short enough for the macOS Unix-socket limit;
 - parent directory is mode `0700`, socket is mode `0600`;

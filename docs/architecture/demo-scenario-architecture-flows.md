@@ -580,7 +580,7 @@ Engineering Telematics Dashboard presents those facts without joining the
 control path. A failed obstacle cleanup, reset or lane validation leaves the
 vehicle in safe stop and does not partially activate the requested mode.
 The exact accepted transition and engineering-path contract is
-[Simulator Control and Context 1.1.0](../../contracts/simulator-control-context/simulator-control-context.v1.json).
+[Simulator Control and Context 1.1.1](../../contracts/simulator-control-context/simulator-control-context.v1.json).
 
 ## G1 — Vehicle Data Platform Component v1
 

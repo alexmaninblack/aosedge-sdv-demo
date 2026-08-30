@@ -265,7 +265,7 @@ decisions they exercise.
 - Architecture flows: [G0 baseline failure boundaries (`AF-G0-FR`)](../../architecture/demo-scenario-architecture-flows.md#af-g0-fr) and [working vehicle baseline (`AF-G0-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-g0-rt)
 - Components: [Control UI (`CMP-CONTROL`)](../component-decomposition-and-interface-register.md#cmp-control) and [Gateway (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw)
 - Interfaces: [control requests (`IF-VEH-002`)](../component-decomposition-and-interface-register.md#if-veh-002) and [CARLA commands (`IF-VEH-003`)](../component-decomposition-and-interface-register.md#if-veh-003)
-- Executable contract: [Simulator Control and Context 1.1.0](../../../contracts/simulator-control-context/simulator-control-context.v1.json)
+- Executable contract: [Simulator Control and Context 1.1.1](../../../contracts/simulator-control-context/simulator-control-context.v1.json)
 - Required evidence: isolated state-machine suite, local socket permission/lifecycle test and live safe-stop observation
 - Requirement state: D3 design-reviewed; D4-004 contract accepted
 - Implementation state: `CURRENT`
@@ -286,7 +286,7 @@ decisions they exercise.
 - Architecture flows: [working vehicle baseline (`AF-G0-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-g0-rt) and [drive-mode/world-context transitions (`AF-X-DRIVE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-drive)
 - Components: [Control UI (`CMP-CONTROL`)](../component-decomposition-and-interface-register.md#cmp-control) and [Gateway (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw), jointly with [Scenario Controller (`CMP-SCENE`)](../component-decomposition-and-interface-register.md#cmp-scene)
 - Interfaces: [control requests (`IF-VEH-002`)](../component-decomposition-and-interface-register.md#if-veh-002) and [CARLA commands (`IF-VEH-003`)](../component-decomposition-and-interface-register.md#if-veh-003)
-- Executable contract: [Simulator Control and Context 1.1.0](../../../contracts/simulator-control-context/simulator-control-context.v1.json)
+- Executable contract: [Simulator Control and Context 1.1.1](../../../contracts/simulator-control-context/simulator-control-context.v1.json)
 - Required evidence: mode-transition suite, stable actor/run/frame identity and visual handover acceptance
 - Requirement state: D3 design-reviewed; D4-004 contract accepted
 - Implementation state: `PARTIAL`; current same-actor handover, lane validation and automatic-to-manual blend exist, while context-aware obstacle cleanup/reset before Autopilot does not
@@ -408,10 +408,13 @@ decisions they exercise.
   prove that each sample was fresh when acquired and revalidate the latest
   complete sample at each destructive gate; the retained observation sequence
   is stability evidence only. The six controller/reset facts shall be included
-  only when one non-blocking, owner-only `AF_UNIX` datagram from the exclusive
-  controller is authenticated through Linux peer credentials and joined to
+  only when one non-blocking, length-framed record from the exclusive
+  controller is carried over the owner-only connected `AF_UNIX` stream for
+  that run, authenticated by effective UID on Darwin or Linux, and joined to
   the physical snapshot by exact CARLA frame ID and simulation time. The
-  transport shall reject truncated/oversize input before JSON processing,
+  transport shall reject zero/truncated/oversize input before JSON processing,
+  treat backpressure timeout, EOF or disconnect as unavailable without
+  reconnect or prior-value reuse,
   bound unmatched records to four per side for 250 ms host-monotonic residence
   and omit the complete six-fact group on invalid, missing, duplicate,
   out-of-order, expired or overflowed input, without last-known reuse. These
@@ -425,7 +428,7 @@ decisions they exercise.
 - Components: [Gateway (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw), [VISS (`CMP-VISS`)](../component-decomposition-and-interface-register.md#cmp-viss), [OEM Component Runtime (`CMP-RUNTIME`)](../component-decomposition-and-interface-register.md#cmp-runtime) and [Engineering Dashboard (`CMP-ENG-DASH`)](../component-decomposition-and-interface-register.md#cmp-eng-dash)
 - Interfaces: [normalized model (`IF-VEH-004`)](../component-decomposition-and-interface-register.md#if-veh-004), [engineering subscription (`IF-VEH-006`)](../component-decomposition-and-interface-register.md#if-veh-006) and [Platform-update vehicle state (`IF-VEH-007`)](../component-decomposition-and-interface-register.md#if-veh-007)
 - Required evidence: state/path/type/freshness fixtures including per-sample acquisition freshness and latest-sample gate-time freshness; accepted controller-record schema, peer/permission and exact frame/time join fixtures; bounded missing/drop/duplicate/out-of-order/overflow/expiry negatives; monotonic generation checks; real-frame-only reset discontinuity sequence; runtime-role allowlist; dashboard rendering; and negative proof that neither the dashboard nor Gateway owns the update decision
-- Executable contracts: [Simulator Control and Context 1.1.0](../../../contracts/simulator-control-context/simulator-control-context.v1.json) and [Platform FOTA Safe Stop 1.1.1](../../../contracts/platform-fota-safe-stop/platform-fota-safe-stop-profile.v1.json)
+- Executable contracts: [Simulator Control and Context 1.1.1](../../../contracts/simulator-control-context/simulator-control-context.v1.json) and [Platform FOTA Safe Stop 1.1.1](../../../contracts/platform-fota-safe-stop/platform-fota-safe-stop-profile.v1.json)
 - Requirement state: D3 design-reviewed; D4-004 contract accepted
 - Implementation state: `TARGET`; current controller status contains part of the state outside VISS, but the accepted engineering projection and dashboard fields do not exist
 
@@ -496,7 +499,7 @@ profile before the Platform Team selects a narrower service-facing contract.
 | <a id="ut-gateway-010"></a>`UT-GATEWAY-010` — authoritative QM-channel policy | [Advisory Set (`REQ-GATEWAY-010`)](#req-gateway-010) | Correct Brake/Tire target plus wrong caller/path/type/value, stale/replay/rate/correlation, arbitrary VSS and all motion/safety-operation negatives with no side effects | No implementation | `TARGET` |
 | <a id="ut-gateway-011"></a>`UT-GATEWAY-011` — advisory status state machine | [Factual status (`REQ-GATEWAY-011`)](#req-gateway-011) | Accepted/rejected reasons, correlation, bounded state, reconnect and prohibited HMI claims | No implementation | `TARGET` |
 | <a id="ut-gateway-012"></a>`UT-GATEWAY-012` — advisory chronology | [Local chronology (`REQ-GATEWAY-012`)](#req-gateway-012) | Source/advisory/Gateway ordering, correlation, missing or inconsistent timestamps and Cloud separation | No implementation | `TARGET` |
-| <a id="ut-gateway-013"></a>`UT-GATEWAY-013` — frame-coherent mode/context projection | [Transition projection (`REQ-GATEWAY-013`)](#req-gateway-013) | Closed datagram schema; owner-only socket and peer credentials; non-blocking/oversize/truncation behavior; exact frame/time joins in both arrival orders; four-per-side/250-ms bounds; missing/drop/duplicate/out-of-order/overflow/expiry whole-group omission; no last-known reuse; generation monotonicity; real-frame-only reset/discontinuity lifetime; dashboard separation | No implementation | `TARGET` |
+| <a id="ut-gateway-013"></a>`UT-GATEWAY-013` — frame-coherent mode/context projection | [Transition projection (`REQ-GATEWAY-013`)](#req-gateway-013) | Closed length-framed schema; owner-only connected stream and Darwin/Linux peer credentials; non-blocking partial-frame/backpressure/EOF/oversize/truncation behavior; exact frame/time joins in both arrival orders; four-per-side/250-ms bounds; missing/drop/duplicate/out-of-order/overflow/expiry whole-group omission; no reconnect or last-known reuse; generation monotonicity; real-frame-only reset/discontinuity lifetime; dashboard separation | Candidate correction not started | `TARGET` |
 | <a id="ut-gateway-014"></a>`UT-GATEWAY-014` — hardware-manifest accounting | [Hardware accounting (`REQ-GATEWAY-014`)](#req-gateway-014) | Manifest identity/schema/digest, unique complete every-entry disposition, source/blueprint/sensor/adapter mismatch, unavailable/unsupported handling and qualification/demo-truth rejection | Canonical profile/schema accepted; existing state/projection tests cover only the mapped subset | `PARTIAL` |
 | <a id="ut-gateway-015"></a>`UT-GATEWAY-015` — actuator capability/authority/applied state | [Actuator traceability (`REQ-GATEWAY-015`)](#req-gateway-015) | Declared versus authorized actuators, command bounds, accepted/rejected status, applied-state correlation and unauthorized gear/reverse/handbrake cases | Existing control tests cover current throttle/brake/steer authority only | `PARTIAL` |
 
@@ -516,7 +519,7 @@ profile before the Platform Team selects a narrower service-facing contract.
 | [Advisory Set (`REQ-GATEWAY-010`)](#req-gateway-010) | [`UT-GATEWAY-010`](#ut-gateway-010) | TLS Set handler | Typed advisory conformance | VDP-to-Gateway round trip | G4 and T1 advisory proof |
 | [Advisory status (`REQ-GATEWAY-011`)](#req-gateway-011) | [`UT-GATEWAY-011`](#ut-gateway-011) | Status publication | Status schema/enum suite | Dashboard subscription | G4/T1 factual receipt |
 | [Local chronology (`REQ-GATEWAY-012`)](#req-gateway-012) | [`UT-GATEWAY-012`](#ut-gateway-012) | Correlated timestamp output | Chronology field semantics | Local-path correlation | Separate on-board/Cloud chronology display |
-| [Transition projection (`REQ-GATEWAY-013`)](#req-gateway-013) | [`UT-GATEWAY-013`](#ut-gateway-013) | Controller datagram join, VSS snapshot and dashboard | Simulator-control handoff record plus reset-sequence fixtures | Live all-transition sequence | G0 truthful mode/context evidence |
+| [Transition projection (`REQ-GATEWAY-013`)](#req-gateway-013) | [`UT-GATEWAY-013`](#ut-gateway-013) | Controller framed-stream join, VSS snapshot and dashboard | Simulator-control handoff record plus reset-sequence fixtures | Live all-transition sequence | G0 truthful mode/context evidence |
 | [Hardware accounting (`REQ-GATEWAY-014`)](#req-gateway-014) | [`UT-GATEWAY-014`](#ut-gateway-014) | Startup coverage report | Manifest/adapter coverage fixtures | Live installed-state comparison | G0 complete-profile evidence |
 | [Actuator traceability (`REQ-GATEWAY-015`)](#req-gateway-015) | [`UT-GATEWAY-015`](#ut-gateway-015) | Command/result/applied-state record | `IF-VEH-002`/`003`/`001` sequence fixtures | Live accepted/rejected controls | G0 capability-versus-authority proof |
 

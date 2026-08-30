@@ -136,7 +136,7 @@ worktree. A different commit or dirty base stops work and requires review.
 | Invalid-input cases | 1.0.0 | `d63d80b2e8f8d5e02ddaa24ecbb1532aea80694ed5a552b7c3329a26a36ac222` |
 | Conversion/quantization cases | 1.0.0 | `deb8d15e0bad1ddec562d3b5a6fcaf1121cec41f467c4e040924d1efc4572fa7` |
 | Assessment schema | 1.0.0 | `0c47d793bb4e31852c0452b92c901514d582c16a479f7107d15e02f0d22dc1e9` |
-| Band-change event schema | 1.0.0 | `d88bf8882f68b25980dc23987149d4f57c25eee7bed371af419998a053a55e66` |
+| Band-change event schema | 1.0.0 bounded Unit-ID correction accepted 2026-08-30 | `22e25d5519780b16617c574ca44bd17fc193866f89e917c6e69b3ea60a74080d` |
 | Persistent-state schema | 1.0.0 | `350a38547490547f3bf963971fb9a2f5e0cc7c4c4ea4d96b746b392779fc7f79` |
 | Golden assessment fixture | 1.0.0 | `84c7deaea38a0ed4c8f95a9aabda1dd7d89ab96d76cd09298f11f27e52b8301d` |
 | Golden event fixture | 1.0.0 | `4abcf514a6d454e7216325a62a2aee3416e1ef07636f318ed5315b67fd723578` |

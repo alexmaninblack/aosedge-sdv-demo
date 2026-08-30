@@ -6,11 +6,11 @@
 - ID: `WP-P1-BRAKE-CLOUD-DATA-001`
 - Lane: `L-BRAKE-CLOUD`
 - Increment: `IMP-04-BRAKE-CLOUD-DATA-001`
-- State: `IMPLEMENTATION CANDIDATE QUARANTINED — BOUNDED CORRECTION REQUIRED`
-- Version: 0.2
+- State: `BOUNDED CORRECTION AUTHORIZED — READY / NOT STARTED`
+- Version: 0.3
 - Prepared: 2026-08-29
 - Independent candidate review authorized: yes, completed 2026-08-30
-- Further product correction authorized: no, pending the exact delta below
+- Further product correction authorized: yes, accepted 2026-08-30 only for the exact delta below
 - Repository: `brake-health-cloud`
 - Frozen base: `68fe61b292b0b9671b1af0dc1881fe37dc5f97de`
 - Proposed branch: `codex/imp-04-brake-cloud-data`
@@ -80,6 +80,16 @@ cascade was prepared from clean `aosedge-sdv-demo@d54fbc4ced3b1083dbf686d7aa559e
 
 Any base or digest mismatch stops the future packet. The worker must not
 reinterpret, regenerate or copy solution contracts into product history.
+
+The authorized correction additionally pins the accepted 2026-08-30 inputs:
+`CR-BRAKE-CLOUD` SHA-256
+`a1f8051bb9db8cc11e4cda57c2242ff356cc9b592aea8ba4eceae260e10ac0b0`,
+D4 Decision Register SHA-256
+`91842de2ec12a8f802a9bc2ae402e2db77af76ccf9d248ca1a44463a3943e556`,
+and bounded Unit-ID Brake Health Event schema SHA-256
+`22e25d5519780b16617c574ca44bd17fc193866f89e917c6e69b3ea60a74080d`.
+These supersede only the corresponding correction inputs; the original hashes
+above remain candidate provenance.
 
 ## Exact Future Writable Boundary
 
@@ -335,8 +345,8 @@ are inside the twenty-two-file boundary, frozen contract digests match, and
 offline typecheck, 19 Node tests, 12 Vitest tests, build and quality gates pass.
 It shall not be discarded or reimplemented.
 
-Independent review nevertheless quarantined the candidate until a separately
-authorized bounded correction closes exactly these defects:
+Independent review quarantined the candidate until the operator accepted on
+2026-08-30 a bounded correction that closes exactly these defects:
 
 1. reject every invalid `terminalState`/`reasonCode` completion pair with
    `422`, including all five mismatch negatives;
@@ -347,9 +357,14 @@ authorized bounded correction closes exactly these defects:
 4. add the missing closed-schema negatives, `SQLITE_FULL` proof and persistent-
    conflict regression.
 
-The correction review must also classify transient `SQLITE_BUSY` separately
-from fatal storage faults and resolve the bounded Unit-ID schema inconsistency
-without silently changing the accepted API. No further product edit,
-dependency access, commit, merge or push is authorized by this record.
-Reviewers must accept the exact correction boundary first. Any change outside
-it returns a bounded change request rather than being absorbed into the packet.
+The accepted correction classifies transient `SQLITE_BUSY` as retryable `503`
+without permanently latching the backend unavailable; `SQLITE_FULL`, corrupt
+or closed storage remains fatal/not-ready and no receipt may be acknowledged.
+It also applies the common 1..128-character bounded-ID pattern
+`^[A-Za-z0-9._:-]+$` to the Brake Health Event `unitSystemUid`, matching the
+Current Unit context, telemetry-window and query contracts. The worker starts
+from preserved candidate `a4b5b33`, changes only the existing twenty-two-file
+boundary, runs the full existing offline gates plus every listed regression,
+and returns one clean correction commit. Dependency access, merge, push and
+all external operations remain unauthorized. Any change outside this exact
+delta returns a bounded change request rather than being absorbed.

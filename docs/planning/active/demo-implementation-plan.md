@@ -349,13 +349,14 @@ handoff.
   `d4a20c`, but independent qualification found that its Linux-only Unix
   datagram peer-credential implementation cannot start on the accepted macOS
   Gateway runtime. Core/VISS/shared-contract/sanitizer suites passed; merge is
-  blocked pending a bounded D4-004/`IF-VEH-007` transport correction, macOS
-  tests and a pinned `CARLA_EGO_WITH_CARLA=ON` compile. The later selected-Unit
+  blocked pending implementation of the now-accepted bounded D4-004/
+  `IF-VEH-007` framed-stream correction, macOS tests and a pinned
+  `CARLA_EGO_WITH_CARLA=ON` compile. The later selected-Unit
   mTLS packet is authorized as part of the Demo Interface Train but cannot
   start until that corrected Gateway base is accepted. The exact recommended
-  cross-platform stream correction is isolated for operator review in
+  cross-platform stream correction is accepted and authorized in
   [`WP-P1-VEH-GATEWAY-CONTROLLER-MACOS-001`](work-packets/p1-vehicle-gateway-controller-macos-correction.md);
-  it grants no product or normative contract edit before acceptance.
+  its exact fourteen-file boundary; no live or dependency action is implied.
 - Repositories: `CarlaSim` only if the installed hardware model itself needs a
   change; otherwise `carla-ego-runtime` for scenario, controller, Gateway,
   VISS, advisory and Engineering Dashboard changes.
@@ -483,12 +484,12 @@ handoff.
   integrations remain later gates.
 - The next bounded Cloud packet,
   [`WP-P1-BRAKE-CLOUD-DATA-001`](work-packets/p1-brake-cloud-data.md), is
-  represented by a preserved two-commit candidate ending at `a4b5b33`, but independent
-  review classified it `QUARANTINED — BOUNDED CORRECTION REQUIRED`. Provenance,
+  represented by a preserved two-commit candidate ending at `a4b5b33`.
+  Independent review classified it `QUARANTINED — BOUNDED CORRECTION REQUIRED`,
+  and the operator authorized only that exact correction on 2026-08-30. Provenance,
   path boundary, frozen inputs and existing offline gates pass. Invalid
   completion pairs, incomplete SQLite digest constraints, lost persistent
-  conflict projection and missing negative/storage tests block acceptance. No
-  correction is authorized until that exact delta is reviewed. Its source-only
+  conflict projection and missing negative/storage tests block acceptance. Its source-only
   data boundary
   consumes an injected current Test/Production Unit context sourced from the
   provisioning journal, while live context wiring remains deferred. It stores

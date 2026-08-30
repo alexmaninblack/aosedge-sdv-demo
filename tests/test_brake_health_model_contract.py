@@ -269,6 +269,14 @@ class BrakeHealthModelContractTest(unittest.TestCase):
         self.assertFalse(self.assessment_schema["properties"]["content"]["additionalProperties"])
         self.assertFalse(self.event_schema["additionalProperties"])
         self.assertFalse(self.event_schema["properties"]["content"]["additionalProperties"])
+        self.assertEqual(
+            {"$ref": "#/$defs/boundedId"},
+            self.event_schema["properties"]["unitSystemUid"],
+        )
+        self.assertEqual(
+            "^[A-Za-z0-9._:-]+$",
+            self.event_schema["$defs"]["boundedId"]["pattern"],
+        )
         self.assertFalse(self.state_schema["additionalProperties"])
 
 

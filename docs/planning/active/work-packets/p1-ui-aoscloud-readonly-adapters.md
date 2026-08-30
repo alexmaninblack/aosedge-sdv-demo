@@ -52,7 +52,7 @@ nor authorizes `IMP-07` protected actions.
 | Item | Frozen value |
 | --- | --- |
 | Solution/product repository | `aosedge-sdv-demo` |
-| Exact future branch base | `ce829f0a7300e83ab222fda64defbaf56eccbf9c` |
+| Exact future branch base | `107031a353308fc670d4a477e302e7a6bd278e55` |
 | Required relationship | clean `main`, exact commit above; completed Presenter shell commit `106d340a6fe2e945de055642f2e016355ea6cf91` must be an ancestor |
 | Presenter shell tree | `90abac62816a879060a0d793081726c9cf72b4aa` |
 | Proposed future branch | `codex/imp-06-readonly-adapters` |
@@ -67,14 +67,14 @@ another checkout.
 
 ## Frozen Inputs
 
-All repository file digests in this table are the exact bytes at synchronized
-solution commit `ce829f0a7300e83ab222fda64defbaf56eccbf9c`. Presenter-shell
+All repository file digests in this table are the exact accepted bytes after
+solution readiness commit `107031a353308fc670d4a477e302e7a6bd278e55`. Presenter-shell
 identity remains the accepted ancestor
 `106d340a6fe2e945de055642f2e016355ea6cf91`.
 
 | Input | Version / identity | SHA-256 |
 | --- | --- | --- |
-| Consolidated execution trains | synchronized authorization record, 2026-08-30 | `631aa238cf90395f4604001970940c69597796cd1ba7cc04257e7c3b2fdde40f` |
+| Consolidated execution trains | synchronized authorization record, 2026-08-30 | `e97a2c597ff1039685bbc70fcde1171c4a2cc28c8f33d87bdd623c4d961071e2` |
 | Presenter shell completion packet | `WP-P1-UI-001` 0.3 | `e918ced919eed551b539c8bd85e905cda8e2c0b0f4a80429b6788b542609b426` |
 | Presenter lockfile | shell commit `106d340a`; Node 26.0.0 / npm 11.12.1 | `fcb9e6114b021dfa02f93a76d453f2ca06980c780947dbe38ac9a5d378a7364c` |
 | Presenter architecture test | shell commit `106d340a` | `e4b603477473374ff9d3dd2c75cc6044e1683f124c475dad34d733ed2fee3948` |
@@ -82,8 +82,8 @@ identity remains the accepted ancestor
 | UI Traceability Register | 1.1 | `84cb86ba668b13fb979b1b1df219761a49ed410856629fde712051001cd63bd3` |
 | `CR-DEMO` | 1.1 | `a67e2d37f0f37127b6596a1d1c0e06d36edab7707927878d30da4a5867a02d43` |
 | `CR-AOS` | 0.4 | `485a66ee27287475d7144e01721c5ccbff99b2792cb57fc07124747b43eb50e2` |
-| D4 Decision Register | D4-011, D4-012, D4-014, D4-021 and D4-026 | `5ad2a0a922907962c0b0d4712194404696cdc15d15db3d41b82058a0eafcca68` |
-| Component/interface register | `CMP-SW-DASH`, `IF-LC-005`, `IF-OBS-001`, `IF-FUNC-002` | `85b2c5c1c96007f532a23947c05eedaada32af5509095569f42ef526d965ea89` |
+| D4 Decision Register | D4-011, D4-012, D4-014, D4-021 and D4-026 | `91842de2ec12a8f802a9bc2ae402e2db77af76ccf9d248ca1a44463a3943e556` |
+| Component/interface register | `CMP-SW-DASH`, `IF-LC-005`, `IF-OBS-001`, `IF-FUNC-002` | `1bb198f8a63074bd2c133b439abd918b6730278fd553339145f1956d53cafb61` |
 | AosCloud lifecycle research | API v11 implementation 6.1.26 | `dac5e0804dc45cbeefeb9afa2c89b8675174f59e3d3c1790445d032e439d5f65` |
 | R6.1 source lock | includes OpenAPI 3.0.3 observed 2026-08-14 | `cf945d31882d5e54c15b57cec675c754779b203343b2e9f49bca243f0345c0af` |
 | Frozen AosCloud OpenAPI bytes | v11 / implementation 6.1.26 | digest recorded only: `a587d7a308cb7c9ea0d274f1c5f2ff4ae3a99e2e492b753436ae6c9e2dbf508a` |

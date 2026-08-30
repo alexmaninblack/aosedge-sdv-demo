@@ -25,7 +25,7 @@ class SimulatorControlContextContractTest(unittest.TestCase):
 
     def test_identity_and_state_sets_are_frozen(self) -> None:
         self.assertEqual("D4-004", self.contract["decision"])
-        self.assertEqual("1.1.0", self.contract["contractVersion"])
+        self.assertEqual("1.1.1", self.contract["contractVersion"])
         self.assertEqual(
             {"SAFE_STOP", "SCENARIO", "MANUAL", "AUTOPILOT"},
             set(self.contract["states"]["driveModes"]),
@@ -62,16 +62,22 @@ class SimulatorControlContextContractTest(unittest.TestCase):
             set(self.contract["reversePolicy"]["recovery"]),
         )
 
-    def test_controller_gateway_transport_is_local_atomic_and_bounded(self) -> None:
+    def test_controller_gateway_transport_is_cross_platform_framed_and_bounded(self) -> None:
         handoff = self.contract["controllerGatewayHandoff"]
         transport = handoff["transport"]
         self.assertEqual("AF_UNIX", transport["addressFamily"])
-        self.assertEqual("SOCK_DGRAM", transport["socketType"])
-        self.assertEqual("NON_BLOCKING", transport["controllerSend"])
-        self.assertEqual(4096, transport["maximumDatagramBytes"])
-        self.assertTrue(transport["linuxPeerCredentialsRequired"])
-        self.assertTrue(transport["rejectTruncatedOrOversizeBeforeJson"])
-        self.assertFalse(transport["streamProtocol"])
+        self.assertEqual("SOCK_STREAM", transport["socketType"])
+        self.assertEqual("UINT32_BE_LENGTH_PREFIX", transport["framing"])
+        self.assertEqual("NON_BLOCKING", transport["controllerIo"])
+        self.assertEqual(4096, transport["maximumRecordBytes"])
+        self.assertEqual(1, transport["maximumPartialFrames"])
+        self.assertTrue(transport["peerEffectiveUidRequired"])
+        self.assertEqual(
+            ["DARWIN_GETPEEREID_OR_LOCAL_PEERCRED", "LINUX_SO_PEERCRED"],
+            transport["peerCredentialMechanisms"],
+        )
+        self.assertTrue(transport["rejectZeroOversizeOrTruncatedBeforeJson"])
+        self.assertTrue(transport["oneConnectionPerRun"])
         self.assertFalse(transport["reconnectProtocol"])
         self.assertFalse(transport["historyOrReplay"])
 

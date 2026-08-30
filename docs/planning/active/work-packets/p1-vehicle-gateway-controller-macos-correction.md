@@ -6,13 +6,15 @@
 - ID: `WP-P1-VEH-GATEWAY-CONTROLLER-MACOS-001`
 - Lane: `L-VEH`
 - Increment: bounded correction to `IMP-02C`
-- State: `REVIEW CANDIDATE — NOT AUTHORIZED`
-- Version: 0.1
+- State: `ACCEPTED — IMPLEMENTATION AUTHORIZED / NOT STARTED`
+- Version: 0.2
 - Prepared: 2026-08-30
+- Accepted and authorized: 2026-08-30
 - Repository: `carla-ego-runtime`
 - Preserved candidate: `d4a20c85196ef7df81c78f992f6237c5eca8ff6c`
-- Product edits, dependency retrieval, build, live CARLA, VM, Cloud, merge and
-  push authorized: no
+- Product edits and owned offline/local tests inside the retained fourteen-file
+  boundary authorized after the synchronized contract checkpoint is committed;
+  dependency retrieval, live CARLA, VM, Cloud, merge and push authorized: no
 
 ## Proven Blocker
 
@@ -30,7 +32,7 @@ runtime is not accepted.
 
 ## Recommended Bounded Correction
 
-Amend D4-004, Simulator Control and Context 1.1.0 and `IF-VEH-007` together to
+Amend D4-004, Simulator Control and Context 1.1.1 and `IF-VEH-007` together to
 use one owner-only connected `AF_UNIX/SOCK_STREAM` per run:
 
 1. the C++ Gateway creates one mode-`0600` socket under the existing random
@@ -73,7 +75,9 @@ authorized here.
 
 ## Authorization Gate
 
-The operator must explicitly accept the recommended transport correction
-before the normative D4/contract/interface cascade or any candidate source
-edit. If the stream boundary is rejected, `d4a20c` remains quarantined and the
-Demo Interface Train remains blocked. No fallback transport is inferred.
+The operator accepted the recommended transport correction on 2026-08-30.
+The synchronized D4/contract/interface cascade is the exact implementation
+input. The worker may correct the preserved `d4a20c` candidate only within its
+existing fourteen-file boundary and run the listed offline/local tests. A need
+for another transport, product path, dependency retrieval, live CARLA or any
+external operation stops for a new bounded authorization.

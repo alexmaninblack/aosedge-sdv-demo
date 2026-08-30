@@ -191,7 +191,7 @@ calibration tolerance.
 - Architecture flow: [working vehicle baseline (`AF-G0-RT`)](../../architecture/demo-scenario-architecture-flows.md#af-g0-rt)
 - Components: [Scenario Controller (`CMP-SCENE`)](../component-decomposition-and-interface-register.md#cmp-scene), jointly with [Vehicle Gateway (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw)
 - Interface: [Gateway commands (`IF-VEH-003`)](../component-decomposition-and-interface-register.md#if-veh-003)
-- Executable contract: [Simulator Control and Context 1.1.0](../../../contracts/simulator-control-context/simulator-control-context.v1.json)
+- Executable contract: [Simulator Control and Context 1.1.1](../../../contracts/simulator-control-context/simulator-control-context.v1.json)
 - Required evidence: stable actor/run identity, monotonic mode generation, aborted-attempt record and continuous frame range
 - Requirement state: D3 design-reviewed; D4-004 contract accepted
 - Implementation state: `CURRENT`
@@ -314,7 +314,7 @@ under [preserve immutable factory artifact (`SYS-RET-005`)](../system-requiremen
 - Architecture flow: [drive-mode and world-context transitions (`AF-X-DRIVE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-drive)
 - Components: [CARLA (`CMP-CARLA`)](../component-decomposition-and-interface-register.md#cmp-carla) and [Scenario Controller (`CMP-SCENE`)](../component-decomposition-and-interface-register.md#cmp-scene), jointly with [Vehicle Gateway (`CMP-GW`)](../component-decomposition-and-interface-register.md#cmp-gw)
 - Interface: [Gateway commands (`IF-VEH-003`)](../component-decomposition-and-interface-register.md#if-veh-003)
-- Executable contract: [Simulator Control and Context 1.1.0](../../../contracts/simulator-control-context/simulator-control-context.v1.json)
+- Executable contract: [Simulator Control and Context 1.1.1](../../../contracts/simulator-control-context/simulator-control-context.v1.json)
 - Required evidence: complete source-mode/context/target-mode matrix, obstacle inventory, actor identity, exact frame/time-attributed controller records, reset/control generation sequence, zero-motion reset, no fabricated blocking-reset frame, exactly one real discontinuity frame and injected cleanup/reset failures
 - Requirement state: D3 design-reviewed; D4-004 contract accepted
 - Implementation state: `PARTIAL`; scenario restart, same-actor continuity and manual abort exist, but the obstacle is currently session-lived and Scenario/brake-event Manual to Autopilot does not yet perform the accepted cleanup/reset

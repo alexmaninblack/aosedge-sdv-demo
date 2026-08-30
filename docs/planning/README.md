@@ -13,9 +13,10 @@ assignment, VM restart, or provisioned-Unit change.
   verification and per-increment authorization gates.
 - [Consolidated Implementation Execution Trains](active/infrastructure-first-critical-path-proposal.md)
   — the completed Platform Train authorization record and bounded Demo
-  Interface Train authorization. The latter remains on readiness hold until
-  the controller-handoff macOS correction and synchronized entry gates close;
-  it authorizes no live source or external mutation.
+  Interface Train authorization. Its macOS handoff correction is now accepted;
+  the train may begin only after the synchronized contract checkpoint and
+  exact clean entry gates pass, and authorizes no live source or external
+  mutation.
 - Completed P0 work packets:
   [UI readiness](active/work-packets/p0-ui-readiness.md),
   [Vehicle/Gateway readiness](active/work-packets/p0-vehicle-gateway-readiness.md)
@@ -40,7 +41,7 @@ assignment, VM restart, or provisioned-Unit change.
   Their source/fan-in/qualification result is accepted Factory baseline `.21`;
   these historical execution records grant no residual product, Builder, VM
   or Cloud authority. The Demo Interface Train is separately authorized but
-  remains on the synchronized readiness hold described above.
+  remains not started until the synchronized contract checkpoint lands.
 - The next Platform execution boundary is the authorized
   [VDP deployable artifact preparation packet](active/work-packets/p1-platform-vdp-artifacts.md),
   which is offline-only and not started. It owns no signing, Cloud, VM or FOTA
@@ -49,10 +50,11 @@ assignment, VM restart, or provisioned-Unit change.
   records the preserved `d4a20c` candidate and its macOS/full-CARLA compile
   blockers; its bounded
   [macOS correction packet](active/work-packets/p1-vehicle-gateway-controller-macos-correction.md)
-  remains a review candidate. The [Brake v2 packet](active/work-packets/p1-brake-health-core-v2.md)
+  is accepted/authorized but not started. The [Brake v2 packet](active/work-packets/p1-brake-health-core-v2.md)
   is source-only authorized/not started; the
   [Brake Cloud Data packet](active/work-packets/p1-brake-cloud-data.md) preserves
-  its existing candidate in quarantine pending a bounded correction.
+  its existing candidate in quarantine with only its exact bounded correction
+  authorized/not started.
 - [Repository inventory and migration plan](repository-inventory-and-migration-plan.md)
   — completed migration and local-cleanup execution record.
 

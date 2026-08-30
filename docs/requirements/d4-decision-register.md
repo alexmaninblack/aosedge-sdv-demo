@@ -276,9 +276,10 @@ evidence.
 - Decision state: `DECIDED`
 - Accepted: 2026-08-21
 - Controller/Gateway handoff refinement accepted: 2026-08-29
+- Cross-platform macOS/Linux transport correction accepted: 2026-08-30
 - Owners: Vehicle Simulation / Vehicle Gateway
 - Canonical contract:
-  [Simulator Control and Context Contract 1.1.0](../../contracts/simulator-control-context/simulator-control-context.v1.json)
+  [Simulator Control and Context Contract 1.1.1](../../contracts/simulator-control-context/simulator-control-context.v1.json)
 
 The accepted contract freezes:
 
@@ -306,9 +307,15 @@ The accepted contract freezes:
 9. reverse as a physical capability declared by D4-002 but not authorized in
    the first-demo Control UI. Recovery uses Scenario restart or the accepted
    Autopilot context reset; Traffic Manager obstacle avoidance is not claimed;
-10. one owner-only, Linux-peer-credential-verified `AF_UNIX` `SOCK_DGRAM`
-    controller-to-Gateway handoff, with one non-blocking atomic record per real
-    completed CARLA frame and no stream, reconnect or replay/history protocol;
+10. one owner-only connected `AF_UNIX` `SOCK_STREAM` controller-to-Gateway
+    handoff per run, with effective-UID peer verification through
+    `getpeereid`/`LOCAL_PEERCRED` on Darwin and `SO_PEERCRED` on Linux, one
+    non-blocking unsigned-big-endian-32-length-framed UTF-8 JSON record per real
+    completed CARLA frame, a 4096-byte body maximum and at most one bounded
+    partial frame. Zero, oversize, truncated or invalid input, backpressure
+    timeout, EOF or disconnect makes the channel unavailable and omits all six
+    controller/reset facts; there is no reconnect, replay or history protocol
+    and no last-known reuse within a run;
 11. an exact frame-ID-plus-simulation-time join bounded to four unmatched
     physical and four unmatched control records for 250 ms host-monotonic
     residence. Invalid, duplicate, out-of-order, missing, expired or overflowed
