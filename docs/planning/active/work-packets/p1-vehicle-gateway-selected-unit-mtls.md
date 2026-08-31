@@ -6,15 +6,18 @@
 - ID: `WP-P1-VEH-GATEWAY-SELECTED-UNIT-MTLS-001`
 - Lane: `L-VEH`
 - Increment: `IMP-02D`
-- State: `REBASELINE REQUIRED ON ACCEPTED CONTROLLER-HANDOFF BASE 162eaa3`
-- Version: 0.4
+- State: `REBASELINED ON 162eaa3 — PRODUCT EDITS HELD FOR INDEPENDENT REVIEW`
+- Version: 0.5
 - Prepared: 2026-08-29
 - Authorized: 2026-08-30 as part of the bounded Demo Interface Train
 - Status synchronized: 2026-08-31
-- Product edits and local/offline tests authorized only after the corrected
-  controller-handoff base is accepted; dependency retrieval, retained real
-  certificates, live CARLA, VM, Unit, Cloud, signing, FOTA, push and merge
-  authorized: no
+- Rebaselined: 2026-08-31 on the accepted controller-handoff product tip;
+  this documentation checkpoint does not release product edits before its
+  independent review
+- Product edits and local/offline tests remain within the accepted train only
+  after this rebaseline is independently accepted; dependency retrieval,
+  retained real certificates, live CARLA, VM, Unit, Cloud, signing, FOTA, push
+  and merge authorized: no
 - Assessment performed: read-only source, contract and requirement inspection
 - Execution train:
   [Consolidated Implementation Execution Trains](../infrastructure-first-critical-path-proposal.md)
@@ -57,23 +60,52 @@ certificate, VISS role or direct Gateway access.
 | Accepted controller-handoff predecessor | `162eaa3c65ed1c4e9a981b4efd133a9287e8ebe2` |
 | Accepted predecessor parent | `a8d27194fa74d29f1fc45b7b849ddb727fed9fe6` |
 | Accepted predecessor tree | `c58439737b8d1924ad5b9b44fd1e3cd9898a9147` |
-| Required base state | clean, after this packet is rebaselined and re-accepted |
+| Required base state | clean `HEAD == main == origin/main == 162eaa3c65ed1c4e9a981b4efd133a9287e8ebe2` |
 | Proposed branch | `codex/imp-02d-selected-unit-mtls` |
 | Proposed isolated worktree | `../carla-ego-runtime-imp-02d-selected-unit-mtls` |
 
-The original frozen base has moved only through the accepted controller-
-handoff correction train, now integrated at `162eaa3`. Product implementation
-must not start from either the historical `d4a20c` snapshot or the new tip
-until this packet refreshes its source/tree identities, current-state
-assessment, exact writable boundary and affected tests against `162eaa3`, and
-that bounded rebaseline is independently accepted. Untracked cache material is
-not an input and shall not enter the future worktree.
+The original frozen base moved only through the accepted controller-handoff
+correction train, now integrated at `162eaa3`. The required read-only
+rebaseline completed on 2026-08-31: source/tree identities, current-state
+assessment, the exact writable boundary, current content digests and affected
+tests below are pinned to that tip. Product implementation must not start from
+the historical `d4a20c` snapshot and remains held at `162eaa3` until this
+bounded checkpoint is independently accepted. Untracked cache material is not
+an input and shall not enter the future worktree.
+
+The exact base content of every accepted writable path is:
+
+| Product path at `162eaa3` | SHA-256 or creation state |
+| --- | --- |
+| `CMakeLists.txt` | `df87b42078164c61138a9e18a58aee110a90309d1f307b661a0a9491cd700942` |
+| `include/carla_ego_runtime/viss_access.hpp` | absent — new |
+| `src/viss_access.cpp` | absent — new |
+| `include/carla_ego_runtime/viss_assignment_control.hpp` | absent — new |
+| `src/viss_assignment_control.cpp` | absent — new |
+| `include/carla_ego_runtime/viss_protocol.hpp` | `ac2a4ea604ea41ea4f32840e8e91f906c78d5332240c0cfbd18f74cb3907a5c1` |
+| `src/viss_protocol.cpp` | `0a82baa426db16468e419cac1fd0e14c41508489fd4d394f3890c3eaaf6f0fb1` |
+| `include/carla_ego_runtime/viss_server.hpp` | `fdf153dbfdec9ab3a9cde991c77785973f5557a96f8a035d29ab76e5f59be596` |
+| `src/viss_server.cpp` | `881351f7c5eeca3a620779420e3bf9d4f4760b00981bf6f386298d6a7d88cdd6` |
+| `include/carla_ego_runtime/runtime_options.hpp` | `9e66efe123308b9eb2486438e0cfce600f269d012e75d7062508d7adbb6ee923` |
+| `src/runtime_options.cpp` | `f0df30f976bf2acc9caeb7d95d196fcdac38682425eb4773bbe4cb189f555bf6` |
+| `src/runtime_carla.cpp` | `828a6baa0bf4a8c21cc16d5f28125300b5712adb148f78bca9ae8e4232ebc7c3` |
+| `src/viss_client.cpp` | `630e133594dac78d2b3ff98defe551b5347d30eeec050e5c2770c70273c45310` |
+| `tests/viss_access_test.cpp` | absent — new |
+| `tests/viss_assignment_control_test.cpp` | absent — new |
+| `tests/viss_protocol_test.cpp` | `105727d27e19f674acc490788e683d60dbd7b078a81d438f4df9f7f7c52db6a1` |
+| `tests/viss_network_test.cpp` | `1b515890ec706df6947b5012f197e5ea8efd3a915761dfc6e7be3cfb49710f26` |
+| `tests/runtime_options_test.cpp` | `4dc7af4b0e0b3bfb1ec254173dd609edd59df3224e89bda6fb502212094dfcec` |
+| `docs/viss-profile.md` | `8fb9d989a62041d1f424024e6fd83497d427ffeabaf9db06bb74b07afeaf3fca` |
+| `docs/telemetry-contract.md` | `11ef50033e1a2560b494acb78c11f036abe098b7d9ba904e2eb8e6e34518255d` |
 
 ### Solution source
 
 The committed solution readiness parent is
-`aosedge-sdv-demo@107031a353308fc670d4a477e302e7a6bd278e55`; the accepted
-correction cascade is pinned by the exact digests below.
+`aosedge-sdv-demo@107031a353308fc670d4a477e302e7a6bd278e55`. This rebaseline
+was performed on clean
+`aosedge-sdv-demo@a49b86f5f7920d8bed0207bfed7991ca4b83cafa`, tree
+`5e993bae98a9451d3c9d57a400ee72bed815e0aa`. The accepted correction cascade
+remains pinned by the exact digests below.
 
 | Frozen input after `107031a` | SHA-256 |
 | --- | --- |
@@ -89,14 +121,14 @@ correction cascade is pinned by the exact digests below.
 | Accepted Platform P0 decisions | `c5a8ce0ecfb79d85687107fa13ea64638e22bbb3f67dd4f004c2c4e8f07f21cb` |
 | Single-node provisioning evidence | `553f8be26c4f29c3e201b5e5d024ad8c57e7a6c2cd35341904b26624a4f15c15` |
 
-Every digest and both product commits must be rechecked immediately before
-implementation starts.
+All eleven digests were rechecked byte-for-byte at `a49b86f` on 2026-08-31
+and still match. They, the solution checkpoint and the product commit/tree/
+parent identities must be rechecked immediately before implementation starts.
 
 ## Read-only current-state result
 
-The following is the historical read-only assessment at `d4a20c85`; it must be
-revalidated during the required `162eaa3` rebaseline. At that snapshot the
-Gateway already provides TLS 1.2+, a server certificate,
+The historical assessment remains true after direct source revalidation at
+clean `162eaa3`. The Gateway already provides TLS 1.2+, a server certificate,
 `VISSv3`, bounded subscriptions/pending output and server-authenticated
 Get/Subscribe/Unsubscribe behavior. It does not yet provide D4-006 mTLS:
 
@@ -112,6 +144,14 @@ Get/Subscribe/Unsubscribe behavior. It does not yet provide D4-006 mTLS:
 - no local assignment-control interface, generation compare-and-swap or
   selected-session closure exists.
 
+The `d4a20c..162eaa3` controller correction changed ten paths. Only
+`src/runtime_options.cpp`, `src/runtime_carla.cpp` and
+`docs/telemetry-contract.md` overlap this packet; their exact current bytes are
+pinned above. The correction added no client trust, certificate identity,
+role policy or selected-Unit assignment seam and creates no twenty-first-path
+need. The existing OpenSSL 3/Threads/Boost.JSON and runtime option composition
+remain sufficient for this bounded implementation.
+
 The accepted VDP source at `aos-vehicle-platform@667afb1512cf43ff27f1ab5327293208bf73045b`
 already has partial client-side seams: it can load a client certificate/key
 from the systemd credential directory and reads an external `selectedSource`
@@ -121,17 +161,22 @@ schema or implemented host-side producer, and its `ReadinessTracker` identity
 is not wired into the running bridge. It is evidence for field alignment, not
 proof of an end-to-end selected-Unit implementation.
 
+That source is preserved as the provenance of the three prepared unsigned VDP
+artifacts now integrated through
+`aos-vehicle-platform@1d5fe77f9c74bfeab17b8154063bdd89c7656b9f`. Artifact
+preparation does not close the still-separate host assignment and client-
+integration work.
+
 No current implementation creates the per-Unit VISS client identities after
 provisioning or supplies the purpose-bound Platform Update Runtime client.
 Those are real cross-repository integration gaps, not work to hide inside the
 Gateway server.
 
-## Proposed exact trust model
+## Accepted exact trust model
 
-This section is the frozen recommended safe-default bundle for the Demo
-Interface Train. It becomes the execution contract only when that train
-receives its one-time consolidated authorization; it does not need five
-separate operator approvals.
+This section is the frozen safe-default bundle accepted with the Demo
+Interface Train on 2026-08-30. It is the execution contract for this packet
+and does not need five separate operator approvals.
 
 ### Certificate and fingerprint profile (`MTLS-01`)
 
@@ -144,11 +189,11 @@ separate operator approvals.
   carry `digitalSignature` key usage and `clientAuth` EKU, and contain exactly
   one recognized URI SAN. CN, OU, source IP, DNS name and request payload are
   never identity authority.
-- Proposed selected-role URI SAN syntax is:
+- The accepted selected-role URI SAN syntax is:
   `urn:aosedge:demo:viss-client:v1:<role>:<unit-uuid>:<main-node-uuid>`, where
   `<role>` is `selected-platform-unit` or `platform-update-runtime` and both
   UUIDs use canonical lowercase RFC 4122 text.
-- Proposed independent-role URI SAN values are
+- The accepted independent-role URI SAN values are
   `urn:aosedge:demo:viss-client:v1:engineering-dashboard` and
   `urn:aosedge:demo:viss-client:v1:qualification-client`.
 - The enrollment fingerprint is SHA-256 over the leaf certificate's DER bytes,
@@ -165,7 +210,7 @@ messages or the current-run journal.
 
 The Host Demo Orchestrator owns durable current-run identity references and
 the assignment operation. The Gateway owns transport admission and its
-in-memory current selection. The proposed handoff is one private local
+in-memory current selection. The accepted handoff is one private local
 `AF_UNIX/SOCK_STREAM` control socket, separate from vehicle control and the
 controller-facts framed stream:
 
@@ -181,7 +226,7 @@ controller-facts framed stream:
 - requests are serialized in the Gateway I/O context. There is no network
   assignment endpoint and no bearer token.
 
-Proposed schema version 1 has three actions:
+Accepted schema version 1 has three actions:
 
 ```json
 {"schemaVersion":1,"action":"select","requestId":"<bounded-id>","expectedAssignmentGeneration":0,"selectedSource":{"unitId":"<uuid>","nodeId":"<uuid>","selectedPlatformUnitCertificateSha256":"<sha256>","platformUpdateRuntimeCertificateSha256":"<sha256>"}}
@@ -251,7 +296,7 @@ state.
   Gateway restart and authoritative journal recovery. R0 destroys Unit-owned
   client material and current-run VISS material in the accepted order.
 
-## Proposed strict configuration ownership
+## Accepted strict configuration ownership
 
 | Configuration/material | Owner | Delivery/use |
 | --- | --- | --- |
@@ -265,15 +310,15 @@ state.
 
 Strict configuration absence or inconsistency keeps selected-bound VISS
 `NOT_READY`; it never falls back to generic client admission. Historical
-server-authenticated loopback tooling may remain available only as an explicit
+server-authenticated loopback tooling remains available only as an explicit
 development profile that cannot bind outside loopback and is never used as
-D4-006 evidence. Whether to retain that development profile is a review
-decision below, not an implicit compatibility promise.
+D4-006 evidence. This retained development-only profile is fixed by `MTLS-05`,
+not an implicit compatibility promise.
 
-## Proposed smallest Gateway writable boundary
+## Accepted smallest Gateway writable boundary
 
-If `MTLS-01` through `MTLS-05` are accepted, the Gateway-core implementation
-is limited to these twenty paths in `carla-ego-runtime`:
+Under accepted `MTLS-01` through `MTLS-05`, the Gateway-core implementation is
+limited to these twenty paths in `carla-ego-runtime`:
 
 1. `CMakeLists.txt`;
 2. `include/carla_ego_runtime/viss_access.hpp` — new;
@@ -334,6 +379,90 @@ network, live CARLA or VM is required.
    format/static analysis/sanitizers already supported by the repository;
    exact twenty-path boundary and `git diff --check`.
 
+### Pinned local/offline verification entry
+
+The accepted macOS compile inputs remain present and no dependency retrieval
+is needed:
+
+| Input | Exact value |
+| --- | --- |
+| CMake | `/opt/homebrew/bin/cmake`, version `4.4.2` |
+| OpenSSL | `/opt/homebrew/opt/openssl@3`, version `3.6.3` |
+| LibCarla/Boost prefix | `../CarlaSim/Build-macos-client-v3/install` from the proposed product worktree |
+| `CarlaConfig.cmake` SHA-256 | `027e2c1e5523060f4f88f7b10513442d27a5db3ea1ba8de7f69e69fb02714558` |
+| `libcarla-client.a` SHA-256 | `e5491cbf0221d840788b6243d3956bfddfb5436d950ecf2d84fcb3f52ae02933` |
+
+After independent acceptance, create the proposed product worktree at exact
+`162eaa3`, recheck every identity/digest above and use these commands in order.
+They configure only owned build directories and never fetch a dependency:
+
+```sh
+mtls_source=../carla-ego-runtime-imp-02d-selected-unit-mtls
+mtls_carla_prefix=../CarlaSim/Build-macos-client-v3/install
+cmake -S "$mtls_source" \
+  -B "$mtls_source/build-imp-02d-viss" \
+  --fresh \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DBUILD_TESTING=ON \
+  -DCARLA_EGO_WITH_CARLA=OFF \
+  -DCARLA_EGO_WITH_VISS=ON \
+  -DCARLA_EGO_BOOST_INCLUDE_DIR="$mtls_carla_prefix/include" \
+  -DOPENSSL_ROOT_DIR=/opt/homebrew/opt/openssl@3
+cmake --build "$mtls_source/build-imp-02d-viss" --parallel
+ctest --test-dir "$mtls_source/build-imp-02d-viss" \
+  --output-on-failure \
+  -R 'runtime_options|viss_access|viss_assignment_control|viss_protocol|viss_network'
+ctest --test-dir "$mtls_source/build-imp-02d-viss" \
+  --output-on-failure
+```
+
+Run the same complete suite with the already proven Clang ASan+UBSan shape:
+
+```sh
+mtls_source=../carla-ego-runtime-imp-02d-selected-unit-mtls
+mtls_carla_prefix=../CarlaSim/Build-macos-client-v3/install
+cmake -S "$mtls_source" \
+  -B "$mtls_source/build-imp-02d-sanitize" \
+  --fresh \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DBUILD_TESTING=ON \
+  -DCARLA_EGO_WITH_CARLA=OFF \
+  -DCARLA_EGO_WITH_VISS=ON \
+  -DCARLA_EGO_BOOST_INCLUDE_DIR="$mtls_carla_prefix/include" \
+  -DOPENSSL_ROOT_DIR=/opt/homebrew/opt/openssl@3 \
+  '-DCMAKE_CXX_FLAGS=-fsanitize=address,undefined -fno-omit-frame-pointer' \
+  '-DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address,undefined'
+cmake --build "$mtls_source/build-imp-02d-sanitize" --parallel
+ctest --test-dir "$mtls_source/build-imp-02d-sanitize" \
+  --output-on-failure
+```
+
+Finally compile/link only the changed CARLA-enabled runtime and bundled client
+against the accepted installed prefix; do not rebuild CARLA, Unreal or
+LibCarla:
+
+```sh
+mtls_source=../carla-ego-runtime-imp-02d-selected-unit-mtls
+mtls_carla_prefix=../CarlaSim/Build-macos-client-v3/install
+cmake -S "$mtls_source" \
+  -B "$mtls_source/build-imp-02d-carla" \
+  --fresh \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DBUILD_TESTING=OFF \
+  -DCARLA_EGO_WITH_CARLA=ON \
+  -DCARLA_EGO_WITH_VISS=ON \
+  -DCMAKE_PREFIX_PATH="$mtls_carla_prefix;/opt/homebrew/opt/openssl@3"
+cmake --build "$mtls_source/build-imp-02d-carla" \
+  --target carla-ego-runtime carla-viss-client \
+  --parallel
+```
+
+Before the completion commit, require `git diff --check`, exact comparison of
+changed paths with the twenty-path allowlist, no credential/private-key bytes,
+one clean commit, and clean status. Native wrong-UID execution on macOS remains
+a documented platform-test limitation; the Linux fixture must cover
+`SO_PEERCRED`, and no privileged macOS result may be fabricated.
+
 An implementation completion record must include test commands/results,
 ephemeral certificate matrix, per-role allow/deny matrix, assignment traces
 with redacted identity fingerprints, base/digest recheck and one clean local
@@ -378,7 +507,7 @@ The consolidated Demo Interface Train authorization accepted these five
 technical defaults together on 2026-08-30. They preserve the already accepted
 business and security boundary and do not create a separate approval round:
 
-| ID | Bundled default | Status before train authorization |
+| ID | Bundled default | Accepted train status |
 | --- | --- | --- |
 | `MTLS-01` | Use one exact URI SAN identity plus lowercase SHA-256 of DER leaf bytes; no CN/OU/IP authority | Accepted |
 | `MTLS-02` | Use the private same-UID Unix stream CAS interface and exact select/detach/status schema above; start from the journal generation | Accepted |
@@ -388,12 +517,11 @@ business and security boundary and do not create a separate approval round:
 
 There is no further product decision inside the Gateway-core packet. The
 controller-handoff macOS transport and targeted CARLA-enabled compile/link
-blockers are closed at accepted product tip `162eaa3`; however this packet is
-not entry-ready because its frozen source, digests, assessment and twenty-file
-boundary still describe `d4a20c`. A bounded rebaseline and independent
-acceptance are required before implementation. Two cross-repository items
-remain intentionally deferred
-after Gateway-core and host-only test completion:
+blockers are closed at accepted product tip `162eaa3`. The bounded rebaseline
+is complete and found no design/contract gap or boundary expansion; only
+independent acceptance of this documentation checkpoint remains before
+product implementation may begin. Two cross-repository items remain
+intentionally deferred after Gateway-core and host-only test completion:
 
 1. a reviewed onboarding/config packet must create the two distinct per-Unit
    role certificates only after exact Unit/Main Node identity is known,
@@ -409,7 +537,7 @@ automatic fallback is permitted to bypass those blockers.
 
 ## Stop conditions
 
-Stop before product edits if the consolidated train is not authorized, a
+Stop before product edits if this rebaseline is not independently accepted, a
 bundled default cannot be implemented, a digest or base mismatches, the
 worktree is not clean, a twenty-first product path is needed, peer
 verification/path policy would need to be weakened, old sessions cannot be
