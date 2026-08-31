@@ -1,11 +1,13 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Brake Health Cloud API — Accepted Contract
+# Brake Health Cloud API — Accepted Contract and Proposed Window Detail
 
 - Decision: `D4-017`
 - Lifecycle state: `ACCEPTED`
-- Contract version: `1.0.0`
+- Accepted contract version: `1.0.0`
+- Proposed additive Query/SSE/Admin profile: `1.1.0`
+- Proposed amendment: `BC-WINDOW-DETAIL-DEC-01`; independent review required
 - Subdecision state: transport, first-demo security boundary, idempotency,
   durable acknowledgement, persistence, Dashboard query/authority and exact
   current-run cleanup accepted 2026-08-23
@@ -118,9 +120,11 @@ Files:
   — exact bounded REST pagination, closed error mapping, notification-only SSE
   and separate local-admin transport;
 - [`query-page.schema.json`](query-page.schema.json),
+  [`window-detail.schema.json`](window-detail.schema.json),
   [`error-response.schema.json`](error-response.schema.json) and
   [`sse-change-notification.schema.json`](sse-change-notification.schema.json)
-  — closed browser-query responses;
+  — closed browser-query responses; the window-detail schema belongs only to
+  the proposed additive 1.1.0 profile;
 - [`cleanup-preview-request.schema.json`](cleanup-preview-request.schema.json),
   [`cleanup-execute-request.schema.json`](cleanup-execute-request.schema.json)
   and [`cleanup-result.schema.json`](cleanup-result.schema.json) — closed
@@ -135,7 +139,10 @@ Files:
 - the query page, closed error, SSE notification, cleanup preview request,
   cleanup execute request, cleanup result, Current Unit context, pending VDP
   provenance and RFC8785 edge files under `fixtures/`
-  — Query/SSE/Admin 1.0.0 annex conformance fixtures.
+  — Query/SSE/Admin 1.0.0 annex conformance fixtures; and
+- [`fixtures/window-detail.valid.json`](fixtures/window-detail.valid.json) —
+  the proposed exact Unit/window point-read fixture with stored PRE/ACTIVE
+  samples and no paging fields.
 
 Backend idempotency is namespaced by the correlation-only `unitSystemUid` and
 the exact canonical `messageType` before its message-specific identity. A
@@ -170,6 +177,38 @@ chunk 0's first sample timestamp or the completion's
 `windowStartTimestamp`. When both arrive, they must match; mismatch is
 quarantined and non-terminal. No window-change SSE notification is emitted for
 a still-hidden later chunk.
+
+## Proposed Window Detail Amendment
+
+The proposed 1.1.0 Query/SSE/Admin profile adds one point read without changing
+the four accepted 1.0.0 collection bodies:
+
+```text
+GET /api/v1/brake/units/{systemUid}/windows/{eventId}
+```
+
+The backend authorizes the exact Unit through the injected
+`CurrentUnitContext` before looking up the lowercase UUIDv4 event ID. The
+closed 1.0.0 detail body contains the existing query-window summary and zero
+through 150 samples read from already validated canonical chunk content in
+ascending chunk-index and stored-array order. A completion-first partial
+window may therefore return zero samples. Every stored phase, value, quality,
+source timestamp and source-age field remains unchanged; the point read never
+fabricates or interpolates data and never reorders it by phase.
+
+The detail route accepts no query parameters and has no limit, cursor,
+pagination or snapshot/freshness claim. A non-current Unit is `404
+UNIT_NOT_CURRENT`, malformed identity or query syntax is `400 INVALID_REQUEST`,
+and a current Unit without a visible matching projection is `404 NOT_FOUND`.
+Existing growing, partial, terminal and quarantined projection states remain
+factual. Corrupt stored content is a retryable `503`, not a partial response.
+The existing collection, SSE, cache, Current Unit, first-demo network and
+security boundaries remain unchanged.
+
+No database migration belongs to this amendment. Existing migration 002
+already retains canonical validated chunk content and the exact
+Unit/event/chunk index. This proposal authorizes no backend change until the
+contract cascade and its source-only work packet are independently accepted.
 
 The Brake Dashboard obtains functional windows, assessments, events and
 advisory facts only through the accepted 1.0.0 annex's bounded keyset-paginated

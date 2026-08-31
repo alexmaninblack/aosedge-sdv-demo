@@ -2,14 +2,16 @@
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "schemaVersion": 1,
   "profileId": "aosedge-demo-brake-cloud-query-admin",
-  "contractVersion": "1.0.0",
-  "lifecycleState": "ACCEPTED",
+  "contractVersion": "1.1.0",
+  "lifecycleState": "PROPOSED",
+  "acceptedBaseContractVersion": "1.0.0",
   "decision": "D4-017",
   "acceptedClarifications": [
     "BC-DATA-DEC-03",
     "BC-DATA-DEC-05",
     "BC-DATA-DEC-06"
   ],
+  "proposedClarifications": ["BC-WINDOW-DETAIL-DEC-01"],
   "currentUnitContext": {
     "schema": "current-unit-context.schema.json",
     "injection": "REQUIRED_EXPLICIT_APPLICATION_INPUT",
@@ -73,6 +75,26 @@
       "endOfCollection": "nextCursor_NULL"
     },
     "responseSchema": "query-page.schema.json",
+    "pointReads": [
+      {
+        "resourceType": "WINDOW_DETAIL",
+        "method": "GET",
+        "path": "/units/{systemUid}/windows/{eventId}",
+        "eventIdFormat": "LOWERCASE_UUID_V4",
+        "responseSchema": "window-detail.schema.json",
+        "queryParametersAllowed": false,
+        "paginationApplied": false,
+        "visibilitySource": "EXISTING_WINDOW_QUERY_PROJECTION",
+        "missingVisibleProjectionBehavior": "404_NOT_FOUND",
+        "sampleSource": "VALIDATED_CANONICAL_WINDOW_CHUNK_CONTENT_JSON",
+        "sampleOrder": "CHUNK_INDEX_ASC_THEN_STORED_SAMPLE_ARRAY_ORDER",
+        "minimumSamples": 0,
+        "maximumSamples": 150,
+        "storedSampleFieldsPreserved": true,
+        "snapshotIsolationClaimed": false,
+        "freshnessClaimed": false
+      }
+    ],
     "cacheControl": "no-store",
     "windowProjectionVisibility": {
       "outOfOrderChunkPersistence": "DURABLE_ACK_ALLOWED",

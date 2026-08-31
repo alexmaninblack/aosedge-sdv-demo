@@ -9,6 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT_ROOT = ROOT / "contracts" / "brake-cloud-api"
+TELEMETRY_ROOT = ROOT / "contracts" / "brake-telemetry-window"
 
 
 def load(name: str) -> dict:
@@ -26,6 +27,7 @@ class BrakeCloudApiContractTest(unittest.TestCase):
         cls.advisory_schema = load("brake-advisory-fact.schema.json")
         cls.cleanup_schema = load("cleanup-preview.schema.json")
         cls.query_schema = load("query-page.schema.json")
+        cls.window_detail_schema = load("window-detail.schema.json")
         cls.error_schema = load("error-response.schema.json")
         cls.sse_schema = load("sse-change-notification.schema.json")
         cls.cleanup_preview_request_schema = load("cleanup-preview-request.schema.json")
@@ -35,6 +37,10 @@ class BrakeCloudApiContractTest(unittest.TestCase):
         cls.advisory = load("fixtures/brake-advisory-fact.valid.json")
         cls.cleanup = load("fixtures/cleanup-preview.valid.json")
         cls.query_page = load("fixtures/query-window-page.valid.json")
+        cls.window_detail = load("fixtures/window-detail.valid.json")
+        cls.window_chunk = json.loads(
+            (TELEMETRY_ROOT / "fixtures/window-chunk.valid.json").read_text(encoding="utf-8")
+        )
         cls.error = load("fixtures/error-response.valid.json")
         cls.sse = load("fixtures/sse-change-notification.valid.json")
         cls.cleanup_preview_request = load("fixtures/cleanup-preview-request.valid.json")
@@ -201,7 +207,9 @@ class BrakeCloudApiContractTest(unittest.TestCase):
 
     def test_query_pagination_and_error_mapping_are_exact(self) -> None:
         annex = self.query_admin_profile
-        self.assertEqual("ACCEPTED", annex["lifecycleState"])
+        self.assertEqual("PROPOSED", annex["lifecycleState"])
+        self.assertEqual("1.1.0", annex["contractVersion"])
+        self.assertEqual("1.0.0", annex["acceptedBaseContractVersion"])
         pagination = annex["rest"]["pagination"]
         self.assertEqual((1, 50, 100), (pagination["minimumLimit"], pagination["defaultLimit"], pagination["maximumLimit"]))
         self.assertEqual("OPAQUE_KEYSET_CURSOR", pagination["style"])
@@ -219,6 +227,50 @@ class BrakeCloudApiContractTest(unittest.TestCase):
         self.assertEqual("WINDOW", self.query_page["resourceType"])
         self.assertIsNone(self.query_page["nextCursor"])
         self.assertEqual("INVALID_CURSOR", self.error["errorCode"])
+
+    def test_window_detail_is_additive_bounded_and_non_paged(self) -> None:
+        annex = self.query_admin_profile
+        self.assertEqual(["BC-WINDOW-DETAIL-DEC-01"], annex["proposedClarifications"])
+        self.assertEqual(4, len(annex["rest"]["routes"]))
+        detail = annex["rest"]["pointReads"]
+        self.assertEqual(1, len(detail))
+        detail = detail[0]
+        self.assertEqual("WINDOW_DETAIL", detail["resourceType"])
+        self.assertEqual("GET", detail["method"])
+        self.assertEqual("/units/{systemUid}/windows/{eventId}", detail["path"])
+        self.assertEqual("LOWERCASE_UUID_V4", detail["eventIdFormat"])
+        self.assertEqual("window-detail.schema.json", detail["responseSchema"])
+        self.assertFalse(detail["queryParametersAllowed"])
+        self.assertFalse(detail["paginationApplied"])
+        self.assertEqual("EXISTING_WINDOW_QUERY_PROJECTION", detail["visibilitySource"])
+        self.assertEqual("404_NOT_FOUND", detail["missingVisibleProjectionBehavior"])
+        self.assertEqual("VALIDATED_CANONICAL_WINDOW_CHUNK_CONTENT_JSON", detail["sampleSource"])
+        self.assertEqual("CHUNK_INDEX_ASC_THEN_STORED_SAMPLE_ARRAY_ORDER", detail["sampleOrder"])
+        self.assertEqual((0, 150), (detail["minimumSamples"], detail["maximumSamples"]))
+        self.assertTrue(detail["storedSampleFieldsPreserved"])
+        self.assertFalse(detail["snapshotIsolationClaimed"])
+        self.assertFalse(detail["freshnessClaimed"])
+
+    def test_window_detail_schema_and_fixture_are_closed_and_consistent(self) -> None:
+        schema = self.window_detail_schema
+        fixture = self.window_detail
+        self.assertFalse(schema["additionalProperties"])
+        self.assertEqual(0, schema["properties"]["samples"]["minItems"])
+        self.assertEqual(150, schema["properties"]["samples"]["maxItems"])
+        self.assertEqual(
+            "../brake-telemetry-window/brake-telemetry-window-chunk.schema.json#/$defs/sample",
+            schema["properties"]["samples"]["items"]["$ref"],
+        )
+        self.assertEqual("WINDOW_DETAIL", fixture["resourceType"])
+        self.assertEqual("1.0.0", fixture["contractVersion"])
+        self.assertEqual(fixture["unitSystemUid"], fixture["window"]["unitSystemUid"])
+        self.assertEqual(fixture["unitRole"], fixture["window"]["unitRole"])
+        self.assertEqual(fixture["window"]["receivedSampleCount"], len(fixture["samples"]))
+        self.assertEqual(self.window_chunk["eventId"], fixture["window"]["eventId"])
+        self.assertEqual(self.window_chunk["content"]["samples"], fixture["samples"])
+        self.assertEqual([0, 1], [sample["sampleIndex"] for sample in fixture["samples"]])
+        self.assertEqual(["PRE", "ACTIVE"], [sample["phase"] for sample in fixture["samples"]])
+        self.assertFalse({"limit", "nextCursor", "cursor"} & set(fixture))
 
     def test_out_of_order_window_visibility_and_event_vdp_provenance_are_exact(self) -> None:
         visibility = self.query_admin_profile["rest"]["windowProjectionVisibility"]
@@ -371,6 +423,7 @@ class BrakeCloudApiContractTest(unittest.TestCase):
             self.cleanup_preview_request_schema,
             self.cleanup_execute_request_schema,
             self.cleanup_result_schema,
+            self.window_detail_schema,
         ):
             self.assertFalse(schema["additionalProperties"])
         for name in (

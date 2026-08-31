@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "resourceType": "WINDOW_DETAIL",
+  "unitSystemUid": "demo-unit-validation-001",
+  "unitRole": "VALIDATION",
+  "window": {
+    "eventId": "4cba2d80-c04a-4d24-9f03-f4a85d56da13",
+    "unitSystemUid": "demo-unit-validation-001",
+    "unitRole": "VALIDATION",
+    "serviceVersion": "1.0.0",
+    "serviceArtifactSha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "vdpContractVersion": "1.0.0",
+    "vdpContractSha256": "2222222222222222222222222222222222222222222222222222222222222222",
+    "windowStartTimestamp": "2026-08-22T12:00:00.000Z",
+    "backendReceivedAt": "2026-08-22T12:00:00.300Z",
+    "deliveryState": "RECEIVING",
+    "projectionState": "GROWING",
+    "terminalState": null,
+    "receivedChunkCount": 1,
+    "expectedChunkCount": null,
+    "receivedSampleCount": 2,
+    "phaseSampleCounts": {"PRE": 1, "ACTIVE": 1, "POST": 0},
+    "completionContentSha256": null,
+    "windowSha256": null
+  },
+  "samples": [
+    {
+      "sampleIndex": 0,
+      "sourceTimestamp": "2026-08-22T12:00:00.000Z",
+      "phase": "PRE",
+      "quality": "VALID_COMPLETE_FRAME",
+      "maxSourceAgeMs": 20,
+      "speedKph": 42,
+      "longitudinalAccelerationMps2": 0.1,
+      "lateralAccelerationMps2": 0,
+      "verticalAccelerationMps2": 0,
+      "acceleratorPedalPercent": 0,
+      "brakePedalPercent": 60
+    },
+    {
+      "sampleIndex": 1,
+      "sourceTimestamp": "2026-08-22T12:00:00.200Z",
+      "phase": "ACTIVE",
+      "quality": "VALID_COMPLETE_FRAME",
+      "maxSourceAgeMs": 22,
+      "speedKph": 41,
+      "longitudinalAccelerationMps2": -3,
+      "lateralAccelerationMps2": 0,
+      "verticalAccelerationMps2": 0,
+      "acceleratorPedalPercent": 0,
+      "brakePedalPercent": 65
+    }
+  ]
+}

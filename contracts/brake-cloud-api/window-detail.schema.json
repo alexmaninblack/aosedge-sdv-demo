@@ -1,0 +1,23 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:brake-cloud-window-detail:schema:v1",
+  "title": "Brake Cloud Unit-Scoped Window Detail",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "contractVersion", "resourceType", "unitSystemUid", "unitRole", "window", "samples"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "contractVersion": {"const": "1.0.0"},
+    "resourceType": {"const": "WINDOW_DETAIL"},
+    "unitSystemUid": {"$ref": "query-page.schema.json#/$defs/boundedId"},
+    "unitRole": {"$ref": "query-page.schema.json#/$defs/unitRole"},
+    "window": {"$ref": "query-page.schema.json#/$defs/windowItem"},
+    "samples": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 150,
+      "items": {"$ref": "../brake-telemetry-window/brake-telemetry-window-chunk.schema.json#/$defs/sample"}
+    }
+  }
+}

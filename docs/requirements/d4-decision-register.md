@@ -2295,6 +2295,55 @@ The proposed exact decision is:
    `a2dc0c016d5281c9accead1d6447600d4a2c3736acaef1f725a2831efe334cad`.
    Brake Cloud API remains version 1.0.0.
 
+#### D4-017 Proposed Additive Amendment — Brake Window Detail
+
+- Amendment ID: `BC-WINDOW-DETAIL-DEC-01`
+- Amendment state: `PROPOSED — INDEPENDENT REVIEW REQUIRED`
+- Prepared: 2026-08-31
+- Accepted base: D4-017 Query/SSE/Admin API 1.0.0
+- Proposed machine-readable profile: Query/SSE/Admin API 1.1.0
+
+The proposed additive decision is:
+
+1. Add exactly one functional point read,
+   `GET /api/v1/brake/units/{systemUid}/windows/{eventId}`, for an existing
+   query-visible v1 Brake window. The path `eventId` is a lowercase UUIDv4.
+   The exact `systemUid` must first match the injected `CurrentUnitContext`;
+   a non-current Unit returns `404 UNIT_NOT_CURRENT` before any event lookup.
+   A malformed event ID or any query parameter returns `400 INVALID_REQUEST`.
+   A current Unit with no matching visible projection returns `404 NOT_FOUND`.
+2. The closed response keeps contract version 1.0.0 and returns the exact
+   existing window summary plus zero through 150 already accepted samples.
+   Zero samples is valid when completion established the visible partial
+   window before a chunk arrived. Samples are read from the validated canonical
+   stored chunk content in ascending `chunkIndex`, preserving each stored
+   sample array and every phase, value, quality, source timestamp and source-age
+   field. It never invents, interpolates, deduplicates or reorders a sample by
+   phase.
+3. The point read is not paginated, accepts no `limit` or `cursor`, claims no
+   snapshot isolation and adds no new freshness assertion. `GROWING`,
+   `PARTIAL`, `TERMINAL` and `QUARANTINED` return only their factual existing
+   projection and accepted stored samples. A later chunk that remains hidden
+   because no authoritative start exists also remains unavailable through the
+   point read. Cache control stays `no-store`; SSE remains notification-only.
+4. The four accepted collection routes and their 1.0.0 response bodies,
+   pagination, ordering, errors and Current Unit behavior remain unchanged.
+   Stored-content corruption fails closed as retryable `503`; SQLite
+   busy/locked contention remains retryable without converting stored data into
+   a current success. The existing first-demo local/loopback and
+   correlation-only `system_uid` boundary is unchanged and no production
+   authentication claim is added.
+5. No database migration is required or allowed for this amendment. Migration
+   `002_brake_data.sql` already durably stores the validated canonical
+   `window_chunks.content_json` and indexes exact
+   `(unit_system_uid,event_id,chunk_index)` lookup. Implementation must verify
+   stored content against its accepted message identity/digest before returning
+   it and fail closed on mismatch.
+
+This proposed amendment changes no accepted 1.0.0 behavior and authorizes no
+product edit until its contract cascade and bounded implementation packet are
+independently reviewed and accepted.
+
 ### D4-018 Accepted Decision Record — Tire In-Vehicle Product
 
 - Decision state: `ACCEPTED`
