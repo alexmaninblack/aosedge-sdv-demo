@@ -52,7 +52,9 @@ assignment, VM restart, or provisioned-Unit change.
   blockers; its bounded
   [macOS correction packet](active/work-packets/p1-vehicle-gateway-controller-macos-correction.md)
   is accepted/authorized but not started. The [Brake v2 packet](active/work-packets/p1-brake-health-core-v2.md)
-  is source-only authorized/not started; the
+  is implemented and integrated; the proposed
+  [Brake v3 advisory-core packet](active/work-packets/p1-brake-health-core-v3.md)
+  is review-only and authorizes no product edit. The
   [Brake Cloud Data packet](active/work-packets/p1-brake-cloud-data.md) preserves
   its existing candidate in quarantine with only its exact bounded correction
   authorized/not started.
