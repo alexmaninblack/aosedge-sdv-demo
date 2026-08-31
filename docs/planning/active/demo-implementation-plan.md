@@ -516,8 +516,12 @@ handoff.
 
 ### `IMP-05` — Tire Health and multi-tenant isolation
 
-- State: `BLOCKED` until current `CR-TIRE` contracts, D4-003 empirical values
-  and both proposed Tire repository creations are accepted.
+- State: `BLOCKED — DESIGN BASELINE RECONCILED`. `CR-TIRE` and
+  `CR-TIRE-CLOUD` now consistently reference accepted D4-018/D4-019 and
+  accepted D4-027/design-reviewed D4-020 inputs through
+  [`WP-P0-TIRE-001`](work-packets/p0-tire-readiness-reconciliation.md). Product
+  work remains blocked until D4-003 empirical values and both proposed Tire
+  repository creations are accepted.
 - Repositories: proposed `tire-health-service` and `tire-health-cloud`.
 - Scope: implement one mature Tire v1.0 candidate requiring VDP v3, bounded
   persistent condition state and reporting, typed inspection advisory,

@@ -102,8 +102,8 @@ The estimator is deliberately synthetic and deterministic. It demonstrates
 local computation, independent Function Team 2 lifecycle, bounded offline
 state, typed advisory and tenant isolation; it is not a production tread-depth,
 remaining-life, safety or diagnostic model. Exact numeric separation is a
-D4-003 calibration gate: the contract is not accepted until the frozen live
-exercise proves the required healthy/pre-aged bands repeatedly.
+D4-003 calibration gate: the artifact/product is not accepted until the frozen
+live exercise proves the required healthy/pre-aged bands repeatedly.
 
 Files:
 

@@ -566,9 +566,10 @@ the only normative definitions.
 
 ### `CR-TIRE` — Tire Health in-vehicle service
 
-- Prepared executable D4 refinement:
+- Accepted executable D4 design refinement:
   [Tire Health In-Vehicle Product Contract](../../contracts/tire-health-model/README.md)
-  (`REVIEW_CANDIDATE`, not implemented or accepted).
+  (`ACCEPTED` design input; D4-003 empirical qualification and implementation
+  remain open).
 
 - Component: [Tire Health In-Vehicle Service (`CMP-TIRE`)](#cmp-tire).
 - Interfaces: [dynamics subscription (`IF-TIRE-001`)](#if-tire-001),
@@ -662,11 +663,12 @@ Delivery Dashboard.
 
 ### `CR-TIRE-CLOUD` — Tire Health Cloud product
 
-- Prepared executable D4 refinements:
+- Accepted/design-reviewed executable D4 refinements:
   [Tire Health Cloud API](../../contracts/tire-cloud-api/README.md),
   [Tire Health In-Vehicle Product Contract](../../contracts/tire-health-model/README.md)
   and [Local Demo Hosting and VM Route](../../contracts/local-demo-hosting/README.md)
-  (`REVIEW_CANDIDATE`; no repository or executable exists).
+  (D4-018/D4-019 `ACCEPTED`, D4-020 `DESIGN_REVIEWED`; no repository or
+  executable exists).
 
 - Components: [Tire Health Backend (`CMP-TIRE-BE`)](#cmp-tire-be)
   and [Tire Health Function Dashboard (`CMP-TIRE-DASH`)](#cmp-tire-dash).
@@ -685,11 +687,12 @@ Delivery Dashboard.
 
 ### `CR-DEMO` — Demonstration orchestration and delivery view
 
-- Prepared executable D4 refinements:
+- Accepted/design-reviewed executable D4 refinements:
   [Brake Cloud API](../../contracts/brake-cloud-api/README.md),
   [Tire Cloud API](../../contracts/tire-cloud-api/README.md), and
   [Local Demo Hosting and VM Route](../../contracts/local-demo-hosting/README.md)
-  (`REVIEW_CANDIDATE`; no local/Cloud/VM action is authorized).
+  (Cloud APIs `ACCEPTED`, hosting `DESIGN_REVIEWED`; no local/Cloud/VM action
+  is authorized).
 
 - Components: [Software Delivery Dashboard (`CMP-SW-DASH`)](#cmp-sw-dash)
   and [Demo Orchestrator (`CMP-ORCH`)](#cmp-orch).

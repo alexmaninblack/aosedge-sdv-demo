@@ -3,10 +3,12 @@
 
 # Tire Health In-Vehicle Service Component Requirements
 
-- Status: D3 review candidate
+- Status: D3 design-reviewed; D4-018 and D4-027 accepted; D4-003 empirical
+  qualification remains open
 - Package: [`CR-TIRE`](../component-decomposition-and-interface-register.md#cr-tire)
 - Version: 0.6
 - Prepared: 2026-08-21
+- Accepted: 2026-08-31
 - Previous accepted package: Version 0.5
 - Owner: Function Team 2 / Service Provider 2 / SOTA 2
 - Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
@@ -18,7 +20,7 @@
 - Reviewed D4 working direction: [D4-003 deterministic stimuli and calibration](../d4-decision-register.md#d4-003)
 - Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
 - Accepted D4 advisory input: [D4-008 Typed QM Advisory Profile](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
-- Prepared D4 exact review candidates: [Tire Health In-Vehicle Product Contract](../../../contracts/tire-health-model/README.md), [Tire Cloud API](../../../contracts/tire-cloud-api/README.md), and [Local Demo Hosting and VM Route](../../../contracts/local-demo-hosting/README.md)
+- Accepted D4 exact product inputs: [Tire Health In-Vehicle Product Contract](../../../contracts/tire-health-model/README.md) and [Tire Cloud API](../../../contracts/tire-cloud-api/README.md); [Local Demo Hosting and VM Route](../../../contracts/local-demo-hosting/README.md) is design-reviewed and still requires implementation qualification
 - Implementation baseline: no `tire-health-service` repository or executable exists
 - Implementation, repository creation, signing, Cloud, or Unit mutation authorized: no
 
@@ -216,7 +218,7 @@ executable against controlled adjacent components.
 | --- | --- | --- | --- |
 | [One immutable mature v1.0 candidate (`REQ-TIRE-001`)](#req-tire-001) | Produce exactly one prepared credential-free ARM64 Tire Health candidate for this demo | Unit, Component, Contract, Integration | D3 design-reviewed |
 | [VDP v3 compatibility and fail-closed readiness (`REQ-TIRE-002`)](#req-tire-002) | Run only against the accepted VDP v3 contract without claiming native Cloud admission | Unit, Component, Contract, Integration | D3 design-reviewed |
-| [Fixed-resource KUKSA authorization lifecycle (`REQ-TIRE-013`)](#req-tire-013) | Bootstrap without caller-selected authority and use only private volatile IAM-derived JWTs | Unit, Component, Contract, Integration | D3 review candidate |
+| [Fixed-resource KUKSA authorization lifecycle (`REQ-TIRE-013`)](#req-tire-013) | Bootstrap without caller-selected authority and use only private volatile IAM-derived JWTs | Unit, Component, Contract, Integration | D4-027 accepted; implementation and integration open |
 | [Validated native dynamics subscription (`REQ-TIRE-004`)](#req-tire-004) | Consume only accepted dynamics and never consume hidden simulation truth | Unit, Component, Contract, Integration | D3 design-reviewed |
 | [Bounded persistent local condition estimate (`REQ-TIRE-005`)](#req-tire-005) | Deterministically maintain a versioned synthetic condition band without exact tread claims | Unit, Component, Analysis, End-to-end | D3 design-reviewed |
 | [Explicit degraded behavior (`REQ-TIRE-006`)](#req-tire-006) | Never turn stale, missing or inconsistent data into a healthy result | Unit, Component, Contract, Integration | D3 design-reviewed |
@@ -440,7 +442,7 @@ and persistence rules remain owned by D4-018 rather than the stimulus profile.
 - Interfaces: [fixed-resource bootstrap (`IF-AUTH-007`)](../component-decomposition-and-interface-register.md#if-auth-007) and [private JWT or rejection (`IF-AUTH-009`)](../component-decomposition-and-interface-register.md#if-auth-009)
 - Verification: Unit, Component, Contract, Integration
 - Evidence: no-caller-selected-authority negative cases, bounded refresh/expiry trace, stop/unregister/reboot cleanup, cross-Service isolation and secret/JWT-negative artifacts/logs/state
-- State: D3 review candidate
+- State: D4-027 accepted; implementation and integration open
 
 ## Stable Unit-Test Obligations
 
@@ -480,26 +482,34 @@ increase follows the documented Level-B change process rather than silently
 changing candidate metadata.
 
 Version 0.5 preserved that accepted functional and resource model. Version 0.6
-is a review candidate that retires `REQ-TIRE-003`/`UT-TIRE-003`, adds
+is accepted as the current design baseline. It retires
+`REQ-TIRE-003`/`UT-TIRE-003`, adds
 `REQ-TIRE-013`/`UT-TIRE-013`, and replaces caller-selected broker requests with
 fixed-resource `CMP-KAC` bootstrap and private volatile JWT delivery. Tire
 Health functional behavior, quotas and single-release demo role are unchanged.
 
+Acceptance of Version 0.6 closes the documentation-level CR-TIRE design
+baseline only. It creates no repository, executable or artifact and does not
+waive D4-003 calibration, implementation review or live qualification.
+
 ## Open D4 Gates
 
-The D4-018 and D4-019 packages linked above now contain an exact proposed
-input/model/message/advisory/state/transport design. Numeric values remain
-review candidates. D4-003 healthy/pre-aged separation, D4-020 credential route,
-D4-023 quota enforcement and real KUKSA/Gateway integration remain live gates.
+The D4-018 and D4-019 packages linked above contain the accepted exact
+input/model/message/advisory/state/transport design. Their numeric values are
+the current design input, but D4-003 still permits calibration-owned
+normalization adjustment before the configuration is frozen and digest-pinned;
+artifact/product acceptance therefore remains blocked until the frozen live
+healthy/pre-aged separation passes. D4-020 route qualification, D4-023 quota
+enforcement and real KUKSA/Gateway integration remain live gates.
 
 | Gate | Why it blocks implementation acceptance | Owner |
 | --- | --- | --- |
 | Exact D4-018 model-consumed subset of the accepted VDP v3 paths, plus estimator cadence/quality/freshness bounds | Accepted; real VDP/KUKSA conformance remains a gate | Platform Team + Function Team 2 |
 | Accelerated/pre-aged stimulus, service-visible initial estimate and hidden qualification oracle | Blocks honest deterministic demonstration without oracle leakage | Vehicle Simulation + Function Team 2 |
-| Synthetic estimator, state schema, bands, confidence, thresholds and tolerance | Exact review candidate is prepared; human acceptance and D4-003 qualification remain gates | Function Team 2 |
+| Synthetic estimator, state schema, bands, confidence, thresholds and tolerance | Exact design is accepted; D4-003 calibration and artifact/product acceptance remain gates | Function Team 2 |
 | Assessment/event schemas, local transport, idempotency key, rate/size and acknowledgement | D4-018 logical contract accepted; D4-019 and live backend conformance remain gates; production authentication is intentionally out of scope | Function Team 2 + `CR-TIRE-CLOUD` |
 | D4-018 Tire decision thresholds and hysteresis that trigger the accepted advisory envelope | Accepted; D4-003 live qualification remains open | Function Team 2 |
-| Queue/state capacity, retention, retry/backoff, overflow and future migration policy | Exact current-release review candidate is prepared; live offline/restart/uninstall qualification remains a gate | Function Team 2 |
+| Queue/state capacity, retention, retry/backoff, overflow and future migration policy | Exact current-release design is accepted; live offline/restart/uninstall qualification remains a gate | Function Team 2 |
 | Mapping and runtime qualification of the accepted provisional CPU/RAM/state/tmp/file/process envelope, plus health/readiness endpoint | Blocks resource and failure-isolation acceptance; any increase requires a reviewed Level-B change | Function Team 2 + Aos integration |
 | Source/local/backend chronology fields plus log schema/redaction | Blocks observability and chronology acceptance | Function Team 2 + Demo experience |
 | Native Cloud service-to-VDP dependency admission | Deferred platform roadmap item; does not block v1.0 when sequencing, OEM evidence and fail-closed readiness are proved | AosEdge Platform Team |

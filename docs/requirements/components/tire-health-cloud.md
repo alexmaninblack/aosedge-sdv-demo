@@ -3,11 +3,12 @@
 
 # Tire Health Cloud Product Component Requirements
 
-- Status: D3 design-reviewed; D4 contract review prepared
+- Status: D3 design-reviewed; D4-018 and D4-019 accepted; D4-020 design-reviewed
 - Package: [`CR-TIRE-CLOUD`](../component-decomposition-and-interface-register.md#cr-tire-cloud)
-- Version: 0.3
+- Version: 0.4
 - Prepared: 2026-08-19
 - Accepted: 2026-08-19
+- Reconciled: 2026-08-31
 - Owner: Function Team 2 / Service Provider 2 functional Cloud product
 - Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
@@ -17,7 +18,7 @@
 - Accepted architecture decisions: [ADR 0008](../../architecture/decisions/0008-use-tire-health-for-function-team-2.md), [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md), and [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
 - Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
 - Accepted D4 publication input: [D4-010.3 Artifact Publication Credential Profile](../../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
-- Prepared D4 product/hosting review candidates: [Tire Health In-Vehicle Product Contract](../../../contracts/tire-health-model/README.md), [Tire Cloud API](../../../contracts/tire-cloud-api/README.md), and [Local Demo Hosting and VM Route](../../../contracts/local-demo-hosting/README.md)
+- Accepted D4 product inputs: [Tire Health In-Vehicle Product Contract](../../../contracts/tire-health-model/README.md) and [Tire Cloud API](../../../contracts/tire-cloud-api/README.md); [Local Demo Hosting and VM Route](../../../contracts/local-demo-hosting/README.md) is design-reviewed and still requires implementation qualification
 - Implementation baseline: no `tire-health-cloud` repository or executable exists
 - Implementation, repository creation, signing, Cloud, or Unit mutation authorized: no
 
@@ -115,7 +116,7 @@ QEMU guest-visible host route without requiring exposure to the office, home,
 customer or public LAN. The first demo adds no per-Unit functional-backend
 credential lifecycle and makes no production backend-authentication claim;
 that responsibility belongs to Function Team 2. D4-020 defines the exact
-proposed route as a review candidate and live two-VM qualification gate.
+design-reviewed route and retains live two-VM qualification as a gate.
 
 The dashboard delegates publication to the common session-scoped native macOS
 helper surface pre-bound to D4-010.3 profile `tire-sp2`. In the current
@@ -483,7 +484,7 @@ pipeline/AosCloud; a browser timeout must not cause blind republishing.
 - Flow: [Tire observability (`AF-TIRE-OB`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-ob)
 - Verification: Unit, Component, Integration
 - Evidence: ARM64 image/Compose manifest, secret/path scan, health, volume and Docker restart proof
-- State: D3 design-reviewed; D4-020 exact ARM64 container/port/volume baseline prepared for review
+- State: D3 design-reviewed; D4-020 exact ARM64 container/port/volume baseline design-reviewed; implementation qualification open
 
 ### Multi-product network and signing isolation
 
@@ -495,7 +496,7 @@ pipeline/AosCloud; a browser timeout must not cause blind republishing.
 - Flows: [Tire lifecycle (`AF-TIRE-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-lc) and [failure boundaries (`AF-TIRE-FR`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-fr)
 - Verification: Unit, Component, Integration, End-to-end
 - Evidence: listener/local-route/helper/profile/filesystem/volume policy tests, malformed/cross-function message and LAN probes, explicit no-backend-security-claim label and simultaneous Brake/Tire isolation run
-- State: D3 design-reviewed; D4-010.3 accepted and D4-020 helper/local-route profile prepared for review; live two-VM route qualification remains required
+- State: D3 design-reviewed; D4-010.3 accepted and D4-020 helper/local-route profile design-reviewed; live two-VM route qualification remains required
 
 ### Fixed Tire CPU-isolation control
 
@@ -563,16 +564,16 @@ keys, tokens, raw certificates, unrestricted telemetry or hidden truth.
 
 ## Open D4 Gates
 
-The accepted D4-018/D4-019 packages and D4-020 review candidate provide exact
+The accepted D4-018/D4-019 packages and design-reviewed D4-020 profile provide exact
 contracts for the in-vehicle logical products, Cloud API/storage/reset and Mac
 hosting boundary. The remaining gates below are human acceptance, repository
 implementation or live qualification rather than unspecified architecture.
 
 | Gate | Impact | Owner |
 | --- | --- | --- |
-| Exact `IF-TIRE-003/004` schemas, bounds, local transport and acknowledgement | Backend/service contract and fixtures; production authentication remains Function Team-owned and out of scope | Function Team 2 |
+| Implement and qualify the accepted `IF-TIRE-003/004` schemas, bounds, local transport and acknowledgement | Backend/service conformance; production authentication remains Function Team-owned and out of scope | Function Team 2 |
 | Condition/event dashboard fields, chart/state presentation and terminology | Audience UI and snapshot tests | Function Team 2 |
-| Backend technology, API transport and storage schema | Repository scaffold and component tests | Function Team 2 |
+| Repository framework plus implementation of the accepted HTTP API and SQLite schema | Repository scaffold and component tests | Function Team 2 |
 | Exact common-helper request/result transport, D4-010.3 `tire-sp2` configuration and authoritative Cloud reconciliation lookup | Publication integration; accepted profile/custody semantics are closed | Function Team 2 security/release owner + Demo Solution |
 | Docker startup/minimum version, container/volume/port names and collision policy with Brake Cloud | Launcher and simultaneous products | `CR-DEMO` + both Function Teams |
 | QEMU guest-visible local route without LAN exposure | Real functional ingestion | `CR-DEMO` + Function Team 2 |
@@ -605,7 +606,7 @@ the following boundaries for implementation planning:
    ARM64 container with dedicated persistence and loopback browser access. It
    delegates publication to the common native helper pre-bound to `tire-sp2`;
    the current file-backed PKCS#12 remains outside Docker and the browser.
-7. The fourteen component requirements and ten stable unit-test obligations
+7. The fifteen component requirements and eleven stable unit-test obligations
    are accepted as the D3 verification baseline.
 
 Version 0.3 was revalidated on 2026-08-22 after D4-010.3 accepted the
@@ -618,10 +619,12 @@ identity-bound Tire CPU-isolation control. The current package contains fifteen
 requirements and eleven stable unit-test obligations; live enforcement
 evidence remains required by the design-reviewed D4-023 qualification plan.
 
-Exact message/API schemas, storage technology, container/network names,
-QEMU-to-container routing, helper transport and retention values remain D4
-gates. This acceptance does not create a repository or artifact and does not
-authorize signing, publication, Cloud mutation or Unit mutation.
+The message/API schemas, HTTP transport, SQLite durability model and
+container/network identities are accepted design inputs. Repository framework,
+schema implementation, QEMU-to-container route qualification, helper transport
+implementation and runtime evidence remain open gates. This acceptance does
+not create a repository or artifact and does not authorize signing,
+publication, Cloud mutation or Unit mutation.
 
 ## Change Rules
 
