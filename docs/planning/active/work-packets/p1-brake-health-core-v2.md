@@ -116,7 +116,9 @@ it is not a production latency, reliability, safety or network KPI.
 | Product commit | `7c0a658ba2106a7274e61296746dcdd3008db26b` |
 | Product parent | `04abe5bacc47e849c6a6fe4fccb64e8a15157d8f` |
 | Product tree | `0b2c25d5b47d683420539d9f4fde6c12a292b4e9` |
-| Solution baseline used for this proposal | `bcc7975d4aa3e3ed3c6b617abcd47b6bb18c88fd` |
+| Authoritative contract-cascade commit | `e593353cd9c66307a591c2439c7c63bab38e83c9` |
+| Implementation-authorization baseline | `107031a353308fc670d4a477e302e7a6bd278e55` |
+| Accepted bounded Unit-ID correction | `a15a94b8b6001f05829465bd7edd368e7f26733a` |
 
 The proposed product base is the isolated, source-complete
 `WP-P1-BHS-CORE-001` commit. Product `main` need not move before this packet,
@@ -125,14 +127,22 @@ worktree. A different commit or dirty base stops work and requires review.
 
 ## Frozen Contract Inputs
 
+The byte provenance is deliberately split: every input in the table below
+except the band-change event schema is frozen at the implementation-
+authorization baseline `107031a353308fc670d4a477e302e7a6bd278e55`; the
+band-change event schema is frozen at the later accepted bounded Unit-ID
+correction `a15a94b8b6001f05829465bd7edd368e7f26733a`. The later commit also
+contains unrelated documentation evolution and is not a replacement baseline
+for the other frozen inputs.
+
 | Input | Version or revision | SHA-256 |
 | --- | --- | --- |
 | `CR-BHS` | 0.9 | `c0199dd5b08d89ad8aa98ad131351463070d2a6641a1be0ed9dcdf6492f72a26` |
-| D4 decision register | accepted D4-016.3 byte/arithmetic closure, D4-016.5 and D4-017 | `d4e95f59d7b5e5189d215af7dc1db2363efd94200f7736d2845207d9c5023503` |
+| D4 decision register | accepted D4-016.3 byte/arithmetic closure, D4-016.5 and D4-017 | `5ad2a0a922907962c0b0d4712194404696cdc15d15db3d41b82058a0eafcca68` |
 | Brake model README | 1.0.0 / closure 2026-08-29 | `477c9630b893f4fca42dcd286bc23c7b8737ce3418d2da80f54f3239fe98f11f` |
 | Brake model profile | 1.0.0 | `7749dff2dd340f05ae5f3c90912d65007ad48c52a5136ab0e165a83109d55f53` |
 | Completed-episode input schema | 1.0.0 | `72913fbfee22d81a09106a80c7354d8f03f38600e1d9ada8ea56a8a6156118c5` |
-| Complete 80-sample golden input | 1.0.0 | `a989204bb82d48e512d8771f8e36102a3f9a8db59a26b6209d2943ec246e170d` |
+| Complete 80-sample golden input | 1.0.0 | `8d8502bbcc1ef2505b8d16fe761431c200f6327e39fcdb29e55ae7fe0d9e246a` |
 | Invalid-input cases | 1.0.0 | `d63d80b2e8f8d5e02ddaa24ecbb1532aea80694ed5a552b7c3329a26a36ac222` |
 | Conversion/quantization cases | 1.0.0 | `deb8d15e0bad1ddec562d3b5a6fcaf1121cec41f467c4e040924d1efc4572fa7` |
 | Assessment schema | 1.0.0 | `0c47d793bb4e31852c0452b92c901514d582c16a479f7107d15e02f0d22dc1e9` |
