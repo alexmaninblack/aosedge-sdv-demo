@@ -73,6 +73,15 @@ class BrakeHealthAdvisoryPolicyTest(unittest.TestCase):
         self.assertFalse(self.policy["authority"]["arbitraryTextAllowed"])
         self.assertFalse(self.policy["authority"]["vehicleMotionAllowed"])
 
+    def test_persistence_requires_epoch_and_sequence_reuse_protection(self) -> None:
+        persistence = self.policy["persistence"]
+        self.assertTrue(persistence["producerEpochPersistent"])
+        self.assertTrue(persistence["sequenceMonotonicPersistent"])
+        self.assertEqual(
+            "READ_STATUS_THEN_REFRESH_OR_RETRY_WITHOUT_SEQUENCE_REUSE",
+            persistence["restartBehavior"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

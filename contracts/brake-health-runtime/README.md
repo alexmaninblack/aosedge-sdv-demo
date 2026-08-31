@@ -4,9 +4,9 @@
 # Brake Health Runtime and Evidence Profile
 
 - Decision: D4-016.5 accepted 2026-08-23
-- Contract version: 1.0.0
+- Contract version: 1.1.0
 - Accepted profile SHA-256:
-  `d16bbfe4f1672c0d9935826f2d79b6cc3331a050f72d30d0e9365332c09c0064`
+  `cc90a091e044995a49ad886ae6a5f000c579c8a43a84dbaab8a6edf2a8c492c4`
 
 This profile freezes the proposed capability-oriented readiness, requested Aos
 quota envelope, cross-version state rules and bounded native-log vocabulary
@@ -37,6 +37,13 @@ background and is deleted only after durable backend acknowledgement or R0.
 On v2-to-v3 update, exact model state is reused and the accepted D4-016.4
 persisted-active-condition behavior applies. Unknown state or model digest is
 quarantined explicitly; it is never silently reset.
+
+Ordinary process, container and VM restarts preserve the producer epoch and
+continue from the persisted next advisory sequence without reuse. Only an
+explicit producer replacement or new producer lifecycle rotates the epoch,
+exactly once, and starts its sequence at `1`. R0 destroys that producer state.
+Late evidence from an old epoch may remain historical evidence but never
+changes the current state or advisory.
 
 Structured Service logs report owned state, queue and capability facts.
 Repeated records are rate-limited and aggregated. CPU/RAM quota enforcement

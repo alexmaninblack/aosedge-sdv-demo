@@ -103,8 +103,17 @@ class SharedEvidenceCorrelationContractTest(unittest.TestCase):
         ordering = self.profile["orderingAndAnomalies"]
         self.assertEqual(["PRODUCER_EPOCH", "SEQUENCE"], ordering["stateChangingOrder"])
         self.assertFalse(ordering["backendReceiptTimeDeterminesStateOrder"])
-        self.assertTrue(ordering["serviceRestart"]["createsNewProducerEpoch"])
-        self.assertFalse(ordering["serviceRestart"]["oldEpochLateEvidenceMayMutateCurrentStateOrAdvisory"])
+        lifecycle = ordering["producerLifecycle"]
+        self.assertEqual("PRESERVE", lifecycle["ordinaryRestart"]["producerEpoch"])
+        self.assertEqual(
+            "CONTINUE_MONOTONIC_FROM_PERSISTED_NEXT_WITHOUT_REUSE",
+            lifecycle["ordinaryRestart"]["sequence"],
+        )
+        self.assertEqual(
+            "ROTATE_EXACTLY_ONCE",
+            lifecycle["explicitReplacementOrNewProducerLifecycle"]["producerEpoch"],
+        )
+        self.assertFalse(lifecycle["lateOldEpochEvidence"]["mayMutateCurrentStateOrAdvisory"])
         self.assertTrue(ordering["reconnectRetry"]["onlyUnacknowledgedMessages"])
         self.assertTrue(ordering["reconnectRetry"]["synchronizationRequiresAllSequencesThroughDeclaredWatermarkAcknowledged"])
 

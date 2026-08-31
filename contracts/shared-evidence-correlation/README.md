@@ -5,7 +5,7 @@
 
 - Decision: `D4-024`
 - Lifecycle state: `DESIGN_REVIEWED`
-- Contract version: `1.0.0`
+- Contract version: `1.1.0`
 - Accepted subdecisions: D4-024.1 canonical correlation context, D4-024.2
   timestamp semantics/causal order, D4-024.3 structured evidence/redaction and
   D4-024.4 duplicate/out-of-order/clock behavior and D4-024.5 conformance and
@@ -83,11 +83,14 @@ Dashboard row. Reusing a key with different content is an explicit
 `IDEMPOTENCY_CONFLICT` and cannot replace accepted evidence.
 
 State-changing order is defined by producer epoch and sequence, not backend
-receipt time. Service restart creates a new epoch. Delayed evidence from an old
-epoch may remain visible in the current run but cannot mutate current state or
-advisory. Reconnect retries only unacknowledged messages without changing IDs,
-content or source times; synchronization completes only after every sequence
-through the declared watermark is acknowledged.
+receipt time. An ordinary process, container or VM restart preserves the epoch
+and continues from the persisted next sequence without reuse. Only an explicit
+producer replacement or new producer lifecycle rotates the epoch, exactly once,
+and starts its sequence at `1`; R0 destroys the producer state. Delayed evidence
+from an old epoch may remain visible in the current run but cannot mutate current
+state or advisory. Reconnect retries only unacknowledged messages without
+changing IDs, content or source times; synchronization completes only after
+every sequence through the declared watermark is acknowledged.
 
 Out-of-order evidence is labelled rather than silently discarded and never
 rolls back the current Dashboard state. Invalid RFC 3339 UTC or impossible

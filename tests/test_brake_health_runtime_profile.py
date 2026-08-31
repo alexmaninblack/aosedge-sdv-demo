@@ -63,6 +63,18 @@ class BrakeHealthRuntimeProfileTest(unittest.TestCase):
         self.assertFalse(state["v1ToV2"]["legacySpoolMayGateV2Analytics"])
         self.assertIn("BACKGROUND", state["v1ToV2"]["legacySpoolHandling"])
         self.assertIn("D4_016_4", state["v2ToV3"]["persistedInspectionBehavior"])
+        lifecycle = state["producerLifecycle"]
+        self.assertEqual("PRESERVE", lifecycle["ordinaryRestart"]["producerEpoch"])
+        self.assertEqual(
+            "ROTATE_EXACTLY_ONCE",
+            lifecycle["explicitReplacementOrNewProducerLifecycle"]["producerEpoch"],
+        )
+        self.assertEqual(
+            "START_AT_ONE",
+            lifecycle["explicitReplacementOrNewProducerLifecycle"]["sequence"],
+        )
+        self.assertEqual("DESTROY", lifecycle["r0"]["producerState"])
+        self.assertFalse(lifecycle["lateOldEpochEvidence"]["mayMutateCurrentStateOrAdvisory"])
 
     def test_logging_is_allowlisted_redacted_and_native(self) -> None:
         logging = self.profile["nativeLogging"]

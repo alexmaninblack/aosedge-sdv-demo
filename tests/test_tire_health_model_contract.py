@@ -160,6 +160,15 @@ class TireHealthModelContractTest(unittest.TestCase):
         self.assertFalse(advisory["externalConnectivityRequired"])
         self.assertEqual("ENGINEERING_TELEMATICS_DASHBOARD_ONLY", advisory["presentedIndicationSurface"])
         self.assertFalse(advisory["driverClusterImplemented"])
+        lifecycle = advisory["producerLifecycle"]
+        self.assertEqual(["PROCESS", "CONTAINER", "VM"], lifecycle["ordinaryRestart"]["scopes"])
+        self.assertEqual("PRESERVE", lifecycle["ordinaryRestart"]["producerEpoch"])
+        self.assertEqual(
+            "START_AT_ONE",
+            lifecycle["explicitReplacementOrNewProducerLifecycle"]["sequence"],
+        )
+        self.assertEqual("DESTROY", lifecycle["r0"]["producerState"])
+        self.assertFalse(lifecycle["lateOldEpochEvidence"]["mayMutateCurrentStateOrAdvisory"])
 
     def test_logs_and_faults_are_bounded_and_isolated(self) -> None:
         runtime = self.profile["runtime"]

@@ -2,7 +2,7 @@
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "schemaVersion": 1,
   "contractId": "aosedge-demo-tire-health-product",
-  "contractVersion": "1.0.0",
+  "contractVersion": "1.1.0",
   "lifecycleState": "ACCEPTED",
   "decision": "D4-018",
   "product": {
@@ -162,6 +162,22 @@
     "leaseMs": 30000,
     "refreshIntervalMs": 20000,
     "persistentProducerEpochAndSequence": true,
+    "producerLifecycle": {
+      "ordinaryRestart": {
+        "scopes": ["PROCESS", "CONTAINER", "VM"],
+        "producerEpoch": "PRESERVE",
+        "sequence": "CONTINUE_MONOTONIC_FROM_PERSISTED_NEXT_WITHOUT_REUSE"
+      },
+      "explicitReplacementOrNewProducerLifecycle": {
+        "producerEpoch": "ROTATE_EXACTLY_ONCE",
+        "sequence": "START_AT_ONE"
+      },
+      "r0": {"producerState": "DESTROY"},
+      "lateOldEpochEvidence": {
+        "mayRemainVisibleAsHistorical": true,
+        "mayMutateCurrentStateOrAdvisory": false
+      }
+    },
     "ambiguousWriteRetriesIdenticalRequest": true,
     "refreshUsesNewSequenceAndRequestId": true,
     "gatewayStatusIsApplicationEvidence": true,

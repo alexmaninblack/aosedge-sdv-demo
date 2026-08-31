@@ -2,7 +2,7 @@
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "schemaVersion": 1,
   "contractId": "aosedge-demo-brake-health-runtime",
-  "contractVersion": "1.0.0",
+  "contractVersion": "1.1.0",
   "lifecycleState": "ACCEPTED",
   "decision": "D4-016.5",
   "versions": {
@@ -81,6 +81,22 @@
       "modelState": "REUSE_EXACT_MODEL_STATE",
       "advisoryState": "CREATE_OR_REUSE_PERSISTENT_ADVISORY_EPOCH_SEQUENCE",
       "persistedInspectionBehavior": "APPLY_ACCEPTED_D4_016_4_ONE_TIME_ACTIVATION"
+    },
+    "producerLifecycle": {
+      "ordinaryRestart": {
+        "scopes": ["PROCESS", "CONTAINER", "VM"],
+        "producerEpoch": "PRESERVE",
+        "sequence": "CONTINUE_MONOTONIC_FROM_PERSISTED_NEXT_WITHOUT_REUSE"
+      },
+      "explicitReplacementOrNewProducerLifecycle": {
+        "producerEpoch": "ROTATE_EXACTLY_ONCE",
+        "sequence": "START_AT_ONE"
+      },
+      "r0": {"producerState": "DESTROY"},
+      "lateOldEpochEvidence": {
+        "mayRemainVisibleAsHistorical": true,
+        "mayMutateCurrentStateOrAdvisory": false
+      }
     },
     "v3ForwardRepair": "READ_SAME_SCHEMA_OR_EXPLICITLY_MIGRATE_WITH_JOURNAL",
     "arbitraryBackwardServiceSelectionClaimed": false,

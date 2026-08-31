@@ -1854,10 +1854,10 @@ mutation, Unit deletion, VM stop or overlay disposal.
   `7749dff2dd340f05ae5f3c90912d65007ad48c52a5136ab0e165a83109d55f53`
 - Exact D4-016.4 accepted: 2026-08-23
 - Accepted D4-016.4 policy SHA-256:
-  `1fb25510f60e01a1a498a00386d33de4c2eb659a0ee3db3be41928076bd7dca1`
+  `13216b51647525d48b83eb79bd47444ccb392d1a51a7ffd18b593d4c91f52467`
 - Exact D4-016.5 accepted: 2026-08-23
 - Accepted D4-016.5 profile SHA-256:
-  `d16bbfe4f1672c0d9935826f2d79b6cc3331a050f72d30d0e9365332c09c0064`
+  `cc90a091e044995a49ad886ae6a5f000c579c8a43a84dbaab8a6edf2a8c492c4`
 - Owners: Function Team 1 / Vehicle Simulation / Platform Team
 
 #### D4-016.1 — Service v1 bounded braking acquisition
@@ -2087,7 +2087,12 @@ in these canonical contracts:
 2. The persistent producer epoch and monotonically increasing sequence are
    written before KUKSA. Request ID is deterministic UUIDv5 over epoch,
    sequence, operation and decision. An ambiguous write retries identical
-   bytes; a refresh uses a new sequence and ID.
+   bytes; a refresh uses a new sequence and ID. An ordinary process, container
+   or VM restart preserves the epoch and continues from the persisted next
+   sequence without reuse. Only an explicit producer replacement or new
+   producer lifecycle rotates the epoch, exactly once, and starts its sequence
+   at `1`. R0 destroys the producer state. Late evidence from an old epoch may
+   remain historical evidence but can never change current state or advisory.
 3. The lease is 30 seconds and refresh is every 20 seconds while the same
    valid condition remains active. No AosCloud or backend round trip is part
    of this path.
@@ -2123,8 +2128,11 @@ in these canonical contracts:
    and persistent advisory epoch/sequence, including the accepted D4-016.4
    persisted-active-condition activation. Unknown schema or model-config
    mismatch is quarantined as `NOT_READY_STATE`; silent reset and arbitrary
-   backward-version claims are forbidden. R0 removes state with the disposable
-   overlay.
+   backward-version claims are forbidden. Ordinary process, container and VM
+   restart preserves the producer epoch and continues its monotonic sequence;
+   an explicit replacement/new producer lifecycle rotates once and starts at
+   sequence `1`. R0 removes that state with the disposable overlay, and late
+   old-epoch evidence never changes current state or advisory.
 4. Logs are one bounded English JSON object per stdout/stderr line for an
    allowlisted event vocabulary, at most 2048 bytes and 60 records/minute;
    repetitions are aggregated with a count. Secrets/JWTs/keys/certificates/

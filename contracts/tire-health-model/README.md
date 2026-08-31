@@ -5,7 +5,7 @@
 
 - Decision: `D4-018`
 - Lifecycle state: `ACCEPTED`
-- Contract version: `1.0.0`
+- Contract version: `1.1.0`
 - Subdecision state: exact VDP v3 input/incompatibility, bounded dynamics
   episode, deterministic synthetic estimator and persistent hysteresis/
   idempotency plus pre-demo calibration/qualification policy accepted
@@ -75,6 +75,13 @@ capacity it preserves accepted records, rejects the new Cloud message with
 `TIRE_OUTBOX_FULL`, and continues local estimation/advisory. External loss is
 `DEGRADED`, not local `NOT_READY`; reconnect delivery is idempotent and keeps
 original event time. Unknown state is quarantined without silent reset.
+
+Ordinary process, container and VM restarts also preserve the advisory
+producer epoch and continue from the persisted next sequence without reuse.
+Only an explicit producer replacement or new producer lifecycle rotates the
+epoch, exactly once, and starts its sequence at `1`. R0 destroys that producer
+state; late old-epoch evidence can never change the current Tire state or
+advisory.
 
 The accepted resource values are requested, not yet qualified. AosCore is the
 only resource authority and D4-023 remains the measurement gate. The first

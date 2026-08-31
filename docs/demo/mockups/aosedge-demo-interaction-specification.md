@@ -2029,9 +2029,12 @@ reorder current state.
 An identical Function-message retry reuses its accepted identity and produces
 no second audience row. A conflicting duplicate is visibly quarantined and
 cannot replace current state. Sequence/epoch, not receipt order, controls state
-progression. A Service restart creates a new producer epoch; delayed evidence
-from an old epoch may remain visible for diagnosis but cannot roll back the
-current assessment or advisory.
+progression. An ordinary process, container or VM restart preserves the
+producer epoch and continues from the persisted next sequence without reuse.
+Only an explicit producer replacement or new producer lifecycle rotates the
+epoch once and starts sequence `1`; R0 destroys producer state. Delayed
+evidence from an old epoch may remain visible for diagnosis but cannot roll
+back the current assessment or advisory.
 
 The audience view de-duplicates normal retry traffic while retaining a bounded
 ignored-duplicate/conflict indicator in Technical Details. It does not hide a

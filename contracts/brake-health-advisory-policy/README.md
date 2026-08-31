@@ -29,3 +29,11 @@ The Service reads the matching Gateway Status and treats only matching
 transport evidence only. A rejected request never falls back to another path
 or command. After a crash or loss of the internal advisory chain, lease expiry
 removes the indication; it is never claimed as driver acknowledgement.
+
+The accepted persistent epoch and monotonic-sequence policy has one lifecycle
+meaning. An ordinary process, container or VM restart preserves the producer
+epoch and continues from the persisted next sequence without reuse. Only an
+explicit producer replacement or new producer lifecycle rotates the epoch,
+exactly once, and starts its sequence at `1`. R0 destroys the producer state.
+Delayed evidence from an old epoch may remain historical evidence, but it can
+never change the current state or advisory.
