@@ -74,7 +74,7 @@ export interface PlannedFixtureRead {
   plan: ReadRequest;
   context: ReadRouteContext;
   readCompletedAt: string;
-  record: unknown;
+  record: ContractRecord<unknown>;
 }
 
 const sourceRoutes = {
@@ -86,15 +86,19 @@ const sourceRoutes = {
 const requestKeys = new Set(["source", "routeId", "method", "selectors", "pagination"]);
 const selectorKeys = new Set(["contextId", "objectFingerprint", "cursor"]);
 
-const detailRoutes = new Set<string>([
+const objectSelectedRoutes = new Set<string>([
   "OEM_UNIT_DETAIL",
+  "OEM_UNIT_NODES_PAGE",
   "OEM_NODE_DETAIL",
+  "OEM_SUBJECT_SERVICES_PAGE",
   "OEM_UNIT_SET_DETAIL",
+  "OEM_UNIT_SET_MEMBERS_PAGE",
   "OEM_VERIFICATION_BATCH_DETAIL",
   "OEM_FLEET_VALIDATION_BATCH_DETAIL",
   "OEM_CAMPAIGN_DETAIL",
   "OEM_UNIT_LOG_DETAIL",
   "BRAKE_SERVICE_LOG_DETAIL",
+  ...BRAKE_BACKEND_ROUTE_IDS,
 ]);
 
 const completeRoutes = new Set<string>([
@@ -111,14 +115,60 @@ const completeRoutes = new Set<string>([
   ...BRAKE_BACKEND_ROUTE_IDS,
 ]);
 
-const requiredRouteCounts = new Map<string, number>([
-  ...OEM_ROUTE_IDS.map((routeId) => [routeId, 1] as const),
-  ...BRAKE_SP1_ROUTE_IDS.map((routeId) => [routeId, 1] as const),
-  ...BRAKE_BACKEND_ROUTE_IDS.map((routeId) => [routeId, 1] as const),
-  ["OEM_UNIT_DETAIL", 2],
-  ["OEM_NODE_DETAIL", 2],
-  ["OEM_UNIT_SET_DETAIL", 2],
-]);
+const cloudReadPlans: readonly ReadRequest[] = [
+  { source: "AOSCLOUD_OEM", routeId: "OEM_USERS_ME", method: "GET", selectors: { contextId: "oem-session" }, pagination: "SINGLE" },
+  { source: "AOSCLOUD_OEM", routeId: "OEM_UNITS_PAGE", method: "GET", selectors: { contextId: "vehicle-inventory" }, pagination: "COMPLETE" },
+  { source: "AOSCLOUD_OEM", routeId: "OEM_UNIT_DETAIL", method: "GET", selectors: { contextId: "vehicle-inventory", objectFingerprint: "unit:test:7c91" }, pagination: "SINGLE" },
+  { source: "AOSCLOUD_OEM", routeId: "OEM_UNIT_DETAIL", method: "GET", selectors: { contextId: "vehicle-inventory", objectFingerprint: "unit:production:4e22" }, pagination: "SINGLE" },
+  { source: "AOSCLOUD_OEM", routeId: "OEM_UNIT_NODES_PAGE", method: "GET", selectors: { contextId: "vehicle-inventory", objectFingerprint: "unit:test:7c91" }, pagination: "COMPLETE" },
+  { source: "AOSCLOUD_OEM", routeId: "OEM_UNIT_NODES_PAGE", method: "GET", selectors: { contextId: "vehicle-inventory", objectFingerprint: "unit:production:4e22" }, pagination: "COMPLETE" },
+  { source: "AOSCLOUD_OEM", routeId: "OEM_NODE_DETAIL", method: "GET", selectors: { contextId: "vehicle-inventory", objectFingerprint: "node:test-main:853a" }, pagination: "SINGLE" },
+  { source: "AOSCLOUD_OEM", routeId: "OEM_NODE_DETAIL", method: "GET", selectors: { contextId: "vehicle-inventory", objectFingerprint: "node:production-main:59bd" }, pagination: "SINGLE" },
+  { source: "AOSCLOUD_OEM", routeId: "OEM_SUBJECT_SERVICES_PAGE", method: "GET", selectors: { contextId: "pending-recipients", objectFingerprint: "unit:test:7c91" }, pagination: "COMPLETE" },
+  { source: "AOSCLOUD_OEM", routeId: "OEM_SUBJECT_SERVICES_PAGE", method: "GET", selectors: { contextId: "pending-recipients", objectFingerprint: "unit:production:4e22" }, pagination: "COMPLETE" },
+  { source: "AOSCLOUD_OEM", routeId: "OEM_UNIT_SETS_PAGE", method: "GET", selectors: { contextId: "role-sets" }, pagination: "COMPLETE" },
+  { source: "AOSCLOUD_OEM", routeId: "OEM_UNIT_SET_DETAIL", method: "GET", selectors: { contextId: "role-sets", objectFingerprint: "set:test:8d0f" }, pagination: "SINGLE" },
+  { source: "AOSCLOUD_OEM", routeId: "OEM_UNIT_SET_DETAIL", method: "GET", selectors: { contextId: "role-sets", objectFingerprint: "set:production:103c" }, pagination: "SINGLE" },
+  { source: "AOSCLOUD_OEM", routeId: "OEM_UNIT_SET_MEMBERS_PAGE", method: "GET", selectors: { contextId: "role-sets", objectFingerprint: "set:test:8d0f" }, pagination: "COMPLETE" },
+  { source: "AOSCLOUD_OEM", routeId: "OEM_UNIT_SET_MEMBERS_PAGE", method: "GET", selectors: { contextId: "role-sets", objectFingerprint: "set:production:103c" }, pagination: "COMPLETE" },
+  { source: "AOSCLOUD_OEM", routeId: "OEM_VERIFICATION_BATCHES_PAGE", method: "GET", selectors: { contextId: "release-chain" }, pagination: "COMPLETE" },
+  { source: "AOSCLOUD_OEM", routeId: "OEM_VERIFICATION_BATCH_DETAIL", method: "GET", selectors: { contextId: "release-chain", objectFingerprint: "verification:brake-v3:13f8" }, pagination: "SINGLE" },
+  { source: "AOSCLOUD_OEM", routeId: "OEM_FLEET_VALIDATION_BATCHES_PAGE", method: "GET", selectors: { contextId: "release-chain" }, pagination: "COMPLETE" },
+  { source: "AOSCLOUD_OEM", routeId: "OEM_FLEET_VALIDATION_BATCH_DETAIL", method: "GET", selectors: { contextId: "release-chain", objectFingerprint: "fleet-validation:brake-v2:b827" }, pagination: "SINGLE" },
+  { source: "AOSCLOUD_OEM", routeId: "OEM_CAMPAIGNS_PAGE", method: "GET", selectors: { contextId: "release-chain" }, pagination: "COMPLETE" },
+  { source: "AOSCLOUD_OEM", routeId: "OEM_CAMPAIGN_DETAIL", method: "GET", selectors: { contextId: "release-chain", objectFingerprint: "campaign:brake-v2:27a1" }, pagination: "SINGLE" },
+  { source: "AOSCLOUD_OEM", routeId: "OEM_UNIT_LOGS_PAGE", method: "GET", selectors: { contextId: "unit-log-metadata" }, pagination: "COMPLETE" },
+  ...Array.from({ length: 7 }, (_, index): ReadRequest => ({
+    source: "AOSCLOUD_OEM",
+    routeId: "OEM_UNIT_LOG_DETAIL",
+    method: "GET",
+    selectors: { contextId: "unit-log-metadata", objectFingerprint: `unit-log:${index + 1}:c0de` },
+    pagination: "SINGLE",
+  })),
+  { source: "AOSCLOUD_BRAKE_SP1", routeId: "BRAKE_USERS_ME", method: "GET", selectors: { contextId: "brake-session" }, pagination: "SINGLE" },
+  { source: "AOSCLOUD_BRAKE_SP1", routeId: "BRAKE_SERVICE_LOGS_PAGE", method: "GET", selectors: { contextId: "brake-service-log-metadata" }, pagination: "COMPLETE" },
+  { source: "AOSCLOUD_BRAKE_SP1", routeId: "BRAKE_SERVICE_LOG_DETAIL", method: "GET", selectors: { contextId: "brake-service-log-metadata", objectFingerprint: "service-log:1:ad24" }, pagination: "SINGLE" },
+];
+
+export function requiredReadPlansForContext(
+  role: AudienceVehicleRole | null,
+  systemUidFingerprint: string | null,
+): readonly ReadRequest[] {
+  const plans: ReadRequest[] = [...structuredClone(cloudReadPlans)];
+  if (role && systemUidFingerprint) {
+    const contextId = role === "TEST" ? "current-test-unit" : "current-production-unit";
+    for (const routeId of BRAKE_BACKEND_ROUTE_IDS) {
+      plans.push({
+        source: "BRAKE_BACKEND",
+        routeId,
+        method: "GET",
+        selectors: { contextId, objectFingerprint: systemUidFingerprint },
+        pagination: "COMPLETE",
+      });
+    }
+  }
+  return plans;
+}
 
 export function validateReadRequest(input: unknown): ReadRequest {
   if (!input || typeof input !== "object" || Array.isArray(input)) throw new Error("READ_PLAN_MALFORMED");
@@ -139,7 +189,7 @@ export function validateReadRequest(input: unknown): ReadRequest {
   const cursor = selectors.cursor;
   if (objectFingerprint !== undefined && (typeof objectFingerprint !== "string" || !/^[a-z][a-z0-9-]*(?::[a-z0-9-]+){1,4}:[0-9a-f]{4}$/.test(objectFingerprint))) throw new Error("READ_SELECTOR_MALFORMED");
   if (cursor !== undefined && (typeof cursor !== "string" || !/^[A-Za-z0-9_-]{1,2048}$/.test(cursor))) throw new Error("READ_SELECTOR_MALFORMED");
-  if (detailRoutes.has(value.routeId as string) && objectFingerprint === undefined) throw new Error("READ_SELECTOR_REQUIRED");
+  if (objectSelectedRoutes.has(value.routeId as string) && objectFingerprint === undefined) throw new Error("READ_SELECTOR_REQUIRED");
   if (value.pagination !== (completeRoutes.has(value.routeId as string) ? "COMPLETE" : "SINGLE")) throw new Error("READ_PAGINATION_MISMATCH");
   return input as ReadRequest;
 }
@@ -208,12 +258,6 @@ export function validateReadOnlyFixturePackageEnvelope(input: unknown): ReadOnly
   if (typeof input.fixtureId !== "string" || !/^[a-z0-9][a-z0-9-]{0,95}$/.test(input.fixtureId)) throw new Error("FIXTURE_ID_MALFORMED");
   if (input.contractClass !== "CONTRACT_SYNTHETIC" || input.policyId !== "FIXTURE_POLICY_EXPLICIT_V1") throw new Error("FIXTURE_PROVENANCE_REQUIRED");
   if (input.phase !== "PRE_M1" && input.phase !== "MANAGED") throw new Error("FIXTURE_PHASE_MALFORMED");
-  if (!Array.isArray(input.plans) || input.plans.length === 0) throw new Error("READ_PLAN_REQUIRED");
-  const plans = input.plans.map(validateReadRequest);
-  if (new Set(plans.map((plan) => JSON.stringify(plan))).size !== plans.length) throw new Error("READ_PLAN_DUPLICATE");
-  for (const [routeId, count] of requiredRouteCounts) {
-    if (plans.filter((plan) => plan.routeId === routeId).length < count) throw new Error("READ_PLAN_INCOMPLETE");
-  }
   if (!exactObjectKeys(input.aosCloud, ["session", "brakeSession", "bindings", "units", "unitSets", "unitSetPages", "releases", "unitLogs", "serviceLogs"])) throw new Error("AOSCLOUD_FIXTURE_MALFORMED");
   if (!exactObjectKeys(input.brake, ["contextRole", "contextSystemUidFingerprint", "resources", "notificationCount", "restReadCount"])) throw new Error("BRAKE_FIXTURE_MALFORMED");
   const contextPairIsValid = input.brake.contextRole === null
@@ -222,6 +266,16 @@ export function validateReadOnlyFixturePackageEnvelope(input: unknown): ReadOnly
       && typeof input.brake.contextSystemUidFingerprint === "string"
       && /^uid:(?:test|production):[0-9a-f]{4}$/.test(input.brake.contextSystemUidFingerprint);
   if (!contextPairIsValid) throw new Error("CURRENT_UNIT_CONTEXT_MALFORMED");
+  if (!Array.isArray(input.plans) || input.plans.length === 0) throw new Error("READ_PLAN_REQUIRED");
+  const plans = input.plans.map(validateReadRequest);
+  const planKeys = plans.map((plan) => JSON.stringify(plan));
+  if (new Set(planKeys).size !== plans.length) throw new Error("READ_PLAN_DUPLICATE");
+  const expectedKeys = new Set(requiredReadPlansForContext(
+    input.brake.contextRole as AudienceVehicleRole | null,
+    input.brake.contextSystemUidFingerprint as string | null,
+  ).map((plan) => JSON.stringify(plan)));
+  if (planKeys.some((key) => !expectedKeys.has(key))) throw new Error("READ_PLAN_UNEXPECTED");
+  if (planKeys.length !== expectedKeys.size || [...expectedKeys].some((key) => !planKeys.includes(key))) throw new Error("READ_PLAN_INCOMPLETE");
   if (!Number.isInteger(input.brake.notificationCount) || Number(input.brake.notificationCount) < 0
     || !Number.isInteger(input.brake.restReadCount) || Number(input.brake.restReadCount) < 0) throw new Error("BRAKE_REREAD_COUNT_MALFORMED");
   return input as unknown as ReadOnlyFixturePackage;

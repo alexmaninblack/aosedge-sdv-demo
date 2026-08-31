@@ -57,16 +57,46 @@ describe("closed read request plans", () => {
     expect(() => validateReadOnlyFixturePackageEnvelope(context)).toThrow("CURRENT_UNIT_CONTEXT_MALFORMED");
   });
 
-  it("requires every frozen page/detail route and both vehicle identities in detail plans", () => {
+  it("requires the exact per-object page/detail plan set for both vehicle identities", () => {
     const fixture = readOnlyFixtureById("ready");
     const routeIds = fixture.plans.map((request) => request.routeId);
     expect([...OEM_ROUTE_IDS, ...BRAKE_SP1_ROUTE_IDS, ...BRAKE_BACKEND_ROUTE_IDS].every((routeId) => routeIds.includes(routeId))).toBe(true);
+    expect(fixture.plans).toHaveLength(36);
     expect(fixture.plans.filter((request) => request.routeId === "OEM_UNIT_DETAIL")).toHaveLength(2);
+    expect(fixture.plans.filter((request) => request.routeId === "OEM_UNIT_NODES_PAGE")).toHaveLength(2);
     expect(fixture.plans.filter((request) => request.routeId === "OEM_NODE_DETAIL")).toHaveLength(2);
+    expect(fixture.plans.filter((request) => request.routeId === "OEM_SUBJECT_SERVICES_PAGE")).toHaveLength(2);
     expect(fixture.plans.filter((request) => request.routeId === "OEM_UNIT_SET_DETAIL")).toHaveLength(2);
+    expect(fixture.plans.filter((request) => request.routeId === "OEM_UNIT_SET_MEMBERS_PAGE")).toHaveLength(2);
+    expect(fixture.plans.filter((request) => request.routeId === "OEM_UNIT_LOG_DETAIL")).toHaveLength(7);
 
     fixture.plans = fixture.plans.filter((request) => request.routeId !== "OEM_CAMPAIGN_DETAIL");
     expect(() => validateReadOnlyFixturePackageEnvelope(fixture)).toThrow("READ_PLAN_INCOMPLETE");
+  });
+
+  it("rejects extra and wrong-object plans and binds backend reads to the exact current Unit", () => {
+    const extra = readOnlyFixtureById("ready");
+    extra.plans = [...extra.plans, {
+      source: "AOSCLOUD_OEM",
+      routeId: "OEM_NODE_DETAIL",
+      method: "GET",
+      selectors: { contextId: "vehicle-inventory", objectFingerprint: "node:other-main:0bad" },
+      pagination: "SINGLE",
+    }];
+    expect(() => validateReadOnlyFixturePackageEnvelope(extra)).toThrow("READ_PLAN_UNEXPECTED");
+
+    const wrong = readOnlyFixtureById("ready");
+    wrong.plans = wrong.plans.map((request) => request.routeId === "OEM_NODE_DETAIL" && request.selectors.objectFingerprint === "node:production-main:59bd"
+      ? { ...request, selectors: { ...request.selectors, objectFingerprint: "node:other-main:0bad" } }
+      : request);
+    expect(() => validateReadOnlyFixturePackageEnvelope(wrong)).toThrow("READ_PLAN_UNEXPECTED");
+
+    const production = readOnlyFixtureById("production");
+    expect(production.plans.filter((request) => request.source === "BRAKE_BACKEND")).toHaveLength(4);
+    expect(production.plans.filter((request) => request.source === "BRAKE_BACKEND").every((request) =>
+      request.selectors.contextId === "current-production-unit"
+      && request.selectors.objectFingerprint === "uid:production:9b14")).toBe(true);
+    expect(readOnlyFixtureById("read-only-brake-context-unavailable").plans.some((request) => request.source === "BRAKE_BACKEND")).toBe(false);
   });
 
   it("executes declared plans only in their composition-owned route/role context", () => {
@@ -88,6 +118,17 @@ describe("closed read request plans", () => {
       { routeContext: "oem-delivery-read", role: "OEM" },
       clock,
     )).toThrow("READ_PLAN_NOT_DECLARED");
+  });
+
+  it("executes Unit Set membership as separate complete per-Set reads", () => {
+    const adapter = new FixtureReadOnlyAdapter(new FixturePresenterReadAdapter("read-only-paginated-membership"), "read-only-paginated-membership", clock);
+    const plans = readOnlyFixtureById("read-only-paginated-membership").plans.filter((plan) => plan.routeId === "OEM_UNIT_SET_MEMBERS_PAGE");
+    const reads = plans.map((plan) => adapter.read(plan, { routeContext: "oem-delivery-read", role: "OEM" }, clock));
+    expect(reads.map((read) => (read.record.value as readonly { role: string }[]).map((page) => page.role))).toEqual([
+      ["TEST", "TEST"],
+      ["PRODUCTION"],
+    ]);
+    expect(reads.every((read) => read.plan.pagination === "COMPLETE")).toBe(true);
   });
 });
 
@@ -345,5 +386,18 @@ describe("composed Presenter snapshot", () => {
     const unauthenticated = await snapshot("read-only-unauthenticated");
     expect(unauthenticated.vehicle.value).toBe("unavailable");
     expect(unauthenticated.teams.platform.productStatus).toBe("VDP v—");
+  });
+
+  it("uses executed detail results as the sole projection input", async () => {
+    const rawFixture = readOnlyFixtureById("read-only-missing-log-detail");
+    expect(aosCloudReadModel(rawFixture, clock).unitLogs.state).toBe("CURRENT");
+
+    const composed = await snapshot("read-only-missing-log-detail");
+    expect(composed.readOnly?.unitLogs).toMatchObject({
+      value: null,
+      state: "UNKNOWN",
+      transport: "NOT_FOUND_OR_INACCESSIBLE",
+      reason: "FIXTURE_OBJECT_NOT_FOUND",
+    });
   });
 });

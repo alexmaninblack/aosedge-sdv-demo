@@ -7,43 +7,9 @@ import type {
   UnitView,
   VehicleBindingView,
 } from "../../domain";
-import type { ContractRecord, ReadOnlyFixturePackage, ReadRequest } from "./contracts";
+import { requiredReadPlansForContext, type ContractRecord, type ReadOnlyFixturePackage } from "./contracts";
 
 const SOURCE_TIME = "2026-08-30T09:00:00.000Z";
-
-function plan(request: ReadRequest): ReadRequest {
-  return request;
-}
-
-const plans: readonly ReadRequest[] = [
-  plan({ source: "AOSCLOUD_OEM", routeId: "OEM_USERS_ME", method: "GET", selectors: { contextId: "oem-session" }, pagination: "SINGLE" }),
-  plan({ source: "AOSCLOUD_OEM", routeId: "OEM_UNITS_PAGE", method: "GET", selectors: { contextId: "vehicle-inventory" }, pagination: "COMPLETE" }),
-  plan({ source: "AOSCLOUD_OEM", routeId: "OEM_UNIT_DETAIL", method: "GET", selectors: { contextId: "vehicle-inventory", objectFingerprint: "unit:test:7c91" }, pagination: "SINGLE" }),
-  plan({ source: "AOSCLOUD_OEM", routeId: "OEM_UNIT_DETAIL", method: "GET", selectors: { contextId: "vehicle-inventory", objectFingerprint: "unit:production:4e22" }, pagination: "SINGLE" }),
-  plan({ source: "AOSCLOUD_OEM", routeId: "OEM_UNIT_NODES_PAGE", method: "GET", selectors: { contextId: "vehicle-inventory", objectFingerprint: "unit:test:7c91" }, pagination: "COMPLETE" }),
-  plan({ source: "AOSCLOUD_OEM", routeId: "OEM_NODE_DETAIL", method: "GET", selectors: { contextId: "vehicle-inventory", objectFingerprint: "node:test-main:853a" }, pagination: "SINGLE" }),
-  plan({ source: "AOSCLOUD_OEM", routeId: "OEM_NODE_DETAIL", method: "GET", selectors: { contextId: "vehicle-inventory", objectFingerprint: "node:production-main:59bd" }, pagination: "SINGLE" }),
-  plan({ source: "AOSCLOUD_OEM", routeId: "OEM_SUBJECT_SERVICES_PAGE", method: "GET", selectors: { contextId: "pending-recipients" }, pagination: "COMPLETE" }),
-  plan({ source: "AOSCLOUD_OEM", routeId: "OEM_UNIT_SETS_PAGE", method: "GET", selectors: { contextId: "role-sets" }, pagination: "COMPLETE" }),
-  plan({ source: "AOSCLOUD_OEM", routeId: "OEM_UNIT_SET_DETAIL", method: "GET", selectors: { contextId: "role-sets", objectFingerprint: "set:test:8d0f" }, pagination: "SINGLE" }),
-  plan({ source: "AOSCLOUD_OEM", routeId: "OEM_UNIT_SET_DETAIL", method: "GET", selectors: { contextId: "role-sets", objectFingerprint: "set:production:103c" }, pagination: "SINGLE" }),
-  plan({ source: "AOSCLOUD_OEM", routeId: "OEM_UNIT_SET_MEMBERS_PAGE", method: "GET", selectors: { contextId: "role-sets" }, pagination: "COMPLETE" }),
-  plan({ source: "AOSCLOUD_OEM", routeId: "OEM_VERIFICATION_BATCHES_PAGE", method: "GET", selectors: { contextId: "release-chain" }, pagination: "COMPLETE" }),
-  plan({ source: "AOSCLOUD_OEM", routeId: "OEM_VERIFICATION_BATCH_DETAIL", method: "GET", selectors: { contextId: "release-chain", objectFingerprint: "verification:brake-v3:13f8" }, pagination: "SINGLE" }),
-  plan({ source: "AOSCLOUD_OEM", routeId: "OEM_FLEET_VALIDATION_BATCHES_PAGE", method: "GET", selectors: { contextId: "release-chain" }, pagination: "COMPLETE" }),
-  plan({ source: "AOSCLOUD_OEM", routeId: "OEM_FLEET_VALIDATION_BATCH_DETAIL", method: "GET", selectors: { contextId: "release-chain", objectFingerprint: "fleet-validation:brake-v2:b827" }, pagination: "SINGLE" }),
-  plan({ source: "AOSCLOUD_OEM", routeId: "OEM_CAMPAIGNS_PAGE", method: "GET", selectors: { contextId: "release-chain" }, pagination: "COMPLETE" }),
-  plan({ source: "AOSCLOUD_OEM", routeId: "OEM_CAMPAIGN_DETAIL", method: "GET", selectors: { contextId: "release-chain", objectFingerprint: "campaign:brake-v2:27a1" }, pagination: "SINGLE" }),
-  plan({ source: "AOSCLOUD_OEM", routeId: "OEM_UNIT_LOGS_PAGE", method: "GET", selectors: { contextId: "unit-log-metadata" }, pagination: "COMPLETE" }),
-  plan({ source: "AOSCLOUD_OEM", routeId: "OEM_UNIT_LOG_DETAIL", method: "GET", selectors: { contextId: "unit-log-metadata", objectFingerprint: "unit-log:1:c0de" }, pagination: "SINGLE" }),
-  plan({ source: "AOSCLOUD_BRAKE_SP1", routeId: "BRAKE_USERS_ME", method: "GET", selectors: { contextId: "brake-session" }, pagination: "SINGLE" }),
-  plan({ source: "AOSCLOUD_BRAKE_SP1", routeId: "BRAKE_SERVICE_LOGS_PAGE", method: "GET", selectors: { contextId: "brake-service-log-metadata" }, pagination: "COMPLETE" }),
-  plan({ source: "AOSCLOUD_BRAKE_SP1", routeId: "BRAKE_SERVICE_LOG_DETAIL", method: "GET", selectors: { contextId: "brake-service-log-metadata", objectFingerprint: "service-log:1:ad24" }, pagination: "SINGLE" }),
-  plan({ source: "BRAKE_BACKEND", routeId: "BRAKE_WINDOWS", method: "GET", selectors: { contextId: "current-test-unit" }, pagination: "COMPLETE" }),
-  plan({ source: "BRAKE_BACKEND", routeId: "BRAKE_ASSESSMENTS", method: "GET", selectors: { contextId: "current-test-unit" }, pagination: "COMPLETE" }),
-  plan({ source: "BRAKE_BACKEND", routeId: "BRAKE_EVENTS", method: "GET", selectors: { contextId: "current-test-unit" }, pagination: "COMPLETE" }),
-  plan({ source: "BRAKE_BACKEND", routeId: "BRAKE_ADVISORIES", method: "GET", selectors: { contextId: "current-test-unit" }, pagination: "COMPLETE" }),
-];
 
 const oemSession: SessionView = {
   routeContext: "oem-delivery-read",
@@ -199,7 +165,7 @@ function basePackage(): ReadOnlyFixturePackage {
     contractClass: "CONTRACT_SYNTHETIC",
     policyId: "FIXTURE_POLICY_EXPLICIT_V1",
     phase: "MANAGED",
-    plans: structuredClone(plans),
+    plans: requiredReadPlansForContext("TEST", "uid:test:76d2"),
     aosCloud: {
       session: record("AOSCLOUD_OEM", structuredClone(oemSession)),
       brakeSession: record("AOSCLOUD_BRAKE_SP1", structuredClone(brakeSession)),
@@ -380,6 +346,12 @@ const variants = {
     value.aosCloud.serviceLogs.value = [{ ...unitLogs[0]!, family: "unit-logs", owner: "OEM" }];
     return value;
   },
+  "read-only-missing-log-detail": () => {
+    const value = basePackage();
+    value.fixtureId = "read-only-missing-log-detail";
+    value.aosCloud.unitLogs.value = value.aosCloud.unitLogs.value?.filter((item) => item.requestFingerprint !== "unit-log:1:c0de") ?? null;
+    return value;
+  },
   "read-only-campaign-unit-ids": () => {
     const value = basePackage();
     value.fixtureId = "read-only-campaign-unit-ids";
@@ -546,5 +518,6 @@ export function readOnlyFixtureById(id: string): ReadOnlyFixturePackage {
   else if (id === "r0") value = variants.m0();
   else value = unavailablePackage(id);
   value.fixtureId = id;
+  value.plans = requiredReadPlansForContext(value.brake.contextRole, value.brake.contextSystemUidFingerprint);
   return value;
 }

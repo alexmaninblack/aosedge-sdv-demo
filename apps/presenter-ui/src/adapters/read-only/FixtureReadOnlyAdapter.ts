@@ -1,4 +1,15 @@
-import type { Clock, PresenterReadPort, PresenterSnapshot } from "../../domain";
+import type {
+  BrakeResourceView,
+  Clock,
+  NativeLogView,
+  PresenterReadPort,
+  PresenterSnapshot,
+  ReleaseObjectView,
+  SessionView,
+  UnitSetView,
+  UnitView,
+  VehicleBindingView,
+} from "../../domain";
 import { isAcceptedDateTime } from "./aosCloudReadModel";
 import { composePresenterSnapshot } from "./composePresenterSnapshot";
 import {
@@ -7,6 +18,7 @@ import {
   type ReadOnlyFixturePackage,
   type ReadRequest,
   type ReadRouteContext,
+  type UnitSetPage,
   validateReadOnlyFixturePackageEnvelope,
   validateReadRequest,
 } from "./contracts";
@@ -44,7 +56,7 @@ function selectOne<T>(record: ContractRecord<readonly T[]>, predicate: (item: T)
   return { ...record, value };
 }
 
-function recordForPlan(fixture: ReadOnlyFixturePackage, plan: ReadRequest): unknown {
+function recordForPlan(fixture: ReadOnlyFixturePackage, plan: ReadRequest): ContractRecord<unknown> {
   const objectFingerprint = plan.selectors.objectFingerprint;
   switch (plan.routeId) {
     case "OEM_USERS_ME":
@@ -58,19 +70,21 @@ function recordForPlan(fixture: ReadOnlyFixturePackage, plan: ReadRequest): unkn
     case "OEM_NODE_DETAIL":
       return selectOne(fixture.aosCloud.bindings, (binding) => binding.mainNodeFingerprint === objectFingerprint);
     case "OEM_SUBJECT_SERVICES_PAGE":
-      return fixture.aosCloud.units;
+      return selectMany(fixture.aosCloud.units, (unit) => unit.unitFingerprint === objectFingerprint);
     case "OEM_UNIT_SETS_PAGE":
       return fixture.aosCloud.unitSets;
     case "OEM_UNIT_SET_DETAIL": {
       const binding = fixture.aosCloud.bindings.value?.find((item) => item.unitSetFingerprint === objectFingerprint);
       return selectOne(fixture.aosCloud.unitSets, (unitSet) => unitSet.role === binding?.role);
     }
-    case "OEM_UNIT_SET_MEMBERS_PAGE":
-      return fixture.aosCloud.unitSets.outcome === "OK"
-        ? { ...fixture.aosCloud.unitSets, value: fixture.aosCloud.unitSetPages }
-        : fixture.aosCloud.unitSets;
+    case "OEM_UNIT_SET_MEMBERS_PAGE": {
+      if (fixture.aosCloud.unitSets.outcome !== "OK") return fixture.aosCloud.unitSets;
+      const binding = fixture.aosCloud.bindings.value?.find((item) => item.unitSetFingerprint === objectFingerprint);
+      if (!binding) return { ...fixture.aosCloud.unitSets, outcome: "404", value: null, reasonCode: "FIXTURE_OBJECT_NOT_FOUND" };
+      return { ...fixture.aosCloud.unitSets, value: fixture.aosCloud.unitSetPages.filter((page) => page.role === binding.role) };
+    }
     case "OEM_VERIFICATION_BATCHES_PAGE":
-      return selectMany(fixture.aosCloud.releases, (release) => release.kind === "VERIFICATION_BATCH");
+      return selectMany(fixture.aosCloud.releases, (release) => release.kind === "CANDIDATE" || release.kind === "VERIFICATION_BATCH");
     case "OEM_VERIFICATION_BATCH_DETAIL":
       return selectOne(fixture.aosCloud.releases, (release) => release.kind === "VERIFICATION_BATCH" && release.fingerprint === objectFingerprint);
     case "OEM_FLEET_VALIDATION_BATCHES_PAGE":
@@ -92,14 +106,111 @@ function recordForPlan(fixture: ReadOnlyFixturePackage, plan: ReadRequest): unkn
     case "BRAKE_SERVICE_LOG_DETAIL":
       return selectOne(fixture.aosCloud.serviceLogs, (log) => log.requestFingerprint === objectFingerprint);
     case "BRAKE_WINDOWS":
-      return selectMany(fixture.brake.resources, (resource) => resource.resourceType === "WINDOW");
+      return selectMany(fixture.brake.resources, (resource) => resource.resourceType === "WINDOW" && resource.unitSystemUidFingerprint === objectFingerprint);
     case "BRAKE_ASSESSMENTS":
-      return selectMany(fixture.brake.resources, (resource) => resource.resourceType === "ASSESSMENT");
+      return selectMany(fixture.brake.resources, (resource) => resource.resourceType === "ASSESSMENT" && resource.unitSystemUidFingerprint === objectFingerprint);
     case "BRAKE_EVENTS":
-      return selectMany(fixture.brake.resources, (resource) => resource.resourceType === "EVENT");
+      return selectMany(fixture.brake.resources, (resource) => resource.resourceType === "EVENT" && resource.unitSystemUidFingerprint === objectFingerprint);
     case "BRAKE_ADVISORIES":
-      return selectMany(fixture.brake.resources, (resource) => resource.resourceType === "ADVISORY");
+      return selectMany(fixture.brake.resources, (resource) => resource.resourceType === "ADVISORY" && resource.unitSystemUidFingerprint === objectFingerprint);
   }
+}
+
+function readsFor(reads: readonly Readonly<PlannedFixtureRead>[], ...routeIds: ReadRequest["routeId"][]): readonly Readonly<PlannedFixtureRead>[] {
+  return reads.filter((read) => routeIds.includes(read.plan.routeId));
+}
+
+function singleRecord<T>(reads: readonly Readonly<PlannedFixtureRead>[], routeId: ReadRequest["routeId"]): ContractRecord<T> {
+  const selected = readsFor(reads, routeId);
+  if (selected.length !== 1) throw new Error("READ_EXECUTION_CARDINALITY_MISMATCH");
+  return structuredClone(selected[0]!.record) as ContractRecord<T>;
+}
+
+function aggregateRecords<T>(
+  gateReads: readonly Readonly<PlannedFixtureRead>[],
+  valueReads: readonly Readonly<PlannedFixtureRead>[],
+): ContractRecord<readonly T[]> {
+  if (gateReads.length === 0 || valueReads.length === 0) throw new Error("READ_EXECUTION_CARDINALITY_MISMATCH");
+  const first = gateReads[0]!.record;
+  const source = gateReads[0]!.plan.source;
+  if (gateReads.some((read) => read.plan.source !== source || read.record.source !== source)) throw new Error("READ_EXECUTION_SCOPE_MISMATCH");
+  const failed = gateReads.find((read) => read.record.outcome !== "OK");
+  if (failed) return { ...structuredClone(failed.record), value: null } as ContractRecord<readonly T[]>;
+  const values: T[] = [];
+  for (const read of valueReads) {
+    if (read.record.outcome !== "OK" || read.record.value === null) {
+      return { ...structuredClone(read.record), value: null } as ContractRecord<readonly T[]>;
+    }
+    if (Array.isArray(read.record.value)) values.push(...structuredClone(read.record.value) as T[]);
+    else values.push(structuredClone(read.record.value) as T);
+  }
+  return {
+    ...structuredClone(first),
+    freshness: gateReads.some((read) => read.record.freshness === "STALE") ? "STALE" : "CURRENT",
+    value: values,
+  } as ContractRecord<readonly T[]>;
+}
+
+function materializeExecutedFixture(
+  fixture: ReadOnlyFixturePackage,
+  reads: readonly Readonly<PlannedFixtureRead>[],
+): ReadOnlyFixturePackage {
+  const unitReads = readsFor(reads, "OEM_UNITS_PAGE", "OEM_UNIT_DETAIL", "OEM_SUBJECT_SERVICES_PAGE");
+  const nodeReads = readsFor(reads, "OEM_UNIT_NODES_PAGE", "OEM_NODE_DETAIL");
+  const unitSetReads = readsFor(reads, "OEM_UNIT_SETS_PAGE", "OEM_UNIT_SET_DETAIL", "OEM_UNIT_SET_MEMBERS_PAGE");
+  const membershipReads = readsFor(reads, "OEM_UNIT_SET_MEMBERS_PAGE");
+  const releaseReads = readsFor(
+    reads,
+    "OEM_VERIFICATION_BATCHES_PAGE",
+    "OEM_VERIFICATION_BATCH_DETAIL",
+    "OEM_FLEET_VALIDATION_BATCHES_PAGE",
+    "OEM_FLEET_VALIDATION_BATCH_DETAIL",
+    "OEM_CAMPAIGNS_PAGE",
+    "OEM_CAMPAIGN_DETAIL",
+  );
+  const releasePageReads = readsFor(reads, "OEM_VERIFICATION_BATCHES_PAGE", "OEM_FLEET_VALIDATION_BATCHES_PAGE", "OEM_CAMPAIGNS_PAGE");
+  const unitLogReads = readsFor(reads, "OEM_UNIT_LOGS_PAGE", "OEM_UNIT_LOG_DETAIL");
+  const serviceLogReads = readsFor(reads, "BRAKE_SERVICE_LOGS_PAGE", "BRAKE_SERVICE_LOG_DETAIL");
+  const brakeReads = readsFor(reads, ...["BRAKE_WINDOWS", "BRAKE_ASSESSMENTS", "BRAKE_EVENTS", "BRAKE_ADVISORIES"] as const);
+  const unitSets = aggregateRecords<UnitSetView>(unitSetReads, readsFor(reads, "OEM_UNIT_SET_DETAIL"));
+  const materialized: ReadOnlyFixturePackage = {
+    fixtureId: fixture.fixtureId,
+    contractClass: fixture.contractClass,
+    policyId: fixture.policyId,
+    phase: fixture.phase,
+    plans: structuredClone(fixture.plans),
+    aosCloud: {
+      session: singleRecord<SessionView>(reads, "OEM_USERS_ME"),
+      brakeSession: singleRecord<SessionView>(reads, "BRAKE_USERS_ME"),
+      bindings: aggregateRecords<VehicleBindingView>(nodeReads, readsFor(reads, "OEM_NODE_DETAIL")),
+      units: aggregateRecords<UnitView>(unitReads, readsFor(reads, "OEM_UNIT_DETAIL")),
+      unitSets,
+      unitSetPages: unitSets.outcome === "OK"
+        ? aggregateRecords<UnitSetPage>(membershipReads, membershipReads).value ?? []
+        : [],
+      releases: aggregateRecords<ReleaseObjectView>(releaseReads, releasePageReads),
+      unitLogs: aggregateRecords<NativeLogView>(unitLogReads, readsFor(reads, "OEM_UNIT_LOG_DETAIL")),
+      serviceLogs: aggregateRecords<NativeLogView>(serviceLogReads, readsFor(reads, "BRAKE_SERVICE_LOG_DETAIL")),
+    },
+    brake: {
+      contextRole: fixture.brake.contextRole,
+      contextSystemUidFingerprint: fixture.brake.contextSystemUidFingerprint,
+      resources: brakeReads.length > 0
+        ? aggregateRecords<BrakeResourceView>(brakeReads, brakeReads)
+        : {
+          contractClass: "CONTRACT_SYNTHETIC",
+          source: "BRAKE_BACKEND",
+          outcome: "SOURCE_UNAVAILABLE",
+          freshness: "CURRENT",
+          sourceTimestamp: null,
+          reasonCode: "CURRENT_UNIT_CONTEXT_UNAVAILABLE",
+          value: null,
+        },
+      notificationCount: fixture.brake.notificationCount,
+      restReadCount: fixture.brake.restReadCount,
+    },
+  };
+  return validateReadOnlyFixturePackageEnvelope(materialized);
 }
 
 export class FixtureReadOnlyAdapter implements PresenterReadPort {
@@ -153,15 +264,15 @@ export class FixtureReadOnlyAdapter implements PresenterReadPort {
       if (!plan || !context || !clock) throw new Error("READ_INVOCATION_INCOMPLETE");
       return this.#readPlan(plan, context, clock, fixture);
     }
-    this.#executeDeclaredPlans(fixture, this.#clock);
-    return this.#base.read().then((base) => composePresenterSnapshot(base, fixture, this.#clock));
+    const executedFixture = materializeExecutedFixture(fixture, this.#executeDeclaredPlans(fixture, this.#clock));
+    return this.#base.read().then((base) => composePresenterSnapshot(base, executedFixture, this.#clock));
   }
 
   subscribe(listener: (snapshot: Readonly<PresenterSnapshot>) => void): () => void {
     return this.#base.subscribe((base) => {
       const fixture = this.#validatedPackage();
-      this.#executeDeclaredPlans(fixture, this.#clock);
-      listener(composePresenterSnapshot(base, fixture, this.#clock));
+      const executedFixture = materializeExecutedFixture(fixture, this.#executeDeclaredPlans(fixture, this.#clock));
+      listener(composePresenterSnapshot(base, executedFixture, this.#clock));
     });
   }
 }
