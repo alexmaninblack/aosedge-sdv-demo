@@ -55,9 +55,11 @@ assignment, VM restart, or provisioned-Unit change.
   is implemented and integrated; the proposed
   [Brake v3 advisory-core packet](active/work-packets/p1-brake-health-core-v3.md)
   is review-only and authorizes no product edit. The
-  [Brake Cloud Data packet](active/work-packets/p1-brake-cloud-data.md) preserves
-  its existing candidate in quarantine with only its exact bounded correction
-  authorized/not started.
+  [Brake Cloud Data packet](active/work-packets/p1-brake-cloud-data.md) is
+  implemented and integrated on product `main` at `1320dde`. The proposed
+  [Brake Cloud window-detail packet](active/work-packets/p1-brake-cloud-window-detail.md)
+  freezes an additive five-path, no-migration point-read boundary and
+  authorizes no product edit before independent review.
 - [Repository inventory and migration plan](repository-inventory-and-migration-plan.md)
   — completed migration and local-cleanup execution record.
 

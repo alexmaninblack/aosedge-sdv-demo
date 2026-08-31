@@ -483,8 +483,9 @@ handoff.
   advisory-core boundary on product base `63b0c5f`. It is
   `PROPOSED — REVIEW REQUIRED`; it authorizes no product edit, packaging,
   network, Cloud, VM, merge or push action.
-- Accepted Cloud packet order: `BRAKE-CLOUD-FOUNDATION-001`,
-  `BRAKE-CLOUD-DATA-001`, `BRAKE-CLOUD-UI-001`,
+- Cloud packet order: `BRAKE-CLOUD-FOUNDATION-001`,
+  `BRAKE-CLOUD-DATA-001`, proposed additive
+  `BRAKE-CLOUD-WINDOW-DETAIL-001`, `BRAKE-CLOUD-UI-001`,
   `BRAKE-CLOUD-INTEGRATION-001` and `BRAKE-CLOUD-QUALIFICATION-001`. The
   current repository tip is `brake-health-cloud@1320dde`; each later product
   packet remains separately bounded and reviewed.
@@ -496,7 +497,7 @@ handoff.
   SQLite foundation and fixture-only three-view Dashboard shell.
 - The next bounded Cloud packet,
   [`WP-P1-BRAKE-CLOUD-DATA-001`](work-packets/p1-brake-cloud-data.md), is
-  is `IMPLEMENTED — DATA CORRECTION ACCEPTED / INTEGRATED TO MAIN` through
+  `IMPLEMENTED — DATA CORRECTION ACCEPTED / INTEGRATED TO MAIN` through
   `012b60a`, `a4b5b33` and final correction
   `1320dde24ae0f72771ea9320c2bd2212c20726ba`. Offline typecheck, 19 Node tests,
   12 Vitest tests, build, quality, lock/dependency, secret/license and diff
@@ -509,6 +510,15 @@ handoff.
   process-local confirmation key. It excludes synchronization completion,
   source-generation/run binding and Test/Production comparative-success claims
   pending D4-024.
+- The proposed additive point-read packet,
+  [`WP-P1-BRAKE-CLOUD-WINDOW-DETAIL-001`](work-packets/p1-brake-cloud-window-detail.md),
+  is `PROPOSED — REVIEW REQUIRED` on product base `1320dde`. It owns exactly
+  five backend source/test paths and no migration. It may add only
+  `GET /api/v1/brake/units/{systemUid}/windows/{eventId}` with a closed
+  zero-to-150-sample response over already accepted canonical chunk content.
+  The four collection bodies, SSE, `CurrentUnitContext`, paging, errors,
+  listener/security boundary and migration 002 remain unchanged. The packet
+  authorizes no product edit until independent review and explicit acceptance.
 - Scope: implement the prepared Brake v1-v3 candidates, bounded v1
   pre/active/post window, v2 synthetic local assessment and derived-only
   reporting, v3 typed maintenance advisory, bounded offline queue, backend,
