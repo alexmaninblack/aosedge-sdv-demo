@@ -7,7 +7,7 @@ import type {
   UnitView,
   VehicleBindingView,
 } from "../../domain";
-import type { ReadOnlyFixturePackage, ReadRequest } from "./contracts";
+import type { ContractRecord, ReadOnlyFixturePackage, ReadRequest } from "./contracts";
 
 const SOURCE_TIME = "2026-08-30T09:00:00.000Z";
 
@@ -85,19 +85,27 @@ const bindings: readonly VehicleBindingView[] = [
 const units: readonly UnitView[] = [
   {
     role: "TEST",
+    systemUidFingerprint: "uid:test:76d2",
+    unitFingerprint: "unit:test:7c91",
+    mainNodeFingerprint: "node:test-main:853a",
     connectionState: "Online",
     reportedState: "ready",
     desiredSoftware: ["VDP v2", "Brake v2"],
     actualSoftware: ["VDP v2", "Brake v2"],
-    pendingBatchFingerprints: ["verification:brake-v3:13f8"],
+    pendingComponentBatchFingerprints: [],
+    pendingServiceBatchFingerprints: ["verification:brake-v3:13f8"],
   },
   {
     role: "PRODUCTION",
+    systemUidFingerprint: "uid:production:9b14",
+    unitFingerprint: "unit:production:4e22",
+    mainNodeFingerprint: "node:production-main:59bd",
     connectionState: "Online",
     reportedState: "ready",
     desiredSoftware: ["VDP v2", "Brake v2"],
     actualSoftware: ["VDP v2", "Brake v2"],
-    pendingBatchFingerprints: [],
+    pendingComponentBatchFingerprints: [],
+    pendingServiceBatchFingerprints: [],
   },
 ];
 
@@ -158,10 +166,10 @@ const serviceLogs: readonly NativeLogView[] = [
 ];
 
 const brakeResources: readonly BrakeResourceView[] = [
-  { role: "TEST", resourceType: "windows", state: "COMPLETE", count: 1, sourceTime: SOURCE_TIME, backendReceivedAt: "2026-08-30T09:00:01.000Z", vdpVersion: "2", vdpDigest: "sha256:3f50…a0c2" },
-  { role: "TEST", resourceType: "assessments", state: "ASSESSED", count: 1, sourceTime: SOURCE_TIME, backendReceivedAt: "2026-08-30T09:00:01.000Z", vdpVersion: "2", vdpDigest: "sha256:3f50…a0c2" },
-  { role: "TEST", resourceType: "events", state: "PENDING_ASSESSMENT_CORRELATION", count: 1, sourceTime: SOURCE_TIME, backendReceivedAt: "2026-08-30T09:00:01.000Z", vdpVersion: null, vdpDigest: null },
-  { role: "TEST", resourceType: "advisories", state: "PUBLISHED", count: 1, sourceTime: SOURCE_TIME, backendReceivedAt: "2026-08-30T09:00:01.000Z", vdpVersion: "2", vdpDigest: "sha256:3f50…a0c2" },
+  { role: "TEST", unitSystemUidFingerprint: "uid:test:76d2", resourceType: "WINDOW", state: "COMPLETE", deliveryState: "DURABLY_RECEIVED", projectionState: "TERMINAL", terminalState: "COMPLETE", count: 1, limit: 50, nextCursor: null, complete: true, sourceTime: SOURCE_TIME, backendReceivedAt: "2026-08-30T09:00:01.000Z", vdpVersion: "2.0.0", vdpDigest: "sha256:3f50…a0c2" },
+  { role: "TEST", unitSystemUidFingerprint: "uid:test:76d2", resourceType: "ASSESSMENT", state: "ASSESSED", deliveryState: "DURABLY_RECEIVED", projectionState: null, terminalState: null, count: 1, limit: 50, nextCursor: null, complete: true, sourceTime: SOURCE_TIME, backendReceivedAt: "2026-08-30T09:00:01.000Z", vdpVersion: "2.0.0", vdpDigest: "sha256:3f50…a0c2" },
+  { role: "TEST", unitSystemUidFingerprint: "uid:test:76d2", resourceType: "EVENT", state: "PENDING_ASSESSMENT_CORRELATION", deliveryState: "DURABLY_RECEIVED", projectionState: null, terminalState: null, count: 1, limit: 50, nextCursor: null, complete: true, sourceTime: SOURCE_TIME, backendReceivedAt: "2026-08-30T09:00:01.000Z", vdpVersion: null, vdpDigest: null },
+  { role: "TEST", unitSystemUidFingerprint: "uid:test:76d2", resourceType: "ADVISORY", state: "PUBLISHED", deliveryState: "DURABLY_RECEIVED", projectionState: null, terminalState: null, count: 1, limit: 50, nextCursor: null, complete: true, sourceTime: SOURCE_TIME, backendReceivedAt: "2026-08-30T09:00:01.000Z", vdpVersion: "2.0.0", vdpDigest: "sha256:3f50…a0c2" },
 ];
 
 function record<T>(source: "AOSCLOUD_OEM" | "AOSCLOUD_BRAKE_SP1" | "BRAKE_BACKEND", value: T) {
@@ -189,8 +197,8 @@ function basePackage(): ReadOnlyFixturePackage {
       units: record("AOSCLOUD_OEM", structuredClone(units)),
       unitSets: record("AOSCLOUD_OEM", structuredClone(unitSets)),
       unitSetPages: [
-        { role: "TEST", page: 1, hasNext: false, members: ["unit:test:7c91"] },
-        { role: "PRODUCTION", page: 1, hasNext: false, members: ["unit:production:4e22"] },
+        { role: "TEST", page: 1, hasNext: false, cursor: null, nextCursor: null, members: ["unit:test:7c91"] },
+        { role: "PRODUCTION", page: 1, hasNext: false, cursor: null, nextCursor: null, members: ["unit:production:4e22"] },
       ],
       releases: record("AOSCLOUD_OEM", structuredClone(releases)),
       unitLogs: record("AOSCLOUD_OEM", structuredClone(unitLogs)),
@@ -198,6 +206,7 @@ function basePackage(): ReadOnlyFixturePackage {
     },
     brake: {
       contextRole: "TEST",
+      contextSystemUidFingerprint: "uid:test:76d2",
       resources: record("BRAKE_BACKEND", structuredClone(brakeResources)),
       notificationCount: 0,
       restReadCount: 1,
@@ -219,6 +228,7 @@ const variants = {
     value.aosCloud.unitLogs.value = [];
     value.aosCloud.serviceLogs.value = [];
     value.brake.contextRole = null;
+    value.brake.contextSystemUidFingerprint = null;
     value.brake.resources.value = [];
     return value;
   },
@@ -226,7 +236,8 @@ const variants = {
     const value = basePackage();
     value.fixtureId = "production";
     value.brake.contextRole = "PRODUCTION";
-    value.brake.resources.value = brakeResources.map((item) => ({ ...item, role: "PRODUCTION" }));
+    value.brake.contextSystemUidFingerprint = "uid:production:9b14";
+    value.brake.resources.value = brakeResources.map((item) => ({ ...item, role: "PRODUCTION", unitSystemUidFingerprint: "uid:production:9b14" }));
     return value;
   },
   stale: () => {
@@ -292,12 +303,22 @@ const variants = {
     ];
     return value;
   },
+  "read-only-paginated-membership": () => {
+    const value = basePackage();
+    value.fixtureId = "read-only-paginated-membership";
+    value.aosCloud.unitSetPages = [
+      { role: "TEST", page: 1, hasNext: true, cursor: null, nextCursor: "test_page_2", members: [] },
+      { role: "TEST", page: 2, hasNext: false, cursor: "test_page_2", nextCursor: null, members: ["unit:test:7c91"] },
+      ...value.aosCloud.unitSetPages.filter((item) => item.role === "PRODUCTION"),
+    ];
+    return value;
+  },
   "read-only-crossed-membership": () => {
     const value = basePackage();
     value.fixtureId = "read-only-crossed-membership";
     value.aosCloud.unitSetPages = [
-      { role: "TEST", page: 1, hasNext: false, members: ["unit:production:4e22"] },
-      { role: "PRODUCTION", page: 1, hasNext: false, members: ["unit:test:7c91"] },
+      { role: "TEST", page: 1, hasNext: false, cursor: null, nextCursor: null, members: ["unit:production:4e22"] },
+      { role: "PRODUCTION", page: 1, hasNext: false, cursor: null, nextCursor: null, members: ["unit:test:7c91"] },
     ];
     return value;
   },
@@ -317,6 +338,30 @@ const variants = {
     const value = basePackage();
     value.fixtureId = "read-only-missing-permission";
     value.aosCloud.session.value = { ...oemSession, effectivePermissions: oemSession.effectivePermissions.filter((item) => item !== "units_read") };
+    return value;
+  },
+  "read-only-missing-campaign-permission": () => {
+    const value = basePackage();
+    value.fixtureId = "read-only-missing-campaign-permission";
+    value.aosCloud.session.value = { ...oemSession, effectivePermissions: oemSession.effectivePermissions.filter((item) => item !== "campaigns_read") };
+    return value;
+  },
+  "read-only-missing-unit": () => {
+    const value = basePackage();
+    value.fixtureId = "read-only-missing-unit";
+    value.aosCloud.units.value = value.aosCloud.units.value?.filter((item) => item.role !== "TEST") ?? null;
+    return value;
+  },
+  "read-only-ambiguous-unit": () => {
+    const value = basePackage();
+    value.fixtureId = "read-only-ambiguous-unit";
+    value.aosCloud.units.value = value.aosCloud.units.value ? [...value.aosCloud.units.value, { ...value.aosCloud.units.value[0]! }] : null;
+    return value;
+  },
+  "read-only-wrong-main-node": () => {
+    const value = basePackage();
+    value.fixtureId = "read-only-wrong-main-node";
+    value.aosCloud.units.value = value.aosCloud.units.value?.map((item) => item.role === "TEST" ? { ...item, mainNodeFingerprint: "node:other-main:0bad" } : item) ?? null;
     return value;
   },
   "read-only-wrong-log-family": () => {
@@ -340,7 +385,7 @@ const variants = {
   "read-only-brake-empty": () => {
     const value = basePackage();
     value.fixtureId = "read-only-brake-empty";
-    value.brake.resources.value = [];
+    value.brake.resources.value = brakeResources.map((item) => ({ ...item, count: 0 }));
     return value;
   },
   "read-only-brake-not-current": () => {
@@ -353,7 +398,43 @@ const variants = {
     const value = basePackage();
     value.fixtureId = "read-only-brake-context-unavailable";
     value.brake.contextRole = null;
+    value.brake.contextSystemUidFingerprint = null;
     value.brake.resources = { ...value.brake.resources, outcome: "SOURCE_UNAVAILABLE", value: null, reasonCode: "CURRENT_UNIT_CONTEXT_UNAVAILABLE" };
+    return value;
+  },
+  "read-only-brake-wrong-unit": () => {
+    const value = basePackage();
+    value.fixtureId = "read-only-brake-wrong-unit";
+    value.brake.contextSystemUidFingerprint = "uid:production:9b14";
+    return value;
+  },
+  "read-only-brake-partial-window": () => {
+    const value = basePackage();
+    value.fixtureId = "read-only-brake-partial-window";
+    value.brake.resources.value = value.brake.resources.value?.map((item) => item.resourceType === "WINDOW"
+      ? { ...item, state: "PARTIAL", deliveryState: "RECEIVING", projectionState: "PARTIAL", terminalState: null }
+      : item) ?? null;
+    return value;
+  },
+  "read-only-brake-incomplete-page": () => {
+    const value = basePackage();
+    value.fixtureId = "read-only-brake-incomplete-page";
+    value.brake.resources.value = value.brake.resources.value?.map((item) => item.resourceType === "WINDOW"
+      ? { ...item, complete: false, nextCursor: "page_2" }
+      : item) ?? null;
+    return value;
+  },
+  "read-only-invalid-date": () => {
+    const value = basePackage();
+    value.fixtureId = "read-only-invalid-date";
+    value.aosCloud.units.sourceTimestamp = "2026-02-30T09:00:00.000Z";
+    return value;
+  },
+  "read-only-unknown-enum": () => {
+    const value = basePackage();
+    value.fixtureId = "read-only-unknown-enum";
+    const first = value.aosCloud.units.value?.[0];
+    if (first) (first as { connectionState: string }).connectionState = "CONNECTED_MAYBE";
     return value;
   },
   "read-only-notification": () => {
@@ -367,7 +448,7 @@ const variants = {
     const value = basePackage();
     value.fixtureId = "read-only-duplicate-membership";
     value.aosCloud.unitSetPages = [
-      { role: "TEST", page: 1, hasNext: false, members: ["unit:test:7c91", "unit:test:7c91"] },
+      { role: "TEST", page: 1, hasNext: false, cursor: null, nextCursor: null, members: ["unit:test:7c91", "unit:test:7c91"] },
       ...value.aosCloud.unitSetPages.filter((item) => item.role === "PRODUCTION"),
     ];
     return value;
@@ -376,7 +457,7 @@ const variants = {
     const value = basePackage();
     value.fixtureId = "read-only-prior-run-membership";
     value.aosCloud.unitSetPages = [
-      { role: "TEST", page: 1, hasNext: false, members: ["unit:prior-run:44aa"] },
+      { role: "TEST", page: 1, hasNext: false, cursor: null, nextCursor: null, members: ["unit:prior-run:44aa"] },
       ...value.aosCloud.unitSetPages.filter((item) => item.role === "PRODUCTION"),
     ];
     return value;
@@ -409,13 +490,51 @@ const variants = {
     value.aosCloud.bindings = { ...value.aosCloud.bindings, outcome: "MALFORMED", reasonCode: "DUPLICATE_BINDING", value: null };
     return value;
   },
+  "read-only-redacted": () => {
+    const value = basePackage();
+    value.fixtureId = "read-only-redacted";
+    value.aosCloud.unitLogs = { ...value.aosCloud.unitLogs, outcome: "REDACTED", value: null, reasonCode: "LOG_METADATA_REDACTED" };
+    return value;
+  },
 } satisfies Record<string, () => ReadOnlyFixturePackage>;
 
 export const readOnlyFixtureIds = Object.freeze(Object.keys(variants));
 
+const readyAliases = new Set([
+  "blocked", "submitting", "uncertain", "reconciling", "failed", "safe-stop", "reconnected", "asset-failure", "m1",
+  "qualification-absent", "qualification-stale", "qualification-withdrawn", "not-qualified",
+]);
+
+function unavailablePackage(id: string): ReadOnlyFixturePackage {
+  const value = basePackage();
+  const unavailable = <T>(recordValue: ContractRecord<T>): ContractRecord<T> => ({
+    ...recordValue,
+    outcome: "SOURCE_UNAVAILABLE",
+    value: null,
+    reasonCode: "FIXTURE_CONTEXT_UNAVAILABLE",
+  });
+  value.fixtureId = id;
+  value.aosCloud.session = unavailable(value.aosCloud.session);
+  value.aosCloud.brakeSession = unavailable(value.aosCloud.brakeSession);
+  value.aosCloud.bindings = unavailable(value.aosCloud.bindings);
+  value.aosCloud.units = unavailable(value.aosCloud.units);
+  value.aosCloud.unitSets = unavailable(value.aosCloud.unitSets);
+  value.aosCloud.releases = unavailable(value.aosCloud.releases);
+  value.aosCloud.unitLogs = unavailable(value.aosCloud.unitLogs);
+  value.aosCloud.serviceLogs = unavailable(value.aosCloud.serviceLogs);
+  value.brake.contextRole = null;
+  value.brake.contextSystemUidFingerprint = null;
+  value.brake.resources = { ...value.brake.resources, outcome: "SOURCE_UNAVAILABLE", value: null, reasonCode: "CURRENT_UNIT_CONTEXT_UNAVAILABLE" };
+  return value;
+}
+
 export function readOnlyFixtureById(id: string): ReadOnlyFixturePackage {
-  const factory = variants[id as keyof typeof variants] ?? variants.ready;
-  const value = factory();
+  const factory = variants[id as keyof typeof variants];
+  let value: ReadOnlyFixturePackage;
+  if (factory) value = factory();
+  else if (readyAliases.has(id)) value = basePackage();
+  else if (id === "r0") value = variants.m0();
+  else value = unavailablePackage(id);
   value.fixtureId = id;
   return value;
 }

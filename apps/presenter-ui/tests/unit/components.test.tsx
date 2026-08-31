@@ -99,4 +99,14 @@ describe("Presenter application components", () => {
     expect(projection).toHaveTextContent("PENDING_ASSESSMENT_CORRELATION");
     expect(projection).not.toHaveTextContent(/Unit ready|Cloud lifecycle/i);
   });
+
+  it("does not retain a current vehicle or managed-ready verdict after OEM authentication fails", async () => {
+    const user = userEvent.setup();
+    renderReadOnly("read-only-unauthenticated");
+    expect((await screen.findAllByText("Current Vehicle unavailable")).length).toBeGreaterThan(0);
+    await user.click(screen.getByRole("button", { name: /AosEdge Software Evolution Demo/ }));
+    expect(screen.getByText("Current managed-vehicle readiness cannot be confirmed from all required AosCloud source groups.")).toBeVisible();
+    expect(screen.getByText("WAITING", { exact: true })).toBeVisible();
+    expect(screen.queryByText("Both vehicles are currently confirmed managed and Online.")).toBeNull();
+  });
 });

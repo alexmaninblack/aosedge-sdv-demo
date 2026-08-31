@@ -7,6 +7,7 @@ import {
   normalizeContractRecord,
   readOnlyFixtureById,
   readOnlyFixtureIds,
+  validateReadOnlyFixturePackageEnvelope,
   validateReadRequest,
 } from "../../src/adapters/read-only";
 import type { ContractRecord } from "../../src/adapters/read-only";
@@ -36,6 +37,21 @@ describe("closed read request plans", () => {
     [{ source: "AOSCLOUD_OEM", routeId: "OEM_USERS_ME", method: "GET", selectors: { contextId: "x" }, pagination: "PARTIAL" }, "READ_PAGINATION_REQUIRED"],
   ])("rejects a non-allowlisted plan", (request, reason) => {
     expect(() => validateReadRequest(request)).toThrow(reason as string);
+  });
+
+  it("rejects an open package, duplicate plan, malformed fingerprint and inconsistent current-Unit context", () => {
+    const open = { ...readOnlyFixtureById("ready"), credential: "forbidden" };
+    expect(() => validateReadOnlyFixturePackageEnvelope(open)).toThrow("FIXTURE_PACKAGE_MALFORMED");
+
+    const duplicate = readOnlyFixtureById("ready");
+    duplicate.plans = [...duplicate.plans, duplicate.plans[0]!];
+    expect(() => validateReadOnlyFixturePackageEnvelope(duplicate)).toThrow("READ_PLAN_DUPLICATE");
+
+    expect(() => validateReadRequest({ source: "AOSCLOUD_OEM", routeId: "OEM_UNIT_DETAIL", method: "GET", selectors: { contextId: "vehicle-inventory", objectFingerprint: "093c912a-aa98-4d23-9a0e-75a8454296e6" }, pagination: "SINGLE" })).toThrow("READ_SELECTOR_MALFORMED");
+
+    const context = readOnlyFixtureById("ready");
+    context.brake.contextSystemUidFingerprint = null;
+    expect(() => validateReadOnlyFixturePackageEnvelope(context)).toThrow("CURRENT_UNIT_CONTEXT_MALFORMED");
   });
 });
 
@@ -77,6 +93,25 @@ describe("AosCloud fixture projection", () => {
     const projection = aosCloudReadModel(readOnlyFixtureById(id), clock);
     expect(projection.session).toMatchObject({ value: null, state: "INCOMPLETE", reason: "OEM_SESSION_SCOPE_MISMATCH" });
     expect(projection.units).toMatchObject({ value: null, state: "UNKNOWN", reason: "OEM_SESSION_NOT_CURRENT" });
+  });
+
+  it("requires authority for every requested OEM read group", () => {
+    const projection = aosCloudReadModel(readOnlyFixtureById("read-only-missing-campaign-permission"), clock);
+    expect(projection.session).toMatchObject({ value: null, state: "INCOMPLETE", reason: "OEM_SESSION_SCOPE_MISMATCH" });
+    expect(projection.releases).toMatchObject({ value: null, state: "UNKNOWN", reason: "OEM_SESSION_NOT_CURRENT" });
+    expect(projection.unitLogs).toMatchObject({ value: null, state: "UNKNOWN", reason: "OEM_SESSION_NOT_CURRENT" });
+  });
+
+  it.each(["read-only-missing-unit", "read-only-ambiguous-unit", "read-only-wrong-main-node"])("rejects an unprovable Unit/Main Node binding for %s", (id) => {
+    expect(aosCloudReadModel(readOnlyFixtureById(id), clock).units).toMatchObject({
+      value: null,
+      state: "INCOMPLETE",
+      reason: "UNIT_NODE_BINDING_MISMATCH",
+    });
+  });
+
+  it("accepts only a cursor-linked complete multi-page Unit Set", () => {
+    expect(aosCloudReadModel(readOnlyFixtureById("read-only-paginated-membership"), clock).unitSets.state).toBe("CURRENT");
   });
 
   it("keeps Brake SP1 ownership independent", () => {
@@ -142,18 +177,55 @@ describe("source, error and Brake mapping", () => {
   });
 
   it("treats an empty current Brake page as factual and a notification as reread-only", () => {
-    expect(brakeCloudReadModel(readOnlyFixtureById("read-only-brake-empty"), clock).brake).toMatchObject({ value: [], state: "CURRENT" });
+    const empty = brakeCloudReadModel(readOnlyFixtureById("read-only-brake-empty"), clock).brake;
+    expect(empty.state).toBe("CURRENT");
+    expect(empty.value?.every((item) => item.count === 0)).toBe(true);
     expect(brakeCloudReadModel(readOnlyFixtureById("read-only-notification"), clock)).toMatchObject({ notificationRereads: 2, brake: { state: "CURRENT" } });
   });
 
   it("keeps pending-event VDP provenance null and never infers Unit readiness", () => {
     const brake = brakeCloudReadModel(readOnlyFixtureById("ready"), clock).brake;
-    expect(brake.value?.find((item) => item.resourceType === "events")).toMatchObject({
+    expect(brake.value?.find((item) => item.resourceType === "EVENT")).toMatchObject({
       state: "PENDING_ASSESSMENT_CORRELATION",
       vdpVersion: null,
       vdpDigest: null,
     });
     expect(JSON.stringify(brake)).not.toMatch(/Unit ready|Cloud lifecycle/i);
+  });
+
+  it("requires the exact current Unit and a complete REST page for Brake", () => {
+    expect(brakeCloudReadModel(readOnlyFixtureById("read-only-brake-wrong-unit"), clock).brake).toMatchObject({
+      value: null,
+      state: "INCOMPLETE",
+      reason: "BRAKE_RESOURCE_SCOPE_MISMATCH",
+    });
+    expect(brakeCloudReadModel(readOnlyFixtureById("read-only-brake-incomplete-page"), clock).brake).toMatchObject({
+      value: null,
+      state: "INCOMPLETE",
+    });
+    expect(brakeCloudReadModel(readOnlyFixtureById("read-only-brake-partial-window"), clock).brake.value?.find((item) => item.resourceType === "WINDOW")).toMatchObject({
+      state: "PARTIAL",
+      deliveryState: "RECEIVING",
+      projectionState: "PARTIAL",
+      terminalState: null,
+    });
+  });
+
+  it("fails closed for an invalid date, unknown enum and cross-owner record", () => {
+    expect(aosCloudReadModel(readOnlyFixtureById("read-only-invalid-date"), clock).units).toMatchObject({ value: null, state: "INCOMPLETE", transport: "MALFORMED" });
+    expect(aosCloudReadModel(readOnlyFixtureById("read-only-unknown-enum"), clock).units).toMatchObject({ value: null, state: "INCOMPLETE", transport: "MALFORMED" });
+    const fixture = readOnlyFixtureById("ready");
+    fixture.aosCloud.units.source = "BRAKE_BACKEND";
+    expect(aosCloudReadModel(fixture, clock).units).toMatchObject({ value: null, state: "INCOMPLETE", transport: "MALFORMED" });
+  });
+
+  it("projects an explicitly hidden fact as REDACTED rather than absent", () => {
+    expect(aosCloudReadModel(readOnlyFixtureById("read-only-redacted"), clock).unitLogs).toMatchObject({
+      value: null,
+      state: "REDACTED",
+      transport: "AVAILABLE",
+      reason: "LOG_METADATA_REDACTED",
+    });
   });
 });
 
@@ -173,5 +245,15 @@ describe("composed Presenter snapshot", () => {
     expect(value.readOnly?.brake).toMatchObject({ state: "UNKNOWN", transport: "SCHEMA_INVALID" });
     expect(value.readOnly?.units.state).toBe("CURRENT");
     expect(value.teams.brake.backendStatus).toContain("UNKNOWN");
+  });
+
+  it("never falls an unknown fixture or unauthenticated session back to current readiness", async () => {
+    const unknown = await snapshot("not-a-known-fixture");
+    expect(unknown.readOnly?.session).toMatchObject({ value: null, state: "UNKNOWN", transport: "SOURCE_UNAVAILABLE" });
+    expect(unknown.vehicle.value).toBe("unavailable");
+
+    const unauthenticated = await snapshot("read-only-unauthenticated");
+    expect(unauthenticated.vehicle.value).toBe("unavailable");
+    expect(unauthenticated.teams.platform.productStatus).toBe("VDP v—");
   });
 });

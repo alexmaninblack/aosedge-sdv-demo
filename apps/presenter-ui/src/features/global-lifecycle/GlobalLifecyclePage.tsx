@@ -21,6 +21,11 @@ export function GlobalLifecyclePage({ view, assetFailure, eventChain, onAction }
   const readOnly = usePresenterReadModel().readOnly;
   const qualification = view.qualification.value;
   const currentLifecycle = lifecycleLabels[view.stage];
+  const managedSourceReady = readOnly
+    ? [readOnly.session, readOnly.bindings, readOnly.units, readOnly.unitSets].every((item) => item.state === "CURRENT")
+      && Boolean(readOnly.units.value?.length)
+      && Boolean(readOnly.units.value?.every((item) => item.connectionState === "Online"))
+    : view.stage === "G0" || view.stage === "ACTIVE";
   return (
     <div className="global-page" data-testid="global-lifecycle-page">
       <header className="page-head">
@@ -43,7 +48,7 @@ export function GlobalLifecyclePage({ view, assetFailure, eventChain, onAction }
             {readOnly.bindings.value?.map((binding) => (
               <article className="life-step" key={binding.role}>
                 <b>{binding.label}</b>
-                <p>{binding.wireRole} · {binding.unitFingerprint} · Main {binding.mainNodeFingerprint}</p>
+                <p>{binding.wireRole} · {binding.unitFingerprint} · Main {binding.mainNodeFingerprint} · Unit {readOnly.units.value?.find((item) => item.role === binding.role)?.connectionState ?? "not current"}</p>
                 <StatusBadge status={readOnly.bindings.state} />
               </article>
             ))}
@@ -69,7 +74,7 @@ export function GlobalLifecyclePage({ view, assetFailure, eventChain, onAction }
         <div className="lifecycle-steps">
           <article className="life-step" data-complete={view.manufactured}><b>Produce Test and Production Vehicles</b><p>Create fresh Test and Production vehicles from the qualified OEM Factory Image. They do not have Cloud identities yet.</p><button className="button button-primary" onClick={() => onAction("Create Test and Production Vehicles")}>Create Vehicles</button></article>
           <article className="life-step" data-complete={view.provisioned}><b>Bring Vehicles Under AosEdge Management</b><p>Provision both produced vehicles, create fresh Unit and Node identities, assign their Test and Production groups, and confirm that they are online.</p><button className="button button-primary" onClick={() => onAction("Provision Produced Vehicles")}>Provision Vehicles</button></article>
-          <article className="life-step" data-complete={view.stage === "G0" || view.stage === "ACTIVE"}><b>Managed Vehicles Ready</b><p>Both vehicles are managed by AosEdge. The Test Vehicle is current; post-SOP platform components and Services are not installed yet.</p><StatusBadge status={view.stage === "G0" || view.stage === "ACTIVE" ? "READY" : "WAITING"} /></article>
+          <article className="life-step" data-complete={managedSourceReady}><b>Managed Vehicles Ready</b><p>{managedSourceReady ? "Both vehicles are currently confirmed managed and Online. Post-SOP platform components and Services are not installed yet." : "Current managed-vehicle readiness cannot be confirmed from all required AosCloud source groups."}</p><StatusBadge status={managedSourceReady ? "READY" : "WAITING"} /></article>
         </div>
       </section>
       <section className="lifecycle-block">

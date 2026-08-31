@@ -120,11 +120,15 @@ export interface VehicleBindingView {
 
 export interface UnitView {
   role: AudienceVehicleRole;
-  connectionState: string;
-  reportedState: string;
+  systemUidFingerprint: string;
+  unitFingerprint: string;
+  mainNodeFingerprint: string;
+  connectionState: "Online" | "Offline";
+  reportedState: "ready" | "error" | "unknown";
   desiredSoftware: readonly string[];
   actualSoftware: readonly string[];
-  pendingBatchFingerprints: readonly string[];
+  pendingComponentBatchFingerprints: readonly string[];
+  pendingServiceBatchFingerprints: readonly string[];
 }
 
 export interface UnitSetView {
@@ -138,7 +142,7 @@ export interface UnitSetView {
 export interface ReleaseObjectView {
   kind: "CANDIDATE" | "VERIFICATION_BATCH" | "FLEET_VALIDATION_BATCH" | "CAMPAIGN";
   fingerprint: string;
-  state: string;
+  state: "published" | "waiting" | "valid" | "done" | "preview";
   targetFingerprints: readonly string[];
   result?: string;
   unresolvedShape?: "unit_ids" | "units_ids";
@@ -156,9 +160,16 @@ export interface NativeLogView {
 
 export interface BrakeResourceView {
   role: AudienceVehicleRole;
-  resourceType: "windows" | "assessments" | "events" | "advisories";
-  state: string;
+  unitSystemUidFingerprint: string;
+  resourceType: "WINDOW" | "ASSESSMENT" | "EVENT" | "ADVISORY";
+  state: "COMPLETE" | "PARTIAL" | "ASSESSED" | "PENDING_ASSESSMENT_CORRELATION" | "CORRELATED_ASSESSMENT" | "PUBLISHED";
+  deliveryState: "RECEIVING" | "DELAYED" | "CONFLICT" | "DURABLY_RECEIVED";
+  projectionState: "GROWING" | "PARTIAL" | "TERMINAL" | "QUARANTINED" | null;
+  terminalState: "COMPLETE" | "TRUNCATED_MAX_DURATION" | "INCOMPLETE_SOURCE_GAP" | "ABORTED_SERVICE_STOP" | "ABORTED_RESTART" | null;
   count: number;
+  limit: number;
+  nextCursor: string | null;
+  complete: boolean;
   sourceTime: string | null;
   backendReceivedAt: string | null;
   vdpVersion: string | null;

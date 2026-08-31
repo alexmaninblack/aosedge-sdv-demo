@@ -1,7 +1,7 @@
 import type { Clock, PresenterReadPort, PresenterSnapshot } from "../../domain";
 import { composePresenterSnapshot } from "./composePresenterSnapshot";
 import { readOnlyFixtureById } from "./fixtureCatalog";
-import { validateReadRequest } from "./contracts";
+import { validateReadOnlyFixturePackageEnvelope } from "./contracts";
 
 export class FixtureReadOnlyAdapter implements PresenterReadPort {
   readonly #base: PresenterReadPort;
@@ -17,8 +17,7 @@ export class FixtureReadOnlyAdapter implements PresenterReadPort {
 
   #validatePackage(): void {
     const fixture = readOnlyFixtureById(this.#fixtureId);
-    if (fixture.contractClass !== "CONTRACT_SYNTHETIC") throw new Error("FIXTURE_PROVENANCE_REQUIRED");
-    fixture.plans.forEach(validateReadRequest);
+    validateReadOnlyFixturePackageEnvelope(fixture);
   }
 
   async read(): Promise<Readonly<PresenterSnapshot>> {

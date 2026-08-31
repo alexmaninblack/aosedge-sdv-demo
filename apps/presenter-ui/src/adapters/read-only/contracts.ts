@@ -88,13 +88,15 @@ export function validateReadRequest(input: unknown): ReadRequest {
   const selectors = value.selectors as Record<string, unknown>;
   if (Object.keys(selectors).some((key) => !selectorKeys.has(key))) throw new Error("READ_SELECTOR_FORBIDDEN");
   if (typeof selectors.contextId !== "string" || !selectors.contextId) throw new Error("READ_CONTEXT_REQUIRED");
-  for (const key of ["objectFingerprint", "cursor"] as const) {
-    if (selectors[key] !== undefined && typeof selectors[key] !== "string") throw new Error("READ_SELECTOR_MALFORMED");
-  }
+  if (!/^[a-z][a-z0-9-]{1,63}$/.test(selectors.contextId)) throw new Error("READ_CONTEXT_MALFORMED");
+  const objectFingerprint = selectors.objectFingerprint;
+  const cursor = selectors.cursor;
+  if (objectFingerprint !== undefined && (typeof objectFingerprint !== "string" || !/^[a-z][a-z0-9-]*(?::[a-z0-9-]+){1,4}:[0-9a-f]{4}$/.test(objectFingerprint))) throw new Error("READ_SELECTOR_MALFORMED");
+  if (cursor !== undefined && (typeof cursor !== "string" || !/^[A-Za-z0-9_-]{1,2048}$/.test(cursor))) throw new Error("READ_SELECTOR_MALFORMED");
   return input as ReadRequest;
 }
 
-export type FixtureOutcome = "OK" | "400" | "401" | "403" | "404" | "422" | "SOURCE_UNAVAILABLE" | "MALFORMED";
+export type FixtureOutcome = "OK" | "400" | "401" | "403" | "404" | "422" | "SOURCE_UNAVAILABLE" | "MALFORMED" | "REDACTED";
 export type FixtureFreshness = "CURRENT" | "STALE";
 
 export interface ContractRecord<T> {
@@ -111,6 +113,8 @@ export interface UnitSetPage {
   role: AudienceVehicleRole;
   page: number;
   hasNext: boolean;
+  cursor: string | null;
+  nextCursor: string | null;
   members: readonly string[];
 }
 
@@ -128,6 +132,7 @@ export interface AosCloudFixtureRecords {
 
 export interface BrakeFixtureRecords {
   contextRole: AudienceVehicleRole | null;
+  contextSystemUidFingerprint: string | null;
   resources: ContractRecord<readonly BrakeResourceView[]>;
   notificationCount: number;
   restReadCount: number;
@@ -141,4 +146,32 @@ export interface ReadOnlyFixturePackage {
   plans: readonly ReadRequest[];
   aosCloud: AosCloudFixtureRecords;
   brake: BrakeFixtureRecords;
+}
+
+function exactObjectKeys(value: unknown, keys: readonly string[]): value is Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  return Object.keys(value).length === keys.length
+    && Object.keys(value).every((key) => keys.includes(key))
+    && keys.every((key) => Object.hasOwn(value, key));
+}
+
+export function validateReadOnlyFixturePackageEnvelope(input: unknown): ReadOnlyFixturePackage {
+  if (!exactObjectKeys(input, ["fixtureId", "contractClass", "policyId", "phase", "plans", "aosCloud", "brake"])) throw new Error("FIXTURE_PACKAGE_MALFORMED");
+  if (typeof input.fixtureId !== "string" || !/^[a-z0-9][a-z0-9-]{0,95}$/.test(input.fixtureId)) throw new Error("FIXTURE_ID_MALFORMED");
+  if (input.contractClass !== "CONTRACT_SYNTHETIC" || input.policyId !== "FIXTURE_POLICY_EXPLICIT_V1") throw new Error("FIXTURE_PROVENANCE_REQUIRED");
+  if (input.phase !== "PRE_M1" && input.phase !== "MANAGED") throw new Error("FIXTURE_PHASE_MALFORMED");
+  if (!Array.isArray(input.plans) || input.plans.length === 0) throw new Error("READ_PLAN_REQUIRED");
+  const plans = input.plans.map(validateReadRequest);
+  if (new Set(plans.map((plan) => JSON.stringify(plan))).size !== plans.length) throw new Error("READ_PLAN_DUPLICATE");
+  if (!exactObjectKeys(input.aosCloud, ["session", "brakeSession", "bindings", "units", "unitSets", "unitSetPages", "releases", "unitLogs", "serviceLogs"])) throw new Error("AOSCLOUD_FIXTURE_MALFORMED");
+  if (!exactObjectKeys(input.brake, ["contextRole", "contextSystemUidFingerprint", "resources", "notificationCount", "restReadCount"])) throw new Error("BRAKE_FIXTURE_MALFORMED");
+  const contextPairIsValid = input.brake.contextRole === null
+    ? input.brake.contextSystemUidFingerprint === null
+    : (input.brake.contextRole === "TEST" || input.brake.contextRole === "PRODUCTION")
+      && typeof input.brake.contextSystemUidFingerprint === "string"
+      && /^uid:(?:test|production):[0-9a-f]{4}$/.test(input.brake.contextSystemUidFingerprint);
+  if (!contextPairIsValid) throw new Error("CURRENT_UNIT_CONTEXT_MALFORMED");
+  if (!Number.isInteger(input.brake.notificationCount) || Number(input.brake.notificationCount) < 0
+    || !Number.isInteger(input.brake.restReadCount) || Number(input.brake.restReadCount) < 0) throw new Error("BRAKE_REREAD_COUNT_MALFORMED");
+  return input as unknown as ReadOnlyFixturePackage;
 }

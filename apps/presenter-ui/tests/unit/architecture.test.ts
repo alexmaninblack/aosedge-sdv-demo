@@ -23,14 +23,14 @@ describe("module architecture", () => {
   });
 
   it("rejects browser-owned authority, external transports and persistence", () => {
-    const forbidden = /\b(fetch|XMLHttpRequest|WebSocket|EventSource|localStorage|sessionStorage|indexedDB|serviceWorker)\b/;
+    const forbidden = /\b(fetch|XMLHttpRequest|WebSocket|EventSource|sendBeacon|localStorage|sessionStorage|indexedDB|serviceWorker)\b/;
     const offenders = Object.entries(sources).filter(([, source]) => forbidden.test(source));
     expect(offenders.map(([path]) => path)).toEqual([]);
   });
 
   it("contains no mutation method literal or privileged material field", () => {
     const mutation = /["'](?:POST|PATCH|PUT|DELETE)["']/;
-    const privilegedField = /\b(?:privateKey|private_key|certificateContent|authHeader|authorizationHeader|password|rawResponse|helperCapability)\s*[?:]/i;
+    const privilegedField = /\b(?:privateKey|private_key|certificate|certificateContent|token|credential|authHeader|authorizationHeader|password|rawResponse|helperCapability)\s*[?:]/i;
     expect(Object.entries(sources).filter(([, source]) => mutation.test(source)).map(([path]) => path)).toEqual([]);
     expect(Object.entries(sources).filter(([, source]) => privilegedField.test(source)).map(([path]) => path)).toEqual([]);
   });

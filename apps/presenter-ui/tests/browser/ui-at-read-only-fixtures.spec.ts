@@ -25,6 +25,15 @@ test("UI-AT-020/029 — unauthenticated Cloud session does not retain current Un
   await openGlobal(page, "read-only-unauthenticated");
   await expect(page.getByText("UNKNOWN · UNAUTHENTICATED", { exact: false }).first()).toBeVisible();
   await expect(page.getByText("Current membership cannot be confirmed")).toBeVisible();
+  await expect(page.locator(".vehicle-pill").getByText("Current Vehicle unavailable")).toBeVisible();
+  await expect(page.getByText("Current managed-vehicle readiness cannot be confirmed from all required AosCloud source groups.")).toBeVisible();
+  await expect(page.getByText("Both vehicles are currently confirmed managed and Online.")).toHaveCount(0);
+});
+
+test("UI-AT-020/029 — unknown fixture selector fails closed", async ({ page }) => {
+  await openGlobal(page, "not-a-known-fixture");
+  await expect(page.locator(".vehicle-pill").getByText("Current Vehicle unavailable")).toBeVisible();
+  await expect(page.getByText("UNKNOWN · SOURCE_UNAVAILABLE", { exact: false }).first()).toBeVisible();
 });
 
 test("UI-AT-006/043 — incomplete membership never renders current", async ({ page }) => {

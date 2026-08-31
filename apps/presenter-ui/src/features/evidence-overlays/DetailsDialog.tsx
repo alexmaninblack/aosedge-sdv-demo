@@ -22,7 +22,7 @@ export function DetailsDialog({ release, redactionNotice, onClose }: { release: 
       ["Effective read permissions", readOnly.session.value?.effectivePermissions.join(", ") ?? "not current"],
       ["Lifecycle objects", releaseEvidence ?? "not current"],
       ["Source and freshness", `${readOnly.releases.source.owner} · ${readOnly.releases.state} · ${readOnly.releases.readCompletedAt}`],
-      ["Shell source reference", "Deterministic fixture · current · not live AosEdge state"],
+      ["Shell source reference", `Deterministic fixture · ${readOnly.session.state} · not live AosEdge state`],
     );
   } else {
     rows.push(["Source and freshness", "Deterministic fixture · current · not live AosEdge state"]);
