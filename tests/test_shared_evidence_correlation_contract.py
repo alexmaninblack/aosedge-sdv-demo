@@ -127,6 +127,17 @@ class SharedEvidenceCorrelationContractTest(unittest.TestCase):
     def test_qualification_is_bounded_and_has_no_separate_archive(self) -> None:
         plan = self.profile["qualificationPlan"]
         self.assertTrue(plan["clockAnomaliesUseFixturesWithoutChangingMacOrVmClock"])
+        restart_case = "ORDINARY_SERVICE_RESTART_PRESERVES_EPOCH_AND_CONTINUES_SEQUENCE"
+        self.assertIn(restart_case, plan["ownerComponentTests"])
+        self.assertIn(restart_case, plan["validationUnitIntegration"])
+        self.assertNotIn(
+            "SERVICE_RESTART_CREATES_NEW_PRODUCER_EPOCH",
+            plan["ownerComponentTests"],
+        )
+        self.assertNotIn(
+            "SERVICE_RESTART_AND_NEW_EPOCH",
+            plan["validationUnitIntegration"],
+        )
         self.assertIn("LOCAL_DECISION_WHILE_OFFLINE", plan["validationUnitIntegration"])
         self.assertEqual(2, len(plan["productionUnitRehearsals"]))
         self.assertTrue(plan["productionUsesSameReviewedContractsAndPreparedArtifactsAsValidation"])
