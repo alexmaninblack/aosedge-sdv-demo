@@ -65,6 +65,18 @@ export type ReadRequest =
   | ReadRequestBase<BrakeSp1RouteId, "AOSCLOUD_BRAKE_SP1">
   | ReadRequestBase<BrakeBackendRouteId, "BRAKE_BACKEND">;
 
+export type ReadRouteContext =
+  | Readonly<{ routeContext: "oem-delivery-read"; role: "OEM" }>
+  | Readonly<{ routeContext: "brake-sp1-read"; role: "Service Provider" }>
+  | Readonly<{ routeContext: "brake-backend-read"; role: "Current Unit" }>;
+
+export interface PlannedFixtureRead {
+  plan: ReadRequest;
+  context: ReadRouteContext;
+  readCompletedAt: string;
+  record: unknown;
+}
+
 const sourceRoutes = {
   AOSCLOUD_OEM: new Set<string>(OEM_ROUTE_IDS),
   AOSCLOUD_BRAKE_SP1: new Set<string>(BRAKE_SP1_ROUTE_IDS),
@@ -73,6 +85,40 @@ const sourceRoutes = {
 
 const requestKeys = new Set(["source", "routeId", "method", "selectors", "pagination"]);
 const selectorKeys = new Set(["contextId", "objectFingerprint", "cursor"]);
+
+const detailRoutes = new Set<string>([
+  "OEM_UNIT_DETAIL",
+  "OEM_NODE_DETAIL",
+  "OEM_UNIT_SET_DETAIL",
+  "OEM_VERIFICATION_BATCH_DETAIL",
+  "OEM_FLEET_VALIDATION_BATCH_DETAIL",
+  "OEM_CAMPAIGN_DETAIL",
+  "OEM_UNIT_LOG_DETAIL",
+  "BRAKE_SERVICE_LOG_DETAIL",
+]);
+
+const completeRoutes = new Set<string>([
+  "OEM_UNITS_PAGE",
+  "OEM_UNIT_NODES_PAGE",
+  "OEM_SUBJECT_SERVICES_PAGE",
+  "OEM_UNIT_SETS_PAGE",
+  "OEM_UNIT_SET_MEMBERS_PAGE",
+  "OEM_VERIFICATION_BATCHES_PAGE",
+  "OEM_FLEET_VALIDATION_BATCHES_PAGE",
+  "OEM_CAMPAIGNS_PAGE",
+  "OEM_UNIT_LOGS_PAGE",
+  "BRAKE_SERVICE_LOGS_PAGE",
+  ...BRAKE_BACKEND_ROUTE_IDS,
+]);
+
+const requiredRouteCounts = new Map<string, number>([
+  ...OEM_ROUTE_IDS.map((routeId) => [routeId, 1] as const),
+  ...BRAKE_SP1_ROUTE_IDS.map((routeId) => [routeId, 1] as const),
+  ...BRAKE_BACKEND_ROUTE_IDS.map((routeId) => [routeId, 1] as const),
+  ["OEM_UNIT_DETAIL", 2],
+  ["OEM_NODE_DETAIL", 2],
+  ["OEM_UNIT_SET_DETAIL", 2],
+]);
 
 export function validateReadRequest(input: unknown): ReadRequest {
   if (!input || typeof input !== "object" || Array.isArray(input)) throw new Error("READ_PLAN_MALFORMED");
@@ -93,6 +139,8 @@ export function validateReadRequest(input: unknown): ReadRequest {
   const cursor = selectors.cursor;
   if (objectFingerprint !== undefined && (typeof objectFingerprint !== "string" || !/^[a-z][a-z0-9-]*(?::[a-z0-9-]+){1,4}:[0-9a-f]{4}$/.test(objectFingerprint))) throw new Error("READ_SELECTOR_MALFORMED");
   if (cursor !== undefined && (typeof cursor !== "string" || !/^[A-Za-z0-9_-]{1,2048}$/.test(cursor))) throw new Error("READ_SELECTOR_MALFORMED");
+  if (detailRoutes.has(value.routeId as string) && objectFingerprint === undefined) throw new Error("READ_SELECTOR_REQUIRED");
+  if (value.pagination !== (completeRoutes.has(value.routeId as string) ? "COMPLETE" : "SINGLE")) throw new Error("READ_PAGINATION_MISMATCH");
   return input as ReadRequest;
 }
 
@@ -163,6 +211,9 @@ export function validateReadOnlyFixturePackageEnvelope(input: unknown): ReadOnly
   if (!Array.isArray(input.plans) || input.plans.length === 0) throw new Error("READ_PLAN_REQUIRED");
   const plans = input.plans.map(validateReadRequest);
   if (new Set(plans.map((plan) => JSON.stringify(plan))).size !== plans.length) throw new Error("READ_PLAN_DUPLICATE");
+  for (const [routeId, count] of requiredRouteCounts) {
+    if (plans.filter((plan) => plan.routeId === routeId).length < count) throw new Error("READ_PLAN_INCOMPLETE");
+  }
   if (!exactObjectKeys(input.aosCloud, ["session", "brakeSession", "bindings", "units", "unitSets", "unitSetPages", "releases", "unitLogs", "serviceLogs"])) throw new Error("AOSCLOUD_FIXTURE_MALFORMED");
   if (!exactObjectKeys(input.brake, ["contextRole", "contextSystemUidFingerprint", "resources", "notificationCount", "restReadCount"])) throw new Error("BRAKE_FIXTURE_MALFORMED");
   const contextPairIsValid = input.brake.contextRole === null

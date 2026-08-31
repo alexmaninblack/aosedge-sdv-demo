@@ -86,7 +86,7 @@ export function brakeCloudReadModel(fixture: ReadOnlyFixturePackage, clock: Cloc
       transport: "SOURCE_UNAVAILABLE",
       reason: "CURRENT_UNIT_CONTEXT_UNAVAILABLE",
     });
-  } else if (brake.state === "CURRENT" && brake.value) {
+  } else if ((brake.state === "CURRENT" || brake.state === "STALE") && brake.value) {
     const binding = fixture.aosCloud.bindings.value?.find((item) => item.role === role);
     const valid = binding?.systemUidFingerprint === contextSystemUidFingerprint && brake.value.every((item) =>
       item.role === role

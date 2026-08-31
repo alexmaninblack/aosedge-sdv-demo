@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import { FixturePresenterReadAdapter } from "../../src/adapters/fixtures";
 import {
   FixtureReadOnlyAdapter,
+  BRAKE_BACKEND_ROUTE_IDS,
+  BRAKE_SP1_ROUTE_IDS,
+  OEM_ROUTE_IDS,
   aosCloudReadModel,
   brakeCloudReadModel,
   normalizeContractRecord,
@@ -52,6 +55,39 @@ describe("closed read request plans", () => {
     const context = readOnlyFixtureById("ready");
     context.brake.contextSystemUidFingerprint = null;
     expect(() => validateReadOnlyFixturePackageEnvelope(context)).toThrow("CURRENT_UNIT_CONTEXT_MALFORMED");
+  });
+
+  it("requires every frozen page/detail route and both vehicle identities in detail plans", () => {
+    const fixture = readOnlyFixtureById("ready");
+    const routeIds = fixture.plans.map((request) => request.routeId);
+    expect([...OEM_ROUTE_IDS, ...BRAKE_SP1_ROUTE_IDS, ...BRAKE_BACKEND_ROUTE_IDS].every((routeId) => routeIds.includes(routeId))).toBe(true);
+    expect(fixture.plans.filter((request) => request.routeId === "OEM_UNIT_DETAIL")).toHaveLength(2);
+    expect(fixture.plans.filter((request) => request.routeId === "OEM_NODE_DETAIL")).toHaveLength(2);
+    expect(fixture.plans.filter((request) => request.routeId === "OEM_UNIT_SET_DETAIL")).toHaveLength(2);
+
+    fixture.plans = fixture.plans.filter((request) => request.routeId !== "OEM_CAMPAIGN_DETAIL");
+    expect(() => validateReadOnlyFixturePackageEnvelope(fixture)).toThrow("READ_PLAN_INCOMPLETE");
+  });
+
+  it("executes declared plans only in their composition-owned route/role context", () => {
+    const adapter = new FixtureReadOnlyAdapter(new FixturePresenterReadAdapter("ready"), "ready", clock);
+    const request = readOnlyFixtureById("ready").plans.find((plan) => plan.routeId === "OEM_NODE_DETAIL")!;
+    const result = adapter.read(request, { routeContext: "oem-delivery-read", role: "OEM" }, clock);
+    expect(result).toMatchObject({
+      plan: request,
+      context: { routeContext: "oem-delivery-read", role: "OEM" },
+      readCompletedAt: NOW,
+      record: { source: "AOSCLOUD_OEM", outcome: "OK", value: { mainNodeFingerprint: request.selectors.objectFingerprint } },
+    });
+    expect(Object.isFrozen(result)).toBe(true);
+    expect(Object.isFrozen(result.record)).toBe(true);
+
+    expect(() => adapter.read(request, { routeContext: "brake-sp1-read", role: "Service Provider" }, clock)).toThrow("READ_CONTEXT_SCOPE_MISMATCH");
+    expect(() => adapter.read(
+      { ...request, selectors: { ...request.selectors, objectFingerprint: "node:other-main:0bad" } },
+      { routeContext: "oem-delivery-read", role: "OEM" },
+      clock,
+    )).toThrow("READ_PLAN_NOT_DECLARED");
   });
 });
 
@@ -148,6 +184,52 @@ describe("AosCloud fixture projection", () => {
       reason: "SERVICE_LOG_SCOPE_MISMATCH",
     });
   });
+
+  it("validates authority, identity, joins, membership, recipients and log scope before retaining STALE facts", () => {
+    const authority = readOnlyFixtureById("ready");
+    authority.aosCloud.session.freshness = "STALE";
+    authority.aosCloud.session.value = { ...authority.aosCloud.session.value!, role: "Fleet Owner" };
+    expect(aosCloudReadModel(authority, clock).session).toMatchObject({ value: null, state: "INCOMPLETE", reason: "OEM_SESSION_SCOPE_MISMATCH" });
+
+    const identity = readOnlyFixtureById("ready");
+    identity.aosCloud.bindings.freshness = "STALE";
+    identity.aosCloud.bindings.value = identity.aosCloud.bindings.value?.map((item) => item.role === "PRODUCTION"
+      ? { ...item, systemUidFingerprint: "uid:test:76d2" }
+      : item) ?? null;
+    expect(aosCloudReadModel(identity, clock).bindings).toMatchObject({ value: null, state: "INCOMPLETE", reason: "VEHICLE_BINDING_AMBIGUOUS" });
+
+    const join = readOnlyFixtureById("ready");
+    join.aosCloud.units.freshness = "STALE";
+    join.aosCloud.units.value = join.aosCloud.units.value?.map((item) => item.role === "TEST"
+      ? { ...item, mainNodeFingerprint: "node:other-main:0bad" }
+      : item) ?? null;
+    expect(aosCloudReadModel(join, clock).units).toMatchObject({ value: null, state: "INCOMPLETE", reason: "UNIT_NODE_BINDING_MISMATCH" });
+
+    const membership = readOnlyFixtureById("ready");
+    membership.aosCloud.unitSets.freshness = "STALE";
+    membership.aosCloud.unitSetPages = membership.aosCloud.unitSetPages.map((page) => ({
+      ...page,
+      members: page.role === "TEST" ? ["unit:production:4e22"] : ["unit:test:7c91"],
+    }));
+    expect(aosCloudReadModel(membership, clock).unitSets).toMatchObject({ value: null, state: "INCOMPLETE", reason: "UNIT_SET_MEMBERSHIP_INCOMPLETE" });
+
+    const recipient = readOnlyFixtureById("ready");
+    recipient.aosCloud.releases.freshness = "STALE";
+    recipient.aosCloud.releases.value = recipient.aosCloud.releases.value?.map((item) => item.kind === "VERIFICATION_BATCH"
+      ? { ...item, targetFingerprints: ["unit:test:7c91", "unit:production:4e22"] }
+      : item) ?? null;
+    expect(aosCloudReadModel(recipient, clock).releases).toMatchObject({ value: null, state: "INCOMPLETE", reason: "RELEASE_RECIPIENT_SET_MISMATCH" });
+
+    const logs = readOnlyFixtureById("ready");
+    logs.aosCloud.serviceLogs.freshness = "STALE";
+    logs.aosCloud.serviceLogs.value = logs.aosCloud.serviceLogs.value?.map((item) => ({ ...item, family: "unit-logs", owner: "OEM" })) ?? null;
+    expect(aosCloudReadModel(logs, clock).serviceLogs).toMatchObject({ value: null, state: "INCOMPLETE", reason: "SERVICE_LOG_SCOPE_MISMATCH" });
+
+    const brake = readOnlyFixtureById("ready");
+    brake.brake.resources.freshness = "STALE";
+    brake.brake.resources.value = brake.brake.resources.value?.map((item) => ({ ...item, unitSystemUidFingerprint: "uid:production:9b14" })) ?? null;
+    expect(brakeCloudReadModel(brake, clock).brake).toMatchObject({ value: null, state: "INCOMPLETE", reason: "BRAKE_RESOURCE_SCOPE_MISMATCH" });
+  });
 });
 
 describe("source, error and Brake mapping", () => {
@@ -174,6 +256,14 @@ describe("source, error and Brake mapping", () => {
     const unavailable = normalizeContractRecord({ ...currentRecord, outcome: "SOURCE_UNAVAILABLE", value: null }, clock, "FIXTURE_POLICY_EXPLICIT_V1", current);
     expect(unavailable).toMatchObject({ value: { state: "accepted" }, state: "STALE", transport: "SOURCE_UNAVAILABLE", reason: "Current state cannot be confirmed" });
     expect(unavailable.sourceTimestamp).toBe(current.sourceTimestamp);
+
+    const unaccepted = normalizeContractRecord(
+      { ...currentRecord, outcome: "SOURCE_UNAVAILABLE", value: null },
+      clock,
+      "FIXTURE_POLICY_EXPLICIT_V1",
+      { ...current, state: "UNKNOWN" },
+    );
+    expect(unaccepted).toMatchObject({ value: null, state: "UNKNOWN", transport: "SOURCE_UNAVAILABLE" });
   });
 
   it("treats an empty current Brake page as factual and a notification as reread-only", () => {

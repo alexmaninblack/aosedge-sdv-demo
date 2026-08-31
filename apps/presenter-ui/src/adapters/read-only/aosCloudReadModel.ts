@@ -223,7 +223,10 @@ export function normalizeContractRecord<T>(
   if (record.outcome === "REDACTED") {
     return readObservation<T>({ value: null, source, sourceTimestamp: record.sourceTimestamp, readCompletedAt, state: "REDACTED", transport: "AVAILABLE", reason: sanitizedReason(record.reasonCode, "VALUE_REDACTED") });
   }
-  if (record.outcome === "SOURCE_UNAVAILABLE" && previous?.value !== null && previous?.value !== undefined) {
+  if (record.outcome === "SOURCE_UNAVAILABLE"
+    && (previous?.state === "CURRENT" || previous?.state === "STALE")
+    && previous.value !== null
+    && validateValue(previous.value)) {
     return readObservation({
       value: structuredClone(previous.value),
       source,
@@ -247,6 +250,10 @@ export function normalizeContractRecord<T>(
 
 function incomplete<T>(observation: ReadObservation<T>, reason: string): ReadObservation<T> {
   return readObservation<T>({ ...observation, value: null, state: "INCOMPLETE", transport: "MALFORMED", reason });
+}
+
+function retainsAcceptedValue<T>(observation: ReadObservation<T>): boolean {
+  return (observation.state === "CURRENT" || observation.state === "STALE") && observation.value !== null;
 }
 
 function unavailableFromSession<T>(observation: ReadObservation<T>, session: ReadObservation<SessionView>, reason: string): ReadObservation<T> {
@@ -368,19 +375,19 @@ export function aosCloudReadModel(fixture: ReadOnlyFixturePackage, clock: Clock)
   let unitLogs = normalizeContractRecord(aosCloud.unitLogs, clock, policyId, undefined, "AOSCLOUD_OEM", (value): value is readonly NativeLogView[] => arrayOf(value, nativeLogShapeIsValid));
   let serviceLogs = normalizeContractRecord(aosCloud.serviceLogs, clock, policyId, undefined, "AOSCLOUD_BRAKE_SP1", (value): value is readonly NativeLogView[] => arrayOf(value, nativeLogShapeIsValid));
 
-  if (session.state === "CURRENT" && !sessionIsValid(session.value, "oem-delivery-read", "OEM", "owner:oem:", oemPermissions)) {
+  if (retainsAcceptedValue(session) && !sessionIsValid(session.value, "oem-delivery-read", "OEM", "owner:oem:", oemPermissions)) {
     session = incomplete(session, "OEM_SESSION_SCOPE_MISMATCH");
   }
-  if (brakeSession.state === "CURRENT" && !sessionIsValid(brakeSession.value, "brake-sp1-read", "Service Provider", "owner:brake-sp1:", brakePermissions)) {
+  if (retainsAcceptedValue(brakeSession) && !sessionIsValid(brakeSession.value, "brake-sp1-read", "Service Provider", "owner:brake-sp1:", brakePermissions)) {
     brakeSession = incomplete(brakeSession, "BRAKE_SESSION_SCOPE_MISMATCH");
   }
-  if (bindings.state === "CURRENT" && !bindingsAreExact(bindings.value)) bindings = incomplete(bindings, "VEHICLE_BINDING_AMBIGUOUS");
-  if (units.state === "CURRENT" && !unitsAreExact(units.value, bindings.value)) units = incomplete(units, "UNIT_NODE_BINDING_MISMATCH");
-  if (unitSets.state === "CURRENT" && (!unitSetPagesShapeIsValid(aosCloud.unitSetPages) || !setsAreExact(aosCloud, bindings.value))) unitSets = incomplete(unitSets, "UNIT_SET_MEMBERSHIP_INCOMPLETE");
-  if (releases.state === "CURRENT" && releases.value?.some((item) => item.unresolvedShape)) releases = incomplete(releases, "CAMPAIGN_RESPONSE_SHAPE_UNRESOLVED");
-  else if (releases.state === "CURRENT" && !releaseRecipientsAreExact(releases.value, bindings.value, units.value)) releases = incomplete(releases, "RELEASE_RECIPIENT_SET_MISMATCH");
-  if (unitLogs.state === "CURRENT" && !logsAreScoped(unitLogs.value, "unit-logs", "OEM")) unitLogs = incomplete(unitLogs, "UNIT_LOG_SCOPE_MISMATCH");
-  if (serviceLogs.state === "CURRENT" && !logsAreScoped(serviceLogs.value, "service-logs", "BRAKE_SP1")) serviceLogs = incomplete(serviceLogs, "SERVICE_LOG_SCOPE_MISMATCH");
+  if (retainsAcceptedValue(bindings) && !bindingsAreExact(bindings.value)) bindings = incomplete(bindings, "VEHICLE_BINDING_AMBIGUOUS");
+  if (retainsAcceptedValue(units) && !unitsAreExact(units.value, bindings.value)) units = incomplete(units, "UNIT_NODE_BINDING_MISMATCH");
+  if (retainsAcceptedValue(unitSets) && (!unitSetPagesShapeIsValid(aosCloud.unitSetPages) || !setsAreExact(aosCloud, bindings.value))) unitSets = incomplete(unitSets, "UNIT_SET_MEMBERSHIP_INCOMPLETE");
+  if (retainsAcceptedValue(releases) && releases.value?.some((item) => item.unresolvedShape)) releases = incomplete(releases, "CAMPAIGN_RESPONSE_SHAPE_UNRESOLVED");
+  else if (retainsAcceptedValue(releases) && !releaseRecipientsAreExact(releases.value, bindings.value, units.value)) releases = incomplete(releases, "RELEASE_RECIPIENT_SET_MISMATCH");
+  if (retainsAcceptedValue(unitLogs) && !logsAreScoped(unitLogs.value, "unit-logs", "OEM")) unitLogs = incomplete(unitLogs, "UNIT_LOG_SCOPE_MISMATCH");
+  if (retainsAcceptedValue(serviceLogs) && !logsAreScoped(serviceLogs.value, "service-logs", "BRAKE_SP1")) serviceLogs = incomplete(serviceLogs, "SERVICE_LOG_SCOPE_MISMATCH");
 
   if (session.state !== "CURRENT") {
     bindings = unavailableFromSession(bindings, session, "OEM_SESSION_NOT_CURRENT");
