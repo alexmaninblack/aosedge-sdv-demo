@@ -345,20 +345,21 @@ handoff.
   VISS and 21 shared-contract tests, and passed independent review. It does not
   make the live controller handoff or selected-Unit mTLS Safe Stop path
   operational or qualified.
-- The controller-to-C++ handoff candidate exists at clean isolated commit
-  `d4a20c`, but independent qualification found that its Linux-only Unix
-  datagram peer-credential implementation cannot start on the accepted macOS
-  Gateway runtime. Core/VISS/shared-contract/sanitizer suites passed; merge is
-  blocked pending implementation of the now-accepted bounded D4-004/
-  `IF-VEH-007` framed-stream correction, macOS tests and one incremental build
-  of the changed Gateway/runtime target with `CARLA_EGO_WITH_CARLA=ON` against
-  the already working pinned local LibCarla. CARLA/Unreal itself is not rebuilt.
-  The later selected-Unit
-  mTLS packet is authorized as part of the Demo Interface Train but cannot
-  start until that corrected Gateway base is accepted. The exact recommended
-  cross-platform stream correction is accepted and authorized in
-  [`WP-P1-VEH-GATEWAY-CONTROLLER-MACOS-001`](work-packets/p1-vehicle-gateway-controller-macos-correction.md);
-  its exact fourteen-file boundary; no live or dependency action is implied.
+- The controller-to-C++ handoff and accepted macOS framed-stream correction are
+  `IMPLEMENTED / INTEGRATED` through product train `d4a20c85196e`,
+  `a8d27194fa74` and final fail-closed tip
+  `162eaa3c65ed1c4e9a981b4efd133a9287e8ebe2`. The cumulative delta remains
+  inside the exact fourteen-path boundary. Normal and sanitizer CTest each
+  passed 18/18, Python/M6 passed 85/85, and the changed arm64 Gateway/runtime
+  target compiled and linked with `CARLA_EGO_WITH_CARLA=ON` against the
+  accepted installed LibCarla prefix. No CARLA/Unreal/LibCarla rebuild,
+  dependency retrieval or live run occurred. Native wrong-UID macOS execution
+  remains a documented platform-test limitation, not fabricated evidence.
+  Live CARLA/Gateway/Safe Stop qualification remains open.
+- The later selected-Unit mTLS packet retains its accepted trust decisions but
+  is not entry-ready: its frozen source, digests, assessment and twenty-file
+  boundary still describe `d4a20c`. It is `REBASELINE REQUIRED` on accepted
+  predecessor `162eaa3` before product implementation may start.
 - Repositories: `CarlaSim` only if the installed hardware model itself needs a
   change; otherwise `carla-ego-runtime` for scenario, controller, Gateway,
   VISS, advisory and Engineering Dashboard changes.
@@ -378,7 +379,8 @@ handoff.
 
 ### `IMP-03` — Factory substrate, current-release security and VDP family
 
-- State: `FACTORY BASELINE ACCEPTED / VDP ARTIFACT BUILD OPEN`; `CR-FACTORY` 0.5,
+- State: `FACTORY BASELINE ACCEPTED / VDP ARTIFACTS PREPARED / OFFLINE VALIDATED`;
+  `CR-FACTORY` 0.5,
   `CR-KAC` 0.12, `CR-VDP` 0.9 and
   `CR-CROSS` 0.4 were accepted on 2026-08-28 and Platform baseline
   `bdc72aba97a83c9868d454588189ef139710a6d7` was reconciled to `origin/main`.
@@ -410,26 +412,30 @@ handoff.
   The VDP v1-v3 packet
   [`WP-P1-PLATFORM-VDP-001`](work-packets/p1-platform-vdp-family.md) is
   source-complete at `67123333775a696a1143d0281013651b3736f0fd` and integrated
-  through `f565251` in the accepted `.21` source history. No prepared ARM64
-  v1/v2/v3 component artifact, canonical artifact/metadata digest, signature,
-  Cloud publication identity or installed VDP exists. The next Platform gate
-  is therefore artifact build and qualification from the already integrated
-  source, not another source-family implementation or Factory-image rebuild.
+  through `f565251` in the accepted `.21` source history. Three unsigned ARM64
+  component candidates are now prepared and offline validated through product
+  commits `db4fb4c6fd86` and `1d5fe77f9c74`. Their exact prepared-artifact
+  SHA-256 values are v1 `22a29384babc34262f6b16d9f7b438a655da9c6766c46f2c0c2ac3a223760599`,
+  v2 `794c9f1040920b44d7e1a77a03c61b67d62a110e8d5ebb3887fe1d483cc69ef6`
+  and v3 `9db0de1621c694d5048ad48ea6d75e6a143856179e348842bb3b579c2defa82c`.
+  They are not signed, published, installed or live-qualified.
   The earlier proposed source/recipe/offline-compile boundary in
   [`WP-P1-PLATFORM-KAC-COMPILE-INTEGRATION-001`](work-packets/p1-platform-kac-compile-integration.md)
   is retained only as pre-execution planning history; the completed `.21`
   source/image evidence supersedes it as the current Platform status and the
   file grants no new execution authority.
-  The accepted containing source was fast-forwarded and pushed to
-  `aos-vehicle-platform/main` on 2026-08-30; local and remote `main` now equal
-  `667afb1512cf43ff27f1ab5327293208bf73045b`. Readiness review also proved that
-  the current v1-v3 path produces only `notDeployable` source prebuilds while
-  the deployable envelope remains hard-coded to historical Provider `0.2.0`.
-  The separately authorized
+  The accepted artifact train was fast-forwarded and pushed to
+  `aos-vehicle-platform/main`; local and remote `main` now equal
+  `1d5fe77f9c74bfeab17b8154063bdd89c7656b9f`. The pre-implementation review
+  had proved that the earlier v1-v3 path produced only `notDeployable` source
+  prebuilds while the deployable envelope was hard-coded to historical Provider
+  `0.2.0`. The completed
   [`WP-P1-PLATFORM-VDP-ARTIFACTS-001`](work-packets/p1-platform-vdp-artifacts.md)
-  therefore owns the finite deployable builder/validator, three producer
-  manifests and deterministic offline artifact preparation. It is
-  `AUTHORIZED — READY / NOT STARTED`; no signing, Cloud, VM or FOTA is included.
+  now provides the finite deployable builder/validator, three producer
+  manifests and deterministic offline artifact preparation while preserving
+  Provider `0.2.0`. It is `PREPARED / OFFLINE VALIDATED — INTEGRATED TO MAIN`;
+  signing, publication, VM VISS/KUKSA/A-B proof and FOTA qualification remain
+  open.
 - Repository: `aos-vehicle-platform`.
 - Scope: build the successor OEM Demo Factory Image with stock Aos IAM
   `enablePermissionsHandler: true`, no provisioned identity or pre-populated
@@ -448,10 +454,9 @@ handoff.
 
 ### `IMP-04` — Brake Health vertical slice
 
-- State: `SOURCE IMPLEMENTATION IN PROGRESS`; `CR-BHS` 0.8 and D4-017 are
-  accepted, and the first bounded Brake Service and Brake Cloud foundation
-  packets are authorized. The Cloud repository-creation gate closed on
-  2026-08-28.
+- State: `V1/V2 DOMAIN AND CLOUD DATA IMPLEMENTED / INTEGRATED`; `CR-BHS` 0.8
+  and D4-017 are accepted. V3, Service adapters/packaging, Cloud UI/integration
+  and live qualification remain open.
 - Repositories: `brake-health-service` and `brake-health-cloud`.
 - Accepted Service packet order: `BHS-CORE-001` foundation/v1,
   `BHS-CORE-002` v2, `BHS-CORE-003` v3, `BHS-ADAPTERS-001` external adapters
@@ -460,39 +465,36 @@ handoff.
   may proceed concurrently after its own gates close.
 - The first bounded packet,
   [`WP-P1-BHS-CORE-001`](work-packets/p1-brake-health-core-v1.md), is accepted
-  and source-complete on isolated commit `7c0a658`; the main branch remains at
-  the frozen `brake-health-service` base. It does not authorize packaging,
-  dependency retrieval or external operations.
+  and source-complete at `7c0a658`. It is integrated as the first commit of the
+  accepted v1/v2 train now on product `main`/`origin/main` at `63b0c5f`. This
+  does not imply runtime composition, packaging or qualification.
 - The next source packet,
   [`WP-P1-BHS-CORE-002`](work-packets/p1-brake-health-core-v2.md), is
-  `IMPLEMENTATION AUTHORIZED — READY / NOT STARTED`. It assesses exact
-  commit `7c0a658` as its source base and freezes the smallest v2-only C++
-  domain boundary. All ten byte/arithmetic/input/persistence decisions are
-  accepted and their authoritative contract/fixture digests are refreshed.
-  The operator accepted its exact dependency-free source/core boundary on
-  2026-08-30. Packaging, dependency retrieval, external actions, merge and push
-  remain separately gated.
+  `IMPLEMENTED — V2 DOMAIN CORE INTEGRATED TO MAIN` through commits `840a1bd`,
+  `1609225`, `c5544f5` and final identity-ledger correction
+  `63b0c5fd43572ff96c508abc5e35818218d3500a`. The exact twelve-path boundary,
+  strict Python 6/6, combined CTest 2/2, v2-only CTest 1/1, quality and
+  ASan+UBSan 2/2 gates passed; accepted v1 digests remain unchanged. V3,
+  adapters, executable composition, packaging and live qualification remain
+  separately gated.
 - Accepted Cloud packet order: `BRAKE-CLOUD-FOUNDATION-001`,
   `BRAKE-CLOUD-DATA-001`, `BRAKE-CLOUD-UI-001`,
   `BRAKE-CLOUD-INTEGRATION-001` and `BRAKE-CLOUD-QUALIFICATION-001`. The
-  public repository baseline is `brake-health-cloud@6da2926`; each product
+  current repository tip is `brake-health-cloud@1320dde`; each later product
   packet remains separately bounded and reviewed.
 - The first bounded Cloud packet,
   [`WP-P1-BRAKE-CLOUD-FOUNDATION-001`](work-packets/p1-brake-cloud-foundation.md),
-  is source-complete on isolated commit `68fe61b`; the repository main branch
-  remains at its governance-only baseline. The packet implements only the
-  exact npm workspace, loopback backend/SQLite foundation and fixture-only
-  three-view Dashboard shell; D4 ingestion, helper, container and live
-  integrations remain later gates.
+  is source-complete at `68fe61b` and integrated as the first commit of the
+  accepted foundation/data train now on product `main`/`origin/main` at
+  `1320dde`. It implements only the exact npm workspace, loopback backend/
+  SQLite foundation and fixture-only three-view Dashboard shell.
 - The next bounded Cloud packet,
   [`WP-P1-BRAKE-CLOUD-DATA-001`](work-packets/p1-brake-cloud-data.md), is
-  represented by a preserved two-commit candidate ending at `a4b5b33`.
-  Independent review classified it `QUARANTINED — BOUNDED CORRECTION REQUIRED`,
-  and the operator authorized only that exact correction on 2026-08-30. Provenance,
-  path boundary, frozen inputs and existing offline gates pass. Invalid
-  completion pairs, incomplete SQLite digest constraints, lost persistent
-  conflict projection and missing negative/storage tests block acceptance. Its source-only
-  data boundary
+  is `IMPLEMENTED — DATA CORRECTION ACCEPTED / INTEGRATED TO MAIN` through
+  `012b60a`, `a4b5b33` and final correction
+  `1320dde24ae0f72771ea9320c2bd2212c20726ba`. Offline typecheck, 19 Node tests,
+  12 Vitest tests, build, quality, lock/dependency, secret/license and diff
+  gates passed. Its source-only data boundary
   consumes an injected current Test/Production Unit context sourced from the
   provisioning journal, while live context wiring remains deferred. It stores
   later out-of-order chunks without projecting them before authoritative
@@ -531,9 +533,14 @@ handoff.
 
 ### `IMP-06` — Authoritative Dashboard read model
 
-- State: `FIXTURE-FIRST SLICE AUTHORIZED / NOT STARTED`; `IMP-01` is accepted
-  and the operator accepted the six closed fixture-only safe defaults on
-  2026-08-30. Live wire-shape, transport and account qualification remain later
+- State: `FIXTURE-FIRST READ PROJECTION IMPLEMENTED / INTEGRATED; LIVE TRANSPORT
+  DEFERRED`. The accepted product train is `a18f569`, `7c8d906`, `7fa4b1c` and
+  final fail-closed tip `a8bc6d0c57a2`. It remained inside the exact 23-path
+  boundary with package/lock bytes unchanged; offline typecheck, unit, browser,
+  architecture, quality and negative gates passed. Current solution
+  `main == origin/main` at `3d4c87fb`. All records remain explicitly
+  `CONTRACT_SYNTHETIC`/fixture-only; live wire shape, browser-safe transport,
+  credentials, account qualification, log delivery and mutations remain later
   packets.
 - Repository: `aosedge-sdv-demo`.
 - Scope: replace fixture projections incrementally with read-only adapters for
@@ -620,24 +627,27 @@ The first P1 code batch has the following current state:
 2. [`WP-P1-VEH-001`](work-packets/p1-vehicle-gateway-wheel-units.md) for the
    `IMP-02A` frozen VSS wheel angular-speed semantics in `L-VEH` is
    `IMPLEMENTED`; and
-3. the integrated Factory/runtime/IAM/KAC substrate in `L-PLATFORM` is accepted
-   as Factory baseline `.21` at source `667afb1512cf`; the VDP family is
-   source-complete at `67123333775a` and integrated through `f565251`, but its
-   three prepared component artifacts, digests, signing/publication identities
-   and live FOTA qualification are still absent. The bounded deployable
-   builder/artifact-preparation packet is authorized but not started and is the
-   next Platform gate;
-4. the first Brake Service core packet is source-complete at isolated commit
-   `7c0a658`; and
-5. the Brake Cloud foundation packet is source-complete at isolated commit
-   `68fe61b`; its later Data candidate `a4b5b33` is preserved but quarantined
-   pending a separately reviewed bounded correction.
+3. the integrated Factory/runtime/IAM/KAC substrate in `L-PLATFORM` remains the
+   accepted Factory baseline `.21`; VDP v1-v3 are now prepared/offline validated
+   and integrated through `aos-vehicle-platform@1d5fe77`, with three exact
+   unsigned artifact digests. Signing, publication, VM VISS/KUKSA/A-B and FOTA
+   qualification remain open;
+4. the Brake Service v1/v2 dependency-free domain train is integrated through
+   `brake-health-service@63b0c5f`; v3, adapters, executable composition,
+   packaging and live qualification remain open;
+5. the Brake Cloud foundation/data train is integrated through
+   `brake-health-cloud@1320dde`; Dashboard data UI, container/ARM64 packaging,
+   external adapters and live qualification remain open;
+6. the Gateway controller handoff/macOS correction is integrated through
+   `carla-ego-runtime@162eaa3`; live CARLA/Safe Stop qualification remains open
+   and the selected-Unit mTLS packet requires a bounded rebaseline on that tip;
+   and
+7. the fixture-only read projection is integrated through product tip
+   `a8bc6d0` on current solution `main@3d4c87f`; live transport and protected
+   actions remain deferred.
 
-The Platform artifact worker may execute only inside the newly authorized
-offline artifact boundary. The Integration Coordinator does not merge any
-branch until required package inputs and combined source gates pass.
-Further `IMP-04` or `IMP-05` packets may enter a free slot only after their own
-contract, repository and packet-authorization gates close.
+Further packets may enter a free slot only after their own contract,
+repository, rebaseline where required and packet-authorization gates close.
 
 Before code starts, the Coordinator requires a separately accepted
 authorization record that pins the current repository base, exact writable

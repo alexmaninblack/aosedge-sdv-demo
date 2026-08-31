@@ -12,10 +12,10 @@
 - Frozen base: `6da2926ba96df5e470bfbc3514e983f5d54c3975`
 - Branch: `codex/imp-04-brake-cloud-foundation`
 - Integration owner: Demo Integration Coordinator
-- Exact npm registry package installation authorized: yes, only the frozen
-  direct versions and their lockfile-resolved transitive dependencies
-- Cloud, helper, credential, VM, Unit, CARLA, container, push or merge
-  authorized: no
+- Initial dependency authorization: exact frozen direct npm versions and their
+  lockfile-resolved transitive dependencies only
+- Initial packet exclusions: Cloud, helper, credential, VM, Unit, CARLA,
+  container, push and merge. Later integration evidence is recorded below.
 
 ## Outcome
 
@@ -212,8 +212,15 @@ The packet must add and pass deterministic verification for:
   operation occurred. There are no open packet defects.
 
 `IMPLEMENTED` means only that the isolated foundation passes. It does not mean
-that Brake Cloud data handling, UI behavior, packaging or live integration is
-implemented or qualified.
+that Brake Cloud UI, packaging or live integration is implemented or
+qualified.
+
+Integration note, 2026-08-31: exact foundation commit
+`68fe61b292b0b9671b1af0dc1881fe37dc5f97de` is now the first product commit in
+the accepted foundation/data train integrated through
+`1320dde24ae0f72771ea9320c2bd2212c20726ba` on product `main`/`origin/main`.
+The source-only data backend is implemented; Dashboard data UI, container/
+ARM64 packaging, external adapters and live qualification remain open.
 
 ## Authorization Gate
 

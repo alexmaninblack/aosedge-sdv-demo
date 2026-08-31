@@ -6,15 +6,17 @@
 - ID: `WP-P1-VEH-GATEWAY-CONTROLLER-MACOS-001`
 - Lane: `L-VEH`
 - Increment: bounded correction to `IMP-02C`
-- State: `ACCEPTED — IMPLEMENTATION AUTHORIZED / NOT STARTED`
-- Version: 0.2
+- State: `IMPLEMENTED — INTEGRATED TO MAIN`
+- Version: 0.3
 - Prepared: 2026-08-30
 - Accepted and authorized: 2026-08-30
+- Completed and integrated: 2026-08-31
 - Repository: `carla-ego-runtime`
 - Preserved candidate: `d4a20c85196ef7df81c78f992f6237c5eca8ff6c`
-- Product edits and owned offline/local tests inside the retained fourteen-file
-  boundary authorized after the synchronized contract checkpoint is committed;
-  dependency retrieval, live CARLA, VM, Cloud, merge and push authorized: no
+- Initial correction authorization: product edits and owned offline/local tests
+  inside the retained fourteen-file boundary after the synchronized contract
+  checkpoint. Dependency retrieval, live CARLA, VM and Cloud remained excluded;
+  later bounded build and integration evidence is recorded below.
 
 ## Proven Blocker
 
@@ -58,7 +60,7 @@ This changes only the local transport required for target-platform peer
 authentication. It changes no authority, data field, producer, consumer,
 freshness, lifecycle or Safe Stop behavior.
 
-## Proposed Source Boundary After Design Acceptance
+## Implemented Source Boundary
 
 Retain the original fourteen-file packet boundary. Only the channel/protocol,
 controller and their existing tests/docs may need edits; no fifteenth product
@@ -78,11 +80,20 @@ authorized. The entry gate first resolves and verifies the exact existing
 headers, libraries and CMake settings used by the working launcher; a missing
 or mismatched local input stops rather than expanding the build.
 
-## Authorization Gate
+## Completion Record
 
 The operator accepted the recommended transport correction on 2026-08-30.
-The synchronized D4/contract/interface cascade is the exact implementation
-input. The worker may correct the preserved `d4a20c` candidate only within its
-existing fourteen-file boundary and run the listed offline/local tests. A need
-for another transport, product path, dependency retrieval, live CARLA or any
-external operation stops for a new bounded authorization.
+Commit `a8d27194fa74d29f1fc45b7b849ddb727fed9fe6` implemented it over preserved
+candidate `d4a20c85196ef7df81c78f992f6237c5eca8ff6c`; follow-up
+`162eaa3c65ed1c4e9a981b4efd133a9287e8ebe2` invalidates all buffered control
+facts on channel loss before a waiter can consume them. Both commits remain
+inside the original fourteen-file boundary and are integrated on product
+`main`/`origin/main`.
+
+Normal and sanitizer CTest each passed 18/18, Python/M6 verification passed
+85/85, and the targeted arm64 `CARLA_EGO_WITH_CARLA=ON` target compiled and
+linked against the accepted installed LibCarla prefix. No CARLA/Unreal/
+LibCarla rebuild, dependency retrieval or live run occurred. Native wrong-UID
+macOS execution remains documented rather than replaced by a fabricated
+privileged test. Selected-Unit mTLS and live CARLA/Safe Stop qualification are
+separate open gates.

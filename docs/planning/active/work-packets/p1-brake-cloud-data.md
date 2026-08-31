@@ -6,19 +6,20 @@
 - ID: `WP-P1-BRAKE-CLOUD-DATA-001`
 - Lane: `L-BRAKE-CLOUD`
 - Increment: `IMP-04-BRAKE-CLOUD-DATA-001`
-- State: `BOUNDED CORRECTION AUTHORIZED — READY / NOT STARTED`
-- Version: 0.3
+- State: `IMPLEMENTED — DATA CORRECTION ACCEPTED / INTEGRATED TO MAIN`
+- Version: 0.4
 - Prepared: 2026-08-29
 - Independent candidate review authorized: yes, completed 2026-08-30
 - Further product correction authorized: yes, accepted 2026-08-30 only for the exact delta below
+- Completed and integrated: 2026-08-31
 - Repository: `brake-health-cloud`
 - Frozen base: `68fe61b292b0b9671b1af0dc1881fe37dc5f97de`
-- Proposed branch: `codex/imp-04-brake-cloud-data`
-- Proposed isolated worktree: `brake-health-cloud-imp-04-data`
+- Implementation branch: `codex/imp-04-brake-cloud-data`
+- Implementation worktree: `brake-health-cloud-imp-04-data`
 - Integration owner: Demo Integration Coordinator
-- Dependency retrieval, product edit, commit, push or merge authorized: no
-- Cloud, helper, credential, container, VM, Unit, CARLA, signing, publication
-  or live operation authorized: no
+- Initial packet exclusions: dependency retrieval, Cloud, helper, credential,
+  container, VM, Unit, CARLA, signing, publication and live operation. Later
+  bounded product correction and integration evidence is recorded below.
 - Previous implemented slice:
   [WP-P1-BRAKE-CLOUD-FOUNDATION-001](p1-brake-cloud-foundation.md)
 
@@ -337,13 +338,16 @@ data facts; reconnect/outbox convergence remains integration work.
 `REQ-BRAKE-CLOUD-012`, D4-024 run/source-generation binding and the composed
 success claim are wholly deferred.
 
-## Authorization Gate
+## Completion Record
 
-The preserved candidate consists of linear commits `012b60a` and `a4b5b33`
-over exact base `68fe61b`. Its worktree is clean, all nineteen changed paths
-are inside the twenty-two-file boundary, frozen contract digests match, and
-offline typecheck, 19 Node tests, 12 Vitest tests, build and quality gates pass.
-It shall not be discarded or reimplemented.
+The accepted implementation consists of linear commits
+`012b60a676bb6dca7a115ffac03945ce5f805f75` and
+`a4b5b33f53a0931ae115f0790216e40b445499d6` over exact foundation
+`68fe61b292b0b9671b1af0dc1881fe37dc5f97de`, followed by bounded correction
+`1320dde24ae0f72771ea9320c2bd2212c20726ba`. All changed paths remain inside
+the twenty-two-file data boundary, frozen contract digests match, and offline
+typecheck, 19 Node tests, 12 Vitest tests, production build, quality,
+lock/direct-dependency, secret, license and diff gates pass.
 
 Independent review quarantined the candidate until the operator accepted on
 2026-08-30 a bounded correction that closes exactly these defects:
@@ -357,14 +361,14 @@ Independent review quarantined the candidate until the operator accepted on
 4. add the missing closed-schema negatives, `SQLITE_FULL` proof and persistent-
    conflict regression.
 
-The accepted correction classifies transient `SQLITE_BUSY` as retryable `503`
+The integrated correction classifies transient `SQLITE_BUSY` as retryable `503`
 without permanently latching the backend unavailable; `SQLITE_FULL`, corrupt
 or closed storage remains fatal/not-ready and no receipt may be acknowledged.
 It also applies the common 1..128-character bounded-ID pattern
 `^[A-Za-z0-9._:-]+$` to the Brake Health Event `unitSystemUid`, matching the
-Current Unit context, telemetry-window and query contracts. The worker starts
-from preserved candidate `a4b5b33`, changes only the existing twenty-two-file
-boundary, runs the full existing offline gates plus every listed regression,
-and returns one clean correction commit. Dependency access, merge, push and
-all external operations remain unauthorized. Any change outside this exact
-delta returns a bounded change request rather than being absorbed.
+Current Unit context, telemetry-window and query contracts. Product
+`main == origin/main` at exact integrated tip
+`1320dde24ae0f72771ea9320c2bd2212c20726ba`. No external service, Cloud,
+credential, container or live operation occurred. Dashboard data UI,
+container/ARM64 packaging, live source context, D4-024 run/source-generation
+binding and integrated qualification remain open.

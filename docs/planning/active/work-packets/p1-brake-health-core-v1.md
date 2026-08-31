@@ -183,7 +183,14 @@ nothing.
   occurred. There are no open packet defects.
 
 `IMPLEMENTED` means only that this isolated v1 domain packet passes. It does
-not mean that Brake Service v1 is packaged, integrated or qualified.
+not mean that Brake Service v1 is packaged or qualified.
+
+Integration note, 2026-08-31: the exact accepted v1 commit
+`7c0a658ba2106a7274e61296746dcdd3008db26b` is now the first product commit in
+the five-commit v1/v2 train integrated through
+`63b0c5fd43572ff96c508abc5e35818218d3500a` on product `main`/`origin/main`.
+Combined verification preserved the accepted v1 digests exactly. Runtime
+composition, packaging, deployment and live qualification remain open.
 
 ## Authorization Gate
 

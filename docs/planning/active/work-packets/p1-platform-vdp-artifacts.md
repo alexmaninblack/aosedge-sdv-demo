@@ -6,14 +6,18 @@
 - ID: `WP-P1-PLATFORM-VDP-ARTIFACTS-001`
 - Lane: `L-PLATFORM`
 - Increment: `IMP-03-VDP-ARTIFACTS`
-- State: `AUTHORIZED — READY / NOT STARTED`
-- Version: 0.1
+- State: `PREPARED / OFFLINE VALIDATED — INTEGRATED TO MAIN`
+- Version: 0.2
 - Prepared and authorized: 2026-08-30
+- Completed and integrated: 2026-08-31
 - Repository: `aos-vehicle-platform`
 - Exact source revision: `667afb1512cf43ff27f1ab5327293208bf73045b`
 - Exact source tree: `164f907bf041dbc99df24d2ebe7b0e5d2bbaeab0`
-- Required relationship: clean `main == origin/main` at the exact source
-  revision above
+- Implementation commit: `db4fb4c6fd8615d58245740e3e78ca907ebdbc21`
+- Evidence-correction and integrated main tip:
+  `1d5fe77f9c74bfeab17b8154063bdd89c7656b9f`
+- Entry relationship at implementation start: clean `main == origin/main` at
+  the exact source revision above
 - Parent source packet:
   [`WP-P1-PLATFORM-VDP-001`](p1-platform-vdp-family.md)
 - Accepted Factory binding: `6.1.1-maninblack.21`, raw image SHA-256
@@ -134,21 +138,34 @@ Disposable-VM/real VISS-KUKSA/A-B qualification, signing/publication, Test
 Vehicle FOTA and identical-byte Production promotion remain separately
 authorized later phases.
 
-## Completion Evidence
+## Completion Record
 
-The worker returns the exact branch/worktree, commit and parent; changed-path
-inventory; all commands and test counts; two-build comparison for each
-version; artifact, layer, metadata and canonical-manifest digests/sizes;
-package/SBOM/license/provenance inventories; historical Provider regression;
-secret/network negative results; content-store locations; free-space result;
-and confirmation that every excluded operation was absent.
+- The accepted implementation is
+  `db4fb4c6fd8615d58245740e3e78ca907ebdbc21`, followed by the bounded evidence
+  correction `1d5fe77f9c74bfeab17b8154063bdd89c7656b9f`, over exact source
+  `667afb1512cf43ff27f1ab5327293208bf73045b`.
+- Exactly nine product paths changed, all inside the accepted writable
+  boundary. Independent review returned `GO`; 116 offline tests, the quality
+  gate and diff/boundary checks passed.
+- Deterministic double-build evidence, dependency/license/SBOM/provenance and
+  secret/network-negative checks passed. The historical Provider `0.2.0`
+  candidate bytes and behavior remain preserved.
+- The three unsigned candidates are staged in their Git-excluded
+  content-addressed locations and are bound to these prepared-artifact
+  SHA-256 values: v1
+  `22a29384babc34262f6b16d9f7b438a655da9c6766c46f2c0c2ac3a223760599`,
+  v2 `794c9f1040920b44d7e1a77a03c61b67d62a110e8d5ebb3887fe1d483cc69ef6`
+  and v3 `9db0de1621c694d5048ad48ea6d75e6a143856179e348842bb3b579c2defa82c`.
+- Product `main` and `origin/main` were fast-forwarded to exact tip
+  `1d5fe77f9c74bfeab17b8154063bdd89c7656b9f`; no signing, publication,
+  Cloud, VM, FOTA or live operation occurred.
 
 Passing this packet means only `PREPARED / OFFLINE VALIDATED`. It does not mean
 `SIGNED`, `PUBLISHED`, `DEPLOYED`, `VALIDATED` or `PRODUCTION ACCEPTED`.
 
-## Authorization Gate
+## Remaining Gates
 
-The operator accepted this exact Phase-A boundary on 2026-08-30. Product work
-may begin only after the synchronized readiness documents are committed and
-the entry gate above passes. Any expansion, external action or later lifecycle
-phase requires a separate authorization.
+The operator accepted this exact Phase-A boundary on 2026-08-30 and the
+bounded source work is complete. Signing, publication identity, disposable-VM
+VISS/KUKSA/A-B validation, Test Vehicle FOTA and identical-byte Production
+promotion remain open and require their own authorization and evidence.

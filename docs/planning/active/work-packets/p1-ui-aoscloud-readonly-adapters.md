@@ -6,16 +6,18 @@
 - ID: `WP-P1-UI-AOSCLOUD-READONLY-ADAPTERS-001`
 - Lane: `L-UI` / Demo Interface Train
 - Increment: bounded fixture-first slice of `IMP-06`
-- Review state: `AUTHORIZED — READY / NOT STARTED`
-- Version: 0.4
+- Review state: `IMPLEMENTED — FIXTURE-ONLY READ PROJECTION INTEGRATED / LIVE TRANSPORT DEFERRED`
+- Version: 0.5
 - Prepared: 2026-08-29
 - Authorized: 2026-08-30
 - Rebaselined: 2026-08-30
-- Implementation authorized: yes, only after the synchronized entry gate below passes
-- Product edit, branch/worktree creation, dependency materialization, build,
-  network access, live Cloud/backend access, credential use, helper execution,
-  signing, publication, VM/Unit operation, SOTA/FOTA, commit, push or merge
-  authorized: no
+- Completed and integrated: 2026-08-31
+- Initial implementation authorization: yes, only after the synchronized entry
+  gate below passed
+- Initial packet exclusions: network access, live Cloud/backend access,
+  credential use, helper execution, signing, publication, VM/Unit operation and
+  SOTA/FOTA. Later local build, commit and integration evidence is recorded
+  below.
 - Orchestration input:
   [Consolidated Implementation Execution Trains](../infrastructure-first-critical-path-proposal.md)
 - Completed shell input:
@@ -492,27 +494,28 @@ These defaults are frozen recommendations until the train is authorized. They
 do not reopen the accepted authority, Test/Production terminology, Unit Set
 isolation, no-second-store or read-only decisions.
 
-## Completion Evidence Required Later
+## Completion Record
 
-An authorized worker must report the exact branch/worktree, commit and parent;
-changed-file list and 23-path boundary check; unchanged package/lock digests;
-frozen-input verification; all exact fixture/typecheck/unit/browser commands
-and results; GET-only/credential/secret/storage/mutation negative scans; and
-confirmation that no network, Cloud/backend, helper, signing, VM/Unit, CARLA,
-build, publication, push or merge operation occurred.
+- The accepted product train over exact base
+  `ebc144fd95e4a0f9485ddb9c4ab91834ee227388` is
+  `a18f56908361a5f558068e1b192fbb7a364c9131`,
+  `7c8d9064eec87efdd13bd95c71814314e4deb009`,
+  `7fa4b1ca3c48cb5b4fdf761be1e54ad5d58e4e41` and final product tip
+  `a8bc6d0c57a2f5d12112b5ab13beb0d24f53e420`.
+- Every cumulative change remained inside the exact accepted 23-path boundary;
+  `package.json` and `package-lock.json` remained byte-identical.
+- Independent review accepted the final fail-closed projection. Offline
+  dependency materialization, typecheck, unit, browser, architecture, quality,
+  diff/boundary and credential/secret/storage/mutation-negative gates passed.
+- The product train is integrated in solution `main`; the later documentation-
+  only digest correction places current solution `main == origin/main` at
+  `3d4c87fb6b74734c6a5ab36602f1bd745655ea6b`.
+- The adapter remains `CONTRACT_SYNTHETIC` and fixture-only. It has no network,
+  credential, helper, mutation, live AosCloud/Brake Backend or log-delivery
+  capability.
 
-Successful fixture-only implementation would mean only that the accepted read
-projection and failure/redaction behavior are source-traceable. It would not
-mean that AosCloud or Brake Backend connectivity, credentials, live response
-shapes, freshness windows, log delivery, protected actions, packaging or the
-integrated demo are qualified.
-
-## Authorization Gate
-
-`AUTHORIZED — READY / NOT STARTED`. The operator accepted `UI-RO-RD-01`
-through `UI-RO-RD-06` together on 2026-08-30 and authorized only the exact
-synchronized base, twenty-three-file boundary, offline/local tests and one
-local checkpoint. Product edits start only after the committed packet and
-frozen inputs recheck exactly. Dependency changes, network, live transport,
-credentials, external sources, push, merge and every mutation remain separate
-packets even after this fixture-first slice is completed.
+`IMPLEMENTED` and `INTEGRATED` mean only that the accepted fixture read
+projection and failure/redaction behavior are source-traceable. Live wire
+shapes, browser-safe transport, account qualification, freshness windows,
+credentials, log delivery, packaging and protected actions remain open; the
+integrated demo is not yet qualified.

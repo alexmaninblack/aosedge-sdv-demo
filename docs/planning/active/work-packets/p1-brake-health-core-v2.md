@@ -6,13 +6,15 @@
 - ID: `WP-P1-BHS-CORE-002`
 - Lane: `L-BRAKE`
 - Increment: `IMP-04-BHS-CORE-002`
-- State: `IMPLEMENTATION AUTHORIZED — READY / NOT STARTED`
+- State: `IMPLEMENTED — V2 DOMAIN CORE INTEGRATED TO MAIN`
+- Version: 0.4
 - Prepared: 2026-08-29
 - Authorized: 2026-08-30
+- Completed and integrated: 2026-08-31
 - Repository: `brake-health-service`
-- Proposed frozen source base:
+- Frozen implementation source base:
   `7c0a658ba2106a7274e61296746dcdd3008db26b`
-- Proposed branch: `codex/imp-04-bhs-core-v2`
+- Implementation branch: `codex/imp-04-bhs-core-v2`
 - Integration owner: Demo Integration Coordinator
 
 ## Outcome
@@ -375,21 +377,31 @@ Stop and return for review if:
    transport; or
 8. build, owned tests, inherited v1/scaffold tests or boundary checks fail.
 
-## Completion Evidence Required Later
+## Completion Record
 
-An authorized worker must report the isolated branch/worktree, exact commit
-and parent, changed-file list, boundary check, deterministic test commands and
-results, contract fixture/digest comparison, dependency and secret-negative
-scan and explicit confirmation that no excluded operation occurred.
+- The accepted v2 train over v1 commit
+  `7c0a658ba2106a7274e61296746dcdd3008db26b` is
+  `840a1bd163196d14ae0132d197c13aba8678becb`,
+  `160922500e0e83fa057e49530d2c05e656c5fe7e`,
+  `c5544f5f6de37f35a7fe1b34a5a2e9e399c1ab53` and final identity-ledger
+  correction `63b0c5fd43572ff96c508abc5e35818218d3500a`.
+- The v2 cumulative delta changes exactly the accepted twelve paths. Final
+  independent review returned `GO` for crash recovery, complete identity-ledger
+  binding, durable-ACK history, duplicate identity and all prior blockers.
+- Strict Python verification passed 6/6; combined embedded CTest passed 2/2,
+  v2-only CTest passed 1/1, the 43-file quality gate passed and ASan+UBSan
+  passed 2/2. The accepted v1 digests remained exact.
+- Product `main == origin/main` at exact integrated tip
+  `63b0c5fd43572ff96c508abc5e35818218d3500a`. No dependency retrieval,
+  packaging, deployment or external operation occurred.
 
-Source completion would prove only the v2 domain core. It would not mean that
+Source completion proves only the v2 domain core. It does not mean that
 Brake Service v2 is composed, packaged, deployed, calibrated or qualified.
 
-## Authorization Gate
+## Remaining Gates
 
-`IMPLEMENTATION AUTHORIZED — READY / NOT STARTED`. `BHS-V2-RD-01` through
-`BHS-V2-RD-10`, the exact writable boundary and the authoritative refreshed
-contract/fixture digests were accepted by the operator on 2026-08-30. The
-authorization permits only the dependency-free source/core work, owned tests
-and one isolated local commit described here. Dependency retrieval, packaging,
-deployment, external actions, merge and push remain separately gated.
+`BHS-V2-RD-01` through `BHS-V2-RD-10`, the exact writable boundary and the
+authoritative refreshed contract/fixture digests were accepted by the operator
+on 2026-08-30 and the dependency-free domain work is complete. V3, runtime
+adapters, executable composition, packaging, ARM64 artifact production,
+deployment, calibration and live qualification remain separately gated.

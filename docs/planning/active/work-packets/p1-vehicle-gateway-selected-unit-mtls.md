@@ -6,10 +6,11 @@
 - ID: `WP-P1-VEH-GATEWAY-SELECTED-UNIT-MTLS-001`
 - Lane: `L-VEH`
 - Increment: `IMP-02D`
-- State: `AUTHORIZED — ENTRY SEQUENCED AFTER CONTROLLER-HANDOFF MACOS CORRECTION`
-- Version: 0.3
+- State: `REBASELINE REQUIRED ON ACCEPTED CONTROLLER-HANDOFF BASE 162eaa3`
+- Version: 0.4
 - Prepared: 2026-08-29
 - Authorized: 2026-08-30 as part of the bounded Demo Interface Train
+- Status synchronized: 2026-08-31
 - Product edits and local/offline tests authorized only after the corrected
   controller-handoff base is accepted; dependency retrieval, retained real
   certificates, live CARLA, VM, Unit, Cloud, signing, FOTA, push and merge
@@ -52,17 +53,21 @@ certificate, VISS role or direct Gateway access.
 | --- | --- |
 | Repository | `carla-ego-runtime` |
 | Safe Stop projection commit | `8af302dd11c872a564ea7542a126c9886daf2a5a` |
-| Required integration base | `d4a20c85196ef7df81c78f992f6237c5eca8ff6c` |
-| Integration-base parent | `8af302dd11c872a564ea7542a126c9886daf2a5a` |
-| Integration-base tree | `f232db0ed28c2a5dc12009aa5197beee646d8703` |
-| Required base state | clean |
+| Historical proposed integration base | `d4a20c85196ef7df81c78f992f6237c5eca8ff6c` |
+| Accepted controller-handoff predecessor | `162eaa3c65ed1c4e9a981b4efd133a9287e8ebe2` |
+| Accepted predecessor parent | `a8d27194fa74d29f1fc45b7b849ddb727fed9fe6` |
+| Accepted predecessor tree | `c58439737b8d1924ad5b9b44fd1e3cd9898a9147` |
+| Required base state | clean, after this packet is rebaselined and re-accepted |
 | Proposed branch | `codex/imp-02d-selected-unit-mtls` |
 | Proposed isolated worktree | `../carla-ego-runtime-imp-02d-selected-unit-mtls` |
 
-The existing main checkout's untracked `tools/__pycache__/` is not an input,
-is not an authorized deletion and shall not enter the proposed worktree. Any
-base movement, dirty path or need to absorb a different Gateway branch stops
-work.
+The original frozen base has moved only through the accepted controller-
+handoff correction train, now integrated at `162eaa3`. Product implementation
+must not start from either the historical `d4a20c` snapshot or the new tip
+until this packet refreshes its source/tree identities, current-state
+assessment, exact writable boundary and affected tests against `162eaa3`, and
+that bounded rebaseline is independently accepted. Untracked cache material is
+not an input and shall not enter the future worktree.
 
 ### Solution source
 
@@ -89,7 +94,9 @@ implementation starts.
 
 ## Read-only current-state result
 
-At `d4a20c85` the Gateway already provides TLS 1.2+, a server certificate,
+The following is the historical read-only assessment at `d4a20c85`; it must be
+revalidated during the required `162eaa3` rebaseline. At that snapshot the
+Gateway already provides TLS 1.2+, a server certificate,
 `VISSv3`, bounded subscriptions/pending output and server-authenticated
 Get/Subscribe/Unsubscribe behavior. It does not yet provide D4-006 mTLS:
 
@@ -379,12 +386,13 @@ business and security boundary and do not create a separate approval round:
 | `MTLS-04` | No automatic first-demo live rotation or mid-session certificate-expiry timer; reconnect revalidates and fingerprint de-enrollment closes active sessions | Accepted |
 | `MTLS-05` | Implement only the twenty-file Gateway core here; retain server-auth-only loopback solely as an explicit non-demo development mode; use separate bounded packets for onboarding, VDP/Runtime wiring and Orchestrator production | Accepted |
 
-There is no further user decision inside the Gateway-core packet. Its entry
-base is nevertheless blocked until the controller-handoff candidate has a
-qualified macOS transport and targeted incremental CARLA-enabled Gateway/
-runtime build against the existing working local LibCarla. This is not a
-CARLA/Unreal rebuild. Two cross-repository
-items remain intentionally deferred
+There is no further product decision inside the Gateway-core packet. The
+controller-handoff macOS transport and targeted CARLA-enabled compile/link
+blockers are closed at accepted product tip `162eaa3`; however this packet is
+not entry-ready because its frozen source, digests, assessment and twenty-file
+boundary still describe `d4a20c`. A bounded rebaseline and independent
+acceptance are required before implementation. Two cross-repository items
+remain intentionally deferred
 after Gateway-core and host-only test completion:
 
 1. a reviewed onboarding/config packet must create the two distinct per-Unit

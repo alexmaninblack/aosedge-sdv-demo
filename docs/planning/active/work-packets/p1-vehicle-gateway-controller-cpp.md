@@ -6,14 +6,16 @@
 - ID: `WP-P1-VEH-GATEWAY-CONTROLLER-CPP-001`
 - Lane: `L-VEH`
 - Increment: `IMP-02C`
-- State: `BOUNDED MACOS CORRECTION AUTHORIZED — NOT STARTED`
-- Version: 0.4
+- State: `IMPLEMENTED — MACOS FRAMED-STREAM CORRECTION INTEGRATED TO MAIN`
+- Version: 0.5
 - Prepared: 2026-08-29
 - Design review completed: 2026-08-29
-- Product edits within the exact fourteen-path boundary and one isolated local
-  product commit authorized: yes, 2026-08-29
-- Build, dependency retrieval, live CARLA/VM/Unit, Cloud, signing, FOTA, merge
-  and push authorized: no
+- Corrected and integrated: 2026-08-31
+- Initial product-edit authorization: exact fourteen-path boundary and one
+  isolated local product commit, 2026-08-29
+- Initial packet exclusions: build, dependency retrieval, live
+  CARLA/VM/Unit, Cloud, signing, FOTA, merge and push. Later bounded correction,
+  build and integration evidence is recorded below.
 - Planning context: Infrastructure-First Critical Path proposal (not part of
   this Gateway-only documentation commit)
 - Inputs: [WP-P1-VEH-002](p1-vehicle-gateway-safe-stop-projection.md),
@@ -77,24 +79,20 @@ allowed paths. Independent local qualification completed on 2026-08-30:
 - the synthetic trace proved all ten VSS paths and atomic omission of the six
   controller paths when the handoff is missing.
 
-The candidate is not merge-ready. The accepted deployment runs CARLA and the
-Gateway on macOS, but the implementation uses a Linux-only Unix datagram peer-
-credential path and throws on every non-Linux platform. `run_m6.py` enables
-that path unconditionally, so the target Mac fails its startup gate. Darwin
-documents reliable `LOCAL_PEERCRED`/`getpeereid` only for connected Unix
-`SOCK_STREAM`. The operator accepted the bounded D4-004/IF-VEH-007 correction
-on 2026-08-30; it is now the sole authorized delta over `d4a20c`.
+That original candidate was not merge-ready because the accepted deployment
+runs CARLA and the Gateway on macOS while its Unix datagram credential path was
+Linux-only. The bounded correction was implemented in
+`a8d27194fa74d29f1fc45b7b849ddb727fed9fe6` and fail-closed buffered-fact
+invalidation was completed in
+`162eaa3c65ed1c4e9a981b4efd133a9287e8ebe2`. The cumulative train retains the
+exact fourteen-path boundary and is integrated on product `main`/`origin/main`.
 
-The changed `runtime_carla.cpp` also lacks an incremental
-`CARLA_EGO_WITH_CARLA=ON` target-build proof in this isolated worktree. The
-accepted host already has working pinned LibCarla in the
-`Build-macos-client-v3`/`Build-ego-runtime-m4` configuration. The correction
-must reuse and verify those exact existing headers, libraries and CMake
-settings to build only the changed Gateway/runtime target. It must not rebuild
-CARLA or Unreal, create another LibCarla build or download a dependency. A
-missing/mismatched local input is a stop condition. The candidate remains
-preserved and clean. No merge or push is authorized until both blockers close,
-the corrected target tests pass and this completion record is updated.
+Normal and sanitizer CTest each passed 18/18; Python/M6 verification passed
+85/85. The changed Gateway/runtime target compiled and linked for arm64 with
+`CARLA_EGO_WITH_CARLA=ON` against the accepted installed LibCarla prefix. No
+CARLA, Unreal or LibCarla rebuild, dependency retrieval or live CARLA run was
+performed. Native wrong-UID macOS execution remains a documented platform-test
+limitation; no privileged proof was fabricated.
 
 ## Reviewed exact writable boundary
 
@@ -193,6 +191,19 @@ Exit evidence is a clean isolated commit, file-boundary report, exact test
 commands/results, malformed-input matrix and a trace from controller tick to
 the ten-path VSS snapshot. It authorizes neither mTLS nor live qualification.
 
+## Completion Record
+
+- Initial handoff: `d4a20c85196ef7df81c78f992f6237c5eca8ff6c` over
+  `8af302dd11c872a564ea7542a126c9886daf2a5a`.
+- macOS framed-stream correction:
+  `a8d27194fa74d29f1fc45b7b849ddb727fed9fe6`.
+- Fail-closed channel-loss correction and integrated tip:
+  `162eaa3c65ed1c4e9a981b4efd133a9287e8ebe2`.
+- Boundary: the cumulative implementation changes exactly the accepted
+  fourteen paths; product `main == origin/main` at the integrated tip.
+- Remaining: selected-Unit mTLS requires its own refreshed source baseline;
+  live CARLA/Gateway and end-to-end Safe Stop qualification remain open.
+
 ## Exclusions and stop conditions
 
 Excluded: Safe Stop thresholds/history/gate evaluation; Runtime changes;
@@ -237,7 +248,7 @@ discontinuity; the next real frame clears it. Failure with no completed frame
 creates no reset-success evidence. UI operation progress remains separate.
 
 All three design choices are closed. The user explicitly authorized the exact
-fourteen-path product implementation on 2026-08-29. That authorization becomes
-effective only after this Gateway-only cascade is committed, every digest and
-both source bases are rechecked, and the isolated product worktree is confirmed
-clean. It does not authorize any excluded or live/external action.
+fourteen-path product implementation on 2026-08-29; the bounded macOS
+correction and its fail-closed follow-up are now integrated through `162eaa3`.
+This completion does not authorize selected-Unit mTLS, a live/external action
+or a qualification claim.
