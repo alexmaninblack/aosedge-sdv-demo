@@ -207,7 +207,7 @@ class BrakeCloudApiContractTest(unittest.TestCase):
 
     def test_query_pagination_and_error_mapping_are_exact(self) -> None:
         annex = self.query_admin_profile
-        self.assertEqual("PROPOSED", annex["lifecycleState"])
+        self.assertEqual("ACCEPTED", annex["lifecycleState"])
         self.assertEqual("1.1.0", annex["contractVersion"])
         self.assertEqual("1.0.0", annex["acceptedBaseContractVersion"])
         pagination = annex["rest"]["pagination"]
@@ -230,7 +230,8 @@ class BrakeCloudApiContractTest(unittest.TestCase):
 
     def test_window_detail_is_additive_bounded_and_non_paged(self) -> None:
         annex = self.query_admin_profile
-        self.assertEqual(["BC-WINDOW-DETAIL-DEC-01"], annex["proposedClarifications"])
+        self.assertIn("BC-WINDOW-DETAIL-DEC-01", annex["acceptedClarifications"])
+        self.assertNotIn("proposedClarifications", annex)
         self.assertEqual(4, len(annex["rest"]["routes"]))
         detail = annex["rest"]["pointReads"]
         self.assertEqual(1, len(detail))

@@ -512,13 +512,14 @@ handoff.
   pending D4-024.
 - The proposed additive point-read packet,
   [`WP-P1-BRAKE-CLOUD-WINDOW-DETAIL-001`](work-packets/p1-brake-cloud-window-detail.md),
-  is `PROPOSED — REVIEW REQUIRED` on product base `1320dde`. It owns exactly
+  is `ACCEPTED — IMPLEMENTATION AUTHORIZED` on product base `1320dde`. It owns exactly
   five backend source/test paths and no migration. It may add only
   `GET /api/v1/brake/units/{systemUid}/windows/{eventId}` with a closed
   zero-to-150-sample response over already accepted canonical chunk content.
   The four collection bodies, SSE, `CurrentUnitContext`, paging, errors,
-  listener/security boundary and migration 002 remain unchanged. The packet
-  authorizes no product edit until independent review and explicit acceptance.
+  listener/security boundary and migration 002 remain unchanged. Its authority
+  is limited to the exact local source-only five-path implementation; no
+  packaging, network, live, merge or push action is authorized.
 - Scope: implement the prepared Brake v1-v3 candidates, bounded v1
   pre/active/post window, v2 synthetic local assessment and derived-only
   reporting, v3 typed maintenance advisory, bounded offline queue, backend,

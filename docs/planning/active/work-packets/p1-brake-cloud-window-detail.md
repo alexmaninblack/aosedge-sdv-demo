@@ -6,10 +6,12 @@
 - ID: `WP-P1-BRAKE-CLOUD-WINDOW-DETAIL-001`
 - Lane: `L-BRAKE-CLOUD`
 - Parent increment: `IMP-04`
-- Review state: `PROPOSED — REVIEW REQUIRED`
-- Version: 1.0
+- Review state: `ACCEPTED — IMPLEMENTATION AUTHORIZED`
+- Version: 1.1
 - Prepared: 2026-08-31
-- Product implementation authorization: no
+- Independently reviewed and accepted: 2026-08-31
+- Product implementation authorization: yes, only for the exact local
+  source-only five-path boundary below
 - Network, dependency retrieval, container, VM, Cloud, signing, publication,
   merge or push authorization: no
 - Parent plan: [Demo Implementation Plan 1.2](../demo-implementation-plan.md)
@@ -28,9 +30,9 @@ already accepted samples from the current SQLite data model. The packet adds
 no database migration and changes no collection, SSE, Current Unit, paging,
 listener, security or first-demo authority behavior.
 
-This packet is a review proposal. It authorizes no product edit until an
-independent reviewer accepts the exact boundary and an implementation owner
-explicitly authorizes execution.
+This packet is independently accepted and authorizes only the exact local
+source-only five-path implementation below. It authorizes no packaging,
+network, live, merge or push action.
 
 ## Exact Frozen Entry Base
 
@@ -41,8 +43,8 @@ explicitly authorizes execution.
 | Product parent | `a4b5b33f53a0931ae115f0790216e40b445499d6` |
 | Product tree | `e13fe62e0e2e5a9702f98e2170a32fde9cc4083e` |
 | Required product refs | clean `main == origin/main ==` product commit |
-| Contract-cascade commit | `f7c701dc9c0b4052dfff6a0c8de138eef5094600` |
-| Contract-cascade tree | `2b3fe064b7c5f05eafea2e4519585aa23acaeb14` |
+| Reviewed contract-cascade commit | `f7c701dc9c0b4052dfff6a0c8de138eef5094600` |
+| Reviewed contract-cascade tree | `2b3fe064b7c5f05eafea2e4519585aa23acaeb14` |
 
 A future worker must create one isolated product worktree from the exact
 product commit. A different commit/tree, dirty base, changed frozen input or
@@ -54,10 +56,10 @@ All hashes are raw file SHA-256 at the contract-cascade commit.
 
 | Input | Role | SHA-256 |
 | --- | --- | --- |
-| D4 decision register | proposed D4-017 additive amendment | `b8af52e1588406d0ee27a5fd96738981e8b1c68c618cd4dfa2eba683ed1801ac` |
-| `CR-BRAKE-CLOUD` | proposed requirement/test cascade | `a6559b3c5700db35162f4786a595ba03e98cd0a5fe0d6d94195d2c843bc8f213` |
-| Brake Cloud API README | accepted 1.0.0 plus proposed detail closure | `add7c44139e6b7d3e025912c4d23efabde4e46994ce628a7b3ff9563366ca0bf` |
-| Query/SSE/Admin profile | proposed 1.1.0 | `9a22505e7423eba1f58581e8b1a2b0d1d6720257f7e128402eca8c903c7ef89e` |
+| D4 decision register | accepted D4-017 additive amendment | `e90bcd7b9a3bf12c3ff0f2e7f002b1294f6e65d2c5815a05e8e187fe712172d7` |
+| `CR-BRAKE-CLOUD` | accepted requirement/test cascade | `6b72dee873760cff4f2642498626ec5bbf8ebb4b14eab8d657f11819985e53e9` |
+| Brake Cloud API README | accepted 1.0.0 plus detail closure | `4e9fc900c1de737983aff3486b8ae98c65de42e468e6995d6ae7dfbf975ffade` |
+| Query/SSE/Admin profile | accepted 1.1.0 | `5a07981c6ca7c9747c9d7925c03d8c73b5a3b0852a29e36c952b0cad06d682b3` |
 | Window-detail schema | closed response 1.0.0 | `ac3b34589a5d5084b5b2eac229bf1b5467fdf6006b079d8cf9cbd29d5db9a99e` |
 | Window-detail fixture | growing two-sample valid response | `89f10a95af5f579f96db0cedd977d61a63f007f4a2efce4f752e1dd85a91eda9` |
 | Query-page schema | immutable collection/window-item input | `17b13d55462e97ca2011391e1ce78e272124839b1851cfcf675ad9434d802c38` |

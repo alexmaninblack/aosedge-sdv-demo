@@ -2295,15 +2295,16 @@ The proposed exact decision is:
    `a2dc0c016d5281c9accead1d6447600d4a2c3736acaef1f725a2831efe334cad`.
    Brake Cloud API remains version 1.0.0.
 
-#### D4-017 Proposed Additive Amendment — Brake Window Detail
+#### D4-017 Accepted Additive Amendment — Brake Window Detail
 
 - Amendment ID: `BC-WINDOW-DETAIL-DEC-01`
-- Amendment state: `PROPOSED — INDEPENDENT REVIEW REQUIRED`
+- Amendment state: `ACCEPTED`
 - Prepared: 2026-08-31
+- Independently reviewed and accepted: 2026-08-31
 - Accepted base: D4-017 Query/SSE/Admin API 1.0.0
 - Proposed machine-readable profile: Query/SSE/Admin API 1.1.0
 
-The proposed additive decision is:
+The accepted additive decision is:
 
 1. Add exactly one functional point read,
    `GET /api/v1/brake/units/{systemUid}/windows/{eventId}`, for an existing
@@ -2340,9 +2341,9 @@ The proposed additive decision is:
    stored content against its accepted message identity/digest before returning
    it and fail closed on mismatch.
 
-This proposed amendment changes no accepted 1.0.0 behavior and authorizes no
-product edit until its contract cascade and bounded implementation packet are
-independently reviewed and accepted.
+This amendment changes no accepted 1.0.0 collection behavior. Its exact
+five-path source-only implementation packet is separately accepted and
+authorized; packaging, network, live, merge and push remain outside it.
 
 ### D4-018 Accepted Decision Record — Tire In-Vehicle Product
 

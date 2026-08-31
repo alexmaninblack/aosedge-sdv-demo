@@ -4,7 +4,7 @@
 # Brake Health Cloud Product Component Requirements
 
 - Status: D4 design accepted; source foundation and Data backend integrated;
-  bounded window-detail contract/packet proposed for independent review
+  bounded window-detail contract/packet accepted and implementation authorized
 - Package: [`CR-BRAKE-CLOUD`](../component-decomposition-and-interface-register.md#cr-brake-cloud)
 - Version: 0.6
 - Prepared: 2026-08-19
@@ -24,9 +24,9 @@
   integrated on `main`/`origin/main` at
   `1320dde24ae0f72771ea9320c2bd2212c20726ba`
 - Repository creation completed: 2026-08-28; the bounded foundation and Data
-  packets are integrated. The additive window-detail contract and packet are
-  proposed only; signing, Cloud, container, VM or Unit mutation is not
-  authorized
+  packets are integrated. The additive window-detail contract and exact
+  five-path source packet are accepted/authorized; signing, Cloud, container,
+  VM or Unit mutation is not authorized
 
 ## Purpose
 
@@ -194,7 +194,7 @@ source/Unit/run correlation supplied to it.
 - schema, version, size, Unit, run, source-time and correlation validation;
 - idempotent ordered reconstruction of v1 event-window chunks and completion;
 - automatic persistence and query/subscription of growing and completed v1
-  windows, with the proposed bounded exact-Unit/window detail point read;
+  windows, with the accepted bounded exact-Unit/window detail point read;
 - idempotent v2/v3 assessment, event and advisory-fact ingestion;
 - original sample/event time, receipt time and synchronization-state preservation;
 - current-run persistence, exact preview/delete action and complete R0 deletion scope;
@@ -507,7 +507,7 @@ components.
 <a id="req-brake-cloud-007"></a>
 
 - ID: `REQ-BRAKE-CLOUD-007`
-- Statement: The Vehicle Data view shall present a v1 window only after chunk 0 or completion establishes an authoritative start, as growing while later accepted chunks arrive, and terminal only after the Backend has durably accepted the completion record and validated every declared chunk index plus the ordered digest/count/phase/window commitments. Its proposed exact-Unit/window detail read shall show zero through 150 already accepted samples in ascending chunk-index and stored-array order, preserving PRE/ACTIVE/POST phase, speed, longitudinal acceleration, accelerator/brake pedal positions, quality, source time and source age without interpolation or a freshness claim. It shall also show Service/VDP versions, Unit role, original event time, delivery state and one of the D4-016.1/.2 completion states. It shall label the event `HARD_BRAKING_EPISODE_V1` and never imply native ABS/AEB/EBS activation or brake-component health.
+- Statement: The Vehicle Data view shall present a v1 window only after chunk 0 or completion establishes an authoritative start, as growing while later accepted chunks arrive, and terminal only after the Backend has durably accepted the completion record and validated every declared chunk index plus the ordered digest/count/phase/window commitments. Its accepted exact-Unit/window detail read shall show zero through 150 already accepted samples in ascending chunk-index and stored-array order, preserving PRE/ACTIVE/POST phase, speed, longitudinal acceleration, accelerator/brake pedal positions, quality, source time and source age without interpolation or a freshness claim. It shall also show Service/VDP versions, Unit role, original event time, delivery state and one of the D4-016.1/.2 completion states. It shall label the event `HARD_BRAKING_EPISODE_V1` and never imply native ABS/AEB/EBS activation or brake-component health.
 - Rationale: The first service version visibly proves event-focused Cloud data collection.
 - Parent system requirements: [Bounded v1 Brake Telemetry Window (`SYS-BHS-005`)](../system-requirements-and-traceability.md#sys-bhs-005), [Authoritative demo surfaces (`SYS-OBS-001`)](../system-requirements-and-traceability.md#sys-obs-001)
 - Architecture flow: [First functional-service proof (`AF-G2-OB`)](../../architecture/demo-scenario-architecture-flows.md#af-g2-ob)
@@ -515,8 +515,8 @@ components.
 - Interfaces: [`IF-FUNC-002`](../component-decomposition-and-interface-register.md#if-func-002)
 - Verification levels: Unit / Component / Integration / End-to-end
 - Required evidence: deterministic progress-state tests and VU/PU dashboard capture
-- State: D4-017 factual v1 collection/presentation contract accepted; additive
-  window-detail contract and implementation packet proposed; qualification open
+- State: D4-017 factual v1 collection/presentation and additive window-detail
+  contracts accepted; exact source packet authorized; qualification open
 
 #### Acceptance criteria
 
@@ -525,7 +525,7 @@ components.
    first remains stored but hidden until one of those start facts arrives.
 2. UI phase and sample counts derive from persisted backend state.
 3. Disconnection leaves the last state visibly stale/offline rather than complete or current.
-4. The proposed detail route authorizes the exact Current Unit before event
+4. The accepted detail route authorizes the exact Current Unit before event
    lookup, returns only an existing visible projection and accepted stored
    samples, accepts no paging/query fields, and requires no database migration.
 
@@ -751,7 +751,7 @@ components.
 | <a id="ut-brake-cloud-002"></a>`UT-BRAKE-CLOUD-002` — Candidate catalogue integrity | [REQ-BRAKE-CLOUD-002](#req-brake-cloud-002), [REQ-BRAKE-CLOUD-003](#req-brake-cloud-003) | Valid v1-v3, missing field, changed bytes, invalid permission/quota/range | Immutable catalogue fixtures | Enable only exact valid candidates; no build/mutation path | Planned catalogue suite | Design accepted; implementation open |
 | <a id="ut-brake-cloud-003"></a>`UT-BRAKE-CLOUD-003` — Explicit release action | [REQ-BRAKE-CLOUD-004](#req-brake-cloud-004) | Confirm, cancel, success, failure, timeout, uncertain result, wrong profile/candidate/type/path/URL and retry attempt | D4-010.3 helper/profile fake, Cloud result fake and deterministic clock | Only `brake-sp1` plus an exact catalogue candidate passes; no key/PKCS#12 exposure or blind retry; exact resulting digest; `PUBLISHED` only after Cloud re-read | Planned release-workspace suite | Design accepted; implementation open |
 | <a id="ut-brake-cloud-004"></a>`UT-BRAKE-CLOUD-004` — v1 reconstruction | [REQ-BRAKE-CLOUD-006](#req-brake-cloud-006) | Ordered/reordered, duplicate, missing, conflicting, corrupt, cross-Unit/Service/VDP, later-chunk-first and completion-before-chunks cases | Shared D4-016.2 fixtures and transactional store fake | Later chunk and completion may be durably ACKed; no window query/SSE projection before chunk 0 or completion establishes start; one terminal digest-verified window only after the complete consistent set; mismatch quarantined non-terminal | Planned backend suite | D4-016.2 and D4-017 accepted; implementation proposed in `BRAKE-CLOUD-DATA-001` |
-| <a id="ut-brake-cloud-005"></a>`UT-BRAKE-CLOUD-005` — v1 presentation states | [REQ-BRAKE-CLOUD-007](#req-brake-cloud-007) | Empty, pre-start hidden, zero-sample completion-first, growing, partial/gapped, delayed, complete, quarantined/conflict, stale and disconnected; exact detail, invalid/wrong Unit/event/query and storage failures | Backend-query/detail fixtures plus CurrentUnitContext | Exact context role/phases/counts/version/times; 0..150 unchanged ordered stored samples; truthful current-Unit empty collection; no pre-start detail, paging, interpolation, premature-terminal or freshness projection | Planned backend/detail/dashboard state suite | Collection design accepted; additive detail contract/packet proposed |
+| <a id="ut-brake-cloud-005"></a>`UT-BRAKE-CLOUD-005` — v1 presentation states | [REQ-BRAKE-CLOUD-007](#req-brake-cloud-007) | Empty, pre-start hidden, zero-sample completion-first, growing, partial/gapped, delayed, complete, quarantined/conflict, stale and disconnected; exact detail, invalid/wrong Unit/event/query and storage failures | Backend-query/detail fixtures plus CurrentUnitContext | Exact context role/phases/counts/version/times; 0..150 unchanged ordered stored samples; truthful current-Unit empty collection; no pre-start detail, paging, interpolation, premature-terminal or freshness projection | Planned backend/detail/dashboard state suite | Additive detail contract accepted; source packet authorized; implementation open |
 | <a id="ut-brake-cloud-006"></a>`UT-BRAKE-CLOUD-006` — v2 derived product | [REQ-BRAKE-CLOUD-008](#req-brake-cloud-008) | Assessment/event normal, duplicate, missing/exact assessment correlation, invalid provenance/model and forbidden normal-v1 presentation | v2 contract fixtures | Event VDP provenance stays null/pending until exact assessment match, then copies exact fields; no inference or v1 stream claim | Planned backend/dashboard suite | Design accepted; implementation open |
 | <a id="ut-brake-cloud-007"></a>`UT-BRAKE-CLOUD-007` — v3 advisory fact | [REQ-BRAKE-CLOUD-009](#req-brake-cloud-009) | Correlated, missing, conflicting and duplicate advisory facts | v3 fixtures | Correct association and explicit no-driver/Gateway authority label | Planned backend/dashboard suite | Design accepted; implementation open |
 | <a id="ut-brake-cloud-008"></a>`UT-BRAKE-CLOUD-008` — Delayed/out-of-order data handling | [REQ-BRAKE-CLOUD-010](#req-brake-cloud-010) | Delayed/out-of-order messages, duplicate identity, restart and retention expiry | Store fake and deterministic source/local/receipt clocks | Same identity remains idempotent; original/local/receipt time separation; duplicate/out-of-order facts visible; no synchronization-complete or outbox-drained claim | Planned backend suite | Source-only subset proposed in `BRAKE-CLOUD-DATA-001`; reconnect/drain qualification deferred |
@@ -833,11 +833,11 @@ topology and cleanup boundaries are design accepted. Repository creation,
 implementation and live route/LAN-negative qualification remain separate
 gates; this acceptance authorizes none of them by itself.
 
-Version 0.6 records the proposed additive D4-017 Brake window-detail closure.
+Version 0.6 records the accepted additive D4-017 Brake window-detail closure.
 It keeps all accepted 1.0.0 collection/SSE/Current Unit/error behavior and the
-existing SQLite schema unchanged while proposing one bounded exact-Unit/event
-read over already stored canonical samples. Neither this requirements update
-nor the proposed packet authorizes a product edit before independent review.
+existing SQLite schema unchanged while adding one bounded exact-Unit/event read
+over already stored canonical samples. Independent review accepted the exact
+five-path packet and authorized its source-only offline implementation.
 
 ## Open Issues for D4
 
@@ -850,7 +850,7 @@ they no longer represent open product design.
 | --- | --- | --- | --- |
 | Implement accepted D4-017 `IF-FUNC-001` local transport, endpoint discovery, retry/backoff and durable acknowledgement | Delivery and backend completion still block integration; production authentication is intentionally out of scope | Function Team 1 | Backend implementation and qualification |
 | Implement accepted v1 pre/active/post display and chart fields | Dashboard fixtures and presentation remain to be built | Function Team 1 | UI implementation and human review |
-| Independently review and implement the proposed exact-Unit/window detail read over stored canonical samples | The collection summary alone does not provide the sample sequence needed by the Vehicle Data detail view | Function Team 1 | Proposed `BRAKE-CLOUD-WINDOW-DETAIL-001` contract and source packet |
+| Implement the accepted exact-Unit/window detail read over stored canonical samples | The collection summary alone does not provide the sample sequence needed by the Vehicle Data detail view | Function Team 1 | Authorized `BRAKE-CLOUD-WINDOW-DETAIL-001` source packet |
 | Implement accepted HTTP/SQLite/container deployment boundary | Repository scaffold and component tests remain to be built | Function Team 1 | Repository and implementation packets |
 | Implement exact common-helper request/result transport, D4-010.3 `brake-sp1` configuration and authoritative Cloud reconciliation lookup | Accepted profile/custody semantics are closed; executable integration remains open | Function Team 1 security/release owner + Demo Solution | Publication integration packet |
 | Exact Docker Desktop startup/wait behavior and accepted minimum version | Demo launcher and colleague reproduction | `CR-DEMO` plus Function Team 1 | Before launcher implementation |

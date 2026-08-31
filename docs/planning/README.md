@@ -58,8 +58,9 @@ assignment, VM restart, or provisioned-Unit change.
   [Brake Cloud Data packet](active/work-packets/p1-brake-cloud-data.md) is
   implemented and integrated on product `main` at `1320dde`. The proposed
   [Brake Cloud window-detail packet](active/work-packets/p1-brake-cloud-window-detail.md)
-  freezes an additive five-path, no-migration point-read boundary and
-  authorizes no product edit before independent review.
+  is accepted and authorizes the additive five-path, no-migration local
+  source-only point-read implementation; it authorizes no packaging, network,
+  live, merge or push action.
 - [Repository inventory and migration plan](repository-inventory-and-migration-plan.md)
   — completed migration and local-cleanup execution record.
 

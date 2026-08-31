@@ -1,13 +1,13 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Brake Health Cloud API — Accepted Contract and Proposed Window Detail
+# Brake Health Cloud API — Accepted Contract
 
 - Decision: `D4-017`
 - Lifecycle state: `ACCEPTED`
 - Accepted contract version: `1.0.0`
-- Proposed additive Query/SSE/Admin profile: `1.1.0`
-- Proposed amendment: `BC-WINDOW-DETAIL-DEC-01`; independent review required
+- Additive Query/SSE/Admin profile: `1.1.0`
+- Accepted amendment: `BC-WINDOW-DETAIL-DEC-01`; accepted 2026-08-31
 - Subdecision state: transport, first-demo security boundary, idempotency,
   durable acknowledgement, persistence, Dashboard query/authority and exact
   current-run cleanup accepted 2026-08-23
@@ -124,7 +124,7 @@ Files:
   [`error-response.schema.json`](error-response.schema.json) and
   [`sse-change-notification.schema.json`](sse-change-notification.schema.json)
   — closed browser-query responses; the window-detail schema belongs only to
-  the proposed additive 1.1.0 profile;
+  the additive 1.1.0 profile;
 - [`cleanup-preview-request.schema.json`](cleanup-preview-request.schema.json),
   [`cleanup-execute-request.schema.json`](cleanup-execute-request.schema.json)
   and [`cleanup-result.schema.json`](cleanup-result.schema.json) — closed
@@ -141,7 +141,7 @@ Files:
   provenance and RFC8785 edge files under `fixtures/`
   — Query/SSE/Admin 1.0.0 annex conformance fixtures; and
 - [`fixtures/window-detail.valid.json`](fixtures/window-detail.valid.json) —
-  the proposed exact Unit/window point-read fixture with stored PRE/ACTIVE
+  the exact Unit/window point-read fixture with stored PRE/ACTIVE
   samples and no paging fields.
 
 Backend idempotency is namespaced by the correlation-only `unitSystemUid` and
@@ -178,9 +178,9 @@ chunk 0's first sample timestamp or the completion's
 quarantined and non-terminal. No window-change SSE notification is emitted for
 a still-hidden later chunk.
 
-## Proposed Window Detail Amendment
+## Accepted Window Detail Amendment
 
-The proposed 1.1.0 Query/SSE/Admin profile adds one point read without changing
+The accepted 1.1.0 Query/SSE/Admin profile adds one point read without changing
 the four accepted 1.0.0 collection bodies:
 
 ```text
@@ -207,8 +207,8 @@ security boundaries remain unchanged.
 
 No database migration belongs to this amendment. Existing migration 002
 already retains canonical validated chunk content and the exact
-Unit/event/chunk index. This proposal authorizes no backend change until the
-contract cascade and its source-only work packet are independently accepted.
+Unit/event/chunk index. Its separate source-only work packet is accepted and
+authorized only for the exact five-path offline implementation boundary.
 
 The Brake Dashboard obtains functional windows, assessments, events and
 advisory facts only through the accepted 1.0.0 annex's bounded keyset-paginated
