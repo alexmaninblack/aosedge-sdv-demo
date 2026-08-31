@@ -6,10 +6,10 @@
 - ID: `WP-P1-BHS-CORE-003`
 - Lane: `L-BHS`
 - Parent increment: `IMP-04`
-- Review state: `PROPOSED — REVIEW REQUIRED`
+- Review state: `ACCEPTED — IMPLEMENTATION AUTHORIZED`
 - Version: 1.0
 - Prepared: 2026-08-31
-- Product implementation authorization: no
+- Product implementation authorization: yes — exact nine-path boundary only
 - Network, live platform, packaging, signing, publication, merge or push
   authorization: no
 - Parent plan: [Demo Implementation Plan 1.2](../demo-implementation-plan.md)
@@ -23,8 +23,9 @@ accepts only a matching factual Gateway Status and creates the correlated
 Brake advisory fact for the existing bounded functional outbox.
 
 This packet adds no KUKSA, VISS, KAC, gRPC, backend, Aos packaging or live
-runtime integration. It does not authorize product edits until this packet is
-independently reviewed and accepted.
+runtime integration. The exact nine-path source-only implementation boundary
+is accepted and authorized; every external operation and excluded path remains
+unauthorized.
 
 ## Exact Frozen Entry Base
 
@@ -35,8 +36,8 @@ independently reviewed and accepted.
 | Product parent | `c5544f5f6de37f35a7fe1b34a5a2e9e399c1ab53` |
 | Product tree | `7c2803c806001ab8bfb7eae44fbf8489f95ccdd5` |
 | Required product refs | clean `main == origin/main ==` product commit |
-| Authoritative contract-cascade commit | `0e40bbb5b06dfd2d4309e0e4107f47631ee76000` |
-| Contract-cascade tree | `a4f4ab6389f5678e72178a1e40d5911bdc619aad` |
+| Authoritative contract-cascade commit | `3f4635a6ec08f845e2a4bbdf4bf70f318cfa537b` |
+| Contract-cascade tree | `56124314f268390e4789feb835315cc6025f0e6b` |
 
 A worker must use a new isolated one-writer product worktree from the exact
 product commit. Any different commit, tree, dirty base or pre-existing v3 path
@@ -70,7 +71,7 @@ All hashes are raw file SHA-256 at the authoritative contract-cascade commit.
 | Typed QM Gateway Status schema | closed schema v1 | `1e0ecb28cc7548c65f1352b4c8b5874871400b8a83050a1b527c5f58f8493661` |
 | Brake runtime README | D4-016.5 / lifecycle 1.1.0 | `066d23506302fc094385b666081385b2cef8fc8c8fbabbf313a50020dcefea65` |
 | Brake runtime profile | 1.1.0 | `cc90a091e044995a49ad886ae6a5f000c579c8a43a84dbaab8a6edf2a8c492c4` |
-| Shared evidence profile | 1.1.0 | `b090c0c2450f130aae0c8f4f4be468dbef6fde4437678932965077ad57f85266` |
+| Shared evidence profile | 1.1.0 | `657c4d0dc83fd2a98b2a827172f1cb408965105865903397fc7ba07564f5c0d2` |
 | Brake model profile | 1.0.0 | `7749dff2dd340f05ae5f3c90912d65007ad48c52a5136ab0e165a83109d55f53` |
 | Brake model persistent-state schema | 1.0.0 | `350a38547490547f3bf963971fb9a2f5e0cc7c4c4ea4d96b746b392779fc7f79` |
 | Brake model state fixture | 1.0.0 | `5a9b64c8f4fe8295e018c484b925f79f221659fb8106cfea87968b6cb0ad9240` |
@@ -104,7 +105,7 @@ behavior.
 
 ## Exact Nine-Path Writable Boundary
 
-Only these product-repository paths may change after separate implementation
+Only these product-repository paths may change under this implementation
 authorization:
 
 1. `CMakeLists.txt`;
@@ -281,7 +282,10 @@ Stop and return for review if:
 8. a late old-epoch input can affect current state under any tested path; or
 9. any owned, inherited, sanitizer, quality or boundary gate fails.
 
-## Completion Record
+## Authorization Record
 
-Pending independent packet review and explicit implementation authorization.
-No product edit is authorized by this proposed checkpoint.
+Accepted and implementation-authorized on 2026-08-31 after independent packet
+review and direct owner approval. Authorization is limited to the exact
+nine-path product boundary above. Product implementation has not yet started;
+all network, live platform, packaging, signing, publication, merge and push
+operations remain separately gated.

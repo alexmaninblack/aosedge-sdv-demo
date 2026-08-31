@@ -477,12 +477,13 @@ handoff.
   ASan+UBSan 2/2 gates passed; accepted v1 digests remain unchanged. V3,
   adapters, executable composition, packaging and live qualification remain
   separately gated.
-- The proposed source-only v3 packet,
+- The accepted source-only v3 packet,
   [`WP-P1-BHS-CORE-003`](work-packets/p1-brake-health-core-v3.md), freezes the
   accepted producer restart/replacement lifecycle and a nine-path C++17
   advisory-core boundary on product base `63b0c5f`. It is
-  `PROPOSED — REVIEW REQUIRED`; it authorizes no product edit, packaging,
-  network, Cloud, VM, merge or push action.
+  `ACCEPTED — IMPLEMENTATION AUTHORIZED`; it authorizes only the exact
+  nine-path source-only product boundary. Packaging, network, Cloud, VM,
+  merge and push actions remain separately gated.
 - Cloud packet order: `BRAKE-CLOUD-FOUNDATION-001`,
   `BRAKE-CLOUD-DATA-001`, proposed additive
   `BRAKE-CLOUD-WINDOW-DETAIL-001`, `BRAKE-CLOUD-UI-001`,
