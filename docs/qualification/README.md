@@ -12,6 +12,9 @@ qualification procedures, and sanitized defect evidence.
 - [Pre-cleanup end-to-end acceptance](pre-cleanup-e2e-acceptance.md)
 - [Post-cleanup acceptance](post-cleanup-acceptance.md)
 - [CARLA VISS-to-KUKSA qualification](carla-viss-to-kuksa.md)
+- [LTVP VDP update specification-to-implementation record](ltvp-vdp-update-as-built.md)
+  — `.26` engineering findings and the open `.27`/VDP `1.0.14`–`1.0.15`
+  repeatability gates.
 - [D4-003 Brake and Tire stimulus calibration plan](d4-003-stimulus-calibration-plan.md)
   — approved pre-demonstration calibration and independent-repeat plan; exact
   Tire parameters and numeric tolerances remain open until live calibration.

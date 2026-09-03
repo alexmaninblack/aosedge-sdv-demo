@@ -12,6 +12,9 @@
 - [Platform FOTA Safe Stop Contract](platform-fota-safe-stop/README.md)
   — accepted Gateway evidence, OEM Component Runtime gate, durable waiting,
   recovery and qualification rules for Vehicle Data Platform Component FOTA.
+- [LTVP VISS server-authenticated TEST_ONLY exception](ltvp-viss-server-auth-test-only/README.md)
+  — bounded Test Vehicle server-auth route and repeatable `.27` qualification;
+  the strict per-Unit mTLS Production design remains unchanged.
 - [Exclusive Live-Source Assignment Contract](exclusive-live-source-assignment/README.md)
   — audience model for Validation/Production Vehicles and the host-side
   one-source sequential-assignment proof.
