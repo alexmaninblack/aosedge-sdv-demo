@@ -10,7 +10,7 @@ assignment, VM restart, or provisioned-Unit change.
 - [Current design and delivery roadmap](roadmap.md)
 - [LTVP `.27` repeatable VDP update packet](active/work-packets/ltvp-27-repeatable-vdp-update.md)
   — accepted clean-source, two-cycle Test Vehicle qualification for VDP
-  `1.0.14` and `1.0.15` from one immutable Factory image.
+  `1.0.15` and `1.0.16` from one immutable Factory image.
 - [Accepted Demo Implementation Plan 1.2](active/demo-implementation-plan.md)
   — bounded implementation increments, repository ownership, dependencies,
   verification and per-increment authorization gates.

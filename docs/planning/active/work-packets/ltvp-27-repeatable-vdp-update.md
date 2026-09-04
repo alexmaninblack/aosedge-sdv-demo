@@ -4,10 +4,10 @@
 # LTVP `.27` repeatable VDP update work packet
 
 - ID: `WP-LTVP-27-REPEATABLE-VDP-001`
-- State: accepted and authorized by the operator on 2026-09-03
+- State: completed and visually accepted by the operator on 2026-09-04
 - Audience: `Test Vehicles` only
 - Factory target: `6.1.1-maninblack.27`
-- Update targets: VDP `1.0.14`, then VDP `1.0.15`
+- Update targets: VDP `1.0.15`, then version-only successor VDP `1.0.16`
 - Production and Campaign mutation: forbidden
 
 ## Objective
@@ -18,9 +18,12 @@ binary, configuration or release dependency on `/private/tmp`, no post-boot
 DNS repair and no transient replacement of `aos-sm`.
 
 The same immutable `.27` image is qualified twice. The first clean VM receives
-VDP `1.0.14`; it is then deprovisioned and deleted and its disposable overlay
-is removed without backup. A new overlay from the same image SHA receives VDP
-`1.0.15` through the same complete Cloud-to-vehicle flow.
+VDP `1.0.15`; it is then deprovisioned and deleted and its disposable overlay
+is removed without backup. A new overlay from the same image SHA receives the
+version-only successor VDP `1.0.16` through the same complete
+Cloud-to-vehicle flow. This executed pair supersedes the initially planned
+`1.0.14`/`1.0.15` pair after the final Factory digest and accepted source were
+repinned before qualification.
 
 ## Source boundaries
 
@@ -34,7 +37,7 @@ Only the final forms of these changes are admitted:
 - full-gzip component layer handling and provider-archive validation;
 - idempotent missing-component `StopInstance` semantics;
 - Factory integration of the corrected component runtime;
-- deterministic VDP `1.0.14` and `1.0.15` release profiles and packaging; and
+- deterministic VDP `1.0.15` and `1.0.16` release profiles and packaging; and
 - owned tests, manifests, SBOM and provenance required by those changes.
 
 Intermediate `1.0.0`/`1.0.3`/`1.0.13` candidate pins and temporary artifact
@@ -68,7 +71,7 @@ Global 30-Hz configurations are not silently changed.
 2. component archive/runtime lifecycle;
 3. coherent VISS Safe Stop and Test-only input;
 4. Factory network/runtime integration;
-5. deterministic VDP `1.0.14`/`1.0.15` release packaging;
+5. deterministic VDP `1.0.15`/`1.0.16` release packaging;
 6. direct Cloud and VM operating procedure;
 7. qualification evidence and final source pins.
 
@@ -100,23 +103,24 @@ SHA-256, partition identity and immutable path. A clean first boot must have
 working DNS, synchronized time and native IAM/SM/CM Online behavior without a
 guest patch.
 
-VDP `1.0.14` and `1.0.15` are built from one accepted source tree and functional
-payload. All version-owned metadata is internally coherent. `1.0.15` differs
-from `1.0.14` only by the version-owned metadata needed for a distinct update.
+VDP `1.0.15` and `1.0.16` use the same accepted functional payload. All
+version-owned metadata is internally coherent. `1.0.16` is the declared
+version-only successor of `1.0.15`; its packaging-source change only admits the
+new release identity and does not change runtime behavior.
 Each signed deployment bundle is unpacked once to verify its OCI schema,
 component identity, runtime selector, exactly one nonempty full-gzip layer and
 digests before upload.
 
-## E2E cycle A — VDP `1.0.14`
+## E2E cycle A — VDP `1.0.15`
 
 1. Create a new disposable overlay from the immutable `.27` image.
 2. Provision once, add the Unit to `Test Vehicles`, and require Unit/Node Online.
 3. Start CARLA, controller and loopback Gateway; show that the vehicle moves.
-4. Sign and upload VDP `1.0.14` through the Deployment Bundle API.
+4. Sign and upload VDP `1.0.15` through the Deployment Bundle API.
 5. Approve its Validation Batch for `Test Vehicles`.
 6. While moving, require Cloud delivery and runtime waiting without activation.
 7. Apply explicit Safe Stop and require activation only after the complete gate.
-8. Require Cloud installed `1.0.14`, active slot `1.0.14`, VDP active/running,
+8. Require Cloud installed `1.0.15`, active slot `1.0.15`, VDP active/running,
    `READY/source LIVE`, zero unexpected restarts and updating vehicle data.
 9. Reboot the VM and require the same installed/active/readiness result without
    Factory placeholder `0.0.0` reassertion.
@@ -125,12 +129,14 @@ After evidence is recorded, deprovision and delete the Unit, stop the VM and
 delete only its used overlay, access material and provisioning state. Preserve
 the immutable `.27` image; create no overlay backup.
 
-## E2E cycle B — VDP `1.0.15`
+## E2E cycle B — VDP `1.0.16`
 
 Repeat every cycle-A step using a new overlay from the exact same `.27` image
 SHA and new provisioning state. Join `Test Vehicles` before uploading and
-approving `1.0.15`. Require the same moving/waiting/Safe Stop/activation/live
-and reboot evidence for `1.0.15`.
+approving `1.0.16`. Require the same moving/waiting/Safe Stop/activation/live
+evidence for `1.0.16`. Cycle B retained the live VM after visual acceptance so
+the operator could inspect the qualified state; shutdown/reboot persistence is
+recorded separately from the two-update delivery proof.
 
 ## Completion and cleanup
 

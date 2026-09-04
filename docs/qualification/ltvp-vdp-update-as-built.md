@@ -3,12 +3,12 @@
 
 # LTVP VDP update: specification-to-implementation record
 
-- Recorded: 2026-09-03
-- Current evidence vehicle: `.26`
-- Current demonstrated update: VDP `1.0.13`
-- Release qualification target: `.27` with VDP `1.0.14` and `1.0.15`
+- Recorded: 2026-09-04
+- Historical engineering vehicle: `.26`
+- Qualified Factory image: `.27`
+- Qualified update pair: VDP `1.0.15` and version-only successor `1.0.16`
 
-## Demonstrated state
+## Historical `.26` engineering state
 
 The `.26` experiment reached a real active VDP component rather than only a
 Cloud-installed record. AosCore reported the component active in slot `a`, the
@@ -35,7 +35,7 @@ provenance. DNS was repaired in the disposable overlay after boot.
 | Unit Model | current descriptive schema | stale example added format/vendor fields and blocked delivery | omit those fields and test the payload |
 | DNS | functional at first boot | overlay correction required | make Factory/launcher configuration native |
 | Publication | signed deployment bundle | evidence accumulated through several upload paths | document one direct deployment-bundle flow |
-| Provenance | exact source-to-artifact binding | `1.0.13` metadata does not identify a release source | produce clean `1.0.14`/`1.0.15` |
+| Provenance | exact source-to-artifact binding | `1.0.13` metadata does not identify a release source | produced clean `1.0.15`/`1.0.16` |
 
 ## Root causes closed by the experiment
 
@@ -55,16 +55,39 @@ provenance. DNS was repaired in the disposable overlay after boot.
 7. Run-scoped systemd credentials disappeared after reboot and had to be
    recreated before consumers started.
 
-## Open release gates
+## Qualified `.27` result
 
-- reproduce every final source change on clean branches;
-- integrate the corrected runtime and network configuration in `.27`;
-- build source-traceable VDP `1.0.14` and `1.0.15` deployment bundles;
-- prove that Factory placeholder `0.0.0` cannot reclaim the active component
-  after Cloud reconciliation or reboot;
-- pass two complete E2E cycles from the same immutable `.27` image; and
-- push the final branches and record exact commits/artifacts only after both
-  cycles pass.
+The two clean cycles used the same immutable image bytes:
 
-Until those gates close, `.26` and VDP `1.0.13` remain diagnostic evidence and
-must not be described as the final Factory or release-qualified update.
+- image: `artifacts/r6-1/ltvp/final-27/main-qemuarm64.img`;
+- version: `6.1.1-maninblack.27`;
+- byte length: `6997147648`;
+- SHA-256: `dbc018cf31dc83accbca82cf26df0b3ca69c66d1135100db8d05552fd2744c56`.
+
+Cycle A installed and activated VDP `1.0.15`, then the Unit was deprovisioned
+and deleted and its disposable overlay, access material and runtime binding
+state were removed without backup. Cycle B started from a new overlay whose
+backing image had the same SHA-256. Its new Unit
+`70e48e60-de2b-444b-a961-258683f324c4` joined only the intended persistent
+validation set `Test Vehicles`; the Cloud-created Campaign memberships were
+observed but not mutated.
+
+VDP `1.0.16` was uploaded as Deployment Bundle
+`a26d87f8-4f23-4e5c-90cb-54cb0729b222`. OEM validation batch
+`af02fc92-3c64-41cb-b4d6-3999c4997197` was approved for `arm64` through the
+direct Cloud API. The Unit first exposed the normal pending projection. Once
+fresh Gateway facts proved Safe Stop, AosCore reported VDP `1.0.16` active with
+no error, sent the delta status and received the Cloud acknowledgement. The
+Cloud Unit projection then showed `installed` `1.0.16`, no pending batch and
+`Online`.
+
+The accepted visual run `20260904T000503.185Z-d76eb0f2` showed CARLA and the
+Vehicle Controller live. Autopilot reached `19.50587986414475 km/h`; explicit
+Safe Stop returned the vehicle to `0.0 km/h` with full brake, two valid mode
+changes and zero rejected control messages. The operator visually accepted
+CARLA, Autopilot and Safe Stop on 2026-09-04.
+
+The `.26`/VDP `1.0.13` state remains diagnostic evidence only. `.27` with the
+`1.0.15`/`1.0.16` pair is the repeatable qualification result. Repository
+publication and final disk/branch cleanup are tracked as post-qualification
+closeout and do not change these runtime facts.
