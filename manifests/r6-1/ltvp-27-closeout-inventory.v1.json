@@ -1,0 +1,183 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "recordKind": "LTVP_27_CLOSEOUT_INVENTORY",
+  "recordedAt": "2026-09-04T02:54:46Z",
+  "updatedAt": "2026-09-04T05:27:36Z",
+  "state": "FINAL_BRANCHES_PUBLISHED_POST_HOUSEKEEPING_PENDING",
+  "claimBoundary": [
+    "TEST_ONLY_SERVER_AUTHENTICATED_VISS",
+    "NOT_A_FULL_DEMO_BASELINE_QUALIFICATION_DOSSIER",
+    "NOT_PRODUCTION_OR_CAMPAIGN_QUALIFICATION"
+  ],
+  "repositories": {
+    "solution": {
+      "branch": "codex/ltvp-finalize-27",
+      "revision": "174b1b045896decba922568aa6331bae5eaa5486",
+      "tree": "fb2050a8011b2741d99443bcc27496d4360ac339",
+      "remotePublished": true
+    },
+    "platform": {
+      "branch": "codex/ltvp-finalize-27",
+      "revision": "0a2c8249ec780e822bff90f29f9d3d5ba5dd7feb",
+      "tree": "a978eec1434a262459f40803d89052dc324a883a",
+      "remotePublished": true
+    },
+    "carlaEgoRuntime": {
+      "branch": "codex/ltvp-traffic-manager-order",
+      "revision": "c308c4195f8f9eebd7a5a59ff630d2b13237afb2",
+      "tree": "9e3456a7ca79fd546d41e603de5bd5b8470ffc26",
+      "remotePublished": true
+    }
+  },
+  "factoryImage": {
+    "path": "artifacts/r6-1/ltvp/final-27/main-qemuarm64.img",
+    "version": "6.1.1-maninblack.27",
+    "byteLength": 6997147648,
+    "sha256": "dbc018cf31dc83accbca82cf26df0b3ca69c66d1135100db8d05552fd2744c56",
+    "sourceBinding": {
+      "state": "SAME_SOURCE_CLEAN_REBUILD_RECORDED",
+      "chronologicalCandidateRevision": "72c0224ba65537bed41a6ca12a7bf3a9c07da194",
+      "chronologicalCandidateTree": "b1e6d1b5ec32c996169d5f10057878f1195e2ec7",
+      "claim": "The canonical image is retained unchanged. Its exact original build log was not retained; an offline clean rebuild from the pinned same-source inputs passed on 2026-09-04.",
+      "missing": [
+        "EXACT_CANONICAL_IMAGE_ORIGINAL_BUILD_LOG"
+      ]
+    },
+    "cleanRebuild": {
+      "record": "docs/qualification/ltvp-27-clean-build.md",
+      "platformRevision": "72c0224ba65537bed41a6ca12a7bf3a9c07da194",
+      "platformTree": "b1e6d1b5ec32c996169d5f10057878f1195e2ec7",
+      "aosCoreLibCppRevision": "60cb83535f773762c61ac5f544b31b7b88c502e3",
+      "aosCoreApiRevision": "af3552a0a5eb0237eff7f5f183780ca46c339cd3",
+      "aosCoreNormalizedTreeSha256": "f976aca0ad7b9510a6ade547af56b54907e5447412221567c0ba03fabf332436",
+      "effectiveAutoConfSha256": "166cb85b68b0aeaf42f2d78de1a0fd348a079edd0f5b2da7a449379b92f7e3a8",
+      "projectManifestSha256": "b9b49a575798f2bc4a532a794e77352ed21596677ef5aced4304db9e7a87f09e",
+      "fullDiskSha256": "1ebbf03f99b98b441d585826e9ddf4509c2121db16b87a3698ae5d75f7954c65",
+      "rootfsSha256": "6878e14f65d9952a8a529350ad6da23fdc40078239b18c2216f10243855652e0",
+      "initramfsSha256": "dba46255c914d7ae170c4628cc6e28245c8769cf94fed0c340d0121f5d1d1ee7",
+      "kernelSha256": "257a0312aec4db59834ce8aa20b09855bc097544d7a19b5a020d47e931e84de2",
+      "bitbake": "7549_TASKS_ATTEMPTED;_7510_VALID_SSTATE;_ALL_SUCCEEDED",
+      "result": "PASSED"
+    }
+  },
+  "components": {
+    "1.0.15": {
+      "releaseCandidateManifest": "manifests/release-candidates/aosedge-vdp-component-1.0.15.manifest.json",
+      "releaseCandidateManifestSha256": "be5ebfdce4f6874e5df70bfac34ee6c090cd80942e2630a6259655150e53a704",
+      "unsignedArchiveSha256": "787451451674ad83e0a6b5177a1d87c1cd5e6243ab9b331cd56284440f04ed88",
+      "layerSha256": "52c1cbfb49edf2daaccc0fa79a8dab4ee50c565807e062693fcfc6670e7c3f61",
+      "signedBundlePath": "artifacts/r6-1/ltvp/final-27/signed/vdp-1.0.15-deployment-bundle.tar.gz",
+      "signedBundleByteLength": 6612335,
+      "signedBundleSha256": "2a1ba02860b1eaf10c5a14dab7f627c945ff204d2964ebb0e418b4bf0e2c81a1",
+      "cloudDeploymentBundleId": "cc99c467-a24f-4707-9208-3425b0127693",
+      "cloudValidationBatchId": "bb7c3fcb-72a4-4244-b373-3a710adfa0a3"
+    },
+    "1.0.16": {
+      "releaseCandidateManifest": "manifests/release-candidates/aosedge-vdp-component-1.0.16.manifest.json",
+      "releaseCandidateManifestSha256": "eeb5a7212c4881fcc907538afe0cc0501b99d37fa8357dab04492c93835a4647",
+      "unsignedArchiveSha256": "7b11f2a73eb05a10bfa75238a06494294f52a9d735ec473ac9da32ade34e3ea8",
+      "layerSha256": "e30f260d819201064a3659f3c242f97126d03da2eb3ccb868a68e4d5765d6cc7",
+      "signedBundlePath": "artifacts/r6-1/ltvp/final-27/signed/vdp-1.0.16-deployment-bundle.tar.gz",
+      "signedBundleByteLength": 6612398,
+      "signedBundleSha256": "b36e3064166739c98ec028fc75980bf4ea937d531a7e7a7889e11283dd1d7d9c",
+      "cloudDeploymentBundleId": "a26d87f8-4f23-4e5c-90cb-54cb0729b222",
+      "cloudValidationBatchId": "af02fc92-3c64-41cb-b4d6-3999c4997197"
+    }
+  },
+  "qualificationCycles": {
+    "cycleA": {
+      "componentVersion": "1.0.15",
+      "unitLifecycle": "DEPROVISIONED_AND_DELETED",
+      "evidencePath": "artifacts/r6-1/ltvp/final-27/evidence/cycle-a",
+      "evidenceTreeSha256": "abbd58c7118d42e6d384ed5e2a743e20f96532502a71e5cc563fa63c5a4f0f3d",
+      "restartEvidenceState": "RETAINED_BINARY_JOURNAL_NOT_YET_REVIEWABLY_EXTRACTED"
+    },
+    "cycleB": {
+      "componentVersion": "1.0.16",
+      "unitFingerprintSha256": "569c151705b73ca5cd6e8f66576e7f4c9cae63d02506b93c38f2616731b93057",
+      "acceptedRunId": "20260904T000503.185Z-d76eb0f2",
+      "evidencePath": "artifacts/r6-1/ltvp/final-27/evidence/cycle-b",
+      "evidenceTreeSha256": "4cb4a0f504f6552f2e1b05ae81e75eee95e7916b89401408dde8e2cc4a740d0a",
+      "currentEvidenceTreeSha256": "68c8183429ffd24f62213d755dd92d97851b489cfa1f9a756b6297abc5ca0bd9",
+      "machineObservations": {
+        "maximumSpeedKmh": 19.50587986414475,
+        "finalSpeedKmh": 0.0,
+        "distanceM": 159.6147383973191,
+        "modeChanges": 2,
+        "rejectedControlMessages": 0,
+        "dashboardDataHealth": "LIVE",
+        "simulationHz": 20.0,
+        "dashboardHz": 4.0
+      },
+      "humanReview": "ACCEPTED",
+      "coldRestartState": "PASSED; INSTALLED_1.0.16; CLOUD_ONLINE; SM_AND_VDP_ACTIVE_RUNNING; VDP_HEALTHY; NRESTARTS_0; GUEST_VISS_SOURCE_READY_LIVE",
+      "latestColdRestartVisualRun": {
+        "runId": "20260904T024329.334Z-6c8b826c",
+        "manifestSha256": "f4b9e4272e3ae5d7a2cd30c34a7d387d8b8fd348abfb0e85ff3591d032b3d057",
+        "controllerStatusSha256": "8b357737f246b26d9cb38401e65795941effda03692d26983eb197502a255393",
+        "maximumSpeedKmh": 19.50565198383715,
+        "finalSpeedKmh": 0.0,
+        "distanceM": 76.25264751540627,
+        "modeChanges": 2,
+        "rejectedControlMessages": 0,
+        "dashboardDataHealth": "LIVE",
+        "simulationHz": 20.0,
+        "dashboardHz": 4.0,
+        "processExitCodes": "RUNTIME_0_CONTROLLER_0_KEYBOARD_0",
+        "operatorAction": "AUTOPILOT_THEN_SAFE_STOP"
+      },
+      "coldRestartAcceptedRun": {
+        "runId": "20260904T051849.089Z-a441c387",
+        "manifestSha256": "5c59bdcb37689c71c11d85664877578821f2b4940c2d2d2725ba1d4237ac0812",
+        "controllerStatusSha256": "c6248cb506219fe0e036993a3d9afc813ba2097a31438323dd08e123fb9dce46",
+        "startupTimelineSha256": "d00b55794f884f3462eab7807a5c56b83a588f2326e16ff4277fc1a8b216ba89",
+        "verdictSha256": "6302b9153a683e74c30863e2832c5b6019f46da7d9b4ca8273025c8b990654a5",
+        "status": "completed",
+        "dashboardConnection": "CONNECTED",
+        "dashboardDataHealth": "LIVE",
+        "simulationHz": 20.0,
+        "dashboardHz": 4.0,
+        "eventsReceived": 1941,
+        "processExitCodes": "RUNTIME_0_CONTROLLER_0_KEYBOARD_0",
+        "finalDriveMode": "safe_stop",
+        "guestComponentVersion": "1.0.16",
+        "guestProviderHealth": "HEALTHY",
+        "guestServiceRestarts": 0,
+        "cloudOnlineStatus": "Online"
+      },
+      "parkingCheckpoint": {
+        "recordedAt": "2026-09-04T02:54:46Z",
+        "processes": "CARLA_GATEWAY_QEMU_DNS_STOPPED",
+        "guestMutationAfterDiagnosis": "NONE_COPY_CANCELLED_AT_PASSWORD_PROMPT",
+        "retained": "IMMUTABLE_27_IMAGE_CYCLE_B_OVERLAY_UNIT_VDP_1.0.16_BUNDLES_EVIDENCE",
+        "resumePoint": "RESTORE_EXACT_FIVE_RUN_SCOPED_INPUTS_THEN_REQUIRE_GUEST_VISS_AND_READY_SOURCE_LIVE"
+      }
+    }
+  },
+  "retainedArtifactSets": {
+    "signedBundlesTreeSha256": "25e0fdf725c667935a94bd5912d404a23a0a4a0ff9c118ee05667a30f0bfa46f",
+    "cycleAEvidenceTreeSha256": "abbd58c7118d42e6d384ed5e2a743e20f96532502a71e5cc563fa63c5a4f0f3d",
+    "cycleBEvidenceTreeSha256": "4cb4a0f504f6552f2e1b05ae81e75eee95e7916b89401408dde8e2cc4a740d0a",
+    "cycleBEvidenceTreeSha256AfterColdRestart": "68c8183429ffd24f62213d755dd92d97851b489cfa1f9a756b6297abc5ca0bd9",
+    "cycleBColdRestartEvidenceTreeSha256": "a74b7a34f0f6f5084f315d37f1a5f57eda82ef4ac1f1d81a6ce6e6a7c09bd359",
+    "treeHashAlgorithm": "SHA256_OF_SORTED_SHA256_LINES_WITH_DOT_RELATIVE_PATHS"
+  },
+  "freshSourceChecks": {
+    "solutionPytest": "18_PASSED",
+    "platformPytest": "77_PASSED",
+    "carlaCleanCtest": "22_OF_22_PASSED",
+    "carlaPythonUnittest": "90_PASSED",
+    "carlaEgoRuntimeSha256": "e74c43a8d14b736d55e0249943b7424dc59dc2c04df19b597187f41550b0bb91",
+    "vdp1015DoubleBuild": "EXACT_RELEASE_MANIFEST_REPRODUCED_FROM_1fa6bf1",
+    "vdp1016DoubleBuild": "EXACT_RELEASE_MANIFEST_REPRODUCED_FROM_0a2c824",
+    "yoctoCleanBuild": "PASSED",
+    "successorDnsProfilePortTests": "12_PASSED",
+    "solutionUnittestDiscover": "334_PASSED",
+    "onboardingSafetyGate": "PASSED",
+    "documentationGate": "PASSED"
+  },
+  "openGates": [
+    "RUN_POST_PUBLICATION_HOUSEKEEPING"
+  ]
+}
