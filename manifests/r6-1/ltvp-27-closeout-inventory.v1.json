@@ -3,8 +3,8 @@
   "schemaVersion": 1,
   "recordKind": "LTVP_27_CLOSEOUT_INVENTORY",
   "recordedAt": "2026-09-04T02:54:46Z",
-  "updatedAt": "2026-09-04T05:27:36Z",
-  "state": "FINAL_BRANCHES_PUBLISHED_POST_HOUSEKEEPING_PENDING",
+  "updatedAt": "2026-09-04T05:38:55Z",
+  "state": "CLOSEOUT_COMPLETE",
   "claimBoundary": [
     "TEST_ONLY_SERVER_AUTHENTICATED_VISS",
     "NOT_A_FULL_DEMO_BASELINE_QUALIFICATION_DOSSIER",
@@ -177,7 +177,27 @@
     "onboardingSafetyGate": "PASSED",
     "documentationGate": "PASSED"
   },
-  "openGates": [
-    "RUN_POST_PUBLICATION_HOUSEKEEPING"
-  ]
+  "postPublicationHousekeeping": {
+    "recordedAt": "2026-09-04T05:38:55Z",
+    "solutionWorktree": "CLEAN_AND_MATCHES_UPSTREAM",
+    "platformWorktree": "CLEAN_AND_MATCHES_UPSTREAM",
+    "carlaEgoRuntimeWorktree": "CLEAN_AND_MATCHES_UPSTREAM",
+    "experimentalLtvpBranchesAndWorktrees": "REMOVED_LOCAL_AND_REMOTE",
+    "retainedFactoryImages": [
+      "artifacts/r6-1/ltvp/final-27/main-qemuarm64.img"
+    ],
+    "retainedSignedBundles": [
+      "artifacts/r6-1/ltvp/final-27/signed/vdp-1.0.15-deployment-bundle.tar.gz",
+      "artifacts/r6-1/ltvp/final-27/signed/vdp-1.0.16-deployment-bundle.tar.gz"
+    ],
+    "retainedRuntime": "CURRENT_CYCLE_B_OVERLAY_VM_AND_DNS_ONLY",
+    "carlaAndGateway": "STOPPED_CLEANLY",
+    "yoctoBuilder": "STOPPED",
+    "cloudUnitsTotal": 1,
+    "staleCloudUnits": 0,
+    "currentCloudUnit": "70e48e60-de2b-444b-a961-258683f324c4",
+    "currentCloudUnitStatus": "PROVISIONED_ONLINE_DEFAULT_FLEET",
+    "hostFreeGiB": 159
+  },
+  "openGates": []
 }
