@@ -3,6 +3,20 @@
 set -u
 umask 077
 
+host_dns_port=${1:-18053}
+case "$host_dns_port" in
+    ''|*[!0-9]*)
+        printf 'AosVM QEMU network compatibility update failed: invalid host DNS port: %s\n' \
+            "$host_dns_port" >&2
+        exit 1
+        ;;
+esac
+[ "$host_dns_port" -ge 1024 ] && [ "$host_dns_port" -le 65535 ] || {
+    printf 'AosVM QEMU network compatibility update failed: host DNS port is outside 1024..65535: %s\n' \
+        "$host_dns_port" >&2
+    exit 1
+}
+
 config=/etc/systemd/network/20-wired.network
 dnsmasq_config=/var/aos/dns/dnsmasq.conf
 expected_address=10.0.0.100/24
@@ -10,9 +24,10 @@ expected_gateway=10.0.0.1
 expected_old_dns='10.0.0.1
 10.0.0.100'
 expected_intermediate_dns=10.0.0.2
-expected_port_dns=10.0.0.1:18053
+expected_port_dns=10.0.0.1:$host_dns_port
 expected_dns=10.0.0.100
-expected_upstream='server=10.0.0.1#18053'
+baseline_upstream='server=10.0.0.1#18053'
+expected_upstream=server=10.0.0.1#$host_dns_port
 temporary_config=
 temporary_dnsmasq_config=
 root_remounted_rw=0
@@ -60,7 +75,7 @@ case "$current_dns" in
     *) fail "unexpected existing DNS configuration: $current_dns" ;;
 esac
 case "$current_upstreams" in
-    ''|"$expected_upstream") ;;
+    ''|"$baseline_upstream"|"$expected_upstream") ;;
     *) fail "unexpected existing dnsmasq upstream configuration: $current_upstreams" ;;
 esac
 

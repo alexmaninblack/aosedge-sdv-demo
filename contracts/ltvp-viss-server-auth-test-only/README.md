@@ -105,13 +105,13 @@ cold restart; the installed update remains the active authority.
 
 Qualification uses one immutable `.27` image twice:
 
-1. provision a clean overlay, join `Test Vehicles`, deliver VDP `1.0.14`,
+1. provision a clean overlay, join `Test Vehicles`, deliver VDP `1.0.15`,
    apply it after an explicit Safe Stop and prove readiness after reboot;
 2. deprovision and delete that Unit, stop the VM and delete its overlay and
    provisioning state without backup;
 3. create a new overlay from the unchanged `.27` image SHA, provision a new
-   Test Vehicle and repeat the complete flow with VDP `1.0.15`;
-4. require `1.0.15` to differ from `1.0.14` only in coherent version-owned
+   Test Vehicle and repeat the complete flow with VDP `1.0.16`;
+4. require `1.0.16` to differ from `1.0.15` only in coherent version-owned
    metadata while using the same accepted source and functional payload.
 
 The only terminal claim is

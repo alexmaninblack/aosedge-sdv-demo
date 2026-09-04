@@ -4,7 +4,9 @@
 # LTVP `.27` repeatable VDP update work packet
 
 - ID: `WP-LTVP-27-REPEATABLE-VDP-001`
-- State: completed and visually accepted by the operator on 2026-09-04
+- State: runtime and visual cycles accepted by the operator on 2026-09-04;
+  clean-build, restart-evidence, publication and housekeeping closeout in
+  progress
 - Audience: `Test Vehicles` only
 - Factory target: `6.1.1-maninblack.27`
 - Update targets: VDP `1.0.15`, then version-only successor VDP `1.0.16`
@@ -137,6 +139,61 @@ approving `1.0.16`. Require the same moving/waiting/Safe Stop/activation/live
 evidence for `1.0.16`. Cycle B retained the live VM after visual acceptance so
 the operator could inspect the qualified state; shutdown/reboot persistence is
 recorded separately from the two-update delivery proof.
+
+## Parking checkpoint — 2026-09-04
+
+Closeout was deliberately parked at `2026-09-04T02:54:46Z`. The immutable
+`.27` image, Cycle B overlay, provisioned Unit, installed VDP `1.0.16`, signed
+bundles and existing evidence were retained without backup, deletion or Cloud
+mutation. CARLA, Gateway, QEMU and the Cycle B DNS bridge were all stopped;
+the VM completed an orderly QMP powerdown.
+
+The post-reboot visual run `20260904T024329.334Z-6c8b826c` completed with all
+three process exit codes equal to zero. The operator exercised Autopilot and
+then Safe Stop. The final manifest reports `19.50565198383715 km/h` maximum
+speed, `0.0 km/h` final speed, `76.25264751540627 m`, two accepted mode
+changes, no rejected control messages, live VISS data at 20 Hz simulation and
+4 Hz dashboard delivery, and complete controller/CARLA cleanup.
+
+The same run also exposed the remaining restart gate precisely. Cloud retained
+VDP `1.0.16` as installed and the Unit was Online, but the guest VDP service
+entered an auto-restart loop with `vehicle integration configuration is
+unavailable`. Direct guest inspection proved that all five Test-only
+run-scoped inputs had disappeared during reboot: the public VISS CA, the VDP
+selected-source binding, the Safe Stop binding and the two systemd drop-ins.
+The attempted copy was cancelled at its password prompt, so no rehydration or
+guest mutation occurred before parking.
+
+Resume by starting the same DNS bridge and Cycle B overlay, restoring exactly
+those five run-scoped inputs under `/run`, reloading systemd and restarting
+only `aos-sm` and the VDP consumer. Then start the accepted CARLA/Gateway
+configuration once and require both a guest-originated VISS connection and
+VDP `READY/source LIVE`. Record that evidence before final commits, remote
+publication or any cleanup.
+
+## Cold-restart completion — 2026-09-04
+
+The parked gate was resumed on the same Cycle B overlay. Exactly the five
+recorded Test-only inputs were restored under `/run`; only `aos-sm` and
+`aos-vehicle-data-provider` were restarted. The accepted 50-ms
+CARLA/Gateway configuration then completed as run
+`20260904T051849.089Z-a441c387`. Its manifest reports all three process exit
+codes as zero, VISS `CONNECTED`, data health `LIVE`, 20-Hz simulation, 4-Hz
+delivery, 1,941 received events and final Safe Stop.
+
+Inside the VM, the active component metadata remained `1.0.16`, both services
+were `active/running` with `NRestarts=0`, provider health returned `HEALTHY`
+and the guest-originated `wss://10.0.0.1:6443` source continuously reported
+selected vehicle data ready. AosCore reconnected to Cloud, reported installed
+VDP `1.0.16`, received the desired status and the Unit returned `Online`.
+Therefore the Cycle B cold-restart gate is closed.
+
+The resume also exposed one host-profile defect without changing the overlay:
+the overlay's accepted dnsmasq route selected host port `18053`, while the
+successor launcher started its bridge on `18056`. Onboarding now passes the
+profile-owned `AOSVM_HOST_DNS_PORT` into the guest network-compatibility step,
+so fresh successor/validation overlays and their bridge use the same port.
+The targeted successor profile suite passes all 12 tests.
 
 ## Completion and cleanup
 

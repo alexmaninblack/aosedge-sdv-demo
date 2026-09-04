@@ -21,6 +21,7 @@ GUEST_ONBOARDING_CHECK="$REPOSITORY_ROOT/scripts/guest/aosvm-onboarding-check"
 EXPECTED_MODEL_NAME=aos-vm
 EXPECTED_MODEL_VERSION=1.0.0
 EXPECTED_GUEST_VERSION_IDS=${AOSVM_EXPECTED_VERSION_IDS:-6.1.0,6.1.1-maninblack.1}
+GUEST_DNS_BRIDGE_PORT=${AOSVM_HOST_DNS_PORT:-18053}
 
 fail() {
     printf 'Error: %s\n' "$*" >&2
@@ -208,9 +209,10 @@ bootstrap() {
 install_guest_file() {
     source_file=$1
     remote_name=$2
+    shift 2
     "$GUEST" copy "$source_file" "/tmp/$remote_name"
     "$GUEST" run chmod 0700 "/tmp/$remote_name"
-    "$GUEST" run sh "/tmp/$remote_name"
+    "$GUEST" run sh "/tmp/$remote_name" "$@"
     "$GUEST" run rm -f "/tmp/$remote_name"
 }
 
@@ -230,7 +232,7 @@ configure_guest() {
         aosvm-apply-arm64-compat
     install_guest_file \
         "$REPOSITORY_ROOT/scripts/guest/aosvm-apply-qemu-network-compat" \
-        aosvm-apply-qemu-network-compat
+        aosvm-apply-qemu-network-compat "$GUEST_DNS_BRIDGE_PORT"
     printf 'Guest compatibility configuration is complete.\n'
 }
 

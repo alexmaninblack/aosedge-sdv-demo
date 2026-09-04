@@ -20,6 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PROFILE = ROOT / "scripts" / "successor-testing-vm"
 LAUNCHER = ROOT / "scripts" / "aosvm"
 ONBOARD = ROOT / "scripts" / "aosvm-macos-onboard"
+NETWORK_COMPAT = ROOT / "scripts" / "guest" / "aosvm-apply-qemu-network-compat"
 MANIFEST_HELPER = ROOT / "scripts" / "host" / "aosvm-successor-manifest"
 PHASE13_GATE = ROOT / "tests" / "host" / "aosvm-phase13-stopped-gate"
 
@@ -177,6 +178,20 @@ class SuccessorTestingVMTests(unittest.TestCase):
         self.assertIn('AOSVM_RUN_ROOT="/private/tmp/aosvm-successor-testing-runtime"', source)
         self.assertIn('AOSVM_BACKUP_ROOT="$STATE_ROOT/backups"', source)
         self.assertIn('AOSVM_PROVISION_ATTEMPT_ROOT="$STATE_ROOT/provisioning"', source)
+
+    def test_profile_dns_port_is_applied_to_the_guest_overlay(self) -> None:
+        onboard = ONBOARD.read_text(encoding="utf-8")
+        network_compat = NETWORK_COMPAT.read_text(encoding="utf-8")
+        self.assertIn(
+            "GUEST_DNS_BRIDGE_PORT=${AOSVM_HOST_DNS_PORT:-18053}", onboard
+        )
+        self.assertIn(
+            'aosvm-apply-qemu-network-compat "$GUEST_DNS_BRIDGE_PORT"', onboard
+        )
+        self.assertIn("host_dns_port=${1:-18053}", network_compat)
+        self.assertIn(
+            "expected_upstream=server=10.0.0.1#$host_dns_port", network_compat
+        )
 
     def test_phase13_gate_accepts_only_manifest_validated_successor_inputs(self) -> None:
         gate = PHASE13_GATE.read_text(encoding="utf-8")

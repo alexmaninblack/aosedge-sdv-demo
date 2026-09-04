@@ -496,7 +496,8 @@ change.
 The idempotent `scripts/guest/aosvm-apply-qemu-network-compat` helper changes
 only the disposable overlay. It configures `systemd-resolved` to use the
 image's existing `dnsmasq` on `10.0.0.100` and configures that forwarder with
-`server=10.0.0.1#18053`. The helper accepts only the known released,
+the host DNS port selected by the launcher profile (`18053` for the default
+profile). The helper accepts only the known released,
 intermediate, or final states, installs both files atomically, preserves owner,
 mode, and SELinux context, syncs storage, and returns `/dev/sda3` to read-only.
 Recreating the overlay restores the released files and therefore removes this

@@ -87,7 +87,28 @@ Safe Stop returned the vehicle to `0.0 km/h` with full brake, two valid mode
 changes and zero rejected control messages. The operator visually accepted
 CARLA, Autopilot and Safe Stop on 2026-09-04.
 
+The subsequent cold-restart run `20260904T051849.089Z-a441c387` closed the
+remaining persistence gate after restoring the five explicitly run-scoped
+Test-only inputs. VDP stayed at `1.0.16`, both `aos-sm` and VDP were
+`active/running` with zero restarts, provider health was `HEALTHY`, the
+guest-originated VISS source reported selected vehicle data ready, and the
+Cloud Unit was `Online`. The CARLA/Gateway manifest completed with all process
+exit codes zero, VISS `CONNECTED`, data health `LIVE`, 20-Hz simulation and
+4-Hz delivery. Compact evidence is retained below
+`artifacts/r6-1/ltvp/final-27/evidence/cycle-b/cold-restart`.
+
+During resume, the only Cloud-offline interval was traced to a host-profile
+port mismatch: the current overlay routed dnsmasq to `18053`, while the
+successor launcher selected `18056`. No guest DNS or image correction was made
+to pass the gate; the bridge was aligned to the overlay's already accepted
+route. The source fix now passes each launcher's selected DNS port into fresh
+overlay onboarding, preventing the mismatch for subsequent runs.
+
 The `.26`/VDP `1.0.13` state remains diagnostic evidence only. `.27` with the
 `1.0.15`/`1.0.16` pair is the repeatable qualification result. Repository
 publication and final disk/branch cleanup are tracked as post-qualification
-closeout and do not change these runtime facts.
+closeout and do not change these runtime facts. The runtime, visual and
+cold-restart gates are closed. The clean-build gate passed from pinned source as recorded in
+[`ltvp-27-clean-build.md`](ltvp-27-clean-build.md). Its current state, retained
+signed-bundle digests and compact evidence-tree hashes are recorded in
+[`ltvp-27-closeout-inventory.v1.json`](../../manifests/r6-1/ltvp-27-closeout-inventory.v1.json).
