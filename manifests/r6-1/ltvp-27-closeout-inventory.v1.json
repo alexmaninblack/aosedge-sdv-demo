@@ -3,13 +3,23 @@
   "schemaVersion": 1,
   "recordKind": "LTVP_27_CLOSEOUT_INVENTORY",
   "recordedAt": "2026-09-04T02:54:46Z",
-  "updatedAt": "2026-09-04T05:38:55Z",
+  "updatedAt": "2026-09-04T07:14:51Z",
   "state": "CLOSEOUT_COMPLETE",
   "claimBoundary": [
     "TEST_ONLY_SERVER_AUTHENTICATED_VISS",
     "NOT_A_FULL_DEMO_BASELINE_QUALIFICATION_DOSSIER",
     "NOT_PRODUCTION_OR_CAMPAIGN_QUALIFICATION"
   ],
+  "artifactStore": {
+    "rootEnvironmentVariable": "DEMO_ARTIFACT_ROOT",
+    "projectRelativeRoot": "aosedge-sdv-demo",
+    "layout": "HUMAN_READABLE_DEMO_ARTIFACTS_V1",
+    "compiledArtifacts": {
+      "libCarla": "$WORKSPACE_ROOT/CarlaSim/Build-macos-client-v3",
+      "carlaEgoRuntime": "$WORKSPACE_ROOT/CarlaSim/Build-ego-runtime-ltvp-final",
+      "state": "RETAINED_AT_ACTIVE_LAUNCHER_PATHS_PENDING_SEPARATE_MIGRATION"
+    }
+  },
   "repositories": {
     "solution": {
       "branch": "codex/ltvp-finalize-27",
@@ -31,7 +41,7 @@
     }
   },
   "factoryImage": {
-    "path": "artifacts/r6-1/ltvp/final-27/main-qemuarm64.img",
+    "path": "$DEMO_ARTIFACT_ROOT/aosedge-sdv-demo/factory-images/6.1.1-maninblack.27/main-qemuarm64.img",
     "version": "6.1.1-maninblack.27",
     "byteLength": 6997147648,
     "sha256": "dbc018cf31dc83accbca82cf26df0b3ca69c66d1135100db8d05552fd2744c56",
@@ -67,7 +77,7 @@
       "releaseCandidateManifestSha256": "be5ebfdce4f6874e5df70bfac34ee6c090cd80942e2630a6259655150e53a704",
       "unsignedArchiveSha256": "787451451674ad83e0a6b5177a1d87c1cd5e6243ab9b331cd56284440f04ed88",
       "layerSha256": "52c1cbfb49edf2daaccc0fa79a8dab4ee50c565807e062693fcfc6670e7c3f61",
-      "signedBundlePath": "artifacts/r6-1/ltvp/final-27/signed/vdp-1.0.15-deployment-bundle.tar.gz",
+      "signedBundlePath": "$DEMO_ARTIFACT_ROOT/aosedge-sdv-demo/components/vehicle-data-provider/1.0.15/vdp-1.0.15-deployment-bundle.tar.gz",
       "signedBundleByteLength": 6612335,
       "signedBundleSha256": "2a1ba02860b1eaf10c5a14dab7f627c945ff204d2964ebb0e418b4bf0e2c81a1",
       "cloudDeploymentBundleId": "cc99c467-a24f-4707-9208-3425b0127693",
@@ -78,7 +88,7 @@
       "releaseCandidateManifestSha256": "eeb5a7212c4881fcc907538afe0cc0501b99d37fa8357dab04492c93835a4647",
       "unsignedArchiveSha256": "7b11f2a73eb05a10bfa75238a06494294f52a9d735ec473ac9da32ade34e3ea8",
       "layerSha256": "e30f260d819201064a3659f3c242f97126d03da2eb3ccb868a68e4d5765d6cc7",
-      "signedBundlePath": "artifacts/r6-1/ltvp/final-27/signed/vdp-1.0.16-deployment-bundle.tar.gz",
+      "signedBundlePath": "$DEMO_ARTIFACT_ROOT/aosedge-sdv-demo/components/vehicle-data-provider/1.0.16/vdp-1.0.16-deployment-bundle.tar.gz",
       "signedBundleByteLength": 6612398,
       "signedBundleSha256": "b36e3064166739c98ec028fc75980bf4ea937d531a7e7a7889e11283dd1d7d9c",
       "cloudDeploymentBundleId": "a26d87f8-4f23-4e5c-90cb-54cb0729b222",
@@ -89,7 +99,7 @@
     "cycleA": {
       "componentVersion": "1.0.15",
       "unitLifecycle": "DEPROVISIONED_AND_DELETED",
-      "evidencePath": "artifacts/r6-1/ltvp/final-27/evidence/cycle-a",
+      "evidencePath": "$DEMO_ARTIFACT_ROOT/aosedge-sdv-demo/qualifications/vdp-update-on-6.1.1-maninblack.27/initial-provision-vdp-1.0.15",
       "evidenceTreeSha256": "abbd58c7118d42e6d384ed5e2a743e20f96532502a71e5cc563fa63c5a4f0f3d",
       "restartEvidenceState": "RETAINED_BINARY_JOURNAL_NOT_YET_REVIEWABLY_EXTRACTED"
     },
@@ -97,7 +107,7 @@
       "componentVersion": "1.0.16",
       "unitFingerprintSha256": "569c151705b73ca5cd6e8f66576e7f4c9cae63d02506b93c38f2616731b93057",
       "acceptedRunId": "20260904T000503.185Z-d76eb0f2",
-      "evidencePath": "artifacts/r6-1/ltvp/final-27/evidence/cycle-b",
+      "evidencePath": "$DEMO_ARTIFACT_ROOT/aosedge-sdv-demo/qualifications/vdp-update-on-6.1.1-maninblack.27/clean-reprovision-vdp-1.0.16",
       "evidenceTreeSha256": "4cb4a0f504f6552f2e1b05ae81e75eee95e7916b89401408dde8e2cc4a740d0a",
       "currentEvidenceTreeSha256": "68c8183429ffd24f62213d755dd92d97851b489cfa1f9a756b6297abc5ca0bd9",
       "machineObservations": {
@@ -178,26 +188,26 @@
     "documentationGate": "PASSED"
   },
   "postPublicationHousekeeping": {
-    "recordedAt": "2026-09-04T05:38:55Z",
+    "recordedAt": "2026-09-04T07:14:51Z",
     "solutionWorktree": "CLEAN_AND_MATCHES_UPSTREAM",
     "platformWorktree": "CLEAN_AND_MATCHES_UPSTREAM",
     "carlaEgoRuntimeWorktree": "CLEAN_AND_MATCHES_UPSTREAM",
     "experimentalLtvpBranchesAndWorktrees": "REMOVED_LOCAL_AND_REMOTE",
     "retainedFactoryImages": [
-      "artifacts/r6-1/ltvp/final-27/main-qemuarm64.img"
+      "$DEMO_ARTIFACT_ROOT/aosedge-sdv-demo/factory-images/6.1.1-maninblack.27/main-qemuarm64.img"
     ],
     "retainedSignedBundles": [
-      "artifacts/r6-1/ltvp/final-27/signed/vdp-1.0.15-deployment-bundle.tar.gz",
-      "artifacts/r6-1/ltvp/final-27/signed/vdp-1.0.16-deployment-bundle.tar.gz"
+      "$DEMO_ARTIFACT_ROOT/aosedge-sdv-demo/components/vehicle-data-provider/1.0.15/vdp-1.0.15-deployment-bundle.tar.gz",
+      "$DEMO_ARTIFACT_ROOT/aosedge-sdv-demo/components/vehicle-data-provider/1.0.16/vdp-1.0.16-deployment-bundle.tar.gz"
     ],
-    "retainedRuntime": "CURRENT_CYCLE_B_OVERLAY_VM_AND_DNS_ONLY",
-    "carlaAndGateway": "STOPPED_CLEANLY",
+    "retainedRuntime": "CURRENT_CYCLE_B_OVERLAY_REBASED_TO_CANONICAL_FACTORY_IMAGE; DNS_ONLY_RUNNING",
+    "carlaGatewayAndVm": "STOPPED_CLEANLY",
     "yoctoBuilder": "STOPPED",
     "cloudUnitsTotal": 1,
     "staleCloudUnits": 0,
     "currentCloudUnit": "70e48e60-de2b-444b-a961-258683f324c4",
-    "currentCloudUnitStatus": "PROVISIONED_ONLINE_DEFAULT_FLEET",
-    "hostFreeGiB": 159
+    "currentCloudUnitStatus": "PROVISIONED; VM_STOPPED_BY_OPERATOR",
+    "hostFreeGiB": 329
   },
   "openGates": []
 }

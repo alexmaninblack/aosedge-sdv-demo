@@ -59,10 +59,14 @@ provenance. DNS was repaired in the disposable overlay after boot.
 
 The two clean cycles used the same immutable image bytes:
 
-- image: `artifacts/r6-1/ltvp/final-27/main-qemuarm64.img`;
+- image: `$DEMO_ARTIFACT_ROOT/aosedge-sdv-demo/factory-images/6.1.1-maninblack.27/main-qemuarm64.img`;
 - version: `6.1.1-maninblack.27`;
 - byte length: `6997147648`;
 - SHA-256: `dbc018cf31dc83accbca82cf26df0b3ca69c66d1135100db8d05552fd2744c56`.
+
+`$DEMO_ARTIFACT_ROOT` is the host-local immutable artifact root outside every
+repository and worktree. Git retains only manifests, sizes and digests; it does
+not retain VM images, signed deployment bundles or runtime evidence archives.
 
 Cycle A installed and activated VDP `1.0.15`, then the Unit was deprovisioned
 and deleted and its disposable overlay, access material and runtime binding
@@ -95,7 +99,7 @@ guest-originated VISS source reported selected vehicle data ready, and the
 Cloud Unit was `Online`. The CARLA/Gateway manifest completed with all process
 exit codes zero, VISS `CONNECTED`, data health `LIVE`, 20-Hz simulation and
 4-Hz delivery. Compact evidence is retained below
-`artifacts/r6-1/ltvp/final-27/evidence/cycle-b/cold-restart`.
+`$DEMO_ARTIFACT_ROOT/aosedge-sdv-demo/qualifications/vdp-update-on-6.1.1-maninblack.27/clean-reprovision-vdp-1.0.16/cold-restart`.
 
 During resume, the only Cloud-offline interval was traced to a host-profile
 port mismatch: the current overlay routed dnsmasq to `18053`, while the
