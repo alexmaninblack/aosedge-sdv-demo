@@ -237,10 +237,24 @@ class ComponentService:
         state = state or read_json(self.environment.root / JOURNAL)
         if "test" not in state["vehicles"] or set(state["vehicles"]) - {"test", "production"}:
             raise EnvironmentError("COMPONENT_TEST_PRODUCTION_SCOPE_REQUIRED")
-        vehicles = {role: {key: value[key] for key in ("unitId", "unitSetId", "systemUid")}
+        vehicles = {role: {key: value.get(key) for key in ("unitId", "unitSetId", "systemUid")}
                     for role, value in state["vehicles"].items()}
         record = state.get("componentOperations", {}).get(version, {})
         scope = dict(version=version, vehicles=vehicles, deploymentId=record.get("deploymentId"))
+        batch_id = record.get("batchId") or record.get("approve", {}).get("response", {}).get("batchId")
+        if batch_id:
+            scope["batchId"] = batch_id
+        if record.get("roleSetIds"):
+            scope["roleSetIds"] = record["roleSetIds"]
+        if all(not item.get("unitId") for item in state["vehicles"].values()):
+            from .component_runtime import FACTORY_VERSION
+            if (set(vehicles) != {"test", "production"} or state.get("stage") != "MANUFACTURED"
+                    or state.get("factory", {}).get("version") != FACTORY_VERSION
+                    or state.get("currentVehicle") is not None
+                    or any(item.get("cloud") or item.get("systemUid") or item.get("nodeId")
+                           for item in state["vehicles"].values())):
+                raise EnvironmentError("COMPONENT_PRISTINE_DUAL_FACTORY_REQUIRED")
+            scope["preProvisioning"] = True
         if "production" not in vehicles:
             binding = state.get("cloudBinding", {})
             if not binding.get("sets", {}).get("production"):
@@ -337,6 +351,8 @@ class ComponentService:
             verified = self.verify(version)
             state = read_json(self.environment.root / JOURNAL)
             scope = self._cloud_scope(version, state)
+            if scope.get("preProvisioning"):
+                raise EnvironmentError("COMPONENT_SEND_REQUIRES_PROVISIONED_UNIT")
             before = self._worker("cloud-status", **scope)
             try:
                 guard(before)
@@ -403,15 +419,24 @@ class ComponentService:
                     or prepared.get("contentProfile") not in PROFILE_BASES):
                 raise EnvironmentError("COMPONENT_PUBLICATION_VERSION_NOT_AUTHORIZED")
         with self.environment._writer():
-            verified = self.verify(version)
             state = read_json(self.environment.root / JOURNAL)
+            previous = state.get("componentOperations", {}).get(version, {})
+            # Approval targets an already uploaded Cloud batch, not a local
+            # archive. Do not unpack/hash/verify that archive again for PATCH.
+            verified = self.verify(version) if action == "upload" else dict(sha256=previous.get("sha256"))
             scope = self._cloud_scope(version, state)
-            before = self._worker("cloud-status", **scope)
+            if scope.get("preProvisioning") and (action not in ("upload", "approve")
+                    or version in ("2.0.0", "3.0.0") or prepared.get("contentProfile") != "v1"):
+                raise EnvironmentError("COMPONENT_PREPROVISION_V1_ONLY")
+            before = self._worker("cloud-status", **scope, purpose=action)
             try:
-                guard(before)
+                if action == "upload":
+                    guard(before)
             except CloudFailure as error:
                 raise EnvironmentError(str(error)) from None
             record = state.setdefault("componentOperations", {}).setdefault(version, {})
+            if scope.get("preProvisioning") and "testSet" in before:
+                record["roleSetIds"] = {role: before[role + "Set"]["id"] for role in ("test", "production")}
             if record.get("sha256", verified["sha256"]) != verified["sha256"]:
                 raise EnvironmentError("COMPONENT_PUBLICATION_DIGEST_CHANGED")
             if "productionBefore" in record and before["production"] != record["productionBefore"]:
@@ -432,12 +457,21 @@ class ComponentService:
                         raise EnvironmentError("COMPONENT_PUBLICATION_MUST_INCREMENT_VERSION")
                 _, files = self._inspect(version)
                 required_paths = document(files, "config/capability-manifest.json")["readPaths"]
-                schema = self.diagnose("test")
-                if schema.get("schemaLoadedByService") is not True:
-                    raise EnvironmentError("COMPONENT_KUKSA_SCHEMA_BINDING_NOT_PROVEN")
-                missing = sorted(set(required_paths) & set(schema["missing"]))
-                if missing:
-                    raise EnvironmentError("COMPONENT_KUKSA_SCHEMA_MISSING:" + ",".join(missing))
+                if scope.get("preProvisioning"):
+                    provenance = document(files, "provenance/provenance.json")
+                    contract = read_json(self.environment.root / "contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json")
+                    expected = next(item["readPaths"] for item in contract["componentVersions"] if item["id"] == "VDP_V1")
+                    if (required_paths != expected or provenance.get("contentProfile") != "v1"
+                            or provenance.get("factoryImageVersion") != state["factory"]["version"]
+                            or provenance.get("factoryImageRawSha256") != state["factory"]["sha256"]):
+                        raise EnvironmentError("COMPONENT_PREPROVISION_FACTORY_PROFILE_MISMATCH")
+                else:
+                    schema = self.diagnose("test")
+                    if schema.get("schemaLoadedByService") is not True:
+                        raise EnvironmentError("COMPONENT_KUKSA_SCHEMA_BINDING_NOT_PROVEN")
+                    missing = sorted(set(required_paths) & set(schema["missing"]))
+                    if missing:
+                        raise EnvironmentError("COMPONENT_KUKSA_SCHEMA_MISSING:" + ",".join(missing))
                 values = dict(bundle=str(self._bundle(version)), expectedSha256=verified["sha256"])
             else:
                 if len(before["verificationBatches"]) != 1:
@@ -459,6 +493,7 @@ class ComponentService:
                     atomic_json(self.environment.root / JOURNAL, state)
                     return dict(batchId=batch["id"], approved=desired, noOp=True)
                 values = dict(batchId=batch["id"])
+                record["batchId"] = batch["id"]
             if record.get(action, {}).get("attemptStarted"):
                 if action == "upload" or record[action].get("state") != "CONFIRMED":
                     raise EnvironmentError("COMPONENT_" + action.upper() + "_RECONCILIATION_REQUIRED")
@@ -470,18 +505,23 @@ class ComponentService:
             record[action] = intent
             record.setdefault("productionBefore", before["production"])
             atomic_json(self.environment.root / JOURNAL, state)
-            result = self._worker(action, **scope, **values)
+            result = self._worker(action, **dict(scope, **values))
             if action == "upload":
                 record["deploymentId"] = result["deploymentId"]
             record[action].update(state="RESPONDED", response=result)
             atomic_json(self.environment.root / JOURNAL, state)
-            after = self._worker("cloud-status", **self._cloud_scope(version, state))
+            confirmation = dict(self._cloud_scope(version, state), purpose="confirm")
+            after = self._worker("cloud-status", **confirmation)
             if after["production"] != record["productionBefore"]:
                 raise EnvironmentError("COMPONENT_PRODUCTION_GUARD_CHANGED")
             if action == "upload" and not any(item["id"] == record["deploymentId"] for item in after["deploymentBundles"]):
                 raise EnvironmentError("COMPONENT_UPLOAD_RECONCILIATION_REQUIRED")
-            if action in ("approve", "unapprove") and result.get("approved") is not (action == "approve"):
-                raise EnvironmentError("COMPONENT_APPROVAL_NOT_CONFIRMED")
+            if action in ("approve", "unapprove"):
+                batches = after.get("verificationBatches", [])
+                if (result.get("approved") is not (action == "approve") or len(batches) != 1
+                        or batches[0]["id"] != values["batchId"]
+                        or (batches[0].get("approval_states") or {}).get("arm64", {}).get("is_approved") is not (action == "approve")):
+                    raise EnvironmentError("COMPONENT_APPROVAL_NOT_CONFIRMED")
             record[action].update(state="CONFIRMED", confirmedAt=now())
             atomic_json(self.environment.root / JOURNAL, state)
             return dict(result, productionUnchanged=True)

@@ -62,11 +62,115 @@ class DeliveryTests(unittest.TestCase):
         self.assertTrue(result["noOp"])
         self.assertEqual(1, len(calls))
 
+    def test_preprovision_scope_requires_pristine_dual_factory(self):
+        from aosedge_demo_orchestrator.component_runtime import FACTORY_VERSION
+        self.state = dict(stage="MANUFACTURED", factory=dict(version=FACTORY_VERSION, sha256="factory"),
+            vehicles={role: dict(unitId=None, nodeId=None, unitSetId=None) for role in ("test", "production")})
+        self.save()
+        self.assertTrue(self.service._cloud_scope("10.0.0")["preProvisioning"])
+        self.state["vehicles"]["test"]["systemUid"] = "partial-identity"
+        self.save()
+        with self.assertRaisesRegex(EnvironmentError, "PRISTINE_DUAL_FACTORY"):
+            self.service._cloud_scope("10.0.0")
+
+    def test_empty_cloud_snapshot_has_no_unit_requests_and_rejects_any_members(self):
+        ids = {"test": "11111111-1111-4111-8111-111111111111", "production": "22222222-2222-4222-8222-222222222222"}
+        sets = {role: dict(id=identity, title="Test Vehicles" if role == "test" else "Production Vehicles",
+            fleet="fleet", is_validation_set=role == "test", members=[])
+            for role, identity in ids.items()}
+        class EmptyCloud:
+            user = {"ownerId": "owner"}
+            def inventory(self):
+                return dict(sets=list(sets.values()), units=[])
+            def call(self, path):
+                if path == "components/" + COMPONENT_ID + "/":
+                    return dict(codename=COMPONENT)
+                for item in sets.values():
+                    if path == "unit-sets/" + item["id"] + "/":
+                        return item
+                raise AssertionError("No Unit-specific calls before provisioning: " + path)
+            def pages(self, path):
+                if path.startswith("units/"):
+                    raise AssertionError(path)
+                return []
+        value = snapshot(EmptyCloud(), dict(version="10.0.0", preProvisioning=True,
+            vehicles={role: dict(unitId=None) for role in ids}))
+        guard(value)
+        self.assertEqual([], value["testAvailableComponents"])
+        with self.assertRaises(CloudFailure):
+            guard(dict(value, remainingUnits=["another-unit"]))
+        with self.assertRaises(CloudFailure):
+            guard(dict(value, test=dict(members=["another-unit"])))
+
+    def test_preprovision_v1_upload_is_once_and_does_not_probe_a_guest(self):
+        from aosedge_demo_orchestrator.component_runtime import FACTORY_VERSION
+        self.state = dict(stage="MANUFACTURED", factory=dict(version=FACTORY_VERSION, sha256="factory"),
+            vehicles={role: dict(unitId=None, nodeId=None, unitSetId=None) for role in ("test", "production")})
+        self.save()
+        directory = self.service._directory("10.0.0")
+        directory.mkdir(parents=True)
+        prepared = dict(version="10.0.0", contentProfile="v1")
+        (directory / "prepared.json").write_text(json.dumps(prepared))
+        contract = self.root / "contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json"
+        contract.parent.mkdir(parents=True)
+        contract.write_text(json.dumps(dict(componentVersions=[dict(id="VDP_V1", readPaths=["Vehicle.Speed"])])))
+        before = dict(self.before, preProvisioning=True, remainingUnits=[],
+            test=dict(members=[]), production=dict(members=[]),
+            testSet=dict(id="test-set", fleet="fleet", is_validation_set=True),
+            productionSet=dict(id="prod-set", fleet="fleet", is_validation_set=False))
+        after = dict(before, deploymentBundles=[dict(id="bundle", state="uploaded")])
+        files = {"config/capability-manifest.json": b'{"readPaths":["Vehicle.Speed"]}',
+            "provenance/provenance.json": json.dumps(dict(contentProfile="v1", factoryImageVersion=FACTORY_VERSION,
+                factoryImageRawSha256="factory")).encode()}
+        with patch.object(self.service, "verify", return_value=dict(sha256="digest")), \
+                patch.object(self.service, "_bundle", return_value=directory / "fixture.tar.gz"), \
+                patch.object(self.service, "_inspect", return_value=({}, files)), \
+                patch.object(self.service, "diagnose", side_effect=AssertionError("No guest before provisioning")), \
+                patch.object(self.service, "_worker", side_effect=[before, dict(deploymentId="bundle", httpStatus=201), after]) as worker:
+            result = self.service.upload("10.0.0")
+            self.assertTrue(result["productionUnchanged"])
+            self.assertEqual(["cloud-status", "upload", "cloud-status"], [call.args[0] for call in worker.call_args_list])
+        prepared["contentProfile"] = "v2"
+        (directory / "prepared.json").write_text(json.dumps(prepared))
+        with patch.object(self.service, "verify", return_value=dict(sha256="digest")), \
+                patch.object(self.service, "_worker") as worker, \
+                self.assertRaisesRegex(EnvironmentError, "PREPROVISION_V1_ONLY"):
+            self.service.upload("10.0.0")
+        worker.assert_not_called()
+
     def test_upload_response_loss_is_not_retried(self):
         with self.assertRaises(EnvironmentError):
             self.invoke("upload", [self.before, EnvironmentError("LOST")])
         with self.assertRaisesRegex(EnvironmentError, "RECONCILIATION_REQUIRED"):
             self.invoke("upload", [self.before])
+
+    def test_confirmation_reads_exact_bundle_and_production_only(self):
+        from unittest.mock import Mock
+        deployment = "33333333-3333-4333-8333-333333333333"
+        cloud = Mock()
+        cloud.user = dict(ownerId="owner")
+        cloud.pages.return_value = [dict(id=deployment, state="uploaded"), dict(id="unrelated", state="done")]
+        with patch("aosedge_demo_orchestrator.component_cloud.unit_view", return_value=self.before["production"]) as unit:
+            result = snapshot(cloud, dict(version="10.0.0", purpose="confirm", deploymentId=deployment,
+                vehicles={role: dict(unitId=role) for role in ("test", "production")}))
+        cloud.call.assert_not_called()
+        cloud.pages.assert_called_once_with("deployment-bundles/")
+        cloud.inventory.assert_not_called()
+        unit.assert_called_once_with(cloud, dict(unitId="production"))
+        self.assertEqual(deployment, result["deploymentBundles"][0]["id"])
+
+    def test_approval_does_not_verify_local_archive(self):
+        from unittest.mock import Mock
+        batch = dict(id="batch", oem_id="owner", architectures=["arm64"], update_items=[dict(
+            identity_id=COMPONENT_ID, codename=COMPONENT, version="2.0.0")],
+            approval_states={"arm64": {"is_approved": True}})
+        before = dict(self.before, verificationBatches=[batch], deploymentBundles=[dict(id="bundle", state="done")])
+        with patch.object(self.service, "verify", side_effect=AssertionError("No local signing work during approval")), \
+                patch.object(self.service, "_worker", return_value=before) as worker:
+            result = self.service.approve("2.0.0")
+        self.assertTrue(result["noOp"])
+        worker.assert_called_once()
+        self.assertEqual("approve", worker.call_args.kwargs["purpose"])
 
     def test_existing_version_prevents_publication(self):
         with self.assertRaisesRegex(EnvironmentError, "ALREADY_IN_CLOUD"):
@@ -94,6 +198,9 @@ class DeliveryTests(unittest.TestCase):
         class FixtureCloud:
             user = {"ownerId": "owner"}
 
+            def require(self, *permissions):
+                raise AssertionError("No extra Production validation permissions: " + ",".join(permissions))
+
             def call(self, path):
                 if path == "components/" + COMPONENT_ID + "/":
                     return {"codename": COMPONENT}
@@ -109,6 +216,8 @@ class DeliveryTests(unittest.TestCase):
             def pages(self, path):
                 if "available-components" in path:
                     raise AssertionError("Available components is an array, not a paginated endpoint")
+                if path.startswith(("fleet-validation-batch/", "campaigns/")):
+                    raise AssertionError("Production rollout is deferred: " + path)
                 return []
 
         request = dict(version="1.0.16", vehicles={role: dict(
@@ -117,6 +226,9 @@ class DeliveryTests(unittest.TestCase):
             result = snapshot(FixtureCloud(), request)
         self.assertEqual([dict(id="available", type=COMPONENT, version="1.0.16", file_size=42)],
                          result["testAvailableComponents"])
+        self.assertNotIn("validationBatches", result)
+        self.assertNotIn("validationObservation", result)
+        self.assertEqual({"id": test_id}, result["production"])
 
     def test_unapprove_existing_batch_then_restore_without_upload(self):
         batch = dict(id="batch", oem_id="owner", architectures=["arm64"], update_items=[dict(

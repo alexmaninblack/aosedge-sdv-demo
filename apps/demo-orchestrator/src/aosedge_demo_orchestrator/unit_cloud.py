@@ -8,6 +8,7 @@ import os
 import re
 import ssl
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -81,37 +82,56 @@ class Cloud:
                 break
         raise CloudFailure("CLOUD_PAGINATION_INCOMPLETE")
 
-    def unit(self, identity):
-        self.require("units_read", "units_nodes_list")
+    def unit(self, identity, nodes=True):
+        self.require("units_read", *( ["units_nodes_list"] if nodes else []))
         value = self.call("units/" + identity + "/", absent=True)
         if value is None:
             return None
         result = {key: safe_word(value[key]) for key in ("system_uid", "status", "online_status")}
         result.update(id=object_id(value["id"]), fleet=object_id(value["fleet"]) if value.get("fleet") else None,
                       unit_sets=[object_id(item["id"]) for item in value["unit_sets"]])
-        result["nodes"] = [{key: item.get(key) for key in ("id", "node_id", "node_type", "is_main", "status")}
-                           for item in self.pages("units/" + result["id"] + "/nodes/")]
+        if nodes:
+            result["nodes"] = [{key: item.get(key) for key in ("id", "node_id", "node_type", "is_main", "status")}
+                               for item in self.pages("units/" + result["id"] + "/nodes/")]
         return result
 
-    def inventory(self):
-        self.require("unit_sets_list", "unit_sets_units_list", "units_list")
+    def inventory(self, set_ids=None, include_units=True):
+        self.require("unit_sets_units_list")
+        if set_ids:
+            source = [self.call("unit-sets/" + object_id(identity) + "/") for identity in set_ids.values()]
+        else:
+            self.require("unit_sets_list")
+            source = [item for item in self.pages("unit-sets/") if any(
+                item["title"] == title or item["title"].endswith(" / " + title)
+                for title in ("Test Vehicles", "Production Vehicles"))]
         sets = []
-        for item in self.pages("unit-sets/"):
+        for item in source:
             sets.append({"id": object_id(item["id"]), "title": safe_word(item["title"]),
                          "fleet": object_id(item["fleet"]) if item.get("fleet") else None,
                          "is_validation_set": item["is_validation_set"],
+                         "update_strategy": item.get("update_strategy"),
+                         "allow_unknown_components": item.get("allow_unknown_components"),
                          "members": [{"id": object_id(unit["id"]), "system_uid": safe_word(unit["system_uid"])}
                                      for unit in self.pages("unit-sets/" + object_id(item["id"]) + "/units/")]})
-        units = [{key: safe_word(item[key]) for key in ("id", "system_uid", "status", "online_status")}
-                 for item in self.pages("units/")]
+        units = []
+        if include_units:
+            self.require("units_list")
+            units = [{key: safe_word(item[key]) for key in ("id", "system_uid", "status", "online_status")}
+                     for item in self.pages("units/")]
         return {"ownerId": self.user["ownerId"], "sets": sets, "units": units}
 
 
 def execute(request):
-    cloud = Cloud(request)
     action = request["action"]
+    # IAM identity is guest-local; it needs no OEM request or Cloud connection.
+    if action == "identity":
+        if request.get("address") not in ("127.0.0.1:18089", "127.0.0.1:18090"):
+            raise CloudFailure("SDK_ADDRESS_NOT_OWNED_LOOPBACK")
+        from aosedge_demo_orchestrator.unit_sdk import identity
+        return identity(request["address"])
+    cloud = Cloud(request)
     if action == "inventory":
-        return cloud.inventory()
+        return cloud.inventory(request.get("setIds"), request.get("includeUnits", True))
     if action in ("identity", "provision"):
         if request.get("address") not in ("127.0.0.1:18089", "127.0.0.1:18090"):
             raise CloudFailure("SDK_ADDRESS_NOT_OWNED_LOOPBACK")
@@ -124,9 +144,43 @@ def execute(request):
         if len(matches) > 1 or any(item["system_uid"] != uid for item in matches):
             raise CloudFailure("CLOUD_IDENTITY_AMBIGUOUS")
         return {"unit": cloud.unit(object_id(matches[0]["id"])) if matches else None}
+    if action == "wait":
+        label = request["label"]
+        checks = {
+            "CLOUD_ONLINE": lambda unit: unit["status"] == "provisioned" and unit["online_status"] == "Online",
+            "CLOUD_OFFLINE": lambda unit: unit["online_status"] == "Offline",
+            "CLOUD_DEPROVISIONED": lambda unit: unit["status"] == "new" and unit["online_status"] == "Offline",
+            "ROLE_UNIT_SET": lambda unit: request["unitSetId"] in unit["unit_sets"],
+            "MEMBERSHIP_REMOVED": lambda unit: request["unitSetId"] not in unit["unit_sets"],
+        }
+        if label not in checks:
+            raise CloudFailure("UNIT_WAIT_LABEL_INVALID")
+        identity = object_id(request["unitId"]) if request.get("unitId") else None
+        node_data = None if request.get("needNodes") else []
+        deadline = time.monotonic() + min(90, request.get("timeout", 90))
+        while time.monotonic() < deadline:
+            if identity is None:
+                cloud.require("units_list")
+                matches = cloud.pages("units/?" + urllib.parse.urlencode({"system_uid": request["systemUid"]}))
+                if len(matches) > 1 or any(item["system_uid"] != request["systemUid"] for item in matches):
+                    raise CloudFailure("CLOUD_IDENTITY_AMBIGUOUS")
+                if matches:
+                    identity = object_id(matches[0]["id"])
+            unit = cloud.unit(identity, nodes=node_data is None) if identity else None
+            if unit:
+                if unit["system_uid"] != request["systemUid"]:
+                    raise CloudFailure("UNIT_IDENTITY_MISMATCH")
+                if unit.get("nodes"):
+                    node_data = unit["nodes"]
+                if checks[label](unit) and (not request.get("needNodes") or node_data):
+                    if request.get("needNodes"):
+                        unit["nodes"] = node_data
+                    return {"unit": unit}
+            time.sleep(2)
+        raise CloudFailure("UNIT_WAIT_TIMEOUT:" + label)
     identity = object_id(request["unitId"])
     if action == "read":
-        return {"unit": cloud.unit(identity)}
+        return {"unit": cloud.unit(identity, nodes=request.get("nodes", True))}
     if action == "absence":
         cloud.require("units_list", "units_nodes_read")
         inventory = cloud.inventory()

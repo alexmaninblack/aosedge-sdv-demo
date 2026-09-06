@@ -189,6 +189,9 @@ def render_human(result: OperationResult, details: bool = False) -> str:
                 lines.append("  " + item["reason"])
             if "guestReady" in item:
                 lines.append("  SSH=" + str(item["guestReady"]) + " DNS=" + str(item.get("guestDnsReady")))
+            if item.get("factoryRole"):
+                value = item["factoryRole"]
+                lines.append("  Factory role: " + str(value.get("role", role)) + "; " + value["state"])
             if item.get("access"):
                 from .guest_access import ssh_command
                 from .status import project_root

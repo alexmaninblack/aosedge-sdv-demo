@@ -24,6 +24,7 @@ PROFILE = "LTVP_VISS_SERVER_AUTH_TEST_ONLY"
 ROOT = Path("/run/democtl-source")
 FACTORY_INPUTS_MARKER = Path("/usr/share/aos-vehicle-platform/demo-runtime-inputs-v1")
 FACTORY_INPUTS = Path("/var/aos/workdirs/sm/runtimes/systemd-slot-component/demo-inputs")
+FACTORY_ROLE_DROPIN = Path("/run/systemd/system/aos-sm.service.d/20-democtl-role.conf")
 VSS_BASE = Path("/usr/share/vss/vss.json")
 VSS_TEMP = Path("/run/democtl-vss/vss.json")
 VSS_DROPIN = Path("/run/systemd/system/kuksa-databroker.service.d/90-democtl-vss.conf")
@@ -240,18 +241,38 @@ def initialize_factory_role(request):
         raise ValueError("SOURCE_ROLE_INVALID")
     if any(path.is_symlink() for path in (FACTORY_INPUTS,) + tuple(FACTORY_INPUTS.parents)):
         raise ValueError("SOURCE_INPUT_SYMLINK")
+    store = FACTORY_INPUTS.parent
+    mounted = os.path.ismount(store)
     path = FACTORY_INPUTS / "role"
     if path.is_symlink():
         raise ValueError("SOURCE_INPUT_SYMLINK")
-    if path.exists():
+    if mounted and path.exists():
         if path.read_text() != role + "\n":
             raise ValueError("SOURCE_FACTORY_ROLE_CONFLICT")
         return dict(state="INITIALIZED", role=role, noOp=True)
     state = command(["systemctl", "show", "aos-sm", "--property=ActiveState", "--value"])
     if state.returncode or state.stdout.strip() != "inactive":
         raise ValueError("SOURCE_FACTORY_ROLE_REQUIRES_UNPROVISIONED_VM")
-    write_public(path, role + "\n")
-    return dict(state="INITIALIZED", role=role, noOp=False)
+    # Before provisioning the final store need not be mounted yet. Stage the
+    # role in SM's existing start sequence, AFTER its bootstrap/mount dependency.
+    # No early directory write, mount, SM start/restart or second persistent store.
+    # No shell/systemd variable interpolation or escaped newline literals.
+    script = ("from pathlib import Path; import os,sys; p=Path(" + json.dumps(str(path)) + "); "
+        "r=bytes(" + repr(list((role + "\n").encode())) + "); "
+        "os.path.ismount(p.parent.parent) or sys.exit(\"VDP_STORE_NOT_MOUNTED\"); "
+        "(not p.is_symlink() and not p.parent.is_symlink()) or sys.exit(\"VDP_ROLE_SYMLINK\"); "
+        "p.parent.mkdir(mode=0o755, parents=True, exist_ok=True); "
+        "(not p.exists() or p.read_bytes()==r) or sys.exit(\"VDP_ROLE_CONFLICT\"); "
+        "p.write_bytes(r) if not p.exists() else None; p.chmod(0o644)")
+    dropin = "# democtl factory role: " + role + "\n[Service]\nExecStartPre=/usr/bin/python3 -c '" + script + "'\n"
+    if FACTORY_ROLE_DROPIN.exists() and FACTORY_ROLE_DROPIN.read_text() != dropin:
+        raise ValueError("SOURCE_FACTORY_ROLE_CONFLICT")
+    if write_public(FACTORY_ROLE_DROPIN, dropin) and command(["systemctl", "daemon-reload"]).returncode:
+        raise ValueError("SOURCE_FACTORY_ROLE_RELOAD_FAILED")
+    if mounted:
+        write_public(path, role + "\n")
+    return dict(state="INITIALIZED" if mounted else "STAGED_BEFORE_SM", role=role,
+                storeMounted=mounted, noOp=False)
 
 
 def configure(request):
@@ -556,6 +577,11 @@ def execute(request):
         return dict(service=service, executable=executable,
                     binarySha256=hashlib.sha256(Path("/proc/" + pid + "/exe").read_bytes()).hexdigest() if executable else None,
                     configPath=str(cfg), freshnessProfile=profile,
+                    factoryRole={"storeMounted": os.path.ismount(FACTORY_INPUTS.parent),
+                        "present": (service_inputs / "role").is_file(),
+                        "value": (service_inputs / "role").read_text().strip()
+                            if (service_inputs / "role").is_file()
+                            and (service_inputs / "role").read_text() in ("test\n", "production\n") else None},
                     binaryContext=command(["stat", "-Lc", "%C", "/proc/" + pid + "/exe"]).stdout.strip() if executable else None,
                     configContext=command(["stat", "-c", "%C", str(cfg)]).stdout.strip(),
                     audit=audit,

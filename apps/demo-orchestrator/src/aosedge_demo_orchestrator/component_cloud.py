@@ -19,6 +19,16 @@ COMPONENT_ID = "c33bc994-460b-476f-8000-934b55a70455"
 
 
 def guard(value):
+    if value.get("preProvisioning"):
+        if (value.get("remainingUnits") != [] or value["test"].get("members") != []
+                or value["production"].get("members") != []
+                or value["testSet"]["is_validation_set"] is not True
+                or value["productionSet"]["is_validation_set"] is not False
+                or not value["testSet"].get("fleet")
+                or value["testSet"]["fleet"] != value["productionSet"]["fleet"]
+                or value["testSet"]["id"] == value["productionSet"]["id"]):
+            raise CloudFailure("COMPONENT_EMPTY_CLOUD_SCOPE_NOT_PROVEN")
+        return
     if (value["testSet"]["is_validation_set"] is not True
             or value["productionSet"]["is_validation_set"] is not False
             or value["test"]["fleet"] != value["production"]["fleet"]
@@ -96,6 +106,10 @@ def unit_view(cloud, identity):
 
 
 def snapshot(cloud, request):
+    pre_provisioning = request.get("preProvisioning") is True
+    purpose = request.get("purpose", "status")
+    confirmation = purpose == "confirm"
+    approval = purpose in ("approve", "unapprove")
     if "production" not in request["vehicles"]:
         # A single-role qualification owns no Production VM. Observe exactly
         # the existing member of the provisioner's bound Production set; never
@@ -107,19 +121,26 @@ def snapshot(cloud, request):
         request = dict(request, vehicles=dict(request["vehicles"], production=dict(
             unitId=object_id(members[0]["id"]), systemUid=members[0]["system_uid"], unitSetId=set_id)))
     version = request["version"]
-    component = cloud.call("components/" + COMPONENT_ID + "/")
-    if component["codename"] != COMPONENT:
-        raise CloudFailure("COMPONENT_CLOUD_IDENTITY_MISMATCH")
+    if not confirmation and not approval:
+        component = cloud.call("components/" + COMPONENT_ID + "/")
+        if component["codename"] != COMPONENT:
+            raise CloudFailure("COMPONENT_CLOUD_IDENTITY_MISMATCH")
     def versions():
         return [project(item, ("id", "version", "state", "file_size", "is_fake"))
                 for item in cloud.pages("components/" + COMPONENT_ID + "/versions/")]
     def bundles():
+        # v11 exposes GET on the collection only; /{id}/ supports DELETE,
+        # not GET. Resolve the exact recorded ID from the documented list.
         return [project(item, ("id", "state", "file_size", "items"))
                 for item in cloud.pages("deployment-bundles/")
-                if item["id"] == request.get("deploymentId") or any(
+                if (item["id"] == request["deploymentId"] if request.get("deploymentId") else any(
                     entry.get("codename") == COMPONENT and entry.get("version") == version
-                    for entry in item.get("items") or [])]
+                    for entry in item.get("items") or []))]
     def batches():
+        if request.get("batchId"):
+            detail = cloud.call("verification-batch/" + object_id(request["batchId"]) + "/")
+            batch_guard(detail, request, cloud.user["ownerId"])
+            return [project(detail, ("id", "state", "oem_id", "architectures", "update_bundle_id", "update_items", "approval_states"))]
         matches = []
         for item in cloud.pages("verification-batch/?" + urlencode({"search": COMPONENT})):
             entries = item.get("update_items") or []
@@ -127,15 +148,45 @@ def snapshot(cloud, request):
                 detail = cloud.call("verification-batch/" + object_id(item["id"]) + "/")
                 matches.append(project(detail, ("id", "state", "oem_id", "architectures", "update_bundle_id", "update_items", "approval_states")))
         return matches
-    tasks = {"versions": versions, "deploymentBundles": bundles, "verificationBatches": batches}
-    tasks["testSendRequests"] = lambda: [project(item, ("id", "component_type", "update_component"))
-        for item in cloud.call("units/" + object_id(request["vehicles"]["test"]["unitId"])
-                               + "/components/send-requests/") if item.get("component_type") == COMPONENT]
-    tasks["testAvailableComponents"] = lambda: [project(item, ("id", "type", "version", "file_size"))
-        for item in cloud.call("units/" + object_id(request["vehicles"]["test"]["unitId"]) + "/available-components/")
-        if item.get("type") == COMPONENT]
-    tasks.update({role: lambda item=item: unit_view(cloud, item) for role, item in request["vehicles"].items()})
-    tasks.update({role + "Set": lambda item=item: project(cloud.call("unit-sets/" + object_id(item["unitSetId"]) + "/"),
+    tasks = {"versions": versions if purpose in ("status", "upload", "send") else lambda: [],
+             "deploymentBundles": bundles if ((not confirmation and not (approval and request.get("deploymentId")))
+                 or (confirmation and not request.get("batchId"))) else lambda: [],
+             "verificationBatches": batches if not confirmation or request.get("batchId") else lambda: [],
+             "testSendRequests": lambda: [], "testAvailableComponents": lambda: []}
+    if confirmation or (approval and (not pre_provisioning or request.get("roleSetIds"))):
+        if pre_provisioning:
+            set_id = object_id(request["roleSetIds"]["production"])
+            def production():
+                details = cloud.call("unit-sets/" + set_id + "/")
+                members = cloud.pages("unit-sets/" + set_id + "/units/")
+                view = project(details, ("id", "title", "fleet", "is_validation_set", "update_strategy", "allow_unknown_components"))
+                return dict(members=[{key: unit[key] for key in ("id", "system_uid")} for unit in members], unitSet=view)
+            tasks["production"] = production
+        else:
+            tasks["production"] = lambda: unit_view(cloud, request["vehicles"]["production"])
+    elif pre_provisioning:
+        inventory = cloud.inventory()
+        from .units import UnitService
+        # Same role-set resolution as provisioning; no fabricated Unit identities.
+        sets = UnitService._bindings(None, {}, inventory)
+        tasks["remainingUnits"] = lambda: [item["id"] for item in inventory["units"]]
+        tasks["preProvisioning"] = lambda: True
+        tasks["testSendRequests"] = lambda: []
+        tasks["testAvailableComponents"] = lambda: []
+        for role, value in sets.items():
+            view = project(value, ("id", "title", "fleet", "is_validation_set", "update_strategy", "allow_unknown_components"))
+            tasks[role + "Set"] = lambda view=view: view
+            tasks[role] = lambda value=value, view=view: dict(members=value["members"], unitSet=view)
+    else:
+        if purpose in ("status", "send"):
+            tasks["testSendRequests"] = lambda: [project(item, ("id", "component_type", "update_component"))
+                for item in cloud.call("units/" + object_id(request["vehicles"]["test"]["unitId"])
+                                       + "/components/send-requests/") if item.get("component_type") == COMPONENT]
+            tasks["testAvailableComponents"] = lambda: [project(item, ("id", "type", "version", "file_size"))
+                for item in cloud.call("units/" + object_id(request["vehicles"]["test"]["unitId"]) + "/available-components/")
+                if item.get("type") == COMPONENT]
+        tasks.update({role: lambda item=item: unit_view(cloud, item) for role, item in request["vehicles"].items()})
+        tasks.update({role + "Set": lambda item=item: project(cloud.call("unit-sets/" + object_id(item["unitSetId"]) + "/"),
         ("id", "title", "fleet", "is_validation_set", "update_strategy", "allow_unknown_components"))
         for role, item in request["vehicles"].items()})
     with ThreadPoolExecutor(max_workers=6) as pool:
@@ -147,6 +198,9 @@ def snapshot(cloud, request):
     result["latestPublishedVersion"] = max(published, key=lambda value: tuple(map(int, value.split("."))), default=None)
     result["versions"] = [item for item in catalog if item.get("version") == version]
     result.update(version=version, componentId=COMPONENT_ID, ownerId=cloud.user["ownerId"])
+    # Production FOTA is deferred pending the platform release (operator's
+    # platform-team report, 2026-09-06). Observe its Unit as a non-target guard,
+    # but do not probe fleet validation or campaign APIs during Test status.
     return result
 
 
@@ -180,8 +234,7 @@ def execute(request):
         if (current.get("approval_states") or {}).get("arm64", {}).get("is_approved") is desired:
             return dict(batchId=current["id"], approved=desired, noOp=True)
         cloud.call(path, "PATCH", [{"architecture": "arm64", "is_approved": desired}])
-        confirmed = cloud.call(path)
-        batch_guard(confirmed, request, cloud.user["ownerId"])
-        return dict(batchId=confirmed["id"], approved=(confirmed.get("approval_states") or {}).get("arm64", {}).get("is_approved"),
-                    state=confirmed["state"], httpStatus=200)
+        # The caller's exact post-read confirms the persisted approval. Do not
+        # fetch the same batch twice after this PATCH.
+        return dict(batchId=current["id"], approved=desired, httpStatus=200)
     raise CloudFailure("COMPONENT_CLOUD_ACTION_INVALID")

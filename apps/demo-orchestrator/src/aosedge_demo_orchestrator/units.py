@@ -43,7 +43,8 @@ class UnitService:
         try:
             result = subprocess.run([str(config["cloudPython"]), "-I", "-B",
                 str(Path(__file__).with_name("unit_cloud.py"))], input=json.dumps(request),
-                capture_output=True, text=True, timeout=195 if action == "provision" else 45, env={"PATH": os.defpath})
+                capture_output=True, text=True, timeout=195 if action == "provision" else 120 if action == "wait" else 45,
+                env={"PATH": os.defpath})
             if result.returncode or len(result.stdout) > 262144:
                 raise EnvironmentError("UNIT_WORKER_UNAVAILABLE")
             payload = json.loads(result.stdout)
@@ -105,8 +106,8 @@ class UnitService:
             self.vm._validate(state, "stop", roles)
             if state.get("currentVehicle") is not None:
                 raise EnvironmentError("UNIT_LIFECYCLE_REQUIRES_DETACHED_SOURCE")
-            self.progress("Reading OEM authority, role Unit Sets and current Cloud inventory")
-            inventory = self._cloud("inventory")
+            self.progress("Reading OEM authority and the two role Unit Sets")
+            inventory = self._cloud("inventory", setIds=state.get("cloudBinding", {}).get("sets"), includeUnits=False)
             self.owner_id = inventory["ownerId"]
             selected = self._bindings(state, inventory)
             state["cloudBinding"] = {"ownerId": inventory["ownerId"], "fleetId": selected["test"]["fleet"],
@@ -224,18 +225,21 @@ class UnitService:
         return self._guest_script(state, role,
             "test -f /var/aos/.provisionstate || exit 1\n"
             "for s in aos-iam.service aos-cm.service aos-sm.service; do systemctl is-active --quiet \"$s\" || exit 1; done\n"
+            "if test -f /usr/share/aos-vehicle-platform/demo-runtime-inputs-v1; then\n"
+            "test \"$(cat /var/aos/workdirs/sm/runtimes/systemd-slot-component/demo-inputs/role)\" = " + role + " || exit 1\nfi\n"
             "printf 'PROVISIONED\\n'\n") == "PROVISIONED\n"
 
     def _bind_unit(self, state, role, unit):
         item = state["vehicles"][role]
-        if unit["system_uid"] != item["systemUid"] or (unit["status"] == "provisioned" and len(unit["nodes"]) != 1):
+        if unit["system_uid"] != item["systemUid"] or (unit["status"] == "provisioned"
+                and "nodes" in unit and len(unit["nodes"]) != 1):
             raise EnvironmentError("UNIT_NODE_IDENTITY_MISMATCH")
         if item.get("unitId") not in (None, unit["id"]):
             raise EnvironmentError("UNIT_UUID_CHANGED")
         if unit["fleet"] != state["cloudBinding"]["fleetId"]:
             raise EnvironmentError("UNIT_FLEET_MISMATCH")
         item["unitId"] = unit["id"]
-        if unit["nodes"]:
+        if unit.get("nodes"):
             if item.get("nodeId") not in (None, unit["nodes"][0]["id"]):
                 raise EnvironmentError("UNIT_NODE_UUID_CHANGED")
             item["nodeId"] = unit["nodes"][0]["id"]
@@ -243,19 +247,14 @@ class UnitService:
 
     def _wait(self, state, role, predicate, label, timeout=90):
         item = state["vehicles"][role]
-        deadline = time.monotonic() + timeout
-        last_report = 0
-        while time.monotonic() < deadline:
-            value = self._cloud("find", systemUid=item["systemUid"])["unit"]
-            if value:
-                self._bind_unit(state, role, value)
-            if predicate(value):
-                return value
-            if time.monotonic() - last_report > 10:
-                self.progress(role + ": waiting for " + label)
-                last_report = time.monotonic()
-            time.sleep(2)
-        raise EnvironmentError("UNIT_WAIT_TIMEOUT:" + label)
+        self.progress(role + ": waiting for " + label)
+        value = self._cloud("wait", unitId=item.get("unitId"), systemUid=item["systemUid"],
+            unitSetId=item.get("unitSetId"), needNodes=not bool(item.get("nodeId")),
+            label=label, timeout=timeout)["unit"]
+        self._bind_unit(state, role, value)
+        if not predicate(value):
+            raise EnvironmentError("UNIT_WAIT_POSTCONDITION_FAILED:" + label)
+        return value
 
     def _provision(self, state, role, selected):
         item = state["vehicles"][role]
@@ -271,8 +270,8 @@ class UnitService:
                 identity = self._cloud("identity", address=address)
                 if any(other.get("systemUid") == identity["systemUid"] for name, other in state["vehicles"].items() if name != role):
                     raise EnvironmentError("DUPLICATE_GUEST_IDENTITY")
-                if self._cloud("find", systemUid=identity["systemUid"])["unit"]:
-                    raise EnvironmentError("GUEST_IDENTITY_ALREADY_REGISTERED")
+                # The SDK adapter performs the exact duplicate-identity query
+                # immediately before registration; do not do the same read twice.
                 item.update(systemUid=identity["systemUid"], unitSetId=selected[role]["id"],
                             cloud={"lifecycle": "PROVISIONING", "identity": identity})
                 self._intent(state, role, "SDK_PROVISION")
@@ -287,13 +286,9 @@ class UnitService:
         if item["unitSetId"] not in unit["unit_sets"]:
             self._intent(state, role, "ASSIGN_SET")
             self._cloud("assign", unitId=item["unitId"], systemUid=item["systemUid"], unitSetId=item["unitSetId"])
-            self._wait(state, role, lambda value: value and item["unitSetId"] in value["unit_sets"], "ROLE_UNIT_SET")
+            unit = self._wait(state, role, lambda value: value and item["unitSetId"] in value["unit_sets"], "ROLE_UNIT_SET")
             self._done(state, role)
-        inventory = self._cloud("inventory", ownerId=state["cloudBinding"]["ownerId"])
-        sets = self._bindings(state, inventory)
-        if {member["id"] for member in sets[role]["members"]} != {item["unitId"]}:
-            raise EnvironmentError("ROLE_UNIT_SET_POSTCONDITION_FAILED")
-        if any(member["id"] == item["unitId"] for other, value in sets.items() if other != role for member in value["members"]):
+        if selected["production" if role == "test" else "test"]["id"] in unit["unit_sets"]:
             raise EnvironmentError("CROSSED_ROLE_MEMBERSHIP")
         item["cloud"]["lifecycle"] = "ONLINE"
         self.vm._save(state)

@@ -11,6 +11,7 @@ from unittest.mock import Mock, patch
 from aosedge_demo_orchestrator.environment import EnvironmentError
 from aosedge_demo_orchestrator.units import UnitService
 from aosedge_demo_orchestrator.probes import classify_cloud_log, provisioning_forward_states
+from aosedge_demo_orchestrator import unit_cloud
 
 TEST = "11111111-1111-4111-8111-111111111111"
 PROD = "22222222-2222-4222-8222-222222222222"
@@ -42,6 +43,43 @@ class UnitSafetyTests(unittest.TestCase):
                 inventory["sets"][1]["fleet"] = UNIT
             with self.assertRaises(EnvironmentError):
                 self.service._bindings({}, inventory)
+
+    def test_online_poll_reuses_client_and_known_uuid_without_node_or_inventory_reads(self):
+        cloud = Mock()
+        cloud.unit.side_effect = [dict(system_uid="uid", status="provisioned", online_status=value)
+                                  for value in ("Offline", "Online")]
+        request = dict(action="wait", unitId=UNIT, systemUid="uid", unitSetId=TEST,
+                       needNodes=False, label="CLOUD_ONLINE")
+        with patch.object(unit_cloud, "Cloud", return_value=cloud) as constructor, \
+                patch.object(unit_cloud.time, "sleep"):
+            result = unit_cloud.execute(request)
+        constructor.assert_called_once_with(request)
+        self.assertEqual("Online", result["unit"]["online_status"])
+        self.assertEqual(2, cloud.unit.call_count)
+        self.assertTrue(all(call.kwargs == {"nodes": False} for call in cloud.unit.call_args_list))
+        cloud.pages.assert_not_called()
+        cloud.inventory.assert_not_called()
+
+    def test_unknown_uuid_is_resolved_once_and_nodes_are_reused_within_wait(self):
+        cloud = Mock()
+        cloud.pages.return_value = [dict(id=UNIT, system_uid="uid")]
+        cloud.unit.side_effect = [dict(system_uid="uid", status="provisioned", online_status="Offline", nodes=[dict(id=NODE)]),
+                                  dict(system_uid="uid", status="provisioned", online_status="Online")]
+        with patch.object(unit_cloud, "Cloud", return_value=cloud), patch.object(unit_cloud.time, "sleep"):
+            result = unit_cloud.execute(dict(action="wait", systemUid="uid", needNodes=True, label="CLOUD_ONLINE"))
+        cloud.pages.assert_called_once()
+        self.assertEqual([True, False], [call.kwargs["nodes"] for call in cloud.unit.call_args_list])
+        self.assertEqual(NODE, result["unit"]["nodes"][0]["id"])
+
+    def test_inventory_limits_membership_reads_to_role_sets_and_can_skip_units(self):
+        cloud = unit_cloud.Cloud.__new__(unit_cloud.Cloud)
+        cloud.user = dict(ownerId=UNIT)
+        cloud.require = Mock()
+        cloud.pages = Mock(side_effect=[self.inventory["sets"] + [dict(id=NODE, title="Other Fleet")], [], []])
+        result = cloud.inventory(include_units=False)
+        self.assertEqual(2, len(result["sets"]))
+        self.assertEqual(["unit-sets/", "unit-sets/" + TEST + "/units/", "unit-sets/" + PROD + "/units/"],
+                         [call.args[0] for call in cloud.pages.call_args_list])
 
     def test_pinned_set_identity_survives_display_title_change(self):
         state = {"cloudBinding": {"ownerId": UNIT, "sets": {"test": TEST, "production": PROD}}}
