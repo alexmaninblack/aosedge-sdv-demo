@@ -340,6 +340,15 @@ the requested mode or newly requested context.
 
 ### D4-005 Decision Record — Exclusive Live-Source Assignment
 
+- Local CLI demo amendment, accepted by the operator on 2026-09-05:
+  [defer per-Unit VISS mTLS](../architecture/demo-control.md#local-demo-amendment-defer-per-unit-viss-mtls).
+  Both logical demo VM roles may use the explicit server-authenticated local
+  profile. CARLA does not identify Cloud Units; the Orchestrator must still
+  enforce zero-or-one connected VM and confirmed detach/reset. The strict
+  authenticated-peer contract remains a future target, not a prerequisite or
+  qualification claim for this local exception. AosCloud/IAM authentication
+  and TLS server verification are unchanged.
+
 - Decision state: `DECIDED`
 - Accepted: 2026-08-21
 - Owners: Demo Solution / Vehicle Gateway / Vehicle Simulation
@@ -2700,10 +2709,12 @@ signing, Cloud/Unit/VM mutation or deployment.
   [I0-DEC-002](../demo/mockups/README.md#i0-dec-002)
 - Owners: Demo Solution / Platform / Simulator / both Function Teams
 - Machine-readable contract:
-  [Demo Run State, Overlays and Cleanup 1.1.0](../../contracts/demo-run-state/README.md)
+  [Demo Run State, Overlays and Cleanup 1.2.0](../../contracts/demo-run-state/README.md)
 
 D4-021.1 fixes one Git-excluded qualified local Factory Image at
-`.local/factory/oem-demo-factory.qcow2` with its manifest, mode `0444`, no
+`.local/factory/oem-demo-factory.qcow2` (or format-preserving .img for raw,
+per the 2026-09-05 [local creation amendment](../architecture/demo-control.md#agreed-cli-surface))
+with its manifest, mode `0444`, no
 symlink/hard-link relationship to mutable build output and digest verification
 at M0 and R0. M0 creates exactly two mode-`0600` copy-on-write overlays at
 `.local/demo-current/validation.qcow2` and

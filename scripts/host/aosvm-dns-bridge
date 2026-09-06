@@ -315,6 +315,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--listen-address", default=DEFAULT_LISTEN_ADDRESS)
     parser.add_argument("--listen-port", type=int, default=DEFAULT_LISTEN_PORT)
+    parser.add_argument("--owner-id", help="opaque owner marker for the native democtl process manager")
     parser.add_argument(
         "--upstream",
         action="append",

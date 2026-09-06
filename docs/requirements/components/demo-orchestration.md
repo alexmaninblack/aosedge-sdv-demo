@@ -22,7 +22,7 @@
 - Accepted D4 Safe Stop freshness decision: [D4-028](../d4-decision-register.md#d4-028)
 - Accepted D4 publication decision: [D4-010.3 Artifact Publication Credential Profile](../../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
 - Accepted D4 qualification/presentation/update-state decision: [D4-026.1–.19](../d4-decision-register.md#d4-026)
-- Accepted D4 run-state and recovery decision: [D4-021 / Demo Run State 1.1.0](../../../contracts/demo-run-state/README.md)
+- Accepted D4 run-state and recovery decision: [D4-021 / Demo Run State 1.2.0](../../../contracts/demo-run-state/README.md)
 - Prepared D4 functional/hosting review candidates: [Brake Cloud API](../../../contracts/brake-cloud-api/README.md), [Tire Cloud API](../../../contracts/tire-cloud-api/README.md), and [Local Demo Hosting and VM Route](../../../contracts/local-demo-hosting/README.md)
 - Implementation, signing, Cloud, Unit, VM, or CARLA mutation authorized: no
 
@@ -444,6 +444,11 @@ the real supported APIs and launchers.
 <a id="req-demo-010"></a>
 
 - ID: `REQ-DEMO-010`
+- Local CLI demo scope amendment (operator accepted 2026-09-05):
+  [per-Unit VISS mTLS is deferred](../../architecture/demo-control.md#local-demo-amendment-defer-per-unit-viss-mtls).
+  The strict authenticated-peer clause below remains the future target;
+  source exclusivity, confirmed handover, server TLS verification and honest
+  readiness remain required for both logical demo roles.
 - Statement: The audience shall see a Test Vehicle and a Production Vehicle, with exactly one global `CURRENT VEHICLE` in stable state; `Test Vehicle` is the Representation Layer alias for the technical Validation Unit in the Verification Unit Set, and technical detail maps each vehicle to its exact AosCloud Unit/Node/Unit Set. Team-perspective navigation shall not change Current Vehicle. The first demo implementation shall assign the exact live CARLA/Gateway source, contract, authenticated Unit peer, generation and frame range exclusively to VU for qualification, then prove detach, perform a D4-004 canonical reset/new generation with no Unit attached and assign the same live source exclusively to PU for presentation. It shall support the reverse sequence for a later Test Vehicle release cycle. The primary UI shall offer `Continue with Production Vehicle` and `Continue testing on Test Vehicle`, shall show an honest changing/unavailable state until handover is proven, and shall not expose attach/detach, VM or source-gate plumbing as vehicle behavior. Both Units may remain Cloud Online. Overlap, uncertain detach/reset or ambiguous ranges shall block evidence and the next assignment. Vehicle role shall not enter the VSS/KUKSA production path. Telemetry replay is deferred and shall not be implemented or claimed in this iteration.
 - Parents: [exact source binding (`SYS-SRC-001`)](../system-requirements-and-traceability.md#sys-src-001) and [honest presentation (`SYS-SRC-002`)](../system-requirements-and-traceability.md#sys-src-002)
 - Flow: [one visible source (`AF-X-SOURCE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-source)
@@ -608,7 +613,7 @@ the real supported APIs and launchers.
 - Parents: [independent resource-scoped release operations (`SYS-REL-012`)](../system-requirements-and-traceability.md#sys-rel-012) and [Cloud-authoritative dashboard (`SYS-OBS-002`)](../system-requirements-and-traceability.md#sys-obs-002)
 - Flow: [common release (`AF-X-RELEASE`)](../../architecture/demo-scenario-architecture-flows.md#af-x-release)
 - Components/interfaces: `CMP-SW-DASH`, `CMP-ORCH`, `IF-LC-001`, `IF-LC-005`, `IF-LC-006`, `IF-LC-007`, `IF-DEMO-001`
-- Executable contract: [Demo Run State, Overlays and Cleanup 1.1.0](../../../contracts/demo-run-state/README.md)
+- Executable contract: [Demo Run State, Overlays and Cleanup 1.2.0](../../../contracts/demo-run-state/README.md)
 - Verification: Unit, Component, Contract, Integration, End-to-end
 - Evidence: disjoint Platform/Brake/Tire operation fixtures; exact candidate/profile/Cloud-object/Batch/Campaign/Unit/Unit-Set conflict matrix; run-exclusive provisioning/source/retirement/R0 cases; registry-capacity and helper-busy cases; atomic-write interruption; restart with several mixed non-terminal outcomes; corrupt-registry diagnosis; no-hidden-success, no-blind-retry and no-automatic-cross-team-queue proof
 - State: D3 design-reviewed; D4-021.2/.3 Level-B revalidation accepted 2026-08-25; implementation and live interruption qualification remain open
@@ -700,7 +705,7 @@ proof; they do not replace these isolated decisions and failure branches.
 | `REQ-DEMO-019` | `UT-017` | Publication state machine | D4-010.3 profile plus protected helper/result schema | Test sign/publish and Cloud reconcile | Exact signed digest handoff |
 | `REQ-DEMO-020` | `UT-018` | Connectivity-control state machine | Atomic fault-plan and probe schema | Real dual-path block/restore with excluded-path probes | `AF-X-OFFLINE` same-Unit and backend-synchronization proof |
 | `REQ-DEMO-021` | `UT-019` | Isolation-proof state machine | Load-control and quota/monitoring evidence schema | Real Tire cgroup CPU cap with concurrent Brake/platform continuity | `AF-TIRE-RES` audience proof |
-| `REQ-DEMO-022` | `UT-008`, `UT-020` | Per-operation conflict and recovery coordination | Demo Run State 1.1.0 registry/conflict profile | Concurrent disjoint calls plus overlapping and interrupted-operation qualification | Independent producer flows without global lock |
+| `REQ-DEMO-022` | `UT-008`, `UT-020` | Per-operation conflict and recovery coordination | Demo Run State 1.2.0 registry/conflict profile | Concurrent disjoint calls plus overlapping and interrupted-operation qualification | Independent producer flows without global lock |
 | `REQ-DEMO-023` | `UT-021` | Presenter workspace shell and shared header | Measured workspace/profile and ownership contract | Real native/browser composition and restart restoration on presenter Mac | One-screen core flow with no tab/Space/layout intervention |
 | `REQ-DEMO-024` | `UT-022` | Global lifecycle workspace | Qualification/run-lifecycle/navigation contract | Real bounded qualification and run-state adapters in the composed workspace | Global lifecycle story with fixed vehicle evidence and independent team state |
 

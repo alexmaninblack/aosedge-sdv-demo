@@ -62,3 +62,21 @@ on-demand Aos log requests.
 The profile is specific to the first demonstration qualification. A production
 vehicle may use a different Vehicle State Manager and different homologated
 thresholds behind the same runtime-owned policy boundary.
+
+## Local Test clock-age exception — 2026-09-06
+
+The operator explicitly authorized `safeStopFreshnessProfile: "demo-5s"` in
+the Test .29 SM bootstrap runtime configuration to continue the local CARLA
+demo despite approximately 2.016 seconds of Mac/VM clock skew. This is a
+separate demonstration exception, not compliance with the unchanged 1.1.1
+250-ms profile. It admits up to 5000 ms source age both at acquisition and
+at each destructive gate, including genuinely delayed data within that bound.
+It is not a symmetric clock-skew allowance: future timestamps remain rejected.
+
+Omitting the setting retains `standard` (250 ms); other values are rejected.
+The twelve distinct advancing frames, mode/transition, motion/brake/throttle,
+generation/reset, completeness, transport identity, bounded waits and rollback
+conditions are unchanged. Production and signed VDP profile hashes are not
+modified. The initial proof uses a temporary Test-only SM binary/config mount;
+it does not qualify or alter the immutable Factory .29 image. The independent
+asynchronous StopInstance/StartInstance transaction race remains open.

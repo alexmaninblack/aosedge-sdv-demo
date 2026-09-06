@@ -124,7 +124,7 @@ helper capacity affects only the requested operation and never creates an
 automatic queue or an AosCloud limitation claim.
 
 This decision is implemented in the documentation baseline by revised
-D4-021.2/.3, [Demo Run State 1.1.0](../../../contracts/demo-run-state/README.md),
+D4-021.2/.3, [Demo Run State 1.2.0](../../../contracts/demo-run-state/README.md),
 `SYS-REL-012`, `REQ-DEMO-022`, `UT-DEMO-020` and Interaction Specification
 2.5. HLA, component graph, repositories, interfaces and authority boundaries
 were revalidated unchanged. UI implementation remains separately unauthorized.

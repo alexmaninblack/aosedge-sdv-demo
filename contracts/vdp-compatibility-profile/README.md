@@ -18,6 +18,15 @@ The profile selects only paths already accepted by the
 It does not define the exact Brake or Tire advisory targets; those remain owned
 by `D4-008`.
 
+Operator-approved repeat-cycle interpretation (2026-09-06): `VDP_V1`,
+`VDP_V2`, `VDP_V3` identify functional capability profiles, not every future
+Cloud release number. Demo Control can package the same profile as a newer
+release (for example 4.0.0 contains VDP_V1). Consumers must use signed
+capabilities/profile identity rather than infer functionality from release
+major. Contract JSON, digests, signal graph and service compatibility semantics
+are unchanged. See [Demo Control](../../docs/architecture/demo-control.md) for
+the separate monotonic publication sequence.
+
 The current AosCloud release does not provide native pre-transfer admission for
 a SOTA service that requires a newer FOTA VDP Component. Therefore this
 contract requires fail-closed service readiness and factual dashboard guidance,

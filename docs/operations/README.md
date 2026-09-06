@@ -14,3 +14,11 @@ unambiguous path.
 
 All persistent Unit identities and secrets remain outside Git. Provisioning is
 never implicit.
+
+## Demo Control — Read-only Status
+
+The [Demo Control design](../architecture/demo-control.md) describes the shared
+CLI/UI direction. Its first read-only status slice is implemented; lifecycle
+mutations remain disabled. See the [package README](../../apps/demo-orchestrator/README.md)
+for executable status commands, local configuration and limitations. It does
+not replace the working VM lifecycle procedure above.

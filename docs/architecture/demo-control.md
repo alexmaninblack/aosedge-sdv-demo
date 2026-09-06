@@ -1,0 +1,862 @@
+<!-- SPDX-FileCopyrightText: 2026 maninblack -->
+<!-- SPDX-License-Identifier: MIT -->
+
+# Demo Control
+
+- Status: Draft
+- Version: 0.12
+- Prepared: 2026-09-05
+- Owner: Demo Solution Team
+- Architecture input: [High-Level Architecture 1.5](high-level-architecture.md)
+- Scenario input: [Demo Scenarios 2.0](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.0](demo-scenario-architecture-flows.md)
+- Requirements input: [Demo Orchestration Component Requirements 1.1](../requirements/components/demo-orchestration.md)
+
+This is the implementation-design companion for the existing
+[Demo Orchestrator](../requirements/component-decomposition-and-interface-register.md#cmp-orch),
+not a new component or a replacement for the accepted requirements.
+It records the documentation audit, agreed direction and proposals still to
+review. Publishing this draft does not authorize runtime or Cloud changes.
+
+## Implementation Checkpoint — 2026-09-05
+
+The user authorized the first read-only status implementation after reviewing
+this draft. It now reads local QEMU/QMP state, optional guest SSH/DNS and
+separate authenticated OEM/SP Cloud observations through the same CLI/API core.
+Defaults are all targets and an 8-second per-probe budget. There are no hidden
+mutations, repairs or lifecycle wrappers. The package README defines executable
+options, local configuration and result/exit-code semantics.
+
+The next authorized local increment implements image list and environment
+create: one independent format-preserving factory copy, fresh requested role
+overlays and an atomic current-run journal. Status reads its manufactured role
+bindings without inheriting the retained .27 Unit identity. No live VMs or Cloud
+objects were changed to test this increment. Prepare, handover, park/resume,
+retirement, full recovery and AosCore connection proof remain unimplemented.
+No historical baseline/topology discrepancy is resolved by local creation.
+
+The next local increment, authorized 2026-09-05, implements environment retire
+only for an unused successful create. It removes released, unmodified role
+overlays, the local factory copy/manifest and finally the current journal; it preserves the original artifact,
+and never calls Cloud. A full provisioned-environment retire remains unavailable.
+Fixture proof covers create/retire/create, idempotent repeat, interrupted unlink,
+held/modified disks and scope/path exclusions; no real demo environment was
+deleted during this implementation.
+
+The documentation gate now includes apps/*/README.md, resolving the audit's
+unscanned package-link errors. Fixture tests cover stopped/missing/ambiguous
+VMs, QMP allowlisting, SSH errors, role/owner/permission projection, partial
+results and secret exclusion. Live reads observed the retained test VM stopped
+and its Unit Offline/provisioned, with authenticated OEM and SP responses.
+No VM was started, so live guest checks are not qualified by this checkpoint.
+
+The authorized local VM increment now implements start/stop through the same
+CLI/API core: exact owned QEMU processes, one shared DNS service, explicit
+interactive first SSH enrollment, bounded guest readiness and graceful poweroff.
+Successful stop can prove a booted guest remains unprovisioned and bind that
+proof to its stopped disk, extending local retire without authorizing Cloud
+retirement. Process/guest doubles and isolated protocol fixtures cover this
+increment; no retained VM, Cloud object or original artifact was modified.
+Live boot/SSH qualification remains an operator test, not an inferred success.
+
+The subsequent authorized terminal-equivalent acceptance is recorded in
+[local VM CLI acceptance](../qualification/democtl-local-vm-lifecycle.md).
+It supersedes the initial fixture-only qualification limit for the exercised
+.27 local create/start/stop/retire slice, not for Cloud or complete-demo flows.
+It also records the measured 90-second ceiling adjustment, concurrent VM boot,
+readonly SSH configuration, guest DNS utility and immediate TCP restart fixes.
+
+## Purpose and First Slice
+
+The subsequently authorized Unit slice implements unit provision/deprovision/delete
+for the current run, through OEM APIs and the official SDK. Its commands,
+postconditions and exclusions are defined under Unit Lifecycle below; actual
+results and qualification gaps are in [Unit CLI acceptance](../qualification/democtl-unit-lifecycle.md).
+It supersedes earlier placeholder statements for these three operations only.
+
+Demo Control provides the same tools for engineering preparation and the
+future Demo UI. An operator can use `democtl` without opening the UI; the UI
+will call the same application core through a local API.
+
+The initial operation scope is agreed as:
+
+- selecting an immutable factory image, without hard-coding `.27`;
+- targeting the test VM, production VM or both;
+- observing status, including access and the Aos platform;
+- creating and starting VMs, provisioning Units and selecting one Current Vehicle;
+- safely switching the live source between Test and Production;
+- parking/resuming the same environment without changing its identities;
+- explicitly retiring Cloud Units and disposing of their local VMs.
+
+Signing, deployment-bundle upload and explicit verification-batch approval are
+implemented for the authorized VDP family increment below. Full driving/scenario automation
+remains a later slice. Source selection and the Safe Stop/reset transitions required
+for switching, parking and retirement belong to the agreed operation classes
+below. Status, image list and local create are implemented today. The initial VM/Unit lifecycle is
+not, by itself, proof of complete scenario retirement.
+
+## Agreed Lifecycle Operation Classes
+
+Design agreement: 2026-09-05. The five classes below are agreed for the shared
+CLI/UI application core. The CLI surface below is agreed and its first local
+creation increment, low-level VM start/stop and unprovisioned-local retirement are implemented; the other
+classes and full Cloud-and-local retirement remain unimplemented; low-level
+Unit retirement is now implemented separately.
+Implementation authorization does not imply starting existing VMs or mutating
+live Cloud objects as incidental tests.
+
+### 1. Create a New Environment
+
+Select an explicit prebuilt immutable factory image, without a fixed version
+in code. Normally create two independent copy-on-write overlays: Test and
+Production. Allocate separate local VM identities, access endpoints and
+runtime resources. Never clone a provisioned overlay as a fresh vehicle.
+
+The result is a local manufactured environment: no Cloud Unit identities and
+no Current Vehicle assignment. The original image is unchanged. Single-role
+engineering use remains distinct from the complete dual-role demo; the
+existing layout/topology discrepancies below must still be reconciled.
+
+### 2. Prepare the Environment for Use
+
+Start the owned shared infrastructure (including DNS, CARLA and Gateway) and
+the selected VMs. Provision each fresh VM once, retain its exact Unit/Node
+binding, assign the corresponding Test or Production Unit Set and confirm
+Cloud Online. Only then select the Current Vehicle and authorize its
+Gateway/CARLA connection; the normal new demo starts with Test selected.
+
+CARLA, Gateway and network reachability may be prepared before provisioning.
+The authoritative vehicle selection/connection comes after provisioning,
+because it is bound to the known Unit/Node identity and verified role.
+This is the demo's identity/selection ordering, not a requirement for CARLA
+to be running in order for AosCloud provisioning itself to work.
+
+This follows [onboarding](demo-scenario-architecture-flows.md#af-m1-lc) and
+the [per-Unit VISS identity lifecycle](../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json).
+VM boot, provisioning, set assignment and vehicle selection remain separately
+observable steps, even when presented as one operator workflow. A parked
+environment uses resume, not another fresh provisioning attempt.
+
+### 3. Change the Current Vehicle
+
+Switching Test to Production, or back, is an explicit operation:
+
+1. Enter Safe Stop.
+2. Disconnect the current VM from the live source and confirm detachment.
+3. With no VM attached, perform the agreed scene reset and confirm its new
+   reset generation.
+4. Authorize the other exact Unit and establish its source connection.
+5. Confirm the selected vehicle's stage-appropriate operation.
+
+At all times, **zero or one VM** is assigned to CARLA/Gateway, never two.
+Both VMs may remain Cloud Online; Cloud connectivity is independent of live
+source selection. A failed or uncertain detach/reset blocks the next
+assignment. Follow the existing
+[exclusive live-source contract](../../contracts/exclusive-live-source-assignment/exclusive-live-source-assignment.v1.json),
+not an additional source-selection mechanism or a reprovisioning flow.
+
+### 4. Park and Resume
+
+Parking is non-destructive: Safe Stop, confirmed source detachment, graceful
+VM shutdown and shutdown of the environment's owned infrastructure. Preserve
+overlays, image references, Unit identities, provisioning and current-run
+recovery state. Parking is not deprovisioning, cleanup or automatic backup.
+
+Resume uses those same VMs and Cloud identities. Re-read actual state after
+restart, restore the owned infrastructure and VM processes, then restore the
+intended single Current Vehicle through the same selection rules. Do not
+create replacement overlays, reprovision or automatically resume driving.
+An unresolved previous action remains visible and requires reconciliation.
+
+### 5. Retire and Delete the Environment
+
+Full retirement is explicitly distinct from parking. Safe Stop and detach
+the live source, then retire the exact Units that were created for this
+environment. Follow the existing
+[retirement order](../../contracts/demo-run-state/demo-run-state-profile.v1.json):
+Cloud offline/deprovisioning with authoritative new/Offline confirmation, VM shutdown
+and overlay release, scoped role-set membership removal, Unit deletion and
+authoritative absence reconciliation.
+
+Delete local overlays and run-specific access/runtime material only after
+the applicable Cloud retirement and owned-data cleanup are proven complete.
+Do not infer Cloud deletion from local disk removal. Conversely, deleting a
+Cloud Unit does not itself remove a local VM. Never invent a Cloud identity
+or attempt deprovisioning for a never-provisioned local overlay.
+
+Preserve the immutable factory image, persistent Unit Sets and Cloud
+audit/release history. No automatic backup is added. When functional backends
+or other later stages are in scope, their cleanup follows the existing full
+retirement contract; completing the first VM/Unit slice alone is not proof
+that complete scenario retirement has been implemented.
+
+The initial implemented retire scope is UNPROVISIONED_LOCAL_CREATE: successful
+create with no authoritative Cloud identities or live source and no open disk
+handles. An untouched overlay must inherit all data from its factory backing.
+A booted overlay instead requires the local stop proof described below.
+This removes exactly the recorded overlays and generated access keys, then local factory copy
+and manifest, and finally the journal without backup; it keeps the original
+artifact. Unproven/changed stopped disks, unknown runtime files,
+failed create and unobservable ownership block this narrow path. A separately
+authorized Cloud-retired CLI-only path is described under Unit Lifecycle;
+absent local Unit IDs alone are never a cleanup proof. Complete scenario runs
+still require full R0.
+An interrupted local retire preserves per-file intent; another explicit retire
+reconciles remaining targets before continuing. Missing/corrupt journal data is
+never replaced by guessed ownership or a recursive directory delete.
+
+### Cross-Cutting Results and Recovery
+
+Keep the operated-on VM set separate from the Current Vehicle selection.
+An operation may target Test, Production or both, while source selection
+remains Test, Production or none; selecting both targets never means
+connecting both to CARLA.
+
+Return the observed result of each step and each VM. If Test succeeds and
+Production fails, retain both outcomes; do not erase success, report the pair
+ready or restart the whole workflow. After interruption or response loss,
+reconcile the prior attempt before another mutation. Status remains a
+read-only operation, never an implicit repair or rollback.
+
+Readiness is relative to the lifecycle stage. Distinguish VM Running, guest
+access, DNS, Cloud Online, Current Vehicle assignment and live data flow.
+At [the empty-provider baseline](demo-scenario-architecture-flows.md#af-g0-rt),
+the infrastructure can be ready for VDP installation while the VDP data path
+is absent by design. Do not report a connection fault merely because VDP has
+not yet been deployed; equally, source selection alone does not prove the
+complete VDP chain is working.
+
+## Agreed CLI Surface
+
+### VDP Family Increment — Authorized 2026-09-06
+
+Repeat-cycle amendment, approved 2026-09-06: functional profiles `v1`, `v2`,
+`v3` are independent of Cloud release numbers. Repeat the existing contents as
+4.0.0/profile v1 (7 signals), 5.0.0/profile v2 (15), 6.0.0/profile v3 (23).
+Later cycles may use 7/8/9 and onward with an explicit profile; release major
+never selects functionality. This supersedes the old-version reapproval and
+addressed-send experiment as the repeatable-demo workflow.
+
+`component prepare VERSION --profile v1|v2|v3` reuses pinned signed
+1.0.16/2.0.0/3.0.0 payloads. Only release metadata, capability digest, active
+profile VERSION/MANIFEST_SHA256 constants, package version and provenance/SBOM
+metadata change. Application code, native dependencies, paths, capabilities,
+contract references and advisory declarations stay those of the chosen profile.
+All active runtime/provider/manifest/inner/outer release versions agree. No
+existing artifact is overwritten. Preparation increases local release numbers;
+upload requires a number above the Cloud component catalog. Publish, approve
+and observe each step before the next. Scope: Test .29 only, 4→5→6,
+telemetry-only; full advisory/mTLS remain deferred. No component deletion,
+force-send, reprovisioning, Factory rebuild or Production/fleet validation
+change is part of this cycle. All actions remain Demo Control operations.
+
+The operator approved implementing the real additive VDP v1/v2/v3 releases
+and testing consecutive FOTA updates on Test only. All component preparation,
+inspection, unpacking, validation, signing, deployment-bundle upload, explicit
+batch approval and component observations must be Demo Control operations,
+available from both CLI and the shared application core. No standalone workflow
+helper or manual publication bypass is allowed. Official signer and Cloud
+adapters may be used inside that core.
+
+The sequence is: correct and prove physical Autopilot-to-Safe-Stop; preserve
+immutable .28 and working v1 (release 1.0.16); prepare real 2.0.0 and 3.0.0 with
+coherent metadata and the working component runtime/dependency layout; verify
+7/15/23 additive signals and the full v3 typed advisory path; then run one fresh
+Test .28 through v1, v2 and v3 without reprovisioning between releases. Approve
+one version at a time and prove actual active version plus data, not merely
+Cloud Installed. Production, original image bytes and existing signing trust
+are unchanged; no VM image rebuild or backup is part of this increment.
+
+Factory .29 continuation, explicitly authorized 2026-09-06: repeat the existing
+1.0.16 -> 2.0.0 -> 3.0.0 artifacts on a fresh Test .29. Preserve Test .28's
+provisioned Unit/disk and current Production. `component unapprove VERSION`
+temporarily sets only the exact existing 2.0.0/3.0.0 verification batch approval
+to false; `component approve VERSION` restores approval sequentially. Both
+resolve existing artifacts/batches, journal before one attempt and confirm via
+Cloud readback; neither uploads or changes fleet validation. A fresh single-Test
+qualification observes the sole member of the already-bound Production set as
+a read-only guard, without adopting that VM into its lifecycle journal.
+`unit unassign test` requires a stopped, detached, provisioned Test and removes
+only its bound Test Vehicles membership, preserving the Unit, disk and all
+other memberships. It does not deprovision or delete. These amendments use the
+same shared CLI/API core and journal, not standalone administrative helpers.
+
+Addressed delivery amendment, explicitly authorized 2026-09-06:
+`component send VERSION` requests one existing approved/Ready VDP 2.0.0 or
+3.0.0 for the journal's exact Test Unit via the official
+`POST units/{id}/components/send-requests/` with one `update_component_ids`
+entry. The current live authorization is for 2.0.0 on Test .29. IDs are resolved
+from the authenticated Cloud snapshot, not caller inputs. A signed local
+artifact, unique existing bundle/batch, OEM approval and unchanged Production
+are required. This explicit request is separate from approval and performs no
+upload, re-signing, fleet validation, set/model change or guest restart. A
+missing available-components entry is reported, not silently treated as proof
+that Cloud will accept the request. Intent is recorded before one attempt;
+repeat reconciles existing state without reposting. HTTP acceptance plus
+request/Unit post-read is not proof of VM activation; observe runtime separately.
+
+Implemented commands are `component list`, `component inspect VERSION`,
+`component unpack VERSION`, `component prepare VERSION`, `component sign VERSION`,
+`component verify VERSION`, `component upload VERSION`,
+`component cloud-status VERSION`, `component approve VERSION` and
+`component status <test|production>`. The package README is authoritative for
+their exact behavior. Approval means verification batch only, never Production
+promotion through fleet validation. The original increment published only
+2.0.0 and 3.0.0; the repeat-cycle amendment above adds explicitly prepared
+profile-replay releases. No caller-supplied UUID, URL, credential or filesystem path is
+accepted. The shared writer and existing journal own publication intents.
+`component logs <role>` and `component diagnose <role>` provide bounded redacted
+runtime events and an installed-KUKSA-schema comparison. Upload checks required
+leaf presence before mutation. This does not authorize changing the Factory
+schema: .28 lacks the eight v3 ChaosWheel leaves. The operator subsequently
+authorized a temporary Test-only Platform configuration continuation on
+2026-09-06: `component schema-apply test` and `component schema-remove test`.
+These shared-core operations use the existing writer/journal, accept no custom
+paths or permissions, retain all existing leaves, and bind a public supplemented
+schema only inside KUKSA's service namespace. The original .28, credentials,
+ExecStart, Production and existing 3.0.0 bundle remain unchanged. One restart
+loads the temporary schema; confirmed repeated application does not restart.
+The exact `/run` files and reboot/removal behavior are described in the package
+README. This does not authorize another Factory build or new VDP publication.
+
+Operator amendment, confirmed 2026-09-06: retain the existing local server-TLS
+profile and defer mTLS. This run qualifies only installation, actual startup
+and additive 7/15/23 telemetry paths. Full v3 advisory and its differentiated
+write-authority qualification are deferred. Do not enable any Gateway Set or
+claim complete v3 specification conformance. The existing v1 binding label is
+legacy local source identity, not a Gateway read ACL: Development already
+permits telemetry reads. Release-specific subscriptions and KUKSA publication
+must still match the exact release manifest; no permission expansion occurs.
+
+This authorization does not waive D4-008: only the authorized VDP can send the
+two typed advisory writes, Engineering Dashboard remains read-only, and no
+vehicle-motion write is permitted. The existing local amendment deferred
+client authentication for telemetry; it does not define how VDP and Dashboard
+are distinguished for writes. That remains a deferred design gate for full v3,
+not permission to authorize Set for every Development client. See the
+[implementation and evidence checkpoint](../qualification/democtl-vdp-family.md).
+
+### Environment Commands
+
+Interface agreement: 2026-09-05. These are the agreed command names and
+parameters, not a claim that every operation is implemented.
+
+~~~text
+democtl image list
+democtl environment create --image 6.1.1-maninblack.27/main-qemuarm64 --target all
+democtl environment create --image-path /path/to/factory.img --target all
+democtl vm start test
+democtl vm start all --timeout 90
+democtl vm stop test
+democtl vm stop all
+democtl unit provision <test|production|all>
+democtl unit deprovision <test|production|all>
+democtl unit delete <test|production|all>
+democtl simulation start
+democtl simulation stop
+democtl environment prepare --target all --current test
+democtl vehicle select production
+democtl vehicle select test
+democtl environment park
+democtl environment resume
+democtl environment retire
+democtl status
+democtl status --cloud
+democtl status --guest --cloud
+democtl --output json status --guest --cloud
+~~~
+
+- The target selector accepts test, production or all; it never means that
+  both VMs connect to CARLA.
+- Image selectors come from image list. Its source is the existing
+  DEMO_ARTIFACT_ROOT artifact store and published manifests, not a new manually
+  maintained registry. The readable selector is version/architecture.
+- --image and --image-path are mutually exclusive. A raw path does not waive
+  factory provenance, immutable-image or metadata requirements. Missing or
+  ambiguous metadata is visible; there is no automatic latest-image fallback.
+- create only creates local VMs. It does not boot them, provision, launch CARLA
+  or connect a live source. prepare performs those distinct subsequent steps.
+- --current accepts test or production, never all.
+- `--target` selects the VMs to prepare; it never selects multiple live
+  consumers. `prepare --target all` requires an explicit `--current test` or
+  `--current production`; omission is an input error before any action.
+  The current role must belong to the prepared target set. Neither the CLI nor
+  the shared application API silently chooses a current vehicle.
+- `vehicle select test|production` changes only the one live CARLA/Gateway
+  assignment. It does not create, provision or restart either VM. Both Units
+  may remain Cloud Online. Switching follows Safe Stop, confirmed detach,
+  canonical scene reset and then attachment of the exact selected Unit.
+  Failed or uncertain detach/reset prevents attachment of the other Unit.
+- Selecting the already attached role is an observed no-op: confirm the exact
+  existing assignment without restarting the VM/Gateway or resetting CARLA.
+  Missing or contradictory live assignment is not treated as an idempotent
+  success merely because the journal names that role.
+- park preserves VM/Cloud identity and disk state. resume restores that same
+  environment without reprovisioning or automatically enabling driving.
+- retire is the explicitly destructive Cloud-and-local retirement operation;
+  the original factory image and persistent Unit Sets remain.
+- Low-level vm start/stop use the same application core intended for prepare
+  and park/resume; Unit operations also use that core.
+
+Implementation order is image discovery/resolution, local VM creation,
+VM start/stop, prepare, safe source selection, park/resume and full retirement. Each command
+must report its actual implementation state. A parsed command is not a
+successful operation, and a failed/unsupported command must not perform a
+partial hidden workflow.
+
+### Simulation Lifecycle and Fast Observations — Authorized Increment
+
+Operator agreement: 2026-09-05. `simulation start/stop` own the CARLA,
+Controller, Gateway and associated local UI process group. They never start or
+stop VMs, provision/deprovision Units or change Cloud memberships. An existing
+manufactured environment supplies the one journal and owned runtime paths.
+
+- start blocks all existing VM source gates before opening the Gateway. It
+  returns ready without selecting a VM. A healthy repeated start is a no-op,
+  preserving current assignment and reset generation. Partial startup is not
+  reported ready; explicit stop reconciles and shuts down exact owned processes.
+- stop enters Safe Stop, confirms physical stop and both gates blocked, then
+  gracefully stops the owned runner and simulator. Preserve VMs, disks, Cloud
+  identities and compact run evidence. No reset, backup or forced process kill.
+  A stopped repeat is a no-op after local ownership reconciliation. If the
+  Controller has already exited, report physical-stop evidence unavailable;
+  confirmed guest detachment and owned-process shutdown still permit cleanup.
+- `vehicle select` returns `SIMULATION_NOT_RUNNING` when the simulator is
+  absent, or `SIMULATION_NOT_READY` when its Controller/Gateway is not ready.
+  These checks precede guest/Cloud work. It never implicitly starts or waits for
+  simulator startup. Provisioned local role bindings are required; selection
+  does not scan Cloud. Use lifecycle/prepare and explicit `status --cloud` for
+  authoritative Cloud observations.
+- `environment prepare` composes the same VM/Unit, simulation and selection
+  primitives; attach only after both preparation branches are ready. They are
+  independent; the initial implementation keeps mutation under one writer.
+- Selection reuses pinned SSH within one operation and the already verified
+  gate action results. It retains Safe Stop, confirmed detach, real reset,
+  exclusive attach and server-verified advancing VISS frames. No background
+  connection service or second state store is introduced.
+- Ordinary status reads local runtime/Controller facts and the selected role.
+  Last connection confirmation is a timestamped operation result in the same
+  journal, never relabeled as a fresh connection probe. `--guest` freshly reads
+  guest gates/VDP and probes only the selected path; blocked peers do not incur
+  a deliberate network timeout. Source probes share a bounded read deadline.
+  `--cloud` adds fresh Cloud observations. Status never persists observations.
+
+Implementation and tests must use `democtl simulation start/stop` for all
+simulator launches/shutdowns once those commands exist. Park/resume and full
+retirement remain separate operations; simulation stop does not implement them.
+
+### Prepare and Select Implementation Increment
+
+Operator agreement: 2026-09-05. Implement `environment prepare` and
+`vehicle select` through the same CLI/UI application core and existing
+CARLA/Gateway control interfaces. Do not introduce a second source selector.
+Preserve already provisioned VM identities; provisioning is needed only for
+fresh VMs. Status must distinguish infrastructure readiness, selected role,
+authenticated connection and fresh VDP data. A factory baseline without VDP
+can be ready for installation, but is not a proven live VDP data path.
+
+Acceptance runs from `apps/demo-orchestrator` through `democtl`: explicit
+current selection with both targets, Test-to-Production and reverse handover,
+same-role no-op, rejection of missing/invalid current selection before side
+effects, and no new attachment after an unconfirmed detach/reset. Real live
+acceptance requires the supported source-control boundary and the explicitly
+selected trust profile below; fixture success alone must not be reported as
+live qualification.
+Park/resume and complete scenario retirement remain separate increments.
+
+Implementation checkpoint, 2026-09-05: prepare/select dispatch through the
+shared application core. Selector validation precedes side effects. The
+operator authorized extending the existing Controller with authenticated
+`orchestrate` Safe Stop, status, standalone reset and release operations.
+The native keyboard session remains owned by its UI; driving commands are
+interlocked while orchestration holds Safe Stop. Only the existing tick owner
+resets the ego actor. Completion requires a fresh, stopped physical frame and,
+for reset, exactly one completed reset generation. Scenario is not started.
+
+The local transport gate is a narrow, owned `inet democtl_source` nftables
+table in each VM. Gateway listens on host loopback 16443; host 6443 must have
+no listener. An OPEN gate redirects only the existing .28 client destination
+`10.0.0.1:6443` to `10.0.0.1:16443`. A BLOCKED gate drops both incoming and
+outgoing VISS traffic, including existing flows. Other firewall tables, SSH,
+DNS and Cloud connectivity are unchanged. No SSH forwarding permission or
+SELinux exception is added. On guest reboot the transient gate disappears,
+so the fixed client endpoint has no listener and fails closed.
+
+Both gates are confirmed BLOCKED before reset. Only the selected gate opens
+after the Controller confirms reset. The selected guest must complete a
+server-verified VISS read before release; the vehicle remains in Safe Stop.
+Public per-run CA/binding inputs use the existing TEST_ONLY platform profile;
+no private client credentials are generated. A baseline without an installed
+VDP is reported separately from the guest's VISS connection. A TLS read does
+not prove VDP-to-KUKSA readiness.
+
+The current-run writer lock also covers composite operations. Source intent
+is recorded before external actions; a repeated request for the same target
+reconciles its exact Controller operation ID and actual gates. A confirmed
+reset is never repeated. A different target or contradictory evidence blocks
+attachment. A failed startup may reuse only the exact owned simulator after
+runner exit, socket cleanup, failed manifest and both blocked paths are proven.
+Live acceptance is recorded separately from fixture/regression success in
+[the CLI source record](../qualification/democtl-source-selection.md).
+
+Default `democtl status` identifies the connected role from Controller
+freshness, actual guest gates and a server-verified guest read with advancing
+frame IDs. It returns `none` for confirmed blocked paths and `unknown` for
+unavailable/contradictory evidence. `--guest` also attempts an independent read
+from the blocked peer. VDP's reported readiness is not an independent KUKSA
+consumer proof.
+
+This increment supports initial preparation of created targets and source
+selection among prepared roles. Adding an unprepared role to an already
+attached environment, parking, resuming after a guest/host reboot and full
+source teardown remain follow-on lifecycle work, not successful hidden
+fallbacks. Reboot fails closed; the current selection command reports the
+missing live gate rather than silently rebuilding it.
+
+### Local Demo Amendment: Defer Per-Unit VISS mTLS
+
+Operator decision: 2026-09-05. For this local CLI demo, per-Unit VISS client
+certificate issuance/enrollment and Gateway authentication of the selected
+Cloud Unit are deferred. They are not prerequisites for implementing or
+testing `environment prepare` and `vehicle select` in this bounded profile.
+This amendment applies to both logical Test and Production demo VMs on the
+presenter Mac, not to a real production deployment.
+
+- CARLA knows only its simulated vehicle, never Cloud Unit/Node identities or
+  Test/Production roles. `democtl` owns the role-to-local-VM mapping.
+- Use the existing explicit server-authenticated local VISS profile. Retain
+  server TLS verification, loopback host exposure, SSH authentication and all
+  AosCloud/IAM provisioning authentication. Defer client mTLS only; do not
+  disable TLS verification or create shared/placeholder client certificates.
+- Enforce zero or one connected demo VM through the owned connection control.
+  A selected-role label alone is not connection exclusivity. The unselected
+  VM must have no usable live VISS data path, including a connection left from
+  an earlier selection. Cloud connectivity remains independent.
+- Safe Stop, confirmed detach before switching, scene reset, same-role no-op,
+  current-state reconciliation and honest live-data readiness remain required.
+- Identify the result as `LOCAL_DEMO_SERVER_TLS`, with per-Unit mTLS explicitly
+  `DEFERRED`. Do not report D4-006 strict identity/security qualification.
+
+The strict D4-005/D4-006 profiles remain the future target. This explicit
+operator-selected local exception is not an automatic fallback when strict
+credentials or authentication fail. Re-enabling strict mode requires its
+separate onboarding/client integration and live qualification.
+
+Backing-image decision, confirmed 2026-09-05: make one independent local
+Factory Image copy under .local/factory; both role overlays use that copy,
+never the artifact-store original directly. Preserve the original bytes,
+format and SHA-256: raw uses oem-demo-factory.img, qcow2 uses
+oem-demo-factory.qcow2. This is one common backing copy, not two full copies
+and not a backup of a provisioned VM. The copy stays read-only during use.
+The subsequent user-approved symmetry correction makes local retire remove
+that copy and its generated manifest after both overlays; only the original
+artifact remains. No image conversion or rebuild occurs. The command also
+handles an exactly bound copy left by the former retire, without recreating VMs.
+
+The first local creation increment resolves published images in the catalog
+by selector or exact path. A path outside that catalog remains unsupported
+until a producer manifest binding is integrated; metadata is never guessed.
+
+### Local VM Start/Stop — Agreed Increment
+
+- Target test, production or all already-created roles; reuse their image,
+  overlays, local identities and ports. No implicit create, provision, CARLA,
+  Current Vehicle change, backup, rebuild or full-demo readiness claim.
+- Bind the initial main-qemuarm64 runtime profile to macOS ARM64/HVF, pinned
+  firmware and accepted QEMU versions. Do not hard-code image .27 as the selector.
+- start launches/reuses exact owned QEMU processes and one shared DNS bridge.
+  Confirm QMP Running, authenticated guest SSH and guest DNS separately. Default
+  guest wait ceiling is 90 seconds per VM; timeout leaves visible PARTIAL state.
+  Both selected VM processes launch before readiness waits. Readiness ends the
+  operation immediately; the ceiling is not an imposed boot delay.
+- First SSH setup uses an explicitly entered guest password in the interactive
+  CLI, the owned serial console and a new per-VM key. Pin the guest public host
+  key through that console. Do not extract passwords from legacy tools or accept
+  them in API/argv/journal. Noninteractive first start reports missing enrollment.
+- stop asks the guest to power off over SSH, falling back to QMP powerdown.
+  Wait for process exit and disk release, with no automatic forced kill. Keep
+  overlay/identity/access material. Stop shared DNS only after the last owned VM.
+  Block a direct stop of Current Vehicle; detach/park is a separate operation.
+- Read actual process ownership before explicit retry, keep per-role outcomes,
+  and retain unresolved operation scope. Do not erase another role's uncertainty.
+- Extend local retire only for stopped, proven unprovisioned guests: before
+  poweroff observe absent provision-state/PIN files, active provisioning IAM and
+  inactive normal-mode IAM/SM/CM; after process exit bind this to overlay SHA-256.
+  retire requires the same digest and deletes only tracked access files along
+  with its existing local targets. Unknown/provisioned state blocks this path.
+
+The [package README](../../apps/demo-orchestrator/README.md#start-and-stop-created-vms)
+defines commands and readiness limits. This increment does not implement full
+Cloud/scenario retirement, source selection or live qualification.
+
+### Unit Lifecycle — Authorized Increment
+
+- Operate only the current journal's Test/Production identities, with one
+  run-exclusive writer. all serializes the created roles Test then Production.
+- provision requires a running, SSH/DNS-ready guest. Read its real system/model/
+  Main Node identity; invoke the official v6 SDK once; prove normal guest mode,
+  Cloud Online, then scoped role membership. Pin the authenticated OEM owner,
+  fleet and set UUIDs; Test is a verification set, Production is not. Reject
+  missing, ambiguous, crossed-role or foreign-member bindings without removal.
+- Reuse the qualified SDK 5.4.2 transition correction only as a library. No old
+  VM/checkpoint workflow, backup, image patch or inherited baseline identity.
+- deprovision stops only CM, waits for Cloud Offline, deprovisions once and
+  confirms new/Offline, then stops the exact VM. By the operator's 2026-09-05
+  amendment, no old-identity reconnect/probe is performed: Cloud owns identity
+  revocation. Do not restart CM after deprovision or claim certificate-revocation
+  testing. Preserve peer VM/DNS until the last VM stops.
+- delete removes only the recorded systemUID from its role set, deletes the
+  deprovisioned Unit once and proves Unit/Node absence using authenticated
+  inventory visibility. Keep persistent role sets and campaign definitions.
+- Every mutation records intent first; lost responses remain uncertain until
+  authoritative reconciliation. Repeat commands do not repeat proven SDK or
+  destructive requests. Retired overlays cannot start/provision as new Units.
+- This slice retains overlays, access material, factory copy and the current
+  journal. It implements neither backend/CARLA cleanup nor full R0/recreation.
+  The retained baseline Unit is not a mutation target; its one Test membership
+  was removed only under separate exact user authorization for this acceptance.
+
+The subsequent user-authorized environment retire extension removes those
+retained CLI-only files after fresh authoritative Cloud absence and empty-set
+proof. Every provisioned role must already be DELETED; no old-identity rejection
+flag is required. The same writer lock and per-file interrupted-unlink reconciliation
+apply; Cloud reads repeat on resume, and no Cloud mutation is performed. Exact
+overlays/access, working factory copy/generated manifest and journal are removed
+without backup; the artifact-store original is preserved. This enables fresh
+CLI-only cycles without implementing backend/CARLA/scenario retirement.
+
+See the [executable commands](../../apps/demo-orchestrator/README.md#provision-and-retire-cloud-units).
+Live coverage is explicitly bounded in the acceptance record; implementation
+does not itself qualify every fresh-order or interruption combination.
+
+## Agreed Direction and Current Implementation
+
+| Area | Agreed direction | What exists on 2026-09-05 |
+| --- | --- | --- |
+| Location | `apps/demo-orchestrator/`, alongside `apps/presenter-ui/` in the Solution repository | Python package and editable-install instructions |
+| Shared implementation | CLI and UI use one operation core | CLI plus a transport-neutral Python API adapter; no HTTP server or UI connection |
+| Target names | `test` maps to `VALIDATION`; `production` to `PRODUCTION`; `all` selects both | Target parsing and mapping |
+| Status | Report observed facts, including OEM and Service Provider access | Local/QMP observations plus optional guest SSH/DNS and authenticated Cloud reads |
+| Lifecycle | Explicit VM and Unit operations | Local create, VM start/stop, Unit provision/deprovision/delete and unused/Cloud-retired CLI cleanup implemented; prepare/select/park/resume and full scenario R0 remain unavailable |
+| Image selection | Explicit image reference; generated descriptor, not operator-written YAML | Published catalog discovery, exact selector/path resolution, format-preserving local copy and generated manifest |
+
+The [package README](../../apps/demo-orchestrator/README.md) is the source for
+commands that actually exist, installation and package tests. Status returns
+`OBSERVED` or `PARTIAL`; neither means “the demo is ready.”
+
+## Ownership and Integration
+
+The CLI parses operator intent. The application core performs or observes an
+operation; host, guest and Cloud adapters encapsulate their respective
+interfaces. Human-readable output and JSON represent the same result.
+The future local API calls this core, not shell commands assembled by the UI.
+
+AosCloud remains authoritative for Units, memberships, reported/desired state
+and delivery. QEMU and the guest report their own runtime facts. The local
+journal correlates operations; it must not become a second Cloud database.
+
+Existing scripts are evidence of working commands, not an automatic dependency
+of the new core. Reuse an understood, bounded primitive when appropriate; do not
+invoke an entire legacy workflow to obtain one fact. There are no implicit
+backups, provisioning, restarts or repair steps inside `status`.
+
+The integration must respect the
+[local hosting and native-helper boundary](../../contracts/local-demo-hosting/README.md).
+A local CLI profile selector is not permission for a browser caller to choose
+arbitrary credentials, Cloud endpoints, executables or filesystem paths.
+Browser operations must use the server-bound, authorized session context.
+
+## Status: Implemented Slice and Remaining Design
+
+### Reading Modes
+
+The following interface is implemented:
+
+```text
+democtl status [test|production|all]
+democtl status [test|production|all] --guest
+democtl status [test|production|all] --cloud
+democtl status [test|production|all] --guest --cloud
+democtl --output json status [test|production|all] --guest --cloud
+```
+
+- Default: quick local observations, plus clearly dated last-known observations
+  only if an approved source of those observations exists.
+- `--guest`: add bounded, read-only guest checks.
+- `--cloud`: add fresh Cloud access and relevant Unit reads.
+- Both flags: combine independent observations; failure of one source must not
+  erase results obtained from another.
+
+The default target is `all`; the per-probe budget is 8 seconds. `--details`
+and local CLI `--profile` options are implemented. No status observations are
+cached. The selected-source operation's dated confirmation is shown separately
+from fresh reads, as agreed in the simulation/fast-observation increment.
+
+### What the Snapshot Contains
+
+| Layer | Facts to expose | Important distinction |
+| --- | --- | --- |
+| Run and target | Selected role, image reference/version/digest reference, owned overlay reference, pinned Unit/Node identity and last operation outcome | Local intent is not confirmation of Cloud membership |
+| Local VM | Overlay presence, owned QEMU process and QMP response | Process running does not mean guest ready or Cloud Online |
+| Guest access | SSH connection/authentication result; configured host DNS bridge and guest resolution of the configured Cloud hosts | DNS failure, timeout, authentication failure and changed host key are different failures |
+| Guest Aos platform | Observed release, provisioning/normal mode and expected services' state, result and restart count | Expectations depend on the selected image and mode |
+| Host Cloud access | Endpoint response, credential availability, authenticated identity/role and owner/provider binding | Reachable API does not mean authenticated or authorized |
+| Cloud Unit | Observed Unit/Node identity, Online state, Unit Set membership and role mismatch | Missing local UUID or denied read does not prove the Unit is absent |
+| Operation history | Last requested action, observed result, timing and unresolved outcome | Request accepted does not mean operation completed |
+
+Configured guest profiles should define the expected service set. For example,
+the repository's current image tooling distinguishes provisioning
+`aos-iam-prov` from normal-mode `aos-iam`, `aos-sm` and `aos-cm`.
+That is an image-specific input, not a universal list frozen into `democtl`.
+A stopped VM skips guest probes and reports why.
+
+Cloud reachability here is an observation from this host. It is not a claim
+that every AosCloud subsystem is healthy; guest connectivity and Unit Online
+must be reported separately.
+
+### OEM and Service Provider Access
+
+Report each configured credential context separately: OEM delivery, any
+separate Platform publication context, and each configured Service Provider.
+Do not merge their permissions into one “Cloud access OK” flag.
+
+For each context, show:
+
+- whether a credential reference is configured and can be used non-interactively;
+- public certificate expiry metadata when available without unlocking or
+  exposing protected material;
+- the role and owner/provider identity actually returned by an authenticated
+  read, rather than inferred from a local profile name;
+- effective permissions where the API exposes them, and “unknown” otherwise;
+- which planned operation is affected by a missing or insufficient context.
+
+Use the [Cloud role and action matrix](../requirements/d4-decision-register.md#d4-011)
+and [artifact publication profile](../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
+as the authority for separation of roles. A successful read is not proof of
+permission to provision, approve or delete.
+
+No interactive unlock, credential enrollment, role change or TLS bypass is
+part of status. Missing Service Provider access must not falsely make local
+VM startup unavailable; likewise OEM access does not imply Service Provider
+access. The implemented `users/me` and exact Unit-detail reads use the public
+OpenAPI fields. The observed API role strings are `oem` and `service provider`;
+profile names are not substituted for those source values.
+
+### Observation and Execution Rules
+
+Every external observation needs its source, local observation time, source
+time if supplied, freshness/coverage and sanitized error. Preserve distinct
+“not requested,” “not observed,” “stale,” “unavailable” and “confirmed absent”
+meanings. Do not turn unknown results into a reassuring green summary.
+
+The existing [Presenter read-source model](../../apps/presenter-ui/src/domain/sourceObservation.ts)
+and [read-only adapter contracts](../../apps/presenter-ui/src/adapters/read-only/contracts.ts)
+already describe source and freshness semantics. Their
+[implementation work packet](../planning/active/work-packets/p1-ui-aoscloud-readonly-adapters.md)
+records fixture-only integration, with live transport deferred. Align the
+future serialized status contract with these semantics instead of creating a
+competing UI read model; additional provider contexts still need explicit
+mapping.
+
+Status should batch compatible guest observations into one SSH session and
+reuse authentication within one call per selected Cloud context. Query pinned
+objects, not the entire account. Bound timeouts and return partial results
+with the unavailable source identified.
+
+Status does not write lifecycle state, fix DNS, start a service, request a
+Cloud log archive or retry a mutation. If reconciliation is needed, show the
+uncertain result and the explicit next operation. Detailed diagnostic log
+collection remains separate.
+
+## Configuration and State
+
+Keep three concerns distinct:
+
+| Concern | Proposed owner | Boundary |
+| --- | --- | --- |
+| Factory image descriptor | Build publication or explicit CLI registration | Version, artifact identity/digest and compatible runtime/network profile; no keys or fixed `.27` dependency |
+| Local operator configuration | Local installation/profile configuration | Artifact root and credential references; machine-specific values and secrets stay outside Git |
+| Current run | Existing [Demo Run State contract](../../contracts/demo-run-state/README.md) | One current run and its atomic journal, not a new history database |
+
+The accepted journal path is `.run/demo-current/journal.json`; the accepted
+factory/overlay layout is owned by that contract. The earlier discussion of
+per-run `plan.json`/`state.json` directories is not an accepted replacement.
+The read-only slice uses `.local/demo-control/status.json` for operator
+observation bindings, not history or desired state. Its fields are documented
+in the package README. Local creation reads the human-readable artifact store
+and generates the copy descriptor; the journal takes precedence for managed
+VM bindings, without importing the old experimental Unit/access references.
+
+The accepted complete demonstration prepares two roles from the same factory
+image. Single-role engineering use must be scoped explicitly; it does not
+silently change the full-run topology or claim dual-role qualification.
+
+## Documentation Audit and Placement
+
+Audit scope: the Solution checkout at `main` commit `fe35641`, the local
+orchestrator boilerplate and the retained `codex/ltvp-finalize-27` reference
+at `6a943c4`. This was a document/source audit, not a fresh VM or Cloud check.
+
+| Question | Owning documentation | How this document connects |
+| --- | --- | --- |
+| What the demo demonstrates | [Scenario](../demo/staged-post-sop-brake-health-demo-scenarios.md) | Reference the scenario; do not redefine its story |
+| What coordinates what | [HLA](high-level-architecture.md), [flows](demo-scenario-architecture-flows.md), [component register](../requirements/component-decomposition-and-interface-register.md) | Implementation companion for the existing orchestrator |
+| What is required | [Component requirements](../requirements/components/demo-orchestration.md), [D4 decisions](../requirements/d4-decision-register.md), [contracts](../../contracts/) | Link obligations and schemas; review conflicts at their source |
+| What to implement next | [Planning](../planning/README.md) | Create a bounded implementation packet only after design agreement |
+| How to operate implemented commands | [Package README](../../apps/demo-orchestrator/README.md), [operations](../operations/README.md) | Installation stays with the package; add a real runbook when operations work |
+| What has been demonstrated | [Current baseline](../qualification/current-baseline.md), [qualification index](../qualification/README.md) | Link exact revisions and evidence; never infer qualification from a design |
+
+The stable location is `docs/architecture/demo-control.md`. Version and status
+belong in metadata, not filename suffixes. Navigation links from the document
+map, architecture, development, operations and package README make it
+discoverable without duplicating its content.
+
+The audit found that the documentation gate omitted application READMEs.
+The status implementation adds `apps/*/README.md` to its scan; package
+backlinks now participate in the gate without scanning dependency/build trees.
+
+### Discrepancies to Resolve Before Lifecycle Implementation
+
+| Finding | Evidence and consequence | Owning follow-up |
+| --- | --- | --- |
+| Baseline pointers disagree | The root README still discusses `.11`; current-baseline/planning name `.21`; `.27` as-built/closeout records remain on the retained branch | Reconcile the accepted evidence and source integration, then update current pointers; preserve historical reports |
+| Successful narrow experiment is not full qualification | The retained `.27` records describe a test-only VDP update path, not the complete production/campaign narrative | Publish explicit supported scope and limitations in qualification |
+| DNS behavior has not been consolidated in main | The retained branch contains onboarding/network changes; the main onboarding check still assumes port `18053` | Integrate the intended source/profile behavior before using it as the new adapter's baseline; do not reuse the old checker wholesale |
+| Cloud topology differs from the recent operating decision | Requirements/current baseline retain a dedicated demo Fleet; the agreed simplified experiment uses Default Fleet | Reconcile the owning topology decision and requirement, then bind verified IDs; do not guess live membership |
+| Local creation layout reconciliation | User confirmed one local copy, format preservation and explicit engineering targets | Contract 1.2.0 records raw/qcow2 copy paths and single-role engineering scope; one current journal and full-demo two-role requirement remain |
+
+None of those discrepancies is silently resolved by this draft. In particular,
+it does not merge the retained branch, promote `.27` to full qualification,
+change Cloud topology. The narrow user-approved local creation amendment is
+recorded in run-state contract 1.2.0; other discrepancies remain open.
+
+## Traceability and Next Review
+
+The implementation proposal must preserve:
+
+- [Cloud-authoritative read facts](../requirements/components/demo-orchestration.md#req-demo-005)
+  and [visible decision basis](../requirements/components/demo-orchestration.md#req-demo-006);
+- [exactly-once provisioning reconciliation](../requirements/components/demo-orchestration.md#req-demo-003)
+  and [authoritative Unit/Unit Set binding](../requirements/components/demo-orchestration.md#req-demo-004);
+- [ordered retirement](../requirements/components/demo-orchestration.md#req-demo-013)
+  and [restart-safe recovery](../requirements/components/demo-orchestration.md#req-demo-015);
+- [local least privilege](../requirements/components/demo-orchestration.md#req-demo-016)
+  and [honest coverage](../requirements/components/demo-orchestration.md#req-demo-017).
+
+Completed agreements: document ownership, status, the five lifecycle classes,
+their CLI surface and the one-copy local manufacture increment. Next items:
+
+1. Implement the remaining agreed commands with per-step results and explicit
+   partial-completion/recovery semantics.
+2. Reconcile the baseline, topology and configuration conflicts in their owning
+   documents under the [documentation governance](../governance/documentation-and-requirements-management.md).
+3. Close the current-run journal/recovery and source-selection integration
+   needed by mutations without introducing a parallel lifecycle store.
+4. Agree a bounded implementation increment and its tests; publish operator
+   instructions and evidence only as that increment works.
+
+Status, image list, local create, VM start/stop and unprovisioned-local retire are available for operator testing. The
+remaining commands are agreed design, not working lifecycle automation yet.
+No live execution qualification is implied by fixture tests. Open topology,
+baseline and live-source integration decisions remain explicit prerequisites
+for the corresponding later operations.

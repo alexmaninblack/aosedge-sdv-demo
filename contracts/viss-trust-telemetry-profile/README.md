@@ -3,6 +3,12 @@
 
 # VISS Trust and Telemetry Profile
 
+The current presenter-Mac CLI demo has an explicit
+[operator-accepted local exception](../../docs/architecture/demo-control.md#local-demo-amendment-defer-per-unit-viss-mtls)
+dated 2026-09-05: per-Unit client mTLS is deferred, while server TLS verification
+and single-VM source exclusivity remain required. The strict contract below
+remains the future target; local-demo success is not strict mTLS qualification.
+
 - Decision: [`D4-006`](../../docs/requirements/d4-decision-register.md#d4-006)
 - Contract version: 1.1.0
 - Accepted contract SHA-256: `4a1a2bd804c3a49f707b5e640632bd8a0357901f59e4615c340622b043d4c12c`

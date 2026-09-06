@@ -17,22 +17,76 @@ class DemoRunStateContractTest(unittest.TestCase):
 
     def test_all_subdecisions_and_package_are_design_reviewed(self) -> None:
         self.assertEqual("D4-021", self.profile["decision"])
-        self.assertEqual("1.1.0", self.profile["contractVersion"])
+        self.assertEqual("1.6.0", self.profile["contractVersion"])
         self.assertEqual("DESIGN_REVIEWED", self.profile["lifecycleState"])
         self.assertEqual(
             {"D4-021.1", "D4-021.2", "D4-021.3", "D4-021.4", "D4-021.5", "D4-021.6"},
             {item["id"] for item in self.profile["acceptedSubdecisions"]},
         )
 
+    def test_unit_increment_does_not_silently_claim_or_perform_full_r0(self) -> None:
+        unit = self.profile["unitLifecycleIncrement"]
+        self.assertEqual(["unit provision", "unit deprovision", "unit delete"], unit["commands"])
+        self.assertEqual(["test", "production"], unit["allOrder"])
+        for key in ("runExclusive", "oneSdkAttemptPerFreshGuest", "deprovisionRequiresOffline",
+                    "deleteRequiresUnitAndNodeAbsenceWithIndependentVisibility",
+                    "retainPersistentRoleSetsAndCampaignDefinitions", "retainLocalDisksAccessAndJournal"):
+            self.assertTrue(unit[key])
+        self.assertEqual(["AUTHORITATIVE_NEW_OFFLINE", "VM_STOPPED"], unit["deprovisionCompletion"])
+        for key in ("oldIdentityProbeIsTlsRevocationProof", "oldIdentityReconnectProbe", "foreignRoleMembersRemovedAutomatically",
+                    "retiredOverlayReuseAllowed", "fullR0OrRepeatabilityQualificationClaim"):
+            self.assertFalse(unit[key])
+
+    def test_cloud_retired_cli_cleanup_keeps_original_and_requires_fresh_proof(self) -> None:
+        cleanup = self.profile["cloudRetiredLocalCleanup"]
+        self.assertEqual("environment retire", cleanup["command"])
+        for key in ("requiresAllCurrentCloudIdentitiesDeleted",
+                    "requiresFreshAuthenticatedUnitNodeAndSystemUidAbsence", "requiresPersistentRoleSetsEmpty",
+                    "requiresStoppedVmsDnsAndUnheldOwnedFiles", "freshCloudReadsRepeatedOnInterruptedCleanup",
+                    "deleteTrackedOverlaysAndAccessMaterial", "deleteWorkingFactoryCopyAndGeneratedManifest",
+                    "deleteJournalLast", "preserveOriginalArtifactAndPublishedManifests"):
+            self.assertTrue(cleanup[key])
+        for key in ("requiresRecordedOldIdentityRejection", "performsCloudMutations", "backupCreated", "fullScenarioR0Claim"):
+            self.assertFalse(cleanup[key])
+
     def test_factory_is_independent_immutable_and_digest_checked(self) -> None:
         factory = self.profile["factoryImage"]
         self.assertEqual(".local/factory/oem-demo-factory.qcow2", factory["imagePath"])
+        self.assertEqual(".local/factory/oem-demo-factory.img", factory["imagePathsByFormat"]["raw"])
+        self.assertTrue(factory["copyPreservesSourceBytesFormatAndDigest"])
         self.assertEqual("0444", factory["fileMode"])
         self.assertFalse(factory["symlinkAllowed"])
         self.assertFalse(factory["hardLinkAllowed"])
         self.assertEqual({"M0_ENTRY", "R0_EXIT"}, set(factory["digestVerificationPoints"]))
         self.assertFalse(factory["modifiedByDemoRun"])
         self.assertTrue(factory["retainedAfterSuccessfulR0"])
+
+    def test_unused_manufactured_cleanup_is_not_a_cloud_retirement_shortcut(self) -> None:
+        cleanup = self.profile["localCreationAmendment"]["unusedManufacturedCleanup"]
+        self.assertEqual("UNPROVISIONED_LOCAL_CREATE_ONLY", cleanup["scope"])
+        self.assertTrue(cleanup["requiresSuccessfulCreate"])
+        self.assertTrue(cleanup["requiresNoCloudIdentityOrLiveSource"])
+        self.assertTrue(cleanup["requiresNoOpenHandles"])
+        self.assertTrue(cleanup["neverStartedRequiresNoGuestOwnedDataExtents"])
+        self.assertTrue(cleanup["bootedRequiresStoppedUnprovisionedObservationAndMatchingOverlayDigest"])
+        self.assertTrue(cleanup["deleteTrackedLocalAccessKeysWithOverlays"])
+        self.assertTrue(cleanup["preserveOriginalArtifactAndPublishedManifests"])
+        self.assertTrue(cleanup["deleteLocalFactoryCopyAndGeneratedManifestAfterOverlays"])
+        self.assertTrue(cleanup["supportsBoundFactoryCopyLeftByFormerRetire"])
+        self.assertTrue(cleanup["journalDeletedAfterAllRecordedOverlays"])
+        self.assertFalse(cleanup["backupCreated"])
+        self.assertFalse(cleanup["fullCloudR0Claim"])
+
+    def test_local_vm_lifecycle_does_not_hide_cloud_or_force_kill(self) -> None:
+        lifecycle = self.profile["localVmLifecycleAmendment"]
+        self.assertEqual(["vm start", "vm stop"], lifecycle["commands"])
+        self.assertTrue(lifecycle["processOwnershipRereadBeforeRetry"])
+        self.assertTrue(lifecycle["sharedDnsStoppedAfterLastManagedVm"])
+        self.assertTrue(lifecycle["currentVehicleStopRequiresDetachOrPark"])
+        self.assertFalse(lifecycle["passwordPersistedOrDiscoveredFromLegacyScripts"])
+        self.assertFalse(lifecycle["automaticVmForceKill"])
+        self.assertFalse(lifecycle["cloudOrCarlaActions"])
+        self.assertFalse(lifecycle["fullDemoQualificationClaim"])
 
     def test_only_two_current_overlays_exist_and_are_never_reused(self) -> None:
         overlays = self.profile["currentOverlays"]

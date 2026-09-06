@@ -39,6 +39,10 @@ class DocumentationCheckTests(unittest.TestCase):
         shutil.copy2(ROOT / "workspace" / "repositories.json", root / "workspace" / "repositories.json")
         shutil.copytree(ROOT / "contracts", root / "contracts")
         shutil.copytree(ROOT / "docs", root / "docs", ignore=shutil.ignore_patterns(".DS_Store"))
+        shutil.copytree(
+            ROOT / "apps", root / "apps",
+            ignore=shutil.ignore_patterns(".DS_Store", ".venv", "node_modules", "build", "dist", "__pycache__", "*.egg-info"),
+        )
         sibling_files = (
             ("carla-ego-runtime", "docs/carla-setup-macos.md"),
             ("carla-ego-runtime", "docs/macos-launchers.md"),

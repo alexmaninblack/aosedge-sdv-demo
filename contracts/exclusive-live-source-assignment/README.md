@@ -3,6 +3,13 @@
 
 # Exclusive Live-Source Assignment Contract
 
+For the current presenter-Mac CLI demo, the operator accepted the
+[local demo trust amendment](../../docs/architecture/demo-control.md#local-demo-amendment-defer-per-unit-viss-mtls)
+on 2026-09-05. It defers per-Unit VISS client mTLS for both logical demo roles,
+but retains zero-or-one VM connectivity, confirmed detach/reset and server TLS
+verification. The strict JSON contract below is unchanged and must not be
+claimed as qualified by that local exception.
+
 - Decision: [`D4-005`](../../docs/requirements/d4-decision-register.md#d4-005)
 - Contract version: 1.0.0
 - Lifecycle state: accepted contract; implementation and qualification remain open

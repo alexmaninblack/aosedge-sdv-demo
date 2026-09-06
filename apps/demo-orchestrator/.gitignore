@@ -1,0 +1,8 @@
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+.venv/
+__pycache__/
+*.egg-info/
+build/
+dist/

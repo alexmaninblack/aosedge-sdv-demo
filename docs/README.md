@@ -31,6 +31,8 @@ not only the CARLA-to-AosEdge transport bridge.
   `T1` Tire Health stage, observability, offline, and retirement mapping.
 - [Repository and component boundaries](architecture/repository-boundaries.md)
   — ownership across the participating repositories.
+- [Demo Control — draft implementation design](architecture/demo-control.md)
+  — shared `democtl`/UI core, initial lifecycle scope and status/access proposal.
 - [Architecture decisions](architecture/decisions/) — accepted and proposed
   decisions and their consequences.
 - [Architecture diagrams](architecture/diagrams/) — editable diagram sources

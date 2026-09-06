@@ -5,7 +5,7 @@
 
 - Decision: `D4-021`
 - Lifecycle state: `DESIGN_REVIEWED`
-- Contract version: `1.1.0`
+- Contract version: `1.6.0`
 - Accepted subdecisions: D4-021.1 Factory Image and overlay layout, D4-021.2
   minimal current-run journal, D4-021.3 interrupted-operation recovery and
   D4-021.4 complete R0 ordering plus D4-021.5 functional/simulator cleanup,
@@ -23,6 +23,71 @@ The Factory Image is a qualified local copy of the CMP Factory output, not a
 symlink or hard link to a mutable build result. M0 and R0 verify its digest;
 the demo never modifies or removes it. A provisioned overlay is never copied
 or reused as a next-run source.
+
+The [2026-09-05 local creation amendment](../../docs/architecture/demo-control.md#agreed-cli-surface)
+preserves the selected source format and bytes: raw images are copied to
+.local/factory/oem-demo-factory.img; qcow2 retains the original .qcow2 path.
+Both overlays explicitly bind the selected format/path and original SHA-256.
+No format conversion occurs. Explicit single-role engineering creation is
+allowed, but does not satisfy the two-role complete-demo requirement or
+promote a test-only artifact to production qualification. This amendment does
+not change Cloud topology, provisioning or retirement requirements.
+
+The same local increment supports explicit retirement of UNPROVISIONED_LOCAL_CREATE
+output: no Cloud/Current Vehicle identity, successful manufacture and no open
+handles. Never-started overlays must have no guest-owned extents. A booted guest
+instead needs a democtl stop observation proving provisioning mode and no local
+provision state, bound to the stopped overlay digest; retire requires that same
+digest. Absent journal Unit IDs alone never prove this. Per the approved symmetry
+correction, remove recorded overlays and tracked local access keys, then the local copy/generated manifest,
+then the journal; retain the original artifact and published manifests. This
+local-create amendment supersedes local-copy retention for this narrow scope.
+It also covers the exactly catalog-bound copy left by the former local retire.
+This is not full
+R0. Provisioned environments still require the complete ordering below.
+Interrupted local unlink is reconciled per exact file before continuing; an
+unknown/corrupt journal is not permission to remove a directory tree.
+
+Version 1.3.0 records the agreed local VM start/stop increment. It uses the same
+current-run journal for owned process/profile/access references, shared DNS
+ownership, bounded VM_START/VM_STOP intent and stop-proof digest; credentials
+are never journal content. Password-based initial enrollment is explicit and
+interactive, not credential discovery. Actual process ownership is re-read on
+retry. Stop is graceful, preserves disks and identities, and stops owned DNS
+only when no managed VM remains. Current Vehicle requires separate detach/park.
+No Cloud, CARLA, full R0 or live qualification is implied by this increment.
+
+Version 1.4.0 records the authorized low-level Unit increment, without changing
+complete R0 ordering: OEM provision/deprovision/delete use the same journal and
+run-exclusive writer. The journal pins owner/fleet/role-set UUIDs and actual
+systemUID/Unit/Main Node identity. Provision proves Online, normal guest mode
+and scoped role membership. Retirement requires Offline, single deprovision,
+explicit failure of the old identity to restore Online, stopped VM, scoped set
+removal and Unit/Node absence with independent visibility. WebSocket rejection
+is not represented as TLS certificate revocation. These commands retain local
+disks, access and journal; fresh manufacture still requires separately completed
+cleanup. No full R0 or repeatability claim follows. See the
+[bounded live record](../../docs/qualification/democtl-unit-lifecycle.md).
+
+Version 1.5.0 adds the separately authorized cleanup of a Cloud-retired CLI-only
+run. All current Cloud identities must already be deleted with recorded
+old-identity rejection; fresh authenticated reads must again prove Unit/Node/
+systemUID absence and empty persistent role sets before any local deletion.
+Stopped owners, no Current Vehicle, released exact files and unchanged backing
+bindings remain mandatory. Interrupted cleanup repeats the read-only Cloud gate
+before resuming exact pending unlinks. Delete tracked overlays/access, the
+working factory copy/generated manifest and journal last, without backup;
+preserve the original artifact and manifests. This does not implement scenario,
+backend, VISS or CARLA R0; those actions have not occurred in this CLI-only slice.
+
+Version 1.6.0 records the operator's 2026-09-05 removal of the old-identity probe
+from this CLI increment. After one Cloud deprovision and authoritative new/Offline
+confirmation, stop the exact VM without restarting CM. Cloud owns identity
+revocation; the CLI neither retests it nor claims TLS-revocation evidence.
+Delete and local retire no longer require an oldIdentityRejected flag.
+Their stopped-owner, authoritative absence, scoped membership and ownership
+checks remain unchanged. Historical probe fields in existing journals are not
+used to initiate or resume a connection attempt.
 
 No historical ordinary-run directory exists. `.local/demo-current` and
 `.run/demo-current` represent the only current run. If they describe an

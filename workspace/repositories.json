@@ -78,7 +78,7 @@
   "launcherPaths": [
     { "id": "carla-root", "base": "workspace", "path": "CarlaSim", "kind": "directory" },
     { "id": "runtime-root", "base": "workspace", "path": "carla-ego-runtime", "kind": "directory" },
-    { "id": "runtime-build", "base": "workspace", "path": "CarlaSim/Build-ego-runtime-m4", "kind": "directory" },
+    { "id": "runtime-build", "base": "workspace", "path": "CarlaSim/Build-ego-runtime-ltvp-final", "kind": "directory" },
     { "id": "python", "base": "workspace", "path": "CarlaSim/.venv-m5/bin/python", "kind": "executable" },
     { "id": "tls", "base": "workspace", "path": "CarlaSim/LocalRuntime/m5/tls", "kind": "directory" },
     { "id": "unreal-editor", "base": "workspace", "path": "UnrealEngine5_carla/Engine/Binaries/Mac/UnrealEditor.app/Contents/MacOS/UnrealEditor", "kind": "executable" },

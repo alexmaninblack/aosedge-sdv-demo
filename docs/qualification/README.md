@@ -7,6 +7,18 @@ This directory records accepted baselines, exact component locks,
 qualification procedures, and sanitized defect evidence.
 
 - [Current accepted baseline](current-baseline.md)
+- [democtl local VM terminal acceptance](democtl-local-vm-lifecycle.md)
+  — live create/start/stop/retire checks on .27, separate from Cloud/demo qualification.
+- [democtl Unit terminal acceptance](democtl-unit-lifecycle.md)
+  — actual provisioning/Online/role-set/retirement results and remaining fresh-cycle gates.
+- [democtl local source selection](democtl-source-selection.md)
+  — .28 Test/Production handover, actual status, no-op and local TLS evidence.
+- [democtl VDP family checkpoint](democtl-vdp-family.md)
+  — Test VDP 6.0.0 active with 23 telemetry paths under transient SM demo-5s;
+  the Stop/Start race and clean Factory qualification remain open.
+- [Source checkpoint and next Factory release](democtl-release-checkpoint.md)
+  — immutable .29 boundary, source consolidation, remaining defect and proposed
+  engineering/operator E2E gates; not a new release acceptance.
 - [AOS-0 Apple Silicon qualification record](aosvm-apple-silicon-baseline.md)
 - [AOS-1 single-Main-Node qualification record](aosvm-single-node-provisioning.md)
 - [Pre-cleanup end-to-end acceptance](pre-cleanup-e2e-acceptance.md)

@@ -13,5 +13,7 @@ boundary; High-Level Architecture 1.4 remains historical traceability only.
   — complete `M0 -> M1 -> G0–G4 -> T1 -> R0` mapping of Scenario 2.0 to
   High-Level Architecture 1.5, including the independent Tire Health stage.
 - [Repository and component boundaries](repository-boundaries.md)
+- [Demo Control — draft implementation design](demo-control.md)
+  — shared CLI/UI orchestration, initial VM lifecycle and proposed status model.
 - [Architecture decisions](decisions/)
 - [Diagram sources and exports](diagrams/)

@@ -45,6 +45,12 @@ upstream architectural decision.
 
 ## Implementation Rule
 
+For the shared CLI/UI orchestrator, start with the
+[Demo Control draft](../architecture/demo-control.md) and the
+[package README](../../apps/demo-orchestrator/README.md). The draft separates
+the authorized read-only status implementation from proposed lifecycle
+behavior; it does not authorize lifecycle changes.
+
 Keep source, tests and component-specific usage documentation in the owning
 repository. Update this solution repository when a change affects:
 
