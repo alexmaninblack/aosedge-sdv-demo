@@ -48,8 +48,8 @@ def build_parser() -> argparse.ArgumentParser:
     image = commands.add_parser("image", help="discover published immutable factory images")
     image_commands = image.add_subparsers(dest="action", required=True)
     image_commands.add_parser("list", help="list readable version/architecture selectors without hashing images")
-    factory_build = image_commands.add_parser("build", help="build the authorized Factory .30 from committed sources using the warm offline Builder")
-    factory_build.add_argument("image", choices=("6.1.1-maninblack.30",))
+    factory_build = image_commands.add_parser("build", help="build the authorized Factory .31 from committed sources using the warm offline Builder")
+    factory_build.add_argument("image", choices=("6.1.1-maninblack.31",))
 
     component = commands.add_parser("component", help="operate on VDP bundles in the artifact catalog")
     component_commands = component.add_subparsers(dest="action", required=True)

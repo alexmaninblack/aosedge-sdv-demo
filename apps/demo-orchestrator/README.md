@@ -47,7 +47,12 @@ VM or AosCloud lifecycle operations independently.
 
 This package implements read-only status, image discovery and local environment
 creation, local VM start/stop, OEM Unit provisioning/deprovisioning/deletion,
-and cleanup of unprovisioned local output. No legacy lifecycle workflow is called.
+and cleanup of unprovisioned or explicitly Cloud-retired local output. No legacy
+lifecycle workflow is called. After `simulation stop`, `unit deprovision` and
+`unit delete`, `environment retire` also removes the stopped telemetry source's
+owned runtime outputs and completed component-operation journal records. It
+does not delete original images, published bundles, Cloud releases, Unit Sets,
+source code or Builder caches, and adds no backups.
 
 The [Demo Control design](../../docs/architecture/demo-control.md) records the
 agreed direction, documentation audit and proposals still under review,
@@ -625,39 +630,47 @@ again. Alternatively, use `.venv/bin/democtl status` directly without activation
 
 ## Development
 
-### Factory .30 build
+### Factory .31 build
 
-`democtl image build 6.1.1-maninblack.30` uses the committed Platform source
-and existing warm Builder. It runs the new ARM64 input/profile tests before
+`democtl image build 6.1.1-maninblack.31` uses pinned Platform main
+`0bed8b3769b09fbe685ed599ca8d10e6594fbe53` and the existing warm Builder.
+It runs five ARM64 factory-placeholder/input/profile regressions before
 SM package QA and image construction, reuses the existing Rouge layout, then
 exports a new immutable catalog image and stops Builder. It does not publish
 components, provision Units or modify Production. A completed build means
-`BUILT_NOT_LIVE_QUALIFIED`, not E2E acceptance. Existing .30 artifacts are never
+`BUILT_NOT_LIVE_QUALIFIED`, not E2E acceptance. Existing artifacts are never
 overwritten by repeating this command. Downloads and shared-state caches are
 retained; generated artifacts stay outside Git.
 
-The .30 Factory owns persistent public source-input configuration. Source
-selection writes public CA/bindings and the explicit role into runtime data;
+Factory .31 retains .30's persistent public source-input configuration. `vm start`
+initializes the explicit role before provisioning; source selection writes
+public CA/bindings without restarting SM. The role stays in runtime data;
 only Test selects `demo-5s`, and an empty Factory/Production uses `standard`.
 No private keys, role assignment or captured vehicle data are baked into the
 image. Existing .29 transient qualification commands remain separate.
 
-### Test-only SM clock-age qualification
+### Test-only SM qualification
 
 The 2026-09-06 local-demo exception is documented in the
 [Safe Stop contract](../../contracts/platform-fota-safe-stop/README.md) and
 [VDP checkpoint](../../docs/qualification/democtl-vdp-family.md). In the isolated
-Test .29 qualification environment, `component sm-builder-start test` starts
+Test qualification environment, `component sm-builder-start test` starts
 the existing Builder on port 10024; `component sm-build test` compiles only SM,
-runs the targeted native Stop/Start suite, exports the fixed proof artifact
+runs the three targeted factory-placeholder regressions, exports the proof artifact
 and stops Builder. `component sm-test test` reruns that test on the existing
 compiled target without compiling again. Test failures retain their output.
 `component sm-builder-stop test` is the explicit graceful stop.
 
-`component sm-apply test` applies that artifact and the explicit `demo-5s`
-setting through temporary systemd mounts/credentials; `component sm-status
+The current authorized target is Test .30, local VM
+`7a2d4419-5a37-4838-ab5c-ed0d2792b9e8`. Proof sources use the .30 source commit
+plus the recorded runtime delta in a separate Builder source directory. The
+artifact is `demo-artifacts/aosedge-sdv-demo/runtime-proofs/sm-factory-placeholder`.
+
+`component sm-apply test` applies only that binary through a temporary systemd
+mount and one restart, preserving the Factory configuration and public inputs;
+`component sm-status
 test` observes the effective binary and profile. These are bounded qualification
-commands, pinned to the authorized Test .29, not general release deployment.
+commands, pinned to the authorized Test .30, not general release deployment.
 They do not modify the immutable Factory image, Cloud or Production; the
 temporary substitution disappears at VM reboot. The normal default remains
 250 ms. No VDP update is implied by SM application.

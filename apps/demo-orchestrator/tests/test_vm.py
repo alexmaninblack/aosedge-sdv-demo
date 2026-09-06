@@ -33,6 +33,9 @@ class FakeRuntime(VMService):
     def _host_profile(self):
         pass
 
+    def _initialize_factory_role(self, state, role):
+        return {"state": "INITIALIZED", "role": role}
+
     def _free_port(self, port, udp=False):
         pass
 

@@ -281,6 +281,15 @@ class ImagesAndCreateTests(unittest.TestCase):
         self.assertEqual("CLOUD_RETIRED_CLI_RUN", result["scope"])
         self.assertTrue(result["cloudReadsPerformed"])
         self.assertFalse((self.root / JOURNAL).exists())
+
+    def test_retire_borrowed_dns_is_not_owned_or_stopped(self):
+        state = self.create("test")
+        state["shared"] = {"dns": {"ownership": "EXTERNAL_DEPENDENCY", "state": "RUNNING", "pid": 123,
+            "ownerRoot": str(self.workspace / "canonical"), "ownerId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"}}
+        atomic_json(self.root / JOURNAL, state)
+        result = self.service.retire()
+        self.assertEqual("REMOVED", result["outcome"])
+        self.assertFalse(any("canonical" in path for path in result["removed"]))
         self.assertEqual(self.sha, digest(self.source))
         self.create()
 
@@ -292,6 +301,84 @@ class ImagesAndCreateTests(unittest.TestCase):
         with self.assertRaisesRegex(EnvironmentError, "CLOUD_RETIREMENT_PROOF_REQUIRED"):
             self.service.retire(cloud_check=check)
         check.assert_not_called()
+
+    def source_retirement_fixture(self):
+        state = self.retired_cloud_state()
+        identity = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+        relative = ".run/demo-current/source/" + identity
+        run = self.service._directory(relative)
+        self.service._directory(".run/demo-current/control")
+        atomic_json(run / "manifest.json", {"run_id": identity, "status": "completed"})
+        (run / "runner.log").write_text("owned temporary runtime output\n")
+        state["source"] = dict(runId=identity, runDirectory=relative,
+            controlDirectory=".run/demo-current/control", state="STOPPED", operation=None,
+            runnerCommand=["fixture", "--owned-run", str(run)],
+            simulatorCommand=["fixture", "--simulator"])
+        state["componentOperations"] = {"9.0.0": {"upload": {"attemptStarted": True, "state": "CONFIRMED"}}}
+        state["smDemoProof"] = {"state": "APPLIED"}
+        atomic_json(self.root / JOURNAL, state)
+        return state, run
+
+    def test_retire_stopped_source_outputs_preserves_original_and_recreates(self):
+        state, run = self.source_retirement_fixture()
+        result = self.service.retire(cloud_check=Mock(return_value=True))
+        self.assertIn(str(run.relative_to(self.root) / "runner.log"), result["removed"])
+        self.assertFalse((self.root / ".run/demo-current/source").exists())
+        self.assertFalse((self.root / ".run/demo-current/control").exists())
+        self.assertEqual(self.sha, digest(self.source))
+        self.create()
+
+    def test_retire_source_rejects_live_unknown_and_symlink_before_unlink(self):
+        state, run = self.source_retirement_fixture()
+        with patch("aosedge_demo_orchestrator.source.SourceDriver.live_process", return_value=123):
+            with self.assertRaisesRegex(EnvironmentError, "SIMULATION_MUST_BE_STOPPED"):
+                self.service.retire(cloud_check=Mock(return_value=True))
+        extra = run / "unowned.txt"
+        extra.write_text("must remain")
+        with self.assertRaisesRegex(EnvironmentError, "UNTRACKED_SOURCE_RUNTIME_FILE"):
+            self.service.retire(cloud_check=Mock(return_value=True))
+        extra.unlink()
+        log = run / "runner.log"
+        log.unlink()
+        log.symlink_to(self.source)
+        with self.assertRaisesRegex(EnvironmentError, "CLEANUP_FILE_NOT_OWNED"):
+            self.service.retire(cloud_check=Mock(return_value=True))
+        self.assertTrue((self.root / state["vehicles"]["test"]["overlay"]).exists())
+        self.assertEqual(self.sha, digest(self.source))
+
+    def test_retire_source_resumes_after_runtime_unlink_without_manifest(self):
+        state, run = self.source_retirement_fixture()
+        original = self.service._unlink_owned
+        def interrupted(path, identity):
+            original(path, identity)
+            if path == run / "manifest.json":
+                raise OSError("interrupted after manifest unlink")
+        with patch.object(self.service, "_unlink_owned", side_effect=interrupted), self.assertRaises(OSError):
+            self.service.retire(cloud_check=Mock(return_value=True))
+        self.assertEqual("REMOVED", self.service.retire(cloud_check=Mock(return_value=True))["outcome"])
+        self.assertFalse(run.exists())
+
+    def test_retire_keeps_uncertain_component_publication(self):
+        state, run = self.source_retirement_fixture()
+        state["componentOperations"]["9.0.0"]["upload"]["state"] = "UNCERTAIN"
+        atomic_json(self.root / JOURNAL, state)
+        with self.assertRaisesRegex(EnvironmentError, "COMPONENT_OPERATION_RECONCILIATION_REQUIRED"):
+            self.service.retire(cloud_check=Mock(return_value=True))
+        self.assertTrue(run.exists())
+
+    def test_retire_obsolete_send_needs_exact_deleted_target_and_fresh_proof(self):
+        state, run = self.source_retirement_fixture()
+        send = {"attemptStarted": True, "state": "UNCERTAIN", "unitId": "wrong-target"}
+        state["componentOperations"]["9.0.0"]["send"] = send
+        atomic_json(self.root / JOURNAL, state)
+        with self.assertRaisesRegex(EnvironmentError, "COMPONENT_OPERATION_RECONCILIATION_REQUIRED"):
+            self.service.retire(cloud_check=Mock(return_value=True))
+        send["unitId"] = state["vehicles"]["test"]["unitId"]
+        atomic_json(self.root / JOURNAL, state)
+        with self.assertRaisesRegex(EnvironmentError, "FRESH_CLOUD_RETIREMENT_CHECK_FAILED"):
+            self.service.retire(cloud_check=Mock(return_value=False))
+        self.assertTrue(run.exists())
+        self.assertEqual("REMOVED", self.service.retire(cloud_check=Mock(return_value=True))["outcome"])
 
     def test_cloud_retire_rechecks_cloud_after_interrupted_unlink(self):
         state = self.retired_cloud_state()

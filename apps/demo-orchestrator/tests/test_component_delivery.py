@@ -261,6 +261,24 @@ class DeliveryTests(unittest.TestCase):
         self.assertNotIn("hidden fixture", json.dumps(result))
         self.assertNotIn("SECRET_FIXTURE", json.dumps(result))
 
+    def test_journal_preserves_cm_phases_and_typed_instance_status(self):
+        service = SimpleNamespace(returncode=0, stdout="Id=aos-cm.service\n")
+        messages = [dict(MESSAGE=message, __REALTIME_TIMESTAMP=str(index), _SYSTEMD_UNIT="aos-cm.service")
+            for index, message in enumerate((
+                "(updatemanager) Update state changed: state=activating",
+                "(launcher) Instance status received: instance={component:1:factory-vdp:aos-vm-main:0}, version=0.0.0, state=activating",
+                "(updatemanager) Current update canceled",
+                "(launcher) Instance status received: instance={component:0:vdp:subject:0}, version=8.0.0, state=active, token=SECRET_FIXTURE"))]
+        journal = SimpleNamespace(returncode=0, stdout="\n".join(json.dumps(value) for value in messages))
+        empty = SimpleNamespace(returncode=0, stdout="")
+        with patch.object(source_guest, "command", side_effect=[service, journal, empty, empty, empty]):
+            result = source_guest.execute(dict(action="component-logs", vehicle=dict(localVmId="fixture")))
+        self.assertEqual(2, len(result["cmUpdatePhases"]))
+        self.assertEqual(dict(type="component", preinstalled=True, itemId="factory-vdp", subjectId="aos-vm-main",
+            instance=0, version="0.0.0", state="activating"), result["entries"][1]["nativeInstance"])
+        self.assertNotIn("SECRET_FIXTURE", json.dumps(result))
+        self.assertNotIn("{component:", json.dumps(result))
+
     def test_unconfirmed_approval_does_not_report_completion(self):
         self.state["componentOperations"] = {"2.0.0": dict(deploymentId="bundle", sha256="digest")}
         self.save()

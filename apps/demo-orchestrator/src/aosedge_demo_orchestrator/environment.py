@@ -24,12 +24,17 @@ FACTORY = {"raw": ".local/factory/oem-demo-factory.img",
            "qcow2": ".local/factory/oem-demo-factory.qcow2"}
 MANIFEST = ".local/factory/oem-demo-factory.manifest.json"
 JOURNAL = ".run/demo-current/journal.json"
+SOURCE_RUNTIME_FILES = frozenset(("input.json", "configuration.json", "manifest.json",
+    "startup-timeline.json", "startup-timeline.json.lock", "start.gate", "events.jsonl",
+    "controller-status.json", "simulator.log", "runner.log"))
 
 
 def cleanup_targets(state):
     from .guest_access import ACCESS_FILES
     roles = [role for role in OVERLAYS if role in state["vehicles"]]
     targets = {role: OVERLAYS[role] for role in roles}
+    for relative in state.get("runtimeCleanup", {}).get("files", []):
+        targets["runtime:" + relative] = relative
     for role in roles:
         if state["vehicles"][role].get("runtime", {}).get("accessCreated"):
             for name in ACCESS_FILES:
@@ -335,7 +340,8 @@ class EnvironmentService:
         if (not isinstance(state, dict) or type(state.get("schemaVersion")) is not int
                 or state["schemaVersion"] != 1 or state.get("kind") != "democtl.current-run"
                 or set(state) - {"schemaVersion", "kind", "startedAt", "stage", "scope", "factory",
-                                 "currentVehicle", "vehicles", "operations", "retirement", "shared", "cloudBinding"}
+                                 "currentVehicle", "vehicles", "operations", "retirement", "shared", "cloudBinding",
+                                 "source", "componentOperations", "componentSchema", "smDemoProof", "runtimeCleanup"}
                 or state.get("stage") not in ("MANUFACTURED", "LOCAL_STOPPED", "RETIRING_LOCAL")
                 or state.get("currentVehicle") is not None):
             raise EnvironmentError("LOCAL_RETIRE_REQUIRES_UNUSED_MANUFACTURED_ENVIRONMENT")
@@ -367,7 +373,14 @@ class EnvironmentService:
                     or item["runtime"].get("state") != "STOPPED"):
                 raise EnvironmentError("VM_MUST_BE_STOPPED_BEFORE_RETIRE")
         dns = state.get("shared", {}).get("dns")
-        if dns and (dns.get("state") != "STOPPED" or dns.get("pid") is not None):
+        if dns and dns.get("ownership") == "EXTERNAL_DEPENDENCY":
+            # Retiring a stopped borrower neither owns nor stops the shared bridge.
+            if (state.get("scope") != "SINGLE_ROLE_ENGINEERING" or set(vehicles) != {"test"}
+                    or not Path(dns.get("ownerRoot", "")).is_absolute()
+                    or Path(dns["ownerRoot"]).resolve() == self.root):
+                raise EnvironmentError("DNS_DEPENDENCY_BINDING_INVALID")
+            object_id(dns.get("ownerId"))
+        elif dns and (dns.get("state") != "STOPPED" or dns.get("pid") is not None):
             raise EnvironmentError("DNS_MUST_BE_STOPPED_BEFORE_RETIRE")
         operations = state.get("operations")
         if not isinstance(operations, list) or not 1 <= len(operations) <= 2:
@@ -396,6 +409,89 @@ class EnvironmentService:
                     raise EnvironmentError("CLEANUP_JOURNAL_INVALID")
         return resuming
 
+    def _runtime_cleanup(self, state):
+        """Plan only fixed Demo Control source outputs; never recursive deletion."""
+        source = state.get("source")
+        base = ".run/demo-current/source"
+        control = ".run/demo-current/control"
+        if source:
+            run_id = object_id(source.get("runId"))
+            if (source.get("state") != "STOPPED" or source.get("operation") or source.get("stopOperation")
+                    or source.get("runDirectory") != base + "/" + run_id
+                    or source.get("controlDirectory") != control):
+                raise EnvironmentError("SIMULATION_MUST_BE_STOPPED_BEFORE_RETIRE")
+            from .source import SourceDriver
+            from .vm import VMService
+            driver = SourceDriver(VMService(self))
+            if any(driver.live_process(source[key]) for key in ("runnerCommand", "simulatorCommand")):
+                raise EnvironmentError("SIMULATION_MUST_BE_STOPPED_BEFORE_RETIRE")
+            if any(str(self.root / base) in args or str(self.root / control) in args
+                   for _, args in driver.vm._processes()):
+                raise EnvironmentError("SOURCE_RUNTIME_STILL_IN_USE")
+        elif any((self.root / p).exists() or (self.root / p).is_symlink() for p in (base, control)):
+            raise EnvironmentError("SOURCE_RUNTIME_OWNERSHIP_MISSING")
+        for record in state.get("componentOperations", {}).values():
+            for action in ("upload", "approve", "unapprove", "send"):
+                attempt = record.get(action)
+                if isinstance(attempt, dict) and attempt.get("attemptStarted") and attempt.get("state") != "CONFIRMED":
+                    # A Unit-scoped send cannot survive authoritative deletion
+                    # of that exact target. This is not proof of delivery; the
+                    # fresh cloud_check below is still mandatory before unlink.
+                    if action == "send" and any(attempt.get("unitId") == item.get("unitId")
+                            and item.get("cloud", {}).get("lifecycle") == "DELETED"
+                            and item.get("cloud", {}).get("absenceConfirmed") is True
+                            for item in state["vehicles"].values()):
+                        continue
+                    raise EnvironmentError("COMPONENT_OPERATION_RECONCILIATION_REQUIRED")
+        plan = state.get("runtimeCleanup")
+        if plan is None:
+            plan = {"files": [], "directories": []}
+            root = self.root / base
+            if root.exists() or root.is_symlink():
+                self._directory(base)
+                for run in sorted(root.iterdir()):
+                    object_id(run.name)
+                    relative = base + "/" + run.name
+                    self._directory(relative)
+                    manifest = run / "manifest.json"
+                    self._owned_file(manifest)
+                    receipt = read_json(manifest)
+                    if receipt.get("run_id") != run.name or receipt.get("status") not in ("completed", "failed"):
+                        raise EnvironmentError("SOURCE_RUNTIME_RECEIPT_INVALID")
+                    for path in sorted(run.iterdir()):
+                        if path.name not in SOURCE_RUNTIME_FILES:
+                            raise EnvironmentError("UNTRACKED_SOURCE_RUNTIME_FILE")
+                        plan["files"].append(relative + "/" + path.name)
+                    plan["directories"].append(relative)
+                plan["directories"].append(base)
+            if (self.root / control).exists() or (self.root / control).is_symlink():
+                self._directory(control)
+                if any((self.root / control).iterdir()):
+                    raise EnvironmentError("SOURCE_CONTROL_CLEANUP_INCOMPLETE")
+                plan["directories"].append(control)
+        if (not isinstance(plan, dict) or set(plan) != {"files", "directories"}
+                or any(not isinstance(plan[k], list) or len(plan[k]) != len(set(plan[k])) for k in plan)):
+            raise EnvironmentError("RUNTIME_CLEANUP_PLAN_INVALID")
+        for relative in plan["directories"]:
+            parts = Path(relative).parts
+            if relative not in (base, control):
+                if len(parts) != 4 or parts[:3] != Path(base).parts:
+                    raise EnvironmentError("RUNTIME_CLEANUP_PLAN_INVALID")
+                object_id(parts[3])
+            path = self.root / relative
+            if path.exists() or path.is_symlink():
+                self._directory(relative)
+                allowed = set(plan["directories"]) | set(plan["files"])
+                if any(str(p.relative_to(self.root)) not in allowed for p in path.iterdir()):
+                    raise EnvironmentError("UNTRACKED_SOURCE_RUNTIME_FILE")
+        for relative in plan["files"]:
+            parts = Path(relative).parts
+            if (len(parts) != 5 or parts[:3] != Path(base).parts or parts[4] not in SOURCE_RUNTIME_FILES
+                    or str(Path(relative).parent) not in plan["directories"]):
+                raise EnvironmentError("RUNTIME_CLEANUP_PLAN_INVALID")
+            object_id(parts[3])
+        return plan
+
     def _unlink_owned(self, path, identity):
         # Reconcile this exact inode and its users immediately before deletion.
         if self._owned_file(path) != identity:
@@ -410,7 +506,7 @@ class EnvironmentService:
         """Dispose unused or authoritatively Cloud-retired CLI output; not scenario R0."""
         with self._writer():
             run_root = self.root / ".run/demo-current"
-            if any(p.name not in ("writer.lock", "journal.json", "test-access", "production-access") for p in run_root.iterdir()):
+            if any(p.name not in ("writer.lock", "journal.json", "test-access", "production-access", "source", "control") for p in run_root.iterdir()):
                 raise EnvironmentError("CURRENT_RUN_RECOVERY_REQUIRED")
             overlay_root = self.root / ".local/demo-current"
             if overlay_root.exists() or overlay_root.is_symlink():
@@ -418,6 +514,8 @@ class EnvironmentService:
             journal_path = self.root / JOURNAL
             factory_root = self.root / ".local/factory"
             if not journal_path.exists() and not journal_path.is_symlink():
+                if any((run_root / name).exists() or (run_root / name).is_symlink() for name in ("source", "control")):
+                    raise EnvironmentError("SOURCE_RUNTIME_OWNERSHIP_MISSING")
                 if any((run_root / (role + "-access")).exists() for role in OVERLAYS):
                     raise EnvironmentError("ORPHAN_ACCESS_MATERIAL_REQUIRES_RECONCILIATION")
                 if overlay_root.exists() and any(overlay_root.iterdir()):
@@ -451,6 +549,7 @@ class EnvironmentService:
                 self._owned_file(journal_path)
                 state = read_json(journal_path)
                 resuming = self._local_retirement_state(state)
+            state["runtimeCleanup"] = self._runtime_cleanup(state)
             factory = state.get("factory")
             if (not isinstance(factory, dict) or factory.get("format") not in FACTORY
                     or factory.get("path") != FACTORY[factory["format"]]
@@ -544,10 +643,14 @@ class EnvironmentService:
                 access = run_root / (role + "-access")
                 if access.exists():
                     access.rmdir()
+            for relative in state["runtimeCleanup"]["directories"]:
+                path = self.root / relative
+                if path.exists():
+                    path.rmdir()  # Empty, validated exact directory only.
             journal_path.unlink()  # Last recovery record; all exact targets are absent.
             sync_directory(run_root)
             # Keep the lock inode stable for waiting/current/future writers.
             return {"scope": "CLOUD_RETIRED_CLI_RUN" if cloud_retired else "UNUSED_LOCAL_CREATE", "outcome": "REMOVED",
-                    "removed": list(targets.values()) + [JOURNAL],
+                    "removed": list(targets.values()) + state["runtimeCleanup"]["directories"] + [JOURNAL],
                     "preserved": ["demo-artifacts source image and published manifests"], "cloudActions": False,
                     "cloudReadsPerformed": cloud_retired, "recoverable": False}

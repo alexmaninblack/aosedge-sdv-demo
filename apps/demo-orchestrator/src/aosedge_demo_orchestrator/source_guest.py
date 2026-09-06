@@ -232,6 +232,28 @@ def sm_public_inputs(pid, runtime):
     return host, namespace, profile
 
 
+def initialize_factory_role(request):
+    if not FACTORY_INPUTS_MARKER.is_file():
+        return dict(state="NOT_APPLICABLE")
+    role = request.get("role")
+    if role not in ("test", "production"):
+        raise ValueError("SOURCE_ROLE_INVALID")
+    if any(path.is_symlink() for path in (FACTORY_INPUTS,) + tuple(FACTORY_INPUTS.parents)):
+        raise ValueError("SOURCE_INPUT_SYMLINK")
+    path = FACTORY_INPUTS / "role"
+    if path.is_symlink():
+        raise ValueError("SOURCE_INPUT_SYMLINK")
+    if path.exists():
+        if path.read_text() != role + "\n":
+            raise ValueError("SOURCE_FACTORY_ROLE_CONFLICT")
+        return dict(state="INITIALIZED", role=role, noOp=True)
+    state = command(["systemctl", "show", "aos-sm", "--property=ActiveState", "--value"])
+    if state.returncode or state.stdout.strip() != "inactive":
+        raise ValueError("SOURCE_FACTORY_ROLE_REQUIRES_UNPROVISIONED_VM")
+    write_public(path, role + "\n")
+    return dict(state="INITIALIZED", role=role, noOp=False)
+
+
 def configure(request):
     item = request["vehicle"]
     generation = request["generation"]
@@ -249,20 +271,17 @@ def configure(request):
             raise ValueError("SOURCE_ROLE_INVALID")
         if any(path.is_symlink() for path in (FACTORY_INPUTS,) + tuple(FACTORY_INPUTS.parents)):
             raise ValueError("SOURCE_INPUT_SYMLINK")
+        role_path = FACTORY_INPUTS / "role"
+        if role_path.is_symlink() or not role_path.is_file() or role_path.read_text() != role + "\n":
+            raise ValueError("SOURCE_FACTORY_ROLE_NOT_INITIALIZED")
         changed = write_public(FACTORY_INPUTS / "viss-update-ca", request["ca"])
         changed = write_public(FACTORY_INPUTS / "selected.json", vdp) or changed
         write_public(FACTORY_INPUTS / "viss-update-binding", sm)
-        role_changed = write_public(FACTORY_INPUTS / "role", role + "\n")
-        # ParseConfig reads the role at initialization; source generations do
-        # not require another SM restart. Missing role defaults to standard.
-        if role_changed:
-            if command(["systemctl", "restart", "aos-sm"]).returncode:
-                raise ValueError("SOURCE_SM_ROLE_RESTART_FAILED")
         active = command(["systemctl", "show", "aos-vehicle-data-provider", "--property=ActiveState", "--value"]).stdout.strip()
         if changed and active in ("active", "activating", "failed"):
             if command(["systemctl", "restart", "aos-vehicle-data-provider"]).returncode:
                 raise ValueError("VDP_CONFIGURATION_RESTART_FAILED")
-        return dict(configured=True, persistent=True, role=role, smRestarted=role_changed)
+        return dict(configured=True, persistent=True, role=role, smRestarted=False)
     # These are public trust/configuration inputs, never client authentication.
     write_public(ROOT / "ca.pem", request["ca"])
     write_public(ROOT / "selected.json", vdp)
@@ -421,6 +440,37 @@ def sm_load_public_credentials(root, dropin, request):
 
 
 def execute(request):
+    if request["action"] == "component-sm-apply" and request.get("proof") == "factory-placeholder":
+        if request.get("target") != "test" or request["vehicle"].get("localVmId") != "7a2d4419-5a37-4838-ab5c-ed0d2792b9e8":
+            raise ValueError("SM_PROOF_REQUIRES_AUTHORIZED_TEST_30")
+        observation = execute(dict(request, action="component-sm-status"))
+        if observation["binarySha256"] == request["sha256"]:
+            return dict(state="APPLIED", noOp=True, persistentFactoryInputs=True, **observation)
+        if (observation["binarySha256"] != "8841250027b197e0cde0f20b745425be5e8ba41a14c8a1a0b36851fdbedf728b"
+                or observation["freshnessProfile"] != "demo-5s" or not FACTORY_INPUTS_MARKER.is_file()):
+            raise ValueError("SM_FACTORY_30_BASE_MISMATCH")
+        if Path("/var/aos/workdirs/sm/runtimes/systemd-slot-component/state/transaction.json").exists():
+            raise ValueError("SM_ACTIVE_TRANSACTION_PRESERVED")
+        raw = base64.b64decode(request["binary"], validate=True)
+        if hashlib.sha256(raw).hexdigest() != request["sha256"] or raw[:5] != b"\x7fELF\x02" or raw[18:20] != b"\xb7\x00":
+            raise ValueError("SM_ARM64_BINARY_SHA_MISMATCH")
+        root = Path("/run/democtl-sm-factory-placeholder")
+        dropin = Path("/run/systemd/system/aos-sm.service.d/91-democtl-sm-factory-placeholder.conf")
+        if root.exists() or dropin.exists() or dropin.is_symlink():
+            raise ValueError("SM_TRANSIENT_STATE_REQUIRES_RECONCILIATION")
+        root.mkdir(mode=0o700)
+        (root / "aos_sm_app").write_bytes(raw)
+        (root / "aos_sm_app").chmod(0o755)
+        command(["chcon", "--reference=/usr/bin/aos_sm_app", str(root / "aos_sm_app")], check=True)
+        dropin.parent.mkdir(parents=True, exist_ok=True)
+        dropin.write_text("[Service]\nBindReadOnlyPaths=" + str(root / "aos_sm_app") + ":/usr/bin/aos_sm_app\n")
+        command(["systemctl", "daemon-reload"], check=True)
+        subprocess.run(["systemctl", "restart", "aos-sm"], capture_output=True, text=True, timeout=20, check=True)
+        result = execute(dict(request, action="component-sm-status"))
+        if (result["binarySha256"] != request["sha256"] or result["freshnessProfile"] != "demo-5s"
+                or result["service"]["ActiveState"] != "active"):
+            raise ValueError("SM_TRANSIENT_ACTIVATION_UNCONFIRMED")
+        return dict(state="APPLIED", noOp=False, persistentFactoryInputs=True, **dict(result, mutation=True))
     if request["action"] == "component-sm-apply":
         if request.get("target") != "test" or request["vehicle"].get("localVmId") != "540cdea7-3fb8-4554-93aa-75cdf0ed577d":
             raise ValueError("SM_PROOF_REQUIRES_AUTHORIZED_TEST_29")
@@ -518,6 +568,8 @@ def execute(request):
                         if any(path in line for path in ("/run/credentials", "/run/democtl-sm", "/etc/aos/sm.cfg", "/usr/bin/aos_sm_app"))][:20] if executable else [],
                     mutation=False)
     action = request["action"]
+    if action == "factory-role":
+        return initialize_factory_role(request)
     identity = request["vehicle"]["localVmId"]
     if action in ("component-schema-apply", "component-schema-remove"):
         return vss_change(request)
@@ -589,9 +641,9 @@ def execute(request):
         ids = [line[3:] for line in services.stdout.splitlines() if line.startswith("Id=")]
         streams = []
         for unit in ids + ["kuksa-databroker.service", "aos-vehicle-data-provider-selftest@a.service", "aos-vehicle-data-provider-selftest@b.service"]:
-            result = command(["journalctl", "-b", "-n", "1000" if unit == "aos-sm.service" else "80",
+            result = command(["journalctl", "-b", "-n", "4000" if unit == "aos-cm.service" else "1000" if unit == "aos-sm.service" else "80",
                               "-o", "json", "--no-pager", "-u", unit])
-            if result.returncode or len(result.stdout) > 2097152:
+            if result.returncode or len(result.stdout) > (8388608 if unit == "aos-cm.service" else 2097152):
                 raise ValueError("COMPONENT_JOURNAL_UNAVAILABLE")
             streams.extend(result.stdout.splitlines())
         entries, structures, ready_events = [], set(), 0
@@ -617,6 +669,19 @@ def execute(request):
                         continue
                 except (ValueError, TypeError):
                     continue
+            # Preserve only typed public instance identity/status fields; never
+            # return the unrestricted native instance body or error payload.
+            native_fields = {}
+            native = re.search(r"(?:instance|instanceID|ident)=\{(component|service):([01]):([A-Za-z0-9_.-]{1,128}):([A-Za-z0-9_.-]{1,128}):([0-9]{1,20})\}", message)
+            if native:
+                native_fields = dict(type=native[1], preinstalled=native[2] == "1",
+                    itemId=native[3], subjectId=native[4], instance=int(native[5]))
+                for field, pattern in (("version", r"[0-9]+\.[0-9]+\.[0-9]+(?:-[A-Za-z0-9_.-]+)?"),
+                                       ("state", r"activating|active|inactive|failed"),
+                                       ("runtimeID", r"[0-9a-f-]{36}")):
+                    value = re.search(r"\b" + field + "=(" + pattern + r")(?=,|\s|$)", message)
+                    if value:
+                        native_fields[field] = value[1]
             # Preserve only known fixed runtime failure labels before removing
             # instance bodies, which otherwise also hide the trailing error.
             diagnostic = next((label for label in (
@@ -629,18 +694,22 @@ def execute(request):
             if (re.search(r"token|password|private.?key|certificate|authorization|jwt|https?://|wss?://", message, re.I)
                     or "-----BEGIN" in message or re.search(r"eyJ[A-Za-z0-9_-]+\.", message)):
                 continue
-            if not re.search(r"fail|error|cannot|could not|stop|start|health|slot|component|provider|safe.?stop", message, re.I):
+            if not re.search(r"fail|error|cannot|could not|stop|start|health|slot|component|provider|safe.?stop|desired.?status|run.?instances|wait.*active|wait.*node|node.?status|instance.?status|instances.?statuses|Update state changed|Current update canceled", message, re.I):
                 continue
             message = re.sub(r"[A-Za-z0-9_+/=-]{48,}", "[REDACTED_LONG_VALUE]", message)
             message = re.sub(r"[\x00-\x1f\x7f]", " ", message)[:600]
             entry = dict(time=item.get("__REALTIME_TIMESTAMP"), unit=item.get("_SYSTEMD_UNIT"), message=message)
             if diagnostic:
                 entry["diagnostic"] = diagnostic
+            if native_fields:
+                entry["nativeInstance"] = native_fields
             entries.append(entry)
         entries.sort(key=lambda entry: int(entry["time"] or 0))
-        return dict(entries=entries[-80:], scannedEntries=len(streams), providerReadyEvents=ready_events, structuredFields=sorted(structures),
+        return dict(entries=entries[-200:], scannedEntries=len(streams), providerReadyEvents=ready_events, structuredFields=sorted(structures),
                     services=services.stdout.strip().splitlines(), guestEpoch=int(time.time()),
-                    window="Current boot: last 1000 SM / 80 other service events", projection="BOUNDED_REDACTED_SERVICE_EVENTS")
+                    cmUpdatePhases=[entry for entry in entries if entry["unit"] == "aos-cm.service" and
+                        re.search(r"Update state changed|Current update canceled|Cancel current update|Failed to process desired status", entry["message"])][-80:],
+                    window="Current boot: last 4000 CM / 1000 SM / 80 other service events", projection="BOUNDED_REDACTED_SERVICE_EVENTS")
     if action == "component-status":
         result = execute(dict(request, action="status"))
         root = Path("/var/aos/workdirs/sm/runtimes/systemd-slot-component")

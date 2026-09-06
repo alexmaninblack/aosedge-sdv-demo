@@ -18,6 +18,20 @@ not a new component or a replacement for the accepted requirements.
 It records the documentation audit, agreed direction and proposals still to
 review. Publishing this draft does not authorize runtime or Cloud changes.
 
+## Accepted Factory .30 correction — 2026-09-06
+
+The operator approved initializing the manufactured Test/Production role in
+`vm start`, before provisioning enables SM. Source selection updates only its
+public source inputs and does not restart SM. The existing Test-only
+`component sm-build` / `component sm-apply` commands qualify the factory-marker
+correction on the preserved .30 Test; they do not rebuild the Factory image,
+alter CM timeouts, bypass Safe Stop or modify Production. The marker remains a
+terminal empty-slot baseline during first-install waiting and becomes inactive
+when a real component is installed. Runtime start rejection must return a
+terminal failed status rather than leave an instance activating. Exact scope,
+tests and live results are recorded in the
+[release checkpoint](../qualification/democtl-release-checkpoint.md).
+
 ## Implementation Checkpoint — 2026-09-05
 
 The user authorized the first read-only status implementation after reviewing
@@ -201,6 +215,20 @@ failed create and unobservable ownership block this narrow path. A separately
 authorized Cloud-retired CLI-only path is described under Unit Lifecycle;
 absent local Unit IDs alone are never a cleanup proof. Complete scenario runs
 still require full R0.
+The 2026-09-06 cleanup amendment extends this same `environment retire` command
+to the stopped telemetry-demo source and completed component-operation records.
+It requires deleted Cloud identities, stopped VMs, a stopped Controller/Gateway,
+terminal source-run manifests and no live owner/open file handles. It removes
+only the fixed source-output filenames inside owned UUID run directories,
+the empty control directory, generated SSH access, overlays and factory copy,
+then the journal. Unknown files, symlinks and unresolved publications block
+cleanup. An uncertain Unit-scoped send may be discarded only after fresh
+authoritative deletion of that exact target; this is not a successful-delivery
+claim. Uncertain global publication/approval still blocks. The runtime-file plan participates in existing interrupted-unlink
+reconciliation. A stopped single-Test borrower may retire without stopping its
+external canonical DNS bridge. Published images/bundles, Unit Sets, Cloud release
+history, source repositories, Builder and caches remain untouched. This is not
+general backend or full functional-scenario R0 cleanup.
 An interrupted local retire preserves per-file intent; another explicit retire
 reconciles remaining targets before continuing. Missing/corrupt journal data is
 never replaced by guessed ownership or a recursive directory delete.

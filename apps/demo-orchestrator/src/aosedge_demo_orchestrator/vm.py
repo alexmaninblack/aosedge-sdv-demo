@@ -377,6 +377,12 @@ class VMService:
         self._save(state)
         self.progress(role + ": VM process running")
 
+    def _initialize_factory_role(self, state, role):
+        from .source import SourceDriver
+        driver = SourceDriver(self)
+        with driver.operation(timeout=10):
+            return driver.guest(state, role, "factory-role")
+
     def _start(self, state, role, timeout, password):
         item = state["vehicles"][role]
         runtime = item["runtime"]
@@ -403,6 +409,8 @@ class VMService:
                     return {"state": "PARTIAL", "processState": "RUNNING", "reason": "SSH_ENROLLMENT_REQUIRES_INTERACTIVE_PASSWORD",
                             "sshPort": item["sshPort"]}
                 if guest["guestReady"] and guest["guestDnsReady"]:
+                    if guest.get("unprovisioned"):
+                        guest["factoryRole"] = self._initialize_factory_role(state, role)
                     return {"state": "COMPLETED", "processState": "RUNNING", **guest,
                             "sshPort": item["sshPort"], "access": str(access.relative_to(self.root))}
             except EnvironmentError:

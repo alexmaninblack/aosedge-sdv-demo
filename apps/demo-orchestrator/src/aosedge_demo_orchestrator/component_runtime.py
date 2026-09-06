@@ -21,9 +21,12 @@ import sys
 from .environment import EnvironmentError
 
 SOURCE = Path.home() / "OpenAI/CarlaSim/.worktrees/aos-platform-factory-29"
+FACTORY_SOURCE = Path.home() / "OpenAI/aos-vehicle-platform"
+FACTORY_VERSION = "6.1.1-maninblack.31"
+FACTORY_REVISION = "0bed8b3769b09fbe685ed599ca8d10e6594fbe53"
 RELATIVE = "meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files/systemd-slot-component"
 BUILDER_PROJECT = "/home/yocto/r61-build/project/yocto"
-ARTIFACT = Path.home() / "OpenAI/demo-artifacts/aosedge-sdv-demo/runtime-proofs/sm-stop-start"
+ARTIFACT = Path.home() / "OpenAI/demo-artifacts/aosedge-sdv-demo/runtime-proofs/sm-factory-placeholder"
 FILES = ("config.hpp", "config.cpp", "safestop.hpp", "safestop.cpp", "runtime.hpp", "runtime.cpp",
          "tests/safestop.cpp", "tests/runtime.cpp")
 
@@ -52,8 +55,8 @@ def apply_test(environment, target):
     with environment._writer():
         state = read_json(environment.root / JOURNAL)
         vehicle = state["vehicles"].get("test", {})
-        if vehicle.get("localVmId") != "540cdea7-3fb8-4554-93aa-75cdf0ed577d":
-            raise EnvironmentError("SM_PROOF_REQUIRES_AUTHORIZED_TEST_29")
+        if vehicle.get("localVmId") != "7a2d4419-5a37-4838-ab5c-ed0d2792b9e8":
+            raise EnvironmentError("SM_PROOF_REQUIRES_AUTHORIZED_TEST_30")
         record = state.setdefault("smDemoProof", {})
         record.update(state="ATTEMPT_STARTED", startedAt=now(), binarySha256=manifest["executableSha256"])
         atomic_json(environment.root / JOURNAL, state)
@@ -62,12 +65,12 @@ def apply_test(environment, target):
             with driver.operation(timeout=60):
                 observed = driver.guest(state, "test", "component-sm-status")
                 result = driver.guest(state, "test", "component-sm-apply", target="test",
-                    proof="stop-start",
+                    proof="factory-placeholder",
                     binary="" if observed["binarySha256"] == manifest["executableSha256"] else base64.b64encode(raw).decode(),
                     sha256=manifest["executableSha256"])
                 # systemd clears service credentials on restart. Restore only
                 # the already selected Test's public trust/binding inputs.
-                if not result.get("noOp") and state.get("currentVehicle") == "test":
+                if not result.get("persistentFactoryInputs") and not result.get("noOp") and state.get("currentVehicle") == "test":
                     driver.guest(state, "test", "configure",
                         generation=state["source"]["assignmentGeneration"],
                         ca=driver.assets()["ca"].read_text())
@@ -82,17 +85,17 @@ def apply_test(environment, target):
 
 
 def build(target, compile_source=True):
-    """Compile only the accepted .29 SM recipe, run its suite, export, stop."""
+    """Compile only the .30 SM correction, run three regressions, export, stop."""
     if target != "test":
         raise EnvironmentError("SM_QUALIFICATION_TEST_ONLY")
     if ARTIFACT.exists():
         raise EnvironmentError("SM_PROOF_ARTIFACT_ALREADY_EXISTS")
-    expected = "45dfa22fce9b0b0fa636f1ca2dce876482ca5f68"
+    expected = "c3e08586d3c3d11b192041a9a7226765e098c63c"
     ssh = builder_ssh()
     try:
-        revision = subprocess.check_output(ssh + ["git -C " + BUILDER_PROJECT + "/aos-vehicle-platform rev-parse HEAD"], timeout=15).decode().strip()
+        revision = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=SOURCE).decode().strip()
         if revision != expected:
-            raise EnvironmentError("SM_BUILDER_BASE_REVISION_MISMATCH")
+            raise EnvironmentError("SM_SOURCE_BASE_REVISION_MISMATCH")
         data = io.BytesIO()
         inputs = {}
         with tarfile.open(fileobj=data, mode="w") as archive:
@@ -101,25 +104,38 @@ def build(target, compile_source=True):
                 inputs[name] = hashlib.sha256(path.read_bytes()).hexdigest()
                 archive.add(path, arcname=RELATIVE + "/" + name, recursive=False)
         if compile_source:
-            subprocess.run(ssh + ["tar -xf - -C " + BUILDER_PROJECT + "/aos-vehicle-platform"],
+            # Isolate proof sources; keep the .30 build's source snapshot intact.
+            identity = hashlib.sha256(json.dumps(inputs, sort_keys=True).encode()).hexdigest()[:40]
+            proof_source = BUILDER_PROJECT + "/aos-vehicle-platform-" + identity
+            archive = subprocess.check_output(["git", "archive", expected], cwd=SOURCE)
+            subprocess.run(ssh + ["mkdir -p " + proof_source], check=True, timeout=15)
+            subprocess.run(ssh + ["tar -xf - -C " + proof_source], input=archive, check=True, timeout=30)
+            subprocess.run(ssh + ["tar -xf - -C " + proof_source],
                            input=data.getvalue(), check=True, timeout=20, stdout=sys.stderr)
+            layer_update = ("from pathlib import Path; import re; p=Path(%r); "
+                "s,n=re.subn(r'aos-vehicle-platform(?:-[0-9a-f]{40})?/meta-aos-vehicle-platform', %r, p.read_text()); "
+                "assert n == 1; p.write_text(s)") % (BUILDER_PROJECT + "/build-main/conf/bblayers.conf",
+                    Path(proof_source).name + "/meta-aos-vehicle-platform")
+            subprocess.run(ssh + ["python3 -c " + shlex.quote(layer_update)], check=True, timeout=15)
             print("Test SM: offline recipe compile; no image build", file=sys.stderr, flush=True)
-            command = "cd " + BUILDER_PROJECT + "; . poky/oe-init-build-env build-main >/dev/null; BB_NO_NETWORK=1 BB_FETCH_PREMIRRORONLY=1 bitbake -c compile aos-servicemanager"
+            command = "cd " + BUILDER_PROJECT + "; . poky/oe-init-build-env build-main >/dev/null; bitbake -R " + proof_source + "/qualification/factory-30.conf -c compile aos-servicemanager"
             subprocess.run(ssh + ["bash -lc " + __import__("shlex").quote(command)],
                            check=True, timeout=1200, stdout=sys.stderr)
         work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-servicemanager/git"
         test = work + "/build/src/sm/launcher/runtimes/systemd-slot-component/tests/aos_sm_runtimes_systemdslotcomponent_test"
         loader = work + "/recipe-sysroot/usr/lib/ld-linux-aarch64.so.1"
         libs = work + "/recipe-sysroot/lib:" + work + "/recipe-sysroot/usr/lib"
-        test_filter = "*StopStart*:*StopMakes*:*StopMissing*:*StopCancellation*"
-        print("Test SM: executing targeted native Stop/Start regression tests", file=sys.stderr, flush=True)
+        test_filter = "*StartsWithAnEmptyPersistentStore:*FactoryPlaceholder*"
+        print("Test SM: executing three native factory-placeholder regressions", file=sys.stderr, flush=True)
         result = subprocess.run(ssh + ["sudo -n " + loader + " --library-path " + libs + " " + test + " --gtest_filter=" + __import__("shlex").quote(test_filter)],
-                                timeout=240, capture_output=True)
+                                timeout=30, capture_output=True)
         print(result.stdout.decode(), file=sys.stderr, flush=True)
         print(result.stderr.decode(), file=sys.stderr, flush=True)
         ARTIFACT.with_suffix(".test.log").write_bytes(result.stdout + result.stderr)
         if result.returncode:
             raise EnvironmentError("SM_TARGETED_TEST_FAILED:" + str(result.returncode))
+        if b"[  PASSED  ] 3 tests." not in result.stdout:
+            raise EnvironmentError("SM_EXPECTED_THREE_TESTS_NOT_EXECUTED")
         binaries = subprocess.check_output(ssh + ["find " + work + "/build -type f -name aos_sm_app"], timeout=20).decode().splitlines()
         if len(binaries) != 1:
             raise EnvironmentError("SM_BINARY_IDENTITY_UNRESOLVED")
@@ -172,11 +188,13 @@ def build_factory(version):
     gate image construction on the new configuration test and package QA, then
     reuse the existing Rouge disk description. Never alter a published image.
     """
-    if version != "6.1.1-maninblack.30":
+    if version != FACTORY_VERSION:
         raise EnvironmentError("FACTORY_BUILD_NOT_AUTHORIZED")
-    if subprocess.check_output(["git", "status", "--porcelain"], cwd=SOURCE):
+    if subprocess.check_output(["git", "status", "--porcelain"], cwd=FACTORY_SOURCE):
         raise EnvironmentError("FACTORY_COMMITTED_SOURCE_REQUIRED")
-    revision = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=SOURCE).decode().strip()
+    revision = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=FACTORY_SOURCE).decode().strip()
+    if revision != FACTORY_REVISION:
+        raise EnvironmentError("FACTORY_SOURCE_REVISION_MISMATCH")
     destination = ARTIFACT.parents[1] / "factory-images" / version
     if destination.exists():
         raise EnvironmentError("FACTORY_ARTIFACT_EXISTS_RECONCILE_WITHOUT_REBUILD")
@@ -190,7 +208,7 @@ def build_factory(version):
                                 stdout=subprocess.PIPE if capture else sys.stderr, stderr=sys.stderr, check=True)
         return result.stdout.decode() if capture else ""
     def stage(message):
-        print("Factory .30: " + message, file=sys.stderr, flush=True)
+        print("Factory .31: " + message, file=sys.stderr, flush=True)
     try:
         # The same established Builder adapter owns start/stop and disk guards.
         builder("test", "start")
@@ -202,7 +220,7 @@ def build_factory(version):
                     if line.strip() and Path(shlex.split(line)[0]).name == "rouge"]
         if len(assembly) != 1 or "main-qemuarm64.img" not in assembly[0]:
             raise EnvironmentError("FACTORY_PINNED_ROUGE_COMMAND_UNRESOLVED")
-        archive = subprocess.check_output(["git", "archive", revision], cwd=SOURCE)
+        archive = subprocess.check_output(["git", "archive", revision], cwd=FACTORY_SOURCE)
         remote("mkdir -p " + source)
         subprocess.run(ssh + ["tar -xf - -C " + source], input=archive, check=True, timeout=30, stdout=sys.stderr)
         # Change only the Platform layer binding. All other layers and caches
@@ -215,22 +233,24 @@ def build_factory(version):
                                     Path(source).name + "/meta-aos-vehicle-platform")
         remote("python3 -c " + shlex.quote(layer_update))
         prefix = "cd " + BUILDER_PROJECT + "; . poky/oe-init-build-env build-main >/dev/null; "
-        flags = " -R " + source + "/qualification/factory-30.conf "
-        stage("compile the changed SM configuration (offline)")
+        flags = " -R " + source + "/qualification/factory-31.conf "
+        stage("compile the proven SM correction from committed source (offline)")
         remote(prefix + "bitbake" + flags + "-c compile aos-servicemanager", timeout=1200, capture=False)
         work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-servicemanager/git"
         test = work + "/build/src/sm/launcher/runtimes/systemd-slot-component/tests/aos_sm_runtimes_systemdslotcomponent_test"
         loader = work + "/recipe-sysroot/usr/lib/ld-linux-aarch64.so.1"
         libs = work + "/recipe-sysroot/lib:" + work + "/recipe-sysroot/usr/lib"
-        stage("run only the new persistent-input and profile tests")
+        stage("run five factory-placeholder, persistent-input and profile regressions")
         test_log = remote("sudo -n " + loader + " --library-path " + libs + " " + test +
-            " --gtest_filter='*FactoryDemoInputs*:*AcceptsOnlyExplicitDemoFreshnessProfile*'", timeout=60)
+            " --gtest_filter='*FactoryDemoInputs*:*AcceptsOnlyExplicitDemoFreshnessProfile*:*StartsWithAnEmptyPersistentStore:*FactoryPlaceholder*'", timeout=30)
         print(test_log, file=sys.stderr, flush=True)
+        if "[  PASSED  ] 5 tests." not in test_log:
+            raise EnvironmentError("FACTORY_EXPECTED_FIVE_TESTS_NOT_EXECUTED")
         stage("package SM with package QA")
         remote(prefix + "bitbake" + flags + "aos-servicemanager", timeout=1200, capture=False)
         stage("construct the Factory filesystem from pinned sources")
         remote(prefix + "bitbake" + flags + "aos-image-vm", timeout=2400, capture=False)
-        output = "main-qemuarm64-factory-30.img"
+        output = "main-qemuarm64-factory-31.img"
         assembly = [output if item == "main-qemuarm64.img" else item for item in assembly[0]]
         assembly[0] = "/home/yocto/.local/bin/rouge"
         stage("assemble the same six-partition disk layout")
@@ -261,6 +281,8 @@ def build_factory(version):
         (destination / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
         (destination / "configuration-tests.log").write_text(test_log)
         return manifest
+    except EnvironmentError:
+        raise
     except (OSError, ValueError, subprocess.SubprocessError) as error:
         raise EnvironmentError("FACTORY_BUILD_FAILED:" + type(error).__name__) from None
     finally:

@@ -13,9 +13,9 @@ from aosedge_demo_orchestrator.source_guest import execute
 
 class RuntimeProofBoundaryTests(unittest.TestCase):
     def test_factory_build_cli_and_api_use_the_same_exact_release(self):
-        request = request_from_arguments(build_parser().parse_args(["image", "build", "6.1.1-maninblack.30"]))
+        request = request_from_arguments(build_parser().parse_args(["image", "build", "6.1.1-maninblack.31"]))
         app = Mock()
-        execute_operation(dict(domain="image", action="build", image="6.1.1-maninblack.30"), app)
+        execute_operation(dict(domain="image", action="build", image="6.1.1-maninblack.31"), app)
         self.assertEqual(request, app.execute.call_args.args[0])
         with self.assertRaises(ValueError):
             execute_operation(dict(domain="image", action="build", image="6.1.1-maninblack.29"), app)
@@ -43,6 +43,7 @@ class RuntimeProofBoundaryTests(unittest.TestCase):
 
     def test_wrong_test_vm_is_rejected_before_guest_commands(self):
         with patch("aosedge_demo_orchestrator.source_guest.command") as command:
-            with self.assertRaises(ValueError):
-                execute(dict(action="component-sm-apply", target="test", vehicle={"localVmId": "another-vm"}))
+            for proof in ("stop-start", "factory-placeholder"):
+                with self.assertRaises(ValueError):
+                    execute(dict(action="component-sm-apply", proof=proof, target="test", vehicle={"localVmId": "another-vm"}))
             command.assert_not_called()
