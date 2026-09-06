@@ -17,6 +17,7 @@ import shlex
 import shutil
 from pathlib import Path
 import sys
+import time
 
 from .environment import EnvironmentError
 
@@ -212,6 +213,20 @@ def build_factory(version):
     try:
         # The same established Builder adapter owns start/stop and disk guards.
         builder("test", "start")
+        stage("waiting for pinned key-only Builder SSH; 90-second boot budget")
+        deadline = time.monotonic() + 90
+        while True:
+            try:
+                ready = subprocess.run(ssh + ["true"], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, timeout=7)
+            except subprocess.TimeoutExpired:
+                ready = subprocess.CompletedProcess(ssh, 255, stderr=b"SSH boot probe timed out")
+            if ready.returncode == 0:
+                break
+            if b"Host key verification failed" in ready.stderr or b"Permission denied" in ready.stderr:
+                raise EnvironmentError("FACTORY_BUILDER_SSH_TRUST_OR_AUTH_FAILED")
+            if time.monotonic() >= deadline:
+                raise EnvironmentError("FACTORY_BUILDER_SSH_BOOT_TIMEOUT")
+            time.sleep(1)
         free = int(remote("df -Pk " + BUILDER_PROJECT + " | tail -1 | awk '{print $4}'").strip()) * 1024
         if free < 60 * 1024**3:
             raise EnvironmentError("FACTORY_BUILDER_FREE_SPACE_BELOW_60_GIB")
