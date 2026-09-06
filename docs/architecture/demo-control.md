@@ -4,8 +4,8 @@
 # Demo Control
 
 - Status: Draft
-- Version: 0.12
-- Prepared: 2026-09-05
+- Version: 0.14
+- Prepared: 2026-09-06
 - Owner: Demo Solution Team
 - Architecture input: [High-Level Architecture 1.5](high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.0](../demo/staged-post-sop-brake-health-demo-scenarios.md)
@@ -18,7 +18,41 @@ not a new component or a replacement for the accepted requirements.
 It records the documentation audit, agreed direction and proposals still to
 review. Publishing this draft does not authorize runtime or Cloud changes.
 
-## Accepted Factory .30 correction — 2026-09-06
+## Accepted Factory .31 Test baseline and corrections — 2026-09-06
+
+Operator amendment after the fresh .31 run: `vm start` stages role assignment
+in an owned transient SM `ExecStartPre`, after the existing store mount/bootstrap
+and before the native process reads its configuration. This replaces early
+writing into a potentially unmounted directory. The role's persistent location
+and authority stay unchanged; no extra SM restart or image rebuild is introduced.
+Provisioning confirms the actual role in its existing guest readiness read.
+
+The same amendment authorizes removing repeated broad Cloud comparisons:
+exact-ID bundle/batch confirmation replaces the second full snapshot; approval
+does not depend on a local archive or Test Online; Unit wait cycles reuse one
+authenticated client and known Unit/Node IDs. Keep OEM authority, exact target,
+Production non-mutation observation, uncertain-attempt reconciliation and
+destructive cleanup boundaries. The package README records the executable behavior.
+
+Production update continuation is deferred by the operator on 2026-09-06,
+after consultation with the Aos platform developers: the current platform
+delivers updates only to Units in verification sets; delivery to ordinary
+Production sets awaits a platform release. This is operator-reported platform
+information, not an independently verified release guarantee. The earlier
+HTTP 403 observation does not establish the cause and does not justify changing
+OEM permissions or marking Production as a verification set. CARLA handover
+completed, but Production FOTA/Safe Stop qualification did not. Ordinary
+component status must not query the deferred fleet-validation/campaign APIs;
+the Production non-mutation observation remains. Resume Production FOTA only
+after the platform change is confirmed and its qualification is authorized.
+
+The Test 10/v1 -> 11/v2 -> 12/v3 transitions and visual behavior were confirmed
+by the operator. The [current baseline](../qualification/democtl-release-checkpoint.md#current-test-baseline)
+records immutable artifact digests and the separate fresh-overlay repeat,
+advisory, independent-consumer and broader qualification exclusions.
+A v11 API correction replaces unsupported GET of an individual deployment
+bundle (HTTP 405) with collection lookup of its exact UUID; verification-batch
+detail GET remains valid.
 
 The operator approved initializing the manufactured Test/Production role in
 `vm start`, before provisioning enables SM. Source selection updates only its

@@ -3,8 +3,8 @@
 
 # Demo Control VDP Family Checkpoint
 
-- Status: VDP 7.0.0 ACTIVE/7-path READY on Test; corrected SM Stop/Start completes without ten-minute retry; clean Factory .30 qualification remains
-- Version: 0.13
+- Status: Factory .31 Test VDP 10/v1 -> 11/v2 -> 12/v3 operator-confirmed; v3 reports 23-path READY; full advisory remains deferred
+- Version: 0.15
 - Prepared: 2026-09-06
 - Owner: Demo Solution Team
 - Design: [Demo Control](../architecture/demo-control.md)
@@ -13,7 +13,22 @@
 
 ## Scope and source boundary
 
-Latest proof, 2026-09-06: the operator-approved synchronous StopInstance
+Latest acceptance, 2026-09-06: the operator confirmed both Test update
+transitions, 10.0.0/v1 -> 11.0.0/v2 -> 12.0.0/v3, occurring after Safe Stop
+with visual operation accepted. Supplied final component status shows
+12.0.0 active, matching slot, zero restarts and provider-reported 23-path
+READY/LIVE. See the [Factory .31 acceptance record](democtl-release-checkpoint.md#factory-31-operator-acceptance)
+for evidence boundaries and the outstanding fresh-overlay repeat. This does
+not qualify full v3 advisory or an independent telemetry consumer.
+
+Production FOTA is deferred pending the platform release, following the
+operator's 2026-09-06 report from the Aos developers that only verification-set
+Units currently receive updates. This supersedes the earlier permission-based
+diagnostic hypothesis; no OEM permission or Unit Set changes are prescribed.
+The current artifact/source record is in the
+[Test baseline](democtl-release-checkpoint.md#current-test-baseline).
+
+Earlier rapid proof, 2026-09-06: the operator-approved synchronous StopInstance
 completion barrier passed 7 native tests in 286 ms, including cancellation,
 rollback and runtime restart. SM SHA
 `0ea27410730ca188fb40641a5a110e0396436807ff8380f44a74cd5ada63d9b8`

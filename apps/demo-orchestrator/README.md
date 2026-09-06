@@ -60,6 +60,56 @@ including implemented status observations and remaining lifecycle proposals.
 
 ## Current commands
 
+### Role initialization and Cloud request economy — 2026-09-06
+
+`vm start` stages the exact Test/Production role for the native SM start
+sequence. On an unmounted store it reports `STAGED_BEFORE_SM`; it does not
+write beneath a future mount. An owned `/run/systemd/system/aos-sm.service.d/20-democtl-role.conf`
+`ExecStartPre` writes the role after SM's existing bootstrap/mount dependencies,
+before SM reads its configuration. There is no extra SM start/restart, image
+rebuild, copied image or separate persistent role store. A mounted valid role
+is reused; a conflicting role fails. `unit provision` includes role readback
+in its existing guest readiness read. `component sm-status test` reports the
+role and mount observation. On reboot the role remains in the component store.
+
+Cloud commands keep authenticated OEM/permission and exact-target checks,
+one recorded mutation attempt and authoritative confirmation. Upload/approval
+confirmation now reads the exact bundle/batch and Production only, not a second
+full catalog/inventory. Known verification-batch UUIDs use their detail endpoint.
+The v11 deployment-bundle detail route supports DELETE only: read its collection
+and select the exact recorded UUID; never issue GET to that detail route.
+Approval does not reverify a local archive or require Test Online. Its post-read
+must confirm the requested approval value. Upload still verifies signed bytes,
+release ordering and compatibility; addressed-send and destructive cleanup
+retain their separate scope checks.
+
+Production FOTA is deferred pending a platform release. On 2026-09-06 the
+operator reported confirmation from the Aos platform developers: the current
+deployment delivers updates only to Units in verification sets. This is an
+operator-reported platform limitation, not a conclusion from HTTP 403 or a
+reason to change OEM permissions, Production membership or campaign settings.
+`component cloud-status VERSION` reads component/verification/Unit state and
+keeps Production as a non-target observation; it does not query fleet-validation
+batches or campaigns. Production remains a non-verification set. Its lifecycle
+and source selection remain available, but Production FOTA is not qualified.
+
+Unit lifecycle discovery reads only the two role sets, not other sets' members.
+Online/membership/offline waiting uses one authenticated Cloud client for that
+wait, resolves an unknown Unit UUID once, and reuses known Node identity. Each
+subsequent poll reads the exact Unit; there is no repeated `users/me`, Unit
+search or Nodes inventory per poll. Independent mutation stages still verify
+their own OEM authority. No persistent credential/session cache is added.
+
+Prepared v1 profile replays can be uploaded/approved before provisioning a
+pristine dual-VM Factory .31 environment. This branch verifies the empty Cloud
+scope and Factory-bound profile rather than probing a nonexistent guest.
+The operator confirmed the Test .31 sequence 10/v1 -> 11/v2 -> 12/v3 and visual
+Safe Stop-gated replacements. The separate fresh-overlay repeat, full advisory
+and independent-consumer qualification remain outstanding. See the
+[current Test baseline](../../docs/qualification/democtl-release-checkpoint.md#current-test-baseline)
+for exact artifacts, evidence and deferred scope. No new image is needed merely
+to checkpoint these already exercised host-side corrections.
+
 ```text
 democtl image list
 democtl component list

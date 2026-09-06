@@ -3,14 +3,217 @@
 
 # Demo Control Source Checkpoint and Next Factory Release
 
-- Status: Live .30 correction proved; demo environments retired; clean Factory .31 not built yet
-- Version: 0.5
+- Status: Factory .31 Test VDP 10/v1 -> 11/v2 -> 12/v3 operator-confirmed; fresh-overlay repeat remains
+- Version: 0.8
 - Prepared: 2026-09-06
 - Owner: Demo Solution Team
 - Design: [Demo Control](../architecture/demo-control.md)
 - Evidence: [VDP family checkpoint](democtl-vdp-family.md)
 
 ## What is demonstrated
+
+<a id="current-test-baseline"></a>
+
+### Current Test baseline — 2026-09-06
+
+The accepted checkpoint is Factory .31 with the operator-confirmed Test
+sequence 10.0.0/v1 -> 11.0.0/v2 -> 12.0.0/v3. Both replacements waited while
+driving and occurred after Safe Stop, as confirmed by the operator. The final
+provider reports 23-path READY/LIVE with zero restarts and a matching slot.
+This is a Test functional/visual checkpoint, not full production qualification.
+
+Artifacts stay outside Git under `demo-artifacts/aosedge-sdv-demo/`:
+
+| Artifact | Relative path | Recorded SHA-256 |
+| --- | --- | --- |
+| Factory .31 | `factory-images/6.1.1-maninblack.31/main-qemuarm64.img` | `a9019f4adfe70499bde339c8e9d95eb8568736b73dc218f6c0e390fbcd28ddf4` |
+| VDP 10 / v1 | `components/vehicle-data-provider/10.0.0/vdp-10.0.0-deployment-bundle.tar.gz` | `f2ebeb12bf3560b379c32a3b23c432eeeda24c026be11fe4d4909071d0dac93c` |
+| VDP 11 / v2 | `components/vehicle-data-provider/11.0.0/vdp-11.0.0-deployment-bundle.tar.gz` | `103446ed046be38beb3ca936f5763944d785dc23bb22f0f60caa645fafd4e653` |
+| VDP 12 / v3 | `components/vehicle-data-provider/12.0.0/vdp-12.0.0-deployment-bundle.tar.gz` | `fd4f36e56fe9985ddbc26e7a4ae46a22e6554f4d5a4d6155c3a17536ce6110d3` |
+
+Digests above come from the existing Factory manifest and each release's
+`signed.json`; unchanged artifacts are not rebuilt, repackaged or rehashed for
+this source checkpoint. Factory source is Platform
+`0bed8b3769b09fbe685ed599ca8d10e6594fbe53`. The Factory manifest retains its
+build-time `BUILT_NOT_LIVE_QUALIFIED` record; this document records subsequent
+operator acceptance without rewriting immutable build provenance. Frozen
+profile inputs 1.0.16/v1, 2.0.0/v2 and 3.0.0/v3 remain required for preparation
+of later monotonically increasing Cloud releases.
+
+Outstanding scope: a fresh-overlay repeat from the same Factory SHA; full v3
+advisory; independent-consumer validation; reboot/security qualification beyond
+the recorded tests. Production FOTA is separately deferred below. No image
+build, new release upload or live E2E rerun is part of this source finalization.
+Historical sections below describe state at their own timestamps; their
+pending/uncommitted wording does not override this current checkpoint.
+
+#### Source finalization and checks
+
+| Repository | Published implementation revision | Scope |
+| --- | --- | --- |
+| `aosedge-sdv-demo` | `84fbfcddbcb4339d8612dc34d22603987d6de56e` | Mounted-store role initialization, bounded exact-target Cloud reads, Test workflow regressions; no deferred Production validation probes |
+| `aos-vehicle-platform` | `0bed8b3769b09fbe685ed599ca8d10e6594fbe53` | Existing immutable Factory .31 source, unchanged in this finalization |
+| `carla-ego-runtime` | `93459ee8f39c57b7db05e3a6bbd225de3623c871` | Publishes the previously committed Safe Stop/acquisition-UTC changes (`bbff7f0`) and Traffic Manager port selection (`93459ee`) |
+
+The documentation commit containing this record follows the implementation
+checkpoint; use Git history to resolve its exact revision. These source pins
+do not claim a new Runtime binary build or change the original build provenance
+of the already tested Factory/VDP artifacts.
+
+Checks executed for source finalization:
+
+- Full Demo Control local regression suite: 202 tests PASS in 42.146 seconds.
+  Builder/Cloud/VM interactions are fixtures; no live build or lifecycle ran.
+- Runtime orchestration-control regression: 9 tests PASS. Native C++ tests and
+  binaries were not rebuilt/rerun in this checkpoint; the previously recorded
+  live acceptance is preserved rather than relabeled as a fresh run.
+- Documentation navigation/metadata gate: PASS, 150 Markdown documents,
+  658 stable identifiers and 38 Mermaid diagrams. Four internal anchors were
+  corrected; only the documentation gate was rerun afterward.
+- Changed-file public-source boundary scan: PASS for 37 Solution/Runtime files,
+  checking binary/credential content, private URLs and personal absolute paths.
+  Confidential-input commit/push guards and `git diff --check` passed.
+- The older whole-repository source scan stops at the pre-existing presenter UI
+  asset `apps/presenter-ui/src/assets/icons/connectivity-available.png` because
+  it rejects all binary content. The asset and validator were not changed or
+  deleted to bypass this unrelated gate. A full repository/CI qualification is
+  not claimed; the scoped publication scan above passed.
+
+Only source, tests and documentation were committed/pushed. Factory disks,
+overlays, bundles, keys, credentials, raw logs and runtime state remain outside
+Git. No VM/Cloud mutation, Safe Stop trigger, source switch or new upload was
+performed during this finalization.
+
+#### Housekeeping outcome
+
+Removed after confirming clean tracked/untracked/ignored state, no open files
+and zero commits outside the published Platform main:
+
+- Platform branch `codex/cm-stream-write-fix` and worktree
+  `CarlaSim/.worktrees/aos-platform-cm-stream-write-fix` (about 1.4 MiB).
+- Platform branch `codex/factory-29-vss` and worktree
+  `CarlaSim/.worktrees/aos-platform-factory-29` (about 1.5 MiB).
+
+Neither branch existed on the remote, so no remote deletion was necessary.
+Their commits remain in main; the worktrees can be recreated from Git. No
+backup copy was made. Host free space at audit was about 271 GiB.
+
+Preserved pending a separate exact deletion decision:
+
+- Original Factory .28/.29/.30 artifacts: about 6.5 GiB each, 19.5 GiB total.
+  They are candidates, not part of the current .31 acceptance; dependency and
+  live backing-image checks are required before deleting original artifacts.
+- The Solution and Platform `codex/ltvp-finalize-27` branches/worktrees: their
+  tips are not ancestors of main. The Platform branch retains release/packaging
+  commits for frozen VDP 1.0.16 input; semantic integration must not be assumed
+  merely from the newer Factory version number. Remote refs remain untouched.
+- Unrelated Brake Health worktree, untracked CarlaSim directories/scripts,
+  `.tmp` (about 4.8 MiB) and `.codex-build` (about 25 MiB): ownership/dependency
+  closure was not established, so they were not treated as disposable.
+
+Preserved without a cleanup proposal: Factory .31, VDP 10/11/12 and manifests,
+the frozen v1/v2/v3 preparation inputs, current Test/Production overlays and
+identities, simulator connection, Cloud release history, Builder/caches and
+credentials. This was source housekeeping, not environment retirement.
+
+### Production handover completed; FOTA deferred by platform limitation — 2026-09-06
+
+The operator authorized switching CARLA to the existing Production and
+installing the tested 12.0.0/v3 without another image or bundle. Executed
+`democtl vehicle select production`: COMPLETED, physical Safe Stop confirmed,
+both paths blocked before reset, then Production OPEN and Test BLOCKED.
+Production's provider is inactive; Test retains its active provider.
+
+Read-only `democtl component cloud-status 12.0.0` confirmed Test
+`3d5cdbc8-8b53-42d9-acba-ff49b067cdb5` installed 12.0.0, Production
+`fa972f67-990b-4af6-b81c-4d86a8e6634f` Online with factory 0.0.0 and no pending
+VDP. Verification batch `e08ed503-d9cf-4a88-8c36-4c8e2942d6c9` is Valid with
+arm64 approved. The deployment is `c8a9f996-0fe3-4a29-94e3-0bcc9abfd3b6`.
+
+The operator subsequently reported direct confirmation from the Aos platform
+developers: the current release sends updates only to Units belonging to
+verification sets; ordinary Production delivery requires a future platform
+release. The operator explicitly deferred this work. This report supersedes
+the earlier hypothesis based on HTTP 403 from fleet-validation listing. It is
+not a claim that a particular future version/date is known or independently
+tested. Do not change OEM permissions, create campaigns as a workaround, or
+enable verification on Production to claim Production qualification.
+
+Read-only `democtl component logs production` at 10:07:24 UTC showed three
+received desired-status messages at 08:12:55, 08:12:56 and 08:13:05 UTC with
+configuration/subject processing and no VDP 12 assignment. These preceded
+the 08:20:28 arm64 approval. No later receipt appeared in the bounded current
+boot journal; CM/SM were active with zero restarts and VDP remained inactive.
+This is bounded guest evidence, not access to Cloud dispatcher internals.
+
+No role, permission, Unit Set, campaign or Production approval was changed;
+no addressed-send fallback was used. Production installation/Safe Stop gating
+is NOT_PROVEN. The last observed simulator connection is Production in Safe
+Stop, with both VMs retained; source checkpointing does not move or retire them.
+
+An unrelated Cloud observation defect was corrected during this attempt:
+`deployment-bundles/{id}/` supports DELETE, not GET. Exact bundle reads now
+select the UUID from the documented collection endpoint. Ordinary component
+status no longer probes deferred fleet-validation/campaign APIs. It retains
+component/verification/Unit reads and the Production non-target observation.
+
+<a id="factory-31-operator-acceptance"></a>
+
+### Factory .31 operator acceptance after CLI correction — 2026-09-06
+
+The operator ran the agreed democtl sequence and supplied the final
+`democtl component status test` output. In response to the explicit question
+whether both 10 -> 11 and 11 -> 12 replacements waited while driving and
+occurred only after Safe Stop, and whether visual operation worked, the
+operator confirmed both transitions and visual acceptance.
+
+The final supplied observation records VDP `12.0.0` / v3 active in slot `a`,
+`processSlotMatches=true`, `vdpRestarts=0`, `gate=OPEN`,
+`vdpData=REPORTED_READY`, `readPathCount=23`, and
+`VDP data READY; source LIVE; reason NONE`. Service result is `success`,
+`ExecMainStatus=0`, PID 2005, active since `2026-09-06 08:20:52 UTC`.
+Capability manifest SHA-256:
+`ae4bfc5604a69992df3122de6e4c088c66f80dc99f03af6c75edcf17474e3e38`.
+
+Evidence boundary: this is operator-confirmed functional/visual acceptance
+of the Test update sequence on the existing .31 image, plus the supplied
+provider/process status. Intermediate command outputs and transition timings
+were not supplied in this confirmation. `PROVIDER_REPORTED_NOT_INDEPENDENT_CONSUMER`
+and `advisory=DEFERRED` remain explicit; this does not qualify independent
+consumer validation, full v3 advisory, Production updates, reboot/security
+gates, or a second clean-overlay lifecycle run. No new Factory build, VM/Cloud
+operation, cleanup, commit or push was performed to record this acceptance.
+The Demo Control role/Cloud corrections are finalized with the current source
+checkpoint; this paragraph retains the boundary of the earlier live evidence.
+
+The earlier failed-run and pending-acceptance entries below are historical.
+The remaining agreed repeat is retirement and recreation from the identical
+immutable .31 image SHA, with higher Cloud release numbers; it is not recorded
+as completed here.
+
+### Factory .31 build and first operator run — 2026-09-06
+
+Factory `6.1.1-maninblack.31/main-qemuarm64.img` was built from Platform
+`0bed8b3769b09fbe685ed599ca8d10e6594fbe53`, transferred and frozen at
+SHA-256 `a9019f4adfe70499bde339c8e9d95eb8568736b73dc218f6c0e390fbcd28ddf4`
+(6,997,147,648 bytes). Five native SM configuration/factory tests passed;
+package/image tasks completed. Builder was stopped. Buildpaths QA warnings
+were present; this is not a warning-free or live-qualified claim.
+
+The operator uploaded and approved VDP 10.0.0/v1, booted/provisioned both roles
+and started CARLA. Test received 10.0.0 and its offline self-test passed.
+`vehicle select test` failed with `SOURCE_FACTORY_ROLE_NOT_INITIALIZED:test`.
+Read-only observations showed detached/blocked source gates, working DNS and
+CM/SM, no configured source inputs, and SM profile `standard`. No successful
+VDP activation or completed .31 E2E is claimed. The mount-order correction and
+Cloud request reductions are source-level changes in Demo Control; their live
+acceptance remains the next fresh operator-driven run using the same .31 image.
+
+Local regression result after these CLI changes: `PYTHONPATH=src:tests
+.venv/bin/python -m unittest discover -s tests -q` passed all 202 tests in
+36.263 seconds. This includes deferred role initialization for both roles and
+exact-target Cloud request paths; mocked tests do not constitute live E2E
+acceptance. No VM or Cloud mutation was performed for this regression run.
 
 ### Authorized Factory .31 execution — 2026-09-06
 
