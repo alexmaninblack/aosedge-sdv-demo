@@ -3,14 +3,29 @@
 
 # Demo Control Source Checkpoint and Next Factory Release
 
-- Status: engineering checkpoint; next release plan is a review candidate
-- Version: 0.1
+- Status: authorized Factory .30 build in progress; operator E2E not yet ready
+- Version: 0.2
 - Prepared: 2026-09-06
 - Owner: Demo Solution Team
 - Design: [Demo Control](../architecture/demo-control.md)
 - Evidence: [VDP family checkpoint](democtl-vdp-family.md)
 
 ## What is demonstrated
+
+Latest confirmed increment: Test VDP 7.0.0 (v1 content) is READY/LIVE/NONE,
+Cloud installed=7.0.0, pending=null. Native Stop returned at
+03:48:35.001468 UTC and Start was called at 03:48:35.747153 UTC; the new
+installation was committed at 03:48:36.825068 UTC. The native stop-completion
+fix is committed in Platform `e5e9ffd`, with seven targeted regressions passing.
+The Gateway Traffic Manager port delta is consolidated in main `93459ee`.
+These close the earlier Stop/Start and source-consolidation issues below.
+
+Factory .30 source `c3e0858` packages persistent public source inputs and
+role selection, with missing/Production role retaining standard freshness.
+The new host-side packaging fixture, source fixture, CLI/API boundary tests
+and 15 source-operation tests pass. ARM64 configuration tests, package/image
+build and clean-VM E2E are still running or pending; no clean-release success
+is claimed. The build is invoked with `democtl image build 6.1.1-maninblack.30`.
 
 The recorded 2026-09-06 03:05 UTC observation is Test VDP 6.0.0 active,
 23-path READY/LIVE/NONE, Cloud installed=6.0.0 and pending=null. Production
@@ -83,7 +98,7 @@ manager returns an error; do not infer its absence solely from a not-found log.
 Do not shorten unrelated timeouts as a substitute for fixing the known
 StopInstance/StartInstance transaction contract.
 
-## Proposed next release gates
+## Authorized next release gates
 
 1. Preserve these source checkpoints and existing proof. Do not rerun already
    passed tests merely to repeat evidence during bookkeeping.
@@ -108,5 +123,6 @@ functional content is reused. Stage and approve the next v1-content release
 before a fresh Unit joins the delivery set, so Cloud's latest release does not
 skip the initial v1 stage. All preparation/signing/upload/approval uses democtl.
 
-No new image build, live repair, Cloud release, teardown or push is implied by
-this source checkpoint. The proposed remaining work needs plan agreement.
+The operator authorized the above release plan and the StopInstance contract
+correction. Continue the remaining build/E2E gates through Demo Control. No
+Production mutation or push is implied by this checkpoint.

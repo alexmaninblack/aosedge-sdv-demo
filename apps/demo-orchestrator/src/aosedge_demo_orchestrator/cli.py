@@ -48,11 +48,13 @@ def build_parser() -> argparse.ArgumentParser:
     image = commands.add_parser("image", help="discover published immutable factory images")
     image_commands = image.add_subparsers(dest="action", required=True)
     image_commands.add_parser("list", help="list readable version/architecture selectors without hashing images")
+    factory_build = image_commands.add_parser("build", help="build the authorized Factory .30 from committed sources using the warm offline Builder")
+    factory_build.add_argument("image", choices=("6.1.1-maninblack.30",))
 
     component = commands.add_parser("component", help="operate on VDP bundles in the artifact catalog")
     component_commands = component.add_subparsers(dest="action", required=True)
     component_commands.add_parser("list", help="list retained VDP artifact versions")
-    for action in ("sm-builder-start", "sm-builder-stop", "sm-build", "sm-apply"):
+    for action in ("sm-builder-start", "sm-builder-stop", "sm-build", "sm-test", "sm-apply"):
         command = component_commands.add_parser(action, help="bounded Test SM qualification: dedicated existing Builder, port 10024")
         command.add_argument("target", choices=("test",))
     component_status = component_commands.add_parser("status", help="read active slot and provider-reported telemetry readiness")

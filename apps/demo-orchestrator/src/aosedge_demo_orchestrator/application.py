@@ -28,12 +28,12 @@ class DemoOrchestrator:
         selection_error = request.selection_error()
         if selection_error:
             return OperationResult(operation, OperationState.BLOCKED, selection_error)
-        if request.domain == "component" and request.action in ("sm-builder-start", "sm-builder-stop", "sm-build", "sm-apply"):
+        if request.domain == "component" and request.action in ("sm-builder-start", "sm-builder-stop", "sm-build", "sm-test", "sm-apply"):
             from .component_runtime import builder, build, apply_test
             try:
                 target = request.target.value if request.target else None
                 data = (apply_test(self.environment_service, target) if request.action == "sm-apply" else
-                        build(target) if request.action == "sm-build" else builder(target, request.action.rsplit("-", 1)[1]))
+                        build(target, compile_source=request.action == "sm-build") if request.action in ("sm-build", "sm-test") else builder(target, request.action.rsplit("-", 1)[1]))
                 return OperationResult(operation, OperationState.COMPLETED,
                     "Test-only transient SM profile; immutable image, Cloud and Production unchanged." if request.action == "sm-apply" else
                     "Dedicated Builder only; no demo VM or Cloud mutation.", data=data)
@@ -117,6 +117,14 @@ class DemoOrchestrator:
             data = self.image_catalog.list()
             return OperationResult(operation, OperationState.PARTIAL if data["issues"] else OperationState.OBSERVED,
                                    "Published image metadata; image contents were not rehashed.", data=data)
+        if operation == "image.build":
+            from .component_runtime import build_factory
+            try:
+                data = build_factory(request.image)
+                return OperationResult(operation, OperationState.COMPLETED,
+                    "Immutable Factory image built; live E2E qualification is not yet performed.", data=data)
+            except EnvironmentError as error:
+                return OperationResult(operation, OperationState.BLOCKED, str(error))
         if operation == "environment.retire":
             if request.target or request.image or request.image_path or request.current:
                 raise ValueError("Local retirement uses the exact current environment only")

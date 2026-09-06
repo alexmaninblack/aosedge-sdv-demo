@@ -12,8 +12,16 @@ from aosedge_demo_orchestrator.source_guest import execute
 
 
 class RuntimeProofBoundaryTests(unittest.TestCase):
+    def test_factory_build_cli_and_api_use_the_same_exact_release(self):
+        request = request_from_arguments(build_parser().parse_args(["image", "build", "6.1.1-maninblack.30"]))
+        app = Mock()
+        execute_operation(dict(domain="image", action="build", image="6.1.1-maninblack.30"), app)
+        self.assertEqual(request, app.execute.call_args.args[0])
+        with self.assertRaises(ValueError):
+            execute_operation(dict(domain="image", action="build", image="6.1.1-maninblack.29"), app)
+
     def test_cli_and_api_share_test_only_operations(self):
-        for action in ("sm-builder-start", "sm-builder-stop", "sm-build", "sm-apply", "sm-status"):
+        for action in ("sm-builder-start", "sm-builder-stop", "sm-build", "sm-test", "sm-apply", "sm-status"):
             request = request_from_arguments(build_parser().parse_args(["component", action, "test"]))
             self.assertEqual("test", request.target.value)
             app = Mock()

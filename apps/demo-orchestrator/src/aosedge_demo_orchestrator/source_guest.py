@@ -22,6 +22,8 @@ from pathlib import Path
 TABLE = "democtl_source"
 PROFILE = "LTVP_VISS_SERVER_AUTH_TEST_ONLY"
 ROOT = Path("/run/democtl-source")
+FACTORY_INPUTS_MARKER = Path("/usr/share/aos-vehicle-platform/demo-runtime-inputs-v1")
+FACTORY_INPUTS = Path("/var/aos/workdirs/sm/runtimes/systemd-slot-component/demo-inputs")
 VSS_BASE = Path("/usr/share/vss/vss.json")
 VSS_TEMP = Path("/run/democtl-vss/vss.json")
 VSS_DROPIN = Path("/run/systemd/system/kuksa-databroker.service.d/90-democtl-vss.conf")
@@ -218,6 +220,18 @@ def write_public(path, data, mode=0o644):
     return True
 
 
+def sm_public_inputs(pid, runtime):
+    host = Path("/run/credentials/aos-sm.service")
+    if runtime.get("demoLocalSourceInputs") is True:
+        host = FACTORY_INPUTS
+    namespace = Path("/proc") / pid / "root" / host.relative_to("/")
+    profile = runtime.get("safeStopFreshnessProfile", "standard")
+    if runtime.get("demoLocalSourceInputs") is True:
+        role = namespace / "role"
+        profile = "demo-5s" if role.is_file() and role.read_text() == "test\n" else "standard"
+    return host, namespace, profile
+
+
 def configure(request):
     item = request["vehicle"]
     generation = request["generation"]
@@ -228,6 +242,27 @@ def configure(request):
         viss=dict(uri="wss://10.0.0.1:6443", tlsServerName="127.0.0.1"),
         selectedSource=dict(unitId=item["unitId"], nodeId=item["nodeId"],
             assignmentGeneration=generation, pathSet="VDP_V1"))
+    # The Factory owns this opt-in. Never retrofit an older immutable image.
+    if FACTORY_INPUTS_MARKER.is_file():
+        role = request.get("role")
+        if role not in ("test", "production"):
+            raise ValueError("SOURCE_ROLE_INVALID")
+        if any(path.is_symlink() for path in (FACTORY_INPUTS,) + tuple(FACTORY_INPUTS.parents)):
+            raise ValueError("SOURCE_INPUT_SYMLINK")
+        changed = write_public(FACTORY_INPUTS / "viss-update-ca", request["ca"])
+        changed = write_public(FACTORY_INPUTS / "selected.json", vdp) or changed
+        write_public(FACTORY_INPUTS / "viss-update-binding", sm)
+        role_changed = write_public(FACTORY_INPUTS / "role", role + "\n")
+        # ParseConfig reads the role at initialization; source generations do
+        # not require another SM restart. Missing role defaults to standard.
+        if role_changed:
+            if command(["systemctl", "restart", "aos-sm"]).returncode:
+                raise ValueError("SOURCE_SM_ROLE_RESTART_FAILED")
+        active = command(["systemctl", "show", "aos-vehicle-data-provider", "--property=ActiveState", "--value"]).stdout.strip()
+        if changed and active in ("active", "activating", "failed"):
+            if command(["systemctl", "restart", "aos-vehicle-data-provider"]).returncode:
+                raise ValueError("VDP_CONFIGURATION_RESTART_FAILED")
+        return dict(configured=True, persistent=True, role=role, smRestarted=role_changed)
     # These are public trust/configuration inputs, never client authentication.
     write_public(ROOT / "ca.pem", request["ca"])
     write_public(ROOT / "selected.json", vdp)
@@ -287,7 +322,8 @@ def probe(safe_stop=False):
         raise ValueError("VISS_PROBE_CONTROL_LIMIT")
 
     def read():
-        context = ssl.create_default_context(cafile=str(ROOT / "ca.pem"))
+        ca = FACTORY_INPUTS / "viss-update-ca" if FACTORY_INPUTS_MARKER.is_file() else ROOT / "ca.pem"
+        context = ssl.create_default_context(cafile=str(ca))
         with socket.create_connection(("10.0.0.1", 6443), 3) as raw:
             with context.wrap_socket(raw, server_hostname="127.0.0.1") as client:
                 key = base64.b64encode(os.urandom(16)).decode()
@@ -389,9 +425,11 @@ def execute(request):
         if request.get("target") != "test" or request["vehicle"].get("localVmId") != "540cdea7-3fb8-4554-93aa-75cdf0ed577d":
             raise ValueError("SM_PROOF_REQUIRES_AUTHORIZED_TEST_29")
         observation = execute(dict(request, action="component-sm-status"))
+        stop_start_proof = request.get("proof") == "stop-start"
+        proof_root = Path("/run/democtl-sm-stop-start" if stop_start_proof else "/run/democtl-sm-demo-5s")
         if observation["binarySha256"] == request["sha256"] and observation["freshnessProfile"] == "demo-5s":
             if not observation["publicInputPresence"]["serviceCA"] or not observation["publicInputPresence"]["serviceBinding"]:
-                root = Path("/run/democtl-sm-demo-5s")
+                root = proof_root
                 dropin = Path("/run/systemd/system/aos-sm.service.d/90-democtl-sm-demo-5s.conf")
                 sm_load_public_credentials(root, dropin, request)
                 command(["systemctl", "daemon-reload"], check=True)
@@ -401,9 +439,14 @@ def execute(request):
                     raise ValueError("SM_PUBLIC_INPUTS_NOT_VISIBLE")
                 return dict(state="APPLIED", noOp=False, sourceCredentialRepair=True, **dict(observation, mutation=True))
             return dict(state="APPLIED", noOp=True, **observation)
-        if observation["binarySha256"] != "b010fb73a53e6d2f39eb5cf1cfa46b483331187f9c0f67cd9ec13b216f57d5f4" or observation["freshnessProfile"] != "standard":
+        original = (observation["binarySha256"] == "b010fb73a53e6d2f39eb5cf1cfa46b483331187f9c0f67cd9ec13b216f57d5f4"
+                    and observation["freshnessProfile"] == "standard")
+        preceding_proof = (stop_start_proof and observation["binarySha256"] ==
+            "f0e8c3806c95befc880276f7ca1a05de82a9d866abe9bb665ba3ba868aaedde2"
+            and observation["freshnessProfile"] == "demo-5s")
+        if not (original or preceding_proof):
             raise ValueError("SM_ORIGINAL_BINARY_OR_CONFIG_MISMATCH")
-        if observation["executable"] != "/usr/bin/aos_sm_app":
+        if original and observation["executable"] != "/usr/bin/aos_sm_app":
             raise ValueError("SM_EXECUTABLE_PATH_MISMATCH")
         transaction = Path("/var/aos/workdirs/sm/runtimes/systemd-slot-component/state/transaction.json")
         if transaction.exists():
@@ -411,9 +454,9 @@ def execute(request):
         raw = base64.b64decode(request["binary"], validate=True)
         if hashlib.sha256(raw).hexdigest() != request["sha256"] or raw[:5] != b"\x7fELF\x02" or raw[18:20] != b"\xb7\x00":
             raise ValueError("SM_ARM64_BINARY_SHA_MISMATCH")
-        root = Path("/run/democtl-sm-demo-5s")
+        root = proof_root
         dropin = Path("/run/systemd/system/aos-sm.service.d/90-democtl-sm-demo-5s.conf")
-        if root.exists() or dropin.exists():
+        if root.exists() or (dropin.exists() and not preceding_proof) or dropin.is_symlink():
             raise ValueError("SM_TRANSIENT_STATE_REQUIRES_RECONCILIATION")
         config = json.loads(Path("/etc/aos/sm.cfg").read_text())
         matches = [item["config"] for item in config["runtimes"] if item["plugin"] == "systemd-slot-component"]
@@ -437,14 +480,18 @@ def execute(request):
             raise ValueError("SM_TRANSIENT_ACTIVATION_UNCONFIRMED")
         return dict(state="APPLIED", noOp=False, **dict(result, mutation=True))
     if request["action"] == "component-sm-status":
-        props = command(["systemctl", "show", "aos-sm", "--property=MainPID,ActiveState,Result,NRestarts"]).stdout
+        props = command(["systemctl", "show", "aos-sm", "--property=MainPID,ActiveState,Result,NRestarts,FragmentPath,ExecStart"]).stdout
         service = dict(line.split("=", 1) for line in props.splitlines() if "=" in line)
+        launch = service.pop("ExecStart", "")
+        launcher = re.search(r"path=([^ ;]+)", launch)
+        service["launcherPath"] = launcher.group(1) if launcher else None
         pid = service.get("MainPID", "0")
         executable = os.readlink("/proc/" + pid + "/exe") if pid.isdigit() and int(pid) > 0 else None
         cfg = Path("/etc/aos/sm.cfg")
         effective = Path("/proc") / pid / "root/etc/aos/sm.cfg"
         config = json.loads(effective.read_text() if effective.is_file() else cfg.read_text())
         runtime = next(item["config"] for item in config["runtimes"] if item["plugin"] == "systemd-slot-component")
+        host_inputs, service_inputs, profile = sm_public_inputs(pid, runtime)
         started = command(["systemctl", "show", "aos-sm", "--property=ActiveEnterTimestampMonotonic", "--value"])
         kernel = command(["journalctl", "-k", "-b", "-n", "500", "--no-pager", "-o", "json"])
         events = [json.loads(line) for line in kernel.stdout.splitlines()] if kernel.returncode == 0 else []
@@ -458,15 +505,15 @@ def execute(request):
                      selinuxEnforcing=Path("/sys/fs/selinux/enforce").read_text().strip() == "1")
         return dict(service=service, executable=executable,
                     binarySha256=hashlib.sha256(Path("/proc/" + pid + "/exe").read_bytes()).hexdigest() if executable else None,
-                    configPath=str(cfg), freshnessProfile=runtime.get("safeStopFreshnessProfile", "standard"),
+                    configPath=str(cfg), freshnessProfile=profile,
                     binaryContext=command(["stat", "-Lc", "%C", "/proc/" + pid + "/exe"]).stdout.strip() if executable else None,
                     configContext=command(["stat", "-c", "%C", str(cfg)]).stdout.strip(),
                     audit=audit,
                     processContext=Path("/proc/" + pid + "/attr/current").read_text().strip() if executable else None,
-                    publicInputPresence={"hostCA": Path("/run/credentials/aos-sm.service/viss-update-ca").is_file(),
-                        "hostBinding": Path("/run/credentials/aos-sm.service/viss-update-binding").is_file(),
-                        "serviceCA": (Path("/proc") / pid / "root/run/credentials/aos-sm.service/viss-update-ca").is_file(),
-                        "serviceBinding": (Path("/proc") / pid / "root/run/credentials/aos-sm.service/viss-update-binding").is_file()},
+                    publicInputPresence={"hostCA": (host_inputs / "viss-update-ca").is_file(),
+                        "hostBinding": (host_inputs / "viss-update-binding").is_file(),
+                        "serviceCA": (service_inputs / "viss-update-ca").is_file(),
+                        "serviceBinding": (service_inputs / "viss-update-binding").is_file()},
                     mountObservation=[line for line in Path("/proc/" + pid + "/mountinfo").read_text().splitlines()
                         if any(path in line for path in ("/run/credentials", "/run/democtl-sm", "/etc/aos/sm.cfg", "/usr/bin/aos_sm_app"))][:20] if executable else [],
                     mutation=False)
@@ -510,8 +557,10 @@ def execute(request):
         safe_stop = dict(servicePid=sm, bindingObservation="SM_MOUNT_NAMESPACE", mutation=False)
         safe_stop["clock"] = clock_status()
         if sm.isdigit() and int(sm) > 0:
-            namespace = Path("/proc") / sm / "root/run/credentials/aos-sm.service"
-            host = Path("/run/credentials/aos-sm.service")
+            sm_config = json.loads((Path("/proc") / sm / "root/etc/aos/sm.cfg").read_text())
+            runtime = next(item["config"] for item in sm_config["runtimes"] if item["plugin"] == "systemd-slot-component")
+            host, namespace, profile = sm_public_inputs(sm, runtime)
+            safe_stop["freshnessProfile"] = profile
             safe_stop["presence"] = {name: (namespace / name).is_file() for name in (
                 "viss-update-ca", "viss-update-binding", "viss-update-certificate", "viss-update-private-key")}
             binding_path = namespace / "viss-update-binding"

@@ -44,11 +44,33 @@ runtime operation. This deliberately permits a twelve-sample window to span
 more than 250 ms while preventing buffered history from authorizing a current
 transition.
 
-Waiting is a single asynchronous bounded runtime transaction. The durable
+Waiting uses a single bounded runtime worker. The durable
 record contains transaction metadata, never Safe Stop samples; the runtime
 does not hold its main mutex while waiting, and shutdown performs bounded
 cancel-and-join. The current healthy VDP remains active during replacement or
 removal waiting, while first install exposes no active capability.
+
+<a id="native-stop-completion"></a>
+
+### Native stop-completion correction — accepted 2026-09-06
+
+The operator approved correcting the mismatch with the pinned AosCore launch
+pool: `StopInstance` must not return success until the provider is actually
+stopped. It waits for its worker without holding the runtime's main mutex and
+returns `Inactive` only after durable stop completion. Cancellation or failure
+returns an error, never a successful asynchronous stop. The completion bound
+is 590 seconds plus the existing two-second cancellation bound, below CM's
+600-second node-status timeout; successful completion returns immediately,
+not after that limit. The Safe Stop collection deadline remains 480 seconds.
+
+`StartInstance` retains its asynchronous `Activating` contract. A completed
+stop retains a private `stopped.json` predecessor record and its existing A/B
+slot for version checks and rollback. It is not an active installation and is
+not automatically started by reboot. A subsequent candidate uses the other
+slot; successful replacement clears the stopped record, while failed
+replacement restores the predecessor. No Safe Stop evidence is persisted.
+This supersedes the earlier implication that StopInstance could return while
+its remove worker was still active. No upstream launcher fork is introduced.
 
 While Safe Stop is not yet established, AosCore's native lifecycle state is
 `ACTIVATING`. A first install leaves the empty VDP slot empty; a replacement
@@ -79,4 +101,23 @@ generation/reset, completeness, transport identity, bounded waits and rollback
 conditions are unchanged. Production and signed VDP profile hashes are not
 modified. The initial proof uses a temporary Test-only SM binary/config mount;
 it does not qualify or alter the immutable Factory .29 image. The independent
-asynchronous StopInstance/StartInstance transaction race remains open.
+StopInstance/StartInstance correction is now proven by Test VDP 7.0.0; see the
+[qualification record](../../docs/qualification/democtl-vdp-family.md).
+
+## Durable local-demo input integration — Factory .30
+
+The Factory opts into `demoLocalSourceInputs`; without it the native credential
+paths and default profile are unchanged. Public CA, source binding, selected
+VDP source and a fixed `test`/`production` role live under the existing runtime
+data directory's `demo-inputs`. No private credential or vehicle sample is
+stored there. The image contains no live input or role. Missing role selects
+`standard`; only explicit `test` selects `demo-5s`. Production remains standard.
+
+Demo Control writes these public inputs during source configuration. The first
+role assignment restarts SM once so its initialization reads the role. Later
+source generations update the binding without another role restart. Packaged
+VDP `LoadCredential` entries read the public input files from persistent data.
+Reboot retains configuration, not authorization from old Safe Stop samples:
+every destructive operation still requires fresh live evidence. The existing
+source-selection operation owns reconnecting the local CARLA transport.
+This integration is being qualified; it is not yet a clean-build E2E result.

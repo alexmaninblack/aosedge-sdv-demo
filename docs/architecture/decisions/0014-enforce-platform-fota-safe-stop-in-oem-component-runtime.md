@@ -96,7 +96,7 @@ vehicle-state source as stopped.
 The runtime transaction state machine shall add a durable
 `WaitingForSafeStop` phase between candidate preparation and destructive
 activation. Only transaction metadata is durable; Safe Stop samples are never
-persisted. One bounded asynchronous worker shall return native `Activating`
+persisted. One bounded worker shall support native `Activating`
 after the durable wait is established, shall not hold the runtime's main mutex
 while waiting and shall be cancelled and joined within a bound during runtime
 stop. After VM or runtime restart, old evidence is never reused as
@@ -104,6 +104,14 @@ current. Where a prior healthy provider exists, the runtime shall restore it;
 for a first install, the slot shall remain empty. The runtime then reconstructs
 the pending transaction, obtains fresh evidence and either resumes the same
 candidate idempotently or fails it without activating.
+
+Operator-approved correction, 2026-09-06: `StartInstance` returns Activating
+asynchronously; `StopInstance` waits for actual worker completion before
+returning success/Inactive, as required by the pinned native launcher. Its
+completion barrier never owns the main runtime mutex. A stopped predecessor
+is retained as inactive rollback metadata, not restarted merely by reboot.
+The exact completion bounds and recovery distinction are recorded in the
+[native stop-completion correction](../../../contracts/platform-fota-safe-stop/README.md#native-stop-completion).
 
 A repeated request for the same candidate may reattach to the transaction. A
 different candidate while a transition is active shall be rejected. No reboot

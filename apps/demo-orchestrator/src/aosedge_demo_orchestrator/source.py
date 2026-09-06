@@ -77,7 +77,7 @@ class SourceDriver:
         from . import source_guest
         code = Path(source_guest.__file__).read_text()
         vehicle = dict(state["vehicles"][role], sourceProbeSelected=state.get("currentVehicle") == role)
-        request = dict(action=action, vehicle=vehicle, **extra)
+        request = dict(action=action, vehicle=vehicle, role=role, **extra)
         script = "python3 - <<'DEMOCTL_SOURCE_PY'\n" + code + "\nmain(" + repr(request) + ")\nDEMOCTL_SOURCE_PY\n"
         try:
             timeout = self.budget(60 if action == "component-sm-apply" else 25)

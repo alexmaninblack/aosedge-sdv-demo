@@ -3,8 +3,8 @@
 
 # Demo Control VDP Family Checkpoint
 
-- Status: VDP 6.0.0 ACTIVE/23-path READY on Test with temporary SM demo-5s; Cloud installed and pending=null; native Stop/Start retry defect remains
-- Version: 0.12
+- Status: VDP 7.0.0 ACTIVE/7-path READY on Test; corrected SM Stop/Start completes without ten-minute retry; clean Factory .30 qualification remains
+- Version: 0.13
 - Prepared: 2026-09-06
 - Owner: Demo Solution Team
 - Design: [Demo Control](../architecture/demo-control.md)
@@ -12,6 +12,24 @@
   and [Typed QM Advisory](../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 
 ## Scope and source boundary
+
+Latest proof, 2026-09-06: the operator-approved synchronous StopInstance
+completion barrier passed 7 native tests in 286 ms, including cancellation,
+rollback and runtime restart. SM SHA
+`0ea27410730ca188fb40641a5a110e0396436807ff8380f44a74cd5ada63d9b8`
+is active on Test (PID 4921, no automatic restarts). VDP 7.0.0/v1 content was
+prepared, signed, uploaded and approved exclusively through democtl. Bundle
+SHA `f93b547cc149b22caf6a025f03beee60b2eb656a8814fe761b0f0d8ee77f4352`,
+deployment `a540eddb-11ae-4584-bb5e-7027541f2496`, validation batch
+`3a30f0cf-bd24-4797-b056-8a921dcf4fbf`.
+
+Native Stop at 03:48:35.001468 UTC was followed by Start at
+03:48:35.747153 UTC and commit around 03:48:36.825 UTC. VDP PID 5063,
+slot b, 7-path READY/LIVE/NONE, NRestarts=0. Cloud Test Online/installed=7.0.0,
+pending=null; Production Online/0.0.0 with unchanged membership/settings.
+No ten-minute retry or manual provider start. Published .29 is unchanged;
+the corrected SM remains a temporary mount. Clean .30 integration/E2E is next.
+Historical open-Stop/Start statements below describe the earlier revisions.
 
 Subsequent operator decision: keep mTLS deferred; proceed with installation,
 startup and the 7/15/23 telemetry sequence only. Full v3 advisory remains

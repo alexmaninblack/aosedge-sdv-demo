@@ -20,7 +20,7 @@ def execute_operation(
     target_value = payload.get("target")
     target = VehicleTarget(target_value) if target_value else None
     application = orchestrator or DemoOrchestrator()
-    if domain == "component" and action in ("sm-builder-start", "sm-builder-stop", "sm-build", "sm-apply", "sm-status"):
+    if domain == "component" and action in ("sm-builder-start", "sm-builder-stop", "sm-build", "sm-test", "sm-apply", "sm-status"):
         if set(payload) != {"domain", "action", "target"} or target != VehicleTarget.TEST:
             raise ValueError("SM qualification accepts Test only, no caller-selected paths or commands")
         return application.execute(OperationRequest(domain, action, target)).to_dict()
@@ -74,6 +74,10 @@ def execute_operation(
         if set(payload) - {"domain", "action"}:
             raise ValueError("Unsupported image list field")
         return application.execute(OperationRequest(domain, action)).to_dict()
+    if domain == "image" and action == "build":
+        if set(payload) != {"domain", "action", "image"} or payload["image"] != "6.1.1-maninblack.30":
+            raise ValueError("Only the authorized Factory .30 build is available")
+        return application.execute(OperationRequest(domain, action, image=payload["image"])).to_dict()
     if domain == "environment" and action == "create":
         # CLI paths do not become a browser-controlled filesystem capability.
         if set(payload) - {"domain", "action", "target", "image"}:

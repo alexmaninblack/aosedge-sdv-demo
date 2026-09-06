@@ -625,6 +625,23 @@ again. Alternatively, use `.venv/bin/democtl status` directly without activation
 
 ## Development
 
+### Factory .30 build
+
+`democtl image build 6.1.1-maninblack.30` uses the committed Platform source
+and existing warm Builder. It runs the new ARM64 input/profile tests before
+SM package QA and image construction, reuses the existing Rouge layout, then
+exports a new immutable catalog image and stops Builder. It does not publish
+components, provision Units or modify Production. A completed build means
+`BUILT_NOT_LIVE_QUALIFIED`, not E2E acceptance. Existing .30 artifacts are never
+overwritten by repeating this command. Downloads and shared-state caches are
+retained; generated artifacts stay outside Git.
+
+The .30 Factory owns persistent public source-input configuration. Source
+selection writes public CA/bindings and the explicit role into runtime data;
+only Test selects `demo-5s`, and an empty Factory/Production uses `standard`.
+No private keys, role assignment or captured vehicle data are baked into the
+image. Existing .29 transient qualification commands remain separate.
+
 ### Test-only SM clock-age qualification
 
 The 2026-09-06 local-demo exception is documented in the
@@ -632,7 +649,9 @@ The 2026-09-06 local-demo exception is documented in the
 [VDP checkpoint](../../docs/qualification/democtl-vdp-family.md). In the isolated
 Test .29 qualification environment, `component sm-builder-start test` starts
 the existing Builder on port 10024; `component sm-build test` compiles only SM,
-runs the native suite, exports the fixed proof artifact and stops Builder.
+runs the targeted native Stop/Start suite, exports the fixed proof artifact
+and stops Builder. `component sm-test test` reruns that test on the existing
+compiled target without compiling again. Test failures retain their output.
 `component sm-builder-stop test` is the explicit graceful stop.
 
 `component sm-apply test` applies that artifact and the explicit `demo-5s`
