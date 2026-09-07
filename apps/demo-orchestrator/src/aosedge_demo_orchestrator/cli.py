@@ -14,6 +14,7 @@ from . import __version__
 from .application import DemoOrchestrator
 from .models import OperationRequest, OperationResult, OperationState, VehicleTarget
 from .status import StatusService
+from .environment import EnvironmentError
 
 
 TARGETS = tuple(target.value for target in VehicleTarget)
@@ -35,6 +36,22 @@ def build_parser() -> argparse.ArgumentParser:
         help="result format (default: human)",
     )
     commands = parser.add_subparsers(dest="domain", required=True)
+
+    workspace = commands.add_parser("workspace", help="built-in-display window composition only")
+    workspace_commands = workspace.add_subparsers(dest="action", required=True)
+    workspace_commands.add_parser("status", help="read demo window geometry; no lifecycle actions")
+    workspace_commands.add_parser("restore", help="place owned demo windows; no VM, Cloud or driving action")
+    workspace_commands.add_parser("close", help="close owned Presenter windows and background; preserve simulation, VMs and Cloud")
+
+    ui = commands.add_parser("ui", help="local Presenter UI")
+    ui.add_subparsers(dest="action", required=True).add_parser("serve", help="serve the built UI and protected Test-first operations on loopback")
+    demo = commands.add_parser("demo", help="operator's complete Test-first demo workflow")
+    demo_commands = demo.add_subparsers(dest="action", required=True)
+    for action in ("plan", "prepare"):
+        command = demo_commands.add_parser(action, help="read the plan" if action == "plan" else "prepare both VMs and Test VDP v1 through existing Demo Control operations")
+        command.add_argument("--image", required=True, help="factory version/architecture from image list")
+    access = commands.add_parser("access", help="native VM enrollment input")
+    access.add_subparsers(dest="action", required=True).add_parser("setup", help="native password dialog; optional Keychain save")
 
     status = commands.add_parser("status", help="read local VM, guest and Cloud observations")
     status.add_argument("target", nargs="?", choices=TARGETS, default="all")
@@ -70,7 +87,10 @@ def build_parser() -> argparse.ArgumentParser:
         schema.add_argument("target", choices=("test",))
     for action in ("inspect", "unpack", "prepare", "verify", "sign", "cloud-status", "upload", "approve", "unapprove", "send"):
         command = component_commands.add_parser(action)
-        command.add_argument("component_version", help="exact version from component list")
+        if action == "cloud-status":
+            command.add_argument("component_version", nargs="?", help="exact release; omit for a focused Cloud-only Test overview")
+        else:
+            command.add_argument("component_version", help="exact version from component list")
         if action == "prepare":
             command.add_argument("--profile", dest="content_profile", choices=("v1", "v2", "v3"),
                                  help="reuse this functional profile in a new release >=4.0.0")
@@ -142,13 +162,21 @@ def render_human(result: OperationResult, details: bool = False) -> str:
         summary += f" role={document['technical_role']}"
     lines = [summary, document["message"]]
     data = document.get("data")
+    if data and document["operation"].startswith("workspace."):
+        lines.append(json.dumps(data, indent=2, sort_keys=True))
     if data and document["operation"].startswith("component."):
         lines.append(json.dumps(data, indent=2, sort_keys=True))
+    if data and document["operation"].startswith("demo."):
+        lines.append("VDP: " + str(data.get("contentProfile", "v1")) + " / " + str(data.get("version", "not selected")))
+        lines.append("Phase: " + data.get("phase", "not observed"))
     if data and document["operation"].startswith("simulation."):
         lines.append("Simulation: " + data["state"] + (" (unchanged)" if data["noOp"] else ""))
         lines.append("Current Vehicle: " + str(data.get("currentVehicle") or "none"))
         if data.get("physicalStop"):
             lines.append("Physical stop: " + data["physicalStop"])
+        if data.get("workspace"):
+            lines.append("Workspace: " + data["workspace"]["state"])
+            lines.extend(data["workspace"].get("problems", []))
     if data and document["operation"] in ("environment.prepare", "vehicle.select"):
         lines.append("Current Vehicle: " + data["currentVehicle"] + (" (unchanged)" if data["noOp"] else ""))
         lines.append("Profile: " + data["trustProfile"] + "; per-Unit mTLS: " + data["perUnitMtls"])
@@ -303,6 +331,21 @@ def render_human(result: OperationResult, details: bool = False) -> str:
 def main(argv: Optional[List[str]] = None) -> int:
     parser = build_parser()
     arguments = parser.parse_args(argv)
+    if arguments.domain == "ui":
+        from .presenter import serve
+        return serve()
+    if arguments.domain == "access":
+        from .native_access import NativeVMAccess
+        access = NativeVMAccess(progress=lambda message: print(message, file=sys.stderr, flush=True))
+        try:
+            access("test")
+            print("COMPLETED access.setup — native VM access available; no VM or Cloud action")
+            return 0
+        except EnvironmentError as error:
+            print("BLOCKED access.setup " + str(error), file=sys.stderr)
+            return 1
+        finally:
+            access.clear()
     service = StatusService(config_path=getattr(arguments, "config", None))
     from .vm import VMService
     def password_provider(role):
@@ -311,6 +354,11 @@ def main(argv: Optional[List[str]] = None) -> int:
         return getpass.getpass("Guest root password for first SSH setup (" + role + "): ")
     vm_service = VMService(password_provider=password_provider,
                           progress=lambda message: print(message, file=sys.stderr, flush=True))
+    native_access = None
+    if arguments.domain == "demo" and arguments.action == "prepare":
+        from .native_access import NativeVMAccess
+        native_access = NativeVMAccess(progress=vm_service.progress)
+        vm_service.password_provider = native_access
     try:
         result = DemoOrchestrator(service, vm_service=vm_service).execute(request_from_arguments(arguments))
     except ValueError:
@@ -318,6 +366,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     except KeyboardInterrupt:
         print("INTERRUPTED: current VM/Cloud state retained; reconcile before continuing.", file=sys.stderr)
         return 130
+    finally:
+        if native_access:
+            native_access.clear()
     if arguments.output == "json":
         print(json.dumps(result.to_dict(), sort_keys=True, separators=(",", ":")))
     else:

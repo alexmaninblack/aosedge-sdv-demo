@@ -1,6 +1,6 @@
 import { useReducer } from "react";
-import { initialPresentationState, presentationReducer } from "../../domain";
+import { initialPresentationState, presentationReducer, type Perspective } from "../../domain";
 
-export function usePresentationState() {
-  return useReducer(presentationReducer, initialPresentationState);
+export function usePresentationState(perspective: Perspective = "platform") {
+  return useReducer(presentationReducer, { ...initialPresentationState, perspective });
 }

@@ -143,7 +143,7 @@ class SourceDriver:
         while time.monotonic() < deadline:
             value = self.rpc(source, "status", identity)
             frame = value.get("frame") or {}
-            stopped = (frame.get("activeMode") == "SAFE_STOP" and frame.get("speedKmh", float("inf")) <= .5
+            stopped = (frame.get("activeMode") == ("MANUAL" if phase == "MANUAL_READY" else "SAFE_STOP") and frame.get("speedKmh", float("inf")) <= .5
                        and frame.get("brake", -1) >= .99)
             if value.get("operationId") == identity and value.get("phase") == phase and value.get("fresh") and stopped:
                 return value
@@ -202,6 +202,11 @@ class SourceDriver:
             self.vm._free_port(port)
         if (self.root / source["controlDirectory"] / "control.sock").exists():
             raise EnvironmentError("SIMULATION_CONTROL_CLEANUP_INCOMPLETE")
+        from .workspace import close_terminal
+        try:
+            close_terminal(source)
+        except (EnvironmentError, OSError, subprocess.SubprocessError):
+            self.progress("Simulation stopped; its inactive dashboard window could not be closed")
 
     def start(self, state):
         previous = None
@@ -223,6 +228,8 @@ class SourceDriver:
                     or any(v["gate"] != "BLOCKED" for v in self.guests(state, "status").values())):
                     raise EnvironmentError("SOURCE_PREVIOUS_RUN_NOT_RUNNING_RECONCILE_REQUIRED")
         paths = self.assets()
+        from .workspace import prepare_controller
+        prepare_controller(paths, self.progress)
         # The fixed .28 client URI has no host listener. Without its owned
         # redirect (including after reboot) it cannot reach the Gateway.
         self.vm._free_port(6443)
@@ -248,7 +255,8 @@ class SourceDriver:
             "--python", str(paths["python"]), "--python-api-root", str(paths["carla-root"] / "PythonAPI/carla"),
             "--certificate", str(paths["ca"]), "--private-key", str(paths["key"]),
             "--keyboard-ui", str(paths["keyboard"]), "--run-directory", str(run),
-            "--control-directory", str(control), "--started-timestamp", str(time.time())]
+            "--control-directory", str(control), "--started-timestamp", str(time.time()),
+            "--demo-journal", str(self.root / JOURNAL)]
         runner.append("--viss-development")
         source = dict(runId=identity, controlDirectory=str(control.relative_to(self.root)),
             runDirectory=str(run.relative_to(self.root)), simulatorCommand=simulator, runnerCommand=runner,
@@ -276,11 +284,27 @@ class SourceDriver:
         else:
             raise EnvironmentError("SOURCE_SIMULATOR_READY_TIMEOUT")
         self.progress("CARLA: starting Controller, Gateway and keyboard UI")
-        self.spawn(runner, run / "runner.log")
+        from .workspace import launch_terminal
+        source["terminalWindowId"] = launch_terminal(runner, run / "runner.log", identity)
+        self.vm._save(state)
+        return self.finish_start(state)
+
+    def finish_start(self, state):
+        source = state["source"]
+        runner = source["runnerCommand"]
+        run = self.root / source["runDirectory"]
         deadline = time.monotonic() + 90
+        launch_deadline = time.monotonic() + 5
+        seen = False
         while time.monotonic() < deadline:
             if not self.live_process(runner):
+                # Terminal's do-script acknowledgment precedes exec. This is
+                # startup observation, not a second launch or a retry.
+                if not seen and time.monotonic() < launch_deadline:
+                    time.sleep(.1)
+                    continue
                 raise EnvironmentError("SOURCE_RUNNER_EXITED")
+            seen = True
             try:
                 value = self.rpc(source, "status", str(uuid4()))
                 timeline = read_json(run / "startup-timeline.json")
@@ -339,6 +363,8 @@ class SourceService:
                 if source and (source.get("operation") or source.get("stopOperation")):
                     raise EnvironmentError("SOURCE_OPERATION_RECONCILIATION_REQUIRED")
                 if source and self.driver.live_process(source["runnerCommand"]):
+                    if source["state"] == "STARTING":
+                        self.driver.finish_start(state)
                     frame = self.driver.ready(state)
                     if frame.get("held"):
                         raise EnvironmentError("SIMULATION_NOT_READY")
@@ -349,13 +375,37 @@ class SourceService:
                 if any(v["gate"] != "BLOCKED" for v in views.values()):
                     raise EnvironmentError("SOURCE_DETACH_NOT_CONFIRMED")
                 source = self.driver.start(state)
-                return dict(state="RUNNING", noOp=False, currentVehicle=None, runId=source["runId"])
+                result = dict(state="RUNNING", noOp=False, currentVehicle=None, runId=source["runId"])
+                if (state.get("workspace") or {}).get("profile") == "builtin-v1":
+                    from .workspace import WorkspaceService
+                    try:
+                        result["workspace"] = WorkspaceService(self.environment, self.driver).execute("restore")
+                    except (EnvironmentError, OSError, ValueError, subprocess.SubprocessError):
+                        result["workspace"] = dict(state="INCOMPLETE", problems=["Run democtl workspace restore"])
+                return result
             if action != "stop":
                 raise EnvironmentError("SIMULATION_ACTION_INVALID")
             if not source:
                 return dict(state="STOPPED", noOp=True, currentVehicle=None)
             if source.get("operation"):
-                raise EnvironmentError("SOURCE_OPERATION_RECONCILIATION_REQUIRED")
+                pending = source["operation"]
+                if (not pending.get("initialManual") or state.get("currentVehicle") is not None
+                        or source.get("assignmentGeneration") != 0):
+                    raise EnvironmentError("SOURCE_OPERATION_RECONCILIATION_REQUIRED")
+                observed = self.driver.rpc(source, "status", pending["id"])
+                frame = observed.get("frame") or {}
+                if (observed.get("operationId") != pending["id"] or not observed.get("held")
+                        or not observed.get("fresh") or frame.get("activeMode") != "SAFE_STOP"
+                        or frame.get("speedKmh", float("inf")) > .5 or frame.get("brake", 0) < .99):
+                    raise EnvironmentError("SOURCE_INITIALIZATION_CANCEL_REQUIRES_SAFE_STOP")
+                self.progress("Simulation: interrupted initialization is physically stopped; detaching both paths")
+                views = self.driver.guests(state, "block")
+                if any(v["gate"] != "BLOCKED" for v in views.values()):
+                    raise EnvironmentError("SOURCE_DETACH_NOT_CONFIRMED")
+                source["stopOperation"] = dict(id=pending["id"], phase="DETACHED", physicalStop="CONFIRMED")
+                source["operation"] = None
+                source["state"] = "STOPPING"
+                self.vm._save(state)
             if source["state"] == "STOPPED":
                 if state.get("currentVehicle") or source.get("stopOperation"):
                     raise EnvironmentError("SOURCE_STOPPED_STATE_CONTRADICTORY")
@@ -390,7 +440,10 @@ class SourceService:
             self.vm._save(state)
             return dict(state="STOPPED", noOp=False, currentVehicle=None, physicalStop=physical)
 
-    def select(self, role):
+    def initialize_test(self):
+        return self.select("test", initial_manual=True)
+
+    def select(self, role, initial_manual=False):
         with self.environment._writer(), self.driver.operation():
             state = read_json(self.root / JOURNAL)
             self.driver.ready(state)  # fail promptly, before VM/Cloud/guest work
@@ -401,9 +454,9 @@ class SourceService:
             if (item.get("cloud", {}).get("lifecycle") != "ONLINE"
                     or not all(item.get(key) for key in ("unitId", "nodeId", "unitSetId"))):
                 raise EnvironmentError("SOURCE_UNIT_PROVISION_REQUIRED:" + role)
-            return self._select(state, role, configure=True)
+            return self._select(state, role, configure=True, initial_manual=initial_manual)
 
-    def _select(self, state, role, configure=False):
+    def _select(self, state, role, configure=False, initial_manual=False):
         source = state["source"]
         pending = source.get("operation")
         if pending and pending["target"] != role:
@@ -412,6 +465,11 @@ class SourceService:
         views = (self.driver.guests(state, "status", configure_role=role) if configure
                  else self.driver.guests(state, "status"))
         old = state.get("currentVehicle")
+        if initial_manual and (role != "test" or (old is not None and old != role)
+                or (old is None and source.get("assignmentGeneration", 0) != 0)):
+            raise EnvironmentError("INITIAL_MANUAL_REQUIRES_FIRST_TEST_CONNECTION")
+        if pending and bool(pending.get("initialManual")) != initial_manual:
+            raise EnvironmentError("SOURCE_OPERATION_MODE_CHANGED")
         expected = {r: "OPEN" if r == old else "BLOCKED" for r in state["vehicles"]}
         if not pending and any(v["gate"] != expected[r] for r, v in views.items()):
             raise EnvironmentError("SOURCE_LIVE_ASSIGNMENT_CONTRADICTORY")
@@ -432,9 +490,9 @@ class SourceService:
                 raise EnvironmentError("SOURCE_OPERATION_OWNER_MISMATCH")
             self.progress("Source: reconciling the same operation from Controller and guest gates")
         else:
-            source["operation"] = dict(id=identity, target=role, previous=old, phase="SAFE_STOP_REQUESTED")
+            source["operation"] = dict(id=identity, target=role, previous=old, phase="SAFE_STOP_REQUESTED", initialManual=initial_manual)
             self.vm._save(state)
-        if phase not in ("RESETTING", "RESET", "RELEASED"):
+        if phase not in ("RESETTING", "RESET", "MANUAL_PREPARING", "MANUAL_READY", "RELEASED"):
             self.progress("Source: Safe Stop; waiting for a completed stopped frame")
             self.driver.rpc(source, "safe_stop", identity)
             self.driver.wait(source, identity, "SAFE_STOP")
@@ -457,7 +515,11 @@ class SourceService:
                 raise EnvironmentError("SOURCE_RELEASED_ASSIGNMENT_CONTRADICTORY")
             frame = observed
         else:
-            frame = self.driver.wait(source, identity, "RESET")
+            if phase not in ("MANUAL_PREPARING", "MANUAL_READY"):
+                frame = self.driver.wait(source, identity, "RESET")
+            if initial_manual:
+                self.driver.rpc(source, "manual_ready", identity)
+                frame = self.driver.wait(source, identity, "MANUAL_READY")
             source["operation"]["phase"] = "RESET_CONFIRMED"
             self.vm._save(state)
             views[role].update(self.driver.guest(state, role, "allow"))
@@ -474,14 +536,14 @@ class SourceService:
         source["operation"]["phase"] = "ATTACHED"
         state["currentVehicle"] = role
         self.vm._save(state)
-        released = self.driver.rpc(source, "release", identity)
+        released = self.driver.rpc(source, "release_manual" if initial_manual else "release", identity)
         if released.get("held") or released.get("phase") != "RELEASED":
             raise EnvironmentError("SOURCE_HOLD_RELEASE_UNCONFIRMED")
         source.update(assignmentGeneration=source["assignmentGeneration"] + 1, operation=None,
             lastConnectionConfirmation=dict(role=role, confirmedAt=now(), runId=source.get("runId"),
                 serverTls=True, advancingVissFrames=data.get("advancingVissFrames", False)))
         self.vm._save(state)
-        self.progress("Source: " + role + " connected; car remains in Safe Stop")
+        self.progress("Source: " + role + (" connected in stationary Manual; ready for Autopilot then Safe Stop" if initial_manual else " connected; car remains in Safe Stop"))
         return dict(TRUST, currentVehicle=role, noOp=False, vehicles=views,
             controller=frame, connection=data, assignmentGeneration=source["assignmentGeneration"])
 

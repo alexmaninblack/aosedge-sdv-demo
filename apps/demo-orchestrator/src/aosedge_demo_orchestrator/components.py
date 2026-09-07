@@ -214,7 +214,7 @@ class ComponentService:
         try:
             process = subprocess.run([str(config["cloudPython"]), "-I", "-B",
                 str(Path(__file__).with_name("component_worker.py"))], input=json.dumps(request),
-                text=True, capture_output=True, timeout=90, env={"PATH": os.defpath})
+                text=True, capture_output=True, timeout=30 if values.get("purpose") == "overview" else 90, env={"PATH": os.defpath})
             if process.returncode or len(process.stdout) > 262144:
                 raise EnvironmentError("COMPONENT_WORKER_RESULT_UNAVAILABLE")
             result = json.loads(process.stdout)
@@ -248,7 +248,7 @@ class ComponentService:
             scope["roleSetIds"] = record["roleSetIds"]
         if all(not item.get("unitId") for item in state["vehicles"].values()):
             from .component_runtime import FACTORY_VERSION
-            if (set(vehicles) != {"test", "production"} or state.get("stage") != "MANUFACTURED"
+            if (set(vehicles) != {"test", "production"} or state.get("stage") not in ("MANUFACTURED", "LOCAL_STOPPED")
                     or state.get("factory", {}).get("version") != FACTORY_VERSION
                     or state.get("currentVehicle") is not None
                     or any(item.get("cloud") or item.get("systemUid") or item.get("nodeId")
@@ -262,7 +262,18 @@ class ComponentService:
             scope["productionSetId"] = binding["sets"]["production"]
         return scope
 
-    def cloud_status(self, version):
+    def cloud_status(self, version=None):
+        if version is None:
+            from .status import read_json
+            from .environment import JOURNAL
+            state = read_json(self.environment.root / JOURNAL)
+            identity = state.get("vehicles", {}).get("test", {})
+            if not all(identity.get(key) for key in ("unitId", "systemUid", "unitSetId")):
+                raise EnvironmentError("COMPONENT_TEST_CLOUD_BINDING_REQUIRED")
+            # The journal selects the exact owned Unit, never supplies its
+            # displayed state. No guest access or local bundle inspection.
+            return self._worker("cloud-status", purpose="overview", vehicles={"test": {
+                key: identity[key] for key in ("unitId", "systemUid", "unitSetId")}})
         return self._worker("cloud-status", **self._cloud_scope(version))
 
     def logs(self, target):
@@ -410,7 +421,7 @@ class ComponentService:
     def _publish(self, action, version):
         from .status import read_json, now
         from .environment import JOURNAL, atomic_json
-        from .component_cloud import guard, batch_guard
+        from .component_cloud import guard, batch_guard, reconcile_list_guard
         from .unit_cloud import CloudFailure
         if version not in ("2.0.0", "3.0.0"):
             from .component_build import PROFILE_BASES, version_number
@@ -435,6 +446,8 @@ class ComponentService:
             except CloudFailure as error:
                 raise EnvironmentError(str(error)) from None
             record = state.setdefault("componentOperations", {}).setdefault(version, {})
+            if reconcile_list_guard(record, before):
+                atomic_json(self.environment.root / JOURNAL, state)
             if scope.get("preProvisioning") and "testSet" in before:
                 record["roleSetIds"] = {role: before[role + "Set"]["id"] for role in ("test", "production")}
             if record.get("sha256", verified["sha256"]) != verified["sha256"]:

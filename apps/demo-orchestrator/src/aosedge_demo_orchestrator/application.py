@@ -7,6 +7,7 @@ from .models import OperationRequest, OperationResult, OperationState
 from .status import StatusService, has_unknown, now
 from .images import ImageCatalog, ImageError
 from .environment import EnvironmentService, EnvironmentError
+from .models import VehicleTarget
 
 
 class DemoOrchestrator:
@@ -28,6 +29,41 @@ class DemoOrchestrator:
         selection_error = request.selection_error()
         if selection_error:
             return OperationResult(operation, OperationState.BLOCKED, selection_error)
+        if request.domain == "workspace" and request.action in ("status", "restore", "close"):
+            if request.target or request.current or request.image or request.image_path or request.profile or request.component_version or request.content_profile:
+                return OperationResult(operation, OperationState.BLOCKED, "WORKSPACE_USES_CURRENT_ENVIRONMENT")
+            from .workspace import WorkspaceService
+            import subprocess
+            try:
+                data = WorkspaceService(self.environment_service, self.source_service.driver).execute(request.action)
+                return OperationResult(operation, OperationState.PARTIAL if data["problems"] else
+                    OperationState.OBSERVED if request.action == "status" else OperationState.COMPLETED,
+                    "Local windows only; no Cloud, VM, Current Vehicle or release changes.", data=data)
+            except EnvironmentError as error:
+                return OperationResult(operation, OperationState.BLOCKED, str(error))
+            except (OSError, ValueError, KeyError, subprocess.SubprocessError):
+                return OperationResult(operation, OperationState.BLOCKED, "WORKSPACE_OBSERVATION_UNAVAILABLE")
+        if request.domain == "demo" and request.action in ("plan", "prepare"):
+            from .demo_preparation import DemoPreparation
+            if not request.image or request.target or request.image_path or request.current or request.profile:
+                return OperationResult(operation, OperationState.BLOCKED, "DEMO_REQUIRES_CATALOG_IMAGE_ONLY")
+            try:
+                workflow = DemoPreparation(self)
+                if request.action == "prepare":
+                    return workflow.prepare(request.image)
+                return OperationResult(operation, OperationState.OBSERVED, "Read-only preparation plan; no image creation or publication.", data=workflow.plan(request.image))
+            except (EnvironmentError, ImageError) as error:
+                return OperationResult(operation, OperationState.BLOCKED, str(error))
+            except (OSError, ValueError, KeyError, TypeError):
+                return OperationResult(operation, OperationState.BLOCKED, "DEMO_PREPARATION_STATE_UNAVAILABLE")
+        if operation == "vehicle.initialize":
+            initialize = getattr(self.source_service, "initialize_test", None)
+            if request.target != VehicleTarget.TEST or not callable(initialize):
+                return OperationResult(operation, OperationState.BLOCKED, "DEMO_INITIAL_MANUAL_CHANGE_PENDING_AUTHORIZATION")
+            try:
+                return OperationResult(operation, OperationState.COMPLETED, "Initial Test connection in stationary Manual.", data=initialize())
+            except EnvironmentError as error:
+                return OperationResult(operation, OperationState.BLOCKED, str(error))
         if request.domain == "component" and request.action in ("sm-builder-start", "sm-builder-stop", "sm-build", "sm-test", "sm-apply"):
             from .component_runtime import builder, build, apply_test
             try:

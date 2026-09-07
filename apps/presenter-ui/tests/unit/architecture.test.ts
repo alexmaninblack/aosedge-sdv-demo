@@ -24,14 +24,19 @@ describe("module architecture", () => {
 
   it("rejects browser-owned authority, external transports and persistence", () => {
     const forbidden = /\b(fetch|XMLHttpRequest|WebSocket|EventSource|sendBeacon|localStorage|sessionStorage|indexedDB|serviceWorker)\b/;
-    const offenders = Object.entries(sources).filter(([, source]) => forbidden.test(source));
+    // Only the fixed same-origin local adapters own HTTP. No persistence.
+    const offenders = Object.entries(sources).filter(([path, source]) => forbidden.test(
+      /adapters\/local\/LocalPresenter(Read|Command)Adapter\.ts$/.test(path) ? source.replace(/\bfetch\b/g, "localRequest") : source));
     expect(offenders.map(([path]) => path)).toEqual([]);
   });
 
-  it("contains no mutation method literal or privileged material field", () => {
+  it("allows POST only in the fixed local command adapter and no privileged material field", () => {
     const mutation = /["'](?:POST|PATCH|PUT|DELETE)["']/;
     const privilegedField = /\b(?:privateKey|private_key|certificate|certificateContent|token|credential|authHeader|authorizationHeader|password|rawResponse|helperCapability)\s*[?:]/i;
-    expect(Object.entries(sources).filter(([, source]) => mutation.test(source)).map(([path]) => path)).toEqual([]);
+    expect(Object.entries(sources).filter(([path, source]) => mutation.test(source) && !path.endsWith("adapters/local/LocalPresenterCommandAdapter.ts")).map(([path]) => path)).toEqual([]);
+    const command = Object.entries(sources).find(([path]) => path.endsWith("adapters/local/LocalPresenterCommandAdapter.ts"))![1];
+    expect(command).not.toMatch(/["'](?:PATCH|PUT|DELETE)["']|https?:\/\//);
+    expect(command.match(/fetch\("\/api\/presenter\/operations"/g)).toHaveLength(2);
     expect(Object.entries(sources).filter(([, source]) => privilegedField.test(source)).map(([path]) => path)).toEqual([]);
   });
 

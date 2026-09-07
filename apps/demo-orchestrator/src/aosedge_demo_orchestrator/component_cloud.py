@@ -106,6 +106,18 @@ def unit_view(cloud, identity):
 
 
 def snapshot(cloud, request):
+    if request.get("purpose") == "overview":
+        cloud.require("units_read")
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            unit = pool.submit(unit_view, cloud, request["vehicles"]["test"])
+            versions = pool.submit(cloud.pages, "components/" + COMPONENT_ID + "/versions/")
+            result = dict(test=unit.result(), versions=[project(item, ("version", "state", "is_fake"))
+                          for item in versions.result()])
+        published = [item["version"] for item in result["versions"] if item.get("is_fake") is False
+                     and isinstance(item.get("version"), str) and VERSION.fullmatch(item["version"])]
+        result["latestPublishedVersion"] = max(published, key=lambda value: tuple(map(int, value.split("."))), default=None)
+        result["source"] = "AOS_CLOUD_ONLY"
+        return result
     pre_provisioning = request.get("preProvisioning") is True
     purpose = request.get("purpose", "status")
     confirmation = purpose == "confirm"
@@ -177,6 +189,10 @@ def snapshot(cloud, request):
             view = project(value, ("id", "title", "fleet", "is_validation_set", "update_strategy", "allow_unknown_components"))
             tasks[role + "Set"] = lambda view=view: view
             tasks[role] = lambda value=value, view=view: dict(members=value["members"], unitSet=view)
+        # List and detail serializers need not expose the same optional fields.
+        # Keep both observations for explicit reconciliation of old list guards.
+        tasks["productionDetail"] = lambda: project(cloud.call("unit-sets/" + object_id(sets["production"]["id"]) + "/"),
+            ("id", "title", "fleet", "is_validation_set", "update_strategy", "allow_unknown_components"))
     else:
         if purpose in ("status", "send"):
             tasks["testSendRequests"] = lambda: [project(item, ("id", "component_type", "update_component"))
@@ -193,6 +209,10 @@ def snapshot(cloud, request):
         pending = {key: pool.submit(job) for key, job in tasks.items()}
         result = {key: job.result() for key, job in pending.items()}
     catalog = result["versions"]
+    if pre_provisioning and "productionDetail" in result:
+        result["productionListObservation"] = result["production"]
+        result["production"] = dict(members=result["production"]["members"], unitSet=result.pop("productionDetail"))
+        result["productionSet"] = result["production"]["unitSet"]
     published = [item["version"] for item in catalog if isinstance(item.get("version"), str)
                  and VERSION.fullmatch(item["version"]) and item.get("is_fake") is False]
     result["latestPublishedVersion"] = max(published, key=lambda value: tuple(map(int, value.split("."))), default=None)
@@ -204,8 +224,35 @@ def snapshot(cloud, request):
     return result
 
 
+def reconcile_list_guard(record, observed):
+    """Migrate only the proven empty-set list/detail serializer discrepancy."""
+    previous = record.get("productionBefore")
+    listed = observed.get("productionListObservation")
+    current = observed.get("production")
+    if previous == current or previous is None:
+        return False
+    upload = record.get("upload", {})
+    if (not observed.get("preProvisioning") or previous != listed or listed.get("members") != []
+            or current.get("members") != [] or upload.get("state") != "RESPONDED"
+            or (upload.get("response") or {}).get("httpStatus") != 201 or record.get("approve")):
+        return False
+    old_set, new_set = previous["unitSet"], current["unitSet"]
+    changed = {key for key in set(old_set) | set(new_set) if old_set.get(key) != new_set.get(key)}
+    if changed != {"update_strategy"} or old_set.get("update_strategy") is not None or not isinstance(new_set.get("update_strategy"), str):
+        return False
+    record["guardReconciliation"] = dict(reason="EMPTY_SET_LIST_DETAIL_SERIALIZER", previous=previous, canonical=current)
+    record["productionBefore"] = current
+    return True
+
+
 def execute(request):
     cloud = Cloud(request)
+    if request["action"] == "release-catalog":
+        if cloud.call("components/" + COMPONENT_ID + "/")["codename"] != COMPONENT:
+            raise CloudFailure("COMPONENT_CLOUD_IDENTITY_MISMATCH")
+        versions = [item["version"] for item in cloud.pages("components/" + COMPONENT_ID + "/versions/")
+                    if item.get("is_fake") is False and isinstance(item.get("version"), str) and VERSION.fullmatch(item["version"])]
+        return dict(versions=versions, latest=max(versions, key=lambda value: tuple(map(int, value.split("."))), default="0.0.0"))
     if request["action"] == "cloud-status":
         return snapshot(cloud, request)
     if request["action"] == "upload":

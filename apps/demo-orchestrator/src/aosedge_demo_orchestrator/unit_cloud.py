@@ -130,6 +130,27 @@ def execute(request):
         from aosedge_demo_orchestrator.unit_sdk import identity
         return identity(request["address"])
     cloud = Cloud(request)
+    if action == "reconcile-uploads":
+        from aosedge_demo_orchestrator.component_cloud import batch_guard
+        from aosedge_demo_orchestrator.components import COMPONENT, VERSION
+        cloud.require("deployment_bundles_list", "verification_batch_read")
+        bundles = cloud.pages("deployment-bundles/")
+        for entry in request["uploads"]:
+            deployment_id = object_id(entry["deploymentId"])
+            if not VERSION.fullmatch(entry["version"]):
+                raise CloudFailure("COMPONENT_OPERATION_RECONCILIATION_REQUIRED")
+            matches = [bundle for bundle in bundles if bundle.get("id") == deployment_id]
+            if len(matches) != 1 or matches[0].get("state") != "done":
+                raise CloudFailure("COMPONENT_OPERATION_RECONCILIATION_REQUIRED")
+            items = matches[0].get("items") or []
+            if len(items) != 1 or items[0].get("codename") != COMPONENT or items[0].get("version") != entry["version"]:
+                raise CloudFailure("COMPONENT_OPERATION_RECONCILIATION_REQUIRED")
+            batch_id = object_id(entry["batchId"])
+            batch = cloud.call("verification-batch/" + batch_id + "/")
+            if batch.get("id") != batch_id:
+                raise CloudFailure("COMPONENT_OPERATION_RECONCILIATION_REQUIRED")
+            batch_guard(batch, entry, cloud.user["ownerId"])
+        return {"confirmedUploads": request["uploads"]}
     if action == "inventory":
         return cloud.inventory(request.get("setIds"), request.get("includeUnits", True))
     if action in ("identity", "provision"):

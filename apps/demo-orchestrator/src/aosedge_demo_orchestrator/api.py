@@ -20,6 +20,10 @@ def execute_operation(
     target_value = payload.get("target")
     target = VehicleTarget(target_value) if target_value else None
     application = orchestrator or DemoOrchestrator()
+    if domain == "demo" and action in ("plan", "prepare"):
+        if set(payload) != {"domain", "action", "image"} or not isinstance(payload["image"], str):
+            raise ValueError("Demo preparation accepts a catalog image only")
+        return application.execute(OperationRequest(domain, action, image=payload["image"])).to_dict()
     if domain == "component" and action in ("sm-builder-start", "sm-builder-stop", "sm-build", "sm-test", "sm-apply", "sm-status"):
         if set(payload) != {"domain", "action", "target"} or target != VehicleTarget.TEST:
             raise ValueError("SM qualification accepts Test only, no caller-selected paths or commands")
@@ -32,12 +36,18 @@ def execute_operation(
         return application.execute(OperationRequest(domain, action, target)).to_dict()
     if domain == "component" and action in ("list", "inspect", "unpack", "prepare", "verify", "sign", "cloud-status", "upload", "approve", "unapprove", "send"):
         expected = {"domain", "action"} if action == "list" else {"domain", "action", "component_version"}
+        if action == "cloud-status" and "component_version" not in payload:
+            expected.remove("component_version")
         if action == "prepare" and "content_profile" in payload:
             expected.add("content_profile")
         if set(payload) != expected:
             raise ValueError("Component operations accept only a catalog version, never paths or credentials")
         return application.execute(OperationRequest(domain, action,
             component_version=payload.get("component_version"), content_profile=payload.get("content_profile"))).to_dict()
+    if domain == "workspace" and action in ("status", "restore", "close"):
+        if set(payload) != {"domain", "action"}:
+            raise ValueError("Workspace accepts no paths, targets or caller-selected windows")
+        return application.execute(OperationRequest(domain, action)).to_dict()
     if domain == "simulation" and action in ("start", "stop"):
         if set(payload) != {"domain", "action"}:
             raise ValueError("Simulation uses only the owned current environment")

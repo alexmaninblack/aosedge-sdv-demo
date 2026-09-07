@@ -45,6 +45,19 @@ class Driver:
 
 
 class SourceTests(unittest.TestCase):
+    def test_initial_manual_waits_before_opening_test_source(self):
+        self.service._select(self.state, "test", initial_manual=True)
+        calls = self.driver.calls
+        self.assertLess(calls.index(("wait", "MANUAL_READY")), calls.index(("allow", "test")))
+        self.assertLess(calls.index(("probe", "test")), next(index for index, call in enumerate(calls) if call[0] == "release_manual"))
+        self.assertNotIn("release", [call[0] for call in calls])
+
+    def test_initial_manual_cannot_be_used_for_handover(self):
+        self.state["source"]["assignmentGeneration"] = 1
+        with self.assertRaisesRegex(EnvironmentError, "FIRST_TEST_CONNECTION"):
+            self.service._select(self.state, "test", initial_manual=True)
+        self.assertNotIn("allow", [call[0] for call in self.driver.calls])
+
     def setUp(self):
         self.vm = Mock()
         self.driver = Driver(self.vm)

@@ -6,6 +6,9 @@ import { ReleaseAuthorityLine } from "../features/release-authority";
 import { TireEvidence, TireHeading, TireReleaseStory, TireSummaries } from "../features/tire-team";
 import { ProducerWorkspaceLayout } from "../shared/layout";
 import { vehicleLabel } from "./SharedHeader";
+import { LocalPlatformControls } from "../features/platform-team/LocalPlatformControls";
+import { usePlatformObservation } from "./state/PresenterReadModelProvider";
+import { projectCloudPlatform } from "../domain";
 
 export function ProducerWorkspace({ teamId, snapshot, presentation, dispatch }: {
   teamId: TeamId;
@@ -15,7 +18,13 @@ export function ProducerWorkspace({ teamId, snapshot, presentation, dispatch }: 
 }) {
   const releaseRef = useRef<HTMLDivElement>(null);
   const restoredTeam = useRef<TeamId | null>(null);
-  const team = snapshot.teams[teamId];
+  const cloud = usePlatformObservation();
+  const localPlatform = Boolean(snapshot.localDemo && teamId === "platform");
+  const team = localPlatform ? projectCloudPlatform(snapshot.teams[teamId], cloud.observation) : snapshot.teams[teamId];
+
+  useEffect(() => {
+    if (localPlatform && window.location.hash !== "#native-header") cloud.refresh();
+  }, [localPlatform, cloud.refresh]);
 
   useEffect(() => {
     if (restoredTeam.current === teamId) return;
@@ -32,6 +41,11 @@ export function ProducerWorkspace({ teamId, snapshot, presentation, dispatch }: 
   const onLogs = () => dispatch({ type: "open-logs", team: teamId });
   const label = vehicleLabel(snapshot.vehicle.value);
 
+  if (snapshot.localDemo && teamId !== "platform") return <div className="global-page">
+    <header className="page-head"><div><h1>{team.name}</h1><p>This integration follows the Test Vehicle Platform pass.</p></div></header>
+    <section className="lifecycle-block"><h2>Not connected</h2><p>Navigation remains available. Service publication, deployment and backend evidence are outside this increment; no successful result is simulated.</p></section>
+  </div>;
+
   let heading;
   let summaries;
   let evidence;
@@ -39,8 +53,8 @@ export function ProducerWorkspace({ teamId, snapshot, presentation, dispatch }: 
   if (teamId === "platform") {
     heading = <PlatformHeading team={team} />;
     summaries = <PlatformSummaries team={team} vehicleLabel={label} />;
-    evidence = <PlatformEvidence team={team} assetFailure={snapshot.assetFailure} onLogs={onLogs} />;
-    releases = <PlatformReleaseStory team={team} assetFailure={snapshot.assetFailure} onDetails={onDetails} onAction={onAction} />;
+    evidence = <PlatformEvidence team={team} assetFailure={snapshot.assetFailure} onLogs={onLogs} cloud={localPlatform ? cloud : undefined} />;
+    releases = <>{snapshot.localDemo && <LocalPlatformControls />}<PlatformReleaseStory team={team} assetFailure={snapshot.assetFailure} onDetails={onDetails} onAction={onAction} /></>;
   } else if (teamId === "brake") {
     heading = <BrakeHeading team={team} />;
     summaries = <BrakeSummaries team={team} vehicleLabel={label} />;

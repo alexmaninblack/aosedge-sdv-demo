@@ -436,7 +436,7 @@ class EnvironmentService:
                 if isinstance(attempt, dict) and attempt.get("attemptStarted") and attempt.get("state") != "CONFIRMED":
                     # A Unit-scoped send cannot survive authoritative deletion
                     # of that exact target. This is not proof of delivery; the
-                    # fresh cloud_check below is still mandatory before unlink.
+                    # fresh cloud_check is still mandatory before unlink.
                     if action == "send" and any(attempt.get("unitId") == item.get("unitId")
                             and item.get("cloud", {}).get("lifecycle") == "DELETED"
                             and item.get("cloud", {}).get("absenceConfirmed") is True
@@ -549,7 +549,6 @@ class EnvironmentService:
                 self._owned_file(journal_path)
                 state = read_json(journal_path)
                 resuming = self._local_retirement_state(state)
-            state["runtimeCleanup"] = self._runtime_cleanup(state)
             factory = state.get("factory")
             if (not isinstance(factory, dict) or factory.get("format") not in FACTORY
                     or factory.get("path") != FACTORY[factory["format"]]
@@ -578,6 +577,9 @@ class EnvironmentService:
                 # new read-only Cloud proof under this same writer lock.
                 if cloud_check(state) is not True:
                     raise EnvironmentError("FRESH_CLOUD_RETIREMENT_CHECK_FAILED")
+            # The read-only Cloud gate also reconciles recorded upload responses
+            # before unresolved global operations can block local disposal.
+            state["runtimeCleanup"] = self._runtime_cleanup(state)
             targets = cleanup_targets(state)
             from .guest_access import ACCESS_FILES
             for role in OVERLAYS:

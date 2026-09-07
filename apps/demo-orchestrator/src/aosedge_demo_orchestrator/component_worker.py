@@ -73,7 +73,7 @@ def execute(request):
             result = verify(stage / "batch.tar.gz", credential)
             os.link(stage / "batch.tar.gz", output)
         return result
-    if request["action"] in ("cloud-status", "upload", "approve", "unapprove", "send"):
+    if request["action"] in ("release-catalog", "cloud-status", "upload", "approve", "unapprove", "send"):
         from aosedge_demo_orchestrator.component_cloud import execute as cloud_execute
         from aosedge_demo_orchestrator.unit_cloud import CloudFailure
         try:

@@ -4,6 +4,8 @@ import { PresenterApp } from "./app/PresenterApp";
 import { createPresenterDependencies } from "./app/composition/createPresenterDependencies";
 import { PresenterReadModelProvider } from "./app/state/PresenterReadModelProvider";
 import "./shared/design-tokens/global.css";
+import "./shared/design-tokens/local-demo.css";
+import { PresenterControls } from "./app/state/PresenterControls";
 
 const root = document.getElementById("root");
 if (!root) throw new Error("Presenter UI root element is missing");
@@ -12,7 +14,7 @@ const dependencies = createPresenterDependencies(window.location);
 createRoot(root).render(
   <StrictMode>
     <PresenterReadModelProvider dependencies={dependencies}>
-      <PresenterApp />
+      <PresenterControls port={dependencies.commandPort}><PresenterApp /></PresenterControls>
     </PresenterReadModelProvider>
   </StrictMode>,
 );

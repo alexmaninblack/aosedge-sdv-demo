@@ -127,7 +127,9 @@ def load_configuration(root, config_path=None):
             if factory:
                 vehicles[role].update(imageVersion=factory["version"], imageSha256=factory["sha256"])
         journal = observation("CURRENT_RUN_JOURNAL", {"stage": state["stage"],
-                              "roles": sorted(state["vehicles"]), "currentVehicle": state.get("currentVehicle")},
+                              "roles": sorted(state["vehicles"]), "currentVehicle": state.get("currentVehicle"),
+                              "preparation": {key: value for key, value in (state.get("demoPreparation") or {}).items()
+                                              if key in ("phase", "version", "contentProfile", "completedSteps", "updatedAt", "reason")}},
                               reason="RECOVERY_REQUIRED" if state["stage"] not in (
                                   "MANUFACTURED", "LOCAL_ACTIVE", "LOCAL_STOPPED") else None)
     if not isinstance(vehicles, dict) or set(vehicles) - {"test", "production"}:

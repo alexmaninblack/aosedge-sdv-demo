@@ -8,13 +8,17 @@ export function vehicleLabel(role: VehicleRole | null): string {
 
 export function SharedHeader({ snapshot, perspective, onNavigate }: { snapshot: PresenterSnapshot; perspective: Perspective; onNavigate: (value: Perspective) => void }) {
   const teams: TeamId[] = ["platform", "brake", "tire"];
+  const assigned = snapshot.vehicle.value === "test" || snapshot.vehicle.value === "production";
+  const connectionLabel = snapshot.localDemo && assigned
+    ? snapshot.localDemo.source.state === "CONNECTED" ? "Connection confirmed" : "Connection not rechecked"
+    : undefined;
   return (
     <header className="shared-header">
       <div className="brand-row">
         <button className="title-button" type="button" onClick={() => onNavigate("global")} aria-pressed={perspective === "global"}>
           <strong>AosEdge Software Evolution Demo</strong><span>Open the run-wide Demo Lifecycle</span>
         </button>
-        <CurrentVehicleIndicator vehicle={snapshot.vehicle} assetFailure={snapshot.assetFailure} />
+        <CurrentVehicleIndicator vehicle={snapshot.vehicle} assetFailure={snapshot.assetFailure} connectionLabel={connectionLabel} />
       </div>
       <nav className="team-tabs" aria-label="OEM producer perspectives">
         {teams.map((teamId) => {

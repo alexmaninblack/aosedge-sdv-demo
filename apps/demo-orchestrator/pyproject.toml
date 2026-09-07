@@ -20,3 +20,6 @@ democtl = "aosedge_demo_orchestrator.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+aosedge_demo_orchestrator = ["native/*.swift"]

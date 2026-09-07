@@ -48,6 +48,14 @@ class SimulationTests(unittest.TestCase):
         self.driver.guests.assert_not_called()
         self.vm._save.assert_not_called()
 
+    def test_terminal_started_session_is_observed_without_relaunch(self):
+        self.state["source"]["state"] = "STARTING"
+        result = self.service.simulation("start")
+        self.assertTrue(result["noOp"])
+        self.driver.finish_start.assert_called_once_with(self.state)
+        self.driver.start.assert_not_called()
+        self.driver.guests.assert_not_called()
+
     def test_start_blocks_before_launch_and_does_not_attach(self):
         self.state.update(source=None, currentVehicle=None)
         self.driver.start.return_value = dict(runId="new")
@@ -79,6 +87,33 @@ class SimulationTests(unittest.TestCase):
         self.assertEqual("NOT_OBSERVED", result["physicalStop"])
         self.driver.rpc.assert_not_called()
         self.driver.stop.assert_called_once()
+
+    def test_stop_cancels_owned_initialization_only_after_actual_safe_stop(self):
+        self.state["currentVehicle"] = None
+        self.state["source"].update(assignmentGeneration=0,
+            operation=dict(id="initial", initialManual=True, phase="DETACHED"))
+        self.driver.rpc.return_value = dict(operationId="initial", held=True, fresh=True,
+            frame=dict(activeMode="SAFE_STOP", speedKmh=0, brake=1))
+        self.assertEqual("STOPPED", self.service.simulation("stop")["state"])
+        self.driver.rpc.assert_called_once_with(self.state["source"], "status", "initial")
+        self.driver.guests.assert_called_once_with(self.state, "block")
+        self.driver.stop.assert_called_once()
+        self.assertIsNone(self.state["source"]["operation"])
+
+    def test_initialization_cancel_rejects_unknown_moving_or_other_owner(self):
+        self.state["currentVehicle"] = None
+        self.state["source"].update(assignmentGeneration=0,
+            operation=dict(id="initial", initialManual=True, phase="DETACHED"))
+        safe = dict(operationId="initial", held=True, fresh=True,
+            frame=dict(activeMode="SAFE_STOP", speedKmh=0, brake=1))
+        for change in (dict(fresh=False), dict(held=False), dict(operationId="other"),
+                       dict(frame=dict(activeMode="MANUAL", speedKmh=0, brake=1)),
+                       dict(frame=dict(activeMode="SAFE_STOP", speedKmh=10, brake=1))):
+            self.driver.rpc.return_value = dict(safe, **change)
+            with self.assertRaisesRegex(EnvironmentError, "CANCEL_REQUIRES_SAFE_STOP"):
+                self.service.simulation("stop")
+        self.driver.guests.assert_not_called()
+        self.driver.stop.assert_not_called()
 
     def test_partial_start_without_controller_can_be_stopped(self):
         self.state["source"].update(state="STARTING", controlDirectory="control")
@@ -155,6 +190,26 @@ class SimulationTests(unittest.TestCase):
 
 
 class SourceTransportTests(unittest.TestCase):
+    def test_terminal_exec_is_allowed_to_appear_after_acknowledgment(self):
+        driver = SourceDriver(Mock(root=Path("/not-live")))
+        state = dict(source=dict(runnerCommand=["owned-runner"], runDirectory="run", state="STARTING"))
+        driver.live_process = Mock(side_effect=[None, 123])
+        driver.rpc = Mock(return_value=dict(fresh=True))
+        with patch("aosedge_demo_orchestrator.source.time.sleep") as sleep, patch(
+                "aosedge_demo_orchestrator.source.read_json", return_value=dict(stages=[dict(stage="keyboard_ready")])):
+            driver.finish_start(state)
+        self.assertEqual("RUNNING", state["source"]["state"])
+        sleep.assert_called_once_with(.1)
+        driver.vm._save.assert_called_once_with(state)
+
+    def test_observed_runner_exit_is_not_retried(self):
+        driver = SourceDriver(Mock(root=Path("/not-live")))
+        state = dict(source=dict(runnerCommand=["owned-runner"], runDirectory="run", state="STARTING"))
+        driver.live_process = Mock(side_effect=[123, None])
+        driver.rpc = Mock(side_effect=OSError("not ready"))
+        with patch("aosedge_demo_orchestrator.source.time.sleep"), self.assertRaisesRegex(EnvironmentError, "SOURCE_RUNNER_EXITED"):
+            driver.finish_start(state)
+
     def test_ssh_reused_within_operation_and_closed_afterwards(self):
         vm = Mock(root=Path("/not-live"))
         driver = SourceDriver(vm)

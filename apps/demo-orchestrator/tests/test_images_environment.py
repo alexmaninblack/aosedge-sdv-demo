@@ -366,6 +366,18 @@ class ImagesAndCreateTests(unittest.TestCase):
             self.service.retire(cloud_check=Mock(return_value=True))
         self.assertTrue(run.exists())
 
+    def test_retire_cloud_reconciliation_precedes_publication_guard(self):
+        state, run = self.source_retirement_fixture()
+        state["componentOperations"]["9.0.0"]["upload"]["state"] = "RESPONDED"
+        atomic_json(self.root / JOURNAL, state)
+        def reconciled(current):
+            self.assertTrue(run.exists())
+            self.assertTrue(all((self.root / item["overlay"]).exists() for item in current["vehicles"].values()))
+            current["componentOperations"]["9.0.0"]["upload"]["state"] = "CONFIRMED"
+            return True
+        self.assertEqual("REMOVED", self.service.retire(cloud_check=reconciled)["outcome"])
+        self.assertFalse(run.exists())
+
     def test_retire_obsolete_send_needs_exact_deleted_target_and_fresh_proof(self):
         state, run = self.source_retirement_fixture()
         send = {"attemptStarted": True, "state": "UNCERTAIN", "unitId": "wrong-target"}

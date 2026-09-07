@@ -185,6 +185,86 @@ class UnitSafetyTests(unittest.TestCase):
         for forbidden in ("NEVER_LEAK", "private.example", "systemId"):
             self.assertNotIn(forbidden, value)
 
+    def test_retire_reconciles_known_upload_without_replaying_or_reading_deleted_unit(self):
+        self.state["cloudBinding"] = {"ownerId": UNIT}
+        self.state["vehicles"] = {}
+        record = dict(deploymentId=TEST, batchId=PROD,
+            upload=dict(attemptStarted=True, state="RESPONDED", response=dict(httpStatus=201, deploymentId=TEST)),
+            approve=dict(state="CONFIRMED", response=dict(batchId=PROD)))
+        self.state["componentOperations"] = {"12.0.0": record}
+        entries = [dict(version="12.0.0", deploymentId=TEST, batchId=PROD)]
+        self.service._cloud = Mock(return_value={"confirmedUploads": entries})
+        self.assertTrue(self.service.confirm_retired(self.state))
+        self.service._cloud.assert_called_once_with("reconcile-uploads", uploads=entries)
+        self.assertEqual("PUBLICATION_ONLY", record["upload"]["reconciliationScope"])
+        self.assertEqual("CONFIRMED", record["upload"]["state"])
+        self.service.vm._save.assert_called_once_with(self.state)
+        self.service._cloud.reset_mock()
+        self.assertTrue(self.service.confirm_retired(self.state))
+        self.service._cloud.assert_not_called()
+
+    def test_retire_upload_missing_identity_or_proof_stays_unresolved(self):
+        self.state.update(vehicles={}, cloudBinding={"ownerId": UNIT})
+        original = dict(deploymentId=TEST, batchId=PROD,
+            upload=dict(attemptStarted=True, state="RESPONDED", response=dict(httpStatus=201, deploymentId=TEST)),
+            approve=dict(state="CONFIRMED", response=dict(batchId=PROD)))
+        for failure in ("missing", "mismatch", "uncertain", "approval", "unavailable", "wrong-proof"):
+            with self.subTest(failure=failure):
+                record = copy.deepcopy(original)
+                if failure == "missing":
+                    record.pop("deploymentId")
+                elif failure == "mismatch":
+                    record["upload"]["response"]["deploymentId"] = NODE
+                elif failure == "uncertain":
+                    record["upload"]["state"] = "UNCERTAIN"
+                elif failure == "approval":
+                    record["approve"]["state"] = "RESPONDED"
+                self.state["componentOperations"] = {"12.0.0": record}
+                self.service._cloud = Mock(side_effect=EnvironmentError("CLOUD_UNAVAILABLE")) if failure == "unavailable" else Mock(return_value={"confirmedUploads": []})
+                before = copy.deepcopy(self.state)
+                with self.assertRaises(EnvironmentError):
+                    self.service.confirm_retired(self.state)
+                self.assertEqual(before, self.state)
+                self.service.vm._save.assert_not_called()
+                if failure not in ("unavailable", "wrong-proof"):
+                    self.service._cloud.assert_not_called()
+
+    def test_upload_reconciliation_worker_is_read_only_exact_and_owner_scoped(self):
+        from aosedge_demo_orchestrator.component_cloud import COMPONENT, COMPONENT_ID
+        entry = dict(version="12.0.0", deploymentId=TEST, batchId=PROD)
+        bundle = dict(id=TEST, state="done", items=[dict(codename=COMPONENT, version="12.0.0")])
+        batch = dict(id=PROD, oem_id=UNIT, architectures=["arm64"],
+            update_items=[dict(identity_id=COMPONENT_ID, codename=COMPONENT, version="12.0.0")])
+        for failure in (None, "missing", "duplicate", "state", "component", "version", "owner", "batch"):
+            with self.subTest(failure=failure):
+                bundles, detail = [copy.deepcopy(bundle)], copy.deepcopy(batch)
+                if failure == "missing":
+                    bundles = []
+                elif failure == "duplicate":
+                    bundles *= 2
+                elif failure == "state":
+                    bundles[0]["state"] = "error"
+                elif failure in ("component", "version"):
+                    bundles[0]["items"][0]["codename" if failure == "component" else "version"] = "wrong"
+                elif failure == "owner":
+                    detail["oem_id"] = NODE
+                elif failure == "batch":
+                    detail["id"] = NODE
+                cloud = Mock(user={"ownerId": UNIT})
+                cloud.pages.return_value, cloud.call.return_value = bundles, detail
+                with patch.object(unit_cloud, "Cloud", return_value=cloud):
+                    if failure:
+                        with self.assertRaises(unit_cloud.CloudFailure):
+                            unit_cloud.execute(dict(action="reconcile-uploads", uploads=[entry]))
+                    else:
+                        self.assertEqual({"confirmedUploads": [entry]}, unit_cloud.execute(dict(action="reconcile-uploads", uploads=[entry])))
+                cloud.pages.assert_called_once_with("deployment-bundles/")
+                for call in cloud.call.call_args_list:
+                    self.assertEqual(("verification-batch/" + PROD + "/",), call.args)
+                    self.assertEqual({}, call.kwargs)  # GET only; never POST/DELETE.
+                cloud.unit.assert_not_called()
+                cloud.inventory.assert_not_called()
+
     def test_forward_removal_allows_draining_connection_but_not_listener(self):
         self.service._live = Mock()
         self.service.vm._paths.return_value = ["fixture.qmp"]

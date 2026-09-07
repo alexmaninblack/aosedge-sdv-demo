@@ -13,6 +13,14 @@ from aosedge_demo_orchestrator.environment import EnvironmentError
 
 
 class DemoCtlBoilerplateTests(unittest.TestCase):
+    def test_composite_initialization_reaches_the_same_source_service(self):
+        from aosedge_demo_orchestrator.application import DemoOrchestrator
+        from aosedge_demo_orchestrator.models import OperationRequest, VehicleTarget, OperationState
+        from unittest.mock import Mock
+        source = Mock(initialize_test=Mock(return_value=dict(currentVehicle="test")))
+        result = DemoOrchestrator(source_service=source).execute(OperationRequest("vehicle", "initialize", VehicleTarget.TEST))
+        self.assertEqual(OperationState.COMPLETED, result.state)
+        source.initialize_test.assert_called_once()
     def test_command_tree_accepts_each_vehicle_selector(self) -> None:
         parser = build_parser()
         for target in ("test", "production", "all"):

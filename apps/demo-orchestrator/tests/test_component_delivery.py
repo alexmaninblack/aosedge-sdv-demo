@@ -10,7 +10,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from aosedge_demo_orchestrator.components import ComponentService
-from aosedge_demo_orchestrator.component_cloud import guard, batch_guard, snapshot, COMPONENT_ID
+from aosedge_demo_orchestrator.component_cloud import guard, batch_guard, snapshot, COMPONENT_ID, reconcile_list_guard
 from aosedge_demo_orchestrator.components import COMPONENT
 from aosedge_demo_orchestrator.unit_cloud import CloudFailure
 from aosedge_demo_orchestrator.environment import EnvironmentError, JOURNAL
@@ -20,6 +20,27 @@ from aosedge_demo_orchestrator import source_guest
 
 
 class DeliveryTests(unittest.TestCase):
+    def test_focused_cloud_status_never_reads_a_guest_or_an_artifact(self):
+        with patch.object(self.service, "_worker", return_value={"source": "AOS_CLOUD_ONLY"}) as worker, \
+                patch.object(self.service, "status") as guest, patch.object(self.service, "inspect") as inspect:
+            self.assertEqual("AOS_CLOUD_ONLY", self.service.cloud_status()["source"])
+        guest.assert_not_called()
+        inspect.assert_not_called()
+        worker.assert_called_once_with("cloud-status", purpose="overview", vehicles={"test": self.state["vehicles"]["test"]})
+
+    def test_legacy_list_guard_reconciles_only_null_strategy_for_empty_set(self):
+        import copy
+        before = dict(members=[], unitSet=dict(id="production", is_validation_set=False, update_strategy=None))
+        after = dict(members=[], unitSet=dict(before["unitSet"], update_strategy="MinimizeRestarts"))
+        original = dict(productionBefore=before, upload=dict(state="RESPONDED", response=dict(httpStatus=201)))
+        observed = dict(preProvisioning=True, productionListObservation=before, production=after)
+        record = copy.deepcopy(original)
+        self.assertTrue(reconcile_list_guard(record, observed))
+        self.assertEqual(after, record["productionBefore"])
+        self.assertEqual(before, record["guardReconciliation"]["previous"])
+        for changed in (dict(after, members=[dict(id="other")]), dict(after, unitSet=dict(after["unitSet"], is_validation_set=True))):
+            self.assertFalse(reconcile_list_guard(copy.deepcopy(original), dict(observed, production=changed)))
+
     def setUp(self):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
@@ -66,6 +87,9 @@ class DeliveryTests(unittest.TestCase):
         from aosedge_demo_orchestrator.component_runtime import FACTORY_VERSION
         self.state = dict(stage="MANUFACTURED", factory=dict(version=FACTORY_VERSION, sha256="factory"),
             vehicles={role: dict(unitId=None, nodeId=None, unitSetId=None) for role in ("test", "production")})
+        self.save()
+        self.assertTrue(self.service._cloud_scope("10.0.0")["preProvisioning"])
+        self.state["stage"] = "LOCAL_STOPPED"
         self.save()
         self.assertTrue(self.service._cloud_scope("10.0.0")["preProvisioning"])
         self.state["vehicles"]["test"]["systemUid"] = "partial-identity"

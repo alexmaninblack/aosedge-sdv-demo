@@ -1,4 +1,4 @@
-import type { TeamView } from "../../domain";
+import type { TeamView, PlatformCloudObservation } from "../../domain";
 import { Icon, ReleaseCard, SourceStamp, StatusBadge } from "../../shared/components";
 
 export function PlatformHeading({ team }: { team: TeamView }) {
@@ -15,12 +15,26 @@ export function PlatformSummaries({ team, vehicleLabel }: { team: TeamView; vehi
   );
 }
 
-export function PlatformEvidence({ team, assetFailure, onLogs }: { team: TeamView; assetFailure: boolean; onLogs: () => void }) {
+export function PlatformEvidence({ team, assetFailure, onLogs, cloud }: { team: TeamView; assetFailure: boolean; onLogs: () => void;
+  cloud?: { observation: PlatformCloudObservation | null; loading: boolean; refresh: () => void } }) {
+  const value = cloud?.observation?.value;
   return (
     <section className="evidence-panel">
       <div className="evidence-head"><b><Icon name="platform" label="Platform" broken={assetFailure} />{team.evidenceTitle}</b><StatusBadge status={team.backendStatus} /></div>
+      {cloud && <>
+        <dl className={`platform-cloud-facts${cloud.observation?.state === "CURRENT" ? "" : " stale-observation"}`}>
+          <div><dt>Cloud connection</dt><dd>{value?.online ?? "Not observed"}</dd></div>
+          <div><dt>Unit lifecycle</dt><dd>{value?.lifecycle ?? "Not observed"}</dd></div>
+          <div><dt>Installed release</dt><dd>{value?.installedVersion ?? "Not reported"}</dd></div>
+          <div><dt>Pending release</dt><dd>{value?.pendingVersion ?? (value ? "None reported" : "Not observed")}</dd></div>
+          <div><dt>Update state</dt><dd>{value?.updateStatus ?? "Not reported"}</dd></div>
+          <div><dt>Latest published</dt><dd>{value?.latestPublishedVersion ?? "Not reported"}</dd></div>
+        </dl>
+        <button className="button" disabled={cloud.loading} onClick={cloud.refresh}>{cloud.loading ? "Reading Aos Cloud…" : "Refresh Cloud state"}</button>
+        {cloud.observation?.state === "STALE" && <p role="status">Previous observation — not current.</p>}
+      </>}
       <p>{team.evidenceBody}</p>
-      <div className="evidence-actions"><button className="button" type="button" onClick={onLogs}><Icon name="logs" label="Platform Logs" broken={assetFailure} /> Platform Logs</button></div>
+      <div className="evidence-actions"><button className="button" type="button" disabled={!team.source.source.fixture && !team.logs} onClick={onLogs}><Icon name="logs" label="Platform Logs" broken={assetFailure} /> Platform Logs</button></div>
       <SourceStamp observed={team.source} />
     </section>
   );

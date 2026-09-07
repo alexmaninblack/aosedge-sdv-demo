@@ -3,6 +3,110 @@
 
 # Demo Orchestrator
 
+The current [source/evidence checkpoint](../../docs/qualification/democtl-release-checkpoint.md#desktop-preparation-checkpoint--2026-09-07)
+and accepted [native desktop plan](../../docs/planning/active/native-demo-desktop.md)
+are the starting point for the next UI increment. Today CARLA, Driving Control
+and Terminal telemetry are separate windows. The planned control/telemetry
+merge and one-click launcher are not implemented; CARLA will remain separate.
+
+### Local Presenter control
+
+Operator workflow (same core in CLI and the UI's **Prepare demo** button):
+
+```bash
+democtl demo plan --image 6.1.1-maninblack.31/main-qemuarm64
+democtl demo prepare --image 6.1.1-maninblack.31/main-qemuarm64
+```
+
+Plan is read-only. Prepare chooses/reuses the correct v1 release automatically,
+creates or continues matching Test/Production VMs, publishes/approves baseline
+v1, starts/provisions both roles, starts simulation and initially connects Test
+in stationary Manual. Then the operator starts Autopilot and presses Safe Stop.
+The component may already be downloaded; activation waits for actual Safe Stop.
+Completed stages persist in the existing run journal, not in the browser.
+Failures retain the exact stage; another call never blindly repeats a Cloud
+mutation. Already-prepared calls do not reset or restart the vehicle.
+
+UI and `demo prepare` use a visible macOS VM-access dialog or the fixed Keychain
+item. To configure it separately: `democtl access setup`. **Save in Keychain**
+is optional and explicit; **Use once** lasts only for that command. No hidden
+terminal prompt, password in argv, or browser credential. Cancel stops the flow.
+
+After building the existing `apps/presenter-ui` package, run `democtl ui serve`
+from this directory. The foreground server exposes the UI at
+`http://127.0.0.1:18080/`, local observations and explicitly confirmed operations.
+Startup does not start VMs or call Cloud. Buttons invoke the same application
+core as CLI. Cloud and guest reads are explicit, never background polling.
+Private native port 18600 uses a temporary backend-only capability; enter the
+first-SSH password in the native macOS dialog, never in the browser.
+No caller-selected command, path, target, credential or Cloud endpoint is
+accepted over HTTP. Fixed actions prepare both VMs; VDP delivery is Test-only.
+One job runs at a time with immediate receipts and no automatic retries.
+Ctrl+C while idle closes the UI session, preserving VMs and Units. Reset is a
+separate confirmed action without backups. Native composition has been visually
+accepted on the built-in display; complete fresh-environment UI E2E remains
+unqualified. See the
+[Presenter UI instructions](../presenter-ui/README.md).
+
+### Built-in Mac display workspace
+
+With the local Presenter server and simulation already running:
+
+```bash
+democtl workspace restore
+democtl workspace status
+democtl workspace close
+```
+
+`restore` places only the current demo's windows on the built-in display:
+shared header, CARLA upper-left, Controller and native Terminal telematics
+below it, and the Platform/Lifecycle panel on the right. The two Presenter
+windows host the existing local UI, not a separate lifecycle implementation.
+The compact profile aligns CARLA and the dashboard at their right edge,
+narrows the Controller and expands the right panel (approximately 45/55).
+The shared header and dashboard width are unchanged on the built-in display.
+A black background in the same Presenter process fills the working area
+behind the demo panels. It closes with Presenter and does not change macOS
+wallpaper/settings. A changed native Presenter binary reloads only those UI
+windows during restore, never the simulator or VMs.
+`workspace close` gracefully closes only the owned native Presenter windows
+and black background. The simulation, VMs, Cloud Units and local web server
+remain running. Repeating close is a no-op; restore recreates the windows.
+`status` only observes; neither command connects a VM, touches Cloud or
+changes driving mode. A missing window or denied macOS Accessibility access
+is reported as incomplete, not as a successful layout. The app/Terminal from
+which `democtl` is invoked needs the relevant macOS Accessibility/Automation
+permission; permission for an unrelated app is not sufficient.
+
+After the first restore, a new `simulation start` restores this layout
+automatically. Its existing single telemetry client renders in one native
+Terminal, not an HTML copy or a log-following second client. Healthy repeated
+starts do not restart the simulator. The controller is resizable. The operator
+accepted the compact composition and black background; later layout changes
+still require visual review. Interactive sessions now run until explicitly
+stopped, without the old one-hour cap. Startup and safety timeouts remain.
+
+### Cold start of the preserved environment
+
+In one terminal, keep the local UI service running:
+
+```bash
+democtl ui serve
+```
+
+In another terminal in this package's activated virtual environment:
+
+```bash
+democtl vm start all
+democtl simulation start
+democtl vehicle select test
+```
+
+`simulation start` does not itself attach a VM. The last command is required
+and leaves the car in Safe Stop; this is everyday restart, not the initial
+stationary-Manual Prepare workflow. Existing Units, installed releases and
+overlays are reused without provisioning or component publication.
+
 ### Factory .29 qualification additions
 
 For repeated demos use the [monotonic release / frozen profile sequence](#component-artifacts-and-test-delivery)
@@ -148,6 +252,13 @@ implemented, as are the three unit commands and local-profile environment
 prepare/vehicle select. Park/resume remain NOT_IMPLEMENTED.
 
 ### Component artifacts and Test delivery
+
+`democtl component cloud-status` without a version reads a focused Cloud-only
+Test overview (Unit status and VDP release catalog). The Platform UI uses this
+same application operation on tab entry. It never probes the guest, scans all
+Units or reads Production for this overview. A version argument retains the
+existing detailed release observation. Cloud Installed is not evidence of a
+running process, telemetry READY or the functional v1/v2/v3 content mapping.
 
 Repeat a demo with new Cloud releases and explicit frozen content profiles:
 
@@ -513,6 +624,13 @@ journal last. The original artifact remains. This extension does not cover a
 run that used future CARLA/scenario/backend operations or claim complete R0.
 Its JSON scope is CLOUD_RETIRED_CLI_RUN, with cloudReadsPerformed=true and
 cloudActions=false (no Cloud mutation). No backup is made.
+
+For historical uploads left at RESPONDED/HTTP 201, retire can reconcile the exact
+recorded deployment and confirmed verification batch through read-only Cloud
+requests. It confirms the completed bundle's component/version and the batch's
+OEM/component/architecture/version; it never uploads or approves again. Unknown
+IDs, mismatched or unavailable proof and unresolved approvals still block local
+deletion. This confirms publication only, not the former Production snapshot.
 
 This implements the inverse of a successful local create, including a booted
 but proven unprovisioned VM after democtl stop. It permanently removes the exact

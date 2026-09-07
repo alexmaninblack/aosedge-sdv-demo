@@ -92,6 +92,30 @@ class UnitService:
             if (not result["absent"] or any(value["members"] for value in sets.values())
                     or any(unit["system_uid"] == item["systemUid"] for unit in result["inventory"]["units"])):
                 raise EnvironmentError("FRESH_CLOUD_RETIREMENT_CHECK_FAILED")
+        uploads = []
+        for version, record in state.get("componentOperations", {}).items():
+            attempt = record.get("upload", {})
+            if not attempt.get("attemptStarted") or attempt.get("state") == "CONFIRMED":
+                continue
+            response = attempt.get("response") or {}
+            approval = record.get("approve") or {}
+            if (attempt.get("state") != "RESPONDED" or response.get("httpStatus") != 201
+                    or not record.get("deploymentId") or record["deploymentId"] != response.get("deploymentId")
+                    or approval.get("state") != "CONFIRMED" or not record.get("batchId")
+                    or record["batchId"] != (approval.get("response") or {}).get("batchId")):
+                raise EnvironmentError("COMPONENT_OPERATION_RECONCILIATION_REQUIRED")
+            uploads.append(dict(version=version, deploymentId=record["deploymentId"], batchId=record["batchId"]))
+        if uploads:
+            self.progress("Confirming recorded component uploads in Cloud; no upload or approval")
+            result = self._cloud("reconcile-uploads", uploads=uploads)
+            if result.get("confirmedUploads") != uploads:
+                raise EnvironmentError("COMPONENT_OPERATION_RECONCILIATION_REQUIRED")
+            for entry in uploads:
+                state["componentOperations"][entry["version"]]["upload"].update(
+                    state="CONFIRMED", confirmedAt=now(), reconciliationScope="PUBLICATION_ONLY")
+            # This proves the publication outcome, not the old Production
+            # snapshot (those Units have legitimately been deleted already).
+            self.vm._save(state)
         return True
 
     def execute(self, action, target):

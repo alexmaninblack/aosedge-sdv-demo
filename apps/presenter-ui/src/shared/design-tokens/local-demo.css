@@ -1,0 +1,72 @@
+/* Extend the accepted composition without changing fixture review goldens. */
+.local-demo-shell { min-width: 1180px; }
+.local-demo-shell .fixture-ribbon { border-radius: 6px; font-size: 12px; max-width: 47%; }
+.local-demo-shell .team-tab b, .local-demo-shell .vehicle-pill { font-size: 14px; }
+.local-demo-shell .vehicle-connection { display: block; margin-top: 2px; font-size: 12px; font-weight: 500; color: var(--muted); }
+.local-demo-shell .team-tab small, .local-demo-shell .title-button span { font-size: 12px; }
+.local-demo-shell .native-slot-label { font-size: 12px; }
+.local-demo-shell .native-reservation-copy strong { font-size: 18px; }
+.local-demo-shell .native-reservation-copy span, .local-demo-shell .terminal-lines { font-size: 12px; }
+.local-demo-shell .status-badge { font-size: 12px; max-width: none; white-space: normal; }
+.local-demo-shell .button { font-size: 14px; padding: 8px 12px; }
+.local-demo-shell .page-head p, .local-demo-shell .lifecycle-block > p { font-size: 14px; line-height: 1.5; }
+.local-demo-shell .life-step b, .local-demo-shell .lifecycle-block h2 { font-size: 16px; }
+.local-demo-shell .life-step p, .local-demo-shell .life-step small { font-size: 14px; min-height: 0; line-height: 1.45; }
+.local-demo-shell .life-step small, .local-observed { color: var(--muted); }
+.local-current-state .status-badge { margin-top: 10px; }
+.local-vehicle-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
+.local-preview-notice { color: var(--muted); font-size: 12px; padding: 0 4px; }
+.image-selector { display: grid; gap: 8px; margin: 16px 0 10px; font-size: 14px; font-weight: 650; }
+.image-selector select { width: 100%; font: inherit; color: var(--ink); background: white; border: 1px solid var(--line); border-radius: 8px; padding: 11px; }
+.local-preparation-steps { display: grid; gap: 10px; }
+.local-preparation-steps .life-step { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; }
+.local-preparation-steps .button { grid-column: 2; justify-self: start; }
+.step-number { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; color: var(--blue); background: var(--blue-soft); font-size: 14px; font-weight: 800; }
+.local-demo-shell .team-heading h1 { font-size: 20px; }
+.local-demo-shell .team-heading p { font-size: 14px; }
+.local-demo-shell .authority-line b, .local-demo-shell .summary-card b, .local-demo-shell .evidence-head b { font-size: 14px; }
+.local-demo-shell .authority-line p, .local-demo-shell .summary-card label, .local-demo-shell .summary-card small, .local-demo-shell .evidence-panel p { font-size: 12px; }
+.local-demo-shell .summary-card b { white-space: normal; }
+.local-demo-shell .source-stamp { font-size: 12px; }
+.platform-cloud-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 16px; margin: 12px 0; font-size: 14px; }
+.platform-cloud-facts dt { color: var(--muted); margin-bottom: 3px; }
+.platform-cloud-facts dd { margin: 0; font-weight: 650; }
+.platform-cloud-facts.stale-observation { color: var(--muted); }
+.local-demo-shell .release-head h2 { font-size: 18px; }
+.local-demo-shell .release-head p, .local-demo-shell .stage-copy p { font-size: 14px; }
+.local-demo-shell .release-policies span, .local-demo-shell .stage-title span { font-size: 12px; }
+.local-demo-shell .stage-title strong { font-size: 16px; }
+.local-demo-shell .stage-title { flex-wrap: wrap; }
+.local-demo-shell .stage-marker, .local-demo-shell .version-badge { font-size: 14px; }
+.local-demo-shell .detail-grid dt, .local-demo-shell .detail-grid dd, .local-demo-shell .modal-summary { font-size: 14px; }
+.local-demo-shell .browser-workspace { display: flex; flex-direction: column; }
+.local-demo-shell .browser-workspace > .global-page,
+.local-demo-shell .browser-workspace > .producer-page { flex: 1; height: auto; min-height: 0; }
+.local-action-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.local-platform-controls { padding: 16px; border: 1px solid var(--line); border-radius: 10px; background: white; margin-bottom: 16px; }
+.local-platform-controls h2 { margin: 0 0 8px; font-size: 18px; }
+.local-platform-controls p { font-size: 14px; line-height: 1.5; }
+.local-release-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.local-release-inputs label { display: grid; gap: 6px; font-size: 14px; }
+.local-release-inputs input, .local-release-inputs select { width: 100%; min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: 6px; font: inherit; background: white; color: var(--ink); }
+.operation-progress { flex: 0 0 auto; max-height: 190px; overflow: auto; padding: 12px 20px; border-top: 1px solid var(--line); background: #eef3fa; font-size: 13px; }
+.operation-progress p { margin: 5px 0; }
+.operation-progress summary { cursor: pointer; }
+.operation-progress pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; }
+.operation-error { color: #9b2534; }
+.local-demo-shell .modal { max-height: 95%; }
+.prepare-demo-primary { border-top: 3px solid var(--blue); }
+.prepare-demo-primary > .button-primary { font-size: 16px; padding: 12px 24px; }
+.preparation-state { padding: 12px; margin-top: 14px; background: var(--blue-soft); border-radius: 8px; font-size: 14px; }
+.local-lifecycle > details > summary { font-size: 14px; cursor: pointer; }
+
+/* Two native WebKit windows share this same UI/read model and navigation. */
+.app-shell.native-header { min-width: 0; grid-template-rows: 76px; }
+.native-header .shared-header { padding: 10px 16px; }
+.native-header .presenter-workspace, .native-header .fixture-ribbon { display: none; }
+.app-shell.native-browser { min-width: 0; grid-template-rows: minmax(0, 1fr); }
+.native-browser > .shared-header, .native-browser > .fixture-ribbon,
+.native-browser .native-reservations { display: none; }
+.native-browser .presenter-workspace { grid-template-columns: minmax(0, 1fr); }
+.native-browser .global-page { padding-top: 20px; }
+.native-browser .team-context { padding-top: 18px; }

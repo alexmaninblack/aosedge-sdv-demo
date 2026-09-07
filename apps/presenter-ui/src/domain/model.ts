@@ -18,7 +18,7 @@ export type StageState =
 export interface SourceReference {
   owner: string;
   system: string;
-  fixture: true;
+  fixture: boolean;
 }
 
 export interface Observed<T> {
@@ -191,6 +191,7 @@ export interface ReadOnlyPresenterView {
 }
 
 export interface PresenterSnapshot {
+  localDemo?: LocalDemoView;
   fixtureId: string;
   fixtureLabel: string;
   observedAt: string;
@@ -202,6 +203,15 @@ export interface PresenterSnapshot {
   eventChain: string[];
   redactionNotice: string;
   readOnly?: ReadOnlyPresenterView;
+}
+
+export interface LocalDemoView {
+  preparation?: { phase?: string; version?: string; contentProfile?: string; completedSteps?: string[]; updatedAt?: string; reason?: string } | null;
+  available: boolean;
+  images: { selector: string; version: string; architecture: string; state: string; problems: string[] }[];
+  vehicles: Record<"test" | "production", { state: string; reason: string | null; process: string | null; imageVersion: string | null; overlayExists: boolean | null }>;
+  source: { state: string; currentVehicle: string | null; selectedVehicle?: string | null; reason?: string | null };
+  access: Record<string, { present: boolean; state: string }>;
 }
 
 export interface PresentationState {
