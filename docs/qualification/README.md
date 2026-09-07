@@ -17,8 +17,9 @@ qualification procedures, and sanitized defect evidence.
   — Test VDP 6.0.0 active with 23 telemetry paths under transient SM demo-5s;
   the Stop/Start race and clean Factory qualification remain open.
 - [Source checkpoint and next Factory release](democtl-release-checkpoint.md)
-  — immutable .29 boundary, source consolidation, remaining defect and proposed
-  engineering/operator E2E gates; not a new release acceptance.
+  — current immutable Factory .31 Test checkpoint, operator-assisted VDP
+  13.0.1/v1 -> 14/v2 -> 15/v3 replay and native desktop preparation;
+  earlier Factory investigations remain timestamped historical evidence.
 - [AOS-0 Apple Silicon qualification record](aosvm-apple-silicon-baseline.md)
 - [AOS-1 single-Main-Node qualification record](aosvm-single-node-provisioning.md)
 - [Pre-cleanup end-to-end acceptance](pre-cleanup-e2e-acceptance.md)

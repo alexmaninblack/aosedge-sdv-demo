@@ -8,6 +8,12 @@ gates. A plan does not itself authorize a build, signature, Cloud mutation,
 assignment, VM restart, or provisioned-Unit change.
 
 - [Current design and delivery roadmap](roadmap.md)
+- [Native Demo Desktop Plan](active/native-demo-desktop.md)
+  — accepted 2026-09-07: freeze/publish the working source checkpoint, combine
+  Driving Control and telemetry, add a Demo Control-backed native launcher,
+  and configure a dedicated Space. CARLA stays a separate window; new desktop
+  implementation has not started. Earlier train status below is historical
+  authorization evidence, not the current live demo status.
 - [Accepted Demo Implementation Plan 1.2](active/demo-implementation-plan.md)
   — bounded implementation increments, repository ownership, dependencies,
   verification and per-increment authorization gates.

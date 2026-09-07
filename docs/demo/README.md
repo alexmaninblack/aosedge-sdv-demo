@@ -14,6 +14,12 @@ The guide explains where to look, what action occurs, what the audience should
 observe and what each chapter demonstrates without requiring the reader to
 first study the technical specifications below.
 
+The accepted [Native Demo Desktop Plan](../planning/active/native-demo-desktop.md)
+keeps this composition while combining control/telemetry, retaining CARLA as a
+separate window and adding one-click startup. The
+[source checkpoint](../qualification/democtl-release-checkpoint.md) separates
+today's Test demo evidence from future advisory and Production capabilities.
+
 [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.0](staged-post-sop-brake-health-demo-scenarios.md)
 is the accepted demo-scenario baseline. It defines the canonical
 `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> T1 -> R0` presentation lifecycle,

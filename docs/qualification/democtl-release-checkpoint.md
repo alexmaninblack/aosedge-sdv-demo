@@ -3,9 +3,9 @@
 
 # Demo Control Source Checkpoint and Next Factory Release
 
-- Status: Factory .31 Test VDP 10/v1 -> 11/v2 -> 12/v3 operator-confirmed; fresh-overlay repeat remains
-- Version: 0.8
-- Prepared: 2026-09-06
+- Status: Factory .31 Test VDP 15/v3 and desktop source checkpoint; fresh-overlay repeat remains
+- Version: 0.10
+- Prepared: 2026-09-07
 - Owner: Demo Solution Team
 - Design: [Demo Control](../architecture/demo-control.md)
 - Evidence: [VDP family checkpoint](democtl-vdp-family.md)
@@ -13,6 +13,152 @@
 ## What is demonstrated
 
 <a id="current-test-baseline"></a>
+
+<a id="desktop-preparation-checkpoint--2026-09-07"></a>
+
+### Desktop preparation checkpoint — 2026-09-07
+
+Before new native desktop work, the operator requested source commits, pushes,
+plan documentation and bounded housekeeping. The accepted next steps are in
+the [Native Demo Desktop Plan](../planning/active/native-demo-desktop.md).
+No combined telemetry window, native launcher or Space automation is implemented
+by this checkpoint. CARLA remains a separate window.
+
+Current source scope: native Presenter/workspace and black background; visible
+VM credential input and journaled preparation; safe initial stationary Manual;
+Cloud-only Platform observation; current-vehicle selection projection;
+telemetry freshness/context and unavailable advisory; interactive lifetime fix.
+Runtime source is `a3e22ae` on `carla-ego-runtime/main`. Solution implementation
+is `9d62e50` on `aosedge-sdv-demo/main`; the documentation commit containing
+this entry follows it. Platform
+remains `0bed8b3769b09fbe685ed599ca8d10e6594fbe53`, with immutable Factory .31.
+These pins do not rewrite existing binary or Factory build provenance.
+
+The one-hour shutdown was diagnosed from the previous run: its Controller
+completed at 3600.0369 seconds under `maximum_session_seconds=3600`; dashboard
+termination was downstream. The interactive runner now passes `--until-stopped`
+and records that lifetime. Bounded runs retain their duration limit, and
+explicit stop, command/ownership expiry and disconnect behavior remain active.
+Targeted lifetime tests and actual restarted-run configuration were checked;
+no new hour-long endurance test was performed.
+
+The latest cold-start session is `5fd8a8c7-478c-4917-bf8c-ac457edd85cb`.
+After stopping the previous simulation, both VMs, Presenter and idle UI server,
+the operator restarted the UI server, VMs and simulator using Demo Control.
+Simulation initially remained unassigned because `vehicle select test` had
+not been run; this was not evidence of a failed attachment. After the command
+was supplied, the operator confirmed that everything started and worked.
+This is operator-confirmed cold-start evidence on the preserved environment,
+not a new fresh-overlay or independent Cloud/security qualification. The
+earlier measured VDP 15/v3 replay remains the detailed update evidence below.
+
+Local checks executed for this checkpoint:
+
+- Demo Control: 249 tests PASS in 52.652 seconds; VM/Cloud/Builder are fixtures.
+- Presenter: TypeScript typecheck PASS and 87 unit tests PASS.
+- Runtime tooling: 50 tests PASS; control/protocol/orchestration: 41 tests PASS.
+- Existing compiled `viss-dashboard-test`: PASS, no rebuild required.
+- Source-only staged scan: 68 implementation files PASS across both repos;
+  no binary/private-key/token signatures found by the bounded scan.
+- Documentation navigation/metadata gate: PASS, 151 Markdown documents,
+  658 stable identifiers and 38 Mermaid diagrams. Explicit stable anchors
+  were added for the new plan/checkpoint links.
+- Initial sandbox-only test attempts could not bind temporary sockets/read
+  processes/write Vite cache; the same tests passed with the required local
+  permissions. Product source was not changed to accommodate that restriction.
+- New browser/live E2E, native recompilation, image build, signing, upload and
+  Cloud mutations are excluded from this bookkeeping step. Previously recorded
+  native compilation and operator evidence are retained, not relabelled.
+
+Housekeeping preserves the current `.local` environment (about 8.2 GiB),
+`.run` evidence (about 19 MiB), Factory/profile/published artifacts and caches.
+The old Gateway worktree `carla-tm-order` remains referenced by the installed
+runtime build's CMake cache; it is not safe to classify all old worktrees as
+disposable. Historical qualification directories and unrelated dirty/untracked
+work are retained, not implicitly retired or published. The inactive 41 MiB
+temporary dashboard qualification build `/private/tmp/aosedge-dashboard.sVnt6a`
+was permanently removed after its test passed, its source was committed and
+`lsof` found no open handles. The installed client is a separate regular file
+and remains unchanged. This scratch can be regenerated from source, not
+restored as an original directory. There is no backup. The filesystem reported
+about 294 GiB available afterward; that global change is not attributed solely
+to the 41 MiB cleanup. No branches or worktrees were deleted by this checkpoint.
+Push results are recorded in the final handoff.
+
+Historical pending/uncommitted statements below describe their original runs
+and do not override this source checkpoint or authorize deferred work.
+
+### Cloud-only Platform observation and dashboard increment — 2026-09-07
+
+The Platform perspective now obtains Unit/component status exclusively through
+the existing authenticated Aos Cloud adapter, via `democtl component
+cloud-status` without a version. The same operation serves the fixed local
+Presenter endpoint. No guest probe supplies this view; legacy UI guest-state
+requests now map to Cloud reads, and the guest-log action is rejected.
+Cloud Installed is not presented as Running, data READY, Safe Stop or an
+inferred functional profile. Read failures and expired observations are
+explicitly unavailable/stale.
+
+Checks for this increment: 75 focused Demo Control tests, 8 Presenter-operation
+tests, 87 UI unit tests, the UI production build, and the native
+`viss_dashboard` test passed. The live Platform endpoint reported Test Online,
+`15.0.0` installed, no pending release, and `15.0.0` latest published. Runtime
+state and data readiness were explicitly `NOT_REPORTED_BY_CLOUD`.
+
+Only the native VISS dashboard target was built and installed; no Factory,
+VDP package, Unit identity or Cloud configuration changed. The dashboard adds
+drive mode, Gateway physical stopped-state observation, run/reset context,
+freshness expiry and explicit unavailable Brake/Tire Driver Advisory rows.
+The advisory chain itself remains deferred, not implied by these indicators.
+
+Simulator stop/start and workspace close/restore used `democtl`. The final
+local Presenter observation selected Test; it is `SELECTED_NOT_PROBED`, not
+a fresh independent connection proof. Workspace observation found all
+surfaces present, with the Controller 30 points taller than the requested
+geometry; other surfaces matched within existing tolerance. Operator visual
+review remains pending. The stop reported Controller absent and physical
+stop not observed; this increment does not claim a new driving/Safe Stop E2E
+run. Source changes remain uncommitted; no publication was requested.
+
+### Latest operator-assisted Test replay — 2026-09-07
+
+On the existing Factory .31 Test VM, the operator-assisted sequence
+`13.0.1/v1 -> 14.0.0/v2 -> 15.0.0/v3` completed. All preparation, signing,
+upload, verification-batch approval and guest/Cloud observations used
+`democtl component` commands. Autopilot and Safe Stop were operated by the
+user, with movement and button presses confirmed in the conversation.
+
+| Observation | Before Safe Stop | After Safe Stop |
+| --- | --- | --- |
+| v1 -> v2 | `13.0.1`, slot A, 7-path READY; removal transaction `waiting-for-safe-stop` | `14.0.0`, slot B, 15-path READY/LIVE; process matches slot; `Result=success`, restarts 0 |
+| v2 -> v3 | `14.0.0`, slot B, 15-path READY; removal transaction `waiting-for-safe-stop` | `15.0.0`, slot A, 23-path READY/LIVE; process matches slot; `Result=success`, restarts 0 |
+
+Both post-press observations already showed the successor running; no manual
+restart, resend, retry or ten-minute wait was used. Guest service start times
+were `2026-09-07 01:00:46 UTC` for v2 and `01:03:14 UTC` for v3. The retained
+`last-failure.json` refers to the earlier `13.0.1` attempt and predates both
+successful installs; it was not deleted or treated as a new failure.
+
+Signed bundles remain outside Git under
+`demo-artifacts/aosedge-sdv-demo/components/vehicle-data-provider/`:
+
+| Release / content | Signed bundle SHA-256 | Deployment / verification batch |
+| --- | --- | --- |
+| `14.0.0` / v2 | `22a83fd5da2f246c3cddb027549bb608b2bc933c029e17fde7c572865c7193a0` | `bbd553b4-eb06-4b45-8268-53a2afee39e8` / `5953ecfe-0875-4b91-8d91-9c3b23ff9142` |
+| `15.0.0` / v3 | `685a0bbd7bd0c842276dc0a4a4208b74ceb4a2f8bbe5ecf92207c17dd100ed11` | `2489fb29-8169-4451-8d32-4926c12c0607` / `ff8f8183-f565-4159-8456-f41fca6af283` |
+
+Both signatures verified as RS256 using the configured OEM certificate.
+Final Cloud reconciliation reported Test Online, `15.0.0` installed, no
+pending component, deployment `done`, and verification batch `Valid`.
+Production remained Online on its `0.0.0` baseline with no pending component;
+no Production promotion, Unit Set changes or identity/lifecycle operations
+were performed. The immutable .31 image and runtime source were unchanged.
+
+This verifies the existing-VM telemetry update path, not a fresh-overlay run,
+independent consumer reads, full v3 advisory or reboot/security qualification.
+READY is provider-reported, and v3 advisory remains `DEFERRED`. No build,
+cleanup, commit or push was performed as part of this replay. The earlier
+accepted checkpoint and its outstanding scope below remain historical evidence.
 
 ### Current Test baseline — 2026-09-06
 
@@ -84,7 +230,33 @@ overlays, bundles, keys, credentials, raw logs and runtime state remain outside
 Git. No VM/Cloud mutation, Safe Stop trigger, source switch or new upload was
 performed during this finalization.
 
-#### Housekeeping outcome
+#### Subsequent empty-environment cleanup — 2026-09-06
+
+After source finalization, the operator authorized returning the current demo
+to its initial CLI state. The existing commands completed in order:
+`simulation stop`, `unit deprovision all`, `unit delete all`,
+`environment retire`. Both exact Unit/Node identities were confirmed absent
+and both role Unit Sets empty. No new Safe Stop functional proof is claimed:
+the Controller was already absent when simulation stop ran.
+
+Retire initially preserved local state because historical VDP 11/12 uploads
+were marked RESPONDED despite their confirmed approvals. The authorized narrow
+fix reconciles the exact deployment IDs and OEM/component/version-scoped batch
+reads without repeating uploads or approvals. Both were confirmed and retire
+completed. The affected regression suites passed 87 tests; the documentation
+gate passed. The original sandbox test invocation could not inspect host
+processes; the same tests passed with process-read access, without live VM or
+Cloud activity in the tests.
+
+Removed without backup: Test/Production overlays, generated SSH access, the
+working factory copy/manifest, stopped source output files and current journal.
+Original Factory .31, published VDP artifacts and Cloud releases, role Unit
+Sets, credentials, repositories and Builder/caches remain. Previously authorized
+original Factory .28/.29/.30 image deletion also completed; .27 was already
+retired. Compact artifact metadata remains. This cleanup is not a new E2E run
+or proof of the still-deferred Production FOTA path.
+
+#### Housekeeping outcome at source finalization (before the cleanup above)
 
 Removed after confirming clean tracked/untracked/ignored state, no open files
 and zero commits outside the published Platform main:

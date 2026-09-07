@@ -4,8 +4,8 @@
 # Demo Control
 
 - Status: Draft
-- Version: 0.14
-- Prepared: 2026-09-06
+- Version: 0.19
+- Prepared: 2026-09-07
 - Owner: Demo Solution Team
 - Architecture input: [High-Level Architecture 1.5](high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.0](../demo/staged-post-sop-brake-health-demo-scenarios.md)
@@ -17,6 +17,156 @@ This is the implementation-design companion for the existing
 not a new component or a replacement for the accepted requirements.
 It records the documentation audit, agreed direction and proposals still to
 review. Publishing this draft does not authorize runtime or Cloud changes.
+
+<a id="native-demo-desktop--accepted-direction-2026-09-07"></a>
+
+## Native demo desktop — accepted direction 2026-09-07
+
+The operator accepted a single native Driving Control + Engineering Telematics
+window, while CARLA/Unreal remains a separate window. Keep the current composed
+layout and black background. Do not embed or capture CARLA video; the decision
+avoids additional complexity and overhead, not a measured performance defect.
+
+All lifecycle operations remain in Demo Control and available from CLI. The
+native launcher will reuse them for everyday start, explicit Stop Demo and
+layout restoration; it must not independently implement provisioning, recreate
+an existing environment on open or delete Cloud Units on stop. First-time
+Prepare remains an explicit, separate operation. Platform Team state stays
+Cloud-only; native telemetry reuses Gateway/VISS and retains stale/unavailable
+and advisory-not-implemented semantics.
+
+The [Native Demo Desktop Plan](../planning/active/native-demo-desktop.md) records
+the accepted order: source commit/push and bounded housekeeping first, combined
+control/telemetry second, launcher third, then one-time dedicated-Space setup.
+The existing Terminal dashboard described below is the current implementation,
+not the intended final native surface. No new desktop implementation has begun.
+The accepted direction amends only these host-side presentation/lifecycle
+details; Factory .31, VDP payloads, Safe Stop authority and Production FOTA
+exclusions remain unchanged.
+
+## Test-first Presenter integration — 2026-09-06
+
+Operator amendment: one `democtl demo prepare --image VERSION/ARCHITECTURE`
+command is shared with the main **Prepare demo** UI action. `democtl demo plan`
+reads its plan without mutation. The native current-run journal owns stage
+completion and release selection; page reload only observes that journal.
+Prepare reuses this run's v1 candidate (13.0.1 for the interrupted run), otherwise
+chooses a monotonically newer release from local and Cloud catalogs. It creates
+or resumes the matching dual-VM environment, signs/publishes/approves v1 before
+provisioning, starts both VMs, provisions each into its role set, starts the
+simulator and connects Test. Production FOTA stays excluded. Each stage uses
+existing core operations and stops on a blocker, with no blind replay.
+
+The hidden-terminal input is replaced by a native macOS dialog in UI and the
+composite command. `democtl access setup` exposes that same input independently.
+Use once keeps the value in process memory; Save in Keychain is an explicit
+dialog choice for the fixed factory-SSH service/account. Neither argv, logs,
+Git nor browser receives the value. Cancel/180-second dialog expiry stops the
+operation. Regular terminal `vm start` retains its terminal prompt.
+
+After an execution-review pause, the operator explicitly authorized the narrow
+stationary-Manual command-deadline exception. Initial Test selection still
+physically stops, blocks both paths and resets, then confirms a real Manual
+frame with zero throttle/full brake before opening Test's path. A native
+operator session is required. Ordinary handover stays in Safe Stop. First
+actuator input restores the command deadline; ownership timeout/disconnect
+still invoke Safe Stop. No AosCore gate, Factory image or VDP content is changed.
+The native controller presents this as waiting for an explicit Manual or
+Autopilot selection: it keeps full brake and emits no neutral commands or
+focus-loss stop while in `manual_ready`. Ordinary manual driving still stops
+on focus loss. An interrupted initial connection can be cancelled by existing
+`simulation stop` only after a fresh, owned, physically stopped frame and
+confirmed blocked data paths; it does not reprovision or delete either VM.
+
+Live preparation evidence, 2026-09-06: the failed hidden-input UI session was
+stopped; native password input completed successfully. Preparation reused the
+owned 13.0.1/v1 publication, approved its Test batch, started/provisioned both
+.31 roles and confirmed their correct Unit Sets and Online state. A dispatcher
+import error was corrected before source attachment. The subsequent connection
+exposed the native UI focus-loss stop described above; that failed simulation
+was stopped through Demo Control and the corrected session started through the
+same command surface. Resume skipped all completed Cloud/VM/publication stages
+and reached `READY_TO_DRIVE`. This is resumed-run evidence, not an uninterrupted
+fresh-create qualification.
+
+At handoff, Test alone had its source gate open, the TLS probe observed
+advancing VISS frames, and Controller reported stationary `manual_ready` with
+zero commands/command timeouts/ownership timeouts. Guest component status
+reported no active VDP and an incoming 13.0.1 transaction in
+`waiting-for-safe-stop`; a prior `safe_stop_timeout` was retained as failure
+history, not hidden or claimed as a successful install. The operator's drive
+and Safe Stop activation/VDP startup are still pending. Original Factory image
+bytes and Production FOTA remain untouched. Targeted gates passed: 83 Demo
+Control tests, 41 protocol/control tests, 19 native UI tooling tests, strict UI
+build and 76 UI tests. The native Swift controller was rebuilt, not the VM.
+
+The Cloud serializer discrepancy is proven: Unit Set list omitted
+`update_strategy` (null), detail returned `MinimizeRestarts`. New pre-provision
+Production guards use the detail representation consistently. The one old
+RESPONDED/201 empty-set upload can migrate only when the old guard exactly
+matches a fresh list observation and the sole differing field is previously
+unknown `update_strategy`; previous and canonical observations are retained.
+Membership, IDs, validation mode and other policy changes still block.
+
+The operator accepted the existing interaction mockup as the visual basis and
+the sequence: screen composition, two-VM initialization, then Platform VDP
+v1/v2/v3 on Test. Production remains provisionable but FOTA rollout is deferred;
+do not turn its Unit Set into a verification set. Brake/Tire navigation remains
+available without presenting unimplemented operations as successful.
+
+The first implemented slice is `democtl ui serve`, a foreground loopback
+engineering preview on the existing software-delivery UI port 18080. It serves
+the built Presenter bundle and a fixed read-only projection of existing local
+`status` / `image list` operations. No Cloud/guest reads, image hashing, arbitrary
+request dispatch, mutation, browser credential or session capability is exposed.
+Existing fixture screens require an explicit fixture parameter; missing local
+observations never fall back to simulated readiness. Current UI qualification,
+Cloud Online and native-window placement are not claimed from these local reads.
+The operator visually accepted this composition on 2026-09-06.
+
+The operator subsequently explicitly authorized both-VM create/start/stop,
+Cloud provision/deprovision/delete, simulation start/stop and Test connection,
+selected Test VDP prepare/sign/upload/approve, and environment reset without
+backups. This resolves the earlier execution-review pause. Production FOTA,
+original image deletion and arbitrary native dispatch remain excluded.
+
+The implemented protected boundary uses same-origin port 18080, strict
+Host/Origin/JSON checks and exact action fields. The backend alone owns a 256-bit
+ephemeral capability for private loopback port 18600 (directory 0700, file 0400).
+Normal shutdown removes listeners and capability. Mutation confirmation names
+the actor, selection, target and effect; UI SSH enrollment uses the native
+macOS dialog described above.
+The fixed native allowlist invokes existing Demo Control application operations.
+
+Receipts are ephemeral UI progress, not a second lifecycle store. One job runs
+at a time; request IDs deduplicate within the session, generation IDs reject
+stale submissions, and unknown outcomes block mutations without automatic
+retries. Existing native journals own reconciliation. Background reads are local;
+Cloud/guest reads are explicit and timestamped. Stop the UI server when idle.
+Native-window composition, prebuilt-container hosting and live UI E2E remain
+outstanding; source tests do not qualify these boundaries.
+
+Planned Test flow preserves the known ordering: select the catalog image,
+create both overlays, prepare/sign/upload/approve a new v1 release before
+provisioning, start/provision both roles, start simulation and connect Test.
+Then publish and authorize increasing v2/v3 content-profile releases separately,
+observing Cloud acceptance, Safe Stop waiting, installation, process startup and
+data readiness as distinct facts. End/reset follows the existing simulation-stop,
+Unit-deprovision, Unit-delete, remaining-VM-stop and local-retire order.
+Inapplicable Cloud stages are skipped only from a never-provisioned journal;
+empty environments use existing retire/orphan checks. No image rebuild is required.
+
+First-slice evidence: production UI build and strict typecheck passed; 71
+UI tests and 10 Presenter-server/CLI tests passed, including fixed read-only
+requests, same-origin restrictions, unavailable-state handling and blocked
+filesystem/mutation requests. This is not a live provisioning or FOTA proof.
+
+Protected-slice source evidence: strict UI build/typecheck, 76 UI unit tests,
+18 Presenter/API/CLI tests and documentation quality gate passed. Tests cover
+Cancel, duplicate clicks/IDs, stale generations, unknown responses, same-origin
+dispatch, private capability isolation/cleanup, result projection and reset
+ordering (including empty/never-provisioned journals). Executors are test doubles;
+these checks perform no real provisioning, publication or approval.
 
 ## Accepted Factory .31 Test baseline and corrections — 2026-09-06
 
@@ -258,7 +408,16 @@ the empty control directory, generated SSH access, overlays and factory copy,
 then the journal. Unknown files, symlinks and unresolved publications block
 cleanup. An uncertain Unit-scoped send may be discarded only after fresh
 authoritative deletion of that exact target; this is not a successful-delivery
-claim. Uncertain global publication/approval still blocks. The runtime-file plan participates in existing interrupted-unlink
+claim. A historical upload marked `RESPONDED` with HTTP 201, the exact recorded
+deployment ID and a confirmed approval/batch ID is reconciled inside this same
+command: read the deployment-bundle collection once, match the completed bundle
+and its sole component/version, and read the recorded verification batch to
+confirm OEM, component identity, architecture and version. No upload or approval
+is repeated; deleted Units are not recreated or used as component-status targets.
+The journal records `PUBLICATION_ONLY` confirmation, not retrospective proof of
+an unchanged Production snapshot. Missing, ambiguous or unavailable Cloud proof,
+unknown publication outcomes and unresolved approvals still block cleanup.
+The runtime-file plan participates in existing interrupted-unlink
 reconciliation. A stopped single-Test borrower may retire without stopping its
 external canonical DNS bridge. Published images/bundles, Unit Sets, Cloud release
 history, source repositories, Builder and caches remain untouched. This is not
@@ -506,6 +665,155 @@ manufactured environment supplies the one journal and owned runtime paths.
 Implementation and tests must use `democtl simulation start/stop` for all
 simulator launches/shutdowns once those commands exist. Park/resume and full
 retirement remain separate operations; simulation stop does not implement them.
+
+### Built-in display composition — 2026-09-07 increment
+
+#### Cloud-only Platform status and Engineering display — 2026-09-07
+
+Operator clarification: the Platform perspective obtains operational status
+only through Aos Cloud, never by reading a VM directly. Entering or re-entering
+Platform Team performs a read-only `democtl component cloud-status` operation
+(without a version). This focused form reads the bound Test Unit and the VDP
+version catalog using the existing authenticated Cloud adapter. The local
+journal selects the exact owned Unit only; it supplies no displayed Unit or
+component state. Version-qualified `cloud-status VERSION` keeps its existing
+release-specific behavior. No VM probe, artifact unpack/hash, Unit inventory,
+Unit Set scan or Production read is added to this overview.
+
+The fixed same-origin `/api/presenter/platform` projection exposes Online,
+Cloud lifecycle, installed/pending release, reported update state, latest
+published version and read time. It exposes no Unit UUID, private path or
+credential. Installed does not imply Running, data READY, functional v1/v2/v3
+profile or Safe Stop: those facts are not supplied by this Cloud read. The
+three functional-profile cards remain workflow references, not inferred
+acceptance. Failed reads are unavailable; old values are labelled stale while
+refreshing and after 60 seconds. This presentation age is not a platform
+timeout. A manual refresh is available, with no Cloud background polling.
+Overlapping reads are coalesced; the native header does not independently
+request the Platform observation. The former direct guest-state/log buttons
+are removed. Legacy `observe-test` UI requests now read Cloud; `test-logs` is
+rejected at the UI operation boundary. Engineer CLI guest observation remains
+available outside the panel.
+
+Engineering Telematics remains the existing read-only VISS Terminal client.
+Its compact display adds Gateway drive mode, physical stopped-state
+observation, a shortened live-exercise fingerprint/reset generation, and the
+selected vehicle label from the existing run journal, joined to the same VISS
+run ID. This label is local assignment context, not Cloud or VDP evidence.
+An independent render timer labels values stale after five seconds without
+received/advancing frames; it does not freeze a LIVE label on an idle stream.
+This is display freshness, not the OEM runtime's FOTA authorization evaluator.
+Separate Brake and Tire Driver Advisory rows explicitly remain UNAVAILABLE
+until the real typed advisory chain is connected. No warning is fabricated
+from installed v3, and no telemetry/advisory write is introduced.
+
+The advisory implementation and the dual-network external-connectivity
+button remain subsequent work. No Factory image, Unit identity or VDP release
+is changed by these display additions.
+
+`democtl workspace status` observes and `democtl workspace restore` places the
+current environment's owned windows. They do not invoke simulation, VM, Cloud,
+source selection, release delivery or driving-mode operations. Neither accepts
+arbitrary PIDs, window names, paths or executable commands from CLI/HTTP.
+`democtl workspace close` gracefully terminates only the exact owned native
+Presenter process (header, right panel and background), keeping its layout
+profile for restore. It does not stop the local web server or any simulation,
+VM or Cloud lifecycle. A repeated close with no owned host is a no-op.
+
+The built-in-display profile uses a full-width header and approximately 45/55
+left/right body columns, with CARLA in the upper 55% of the left column.
+The compact Controller and native Terminal dashboard sit beneath it; CARLA
+and dashboard share their right edge, with an 8px gap to the expanded panel.
+On the 2056px built-in display the Controller is 402px wide, dashboard stays
+504px wide, CARLA is 914px wide and the right panel is 1118px wide.
+The right column remains the existing
+Presenter Platform/Lifecycle interface. A small native WebKit host contains
+the same local React UI in two windows; its only cross-window message is a
+closed navigation enum. Runtime data/control stays with the existing adapters.
+
+Operator-approved background: one opaque black, borderless, nonactivating
+panel in the same Presenter process covers the built-in display's visible
+work area, including gaps and margins. It is ordered behind the owned demo
+windows, not kept always on top. No wallpaper, Dock/menu bar, external-display
+or unrelated-window settings change. Restore reuses it; closing Presenter
+removes it with the header/right panel. Rebuilding the small native host
+reloads only Presenter windows; simulation, VM and Cloud lifecycles are not
+invoked. Window ordering uses window numbers/owner PIDs, not screen capture.
+Background implementation checkpoint: local uncommitted `main` tree, confined
+to workspace/native Presenter code, workspace tests and documentation. Eleven
+workspace tests and targeted Swift compilation passed. First and repeated
+`workspace restore` completed without problems; the repeat kept Presenter PID
+91670 and the background rectangle `[0, 39, 2056, 1224]`. Existing panel
+rectangles were preserved. No VM/Cloud/build-image/security-policy gates or
+cleanup were needed; caches and runtime evidence remain unchanged. The native
+host binary remains in `.local/demo-control/workspace/Demo Presenter`.
+
+`simulation start` launches the existing runner in one owned Terminal so the
+existing Engineering Telematics client has a real PTY. Terminal acknowledgment
+may precede exec; observe initial process appearance for at most five seconds,
+without a second launch. Once observed, process exit fails immediately. A live
+STARTING session can finish readiness observation without restarting it. After
+the profile is enabled, a new simulation start restores the layout; a healthy
+repeated start preserves assignment. Stop closes only an idle, single-tab
+Terminal whose window ID and run-specific title still match ownership.
+
+Layout status reports actual versus requested window rectangles. macOS access
+denial, absent/ambiguous owners and geometry differences remain incomplete.
+Accessibility permission must apply to the actual invoking app. Geometry alone
+does not qualify readability; operator visual acceptance is still pending.
+Closing the native Presenter leaves simulation, VMs and Cloud unchanged.
+
+First built-in-display trial (superseded by the operator-approved compact
+profile above): 2056 × 1224 usable logical pixels. Header,
+Platform panel, Controller and Terminal matched their requested rectangles.
+CARLA rendered its live scene at 914 × 614 inside the requested 1016 × 614
+zone; this width difference deliberately remains `PARTIAL`, not a qualified
+exact layout. Visual readability/acceptance is pending. The simulator was
+restarted through `democtl` to expose its existing dashboard in Terminal;
+Current Vehicle is now unselected. No VM or Cloud identity was recreated.
+
+Compact-profile application on the same live session: `workspace restore`
+completed with no problems. Header, Controller, dashboard and right panel
+matched exactly; CARLA differed by one logical pixel in width/height (native
+rounding, within the 3px geometry tolerance). All Controller labels and buttons
+fit in the 402 × 502 window on visual inspection. Ten workspace tests passed.
+No simulator/VM restart, Cloud action, build or cleanup was performed for this
+layout-only change. The operator subsequently confirmed the composition looks
+good and authorized the black background; background visual acceptance is pending.
+
+The operator then accepted the background and requested a restart trial.
+On 2026-09-07, the CLI sequence `simulation stop`, `vm stop all`,
+`workspace close`, `vm start all`, `simulation start`, `vehicle select test`
+completed. Shutdown confirmed physical Safe Stop; the two guest starts took
+25.09s and 29.42s with SSH, DNS and role initialization successful. Both
+original Cloud Units returned Online/provisioned without identity changes.
+The new simulation start automatically recreated Presenter (PID 93614), the
+Terminal dashboard and the black background. `workspace status` reported no
+geometry problems. Final guest observation reported Test CONNECTED/OPEN,
+Production BLOCKED, active VDP 13.0.1 with live READY data and zero service
+restarts. The old `last-failure.json` predates the successful installed state;
+it was retained, not deleted or treated as a new failure.
+
+Scope/exclusions: the local web/API server on port 18080 remained running as
+the control endpoint; its restart was not qualified by this trial. No
+deprovision/delete, new artifact, upload, Cloud mutation or cleanup occurred.
+The native Presenter close increment is local/uncommitted on `main`; twelve
+workspace tests and `git diff --check` passed. Full visual restoration after
+restart awaits the operator's observation, not a fabricated UI acceptance.
+
+Current Vehicle UI correction — 2026-09-07: the lightweight Presenter endpoint
+can report `selectedVehicle=test`, `currentVehicle=null` and
+`state=SELECTED_NOT_PROBED`. Null here means no fresh connection probe, not no
+assignment. The local UI now projects the accepted selection for stable
+`SELECTED_NOT_PROBED`/`CONNECTED` states and displays connection evidence
+separately. Unknown, invalid or conflicting state shows unavailable; a known
+empty assignment shows Not assigned. The header uses “Connection not rechecked”
+for the lightweight read and “Connection confirmed” only for CONNECTED.
+No new guest/Cloud requests or polling frequency changes were introduced.
+The existing layout/dependencies were retained. The local uncommitted UI
+change passed 12 targeted tests, all 84 UI unit tests and the TypeScript/Vite
+build. Only Presenter windows were reloaded through workspace close/restore;
+the local route returned HTTP 200. Simulation, VMs and Cloud were not mutated.
 
 ### Prepare and Select Implementation Increment
 
