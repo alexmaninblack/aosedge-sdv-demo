@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 
 from .backend_context import CONTEXT, UID, project_context
 from .backends import DIGEST, TEAMS
-from .environment import EnvironmentError, JOURNAL, atomic_json, encoded, sync_directory
+from .environment import EnvironmentError, JOURNAL, MANIFEST, OVERLAYS, atomic_json, digest, encoded, sync_directory
 from .status import now, object_id, read_json
 
 COUNTS = {"messages", "windows", "assessments", "events", "advisories", "quarantine"}
@@ -57,6 +57,29 @@ class BackendRetirement:
     def _save(self, state):
         atomic_json(self.root / JOURNAL, state)
 
+    def _test_released(self, state, unprovisioned=False):
+        item = state["vehicles"]["test"]
+        if item.get("overlay") != OVERLAYS["test"]:
+            raise EnvironmentError("BACKEND_TEST_OVERLAY_BINDING_INVALID")
+        path = self.root / item["overlay"]
+        if path.exists() or path.is_symlink():
+            if unprovisioned:
+                manifest = self.root / MANIFEST
+                self.environment._owned_file(manifest)
+                if digest(manifest) != state["factory"].get("manifestSha256"):
+                    raise EnvironmentError("VM_FACTORY_MANIFEST_CHANGED")
+                metadata = read_json(manifest)
+                self.environment._untouched_overlay(path, state["factory"], metadata["image"]["virtualSizeBytes"], item.get("runtime"))
+            else:
+                self.environment._owned_file(path)
+                self.environment._assert_unheld(path)
+        else:
+            scoped = state.get("testRetirement", {}).get("targets", {}).get("overlay", {})
+            legacy = state.get("retirement", {}).get("test", {})
+            if not ((scoped.get("path") == OVERLAYS["test"] and scoped.get("state") in ("REMOVE_PENDING", "REMOVED"))
+                    or legacy.get("state") in ("REMOVE_PENDING", "REMOVED")):
+                raise EnvironmentError("BACKEND_TEST_OVERLAY_ABSENCE_NOT_PROVEN")
+
     def _owned(self, state, team, running=False):
         owner = object_id(state["operations"][0]["id"])
         record = state["backends"][team]
@@ -68,6 +91,9 @@ class BackendRetirement:
         observed = self.service._inspect("container", name)
         self.service._owned_container(observed, owner, team, record["imageId"])
         if observed:
+            if (record.get("state") == "STOPPED" and (record.get("cleanup") or {}).get("stopRequested") is True
+                    and observed.get("State", {}).get("Running") is True):
+                raise EnvironmentError("BACKEND_CLEANUP_RESTARTED_AFTER_PROOF")
             mounts = observed.get("Mounts") or []
             volume = "aosedge_demo_" + team + "_cloud_v1"
             data = [mount for mount in mounts if mount.get("Destination") == "/data"]
@@ -174,7 +200,7 @@ class BackendRetirement:
         record["cleanup"] = dict(systemUid=uid, imageId=record["imageId"], state="CONFIRMED", checkedAt=now(), **FOUNDATION)
         self._save(state)
 
-    def _empty_store(self, state):
+    def _empty_store(self, state, allow_nonempty=False):
         observed = self._owned(state, "brake", running=True)
         body = self._private("brake", observed["Id"], "empty-proof", dict(schemaVersion=1, contractVersion="1.0.0"))
         if (not isinstance(body, dict) or set(body) != {"schemaVersion", "contractVersion", "state", "databaseSchemaVersion", "recordCounts", "observedAt"}
@@ -183,9 +209,13 @@ class BackendRetirement:
                 or body["databaseSchemaVersion"] != 2 or body.get("state") not in ("EMPTY", "NONEMPTY")):
             raise EnvironmentError("BACKEND_WHOLE_STORE_EMPTY_PROOF_UNAVAILABLE")
         _timestamp(body["observedAt"])
-        if body["state"] != "EMPTY" or any(_counts(body.get("recordCounts")).values()):
+        counts = _counts(body.get("recordCounts"))
+        empty = not any(counts.values())
+        if (body["state"] == "EMPTY") is not empty:
+            raise EnvironmentError("BACKEND_WHOLE_STORE_EMPTY_PROOF_UNAVAILABLE")
+        if not empty and not allow_nonempty:
             raise EnvironmentError("BACKEND_NONMATCHING_DATA_PRESERVED")
-        state["backends"]["brake"]["cleanup"]["wholeStoreEmpty"] = True
+        state["backends"]["brake"]["cleanup"].update(wholeStoreEmpty=empty, recordCounts=counts)
         self._save(state)
 
     def _proofs(self, state, uid):
@@ -323,6 +353,7 @@ class BackendRetirement:
                     or item.get("runtime", {}).get("state") != "STOPPED"
                     or item.get("runtime", {}).get("pid") is not None or state.get("currentVehicle") == "test"):
                 raise EnvironmentError("BACKEND_CLEANUP_REQUIRES_RETIRED_STOPPED_TEST")
+            self._test_released(state)
             records = state.get("backends")
             if not isinstance(records, dict) or set(records) != set(TEAMS):
                 raise EnvironmentError("BACKEND_CLEANUP_BOTH_OWNED_BACKENDS_REQUIRED")
@@ -362,5 +393,77 @@ class BackendRetirement:
                     raise EnvironmentError("BACKEND_WHOLE_STORE_EMPTY_PROOF_UNAVAILABLE")
             self._remove_context(state)
             if "production" not in state["vehicles"]:
+                self._finish_single(state)
+            return True
+
+    def _unprovisioned_proofs(self, state, local_id):
+        for team in TEAMS:
+            record = state["backends"][team]
+            proof = record.get("cleanup") or {}
+            if (proof.get("state") != "CONFIRMED" or proof.get("localVmId") != local_id
+                    or proof.get("imageId") != record["imageId"] or "systemUid" in proof):
+                return False
+            if team == "brake":
+                counts = _counts(proof.get("recordCounts"))
+                if proof.get("wholeStoreEmpty") is not (not any(counts.values())):
+                    return False
+                if proof.get("scope") != "UNPROVISIONED_STORE_OBSERVATION":
+                    return False
+            elif any(proof.get(key) != value or type(proof.get(key)) is not type(value) for key, value in FOUNDATION.items()):
+                return False
+        return True
+
+    def confirm_unprovisioned_cleanup(self, state):
+        """Cleanup of a stopped, never-Cloud-attempted Test manufacture only.
+
+No UID is invented. Whole-store read proves reset eligibility for single-Test.
+With a peer, nonempty product storage is preserved without claiming Test-record
+absence. Guest stop/overlay-digest proof is finally enforced by local retire.
+"""
+        with self.environment._writer():
+            item = state.get("vehicles", {}).get("test", {})
+            local_id = object_id(item.get("localVmId"))
+            runtime = item.get("runtime") or {}
+            if (any(item.get(key) is not None for key in ("unitId", "nodeId", "systemUid", "unitSetId", "cloud"))
+                    or state.get("currentVehicle") == "test"
+                    or (runtime and (runtime.get("state") != "STOPPED" or runtime.get("pid") is not None))
+                    or (runtime.get("everStarted") and (runtime.get("stopProof") or {}).get("unprovisioned") is not True)
+                    or any(operation.get("class") not in ("LOCAL_CREATE", "LOCAL_RETIRE") for operation in state.get("operations", []))):
+                raise EnvironmentError("BACKEND_CLEANUP_REQUIRES_NEVER_PROVISIONED_TEST")
+            self._test_released(state, unprovisioned=True)
+            context = self.root / CONTEXT
+            if context.exists() or context.is_symlink():
+                raise EnvironmentError("BACKEND_UNPROVISIONED_CONTEXT_MUST_BE_ABSENT")
+            records = state.get("backends")
+            if not isinstance(records, dict) or set(records) != set(TEAMS):
+                raise EnvironmentError("BACKEND_CLEANUP_BOTH_OWNED_BACKENDS_REQUIRED")
+            for team in TEAMS:
+                self._owned(state, team)
+                record = records[team]
+                self.service._image(record["imageId"])
+                for kind, name in (("volume", "aosedge_demo_" + team + "_cloud_v1"),
+                                   ("network", "aosedge-demo-" + team + "-cloud-v1")):
+                    if self._resource(state, team, kind, name) is None and (record.get("cleanup") or {}).get(kind + "Removal") not in ("REMOVE_PENDING", "REMOVED"):
+                        raise EnvironmentError("BACKEND_CLEANUP_RESOURCE_MISSING")
+            self._layout(state)
+            stopping = all((record.get("cleanup") or {}).get("stopRequested") is True for record in records.values())
+            if not self._unprovisioned_proofs(state, local_id) or not stopping:
+                for team in TEAMS:
+                    self._owned(state, team, running=True)
+                record = state["backends"]["brake"]
+                record["cleanup"] = dict(localVmId=local_id, imageId=record["imageId"], state="OBSERVING", checkedAt=now(),
+                    scope="UNPROVISIONED_STORE_OBSERVATION")
+                self._save(state)
+                self._empty_store(state, allow_nonempty="production" in state["vehicles"])
+                record["cleanup"]["state"] = "CONFIRMED"
+                self._save(state)
+                self._tire(state, None, self._owned(state, "tire", running=True))
+                state["backends"]["tire"]["cleanup"].pop("systemUid")
+                state["backends"]["tire"]["cleanup"]["localVmId"] = local_id
+                self._save(state)
+            self._stop(state)
+            if "production" not in state["vehicles"]:
+                if state["backends"]["brake"]["cleanup"].get("wholeStoreEmpty") is not True:
+                    raise EnvironmentError("BACKEND_NONMATCHING_DATA_PRESERVED")
                 self._finish_single(state)
             return True
