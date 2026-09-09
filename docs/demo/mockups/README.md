@@ -17,13 +17,126 @@
   2.5 and is not the implementation baseline:
   [AosEdge Demo linear-flow HTML mockup](aosedge-demo-linear-flow-mockup.html)
 - Detailed Interaction Specification:
-  [AosEdge Demo Interaction Specification 2.5](aosedge-demo-interaction-specification.md)
-- Exact review mockup derived from Interaction Specification 2.5:
+  [AosEdge Demo Interaction Specification 2.6](aosedge-demo-interaction-specification.md)
+- Retained pre-Studio review mockup derived from the earlier contract:
   [Accepted AosEdge Demo Interaction Mockup](aosedge-demo-interaction-mockup-2-4.html)
 - Editable mockup source:
   [AosEdge Demo Interaction Mockup Authoring Source](aosedge-demo-interaction-mockup-2-4.source.html)
 - Standalone build helper:
   [`scripts/build-demo-interaction-mockup`](../../../scripts/build-demo-interaction-mockup)
+
+## Current Studio B review — Mockup 2.6
+
+Current Test contract: [UI-STUDIO-026](aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract).
+Corrective re-audit: [findings, proposals and remaining gaps](../../research/demo-studio-action-audit.md#current-re-audit--9-september-2026).
+27 isolated checks passed, including a complete standalone browser click-through
+with VDP, both services, offline, Park/Resume and Retire. Run the local state tests
+with `node --test tests/mockups/mockup-2-6.test.cjs`; the browser case
+is opt-in using `MOCKUP_PLAYWRIGHT` (package path) and `MOCKUP_CHROME` (executable).
+All browser traffic is intercepted and the profile is isolated. No live E2E
+result is claimed. Expanded logs/errors and concurrent mutations are later scope.
+The warehouse variant may publish v2 before Provision; normal Full story still
+introduces v1. Retained Group Subject, minimum one service instance and P7D offline lifetime are accepted; live application remains pending.
+
+
+[Open Interaction Mockup 2.6](aosedge-demo-interaction-mockup-2-6.html)
+([editable source](aosedge-demo-interaction-mockup-2-6.source.html)).
+This version implements the simulated review flow for the accepted Q01–Q14 /
+M01–M08 decisions in the [delivery plan](../../planning/active/demo-studio-delivery-plan.md).
+The user authorized mockup work only: application integration and live operations
+remain out of scope. This is not a new normative specification or an E2E result
+for the real platform.
+
+The fixed composition is unchanged: CARLA and native Driving Control/Telemetry
+on the left; vehicle architecture, releases and team/Cloud dashboards on the right.
+Review the following clickable sequence:
+
+1. **Full story:** Create and boot → connect in stationary Manual → Platform
+   Prepare / Sign / Publish v1 → provision into Test Vehicles → drive / Safe Stop.
+   **Quick preparation** composes the same actions after an explicit click and
+   stops in Manual, without automatically driving or requesting Safe Stop.
+2. VDP v1 → Brake v1 → VDP v2 → Brake v2 → VDP v3 → Brake v3 → Tire v1.
+   Service publication and first OEM Deploy are separate. Later updates use
+   publication without another version-specific assignment or batch approval.
+3. Inspect architecture items, Cloud installation/runtime/resources, explicit
+   asynchronous logs, backend records and independent native advisory display.
+4. Disconnect external networking, drive, then reconnect: local telemetry and
+   advisory continue; backend receipt is delayed and carries event provenance.
+5. **Session → Park / Resume** retains the run. **Finish demo → Retire** removes
+   its working environment, Unit, bindings and records. **New cycle** completes
+   the same cleanup when necessary and uses fresh releases from the same image.
+
+Release versions are read-only and automatically assigned per product identity
+during Prepare. The illustrative initial high-water marks are VDP 15, Brake 3,
+and Tire 1; they are not reads of the live Cloud catalog. Retire retains release
+continuity, reusable source/catalog objects and the Subject, not ordinary run
+history. The standalone mockup stores its own state in browser local storage
+under `aosedge-studio-mockup-2.6`, including interrupted-operation recovery.
+No real access credential or artifact is generated or stored.
+
+The Session menu also exposes review-only processing-error, lost-upload-reply
+and unavailable-Cloud-read conditions. These do not belong to the audience's
+main story. Park refuses unfinished/uncertain updates without queuing a stop;
+reconciliation does not upload the same bundle again.
+
+The standalone opens directly without a server or network access. Icons and
+the CARLA reference image are embedded. Its direct document wrapper is
+intentional: an opaque sandboxed iframe cannot retain local mock state across
+reload. The older build helper still targets 2.4 and must not regenerate 2.6.
+Versions 2.4 and 2.5, including their editable sources, are preserved unchanged.
+
+Browser checks covered the full simulated story, delayed offline receipt,
+explicit logs, guarded Park, Resume, Retire, reload and automatically numbered
+fresh Quick preparation. These are mockup checks only. User visual approval
+and the subsequent comprehensive integration audit remain required before
+implementation.
+
+Additional simulated checks covered rejected publication with a reserved version,
+lost reply and reload recovery of the same bundle, the per-identity pending
+guard, independent team publication, publication while the vehicle is Offline,
+stale Cloud observations, reconnecting log requests, and separate deprovision /
+delete followed by clean New cycle. No real platform behavior is qualified by
+these tests.
+
+Stationary Safe Stop regression: selecting Safe Stop at zero speed now
+re-evaluates a downloaded pending VDP update, just as reaching zero from motion
+does. Manual at zero remains ineligible, and selecting Safe Stop while moving
+does not install before the vehicle stops. This is a mockup-only correction;
+it changes neither native vehicle controls nor Aos Core policy.
+
+Presentation revision, 9 September 2026: the header embeds the original
+`aos-edge-logo-wgite.svg` used by the [official AosEdge website](https://aosedge.tech/en/)
+(retrieved from `https://aosedge.tech/en/aos-edge-logo-wgite.svg`). Its artwork,
+colors and proportions are unchanged; the AosEdge brand remains owned by its
+respective owner. Release-allocation explanations are removed from the demo UI
+without changing allocation behavior. The Domain Controller title is centered.
+Each dashed product link terminates at its own installed Brake or Tire service
+and corresponding backend dashboard; empty slots do not acquire a link.
+
+## Earlier Studio B review package — Mockup 2.5
+
+The preceding clickable review version is
+[AosEdge Demo Interaction Mockup 2.5 — Studio B](aosedge-demo-interaction-mockup-2-5.html),
+with its [editable HTML fragment](aosedge-demo-interaction-mockup-2-5.source.html).
+It preserves the selected composition: CARLA and native Driving Control /
+telemetry on the left, architecture and team workspaces on the right. All
+actions and transitions are simulated; it makes no live VM or Cloud calls.
+
+Related English working documents:
+
+- [Experience proposal](demo-experience-proposal.md) — discussion rationale.
+- [Action and integration audit](../../research/demo-studio-action-audit.md)
+  — 78 action/transition rows and 28 implementation gaps.
+- [Staged delivery plan](../../planning/active/demo-studio-delivery-plan.md)
+  — proposed work and separately pending mockup changes; not execution authority.
+
+Version 2.4 and its authoring source remain unchanged as the earlier review
+baseline. Version 2.5 records the selected Studio B mockup, not an automatic
+revision of the normative Interaction Specification or approval of all
+simulated capabilities. The existing build helper above still targets 2.4;
+it must not be used to regenerate 2.5. The 2.5 standalone export includes its
+presentation shell, styles, scripts and embedded images and opens without a
+local server. The adjacent source is the editable visualization fragment.
 
 ## Purpose
 

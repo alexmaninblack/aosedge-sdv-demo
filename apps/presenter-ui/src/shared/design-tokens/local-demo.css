@@ -2,8 +2,6 @@
 .local-demo-shell { min-width: 1180px; }
 .local-demo-shell .fixture-ribbon { border-radius: 6px; font-size: 12px; max-width: 47%; }
 .local-demo-shell .team-tab b, .local-demo-shell .vehicle-pill { font-size: 14px; }
-.local-demo-shell .vehicle-connection { display: block; margin-top: 2px; font-size: 12px; font-weight: 500; color: var(--muted); }
-.local-demo-shell .team-tab small, .local-demo-shell .title-button span { font-size: 12px; }
 .local-demo-shell .native-slot-label { font-size: 12px; }
 .local-demo-shell .native-reservation-copy strong { font-size: 18px; }
 .local-demo-shell .native-reservation-copy span, .local-demo-shell .terminal-lines { font-size: 12px; }

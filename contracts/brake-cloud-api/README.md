@@ -1,6 +1,22 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
+## Pending Studio Test contract migration — 2026-09-09
+
+The current [UI-STUDIO-026 target](../../docs/demo/mockups/aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract)
+requires one current Test UID without a hidden Production vehicle. The JSON
+profile in this package still specifies the earlier two-role context/cleanup
+contract. It is **not yet compatible with the Test-only Studio flow**.
+Studio P1 must migrate context validation and cleanup selectors with the backend
+handlers/tests: exactly the current Test alone or the retained dual-role flow;
+reject empty, duplicate, foreign and partial unrelated selectors. Keep the
+current UID binding until scoped cleanup completes, then clear it. Park retains
+the database; Retire deletes owned ordinary run records without an archive.
+This records the accepted target and remaining executable migration, not a
+silent schema update or proof of a working backend. Message formats, durable
+acknowledgement and authority boundaries below are unchanged.
+
+
 # Brake Health Cloud API — Accepted Contract
 
 - Decision: `D4-017`

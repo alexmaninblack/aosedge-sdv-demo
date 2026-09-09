@@ -29,6 +29,18 @@ class DemoOrchestrator:
         selection_error = request.selection_error()
         if selection_error:
             return OperationResult(operation, OperationState.BLOCKED, selection_error)
+        if request.domain == "vehicle" and request.action in ("connectivity-on", "connectivity-off", "connectivity-status"):
+            from .connectivity import ConnectivityService
+            import subprocess
+            try:
+                action = request.action.removeprefix("connectivity-")
+                data = ConnectivityService(self.source_service).execute(action, request.target.value if request.target else None)
+                return OperationResult(operation, OperationState.OBSERVED if action == "status" else OperationState.COMPLETED,
+                    "Selected VM packet filter only; driving, VISS, other VM and Presenter Internet unchanged.", target=data["target"], data=data)
+            except EnvironmentError as error:
+                return OperationResult(operation, OperationState.BLOCKED, str(error))
+            except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
+                return OperationResult(operation, OperationState.BLOCKED, "EXTERNAL_LINK_UNAVAILABLE")
         if request.domain == "workspace" and request.action in ("status", "restore", "close"):
             if request.target or request.current or request.image or request.image_path or request.profile or request.component_version or request.content_profile:
                 return OperationResult(operation, OperationState.BLOCKED, "WORKSPACE_USES_CURRENT_ENVIRONMENT")

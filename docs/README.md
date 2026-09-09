@@ -77,6 +77,9 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Research
 
+- [Demo Studio action and integration audit](research/demo-studio-action-audit.md)
+  — Studio B mockup actions mapped to current Demo Control and Cloud APIs,
+  with observed gaps and proposed integration boundaries; not live qualification.
 - [R9 Demo Foundation Research](research/demo-foundation/README.md) — completed
   read-only workstreams for the G0 runtime, AosCloud lifecycle, VM recovery,
   CARLA scenario, Brake Health model, advisory path, functional backend,

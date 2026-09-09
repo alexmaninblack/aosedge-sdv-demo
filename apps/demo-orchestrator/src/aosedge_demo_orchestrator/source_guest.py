@@ -4,7 +4,7 @@
 """Fixed guest-side local-demo source operations, transported over pinned SSH.
 
 No Cloud credentials, client keys, image modification or arbitrary commands.
-The firewall table covers only the existing host VISS endpoint, both directions.
+Separate owned tables select the VISS source and fault the external uplink.
 """
 
 import json
@@ -20,6 +20,7 @@ import time
 from pathlib import Path
 
 TABLE = "democtl_source"
+EXTERNAL_TABLE = "democtl_external"
 PROFILE = "LTVP_VISS_SERVER_AUTH_TEST_ONLY"
 ROOT = Path("/run/democtl-source")
 FACTORY_INPUTS_MARKER = Path("/usr/share/aos-vehicle-platform/demo-runtime-inputs-v1")
@@ -141,6 +142,101 @@ def vss_change(request):
 
 def command(args, **kwargs):
     return subprocess.run(args, capture_output=True, text=True, timeout=8, **kwargs)
+
+
+def external_rules(interface="eth0"):
+    """Only the owned SSH control path and in-vehicle VISS cross the uplink offline.
+
+    Include forwarding for service namespaces, and drop IPv6 as well as IPv4.
+    Accept in this table does not bypass the platform's other base chains.
+    """
+    result = []
+    for chain, direction in (("output", "out"), ("input", "in"),
+                             ("forward", "out"), ("forward", "in")):
+        outbound = direction == "out"
+        uplink = {"match": {"op": "==", "left": {"meta": {"key": "oifname" if outbound else "iifname"}}, "right": interface}}
+        host = {"match": {"op": "==", "left": {"payload": {"protocol": "ip", "field": "daddr" if outbound else "saddr"}}, "right": "10.0.0.1"}}
+        ports = [("dport" if outbound else "sport", p) for p in (6443, 16443)]
+        if chain != "forward":
+            ports.append(("sport" if outbound else "dport", 22))
+        for field, port in ports:
+            result.append(dict(family="inet", table=EXTERNAL_TABLE, chain=chain, expr=[
+                uplink, host, {"match": {"op": "==", "left": {"payload": {"protocol": "tcp", "field": field}}, "right": port}}, {"accept": None}]))
+        result.append(dict(family="inet", table=EXTERNAL_TABLE, chain=chain, expr=[uplink, {"drop": None}]))
+    return result
+
+
+def external_state(identity, interface="eth0"):
+    listed = command(["nft", "-j", "list", "tables"])
+    if listed.returncode:
+        raise ValueError("EXTERNAL_LINK_UNOBSERVABLE")
+    if not any(x.get("table", {}).get("name") == EXTERNAL_TABLE for x in json.loads(listed.stdout)["nftables"]):
+        return "ON"
+    listed = command(["nft", "-j", "list", "table", "inet", EXTERNAL_TABLE])
+    if listed.returncode:
+        raise ValueError("EXTERNAL_LINK_UNOBSERVABLE")
+    actual = json.loads(listed.stdout)["nftables"]
+    tables = [x["table"] for x in actual if "table" in x]
+    chains = [{k: v for k, v in x["chain"].items() if k != "handle"} for x in actual if "chain" in x]
+    rules_seen = [{k: v for k, v in x["rule"].items() if k != "handle"} for x in actual if "rule" in x]
+    expected_chains = [dict(family="inet", table=EXTERNAL_TABLE, name=name,
+        type="filter", hook=name, prio=-190, policy="accept") for name in ("output", "input", "forward")]
+    expected_rules = external_rules(interface)
+    # nft lists rules grouped by chain; compare that same stable ordering.
+    expected_rules = [r for c in expected_chains for r in expected_rules if r["chain"] == c["name"]]
+    if (len(tables) != 1 or tables[0].get("comment") != "democtl:" + identity
+            or chains != expected_chains or rules_seen != expected_rules):
+        raise ValueError("EXTERNAL_LINK_OWNER_OR_RULES_CONFLICT")
+    return "OFF"
+
+
+def external_profile():
+    routes = []
+    for line in Path("/proc/net/route").read_text().splitlines()[1:]:
+        fields = line.split()
+        if len(fields) >= 8 and fields[1] == "00000000" and fields[7] == "00000000":
+            routes.append(dict(interface=fields[0], gateway=socket.inet_ntoa(bytes.fromhex(fields[2])[::-1]),
+                mac=(Path("/sys/class/net") / fields[0] / "address").read_text().strip()))
+    connection = os.environ.get("SSH_CONNECTION", "").split()
+    return dict(defaultRoutes=routes, maintenancePeer=connection[0] if len(connection) == 4 else None,
+        maintenanceAddress=connection[2] if len(connection) == 4 else None,
+        maintenancePort=connection[3] if len(connection) == 4 else None)
+
+
+def external_connectivity(request):
+    identity = request["vehicle"]["localVmId"]
+    if not re.fullmatch(r"[a-f0-9-]{36}", identity):
+        raise ValueError("EXTERNAL_LINK_OWNER_INVALID")
+    profile = external_profile()
+    routes = profile["defaultRoutes"]
+    if (len(routes) != 1 or routes[0].get("gateway") != "10.0.0.1"
+            or routes[0].get("mac") != request["vehicle"].get("mac")
+            or not re.fullmatch(r"[a-zA-Z0-9_.:-]{1,15}", routes[0].get("interface", ""))
+            or profile.get("maintenancePeer") != "10.0.0.1"
+            or profile.get("maintenanceAddress") != "10.0.0.100"
+            or profile.get("maintenancePort") != "22"):
+        raise ValueError("EXTERNAL_LINK_LOCAL_PATH_NOT_SUPPORTED")
+    interface = routes[0]["interface"]
+    before = external_state(identity, interface)
+    action = request["action"].removeprefix("connectivity-")
+    if action not in ("on", "off", "status"):
+        raise ValueError("EXTERNAL_LINK_ACTION_INVALID")
+    result = dict(state=before, evidence="OWNED_GUEST_PACKET_FILTER", noOp=True,
+                  cloudState="NOT_OBSERVED", inVehiclePath="PRESERVED_BY_POLICY",
+                  rebootRestoresConnectivity=True, networkProfile=profile)
+    if action == "status" or before == action.upper():
+        return result
+    if action == "off":
+        entries = [{"add": {"table": {"family": "inet", "name": EXTERNAL_TABLE, "comment": "democtl:" + identity}}}]
+        entries.extend({"add": {"chain": dict(family="inet", table=EXTERNAL_TABLE, name=name,
+            type="filter", hook=name, prio=-190, policy="accept")}} for name in ("output", "input", "forward"))
+        entries.extend({"add": {"rule": rule}} for rule in external_rules(interface))
+    else:
+        entries = [{"delete": {"table": {"family": "inet", "name": EXTERNAL_TABLE}}}]
+    applied = command(["nft", "-j", "-f", "-"], input=json.dumps({"nftables": entries}))
+    if applied.returncode or external_state(identity, interface) != action.upper():
+        raise ValueError("EXTERNAL_LINK_APPLY_NOT_CONFIRMED")
+    return dict(result, state=action.upper(), noOp=False)
 
 
 def rules(blocked):
@@ -597,6 +693,8 @@ def execute(request):
     if action == "factory-role":
         return initialize_factory_role(request)
     identity = request["vehicle"]["localVmId"]
+    if action in ("connectivity-on", "connectivity-off", "connectivity-status"):
+        return external_connectivity(request)
     if action in ("component-schema-apply", "component-schema-remove"):
         return vss_change(request)
     if action == "component-diagnose":

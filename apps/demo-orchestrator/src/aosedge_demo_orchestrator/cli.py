@@ -112,6 +112,9 @@ def build_parser() -> argparse.ArgumentParser:
     vehicle_commands = vehicle.add_subparsers(dest="action", required=True)
     select = vehicle_commands.add_parser("select", help="Safe Stop, detach, scene reset and connect one role")
     select.add_argument("target", choices=("test", "production"))
+    connectivity = vehicle_commands.add_parser("connectivity", help="selected vehicle external world; preserve CARLA, VISS and control")
+    connectivity.add_argument("link_action", choices=("status", "off", "on"))
+    connectivity.add_argument("--target", choices=("test", "production"), help="defaults to Current Vehicle; off requires that same Current Vehicle")
 
     simulation = commands.add_parser("simulation", help="manage owned CARLA, Controller and Gateway; no VM/Cloud changes")
     simulation_commands = simulation.add_subparsers(dest="action", required=True)
@@ -143,7 +146,7 @@ def request_from_arguments(arguments: argparse.Namespace) -> OperationRequest:
                                 timeout=arguments.timeout, profile=arguments.profile)
     return OperationRequest(
         domain=arguments.domain,
-        action=arguments.action,
+        action=("connectivity-" + arguments.link_action if getattr(arguments, "link_action", None) else arguments.action),
         target=VehicleTarget(arguments.target) if getattr(arguments, "target", None) else None,
         image=getattr(arguments, "image", None), image_path=getattr(arguments, "image_path", None),
         current=getattr(arguments, "current", None),
@@ -162,6 +165,9 @@ def render_human(result: OperationResult, details: bool = False) -> str:
         summary += f" role={document['technical_role']}"
     lines = [summary, document["message"]]
     data = document.get("data")
+    if data and document["operation"].startswith("vehicle.connectivity-"):
+        lines.append("Vehicle: " + data["target"] + "; external connectivity: " + data["state"])
+        lines.append("Filter evidence only; AosCloud Online/Offline is observed separately.")
     if data and document["operation"].startswith("workspace."):
         lines.append(json.dumps(data, indent=2, sort_keys=True))
     if data and document["operation"].startswith("component."):

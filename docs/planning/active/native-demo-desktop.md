@@ -3,8 +3,8 @@
 
 # Native Demo Desktop Plan
 
-- Status: Accepted direction; implementation not started
-- Version: 1.0
+- Status: Accepted; step 0 published, step 1 development/live review in progress
+- Version: 1.3
 - Prepared: 2026-09-07
 - Owner: Demo Solution Team with Vehicle/Gateway runtime owner
 - Design: [Demo Control](../../architecture/demo-control.md#native-demo-desktop--accepted-direction-2026-09-07)
@@ -25,6 +25,63 @@ Control and restore its windows. It will not become a second orchestrator.
 A dedicated ordinary macOS Desktop/Space will be configured once; automatic
 Space creation, private APIs and arbitrary cross-application window migration
 are not part of this plan.
+
+## Development trial — 2026-09-07
+
+After the source checkpoint was published, the operator explicitly authorized
+step 1 implementation and immediate live review, deferring broad formal checks
+until the working UI is visually accepted. Step 2/3 have not started.
+
+The first native control/telemetry window is implemented. The existing VISS
+client supplies bounded JSON snapshots to a single child owned by the native
+Control app; normal simulation startup no longer launches a Terminal. Existing
+terminal monitor mode and cleanup of a previous owned Terminal are retained.
+The existing controller occupies the left 44% of the combined window; telemetry
+occupies the right. The operator subsequently accepted fixed Dashboard / Vehicle /
+Data pages instead of expanding engineering details; CARLA remains separate.
+
+The fixed-page revision keeps vehicle identity, freshness, speed and driving
+state visible above every page. Dashboard contains pedals and advisory; Vehicle
+contains steering/gear/RPM and a four-wheel schematic; Data contains stream
+metrics, coordinates and session/timestamp fields. No scrolling, window growth,
+Cloud state or duplicate advisory footnotes are introduced. Native screen-point
+typography replaces scaling the telemetry canvas; the current workspace geometry
+is preserved. This revision is a native UI change, not a VM or VDP rebuild.
+
+Only the Swift window and VISS client were compiled. Thirteen workspace and
+27 runtime-tool tests plus the native dashboard JSON/freshness test passed.
+`democtl simulation stop/start`, `vehicle select test` and `workspace status`
+completed; VMs and Cloud identities were not restarted or recreated. Native
+visual inspection showed LIVE Test telemetry at 19.4 km/h in Autopilot. Clicking
+the same window's Safe Stop resulted in 0.0 km/h, 0% accelerator, 100% brake and
+STOPPED (Gateway observation). The live demo remains open in Safe Stop for
+operator review. Full regression, telemetry-child failure/reconnect lifecycle,
+further native accessibility/layout refinement and source publication are not
+claimed by this development trial. Advisory remains unavailable.
+
+### Selected-vehicle connectivity — authorized development increment
+
+The operator subsequently requested the planned disconnect/reconnect button.
+Driving Control now uses `democtl vehicle connectivity status|off|on`, without
+moving Aos/network concepts into the telemetry dashboard. It faults only the
+selected VM's external uplink, retaining local VISS and maintenance SSH.
+Implementation and recovery are described in
+[Demo Control](../../architecture/demo-control.md#vehicle-external-connectivity-development-increment--2026-09-07).
+
+The focused CLI live trial observed the same Test Unit change to Cloud Offline
+while VDP 15.0.0 remained READY with 23 signals, PID 1833 and unchanged restart
+count 1. ON removed only the owned transient filter. This is a development
+proof, not full advisory/backend replay or Production qualification. No image,
+component, Unit identity, existing firewall table or Mac network was changed.
+
+The installed native button was then exercised OFF/ON. While OFF, the live
+Dashboard showed Autopilot, MOVING, 19.4 km/h and LIVE telemetry; guest VDP
+remained READY with the same PID/restart count. Reconnect returned the button
+and actual filter to ON; the CLI trial also confirmed that the same Cloud Unit
+returned Online. Simulation stop/start and Test selection used democtl to load
+the new native binary; neither VM was restarted. Targeted checks passed:
+14 connectivity tests, 13 source-selection tests, 8 runtime-tool tests and
+Swift compilation. Full formal regression/publication remain deferred.
 
 ## Order and exit criteria
 
@@ -64,7 +121,8 @@ VISS client; `aosedge-sdv-demo` for launch/layout integration and documentation.
   not block commands. Preserve manual focus-loss safety and stationary
   `manual_ready` behavior when interacting with the combined window.
 - Display selected-vehicle context, drive mode, physical stop observation,
-  speed/pedals and existing signals. Keep diagnostic detail collapsible.
+  speed/pedals and existing signals. Use the accepted fixed Dashboard / Vehicle /
+  Data pages; diagnostics must not expand the window or require scrolling.
 - Show missing/stale/disconnected data explicitly. Driver Advisory remains
   unavailable until the separate real Brake/Tire advisory chain is connected.
 - Engineering telemetry comes from Gateway/VISS, not from invented Cloud
@@ -125,7 +183,7 @@ limitation rather than add private APIs or keyboard-driven Mission Control.
 
 ## Explicitly deferred
 
-Production FOTA (platform delivery limitation), complete Driver Advisory,
-external-connectivity toggle, CARLA video embedding/capture, image rebuilds,
+Production FOTA (platform delivery limitation), complete Driver Advisory and
+offline backend replay, CARLA video embedding/capture, image rebuilds,
 fresh-overlay qualification and slide preparation are separate work. This
 desktop plan does not silently authorize any of them or claim their completion.

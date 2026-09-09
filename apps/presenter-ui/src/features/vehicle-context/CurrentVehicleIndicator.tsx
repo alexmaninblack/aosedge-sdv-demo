@@ -9,12 +9,12 @@ const labels: Record<VehicleRole, string> = {
   unavailable: "Current Vehicle unavailable",
 };
 
-export function CurrentVehicleIndicator({ vehicle, assetFailure, connectionLabel }: { vehicle: Observed<VehicleRole>; assetFailure: boolean; connectionLabel?: string }) {
+export function CurrentVehicleIndicator({ vehicle, assetFailure }: { vehicle: Observed<VehicleRole>; assetFailure: boolean }) {
   const role = vehicle.value ?? "unavailable";
   return (
     <div className={`vehicle-pill vehicle-${role}`} title={vehicle.reason}>
       <Icon name={role === "unavailable" ? "unavailable" : "vehicle"} label="Current vehicle" broken={assetFailure} />
-      <span>{labels[role]}{connectionLabel && <small className="vehicle-connection">{connectionLabel}</small>}</span>
+      <span>{labels[role]}</span>
     </div>
   );
 }

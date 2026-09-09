@@ -44,6 +44,36 @@ The accepted direction amends only these host-side presentation/lifecycle
 details; Factory .31, VDP payloads, Safe Stop authority and Production FOTA
 exclusions remain unchanged.
 
+## Studio Test target contract — 2026-09-09
+
+The current target is [UI-STUDIO-026](../demo/mockups/aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract).
+The dated implementation notes below describe the earlier code, not a competing
+current workflow. In particular, dual-VM Prepare, mandatory approval, universal
+.31 guards and guest-derived right-panel status are not the accepted target.
+No application change is claimed by this document update.
+
+| Shared operation | Current target contract | As-built gap / phase |
+|---|---|---|
+| Create | Catalog copy/overlay + Test boot/DNS/role + both backend processes/storage | Compose existing low-level create/start; backend lifecycle/context in P1 |
+| Initial connect | Public stationary-Manual initialization; preserve ordinary select semantics | Expose existing internal initialization; P1 |
+| Provision | Running selected Test → official provisioning → Online → verification membership | Narrow provisioning-only detached-source guard; preserve retirement safety; P1/P3 |
+| Release Prepare | Operator selects content profile; shared allocator returns opaque release handle/version | Durable reservation survives cleanup; engineering explicit-version CLI need not be removed; P1 |
+| Publish | Signed deployment bundle → recorded processing result → independent recipient observation | No approval gate for verification Test; publication may precede Provision or occur while vehicle Offline; P2 |
+| First service Deploy | Bind current Test to retained dedicated Subject, add service identity only, preserve peer | No service-version or instance-count argument; accepted Group/minimum-instance/TTL settings in UI-STUDIO-026; runtime qualification still required; P5 |
+| Cloud observation | Unit components + service detail/instances + DMIPS + sample/read freshness | No direct VM read or product-result inference; P2 |
+| Park/Resume | Same disks, identity, installed releases and product data; full local stop/restart | Shared composition/journal missing; no Create/reprovision; P1/P3 |
+| Finish / New cycle | One shared scoped Retire across Cloud, local runtimes and product records | Existing environment retire remains local-only, not full cleanup; P1/P3 |
+
+Use the [delivery plan's command surface](../planning/active/demo-studio-delivery-plan.md#6-cli-surface-reuse-first-add-only-missing-operations)
+for proposed CLI names and the [action audit](../research/demo-studio-action-audit.md)
+for exact API payloads/results. These are shared application operations, not
+new subprocess wrappers. Keep completed-stage receipts, exact entity IDs and
+minimal cross-run release continuity in the existing journal design. Backend
+cleanup must retain its original current-run UID context until records are
+cleared, even after the Cloud Unit is deleted. Group/TTL settings are accepted in UI-STUDIO-026, not a
+pending design question. Expanded logs/errors/concurrent mutations are deferred.
+
+
 ## Test-first Presenter integration — 2026-09-06
 
 Operator amendment: one `democtl demo prepare --image VERSION/ARCHITECTURE`
@@ -707,9 +737,48 @@ Separate Brake and Tire Driver Advisory rows explicitly remain UNAVAILABLE
 until the real typed advisory chain is connected. No warning is fabricated
 from installed v3, and no telemetry/advisory write is introduced.
 
-The advisory implementation and the dual-network external-connectivity
-button remain subsequent work. No Factory image, Unit identity or VDP release
-is changed by these display additions.
+The advisory implementation remains subsequent work. The external-connectivity
+development increment below implements the Controller fault action separately
+from the telemetry view. No Factory image, Unit identity or VDP release is
+changed by these display additions.
+
+<a id="vehicle-external-connectivity-development-increment--2026-09-07"></a>
+
+### Vehicle external-connectivity development increment — 2026-09-07
+
+Implements the Controller action in UI-INT-056 for the current demo vehicle:
+`democtl vehicle connectivity status|off|on [--target test|production]`.
+Omitting target uses Current Vehicle. OFF requires that selected, running VM
+and a running simulation. ON accepts an explicit target after simulation stop.
+A recorded OFF/uncertain state blocks handover until explicitly restored.
+
+The existing pinned guest transport observes the actual default interface,
+its journal-bound MAC and the maintenance path. One atomic, UUID-owned
+`inet democtl_external` nftables table blocks input/output/forward traffic over
+that interface (IPv4 and IPv6), retaining only local host VISS ports 6443/16443
+and maintenance SSH. Existing source selection and platform tables remain
+unchanged; there is no generic established-connection exception. Restore
+deletes only the exact owned table. Existing services and identities are not
+restarted or recreated, and the Mac/other VM are not faulted. This is a
+transient demo policy, cleared by VM reboot, not Factory image configuration.
+
+Intent/result use `vehicles[role].runtime.externalConnectivity` in the existing
+journal. Uncertain outcomes require actual filter reconciliation before the
+next explicit mutation. Status is one bounded guest read, without the global
+writer lock, Cloud calls, full inventory or image hashing. ON/OFF describes
+the filter, not Cloud Online/Offline or backend synchronization.
+
+Driving Control invokes the same CLI asynchronously and reads its setting at
+five-second intervals. Only one command is in flight; UNKNOWN is visible on
+read failure. The telemetry child, keyboard bridge and UI remain independent.
+The control app waits for its in-flight command when closing; closing does not
+silently restore connectivity. Explicit CLI ON remains available if the app
+has closed. Platform Team continues to obtain its observations only from Cloud.
+
+This slice delivers the Controller button and CLI. Shared-header fault
+projection and complete Brake/Tire offline buffering/backend replay remain
+separate work; Test VDP continuity is not claimed as qualification of that
+unimplemented advisory chain or of Production FOTA.
 
 `democtl workspace status` observes and `democtl workspace restore` places the
 current environment's owned windows. They do not invoke simulation, VM, Cloud,
@@ -814,6 +883,16 @@ The existing layout/dependencies were retained. The local uncommitted UI
 change passed 12 targeted tests, all 84 UI unit tests and the TypeScript/Vite
 build. Only Presenter windows were reloaded through workspace close/restore;
 the local route returned HTTP 200. Simulation, VMs and Cloud were not mutated.
+
+Header simplification — operator accepted 2026-09-08: the earlier
+`Connection not rechecked` / `Connection confirmed` captions, demo-title hint
+and team-tab status subtitles are removed. The header keeps the demo title,
+current logical vehicle and team names, vertically centered within unchanged
+workspace geometry. Assignment remains derived from Demo Control's accepted
+selection, refreshed from existing local snapshots and restored on UI reload;
+detach/stop clears it. This is assignment context, not continuous link-health
+evidence. No new guest or Cloud probes, state store or polling are introduced.
+Detailed team status remains inside the corresponding perspective.
 
 ### Prepare and Select Implementation Increment
 

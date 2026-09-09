@@ -9,6 +9,7 @@ import signal
 import socket
 import stat
 import subprocess
+import sys
 import time
 import tempfile
 from contextlib import contextmanager
@@ -256,11 +257,13 @@ class SourceDriver:
             "--certificate", str(paths["ca"]), "--private-key", str(paths["key"]),
             "--keyboard-ui", str(paths["keyboard"]), "--run-directory", str(run),
             "--control-directory", str(control), "--started-timestamp", str(time.time()),
-            "--demo-journal", str(self.root / JOURNAL)]
+            "--demo-journal", str(self.root / JOURNAL),
+            "--connectivity-command", json.dumps([sys.executable, "-m", "aosedge_demo_orchestrator",
+                "--output", "json", "vehicle", "connectivity"])]
         runner.append("--viss-development")
         source = dict(runId=identity, controlDirectory=str(control.relative_to(self.root)),
             runDirectory=str(run.relative_to(self.root)), simulatorCommand=simulator, runnerCommand=runner,
-            state="STARTING", assignmentGeneration=0, operation=None)
+            state="STARTING", assignmentGeneration=0, operation=None, nativeTelemetry=True)
         state["source"] = source
         self.vm._save(state)
         if previous and previous["simulatorCommand"] != simulator:
@@ -284,8 +287,7 @@ class SourceDriver:
         else:
             raise EnvironmentError("SOURCE_SIMULATOR_READY_TIMEOUT")
         self.progress("CARLA: starting Controller, Gateway and keyboard UI")
-        from .workspace import launch_terminal
-        source["terminalWindowId"] = launch_terminal(runner, run / "runner.log", identity)
+        self.spawn(runner, run / "runner.log")
         self.vm._save(state)
         return self.finish_start(state)
 
@@ -298,8 +300,8 @@ class SourceDriver:
         seen = False
         while time.monotonic() < deadline:
             if not self.live_process(runner):
-                # Terminal's do-script acknowledgment precedes exec. This is
-                # startup observation, not a second launch or a retry.
+                # Process appearance is startup observation, not a second
+                # launch or a retry.
                 if not seen and time.monotonic() < launch_deadline:
                     time.sleep(.1)
                     continue
@@ -446,6 +448,9 @@ class SourceService:
     def select(self, role, initial_manual=False):
         with self.environment._writer(), self.driver.operation():
             state = read_json(self.root / JOURNAL)
+            previous = state.get("currentVehicle")
+            if previous and previous != role and (state["vehicles"][previous].get("runtime", {}).get("externalConnectivity") or {}).get("state") not in (None, "ON"):
+                raise EnvironmentError("RESTORE_CURRENT_VEHICLE_CONNECTIVITY_BEFORE_HANDOVER")
             self.driver.ready(state)  # fail promptly, before VM/Cloud/guest work
             self.vm._validate(state, "start", [role])
             if state["source"].get("stopOperation"):

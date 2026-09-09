@@ -21,6 +21,22 @@
   repository creation, product implementation, build, signing, Cloud, Unit, VM
   or CARLA mutation is authorized by this plan alone
 
+## Current Studio milestone ordering — 2026-09-09
+
+For the current Test-only Studio milestone, use the
+[reconciled delivery sequence](demo-studio-delivery-plan.md#current-reconciled-sequence)
+and [UI-STUDIO-026](../../demo/mockups/aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract).
+They supersede this older plan's two-vehicle/mandatory-approval/linear-workspace
+ordering for this milestone only. Original P1/P2 identifiers below belong to
+the earlier source plan; Studio P1–P8 are a separate, explicitly named sequence.
+Backend lifecycle/context and executable contract migration precede the full
+CLI lifecycle; product algorithms follow later. Current contract reconciliation
+precedes implementation; P8 records qualification, not the first design update.
+Application implementation remains unauthorized. Production and expanded
+logs/error recovery remain later scope; formal acceptance records are not
+silently discarded by ordinary-run Retire.
+
+
 ## Purpose
 
 This plan turns the accepted design into bounded, independently reviewable

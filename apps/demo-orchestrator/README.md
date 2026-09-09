@@ -3,11 +3,41 @@
 
 # Demo Orchestrator
 
+Development update: the normal simulation now opens **Driving Control & Telemetry**
+as one native window beneath the separate CARLA window. It consumes the existing
+VISS client's JSON output; no Terminal dashboard opens. Use the same
+`simulation start/stop`, `vehicle select test` and workspace commands. Older
+Terminal-layout descriptions below record the published checkpoint; native
+telemetry is currently under live visual review, not formally qualified.
+
+### Vehicle external connectivity
+
+The Driving Control button invokes the same commands available in the CLI:
+
+```bash
+democtl vehicle connectivity status
+democtl vehicle connectivity off
+democtl vehicle connectivity on
+```
+
+OFF affects only the currently selected VM's external connection: Aos Cloud
+and functional backends. Local CARLA/Gateway/VISS, maintenance SSH, the Mac's
+Internet connection and the other VM are preserved. ON removes that transient
+filter without restarting or reprovisioning anything. ON/OFF is the observed
+filter setting, not a claim about Cloud reachability; Cloud may report Offline
+or Online later. The telemetry dashboard remains vehicle-data-only.
+
+Restore connectivity before selecting another VM. If simulation was stopped
+while the link was OFF, restore explicitly with
+`democtl vehicle connectivity on --target test` (or `production`). Closing the
+control window does not restore the link; a VM reboot clears the transient
+filter. The native button checks the setting every five seconds without a
+Cloud API call. An unavailable reading is UNKNOWN, never assumed ON.
+
 The current [source/evidence checkpoint](../../docs/qualification/democtl-release-checkpoint.md#desktop-preparation-checkpoint--2026-09-07)
 and accepted [native desktop plan](../../docs/planning/active/native-demo-desktop.md)
-are the starting point for the next UI increment. Today CARLA, Driving Control
-and Terminal telemetry are separate windows. The planned control/telemetry
-merge and one-click launcher are not implemented; CARLA will remain separate.
+are the starting point for this UI increment. Control and telemetry are now
+combined; the one-click launcher is not implemented. CARLA remains separate.
 
 ### Local Presenter control
 

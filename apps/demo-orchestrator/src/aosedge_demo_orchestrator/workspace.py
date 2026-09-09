@@ -14,7 +14,7 @@ from .environment import EnvironmentError, JOURNAL, atomic_json
 from .status import read_json, now
 
 
-def geometry(screen):
+def geometry(screen, combined=False):
     x, y, width, height = (int(screen[k]) for k in ("x", "y", "width", "height"))
     if width < 1440 or height < 900:
         raise EnvironmentError("WORKSPACE_DISPLAY_TOO_SMALL")
@@ -32,11 +32,15 @@ def geometry(screen):
     dashboard = (previous_left - gap) // 2
     controller = max(360, left - gap - dashboard)
     dashboard = left - gap - controller
-    return dict(backdrop=[x, y, width, height], header=[x + margin, y + margin, usable, header],
+    result = dict(backdrop=[x, y, width, height], header=[x + margin, y + margin, usable, header],
         browser=[x + margin + left + gap, top, usable - left - gap, body],
         carla=[x + margin, top, left, carla],
         controller=[x + margin, top + carla + gap, controller, lower],
         dashboard=[x + margin + controller + gap, top + carla + gap, dashboard, lower])
+    if combined:
+        result["controller"][2] = left
+        del result["dashboard"]
+    return result
 
 
 def applescript(script):
@@ -164,9 +168,10 @@ class WorkspaceService:
             if result.returncode:
                 raise EnvironmentError("WORKSPACE_BUILTIN_DISPLAY_UNAVAILABLE")
             screen = json.loads(result.stdout)
-            layout = geometry(screen)
             state = read_json(self.root / JOURNAL)
             source = state.get("source") or {}
+            combined = source.get("nativeTelemetry") is True
+            layout = geometry(screen, combined=combined)
             record = state.get("workspace") or {}
             surfaces, problems, foreground_pids = {}, [], []
             processes = self.driver.vm._processes()
@@ -185,7 +190,7 @@ class WorkspaceService:
                 foreground_pids.append(pid)
                 try:
                     actual = window(pid, layout[name] if action == "restore" else None,
-                                    title="CARLA — Live Driving Control" if name == "controller" else None)
+                                    title=("CARLA — Driving Control & Telemetry" if combined else "CARLA — Live Driving Control") if name == "controller" else None)
                     surfaces[name] = dict(actual=actual, expected=layout[name])
                     if any(abs(a - b) > 3 for a, b in zip(actual, layout[name])):
                         problems.append(name + ": geometry differs")
@@ -194,7 +199,9 @@ class WorkspaceService:
                 except subprocess.TimeoutExpired:
                     problems.append(name + ": window observation timed out")
             terminal = source.get("terminalWindowId")
-            if isinstance(terminal, int):
+            if combined:
+                surfaces["dashboard"] = dict(embeddedIn="controller", dataEvidence="NOT_PROBED_BY_LAYOUT")
+            elif isinstance(terminal, int):
                 r = layout["dashboard"]
                 title = "Engineering Telematics — " + source["runId"][:8]
                 setting = f"set bounds of w to {{{r[0]}, {r[1]}, {r[0]+r[2]}, {r[1]+r[3]}}}" if action == "restore" else ""

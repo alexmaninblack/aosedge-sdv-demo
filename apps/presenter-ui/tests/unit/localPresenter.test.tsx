@@ -64,14 +64,37 @@ describe("local composition preview", () => {
     expect(snapshot.vehicle.state).toBe("CURRENT");
     render(<SharedHeader snapshot={snapshot} perspective="global" onNavigate={() => {}} />);
     expect(screen.getByText(`Current vehicle · ${role === "test" ? "Test" : "Production"} Vehicle`)).toBeInTheDocument();
-    expect(screen.getByText("Connection not rechecked")).toBeInTheDocument();
+    expect(screen.queryByText("Connection not rechecked")).not.toBeInTheDocument();
     expect(screen.queryByText("Connection confirmed")).not.toBeInTheDocument();
   });
-  it("distinguishes a confirmed connection from an accepted selection", () => {
+  it("keeps connection diagnostics out of the header even after a confirmed selection", () => {
     const snapshot = composeLocalSnapshot({ ...data, source: { state: "CONNECTED", selectedVehicle: "test", currentVehicle: "test" } });
     render(<SharedHeader snapshot={snapshot} perspective="global" onNavigate={() => {}} />);
-    expect(screen.getByText("Connection confirmed")).toBeInTheDocument();
+    expect(screen.queryByText("Connection confirmed")).not.toBeInTheDocument();
     expect(snapshot.vehicle.value).toBe("test");
+  });
+  it("shows only the demo title, assignment and team names without subtitles", () => {
+    const snapshot = composeLocalSnapshot(data);
+    const { container } = render(<SharedHeader snapshot={snapshot} perspective="global" onNavigate={() => {}} />);
+    expect(screen.getByRole("button", { name: "AosEdge Software Evolution Demo" })).toBeInTheDocument();
+    for (const team of Object.values(snapshot.teams)) expect(screen.getByText(team.name)).toBeInTheDocument();
+    expect(screen.queryByText("Open the run-wide Demo Lifecycle")).not.toBeInTheDocument();
+    expect(screen.queryByText("Test Vehicle pass")).not.toBeInTheDocument();
+    expect(screen.queryByText("Not connected")).not.toBeInTheDocument();
+    expect(container.querySelector("header small")).toBeNull();
+  });
+  it("updates assignment from Demo Control across handover, reload and stop without making requests", () => {
+    const request = vi.fn();
+    vi.stubGlobal("fetch", request);
+    const snapshot = (source: typeof data.source & { selectedVehicle?: string }) => composeLocalSnapshot({ ...data, source });
+    const props = { perspective: "global" as const, onNavigate: () => {} };
+    const { rerender } = render(<SharedHeader {...props} snapshot={snapshot({ state: "SELECTED_NOT_PROBED", selectedVehicle: "test", currentVehicle: null })} />);
+    expect(screen.getByText("Current vehicle · Test Vehicle")).toBeInTheDocument();
+    rerender(<SharedHeader {...props} snapshot={snapshot({ state: "SELECTED_NOT_PROBED", selectedVehicle: "production", currentVehicle: null })} />);
+    expect(screen.getByText("Current vehicle · Production Vehicle")).toBeInTheDocument();
+    rerender(<SharedHeader {...props} snapshot={snapshot({ state: "STOPPED", currentVehicle: null })} />);
+    expect(screen.getByText("Current vehicle · Not assigned")).toBeInTheDocument();
+    expect(request).not.toHaveBeenCalled();
   });
   it.each([
     { state: "UNKNOWN", selectedVehicle: "test", currentVehicle: null },

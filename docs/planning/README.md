@@ -8,6 +8,9 @@ gates. A plan does not itself authorize a build, signature, Cloud mutation,
 assignment, VM restart, or provisioned-Unit change.
 
 - [Current design and delivery roadmap](roadmap.md)
+- [Demo Studio staged delivery plan](active/demo-studio-delivery-plan.md)
+  — proposed integration sequence based on the Studio B action audit; mockup
+  changes require separate approval, and implementation is not yet authorized.
 - [Native Demo Desktop Plan](active/native-demo-desktop.md)
   — accepted 2026-09-07: freeze/publish the working source checkpoint, combine
   Driving Control and telemetry, add a Demo Control-backed native launcher,

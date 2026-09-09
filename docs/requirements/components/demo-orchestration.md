@@ -26,6 +26,21 @@
 - Prepared D4 functional/hosting review candidates: [Brake Cloud API](../../../contracts/brake-cloud-api/README.md), [Tire Cloud API](../../../contracts/tire-cloud-api/README.md), and [Local Demo Hosting and VM Route](../../../contracts/local-demo-hosting/README.md)
 - Implementation, signing, Cloud, Unit, VM, or CARLA mutation authorized: no
 
+## Studio Test scope amendment — 2026-09-09
+
+[UI-STUDIO-026](../../demo/mockups/aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract)
+is the accepted current Test interaction amendment and includes the explicit
+replacement map. For this milestone, it supersedes conflicting two-vehicle,
+dedicated-demo-Fleet, terminal-only, mandatory-approval, independent-concurrent
+writer and routine-history-retention provisions below. Keep original stable IDs
+and their unchanged authority/product/safety obligations; Production remains
+future scope rather than a prerequisite for Test. D4-012.1 and D4-026's earlier
+presentation/order provisions must not be applied as simultaneous requirements
+against that amendment. Backend context cardinality and cleanup selectors still
+need the identified P1 executable-contract/handler migration. This scoped
+amendment does not authorize implementation, live calls or deletion.
+
+
 ## Purpose
 
 This package defines the audience-facing software-delivery experience and the

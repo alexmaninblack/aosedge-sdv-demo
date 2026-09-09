@@ -3,8 +3,8 @@
 
 # AosEdge Demo Interaction Specification
 
-- Status: Accepted interaction contract
-- Version: 2.5
+- Status: Accepted interaction contract; current Test scope amended by UI-STUDIO-026
+- Version: 2.6
 - Prepared: 2026-08-25
 - Accepted: 2026-08-26
 - Owner: Demo Solution Team with Platform Team and Function Teams 1 and 2
@@ -23,12 +23,143 @@
 - Platform FOTA Safe Stop contract: [1.1.1](../../../contracts/platform-fota-safe-stop/README.md)
 - Surface register: [I0 Audience-Visible Interface Register](README.md)
 - UI traceability: [AosEdge Demo UI Traceability Register](aosedge-demo-ui-traceability-register.md)
-- Current clickable review artifact derived from this contract:
+- Retained earlier 2.5-contract artifact (current Studio artifact linked below):
   [Accepted Interaction Mockup](aosedge-demo-interaction-mockup-2-4.html)
 - Layout review artifact predating this complete contract: [Linear-flow HTML mockup](aosedge-demo-linear-flow-mockup.html)
 - UI implementation authorized: no
 
-## Purpose and Authority
+<a id="ui-studio-026--current-test-studio-contract"></a>
+
+## UI-STUDIO-026 — current Test Studio contract
+
+Accepted scope reconciliation: 9 September 2026. This section is the current
+interaction contract for the Test-only Studio B flow. It incorporates the
+[accepted questionnaire and subsequent amendments](../../planning/active/demo-studio-delivery-plan.md).
+The [2.6 mockup](aosedge-demo-interaction-mockup-2-6.html) is a simulation of
+this contract, not evidence of working Cloud or product integration. Application
+implementation is still gated by the re-audit and explicit authorization.
+
+### Applicability and replacement map
+
+The earlier sections and their `UI-INT-*` / `UI-AT-*` anchors remain intact for
+traceability and future Production work. Their conflicting provisions are
+**superseded for this Test milestone**, not concurrent requirements:
+
+| Earlier provision / owner | Current replacement | Disposition |
+|---|---|---|
+| Terminal engineering surface; D4-026.20 and UI-INT-003/078 surface rules | Separate CARLA window plus native Driving Control/Telemetry on the left; Studio on the right | Native accepted composition replaces terminal-only rendering; no CARLA embedding |
+| Fixed lifecycle/team workspace, five-stage release cards, UI-INT-004/008/010/079 | Persistent architecture actors with clickable components/services/Cloud/backend cards and contextual release actions | Studio B replaces the old navigation/cards; no additional Controller/Architecture tab |
+| Test-to-Production handover, two-vehicle setup and dedicated demo Fleet, D4-012.1 | Exactly one current Test controller in the configured Test verification set; Production visible but Deferred | No hidden Production VM, Fleet creation or Production rollout |
+| Per-release accept/approve/deploy stage | VDP publication is followed by delivery observation; first service Publish is followed by identity assignment; later service versions only Publish update | Verification recipients do not require batch approval; no version-specific Subject assignment |
+| Independent team progress implies simultaneous mutations | Preserve separate ownership, releases and peer service bindings; serialize operator mutations in this milestone | Parallel writer execution is deferred, not a new Cloud restriction |
+| Full error/log and cancellation UX | Truthful failure/uncertainty and safe refusal; no invented cancellation, rollback or automatic campaign halt | Expanded diagnostics and terminal failed-install recovery are later-phase work |
+| Required intermediate Pending observation | Confirm terminal expected version/instance directly if intermediate states were missed | Do not manufacture historical transitions |
+| Retain all run evidence/history | Park retains current run; Retire removes ordinary owned run data | Formal qualification checkpoint is separate from routine demo retention |
+
+All unchanged authority, Safe Stop, identity, product-evidence and security
+boundaries in the earlier sections remain applicable. This amendment is not a
+waiver of platform requirements outside the bounded demo.
+
+### State and action contract
+
+1. **Create** composes creation of a disposable working copy from the catalog's
+   immutable factory image, boot with role/DNS initialized, and preparation of
+   both product backends. It does not provision or deploy a service. Empty
+   service slots remain empty; factory VDP metadata is not a Cloud observation.
+2. **Connect** starts/reuses simulator, Gateway and native surfaces and initially
+   connects Test in stationary Manual. No automatic Autopilot or Safe Stop.
+3. **Full story** shows Platform Prepare → Sign → Publish v1 before Provision.
+   **Warehouse variant** may publish a higher VDP profile before Provision;
+   the eligible latest release may arrive first. Do not force v1, downgrade,
+   or claim skipped profile chapters were demonstrated. **Quick preparation**
+   explicitly composes the ordinary sequence and stops in Manual.
+4. **Provision** preserves the running, locally connected controller: official
+   provisioning → observe Online → add Test verification membership → observe
+   delivery. If registration succeeded but Online/membership did not, resume
+   those remaining stages against the same identity. Local connectivity alone
+   never establishes Cloud Online.
+5. **VDP update** distinguishes accepted bundle, server processing, Published,
+   Unit Pending and Installed. Apply is owned by the vehicle's Safe Stop policy,
+   not a Cloud panel button. The Cloud component inventory has no VDP-process
+   run-state field: display runtime Not reported, with functional proof separate.
+6. **Service** first Publish uses its team's SP. Deploy to Test uses OEM: resolve
+   the retained dedicated Subject, bind the exact current Test `system_uid`,
+   add only the requested `service_ids:[service UUID]`, preserve its peer, then
+   read assignment and expected service version/instance runtime. The payload
+   contains neither version nor instance count. Later higher-version publication
+   uses the same service identity and no second Deploy. SOTA does not inherit
+   our component-specific Safe Stop gate.
+7. **Observation** reads Aos Cloud for right-side inventory/runtime/resources,
+   the product backend for results/receipt, and vehicle telemetry for native
+   advisory. CPU is DMIPS. Unknown/missing/stale are not zero/absent/Offline.
+   Terminal observation can advance the guide without seeing Pending. Remember
+   already observed chapters within the run; never return to an old chapter
+   merely because its version was replaced.
+8. **Product results** require suitable input and the corresponding real
+   service/VDP capabilities in implementation. Running alone proves no result.
+   Backend receipt and vehicle advisory visibility are separate. Live advisory
+   expires/clears under the QM lease and cannot survive a different service
+   version or vehicle-source generation as if fresh; backend history may remain.
+9. **Offline** affects vehicle external access only. Local driving/telemetry and
+   eligible local functions remain independent; durable queued product records
+   upload once after reconnect. Host publication access is separately checked.
+10. **Park/Resume** stops/restarts owned local runtimes while preserving disks,
+    identity, installed releases and records. No Create/provision/republication.
+    Refuse conflicting unfinished/uncertain changes promptly, with no shutdown
+    queue. **Retire/New cycle** share scoped cleanup: quiesce producers, revoke
+    and delete the exact Unit, reset owned Subject/Set bindings, clear owned
+    product records, stop backends and remove working files. Preserve factory
+    image, permanent infrastructure, Subject, published releases and minimal
+    release-number continuity. Never reuse a retired overlay.
+11. **Interrupted action** preserves recorded identity, bundle result and
+    completed stages. Reconcile observes first and resumes only remaining work;
+    it cannot turn Processing into Published or replay an uncertain upload.
+    A confirmed publication rejection offers a corrected new release. An
+    unresolved installation failure remains a truthful stop requiring engineering
+    intervention; forced cleanup/campaign recovery is not claimed implemented.
+12. **Versions** are allocated by Demo Control, not entered by the operator.
+    Persist reservations/used numbers and verified profile bindings across
+    ordinary cleanup. Number allocation details do not appear as audience copy.
+
+<a id="accepted-subject-and-service-package-settings--9-september-2026"></a>
+
+### Accepted Subject and service package settings — 9 September 2026
+
+The user accepted a retained dedicated **Group Subject**, `is_group: true`,
+bound only to the current Test Unit. Brake and Tire share that Subject while
+retaining separate service identities and SP ownership. Clear its owned
+Unit/service bindings at Retire, not the Subject itself. Do not reuse or alter
+a factory/NodeType Subject. User-state migration between vehicles is not part
+of this demo; local product queues/storage remain a separate requirement.
+
+Both services require `instances.minInstances: 1` and `offlineTTL: P7D` in
+their service configuration. For the existing schemaVersion-2 bundle authoring
+shape, these belong under `items[].configuration.instances.minInstances` and
+`items[].configuration.offlineTTL`, not in the assignment request. The package
+adapter must validate the resulting signed metadata at the packaging boundary.
+Seven days is an explicit offline lifetime, not infinite retention or a default.
+
+OEM assignment passes `service_ids:[service UUID]` only; Unit attachment passes
+`system_uids:[current Test UID]`. Neither payload selects a service version or
+number of instances. Observe the actual expected version/instance in Cloud;
+the requested minimum does not itself prove a running process.
+
+The [decision/evidence table](../../research/demo-studio-action-audit.md#subject-and-package-proposal)
+records the supporting documentation/API review. These decisions close the
+remaining configuration choices; they do not change a tenant setting, package
+or executable API schema and do not authorize live operations.
+
+### Verification and implementation handoff
+
+The [action audit](../../research/demo-studio-action-audit.md) maps the current
+flow to existing and missing operations and records reproducible mock-only
+tests. The [delivery plan](../../planning/active/demo-studio-delivery-plan.md#current-reconciled-sequence)
+is the current phase order. Normal/reload/offline/service/retire mockup tests
+precede implementation; real CLI E2E, scoped cleanup and a visually approved UI
+repeat from the same image SHA follow it. No simulation test qualifies the VM,
+Cloud tenant, service package or product algorithms.
+
+## Purpose and Authority — retained 2.5 baseline
 
 This specification defines how a presenter and audience interact with the
 accepted demo through one composed full-screen workspace. It turns the I0
@@ -115,7 +246,15 @@ the core flow. It contains only:
 - exactly one current logical vehicle indicator: `Not assigned` before `G0`,
   then `Test Vehicle` or `Production Vehicle`; and
 - the three selectable OEM team perspectives: `Platform Team`, `Brake Team`
-  and `Tire Team`, with a concise current state for each team.
+  and `Tire Team`.
+
+Operator amendment, 2026-09-08: keep each header item on one line without
+subtitles, team-status summaries or connection-probe diagnostics. Detailed
+status belongs inside its team perspective. The current-vehicle label reflects
+Demo Control's accepted assignment after selection/handover, restored from
+that state on UI reload and cleared by detach/stop. It is not a continuously
+probed connection, Internet availability or Cloud Online claim; the header
+does not initiate guest/Cloud reads to validate that label.
 
 The header does not display a global step number, `Next` action, demo-run ID,
 Unit/Node UUID, attach/detach plumbing or an automatic approval claim.

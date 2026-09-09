@@ -12,6 +12,24 @@
 - Surface register: [I0 Audience-Visible Interface Register 0.14](README.md)
 - Implementation authorized: no
 
+## Current Studio Test traceability amendment
+
+The earlier UI-INT/UI-AT rows remain for stable reverse links. For current Test,
+apply the replacement map in [UI-STUDIO-026](aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract)
+before using those rows as acceptance requirements; conflicting old layout,
+Production/approval and terminal-only clauses are superseded for this scope.
+
+| Current rule group | Implementation mapping | Mock evidence / real gate |
+|---|---|---|
+| UI-STUDIO-026 Create/connect/provision/VDP | Action audit A01–A11, L01–L08, V01–V11 | [Isolated tests](../../../tests/mockups/mockup-2-6.test.cjs); real P1–P4 still open |
+| UI-STUDIO-026 service identity/runtime/products | Action audit S/N/C/B rows | Isolated service, stale-advisory and offline tests; P5–P7 real runtime/product proof open |
+| UI-STUDIO-026 Park/Resume/Retire/recovery/ledger | Action audit R rows | Isolated partial-Park, reload, rejection, clean-repeat tests; shared implementation open |
+| UI-STUDIO-026 repeat qualification | Accepted Q14 / Studio P8 | Fresh CLI cycle, scoped Retire, same-image visual UI repeat; mockup is not E2E evidence |
+
+Current action IDs and gaps are in the [re-audit](../../research/demo-studio-action-audit.md).
+Subject Group/TTL/minimum-instance settings are accepted in UI-STUDIO-026; actual package/tenant qualification is pending.
+
+
 ## Purpose
 
 This register provides the one-row-per-rule forward and reverse traceability

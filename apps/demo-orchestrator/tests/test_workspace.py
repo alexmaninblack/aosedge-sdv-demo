@@ -12,6 +12,12 @@ from aosedge_demo_orchestrator.cli import build_parser, request_from_arguments
 from aosedge_demo_orchestrator.api import execute_operation
 
 class WorkspaceTests(unittest.TestCase):
+    def test_combined_control_and_telemetry_keep_the_carla_column(self):
+        layout = geometry(dict(x=0, y=39, width=2056, height=1224), combined=True)
+        self.assertEqual([8, 753, 914, 502], layout["controller"])
+        self.assertNotIn("dashboard", layout)
+        self.assertEqual(layout["controller"][2], layout["carla"][2])
+
     def test_close_owns_only_presenter_and_repeat_is_noop(self):
         environment = Mock(root=Path("/not-live"))
         environment._writer.side_effect = contextlib.nullcontext
