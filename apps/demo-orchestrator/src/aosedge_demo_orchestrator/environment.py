@@ -217,6 +217,9 @@ class EnvironmentService:
             raise EnvironmentError("FACTORY_COPY_REQUIRES_60_GIB_FREE")
         roles = tuple(OVERLAYS) if target == "all" else (target,)
         with self._writer():
+            if (self.root / JOURNAL).exists() and target == "test":
+                from .test_environment import add_test
+                return add_test(self, image)
             # Any retained current state, including a failed atomic write, blocks
             # a new manufacture. Never truncate or remove it automatically.
             directory = self.root / ".run/demo-current"
@@ -341,10 +344,12 @@ class EnvironmentService:
                 or state["schemaVersion"] != 1 or state.get("kind") != "democtl.current-run"
                 or set(state) - {"schemaVersion", "kind", "startedAt", "stage", "scope", "factory",
                                  "currentVehicle", "vehicles", "operations", "retirement", "shared", "cloudBinding",
-                                 "source", "componentOperations", "componentSchema", "smDemoProof", "runtimeCleanup", "demoPreparation"}
+                                 "source", "componentOperations", "componentSchema", "smDemoProof", "runtimeCleanup", "demoPreparation", "demoLifecycle", "testRetirement"}
                 or state.get("stage") not in ("MANUFACTURED", "LOCAL_STOPPED", "RETIRING_LOCAL")
                 or state.get("currentVehicle") is not None):
             raise EnvironmentError("LOCAL_RETIRE_REQUIRES_UNUSED_MANUFACTURED_ENVIRONMENT")
+        if "testRetirement" in state and state["testRetirement"] != {"state": "COMPLETED"}:
+            raise EnvironmentError("TEST_RETIREMENT_JOURNAL_INVALID")
         vehicles = state.get("vehicles")
         factory_only = state.get("scope") == "FACTORY_COPY_ONLY"
         if (not isinstance(vehicles, dict) or set(vehicles) - set(OVERLAYS)
@@ -656,3 +661,8 @@ class EnvironmentService:
                     "removed": list(targets.values()) + state["runtimeCleanup"]["directories"] + [JOURNAL],
                     "preserved": ["demo-artifacts source image and published manifests"], "cloudActions": False,
                     "cloudReadsPerformed": cloud_retired, "recoverable": False}
+
+    def retire_test(self, cloud_check=None, backend_check=None):
+        """Retire only Test working state; never dispose a retained Production peer."""
+        from .test_environment import retire_test
+        return retire_test(self, cloud_check, backend_check)

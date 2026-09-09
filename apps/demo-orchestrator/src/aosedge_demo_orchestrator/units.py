@@ -99,13 +99,22 @@ class UnitService:
             raise EnvironmentError("ROLE_UNIT_SET_FLEET_OR_ID_CONFLICT")
         return selected
 
-    def confirm_retired(self, state):
+    def confirm_test_retired(self, state):
+        """Fresh Test-only absence proof, preserving the full peer journal."""
+        return self.confirm_retired(state, roles=("test",))
+
+    def confirm_retired(self, state, roles=None):
         """Read-only cleanup gate; caller already owns the current-run writer."""
         binding = state.get("cloudBinding")
         if not binding or not binding.get("ownerId"):
             raise EnvironmentError("CLOUD_RETIREMENT_OWNER_REQUIRED")
         self.owner_id = binding["ownerId"]
-        for role, item in state["vehicles"].items():
+        scoped = roles is not None
+        roles = tuple(state["vehicles"]) if roles is None else tuple(roles)
+        if (scoped and not roles) or any(role not in state["vehicles"] for role in roles):
+            raise EnvironmentError("CLOUD_RETIREMENT_TARGET_INVALID")
+        for role in roles:
+            item = state["vehicles"][role]
             if not item.get("cloud"):
                 continue
             if item["cloud"].get("lifecycle") != "DELETED":
@@ -113,7 +122,7 @@ class UnitService:
             self.progress(role + ": confirming retired Unit/Node absence before local cleanup")
             result = self._cloud("absence", unitId=item["unitId"], nodeId=item["nodeId"])
             sets = self._bindings(state, result["inventory"])
-            if (not result["absent"] or any(value["members"] for value in sets.values())
+            if (not result["absent"] or any(sets[target]["members"] for target in (roles if scoped else sets))
                     or any(unit["system_uid"] == item["systemUid"] for unit in result["inventory"]["units"])):
                 raise EnvironmentError("FRESH_CLOUD_RETIREMENT_CHECK_FAILED")
         uploads = []

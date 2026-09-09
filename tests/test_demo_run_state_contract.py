@@ -17,7 +17,7 @@ class DemoRunStateContractTest(unittest.TestCase):
 
     def test_all_subdecisions_and_package_are_design_reviewed(self) -> None:
         self.assertEqual("D4-021", self.profile["decision"])
-        self.assertEqual("1.6.0", self.profile["contractVersion"])
+        self.assertEqual("1.7.0", self.profile["contractVersion"])
         self.assertEqual("DESIGN_REVIEWED", self.profile["lifecycleState"])
         self.assertEqual(
             {"D4-021.1", "D4-021.2", "D4-021.3", "D4-021.4", "D4-021.5", "D4-021.6"},
@@ -36,6 +36,20 @@ class DemoRunStateContractTest(unittest.TestCase):
         for key in ("oldIdentityProbeIsTlsRevocationProof", "oldIdentityReconnectProbe", "foreignRoleMembersRemovedAutomatically",
                     "retiredOverlayReuseAllowed", "fullR0OrRepeatabilityQualificationClaim"):
             self.assertFalse(unit[key])
+
+    def test_test_scoped_retirement_keeps_peer_and_requires_fresh_exact_proofs(self) -> None:
+        scoped = self.profile["testScopedLocalLifecycleAmendment"]
+        self.assertEqual("TEST_ONLY_WITH_EXISTING_PRODUCTION_PRESERVED", scoped["scope"])
+        for key in ("productionRoleSetMayRemainNonempty", "backendCleanupRequiresExactTestUidProofBeforeIdentityRemoval",
+                    "callbacksReceiveFullJournalToPreservePeerOnReconciliation", "callbacksMustReturnLiteralTrue",
+                    "cloudAndBackendProofRepeatedOnInterruptedUnlink", "deleteOnlyOwnedStoppedUnheldTestOverlayAndAccessFiles",
+                    "removeTerminalTestComponentAndPreparationReceipts", "uncertainOrPeerTargetedComponentReceiptsBlock"):
+            self.assertTrue(scoped[key])
+        for key in ("freshTestCopiesFactoryAgain", "retiredTestOverlayReuseAllowed",
+                    "changesLegacyAllRetireSemantics", "fullStudioLifecycleQualificationClaim"):
+            self.assertFalse(scoped[key])
+        self.assertIn("PRODUCTION_RUNTIME", scoped["preserve"])
+        self.assertIn("RELEASE_NUMBER_CONTINUITY", scoped["preserve"])
 
     def test_cloud_retired_cli_cleanup_keeps_original_and_requires_fresh_proof(self) -> None:
         cleanup = self.profile["cloudRetiredLocalCleanup"]
