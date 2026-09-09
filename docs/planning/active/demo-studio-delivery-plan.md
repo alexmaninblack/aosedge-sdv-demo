@@ -9,7 +9,12 @@
 - Review mockup: [Interaction Mockup 2.6 — agreed Studio B flow](../../demo/mockups/aosedge-demo-interaction-mockup-2-6.html); [2.5 retained](../../demo/mockups/aosedge-demo-interaction-mockup-2-5.html) as the original action-audit basis
 - Basis: [action and integration audit][audit], including its 78 action/transition rows and 28 gaps
 - Target: the accepted Studio B composition connected to a real, repeatable Test-vehicle demo
-- Authorization: mockup and related working-document edits only. Application implementation and all live publication/provisioning/deletion remain unauthorized.
+- Authorization: mockup and related working-document edits, followed by the separately authorized source Git checkpoint. Application implementation and live Cloud publication/provisioning/deletion remain unauthorized.
+
+The [pre-implementation source checkpoint](../../qualification/pre-studio-implementation-2026-09-09.md)
+records the named return point, exact repository revisions and intentionally
+excluded work. Creating or publishing that Git checkpoint does not authorize
+starting P1 or any later implementation stage.
 
 ### Current gate — mockup first
 

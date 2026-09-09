@@ -7,6 +7,9 @@ This directory records accepted baselines, exact component locks,
 qualification procedures, and sanitized defect evidence.
 
 - [Current accepted baseline](current-baseline.md)
+- [Pre-Studio implementation source checkpoint](pre-studio-implementation-2026-09-09.md)
+  — exact multi-repository source pins and named return point; mockup 2.6 and
+  accepted design are frozen, Studio implementation remains unauthorized.
 - [democtl local VM terminal acceptance](democtl-local-vm-lifecycle.md)
   — live create/start/stop/retire checks on .27, separate from Cloud/demo qualification.
 - [democtl Unit terminal acceptance](democtl-unit-lifecycle.md)

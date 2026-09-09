@@ -4,11 +4,16 @@
 # Demo Control Source Checkpoint and Next Factory Release
 
 - Status: Factory .31 Test VDP 15/v3 and desktop source checkpoint; fresh-overlay repeat remains
-- Version: 0.10
-- Prepared: 2026-09-07
+- Version: 0.11
+- Prepared: 2026-09-09
 - Owner: Demo Solution Team
 - Design: [Demo Control](../architecture/demo-control.md)
 - Evidence: [VDP family checkpoint](democtl-vdp-family.md)
+
+Latest source-only return point:
+[Pre-Studio implementation checkpoint, 9 September 2026](pre-studio-implementation-2026-09-09.md).
+It records the native telemetry/connectivity source and mockup 2.6 review;
+it does not supersede or extend the live Factory/VDP evidence below.
 
 ## What is demonstrated
 

@@ -37,7 +37,7 @@
       "visibility": "public",
       "repository": "https://github.com/alexmaninblack/carla-ego-runtime.git",
       "remote": "origin",
-      "acceptedRevision": "22864c5bfd15f70827fdfc2a374686d00487481b",
+      "acceptedRevision": "f506e4b206725317c83346c4f46069235ca8f038",
       "acceptedBranches": ["main"],
       "allowedDirtyPaths": []
     },
@@ -48,7 +48,7 @@
       "visibility": "public",
       "repository": "https://github.com/alexmaninblack/aos-vehicle-platform.git",
       "remote": "origin",
-      "acceptedRevision": "bdc72aba97a83c9868d454588189ef139710a6d7",
+      "acceptedRevision": "0bed8b3769b09fbe685ed599ca8d10e6594fbe53",
       "acceptedBranches": ["main"],
       "allowedDirtyPaths": []
     },
@@ -59,7 +59,7 @@
       "visibility": "public",
       "repository": "https://github.com/alexmaninblack/brake-health-service.git",
       "remote": "origin",
-      "acceptedRevision": "04abe5bacc47e849c6a6fe4fccb64e8a15157d8f",
+      "acceptedRevision": "63b0c5fd43572ff96c508abc5e35818218d3500a",
       "acceptedBranches": ["main"],
       "allowedDirtyPaths": []
     },
@@ -70,7 +70,7 @@
       "visibility": "public",
       "repository": "https://github.com/alexmaninblack/brake-health-cloud.git",
       "remote": "origin",
-      "acceptedRevision": "6da2926ba96df5e470bfbc3514e983f5d54c3975",
+      "acceptedRevision": "1320dde24ae0f72771ea9320c2bd2212c20726ba",
       "acceptedBranches": ["main"],
       "allowedDirtyPaths": []
     }
