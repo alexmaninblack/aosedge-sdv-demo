@@ -7,7 +7,94 @@ Status: **partial implementation; not ready for final operator E2E**.
 The [accepted P1–P8 plan](../planning/active/demo-studio-delivery-plan.md)
 remains authoritative. No mockup flow or live Presenter composition was changed.
 
-## Latest continuation — Docker recovery and Brake source publication
+## Latest continuation — functional Test cycle, paused at user request
+
+The user granted standing publication authority for the agreed Test-cycle
+VDP/Brake/Tire artifacts and the agreed public source repositories. Routine
+release uploads no longer require a separate question. This does not authorize
+Production mutation, new access grants or bypassing execution safety review.
+The user subsequently deferred native Driving Control/telemetry visual alignment
+until the functional chain works. No UI/mockup or native visual change was made.
+
+### Confirmed live results
+
+- VDP v1 **16.0.0** was uploaded through Demo Control, deployment
+  `430e27ba-dfac-49e7-93d7-e36712a23f18`, then independently observed Ready.
+  No batch approval or duplicate upload was used.
+- The already running, locally connected fresh `.31` Test was provisioned in
+  39.24 seconds, without a source reset or SM restart. Current Unit is
+  `2a29c145-bbd1-4494-a0e5-d4b79e6a9db5`, system UID
+  `d53d05cd4c4649c9a896534b23b88273`, Node
+  `7dc03f51-539b-4a8c-bb33-5a8bb7290e6f`. Cloud Online and Test Vehicles
+  membership were confirmed. Production was preserved.
+- During native Autopilot, independent Controller observation showed
+  19.37 km/h while first installation waited for Safe Stop. Native Safe Stop
+  then installed **16.0.0**, slot a, PID 5035, seven read paths, READY/LIVE,
+  matching process/slot and zero restarts, at 22:37:14 UTC.
+- VDP v2 **17.0.0** was prepared, signed and uploaded once, deployment
+  `7352f437-a05d-47fb-885d-335ffeaa9a14`. Cloud Ready and pending Test delivery
+  were confirmed while v1 remained active during driving. Signed SHA256:
+  `98f2841aa4241c55464b63df5c5455057da28510d6862eac58fb0fa275bfa76f`.
+- VDP v3 **18.0.0** is prepared and signed, **not uploaded**. Signed SHA256:
+  `6953945c3d0dac8efcdc6fcf85bb0122b47d9bec63e76eb57ffb74bd736033ae`.
+  Do not publish it to work around the unfinished v2 transition.
+
+### Preserved failure and next diagnostic boundary
+
+Native Safe Stop for v2 is confirmed by fresh SAFE_STOP/STABLE, zero speed,
+zero accelerator, full brake and advancing coherent VISS frames. However SM
+retains the remove transaction for 16.0.0 in `waiting-for-safe-stop`. A
+`safe_stop_timeout` was recorded and the native framework began another stop
+attempt; Demo Control did not issue a retry. VDP16 remains active and READY.
+SM PID 4412, binary SHA256
+`df141e0df7ed9dac6e74ef055e7b31994b501f9d26e1f34d50326c0f76839f86`,
+effective `demo-5s`, initialized Test role, exact public binding and zero fresh
+AVC denials were confirmed. No clock adjustment, guest binary replacement,
+VM/SM restart or speculative publication was performed.
+
+The existing read-only `component sm-status` now exposes bounded wait-channel
+and resource counts, without argv, environment, descriptor targets or memory.
+The existing `component diagnose` records each snapshot's acquisition time
+and elapsed time. Six runtime-boundary tests and five probe tests pass.
+One observed snapshot was 14 ms in the future at acquisition, which the pinned
+Safe Stop evaluator rejects even under `demo-5s`. Another read obtained its
+first TLS snapshot in 5.187 ms with positive age. These are root network probe
+observations, **not an SM evaluator trace**; they do not prove the sole cause.
+The earlier approved age exception explicitly preserves future rejection.
+Do not silently broaden it or claim a clock fix.
+
+Next: if still needed after resumption, reproduce the exact SM acquisition
+sequence read-only (new TLS connection per frame, 250 ms total read deadline,
+ten coherent facts, twelve distinct-frame window and immediate refresh).
+Native code currently discards both ReadFrame errors and evaluator reasons,
+so existing logs alone cannot distinguish them. Preserve this attempt rather
+than rebuilding/reprovisioning or allocating another release. Only after v2
+actually completes may v3 publication and Park/Resume qualification continue.
+
+A proposed live Park-refusal test was rejected before execution by safety
+review; it was not bypassed. The subsequent explicit user request to park for
+closing the computer is handled through the standard `environment park` and
+its actual result must be recorded below. UI remains unbound: 64516 serves
+mockup 2.8; 18080 serves the previous Presenter. P3 and later phases are open.
+
+At the explicit pause request, `environment park` returned **BLOCKED** with
+`DEMO_COMPONENT_UPDATE_PENDING_OR_FAILED`, before stopping any process. The
+earlier mistaken `demo park` spelling was rejected by argument parsing and
+made no change. Work is paused, but this is **not a powered-off environment**:
+the simulator, Test/Production VMs and backend processes remain running.
+No guard bypass was attempted. Stopping despite the unfinished update needs
+explicit operator direction; all disks and Cloud identities remain preserved.
+
+Independent Brake work adds local commit `b6ba7a2` after `4434082` in
+`/private/tmp/brake-growing-window-fmQtdV`: all-five-kind ACK retention and
+accepted POST-to-ACTIVE retrigger corrections. Four CTest targets, quality and
+boundary tests passed; main Brake checkout, Docker and live services were not
+changed. Its runtime wiring audit identifies unresolved v2/v3 executable
+integration and old schemas/validators restricting service release versions.
+No P5/P6 completion is claimed. GitHub authentication remains unresolved as
+recorded in the preceding checkpoint; no new source push succeeded.
+
+## Earlier continuation — Docker recovery and Brake source publication
 
 The user explicitly authorized one Docker Desktop restart with temporary
 interruption/restoration of the five existing `watt-the-app` containers, without

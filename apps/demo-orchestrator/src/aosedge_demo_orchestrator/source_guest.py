@@ -35,6 +35,36 @@ VSS_PATHS = tuple("Vehicle.CarlaSimulation.ChaosWheel." + row + "." + side + "."
     for row in ("Row1", "Row2") for side in ("Left", "Right"))
 
 
+def process_wait_observation(pid, proc=Path("/proc")):
+    """Bounded wait/resource facts only: no argv, environment or file targets."""
+    if not str(pid).isdigit() or int(pid) <= 0:
+        return dict(state="UNAVAILABLE")
+    root = proc / str(pid)
+    result = dict(state="CURRENT", waits={}, threads=[])
+    try:
+        tasks = sorted(root.joinpath("task").iterdir(), key=lambda path: int(path.name))
+        result["threadCount"] = len(tasks)
+        result["complete"] = len(tasks) <= 64
+        result["openDescriptorCount"] = len(list(root.joinpath("fd").iterdir()))
+        for task in tasks[:64]:
+            try:
+                wait = task.joinpath("wchan").read_text().strip()
+                if not re.fullmatch(r"[A-Za-z0-9_]{1,100}", wait):
+                    wait = "UNAVAILABLE"
+                result["waits"][wait] = result["waits"].get(wait, 0) + 1
+                result["threads"].append(dict(id=int(task.name), wait=wait))
+            except OSError:
+                result["complete"] = False
+        for line in root.joinpath("status").read_text().splitlines():
+            if line.startswith(("VmRSS:", "VmSize:", "FDSize:")):
+                key, value = line.split(":", 1)
+                if re.fullmatch(r"\s*\d+(?:\s+kB)?\s*", value):
+                    result[key] = value.strip()
+    except OSError:
+        result.update(state="PARTIAL", complete=False)
+    return result
+
+
 def vss_supplement(schema):
     """Only append the eight accepted v3 sensor leaves; preserve the base tree."""
     result = json.loads(json.dumps(schema))
@@ -474,6 +504,7 @@ def probe(safe_stop=False, preprovision=False):
             raise ValueError("SOURCE_PROVISIONED_IDENTITY_REQUIRED")
         ca = (FACTORY_INPUTS / "viss-update-ca" if FACTORY_INPUTS_MARKER.is_file()
               and not preprovision else ROOT / "ca.pem")
+        started = time.monotonic()
         context = ssl.create_default_context(cafile=str(ca))
         with socket.create_connection(("10.0.0.1", 6443), 3) as raw:
             with context.wrap_socket(raw, server_hostname="127.0.0.1") as client:
@@ -494,6 +525,8 @@ def probe(safe_stop=False, preprovision=False):
                         or fields.get("sec-websocket-protocol") != "VISSv3"):
                     raise ValueError("VISS_PROBE_UPGRADE_INVALID")
                 samples = []
+                acquired = []
+                elapsed = []
                 for _ in range(2):
                     query = dict(action="get", path="Vehicle.CarlaSimulation.FrameId", requestId="democtl")
                     if safe_stop:
@@ -505,12 +538,16 @@ def probe(safe_stop=False, preprovision=False):
                             "Chassis.Accelerator.PedalPosition", "Chassis.Brake.PedalPosition"]))
                     send(client, json.dumps(query, separators=(",", ":")).encode())
                     response = frame(client)
+                    acquired.append(int(time.time() * 1000))
+                    elapsed.append(round((time.monotonic() - started) * 1000, 3))
                     if "error" in response or response.get("requestId") != "democtl" or "data" not in response:
                         raise ValueError("VISS_FRAME_UNAVAILABLE")
                     samples.append(response["data"])
                     time.sleep(.1)
                 if safe_stop:
                     return dict(serverTls=True, snapshots=samples, guestEpochMilliseconds=int(time.time() * 1000),
+                        snapshotAcquiredEpochMilliseconds=acquired,
+                        snapshotElapsedMilliseconds=elapsed,
                         evidence="ROOT_NETWORK_PROBE_NOT_SM_PROCESS_OBSERVATION")
                 ids = []
                 for sample in samples:
@@ -685,7 +722,7 @@ def execute(request):
                      completeWindow=bool(since and kernel.returncode == 0 and (len(events) < 500 or
                          int(events[0].get("__MONOTONIC_TIMESTAMP", 0)) <= since)),
                      selinuxEnforcing=Path("/sys/fs/selinux/enforce").read_text().strip() == "1")
-        return dict(service=service, executable=executable,
+        return dict(service=service, executable=executable, processWaits=process_wait_observation(pid),
                     binarySha256=hashlib.sha256(Path("/proc/" + pid + "/exe").read_bytes()).hexdigest() if executable else None,
                     configPath=str(cfg), freshnessProfile=profile,
                     factoryRole={"storeMounted": os.path.ismount(FACTORY_INPUTS.parent),

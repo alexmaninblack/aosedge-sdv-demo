@@ -12,10 +12,27 @@ from aosedge_demo_orchestrator.api import execute_operation
 from aosedge_demo_orchestrator.cli import build_parser, request_from_arguments
 from aosedge_demo_orchestrator.component_runtime import apply_test, build, builder, build_factory, FACTORY_VERSION, FACTORY_REVISION
 from aosedge_demo_orchestrator.environment import EnvironmentError
-from aosedge_demo_orchestrator.source_guest import execute
+from aosedge_demo_orchestrator.source_guest import execute, process_wait_observation
 
 
 class RuntimeProofBoundaryTests(unittest.TestCase):
+    def test_process_wait_observation_excludes_secret_bearing_process_fields(self):
+        with tempfile.TemporaryDirectory() as directory:
+            proc = Path(directory)
+            root = proc / "12"
+            (root / "task/12").mkdir(parents=True)
+            (root / "fd").mkdir()
+            (root / "task/12/wchan").write_text("futex_wait_queue\n")
+            (root / "status").write_text("VmRSS:\t1024 kB\nFDSize:\t64\nName:\tSECRET\n")
+            (root / "cmdline").write_text("SECRET")
+            (root / "fd/3").symlink_to("/secret/key")
+            value = process_wait_observation("12", proc)
+            self.assertEqual({"futex_wait_queue": 1}, value["waits"])
+            self.assertEqual(1, value["openDescriptorCount"])
+            self.assertNotIn("SECRET", str(value))
+            self.assertNotIn("/secret", str(value))
+            self.assertEqual("UNAVAILABLE", process_wait_observation("0", proc)["state"])
+
     def test_factory_cold_boot_waits_for_ssh_before_build_reads(self):
         with tempfile.TemporaryDirectory() as directory, \
                 patch("aosedge_demo_orchestrator.component_runtime.ARTIFACT", Path(directory) / "runtime-proofs" / "proof"), \
