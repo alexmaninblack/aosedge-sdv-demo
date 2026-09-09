@@ -394,6 +394,10 @@ class BackendRetirement:
                     raise EnvironmentError("BACKEND_NONMATCHING_DATA_PRESERVED")
                 if state["backends"]["brake"]["cleanup"].get("wholeStoreEmpty") is not True:
                     raise EnvironmentError("BACKEND_WHOLE_STORE_EMPTY_PROOF_UNAVAILABLE")
+            # Docker Desktop can retain a stopped container's context bind.
+            # Release only the exact owned instances; peer storage stays intact.
+            for team in TEAMS:
+                self._remove_resource(state, team, "container", "aosedge-demo-" + team + "-cloud")
             self._remove_context(state)
             if "production" not in state["vehicles"]:
                 self._finish_single(state)

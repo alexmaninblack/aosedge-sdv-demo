@@ -122,9 +122,10 @@ class BackendRetirementTests(TestCase):
         self.assertTrue(self.cleanup.confirm_test_cleanup(state))
         self.assertEqual(peer, state["vehicles"]["production"])
         self.assertEqual(7, self.nonmatching["messages"])
-        self.assertEqual(6, len(self.backend.resources))
+        self.assertEqual(4, len(self.backend.resources))
         self.assertFalse((self.root / CONTEXT).exists())
-        self.assertEqual([("stop", "brake"), ("stop", "tire")], self.backend.actions)
+        self.assertEqual([("stop", "brake"), ("stop", "tire"),
+            ("container", "rm", "1" * 64), ("container", "rm", "2" * 64)], self.backend.actions)
         for team in TEAMS:
             self.assertEqual(owner, state["backends"][team]["owner"])
             self.assertEqual("STOPPED", state["backends"][team]["state"])
@@ -145,13 +146,92 @@ class BackendRetirementTests(TestCase):
 
     def test_repeated_dual_cleanup_reuses_only_proven_stopped_owned_generation(self):
         state = self.backend_fixture()
+        container = copy.deepcopy(self.backend.resources[("container", "aosedge-demo-brake-cloud")])
         self.cleanup.confirm_test_cleanup(state)
         calls = len(self.calls)
+        actions = list(self.backend.actions)
         self.assertTrue(self.cleanup.confirm_test_cleanup(state))
         self.assertEqual(calls, len(self.calls))
-        self.backend.resources[("container", "aosedge-demo-brake-cloud")]["State"]["Running"] = True
+        self.assertEqual(actions, self.backend.actions)
+        self.backend.resources[("container", "aosedge-demo-brake-cloud")] = container
         with self.assertRaisesRegex(EnvironmentError, "RESTARTED_AFTER_PROOF"):
             self.cleanup.confirm_test_cleanup(state)
+
+    def test_pending_dual_context_unlink_releases_stopped_binds_and_preserves_peer_storage(self):
+        state = self.backend_fixture()
+        peer = copy.deepcopy(state["vehicles"]["production"])
+        cloud = copy.deepcopy(state["vehicles"]["test"]["cloud"])
+        storage = {key: copy.deepcopy(value) for key, value in self.backend.resources.items() if key[0] != "container"}
+        self.cleanup._brake(state, "test-uid", self.cleanup._owned(state, "brake", running=True))
+        self.cleanup._tire(state, "test-uid", self.cleanup._owned(state, "tire", running=True))
+        self.cleanup._stop(state)
+        context = self.root / CONTEXT
+        state["backends"]["brake"]["cleanup"].update(contextRemoval="REMOVE_PENDING",
+            contextIdentity=self.service._owned_file(context))
+        atomic_json(self.root / JOURNAL, state)
+        calls = list(self.calls)
+        def check_released(path):
+            if path == context:
+                self.assertEqual(storage, self.backend.resources)
+                self.assertTrue(all(state["backends"][team]["cleanup"]["containerRemoval"] == "REMOVED" for team in TEAMS))
+        with patch.object(self.service, "_assert_unheld", side_effect=check_released) as check:
+            self.assertTrue(self.cleanup.confirm_test_cleanup(state))
+        self.assertIn(((context,), {}), check.call_args_list)
+        self.assertEqual(storage, self.backend.resources)
+        self.assertEqual(peer, state["vehicles"]["production"])
+        self.assertEqual(cloud, state["vehicles"]["test"]["cloud"])
+        self.assertEqual(7, self.nonmatching["messages"])
+        self.assertEqual(calls, self.calls)
+
+    def test_single_context_unlink_also_follows_both_container_releases(self):
+        state = self.backend_fixture(production=False)
+        context = self.root / CONTEXT
+        def check_released(path):
+            if path == context:
+                self.assertEqual({"volume", "network"}, {key[0] for key in self.backend.resources})
+                self.assertEqual(4, len(self.backend.resources))
+        with patch.object(self.service, "_assert_unheld", side_effect=check_released) as check:
+            self.assertTrue(self.cleanup.confirm_test_cleanup(state))
+        self.assertIn(((context,), {}), check.call_args_list)
+        self.assertEqual({}, self.backend.resources)
+        self.assertEqual(2, len([action for action in self.backend.actions if action[0] == "container"]))
+
+    def test_context_still_held_after_bind_release_blocks_and_repeat_preserves_proofs(self):
+        state = self.backend_fixture()
+        context = self.root / CONTEXT
+        def externally_held(path):
+            if path == context:
+                raise EnvironmentError("CLEANUP_FILE_IN_USE")
+        with patch.object(self.service, "_assert_unheld", side_effect=externally_held):
+            with self.assertRaisesRegex(EnvironmentError, "FILE_IN_USE"):
+                self.cleanup.confirm_test_cleanup(state)
+        self.assertTrue(context.exists())
+        self.assertEqual("REMOVE_PENDING", state["backends"]["brake"]["cleanup"]["contextRemoval"])
+        self.assertEqual({"volume", "network"}, {key[0] for key in self.backend.resources})
+        calls, actions = list(self.calls), list(self.backend.actions)
+        self.assertTrue(self.cleanup.confirm_test_cleanup(state))
+        self.assertEqual(calls, self.calls)
+        self.assertEqual(actions, self.backend.actions)
+
+    def test_dual_container_removal_reply_loss_reconciles_without_second_delete(self):
+        state = self.backend_fixture()
+        peer = copy.deepcopy(state["vehicles"]["production"])
+        original = self.backend._docker
+        def interrupted(*args):
+            original(*args)
+            raise EnvironmentError("response lost")
+        with patch.object(self.backend, "_docker", side_effect=interrupted):
+            with self.assertRaisesRegex(EnvironmentError, "response lost"):
+                self.cleanup.confirm_test_cleanup(state)
+        self.assertTrue((self.root / CONTEXT).exists())
+        self.assertEqual("REMOVE_PENDING", state["backends"]["brake"]["cleanup"]["containerRemoval"])
+        calls = list(self.calls)
+        self.assertTrue(self.cleanup.confirm_test_cleanup(state))
+        self.assertEqual(1, self.backend.actions.count(("container", "rm", "1" * 64)))
+        self.assertEqual(1, self.backend.actions.count(("container", "rm", "2" * 64)))
+        self.assertEqual(calls, self.calls)
+        self.assertEqual(peer, state["vehicles"]["production"])
+        self.assertEqual(7, self.nonmatching["messages"])
 
     def test_single_cleanup_proves_total_empty_before_fixed_resource_removal(self):
         state = self.backend_fixture(production=False)
