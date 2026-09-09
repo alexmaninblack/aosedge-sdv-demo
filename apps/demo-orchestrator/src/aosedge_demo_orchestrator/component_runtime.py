@@ -20,6 +20,7 @@ import sys
 import time
 import runpy
 import re
+import stat
 
 from .environment import EnvironmentError
 
@@ -200,7 +201,50 @@ def builder(target, action):
                 sshPort=10024, demoVmMutation=False, cloudMutation=False)
 
 
-def build_factory(version):
+def register_factory_support(destination, version, compatibility):
+    """Annotate an existing producer manifest, never touch immutable image bytes."""
+    from .environment import atomic_json
+    from .images import ImageCatalog
+    from .status import read_json
+    try:
+        manifest_path = destination / "manifest.json"
+        info = manifest_path.lstat()
+        if (destination.is_symlink() or not stat.S_ISREG(info.st_mode)
+                or info.st_nlink != 1 or info.st_uid != os.getuid()):
+            raise EnvironmentError("FACTORY_EXISTING_MANIFEST_NOT_OWNED")
+        catalog = ImageCatalog(root=destination.parents[2], workspace=FACTORY_SOURCE.parent)
+        record = catalog.resolve(version + "/main-qemuarm64")
+        if (record.path.resolve() != (destination / "main-qemuarm64.img").resolve() or record.image_format != "raw"
+                or record.path.stat().st_uid != os.getuid()):
+            raise EnvironmentError("FACTORY_EXISTING_IMAGE_BINDING_MISMATCH")
+        manifest = read_json(manifest_path, limit=262144)
+        if manifest.get("source") != dict(repository="aos-vehicle-platform", revision=compatibility["sourceRevision"]):
+            raise EnvironmentError("FACTORY_EXISTING_SOURCE_BINDING_MISMATCH")
+        for source in record.metadata_sources:
+            producer = catalog.root / source
+            if producer.is_symlink():
+                raise EnvironmentError("FACTORY_EXISTING_MANIFEST_NOT_OWNED")
+            metadata = read_json(producer, limit=262144)
+            declared = metadata.get("demoCompatibility")
+            if declared is not None and (declared != compatibility or metadata.get("source") != manifest["source"]):
+                raise EnvironmentError("FACTORY_EXISTING_COMPATIBILITY_CONFLICT")
+        no_op = manifest.get("demoCompatibility") == compatibility
+        if not no_op:
+            manifest["demoCompatibility"] = compatibility
+            atomic_json(manifest_path, manifest)
+            manifest_path.chmod(stat.S_IMODE(info.st_mode))
+        catalog.component_support(record.selector, record.sha256,
+            compatibility["componentType"], compatibility["supportedReadPaths"])
+        return dict(metadataOnly=True, noOp=no_op, rebuilt=False, imageBytesChanged=False,
+            digestChecked=False, image=record.selector, sha256=record.sha256,
+            qualificationState=manifest.get("state"), demoCompatibility=compatibility)
+    except EnvironmentError:
+        raise
+    except (OSError, ValueError, KeyError, TypeError):
+        raise EnvironmentError("FACTORY_EXISTING_METADATA_UNAVAILABLE") from None
+
+
+def build_factory(version, metadata_only=False):
     """The release build is a Demo Control operation, not an operator script.
 
     Export only committed Platform source, reuse the warm offline build tree,
@@ -216,6 +260,8 @@ def build_factory(version):
         raise EnvironmentError("FACTORY_SOURCE_REVISION_MISMATCH")
     compatibility = factory_component_support(revision)
     destination = ARTIFACT.parents[1] / "factory-images" / version
+    if metadata_only:
+        return register_factory_support(destination, version, compatibility)
     if destination.exists():
         raise EnvironmentError("FACTORY_ARTIFACT_EXISTS_RECONCILE_WITHOUT_REBUILD")
     if shutil.disk_usage(destination.parent).free < 60 * 1024**3:

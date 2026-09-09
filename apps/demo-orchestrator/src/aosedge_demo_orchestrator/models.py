@@ -48,6 +48,7 @@ class OperationRequest:
     component_version: Optional[str] = None
     content_profile: Optional[str] = None
     team: Optional[str] = None
+    metadata_only: bool = False
 
     def selection_error(self) -> Optional[str]:
         """Validate agreed selectors before any lifecycle adapter is called."""

@@ -57,9 +57,16 @@ image SHA/version/path/format and the package provenance. Its `sourceSelector`
 feeds `ImageCatalog.component_support(selector, sha256, component_type,
 required_paths)`. The catalog must supply the validated producer declaration.
 No image bytes or guest schema are read during publication. Missing/conflicting
-declarations block publication; there is no hardcoded .31 exception. The source
-producer/retained-artifact declaration migration remains a separate integration
-gate. Tests use an explicit declared fixture, not an invented compatibility claim.
+declarations block publication; there is no hardcoded .31 exception. The
+[producer and explicit retained-artifact registration](demo-control-image-compatibility.md)
+now supply this declaration; registration is not a hidden upload side effect.
+Tests use an explicit declared fixture, not an invented compatibility claim.
+
+The integrated read-only `component cloud-status 15.0.0` observed the exact
+historical bundle `2489fb29-8169-4451-8d32-4926c12c0607` as `done` with
+`build_info=Done` and the matching real catalog version `Ready` at
+2026-09-09 16:07 UTC. It returned publication `READY` independently of Test's
+reported `Offline` connectivity and installed version. No upload was repeated.
 
 ## Documented API and read bounds
 

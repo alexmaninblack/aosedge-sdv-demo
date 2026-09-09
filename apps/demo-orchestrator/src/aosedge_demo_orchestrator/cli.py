@@ -73,6 +73,8 @@ def build_parser() -> argparse.ArgumentParser:
     image_commands.add_parser("list", help="list readable version/architecture selectors without hashing images")
     factory_build = image_commands.add_parser("build", help="build the authorized Factory .31 from committed sources using the warm offline Builder")
     factory_build.add_argument("image", choices=("6.1.1-maninblack.31",))
+    factory_build.add_argument("--metadata-only", action="store_true",
+        help="register source-derived support on an existing image; never start Builder or rebuild")
 
     component = commands.add_parser("component", help="operate on VDP bundles in the artifact catalog")
     component_commands = component.add_subparsers(dest="action", required=True)
@@ -166,6 +168,7 @@ def request_from_arguments(arguments: argparse.Namespace) -> OperationRequest:
         component_version=getattr(arguments, "component_version", None),
         content_profile=getattr(arguments, "content_profile", None),
         team=getattr(arguments, "team", None),
+        metadata_only=getattr(arguments, "metadata_only", False),
         timeout=getattr(arguments, "timeout", 8.0),
     )
 

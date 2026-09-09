@@ -100,9 +100,12 @@ def execute_operation(
             raise ValueError("Unsupported image list field")
         return application.execute(OperationRequest(domain, action)).to_dict()
     if domain == "image" and action == "build":
-        if set(payload) != {"domain", "action", "image"} or payload["image"] != "6.1.1-maninblack.31":
+        if (set(payload) - {"domain", "action", "image", "metadata_only"}
+                or payload.get("image") != "6.1.1-maninblack.31"
+                or type(payload.get("metadata_only", False)) is not bool):
             raise ValueError("Only the authorized Factory .31 build is available")
-        return application.execute(OperationRequest(domain, action, image=payload["image"])).to_dict()
+        return application.execute(OperationRequest(domain, action, image=payload["image"],
+            metadata_only=payload.get("metadata_only", False))).to_dict()
     if domain == "environment" and action == "create":
         # CLI paths do not become a browser-controlled filesystem capability.
         if set(payload) - {"domain", "action", "target", "image"}:
