@@ -34,6 +34,11 @@ def execute_operation(
         return application.execute(OperationRequest(domain, action, team=payload["team"])).to_dict()
     if domain == "backend":
         raise ValueError("Backend development builds are CLI-only, never a presentation action")
+    if (domain, action) in (("demo", "create"), ("demo", "retire"), ("environment", "park"), ("environment", "resume")):
+        expected = {"domain", "action", "image"} if action == "create" else {"domain", "action"}
+        if set(payload) != expected or (action == "create" and not isinstance(payload["image"], str)):
+            raise ValueError("Studio lifecycle accepts only its fixed Test scope and a catalog image for Create")
+        return application.execute(OperationRequest(domain, action, image=payload.get("image"))).to_dict()
     if domain == "demo" and action in ("plan", "prepare"):
         if (set(payload) - {"domain", "action", "image", "target"} or not isinstance(payload.get("image"), str)
                 or target not in (None, VehicleTarget.TEST, VehicleTarget.ALL)):

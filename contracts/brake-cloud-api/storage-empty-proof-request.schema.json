@@ -1,0 +1,13 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:brake-cloud-storage-empty-proof-request:schema:v1",
+  "title": "Brake Cloud Private Read-only Storage Proof Request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "contractVersion"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "contractVersion": {"const": "1.0.0"}
+  }
+}

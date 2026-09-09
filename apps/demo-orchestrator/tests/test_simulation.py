@@ -88,6 +88,28 @@ class SimulationTests(unittest.TestCase):
         self.driver.rpc.assert_not_called()
         self.driver.stop.assert_called_once()
 
+    def test_test_scoped_stop_never_changes_production_gate(self):
+        self.assertEqual("STOPPED", self.service.simulation("stop", target="test")["state"])
+        self.driver.guests.assert_any_call(self.state, "status")
+        self.driver.guests.assert_any_call(self.state, "block", roles=["test"])
+        self.assertNotIn(unittest.mock.call(self.state, "block"), self.driver.guests.call_args_list)
+
+    def test_test_scoped_stop_cannot_stop_selected_production(self):
+        self.state["currentVehicle"] = "production"
+        with self.assertRaisesRegex(EnvironmentError, "TEST_SCOPE_CONFLICT"):
+            self.service.simulation("stop", target="test")
+        self.driver.rpc.assert_not_called()
+        self.driver.guests.assert_not_called()
+        self.driver.stop.assert_not_called()
+
+    def test_test_scoped_start_does_not_repair_an_open_preserved_peer(self):
+        self.state.update(source=None, currentVehicle=None)
+        self.driver.guests.return_value["production"]["gate"] = "OPEN"
+        with self.assertRaisesRegex(EnvironmentError, "PRESERVED_PEER_NOT_DETACHED"):
+            self.service.simulation("start", target="test")
+        self.driver.guests.assert_called_once_with(self.state, "status")
+        self.driver.start.assert_not_called()
+
     def test_stop_cancels_owned_initialization_only_after_actual_safe_stop(self):
         self.state["currentVehicle"] = None
         self.state["source"].update(assignmentGeneration=0,

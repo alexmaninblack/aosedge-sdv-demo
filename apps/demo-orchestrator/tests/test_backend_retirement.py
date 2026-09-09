@@ -132,6 +132,17 @@ class BackendRetirementTests(TestCase):
         self.assertNotIn(TOKEN, (self.root / JOURNAL).read_text())
         self.assertEqual([("brake", "preview"), ("brake", "execute"), ("brake", "preview"), ("tire", "foundation-proof")], self.calls)
 
+    def test_docker_desktop_exact_host_mount_alias_is_accepted_only_on_macos(self):
+        state = self.backend_fixture()
+        for team in TEAMS:
+            container = self.backend.resources[("container", "aosedge-demo-" + team + "-cloud")]
+            container["Mounts"][1]["Source"] = "/host_mnt" + str((self.root / CONTEXT).parent)
+        with patch("aosedge_demo_orchestrator.backend_retirement.sys.platform", "linux"):
+            with self.assertRaisesRegex(EnvironmentError, "MOUNT_BINDING_INVALID"):
+                self.cleanup._owned(state, "brake")
+        with patch("aosedge_demo_orchestrator.backend_retirement.sys.platform", "darwin"):
+            self.assertTrue(self.cleanup.confirm_test_cleanup(state))
+
     def test_repeated_dual_cleanup_reuses_only_proven_stopped_owned_generation(self):
         state = self.backend_fixture()
         self.cleanup.confirm_test_cleanup(state)

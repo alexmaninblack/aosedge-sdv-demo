@@ -32,8 +32,12 @@ class DemoPreparationTests(unittest.TestCase):
             self.calls.append((request.domain, request.action))
             return OperationResult(request.domain + "." + request.action, OperationState.COMPLETED, "done", data=dict(activeVersion="0.0.0",
                 publication=dict(stage="READY"), deploymentBundles=[dict(state="done")], versions=[dict(state="Ready")]))
-        self.app = SimpleNamespace(environment_service=env, vm_service=Mock(), source_service=SimpleNamespace(initialize_test=lambda: None), execute=execute)
-        self.workflow = DemoPreparation(self.app, self.component)
+        self.app = SimpleNamespace(environment_service=env, vm_service=Mock(), source_service=SimpleNamespace(
+            initialize_test=lambda: None, simulation=lambda *a, **k: self.calls.append(("simulation", "start")) or dict(state="RUNNING")), execute=execute)
+        self.backends = Mock()
+        self.backends._candidate.return_value = dict(imageId="pinned")
+        self.backends.start_stack.return_value = dict(state="RUNNING")
+        self.workflow = DemoPreparation(self.app, self.component, self.backends)
 
     def test_plan_selects_next_version_without_native_mutation(self):
         self.assertEqual("13.0.0", self.workflow.plan("31/arm64")["version"])
@@ -66,7 +70,7 @@ class DemoPreparationTests(unittest.TestCase):
         result = self.workflow.prepare("31/arm64")
         self.assertEqual(OperationState.BLOCKED, result.state)
         self.assertEqual("publication", result.data["phase"])
-        self.assertEqual(["start-vms", "simulation", "connect-test-manual", "prepare-v1", "sign-v1", "upload-v1"], result.data["completedSteps"])
+        self.assertEqual(["start-vms", "start-backends", "simulation", "connect-test-manual", "prepare-v1", "sign-v1", "upload-v1"], result.data["completedSteps"])
         self.assertNotIn(("unit", "provision"), self.calls)
 
     def test_processing_is_not_published_and_retry_does_not_reupload(self):
@@ -88,6 +92,19 @@ class DemoPreparationTests(unittest.TestCase):
         self.state["vehicles"]["production"] = {}
         self.path.write_text(json.dumps(self.state))
         self.assertEqual("all", self.workflow.plan("31/arm64", VehicleTarget.ALL)["target"])
-        from aosedge_demo_orchestrator.environment import EnvironmentError
-        with self.assertRaisesRegex(EnvironmentError, "ROLES_CONFLICT"):
-            self.workflow.plan("31/arm64")
+        self.state["vehicles"]["production"] = dict(unitId="preserved", systemUid="preserved-uid")
+        self.path.write_text(json.dumps(self.state))
+        self.assertEqual("test", self.workflow.plan("31/arm64")["target"])
+
+    def test_new_test_plan_can_follow_scoped_retirement_with_production_preserved(self):
+        self.state["vehicles"] = dict(production=dict(unitId="preserved"))
+        self.state["testRetirement"] = dict(state="COMPLETED")
+        self.path.write_text(json.dumps(self.state))
+        self.assertFalse(self.workflow.plan("31/arm64")["existingEnvironment"])
+
+    def test_backend_failure_prevents_source_and_cloud_start(self):
+        self.backends.start_stack.return_value = dict(state="PARTIAL", reason="TIRE_START_FAILED")
+        result = self.workflow.prepare("31/arm64")
+        self.assertEqual(OperationState.PARTIAL, result.state)
+        self.assertEqual("start-backends", result.data["phase"])
+        self.assertEqual([("vm", "start")], self.calls)

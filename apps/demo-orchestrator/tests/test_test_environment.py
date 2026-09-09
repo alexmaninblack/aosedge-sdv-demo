@@ -43,6 +43,8 @@ class TestOnlyRetirementTests(TestCase):
 
     def test_first_retire_preserves_running_production_dns_factory_and_ledger(self):
         state = self.retired()
+        state["workspace"] = dict(profile="builtin-v1", combined=True)
+        atomic_json(self.root / JOURNAL, state)
         factory = self.root / state["factory"]["path"]
         before = (factory.stat().st_ino, factory.read_bytes(), (self.root / MANIFEST).read_bytes())
         production_file = self.root / state["vehicles"]["production"]["overlay"]
@@ -55,7 +57,7 @@ class TestOnlyRetirementTests(TestCase):
         self.assertEqual("REMOVED", result["outcome"])
         for key in ("production",):
             self.assertEqual(state["vehicles"][key], current["vehicles"][key])
-        for key in ("shared", "factory", "cloudBinding", "currentVehicle"):
+        for key in ("shared", "factory", "cloudBinding", "currentVehicle", "workspace"):
             self.assertEqual(state[key], current[key])
         self.assertEqual(before, (factory.stat().st_ino, factory.read_bytes(), (self.root / MANIFEST).read_bytes()))
         self.assertEqual(peer_before, (production_file.stat().st_ino, production_file.read_bytes()))

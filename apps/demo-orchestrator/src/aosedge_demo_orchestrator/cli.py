@@ -45,7 +45,7 @@ def build_parser() -> argparse.ArgumentParser:
         command.add_argument("--profile", help="one configured Cloud profile; default reads each separately")
     backend = commands.add_parser("backend", help="owned functional backend containers, separate from Cloud and vehicle functions")
     backend_commands = backend.add_subparsers(dest="action", required=True)
-    for action in ("build", "start", "stop", "status"):
+    for action in ("build", "activate", "start", "stop", "status"):
         command = backend_commands.add_parser(action, help="explicit development build" if action == "build" else "owned backend " + action)
         command.add_argument("team", choices=("brake", "tire"))
 
@@ -59,6 +59,9 @@ def build_parser() -> argparse.ArgumentParser:
     ui.add_subparsers(dest="action", required=True).add_parser("serve", help="serve the built UI and protected Test-first operations on loopback")
     demo = commands.add_parser("demo", help="operator's complete Test-first demo workflow")
     demo_commands = demo.add_subparsers(dest="action", required=True)
+    create = demo_commands.add_parser("create", help="create and boot Test controller and start prepared backends; no publication/provisioning")
+    create.add_argument("--image", required=True, help="factory version/architecture from image list")
+    demo_commands.add_parser("retire", help="deprovision/delete the owned Test, clean its data and remove its overlay; preserve Production and source image")
     for action in ("plan", "prepare"):
         command = demo_commands.add_parser(action, help="read the plan" if action == "plan" else "prepare the Test demo through shared Demo Control operations")
         command.add_argument("--image", required=True, help="factory version/architecture from image list")
@@ -125,6 +128,8 @@ def build_parser() -> argparse.ArgumentParser:
     for action in ("park", "resume"):
         environment_commands.add_parser(action, help="agreed interface; not implemented yet")
     environment_commands.add_parser("retire", help="remove unused local overlays and factory copy; keep original artifact")
+    for action in ("park", "resume"):
+        environment_commands.add_parser(action, help="preserve the Test disks, Cloud identity and backend data; never affect Production")
     vehicle = commands.add_parser("vehicle", help="select the single live vehicle")
     vehicle_commands = vehicle.add_subparsers(dest="action", required=True)
     initialize = vehicle_commands.add_parser("initialize", help="first Test connection in stationary Manual, before or after provisioning")
@@ -199,9 +204,12 @@ def render_human(result: OperationResult, details: bool = False) -> str:
         lines.append(json.dumps(data, indent=2, sort_keys=True))
     if data and document["operation"].startswith("backend."):
         lines.append(json.dumps(data, indent=2, sort_keys=True))
-    if data and document["operation"].startswith("demo."):
-        lines.append("VDP: " + str(data.get("contentProfile", "v1")) + " / " + str(data.get("version", "not selected")))
+    if data and (document["operation"].startswith("demo.") or document["operation"] in ("environment.park", "environment.resume")):
+        if "version" in data:
+            lines.append("VDP: " + str(data.get("contentProfile", "v1")) + " / " + str(data["version"]))
         lines.append("Phase: " + data.get("phase", "not observed"))
+        if data.get("reason"):
+            lines.append(data["reason"])
     if data and document["operation"].startswith("simulation."):
         lines.append("Simulation: " + data["state"] + (" (unchanged)" if data["noOp"] else ""))
         lines.append("Current Vehicle: " + str(data.get("currentVehicle") or "none"))
@@ -390,7 +398,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     vm_service = VMService(password_provider=password_provider,
                           progress=lambda message: print(message, file=sys.stderr, flush=True))
     native_access = None
-    if arguments.domain == "demo" and arguments.action == "prepare":
+    if arguments.domain == "demo" and arguments.action in ("prepare", "create"):
         from .native_access import NativeVMAccess
         native_access = NativeVMAccess(progress=vm_service.progress)
         vm_service.password_provider = native_access

@@ -328,7 +328,18 @@ class BrakeCloudApiContractTest(unittest.TestCase):
         self.assertFalse(admin["lanAccessAllowed"])
         self.assertFalse(admin["demoRunIdFieldAllowed"])
         self.assertFalse(admin["runTimeRangeFieldAllowed"])
-        self.assertTrue(admin["selectorMustEqualInjectedCurrentUnitContext"])
+        self.assertTrue(admin["selectorMustMatchAcceptedCurrentContextScope"])
+        self.assertEqual("EXACT_CURRENT_TEST_OR_SORTED_ALL_CURRENT_CONTEXT_SYSTEM_UIDS", admin["selector"])
+        self.assertFalse(admin["productionOnlyCleanupAllowed"])
+        self.assertTrue(admin["singleTestVolumeRemovalRequiresMatchingAndNonmatchingCountsZero"])
+        proof = admin["emptyStoreProof"]
+        self.assertTrue(proof["readOnly"])
+        self.assertFalse(proof["requiresCurrentUnitContext"])
+        self.assertFalse(proof["unknownSchemaOrUnavailableIsEmpty"])
+        self.assertFalse(proof["deletesRecordsOrVolumes"])
+        self.assertEqual({"schemaVersion", "contractVersion"}, set(load(proof["requestSchema"])["required"]))
+        self.assertEqual({"messages", "windows", "assessments", "events", "advisories", "quarantine"},
+            set(load(proof["responseSchema"])["properties"]["recordCounts"]["required"]))
         digest = admin["recordSetDigest"]
         self.assertEqual("SHA256_OF_RFC8785_CANONICAL_JSON", digest["algorithm"])
         self.assertEqual(

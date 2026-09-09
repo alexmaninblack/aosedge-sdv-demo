@@ -5,7 +5,7 @@
   "title": "Brake Cloud Current-Unit Cleanup Result",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "contractVersion", "systemUids", "deletedRecordCounts", "remainingMatchingRecordCounts", "nonmatchingRecordSetSha256", "completedAt"],
+  "required": ["schemaVersion", "contractVersion", "systemUids", "deletedRecordCounts", "remainingMatchingRecordCounts", "nonmatchingRecordCounts", "nonmatchingRecordSetSha256", "completedAt"],
   "properties": {
     "schemaVersion": {"const": 1},
     "contractVersion": {"const": "1.0.0"},
@@ -18,6 +18,7 @@
     },
     "deletedRecordCounts": {"$ref": "#/$defs/recordCounts"},
     "remainingMatchingRecordCounts": {"$ref": "#/$defs/zeroRecordCounts"},
+    "nonmatchingRecordCounts": {"$ref": "#/$defs/recordCounts"},
     "nonmatchingRecordSetSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "completedAt": {"type": "string", "format": "date-time"}
   },

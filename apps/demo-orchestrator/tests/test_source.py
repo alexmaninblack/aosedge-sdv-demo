@@ -21,11 +21,13 @@ class Driver:
         self.fresh = True
         self.tls = True
 
-    def guests(self, state, action):
-        self.calls.append((action, "all"))
+    def guests(self, state, action, roles=None):
+        self.calls.append((action, "all" if roles is None else ",".join(roles)))
         if action == "block":
-            self.gates = {role: "BLOCKED" for role in self.gates}
-        return {r: dict(gate=g, vdpProcess="inactive", vdpData="NOT_OBSERVED") for r, g in self.gates.items()}
+            for role in (self.gates if roles is None else roles):
+                self.gates[role] = "BLOCKED"
+        return {r: dict(gate=g, vdpProcess="inactive", vdpData="NOT_OBSERVED")
+                for r, g in self.gates.items() if roles is None or r in roles}
 
     def guest(self, state, role, action):
         self.calls.append((action, role))
@@ -71,6 +73,8 @@ class SourceTests(unittest.TestCase):
         self.assertLess(calls.index(("wait", "MANUAL_READY")), calls.index(("allow", "test")))
         self.assertLess(calls.index(("probe", "test")), next(index for index, call in enumerate(calls) if call[0] == "release_manual"))
         self.assertNotIn("release", [call[0] for call in calls])
+        self.assertNotIn(("block", "all"), calls)
+        self.assertIn(("block", "test"), calls)
 
     def test_initial_manual_cannot_be_used_for_handover(self):
         self.state["source"]["assignmentGeneration"] = 1

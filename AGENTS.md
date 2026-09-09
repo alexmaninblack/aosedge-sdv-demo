@@ -75,6 +75,10 @@ debugging and qualification task in this repository and its worktrees.
 
 ## Security, Cloud and cleanup
 
+- New repositories created for this project must be public, as explicitly
+  required by the user on 10 September 2026. Do not default them to private.
+  Public visibility does not permit committing credentials, runtime data or
+  build artifacts; retain the existing source-publication and secret gates.
 - Never print, hash for display, persist in evidence or place in Git any PIN,
   private key, JWT, reusable certificate content or one-time token.
 - Grant no broad SELinux/systemd/filesystem/network permission from a symptom.

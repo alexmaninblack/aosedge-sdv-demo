@@ -99,8 +99,10 @@ class SourceDriver:
         except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError):
             raise EnvironmentError("SOURCE_GUEST_UNAVAILABLE:" + role) from None
 
-    def guests(self, state, action, configure_role=None):
-        roles = list(state["vehicles"])
+    def guests(self, state, action, configure_role=None, roles=None):
+        roles = list(state["vehicles"]) if roles is None else list(roles)
+        if not roles or set(roles) - set(state["vehicles"]):
+            raise EnvironmentError("SOURCE_GUEST_SCOPE_INVALID")
         def read(role):
             command = self.vm._command(state, role)
             if not self.vm._owned_pid(command, "democtl-" + role + "-" + state["vehicles"][role]["localVmId"]):
@@ -357,10 +359,29 @@ class SourceService:
             self.simulation("start")
             return self.select(current)
 
-    def simulation(self, action):
+    def _detach(self, state, target=None):
+        if target is None:
+            return self.driver.guests(state, "block")
+        # Studio may retain a running Production VM. Read its existing gate,
+        # never rewrite it to satisfy a Test-only operation.
+        views = self.driver.guests(state, "status")
+        if any(view.get("gate") != "BLOCKED" for role, view in views.items() if role != target):
+            raise EnvironmentError("SOURCE_PRESERVED_PEER_NOT_DETACHED")
+        selected = self.driver.guests(state, "block", roles=[target])
+        views.update(selected)
+        return views
+
+    def simulation(self, action, target=None):
         with self.environment._writer(), self.driver.operation():
             state = read_json(self.root / JOURNAL)
+            if target is not None and (target != "test" or target not in state["vehicles"]
+                    or state.get("currentVehicle") not in (None, target)):
+                raise EnvironmentError("SOURCE_TEST_SCOPE_CONFLICT")
             source = state.get("source")
+            if target is not None and action == "stop" and source and source.get("state") != "STOPPED":
+                peer_views = self.driver.guests(state, "status")
+                if any(view.get("gate") != "BLOCKED" for role, view in peer_views.items() if role != target):
+                    raise EnvironmentError("SOURCE_PRESERVED_PEER_NOT_DETACHED")
             if action == "start":
                 if source and (source.get("operation") or source.get("stopOperation")):
                     raise EnvironmentError("SOURCE_OPERATION_RECONCILIATION_REQUIRED")
@@ -373,7 +394,7 @@ class SourceService:
                     return dict(state="RUNNING", noOp=True, currentVehicle=state.get("currentVehicle"), controller=frame)
                 if source and source["state"] not in ("STOPPED", "STARTING"):
                     raise EnvironmentError("SIMULATION_NOT_READY:run simulation stop to reconcile the previous session")
-                views = self.driver.guests(state, "block")
+                views = self._detach(state, target)
                 if any(v["gate"] != "BLOCKED" for v in views.values()):
                     raise EnvironmentError("SOURCE_DETACH_NOT_CONFIRMED")
                 source = self.driver.start(state)
@@ -401,7 +422,7 @@ class SourceService:
                         or frame.get("speedKmh", float("inf")) > .5 or frame.get("brake", 0) < .99):
                     raise EnvironmentError("SOURCE_INITIALIZATION_CANCEL_REQUIRES_SAFE_STOP")
                 self.progress("Simulation: interrupted initialization is physically stopped; detaching both paths")
-                views = self.driver.guests(state, "block")
+                views = self._detach(state, target)
                 if any(v["gate"] != "BLOCKED" for v in views.values()):
                     raise EnvironmentError("SOURCE_DETACH_NOT_CONFIRMED")
                 source["stopOperation"] = dict(id=pending["id"], phase="DETACHED", physicalStop="CONFIRMED")
@@ -428,7 +449,7 @@ class SourceService:
                     physical = "CONFIRMED"
                 else:
                     self.progress("Simulation: Controller absent; physical stop not observed")
-                views = self.driver.guests(state, "block")
+                views = self._detach(state, target)
                 if any(v["gate"] != "BLOCKED" for v in views.values()):
                     raise EnvironmentError("SOURCE_DETACH_NOT_CONFIRMED")
                 state["currentVehicle"] = None
@@ -501,7 +522,7 @@ class SourceService:
             self.progress("Source: Safe Stop; waiting for a completed stopped frame")
             self.driver.rpc(source, "safe_stop", identity)
             self.driver.wait(source, identity, "SAFE_STOP")
-            blocked = self.driver.guests(state, "block")
+            blocked = self._detach(state, "test" if initial_manual else None)
             for r, result in blocked.items():
                 views[r].update(result)  # action includes verified nft readback
             if any(v["gate"] != "BLOCKED" for v in views.values()):

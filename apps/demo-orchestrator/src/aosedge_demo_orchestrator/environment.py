@@ -344,7 +344,7 @@ class EnvironmentService:
                 or state["schemaVersion"] != 1 or state.get("kind") != "democtl.current-run"
                 or set(state) - {"schemaVersion", "kind", "startedAt", "stage", "scope", "factory",
                                  "currentVehicle", "vehicles", "operations", "retirement", "shared", "cloudBinding",
-                                 "source", "componentOperations", "componentSchema", "smDemoProof", "runtimeCleanup", "demoPreparation", "demoLifecycle", "testRetirement"}
+                                 "source", "componentOperations", "componentSchema", "smDemoProof", "runtimeCleanup", "demoPreparation", "demoLifecycle", "testRetirement", "workspace"}
                 or state.get("stage") not in ("MANUFACTURED", "LOCAL_STOPPED", "RETIRING_LOCAL")
                 or state.get("currentVehicle") is not None):
             raise EnvironmentError("LOCAL_RETIRE_REQUIRES_UNUSED_MANUFACTURED_ENVIRONMENT")

@@ -121,6 +121,84 @@ class BackendService:
             raise EnvironmentError("BACKEND_BUILD_REQUIRED:" + team)
         return max(values, key=lambda value: value["builtAt"])
 
+    def start_stack(self):
+        """Compose existing team operations; undo only this start attempt."""
+        with self.environment._writer():
+            before = {team: self.execute("status", team) for team in TEAMS}
+            state = read_json(self.root / JOURNAL)
+            # Both immutable candidates must exist before starting the first team.
+            for team in TEAMS:
+                self._image(self._runtime_candidate(state, team)["imageId"])
+            attempted = []
+            results = {}
+            try:
+                for team in TEAMS:
+                    if before[team]["state"] == "STOPPED":
+                        attempted.append(team)
+                    results[team] = self.execute("start", team)
+                    if results[team]["state"] != "RUNNING":
+                        raise EnvironmentError("BACKEND_STACK_NOT_READY:" + team)
+            except EnvironmentError as error:
+                cleanup = {}
+                for team in reversed(attempted):
+                    try:
+                        cleanup[team] = self.execute("stop", team)
+                    except EnvironmentError as stop_error:
+                        cleanup[team] = dict(state="UNKNOWN", reason=str(stop_error))
+                return dict(state="PARTIAL", reason=str(error), teams=results,
+                    partialStartupCleanup=cleanup, dataPreserved=True)
+            return dict(state="RUNNING", teams=results, dataPreserved=True)
+
+    def stop_stack(self):
+        """Normal shutdown retains both function volumes and current context."""
+        with self.environment._writer():
+            results = {}
+            for team in reversed(TEAMS):
+                try:
+                    results[team] = self.execute("stop", team)
+                except EnvironmentError as error:
+                    results[team] = dict(state="UNKNOWN", reason=str(error))
+            return dict(state="STOPPED" if all(value["state"] == "STOPPED"
+                for value in results.values()) else "PARTIAL", teams=results, dataPreserved=True)
+
+    def _runtime_candidate(self, state, team):
+        record = state.get("backends", {}).get(team)
+        return {key: record[key] for key in ("imageId", "sourceRevision")} if record else self._candidate(team)
+
+    def _activate(self, state, team, record, observed, owner):
+        if not record or (observed and observed.get("State", {}).get("Running")):
+            raise EnvironmentError("BACKEND_ACTIVATION_REQUIRES_OWNED_STOPPED_CONTAINER")
+        if record.get("state") != "STOPPED" and record.get("action") != "activate":
+            raise EnvironmentError("BACKEND_OPERATION_RECONCILIATION_REQUIRED")
+        candidate = self._candidate(team)
+        self._image(candidate["imageId"])
+        if record.get("imageId") == candidate["imageId"]:
+            return dict(team=team, state="STOPPED", noOp=True, dataPreserved=True)
+        if record.get("replacementImageId") not in (None, candidate["imageId"]):
+            raise EnvironmentError("BACKEND_ACTIVATION_CANDIDATE_CHANGED")
+        old_spec = self._spec(state, team, record["imageId"])
+        spec = self._spec(state, team, candidate["imageId"])
+        for kind, group in (("volume", spec["volumes"]), ("network", spec["networks"])):
+            resource = self._inspect(kind, next(iter(group)))
+            labels = (resource or {}).get("Labels") or {}
+            if resource and (labels.get("tech.aosedge.demo.owner") != owner or labels.get("tech.aosedge.demo.team") != team):
+                raise EnvironmentError("BACKEND_FOREIGN_" + kind.upper())
+        path = self.root / ".run/demo-current/backends" / (team + "-compose.json")
+        if path.is_symlink() or record.get("composePath") != str(path.relative_to(self.root)) or read_json(path) not in (old_spec, spec):
+            raise EnvironmentError("BACKEND_COMPOSE_RECONCILIATION_REQUIRED")
+        record.update(state="UNCERTAIN", action="activate", replacementImageId=candidate["imageId"])
+        atomic_json(self.root / JOURNAL, state)
+        if observed is not None:
+            self._docker("container", "rm", record["containerName"])
+        if self._inspect("container", record["containerName"]) is not None:
+            raise EnvironmentError("BACKEND_ACTIVATION_REMOVAL_UNCONFIRMED")
+        atomic_json(path, spec)
+        record.update(imageId=candidate["imageId"], sourceRevision=candidate["sourceRevision"],
+            state="STOPPED", confirmedAt=now())
+        record.pop("replacementImageId", None)
+        atomic_json(self.root / JOURNAL, state)
+        return dict(team=team, state="STOPPED", noOp=False, dataPreserved=True)
+
     def _owned_container(self, observed, owner, team, image):
         if observed is None:
             return
@@ -148,7 +226,7 @@ class BackendService:
             volumes={volume: dict(name=volume, labels=labels)}, networks={network: dict(name=network, labels=labels)})
 
     def execute(self, action, team):
-        if team not in TEAMS or action not in ("build", "start", "stop", "status"):
+        if team not in TEAMS or action not in ("build", "activate", "start", "stop", "status"):
             raise EnvironmentError("BACKEND_OPERATION_INVALID")
         if action == "build":
             return self.build(team)
@@ -163,11 +241,26 @@ class BackendService:
             record = state.get("backends", {}).get(team)
             observed = self._inspect("container", name)
             self._owned_container(observed, owner, team, (record or {}).get("imageId"))
+            if action == "activate":
+                return self._activate(state, team, record, observed, owner)
             if action == "status":
                 runtime = (observed or {}).get("State", {})
+                context_path = str(self.root / ".run/demo-current/backends/context")
+                mounts = (observed or {}).get("Mounts") or []
+                binding = {"dataMountCount": sum(mount.get("Destination") == "/data" for mount in mounts),
+                           "contextMountCount": sum(mount.get("Destination") == "/run/demo-control/context" for mount in mounts)}
+                for mount in mounts:
+                    if mount.get("Destination") == "/run/demo-control/context":
+                        binding.update(contextReadOnly=mount.get("RW") is False,
+                            contextIsBind=mount.get("Type") == "bind", contextSource=(
+                                "HOST_PATH" if mount.get("Source") == context_path else
+                                "DOCKER_DESKTOP_HOST_MOUNT" if mount.get("Source") == "/host_mnt" + context_path else "UNRECOGNIZED"))
+                    if mount.get("Destination") == "/data":
+                        binding.update(dataWritable=mount.get("RW") is True, dataIsVolume=mount.get("Type") == "volume",
+                            dataVolumeMatches=mount.get("Name") == "aosedge_demo_" + team + "_cloud_v1")
                 return dict(team=team, state="RUNNING" if runtime.get("Running") else "STOPPED",
                     processHealth=(runtime.get("Health") or {}).get("Status", "NOT_OBSERVED"),
-                    contextReadiness="NOT_OBSERVED", productReadiness="NOT_OBSERVED", source="DOCKER_PROCESS_ONLY")
+                    contextReadiness="NOT_OBSERVED", productReadiness="NOT_OBSERVED", source="DOCKER_PROCESS_ONLY", storageBinding=binding)
             if action == "stop" and (observed is None or not observed.get("State", {}).get("Running")):
                 if record:
                     record.update(state="STOPPED", confirmedAt=now(), reconciliation="OBSERVED_NOT_RUNNING")
@@ -181,9 +274,7 @@ class BackendService:
                 if action != "stop":
                     raise EnvironmentError("BACKEND_OPERATION_RECONCILIATION_REQUIRED")
             if action == "start":
-                candidate = self._candidate(team)
-                if record and record.get("imageId") != candidate["imageId"]:
-                    raise EnvironmentError("BACKEND_IMAGE_CHANGE_REQUIRES_RETIRE")
+                candidate = self._runtime_candidate(state, team)
                 self._image(candidate["imageId"])
                 if observed and observed.get("State", {}).get("Running"):
                     healthy = observed.get("State", {}).get("Health", {}).get("Status") == "healthy"

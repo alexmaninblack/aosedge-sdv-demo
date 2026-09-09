@@ -20,6 +20,15 @@ democtl backend stop brake
 democtl backend stop tire
 ```
 
+Development-only candidate activation is explicit: after stopping one owned
+team backend, `democtl backend activate <team>` selects its latest successfully
+built immutable image. It removes/recreates no data volume and does not start
+a process. The next `backend start <team>` uses that recorded image. A running
+container, foreign resource, lost/ambiguous identity or changed candidate during
+reconciliation blocks activation. This command is not a browser action and does
+not add a step to the operator's demo story. Ordinary Park/Resume preserves the
+recorded image even when a newer development candidate exists.
+
 Build is development preparation only. It requires committed, clean source
 in the owning sibling repository and a running Docker engine. A pinned base
 image/dependency may be fetched during this explicit build. It records the
@@ -27,7 +36,8 @@ local ARM64 image SHA256 ID and source commit under the artifact catalog's
 `backends/<team>/<source-commit>/manifest.json`. No binaries enter Git.
 
 Start never builds, pulls, starts Docker Desktop or replaces an image in an
-existing run. It requires a current Test-containing run and a locally present
+existing run. Only explicit stopped development activation changes that binding.
+It requires a current Test-containing run and a locally present
 immutable image. Production is optional; no Production VM is created.
 CLI and transport-neutral API use the same operation implementation. API
 requests accept only the fixed team and start/stop/status, not builds, paths,
@@ -63,6 +73,33 @@ keys or telemetry. The same Test may acquire its just-provisioned Production
 peer, but an old UID cannot silently be replaced or removed. Cloud deletion
 does not erase the retiring UID selector before exact backend cleanup.
 
+## Composed Test lifecycle
+
+The following shared commands have source and fixture coverage; the complete
+live cycle is not yet qualified. They do not replace the existing engineering
+commands for independent Test/Production/all operations.
+
+| Command | Ordered scope | Result boundary |
+| --- | --- | --- |
+| `demo create --image <catalog-id>` | Create the current Test overlay when absent, boot Test, start both prepared backend images | Controller running; no provisioning, simulator connection or software publication |
+| `environment park` | Read current update state; stop/detach the owned simulator, stop Test, stop both backends | Preserve identity, disks, data, selection intent and immutable image bindings |
+| `environment resume` | Start retained Test/backends; restore the previously running simulator and Test connection in initial Manual | Local resumption; Cloud Online and product readiness need their own observations |
+| `demo retire` | Refuse unresolved updates; stop simulator; establish backend cleanup context; deprovision/delete Test; stop Test; remove exact Test data and local overlay | Preserve Production, published releases and shared dependencies; resume only journaled incomplete steps |
+
+All commands are invoked with the `democtl` prefix. Create accepts the catalog
+selector, not a filesystem path. Browser requests remain fixed to Test. Native
+VM access uses the same protected-input path as existing preparation.
+Park is refused promptly for an unfinished or uncertain update: it does not
+queue a shutdown or implicitly cancel an update. Stop preserves backend data;
+only scoped Retire may remove it after exact owned-state checks.
+
+For a retained Production peer, backend cleanup deletes only records selected
+by the retiring Test UID and preserves storage/nonmatching records. Single-Test
+resource deletion additionally requires whole-store emptiness against the
+known schema. Tire currently supplies only a foundation-only proof. A retained
+demo Subject is not yet integrated: service assignment state blocks retirement
+rather than silently leaving or deleting a binding.
+
 ## Current boundaries and evidence
 
 Ten isolated lifecycle tests and six context tests pass. The lifecycle suite
@@ -73,13 +110,15 @@ The independent Tire foundation exposes process/context health and explicitly
 returns `501 NOT_IMPLEMENTED` for product routes. Its foundation-only proof is
 not a product-record cleanup implementation or an empty product result.
 
-Two explicit `democtl backend build` attempts stopped before compilation:
-the Docker engine was unavailable. A subsequent read-only `backend status`
-identified `BACKEND_DOCKER_ENGINE_UNAVAILABLE`. No new images, containers,
-volumes, guest routes or Cloud resources were created by these attempts.
+The initial build attempts stopped while Docker was unavailable. After the
+user started Docker, both real ARM64 backend builds and starts succeeded.
+Brake also passed explicit stop/activate/start with its existing database
+retained. Scoped Test cleanup reached confirmed data proofs and stopped
+containers, but local context removal remains blocked by an open file handle.
+The exact source/image revisions and current recovery boundary are in the
+[implementation checkpoint](../qualification/demo-studio-implementation-progress-2026-09-10.md#resumed-execution).
 
-Remaining P1/P3 gates: real ARM64 container build/start/restart, bounded partial
-startup cleanup, composed Create/Park/Resume/Retire, exact backend cleanup
-before volume reset, shared native protected-action integration, independent
-guest routes and loopback/LAN-negative proof. Do not claim the new complete
-preparation command is qualified from these isolated tests.
+Remaining P1/P3 live gates include completed scoped retirement, fresh Create,
+Park/Resume and full CLI repeat, shared native protected-action integration,
+independent guest routes and loopback/LAN-negative proof. Composed source and
+fixture coverage are not qualification of the complete preparation command.

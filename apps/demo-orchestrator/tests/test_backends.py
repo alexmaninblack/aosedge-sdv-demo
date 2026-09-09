@@ -139,3 +139,93 @@ class BackendTests(unittest.TestCase):
                 returncode=1, stdout="", stderr="Cannot connect to the Docker daemon at unix:///private/socket?token=secret")):
             with self.assertRaisesRegex(EnvironmentError, "^BACKEND_DOCKER_ENGINE_UNAVAILABLE$"):
                 self.service._run(["docker", "container", "ls"])
+
+    def stack_execute(self, before=None, fail=None):
+        before = before or {}
+        calls = []
+        def execute(action, team):
+            calls.append((action, team))
+            if (action, team) == fail:
+                raise EnvironmentError("TEST_FAILURE")
+            return dict(state=(before.get(team, "STOPPED") if action == "status" else
+                "RUNNING" if action == "start" else "STOPPED"))
+        self.service.execute = execute
+        return calls
+
+    def test_stack_preflights_both_images_before_any_start(self):
+        calls = self.stack_execute()
+        self.service._candidate.side_effect = [dict(imageId=IMAGE), EnvironmentError("MISSING_TIRE")]
+        with self.assertRaisesRegex(EnvironmentError, "MISSING_TIRE"):
+            self.service.start_stack()
+        self.assertEqual([("status", "brake"), ("status", "tire")], calls)
+
+    def test_partial_stack_start_stops_only_newly_attempted_teams(self):
+        calls = self.stack_execute(before=dict(brake="RUNNING"), fail=("start", "tire"))
+        result = self.service.start_stack()
+        self.assertEqual("PARTIAL", result["state"])
+        self.assertEqual({"tire"}, set(result["partialStartupCleanup"]))
+        self.assertNotIn(("stop", "brake"), calls)
+        self.assertEqual(("stop", "tire"), calls[-1])
+
+    def test_partial_new_stack_start_stops_both_in_reverse_order(self):
+        calls = self.stack_execute(fail=("start", "tire"))
+        self.assertEqual("PARTIAL", self.service.start_stack()["state"])
+        self.assertEqual([("stop", "tire"), ("stop", "brake")], calls[-2:])
+
+    def test_stack_start_success_preserves_both_data_stores(self):
+        calls = self.stack_execute()
+        result = self.service.start_stack()
+        self.assertEqual("RUNNING", result["state"])
+        self.assertTrue(result["dataPreserved"])
+        self.assertEqual([("start", "brake"), ("start", "tire")], calls[-2:])
+
+    def test_stack_stop_reports_partial_and_continues_after_one_failure(self):
+        calls = self.stack_execute(fail=("stop", "tire"))
+        result = self.service.stop_stack()
+        self.assertEqual("PARTIAL", result["state"])
+        self.assertEqual("UNKNOWN", result["teams"]["tire"]["state"])
+        self.assertEqual([("stop", "tire"), ("stop", "brake")], calls)
+        self.assertTrue(result["dataPreserved"])
+
+    def test_new_build_does_not_change_the_image_on_normal_start_or_resume(self):
+        self.service.execute("start", "brake")
+        self.service.execute("stop", "brake")
+        self.service._candidate.return_value = dict(imageId="sha256:" + "b" * 64, sourceRevision="new")
+        self.service.execute("start", "brake")
+        journal = json.loads((self.root / JOURNAL).read_text())
+        self.assertEqual(IMAGE, journal["backends"]["brake"]["imageId"])
+
+    def test_activation_refuses_running_container_before_any_mutation(self):
+        self.service.execute("start", "brake")
+        self.commands.clear()
+        self.service._candidate.return_value = dict(imageId="sha256:" + "b" * 64, sourceRevision="new")
+        with self.assertRaisesRegex(EnvironmentError, "OWNED_STOPPED"):
+            self.service.execute("activate", "brake")
+        self.assertEqual([], self.commands)
+
+    def test_stopped_activation_reconciles_lost_removal_without_deleting_data(self):
+        self.service.execute("start", "brake")
+        self.service.execute("stop", "brake")
+        self.commands.clear()
+        replacement = "sha256:" + "b" * 64
+        self.service._candidate.return_value = dict(imageId=replacement, sourceRevision="new")
+        def lost_removal(*args, **kwargs):
+            self.commands.append(args)
+            self.container = None
+            raise EnvironmentError("LOST_REPLY")
+        self.service._docker = lost_removal
+        with self.assertRaisesRegex(EnvironmentError, "LOST_REPLY"):
+            self.service.execute("activate", "brake")
+        self.assertEqual([("container", "rm", "aosedge-demo-brake-cloud")], self.commands)
+        self.assertEqual("UNCERTAIN", json.loads((self.root / JOURNAL).read_text())["backends"]["brake"]["state"])
+        result = self.service.execute("activate", "brake")
+        self.assertEqual("STOPPED", result["state"])
+        self.assertEqual(1, len(self.commands))
+        self.assertEqual(replacement, json.loads((self.root / JOURNAL).read_text())["backends"]["brake"]["imageId"])
+        self.assertTrue(self.service.execute("activate", "brake")["noOp"])
+
+    def test_activation_is_cli_only(self):
+        request = request_from_arguments(build_parser().parse_args(["backend", "activate", "brake"]))
+        self.assertEqual("activate", request.action)
+        with self.assertRaises(ValueError):
+            execute_operation(dict(domain="backend", action="activate", team="brake"), Mock())

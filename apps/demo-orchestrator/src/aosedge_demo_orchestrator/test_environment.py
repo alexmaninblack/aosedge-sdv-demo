@@ -24,7 +24,7 @@ from .status import object_id, read_json
 ROOT_FIELDS = {"schemaVersion", "kind", "startedAt", "stage", "scope", "factory",
     "currentVehicle", "vehicles", "operations", "shared", "cloudBinding", "source",
     "componentOperations", "componentSchema", "smDemoProof", "demoPreparation",
-    "backends", "demoLifecycle", "testRetirement"}
+    "backends", "demoLifecycle", "testRetirement", "workspace"}
 
 
 def _state(environment):

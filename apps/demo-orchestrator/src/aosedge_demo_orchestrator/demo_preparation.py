@@ -10,14 +10,16 @@ from .models import OperationRequest, OperationResult, OperationState, VehicleTa
 from .status import read_json, now
 from .vm import access_path
 from .releases import ReleaseContinuity
+from .backends import BackendService, TEAMS
 
 
 class DemoPreparation:
-    def __init__(self, application, components=None):
+    def __init__(self, application, components=None, backends=None):
         self.app = application
         self.environment = application.environment_service
         self.components = components or ComponentService(self.environment)
         self.progress = application.vm_service.progress
+        self.backends = backends or BackendService(self.environment, self.progress)
 
     def plan(self, image, target=VehicleTarget.TEST):
         if target not in (VehicleTarget.TEST, VehicleTarget.ALL):
@@ -28,10 +30,12 @@ class DemoPreparation:
             raise EnvironmentError("DEMO_FACTORY_IMAGE_UNAVAILABLE")
         path = self.environment.root / JOURNAL
         state = read_json(path) if path.exists() else None
-        if state and (set(state["vehicles"]) != roles or not state.get("factory")
+        add_test = bool(state and target == VehicleTarget.TEST and set(state["vehicles"]) == {"production"}
+                        and state.get("testRetirement") == {"state": "COMPLETED"})
+        if state and ((not roles.issubset(state["vehicles"]) and not add_test) or not state.get("factory")
                 or state["factory"]["sha256"] != candidate.sha256):
             raise EnvironmentError("DEMO_EXISTING_ENVIRONMENT_IMAGE_OR_ROLES_CONFLICT")
-        record = (state or {}).get("demoPreparation")
+        record = (state or {}).get("demoPreparation") if not add_test else None
         if record:
             if record["image"] != image or record.get("target", "all") != target.value:
                 raise EnvironmentError("DEMO_PREPARATION_IMAGE_CHANGED")
@@ -48,10 +52,10 @@ class DemoPreparation:
                 if metadata.get("contentProfile") == "v1" and version_number(version) >= version_number(cloud["latest"]):
                     reusable.append(version)
         version = max(reusable, key=version_number) if reusable else ReleaseContinuity(self.environment).next("vdp", versions)
-        if state and any(item.get("unitId") or item.get("systemUid") for item in state["vehicles"].values()):
+        if state and any(item.get("unitId") or item.get("systemUid") for role, item in state["vehicles"].items() if role in roles):
             raise EnvironmentError("DEMO_INITIALIZATION_REQUIRES_UNPROVISIONED_RUN")
         return dict(image=image, target=target.value, version=version, contentProfile="v1", phase="PLANNED", completedSteps=[],
-                    existingEnvironment=bool(state), originalImagePreserved=True)
+                    existingEnvironment=bool(state and not add_test), originalImagePreserved=True)
 
     def prepare(self, image, target=VehicleTarget.TEST):
         # Do not publish/provision half a scenario while its startup mode is unavailable.
@@ -65,6 +69,8 @@ class DemoPreparation:
                 return OperationResult("demo.prepare", OperationState.COMPLETED,
                     "Preparation previously completed; live readiness is observed separately. No restart, reset or repeat publication.",
                     data=dict(record, noOp=True, readiness="NOT_RECHECKED"))
+            for team in TEAMS:
+                self.backends._image(self.backends._candidate(team)["imageId"])
             roles = ("test",) if target == VehicleTarget.TEST else ("test", "production")
             if any(not (access_path(self.environment.root, role) / "known_hosts").exists() for role in roles):
                 provider = self.app.vm_service.password_provider
@@ -82,6 +88,7 @@ class DemoPreparation:
             save()
             steps = [
                 ("start-vms", OperationRequest("vm", "start", target, timeout=90)),
+                ("start-backends", None),
                 ("simulation", OperationRequest("simulation", "start")),
                 ("connect-test-manual", OperationRequest("vehicle", "initialize", VehicleTarget.TEST)),
                 ("prepare-v1", OperationRequest("component", "prepare", component_version=version, content_profile="v1")),
@@ -96,8 +103,17 @@ class DemoPreparation:
                     continue
                 record.update(phase=phase, updatedAt=now())
                 save()
-                self.progress(phase + (" · " + version if request.domain == "component" else ""))
-                if phase == "prepare-v1" and (self.components._directory(version) / "prepared.json").is_file():
+                self.progress(phase + (" · " + version if request and request.domain == "component" else ""))
+                if phase == "start-backends":
+                    backend_result = self.backends.start_stack()
+                    result = OperationResult("backend.start-stack", OperationState.COMPLETED
+                        if backend_result["state"] == "RUNNING" else OperationState.PARTIAL,
+                        backend_result.get("reason", "Backend process startup observed"), data=backend_result)
+                elif phase == "simulation":
+                    simulation = self.app.source_service.simulation("start", target="test" if target == VehicleTarget.TEST else None)
+                    result = OperationResult("simulation.start", OperationState.COMPLETED
+                        if simulation["state"] == "RUNNING" else OperationState.PARTIAL, "Simulation startup observed", data=simulation)
+                elif phase == "prepare-v1" and (self.components._directory(version) / "prepared.json").is_file():
                     metadata = read_json(self.components._directory(version) / "prepared.json")
                     if metadata.get("version") != version or metadata.get("contentProfile") != "v1":
                         raise EnvironmentError("DEMO_REUSED_COMPONENT_PROFILE_CONFLICT")

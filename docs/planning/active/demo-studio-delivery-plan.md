@@ -15,6 +15,14 @@
 
 ## Implementation execution — 9 September 2026
 
+Resumed on 10 September with explicit Test-only destructive-cycle authority
+while preserving the existing Production peer. Docker build/start is now
+proven, source publication to the three existing named remotes is authorized,
+and new project repositories must be public. Current evidence and the remaining
+service runtime/input gates are in the
+[resumed implementation checkpoint](../../qualification/demo-studio-implementation-progress-2026-09-10.md#resumed-execution).
+This does not promote the incomplete P1–P8 sequence to accepted E2E.
+
 Implementation starts from `pre-studio-implementation-2.8-2026-09-09`,
 commit `b997e6e6cffba02b61a588c40f14dba30942d17d`, on
 `codex/demo-studio-implementation`. The historical review gates below describe

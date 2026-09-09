@@ -18,6 +18,7 @@
     "advisories": 0,
     "quarantine": 0
   },
+  "nonmatchingRecordCounts": {"messages": 2, "windows": 1, "assessments": 1, "events": 1, "advisories": 0, "quarantine": 0},
   "nonmatchingRecordSetSha256": "5555555555555555555555555555555555555555555555555555555555555555",
   "completedAt": "2026-08-22T20:00:30Z"
 }

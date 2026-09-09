@@ -14,6 +14,7 @@ import json
 import re
 import shutil
 import subprocess
+import sys
 from datetime import datetime, timezone
 
 from .backend_context import CONTEXT, UID, project_context
@@ -98,10 +99,12 @@ class BackendRetirement:
             volume = "aosedge_demo_" + team + "_cloud_v1"
             data = [mount for mount in mounts if mount.get("Destination") == "/data"]
             context = [mount for mount in mounts if mount.get("Destination") == "/run/demo-control/context"]
+            host_context = str((self.root / CONTEXT).parent)
+            accepted_sources = (host_context, "/host_mnt" + host_context) if sys.platform == "darwin" else (host_context,)
             if (len(data) != 1 or data[0].get("Type") != "volume" or data[0].get("Name") != volume
                     or data[0].get("RW") is not True or len(context) != 1
                     or context[0].get("Type") != "bind" or context[0].get("RW") is not False
-                    or context[0].get("Source") != str((self.root / CONTEXT).parent)):
+                    or context[0].get("Source") not in accepted_sources):
                 raise EnvironmentError("BACKEND_CLEANUP_MOUNT_BINDING_INVALID")
         if running and (not observed or observed.get("State", {}).get("Running") is not True
                 or observed.get("State", {}).get("Health", {}).get("Status") != "healthy"):

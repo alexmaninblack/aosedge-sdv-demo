@@ -72,14 +72,31 @@ current UID with no rows truthfully returns an empty page with the context
 role; a non-current UID is `404 UNIT_NOT_CURRENT`, and missing/invalid context
 is `503 CURRENT_UNIT_CONTEXT_UNAVAILABLE` without a stream. The Demo
 Orchestrator uses the same exact context for preview/confirm/execute reset.
-The cleanup selector is exactly all sorted Unit UIDs in that context and contains no
+The Studio cleanup selector is exactly the current Test UID. The engineering
+operation also retains the exact sorted full-context selector; a Production-only
+selector is not allowed. Neither selector contains
 `demoRunId`, start time or end time. The admin endpoints use a separate
 mode-`0600` Unix-domain HTTP composition root and are unavailable to the
 browser, guest ingestion route and LAN. Wildcard, missing, empty, duplicate,
-foreign or partial-context selectors are rejected. An empty matching dataset
-is a valid idempotent result; its one or two exact context identities remain mandatory.
+foreign or other partial-context selectors are rejected. An empty matching
+dataset is a valid idempotent result; its accepted current-context identity
+scope remains mandatory. Preview and execute additionally report six explicit
+`nonmatchingRecordCounts`, allowing a caller to distinguish removal of the
+Test records from an entirely empty logical store. Other Units' rows are never
+implied disposable. Whole-volume removal requires the separate private schema-
+validated empty-store proof, stopped owners and exact resource ownership.
 
-The 60-second preview token binds all sorted context identities, record counts,
+The private `POST /api/v1/brake/admin/storage/empty-proof` takes only the
+[versioned request](storage-empty-proof-request.schema.json) and returns the
+[closed storage proof](storage-empty-proof.schema.json). It is read-only and
+does not require a Unit context, so an interrupted Create before Provision can
+be retired without inventing a Unit UID. The backend verifies its packaged
+database schema, migration ledger, integrity and foreign keys before counting
+all six record categories in one read transaction. Unknown tables, schema or
+unavailable storage are errors, never `EMPTY`. It is not a public/guest route,
+does not expose records and does not itself authorize a volume deletion.
+
+The 60-second preview token binds the selected accepted identities, record counts,
 record-set digest and expiry. The digest is SHA-256 of one RFC8785 canonical
 array containing all six logical table blocks in fixed order—messages,
 windows, assessments, events, advisories and quarantine—including empty

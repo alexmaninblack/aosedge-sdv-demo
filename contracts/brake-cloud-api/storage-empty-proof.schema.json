@@ -1,21 +1,16 @@
 {
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:aosedge-sdv-demo:brake-cloud-cleanup-preview:schema:v1",
-  "title": "Brake Cloud Current-Run Cleanup Preview",
+  "$id": "urn:aosedge-sdv-demo:brake-cloud-storage-empty-proof:schema:v1",
+  "title": "Brake Cloud Private Read-only Storage Proof",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "contractVersion", "systemUids", "recordCounts", "nonmatchingRecordCounts", "recordSetSha256", "confirmationToken", "expiresAt"],
+  "required": ["schemaVersion", "contractVersion", "state", "databaseSchemaVersion", "recordCounts", "observedAt"],
   "properties": {
     "schemaVersion": {"const": 1},
     "contractVersion": {"const": "1.0.0"},
-    "systemUids": {
-      "type": "array",
-      "minItems": 1,
-      "maxItems": 2,
-      "uniqueItems": true,
-      "items": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._:-]+$"}
-    },
+    "state": {"enum": ["EMPTY", "NONEMPTY"]},
+    "databaseSchemaVersion": {"const": 2},
     "recordCounts": {
       "type": "object",
       "additionalProperties": false,
@@ -29,9 +24,9 @@
         "quarantine": {"type": "integer", "minimum": 0}
       }
     },
-    "nonmatchingRecordCounts": {"$ref": "#/properties/recordCounts"},
-    "recordSetSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-    "confirmationToken": {"type": "string", "minLength": 32, "maxLength": 1024},
-    "expiresAt": {"type": "string", "format": "date-time"}
-  }
+    "observedAt": {"type": "string", "format": "date-time"}
+  },
+  "if": {"properties": {"state": {"const": "EMPTY"}}},
+  "then": {"properties": {"recordCounts": {"additionalProperties": {"const": 0}}}},
+  "else": {"properties": {"recordCounts": {"not": {"additionalProperties": {"const": 0}}}}}
 }

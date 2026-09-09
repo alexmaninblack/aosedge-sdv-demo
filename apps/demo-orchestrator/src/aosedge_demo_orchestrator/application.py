@@ -80,6 +80,19 @@ class DemoOrchestrator:
                 return OperationResult(operation, OperationState.BLOCKED, str(error))
             except (OSError, ValueError, KeyError, subprocess.SubprocessError):
                 return OperationResult(operation, OperationState.BLOCKED, "WORKSPACE_OBSERVATION_UNAVAILABLE")
+        if operation in ("demo.create", "demo.retire", "environment.park", "environment.resume"):
+            from .demo_lifecycle import DemoLifecycle
+            if (request.target not in (None, VehicleTarget.TEST) or request.current or request.image_path
+                    or request.profile or request.component_version or request.content_profile or request.team
+                    or request.service_id or (bool(request.image) != (request.action == "create"))):
+                return OperationResult(operation, OperationState.BLOCKED, "DEMO_LIFECYCLE_USES_OWNED_TEST_ONLY")
+            try:
+                workflow = DemoLifecycle(self)
+                return workflow.create(request.image) if request.action == "create" else getattr(workflow, request.action)()
+            except (EnvironmentError, ImageError) as error:
+                return OperationResult(operation, OperationState.BLOCKED, str(error), target="test")
+            except (OSError, ValueError, KeyError, TypeError):
+                return OperationResult(operation, OperationState.PARTIAL, "DEMO_LIFECYCLE_UNAVAILABLE_STATE_RETAINED", target="test")
         if request.domain == "demo" and request.action in ("plan", "prepare"):
             from .demo_preparation import DemoPreparation
             if not request.image or request.target not in (None, VehicleTarget.TEST, VehicleTarget.ALL) or request.image_path or request.current or request.profile:
