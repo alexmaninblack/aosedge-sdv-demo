@@ -23,6 +23,7 @@ TABLE = "democtl_source"
 EXTERNAL_TABLE = "democtl_external"
 PROFILE = "LTVP_VISS_SERVER_AUTH_TEST_ONLY"
 ROOT = Path("/run/democtl-source")
+PROVISION_STATE = Path("/var/aos/.provisionstate")
 FACTORY_INPUTS_MARKER = Path("/usr/share/aos-vehicle-platform/demo-runtime-inputs-v1")
 FACTORY_INPUTS = Path("/var/aos/workdirs/sm/runtimes/systemd-slot-component/demo-inputs")
 FACTORY_ROLE_DROPIN = Path("/run/systemd/system/aos-sm.service.d/20-democtl-role.conf")
@@ -373,6 +374,17 @@ def initialize_factory_role(request):
 
 def configure(request):
     item = request["vehicle"]
+    if not item.get("unitId"):
+        if (request.get("role") != "test" or item.get("cloud") or PROVISION_STATE.exists()
+                or not FACTORY_INPUTS_MARKER.is_file()):
+            raise ValueError("SOURCE_CLOUD_BINDING_INCOMPLETE")
+        initialize_factory_role(request)
+        # The local Gateway connection exists before the Cloud identity and
+        # before SM mounts its store. Stage only public TLS trust in /run;
+        # never invent Unit/Node IDs or write under the unmounted SM store.
+        write_public(ROOT / "ca.pem", request["ca"])
+        return dict(configured=True, preProvision=True, smRestarted=False,
+                    runtimeBinding="DEFERRED_UNTIL_PROVISION")
     generation = request["generation"]
     sm = dict(schemaVersion=2, profile=PROFILE, unitId=item["unitId"],
         nodeId=item["cloud"]["identity"]["nodeHardwareId"], assignmentGeneration=generation,
@@ -417,7 +429,7 @@ def configure(request):
     return {"configured": True}
 
 
-def probe(safe_stop=False):
+def probe(safe_stop=False, preprovision=False):
     # A real server-authenticated WebSocket read from this guest. No KUKSA or
     # mTLS success is inferred from it.
     def receive(stream, length):
@@ -458,7 +470,10 @@ def probe(safe_stop=False):
         raise ValueError("VISS_PROBE_CONTROL_LIMIT")
 
     def read():
-        ca = FACTORY_INPUTS / "viss-update-ca" if FACTORY_INPUTS_MARKER.is_file() else ROOT / "ca.pem"
+        if preprovision and PROVISION_STATE.exists():
+            raise ValueError("SOURCE_PROVISIONED_IDENTITY_REQUIRED")
+        ca = (FACTORY_INPUTS / "viss-update-ca" if FACTORY_INPUTS_MARKER.is_file()
+              and not preprovision else ROOT / "ca.pem")
         context = ssl.create_default_context(cafile=str(ca))
         with socket.create_connection(("10.0.0.1", 6443), 3) as raw:
             with context.wrap_socket(raw, server_hostname="127.0.0.1") as client:
@@ -892,7 +907,7 @@ def execute(request):
     if action == "configure":
         return configure(request)
     if action == "probe":
-        return probe()
+        return probe(preprovision=True) if not request["vehicle"].get("unitId") else probe()
     if action in ("status", "observe"):
         active = command(["systemctl", "show", "aos-vehicle-data-provider", "--property=ActiveState,StatusText,NRestarts"])
         values = dict(line.split("=", 1) for line in active.stdout.splitlines() if "=" in line)
@@ -902,7 +917,7 @@ def execute(request):
         result = {"gate": gate_state(identity), "vdpProcess": values.get("ActiveState", "UNKNOWN"),
                 "vdpData": data, "vdpStatusText": text, "vdpRestarts": values.get("NRestarts")}
         if action == "observe" and request["vehicle"].get("sourceProbeSelected") and result["gate"] == "OPEN":
-            result["connection"] = probe()
+            result["connection"] = probe(preprovision=True) if not request["vehicle"].get("unitId") else probe()
         return result
     raise ValueError("SOURCE_GUEST_ACTION_INVALID")
 

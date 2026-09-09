@@ -19,6 +19,14 @@ from aosedge_demo_orchestrator import source_guest
 
 
 class SimulationTests(unittest.TestCase):
+    def test_cli_explicit_test_scope_reaches_existing_test_primitive(self):
+        for action in ("start", "stop"):
+            request = request_from_arguments(build_parser().parse_args(["simulation", action, "--target", "test"]))
+            source = Mock()
+            source.simulation.return_value = {"state": "COMPLETED"}
+            DemoOrchestrator(source_service=source).execute(request)
+            source.simulation.assert_called_once_with(action, target="test")
+
     def setUp(self):
         self.vm, self.units, self.driver = Mock(), Mock(), Mock()
         self.vm.root = Path("/not-live")
@@ -212,6 +220,20 @@ class SimulationTests(unittest.TestCase):
 
 
 class SourceTransportTests(unittest.TestCase):
+    def test_busy_dedicated_traffic_manager_port_blocks_before_launch(self):
+        driver = SourceDriver(Mock(root=Path("/not-live")))
+        driver.assets = Mock(return_value={})
+        driver.spawn = Mock()
+        def free(port):
+            if port == 18000:
+                raise EnvironmentError("VM_OR_DNS_PORT_IN_USE")
+        driver.vm._free_port.side_effect = free
+        with patch("aosedge_demo_orchestrator.workspace.prepare_controller"), self.assertRaisesRegex(
+                EnvironmentError, "SOURCE_TRAFFIC_MANAGER_PORT_IN_USE"):
+            driver.start({})
+        driver.spawn.assert_not_called()
+        driver.vm._save.assert_not_called()
+
     def test_terminal_exec_is_allowed_to_appear_after_acknowledgment(self):
         driver = SourceDriver(Mock(root=Path("/not-live")))
         state = dict(source=dict(runnerCommand=["owned-runner"], runDirectory="run", state="STARTING"))

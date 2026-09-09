@@ -175,10 +175,11 @@ class DemoOrchestrator:
                 "Local component artifact operation; no Cloud or VM mutation.", data=data)
         if operation in ("simulation.start", "simulation.stop"):
             import subprocess
-            if request.target or request.current or request.image or request.image_path:
+            if request.target not in (None, VehicleTarget.TEST) or request.current or request.image or request.image_path:
                 return OperationResult(operation, OperationState.BLOCKED, "SIMULATION_USES_CURRENT_ENVIRONMENT")
             try:
-                data = self.source_service.simulation(request.action)
+                data = (self.source_service.simulation(request.action, target="test") if request.target
+                        else self.source_service.simulation(request.action))
             except EnvironmentError as error:
                 return OperationResult(operation, OperationState.BLOCKED, str(error))
             except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):

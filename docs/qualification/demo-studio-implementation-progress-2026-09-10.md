@@ -36,6 +36,57 @@ was cancelled and the existing `democtl vm start test` terminal input path was
 used. This is not a new image build or an alternate VM-management helper.
 Fresh Test qualification and P3–P8 remain open.
 
+### Fresh Test startup findings
+
+Fresh Test boot/SSH/DNS completed in 63.43 seconds, followed by both backend
+process starts. CARLA Controller startup initially failed with `std::exception`.
+A fixed owned-call-site diagnostic localized the native failure to
+`client.get_trafficmanager(8000)`. Read-only listener evidence confirmed Docker
+owned that port. A subsequent attempt encountered the actor left in that
+failed scene. The owned scene was stopped through Demo Control, without VM or
+Watt restarts. Using the dedicated demo TM port `18000` then started the real
+CARLA/Controller/Gateway/native telemetry group successfully. Layout placement
+completed; operator visual approval is still pending.
+
+The first pre-Provision source connection exposed an old requirement for
+Cloud `unitId`/`nodeId`. The agreed ordering now stages public local TLS trust
+only before Provision; real SM/VDP identity binding is performed after
+provisioning and before verification membership. The actual initial connection
+passed: fresh completed Manual frame, full brake, advancing TLS/VISS frames,
+Test gate OPEN and Production gate BLOCKED. No provider runtime was claimed
+before installation. Focused fixtures passed: 26 simulation, 16 source,
+3 Factory source, 27 Unit and 9 native controller-tool tests. Live post-Provision
+binding and OTA qualification remain the next gate.
+
+### Publication gate — VDP v1 16.0.0
+
+`democtl component prepare --profile v1` allocated **16.0.0**, preserving the
+seven-signal functional profile from the pinned v1 baseline. Signing completed
+with `VERIFIED_RS256` against the configured OEM signing certificate; signed
+bundle SHA256 is
+`073a58b5d4f6db8ee49bea1cbf5a35f47371e28bcf9d8cd1ced9b50c2c88ef25`.
+The execution permission review rejected `component upload 16.0.0` **before
+process creation**, requesting explicit authorization for that version and Aos
+Cloud destination. No upload attempt started, no deployment ID exists for
+this release, and no indirect route or automatic retry was used. The reserved
+version and signed artifact are retained; do not allocate another release to
+work around the gate. Provisioning has not begun because the accepted sequence
+publishes before Provision. Fresh Test remains connected in stationary Manual.
+
+The integrated Demo Control fixture suite passes **443 tests** in 63.519
+seconds. Nine native Controller-tool tests pass, including non-secret native
+failure call-site reporting. Runtime source checkpoint is `2fc57a9` on
+`codex/studio-controller-startup-diagnostic` (local, not pushed). These results
+do not close live post-Provision binding, OTA or the later service/UI phases.
+
+Independent Brake source work produced local commit `4434082` on
+`codex/brake-growing-window`: sealed PRE and full ACTIVE/POST chunks during
+capture, durable ACK/restart handling and exact completion semantics. Four
+host CTest targets (13 runtime groups), repository quality and two boundary
+tests passed. That isolated source worktree is not integrated or pushed; the
+main Brake checkout remains the published `3ad5b23`. No actual ARM64 service
+build or service deployment has been qualified by this source result.
+
 ## Earlier continuation — three authorizations accepted
 
 The user approved all three proposals listed below. Tire source branch

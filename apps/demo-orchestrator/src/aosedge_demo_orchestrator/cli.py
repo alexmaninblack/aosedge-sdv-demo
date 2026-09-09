@@ -144,8 +144,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     simulation = commands.add_parser("simulation", help="manage owned CARLA, Controller and Gateway; no VM/Cloud changes")
     simulation_commands = simulation.add_subparsers(dest="action", required=True)
-    simulation_commands.add_parser("start", help="start simulation without selecting a VM; ready repeat is a no-op")
-    simulation_commands.add_parser("stop", help="Safe Stop, detach and gracefully stop simulation; preserve VMs")
+    for action in ("start", "stop"):
+        command = simulation_commands.add_parser(action, help="manage the owned simulation; preserve VMs")
+        command.add_argument("--target", choices=("test",), help="touch only Test's source gate; preserve an existing Production peer")
 
     vm = commands.add_parser("vm", help="manage local VM processes")
     vm_commands = vm.add_subparsers(dest="action", required=True)

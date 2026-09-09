@@ -947,6 +947,23 @@ DNS and Cloud connectivity are unchanged. No SSH forwarding permission or
 SELinux exception is added. On guest reboot the transient gate disappears,
 so the fixed client endpoint has no listener and fails closed.
 
+Studio's composed source profile uses the dedicated Traffic Manager TCP port
+`18000`, not the generic CARLA sample's `8000`. A foreign listener on `18000`
+blocks startup before launch; no port owner is stopped and no random-port
+fallback is used. `simulation start|stop --target test` exposes the existing
+Test-scoped primitive to CLI operators preserving a Production peer. Omitting
+the selector retains the earlier engineering behavior; Presenter composition
+uses its explicit Test scope.
+
+The initial pre-Provision connection stages only the public Gateway CA under
+the existing `/run/democtl-source` location and proves a real TLS/VISS read.
+It writes no fabricated Cloud Unit/Node IDs and no files beneath the unmounted
+SM store. Once provisioning establishes real Unit/Node IDs, guest Core and the
+mounted store, `unit provision test` binds that same source before assigning
+the verification set. No scene reset, source detach, SM restart or alternative
+identity is part of this handoff. The existing SM VISS provider validates its
+credential/binding on each frame read; this is not a new runtime API.
+
 Both gates are confirmed BLOCKED before reset. Only the selected gate opens
 after the Controller confirms reset. The selected guest must complete a
 server-verified VISS read before release; the vehicle remains in Safe Stop.

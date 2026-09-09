@@ -14,6 +14,31 @@ from aosedge_demo_orchestrator import source_guest as guest
 
 
 class FactorySourceTests(unittest.TestCase):
+    def test_preprovision_connection_stages_only_public_trust_not_fake_identity(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            marker = root / "marker"
+            marker.touch()
+            inputs = root / "unmounted-store/demo-inputs"
+            request = dict(role="test", generation=1, ca="PUBLIC_TEST_CA", vehicle={})
+            with patch.object(guest, "FACTORY_INPUTS_MARKER", marker), patch.object(guest, "FACTORY_INPUTS", inputs), \
+                    patch.object(guest, "FACTORY_ROLE_DROPIN", root / "role.conf"), \
+                    patch.object(guest, "PROVISION_STATE", root / "provisioned"), patch.object(guest, "ROOT", root / "run"), \
+                    patch.object(guest.os.path, "ismount", return_value=False), \
+                    patch.object(guest, "command", return_value=SimpleNamespace(returncode=0, stdout="inactive\n")) as command:
+                result = guest.configure(request)
+                self.assertTrue(result["preProvision"])
+                self.assertEqual("PUBLIC_TEST_CA", (root / "run/ca.pem").read_text())
+                self.assertFalse(inputs.exists())
+                self.assertEqual(["ca.pem"], [p.name for p in (root / "run").iterdir()])
+                self.assertFalse(any("start" in call.args[0] or "restart" in call.args[0] for call in command.call_args_list))
+                command.reset_mock()
+                guest.configure(request)
+                self.assertFalse(any("daemon-reload" in call.args[0] for call in command.call_args_list))
+                (root / "provisioned").touch()
+                with self.assertRaisesRegex(ValueError, "SOURCE_CLOUD_BINDING_INCOMPLETE"):
+                    guest.configure(request)
+
     def test_role_is_initialized_before_provisioning_and_source_never_restarts_sm(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()

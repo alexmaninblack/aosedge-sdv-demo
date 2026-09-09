@@ -358,6 +358,18 @@ class UnitService:
         unit = self._wait(state, role, lambda value: value and value["status"] == "provisioned" and value["online_status"] == "Online", "CLOUD_ONLINE")
         if not self._guest_provisioned(state, role):
             raise EnvironmentError("PROVISIONED_GUEST_CORE_NOT_READY")
+        if role == "test" and state.get("currentVehicle") == "test":
+            # Initial Manual connection precedes Cloud identity. Bind the
+            # existing source only after real Unit/Node IDs and the mounted
+            # SM store exist, before Test membership can trigger delivery.
+            from .source import SourceDriver
+            driver = SourceDriver(self.vm)
+            with driver.operation():
+                configured = driver.guest(state, role, "configure",
+                    generation=state["source"]["assignmentGeneration"], ca=driver.assets()["ca"].read_text())
+            if configured.get("configured") is not True or configured.get("preProvision"):
+                raise EnvironmentError("SOURCE_POST_PROVISION_BINDING_UNCONFIRMED")
+            self.progress(role + ": existing source bound to confirmed Cloud identity; no source reset")
         if item["unitSetId"] not in unit["unit_sets"]:
             self._intent(state, role, "ASSIGN_SET")
             self._cloud("assign", unitId=item["unitId"], systemUid=item["systemUid"], unitSetId=item["unitSetId"])

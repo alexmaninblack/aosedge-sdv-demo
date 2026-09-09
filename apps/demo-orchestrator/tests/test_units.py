@@ -20,6 +20,27 @@ NODE = "44444444-4444-4444-8444-444444444444"
 
 
 class UnitSafetyTests(unittest.TestCase):
+    def test_real_source_identity_is_bound_before_verification_membership(self):
+        import contextlib
+        self.state.update(currentVehicle="test", source=dict(assignmentGeneration=1))
+        self.service._live = Mock()
+        self.service._guest_provisioned = Mock(return_value=True)
+        self.service._wait = Mock(side_effect=[dict(unit_sets=[]), dict(unit_sets=[TEST])])
+        self.service._intent = Mock()
+        self.service._done = Mock()
+        order = []
+        driver = Mock()
+        driver.operation.side_effect = contextlib.nullcontext
+        driver.assets.return_value = {"ca": Mock(read_text=Mock(return_value="PUBLIC_TEST_CA"))}
+        driver.guest.side_effect = lambda *a, **k: order.append("bind-source") or {"configured": True}
+        self.service._cloud = Mock(side_effect=lambda *a, **k: order.append(a[0]))
+        selected = dict(test=dict(id=TEST), production=dict(id=PROD))
+        with patch("aosedge_demo_orchestrator.source.SourceDriver", return_value=driver):
+            self.service._provision(self.state, "test", selected)
+        self.assertEqual(["bind-source", "assign"], order)
+        driver.guest.assert_called_once_with(self.state, "test", "configure", generation=1, ca="PUBLIC_TEST_CA")
+        self.assertEqual(1, self.state["source"]["assignmentGeneration"])
+
     def test_connected_initial_test_can_provision_but_not_retire(self):
         import contextlib
         self.service.environment._writer = contextlib.nullcontext

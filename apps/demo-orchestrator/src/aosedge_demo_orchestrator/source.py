@@ -5,6 +5,7 @@
 
 import json
 import os
+import re
 import signal
 import socket
 import stat
@@ -23,6 +24,7 @@ from .status import read_json, now
 from .vm import access_path
 
 TRUST = {"trustProfile": "LOCAL_DEMO_SERVER_TLS", "perUnitMtls": "DEFERRED"}
+TRAFFIC_MANAGER_PORT = 18000
 
 
 class SourceDriver:
@@ -237,6 +239,13 @@ class SourceDriver:
         # redirect (including after reboot) it cannot reach the Gateway.
         self.vm._free_port(6443)
         self.vm._free_port(16443)
+        # The generic CARLA sample's 8000 conflicts with unrelated local web
+        # applications. This demo owns one explicit TM endpoint, never adopts
+        # or stops another port owner and never searches for a random port.
+        try:
+            self.vm._free_port(TRAFFIC_MANAGER_PORT)
+        except EnvironmentError:
+            raise EnvironmentError("SOURCE_TRAFFIC_MANAGER_PORT_IN_USE") from None
         if not previous:
             self.vm._free_port(2000)
         identity = str(uuid4())
@@ -247,6 +256,7 @@ class SourceDriver:
         if len(os.fsencode(control / "control.sock")) >= 104:
             raise EnvironmentError("SOURCE_CONTROL_PATH_TOO_LONG")
         config = read_json(paths["config"])
+        config["controller"]["autopilot"]["traffic_manager_port"] = TRAFFIC_MANAGER_PORT
         config["simulation"]["fixed_delta_seconds"] = .05
         config["runtime"].update(viss_port=16443, chase_camera_update_hz=20)
         atomic_json(run / "input.json", config)
@@ -320,6 +330,74 @@ class SourceDriver:
                 pass
             time.sleep(.25)
         raise EnvironmentError("SOURCE_READY_TIMEOUT")
+
+    def startup_diagnostic(self, source):
+        """Fixed startup facts only; never expose runner payloads or paths."""
+        base = self.root / ".run/demo-current/source"
+        run = self.root / source.get("runDirectory", "")
+        if run.is_symlink() or run.parent.resolve() != base.resolve():
+            return {"reason": "SOURCE_DIAGNOSTIC_PATH_UNSAFE"}
+        observed = []
+        for name in ("startup-timeline.json", "controller-status.json", "manifest.json", "runner.log", "events.jsonl"):
+            path = run / name
+            try:
+                if path.is_symlink() or not path.is_file():
+                    continue
+                with path.open("rb") as stream:
+                    stream.seek(max(0, path.stat().st_size - 65536))
+                    observed.append(stream.read(65536).decode("utf-8", errors="replace"))
+            except OSError:
+                continue
+        text = "\n".join(observed)
+        stages = [stage for stage in ("interactive_orchestrator_started", "vehicle_ready",
+            "first_vss_frame", "viss_verified", "keyboard_ready", "interactive_failed",
+            "interactive_cleanup_complete") if '"stage": "' + stage + '"' in text
+            or '"stage":"' + stage + '"' in text]
+        failures = [code for needle, code in (
+            ("ModuleNotFoundError", "PYTHON_MODULE_MISSING"),
+            ("ImportError", "PYTHON_IMPORT_FAILED"),
+            ("Permission denied", "PERMISSION_DENIED"),
+            ("Operation not permitted", "OPERATION_NOT_PERMITTED"),
+            ("Address already in use", "ADDRESS_IN_USE"),
+            ("No such file or directory", "FILE_NOT_FOUND"),
+            ("File exists", "FILE_EXISTS"),
+            ("std::exception", "CARLA_NATIVE_EXCEPTION"),
+            ("local control server failed to start", "CONTROL_SOCKET_START_FAILED"),
+            ("timed out", "TIMEOUT"),
+            ("external controller did not become ready", "CONTROLLER_NOT_READY"),
+            ("independent VISS start probe failed", "VISS_PROBE_FAILED"),
+            ("before the keyboard-control window", "NATIVE_CONTROL_EXITED"),
+            ("before the first VSS frame", "TELEMETRY_EXITED"),
+            ("run directory is already in use", "RUN_DIRECTORY_IN_USE"),
+            ("SyntaxError", "PYTHON_SYNTAX_ERROR"),
+            ("configured vehicle blueprint lacks required control attributes", "VEHICLE_BLUEPRINT_INVALID"),
+            ("CARLA client/server version mismatch", "CARLA_VERSION_MISMATCH"),
+            ("an existing hero vehicle already exists", "EXISTING_HERO_VEHICLE"),
+            ("an existing brake-event obstacle already exists", "EXISTING_BRAKE_OBSTACLE"),
+            ("external-control spawn point is unavailable", "SPAWN_POINT_UNAVAILABLE"),
+            ("is occupied", "SPAWN_POINT_OCCUPIED"),
+            ("the scenario start is not on a driving lane", "SCENARIO_START_NOT_DRIVING_LANE"),
+        ) if needle in text]
+        lines = re.findall(r'"controller_line"\s*:\s*([0-9]{1,5})\b', text)
+        listener = {"state": "NOT_OBSERVED"}
+        try:
+            config = run / "input.json"
+            if config.is_symlink() or config.stat().st_size > 65536:
+                raise ValueError()
+            port = read_json(config)["controller"]["autopilot"]["traffic_manager_port"]
+            if type(port) is not int or not 1024 <= port <= 65535:
+                raise ValueError()
+            result = subprocess.run(["lsof", "-nP", "-iTCP:" + str(port), "-sTCP:LISTEN", "-Fpc"],
+                                    capture_output=True, text=True, timeout=3)
+            listener = dict(port=port, state="LISTENING" if result.returncode == 0 else
+                "NO_LISTENER" if result.returncode == 1 else "UNAVAILABLE",
+                dockerOwner=any(line.startswith("ccom.docker") for line in result.stdout.splitlines()))
+        except (OSError, ValueError, KeyError, subprocess.SubprocessError):
+            pass
+        return dict(stages=stages, failures=failures, controllerLine=int(lines[-1]) if lines else None,
+                    trafficManager=listener,
+                    evidence="BOUNDED_LOCAL_STARTUP_RECORDS",
+                    rawOutputExposed=False)
 
 
 class SourceService:
@@ -605,6 +683,8 @@ class SourceService:
                 value.update(state="DETACHED", currentVehicle=None)
         except EnvironmentError as error:
             value["reason"] = str(error)
+            if str(error) in ("SIMULATION_NOT_READY", "SIMULATION_NOT_RUNNING"):
+                value["startupDiagnostic"] = self.driver.startup_diagnostic(source)
             if str(error) == "SIMULATION_NOT_RUNNING":
                 value["state"] = "STOPPED" if source["state"] == "STOPPED" else "NOT_RUNNING"
         except (OSError, ValueError, subprocess.SubprocessError):

@@ -47,6 +47,26 @@ class Driver:
 
 
 class SourceTests(unittest.TestCase):
+    def test_startup_diagnostic_returns_fixed_categories_not_raw_payload(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            run = root / ".run/demo-current/source/fixture"
+            run.mkdir(parents=True)
+            (run / "runner.log").write_text('private-value std::exception "controller_line": 287\n')
+            (run / "startup-timeline.json").write_text('{"stages":[{"stage":"interactive_failed"}]}')
+            driver = SourceDriver(Mock(root=root))
+            value = driver.startup_diagnostic(dict(runDirectory=str(run.relative_to(root))))
+            self.assertEqual(["CARLA_NATIVE_EXCEPTION"], value["failures"])
+            self.assertEqual(["interactive_failed"], value["stages"])
+            self.assertEqual(287, value["controllerLine"])
+            self.assertNotIn("private-value", str(value))
+            (run / "runner.log").unlink()
+            outside = root / "private"
+            outside.write_text("Permission denied")
+            (run / "runner.log").symlink_to(outside)
+            self.assertEqual([], driver.startup_diagnostic(dict(runDirectory=str(run.relative_to(root))))["failures"])
+            self.assertEqual("SOURCE_DIAGNOSTIC_PATH_UNSAFE", driver.startup_diagnostic(dict(runDirectory="/tmp"))["reason"])
+
     def test_initial_connection_does_not_require_cloud_but_select_still_does(self):
         import contextlib
         self.service.environment._writer = contextlib.nullcontext
