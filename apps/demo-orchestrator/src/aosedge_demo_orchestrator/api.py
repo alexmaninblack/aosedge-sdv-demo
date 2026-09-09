@@ -20,6 +20,14 @@ def execute_operation(
     target_value = payload.get("target")
     target = VehicleTarget(target_value) if target_value else None
     application = orchestrator or DemoOrchestrator()
+    if domain == "service":
+        expected = {"domain", "action"} | ({"service_id"} if action == "status" else set())
+        if "profile" in payload:
+            expected.add("profile")
+        if action not in ("list", "status") or set(payload) != expected:
+            raise ValueError("Service inspection accepts only catalog identity and configured profile")
+        return application.execute(OperationRequest(domain, action, service_id=payload.get("service_id"),
+            profile=payload.get("profile"))).to_dict()
     if domain == "backend" and action in ("start", "stop", "status"):
         if set(payload) != {"domain", "action", "team"} or payload["team"] not in ("brake", "tire"):
             raise ValueError("Backend accepts a fixed team only, never paths, images or commands")
