@@ -148,6 +148,10 @@ integration and are not implemented by these commands. Inventory read time does
 not establish a fresh Unit report. Upload receipts/reconciliation, profile
 provenance, runtime completion rules and SOTA identity remain separate phases.
 
+The separate [service catalog/ownership inspection](demo-control-service-observation.md)
+adds read-only, per-profile OEM/SP catalog and service-to-Unit observations.
+It does not infer team publication authority from OEM visibility.
+
 Deterministic tests use synthetic API fixtures and cover multi-component
 inventory, missing/empty/error distinctions, real multi-instance versions,
 pagination/fan-out bounds, zero/missing metrics, source times, identity mismatch,

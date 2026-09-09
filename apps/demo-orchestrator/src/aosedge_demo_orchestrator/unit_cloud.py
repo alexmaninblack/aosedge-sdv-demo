@@ -26,7 +26,7 @@ class CloudFailure(Exception):
 
 
 class Cloud:
-    def __init__(self, request):
+    def __init__(self, request, expected_role="oem"):
         from importlib import resources
         from aos_prov.utils.user_credentials import UserCredentials
 
@@ -41,15 +41,18 @@ class Cloud:
         self.opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect(),
                                                   urllib.request.HTTPSHandler(context=context))
         self.base = "https://" + host + ":10000/api/v11/"
-        self.user = project_user(self.call("users/me/"), "oem", request.get("ownerId"))
+        if expected_role not in ("oem", "service provider"):
+            raise CloudFailure("CLOUD_EXPECTED_ROLE_INVALID")
+        self.user = project_user(self.call("users/me/"), expected_role, request.get("ownerId"))
         if (not self.user["roleMatches"] or self.user["ownerMatches"] is False
                 or not self.user["ownerId"] or self.user["effectivePermissions"] is None):
-            raise CloudFailure("OEM_AUTHORITY_NOT_PROVEN")
+            raise CloudFailure("OEM_AUTHORITY_NOT_PROVEN" if expected_role == "oem" else "SP_AUTHORITY_NOT_PROVEN")
 
     def require(self, *permissions):
         missing = set(permissions) - set(self.user["effectivePermissions"])
         if missing:
-            raise CloudFailure("OEM_PERMISSION_MISSING:" + ",".join(sorted(missing)))
+            prefix = "SP" if self.user.get("role") == "service provider" else "OEM"
+            raise CloudFailure(prefix + "_PERMISSION_MISSING:" + ",".join(sorted(missing)))
 
     def call(self, path, method="GET", body=None, expected=200, absent=False):
         req = urllib.request.Request(self.base + path, method=method,

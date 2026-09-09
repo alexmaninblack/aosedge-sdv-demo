@@ -29,6 +29,18 @@ class DemoOrchestrator:
         selection_error = request.selection_error()
         if selection_error:
             return OperationResult(operation, OperationState.BLOCKED, selection_error)
+        if request.domain == "service":
+            from .services import ServiceCatalog
+            if request.target or request.current or request.image or request.image_path or request.team or request.component_version or request.content_profile:
+                return OperationResult(operation, OperationState.BLOCKED, "SERVICE_READ_SELECTOR_INVALID")
+            try:
+                data = ServiceCatalog(self.environment_service).execute(request.action, request.service_id, request.profile)
+                return OperationResult(operation, OperationState.PARTIAL if data["problems"] else OperationState.OBSERVED,
+                    "Read-only per-profile Cloud catalog/ownership; not team authority assignment or runtime health.", data=data)
+            except EnvironmentError as error:
+                return OperationResult(operation, OperationState.BLOCKED, str(error))
+            except (OSError, ValueError, KeyError, TypeError):
+                return OperationResult(operation, OperationState.BLOCKED, "SERVICE_CLOUD_CONFIGURATION_UNAVAILABLE")
         if request.domain == "backend":
             from .backends import BackendService
             if request.target or request.current or request.image or request.image_path or request.profile:

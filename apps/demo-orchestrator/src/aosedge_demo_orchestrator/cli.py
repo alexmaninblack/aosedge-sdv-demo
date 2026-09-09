@@ -36,6 +36,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="result format (default: human)",
     )
     commands = parser.add_subparsers(dest="domain", required=True)
+    service = commands.add_parser("service", help="read AosCloud service catalog, owners, versions and assignments")
+    service_commands = service.add_subparsers(dest="action", required=True)
+    for action in ("list", "status"):
+        command = service_commands.add_parser(action, help="read-only OEM/SP observations; no upload or assignment")
+        if action == "status":
+            command.add_argument("service_id", help="exact service UUID from service list")
+        command.add_argument("--profile", help="one configured Cloud profile; default reads each separately")
     backend = commands.add_parser("backend", help="owned functional backend containers, separate from Cloud and vehicle functions")
     backend_commands = backend.add_subparsers(dest="action", required=True)
     for action in ("build", "start", "stop", "status"):
@@ -169,6 +176,7 @@ def request_from_arguments(arguments: argparse.Namespace) -> OperationRequest:
         content_profile=getattr(arguments, "content_profile", None),
         team=getattr(arguments, "team", None),
         metadata_only=getattr(arguments, "metadata_only", False),
+        service_id=getattr(arguments, "service_id", None), profile=getattr(arguments, "profile", None),
         timeout=getattr(arguments, "timeout", 8.0),
     )
 
