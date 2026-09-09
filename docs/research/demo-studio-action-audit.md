@@ -3,6 +3,56 @@
 
 # Demo Studio B: action, transition and integration audit
 
+<a id="mockup-28-corrective-re-audit"></a>
+
+## Mockup 2.8 corrective re-audit — 9 September 2026
+
+Current artifact: [2.8 standalone](../demo/mockups/aosedge-demo-interaction-mockup-2-8.html)
+and [editable source](../demo/mockups/aosedge-demo-interaction-mockup-2-8.source.html).
+The user approved the B2 appearance and authorized correction of the three
+reproduced findings below. This section supersedes the earlier mockup test
+count/current-artifact references, not the accepted contract or integration plan.
+
+| Finding | Correction | Re-audit evidence / disposition |
+|---|---|---|
+| Offline local installation appeared immediately in Cloud inventory | Keep a Unit-scoped simulated device report. Only an externally connected, running, provisioned Unit refreshes it. Operator read availability is independent; desired publication/membership remain Cloud facts. Release actions use Cloud Pending, not the local apply queue. | Offline VDP installs locally while Cloud retains the prior version and Pending; reconnect updates it. Tests also cover service runtime, disconnect-detection grace, missing read access, a new identity and existing 2.8 storage. **Closed.** |
+| VDP completed after stationary Safe Stop was lost | Revalidate during preparation and before activation; invalidate the old attempt on loss. Keep the previous healthy VDP until the mock's atomic activation commit. Reload never restores a persisted Safe Stop grant. SOTA remains independent. | Loss at 300 ms and 1000 ms, loss/return before an old callback, movement/missing source/stopped controller, reload in both phases, successful subsequent Safe Stop and actual browser buttons all checked. **Closed.** |
+| Fully populated B2 architecture pushed the footer outside its panel | Adjust only right-side spacing and Cloud-card icon size; preserve fixed left/right composition, CARLA and all controls/information. | Complete VDP v3 + Brake v3 + Tire v1 at 1728 × 1117, 1512 × 982 and 1280 × 720: no footer clipping, section overlap or page scrolling. Pending-state fit also checked. **Closed.** |
+
+**45/45 tests passed, none skipped**, using
+[`tests/mockups/mockup-2-8.test.cjs`](../../tests/mockups/mockup-2-8.test.cjs)
+with Playwright and Chrome enabled. Both browser cases run isolated contexts
+with requests intercepted; no live VM, Cloud tenant or operator browser profile
+is used. The complete button sequence covers Create/connect, publication before
+Provision, all VDP/Brake profiles, Tire, product receipt/advisory, offline/reconnect,
+Park/Resume and Retire. Additional tests cover rejection, uncertain publication,
+reload/recovery, warehouse publication and clean-cycle version continuity.
+
+Source/standalone state-machine parity and unchanged 2.7 SHA-256 values are
+asserted. The CARLA reference, official logo and B2 artwork remain unchanged.
+The visual adapter cannot issue actions, contact Cloud or persist model state.
+The specification, surface register, traceability and delivery-plan entry point
+now point to 2.8; UI-STUDIO-026 remains the flow authority.
+
+The Safe Stop correction follows
+[ADR-0014](../architecture/decisions/0014-enforce-platform-fota-safe-stop-in-oem-component-runtime.md)
+and the existing
+[component Safe Stop profile](../../contracts/platform-fota-safe-stop/platform-fota-safe-stop-profile.v1.json).
+It is a simulation of continuous gating, not a real atomic-update implementation
+or a new rollback/cancellation action. The mock report snapshot is an evidence
+boundary, not a newly specified production persistence interface.
+
+No new action, actor, API payload or product decision was introduced. The
+previously reviewed public API/Subject/package evidence below remains applicable;
+this correction made no live Cloud calls. The existing 78 action rows, 28 real
+integration gaps and P1–P8 order remain the implementation backlog. No additional
+blocker was found within the corrected mockup scope. **Application implementation
+and real E2E qualification are not performed here.** The operator subsequently
+authorized the [2.8 source checkpoint](../qualification/pre-studio-implementation-2026-09-09.md#reviewed-28-source-checkpoint);
+publishing it does not authorize implementation.
+
+## Retained 2.6 integration audit and evidence
+
 Review package: [Mockup 2.6](../demo/mockups/aosedge-demo-interaction-mockup-2-6.html),
 [experience proposal](../demo/mockups/demo-experience-proposal.md) and
 [proposed delivery plan](../planning/active/demo-studio-delivery-plan.md).

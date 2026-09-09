@@ -35,8 +35,11 @@
 Accepted scope reconciliation: 9 September 2026. This section is the current
 interaction contract for the Test-only Studio B flow. It incorporates the
 [accepted questionnaire and subsequent amendments](../../planning/active/demo-studio-delivery-plan.md).
-The [2.6 mockup](aosedge-demo-interaction-mockup-2-6.html) is a simulation of
-this contract, not evidence of working Cloud or product integration. Application
+The [current 2.8 mockup](aosedge-demo-interaction-mockup-2-8.html) simulates this
+contract with the reviewed B2 visuals; [2.6](aosedge-demo-interaction-mockup-2-6.html)
+and [2.7](aosedge-demo-interaction-mockup-2-7.html) remain unchanged references.
+The [2.8 corrective re-audit](../../research/demo-studio-action-audit.md#mockup-28-corrective-re-audit)
+does not establish working Cloud or product integration. Application
 implementation is still gated by the re-audit and explicit authorization.
 
 ### Applicability and replacement map

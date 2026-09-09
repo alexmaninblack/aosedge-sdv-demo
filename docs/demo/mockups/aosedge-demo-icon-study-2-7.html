@@ -1,0 +1,119 @@
+<!-- SPDX-FileCopyrightText: 2026 maninblack -->
+<!-- SPDX-License-Identifier: MIT -->
+<section id="aos-icon-study" aria-label="AosEdge icon directions" data-direction="b">
+  <style>
+    #aos-icon-study { --is-ink:#243447; --is-muted:#607084; --is-line:#dce3eb; --is-blue:#276ca3; --is-soft:#e9f1f8; --is-paper:#fff; --is-icon:#2d618b; --is-nav-size:20px; color-scheme:light; color:var(--is-ink); font:14px/1.4 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; width:100%; }
+    #aos-icon-study * { box-sizing:border-box; }
+    #aos-icon-study h2,#aos-icon-study h3,#aos-icon-study p { margin:0; }
+    #aos-icon-study .is-heading { display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:18px 20px; background:var(--is-paper); border-bottom:1px solid var(--is-line); }
+    #aos-icon-study h2 { font-size:20px; font-weight:600; letter-spacing:-.025em; }
+    #aos-icon-study .is-kicker { font-size:12px; color:var(--is-muted); }
+    #aos-icon-study button { font:inherit; cursor:pointer; }
+    #aos-icon-study .is-sheet { background:var(--is-paper); padding:0 20px 16px; }
+    #aos-icon-study .is-grid { display:grid; grid-template-columns:minmax(96px,1fr) repeat(3,minmax(0,1fr)); align-items:center; }
+    #aos-icon-study .is-column-head { min-height:86px; border-bottom:1px solid var(--is-line); }
+    #aos-icon-study .is-column-head>span { color:var(--is-muted); font-size:12px; }
+    #aos-icon-study .is-choice { align-self:stretch; background:transparent; border:0; border-bottom:3px solid transparent; padding:12px 4px; text-align:center; color:var(--is-muted); }
+    #aos-icon-study .is-choice strong { display:block; font-size:15px; font-weight:600; color:var(--is-ink); }
+    #aos-icon-study .is-choice span { display:block; font-size:11px; margin-top:4px; }
+    #aos-icon-study .is-choice[aria-pressed=true] { background:#f1f6fb; border-bottom-color:var(--is-blue); color:var(--is-blue); }
+    #aos-icon-study .is-icon-row { min-height:56px; border-bottom:1px solid #edf1f5; }
+    #aos-icon-study .is-role { font-size:13px; font-weight:500; }
+    #aos-icon-study .is-cell { align-self:stretch; display:grid; place-items:center; padding:6px; }
+    #aos-icon-study .is-cell[data-selected=true] { background:#f8fafc; }
+    #aos-icon-study .is-mark { position:relative; display:inline-grid; place-items:center; width:40px; height:40px; flex:0 0 auto; color:var(--is-icon); border-radius:10px; }
+    #aos-icon-study .is-mark svg { display:block; width:26px!important; height:26px!important; stroke-width:2; }
+    #aos-icon-study [data-style=b] .is-mark { background:var(--is-soft); color:#244f73; }
+    #aos-icon-study [data-style=b] .is-mark svg { stroke-width:2.15; }
+    #aos-icon-study [data-style=c] .is-mark { background:#315f85; color:#fff; border-radius:9px; }
+    #aos-icon-study [data-style=c] .is-mark svg { stroke-width:2.3; }
+    #aos-icon-study .is-preview { background:#f4f6f8; padding:18px 20px 20px; }
+    #aos-icon-study .is-preview-head { display:flex; justify-content:space-between; gap:10px; margin-bottom:12px; }
+    #aos-icon-study .is-preview h3 { font-size:15px; font-weight:600; }
+    #aos-icon-study .is-preview-head span { font-size:12px; color:var(--is-muted); }
+    #aos-icon-study .is-mini-workspace { padding:12px; background:var(--is-paper); border:1px solid var(--is-line); border-radius:9px; }
+    #aos-icon-study .is-nav { display:flex; flex-wrap:wrap; gap:4px 20px; border-bottom:1px solid var(--is-line); margin-bottom:14px; }
+    #aos-icon-study .is-nav button { display:flex; align-items:center; gap:7px; border:0; border-bottom:2px solid transparent; color:var(--is-muted); padding:0 0 9px; background:transparent; font-size:14px; font-weight:500; }
+    #aos-icon-study .is-nav button[aria-pressed=true] { color:var(--is-blue); border-bottom-color:var(--is-blue); }
+    #aos-icon-study .is-nav .is-mark { width:28px; height:28px; border-radius:7px; }
+    #aos-icon-study .is-nav .is-mark svg { width:var(--is-nav-size)!important; height:var(--is-nav-size)!important; }
+    #aos-icon-study .is-cards { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+    #aos-icon-study .is-backend { background:#f7f9fb; border:1px solid var(--is-line); border-radius:8px; min-height:124px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px; padding:12px 6px; text-align:center; }
+    #aos-icon-study .is-backend strong { font-size:14px; font-weight:600; }
+    #aos-icon-study .is-backend small { color:var(--is-muted); font-size:12px; display:flex; align-items:center; gap:4px; }
+    #aos-icon-study .is-backend small svg { width:13px!important; height:13px!important; }
+    #aos-icon-study .is-caption { display:flex; gap:14px; flex-wrap:wrap; align-items:center; padding-top:13px; font-size:12px; color:var(--is-muted); }
+    #aos-icon-study .is-caption .is-dark { background:#17212d; color:#c2d3e4; border-radius:6px; padding:5px 8px; display:inline-flex; align-items:center; gap:7px; }
+    #aos-icon-study .is-dark .is-mark { width:25px; height:25px; background:transparent; color:#95c7ed; }
+    #aos-icon-study .is-dark .is-mark svg { width:20px!important; height:20px!important; }
+    #aos-icon-study .is-mark svg.is-tire-core { position:absolute; width:13px!important; height:13px!important; }
+    #aos-icon-study .is-nav .is-mark svg.is-tire-core { width:calc(var(--is-nav-size) / 2)!important; height:calc(var(--is-nav-size) / 2)!important; }
+    @media(max-width:520px) {
+      #aos-icon-study .is-heading { padding:14px 10px; align-items:flex-start; flex-direction:column; gap:3px; }
+      #aos-icon-study .is-sheet { padding:0 10px 12px; }
+      #aos-icon-study .is-grid { grid-template-columns:82px repeat(3,minmax(0,1fr)); }
+      #aos-icon-study .is-choice strong { font-size:12px; }
+      #aos-icon-study .is-choice span { font-size:11px; }
+      #aos-icon-study .is-role { font-size:12px; }
+      #aos-icon-study .is-preview { padding:14px 10px; }
+      #aos-icon-study .is-nav { gap:4px 12px; }
+      #aos-icon-study .is-nav button { font-size:12px; }
+      #aos-icon-study .is-cards { grid-template-columns:1fr; }
+      #aos-icon-study .is-backend { min-height:74px; flex-direction:row; justify-content:flex-start; text-align:left; flex-wrap:wrap; padding:10px; }
+      #aos-icon-study .is-backend small { margin-left:auto; }
+    }
+  </style>
+  <header class="is-heading"><h2>Icon directions</h2><span class="is-kicker">AosEdge · visual study for 2.7</span></header>
+  <div class="is-sheet">
+    <div class="is-grid is-column-head">
+      <span>Same symbols<br>Three treatments</span>
+      <button type="button" class="is-choice" data-pick="a" aria-pressed="false"><strong>A · Outline</strong><span>Quiet / precise</span></button>
+      <button type="button" class="is-choice" data-pick="b" aria-pressed="true"><strong>B · Soft badge</strong><span>Recommended</span></button>
+      <button type="button" class="is-choice" data-pick="c" aria-pressed="false"><strong>C · Solid badge</strong><span>Bold / prominent</span></button>
+    </div>
+    <div class="is-rows"></div>
+  </div>
+  <section class="is-preview" aria-label="Icon treatment in existing UI contexts">
+    <div class="is-preview-head"><h3>In context</h3><span data-choice-label aria-live="polite">B · Soft badge</span></div>
+    <div class="is-mini-workspace" data-preview-style data-style="b">
+      <nav class="is-nav" aria-label="Sample team navigation"></nav>
+      <div class="is-cards"></div>
+    </div>
+    <div class="is-caption"><span class="is-dark"><span class="is-mark"><i data-lucide="car-front" aria-hidden="true"></i></span>Test Vehicle</span><span>Navigation 20 px · cards 26 px · no status colors</span></div>
+  </section>
+  <script>
+    (() => {
+      const root=document.getElementById('aos-icon-study');
+      const roles=[['Vehicle','car-front'],['Platform','cpu'],['Brake','disc-3'],['Tire','circle-dashed'],['Aos Cloud','cloud'],['Gateway','network'],['Component','layers'],['Service','box']];
+      const names={a:'A · Outline',b:'B · Soft badge',c:'C · Solid badge'};
+      const design={direction:'b',navSize:20};
+      function mark(icon){const box=document.createElement('span');box.className='is-mark';const i=document.createElement('i');i.dataset.lucide=icon;i.setAttribute('aria-hidden','true');box.append(i);if(icon==='circle-dashed'){const core=document.createElement('i');core.dataset.lucide='circle';core.className='is-tire-core';core.setAttribute('aria-hidden','true');box.append(core);}return box;}
+      const rows=root.querySelector('.is-rows');
+      roles.forEach(([name,icon])=>{
+        const row=document.createElement('div');row.className='is-grid is-icon-row';
+        const label=document.createElement('div');label.className='is-role';label.textContent=name;row.append(label);
+        ['a','b','c'].forEach(style=>{const cell=document.createElement('div');cell.className='is-cell';cell.dataset.style=style;cell.append(mark(icon));row.append(cell);});rows.append(row);
+      });
+      roles.slice(0,4).forEach(([name,icon],index)=>{
+        const button=document.createElement('button');button.type='button';button.setAttribute('aria-pressed',String(index===0));button.append(mark(icon),document.createTextNode(name));
+        button.addEventListener('click',()=>root.querySelectorAll('.is-nav button').forEach(b=>b.setAttribute('aria-pressed',String(b===button))));root.querySelector('.is-nav').append(button);
+      });
+      [['Brake backend','disc-3','Open dashboard'],['Tire backend','circle-dashed','Open dashboard'],['Aos Cloud','cloud','Unit monitoring']].forEach(([name,icon,caption])=>{
+        const card=document.createElement('div');card.className='is-backend';const label=document.createElement('strong');label.textContent=name;
+        const sub=document.createElement('small');sub.textContent=caption;const arrow=document.createElement('i');arrow.dataset.lucide='arrow-up-right';arrow.setAttribute('aria-hidden','true');sub.append(arrow);card.append(mark(icon),label,sub);root.querySelector('.is-cards').append(card);
+      });
+      function render(){
+        root.dataset.direction=design.direction;
+        root.style.setProperty('--is-nav-size',design.navSize+'px');
+        root.querySelector('[data-preview-style]').dataset.style=design.direction;
+        root.querySelector('[data-choice-label]').textContent=names[design.direction];
+        root.querySelectorAll('[data-pick]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.pick===design.direction)));
+        root.querySelectorAll('.is-cell').forEach(c=>c.dataset.selected=String(c.dataset.style===design.direction));
+      }
+      root.querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>{design.direction=b.dataset.pick;render();}));
+      render();
+      if(globalThis.lucide)globalThis.lucide.createIcons({attrs:{width:24,height:24}});
+      if(globalThis.Tweak){const tweak=new Tweak({container:root,onChange:render});tweak.addSelect(design,'direction',{label:'Icon treatment',options:[{label:names.a,value:'a'},{label:names.b,value:'b'},{label:names.c,value:'c'}]});tweak.addSlider(design,'navSize',{label:'Navigation icon',min:18,max:22,unit:'px'});}
+    })();
+  </script>
+</section>

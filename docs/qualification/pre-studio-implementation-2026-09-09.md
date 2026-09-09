@@ -4,13 +4,39 @@
 # Pre-Studio implementation source checkpoint
 
 - Status: accepted source checkpoint; Studio implementation not authorized
-- Version: 1.0
+- Version: 1.1
 - Prepared: 2026-09-09
 - Owner: Demo Solution Team
 - Reference: `pre-studio-implementation-2026-09-09`
 - Plan: [Demo Studio delivery plan](../planning/active/demo-studio-delivery-plan.md)
 - Contract: [Current Test Studio contract](../demo/mockups/aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract)
 - Audit: [Action and integration audit](../research/demo-studio-action-audit.md)
+
+## Reviewed 2.8 source checkpoint
+
+On 9 September 2026, after approval of the B2 visuals and closure of the three
+mockup findings, the operator authorized committing and pushing the latest
+reviewed changes. The Solution return-point tag is
+`pre-studio-implementation-2.8-2026-09-09`. Resolve its exact commit with
+`git rev-parse pre-studio-implementation-2.8-2026-09-09^{commit}`.
+The original `pre-studio-implementation-2026-09-09` tag is not moved.
+
+This increment includes mockups 2.7/2.8, their authoring sources and regression
+tests, the reviewed icon studies/artwork/prompts, and synchronized specification,
+traceability, action audit and delivery-plan references. Approved icon PNGs are
+design source assets, not VM images or compiled build outputs. The 2.8 suite
+passed 45/45 checks with both isolated browser cases enabled; this checkpoint
+reuses that just-completed evidence without repeating live infrastructure tests.
+Normal staged confidentiality and documentation commit hooks remain enabled.
+
+The six dependency revisions below were rechecked and are unchanged. Their
+main source trees are clean except for the previously excluded CARLA scratch
+items. No dependency source pin changes, experimental-branch integration,
+build output, VM overlay, signed release bundle or credential is included.
+The exclusions listed below remain in force. Studio implementation is still
+unauthorized; the next discussion reviews the existing P1–P8 delivery order.
+
+## Original checkpoint record
 
 ## Boundary and authorization
 

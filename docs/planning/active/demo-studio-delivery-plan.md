@@ -6,7 +6,7 @@
 - Status: **Pre-implementation audit complete; all design choices accepted; implementation not authorized**
 - Prepared: 9 September 2026
 - Working language: English
-- Review mockup: [Interaction Mockup 2.6 — agreed Studio B flow](../../demo/mockups/aosedge-demo-interaction-mockup-2-6.html); [2.5 retained](../../demo/mockups/aosedge-demo-interaction-mockup-2-5.html) as the original action-audit basis
+- Review mockup: [Interaction Mockup 2.8 — reviewed B2 visuals and corrected simulation](../../demo/mockups/aosedge-demo-interaction-mockup-2-8.html); [2.6 retained flow baseline](../../demo/mockups/aosedge-demo-interaction-mockup-2-6.html); [2.5 retained](../../demo/mockups/aosedge-demo-interaction-mockup-2-5.html) as the original action-audit basis
 - Basis: [action and integration audit][audit], including its 78 action/transition rows and 28 gaps
 - Target: the accepted Studio B composition connected to a real, repeatable Test-vehicle demo
 - Authorization: mockup and related working-document edits, followed by the separately authorized source Git checkpoint. Application implementation and live Cloud publication/provisioning/deletion remain unauthorized.
@@ -17,6 +17,19 @@ excluded work. Creating or publishing that Git checkpoint does not authorize
 starting P1 or any later implementation stage.
 
 ### Current gate — mockup first
+
+Current closure, 9 September 2026: the user approved 2.8's appearance and
+authorized the three post-visual audit fixes. Its
+[corrective re-audit](../../research/demo-studio-action-audit.md#mockup-28-corrective-re-audit)
+passes 45/45 isolated mockup checks. Cloud report isolation, continuous VDP
+Safe Stop and populated-panel fit are corrected without changing the accepted
+action sequence or introducing API calls. The P1–P8 order and 28 real integration
+work items remain unchanged. Application implementation still needs separate
+authorization. The subsequently authorized source checkpoint is recorded as
+`pre-studio-implementation-2.8-2026-09-09` in the
+[checkpoint record](../../qualification/pre-studio-implementation-2026-09-09.md#reviewed-28-source-checkpoint).
+
+The following records the retained flow-review history:
 
 After completing the questionnaire, the user explicitly required the updated
 clickable mockup before any implementation. Version 2.6 simulates the agreed
@@ -54,7 +67,7 @@ Test contract is [UI-STUDIO-026](../../demo/mockups/aosedge-demo-interaction-spe
 
 | Order | Required deliverable | Dependency / gate |
 |---|---|---|
-| Review now | Fix 2.6; test services/reload/cleanup; reconcile documents and re-audit | Mockup/docs only |
+| Review now | 2.8 corrective re-audit closed; 2.6/2.7 retained; services/reload/offline/cleanup and visual-fit checks passed | Mockup/docs only; no application implementation authorization |
 | P0 | Subject/package settings accepted; use the final re-audit and current contract cascade | Separate implementation authorization |
 | P1 | Shared Test lifecycle/results, automatic release ledger, initial Manual connection; backend process/storage/current-Test context | Migrate backend cardinality/cleanup contracts with their implementation; retain dual-role CLI |
 | P2 | Cloud inventory/instances, processing receipts, recovery, DMIPS, shared observations | Terminal state need not wait for missed Pending; expanded logs later |

@@ -4,8 +4,9 @@
 # I0 Audience-Visible Interface Register and Mockup Gate
 
 - Status: accepted
-- Version: 0.14
+- Version: 0.17
 - Prepared: 2026-08-25
+- Updated: 2026-09-09
 - Owner: Demo Solution Team with Platform Team and Function Teams 1 and 2
 - Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.0](../staged-post-sop-brake-health-demo-scenarios.md)
@@ -25,7 +26,76 @@
 - Standalone build helper:
   [`scripts/build-demo-interaction-mockup`](../../../scripts/build-demo-interaction-mockup)
 
-## Current Studio B review — Mockup 2.6
+## Current reviewed mockup — 2.8 automotive edition
+
+[Open Interaction Mockup 2.8](aosedge-demo-interaction-mockup-2-8.html)
+([editable source](aosedge-demo-interaction-mockup-2-8.source.html)).
+
+This separate visual candidate uses the approved [B2 automotive miniatures,
+including the Service code symbol](icon-concepts-2-7/b2-service-code.png).
+It preserves the 2.7 source and standalone files without modification.
+The [icon study register](icon-concepts-2-7/README.md) retains the alternatives,
+approved artwork and exact generation briefs.
+
+- The exact approved artwork is embedded and displayed through CSS crop
+  windows; no new icon family or regenerated artwork is substituted.
+- Vehicle, controller, gateway, brake, tire and Cloud miniatures identify the
+  navigation and architecture actors. Component layers and the Service code
+  symbol identify software in release paths and Cloud inventory headings.
+- Installed-item icons remain inside their existing conditional buttons;
+  uninstalled service slots remain empty.
+- CARLA imagery and the agreed action sequence are preserved. The mockup uses
+  its isolated `aosedge-studio-mockup-2.8` storage namespace.
+- The post-visual audit corrections retain Cloud device reports while the
+  vehicle is offline, continuously gate VDP activation on stationary Safe Stop,
+  and keep the populated architecture/guide/footer within the fixed panel.
+  These are contract corrections, not new demo scenarios or live integrations.
+
+The user approved the B2 appearance on 9 September 2026. The subsequent
+[corrective re-audit](../../research/demo-studio-action-audit.md#mockup-28-corrective-re-audit)
+passed **45/45 checks**, including isolated browser interaction with VDP,
+Brake/Tire, offline/reconnect, Safe Stop loss, Park/Resume and Retire.
+The fully populated architecture fits at 1728 × 1117, 1512 × 982 and
+1280 × 720 without page scrolling, footer clipping or overlapping sections.
+No live platform qualification or application implementation is authorized.
+Do not use the older 2.4 build helper to regenerate 2.8.
+
+Run `node --test tests/mockups/mockup-2-8.test.cjs`. Set `MOCKUP_PLAYWRIGHT`
+to the installed Playwright package and `MOCKUP_CHROME` to the Chrome executable
+to include both browser cases; without them those two cases are explicitly
+skipped. Browser checks use isolated contexts and intercepted requests, not
+the operator's profile or a live Cloud account.
+
+## Retained visual baseline — Mockup 2.7
+
+[Open Interaction Mockup 2.7](aosedge-demo-interaction-mockup-2-7.html)
+([editable source](aosedge-demo-interaction-mockup-2-7.source.html)).
+
+This is a presentation-only refinement of 2.6, awaiting visual review. It does
+not replace the accepted interaction contract or authorize application work.
+The original 2.6 files and pre-implementation checkpoint remain unchanged.
+
+- Driving Control and Telemetry share one dark visual treatment, with larger
+  control labels and buttons. The CARLA reference and official logo are unchanged.
+- The right workspace uses consistent light surfaces, blue accents, spacing,
+  typography and semantic status colors. Idle states are neutral.
+- Tire's single existing profile fills its row; no extra profiles are added.
+  Detail dialogs align existing labels and values without removing information.
+- The fixed left/right composition scales to fit both desktop width and height,
+  including 1728 × 1117 and 1280 × 720, without page scrolling.
+
+Actions, guards, transitions and simulation timings are unchanged. Version 2.7
+uses its own `aosedge-studio-mockup-2.7` storage namespace, leaving the operator's
+2.6 run intact. No Cloud API, VM or live application is touched.
+
+Run `node --test tests/mockups/mockup-2-7.test.cjs`. The isolated browser case
+uses the same opt-in `MOCKUP_PLAYWRIGHT` and `MOCKUP_CHROME` settings described
+below. The suite includes the original scenarios, script-equivalence and image
+preservation checks, viewport-fit checks and detail-dialog checks. These are
+mockup checks, not live platform qualification. The older 2.4 build helper must
+not regenerate either 2.6 or 2.7.
+
+## Accepted flow review baseline — Mockup 2.6
 
 Current Test contract: [UI-STUDIO-026](aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract).
 Corrective re-audit: [findings, proposals and remaining gaps](../../research/demo-studio-action-audit.md#current-re-audit--9-september-2026).
