@@ -203,6 +203,30 @@ class UnitSafetyTests(unittest.TestCase):
         for forbidden in ("NEVER_LEAK", "private.example", "systemId"):
             self.assertNotIn(forbidden, value)
 
+    def test_test_retirement_preserves_production_membership_and_full_journal_on_upload_reconcile(self):
+        self.state["vehicles"]["test"]["cloud"]["lifecycle"] = "DELETED"
+        self.state["vehicles"]["production"] = dict(unitId=NODE, nodeId=PROD,
+            systemUid="production-hardware", cloud=dict(lifecycle="ONLINE"), runtime=dict(pid=123, state="RUNNING"))
+        self.state["cloudBinding"] = dict(ownerId=UNIT, sets=dict(test=TEST, production=PROD))
+        self.state["shared"] = dict(dns=dict(pid=555, state="RUNNING"))
+        self.state["demoLifecycle"] = dict(action="retire", target="test")
+        record = dict(deploymentId=TEST, publicationPath="VERIFICATION_TEST", ownerId=UNIT,
+            upload=dict(attemptStarted=True, state="RESPONDED", response=dict(httpStatus=201, deploymentId=TEST)))
+        self.state["componentOperations"] = {"16.0.0": record}
+        inventory = copy.deepcopy(self.inventory)
+        inventory["units"] = [dict(id=NODE, system_uid="production-hardware")]
+        inventory["sets"][1]["members"] = [dict(id=NODE)]
+        entries = [dict(version="16.0.0", deploymentId=TEST, verificationTest=True)]
+        self.service._cloud = Mock(side_effect=[dict(absent=True, inventory=inventory), dict(confirmedUploads=entries)])
+        before = copy.deepcopy(self.state)
+        self.assertTrue(self.service.confirm_test_retired(self.state))
+        self.assertEqual(before["vehicles"]["production"], self.state["vehicles"]["production"])
+        self.assertEqual(before["shared"], self.state["shared"])
+        self.assertEqual(before["demoLifecycle"], self.state["demoLifecycle"])
+        self.service.vm._save.assert_called_once_with(self.state)
+        self.service._cloud.assert_any_call("absence", unitId=UNIT, nodeId=NODE)
+        self.assertEqual("CONFIRMED", record["upload"]["state"])
+
     def test_retire_reconciles_known_upload_without_replaying_or_reading_deleted_unit(self):
         self.state["cloudBinding"] = {"ownerId": UNIT}
         self.state["vehicles"] = {}

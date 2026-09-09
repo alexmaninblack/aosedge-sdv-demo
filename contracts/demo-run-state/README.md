@@ -5,7 +5,7 @@
 
 - Decision: `D4-021`
 - Lifecycle state: `DESIGN_REVIEWED`
-- Contract version: `1.6.0`
+- Contract version: `1.7.0`
 - Accepted subdecisions: D4-021.1 Factory Image and overlay layout, D4-021.2
   minimal current-run journal, D4-021.3 interrupted-operation recovery and
   D4-021.4 complete R0 ordering plus D4-021.5 functional/simulator cleanup,
@@ -88,6 +88,35 @@ Delete and local retire no longer require an oldIdentityRejected flag.
 Their stopped-owner, authoritative absence, scoped membership and ownership
 checks remain unchanged. Historical probe fields in existing journals are not
 used to initiate or resume a connection attempt.
+
+Version 1.7.0 records the operator's 10 September authorization for Test-only
+retirement and recreation while preserving an existing Production peer. The
+local leaf `EnvironmentService.retire_test` requires Test stopped and detached,
+its exact files unheld, fresh authenticated Test Unit/Node/systemUID absence and
+an empty Test role set. Production membership may remain present. The
+`UnitService.confirm_test_retired` callback receives the full journal so upload
+reconciliation cannot overwrite or discard Production. Backend cleanup must
+prove exact old-Test data/context cleanup before the identity is discarded;
+its callback must return literal `True`, preserve peer records and persist its
+own completed stages. Both callbacks run again before interrupted unlink resumes.
+
+The peer's overlay, runtime PID, Cloud identity, DNS and shared factory copy are
+not stopped, deleted or recopied. Only exact Test overlay/access files and
+terminal Test component/preparation receipts are removed. Unknown files,
+unresolved publications or peer-targeted receipts block deletion. The existing
+journal gains bounded `testRetirement` per-file intent, then only a completed
+marker until fresh Test creation. The compositor's `demoLifecycle` receipt is
+preserved so its remaining stages can finish. No ordinary history is introduced.
+
+`create(target="test")` may then add a new Test overlay to the retained
+Production journal, using the same factory selector, format and SHA, with a
+fresh local identity and no inherited Unit credentials. It never truncates an
+existing Test or retries an uncertain create. The existing complete/all local
+retirement semantics remain unchanged. A single-Test environment delegates to
+that existing cleanup only after the compositor has persisted backend cleanup
+and removed the cleaned backend ownership/path references. Shared source
+stop/reset and product cleanup belong to the compositor, not this local leaf.
+These primitives alone do not qualify complete Studio R0 or its UI.
 
 No historical ordinary-run directory exists. `.local/demo-current` and
 `.run/demo-current` represent the only current run. If they describe an
