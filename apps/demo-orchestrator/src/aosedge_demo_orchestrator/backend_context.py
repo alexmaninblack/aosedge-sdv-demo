@@ -13,6 +13,15 @@ ROLE = {"test": ("testUnit", "VALIDATION", "Test Vehicle"),
         "production": ("productionUnit", "PRODUCTION", "Production Vehicle")}
 
 
+def export_directory(environment):
+    # Only this non-secret projection crosses the read-only container mount.
+    # Container UID differs from the Mac UID. The private parent run directory
+    # remains 0700; journal/access files are never exposed or made readable.
+    directory = environment._directory(".run/demo-current/backends/context")
+    directory.chmod(0o755)
+    return directory
+
+
 def project_context(state):
     vehicles = state.get("vehicles")
     if not isinstance(vehicles, dict) or "test" not in vehicles or set(vehicles) - set(ROLE):
@@ -45,17 +54,20 @@ def sync_context(environment, state):
     """
     with environment._writer():
         value = project_context(state)
-        directory = environment._directory(".run/demo-current/backends/context")
+        directory = export_directory(environment)
         path = directory / "current-unit-context.json"
         if path.is_symlink():
             raise EnvironmentError("BACKEND_CONTEXT_PATH_UNSAFE")
         if path.exists():
+            environment._owned_file(path)
             previous = read_json(path)
             if previous == value:
+                path.chmod(0o444)
                 return dict(state="UNCHANGED", context=value)
             # Permit only adding a just-provisioned peer to this same Test.
             expected_previous = {key: item for key, item in value.items() if key != "productionUnit"}
             if previous != expected_previous:
                 raise EnvironmentError("BACKEND_CONTEXT_CLEANUP_REQUIRED_BEFORE_REBIND")
         atomic_json(path, value)
+        path.chmod(0o444)
         return dict(state="BOUND", context=value)

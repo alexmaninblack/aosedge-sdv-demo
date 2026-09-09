@@ -62,7 +62,18 @@ class BackendContextTests(unittest.TestCase):
             path = env.root / CONTEXT
             malformed = json.loads(path.read_text())
             malformed["source"] = "UNTRUSTED_SOURCE"
+            path.chmod(0o600)
             path.write_text(json.dumps(malformed))
             state["vehicles"]["production"] = vehicle("prod-uid")
             with self.assertRaisesRegex(EnvironmentError, "CLEANUP_REQUIRED"):
                 sync_context(env, state)
+
+    def test_only_nonsecret_export_is_readable_by_container_uid(self):
+        with tempfile.TemporaryDirectory() as directory:
+            env = EnvironmentService(Path(directory))
+            sync_context(env, dict(vehicles=dict(test=vehicle("test-uid"))))
+            path = env.root / CONTEXT
+            self.assertEqual(0o444, path.stat().st_mode & 0o777)
+            self.assertEqual(0o755, path.parent.stat().st_mode & 0o777)
+            self.assertEqual(0o700, (env.root / ".run/demo-current").stat().st_mode & 0o777)
+            self.assertEqual({"contractVersion", "schemaVersion", "source", "testUnit"}, set(json.loads(path.read_text())))

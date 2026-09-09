@@ -30,6 +30,9 @@ the preceding review; the authorization above now opens P1–P8.
 - P2 Cloud-only read increment is integrated and live-read tested; the full
   phase remains open. See [Cloud observations](../../architecture/demo-control-cloud-observation.md).
 - Final operator visual approval remains an explicit gate after automated tests.
+- The [implementation checkpoint](../../qualification/demo-studio-implementation-progress-2026-09-10.md)
+  separates completed source/tests, preserved live state, remaining code and
+  decisions required before live qualification. It is not a completion report.
 
 ### Source increment and remaining live gates — 10 September
 

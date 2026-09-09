@@ -121,6 +121,15 @@ class BackendService:
             raise EnvironmentError("BACKEND_BUILD_REQUIRED:" + team)
         return max(values, key=lambda value: value["builtAt"])
 
+    def _owned_container(self, observed, owner, team, image):
+        if observed is None:
+            return
+        labels = observed.get("Config", {}).get("Labels") or {}
+        if labels.get("tech.aosedge.demo.owner") != owner or labels.get("tech.aosedge.demo.team") != team:
+            raise EnvironmentError("BACKEND_FOREIGN_CONTAINER")
+        if observed.get("Image") != image:
+            raise EnvironmentError("BACKEND_CONTAINER_RECONCILIATION_REQUIRED")
+
     def _spec(self, state, team, image):
         owner = object_id(state["operations"][0]["id"])
         port = 18091 if team == "brake" else 18092
@@ -153,12 +162,7 @@ class BackendService:
             name = "aosedge-demo-" + team + "-cloud"
             record = state.get("backends", {}).get(team)
             observed = self._inspect("container", name)
-            if observed is not None:
-                labels = observed.get("Config", {}).get("Labels") or {}
-                if labels.get("tech.aosedge.demo.owner") != owner or labels.get("tech.aosedge.demo.team") != team:
-                    raise EnvironmentError("BACKEND_FOREIGN_CONTAINER")
-                if record is None or observed.get("Image") != record.get("imageId"):
-                    raise EnvironmentError("BACKEND_CONTAINER_RECONCILIATION_REQUIRED")
+            self._owned_container(observed, owner, team, (record or {}).get("imageId"))
             if action == "status":
                 runtime = (observed or {}).get("State", {})
                 return dict(team=team, state="RUNNING" if runtime.get("Running") else "STOPPED",
@@ -187,11 +191,16 @@ class BackendService:
                 spec = self._spec(state, team, candidate["imageId"])
                 for kind, group in (("volume", spec["volumes"]), ("network", spec["networks"])):
                     resource = self._inspect(kind, next(iter(group)))
-                    if resource and (resource.get("Labels") or {}).get("tech.aosedge.demo.owner") != owner:
+                    labels = (resource or {}).get("Labels") or {}
+                    if resource and (labels.get("tech.aosedge.demo.owner") != owner
+                            or labels.get("tech.aosedge.demo.team") != team):
                         raise EnvironmentError("BACKEND_FOREIGN_" + kind.upper())
                 directory = self.environment._directory(".run/demo-current/backends")
-                self.environment._directory(".run/demo-current/backends/context")
+                from .backend_context import export_directory
+                export_directory(self.environment)
                 path = directory / (team + "-compose.json")
+                if path.is_symlink() or (path.exists() and (record is None or read_json(path) != spec)):
+                    raise EnvironmentError("BACKEND_COMPOSE_RECONCILIATION_REQUIRED")
                 atomic_json(path, spec)
                 record = dict(imageId=candidate["imageId"], sourceRevision=candidate["sourceRevision"], composePath=str(path.relative_to(self.root)),
                               containerName=name, owner=owner, state="UNCERTAIN", action="start", startedAt=now())
@@ -200,6 +209,7 @@ class BackendService:
                 self.progress("Starting " + team + " backend; process readiness only, current Unit may not yet exist")
                 self._docker("compose", "--file", str(path), "up", "--detach", "--no-build", "--pull", "never", "--wait", "--wait-timeout", "60", timeout=75)
                 observed = self._inspect("container", name)
+                self._owned_container(observed, owner, team, record["imageId"])
                 if not observed or observed.get("State", {}).get("Health", {}).get("Status") != "healthy":
                     raise EnvironmentError("BACKEND_START_NOT_CONFIRMED")
                 record.update(state="RUNNING", confirmedAt=now())
@@ -211,6 +221,7 @@ class BackendService:
                 atomic_json(self.root / JOURNAL, state)
                 self._docker("compose", "--file", str(path), "stop", "--timeout", "10", timeout=20)
                 observed = self._inspect("container", name)
+                self._owned_container(observed, owner, team, record["imageId"])
                 if observed and observed.get("State", {}).get("Running"):
                     raise EnvironmentError("BACKEND_STOP_NOT_CONFIRMED")
                 record.update(state="STOPPED", confirmedAt=now())
