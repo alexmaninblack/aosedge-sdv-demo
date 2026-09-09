@@ -79,6 +79,16 @@ failure call-site reporting. Runtime source checkpoint is `2fc57a9` on
 `codex/studio-controller-startup-diagnostic` (local, not pushed). These results
 do not close live post-Provision binding, OTA or the later service/UI phases.
 
+Solution source checkpoints `4199321` and `c346345` are committed locally.
+Publishing them to the already approved implementation branch failed before
+authentication (`could not read Username`). The existing GitHub CLI account
+check then reported an invalid token. No alternative credential search, login
+or remote rewrite was attempted. GitHub authentication must be restored before
+that push; the earlier confirmed Brake `3ad5b23` push is unaffected. The
+Controller diagnostic branch remains local, and all pre-implementation return
+points are preserved. No source push failure is treated as a successful remote
+checkpoint.
+
 Independent Brake source work produced local commit `4434082` on
 `codex/brake-growing-window`: sealed PRE and full ACTIVE/POST chunks during
 capture, durable ACK/restart handling and exact completion semantics. Four
