@@ -38,6 +38,13 @@ declaration through Demo Control remains an integration step; the reader does
 not silently modify legacy manifests during status or publication. No rebuild,
 image replacement or qualification promotion has occurred.
 
+The existing pinned Factory build producer now includes this declaration in
+its output manifest, deriving paths from that source's packaged VSS composition
+and preserving `BUILT_NOT_LIVE_QUALIFIED`. Two producer tests cover the exact
+source, complete schema and rejection before construction. Existing immutable
+artifacts still take the explicit reconcile-without-rebuild path; this source
+change does not rewrite their manifests or run the Builder.
+
 Isolated regression tests cover a version-independent declared image, missing
 declaration, wrong image SHA/type/source, unsupported paths and conflicting
 producer metadata. They do not substitute for the declaration or live proof.

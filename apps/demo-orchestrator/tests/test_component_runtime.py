@@ -20,6 +20,7 @@ class RuntimeProofBoundaryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory, \
                 patch("aosedge_demo_orchestrator.component_runtime.ARTIFACT", Path(directory) / "runtime-proofs" / "proof"), \
                 patch("aosedge_demo_orchestrator.component_runtime.builder") as lifecycle, \
+                patch("aosedge_demo_orchestrator.component_runtime.factory_component_support", return_value={}), \
                 patch("aosedge_demo_orchestrator.component_runtime.time.sleep"), \
                 patch("aosedge_demo_orchestrator.component_runtime.shutil.disk_usage", return_value=SimpleNamespace(free=80*1024**3)), \
                 patch("aosedge_demo_orchestrator.component_runtime.subprocess.check_output", side_effect=[b"", FACTORY_REVISION.encode()]), \

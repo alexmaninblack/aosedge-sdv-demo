@@ -18,6 +18,8 @@ import shutil
 from pathlib import Path
 import sys
 import time
+import runpy
+import re
 
 from .environment import EnvironmentError
 
@@ -30,6 +32,22 @@ BUILDER_PROJECT = "/home/yocto/r61-build/project/yocto"
 ARTIFACT = Path.home() / "OpenAI/demo-artifacts/aosedge-sdv-demo/runtime-proofs/sm-factory-placeholder"
 FILES = ("config.hpp", "config.cpp", "safestop.hpp", "safestop.cpp", "runtime.hpp", "runtime.cpp",
          "tests/safestop.cpp", "tests/runtime.cpp")
+
+
+def factory_component_support(revision):
+    """Producer metadata for the exact supported source, not live qualification."""
+    from .components import COMPONENT
+    if revision != FACTORY_REVISION:
+        raise EnvironmentError("FACTORY_SOURCE_REVISION_MISMATCH")
+    schema = runpy.run_path(str(FACTORY_SOURCE /
+        "meta-aos-vehicle-platform/recipes-support/vss/files/vdp_vss_schema.py"))
+    paths = list(schema["BASE_PATHS"] + schema["WHEEL_PATHS"] + schema["SLIP_PATHS"])
+    if (len(paths) != 23 or any(not isinstance(path, str)
+            or not re.fullmatch(r"Vehicle(?:\.[A-Za-z][A-Za-z0-9_]*)+", path) for path in paths)
+            or len(set(paths)) != 23):
+        raise EnvironmentError("FACTORY_VDP_SCHEMA_DECLARATION_MISMATCH")
+    return dict(schemaVersion=1, runtimeProfile="aos-main-qemuarm64-v1", componentType=COMPONENT,
+                supportedReadPaths=paths, sourceRevision=revision)
 
 
 def builder_ssh():
@@ -196,6 +214,7 @@ def build_factory(version):
     revision = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=FACTORY_SOURCE).decode().strip()
     if revision != FACTORY_REVISION:
         raise EnvironmentError("FACTORY_SOURCE_REVISION_MISMATCH")
+    compatibility = factory_component_support(revision)
     destination = ARTIFACT.parents[1] / "factory-images" / version
     if destination.exists():
         raise EnvironmentError("FACTORY_ARTIFACT_EXISTS_RECONCILE_WITHOUT_REBUILD")
@@ -287,7 +306,7 @@ def build_factory(version):
         if digest.hexdigest() != remote_sha:
             raise EnvironmentError("FACTORY_TRANSFER_DIGEST_MISMATCH")
         image.chmod(0o444)
-        manifest = dict(schemaVersion=1, state="BUILT_NOT_LIVE_QUALIFIED",
+        manifest = dict(schemaVersion=1, state="BUILT_NOT_LIVE_QUALIFIED", demoCompatibility=compatibility,
             source=dict(repository="aos-vehicle-platform", revision=revision),
             factoryImage=dict(version=version, architecture="main-qemuarm64", path="main-qemuarm64.img",
                               byteLength=image.stat().st_size, sha256=remote_sha, format="raw"),
