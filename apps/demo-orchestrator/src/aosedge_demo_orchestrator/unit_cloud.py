@@ -130,6 +130,11 @@ def execute(request):
         from aosedge_demo_orchestrator.unit_sdk import identity
         return identity(request["address"])
     cloud = Cloud(request)
+    if action == "observe":
+        from aosedge_demo_orchestrator.cloud_observation import inventory, monitoring
+        if request.get("observation") not in ("cloud-status", "monitoring"):
+            raise CloudFailure("UNIT_OBSERVATION_INVALID")
+        return (monitoring if request["observation"] == "monitoring" else inventory)(cloud, request)
     if action == "reconcile-uploads":
         from aosedge_demo_orchestrator.component_cloud import batch_guard
         from aosedge_demo_orchestrator.components import COMPONENT, VERSION

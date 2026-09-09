@@ -139,6 +139,18 @@ class DemoOrchestrator:
             return OperationResult(operation, OperationState.COMPLETED,
                 "One VM connected to the local server-TLS source. VDP/KUKSA readiness is reported separately; mTLS deferred.",
                 target=request.target.value, data=data)
+        if request.domain == "unit" and request.action in ("cloud-status", "monitoring"):
+            if (request.target != VehicleTarget.TEST or request.guest or request.cloud or request.current or request.image
+                    or request.image_path or request.profile or request.component_version or request.content_profile):
+                return OperationResult(operation, OperationState.BLOCKED, "UNIT_OBSERVATION_REQUIRES_TEST")
+            try:
+                data = self.unit_service.observe(request.action, "test")
+            except EnvironmentError as error:
+                return OperationResult(operation, OperationState.BLOCKED, str(error), target="test")
+            except (OSError, ValueError, KeyError, TypeError):
+                return OperationResult(operation, OperationState.BLOCKED, "UNIT_OBSERVATION_BINDING_UNAVAILABLE", target="test")
+            return OperationResult(operation, OperationState.PARTIAL if data["problems"] else OperationState.OBSERVED,
+                "Read-only Aos Cloud observation; no guest reads, repairs, logs or update actions.", target="test", data=data)
         if request.domain == "unit" and request.action in ("provision", "deprovision", "delete", "unassign"):
             if request.target is None:
                 return OperationResult(operation, OperationState.BLOCKED, "UNIT_TARGET_REQUIRED")

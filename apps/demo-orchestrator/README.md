@@ -3,6 +3,16 @@
 
 # Demo Orchestrator
 
+### Cloud-only Test observations
+
+`democtl unit cloud-status test` reads the current Test's Cloud-reported
+components, Subjects, services and actual instances. `democtl unit monitoring test`
+reads its latest resource samples separately. Neither command queries the VM,
+changes Cloud, waits for an update or performs an environment audit. Missing,
+empty and failed observations remain distinct; CPU is DMIPS, while unverified
+RAM/disk/traffic scaling remains explicitly unknown. See the
+[bounded read/result contract](../../docs/architecture/demo-control-cloud-observation.md).
+
 Development update: the normal simulation now opens **Driving Control & Telemetry**
 as one native window beneath the separate CARLA window. It consumes the existing
 VISS client's JSON output; no Terminal dashboard opens. Use the same

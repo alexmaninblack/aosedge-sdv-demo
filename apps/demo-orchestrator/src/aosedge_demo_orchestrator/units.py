@@ -23,6 +23,30 @@ class UnitService:
         self.environment = vm.environment
         self.root = vm.root
         self.progress = vm.progress
+        from .cloud_observation import SharedCloudObserver
+        self.cloud_observer = SharedCloudObserver()
+
+    def observe(self, action, target):
+        """Journal selects identity only; every displayed fact comes from Cloud."""
+        from .cloud_observation import unavailable
+        from .status import object_id, safe_word
+        if target != "test" or action not in ("cloud-status", "monitoring"):
+            raise EnvironmentError("UNIT_OBSERVATION_REQUIRES_TEST")
+        state = read_json(self.root / JOURNAL)
+        item = state.get("vehicles", {}).get("test", {})
+        if not item.get("unitId") or not item.get("systemUid"):
+            raise EnvironmentError("TEST_CLOUD_BINDING_REQUIRED")
+        identity = dict(unitId=object_id(item["unitId"]), systemUid=safe_word(item["systemUid"], 256))
+        owner = state.get("cloudBinding", {}).get("ownerId")
+        if not owner:
+            raise EnvironmentError("CLOUD_OBSERVATION_OWNER_REQUIRED")
+        owner = object_id(owner)
+        def fetch():
+            try:
+                return self._cloud("observe", observation=action, ownerId=owner, **identity)
+            except EnvironmentError as error:
+                return unavailable(identity, action, str(error))
+        return self.cloud_observer.read((owner, identity["unitId"], identity["systemUid"], action), fetch)
 
     def _cloud(self, action, **values):
         config = load_configuration(self.root)
@@ -43,7 +67,7 @@ class UnitService:
         try:
             result = subprocess.run([str(config["cloudPython"]), "-I", "-B",
                 str(Path(__file__).with_name("unit_cloud.py"))], input=json.dumps(request),
-                capture_output=True, text=True, timeout=195 if action == "provision" else 120 if action == "wait" else 45,
+                capture_output=True, text=True, timeout=195 if action == "provision" else 120 if action == "wait" else 60 if action == "observe" else 45,
                 env={"PATH": os.defpath})
             if result.returncode or len(result.stdout) > 262144:
                 raise EnvironmentError("UNIT_WORKER_UNAVAILABLE")
