@@ -1,19 +1,17 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-## Pending Studio Test contract migration — 2026-09-09
+## Studio Test context migration — 2026-09-10
 
 The current [UI-STUDIO-026 target](../../docs/demo/mockups/aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract)
 requires one current Test UID without a hidden Production vehicle. The JSON
-profile in this package still specifies the earlier two-role context/cleanup
-contract. It is **not yet compatible with the Test-only Studio flow**.
-Studio P1 must migrate context validation and cleanup selectors with the backend
-handlers/tests: exactly the current Test alone or the retained dual-role flow;
+profiles and backend handlers/tests now accept exactly the current Test alone
+or the retained dual-role engineering flow. They
 reject empty, duplicate, foreign and partial unrelated selectors. Keep the
 current UID binding until scoped cleanup completes, then clear it. Park retains
 the database; Retire deletes owned ordinary run records without an archive.
-This records the accepted target and remaining executable migration, not a
-silent schema update or proof of a working backend. Message formats, durable
+This is isolated contract/backend evidence, not full Demo Control lifecycle
+or live E2E qualification. Message formats, durable
 acknowledgement and authority boundaries below are unchanged.
 
 
@@ -74,14 +72,14 @@ current UID with no rows truthfully returns an empty page with the context
 role; a non-current UID is `404 UNIT_NOT_CURRENT`, and missing/invalid context
 is `503 CURRENT_UNIT_CONTEXT_UNAVAILABLE` without a stream. The Demo
 Orchestrator uses the same exact context for preview/confirm/execute reset.
-The cleanup selector is exactly those two sorted Unit UIDs and contains no
+The cleanup selector is exactly all sorted Unit UIDs in that context and contains no
 `demoRunId`, start time or end time. The admin endpoints use a separate
 mode-`0600` Unix-domain HTTP composition root and are unavailable to the
-browser, guest ingestion route and LAN. Wildcard, missing or non-two-Unit
-selectors are rejected. An empty matching dataset is a valid idempotent
-result, but the two exact Unit identities are still mandatory.
+browser, guest ingestion route and LAN. Wildcard, missing, empty, duplicate,
+foreign or partial-context selectors are rejected. An empty matching dataset
+is a valid idempotent result; its one or two exact context identities remain mandatory.
 
-The 60-second preview token binds the two sorted identities, record counts,
+The 60-second preview token binds all sorted context identities, record counts,
 record-set digest and expiry. The digest is SHA-256 of one RFC8785 canonical
 array containing all six logical table blocks in fixed order—messages,
 windows, assessments, events, advisories and quarantine—including empty
@@ -138,7 +136,7 @@ Files:
 - [`cleanup-preview.schema.json`](cleanup-preview.schema.json) — closed reset
   preview and confirmation-token schema;
 - [`current-unit-context.schema.json`](current-unit-context.schema.json) —
-  closed injected current Test/Production Unit identity and role context;
+  closed injected current Test and optional Production identity/role context;
 - [`brake-cloud-query-admin-profile.v1.json`](brake-cloud-query-admin-profile.v1.json)
   — exact bounded REST pagination, closed error mapping, notification-only SSE
   and separate local-admin transport;
@@ -151,7 +149,7 @@ Files:
 - [`cleanup-preview-request.schema.json`](cleanup-preview-request.schema.json),
   [`cleanup-execute-request.schema.json`](cleanup-execute-request.schema.json)
   and [`cleanup-result.schema.json`](cleanup-result.schema.json) — closed
-  two-UID admin request/result messages with no run identifier or time range;
+  one-or-two-UID admin request/result messages with no run identifier or time range;
 - [`rfc8785-edge-vectors.schema.json`](rfc8785-edge-vectors.schema.json) —
   closed Unicode ordering, number serialization and duplicate-key edge-vector
   package;

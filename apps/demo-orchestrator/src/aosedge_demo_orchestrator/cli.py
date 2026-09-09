@@ -36,6 +36,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="result format (default: human)",
     )
     commands = parser.add_subparsers(dest="domain", required=True)
+    backend = commands.add_parser("backend", help="owned functional backend containers, separate from Cloud and vehicle functions")
+    backend_commands = backend.add_subparsers(dest="action", required=True)
+    for action in ("build", "start", "stop", "status"):
+        command = backend_commands.add_parser(action, help="explicit development build" if action == "build" else "owned backend " + action)
+        command.add_argument("team", choices=("brake", "tire"))
 
     workspace = commands.add_parser("workspace", help="built-in-display window composition only")
     workspace_commands = workspace.add_subparsers(dest="action", required=True)
@@ -160,6 +165,7 @@ def request_from_arguments(arguments: argparse.Namespace) -> OperationRequest:
         current=getattr(arguments, "current", None),
         component_version=getattr(arguments, "component_version", None),
         content_profile=getattr(arguments, "content_profile", None),
+        team=getattr(arguments, "team", None),
         timeout=getattr(arguments, "timeout", 8.0),
     )
 
@@ -179,6 +185,8 @@ def render_human(result: OperationResult, details: bool = False) -> str:
     if data and document["operation"].startswith("workspace."):
         lines.append(json.dumps(data, indent=2, sort_keys=True))
     if data and document["operation"].startswith("component."):
+        lines.append(json.dumps(data, indent=2, sort_keys=True))
+    if data and document["operation"].startswith("backend."):
         lines.append(json.dumps(data, indent=2, sort_keys=True))
     if data and document["operation"].startswith("demo."):
         lines.append("VDP: " + str(data.get("contentProfile", "v1")) + " / " + str(data.get("version", "not selected")))

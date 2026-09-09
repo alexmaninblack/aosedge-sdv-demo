@@ -29,6 +29,19 @@ class DemoOrchestrator:
         selection_error = request.selection_error()
         if selection_error:
             return OperationResult(operation, OperationState.BLOCKED, selection_error)
+        if request.domain == "backend":
+            from .backends import BackendService
+            if request.target or request.current or request.image or request.image_path or request.profile:
+                return OperationResult(operation, OperationState.BLOCKED, "BACKEND_USES_FIXED_TEAM_ONLY")
+            try:
+                data = BackendService(self.environment_service, self.vm_service.progress).execute(request.action, request.team)
+                state = (OperationState.OBSERVED if request.action == "status" else OperationState.PARTIAL
+                    if request.action == "start" and data.get("state") != "RUNNING" else OperationState.COMPLETED)
+                return OperationResult(operation, state, "Backend process/storage operation; not Cloud or in-vehicle function readiness.", data=data)
+            except EnvironmentError as error:
+                return OperationResult(operation, OperationState.BLOCKED, str(error))
+            except (OSError, ValueError, KeyError, TypeError):
+                return OperationResult(operation, OperationState.BLOCKED, "BACKEND_STATE_UNAVAILABLE")
         if request.domain == "vehicle" and request.action in ("connectivity-on", "connectivity-off", "connectivity-status"):
             from .connectivity import ConnectivityService
             import subprocess

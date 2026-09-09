@@ -46,6 +46,31 @@ owned roles, selected Test, running .31, fresh Controller Safe Stop. It was not
 retired or reconfigured during source work. Production is not removed merely to
 fit the new Test-only default.
 
+P1 also has an isolated Demo Control context projector: exact successful current
+Test identity, optional successful Production peer, no Cloud/runtime state in
+the exported context, no silent replacement of a retiring UID, and retained
+scope after Cloud deletion until backend cleanup. Five tests passed. Successful
+provisioning refreshes this context when the run owns backend processes. Full
+Create/Park/Retire composition remains pending.
+
+The shared CLI/API now contains bounded backend start/stop/status primitives;
+development image construction is an explicit CLI-only `backend build` action.
+Six isolated tests cover digest pinning, loopback-only publication, no build/pull
+on start, foreign-owner rejection, preserved storage and lost-response
+reconciliation. These tests do not qualify Docker startup or guest routing.
+
+Brake runtime source increment `dca3190c31bd9d593ec2e1a8a4763d2ed28ac984`
+on `codex/studio-brake-runtime` adds host-tested v1 composition and bounded
+transport primitives. CTest passed v1, v2 and seven runtime test groups (3/3
+CTest targets). It is a library increment, **not a deployable service**:
+bootstrap, real KUKSA adapter, growing-window transport and Linux ARM64 assembly
+remain unimplemented. The diagnostic package must not be published as product.
+
+Local Solution checkpoint: `619d107`. Remote push was rejected by the execution
+permission review because the exact GitHub destination lacked explicit approval
+in the current trusted request. No push workaround or remote modification was
+attempted. Existing pre-implementation remote checkpoint remains unchanged.
+
 Before P5 live SOTA there are precise integration gates, not bundle-format
 guesses:
 

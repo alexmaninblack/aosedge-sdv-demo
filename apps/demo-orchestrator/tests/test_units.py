@@ -31,6 +31,7 @@ class UnitSafetyTests(unittest.TestCase):
         with patch("aosedge_demo_orchestrator.units.read_json", return_value=self.state):
             self.service.execute("provision", "test")
             self.service._provision.assert_called_once()
+            self.service.vm._validate.assert_called_with(self.state, "start", ["test"])
             self.service._cloud.reset_mock()
             for action in ("deprovision", "delete"):
                 with self.assertRaisesRegex(EnvironmentError, "DETACHED_SOURCE"):
