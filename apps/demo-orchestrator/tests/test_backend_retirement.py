@@ -239,7 +239,8 @@ class BackendRetirementTests(TestCase):
         with patch.object(self.backend, "execute", side_effect=interrupted):
             with self.assertRaisesRegex(EnvironmentError, "stop response lost"):
                 self.cleanup.confirm_test_cleanup(state)
-        state = read_json(self.root / JOURNAL)
+        self.assertEqual("STOPPED", state["backends"]["brake"]["state"])
+        self.assertEqual(read_json(self.root / JOURNAL), state)
         calls = len(self.calls)
         self.assertTrue(self.cleanup.confirm_test_cleanup(state))
         self.assertEqual(calls, len(self.calls))
