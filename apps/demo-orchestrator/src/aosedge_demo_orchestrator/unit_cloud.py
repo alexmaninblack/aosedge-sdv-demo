@@ -138,12 +138,24 @@ def execute(request):
     if action == "reconcile-uploads":
         from aosedge_demo_orchestrator.component_cloud import batch_guard
         from aosedge_demo_orchestrator.components import COMPONENT, VERSION
-        cloud.require("deployment_bundles_list", "verification_batch_read")
-        bundles = cloud.pages("deployment-bundles/")
+        uploads = request["uploads"]
+        if not isinstance(uploads, list) or not uploads or len(uploads) > 16:
+            raise CloudFailure("COMPONENT_RECONCILIATION_SCOPE_INVALID")
+        cloud.require("deployment_bundles_list")
+        bundles = None
         for entry in request["uploads"]:
             deployment_id = object_id(entry["deploymentId"])
             if not VERSION.fullmatch(entry["version"]):
                 raise CloudFailure("COMPONENT_OPERATION_RECONCILIATION_REQUIRED")
+            if entry.get("verificationTest") is True:
+                from aosedge_demo_orchestrator.component_publication import snapshot
+                observed = snapshot(cloud, dict(entry, vehicles={}, purpose="retirement"))
+                if observed["publication"]["stage"] != "READY":
+                    raise CloudFailure("COMPONENT_OPERATION_RECONCILIATION_REQUIRED")
+                continue
+            cloud.require("verification_batch_read")
+            if bundles is None:
+                bundles = cloud.pages("deployment-bundles/")
             matches = [bundle for bundle in bundles if bundle.get("id") == deployment_id]
             if len(matches) != 1 or matches[0].get("state") != "done":
                 raise CloudFailure("COMPONENT_OPERATION_RECONCILIATION_REQUIRED")

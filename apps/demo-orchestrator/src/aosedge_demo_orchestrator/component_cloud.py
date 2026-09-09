@@ -68,7 +68,10 @@ def upload(cloud, request):
             result = json.loads(raw)
     except urllib.error.HTTPError as error:
         raise CloudFailure("COMPONENT_UPLOAD_HTTP_" + str(error.code)) from None
-    return dict(deploymentId=object_id(result["id"]), state=result["state"], httpStatus=201)
+    from .cloud_observation import pick
+    public = pick(result, ("state", "build_info"))
+    return dict(deploymentId=object_id(result["id"]), state=public["state"],
+                buildInfo=public["build_info"], httpStatus=201)
 
 
 def project(value, keys):
@@ -86,21 +89,32 @@ def send_observed(value, component_id):
     return None
 
 
-def unit_view(cloud, identity):
+def unit_view(cloud, identity, strict=False):
+    from .cloud_observation import pick
     value = cloud.call("units/" + object_id(identity["unitId"]) + "/")
-    if value["system_uid"] != identity["systemUid"]:
+    if value["system_uid"] != identity["systemUid"] or (strict and value.get("id") != identity["unitId"]):
         raise CloudFailure("COMPONENT_UNIT_IDENTITY_CHANGED")
     result = project(value, ("id", "status", "online_status", "fleet", "update_strategy", "fota_blocked"))
+    if strict:
+        result = pick(value, ("id", "status", "online_status", "fleet", "update_strategy", "fota_blocked"))
     result["unitSets"] = [object_id(item["id"]) for item in value.get("unit_sets") or []]
     if identity["unitSetId"] not in result["unitSets"]:
         raise CloudFailure("COMPONENT_ROLE_UNIT_SET_MISSING")
     result["components"] = []
+    if strict and not isinstance(value.get("unit_update_components"), list):
+        result["components"] = None
+        return result
     for item in value.get("unit_update_components") or []:
         if item.get("type") != COMPONENT:
             continue
         row = project(item, ("type", "pending_component_status", "pending_validation_batch_id", "installed_component_id"))
+        if strict:
+            row = pick(item, ("type", "pending_component_status", "pending_validation_batch_id", "installed_component_id"))
+        row.update(pick(item, ("pending_component_error",)))
         for name in ("installed_component", "pending_component"):
             row[name] = project(item[name], ("id", "version", "state", "is_fake")) if item.get(name) else None
+            if strict and row[name] is not None:
+                row[name] = pick(item[name], ("id", "version", "state"), booleans=("is_fake",))
         result["components"].append(row)
     return result
 
@@ -254,6 +268,9 @@ def execute(request):
                     if item.get("is_fake") is False and isinstance(item.get("version"), str) and VERSION.fullmatch(item["version"])]
         return dict(versions=versions, latest=max(versions, key=lambda value: tuple(map(int, value.split("."))), default="0.0.0"))
     if request["action"] == "cloud-status":
+        if request.get("verificationTest") is True:
+            from .component_publication import snapshot as publication_snapshot
+            return publication_snapshot(cloud, request)
         return snapshot(cloud, request)
     if request["action"] == "upload":
         return upload(cloud, request)

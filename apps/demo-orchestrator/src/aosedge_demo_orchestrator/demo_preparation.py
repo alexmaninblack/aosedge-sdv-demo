@@ -109,10 +109,7 @@ class DemoPreparation:
                     save()
                     return OperationResult("demo.prepare", result.state, result.message, data=record)
                 if phase == "publication":
-                    bundles = (result.data or {}).get("deploymentBundles", [])
-                    versions = (result.data or {}).get("versions", [])
-                    if (len(bundles) != 1 or bundles[0].get("state") != "done"
-                            or len(versions) != 1 or versions[0].get("state") != "Ready"):
+                    if (result.data or {}).get("publication", {}).get("stage") != "READY":
                         record["reason"] = "COMPONENT_PUBLICATION_NOT_READY"
                         save()
                         return OperationResult("demo.prepare", OperationState.PARTIAL,

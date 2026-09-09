@@ -123,7 +123,8 @@ class DemoOrchestrator:
                 OperationState.PARTIAL if data.get("problems") else
                 OperationState.COMPLETED if request.action in ("unpack", "prepare", "sign", "upload", "approve", "unapprove", "send", "schema-apply", "schema-remove") else OperationState.OBSERVED,
                 "Test component send request accepted; VM installation/startup is observed separately." if request.action == "send" else
-                "Test component publication; fleet validation/Production promotion is not performed." if request.action in ("upload", "approve", "unapprove") else
+                "Deployment-bundle request accepted or reconciled; inspect publication.stage for processing/Ready. No validation approval or Production promotion." if request.action == "upload" else
+                "Explicit engineering batch approval; not part of verification-Test delivery." if request.action in ("approve", "unapprove") else
                 "Read-only component Cloud observation." if request.action == "cloud-status" else
                 "Temporary Test-only KUKSA schema; no Factory image, credential, Cloud or Production mutation." if request.action in ("schema-apply", "schema-remove") else
                 "Read-only guest component observation; no restart or update." if request.action in ("status", "logs", "diagnose", "sm-status") else
