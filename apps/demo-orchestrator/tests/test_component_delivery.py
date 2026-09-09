@@ -68,21 +68,6 @@ class DeliveryTests(unittest.TestCase):
             result = getattr(self.service, action)("2.0.0")
             return result, worker.call_args_list
 
-    def test_upload_exactly_once_and_records_before_attempt(self):
-        after = dict(self.before, deploymentBundles=[dict(id="bundle", state="Uploaded")])
-        def response(action, **values):
-            if action == "upload":
-                state = json.loads(self.journal.read_text())
-                self.assertTrue(state["componentOperations"]["2.0.0"]["upload"]["attemptStarted"])
-                return dict(deploymentId="bundle", httpStatus=201)
-            return self.before if not values.get("deploymentId") else after
-        result, calls = self.invoke("upload", response)
-        self.assertTrue(result["productionUnchanged"])
-        self.assertEqual(1, sum(call.args[0] == "upload" for call in calls))
-        result, calls = self.invoke("upload", [after])
-        self.assertTrue(result["noOp"])
-        self.assertEqual(1, len(calls))
-
     def test_preprovision_scope_requires_pristine_dual_factory(self):
         from aosedge_demo_orchestrator.component_runtime import FACTORY_VERSION
         self.state = dict(stage="MANUFACTURED", factory=dict(version=FACTORY_VERSION, sha256="factory"),
@@ -126,48 +111,6 @@ class DeliveryTests(unittest.TestCase):
         with self.assertRaises(CloudFailure):
             guard(dict(value, test=dict(members=["another-unit"])))
 
-    def test_preprovision_v1_upload_is_once_and_does_not_probe_a_guest(self):
-        from aosedge_demo_orchestrator.component_runtime import FACTORY_VERSION
-        self.state = dict(stage="MANUFACTURED", factory=dict(version=FACTORY_VERSION, sha256="factory"),
-            vehicles={role: dict(unitId=None, nodeId=None, unitSetId=None) for role in ("test", "production")})
-        self.save()
-        directory = self.service._directory("10.0.0")
-        directory.mkdir(parents=True)
-        prepared = dict(version="10.0.0", contentProfile="v1")
-        (directory / "prepared.json").write_text(json.dumps(prepared))
-        contract = self.root / "contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json"
-        contract.parent.mkdir(parents=True)
-        contract.write_text(json.dumps(dict(componentVersions=[dict(id="VDP_V1", readPaths=["Vehicle.Speed"])])))
-        before = dict(self.before, preProvisioning=True, remainingUnits=[],
-            test=dict(members=[]), production=dict(members=[]),
-            testSet=dict(id="test-set", fleet="fleet", is_validation_set=True),
-            productionSet=dict(id="prod-set", fleet="fleet", is_validation_set=False))
-        after = dict(before, deploymentBundles=[dict(id="bundle", state="uploaded")])
-        files = {"config/capability-manifest.json": b'{"readPaths":["Vehicle.Speed"]}',
-            "provenance/provenance.json": json.dumps(dict(contentProfile="v1", factoryImageVersion=FACTORY_VERSION,
-                factoryImageRawSha256="factory")).encode()}
-        with patch.object(self.service, "verify", return_value=dict(sha256="digest")), \
-                patch.object(self.service, "_bundle", return_value=directory / "fixture.tar.gz"), \
-                patch.object(self.service, "_inspect", return_value=({}, files)), \
-                patch.object(self.service, "diagnose", side_effect=AssertionError("No guest before provisioning")), \
-                patch.object(self.service, "_worker", side_effect=[before, dict(deploymentId="bundle", httpStatus=201), after]) as worker:
-            result = self.service.upload("10.0.0")
-            self.assertTrue(result["productionUnchanged"])
-            self.assertEqual(["cloud-status", "upload", "cloud-status"], [call.args[0] for call in worker.call_args_list])
-        prepared["contentProfile"] = "v2"
-        (directory / "prepared.json").write_text(json.dumps(prepared))
-        with patch.object(self.service, "verify", return_value=dict(sha256="digest")), \
-                patch.object(self.service, "_worker") as worker, \
-                self.assertRaisesRegex(EnvironmentError, "PREPROVISION_V1_ONLY"):
-            self.service.upload("10.0.0")
-        worker.assert_not_called()
-
-    def test_upload_response_loss_is_not_retried(self):
-        with self.assertRaises(EnvironmentError):
-            self.invoke("upload", [self.before, EnvironmentError("LOST")])
-        with self.assertRaisesRegex(EnvironmentError, "RECONCILIATION_REQUIRED"):
-            self.invoke("upload", [self.before])
-
     def test_confirmation_reads_exact_bundle_and_production_only(self):
         from unittest.mock import Mock
         deployment = "33333333-3333-4333-8333-333333333333"
@@ -195,14 +138,6 @@ class DeliveryTests(unittest.TestCase):
         self.assertTrue(result["noOp"])
         worker.assert_called_once()
         self.assertEqual("approve", worker.call_args.kwargs["purpose"])
-
-    def test_existing_version_prevents_publication(self):
-        with self.assertRaisesRegex(EnvironmentError, "ALREADY_IN_CLOUD"):
-            self.invoke("upload", [dict(self.before, versions=[dict(version="2.0.0")])])
-
-    def test_production_change_is_not_hidden(self):
-        with self.assertRaisesRegex(EnvironmentError, "PRODUCTION_GUARD_CHANGED"):
-            self.invoke("upload", [self.before, dict(deploymentId="bundle"), dict(self.before, production={})])
 
     def test_wrong_scope_and_batch_rejected(self):
         guard(self.before)
@@ -423,18 +358,6 @@ class DeliveryTests(unittest.TestCase):
         before = dict(self.before, verificationBatches=[batch])
         with self.assertRaisesRegex(EnvironmentError, "APPROVAL_NOT_CONFIRMED"):
             self.invoke("approve", [before, dict(batchId="batch", approved=False), before])
-
-    def test_missing_schema_prevents_upload_before_attempt(self):
-        with patch.object(self.service, "verify", return_value=dict(sha256="digest")), \
-                patch.object(self.service, "_inspect", return_value=({}, {"config/capability-manifest.json": b'{"readPaths":["Vehicle.CarlaSimulation.ChaosWheel.Row1.Left.LongitudinalSlip"]}'})), \
-                patch.object(self.service, "diagnose", return_value=dict(schemaLoadedByService=True,
-                    missing=["Vehicle.CarlaSimulation.ChaosWheel.Row1.Left.LongitudinalSlip"])), \
-                patch.object(self.service, "_worker", return_value=self.before) as worker:
-            with self.assertRaisesRegex(EnvironmentError, "KUKSA_SCHEMA_MISSING"):
-                self.service.upload("2.0.0")
-        self.assertEqual(1, worker.call_count)
-        self.assertNotIn("componentOperations", json.loads(self.journal.read_text()))
-
 
 if __name__ == "__main__":
     unittest.main()

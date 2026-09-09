@@ -31,7 +31,7 @@ class DemoPreparationTests(unittest.TestCase):
         def execute(request):
             self.calls.append((request.domain, request.action))
             return OperationResult(request.domain + "." + request.action, OperationState.COMPLETED, "done", data=dict(activeVersion="0.0.0",
-                deploymentBundles=[dict(state="done")], versions=[dict(state="Ready")]))
+                publication=dict(stage="READY"), deploymentBundles=[dict(state="done")], versions=[dict(state="Ready")]))
         self.app = SimpleNamespace(environment_service=env, vm_service=Mock(), source_service=SimpleNamespace(initialize_test=lambda: None), execute=execute)
         self.workflow = DemoPreparation(self.app, self.component)
 
@@ -74,7 +74,7 @@ class DemoPreparationTests(unittest.TestCase):
         def processing(request):
             if request.action == "cloud-status":
                 return OperationResult("component.cloud-status", OperationState.OBSERVED, "processing",
-                    data=dict(deploymentBundles=[dict(state="processing")], versions=[]))
+                    data=dict(publication=dict(stage="PROCESSING"), deploymentBundles=[dict(state="processing")], versions=[]))
             return execute(request)
         self.app.execute = processing
         result = self.workflow.prepare("31/arm64")

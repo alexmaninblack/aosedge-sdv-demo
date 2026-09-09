@@ -247,6 +247,22 @@ class UnitSafetyTests(unittest.TestCase):
                 if failure not in ("unavailable", "wrong-proof"):
                     self.service._cloud.assert_not_called()
 
+    def test_retire_verification_upload_has_no_approval_dependency(self):
+        self.state.update(vehicles={}, cloudBinding={"ownerId": UNIT})
+        record = dict(deploymentId=TEST, publicationPath="VERIFICATION_TEST", ownerId=UNIT,
+            upload=dict(attemptStarted=True, state="RESPONDED", response=dict(httpStatus=201, deploymentId=TEST)))
+        self.state["componentOperations"] = {"16.0.0": record}
+        entries = [dict(version="16.0.0", deploymentId=TEST, verificationTest=True)]
+        self.service._cloud = Mock(return_value=dict(confirmedUploads=entries))
+        self.assertTrue(self.service.confirm_retired(self.state))
+        self.service._cloud.assert_called_once_with("reconcile-uploads", uploads=entries)
+        self.assertEqual("CONFIRMED", record["upload"]["state"])
+        self.assertNotIn("approve", record)
+        record["ownerId"] = NODE
+        record["upload"]["state"] = "RESPONDED"
+        with self.assertRaisesRegex(EnvironmentError, "PUBLICATION_OWNER_CHANGED"):
+            self.service.confirm_retired(self.state)
+
     def test_upload_reconciliation_worker_is_read_only_exact_and_owner_scoped(self):
         from aosedge_demo_orchestrator.component_cloud import COMPONENT, COMPONENT_ID
         entry = dict(version="12.0.0", deploymentId=TEST, batchId=PROD)

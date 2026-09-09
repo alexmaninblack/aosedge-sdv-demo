@@ -124,11 +124,17 @@ class UnitService:
             response = attempt.get("response") or {}
             approval = record.get("approve") or {}
             if (attempt.get("state") != "RESPONDED" or response.get("httpStatus") != 201
-                    or not record.get("deploymentId") or record["deploymentId"] != response.get("deploymentId")
-                    or approval.get("state") != "CONFIRMED" or not record.get("batchId")
-                    or record["batchId"] != (approval.get("response") or {}).get("batchId")):
+                    or not record.get("deploymentId") or record["deploymentId"] != response.get("deploymentId")):
                 raise EnvironmentError("COMPONENT_OPERATION_RECONCILIATION_REQUIRED")
-            uploads.append(dict(version=version, deploymentId=record["deploymentId"], batchId=record["batchId"]))
+            if record.get("publicationPath") == "VERIFICATION_TEST":
+                if record.get("ownerId") != self.owner_id:
+                    raise EnvironmentError("COMPONENT_PUBLICATION_OWNER_CHANGED")
+                uploads.append(dict(version=version, deploymentId=record["deploymentId"], verificationTest=True))
+            else:
+                if (approval.get("state") != "CONFIRMED" or not record.get("batchId")
+                        or record["batchId"] != (approval.get("response") or {}).get("batchId")):
+                    raise EnvironmentError("COMPONENT_OPERATION_RECONCILIATION_REQUIRED")
+                uploads.append(dict(version=version, deploymentId=record["deploymentId"], batchId=record["batchId"]))
         if uploads:
             self.progress("Confirming recorded component uploads in Cloud; no upload or approval")
             result = self._cloud("reconcile-uploads", uploads=uploads)

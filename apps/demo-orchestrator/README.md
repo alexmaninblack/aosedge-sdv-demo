@@ -217,9 +217,11 @@ in its existing guest readiness read. `component sm-status test` reports the
 role and mount observation. On reboot the role remains in the component store.
 
 Cloud commands keep authenticated OEM/permission and exact-target checks,
-one recorded mutation attempt and authoritative confirmation. Upload/approval
-confirmation now reads the exact bundle/batch and Production only, not a second
-full catalog/inventory. Known verification-batch UUIDs use their detail endpoint.
+one recorded mutation attempt and authoritative confirmation. Verification-Test
+publication returns HTTP acceptance immediately; `component cloud-status VERSION`
+separately observes processing, Ready or Error. It needs no batch approval or
+Production VM. Explicit engineering approval still reads its known batch and
+retains its historical Production guard. Known batch UUIDs use their detail endpoint.
 The v11 deployment-bundle detail route supports DELETE only: read its collection
 and select the exact recorded UUID; never issue GET to that detail route.
 Approval does not reverify a local archive or require Test Online. Its post-read
@@ -232,9 +234,9 @@ operator reported confirmation from the Aos platform developers: the current
 deployment delivers updates only to Units in verification sets. This is an
 operator-reported platform limitation, not a conclusion from HTTP 403 or a
 reason to change OEM permissions, Production membership or campaign settings.
-`component cloud-status VERSION` reads component/verification/Unit state and
-keeps Production as a non-target observation; it does not query fleet-validation
-batches or campaigns. Production remains a non-verification set. Its lifecycle
+`component cloud-status VERSION` reads the owned bundle, catalog version and
+current Test Unit without querying verification batches, Production or campaigns.
+Production remains a non-verification set. Its lifecycle
 and source selection remain available, but Production FOTA is not qualified.
 
 Unit lifecycle discovery reads only the two role sets, not other sets' members.
@@ -244,9 +246,15 @@ subsequent poll reads the exact Unit; there is no repeated `users/me`, Unit
 search or Nodes inventory per poll. Independent mutation stages still verify
 their own OEM authority. No persistent credential/session cache is added.
 
-Prepared v1 profile replays can be uploaded/approved before provisioning a
-pristine dual-VM Factory .31 environment. This branch verifies the empty Cloud
-scope and Factory-bound profile rather than probing a nonexistent guest.
+Prepared v1/v2/v3 profile replays can be published before provisioning the
+owned Test, including while connected/running in initial Manual. No hidden
+Production VM is required. Before publication all verification-set membership
+pages must prove that no other Unit can receive the update. After provisioning,
+only the current Test may be a recipient; Offline is not a host-publication block.
+Compatibility comes from the exact Factory copy receipt and a producer catalog
+declaration, not guest SSH. Missing declaration is a blocker: the retained .31
+artifact is not automatically grandfathered in by version number. See the
+[publication contract](../../docs/architecture/demo-control-component-publication.md).
 The operator confirmed the Test .31 sequence 10/v1 -> 11/v2 -> 12/v3 and visual
 Safe Stop-gated replacements. The separate fresh-overlay repeat, full advisory
 and independent-consumer qualification remain outstanding. See the
@@ -260,11 +268,10 @@ democtl component list
 democtl component inspect 1.0.16
 democtl component unpack 1.0.16
 democtl component verify 1.0.16
-democtl component prepare 2.0.0
-democtl component sign 2.0.0
-democtl component upload 2.0.0
-democtl component cloud-status 2.0.0
-democtl component approve 2.0.0
+democtl component prepare --profile v1
+democtl component sign VERSION
+democtl component upload VERSION
+democtl component cloud-status VERSION
 democtl component status test
 democtl component logs test
 democtl component diagnose test
@@ -306,7 +313,7 @@ Repeat a demo with new Cloud releases and explicit frozen content profiles:
 democtl component prepare 4.0.0 --profile v1
 democtl component sign 4.0.0
 democtl component upload 4.0.0
-democtl component approve 4.0.0
+democtl component cloud-status 4.0.0
 democtl component status test
 # After seven-signal READY, repeat for 5.0.0 --profile v2 (15 signals),
 # then 6.0.0 --profile v3 (23 signals).
@@ -318,7 +325,10 @@ seven allowlisted metadata files may differ. Application code/dependencies
 remain unchanged except the selected profile's VERSION/MANIFEST_SHA256
 constants and package version. Signed provenance records the content profile,
 source-bundle SHA and current Factory identity. Candidates may be prepared and
-signed locally in advance, but upload/approval is sequential. No deletion,
+signed locally in advance, but publication is sequential. Before Provision a
+previous Ready publication may be superseded by the next profile; with a
+provisioned Test, the previous version must be installed and no update pending
+or failed. No deletion,
 reprovisioning, old-version force-send or automatic Production promotion occurs.
 
 Known .29 runtime defect observed on the first 4.0.0 replacement: the native
@@ -374,16 +384,19 @@ credential; `verify VERSION` verifies RS256 plus all signed member hashes and
 matching inner/outer config against that credential's certificate.
 
 `upload VERSION` sends the signed archive to **deployment-bundles/upload/**,
-not component upload. Before upload it checks the candidate's required leaves
-against the KUKSA schema actually loaded on Test. Missing leaves block the
-upload before any external mutation. `approve VERSION` separately approves only the exact OEM
-VDP/arm64 **verification batch**. Neither command approves a fleet validation
-batch or promotes to Production. Both resolve Cloud state, record the attempt
-in the existing run journal and reconcile afterwards. A lost response cannot
-trigger blind resubmission. Read `cloud-status VERSION` to reconcile the existing
-attempt; already confirmed upload/approval is a no-op. Publication accepts the
-original 2.0.0/3.0.0 and newer explicitly prepared profile-replay releases,
-using the existing Test/Production role mapping.
+not component upload. It checks the prepared profile, signed bytes, increasing
+release, Factory receipt/catalog compatibility, OEM ownership and complete
+verification-recipient coverage. No guest read is needed. New publication uses
+explicitly prepared profile-replay releases (4.0.0 or higher); the frozen
+2.0.0/3.0.0 artifacts remain replay inputs, not new release numbers.
+HTTP 201 means `publication.stage=ACCEPTED`, not Ready. `cloud-status VERSION`
+reads the exact recorded bundle through documented pagination and the matching
+catalog version. Error preserves sanitized `build_info`; neither error nor
+processing becomes a successful `noOp`. A repeated `upload VERSION` only
+reconciles that exact response ID and never uploads again. Response loss without
+a known ID blocks resubmission. `approve`/`unapprove` remain explicit engineering
+operations for existing VDP/arm64 verification batches, not steps in the current
+Test flow. None of these operations promotes to Production.
 
 `component status <test|production>` reads the active slot, coherent installed
 metadata, matching running process configuration, systemd result/restarts and
@@ -665,8 +678,11 @@ run that used future CARLA/scenario/backend operations or claim complete R0.
 Its JSON scope is CLOUD_RETIRED_CLI_RUN, with cloudReadsPerformed=true and
 cloudActions=false (no Cloud mutation). No backup is made.
 
-For historical uploads left at RESPONDED/HTTP 201, retire can reconcile the exact
-recorded deployment and confirmed verification batch through read-only Cloud
+For new verification-Test uploads left at RESPONDED/HTTP 201, retire reconciles
+the owned deployment ID and matching Ready catalog version without a batch or
+approval. Processing/error/missing proof remains unresolved. For historical
+engineering uploads, retire can reconcile the exact recorded deployment and
+confirmed verification batch through read-only Cloud
 requests. It confirms the completed bundle's component/version and the batch's
 OEM/component/architecture/version; it never uploads or approves again. Unknown
 IDs, mismatched or unavailable proof and unresolved approvals still block local
