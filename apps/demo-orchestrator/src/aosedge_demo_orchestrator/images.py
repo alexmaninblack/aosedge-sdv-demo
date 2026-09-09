@@ -4,6 +4,7 @@
 """Discover immutable image artifacts; no registration database or image hashing."""
 
 import os
+import json
 import re
 import stat
 from dataclasses import dataclass
@@ -166,3 +167,48 @@ class ImageCatalog:
         if matches[0].problems:
             raise ImageError(matches[0].problems[0])
         return matches[0]
+
+    def component_support(self, selector, sha256, component_type, required_paths):
+        """Read a producer declaration bound to this exact immutable image.
+
+        Catalog presence/architecture is not component compatibility. Missing
+        declarations remain a publication blocker, never a guest-probe fallback
+        or a hardcoded version exception. No image bytes are read here.
+        """
+        record = self.resolve(selector)
+        if record.sha256 != sha256:
+            raise ImageError("COMPONENT_FACTORY_DIGEST_MISMATCH")
+        signal = re.compile(r"Vehicle(?:\.[A-Za-z][A-Za-z0-9_]*)+")
+        if (not isinstance(required_paths, (list, tuple, set)) or not required_paths
+                or any(not isinstance(path, str) or not signal.fullmatch(path) for path in required_paths)):
+            raise ImageError("COMPONENT_REQUIRED_PATHS_INVALID")
+        declarations = []
+        fields = {"schemaVersion", "runtimeProfile", "componentType", "supportedReadPaths", "sourceRevision"}
+        for source in record.metadata_sources:
+            path = self.root / source
+            if path.is_symlink() or not path.resolve().is_relative_to(self.project.resolve()):
+                raise ImageError("COMPONENT_FACTORY_DECLARATION_UNSAFE")
+            data = read_json(path, limit=262144)
+            support = data.get("demoCompatibility")
+            if support is None:
+                continue
+            if (not isinstance(support, dict) or set(support) != fields or support.get("schemaVersion") != 1
+                    or support.get("runtimeProfile") != "aos-main-qemuarm64-v1"
+                    or record.architecture != "main-qemuarm64"
+                    or support.get("componentType") != component_type
+                    or not re.fullmatch(r"[0-9a-f]{40}", str(support.get("sourceRevision", "")))
+                    or data.get("source") != {"repository": "aos-vehicle-platform", "revision": support["sourceRevision"]}):
+                raise ImageError("COMPONENT_FACTORY_DECLARATION_INVALID")
+            paths = support.get("supportedReadPaths")
+            if (not isinstance(paths, list) or not 1 <= len(paths) <= 100
+                    or any(not isinstance(item, str) or not signal.fullmatch(item) for item in paths)
+                    or len(set(paths)) != len(paths)):
+                raise ImageError("COMPONENT_FACTORY_DECLARATION_INVALID")
+            declarations.append(support)
+        if not declarations:
+            raise ImageError("COMPONENT_FACTORY_COMPATIBILITY_NOT_DECLARED")
+        if len({json.dumps(value, sort_keys=True) for value in declarations}) != 1:
+            raise ImageError("COMPONENT_FACTORY_DECLARATION_CONFLICT")
+        if set(required_paths) - set(declarations[0]["supportedReadPaths"]):
+            raise ImageError("COMPONENT_FACTORY_REQUIRED_PATHS_UNSUPPORTED")
+        return declarations[0]
