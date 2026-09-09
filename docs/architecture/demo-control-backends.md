@@ -39,6 +39,11 @@ no new privileges. The current context directory is mounted read-only; no
 host keys or broad host directory is mounted. Product dashboard UI ports and
 Presenter proxy integration remain later work, not phantom listeners.
 
+Only the non-secret context export directory is 0755 and its JSON projection
+0444, so a different container UID can read the read-only mount. The parent
+run directory remains 0700; journal, access keys and Compose files are not
+exported. This does not grant the container write access or change guest trust.
+
 ## Ownership and recovery
 
 The existing journal records the LOCAL_CREATE operation owner, team, immutable
@@ -60,7 +65,9 @@ does not erase the retiring UID selector before exact backend cleanup.
 
 ## Current boundaries and evidence
 
-Seven isolated lifecycle tests and five context tests pass. Native Brake tests
+Ten isolated lifecycle tests and six context tests pass. The lifecycle suite
+also rejects container identity changes, cross-team storage and unrecorded
+Compose files. Native Brake tests
 cover durable SQLite storage, current-Test queries and private exact cleanup.
 The independent Tire foundation exposes process/context health and explicitly
 returns `501 NOT_IMPLEMENTED` for product routes. Its foundation-only proof is

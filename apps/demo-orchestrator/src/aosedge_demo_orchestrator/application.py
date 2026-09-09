@@ -197,9 +197,15 @@ class DemoOrchestrator:
         if operation == "image.build":
             from .component_runtime import build_factory
             try:
-                data = build_factory(request.image)
+                if request.metadata_only:
+                    with self.environment_service._writer():
+                        data = build_factory(request.image, metadata_only=True)
+                else:
+                    data = build_factory(request.image)
                 return OperationResult(operation, OperationState.COMPLETED,
-                    "Immutable Factory image built; live E2E qualification is not yet performed.", data=data)
+                    ("Factory compatibility metadata registered; image bytes and qualification unchanged."
+                     if request.metadata_only else
+                     "Immutable Factory image built; live E2E qualification is not yet performed."), data=data)
             except EnvironmentError as error:
                 return OperationResult(operation, OperationState.BLOCKED, str(error))
         if operation == "environment.retire":

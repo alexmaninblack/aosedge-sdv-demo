@@ -75,6 +75,33 @@ class BackendTests(unittest.TestCase):
                 self.service.execute(action, "brake")
         self.assertEqual([], self.commands)
 
+    def test_changed_container_identity_cannot_confirm_start_success(self):
+        original = self.service._docker
+        def changed(*args, **kwargs):
+            original(*args, **kwargs)
+            self.container["Config"]["Labels"]["tech.aosedge.demo.owner"] = "other"
+        self.service._docker = changed
+        with self.assertRaisesRegex(EnvironmentError, "FOREIGN_CONTAINER"):
+            self.service.execute("start", "brake")
+        journal = json.loads((self.root / JOURNAL).read_text())
+        self.assertEqual("UNCERTAIN", journal["backends"]["brake"]["state"])
+
+    def test_other_team_storage_is_not_reused_even_with_same_run_owner(self):
+        self.service._inspect = lambda kind, name: dict(Labels={"tech.aosedge.demo.owner": OWNER,
+            "tech.aosedge.demo.team": "tire"}) if kind == "volume" else None
+        with self.assertRaisesRegex(EnvironmentError, "FOREIGN_VOLUME"):
+            self.service.execute("start", "brake")
+        self.assertEqual([], self.commands)
+
+    def test_unrecorded_compose_file_is_not_overwritten(self):
+        directory = self.environment._directory(".run/demo-current/backends")
+        path = directory / "brake-compose.json"
+        path.write_text("untracked")
+        with self.assertRaisesRegex(EnvironmentError, "COMPOSE_RECONCILIATION_REQUIRED"):
+            self.service.execute("start", "brake")
+        self.assertEqual("untracked", path.read_text())
+        self.assertEqual([], self.commands)
+
     def test_lost_start_reply_is_reconciled_by_observation_not_second_start(self):
         normal = self.service._docker
         def lost(*args, **kwargs):

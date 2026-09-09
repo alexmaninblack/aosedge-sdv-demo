@@ -192,7 +192,8 @@ class ImageCatalog:
             support = data.get("demoCompatibility")
             if support is None:
                 continue
-            if (not isinstance(support, dict) or set(support) != fields or support.get("schemaVersion") != 1
+            if (not isinstance(support, dict) or set(support) != fields
+                    or type(support.get("schemaVersion")) is not int or support["schemaVersion"] != 1
                     or support.get("runtimeProfile") != "aos-main-qemuarm64-v1"
                     or record.architecture != "main-qemuarm64"
                     or support.get("componentType") != component_type

@@ -866,6 +866,14 @@ components, provision Units or modify Production. A completed build means
 overwritten by repeating this command. Downloads and shared-state caches are
 retained; generated artifacts stay outside Git.
 
+For an existing image, `democtl image build 6.1.1-maninblack.31 --metadata-only`
+registers its source-derived VDP compatibility declaration in the producer
+manifest. It requires the exact clean source revision and owned immutable
+catalog binding. It never starts Builder, checks build disk space, rebuilds or
+changes image bytes or qualification state. Missing artifacts or conflicting
+metadata fail closed; an identical repeat is a noOp. This explicit migration is
+not performed implicitly by `image list`, status or component upload.
+
 Factory .31 retains .30's persistent public source-input configuration. `vm start`
 initializes the explicit role before provisioning; source selection writes
 public CA/bindings without restarting SM. The role stays in runtime data;

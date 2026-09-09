@@ -3,7 +3,7 @@
 
 # Demo Studio: staged delivery plan
 
-- Status: **Implementation authorized; P1 in progress**
+- Status: **Implementation authorized; P1/P2 source increments in progress, not phase-qualified**
 - Prepared: 9 September 2026
 - Working language: English
 - Review mockup: [Interaction Mockup 2.8 — reviewed B2 visuals and corrected simulation](../../demo/mockups/aosedge-demo-interaction-mockup-2-8.html); [2.6 retained flow baseline](../../demo/mockups/aosedge-demo-interaction-mockup-2-6.html); [2.5 retained](../../demo/mockups/aosedge-demo-interaction-mockup-2-5.html) as the original action-audit basis
@@ -24,12 +24,16 @@ the preceding review; the authorization above now opens P1–P8.
   runtime and KAC resources; effective SOTA delivery still needs live proof.
 - P1: shared Test lifecycle, release continuity and backend context migration
   in progress; not yet qualified.
-- P2–P8: pending. Brake currently has domain libraries and a diagnostic package
+- P3–P8: pending. Brake currently has domain libraries and a diagnostic package
   stub, not a deployable product runtime. VDP/Gateway advisory wiring and Tire
   are implementation work, not capabilities inferred from mockup tests.
-- P2 Cloud-only read increment is integrated and live-read tested; the full
-  phase remains open. See [Cloud observations](../../architecture/demo-control-cloud-observation.md).
+- P2 Cloud-only reads and publication reconciliation are integrated; the full
+  phase remains open. See [Cloud observations](../../architecture/demo-control-cloud-observation.md)
+  and [Test publication](../../architecture/demo-control-component-publication.md).
 - Final operator visual approval remains an explicit gate after automated tests.
+- The [implementation checkpoint](../../qualification/demo-studio-implementation-progress-2026-09-10.md)
+  separates completed source/tests, preserved live state, remaining code and
+  decisions required before live qualification. It is not a completion report.
 
 ### Source increment and remaining live gates — 10 September
 
@@ -76,8 +80,16 @@ guest runtime claim follows. No Cloud mutation or VM repair was attempted.
 
 [Catalog component support](../../architecture/demo-control-image-compatibility.md)
 now has an exact image/source-bound declaration reader instead of assuming a
-version universally supports all payloads. The old .31 manifest has no producer
-declaration yet; migration remains explicit and must not trigger an image rebuild.
+version universally supports all payloads. The old .31 producer declaration
+was registered using the explicit metadata-only Demo Control mode; repeat was
+a noOp. The image bytes, SHA and qualification state were preserved and Builder
+was not run. Eight source/metadata tests passed.
+
+The integrated Test publication path now returns acceptance immediately and
+reconciles processing/readiness/error separately without batch approval. Its
+old-bundle live read returned `READY` for 15.0.0 while the Unit remained Offline;
+no upload was repeated. The combined fixture suite at `bdee1b2` passed 337 tests.
+The final checkpoint records the additional metadata-only tests and limitations.
 
 Brake runtime source increment `dca3190c31bd9d593ec2e1a8a4763d2ed28ac984`
 on `codex/studio-brake-runtime` adds host-tested v1 composition and bounded
