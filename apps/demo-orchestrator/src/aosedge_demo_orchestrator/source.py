@@ -456,7 +456,7 @@ class SourceService:
             if state["source"].get("stopOperation"):
                 raise EnvironmentError("SIMULATION_NOT_READY")
             item = state["vehicles"][role]
-            if (item.get("cloud", {}).get("lifecycle") != "ONLINE"
+            if not initial_manual and (item.get("cloud", {}).get("lifecycle") != "ONLINE"
                     or not all(item.get(key) for key in ("unitId", "nodeId", "unitSetId"))):
                 raise EnvironmentError("SOURCE_UNIT_PROVISION_REQUIRED:" + role)
             return self._select(state, role, configure=True, initial_manual=initial_manual)
@@ -546,7 +546,7 @@ class SourceService:
             raise EnvironmentError("SOURCE_HOLD_RELEASE_UNCONFIRMED")
         source.update(assignmentGeneration=source["assignmentGeneration"] + 1, operation=None,
             lastConnectionConfirmation=dict(role=role, confirmedAt=now(), runId=source.get("runId"),
-                serverTls=True, advancingVissFrames=data.get("advancingVissFrames", False)))
+                serverTls=True, initialManual=initial_manual, advancingVissFrames=data.get("advancingVissFrames", False)))
         self.vm._save(state)
         self.progress("Source: " + role + (" connected in stationary Manual; ready for Autopilot then Safe Stop" if initial_manual else " connected; car remains in Safe Stop"))
         return dict(TRUST, currentVehicle=role, noOp=False, vehicles=views,

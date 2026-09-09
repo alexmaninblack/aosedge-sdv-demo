@@ -544,6 +544,14 @@ class ComponentService:
         from .status import read_json
         from .environment import JOURNAL
         with self.environment._writer():
+            from .releases import ReleaseContinuity
+            continuity = ReleaseContinuity(self.environment)
+            if version is None:
+                if content_profile not in PROFILE_BASES:
+                    raise EnvironmentError("COMPONENT_CONTENT_PROFILE_REQUIRED")
+                cloud = self._worker("release-catalog")
+                observed = [item["version"] for item in self.list()["components"]] + cloud["versions"]
+                version = continuity.reserve("vdp", observed)
             destination = self._directory(version)
             if destination.exists() or destination.is_symlink():
                 raise EnvironmentError("COMPONENT_PREPARE_DESTINATION_EXISTS")
@@ -551,6 +559,7 @@ class ComponentService:
                 raise EnvironmentError("COMPONENT_REPLAY_PROFILE_OR_VERSION_INVALID")
             if version not in ("2.0.0", "3.0.0") and content_profile is None:
                 raise EnvironmentError("COMPONENT_CONTENT_PROFILE_REQUIRED")
+            continuity.remember("vdp", version)
             if content_profile is not None:
                 previous = [version_number(item.name) for item in self.root.iterdir()
                             if item.is_dir() and VERSION.fullmatch(item.name)]

@@ -128,7 +128,13 @@ class UnitService:
             state = read_json(self.root / JOURNAL)
             roles = [role for role in OVERLAYS if role in state["vehicles"]] if target == "all" else [target]
             self.vm._validate(state, "stop", roles)
-            if state.get("currentVehicle") is not None:
+            selected_role = state.get("currentVehicle")
+            initial_connection = (state.get("source", {}).get("lastConnectionConfirmation") or {})
+            connected_initial_test = (action == "provision" and selected_role == "test" and "test" in roles
+                and initial_connection.get("role") == "test" and initial_connection.get("serverTls") is True
+                and initial_connection.get("initialManual") is True
+                and not state.get("source", {}).get("operation") and not state.get("source", {}).get("stopOperation"))
+            if selected_role is not None and not connected_initial_test:
                 raise EnvironmentError("UNIT_LIFECYCLE_REQUIRES_DETACHED_SOURCE")
             self.progress("Reading OEM authority and the two role Unit Sets")
             inventory = self._cloud("inventory", setIds=state.get("cloudBinding", {}).get("sets"), includeUnits=False)

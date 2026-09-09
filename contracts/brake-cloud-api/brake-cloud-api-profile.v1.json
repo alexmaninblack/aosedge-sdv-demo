@@ -133,9 +133,10 @@
     "schema": "current-unit-context.schema.json",
     "injection": "REQUIRED_EXPLICIT_APPLICATION_INPUT",
     "source": "CURRENT_RUN_PROVISIONING_JOURNAL",
-    "exactRoles": ["VALIDATION", "PRODUCTION"],
+    "requiredRoles": ["VALIDATION"],
+    "optionalRoles": ["PRODUCTION"],
     "cloudStateFieldsOrInferenceAllowed": false,
-    "liveWiring": "DEFERRED_TO_BRAKE_CLOUD_INTEGRATION_001"
+    "liveWiring": "BACKEND_CONTEXT_PROVIDER_IMPLEMENTED_DEMO_CONTROL_COMPOSITION_PENDING"
   },
   "query": {
     "basePath": "/api/v1/brake",

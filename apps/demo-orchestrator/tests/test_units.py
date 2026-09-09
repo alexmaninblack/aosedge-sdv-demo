@@ -20,6 +20,23 @@ NODE = "44444444-4444-4444-8444-444444444444"
 
 
 class UnitSafetyTests(unittest.TestCase):
+    def test_connected_initial_test_can_provision_but_not_retire(self):
+        import contextlib
+        self.service.environment._writer = contextlib.nullcontext
+        self.service.root = Path("/unused-test-root")
+        self.state.update(currentVehicle="test", source=dict(lastConnectionConfirmation=dict(role="test", serverTls=True, initialManual=True)))
+        self.service._cloud = Mock(return_value=self.inventory)
+        self.service._provision = Mock(return_value={"lifecycle": "ONLINE"})
+        self.state["vehicles"]["test"]["unitId"] = None
+        with patch("aosedge_demo_orchestrator.units.read_json", return_value=self.state):
+            self.service.execute("provision", "test")
+            self.service._provision.assert_called_once()
+            self.service._cloud.reset_mock()
+            for action in ("deprovision", "delete"):
+                with self.assertRaisesRegex(EnvironmentError, "DETACHED_SOURCE"):
+                    self.service.execute(action, "test")
+            self.service._cloud.assert_not_called()
+
     def setUp(self):
         self.service = UnitService(Mock())
         self.service.vm._save = Mock()

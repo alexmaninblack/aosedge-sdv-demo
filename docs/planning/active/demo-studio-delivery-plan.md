@@ -3,13 +3,76 @@
 
 # Demo Studio: staged delivery plan
 
-- Status: **Pre-implementation audit complete; all design choices accepted; implementation not authorized**
+- Status: **Implementation authorized; P1 in progress**
 - Prepared: 9 September 2026
 - Working language: English
 - Review mockup: [Interaction Mockup 2.8 — reviewed B2 visuals and corrected simulation](../../demo/mockups/aosedge-demo-interaction-mockup-2-8.html); [2.6 retained flow baseline](../../demo/mockups/aosedge-demo-interaction-mockup-2-6.html); [2.5 retained](../../demo/mockups/aosedge-demo-interaction-mockup-2-5.html) as the original action-audit basis
 - Basis: [action and integration audit][audit], including its 78 action/transition rows and 28 gaps
 - Target: the accepted Studio B composition connected to a real, repeatable Test-vehicle demo
-- Authorization: mockup and related working-document edits, followed by the separately authorized source Git checkpoint. Application implementation and live Cloud publication/provisioning/deletion remain unauthorized.
+- Authorization: on 9 September 2026 the user authorized implementation and independent verification of P1–P8, in the accepted sequence. Production rollout and changes outside these phases remain excluded.
+
+<a id="implementation-execution--9-september-2026"></a>
+
+## Implementation execution — 9 September 2026
+
+Implementation starts from `pre-studio-implementation-2.8-2026-09-09`,
+commit `b997e6e6cffba02b61a588c40f14dba30942d17d`, on
+`codex/demo-studio-implementation`. The historical review gates below describe
+the preceding review; the authorization above now opens P1–P8.
+
+- P0: source readiness audit completed. Factory .31 includes native container
+  runtime and KAC resources; effective SOTA delivery still needs live proof.
+- P1: shared Test lifecycle, release continuity and backend context migration
+  in progress; not yet qualified.
+- P2–P8: pending. Brake currently has domain libraries and a diagnostic package
+  stub, not a deployable product runtime. VDP/Gateway advisory wiring and Tire
+  are implementation work, not capabilities inferred from mockup tests.
+- Final operator visual approval remains an explicit gate after automated tests.
+
+### Source increment and remaining live gates — 10 September
+
+The first P1 increment has isolated regression evidence, not phase acceptance:
+271 Demo Control tests passed; after the final API/selector changes, the changed
+Presenter operations, ledger, CLI and Unit suites passed again. The Brake Cloud
+contract suite passed 17 tests. Backend branch `codex/studio-test-backend`,
+commit `77c99de0342cfb53077c01ab3d4c6721d2eb2228`, passed 31 backend tests,
+12 architecture/UI tests, typecheck and quality gates. Its source supports one
+Test context, optional Production, durable storage and separate process/query
+readiness. Composed backend lifecycle and the remaining P1/P2 work are not yet
+complete, so the new preparation sequence is not declared ready for a live run.
+
+The existing live run was observed through `democtl status test --cloud`: two
+owned roles, selected Test, running .31, fresh Controller Safe Stop. It was not
+retired or reconfigured during source work. Production is not removed merely to
+fit the new Test-only default.
+
+Before P5 live SOTA there are precise integration gates, not bundle-format
+guesses:
+
+| Required service input | Proven source | Unclosed deployment binding |
+|---|---|---|
+| Unit UID | Native IAM `GetSystemInfo.system_id`; official SDK maps it to Cloud `system_uid` | Service access/mount to this authoritative identity |
+| Unit role | Current Demo Control role input, consumed by the component runtime | No accepted service-visible role interface |
+| Service version/artifact digest | Actual SM instance version and manifest digest | Exact digest meaning and trusted delivery to the service; not interchangeable archive/binary digests |
+| Active VDP contract version/digest | Validated active VDP capability manifest | No current service-visible transport/change notification; an expected packaged profile is not active-runtime proof |
+| KUKSA TLS trust | VM KUKSA public trust certificate; Provider uses its own systemd credential delivery | Existing service named resources do not mount that public certificate; no TLS verification bypass or Provider credential reuse |
+
+Pinned AosCore `9eecb80c4994937b5c8cbe0464970f81e8ad4c2d`, container
+`instance.hpp:138` and `instance.cpp:345`, agrees with the
+[official launcher environment description](https://docs.aosedge.tech/docs/aos-core/architecture/service-manager/launcher):
+standard injection gives item/Subject/instance identifiers and `AOS_SECRET`,
+not the missing facts above. Per-instance environment overrides exist, but
+choosing new metadata variables or resource mounts is a design/interface
+decision, not evidence that a binding already exists. Platform resource
+definitions are in `meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files/resources.cfg`
+at platform revision `0bed8b3769b09fbe685ed599ca8d10e6594fbe53`.
+
+Only one configured SP profile was found. This does not prove that it cannot
+own Tire, but the accepted independent Tire authority mapping has not been
+established. Do not reuse Brake authority by assumption, create credentials,
+widen resource access or change the immutable image to bypass these gates.
+Close these bounded integration decisions before claiming a deployable service
+or a full UI/E2E result. No new bundle was uploaded during this increment.
 
 The [pre-implementation source checkpoint](../../qualification/pre-studio-implementation-2026-09-09.md)
 records the named return point, exact repository revisions and intentionally

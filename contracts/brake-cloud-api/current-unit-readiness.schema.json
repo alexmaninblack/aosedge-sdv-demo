@@ -1,0 +1,22 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:brake-cloud-current-unit-readiness:schema:v1",
+  "title": "Brake backend current Unit context readiness, not Cloud or product readiness",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["ready", "reason", "systemUids"],
+  "properties": {
+    "ready": {"type": "boolean"},
+    "reason": {"enum": ["READY", "CURRENT_UNIT_CONTEXT_UNAVAILABLE", "TEMPORARILY_UNAVAILABLE"]},
+    "systemUids": {
+      "type": "array", "maxItems": 2, "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._:-]+$"}
+    }
+  },
+  "allOf": [{
+    "if": {"properties": {"ready": {"const": true}}},
+    "then": {"properties": {"reason": {"const": "READY"}, "systemUids": {"minItems": 1}}},
+    "else": {"properties": {"reason": {"enum": ["CURRENT_UNIT_CONTEXT_UNAVAILABLE", "TEMPORARILY_UNAVAILABLE"]}, "systemUids": {"maxItems": 0}}}
+  }]
+}

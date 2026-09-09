@@ -52,6 +52,22 @@ current workflow. In particular, dual-VM Prepare, mandatory approval, universal
 .31 guards and guest-derived right-panel status are not the accepted target.
 No application change is claimed by this document update.
 
+Implementation started on 9 September after the separately approved 2.8 source
+checkpoint. The first source increment exposes `demo plan/prepare --target test`
+(default), explicit `--target all` for engineering, and `vehicle initialize test`
+for the first stationary-Manual connection before provisioning. Ordinary
+`vehicle select` still requires a provisioned target. Only provisioning may
+retain a confirmed initial Test connection; deprovision/delete remain detached.
+
+`component prepare --profile v1|v2|v3` may omit the engineering version override.
+The shared allocator takes the maximum observed local/Cloud version and the
+retained high-water mark in `.local/release-continuity.json`, then reserves the
+next major release under the existing writer lock. The continuity record stores
+only per-identity versions, not run history or credentials, and survives Retire.
+CLI and API use the same request/result path. These source changes are not yet
+a full Studio or live E2E qualification; the current phase and integration gates
+are recorded in the [delivery plan](../planning/active/demo-studio-delivery-plan.md#implementation-execution--9-september-2026).
+
 | Shared operation | Current target contract | As-built gap / phase |
 |---|---|---|
 | Create | Catalog copy/overlay + Test boot/DNS/role + both backend processes/storage | Compose existing low-level create/start; backend lifecycle/context in P1 |

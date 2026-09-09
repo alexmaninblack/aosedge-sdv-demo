@@ -57,25 +57,28 @@ class DemoOrchestrator:
                 return OperationResult(operation, OperationState.BLOCKED, "WORKSPACE_OBSERVATION_UNAVAILABLE")
         if request.domain == "demo" and request.action in ("plan", "prepare"):
             from .demo_preparation import DemoPreparation
-            if not request.image or request.target or request.image_path or request.current or request.profile:
+            if not request.image or request.target not in (None, VehicleTarget.TEST, VehicleTarget.ALL) or request.image_path or request.current or request.profile:
                 return OperationResult(operation, OperationState.BLOCKED, "DEMO_REQUIRES_CATALOG_IMAGE_ONLY")
             try:
                 workflow = DemoPreparation(self)
                 if request.action == "prepare":
-                    return workflow.prepare(request.image)
-                return OperationResult(operation, OperationState.OBSERVED, "Read-only preparation plan; no image creation or publication.", data=workflow.plan(request.image))
+                    return workflow.prepare(request.image, request.target or VehicleTarget.TEST)
+                return OperationResult(operation, OperationState.OBSERVED, "Read-only preparation plan; no image creation or publication.", data=workflow.plan(request.image, request.target or VehicleTarget.TEST))
             except (EnvironmentError, ImageError) as error:
                 return OperationResult(operation, OperationState.BLOCKED, str(error))
             except (OSError, ValueError, KeyError, TypeError):
                 return OperationResult(operation, OperationState.BLOCKED, "DEMO_PREPARATION_STATE_UNAVAILABLE")
         if operation == "vehicle.initialize":
+            import subprocess
             initialize = getattr(self.source_service, "initialize_test", None)
             if request.target != VehicleTarget.TEST or not callable(initialize):
-                return OperationResult(operation, OperationState.BLOCKED, "DEMO_INITIAL_MANUAL_CHANGE_PENDING_AUTHORIZATION")
+                return OperationResult(operation, OperationState.BLOCKED, "INITIAL_MANUAL_REQUIRES_TEST")
             try:
                 return OperationResult(operation, OperationState.COMPLETED, "Initial Test connection in stationary Manual.", data=initialize())
             except EnvironmentError as error:
                 return OperationResult(operation, OperationState.BLOCKED, str(error))
+            except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
+                return OperationResult(operation, OperationState.BLOCKED, "SOURCE_STATE_OR_RUNTIME_UNAVAILABLE")
         if request.domain == "component" and request.action in ("sm-builder-start", "sm-builder-stop", "sm-build", "sm-test", "sm-apply"):
             from .component_runtime import builder, build, apply_test
             try:

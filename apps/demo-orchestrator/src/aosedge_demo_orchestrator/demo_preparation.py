@@ -9,6 +9,7 @@ from .environment import EnvironmentError, JOURNAL, atomic_json
 from .models import OperationRequest, OperationResult, OperationState, VehicleTarget
 from .status import read_json, now
 from .vm import access_path
+from .releases import ReleaseContinuity
 
 
 class DemoPreparation:
@@ -18,18 +19,21 @@ class DemoPreparation:
         self.components = components or ComponentService(self.environment)
         self.progress = application.vm_service.progress
 
-    def plan(self, image):
+    def plan(self, image, target=VehicleTarget.TEST):
+        if target not in (VehicleTarget.TEST, VehicleTarget.ALL):
+            raise EnvironmentError("DEMO_TARGET_MUST_INCLUDE_TEST")
+        roles = {"test"} if target == VehicleTarget.TEST else {"test", "production"}
         candidate = self.environment.catalog.resolve(image)
         if candidate.problems:
             raise EnvironmentError("DEMO_FACTORY_IMAGE_UNAVAILABLE")
         path = self.environment.root / JOURNAL
         state = read_json(path) if path.exists() else None
-        if state and (set(state["vehicles"]) != {"test", "production"} or not state.get("factory")
+        if state and (set(state["vehicles"]) != roles or not state.get("factory")
                 or state["factory"]["sha256"] != candidate.sha256):
             raise EnvironmentError("DEMO_EXISTING_ENVIRONMENT_IMAGE_OR_ROLES_CONFLICT")
         record = (state or {}).get("demoPreparation")
         if record:
-            if record["image"] != image:
+            if record["image"] != image or record.get("target", "all") != target.value:
                 raise EnvironmentError("DEMO_PREPARATION_IMAGE_CHANGED")
             return dict(record, existingEnvironment=True)
         cloud = self.components._worker("release-catalog")
@@ -43,45 +47,48 @@ class DemoPreparation:
                 metadata = read_json(prepared)
                 if metadata.get("contentProfile") == "v1" and version_number(version) >= version_number(cloud["latest"]):
                     reusable.append(version)
-        version = max(reusable, key=version_number) if reusable else str(max(map(version_number, versions))[0] + 1) + ".0.0"
+        version = max(reusable, key=version_number) if reusable else ReleaseContinuity(self.environment).next("vdp", versions)
         if state and any(item.get("unitId") or item.get("systemUid") for item in state["vehicles"].values()):
             raise EnvironmentError("DEMO_INITIALIZATION_REQUIRES_UNPROVISIONED_RUN")
-        return dict(image=image, version=version, contentProfile="v1", phase="PLANNED", completedSteps=[],
+        return dict(image=image, target=target.value, version=version, contentProfile="v1", phase="PLANNED", completedSteps=[],
                     existingEnvironment=bool(state), originalImagePreserved=True)
 
-    def prepare(self, image):
+    def prepare(self, image, target=VehicleTarget.TEST):
         # Do not publish/provision half a scenario while its startup mode is unavailable.
         if not callable(getattr(self.app.source_service, "initialize_test", None)):
             raise EnvironmentError("DEMO_INITIAL_MANUAL_CHANGE_PENDING_AUTHORIZATION")
         with self.environment._writer():
-            record = self.plan(image)
+            record = self.plan(image, target)
             version = record["version"]
             self.progress("Preparing Test demo with VDP v1 / Cloud release " + version)
             if record.get("phase") == "READY_TO_DRIVE":
                 return OperationResult("demo.prepare", OperationState.COMPLETED,
-                    "This run is already prepared; no restart, reset or repeat publication.", data=dict(record, noOp=True))
-            if any(not (access_path(self.environment.root, role) / "known_hosts").exists() for role in ("test", "production")):
+                    "Preparation previously completed; live readiness is observed separately. No restart, reset or repeat publication.",
+                    data=dict(record, noOp=True, readiness="NOT_RECHECKED"))
+            roles = ("test",) if target == VehicleTarget.TEST else ("test", "production")
+            if any(not (access_path(self.environment.root, role) / "known_hosts").exists() for role in roles):
                 provider = self.app.vm_service.password_provider
                 if provider is None or not provider("test"):
                     raise EnvironmentError("DEMO_VM_ACCESS_REQUIRED")
             if not record["existingEnvironment"]:
-                result = self.app.execute(OperationRequest("environment", "create", VehicleTarget.ALL, image=image))
+                result = self.app.execute(OperationRequest("environment", "create", target, image=image))
                 if result.state != OperationState.COMPLETED:
                     return OperationResult("demo.prepare", result.state, result.message, data=dict(phase="create"))
             def save():
                 state = read_json(self.environment.root / JOURNAL)
                 state["demoPreparation"] = record
                 atomic_json(self.environment.root / JOURNAL, state)
+            ReleaseContinuity(self.environment).remember("vdp", version)
             save()
             steps = [
+                ("start-vms", OperationRequest("vm", "start", target, timeout=90)),
+                ("simulation", OperationRequest("simulation", "start")),
+                ("connect-test-manual", OperationRequest("vehicle", "initialize", VehicleTarget.TEST)),
                 ("prepare-v1", OperationRequest("component", "prepare", component_version=version, content_profile="v1")),
                 ("sign-v1", OperationRequest("component", "sign", component_version=version)),
                 ("upload-v1", OperationRequest("component", "upload", component_version=version)),
-                ("approve-v1", OperationRequest("component", "approve", component_version=version)),
-                ("start-vms", OperationRequest("vm", "start", VehicleTarget.ALL, timeout=90)),
-                ("provision", OperationRequest("unit", "provision", VehicleTarget.ALL)),
-                ("simulation", OperationRequest("simulation", "start")),
-                ("connect-test-manual", OperationRequest("vehicle", "initialize", VehicleTarget.TEST)),
+                ("publication", OperationRequest("component", "cloud-status", component_version=version)),
+                ("provision", OperationRequest("unit", "provision", target)),
                 ("observe-baseline", OperationRequest("component", "status", VehicleTarget.TEST)),
             ]
             for phase, request in steps:
@@ -101,6 +108,15 @@ class DemoPreparation:
                     record["reason"] = result.message
                     save()
                     return OperationResult("demo.prepare", result.state, result.message, data=record)
+                if phase == "publication":
+                    bundles = (result.data or {}).get("deploymentBundles", [])
+                    versions = (result.data or {}).get("versions", [])
+                    if (len(bundles) != 1 or bundles[0].get("state") != "done"
+                            or len(versions) != 1 or versions[0].get("state") != "Ready"):
+                        record["reason"] = "COMPONENT_PUBLICATION_NOT_READY"
+                        save()
+                        return OperationResult("demo.prepare", OperationState.PARTIAL,
+                            "Cloud processing is not yet confirmed Ready; repeat to observe, without uploading again.", data=record)
                 if phase == "observe-baseline" and (result.data or {}).get("activeVersion") not in (None, "0.0.0"):
                     raise EnvironmentError("DEMO_VDP_ACTIVATED_BEFORE_OPERATOR_SAFE_STOP")
                 record["completedSteps"].append(phase)

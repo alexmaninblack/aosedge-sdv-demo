@@ -21,9 +21,10 @@ def execute_operation(
     target = VehicleTarget(target_value) if target_value else None
     application = orchestrator or DemoOrchestrator()
     if domain == "demo" and action in ("plan", "prepare"):
-        if set(payload) != {"domain", "action", "image"} or not isinstance(payload["image"], str):
-            raise ValueError("Demo preparation accepts a catalog image only")
-        return application.execute(OperationRequest(domain, action, image=payload["image"])).to_dict()
+        if (set(payload) - {"domain", "action", "image", "target"} or not isinstance(payload.get("image"), str)
+                or target not in (None, VehicleTarget.TEST, VehicleTarget.ALL)):
+            raise ValueError("Demo preparation accepts a catalog image and Test or all target only")
+        return application.execute(OperationRequest(domain, action, target or VehicleTarget.TEST, image=payload["image"])).to_dict()
     if domain == "component" and action in ("sm-builder-start", "sm-builder-stop", "sm-build", "sm-test", "sm-apply", "sm-status"):
         if set(payload) != {"domain", "action", "target"} or target != VehicleTarget.TEST:
             raise ValueError("SM qualification accepts Test only, no caller-selected paths or commands")
@@ -40,6 +41,8 @@ def execute_operation(
             expected.remove("component_version")
         if action == "prepare" and "content_profile" in payload:
             expected.add("content_profile")
+            if "component_version" not in payload:
+                expected.remove("component_version")
         if set(payload) != expected:
             raise ValueError("Component operations accept only a catalog version, never paths or credentials")
         return application.execute(OperationRequest(domain, action,
@@ -59,10 +62,12 @@ def execute_operation(
         if request.selection_error():
             raise ValueError(request.selection_error())
         return application.execute(request).to_dict()
-    if domain == "vehicle" and action == "select":
+    if domain == "vehicle" and action in ("select", "initialize"):
         if set(payload) != {"domain", "action", "target"}:
             raise ValueError("Vehicle select accepts only one target")
         request = OperationRequest(domain, action, target)
+        if action == "initialize" and target != VehicleTarget.TEST:
+            raise ValueError("Initial Manual connection requires Test")
         if request.selection_error():
             raise ValueError(request.selection_error())
         return application.execute(request).to_dict()

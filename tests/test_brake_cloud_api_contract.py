@@ -190,11 +190,15 @@ class BrakeCloudApiContractTest(unittest.TestCase):
         context_profile = self.query_admin_profile["currentUnitContext"]
         self.assertEqual("REQUIRED_EXPLICIT_APPLICATION_INPUT", context_profile["injection"])
         self.assertEqual("CURRENT_RUN_PROVISIONING_JOURNAL", context_profile["acceptedSource"])
-        self.assertEqual(2, context_profile["exactUnitCount"])
+        self.assertEqual(1, context_profile["minimumUnitCount"])
+        self.assertEqual(2, context_profile["maximumUnitCount"])
+        self.assertEqual(["VALIDATION"], context_profile["requiredRoles"])
+        self.assertEqual(["PRODUCTION"], context_profile["optionalRoles"])
         self.assertTrue(context_profile["distinctSystemUidsRequired"])
         self.assertFalse(context_profile["cloudLifecycleOrReadinessFieldsAllowed"])
         self.assertFalse(context_profile["cloudLookupOrInferenceAllowed"])
-        self.assertIn("DEFERRED", context_profile["liveProvisioningJournalAdapter"])
+        self.assertEqual("EXPLICIT_DEMO_CONTROL_OWNED_CONTEXT_FILE_PROVIDER", context_profile["liveProvisioningJournalAdapter"])
+        self.assertNotIn("productionUnit", self.current_unit_context_schema["required"])
         context = self.current_unit_context
         self.assertEqual("VALIDATION", context["testUnit"]["unitRole"])
         self.assertEqual("PRODUCTION", context["productionUnit"]["unitRole"])
@@ -204,6 +208,14 @@ class BrakeCloudApiContractTest(unittest.TestCase):
         rest = self.query_admin_profile["rest"]
         self.assertEqual("200_EMPTY_PAGE_WITH_CONTEXT_ROLE", rest["emptyCurrentUnitBehavior"])
         self.assertEqual("404_UNIT_NOT_CURRENT", rest["nonCurrentUnitBehavior"])
+
+    def test_cleanup_supports_exact_one_or_two_uids_never_empty_or_unbounded(self):
+        for schema in (self.cleanup_schema, self.cleanup_result_schema, self.cleanup_preview_request_schema,
+                       self.cleanup_execute_request_schema):
+            selector = schema.get("$defs", {}).get("systemUids") or schema["properties"]["systemUids"]
+            self.assertEqual(1, selector["minItems"])
+            self.assertEqual(2, selector["maxItems"])
+            self.assertTrue(selector["uniqueItems"])
 
     def test_query_pagination_and_error_mapping_are_exact(self) -> None:
         annex = self.query_admin_profile

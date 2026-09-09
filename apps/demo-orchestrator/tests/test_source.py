@@ -5,7 +5,7 @@ import tempfile
 import threading
 import unittest
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from aosedge_demo_orchestrator.environment import EnvironmentService, EnvironmentError
 from aosedge_demo_orchestrator.source import SourceService, SourceDriver
@@ -45,6 +45,26 @@ class Driver:
 
 
 class SourceTests(unittest.TestCase):
+    def test_initial_connection_does_not_require_cloud_but_select_still_does(self):
+        import contextlib
+        self.service.environment._writer = contextlib.nullcontext
+        self.driver.operation = contextlib.nullcontext
+        self.driver.ready = Mock()
+        self.service.root = Path("/unused-test-root")
+        self.service._select = Mock(return_value={"currentVehicle": "test"})
+        with patch("aosedge_demo_orchestrator.source.read_json", return_value=self.state):
+            self.assertEqual("test", self.service.initialize_test()["currentVehicle"])
+            self.service._select.assert_called_once_with(self.state, "test", configure=True, initial_manual=True)
+            with self.assertRaisesRegex(EnvironmentError, "SOURCE_UNIT_PROVISION_REQUIRED"):
+                self.service.select("test")
+
+    def test_initial_manual_test_only_never_requires_a_hidden_peer(self):
+        self.state["vehicles"].pop("production")
+        self.driver.gates.pop("production")
+        result = self.service._select(self.state, "test", initial_manual=True)
+        self.assertEqual({"test": "OPEN"}, self.driver.gates)
+        self.assertEqual("test", result["currentVehicle"])
+
     def test_initial_manual_waits_before_opening_test_source(self):
         self.service._select(self.state, "test", initial_manual=True)
         calls = self.driver.calls

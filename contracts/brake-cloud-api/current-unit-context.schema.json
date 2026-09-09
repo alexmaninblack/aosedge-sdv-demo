@@ -5,7 +5,7 @@
   "title": "Brake Cloud Injected Current Unit Context",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "contractVersion", "source", "testUnit", "productionUnit"],
+  "required": ["schemaVersion", "contractVersion", "source", "testUnit"],
   "properties": {
     "schemaVersion": {"const": 1},
     "contractVersion": {"const": "1.0.0"},

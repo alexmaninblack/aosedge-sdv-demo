@@ -9,7 +9,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 from aosedge_demo_orchestrator.demo_preparation import DemoPreparation
 from aosedge_demo_orchestrator.environment import JOURNAL
-from aosedge_demo_orchestrator.models import OperationResult, OperationState
+from aosedge_demo_orchestrator.models import OperationResult, OperationState, VehicleTarget
 
 
 class DemoPreparationTests(unittest.TestCase):
@@ -19,7 +19,7 @@ class DemoPreparationTests(unittest.TestCase):
         self.root = Path(temporary.name)
         self.path = self.root / JOURNAL
         self.path.parent.mkdir(parents=True)
-        self.state = dict(factory=dict(sha256="factory"), vehicles=dict(test={}, production={}))
+        self.state = dict(factory=dict(sha256="factory"), vehicles=dict(test={}))
         self.path.write_text(json.dumps(self.state))
         env = SimpleNamespace(root=self.root, _writer=contextlib.nullcontext,
             catalog=Mock(resolve=Mock(return_value=SimpleNamespace(sha256="factory", problems=[]))))
@@ -30,7 +30,8 @@ class DemoPreparationTests(unittest.TestCase):
         self.calls = []
         def execute(request):
             self.calls.append((request.domain, request.action))
-            return OperationResult(request.domain + "." + request.action, OperationState.COMPLETED, "done", data=dict(activeVersion="0.0.0"))
+            return OperationResult(request.domain + "." + request.action, OperationState.COMPLETED, "done", data=dict(activeVersion="0.0.0",
+                deploymentBundles=[dict(state="done")], versions=[dict(state="Ready")]))
         self.app = SimpleNamespace(environment_service=env, vm_service=Mock(), source_service=SimpleNamespace(initialize_test=lambda: None), execute=execute)
         self.workflow = DemoPreparation(self.app, self.component)
 
@@ -48,21 +49,45 @@ class DemoPreparationTests(unittest.TestCase):
         result = self.workflow.prepare("31/arm64")
         self.assertEqual("READY_TO_DRIVE", result.data["phase"])
         self.assertEqual("13.0.1", result.data["version"])
-        self.assertEqual([("component", "inspect"), ("component", "sign"), ("component", "upload"), ("component", "approve"),
-            ("vm", "start"), ("unit", "provision"), ("simulation", "start"), ("vehicle", "initialize"), ("component", "status")], self.calls)
+        self.assertEqual([("vm", "start"), ("simulation", "start"), ("vehicle", "initialize"),
+            ("component", "inspect"), ("component", "sign"), ("component", "upload"), ("component", "cloud-status"),
+            ("unit", "provision"), ("component", "status")], self.calls)
         self.calls.clear()
         self.assertTrue(self.workflow.prepare("31/arm64").data["noOp"])
         self.assertEqual([], self.calls)
 
-    def test_blocked_stage_preserves_completed_steps_and_does_not_start_vms(self):
+    def test_blocked_publication_preserves_running_manual_and_does_not_provision(self):
         execute = self.app.execute
         def blocked(request):
-            if request.action == "approve":
-                return OperationResult("component.approve", OperationState.BLOCKED, "EXACT_BATCH_REQUIRED")
+            if request.action == "cloud-status":
+                return OperationResult("component.cloud-status", OperationState.BLOCKED, "CLOUD_UNAVAILABLE")
             return execute(request)
         self.app.execute = blocked
         result = self.workflow.prepare("31/arm64")
         self.assertEqual(OperationState.BLOCKED, result.state)
-        self.assertEqual("approve-v1", result.data["phase"])
-        self.assertEqual(["prepare-v1", "sign-v1", "upload-v1"], result.data["completedSteps"])
-        self.assertNotIn(("vm", "start"), self.calls)
+        self.assertEqual("publication", result.data["phase"])
+        self.assertEqual(["start-vms", "simulation", "connect-test-manual", "prepare-v1", "sign-v1", "upload-v1"], result.data["completedSteps"])
+        self.assertNotIn(("unit", "provision"), self.calls)
+
+    def test_processing_is_not_published_and_retry_does_not_reupload(self):
+        execute = self.app.execute
+        def processing(request):
+            if request.action == "cloud-status":
+                return OperationResult("component.cloud-status", OperationState.OBSERVED, "processing",
+                    data=dict(deploymentBundles=[dict(state="processing")], versions=[]))
+            return execute(request)
+        self.app.execute = processing
+        result = self.workflow.prepare("31/arm64")
+        self.assertEqual(OperationState.PARTIAL, result.state)
+        self.calls.clear()
+        self.app.execute = execute
+        self.workflow.prepare("31/arm64")
+        self.assertEqual([("component", "cloud-status"), ("unit", "provision"), ("component", "status")], self.calls)
+
+    def test_dual_role_engineering_selection_is_explicit(self):
+        self.state["vehicles"]["production"] = {}
+        self.path.write_text(json.dumps(self.state))
+        self.assertEqual("all", self.workflow.plan("31/arm64", VehicleTarget.ALL)["target"])
+        from aosedge_demo_orchestrator.environment import EnvironmentError
+        with self.assertRaisesRegex(EnvironmentError, "ROLES_CONFLICT"):
+            self.workflow.plan("31/arm64")

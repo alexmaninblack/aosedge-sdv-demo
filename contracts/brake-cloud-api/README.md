@@ -54,12 +54,19 @@ SOTA delivery, OEM approval, Aos IAM/KUKSA authorization or Gateway policy.
 
 The backend stores only current-demo functional records. It is not an
 AosCloud mirror, lifecycle authority or long-term demo-run archive. The local
-application receives a closed `CurrentUnitContext` containing exactly the
-current Test Vehicle and Production Vehicle `system_uid` and wire roles from
+application receives a closed `CurrentUnitContext` containing the mandatory
+current Test Vehicle and, for the dual-role engineering flow only, the optional
+Production Vehicle `system_uid` and wire roles from
 the provisioning journal. It is explicit injected input, not a backend Cloud
 lookup, lifecycle/readiness assertion or inferred current Unit. Its live
-provisioning-journal adapter remains deferred to
-`BRAKE-CLOUD-INTEGRATION-001`. The accepted wire enum
+context provider rereads a Demo Control-owned file without restarting the backend.
+Process/storage readiness (`GET /health/ready`) is independent of current-Unit
+query readiness (`GET /health/context`); Create may start the process before
+Provision. Missing/invalid context returns 503, not an empty healthy dashboard.
+The [context-readiness schema](current-unit-readiness.schema.json) defines the
+closed response: 200 for ready current context, 503 otherwise. It asserts no
+Cloud connection, installed service or functional result.
+Retire retains the context through exact scoped cleanup. The accepted wire enum
 `VALIDATION` and its provisioning identity map to the user-facing label **Test
 Vehicle**; human-facing product text must use only that label.
 Only a UID in that context may produce a query page or SSE stream. A matching

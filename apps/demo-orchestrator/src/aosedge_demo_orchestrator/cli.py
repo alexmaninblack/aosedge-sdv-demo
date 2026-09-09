@@ -48,8 +48,9 @@ def build_parser() -> argparse.ArgumentParser:
     demo = commands.add_parser("demo", help="operator's complete Test-first demo workflow")
     demo_commands = demo.add_subparsers(dest="action", required=True)
     for action in ("plan", "prepare"):
-        command = demo_commands.add_parser(action, help="read the plan" if action == "plan" else "prepare both VMs and Test VDP v1 through existing Demo Control operations")
+        command = demo_commands.add_parser(action, help="read the plan" if action == "plan" else "prepare the Test demo through shared Demo Control operations")
         command.add_argument("--image", required=True, help="factory version/architecture from image list")
+        command.add_argument("--target", choices=("test", "all"), default="test", help="owned roles; Studio defaults to Test only")
     access = commands.add_parser("access", help="native VM enrollment input")
     access.add_subparsers(dest="action", required=True).add_parser("setup", help="native password dialog; optional Keychain save")
 
@@ -87,7 +88,9 @@ def build_parser() -> argparse.ArgumentParser:
         schema.add_argument("target", choices=("test",))
     for action in ("inspect", "unpack", "prepare", "verify", "sign", "cloud-status", "upload", "approve", "unapprove", "send"):
         command = component_commands.add_parser(action)
-        if action == "cloud-status":
+        if action == "prepare":
+            command.add_argument("component_version", nargs="?", help="engineering override; omit to allocate a fresh release")
+        elif action == "cloud-status":
             command.add_argument("component_version", nargs="?", help="exact release; omit for a focused Cloud-only Test overview")
         else:
             command.add_argument("component_version", help="exact version from component list")
@@ -110,6 +113,8 @@ def build_parser() -> argparse.ArgumentParser:
     environment_commands.add_parser("retire", help="remove unused local overlays and factory copy; keep original artifact")
     vehicle = commands.add_parser("vehicle", help="select the single live vehicle")
     vehicle_commands = vehicle.add_subparsers(dest="action", required=True)
+    initialize = vehicle_commands.add_parser("initialize", help="first Test connection in stationary Manual, before or after provisioning")
+    initialize.add_argument("target", choices=("test",))
     select = vehicle_commands.add_parser("select", help="Safe Stop, detach, scene reset and connect one role")
     select.add_argument("target", choices=("test", "production"))
     connectivity = vehicle_commands.add_parser("connectivity", help="selected vehicle external world; preserve CARLA, VISS and control")
