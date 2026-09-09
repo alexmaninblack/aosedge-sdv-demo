@@ -47,7 +47,8 @@ def build_parser() -> argparse.ArgumentParser:
         command.add_argument("--profile", help="one configured Cloud profile; default reads each separately")
     backend = commands.add_parser("backend", help="owned functional backend containers, separate from Cloud and vehicle functions")
     backend_commands = backend.add_subparsers(dest="action", required=True)
-    backend_commands.add_parser("recover-file-sharing", help="explicit idle Docker Desktop recovery for blocked owned cleanup; preserves storage")
+    recovery = backend_commands.add_parser("recover-file-sharing", help="explicit Docker Desktop recovery for blocked owned cleanup; preserves storage")
+    recovery.add_argument("--restart-project", choices=("watt-the-app",), help="explicitly authorized one-time interruption and restoration of the five Watt containers")
     for action in ("build", "activate", "start", "stop", "status"):
         command = backend_commands.add_parser(action, help="explicit development build" if action == "build" else "owned backend " + action)
         command.add_argument("team", choices=("brake", "tire"))
@@ -182,6 +183,7 @@ def request_from_arguments(arguments: argparse.Namespace) -> OperationRequest:
         content_profile=getattr(arguments, "content_profile", None),
         team=getattr(arguments, "team", None),
         metadata_only=getattr(arguments, "metadata_only", False),
+        restart_project=getattr(arguments, "restart_project", None),
         service_id=getattr(arguments, "service_id", None), profile=getattr(arguments, "profile", None),
         timeout=getattr(arguments, "timeout", 8.0),
     )

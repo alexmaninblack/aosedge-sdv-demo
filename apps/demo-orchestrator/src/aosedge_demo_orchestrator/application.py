@@ -62,9 +62,9 @@ class DemoOrchestrator:
                 if request.action == "recover-file-sharing":
                     if request.team:
                         raise EnvironmentError("BACKEND_RECOVERY_USES_CURRENT_CLEANUP_ONLY")
-                    data = backend.recover_file_sharing()
+                    data = backend.recover_file_sharing(request.restart_project)
                     return OperationResult(operation, OperationState.COMPLETED if data["state"] == "COMPLETED" else OperationState.PARTIAL,
-                        "Explicit idle Docker Desktop recovery; no pruning, Cloud mutation or VM restart.", data=data)
+                        "Explicit Docker Desktop recovery; no pruning, Cloud mutation or QEMU VM restart.", data=data)
                 data = backend.execute(request.action, request.team)
                 state = (OperationState.OBSERVED if request.action == "status" else OperationState.PARTIAL
                     if request.action == "start" and data.get("state") != "RUNNING" else OperationState.COMPLETED)

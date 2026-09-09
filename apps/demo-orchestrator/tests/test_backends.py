@@ -81,6 +81,46 @@ class BackendTests(unittest.TestCase):
             self.assertTrue(self.service.recover_file_sharing()["noOp"])
         self.assertEqual(1, sum(call.args[:2] == ("desktop", "restart") for call in self.service._docker.call_args_list))
 
+    def test_authorized_watt_restart_restores_same_five_instances_and_data(self):
+        self.state.update(demoLifecycle=dict(action="retire", state="PARTIAL", reason="CLEANUP_FILE_IN_USE",
+            phase="retire-test-data-and-overlay"), backends={team: dict(state="STOPPED", cleanup=dict(containerRemoval="REMOVED"))
+                for team in ("brake", "tire")})
+        atomic_json(self.root / JOURNAL, self.state)
+        containers = {}
+        for index, service in enumerate(("db", "redis", "api", "admin", "tunnel"), 1):
+            name = "watt-the-app-" + service + "-1"
+            containers[name] = dict(Id=str(index) * 64, Image=IMAGE,
+                Config=dict(Labels={"com.docker.compose.project": "watt-the-app", "com.docker.compose.service": service}),
+                State=dict(Running=True, Health=dict(Status="healthy")),
+                Mounts=[dict(Type="volume", Name=service + "-data", Destination="/data", RW=True),
+                    dict(Type="bind", Source="/fixed/source", Destination="/app", RW=False)])
+        self.service._inspect = lambda kind, name: containers.get(name)
+        actions = []
+        def docker(*args, **kwargs):
+            actions.append(args)
+            if args == ("container", "ls", "--quiet"):
+                return "\n".join(value["Id"][:12] for value in containers.values())
+            if args[:2] == ("desktop", "restart"):
+                for value in containers.values():
+                    value["State"]["Running"] = False
+                    value["Mounts"].reverse()
+            if args[:2] == ("container", "start"):
+                next(value for value in containers.values() if value["Id"] == args[2])["State"]["Running"] = True
+            return ""
+        self.service._docker = docker
+        held = dict(state="HELD", owners=[dict(pid=123, processClass="VIRTUAL_MACHINE")])
+        self.service._context_handles = Mock(side_effect=[held, dict(state="CLEAR", owners=[]), dict(state="CLEAR", owners=[])])
+        self.service._run = Mock(side_effect=["p123\n", "/usr/bin/python\n"])
+        with patch("aosedge_demo_orchestrator.backends.sys.platform", "darwin"), patch.object(Path, "is_file", return_value=True), patch(
+                "aosedge_demo_orchestrator.backends.shutil.which", return_value="/fixed/lsof"):
+            result = self.service.recover_file_sharing("watt-the-app")
+            self.assertEqual("COMPLETED", result["state"])
+            self.assertEqual(set(containers), set(result["restoredContainers"]))
+            self.assertTrue(self.service.recover_file_sharing("watt-the-app")["noOp"])
+        self.assertEqual(1, sum(args[:2] == ("desktop", "restart") for args in actions))
+        self.assertEqual(5, sum(args[:2] == ("container", "start") for args in actions))
+        self.assertFalse(any("rm" in args or "prune" in args for args in actions))
+
     def test_start_is_digest_pinned_loopback_only_no_build_or_pull(self):
         result = self.service.execute("start", "brake")
         self.assertEqual("RUNNING", result["state"])

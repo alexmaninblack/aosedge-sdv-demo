@@ -50,6 +50,7 @@ class OperationRequest:
     team: Optional[str] = None
     service_id: Optional[str] = None
     metadata_only: bool = False
+    restart_project: Optional[str] = None
 
     def selection_error(self) -> Optional[str]:
         """Validate agreed selectors before any lifecycle adapter is called."""

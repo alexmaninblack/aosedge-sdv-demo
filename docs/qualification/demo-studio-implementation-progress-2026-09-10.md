@@ -7,7 +7,36 @@ Status: **partial implementation; not ready for final operator E2E**.
 The [accepted P1–P8 plan](../planning/active/demo-studio-delivery-plan.md)
 remains authoritative. No mockup flow or live Presenter composition was changed.
 
-## Latest continuation — three authorizations accepted
+## Latest continuation — Docker recovery and Brake source publication
+
+The user explicitly authorized one Docker Desktop restart with temporary
+interruption/restoration of the five existing `watt-the-app` containers, without
+data deletion, and publication of Brake Service commit `3ad5b23` to the public
+`alexmaninblack/brake-health-service` branch `codex/studio-brake-runtime`.
+That source push completed without force. No compiled artifact was published.
+
+`democtl backend recover-file-sharing --restart-project watt-the-app` performed
+exactly one engine restart. All five original containers were restored with the
+same container IDs, image IDs and data mounts; previously healthy containers
+were checked healthy. A mount-array ordering difference initially prevented
+confirmation of the API container. Read-only reconciliation proved the mount
+sets identical; comparing by destination resolved that observation defect.
+Resuming recovery did not restart Docker again. No Watt container or volume was
+deleted, recreated or pruned, and no QEMU guest was restarted by this operation.
+The 23 backend regression tests pass, including five-container restoration,
+unordered equivalent mounts, foreign-container refusal and once-only restart.
+
+The exact context file is no longer held open. Resuming `democtl demo retire`
+completed local old-Test context/overlay removal without repeating the already
+completed Cloud deprovision/delete steps. Production's Unit, overlay and shared
+factory/DNS resources were preserved. A fresh Test overlay was subsequently
+created from the same immutable `.31` image. Its native password prompt could
+not be automated under the host's accessibility permissions; that prompt alone
+was cancelled and the existing `democtl vm start test` terminal input path was
+used. This is not a new image build or an alternate VM-management helper.
+Fresh Test qualification and P3–P8 remain open.
+
+## Earlier continuation — three authorizations accepted
 
 The user approved all three proposals listed below. Tire source branch
 `codex/studio-tire-backend` was pushed to the public
@@ -43,7 +72,8 @@ build, fresh Test, service assignment or new Cloud upload was started here.
 
 The earlier sections are retained as timestamped progress history. Their
 three outstanding authorization statements are superseded by this section;
-the unrelated Docker workloads are the new confirmed live-cycle blocker.
+the unrelated Docker workloads were the then-current live-cycle blocker,
+subsequently resolved by the explicit authorization and recovery above.
 
 ## <a id="resumed-execution"></a>Resumed execution — 10 September, supersedes the initial gates below
 

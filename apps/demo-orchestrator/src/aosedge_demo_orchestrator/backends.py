@@ -8,6 +8,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 from .environment import EnvironmentError, JOURNAL, atomic_json
@@ -138,11 +139,53 @@ class BackendService:
                     owners[-1]["processClass"] = "DOCKER_DESKTOP"
         return dict(state="HELD" if owners else "CLEAR" if result.returncode == 1 and not result.stdout else "UNKNOWN", owners=owners)
 
-    def recover_file_sharing(self):
+    def _restore_fingerprint(self, container):
+        return dict(id=container["Id"], image=container["Image"], mounts=[
+            {key: mount.get(key) for key in ("Type", "Name", "Source", "Destination", "RW")}
+            for mount in container.get("Mounts", [])])
+
+    def _same_restore_binding(self, actual, expected):
+        return (actual["id"] == expected["id"] and actual["image"] == expected["image"]
+            and sorted(actual["mounts"], key=lambda mount: mount["Destination"]) ==
+                sorted(expected["mounts"], key=lambda mount: mount["Destination"]))
+
+    def _restore_project(self, state, recovery):
+        restored = []
+        for record in recovery.get("containers", []):
+            observed = self._inspect("container", record["name"])
+            if not observed or not self._same_restore_binding(self._restore_fingerprint(observed), record["binding"]):
+                raise EnvironmentError("BACKEND_RECOVERY_CONTAINER_OR_DATA_BINDING_CHANGED")
+            if not observed.get("State", {}).get("Running"):
+                if record.get("restoreAttemptStarted"):
+                    raise EnvironmentError("BACKEND_RECOVERY_CONTAINER_START_UNCONFIRMED")
+                record["restoreAttemptStarted"] = True
+                atomic_json(self.root / JOURNAL, state)
+                self._docker("container", "start", record["binding"]["id"], timeout=25)
+            deadline = time.monotonic() + 60
+            while True:
+                observed = self._inspect("container", record["name"])
+                if not observed or not self._same_restore_binding(self._restore_fingerprint(observed), record["binding"]):
+                    raise EnvironmentError("BACKEND_RECOVERY_CONTAINER_OR_DATA_BINDING_CHANGED")
+                runtime = observed.get("State", {})
+                healthy = (runtime.get("Health") or {}).get("Status")
+                if runtime.get("Running") and (not record["wasHealthy"] or healthy == "healthy"):
+                    break
+                if time.monotonic() >= deadline or healthy == "unhealthy":
+                    raise EnvironmentError("BACKEND_RECOVERY_CONTAINER_READINESS_UNCONFIRMED")
+                time.sleep(2)
+            record["restored"] = True
+            atomic_json(self.root / JOURNAL, state)
+            restored.append(record["name"])
+            self.progress("Restored existing container " + record["name"] + "; image and data mounts unchanged")
+        return restored
+
+    def recover_file_sharing(self, restart_project=None):
         """Explicit local recovery, never automatic in ordinary demo actions."""
         with self.environment._writer():
             state = read_json(self.root / JOURNAL)
             lifecycle = state.get("demoLifecycle") or {}
+            if restart_project not in (None, "watt-the-app"):
+                raise EnvironmentError("BACKEND_RECOVERY_PROJECT_NOT_AUTHORIZED")
             if (sys.platform != "darwin" or lifecycle.get("action") != "retire"
                     or lifecycle.get("state") != "PARTIAL" or lifecycle.get("reason") != "CLEANUP_FILE_IN_USE"
                     or lifecycle.get("phase") != "retire-test-data-and-overlay"):
@@ -152,6 +195,18 @@ class BackendService:
                 if (record.get("state") != "STOPPED" or record.get("cleanup", {}).get("containerRemoval") != "REMOVED"
                         or self._inspect("container", "aosedge-demo-" + team + "-cloud") is not None):
                     raise EnvironmentError("BACKEND_FILE_SHARING_CONTAINERS_NOT_RELEASED")
+            recovery = lifecycle.get("fileSharingRecovery") or {}
+            if recovery.get("attemptStarted"):
+                # Reconcile an interrupted restore; never replay the restart.
+                if recovery.get("project") != restart_project:
+                    raise EnvironmentError("BACKEND_RECOVERY_PROJECT_BINDING_CHANGED")
+                self._docker("info", "--format", "{{.ServerVersion}}")
+                restored = self._restore_project(state, recovery)
+                observation = self._context_handles()
+                recovery.update(state="COMPLETED" if observation["state"] == "CLEAR" else "PARTIAL", checkedAt=now())
+                atomic_json(self.root / JOURNAL, state)
+                return dict(state=recovery["state"], noOp=True, dataPreserved=True,
+                    restoredContainers=restored, contextOpenHandles=observation)
             handles = self._context_handles()
             if handles["state"] == "CLEAR":
                 return dict(state="COMPLETED", noOp=True, dataPreserved=True)
@@ -167,26 +222,40 @@ class BackendService:
                 evidence = self._run([lsof, "-a", "-p", str(holder["pid"]), "-F", "p", "--", str(disk)])
                 if {line for line in evidence.splitlines() if re.fullmatch(r"p[0-9]+", line)} != {"p" + str(holder["pid"])}:
                     raise EnvironmentError("BACKEND_FILE_SHARING_DOCKER_VM_UNPROVEN")
-            # A host-wide engine restart must not interrupt another container
-            # or build. This command never stops one to satisfy the guard.
-            if self._docker("container", "ls", "--quiet").strip():
-                raise EnvironmentError("BACKEND_FILE_SHARING_OTHER_CONTAINER_RUNNING")
+            running = self._docker("container", "ls", "--quiet").split()
+            containers = []
+            if running:
+                if restart_project != "watt-the-app":
+                    raise EnvironmentError("BACKEND_FILE_SHARING_OTHER_CONTAINER_RUNNING")
+                for service in ("db", "redis", "api", "admin", "tunnel"):
+                    name = "watt-the-app-" + service + "-1"
+                    value = self._inspect("container", name)
+                    labels = (value or {}).get("Config", {}).get("Labels") or {}
+                    if (not value or not value.get("State", {}).get("Running")
+                            or labels.get("com.docker.compose.project") != "watt-the-app"
+                            or labels.get("com.docker.compose.service") != service):
+                        raise EnvironmentError("BACKEND_RECOVERY_WATT_SCOPE_CHANGED")
+                    containers.append(dict(name=name, binding=self._restore_fingerprint(value),
+                        wasHealthy=(value.get("State", {}).get("Health") or {}).get("Status") == "healthy"))
+                if len(running) != 5 or any(len(item) < 12 or sum(record["binding"]["id"].startswith(item)
+                        for record in containers) != 1 for item in running):
+                    raise EnvironmentError("BACKEND_FILE_SHARING_OTHER_CONTAINER_RUNNING")
             processes = self._run(["/bin/ps", "-axo", "comm="])
             if any(Path(line.strip()).name in ("docker-buildx", "buildctl") for line in processes.splitlines()):
                 raise EnvironmentError("BACKEND_FILE_SHARING_BUILD_RUNNING")
-            recovery = lifecycle.get("fileSharingRecovery") or {}
-            if recovery.get("attemptStarted"):
-                raise EnvironmentError("BACKEND_FILE_SHARING_RESTART_ALREADY_ATTEMPTED")
-            lifecycle["fileSharingRecovery"] = dict(attemptStarted=True, startedAt=now(), state="UNCERTAIN")
+            recovery = dict(attemptStarted=True, startedAt=now(), state="UNCERTAIN",
+                project=restart_project, containers=containers)
+            lifecycle["fileSharingRecovery"] = recovery
             atomic_json(self.root / JOURNAL, state)
-            self.progress("Restarting idle Docker Desktop once to release its stale file-sharing handle; data and VM disks preserved")
+            self.progress("Restarting Docker Desktop once; restoring the recorded containers without changing images or data")
             self._docker("desktop", "restart", "--timeout", "120", timeout=125)
             self._docker("info", "--format", "{{.ServerVersion}}")
+            restored = self._restore_project(state, recovery)
             observation = self._context_handles()
             lifecycle["fileSharingRecovery"].update(state="COMPLETED" if observation["state"] == "CLEAR" else "PARTIAL", checkedAt=now())
             atomic_json(self.root / JOURNAL, state)
             return dict(state=lifecycle["fileSharingRecovery"]["state"], noOp=False, dataPreserved=True,
-                contextOpenHandles=observation)
+                restoredContainers=restored, contextOpenHandles=observation)
 
     def _candidate(self, team):
         values = []
@@ -324,6 +393,17 @@ class BackendService:
                 return self._activate(state, team, record, observed, owner)
             if action == "status":
                 runtime = (observed or {}).get("State", {})
+                restore_status = []
+                for saved in ((state.get("demoLifecycle") or {}).get("fileSharingRecovery") or {}).get("containers", []):
+                    current = self._inspect("container", saved["name"])
+                    actual = self._restore_fingerprint(current) if current else {}
+                    expected = saved["binding"]
+                    restore_status.append(dict(name=saved["name"], present=current is not None,
+                        running=bool((current or {}).get("State", {}).get("Running")),
+                        idMatches=actual.get("id") == expected["id"], imageMatches=actual.get("image") == expected["image"],
+                        mountsMatchOrdered=actual.get("mounts") == expected["mounts"],
+                        mountsMatchUnordered=sorted(actual.get("mounts", []), key=lambda item: item.get("Destination", "")) ==
+                            sorted(expected["mounts"], key=lambda item: item.get("Destination", ""))))
                 handles = self._context_handles()
                 active = []
                 if handles["state"] == "HELD":
@@ -348,7 +428,8 @@ class BackendService:
                 return dict(team=team, state="RUNNING" if runtime.get("Running") else "STOPPED",
                     processHealth=(runtime.get("Health") or {}).get("Status", "NOT_OBSERVED"),
                     contextReadiness="NOT_OBSERVED", productReadiness="NOT_OBSERVED", source="DOCKER_PROCESS_ONLY", storageBinding=binding,
-                    contextOpenHandles=handles, engineRunningContainers=active)
+                    contextOpenHandles=handles, engineRunningContainers=active,
+                    engineRunningContainersObserved=handles["state"] == "HELD", recoveryContainers=restore_status)
             if action == "stop" and (observed is None or not observed.get("State", {}).get("Running")):
                 if record:
                     record.update(state="STOPPED", confirmedAt=now(), reconciliation="OBSERVED_NOT_RUNNING")
