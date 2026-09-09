@@ -140,6 +140,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     unit = commands.add_parser("unit", help="manage AosCloud Unit lifecycle")
     unit_commands = unit.add_subparsers(dest="action", required=True)
+    for action in ("cloud-status", "monitoring"):
+        command = unit_commands.add_parser(action, help="one bounded read of current Test Cloud facts; no guest access")
+        command.add_argument("target", choices=("test",))
     for action in ("provision", "deprovision", "delete"):
         command = unit_commands.add_parser(action)
         command.add_argument("target", choices=TARGETS)
@@ -202,7 +205,9 @@ def render_human(result: OperationResult, details: bool = False) -> str:
         for role, value in data["vehicles"].items():
             lines.append(role + ": source=" + value["gate"] + "; VDP=" + value["vdpProcess"]
                          + "; VDP data=" + value["vdpData"])
-    if data and document["operation"].startswith("unit."):
+    if data and document["operation"] in ("unit.cloud-status", "unit.monitoring"):
+        lines.append(json.dumps(data, indent=2, sort_keys=True))
+    elif data and document["operation"].startswith("unit."):
         for role, item in data["vehicles"].items():
             lines.append(role + ": " + item["state"] + " " + item.get("reason", ""))
             lines.append("  " + json.dumps({k: v for k, v in item.items() if k not in ("state", "reason")}, sort_keys=True))

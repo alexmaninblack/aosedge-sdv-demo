@@ -77,6 +77,10 @@ def execute_operation(
         if request.selection_error():
             raise ValueError(request.selection_error())
         return application.execute(request).to_dict()
+    if domain == "unit" and action in ("cloud-status", "monitoring"):
+        if set(payload) != {"domain", "action", "target"} or target != VehicleTarget.TEST:
+            raise ValueError("Cloud observation accepts the owned current Test only")
+        return application.execute(OperationRequest(domain, action, target)).to_dict()
     if domain == "unit" and action in ("provision", "deprovision", "delete", "unassign"):
         if set(payload) != {"domain", "action", "target"} or target is None:
             raise ValueError("Unit requests accept only action and target")
