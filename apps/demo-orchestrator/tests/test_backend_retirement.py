@@ -12,7 +12,7 @@ import test_images_environment as fixtures
 from aosedge_demo_orchestrator.backend_context import CONTEXT, project_context
 from aosedge_demo_orchestrator.backend_retirement import BackendRetirement, COUNTS, FOUNDATION
 from aosedge_demo_orchestrator.backends import BackendService, TEAMS
-from aosedge_demo_orchestrator.environment import EnvironmentError, JOURNAL, atomic_json
+from aosedge_demo_orchestrator.environment import EnvironmentError, JOURNAL, atomic_json, digest
 from aosedge_demo_orchestrator.status import read_json
 
 TOKEN = "fixture-only-confirmation-token-never-persist-" + "x" * 32
@@ -139,7 +139,7 @@ class BackendRetirementTests(TestCase):
         self.assertTrue(self.cleanup.confirm_test_cleanup(state))
         self.assertEqual(calls, len(self.calls))
         self.backend.resources[("container", "aosedge-demo-brake-cloud")]["State"]["Running"] = True
-        with self.assertRaisesRegex(EnvironmentError, "RUNNING_WITHOUT_CONTEXT"):
+        with self.assertRaisesRegex(EnvironmentError, "RESTARTED_AFTER_PROOF"):
             self.cleanup.confirm_test_cleanup(state)
 
     def test_single_cleanup_proves_total_empty_before_fixed_resource_removal(self):
@@ -304,3 +304,93 @@ class BackendRetirementTests(TestCase):
             self.cleanup.confirm_test_cleanup(state)
         self.assertEqual([], self.calls)
         self.assertEqual(6, len(self.backend.resources))
+
+    def unprovisioned(self, production=False):
+        state = self.backend_fixture(production=production)
+        test = state["vehicles"]["test"]
+        for key in ("unitId", "nodeId", "systemUid", "unitSetId", "cloud"):
+            test.pop(key, None)
+        test["runtime"] = dict(state="STOPPED", pid=None, everStarted=True,
+            stopProof=dict(unprovisioned=True, overlaySha256=digest(self.root / test["overlay"])))
+        (self.root / CONTEXT).unlink()
+        atomic_json(self.root / JOURNAL, state)
+        return state
+
+    def test_unprovisioned_single_uses_empty_proofs_without_invented_uid_or_selector(self):
+        state = self.unprovisioned()
+        self.matching = dict.fromkeys(COUNTS, 0)
+        self.assertTrue(self.cleanup.confirm_unprovisioned_cleanup(state))
+        self.assertEqual([("brake", "empty-proof"), ("tire", "foundation-proof")], self.calls)
+        self.assertEqual({}, self.backend.resources)
+        self.assertNotIn("backends", state)
+        self.assertNotIn("systemUid", state["vehicles"]["test"])
+
+    def test_unprovisioned_dual_preserves_nonempty_storage_without_test_absence_claim(self):
+        state = self.unprovisioned(production=True)
+        peer = copy.deepcopy(state["vehicles"]["production"])
+        self.assertTrue(self.cleanup.confirm_unprovisioned_cleanup(state))
+        self.assertEqual(peer, state["vehicles"]["production"])
+        self.assertEqual(6, len(self.backend.resources))
+        self.assertEqual(2, self.matching["messages"])
+        self.assertEqual(7, self.nonmatching["messages"])
+        proof = state["backends"]["brake"]["cleanup"]
+        self.assertEqual("UNPROVISIONED_STORE_OBSERVATION", proof["scope"])
+        self.assertNotIn("matchingRecordCounts", proof)
+        self.assertNotIn("systemUid", proof)
+        self.assertFalse(proof["wholeStoreEmpty"])
+        calls = len(self.calls)
+        self.assertTrue(self.cleanup.confirm_unprovisioned_cleanup(state))
+        self.assertEqual(calls, len(self.calls))
+
+    def test_unprovisioned_single_nonempty_store_is_never_erased(self):
+        state = self.unprovisioned()
+        with self.assertRaisesRegex(EnvironmentError, "NONMATCHING_DATA_PRESERVED"):
+            self.cleanup.confirm_unprovisioned_cleanup(state)
+        self.assertEqual(6, len(self.backend.resources))
+        self.assertEqual([], self.backend.actions)
+
+    def test_unprovisioned_partial_cloud_attempt_or_unknown_stop_proof_blocks(self):
+        state = self.unprovisioned()
+        for change in (dict(cloud={}), dict(systemUid="partial-sdk-uid"),
+                       dict(runtime=dict(state="STOPPED", pid=None, everStarted=True))):
+            candidate = copy.deepcopy(state)
+            candidate["vehicles"]["test"].update(change)
+            with self.assertRaisesRegex(EnvironmentError, "NEVER_PROVISIONED_TEST"):
+                self.cleanup.confirm_unprovisioned_cleanup(candidate)
+        self.assertEqual([], self.calls)
+
+    def test_unprovisioned_stale_context_is_not_unlinked_or_adopted(self):
+        state = self.unprovisioned()
+        atomic_json(self.root / CONTEXT, dict(stale="old-test"))
+        with self.assertRaisesRegex(EnvironmentError, "CONTEXT_MUST_BE_ABSENT"):
+            self.cleanup.confirm_unprovisioned_cleanup(state)
+        self.assertTrue((self.root / CONTEXT).exists())
+
+    def test_unprovisioned_single_interrupted_resource_cleanup_resumes_without_new_proof(self):
+        state = self.unprovisioned()
+        self.matching = dict.fromkeys(COUNTS, 0)
+        original = self.backend._docker
+        def interrupted(*args):
+            original(*args)
+            raise EnvironmentError("removed before response loss")
+        with patch.object(self.backend, "_docker", side_effect=interrupted):
+            with self.assertRaisesRegex(EnvironmentError, "response loss"):
+                self.cleanup.confirm_unprovisioned_cleanup(state)
+        self.assertTrue(self.cleanup.confirm_unprovisioned_cleanup(state))
+        self.assertEqual({}, self.backend.resources)
+        self.assertEqual([("brake", "empty-proof"), ("tire", "foundation-proof")], self.calls)
+
+    def test_owned_test_disk_must_be_released_before_product_records_are_deleted(self):
+        state = self.backend_fixture()
+        with patch.object(self.service, "_assert_unheld", side_effect=EnvironmentError("CLEANUP_FILE_IN_USE")):
+            with self.assertRaisesRegex(EnvironmentError, "FILE_IN_USE"):
+                self.cleanup.confirm_test_cleanup(state)
+        self.assertEqual([], self.calls)
+        self.assertEqual(2, self.matching["messages"])
+
+    def test_unprovisioned_changed_stopped_overlay_does_not_erase_backend_store(self):
+        state = self.unprovisioned()
+        state["vehicles"]["test"]["runtime"]["stopProof"]["overlaySha256"] = "f" * 64
+        with self.assertRaisesRegex(EnvironmentError, "STOPPED_UNPROVISIONED_PROOF"):
+            self.cleanup.confirm_unprovisioned_cleanup(state)
+        self.assertEqual([], self.calls)
