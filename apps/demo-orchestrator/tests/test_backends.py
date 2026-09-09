@@ -40,6 +40,47 @@ class BackendTests(unittest.TestCase):
                 self.container["State"]["Running"] = False
         self.service._docker = docker
 
+    def test_context_handle_status_exposes_only_fixed_class_and_pid(self):
+        path = self.root / ".run/demo-current/backends/context/current-unit-context.json"
+        path.parent.mkdir(parents=True)
+        path.write_text("{}")
+        response = SimpleNamespace(returncode=0, stderr="", stdout="p123\nccom.apple.Virtualization.VirtualMachine\n")
+        with patch("aosedge_demo_orchestrator.backends.shutil.which", return_value="/fixed/lsof"), patch(
+                "aosedge_demo_orchestrator.backends.subprocess.run", return_value=response):
+            self.assertEqual(dict(state="HELD", owners=[dict(pid=123, processClass="VIRTUAL_MACHINE")]),
+                self.service._context_handles())
+            response.stderr = "visibility denied"
+            self.assertEqual(dict(state="UNKNOWN", owners=[]), self.service._context_handles())
+
+    def test_recovery_never_restarts_engine_with_unrelated_running_container(self):
+        self.state.update(demoLifecycle=dict(action="retire", state="PARTIAL", reason="CLEANUP_FILE_IN_USE",
+            phase="retire-test-data-and-overlay"), backends={team: dict(state="STOPPED", cleanup=dict(containerRemoval="REMOVED"))
+                for team in ("brake", "tire")})
+        atomic_json(self.root / JOURNAL, self.state)
+        self.service._context_handles = Mock(return_value=dict(state="HELD", owners=[dict(pid=123, processClass="VIRTUAL_MACHINE")]))
+        self.service._docker = Mock(return_value="unrelated-id\n")
+        self.service._run = Mock(return_value="p123\n")
+        with patch("aosedge_demo_orchestrator.backends.sys.platform", "darwin"), patch.object(Path, "is_file", return_value=True), patch(
+                "aosedge_demo_orchestrator.backends.shutil.which", return_value="/fixed/lsof"):
+            with self.assertRaisesRegex(EnvironmentError, "OTHER_CONTAINER_RUNNING"):
+                self.service.recover_file_sharing()
+        self.assertEqual([(("container", "ls", "--quiet"),)], [tuple([call.args]) for call in self.service._docker.call_args_list])
+
+    def test_recovery_restart_once_then_clear_and_repeat_is_read_only(self):
+        self.state.update(demoLifecycle=dict(action="retire", state="PARTIAL", reason="CLEANUP_FILE_IN_USE",
+            phase="retire-test-data-and-overlay"), backends={team: dict(state="STOPPED", cleanup=dict(containerRemoval="REMOVED"))
+                for team in ("brake", "tire")})
+        atomic_json(self.root / JOURNAL, self.state)
+        held = dict(state="HELD", owners=[dict(pid=123, processClass="VIRTUAL_MACHINE")])
+        self.service._context_handles = Mock(side_effect=[held, dict(state="CLEAR", owners=[]), dict(state="CLEAR", owners=[])])
+        self.service._docker = Mock(return_value="")
+        self.service._run = Mock(side_effect=["p123\n", "/usr/bin/python\n"])
+        with patch("aosedge_demo_orchestrator.backends.sys.platform", "darwin"), patch.object(Path, "is_file", return_value=True), patch(
+                "aosedge_demo_orchestrator.backends.shutil.which", return_value="/fixed/lsof"):
+            self.assertEqual("COMPLETED", self.service.recover_file_sharing()["state"])
+            self.assertTrue(self.service.recover_file_sharing()["noOp"])
+        self.assertEqual(1, sum(call.args[:2] == ("desktop", "restart") for call in self.service._docker.call_args_list))
+
     def test_start_is_digest_pinned_loopback_only_no_build_or_pull(self):
         result = self.service.execute("start", "brake")
         self.assertEqual("RUNNING", result["state"])

@@ -7,6 +7,44 @@ Status: **partial implementation; not ready for final operator E2E**.
 The [accepted P1–P8 plan](../planning/active/demo-studio-delivery-plan.md)
 remains authoritative. No mockup flow or live Presenter composition was changed.
 
+## Latest continuation — three authorizations accepted
+
+The user approved all three proposals listed below. Tire source branch
+`codex/studio-tire-backend` was pushed to the public
+`alexmaninblack/tire-health-cloud` repository. The accepted temporary authority
+model now permits the existing SP for a distinct Tire service identity.
+The Test-only read-only metadata/public-trust proof is authorized without a
+Factory rebuild; it has not yet been applied to a guest.
+
+The next cleanup attempt corrected dependency order: both exact owned stopped
+backend containers were removed before context unlink. Their volume/network
+storage and Production were preserved. The file remains held by Docker
+Desktop's Virtual Machine process even after both mounts/containers disappear.
+Read-only `democtl backend status brake` identifies that holder, and bounded
+`backend recover-file-sharing` proved the same process owns Docker.raw.
+Recovery refused **before restart** because five unrelated containers remain
+running: `watt-the-app-admin-1`, `watt-the-app-tunnel-1`, `watt-the-app-api-1`,
+`watt-the-app-db-1`, `watt-the-app-redis-1`. None was stopped or changed.
+The exact open-handle check is not bypassed; Test overlay/context remain.
+
+This matches the residual VirtioFS descriptor behavior reported in
+[Docker's issue tracker](https://github.com/docker/desktop-feedback/issues/168).
+The official [Docker Desktop restart operation](https://docs.docker.com/reference/cli/docker/desktop/restart/)
+would interrupt those unrelated containers, so that action requires a separate
+bounded authorization or their owner to make the engine idle. No engine
+restart or Docker storage pruning has occurred.
+
+Brake source `3ad5b23` adds a pinned Linux ARM64 product recipe and verified
+export schema, not a built artifact. Demo Control now has a CLI-only
+`service build brake` entry with real ELF/source/test-proof checks. Five build
+adapter tests and 22 backend tests passed. The cleanup increment passed 28
+backend retirement and 15 Test-environment tests. No actual product Docker
+build, fresh Test, service assignment or new Cloud upload was started here.
+
+The earlier sections are retained as timestamped progress history. Their
+three outstanding authorization statements are superseded by this section;
+the unrelated Docker workloads are the new confirmed live-cycle blocker.
+
 ## <a id="resumed-execution"></a>Resumed execution — 10 September, supersedes the initial gates below
 
 The user authorized scoped current-Test deprovision/delete, owned data/overlay

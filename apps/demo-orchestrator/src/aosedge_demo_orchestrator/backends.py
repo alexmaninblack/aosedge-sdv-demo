@@ -7,6 +7,7 @@ import json
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 from .environment import EnvironmentError, JOURNAL, atomic_json
@@ -108,6 +109,84 @@ class BackendService:
         if len(values) != 1 or values[0].get("Id") != identity or values[0].get("Architecture") != "arm64":
             raise EnvironmentError("BACKEND_ARM64_IMAGE_NOT_AVAILABLE")
         return values[0]
+
+    def _context_handles(self):
+        """Bounded diagnostic for the one owned context, not process arguments."""
+        path = self.root / ".run/demo-current/backends/context/current-unit-context.json"
+        if not path.exists():
+            return dict(state="ABSENT", owners=[])
+        self.environment._owned_file(path)
+        executable = shutil.which("lsof")
+        if not executable:
+            return dict(state="UNKNOWN", owners=[])
+        try:
+            result = subprocess.run([executable, "-F", "pc", "--", str(path)],
+                capture_output=True, text=True, timeout=8, check=False)
+        except (OSError, subprocess.TimeoutExpired):
+            return dict(state="UNKNOWN", owners=[])
+        if result.stderr or result.returncode not in (0, 1) or len(result.stdout) > 8192:
+            return dict(state="UNKNOWN", owners=[])
+        owners = []
+        for line in result.stdout.splitlines():
+            if re.fullmatch(r"p[0-9]{1,10}", line):
+                owners.append(dict(pid=int(line[1:]), processClass="OTHER"))
+            elif line.startswith("c") and owners:
+                name = line[1:].lower()
+                if "virtualization" in name or name in ("qemu-system-aarch64", "qemu-system-x86_64"):
+                    owners[-1]["processClass"] = "VIRTUAL_MACHINE"
+                elif "docker" in name:
+                    owners[-1]["processClass"] = "DOCKER_DESKTOP"
+        return dict(state="HELD" if owners else "CLEAR" if result.returncode == 1 and not result.stdout else "UNKNOWN", owners=owners)
+
+    def recover_file_sharing(self):
+        """Explicit local recovery, never automatic in ordinary demo actions."""
+        with self.environment._writer():
+            state = read_json(self.root / JOURNAL)
+            lifecycle = state.get("demoLifecycle") or {}
+            if (sys.platform != "darwin" or lifecycle.get("action") != "retire"
+                    or lifecycle.get("state") != "PARTIAL" or lifecycle.get("reason") != "CLEANUP_FILE_IN_USE"
+                    or lifecycle.get("phase") != "retire-test-data-and-overlay"):
+                raise EnvironmentError("BACKEND_FILE_SHARING_RECOVERY_NOT_APPLICABLE")
+            for team in TEAMS:
+                record = state.get("backends", {}).get(team, {})
+                if (record.get("state") != "STOPPED" or record.get("cleanup", {}).get("containerRemoval") != "REMOVED"
+                        or self._inspect("container", "aosedge-demo-" + team + "-cloud") is not None):
+                    raise EnvironmentError("BACKEND_FILE_SHARING_CONTAINERS_NOT_RELEASED")
+            handles = self._context_handles()
+            if handles["state"] == "CLEAR":
+                return dict(state="COMPLETED", noOp=True, dataPreserved=True)
+            if handles["state"] != "HELD" or any(owner["processClass"] != "VIRTUAL_MACHINE" for owner in handles["owners"]):
+                raise EnvironmentError("BACKEND_FILE_SHARING_HOLDER_NOT_RECOGNIZED")
+            disk = Path.home() / "Library/Containers/com.docker.docker/Data/vms/0/data/Docker.raw"
+            lsof = shutil.which("lsof")
+            if not disk.is_file():
+                raise EnvironmentError("BACKEND_FILE_SHARING_DOCKER_DISK_NOT_FOUND")
+            if not lsof:
+                raise EnvironmentError("BACKEND_FILE_SHARING_LSOF_UNAVAILABLE")
+            for holder in handles["owners"]:
+                evidence = self._run([lsof, "-a", "-p", str(holder["pid"]), "-F", "p", "--", str(disk)])
+                if {line for line in evidence.splitlines() if re.fullmatch(r"p[0-9]+", line)} != {"p" + str(holder["pid"])}:
+                    raise EnvironmentError("BACKEND_FILE_SHARING_DOCKER_VM_UNPROVEN")
+            # A host-wide engine restart must not interrupt another container
+            # or build. This command never stops one to satisfy the guard.
+            if self._docker("container", "ls", "--quiet").strip():
+                raise EnvironmentError("BACKEND_FILE_SHARING_OTHER_CONTAINER_RUNNING")
+            processes = self._run(["/bin/ps", "-axo", "comm="])
+            if any(Path(line.strip()).name in ("docker-buildx", "buildctl") for line in processes.splitlines()):
+                raise EnvironmentError("BACKEND_FILE_SHARING_BUILD_RUNNING")
+            recovery = lifecycle.get("fileSharingRecovery") or {}
+            if recovery.get("attemptStarted"):
+                raise EnvironmentError("BACKEND_FILE_SHARING_RESTART_ALREADY_ATTEMPTED")
+            lifecycle["fileSharingRecovery"] = dict(attemptStarted=True, startedAt=now(), state="UNCERTAIN")
+            atomic_json(self.root / JOURNAL, state)
+            self.progress("Restarting idle Docker Desktop once to release its stale file-sharing handle; data and VM disks preserved")
+            self._docker("desktop", "restart", "--timeout", "120", timeout=125)
+            self._docker("info", "--format", "{{.ServerVersion}}")
+            observation = self._context_handles()
+            lifecycle["fileSharingRecovery"].update(state="COMPLETED" if observation["state"] == "CLEAR" else "PARTIAL", checkedAt=now())
+            atomic_json(self.root / JOURNAL, state)
+            return dict(state=lifecycle["fileSharingRecovery"]["state"], noOp=False, dataPreserved=True,
+                contextOpenHandles=observation)
 
     def _candidate(self, team):
         values = []
@@ -245,6 +324,14 @@ class BackendService:
                 return self._activate(state, team, record, observed, owner)
             if action == "status":
                 runtime = (observed or {}).get("State", {})
+                handles = self._context_handles()
+                active = []
+                if handles["state"] == "HELD":
+                    for line in self._docker("container", "ls", "--format", "{{json .}}").splitlines():
+                        item = json.loads(line)
+                        name = item.get("Names", "")
+                        active.append(dict(name=name if re.fullmatch(r"[a-zA-Z0-9_.-]{1,128}", name) else "UNNAMED",
+                            currentRunOwned=("tech.aosedge.demo.owner=" + owner) in item.get("Labels", "").split(",")))
                 context_path = str(self.root / ".run/demo-current/backends/context")
                 mounts = (observed or {}).get("Mounts") or []
                 binding = {"dataMountCount": sum(mount.get("Destination") == "/data" for mount in mounts),
@@ -260,7 +347,8 @@ class BackendService:
                             dataVolumeMatches=mount.get("Name") == "aosedge_demo_" + team + "_cloud_v1")
                 return dict(team=team, state="RUNNING" if runtime.get("Running") else "STOPPED",
                     processHealth=(runtime.get("Health") or {}).get("Status", "NOT_OBSERVED"),
-                    contextReadiness="NOT_OBSERVED", productReadiness="NOT_OBSERVED", source="DOCKER_PROCESS_ONLY", storageBinding=binding)
+                    contextReadiness="NOT_OBSERVED", productReadiness="NOT_OBSERVED", source="DOCKER_PROCESS_ONLY", storageBinding=binding,
+                    contextOpenHandles=handles, engineRunningContainers=active)
             if action == "stop" and (observed is None or not observed.get("State", {}).get("Running")):
                 if record:
                     record.update(state="STOPPED", confirmedAt=now(), reconciliation="OBSERVED_NOT_RUNNING")

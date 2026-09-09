@@ -23,6 +23,23 @@ service runtime/input gates are in the
 [resumed implementation checkpoint](../../qualification/demo-studio-implementation-progress-2026-09-10.md#resumed-execution).
 This does not promote the incomplete P1–P8 sequence to accepted E2E.
 
+### Additional authorization — 10 September 2026
+
+The user explicitly approved all three bounded proposals after the resumed
+checkpoint: (1) a minimal platform-owned read-only metadata/public KUKSA trust
+interface, first proved transiently on the current disposable Test without a
+Factory `.31` rebuild; (2) use of the existing configured SP for a distinct Tire
+service identity, temporarily simplifying separate team-SP publication authority;
+and (3) source push to the public `alexmaninblack/tire-health-cloud` repository.
+Separate Brake/Tire identities, instances, permissions, data and backend processes
+remain required. This does not grant Production mutation, private-key exposure,
+arbitrary service resource access, new credentials, main/force pushes or an image
+rebuild. The exact resource producer and provenance mapping must be recorded
+before the transient Test action and verified against actual platform sources.
+The exact [temporary service-input mapping](../../architecture/demo-control-service-inputs.md)
+records the seven fields, OCI manifest digest meaning, startup ordering and
+public-certificate boundary. It is not a claim of a completed guest proof.
+
 Implementation starts from `pre-studio-implementation-2.8-2026-09-09`,
 commit `b997e6e6cffba02b61a588c40f14dba30942d17d`, on
 `codex/demo-studio-implementation`. The historical review gates below describe

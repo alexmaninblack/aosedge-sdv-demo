@@ -29,6 +29,18 @@ class DemoOrchestrator:
         selection_error = request.selection_error()
         if selection_error:
             return OperationResult(operation, OperationState.BLOCKED, selection_error)
+        if operation == "service.build":
+            from .service_build import ServiceBuilder
+            if request.target or request.current or request.image or request.image_path or request.profile or request.service_id or request.component_version or request.content_profile:
+                return OperationResult(operation, OperationState.BLOCKED, "SERVICE_BUILD_USES_FIXED_TEAM_ONLY")
+            try:
+                data = ServiceBuilder(self.environment_service, self.vm_service.progress).execute(request.team)
+                return OperationResult(operation, OperationState.COMPLETED,
+                    "Real ARM64 development build; no Cloud publication, guest installation or runtime qualification.", data=data)
+            except EnvironmentError as error:
+                return OperationResult(operation, OperationState.BLOCKED, str(error))
+            except (OSError, ValueError, KeyError, TypeError):
+                return OperationResult(operation, OperationState.BLOCKED, "SERVICE_BUILD_UNAVAILABLE")
         if request.domain == "service":
             from .services import ServiceCatalog
             if request.target or request.current or request.image or request.image_path or request.team or request.component_version or request.content_profile:
@@ -46,7 +58,14 @@ class DemoOrchestrator:
             if request.target or request.current or request.image or request.image_path or request.profile:
                 return OperationResult(operation, OperationState.BLOCKED, "BACKEND_USES_FIXED_TEAM_ONLY")
             try:
-                data = BackendService(self.environment_service, self.vm_service.progress).execute(request.action, request.team)
+                backend = BackendService(self.environment_service, self.vm_service.progress)
+                if request.action == "recover-file-sharing":
+                    if request.team:
+                        raise EnvironmentError("BACKEND_RECOVERY_USES_CURRENT_CLEANUP_ONLY")
+                    data = backend.recover_file_sharing()
+                    return OperationResult(operation, OperationState.COMPLETED if data["state"] == "COMPLETED" else OperationState.PARTIAL,
+                        "Explicit idle Docker Desktop recovery; no pruning, Cloud mutation or VM restart.", data=data)
+                data = backend.execute(request.action, request.team)
                 state = (OperationState.OBSERVED if request.action == "status" else OperationState.PARTIAL
                     if request.action == "start" and data.get("state") != "RUNNING" else OperationState.COMPLETED)
                 return OperationResult(operation, state, "Backend process/storage operation; not Cloud or in-vehicle function readiness.", data=data)

@@ -38,6 +38,8 @@ def build_parser() -> argparse.ArgumentParser:
     commands = parser.add_subparsers(dest="domain", required=True)
     service = commands.add_parser("service", help="read AosCloud service catalog, owners, versions and assignments")
     service_commands = service.add_subparsers(dest="action", required=True)
+    service_build = service_commands.add_parser("build", help="development-only real ARM64 service build; no publication or VM action")
+    service_build.add_argument("team", choices=("brake", "tire"))
     for action in ("list", "status"):
         command = service_commands.add_parser(action, help="read-only OEM/SP observations; no upload or assignment")
         if action == "status":
@@ -45,6 +47,7 @@ def build_parser() -> argparse.ArgumentParser:
         command.add_argument("--profile", help="one configured Cloud profile; default reads each separately")
     backend = commands.add_parser("backend", help="owned functional backend containers, separate from Cloud and vehicle functions")
     backend_commands = backend.add_subparsers(dest="action", required=True)
+    backend_commands.add_parser("recover-file-sharing", help="explicit idle Docker Desktop recovery for blocked owned cleanup; preserves storage")
     for action in ("build", "activate", "start", "stop", "status"):
         command = backend_commands.add_parser(action, help="explicit development build" if action == "build" else "owned backend " + action)
         command.add_argument("team", choices=("brake", "tire"))
@@ -125,8 +128,6 @@ def build_parser() -> argparse.ArgumentParser:
     prepare = environment_commands.add_parser("prepare", help="start/provision target VMs and connect only the explicit current role")
     prepare.add_argument("--target", choices=TARGETS, required=True, help="VMs to prepare, not VMs to connect simultaneously")
     prepare.add_argument("--current", choices=("test", "production"), required=True, help="the one VM to connect to CARLA/Gateway")
-    for action in ("park", "resume"):
-        environment_commands.add_parser(action, help="agreed interface; not implemented yet")
     environment_commands.add_parser("retire", help="remove unused local overlays and factory copy; keep original artifact")
     for action in ("park", "resume"):
         environment_commands.add_parser(action, help="preserve the Test disks, Cloud identity and backend data; never affect Production")
