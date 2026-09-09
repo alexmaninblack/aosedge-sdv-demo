@@ -231,12 +231,20 @@ class BackendRetirement:
         for team in TEAMS:
             observed = self._owned(state, team)
             if observed and observed.get("State", {}).get("Running"):
-                self.service.execute("stop", team)
-                current = read_json(self.root / JOURNAL)
-                state.clear()
-                state.update(current)
+                try:
+                    self.service.execute("stop", team)
+                finally:
+                    # The core may have persisted a stopped/uncertain result
+                    # before losing its reply. Keep the caller's same object
+                    # current so its error receipt cannot overwrite that fact.
+                    current = read_json(self.root / JOURNAL)
+                    state.clear()
+                    state.update(current)
                 if (self._owned(state, team) or {}).get("State", {}).get("Running"):
                     raise EnvironmentError("BACKEND_STOP_NOT_CONFIRMED")
+            elif state["backends"][team].get("state") != "STOPPED":
+                state["backends"][team].update(state="STOPPED", confirmedAt=now())
+                self._save(state)
 
     def _remove_context(self, state):
         path = self.root / CONTEXT
