@@ -70,6 +70,40 @@ class ImagesAndCreateTests(unittest.TestCase):
         with self.assertRaisesRegex(ImageError, "IMAGE_AMBIGUOUS"):
             self.catalog.resolve("version-one/main-qemuarm64")
 
+    def test_component_compatibility_is_declared_not_inferred_from_image_name(self):
+        selector = "version-one/main-qemuarm64"
+        with self.assertRaisesRegex(ImageError, "COMPATIBILITY_NOT_DECLARED"):
+            self.catalog.component_support(selector, self.sha, "vdp", ["Vehicle.Speed"])
+        metadata = json.loads(self.manifest.read_text())
+        metadata["source"] = dict(repository="aos-vehicle-platform", revision="a" * 40)
+        metadata["demoCompatibility"] = dict(schemaVersion=1, runtimeProfile="aos-main-qemuarm64-v1",
+            componentType="vdp", supportedReadPaths=["Vehicle.Speed"], sourceRevision="a" * 40)
+        self.manifest.write_text(json.dumps(metadata))
+        with patch("subprocess.run", side_effect=AssertionError("metadata only")):
+            support = self.catalog.component_support(selector, self.sha, "vdp", ["Vehicle.Speed"])
+        self.assertEqual(["Vehicle.Speed"], support["supportedReadPaths"])
+        for sha, component, paths, reason in (
+                ("b" * 64, "vdp", ["Vehicle.Speed"], "DIGEST_MISMATCH"),
+                (self.sha, "other", ["Vehicle.Speed"], "DECLARATION_INVALID"),
+                (self.sha, "vdp", ["Vehicle.New.Signal"], "PATHS_UNSUPPORTED")):
+            with self.assertRaisesRegex(ImageError, reason):
+                self.catalog.component_support(selector, sha, component, paths)
+        metadata["demoCompatibility"]["sourceRevision"] = "b" * 40
+        self.manifest.write_text(json.dumps(metadata))
+        with self.assertRaisesRegex(ImageError, "DECLARATION_INVALID"):
+            self.catalog.component_support(selector, self.sha, "vdp", ["Vehicle.Speed"])
+
+    def test_conflicting_component_declaration_never_selects_one_silently(self):
+        metadata = json.loads(self.manifest.read_text())
+        metadata["source"] = dict(repository="aos-vehicle-platform", revision="a" * 40)
+        metadata["demoCompatibility"] = dict(schemaVersion=1, runtimeProfile="aos-main-qemuarm64-v1",
+            componentType="vdp", supportedReadPaths=["Vehicle.Speed"], sourceRevision="a" * 40)
+        self.manifest.write_text(json.dumps(metadata))
+        metadata["demoCompatibility"]["supportedReadPaths"].append("Vehicle.Other.Signal")
+        self.manifest.with_name("second.json").write_text(json.dumps(metadata))
+        with self.assertRaisesRegex(ImageError, "DECLARATION_CONFLICT"):
+            self.catalog.component_support("version-one/main-qemuarm64", self.sha, "vdp", ["Vehicle.Speed"])
+
     def test_missing_conflicting_and_mutable_metadata_block_create(self):
         data = json.loads(self.manifest.read_text())
         data["factoryImage"]["sha256"] = "f" * 64

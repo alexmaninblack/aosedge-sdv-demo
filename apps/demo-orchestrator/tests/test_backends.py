@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from aosedge_demo_orchestrator.backends import BackendService
 from aosedge_demo_orchestrator.environment import EnvironmentService, EnvironmentError, JOURNAL, atomic_json
@@ -106,3 +106,9 @@ class BackendTests(unittest.TestCase):
                         dict(domain="backend", action="start", team="brake", image="arbitrary")):
             with self.assertRaises(ValueError):
                 execute_operation(payload, app)
+
+    def test_unavailable_engine_is_not_absence_and_raw_error_is_never_public(self):
+        with patch("aosedge_demo_orchestrator.backends.subprocess.run", return_value=SimpleNamespace(
+                returncode=1, stdout="", stderr="Cannot connect to the Docker daemon at unix:///private/socket?token=secret")):
+            with self.assertRaisesRegex(EnvironmentError, "^BACKEND_DOCKER_ENGINE_UNAVAILABLE$"):
+                self.service._run(["docker", "container", "ls"])

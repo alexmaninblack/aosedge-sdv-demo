@@ -30,6 +30,15 @@ class BackendService:
             raise EnvironmentError("BACKEND_COMMAND_UNAVAILABLE_OR_UNCERTAIN") from None
         if result.returncode:
             # Docker/registry/tool output is not a public diagnostic envelope.
+            error = result.stderr.lower()
+            if any(marker in error for marker in ("cannot connect to the docker daemon",
+                    "is the docker daemon running", "failed to connect to the docker api",
+                    "dial unix", "error during connect")):
+                raise EnvironmentError("BACKEND_DOCKER_ENGINE_UNAVAILABLE")
+            if "no space left on device" in error:
+                raise EnvironmentError("BACKEND_BUILD_STORAGE_EXHAUSTED")
+            if "failed to resolve source metadata" in error or "failed to fetch" in error:
+                raise EnvironmentError("BACKEND_PINNED_BUILD_INPUT_UNAVAILABLE")
             raise EnvironmentError("BACKEND_COMMAND_FAILED")
         if len(result.stdout) > 1048576:
             raise EnvironmentError("BACKEND_RESPONSE_TOO_LARGE")

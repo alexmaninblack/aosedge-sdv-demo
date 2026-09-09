@@ -27,6 +27,8 @@ the preceding review; the authorization above now opens P1–P8.
 - P2–P8: pending. Brake currently has domain libraries and a diagnostic package
   stub, not a deployable product runtime. VDP/Gateway advisory wiring and Tire
   are implementation work, not capabilities inferred from mockup tests.
+- P2 Cloud-only read increment is integrated and live-read tested; the full
+  phase remains open. See [Cloud observations](../../architecture/demo-control-cloud-observation.md).
 - Final operator visual approval remains an explicit gate after automated tests.
 
 ### Source increment and remaining live gates — 10 September
@@ -58,6 +60,24 @@ development image construction is an explicit CLI-only `backend build` action.
 Six isolated tests cover digest pinning, loopback-only publication, no build/pull
 on start, foreign-owner rejection, preserved storage and lost-response
 reconciliation. These tests do not qualify Docker startup or guest routing.
+
+The subsequent backend error-classification regression brings that suite to
+seven tests. Both actual `backend build` attempts stopped before compilation
+because Docker engine was unavailable; read-only status confirmed that exact
+condition. No backend runtime resources were created. The
+[backend increment](../../architecture/demo-control-backends.md) records its
+remaining lifecycle gates. Brake container source is `f55bd74`, Tire foundation
+is `565c3da`; neither has been Docker-built or live-qualified.
+
+The new `unit cloud-status test` and `unit monitoring test` performed bounded
+read-only tenant integration. Cloud reported Test Offline, VDP 15.0.0 installed,
+no service rows and no resource samples. Missing reports remain unknown; no
+guest runtime claim follows. No Cloud mutation or VM repair was attempted.
+
+[Catalog component support](../../architecture/demo-control-image-compatibility.md)
+now has an exact image/source-bound declaration reader instead of assuming a
+version universally supports all payloads. The old .31 manifest has no producer
+declaration yet; migration remains explicit and must not trigger an image rebuild.
 
 Brake runtime source increment `dca3190c31bd9d593ec2e1a8a4763d2ed28ac984`
 on `codex/studio-brake-runtime` adds host-tested v1 composition and bounded
