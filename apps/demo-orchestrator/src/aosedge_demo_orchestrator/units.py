@@ -127,7 +127,10 @@ class UnitService:
             self.mutations_started = False
             state = read_json(self.root / JOURNAL)
             roles = [role for role in OVERLAYS if role in state["vehicles"]] if target == "all" else [target]
-            self.vm._validate(state, "stop", roles)
+            # Provision preserves the running guest and its initial source.
+            # Stop validation intentionally rejects attached sources for
+            # deprovision/delete and must not run before this narrow exception.
+            self.vm._validate(state, "start" if action == "provision" else "stop", roles)
             selected_role = state.get("currentVehicle")
             initial_connection = (state.get("source", {}).get("lastConnectionConfirmation") or {})
             connected_initial_test = (action == "provision" and selected_role == "test" and "test" in roles
@@ -160,6 +163,9 @@ class UnitService:
                 else:
                     try:
                         detail = getattr(self, "_" + action)(state, role, selected)
+                        if action == "provision" and state.get("backends"):
+                            from .backend_context import sync_context
+                            sync_context(self.environment, state)
                         result.update(detail, state="COMPLETED")
                     except (EnvironmentError, OSError, subprocess.SubprocessError) as error:
                         result["reason"] = str(error) if isinstance(error, EnvironmentError) else "UNIT_OPERATION_UNAVAILABLE"

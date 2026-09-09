@@ -20,6 +20,12 @@ def execute_operation(
     target_value = payload.get("target")
     target = VehicleTarget(target_value) if target_value else None
     application = orchestrator or DemoOrchestrator()
+    if domain == "backend" and action in ("start", "stop", "status"):
+        if set(payload) != {"domain", "action", "team"} or payload["team"] not in ("brake", "tire"):
+            raise ValueError("Backend accepts a fixed team only, never paths, images or commands")
+        return application.execute(OperationRequest(domain, action, team=payload["team"])).to_dict()
+    if domain == "backend":
+        raise ValueError("Backend development builds are CLI-only, never a presentation action")
     if domain == "demo" and action in ("plan", "prepare"):
         if (set(payload) - {"domain", "action", "image", "target"} or not isinstance(payload.get("image"), str)
                 or target not in (None, VehicleTarget.TEST, VehicleTarget.ALL)):
