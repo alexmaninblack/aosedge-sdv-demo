@@ -5,6 +5,7 @@
 
 import contextlib
 import base64
+import gzip
 import importlib.machinery
 import importlib.util
 import os
@@ -25,7 +26,7 @@ import stat
 from .environment import EnvironmentError
 
 SOURCE = Path.home() / "OpenAI/aos-vehicle-platform"
-SM_REVISION = "0e645a549b299dfa88ae7fc3725a1c1dee2bf3a1"
+SM_REVISION = "7f168e9bd5338dd9320ebbd6fe0f6043fcc1eb65"
 SM_TEST_VM = "d53d05cd-4c46-49c9-a896-534b23b88273"
 SM_TEST_UNIT = "2a29c145-bbd1-4494-a0e5-d4b79e6a9db5"
 FACTORY_SOURCE = Path.home() / "OpenAI/aos-vehicle-platform"
@@ -33,7 +34,7 @@ FACTORY_VERSION = "6.1.1-maninblack.31"
 FACTORY_REVISION = "0bed8b3769b09fbe685ed599ca8d10e6594fbe53"
 RELATIVE = "meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files/systemd-slot-component"
 BUILDER_PROJECT = "/home/yocto/r61-build/project/yocto"
-ARTIFACT = Path.home() / "OpenAI/demo-artifacts/aosedge-sdv-demo/runtime-proofs/sm-demo-clock-skew"
+ARTIFACT = Path.home() / "OpenAI/demo-artifacts/aosedge-sdv-demo/runtime-proofs/sm-queued-recovery"
 FILES = ("config.hpp", "config.cpp", "safestop.hpp", "safestop.cpp", "runtime.hpp", "runtime.cpp",
          "tests/safestop.cpp", "tests/runtime.cpp")
 
@@ -89,10 +90,9 @@ def apply_test(environment, target):
         driver = SourceDriver(VMService(environment))
         try:
             with driver.operation(timeout=60):
-                observed = driver.guest(state, "test", "component-sm-status")
                 result = driver.guest(state, "test", "component-sm-apply", target="test",
-                    proof="demo-clock-skew",
-                    binary="" if observed["binarySha256"] == manifest["executableSha256"] else base64.b64encode(raw).decode(),
+                    proof="queued-recovery",
+                    binary=base64.b64encode(gzip.compress(raw, compresslevel=1, mtime=0)).decode(),
                     sha256=manifest["executableSha256"])
                 # systemd clears service credentials on restart. Restore only
                 # the already selected Test's public trust/binding inputs.
@@ -111,7 +111,7 @@ def apply_test(environment, target):
 
 
 def build(target, compile_source=True):
-    """Compile the pinned Test timing correction, native-test, export and stop."""
+    """Compile the pinned Test timing/recovery correction, test, export and stop."""
     if target != "test":
         raise EnvironmentError("SM_QUALIFICATION_TEST_ONLY")
     if ARTIFACT.exists():
@@ -171,7 +171,8 @@ def build(target, compile_source=True):
         test_filter = ("SafeStopEvaluatorTest.*:*RequiresTheFixedBootstrapContract:"
             "*AcceptsOnlyExplicitDemoFreshnessProfile:*FactoryDemoInputsRespectPersistentRole:"
             "*StartsWithAnEmptyPersistentStore:*FactoryPlaceholder*:"
-            "*StopMakesTheComponentUnavailable:*StopCancellationNeverReturnsSuccess:*StopMissingComponentIsIdempotent")
+            "*StopMakesTheComponentUnavailable:*StopCancellationNeverReturnsSuccess:*StopMissingComponentIsIdempotent:"
+            "*SystemdSlotComponentWaitingRecoveryTest.*:*IntentionallyStoppedPreviousRemainsStopped")
         print("Test SM: executing native timing, role, physical-gate and stop regressions", file=sys.stderr, flush=True)
         result = subprocess.run(ssh + ["sudo -n " + loader + " --library-path " + libs + " " + test + " --gtest_filter=" + __import__("shlex").quote(test_filter)],
                                 timeout=30, capture_output=True)
@@ -182,9 +183,15 @@ def build(target, compile_source=True):
             raise EnvironmentError("SM_TARGETED_TEST_FAILED:" + str(result.returncode))
         required_tests = ("DemoFutureSkewIsBoundedAtAcquisitionAndTheGate",
             "StandardStillRejectsAnyFutureAcquisitionOrGate", "DemoAgeAllowancePreservesOtherGates",
-            "FactoryDemoInputsRespectPersistentRole", "StopCancellationNeverReturnsSuccess")
+            "FactoryDemoInputsRespectPersistentRole", "StopCancellationNeverReturnsSuccess",
+            "ColdBootStartsInactiveCommittedPrevious/0", "ColdBootStartsInactiveCommittedPrevious/1",
+            "HealthyPreviousDoesNotRestart/0", "HealthyPreviousDoesNotRestart/1",
+            "StartFailurePreservesWaitingState/0", "StartFailurePreservesWaitingState/1",
+            "HealthRecheckFailurePreservesWaitingState/0", "HealthRecheckFailurePreservesWaitingState/1",
+            "MissingActiveIsNotRecreated/0", "MissingActiveIsNotRecreated/1",
+            "IntentionallyStoppedPreviousRemainsStopped")
         if not re.search(rb"\[  PASSED  \] [1-9][0-9]* tests\.", result.stdout) or any(
-                not re.search(rb"\[       OK \] [^\n]*\." + name.encode() + rb" \(", result.stdout)
+                not re.search(rb"\[       OK \] [^\n]*\." + re.escape(name.encode()) + rb" \(", result.stdout)
                 for name in required_tests):
             raise EnvironmentError("SM_REQUIRED_NATIVE_REGRESSIONS_NOT_EXECUTED")
         binaries = subprocess.check_output(ssh + ["find " + work + "/build -type f -name aos_sm_app"], timeout=20).decode().splitlines()

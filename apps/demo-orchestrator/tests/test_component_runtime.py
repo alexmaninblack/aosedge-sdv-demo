@@ -2,6 +2,10 @@
 # SPDX-License-Identifier: MIT
 
 import unittest
+import base64
+import gzip
+import hashlib
+import json
 import subprocess
 import tempfile
 from pathlib import Path
@@ -12,7 +16,7 @@ from aosedge_demo_orchestrator.api import execute_operation
 from aosedge_demo_orchestrator.cli import build_parser, request_from_arguments
 from aosedge_demo_orchestrator.component_runtime import apply_test, build, builder, build_factory, FACTORY_VERSION, FACTORY_REVISION, SM_REVISION
 from aosedge_demo_orchestrator.environment import EnvironmentError
-from aosedge_demo_orchestrator.source_guest import execute, process_wait_observation
+from aosedge_demo_orchestrator.source_guest import execute, process_wait_observation, sm_saved_test_release, sm_recover_test
 
 
 class RuntimeProofBoundaryTests(unittest.TestCase):
@@ -93,7 +97,124 @@ class RuntimeProofBoundaryTests(unittest.TestCase):
 
     def test_wrong_test_vm_is_rejected_before_guest_commands(self):
         with patch("aosedge_demo_orchestrator.source_guest.command") as command:
-            for proof in ("stop-start", "factory-placeholder", "demo-clock-skew"):
+            for proof in ("stop-start", "factory-placeholder", "demo-clock-skew", "queued-recovery"):
                 with self.assertRaises(ValueError):
                     execute(dict(action="component-sm-apply", proof=proof, target="test", vehicle={"localVmId": "another-vm"}))
             command.assert_not_called()
+
+
+class QueuedRecoveryBoundaryTests(unittest.TestCase):
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name) / "runtime"
+        (self.root / "state").mkdir(parents=True)
+        (self.root / "slots/b/config").mkdir(parents=True)
+        self.installed = dict(schemaVersion=1, slot="b", ItemId="component", SubjectId="aos-vm-main",
+            Instance=0, Version="17.0.0", ManifestDigest="a"*64, RuntimeId="runtime", Preinstalled=False)
+        self.transaction = dict(schemaVersion=2, operation="remove", phase="waiting-for-safe-stop",
+            hasPrevious=True, candidateSlot="b", previousSlot="b")
+        for prefix in ("candidate", "previous"):
+            self.transaction.update({prefix + key: value for key, value in self.installed.items()
+                if key not in ("schemaVersion", "slot")})
+        self.write("state/installed.json", self.installed)
+        self.write("slots/b/.aos-instance.json", self.installed)
+        self.write("state/transaction.json", self.transaction)
+        self.write("slots/b/component.json", dict(schemaVersion=1, component="vehicle-data-provider", version="17.0.0",
+            architecture="arm64", os="linux", runtimeInterface=1, entrypoint="bin/vehicle-data-provider", configuration="config/provider.json"))
+        self.write("slots/b/config/capability-manifest.json", dict(semanticVersion="17.0.0"))
+        self.cap_sha = hashlib.sha256((self.root / "slots/b/config/capability-manifest.json").read_bytes()).hexdigest()
+        self.write("slots/b/config/provider.json", dict(semanticVersion="17.0.0", capabilityManifestSha256=self.cap_sha))
+        self.addCleanup(patch.stopall)
+        patch("aosedge_demo_orchestrator.source_guest.SM_RECOVERY_CAP_SHA", self.cap_sha).start()
+
+    def write(self, relative, value):
+        (self.root / relative).write_text(json.dumps(value))
+
+    def test_valid_missing_selector_is_read_only_and_does_not_rewrite_intent(self):
+        before = {p: p.read_bytes() for p in self.root.rglob("*.json")}
+        result = sm_saved_test_release(self.root)
+        self.assertEqual("17.0.0", result["version"])
+        self.assertFalse(result["selectorPresent"])
+        self.assertFalse((self.root / "active").is_symlink())
+        self.assertEqual(before, {p: p.read_bytes() for p in self.root.rglob("*.json")})
+
+    def test_wrong_phase_operation_version_slot_and_digest_are_rejected(self):
+        for key, value in (("phase", "stopping"), ("operation", "install-or-replace"),
+                ("previousVersion", "18.0.0"), ("candidateSlot", "a"), ("previousManifestDigest", "b"*64)):
+            with self.subTest(key=key):
+                self.write("state/transaction.json", dict(self.transaction, **{key: value}))
+                with self.assertRaisesRegex(ValueError, "SM_RECOVERY"):
+                    sm_saved_test_release(self.root)
+        self.write("state/transaction.json", self.transaction)
+
+    def test_stopped_predecessor_and_foreign_selector_are_never_restored(self):
+        self.write("state/stopped.json", self.installed)
+        with self.assertRaisesRegex(ValueError, "SAVED_TEST_17"):
+            sm_saved_test_release(self.root)
+        (self.root / "state/stopped.json").unlink()
+        (self.root / "active").symlink_to("slots/a")
+        with self.assertRaisesRegex(ValueError, "SELECTOR_CONFLICT"):
+            sm_saved_test_release(self.root)
+        self.assertEqual("slots/a", (self.root / "active").readlink().as_posix())
+
+    def test_correct_existing_selector_is_preserved(self):
+        (self.root / "active").symlink_to("slots/b")
+        self.assertTrue(sm_saved_test_release(self.root)["selectorPresent"])
+
+    def test_slot_record_and_symlink_payload_are_rejected(self):
+        self.write("slots/b/.aos-instance.json", dict(self.installed, ManifestDigest="c"*64))
+        with self.assertRaisesRegex(ValueError, "SAVED_TEST_17"):
+            sm_saved_test_release(self.root)
+        self.write("slots/b/.aos-instance.json", self.installed)
+        (self.root / "slots/b/foreign").symlink_to("/etc/passwd")
+        with self.assertRaisesRegex(ValueError, "PAYLOAD_PATH_UNSAFE"):
+            sm_saved_test_release(self.root)
+
+    def test_wrong_capability_hash_is_rejected(self):
+        self.write("slots/b/config/provider.json", dict(semanticVersion="17.0.0", capabilityManifestSha256="0"*64))
+        with self.assertRaisesRegex(ValueError, "PAYLOAD_METADATA_MISMATCH"):
+            sm_saved_test_release(self.root)
+
+    def test_apply_stops_owner_restores_only_selector_then_starts_once_and_repeat_is_noop(self):
+        module = "aosedge_demo_orchestrator.source_guest."
+        raw = b"\x7fELF\x02" + b"\0"*13 + b"\xb7\x00" + b"test"
+        digest = hashlib.sha256(raw).hexdigest()
+        request = dict(target="test", sha256=digest, binary=base64.b64encode(gzip.compress(raw)).decode(), vehicle=dict(
+            localVmId="d53d05cd-4c46-49c9-a896-534b23b88273", unitId="2a29c145-bbd1-4494-a0e5-d4b79e6a9db5"))
+        marker = self.root / "factory-marker"
+        marker.touch()
+        inputs = self.root / "demo-inputs"
+        inputs.mkdir()
+        (inputs / "role").write_text("test\n")
+        stock = self.root / "stock"
+        stock.write_bytes(b"stock")
+        proof = self.root / "proof"
+        dropin = self.root / "dropin/proof.conf"
+        paths = {"/usr/bin/aos_sm_app": stock, "/run/democtl-sm-queued-recovery": proof,
+            "/run/systemd/system/aos-sm.service.d/92-democtl-sm-queued-recovery.conf": dropin}
+        original_sha = hashlib.sha256
+        baseline = "df141e0df7ed9dac6e74ef055e7b31994b501f9d26e1f34d50326c0f76839f86"
+        observed = dict(binarySha256=None, freshnessProfile="standard", service={"ActiveState": "activating"})
+        active = dict(observed, binarySha256=digest, freshnessProfile="demo-5s", service={"ActiveState": "active"})
+        before = {p: p.read_bytes() for p in self.root.rglob("*.json")}
+        def operation(argv, **kwargs):
+            if argv[1] == "stop":
+                self.assertFalse((self.root / "active").is_symlink())
+            else:
+                self.assertEqual("slots/b", (self.root / "active").readlink().as_posix())
+            return subprocess.CompletedProcess(argv, 0)
+        with patch(module + "Path", side_effect=lambda path: paths[path]), \
+                patch(module + "FACTORY_INPUTS", inputs), patch(module + "FACTORY_INPUTS_MARKER", marker), \
+                patch(module + "os.path.ismount", return_value=True), \
+                patch(module + "hashlib.sha256", side_effect=lambda data: SimpleNamespace(hexdigest=lambda: baseline)
+                    if data == b"stock" else original_sha(data)), \
+                patch(module + "execute", side_effect=[observed, active, active]), \
+                patch(module + "command"), patch(module + "subprocess.run", side_effect=operation) as run:
+            result = sm_recover_test(request)
+            self.assertTrue(result["restoredSelector"])
+            self.assertTrue(result["durableRecordsPreserved"])
+            self.assertTrue(sm_recover_test(request)["noOp"])
+        self.assertEqual([["systemctl", "stop", "aos-sm"], ["systemctl", "start", "aos-sm"]],
+            [call.args[0] for call in run.call_args_list])
+        self.assertEqual(before, {p: p.read_bytes() for p in before})

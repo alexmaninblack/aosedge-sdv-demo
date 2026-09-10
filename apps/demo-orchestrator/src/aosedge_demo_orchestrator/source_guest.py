@@ -9,11 +9,14 @@ Separate owned tables select the VISS source and fault the external uplink.
 
 import json
 import base64
+import gzip
+import io
 import hashlib
 import os
 import re
 import socket
 import ssl
+import stat
 import subprocess
 import sys
 import time
@@ -27,6 +30,7 @@ PROVISION_STATE = Path("/var/aos/.provisionstate")
 FACTORY_INPUTS_MARKER = Path("/usr/share/aos-vehicle-platform/demo-runtime-inputs-v1")
 FACTORY_INPUTS = Path("/var/aos/workdirs/sm/runtimes/systemd-slot-component/demo-inputs")
 FACTORY_ROLE_DROPIN = Path("/run/systemd/system/aos-sm.service.d/20-democtl-role.conf")
+SM_RECOVERY_CAP_SHA = "83e705f3f49bea3fb32a37d485da16765f7266d5ba6984631c2459b3e65c7eb6"
 VSS_BASE = Path("/usr/share/vss/vss.json")
 VSS_TEMP = Path("/run/democtl-vss/vss.json")
 VSS_DROPIN = Path("/run/systemd/system/kuksa-databroker.service.d/90-democtl-vss.conf")
@@ -608,7 +612,126 @@ def sm_load_public_credentials(root, dropin, request):
         "LoadCredential=viss-update-binding:" + str(root / "viss-update-binding") + "\n")
 
 
+def sm_saved_test_release(root):
+    """Validate the operator-authorized Test17 selector repair, without mutation.
+
+    The native runtime still validates the payload before starting it. This
+    bounded repair must not become an automatic missing-selector fallback.
+    """
+    def read(relative):
+        path = root / relative
+        current = path
+        while current != root.parent:
+            if current.is_symlink():
+                raise ValueError("SM_RECOVERY_UNSAFE_PATH")
+            current = current.parent
+        if not path.is_file() or path.stat().st_size > 131072:
+            raise ValueError("SM_RECOVERY_UNSAFE_RECORD")
+        return json.loads(path.read_bytes())
+
+    installed = read("state/installed.json")
+    transaction = read("state/transaction.json")
+    stored = read("slots/b/.aos-instance.json")
+    stopped = root / "state/stopped.json"
+    active = root / "active"
+    if (stopped.exists() or stopped.is_symlink()
+            or installed.get("schemaVersion") != 1 or installed.get("Version") != "17.0.0"
+            or installed.get("slot") != "b" or installed != stored
+            or transaction.get("schemaVersion") != 2 or transaction.get("operation") != "remove"
+            or transaction.get("phase") != "waiting-for-safe-stop" or transaction.get("hasPrevious") is not True
+            or transaction.get("previousSlot") != "b" or transaction.get("candidateSlot") != "b"):
+        raise ValueError("SM_RECOVERY_SAVED_TEST_17_MISMATCH")
+    fields = ("ItemId", "SubjectId", "Instance", "Version", "ManifestDigest", "RuntimeId", "Preinstalled")
+    if any(key not in installed or transaction.get(prefix + key) != installed[key]
+           for key in fields for prefix in ("previous", "candidate")):
+        raise ValueError("SM_RECOVERY_INSTANCE_MISMATCH")
+    if not re.fullmatch(r"(?:sha256:)?[a-f0-9]{64}", installed["ManifestDigest"]):
+        raise ValueError("SM_RECOVERY_MANIFEST_DIGEST_INVALID")
+    if (active.exists() or active.is_symlink()) and (not active.is_symlink() or os.readlink(active) != "slots/b"):
+        raise ValueError("SM_RECOVERY_ACTIVE_SELECTOR_CONFLICT")
+    metadata = read("slots/b/component.json")
+    provider = read("slots/b/config/provider.json")
+    capability = read("slots/b/config/capability-manifest.json")
+    capability_sha = hashlib.sha256((root / "slots/b/config/capability-manifest.json").read_bytes()).hexdigest()
+    if (metadata.get("component") != "vehicle-data-provider" or metadata.get("version") != "17.0.0"
+            or metadata.get("architecture") != "arm64" or metadata.get("os") != "linux"
+            or metadata.get("runtimeInterface") != 1 or metadata.get("entrypoint") != "bin/vehicle-data-provider"
+            or metadata.get("configuration") != "config/provider.json"
+            or provider.get("semanticVersion") != "17.0.0" or capability.get("semanticVersion") != "17.0.0"
+            or provider.get("capabilityManifestSha256") != capability_sha
+            or capability_sha != SM_RECOVERY_CAP_SHA):
+        raise ValueError("SM_RECOVERY_PAYLOAD_METADATA_MISMATCH")
+    # Reject links/special files before restoring a selector; native validation
+    # then applies its full payload, permissions and runtime compatibility rules.
+    for index, path in enumerate((root / "slots/b").rglob("*")):
+        mode = path.lstat().st_mode
+        if index >= 4096 or not (stat.S_ISREG(mode) or stat.S_ISDIR(mode)):
+            raise ValueError("SM_RECOVERY_PAYLOAD_PATH_UNSAFE")
+    return dict(version="17.0.0", slot="b", manifestDigest=installed["ManifestDigest"],
+                selectorPresent=active.is_symlink())
+
+
+def sm_recover_test(request):
+    """One authorized transient proof; retain durable intent and immutable .31."""
+    if (request.get("target") != "test"
+            or request["vehicle"].get("localVmId") != "d53d05cd-4c46-49c9-a896-534b23b88273"
+            or request["vehicle"].get("unitId") != "2a29c145-bbd1-4494-a0e5-d4b79e6a9db5"):
+        raise ValueError("SM_PROOF_REQUIRES_AUTHORIZED_TEST_31")
+    observation = execute(dict(request, action="component-sm-status"))
+    if observation["binarySha256"] == request["sha256"] and observation["service"]["ActiveState"] == "active":
+        return dict(state="APPLIED", noOp=True, persistentFactoryInputs=True, **observation)
+    baseline = hashlib.sha256(Path("/usr/bin/aos_sm_app").read_bytes()).hexdigest()
+    if (baseline != "df141e0df7ed9dac6e74ef055e7b31994b501f9d26e1f34d50326c0f76839f86"
+            or observation["binarySha256"] not in (None, baseline)
+            or (observation["binarySha256"] is not None and observation["freshnessProfile"] != "demo-5s")
+            or not FACTORY_INPUTS_MARKER.is_file()
+            or not os.path.ismount(FACTORY_INPUTS.parent) or (FACTORY_INPUTS / "role").read_text() != "test\n"):
+        raise ValueError("SM_FACTORY_31_BASE_MISMATCH")
+    runtime = FACTORY_INPUTS.parent
+    saved = sm_saved_test_release(runtime)
+    with gzip.GzipFile(fileobj=io.BytesIO(base64.b64decode(request["binary"], validate=True))) as payload:
+        raw = payload.read(256 * 1024 * 1024 + 1)
+    if len(raw) > 256 * 1024 * 1024:
+        raise ValueError("SM_ARM64_BINARY_TOO_LARGE")
+    if hashlib.sha256(raw).hexdigest() != request["sha256"] or raw[:5] != b"\x7fELF\x02" or raw[18:20] != b"\xb7\x00":
+        raise ValueError("SM_ARM64_BINARY_SHA_MISMATCH")
+    root = Path("/run/democtl-sm-queued-recovery")
+    dropin = Path("/run/systemd/system/aos-sm.service.d/92-democtl-sm-queued-recovery.conf")
+    if root.exists() or root.is_symlink() or dropin.exists() or dropin.is_symlink():
+        raise ValueError("SM_TRANSIENT_STATE_REQUIRES_RECONCILIATION")
+    root.mkdir(mode=0o700)
+    (root / "aos_sm_app").write_bytes(raw)
+    (root / "aos_sm_app").chmod(0o755)
+    command(["chcon", "--reference=/usr/bin/aos_sm_app", str(root / "aos_sm_app")], check=True)
+    print("Test SM: stop failed owner once; retain installed and queued transaction records", file=sys.stderr, flush=True)
+    subprocess.run(["systemctl", "stop", "aos-sm"], capture_output=True, text=True, timeout=20, check=True)
+    if sm_saved_test_release(runtime) != saved:
+        raise ValueError("SM_RECOVERY_RECORD_CHANGED")
+    # Do not overwrite any active path. These durable records were verified
+    # both before and after stopping the only runtime writer.
+    if not saved["selectorPresent"]:
+        (runtime / "active").symlink_to("slots/b")
+        descriptor = os.open(runtime, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+    dropin.parent.mkdir(parents=True, exist_ok=True)
+    dropin.write_text("[Service]\nBindReadOnlyPaths=" + str(root / "aos_sm_app") + ":/usr/bin/aos_sm_app\n")
+    command(["systemctl", "daemon-reload"], check=True)
+    print("Test SM: start corrected runtime; native recovery owns VDP17 and pending VDP18", file=sys.stderr, flush=True)
+    subprocess.run(["systemctl", "start", "aos-sm"], capture_output=True, text=True, timeout=20, check=True)
+    result = execute(dict(request, action="component-sm-status"))
+    if (result["binarySha256"] != request["sha256"] or result["service"]["ActiveState"] != "active"
+            or result["freshnessProfile"] != "demo-5s"):
+        raise ValueError("SM_TRANSIENT_ACTIVATION_UNCONFIRMED")
+    return dict(state="APPLIED", noOp=False, persistentFactoryInputs=True,
+                restoredSelector=not saved["selectorPresent"], durableRecordsPreserved=True, **dict(result, mutation=True))
+
+
 def execute(request):
+    if request["action"] == "component-sm-apply" and request.get("proof") == "queued-recovery":
+        return sm_recover_test(request)
     if request["action"] == "component-sm-apply" and request.get("proof") == "demo-clock-skew":
         if (request.get("target") != "test"
                 or request["vehicle"].get("localVmId") != "d53d05cd-4c46-49c9-a896-534b23b88273"
@@ -707,7 +830,12 @@ def execute(request):
         launcher = re.search(r"path=([^ ;]+)", launch)
         service["launcherPath"] = launcher.group(1) if launcher else None
         pid = service.get("MainPID", "0")
-        executable = os.readlink("/proc/" + pid + "/exe") if pid.isdigit() and int(pid) > 0 else None
+        try:
+            executable = os.readlink("/proc/" + pid + "/exe") if pid.isdigit() and int(pid) > 0 else None
+            binary_sha = hashlib.sha256(Path("/proc/" + pid + "/exe").read_bytes()).hexdigest() if executable else None
+        except FileNotFoundError:
+            # A failed runtime can exit during this read-only observation.
+            executable, binary_sha = None, None
         cfg = Path("/etc/aos/sm.cfg")
         effective = Path("/proc") / pid / "root/etc/aos/sm.cfg"
         config = json.loads(effective.read_text() if effective.is_file() else cfg.read_text())
@@ -725,7 +853,7 @@ def execute(request):
                          int(events[0].get("__MONOTONIC_TIMESTAMP", 0)) <= since)),
                      selinuxEnforcing=Path("/sys/fs/selinux/enforce").read_text().strip() == "1")
         return dict(service=service, executable=executable, processWaits=process_wait_observation(pid),
-                    binarySha256=hashlib.sha256(Path("/proc/" + pid + "/exe").read_bytes()).hexdigest() if executable else None,
+                    binarySha256=binary_sha,
                     configPath=str(cfg), freshnessProfile=profile,
                     factoryRole={"storeMounted": os.path.ismount(FACTORY_INPUTS.parent),
                         "present": (service_inputs / "role").is_file(),
@@ -735,6 +863,11 @@ def execute(request):
                     binaryContext=command(["stat", "-Lc", "%C", "/proc/" + pid + "/exe"]).stdout.strip() if executable else None,
                     configContext=command(["stat", "-c", "%C", str(cfg)]).stdout.strip(),
                     audit=audit,
+                    queuedRecoveryProof={
+                        "directoryPresent": Path("/run/democtl-sm-queued-recovery").exists(),
+                        "dropInPresent": Path("/run/systemd/system/aos-sm.service.d/92-democtl-sm-queued-recovery.conf").exists(),
+                        "activeSelector": os.readlink(FACTORY_INPUTS.parent / "active")
+                            if (FACTORY_INPUTS.parent / "active").is_symlink() else None},
                     processContext=Path("/proc/" + pid + "/attr/current").read_text().strip() if executable else None,
                     publicInputPresence={"hostCA": (host_inputs / "viss-update-ca").is_file(),
                         "hostBinding": (host_inputs / "viss-update-binding").is_file(),
@@ -903,7 +1036,7 @@ def execute(request):
             if path.stat().st_size > 131072:
                 raise ValueError("COMPONENT_STATE_TOO_LARGE")
             value = json.loads(path.read_bytes())
-            row = {key: value[key] for key in ("schemaVersion", "version", "candidateVersion", "phase", "operation") if key in value}
+            row = {key: value[key] for key in ("schemaVersion", "Version", "slot", "version", "candidateVersion", "candidateSlot", "previousVersion", "previousSlot", "hasPrevious", "phase", "operation") if key in value}
             message = value.get("message", "")
             if isinstance(message, str) and re.fullmatch(r"[a-zA-Z0-9_ :.,()-]{1,200}", message):
                 row["reason"] = message

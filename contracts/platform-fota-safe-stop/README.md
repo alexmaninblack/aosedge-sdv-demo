@@ -129,6 +129,23 @@ targeted transient SM proof on the current Test `.31`, not a rebuilt or newly
 qualified Factory image. See the
 [current implementation checkpoint](../../docs/qualification/demo-studio-implementation-progress-2026-09-10.md).
 
+## Queued cold-boot recovery correction — accepted 2026-09-10
+
+For a waiting transaction with a validated committed predecessor, recovery
+checks provider health and, when inactive, starts and rechecks that provider
+before resuming the wait. A start or health-recheck failure preserves the valid
+active selector and durable waiting intent. This applies to queued replacement
+and removal, matching the existing ordinary-installed recovery behavior.
+The intentionally stopped predecessor and empty first-install branches are
+unchanged; all resumed destructive steps reconstruct fresh Safe Stop evidence.
+
+The native runtime does not invent a missing active selector. The operator
+separately authorized one bounded Demo Control repair of the current Test's
+selector from its matching saved 17.0.0 records, after the old FailClosed path
+removed it. No durable installed/transaction record, Cloud assignment, immutable
+Factory image or Production state is rewritten by that repair. Qualification
+remains recorded in the current implementation checkpoint.
+
 ## Durable local-demo input integration — Factory .30
 
 The Factory opts into `demoLocalSourceInputs`; without it the native credential

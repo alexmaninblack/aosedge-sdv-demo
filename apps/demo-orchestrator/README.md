@@ -888,7 +888,8 @@ The 2026-09-06 local-demo exception is documented in the
 [VDP checkpoint](../../docs/qualification/democtl-vdp-family.md). In the isolated
 Test qualification environment, `component sm-build test` starts the existing
 Builder on port 10024, compiles only SM, runs native timing, role-selection,
-physical-gate and stop regressions, exports the proof artifact and stops Builder.
+physical-gate, stop and queued cold-boot recovery regressions, exports the proof
+artifact and stops Builder.
 `component sm-test test` reruns those tests on the existing
 compiled target without compiling again. Test failures retain their output.
 `component sm-builder-stop test` is the explicit graceful stop.
@@ -897,11 +898,12 @@ The current authorized target is Test .31, local VM
 `d53d05cd-4c46-49c9-a896-534b23b88273`, Unit
 `2a29c145-bbd1-4494-a0e5-d4b79e6a9db5`, with the existing immutable .31 SHA.
 Proof sources are pinned to Platform commit
-`0e645a549b299dfa88ae7fc3725a1c1dee2bf3a1` in a separate Builder source directory.
-The artifact is `demo-artifacts/aosedge-sdv-demo/runtime-proofs/sm-demo-clock-skew`.
+`7f168e9bd5338dd9320ebbd6fe0f6043fcc1eb65` in a separate Builder source directory.
+The artifact is `demo-artifacts/aosedge-sdv-demo/runtime-proofs/sm-queued-recovery`;
+the earlier timing-only proof is retained separately.
 
 `component sm-apply test` applies only that binary through a temporary systemd
-mount and one restart, preserving the Factory configuration and public inputs;
+mount and one stop/start, preserving the Factory configuration and public inputs;
 `component sm-status
 test` observes the effective binary and profile. These are bounded qualification
 commands, pinned to the authorized Test .31, not general release deployment.
@@ -909,6 +911,16 @@ They do not modify the immutable Factory image, Cloud or Production; the
 temporary substitution disappears at VM reboot. The normal default remains
 250 ms. Test alone admits signed age ±5000 ms and a 1000-ms read deadline.
 No VDP update is implied by SM application.
+
+For this exact authorized Test recovery only, application validates the existing
+17.0.0 slot-b installation, matching queued remove transaction, slot record and
+capability digest before and after stopping SM. It restores a missing
+`active -> slots/b` selector without overwriting another selection or rewriting
+durable JSON. The corrected native runtime starts the saved provider and resumes
+the existing transaction with fresh Safe Stop evidence. An intentionally stopped
+predecessor, changed transaction or foreign selector is rejected. A repeated
+application to the already active proof binary performs no restart. This is not
+a general missing-selector repair policy, Cloud retry, or new VDP publication.
 
 The package uses Python 3.9 and the standard library. Optional Cloud reads use
 the separately installed Aos SDK environment. Fixture tests do not contact

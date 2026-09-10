@@ -7,6 +7,11 @@ Status: **partial implementation; not ready for final operator E2E**.
 The [accepted P1–P8 plan](../planning/active/demo-studio-delivery-plan.md)
 remains authoritative. No mockup flow or live Presenter composition was changed.
 
+Latest result: **Test VDP18 is actually running, READY/LIVE, with 23 read paths**
+after the authorized queued-recovery SM proof. Cloud reports installed18,
+Online and no pending component. The immutable Factory .31 is unchanged;
+this remains a transient runtime proof, not a clean-image/full-Studio claim.
+
 ## Resumed: bounded Test timing correction — 10 September
 
 The user restored the connection and asked to continue. Before changing SM,
@@ -124,9 +129,76 @@ committed predecessor during queued-update recovery, preserving waiting
 intent and the unchanged stopped-predecessor/empty-first-install branches.
 The already affected Test also needs an explicitly authorized restoration of
 its prior active selector from validated durable slot records; source repair
-alone must not silently manufacture a missing selection. No selector/state
-repair, new recovery binary, additional reboot or duplicate upload has been
-attempted. The component command fixture suite still passes 71 tests.
+alone must not silently manufacture a missing selection. The user approved
+both corrections; their execution is recorded below.
+
+### Authorized queued-update recovery: targeted build passed
+
+Platform commit `7f168e9bd5338dd9320ebbd6fe0f6043fcc1eb65` changes only the
+waiting-with-committed-predecessor startup path and its native fixtures on top
+of the accepted timing correction. It tries StartProvider and a health recheck
+without deleting valid waiting state when either fails. Missing active links
+are not automatically recreated, intentionally stopped predecessors stay
+stopped, and empty first install is unchanged.
+
+`democtl component sm-build test` compiled only SM offline, reused 1708 of
+1716 tasks, and passed **29 native tests in 545 ms**, including 11 new queued
+remove/replacement, failure-preservation and stopped-predecessor executions.
+Builder stopped cleanly. Binary SHA256:
+`cf251da44d30aec38bd015210f08e284eb121aaff8f00feca2d74b75291a3dee`.
+Artifact: `demo-artifacts/aosedge-sdv-demo/runtime-proofs/sm-queued-recovery`.
+Solution tests passed 78 component cases and 16 source cases.
+
+The existing Test-only `sm-apply` validates installed17/slot b against both
+transaction predecessors and the slot record, rejects stopped/foreign state,
+then stops SM, revalidates, restores only the missing relative selector and
+starts the corrected runtime. No installed or transaction JSON is rewritten.
+The first 108,313,720-byte uncompressed proof transfer returned unavailable.
+Read-only reconciliation confirmed stock SM, no proof directory/drop-in, no
+active selector and unchanged durable records. The same binary is therefore
+transferred using bounded gzip transport inside the existing command; no
+rebuild, image change, new VDP or Cloud write was performed.
+
+### Live queued recovery and pending VDP18: passed
+
+The corrected transport completed the authorized apply once: it restored only
+`active -> slots/b`, retained installed17 and the pending-remove JSON, and
+performed one SM stop/start. SM PID5538 initially became active with the exact
+proof binary, Test demo timing, public inputs present, SELinux Enforcing and
+zero fresh AVCs. The native recovery started the committed predecessor.
+
+Native logs then show CM's existing target18 driving stop17 / start18, with
+the slot-a payload self-test passing and version18 becoming active at
+**01:44:55 UTC** (epoch microseconds 1789004695181778). This was approximately
+three seconds after corrected SM startup at 01:44:52; no ten-minute delay,
+batch approval, duplicate publication, new desired-status request, CM restart,
+VM restart or reprovision was introduced by this repair. A stale launcher
+start17 initially reported `a different component transaction is already
+active`; CM reconciled its existing18 intent and the transition completed.
+This is not a claim that historical/current-boot logs contain no errors.
+
+`component status test` independently observed active slot **a**, version
+**18.0.0**, PID5637, **23** configured read paths, matching process/slot,
+`VDP data READY; source LIVE; reason NONE`, success and zero provider restarts.
+The durable transaction is gone after native completion; installed.json now
+records18/slot a. The retained last-failure record concerns historical16 and
+was not deleted or presented as a current18 failure. The capability digest is
+`ef96d8e18c018daf6dba9f6a928ace0a9a1a6c9ea96cd37810c2461fc483fb09`.
+This remains provider-reported readiness, not Brake/Tire consumer qualification;
+advisory is still DEFERRED.
+
+At **01:45:49 UTC**, `component cloud-status 18.0.0` independently reports the
+same Test Online, installed version UUID `9c2165e9-ff2f-40a4-8c5c-ab134d32a1b8`,
+with pending component, pending error and validation batch all null. Current
+CM, SM and VDP services are active, successful and show zero automatic restarts.
+Factory bytes, Unit identity, Production and all existing Cloud releases are
+preserved. New Studio UI and real Brake/Tire E2E remain open in the P1–P8 plan.
+
+The explicit idempotent `sm-apply test` repeat returned noOp with the same
+SM PID5538, NRestarts0, active slot a and unchanged proof hash. It issued no
+second stop/start; the final audit still has a complete window, zero fresh
+AVCs and Enforcing mode. The 78 component fixtures were rerun after the
+transport adjustment and passed.
 
 ## Earlier continuation — functional Test cycle, paused at user request
 
