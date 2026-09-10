@@ -269,6 +269,24 @@ class BackendService:
             raise EnvironmentError("BACKEND_BUILD_REQUIRED:" + team)
         return max(values, key=lambda value: value["builtAt"])
 
+    def observe_stack(self):
+        """Focused process read; no storage forensics, image checks or mutation."""
+        state = read_json(self.root / JOURNAL)
+        owner = object_id(state["operations"][0]["id"])
+        results = {}
+        for team in TEAMS:
+            try:
+                container = self._inspect("container", "aosedge-demo-" + team + "-cloud")
+                self._owned_container(container, owner, team, (state.get("backends", {}).get(team) or {}).get("imageId"))
+                runtime = (container or {}).get("State", {})
+                health = (runtime.get("Health") or {}).get("Status", "NOT_OBSERVED")
+                results[team] = dict(state="RUNNING" if runtime.get("Running") else "STOPPED", processHealth=health)
+            except EnvironmentError as error:
+                results[team] = dict(state="UNKNOWN", reason=str(error))
+        return dict(state="CURRENT" if all(item["state"] == "RUNNING" and item.get("processHealth") == "healthy"
+            for item in results.values()) else "UNKNOWN", teams=results, readCompletedAt=now(),
+            productReadiness="NOT_OBSERVED", source="DOCKER_PROCESS_ONLY")
+
     def start_stack(self):
         """Compose existing team operations; undo only this start attempt."""
         with self.environment._writer():

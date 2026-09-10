@@ -17,14 +17,15 @@ export interface PlatformCloudObservation {
 
 export function projectCloudPlatform(team: TeamView, cloud: PlatformCloudObservation | null): TeamView {
   const current = cloud?.state === "CURRENT";
-  const value = current ? cloud.value : null;
+  const value = cloud?.value;
+  const lastKnown = value && !current ? " · last known" : "";
   return { ...team,
-    productStatus: value?.installedVersion ? `VDP ${value.installedVersion} · Cloud installed` : current ? "No installed release reported" : "Cloud state not current",
-    lifecycleStatus: value?.pendingVersion ? `Pending ${value.pendingVersion}` : current ? "No pending release reported" : "Refresh Cloud state",
+    productStatus: value?.installedVersion ? `VDP ${value.installedVersion} · Cloud installed${lastKnown}` : current ? "No installed release reported" : "Cloud state not current",
+    lifecycleStatus: value?.pendingVersion ? `Pending ${value.pendingVersion}${lastKnown}` : current ? "No pending release reported" : "Refresh Cloud state",
     evidenceTitle: "Test Vehicle · Aos Cloud",
     backendStatus: current ? value?.online ?? "Unknown" : cloud?.state ?? "Not observed",
     evidenceBody: "Installed is the Cloud-reported state. Running process, live-data readiness and Safe Stop are not reported by this Cloud read; no direct VM probe is made.",
-    source: { value: current ? "Cloud state received" : null, state: cloud?.state ?? "UNAVAILABLE",
+    source: { value: value ? `Cloud state received${lastKnown}` : null, state: cloud?.state ?? "UNAVAILABLE",
       observedAt: cloud?.observedAt ?? null, source: { owner: "Aos Cloud", system: "Unit and component API", fixture: false },
       ...(!current ? { reason: cloud?.state === "STALE" ? "Previous observation — refresh required" : "Cloud state unavailable" } : {}) },
     releases: team.releases.map((release) => ({ ...release, status: "Content profile reference",

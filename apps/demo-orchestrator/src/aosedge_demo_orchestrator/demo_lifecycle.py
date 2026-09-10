@@ -76,6 +76,23 @@ class DemoLifecycle:
     def _vm(self, action):
         return self.app.execute(OperationRequest("vm", action, VehicleTarget.TEST, timeout=90))
 
+    def readiness(self, source=False, cloud=False):
+        """Current evidence, not a replay of a completed preparation journal."""
+        values = dict(vm=self.app.vm_service.observe_readiness("test"), backends=self.backends.observe_stack())
+        current = all(value.get("state") == "CURRENT" for value in values.values())
+        if source:
+            # Local controller/selection only. Do not claim a guest connection
+            # from a remembered selection or inspect the preserved Production VM.
+            values["source"] = self.app.source_service.observe(guest=False, timeout=5)
+            current = current and values["source"].get("state") == "SELECTED_NOT_PROBED" and (
+                values["source"].get("selectedVehicle") == "test" and
+                values["source"].get("controller", {}).get("fresh") is True)
+        if cloud:
+            values["cloud"] = self.app.unit_service.observe("cloud-status", "test")
+            current = current and values["cloud"].get("unit", {}).get("state") == "CURRENT"
+        return dict(state="CURRENT" if current else "INCOMPLETE", observedAt=now(), observations=values,
+            connection="NOT_RECHECKED", productReadiness="NOT_OBSERVED")
+
     def create(self, image):
         with self.environment._writer():
             candidate = self.environment.catalog.resolve(image)
@@ -90,7 +107,10 @@ class DemoLifecycle:
                 if record and (record.get("action") != "create" or record.get("image") != image):
                     raise EnvironmentError("DEMO_EXISTING_CONTROLLER_USE_RESUME_OR_RETIRE")
                 if record and record.get("state") == "COMPLETED":
-                    return self._result(record, noOp=True, readiness="NOT_RECHECKED")
+                    readiness = self.readiness()
+                    return OperationResult("demo.create", OperationState.OBSERVED if readiness["state"] == "CURRENT" else OperationState.PARTIAL,
+                        "Previous creation retained; one current VM/backend observation, no restart or repeated creation.", target="test",
+                        data=dict(record, noOp=True, productionPreserved=True, readiness=readiness))
                 if state["vehicles"]["test"].get("unitId"):
                     raise EnvironmentError("DEMO_CREATE_CANNOT_ADOPT_PROVISIONED_TEST")
             # Immutable backend inputs are required before starting any VM.
@@ -168,6 +188,8 @@ class DemoLifecycle:
         with self.environment._writer():
             state = self._state()
             previous = state.get("demoLifecycle") or {}
+            if previous.get("action") == "resume" and previous.get("state") == "COMPLETED":
+                return self._resumed_observation(self._result(previous, noOp=True))
             if previous.get("action") == "resume" and previous.get("state") in ("PARTIAL", "COMPLETED"):
                 record = dict(previous, completedSteps=[])
             elif previous.get("action") == "park" and previous.get("state") == "COMPLETED":
@@ -181,7 +203,20 @@ class DemoLifecycle:
             if record["retainedConnection"] == "test":
                 steps.append(("restore-test-connection", lambda: self.app.execute(
                     OperationRequest("vehicle", "initialize", VehicleTarget.TEST))))
-            return self._steps(record, steps, "RESUMED")
+            result = self._steps(record, steps, "RESUMED")
+            return self._resumed_observation(result) if result.state == OperationState.COMPLETED else result
+
+    def _resumed_observation(self, result):
+        state = self._state()
+        if not state["vehicles"]["test"].get("unitId"):
+            return result
+        cloud = self.app.unit_service.observe("cloud-status", "test")
+        # Missing optional layers/subjects are not a failed Resume or evidence
+        # of Offline. Preserve their envelopes without blocking local startup.
+        current = cloud.get("unit", {}).get("state") == "CURRENT"
+        return OperationResult(result.operation, result.state if current else OperationState.PARTIAL,
+            "Same Test resumed; one Cloud observation, no provisioning. Unknown Cloud state can be reread without replaying startup.",
+            target="test", data=dict(result.data, cloud=cloud))
 
     def _backend_cleanup(self, state):
         from .backend_retirement import BackendRetirement

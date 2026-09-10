@@ -142,11 +142,22 @@ an explicit successful empty inventory clears the corresponding previous facts.
 No on-disk observation database is added. Separate CLI processes perform fresh
 one-shot reads. The Presenter must reuse its application instance to share reads.
 
-Visible-panel scheduling (2–10 seconds pending, 10 seconds idle), sample-age
-presentation and hidden-view cancellation belong to the accepted Presenter
-integration and are not implemented by these commands. Inventory read time does
-not establish a fresh Unit report. Upload receipts/reconciliation, profile
-provenance, runtime completion rules and SOTA identity remain separate phases.
+Visible-panel scheduling is implemented in the shared Presenter observer for
+the existing Cloud-only Platform read: one in-flight request; entry and
+post-action refresh; pending intervals of 2, 4, 8, then 10 seconds; 10 seconds
+idle. Both panel exit and a hidden browser document stop scheduling. They do
+not cancel an in-flight read or an operation. Concurrent post-action requests
+coalesce into one subsequent read; actions while hidden invalidate last-known
+data and defer the read until entry. Read failure retains the previous value
+and timestamp with STALE, rather than inventing Offline or empty inventory.
+The old Platform projection now visibly labels retained values as last known.
+
+This does not bind the new Studio architecture/monitor screens. Their use of
+the complete normalized Unit identity/inventory and visible-only metrics is
+still part of P4 integration; the current Presenter Platform route remains the
+focused VDP overview. Inventory read time does not establish a fresh Unit
+report. Upload receipts/reconciliation, profile provenance, runtime completion
+rules and SOTA identity remain separate concerns.
 
 The separate [service catalog/ownership inspection](demo-control-service-observation.md)
 adds read-only, per-profile OEM/SP catalog and service-to-Unit observations.

@@ -94,6 +94,23 @@ class VMTests(unittest.TestCase):
     def state(self):
         return json.loads((self.root / JOURNAL).read_text())
 
+    def test_readiness_is_one_read_no_boot_role_write_or_journal_write(self):
+        self.assertEqual("VM_NOT_RUNNING", self.runtime.observe_readiness("test")["reason"])
+        self.runtime.execute("start", "test", 1)
+        before = (self.root / JOURNAL).read_bytes()
+        spawned = list(self.runtime.spawned)
+        with patch.object(self.runtime, "_initialize_factory_role") as role, patch(
+                "aosedge_demo_orchestrator.vm.read_guest", wraps=self.runtime.guest) as guest:
+            self.assertEqual("CURRENT", self.runtime.observe_readiness("test")["state"])
+            guest.assert_called_once()
+            self.assertEqual(10022, guest.call_args.args[1])
+            self.assertEqual(5, guest.call_args.args[2])
+            role.assert_not_called()
+        self.assertEqual(before, (self.root / JOURNAL).read_bytes())
+        self.assertEqual(spawned, self.runtime.spawned)
+        self.runtime.guest_ready = False
+        self.assertEqual("UNKNOWN", self.runtime.observe_readiness("test")["state"])
+
     def test_start_both_repeat_stop_one_and_last_dns_owner(self):
         result = self.runtime.execute("start", "all", 1)
         self.assertTrue(all(item["state"] == "COMPLETED" for item in result["vehicles"].values()))

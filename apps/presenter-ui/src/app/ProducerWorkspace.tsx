@@ -23,8 +23,8 @@ export function ProducerWorkspace({ teamId, snapshot, presentation, dispatch }: 
   const team = localPlatform ? projectCloudPlatform(snapshot.teams[teamId], cloud.observation) : snapshot.teams[teamId];
 
   useEffect(() => {
-    if (localPlatform && window.location.hash !== "#native-header") cloud.refresh();
-  }, [localPlatform, cloud.refresh]);
+    if (localPlatform && window.location.hash !== "#native-header") return cloud.enter();
+  }, [localPlatform, cloud.enter]);
 
   useEffect(() => {
     if (restoredTeam.current === teamId) return;

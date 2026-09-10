@@ -31,6 +31,7 @@ FACTORY_INPUTS_MARKER = Path("/usr/share/aos-vehicle-platform/demo-runtime-input
 FACTORY_INPUTS = Path("/var/aos/workdirs/sm/runtimes/systemd-slot-component/demo-inputs")
 FACTORY_ROLE_DROPIN = Path("/run/systemd/system/aos-sm.service.d/20-democtl-role.conf")
 SM_RECOVERY_CAP_SHA = "83e705f3f49bea3fb32a37d485da16765f7266d5ba6984631c2459b3e65c7eb6"
+SM_COMMITTED_CAP_SHA = "ef96d8e18c018daf6dba9f6a928ace0a9a1a6c9ea96cd37810c2461fc483fb09"
 VSS_BASE = Path("/usr/share/vss/vss.json")
 VSS_TEMP = Path("/run/democtl-vss/vss.json")
 VSS_DROPIN = Path("/run/systemd/system/kuksa-databroker.service.d/90-democtl-vss.conf")
@@ -612,8 +613,8 @@ def sm_load_public_credentials(root, dropin, request):
         "LoadCredential=viss-update-binding:" + str(root / "viss-update-binding") + "\n")
 
 
-def sm_saved_test_release(root):
-    """Validate the operator-authorized Test17 selector repair, without mutation.
+def sm_saved_test_release(root, committed=False):
+    """Validate the authorized Test17 repair or committed18 proof reapply.
 
     The native runtime still validates the payload before starting it. This
     bounded repair must not become an automatic missing-selector fallback.
@@ -629,45 +630,52 @@ def sm_saved_test_release(root):
             raise ValueError("SM_RECOVERY_UNSAFE_RECORD")
         return json.loads(path.read_bytes())
 
+    version, slot = ("18.0.0", "a") if committed else ("17.0.0", "b")
     installed = read("state/installed.json")
-    transaction = read("state/transaction.json")
-    stored = read("slots/b/.aos-instance.json")
+    transaction_path = root / "state/transaction.json"
+    if committed and (transaction_path.exists() or transaction_path.is_symlink()):
+        raise ValueError("SM_RESUME_TRANSACTION_PRESENT")
+    transaction = {} if committed else read("state/transaction.json")
+    stored = read("slots/" + slot + "/.aos-instance.json")
     stopped = root / "state/stopped.json"
     active = root / "active"
     if (stopped.exists() or stopped.is_symlink()
-            or installed.get("schemaVersion") != 1 or installed.get("Version") != "17.0.0"
-            or installed.get("slot") != "b" or installed != stored
-            or transaction.get("schemaVersion") != 2 or transaction.get("operation") != "remove"
+            or installed.get("schemaVersion") != 1 or installed.get("Version") != version
+            or installed.get("slot") != slot or installed != stored):
+        raise ValueError("SM_RECOVERY_SAVED_TEST_" + ("18" if committed else "17") + "_MISMATCH")
+    if not committed and (transaction.get("schemaVersion") != 2 or transaction.get("operation") != "remove"
             or transaction.get("phase") != "waiting-for-safe-stop" or transaction.get("hasPrevious") is not True
             or transaction.get("previousSlot") != "b" or transaction.get("candidateSlot") != "b"):
         raise ValueError("SM_RECOVERY_SAVED_TEST_17_MISMATCH")
     fields = ("ItemId", "SubjectId", "Instance", "Version", "ManifestDigest", "RuntimeId", "Preinstalled")
-    if any(key not in installed or transaction.get(prefix + key) != installed[key]
-           for key in fields for prefix in ("previous", "candidate")):
+    if any(key not in installed for key in fields) or (not committed and any(transaction.get(prefix + key) != installed[key]
+           for key in fields for prefix in ("previous", "candidate"))):
         raise ValueError("SM_RECOVERY_INSTANCE_MISMATCH")
     if not re.fullmatch(r"(?:sha256:)?[a-f0-9]{64}", installed["ManifestDigest"]):
         raise ValueError("SM_RECOVERY_MANIFEST_DIGEST_INVALID")
-    if (active.exists() or active.is_symlink()) and (not active.is_symlink() or os.readlink(active) != "slots/b"):
+    if (committed or active.exists() or active.is_symlink()) and (not active.is_symlink() or os.readlink(active) != "slots/" + slot):
         raise ValueError("SM_RECOVERY_ACTIVE_SELECTOR_CONFLICT")
-    metadata = read("slots/b/component.json")
-    provider = read("slots/b/config/provider.json")
-    capability = read("slots/b/config/capability-manifest.json")
-    capability_sha = hashlib.sha256((root / "slots/b/config/capability-manifest.json").read_bytes()).hexdigest()
-    if (metadata.get("component") != "vehicle-data-provider" or metadata.get("version") != "17.0.0"
+    prefix = "slots/" + slot + "/"
+    metadata = read(prefix + "component.json")
+    provider = read(prefix + "config/provider.json")
+    capability = read(prefix + "config/capability-manifest.json")
+    capability_sha = hashlib.sha256((root / (prefix + "config/capability-manifest.json")).read_bytes()).hexdigest()
+    expected_capability = SM_COMMITTED_CAP_SHA if committed else SM_RECOVERY_CAP_SHA
+    if (metadata.get("component") != "vehicle-data-provider" or metadata.get("version") != version
             or metadata.get("architecture") != "arm64" or metadata.get("os") != "linux"
             or metadata.get("runtimeInterface") != 1 or metadata.get("entrypoint") != "bin/vehicle-data-provider"
             or metadata.get("configuration") != "config/provider.json"
-            or provider.get("semanticVersion") != "17.0.0" or capability.get("semanticVersion") != "17.0.0"
+            or provider.get("semanticVersion") != version or capability.get("semanticVersion") != version
             or provider.get("capabilityManifestSha256") != capability_sha
-            or capability_sha != SM_RECOVERY_CAP_SHA):
+            or capability_sha != expected_capability):
         raise ValueError("SM_RECOVERY_PAYLOAD_METADATA_MISMATCH")
     # Reject links/special files before restoring a selector; native validation
     # then applies its full payload, permissions and runtime compatibility rules.
-    for index, path in enumerate((root / "slots/b").rglob("*")):
+    for index, path in enumerate((root / ("slots/" + slot)).rglob("*")):
         mode = path.lstat().st_mode
         if index >= 4096 or not (stat.S_ISREG(mode) or stat.S_ISDIR(mode)):
             raise ValueError("SM_RECOVERY_PAYLOAD_PATH_UNSAFE")
-    return dict(version="17.0.0", slot="b", manifestDigest=installed["ManifestDigest"],
+    return dict(version=version, slot=slot, manifestDigest=installed["ManifestDigest"],
                 selectorPresent=active.is_symlink())
 
 
@@ -688,7 +696,8 @@ def sm_recover_test(request):
             or not os.path.ismount(FACTORY_INPUTS.parent) or (FACTORY_INPUTS / "role").read_text() != "test\n"):
         raise ValueError("SM_FACTORY_31_BASE_MISMATCH")
     runtime = FACTORY_INPUTS.parent
-    saved = sm_saved_test_release(runtime)
+    committed = request.get("resumeCommitted") is True
+    saved = sm_saved_test_release(runtime, committed=committed)
     with gzip.GzipFile(fileobj=io.BytesIO(base64.b64decode(request["binary"], validate=True))) as payload:
         raw = payload.read(256 * 1024 * 1024 + 1)
     if len(raw) > 256 * 1024 * 1024:
@@ -703,9 +712,9 @@ def sm_recover_test(request):
     (root / "aos_sm_app").write_bytes(raw)
     (root / "aos_sm_app").chmod(0o755)
     command(["chcon", "--reference=/usr/bin/aos_sm_app", str(root / "aos_sm_app")], check=True)
-    print("Test SM: stop failed owner once; retain installed and queued transaction records", file=sys.stderr, flush=True)
+    print("Test SM: replace transient runtime once; preserve installed component and durable intent", file=sys.stderr, flush=True)
     subprocess.run(["systemctl", "stop", "aos-sm"], capture_output=True, text=True, timeout=20, check=True)
-    if sm_saved_test_release(runtime) != saved:
+    if sm_saved_test_release(runtime, committed=committed) != saved:
         raise ValueError("SM_RECOVERY_RECORD_CHANGED")
     # Do not overwrite any active path. These durable records were verified
     # both before and after stopping the only runtime writer.
@@ -719,7 +728,7 @@ def sm_recover_test(request):
     dropin.parent.mkdir(parents=True, exist_ok=True)
     dropin.write_text("[Service]\nBindReadOnlyPaths=" + str(root / "aos_sm_app") + ":/usr/bin/aos_sm_app\n")
     command(["systemctl", "daemon-reload"], check=True)
-    print("Test SM: start corrected runtime; native recovery owns VDP17 and pending VDP18", file=sys.stderr, flush=True)
+    print("Test SM: start corrected runtime; native runtime owns the unchanged component state", file=sys.stderr, flush=True)
     subprocess.run(["systemctl", "start", "aos-sm"], capture_output=True, text=True, timeout=20, check=True)
     result = execute(dict(request, action="component-sm-status"))
     if (result["binarySha256"] != request["sha256"] or result["service"]["ActiveState"] != "active"

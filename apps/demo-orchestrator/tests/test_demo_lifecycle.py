@@ -35,13 +35,16 @@ class LifecycleTests(unittest.TestCase):
         self.app = Mock()
         self.app.environment_service = self.environment
         self.app.execute.return_value = completed()
+        self.app.vm_service.observe_readiness.return_value = dict(state="CURRENT", guestReady=True, guestDnsReady=True)
         self.backends = Mock()
         self.backends._candidate.return_value = dict(imageId="immutable")
         self.backends.start_stack.return_value = dict(state="RUNNING")
         self.backends.stop_stack.return_value = dict(state="STOPPED")
+        self.backends.observe_stack.return_value = dict(state="CURRENT")
         self.app.source_service.simulation.side_effect = self.simulation
         self.workflow = DemoLifecycle(self.app, self.backends)
-        self.observed = {key: dict(state="CURRENT", value=[]) for key in ("components", "services")}
+        from aosedge_demo_orchestrator.cloud_observation import SECTIONS
+        self.observed = {key: dict(state="CURRENT", value=[]) for key in SECTIONS}
         self.observed["serviceDetails"] = {}
         self.app.unit_service.observe.return_value = self.observed
 
@@ -76,6 +79,21 @@ class LifecycleTests(unittest.TestCase):
         self.app.execute.reset_mock()
         self.assertTrue(self.workflow.create("factory/arch").data["noOp"])
         self.app.execute.assert_not_called()
+
+    def test_repeated_create_reads_current_readiness_without_replaying_steps(self):
+        self.workflow.create("factory/arch")
+        saved = (self.root / JOURNAL).read_bytes()
+        self.app.execute.reset_mock()
+        self.backends.start_stack.reset_mock()
+        self.app.vm_service.observe_readiness.return_value = dict(state="UNKNOWN", reason="VM_NOT_RUNNING")
+        result = self.workflow.create("factory/arch")
+        self.assertEqual(OperationState.PARTIAL, result.state)
+        self.assertEqual("INCOMPLETE", result.data["readiness"]["state"])
+        self.app.vm_service.observe_readiness.assert_called_once_with("test")
+        self.app.execute.assert_not_called()
+        self.backends.start_stack.assert_not_called()
+        self.app.unit_service.observe.assert_not_called()
+        self.assertEqual(saved, (self.root / JOURNAL).read_bytes())
 
     def test_create_missing_backend_does_not_start_vm(self):
         self.backends._candidate.side_effect = EnvironmentError("MISSING_BACKEND")
@@ -168,6 +186,29 @@ class LifecycleTests(unittest.TestCase):
         request = self.app.execute.call_args.args[0]
         self.assertEqual(("vm", "start"), (request.domain, request.action))
         self.assertNotIn("unitId", self.read()["vehicles"]["test"])
+
+    def test_resume_read_failure_retries_observation_not_startup(self):
+        self.provisioned()
+        self.workflow.park()
+        self.observed["unit"] = dict(state="UNKNOWN", value=None)
+        self.assertEqual(OperationState.PARTIAL, self.workflow.resume().state)
+        self.app.execute.reset_mock()
+        self.app.unit_service.observe.reset_mock()
+        self.backends.start_stack.reset_mock()
+        self.observed["unit"] = dict(state="CURRENT", value={})
+        result = self.workflow.resume()
+        self.assertTrue(result.data["noOp"])
+        self.app.execute.assert_not_called()
+        self.backends.start_stack.assert_not_called()
+        self.app.unit_service.observe.assert_called_once_with("cloud-status", "test")
+
+    def test_optional_not_reported_inventory_does_not_block_resume(self):
+        self.provisioned()
+        self.workflow.park()
+        self.observed["layers"] = dict(state="UNKNOWN", reason="NOT_REPORTED", value=None)
+        result = self.workflow.resume()
+        self.assertEqual(OperationState.COMPLETED, result.state)
+        self.assertIsNone(result.data["cloud"]["layers"]["value"])
 
     def test_cli_and_api_share_fixed_scope_and_no_operator_capabilities(self):
         for action in ("create", "retire", "park", "resume"):

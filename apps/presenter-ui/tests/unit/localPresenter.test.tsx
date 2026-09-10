@@ -46,7 +46,7 @@ describe("local composition preview", () => {
     expect(team.releases.every((release) => release.status === "Content profile reference")).toBe(true);
     const stale = projectCloudPlatform(team, { ...cloud, state: "STALE" });
     expect(stale.backendStatus).toBe("STALE");
-    expect(stale.productStatus).not.toContain("installed");
+    expect(stale.productStatus).toBe("VDP 15.0.0 · Cloud installed · last known");
   });
   it("deduplicates the in-flight fixed Cloud-only read and sanitizes failure", async () => {
     const request = vi.fn().mockResolvedValue({ ok: true, json: async () => cloud });

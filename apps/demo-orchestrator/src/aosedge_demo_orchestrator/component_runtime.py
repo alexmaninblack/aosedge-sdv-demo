@@ -85,6 +85,10 @@ def apply_test(environment, target):
                 "a9019f4adfe70499bde339c8e9d95eb8568736b73dc218f6c0e390fbcd28ddf4"):
             raise EnvironmentError("SM_PROOF_REQUIRES_AUTHORIZED_TEST_31")
         record = state.setdefault("smDemoProof", {})
+        # Reapply only a previously confirmed proof after Park/Resume, and only
+        # against committed18. This does not generalize selector recovery.
+        resume_committed = (record.get("state") == "APPLIED" and
+            record.get("binarySha256") == manifest["executableSha256"])
         record.update(state="ATTEMPT_STARTED", startedAt=now(), binarySha256=manifest["executableSha256"])
         atomic_json(environment.root / JOURNAL, state)
         driver = SourceDriver(VMService(environment))
@@ -92,6 +96,7 @@ def apply_test(environment, target):
             with driver.operation(timeout=60):
                 result = driver.guest(state, "test", "component-sm-apply", target="test",
                     proof="queued-recovery",
+                    resumeCommitted=resume_committed,
                     binary=base64.b64encode(gzip.compress(raw, compresslevel=1, mtime=0)).decode(),
                     sha256=manifest["executableSha256"])
                 # systemd clears service credentials on restart. Restore only

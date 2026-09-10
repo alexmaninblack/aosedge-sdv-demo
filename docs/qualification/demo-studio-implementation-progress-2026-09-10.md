@@ -7,10 +7,95 @@ Status: **partial implementation; not ready for final operator E2E**.
 The [accepted P1–P8 plan](../planning/active/demo-studio-delivery-plan.md)
 remains authoritative. No mockup flow or live Presenter composition was changed.
 
-Latest result: **Test VDP18 is actually running, READY/LIVE, with 23 read paths**
-after the authorized queued-recovery SM proof. Cloud reports installed18,
-Online and no pending component. The immutable Factory .31 is unchanged;
-this remains a transient runtime proof, not a clean-image/full-Studio claim.
+Latest result: **the same Test completed full Park/Resume and VDP18 is again
+running, READY/LIVE, with 23 read paths**. Cloud confirms the same Unit Online.
+The identical qualified transient SM was explicitly reapplied after boot;
+the immutable Factory .31 is unchanged. This remains a transient runtime
+proof, not a clean-image/full-Studio claim.
+
+<a id="evening-continuation--reentry-cloud-observer-and-parkresume"></a>
+
+## Evening continuation — reentry, Cloud observer and Park/Resume
+
+The user asked to continue against the accepted plan. No new image, VDP,
+provisioning, Cloud publication, Production mutation or destructive cleanup was
+performed in this increment. All live lifecycle/proof actions used `democtl`.
+
+### Source changes and focused evidence
+
+- P1 completed Create/Prepare reuse now performs a focused current read rather
+  than returning saved READY as current. It reads Test SSH/DNS, the two owned
+  backend processes, and (for Prepare) local controller/selection plus Cloud.
+  No boot/enrollment, role write, hashing, extraction, publication or restart is
+  replayed. Remembered selection is explicitly not a fresh guest connection;
+  process health is not Brake/Tire product readiness.
+- P2 now has one visible-panel Cloud observer for the existing Platform
+  projection: entry/post-action reads, a single flight, 2/4/8/10-second pending
+  backoff and 10-second idle reads. Hidden panels/documents schedule no reads;
+  pending work is not cancelled. Failure retains timestamped last-known values
+  with STALE. This does not yet bind the new Studio's full Unit/metrics model.
+- P3 Resume now observes Cloud once after startup. Retrying a completed Resume
+  only rereads Cloud, never VM/source/backend startup. A live read exposed an
+  overly strict initial predicate: optional `layers` and `reportedSubjects`
+  return NOT_REPORTED even when the Unit is Online. The predicate was corrected
+  and regression-tested; missing optional fields remain missing, not an error
+  in local Resume or fabricated empty/healthy inventory.
+- The existing exact-Test `component sm-apply` can reapply its previously
+  confirmed binary to committed18/slot a after reboot. It requires the existing
+  selector, matching metadata/capability and no pending/stopped intent. It does
+  not recreate a selector in this path or add an automatic Resume side effect.
+
+Focused tests: 27 lifecycle/preparation, 24 backend, 14 VM, 80 component
+(including 16 SM boundary cases), and 16 source tests passed. Presenter passed
+all 93 unit tests and its TypeScript check. These are scoped regressions, not a
+claim that the complete project or clean-image E2E suite was rerun.
+An isolated Chrome test also passed entry/reentry, failed-refresh last-known
+display, and absence of guest/mutation requests. It used mocked Cloud reads and
+no native-operation capability; it is not operator approval of the new Studio.
+The documentation gate passed for 166 Markdown documents, 658 stable IDs and
+38 Mermaid diagrams.
+
+### Actual retained-Test restart proof
+
+Before Park, VDP18 remained active (PID5637, slot a, zero restarts), but source
+telemetry was disconnected. The old READY observation was not reused as current.
+The transient SM still had the qualified hash and zero fresh AVCs.
+
+`environment park` completed: the absent Controller meant physical Safe Stop
+was not observed at shutdown; this was reported explicitly. The owned source,
+Test VM and both demo backends stopped while the disk, Unit and Production were
+preserved. `environment resume` booted the same VM, restarted both backends and
+CARLA/Gateway, and restored the former Test connection in stationary Manual.
+It did not create another Unit or release.
+
+At **19:14:40 UTC**, a completed Resume reentry returned `noOp=true` and Cloud
+`ONLINE` for Unit **2a29c145-bbd1-4494-a0e5-d4b79e6a9db5**. The optional missing
+Cloud reports are retained in the result without blocking completion.
+
+The explicit `component sm-apply test` restored SHA256
+`cf251da44d30aec38bd015210f08e284eb121aaff8f00feca2d74b75291a3dee`
+with one SM restart, PID1458, Test `demo-5s`, zero automatic restarts, Enforcing,
+complete audit window and zero fresh AVCs. `restoredSelector=false` and
+`durableRecordsPreserved=true`. A subsequent explicit idempotency call returned
+`noOp=true`, the same PID/hash and no additional restart.
+
+`component status test` then confirmed **18.0.0**, slot a, PID1098 (started
+19:10:36 UTC), matching process/slot, 23 read paths, `READY; source LIVE`,
+success and zero provider restarts. Its installed record remains at epoch
+1789004695; historical16 failure is retained and no current transaction exists.
+Advisory remains DEFERRED; this is not independent Brake/Tire consumer proof.
+
+### Remaining gates
+
+The P1 reuse gap and the current-Platform observer gap have scoped regression
+evidence; retained-Test Park/Resume now has actual proof. Full P1–P8 completion
+is still not claimed. The next UI integration must use the normalized Cloud
+Unit identity/inventory and visible-only metrics, not guest diagnostics.
+New Studio binding/operator approval (P4), real Brake SOTA and metadata/resource
+plumbing (P5), advisory (P6), Tire/offline proof (P7), and final clean-image/full
+repeat/housekeeping (P8) remain. Factory .31 does not contain the corrected SM;
+the proof under `/run/democtl-sm-queued-recovery` deliberately remains active
+and will disappear at the next VM reboot.
 
 ## Resumed: bounded Test timing correction — 10 September
 

@@ -52,6 +52,25 @@ class BackendTests(unittest.TestCase):
             response.stderr = "visibility denied"
             self.assertEqual(dict(state="UNKNOWN", owners=[]), self.service._context_handles())
 
+    def test_readiness_only_inspects_owned_processes_without_storage_forensics(self):
+        self.state["backends"] = {team: dict(imageId=IMAGE) for team in ("brake", "tire")}
+        atomic_json(self.root / JOURNAL, self.state)
+        self.service._inspect = Mock(side_effect=lambda kind, name: dict(Image=IMAGE,
+            Config=dict(Labels={"tech.aosedge.demo.owner": OWNER, "tech.aosedge.demo.team": "brake" if "brake" in name else "tire"}),
+            State=dict(Running=True, Health=dict(Status="healthy"))))
+        before = (self.root / JOURNAL).read_bytes()
+        with patch.object(self.service, "_context_handles") as handles:
+            self.assertEqual("CURRENT", self.service.observe_stack()["state"])
+            self.assertEqual(2, self.service._inspect.call_count)
+            handles.assert_not_called()
+        self.service._image.assert_not_called()
+        self.assertEqual([], self.commands)
+        self.assertEqual(before, (self.root / JOURNAL).read_bytes())
+        self.service._inspect.side_effect = EnvironmentError("BACKEND_DOCKER_ENGINE_UNAVAILABLE")
+        result = self.service.observe_stack()
+        self.assertEqual("UNKNOWN", result["state"])
+        self.assertTrue(all(item["state"] == "UNKNOWN" for item in result["teams"].values()))
+
     def test_recovery_never_restarts_engine_with_unrelated_running_container(self):
         self.state.update(demoLifecycle=dict(action="retire", state="PARTIAL", reason="CLEANUP_FILE_IN_USE",
             phase="retire-test-data-and-overlay"), backends={team: dict(state="STOPPED", cleanup=dict(containerRemoval="REMOVED"))

@@ -33,16 +33,35 @@ class DemoPreparationTests(unittest.TestCase):
             return OperationResult(request.domain + "." + request.action, OperationState.COMPLETED, "done", data=dict(activeVersion="0.0.0",
                 publication=dict(stage="READY"), deploymentBundles=[dict(state="done")], versions=[dict(state="Ready")]))
         self.app = SimpleNamespace(environment_service=env, vm_service=Mock(), source_service=SimpleNamespace(
-            initialize_test=lambda: None, simulation=lambda *a, **k: self.calls.append(("simulation", "start")) or dict(state="RUNNING")), execute=execute)
+            initialize_test=lambda: None, simulation=lambda *a, **k: self.calls.append(("simulation", "start")) or dict(state="RUNNING"),
+            observe=Mock(return_value=dict(state="SELECTED_NOT_PROBED", selectedVehicle="test", controller=dict(fresh=True)))),
+            unit_service=Mock(), execute=execute)
+        from aosedge_demo_orchestrator.cloud_observation import SECTIONS
+        self.app.unit_service.observe.return_value = {key: dict(state="CURRENT", value=[]) for key in SECTIONS}
+        self.app.vm_service.observe_readiness.return_value = dict(state="CURRENT")
         self.backends = Mock()
         self.backends._candidate.return_value = dict(imageId="pinned")
         self.backends.start_stack.return_value = dict(state="RUNNING")
+        self.backends.observe_stack.return_value = dict(state="CURRENT")
         self.workflow = DemoPreparation(self.app, self.component, self.backends)
 
     def test_plan_selects_next_version_without_native_mutation(self):
         self.assertEqual("13.0.0", self.workflow.plan("31/arm64")["version"])
         self.assertEqual([], self.calls)
         self.assertNotIn("demoPreparation", json.loads(self.path.read_text()))
+
+    def test_repeat_preparation_keeps_history_but_exposes_cloud_read_failure(self):
+        self.workflow.prepare("31/arm64")
+        saved = self.path.read_bytes()
+        self.calls.clear()
+        self.app.unit_service.observe.return_value["unit"] = dict(state="UNKNOWN", value=None)
+        result = self.workflow.prepare("31/arm64")
+        self.assertEqual(OperationState.PARTIAL, result.state)
+        self.assertEqual("INCOMPLETE", result.data["readiness"]["state"])
+        self.app.unit_service.observe.assert_called_once_with("cloud-status", "test")
+        self.app.source_service.observe.assert_called_once_with(guest=False, timeout=5)
+        self.assertEqual([], self.calls)
+        self.assertEqual(saved, self.path.read_bytes())
 
     def test_reuses_this_runs_v1_and_keeps_order_and_repeat_idempotent(self):
         self.state["componentOperations"] = {"13.0.1": {}}

@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import type { DemoCommand, OperationSession, PresenterCommandPort } from "../../domain/presenterCommandPort";
 import { Modal } from "../../shared/components/Modal";
 import { createPortal } from "react-dom";
+import { usePlatformObservation } from "./PresenterReadModelProvider";
 
 export const actionLabels: Record<DemoCommand["action"], string> = {
   "prepare-demo": "Prepare demo",
@@ -25,6 +26,16 @@ export function PresenterControls({ port, children }: { port?: PresenterCommandP
   const unresolved = useRef<{ id: string; sessionId: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const connectionFailure = useRef(false);
+  const cloud = usePlatformObservation();
+  const seenJobs = useRef<{ sessionId: string; terminal: Set<string> } | null>(null);
+  useEffect(() => {
+    if (!session) return;
+    const terminal = new Set(session.jobs.filter((job) => !["ACCEPTED", "RUNNING"].includes(job.state)).map((job) => job.id));
+    const previous = seenJobs.current;
+    if (previous?.sessionId === session.sessionId && session.jobs.some((job) => terminal.has(job.id)
+      && !previous.terminal.has(job.id) && !reads.has(job.action))) cloud.afterAction();
+    seenJobs.current = { sessionId: session.sessionId, terminal };
+  }, [session, cloud.afterAction]);
   useEffect(() => {
     if (!port) return;
     let active = true;

@@ -296,7 +296,19 @@ democtl simulation stop
 
 Status, image list, environment create, VM start/stop and unused/Cloud-retired CLI environment retire are
 implemented, as are the three unit commands and local-profile environment
-prepare/vehicle select. Park/resume remain NOT_IMPLEMENTED.
+prepare/vehicle select. `environment park` / `environment resume` preserve the
+owned Test disk and Cloud identity. They do not provision, publish, or touch
+Production. Resume restores only the formerly running source/selection and
+then reads Cloud once; a failed Cloud read can be repeated without replaying
+startup. Pending/uncertain updates prevent Park before shutdown begins.
+
+Repeated completed `demo create` and `demo prepare` perform one focused
+readiness observation instead of trusting the recorded phase. Create reads
+Test SSH/DNS and the two owned backend processes; Prepare also reads the local
+controller/remembered selection and Cloud inventory. No hashes/extraction,
+enrollment, factory-role writes, restart, provisioning or publication are
+repeated. `readiness` carries timestamped observations and CURRENT/INCOMPLETE;
+it is not product qualification or a newly proven guest-source connection.
 
 ### Component artifacts and Test delivery
 
@@ -921,6 +933,13 @@ the existing transaction with fresh Safe Stop evidence. An intentionally stopped
 predecessor, changed transaction or foreign selector is rejected. A repeated
 application to the already active proof binary performs no restart. This is not
 a general missing-selector repair policy, Cloud retry, or new VDP publication.
+
+After Park/Resume of this same qualified Test, the same command may reapply the
+previously confirmed proof to committed **18.0.0 / slot a**. It requires the
+existing active selector, exact installed/slot metadata and capability digest,
+with no transaction or intentionally stopped marker. It never repairs a missing
+selector in this case. This is a separate explicit qualification operation,
+not an automatic Resume step; a clean factory image still needs the source fix.
 
 The package uses Python 3.9 and the standard library. Optional Cloud reads use
 the separately installed Aos SDK environment. Fixture tests do not contact

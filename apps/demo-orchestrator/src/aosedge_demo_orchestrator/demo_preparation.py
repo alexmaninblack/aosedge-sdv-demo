@@ -66,9 +66,11 @@ class DemoPreparation:
             version = record["version"]
             self.progress("Preparing Test demo with VDP v1 / Cloud release " + version)
             if record.get("phase") == "READY_TO_DRIVE":
-                return OperationResult("demo.prepare", OperationState.COMPLETED,
-                    "Preparation previously completed; live readiness is observed separately. No restart, reset or repeat publication.",
-                    data=dict(record, noOp=True, readiness="NOT_RECHECKED"))
+                from .demo_lifecycle import DemoLifecycle
+                readiness = DemoLifecycle(self.app, self.backends).readiness(source=True, cloud=True)
+                return OperationResult("demo.prepare", OperationState.OBSERVED if readiness["state"] == "CURRENT" else OperationState.PARTIAL,
+                    "Previous preparation retained; one current infrastructure/Cloud observation. No restart, reset or repeat publication; product readiness is separate.",
+                    data=dict(record, noOp=True, readiness=readiness))
             for team in TEAMS:
                 self.backends._image(self.backends._candidate(team)["imageId"])
             roles = ("test",) if target == VehicleTarget.TEST else ("test", "production")

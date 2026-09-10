@@ -15,6 +15,17 @@
 
 ## Implementation execution — 9 September 2026
 
+Latest continuation (10 September, evening): repeated completed Create/Prepare
+now read current infrastructure rather than saved readiness; the existing
+Platform Cloud view has single-flight visible-only polling and retained stale
+values. The same Test passed full Park/Resume, with unchanged Unit/disk/VDP18;
+the exact transient SM was separately reapplied after boot. See the
+[current checkpoint](../../qualification/demo-studio-implementation-progress-2026-09-10.md#evening-continuation--reentry-cloud-observer-and-parkresume).
+This closes those specific gaps, not the complete P1–P8 plan. New Studio binding,
+full normalized inventory/metrics presentation, real Brake/Tire E2E, and clean
+factory qualification remain. The records below describe earlier increments;
+the phase definitions and exit criteria later in this document are unchanged.
+
 Resumed on 10 September with explicit Test-only destructive-cycle authority
 while preserving the existing Production peer. Docker build/start is now
 proven, source publication to the three existing named remotes is authorized,

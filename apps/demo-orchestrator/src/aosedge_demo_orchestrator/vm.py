@@ -377,6 +377,28 @@ class VMService:
         self._save(state)
         self.progress(role + ": VM process running")
 
+    def observe_readiness(self, role):
+        """One bounded read of an existing VM; no enrollment, role write or retry."""
+        state = read_json(self.root / JOURNAL)
+        item = state.get("vehicles", {}).get(role)
+        if role not in OVERLAYS or item is None:
+            raise EnvironmentError("VM_TARGET_NOT_CREATED")
+        result = dict(target=role, state="UNKNOWN", readCompletedAt=now())
+        try:
+            pid = self._owned_pid(self._command(state, role), str(self.root / item["overlay"]))
+            result["processState"] = "RUNNING" if pid else "STOPPED"
+            if not pid:
+                return dict(result, reason="VM_NOT_RUNNING")
+            result.update(read_guest(access_path(self.root, role), item["sshPort"], 5))
+            result["state"] = "CURRENT" if result.get("guestReady") and result.get("guestDnsReady") else "UNKNOWN"
+            if result["state"] != "CURRENT":
+                result["reason"] = "GUEST_OR_DNS_NOT_READY"
+        except (OSError, ValueError, subprocess.SubprocessError):
+            result["reason"] = "VM_READINESS_UNAVAILABLE"
+        finally:
+            result["readCompletedAt"] = now()
+        return result
+
     def _initialize_factory_role(self, state, role):
         from .source import SourceDriver
         driver = SourceDriver(self)

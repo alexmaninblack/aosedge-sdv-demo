@@ -139,6 +139,41 @@ class QueuedRecoveryBoundaryTests(unittest.TestCase):
         self.assertFalse((self.root / "active").is_symlink())
         self.assertEqual(before, {p: p.read_bytes() for p in self.root.rglob("*.json")})
 
+    def committed18(self):
+        (self.root / "state/transaction.json").unlink()
+        (self.root / "slots/b").rename(self.root / "slots/a")
+        for path in self.root.rglob("*.json"):
+            value = json.loads(path.read_text())
+            for key in ("Version", "version", "semanticVersion"):
+                if key in value:
+                    value[key] = "18.0.0"
+            if "slot" in value:
+                value["slot"] = "a"
+            path.write_text(json.dumps(value))
+        cap = hashlib.sha256((self.root / "slots/a/config/capability-manifest.json").read_bytes()).hexdigest()
+        self.write("slots/a/config/provider.json", dict(semanticVersion="18.0.0", capabilityManifestSha256=cap))
+        patch("aosedge_demo_orchestrator.source_guest.SM_COMMITTED_CAP_SHA", cap).start()
+        (self.root / "active").symlink_to("slots/a")
+
+    def test_committed18_reapply_preserves_all_records_and_requires_existing_selector(self):
+        self.committed18()
+        before = {p: p.read_bytes() for p in self.root.rglob("*.json")}
+        self.assertEqual("18.0.0", sm_saved_test_release(self.root, committed=True)["version"])
+        self.assertEqual(before, {p: p.read_bytes() for p in self.root.rglob("*.json")})
+        (self.root / "active").unlink()
+        with self.assertRaisesRegex(ValueError, "SELECTOR_CONFLICT"):
+            sm_saved_test_release(self.root, committed=True)
+
+    def test_committed18_reapply_refuses_pending_or_intentionally_stopped_state(self):
+        self.committed18()
+        self.write("state/transaction.json", {})
+        with self.assertRaisesRegex(ValueError, "TRANSACTION_PRESENT"):
+            sm_saved_test_release(self.root, committed=True)
+        (self.root / "state/transaction.json").unlink()
+        self.write("state/stopped.json", {})
+        with self.assertRaisesRegex(ValueError, "SAVED_TEST_18"):
+            sm_saved_test_release(self.root, committed=True)
+
     def test_wrong_phase_operation_version_slot_and_digest_are_rejected(self):
         for key, value in (("phase", "stopping"), ("operation", "install-or-replace"),
                 ("previousVersion", "18.0.0"), ("candidateSlot", "a"), ("previousManifestDigest", "b"*64)):
