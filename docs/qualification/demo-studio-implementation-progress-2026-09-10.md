@@ -87,6 +87,47 @@ stop. `vm start test` then booted the same overlay in **26.62 seconds**, with
 guest SSH/DNS ready, persistent Test role unchanged and provisioned identity
 preserved. No backup, reprovisioning or new image was involved.
 
+### Post-restart result: separate queued-update recovery defect
+
+Cloud returned Online for the same Unit and delivered 18. Reapplying the
+temporary SM returned `SM_ACTIVE_TRANSACTION_PRESERVED` before any mutation:
+the queued removal had already resumed. The new timing binary is therefore
+**not currently applied after this VM restart**. The simulator was restarted
+and selected Test through Demo Control; physical Safe Stop and fresh source
+frames were confirmed, with Production's source gate still blocked.
+
+Fresh guest status disagrees with an interpretation of Cloud's installed-17
+row as Running: provider is **inactive**, activeVersion is null, read paths
+are zero. `installed.json` still records the prior installation; the retained
+transaction is remove17 / `waiting-for-safe-stop`. SM entered an automatic
+restart loop (13 restarts observed); CM remained active. VDP18 has not been
+proven running, and the revised timing gate has not been live-qualified.
+
+The existing `component logs` now retains the earliest twelve redacted SM
+launcher errors from a bounded 4000-event current-boot window, separately from
+the latest 200 general events. The first launcher error at epoch microseconds
+1789002598565357 is the `aos-vehicle-data-provider-health active` command
+failure. Subsequent errors say `waiting transaction lost its healthy active
+release`. This establishes the initial health failure before link-loss errors,
+rather than inferring the first failure from the restart loop.
+
+Source analysis identifies a separate defect: waiting-transaction recovery
+validates the committed previous slot but checks its running health without
+starting the provider. The VDP unit intentionally has no boot enable target.
+Unlike ordinary installed recovery, this path calls FailClosed, which stops
+the provider and removes the active selector while retaining both durable
+JSON records. Later starts fail on the now-missing selector before they can
+resume the Safe Stop worker. Timing is not evaluated on this failed path.
+
+The bounded repair proposal is to start and health-check the validated
+committed predecessor during queued-update recovery, preserving waiting
+intent and the unchanged stopped-predecessor/empty-first-install branches.
+The already affected Test also needs an explicitly authorized restoration of
+its prior active selector from validated durable slot records; source repair
+alone must not silently manufacture a missing selection. No selector/state
+repair, new recovery binary, additional reboot or duplicate upload has been
+attempted. The component command fixture suite still passes 71 tests.
+
 ## Earlier continuation — functional Test cycle, paused at user request
 
 The user granted standing publication authority for the agreed Test-cycle

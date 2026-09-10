@@ -819,9 +819,9 @@ def execute(request):
         ids = [line[3:] for line in services.stdout.splitlines() if line.startswith("Id=")]
         streams = []
         for unit in ids + ["kuksa-databroker.service", "aos-vehicle-data-provider-selftest@a.service", "aos-vehicle-data-provider-selftest@b.service"]:
-            result = command(["journalctl", "-b", "-n", "4000" if unit == "aos-cm.service" else "1000" if unit == "aos-sm.service" else "80",
+            result = command(["journalctl", "-b", "-n", "4000" if unit in ("aos-cm.service", "aos-sm.service") else "80",
                               "-o", "json", "--no-pager", "-u", unit])
-            if result.returncode or len(result.stdout) > (8388608 if unit == "aos-cm.service" else 2097152):
+            if result.returncode or len(result.stdout) > (8388608 if unit in ("aos-cm.service", "aos-sm.service") else 2097152):
                 raise ValueError("COMPONENT_JOURNAL_UNAVAILABLE")
             streams.extend(result.stdout.splitlines())
         entries, structures, ready_events = [], set(), 0
@@ -885,9 +885,11 @@ def execute(request):
         entries.sort(key=lambda entry: int(entry["time"] or 0))
         return dict(entries=entries[-200:], scannedEntries=len(streams), providerReadyEvents=ready_events, structuredFields=sorted(structures),
                     services=services.stdout.strip().splitlines(), guestEpoch=int(time.time()),
+                    smStartupFailures=[entry for entry in entries if entry["unit"] == "aos-sm.service"
+                        and "can't start launcher" in entry["message"]][:12],
                     cmUpdatePhases=[entry for entry in entries if entry["unit"] == "aos-cm.service" and
                         re.search(r"Update state changed|Current update canceled|Cancel current update|Failed to process desired status", entry["message"])][-80:],
-                    window="Current boot: last 4000 CM / 1000 SM / 80 other service events", projection="BOUNDED_REDACTED_SERVICE_EVENTS")
+                    window="Current boot: last 4000 CM / 4000 SM / 80 other service events", projection="BOUNDED_REDACTED_SERVICE_EVENTS")
     if action == "component-status":
         result = execute(dict(request, action="status"))
         root = Path("/var/aos/workdirs/sm/runtimes/systemd-slot-component")
