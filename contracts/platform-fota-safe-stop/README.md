@@ -93,7 +93,8 @@ demo despite approximately 2.016 seconds of Mac/VM clock skew. This is a
 separate demonstration exception, not compliance with the unchanged 1.1.1
 250-ms profile. It admits up to 5000 ms source age both at acquisition and
 at each destructive gate, including genuinely delayed data within that bound.
-It is not a symmetric clock-skew allowance: future timestamps remain rejected.
+That original exception was not symmetric: future timestamps remained rejected.
+The local Test behavior below supersedes that restriction on 2026-09-10.
 
 Omitting the setting retains `standard` (250 ms); other values are rejected.
 The twelve distinct advancing frames, mode/transition, motion/brake/throttle,
@@ -103,6 +104,30 @@ modified. The initial proof uses a temporary Test-only SM binary/config mount;
 it does not qualify or alter the immutable Factory .29 image. The independent
 StopInstance/StartInstance correction is now proven by Test VDP 7.0.0; see the
 [qualification record](../../docs/qualification/democtl-vdp-family.md).
+
+<a id="local-test-timing-2026-09-10"></a>
+
+## Revised local Test timing allowance — 2026-09-10
+
+The operator authorized less restrictive timing for the single-Mac demo,
+which is not a demonstration of real-time guarantees. Effective `demo-5s`
+now admits signed source age from **-5000 through +5000 ms**, inclusive,
+at acquisition and at each destructive gate. This includes both clock skew
+and delayed data within that bound; it is not a claim of clock synchronization.
+The read deadline becomes **1000 ms**, a maximum rather than a fixed delay.
+
+The immutable bootstrap field remains 250 ms. Effective timing is selected
+after reading the persistent role: Test uses the demo allowance; Production
+and missing role retain standard timing (250 ms age/read, no future allowance).
+The standard 1.1.1 profile and its signed hashes remain unchanged.
+
+Twelve distinct coherent advancing frames, actual SAFE_STOP/STABLE, physical
+thresholds, generation/reset checks, TLS identity, cancellation, transaction
+deadlines and rollback remain unchanged. Every new transaction reconstructs
+evidence; a cached frame cannot manufacture stability. This is initially a
+targeted transient SM proof on the current Test `.31`, not a rebuilt or newly
+qualified Factory image. See the
+[current implementation checkpoint](../../docs/qualification/demo-studio-implementation-progress-2026-09-10.md).
 
 ## Durable local-demo input integration — Factory .30
 

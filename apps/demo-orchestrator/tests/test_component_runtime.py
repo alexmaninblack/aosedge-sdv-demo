@@ -10,12 +10,23 @@ from unittest.mock import Mock, patch
 
 from aosedge_demo_orchestrator.api import execute_operation
 from aosedge_demo_orchestrator.cli import build_parser, request_from_arguments
-from aosedge_demo_orchestrator.component_runtime import apply_test, build, builder, build_factory, FACTORY_VERSION, FACTORY_REVISION
+from aosedge_demo_orchestrator.component_runtime import apply_test, build, builder, build_factory, FACTORY_VERSION, FACTORY_REVISION, SM_REVISION
 from aosedge_demo_orchestrator.environment import EnvironmentError
 from aosedge_demo_orchestrator.source_guest import execute, process_wait_observation
 
 
 class RuntimeProofBoundaryTests(unittest.TestCase):
+    def test_sm_compile_failure_stops_builder_without_image_build_or_guest_apply(self):
+        with tempfile.TemporaryDirectory() as directory, \
+                patch("aosedge_demo_orchestrator.component_runtime.ARTIFACT", Path(directory) / "proof"), \
+                patch("aosedge_demo_orchestrator.component_runtime.builder") as lifecycle, \
+                patch("aosedge_demo_orchestrator.component_runtime.shutil.disk_usage", return_value=SimpleNamespace(free=80*1024**3)), \
+                patch("aosedge_demo_orchestrator.component_runtime.subprocess.check_output", side_effect=[SM_REVISION.encode(), b""]), \
+                patch("aosedge_demo_orchestrator.component_runtime.subprocess.run", return_value=subprocess.CompletedProcess([], 255, stderr=b"Permission denied")):
+            with self.assertRaisesRegex(EnvironmentError, "SM_BUILDER_SSH_TRUST_OR_AUTH_FAILED"):
+                build("test")
+            self.assertEqual([("test", "start"), ("test", "stop")], [call.args for call in lifecycle.call_args_list])
+
     def test_process_wait_observation_excludes_secret_bearing_process_fields(self):
         with tempfile.TemporaryDirectory() as directory:
             proc = Path(directory)
@@ -82,7 +93,7 @@ class RuntimeProofBoundaryTests(unittest.TestCase):
 
     def test_wrong_test_vm_is_rejected_before_guest_commands(self):
         with patch("aosedge_demo_orchestrator.source_guest.command") as command:
-            for proof in ("stop-start", "factory-placeholder"):
+            for proof in ("stop-start", "factory-placeholder", "demo-clock-skew"):
                 with self.assertRaises(ValueError):
                     execute(dict(action="component-sm-apply", proof=proof, target="test", vehicle={"localVmId": "another-vm"}))
             command.assert_not_called()

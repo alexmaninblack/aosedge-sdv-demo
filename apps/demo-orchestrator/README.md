@@ -886,26 +886,29 @@ image. Existing .29 transient qualification commands remain separate.
 The 2026-09-06 local-demo exception is documented in the
 [Safe Stop contract](../../contracts/platform-fota-safe-stop/README.md) and
 [VDP checkpoint](../../docs/qualification/democtl-vdp-family.md). In the isolated
-Test qualification environment, `component sm-builder-start test` starts
-the existing Builder on port 10024; `component sm-build test` compiles only SM,
-runs the three targeted factory-placeholder regressions, exports the proof artifact
-and stops Builder. `component sm-test test` reruns that test on the existing
+Test qualification environment, `component sm-build test` starts the existing
+Builder on port 10024, compiles only SM, runs native timing, role-selection,
+physical-gate and stop regressions, exports the proof artifact and stops Builder.
+`component sm-test test` reruns those tests on the existing
 compiled target without compiling again. Test failures retain their output.
 `component sm-builder-stop test` is the explicit graceful stop.
 
-The current authorized target is Test .30, local VM
-`7a2d4419-5a37-4838-ab5c-ed0d2792b9e8`. Proof sources use the .30 source commit
-plus the recorded runtime delta in a separate Builder source directory. The
-artifact is `demo-artifacts/aosedge-sdv-demo/runtime-proofs/sm-factory-placeholder`.
+The current authorized target is Test .31, local VM
+`d53d05cd-4c46-49c9-a896-534b23b88273`, Unit
+`2a29c145-bbd1-4494-a0e5-d4b79e6a9db5`, with the existing immutable .31 SHA.
+Proof sources are pinned to Platform commit
+`0e645a549b299dfa88ae7fc3725a1c1dee2bf3a1` in a separate Builder source directory.
+The artifact is `demo-artifacts/aosedge-sdv-demo/runtime-proofs/sm-demo-clock-skew`.
 
 `component sm-apply test` applies only that binary through a temporary systemd
 mount and one restart, preserving the Factory configuration and public inputs;
 `component sm-status
 test` observes the effective binary and profile. These are bounded qualification
-commands, pinned to the authorized Test .30, not general release deployment.
+commands, pinned to the authorized Test .31, not general release deployment.
 They do not modify the immutable Factory image, Cloud or Production; the
 temporary substitution disappears at VM reboot. The normal default remains
-250 ms. No VDP update is implied by SM application.
+250 ms. Test alone admits signed age ±5000 ms and a 1000-ms read deadline.
+No VDP update is implied by SM application.
 
 The package uses Python 3.9 and the standard library. Optional Cloud reads use
 the separately installed Aos SDK environment. Fixture tests do not contact

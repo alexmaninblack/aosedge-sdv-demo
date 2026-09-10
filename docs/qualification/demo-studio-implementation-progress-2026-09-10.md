@@ -7,7 +7,87 @@ Status: **partial implementation; not ready for final operator E2E**.
 The [accepted P1–P8 plan](../planning/active/demo-studio-delivery-plan.md)
 remains authoritative. No mockup flow or live Presenter composition was changed.
 
-## Latest continuation — functional Test cycle, paused at user request
+## Resumed: bounded Test timing correction — 10 September
+
+The user restored the connection and asked to continue. Before changing SM,
+`component status test` confirmed VDP **17.0.0 actually running**, slot b,
+PID 9639, 15 read paths, READY/LIVE, matching process/slot and zero restarts.
+Its start time was **00:23:49 UTC**. The reconciled Cloud read at 00:30:32 UTC
+also reports installed 17.0.0 and Online. This completed under the original
+SM, not the new timing patch; the earlier timeout remains historical evidence.
+No duplicate publication or forced retry was used.
+
+The operator separately authorized relaxed local-demo timing. The
+[revised Test allowance](../../contracts/platform-fota-safe-stop/README.md#local-test-timing-2026-09-10)
+admits signed age ±5000 ms and a 1000-ms read deadline. Production/standard and
+physical Safe Stop conditions remain unchanged. Platform source candidate
+`0e645a549b299dfa88ae7fc3725a1c1dee2bf3a1` has 22 passing targeted source/static
+tests; native execution and live proof are recorded below when completed.
+
+An experimental bounded root-network probe observed 179 future-timestamp reads
+out of 400 (age range -19.967 to +32.829 ms), 339 repeated frames and no stable
+window under the old future-rejecting policy. This was Python/root evidence,
+not a native SM trace or proof of a sole cause. Its temporary window evaluator
+was removed after diagnosis; no second policy evaluator is retained in Demo
+Control. The existing two-snapshot read-only diagnostic remains.
+
+The existing `component sm-build test` / `sm-apply test` path is pinned to this
+source and current Test identity, not the retired .30 proof. It compiles only
+SM offline, tests natively, exports outside Git, stops Builder and permits one
+transient Test-only restart with no active transaction. Factory image bytes,
+Cloud identity and Production are preserved. Next functional transition is the
+already prepared **17 → 18**; 17 is not reinstalled to repeat a completed step.
+
+### Targeted native build and transient application: passed
+
+`democtl component sm-build test` compiled only `aos-servicemanager` offline;
+1708 of 1716 tasks were reused. All **18 selected native tests passed** in
+105 ms, including signed-age boundaries, unchanged standard future rejection,
+role-specific read deadlines, physical/reset/frame gates and stop cancellation.
+Builder stopped cleanly. Binary SHA256:
+`9abeebc94ff10061743c4d2ba1c7fe0873c989369405bb525e3e9412e800a786`.
+Artifact: `demo-artifacts/aosedge-sdv-demo/runtime-proofs/sm-demo-clock-skew`.
+The Solution component suite passed **71 tests**; the existing probe suite
+passed five tests. This is not a full-image build or full-suite claim.
+
+`component sm-apply test` applied one temporary read-only bind mount and one
+SM restart. Process PID 13860 has the exact new binary hash, effective
+`demo-5s`, initialized Test role and both public inputs. SELinux remained
+Enforcing with zero fresh AVCs. VDP17 PID 9639 stayed active with zero restarts.
+The transient source is `/run/democtl-sm-demo-clock-skew/aos_sm_app`; the
+drop-in is `/run/systemd/system/aos-sm.service.d/91-democtl-sm-demo-clock-skew.conf`.
+These disappear on VM reboot; no immutable Factory bytes were changed.
+
+### Next live gate: VDP18 ready, Test Cloud transport unavailable
+
+Native Autopilot and independent `democtl status test --guest` confirmed
+movement (18.32 km/h), fresh frames and connected Test. VDP18 was uploaded
+once at 00:58:43 UTC, deployment `663a9d45-a06e-4f1f-b2b2-ef6cd6cca05c`.
+At 00:59:15 UTC Cloud reported **READY**, version UUID
+`9c2165e9-ff2f-40a4-8c5c-ab134d32a1b8`, assigned to Test as `to be installed`,
+but Test **Offline**. No batch approval, duplicate upload or Production
+operation was performed.
+
+CM is active and guest DNS resolves, but bounded logs repeatedly report
+message-delivery failure. No desired status for 18 was observed in those logs;
+the latest completed update remains 17. Therefore the revised SM live
+replacement gate is **not yet proven**. A separate bounded proposal is to
+expose an explicit `democtl unit reconnect test` and restart only CM once,
+preserving identity, VM, VDP, source and Production. That new operation has
+not been implemented or executed. The user instead explicitly requested a
+restart of the Test VM; no new `unit reconnect` command was added.
+
+The existing selected-vehicle stop guard required detachment first. Through
+Demo Control, `simulation stop --target test` confirmed physical Safe Stop and
+detached Test, then its CARLA stop wait expired at 30 seconds. `vm stop test`
+also exceeded its 90-second wait. Subsequent read-only process/status checks
+confirmed **both processes had exited normally**, without force termination.
+Reconciliation reported `alreadyStopped` for Test and completed the simulator
+stop. `vm start test` then booted the same overlay in **26.62 seconds**, with
+guest SSH/DNS ready, persistent Test role unchanged and provisioned identity
+preserved. No backup, reprovisioning or new image was involved.
+
+## Earlier continuation — functional Test cycle, paused at user request
 
 The user granted standing publication authority for the agreed Test-cycle
 VDP/Brake/Tire artifacts and the agreed public source repositories. Routine

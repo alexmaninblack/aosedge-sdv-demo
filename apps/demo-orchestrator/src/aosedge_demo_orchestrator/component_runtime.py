@@ -24,13 +24,16 @@ import stat
 
 from .environment import EnvironmentError
 
-SOURCE = Path.home() / "OpenAI/CarlaSim/.worktrees/aos-platform-factory-29"
+SOURCE = Path.home() / "OpenAI/aos-vehicle-platform"
+SM_REVISION = "0e645a549b299dfa88ae7fc3725a1c1dee2bf3a1"
+SM_TEST_VM = "d53d05cd-4c46-49c9-a896-534b23b88273"
+SM_TEST_UNIT = "2a29c145-bbd1-4494-a0e5-d4b79e6a9db5"
 FACTORY_SOURCE = Path.home() / "OpenAI/aos-vehicle-platform"
 FACTORY_VERSION = "6.1.1-maninblack.31"
 FACTORY_REVISION = "0bed8b3769b09fbe685ed599ca8d10e6594fbe53"
 RELATIVE = "meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files/systemd-slot-component"
 BUILDER_PROJECT = "/home/yocto/r61-build/project/yocto"
-ARTIFACT = Path.home() / "OpenAI/demo-artifacts/aosedge-sdv-demo/runtime-proofs/sm-factory-placeholder"
+ARTIFACT = Path.home() / "OpenAI/demo-artifacts/aosedge-sdv-demo/runtime-proofs/sm-demo-clock-skew"
 FILES = ("config.hpp", "config.cpp", "safestop.hpp", "safestop.cpp", "runtime.hpp", "runtime.cpp",
          "tests/safestop.cpp", "tests/runtime.cpp")
 
@@ -69,14 +72,17 @@ def apply_test(environment, target):
     manifest = read_json(ARTIFACT / "manifest.json")
     raw = (ARTIFACT / "aos-sm").read_bytes()
     if (not manifest.get("testsPassed") or manifest.get("profile") != "demo-5s"
+            or manifest.get("sourceRevision") != SM_REVISION
             or hashlib.sha256(raw).hexdigest() != manifest["executableSha256"]
             or len(raw) > 256 * 1024 * 1024):
         raise EnvironmentError("SM_QUALIFIED_ARTIFACT_REQUIRED")
     with environment._writer():
         state = read_json(environment.root / JOURNAL)
         vehicle = state["vehicles"].get("test", {})
-        if vehicle.get("localVmId") != "7a2d4419-5a37-4838-ab5c-ed0d2792b9e8":
-            raise EnvironmentError("SM_PROOF_REQUIRES_AUTHORIZED_TEST_30")
+        if (vehicle.get("localVmId") != SM_TEST_VM or vehicle.get("unitId") != SM_TEST_UNIT
+                or state.get("factory", {}).get("sha256") !=
+                "a9019f4adfe70499bde339c8e9d95eb8568736b73dc218f6c0e390fbcd28ddf4"):
+            raise EnvironmentError("SM_PROOF_REQUIRES_AUTHORIZED_TEST_31")
         record = state.setdefault("smDemoProof", {})
         record.update(state="ATTEMPT_STARTED", startedAt=now(), binarySha256=manifest["executableSha256"])
         atomic_json(environment.root / JOURNAL, state)
@@ -85,7 +91,7 @@ def apply_test(environment, target):
             with driver.operation(timeout=60):
                 observed = driver.guest(state, "test", "component-sm-status")
                 result = driver.guest(state, "test", "component-sm-apply", target="test",
-                    proof="factory-placeholder",
+                    proof="demo-clock-skew",
                     binary="" if observed["binarySha256"] == manifest["executableSha256"] else base64.b64encode(raw).decode(),
                     sha256=manifest["executableSha256"])
                 # systemd clears service credentials on restart. Restore only
@@ -105,17 +111,34 @@ def apply_test(environment, target):
 
 
 def build(target, compile_source=True):
-    """Compile only the .30 SM correction, run three regressions, export, stop."""
+    """Compile the pinned Test timing correction, native-test, export and stop."""
     if target != "test":
         raise EnvironmentError("SM_QUALIFICATION_TEST_ONLY")
     if ARTIFACT.exists():
         raise EnvironmentError("SM_PROOF_ARTIFACT_ALREADY_EXISTS")
-    expected = "c3e08586d3c3d11b192041a9a7226765e098c63c"
+    expected = SM_REVISION
+    if shutil.disk_usage(ARTIFACT.parent).free < 60 * 1024**3:
+        raise EnvironmentError("SM_HOST_FREE_SPACE_BELOW_60_GIB")
     ssh = builder_ssh()
+    revision = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=SOURCE).decode().strip()
+    if revision != expected or subprocess.check_output(["git", "status", "--porcelain"], cwd=SOURCE):
+        raise EnvironmentError("SM_PINNED_COMMITTED_SOURCE_REQUIRED")
     try:
-        revision = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=SOURCE).decode().strip()
-        if revision != expected:
-            raise EnvironmentError("SM_SOURCE_BASE_REVISION_MISMATCH")
+        builder("test", "start")
+        print("Test SM: waiting for Builder SSH; 90-second boot budget", file=sys.stderr, flush=True)
+        deadline = time.monotonic() + 90
+        while True:
+            try:
+                ready = subprocess.run(ssh + ["true"], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, timeout=7)
+            except subprocess.TimeoutExpired:
+                ready = subprocess.CompletedProcess(ssh, 255, stderr=b"SSH boot probe timed out")
+            if ready.returncode == 0:
+                break
+            if b"Host key verification failed" in ready.stderr or b"Permission denied" in ready.stderr:
+                raise EnvironmentError("SM_BUILDER_SSH_TRUST_OR_AUTH_FAILED")
+            if time.monotonic() >= deadline:
+                raise EnvironmentError("SM_BUILDER_SSH_BOOT_TIMEOUT")
+            time.sleep(1)
         data = io.BytesIO()
         inputs = {}
         with tarfile.open(fileobj=data, mode="w") as archive:
@@ -124,7 +147,7 @@ def build(target, compile_source=True):
                 inputs[name] = hashlib.sha256(path.read_bytes()).hexdigest()
                 archive.add(path, arcname=RELATIVE + "/" + name, recursive=False)
         if compile_source:
-            # Isolate proof sources; keep the .30 build's source snapshot intact.
+            # Isolate proof sources; keep the immutable .31 source snapshot intact.
             identity = hashlib.sha256(json.dumps(inputs, sort_keys=True).encode()).hexdigest()[:40]
             proof_source = BUILDER_PROJECT + "/aos-vehicle-platform-" + identity
             archive = subprocess.check_output(["git", "archive", expected], cwd=SOURCE)
@@ -138,15 +161,18 @@ def build(target, compile_source=True):
                     Path(proof_source).name + "/meta-aos-vehicle-platform")
             subprocess.run(ssh + ["python3 -c " + shlex.quote(layer_update)], check=True, timeout=15)
             print("Test SM: offline recipe compile; no image build", file=sys.stderr, flush=True)
-            command = "cd " + BUILDER_PROJECT + "; . poky/oe-init-build-env build-main >/dev/null; bitbake -R " + proof_source + "/qualification/factory-30.conf -c compile aos-servicemanager"
+            command = "cd " + BUILDER_PROJECT + "; . poky/oe-init-build-env build-main >/dev/null; bitbake -R " + proof_source + "/qualification/factory-31.conf -c compile aos-servicemanager"
             subprocess.run(ssh + ["bash -lc " + __import__("shlex").quote(command)],
                            check=True, timeout=1200, stdout=sys.stderr)
         work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-servicemanager/git"
         test = work + "/build/src/sm/launcher/runtimes/systemd-slot-component/tests/aos_sm_runtimes_systemdslotcomponent_test"
         loader = work + "/recipe-sysroot/usr/lib/ld-linux-aarch64.so.1"
         libs = work + "/recipe-sysroot/lib:" + work + "/recipe-sysroot/usr/lib"
-        test_filter = "*StartsWithAnEmptyPersistentStore:*FactoryPlaceholder*"
-        print("Test SM: executing three native factory-placeholder regressions", file=sys.stderr, flush=True)
+        test_filter = ("SafeStopEvaluatorTest.*:*RequiresTheFixedBootstrapContract:"
+            "*AcceptsOnlyExplicitDemoFreshnessProfile:*FactoryDemoInputsRespectPersistentRole:"
+            "*StartsWithAnEmptyPersistentStore:*FactoryPlaceholder*:"
+            "*StopMakesTheComponentUnavailable:*StopCancellationNeverReturnsSuccess:*StopMissingComponentIsIdempotent")
+        print("Test SM: executing native timing, role, physical-gate and stop regressions", file=sys.stderr, flush=True)
         result = subprocess.run(ssh + ["sudo -n " + loader + " --library-path " + libs + " " + test + " --gtest_filter=" + __import__("shlex").quote(test_filter)],
                                 timeout=30, capture_output=True)
         print(result.stdout.decode(), file=sys.stderr, flush=True)
@@ -154,8 +180,13 @@ def build(target, compile_source=True):
         ARTIFACT.with_suffix(".test.log").write_bytes(result.stdout + result.stderr)
         if result.returncode:
             raise EnvironmentError("SM_TARGETED_TEST_FAILED:" + str(result.returncode))
-        if b"[  PASSED  ] 3 tests." not in result.stdout:
-            raise EnvironmentError("SM_EXPECTED_THREE_TESTS_NOT_EXECUTED")
+        required_tests = ("DemoFutureSkewIsBoundedAtAcquisitionAndTheGate",
+            "StandardStillRejectsAnyFutureAcquisitionOrGate", "DemoAgeAllowancePreservesOtherGates",
+            "FactoryDemoInputsRespectPersistentRole", "StopCancellationNeverReturnsSuccess")
+        if not re.search(rb"\[  PASSED  \] [1-9][0-9]* tests\.", result.stdout) or any(
+                not re.search(rb"\[       OK \] [^\n]*\." + name.encode() + rb" \(", result.stdout)
+                for name in required_tests):
+            raise EnvironmentError("SM_REQUIRED_NATIVE_REGRESSIONS_NOT_EXECUTED")
         binaries = subprocess.check_output(ssh + ["find " + work + "/build -type f -name aos_sm_app"], timeout=20).decode().splitlines()
         if len(binaries) != 1:
             raise EnvironmentError("SM_BINARY_IDENTITY_UNRESOLVED")
@@ -166,8 +197,9 @@ def build(target, compile_source=True):
         (ARTIFACT / "aos-sm").write_bytes(binary)
         (ARTIFACT / "aos-sm").chmod(0o444)
         (ARTIFACT / "tests.log").write_bytes(result.stdout)
-        manifest = dict(baseRevision=expected, sourceSha256=inputs, executableSha256=hashlib.sha256(binary).hexdigest(),
+        manifest = dict(baseRevision=FACTORY_REVISION, sourceRevision=expected, sourceSha256=inputs, executableSha256=hashlib.sha256(binary).hexdigest(),
                         profile="demo-5s", defaultMaximumSourceAgeMs=250, demoMaximumSourceAgeMs=5000,
+                        demoMaximumFutureSkewMs=5000, demoReadTimeoutMs=1000, standardReadTimeoutMs=250,
                         offline=True, imageBuild=False, testsPassed=True, testFilter=test_filter, guestApplied=False)
         (ARTIFACT / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
         return dict(artifact=str(ARTIFACT), **manifest)

@@ -609,22 +609,24 @@ def sm_load_public_credentials(root, dropin, request):
 
 
 def execute(request):
-    if request["action"] == "component-sm-apply" and request.get("proof") == "factory-placeholder":
-        if request.get("target") != "test" or request["vehicle"].get("localVmId") != "7a2d4419-5a37-4838-ab5c-ed0d2792b9e8":
-            raise ValueError("SM_PROOF_REQUIRES_AUTHORIZED_TEST_30")
+    if request["action"] == "component-sm-apply" and request.get("proof") == "demo-clock-skew":
+        if (request.get("target") != "test"
+                or request["vehicle"].get("localVmId") != "d53d05cd-4c46-49c9-a896-534b23b88273"
+                or request["vehicle"].get("unitId") != "2a29c145-bbd1-4494-a0e5-d4b79e6a9db5"):
+            raise ValueError("SM_PROOF_REQUIRES_AUTHORIZED_TEST_31")
         observation = execute(dict(request, action="component-sm-status"))
         if observation["binarySha256"] == request["sha256"]:
             return dict(state="APPLIED", noOp=True, persistentFactoryInputs=True, **observation)
-        if (observation["binarySha256"] != "8841250027b197e0cde0f20b745425be5e8ba41a14c8a1a0b36851fdbedf728b"
+        if (observation["binarySha256"] != "df141e0df7ed9dac6e74ef055e7b31994b501f9d26e1f34d50326c0f76839f86"
                 or observation["freshnessProfile"] != "demo-5s" or not FACTORY_INPUTS_MARKER.is_file()):
-            raise ValueError("SM_FACTORY_30_BASE_MISMATCH")
+            raise ValueError("SM_FACTORY_31_BASE_MISMATCH")
         if Path("/var/aos/workdirs/sm/runtimes/systemd-slot-component/state/transaction.json").exists():
             raise ValueError("SM_ACTIVE_TRANSACTION_PRESERVED")
         raw = base64.b64decode(request["binary"], validate=True)
         if hashlib.sha256(raw).hexdigest() != request["sha256"] or raw[:5] != b"\x7fELF\x02" or raw[18:20] != b"\xb7\x00":
             raise ValueError("SM_ARM64_BINARY_SHA_MISMATCH")
-        root = Path("/run/democtl-sm-factory-placeholder")
-        dropin = Path("/run/systemd/system/aos-sm.service.d/91-democtl-sm-factory-placeholder.conf")
+        root = Path("/run/democtl-sm-demo-clock-skew")
+        dropin = Path("/run/systemd/system/aos-sm.service.d/91-democtl-sm-demo-clock-skew.conf")
         if root.exists() or dropin.exists() or dropin.is_symlink():
             raise ValueError("SM_TRANSIENT_STATE_REQUIRES_RECONCILIATION")
         root.mkdir(mode=0o700)
