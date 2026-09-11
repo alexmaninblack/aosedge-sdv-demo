@@ -13,12 +13,23 @@ without creating an SP, Service, Subject, assignment, version or credential.
 democtl service list
 democtl service list --profile service-provider
 democtl service status SERVICE_UUID --profile service-provider
+democtl service inspect SERVICE_UUID VERSION_UUID --profile service-provider
 ```
 
 The optional profile is an existing `cloudProfiles` name. With no selector each
 configured profile is observed independently. `SERVICE_UUID` comes from the
 observed catalog; a title, version UUID, team name, path or endpoint is not an
 identity substitute. No implicit Brake/Tire identity is invented.
+
+`inspect` is an explicit engineering-only CLI read of an exact version UUID
+returned by `status`. It first verifies the parent Service's ownership, then
+uses `GET /services/versions/{VERSION_UUID}/` with `services_versions_read`.
+The response must bind both UUIDs exactly. It exposes bounded catalog fields,
+minimum instances, and configuration field names/types, never configuration
+values, environment, URLs or credentials. Null configuration stays unknown,
+not an empty object. This inspection does not verify an OCI manifest digest or
+runtime health. It is not an HTTP/Presenter capability and performs no write,
+catalog scan, retry, guest operation or assignment.
 
 The transport-neutral API accepts only:
 
@@ -36,7 +47,7 @@ commands, not a grant allowing team-facing UI panels to choose peer identities.
 Every profile uses its configured role and optional expected owner when the
 existing Aos SDK worker reads `/users/me/`. The credential, raw user response
 and reusable token never leave the worker. Only observed role/owner,
-expected-owner binding state and seven fixed permission booleans are exposed.
+expected-owner binding state and eight fixed permission booleans are exposed.
 `teamBinding=NOT_CONFIGURED` is deliberate: existing credentials or an SP display
 name do not establish the accepted independent Brake/Tire publication mapping.
 Mutation authority is `NOT_EVALUATED`; these commands perform no write.

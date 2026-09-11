@@ -62,13 +62,14 @@ native left-hand composition, Production scope or service trust model.
 
 Platform, Brake and Tire backend revisions above were pushed to their existing
 `alexmaninblack` working branches, without changing main or forcing history.
-The new [Tire source repository](https://github.com/AlexAgizim/tire-health-service)
-was published through the already authenticated GitHub Desktop account,
-**AlexAgizim**, not alexmaninblack. An unauthenticated GitHub API read confirms
-`private: false`; its remote `codex/studio-tire-runtime` matches the source
-revision above. No account transfer, new credential or visibility change was
-performed. The namespace difference is explicitly retained for owner review;
-it must not be hidden by an incorrect repository link.
+The canonical [Tire source repository](https://github.com/alexmaninblack/tire-health-service)
+is public under **alexmaninblack**. On 11 September, the user authorized a new
+repository in that account instead of transferring the earlier copy. The
+existing source history was pushed unchanged; GitHub confirms that
+`codex/studio-tire-runtime` points to the revision above, and local `origin`
+now uses the canonical URL. The earlier repository under **AlexAgizim** was
+left untouched for the user to remove separately; it is not an active project
+remote. No account transfer or history rewrite was performed.
 
 All three Brake ARM64 profiles were built successfully through
 `democtl service build brake --content-profile v1|v2|v3`.
@@ -181,3 +182,30 @@ inventory. At **01:34:58 UTC** its Cloud-only monitor returned a CPU sample of
 **684 DMIPS** dated **01:34:18 UTC**. Memory/traffic retained their raw values
 with units explicitly unverified; disk remained Not reported. A functioning
 resource read is demonstrated, not complete metric-unit or product readiness.
+
+## Source-publication correction and next P5 increment
+
+The canonical Tire source is now public under `alexmaninblack`, with unchanged
+source history and the same `cb1bfca...` commit. Local `origin` follows that
+repository. The user requested leaving the earlier AlexAgizim copy untouched;
+no transfer or deletion was performed.
+
+The existing SP profile was re-read through Demo Control and has usable
+catalog/version access. The previously accepted temporary use of this SP for
+distinct Brake/Tire identities remains authorized; it is not another open
+permission question. No new service, SP, Subject or assignment was created.
+
+P5 gained the explicit engineering-only `service inspect SERVICE_UUID
+VERSION_UUID --profile PROFILE` command. It checks parent ownership and exact
+version binding, exposes only bounded fields and metadata field names/types,
+and never claims manifest verification. The 23 focused service tests pass;
+its real existing-version read completed in under one second. It is not a
+Presenter capability and does not add polling, retries or guest access.
+
+The token-owner source correction and nine focused Platform tests are recorded
+in the [service-input contract](../architecture/demo-control-service-inputs.md).
+The native SM patch applies to its pinned source, but has not been built into
+a complete SM binary or installed. The metadata source/order remains the
+specific integration decision in that document; P5 is still incomplete.
+No VM, SM, CARLA, backend, Factory image, Cloud release or Production state was
+modified during this increment.

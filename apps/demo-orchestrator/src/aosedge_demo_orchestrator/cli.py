@@ -43,10 +43,12 @@ def build_parser() -> argparse.ArgumentParser:
     service_build = service_commands.add_parser("build", help="development-only real ARM64 service build; no publication or VM action")
     service_build.add_argument("team", choices=("brake", "tire"))
     service_build.add_argument("--content-profile", choices=("v1", "v2", "v3"), default="v1", help="fixed service functional profile, independent of release number")
-    for action in ("list", "status"):
+    for action in ("list", "status", "inspect"):
         command = service_commands.add_parser(action, help="read-only OEM/SP observations; no upload or assignment")
-        if action == "status":
+        if action in ("status", "inspect"):
             command.add_argument("service_id", help="exact service UUID from service list")
+        if action == "inspect":
+            command.add_argument("service_version_id", help="exact version UUID from service status; engineering-only metadata shape")
         command.add_argument("--profile", help="one configured Cloud profile; default reads each separately")
     backend = commands.add_parser("backend", help="owned functional backend containers, separate from Cloud and vehicle functions")
     backend_commands = backend.add_subparsers(dest="action", required=True)
@@ -191,6 +193,7 @@ def request_from_arguments(arguments: argparse.Namespace) -> OperationRequest:
         metadata_only=getattr(arguments, "metadata_only", False),
         restart_project=getattr(arguments, "restart_project", None),
         service_id=getattr(arguments, "service_id", None), profile=getattr(arguments, "profile", None),
+        service_version_id=getattr(arguments, "service_version_id", None),
         timeout=getattr(arguments, "timeout", 8.0),
     )
 

@@ -58,7 +58,9 @@ class DemoOrchestrator:
             if request.target or request.current or request.image or request.image_path or request.team or request.component_version or request.content_profile:
                 return OperationResult(operation, OperationState.BLOCKED, "SERVICE_READ_SELECTOR_INVALID")
             try:
-                data = ServiceCatalog(self.environment_service).execute(request.action, request.service_id, request.profile)
+                catalog = ServiceCatalog(self.environment_service)
+                data = (catalog.execute(request.action, request.service_id, request.profile, request.service_version_id)
+                    if request.action == "inspect" else catalog.execute(request.action, request.service_id, request.profile))
                 return OperationResult(operation, OperationState.PARTIAL if data["problems"] else OperationState.OBSERVED,
                     "Read-only per-profile Cloud catalog/ownership; not team authority assignment or runtime health.", data=data)
             except EnvironmentError as error:

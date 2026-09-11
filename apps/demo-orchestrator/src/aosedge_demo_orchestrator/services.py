@@ -18,7 +18,7 @@ class ServiceCatalog:
     def __init__(self, environment):
         self.environment = environment
 
-    def _read(self, name, profile, config, action, service_id):
+    def _read(self, name, profile, config, action, service_id, version_id=None):
         credential = profile["credential"]
         try:
             usable = not credential.is_symlink() and credential.is_file() and credential.stat().st_mode & 0o077 == 0
@@ -28,6 +28,8 @@ class ServiceCatalog:
             return dict(authority=observed(None, reason="SERVICE_CREDENTIAL_MISSING_OR_UNSAFE"))
         request = dict(action=action, serviceId=service_id, expectedRole=profile["expectedRole"],
             ownerId=profile.get("expectedOwnerId"), credential=str(credential))
+        if version_id is not None:
+            request["versionId"] = version_id
         try:
             response = subprocess.run([str(config["cloudPython"]), "-I", "-B",
                 str(Path(__file__).with_name("service_cloud.py"))], input=json.dumps(request),
@@ -36,20 +38,26 @@ class ServiceCatalog:
                 raise ValueError("Service observation unavailable")
             value = json.loads(response.stdout)
             if (not isinstance(value, dict) or "authority" not in value
-                    or set(value) - {"authority", "services", "providers", "service", "versions", "units"}):
+                    or set(value) - {"authority", "services", "providers", "service", "versions", "version", "units"}):
                 raise ValueError("Service observation shape")
             return value
         except (OSError, ValueError, subprocess.TimeoutExpired):
             return dict(authority=observed(None, reason="SERVICE_CLOUD_READER_UNAVAILABLE"))
 
-    def execute(self, action, service_id=None, profile=None):
-        if action not in ("list", "status") or (action == "list" and service_id is not None):
+    def execute(self, action, service_id=None, profile=None, version_id=None):
+        if (action not in ("list", "status", "inspect") or (action == "list" and service_id is not None)
+                or (action != "inspect" and version_id is not None)):
             raise EnvironmentError("SERVICE_READ_ACTION_INVALID")
-        if action == "status":
+        if action in ("status", "inspect"):
             try:
                 service_id = object_id(service_id)
             except ValueError:
                 raise EnvironmentError("SERVICE_ID_FROM_CATALOG_REQUIRED") from None
+        if action == "inspect":
+            try:
+                version_id = object_id(version_id)
+            except (ValueError, TypeError):
+                raise EnvironmentError("SERVICE_VERSION_ID_FROM_CATALOG_REQUIRED") from None
         config = load_configuration(self.environment.root)
         profiles = config["cloudProfiles"]
         if profile is not None:
@@ -59,7 +67,8 @@ class ServiceCatalog:
         result = dict(schemaVersion=1, source="AOS_CLOUD_ONLY", action=action, serviceId=service_id,
                       readCompletedAt=None, profiles={}, problems=[])
         with ThreadPoolExecutor(max_workers=4) as pool:
-            pending = {name: pool.submit(self._read, name, entry, config, action, service_id) for name, entry in profiles.items()}
+            pending = {name: pool.submit(self._read, name, entry, config, action, service_id, version_id)
+                       for name, entry in profiles.items()}
             for name, future in pending.items():
                 result["profiles"][name] = future.result()
                 for section, value in result["profiles"][name].items():

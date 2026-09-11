@@ -6,6 +6,7 @@
 import contextlib
 import io
 import json
+import re
 import sys
 from pathlib import Path
 from urllib.parse import urlencode
@@ -17,7 +18,7 @@ from aosedge_demo_orchestrator.cloud_observation import pick, failed
 from aosedge_demo_orchestrator.status import object_id, observation
 from aosedge_demo_orchestrator.unit_cloud import Cloud, CloudFailure
 
-PERMISSIONS = ("services_list", "services_read", "services_create", "services_service_versions_list",
+PERMISSIONS = ("services_list", "services_read", "services_create", "services_service_versions_list", "services_versions_read",
                "services_units_list", "deployment_bundles_create", "service_providers_list")
 
 
@@ -56,6 +57,27 @@ def provider_view(row):
 
 def version_view(row):
     return dict(id=object_id(row["id"]), **pick(row, ("version", "container_state", "created_at"), booleans=("is_resource_limits",)))
+
+
+def version_detail(row, service_id, version_id):
+    if object_id(row.get("id")) != version_id or object_id(row.get("service_id")) != service_id:
+        raise CloudFailure("SERVICE_VERSION_BINDING_MISMATCH")
+    config = row.get("container_config_data")
+    if config is not None and (not isinstance(config, dict) or len(config) > 128):
+        raise ValueError("Service version config shape")
+    # Only names/types, never arbitrary configuration values, env, URLs or
+    # credentials. Seeing a hash-shaped field would not verify OCI identity.
+    field_types = {}
+    for key, value in (config or {}).items():
+        if not isinstance(key, str) or not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,63}", key):
+            raise ValueError("Service version config key")
+        field_types[key] = ("null" if value is None else "boolean" if type(value) is bool else
+            "number" if type(value) in (int, float) else "string" if isinstance(value, str) else
+            "object" if isinstance(value, dict) else "array" if isinstance(value, list) else "invalid")
+    return dict(version_view(row), serviceId=service_id,
+        **pick(row, ("download_ttl",), integers=("min_num_instances", "priority")),
+        configurationFieldTypes=field_types if config is not None else None,
+        artifactIdentity="NOT_VERIFIED", runtime="NOT_OBSERVED")
 
 
 def unit_view(row):
@@ -126,13 +148,21 @@ def inspect(cloud, request):
     except (CloudFailure, OSError, ValueError, TypeError, KeyError) as error:
         result["service"] = error_observation(error)
         return result
+    if request["action"] == "inspect":
+        try:
+            version_id = object_id(request["versionId"])
+            cloud.require("services_versions_read")
+            result["version"] = observed(version_detail(cloud.call("services/versions/" + version_id + "/"), identity, version_id))
+        except (CloudFailure, OSError, ValueError, TypeError, KeyError) as error:
+            result["version"] = error_observation(error)
+        return result
     result["versions"] = pages(cloud, "services/" + identity + "/service-versions/", version_view, "services_service_versions_list")
     result["units"] = pages(cloud, "services/" + identity + "/units/", unit_view, "services_units_list")
     return result
 
 
 def execute(request):
-    if request.get("action") not in ("list", "status") or request.get("expectedRole") not in ("oem", "service provider"):
+    if request.get("action") not in ("list", "status", "inspect") or request.get("expectedRole") not in ("oem", "service provider"):
         raise CloudFailure("SERVICE_READ_ACTION_INVALID")
     try:
         cloud = Cloud(request, expected_role=request["expectedRole"])

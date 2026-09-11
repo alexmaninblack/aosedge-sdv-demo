@@ -37,6 +37,8 @@ class FixtureCloud:
             "services/" + SERVICE + "/units/": []}
         self.calls = []
         self.detail = dict(row(), service_provider_id=OWNER, default_quotas=dict(secret="do-not-export"))
+        self.version_detail = dict(id=OTHER, service_id=SERVICE, version="1.0.0", container_state="ready",
+            min_num_instances=1, container_config_data=dict(env=["SECRET=do-not-export"], resources=[]))
 
     def require(self, *permissions):
         Cloud.require(self, *permissions)
@@ -45,6 +47,8 @@ class FixtureCloud:
         self.calls.append(path)
         if path == "services/" + SERVICE + "/":
             return copy.deepcopy(self.detail)
+        if path == "services/versions/" + OTHER + "/":
+            return copy.deepcopy(self.version_detail)
         parsed = urlsplit(path)
         self.assert_known(parsed.path)
         query = parse_qs(parsed.query)
@@ -60,6 +64,40 @@ class FixtureCloud:
 
 
 class ServiceCloudTests(unittest.TestCase):
+    def test_inspect_reads_exact_owned_version_without_catalog_scan_or_config_values(self):
+        cloud = FixtureCloud()
+        result = service_cloud.inspect(cloud, dict(action="inspect", serviceId=SERVICE, versionId=OTHER))
+        value = result["version"]["value"]
+        self.assertEqual(["services/" + SERVICE + "/", "services/versions/" + OTHER + "/"], cloud.calls)
+        self.assertEqual({"env": "array", "resources": "array"}, value["configurationFieldTypes"])
+        self.assertEqual(1, value["min_num_instances"])
+        self.assertEqual("NOT_VERIFIED", value["artifactIdentity"])
+        self.assertNotIn("do-not-export", json.dumps(result))
+
+    def test_inspect_denies_foreign_version_and_no_retry_on_read_failure(self):
+        cloud = FixtureCloud()
+        cloud.version_detail["service_id"] = OWNER
+        result = service_cloud.inspect(cloud, dict(action="inspect", serviceId=SERVICE, versionId=OTHER))
+        self.assertEqual("SERVICE_VERSION_BINDING_MISMATCH", result["version"]["reason"])
+        self.assertIsNone(result["version"]["value"])
+        cloud.user["effectivePermissions"].remove("services_versions_read")
+        cloud.calls.clear()
+        result = service_cloud.inspect(cloud, dict(action="inspect", serviceId=SERVICE, versionId=OTHER))
+        self.assertEqual("FORBIDDEN", result["version"]["transport"])
+        self.assertEqual(["services/" + SERVICE + "/"], cloud.calls)
+
+    def test_inspect_null_is_not_empty_and_malformed_config_is_rejected(self):
+        cloud = FixtureCloud()
+        for supplied, expected in ((None, None), ({}, {})):
+            cloud.version_detail["container_config_data"] = supplied
+            result = service_cloud.inspect(cloud, dict(action="inspect", serviceId=SERVICE, versionId=OTHER))
+            self.assertEqual(expected, result["version"]["value"]["configurationFieldTypes"])
+        for supplied in ([], {"token=do-not-export": "value"}):
+            cloud.version_detail["container_config_data"] = supplied
+            result = service_cloud.inspect(cloud, dict(action="inspect", serviceId=SERVICE, versionId=OTHER))
+            self.assertEqual("UNKNOWN", result["version"]["state"])
+            self.assertNotIn("do-not-export", json.dumps(result))
+
     def test_sp_catalog_is_owned_not_team_bound_and_projection_is_safe(self):
         cloud = FixtureCloud()
         result = service_cloud.inspect(cloud, dict(action="list"))
@@ -166,6 +204,15 @@ class ServiceAdaptersTests(unittest.TestCase):
         self.assertEqual(SERVICE, request.service_id)
         self.assertEqual("service-provider", request.profile)
         self.assertIsNone(request.target)
+
+    def test_version_inspect_is_explicit_engineering_cli_not_browser_capability(self):
+        request = request_from_arguments(build_parser().parse_args(
+            ["service", "inspect", SERVICE, OTHER, "--profile", "service-provider"]))
+        self.assertEqual(("inspect", SERVICE, OTHER), (request.action, request.service_id, request.service_version_id))
+        with self.assertRaises(ValueError):
+            execute_operation(dict(domain="service", action="inspect", service_id=SERVICE, service_version_id=OTHER), Mock())
+        with self.assertRaisesRegex(EnvironmentError, "VERSION_ID_FROM_CATALOG_REQUIRED"):
+            self.catalog.execute("inspect", SERVICE, "service-provider", "1.0.0")
 
     def test_api_scope_is_read_only_and_partial_is_preserved(self):
         app = DemoOrchestrator(environment_service=self.environment)

@@ -4,7 +4,7 @@
 # Temporary Test service inputs
 
 Status: bounded interface authorized on 10 September 2026; opt-in resource
-template implemented, producer/guest qualification still open. This closes the interface choice in the
+template implemented, token-owner source correction prepared, producer/guest qualification still open. This closes the interface choice in the
 [Studio plan](../planning/active/demo-studio-delivery-plan.md), not its P5 gate.
 Factory `.31`, Production and native Aos service authorization remain unchanged.
 
@@ -93,3 +93,35 @@ arbitrary hostnames/IPs. Adding `Server/55555/tcp` or a host-backend IP as thoug
 this field were a host firewall allowlist would not establish the intended
 route. Native public egress and actual routing must be assessed separately.
 No such connection entries or broad network exceptions were added.
+
+## Follow-up evidence and unresolved ordering — 11 September 2026
+
+The authorized native token-owner correction is a source candidate in
+`aos-vehicle-platform`: only the exact KAC token tmpfs receives actual instance
+UID/GID, retaining mode 0700 and all existing protection flags. Its option
+function passes source-equivalent positive/negative tests; complete native SM
+compilation and a real container mount remain unproved. Current Test, Factory
+`.31` and the retained SM override are unchanged.
+
+Through `democtl service inspect`, a real ready version of the existing
+`hello-world-python` service was inspected at 02:39 UTC. Its
+`container_config_data` contains only `cmd`, `instances`, `quotas` and
+`workingDir`, without an OCI identity field. This observation is specific to
+that legacy version, not proof that every future processed bundle has the same
+fields. The public 6.1.53 version and deployment-bundle schemas also provide no
+dedicated image-manifest download/digest endpoint. No configuration values,
+environment, credentials or blob URLs were emitted by the inspection.
+
+Therefore the agreed **complete metadata before assignment** ordering is not
+yet executable. Do not substitute a signed bundle/layer/binary hash or publish
+an arbitrary version just to hide the missing identity source.
+
+Bounded proposal, **not approved or implemented**: source the exact service
+version and selected manifest digest from native SM `InstanceInfo` immediately
+before process launch, while Demo Control retains ownership of the public
+Unit/role/VDP/trust inputs. This changes the service-input delivery contract;
+it does not change product-message provenance semantics or give services new
+Cloud/IAM access. The exact carrier and immutable-versus-refreshable input
+split must be agreed before implementing it. The supported alternative is a
+platform-confirmed pre-assignment API for the actual manifest; none is currently
+established. The rest of the accepted Studio flow is unchanged.
