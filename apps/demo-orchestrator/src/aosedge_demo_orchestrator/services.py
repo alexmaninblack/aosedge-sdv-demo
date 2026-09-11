@@ -72,7 +72,8 @@ class ServiceCatalog:
                 raise ValueError("Service observation unavailable")
             value = json.loads(response.stdout)
             if (not isinstance(value, dict) or "authority" not in value
-                    or set(value) - {"authority", "services", "providers", "service", "versions", "version", "units"}):
+                    or set(value) - {"authority", "services", "providers", "service", "versions", "version", "units",
+                                     "availableArchitectures", "oemArchitectures"}):
                 raise ValueError("Service observation shape")
             return value
         except (OSError, ValueError, subprocess.TimeoutExpired):

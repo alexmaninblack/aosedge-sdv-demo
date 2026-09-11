@@ -23,7 +23,8 @@ class PublicInputTests(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name).resolve()
         for name, value in dict(STORE=self.root / "store", PUBLIC=self.root / "public",
-                CERTIFICATE=self.root / "trust.pem", FILESYSTEM_ROOT=self.root, OWNER=os.getuid()).items():
+                CERTIFICATE=self.root / "trust.pem", FILESYSTEM_ROOT=self.root, OWNER=os.getuid(),
+                IAM_CONFIG=self.root / "iam.cfg", MACHINE_ID=self.root / "machine-id", STARTUP=self.root / "startup").items():
             change = patch.object(guest, name, value)
             change.start()
             self.addCleanup(change.stop)
@@ -47,6 +48,10 @@ class PublicInputTests(unittest.TestCase):
             change.start()
             self.addCleanup(change.stop)
         guest.CERTIFICATE.write_bytes(b"public certificate fixture")
+        guest.MACHINE_ID.write_text("native-unit\n")
+        identifier = dict(plugin="fileidentifier", params=dict(systemIDPath=str(guest.MACHINE_ID)))
+        guest.IAM_CONFIG.write_text(json.dumps(dict(identifier=identifier)))
+        guest.STARTUP.mkdir(mode=0o700)
 
     def put(self, name, value):
         path = guest.STORE / name
@@ -149,6 +154,48 @@ class PublicInputTests(unittest.TestCase):
         value = json.loads(output.call_args.args[0])
         self.assertEqual(dict(ok=False, reason="SERVICE_INPUT_PREPARATION_FAILED"), value)
 
+    def test_cold_restore_without_provider_then_native_process_verification(self):
+        guest.provider_process.side_effect = ValueError("SERVICE_INPUT_PROVIDER_NOT_RUNNING")
+        with patch.object(guest.os, "geteuid", return_value=0), patch("builtins.print"):
+            cold = guest.startup("cold")
+            self.assertEqual("PREPARED", cold["stage"])
+            self.assertFalse(cold["processVerified"])
+            guest.provider_process.assert_not_called()
+            guest.provider_process.side_effect = None
+            verified = guest.startup("verify")
+            self.assertEqual("VERIFIED", verified["stage"])
+            self.assertTrue(verified["processVerified"])
+
+    def test_interrupted_update_withholds_public_data_without_rewriting_recovery(self):
+        guest.project(self.request)
+        transaction = dict(schemaVersion=2, phase="installing", previous=dict(self.record), candidate=dict(Version="19.0.0"))
+        self.put("state/transaction.json", transaction)
+        before = (guest.STORE / "state/transaction.json").read_bytes()
+        with patch.object(guest.os, "geteuid", return_value=0), patch("builtins.print"):
+            deferred = guest.startup("cold")
+        self.assertEqual("DEFERRED", deferred["stage"])
+        self.assertEqual("SERVICE_INPUT_COMPONENT_TRANSACTION_ACTIVE", deferred["reason"])
+        self.assertFalse(any(guest.PUBLIC.rglob("metadata.json")))
+        self.assertEqual(before, (guest.STORE / "state/transaction.json").read_bytes())
+        self.assertEqual(self.record, json.loads((guest.STORE / "state/installed.json").read_bytes()))
+
+    def test_cold_restore_rejects_non_native_identity_source(self):
+        guest.IAM_CONFIG.write_text(json.dumps(dict(identifier=dict(plugin="visidentifier"))))
+        with patch.object(guest.os, "geteuid", return_value=0), patch("builtins.print"):
+            result = guest.startup("cold")
+        self.assertEqual("DEFERRED", result["stage"])
+        self.assertEqual("SERVICE_INPUT_NATIVE_IDENTIFIER_UNSUPPORTED", result["reason"])
+        self.assertFalse(guest.PUBLIC.exists())
+
+    def test_post_start_cannot_verify_another_process_slot(self):
+        guest.project(self.request, cold=True)
+        guest.provider_process.return_value = ("42", [b"provider", b"--config", b"wrong-slot"])
+        with patch.object(guest.os, "geteuid", return_value=0), patch("builtins.print"):
+            result = guest.startup("verify")
+        self.assertEqual("DEFERRED", result["stage"])
+        self.assertFalse(result["processVerified"])
+        self.assertEqual("SERVICE_INPUT_PROCESS_SLOT_MISMATCH", result["reason"])
+
 
 class InputBoundaryTests(unittest.TestCase):
     def test_cli_engineering_mutation_not_browser_dashboard(self):
@@ -167,7 +214,8 @@ class InputBoundaryTests(unittest.TestCase):
             service = ServiceInputs(environment)
             service.identity = Mock(return_value="other")
             with patch("aosedge_demo_orchestrator.service_inputs.SourceDriver") as driver:
-                driver.return_value.guest.return_value = dict(iamPublicServerUrl="main:8090", iamLocalEndpoint=dict(loopback8090Reachable=True))
+                driver.return_value.guest.return_value = dict(iamPublicServerUrl="main:8090", iamLocalEndpoint=dict(loopback8090Reachable=True),
+                    iamFileIdentifier=dict(plugin="fileidentifier", path="/etc/machine-id", systemUid="native-unit"))
                 with self.assertRaisesRegex(EnvironmentError, "IDENTITY_MISMATCH"):
                     service.prepare("test")
                 self.assertEqual(1, driver.return_value.guest.call_count)

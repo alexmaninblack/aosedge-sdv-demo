@@ -782,7 +782,20 @@ def execute(request):
             iam_main = sorted({item[4][0] for item in socket.getaddrinfo("main", 8090, type=socket.SOCK_STREAM)})
         except OSError:
             iam_main = []
+        identifier = json.loads(Path("/etc/aos/iam.cfg").read_text()).get("identifier", {})
+        identifier_path = identifier.get("params", {}).get("systemIDPath")
+        native_file = None
+        if identifier.get("plugin") == "fileidentifier" and identifier_path == "/etc/machine-id":
+            candidate = Path(identifier_path).read_text().strip()
+            if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}", candidate):
+                native_file = candidate
         return dict(mutation=False, source="ENGINEERING_GUEST_ONLY", architecture=os.uname().machine,
+            systemdConfigStorage=dict(readOnly=bool(os.statvfs("/etc/systemd/system").f_flag & os.ST_RDONLY),
+                mounts=[line for line in Path("/proc/mounts").read_text().splitlines()
+                    if line.split()[1] in ("/", "/etc", "/etc/systemd", "/etc/systemd/system", "/var")]),
+            iamFileIdentifier=dict(plugin=identifier.get("plugin"),
+                path=identifier_path if identifier_path == "/etc/machine-id" else "UNSUPPORTED",
+                systemUid=native_file),
             nativeInputTools={name: shutil.which(name) is not None for name in ("grpcurl", "aos-iam-cli")},
             guestGrpcPython=importlib.util.find_spec("grpc") is not None,
             iamPublicServerUrl=cfg.get("iamPublicServerUrl"),

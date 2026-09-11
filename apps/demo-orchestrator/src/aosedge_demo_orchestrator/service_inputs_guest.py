@@ -10,7 +10,9 @@ import re
 import ssl
 import stat
 import subprocess
+import sys
 import tempfile
+import time
 from pathlib import Path
 
 STORE = Path("/var/aos/workdirs/sm/runtimes/systemd-slot-component")
@@ -18,6 +20,9 @@ PUBLIC = Path("/run/aos-demo-service-inputs")
 CERTIFICATE = Path("/var/lib/aos-kuksa-tls/server.pem")
 OWNER = 0
 FILESYSTEM_ROOT = Path("/")
+IAM_CONFIG = Path("/etc/aos/iam.cfg")
+MACHINE_ID = Path("/etc/machine-id")
+STARTUP = Path("/run/democtl-service-inputs")
 VERSION = re.compile(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)")
 
 
@@ -68,7 +73,18 @@ def provider_process():
     return pid, (Path("/proc") / pid / "cmdline").read_bytes().split(b"\0")
 
 
-def snapshot(request):
+def native_identity():
+    identifier = read_document(IAM_CONFIG).get("identifier", {})
+    if (identifier.get("plugin") != "fileidentifier"
+            or identifier.get("params", {}).get("systemIDPath") != str(MACHINE_ID)):
+        raise ValueError("SERVICE_INPUT_NATIVE_IDENTIFIER_UNSUPPORTED")
+    uid = read_public(MACHINE_ID, 256).decode("ascii").strip()
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}", uid):
+        raise ValueError("SERVICE_INPUT_NATIVE_IDENTITY_INVALID")
+    return uid
+
+
+def snapshot(request, *, require_process=True):
     uid = request.get("nativeSystemUid")
     if (request.get("role") != "test" or not isinstance(uid, str)
             or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}", uid)
@@ -107,9 +123,11 @@ def snapshot(request):
             or not VERSION.fullmatch(contract_version) or not isinstance(contract_sha, str)
             or not re.fullmatch(r"[0-9a-f]{64}", contract_sha)):
         raise ValueError("SERVICE_INPUT_VDP_CONTRACT_INVALID")
-    pid, argv = provider_process()
-    if not any(argv[i:i + 2] == [b"--config", str(slot / "config/provider.json").encode()] for i in range(len(argv))):
-        raise ValueError("SERVICE_INPUT_PROCESS_SLOT_MISMATCH")
+    pid = None
+    if require_process:
+        pid, argv = provider_process()
+        if not any(argv[i:i + 2] == [b"--config", str(slot / "config/provider.json").encode()] for i in range(len(argv))):
+            raise ValueError("SERVICE_INPUT_PROCESS_SLOT_MISMATCH")
     public = dict(schemaVersion=2, unitSystemUid=uid, unitRole="validation",
         vdpContractVersion=contract_version, vdpContractSha256=contract_sha)
     return dict(metadata=public, installed=installed, pid=pid, capability=provider["capabilityManifestSha256"])
@@ -128,8 +146,10 @@ def trust():
     return raw
 
 
-def project(request):
-    before = snapshot(request)
+def project(request, *, cold=False):
+    def observe():
+        return snapshot(request, require_process=not cold)
+    before = observe()
     certificate = trust()
     metadata = (json.dumps(before["metadata"], sort_keys=True, indent=2) + "\n").encode()
     contents = {"metadata.json": metadata, "kuksa-ca.pem": certificate}
@@ -165,7 +185,7 @@ def project(request):
                     output.write(content)
                     os.fchmod(output.fileno(), 0o444)
                     os.fsync(output.fileno())
-        if snapshot(request) != before or read_public(CERTIFICATE, 32768) != certificate:
+        if observe() != before or read_public(CERTIFICATE, 32768) != certificate:
             raise ValueError("SERVICE_INPUT_SOURCE_CHANGED")
         for temporary, target in staged:
             os.replace(temporary, target)
@@ -176,16 +196,91 @@ def project(request):
                 os.fsync(descriptor)
             finally:
                 os.close(descriptor)
-        if snapshot(request) != before:
+        if observe() != before:
             raise ValueError("SERVICE_INPUT_POST_WRITE_RECONCILIATION_REQUIRED")
         return dict(state="PREPARED", noOp=not changed, changed=changed,
             metadata=before["metadata"], vdpVersion=before["installed"]["Version"],
             sources={team: str(PUBLIC / team) for team in ("brake", "tire")},
-            resourcesActivated=False, containerActions=False, coldStartQualified=False)
+            resourcesActivated=False, containerActions=False, coldStartQualified=False,
+            processVerified=not cold)
     finally:
         for temporary, _ in staged:
             if temporary.exists():
                 temporary.unlink()
+
+
+def invalidate_projection():
+    # Only reproducible public files owned by this projector. Keep directory
+    # inodes stable and never touch the committed component store or recovery.
+    for team in ("brake", "tire"):
+        directory = PUBLIC / team
+        safe_path(directory)
+        if directory.exists() and (not directory.is_dir() or set(p.name for p in directory.iterdir())
+                - {"metadata.json", "kuksa-ca.pem"}):
+            raise ValueError("SERVICE_INPUT_DIRECTORY_CONFLICT")
+        for name in ("metadata.json", "kuksa-ca.pem"):
+            path = directory / name
+            if path.exists() or path.is_symlink():
+                read_public(path)
+                path.unlink()
+
+
+def startup_record(name, value):
+    safe_path(STARTUP)
+    if not STARTUP.is_dir():
+        raise ValueError("SERVICE_INPUT_STARTUP_DIRECTORY_REQUIRED")
+    target = STARTUP / name
+    safe_path(target)
+    descriptor, temporary = tempfile.mkstemp(prefix=".startup-", dir=STARTUP)
+    try:
+        with os.fdopen(descriptor, "w") as output:
+            json.dump(value, output, sort_keys=True)
+            output.write("\n")
+            os.fchmod(output.fileno(), 0o600)
+            os.fsync(output.fileno())
+        os.replace(temporary, target)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+
+
+def startup(mode):
+    """Existing systemd startup integration, never a container launcher.
+
+    A transaction/incomplete component defers public data without preventing
+    native SM recovery. Post-start observation is not a service restart loop.
+    """
+    if os.geteuid() != 0 or mode not in ("cold", "verify"):
+        raise ValueError("SERVICE_INPUT_OPERATION_INVALID")
+    value = dict(stage="DEFERRED", processVerified=False, observedMonotonicNs=time.monotonic_ns())
+    try:
+        uid = native_identity()
+        request = dict(role="test", nativeSystemUid=uid, vehicle=dict(systemUid=uid))
+        if mode == "cold":
+            result = project(request, cold=True)
+            value.update(stage="PREPARED", vdpVersion=result["vdpVersion"])
+        else:
+            deadline = time.monotonic() + 15
+            while True:
+                try:
+                    observed = snapshot(request)
+                    for team in ("brake", "tire"):
+                        if read_document(PUBLIC / team / "metadata.json") != observed["metadata"]:
+                            raise ValueError("SERVICE_INPUT_STARTUP_PROJECTION_MISMATCH")
+                    value.update(stage="VERIFIED", processVerified=True, vdpVersion=observed["installed"]["Version"])
+                    break
+                except ValueError as error:
+                    if str(error) != "SERVICE_INPUT_PROVIDER_NOT_RUNNING" or time.monotonic() >= deadline:
+                        raise
+                    time.sleep(0.2)
+    except (ValueError, OSError, KeyError, TypeError, subprocess.SubprocessError) as error:
+        reason = str(error)
+        value["reason"] = reason if re.fullmatch(r"SERVICE_INPUT_[A-Z_]+", reason) else "SERVICE_INPUT_STARTUP_UNAVAILABLE"
+        if mode == "cold":
+            invalidate_projection()
+    startup_record(mode + ".json", value)
+    print("SERVICE_INPUT_" + mode.upper() + "_" + value["stage"], flush=True)
+    return value
 
 
 def main(request):
@@ -198,3 +293,9 @@ def main(request):
         value = dict(ok=False, reason=reason if re.fullmatch(r"SERVICE_INPUT_[A-Z_]+", reason)
                      else "SERVICE_INPUT_PREPARATION_FAILED")
     print(json.dumps(value))
+
+
+if __name__ == "__main__" and sys.argv[0] != "-":
+    if len(sys.argv) != 2 or sys.argv[1] not in ("cold", "verify"):
+        raise SystemExit("SERVICE_INPUT_OPERATION_INVALID")
+    startup(sys.argv[1])

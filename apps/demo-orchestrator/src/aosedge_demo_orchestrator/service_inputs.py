@@ -4,6 +4,8 @@
 """Engineering public-input preparation, shared Demo Control operation."""
 
 import json
+import base64
+import hashlib
 import re
 import subprocess
 import tempfile
@@ -68,7 +70,7 @@ class ServiceInputs:
                     if b"connect failed" in diagnostic or b"connection refused" in diagnostic:
                         raise EnvironmentError("SERVICE_NATIVE_IAM_SSH_DESTINATION_UNREACHABLE")
 
-    def prepare(self, target):
+    def prepare(self, target, *, activate=False):
         if target != "test":
             raise EnvironmentError("SERVICE_INPUTS_TEST_ONLY")
         with self.environment._writer():
@@ -78,11 +80,25 @@ class ServiceInputs:
                     or item.get("cloud", {}).get("lifecycle") in ("DELETED", "DEPROVISIONED", "DEPROVISIONING")):
                 raise EnvironmentError("SERVICE_INPUTS_CURRENT_TEST_BINDING_REQUIRED")
             driver = SourceDriver(VMService(self.environment))
-            with driver.operation(timeout=30):
+            with driver.operation(timeout=120 if activate else 30):
                 observed = driver.guest(state, "test", "service-runtime-inspect")
                 if not observed.get("iamLocalEndpoint", {}).get("loopback8090Reachable"):
                     raise EnvironmentError("SERVICE_NATIVE_IAM_NOT_LISTENING")
                 uid = self.identity(state, observed.get("iamPublicServerUrl"))
-                if uid != item["systemUid"]:
+                native_file = observed.get("iamFileIdentifier", {})
+                if (uid != item["systemUid"] or native_file.get("plugin") != "fileidentifier"
+                        or native_file.get("path") != "/etc/machine-id" or native_file.get("systemUid") != uid):
                     raise EnvironmentError("SERVICE_INPUT_NATIVE_IDENTITY_MISMATCH")
+                if activate:
+                    names = {resource.get("name") for resource in observed.get("resources", [])}
+                    if not {"brake-runtime-inputs", "tire-runtime-inputs"}.issubset(names):
+                        from .units import UnitService
+                        cloud = UnitService(VMService(self.environment)).observe("cloud-status", "test")
+                        services = cloud.get("services", {})
+                        if (services.get("state") != "CURRENT" or services.get("value") != []
+                                or not services.get("coverage", {}).get("complete")):
+                            raise EnvironmentError("SERVICE_INPUT_MIGRATION_REQUIRES_NO_LEGACY_ASSIGNMENTS")
+                    raw = Path(__file__).with_name("service_inputs_guest.py").read_bytes()
+                    return driver.guest(state, "test", "service-runtime-activate", nativeSystemUid=uid,
+                        program=base64.b64encode(raw).decode(), programSha256=hashlib.sha256(raw).hexdigest())
                 return driver.guest(state, "test", "service-runtime-prepare", nativeSystemUid=uid)

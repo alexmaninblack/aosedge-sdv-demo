@@ -9,7 +9,81 @@ and [10 September evidence](demo-studio-implementation-progress-2026-09-10.md)
 remain the baseline. This continuation does not change the approved story,
 native left-hand composition, Production scope or service trust model.
 
-## Latest continuation — native inputs and real Tire product build
+## Latest continuation — startup configuration and first native service publication
+
+The user accepted the cold/warm input split. `democtl service runtime-activate
+test` succeeded on the retained Test with one controlled SM restart:
+
+- Native IAM fileidentifier `/etc/machine-id`, IAM TLS `GetSystemInfo` and the
+  provisioning context agree on the Test system UID.
+- Pre-SM stage `PREPARED`, `processVerified=false`, VDP 18.0.0,
+  monotonic observation 54035618206063; post-SM stage `VERIFIED`,
+  `processVerified=true`, same VDP, monotonic observation 54035937140619.
+- SM active/success, PID 137576, `NRestarts=0`, unchanged binary SHA-256
+  `cf251da44d30aec38bd015210f08e284eb121aaff8f00feca2d74b75291a3dee`.
+- Read-only follow-up confirmed both team input resources, root-owned 0444
+  metadata and the native private token tmpfs with 1777 root, 64-KiB limit and
+  retained `rw,nosuid,nodev,noexec` flags.
+- The subsequent unchanged `runtime-activate test` returned `noOp=true` and
+  `currentProcessVerified=true`; SM PID remained 137576 with `NRestarts=0`.
+- This is configuration under `/run`, with `transient=true` and
+  `rebootQualified=false`. The immutable rootfs and existing temporary SM fix
+  were preserved. No full VM reboot, new Factory image, retained service
+  recovery or native service execution is claimed.
+
+Both migrated backends were built/activated/started through Demo Control;
+health is healthy and existing data preserved. Brake source `d7626b7c` produced
+image `sha256:6d8f561051461eef40176031cee5416a1521e5c3a59caceddf9445e63303a99e`;
+Tire source `b383c02a` produced image
+`sha256:f9a25be0f82d05ddeb26da7ffdd474bb77fe5c6912cfec9bfb0ab72b14c150d3`.
+Backend process health alone is not product ingestion readiness.
+
+Brake ARM64 source `bc0ed655d87297746955307695c3102881049316` was built
+successfully through `service build`; Tire reused its completed `1698ee4`
+export. Each prepared v1 package received `1.0.0`. The official signer verified
+RS256 and byte-for-byte equality with the prepared payload before upload.
+
+| Team | Exact accepted deployment | Upload result | Subsequent processing |
+| --- | --- | --- | --- |
+| Brake | ff672a59-9566-4db7-a205-1b5e15961a57 | 201, 2026-09-11T11:14:07Z | Error: service does not support architectures `{'arm'}` |
+| Tire | 44f09c7d-c049-4f4b-ad5c-da54bef76358 | 201, 2026-09-11T11:14:55Z | Same architecture error |
+
+Signed digests are Brake
+`e0925b80835cb65d9c26dfb11c2371a070fad7ebf0a0897bc2ceb8ae62cceb53`
+and Tire `7127eaf89df262415fc32e960e230ada85c56a0bc74b621533e4503b23fdb094`.
+Artifacts and receipts remain outside Git in the existing service release
+catalog. Failed versions remain consumed; no bundle was overwritten/retried.
+
+Both exact configurations contain only `images[].archInfo.architecture=arm64`.
+At 11:20:18Z, `service list --profile oem-delivery` read native API architecture
+lists: available includes `arm64`; assigned to OEM
+`60266780-a6e3-4998-a7b1-b39f246cf81d` is `[arm, arm64]`.
+The absent `arm` matches Cloud's error. This strongly indicates an OEM/package
+architecture requirement, but public OpenAPI does not expose the bundle
+builder's validation algorithm. Do not claim internal causal proof or silently
+change tenant-wide settings. The SP catalog still contains no Brake/Tire
+service identity; no Subject/assignment POST or batch approval was performed.
+
+The native `service assign <catalog-service-UUID> --target test` source is now
+implemented and isolated-tested: one dedicated retained Group Subject, exact
+native Test UID, service IDs only, peer/default preservation and durable
+uncertainty handling. It cannot run until publication is READY. The observer
+now recognizes actual bundle state `building` as PROCESSING. No UI capability,
+new SM code, deprovisioning, cleanup or Production change was introduced.
+
+Final focused regression: 100 service-family tests (including installed official
+signer), 6 CLI, 27 Unit, 21 source and 80 component tests passed: 234 total,
+no skips. The documentation gate passed for 170 Markdown documents, 658 stable
+identifiers and 38 Mermaid diagrams. These fixture/source checks do not replace
+the blocked native service execution or retained-assignment cold-start proof.
+
+Remaining boundary: separately authorize any OEM-wide architecture adjustment
+(or resolve the platform's requirement), then prepare the next allocated
+releases, sign/upload and prove native launch/KAC/ingestion. Full retained-
+assignment VM reboot still needs persistent startup integration in a later
+authorized image packet. N4/N5/N6 are not reported fully closed.
+
+## Earlier continuation — native inputs and real Tire product build
 
 The latest changes preserve native AosCore container preparation, launch and
 retained-instance recovery. No SM code/configuration change, restart, Factory

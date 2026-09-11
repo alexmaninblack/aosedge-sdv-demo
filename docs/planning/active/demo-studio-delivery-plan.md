@@ -26,9 +26,9 @@ gates are retired. Earlier dated checkpoints below remain historical.
 | N1 | Solution: accept ADR, update HLA/flows/requirements, runtime-input contract and D4 migration mapping | English documents, navigation and deterministic docs-check | Complete; product wire migration remains N3 |
 | N2 | Brake/Tire + Platform: private bootstrap sessions, dynamic token readers, native tmpfs resource mode; retire only token-owner patch | First create, isolation, atomic renewal, path/mode/symlink negatives, cleanup/restart, native host compilation | Host source tests passed; Linux/live proof remains N6 |
 | N3 | Solution contracts, both producers/backends: package version and native identity; explicit new message schemas without required service/model OCI digest | Producer-consumer fixtures; legacy queues/history retained; no fabricated digest; model/VDP hashes unchanged | Consumer and producer/input source increments passed; live integration remains N6 |
-| N4 | Demo Control: package the allocated version once; project public inputs; native configuration activation through existing commands | Package/publication equality; no manifest lookup dependency; stable-directory refresh after VDP commit | Package/publication tests, real Tire ARM64 export and warm public projection/repeat passed; resource activation pending |
-| N5 | Existing startup integration: restore public /run inputs before SM launches retained assignments | Exact hook/order documented and tested; no new daemon, persisted token or metadata authority | Blocked by the documented pre-SM versus running-VDP ordering conflict; no cold-start claim |
-| N6 | Bounded current Test SOTA and backend integration through democtl | Real Cloud Running/version, KAC/TLS/subscriptions, renew/expiry, actual product records, retained state and scoped access proof | Pending |
+| N4 | Demo Control: package the allocated version once; project public inputs; native configuration activation through existing commands | Package/publication equality; no manifest lookup dependency; stable-directory refresh after VDP commit | Both real ARM64 exports, signed-payload equality, warm projection and transient native resource activation passed; Cloud processing rejected both initial bundles for architecture mismatch |
+| N5 | Existing startup integration: restore public /run inputs before SM launches retained assignments | Exact hook/order documented and tested; no new daemon, persisted token or metadata authority | Cold/warm split accepted; pre-SM preparation and post-SM process verification passed with unchanged SM binary; persistent-image integration and retained-assignment VM reboot not qualified |
+| N6 | Bounded current Test SOTA and backend integration through democtl | Real Cloud Running/version, KAC/TLS/subscriptions, renew/expiry, actual product records, retained state and scoped access proof | Migrated backends active; Subject assignment source tested but not executed; blocked before service deployment by Cloud architecture rejection |
 | N7 | Checkpoint source/docs and record exclusions | Commit only tested source; no build artifacts; retain current VM/Factory/Production | N2/N3 local checkpoints created; full-migration checkpoint remains pending |
 
 Source increments may be developed independently, but **no new producer is
@@ -83,7 +83,7 @@ still open at that checkpoint; its later result is recorded below. N6
 backend/runtime qualification remains open. See the
 [publication contract](../../architecture/demo-control.md#native-service-publication).
 
-Latest N4 increment: Tire `1698ee4859fb66c210f386f485dad56234e37c15`
+Earlier N4 increment: Tire `1698ee4859fb66c210f386f485dad56234e37c15`
 has a completed real ARM64 product export (bootstrap, service, dependency
 closure and product tests), built through `democtl`; the repeated build command
 reused the completed receipt with `noOp=true`. On current Test, native IAM TLS
@@ -96,8 +96,23 @@ N5 is not closed by this warm result: the existing pre-SM bootstrap precedes
 the component recovery that starts VDP, while public projection requires the
 running committed VDP. The exact conflict and excluded workarounds are in
 [cold-start ordering](../../architecture/demo-control-service-inputs.md#cold-start-ordering-conflict--11-september-2026).
-Resolve that bounded ordering contract before claiming a full N4/N5 or N6
-result; do not modify native container launch to hide the missing integration.
+The user subsequently accepted cold preparation from verified committed state
+without a running process, followed by post-SM process verification. The
+existing native IAM file identifier supplies the same Unit identity. A live
+`runtime-activate test` proved this sequence with the unchanged SM binary and
+both input resources. It is temporary `/run` configuration, not a retained-
+assignment full-VM reboot proof; immutable-image integration remains open.
+
+Latest live publication boundary: Brake and Tire migrated backends are active
+with data preserved. Both current-source ARM64 v1 packages were prepared as
+`1.0.0`, signed and accepted by Deployment Bundle upload. Cloud rejected both:
+`does not support architectures: {'arm'}`. Their verified configurations contain
+only `arm64`; the current OEM architecture read returns `arm` and `arm64`.
+This is evidence of a tenant/package architecture mismatch, not proof of an
+SM fault. No architecture was relabelled, no OEM setting changed and no second
+upload attempted. OEM-wide changes require separate authorization; a service
+cannot be assigned before its package reaches READY. See the
+[latest checkpoint](../../qualification/demo-studio-implementation-progress-2026-09-11.md).
 
 N2 local source checkpoints: Brake `8d19381`, Tire `47ab08d`, Platform
 `205f89d`. The Solution commit containing this record freezes the accepted
@@ -1325,7 +1340,8 @@ Names in the **Proposed** rows are a review contract, not available commands or 
 | Proposed | `demo retire` | Shared full Finish/New-cycle cleanup; composes Cloud, backend and local primitives. Not an alias for local-only environment retire. |
 | Proposed; later phase | `unit logs list/request/show/download` with explicit Unit/node/time/request selectors | Cloud-only asynchronous logs. Separate the mutation verb from reads. No implicit request when opening Logs. |
 | Implemented CLI; live proof pending | `service list/status/inspect`, `service prepare <team> --profile <P>`, `service sign/upload/cloud-status <handle>` | Distinct catalog UUID, functional profile and prepared-release handle; recorded SP binding. One upload, explicit observation, no hidden assignment/approval. |
-| Proposed | `service assign <service> --target test`, `service logs …` | Assignment uses OEM and service IDs, with no unsupported version argument. Logs remain a separate explicit operation. |
+| Implemented CLI; live proof pending | `service assign <catalog-service-UUID> --target test` | Dedicated retained OEM Group Subject, current Test only, native `service_ids`, independent peer-preserving assignment and explicit uncertainty. |
+| Proposed | `service logs …` | Logs remain a separate explicit operation. |
 | Proposed | `backend start/stop/status <team>`, `backend records <team> --target test` | Own backend lifecycle, persistent context and functional observations, shared by CLI and UI. Product-data cleanup requires an explicit scoped operation under M08, not a side effect of a read. |
 | Existing; retain | `simulation start/stop`, `vehicle select test`, `vehicle connectivity off/on/status --target test`, workspace/native layout operations | Preserve accepted native behavior. Driving modes stay in the existing native control path; no Cloud driving API is introduced. |
 

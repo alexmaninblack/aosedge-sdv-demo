@@ -64,6 +64,25 @@ class FixtureCloud:
 
 
 class ServiceCloudTests(unittest.TestCase):
+    def test_oem_architecture_read_is_scoped_and_sanitized(self):
+        cloud = FixtureCloud("oem")
+        cloud.user["effectivePermissions"] += ["oems_available_architectures", "oems_architectures_read"]
+        original = cloud.call
+        def call(path):
+            if path == "oems/architectures/":
+                return dict(architectures=["arm", "arm64"], private="do-not-export")
+            if path == "oems/" + OWNER + "/architectures/":
+                return dict(architectures=["arm"])
+            return original(path)
+        cloud.call = call
+        result = service_cloud.inspect(cloud, dict(action="list"))
+        self.assertEqual(["arm64"], list(set(result["availableArchitectures"]["value"]["architectures"]) -
+            set(result["oemArchitectures"]["value"]["architectures"])))
+        self.assertNotIn("do-not-export", json.dumps(result))
+        for value in (None, "arm", ["arm", "arm"], ["not/a/code"]):
+            with self.assertRaises(CloudFailure):
+                service_cloud.architecture_view(dict(architectures=value))
+
     def test_inspect_reads_exact_owned_version_without_catalog_scan_or_config_values(self):
         cloud = FixtureCloud()
         result = service_cloud.inspect(cloud, dict(action="inspect", serviceId=SERVICE, versionId=OTHER))

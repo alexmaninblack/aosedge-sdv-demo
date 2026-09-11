@@ -63,7 +63,7 @@ def snapshot(cloud, request, preflight=False):
     state = str(bundle["state"] or "").lower()
     if state == "error" or any(str(row.get("container_state") or "").lower() in ("error", "failed") for row in selected_versions):
         return dict(result, stage="ERROR", reason="SERVICE_CLOUD_PROCESSING_ERROR")
-    if state in ("uploaded", "pending", "processing", "in progress"):
+    if state in ("uploaded", "pending", "processing", "building", "in progress"):
         return dict(result, stage="PROCESSING")
     if state != "done":
         return dict(result, reason="SERVICE_BUNDLE_STATE_UNKNOWN")

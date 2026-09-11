@@ -543,7 +543,7 @@ package. Another explicit prepare allocates a new number; existing packages
 are never overwritten. [Signing/publication](#native-service-publication)
 consume the returned handle rather than asking for a second version. These
 operations are not yet exposed as browser mutation capabilities. N4 public-input
-projection is available separately; resource activation and N5 cold-start restoration remain pending
+projection and transient resource activation are available separately; full VM cold-start qualification remains pending
 under the [accepted runtime-input contract](demo-control-service-inputs.md).
 
 ### Native service build and public-input engineering operations
@@ -553,6 +553,7 @@ democtl service build tire --content-profile v1
 democtl service build-status tire
 democtl service runtime-inspect test
 democtl service runtime-prepare test
+democtl service runtime-activate test
 ```
 
 `service build` also supports Brake v1/v2/v3. It builds the committed product
@@ -582,9 +583,27 @@ No staging file becomes a successful readiness result after a failed check.
 `resourcesActivated`, `containerActions` and `coldStartQualified` are explicitly
 false. This command neither activates resource configuration nor restarts SM,
 assigns services, publishes a package or proves retained-assignment recovery.
-It is Test-only and is not exposed to browser mutations. The boot-order conflict
-and required separate decision are recorded in the
+It is Test-only and is not exposed to browser mutations. The accepted cold/warm
+split and remaining boot qualification are recorded in the
 [runtime-input contract](demo-control-service-inputs.md#cold-start-ordering-conflict--11-september-2026).
+
+`runtime-activate test` installs temporary configuration under
+`/run/democtl-service-inputs` and one systemd drop-in. It preserves all existing
+resources, changes only the per-container token tmpfs root to 1777 and adds the
+two team-specific public-input binds. With no legacy service assignments, it
+performs one controlled SM restart using the same executable. `ExecStartPre`
+projects verified committed inputs without requiring a running VDP;
+`ExecStartPost` checks recovered process/slot agreement. Native SM retains
+container launch/recovery ownership. No new service daemon is installed.
+
+The command returns `cold` and `verification` observations, the unchanged SM
+binary digest, service status and `transient=true`, `rebootQualified=false`.
+An exact unchanged repeat verifies/reuses the configuration without a restart;
+conflicting staged data blocks rather than overwriting it. If SM startup fails,
+only this new drop-in is removed and the original configuration is restarted
+once. Interrupted VDP state defers public projection instead of fabricating
+readiness. Full VM reboot requires later integration into the immutable image;
+this temporary activation is not that qualification.
 
 <a id="native-service-publication"></a>
 
@@ -641,11 +660,41 @@ adopting them or silently retrying. No automated resolution is claimed for
 that case. Observation preserves the original receipt and does not rehash
 the payload or signed archive; signing/publication perform those trust checks.
 
-This source increment has offline transport/receipt tests and a real signature
-test using a temporary fixture key. It has not signed or uploaded a live
-product release. Matching backend activation, native resource/input setup,
-container dependencies and current-Test runtime proof still gate live N6.
+Live Brake/Tire `1.0.0` bundles were signed and accepted by the upload API on
+11 September, after migrated backend activation. Both Cloud builds then failed
+with an architecture error; neither service was assigned. Exact evidence and
+remaining runtime gates are in the [checkpoint](../qualification/demo-studio-implementation-progress-2026-09-11.md).
+The observer treats `building` as processing, not success or an unknown state.
 No browser mutation capability is added in this increment.
+
+### Native service assignment — source implemented, live proof pending
+
+```bash
+democtl service assign <catalog-service-UUID> --target test
+```
+
+Use the catalog UUID returned by a READY publication observation, not a release
+handle or team label. The existing receipt resolves team/SP ownership and the
+published version for read-only preflight; assignment sends only `service_ids`.
+One retained OEM Group Subject, labelled `AosEdge SDV demo Test`, is bound only
+to the current Test's native system UID. The command creates/binds it once,
+then appends the requested service without removing its peer. Factory/default
+Subjects, other Units and Production are untouched.
+
+Each POST intent is recorded in the existing run journal before dispatch;
+the returned exact UUID/creator is retained and authoritative reads reconcile
+the result. A matching label is never enough to adopt an unrecorded Subject.
+A lost create UUID remains uncertain and is not replayed. Known bind/assign
+uncertainty can be reconciled by read; there are no blind retries.
+`ASSIGNED` means desired binding only; Cloud-reported instances are separate,
+and the result explicitly sets `runtimeQualified=false`. Browser mutation and
+Subject retirement integration remain separate work; do not reset this run to
+work around an assignment failure.
+
+`service list --profile oem-delivery` also reads the available architecture
+codes and those assigned to this exact OEM. This is read-only diagnosis; it
+does not change tenant settings or pretend these lists prove why a Cloud build
+failed. SP publication preflight does not add these OEM reads.
 
 ### VDP Family Increment — Authorized 2026-09-06
 

@@ -55,6 +55,15 @@ def provider_view(row):
     return dict(id=object_id(row["id"]), **pick(row, ("title",)))
 
 
+def architecture_view(row):
+    values = row.get("architectures")
+    if (not isinstance(values, list) or len(values) > 64
+            or any(not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,32}", value) for value in values)
+            or len(values) != len(set(values))):
+        raise CloudFailure("SERVICE_ARCHITECTURE_RESPONSE_INVALID")
+    return dict(architectures=values)
+
+
 def version_view(row):
     return dict(id=object_id(row["id"]), **pick(row, ("version", "container_state", "created_at"), booleans=("is_resource_limits",)))
 
@@ -155,6 +164,15 @@ def inspect(cloud, request):
         result["services"] = pages(cloud, path, lambda row: service_view(row, user), "services_list")
         result["providers"] = (pages(cloud, "service-providers/", provider_view, "service_providers_list")
             if user["role"] == "oem" else observed(None, state="NOT_APPLICABLE", reason="SP_PROFILE_OBSERVES_OWN_SERVICES_ONLY"))
+        if user["role"] == "oem":
+            for field, path, permission in (
+                    ("availableArchitectures", "oems/architectures/", "oems_available_architectures"),
+                    ("oemArchitectures", "oems/" + object_id(user["ownerId"]) + "/architectures/", "oems_architectures_read")):
+                try:
+                    cloud.require(permission)
+                    result[field] = observed(architecture_view(cloud.call(path)))
+                except (CloudFailure, OSError, ValueError, TypeError, KeyError) as error:
+                    result[field] = error_observation(error)
         return result
     identity = object_id(request["serviceId"])
     try:

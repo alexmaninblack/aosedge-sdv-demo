@@ -4,7 +4,7 @@
 # Service runtime inputs
 
 - Status: Accepted contract; implementation and live qualification tracked separately
-- Version: 2.0
+- Version: 2.1
 - Prepared: 2026-09-11
 - Owner: Demo Control / OEM Platform
 - Decision: [ADR 0015](decisions/0015-use-native-aos-service-runtime-inputs.md)
@@ -114,9 +114,11 @@ the five-field schema, provenance authority or read-only mount contract.
    starts analytics. Cloud Running is not functional Ready.
 6. Refresh public files only after committed slot/process agreement.
    Old windows/outbox records retain their original provenance and bytes.
-7. Cold start must restore the /run sources before automatic retained
-   assignments launch. The exact existing platform/startup hook is a required
-   implementation gate; a warm assignment does not prove this ordering.
+7. Cold start restores the /run sources from verified committed state before
+   automatic retained assignments launch, without requiring a running VDP.
+   After native SM recovery, verify process/slot agreement. Warm refresh still
+   requires that agreement. This split was explicitly accepted on 11 September
+   2026; it changes no SM code or container lifecycle.
 
 No direct guest reads are added to the Presenter platform dashboard; Cloud
 remains its platform-state source. Engineering input projection/inspection is
@@ -148,14 +150,26 @@ under the same layer. These are our component/startup integration, not a missing
 native container capability. The pinned native runner has no per-container
 systemd template into which this preparation can be inserted.
 
-Before N5 implementation, resolve the cold-start input ordering explicitly.
-A pre-SM projection based only on durable committed state would change the
-current process-agreement gate and must define interrupted-update recovery.
-A post-SM projection would change the requirement that inputs precede retained
-instance launch. Neither is silently accepted here. No new SM hook, daemon,
-independent VDP launcher, persistent metadata authority or startup retry is
-introduced as a workaround. Resource activation, retained-instance reboot and
-N6 service deployment remain unqualified; the existing VM is preserved.
+The user explicitly accepted the cold/warm split on 11 September 2026:
+prepare cold-start inputs from validated committed state, then verify the
+process after SM recovers VDP. An interrupted transaction does not authorize
+using an intermediate slot or claiming functional readiness. Native component
+recovery remains responsible for that transaction; public projection must
+withhold incomplete or contradictory data, not prevent SM from performing
+its recovery. No new SM hook, daemon, independent VDP launcher, persistent
+metadata authority or container startup retry is authorized by this split.
+
+The current Test uses native IAM `fileidentifier`, with `systemIDPath` equal
+to `/etc/machine-id`; its value matches the observed IAM v6 response and Test
+provisioning context. Cold preparation may read this same native source,
+without persisting a second identity. Other identifier plugins are unsupported,
+not silently substituted. The [IAM documentation](https://docs.aosedge.tech/docs/aos-core/architecture/identity-access-manager/node-identity#file-identifier)
+describes this authority; the [native file implementation](https://github.com/aosedge/aos_iamanager/blob/b2cdabdc8bc6924c0afe5cefcb5d66b7a1154a5d/identhandler/modules/fileidentifier/fileidentifier.go)
+reads the configured file and trims whitespace. Initial activation and warm
+observations still reconcile this source with native IAM.
+
+Implementation and live startup/reboot evidence are tracked separately in the
+delivery plan. Acceptance does not itself mark N4/N5/N6 complete.
 
 ## Migration and remaining evidence
 

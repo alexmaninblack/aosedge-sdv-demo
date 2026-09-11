@@ -58,7 +58,7 @@ class ServicePublicationTests(unittest.TestCase):
         self.assertEqual("PROCESSING", service_publication.snapshot(self.cloud, dict(self.request, deploymentId=BUNDLE))["stage"])
 
     def test_processing_error_unknown_and_wrong_contents_do_not_claim_ready(self):
-        for state, expected in (("uploaded", "PROCESSING"), ("processing", "PROCESSING"), ("error", "ERROR"), (None, "UNKNOWN")):
+        for state, expected in (("uploaded", "PROCESSING"), ("processing", "PROCESSING"), ("building", "PROCESSING"), ("error", "ERROR"), (None, "UNKNOWN"), ("unrecognized-new-state", "UNKNOWN")):
             with self.subTest(state=state):
                 self.cloud.ready()
                 self.cloud.collections["deployment-bundles/"][0]["state"] = state

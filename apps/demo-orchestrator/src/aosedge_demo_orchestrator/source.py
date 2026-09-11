@@ -82,12 +82,15 @@ class SourceDriver:
         if action == "service-runtime-prepare":
             from . import service_inputs_guest
             worker = service_inputs_guest
+        elif action == "service-runtime-activate":
+            from . import service_activation_guest
+            worker = service_activation_guest
         code = Path(worker.__file__).read_text()
         vehicle = dict(state["vehicles"][role], sourceProbeSelected=state.get("currentVehicle") == role)
         request = dict(action=action, vehicle=vehicle, role=role, **extra)
         script = "python3 - <<'DEMOCTL_SOURCE_PY'\n" + code + "\nmain(" + repr(request) + ")\nDEMOCTL_SOURCE_PY\n"
         try:
-            timeout = self.budget(60 if action == "component-sm-apply" else 25)
+            timeout = self.budget(110 if action == "service-runtime-activate" else 60 if action == "component-sm-apply" else 25)
             command = ssh_command(access_path(self.root, role), state["vehicles"][role]["sshPort"], min(5, timeout))
             if self._session:
                 command = ["ControlMaster=auto" if arg == "ControlMaster=no" else

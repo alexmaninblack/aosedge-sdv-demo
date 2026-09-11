@@ -4,7 +4,7 @@
 # ADR 0015: Use Native Aos Facilities for Service Identity, Data and Tokens
 
 - Status: Accepted — documentation migration and implementation authorized
-- Version: 1.0
+- Version: 1.1
 - Prepared: 2026-09-11
 - Accepted: 2026-09-11, explicit user approval
 - Owner: Demo Solution Team and OEM Platform Team
@@ -228,6 +228,15 @@ No Cloud dependency is added to local renewal or analytics.
    Cloud processing Ready, process Running and functional Ready are different.
 7. **Recover.** Acquire a new token session on launch. Preserve valid outbox,
    model and producer state; refresh public VDP inputs only on committed change.
+
+Cold/warm clarification accepted by the user on 11 September 2026: before SM
+starts, derive public inputs from verified durable committed VDP state without
+requiring a running provider. After native SM recovery, verify process/slot
+agreement. Warm refresh still requires that agreement. An interrupted
+transaction withholds incomplete public inputs without blocking native SM
+recovery. Native IAM's configured file identifier is the same identity source,
+not a new persisted identity. See the [exact input contract](../demo-control-service-inputs.md).
+This changes no SM code, token authority or native container lifecycle.
 
 Package preparation/publication may occur before a vehicle exists or is
 provisioned, as already agreed for the demo story. Steps 1 and 2 gate service

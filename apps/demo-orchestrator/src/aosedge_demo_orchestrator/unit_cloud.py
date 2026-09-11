@@ -159,6 +159,9 @@ def execute(request):
         from aosedge_demo_orchestrator.unit_sdk import identity
         return identity(request["address"])
     cloud = Cloud(request)
+    if action in ("service-assignment-observe", "service-assignment-step"):
+        from aosedge_demo_orchestrator.service_assignment import execute as service_assignment
+        return service_assignment(cloud, request)
     if action == "observe":
         from aosedge_demo_orchestrator.cloud_observation import inventory, monitoring
         if request.get("observation") not in ("cloud-status", "monitoring"):

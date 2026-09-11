@@ -31,13 +31,20 @@ class DemoOrchestrator:
         selection_error = request.selection_error()
         if selection_error:
             return OperationResult(operation, OperationState.BLOCKED, selection_error)
-        if operation == "service.runtime-prepare":
+        if operation in ("service.runtime-prepare", "service.runtime-activate"):
             if (request.target != VehicleTarget.TEST or request.current or request.image or request.image_path
                     or request.profile or request.team or request.service_id or request.content_profile or request.component_version):
                 return OperationResult(operation, OperationState.BLOCKED, "SERVICE_INPUTS_TEST_ONLY")
             try:
                 from .service_inputs import ServiceInputs
-                data = ServiceInputs(self.environment_service).prepare("test")
+                activating = request.action == "runtime-activate"
+                if activating:
+                    self.vm_service.progress("Test: native resource/startup activation; one SM restart, unchanged executable")
+                data = ServiceInputs(self.environment_service).prepare("test", activate=activating)
+                if activating:
+                    complete = data.get("state") == "ACTIVE" and data.get("verification", {}).get("stage") == "VERIFIED"
+                    return OperationResult(operation, OperationState.COMPLETED if complete else OperationState.PARTIAL,
+                        "Transient native configuration; no SM code change, service assignment or VM reboot qualification.", data=data)
                 return OperationResult(operation, OperationState.COMPLETED,
                     "Public inputs prepared; no SM activation, container launch, assignment or cold-start qualification.", data=data)
             except EnvironmentError as error:
@@ -104,6 +111,21 @@ class DemoOrchestrator:
                 return OperationResult(operation, OperationState.BLOCKED, str(error))
             except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
                 return OperationResult(operation, OperationState.BLOCKED, "SERVICE_PACKAGE_PREPARATION_FAILED_VERSION_RETAINED")
+        if operation == "service.assign":
+            if (request.target != VehicleTarget.TEST or request.current or request.image or request.image_path
+                    or request.profile or request.team or request.content_profile or request.component_version
+                    or request.service_release or request.service_version_id):
+                return OperationResult(operation, OperationState.BLOCKED, "SERVICE_ASSIGNMENT_USES_CATALOG_ID_AND_TEST_ONLY")
+            try:
+                from .service_assignment import ServiceAssignment
+                data = ServiceAssignment(self.environment_service, self.unit_service).assign(request.service_id)
+                return OperationResult(operation, OperationState.COMPLETED if data["state"] == "ASSIGNED" else
+                    OperationState.BLOCKED if data["state"] == "BLOCKED" else OperationState.PARTIAL,
+                    "OEM desired assignment only; Cloud runtime and product readiness remain separate.", target="test", data=data)
+            except EnvironmentError as error:
+                return OperationResult(operation, OperationState.BLOCKED, str(error), target="test")
+            except (OSError, ValueError, TypeError, KeyError):
+                return OperationResult(operation, OperationState.BLOCKED, "SERVICE_ASSIGNMENT_INPUT_OR_STATE_UNAVAILABLE", target="test")
         if request.domain == "service":
             from .services import ServiceCatalog
             if request.target or request.current or request.image or request.image_path or request.team or request.component_version or request.content_profile:
