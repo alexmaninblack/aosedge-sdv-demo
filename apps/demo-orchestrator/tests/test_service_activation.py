@@ -5,14 +5,49 @@ import copy
 import json
 from pathlib import Path
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
+import hashlib
+import subprocess
 
-from aosedge_demo_orchestrator.service_activation_guest import compose, dropin_content
+from aosedge_demo_orchestrator.service_activation_guest import compose, dropin_content, restart_existing_sm
 from aosedge_demo_orchestrator.api import execute_operation
 from aosedge_demo_orchestrator.cli import build_parser, request_from_arguments
 
 
 class NativeActivationTests(unittest.TestCase):
+    def test_explicit_restart_is_test_only_and_is_not_the_default(self):
+        default = request_from_arguments(build_parser().parse_args(["service", "runtime-activate", "test"]))
+        self.assertFalse(default.restart_sm)
+        explicit = request_from_arguments(build_parser().parse_args(["service", "runtime-activate", "test", "--restart-sm"]))
+        self.assertTrue(explicit.restart_sm)
+        self.assertIsNone(explicit.selection_error())
+        from dataclasses import replace
+        from aosedge_demo_orchestrator.models import VehicleTarget
+        self.assertIsNotNone(replace(explicit, target=VehicleTarget.PRODUCTION).selection_error())
+        self.assertIsNotNone(replace(explicit, action="runtime-prepare").selection_error())
+
+    def test_existing_restart_is_exactly_one_command_and_same_binary(self):
+        module = "aosedge_demo_orchestrator.service_activation_guest."
+        before = dict(MainPID="11", ActiveState="active")
+        after = dict(MainPID="22", ActiveState="active")
+        binary = hashlib.sha256(b"current-sm").hexdigest()
+        def content(path):
+            return b"current-sm" if str(path).endswith("/exe") else b'{"stage":"VERIFIED"}'
+        with patch(module + "command") as command, patch(module + "service", return_value=after), patch.object(Path, "read_bytes", content):
+            result = restart_existing_sm(before, binary)
+        command.assert_called_once_with(["systemctl", "restart", "aos-sm"], timeout=45)
+        self.assertTrue(result["restarted"])
+        self.assertEqual(binary, result["smBinarySha256"])
+        self.assertEqual("11", result["previousMainPID"])
+        with patch(module + "command", side_effect=subprocess.TimeoutExpired("systemctl", 45)) as command:
+            with self.assertRaisesRegex(ValueError, "RESTART_UNCONFIRMED"):
+                restart_existing_sm(before, binary)
+        self.assertEqual(1, command.call_count)
+        with patch(module + "command") as command, patch(module + "service", return_value=after), patch.object(Path, "read_bytes", return_value=b"different"):
+            with self.assertRaisesRegex(ValueError, "BINARY_MISMATCH"):
+                restart_existing_sm(before, binary)
+        self.assertEqual(1, command.call_count)
+
     def setUp(self):
         self.resources = [dict(name="unrelated", devices=["untouched"], groups=["group"]),
             dict(name="kuksa", hosts=[dict(hostname="Server", ip="10.0.0.100")]),

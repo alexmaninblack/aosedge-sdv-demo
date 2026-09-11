@@ -633,6 +633,15 @@ once. Interrupted VDP state defers public projection instead of fabricating
 readiness. Full VM reboot requires later integration into the immutable image;
 this temporary activation is not that qualification.
 
+An explicit `democtl service runtime-activate test --restart-sm` restarts only
+the already activated Test SM once, after verifying that its existing input
+program, drop-in and resource configuration are unchanged. It writes no new
+configuration and refuses first-time activation. The result includes the old
+and new PIDs and verifies the same binary digest. Unlike initial activation,
+this restart branch never retries or rolls back through a second restart on
+failure or response loss; use read-only reconciliation before another decision.
+An active SM does not by itself prove that assigned services recovered.
+
 <a id="native-service-publication"></a>
 
 ### Native service signing and publication — 2026-09-11

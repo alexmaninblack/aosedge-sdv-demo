@@ -55,9 +55,13 @@ class OperationRequest:
     restart_project: Optional[str] = None
     without_permissions: bool = False
     demo_no_telemetry: bool = False
+    restart_sm: bool = False
 
     def selection_error(self) -> Optional[str]:
         """Validate agreed selectors before any lifecycle adapter is called."""
+        if type(self.restart_sm) is not bool or (self.restart_sm and
+                ((self.domain, self.action) != ("service", "runtime-activate") or self.target != VehicleTarget.TEST)):
+            return "RESTART_SM_USES_TEST_RUNTIME_ACTIVATE_ONLY"
         if type(self.demo_no_telemetry) is not bool or (self.demo_no_telemetry and
                 ((self.domain, self.action) != ("service", "prepare") or not self.without_permissions)):
             return "DEMO_NO_TELEMETRY_REQUIRES_PERMISSION_FREE_SERVICE_PREPARE"

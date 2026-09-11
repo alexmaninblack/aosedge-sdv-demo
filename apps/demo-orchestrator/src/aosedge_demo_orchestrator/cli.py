@@ -47,6 +47,7 @@ def build_parser() -> argparse.ArgumentParser:
     service_inputs.add_argument("target", choices=("test",))
     service_activate = service_commands.add_parser("runtime-activate", help="Test-only transient resource/startup configuration; one SM restart, unchanged binary")
     service_activate.add_argument("target", choices=("test",))
+    service_activate.add_argument("--restart-sm", action="store_true", help="explicit one-time restart of the already activated Test SM; same binary/configuration, no retry")
     service_build = service_commands.add_parser("build", help="development-only real ARM64 service build; no publication or VM action")
     service_build.add_argument("team", choices=("brake", "tire"))
     service_build.add_argument("--content-profile", choices=("v1", "v2", "v3"), default="v1", help="fixed service functional profile, independent of release number")
@@ -215,6 +216,7 @@ def request_from_arguments(arguments: argparse.Namespace) -> OperationRequest:
         service_release=getattr(arguments, "service_release", None),
         without_permissions=getattr(arguments, "without_permissions", False),
         demo_no_telemetry=getattr(arguments, "demo_no_telemetry", False),
+        restart_sm=getattr(arguments, "restart_sm", False),
         timeout=getattr(arguments, "timeout", 8.0),
     )
 

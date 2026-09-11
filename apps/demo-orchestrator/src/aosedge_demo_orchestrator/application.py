@@ -40,7 +40,7 @@ class DemoOrchestrator:
                 activating = request.action == "runtime-activate"
                 if activating:
                     self.vm_service.progress("Test: native resource/startup activation; one SM restart, unchanged executable")
-                data = ServiceInputs(self.environment_service).prepare("test", activate=activating)
+                data = ServiceInputs(self.environment_service).prepare("test", activate=activating, restart_sm=request.restart_sm)
                 if activating:
                     complete = data.get("state") == "ACTIVE" and data.get("verification", {}).get("stage") == "VERIFIED"
                     return OperationResult(operation, OperationState.COMPLETED if complete else OperationState.PARTIAL,

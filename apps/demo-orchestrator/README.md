@@ -62,6 +62,12 @@ and do not query the guest. See the [publication and failure contract](../../doc
 
 ### Test-only service assignment
 
+To perform an explicitly authorized single restart of an already activated
+Test SM: `democtl service runtime-activate test --restart-sm`. This preserves
+its executable/configuration and does not restart the VM or reassign services.
+The ordinary repeat without the flag remains a no-op. A restart failure is
+not retried automatically; SM health and service Running are separate results.
+
 ```bash
 democtl service assign <catalog-service-UUID> --target test
 ```

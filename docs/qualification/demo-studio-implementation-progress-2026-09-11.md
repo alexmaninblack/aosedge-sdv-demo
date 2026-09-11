@@ -13,6 +13,43 @@ native left-hand composition, Production scope or service trust model.
 
 <a id="no-telemetry-lifecycle-400"></a>
 
+### Subsequently authorized single SM restart
+
+The user approved one restart of the current Test SM to check already delivered
+4.0.0. The existing `service runtime-activate` command now accepts an explicit
+`--restart-sm` for its already-activated branch; ordinary repeats remain no-op.
+The explicit branch writes no configuration, verifies the existing setup and
+binary, and never retries on failure/response loss.
+
+At 15:02:41–46 UTC, `democtl service runtime-activate test --restart-sm`
+performed exactly one restart. SM PID changed from 137576 to 171280.
+Its binary SHA-256 remained
+`cf251da44d30aec38bd015210f08e284eb121aaff8f00feca2d74b75291a3dee`.
+SM returned active/success; cold public-input preparation and post-start
+verification both used committed VDP18.0.0. This proves the SM restart and
+unchanged binary, **not service recovery**.
+
+Post-restart logs explicitly show both saved service instances being started
+as **3.0.0**, not 4.0.0. Their native OCI commands still have five arguments and
+NOFILE limits 64/32. Both processes are absent at observation. Brake again
+emits KUKSA_AUTH_UNAVAILABLE; Tire fails network-namespace cleanup with
+`Invalid argument / failed to unmount namespace`. Native startup also logs
+missing leftover container state and an unsuccessful unmount. Thus resetting
+the SM process did not discard or correct the retained old instance state.
+
+Cloud remains: Brake installed-version field 3.0.0, pending 4.0.0 with image
+status installed; Tire pending 4.0.0 with image status installed and failed
+instance. These are separate Cloud projections, not evidence of running 4.0.0.
+SM/CM are active with zero automatic restarts; VDP18 remains active with its
+pre-existing restart count one. No second SM restart, CM/VM restart,
+reprovisioning, native-state deletion, new release or Production action occurred.
+Retained-instance reconciliation remains the next unresolved boundary.
+
+Targeted tests: 5 activation tests (including one-command/no-retry/binary-match
+checks) and 14 input tests passed; the complete service suite passed 116 tests
+with the installed official SDK/signer. The state below documents the preceding
+pre-restart experiment chronologically.
+
 The user subsequently approved explicit Test-only no-telemetry bootstraps, a
 1024-file package limit in that mode, and launch/version-transition testing.
 Normal authorization, SM, VM identity and Production remain unchanged.

@@ -51,6 +51,13 @@ runner patch or 5.0.0 was attempted. See the
 N4 publication is proven for this temporary mode; N6 Running/update and normal
 authenticated functionality remain open.
 
+The user then authorized one same-binary SM restart through the explicit
+`runtime-activate test --restart-sm` branch. SM restarted successfully, but
+restored saved 3.0.0 service instances and old OCI limits/commands. Both service
+processes remain absent; 4.0.0 launch/update is still unqualified. No second
+restart, new release, cleanup or Production mutation followed. Retained native
+instance/state reconciliation must be resolved before a successor release.
+
 | Step | Change and owner | Gate / evidence | State |
 | --- | --- | --- | --- |
 | N1 | Solution: accept ADR, update HLA/flows/requirements, runtime-input contract and D4 migration mapping | English documents, navigation and deterministic docs-check | Complete; product wire migration remains N3 |

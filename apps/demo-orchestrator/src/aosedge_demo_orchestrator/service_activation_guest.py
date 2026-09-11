@@ -65,10 +65,32 @@ def dropin_content():
         "ExecStartPost=/usr/bin/python3 -B " + str(PROGRAM) + " verify\n")
 
 
+def restart_existing_sm(before, binary):
+    # The explicit existing-state branch never writes configuration or retries.
+    # On a lost response, observe systemd/native state before another decision.
+    try:
+        command(["systemctl", "restart", "aos-sm"], timeout=45)
+        after = service()
+        pid = after.get("MainPID", "0")
+        if after.get("ActiveState") != "active" or not pid.isdigit() or int(pid) < 1 or pid == before["MainPID"]:
+            raise ValueError("SERVICE_ACTIVATION_RESTART_UNCONFIRMED")
+        if hashlib.sha256((Path("/proc") / pid / "exe").read_bytes()).hexdigest() != binary:
+            raise ValueError("SERVICE_ACTIVATION_RESTART_BINARY_MISMATCH")
+        return dict(state="ACTIVE", noOp=False, restarted=True, previousMainPID=before["MainPID"],
+            serviceManager=after, smBinarySha256=binary,
+            cold=json.loads((ROOT / "cold.json").read_bytes()),
+            verification=json.loads((ROOT / "verify.json").read_bytes()),
+            rebootQualified=False, transient=True, currentProcessVerified=True)
+    except (OSError, subprocess.SubprocessError):
+        raise ValueError("SERVICE_ACTIVATION_RESTART_UNCONFIRMED") from None
+
+
 def activate(request):
     if (os.geteuid() != 0 or request.get("role") != "test"
             or request.get("action") != "service-runtime-activate"):
         raise ValueError("SERVICE_ACTIVATION_TEST_ONLY")
+    if type(request.get("restartSm", False)) is not bool:
+        raise ValueError("SERVICE_ACTIVATION_RESTART_FLAG_INVALID")
     raw = base64.b64decode(request["program"], validate=True)
     if len(raw) > 65536 or hashlib.sha256(raw).hexdigest() != request["programSha256"]:
         raise ValueError("SERVICE_ACTIVATION_PROGRAM_MISMATCH")
@@ -101,9 +123,13 @@ def activate(request):
         for team in ("brake", "tire"):
             if inputs.read_document(inputs.PUBLIC / team / "metadata.json") != inputs.snapshot(request)["metadata"]:
                 raise ValueError("SERVICE_ACTIVATION_PUBLIC_INPUT_MISMATCH")
+        if request.get("restartSm"):
+            return restart_existing_sm(before, binary)
         return dict(state="ACTIVE", noOp=True, serviceManager=before, smBinarySha256=binary,
             cold=json.loads((ROOT / "cold.json").read_bytes()), verification=json.loads((ROOT / "verify.json").read_bytes()),
             rebootQualified=False, transient=True, currentProcessVerified=True)
+    if request.get("restartSm"):
+        raise ValueError("SERVICE_ACTIVATION_RESTART_REQUIRES_EXISTING_CONFIGURATION")
     if ROOT.exists():
         raise ValueError("SERVICE_ACTIVATION_STAGING_RECONCILE")
     ROOT.mkdir(mode=0o700)

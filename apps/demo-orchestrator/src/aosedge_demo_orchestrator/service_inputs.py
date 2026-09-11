@@ -70,9 +70,11 @@ class ServiceInputs:
                     if b"connect failed" in diagnostic or b"connection refused" in diagnostic:
                         raise EnvironmentError("SERVICE_NATIVE_IAM_SSH_DESTINATION_UNREACHABLE")
 
-    def prepare(self, target, *, activate=False):
+    def prepare(self, target, *, activate=False, restart_sm=False):
         if target != "test":
             raise EnvironmentError("SERVICE_INPUTS_TEST_ONLY")
+        if type(restart_sm) is not bool or (restart_sm and not activate):
+            raise EnvironmentError("SERVICE_RESTART_REQUIRES_ACTIVATION")
         with self.environment._writer():
             state = read_json(self.environment.root / JOURNAL)
             item = state.get("vehicles", {}).get("test", {})
@@ -100,5 +102,6 @@ class ServiceInputs:
                             raise EnvironmentError("SERVICE_INPUT_MIGRATION_REQUIRES_NO_LEGACY_ASSIGNMENTS")
                     raw = Path(__file__).with_name("service_inputs_guest.py").read_bytes()
                     return driver.guest(state, "test", "service-runtime-activate", nativeSystemUid=uid,
-                        program=base64.b64encode(raw).decode(), programSha256=hashlib.sha256(raw).hexdigest())
+                        program=base64.b64encode(raw).decode(), programSha256=hashlib.sha256(raw).hexdigest(),
+                        restartSm=restart_sm)
                 return driver.guest(state, "test", "service-runtime-prepare", nativeSystemUid=uid)
