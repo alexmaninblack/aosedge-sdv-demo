@@ -53,9 +53,13 @@ class OperationRequest:
     service_release: Optional[str] = None
     metadata_only: bool = False
     restart_project: Optional[str] = None
+    without_permissions: bool = False
 
     def selection_error(self) -> Optional[str]:
         """Validate agreed selectors before any lifecycle adapter is called."""
+        if type(self.without_permissions) is not bool or (self.without_permissions and
+                (self.domain, self.action) != ("service", "prepare")):
+            return "WITHOUT_PERMISSIONS_USES_SERVICE_PREPARE_ONLY"
         if self.service_release is not None and (self.domain != "service" or self.action not in ("sign", "upload", "cloud-status")):
             return "SERVICE_RELEASE_SELECTOR_INVALID"
         if self.service_version_id is not None and (self.domain, self.action) != ("service", "inspect"):

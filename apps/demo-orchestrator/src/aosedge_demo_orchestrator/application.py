@@ -104,7 +104,8 @@ class DemoOrchestrator:
                 return OperationResult(operation, OperationState.BLOCKED, "SERVICE_PREPARE_USES_TEAM_AND_PROFILE_ONLY")
             try:
                 data = ServicePackages(self.environment_service, self.vm_service.progress).prepare(
-                    request.team, request.content_profile, request.profile or "service-provider")
+                    request.team, request.content_profile, request.profile or "service-provider",
+                    without_permissions=request.without_permissions)
                 return OperationResult(operation, OperationState.COMPLETED,
                     "Unsigned service package prepared; no VM action, signing, Cloud mutation or runtime qualification.", data=data)
             except EnvironmentError as error:

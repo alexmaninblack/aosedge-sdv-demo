@@ -82,6 +82,30 @@ class ServicePackageTests(unittest.TestCase):
         self.assertEqual({"config.yaml", "service/arm64/" + RELEASE_FILE}, set(changed))
         self.assertEqual(first, json.loads((Path(first["packagePath"]) / "prepared.json").read_text()))
 
+    def test_explicit_delivery_only_mode_removes_only_permissions(self):
+        for team, profile in (("brake", "v1"), ("brake", "v2"), ("brake", "v3"), ("tire", "v1")):
+            expected = package_configuration(ROOT, team, profile, "42.0.0")
+            del expected["items"][0]["configuration"]["permissions"]
+            self.assertEqual(expected, package_configuration(ROOT, team, profile, "42.0.0", without_permissions=True))
+            self.assertIn("permissions", package_configuration(ROOT, team, profile, "42.0.0")["items"][0]["configuration"])
+        first = self.packages.prepare("brake", "v1")
+        second = self.packages.prepare("brake", "v1", without_permissions=True)
+        self.assertTrue(second["withoutPermissions"])
+        self.assertEqual("DELIVERY_ONLY_NO_KUKSA_AUTH", second["qualification"])
+        self.assertEqual({"config.yaml", "service/arm64/" + RELEASE_FILE},
+            {name for name in first["files"] if first["files"][name] != second["files"][name]})
+        self.assertNotIn("permissions", json.loads((Path(second["packagePath"]) / "config.yaml").read_text())["items"][0]["configuration"])
+
+    def test_delivery_only_flag_reaches_shared_dispatch_and_is_not_global(self):
+        request = request_from_arguments(build_parser().parse_args(["service", "prepare", "brake", "--profile", "v1", "--without-permissions"]))
+        self.assertTrue(request.without_permissions)
+        with patch("aosedge_demo_orchestrator.service_packages.ServicePackages", return_value=self.packages):
+            result = DemoOrchestrator(environment_service=self.environment).execute(request)
+        self.assertEqual("COMPLETED", result.state.value)
+        self.assertEqual("DELIVERY_ONLY_NO_KUKSA_AUTH", result.data["qualification"])
+        from aosedge_demo_orchestrator.models import OperationRequest
+        self.assertIsNotNone(OperationRequest("service", "upload", without_permissions=True).selection_error())
+
     def test_private_operator_umask_does_not_hide_payload_from_native_uid(self):
         previous = os.umask(0o077)
         try:
@@ -100,6 +124,13 @@ class ServicePackageTests(unittest.TestCase):
             self.packages.prepare("brake", "v1")
         self.assertEqual([], list((parent / "tire").iterdir()))
         self.assertEqual({}, ReleaseContinuity(self.environment).read()["versions"])
+
+    def test_finder_metadata_is_not_a_release_number(self):
+        directory = self.base / "catalog/services/brake/releases"
+        directory.mkdir(parents=True)
+        (directory / ".DS_Store").write_bytes(b"Finder fixture")
+        self.assertEqual("8.0.0", self.packages.prepare("brake", "v1")["version"])
+        self.assertEqual(b"Finder fixture", (directory / ".DS_Store").read_bytes())
 
     def test_failed_validation_consumes_number_but_never_commits_package(self):
         self.packages._validate.side_effect = EnvironmentError("SERVICE_PACKAGE_SCHEMA_INVALID")

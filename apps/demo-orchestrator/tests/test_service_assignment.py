@@ -46,6 +46,7 @@ class AssignmentCloud:
         self.tire_assigned, self.tire_reported, self.tire_services = [], [], []
         self.service_recipients = {BRAKE: [], TIRE: []}
         self.version_state = "ready"
+        self.version = "8.0.0"
         self.subject_created = dict(id=SUBJECT, label=assignment.LABELS["brake"], is_group=True,
             is_protected=False, priority=0, created_by=USER)
         self.runtime = []
@@ -77,7 +78,7 @@ class AssignmentCloud:
                 service_id = body["service_ids"][0]
                 services = self.services if subject_id == SUBJECT else self.tire_services
                 services.append(dict(service=dict(id=service_id)))
-                self.service_recipients[service_id] = [dict(id=UNIT, system_uid=TEST["systemUid"], oem_id=OWNER, subjects=[subject_id])]
+                self.service_recipients[service_id] = [dict(id=UNIT, system_uid=TEST["systemUid"], oem_id=OWNER, subjects=[DEFAULT, SUBJECT, TIRE_SUBJECT])]
                 self.runtime.append(dict(subject=subject_id, service=dict(id=service_id), instances=[]))
                 return dict(subject_id=subject_id, service_ids=body["service_ids"])
             raise AssertionError(path)
@@ -98,9 +99,9 @@ class AssignmentCloud:
             "subjects/" + TIRE_SUBJECT + "/services/": self.tire_services,
             "units/" + UNIT + "/subjects-services/": self.runtime}
         for identifier in (BRAKE, TIRE):
-            collections["services/" + identifier + "/service-versions/"] = [dict(id=VERSION, version="8.0.0", container_state=self.version_state)]
+            collections["services/" + identifier + "/service-versions/"] = [dict(id=VERSION, version=self.version, container_state=self.version_state)]
             collections["services/" + identifier + "/units/"] = self.service_recipients[identifier]
-            collections["units/" + UNIT + "/subjects-services/" + identifier + "/"] = [row for row in self.runtime if row["service"]["id"] == identifier]
+            collections["units/" + UNIT + "/subjects-services/" + identifier + "/"] = [dict(row, subject=dict(id=row["subject"])) for row in self.runtime if row["service"]["id"] == identifier]
         rows = collections[key]
         offset = int(parse_qs(parts.query)["offset"][0])
         return dict(total=len(rows), offset=offset, items=copy.deepcopy(rows[offset:offset + 100]))
@@ -136,6 +137,20 @@ class WorkerTests(unittest.TestCase):
         self.assertEqual(("BLOCKED", False), (result["stage"], result["attempted"]))
         self.assertIn("COLLISION", result["reason"])
         self.assertEqual([], self.cloud.posts)
+
+    def test_unit_subject_membership_is_not_a_service_assignment(self):
+        for step in ("create", "bind", "assign"):
+            result = assignment.execute(self.cloud, dict(self.request, step=step))
+            if step == "create":
+                self.request["subject"] = result["subject"]
+        result = assignment.snapshot(self.cloud, dict(self.request, runtime=True))
+        self.assertTrue(result["serviceBound"])
+        self.assertEqual(SUBJECT, result["runtime"]["details"][0]["subject"])
+        self.assertEqual(3, len(self.cloud.posts))
+        self.cloud.runtime.append(dict(subject=DEFAULT, service=dict(id=BRAKE)))
+        with self.assertRaisesRegex(CloudFailure, "UNRELATED_SUBJECT"):
+            assignment.snapshot(self.cloud, self.request)
+        self.assertEqual(3, len(self.cloud.posts))
 
     def test_current_test_owner_sp_and_version_identity_gates(self):
         for field, value in (("ownerId", SP), ("serviceProviderId", OWNER), ("team", "foreign"), ("publishedVersion", "9.0.0")):
@@ -325,6 +340,33 @@ class JournalTests(unittest.TestCase):
         self.assertEqual("UNCERTAIN", self.service.assign(BRAKE)["state"])
         result = self.service.assign(BRAKE)
         self.assertIn("BIND_NOT_OBSERVED_NO_REPLAY", result["reason"])
+        self.assertEqual(1, len(self.cloud.posts))
+
+    def test_explicit_deploy_after_new_ready_release_reconciles_absence_once(self):
+        self.loss = ("assign", "before")
+        self.assertEqual("UNCERTAIN", self.service.assign(BRAKE)["state"])
+        self.assertEqual(2, len(self.cloud.posts))
+        self.assertEqual("UNCERTAIN", self.service.assign(BRAKE)["state"])
+        self.cloud.version = "9.0.0"
+        self.cloud.version_state = "uploaded"
+        self.service._publication = Mock(return_value=dict(team="brake", serviceProviderId=SP, publishedVersion="9.0.0"))
+        self.assertEqual("UNCERTAIN", self.service.assign(BRAKE)["state"])
+        self.assertEqual(2, len(self.cloud.posts))
+        self.cloud.version_state = "ready"
+        self.assertEqual("ASSIGNED", self.service.assign(BRAKE)["state"])
+        self.assertEqual(3, len(self.cloud.posts))
+        self.assertTrue(self.service.assign(BRAKE)["noOp"])
+        self.assertEqual(3, len(self.cloud.posts))
+        record = read_json(self.root / JOURNAL)["serviceOperations"][BRAKE]
+        self.assertEqual("8.0.0", record["priorAssignmentAttempts"][0]["publishedVersion"])
+        self.assertEqual("9.0.0", record["steps"]["assign"]["publishedVersion"])
+
+    def test_new_ready_release_cannot_repeat_an_unconfirmed_subject_bind(self):
+        self.loss = ("bind", "before")
+        self.service.assign(BRAKE)
+        self.cloud.version = "9.0.0"
+        self.service._publication = Mock(return_value=dict(team="brake", serviceProviderId=SP, publishedVersion="9.0.0"))
+        self.assertEqual("UNCERTAIN", self.service.assign(BRAKE)["state"])
         self.assertEqual(1, len(self.cloud.posts))
 
     def test_known_failed_preflight_can_be_explicitly_repeated(self):

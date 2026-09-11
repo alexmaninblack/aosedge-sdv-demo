@@ -15,8 +15,25 @@ both package and publication metadata. The result returns a release handle and
 an unsigned package path. No VM, signing, upload or assignment is performed.
 `--profile` is functional content (`v1`, `v2`, `v3`); `--cloud-profile` optionally
 chooses the configured SP. Missing build output gives the explicit build command.
-Tire real product builds and runtime-resource activation remain pending.
+Both teams have real ARM64 exports; Test resource activation is transient and
+does not qualify a persistent Factory image or reboot.
 See the [current package contract](../../docs/architecture/demo-control.md#native-service-package-preparation).
+
+Temporary Cloud workaround, explicitly authorized on 11 September:
+
+```bash
+democtl service prepare brake --profile v1 --without-permissions
+democtl service prepare tire --profile v1 --without-permissions
+```
+
+This omits only `configuration.permissions` and records
+`DELIVERY_ONLY_NO_KUKSA_AUTH`. Existing binaries, resources, minimum instances,
+offline TTL and all other package settings are unchanged. Normal preparation
+without this flag retains native permissions. Do not disable KUKSA authentication
+or claim telemetry/advisory functionality for these releases. Signing/upload use
+the returned handles as usual. Brake/Tire 3.0.0 passed Cloud building and reached
+Test; native launch is not qualified. See the
+[live result](../../docs/qualification/demo-studio-implementation-progress-2026-09-11.md#permission-free-delivery-experiment).
 
 Use the exact returned handle with `democtl service sign <handle>`,
 `democtl service upload <handle>` and `democtl service cloud-status <handle>`.
@@ -39,7 +56,10 @@ Production and default Subjects are untouched. The existing journal retains each
 Subject ID across service updates. Package readiness is reported separately:
 `ASSIGNED` means desired association, not installation or Running. A partial
 result preserves the exact attempted step; repeating reconciles without blindly
-replaying a POST. Full Subject retirement integration remains unavailable.
+replaying a POST. One new explicit association attempt is allowed after a newer
+READY release only when the exact service binding is authoritatively absent and
+the retained Subject is already bound to Test. It never repeats Subject creation
+or Unit binding. Full Subject retirement integration remains unavailable.
 
 ### Cloud-only Test observations
 

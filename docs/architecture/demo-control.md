@@ -538,6 +538,23 @@ instance, seven-day offline TTL, team-specific input resource and exact KUKSA
 paths; native outbound enforcement and loader/library closure still need N6
 proof. No resource configuration is activated by preparation.
 
+Temporary exception accepted on 11 September 2026: the platform team reported
+via the user that the Cloud bundle builder fails on service `permissions`.
+`service prepare <team> --profile <P> --without-permissions` omits only that
+configuration section, keeps the compiled product payload unchanged, and marks
+the receipt `withoutPermissions=true`, `DELIVERY_ONLY_NO_KUKSA_AUTH`. Signing
+checks that the section remains absent. The normal default and accepted native
+permission contract are unchanged. This mode qualifies delivery/version handling
+only: no KUKSA access, telemetry, advisory or functional service readiness is
+claimed. It must not trigger a shared token, disabled broker authentication or
+an SM modification. Return to normal preparation with a newly allocated release
+after the Cloud fix; do not overwrite a published workaround package.
+
+The [3.0.0 experiment](../qualification/demo-studio-implementation-progress-2026-09-11.md#permission-free-delivery-experiment)
+confirmed Cloud READY and guest installation for both teams, but exposed a
+separate native container launch failure. Updating between running service
+versions remains unqualified.
+
 A schema failure retains the allocated number and leaves no committed
 package. Another explicit prepare allocates a new number; existing packages
 are never overwritten. [Signing/publication](#native-service-publication)

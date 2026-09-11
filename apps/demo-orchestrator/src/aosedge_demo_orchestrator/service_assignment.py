@@ -49,6 +49,7 @@ def _subject(row, label, expected_id=None, created_by=None):
 def snapshot(cloud, request):
     """Bounded, sanitized authoritative preflight; never adopts by label."""
     from .service_cloud import service_view, unit_view, version_view
+    from .cloud_observation import service_subject_id
     from .unit_cloud import CloudFailure
     if cloud.user["role"] != "oem" or cloud.user["ownerId"] != request["ownerId"]:
         raise CloudFailure("SERVICE_ASSIGNMENT_OEM_BINDING_CHANGED")
@@ -98,8 +99,15 @@ def snapshot(cloud, request):
     if len(matches) != 1 or object_id(matches[0]["id"]) != subject_id:
         raise CloudFailure("SERVICE_SUBJECT_RECORDED_ID_NOT_UNIQUE")
     result["subject"] = _subject(cloud.call("subjects/" + subject_id + "/"), label, subject_id, retained["createdBy"])
-    for row in recipients:
-        if row["subjectIds"] is None or any(value != subject_id for value in row["subjectIds"]):
+    listing = None
+    if recipients or request.get("runtime"):
+        cloud.require("units_subjects_services_list")
+        listing = _pages(cloud, "units/" + current["unitId"] + "/subjects-services/",
+            lambda row: (service_subject_id(row.get("subject")), (row.get("service") or {}).get("id")))
+        # Service recipients expose all Subjects on a Unit, not the service's
+        # assignment relation. Check the authoritative (Subject, service) rows.
+        if any((row.get("service") or {}).get("id") == identifier and
+                service_subject_id(row.get("subject")) != subject_id for row in listing):
             raise CloudFailure("SERVICE_ASSIGNMENT_UNRELATED_SUBJECT_PRESENT")
     def scoped_units(path):
         rows = _pages(cloud, path, lambda row: object_id(row["id"]))
@@ -118,10 +126,8 @@ def snapshot(cloud, request):
     if request.get("runtime"):
         from .cloud_observation import service as runtime_service
         cloud.require("units_subjects_services_list", "units_subjects_services_read")
-        listing = _pages(cloud, "units/" + current["unitId"] + "/subjects-services/",
-            lambda row: (row.get("subject"), (row.get("service") or {}).get("id")))
         details = _pages(cloud, "units/" + current["unitId"] + "/subjects-services/" + identifier + "/",
-            lambda row: (row.get("subject"), (row.get("service") or {}).get("id")))
+            lambda row: (service_subject_id(row.get("subject")), (row.get("service") or {}).get("id")))
         if any((row.get("service") or {}).get("id") != identifier for row in details):
             raise CloudFailure("SERVICE_ASSIGNMENT_RUNTIME_IDENTITY_MISMATCH")
         result["runtime"] = dict(services=[runtime_service(row) for row in listing if
@@ -265,12 +271,26 @@ class ServiceAssignment:
                             save()
                         continue
                     if attempt.get("attempted") is True:
-                        return partial("SERVICE_ASSIGNMENT_" + step.upper() + "_NOT_OBSERVED_NO_REPLAY", current, attempt)
-                    attempt = dict(stage="ATTEMPTING", attempted=True, startedAt=now())
+                        from .releases import number
+                        previous_version = attempt.get("publishedVersion", record["publishedVersion"])
+                        # A new explicit Deploy following a newer READY release
+                        # is not a replay of the old eligibility state. Reconcile
+                        # exact absence first; never recreate/rebind the Subject.
+                        if not (step == "assign" and current["unitBound"] and current["package"]["ready"]
+                                and number(publication["publishedVersion"]) > number(previous_version)):
+                            return partial("SERVICE_ASSIGNMENT_" + step.upper() + "_NOT_OBSERVED_NO_REPLAY", current, attempt)
+                        history = record.setdefault("priorAssignmentAttempts", [])
+                        if len(history) >= 16:
+                            return partial("SERVICE_ASSIGNMENT_ATTEMPT_HISTORY_LIMIT", current, attempt)
+                        history.append(dict(attempt, publishedVersion=previous_version,
+                            absenceConfirmedAt=current["observedAt"]))
+                    attempt = dict(stage="ATTEMPTING", attempted=True, startedAt=now(),
+                        publishedVersion=publication["publishedVersion"])
                     if step == "create":
                         subject["create"] = attempt
                     else:
                         record["steps"][step] = attempt
+                    record["publishedVersion"] = publication["publishedVersion"]
                     save()
                     response = self.units._cloud("service-assignment-step", **request, step=step)
                     if (response.get("stage") not in ("ACCEPTED", "OBSERVED", "BLOCKED", "UNCERTAIN")

@@ -32,14 +32,23 @@ This supersedes the earlier local READY gate, not Cloud's native validation.
 Q13 retention/reset applies independently to each Subject. No shared Subject
 was created before the amendment, so this run requires no binding migration.
 
+Temporary delivery-only experiment accepted later on 11 September: prepare both
+services with `--without-permissions` while the platform team fixes the reported
+Cloud build defect. This does not change the native trust contract or authorize
+disabling KUKSA authentication. Both 3.0.0 bundles reached READY and were installed
+on current Test; native launch remains failed/inactive, not functional. The
+[latest evidence](../../qualification/demo-studio-implementation-progress-2026-09-11.md#permission-free-delivery-experiment)
+supersedes the earlier 2.0.0 build/association blocker. No 4.0.0 transition, SM
+change, restart, rebuild or Production action is included in this proof.
+
 | Step | Change and owner | Gate / evidence | State |
 | --- | --- | --- | --- |
 | N1 | Solution: accept ADR, update HLA/flows/requirements, runtime-input contract and D4 migration mapping | English documents, navigation and deterministic docs-check | Complete; product wire migration remains N3 |
 | N2 | Brake/Tire + Platform: private bootstrap sessions, dynamic token readers, native tmpfs resource mode; retire only token-owner patch | First create, isolation, atomic renewal, path/mode/symlink negatives, cleanup/restart, native host compilation | Host source tests passed; Linux/live proof remains N6 |
 | N3 | Solution contracts, both producers/backends: package version and native identity; explicit new message schemas without required service/model OCI digest | Producer-consumer fixtures; legacy queues/history retained; no fabricated digest; model/VDP hashes unchanged | Consumer and producer/input source increments passed; live integration remains N6 |
-| N4 | Demo Control: package the allocated version once; project public inputs; native configuration activation through existing commands | Package/publication equality; no manifest lookup dependency; stable-directory refresh after VDP commit | Both real ARM64 exports, signed-payload equality, warm projection and transient resource activation passed; after user changed OEM to arm64 only, both 2.0.0 uploads created service/version records but failed Cloud bundle building |
+| N4 | Demo Control: package the allocated version once; project public inputs; native configuration activation through existing commands | Package/publication equality; no manifest lookup dependency; stable-directory refresh after VDP commit | ARM64 exports, signing, warm projection and transient activation passed; permission-free 3.0.0 bundles READY and guest-installed. Normal permission-bearing publication and functional runtime remain unqualified |
 | N5 | Existing startup integration: restore public /run inputs before SM launches retained assignments | Exact hook/order documented and tested; no new daemon, persisted token or metadata authority | Cold/warm split accepted; pre-SM preparation and post-SM process verification passed with unchanged SM binary; persistent-image integration and retained-assignment VM reboot not qualified |
-| N6 | Bounded current Test SOTA and backend integration through democtl | Real Cloud Running/version, KAC/TLS/subscriptions, renew/expiry, actual product records, retained state and scoped access proof | Separate Brake/Tire Group Subjects created and bound to Test; service association attempted once each but still absent on read. Both packages uploaded/not ready after generic bundle build failure; no Running/functional qualification |
+| N6 | Bounded current Test SOTA and backend integration through democtl | Real Cloud Running/version, KAC/TLS/subscriptions, renew/expiry, actual product records, retained state and scoped access proof | Separate Subjects and service associations confirmed; both 3.0.0 packages installed in guest. Brake inactive; Tire failed with native crun `Too many open files`. KUKSA intentionally unauthorized in this experiment; no Running, update-transition or functional qualification |
 | N7 | Checkpoint source/docs and record exclusions | Commit only tested source; no build artifacts; retain current VM/Factory/Production | N2/N3 local checkpoints created; full-migration checkpoint remains pending |
 
 Source increments may be developed independently, but **no new producer is

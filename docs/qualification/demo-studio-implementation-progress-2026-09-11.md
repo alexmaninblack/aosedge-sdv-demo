@@ -9,7 +9,80 @@ and [10 September evidence](demo-studio-implementation-progress-2026-09-10.md)
 remain the baseline. This continuation does not change the approved story,
 native left-hand composition, Production scope or service trust model.
 
-## Latest continuation — separate service Subjects, Test only
+## Permission-free delivery experiment
+
+The user reported the platform team's diagnosis: a service `permissions`
+section triggers a Cloud build failure. The user authorized omitting it for
+both services to test delivery/version handling without KUKSA telemetry.
+Demo Control now exposes explicit `service prepare <team> --profile v1
+--without-permissions`; the normal default still includes native permissions.
+No authentication bypass, SM change, VM restart, image/product build, Production
+change, cleanup or backup occurred in this experiment.
+
+Both packages reuse the exact existing ARM64 v1 executables from the previous
+2.0.0 attempt. Only the allocated version and permissions omission changed.
+Preparation records `DELIVERY_ONLY_NO_KUKSA_AUTH`. The official signer confirmed
+RS256 and prepared-payload equality. All preparation, signing, upload, assignment
+and live observations were executed through `democtl`.
+
+| Service release | SP Deployment Bundle ID | Cloud version ID | Cloud build result |
+| --- | --- | --- | --- |
+| Brake 3.0.0 | 407ea227-0f42-4445-9bfe-93f35c00bb82 | 5ef448a5-cc6a-4b1b-9750-107a8a432089 | HTTP 201; Done / ready at 14:04:05Z |
+| Tire 3.0.0 | 0c12036b-30f7-4e31-b4fe-782b8f520841 | 5f20d8d1-86b9-4f32-b56c-f0141f6fb3e2 | HTTP 201; Done / ready at 14:04:06Z |
+
+Signing SHA-256: Brake
+`ca95d357426012b68780af60f6d8fa9bb3a06168d1bc25fac9d92b710fa14c77`;
+Tire `cc0ae563b92362c40699b4ed00c8f859f9256e4d313e6fb10f66a73b7368f60e`.
+Artifacts remain outside Git in the catalog's `services/<team>/releases/3.0.0`.
+
+The two retained per-service Subjects below were reused. After exact absence
+reconciliation against the newer READY release, one explicit new service
+association attempt per team succeeded. No Subject was recreated or rebound.
+Old 2.0.0 attempts remain in the journal. Same-release uncertain attempts still
+cannot be replayed; creation/binding never receive this newer-release exception.
+
+Post-read exposed two Demo Control interpretation defects, corrected against
+the [public OpenAPI](https://api.aoscloud.io/api/v11/openapi.json):
+
+- A service's Unit recipient row lists all Subjects attached to that Unit, not
+  the Subjects assigning that particular service. Scope now uses actual
+  `(Subject, service)` relations from the Unit service list; peer/default Unit
+  membership is allowed, but a service assigned through an unrelated Subject
+  still blocks.
+- Unit service list rows use a Subject UUID; detail rows use a Subject object.
+  Both normalize to the same validated ID before projection/pagination.
+
+At 14:10:55Z / 14:10:59Z, repeat assignment commands reconciled with `noOp=true`,
+`unitBound=true`, `serviceBound=true`, and no further POST:
+
+| Service | Cloud observation | Native evidence from existing `component logs test` |
+| --- | --- | --- |
+| Brake 3.0.0 | Installed version 3.0.0; instance 0 inactive | Download/install completed; CRun launch attempted; native restarts exhausted |
+| Tire 3.0.0 | Pending status `installed`, installed version null; instance 0 version 3.0.0 failed | Image manager marked 3.0.0 installed; launch failed with `openat2 sys/fs/cgroup [Too many open files] (crunrunner.cpp:84` |
+
+Guest image-manager events at 14:05:29Z explicitly mark **both** packages
+installed with no install error. This establishes delivery and package
+installation, not healthy execution. Tire's conflicting Cloud version/status
+fields are retained rather than normalized into a successful runtime. The native
+launch failure is distinct from the intentionally missing KUKSA permission; the
+underlying descriptor/limit cause is not yet established. No fabricated KAC
+error or successful product bootstrap is claimed. No 4.0.0 update was published
+to mask the unresolved runtime boundary; version-transition proof remains open.
+
+Additional observation for later reconciliation: Cloud Subject reads report
+`is_group=true` for the two retained Subjects, while CM desired-status log lines
+render their type as `user`. No type mutation or inferred cause was introduced.
+SM and CM remain active, with `NRestarts=0`; VDP remains active (its existing
+provider reconnect/restart observations are not service functionality proof).
+
+Targeted regression evidence: 113 service-family tests with the official signer,
+25 Cloud observation tests and 6 CLI tests passed (144 total). Coverage includes
+normal permissions retained, omission-only package difference, API/CLI flag
+validation, Finder `.DS_Store` ignored as metadata rather than a release, real
+Subject list/detail shapes, unrelated assignment rejection and no POST replay.
+Finder metadata is preserved; no release directory is removed.
+
+## Earlier continuation — separate service Subjects, Test only
 
 The user approved replacing the shared Subject with separate retained OEM Group
 Subjects for the logical Brake and Tire services. Both remain current-Test-only;

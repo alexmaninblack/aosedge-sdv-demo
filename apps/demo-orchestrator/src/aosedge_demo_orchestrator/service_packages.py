@@ -34,6 +34,7 @@ def package_record(directory, team, version):
     if (record.get("schemaVersion") != 1 or record.get("state") != "PREPARED" or record.get("team") != team
             or record.get("version") != version or record.get("releaseHandle") != team + "/" + version
             or record.get("packagePath") != str(directory) or not isinstance(record.get("files"), dict)
+            or type(record.get("withoutPermissions", False)) is not bool
             or not 4 <= len(record["files"]) <= 4098):
         raise EnvironmentError("SERVICE_PACKAGE_RECEIPT_INVALID")
     return record
@@ -79,6 +80,8 @@ def read_package(directory, team, version):
     config = json.loads(files["config.yaml"])
     items = config.get("items", [])
     release = json.loads(files["service/arm64/" + RELEASE_FILE])
+    if record.get("withoutPermissions") and any("permissions" in item.get("configuration", {}) for item in items):
+        raise EnvironmentError("SERVICE_DELIVERY_ONLY_PERMISSIONS_PRESENT")
     if (len(items) != 1 or items[0].get("version") != version or items[0].get("identity", {}).get("type") != "service"
             or items[0]["identity"].get("codename") != team + "-health-service" or items[0].get("sourceFolder") != "service"
             or items[0].get("images") != [dict(sourceFolder="arm64", archInfo=dict(architecture="arm64"))]
@@ -88,9 +91,11 @@ def read_package(directory, team, version):
     return record, files
 
 
-def package_configuration(root, team, content_profile, version):
+def package_configuration(root, team, content_profile, version, *, without_permissions=False):
     """Native schema-2 input, using accepted exact product permissions/quotas."""
     number(version)
+    if type(without_permissions) is not bool:
+        raise EnvironmentError("SERVICE_WITHOUT_PERMISSIONS_FLAG_INVALID")
     contracts = root / "contracts"
     if team == "brake" and content_profile in ("v1", "v2", "v3"):
         source = ("brake-telemetry-window/brake-telemetry-window-profile.v1.json" if content_profile == "v1"
@@ -109,7 +114,7 @@ def package_configuration(root, team, content_profile, version):
         prefix = "Vehicle.OEM." + team.title() + "Health.Advisory."
         permissions[prefix + "GatewayStatus"] = "r"
         permissions[prefix + "Request"] = "rw"
-    return dict(schemaVersion=2, publisher=dict(author="maninblack"), items=[dict(
+    config = dict(schemaVersion=2, publisher=dict(author="maninblack"), items=[dict(
         identity=dict(type="service", codename=team + "-health-service", title=team.title() + " Health Service"),
         version=version, sourceFolder="service", images=[dict(sourceFolder="arm64", archInfo=dict(architecture="arm64"))],
         configuration=dict(workingDir="/", cmd="/usr/bin/" + team + "-health-bootstrap"
@@ -120,6 +125,9 @@ def package_configuration(root, team, content_profile, version):
             resources=[dict(name=name) for name in ("kuksa", "kuksa-auth-client", team + "-runtime-inputs")],
             permissions=dict(kuksa=permissions), allowedConnections=["Server/55555/tcp", "10.0.0.1/" + str(port) + "/tcp"]),
         dependencies=[])])
+    if without_permissions:
+        del config["items"][0]["configuration"]["permissions"]
+    return config
 
 
 def product_files(build, team):
@@ -311,9 +319,11 @@ class ServicePackages:
         if result != {"ok": True, "data": {"state": "VALIDATED_SERVICE_CONFIG"}}:
             raise EnvironmentError("SERVICE_PACKAGE_SCHEMA_INVALID")
 
-    def prepare(self, team, content_profile, cloud_profile="service-provider"):
+    def prepare(self, team, content_profile, cloud_profile="service-provider", *, without_permissions=False):
         if team not in ("brake", "tire") or content_profile not in ("v1", "v2", "v3"):
             raise EnvironmentError("SERVICE_CONTENT_PROFILE_INVALID")
+        if type(without_permissions) is not bool:
+            raise EnvironmentError("SERVICE_WITHOUT_PERMISSIONS_FLAG_INVALID")
         with self.environment._writer():
             # Preparation must never invoke Docker, boot a VM or collect guest
             # metadata. An absent real product export is an explicit build step.
@@ -328,6 +338,8 @@ class ServicePackages:
             observed = list(binding["versions"])
             if directory.exists():
                 for path in directory.iterdir():
+                    if path.name == ".DS_Store" and not path.is_symlink() and path.is_file():
+                        continue  # Finder metadata is not a release directory.
                     if path.name.startswith(".prepare-"):
                         continue
                     number(path.name)
@@ -336,7 +348,8 @@ class ServicePackages:
                     observed.append(path.name)
             version = ReleaseContinuity(self.environment).reserve(team, observed)
             self.progress(team + ": preparing release " + version + "; no build or VM action")
-            config = package_configuration(self.environment.root, team, content_profile, version)
+            config = package_configuration(self.environment.root, team, content_profile, version,
+                without_permissions=without_permissions)
             files[RELEASE_FILE] = (encoded(dict(schemaVersion=1, serviceVersion=version)), 0o444)
             directory.mkdir(parents=True, exist_ok=True, mode=0o700)
             target = directory / version
@@ -361,7 +374,9 @@ class ServicePackages:
                     releaseHandle=team + "/" + version, state="PREPARED", preparedAt=now(),
                     sourceRevision=build["sourceRevision"], files=inventory,
                     serviceId=binding["serviceId"], serviceProviderId=binding["ownerId"], cloudProfile=cloud_profile,
-                    qualification="PREPARED_NOT_RUNTIME_QUALIFIED", packagePath=str(target))
+                    withoutPermissions=without_permissions,
+                    qualification="DELIVERY_ONLY_NO_KUKSA_AUTH" if without_permissions else "PREPARED_NOT_RUNTIME_QUALIFIED",
+                    packagePath=str(target))
                 atomic_json(stage / "prepared.json", result)
                 stage.rename(target)
             return result

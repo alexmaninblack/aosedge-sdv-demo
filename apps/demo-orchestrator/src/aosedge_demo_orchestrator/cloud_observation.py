@@ -125,9 +125,17 @@ def instance(value):
     return result
 
 
+def service_subject_id(value):
+    # OpenAPI: list rows contain a UUID; detail rows contain SubjectInfoSchema.
+    if value is None:
+        return None
+    return object_id(value["id"] if isinstance(value, dict) else value)
+
+
 def service(value):
-    result = pick(value, ("subject", "error_message"),
+    result = pick(value, ("error_message",),
                   ("num_instance", "pending_num_instance", "priority", "error_aos_code", "error_exit_code"))
+    result["subject"] = service_subject_id(value.get("subject"))
     result["service"] = service_identity(value.get("service"))
     versions = value.get("service_versions")
     result["service_versions"] = None if versions is None else pick(versions,

@@ -137,10 +137,12 @@ class CloudInventoryTests(unittest.TestCase):
     def test_real_instance_versions_and_detail_pages_not_first_instance_only(self):
         row = service()
         row["instances"].append(dict(instance_id=1, version="2.0.0", run_state="failed", error_exit_code=1))
-        transport = cloud({UNIT_PATH: unit(), LIST_PATH: page([row]), DETAIL_PATH: page([row, dict(row, subject=OWNER)])})
+        transport = cloud({UNIT_PATH: unit(), LIST_PATH: page([row]), DETAIL_PATH: page([
+            dict(row, subject=dict(id=SUBJECT, label="Brake")), dict(row, subject=dict(id=OWNER))])})
         result = read.inventory(transport, IDENTITY)
         details = result["serviceDetails"][SERVICE]
         self.assertEqual(2, len(details["value"]))
+        self.assertEqual([SUBJECT, OWNER], [item["subject"] for item in details["value"]])
         self.assertEqual(["3.0.0", "2.0.0"], [item["version"] for item in details["value"][0]["instances"]["value"]])
         self.assertEqual("failed", details["value"][0]["instances"]["value"][1]["run_state"])
         self.assertEqual(3, transport.call.call_count)
