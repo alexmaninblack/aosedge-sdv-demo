@@ -7,6 +7,9 @@ This directory records accepted baselines, exact component locks,
 qualification procedures, and sanitized defect evidence.
 
 - [Current accepted baseline](current-baseline.md)
+- [AosCore service teardown patch and CM reconciliation blocker](aoscore-service-update-teardown-2026-09-11.md)
+  — 74 native regressions passed; transient Test SM applied, live 3-to-4
+  service transition still blocked before CM resend; no upstream PR yet.
 - [Pre-Studio implementation source checkpoint](pre-studio-implementation-2026-09-09.md)
   — exact multi-repository source pins and named return point; mockup 2.6 and
   accepted design are frozen, Studio implementation remains unauthorized.

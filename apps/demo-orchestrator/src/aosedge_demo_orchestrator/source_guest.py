@@ -775,7 +775,54 @@ def sm_recover_test(request):
                 restoredSelector=not saved["selectorPresent"], durableRecordsPreserved=True, **dict(result, mutation=True))
 
 
+def sm_apply_service_update(request):
+    """Replace only the authorized Test SM; retain all Cloud/native instance data."""
+    if (request.get("target") != "test"
+            or request["vehicle"].get("localVmId") != "d53d05cd-4c46-49c9-a896-534b23b88273"
+            or request["vehicle"].get("unitId") != "2a29c145-bbd1-4494-a0e5-d4b79e6a9db5"):
+        raise ValueError("SM_PROOF_REQUIRES_AUTHORIZED_TEST_31")
+    observation = execute(dict(request, action="component-sm-status"))
+    if observation["binarySha256"] == request["sha256"] and observation["service"]["ActiveState"] == "active":
+        return dict(state="APPLIED", noOp=True, persistentFactoryInputs=True, **observation)
+    previous = "cf251da44d30aec38bd015210f08e284eb121aaff8f00feca2d74b75291a3dee"
+    dropin = Path("/run/systemd/system/aos-sm.service.d/92-democtl-sm-queued-recovery.conf")
+    old_text = "[Service]\nBindReadOnlyPaths=/run/democtl-sm-queued-recovery/aos_sm_app:/usr/bin/aos_sm_app\n"
+    if (observation["binarySha256"] != previous or observation["service"]["ActiveState"] != "active"
+            or dropin.is_symlink() or dropin.read_text() != old_text
+            or observation["freshnessProfile"] != "demo-5s"):
+        raise ValueError("SM_SERVICE_UPDATE_BASE_MISMATCH")
+    runtime = FACTORY_INPUTS.parent
+    saved = sm_saved_test_release(runtime, committed=True)
+    with gzip.GzipFile(fileobj=io.BytesIO(base64.b64decode(request["binary"], validate=True))) as payload:
+        raw = payload.read(256 * 1024 * 1024 + 1)
+    if (len(raw) > 256 * 1024 * 1024 or hashlib.sha256(raw).hexdigest() != request["sha256"]
+            or raw[:5] != b"\x7fELF\x02" or raw[18:20] != b"\xb7\x00"):
+        raise ValueError("SM_ARM64_BINARY_SHA_MISMATCH")
+    root = Path("/run/democtl-sm-service-update")
+    if root.exists() or root.is_symlink():
+        raise ValueError("SM_TRANSIENT_STATE_REQUIRES_RECONCILIATION")
+    root.mkdir(mode=0o700)
+    binary = root / "aos_sm_app"
+    binary.write_bytes(raw)
+    binary.chmod(0o755)
+    command(["chcon", "--reference=/usr/bin/aos_sm_app", str(binary)], check=True)
+    print("Test SM: one stop/start with service teardown fix; native databases preserved", file=sys.stderr, flush=True)
+    subprocess.run(["systemctl", "stop", "aos-sm"], capture_output=True, text=True, timeout=20, check=True)
+    if sm_saved_test_release(runtime, committed=True) != saved:
+        raise ValueError("SM_COMMITTED_VDP_RECORD_CHANGED")
+    dropin.write_text("[Service]\nBindReadOnlyPaths=" + str(binary) + ":/usr/bin/aos_sm_app\n")
+    command(["systemctl", "daemon-reload"], check=True)
+    subprocess.run(["systemctl", "start", "aos-sm"], capture_output=True, text=True, timeout=25, check=True)
+    result = execute(dict(request, action="component-sm-status"))
+    if result["binarySha256"] != request["sha256"] or result["service"]["ActiveState"] != "active":
+        raise ValueError("SM_TRANSIENT_ACTIVATION_UNCONFIRMED")
+    return dict(state="APPLIED", noOp=False, persistentFactoryInputs=True,
+                previousBinarySha256=previous, durableRecordsPreserved=True, **dict(result, mutation=True))
+
+
 def execute(request):
+    if request["action"] == "component-sm-apply" and request.get("proof") == "service-update-teardown":
+        return sm_apply_service_update(request)
     if request["action"] == "service-runtime-inspect":
         import importlib.util
         import shutil

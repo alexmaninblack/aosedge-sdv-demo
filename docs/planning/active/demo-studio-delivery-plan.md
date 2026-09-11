@@ -58,6 +58,15 @@ processes remain absent; 4.0.0 launch/update is still unqualified. No second
 restart, new release, cleanup or Production mutation followed. Retained native
 instance/state reconciliation must be resolved before a successor release.
 
+Later authorized SM-only patch proof: 74 native regressions and 21 Demo Control
+tests passed; the corrected SM was applied once to current Test. The live
+3.0.0-to-4.0.0 transition remains blocked in CM's full-status ingestion before
+resend (`instancemanager.cpp:198`). This explicitly bounded SM exception does
+not expand the unchanged-runtime architecture or authorize a Factory rebuild.
+A further CM patch/restart is proposed, not implemented. Upstream review is
+withheld pending successful live verification. See the
+[current patch checkpoint](../../qualification/aoscore-service-update-teardown-2026-09-11.md).
+
 | Step | Change and owner | Gate / evidence | State |
 | --- | --- | --- | --- |
 | N1 | Solution: accept ADR, update HLA/flows/requirements, runtime-input contract and D4 migration mapping | English documents, navigation and deterministic docs-check | Complete; product wire migration remains N3 |
@@ -65,7 +74,7 @@ instance/state reconciliation must be resolved before a successor release.
 | N3 | Solution contracts, both producers/backends: package version and native identity; explicit new message schemas without required service/model OCI digest | Producer-consumer fixtures; legacy queues/history retained; no fabricated digest; model/VDP hashes unchanged | Consumer and producer/input source increments passed; live integration remains N6 |
 | N4 | Demo Control: package the allocated version once; project public inputs; native configuration activation through existing commands | Package/publication equality; no manifest lookup dependency; stable-directory refresh after VDP commit | ARM64 exports, signing, warm projection and transient activation passed; permission-free 3.0.0 bundles READY and guest-installed. Normal permission-bearing publication and functional runtime remain unqualified |
 | N5 | Existing startup integration: restore public /run inputs before SM launches retained assignments | Exact hook/order documented and tested; no new daemon, persisted token or metadata authority | Cold/warm split accepted; pre-SM preparation and post-SM process verification passed with unchanged SM binary; persistent-image integration and retained-assignment VM reboot not qualified |
-| N6 | Bounded current Test SOTA and backend integration through democtl | Real Cloud Running/version, KAC/TLS/subscriptions, renew/expiry, actual product records, retained state and scoped access proof | Both 4.0.0 images installed, but old 3.0.0 teardown failed at crunrunner.cpp:139 and old runtime configurations persist. No Running/update-transition proof; KUKSA intentionally unauthorized in the explicit lifecycle experiment |
+| N6 | Bounded current Test SOTA and backend integration through democtl | Real Cloud Running/version, KAC/TLS/subscriptions, renew/expiry, actual product records, retained state and scoped access proof | SM teardown patch passed native tests and was applied; CM rejects old-version startup status before resend. Both 4.0.0 images remain installed but unlaunched. KUKSA intentionally unauthorized in this lifecycle experiment |
 | N7 | Checkpoint source/docs and record exclusions | Commit only tested source; no build artifacts; retain current VM/Factory/Production | N2/N3 local checkpoints created; full-migration checkpoint remains pending |
 
 Source increments may be developed independently, but **no new producer is

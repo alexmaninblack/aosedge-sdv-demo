@@ -16,7 +16,7 @@ from aosedge_demo_orchestrator.api import execute_operation
 from aosedge_demo_orchestrator.cli import build_parser, request_from_arguments
 from aosedge_demo_orchestrator.component_runtime import apply_test, build, builder, build_factory, FACTORY_VERSION, FACTORY_REVISION, SM_REVISION
 from aosedge_demo_orchestrator.environment import EnvironmentError
-from aosedge_demo_orchestrator.source_guest import execute, process_wait_observation, container_runtime_observation, sm_saved_test_release, sm_recover_test
+from aosedge_demo_orchestrator.source_guest import execute, process_wait_observation, container_runtime_observation, sm_saved_test_release, sm_recover_test, sm_apply_service_update
 
 
 class RuntimeProofBoundaryTests(unittest.TestCase):
@@ -118,10 +118,62 @@ class RuntimeProofBoundaryTests(unittest.TestCase):
 
     def test_wrong_test_vm_is_rejected_before_guest_commands(self):
         with patch("aosedge_demo_orchestrator.source_guest.command") as command:
-            for proof in ("stop-start", "factory-placeholder", "demo-clock-skew", "queued-recovery"):
+            for proof in ("stop-start", "factory-placeholder", "demo-clock-skew", "queued-recovery", "service-update-teardown"):
                 with self.assertRaises(ValueError):
                     execute(dict(action="component-sm-apply", proof=proof, target="test", vehicle={"localVmId": "another-vm"}))
             command.assert_not_called()
+
+
+class ServiceUpdateApplyTests(unittest.TestCase):
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name)
+        self.previous = "cf251da44d30aec38bd015210f08e284eb121aaff8f00feca2d74b75291a3dee"
+        self.raw = b"\x7fELF\x02" + b"\0" * 13 + b"\xb7\x00" + b"test-only"
+        self.digest = hashlib.sha256(self.raw).hexdigest()
+        self.request = dict(action="component-sm-apply", proof="service-update-teardown", target="test",
+            vehicle=dict(localVmId="d53d05cd-4c46-49c9-a896-534b23b88273", unitId="2a29c145-bbd1-4494-a0e5-d4b79e6a9db5"),
+            sha256=self.digest, binary=base64.b64encode(gzip.compress(self.raw)).decode())
+        self.dropin = self.root / "run/systemd/system/aos-sm.service.d/92-democtl-sm-queued-recovery.conf"
+        self.dropin.parent.mkdir(parents=True)
+        self.old_text = "[Service]\nBindReadOnlyPaths=/run/democtl-sm-queued-recovery/aos_sm_app:/usr/bin/aos_sm_app\n"
+        self.dropin.write_text(self.old_text)
+        self.before = dict(binarySha256=self.previous, service=dict(ActiveState="active"), freshnessProfile="demo-5s")
+        self.after = dict(self.before, binarySha256=self.digest)
+        self.addCleanup(patch.stopall)
+        patch("aosedge_demo_orchestrator.source_guest.Path", side_effect=lambda path: self.root / str(path).lstrip("/")).start()
+        patch("aosedge_demo_orchestrator.source_guest.FACTORY_INPUTS", self.root / "factory/inputs").start()
+        self.observe = patch("aosedge_demo_orchestrator.source_guest.execute", side_effect=[self.before, self.after]).start()
+        self.saved = patch("aosedge_demo_orchestrator.source_guest.sm_saved_test_release", return_value={"version": "18.0.0"}).start()
+        self.command = patch("aosedge_demo_orchestrator.source_guest.command").start()
+        self.process = patch("aosedge_demo_orchestrator.source_guest.subprocess.run").start()
+
+    def test_apply_stops_and_starts_once_without_deleting_native_state(self):
+        value = sm_apply_service_update(self.request)
+        self.assertTrue(value["durableRecordsPreserved"])
+        self.assertEqual([["systemctl", "stop", "aos-sm"], ["systemctl", "start", "aos-sm"]],
+            [call.args[0] for call in self.process.call_args_list])
+        self.assertIn("democtl-sm-service-update", self.dropin.read_text())
+
+    def test_changed_baseline_does_not_stop_sm(self):
+        self.before["binarySha256"] = "0" * 64
+        with self.assertRaisesRegex(ValueError, "BASE_MISMATCH"):
+            sm_apply_service_update(self.request)
+        self.process.assert_not_called()
+        self.assertEqual(self.old_text, self.dropin.read_text())
+
+    def test_stop_failure_is_not_retried(self):
+        self.process.side_effect = subprocess.TimeoutExpired("stop", 20)
+        with self.assertRaises(subprocess.TimeoutExpired):
+            sm_apply_service_update(self.request)
+        self.assertEqual(1, self.process.call_count)
+        self.assertEqual(self.old_text, self.dropin.read_text())
+
+    def test_matching_live_binary_is_noop(self):
+        self.observe.side_effect = [self.after]
+        self.assertTrue(sm_apply_service_update(self.request)["noOp"])
+        self.process.assert_not_called()
 
 
 class QueuedRecoveryBoundaryTests(unittest.TestCase):

@@ -22,11 +22,12 @@ import time
 import runpy
 import re
 import stat
+import tempfile
 
 from .environment import EnvironmentError
 
 SOURCE = Path.home() / "OpenAI/aos-vehicle-platform"
-SM_REVISION = "7f168e9bd5338dd9320ebbd6fe0f6043fcc1eb65"
+SM_REVISION = "1243780d292eacf463f6a8c79075915565b51927"
 SM_TEST_VM = "d53d05cd-4c46-49c9-a896-534b23b88273"
 SM_TEST_UNIT = "2a29c145-bbd1-4494-a0e5-d4b79e6a9db5"
 FACTORY_SOURCE = Path.home() / "OpenAI/aos-vehicle-platform"
@@ -34,7 +35,8 @@ FACTORY_VERSION = "6.1.1-maninblack.31"
 FACTORY_REVISION = "0bed8b3769b09fbe685ed599ca8d10e6594fbe53"
 RELATIVE = "meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files/systemd-slot-component"
 BUILDER_PROJECT = "/home/yocto/r61-build/project/yocto"
-ARTIFACT = Path.home() / "OpenAI/demo-artifacts/aosedge-sdv-demo/runtime-proofs/sm-queued-recovery"
+ARTIFACT = Path.home() / "OpenAI/demo-artifacts/aosedge-sdv-demo/runtime-proofs/sm-service-update-teardown"
+SM_PATCHES = ("0002-idempotent-service-container-teardown.patch", "0003-preserve-failed-service-replacement.patch")
 FILES = ("config.hpp", "config.cpp", "safestop.hpp", "safestop.cpp", "runtime.hpp", "runtime.cpp",
          "tests/safestop.cpp", "tests/runtime.cpp")
 
@@ -73,6 +75,7 @@ def apply_test(environment, target):
     manifest = read_json(ARTIFACT / "manifest.json")
     raw = (ARTIFACT / "aos-sm").read_bytes()
     if (not manifest.get("testsPassed") or manifest.get("profile") != "demo-5s"
+            or manifest.get("proof") != "service-update-teardown" or manifest.get("serviceUpdateRegressionSuites") != 3
             or manifest.get("sourceRevision") != SM_REVISION
             or hashlib.sha256(raw).hexdigest() != manifest["executableSha256"]
             or len(raw) > 256 * 1024 * 1024):
@@ -84,19 +87,14 @@ def apply_test(environment, target):
                 or state.get("factory", {}).get("sha256") !=
                 "a9019f4adfe70499bde339c8e9d95eb8568736b73dc218f6c0e390fbcd28ddf4"):
             raise EnvironmentError("SM_PROOF_REQUIRES_AUTHORIZED_TEST_31")
-        record = state.setdefault("smDemoProof", {})
-        # Reapply only a previously confirmed proof after Park/Resume, and only
-        # against committed18. This does not generalize selector recovery.
-        resume_committed = (record.get("state") == "APPLIED" and
-            record.get("binarySha256") == manifest["executableSha256"])
+        record = state.setdefault("smServiceUpdateProof", {})
         record.update(state="ATTEMPT_STARTED", startedAt=now(), binarySha256=manifest["executableSha256"])
         atomic_json(environment.root / JOURNAL, state)
         driver = SourceDriver(VMService(environment))
         try:
             with driver.operation(timeout=60):
                 result = driver.guest(state, "test", "component-sm-apply", target="test",
-                    proof="queued-recovery",
-                    resumeCommitted=resume_committed,
+                    proof="service-update-teardown",
                     binary=base64.b64encode(gzip.compress(raw, compresslevel=1, mtime=0)).decode(),
                     sha256=manifest["executableSha256"])
                 # systemd clears service credentials on restart. Restore only
@@ -116,7 +114,7 @@ def apply_test(environment, target):
 
 
 def build(target, compile_source=True):
-    """Compile the pinned Test timing/recovery correction, test, export and stop."""
+    """Qualify the pinned Test service teardown fix, export SM and stop Builder."""
     if target != "test":
         raise EnvironmentError("SM_QUALIFICATION_TEST_ONLY")
     if ARTIFACT.exists():
@@ -144,6 +142,13 @@ def build(target, compile_source=True):
             if time.monotonic() >= deadline:
                 raise EnvironmentError("SM_BUILDER_SSH_BOOT_TIMEOUT")
             time.sleep(1)
+        work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-servicemanager/git"
+        if not compile_source:
+            compile_log = subprocess.check_output(ssh + ["cat " + work + "/temp/log.do_compile"], timeout=20).decode()
+            errors = [line for line in compile_log.splitlines() if "error:" in line or "fatal error:" in line]
+            if errors:
+                print("\n".join(errors[:20]), file=sys.stderr, flush=True)
+                raise EnvironmentError("SM_COMPILE_INCOMPLETE")
         data = io.BytesIO()
         inputs = {}
         with tarfile.open(fileobj=data, mode="w") as archive:
@@ -151,6 +156,8 @@ def build(target, compile_source=True):
                 path = SOURCE / RELATIVE / name
                 inputs[name] = hashlib.sha256(path.read_bytes()).hexdigest()
                 archive.add(path, arcname=RELATIVE + "/" + name, recursive=False)
+        for name in SM_PATCHES:
+            inputs[name] = hashlib.sha256((SOURCE / Path(RELATIVE).parent / name).read_bytes()).hexdigest()
         if compile_source:
             # Isolate proof sources; keep the immutable .31 source snapshot intact.
             identity = hashlib.sha256(json.dumps(inputs, sort_keys=True).encode()).hexdigest()[:40]
@@ -160,6 +167,27 @@ def build(target, compile_source=True):
             subprocess.run(ssh + ["tar -xf - -C " + proof_source], input=archive, check=True, timeout=30)
             subprocess.run(ssh + ["tar -xf - -C " + proof_source],
                            input=data.getvalue(), check=True, timeout=20, stdout=sys.stderr)
+            # Populate only absent, exact-revision public Git fetch caches.
+            # Keep BitBake offline and never modify an existing cache checkout.
+            for repository, pinned in (("aos_core_lib_cpp", "60cb83535f773762c61ac5f544b31b7b88c502e3"),
+                                       ("aos_core_api", "af3552a0a5eb0237eff7f5f183780ca46c339cd3")):
+                local = SOURCE / "build" / repository
+                cache = "/home/yocto/yocto-cache/downloads/git2/github.com.aosedge." + repository + ".git"
+                available = subprocess.run(ssh + ["git -C " + cache + " cat-file -e " + pinned + "^{commit}"],
+                    capture_output=True, timeout=15)
+                if available.returncode == 0:
+                    continue
+                subprocess.run(["git", "cat-file", "-e", pinned + "^{commit}"], cwd=local, check=True)
+                with tempfile.TemporaryDirectory(prefix="democtl-sm-source-") as temporary:
+                    bundle = Path(temporary) / (repository + ".bundle")
+                    subprocess.run(["git", "bundle", "create", str(bundle), "--all"], cwd=local, check=True)
+                    transfer = io.BytesIO()
+                    with tarfile.open(fileobj=transfer, mode="w") as archive:
+                        archive.add(bundle, arcname=bundle.name)
+                    subprocess.run(ssh + ["tar -xf - -C " + proof_source], input=transfer.getvalue(), check=True, timeout=30)
+                subprocess.run(ssh + ["test ! -e " + cache + " && git clone --mirror " + proof_source + "/"
+                    + repository + ".bundle " + cache + " && git -C " + cache + " cat-file -e " + pinned + "^{commit}"],
+                    check=True, timeout=30, stdout=sys.stderr)
             layer_update = ("from pathlib import Path; import re; p=Path(%r); "
                 "s,n=re.subn(r'aos-vehicle-platform(?:-[0-9a-f]{40})?/meta-aos-vehicle-platform', %r, p.read_text()); "
                 "assert n == 1; p.write_text(s)") % (BUILDER_PROJECT + "/build-main/conf/bblayers.conf",
@@ -167,8 +195,15 @@ def build(target, compile_source=True):
             subprocess.run(ssh + ["python3 -c " + shlex.quote(layer_update)], check=True, timeout=15)
             print("Test SM: offline recipe compile; no image build", file=sys.stderr, flush=True)
             command = "cd " + BUILDER_PROJECT + "; . poky/oe-init-build-env build-main >/dev/null; bitbake -R " + proof_source + "/qualification/factory-31.conf -c compile aos-servicemanager"
-            subprocess.run(ssh + ["bash -lc " + __import__("shlex").quote(command)],
-                           check=True, timeout=1200, stdout=sys.stderr)
+            compile_result = subprocess.run(ssh + ["bash -lc " + shlex.quote(command)],
+                           timeout=1200, capture_output=True)
+            compile_text = (compile_result.stdout + compile_result.stderr).decode()
+            ARTIFACT.with_suffix(".compile.log").write_text(compile_text)
+            print("\n".join(line for line in compile_text.splitlines()
+                if "error:" in line or line.startswith(("ERROR:", "NOTE: Running task", "NOTE: Tasks Summary", "Summary:"))),
+                file=sys.stderr, flush=True)
+            if compile_result.returncode:
+                raise EnvironmentError("SM_BUILD_OR_TEST_FAILED")
         work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-servicemanager/git"
         test = work + "/build/src/sm/launcher/runtimes/systemd-slot-component/tests/aos_sm_runtimes_systemdslotcomponent_test"
         loader = work + "/recipe-sysroot/usr/lib/ld-linux-aarch64.so.1"
@@ -178,6 +213,44 @@ def build(target, compile_source=True):
             "*StartsWithAnEmptyPersistentStore:*FactoryPlaceholder*:"
             "*StopMakesTheComponentUnavailable:*StopCancellationNeverReturnsSuccess:*StopMissingComponentIsIdempotent:"
             "*SystemdSlotComponentWaitingRecoveryTest.*:*IntentionallyStoppedPreviousRemainsStopped")
+        candidates = subprocess.check_output(ssh + ["find " + work + "/build -type f -name '*_test'"], timeout=20).decode().splitlines()
+        # The native app disables external library tests. Qualify the exact
+        # recipe-patched library separately, reusing its Yocto toolchain.
+        library_test = f"""import os, pathlib, shlex, subprocess
+work = pathlib.Path({work!r})
+environment = os.environ.copy()
+path_export = next(line for line in (work / 'temp/run.do_compile').read_text().splitlines() if line.startswith('export PATH='))
+environment['PATH'] = shlex.split(path_export)[1].split('=', 1)[1]
+cache = dict((line.split(':', 1)[0], line.split('=', 1)[1]) for line in (work / 'build/CMakeCache.txt').read_text().splitlines() if ':' in line and '=' in line and not line.startswith(('#', '//')))
+subprocess.run([cache['CMAKE_COMMAND'], '-S', str(work / 'service-update-deps/aos_core_lib_cpp'), '-B', str(work / 'service-update-launcher-tests'), '-G', cache['CMAKE_GENERATOR'], '-DCMAKE_MAKE_PROGRAM=' + cache['CMAKE_MAKE_PROGRAM'], '-DWITH_TEST=ON', '-DWITH_MBEDTLS=OFF', '-DWITH_OPENSSL=OFF', '-DFETCHCONTENT_FULLY_DISCONNECTED=ON', '-DCMAKE_GTEST_DISCOVER_TESTS_DISCOVERY_MODE=PRE_TEST', '-DCMAKE_TOOLCHAIN_FILE=' + str(work / 'toolchain.cmake')], env=environment, check=True)
+subprocess.run([cache['CMAKE_COMMAND'], '--build', str(work / 'service-update-launcher-tests'), '--target', 'aos_core_sm_launcher_test', '--parallel', '10'], env=environment, check=True)
+"""
+        print("Test SM: build only the shared-library launcher regression target", file=sys.stderr, flush=True)
+        library_result = subprocess.run(ssh + ["python3 -c " + shlex.quote(library_test)],
+                                        timeout=240, capture_output=True)
+        ARTIFACT.with_suffix(".library-test-build.log").write_bytes(library_result.stdout + library_result.stderr)
+        if library_result.returncode:
+            print((library_result.stdout + library_result.stderr).decode()[-10000:], file=sys.stderr, flush=True)
+            raise EnvironmentError("SM_LIBRARY_TEST_BUILD_FAILED")
+        candidates += subprocess.check_output(ssh + ["find " + work + "/service-update-launcher-tests -type f -name '*_test'"], timeout=20).decode().splitlines()
+        native_results = []
+        for marker, selected in (
+            ("/core/sm/launcher/tests/", "LauncherTest.*:ServiceUpdate/*"),
+            ("/sm/launcher/runtimes/container/tests/", "ContainerCleanupErrorTest.*:ContainerRunnerTest.*:ContainerRuntimeTest.StopInstance"),
+            ("/sm/networkmanager/tests/", "BridgeNetworkTest.*:NamespaceCleanupTest.*"),
+        ):
+            matches = [candidate for candidate in candidates if marker in candidate
+                       and (marker.startswith("/core/") or "/core/" not in candidate)]
+            if len(matches) != 1:
+                raise EnvironmentError("SM_NATIVE_TEST_TARGET_UNRESOLVED:" + marker)
+            print("Test SM: native service regression " + selected, file=sys.stderr, flush=True)
+            native = subprocess.run(ssh + ["sudo -n " + loader + " --library-path " + libs + " " + matches[0]
+                + " --gtest_filter=" + shlex.quote(selected)], timeout=60, capture_output=True)
+            print(native.stdout.decode(), file=sys.stderr, flush=True)
+            print(native.stderr.decode(), file=sys.stderr, flush=True)
+            native_results.append(native.stdout + native.stderr)
+            if native.returncode or b"[  PASSED  ]" not in native.stdout or b"[  SKIPPED ]" in native.stdout:
+                raise EnvironmentError("SM_SERVICE_REGRESSION_FAILED:" + marker)
         print("Test SM: executing native timing, role, physical-gate and stop regressions", file=sys.stderr, flush=True)
         result = subprocess.run(ssh + ["sudo -n " + loader + " --library-path " + libs + " " + test + " --gtest_filter=" + __import__("shlex").quote(test_filter)],
                                 timeout=30, capture_output=True)
@@ -208,11 +281,12 @@ def build(target, compile_source=True):
         ARTIFACT.mkdir(parents=True)
         (ARTIFACT / "aos-sm").write_bytes(binary)
         (ARTIFACT / "aos-sm").chmod(0o444)
-        (ARTIFACT / "tests.log").write_bytes(result.stdout)
+        (ARTIFACT / "tests.log").write_bytes(b"\n".join(native_results) + result.stdout)
         manifest = dict(baseRevision=FACTORY_REVISION, sourceRevision=expected, sourceSha256=inputs, executableSha256=hashlib.sha256(binary).hexdigest(),
                         profile="demo-5s", defaultMaximumSourceAgeMs=250, demoMaximumSourceAgeMs=5000,
                         demoMaximumFutureSkewMs=5000, demoReadTimeoutMs=1000, standardReadTimeoutMs=250,
-                        offline=True, imageBuild=False, testsPassed=True, testFilter=test_filter, guestApplied=False)
+                        offline=True, imageBuild=False, testsPassed=True, testFilter=test_filter,
+                        serviceUpdateRegressionSuites=3, proof="service-update-teardown", guestApplied=False)
         (ARTIFACT / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
         return dict(artifact=str(ARTIFACT), **manifest)
     except subprocess.CalledProcessError:

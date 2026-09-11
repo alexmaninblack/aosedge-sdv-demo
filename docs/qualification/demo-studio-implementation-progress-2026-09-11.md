@@ -11,6 +11,12 @@ native left-hand composition, Production scope or service trust model.
 
 ## Explicit no-telemetry lifecycle experiment — 4.0.0
 
+Latest follow-up: the subsequently authorized SM patch passed 74 native tests
+and was applied once to Test at approximately 16:11 UTC. Live transition still
+fails because CM rejects the old-version startup snapshot before scheduling
+resend. See the [patch and reconciliation evidence](aoscore-service-update-teardown-2026-09-11.md).
+Earlier observations below remain historical; no upstream PR is qualified.
+
 <a id="no-telemetry-lifecycle-400"></a>
 
 ### Subsequently authorized single SM restart
