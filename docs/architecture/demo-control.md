@@ -550,6 +550,17 @@ claimed. It must not trigger a shared token, disabled broker authentication or
 an SM modification. Return to normal preparation with a newly allocated release
 after the Cloud fix; do not overwrite a published workaround package.
 
+The subsequent approved lifecycle experiment adds `--demo-no-telemetry`
+alongside `--without-permissions`. Only this explicit mode appends the bootstrap
+flag and overrides `noFileLimit` to 1024. The bootstrap still validates native
+identity and public metadata, rejects Production, then stays alive until native
+SIGTERM/SIGINT without starting analytics or any credential/network operation.
+It emits `DEMO_LIFECYCLE_ONLY / NOT_READY / TELEMETRY_DISABLED`, not successful
+telemetry. The receipt marks `demoNoTelemetry=true` and
+`DEMO_LIFECYCLE_ONLY_NO_TELEMETRY`. This proves container launch/version
+replacement only; native authorization, normal quotas and N6 functional gates
+remain unchanged. There is no missing-secret fallback.
+
 The [3.0.0 experiment](../qualification/demo-studio-implementation-progress-2026-09-11.md#permission-free-delivery-experiment)
 confirmed Cloud READY and guest installation for both teams, but exposed a
 separate native container launch failure. Updating between running service

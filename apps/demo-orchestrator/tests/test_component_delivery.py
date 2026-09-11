@@ -363,6 +363,20 @@ class DeliveryTests(unittest.TestCase):
         self.assertEqual("Service bootstrap error: KUKSA_AUTH_UNAVAILABLE", result["entries"][0]["message"])
         self.assertNotIn("SECRET_FIXTURE", json.dumps(result))
 
+    def test_native_stop_error_keeps_only_fixed_errno_and_source_location(self):
+        service = SimpleNamespace(returncode=0, stdout="Id=aos-sm.service\n")
+        message = ("Failed to stop instance: instance={service:0:brake:subject:0}, "
+            "error=kill SECRET_FIXTURE: No such process (crunrunner.cpp:139)")
+        journal = SimpleNamespace(returncode=0, stdout=json.dumps(dict(
+            MESSAGE=message, __REALTIME_TIMESTAMP="1", _SYSTEMD_UNIT="aos-sm.service")))
+        empty = SimpleNamespace(returncode=0, stdout="")
+        with patch.object(source_guest, "command", side_effect=[service, journal, empty, empty, empty]):
+            result = source_guest.execute(dict(action="component-logs", vehicle=dict(localVmId="fixture")))
+        native = result["entries"][0]["nativeInstance"]
+        self.assertEqual(["No such process"], native["errorLabels"])
+        self.assertEqual(["crunrunner.cpp:139"], native["errorLocations"])
+        self.assertNotIn("SECRET_FIXTURE", json.dumps(result))
+
     def test_unconfirmed_approval_does_not_report_completion(self):
         self.state["componentOperations"] = {"2.0.0": dict(deploymentId="bundle", sha256="digest")}
         self.save()

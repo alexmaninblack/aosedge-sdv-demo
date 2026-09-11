@@ -54,9 +54,13 @@ class OperationRequest:
     metadata_only: bool = False
     restart_project: Optional[str] = None
     without_permissions: bool = False
+    demo_no_telemetry: bool = False
 
     def selection_error(self) -> Optional[str]:
         """Validate agreed selectors before any lifecycle adapter is called."""
+        if type(self.demo_no_telemetry) is not bool or (self.demo_no_telemetry and
+                ((self.domain, self.action) != ("service", "prepare") or not self.without_permissions)):
+            return "DEMO_NO_TELEMETRY_REQUIRES_PERMISSION_FREE_SERVICE_PREPARE"
         if type(self.without_permissions) is not bool or (self.without_permissions and
                 (self.domain, self.action) != ("service", "prepare")):
             return "WITHOUT_PERMISSIONS_USES_SERVICE_PREPARE_ONLY"

@@ -57,6 +57,7 @@ def build_parser() -> argparse.ArgumentParser:
     service_prepare.add_argument("--profile", dest="content_profile", required=True, choices=("v1", "v2", "v3"))
     service_prepare.add_argument("--cloud-profile", dest="profile", default="service-provider", help="configured SP for the read-only release catalog")
     service_prepare.add_argument("--without-permissions", action="store_true", help="temporary Cloud workaround: delivery/version testing only, no KUKSA authorization")
+    service_prepare.add_argument("--demo-no-telemetry", action="store_true", help="explicit Test-only lifecycle process; requires --without-permissions; no analytics or KUKSA")
     for action in ("sign", "upload", "cloud-status"):
         command = service_commands.add_parser(action, help="use the prepared release handle; no build, version allocation or assignment")
         command.add_argument("service_release", help="exact handle returned by prepare, for example brake/8.0.0")
@@ -213,6 +214,7 @@ def request_from_arguments(arguments: argparse.Namespace) -> OperationRequest:
         service_version_id=getattr(arguments, "service_version_id", None),
         service_release=getattr(arguments, "service_release", None),
         without_permissions=getattr(arguments, "without_permissions", False),
+        demo_no_telemetry=getattr(arguments, "demo_no_telemetry", False),
         timeout=getattr(arguments, "timeout", 8.0),
     )
 

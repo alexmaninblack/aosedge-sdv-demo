@@ -9,6 +9,61 @@ and [10 September evidence](demo-studio-implementation-progress-2026-09-10.md)
 remain the baseline. This continuation does not change the approved story,
 native left-hand composition, Production scope or service trust model.
 
+## Explicit no-telemetry lifecycle experiment — 4.0.0
+
+<a id="no-telemetry-lifecycle-400"></a>
+
+The user subsequently approved explicit Test-only no-telemetry bootstraps, a
+1024-file package limit in that mode, and launch/version-transition testing.
+Normal authorization, SM, VM identity and Production remain unchanged.
+
+- Brake source: `09358831a27330e9824cdea0cf6370506475e071`.
+- Tire source: `4deb4e32220525665c011afd4e9433aa65033670`.
+- Both host bootstrap/input targets compiled; process tests prove survival
+  without tokens, SIGTERM/SIGINT shutdown, NOT_READY reporting and Production
+  rejection. A Tire role-case mismatch was caught and fixed before publication.
+- Through `democtl service build`: one warm ARM64 build per team; six Brake
+  and three Tire CTest suites passed.
+- All 114 Demo Control service tests passed with the installed official SDK
+  and signer, including schema validation of both workaround configurations.
+- `prepare --without-permissions --demo-no-telemetry` allocated 4.0.0 per
+  team. Only that explicit mode adds the bootstrap flag and 1024-file limit.
+  Both signatures verified against the configured SP certificate.
+
+| Release | Deployment Bundle | Cloud version ID | Signed bundle SHA-256 |
+| --- | --- | --- | --- |
+| Brake 4.0.0 | c43f23e9-3a35-4b9c-a7f5-04c2da45c79e | e2f030af-11b7-47ab-b527-da5ac2110579 | 7f52b771bc27c168f1d2e95db1a70b012947a88c845f511d6eba5363e2f1a6ca |
+| Tire 4.0.0 | 0d549d8f-208c-424d-8608-c90d0eb81fe8 | a5c0a409-2ec1-40c5-9714-c9443ccb1232 | 810f0cdc35c597120331bbe4cb82c7496380bee1c9d7802ef7246b22034f0958 |
+
+Uploads returned HTTP 201 at 14:46:40/42 UTC. Both builds were Done/READY at
+14:47:05. Native image-manager logs report both 4.0.0 images installed at
+14:46:51. Existing separate Subjects delivered them without reassignment or
+approval. These facts do not establish a running new instance.
+
+**Launch/update proof failed at old-instance teardown**, before the new
+configuration became effective:
+
+| Old 3.0.0 instance | Stop failure at crunrunner.cpp:139 | Subsequent native observation |
+| --- | --- | --- |
+| Brake, 7cf522e4-ff3f-3b8c-b02e-b09458403b5a | No such process | Launcher starts 3.0.0 again; OCI still has five arguments and 64-file limit; process later absent |
+| Tire, b14e8bca-b1a3-30a0-b44c-d972263deee6 | No such file or directory | Launcher starts 3.0.0 again; OCI still has five arguments and 32-file limit; repeats Too many open files at crunrunner.cpp:84 |
+
+The pinned [native CRun runner](https://github.com/aosedge/aos_core_cpp/blob/9eecb80c4994937b5c8cbe0464970f81e8ad4c2d/src/sm/launcher/runtimes/container/crunrunner.cpp)
+returns an error when `libcrun_container_kill(SIGKILL)` fails in StopContainer.
+CM reports the new instances failed with activation timeout at launcher.cpp:392.
+The new bootstrap/1024-file quota therefore has **not** received a live launch
+proof. Host SIGTERM/SIGINT tests are application tests, not a claim that native
+crun stops gracefully. The existing log command now retains only fixed errno
+labels and source locations from redacted native errors.
+
+SM/CM remain active with zero systemd restarts. VDP18 remains active with its
+pre-existing restart count of one. No VM/SM restart, reprovision, runner patch,
+cleanup or 5.0.0 publication was performed. Native-instance recovery is the
+next separate step; then prove 4.0.0 Running before publishing its successor.
+Telemetry/KAC/advisory and full N6 are intentionally not qualified by this mode.
+Artifacts remain in the existing external service catalog, outside Git; old
+packages, failing instances, source baselines and build caches are preserved.
+
 ## Follow-up diagnosis — native service launch
 
 The user requested diagnosis only. No new release, assignment, restart, quota

@@ -106,6 +106,31 @@ class ServicePackageTests(unittest.TestCase):
         from aosedge_demo_orchestrator.models import OperationRequest
         self.assertIsNotNone(OperationRequest("service", "upload", without_permissions=True).selection_error())
 
+    def test_explicit_no_telemetry_mode_is_bounded_and_defaults_stay_unchanged(self):
+        for team in ("brake", "tire"):
+            normal = package_configuration(ROOT, team, "v1", "42.0.0")
+            expected = json.loads(json.dumps(normal))
+            conf = expected["items"][0]["configuration"]
+            del conf["permissions"]
+            conf["cmd"] += " --demo-no-telemetry"
+            conf["quotas"]["noFileLimit"] = 1024
+            self.assertEqual(expected, package_configuration(ROOT, team, "v1", "42.0.0",
+                without_permissions=True, demo_no_telemetry=True))
+            self.assertEqual(normal, package_configuration(ROOT, team, "v1", "42.0.0"))
+            with self.assertRaises(EnvironmentError):
+                package_configuration(ROOT, team, "v1", "42.0.0", demo_no_telemetry=True)
+        request = request_from_arguments(build_parser().parse_args(
+            ["service", "prepare", "brake", "--profile", "v1", "--without-permissions", "--demo-no-telemetry"]))
+        self.assertTrue(request.demo_no_telemetry)
+        with patch("aosedge_demo_orchestrator.service_packages.ServicePackages", return_value=self.packages):
+            result = DemoOrchestrator(environment_service=self.environment).execute(request)
+        self.assertEqual("COMPLETED", result.state.value)
+        self.assertTrue(result.data["demoNoTelemetry"])
+        self.assertEqual("DEMO_LIFECYCLE_ONLY_NO_TELEMETRY", result.data["qualification"])
+        from aosedge_demo_orchestrator.models import OperationRequest
+        self.assertIsNotNone(OperationRequest("service", "prepare", demo_no_telemetry=True).selection_error())
+        self.assertIsNotNone(OperationRequest("service", "upload", demo_no_telemetry=True, without_permissions=True).selection_error())
+
     def test_private_operator_umask_does_not_hide_payload_from_native_uid(self):
         previous = os.umask(0o077)
         try:
@@ -257,11 +282,13 @@ class OfficialServiceConfigTests(unittest.TestCase):
     @unittest.skipUnless(os.environ.get("AOS_SIGNER_PYTHON"), "explicit installed signer runtime required")
     def test_all_fixed_profiles_validate_with_installed_official_schema_without_credentials(self):
         packages = ServicePackages(SimpleNamespace(root=ROOT))
-        for team, profile in (("brake", "v1"), ("brake", "v2"), ("brake", "v3"), ("tire", "v1")):
-            with self.subTest(team=team, profile=profile), tempfile.TemporaryDirectory() as temporary:
+        for team, profile, demo in (("brake", "v1", False), ("brake", "v2", False), ("brake", "v3", False),
+                                   ("tire", "v1", False), ("brake", "v1", True), ("tire", "v1", True)):
+            with self.subTest(team=team, profile=profile, demo=demo), tempfile.TemporaryDirectory() as temporary:
                 directory = Path(temporary)
                 (directory / "service/arm64").mkdir(parents=True)
-                (directory / "config.yaml").write_text(json.dumps(package_configuration(ROOT, team, profile, "42.0.0")))
+                (directory / "config.yaml").write_text(json.dumps(package_configuration(ROOT, team, profile, "42.0.0",
+                    without_permissions=demo, demo_no_telemetry=demo)))
                 with patch("aosedge_demo_orchestrator.service_packages.load_configuration",
                            return_value=dict(cloudPython=os.environ["AOS_SIGNER_PYTHON"])):
                     packages._validate(directory)

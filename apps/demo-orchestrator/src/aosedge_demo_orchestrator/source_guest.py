@@ -1121,6 +1121,16 @@ def execute(request):
                     value = re.search(r"\b" + field + "=(" + pattern + r")(?=,|\s|$)", message)
                     if value:
                         native_fields[field] = value[1]
+                # Keep fixed errno labels and source locations from a trailing
+                # native error without exposing its arbitrary message/body.
+                if re.search(r"fail|error", message, re.I):
+                    labels = ("Device or resource busy", "Directory not empty",
+                        "No such file or directory", "No such process", "Permission denied",
+                        "Operation not permitted", "Too many open files", "Invalid argument",
+                        "not found", "already exists", "timeout")
+                    native_fields["errorLabels"] = [label for label in labels if label.lower() in message.lower()]
+                    native_fields["errorLocations"] = re.findall(
+                        r"\b(?:instance|container|crunrunner|filesystem|launcher|networkmanager|instancemanager)\.cpp:[0-9]{1,5}\b", message)
             # Preserve only known fixed runtime failure labels before removing
             # instance bodies, which otherwise also hide the trailing error.
             diagnostic = next((label for label in (

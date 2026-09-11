@@ -35,6 +35,23 @@ the returned handles as usual. Brake/Tire 3.0.0 passed Cloud building and reache
 Test; native launch is not qualified. See the
 [live result](../../docs/qualification/demo-studio-implementation-progress-2026-09-11.md#permission-free-delivery-experiment).
 
+For the subsequently approved **Test-only process/update experiment**, use:
+
+```bash
+democtl service build brake --content-profile v1
+democtl service build tire --content-profile v1
+democtl service prepare brake --profile v1 --without-permissions --demo-no-telemetry
+democtl service prepare tire --profile v1 --without-permissions --demo-no-telemetry
+```
+
+The additional flag selects an explicit bootstrap lifecycle loop, validates
+native identity/public metadata, rejects Production, and requests
+`noFileLimit: 1024` for native container setup. It never starts analytics,
+contacts KAC/KUKSA, creates a token or reports telemetry readiness. SIGTERM
+and SIGINT stop the loop cleanly. The receipt records
+`DEMO_LIFECYCLE_ONLY_NO_TELEMETRY`; normal preparation/authentication and
+normal quota contracts are unchanged. This is not functional qualification.
+
 Use the exact returned handle with `democtl service sign <handle>`,
 `democtl service upload <handle>` and `democtl service cloud-status <handle>`.
 Sign reuses a verified existing bundle; upload performs one SP Deployment
