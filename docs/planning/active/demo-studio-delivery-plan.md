@@ -25,11 +25,11 @@ gates are retired. Earlier dated checkpoints below remain historical.
 | --- | --- | --- | --- |
 | N1 | Solution: accept ADR, update HLA/flows/requirements, runtime-input contract and D4 migration mapping | English documents, navigation and deterministic docs-check | Complete; product wire migration remains N3 |
 | N2 | Brake/Tire + Platform: private bootstrap sessions, dynamic token readers, native tmpfs resource mode; retire only token-owner patch | First create, isolation, atomic renewal, path/mode/symlink negatives, cleanup/restart, native host compilation | Host source tests passed; Linux/live proof remains N6 |
-| N3 | Solution contracts, both producers/backends: package version and native identity; explicit new message schemas without required service/model OCI digest | Producer-consumer fixtures; legacy queues/history retained; no fabricated digest; model/VDP hashes unchanged | Consumer increment passed; producer/input migration remains open |
+| N3 | Solution contracts, both producers/backends: package version and native identity; explicit new message schemas without required service/model OCI digest | Producer-consumer fixtures; legacy queues/history retained; no fabricated digest; model/VDP hashes unchanged | Consumer and producer/input source increments passed; live integration remains N6 |
 | N4 | Demo Control: package the allocated version once; project public inputs; native configuration activation through existing commands | Package/publication equality; no manifest lookup dependency; stable-directory refresh after VDP commit | Pending |
 | N5 | Existing startup integration: restore public /run inputs before SM launches retained assignments | Exact hook/order documented and tested; no new daemon, persisted token or metadata authority | Pending |
 | N6 | Bounded current Test SOTA and backend integration through democtl | Real Cloud Running/version, KAC/TLS/subscriptions, renew/expiry, actual product records, retained state and scoped access proof | Pending |
-| N7 | Checkpoint source/docs and record exclusions | Commit only tested source; no build artifacts; retain current VM/Factory/Production | N2 local checkpoints created; full-migration checkpoint remains pending |
+| N7 | Checkpoint source/docs and record exclusions | Commit only tested source; no build artifacts; retain current VM/Factory/Production | N2/N3 local checkpoints created; full-migration checkpoint remains pending |
 
 Source increments may be developed independently, but **no new producer is
 published before its matching backend/contract migration**, and no configured
@@ -59,7 +59,10 @@ occurred. No source push occurred in this increment.
 Unclosed Tire analytics functionality remains a separate P7 task. Resolving
 credentials or process startup does not prove that its model/results work.
 
-### N3 execution position — consumer compatibility checkpoint
+### N3 execution position — consumer and producer source checkpoints
+
+Producer source checkpoints: Brake `bc0ed65`, Tire `a0c58b8`. Both remain
+local commits on the existing working branches. No push or publication occurred.
 
 This splits the existing N3 dependency order into source increments; it adds
 no new audience flow, service, daemon or platform responsibility.
@@ -68,7 +71,7 @@ no new audience flow, service, daemon or platform responsibility.
 | --- | --- | --- |
 | Contract and backend consumers | Nine explicit product revision-2 schemas and fixtures; old schemas retained; both backends accept old/new; exact native-instance correlation; Brake forward-only DB migration 003; mixed query envelopes | Source tests passed; not deployed |
 | Demo Control admin compatibility | Existing empty-store proof accepts Brake database 2/3 and Tire 2 only; all ownership, counts and selector checks retained | Isolated adapter tests; no cleanup execution |
-| Package/public/native readers and producers | Not migrated yet; current service source still uses the legacy product metadata reader | Read immutable release, public metadata and native environment separately; update all serializers and preserve queued bytes |
+| Package/public/native readers and producers | Both entry points read package/public/native inputs separately; all nine product kinds use native v2 provenance; explicit old queue/binding decoding retained | Host Brake 6/6 and Tire 3/3; actual C++ output accepted by both matching backends; ARM64/live proof remains N6 |
 | Product integration consumers | New query schema snapshots are frozen; team dashboards still use fixtures and the accepted Brake detail endpoint is not implemented on the active backend branch | Bind the real query/readiness/evidence consumers before claiming P7 |
 
 The [product-message migration](../../../contracts/service-runtime-inputs/product-message-migration.md)

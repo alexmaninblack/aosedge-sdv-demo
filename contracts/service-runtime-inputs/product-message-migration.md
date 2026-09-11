@@ -88,13 +88,25 @@ native-identity projection supports exact joins. Migration failure rolls back
 the complete migration. Tire already stores the canonical envelope without
 mandatory digest columns and needs no database migration.
 
+## Persisted request provenance
+
+Brake already persists metadata alongside each advisory request; its binding
+decoder explicitly accepts old or native provenance. Tire now adds
+`lastRequestMetadata` to its existing private wrapper state when creating a
+request. The model's 13-field schema, producer epoch and sequence semantics do
+not change. The reader accepts old wrapper records with no binding; it never
+uses current metadata to manufacture a fact for an unbound legacy request.
+Queued facts remain unchanged. Normal advisory refresh creates a new bound
+request using the next sequence in the retained epoch. Backward execution by
+an older binary against this extended wrapper state is not qualified here.
+
 ## Integration gate
 
 Deploy neither producer nor backend during this source-only increment.
 Consumer tests cover old/new ingestion, malformed identity/version, unchanged
-receipts/history, cross-instance conflicts and query correlation. N3 remains
-open until package/public/native readers and both producers use these schemas
-and pass producer-consumer conformance. Demo Control's existing private
+receipts/history, cross-instance conflicts and query correlation. The N3 source producer gate now passes: both readers use the separate inputs,
+and actual C++ output for all nine product kinds passes matching backend
+validation/storage and exact-retry checks. This is not ARM64/live qualification. Demo Control's existing private
 empty-store proof accepts Brake database 2/3 and Tire 2 without weakening its
 ownership, selector or empty-state checks. Real query/readiness/evidence
 consumers must use the new query envelopes before P7 acceptance/N6 evidence.

@@ -17,9 +17,9 @@ native left-hand composition, Production scope or service trust model.
 | P2 | Normalized Cloud-only inventory, publication receipts, visible observer and resource view | Service-instance integration and observed metric coverage in the actual tenant |
 | P3 | Previously recorded VDP18 and retained-Test Park/Resume proof preserved | Final fresh CLI story with the complete service-capable baseline |
 | P4 | Initial Studio B2 workspace connected to existing lifecycle/VDP operations | Complete live UI repeat and operator visual approval; team product panels not connected |
-| P5 | Brake native product source and ARM64 build; read-only service-input resource template | Token-directory ownership, pre-assignment manifest identity, SOTA tooling and real Brake ingestion chain |
+| P5 | Brake profiles; native token/input/provenance source migration and producer/backend conformance | N4 package/public projection, N5 boot ordering, current-source ARM64 build and N6 real ingestion chain; former token-owner/manifest gates retired by ADR 0015 |
 | P6 | Brake v2/v3 profile implementation and focused source tests | Live assessment/advisory and independent consumer evidence |
-| P7 | Independent Tire source and product backend; schema-aware cleanup integration | Raw-feature contract closure, ARM64 runtime integration and complete live/offline proof |
+| P7 | Independent Tire source/backend, native provenance, retained request binding and schema-aware cleanup | Raw-feature/load-worker contract closure, real query consumers, ARM64 runtime integration and complete live/offline proof |
 | P8 | Checkpoint/source consolidation in progress | Full clean-image and visual repeat; success-gated final cleanup |
 
 ## Presenter and Demo Control changes
@@ -298,3 +298,51 @@ Local source checkpoints: Brake Cloud `d7626b7`, Tire Cloud `b383c02`.
 The Solution checkpoint containing this section freezes the contract snapshots,
 adapter compatibility and execution position. Nothing was pushed or published
 in this increment; the repositories remain on their existing `codex/` branches.
+
+## N3 producer and native-reader source checkpoint
+
+Both Brake and Tire now read the immutable package release and four native
+Aos identity variables at startup, independently of the five-field public
+Unit/VDP input. New public readers reject legacy metadata and all identity/
+version overrides. The existing private token-session boundary is unchanged.
+
+All nine product message kinds emit revision 2 / 2.0.0 with a complete native
+`serviceInstance`, and no service/model OCI artifact fields. Content payloads,
+hashes, idempotency keys, QM request/status and ACK schemas remain unchanged.
+Retained legacy queues and journal recovery keep exact old bytes and provenance.
+
+Brake's persisted advisory binding supports both revisions. Tire saves the
+original request metadata in its existing private state wrapper; the actual
+model state, producer epoch and sequence rules do not change. An old unbound
+request is retained but cannot generate a newly misattributed fact. Normal
+refresh creates a bound request using the retained epoch and next sequence.
+No old-binary rollback compatibility for the extended wrapper is claimed.
+
+Local evidence:
+
+- Brake: all six CTest targets passed, including new closed-input tests,
+  native product/restart/journal tests and legacy-to-native recovery.
+- Tire: all three CTest targets passed, including separate-input negatives,
+  native/legacy queues, retained request provenance, unbound legacy recovery
+  and monotonic advisory sequence checks.
+- Actual C++ producers emitted five Brake and four Tire message kinds.
+  Both matching backend implementations accepted and stored them in memory;
+  exact retries retained their receipts, and queries exposed revision 2.
+  These are real serializers with synthetic inputs, not live vehicle records.
+- Brake product-export validation now requires all six CTest suites rather
+  than the stale four-suite list. A missing/failed/skipped suite still blocks
+  export; no package was built in this increment.
+
+This closes the N3 producer/input **source** gate. N4 Demo Control package
+assembly/public projection, N5 boot ordering and N6 actual Test integration
+are next. The gRPC main call sites are migrated, but this host build excludes
+the pinned gRPC/ARM64 target. No package signing/upload, service assignment,
+backend activation, VM/SM restart, Factory build or Production change occurred.
+Team dashboards, Brake detail handler and Tire model/load-worker gaps remain
+as previously recorded. Existing local branches are retained.
+
+Source checkpoints: Brake `bc0ed65`, Tire `a0c58b8`; local only, not pushed.
+The four focused Brake export tests and repository quality gate also passed.
+Solution docs-check passed with 170 Markdown documents, 658 stable identifiers
+and 38 Mermaid diagrams. The Solution commit containing this record preserves
+the exact source-gate position; it does not mark the full migration complete.
