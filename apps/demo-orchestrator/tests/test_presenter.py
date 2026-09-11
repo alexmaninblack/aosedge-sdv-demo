@@ -59,6 +59,24 @@ class PresenterTests(unittest.TestCase):
         self.assertEqual(403, self.request("/api/presenter/snapshot", headers={"Origin": "https://evil.example"})[0])
         self.reader.assert_not_called()
 
+    def test_backend_read_is_fixed_team_only_and_uses_democtl_core(self):
+        value = dict(state="OBSERVED", team="brake", source="REAL_BACKEND_HTTP", cloudAuthority=False,
+            vehicleTelemetry=False, observedAt="now", observations={}, privatePath="not-public")
+        with patch.object(presenter, "execute_operation", return_value=dict(data=value)) as execute:
+            code, body, _ = self.request("/api/presenter/backend/brake")
+        self.assertEqual(200, code)
+        execute.assert_called_once()
+        self.assertEqual(dict(domain="backend",action="inspect",team="brake"),execute.call_args.args[0])
+        self.assertNotIn(b"privatePath",body)
+        for path in ("/api/presenter/backend/production", "/api/presenter/backend/brake?target=production", "/api/presenter/backend/other"):
+            self.assertEqual(404,self.request(path)[0])
+
+    def test_backend_failure_is_not_a_fake_empty_store(self):
+        with patch.object(presenter, "execute_operation", side_effect=RuntimeError("PRIVATE_FIXTURE")):
+            code, body, _ = self.request("/api/presenter/backend/tire")
+        self.assertEqual(503,code)
+        self.assertNotIn(b"PRIVATE_FIXTURE",body)
+
     def test_unavailable_read_is_sanitized_and_not_a_fake_success(self):
         self.reader.side_effect = RuntimeError("secret-material")
         code, body, _ = self.request("/api/presenter/snapshot")

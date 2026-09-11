@@ -350,6 +350,25 @@ class DeliveryTests(unittest.TestCase):
         self.assertNotIn("SECRET_FIXTURE", json.dumps(result))
         self.assertNotIn("{component:", json.dumps(result))
 
+    def test_cm_transport_summary_is_bounded_and_allowlisted(self):
+        service = SimpleNamespace(returncode=0, stdout="Id=aos-cm.service\n")
+        messages = [dict(MESSAGE=list(("\x1b[32m(communication) Received ack message: "
+            "token=SECRET_FIXTURE\x1b[0m").encode()), __REALTIME_TIMESTAMP=str(index),
+            _SYSTEMD_UNIT="misleading.service") for index in range(30)]
+        messages += [dict(MESSAGE="(communication) private password hidden: error",
+                         __REALTIME_TIMESTAMP="31")]
+        journal = SimpleNamespace(returncode=0, stdout="\n".join(json.dumps(value) for value in messages))
+        empty = SimpleNamespace(returncode=0, stdout="")
+        with patch.object(source_guest, "command", side_effect=[service, journal, empty, empty, empty]) as command:
+            result = source_guest.execute(dict(action="component-logs", vehicle=dict(localVmId="fixture")))
+        self.assertEqual(31, result["cmJournal"]["records"])
+        self.assertEqual(15, len(result["cmJournal"]["stages"]))
+        self.assertTrue(all(item["stage"] == "Received ack message" for item in result["cmJournal"]["stages"]))
+        self.assertEqual("31", result["cmJournal"]["lastEventTime"])
+        self.assertIn("600", command.call_args_list[1].args[0])
+        for secret in ("SECRET_FIXTURE", "private password hidden", "misleading.service"):
+            self.assertNotIn(secret, json.dumps(result))
+
     def test_bootstrap_fixed_auth_error_survives_projection_without_payload(self):
         service = SimpleNamespace(returncode=0, stdout="Id=aos-sm.service\n")
         event = dict(eventType="KUKSA_AUTH_CHANGED", currentState="NOT_READY",

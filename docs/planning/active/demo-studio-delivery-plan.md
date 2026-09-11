@@ -83,6 +83,16 @@ normal product state. Use existing Demo Control build/package/sign/upload and
 backend operations, no separate helper workflow. Do not introduce a KUKSA
 authentication fallback or count synthetic results as vehicle functionality.
 
+Mock-backend checkpoint, 22:08 UTC: both ARM64 products and their matching
+backend consumers passed isolated native/HTTP/durability tests. Both new backend
+images are active with retained data. Brake 7/v3 and Tire 6/v1 are Cloud READY
+but remain pending behind Active 6/v3 and 5/v1. The exact Unit API reports
+Offline despite fresh Cloud monitoring and live CM ACK/pong traffic. Preserve
+this contradiction for reconciliation; no restart or repeat publication.
+Real VM-to-backend mock records and outage/retry are not yet proven. The team
+dashboard/read adapter increment displays isolated mock evidence separately
+from Cloud inventory. See the [bounded evidence and remaining gate](../../qualification/demo-mocked-backend-integration.md).
+
 | Step | Change and owner | Gate / evidence | State |
 | --- | --- | --- | --- |
 | N1 | Solution: accept ADR, update HLA/flows/requirements, runtime-input contract and D4 migration mapping | English documents, navigation and deterministic docs-check | Complete; product wire migration remains N3 |
@@ -90,7 +100,7 @@ authentication fallback or count synthetic results as vehicle functionality.
 | N3 | Solution contracts, both producers/backends: package version and native identity; explicit new message schemas without required service/model OCI digest | Producer-consumer fixtures; legacy queues/history retained; no fabricated digest; model/VDP hashes unchanged | Consumer and producer/input source increments passed; live integration remains N6 |
 | N4 | Demo Control: package the allocated version once; project public inputs; native configuration activation through existing commands | Package/publication equality; no manifest lookup dependency; stable-directory refresh after VDP commit | ARM64 exports, signing, warm projection and transient activation passed; permission-free 3.0.0 bundles READY and guest-installed. Normal permission-bearing publication and functional runtime remain unqualified |
 | N5 | Existing startup integration: restore public /run inputs before SM launches retained assignments | Exact hook/order documented and tested; no new daemon, persisted token or metadata authority | Cold/warm split accepted; pre-SM preparation and post-SM process verification passed with unchanged SM binary; persistent-image integration and retained-assignment VM reboot not qualified |
-| N6 | Bounded current Test SOTA and backend integration through democtl | Real Cloud Running/version, KAC/TLS/subscriptions, renew/expiry, actual product records, retained state and scoped access proof | SM/CM fixes and no-telemetry replacement passed: Brake Active 6/v3 and Tire Active 5/v1. Mocked-data/real-backend increment authorized next. Native KUKSA and functional/advisory proof remain open |
+| N6 | Bounded current Test SOTA and backend integration through democtl | Real Cloud Running/version, KAC/TLS/subscriptions, renew/expiry, actual product records, retained state and scoped access proof | No-telemetry replacement passed: Brake Active 6/v3 and Tire Active 5/v1. Mock releases Brake 7 and Tire 6 READY/pending; backend/native fixture integration passed, real VM delivery blocked by contradictory Cloud connectivity. Native KUKSA and functional/advisory proof remain open |
 | N7 | Checkpoint source/docs and record exclusions | Commit only tested source; no build artifacts; retain current VM/Factory/Production | N2/N3 local checkpoints created; full-migration checkpoint remains pending |
 
 Source increments may be developed independently, but **no new producer is
@@ -1417,7 +1427,7 @@ Names in the **Proposed** rows are a review contract, not available commands or 
 | Implemented CLI; live proof pending | `service list/status/inspect`, `service prepare <team> --profile <P>`, `service sign/upload/cloud-status <handle>` | Distinct catalog UUID, functional profile and prepared-release handle; recorded SP binding. One upload, explicit observation, no hidden assignment/approval. |
 | Implemented CLI; live proof recorded in latest checkpoint | `service assign <catalog-service-UUID> --target test` | Separate retained OEM Group Subjects for Brake/Tire, current Test only; native `service_ids`; independent readiness, peer preservation and explicit uncertainty. |
 | Proposed | `service logs …` | Logs remain a separate explicit operation. |
-| Proposed | `backend start/stop/status <team>`, `backend records <team> --target test` | Own backend lifecycle, persistent context and functional observations, shared by CLI and UI. Product-data cleanup requires an explicit scoped operation under M08, not a side effect of a read. |
+| Implemented lifecycle and read-only increment; live service delivery still open | `backend build/activate/start/stop/status/inspect <team>` | Owned lifecycle and persistent context; `inspect` reads readiness and explicitly isolated mock records through fixed endpoints. Shared by CLI and Presenter. Product-data cleanup is a separate scoped operation under M08, never a read side effect. |
 | Existing; retain | `simulation start/stop`, `vehicle select test`, `vehicle connectivity off/on/status --target test`, workspace/native layout operations | Preserve accepted native behavior. Driving modes stay in the existing native control path; no Cloud driving API is introduced. |
 
 ## 7. Verification cadence and stop conditions

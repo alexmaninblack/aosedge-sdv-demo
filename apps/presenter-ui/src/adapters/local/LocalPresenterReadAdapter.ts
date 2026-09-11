@@ -8,6 +8,14 @@ export function readCloudMonitoring(): Promise<unknown> {
   return monitoringFlight;
 }
 
+export async function readBackendObservation(team: "brake" | "tire", signal: AbortSignal): Promise<unknown> {
+  const endpoint = team === "brake" ? "/api/presenter/backend/brake" : "/api/presenter/backend/tire";
+  const response = await fetch(endpoint, { cache: "no-store",
+    signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]) });
+  if (!response.ok) throw new Error("BACKEND_UNAVAILABLE");
+  return response.json();
+}
+
 const deferred = "Production FOTA is unavailable in the current Aos platform release. Production remains outside the verification set.";
 const profiles = [
   "Baseline read-only braking telemetry",

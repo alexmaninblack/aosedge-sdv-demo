@@ -59,6 +59,7 @@ def build_parser() -> argparse.ArgumentParser:
     service_prepare.add_argument("--cloud-profile", dest="profile", default="service-provider", help="configured SP for the read-only release catalog")
     service_prepare.add_argument("--without-permissions", action="store_true", help="temporary Cloud workaround: delivery/version testing only, no KUKSA authorization")
     service_prepare.add_argument("--demo-no-telemetry", action="store_true", help="explicit Test-only lifecycle process; requires --without-permissions; no analytics or KUKSA")
+    service_prepare.add_argument("--demo-mocked-data", action="store_true", help="Test-only synthetic data to isolated real backend storage; requires --without-permissions; no KUKSA or vehicle advisory")
     for action in ("sign", "upload", "cloud-status"):
         command = service_commands.add_parser(action, help="use the prepared release handle; no build, version allocation or assignment")
         command.add_argument("service_release", help="exact handle returned by prepare, for example brake/8.0.0")
@@ -73,7 +74,7 @@ def build_parser() -> argparse.ArgumentParser:
     backend_commands = backend.add_subparsers(dest="action", required=True)
     recovery = backend_commands.add_parser("recover-file-sharing", help="explicit Docker Desktop recovery for blocked owned cleanup; preserves storage")
     recovery.add_argument("--restart-project", choices=("watt-the-app",), help="explicitly authorized one-time interruption and restoration of the five Watt containers")
-    for action in ("build", "activate", "start", "stop", "status"):
+    for action in ("build", "activate", "start", "stop", "status", "inspect"):
         command = backend_commands.add_parser(action, help="explicit development build" if action == "build" else "owned backend " + action)
         command.add_argument("team", choices=("brake", "tire"))
 
@@ -218,6 +219,7 @@ def request_from_arguments(arguments: argparse.Namespace) -> OperationRequest:
         service_release=getattr(arguments, "service_release", None),
         without_permissions=getattr(arguments, "without_permissions", False),
         demo_no_telemetry=getattr(arguments, "demo_no_telemetry", False),
+        demo_mocked_data=getattr(arguments, "demo_mocked_data", False),
         restart_sm=getattr(arguments, "restart_sm", False),
         timeout=getattr(arguments, "timeout", 8.0),
     )

@@ -22,12 +22,17 @@ async function retainedRun(page: Page) {
       publications: [{ version: "19.0.0", stage: "READY" }, { version: "20.0.0", stage: "READY" }],
       value: { target: "test", source: "Aos Cloud", online: "ONLINE", lifecycle: "provisioned", installedVersion: "20.0.0", pendingVersion: null,
         updateStatus: "installed", latestPublishedVersion: null, releases: [], runtimeState: "NOT_REPORTED_BY_CLOUD", dataReadiness: "NOT_REPORTED_BY_CLOUD",
-        inventory: { unitId: "unit-a", components: { state: "CURRENT", value: [] }, services: { state: "CURRENT", value: [] } } },
+        inventory: { unitId: "unit-a", systemUid: "test-system", components: { state: "CURRENT", value: [] }, services: { state: "CURRENT", value: [] } } },
     } });
     if (path.endsWith("/operations")) return route.fulfill({ json: { sessionId: "native", active: null, uncertain: false,
       jobs: [{ id: "old", runId: "old-test", action: "prepare", version: "99.0.0", profile: "v1", state: "COMPLETED", progress: [], results: [] }] } });
     if (path.endsWith("/monitoring")) return route.fulfill({ json: { unitId: "unit-a", readCompletedAt: new Date().toISOString(),
       monitoring: { state: "CURRENT", value: { cpu: { state: "CURRENT", unit: "DMIPS", value: [{ value: 0, time: new Date().toISOString() }] } } } } });
+    if (path === "/api/presenter/backend/brake" || path === "/api/presenter/backend/tire") return route.fulfill({ json: {
+      team:path.split("/").at(-1),state:"OBSERVED",source:"REAL_BACKEND_HTTP",observedAt:new Date().toISOString(),
+      observations:{readiness:{state:"OBSERVED",data:{ready:true}},mockData:{state:"OBSERVED",data:{source:"DEMO_MOCK",vehicleTelemetry:false,
+        unitSystemUid:"test-system",counts:[{kind:"assessment",count:3}],records:[{backendReceivedAt:new Date().toISOString(),message:{
+          messageType:"Synthetic assessment",serviceVersion:"7.0.0",unitSystemUid:"test-system",content:{score:42}}}]}}}} });
     return route.abort();
   });
   return requests;
@@ -48,6 +53,23 @@ test("Reload retains exact profile publication, ignores previous-run jobs and ca
   await page.getByLabel("Capability profile").selectOption("v1");
   await expect(page.locator(".studio-release-stages .complete")).toHaveCount(3);
   expect(requests.every((request) => request.method === "GET")).toBe(true);
+});
+
+test("Team backend is visibly synthetic, drillable and separate from Cloud runtime", async ({ page }) => {
+  const requests=await retainedRun(page);
+  await page.goto("/");
+  await page.getByRole("button", {name:/Brake Team/}).click();
+  await expect(page.getByText("MOCK DATA · Real service → real backend")).toBeVisible();
+  await expect(page.getByRole("button", {name:/Synthetic assessment/})).toBeVisible();
+  await page.screenshot({path:"test-results/studio-brake-backend.png"});
+  await page.getByRole("button", {name:/Synthetic assessment/}).click();
+  await expect(page.getByRole("dialog")).toContainText("not vehicle telemetry");
+  await expect(page.getByRole("dialog")).toContainText('"score": 42');
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", {name:/Tire Team/}).click();
+  await expect(page.getByLabel("tire backend evidence")).toBeVisible();
+  expect(requests.every(row=>row.method === "GET")).toBe(true);
+  expect(requests.some(row=>/guest|runtime-inspect/.test(row.path))).toBe(false);
 });
 
 test("Cloud monitoring has a return path, preserves zero DMIPS and never requests guest data", async ({ page }) => {

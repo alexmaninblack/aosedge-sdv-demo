@@ -70,6 +70,23 @@ class StudioCloudReaderTests(unittest.TestCase):
             self.assertEqual(dict(unitId="unit-a"), self.reader.monitoring())
         self.assertEqual(dict(domain="unit", action="monitoring", target="test"), call.call_args.args[0])
 
+    def test_service_details_own_runtime_and_missing_details_are_not_absence(self):
+        self.journal["serviceOperations"] = {"brake-id":dict(team="brake",test=dict(unitId="unit-a"))}
+        self.write()
+        result = self.inventory()
+        result["data"]["services"]["value"] = [dict(service=dict(id="brake-id"))]
+        row = dict(service=dict(id="brake-id"),service_versions=dict(installed_service_version=dict(version="7.0.0")),instances=dict(state="CURRENT",value=[]))
+        result["data"]["serviceDetails"] = {"brake-id":dict(state="CURRENT",value=[row])}
+        with patch.object(presenter,"execute_operation",return_value=result):
+            data=self.reader()["value"]["inventory"]
+        self.assertEqual([row],data["services"]["value"])
+        self.assertEqual({"brake":"brake-id"},data["teamServiceIds"])
+        result["data"]["serviceDetails"]["brake-id"] = dict(state="UNAVAILABLE",value=None)
+        with patch.object(presenter,"execute_operation",return_value=result):
+            data=self.reader()["value"]["inventory"]
+        self.assertEqual("INCOMPLETE",data["services"]["state"])
+        self.assertIsNone(data["services"]["value"])
+
     def test_older_profile_receipts_remain_visible_and_new_run_prunes_them(self):
         self.journal["componentOperations"] = {
             "19.0.0": dict(deploymentId="bundle-a"),

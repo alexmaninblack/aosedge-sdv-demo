@@ -875,7 +875,8 @@ def execute(request):
         binary = Path("/proc") / pid / "exe"
         digest = hashlib.sha256(binary.read_bytes()).hexdigest() if pid.isdigit() and int(pid) > 0 else None
         return dict(mutation=False, service=service, binarySha256=digest,
-                    executable=os.readlink(binary) if digest else None)
+                    executable=os.readlink(binary) if digest else None,
+                    processWaits=process_wait_observation(pid) if digest else None)
     if request["action"] == "component-sm-apply" and request.get("proof") == "service-update-teardown":
         return sm_apply_service_update(request)
     if request["action"] == "service-runtime-inspect":
@@ -1172,15 +1173,22 @@ def execute(request):
         ids = [line[3:] for line in services.stdout.splitlines() if line.startswith("Id=")]
         streams = []
         for unit in ids + ["kuksa-databroker.service", "aos-vehicle-data-provider-selftest@a.service", "aos-vehicle-data-provider-selftest@b.service"]:
-            result = command(["journalctl", "-b", "-n", "4000" if unit in ("aos-cm.service", "aos-sm.service") else "80",
+            result = command(["journalctl", "-b", "-n", "600" if unit in ("aos-cm.service", "aos-sm.service") else "80",
                               "-o", "json", "--no-pager", "-u", unit])
             if result.returncode or len(result.stdout) > (8388608 if unit in ("aos-cm.service", "aos-sm.service") else 2097152):
                 raise ValueError("COMPONENT_JOURNAL_UNAVAILABLE")
-            streams.extend(result.stdout.splitlines())
-        entries, structures, ready_events = [], set(), 0
-        for line in streams:
+            streams.extend((unit, line) for line in result.stdout.splitlines())
+        entries, structures, ready_events, cm_transport = [], set(), 0, []
+        cm_journal = dict(records=0, messageTypes={}, lastEventTime=None, stages=[])
+        for requested_unit, line in streams:
             item = json.loads(line)
+            item["_SYSTEMD_UNIT"] = requested_unit
             message = item.get("MESSAGE", "")
+            if requested_unit == "aos-cm.service":
+                cm_journal["records"] += 1
+                kind = type(message).__name__
+                cm_journal["messageTypes"][kind] = cm_journal["messageTypes"].get(kind, 0) + 1
+                cm_journal["lastEventTime"] = item.get("__REALTIME_TIMESTAMP")
             # journalctl JSON encodes messages containing control bytes as a
             # byte array, including the Aos coloured C++ logger output.
             if isinstance(message, list) and all(type(part) is int and 0 <= part < 256 for part in message):
@@ -1188,6 +1196,23 @@ def execute(request):
             if not isinstance(message, str):
                 continue
             message = re.sub(r"\x1b\[[0-9;]*m", "", message)
+            if item.get("_SYSTEMD_UNIT") == "aos-cm.service":
+                stage = re.search(r"\(([a-z][a-z0-9_]{1,30})\) ([A-Za-z][A-Za-z '-]{1,75})(?=:|$)", message)
+                if stage and stage[1] in ("communication", "monitoring", "updatemanager", "launcher") and stage[2] in (
+                    "Send monitoring", "Send monitoring data", "Enqueue message", "Sent message",
+                    "WebSocket frame received", "Sent pong frame", "Received message",
+                    "Handle cloud message", "Received ack message", "Update state changed",
+                    "Current update canceled", "Instance status received",
+                ):
+                    cm_journal["stages"].append(dict(time=item.get("__REALTIME_TIMESTAMP"), module=stage[1], stage=stage[2]))
+                labels = [label for label, pattern in (
+                    ("CONNECTION", r"connect"), ("DISCONNECTED", r"disconnect|connection.*closed"),
+                    ("DNS_RESOLUTION", r"resolv|name resolution"), ("TLS", r"TLS|SSL|handshake"),
+                    ("TIMEOUT", r"timeout|timed out"), ("REFUSED", r"refused"),
+                    ("UNREACHABLE", r"unreachable|no route"), ("ERROR", r"fail|error"),
+                    ("AMQP", r"amqp")) if re.search(pattern, message, re.I)]
+                if labels:
+                    cm_transport.append(dict(time=item.get("__REALTIME_TIMESTAMP"), labels=labels))
             if "Selected vehicle data is ready" in message:
                 ready_events += 1
                 continue
@@ -1256,13 +1281,16 @@ def execute(request):
                 entry["nativeInstance"] = native_fields
             entries.append(entry)
         entries.sort(key=lambda entry: int(entry["time"] or 0))
-        return dict(entries=entries[-200:], scannedEntries=len(streams), providerReadyEvents=ready_events, structuredFields=sorted(structures),
+        return dict(entries=entries[-100:], scannedEntries=len(streams), providerReadyEvents=ready_events, structuredFields=sorted(structures),
+                    cmJournal=dict(cm_journal, stages=cm_journal["stages"][-15:]),
+                    cmTransportEvents=cm_transport[-20:],
+                    cmEvents=[entry for entry in entries if entry["unit"] == "aos-cm.service"][-20:],
                     services=services.stdout.strip().splitlines(), guestEpoch=int(time.time()),
                     smStartupFailures=[entry for entry in entries if entry["unit"] == "aos-sm.service"
                         and "can't start launcher" in entry["message"]][:12],
                     cmUpdatePhases=[entry for entry in entries if entry["unit"] == "aos-cm.service" and
-                        re.search(r"Update state changed|Current update canceled|Cancel current update|Failed to process desired status", entry["message"])][-80:],
-                    window="Current boot: last 4000 CM / 4000 SM / 80 other service events", projection="BOUNDED_REDACTED_SERVICE_EVENTS")
+                        re.search(r"Update state changed|Current update canceled|Cancel current update|Failed to process desired status", entry["message"])][-20:],
+                    window="Current boot: last 600 CM / 600 SM / 80 other service events", projection="BOUNDED_REDACTED_SERVICE_EVENTS")
     if action == "component-status":
         result = execute(dict(request, action="status"))
         root = Path("/var/aos/workdirs/sm/runtimes/systemd-slot-component")

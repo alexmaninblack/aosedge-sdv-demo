@@ -5,6 +5,7 @@ import { usePlatformObservation } from "./state/PresenterReadModelProvider";
 import { OperationProgress, usePresenterControls } from "./state/PresenterControls";
 import { Modal } from "../shared/components/Modal";
 import { readCloudMonitoring } from "../adapters/local/LocalPresenterReadAdapter";
+import { BackendEvidence } from "../features/service-team/BackendEvidence";
 import "../shared/design-tokens/studio.css";
 
 export type StudioIconName = "vehicle" | "platform" | "brake" | "tire" | "cloud" | "gateway" | "component" | "service";
@@ -18,6 +19,7 @@ function ServiceRows({ rows }: { rows?: CloudSection<CloudService[]> }) {
   return <div className="studio-inventory">{rows.state !== "CURRENT" && <p>Service inventory · {rows.state} · {rows.reason ?? "Refresh required"}</p>}{rows.value.map((row, index) => <article key={row.service?.id ?? index}>
     <strong>{row.service?.title ?? row.service?.id ?? "Service"}</strong>
     <span>Installed {known(row.service_versions?.installed_service_version?.version)} · Instances {known(row.num_instance)}</span>
+    {row.service_versions?.pending_service_version && <span>Pending {known(row.service_versions.pending_service_version.version)}</span>}
     {row.instances.value?.map((instance, n) => <small key={instance.instance_id ?? n}>Instance {known(instance.instance_id)} · {known(instance.version)} · {known(instance.run_state)}{instance.error_message ? ` · ${instance.error_message}` : ""}</small>)}
   </article>)}</div>;
 }
@@ -83,7 +85,7 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
   const published = Boolean(version && publication?.version === version && publication.stage === "READY");
   const pending = Boolean(value?.pendingVersion);
   useEffect(() => {
-    if (window.location.hash === "#native-header" || !["global", "platform"].includes(perspective)) return;
+    if (window.location.hash === "#native-header" || !["global", "platform", "brake", "tire"].includes(perspective)) return;
     return cloud.enter();
   }, [perspective, cloud.enter]);
   useEffect(() => { setMonitor(false); setDetails(null); }, [perspective]);
@@ -104,8 +106,11 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
         <div className="studio-architecture"><aside className="studio-gateway"><StudioIcon name="vehicle" /><strong>Vehicle</strong><small>Sensors & actuators</small><span className="studio-arrow">↓</span><StudioIcon name="gateway" /><strong>Vehicle Gateway</strong><small>VSS telemetry</small></aside>
           <div className="studio-vss-line"><span>VSS</span></div><section className="studio-controller"><h2><StudioIcon name="platform" />Domain Controller</h2>
             <div className="studio-service-slots">{(["brake", "tire"] as const).map((team) => {
-              const empty = current && inventory?.services.state === "CURRENT" && inventory.services.value?.length === 0;
-              return <button key={team} className="empty-slot" onClick={() => setDetails("services")}><StudioIcon name={team} /><strong>{team === "brake" ? "Brake Health" : "Tire Health"}</strong><small>{empty ? "Empty slot" : "See Cloud inventory"}</small></button>;
+              const id = inventory?.teamServiceIds?.[team];
+              const row = inventory?.services.value?.find(service => id && service.service?.id === id);
+              const empty = current && inventory?.services.state === "CURRENT" && (inventory.services.value?.length === 0 || (id && !row));
+              const version = row?.service_versions?.installed_service_version?.version;
+              return <button key={team} className={empty ? "empty-slot" : ""} onClick={() => setDetails("services")}><StudioIcon name={team} /><strong>{team === "brake" ? "Brake Health" : "Tire Health"}</strong><small>{empty ? "Empty slot" : version ? `Installed ${version}${current && inventory?.services.state === "CURRENT" ? "" : " · last known"}` : "See Cloud inventory"}</small></button>;
             })}</div>
             <button className="studio-vdp" onClick={() => setDetails("vdp")}><StudioIcon name="component" /><strong>{componentLabel}</strong><small>{installed ? `${known(value?.updateStatus)} · release ${installed}${componentCurrent ? "" : " · last known"}` : "Cloud installation not reported"}</small></button>
             <footer><strong>Factory firmware</strong><span>{vehicle.imageVersion ?? "Choose a prepared image"}</span><small>{present ? `Local controller · ${known(vehicle.process)}` : "Not created"}</small></footer>
@@ -133,7 +138,11 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
         <dl className="platform-cloud-facts"><div><dt>Connection</dt><dd>{known(value?.online)}</dd></div><div><dt>Pending release</dt><dd>{known(value?.pendingVersion)}</dd></div><div><dt>VDP runtime</dt><dd>Not reported by Cloud</dd></div></dl>
         {monitor && <><h3>Components · {inventory?.components.state ?? "Not observed"}</h3><div className="studio-inventory">{inventory?.components.value?.map((row, index) => <button key={index} onClick={() => setDetails("vdp")}><strong>{row.type?.endsWith("-vehicle-data-provider") ? "Vehicle Data Platform" : row.type?.endsWith("-rootfs") ? "Root filesystem" : row.type?.endsWith("-boot") ? "Boot firmware" : row.type ?? row.reported_component_id ?? "Component"}</strong><span>Installed {known(row.installed_component?.version)} · Pending {known(row.pending_component?.version)}</span></button>) ?? <p>Not reported</p>}</div><h3>Services & instances</h3><ServiceRows rows={inventory?.services} /><Monitoring key={cloud.observation?.bindingKey ?? inventory?.unitId} unitId={inventory?.unitId} refreshKey={cloud.refreshGeneration} /></>}
       </section>}
-      {(perspective === "brake" || perspective === "tire") && <section className="studio-release"><header><StudioIcon name={perspective} /><div><h2>{section}</h2><p>Cloud runtime and product results are separate observations.</p></div></header><p>Service publication and the product dashboard are being connected. No successful deployment or product result is simulated.</p><ServiceRows rows={inventory?.services} /></section>}
+      {(perspective === "brake" || perspective === "tire") && <><section className="studio-release"><header><StudioIcon name={perspective} /><div><h2>{section}</h2><p>Cloud runtime and product results are separate observations.</p></div></header>
+        <div className="studio-panel-title"><h3>Service inventory · Aos Cloud</h3><button disabled={cloud.loading} onClick={cloud.refresh}>Refresh Cloud state</button></div>
+        <p className="studio-stamp">{cloud.loading ? "Reading Aos Cloud…" : `${cloud.observation?.state ?? "Not observed"} · ${stamp(cloud.observation?.observedAt)}`}</p>
+        <p>Cloud connection: {current ? known(value?.online) : "Not current"}. Active is the last reported instance state, not proof of live telemetry.</p>
+        <ServiceRows rows={inventory?.services} /></section><BackendEvidence key={`${perspective}:${inventory?.systemUid ?? "none"}`} team={perspective} unitSystemUid={inventory?.systemUid} /></>}
     </div>
     <footer className="studio-session-actions"><button disabled={controls.blocked || !present} onClick={() => controls.request({ action: "park" })}>Park</button><button disabled={controls.blocked || !present} onClick={() => controls.request({ action: "resume" })}>Resume</button><button disabled={controls.blocked} onClick={() => controls.request({ action: "reset" })}>Finish demo</button><span>Test-only run</span></footer>
     <OperationProgress />

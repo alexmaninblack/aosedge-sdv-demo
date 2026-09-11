@@ -7,6 +7,9 @@ This directory records accepted baselines, exact component locks,
 qualification procedures, and sanitized defect evidence.
 
 - [Current accepted baseline](current-baseline.md)
+- [Explicit mocked service/backend integration](demo-mocked-backend-integration.md)
+  — authorized synthetic-source boundary, separate queues/storage and real
+  transport/receipt qualification; never a KUKSA authentication fallback.
 - [AosCore service teardown and CM reconciliation proof](aoscore-service-update-teardown-2026-09-11.md)
   — 78 native tests and 25 Demo Control tests passed; Test recovered both
   services to 4, then Brake updated to 5/v2 and 6/v3 and Tire to 5/v1.

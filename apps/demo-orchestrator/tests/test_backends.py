@@ -17,6 +17,47 @@ IMAGE = "sha256:" + "a" * 64
 
 
 class BackendTests(unittest.TestCase):
+    def test_product_inspect_uses_only_fixed_local_endpoints_and_mock_provenance(self):
+        connection = Mock()
+        response = connection.getresponse.return_value
+        response.status = 200
+        response.read.side_effect = [b'{"ready":true}', b'{"state":"CURRENT"}', json.dumps(dict(
+            source="DEMO_MOCK", vehicleTelemetry=False, unitSystemUid="test-uid", counts={})).encode()]
+        with patch("aosedge_demo_orchestrator.backends.http.client.HTTPConnection", return_value=connection) as factory:
+            result = self.service._product_observation("tire", "test-uid")
+        self.assertEqual("OBSERVED", result["state"])
+        self.assertFalse(result["cloudAuthority"])
+        self.assertFalse(result["vehicleTelemetry"])
+        self.assertEqual(3, connection.close.call_count)
+        self.assertTrue(all(call.args == ("127.0.0.1", 18092) and call.kwargs == {"timeout": 3} for call in factory.call_args_list))
+        self.assertEqual(["/health/ready", "/health/context", "/api/v1/tire/demo-mock/summary"],
+            [call.args[1] for call in connection.request.call_args_list])
+
+    def test_product_inspect_rejects_wrong_scope_or_fabricated_source(self):
+        for mock in (dict(source="LIVE", vehicleTelemetry=False, unitSystemUid="test-uid"),
+                     dict(source="DEMO_MOCK", vehicleTelemetry=True, unitSystemUid="test-uid"),
+                     dict(source="DEMO_MOCK", vehicleTelemetry=False, unitSystemUid="production-uid")):
+            connection = Mock()
+            connection.getresponse.return_value.status = 200
+            connection.getresponse.return_value.read.side_effect = [b'{}', b'{}', json.dumps(mock).encode()]
+            with patch("aosedge_demo_orchestrator.backends.http.client.HTTPConnection", return_value=connection):
+                with self.assertRaisesRegex(EnvironmentError, "SCOPE_OR_PROVENANCE"):
+                    self.service._product_observation("brake", "test-uid")
+            self.assertEqual(3, connection.close.call_count)
+
+    def test_product_inspect_missing_context_malformed_or_unavailable_is_not_success(self):
+        with patch("aosedge_demo_orchestrator.backends.http.client.HTTPConnection") as factory:
+            with self.assertRaises(EnvironmentError):
+                self.service._product_observation("brake", None)
+            factory.assert_not_called()
+            connection = factory.return_value
+            response = connection.getresponse.return_value
+            response.status = 200
+            response.read.side_effect = [b'[]', OSError("not available"), b'not JSON']
+            result = self.service._product_observation("brake", "test-uid")
+            self.assertEqual("PARTIAL", result["state"])
+            self.assertTrue(all(item["state"] == "UNAVAILABLE" for item in result["observations"].values()))
+
     def setUp(self):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)

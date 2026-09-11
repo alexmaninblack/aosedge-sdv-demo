@@ -4,6 +4,7 @@
 """Owned functional backend containers; no Cloud, VM or product-state claims."""
 
 import json
+import http.client
 import re
 import shutil
 import subprocess
@@ -19,6 +20,39 @@ DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
 
 
 class BackendService:
+    def _product_observation(self, team, uid):
+        """Fixed owned loopback endpoints; no arbitrary URL, proxy or redirect."""
+        if team not in TEAMS or not uid:
+            raise EnvironmentError("BACKEND_CURRENT_TEST_CONTEXT_REQUIRED")
+        result = dict(team=team, source="REAL_BACKEND_HTTP", cloudAuthority=False,
+            vehicleTelemetry=False, observedAt=now(), observations={})
+        paths = {"readiness": "/health/ready", "context": "/health/context",
+                 "mockData": "/api/v1/" + team + "/demo-mock/summary"}
+        for name, path in paths.items():
+            connection = http.client.HTTPConnection("127.0.0.1", 18091 if team == "brake" else 18092, timeout=3)
+            try:
+                connection.request("GET", path, headers={"Accept": "application/json"})
+                response = connection.getresponse()
+                raw = response.read(262145)
+                if response.status != 200 or len(raw) > 262144:
+                    result["observations"][name] = dict(state="NOT_READY", httpStatus=response.status)
+                    continue
+                value = json.loads(raw)
+                if not isinstance(value, dict):
+                    raise ValueError("BACKEND_RESPONSE_OBJECT_REQUIRED")
+                if name == "mockData" and (value.get("source") != "DEMO_MOCK" or value.get("vehicleTelemetry") is not False
+                        or value.get("unitSystemUid") != uid):
+                    raise EnvironmentError("BACKEND_MOCK_SCOPE_OR_PROVENANCE_MISMATCH")
+                result["observations"][name] = dict(state="OBSERVED", data=value)
+            except EnvironmentError:
+                raise
+            except (OSError, ValueError, http.client.HTTPException):
+                result["observations"][name] = dict(state="UNAVAILABLE")
+            finally:
+                connection.close()
+        result["state"] = "OBSERVED" if all(item["state"] == "OBSERVED" for item in result["observations"].values()) else "PARTIAL"
+        return result
+
     def __init__(self, environment, progress=None):
         self.environment = environment
         self.root = environment.root
@@ -85,6 +119,9 @@ class BackendService:
                 raise EnvironmentError("BACKEND_COMMITTED_SOURCE_REQUIRED")
             package = repository / "package.json"
             protocol = (read_json(package).get("aosedgeDemo") or {}).get("privateCleanupProtocol") if package.is_file() else None
+            mock_protocol = (read_json(package).get("aosedgeDemo") or {}).get("mockCleanupProtocol") if package.is_file() else None
+            if mock_protocol not in (None, "isolated-mock-v1"):
+                raise EnvironmentError("BACKEND_MOCK_CLEANUP_PROTOCOL_UNSUPPORTED")
             if protocol is not None and (team, protocol) != ("tire", "tire-product-v1"):
                 raise EnvironmentError("BACKEND_CLEANUP_PROTOCOL_UNSUPPORTED")
             directory = self.catalog / team / revision
@@ -105,6 +142,8 @@ class BackendService:
                          builtAt=now(), qualification="BUILT_NOT_LIVE_QUALIFIED")
             if protocol:
                 value["privateCleanupProtocol"] = protocol
+            if mock_protocol:
+                value["mockCleanupProtocol"] = mock_protocol
             directory.mkdir(parents=True, mode=0o700, exist_ok=True)
             atomic_json(manifest, value)
             return value
@@ -335,7 +374,7 @@ class BackendService:
 
     def _runtime_candidate(self, state, team):
         record = state.get("backends", {}).get(team)
-        return {key: record[key] for key in ("imageId", "sourceRevision", "privateCleanupProtocol") if key in record} if record else self._candidate(team)
+        return {key: record[key] for key in ("imageId", "sourceRevision", "privateCleanupProtocol", "mockCleanupProtocol") if key in record} if record else self._candidate(team)
 
     def _activate(self, state, team, record, observed, owner):
         if not record or (observed and observed.get("State", {}).get("Running")):
@@ -368,6 +407,10 @@ class BackendService:
         record.update(imageId=candidate["imageId"], sourceRevision=candidate["sourceRevision"],
             state="STOPPED", confirmedAt=now())
         record.pop("cleanup", None)
+        record.pop("mockCleanup", None)
+        record.pop("mockCleanupProtocol", None)
+        if candidate.get("mockCleanupProtocol"):
+            record["mockCleanupProtocol"] = candidate["mockCleanupProtocol"]
         record.pop("privateCleanupProtocol", None)
         if candidate.get("privateCleanupProtocol"):
             record["privateCleanupProtocol"] = candidate["privateCleanupProtocol"]
@@ -402,7 +445,7 @@ class BackendService:
             volumes={volume: dict(name=volume, labels=labels)}, networks={network: dict(name=network, labels=labels)})
 
     def execute(self, action, team):
-        if team not in TEAMS or action not in ("build", "activate", "start", "stop", "status"):
+        if team not in TEAMS or action not in ("build", "activate", "start", "stop", "status", "inspect"):
             raise EnvironmentError("BACKEND_OPERATION_INVALID")
         if action == "build":
             return self.build(team)
@@ -417,6 +460,10 @@ class BackendService:
             record = state.get("backends", {}).get(team)
             observed = self._inspect("container", name)
             self._owned_container(observed, owner, team, (record or {}).get("imageId"))
+            if action == "inspect":
+                if not observed or not observed.get("State", {}).get("Running"):
+                    return dict(team=team, state="STOPPED", source="DOCKER_PROCESS_ONLY")
+                return self._product_observation(team, state["vehicles"]["test"].get("systemUid"))
             if action == "activate":
                 return self._activate(state, team, record, observed, owner)
             if action == "status":
@@ -494,6 +541,8 @@ class BackendService:
                               containerName=name, owner=owner, state="UNCERTAIN", action="start", startedAt=now())
                 if candidate.get("privateCleanupProtocol"):
                     record["privateCleanupProtocol"] = candidate["privateCleanupProtocol"]
+                if candidate.get("mockCleanupProtocol"):
+                    record["mockCleanupProtocol"] = candidate["mockCleanupProtocol"]
                 state.setdefault("backends", {})[team] = record
                 atomic_json(self.root / JOURNAL, state)
                 self.progress("Starting " + team + " backend; process readiness only, current Unit may not yet exist")

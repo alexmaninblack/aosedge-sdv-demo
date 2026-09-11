@@ -131,6 +131,23 @@ class ServicePackageTests(unittest.TestCase):
         self.assertIsNotNone(OperationRequest("service", "prepare", demo_no_telemetry=True).selection_error())
         self.assertIsNotNone(OperationRequest("service", "upload", demo_no_telemetry=True, without_permissions=True).selection_error())
 
+    def test_mock_data_is_explicit_isolated_and_not_an_auth_fallback(self):
+        for team in ("brake", "tire"):
+            conf = package_configuration(ROOT, team, "v1", "42.0.0", without_permissions=True, demo_mocked_data=True)["items"][0]["configuration"]
+            self.assertTrue(conf["cmd"].endswith(" --demo-mocked-data"))
+            self.assertNotIn("permissions", conf)
+            self.assertEqual(1024, conf["quotas"]["noFileLimit"])
+            with self.assertRaises(EnvironmentError):
+                package_configuration(ROOT, team, "v1", "42.0.0", demo_mocked_data=True)
+            with self.assertRaises(EnvironmentError):
+                package_configuration(ROOT, team, "v1", "42.0.0", without_permissions=True, demo_no_telemetry=True, demo_mocked_data=True)
+        request = request_from_arguments(build_parser().parse_args(["service", "prepare", "brake", "--profile", "v1", "--without-permissions", "--demo-mocked-data"]))
+        with patch("aosedge_demo_orchestrator.service_packages.ServicePackages", return_value=self.packages):
+            result = DemoOrchestrator(environment_service=self.environment).execute(request)
+        self.assertEqual("COMPLETED", result.state.value)
+        self.assertTrue(result.data["demoMockedData"])
+        self.assertEqual("DEMO_MOCK_BACKEND_ONLY", result.data["qualification"])
+
     def test_private_operator_umask_does_not_hide_payload_from_native_uid(self):
         previous = os.umask(0o077)
         try:

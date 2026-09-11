@@ -36,8 +36,9 @@ describe("local composition preview", () => {
     expect(screen.queryByText("Refresh running Test VDP")).not.toBeInTheDocument();
     expect(screen.queryByText("Read Test VDP logs")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Brake Team/ }));
-    await user.click(screen.getByRole("button", { name: /Platform Team/ }));
     expect(readPlatform).toHaveBeenCalledTimes(3);
+    await user.click(screen.getByRole("button", { name: /Platform Team/ }));
+    expect(readPlatform).toHaveBeenCalledTimes(4);
   });
   it("does not infer running, READY or functional profile from Cloud installed", () => {
     const team = projectCloudPlatform(composeLocalSnapshot(data).teams.platform, cloud);

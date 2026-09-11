@@ -101,6 +101,19 @@ class StudioCloudReader:
             publication = cache.get((version, record["deploymentId"]))
         result = execute_operation(dict(domain="unit", action="cloud-status", target="test"), self.application)
         data = result.get("data") or {}
+        # The list endpoint is an aggregate. Per-Subject detail owns instance
+        # versions/statuses; do not silently turn a failed detail into absence.
+        service_list = data.get("services") or {}
+        details = data.get("serviceDetails") or {}
+        identifiers = {row.get("service", {}).get("id") for row in service_list.get("value") or [] if row.get("service")}
+        if identifiers:
+            sections = [details.get(identifier) or {} for identifier in identifiers]
+            complete = service_list.get("state") == "CURRENT" and all(section.get("state") == "CURRENT" and isinstance(section.get("value"), list) for section in sections)
+            data = dict(data, services=dict(service_list, state="CURRENT" if complete else "INCOMPLETE",
+                reason=None if complete else "CLOUD_SERVICE_DETAILS_NOT_CURRENT",
+                value=[row for section in sections for row in section.get("value") or []] or ( [] if complete else None)))
+        data["teamServiceIds"] = {record["team"]: identifier for identifier, record in journal.get("serviceOperations", {}).items()
+            if record.get("team") in ("brake", "tire") and record.get("test", {}).get("unitId") == data.get("unitId")}
         section = data.get("unit") or {}
         unit = section.get("value") or {}
         rows = (data.get("components") or {}).get("value")
@@ -119,6 +132,16 @@ class StudioCloudReader:
     def monitoring(self):
         result = execute_operation(dict(domain="unit", action="monitoring", target="test"), self.application)
         return result.get("data") or dict(state="UNAVAILABLE", reason="CLOUD_MONITORING_NOT_OBSERVED", readCompletedAt=now())
+
+    def backend(self, team):
+        if team not in ("brake", "tire"):
+            raise ValueError("BACKEND_TEAM_INVALID")
+        result = execute_operation(dict(domain="backend", action="inspect", team=team), self.application)
+        data = result.get("data") or {}
+        # Separate product evidence, never a Cloud/runtime authority or guest read.
+        if data.get("source") != "REAL_BACKEND_HTTP":
+            return dict(state="UNAVAILABLE", team=team, observedAt=now(), reason="BACKEND_NOT_OBSERVED")
+        return {key: data[key] for key in ("state", "team", "source", "cloudAuthority", "vehicleTelemetry", "observedAt", "observations") if key in data}
 
 
 def read_platform():
@@ -236,6 +259,12 @@ def make_server(static_root, address=ADDRESS, reader=read_snapshot, native=None,
                     self.reply(200, json.dumps(cloud_reader.monitoring()).encode())
                 except Exception:
                     self.reply(503, b'{"error":"CLOUD_MONITORING_UNAVAILABLE"}')
+                return
+            if self.path in ("/api/presenter/backend/brake", "/api/presenter/backend/tire"):
+                try:
+                    self.reply(200, json.dumps(cloud_reader.backend(self.path.rsplit("/", 1)[-1])).encode())
+                except Exception:
+                    self.reply(503, b'{"error":"BACKEND_OBSERVATION_UNAVAILABLE"}')
                 return
             if self.path == "/api/presenter/operations" and native:
                 try:

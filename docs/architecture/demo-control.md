@@ -562,9 +562,57 @@ replacement only; native authorization, normal quotas and N6 functional gates
 remain unchanged. There is no missing-secret fallback.
 
 The [3.0.0 experiment](../qualification/demo-studio-implementation-progress-2026-09-11.md#permission-free-delivery-experiment)
-confirmed Cloud READY and guest installation for both teams, but exposed a
-separate native container launch failure. Updating between running service
-versions remains unqualified.
+exposed a native launch/update failure. The subsequent authorized SM/CM patch
+proof reached Active Brake 6/v3 and Tire 5/v1 through normal publications, with
+unchanged Subjects and no restart between updates. This closes replacement in
+the inert no-telemetry mode, not authenticated functional operation.
+
+### Explicit synthetic backend integration — 2026-09-11
+
+The user-authorized `--demo-mocked-data` preparation mode requires
+`--without-permissions` and is mutually exclusive with `--demo-no-telemetry`.
+It selects the actual product bootstrap's isolated synthetic-data path, retains
+native Test identity and allocated package version, and sets `noFileLimit: 1024`
+only for this explicit demo mode. The receipt reports `demoMockedData=true` and
+`DEMO_MOCK_BACKEND_ONLY`. It does not enable a missing-token fallback.
+
+```bash
+democtl service prepare brake --profile v3 --without-permissions --demo-mocked-data
+democtl service prepare tire --profile v1 --without-permissions --demo-mocked-data
+democtl backend inspect brake
+democtl backend inspect tire
+```
+
+Prepare returns the handle used by the existing sign/upload/cloud-status
+commands. No new publication or assignment path is introduced. Synthetic
+samples/features use separate service state and backend databases; neither
+normal product queries nor Gateway advisory output consume these records.
+See the [bounded integration record](../qualification/demo-mocked-backend-integration.md).
+
+`backend inspect <team>` is a read-only observation of the exact owned backend
+container, its readiness/current-Test context and isolated mock summary. It
+accepts only Brake or Tire; no arbitrary URL or selector is accepted. The
+existing backend adapter makes bounded HTTP reads on its fixed loopback ports.
+No guest, Cloud mutation, restart, database write or lifecycle journal write
+occurs. A stopped backend is `STOPPED`; unavailable/malformed observations are
+`PARTIAL` or blocked, never an empty successful result. `OBSERVED` proves the
+read, not that the current service delivered a record.
+
+Presenter reads this same operation through fixed same-origin routes
+`/api/presenter/backend/brake` and `/api/presenter/backend/tire`. Cloud alone
+supplies installation/instance/connection state. Backend readiness, received
+records and Cloud runtime remain separate facts. The visible team view refreshes
+at a ten-second interval without overlapping requests, shows last-known data
+on failure and clears records when Test identity changes. Every synthetic
+record is visibly marked `MOCK DATA`, with real service version/identity and
+backend receipt time available in the detail view. No vehicle functionality
+is inferred from mock records.
+
+Existing retirement accounts for both ordinary and mock databases before
+removing an owned volume. Private mock cleanup uses separate preview/execute/
+empty-proof routes and evidence; an ordinary empty proof cannot authorize
+discarding unproven mock data. This cleanup was tested with isolated fixtures;
+the current live Test and backend volumes remain preserved.
 
 A schema failure retains the allocated number and leaves no committed
 package. Another explicit prepare allocates a new number; existing packages

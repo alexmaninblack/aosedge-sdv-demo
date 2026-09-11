@@ -9,6 +9,14 @@ and [10 September evidence](demo-studio-implementation-progress-2026-09-10.md)
 remain the baseline. This continuation does not change the approved story,
 native left-hand composition, Production scope or service trust model.
 
+Latest backend continuation: the [mock-data integration checkpoint](demo-mocked-backend-integration.md)
+records passing ARM64/native/backend/UI tests and real Brake 7 / Tire 6 READY
+publications. Both remain pending behind Active Brake 6 / Tire 5, with a Cloud
+Offline versus fresh-monitoring contradiction. The new backends and read-only
+Studio panels are active; their live mock stores are empty. This is not a
+completed N6 or permission-enabled functional chain. Preserve current Test and
+the existing publications rather than restarting or allocating retry releases.
+
 ## Explicit no-telemetry lifecycle experiment — 4.0.0
 
 Latest follow-up, 21:16 UTC: the authorized SM/CM fixes passed 78 native tests

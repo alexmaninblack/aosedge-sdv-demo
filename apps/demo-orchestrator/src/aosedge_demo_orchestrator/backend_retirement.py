@@ -122,7 +122,7 @@ class BackendRetirement:
         return value
 
     def _private(self, team, container_id, operation, payload=None):
-        if team not in TEAMS or operation not in ("preview", "execute", "empty-proof", *( ("foundation-proof",) if team == "tire" else ())):
+        if team not in TEAMS or operation not in ("preview", "execute", "empty-proof", "mock-preview", "mock-execute", "mock-empty-proof", *( ("foundation-proof",) if team == "tire" else ())):
             raise EnvironmentError("BACKEND_PRIVATE_OPERATION_INVALID")
         if not isinstance(container_id, str) or not SHA.fullmatch(container_id):
             raise EnvironmentError("BACKEND_CONTAINER_ID_INVALID")
@@ -163,18 +163,20 @@ class BackendRetirement:
         _counts(body["nonmatchingRecordCounts"])
         return body
 
-    def _brake(self, state, uid, observed):
+    def _brake(self, state, uid, observed, mock=False):
         record = state["backends"]["brake"]
-        previous = record.get("cleanup") or {}
+        key = "mockCleanup" if mock else "cleanup"
+        prefix = "mock-" if mock else ""
+        previous = record.get(key) or {}
         request = dict(schemaVersion=1, contractVersion="1.0.0", systemUids=[uid])
-        preview = self._preview(uid, self._private("brake", observed["Id"], "preview", request))
+        preview = self._preview(uid, self._private("brake", observed["Id"], prefix + "preview", request))
         if any(preview["recordCounts"].values()):
             if previous.get("systemUid") == uid and previous.get("state") in ("SUBMITTING", "UNCERTAIN", "CONFIRMED"):
                 raise EnvironmentError("BACKEND_CLEANUP_UNCERTAIN_OR_NEW_RECORDS_REMAIN")
-            record["cleanup"] = dict(systemUid=uid, imageId=record["imageId"], state="SUBMITTING", checkedAt=now())
+            record[key] = dict(systemUid=uid, imageId=record["imageId"], state="SUBMITTING", checkedAt=now())
             self._save(state)
             try:
-                result = self._private("brake", observed["Id"], "execute", dict(request, confirmationToken=preview["confirmationToken"]))
+                result = self._private("brake", observed["Id"], prefix + "execute", dict(request, confirmationToken=preview["confirmationToken"]))
                 if (not isinstance(result, dict) or set(result) != RESULT or type(result.get("schemaVersion")) is not int or result["schemaVersion"] != 1
                         or result.get("contractVersion") != "1.0.0" or result.get("systemUids") != [uid]
                         or not SHA.fullmatch(result.get("nonmatchingRecordSetSha256", ""))
@@ -183,15 +185,15 @@ class BackendRetirement:
                     raise EnvironmentError("BACKEND_CLEANUP_RESULT_INVALID")
                 _counts(result.get("nonmatchingRecordCounts"))
                 _timestamp(result["completedAt"])
-                preview = self._preview(uid, self._private("brake", observed["Id"], "preview", request))
+                preview = self._preview(uid, self._private("brake", observed["Id"], prefix + "preview", request))
                 if any(preview["recordCounts"].values()):
                     raise EnvironmentError("BACKEND_CLEANUP_NOT_EMPTY")
             except EnvironmentError:
-                record["cleanup"].update(state="UNCERTAIN", checkedAt=now())
+                record[key].update(state="UNCERTAIN", checkedAt=now())
                 self._save(state)
                 raise
         # Zero after unknown response is authoritative absence, not a replay.
-        record["cleanup"] = dict(systemUid=uid, imageId=record["imageId"], state="CONFIRMED", checkedAt=now(),
+        record[key] = dict(systemUid=uid, imageId=record["imageId"], state="CONFIRMED", checkedAt=now(),
             matchingRecordCounts=preview["recordCounts"], nonmatchingRecordCounts=preview["nonmatchingRecordCounts"],
             scope="EXACT_TEST_PRODUCT_DATA")
         self._save(state)
@@ -218,12 +220,14 @@ class BackendRetirement:
             raise EnvironmentError("BACKEND_CLEANUP_PROTOCOL_UNSUPPORTED")
         return protocol == "tire-product-v1"
 
-    def _tire_product_cleanup(self, state, uid, observed):
+    def _tire_product_cleanup(self, state, uid, observed, mock=False):
         record = state["backends"]["tire"]
-        previous = record.get("cleanup") or {}
+        key = "mockCleanup" if mock else "cleanup"
+        prefix = "mock-" if mock else ""
+        previous = record.get(key) or {}
         request = dict(schemaVersion=1, contractVersion="1.0.0", systemUids=[uid])
         def preview():
-            body = self._private("tire", observed["Id"], "preview", request)
+            body = self._private("tire", observed["Id"], prefix + "preview", request)
             expected = (PREVIEW - {"contractVersion"}) | {"nonmatchingRecordSetSha256"}
             if (not isinstance(body, dict) or set(body) != expected or type(body.get("schemaVersion")) is not int
                     or body["schemaVersion"] != 1 or body.get("systemUids") != [uid]
@@ -239,10 +243,10 @@ class BackendRetirement:
         if any(before["recordCounts"].values()):
             if previous.get("systemUid") == uid and previous.get("state") in ("SUBMITTING", "UNCERTAIN", "CONFIRMED"):
                 raise EnvironmentError("BACKEND_CLEANUP_UNCERTAIN_OR_NEW_RECORDS_REMAIN")
-            record["cleanup"] = dict(systemUid=uid, imageId=record["imageId"], state="SUBMITTING", checkedAt=now())
+            record[key] = dict(systemUid=uid, imageId=record["imageId"], state="SUBMITTING", checkedAt=now())
             self._save(state)
             try:
-                result = self._private("tire", observed["Id"], "execute", dict(request, confirmationToken=before["confirmationToken"]))
+                result = self._private("tire", observed["Id"], prefix + "execute", dict(request, confirmationToken=before["confirmationToken"]))
                 expected = (RESULT - {"remainingMatchingRecordCounts"}) | {"remainingRecordCounts", "state"}
                 if (not isinstance(result, dict) or set(result) != expected or type(result.get("schemaVersion")) is not int
                         or result["schemaVersion"] != 1 or result.get("contractVersion") != "1.0.0" or result.get("state") != "CLEANED"
@@ -258,17 +262,17 @@ class BackendRetirement:
                     raise EnvironmentError("TIRE_CLEANUP_NOT_CONFIRMED")
                 before = after
             except EnvironmentError:
-                record["cleanup"].update(state="UNCERTAIN", checkedAt=now())
+                record[key].update(state="UNCERTAIN", checkedAt=now())
                 self._save(state)
                 raise
-        record["cleanup"] = dict(systemUid=uid, imageId=record["imageId"], state="CONFIRMED", checkedAt=now(),
+        record[key] = dict(systemUid=uid, imageId=record["imageId"], state="CONFIRMED", checkedAt=now(),
             matchingRecordCounts=before["recordCounts"], nonmatchingRecordCounts=before["nonmatchingRecordCounts"],
             nonmatchingRecordSetSha256=before["nonmatchingRecordSetSha256"], scope="EXACT_TEST_PRODUCT_DATA")
         self._save(state)
 
-    def _empty_store(self, state, allow_nonempty=False, team="brake"):
+    def _empty_store(self, state, allow_nonempty=False, team="brake", mock=False):
         observed = self._owned(state, team, running=True)
-        body = self._private(team, observed["Id"], "empty-proof", dict(schemaVersion=1, contractVersion="1.0.0"))
+        body = self._private(team, observed["Id"], "mock-empty-proof" if mock else "empty-proof", dict(schemaVersion=1, contractVersion="1.0.0"))
         # N3 adds Brake projection schema 3; Tire retains schema 2. The admin
         # proof, ownership/selector checks and actual empty-state rules stay intact.
         supported_schema_versions = (2, 3) if team == "brake" else (2,)
@@ -284,11 +288,47 @@ class BackendRetirement:
             raise EnvironmentError("BACKEND_WHOLE_STORE_EMPTY_PROOF_UNAVAILABLE")
         if not empty and not allow_nonempty:
             raise EnvironmentError("BACKEND_NONMATCHING_DATA_PRESERVED")
-        state["backends"][team]["cleanup"].update(wholeStoreEmpty=empty, recordCounts=counts)
+        state["backends"][team]["mockCleanup" if mock else "cleanup"].update(wholeStoreEmpty=empty, recordCounts=counts)
         self._save(state)
+
+    def _mock_enabled(self, record):
+        protocol = record.get("mockCleanupProtocol")
+        if protocol not in (None, "isolated-mock-v1"):
+            raise EnvironmentError("BACKEND_MOCK_CLEANUP_PROTOCOL_UNSUPPORTED")
+        return protocol is not None
+
+    def _mock_cleanup(self, state, uid=None, local_id=None):
+        for team in TEAMS:
+            record = state["backends"][team]
+            if not self._mock_enabled(record):
+                continue
+            observed = self._owned(state, team, running=True)
+            if uid is not None:
+                cleanup = self._brake if team == "brake" else self._tire_product_cleanup
+                cleanup(state, uid, observed, mock=True)
+            else:
+                record["mockCleanup"] = dict(localVmId=local_id, imageId=record["imageId"], state="OBSERVING")
+            self._empty_store(state, team=team, mock=True, allow_nonempty="production" in state["vehicles"])
+            record["mockCleanup"]["state"] = "CONFIRMED"
+            self._save(state)
+
+    def _mock_proven(self, state, team, uid=None, local_id=None):
+        record = state["backends"][team]
+        if not self._mock_enabled(record):
+            return True
+        proof = record.get("mockCleanup") or {}
+        counts = proof.get("recordCounts")
+        if (proof.get("state") != "CONFIRMED" or proof.get("imageId") != record["imageId"]
+                or proof.get("systemUid") != uid or proof.get("localVmId") != local_id
+                or not isinstance(counts, dict)):
+            return False
+        empty = not any(_counts(counts, TIRE_COUNTS if team == "tire" else COUNTS).values())
+        return proof.get("wholeStoreEmpty") is empty and (empty or "production" in state["vehicles"])
 
     def _proofs(self, state, uid):
         for team in TEAMS:
+            if not self._mock_proven(state, team, uid=uid):
+                return False
             record = state["backends"][team]
             proof = record.get("cleanup") or {}
             if (proof.get("state") != "CONFIRMED" or proof.get("systemUid") != uid
@@ -386,6 +426,9 @@ class BackendRetirement:
         self._save(state)
 
     def _finish_single(self, state):
+        if any(self._mock_enabled(state["backends"][team]) and
+                state["backends"][team].get("mockCleanup", {}).get("wholeStoreEmpty") is not True for team in TEAMS):
+            raise EnvironmentError("BACKEND_MOCK_WHOLE_STORE_EMPTY_PROOF_UNAVAILABLE")
         if self._tire_product(state) and state["backends"]["tire"]["cleanup"].get("wholeStoreEmpty") is not True:
             raise EnvironmentError("BACKEND_WHOLE_STORE_EMPTY_PROOF_UNAVAILABLE")
         for team in TEAMS:
@@ -451,6 +494,7 @@ class BackendRetirement:
                 if not self._proofs(state, uid) or (not stopping and any(value and value.get("State", {}).get("Running") for value in running)):
                     self._brake(state, uid, self._owned(state, "brake", running=True))
                     self._tire(state, uid, self._owned(state, "tire", running=True))
+                    self._mock_cleanup(state, uid=uid)
                     if "production" not in state["vehicles"]:
                         self._empty_store(state)
                         if self._tire_product(state):
@@ -476,6 +520,8 @@ class BackendRetirement:
 
     def _unprovisioned_proofs(self, state, local_id):
         for team in TEAMS:
+            if not self._mock_proven(state, team, local_id=local_id):
+                return False
             record = state["backends"][team]
             proof = record.get("cleanup") or {}
             if (proof.get("state") != "CONFIRMED" or proof.get("localVmId") != local_id
@@ -538,6 +584,7 @@ absence. Guest stop/overlay-digest proof is finally enforced by local retire.
                 self._tire(state, None, self._owned(state, "tire", running=True))
                 state["backends"]["tire"]["cleanup"].pop("systemUid", None)
                 state["backends"]["tire"]["cleanup"]["localVmId"] = local_id
+                self._mock_cleanup(state, local_id=local_id)
                 self._save(state)
             self._stop(state)
             if "production" not in state["vehicles"]:

@@ -82,6 +82,24 @@ Do not submit this baseline-specific patch as if reproduced against current
 main, or silently upgrade the working Test. First compare the remaining delta
 against current upstream. No upstream PR or push was performed at this gate.
 
+### Upstream source comparison — 12 September 2026
+
+Compared the fetched official 9.1.2 snapshots (Core `a46d1cba`, shared library
+`5560291b`) without modifying the tested pins or live VM:
+
+| Tested failure boundary | Current upstream source | Disposition |
+| --- | --- | --- |
+| CM rejects old/unassigned Active status before resend | Shared-library `f95d155e` changes `UpdateStatus` to warn when the active/status entry is missing while still returning real update errors | The principal status-ingestion fix is already upstream; do not open a duplicate patch against main |
+| crun missing process becomes fatal teardown | Core `34eb0acc` maps ESRCH to typed not-found; current launcher accepts runtime not-found | Related resolution already upstream; our narrower pinned implementation is not a direct main patch |
+| Stop marks inactive before asynchronous task succeeds | Shared-library `9eb7d42e` moves status handling into the task and waits for the pool | Substantially refactored; baseline hunk is not applicable unchanged |
+| Absent bridge interface and unmounted namespace placeholder | Current `BridgeNetwork::Detach` still propagates all delete errors; `DeleteNetworkNamespace` still fails on unsuccessful unmount | Residual source concern; reproduce against current upstream before proposing review changes |
+| Retain failed teardown ownership/image references | Current stop/network/remove sequence differs from the pinned launcher | Requires current-main regression; not claimed fixed or reproduced by the .31 live proof |
+
+This comparison does not qualify a 9.1.2 image and does not authorize replacing
+the currently diagnosed VM. Keep the proven backports in the Platform source;
+upstream review should contain only a reproduced residual delta, not the whole
+baseline-specific patch or a claim that current main has the same failure.
+
 ## Historical SM-only checkpoint
 
 ## Authorized scope

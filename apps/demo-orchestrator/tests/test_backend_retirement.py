@@ -110,6 +110,47 @@ class BackendRetirementTests(TestCase):
                     with self.assertRaisesRegex(EnvironmentError, "BACKEND_WHOLE_STORE_EMPTY_PROOF_UNAVAILABLE"):
                         self.cleanup._empty_store(state, allow_nonempty=True)
 
+    def test_mock_store_cleanup_is_independent_and_required_before_single_volume_removal(self):
+        state = self.backend_fixture(False)
+        state["backends"]["brake"]["mockCleanupProtocol"] = "isolated-mock-v1"
+        mocked = dict.fromkeys(COUNTS, 0)
+        mocked["messages"] = 3
+        operations = []
+        def reply(team, identity, operation, payload=None):
+            nonlocal mocked
+            operations.append(operation)
+            if not operation.startswith("mock-"):
+                return self.private(team, identity, operation, payload)
+            normal = self.matching
+            self.matching = mocked
+            try:
+                return self.private(team, identity, operation[5:], payload)
+            finally:
+                mocked = self.matching
+                self.matching = normal
+        self.cleanup._private.side_effect = reply
+        self.assertTrue(self.cleanup.confirm_test_cleanup(state))
+        self.assertFalse(any(mocked.values()))
+        self.assertFalse(any(self.matching.values()))
+        self.assertEqual(["mock-preview", "mock-execute", "mock-preview", "mock-empty-proof"],
+            [operation for operation in operations if operation.startswith("mock-")])
+        self.assertEqual({}, self.backend.resources)
+
+    def test_mock_proof_cannot_reuse_normal_scope_or_wrong_identity(self):
+        state = self.backend_fixture(False)
+        record = state["backends"]["brake"]
+        record["mockCleanupProtocol"] = "isolated-mock-v1"
+        record["cleanup"] = dict(state="CONFIRMED", imageId=record["imageId"], systemUid="test-uid",
+            wholeStoreEmpty=True, recordCounts=dict.fromkeys(COUNTS, 0))
+        self.assertFalse(self.cleanup._mock_proven(state,"brake",uid="test-uid"))
+        record["mockCleanup"] = dict(record["cleanup"])
+        self.assertTrue(self.cleanup._mock_proven(state,"brake",uid="test-uid"))
+        self.assertFalse(self.cleanup._mock_proven(state,"brake",uid="another-unit"))
+        record["mockCleanup"]["wholeStoreEmpty"] = False
+        with self.assertRaisesRegex(EnvironmentError, "MOCK_WHOLE_STORE"):
+            self.cleanup._finish_single(state)
+        self.assertEqual([], self.backend.actions)
+
     def private(self, team, identity, operation, payload=None):
         self.calls.append((team, operation))
         if team == "tire":

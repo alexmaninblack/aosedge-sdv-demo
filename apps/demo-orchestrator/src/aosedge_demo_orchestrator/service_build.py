@@ -52,7 +52,7 @@ class ServiceBuilder:
             raise EnvironmentError("SERVICE_BUILD_LOG_TOO_LARGE")
         lines = []
         for line in log.splitlines():
-            if (re.search(r"error:|Error:|ERROR|FAILED|fatal:|failed to|permission denied", line)
+            if (re.search(r"error:|FAILED|fatal:|failed to|permission denied|assertion|subprocess aborted|terminate called|what\(\):|Test\s+#", line, re.I)
                     and not re.search(r"(?i)private.key|bearer|password|token|secret|authorization", line)):
                 lines.append(re.sub(r"[\x00-\x1f\x7f]", "", line)[:500])
         return dict(team=team, state=re.sub(r"[\x00-\x1f\x7f]", "", str(row.get("Status", row.get("status", "UNKNOWN"))))[:40],

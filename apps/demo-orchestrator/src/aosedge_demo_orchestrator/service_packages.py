@@ -36,6 +36,8 @@ def package_record(directory, team, version):
             or record.get("packagePath") != str(directory) or not isinstance(record.get("files"), dict)
             or type(record.get("withoutPermissions", False)) is not bool
             or type(record.get("demoNoTelemetry", False)) is not bool
+            or type(record.get("demoMockedData", False)) is not bool
+            or (record.get("demoMockedData") and (not record.get("withoutPermissions") or record.get("demoNoTelemetry")))
             or (record.get("demoNoTelemetry") and not record.get("withoutPermissions"))
             or not 4 <= len(record["files"]) <= 4098):
         raise EnvironmentError("SERVICE_PACKAGE_RECEIPT_INVALID")
@@ -88,6 +90,10 @@ def read_package(directory, team, version):
             not items[0].get("configuration", {}).get("cmd", "").endswith(" --demo-no-telemetry") or
             items[0].get("configuration", {}).get("quotas", {}).get("noFileLimit") != 1024):
         raise EnvironmentError("SERVICE_DEMO_NO_TELEMETRY_CONFIGURATION_CHANGED")
+    if record.get("demoMockedData") and (len(items) != 1 or
+            not items[0].get("configuration", {}).get("cmd", "").endswith(" --demo-mocked-data") or
+            items[0].get("configuration", {}).get("quotas", {}).get("noFileLimit") != 1024):
+        raise EnvironmentError("SERVICE_DEMO_MOCK_CONFIGURATION_CHANGED")
     if (len(items) != 1 or items[0].get("version") != version or items[0].get("identity", {}).get("type") != "service"
             or items[0]["identity"].get("codename") != team + "-health-service" or items[0].get("sourceFolder") != "service"
             or items[0].get("images") != [dict(sourceFolder="arm64", archInfo=dict(architecture="arm64"))]
@@ -97,9 +103,11 @@ def read_package(directory, team, version):
     return record, files
 
 
-def package_configuration(root, team, content_profile, version, *, without_permissions=False, demo_no_telemetry=False):
+def package_configuration(root, team, content_profile, version, *, without_permissions=False, demo_no_telemetry=False, demo_mocked_data=False):
     """Native schema-2 input, using accepted exact product permissions/quotas."""
     number(version)
+    if type(demo_mocked_data) is not bool or (demo_mocked_data and (not without_permissions or demo_no_telemetry)):
+        raise EnvironmentError("SERVICE_DEMO_MOCK_REQUIRES_EXCLUSIVE_PERMISSION_FREE_MODE")
     if type(without_permissions) is not bool:
         raise EnvironmentError("SERVICE_WITHOUT_PERMISSIONS_FLAG_INVALID")
     if type(demo_no_telemetry) is not bool or (demo_no_telemetry and not without_permissions):
@@ -135,9 +143,9 @@ def package_configuration(root, team, content_profile, version, *, without_permi
         dependencies=[])])
     if without_permissions:
         del config["items"][0]["configuration"]["permissions"]
-    if demo_no_telemetry:
+    if demo_no_telemetry or demo_mocked_data:
         configuration = config["items"][0]["configuration"]
-        configuration["cmd"] += " --demo-no-telemetry"
+        configuration["cmd"] += " --demo-mocked-data" if demo_mocked_data else " --demo-no-telemetry"
         # Native libcrun needs headroom during container setup, before it closes
         # inherited descriptors. Leave normal product contracts unchanged.
         configuration["quotas"]["noFileLimit"] = 1024
@@ -333,9 +341,11 @@ class ServicePackages:
         if result != {"ok": True, "data": {"state": "VALIDATED_SERVICE_CONFIG"}}:
             raise EnvironmentError("SERVICE_PACKAGE_SCHEMA_INVALID")
 
-    def prepare(self, team, content_profile, cloud_profile="service-provider", *, without_permissions=False, demo_no_telemetry=False):
+    def prepare(self, team, content_profile, cloud_profile="service-provider", *, without_permissions=False, demo_no_telemetry=False, demo_mocked_data=False):
         if team not in ("brake", "tire") or content_profile not in ("v1", "v2", "v3"):
             raise EnvironmentError("SERVICE_CONTENT_PROFILE_INVALID")
+        if type(demo_mocked_data) is not bool or (demo_mocked_data and (not without_permissions or demo_no_telemetry)):
+            raise EnvironmentError("SERVICE_DEMO_MOCK_REQUIRES_EXCLUSIVE_PERMISSION_FREE_MODE")
         if type(without_permissions) is not bool:
             raise EnvironmentError("SERVICE_WITHOUT_PERMISSIONS_FLAG_INVALID")
         if type(demo_no_telemetry) is not bool or (demo_no_telemetry and not without_permissions):
@@ -365,7 +375,7 @@ class ServicePackages:
             version = ReleaseContinuity(self.environment).reserve(team, observed)
             self.progress(team + ": preparing release " + version + "; no build or VM action")
             config = package_configuration(self.environment.root, team, content_profile, version,
-                without_permissions=without_permissions, demo_no_telemetry=demo_no_telemetry)
+                without_permissions=without_permissions, demo_no_telemetry=demo_no_telemetry, demo_mocked_data=demo_mocked_data)
             files[RELEASE_FILE] = (encoded(dict(schemaVersion=1, serviceVersion=version)), 0o444)
             directory.mkdir(parents=True, exist_ok=True, mode=0o700)
             target = directory / version
@@ -392,7 +402,8 @@ class ServicePackages:
                     serviceId=binding["serviceId"], serviceProviderId=binding["ownerId"], cloudProfile=cloud_profile,
                     withoutPermissions=without_permissions,
                     demoNoTelemetry=demo_no_telemetry,
-                    qualification=("DEMO_LIFECYCLE_ONLY_NO_TELEMETRY" if demo_no_telemetry else
+                    demoMockedData=demo_mocked_data,
+                    qualification=("DEMO_MOCK_BACKEND_ONLY" if demo_mocked_data else "DEMO_LIFECYCLE_ONLY_NO_TELEMETRY" if demo_no_telemetry else
                         "DELIVERY_ONLY_NO_KUKSA_AUTH" if without_permissions else "PREPARED_NOT_RUNTIME_QUALIFIED"),
                     packagePath=str(target))
                 atomic_json(stage / "prepared.json", result)

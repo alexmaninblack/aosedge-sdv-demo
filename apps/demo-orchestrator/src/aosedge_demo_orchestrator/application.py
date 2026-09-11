@@ -105,7 +105,8 @@ class DemoOrchestrator:
             try:
                 data = ServicePackages(self.environment_service, self.vm_service.progress).prepare(
                     request.team, request.content_profile, request.profile or "service-provider",
-                    without_permissions=request.without_permissions, demo_no_telemetry=request.demo_no_telemetry)
+                    without_permissions=request.without_permissions, demo_no_telemetry=request.demo_no_telemetry,
+                    demo_mocked_data=request.demo_mocked_data)
                 return OperationResult(operation, OperationState.COMPLETED,
                     "Unsigned service package prepared; no VM action, signing, Cloud mutation or runtime qualification.", data=data)
             except EnvironmentError as error:
@@ -154,7 +155,7 @@ class DemoOrchestrator:
                     return OperationResult(operation, OperationState.COMPLETED if data["state"] == "COMPLETED" else OperationState.PARTIAL,
                         "Explicit Docker Desktop recovery; no pruning, Cloud mutation or QEMU VM restart.", data=data)
                 data = backend.execute(request.action, request.team)
-                state = (OperationState.OBSERVED if request.action == "status" else OperationState.PARTIAL
+                state = (OperationState.PARTIAL if request.action == "inspect" and data.get("state") == "PARTIAL" else OperationState.OBSERVED if request.action in ("status", "inspect") else OperationState.PARTIAL
                     if request.action == "start" and data.get("state") != "RUNNING" else OperationState.COMPLETED)
                 return OperationResult(operation, state, "Backend process/storage operation; not Cloud or in-vehicle function readiness.", data=data)
             except EnvironmentError as error:
