@@ -338,5 +338,5 @@ review is needed, use:
   for exact UI behavior, actions and state semantics;
 - [UI Traceability Register](mockups/aosedge-demo-ui-traceability-register.md)
   for requirement and acceptance-case coverage; and
-- [Demo Scenario Architecture Flows 2.0](../architecture/demo-scenario-architecture-flows.md)
+- [Demo Scenario Architecture Flows 2.1](../architecture/demo-scenario-architecture-flows.md)
   for detailed component and interface sequences.

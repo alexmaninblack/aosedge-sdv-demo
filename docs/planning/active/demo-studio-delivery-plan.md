@@ -11,15 +11,63 @@
 - Target: the accepted Studio B composition connected to a real, repeatable Test-vehicle demo
 - Authorization: on 9 September 2026 the user authorized implementation and independent verification of P1–P8, in the accepted sequence. Production rollout and changes outside these phases remain excluded.
 
+### Native service input migration — 11 September 2026
+
+<a id="native-service-input-migration"></a>
+
+[ADR 0015](../../architecture/decisions/0015-use-native-aos-service-runtime-inputs.md)
+is **accepted**, and the user authorized documentation migration followed by
+implementation. This is a bounded continuation of P5/P7, not a restart of the
+Studio plan. The former manifest-before-assignment and SM token-owner patch
+gates are retired. Earlier dated checkpoints below remain historical.
+
+| Step | Change and owner | Gate / evidence | State |
+| --- | --- | --- | --- |
+| N1 | Solution: accept ADR, update HLA/flows/requirements, runtime-input contract and D4 migration mapping | English documents, navigation and deterministic docs-check | Complete; product wire migration remains N3 |
+| N2 | Brake/Tire + Platform: private bootstrap sessions, dynamic token readers, native tmpfs resource mode; retire only token-owner patch | First create, isolation, atomic renewal, path/mode/symlink negatives, cleanup/restart, native host compilation | Host source tests passed; Linux/live proof remains N6 |
+| N3 | Solution contracts, both producers/backends: package version and native identity; explicit new message schemas without required service/model OCI digest | Producer-consumer fixtures; legacy queues/history retained; no fabricated digest; model/VDP hashes unchanged | Pending |
+| N4 | Demo Control: package the allocated version once; project public inputs; native configuration activation through existing commands | Package/publication equality; no manifest lookup dependency; stable-directory refresh after VDP commit | Pending |
+| N5 | Existing startup integration: restore public /run inputs before SM launches retained assignments | Exact hook/order documented and tested; no new daemon, persisted token or metadata authority | Pending |
+| N6 | Bounded current Test SOTA and backend integration through democtl | Real Cloud Running/version, KAC/TLS/subscriptions, renew/expiry, actual product records, retained state and scoped access proof | Pending |
+| N7 | Checkpoint source/docs and record exclusions | Commit only tested source; no build artifacts; retain current VM/Factory/Production | N2 local checkpoints created; full-migration checkpoint remains pending |
+
+Source increments may be developed independently, but **no new producer is
+published before its matching backend/contract migration**, and no configured
+1777 token mount is activated with a legacy fixed-path bootstrap. N2 changes
+credential placement only; it must not masquerade as completion of N3–N6.
+The live source/publication permissions already granted remain bounded to the
+current Test; this change does not authorize another Factory build, reset,
+provisioning cycle or Production mutation.
+
+The [runtime-input contract](../../architecture/demo-control-service-inputs.md)
+defines five public fields and immutable package metadata. Its
+[executable schemas](../../../contracts/service-runtime-inputs/README.md) freeze
+the input shapes before readers change. Product wire migration must remove
+Brake's `modelArtifactSha256` dependency as well as `serviceArtifactSha256`;
+both were tied to the unavailable final OCI manifest. Exact artifact identity
+remains separate optional engineering evidence, not service readiness.
+Existing model configuration hashes, VDP compatibility hashes, authorization,
+algorithms, timing limits and persistent producer state do not change.
+
+N2 local source checkpoints: Brake `8d19381`, Tire `47ab08d`, Platform
+`205f89d`. The Solution commit containing this record freezes the accepted
+documentation/input schemas. Test evidence: Brake 5/5 CTest targets, Tire 2/2,
+Platform 8 focused tests, Solution 36 input/KAC/docs tests and docs-check.
+No full ARM64/gRPC service build, live activation, upload or backend/VM change
+occurred. No source push occurred in this increment.
+
+Unclosed Tire analytics functionality remains a separate P7 task. Resolving
+credentials or process startup does not prove that its model/results work.
+
 <a id="implementation-execution--9-september-2026"></a>
 
 ## Implementation execution — 9 September 2026
 
-Latest checkpoint (11 September): the initial approved Studio composition is
+Earlier checkpoint (11 September, before ADR 0015): the initial approved Studio composition is
 connected to shared Test lifecycle/VDP operations and normalized Cloud-only
 inventory/monitoring. Brake has a compiled ARM64 product profile; Tire has
 scoped product source and a new backend cleanup protocol. These are source and
-integration increments, not completed P4–P8 exit criteria. Service launch has
+integration increments, not completed P4–P8 exit criteria. At that checkpoint, service launch had
 two concrete unclosed prerequisites: native per-instance token-directory
 ownership and authoritative ARM64 manifest identity before assignment. See the
 [11 September checkpoint](../../qualification/demo-studio-implementation-progress-2026-09-11.md)

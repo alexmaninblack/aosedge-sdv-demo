@@ -6,15 +6,15 @@
 - Status: D4 design accepted; source foundation and Data backend integrated;
   bounded window-detail contract/packet accepted and implementation authorized
 - Package: [`CR-BRAKE-CLOUD`](../component-decomposition-and-interface-register.md#cr-brake-cloud)
-- Version: 0.6
+- Version: 0.7
 - Prepared: 2026-08-19
 - Accepted: 2026-08-28
 - Owner: Function Team 1 / Service Provider 1 functional Cloud product
-- Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
+- Architecture input: [High-Level Architecture 1.6](../../architecture/high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.0](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 2.0](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 2.0](../component-decomposition-and-interface-register.md)
+- Flow input: [Architecture Flows 2.1](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.1](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 2.1](../component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md) and [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
 - Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
 - Accepted D4 publication input: [D4-010.3 Artifact Publication Credential Profile](../../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
@@ -27,6 +27,18 @@
   packets are integrated. The additive window-detail contract and exact
   five-path source packet are accepted/authorized; signing, Cloud, container,
   VM or Unit mutation is not authorized
+
+## Native service input amendment — 2026-09-11
+
+[ADR 0015](../../architecture/decisions/0015-use-native-aos-service-runtime-inputs.md)
+and the [D4 replacement map](../d4-decision-register.md#native-service-inputs-replacement--2026-09-11)
+are accepted for this package. They replace the fixed token-root leaf and
+mandatory final service/model OCI digest obligations below, while preserving
+the referenced legacy records and all unrelated requirements. Use the
+[current input contract](../../architecture/demo-control-service-inputs.md);
+application version comes from the package, not public Unit metadata.
+Implementation and live gates remain in the
+[ordered migration](../../planning/active/demo-studio-delivery-plan.md#native-service-input-migration).
 
 ## Purpose
 

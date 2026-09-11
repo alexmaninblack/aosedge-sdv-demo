@@ -1,127 +1,114 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Temporary Test service inputs
+# Service runtime inputs
 
-Status: bounded interface authorized on 10 September 2026; opt-in resource
-template implemented, token-owner source correction prepared, producer/guest qualification still open. This closes the interface choice in the
-[Studio plan](../planning/active/demo-studio-delivery-plan.md), not its P5 gate.
-Factory `.31`, Production and native Aos service authorization remain unchanged.
+- Status: Accepted contract; implementation and live qualification tracked separately
+- Version: 2.0
+- Prepared: 2026-09-11
+- Owner: Demo Control / OEM Platform
+- Decision: [ADR 0015](decisions/0015-use-native-aos-service-runtime-inputs.md)
 
-## Read-only payload
+This is the replacement for the former seven-field input and SM token-owner
+patch design. Historical observations remain in the dated qualification
+checkpoints, not as competing instructions here.
 
-Demo Control owns the projection. A dedicated resource for each service maps
-only that service's runtime-input directory into the container read-only with
-`nosuid,nodev,noexec`. It contains `metadata.json` and `kuksa-ca.pem`; no keys,
-tokens, arbitrary host directories or other service metadata are included.
-Directory binding permits an atomic replacement to remain visible to the
-service. Brake uses the existing `--metadata-file` and `--ca-file` arguments.
-The existing `kuksa` and `kuksa-auth-client` resources are still required.
+## Package, public inputs and native identity
 
-| Metadata field | Authoritative binding |
-| --- | --- |
-| `schemaVersion` | Integer `1` |
-| `unitSystemUid` | Native IAM `GetSystemInfo.system_id`, matching the current successful provisioning journal; not Cloud Unit UUID |
-| `unitRole` | Demo Control's initialized guest role under `systemd-slot-component/demo-inputs/role`; Test maps to `validation` |
-| `serviceVersion` | Selected signed candidate's exact release, subsequently reconciled with the actual SM instance version |
-| `serviceArtifactSha256` | SHA-256 of the selected ARM64 OCI image manifest, matching native SM `manifestDigest`; not binary, signed bundle or layer digest |
-| `vdpContractVersion` | Literal `contracts.vdpCompatibility.contractVersion` in the verified committed active capability manifest |
-| `vdpContractSha256` | Its `contracts.vdpCompatibility.sha256`; not the entire capability-manifest hash |
+| Source | Fields / location | Lifecycle |
+| --- | --- | --- |
+| Immutable package | `/usr/share/aosedge/service-release.json`: schemaVersion 1, serviceVersion | Demo Control allocates one release and writes it to this file and publication metadata; root-owned read-only package data |
+| Public Unit input | `/run/aosedge/platform/service-inputs/metadata.json`: schemaVersion 2, unitSystemUid, unitRole, vdpContractVersion, vdpContractSha256 | Prepared before service launch; refresh only on committed VDP change |
+| Public KUKSA trust | `/run/aosedge/platform/service-inputs/kuksa-ca.pem` | Copy only the Unit public certificate, never a private key |
+| Native instance identity | AOS_ITEM_ID, AOS_SUBJECT_ID, AOS_INSTANCE_INDEX, AOS_INSTANCE_ID | Supplied by native Aos; not substituted by caller labels or release metadata |
+| Token path | KUKSA_TOKEN_FILE | Bootstrap-selected private session path; never a token value |
 
-The current VDP compatibility pair is version `1.0.1` and digest
-`8e58e18e9d99a13409af6813e573cbe1c690e439ad746224426801f6b080c871`.
-Functional profile v1/v2/v3 and monotonic Cloud release numbers are separate.
-The public TLS source is only `/var/lib/aos-kuksa-tls/server.pem`, whose SAN
-supports `Server`; its sibling private key is never projected.
+Both services use strict `X.Y.Z` release values, at most 32 characters,
+without leading zeroes. Functional profiles remain separate from releases.
+The package version is application-reported, not platform attestation.
 
-## Ordering and temporary application
+Unit UID is native IAM `GetSystemInfo.system_id`, reconciled with successful
+provisioning, not the Cloud Unit UUID. Test maps to wire role `validation`.
+The VDP pair comes from `contracts.vdpCompatibility` in the verified,
+committed active capability manifest; it is neither a functional profile,
+Cloud release nor the whole capability-manifest digest.
 
-1. Resolve the current IAM identity, initialized role, exact signed candidate
-   and committed active VDP contract. Prepare the read-only inputs before
-   service assignment: bootstrap needs them before process launch.
-2. Preserve all effective SM configuration/resources, adding only the dedicated
-   resource in a temporary `/run` copy. The pinned SM key is
-   `resourcesConfigFile`, not a guessed alternative.
-3. Use a narrow systemd read-only config binding and one SM restart on Test;
-   the resource manager loads the file at Init and has no evidenced hot reload.
-   No rootfs remount, SM binary replacement or Factory rebuild is implied.
-4. After assignment, reconcile actual native instance version/manifest digest
-   against the selected tuple. A mismatch is not a successful integration.
-5. Project VDP changes only after committed slot/process agreement, not when
-   the active symlink first changes during an unfinished transaction. Refresh
-   the actual compatibility pair atomically. Queued messages retain their old
-   provenance. The existing Brake watcher reconnects on metadata/trust change.
-6. Prove exact SELinux/systemd access, KAC renewal and TLS subscription with the
-   service identity. Remove the temporary override after the bounded proof or
-   explicitly record its retained state. No broad permissions or TOFU fallback.
+The executable input schemas are in
+[service runtime inputs](../../contracts/service-runtime-inputs/README.md).
 
-Source evidence: pinned AosCore
-[`config.cpp`](https://github.com/aosedge/aos_core_cpp/blob/9eecb80c4994937b5c8cbe0464970f81e8ad4c2d/src/sm/config/config.cpp#L126),
-[`resourcemanager.cpp`](https://github.com/aosedge/aos_core_cpp/blob/9eecb80c4994937b5c8cbe0464970f81e8ad4c2d/src/sm/resourcemanager/resourcemanager.cpp#L92)
-and [`instance.cpp`](https://github.com/aosedge/aos_core_cpp/blob/9eecb80c4994937b5c8cbe0464970f81e8ad4c2d/src/sm/launcher/runtimes/container/instance.cpp#L198).
-This projection does not give analytics new IAM/network authority; KUKSA
-credentials continue through the existing accepted KAC exchange.
+## Filesystem resources
 
-## Native source audit — 11 September 2026
+| Service | Resource | Host directory |
+| --- | --- | --- |
+| Brake | brake-runtime-inputs | /run/aos-demo-service-inputs/brake |
+| Tire | tire-runtime-inputs | /run/aos-demo-service-inputs/tire |
 
-Platform revision `161108b6e96ff1f43ecccc776f28a7792f4c73ee` supplies a separate
-`resources-demo-services.cfg` template. No recipe selects it automatically and
-the active VM still declares only the existing KUKSA resources. The exact Test
-engineering inspection confirms AArch64/glibc 2.39, the KAC request socket and
-public CA; neither team's metadata has been projected.
+Each resource binds only its own directory to
+`/run/aosedge/platform/service-inputs` using
+`bind,ro,nosuid,nodev,noexec`. Root owns directories (0755) and the two public
+files (0444). Do not bind a shared parent or both resources into one instance.
+Demo Control replaces individual files atomically inside the stable directory.
 
-The bootstrap requires a 0700 token directory owned by its effective UID.
-The active `kuksa-auth-client` resource defines tmpfs mode 0700 but no instance
-owner. Native CM allocates a non-root UID; native container SM copies resource
-mount options without deriving a UID for that mount. A root-owned tmpfs does
-not meet the bootstrap contract. Source: pinned native
-[CM instance UID range](https://github.com/aosedge/aos_core_lib_cpp/blob/60cb83535f773762c61ac5f544b31b7b88c502e3/src/core/cm/launcher/instance.hpp#L32)
-and [SM resource mount construction](https://github.com/aosedge/aos_core_cpp/blob/9eecb80c4994937b5c8cbe0464970f81e8ad4c2d/src/sm/launcher/runtimes/container/instance.cpp#L520).
-The exact native ownership mechanism must be closed before live assignment;
-root execution, a guessed UID and broader directory permissions are excluded.
+Public trust originates only at `/var/lib/aos-kuksa-tls/server.pem`.
+The service validates TLS for `Server`; no TOFU, handshake-extracted trust,
+private-key sibling, Provider token or private trust directory is exposed.
 
-The Cloud 6.1.53 service-version schema does not explicitly expose the selected
-ARM64 manifest digest. Its arbitrary `container_config_data` is not evidence
-that an authoritative digest is available. Native CM resolves the architecture
-manifest separately from the OCI index. Therefore the pre-assignment producer
-still requires a supported artifact/response source. Never substitute the
-bundle, index, layer or binary digest. If that source is unavailable, the
-ordering/interface change needs a bounded decision, not a silent fallback.
+## Private token session
 
-Finally, native `allowedConnections` resolves managed service item IDs, not
-arbitrary hostnames/IPs. Adding `Server/55555/tcp` or a host-backend IP as though
-this field were a host firewall allowlist would not establish the intended
-route. Native public egress and actual routing must be assessed separately.
-No such connection entries or broad network exceptions were added.
+The existing `kuksa-auth-client` resource keeps its socket bind and
+`aos-kuksa-clients` group. Its separate per-container 64-KiB tmpfs retains
+`rw,nosuid,nodev,noexec`, with root mode **1777**, not an SM-generated UID/GID.
+The bootstrap creates an unpredictable `session-<random>` directory (0700)
+under `/run/aosedge/secrets/kuksa`, owned by its effective UID/GID.
+Its token is a regular file `token.jwt` (0400); the child receives its exact
+path through `KUKSA_TOKEN_FILE`.
 
-## Follow-up evidence and unresolved ordering — 11 September 2026
+Reject symlink traversal, wrong ownership/mode and pre-existing session
+adoption. Bound crash-orphan accumulation; never delete an active peer
+session. Normal shutdown removes only the bootstrap's own session. Restart
+acquires new credentials; it does not recover a token from storage. No new
+daemon, wrapper, fixed service UID, privileged chown or SM code is introduced.
 
-The authorized native token-owner correction is a source candidate in
-`aos-vehicle-platform`: only the exact KAC token tmpfs receives actual instance
-UID/GID, retaining mode 0700 and all existing protection flags. Its option
-function passes source-equivalent positive/negative tests; complete native SM
-compilation and a real container mount remain unproved. Current Test, Factory
-`.31` and the retained SM override are unchanged.
+KAC request/response, IAM authority, 300-second TTL, renewal at 180 seconds,
+expiry, denial, retry and redaction remain unchanged. Remove AOS_SECRET
+before starting analytics. Persistent model/outbox data stay in native
+`/storage`; credentials never enter `/storage` or `/state.dat`.
 
-Through `democtl service inspect`, a real ready version of the existing
-`hello-world-python` service was inspected at 02:39 UTC. Its
-`container_config_data` contains only `cmd`, `instances`, `quotas` and
-`workingDir`, without an OCI identity field. This observation is specific to
-that legacy version, not proof that every future processed bundle has the same
-fields. The public 6.1.53 version and deployment-bundle schemas also provide no
-dedicated image-manifest download/digest endpoint. No configuration values,
-environment, credentials or blob URLs were emitted by the inspection.
+## Activation and recovery order
 
-Therefore the agreed **complete metadata before assignment** ordering is not
-yet executable. Do not substitute a signed bundle/layer/binary hash or publish
-an arbitrary version just to hide the missing identity source.
+1. Package preparation and publication may occur before a vehicle exists.
+   They do not require runtime inputs or a final OCI manifest lookup.
+2. Before launch, project native Unit/role, committed VDP and public trust.
+   Reject missing/contradictory inputs instead of supplying placeholders.
+3. Activate the native resource configuration through Demo Control. The
+   pinned resource manager loads at initialization, not via hot reload.
+   Preserve existing SM binary, settings, credentials and resources.
+4. Assign service IDs through the existing Subject operation. Native Aos
+   determines the actual instance and version.
+5. Bootstrap authenticates through KAC, establishes TLS/subscriptions and
+   starts analytics. Cloud Running is not functional Ready.
+6. Refresh public files only after committed slot/process agreement.
+   Old windows/outbox records retain their original provenance and bytes.
+7. Cold start must restore the /run sources before automatic retained
+   assignments launch. The exact existing platform/startup hook is a required
+   implementation gate; a warm assignment does not prove this ordering.
 
-Bounded proposal, **not approved or implemented**: source the exact service
-version and selected manifest digest from native SM `InstanceInfo` immediately
-before process launch, while Demo Control retains ownership of the public
-Unit/role/VDP/trust inputs. This changes the service-input delivery contract;
-it does not change product-message provenance semantics or give services new
-Cloud/IAM access. The exact carrier and immutable-versus-refreshable input
-split must be agreed before implementing it. The supported alternative is a
-platform-confirmed pre-assignment API for the actual manifest; none is currently
-established. The rest of the accepted Studio flow is unchanged.
+No direct guest reads are added to the Presenter platform dashboard; Cloud
+remains its platform-state source. Engineering input projection/inspection is
+a Demo Control operation, separate from dashboard observation.
+
+## Migration and remaining evidence
+
+[The delivery plan](../planning/active/demo-studio-delivery-plan.md#native-service-input-migration)
+owns the ordered work and its actual status. Product-message migration must
+cover the service digest **and** Brake's modelArtifactSha256 alias of it.
+Retain modelConfigSha256 and the VDP compatibility digest. Do not invent a
+replacement artifact hash. New messages use an explicit new schema version;
+legacy queues and backend records remain readable and are never relabelled.
+
+Native environment/resource behavior was inspected at AosCore
+`9eecb80c4994937b5c8cbe0464970f81e8ad4c2d`; evidence links and limitations
+remain in [ADR 0015](decisions/0015-use-native-aos-service-runtime-inputs.md#9-evidence-and-limitations).
+Native mount/SELinux, real KAC/TLS/renewal, backend ingestion and retained-
+assignment cold start still require the focused live proof. Current Factory
+image and Production are not modified by this document.

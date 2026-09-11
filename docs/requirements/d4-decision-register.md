@@ -4,13 +4,38 @@
 # D4 Interface and Qualification Decision Register
 
 - Status: Review candidate
-- Version: 1.0
+- Version: 1.1
 - Prepared: 2026-08-22
 - Previous working baseline: Version 0.9
-- Inputs: HLA 1.5, Demo Scenarios 2.0, Architecture Flows 2.0,
-  System Requirements 2.0, Component Register 2.0 and the corresponding
+- Inputs: HLA 1.6, Demo Scenarios 2.0, Architecture Flows 2.1,
+  System Requirements 2.1, Component Register 2.1 and the corresponding
   component-package review candidates
 - Implementation, signing, Cloud, Unit, VM or CARLA mutation authorized: no
+
+## Native service inputs replacement — 2026-09-11
+
+<a id="native-service-inputs-replacement--2026-09-11"></a>
+
+[ADR 0015](../architecture/decisions/0015-use-native-aos-service-runtime-inputs.md)
+is accepted. The [runtime-input contract](../architecture/demo-control-service-inputs.md)
+and [migration sequence](../planning/active/demo-studio-delivery-plan.md#native-service-input-migration)
+are the current replacement mapping for these parts of the earlier decisions:
+
+| Earlier obligation | Accepted replacement |
+| --- | --- |
+| D4-027.2 fixed token leaf in owner-only tmpfs | Native 1777 per-container tmpfs; bootstrap-created 0700 session; regular 0400 token; dynamic path-only environment |
+| D4-016 product service/artifact provenance | Package release and native identity; new versioned messages without mandatory final OCI digest |
+| D4-016 modelArtifactSha256 alias of service artifact | Remove this mandatory alias too; retain modelConfigSha256 and existing model/state semantics |
+| D4-014/D4-017/D4-024 product log/query/evidence correlation | Version-aware old/new decoding; optional sourced artifact evidence is not a startup or readiness dependency |
+| D4-023 Tire fixed-load command binding | Current Unit, service, version and instance; command identity, authorization, fixed profile, leases and 180-second stop bound unchanged |
+
+Old schemaVersion 1 product records remain explicitly legacy and readable.
+Do not weaken their validator in place or relabel stored provenance. Freeze
+new wire discriminators and migrate producers/backends together before a new
+service publication. Unrelated quotas, algorithms, model hashes, KAC wire
+protocol, IAM decisions and audience flow are not redefined by this table.
+The two input shapes and credential placement are executable under
+[service-runtime-inputs](../../contracts/service-runtime-inputs/README.md).
 
 ## Studio Test scope amendment — 2026-09-09
 
@@ -1020,8 +1045,8 @@ is:
    container destination, group, mount options or fixed KUKSA resource;
 3. the host socket directory and container mount point may exist before the
    helper becomes ready. The socket is owned by `aos-kac:aos-kuksa-clients`
-   and mode `0660`; the private credential directory is mode `0700` and its
-   tmpfs is mounted `nosuid,nodev,noexec`;
+   and mode `0660`; a private 0700 credential session is created under the
+   per-container 1777 tmpfs, mounted `nosuid,nodev,noexec`;
 4. the Service compatibility bootstrap, not the analytics application, reads
    the current instance `AOS_SECRET`, connects to `request.sock` and requests
    the one implicit fixed resource `kuksa`. It shall not send caller identity,
@@ -1032,8 +1057,8 @@ is:
    Unix group access and kernel peer credentials are defense in depth only and
    shall not replace or broaden that IAM decision;
 6. on success, the bootstrap writes the returned JWT atomically to
-   `/run/aosedge/secrets/kuksa/token.jwt` with mode `0400` and exposes only the
-   fixed `KUKSA_TOKEN_FILE` path to the analytics process. Rejection creates no
+   `/run/aosedge/secrets/kuksa/session-<random>/token.jwt` with mode `0400` and exposes only the
+   bootstrap-selected `KUKSA_TOKEN_FILE` path to the analytics process. Rejection creates no
    token file. No other Service instance may read the socket response, tmpfs or
    token file; and
 7. the bootstrap remains the Service-local compatibility owner for renewal.

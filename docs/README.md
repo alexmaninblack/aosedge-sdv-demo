@@ -23,16 +23,19 @@ not only the CARLA-to-AosEdge transport bridge.
 ## Architecture
 
 - [Architecture documentation index](architecture/README.md)
-- [High-Level Architecture 1.5 — accepted](architecture/high-level-architecture.md)
+- [High-Level Architecture 1.6 — accepted](architecture/high-level-architecture.md)
   — current end-to-end system view with the accepted authorization,
   Release Authority, Safe Stop and Tire Health decisions.
-- [Demo Scenario Architecture Flows 2.0 — accepted](architecture/demo-scenario-architecture-flows.md)
+- [Demo Scenario Architecture Flows 2.1 — accepted](architecture/demo-scenario-architecture-flows.md)
   — complete manufacturing, provisioning, post-SOP evolution, Function Team 2
   `T1` Tire Health stage, observability, offline, and retirement mapping.
 - [Repository and component boundaries](architecture/repository-boundaries.md)
   — ownership across the participating repositories.
 - [Demo Control — draft implementation design](architecture/demo-control.md)
   — shared `democtl`/UI core, initial lifecycle scope and status/access proposal.
+- [Native Aos service identity, data and tokens — accepted](architecture/decisions/0015-use-native-aos-service-runtime-inputs.md)
+  — approved Brake/Tire metadata, private token sessions and native startup;
+  documentation cascade and implementation authorized.
 - [Architecture decisions](architecture/decisions/) — accepted and proposed
   decisions and their consequences.
 - [Architecture diagrams](architecture/diagrams/) — editable diagram sources
@@ -53,10 +56,10 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Requirements
 
-- [System Requirements and Traceability 2.0 — accepted](requirements/system-requirements-and-traceability.md)
+- [System Requirements and Traceability 2.1 — accepted](requirements/system-requirements-and-traceability.md)
   — system obligations, complete coverage of the twenty-two Architecture Flows
   gaps, verification intent, repository ownership and component allocation.
-- [Component Decomposition and Interface Register 2.0 — accepted](requirements/component-decomposition-and-interface-register.md)
+- [Component Decomposition and Interface Register 2.1 — accepted](requirements/component-decomposition-and-interface-register.md)
   — logical components, implementation state, lifecycle and repository
   boundaries, runtime and Cloud interfaces, and component-package allocation.
 - [Component requirement packages and template](requirements/components/README.md)

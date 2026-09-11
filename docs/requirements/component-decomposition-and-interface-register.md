@@ -1,18 +1,18 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Component Decomposition and Interface Register 2.0
+# Component Decomposition and Interface Register 2.1
 
 - Status: Accepted
-- Version: 2.0
+- Version: 2.1
 - Prepared: 2026-08-22
 - Accepted: 2026-08-26
 - Previous accepted version: 1.1
 - Owner: System Architecture
-- Architecture input: [High-Level Architecture 1.5](../architecture/high-level-architecture.md)
+- Architecture input: [High-Level Architecture 1.6](../architecture/high-level-architecture.md)
 - Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.0](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Demo Scenario Architecture Flows 2.0](../architecture/demo-scenario-architecture-flows.md)
-- Requirements input: [System Requirements and Traceability 2.0](system-requirements-and-traceability.md)
+- Flow input: [Demo Scenario Architecture Flows 2.1](../architecture/demo-scenario-architecture-flows.md)
+- Requirements input: [System Requirements and Traceability 2.1](system-requirements-and-traceability.md)
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0011](../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
   [ADR 0013](../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md),
@@ -20,6 +20,17 @@
 - Brake Cloud repository creation completed on 2026-08-28; no additional
   repository creation, implementation, Cloud or Unit mutation is authorized by
   this component baseline alone
+
+## Native service input amendment — 2026-09-11
+
+[ADR 0015](../architecture/decisions/0015-use-native-aos-service-runtime-inputs.md)
+changes application provenance and credential placement, not component ownership
+or interface direction. Demo Control projects public Unit/VDP/trust inputs;
+packages carry releases; native Aos supplies instance identity. Private token
+sessions use the existing resource without an SM ownership extension.
+The [current input contract](../architecture/demo-control-service-inputs.md)
+and [D4 replacement map](d4-decision-register.md#native-service-inputs-replacement--2026-09-11)
+replace conflicting placement/digest details below. Other boundaries are unchanged.
 
 ## Purpose
 
@@ -300,7 +311,7 @@ acceptance of this baseline.
 | <a id="if-adv-005"></a>`IF-ADV-005` | `CMP-GW-ADV` | `CMP-VISS` | Factual received/rejected/status signal | Gateway state | `NEW` |
 | <a id="if-auth-007"></a>`IF-AUTH-007` | `CMP-BHS` / `CMP-TIRE` compatibility bootstrap | `CMP-KAC` | Strict `aos-kuksa-auth-compat/v1` `status` or `issue` over private `request.sock`; `issue` carries only current instance `AOS_SECRET`; implicit fixed `kuksa` resource; one LF-terminated JSON request/response per connection | Aos IAM is authoritative; strict schema plus named resource, group and Unix peer credentials are defense in depth | `NEW / TRANSITIONAL` |
 | <a id="if-auth-008"></a>`IF-AUTH-008` | `CMP-KAC` | `CMP-AOS-CORE` IAM | Native `GetPermissions(AOS_SECRET, fixed-resource)` through fixed TLS loopback `127.0.0.1:8090`, Aos CA trust and expected server name `main`, returning active Service identity and registered path/mode permissions or rejection; no DNS, caller-selected endpoint or external IP | Service Manager registration and current Aos IAM state | `EXTERNAL / EXTEND` qualification |
-| <a id="if-auth-009"></a>`IF-AUTH-009` | `CMP-KAC` | requesting `CMP-BHS` / `CMP-TIRE` compatibility bootstrap | Strict `ready`, `issued` or `rejected` response; only `issued` carries a 300-second JWT and renewal-at-180-second instant; only fixed error codes and KAC-generated correlation; bootstrap atomically maintains `/run/aosedge/secrets/kuksa/token.jwt`, then reconnects/recreates KUKSA subscriptions with each replacement token and starts analytics without `AOS_SECRET` | Aos IAM result plus non-widening `r -> read`, `rw -> actuate` mapping; no caller correlation, `w`, wildcards, provider actions, free-text error, parallel Service policy store or shared host token directory | `NEW / TRANSITIONAL` |
+| <a id="if-auth-009"></a>`IF-AUTH-009` | `CMP-KAC` | requesting `CMP-BHS` / `CMP-TIRE` compatibility bootstrap | Strict `ready`, `issued` or `rejected` response; only `issued` carries a 300-second JWT and renewal-at-180-second instant; only fixed error codes and KAC-generated correlation; bootstrap atomically maintains `/run/aosedge/secrets/kuksa/session-<random>/token.jwt`, then reconnects/recreates KUKSA subscriptions with each replacement token and starts analytics without `AOS_SECRET` | Aos IAM result plus non-widening `r -> read`, `rw -> actuate` mapping; no caller correlation, `w`, wildcards, provider actions, free-text error, parallel Service policy store or shared host token directory | `NEW / TRANSITIONAL` |
 | <a id="if-auth-010"></a>`IF-AUTH-010` | `CMP-AOS-CORE` / factory security substrate | `CMP-KAC` and `CMP-KUKSA` | Shared IAM configuration with permission handler enabled; one protected per-Unit `kuksa-jwt` RSA signing operation; `aos-kuksa-verifier-prepare.service` protected sign/verify self-test and atomic root-owned mode-`0444` `/run/aos-kuksa-verifier/kuksa-jwt-public.pem`; mandatory KUKSA `--jwt-public-key`; one-sync-per-boot plus 10-second startup time gate and helper-side issue/renew wall-to-boot deviation check; fail-closed startup, reboot reconstruction and teardown of volatile/runtime authority; no helper anchor/continuous time monitor/KUKSA lifecycle controller and no key/JWT/shared verifier enters an artifact or log | Stock Aos IAM plus dedicated certificate-module/PKCS#11 and systemd-timesyncd integration; D4-010.1 and simplified D4-027.6/.7 current-release compatibility scope; stronger native time/invalidation behavior requalified at migration | `IMPLEMENTED / FACTORY-QUALIFIED` in `.21` |
 
 The advisory chain proves only QM maintenance-request handling and Gateway

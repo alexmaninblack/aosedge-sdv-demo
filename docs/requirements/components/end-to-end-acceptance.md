@@ -9,11 +9,11 @@
 - Prepared: 2026-08-26
 - Accepted: 2026-08-27
 - Owner: System Acceptance with Platform, Function, Gateway and Demo Solution teams
-- Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
+- Architecture input: [High-Level Architecture 1.6](../../architecture/high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.0](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 2.0](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 2.0](../component-decomposition-and-interface-register.md)
+- Flow input: [Architecture Flows 2.1](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.1](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 2.1](../component-decomposition-and-interface-register.md)
 - Previous accepted package: Version 0.6
 - Accepted D4 source decision: [D4-005 Exclusive Live-Source Assignment](../../../contracts/exclusive-live-source-assignment/exclusive-live-source-assignment.v1.json)
 - Accepted D4 VISS decision: [D4-006 VISS Trust and Telemetry Profile](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)

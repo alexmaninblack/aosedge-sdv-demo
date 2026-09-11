@@ -209,3 +209,34 @@ a complete SM binary or installed. The metadata source/order remains the
 specific integration decision in that document; P5 is still incomplete.
 No VM, SM, CARLA, backend, Factory image, Cloud release or Production state was
 modified during this increment.
+
+## Accepted native-input migration: documentation and private sessions
+
+The user approved [ADR 0015](../architecture/decisions/0015-use-native-aos-service-runtime-inputs.md)
+and authorized the documentation cascade and implementation. The earlier
+token-owner SM candidate and final-manifest-before-assignment design above
+are historical, not the current target.
+
+- HLA 1.6, flows/system/interface register 2.1 and affected component packages
+  now link the accepted replacement. Unaffected packages changed input metadata
+  only. Input schemas freeze package release, five-field public metadata and
+  private credential placement. Product wire migration is explicitly N3.
+- Brake `8d19381` and Tire `47ab08d` implement private 0700 sessions in
+  native per-container 1777 tmpfs, dynamic path-only token delivery, secure
+  parent/leaf reads, atomic renewal, own-session cleanup and bounded orphans.
+- Platform `205f89d` removes the unshipped token-owner patch, header, recipe
+  wiring and old tests, and changes only the token mount root mode. These
+  deleted source files remain recoverable from Git. Other SM fixes stay intact.
+- Brake 5/5 and Tire 2/2 host CTest targets pass; both bootstraps compile.
+  Platform 8 resource tests and its repository gate pass. Solution 36
+  input/KAC/document-checker tests and docs-check pass. The stale-version
+  checker test now changes the actual metadata rather than hardcoding HLA 1.5.
+- These are local source commits, not pushes or release publications.
+  No ARM64/gRPC rebuild, VM/SM restart, Cloud/Subject/service mutation,
+  backend change, Factory rebuild or Production action was performed.
+
+Next is the coordinated package/provenance and backend migration, including
+the modelArtifactSha256 alias, explicit legacy decoding and unchanged retained
+state. Then implement public-input projection/boot ordering and perform the
+bounded Test integration through Demo Control. Do not publish this intermediate
+runtime or claim full P5/P7 readiness from host token tests.

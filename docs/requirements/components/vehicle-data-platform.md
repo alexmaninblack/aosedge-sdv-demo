@@ -9,11 +9,11 @@
 - Prepared: 2026-08-21
 - Accepted: 2026-08-28
 - Owner: Platform Team / independent component FOTA
-- Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
+- Architecture input: [High-Level Architecture 1.6](../../architecture/high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.0](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 2.0](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 2.0](../component-decomposition-and-interface-register.md)
+- Flow input: [Architecture Flows 2.1](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.1](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 2.1](../component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md), [ADR 0012](../../architecture/decisions/0012-authorize-running-workloads-not-software-artifacts.md) and [ADR 0013](../../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md)
 - Previous accepted package: Version 0.8, design-reviewed on 2026-08-28
 - Accepted D4 input: [D4-002 Vehicle Hardware Capability Profile](../d4-decision-register.md#d4-002)

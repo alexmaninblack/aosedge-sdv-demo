@@ -1,26 +1,43 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# High-Level Architecture 1.5
+# High-Level Architecture 1.6
 
 - Status: Accepted
-- Version: 1.5
+- Version: 1.6
 - Prepared: 2026-08-22
-- Accepted: 2026-08-26
+- Accepted: 2026-09-11
 - Owner: System Architecture
-- Previous accepted version: 1.4, accepted 2026-08-19
+- Previous accepted version: 1.5, accepted 2026-08-26
 - Accepted architecture decisions: [ADR 0008](decisions/0008-use-tire-health-for-function-team-2.md),
   [ADR 0009](decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0011](decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
   [ADR 0012](decisions/0012-authorize-running-workloads-not-software-artifacts.md),
   [ADR 0013](decisions/0013-current-release-kuksa-authorization-compatibility.md),
-  [ADR 0014](decisions/0014-enforce-platform-fota-safe-stop-in-oem-component-runtime.md)
+  [ADR 0014](decisions/0014-enforce-platform-fota-safe-stop-in-oem-component-runtime.md),
+  [ADR 0015](decisions/0015-use-native-aos-service-runtime-inputs.md)
 - Scope: CARLA, Vehicle Gateway ECU, AosVM Domain Controller, AosCloud,
   shared Vehicle Data Platform Component, two independent OEM Service
   Providers, functional backends, and demonstration tooling
 - Implementation status: target architecture; current and planned elements are
   distinguished below
 - Cloud or Unit mutation authorized: no
+
+## Native service inputs amendment — 2026-09-11
+
+[ADR 0015](decisions/0015-use-native-aos-service-runtime-inputs.md) is accepted.
+Brake and Tire use native Aos lifecycle, identity, permissions, named-resource
+mounts and storage. Demo Control owns only public Unit/role/committed-VDP/trust
+projection. One immutable package release supplies the application version;
+product readiness does not depend on obtaining the final OCI manifest digest.
+Application provenance is not attestation and never authorizes KUKSA access.
+
+The existing bootstrap creates a private 0700 session under its per-container
+1777 token tmpfs and maintains a 0400 token file. Native SM requires no new
+version/digest injection or token-owner patch. KAC/IAM authority, scopes,
+renewal, quotas, data directions and the architecture diagram remain unchanged.
+Sources under /run must be restored before retained assignments launch.
+This target amendment is not a claim of a changed or qualified Factory image.
 
 ## Visual Authoring Source
 
@@ -34,7 +51,7 @@ the Mermaid rendering below are reviewable derivatives and must be regenerated
 or reconciled whenever the source changes.
 
 The visual source defines the component boundaries and principal relationships
-used by Architecture 1.5: two peer OEM Function Teams represented as
+used by Architecture 1.6: two peer OEM Function Teams represented as
 independent AosCloud Service Providers, the shared Vehicle Data Platform
 Component, the Tire Health function, the Factory Baseline Assembly-to-Factory
 Image artifact and factory-installed runtime boundaries,
@@ -55,7 +72,7 @@ Engineering Telematics Dashboard.
 
 ## Revision 1.5 Summary
 
-Architecture 1.5 preserves the vehicle, Cloud, FOTA/SOTA and QM-containment
+Architecture 1.6 preserves the vehicle, Cloud, FOTA/SOTA and QM-containment
 topology of 1.4 while adopting the authorization-boundary correction in
 [ADR 0013](decisions/0013-current-release-kuksa-authorization-compatibility.md):
 
@@ -233,7 +250,7 @@ only run-scoped Unit membership: M1 adds the new Test and Production Units and
 R0 removes them. It never creates, renames, reconfigures or deletes the Fleet or
 either Unit Set.
 
-## Architecture 1.5 Model
+## Architecture 1.6 Model
 
 ```mermaid
 flowchart TB
@@ -475,7 +492,7 @@ separately packaged removable authorization helper and non-secret
 signer/verifier preparation wiring, but no pre-populated Service authority,
 `AOS_SECRET`, JWT, private signer or shared production credential. The accepted
 component runtime is currently specific to one provider type and one empty
-slot; Architecture 1.5 does not claim a generic arbitrary-component runtime.
+slot; Architecture 1.6 does not claim a generic arbitrary-component runtime.
 
 A pinned OEM build may emit both the complete bootable Factory Image and a
 separate rootfs platform-update envelope from the same rootfs content. These
@@ -765,7 +782,7 @@ Vehicle Control UI
 The control path is deliberately separate from VISS telemetry and KUKSA. Loss
 of the control client selects the existing safe-stop behavior. The Brake Health
 service and Tire Health service are QM-domain applications and do not control
-vehicle motion in Architecture 1.5.
+vehicle motion in Architecture 1.6.
 
 ### 3. Local Brake Health analysis
 
@@ -823,7 +840,7 @@ The service does not send a message directly to the dashboard. The engineering
 dashboard observes the Gateway-side advisory and status over VISS. This proves
 that the request completed the round trip back to the simulated vehicle side.
 
-Architecture 1.5 defines the following semantics:
+Architecture 1.6 defines the following semantics:
 
 | Operation | Meaning |
 | --- | --- |
@@ -1002,7 +1019,7 @@ dependency.
 
 ## Current Baseline and Target Delta
 
-| Area | Current accepted behavior | Architecture 1.5 target |
+| Area | Current accepted behavior | Architecture 1.6 target |
 | --- | --- | --- |
 | CARLA and ego runtime | Vehicle state, control, VSS normalization | Preserve unchanged behavior |
 | VISS server | TLS VISS 3.1 Get and Subscribe; write rejected | Add a narrowly scoped QM advisory Set path and Gateway status; Gateway remains the authoritative deny-by-default boundary for motion and safety-critical operations |
@@ -1026,7 +1043,7 @@ contract remains rejected.
 
 ## Architectural Invariants
 
-Architecture 1.5 is aligned only while all of the following remain true:
+Architecture 1.6 is aligned only while all of the following remain true:
 
 1. CARLA represents the physical vehicle; `carla-ego-runtime` represents the
    Vehicle Gateway ECU; AosVM represents a separate Domain Controller ECU.

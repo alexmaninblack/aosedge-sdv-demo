@@ -5,15 +5,15 @@
 
 - Status: D3 design-reviewed
 - Package: [`CR-DEMO`](../component-decomposition-and-interface-register.md#cr-demo)
-- Version: 1.1
+- Version: 1.2
 - Prepared: 2026-08-19
 - Accepted: 2026-08-20
 - Owner: Demo Solution Team
-- Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
+- Architecture input: [High-Level Architecture 1.6](../../architecture/high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.0](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 2.0](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 2.0](../component-decomposition-and-interface-register.md)
+- Flow input: [Architecture Flows 2.1](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.1](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 2.1](../component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md) and [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
 - Accepted D4 Cloud authority input: [D4-011 Cloud Role and Action Matrix](../d4-decision-register.md#d4-011)
 - Accepted D4 topology input: [D4-012.1 Dedicated Demo Fleet and Unit Set Identity](../d4-decision-register.md#d4-012-1)
@@ -25,6 +25,18 @@
 - Accepted D4 run-state and recovery decision: [D4-021 / Demo Run State 1.2.0](../../../contracts/demo-run-state/README.md)
 - Prepared D4 functional/hosting review candidates: [Brake Cloud API](../../../contracts/brake-cloud-api/README.md), [Tire Cloud API](../../../contracts/tire-cloud-api/README.md), and [Local Demo Hosting and VM Route](../../../contracts/local-demo-hosting/README.md)
 - Implementation, signing, Cloud, Unit, VM, or CARLA mutation authorized: no
+
+## Native service input amendment — 2026-09-11
+
+[ADR 0015](../../architecture/decisions/0015-use-native-aos-service-runtime-inputs.md)
+and the [D4 replacement map](../d4-decision-register.md#native-service-inputs-replacement--2026-09-11)
+are accepted for this package. They replace the fixed token-root leaf and
+mandatory final service/model OCI digest obligations below, while preserving
+the referenced legacy records and all unrelated requirements. Use the
+[current input contract](../../architecture/demo-control-service-inputs.md);
+application version comes from the package, not public Unit metadata.
+Implementation and live gates remain in the
+[ordered migration](../../planning/active/demo-studio-delivery-plan.md#native-service-input-migration).
 
 ## Studio Test scope amendment — 2026-09-09
 

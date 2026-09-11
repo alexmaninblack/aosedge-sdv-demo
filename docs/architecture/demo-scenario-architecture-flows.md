@@ -1,25 +1,41 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Demo Scenario Architecture Flows 2.0
+# Demo Scenario Architecture Flows 2.1
 
 - Status: Accepted
-- Version: 2.0
+- Version: 2.1
 - Prepared: 2026-08-22
 - Accepted: 2026-08-26
 - Previous accepted version: 1.8
 - Owner: System Architecture
-- Architecture input: [High-Level Architecture 1.5](high-level-architecture.md)
+- Architecture input: [High-Level Architecture 1.6](high-level-architecture.md)
 - Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.0](../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - CARLA input: [R10 Native CARLA Vehicle Telemetry Inventory](../research/demo-foundation/r10-carla-telemetry-and-function-team-2.md)
-- Requirements input: [System Requirements and Traceability 2.0](../requirements/system-requirements-and-traceability.md)
-- Component input: [Component Decomposition and Interface Register 2.0](../requirements/component-decomposition-and-interface-register.md)
+- Requirements input: [System Requirements and Traceability 2.1](../requirements/system-requirements-and-traceability.md)
+- Component input: [Component Decomposition and Interface Register 2.1](../requirements/component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0009](decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0011](decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
   [ADR 0013](decisions/0013-current-release-kuksa-authorization-compatibility.md),
   [ADR 0014](decisions/0014-enforce-platform-fota-safe-stop-in-oem-component-runtime.md)
 - Accepted publication decision: [D4-010.3 Artifact Publication Credential Profile](../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
 - Implementation, build, signing, Cloud, or Unit mutation authorized: no
+
+## Native service inputs amendment — 2026-09-11
+
+Apply [ADR 0015](decisions/0015-use-native-aos-service-runtime-inputs.md) and
+the [service-input sequence](demo-control-service-inputs.md) to both service
+launch flows. Publication may precede Provision. Public inputs and loaded
+resources gate launch, not publication; final OCI digest discovery gates neither.
+Bootstrap establishes a private token session using native permissions before
+analytics subscribes. Committed VDP changes refresh public files atomically;
+queued product records retain their original provenance.
+
+Cloud reports lifecycle/version/resources, and the product backend reports
+functional results independently. On reboot, restore /run inputs before SM
+automatically launches retained assignments. Do not add a new daemon, reset
+model/producer state or wait for Cloud connectivity to run local analytics.
+Audience-visible Create/Publish/Deploy flows are unchanged.
 
 ## Studio Test scope amendment — 2026-09-09
 

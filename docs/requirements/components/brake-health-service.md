@@ -5,14 +5,14 @@
 
 - Status: D4 exact v2 contract complete; ready for implementation review
 - Package: [`CR-BHS`](../component-decomposition-and-interface-register.md#cr-bhs)
-- Version: 0.9
+- Version: 0.10
 - Prepared: 2026-08-29
 - Owner: Function Team 1 / Service Provider 1 / SOTA 1
-- Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
+- Architecture input: [High-Level Architecture 1.6](../../architecture/high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.0](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 2.0](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 2.0](../component-decomposition-and-interface-register.md)
+- Flow input: [Architecture Flows 2.1](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.1](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 2.1](../component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md), [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md), [ADR 0012](../../architecture/decisions/0012-authorize-running-workloads-not-software-artifacts.md) and [ADR 0013](../../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md)
 - Previous accepted package: Version 0.8
 - Reviewed D4 working direction: [D4-003 deterministic stimuli and calibration](../d4-decision-register.md#d4-003)
@@ -21,6 +21,18 @@
 - Accepted D4 v1 contract: [D4-016.1/.2 decision](../d4-decision-register.md#d4-016) and [executable Brake Telemetry Window Contract](../../../contracts/brake-telemetry-window/README.md)
 - Accepted D4 exact contracts: [v2 synthetic model](../../../contracts/brake-health-model/README.md), [v3 advisory policy](../../../contracts/brake-health-advisory-policy/README.md), [runtime/evidence profile](../../../contracts/brake-health-runtime/README.md) and [Brake Cloud API](../../../contracts/brake-cloud-api/README.md)
 - Implementation baseline: `brake-health-service@04abe5b`
+
+## Native service input amendment — 2026-09-11
+
+[ADR 0015](../../architecture/decisions/0015-use-native-aos-service-runtime-inputs.md)
+and the [D4 replacement map](../d4-decision-register.md#native-service-inputs-replacement--2026-09-11)
+are accepted for this package. They replace the fixed token-root leaf and
+mandatory final service/model OCI digest obligations below, while preserving
+the referenced legacy records and all unrelated requirements. Use the
+[current input contract](../../architecture/demo-control-service-inputs.md);
+application version comes from the package, not public Unit metadata.
+Implementation and live gates remain in the
+[ordered migration](../../planning/active/demo-studio-delivery-plan.md#native-service-input-migration).
 
 ## Purpose
 
@@ -433,7 +445,7 @@ evidence, and no status is driver display or acknowledgement.
   resource. Its compatibility bootstrap, and not the analytics application,
   shall read the current per-instance `AOS_SECRET`, call the mounted private
   Unix socket for the implicit fixed `kuksa` resource and atomically maintain
-  only `/run/aosedge/secrets/kuksa/token.jwt` in the Service-private tmpfs. The
+  only `/run/aosedge/secrets/kuksa/session-<random>/token.jwt` in the Service-private tmpfs. The
   bootstrap shall start analytics with only `KUKSA_TOKEN_FILE`, without
   `AOS_SECRET`; it shall not submit paths, operations, subject, audience, TTL or
   claims. It shall consume only the `r -> read` and `rw -> actuate` profile,

@@ -7,10 +7,10 @@
 - Version: 0.19
 - Prepared: 2026-09-07
 - Owner: Demo Solution Team
-- Architecture input: [High-Level Architecture 1.5](high-level-architecture.md)
+- Architecture input: [High-Level Architecture 1.6](high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.0](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.0](demo-scenario-architecture-flows.md)
-- Requirements input: [Demo Orchestration Component Requirements 1.1](../requirements/components/demo-orchestration.md)
+- Flow input: [Architecture Flows 2.1](demo-scenario-architecture-flows.md)
+- Requirements input: [Demo Orchestration Component Requirements 1.2](../requirements/components/demo-orchestration.md)
 
 This is the implementation-design companion for the existing
 [Demo Orchestrator](../requirements/component-decomposition-and-interface-register.md#cmp-orch),

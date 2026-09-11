@@ -3,17 +3,20 @@
 
 # Architecture Documentation
 
-[High-Level Architecture 1.5](high-level-architecture.md) is the accepted
+[High-Level Architecture 1.6](high-level-architecture.md) is the accepted
 current architecture. It incorporates the accepted authorization compatibility
 boundary, independent OEM Release Authority and Platform FOTA Safe Stop
 boundary; High-Level Architecture 1.4 remains historical traceability only.
 
-- [High-Level Architecture 1.5 — accepted](high-level-architecture.md)
-- [Demo Scenario Architecture Flows 2.0 — accepted](demo-scenario-architecture-flows.md)
+- [High-Level Architecture 1.6 — accepted](high-level-architecture.md)
+- [Demo Scenario Architecture Flows 2.1 — accepted](demo-scenario-architecture-flows.md)
   — complete `M0 -> M1 -> G0–G4 -> T1 -> R0` mapping of Scenario 2.0 to
   High-Level Architecture 1.5, including the independent Tire Health stage.
 - [Repository and component boundaries](repository-boundaries.md)
 - [Demo Control — draft implementation design](demo-control.md)
   — shared CLI/UI orchestration, initial VM lifecycle and proposed status model.
+- [Service identity, data and tokens using native Aos facilities — accepted](decisions/0015-use-native-aos-service-runtime-inputs.md)
+  — approved Brake/Tire protocol and file placement without new SM code;
+  implementation status is tracked in the delivery plan.
 - [Architecture decisions](decisions/)
 - [Diagram sources and exports](diagrams/)

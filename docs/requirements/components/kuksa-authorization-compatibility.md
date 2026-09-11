@@ -1,20 +1,32 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Current-Release KUKSA Authorization Compatibility 0.12
+# Current-Release KUKSA Authorization Compatibility 0.13
 
 - Status: D3 design-reviewed
-- Version: 0.12
+- Version: 0.13
 - Prepared: 2026-08-22
 - Accepted: 2026-08-28
 - Owner: Platform Team
 - Package: [`CR-KAC`](../component-decomposition-and-interface-register.md#cr-kac)
-- Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
+- Architecture input: [High-Level Architecture 1.6](../../architecture/high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.0](../../architecture/demo-scenario-architecture-flows.md)
-- System requirements input: [System Requirements 2.0](../system-requirements-and-traceability.md)
+- Flow input: [Architecture Flows 2.1](../../architecture/demo-scenario-architecture-flows.md)
+- System requirements input: [System Requirements 2.1](../system-requirements-and-traceability.md)
 - Accepted authority: [ADR 0013](../../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md)
 - Implementation, build, signing, Cloud, or Unit mutation authorized: no
+
+## Native service input amendment — 2026-09-11
+
+[ADR 0015](../../architecture/decisions/0015-use-native-aos-service-runtime-inputs.md)
+and the [D4 replacement map](../d4-decision-register.md#native-service-inputs-replacement--2026-09-11)
+are accepted for this package. They replace the fixed token-root leaf and
+mandatory final service/model OCI digest obligations below, while preserving
+the referenced legacy records and all unrelated requirements. Use the
+[current input contract](../../architecture/demo-control-service-inputs.md);
+application version comes from the package, not public Unit metadata.
+Implementation and live gates remain in the
+[ordered migration](../../planning/active/demo-studio-delivery-plan.md#native-service-input-migration).
 
 ## Purpose and Boundary
 
@@ -73,7 +85,7 @@ Service-local transport:
 - Aos IAM `GetPermissions` remains authoritative; the named resource, group and
   Unix peer credentials are defense in depth;
 - the bootstrap atomically maintains mode-`0400`
-  `/run/aosedge/secrets/kuksa/token.jwt` and gives the analytics application
+  `/run/aosedge/secrets/kuksa/session-<random>/token.jwt` and gives the analytics application
   only `KUKSA_TOKEN_FILE`; and
 - stop, replacement, removal or reboot destroys the private tmpfs. No TCP
   listener, public port, shared host token directory or persisted JWT exists.
@@ -325,7 +337,7 @@ not observe Service telemetry, analytics results or advisory payloads.
   timestamps; `rejected` carries only a KAC-generated correlation ID, fixed
   code and retryability. The Service
   bootstrap shall atomically maintain that JWT as mode-`0400`
-  `/run/aosedge/secrets/kuksa/token.jwt` inside the Service-private mode-`0700`
+  `/run/aosedge/secrets/kuksa/session-<random>/token.jwt` inside the Service-private mode-`0700` session in the per-container mode-`1777`
   tmpfs, expose only `KUKSA_TOKEN_FILE` to the analytics application and
   execute that application without `AOS_SECRET`. The helper shall not persist
   the JWT or remain in the subsequent Service-to-KUKSA telemetry/advisory data

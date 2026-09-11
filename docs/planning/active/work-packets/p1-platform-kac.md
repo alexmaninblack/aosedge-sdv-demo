@@ -15,7 +15,7 @@
 - Image build, VM, provisioning, signing, FOTA and live qualification authorized: no
 - Parent plan: [Demo Implementation Plan 1.2](../demo-implementation-plan.md)
 - Readiness input: [WP-P0-PLATFORM-001 0.12](p0-platform-readiness.md)
-- Requirements input: [CR-KAC 0.12](../../../requirements/components/kuksa-authorization-compatibility.md),
+- Requirements input: [CR-KAC 0.13](../../../requirements/components/kuksa-authorization-compatibility.md),
   SHA-256
   `ab0d6bf039d94d52b82ff77c6bcf74ffe397f9f2b6110f8be032ed07198c3e39`
 - Executable contract: [KUKSA current-demo authorization 1.7.0](../../../../contracts/kuksa-current-demo-authorization/kuksa-auth-compat.v1.json),

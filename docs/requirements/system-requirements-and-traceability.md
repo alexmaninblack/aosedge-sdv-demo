@@ -1,17 +1,17 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# System Requirements and Traceability 2.0
+# System Requirements and Traceability 2.1
 
 - Status: Accepted
-- Version: 2.0
+- Version: 2.1
 - Prepared: 2026-08-22
 - Accepted: 2026-08-26
 - Previous accepted version: 1.0
 - Owner: System Architecture
-- Architecture input: [High-Level Architecture 1.5](../architecture/high-level-architecture.md)
+- Architecture input: [High-Level Architecture 1.6](../architecture/high-level-architecture.md)
 - Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.0](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Demo Scenario Architecture Flows 2.0](../architecture/demo-scenario-architecture-flows.md)
+- Flow input: [Demo Scenario Architecture Flows 2.1](../architecture/demo-scenario-architecture-flows.md)
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0011](../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
   [ADR 0013](../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md),
@@ -19,6 +19,23 @@
 - Brake Cloud repository creation completed on 2026-08-28; no additional
   repository creation, implementation, signing, Cloud or Unit mutation is
   authorized by this requirements baseline alone
+
+## Native service inputs amendment — 2026-09-11
+
+The accepted [ADR 0015](../architecture/decisions/0015-use-native-aos-service-runtime-inputs.md)
+and [runtime-input contract](../architecture/demo-control-service-inputs.md)
+replace the former mandatory service OCI-digest provenance and fixed token
+leaf-path obligations. Allocation remains Brake/Tire services, their backends,
+Demo Control and OEM named-resource configuration; no SM API extension is added.
+
+New product schemas must not require serviceArtifactSha256 or its
+modelArtifactSha256 alias. Retain real model-configuration and VDP-contract
+digests, native identity, queued legacy data and persistent producer epochs.
+Package/publication versions must agree; provenance is application-reported,
+not an authorization or attestation claim. Credentials use private volatile
+sessions with unchanged KAC authority and lifetime. Cold-start readiness
+requires input restoration before automatic service launch. This amendment
+does not mark implementation, functional analytics or live qualification done.
 
 ## Purpose
 
@@ -346,7 +363,7 @@ requirements have accepted evidence.
 
 The canonical component IDs, interface IDs, repository candidates and package
 boundaries are defined in the
-[Component Decomposition and Interface Register 2.0](component-decomposition-and-interface-register.md).
+[Component Decomposition and Interface Register 2.1](component-decomposition-and-interface-register.md).
 The next derivation step shall expand the following packages. A system
 requirement may allocate obligations to several packages and one integration
 test.

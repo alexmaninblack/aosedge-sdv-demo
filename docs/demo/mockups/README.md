@@ -8,10 +8,10 @@
 - Prepared: 2026-08-25
 - Updated: 2026-09-09
 - Owner: Demo Solution Team with Platform Team and Function Teams 1 and 2
-- Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
+- Architecture input: [High-Level Architecture 1.6](../../architecture/high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.0](../staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.0](../../architecture/demo-scenario-architecture-flows.md)
-- Requirement inputs: [Component Register 2.0](../../requirements/component-decomposition-and-interface-register.md), [Demo Orchestration](../../requirements/components/demo-orchestration.md) and [End-to-End Acceptance](../../requirements/components/end-to-end-acceptance.md)
+- Flow input: [Architecture Flows 2.1](../../architecture/demo-scenario-architecture-flows.md)
+- Requirement inputs: [Component Register 2.1](../../requirements/component-decomposition-and-interface-register.md), [Demo Orchestration](../../requirements/components/demo-orchestration.md) and [End-to-End Acceptance](../../requirements/components/end-to-end-acceptance.md)
 - Presentation policy: [D4-026.6](../../requirements/d4-decision-register.md#d4-026)
 - UI implementation authorized: no
 - Layout review artifact that predates the complete Interaction Specification

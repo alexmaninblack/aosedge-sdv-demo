@@ -7,7 +7,7 @@ The current end-to-end architecture review candidate, including shared platform 
 independent SOTA lifecycles for two peer OEM functional teams, bidirectional
 KUKSA/VISS flows, local analytics, Cloud reporting, and engineering-dashboard
 boundaries, is proposed in
-[High-Level Architecture 1.5](high-level-architecture.md). High-Level
+[High-Level Architecture 1.6](high-level-architecture.md). High-Level
 Architecture 1.4 remains the accepted baseline until the complete class-C
 cascade is reviewed.
 

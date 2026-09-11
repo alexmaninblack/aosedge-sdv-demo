@@ -9,11 +9,11 @@
 - Accepted: 2026-08-28
 - Updated: 2026-08-29
 - Owner: Demo Solution Team with Platform, Gateway and Function Team owners
-- Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
+- Architecture input: [High-Level Architecture 1.6](../../architecture/high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.0](../../architecture/demo-scenario-architecture-flows.md)
-- System requirements input: [System Requirements 2.0](../../requirements/system-requirements-and-traceability.md)
-- Component input: [Component Register 2.0](../../requirements/component-decomposition-and-interface-register.md)
+- Flow input: [Architecture Flows 2.1](../../architecture/demo-scenario-architecture-flows.md)
+- System requirements input: [System Requirements 2.1](../../requirements/system-requirements-and-traceability.md)
+- Component input: [Component Register 2.1](../../requirements/component-decomposition-and-interface-register.md)
 - End-to-end input: [End-to-End Acceptance 0.8](../../requirements/components/end-to-end-acceptance.md)
 - Fleet and Unit Set identity input: [D4-012.1 Dedicated Demo Fleet and Unit Set Identity](../../requirements/d4-decision-register.md#d4-012-1)
 - UI inputs: [Surface Register 0.14](../../demo/mockups/README.md), [Interaction Specification 2.5](../../demo/mockups/aosedge-demo-interaction-specification.md), [UI Traceability Register 1.2](../../demo/mockups/aosedge-demo-ui-traceability-register.md)

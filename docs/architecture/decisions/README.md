@@ -26,6 +26,9 @@ they do not replace the current HLA.
 - [ADR 0014: Enforce Platform FOTA Safe Stop in the OEM Component Runtime](0014-enforce-platform-fota-safe-stop-in-oem-component-runtime.md)
   — accepted vehicle-state boundary and application policy; implementation and
   live qualification remain open.
+- [ADR 0015: Use Native Aos Facilities for Service Identity, Data and Tokens](0015-use-native-aos-service-runtime-inputs.md)
+  — accepted application provenance, public inputs and private KUKSA token
+  sessions without new SM code changes; implementation authorized.
 
 The change process and stable-reference rules are defined in
 [Documentation and Requirements Management](../../governance/documentation-and-requirements-management.md).

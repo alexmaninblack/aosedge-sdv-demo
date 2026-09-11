@@ -6,16 +6,16 @@
 - Status: D3 design-reviewed; D4-018 and D4-027 accepted; D4-003 empirical
   qualification remains open
 - Package: [`CR-TIRE`](../component-decomposition-and-interface-register.md#cr-tire)
-- Version: 0.6
+- Version: 0.7
 - Prepared: 2026-08-21
 - Accepted: 2026-08-31
 - Previous accepted package: Version 0.5
 - Owner: Function Team 2 / Service Provider 2 / SOTA 2
-- Architecture input: [High-Level Architecture 1.5](../../architecture/high-level-architecture.md)
+- Architecture input: [High-Level Architecture 1.6](../../architecture/high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.0](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 2.0](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 2.0](../component-decomposition-and-interface-register.md)
+- Flow input: [Architecture Flows 2.1](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.1](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 2.1](../component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0008](../../architecture/decisions/0008-use-tire-health-for-function-team-2.md), [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md), [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md), [ADR 0012](../../architecture/decisions/0012-authorize-running-workloads-not-software-artifacts.md) and [ADR 0013](../../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md)
 - Reviewed D4 working direction: [D4-003 deterministic stimuli and calibration](../d4-decision-register.md#d4-003)
 - Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
@@ -23,6 +23,18 @@
 - Accepted D4 exact product inputs: [Tire Health In-Vehicle Product Contract](../../../contracts/tire-health-model/README.md) and [Tire Cloud API](../../../contracts/tire-cloud-api/README.md); [Local Demo Hosting and VM Route](../../../contracts/local-demo-hosting/README.md) is design-reviewed and still requires implementation qualification
 - Implementation baseline: no `tire-health-service` repository or executable exists
 - Implementation, repository creation, signing, Cloud, or Unit mutation authorized: no
+
+## Native service input amendment — 2026-09-11
+
+[ADR 0015](../../architecture/decisions/0015-use-native-aos-service-runtime-inputs.md)
+and the [D4 replacement map](../d4-decision-register.md#native-service-inputs-replacement--2026-09-11)
+are accepted for this package. They replace the fixed token-root leaf and
+mandatory final service/model OCI digest obligations below, while preserving
+the referenced legacy records and all unrelated requirements. Use the
+[current input contract](../../architecture/demo-control-service-inputs.md);
+application version comes from the package, not public Unit metadata.
+Implementation and live gates remain in the
+[ordered migration](../../planning/active/demo-studio-delivery-plan.md#native-service-input-migration).
 
 ## Purpose
 
@@ -427,7 +439,7 @@ and persistence rules remain owned by D4-018 rather than the stimulus profile.
   resource. Its compatibility bootstrap, and not the analytics application,
   shall read the current per-instance `AOS_SECRET`, call the mounted private
   Unix socket for the implicit fixed `kuksa` resource and atomically maintain
-  only `/run/aosedge/secrets/kuksa/token.jwt` in the Service-private tmpfs. The
+  only `/run/aosedge/secrets/kuksa/session-<random>/token.jwt` in the Service-private tmpfs. The
   bootstrap shall start analytics with only `KUKSA_TOKEN_FILE`, without
   `AOS_SECRET`; it shall not submit paths, operations, subject, audience, TTL or
   claims. It shall consume only the `r -> read` and `rw -> actuate` profile,

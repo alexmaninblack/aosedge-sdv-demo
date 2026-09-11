@@ -28,7 +28,7 @@ Tire Health stage, and end-of-demo retirement, without authorizing
 implementation.
 
 The corresponding
-[Demo Scenario Architecture Flows 2.0](../architecture/demo-scenario-architecture-flows.md)
+[Demo Scenario Architecture Flows 2.1](../architecture/demo-scenario-architecture-flows.md)
 map Scenario 2.0 to High-Level Architecture 1.5, including lifecycle, runtime,
 observability, failure and retirement flows. They do not authorize
 implementation.
