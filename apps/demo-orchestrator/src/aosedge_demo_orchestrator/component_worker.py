@@ -44,6 +44,13 @@ def verify(path, credential, expected=None):
 
 
 def execute(request):
+    if request["action"] == "validate-service":
+        from aos_signer.upload_config_v2.batch_configuration import UpdateBundleConfiguration
+        path = Path(request["directory"]) / "config.yaml"
+        config = UpdateBundleConfiguration(path)
+        if len(config.upload_meta_config.items) != 1 or config.upload_meta_config.items[0].identity.type != "service":
+            raise EnvironmentError("SERVICE_PACKAGE_TYPE_INVALID")
+        return dict(state="VALIDATED_SERVICE_CONFIG")
     credential = Path(request["credential"])
     if credential.is_symlink() or credential.stat().st_mode & 0o077:
         raise EnvironmentError("OEM_CREDENTIAL_UNSAFE")

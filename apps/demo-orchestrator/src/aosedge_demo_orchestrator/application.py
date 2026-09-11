@@ -53,6 +53,20 @@ class DemoOrchestrator:
                 return OperationResult(operation, OperationState.BLOCKED, str(error))
             except (OSError, ValueError, KeyError, TypeError):
                 return OperationResult(operation, OperationState.BLOCKED, "SERVICE_BUILD_UNAVAILABLE")
+        if operation == "service.prepare":
+            from .service_packages import ServicePackages
+            import subprocess
+            if request.target or request.current or request.image or request.image_path or request.service_id or request.component_version:
+                return OperationResult(operation, OperationState.BLOCKED, "SERVICE_PREPARE_USES_TEAM_AND_PROFILE_ONLY")
+            try:
+                data = ServicePackages(self.environment_service, self.vm_service.progress).prepare(
+                    request.team, request.content_profile, request.profile or "service-provider")
+                return OperationResult(operation, OperationState.COMPLETED,
+                    "Unsigned service package prepared; no VM action, signing, Cloud mutation or runtime qualification.", data=data)
+            except EnvironmentError as error:
+                return OperationResult(operation, OperationState.BLOCKED, str(error))
+            except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
+                return OperationResult(operation, OperationState.BLOCKED, "SERVICE_PACKAGE_PREPARATION_FAILED_VERSION_RETAINED")
         if request.domain == "service":
             from .services import ServiceCatalog
             if request.target or request.current or request.image or request.image_path or request.team or request.component_version or request.content_profile:

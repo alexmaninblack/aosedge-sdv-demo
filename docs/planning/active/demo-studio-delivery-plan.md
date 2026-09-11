@@ -26,7 +26,7 @@ gates are retired. Earlier dated checkpoints below remain historical.
 | N1 | Solution: accept ADR, update HLA/flows/requirements, runtime-input contract and D4 migration mapping | English documents, navigation and deterministic docs-check | Complete; product wire migration remains N3 |
 | N2 | Brake/Tire + Platform: private bootstrap sessions, dynamic token readers, native tmpfs resource mode; retire only token-owner patch | First create, isolation, atomic renewal, path/mode/symlink negatives, cleanup/restart, native host compilation | Host source tests passed; Linux/live proof remains N6 |
 | N3 | Solution contracts, both producers/backends: package version and native identity; explicit new message schemas without required service/model OCI digest | Producer-consumer fixtures; legacy queues/history retained; no fabricated digest; model/VDP hashes unchanged | Consumer and producer/input source increments passed; live integration remains N6 |
-| N4 | Demo Control: package the allocated version once; project public inputs; native configuration activation through existing commands | Package/publication equality; no manifest lookup dependency; stable-directory refresh after VDP commit | Pending |
+| N4 | Demo Control: package the allocated version once; project public inputs; native configuration activation through existing commands | Package/publication equality; no manifest lookup dependency; stable-directory refresh after VDP commit | Package preparation source/tests passed; signing/publication, public projection and activation remain pending |
 | N5 | Existing startup integration: restore public /run inputs before SM launches retained assignments | Exact hook/order documented and tested; no new daemon, persisted token or metadata authority | Pending |
 | N6 | Bounded current Test SOTA and backend integration through democtl | Real Cloud Running/version, KAC/TLS/subscriptions, renew/expiry, actual product records, retained state and scoped access proof | Pending |
 | N7 | Checkpoint source/docs and record exclusions | Commit only tested source; no build artifacts; retain current VM/Factory/Production | N2/N3 local checkpoints created; full-migration checkpoint remains pending |
@@ -48,6 +48,19 @@ both were tied to the unavailable final OCI manifest. Exact artifact identity
 remains separate optional engineering evidence, not service readiness.
 Existing model configuration hashes, VDP compatibility hashes, authorization,
 algorithms, timing limits and persistent producer state do not change.
+
+N4 package source increment: `service prepare brake --profile v1|v2|v3`
+uses the existing product export without building or requiring a vehicle.
+One SP catalog/version read feeds the existing continuity ledger; one allocated
+version enters both the package release file and schema-2 publication input.
+The returned handle identifies an immutable prepared directory. Native-input
+overrides, private credentials and runtime files are excluded. The installed
+official signer accepts all four fixed service configurations (Brake v1/v2/v3,
+Tire v1) without signing credentials. Tire actual preparation still requires
+its real product-build adapter; a schema test is not a Tire product build.
+No signing, upload, assignment, runtime-resource activation or VM action has
+occurred. Loader/library closure and exact outbound behavior remain live gates.
+See [CLI/result/recovery contract](../../architecture/demo-control.md#native-service-package-preparation).
 
 N2 local source checkpoints: Brake `8d19381`, Tire `47ab08d`, Platform
 `205f89d`. The Solution commit containing this record freezes the accepted

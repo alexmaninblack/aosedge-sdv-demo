@@ -60,7 +60,7 @@ class ServiceBuilder:
                     break
             raise EnvironmentError(reason)
 
-    def execute(self, team, content_profile="v1"):
+    def execute(self, team, content_profile="v1", *, build_missing=True):
         if team != "brake":
             raise EnvironmentError("SERVICE_PRODUCT_BUILD_NOT_IMPLEMENTED")
         if content_profile not in ("v1", "v2", "v3"):
@@ -78,16 +78,21 @@ class ServiceBuilder:
             if directory.is_symlink() or not directory.resolve().is_relative_to(self.environment.catalog.project.resolve()):
                 raise EnvironmentError("SERVICE_BUILD_PATH_UNSAFE")
             receipt = directory / "build.json"
+            if receipt.is_symlink():
+                raise EnvironmentError("SERVICE_BUILD_RECEIPT_INVALID")
             if receipt.exists():
                 value = read_json(receipt)
                 if (value.get("sourceRevision") != revision or value.get("state") != "BUILT"
-                        or value.get("contentProfile") != content_profile):
+                        or value.get("contentProfile") != content_profile or value.get("team") != team
+                        or value.get("outputPath") != str(directory / "output")):
                     raise EnvironmentError("SERVICE_BUILD_RECEIPT_INVALID")
                 for relative, expected in value["binaries"].items():
                     path = directory / "output" / relative
                     if not path.is_file() or path.is_symlink() or digest(path) != expected:
                         raise EnvironmentError("SERVICE_BUILD_ARTIFACT_CHANGED")
                 return dict(value, noOp=True)
+            if not build_missing:
+                raise EnvironmentError("SERVICE_BUILD_REQUIRED:democtl service build " + team + " --content-profile " + content_profile)
             output = directory / "output"
             if output.exists():
                 raise EnvironmentError("SERVICE_BUILD_INCOMPLETE_OUTPUT_RECONCILIATION_REQUIRED")

@@ -12,7 +12,7 @@ IDENTITIES = ("vdp", "brake", "tire")
 
 def number(value):
     import re
-    if not isinstance(value, str) or not re.fullmatch(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)", value):
+    if not isinstance(value, str) or len(value) > 32 or not re.fullmatch(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)", value):
         raise EnvironmentError("RELEASE_VERSION_INVALID")
     return tuple(map(int, value.split(".")))
 
@@ -42,7 +42,9 @@ class ReleaseContinuity:
         if identity not in IDENTITIES:
             raise EnvironmentError("RELEASE_IDENTITY_INVALID")
         floor = self.read()["versions"].get(identity, "3.0.0" if identity == "vdp" else "0.0.0")
-        return str(max(number(item) for item in [floor, *observed])[0] + 1) + ".0.0"
+        version = str(max(number(item) for item in [floor, *observed])[0] + 1) + ".0.0"
+        number(version)
+        return version
 
     def remember(self, identity, version):
         # Same existing single writer as lifecycle/artifact operations. No

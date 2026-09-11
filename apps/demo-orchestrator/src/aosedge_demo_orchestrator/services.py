@@ -18,6 +18,40 @@ class ServiceCatalog:
     def __init__(self, environment):
         self.environment = environment
 
+    def release_versions(self, team, profile="service-provider"):
+        """One SP read session; no Unit scan, assignment or OCI manifest lookup."""
+        from .releases import number
+        if team not in ("brake", "tire"):
+            raise EnvironmentError("SERVICE_TEAM_INVALID")
+        config = load_configuration(self.environment.root)
+        entry = config["cloudProfiles"].get(profile)
+        if not entry or entry["expectedRole"] != "service provider":
+            raise EnvironmentError("SERVICE_PUBLICATION_REQUIRES_CONFIGURED_SP")
+        codename = team + "-health-service"
+        result = self._read(profile, entry, config, "release-catalog", codename)
+        if any(result.get(key, {}).get("state") != "CURRENT" for key in ("authority", "services", "versions")):
+            raise EnvironmentError("SERVICE_RELEASE_CATALOG_UNAVAILABLE")
+        authority = result["authority"]["value"]
+        if authority.get("role") != "service provider":
+            raise EnvironmentError("SERVICE_PUBLICATION_REQUIRES_SP")
+        for key in ("services", "versions"):
+            value = result[key]["value"]
+            if value.get("coverage", {}).get("complete") is not True or value["coverage"]["returned"] != len(value["items"]):
+                raise EnvironmentError("SERVICE_RELEASE_CATALOG_INCOMPLETE")
+        matches = result["services"]["value"]["items"]
+        owner = object_id(authority["ownerId"])
+        if len(matches) > 1 or any(row.get("codename") != codename or row.get("serviceProviderId") != owner for row in matches):
+            raise EnvironmentError("SERVICE_RELEASE_BINDING_INVALID")
+        versions = [row["version"] for row in result["versions"]["value"]["items"]]
+        if not matches and versions:
+            raise EnvironmentError("SERVICE_RELEASE_BINDING_INVALID")
+        # Failed/pending versions also consume numbers. Unknown version syntax
+        # is not silently skipped and never interpreted as an empty catalog.
+        for version in versions:
+            number(version)
+        return dict(serviceId=object_id(matches[0]["id"]) if matches else None,
+            ownerId=owner, codename=codename, versions=versions, cloudProfile=profile)
+
     def _read(self, name, profile, config, action, service_id, version_id=None):
         credential = profile["credential"]
         try:

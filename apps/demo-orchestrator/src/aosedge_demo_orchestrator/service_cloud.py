@@ -129,6 +129,24 @@ def inspect(cloud, request):
         expectedOwnerId=request.get("ownerId"), ownerBinding="MATCHED" if request.get("ownerId") else "NOT_CONFIGURED",
         permissions={name: name in user["effectivePermissions"] for name in PERMISSIONS},
         teamBinding="NOT_CONFIGURED", mutationAuthority="NOT_EVALUATED")))
+    if request["action"] == "release-catalog":
+        if user["role"] != "service provider":
+            raise CloudFailure("SERVICE_PUBLICATION_REQUIRES_SP")
+        codename = request["serviceId"]
+        if codename not in ("brake-health-service", "tire-health-service"):
+            raise CloudFailure("SERVICE_CODENAME_INVALID")
+        catalog = pages(cloud, "services/", lambda row: service_view(row, user), "services_list")
+        if catalog["state"] != "CURRENT":
+            result["services"] = catalog
+            return result
+        matches = [row for row in catalog["value"]["items"] if row.get("codename") == codename]
+        if len(matches) > 1:
+            raise CloudFailure("SERVICE_CODENAME_AMBIGUOUS")
+        result["services"] = observed(dict(items=matches, coverage=dict(total=len(matches), returned=len(matches), complete=True)))
+        result["versions"] = (pages(cloud, "services/" + matches[0]["id"] + "/service-versions/",
+            version_view, "services_service_versions_list") if matches else
+            observed(dict(items=[], coverage=dict(total=0, returned=0, complete=True))))
+        return result
     if request["action"] == "list":
         # The live v11 SP route rejects the optional service_provider filter
         # (422). Read the ordinary catalog and enforce ownership on every row;
@@ -162,7 +180,7 @@ def inspect(cloud, request):
 
 
 def execute(request):
-    if request.get("action") not in ("list", "status", "inspect") or request.get("expectedRole") not in ("oem", "service provider"):
+    if request.get("action") not in ("list", "status", "inspect", "release-catalog") or request.get("expectedRole") not in ("oem", "service provider"):
         raise CloudFailure("SERVICE_READ_ACTION_INVALID")
     try:
         cloud = Cloud(request, expected_role=request["expectedRole"])

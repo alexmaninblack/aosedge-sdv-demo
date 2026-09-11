@@ -346,3 +346,44 @@ The four focused Brake export tests and repository quality gate also passed.
 Solution docs-check passed with 170 Markdown documents, 658 stable identifiers
 and 38 Mermaid diagrams. The Solution commit containing this record preserves
 the exact source-gate position; it does not mark the full migration complete.
+
+## N4 service package preparation source increment
+
+Demo Control now owns `service prepare <team> --profile <content>`. It reads
+the existing real product export without invoking Docker or requiring a Unit.
+Brake supports its existing v1/v2/v3 exports; Tire still has no real build
+adapter and fails explicitly rather than packaging a scaffold.
+
+The authenticated SP worker reads only the owned catalog and matching service
+versions. No manifest or Unit inventory is needed. Complete absence of the
+codename and read failure remain distinct. All published version states feed
+the existing continuity ledger; the package and publication metadata receive
+one allocated value. Version bounds now match the native readers (32-character
+strict SemVer). A failed preparation consumes its number without committing
+partial output. An explicit subsequent preparation preserves the prior package.
+
+Prepared packages contain the two verified ARM64 executables, exported public
+licenses and immutable release metadata. Public Unit/VDP/trust input is not
+packaged, and native Aos identity remains runtime supplied. Source configuration
+requests minInstances 1, offlineTTL P7D, accepted quotas and exact team-scoped
+resources/KUKSA permissions. Outbound rules name only the fixed KUKSA and own
+backend endpoints; schema acceptance does not prove native routing/enforcement.
+
+Evidence: 38 focused service build/catalog/package tests, six CLI tests and four release
+continuity tests passed. Four configurations were checked using the installed
+official Aos signer in temporary directories, through the same private adapter
+used by Demo Control; no signing credential was read. Fixture ARM64 bytes are
+used only for package tests and are not a real product build or published
+artifact. Tests cover version equality, same-content repeat, failure retention,
+no-vehicle preparation, changed executables, links/unexpected files, complete
+catalog coverage, caller umask, catalog redirection and no browser publication
+authority. Documentation quality checks passed (170 Markdown documents,
+658 stable identifiers, 38 Mermaid diagrams).
+
+Remaining N4: real Tire build adapter, handle-based signing/publication,
+public-input projection and native resource activation. N5 existing cold-start
+hook/order remains unimplemented. N6 must still prove the actual container
+loader/glibc boundary, mounted inputs, native identity/KAC/TLS/permissions,
+backend ingestion and retained assignment recovery. No actual product package
+was prepared, signed or published during this source increment; no Cloud,
+VM, backend, SM, Factory or Production state was changed.

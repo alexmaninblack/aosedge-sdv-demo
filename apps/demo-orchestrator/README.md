@@ -3,6 +3,21 @@
 
 # Demo Orchestrator
 
+### Service package preparation (development increment)
+
+```bash
+democtl service prepare brake --profile v1
+```
+
+Uses an existing committed real ARM64 export; it does not build implicitly.
+The SP catalog read and existing continuity ledger allocate one release for
+both package and publication metadata. The result returns a release handle and
+an unsigned package path. No VM, signing, upload or assignment is performed.
+`--profile` is functional content (`v1`, `v2`, `v3`); `--cloud-profile` optionally
+chooses the configured SP. Missing build output gives the explicit build command.
+Tire real product builds and sign/upload/resource activation remain pending.
+See the [current package contract](../../docs/architecture/demo-control.md#native-service-package-preparation).
+
 ### Cloud-only Test observations
 
 `democtl unit cloud-status test` reads the current Test's Cloud-reported

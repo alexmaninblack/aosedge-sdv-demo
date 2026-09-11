@@ -43,6 +43,10 @@ def build_parser() -> argparse.ArgumentParser:
     service_build = service_commands.add_parser("build", help="development-only real ARM64 service build; no publication or VM action")
     service_build.add_argument("team", choices=("brake", "tire"))
     service_build.add_argument("--content-profile", choices=("v1", "v2", "v3"), default="v1", help="fixed service functional profile, independent of release number")
+    service_prepare = service_commands.add_parser("prepare", help="package an existing product build; allocate release once; no VM, signing or upload")
+    service_prepare.add_argument("team", choices=("brake", "tire"))
+    service_prepare.add_argument("--profile", dest="content_profile", required=True, choices=("v1", "v2", "v3"))
+    service_prepare.add_argument("--cloud-profile", dest="profile", default="service-provider", help="configured SP for the read-only release catalog")
     for action in ("list", "status", "inspect"):
         command = service_commands.add_parser(action, help="read-only OEM/SP observations; no upload or assignment")
         if action in ("status", "inspect"):
@@ -215,6 +219,8 @@ def render_human(result: OperationResult, details: bool = False) -> str:
     if data and document["operation"].startswith("component."):
         lines.append(json.dumps(data, indent=2, sort_keys=True))
     if data and document["operation"].startswith("backend."):
+        lines.append(json.dumps(data, indent=2, sort_keys=True))
+    if data and document["operation"].startswith("service."):
         lines.append(json.dumps(data, indent=2, sort_keys=True))
     if data and (document["operation"].startswith("demo.") or document["operation"] in ("environment.park", "environment.resume")):
         if "version" in data:

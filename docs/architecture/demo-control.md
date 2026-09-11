@@ -495,6 +495,57 @@ complete VDP chain is working.
 
 ## Agreed CLI Surface
 
+<a id="native-service-package-preparation"></a>
+
+### Native service package preparation — 2026-09-11
+
+The N4 source increment exposes:
+
+```bash
+democtl service prepare brake --profile v1
+democtl service prepare brake --profile v2
+democtl service prepare brake --profile v3
+```
+
+`--profile` selects immutable functional content here; optional
+`--cloud-profile` selects the configured SP (default `service-provider`).
+The existing `service list/status/inspect --profile` still selects a Cloud
+profile. Preparation requires the existing committed ARM64 product export
+from `service build <team> --content-profile <profile>`; it never starts an
+implicit build or a VM. Tire preparation refuses while its real product build
+adapter remains unimplemented; it does not substitute the diagnostic scaffold.
+
+One SP session reads the owned service catalog and, for an existing exact
+codename, its version collection. It does not scan Units, inspect an OCI
+manifest, assign a Subject or mutate Cloud. Failed/pending published versions
+also reserve their number. An incomplete or unavailable read blocks rather
+than appearing as an empty catalog.
+
+The existing continuity ledger allocates the next version once. A successful
+result returns `releaseHandle` (for example `brake/8.0.0`), `version`,
+`contentProfile`, bound SP/service identifiers and `packagePath`. The staging
+layout is `services/<team>/releases/<version>/` in the artifact catalog. One
+value populates publication metadata and root-owned/read-only package data at
+`/usr/share/aosedge/service-release.json`. Only exported executables, public
+licenses and that release file enter the payload. Unit/VDP metadata, native
+instance identifiers, tokens and private trust never enter a reusable package.
+
+The official installed Aos signer validates schema and paths without signing
+credentials. Output is **PREPARED_NOT_RUNTIME_QUALIFIED**, not published or
+deployable proof. The configuration requests the accepted quotas, minimum one
+instance, seven-day offline TTL, team-specific input resource and exact KUKSA
+paths; native outbound enforcement and loader/library closure still need N6
+proof. No resource configuration is activated by preparation.
+
+A schema failure retains the allocated number and leaves no committed
+package. Another explicit prepare allocates a new number; existing packages
+are never overwritten. Sign/upload and their resume/reconciliation remain
+subsequent N4 work; they must consume the returned handle, not ask an operator
+for a second version. These new preparation operations are not yet exposed
+as browser mutation capabilities. N4 public-input projection/resource activation
+and N5 cold-start restoration are still pending under the
+[accepted runtime-input contract](demo-control-service-inputs.md).
+
 ### VDP Family Increment — Authorized 2026-09-06
 
 Repeat-cycle amendment, approved 2026-09-06: functional profiles `v1`, `v2`,
