@@ -146,3 +146,15 @@ Function Team 1-owned and outside the first-demo scope.
 
 This accepted contract authorizes no product implementation, artifact build,
 publication, Cloud/VM/Unit operation, push or merge by itself.
+
+## Native product provenance — 2026-09-11
+
+For new product messages, [ADR 0015's versioned migration](../service-runtime-inputs/product-message-migration.md)
+defines revision 2 / 2.0.0 beside the retained legacy schemas in this package.
+Use the immutable package release and native service/Subject/instance identity;
+do not require service/model OCI digest fields or relabel old queued records.
+Payload algorithms, model/VDP hashes, receipt keys and authorization remain
+unchanged. Backend consumer source is implemented; producer/input migration
+and real Test integration are still open. Earlier sections and v1 schema
+files remain legacy evidence, not an instruction to reintroduce the digest
+dependency into new messages. Administrative/cleanup protocols are unaffected.

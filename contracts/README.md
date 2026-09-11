@@ -3,6 +3,9 @@
 
 # Cross-Component Contracts
 
+- [Native Service Runtime Inputs](service-runtime-inputs/README.md)
+  — package release, public Unit/VDP metadata, private token sessions and the
+  versioned product-message migration under ADR 0015.
 - [Vehicle Hardware Capability Profile](vehicle-hardware-profile/README.md)
   — selected CARLA hardware-equivalent capabilities and complete
   Simulator–Gateway accounting.

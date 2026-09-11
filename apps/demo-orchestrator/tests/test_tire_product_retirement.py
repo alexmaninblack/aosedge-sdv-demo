@@ -50,6 +50,18 @@ class TireProductRetirementTests(TestCase):
             nonmatchingRecordCounts=dict(self.tire_peer), nonmatchingRecordSetSha256="b" * 64,
             completedAt=datetime.now(timezone.utc).isoformat())
 
+    def test_brake_migration_does_not_enable_tire_schema_three(self):
+        state = self.product(False)
+        state["backends"]["tire"]["cleanup"] = {}
+        self.cleanup._empty_store(state, allow_nonempty=True, team="tire")
+        def response(team, identity, operation, payload=None):
+            value = self.tire_private(team, identity, operation, payload)
+            value["databaseSchemaVersion"] = 3
+            return value
+        self.cleanup._private = Mock(side_effect=response)
+        with self.assertRaisesRegex(EnvironmentError, "BACKEND_WHOLE_STORE_EMPTY_PROOF_UNAVAILABLE"):
+            self.cleanup._empty_store(state, allow_nonempty=True, team="tire")
+
     def test_product_test_cleanup_preserves_peer_and_never_uses_foundation_proof(self):
         state = self.product()
         peer = copy.deepcopy(state["vehicles"]["production"])

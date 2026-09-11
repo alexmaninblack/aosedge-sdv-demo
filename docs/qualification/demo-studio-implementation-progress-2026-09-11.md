@@ -240,3 +240,61 @@ the modelArtifactSha256 alias, explicit legacy decoding and unchanged retained
 state. Then implement public-input projection/boot ordering and perform the
 bounded Test integration through Demo Control. Do not publish this intermediate
 runtime or claim full P5/P7 readiness from host token tests.
+
+## N3 consumer compatibility checkpoint
+
+The next authorized increment continues P5/P7 and ADR 0015. Product revision
+2 / 2.0.0 is frozen separately from retained legacy revision 1. Nine schemas
+and corresponding fixtures use the package release and native service,
+Subject, index and runtime-instance identity without service/model OCI digest
+fields. Model configuration, VDP hashes, content payloads, receipt keys and
+authorization are unchanged. The accepted package/public/environment readers
+and actual service producers have **not yet migrated** to this revision.
+
+Brake consumer source supports both revisions, removes the functional-profile
+restriction from native package releases, and correlates native instances
+exactly. New migration 003 updates only typed projections and retains all
+legacy columns/values, canonical messages and original receipts. Unknown
+legacy schema is rejected before a table rebuild, and an injected mid-migration
+failure rolls back to intact database schema 2. The final migration includes
+every legacy digest column; the populated-database test caught and corrected
+an initial copy-column omission before any live use.
+
+Tire uses separate packaged old/new validators. Its canonical envelope store
+requires no database migration. Both backends return explicit revision-2
+query envelopes and retain the actual revision on every stored message;
+ACK/admin/error/SSE contracts stay unchanged. Existing Demo Control empty-store
+validation accepts Brake database 2/3 and Tire 2 only. No cleanup, deployment
+or runtime operation was executed to test this adapter.
+
+Completed local evidence:
+
+- Brake TypeScript backend compilation and full typecheck passed; 44 backend
+  tests passed, including native HTTP ingestion/query, invalid identity/release,
+  legacy strict decoding, exact duplicates, mixed-instance conflicts,
+  cross-instance event/assessment joins and populated migration/rollback.
+- Brake source/licensing/dependency/artifact quality gate passed.
+- Tire 13 backend tests passed, including both wire revisions, unchanged
+  history/receipts across database reopen, conflicts, scoped cleanup and HTTP.
+- Solution 4 new schema-invariant and 4 existing runtime-input tests passed.
+  Documentation checks passed (170 Markdown files, 658 stable identifiers,
+  38 Mermaid diagrams). The existing Demo Control
+  retirement suites passed: 29 Brake-suite and 36 Tire-suite test executions
+  (the latter also imports the shared Brake fixture suite).
+- Tests use temporary SQLite files/in-memory databases and loopback test
+  sockets. Initial sandbox socket/write denials were harness restrictions;
+  reviewed local test execution passed. No checks ran against the demo database.
+
+Remaining: migrate the two service input readers and serializers, bind real
+query/readiness/evidence consumers, complete N4 package/public projection and
+N5 boot ordering, then N6 current-Test SOTA evidence through Demo Control.
+The accepted Brake window-detail contract has no handler on the active backend
+branch; the v2 schema does not close that P7 endpoint gap. Tire model/CPU-worker
+work remains separate. No Factory build, VM/SM restart, Cloud publication,
+Subject/assignment change or Production mutation occurred. No E2E completion
+or actual product data is claimed by these synthetic fixtures.
+
+Local source checkpoints: Brake Cloud `d7626b7`, Tire Cloud `b383c02`.
+The Solution checkpoint containing this section freezes the contract snapshots,
+adapter compatibility and execution position. Nothing was pushed or published
+in this increment; the repositories remain on their existing `codex/` branches.

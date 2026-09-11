@@ -1,0 +1,168 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:tire-query-page:schema:v2",
+  "title": "Tire Unit-Scoped Query Page — Mixed legacy/native messages",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "contractVersion",
+    "unitSystemUid",
+    "items",
+    "nextCursor"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 2
+    },
+    "contractVersion": {
+      "const": "2.0.0"
+    },
+    "unitSystemUid": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "items": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "message",
+              "backendReceivedAt",
+              "deliveryState"
+            ],
+            "properties": {
+              "message": {
+                "oneOf": [
+                  {
+                    "$ref": "../tire-health-model/tire-health-assessment.schema.json"
+                  },
+                  {
+                    "$ref": "../tire-health-model/tire-health-assessment.v2.schema.json"
+                  }
+                ]
+              },
+              "backendReceivedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "deliveryState": {
+                "const": "DURABLE_ACCEPTED"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "message",
+              "backendReceivedAt",
+              "deliveryState"
+            ],
+            "properties": {
+              "message": {
+                "oneOf": [
+                  {
+                    "$ref": "../tire-health-model/tire-health-event.schema.json"
+                  },
+                  {
+                    "$ref": "../tire-health-model/tire-health-event.v2.schema.json"
+                  }
+                ]
+              },
+              "backendReceivedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "deliveryState": {
+                "const": "DURABLE_ACCEPTED"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "message",
+              "backendReceivedAt",
+              "deliveryState"
+            ],
+            "properties": {
+              "message": {
+                "oneOf": [
+                  {
+                    "$ref": "../tire-cloud-api/tire-advisory-fact.schema.json"
+                  },
+                  {
+                    "$ref": "../tire-cloud-api/tire-advisory-fact.v2.schema.json"
+                  }
+                ]
+              },
+              "backendReceivedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "deliveryState": {
+                "const": "DURABLE_ACCEPTED"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "message",
+              "backendReceivedAt",
+              "deliveryState",
+              "authority",
+              "stale"
+            ],
+            "properties": {
+              "message": {
+                "oneOf": [
+                  {
+                    "$ref": "../tire-cloud-api/tire-function-status.schema.json"
+                  },
+                  {
+                    "$ref": "../tire-cloud-api/tire-function-status.v2.schema.json"
+                  }
+                ]
+              },
+              "backendReceivedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "deliveryState": {
+                "const": "DURABLE_ACCEPTED"
+              },
+              "authority": {
+                "const": "FUNCTION_TEAM_REPORTED_STATUS"
+              },
+              "stale": {
+                "type": "boolean"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "nextCursor": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      ]
+    }
+  }
+}

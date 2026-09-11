@@ -94,6 +94,22 @@ class BackendRetirementTests(TestCase):
         patch.object(self.service, "_assert_unheld").start()
         return state
 
+    def test_native_brake_schema_is_supported_without_accepting_unknown_versions(self):
+        state = self.backend_fixture(False)
+        state["backends"]["brake"]["cleanup"] = {}
+        for version in (2, 3, 4, 1, True, "3"):
+            with self.subTest(version=version):
+                def response(team, identity, operation, payload=None):
+                    value = self.private(team, identity, operation, payload)
+                    value["databaseSchemaVersion"] = version
+                    return value
+                self.cleanup._private = Mock(side_effect=response)
+                if type(version) is int and version in (2, 3):
+                    self.cleanup._empty_store(state, allow_nonempty=True)
+                else:
+                    with self.assertRaisesRegex(EnvironmentError, "BACKEND_WHOLE_STORE_EMPTY_PROOF_UNAVAILABLE"):
+                        self.cleanup._empty_store(state, allow_nonempty=True)
+
     def private(self, team, identity, operation, payload=None):
         self.calls.append((team, operation))
         if team == "tire":

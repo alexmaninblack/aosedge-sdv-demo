@@ -1,0 +1,179 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:brake-health-event:schema:v2",
+  "title": "Brake Health Condition Band Change Event — Native service provenance",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "contractVersion",
+    "messageType",
+    "eventId",
+    "assessmentId",
+    "sourceEventId",
+    "unitSystemUid",
+    "unitRole",
+    "serviceVersion",
+    "modelId",
+    "modelVersion",
+    "modelConfigSha256",
+    "provenance",
+    "content",
+    "contentSha256",
+    "serviceInstance"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 2
+    },
+    "contractVersion": {
+      "const": "2.0.0"
+    },
+    "messageType": {
+      "const": "BRAKE_HEALTH_EVENT"
+    },
+    "eventId": {
+      "$ref": "#/$defs/uuid5"
+    },
+    "assessmentId": {
+      "$ref": "#/$defs/uuid5"
+    },
+    "sourceEventId": {
+      "$ref": "#/$defs/uuid4"
+    },
+    "unitSystemUid": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$(?![\\s\\S])"
+    },
+    "unitRole": {
+      "enum": [
+        "VALIDATION",
+        "PRODUCTION"
+      ]
+    },
+    "serviceVersion": {
+      "type": "string",
+      "maxLength": 32,
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$(?![\\s\\S])"
+    },
+    "modelId": {
+      "const": "brake-condition-demo-v1"
+    },
+    "modelVersion": {
+      "const": "1.0.0"
+    },
+    "modelConfigSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "provenance": {
+      "const": "DEMO_SYNTHETIC"
+    },
+    "content": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "eventType",
+        "reasonCode",
+        "previousBand",
+        "currentBand",
+        "conditionScore",
+        "effectiveAt",
+        "quality"
+      ],
+      "properties": {
+        "eventType": {
+          "const": "BRAKE_CONDITION_BAND_CHANGED"
+        },
+        "reasonCode": {
+          "const": "SYNTHETIC_ACCUMULATED_STRESS_THRESHOLD"
+        },
+        "previousBand": {
+          "$ref": "#/$defs/band"
+        },
+        "currentBand": {
+          "$ref": "#/$defs/band"
+        },
+        "conditionScore": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "effectiveAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "quality": {
+          "const": "VALID_DEMO_SYNTHETIC"
+        }
+      }
+    },
+    "contentSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "serviceInstance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "serviceId",
+        "subjectId",
+        "instanceIndex",
+        "instanceId"
+      ],
+      "properties": {
+        "serviceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$(?![\\s\\S])"
+        },
+        "subjectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$(?![\\s\\S])"
+        },
+        "instanceIndex": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "instanceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$(?![\\s\\S])"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "boundedId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$"
+    },
+    "uuid4": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "uuid5": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "band": {
+      "enum": [
+        "GOOD",
+        "MONITOR",
+        "INSPECTION_RECOMMENDED"
+      ]
+    }
+  }
+}

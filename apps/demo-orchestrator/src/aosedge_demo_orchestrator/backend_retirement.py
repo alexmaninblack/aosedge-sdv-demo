@@ -269,10 +269,13 @@ class BackendRetirement:
     def _empty_store(self, state, allow_nonempty=False, team="brake"):
         observed = self._owned(state, team, running=True)
         body = self._private(team, observed["Id"], "empty-proof", dict(schemaVersion=1, contractVersion="1.0.0"))
+        # N3 adds Brake projection schema 3; Tire retains schema 2. The admin
+        # proof, ownership/selector checks and actual empty-state rules stay intact.
+        supported_schema_versions = (2, 3) if team == "brake" else (2,)
         if (not isinstance(body, dict) or set(body) != {"schemaVersion", "contractVersion", "state", "databaseSchemaVersion", "recordCounts", "observedAt"}
                 or type(body.get("schemaVersion")) is not int or body["schemaVersion"] != 1
                 or body.get("contractVersion") != "1.0.0" or type(body.get("databaseSchemaVersion")) is not int
-                or body["databaseSchemaVersion"] != 2 or body.get("state") not in ("EMPTY", "NONEMPTY")):
+                or body["databaseSchemaVersion"] not in supported_schema_versions or body.get("state") not in ("EMPTY", "NONEMPTY")):
             raise EnvironmentError("BACKEND_WHOLE_STORE_EMPTY_PROOF_UNAVAILABLE")
         _timestamp(body["observedAt"])
         counts = _counts(body.get("recordCounts"), TIRE_COUNTS if team == "tire" else COUNTS)

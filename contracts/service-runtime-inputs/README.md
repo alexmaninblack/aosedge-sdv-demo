@@ -11,6 +11,8 @@ implementation and live qualification are separate.
   Unit/role and committed VDP compatibility only.
 - [Package release schema](service-release.schema.json): schemaVersion 1;
   the exact Demo Control release also used in publication metadata.
+- [Product-message migration](product-message-migration.md): explicit v2
+  provenance, strict legacy decoding and consumer-first rollout.
 - [Credential placement profile](credential-placement.v1.json): private
   sessions using the unchanged native resource mount mechanism.
 - [Placement and sequence](../../docs/architecture/demo-control-service-inputs.md).
