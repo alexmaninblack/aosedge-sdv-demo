@@ -53,6 +53,23 @@ class DemoOrchestrator:
                 return OperationResult(operation, OperationState.BLOCKED, str(error))
             except (OSError, ValueError, KeyError, TypeError):
                 return OperationResult(operation, OperationState.BLOCKED, "SERVICE_BUILD_UNAVAILABLE")
+        if request.domain == "service" and request.action in ("sign", "upload", "cloud-status"):
+            from .service_packages import ServicePackages
+            if (request.target or request.current or request.image or request.image_path or request.service_id
+                    or request.component_version or request.content_profile or request.team or request.profile):
+                return OperationResult(operation, OperationState.BLOCKED, "SERVICE_PUBLICATION_USES_PREPARED_HANDLE_ONLY")
+            try:
+                packages = ServicePackages(self.environment_service, self.vm_service.progress)
+                data = getattr(packages, request.action.replace("-", "_"))(request.service_release)
+                state = (OperationState.COMPLETED if request.action == "sign" else OperationState.PARTIAL
+                    if data.get("stage") in ("ERROR", "UNCERTAIN", "UNKNOWN", "ATTEMPTING") else OperationState.BLOCKED
+                    if data.get("stage") == "BLOCKED" else OperationState.OBSERVED)
+                return OperationResult(operation, state,
+                    "Service bundle operation only; acceptance/readiness is not assignment, installation or function health.", data=data)
+            except EnvironmentError as error:
+                return OperationResult(operation, OperationState.BLOCKED, str(error))
+            except (OSError, ValueError, KeyError, TypeError):
+                return OperationResult(operation, OperationState.BLOCKED, "SERVICE_PUBLICATION_UNAVAILABLE")
         if operation == "service.prepare":
             from .service_packages import ServicePackages
             import subprocess

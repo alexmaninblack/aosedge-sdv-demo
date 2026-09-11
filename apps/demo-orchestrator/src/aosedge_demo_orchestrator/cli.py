@@ -47,6 +47,9 @@ def build_parser() -> argparse.ArgumentParser:
     service_prepare.add_argument("team", choices=("brake", "tire"))
     service_prepare.add_argument("--profile", dest="content_profile", required=True, choices=("v1", "v2", "v3"))
     service_prepare.add_argument("--cloud-profile", dest="profile", default="service-provider", help="configured SP for the read-only release catalog")
+    for action in ("sign", "upload", "cloud-status"):
+        command = service_commands.add_parser(action, help="use the prepared release handle; no build, version allocation or assignment")
+        command.add_argument("service_release", help="exact handle returned by prepare, for example brake/8.0.0")
     for action in ("list", "status", "inspect"):
         command = service_commands.add_parser(action, help="read-only OEM/SP observations; no upload or assignment")
         if action in ("status", "inspect"):
@@ -198,6 +201,7 @@ def request_from_arguments(arguments: argparse.Namespace) -> OperationRequest:
         restart_project=getattr(arguments, "restart_project", None),
         service_id=getattr(arguments, "service_id", None), profile=getattr(arguments, "profile", None),
         service_version_id=getattr(arguments, "service_version_id", None),
+        service_release=getattr(arguments, "service_release", None),
         timeout=getattr(arguments, "timeout", 8.0),
     )
 

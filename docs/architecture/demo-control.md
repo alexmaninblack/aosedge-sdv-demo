@@ -539,12 +539,72 @@ proof. No resource configuration is activated by preparation.
 
 A schema failure retains the allocated number and leaves no committed
 package. Another explicit prepare allocates a new number; existing packages
-are never overwritten. Sign/upload and their resume/reconciliation remain
-subsequent N4 work; they must consume the returned handle, not ask an operator
-for a second version. These new preparation operations are not yet exposed
-as browser mutation capabilities. N4 public-input projection/resource activation
-and N5 cold-start restoration are still pending under the
-[accepted runtime-input contract](demo-control-service-inputs.md).
+are never overwritten. [Signing/publication](#native-service-publication)
+consume the returned handle rather than asking for a second version. These
+operations are not yet exposed as browser mutation capabilities. N4 public-input
+projection/resource activation and N5 cold-start restoration remain pending
+under the [accepted runtime-input contract](demo-control-service-inputs.md).
+
+<a id="native-service-publication"></a>
+
+### Native service signing and publication — 2026-09-11
+
+Use the exact handle returned by preparation; `brake/8.0.0` below is only an
+example, not an instruction to allocate or publish that number:
+
+```bash
+democtl service sign brake/8.0.0
+democtl service upload brake/8.0.0
+democtl service cloud-status brake/8.0.0
+```
+
+All three use the recorded SP profile/owner; there is no account, version,
+Unit, command or path override. Neither signing nor upload rebuilds the
+product or assigns a service. Signing confirms the bound SP, copies only the
+verified prepared files to a temporary signer directory and uses the installed
+official Aos signer. It verifies the real RS256 envelope, signed file hashes
+and byte-for-byte payload/config equality before committing
+`deployment-bundle.tar.gz` and `signed.json` beside `prepared.json`. A repeated
+sign verifies and reuses that bundle. If a completed bundle survived an
+interruption without its receipt, verification reconstructs the receipt without
+resigning. Changed bytes, modes, unsafe paths or version/identity mismatch block.
+
+Upload has one authenticated SP session: read bounded service/version/bundle
+collections, prove the same owner/codename and an unused newer version, then
+check existing assignments to this exact service. No assigned Units is valid
+before Provision. Otherwise every assignment must be the current owned Test
+from the existing lifecycle context. Any other Unit, including Production,
+blocks without modification. No OEM role expansion, Unit Set scan, Subject
+creation, batch approval or explicit send is hidden in publication.
+
+The fixed shared transport performs one `POST /deployment-bundles/upload/`
+with multipart field `file`. This is the same route used for FOTA, authenticated
+as SP for SOTA. `201` returns **ACCEPTED**, not Ready or Running. It records the
+deployment ID immediately and does not poll or sleep. A later explicit
+`cloud-status` reads the bundle collection by that ID and the same owner's
+service/version catalog. **READY** requires the exact completed service bundle
+and a ready matching service version; it does not prove installation or
+functional health. Processing, errors and unknown states remain distinct;
+safe `build_info` is retained and sensitive text is redacted. These shapes are
+from the [public Aos Cloud v11 OpenAPI](https://api.aoscloud.io/api/v11/openapi.json),
+re-read on 11 September 2026. The bundle detail route has no GET operation.
+
+The existing artifact directory holds one `publication.json` intent/receipt.
+It is not a second Unit registry or a credential store. Intent is written
+before the worker runs. An explicit failed-preflight response permits another
+operator call because no POST was attempted. If a POST or worker response is
+uncertain, further `upload` calls perform observation only, never a second POST.
+If the response ID was lost, matching a codename/version alone cannot prove
+the uploaded signed bytes: report **UNCERTAIN** and candidate IDs without
+adopting them or silently retrying. No automated resolution is claimed for
+that case. Observation preserves the original receipt and does not rehash
+the payload or signed archive; signing/publication perform those trust checks.
+
+This source increment has offline transport/receipt tests and a real signature
+test using a temporary fixture key. It has not signed or uploaded a live
+product release. Matching backend activation, native resource/input setup,
+container dependencies and current-Test runtime proof still gate live N6.
+No browser mutation capability is added in this increment.
 
 ### VDP Family Increment — Authorized 2026-09-06
 

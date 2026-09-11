@@ -50,11 +50,14 @@ class OperationRequest:
     team: Optional[str] = None
     service_id: Optional[str] = None
     service_version_id: Optional[str] = None
+    service_release: Optional[str] = None
     metadata_only: bool = False
     restart_project: Optional[str] = None
 
     def selection_error(self) -> Optional[str]:
         """Validate agreed selectors before any lifecycle adapter is called."""
+        if self.service_release is not None and (self.domain != "service" or self.action not in ("sign", "upload", "cloud-status")):
+            return "SERVICE_RELEASE_SELECTOR_INVALID"
         if self.service_version_id is not None and (self.domain, self.action) != ("service", "inspect"):
             return "SERVICE_VERSION_SELECTOR_USES_INSPECT_ONLY"
         if self.domain == "environment" and self.action == "prepare":

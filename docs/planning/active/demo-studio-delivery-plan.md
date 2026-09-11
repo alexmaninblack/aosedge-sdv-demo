@@ -26,7 +26,7 @@ gates are retired. Earlier dated checkpoints below remain historical.
 | N1 | Solution: accept ADR, update HLA/flows/requirements, runtime-input contract and D4 migration mapping | English documents, navigation and deterministic docs-check | Complete; product wire migration remains N3 |
 | N2 | Brake/Tire + Platform: private bootstrap sessions, dynamic token readers, native tmpfs resource mode; retire only token-owner patch | First create, isolation, atomic renewal, path/mode/symlink negatives, cleanup/restart, native host compilation | Host source tests passed; Linux/live proof remains N6 |
 | N3 | Solution contracts, both producers/backends: package version and native identity; explicit new message schemas without required service/model OCI digest | Producer-consumer fixtures; legacy queues/history retained; no fabricated digest; model/VDP hashes unchanged | Consumer and producer/input source increments passed; live integration remains N6 |
-| N4 | Demo Control: package the allocated version once; project public inputs; native configuration activation through existing commands | Package/publication equality; no manifest lookup dependency; stable-directory refresh after VDP commit | Package preparation source/tests passed; signing/publication, public projection and activation remain pending |
+| N4 | Demo Control: package the allocated version once; project public inputs; native configuration activation through existing commands | Package/publication equality; no manifest lookup dependency; stable-directory refresh after VDP commit | Prepare/sign/upload/status source/tests passed; public projection and activation remain pending |
 | N5 | Existing startup integration: restore public /run inputs before SM launches retained assignments | Exact hook/order documented and tested; no new daemon, persisted token or metadata authority | Pending |
 | N6 | Bounded current Test SOTA and backend integration through democtl | Real Cloud Running/version, KAC/TLS/subscriptions, renew/expiry, actual product records, retained state and scoped access proof | Pending |
 | N7 | Checkpoint source/docs and record exclusions | Commit only tested source; no build artifacts; retain current VM/Factory/Production | N2/N3 local checkpoints created; full-migration checkpoint remains pending |
@@ -61,6 +61,17 @@ its real product-build adapter; a schema test is not a Tire product build.
 No signing, upload, assignment, runtime-resource activation or VM action has
 occurred. Loader/library closure and exact outbound behavior remain live gates.
 See [CLI/result/recovery contract](../../architecture/demo-control.md#native-service-package-preparation).
+
+The following N4 source increment adds handle-based `service sign`, `upload`
+and `cloud-status`, with SP binding, exact prepared/signed payload equality,
+one Deployment Bundle POST, durable acceptance/uncertainty and read-only repeat.
+READY is catalog readiness, not service execution. Existing service assignments
+must be absent or scoped solely to the current Test. Public API schema reads,
+temporary-key official signing and isolated transport/receipt tests passed;
+no live product signing/publication or deployment occurred. N4 public inputs,
+activation and N5 boot order are still next. The real Tire build adapter and
+N6 backend/runtime qualification remain open. See the
+[publication contract](../../architecture/demo-control.md#native-service-publication).
 
 N2 local source checkpoints: Brake `8d19381`, Tire `47ab08d`, Platform
 `205f89d`. The Solution commit containing this record freezes the accepted
@@ -1284,10 +1295,11 @@ Names in the **Proposed** rows are a review contract, not available commands or 
 | Existing core; expose | `vehicle initialize test` | Q03: first stationary-Manual connection after Create, before Provision, without automatic Safe Stop. Guard it as initial connection, not an arbitrary reset. Ordinary `vehicle select` stays distinct. |
 | Declared; implement | `environment park`, `environment resume` | Preserve identity/software/disk and resume the same run, using stored target/current-vehicle scope. |
 | Proposed | `unit cloud-status test`, `unit monitoring test` | Complete Cloud inventory and separate metrics. General local `status` must not acquire an expensive full monitoring scan. |
-| Proposed | `component prepare --profile <P>`; `service prepare <service> --profile <P>` | Operator form allocates automatically and returns release handle/version; sign/upload consume that returned handle. Existing explicit-version component form stays engineering-only. |
+| Implemented CLI; service live proof pending | `component prepare --profile <P>`; `service prepare <team> --profile <P>` | Operator form allocates automatically and returns release handle/version; sign/upload consume that returned handle. Existing explicit-version component form stays engineering-only. |
 | Proposed | `demo retire` | Shared full Finish/New-cycle cleanup; composes Cloud, backend and local primitives. Not an alias for local-only environment retire. |
 | Proposed; later phase | `unit logs list/request/show/download` with explicit Unit/node/time/request selectors | Cloud-only asynchronous logs. Separate the mutation verb from reads. No implicit request when opening Logs. |
-| Proposed | `service list/inspect/prepare/sign/upload <service>`, `service assign <service> --target test`, `service status/logs …` | Distinct service/profile/release identities; publication uses the bound team SP, assignment uses OEM. Assignment has no unsupported version argument. |
+| Implemented CLI; live proof pending | `service list/status/inspect`, `service prepare <team> --profile <P>`, `service sign/upload/cloud-status <handle>` | Distinct catalog UUID, functional profile and prepared-release handle; recorded SP binding. One upload, explicit observation, no hidden assignment/approval. |
+| Proposed | `service assign <service> --target test`, `service logs …` | Assignment uses OEM and service IDs, with no unsupported version argument. Logs remain a separate explicit operation. |
 | Proposed | `backend start/stop/status <team>`, `backend records <team> --target test` | Own backend lifecycle, persistent context and functional observations, shared by CLI and UI. Product-data cleanup requires an explicit scoped operation under M08, not a side effect of a read. |
 | Existing; retain | `simulation start/stop`, `vehicle select test`, `vehicle connectivity off/on/status --target test`, workspace/native layout operations | Preserve accepted native behavior. Driving modes stay in the existing native control path; no Cloud driving API is introduced. |
 

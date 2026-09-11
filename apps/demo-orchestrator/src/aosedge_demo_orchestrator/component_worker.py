@@ -51,6 +51,17 @@ def execute(request):
         if len(config.upload_meta_config.items) != 1 or config.upload_meta_config.items[0].identity.type != "service":
             raise EnvironmentError("SERVICE_PACKAGE_TYPE_INVALID")
         return dict(state="VALIDATED_SERVICE_CONFIG")
+    if request["action"] in ("service-sign", "service-verify", "service-upload", "service-cloud-status"):
+        if request["action"] in ("service-upload", "service-cloud-status"):
+            from aosedge_demo_orchestrator.service_publication import execute as publish
+            from aosedge_demo_orchestrator.unit_cloud import CloudFailure
+            try:
+                return publish(request)
+            except CloudFailure as error:
+                raise EnvironmentError(str(error)) from None
+        if request["action"] == "service-verify":
+            return verify_service(request)
+        return sign_service(request)
     credential = Path(request["credential"])
     if credential.is_symlink() or credential.stat().st_mode & 0o077:
         raise EnvironmentError("OEM_CREDENTIAL_UNSAFE")
@@ -88,6 +99,61 @@ def execute(request):
         except CloudFailure as error:
             raise EnvironmentError(str(error)) from None
     raise EnvironmentError("COMPONENT_WORKER_ACTION_INVALID")
+
+
+def verify_service(request):
+    from aosedge_demo_orchestrator.service_packages import read_package
+    credential = Path(request["credential"])
+    if credential.is_symlink() or not credential.is_file() or credential.stat().st_mode & 0o077:
+        raise EnvironmentError("SERVICE_SP_CREDENTIAL_UNSAFE")
+    bundle = Path(request["bundle"])
+    if bundle.is_symlink() or not bundle.is_file():
+        raise EnvironmentError("SERVICE_SIGNED_PATH_UNSAFE")
+    _, files = read_package(Path(request["directory"]), request["team"], request["version"])
+    result = verify(bundle, credential, request.get("expectedSha256"))
+    outer = archive_files(bundle.read_bytes())
+    if archive_files(outer["batch.tar.gz"]) != files:
+        raise EnvironmentError("SERVICE_SIGNED_PAYLOAD_CHANGED")
+    return dict(result, payloadMatchesPrepared=True, verificationTrust="CONFIGURED_SP_SIGNING_CERTIFICATE")
+
+
+def sign_service(request):
+    from aosedge_demo_orchestrator.service_packages import read_package
+    from aosedge_demo_orchestrator.unit_cloud import Cloud, CloudFailure
+    from aos_signer.upload_config_v2.batch_configuration import UpdateBundleConfiguration
+    from aos_signer.signer.signer import Signer
+    credential = Path(request["credential"])
+    if credential.is_symlink() or not credential.is_file() or credential.stat().st_mode & 0o077:
+        raise EnvironmentError("SERVICE_SP_CREDENTIAL_UNSAFE")
+    # Confirm the configured signing account once; the prepared SP must not
+    # silently change with a different certificate at the same local path.
+    try:
+        Cloud(request, expected_role="service provider")
+    except CloudFailure as error:
+        raise EnvironmentError(str(error)) from None
+    directory, output = Path(request["directory"]), Path(request["bundle"])
+    if output.exists() or output.is_symlink():
+        raise EnvironmentError("SERVICE_SIGN_OUTPUT_EXISTS")
+    _, files = read_package(directory, request["team"], request["version"])
+    with tempfile.TemporaryDirectory(prefix=".sign-", dir=directory) as temporary:
+        stage = Path(temporary)
+        for name, raw in files.items():
+            target = stage / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(raw)
+            target.chmod((directory / name).stat().st_mode & 0o777)
+        for parent, _, _ in os.walk(stage / "service"):
+            Path(parent).chmod(0o755)
+        old_cwd = Path.cwd()
+        try:
+            os.chdir(stage)
+            path = stage / "config.yaml"
+            Signer(UpdateBundleConfiguration(path), path, pkcs12_path=request["credential"]).process()
+        finally:
+            os.chdir(old_cwd)
+        result = verify_service(dict(request, bundle=str(stage / "batch.tar.gz")))
+        os.link(stage / "batch.tar.gz", output)
+    return result
 
 
 def main():

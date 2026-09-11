@@ -15,8 +15,16 @@ both package and publication metadata. The result returns a release handle and
 an unsigned package path. No VM, signing, upload or assignment is performed.
 `--profile` is functional content (`v1`, `v2`, `v3`); `--cloud-profile` optionally
 chooses the configured SP. Missing build output gives the explicit build command.
-Tire real product builds and sign/upload/resource activation remain pending.
+Tire real product builds and runtime-resource activation remain pending.
 See the [current package contract](../../docs/architecture/demo-control.md#native-service-package-preparation).
+
+Use the exact returned handle with `democtl service sign <handle>`,
+`democtl service upload <handle>` and `democtl service cloud-status <handle>`.
+Sign reuses a verified existing bundle; upload performs one SP Deployment
+Bundle request and returns acceptance immediately. Repeat after an attempted
+upload only observes Cloud. Ready does not mean installed/running. These
+commands allocate no additional version, perform no assignment or approval,
+and do not query the guest. See the [publication and failure contract](../../docs/architecture/demo-control.md#native-service-publication).
 
 ### Cloud-only Test observations
 

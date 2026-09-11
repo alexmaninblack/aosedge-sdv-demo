@@ -387,3 +387,45 @@ loader/glibc boundary, mounted inputs, native identity/KAC/TLS/permissions,
 backend ingestion and retained assignment recovery. No actual product package
 was prepared, signed or published during this source increment; no Cloud,
 VM, backend, SM, Factory or Production state was changed.
+
+## N4 signing/publication source increment
+
+The next increment implements `service sign <handle>`, `service upload <handle>`
+and `service cloud-status <handle>` behind the common application boundary.
+Prepared metadata binds team, SP and release; these commands cannot change
+those selectors, allocate another release, build or assign a service.
+
+The official signer signs an isolated exact copy. RS256 verification and
+byte-for-byte signed/prepared payload comparison precede the output receipt.
+Repeat and interrupted-receipt recovery verify the existing signed output
+instead of resigning. Package path/content/mode and native-version invariants
+are checked at signing/publication, not repeated during Cloud-only status.
+
+The shared fixed multipart upload route is unchanged for FOTA. SOTA uses the
+bound SP and one session containing preflight plus one POST. A prepared
+release must be unused/newer; assignments to any Unit other than the current
+owned Test block. Empty assignments permit publication before a vehicle
+exists. No OEM permissions, Unit Set/Subject mutation, approve/send, runtime
+restart or fixed delay is introduced.
+
+`201` is recorded as ACCEPTED immediately. Explicit status requires the exact
+recorded bundle ID, correct service/codename/version and ready catalog entry
+before READY. Missing/processing/error/unknown remain distinct. A lost upload
+response remains UNCERTAIN; no speculative bundle adoption or repeat POST.
+An explicit preflight failure is distinguishable from an attempted upload.
+The existing artifact directory retains the intent and sanitized receipt;
+no token, certificate content or new Unit authority is stored there.
+
+Evidence: 55 focused service tests (including real official signing with an
+ephemeral self-signed fixture key), 24 existing FOTA-publication tests,
+eight existing component-package tests, six CLI tests and four continuity
+tests passed. The public v11 OpenAPI was read to verify the upload response,
+bundle-list fields and service-version fields. Native account authentication
+is stubbed only in the offline signature test; no real Cloud key or endpoint
+was used by these tests. HTTP transport tests use an in-memory opener.
+
+No live product was built, signed, uploaded, assigned or started. The current
+VM/SM override, Factory, Production and backend data remain unchanged. Actual
+Tire building, native public-input projection/activation, N5 boot restoration
+and N6 backend/service integration remain pending. This is a local source
+checkpoint, not an E2E or UI-completion claim.

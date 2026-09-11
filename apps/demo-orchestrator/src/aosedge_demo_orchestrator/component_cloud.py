@@ -50,6 +50,12 @@ def upload(cloud, request):
     cloud.require("deployment_bundles_create")
     path = Path(request["bundle"])
     verify(path, Path(request["credential"]), request["expectedSha256"])
+    return upload_bundle(cloud, path)
+
+
+def upload_bundle(cloud, path, prefix="COMPONENT"):
+    """Shared fixed multipart transport; caller proves authority and bytes."""
+    cloud.require("deployment_bundles_create")
     boundary = "democtl-" + uuid4().hex
     raw = path.read_bytes()
     # Exactly the official uploader endpoint and multipart field, with a
@@ -61,13 +67,13 @@ def upload(cloud, request):
     try:
         with cloud.opener.open(req, timeout=45) as response:
             if response.status != 201:
-                raise CloudFailure("COMPONENT_UPLOAD_RESPONSE_UNCERTAIN")
+                raise CloudFailure(prefix + "_UPLOAD_RESPONSE_UNCERTAIN")
             raw = response.read(1048577)
             if len(raw) > 1048576:
-                raise CloudFailure("COMPONENT_UPLOAD_RESPONSE_UNCERTAIN")
+                raise CloudFailure(prefix + "_UPLOAD_RESPONSE_UNCERTAIN")
             result = json.loads(raw)
     except urllib.error.HTTPError as error:
-        raise CloudFailure("COMPONENT_UPLOAD_HTTP_" + str(error.code)) from None
+        raise CloudFailure(prefix + "_UPLOAD_HTTP_" + str(error.code)) from None
     from .cloud_observation import pick
     public = pick(result, ("state", "build_info"))
     return dict(deploymentId=object_id(result["id"]), state=public["state"],
