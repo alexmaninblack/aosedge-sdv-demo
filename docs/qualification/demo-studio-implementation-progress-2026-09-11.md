@@ -158,3 +158,26 @@ is deferred until the required complete successor passes.
 Next: close the exact P5 native ownership and artifact-identity gates, complete
 SOTA tooling and one real Brake chain, then the dependent advisory/Tire work.
 Do not claim a morning-ready complete demo from these source checkpoints.
+
+## Final source checkpoint and live UI read
+
+Solution implementation commit `648082b88b58ed5df9b5a0a12f6d9aacf2cde485`
+was pushed to `codex/demo-studio-implementation`. It includes source, English
+documentation, tests and approved design assets, not compiled artifacts or
+runtime/credential data. The documentation and confidential-input gates passed.
+The pre-implementation return point remains unchanged.
+
+The UI-only restart exposed the documented relative terminal invocation
+`.venv/bin/democtl ui serve`. The stop guard now verifies the process's exact
+canonical working directory before accepting this relative form. Four focused
+tests cover it, a foreign directory/user, a busy session and the absolute form;
+the nine-test stop/Cloud-reader suite passed. No broad process matching or
+port-only signal was introduced.
+
+The updated server started and `workspace restore` placed the owned windows;
+VM, Cloud, CARLA and driving state were not restarted. The live page then
+reported Test Online, VDP18 installed, three named components and empty service
+inventory. At **01:34:58 UTC** its Cloud-only monitor returned a CPU sample of
+**684 DMIPS** dated **01:34:18 UTC**. Memory/traffic retained their raw values
+with units explicitly unverified; disk remained Not reported. A functioning
+resource read is demonstrated, not complete metric-unit or product readiness.
