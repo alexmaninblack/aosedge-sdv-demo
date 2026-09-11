@@ -1,10 +1,88 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# AosCore service replacement: SM patch and remaining CM blocker
+# AosCore service replacement: SM/CM patches and live update proof
 
-Date: 11 September 2026. Status: **native regressions passed; live 3.0.0 to
-4.0.0 transition not qualified; upstream publication withheld**.
+Date: 11 September 2026. Status: **native regressions and Test service
+replacement passed in explicit no-telemetry mode**. Full authenticated
+KUKSA, analytics and advisory qualification remains open.
+
+## Latest result — 21:16 UTC
+
+The user authorized continuation without parking, the additional CM patch,
+and the service update scenarios. The original SM-only checkpoint below is
+historical. At 21:08 UTC `democtl component cm-apply test` applied the qualified
+CM executable with exactly one CM restart. SM PID 181284 and durable VDP18
+records were preserved; CM PID became 183405. No VM restart, reset,
+reprovisioning, native database deletion, assignment change or Production
+mutation was required.
+
+CM now retains unexpected old-version statuses in the observed node snapshot
+for reconciliation, without attributing them to the desired version. Cross-node
+snapshots are rejected before mutation; genuine known-instance/storage errors
+still propagate. The existing native resend path issues stop-old/start-desired.
+The patch does not introduce another scheduler or Cloud authority.
+
+| Gate | Observed result |
+| --- | --- |
+| Targeted CM ARM64 compile | Passed; no package/image build |
+| Native CM tests | 4 passed: existing service update/resend, old Active and Failed version reconciliation; cross-node and storage-error negatives included |
+| Demo Control runtime tests | 25 passed, including one-CM-restart, no blind retry, repeat no-op and wrong-target/binary rejection |
+| Both services 3.0.0 → 4.0.0 | Native stop-old/start-4 and Active observed; Cloud installed 4 with Active instance and no pending version |
+| Brake 4.0.0/v1 → 5.0.0/v2 | Cloud installed 5, Active; Tire remained Active 4 |
+| Brake 5.0.0/v2 → 6.0.0/v3 | Cloud installed 6, Active; Tire remained Active 4 |
+| Tire 4.0.0 → 5.0.0 (v1 content) | Cloud installed 5, Active; Brake remained Active 6 |
+| Final guest observation | Both native bootstrap processes alive; new six-argument command/1024-file-limit package configuration |
+
+All successor operations used `democtl service build/prepare/sign/upload`.
+Version allocation remained automatic. There was no second Deploy, Subject
+reassignment, batch approval or manager restart between service releases.
+The same two per-service Group Subjects and current Test Unit were retained.
+No Tire v2/v3 profile is claimed: Tire's accepted product export is v1 only.
+The v2/v3 Brake binaries were packaged, but no-telemetry mode does not execute
+the analytic child, so this proves replacement, not those algorithms.
+
+CM shared-library source checkpoint: `0b82a6bf` on top of SM `4b8d38ee`.
+Platform CM recipe checkpoint: `1c901cf75fb834b5c93224d846660b91137dd126`.
+It preserves the existing serialized SM-stream-write backport and adds the
+CM reconciliation patch against pinned library/API sources. A fixture-only
+access correction reused the compiled manager after exact production-source
+comparison; the final native tests were rebuilt and passed.
+
+CM artifact outside Git:
+`demo-artifacts/aosedge-sdv-demo/runtime-proofs/cm-service-update-reconcile/`.
+Executable SHA-256:
+`1ee6ad0a821de89c40b4b108b25b89b8afe338fdced9b0cd6a678df0b9f93936`.
+The binary and test manifest are deliberately retained; Builder stopped after
+qualification. Runtime proof files are `/run/democtl-cm-service-update/aos_cm_app`
+and `/run/systemd/system/aos-cm.service.d/93-democtl-service-reconcile.conf`.
+They are transient and are not part of immutable Factory .31. SM proof paths
+below remain active. No new factory image or reboot qualification is claimed.
+
+Successor Deployment Bundles:
+
+- Brake 5.0.0: `42ca2e46-78e9-4b99-875c-482a57130b5a`.
+- Brake 6.0.0: `1945ce25-74ce-4b4b-b0d8-55f22debf9f4`.
+- Tire 5.0.0: `c79222cf-64e7-48a6-9001-94e55956f22b`.
+
+The user's next authorized increment is explicitly mocked data generated
+inside services, sent to real team backends. That is a separate backend
+integration proof and must not masquerade as KUKSA telemetry or close native
+authentication, vehicle analytics or advisory acceptance.
+
+Final manager/security observation: SM PID 181284 and CM PID 183405 remained
+active/success with `NRestarts=0`. SELinux remained Enforcing. The complete
+kernel audit window since SM start contained zero denied events (232 entries
+scanned); no policy was relaxed. No demo/runtime cleanup was requested or done.
+
+Upstream review is a separate remaining step: a fresh read of official main
+found 9.1.2 with substantial container, launcher and network reconciliation
+changes since the tested 9.1.0 pins, including related absent-process handling.
+Do not submit this baseline-specific patch as if reproduced against current
+main, or silently upgrade the working Test. First compare the remaining delta
+against current upstream. No upstream PR or push was performed at this gate.
+
+## Historical SM-only checkpoint
 
 ## Authorized scope
 
@@ -126,7 +204,7 @@ delivery problem:
 Thus the SM replacement patch has passed its native tests but has not yet
 received a live 3-to-4 request with which to qualify the end-to-end fix.
 
-## Next boundary, not implemented
+## Historical next boundary at the SM-only checkpoint
 
 A bounded CM fix should treat an unexpected version in a valid full node
 snapshot as reconciliation input, not a fatal status-ingestion error. Keep

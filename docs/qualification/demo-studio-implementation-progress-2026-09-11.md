@@ -11,11 +11,14 @@ native left-hand composition, Production scope or service trust model.
 
 ## Explicit no-telemetry lifecycle experiment — 4.0.0
 
-Latest follow-up: the subsequently authorized SM patch passed 74 native tests
-and was applied once to Test at approximately 16:11 UTC. Live transition still
-fails because CM rejects the old-version startup snapshot before scheduling
-resend. See the [patch and reconciliation evidence](aoscore-service-update-teardown-2026-09-11.md).
-Earlier observations below remain historical; no upstream PR is qualified.
+Latest follow-up, 21:16 UTC: the authorized SM/CM fixes passed 78 native tests
+and 25 Demo Control tests. Both services recovered to Active 4.0.0. Subsequent
+normal publications reached Brake Active 5/v2 then 6/v3, and Tire Active 5/v1,
+without reassignment or manager restarts between updates. See the
+[patch and reconciliation evidence](aoscore-service-update-teardown-2026-09-11.md).
+Earlier failures below are historical. This is explicit no-telemetry lifecycle
+qualification, not KUKSA, analytics or advisory proof. The next authorized
+increment is mocked service data delivered to real team backends.
 
 <a id="no-telemetry-lifecycle-400"></a>
 

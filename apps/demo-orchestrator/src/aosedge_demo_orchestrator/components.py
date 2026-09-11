@@ -289,6 +289,9 @@ class ComponentService:
     def sm_status(self, target):
         return self.status(target, action="component-sm-status")
 
+    def cm_status(self, target):
+        return self.status(target, action="component-cm-status")
+
     def schema_apply(self, target):
         return self._schema_change(target, "apply")
 

@@ -65,7 +65,23 @@ resend (`instancemanager.cpp:198`). This explicitly bounded SM exception does
 not expand the unchanged-runtime architecture or authorize a Factory rebuild.
 A further CM patch/restart is proposed, not implemented. Upstream review is
 withheld pending successful live verification. See the
-[current patch checkpoint](../../qualification/aoscore-service-update-teardown-2026-09-11.md).
+[patch checkpoint](../../qualification/aoscore-service-update-teardown-2026-09-11.md).
+
+Latest authorized continuation, 21:16 UTC: the CM reconciliation fix passed
+four native tests and was applied once without restarting SM or the VM.
+Both services recovered to Active 4.0.0. Normal subsequent publications then
+reached Brake 5/v2 and 6/v3, and Tire 5/v1, with unchanged per-service Subjects
+and no additional manager restart. Together with the SM proof, 78 native and
+25 Demo Control tests passed. These results close the bounded no-telemetry
+service-update blocker, not full N6/P6/P7. Earlier failure checkpoints above
+are retained as history.
+
+The user next authorizes explicit mocked data inside services to verify real
+backend delivery and backend behavior while Cloud's permissions defect remains.
+Keep the synthetic source conspicuous and isolated from live telemetry and
+normal product state. Use existing Demo Control build/package/sign/upload and
+backend operations, no separate helper workflow. Do not introduce a KUKSA
+authentication fallback or count synthetic results as vehicle functionality.
 
 | Step | Change and owner | Gate / evidence | State |
 | --- | --- | --- | --- |
@@ -74,7 +90,7 @@ withheld pending successful live verification. See the
 | N3 | Solution contracts, both producers/backends: package version and native identity; explicit new message schemas without required service/model OCI digest | Producer-consumer fixtures; legacy queues/history retained; no fabricated digest; model/VDP hashes unchanged | Consumer and producer/input source increments passed; live integration remains N6 |
 | N4 | Demo Control: package the allocated version once; project public inputs; native configuration activation through existing commands | Package/publication equality; no manifest lookup dependency; stable-directory refresh after VDP commit | ARM64 exports, signing, warm projection and transient activation passed; permission-free 3.0.0 bundles READY and guest-installed. Normal permission-bearing publication and functional runtime remain unqualified |
 | N5 | Existing startup integration: restore public /run inputs before SM launches retained assignments | Exact hook/order documented and tested; no new daemon, persisted token or metadata authority | Cold/warm split accepted; pre-SM preparation and post-SM process verification passed with unchanged SM binary; persistent-image integration and retained-assignment VM reboot not qualified |
-| N6 | Bounded current Test SOTA and backend integration through democtl | Real Cloud Running/version, KAC/TLS/subscriptions, renew/expiry, actual product records, retained state and scoped access proof | SM teardown patch passed native tests and was applied; CM rejects old-version startup status before resend. Both 4.0.0 images remain installed but unlaunched. KUKSA intentionally unauthorized in this lifecycle experiment |
+| N6 | Bounded current Test SOTA and backend integration through democtl | Real Cloud Running/version, KAC/TLS/subscriptions, renew/expiry, actual product records, retained state and scoped access proof | SM/CM fixes and no-telemetry replacement passed: Brake Active 6/v3 and Tire Active 5/v1. Mocked-data/real-backend increment authorized next. Native KUKSA and functional/advisory proof remain open |
 | N7 | Checkpoint source/docs and record exclusions | Commit only tested source; no build artifacts; retain current VM/Factory/Production | N2/N3 local checkpoints created; full-migration checkpoint remains pending |
 
 Source increments may be developed independently, but **no new producer is

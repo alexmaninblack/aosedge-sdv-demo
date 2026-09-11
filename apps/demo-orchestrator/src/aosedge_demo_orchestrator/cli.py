@@ -119,13 +119,15 @@ def build_parser() -> argparse.ArgumentParser:
     component = commands.add_parser("component", help="operate on VDP bundles in the artifact catalog")
     component_commands = component.add_subparsers(dest="action", required=True)
     component_commands.add_parser("list", help="list retained VDP artifact versions")
-    for action in ("sm-builder-start", "sm-builder-stop", "sm-build", "sm-test", "sm-apply"):
+    for action in ("sm-builder-start", "sm-builder-stop", "sm-build", "sm-test", "sm-apply", "cm-build", "cm-test", "cm-apply"):
         command = component_commands.add_parser(action, help="bounded Test SM qualification: dedicated existing Builder, port 10024")
         command.add_argument("target", choices=("test",))
     component_status = component_commands.add_parser("status", help="read active slot and provider-reported telemetry readiness")
     component_status.add_argument("target", choices=("test", "production"))
     sm_status = component_commands.add_parser("sm-status", help="read effective SM binary and Safe Stop freshness profile")
     sm_status.add_argument("target", choices=("test",))
+    cm_status = component_commands.add_parser("cm-status", help="read effective Test CM binary and restart count")
+    cm_status.add_argument("target", choices=("test",))
     component_logs = component_commands.add_parser("logs", help="read bounded, redacted SM/CM/provider events")
     component_logs.add_argument("target", choices=("test", "production"))
     component_diagnose = component_commands.add_parser("diagnose", help="compare installed KUKSA schema against the fixed 23-path contract; read-only")

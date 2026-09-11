@@ -16,7 +16,7 @@ from aosedge_demo_orchestrator.api import execute_operation
 from aosedge_demo_orchestrator.cli import build_parser, request_from_arguments
 from aosedge_demo_orchestrator.component_runtime import apply_test, build, builder, build_factory, FACTORY_VERSION, FACTORY_REVISION, SM_REVISION
 from aosedge_demo_orchestrator.environment import EnvironmentError
-from aosedge_demo_orchestrator.source_guest import execute, process_wait_observation, container_runtime_observation, sm_saved_test_release, sm_recover_test, sm_apply_service_update
+from aosedge_demo_orchestrator.source_guest import execute, process_wait_observation, container_runtime_observation, sm_saved_test_release, sm_recover_test, sm_apply_service_update, cm_apply_service_update
 
 
 class RuntimeProofBoundaryTests(unittest.TestCase):
@@ -96,7 +96,7 @@ class RuntimeProofBoundaryTests(unittest.TestCase):
             execute_operation(dict(domain="image", action="build", image="6.1.1-maninblack.29"), app)
 
     def test_cli_and_api_share_test_only_operations(self):
-        for action in ("sm-builder-start", "sm-builder-stop", "sm-build", "sm-test", "sm-apply", "sm-status"):
+        for action in ("sm-builder-start", "sm-builder-stop", "sm-build", "sm-test", "sm-apply", "sm-status", "cm-build", "cm-test", "cm-apply", "cm-status"):
             request = request_from_arguments(build_parser().parse_args(["component", action, "test"]))
             self.assertEqual("test", request.target.value)
             app = Mock()
@@ -122,6 +122,56 @@ class RuntimeProofBoundaryTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     execute(dict(action="component-sm-apply", proof=proof, target="test", vehicle={"localVmId": "another-vm"}))
             command.assert_not_called()
+
+
+class CMServiceUpdateApplyTests(unittest.TestCase):
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name)
+        self.raw = b"\x7fELF\x02" + b"\0" * 13 + b"\xb7\x00" + b"cm-fixture"
+        self.digest = hashlib.sha256(self.raw).hexdigest()
+        self.request = dict(action="component-cm-apply", proof="service-snapshot-reconciliation", target="test",
+            vehicle=dict(localVmId="d53d05cd-4c46-49c9-a896-534b23b88273", unitId="2a29c145-bbd1-4494-a0e5-d4b79e6a9db5"),
+            sha256=self.digest, binary=base64.b64encode(gzip.compress(self.raw)).decode())
+        self.before = dict(binarySha256="8432c0ca62b3b7bebf0e20f3ae3f82d412429be44fadcd00d914dbf1170f48bc",
+                           service=dict(ActiveState="active", MainPID="10"), mutation=False)
+        self.after = dict(self.before, binarySha256=self.digest)
+        self.sm = dict(binarySha256="3e244f438b6f2a8b9dcd08fb4f4be80b21771278e89a0cf6706d87cdec0b2b21",
+                       service=dict(ActiveState="active", MainPID="20"))
+        self.addCleanup(patch.stopall)
+        patch("aosedge_demo_orchestrator.source_guest.Path", side_effect=lambda p: self.root / str(p).lstrip("/")).start()
+        patch("aosedge_demo_orchestrator.source_guest.FACTORY_INPUTS", self.root / "factory/inputs").start()
+        (self.root / "run").mkdir()
+        self.observe = patch("aosedge_demo_orchestrator.source_guest.execute", side_effect=[self.before, self.sm, self.after, self.sm]).start()
+        patch("aosedge_demo_orchestrator.source_guest.sm_saved_test_release", return_value={"version": "18.0.0"}).start()
+        self.commands = patch("aosedge_demo_orchestrator.source_guest.command").start()
+        self.process = patch("aosedge_demo_orchestrator.source_guest.subprocess.run").start()
+
+    def test_cm_apply_restarts_only_cm_once_and_preserves_sm(self):
+        result = cm_apply_service_update(self.request)
+        self.assertTrue(result["smPidPreserved"])
+        self.process.assert_called_once()
+        self.assertEqual(["systemctl", "restart", "aos-cm"], self.process.call_args.args[0])
+
+    def test_cm_timeout_has_no_automatic_retry(self):
+        self.process.side_effect = subprocess.TimeoutExpired("systemctl", 25)
+        with self.assertRaises(subprocess.TimeoutExpired):
+            cm_apply_service_update(self.request)
+        self.process.assert_called_once()
+
+    def test_cm_repeat_is_noop(self):
+        self.observe.side_effect = [self.after]
+        self.assertTrue(cm_apply_service_update(self.request)["noOp"])
+        self.process.assert_not_called()
+
+    def test_cm_wrong_sm_or_target_never_restarts(self):
+        self.observe.side_effect = [self.before, dict(self.sm, binarySha256="unexpected")]
+        with self.assertRaisesRegex(ValueError, "REQUIRES_QUALIFIED_SM"):
+            cm_apply_service_update(self.request)
+        with self.assertRaisesRegex(ValueError, "AUTHORIZED_TEST"):
+            cm_apply_service_update(dict(self.request, target="production"))
+        self.process.assert_not_called()
 
 
 class ServiceUpdateApplyTests(unittest.TestCase):

@@ -820,7 +820,62 @@ def sm_apply_service_update(request):
                 previousBinarySha256=previous, durableRecordsPreserved=True, **dict(result, mutation=True))
 
 
+def cm_apply_service_update(request):
+    """One Test CM restart; preserve SM, VDP and all native/cloud assignments."""
+    if (request.get("target") != "test" or request.get("proof") != "service-snapshot-reconciliation"
+            or request["vehicle"].get("localVmId") != "d53d05cd-4c46-49c9-a896-534b23b88273"
+            or request["vehicle"].get("unitId") != "2a29c145-bbd1-4494-a0e5-d4b79e6a9db5"):
+        raise ValueError("CM_PROOF_REQUIRES_AUTHORIZED_TEST_31")
+    previous = "8432c0ca62b3b7bebf0e20f3ae3f82d412429be44fadcd00d914dbf1170f48bc"
+    observation = execute(dict(request, action="component-cm-status"))
+    if observation["binarySha256"] == request["sha256"] and observation["service"]["ActiveState"] == "active":
+        return dict(state="APPLIED", noOp=True, **observation)
+    if observation["binarySha256"] != previous or observation["service"]["ActiveState"] != "active":
+        raise ValueError("CM_SERVICE_UPDATE_BASE_MISMATCH")
+    sm = execute(dict(request, action="component-sm-status"))
+    if sm["binarySha256"] != "3e244f438b6f2a8b9dcd08fb4f4be80b21771278e89a0cf6706d87cdec0b2b21":
+        raise ValueError("CM_PROOF_REQUIRES_QUALIFIED_SM_PATCH")
+    saved = sm_saved_test_release(FACTORY_INPUTS.parent, committed=True)
+    with gzip.GzipFile(fileobj=io.BytesIO(base64.b64decode(request["binary"], validate=True))) as payload:
+        raw = payload.read(256 * 1024 * 1024 + 1)
+    if (len(raw) > 256 * 1024 * 1024 or hashlib.sha256(raw).hexdigest() != request["sha256"]
+            or raw[:5] != b"\x7fELF\x02" or raw[18:20] != b"\xb7\x00"):
+        raise ValueError("CM_ARM64_BINARY_SHA_MISMATCH")
+    root = Path("/run/democtl-cm-service-update")
+    dropin = Path("/run/systemd/system/aos-cm.service.d/93-democtl-service-reconcile.conf")
+    if root.exists() or root.is_symlink() or dropin.exists() or dropin.is_symlink():
+        raise ValueError("CM_TRANSIENT_STATE_REQUIRES_RECONCILIATION")
+    root.mkdir(mode=0o700)
+    binary = root / "aos_cm_app"
+    binary.write_bytes(raw)
+    binary.chmod(0o755)
+    command(["chcon", "--reference=/usr/bin/aos_cm_app", str(binary)], check=True)
+    dropin.parent.mkdir(parents=True, exist_ok=True)
+    dropin.write_text("[Service]\nBindReadOnlyPaths=" + str(binary) + ":/usr/bin/aos_cm_app\n")
+    command(["systemctl", "daemon-reload"], check=True)
+    print("Test CM: one restart with snapshot reconciliation fix; SM and native databases preserved", file=sys.stderr, flush=True)
+    subprocess.run(["systemctl", "restart", "aos-cm"], capture_output=True, text=True, timeout=25, check=True)
+    result = execute(dict(request, action="component-cm-status"))
+    sm_after = execute(dict(request, action="component-sm-status"))
+    if (result["binarySha256"] != request["sha256"] or result["service"]["ActiveState"] != "active"
+            or sm_after["service"]["MainPID"] != sm["service"]["MainPID"]
+            or sm_saved_test_release(FACTORY_INPUTS.parent, committed=True) != saved):
+        raise ValueError("CM_TRANSIENT_ACTIVATION_UNCONFIRMED")
+    return dict(state="APPLIED", noOp=False, previousBinarySha256=previous,
+                smPidPreserved=True, durableRecordsPreserved=True, **dict(result, mutation=True))
+
+
 def execute(request):
+    if request["action"] == "component-cm-apply":
+        return cm_apply_service_update(request)
+    if request["action"] == "component-cm-status":
+        props = command(["systemctl", "show", "aos-cm", "--property=MainPID,ActiveState,Result,NRestarts,FragmentPath"]).stdout
+        service = dict(line.split("=", 1) for line in props.splitlines() if "=" in line)
+        pid = service.get("MainPID", "0")
+        binary = Path("/proc") / pid / "exe"
+        digest = hashlib.sha256(binary.read_bytes()).hexdigest() if pid.isdigit() and int(pid) > 0 else None
+        return dict(mutation=False, service=service, binarySha256=digest,
+                    executable=os.readlink(binary) if digest else None)
     if request["action"] == "component-sm-apply" and request.get("proof") == "service-update-teardown":
         return sm_apply_service_update(request)
     if request["action"] == "service-runtime-inspect":

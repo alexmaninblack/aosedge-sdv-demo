@@ -224,20 +224,21 @@ class DemoOrchestrator:
                 return OperationResult(operation, OperationState.BLOCKED, str(error))
             except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
                 return OperationResult(operation, OperationState.BLOCKED, "SOURCE_STATE_OR_RUNTIME_UNAVAILABLE")
-        if request.domain == "component" and request.action in ("sm-builder-start", "sm-builder-stop", "sm-build", "sm-test", "sm-apply"):
+        if request.domain == "component" and request.action in ("sm-builder-start", "sm-builder-stop", "sm-build", "sm-test", "sm-apply", "cm-build", "cm-test", "cm-apply"):
             from .component_runtime import builder, build, apply_test
             try:
                 target = request.target.value if request.target else None
-                data = (apply_test(self.environment_service, target) if request.action == "sm-apply" else
-                        build(target, compile_source=request.action == "sm-build") if request.action in ("sm-build", "sm-test") else builder(target, request.action.rsplit("-", 1)[1]))
+                manager = "cm" if request.action.startswith("cm-") else "sm"
+                data = (apply_test(self.environment_service, target, manager=manager) if request.action.endswith("-apply") else
+                        build(target, compile_source=request.action.endswith("-build"), manager=manager) if request.action in ("sm-build", "sm-test", "cm-build", "cm-test") else builder(target, request.action.rsplit("-", 1)[1]))
                 return OperationResult(operation, OperationState.COMPLETED,
-                    "Test-only transient SM profile; immutable image, Cloud and Production unchanged." if request.action == "sm-apply" else
+                    "Test-only transient AosCore runtime; immutable image, Cloud and Production unchanged." if request.action.endswith("-apply") else
                     "Dedicated Builder only; no demo VM or Cloud mutation.", data=data)
             except EnvironmentError as error:
                 return OperationResult(operation, OperationState.BLOCKED, str(error))
-        if request.domain == "component" and request.action in ("list", "inspect", "unpack", "prepare", "verify", "sign", "cloud-status", "upload", "approve", "unapprove", "send", "status", "logs", "diagnose", "schema-apply", "schema-remove", "sm-status"):
+        if request.domain == "component" and request.action in ("list", "inspect", "unpack", "prepare", "verify", "sign", "cloud-status", "upload", "approve", "unapprove", "send", "status", "logs", "diagnose", "schema-apply", "schema-remove", "sm-status", "cm-status"):
             from .components import ComponentService
-            guest_actions = ("status", "logs", "diagnose", "schema-apply", "schema-remove", "sm-status")
+            guest_actions = ("status", "logs", "diagnose", "schema-apply", "schema-remove", "sm-status", "cm-status")
             if ((request.target and request.action not in guest_actions) or request.current or request.image
                     or request.image_path or request.profile or (request.content_profile is not None and request.action != "prepare")):
                 return OperationResult(operation, OperationState.BLOCKED, "COMPONENT_USES_CATALOG_VERSION_ONLY")
@@ -259,7 +260,7 @@ class DemoOrchestrator:
                 "Explicit engineering batch approval; not part of verification-Test delivery." if request.action in ("approve", "unapprove") else
                 "Read-only component Cloud observation." if request.action == "cloud-status" else
                 "Temporary Test-only KUKSA schema; no Factory image, credential, Cloud or Production mutation." if request.action in ("schema-apply", "schema-remove") else
-                "Read-only guest component observation; no restart or update." if request.action in ("status", "logs", "diagnose", "sm-status") else
+                "Read-only guest component observation; no restart or update." if request.action in ("status", "logs", "diagnose", "sm-status", "cm-status") else
                 "Local component artifact operation; no Cloud or VM mutation.", data=data)
         if operation in ("simulation.start", "simulation.stop"):
             import subprocess

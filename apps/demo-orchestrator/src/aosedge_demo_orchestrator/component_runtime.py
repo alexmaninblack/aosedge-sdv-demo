@@ -28,6 +28,7 @@ from .environment import EnvironmentError
 
 SOURCE = Path.home() / "OpenAI/aos-vehicle-platform"
 SM_REVISION = "1243780d292eacf463f6a8c79075915565b51927"
+CM_REVISION = "1c901cf75fb834b5c93224d846660b91137dd126"
 SM_TEST_VM = "d53d05cd-4c46-49c9-a896-534b23b88273"
 SM_TEST_UNIT = "2a29c145-bbd1-4494-a0e5-d4b79e6a9db5"
 FACTORY_SOURCE = Path.home() / "OpenAI/aos-vehicle-platform"
@@ -65,18 +66,21 @@ def builder_ssh():
             "-o", "ConnectTimeout=5", "yocto@127.0.0.1"]
 
 
-def apply_test(environment, target):
+def apply_test(environment, target, manager="sm"):
     from .environment import JOURNAL, atomic_json
     from .status import read_json, now
     from .vm import VMService
     from .source import SourceDriver
-    if target != "test":
+    if target != "test" or manager not in ("sm", "cm"):
         raise EnvironmentError("SM_QUALIFICATION_TEST_ONLY")
-    manifest = read_json(ARTIFACT / "manifest.json")
-    raw = (ARTIFACT / "aos-sm").read_bytes()
-    if (not manifest.get("testsPassed") or manifest.get("profile") != "demo-5s"
-            or manifest.get("proof") != "service-update-teardown" or manifest.get("serviceUpdateRegressionSuites") != 3
-            or manifest.get("sourceRevision") != SM_REVISION
+    artifact = ARTIFACT if manager == "sm" else ARTIFACT.with_name("cm-service-update-reconcile")
+    manifest = read_json(artifact / "manifest.json")
+    raw = (artifact / ("aos-" + manager)).read_bytes()
+    if (not manifest.get("testsPassed")
+            or (manager == "sm" and (manifest.get("profile") != "demo-5s" or manifest.get("proof") != "service-update-teardown"
+                                    or manifest.get("serviceUpdateRegressionSuites") != 3))
+            or (manager == "cm" and manifest.get("proof") != "service-snapshot-reconciliation")
+            or manifest.get("sourceRevision") != (SM_REVISION if manager == "sm" else CM_REVISION)
             or hashlib.sha256(raw).hexdigest() != manifest["executableSha256"]
             or len(raw) > 256 * 1024 * 1024):
         raise EnvironmentError("SM_QUALIFIED_ARTIFACT_REQUIRED")
@@ -87,19 +91,19 @@ def apply_test(environment, target):
                 or state.get("factory", {}).get("sha256") !=
                 "a9019f4adfe70499bde339c8e9d95eb8568736b73dc218f6c0e390fbcd28ddf4"):
             raise EnvironmentError("SM_PROOF_REQUIRES_AUTHORIZED_TEST_31")
-        record = state.setdefault("smServiceUpdateProof", {})
+        record = state.setdefault("smServiceUpdateProof" if manager == "sm" else "cmServiceUpdateProof", {})
         record.update(state="ATTEMPT_STARTED", startedAt=now(), binarySha256=manifest["executableSha256"])
         atomic_json(environment.root / JOURNAL, state)
         driver = SourceDriver(VMService(environment))
         try:
             with driver.operation(timeout=60):
-                result = driver.guest(state, "test", "component-sm-apply", target="test",
-                    proof="service-update-teardown",
+                result = driver.guest(state, "test", "component-" + manager + "-apply", target="test",
+                    proof=manifest["proof"],
                     binary=base64.b64encode(gzip.compress(raw, compresslevel=1, mtime=0)).decode(),
                     sha256=manifest["executableSha256"])
                 # systemd clears service credentials on restart. Restore only
                 # the already selected Test's public trust/binding inputs.
-                if not result.get("persistentFactoryInputs") and not result.get("noOp") and state.get("currentVehicle") == "test":
+                if manager == "sm" and not result.get("persistentFactoryInputs") and not result.get("noOp") and state.get("currentVehicle") == "test":
                     driver.guest(state, "test", "configure",
                         generation=state["source"]["assignmentGeneration"],
                         ca=driver.assets()["ca"].read_text())
@@ -113,14 +117,17 @@ def apply_test(environment, target):
         return result
 
 
-def build(target, compile_source=True):
+def build(target, compile_source=True, manager="sm"):
     """Qualify the pinned Test service teardown fix, export SM and stop Builder."""
-    if target != "test":
+    if target != "test" or manager not in ("sm", "cm"):
         raise EnvironmentError("SM_QUALIFICATION_TEST_ONLY")
-    if ARTIFACT.exists():
+    artifact = ARTIFACT if manager == "sm" else ARTIFACT.with_name("cm-service-update-reconcile")
+    recipe = "aos-servicemanager" if manager == "sm" else "aos-communicationmanager"
+    patch_root = SOURCE / "meta-aos-vehicle-platform/recipes-aos" / recipe / "files"
+    if artifact.exists():
         raise EnvironmentError("SM_PROOF_ARTIFACT_ALREADY_EXISTS")
-    expected = SM_REVISION
-    if shutil.disk_usage(ARTIFACT.parent).free < 60 * 1024**3:
+    expected = SM_REVISION if manager == "sm" else CM_REVISION
+    if shutil.disk_usage(artifact.parent).free < 60 * 1024**3:
         raise EnvironmentError("SM_HOST_FREE_SPACE_BELOW_60_GIB")
     ssh = builder_ssh()
     revision = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=SOURCE).decode().strip()
@@ -128,7 +135,7 @@ def build(target, compile_source=True):
         raise EnvironmentError("SM_PINNED_COMMITTED_SOURCE_REQUIRED")
     try:
         builder("test", "start")
-        print("Test SM: waiting for Builder SSH; 90-second boot budget", file=sys.stderr, flush=True)
+        print(f"Test {manager.upper()}: waiting for Builder SSH; 90-second boot budget", file=sys.stderr, flush=True)
         deadline = time.monotonic() + 90
         while True:
             try:
@@ -142,22 +149,36 @@ def build(target, compile_source=True):
             if time.monotonic() >= deadline:
                 raise EnvironmentError("SM_BUILDER_SSH_BOOT_TIMEOUT")
             time.sleep(1)
-        work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-servicemanager/git"
+        work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/" + recipe + "/git"
         if not compile_source:
             compile_log = subprocess.check_output(ssh + ["cat " + work + "/temp/log.do_compile"], timeout=20).decode()
             errors = [line for line in compile_log.splitlines() if "error:" in line or "fatal error:" in line]
             if errors:
                 print("\n".join(errors[:20]), file=sys.stderr, flush=True)
                 raise EnvironmentError("SM_COMPILE_INCOMPLETE")
+            if manager == "cm":
+                # Test-only correction: reuse the completed CM when the only
+                # changed production translation unit is byte-identical.
+                local_lib = SOURCE / "build/aos_core_lib_cpp"
+                runtime_file = "src/core/cm/launcher/instancemanager.cpp"
+                remote_lib = work + "/service-update-deps/aos_core_lib_cpp/"
+                compiled_source = subprocess.check_output(ssh + ["cat " + remote_lib + runtime_file], timeout=15)
+                if compiled_source != (local_lib / runtime_file).read_bytes():
+                    raise EnvironmentError("CM_PRODUCTION_SOURCE_CHANGED_REBUILD_REQUIRED")
+                test_file = "src/core/cm/launcher/tests/launcher.cpp"
+                refresh = "from pathlib import Path; import sys; Path(" + repr(remote_lib + test_file) + ").write_bytes(sys.stdin.buffer.read())"
+                subprocess.run(ssh + ["python3 -c " + shlex.quote(refresh)],
+                    input=(local_lib / test_file).read_bytes(), check=True, timeout=15)
         data = io.BytesIO()
         inputs = {}
         with tarfile.open(fileobj=data, mode="w") as archive:
-            for name in FILES:
+            for name in (FILES if manager == "sm" else ()):
                 path = SOURCE / RELATIVE / name
                 inputs[name] = hashlib.sha256(path.read_bytes()).hexdigest()
                 archive.add(path, arcname=RELATIVE + "/" + name, recursive=False)
-        for name in SM_PATCHES:
-            inputs[name] = hashlib.sha256((SOURCE / Path(RELATIVE).parent / name).read_bytes()).hexdigest()
+        for name in (SM_PATCHES if manager == "sm" else ("0001-serialize-sm-stream-writes.patch", "0002-reconcile-stale-instance-snapshot.patch")):
+            inputs[name] = hashlib.sha256((patch_root / name).read_bytes()).hexdigest()
+        inputs["recipe"] = hashlib.sha256((patch_root.parent / (recipe + "_git.bbappend")).read_bytes()).hexdigest()
         if compile_source:
             # Isolate proof sources; keep the immutable .31 source snapshot intact.
             identity = hashlib.sha256(json.dumps(inputs, sort_keys=True).encode()).hexdigest()[:40]
@@ -193,18 +214,18 @@ def build(target, compile_source=True):
                 "assert n == 1; p.write_text(s)") % (BUILDER_PROJECT + "/build-main/conf/bblayers.conf",
                     Path(proof_source).name + "/meta-aos-vehicle-platform")
             subprocess.run(ssh + ["python3 -c " + shlex.quote(layer_update)], check=True, timeout=15)
-            print("Test SM: offline recipe compile; no image build", file=sys.stderr, flush=True)
-            command = "cd " + BUILDER_PROJECT + "; . poky/oe-init-build-env build-main >/dev/null; bitbake -R " + proof_source + "/qualification/factory-31.conf -c compile aos-servicemanager"
+            print(f"Test {manager.upper()}: offline recipe compile; no image build", file=sys.stderr, flush=True)
+            command = "cd " + BUILDER_PROJECT + "; . poky/oe-init-build-env build-main >/dev/null; bitbake -R " + proof_source + "/qualification/factory-31.conf -c compile " + recipe
             compile_result = subprocess.run(ssh + ["bash -lc " + shlex.quote(command)],
                            timeout=1200, capture_output=True)
             compile_text = (compile_result.stdout + compile_result.stderr).decode()
-            ARTIFACT.with_suffix(".compile.log").write_text(compile_text)
+            artifact.with_suffix(".compile.log").write_text(compile_text)
             print("\n".join(line for line in compile_text.splitlines()
                 if "error:" in line or line.startswith(("ERROR:", "NOTE: Running task", "NOTE: Tasks Summary", "Summary:"))),
                 file=sys.stderr, flush=True)
             if compile_result.returncode:
                 raise EnvironmentError("SM_BUILD_OR_TEST_FAILED")
-        work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-servicemanager/git"
+        work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/" + recipe + "/git"
         test = work + "/build/src/sm/launcher/runtimes/systemd-slot-component/tests/aos_sm_runtimes_systemdslotcomponent_test"
         loader = work + "/recipe-sysroot/usr/lib/ld-linux-aarch64.so.1"
         libs = work + "/recipe-sysroot/lib:" + work + "/recipe-sysroot/usr/lib"
@@ -223,27 +244,28 @@ path_export = next(line for line in (work / 'temp/run.do_compile').read_text().s
 environment['PATH'] = shlex.split(path_export)[1].split('=', 1)[1]
 cache = dict((line.split(':', 1)[0], line.split('=', 1)[1]) for line in (work / 'build/CMakeCache.txt').read_text().splitlines() if ':' in line and '=' in line and not line.startswith(('#', '//')))
 subprocess.run([cache['CMAKE_COMMAND'], '-S', str(work / 'service-update-deps/aos_core_lib_cpp'), '-B', str(work / 'service-update-launcher-tests'), '-G', cache['CMAKE_GENERATOR'], '-DCMAKE_MAKE_PROGRAM=' + cache['CMAKE_MAKE_PROGRAM'], '-DWITH_TEST=ON', '-DWITH_MBEDTLS=OFF', '-DWITH_OPENSSL=OFF', '-DFETCHCONTENT_FULLY_DISCONNECTED=ON', '-DCMAKE_GTEST_DISCOVER_TESTS_DISCOVERY_MODE=PRE_TEST', '-DCMAKE_TOOLCHAIN_FILE=' + str(work / 'toolchain.cmake')], env=environment, check=True)
-subprocess.run([cache['CMAKE_COMMAND'], '--build', str(work / 'service-update-launcher-tests'), '--target', 'aos_core_sm_launcher_test', '--parallel', '10'], env=environment, check=True)
+subprocess.run([cache['CMAKE_COMMAND'], '--build', str(work / 'service-update-launcher-tests'), '--target', {'aos_core_' + manager + '_launcher_test'!r}, '--parallel', '10'], env=environment, check=True)
 """
-        print("Test SM: build only the shared-library launcher regression target", file=sys.stderr, flush=True)
+        print(f"Test {manager.upper()}: build only the shared-library launcher regression target", file=sys.stderr, flush=True)
         library_result = subprocess.run(ssh + ["python3 -c " + shlex.quote(library_test)],
                                         timeout=240, capture_output=True)
-        ARTIFACT.with_suffix(".library-test-build.log").write_bytes(library_result.stdout + library_result.stderr)
+        artifact.with_suffix(".library-test-build.log").write_bytes(library_result.stdout + library_result.stderr)
         if library_result.returncode:
             print((library_result.stdout + library_result.stderr).decode()[-10000:], file=sys.stderr, flush=True)
             raise EnvironmentError("SM_LIBRARY_TEST_BUILD_FAILED")
         candidates += subprocess.check_output(ssh + ["find " + work + "/service-update-launcher-tests -type f -name '*_test'"], timeout=20).decode().splitlines()
         native_results = []
-        for marker, selected in (
+        suites = (("/core/cm/launcher/tests/", "CMLauncherTest.ServiceUpdate:CMLauncherTest.ResendInstancesOnMismatchedNodeStatus:ServiceReconciliation/*"),) if manager == "cm" else (
             ("/core/sm/launcher/tests/", "LauncherTest.*:ServiceUpdate/*"),
             ("/sm/launcher/runtimes/container/tests/", "ContainerCleanupErrorTest.*:ContainerRunnerTest.*:ContainerRuntimeTest.StopInstance"),
             ("/sm/networkmanager/tests/", "BridgeNetworkTest.*:NamespaceCleanupTest.*"),
-        ):
+        )
+        for marker, selected in suites:
             matches = [candidate for candidate in candidates if marker in candidate
                        and (marker.startswith("/core/") or "/core/" not in candidate)]
             if len(matches) != 1:
                 raise EnvironmentError("SM_NATIVE_TEST_TARGET_UNRESOLVED:" + marker)
-            print("Test SM: native service regression " + selected, file=sys.stderr, flush=True)
+            print(f"Test {manager.upper()}: native service regression " + selected, file=sys.stderr, flush=True)
             native = subprocess.run(ssh + ["sudo -n " + loader + " --library-path " + libs + " " + matches[0]
                 + " --gtest_filter=" + shlex.quote(selected)], timeout=60, capture_output=True)
             print(native.stdout.decode(), file=sys.stderr, flush=True)
@@ -251,12 +273,32 @@ subprocess.run([cache['CMAKE_COMMAND'], '--build', str(work / 'service-update-la
             native_results.append(native.stdout + native.stderr)
             if native.returncode or b"[  PASSED  ]" not in native.stdout or b"[  SKIPPED ]" in native.stdout:
                 raise EnvironmentError("SM_SERVICE_REGRESSION_FAILED:" + marker)
-        print("Test SM: executing native timing, role, physical-gate and stop regressions", file=sys.stderr, flush=True)
+        if manager == "cm":
+            required = ("ServiceReconciliation/CMStaleSnapshotTest.OldVersionTriggersResendWithoutChangingDesiredVersion/0",
+                        "ServiceReconciliation/CMStaleSnapshotTest.OldVersionTriggersResendWithoutChangingDesiredVersion/1")
+            combined = b"\n".join(native_results)
+            if any(("[       OK ] " + name).encode() not in combined for name in required):
+                raise EnvironmentError("CM_REQUIRED_REGRESSIONS_NOT_EXECUTED")
+            binaries = subprocess.check_output(ssh + ["find " + work + "/build -type f -name aos_cm_app"], timeout=20).decode().splitlines()
+            if len(binaries) != 1:
+                raise EnvironmentError("CM_BINARY_IDENTITY_UNRESOLVED")
+            binary = subprocess.check_output(ssh + ["cat " + binaries[0]], timeout=30)
+            if binary[:5] != b"\x7fELF\x02" or binary[18:20] != b"\xb7\x00":
+                raise EnvironmentError("CM_BINARY_NOT_ARM64_ELF")
+            artifact.mkdir()
+            (artifact / "aos-cm").write_bytes(binary)
+            (artifact / "aos-cm").chmod(0o444)
+            (artifact / "tests.log").write_bytes(combined)
+            manifest = dict(sourceRevision=expected, sourceSha256=inputs, executableSha256=hashlib.sha256(binary).hexdigest(),
+                testsPassed=True, proof="service-snapshot-reconciliation", testFilter=suites[0][1], imageBuild=False, offline=True)
+            (artifact / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+            return dict(artifact=str(artifact), **manifest)
+        print(f"Test {manager.upper()}: executing native timing, role, physical-gate and stop regressions", file=sys.stderr, flush=True)
         result = subprocess.run(ssh + ["sudo -n " + loader + " --library-path " + libs + " " + test + " --gtest_filter=" + __import__("shlex").quote(test_filter)],
                                 timeout=30, capture_output=True)
         print(result.stdout.decode(), file=sys.stderr, flush=True)
         print(result.stderr.decode(), file=sys.stderr, flush=True)
-        ARTIFACT.with_suffix(".test.log").write_bytes(result.stdout + result.stderr)
+        artifact.with_suffix(".test.log").write_bytes(result.stdout + result.stderr)
         if result.returncode:
             raise EnvironmentError("SM_TARGETED_TEST_FAILED:" + str(result.returncode))
         required_tests = ("DemoFutureSkewIsBoundedAtAcquisitionAndTheGate",
@@ -278,17 +320,17 @@ subprocess.run([cache['CMAKE_COMMAND'], '--build', str(work / 'service-update-la
         binary = subprocess.check_output(ssh + ["cat " + binaries[0]], timeout=30)
         if binary[:5] != b"\x7fELF\x02" or binary[18:20] != b"\xb7\x00":
             raise EnvironmentError("SM_BINARY_NOT_ARM64_ELF")
-        ARTIFACT.mkdir(parents=True)
-        (ARTIFACT / "aos-sm").write_bytes(binary)
-        (ARTIFACT / "aos-sm").chmod(0o444)
-        (ARTIFACT / "tests.log").write_bytes(b"\n".join(native_results) + result.stdout)
+        artifact.mkdir(parents=True)
+        (artifact / "aos-sm").write_bytes(binary)
+        (artifact / "aos-sm").chmod(0o444)
+        (artifact / "tests.log").write_bytes(b"\n".join(native_results) + result.stdout)
         manifest = dict(baseRevision=FACTORY_REVISION, sourceRevision=expected, sourceSha256=inputs, executableSha256=hashlib.sha256(binary).hexdigest(),
                         profile="demo-5s", defaultMaximumSourceAgeMs=250, demoMaximumSourceAgeMs=5000,
                         demoMaximumFutureSkewMs=5000, demoReadTimeoutMs=1000, standardReadTimeoutMs=250,
                         offline=True, imageBuild=False, testsPassed=True, testFilter=test_filter,
                         serviceUpdateRegressionSuites=3, proof="service-update-teardown", guestApplied=False)
-        (ARTIFACT / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
-        return dict(artifact=str(ARTIFACT), **manifest)
+        (artifact / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+        return dict(artifact=str(artifact), **manifest)
     except subprocess.CalledProcessError:
         raise EnvironmentError("SM_BUILD_OR_TEST_FAILED") from None
     finally:
