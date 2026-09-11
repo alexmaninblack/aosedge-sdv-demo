@@ -350,6 +350,19 @@ class DeliveryTests(unittest.TestCase):
         self.assertNotIn("SECRET_FIXTURE", json.dumps(result))
         self.assertNotIn("{component:", json.dumps(result))
 
+    def test_bootstrap_fixed_auth_error_survives_projection_without_payload(self):
+        service = SimpleNamespace(returncode=0, stdout="Id=aos-sm.service\n")
+        event = dict(eventType="KUKSA_AUTH_CHANGED", currentState="NOT_READY",
+            reasonCode="KUKSA_AUTH_UNAVAILABLE", token="SECRET_FIXTURE")
+        journal = SimpleNamespace(returncode=0, stdout=json.dumps(dict(MESSAGE=json.dumps(event),
+            __REALTIME_TIMESTAMP="1", _SYSTEMD_UNIT="aos-sm.service", _EXE="/usr/bin/brake-health-bootstrap")))
+        empty = SimpleNamespace(returncode=0, stdout="")
+        with patch.object(source_guest, "command", side_effect=[service, journal, empty, empty, empty]):
+            result = source_guest.execute(dict(action="component-logs", vehicle=dict(localVmId="fixture")))
+        self.assertEqual("brake", result["entries"][0]["team"])
+        self.assertEqual("Service bootstrap error: KUKSA_AUTH_UNAVAILABLE", result["entries"][0]["message"])
+        self.assertNotIn("SECRET_FIXTURE", json.dumps(result))
+
     def test_unconfirmed_approval_does_not_report_completion(self):
         self.state["componentOperations"] = {"2.0.0": dict(deploymentId="bundle", sha256="digest")}
         self.save()

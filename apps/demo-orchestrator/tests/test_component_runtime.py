@@ -16,7 +16,7 @@ from aosedge_demo_orchestrator.api import execute_operation
 from aosedge_demo_orchestrator.cli import build_parser, request_from_arguments
 from aosedge_demo_orchestrator.component_runtime import apply_test, build, builder, build_factory, FACTORY_VERSION, FACTORY_REVISION, SM_REVISION
 from aosedge_demo_orchestrator.environment import EnvironmentError
-from aosedge_demo_orchestrator.source_guest import execute, process_wait_observation, sm_saved_test_release, sm_recover_test
+from aosedge_demo_orchestrator.source_guest import execute, process_wait_observation, container_runtime_observation, sm_saved_test_release, sm_recover_test
 
 
 class RuntimeProofBoundaryTests(unittest.TestCase):
@@ -65,6 +65,27 @@ class RuntimeProofBoundaryTests(unittest.TestCase):
             self.assertEqual(["true", "true"], [call.args[0][-1] for call in process.call_args_list[:2]])
             self.assertIn("df -Pk", process.call_args_list[2].args[0][-1])
             self.assertEqual([("test", "start"), ("test", "stop")], [call.args for call in lifecycle.call_args_list])
+
+    def test_container_observation_exposes_limits_not_secrets_or_arbitrary_argv(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            entry = root / "run/aos/runtime/11111111-1111-4111-8111-111111111111"
+            entry.mkdir(parents=True)
+            (entry / "config.json").write_text(json.dumps(dict(process=dict(
+                args=["/usr/bin/tire-health-bootstrap", "SECRET-ARG"],
+                env=["AOS_SECRET=SECRET-VALUE", "AOS_ITEM_ID=PUBLIC-ID"],
+                rlimits=[dict(type="RLIMIT_NOFILE", soft=32, hard=32)]))))
+            (entry / ".pid").write_text("42")
+            config = dict(runtimes=[dict(plugin="container")])
+            value = container_runtime_observation(root, config, root / "proc")
+            row = value["containers"][0]
+            self.assertEqual(32, row["rlimits"][0]["soft"])
+            self.assertTrue(row["nativeEnvPresent"]["AOS_SECRET"])
+            self.assertFalse(row["processAlive"])
+            self.assertNotIn("SECRET-VALUE", json.dumps(value))
+            self.assertNotIn("SECRET-ARG", json.dumps(value))
+            config["runtimes"][0]["config"] = dict(runtimeDir="/run/../private")
+            self.assertEqual("UNSUPPORTED_RUNTIME_PATH", container_runtime_observation(root, config)["state"])
 
     def test_factory_build_cli_and_api_use_the_same_exact_release(self):
         request = request_from_arguments(build_parser().parse_args(["image", "build", "6.1.1-maninblack.31"]))

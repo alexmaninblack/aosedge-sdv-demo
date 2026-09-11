@@ -9,6 +9,83 @@ and [10 September evidence](demo-studio-implementation-progress-2026-09-10.md)
 remain the baseline. This continuation does not change the approved story,
 native left-hand composition, Production scope or service trust model.
 
+## Follow-up diagnosis — native service launch
+
+The user requested diagnosis only. No new release, assignment, restart, quota
+change, authentication bypass or SM/product patch was performed. Current Test
+and its failing native runtime state are preserved. Only existing Demo Control
+read-only diagnostics were extended; the Presenter remains Cloud-only.
+
+`service runtime-inspect test` now projects the two bootstraps' actual native
+OCI limits, UID/GID, argument count, process existence and **presence only** of
+the five native Aos variables. It never exports environment values, arbitrary
+arguments, tokens or credential contents. `component logs test` now retains the
+fixed `KUKSA_AUTH_UNAVAILABLE` structured event previously dropped because it
+had no free-text `message` field. Targeted tests: 17 runtime + 23 delivery tests
+passed (40 total; mocked lifecycle tests made no live mutations).
+
+Observed facts:
+
+| Boundary | Brake 3.0.0 | Tire 3.0.0 |
+| --- | --- | --- |
+| Image-manager installation | installed | installed |
+| Native OCI executable | `/usr/bin/brake-health-bootstrap`, five arguments | `/usr/bin/tire-health-bootstrap`, five arguments |
+| Native UID/GID | 5000/5000, supplementary 997 | 5001/5001, supplementary 997 |
+| Actual `RLIMIT_NOFILE` soft/hard | 64/64 | 32/32 |
+| Actual process/task limit | 16 | 8 |
+| Actual memory limit | 16 MiB | 16 MiB |
+| `AOS_SECRET` in native OCI environment | absent | absent |
+| Other four native Aos identity variables | present | present |
+| Launch | Native `Start instance ... state=active, error=none` at 14:05:29.399Z, then inactive | Fails before bootstrap with `openat2 sys/fs/cgroup [Too many open files]` |
+
+SM itself remains PID 137576, active, with 28 open descriptors in the observed
+snapshot. Its systemd soft/hard limits are 1024/524288. The service's much lower
+32-file limit is not the SM service's systemd limit and does not indicate disk
+space exhaustion. Both limits originate in **our** executable product contracts:
+`brake-health-runtime-profile.v1.json` (64) and
+`tire-health-product-profile.v1.json` (32), passed unchanged by Demo Control.
+
+The [pinned native Instance source](https://github.com/aosedge/aos_core_cpp/blob/9eecb80c4994937b5c8cbe0464970f81e8ad4c2d/src/sm/launcher/runtimes/container/instance.cpp)
+maps `quotas.noFileLimit` to `RLIMIT_NOFILE`. The
+[native CRun runner](https://github.com/aosedge/aos_core_cpp/blob/9eecb80c4994937b5c8cbe0464970f81e8ad4c2d/src/sm/launcher/runtimes/container/crunrunner.cpp)
+uses libcrun directly inside the SM process, not a clean external launcher.
+AosCore declares crun 1.14.3 in its Conan recipe; that library's
+[Linux setup](https://github.com/containers/crun/blob/1.14.3/src/libcrun/linux.c)
+applies the service rlimit before namespace/mount setup, while
+[container entrypoint setup](https://github.com/containers/crun/blob/1.14.3/src/libcrun/container.c)
+closes unnecessary inherited descriptors later. These sources explain why the
+32-file quota can fail during container construction, before Tire opens any
+telemetry connections. The generated OCI limit plus the actual EMFILE error
+localize the failure; a larger-limit live proof was not authorized/executed in
+this diagnosis. The exact guest libcrun package version was not independently
+read; Conan source evidence is not relabelled as guest package attestation.
+
+Brake has a different failure boundary. Native Instance only registers IAM
+permissions and injects `AOS_SECRET` when the permissions map is nonempty.
+Both of our bootstraps explicitly throw on missing/empty `AOS_SECRET`, before
+forking analytics, and their catch block emits `KUKSA_AUTH_UNAVAILABLE` then
+returns 2. The existing journal contains that fixed event at
+14:05:31.596982Z following the Brake relaunch. Journald attributes the inherited
+stream to SM, not independently to the bootstrap executable; the projection
+therefore leaves `team=null` rather than fabricating attribution. The generic
+catch event does not distinguish earlier metadata errors, but the observed
+missing secret is independently a deterministic fatal bootstrap condition.
+
+Consequently, removing `permissions` is sufficient for Cloud build/delivery but
+**not** for these unmodified services to remain Running without telemetry.
+The earlier blanket description of both failures as unrelated to missing KUKSA
+authorization was inaccurate. Tire hits resource setup first; Brake reaches a
+bootstrap that intentionally requires authorization. There is no evidence here
+that SM needs replacement or that provisioning/Subject association must repeat.
+
+Proposed next decision, not implemented: increase the package descriptor budget
+(for example a bounded 1024 for this demo), then either retain intentional
+bootstrap failure for delivery/version-only testing, or explicitly approve a
+separate no-telemetry demo mode which remains alive without contacting KUKSA.
+Normal authorization must stay fail-closed; never fabricate `AOS_SECRET` or use
+the Provider's token. A successful Running/version-transition claim still needs
+the separately agreed live proof.
+
 ## Permission-free delivery experiment
 
 The user reported the platform team's diagnosis: a service `permissions`

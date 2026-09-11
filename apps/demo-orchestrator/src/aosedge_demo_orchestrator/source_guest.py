@@ -70,6 +70,43 @@ def process_wait_observation(pid, proc=Path("/proc")):
     return result
 
 
+def container_runtime_observation(root, cfg, proc=Path("/proc")):
+    """Read native OCI launch facts for our two bootstraps, never env values."""
+    runtimes = [row for row in cfg.get("runtimes", []) if row.get("plugin") == "container"]
+    if len(runtimes) != 1:
+        return dict(state="UNAVAILABLE")
+    directory = runtimes[0].get("config", {}).get("runtimeDir", "/run/aos/runtime")
+    if not isinstance(directory, str) or not directory.startswith("/run/") or ".." in Path(directory).parts:
+        return dict(state="UNSUPPORTED_RUNTIME_PATH")
+    path = root / directory.lstrip("/")
+    rows = []
+    for entry in sorted(path.iterdir())[:16]:
+        if not re.fullmatch(r"[0-9a-f-]{36}", entry.name) or entry.is_symlink():
+            continue
+        file = entry / "config.json"
+        if file.is_symlink() or not file.is_file() or file.stat().st_size > 262144:
+            continue
+        config = json.loads(file.read_text())
+        process = config.get("process", {})
+        args = process.get("args", [])
+        teams = [team for team in ("brake", "tire") if args and args[0] == "/usr/bin/" + team + "-health-bootstrap"]
+        if len(teams) != 1:
+            continue
+        env = {value.split("=", 1)[0] for value in process.get("env", []) if isinstance(value, str)}
+        pid_file = entry / ".pid"
+        pid = pid_file.read_text().strip() if pid_file.is_file() and pid_file.stat().st_size < 32 else "0"
+        rows.append(dict(team=teams[0], containerId=entry.name,
+            argumentCount=len(args), executable=args[0],
+            nativeEnvPresent={key: key in env for key in (
+                "AOS_ITEM_ID", "AOS_SUBJECT_ID", "AOS_INSTANCE_INDEX", "AOS_INSTANCE_ID", "AOS_SECRET")},
+            rlimits=[{key: row.get(key) for key in ("type", "soft", "hard")}
+                for row in process.get("rlimits", [])],
+            user={key: process.get("user", {}).get(key) for key in ("uid", "gid", "additionalGids")},
+            linuxResources=config.get("linux", {}).get("resources"),
+            processAlive=pid.isdigit() and int(pid) > 0 and (proc / pid).is_dir()))
+    return dict(state="CURRENT", runtimeDir=directory, containers=rows)
+
+
 def vss_supplement(schema):
     """Only append the eight accepted v3 sensor leaves; preserve the base tree."""
     result = json.loads(json.dumps(schema))
@@ -744,7 +781,7 @@ def execute(request):
         import shutil
         if request.get("role") != "test":
             raise ValueError("SERVICE_RUNTIME_INSPECTION_USES_TEST_ONLY")
-        props = command(["systemctl", "show", "aos-sm", "--property=MainPID,ActiveState"]).stdout
+        props = command(["systemctl", "show", "aos-sm", "--property=MainPID,ActiveState,LimitNOFILE,LimitNOFILESoft"]).stdout
         service = dict(line.split("=", 1) for line in props.splitlines() if "=" in line)
         pid = service.get("MainPID", "0")
         if not pid.isdigit() or int(pid) <= 0:
@@ -803,6 +840,8 @@ def execute(request):
             containerRuntimes=[{key: row[key] for key in ("plugin", "type", "isComponent") if key in row}
                 for row in cfg.get("runtimes", [])],
             libc=libc, loader=file_fact(Path("/lib/ld-linux-aarch64.so.1")), serviceManager=service,
+            processWaits=process_wait_observation(pid),
+            nativeContainers=container_runtime_observation(root, cfg),
             resourcesConfigFile=resource_path, resources=selected,
             publicInputs={name: file_fact(Path(path)) for name, path in (
                 ("kuksaTrust", "/var/lib/aos-kuksa-tls/server.pem"),
@@ -1054,6 +1093,16 @@ def execute(request):
                 try:
                     structured = json.loads(message)
                     structures.add(tuple(sorted(key for key in structured if re.fullmatch(r"[a-zA-Z_]{1,32}", key))))
+                    if (structured.get("eventType") in ("KUKSA_AUTH_CHANGED", "KUKSA_CONNECTION_CHANGED")
+                            and structured.get("reasonCode") == "KUKSA_AUTH_UNAVAILABLE"
+                            and structured.get("currentState") == "NOT_READY"):
+                        executable = item.get("_EXE", "")
+                        team = next((name for name in ("brake", "tire") if
+                            executable == "/usr/bin/" + name + "-health-bootstrap"), None)
+                        entry = dict(time=item.get("__REALTIME_TIMESTAMP"), unit=item.get("_SYSTEMD_UNIT"),
+                            message="Service bootstrap error: KUKSA_AUTH_UNAVAILABLE", team=team)
+                        entries.append(entry)
+                        continue
                     message = structured.get("message", structured.get("msg", structured.get("text", "")))
                     if not isinstance(message, str):
                         continue
