@@ -4,6 +4,8 @@
 # Demo Studio implementation checkpoint — 10 September 2026
 
 Status: **partial implementation; not ready for final operator E2E**.
+Historical checkpoint. The [11 September continuation](demo-studio-implementation-progress-2026-09-11.md)
+supersedes the current-state statements below, not their recorded evidence.
 The [accepted P1–P8 plan](../planning/active/demo-studio-delivery-plan.md)
 remains authoritative. No mockup flow or live Presenter composition was changed.
 

@@ -29,12 +29,24 @@ class DemoOrchestrator:
         selection_error = request.selection_error()
         if selection_error:
             return OperationResult(operation, OperationState.BLOCKED, selection_error)
+        if operation == "service.runtime-inspect":
+            if request.target != VehicleTarget.TEST or request.current or request.image or request.profile or request.team or request.service_id:
+                return OperationResult(operation, OperationState.BLOCKED, "SERVICE_RUNTIME_INSPECTION_USES_TEST_ONLY")
+            try:
+                from .components import ComponentService
+                data = ComponentService(self.environment_service).status("test", action="service-runtime-inspect")
+                return OperationResult(operation, OperationState.OBSERVED,
+                    "Engineering guest observation only; no restart, provisioning, assignment or credential content.", data=data)
+            except EnvironmentError as error:
+                return OperationResult(operation, OperationState.BLOCKED, str(error))
+            except (OSError, ValueError, KeyError, TypeError):
+                return OperationResult(operation, OperationState.BLOCKED, "SERVICE_RUNTIME_INSPECTION_UNAVAILABLE")
         if operation == "service.build":
             from .service_build import ServiceBuilder
-            if request.target or request.current or request.image or request.image_path or request.profile or request.service_id or request.component_version or request.content_profile:
+            if request.target or request.current or request.image or request.image_path or request.profile or request.service_id or request.component_version:
                 return OperationResult(operation, OperationState.BLOCKED, "SERVICE_BUILD_USES_FIXED_TEAM_ONLY")
             try:
-                data = ServiceBuilder(self.environment_service, self.vm_service.progress).execute(request.team)
+                data = ServiceBuilder(self.environment_service, self.vm_service.progress).execute(request.team, request.content_profile or "v1")
                 return OperationResult(operation, OperationState.COMPLETED,
                     "Real ARM64 development build; no Cloud publication, guest installation or runtime qualification.", data=data)
             except EnvironmentError as error:

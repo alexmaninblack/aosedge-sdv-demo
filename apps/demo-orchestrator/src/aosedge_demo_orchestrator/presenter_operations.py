@@ -43,37 +43,41 @@ def operation_plan(payload):
         fields.add("image")
         if not isinstance(payload.get("image"), str) or not 1 <= len(payload["image"]) <= 128:
             raise ValueError("CATALOG_IMAGE_REQUIRED")
-        plan = ([dict(domain="environment", action="create", target="all", image=payload["image"])] if action == "create"
-                else [dict(domain="demo", action="prepare", image=payload["image"])])
-    elif action in ("prepare", "unpack", "sign", "upload", "approve", "inspect", "verify", "cloud-status"):
+        plan = ([dict(domain="demo", action="create", image=payload["image"])] if action == "create"
+                else [dict(domain="demo", action="prepare", target="test", image=payload["image"])])
+    elif action == "prepare":
+        fields.add("profile")
+        if payload.get("profile") not in ("v1", "v2", "v3"):
+            raise ValueError("CONTENT_PROFILE_REQUIRED")
+        # Only Demo Control allocates the release. Browser input cannot reuse
+        # an old number or identify functional capability by release major.
+        plan = [dict(domain="component", action="prepare", content_profile=payload["profile"])]
+    elif action in ("unpack", "sign", "upload", "inspect", "verify", "cloud-status"):
         fields.add("version")
         version = payload.get("version")
         if not isinstance(version, str) or len(version) > 32 or not VERSION.fullmatch(version):
             raise ValueError("COMPONENT_VERSION_REQUIRED")
         request = dict(domain="component", action=action, component_version=version)
-        if action == "prepare":
-            fields.add("profile")
-            if payload.get("profile") not in ("v1", "v2", "v3"):
-                raise ValueError("CONTENT_PROFILE_REQUIRED")
-            request["content_profile"] = payload["profile"]
         plan = [request]
     elif action in ("start-vms", "stop-vms"):
-        plan = [dict(domain="vm", action="start" if action == "start-vms" else "stop", target="all")]
+        plan = [dict(domain="vm", action="start" if action == "start-vms" else "stop", target="test")]
     elif action == "provision":
-        plan = [dict(domain="unit", action="provision", target="all")]
+        plan = [dict(domain="unit", action="provision", target="test")]
     elif action in ("start-simulation", "stop-simulation"):
         plan = [dict(domain="simulation", action="start" if action == "start-simulation" else "stop")]
     elif action == "connect-test":
+        plan = [dict(domain="vehicle", action="initialize", target="test")]
+    elif action == "reconnect-test":
         plan = [dict(domain="vehicle", action="select", target="test")]
+    elif action in ("park", "resume"):
+        plan = [dict(domain="environment", action=action)]
     elif action == "observe-test":
         # Preserve old UI clients without retaining their direct guest probe.
         plan = [dict(domain="component", action="cloud-status")]
     elif action == "cloud-access":
         plan = [dict(domain="orchestrator", action="status", target="all", cloud=True)]
     elif action == "reset":
-        plan = [dict(domain="simulation", action="stop"), dict(domain="unit", action="deprovision", target="all"),
-                dict(domain="unit", action="delete", target="all"), dict(domain="vm", action="stop", target="all"),
-                dict(domain="environment", action="retire")]
+        plan = [dict(domain="demo", action="retire")]
     else:
         raise ValueError("OPERATION_NOT_ALLOWED")
     if set(payload) != fields or not isinstance(payload["sessionId"], str):
@@ -89,6 +93,9 @@ def public_result(result):
                "processSlotMatches", "readPathCount", "gate", "advisory", "state", "noOp", "currentVehicle",
                "version", "contentProfile", "sha256", "approved", "outcome", "signatureVerified", "phase", "completedSteps", "reason", "image")
     public["facts"] = {key: data[key] for key in allowed if key in data}
+    if isinstance(data.get("publication"), dict):
+        public["facts"]["publication"] = {key: data["publication"].get(key) for key in
+            ("stage", "deploymentId", "bundleState", "versionState", "versionId", "observedAt", "reason")}
     if result.get("operation") == "component.logs":
         # source_guest already strips credential-bearing journal messages.
         public["facts"]["entries"] = [{key: entry[key] for key in ("time", "unit", "message", "diagnostic") if key in entry}
@@ -171,8 +178,12 @@ class SessionOperations:
         access = NativeVMAccess(progress=progress)
         try:
             application = None if self.executor else DemoOrchestrator(vm_service=VMService(password_provider=access, progress=progress))
-            if application and job["action"] == "reset":
-                plan = reset_plan(application.environment_service.root, plan)
+            if application:
+                from .environment import JOURNAL
+                from .status import read_json
+                path = application.environment_service.root / JOURNAL
+                if path.is_file():
+                    job["runId"] = read_json(path).get("vehicles", {}).get("test", {}).get("localVmId")
             with self.lock:
                 job["state"] = "RUNNING"
             for request in plan:

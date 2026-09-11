@@ -127,9 +127,19 @@ def load_configuration(root, config_path=None):
             if factory:
                 vehicles[role].update(imageVersion=factory["version"], imageSha256=factory["sha256"])
         journal = observation("CURRENT_RUN_JOURNAL", {"stage": state["stage"],
+                              "runId": state.get("vehicles", {}).get("test", {}).get("localVmId"),
+                              "registrationComplete": state.get("vehicles", {}).get("test", {}).get("cloud", {}).get("lifecycle") == "ONLINE",
+                              "lifecycle": {key: value for key, value in (state.get("demoLifecycle") or {}).items()
+                                            if key in ("action", "state", "phase", "reason", "image")},
                               "roles": sorted(state["vehicles"]), "currentVehicle": state.get("currentVehicle"),
+                              "candidates": [dict(version=version, contentProfile=row["prepare"]["contentProfile"],
+                                  signed=row.get("signed", {}).get("state") == "COMPLETED",
+                                  submitted=bool(row.get("deploymentId")), preparedSha256=row["prepare"].get("sha256"))
+                                  for version, row in state.get("componentOperations", {}).items()
+                                  if row.get("prepare", {}).get("state") == "COMPLETED"
+                                  and row["prepare"].get("contentProfile") in ("v1", "v2", "v3")],
                               "preparation": {key: value for key, value in (state.get("demoPreparation") or {}).items()
-                                              if key in ("phase", "version", "contentProfile", "completedSteps", "updatedAt", "reason")}},
+                                              if key in ("image", "phase", "version", "contentProfile", "completedSteps", "updatedAt", "reason")}},
                               reason="RECOVERY_REQUIRED" if state["stage"] not in (
                                   "MANUFACTURED", "LOCAL_ACTIVE", "LOCAL_STOPPED") else None)
     if not isinstance(vehicles, dict) or set(vehicles) - {"test", "production"}:

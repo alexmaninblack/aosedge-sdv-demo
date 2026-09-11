@@ -206,7 +206,11 @@ export interface PresenterSnapshot {
 }
 
 export interface LocalDemoView {
-  preparation?: { phase?: string; version?: string; contentProfile?: string; completedSteps?: string[]; updatedAt?: string; reason?: string } | null;
+  runId?: string | null;
+  registrationComplete?: boolean;
+  lifecycle?: { action?: string; state?: string; phase?: string; image?: string; reason?: string } | null;
+  candidates?: { version: string; contentProfile: "v1" | "v2" | "v3"; signed: boolean; submitted: boolean; preparedSha256: string }[];
+  preparation?: { image?: string; phase?: string; version?: string; contentProfile?: string; completedSteps?: string[]; updatedAt?: string; reason?: string } | null;
   available: boolean;
   images: { selector: string; version: string; architecture: string; state: string; problems: string[] }[];
   vehicles: Record<"test" | "production", { state: string; reason: string | null; process: string | null; imageVersion: string | null; overlayExists: boolean | null }>;

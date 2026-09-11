@@ -1,6 +1,6 @@
 import type { PlatformCloudObservation } from "./platformObservation";
 
-export interface CloudObserverState { observation: PlatformCloudObservation | null; loading: boolean }
+export interface CloudObserverState { observation: PlatformCloudObservation | null; loading: boolean; refreshGeneration?: number }
 const unavailable = (): PlatformCloudObservation => ({ state: "UNAVAILABLE", value: null, observedAt: null, reason: "AOS_CLOUD_STATE_UNAVAILABLE" });
 
 /** One observation key per instance. Navigation never cancels an in-flight read. */
@@ -58,17 +58,18 @@ export class VisibleCloudObserver {
     this.flight = Promise.resolve().then(this.read).catch(unavailable).then((incoming) => {
       const old = this.state.observation;
       // Failed reads do not erase inventory or manufacture Offline/absence.
-      const observation = incoming.state !== "CURRENT" && old?.value
-        ? { ...old, state: "STALE" as const, reason: incoming.reason ?? "AOS_CLOUD_STATE_UNAVAILABLE" }
+      const sameBinding = !incoming.bindingKey || !old?.bindingKey || incoming.bindingKey === old.bindingKey;
+      const observation = incoming.state !== "CURRENT" && old?.value && sameBinding
+        ? { ...old, publication: incoming.publication ?? old.publication, publications: incoming.publications ?? old.publications, state: "STALE" as const, reason: incoming.reason ?? "AOS_CLOUD_STATE_UNAVAILABLE" }
         : incoming;
-      this.state = { observation: this.dirty ? { ...observation, state: "STALE", reason: "ACTION_COMPLETED_REFRESH_REQUIRED" } : observation, loading: false };
+      this.state = { observation: this.dirty ? { ...observation, state: "STALE", reason: "ACTION_COMPLETED_REFRESH_REQUIRED" } : observation, loading: false, refreshGeneration: (this.state.refreshGeneration ?? 0) + 1 };
       if (!this.visible()) this.hidden();
       this.emit();
     }).finally(() => {
       this.flight = null;
       if (!this.visible()) return;
       if (this.dirty) { void this.refresh(); return; }
-      const pending = Boolean(this.state.observation?.value?.pendingVersion);
+      const pending = Boolean(this.state.observation?.value?.pendingVersion) || ["ACCEPTED", "PROCESSING"].includes(this.state.observation?.publication?.stage ?? "");
       const delay = pending ? this.pendingDelay : this.intervals.idle;
       this.pendingDelay = pending ? Math.min(this.pendingDelay * 2, this.intervals.maximum) : this.intervals.pending;
       this.timer = setTimeout(() => { void this.refresh(); }, delay);

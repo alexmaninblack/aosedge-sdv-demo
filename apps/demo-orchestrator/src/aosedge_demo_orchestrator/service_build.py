@@ -60,9 +60,11 @@ class ServiceBuilder:
                     break
             raise EnvironmentError(reason)
 
-    def execute(self, team):
+    def execute(self, team, content_profile="v1"):
         if team != "brake":
             raise EnvironmentError("SERVICE_PRODUCT_BUILD_NOT_IMPLEMENTED")
+        if content_profile not in ("v1", "v2", "v3"):
+            raise EnvironmentError("SERVICE_CONTENT_PROFILE_INVALID")
         repository = self.environment.root.parent / "brake-health-service"
         with self.environment._writer():
             revision = self.commands._run(["git", "rev-parse", "HEAD"], cwd=repository).strip()
@@ -72,13 +74,14 @@ class ServiceBuilder:
             if not (repository / "Dockerfile").is_file():
                 raise EnvironmentError("SERVICE_PRODUCT_RECIPE_REQUIRED")
             catalog = self.environment.catalog.project / "services" / team / "builds"
-            directory = catalog / revision
+            directory = catalog / revision / content_profile
             if directory.is_symlink() or not directory.resolve().is_relative_to(self.environment.catalog.project.resolve()):
                 raise EnvironmentError("SERVICE_BUILD_PATH_UNSAFE")
             receipt = directory / "build.json"
             if receipt.exists():
                 value = read_json(receipt)
-                if value.get("sourceRevision") != revision or value.get("state") != "BUILT":
+                if (value.get("sourceRevision") != revision or value.get("state") != "BUILT"
+                        or value.get("contentProfile") != content_profile):
                     raise EnvironmentError("SERVICE_BUILD_RECEIPT_INVALID")
                 for relative, expected in value["binaries"].items():
                     path = directory / "output" / relative
@@ -98,11 +101,13 @@ class ServiceBuilder:
             self._build([executable, "buildx", "build", "--platform", "linux/arm64", "--pull=false",
                 "--target", "export", "--output", "type=local,dest=" + str(output),
                 "--build-arg", "SOURCE_REVISION=" + revision, "--build-arg", "SOURCE_DATE_EPOCH=" + epoch,
+                "--build-arg", "BHS_FUNCTIONAL_PROFILE=" + content_profile,
                 "--file", str(repository / "Dockerfile"), str(repository)])
             product = read_json(output / "product-build.json")
             if (product.get("schemaVersion") != 1 or product.get("kind") != "brake-health-linux-arm64-product"
                     or product.get("sourceRevision") != revision or product.get("sourceDateEpoch") != int(epoch)
                     or product.get("architecture") != "arm64" or product.get("os") != "linux"
+                    or product.get("functionalProfile") != content_profile
                     or product.get("productTarget") != "BHS_BUILD_KUKSA_RUNTIME=ON"
                     or product.get("tests", {}).get("ctest") != "passed"):
                 raise EnvironmentError("SERVICE_PRODUCT_BUILD_PROOF_INVALID")
@@ -119,7 +124,7 @@ class ServiceBuilder:
             recorded = {item["path"]: item["sha256"] for item in product.get("binaries", [])}
             if recorded != binaries:
                 raise EnvironmentError("SERVICE_PRODUCT_BUILD_PROOF_MISMATCH")
-            value = dict(schemaVersion=1, team=team, state="BUILT", sourceRevision=revision,
+            value = dict(schemaVersion=1, team=team, contentProfile=content_profile, state="BUILT", sourceRevision=revision,
                 builtAt=now(), qualification="BUILT_NOT_LIVE_QUALIFIED", binaries=binaries,
                 outputPath=str(output))
             atomic_json(receipt, value)

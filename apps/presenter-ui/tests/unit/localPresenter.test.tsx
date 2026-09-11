@@ -27,17 +27,17 @@ describe("local composition preview", () => {
     const readPlatform = vi.fn().mockResolvedValue(cloud);
     const dependencies = { readPort: { read: async () => snapshot, subscribe: () => () => {}, readPlatform } };
     render(<PresenterReadModelProvider dependencies={dependencies}><PresenterApp /></PresenterReadModelProvider>);
-    await screen.findByTestId("local-lifecycle-page");
-    expect(readPlatform).not.toHaveBeenCalled();
+    await screen.findByTestId("studio-workspace");
+    // The architecture's Cloud card is also a visible subscriber.
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: /Platform Team/ }));
     expect(await screen.findByText("VDP 15.0.0 · Cloud installed")).toBeInTheDocument();
-    expect(readPlatform).toHaveBeenCalledTimes(1);
+    expect(readPlatform).toHaveBeenCalledTimes(2);
     expect(screen.queryByText("Refresh running Test VDP")).not.toBeInTheDocument();
     expect(screen.queryByText("Read Test VDP logs")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Brake Team/ }));
     await user.click(screen.getByRole("button", { name: /Platform Team/ }));
-    expect(readPlatform).toHaveBeenCalledTimes(2);
+    expect(readPlatform).toHaveBeenCalledTimes(3);
   });
   it("does not infer running, READY or functional profile from Cloud installed", () => {
     const team = projectCloudPlatform(composeLocalSnapshot(data).teams.platform, cloud);
@@ -140,15 +140,15 @@ describe("local composition preview", () => {
     expect(failed.global.manufactured).toBe(false);
     expect(failed.fixtureId).toBe("local");
   });
-  it("renders the actual catalog and both VM states; protected actions cannot submit", async () => {
+  it("renders the catalog and Test-only Studio; Production stays deferred and protected actions cannot submit", async () => {
     const snapshot = composeLocalSnapshot(data);
     const dependencies = { readPort: { read: async () => snapshot, subscribe: () => () => {} } };
     render(<PresenterReadModelProvider dependencies={dependencies}><PresenterApp /></PresenterReadModelProvider>);
-    expect(await screen.findByTestId("local-lifecycle-page")).toBeInTheDocument();
+    expect(await screen.findByTestId("studio-workspace")).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Factory image" })).toHaveValue("factory-31/arm64");
-    expect(screen.getAllByText("NOT_CREATED")).toHaveLength(2);
-    expect(screen.getByRole("button", { name: "Create vehicles" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "End and reset demo" })).toBeDisabled();
+    expect(screen.getByRole("option", { name: "Production · Deferred" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Create controller" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Finish demo" })).toBeDisabled();
     expect(screen.queryByText("FIXTURE ONLY")).not.toBeInTheDocument();
   });
 });

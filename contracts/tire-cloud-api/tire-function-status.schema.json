@@ -18,7 +18,7 @@
     "statusId": {"type": "string", "format": "uuid"},
     "unitSystemUid": {"type": "string", "minLength": 1, "maxLength": 128},
     "unitRole": {"enum": ["VALIDATION", "PRODUCTION"]},
-    "serviceVersion": {"const": "1.0.0"},
+    "serviceVersion": {"type": "string", "maxLength": 32, "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"},
     "serviceArtifactSha256": {"$ref": "#/$defs/sha256"},
     "actualVdpContractVersion": {
       "oneOf": [

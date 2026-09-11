@@ -83,6 +83,10 @@ class BackendService:
             revision = self._run(["git", "rev-parse", "HEAD"], cwd=repository).strip()
             if not re.fullmatch(r"[0-9a-f]{40}", revision) or self._run(["git", "status", "--porcelain"], cwd=repository).strip():
                 raise EnvironmentError("BACKEND_COMMITTED_SOURCE_REQUIRED")
+            package = repository / "package.json"
+            protocol = (read_json(package).get("aosedgeDemo") or {}).get("privateCleanupProtocol") if package.is_file() else None
+            if protocol is not None and (team, protocol) != ("tire", "tire-product-v1"):
+                raise EnvironmentError("BACKEND_CLEANUP_PROTOCOL_UNSUPPORTED")
             directory = self.catalog / team / revision
             if directory.is_symlink() or not directory.resolve().is_relative_to(self.catalog.resolve()):
                 raise EnvironmentError("BACKEND_CATALOG_PATH_UNSAFE")
@@ -99,6 +103,8 @@ class BackendService:
             self._image(image["Id"])
             value = dict(schemaVersion=1, team=team, sourceRevision=revision, imageId=image["Id"],
                          builtAt=now(), qualification="BUILT_NOT_LIVE_QUALIFIED")
+            if protocol:
+                value["privateCleanupProtocol"] = protocol
             directory.mkdir(parents=True, mode=0o700, exist_ok=True)
             atomic_json(manifest, value)
             return value
@@ -329,7 +335,7 @@ class BackendService:
 
     def _runtime_candidate(self, state, team):
         record = state.get("backends", {}).get(team)
-        return {key: record[key] for key in ("imageId", "sourceRevision")} if record else self._candidate(team)
+        return {key: record[key] for key in ("imageId", "sourceRevision", "privateCleanupProtocol") if key in record} if record else self._candidate(team)
 
     def _activate(self, state, team, record, observed, owner):
         if not record or (observed and observed.get("State", {}).get("Running")):
@@ -361,6 +367,10 @@ class BackendService:
         atomic_json(path, spec)
         record.update(imageId=candidate["imageId"], sourceRevision=candidate["sourceRevision"],
             state="STOPPED", confirmedAt=now())
+        record.pop("cleanup", None)
+        record.pop("privateCleanupProtocol", None)
+        if candidate.get("privateCleanupProtocol"):
+            record["privateCleanupProtocol"] = candidate["privateCleanupProtocol"]
         record.pop("replacementImageId", None)
         atomic_json(self.root / JOURNAL, state)
         return dict(team=team, state="STOPPED", noOp=False, dataPreserved=True)
@@ -482,6 +492,8 @@ class BackendService:
                 atomic_json(path, spec)
                 record = dict(imageId=candidate["imageId"], sourceRevision=candidate["sourceRevision"], composePath=str(path.relative_to(self.root)),
                               containerName=name, owner=owner, state="UNCERTAIN", action="start", startedAt=now())
+                if candidate.get("privateCleanupProtocol"):
+                    record["privateCleanupProtocol"] = candidate["privateCleanupProtocol"]
                 state.setdefault("backends", {})[team] = record
                 atomic_json(self.root / JOURNAL, state)
                 self.progress("Starting " + team + " backend; process readiness only, current Unit may not yet exist")

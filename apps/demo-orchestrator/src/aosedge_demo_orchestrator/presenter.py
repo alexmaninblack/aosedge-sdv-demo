@@ -17,6 +17,110 @@ from .status import project_root, now
 ADDRESS = ("127.0.0.1", 18080)
 
 
+def stop():
+    """Explicit CLI-only idle server shutdown; never signal a port alone."""
+    import os
+    import signal
+    import subprocess
+    import urllib.request
+    try:
+        result = subprocess.run(["/usr/sbin/lsof", "-t", "-nP", "-iTCP:18080", "-sTCP:LISTEN"],
+            capture_output=True, text=True, timeout=3)
+        pids = result.stdout.split()
+        if not pids:
+            print("OBSERVED ui.stop — UI server is not running; no system action")
+            return 0
+        if len(set(pids)) != 1 or not pids[0].isdigit():
+            raise ValueError()
+        pid = int(pids[0])
+        expected = str(project_root() / "apps/demo-orchestrator/.venv/bin/democtl") + " ui serve"
+        def owner():
+            value = subprocess.run(["/bin/ps", "-p", str(pid), "-o", "uid=,command="], capture_output=True, text=True, timeout=3).stdout.strip()
+            uid, command = value.split(None, 1)
+            if int(uid) != os.getuid():
+                return False
+            if command.endswith(" " + expected):
+                return True
+            # The documented terminal command can use a relative venv path.
+            # Accept it only with the exact canonical process working directory.
+            if not command.endswith(" .venv/bin/democtl ui serve"):
+                return False
+            cwd = subprocess.run(["/usr/sbin/lsof", "-a", "-p", str(pid), "-d", "cwd", "-Fn"],
+                capture_output=True, text=True, timeout=3)
+            return (cwd.returncode == 0 and
+                    [line[1:] for line in cwd.stdout.splitlines() if line.startswith("n")] ==
+                    [str(project_root() / "apps/demo-orchestrator")])
+        if not owner():
+            raise ValueError()
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        with opener.open("http://127.0.0.1:18080/api/presenter/operations", timeout=3) as response:
+            state = json.loads(response.read(262145))
+        if (not isinstance(state.get("sessionId"), str) or state.get("active") or state.get("uncertain")
+                or not owner()):
+            raise ValueError()
+        os.kill(pid, signal.SIGINT)
+        print("COMPLETED ui.stop — idle UI server stopped; VMs, Cloud and simulation unchanged")
+        return 0
+    except (OSError, ValueError, KeyError, subprocess.TimeoutExpired):
+        print("BLOCKED ui.stop — UI ownership, idle state or outcome could not be established; nothing else stopped")
+        return 1
+
+
+class StudioCloudReader:
+    """Reuse the normalized CLI reader and its exact-Unit stale cache."""
+
+    def __init__(self):
+        from .application import DemoOrchestrator
+        self.application = DemoOrchestrator()
+
+    def __call__(self):
+        from .components import COMPONENT
+        from .environment import JOURNAL
+        from .status import read_json
+        # Current-run receipts select a release; they are not installation facts.
+        path = self.application.environment_service.root / JOURNAL
+        journal = read_json(path) if path.is_file() else {}
+        owned = [(version, row) for version, row in journal.get("componentOperations", {}).items()
+                 if row.get("deploymentId") and re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version)]
+        publication = None
+        cache = getattr(self, "publications", {})
+        cache = {key: value for key, value in cache.items() if any(key == (version, row["deploymentId"]) for version, row in owned)}
+        unresolved = [(version, record) for version, record in owned
+                      if cache.get((version, record["deploymentId"]), {}).get("stage") not in ("READY", "FAILED")]
+        if unresolved:
+            version, record = max(unresolved, key=lambda item: tuple(map(int, item[0].split("."))))
+            identity = (version, record["deploymentId"])
+            observed = execute_operation(dict(domain="component", action="cloud-status", component_version=version), self.application)
+            raw = (observed.get("data") or {}).get("publication")
+            cache[identity] = ({key: raw.get(key) for key in ("stage", "deploymentId", "bundleState", "versionState", "versionId", "observedAt", "reason")}
+                               if raw else dict(stage="UNKNOWN", reason="PUBLICATION_NOT_OBSERVED"))
+            cache[identity]["version"] = version
+        self.publications = cache
+        if owned:
+            version, record = max(owned, key=lambda item: tuple(map(int, item[0].split("."))))
+            publication = cache.get((version, record["deploymentId"]))
+        result = execute_operation(dict(domain="unit", action="cloud-status", target="test"), self.application)
+        data = result.get("data") or {}
+        section = data.get("unit") or {}
+        unit = section.get("value") or {}
+        rows = (data.get("components") or {}).get("value")
+        matches = [row for row in rows or [] if row.get("reported_component_id") == COMPONENT or row.get("type") == COMPONENT]
+        row = matches[0] if len(matches) == 1 else {}
+        return dict(state="CURRENT" if section.get("state") == "CURRENT" else "UNAVAILABLE",
+            bindingKey=":".join(str(journal.get("vehicles", {}).get("test", {}).get(key) or "none") for key in ("localVmId", "unitId")),
+            observedAt=data.get("readCompletedAt") or now(), reason=section.get("reason") or (None if unit else "TEST_CLOUD_BINDING_NOT_OBSERVED"),
+            value=dict(target="test", source="Aos Cloud", online=unit.get("connectivity"), lifecycle=unit.get("status"),
+                installedVersion=(row.get("installed_component") or {}).get("version"),
+                pendingVersion=(row.get("pending_component") or {}).get("version"), updateStatus=row.get("pending_component_status"),
+                latestPublishedVersion=None, releases=[], runtimeState="NOT_REPORTED_BY_CLOUD", dataReadiness="NOT_REPORTED_BY_CLOUD",
+                inventory=data, publication=publication) if unit else None,
+            publication=publication, publications=list(cache.values()))
+
+    def monitoring(self):
+        result = execute_operation(dict(domain="unit", action="monitoring", target="test"), self.application)
+        return result.get("data") or dict(state="UNAVAILABLE", reason="CLOUD_MONITORING_NOT_OBSERVED", readCompletedAt=now())
+
+
 def read_platform():
     """Cloud-only public projection of democtl component cloud-status."""
     result = execute_operation(dict(domain="component", action="cloud-status"))
@@ -55,6 +159,10 @@ def read_snapshot():
     # A fixed public projection, never raw configuration, credentials or paths.
     return dict(mode="LOCAL_READ_ONLY", observedAt=snapshot["readCompletedAt"],
         preparation=(snapshot.get("journal", {}).get("value") or {}).get("preparation"),
+        candidates=(snapshot.get("journal", {}).get("value") or {}).get("candidates", []),
+        runId=(snapshot.get("journal", {}).get("value") or {}).get("runId"),
+        registrationComplete=(snapshot.get("journal", {}).get("value") or {}).get("registrationComplete", False),
+        lifecycle=(snapshot.get("journal", {}).get("value") or {}).get("lifecycle"),
         result=status["state"], vehicles=vehicles,
         source={key: snapshot["source"].get(key) for key in ("state", "currentVehicle", "selectedVehicle", "reason")},
         images=[{key: image.get(key) for key in ("selector", "version", "architecture", "state", "problems")}
@@ -63,10 +171,12 @@ def read_snapshot():
                           state="NOT_REQUESTED") for name, profile in snapshot["cloud"].items()})
 
 
-def make_server(static_root, address=ADDRESS, reader=read_snapshot, native=None, platform_reader=read_platform):
+def make_server(static_root, address=ADDRESS, reader=read_snapshot, native=None, platform_reader=None):
     root = Path(static_root).resolve(strict=True)
     if not (root / "index.html").is_file():
         raise ValueError("PRESENTER_BUILD_REQUIRED")
+    cloud_reader = StudioCloudReader()
+    platform_reader = platform_reader or cloud_reader
     platform_lock = threading.Lock()
     platform_result = None
     platform_finished = 0.0
@@ -120,6 +230,12 @@ def make_server(static_root, address=ADDRESS, reader=read_snapshot, native=None,
                     self.reply(200, json.dumps(platform_once()).encode())
                 except Exception:
                     self.reply(503, b'{"error":"AOS_CLOUD_STATE_UNAVAILABLE"}')
+                return
+            if self.path == "/api/presenter/monitoring":
+                try:
+                    self.reply(200, json.dumps(cloud_reader.monitoring()).encode())
+                except Exception:
+                    self.reply(503, b'{"error":"CLOUD_MONITORING_UNAVAILABLE"}')
                 return
             if self.path == "/api/presenter/operations" and native:
                 try:

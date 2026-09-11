@@ -681,6 +681,13 @@ class ComponentService:
                 (stage / ("aosedge-vdp-component-" + version + "-linux-arm64.unsigned.tar.gz")).write_bytes(unsigned)
                 (stage / "prepared.json").write_bytes(encoded(record))
                 os.rename(stage, destination)
+            from .environment import atomic_json
+            journal_path = self.environment.root / JOURNAL
+            if journal_path.is_file():
+                state = read_json(journal_path)
+                state.setdefault("componentOperations", {}).setdefault(version, {})["prepare"] = dict(
+                    state="COMPLETED", contentProfile=content_profile, sha256=record["preparedSha256"])
+                atomic_json(journal_path, state)
             return record
 
     def sign(self, version):
@@ -710,6 +717,14 @@ class ComponentService:
             if self.inspect(version)["payloadSha256"] != record["payloadSha256"]:
                 raise EnvironmentError("COMPONENT_SIGN_CHANGED_PAYLOAD")
             atomic_json(directory / "signed.json", result)
+            from .environment import JOURNAL
+            journal_path = self.environment.root / JOURNAL
+            if journal_path.is_file():
+                state = read_json(journal_path)
+                owned = state.get("componentOperations", {}).get(version)
+                if owned and owned.get("prepare", {}).get("state") == "COMPLETED":
+                    owned["signed"] = dict(state="COMPLETED", sha256=result.get("sha256"))
+                    atomic_json(journal_path, state)
             return result
 
     def unpack(self, version):

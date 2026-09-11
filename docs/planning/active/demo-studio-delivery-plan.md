@@ -3,7 +3,7 @@
 
 # Demo Studio: staged delivery plan
 
-- Status: **Implementation authorized; P1/P2 source increments in progress, not phase-qualified**
+- Status: **Implementation authorized; P1–P4 integration and P5–P7 source increments, not full E2E-qualified**
 - Prepared: 9 September 2026
 - Working language: English
 - Review mockup: [Interaction Mockup 2.8 — reviewed B2 visuals and corrected simulation](../../demo/mockups/aosedge-demo-interaction-mockup-2-8.html); [2.6 retained flow baseline](../../demo/mockups/aosedge-demo-interaction-mockup-2-6.html); [2.5 retained](../../demo/mockups/aosedge-demo-interaction-mockup-2-5.html) as the original action-audit basis
@@ -14,6 +14,17 @@
 <a id="implementation-execution--9-september-2026"></a>
 
 ## Implementation execution — 9 September 2026
+
+Latest checkpoint (11 September): the initial approved Studio composition is
+connected to shared Test lifecycle/VDP operations and normalized Cloud-only
+inventory/monitoring. Brake has a compiled ARM64 product profile; Tire has
+scoped product source and a new backend cleanup protocol. These are source and
+integration increments, not completed P4–P8 exit criteria. Service launch has
+two concrete unclosed prerequisites: native per-instance token-directory
+ownership and authoritative ARM64 manifest identity before assignment. See the
+[11 September checkpoint](../../qualification/demo-studio-implementation-progress-2026-09-11.md)
+for actual tests, preserved live state and remaining work. Earlier observations
+below are historical; accepted phase order and exit criteria are unchanged.
 
 Latest continuation (10 September, evening): repeated completed Create/Prepare
 now read current infrastructure rather than saved readiness; the existing

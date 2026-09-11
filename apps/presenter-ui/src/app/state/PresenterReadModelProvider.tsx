@@ -4,7 +4,7 @@ import type { PresenterDependencies } from "../composition/PresenterDependencies
 import { VisibleCloudObserver, type CloudObserverState } from "../../domain/visibleCloudObserver";
 
 const PresenterReadModelContext = createContext<Readonly<PresenterSnapshot> | null>(null);
-const PlatformContext = createContext<{ observation: PlatformCloudObservation | null; loading: boolean; refresh: () => void; enter: () => () => void; afterAction: () => void }>({ observation: null, loading: false, refresh: () => {}, enter: () => () => {}, afterAction: () => {} });
+const PlatformContext = createContext<CloudObserverState & { refresh: () => void; enter: () => () => void; afterAction: () => void }>({ observation: null, loading: false, refresh: () => {}, enter: () => () => {}, afterAction: () => {} });
 export const usePlatformObservation = () => useContext(PlatformContext);
 
 export function PresenterReadModelProvider({ dependencies, children }: { dependencies: PresenterDependencies; children: ReactNode }) {

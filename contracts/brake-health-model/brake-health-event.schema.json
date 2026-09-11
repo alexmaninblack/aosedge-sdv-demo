@@ -15,7 +15,7 @@
     "sourceEventId": {"$ref": "#/$defs/uuid4"},
     "unitSystemUid": {"$ref": "#/$defs/boundedId"},
     "unitRole": {"enum": ["VALIDATION", "PRODUCTION"]},
-    "serviceVersion": {"enum": ["2.0.0", "3.0.0"]},
+    "serviceVersion": {"type": "string", "maxLength": 32, "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"},
     "serviceArtifactSha256": {"$ref": "#/$defs/sha256"},
     "modelId": {"const": "brake-condition-demo-v1"},
     "modelVersion": {"const": "1.0.0"},

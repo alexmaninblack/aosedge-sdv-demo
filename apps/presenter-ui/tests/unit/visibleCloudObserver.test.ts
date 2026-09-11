@@ -57,4 +57,17 @@ describe("shared visible Cloud observer", () => {
     resolve(current()); await flight; await observer.refresh(); expect(read).toHaveBeenCalledTimes(2);
     leave(); await vi.advanceTimersByTimeAsync(30000); expect(read).toHaveBeenCalledTimes(2);
   });
+  it("never retains a previous Unit observation after the owned Test binding changes", async () => {
+    const read = vi.fn().mockResolvedValue({ ...current(), bindingKey: "vm-a:unit-a" });
+    const observer = new VisibleCloudObserver(read); let value: CloudObserverState | undefined;
+    observer.subscribe((next) => { value = next; }); observer.enter(); await observer.refresh();
+    read.mockResolvedValue({ state: "UNAVAILABLE", bindingKey: "vm-b:none", value: null,
+      observedAt: null, reason: "TEST_NOT_PROVISIONED", publication: { version: "19.0.0", stage: "PROCESSING" } });
+    await observer.refresh();
+    expect(value?.observation?.value).toBeNull();
+    expect(value?.observation?.bindingKey).toBe("vm-b:none");
+    expect(value?.observation?.publication?.version).toBe("19.0.0");
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(read).toHaveBeenCalledTimes(3);
+  });
 });

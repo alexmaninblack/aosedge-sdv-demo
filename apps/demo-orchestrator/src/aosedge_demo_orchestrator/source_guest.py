@@ -739,6 +739,45 @@ def sm_recover_test(request):
 
 
 def execute(request):
+    if request["action"] == "service-runtime-inspect":
+        if request.get("role") != "test":
+            raise ValueError("SERVICE_RUNTIME_INSPECTION_USES_TEST_ONLY")
+        props = command(["systemctl", "show", "aos-sm", "--property=MainPID,ActiveState"]).stdout
+        service = dict(line.split("=", 1) for line in props.splitlines() if "=" in line)
+        pid = service.get("MainPID", "0")
+        if not pid.isdigit() or int(pid) <= 0:
+            raise ValueError("SERVICE_MANAGER_NOT_RUNNING")
+        root = Path("/proc") / pid / "root"
+        cfg = json.loads((root / "etc/aos/sm.cfg").read_text())
+        resource_path = cfg.get("resourcesConfigFile", "/etc/aos/resources.cfg")
+        if not isinstance(resource_path, str) or not resource_path.startswith("/") or ".." in Path(resource_path).parts:
+            raise ValueError("SERVICE_RESOURCE_PATH_INVALID")
+        resources = json.loads((root / resource_path.lstrip("/")).read_text())
+        if not isinstance(resources, list):
+            raise ValueError("SERVICE_RESOURCE_CONFIG_INVALID")
+        names = ("kuksa", "kuksa-auth-client", "brake-runtime-inputs", "tire-runtime-inputs")
+        selected = []
+        for row in resources:
+            if row.get("name") in names:
+                selected.append({key: row[key] for key in ("name", "sharedCount", "groups", "hosts", "mounts") if key in row})
+        def file_fact(path):
+            try:
+                info = path.stat()
+                return dict(present=True, uid=info.st_uid, gid=info.st_gid, mode=oct(stat.S_IMODE(info.st_mode)))
+            except FileNotFoundError:
+                return dict(present=False)
+        try:
+            libc = os.confstr("CS_GNU_LIBC_VERSION")
+        except (ValueError, OSError):
+            libc = None
+        return dict(mutation=False, source="ENGINEERING_GUEST_ONLY", architecture=os.uname().machine,
+            libc=libc, loader=file_fact(Path("/lib/ld-linux-aarch64.so.1")), serviceManager=service,
+            resourcesConfigFile=resource_path, resources=selected,
+            publicInputs={name: file_fact(Path(path)) for name, path in (
+                ("kuksaTrust", "/var/lib/aos-kuksa-tls/server.pem"),
+                ("kacSocket", "/run/aos-kuksa-auth-compat/request.sock"),
+                ("brakeMetadata", "/run/aos-demo-service-inputs/brake/metadata.json"),
+                ("tireMetadata", "/run/aos-demo-service-inputs/tire/metadata.json"))})
     if request["action"] == "component-sm-apply" and request.get("proof") == "queued-recovery":
         return sm_recover_test(request)
     if request["action"] == "component-sm-apply" and request.get("proof") == "demo-clock-skew":

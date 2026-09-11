@@ -8,7 +8,7 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 function Buttons() {
   const controls = usePresenterControls();
   return <><button disabled={controls.blocked} onClick={() => controls.request({ action: "create", image: "31/arm64" })}>Create</button>
-    <button disabled={controls.blocked} onClick={() => controls.request({ action: "approve", version: "13.0.0" })}>Approve</button>
+    <button disabled={controls.blocked} onClick={() => controls.request({ action: "upload", version: "13.0.0" })}>Publish</button>
     <button disabled={controls.blocked} onClick={() => controls.request({ action: "observe-test" })}>Observe</button><OperationProgress /></>;
 }
 function setup() {
@@ -28,21 +28,22 @@ describe("protected Presenter controls", () => {
     fireEvent.click(screen.getByText("Cancel"));
     expect(port.submit).not.toHaveBeenCalled();
     fireEvent.click(screen.getByText("Create"));
-    const button = within(screen.getByRole("dialog")).getByRole("button", { name: "Create Test and Production Vehicles" });
+    const button = within(screen.getByRole("dialog")).getByRole("button", { name: "Create controller" });
     fireEvent.click(button); fireEvent.click(button);
     await waitFor(() => expect(port.submit).toHaveBeenCalledTimes(1));
     expect(port.submit.mock.calls[0]).toEqual([{ action: "create", image: "31/arm64" }, expect.any(String), "native-generation"]);
-    await waitFor(() => expect(screen.getByText(/Create Test and Production Vehicles · ACCEPTED/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/Create controller · ACCEPTED/)).toBeInTheDocument());
     expect(screen.getByText("Create")).toBeDisabled();
   });
-  it("approval identifies OEM authority and the exact Test release", async () => {
+  it("publication identifies OEM authority and immediate Test eligibility without an approval gate", async () => {
     const port = setup();
-    await waitFor(() => expect(screen.getByText("Approve")).toBeEnabled());
-    fireEvent.click(screen.getByText("Approve"));
+    await waitFor(() => expect(screen.getByText("Publish")).toBeEnabled());
+    fireEvent.click(screen.getByText("Publish"));
     const dialog = screen.getByRole("dialog");
-    expect(dialog).toHaveTextContent("OEM Release Authority");
+    expect(dialog).toHaveTextContent("fixed OEM publication context");
     expect(dialog).toHaveTextContent("13.0.0");
-    expect(dialog).toHaveTextContent("Production rollout is excluded");
+    expect(dialog).toHaveTextContent("Production remains unchanged");
+    expect(dialog).toHaveTextContent("no batch-approval step is required");
     expect(port.submit).not.toHaveBeenCalled();
   });
   it("explicit read requires no mutation confirmation", async () => {

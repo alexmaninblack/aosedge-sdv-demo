@@ -3,8 +3,8 @@
 
 # Temporary Test service inputs
 
-Status: bounded interface authorized on 10 September 2026; not implemented
-or guest-qualified. This closes the interface choice in the
+Status: bounded interface authorized on 10 September 2026; opt-in resource
+template implemented, producer/guest qualification still open. This closes the interface choice in the
 [Studio plan](../planning/active/demo-studio-delivery-plan.md), not its P5 gate.
 Factory `.31`, Production and native Aos service authorization remain unchanged.
 
@@ -61,3 +61,35 @@ Source evidence: pinned AosCore
 and [`instance.cpp`](https://github.com/aosedge/aos_core_cpp/blob/9eecb80c4994937b5c8cbe0464970f81e8ad4c2d/src/sm/launcher/runtimes/container/instance.cpp#L198).
 This projection does not give analytics new IAM/network authority; KUKSA
 credentials continue through the existing accepted KAC exchange.
+
+## Native source audit — 11 September 2026
+
+Platform revision `161108b6e96ff1f43ecccc776f28a7792f4c73ee` supplies a separate
+`resources-demo-services.cfg` template. No recipe selects it automatically and
+the active VM still declares only the existing KUKSA resources. The exact Test
+engineering inspection confirms AArch64/glibc 2.39, the KAC request socket and
+public CA; neither team's metadata has been projected.
+
+The bootstrap requires a 0700 token directory owned by its effective UID.
+The active `kuksa-auth-client` resource defines tmpfs mode 0700 but no instance
+owner. Native CM allocates a non-root UID; native container SM copies resource
+mount options without deriving a UID for that mount. A root-owned tmpfs does
+not meet the bootstrap contract. Source: pinned native
+[CM instance UID range](https://github.com/aosedge/aos_core_lib_cpp/blob/60cb83535f773762c61ac5f544b31b7b88c502e3/src/core/cm/launcher/instance.hpp#L32)
+and [SM resource mount construction](https://github.com/aosedge/aos_core_cpp/blob/9eecb80c4994937b5c8cbe0464970f81e8ad4c2d/src/sm/launcher/runtimes/container/instance.cpp#L520).
+The exact native ownership mechanism must be closed before live assignment;
+root execution, a guessed UID and broader directory permissions are excluded.
+
+The Cloud 6.1.53 service-version schema does not explicitly expose the selected
+ARM64 manifest digest. Its arbitrary `container_config_data` is not evidence
+that an authoritative digest is available. Native CM resolves the architecture
+manifest separately from the OCI index. Therefore the pre-assignment producer
+still requires a supported artifact/response source. Never substitute the
+bundle, index, layer or binary digest. If that source is unavailable, the
+ordering/interface change needs a bounded decision, not a silent fallback.
+
+Finally, native `allowedConnections` resolves managed service item IDs, not
+arbitrary hostnames/IPs. Adding `Server/55555/tcp` or a host-backend IP as though
+this field were a host firewall allowlist would not establish the intended
+route. Native public egress and actual routing must be assessed separately.
+No such connection entries or broad network exceptions were added.

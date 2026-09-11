@@ -96,11 +96,39 @@ only scoped Retire may remove it after exact owned-state checks.
 For a retained Production peer, backend cleanup deletes only records selected
 by the retiring Test UID and preserves storage/nonmatching records. Single-Test
 resource deletion additionally requires whole-store emptiness against the
-known schema. Tire currently supplies only a foundation-only proof. A retained
+known schema. Legacy Tire images supply only a foundation-only proof; product
+images use the explicit protocol below. A retained
 demo Subject is not yet integrated: service assignment state blocks retirement
 rather than silently leaving or deleting a binding.
 
-## Current boundaries and evidence
+## Tire product cleanup protocol — 11 September 2026
+
+Committed backend package metadata selects `tire-product-v1` in the immutable
+build manifest. Activation and runtime ownership records preserve that exact
+protocol; it is not inferred from an HTTP 200 or a container being healthy.
+Earlier images retain their foundation-only protocol.
+
+The private product endpoints are `/private/demo/cleanup/preview`,
+`/private/demo/cleanup/execute`, and `/private/demo/empty-proof`. Requests carry
+`schemaVersion: 1`, `contractVersion: "1.0.0"` and, for scoped cleanup,
+`systemUids`. Execute also carries the one-use preview `confirmationToken`.
+That token remains in memory, never in journal/evidence or the Presenter.
+
+Preview supplies exact matching/nonmatching record counts and record-set
+digests. Execute must report `CLEANED`, zero remaining matching counts and
+unchanged nonmatching counts/digest. The six collections are `messages`,
+`assessments`, `events`, `advisories`, `functionStatus` and `quarantine`.
+Whole-store emptiness additionally requires `databaseSchemaVersion: 2` and
+zero counts for every collection. Missing fields, unknown schema and uncertain
+responses are not proof of deletion or permission to retry. Production and
+foreign/nonmatching data remain protected.
+
+The exact requests and response shapes are fixture-tested against the Tire
+product implementation. Its image was built and activated with retained data;
+no live cleanup deletion or real Tire service ingestion is claimed. See the
+[11 September checkpoint](../qualification/demo-studio-implementation-progress-2026-09-11.md).
+
+## Earlier foundation boundaries and evidence
 
 Ten isolated lifecycle tests and six context tests pass. The lifecycle suite
 also rejects container identity changes, cross-team storage and unrecorded

@@ -34,16 +34,19 @@ class OperationTests(unittest.TestCase):
 
     def test_allowlist_and_exact_recipient(self):
         session = SessionOperations()
-        cases = [("create", dict(image="factory-31/arm64"), dict(domain="environment", action="create", target="all", image="factory-31/arm64")),
-                 ("connect-test", {}, dict(domain="vehicle", action="select", target="test")),
-                 ("prepare", dict(version="13.0.0", profile="v1"), dict(domain="component", action="prepare", component_version="13.0.0", content_profile="v1")),
-                 ("approve", dict(version="13.0.0"), dict(domain="component", action="approve", component_version="13.0.0"))]
+        cases = [("create", dict(image="factory-31/arm64"), dict(domain="demo", action="create", image="factory-31/arm64")),
+                 ("connect-test", {}, dict(domain="vehicle", action="initialize", target="test")),
+                 ("prepare", dict(profile="v1"), dict(domain="component", action="prepare", content_profile="v1")),
+                 ("upload", dict(version="13.0.0"), dict(domain="component", action="upload", component_version="13.0.0")),
+                 ("park", {}, dict(domain="environment", action="park")),
+                 ("resume", {}, dict(domain="environment", action="resume")),
+                 ("provision", {}, dict(domain="unit", action="provision", target="test"))]
         for action, params, expected in cases:
             self.assertEqual([expected], operation_plan(payload(session, action, **params))[1])
         for params in (dict(target="production"), dict(path="/tmp/file"), dict(url="https://example.com"), dict(force=True), dict(profile="admin")):
             with self.assertRaises(ValueError):
                 operation_plan(payload(session, **params))
-        for action in ("shell", "send", "unapprove", "production-approve", "test-logs"):
+        for action in ("shell", "send", "approve", "unapprove", "production-approve", "test-logs"):
             with self.assertRaises(ValueError):
                 operation_plan(payload(session, action))
         self.assertEqual([dict(domain="component", action="cloud-status")], operation_plan(payload(session, "observe-test"))[1])
@@ -93,7 +96,7 @@ class OperationTests(unittest.TestCase):
         session = SessionOperations(execute)
         session.submit(payload(session, "reset"))
         self.assertEqual("COMPLETED", self.finish(session)["state"])
-        self.assertEqual(["simulation.stop", "unit.deprovision", "unit.delete", "vm.stop", "environment.retire"],
+        self.assertEqual(["demo.retire"],
                          [call.args[0]["domain"] + "." + call.args[0]["action"] for call in execute.call_args_list])
         execute.reset_mock()
         execute.side_effect = [dict(operation="simulation.stop", state="BLOCKED", message="owned source unavailable")]
@@ -118,7 +121,7 @@ class OperationTests(unittest.TestCase):
             journal = root / JOURNAL
             journal.parent.mkdir(parents=True)
             journal.write_text(json.dumps(dict(vehicles=dict(test=dict(unitId=None), production=dict(unitId=None)))))
-            self.assertEqual(["simulation", "vm", "environment"], [request["domain"] for request in reset_plan(root, plan)])
+            self.assertEqual(["demo"], [request["domain"] for request in reset_plan(root, plan)])
             journal.write_text(json.dumps(dict(vehicles=dict(test=dict(systemUid="partial-identity")))))
             self.assertEqual(plan, reset_plan(root, plan))
 

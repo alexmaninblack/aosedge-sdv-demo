@@ -43,6 +43,7 @@ class ServiceBuildTests(unittest.TestCase):
         atomic_json(directory / "product-build.json", dict(schemaVersion=1,
             kind="brake-health-linux-arm64-product", sourceRevision=REVISION, sourceDateEpoch=1234,
             architecture="arm64", os="linux", productTarget="BHS_BUILD_KUKSA_RUNTIME=ON",
+            functionalProfile=next(value.split("=", 1)[1] for value in args if value.startswith("BHS_FUNCTIONAL_PROFILE=")),
             tests=dict(ctest="passed"), binaries=rows))
 
     def test_build_checks_actual_elf_and_repeat_reuses_exact_artifact(self):
@@ -72,7 +73,14 @@ class ServiceBuildTests(unittest.TestCase):
         with patch("aosedge_demo_orchestrator.service_build.shutil.which", return_value="/fixed/docker"):
             with self.assertRaisesRegex(EnvironmentError, "PROOF_INVALID"):
                 self.builder.execute("brake")
-        self.assertFalse((self.parent / "catalog/services/brake/builds" / REVISION / "build.json").exists())
+        self.assertFalse((self.parent / "catalog/services/brake/builds" / REVISION / "v1/build.json").exists())
+
+    def test_functional_profiles_have_distinct_build_outputs(self):
+        with patch("aosedge_demo_orchestrator.service_build.shutil.which", return_value="/fixed/docker"):
+            first = self.builder.execute("brake", "v1")
+            second = self.builder.execute("brake", "v2")
+        self.assertNotEqual(first["outputPath"], second["outputPath"])
+        self.assertEqual(("v1", "v2"), (first["contentProfile"], second["contentProfile"]))
 
     def test_cli_build_is_not_a_browser_capability(self):
         request = request_from_arguments(build_parser().parse_args(["service", "build", "brake"]))
@@ -84,3 +92,9 @@ class ServiceBuildTests(unittest.TestCase):
         with self.assertRaisesRegex(EnvironmentError, "NOT_IMPLEMENTED"):
             self.builder.execute("tire")
         self.builder._build.assert_not_called()
+
+    def test_runtime_inspection_is_explicit_test_cli_not_browser_capability(self):
+        request = request_from_arguments(build_parser().parse_args(["service", "runtime-inspect", "test"]))
+        self.assertEqual(("service", "runtime-inspect", "test"), (request.domain, request.action, request.target.value))
+        with self.assertRaises(ValueError):
+            execute_operation(dict(domain="service", action="runtime-inspect", target="test"), Mock())

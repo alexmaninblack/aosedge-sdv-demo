@@ -1,5 +1,13 @@
 import type { LocalDemoView, Observed, PresenterReadPort, PresenterSnapshot, ReleaseStage, TeamId, TeamView, VehicleRole, PlatformCloudObservation } from "../../domain";
 
+let monitoringFlight: Promise<unknown> | null = null;
+export function readCloudMonitoring(): Promise<unknown> {
+  if (!monitoringFlight) monitoringFlight = fetch("/api/presenter/monitoring", { cache: "no-store", signal: AbortSignal.timeout(65000) })
+    .then((response) => { if (!response.ok) throw new Error("CLOUD_MONITORING_UNAVAILABLE"); return response.json(); })
+    .finally(() => { monitoringFlight = null; });
+  return monitoringFlight;
+}
+
 const deferred = "Production FOTA is unavailable in the current Aos platform release. Production remains outside the verification set.";
 const profiles = [
   "Baseline read-only braking telemetry",

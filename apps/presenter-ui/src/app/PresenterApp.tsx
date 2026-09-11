@@ -9,6 +9,7 @@ import { ProducerWorkspace } from "./ProducerWorkspace";
 import { SharedHeader } from "./SharedHeader";
 import { LocalLifecyclePage } from "../features/global-lifecycle/LocalLifecyclePage";
 import { OperationProgress, usePresenterControls } from "./state/PresenterControls";
+import { StudioWorkspace } from "./StudioWorkspace";
 
 export function PresenterApp() {
   const snapshot = usePresenterReadModel();
@@ -41,10 +42,9 @@ export function PresenterApp() {
       <div className="fixture-ribbon" role="note"><strong>{snapshot.localDemo ? "LOCAL DEMO CONTROL" : "FIXTURE ONLY"}</strong><span>{snapshot.localDemo ? controls.session ? "Test VDP actions · Production FOTA deferred" : "Connecting native session…" : snapshot.fixtureLabel}</span></div>
       <PresenterWorkspace snapshot={snapshot}>
         {presentation.actionNotice ? <div className="action-notice" role="status">{presentation.actionNotice}</div> : null}
-        {presentation.perspective === "global"
-          ? snapshot.localDemo ? <LocalLifecyclePage snapshot={snapshot} onPlatform={() => navigate("platform")} /> : <GlobalLifecyclePage view={snapshot.global} assetFailure={snapshot.assetFailure} eventChain={snapshot.eventChain} onAction={(action) => dispatch({ type: "open-action", action })} />
+        {snapshot.localDemo ? <StudioWorkspace snapshot={snapshot} perspective={presentation.perspective} navigate={navigate} /> : presentation.perspective === "global"
+          ? <GlobalLifecyclePage view={snapshot.global} assetFailure={snapshot.assetFailure} eventChain={snapshot.eventChain} onAction={(action) => dispatch({ type: "open-action", action })} />
           : <ProducerWorkspace teamId={presentation.perspective as TeamId} snapshot={snapshot} presentation={presentation} dispatch={dispatch} />}
-        {snapshot.localDemo && <OperationProgress />}
         {overlay?.kind === "details" && overlayRelease ? <DetailsDialog release={overlayRelease} redactionNotice={snapshot.redactionNotice} onClose={closeOverlay} /> : null}
         {overlay?.kind === "logs" && overlayTeam ? <OperationalLogsDialog team={overlayTeam} redactionNotice={snapshot.redactionNotice} onClose={closeOverlay} /> : null}
         {overlay?.kind === "action" && overlay.action ? <ActionPreviewDialog action={overlay.action} team={overlayTeam} release={overlayRelease} onClose={closeOverlay} onConfirm={() => dispatch({ type: "confirm-fixture-action", action: overlay.action! })} /> : null}

@@ -38,8 +38,11 @@ def build_parser() -> argparse.ArgumentParser:
     commands = parser.add_subparsers(dest="domain", required=True)
     service = commands.add_parser("service", help="read AosCloud service catalog, owners, versions and assignments")
     service_commands = service.add_subparsers(dest="action", required=True)
+    service_runtime = service_commands.add_parser("runtime-inspect", help="engineering-only Test native ABI and declared service resources; no mutation")
+    service_runtime.add_argument("target", choices=("test",))
     service_build = service_commands.add_parser("build", help="development-only real ARM64 service build; no publication or VM action")
     service_build.add_argument("team", choices=("brake", "tire"))
+    service_build.add_argument("--content-profile", choices=("v1", "v2", "v3"), default="v1", help="fixed service functional profile, independent of release number")
     for action in ("list", "status"):
         command = service_commands.add_parser(action, help="read-only OEM/SP observations; no upload or assignment")
         if action == "status":
@@ -60,7 +63,9 @@ def build_parser() -> argparse.ArgumentParser:
     workspace_commands.add_parser("close", help="close owned Presenter windows and background; preserve simulation, VMs and Cloud")
 
     ui = commands.add_parser("ui", help="local Presenter UI")
-    ui.add_subparsers(dest="action", required=True).add_parser("serve", help="serve the built UI and protected Test-first operations on loopback")
+    ui_commands = ui.add_subparsers(dest="action", required=True)
+    ui_commands.add_parser("serve", help="serve the built UI and protected Test-first operations on loopback")
+    ui_commands.add_parser("stop", help="stop only the idle owned UI server; preserve VMs, services and Cloud")
     demo = commands.add_parser("demo", help="operator's complete Test-first demo workflow")
     demo_commands = demo.add_subparsers(dest="action", required=True)
     create = demo_commands.add_parser("create", help="create and boot Test controller and start prepared backends; no publication/provisioning")
@@ -379,8 +384,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser = build_parser()
     arguments = parser.parse_args(argv)
     if arguments.domain == "ui":
-        from .presenter import serve
-        return serve()
+        from .presenter import serve, stop
+        return stop() if arguments.action == "stop" else serve()
     if arguments.domain == "access":
         from .native_access import NativeVMAccess
         access = NativeVMAccess(progress=lambda message: print(message, file=sys.stderr, flush=True))

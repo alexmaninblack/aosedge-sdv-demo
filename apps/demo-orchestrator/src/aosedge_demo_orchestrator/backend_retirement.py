@@ -23,6 +23,7 @@ from .environment import EnvironmentError, JOURNAL, MANIFEST, OVERLAYS, atomic_j
 from .status import now, object_id, read_json
 
 COUNTS = {"messages", "windows", "assessments", "events", "advisories", "quarantine"}
+TIRE_COUNTS = {"messages", "assessments", "events", "advisories", "functionStatus", "quarantine"}
 SHA = re.compile(r"[a-f0-9]{64}")
 PREVIEW = {"schemaVersion", "contractVersion", "systemUids", "recordCounts", "nonmatchingRecordCounts",
            "recordSetSha256", "confirmationToken", "expiresAt"}
@@ -32,8 +33,8 @@ FOUNDATION = dict(scope="FOUNDATION_ONLY", productIngestion=False, schemaVersion
                   noProductTablesOrRecords=True, unknownTables=False, removalEligible=True)
 
 
-def _counts(value):
-    if (not isinstance(value, dict) or set(value) != COUNTS
+def _counts(value, keys=COUNTS):
+    if (not isinstance(value, dict) or set(value) != keys
             or any(type(count) is not int or count < 0 for count in value.values())):
         raise EnvironmentError("BACKEND_CLEANUP_COUNTS_INVALID")
     return value
@@ -121,7 +122,7 @@ class BackendRetirement:
         return value
 
     def _private(self, team, container_id, operation, payload=None):
-        if (team, operation) not in (("brake", "preview"), ("brake", "execute"), ("brake", "empty-proof"), ("tire", "foundation-proof")):
+        if team not in TEAMS or operation not in ("preview", "execute", "empty-proof", *( ("foundation-proof",) if team == "tire" else ())):
             raise EnvironmentError("BACKEND_PRIVATE_OPERATION_INVALID")
         if not isinstance(container_id, str) or not SHA.fullmatch(container_id):
             raise EnvironmentError("BACKEND_CONTAINER_ID_INVALID")
@@ -196,6 +197,14 @@ class BackendRetirement:
         self._save(state)
 
     def _tire(self, state, uid, observed):
+        if self._tire_product(state):
+            if uid is None:
+                record = state["backends"]["tire"]
+                record["cleanup"] = dict(imageId=record["imageId"], state="OBSERVING", scope="UNPROVISIONED_STORE_OBSERVATION")
+                self._empty_store(state, allow_nonempty="production" in state["vehicles"], team="tire")
+                record["cleanup"]["state"] = "CONFIRMED"
+                return
+            return self._tire_product_cleanup(state, uid, observed)
         value = self._private("tire", observed["Id"], "foundation-proof")
         if value != FOUNDATION or any(type(value[key]) is not type(expected) for key, expected in FOUNDATION.items()):
             raise EnvironmentError("TIRE_FOUNDATION_EMPTY_PROOF_UNAVAILABLE")
@@ -203,22 +212,76 @@ class BackendRetirement:
         record["cleanup"] = dict(systemUid=uid, imageId=record["imageId"], state="CONFIRMED", checkedAt=now(), **FOUNDATION)
         self._save(state)
 
-    def _empty_store(self, state, allow_nonempty=False):
-        observed = self._owned(state, "brake", running=True)
-        body = self._private("brake", observed["Id"], "empty-proof", dict(schemaVersion=1, contractVersion="1.0.0"))
+    def _tire_product(self, state):
+        protocol = state["backends"]["tire"].get("privateCleanupProtocol")
+        if protocol not in (None, "tire-product-v1"):
+            raise EnvironmentError("BACKEND_CLEANUP_PROTOCOL_UNSUPPORTED")
+        return protocol == "tire-product-v1"
+
+    def _tire_product_cleanup(self, state, uid, observed):
+        record = state["backends"]["tire"]
+        previous = record.get("cleanup") or {}
+        request = dict(schemaVersion=1, contractVersion="1.0.0", systemUids=[uid])
+        def preview():
+            body = self._private("tire", observed["Id"], "preview", request)
+            expected = (PREVIEW - {"contractVersion"}) | {"nonmatchingRecordSetSha256"}
+            if (not isinstance(body, dict) or set(body) != expected or type(body.get("schemaVersion")) is not int
+                    or body["schemaVersion"] != 1 or body.get("systemUids") != [uid]
+                    or not all(isinstance(body.get(key), str) and SHA.fullmatch(body[key]) for key in ("recordSetSha256", "nonmatchingRecordSetSha256"))
+                    or not isinstance(body.get("confirmationToken"), str) or not 32 <= len(body["confirmationToken"]) <= 1024):
+                raise EnvironmentError("TIRE_CLEANUP_PREVIEW_INVALID")
+            if _timestamp(body["expiresAt"]) <= datetime.now(timezone.utc):
+                raise EnvironmentError("BACKEND_CLEANUP_PREVIEW_EXPIRED")
+            _counts(body["recordCounts"], TIRE_COUNTS)
+            _counts(body["nonmatchingRecordCounts"], TIRE_COUNTS)
+            return body
+        before = preview()
+        if any(before["recordCounts"].values()):
+            if previous.get("systemUid") == uid and previous.get("state") in ("SUBMITTING", "UNCERTAIN", "CONFIRMED"):
+                raise EnvironmentError("BACKEND_CLEANUP_UNCERTAIN_OR_NEW_RECORDS_REMAIN")
+            record["cleanup"] = dict(systemUid=uid, imageId=record["imageId"], state="SUBMITTING", checkedAt=now())
+            self._save(state)
+            try:
+                result = self._private("tire", observed["Id"], "execute", dict(request, confirmationToken=before["confirmationToken"]))
+                expected = (RESULT - {"remainingMatchingRecordCounts"}) | {"remainingRecordCounts", "state"}
+                if (not isinstance(result, dict) or set(result) != expected or type(result.get("schemaVersion")) is not int
+                        or result["schemaVersion"] != 1 or result.get("contractVersion") != "1.0.0" or result.get("state") != "CLEANED"
+                        or result.get("systemUids") != [uid] or _counts(result.get("deletedRecordCounts"), TIRE_COUNTS) != before["recordCounts"]
+                        or any(_counts(result.get("remainingRecordCounts"), TIRE_COUNTS).values())
+                        or _counts(result.get("nonmatchingRecordCounts"), TIRE_COUNTS) != before["nonmatchingRecordCounts"]
+                        or result.get("nonmatchingRecordSetSha256") != before["nonmatchingRecordSetSha256"]):
+                    raise EnvironmentError("TIRE_CLEANUP_RESULT_INVALID")
+                _timestamp(result["completedAt"])
+                after = preview()
+                if (any(after["recordCounts"].values()) or after["nonmatchingRecordCounts"] != before["nonmatchingRecordCounts"]
+                        or after["nonmatchingRecordSetSha256"] != before["nonmatchingRecordSetSha256"]):
+                    raise EnvironmentError("TIRE_CLEANUP_NOT_CONFIRMED")
+                before = after
+            except EnvironmentError:
+                record["cleanup"].update(state="UNCERTAIN", checkedAt=now())
+                self._save(state)
+                raise
+        record["cleanup"] = dict(systemUid=uid, imageId=record["imageId"], state="CONFIRMED", checkedAt=now(),
+            matchingRecordCounts=before["recordCounts"], nonmatchingRecordCounts=before["nonmatchingRecordCounts"],
+            nonmatchingRecordSetSha256=before["nonmatchingRecordSetSha256"], scope="EXACT_TEST_PRODUCT_DATA")
+        self._save(state)
+
+    def _empty_store(self, state, allow_nonempty=False, team="brake"):
+        observed = self._owned(state, team, running=True)
+        body = self._private(team, observed["Id"], "empty-proof", dict(schemaVersion=1, contractVersion="1.0.0"))
         if (not isinstance(body, dict) or set(body) != {"schemaVersion", "contractVersion", "state", "databaseSchemaVersion", "recordCounts", "observedAt"}
                 or type(body.get("schemaVersion")) is not int or body["schemaVersion"] != 1
                 or body.get("contractVersion") != "1.0.0" or type(body.get("databaseSchemaVersion")) is not int
                 or body["databaseSchemaVersion"] != 2 or body.get("state") not in ("EMPTY", "NONEMPTY")):
             raise EnvironmentError("BACKEND_WHOLE_STORE_EMPTY_PROOF_UNAVAILABLE")
         _timestamp(body["observedAt"])
-        counts = _counts(body.get("recordCounts"))
+        counts = _counts(body.get("recordCounts"), TIRE_COUNTS if team == "tire" else COUNTS)
         empty = not any(counts.values())
         if (body["state"] == "EMPTY") is not empty:
             raise EnvironmentError("BACKEND_WHOLE_STORE_EMPTY_PROOF_UNAVAILABLE")
         if not empty and not allow_nonempty:
             raise EnvironmentError("BACKEND_NONMATCHING_DATA_PRESERVED")
-        state["backends"]["brake"]["cleanup"].update(wholeStoreEmpty=empty, recordCounts=counts)
+        state["backends"][team]["cleanup"].update(wholeStoreEmpty=empty, recordCounts=counts)
         self._save(state)
 
     def _proofs(self, state, uid):
@@ -228,10 +291,11 @@ class BackendRetirement:
             if (proof.get("state") != "CONFIRMED" or proof.get("systemUid") != uid
                     or proof.get("imageId") != record["imageId"]):
                 return False
-            if team == "brake":
-                if any(_counts(proof.get("matchingRecordCounts")).values()):
+            if team == "brake" or self._tire_product(state):
+                keys = TIRE_COUNTS if team == "tire" else COUNTS
+                if any(_counts(proof.get("matchingRecordCounts"), keys).values()):
                     return False
-                _counts(proof.get("nonmatchingRecordCounts"))
+                _counts(proof.get("nonmatchingRecordCounts"), keys)
             elif any(proof.get(key) != value or type(proof.get(key)) is not type(value) for key, value in FOUNDATION.items()):
                 return False
         return True
@@ -319,6 +383,8 @@ class BackendRetirement:
         self._save(state)
 
     def _finish_single(self, state):
+        if self._tire_product(state) and state["backends"]["tire"]["cleanup"].get("wholeStoreEmpty") is not True:
+            raise EnvironmentError("BACKEND_WHOLE_STORE_EMPTY_PROOF_UNAVAILABLE")
         for team in TEAMS:
             self._remove_resource(state, team, "container", "aosedge-demo-" + team + "-cloud")
             self._remove_resource(state, team, "volume", "aosedge_demo_" + team + "_cloud_v1")
@@ -384,6 +450,8 @@ class BackendRetirement:
                     self._tire(state, uid, self._owned(state, "tire", running=True))
                     if "production" not in state["vehicles"]:
                         self._empty_store(state)
+                        if self._tire_product(state):
+                            self._empty_store(state, team="tire")
             elif not self._proofs(state, uid):
                 raise EnvironmentError("BACKEND_CONTEXT_ABSENCE_NOT_PROVEN")
             elif any((self._owned(state, team) or {}).get("State", {}).get("Running") for team in TEAMS):
@@ -410,8 +478,8 @@ class BackendRetirement:
             if (proof.get("state") != "CONFIRMED" or proof.get("localVmId") != local_id
                     or proof.get("imageId") != record["imageId"] or "systemUid" in proof):
                 return False
-            if team == "brake":
-                counts = _counts(proof.get("recordCounts"))
+            if team == "brake" or self._tire_product(state):
+                counts = _counts(proof.get("recordCounts"), TIRE_COUNTS if team == "tire" else COUNTS)
                 if proof.get("wholeStoreEmpty") is not (not any(counts.values())):
                     return False
                 if proof.get("scope") != "UNPROVISIONED_STORE_OBSERVATION":
@@ -465,7 +533,7 @@ absence. Guest stop/overlay-digest proof is finally enforced by local retire.
                 record["cleanup"]["state"] = "CONFIRMED"
                 self._save(state)
                 self._tire(state, None, self._owned(state, "tire", running=True))
-                state["backends"]["tire"]["cleanup"].pop("systemUid")
+                state["backends"]["tire"]["cleanup"].pop("systemUid", None)
                 state["backends"]["tire"]["cleanup"]["localVmId"] = local_id
                 self._save(state)
             self._stop(state)

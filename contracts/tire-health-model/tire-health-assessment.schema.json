@@ -15,9 +15,9 @@
     "unitRole": {"enum": ["VALIDATION", "PRODUCTION"]},
     "sourceExerciseId": {"type": "string", "format": "uuid"},
     "sourceEventTime": {"type": "string", "format": "date-time"},
-    "serviceVersion": {"const": "1.0.0"},
+    "serviceVersion": {"type": "string", "maxLength": 32, "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"},
     "serviceArtifactSha256": {"$ref": "#/$defs/sha256"},
-    "vdpContractVersion": {"const": "3.0.0"},
+    "vdpContractVersion": {"type": "string", "maxLength": 32, "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"},
     "vdpContractSha256": {"$ref": "#/$defs/sha256"},
     "modelConfigSha256": {"$ref": "#/$defs/sha256"},
     "content": {
