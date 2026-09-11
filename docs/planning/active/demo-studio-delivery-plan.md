@@ -21,6 +21,17 @@ implementation. This is a bounded continuation of P5/P7, not a restart of the
 Studio plan. The former manifest-before-assignment and SM token-owner patch
 gates are retired. Earlier dated checkpoints below remain historical.
 
+Subject amendment accepted on 11 September: Q09b now uses one retained OEM
+Group Subject **per logical service**, Brake and Tire, not one shared Subject
+and not one per release. Both may attach only to current Test in this packet;
+Production is excluded. Demo Control records each exact Subject identity and
+keeps assignment independent of package readiness. An accepted publication
+receipt plus matching catalog service/SP identity permits the native assignment
+attempt; upload/build readiness and actual runtime remain separate observations.
+This supersedes the earlier local READY gate, not Cloud's native validation.
+Q13 retention/reset applies independently to each Subject. No shared Subject
+was created before the amendment, so this run requires no binding migration.
+
 | Step | Change and owner | Gate / evidence | State |
 | --- | --- | --- | --- |
 | N1 | Solution: accept ADR, update HLA/flows/requirements, runtime-input contract and D4 migration mapping | English documents, navigation and deterministic docs-check | Complete; product wire migration remains N3 |
@@ -28,7 +39,7 @@ gates are retired. Earlier dated checkpoints below remain historical.
 | N3 | Solution contracts, both producers/backends: package version and native identity; explicit new message schemas without required service/model OCI digest | Producer-consumer fixtures; legacy queues/history retained; no fabricated digest; model/VDP hashes unchanged | Consumer and producer/input source increments passed; live integration remains N6 |
 | N4 | Demo Control: package the allocated version once; project public inputs; native configuration activation through existing commands | Package/publication equality; no manifest lookup dependency; stable-directory refresh after VDP commit | Both real ARM64 exports, signed-payload equality, warm projection and transient resource activation passed; after user changed OEM to arm64 only, both 2.0.0 uploads created service/version records but failed Cloud bundle building |
 | N5 | Existing startup integration: restore public /run inputs before SM launches retained assignments | Exact hook/order documented and tested; no new daemon, persisted token or metadata authority | Cold/warm split accepted; pre-SM preparation and post-SM process verification passed with unchanged SM binary; persistent-image integration and retained-assignment VM reboot not qualified |
-| N6 | Bounded current Test SOTA and backend integration through democtl | Real Cloud Running/version, KAC/TLS/subscriptions, renew/expiry, actual product records, retained state and scoped access proof | Migrated backends active; Subject assignment source tested but not executed; blocked before deployment by generic Cloud bundle build failure, with no detailed cause exposed by version API |
+| N6 | Bounded current Test SOTA and backend integration through democtl | Real Cloud Running/version, KAC/TLS/subscriptions, renew/expiry, actual product records, retained state and scoped access proof | Separate Brake/Tire Group Subjects created and bound to Test; service association attempted once each but still absent on read. Both packages uploaded/not ready after generic bundle build failure; no Running/functional qualification |
 | N7 | Checkpoint source/docs and record exclusions | Commit only tested source; no build artifacts; retain current VM/Factory/Production | N2/N3 local checkpoints created; full-migration checkpoint remains pending |
 
 Source increments may be developed independently, but **no new producer is
@@ -110,8 +121,8 @@ with data preserved. Both current-source ARM64 v1 packages were prepared as
 only `arm64`; the current OEM architecture read returns `arm` and `arm64`.
 This is evidence of a tenant/package architecture mismatch, not proof of an
 SM fault. No architecture was relabelled, no OEM setting changed and no second
-upload attempted. OEM-wide changes require separate authorization; a service
-cannot be assigned before its package reaches READY. See the
+upload attempted. OEM-wide changes require separate authorization. The former
+local READY-before-assignment gate is superseded by the amendment above. See the
 [latest checkpoint](../../qualification/demo-studio-implementation-progress-2026-09-11.md).
 
 Latest publication check: the user changed the OEM to `arm64` only and explicitly
@@ -120,7 +131,9 @@ functional content, without a rebuild. Both uploads returned 201 and created
 service/version records, but both bundles failed with `Failed to build deployment
 bundle.` The missing-`arm` message did not recur. Exact version detail reports
 `uploaded` with null build diagnostic/configuration, not READY. No Subject
-assignment or VM action occurred. Classify the Cloud build failure from its
+assignment or VM action occurred during publication. Subsequent authorized
+assignment created/bound both separate Group Subjects to Test, but service
+association remains absent; see the latest checkpoint. Classify the Cloud build failure from its
 internal diagnostic before another publication; no guessed package change.
 
 N2 local source checkpoints: Brake `8d19381`, Tire `47ab08d`, Platform
@@ -430,7 +443,7 @@ This plan is a review candidate beside the mockup, not a parallel normative spec
 | M02 — Create and baseline order — ACCEPTED | **Create option B:** create and immediately start the controller from selected Factory Firmware. **Platform Team option A:** visibly prepare, sign and publish fresh VDP v1 during the demo, before Provision. | Factory-image picker, manufacturing story, independent Platform Team and the same architectural participants. | Change the democtl pre-provision publication restriction, not the narrative. No artificial stop/start to upload; reuse the running controller for provisioning. P1, P3, P4. See the accepted decisions below. |
 | M03 — Truthful states — ACCEPTED (Q06/Q07a/Q07b) | Use confirmed source-backed stages plus elapsed time; distinguish acceptance/processing/publication/pending/installed, with percentages only when measured. Use the shared visible-panel observer and stale-data policy. Q06 permits Installed / runtime Not reported only if the audit confirms no supported Cloud runtime source. | Installed differs from Running; real engineering/E2E runtime proof remains mandatory; no direct VM queries from the panel, timer-driven success or invented Pending reason. | The current adapter does not prove a Cloud limitation. Investigate supported evidence before applying the fallback. These accepted presentation policies do not close G05/G07/G12/G13/G14 implementation. P2, P4. |
 | M04 — Factory VDP representation — ACCEPTED (Q05, option A) | Put meaning first: selected Factory Firmware version; **VDP — Factory baseline** for the known factory placeholder, then **VDP v1/v2/v3** with the exact release secondary. Put 0.0.0/IDs in Details. Truly absent Brake/Tire slots stay empty; unknown state stays Unknown. | Factory firmware and slot layout; pre-provision image description remains distinct from Cloud-observed installed state. | Q05 fixes the presentation, not the data integration. Resolve profiles from verified bindings, not SemVer; G25 implementation remains open. P2, P4. |
-| M05 — Service release action — ACCEPTED (Q09a, option A) | First assignment to the current vehicle uses two explicit actions: **Publish service** under the owning SP, then **Deploy to Test** under OEM authority. For an already assigned identity, use **Publish update** and observe delivery/runtime, without a second version-specific Deploy. | Independent Platform/Brake/Tire ownership, shared Demo Control operations and separate service releases. | Subject assignment accepts service identity, not a version. Eligible delivery may begin after publication for an existing assignment. Q09b accepts one dedicated Test Subject; Q09c separates Cloud-confirmed update completion from functional readiness. G08/G09 implementation remains open. P5, P6. |
+| M05 — Service release action — ACCEPTED (Q09a, option A) | First assignment to the current vehicle uses two explicit actions: **Publish service** under the owning SP, then **Deploy to Test** under OEM authority. For an already assigned identity, use **Publish update** and observe delivery/runtime, without a second version-specific Deploy. | Independent Platform/Brake/Tire ownership, shared Demo Control operations and separate service releases. | Subject assignment accepts service identity, not a version. Eligible delivery may begin after publication for an existing assignment. Amended Q09b uses distinct Brake/Tire Group Subjects; Q09c separates Cloud-confirmed update completion from functional readiness. G08/G09 integration remains open. P5, P6. |
 | M06 — Session lifecycle — ACCEPTED (Q12a/Q12b/Q13a, option A) | Park/Resume preserves the owned environment; conflicting unfinished/uncertain changes cause prompt refusal without queued shutdown. Finish demo uses scoped Retire. New cycle offers/completes that same cleanup when needed before fresh Create; no mutation on page open. Retain the dedicated Subject but reset owned run bindings, and preserve persistent infrastructure/releases. | Shared Demo Control, distinct low-level lifecycle commands, no warm Pause/backups or blind replay, and explicit confirmation of owned cleanup scope. | Q13b adds scoped data deletion and persistent release-number continuity. Exact conflict/source/Subject-type/state/ordering mappings and G09/G15/G16/G17/G21/G22 implementation remain open. P3, P4. |
 | M07 — Unconfirmed edge transitions — ACCEPTED (Q08b, option A) | Permit one outstanding update per component/service identity in the demo workflow. Preparation/signing of its successor remain available; Publish is unavailable until confirmed completion or resolution of the existing error. No hidden queue or timer wait. Do not claim cancellation/rollback/supersession without evidence. | Independent Platform/Brake/Tire releases remain independent; native driving controls and Safe Stop semantics are unchanged. | This is an agreed demo-tool restriction, not a Cloud limit. Exact native edge semantics and G27 implementation remain open; no new Core behavior or global team lock is authorized. P2, P3, P4. |
 | M08 — Functional results and history — ACCEPTED (Q10b/Q11/Q13b, with the user's retention amendment) | Overview-first team dashboards and compact current-run history, with distinct Cloud, product and native advisory facts. A separate offline episode shows local function/advisory followed by observed delayed delivery. Retire removes owned ordinary run records, without backups, archives or automatically retained reports; preserve release numbers needed by the next run. | Existing composition, independent products, native telemetry, persistent infrastructure/releases and publication while Offline. Park preserves the current run. | Exact persistent numbering, cleanup selectors and G10/G18/G19/G20/G25/G26 integration and qualification remain open. No live cleanup is authorized. P5–P8. |
@@ -689,7 +702,8 @@ the same Demo Control implementation; no manual scripts or direct
 browser-to-Cloud mutation path is introduced.
 
 Publication must be reconciled through its actual processing/ready state;
-upload acceptance alone is not a deployable release. Deploy establishes the
+upload acceptance alone is not a deployable release. Under the 11 September
+amendment, package readiness does not locally gate identity association. Deploy establishes the
 service-identity/Subject/Test binding and observes the resulting assignment.
 It does not assert that an instance has installed, started or become
 functionally ready. First assignment means first assignment to this vehicle,
@@ -710,23 +724,24 @@ completion/readiness criteria. G08/G09 integration and verification remain
 open. No application, mockup HTML, live Cloud state or VM is changed by
 recording this decision; the canonical cascade follows the final audit.
 
-### <a id="q09b-accepted-shared-test-subject"></a>Accepted Q09b — one dedicated Test Subject, 9 September 2026
+### <a id="q09b-accepted-shared-test-subject"></a>Accepted Q09b — dedicated service Subjects, amended 11 September 2026
 
-The user selected **option A: one dedicated demo Subject for the current
-Test vehicle**, shared by the independently assigned Brake and Tire service
-identities. Do not introduce a separate Subject per team or per release.
+The original 9 September choice of one shared Subject is superseded by the
+user-approved 11 September change: **one dedicated Group Subject per logical
+service**, Brake and Tire, both scoped to current Test. Do not create a new
+Subject for every release.
 
 - **Scope and authority:** record the exact Subject identity and its demo
   ownership. Its Unit membership is limited to the current Test `system_uid`;
   do not reuse an unrelated/shared Subject or include Production. OEM delivery
   authority manages the assignments through shared Demo Control. Brake and
   Tire retain their separate SP publication identities and permissions;
-  sharing the Subject grants neither team the other's publication authority.
+  Subject allocation grants neither team the other's publication authority.
 - **Independent actions:** each service has its own first **Deploy to Test**.
   Assigning Brake does not assign Tire, and assigning Tire preserves Brake's
-  existing binding. Resolve the same recorded Subject for both operations;
+  existing binding. Resolve the requested service's exact recorded Subject;
   create it only when necessary and authorized, not on every click. Reconcile
-  partial/uncertain binding outcomes before retrying. A shared Subject is not
+  partial/uncertain binding outcomes before retrying. A Subject is not
   a combined release, a global update lock or a version selector.
 - **Presentation:** keep the Subject as an integration detail, available in
   Details rather than another actor on the main architecture scene. The
@@ -1017,7 +1032,7 @@ and actual implementation still follow the comprehensive audit.
 | Scope | Accepted cleanup policy | Preserve / boundary |
 |---|---|---|
 | Current Test Unit | Ordered deprovision and Unit deletion; reconcile its exact Unit Set/Subject membership and Unit-owned Node absence | Permanent Sets/Fleet/Model and unrelated Units. Do not issue a separate blind Node delete or require Production. |
-| Dedicated demo Subject | Remove the retired Test binding and demo-owned Brake/Tire service assignments so the next first Deploy remains explicit | Retain the Subject identity and agreed configuration, service identities/SP ownership and published versions. Never reset an unrelated/factory Subject or other recipients. |
+| Dedicated demo Subjects | Independently remove the retired Test binding and owned service assignment from Brake and Tire Subjects so each next first Deploy remains explicit | Retain both Subject identities/configuration, service identities/SP ownership and published versions. Never reset an unrelated/factory Subject or other recipients. |
 | Cloud settings | Restore only explicitly recorded temporary run-owned changes to their agreed baseline, where such changes were actually made | Do not reset all Cloud settings, recreate roles/Sets, overwrite unrelated drift or infer baseline values. Persistent verification settings are not temporary by default. |
 | Local run | Stop owned producers/runtimes; remove working overlays/factory copy, run-specific access material and transient runtime/operation files after external reconciliation | Source image/catalog, source repositories, reusable release artifacts, fixed OEM/SP credentials and the cross-run release-number record. No backups, ordinary run archives or image rebuild. |
 | Product backend data | Q13b: after producers are stopped, remove only the retired run's records through each team's scoped preview/execute contract, then clear current-run context | Other Units' data and product schemas/configuration. No ordinary demo-result history is retained. Keep backend APIs alive until cleanup is confirmed. |
@@ -1167,7 +1182,7 @@ the 78 action/transition rows and 28 gaps before requesting implementation.
 | Q08a | Publication while a provisioned vehicle is Offline, within the agreed recipient scope | ANSWERED — A: allow publication with host Cloud access and retained recipient/identity safeguards; separately observe delivery/install | G06/G07/G28 |
 | Q08b | Outstanding-update publication controls and unconfirmed supersession/cancellation | ANSWERED — A: one outstanding update per identity; prepare/sign successors allowed; no global lock or hidden queue | M07; G27 |
 | Q09a | First service publication/assignment versus subsequent updates | ANSWERED — A: Publish service (SP) then first Deploy to Test (OEM); Publish update for an existing identity assignment | M05; G08/G09 |
-| Q09b | Service/Subject ownership, Test binding and team authority | ANSWERED — A: one dedicated Subject for current Test; independent service assignments by OEM and separate team-SP publication; retention/deletion in Q13 | G09/G28 |
+| Q09b | Service/Subject ownership, Test binding and team authority | AMENDED 11 September: separate retained Group Subjects for Brake/Tire, current Test only; independent OEM assignments and team-SP publication; Q13 applies to each | G09/G28 |
 | Q09c | Repeated service profile releases and completion/readiness criteria | ANSWERED — A: retain identities with monotonic profile releases; Cloud-confirmed expected installed/running version completes the update; function/results separate and mandatory for E2E | G10/G11/G25 |
 | Q10a | Backend startup and current Test/run context | ANSWERED — A: prepare/reuse both backends during composed Create or Quick preparation via Demo Control; bind current Test when known; navigation read-only, vehicle deployment separate | G18/G21; Q04b |
 | Q10b | Backend dashboards, functional evidence and advisory presentation | ANSWERED — A: overview first (Cloud service state, latest backend result, recorded advisory), compact history/details; native vehicle display remains separate | M08 presentation; G18/G19/G25 |
@@ -1272,7 +1287,7 @@ Affected owners: Demo Control/Presenter, `brake-health-service`, `brake-health-c
 1. Close the complete service contract before uploading: ARM64 OCI/service manifest, layers/entrypoint, execution identity, minimum instances, resource declarations/quotas, VDP/KUKSA access through the accepted credential boundary, networking and backend endpoint. Reuse accepted runtime/SDK/credential mechanisms; do not invent another helper or broaden permissions.
 2. Establish the actual deployable Brake v1 runtime and its bounded braking-window output. Foundation code alone is not a deployable service. Register the immutable candidate and its functional profile/release version.
 3. Add service preparation, inspection, signing, upload, assignment and observation to Demo Control. Reuse the deployment-bundle/signing machinery where applicable, selecting Brake SP authority for publication and OEM authority for assignment.
-4. Apply accepted Q09b: use one dedicated demo Subject with documented ownership and only the current Test system_uid. Brake and Tire share this Subject but are assigned independently. Create only if necessary and authorized; retain its identity for subsequent operations. Add only the requested service identity and preserve the peer binding. Reconcile partial assignment before a repeat; do not pass a service-version UUID. Apply accepted Q13 binding reset/Subject retention and the accepted Group Subject decision.
+4. Apply amended Q09b: use separate retained OEM Group Subjects for Brake and Tire, each containing only its logical service and only current Test system_uid. Create only if necessary and authorized; retain each identity across updates. Preserve the peer Subject and default Subjects. Reconcile partial assignment before a repeat; send no service-version UUID. Package readiness is observed separately, not a local assignment prerequisite. Apply Q13 binding reset/Subject retention to each.
 5. Reuse the P1 backend lifecycle/storage/current-Test context in composed Create and Quick preparation. Extend it with real Brake product ingestion/queries and validate durable records. Do not reintroduce the two-role requirement or defer basic Tire backend startup to P7. A healthy backend process alone does not prove product-query readiness.
 6. Add backend REST reads to Presenter through the trusted application boundary. SSE announces a change and triggers a REST read; it does not replace persisted records.
 7. Prove one chain: published ready service → desired assignment → a real expected instance/version in Cloud → actual braking window → durable backend record. This establishes the common SOTA/backend integration once.
@@ -1296,7 +1311,7 @@ established on the installed versions. New publication is not part of this
 chapter; the separately accepted Offline publication capability remains.
 
 1. Locate or implement the accepted independent Tire runtime/backend; the audit found a contract, not a complete implementation. Reuse common orchestration adapters, not Brake product identity, storage or lifecycle.
-2. Publish with Tire SP and independently assign its service identity with OEM through the same dedicated Test Subject accepted in Q09b. Preserve Brake's binding and prove real Tire instance, assessment and native advisory while Brake remains unchanged.
+2. Publish with Tire SP and independently assign its identity with OEM through its own retained Group Subject under amended Q09b. Preserve Brake's separate Subject/bindings and prove real Tire instance, assessment and native advisory while Brake remains unchanged.
 3. Use the existing native external-network button/Demo Control command. Keep CARLA, local telemetry and local functions alive while external VM traffic is blocked.
 4. Confirm persisted outbound records, bounded retries and durable acknowledgements. After ON, independently observe filter removal, Cloud reconnect, backend delivery and Gateway advisory state. Do not turn reconnect into an instant queue-drain claim.
 5. Exercise no-data/stale/unsupported states and one reconnect/retry/deduplication case through focused tests plus the same live demonstration, not a full environment rebuild.
@@ -1324,7 +1339,7 @@ Paths are relative to the credential profile's `/api/v11` endpoint. This is the 
 | VDP baseline/update publication | Prepare/sign locally → OEM POST `/deployment-bundles/upload/` (`file`) → paginated GET `/deployment-bundles/` matching deploymentId → GET `/components/{C}/versions/` | 201 means accepted. Processing may continue; success requires a usable matching release. Preserve build errors. No batch approve or explicit send in this verification-set path. |
 | Provision Test | Reuse the VM started by Create with DNS/role initialized and the Q03 local CARLA/Gateway connection preserved → official provisioning SDK, including POST `/units/provisioning/` and certificate exchange → GET Unit until provisioned/Online → POST `/unit-sets/{Q}/units/` with `system_uids` → read membership | Initial v1 publication precedes this step in the accepted story. No unconditional restart or source detach/reconnect; revise the current provisioning guard before this path is executable. Unit identity and exact Test membership confirmed. If membership fails after provisioning, keep the Unit and report that unfinished step; do not restart provisioning. |
 | VDP delivery/install | Read `/units/{U}/` → observe current pending or terminal state → native Safe Stop when required → confirm matching installed | A missed Pending sample is not a blocker. No UI install/restart call. Runtime proof uses the separately agreed Cloud evidence source; otherwise remains Not reported. Timeouts retain pending/error information and do not publish another version. |
-| First SOTA release | SP sign/upload deployment bundle → observe bundle processing and ready `/services/{S}/service-versions/` → resolve the dedicated Test Subject Q accepted in Q09b → POST `/subjects/{Q}/units/` (`system_uids:[UID]`) only if the exact Test binding is absent → POST `/subjects/{Q}/services/` (`service_ids:[S]`) for the missing requested binding → read bindings → read `/units/{U}/subjects-services/` and `/{S}/` | Desired assignment is distinct from installed version and real instances/run_state. Both teams share Q but assign independently; preserve the peer binding. Create Q only if needed and authorized. Do not blindly replay an uncertain mutation or include an unintended Unit. |
+| First SOTA release | SP sign/upload deployment bundle → observe exact service identity and package state → resolve that service's retained Group Subject Q → POST `/subjects/{Q}/units/` (`system_uids:[UID]`) only if exact Test binding is absent → POST `/subjects/{Q}/services/` (`service_ids:[S]`) for missing service binding → read bindings → read `/units/{U}/subjects-services/` and `/{S}/` | Package READY is observed, not a local binding prerequisite. Native Cloud may reject association. Brake and Tire have distinct Q values; preserve the peer. Desired association is not installed version/Running. Create only when needed; no blind replay or unintended Unit. |
 | Subsequent SOTA release | Verify the existing identity/Subject binding → publish higher release version with the same SP identity → observe service processing → observe Unit instances/version | Do not repeat version-specific assignment: the API accepts service identity, not a version. Verification-set delivery can start after upload. |
 | Monitoring/logs | GET Unit/service inventory → monitoring only when requested/visible; list existing logs separately; explicit POST log request → follow all returned request IDs → download completed results | OEM/SP scope retained. A log request is an asynchronous mutation; opening a card is a read. Missing metrics/logs are not zero/healthy. |
 | Deprovision/delete | Detach source → stop CM while VM is available → GET Unit Offline → DELETE `/units/{U}/deprovision/` → GET new/Offline → stop VM → remove exact Unit Set membership → DELETE `/units/{U}/` → confirm absence → local retire | Preserve partial outcomes. Do not stop the VM first and then discover that the deprovision command needs it. Do not create a new identity to recover an uncertain deletion. |
@@ -1349,7 +1364,7 @@ Names in the **Proposed** rows are a review contract, not available commands or 
 | Proposed | `demo retire` | Shared full Finish/New-cycle cleanup; composes Cloud, backend and local primitives. Not an alias for local-only environment retire. |
 | Proposed; later phase | `unit logs list/request/show/download` with explicit Unit/node/time/request selectors | Cloud-only asynchronous logs. Separate the mutation verb from reads. No implicit request when opening Logs. |
 | Implemented CLI; live proof pending | `service list/status/inspect`, `service prepare <team> --profile <P>`, `service sign/upload/cloud-status <handle>` | Distinct catalog UUID, functional profile and prepared-release handle; recorded SP binding. One upload, explicit observation, no hidden assignment/approval. |
-| Implemented CLI; live proof pending | `service assign <catalog-service-UUID> --target test` | Dedicated retained OEM Group Subject, current Test only, native `service_ids`, independent peer-preserving assignment and explicit uncertainty. |
+| Implemented CLI; live proof recorded in latest checkpoint | `service assign <catalog-service-UUID> --target test` | Separate retained OEM Group Subjects for Brake/Tire, current Test only; native `service_ids`; independent readiness, peer preservation and explicit uncertainty. |
 | Proposed | `service logs …` | Logs remain a separate explicit operation. |
 | Proposed | `backend start/stop/status <team>`, `backend records <team> --target test` | Own backend lifecycle, persistent context and functional observations, shared by CLI and UI. Product-data cleanup requires an explicit scoped operation under M08, not a side effect of a read. |
 | Existing; retain | `simulation start/stop`, `vehicle select test`, `vehicle connectivity off/on/status --target test`, workspace/native layout operations | Preserve accepted native behavior. Driving modes stay in the existing native control path; no Cloud driving API is introduced. |

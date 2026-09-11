@@ -128,10 +128,12 @@ waiver of platform requirements outside the bounded demo.
 
 ### Accepted Subject and service package settings — 9 September 2026
 
-The user accepted a retained dedicated **Group Subject**, `is_group: true`,
-bound only to the current Test Unit. Brake and Tire share that Subject while
-retaining separate service identities and SP ownership. Clear its owned
-Unit/service bindings at Retire, not the Subject itself. Do not reuse or alter
+The user initially accepted one retained dedicated Group Subject. The approved
+11 September amendment supersedes that allocation: use **two Group Subjects**,
+`is_group: true`, one for Brake and one for Tire, both bound only to current
+Test. Each contains only its logical service; releases reuse its identity.
+Service identities and SP ownership remain separate. Clear each Subject's owned
+Unit/service bindings at Retire, not the Subjects themselves. Do not reuse or alter
 a factory/NodeType Subject. User-state migration between vehicles is not part
 of this demo; local product queues/storage remain a separate requirement.
 

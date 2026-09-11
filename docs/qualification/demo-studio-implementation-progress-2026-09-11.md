@@ -9,7 +9,54 @@ and [10 September evidence](demo-studio-implementation-progress-2026-09-10.md)
 remain the baseline. This continuation does not change the approved story,
 native left-hand composition, Production scope or service trust model.
 
-## Latest publication check — OEM arm64 only, releases 2.0.0
+## Latest continuation — separate service Subjects, Test only
+
+The user approved replacing the shared Subject with separate retained OEM Group
+Subjects for the logical Brake and Tire services. Both remain current-Test-only;
+release updates reuse their identity. `democtl service assign <service-id>
+--target test` now implements this model and reports package readiness separately
+from desired association. It requires the exact accepted publication receipt and
+matching service/SP/version identity, but no longer invents a local READY gate.
+
+The authorized calls created and bound these objects to current Test
+`2a29c145-bbd1-4494-a0e5-d4b79e6a9db5`, native UID
+`d53d05cd4c4649c9a896534b23b88273`:
+
+| Logical service | Group Subject label | Recorded Subject ID | Confirmed result |
+| --- | --- | --- | --- |
+| Brake | AosEdge SDV demo Brake | ede5ae8b-9796-4bea-88d1-d2dfcab24725 | Create 201; Test binding 201 and authoritative read |
+| Tire | AosEdge SDV demo Tire | e6699b5d-b243-4bfe-8e0c-b905fcfa14df | Create 201; Test binding 201 and authoritative read |
+
+Each service association was attempted once, but the post-read remained empty.
+At 13:01:36Z and 13:01:38Z, explicit CLI reconciliation returned `noOp=true`,
+`unitBound=true`, `serviceBound=false`, `serviceIds=[]`, and package version
+2.0.0 `uploaded` / `ready=false`. No POST was replayed. Assignment remains
+`UNCERTAIN`, not ASSIGNED/installed/Running. The earlier failed Cloud bundle build
+remains unresolved; these observations do not establish why association failed.
+
+The original assignment exception was reduced to a generic reason. A targeted
+worker test reproduced duplicate `CloudFailure` classes when launched by filename
+versus imported by an adapter. The worker now shares its canonical module identity;
+assignment preserves fixed HTTP codes while still redacting response bodies.
+This fixes future diagnostics, not the lost original response. No response was
+invented and no retry was issued merely to recover that diagnostic.
+
+Cloud-only Unit observation at 13:01:00Z confirmed Online, VDP 18.0.0 installed,
+the two new Group Subjects plus the unchanged protected default Subject, and
+zero reported services. Production, Unit Sets, VM/SM, firmware, product data and
+existing packages were not changed. No new bundle, image, backup or cleanup was
+performed. Current transient runtime inputs and all diagnostic state are retained.
+
+Validation: 107 service-family tests (24 assignment tests, including real
+filename-worker exception identity), 27 Unit tests and 20 lifecycle tests passed:
+154 total. Cases include both assignment orders, Tire-only, non-ready packages,
+exact ownership/current-Test checks, no peer contamination, default preservation,
+idempotent repeats, response loss, no blind replay, legacy-shared-record refusal,
+and retirement guard preservation of the new records. Subject cleanup integration,
+native service launch and N6 functional proof remain open. No full VM reboot or
+Factory build is claimed. Source/doc checkpoint only; no artifact/secret enters Git.
+
+## Earlier publication check — OEM arm64 only, releases 2.0.0
 
 The user removed `arm` from the OEM architecture list. A subsequent
 `democtl service list --profile oem-delivery` confirmed exactly `[arm64]` at
@@ -101,10 +148,11 @@ builder's validation algorithm. Do not claim internal causal proof or silently
 change tenant-wide settings. The SP catalog still contains no Brake/Tire
 service identity; no Subject/assignment POST or batch approval was performed.
 
-The native `service assign <catalog-service-UUID> --target test` source is now
-implemented and isolated-tested: one dedicated retained Group Subject, exact
+The initial `service assign <catalog-service-UUID> --target test` source was
+implemented and isolated-tested with one dedicated retained Group Subject, exact
 native Test UID, service IDs only, peer/default preservation and durable
-uncertainty handling. It cannot run until publication is READY. The observer
+uncertainty handling and a local READY gate. Both the allocation and that gate
+are superseded by the latest continuation above. The observer
 now recognizes actual bundle state `building` as PROCESSING. No UI capability,
 new SM code, deprovisioning, cleanup or Production change was introduced.
 

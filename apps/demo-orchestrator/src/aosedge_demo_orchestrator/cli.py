@@ -38,7 +38,7 @@ def build_parser() -> argparse.ArgumentParser:
     commands = parser.add_subparsers(dest="domain", required=True)
     service = commands.add_parser("service", help="read AosCloud service catalog, owners, versions and assignments")
     service_commands = service.add_subparsers(dest="action", required=True)
-    service_assign = service_commands.add_parser("assign", help="OEM assignment of one published service identity to the dedicated current-Test Subject")
+    service_assign = service_commands.add_parser("assign", help="OEM assignment through this service's dedicated Group Subject to current Test only")
     service_assign.add_argument("service_id", help="exact service UUID returned by cloud-status/list, never a version UUID")
     service_assign.add_argument("--target", required=True, choices=("test",))
     service_runtime = service_commands.add_parser("runtime-inspect", help="engineering-only Test native ABI and declared service resources; no mutation")

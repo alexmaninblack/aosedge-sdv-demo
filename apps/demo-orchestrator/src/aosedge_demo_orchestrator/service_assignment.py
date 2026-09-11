@@ -6,7 +6,7 @@
 from .environment import EnvironmentError, JOURNAL, atomic_json
 from .status import object_id, read_json, now
 
-LABEL = "AosEdge SDV demo Test"
+LABELS = {"brake": "AosEdge SDV demo Brake", "tire": "AosEdge SDV demo Tire"}
 STEPS = ("create", "bind", "assign")
 
 
@@ -34,16 +34,16 @@ def _pages(cloud, path, identity):
     raise CloudFailure("SERVICE_ASSIGNMENT_COLLECTION_LIMIT")
 
 
-def _subject(row, expected_id=None, created_by=None):
+def _subject(row, label, expected_id=None, created_by=None):
     from .unit_cloud import CloudFailure
     identifier = object_id(row["id"])
     creator = object_id(row["created_by"])
-    if (expected_id is not None and identifier != expected_id or row.get("label") != LABEL
+    if (expected_id is not None and identifier != expected_id or row.get("label") != label
             or row.get("is_group") is not True or row.get("is_protected") is not False
             or type(row.get("priority")) is not int or row["priority"] != 0
             or created_by is not None and creator != created_by):
         raise CloudFailure("SERVICE_SUBJECT_IDENTITY_TYPE_OR_OWNER_CONFLICT")
-    return dict(id=identifier, label=LABEL, isGroup=True, priority=0, createdBy=creator)
+    return dict(id=identifier, label=label, isGroup=True, priority=0, createdBy=creator)
 
 
 def snapshot(cloud, request):
@@ -71,16 +71,23 @@ def snapshot(cloud, request):
         raise CloudFailure("SERVICE_ASSIGNMENT_PUBLICATION_BINDING_CHANGED")
     versions = [version_view(row) for row in _pages(cloud, "services/" + identifier + "/service-versions/", lambda row: object_id(row["id"]))]
     selected = [row for row in versions if row["version"] == request["publishedVersion"]]
-    if len(selected) != 1 or str(selected[0].get("container_state") or "").lower() != "ready":
-        raise CloudFailure("SERVICE_ASSIGNMENT_PUBLISHED_VERSION_NOT_READY")
+    if len(selected) != 1:
+        raise CloudFailure("SERVICE_ASSIGNMENT_PUBLISHED_VERSION_NOT_UNIQUE")
+    # Assignment selects the service identity, not a version. Catalog readiness
+    # is an independent observation and is not a native Subject prerequisite.
+    package = dict(version=request["publishedVersion"], versionId=selected[0]["id"],
+        state=selected[0].get("container_state"),
+        ready=str(selected[0].get("container_state") or "").lower() == "ready")
     recipients = [unit_view(row) for row in _pages(cloud, "services/" + identifier + "/units/", lambda row: object_id(row["id"]))]
     if any(row["id"] != current["unitId"] or row["system_uid"] != current["systemUid"] or row["oemId"] != request["ownerId"] for row in recipients):
         raise CloudFailure("SERVICE_ASSIGNMENT_NON_TEST_RECIPIENT_PRESENT")
     retained = request.get("subject") or {}
     subjects = _pages(cloud, "subjects/", lambda row: object_id(row["id"]))
-    matches = [row for row in subjects if row.get("label") == LABEL]
+    label = LABELS[request["team"]]
+    matches = [row for row in subjects if row.get("label") == label]
     result = dict(subject=None, candidateSubjectIds=[object_id(row["id"]) for row in matches],
-        unitBound=False, serviceBound=False, serviceIds=[], source="AOS_CLOUD_ONLY", observedAt=now())
+        unitBound=False, serviceBound=False, serviceIds=[], package=package,
+        source="AOS_CLOUD_ONLY", observedAt=now())
     if not retained.get("id"):
         if matches:
             raise CloudFailure("SERVICE_SUBJECT_UNRECORDED_LABEL_COLLISION")
@@ -90,7 +97,7 @@ def snapshot(cloud, request):
     subject_id = object_id(retained["id"])
     if len(matches) != 1 or object_id(matches[0]["id"]) != subject_id:
         raise CloudFailure("SERVICE_SUBJECT_RECORDED_ID_NOT_UNIQUE")
-    result["subject"] = _subject(cloud.call("subjects/" + subject_id + "/"), subject_id, retained["createdBy"])
+    result["subject"] = _subject(cloud.call("subjects/" + subject_id + "/"), label, subject_id, retained["createdBy"])
     for row in recipients:
         if row["subjectIds"] is None or any(value != subject_id for value in row["subjectIds"]):
             raise CloudFailure("SERVICE_ASSIGNMENT_UNRELATED_SUBJECT_PRESENT")
@@ -103,8 +110,7 @@ def snapshot(cloud, request):
     scoped_units("subjects/" + subject_id + "/units/reported/")
     rows = _pages(cloud, "subjects/" + subject_id + "/services/", lambda row: object_id(row["service"]["id"]))
     service_ids = [object_id(row["service"]["id"]) for row in rows]
-    allowed = {identifier, *request.get("ownedServiceIds", [])}
-    if set(service_ids) - allowed:
+    if set(service_ids) - {identifier}:
         raise CloudFailure("SERVICE_SUBJECT_UNRELATED_SERVICE_PRESENT")
     if not assigned and service_ids:
         raise CloudFailure("SERVICE_SUBJECT_STALE_SERVICE_BINDINGS")
@@ -142,20 +148,26 @@ def execute(cloud, request):
     except (CloudFailure, ValueError, TypeError, KeyError) as error:
         return dict(stage="BLOCKED", attempted=False, reason=str(error) if isinstance(error, CloudFailure) else "SERVICE_ASSIGNMENT_PREFLIGHT_SCHEMA_INVALID")
     subject_id = before["subject"]["id"] if before["subject"] else None
-    path, body = ("subjects/", dict(label=LABEL, is_group=True)) if step == "create" else (
+    path, body = ("subjects/", dict(label=LABELS[request["team"]], is_group=True)) if step == "create" else (
         "subjects/" + subject_id + ("/units/" if step == "bind" else "/services/"),
         {"system_uids": [request["test"]["systemUid"]]} if step == "bind" else {"service_ids": [request["serviceId"]]})
     try:
         response = cloud.call(path, "POST", body, expected=201)
         if step == "create":
-            subject = _subject(response, created_by=cloud.user["userId"])
+            subject = _subject(response, LABELS[request["team"]], created_by=cloud.user["userId"])
             return dict(stage="ACCEPTED", attempted=True, httpStatus=201, subject=subject)
         key, value = ("system_uids", request["test"]["systemUid"]) if step == "bind" else ("service_ids", request["serviceId"])
         if object_id(response["subject_id"]) != subject_id or response.get(key) != [value]:
             raise CloudFailure("SERVICE_ASSIGNMENT_RESPONSE_BINDING_MISMATCH")
         return dict(stage="ACCEPTED", attempted=True, httpStatus=201)
-    except Exception:
-        return dict(stage="UNCERTAIN", attempted=True, reason="SERVICE_ASSIGNMENT_POST_RESPONSE_UNCERTAIN")
+    except Exception as error:
+        import re
+        # Preserve fixed HTTP diagnostics without exporting a response body or
+        # turning an unsuccessful/ambiguous POST into an automatic retry.
+        reason = str(error) if isinstance(error, CloudFailure) else ""
+        if not re.fullmatch(r"CLOUD_(?:UNEXPECTED_)?HTTP_[0-9]{3}|SERVICE_ASSIGNMENT_RESPONSE_BINDING_MISMATCH", reason):
+            reason = "SERVICE_ASSIGNMENT_POST_RESPONSE_UNCERTAIN"
+        return dict(stage="UNCERTAIN", attempted=True, reason=reason)
 
 
 class ServiceAssignment:
@@ -178,19 +190,18 @@ class ServiceAssignment:
                     raise EnvironmentError("SERVICE_PUBLICATION_PATH_UNSAFE")
                 receipt = read_json(path)
                 observation = receipt.get("lastObservation") or {}
-                if observation.get("serviceId") != service_id or observation.get("stage") != "READY":
+                if observation.get("serviceId") != service_id:
                     continue
                 _, record = packages._record(team + "/" + path.parent.name, verify_payload=False)
                 if (observation.get("version") != record["version"] or record.get("serviceId") not in (None, service_id)
-                        or receipt.get("attempted") is not True or not receipt.get("deploymentId")
+                        or receipt.get("attempted") is not True or receipt.get("requestAccepted") is not True
+                        or receipt.get("httpStatus") != 201 or not receipt.get("deploymentId")
                         or observation.get("deploymentId") != receipt["deploymentId"]
-                        or observation.get("source") != "AOS_CLOUD_ONLY"
-                        or str(observation.get("bundleState") or "").lower() != "done"
-                        or str(observation.get("versionState") or "").lower() != "ready"):
+                        or observation.get("source") != "AOS_CLOUD_ONLY"):
                     raise EnvironmentError("SERVICE_ASSIGNMENT_PUBLICATION_RECEIPT_MISMATCH")
                 matches.append(dict(team=team, serviceProviderId=record["serviceProviderId"], publishedVersion=record["version"]))
         if not matches or len({(item["team"], item["serviceProviderId"]) for item in matches}) != 1:
-            raise EnvironmentError("SERVICE_ASSIGNMENT_READY_PUBLICATION_REQUIRED")
+            raise EnvironmentError("SERVICE_ASSIGNMENT_PUBLICATION_RECEIPT_REQUIRED")
         from .releases import number
         return max(matches, key=lambda item: number(item["publishedVersion"]))
 
@@ -208,29 +219,37 @@ class ServiceAssignment:
                 raise EnvironmentError("SERVICE_ASSIGNMENT_CURRENT_TEST_REQUIRED")
             test = dict(unitId=object_id(item["unitId"]), systemUid=item["systemUid"], unitSetId=object_id(item["unitSetId"]))
             publication = self._publication(service_id)
-            subject = state.get("demoSubject")
-            if subject and (subject.get("ownerId") != owner or subject.get("label") != LABEL):
+            # Never adopt, rename or discard an older shared Subject implicitly.
+            if state.get("demoSubject"):
+                raise EnvironmentError("SERVICE_SUBJECT_LEGACY_SHARED_BINDING_REQUIRES_RECONCILIATION")
+            label = LABELS[publication["team"]]
+            subjects = state.setdefault("demoSubjects", {})
+            subject = subjects.get(service_id)
+            if subject and (subject.get("ownerId") != owner or subject.get("label") != label):
                 raise EnvironmentError("SERVICE_SUBJECT_RECORDED_OWNER_CONFLICT")
-            subject = state.setdefault("demoSubject", dict(ownerId=owner, label=LABEL))
+            subject = subjects.setdefault(service_id, dict(ownerId=owner, label=label))
             operations = state.setdefault("serviceOperations", {})
             binding = dict(serviceId=service_id, **publication, test=test, ownerId=owner)
             previous = operations.get(service_id)
             if previous and any(previous.get(key) != binding[key] for key in ("serviceId", "team", "serviceProviderId", "test", "ownerId")):
                 raise EnvironmentError("SERVICE_ASSIGNMENT_RECORDED_BINDING_CHANGED")
             record = operations.setdefault(service_id, dict(binding, state="PREPARING", steps={}))
-            owned = [identifier for identifier, value in operations.items() if value.get("ownerId") == owner
-                and value.get("test") == test and value.get("state") == "ASSIGNED"]
-            request = dict(binding, subject=subject, ownedServiceIds=owned)
+            request = dict(binding, subject=subject)
             changed = False
             def save():
                 atomic_json(self.path, state)
             def observe(runtime=False):
                 return self.units._cloud("service-assignment-observe", **request, runtime=runtime)
-            def partial(reason):
+            def partial(reason, observation=None, step_result=None):
                 record.update(state="UNCERTAIN", reason=reason, observedAt=now())
                 save()
-                return dict(state="UNCERTAIN", serviceId=service_id, subjectId=subject.get("id"), reason=reason,
+                result = dict(state="UNCERTAIN", serviceId=service_id, subjectId=subject.get("id"), reason=reason,
                     noOp=not changed, runtimeQualified=False)
+                if observation is not None:
+                    result["observation"] = observation
+                if step_result is not None:
+                    result["stepResult"] = step_result
+                return result
             try:
                 # A lost create response has no authoritative UUID to reconcile.
                 # A matching label is never sufficient proof of ownership.
@@ -246,7 +265,7 @@ class ServiceAssignment:
                             save()
                         continue
                     if attempt.get("attempted") is True:
-                        return partial("SERVICE_ASSIGNMENT_" + step.upper() + "_NOT_OBSERVED_NO_REPLAY")
+                        return partial("SERVICE_ASSIGNMENT_" + step.upper() + "_NOT_OBSERVED_NO_REPLAY", current, attempt)
                     attempt = dict(stage="ATTEMPTING", attempted=True, startedAt=now())
                     if step == "create":
                         subject["create"] = attempt
@@ -271,7 +290,7 @@ class ServiceAssignment:
                     current = observe()
                     confirmed = current["subject"] is not None if step == "create" else current["unitBound"] if step == "bind" else current["serviceBound"]
                     if not confirmed:
-                        return partial("SERVICE_ASSIGNMENT_" + step.upper() + "_NOT_OBSERVED_NO_REPLAY")
+                        return partial("SERVICE_ASSIGNMENT_" + step.upper() + "_NOT_OBSERVED_NO_REPLAY", current, response)
                     attempt.update(stage="CONFIRMED", confirmedAt=now())
                     save()
                 current = observe(runtime=True)

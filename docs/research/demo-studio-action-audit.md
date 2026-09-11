@@ -162,6 +162,15 @@ response-loss recovery and prompt truthful refusal remain covered.
 
 ### Accepted Subject and package settings
 
+11 September amendment: use two retained Group Subjects, one per logical Brake
+or Tire service, not a shared Subject and not a Subject per release. Both are
+current-Test-only in this packet. Q13 reset/retention applies independently.
+Identity association and package readiness are separate: Demo Control may attempt
+the native `service_ids` association after accepted publication/catalog identity
+reconciliation without treating uploaded/error as READY. Actual Cloud validation
+and runtime observations remain authoritative. The live partial result is in the
+[latest checkpoint](../qualification/demo-studio-implementation-progress-2026-09-11.md).
+
 The user explicitly **accepted** the retained Group Subject and both package
 settings on 9 September 2026. The canonical decision is in
 [UI-STUDIO-026](../demo/mockups/aosedge-demo-interaction-specification.md#accepted-subject-and-service-package-settings--9-september-2026).

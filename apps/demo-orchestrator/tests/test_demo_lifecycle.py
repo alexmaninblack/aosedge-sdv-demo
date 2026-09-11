@@ -101,6 +101,16 @@ class LifecycleTests(unittest.TestCase):
             self.workflow.create("factory/arch")
         self.app.execute.assert_not_called()
 
+    def test_retire_preserves_per_service_subject_records_until_cleanup_integration(self):
+        self.provisioned()
+        self.state["demoSubjects"] = {"brake-id": dict(id="retained-brake")}
+        self.write()
+        with self.assertRaisesRegex(EnvironmentError, "SUBJECT_RETIREMENT_INTEGRATION_REQUIRED"):
+            self.workflow.retire()
+        self.assertEqual(self.state["demoSubjects"], self.read()["demoSubjects"])
+        self.app.execute.assert_not_called()
+        self.backends.stop_stack.assert_not_called()
+
     def test_partial_create_resumes_same_owned_step_not_another_vm(self):
         self.backends.start_stack.return_value = dict(state="PARTIAL", reason="TIRE_FAILED")
         self.assertEqual(OperationState.PARTIAL, self.workflow.create("factory/arch").state)

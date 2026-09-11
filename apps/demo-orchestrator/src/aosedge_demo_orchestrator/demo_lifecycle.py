@@ -240,7 +240,7 @@ class DemoLifecycle:
             else:
                 # Do not turn shutdown into an implicit Safe Stop/update action.
                 self._park_guard(state)
-                if state.get("serviceOperations") or state.get("demoSubject"):
+                if state.get("serviceOperations") or state.get("demoSubject") or state.get("demoSubjects"):
                     raise EnvironmentError("DEMO_SUBJECT_RETIREMENT_INTEGRATION_REQUIRED")
                 record = self._record("retire")
             def context():

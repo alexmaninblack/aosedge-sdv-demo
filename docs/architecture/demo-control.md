@@ -75,7 +75,7 @@ are recorded in the [delivery plan](../planning/active/demo-studio-delivery-plan
 | Provision | Running selected Test → official provisioning → Online → verification membership | Narrow provisioning-only detached-source guard; preserve retirement safety; P1/P3 |
 | Release Prepare | Operator selects content profile; shared allocator returns opaque release handle/version | Durable reservation survives cleanup; engineering explicit-version CLI need not be removed; P1 |
 | Publish | Signed deployment bundle → recorded processing result → independent recipient observation | No approval gate for verification Test; publication may precede Provision or occur while vehicle Offline; P2 |
-| First service Deploy | Bind current Test to retained dedicated Subject, add service identity only, preserve peer | No service-version or instance-count argument; accepted Group/minimum-instance/TTL settings in UI-STUDIO-026; runtime qualification still required; P5 |
+| First service Deploy | Bind current Test to this service's retained Group Subject; add only that service identity | Separate Brake/Tire Subjects (11 September amendment); no version or instance-count argument; package readiness and runtime qualification remain separate; P5 |
 | Cloud observation | Unit components + service detail/instances + DMIPS + sample/read freshness | No direct VM read or product-result inference; P2 |
 | Park/Resume | Same disks, identity, installed releases and product data; full local stop/restart | Shared composition/journal missing; no Create/reprovision; P1/P3 |
 | Finish / New cycle | One shared scoped Retire across Cloud, local runtimes and product records | Existing environment retire remains local-only, not full cleanup; P1/P3 |
@@ -678,13 +678,22 @@ No browser mutation capability is added in this increment.
 democtl service assign <catalog-service-UUID> --target test
 ```
 
-Use the catalog UUID returned by a READY publication observation, not a release
-handle or team label. The existing receipt resolves team/SP ownership and the
-published version for read-only preflight; assignment sends only `service_ids`.
-One retained OEM Group Subject, labelled `AosEdge SDV demo Test`, is bound only
-to the current Test's native system UID. The command creates/binds it once,
-then appends the requested service without removing its peer. Factory/default
-Subjects, other Units and Production are untouched.
+Use the catalog UUID returned by a publication observation, not a release
+handle or team label. An accepted upload receipt and exact catalog read resolve
+team/SP ownership. The published version is observed, not selected by assignment:
+assignment sends only `service_ids`. Package `ready` is reported separately and
+is not a local prerequisite to configuring Subject bindings; the native API may
+still reject a request. An uploaded or failed bundle is never presented as ready.
+
+The user-approved 11 September amendment replaces the shared Subject with two
+retained OEM Group Subjects: `AosEdge SDV demo Brake` and `AosEdge SDV demo Tire`.
+Each contains only its logical service, independent of release number, and is
+bound only to the current Test's native system UID. Exact identities are stored
+under `demoSubjects[serviceId]` in the existing run journal. Creating/assigning
+one does not change the other; future per-Unit subsets need no shared-service
+membership edit. Production remains unsupported by this command. Factory/default
+Subjects are untouched. A legacy shared record is blocked for explicit
+reconciliation, never silently adopted, renamed or discarded.
 
 Each POST intent is recorded in the existing run journal before dispatch;
 the returned exact UUID/creator is retained and authoritative reads reconcile
@@ -694,7 +703,9 @@ uncertainty can be reconciled by read; there are no blind retries.
 `ASSIGNED` means desired binding only; Cloud-reported instances are separate,
 and the result explicitly sets `runtimeQualified=false`. Browser mutation and
 Subject retirement integration remain separate work; do not reset this run to
-work around an assignment failure.
+work around an assignment failure. The retirement guard covers both the legacy
+record and the new per-service records; no retained identity can be lost through
+the ordinary Retire path before that integration is implemented.
 
 `service list --profile oem-delivery` also reads the available architecture
 codes and those assigned to this exact OEM. This is read-only diagnosis; it

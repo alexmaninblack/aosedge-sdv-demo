@@ -16,6 +16,9 @@ from pathlib import Path
 
 if not __package__:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    # Workers are launched by filename. Share the canonical module identity
+    # with adapters so CloudFailure is not defined twice (__main__ vs import).
+    sys.modules["aosedge_demo_orchestrator.unit_cloud"] = sys.modules[__name__]
 
 from aosedge_demo_orchestrator.cloud import NoRedirect, project_user
 from aosedge_demo_orchestrator.status import object_id, safe_word

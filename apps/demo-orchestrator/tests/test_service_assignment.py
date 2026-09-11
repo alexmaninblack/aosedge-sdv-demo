@@ -4,6 +4,8 @@
 import contextlib
 import copy
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -27,6 +29,7 @@ BRAKE = "44444444-4444-4444-8444-444444444444"
 TIRE = "55555555-5555-4555-8555-555555555555"
 UNIT = "66666666-6666-4666-8666-666666666666"
 SUBJECT = "77777777-7777-4777-8777-777777777777"
+TIRE_SUBJECT = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
 DEFAULT = "88888888-8888-4888-8888-888888888888"
 SET = "99999999-9999-4999-8999-999999999999"
 VERSION = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
@@ -40,9 +43,10 @@ class AssignmentCloud:
         self.posts, self.reads = [], []
         self.subjects = [dict(id=DEFAULT, label="default", is_group=False, is_protected=True, priority=0, created_by=USER)]
         self.assigned, self.reported, self.services = [], [], []
+        self.tire_assigned, self.tire_reported, self.tire_services = [], [], []
         self.service_recipients = {BRAKE: [], TIRE: []}
         self.version_state = "ready"
-        self.subject_created = dict(id=SUBJECT, label=assignment.LABEL, is_group=True,
+        self.subject_created = dict(id=SUBJECT, label=assignment.LABELS["brake"], is_group=True,
             is_protected=False, priority=0, created_by=USER)
         self.runtime = []
         self.unit_value = dict(id=UNIT, system_uid=TEST["systemUid"], status="provisioned", online_status="Online", unit_sets=[SET])
@@ -59,17 +63,23 @@ class AssignmentCloud:
         if method != "GET":
             self.posts.append((path, method, copy.deepcopy(body), expected))
             if path == "subjects/":
-                self.subjects.append(copy.deepcopy(self.subject_created))
-                return copy.deepcopy(self.subject_created)
+                created = copy.deepcopy(self.subject_created)
+                if body["label"] == assignment.LABELS["tire"]:
+                    created.update(id=TIRE_SUBJECT, label=body["label"])
+                self.subjects.append(created)
+                return copy.deepcopy(created)
+            subject_id = path.split("/")[1]
             if path.endswith("/units/"):
-                self.assigned = [dict(id=UNIT, system_uid=TEST["systemUid"])]
-                return dict(subject_id=SUBJECT, system_uids=body["system_uids"])
+                assigned = self.assigned if subject_id == SUBJECT else self.tire_assigned
+                assigned.append(dict(id=UNIT, system_uid=TEST["systemUid"]))
+                return dict(subject_id=subject_id, system_uids=body["system_uids"])
             if path.endswith("/services/"):
                 service_id = body["service_ids"][0]
-                self.services.append(dict(service=dict(id=service_id)))
-                self.service_recipients[service_id] = [dict(id=UNIT, system_uid=TEST["systemUid"], oem_id=OWNER, subjects=[SUBJECT])]
-                self.runtime.append(dict(subject=SUBJECT, service=dict(id=service_id), instances=[]))
-                return dict(subject_id=SUBJECT, service_ids=body["service_ids"])
+                services = self.services if subject_id == SUBJECT else self.tire_services
+                services.append(dict(service=dict(id=service_id)))
+                self.service_recipients[service_id] = [dict(id=UNIT, system_uid=TEST["systemUid"], oem_id=OWNER, subjects=[subject_id])]
+                self.runtime.append(dict(subject=subject_id, service=dict(id=service_id), instances=[]))
+                return dict(subject_id=subject_id, service_ids=body["service_ids"])
             raise AssertionError(path)
         self.reads.append(path)
         parts = urlsplit(path)
@@ -79,10 +89,13 @@ class AssignmentCloud:
         if key in ("services/" + BRAKE + "/", "services/" + TIRE + "/"):
             identifier = key.split("/")[1]
             return dict(id=identifier, codename=("brake" if identifier == BRAKE else "tire") + "-health-service", service_provider_id=SP)
-        if key == "subjects/" + SUBJECT + "/":
-            return copy.deepcopy(next(row for row in self.subjects if row["id"] == SUBJECT))
+        if key in ("subjects/" + SUBJECT + "/", "subjects/" + TIRE_SUBJECT + "/"):
+            return copy.deepcopy(next(row for row in self.subjects if row["id"] == key.split("/")[1]))
         collections = {"subjects/": self.subjects, "subjects/" + SUBJECT + "/units/": self.assigned,
             "subjects/" + SUBJECT + "/units/reported/": self.reported, "subjects/" + SUBJECT + "/services/": self.services,
+            "subjects/" + TIRE_SUBJECT + "/units/": self.tire_assigned,
+            "subjects/" + TIRE_SUBJECT + "/units/reported/": self.tire_reported,
+            "subjects/" + TIRE_SUBJECT + "/services/": self.tire_services,
             "units/" + UNIT + "/subjects-services/": self.runtime}
         for identifier in (BRAKE, TIRE):
             collections["services/" + identifier + "/service-versions/"] = [dict(id=VERSION, version="8.0.0", container_state=self.version_state)]
@@ -97,7 +110,7 @@ class WorkerTests(unittest.TestCase):
     def setUp(self):
         self.cloud = AssignmentCloud()
         self.request = dict(action="service-assignment-step", ownerId=OWNER, team="brake", serviceProviderId=SP,
-            publishedVersion="8.0.0", serviceId=BRAKE, test=TEST, subject={}, ownedServiceIds=[])
+            publishedVersion="8.0.0", serviceId=BRAKE, test=TEST, subject={})
 
     def retained(self):
         self.cloud.subjects.append(copy.deepcopy(self.cloud.subject_created))
@@ -110,7 +123,7 @@ class WorkerTests(unittest.TestCase):
         assignment.execute(self.cloud, dict(self.request, step="bind"))
         assignment.execute(self.cloud, dict(self.request, step="assign"))
         self.assertEqual([
-            ("subjects/", "POST", {"label": assignment.LABEL, "is_group": True}, 201),
+            ("subjects/", "POST", {"label": assignment.LABELS["brake"], "is_group": True}, 201),
             ("subjects/" + SUBJECT + "/units/", "POST", {"system_uids": [TEST["systemUid"]]}, 201),
             ("subjects/" + SUBJECT + "/services/", "POST", {"service_ids": [BRAKE]}, 201)], self.cloud.posts)
         self.assertEqual(DEFAULT, self.cloud.subjects[0]["id"])
@@ -124,13 +137,36 @@ class WorkerTests(unittest.TestCase):
         self.assertIn("COLLISION", result["reason"])
         self.assertEqual([], self.cloud.posts)
 
-    def test_current_test_owner_sp_and_ready_gates(self):
+    def test_current_test_owner_sp_and_version_identity_gates(self):
         for field, value in (("ownerId", SP), ("serviceProviderId", OWNER), ("team", "foreign"), ("publishedVersion", "9.0.0")):
             with self.subTest(field=field):
                 result = assignment.execute(self.cloud, dict(self.request, step="create", **{field: value}))
                 self.assertEqual(("BLOCKED", False), (result["stage"], result["attempted"]))
         self.cloud.unit_value["system_uid"] = "other-uid"
         self.assertEqual("BLOCKED", assignment.execute(self.cloud, dict(self.request, step="create"))["stage"])
+        self.assertEqual([], self.cloud.posts)
+
+    def test_package_readiness_does_not_gate_native_binding(self):
+        for state in ("uploaded", "error", "ready", None):
+            with self.subTest(state=state):
+                self.setUp()
+                self.cloud.version_state = state
+                result = assignment.execute(self.cloud, dict(self.request, step="create"))
+                self.assertEqual("ACCEPTED", result["stage"])
+                self.request["subject"] = result["subject"]
+                assignment.execute(self.cloud, dict(self.request, step="bind"))
+                assignment.execute(self.cloud, dict(self.request, step="assign"))
+                observation = assignment.snapshot(self.cloud, self.request)
+                self.assertTrue(observation["serviceBound"])
+                self.assertEqual(state, observation["package"]["state"])
+                self.assertEqual(state == "ready", observation["package"]["ready"])
+
+    def test_peer_service_is_not_allowed_in_this_services_subject(self):
+        self.retained()
+        self.cloud.assigned.append(dict(id=UNIT, system_uid=TEST["systemUid"]))
+        self.cloud.services.append(dict(service=dict(id=TIRE)))
+        result = assignment.execute(self.cloud, dict(self.request, step="assign", ownedServiceIds=[TIRE]))
+        self.assertIn("UNRELATED_SERVICE", result["reason"])
         self.assertEqual([], self.cloud.posts)
 
     def test_no_production_or_reported_peer_or_unrelated_service(self):
@@ -173,6 +209,13 @@ class WorkerTests(unittest.TestCase):
         self.assertEqual(("BLOCKED", False), (result["stage"], result["attempted"]))
         self.assertEqual([], self.cloud.posts)
 
+    def test_http_failure_is_visible_without_response_body_or_replay(self):
+        original = self.cloud.call
+        self.cloud.call = lambda path, method="GET", *args, **kw: original(path, method, *args, **kw) if method == "GET" else (_ for _ in ()).throw(CloudFailure("CLOUD_HTTP_400"))
+        result = assignment.execute(self.cloud, dict(self.request, step="create"))
+        self.assertEqual("CLOUD_HTTP_400", result["reason"])
+        self.assertEqual(("UNCERTAIN", True), (result["stage"], result["attempted"]))
+
     def test_pagination_uses_nested_identity_and_rejects_changed_total(self):
         cloud = Mock()
         cloud.call.side_effect = [dict(total=101, offset=0, items=[dict(service=dict(id=str(i))) for i in range(100)]),
@@ -206,7 +249,7 @@ class JournalTests(unittest.TestCase):
         # Assert intent reached durable storage before every external attempt.
         if action == "service-assignment-step":
             state = read_json(self.root / JOURNAL)
-            attempt = state["demoSubject"]["create"] if values["step"] == "create" else state["serviceOperations"][values["serviceId"]]["steps"][values["step"]]
+            attempt = state["demoSubjects"][values["serviceId"]]["create"] if values["step"] == "create" else state["serviceOperations"][values["serviceId"]]["steps"][values["step"]]
             self.assertIs(attempt["attempted"], True)
             if self.loss == (values["step"], "before"):
                 self.loss = None
@@ -228,10 +271,37 @@ class JournalTests(unittest.TestCase):
         self.assertEqual(("ASSIGNED", True), (repeated["state"], repeated["noOp"]))
         self.assertFalse(repeated["runtimeQualified"])
         self.assertEqual("ASSIGNED", self.service.assign(TIRE)["state"])
-        self.assertEqual(4, len(self.cloud.posts))
-        self.assertEqual({BRAKE, TIRE}, {row["service"]["id"] for row in self.cloud.services})
+        self.assertEqual(6, len(self.cloud.posts))
+        self.assertEqual([BRAKE], [row["service"]["id"] for row in self.cloud.services])
+        self.assertEqual([TIRE], [row["service"]["id"] for row in self.cloud.tire_services])
         self.assertEqual(DEFAULT, self.cloud.subjects[0]["id"])
+        self.assertEqual(3, len(self.cloud.subjects))
+        subjects = read_json(self.root / JOURNAL)["demoSubjects"]
+        self.assertEqual(SUBJECT, subjects[BRAKE]["id"])
+        self.assertEqual(TIRE_SUBJECT, subjects[TIRE]["id"])
+        self.assertTrue(self.service.assign(TIRE)["noOp"])
+        self.assertTrue(self.service.assign(BRAKE)["noOp"])
+        self.assertEqual(6, len(self.cloud.posts))
+
+    def test_tire_only_then_brake_are_independent_with_uploaded_package(self):
+        self.cloud.version_state = "uploaded"
+        result = self.service.assign(TIRE)
+        self.assertEqual("ASSIGNED", result["state"])
+        self.assertFalse(result["observation"]["package"]["ready"])
+        self.assertEqual([], self.cloud.services)
+        self.assertEqual([], self.cloud.assigned)
         self.assertEqual(2, len(self.cloud.subjects))
+        self.assertEqual("ASSIGNED", self.service.assign(BRAKE)["state"])
+        self.assertEqual(6, len(self.cloud.posts))
+
+    def test_legacy_shared_subject_is_not_silently_adopted_or_discarded(self):
+        state = read_json(self.root / JOURNAL)
+        state["demoSubject"] = dict(id=SUBJECT)
+        atomic_json(self.root / JOURNAL, state)
+        with self.assertRaisesRegex(EnvironmentError, "LEGACY_SHARED"):
+            self.service.assign(BRAKE)
+        self.assertEqual([], self.cloud.posts)
+        self.assertEqual(state, read_json(self.root / JOURNAL))
 
     def test_lost_create_never_repeats_or_adopts_by_label(self):
         self.loss = ("create", "after")
@@ -239,7 +309,7 @@ class JournalTests(unittest.TestCase):
         result = self.service.assign(BRAKE)
         self.assertEqual("SERVICE_SUBJECT_CREATE_ID_UNCERTAIN_NO_REPLAY", result["reason"])
         self.assertEqual(1, len(self.cloud.posts))
-        self.assertNotIn("id", read_json(self.root / JOURNAL)["demoSubject"])
+        self.assertNotIn("id", read_json(self.root / JOURNAL)["demoSubjects"][BRAKE])
 
     def test_lost_known_binding_can_reconcile_without_replay(self):
         for step in ("bind", "assign"):
@@ -275,22 +345,30 @@ class JournalTests(unittest.TestCase):
 
     def test_missing_published_receipt_never_calls_cloud(self):
         del self.service._publication
-        with self.assertRaisesRegex(EnvironmentError, "READY_PUBLICATION_REQUIRED"):
+        with self.assertRaisesRegex(EnvironmentError, "PUBLICATION_RECEIPT_REQUIRED"):
             self.service.assign(BRAKE)
         self.assertEqual([], self.cloud.posts)
 
-    def test_ready_publication_mapping_requires_exact_accepted_bundle_and_sp(self):
+    def test_publication_mapping_requires_exact_accepted_bundle_not_ready(self):
         del self.service._publication
         directory = self.environment.catalog.project / "services/brake/releases/8.0.0"
         directory.mkdir(parents=True)
         prepared = dict(schemaVersion=1, state="PREPARED", team="brake", version="8.0.0",
             releaseHandle="brake/8.0.0", packagePath=str(directory), files={str(n): {} for n in range(4)},
             serviceProviderId=SP, serviceId=None)
-        receipt = dict(attempted=True, deploymentId=VERSION, lastObservation=dict(stage="READY", source="AOS_CLOUD_ONLY",
+        receipt = dict(attempted=True, requestAccepted=True, httpStatus=201, deploymentId=VERSION, lastObservation=dict(stage="READY", source="AOS_CLOUD_ONLY",
             serviceId=BRAKE, version="8.0.0", deploymentId=VERSION, bundleState="done", versionState="ready"))
         atomic_json(directory / "prepared.json", prepared)
         atomic_json(directory / "publication.json", receipt)
         self.assertEqual(dict(team="brake", serviceProviderId=SP, publishedVersion="8.0.0"), self.service._publication(BRAKE))
+        receipt["lastObservation"].update(stage="ERROR", bundleState="error", versionState=None)
+        atomic_json(directory / "publication.json", receipt)
+        self.assertEqual("brake", self.service._publication(BRAKE)["team"])
+        for key, value in (("requestAccepted", False), ("attempted", False), ("httpStatus", 400)):
+            invalid = dict(receipt, **{key: value})
+            atomic_json(directory / "publication.json", invalid)
+            with self.assertRaisesRegex(EnvironmentError, "RECEIPT_MISMATCH"):
+                self.service._publication(BRAKE)
         receipt["lastObservation"]["deploymentId"] = SP
         atomic_json(directory / "publication.json", receipt)
         with self.assertRaisesRegex(EnvironmentError, "RECEIPT_MISMATCH"):
@@ -307,6 +385,28 @@ class JournalTests(unittest.TestCase):
 
 
 class SurfaceTests(unittest.TestCase):
+    def test_filename_worker_and_adapter_share_exception_identity(self):
+        from aosedge_demo_orchestrator import unit_cloud
+        program = '''
+import importlib.util, sys
+from unittest.mock import Mock, patch
+spec = importlib.util.spec_from_file_location("worker_fixture", sys.argv[1])
+worker = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = worker
+spec.loader.exec_module(worker)
+from aosedge_demo_orchestrator import unit_cloud, service_assignment
+assert unit_cloud is worker
+cloud = Mock()
+cloud.call.side_effect = worker.CloudFailure("CLOUD_HTTP_400")
+with patch.object(service_assignment, "snapshot", return_value=dict(subject=None)):
+    result = service_assignment.execute(cloud, dict(action="service-assignment-step", step="create", team="brake"))
+assert result["reason"] == "CLOUD_HTTP_400", result
+assert cloud.call.call_count == 1
+'''
+        result = subprocess.run([sys.executable, "-I", "-B", "-c", program, unit_cloud.__file__],
+            capture_output=True, text=True, timeout=10)
+        self.assertEqual(0, result.returncode, result.stderr)
+
     def test_cli_fixed_catalog_and_target_but_browser_stays_read_only(self):
         request = request_from_arguments(build_parser().parse_args(["service", "assign", BRAKE, "--target", "test"]))
         self.assertEqual((BRAKE, VehicleTarget.TEST), (request.service_id, request.target))

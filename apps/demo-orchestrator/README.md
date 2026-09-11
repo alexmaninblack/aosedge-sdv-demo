@@ -26,6 +26,21 @@ upload only observes Cloud. Ready does not mean installed/running. These
 commands allocate no additional version, perform no assignment or approval,
 and do not query the guest. See the [publication and failure contract](../../docs/architecture/demo-control.md#native-service-publication).
 
+### Test-only service assignment
+
+```bash
+democtl service assign <catalog-service-UUID> --target test
+```
+
+Use the exact catalog service ID returned by publication/status, never a version
+ID. Demo Control uses a separate retained OEM Group Subject for Brake and Tire;
+assigning one does not assign or change the other. Both target current Test only.
+Production and default Subjects are untouched. The existing journal retains each
+Subject ID across service updates. Package readiness is reported separately:
+`ASSIGNED` means desired association, not installation or Running. A partial
+result preserves the exact attempted step; repeating reconciles without blindly
+replaying a POST. Full Subject retirement integration remains unavailable.
+
 ### Cloud-only Test observations
 
 `democtl unit cloud-status test` reads the current Test's Cloud-reported
