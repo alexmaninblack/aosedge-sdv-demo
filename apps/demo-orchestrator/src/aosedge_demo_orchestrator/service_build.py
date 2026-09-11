@@ -4,6 +4,7 @@
 """Explicit development build of the real ARM64 service; no publication."""
 
 import re
+import json
 import shutil
 import subprocess
 
@@ -18,8 +19,47 @@ class ServiceBuilder:
         self.progress = progress or (lambda message: None)
         self.commands = BackendService(environment, self.progress)
 
+    def status(self, team):
+        """Read completed build history for this exact repository, never retry."""
+        if team not in ("brake", "tire"):
+            raise EnvironmentError("SERVICE_TEAM_INVALID")
+        repository = self.environment.root.parent / (team + "-health-service")
+        executable = shutil.which("docker")
+        if not executable:
+            raise EnvironmentError("SERVICE_BUILD_DOCKER_REQUIRED")
+        raw = self.commands._run([executable, "buildx", "history", "ls", "--local", "--format", "json"], cwd=repository)
+        try:
+            rows = json.loads(raw)
+        except ValueError:
+            rows = [json.loads(line) for line in raw.splitlines() if line.strip()]
+        if isinstance(rows, dict) and ("ID" in rows or "Ref" in rows or "ref" in rows):
+            rows = [rows]
+        if not isinstance(rows, list) or len(rows) > 100:
+            keys = sorted(key for key in rows if isinstance(key, str) and re.fullmatch(r"[A-Za-z_]+", key)) if isinstance(rows, dict) else []
+            return dict(team=team, state="HISTORY_SHAPE_UNSUPPORTED", representation=type(rows).__name__, fields=keys, buildStarted=False)
+        if not rows:
+            return dict(team=team, state="NO_BUILD_RECORD", buildStarted=False)
+        row = rows[0]
+        if not isinstance(row, dict):
+            raise EnvironmentError("SERVICE_BUILD_RECORD_INVALID")
+        reference = row.get("ID") or row.get("Ref") or row.get("ref")
+        if not isinstance(reference, str) or not re.fullmatch(r"[A-Za-z0-9_/-]{1,180}", reference):
+            raise EnvironmentError("SERVICE_BUILD_REFERENCE_INVALID")
+        captured = subprocess.run([executable, "buildx", "history", "logs", "--progress", "plain", reference.rsplit("/", 1)[-1]],
+            cwd=repository, text=True, capture_output=True, timeout=15)
+        log = captured.stdout + captured.stderr
+        if len(log) > 1048576:
+            raise EnvironmentError("SERVICE_BUILD_LOG_TOO_LARGE")
+        lines = []
+        for line in log.splitlines():
+            if (re.search(r"error:|Error:|ERROR|FAILED|fatal:|failed to|permission denied", line)
+                    and not re.search(r"(?i)private.key|bearer|password|token|secret|authorization", line)):
+                lines.append(re.sub(r"[\x00-\x1f\x7f]", "", line)[:500])
+        return dict(team=team, state=re.sub(r"[\x00-\x1f\x7f]", "", str(row.get("Status", row.get("status", "UNKNOWN"))))[:40],
+            buildReference=reference, errors=lines[-16:], buildStarted=False)
+
     def _build(self, arguments):
-        self.progress("Building pinned ARM64 Brake runtime and tests; no VM or Cloud action")
+        self.progress("Building pinned ARM64 service runtime and tests; no VM or Cloud action")
         try:
             process = subprocess.Popen(arguments, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                 text=True)
@@ -61,11 +101,12 @@ class ServiceBuilder:
             raise EnvironmentError(reason)
 
     def execute(self, team, content_profile="v1", *, build_missing=True):
-        if team != "brake":
+        if team not in ("brake", "tire"):
             raise EnvironmentError("SERVICE_PRODUCT_BUILD_NOT_IMPLEMENTED")
-        if content_profile not in ("v1", "v2", "v3"):
+        if content_profile not in (("v1", "v2", "v3") if team == "brake" else ("v1",)):
             raise EnvironmentError("SERVICE_CONTENT_PROFILE_INVALID")
-        repository = self.environment.root.parent / "brake-health-service"
+        repository = self.environment.root.parent / (team + "-health-service")
+        prefix = "BHS" if team == "brake" else "THS"
         with self.environment._writer():
             revision = self.commands._run(["git", "rev-parse", "HEAD"], cwd=repository).strip()
             if not re.fullmatch(r"[0-9a-f]{40}", revision) or self.commands._run(
@@ -106,18 +147,18 @@ class ServiceBuilder:
             self._build([executable, "buildx", "build", "--platform", "linux/arm64", "--pull=false",
                 "--target", "export", "--output", "type=local,dest=" + str(output),
                 "--build-arg", "SOURCE_REVISION=" + revision, "--build-arg", "SOURCE_DATE_EPOCH=" + epoch,
-                "--build-arg", "BHS_FUNCTIONAL_PROFILE=" + content_profile,
+                "--build-arg", prefix + "_FUNCTIONAL_PROFILE=" + content_profile,
                 "--file", str(repository / "Dockerfile"), str(repository)])
             product = read_json(output / "product-build.json")
-            if (product.get("schemaVersion") != 1 or product.get("kind") != "brake-health-linux-arm64-product"
+            if (product.get("schemaVersion") != 1 or product.get("kind") != team + "-health-linux-arm64-product"
                     or product.get("sourceRevision") != revision or product.get("sourceDateEpoch") != int(epoch)
                     or product.get("architecture") != "arm64" or product.get("os") != "linux"
                     or product.get("functionalProfile") != content_profile
-                    or product.get("productTarget") != "BHS_BUILD_KUKSA_RUNTIME=ON"
+                    or product.get("productTarget") != prefix + "_BUILD_KUKSA_RUNTIME=ON"
                     or product.get("tests", {}).get("ctest") != "passed"):
                 raise EnvironmentError("SERVICE_PRODUCT_BUILD_PROOF_INVALID")
             binaries = {}
-            for name in ("brake-health-bootstrap", "brake-health-service"):
+            for name in (team + "-health-bootstrap", team + "-health-service"):
                 path = output / "rootfs/usr/bin" / name
                 if not path.is_file() or path.is_symlink():
                     raise EnvironmentError("SERVICE_PRODUCT_BINARY_MISSING")

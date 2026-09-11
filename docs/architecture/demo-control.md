@@ -505,6 +505,7 @@ The N4 source increment exposes:
 democtl service prepare brake --profile v1
 democtl service prepare brake --profile v2
 democtl service prepare brake --profile v3
+democtl service prepare tire --profile v1
 ```
 
 `--profile` selects immutable functional content here; optional
@@ -512,8 +513,8 @@ democtl service prepare brake --profile v3
 The existing `service list/status/inspect --profile` still selects a Cloud
 profile. Preparation requires the existing committed ARM64 product export
 from `service build <team> --content-profile <profile>`; it never starts an
-implicit build or a VM. Tire preparation refuses while its real product build
-adapter remains unimplemented; it does not substitute the diagnostic scaffold.
+implicit build or a VM. Tire now has its own real ARM64 product export and
+supports only functional profile v1; it never substitutes the diagnostic scaffold.
 
 One SP session reads the owned service catalog and, for an existing exact
 codename, its version collection. It does not scan Units, inspect an OCI
@@ -542,8 +543,48 @@ package. Another explicit prepare allocates a new number; existing packages
 are never overwritten. [Signing/publication](#native-service-publication)
 consume the returned handle rather than asking for a second version. These
 operations are not yet exposed as browser mutation capabilities. N4 public-input
-projection/resource activation and N5 cold-start restoration remain pending
+projection is available separately; resource activation and N5 cold-start restoration remain pending
 under the [accepted runtime-input contract](demo-control-service-inputs.md).
+
+### Native service build and public-input engineering operations
+
+```bash
+democtl service build tire --content-profile v1
+democtl service build-status tire
+democtl service runtime-inspect test
+democtl service runtime-prepare test
+```
+
+`service build` also supports Brake v1/v2/v3. It builds the committed product
+source, runs its ARM64 tests and validates both real executables and the export
+manifest. A completed source/profile receipt is reused without rebuilding.
+`build-status` reads this repository's existing BuildKit history and bounded,
+redacted error lines; it never starts or retries a build. Completed compilation
+is **BUILT_NOT_LIVE_QUALIFIED**, not proof of service execution.
+
+`runtime-prepare test` is a fixed engineering operation, not a Presenter read
+or container launcher. It reconciles native IAM v6 `GetSystemInfo.system_id`
+with the existing Test provisioning context, reads the committed VDP slot and
+running process, then atomically publishes the five public fields and public
+KUKSA certificate into both declared source directories. Native IAM is read
+over a temporary SSH Unix-socket forward, with the installed SDK trust root,
+server-authenticated TLS and fixed server name `main`. It does not log in to
+Cloud, install an SDK in the guest, modify DNS or persist a second identity.
+
+The result includes `changed`, `noOp`, `vdpVersion`, `metadata` and `sources`.
+An unchanged repeat leaves files and directory inodes intact. Directories are
+root-owned 0755; public files are 0444. Public trust comes only from the accepted
+Unit-local certificate, validated for `Server`; no private-key content enters
+the projection. Missing identity, active transaction, slot/process mismatch,
+changed source, symlink, unexpected file or unsafe permissions fail closed.
+No staging file becomes a successful readiness result after a failed check.
+
+`resourcesActivated`, `containerActions` and `coldStartQualified` are explicitly
+false. This command neither activates resource configuration nor restarts SM,
+assigns services, publishes a package or proves retained-assignment recovery.
+It is Test-only and is not exposed to browser mutations. The boot-order conflict
+and required separate decision are recorded in the
+[runtime-input contract](demo-control-service-inputs.md#cold-start-ordering-conflict--11-september-2026).
 
 <a id="native-service-publication"></a>
 

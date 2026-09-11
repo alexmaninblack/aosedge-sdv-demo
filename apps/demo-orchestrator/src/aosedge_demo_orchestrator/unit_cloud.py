@@ -126,6 +126,32 @@ class Cloud:
 
 def execute(request):
     action = request["action"]
+    if action == "service-native-identity":
+        address = request.get("address", "")
+        if not re.fullmatch(r"unix:/tmp/democtl-native-[A-Za-z0-9_-]+/iam.sock", address):
+            raise CloudFailure("SERVICE_NATIVE_IDENTITY_SOCKET_INVALID")
+        import grpc
+        from importlib.resources import files
+        from google.protobuf.empty_pb2 import Empty
+        from aos_prov.communication.unit.v6.generated.iamanager_pb2_grpc import IAMPublicIdentityServiceStub
+        try:
+            # Same server-authenticated native IAM model as the existing KAC:
+            # Aos trust root and fixed server name main; never plaintext/TOFU.
+            ca = files("aos_prov").joinpath("files/1rootCA.crt").read_bytes()
+            options = (("grpc.ssl_target_name_override", "main"), ("grpc.default_authority", "main"),
+                ("grpc.enable_http_proxy", 0), ("grpc.max_receive_message_length", 65536))
+            with grpc.secure_channel(address, grpc.ssl_channel_credentials(root_certificates=ca), options=options) as channel:
+                value = IAMPublicIdentityServiceStub(channel).GetSystemInfo(Empty(), timeout=5)
+        except grpc.RpcError as error:
+            details = (error.details() or "").lower()
+            stage = next((name for needle, name in (("socket closed", "SOCKET_CLOSED"),
+                ("connection refused", "CONNECTION_REFUSED"), ("permission denied", "PERMISSION_DENIED"),
+                ("protocol error", "PROTOCOL_ERROR"), ("no such file", "SOCKET_ABSENT")) if needle in details), None)
+            raise CloudFailure("SERVICE_NATIVE_IAM_RPC_" + error.code().name + ("_" + stage if stage else "")) from None
+        uid = value.system_id
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}", uid):
+            raise CloudFailure("SERVICE_NATIVE_IDENTITY_INVALID")
+        return dict(systemUid=uid, source="IAM_V6_GET_SYSTEM_INFO")
     # IAM identity is guest-local; it needs no OEM request or Cloud connection.
     if action == "identity":
         if request.get("address") not in ("127.0.0.1:18089", "127.0.0.1:18090"):

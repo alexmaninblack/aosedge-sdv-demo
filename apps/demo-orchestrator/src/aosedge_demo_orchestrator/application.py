@@ -3,6 +3,8 @@
 
 """Application boundary used by every external adapter."""
 
+from subprocess import SubprocessError
+
 from .models import OperationRequest, OperationResult, OperationState
 from .status import StatusService, has_unknown, now
 from .images import ImageCatalog, ImageError
@@ -29,6 +31,19 @@ class DemoOrchestrator:
         selection_error = request.selection_error()
         if selection_error:
             return OperationResult(operation, OperationState.BLOCKED, selection_error)
+        if operation == "service.runtime-prepare":
+            if (request.target != VehicleTarget.TEST or request.current or request.image or request.image_path
+                    or request.profile or request.team or request.service_id or request.content_profile or request.component_version):
+                return OperationResult(operation, OperationState.BLOCKED, "SERVICE_INPUTS_TEST_ONLY")
+            try:
+                from .service_inputs import ServiceInputs
+                data = ServiceInputs(self.environment_service).prepare("test")
+                return OperationResult(operation, OperationState.COMPLETED,
+                    "Public inputs prepared; no SM activation, container launch, assignment or cold-start qualification.", data=data)
+            except EnvironmentError as error:
+                return OperationResult(operation, OperationState.BLOCKED, str(error))
+            except (OSError, ValueError, KeyError, TypeError, SubprocessError):
+                return OperationResult(operation, OperationState.BLOCKED, "SERVICE_INPUT_PREPARATION_UNAVAILABLE")
         if operation == "service.runtime-inspect":
             if request.target != VehicleTarget.TEST or request.current or request.image or request.profile or request.team or request.service_id:
                 return OperationResult(operation, OperationState.BLOCKED, "SERVICE_RUNTIME_INSPECTION_USES_TEST_ONLY")
@@ -41,17 +56,22 @@ class DemoOrchestrator:
                 return OperationResult(operation, OperationState.BLOCKED, str(error))
             except (OSError, ValueError, KeyError, TypeError):
                 return OperationResult(operation, OperationState.BLOCKED, "SERVICE_RUNTIME_INSPECTION_UNAVAILABLE")
-        if operation == "service.build":
+        if operation in ("service.build", "service.build-status"):
             from .service_build import ServiceBuilder
             if request.target or request.current or request.image or request.image_path or request.profile or request.service_id or request.component_version:
                 return OperationResult(operation, OperationState.BLOCKED, "SERVICE_BUILD_USES_FIXED_TEAM_ONLY")
             try:
-                data = ServiceBuilder(self.environment_service, self.vm_service.progress).execute(request.team, request.content_profile or "v1")
+                builder = ServiceBuilder(self.environment_service, self.vm_service.progress)
+                if request.action == "build-status":
+                    data = builder.status(request.team)
+                    return OperationResult(operation, OperationState.OBSERVED,
+                        "Read-only repository build history; no retry or runtime action.", data=data)
+                data = builder.execute(request.team, request.content_profile or "v1")
                 return OperationResult(operation, OperationState.COMPLETED,
                     "Real ARM64 development build; no Cloud publication, guest installation or runtime qualification.", data=data)
             except EnvironmentError as error:
                 return OperationResult(operation, OperationState.BLOCKED, str(error))
-            except (OSError, ValueError, KeyError, TypeError):
+            except (OSError, ValueError, KeyError, TypeError, SubprocessError):
                 return OperationResult(operation, OperationState.BLOCKED, "SERVICE_BUILD_UNAVAILABLE")
         if request.domain == "service" and request.action in ("sign", "upload", "cloud-status"):
             from .service_packages import ServicePackages

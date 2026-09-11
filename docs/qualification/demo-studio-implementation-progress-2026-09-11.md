@@ -9,7 +9,67 @@ and [10 September evidence](demo-studio-implementation-progress-2026-09-10.md)
 remain the baseline. This continuation does not change the approved story,
 native left-hand composition, Production scope or service trust model.
 
-## Outcome by phase
+## Latest continuation — native inputs and real Tire product build
+
+The latest changes preserve native AosCore container preparation, launch and
+retained-instance recovery. No SM code/configuration change, restart, Factory
+build, provisioning cycle, Cloud mutation or Production change occurred in
+this continuation.
+
+- Tire source checkpoints `e3bdfa7` and `1698ee4` add the pinned real ARM64
+  product export and a formatting-only GCC warning correction. The first build
+  failed on `-Werror=misleading-indentation`; existing BuildKit history located
+  the exact source errors without repeating the failed build. The corrected
+  revision completed through `democtl service build tire --content-profile v1`
+  at 10:27:10 UTC. A subsequent invocation returned `noOp=true` and reused the
+  same receipt. No source push occurred.
+- Exported bootstrap SHA-256:
+  `b63c27cba9736b6387dfc0e29ad7d343956c99556edd1c099d5d3a41e43844f5`;
+  service SHA-256:
+  `d87451dde73ecf4dcd57145cd4133b7f328fc9c893bf6e86fcb2d4b5af95ff0b`.
+  Product outputs remain outside Git under the artifact catalog. Compilation,
+  product tests and declared dependency closure do not prove live analytics.
+- `democtl service runtime-prepare test` successfully reconciled native IAM
+  v6 identity over authenticated TLS, validated committed VDP 18.0.0 / active
+  slot a and projected compatibility 1.0.1 plus the public KUKSA certificate.
+  A repeat returned `changed=[]`, `noOp=true`. Read-only inspection confirmed
+  both public metadata files owned by root with mode 0444. Source directories
+  remain `/run/aos-demo-service-inputs/brake` and `tire`; they are intentionally
+  retained for the next bounded integration step, not copied into an image.
+- Native IAM requires TLS on 8090 with server name `main`; the initial
+  plaintext diagnostic failed before projection. The implementation uses the
+  official SDK trust root and a temporary pinned SSH Unix-socket forward to
+  Unit-local 127.0.0.1:8090. No DNS change, guest SDK, persisted identity,
+  Cloud login or credential-content output is involved.
+- Focused Solution tests: 74 service tests, including the installed official
+  signer, native TLS transport, public trust parsing, projection/refresh,
+  negatives, idempotence and build-history reconciliation; all passed without
+  skips. Six CLI, 80 component and 21 source regression tests also passed
+  (181 test executions in the focused groups); the 10 public-input tests also
+  passed under the CLI Python environment. The documentation gate passed
+  (170 Markdown documents, 658 stable identifiers, 38 Mermaid diagrams).
+  These are source/fixture proofs except for
+  the explicit live build/projection results above.
+
+N4 native resource activation is still pending. Current Test retains the
+existing SM PID 1458 and its existing resources (old 0700 token tmpfs and no
+team-specific input mounts); this continuation did not activate the migration.
+No native Brake/Tire container launch, KAC renewal, real backend ingestion or
+retained-assignment reboot is claimed.
+The final read-only `component status test` still reported VDP 18.0.0, slot a,
+PID 44297, process/slot agreement and 23 read paths. Its restart counter remained
+1 from the earlier run; this continuation caused no provider restart and does
+not report a zero-restart qualification.
+
+N5 has a concrete [cold-start ordering conflict](../architecture/demo-control-service-inputs.md#cold-start-ordering-conflict--11-september-2026):
+the existing pre-SM bootstrap cannot satisfy a running-VDP prerequisite when
+SM component recovery is what starts VDP. The missing-provider fixture fails
+without fabricating public readiness. Resolving the cold versus warm input
+gate requires an explicit contract decision; no launcher, daemon or SM hook
+was added to conceal this. The latest N4/N5 state supersedes the earlier dated
+source-only observations below, not the accepted phase definitions.
+
+## Earlier outcome by phase
 
 | Phase | Current result | Still required |
 | --- | --- | --- |

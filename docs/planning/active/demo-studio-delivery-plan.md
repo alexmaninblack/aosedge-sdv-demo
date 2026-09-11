@@ -26,8 +26,8 @@ gates are retired. Earlier dated checkpoints below remain historical.
 | N1 | Solution: accept ADR, update HLA/flows/requirements, runtime-input contract and D4 migration mapping | English documents, navigation and deterministic docs-check | Complete; product wire migration remains N3 |
 | N2 | Brake/Tire + Platform: private bootstrap sessions, dynamic token readers, native tmpfs resource mode; retire only token-owner patch | First create, isolation, atomic renewal, path/mode/symlink negatives, cleanup/restart, native host compilation | Host source tests passed; Linux/live proof remains N6 |
 | N3 | Solution contracts, both producers/backends: package version and native identity; explicit new message schemas without required service/model OCI digest | Producer-consumer fixtures; legacy queues/history retained; no fabricated digest; model/VDP hashes unchanged | Consumer and producer/input source increments passed; live integration remains N6 |
-| N4 | Demo Control: package the allocated version once; project public inputs; native configuration activation through existing commands | Package/publication equality; no manifest lookup dependency; stable-directory refresh after VDP commit | Prepare/sign/upload/status source/tests passed; public projection and activation remain pending |
-| N5 | Existing startup integration: restore public /run inputs before SM launches retained assignments | Exact hook/order documented and tested; no new daemon, persisted token or metadata authority | Pending |
+| N4 | Demo Control: package the allocated version once; project public inputs; native configuration activation through existing commands | Package/publication equality; no manifest lookup dependency; stable-directory refresh after VDP commit | Package/publication tests, real Tire ARM64 export and warm public projection/repeat passed; resource activation pending |
+| N5 | Existing startup integration: restore public /run inputs before SM launches retained assignments | Exact hook/order documented and tested; no new daemon, persisted token or metadata authority | Blocked by the documented pre-SM versus running-VDP ordering conflict; no cold-start claim |
 | N6 | Bounded current Test SOTA and backend integration through democtl | Real Cloud Running/version, KAC/TLS/subscriptions, renew/expiry, actual product records, retained state and scoped access proof | Pending |
 | N7 | Checkpoint source/docs and record exclusions | Commit only tested source; no build artifacts; retain current VM/Factory/Production | N2/N3 local checkpoints created; full-migration checkpoint remains pending |
 
@@ -39,6 +39,15 @@ The live source/publication permissions already granted remain bounded to the
 current Test; this change does not authorize another Factory build, reset,
 provisioning cycle or Production mutation.
 
+User-confirmed execution boundary, 11 September 2026: use native AosCore
+container preparation, launch and retained-instance recovery unchanged. N4/N5
+must not introduce an SM patch, launcher or replacement container lifecycle.
+Their remaining scope is our package/resource/input configuration and its
+startup ordering. The [source-verified boundary](../../architecture/demo-control-service-inputs.md#native-launch-boundary--confirmed-11-september-2026)
+records why the documentation's systemd-template example is not applicable
+to the pinned direct-libcrun runner. Native startup support does not itself
+generate our application metadata or restore its volatile source directories.
+
 The [runtime-input contract](../../architecture/demo-control-service-inputs.md)
 defines five public fields and immutable package metadata. Its
 [executable schemas](../../../contracts/service-runtime-inputs/README.md) freeze
@@ -49,7 +58,7 @@ remains separate optional engineering evidence, not service readiness.
 Existing model configuration hashes, VDP compatibility hashes, authorization,
 algorithms, timing limits and persistent producer state do not change.
 
-N4 package source increment: `service prepare brake --profile v1|v2|v3`
+Earlier N4 package source increment: `service prepare brake --profile v1|v2|v3`
 uses the existing product export without building or requiring a vehicle.
 One SP catalog/version read feeds the existing continuity ledger; one allocated
 version enters both the package release file and schema-2 publication input.
@@ -62,16 +71,33 @@ No signing, upload, assignment, runtime-resource activation or VM action has
 occurred. Loader/library closure and exact outbound behavior remain live gates.
 See [CLI/result/recovery contract](../../architecture/demo-control.md#native-service-package-preparation).
 
-The following N4 source increment adds handle-based `service sign`, `upload`
+The subsequent N4 source increment added handle-based `service sign`, `upload`
 and `cloud-status`, with SP binding, exact prepared/signed payload equality,
 one Deployment Bundle POST, durable acceptance/uncertainty and read-only repeat.
 READY is catalog readiness, not service execution. Existing service assignments
 must be absent or scoped solely to the current Test. Public API schema reads,
 temporary-key official signing and isolated transport/receipt tests passed;
 no live product signing/publication or deployment occurred. N4 public inputs,
-activation and N5 boot order are still next. The real Tire build adapter and
-N6 backend/runtime qualification remain open. See the
+activation and N5 boot order were still next. The real Tire build adapter was
+still open at that checkpoint; its later result is recorded below. N6
+backend/runtime qualification remains open. See the
 [publication contract](../../architecture/demo-control.md#native-service-publication).
+
+Latest N4 increment: Tire `1698ee4859fb66c210f386f485dad56234e37c15`
+has a completed real ARM64 product export (bootstrap, service, dependency
+closure and product tests), built through `democtl`; the repeated build command
+reused the completed receipt with `noOp=true`. On current Test, native IAM TLS
+identity reconciliation and public projection succeeded for committed VDP
+18.0.0 / compatibility 1.0.1, followed by an unchanged repeat. Both metadata
+files are root-owned 0444. No service assignment/publication, SM restart,
+resource activation, VM reset or Production mutation occurred in this increment.
+
+N5 is not closed by this warm result: the existing pre-SM bootstrap precedes
+the component recovery that starts VDP, while public projection requires the
+running committed VDP. The exact conflict and excluded workarounds are in
+[cold-start ordering](../../architecture/demo-control-service-inputs.md#cold-start-ordering-conflict--11-september-2026).
+Resolve that bounded ordering contract before claiming a full N4/N5 or N6
+result; do not modify native container launch to hide the missing integration.
 
 N2 local source checkpoints: Brake `8d19381`, Tire `47ab08d`, Platform
 `205f89d`. The Solution commit containing this record freezes the accepted

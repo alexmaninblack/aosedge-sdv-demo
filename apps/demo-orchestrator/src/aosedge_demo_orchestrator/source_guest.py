@@ -740,6 +740,8 @@ def sm_recover_test(request):
 
 def execute(request):
     if request["action"] == "service-runtime-inspect":
+        import importlib.util
+        import shutil
         if request.get("role") != "test":
             raise ValueError("SERVICE_RUNTIME_INSPECTION_USES_TEST_ONLY")
         props = command(["systemctl", "show", "aos-sm", "--property=MainPID,ActiveState"]).stdout
@@ -770,7 +772,23 @@ def execute(request):
             libc = os.confstr("CS_GNU_LIBC_VERSION")
         except (ValueError, OSError):
             libc = None
+        try:
+            native_iam = socket.create_connection(("127.0.0.1", 8090), timeout=1)
+            native_iam.close()
+            iam_loopback = True
+        except OSError:
+            iam_loopback = False
+        try:
+            iam_main = sorted({item[4][0] for item in socket.getaddrinfo("main", 8090, type=socket.SOCK_STREAM)})
+        except OSError:
+            iam_main = []
         return dict(mutation=False, source="ENGINEERING_GUEST_ONLY", architecture=os.uname().machine,
+            nativeInputTools={name: shutil.which(name) is not None for name in ("grpcurl", "aos-iam-cli")},
+            guestGrpcPython=importlib.util.find_spec("grpc") is not None,
+            iamPublicServerUrl=cfg.get("iamPublicServerUrl"),
+            iamLocalEndpoint=dict(loopback8090Reachable=iam_loopback, mainAddresses=iam_main),
+            containerRuntimes=[{key: row[key] for key in ("plugin", "type", "isComponent") if key in row}
+                for row in cfg.get("runtimes", [])],
             libc=libc, loader=file_fact(Path("/lib/ld-linux-aarch64.so.1")), serviceManager=service,
             resourcesConfigFile=resource_path, resources=selected,
             publicInputs={name: file_fact(Path(path)) for name, path in (

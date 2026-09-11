@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2026 maninblack
 # SPDX-License-Identifier: MIT
 
+import json
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -32,18 +34,20 @@ class ServiceBuildTests(unittest.TestCase):
         self.builder._build = Mock(side_effect=self.export)
 
     def export(self, args):
+        team = "tire" if "THS_FUNCTIONAL_PROFILE=v1" in args else "brake"
+        prefix = "THS" if team == "tire" else "BHS"
         directory = Path(args[args.index("--output") + 1].split("dest=", 1)[1])
         rows = []
-        for name in ("brake-health-bootstrap", "brake-health-service"):
+        for name in (team + "-health-bootstrap", team + "-health-service"):
             path = directory / "rootfs/usr/bin" / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(b"\x7fELF\x02\x01" + bytes(12) + b"\xb7\x00" + b"fixture")
             path.chmod(0o755)
             rows.append(dict(path=str(path.relative_to(directory)), sha256=digest(path)))
         atomic_json(directory / "product-build.json", dict(schemaVersion=1,
-            kind="brake-health-linux-arm64-product", sourceRevision=REVISION, sourceDateEpoch=1234,
-            architecture="arm64", os="linux", productTarget="BHS_BUILD_KUKSA_RUNTIME=ON",
-            functionalProfile=next(value.split("=", 1)[1] for value in args if value.startswith("BHS_FUNCTIONAL_PROFILE=")),
+            kind=team + "-health-linux-arm64-product", sourceRevision=REVISION, sourceDateEpoch=1234,
+            architecture="arm64", os="linux", productTarget=prefix + "_BUILD_KUKSA_RUNTIME=ON",
+            functionalProfile=next(value.split("=", 1)[1] for value in args if value.startswith(prefix + "_FUNCTIONAL_PROFILE=")),
             tests=dict(ctest="passed"), binaries=rows))
 
     def test_build_checks_actual_elf_and_repeat_reuses_exact_artifact(self):
@@ -89,12 +93,66 @@ class ServiceBuildTests(unittest.TestCase):
             execute_operation(dict(domain="service", action="build", team="brake"), Mock())
 
     def test_tire_is_not_a_diagnostic_product_fallback(self):
-        with self.assertRaisesRegex(EnvironmentError, "NOT_IMPLEMENTED"):
-            self.builder.execute("tire")
-        self.builder._build.assert_not_called()
+        repository = self.parent / "tire-health-service"
+        repository.mkdir()
+        (repository / "Dockerfile").write_text("fixture only")
+        for profile in ("v2", "v3"):
+            with self.assertRaisesRegex(EnvironmentError, "PROFILE_INVALID"):
+                self.builder.execute("tire", profile)
+        with patch("aosedge_demo_orchestrator.service_build.shutil.which", return_value="/fixed/docker"):
+            result = self.builder.execute("tire")
+            self.assertTrue(self.builder.execute("tire")["noOp"])
+        self.assertEqual("tire", result["team"])
+        self.assertEqual({"rootfs/usr/bin/tire-health-bootstrap", "rootfs/usr/bin/tire-health-service"}, set(result["binaries"]))
+        self.assertEqual(1, self.builder._build.call_count)
 
     def test_runtime_inspection_is_explicit_test_cli_not_browser_capability(self):
         request = request_from_arguments(build_parser().parse_args(["service", "runtime-inspect", "test"]))
         self.assertEqual(("service", "runtime-inspect", "test"), (request.domain, request.action, request.target.value))
         with self.assertRaises(ValueError):
             execute_operation(dict(domain="service", action="runtime-inspect", target="test"), Mock())
+
+    def test_build_history_observed_shapes_and_node_scoped_log_id(self):
+        row = dict(ref="desktop-linux/desktop-linux/existing-build", status="Completed")
+        for raw in (json.dumps(row), json.dumps([row]), json.dumps(row) + "\n" + json.dumps(row)):
+            with self.subTest(raw=raw):
+                self.builder.commands._run.return_value = raw
+                self.builder.commands._run.side_effect = None
+                with patch("aosedge_demo_orchestrator.service_build.shutil.which", return_value="/fixed/docker"), patch(
+                        "aosedge_demo_orchestrator.service_build.subprocess.run",
+                        return_value=subprocess.CompletedProcess([], 0, "", "")) as logs:
+                    result = self.builder.status("tire")
+                self.assertEqual("Completed", result["state"])
+                self.assertFalse(result["buildStarted"])
+                self.assertEqual("existing-build", logs.call_args.args[0][-1])
+                self.assertEqual((self.parent / "tire-health-service").resolve(), logs.call_args.kwargs["cwd"])
+        self.builder._build.assert_not_called()
+
+    def test_failed_history_reads_stderr_without_retry_and_redacts_sensitive_lines(self):
+        self.builder.commands._run.side_effect = None
+        self.builder.commands._run.return_value = json.dumps(dict(ref="node/build-id", status="Error"))
+        log = "source.cpp:10: error: misleading indentation\nERROR: password forbidden-fixture\nERROR: bearer forbidden-fixture\n"
+        with patch("aosedge_demo_orchestrator.service_build.shutil.which", return_value="/fixed/docker"), patch(
+                "aosedge_demo_orchestrator.service_build.subprocess.run",
+                return_value=subprocess.CompletedProcess([], 1, "", log)):
+            result = self.builder.status("tire")
+        self.assertEqual(["source.cpp:10: error: misleading indentation"], result["errors"])
+        self.assertNotIn("forbidden-fixture", json.dumps(result))
+        self.builder._build.assert_not_called()
+
+    def test_empty_invalid_history_and_cli_do_not_start_builds(self):
+        self.builder.commands._run.side_effect = None
+        with patch("aosedge_demo_orchestrator.service_build.shutil.which", return_value="/fixed/docker"), patch(
+                "aosedge_demo_orchestrator.service_build.subprocess.run") as logs:
+            self.builder.commands._run.return_value = "[]"
+            self.assertEqual("NO_BUILD_RECORD", self.builder.status("tire")["state"])
+            for raw in ('["not an object"]', '[{"ref":"; command"}]'):
+                self.builder.commands._run.return_value = raw
+                with self.assertRaises(EnvironmentError):
+                    self.builder.status("tire")
+            logs.assert_not_called()
+        request = request_from_arguments(build_parser().parse_args(["service", "build-status", "tire"]))
+        self.assertEqual(("service", "build-status", "tire"), (request.domain, request.action, request.team))
+        with self.assertRaises(ValueError):
+            execute_operation(dict(domain="service", action="build-status", team="tire"), Mock())
+        self.builder._build.assert_not_called()

@@ -78,7 +78,11 @@ class SourceDriver:
 
     def guest(self, state, role, action, **extra):
         from . import source_guest
-        code = Path(source_guest.__file__).read_text()
+        worker = source_guest
+        if action == "service-runtime-prepare":
+            from . import service_inputs_guest
+            worker = service_inputs_guest
+        code = Path(worker.__file__).read_text()
         vehicle = dict(state["vehicles"][role], sourceProbeSelected=state.get("currentVehicle") == role)
         request = dict(action=action, vehicle=vehicle, role=role, **extra)
         script = "python3 - <<'DEMOCTL_SOURCE_PY'\n" + code + "\nmain(" + repr(request) + ")\nDEMOCTL_SOURCE_PY\n"

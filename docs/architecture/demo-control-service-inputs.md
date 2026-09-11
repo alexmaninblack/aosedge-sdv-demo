@@ -76,6 +76,31 @@ before starting analytics. Persistent model/outbox data stay in native
 
 ## Activation and recovery order
 
+<a id="native-launch-boundary--confirmed-11-september-2026"></a>
+
+### Native launch boundary — confirmed 11 September 2026
+
+Container launch and retained-instance recovery remain native AosCore duties.
+Do not add a launcher, container startup wrapper, SM code patch or replacement
+container lifecycle to implement N4/N5. Demo Control prepares our packages
+and public inputs and activates the declared resource configuration only.
+
+The pinned AosCore revision `9eecb80c4994937b5c8cbe0464970f81e8ad4c2d`
+implements `Instance::Start`, `CreateAosEnvVars`, `AddResources` and
+`CRunRunner::StartContainer` (direct `libcrun_container_run`). The published
+Launcher page describes a systemd template that does not match that runner;
+its `aos-service@.service` example is not an available integration hook in
+this revision. See [native Instance](https://github.com/aosedge/aos_core_cpp/blob/9eecb80c4994937b5c8cbe0464970f81e8ad4c2d/src/sm/launcher/runtimes/container/instance.cpp)
+and [native CRunRunner](https://github.com/aosedge/aos_core_cpp/blob/9eecb80c4994937b5c8cbe0464970f81e8ad4c2d/src/sm/launcher/runtimes/container/crunrunner.cpp).
+
+N5 concerns reconstructing our volatile input files, not implementing native
+container recovery again. A missing application input is not evidence that
+AosCore cannot launch a container. The existing cold-start input ordering
+still needs proof; this clarification does not mark N4/N5 complete or change
+the five-field schema, provenance authority or read-only mount contract.
+
+### Required sequence
+
 1. Package preparation and publication may occur before a vehicle exists.
    They do not require runtime inputs or a final OCI manifest lookup.
 2. Before launch, project native Unit/role, committed VDP and public trust.
@@ -96,6 +121,41 @@ before starting analytics. Persistent model/outbox data stay in native
 No direct guest reads are added to the Presenter platform dashboard; Cloud
 remains its platform-state source. Engineering input projection/inspection is
 a Demo Control operation, separate from dashboard observation.
+
+<a id="cold-start-ordering-conflict--11-september-2026"></a>
+
+### Cold-start ordering conflict — 11 September 2026
+
+The first warm public projection and its unchanged repeat succeeded through
+`democtl service runtime-prepare test` on the existing Test with VDP 18.0.0.
+This does not establish a cold-start integration hook.
+
+The existing platform `aos-vehicle-data-provider-bootstrap.service` runs the
+store check before `aos-sm.service`; it does not start VDP. The VDP service is
+explicitly not enabled independently: component runtime
+`SystemdSlotComponentRuntime::Start()` calls `Recover()`, which validates the
+committed slot and starts the provider. The current projector requires a
+running provider whose process matches that committed slot. Putting this
+projector into the pre-SM store check would therefore prevent SM from reaching
+the code that starts the provider. The negative fixture verifies that no
+public input is published when the provider is absent.
+
+The inspected sources are in the owning platform repository:
+`meta-aos-vehicle-platform/recipes-aos/aos-vehicle-data-provider-platform/files/`
+(`aos-vehicle-data-provider-bootstrap.service`, `aos-vehicle-data-provider.service`)
+and `recipes-aos/aos-servicemanager/files/systemd-slot-component/runtime.cpp`
+under the same layer. These are our component/startup integration, not a missing
+native container capability. The pinned native runner has no per-container
+systemd template into which this preparation can be inserted.
+
+Before N5 implementation, resolve the cold-start input ordering explicitly.
+A pre-SM projection based only on durable committed state would change the
+current process-agreement gate and must define interrupted-update recovery.
+A post-SM projection would change the requirement that inputs precede retained
+instance launch. Neither is silently accepted here. No new SM hook, daemon,
+independent VDP launcher, persistent metadata authority or startup retry is
+introduced as a workaround. Resource activation, retained-instance reboot and
+N6 service deployment remain unqualified; the existing VM is preserved.
 
 ## Migration and remaining evidence
 

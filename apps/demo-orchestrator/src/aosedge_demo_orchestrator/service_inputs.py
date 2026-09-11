@@ -1,0 +1,88 @@
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+"""Engineering public-input preparation, shared Demo Control operation."""
+
+import json
+import re
+import subprocess
+import tempfile
+import time
+from pathlib import Path
+
+from .environment import EnvironmentError, JOURNAL
+from .guest_access import ssh_command
+from .source import SourceDriver
+from .status import load_configuration, read_json
+from .vm import VMService, access_path
+
+
+class ServiceInputs:
+    def __init__(self, environment):
+        self.environment = environment
+
+    def identity(self, state, endpoint):
+        # One short-lived SSH Unix-socket forward to native public IAM. No
+        # guest SDK installation, Cloud login, new TCP listener or saved UID.
+        if endpoint not in ("main:8090", "aosiam:8090", "10.0.0.100:8090", "127.0.0.1:8090"):
+            raise EnvironmentError("SERVICE_NATIVE_IAM_ENDPOINT_UNSUPPORTED")
+        config = load_configuration(self.environment.root)
+        with tempfile.TemporaryDirectory(prefix="democtl-native-", dir="/tmp") as directory:
+            socket = Path(directory) / "iam.sock"
+            command = ssh_command(access_path(self.environment.root, "test"), state["vehicles"]["test"]["sshPort"], 5)[:-2]
+            command = ["ClearAllForwardings=no" if arg == "ClearAllForwardings=yes" else arg for arg in command]
+            # Native KAC uses this same Unit-local IAM endpoint. The SM name
+            # 'main' resolves to 127.0.1.1 in the SSH host namespace, not to the
+            # listening 127.0.0.1 endpoint. No DNS or guest config is changed.
+            command[1:1] = ["-N", "-o", "ExitOnForwardFailure=yes", "-L", str(socket) + ":127.0.0.1:8090"]
+            with subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE) as forward:
+                try:
+                    deadline = time.monotonic() + 5
+                    while not socket.exists():
+                        if forward.poll() is not None or time.monotonic() >= deadline:
+                            raise EnvironmentError("SERVICE_NATIVE_IAM_FORWARD_UNAVAILABLE")
+                        time.sleep(0.05)
+                    result = subprocess.run([str(config["cloudPython"]), "-I", "-B",
+                        str(Path(__file__).with_name("unit_cloud.py"))],
+                        input=json.dumps(dict(action="service-native-identity", address="unix:" + str(socket))),
+                        capture_output=True, text=True, timeout=10)
+                    if result.returncode or len(result.stdout) > 4096:
+                        raise EnvironmentError("SERVICE_NATIVE_IDENTITY_UNAVAILABLE")
+                    value = json.loads(result.stdout)
+                    if not value.get("ok") and re.fullmatch(r"SERVICE_NATIVE_IAM_RPC_[A-Z_]+", value.get("reason", "")):
+                        raise EnvironmentError(value["reason"])
+                    uid = value.get("data", {}).get("systemUid")
+                    if not value.get("ok") or not isinstance(uid, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}", uid):
+                        raise EnvironmentError("SERVICE_NATIVE_IDENTITY_UNAVAILABLE")
+                    return uid
+                finally:
+                    forward.terminate()
+                    try:
+                        forward.wait(timeout=3)
+                    except subprocess.TimeoutExpired:
+                        forward.kill()
+                        forward.wait(timeout=3)
+                    diagnostic = forward.stderr.read(8192).lower()
+                    if b"administratively prohibited" in diagnostic or b"forwarding disabled" in diagnostic:
+                        raise EnvironmentError("SERVICE_NATIVE_IAM_SSH_FORWARDING_DENIED")
+                    if b"connect failed" in diagnostic or b"connection refused" in diagnostic:
+                        raise EnvironmentError("SERVICE_NATIVE_IAM_SSH_DESTINATION_UNREACHABLE")
+
+    def prepare(self, target):
+        if target != "test":
+            raise EnvironmentError("SERVICE_INPUTS_TEST_ONLY")
+        with self.environment._writer():
+            state = read_json(self.environment.root / JOURNAL)
+            item = state.get("vehicles", {}).get("test", {})
+            if (not item.get("unitId") or not item.get("systemUid") or not item.get("localVmId")
+                    or item.get("cloud", {}).get("lifecycle") in ("DELETED", "DEPROVISIONED", "DEPROVISIONING")):
+                raise EnvironmentError("SERVICE_INPUTS_CURRENT_TEST_BINDING_REQUIRED")
+            driver = SourceDriver(VMService(self.environment))
+            with driver.operation(timeout=30):
+                observed = driver.guest(state, "test", "service-runtime-inspect")
+                if not observed.get("iamLocalEndpoint", {}).get("loopback8090Reachable"):
+                    raise EnvironmentError("SERVICE_NATIVE_IAM_NOT_LISTENING")
+                uid = self.identity(state, observed.get("iamPublicServerUrl"))
+                if uid != item["systemUid"]:
+                    raise EnvironmentError("SERVICE_INPUT_NATIVE_IDENTITY_MISMATCH")
+                return driver.guest(state, "test", "service-runtime-prepare", nativeSystemUid=uid)
