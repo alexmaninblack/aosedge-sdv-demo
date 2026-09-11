@@ -64,6 +64,15 @@ class FixtureCloud:
 
 
 class ServiceCloudTests(unittest.TestCase):
+    def test_inspect_exposes_only_sanitized_build_diagnostic(self):
+        cloud = FixtureCloud()
+        for supplied, expected in ((None, None), ("Build failed", "Build failed"),
+                                   ("token=private-fixture", "[REDACTED]")):
+            cloud.version_detail["container_build_info"] = supplied
+            result = service_cloud.inspect(cloud, dict(action="inspect", serviceId=SERVICE, versionId=OTHER))
+            self.assertEqual(expected, result["version"]["value"]["container_build_info"])
+            self.assertNotIn("private-fixture", json.dumps(result))
+
     def test_oem_architecture_read_is_scoped_and_sanitized(self):
         cloud = FixtureCloud("oem")
         cloud.user["effectivePermissions"] += ["oems_available_architectures", "oems_architectures_read"]

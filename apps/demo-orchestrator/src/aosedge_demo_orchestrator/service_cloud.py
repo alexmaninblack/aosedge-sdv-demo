@@ -84,7 +84,7 @@ def version_detail(row, service_id, version_id):
             "number" if type(value) in (int, float) else "string" if isinstance(value, str) else
             "object" if isinstance(value, dict) else "array" if isinstance(value, list) else "invalid")
     return dict(version_view(row), serviceId=service_id,
-        **pick(row, ("download_ttl",), integers=("min_num_instances", "priority")),
+        **pick(row, ("download_ttl", "container_build_info"), integers=("min_num_instances", "priority")),
         configurationFieldTypes=field_types if config is not None else None,
         artifactIdentity="NOT_VERIFIED", runtime="NOT_OBSERVED")
 

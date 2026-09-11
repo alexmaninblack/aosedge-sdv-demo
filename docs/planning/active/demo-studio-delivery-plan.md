@@ -26,9 +26,9 @@ gates are retired. Earlier dated checkpoints below remain historical.
 | N1 | Solution: accept ADR, update HLA/flows/requirements, runtime-input contract and D4 migration mapping | English documents, navigation and deterministic docs-check | Complete; product wire migration remains N3 |
 | N2 | Brake/Tire + Platform: private bootstrap sessions, dynamic token readers, native tmpfs resource mode; retire only token-owner patch | First create, isolation, atomic renewal, path/mode/symlink negatives, cleanup/restart, native host compilation | Host source tests passed; Linux/live proof remains N6 |
 | N3 | Solution contracts, both producers/backends: package version and native identity; explicit new message schemas without required service/model OCI digest | Producer-consumer fixtures; legacy queues/history retained; no fabricated digest; model/VDP hashes unchanged | Consumer and producer/input source increments passed; live integration remains N6 |
-| N4 | Demo Control: package the allocated version once; project public inputs; native configuration activation through existing commands | Package/publication equality; no manifest lookup dependency; stable-directory refresh after VDP commit | Both real ARM64 exports, signed-payload equality, warm projection and transient native resource activation passed; Cloud processing rejected both initial bundles for architecture mismatch |
+| N4 | Demo Control: package the allocated version once; project public inputs; native configuration activation through existing commands | Package/publication equality; no manifest lookup dependency; stable-directory refresh after VDP commit | Both real ARM64 exports, signed-payload equality, warm projection and transient resource activation passed; after user changed OEM to arm64 only, both 2.0.0 uploads created service/version records but failed Cloud bundle building |
 | N5 | Existing startup integration: restore public /run inputs before SM launches retained assignments | Exact hook/order documented and tested; no new daemon, persisted token or metadata authority | Cold/warm split accepted; pre-SM preparation and post-SM process verification passed with unchanged SM binary; persistent-image integration and retained-assignment VM reboot not qualified |
-| N6 | Bounded current Test SOTA and backend integration through democtl | Real Cloud Running/version, KAC/TLS/subscriptions, renew/expiry, actual product records, retained state and scoped access proof | Migrated backends active; Subject assignment source tested but not executed; blocked before service deployment by Cloud architecture rejection |
+| N6 | Bounded current Test SOTA and backend integration through democtl | Real Cloud Running/version, KAC/TLS/subscriptions, renew/expiry, actual product records, retained state and scoped access proof | Migrated backends active; Subject assignment source tested but not executed; blocked before deployment by generic Cloud bundle build failure, with no detailed cause exposed by version API |
 | N7 | Checkpoint source/docs and record exclusions | Commit only tested source; no build artifacts; retain current VM/Factory/Production | N2/N3 local checkpoints created; full-migration checkpoint remains pending |
 
 Source increments may be developed independently, but **no new producer is
@@ -103,7 +103,7 @@ existing native IAM file identifier supplies the same Unit identity. A live
 both input resources. It is temporary `/run` configuration, not a retained-
 assignment full-VM reboot proof; immutable-image integration remains open.
 
-Latest live publication boundary: Brake and Tire migrated backends are active
+Earlier live publication boundary: Brake and Tire migrated backends are active
 with data preserved. Both current-source ARM64 v1 packages were prepared as
 `1.0.0`, signed and accepted by Deployment Bundle upload. Cloud rejected both:
 `does not support architectures: {'arm'}`. Their verified configurations contain
@@ -113,6 +113,15 @@ SM fault. No architecture was relabelled, no OEM setting changed and no second
 upload attempted. OEM-wide changes require separate authorization; a service
 cannot be assigned before its package reaches READY. See the
 [latest checkpoint](../../qualification/demo-studio-implementation-progress-2026-09-11.md).
+
+Latest publication check: the user changed the OEM to `arm64` only and explicitly
+authorized both 2.0.0 uploads. These reuse unchanged ARM64 binaries and v1
+functional content, without a rebuild. Both uploads returned 201 and created
+service/version records, but both bundles failed with `Failed to build deployment
+bundle.` The missing-`arm` message did not recur. Exact version detail reports
+`uploaded` with null build diagnostic/configuration, not READY. No Subject
+assignment or VM action occurred. Classify the Cloud build failure from its
+internal diagnostic before another publication; no guessed package change.
 
 N2 local source checkpoints: Brake `8d19381`, Tire `47ab08d`, Platform
 `205f89d`. The Solution commit containing this record freezes the accepted

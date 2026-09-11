@@ -9,7 +9,44 @@ and [10 September evidence](demo-studio-implementation-progress-2026-09-10.md)
 remain the baseline. This continuation does not change the approved story,
 native left-hand composition, Production scope or service trust model.
 
-## Latest continuation — startup configuration and first native service publication
+## Latest publication check — OEM arm64 only, releases 2.0.0
+
+The user removed `arm` from the OEM architecture list. A subsequent
+`democtl service list --profile oem-delivery` confirmed exactly `[arm64]` at
+2026-09-11T11:47:14Z. Existing 1.0.0 bundles remained in their terminal Error
+state; changing the OEM did not restart their processing.
+
+The user then explicitly authorized signing/uploading Brake and Tire 2.0.0
+to `SP alex_agizim`, owner `fa2c914f-dfc8-48e8-9888-1671c2c9c8c4`.
+Both packages reuse their existing verified ARM64 binaries and functional v1
+content; only the allocated release value changed. No product rebuild, OEM
+mutation by Demo Control, VM restart or Subject assignment occurred.
+
+| Team | Bundle ID (one accepted HTTP 201 upload) | Created service ID | Created version ID |
+| --- | --- | --- | --- |
+| Brake | 7a93da7b-f318-442b-95b9-75378fa575f6 | 3bc71fa0-aae5-4363-8298-8d06501c3132 | 7f58a43b-ba00-4ebc-aa8f-994f62763b82 |
+| Tire | 7c4c069e-c7cd-4b42-88c4-e64b280c0861 | d98957a1-83c2-4d14-a6fb-4e6a6ad27c77 | e0ac84ae-fcbb-4621-bd64-42a1c028594c |
+
+The official signer verified RS256 and prepared-payload equality. Signed bundle
+SHA-256: Brake `b3293da19f1f9de1f89b5db2036268492e51662348e6b37d0d4e85a96c397f21`;
+Tire `0d4935049b946141dc03b0a4957123ed2ed2ca1a67ed4600ee410822d113bdf8`.
+
+Both new bundles failed with `Error: Failed to build deployment bundle.`
+The previous missing-`arm` message did not recur and Cloud now created both
+service identities and versions, but this is not a successful container build.
+Exact-version reads at 11:53:49Z / 11:53:53Z reported `container_state=uploaded`,
+`container_build_info=null`, `container_config_data=null`, `min_num_instances=1`
+and priority 10. Both service recipient lists were empty. No READY, installation
+or execution is claimed. An internal Cloud build diagnostic is required to
+classify this new failure; do not infer a package fix from the generic message.
+
+`service inspect` now exposes the documented `container_build_info` through
+the existing bounded/redacting text projection, without additional API calls
+or raw configuration output. Its focused tests pass (18 tests). The earlier
+OEM architecture hypothesis and first-upload evidence below remain historical;
+the current blocker is the generic Cloud bundle build failure.
+
+## Earlier continuation — startup configuration and first native service publication
 
 The user accepted the cold/warm input split. `democtl service runtime-activate
 test` succeeded on the retained Test with one controlled SM restart:

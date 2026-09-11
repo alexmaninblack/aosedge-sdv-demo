@@ -665,6 +665,11 @@ Live Brake/Tire `1.0.0` bundles were signed and accepted by the upload API on
 with an architecture error; neither service was assigned. Exact evidence and
 remaining runtime gates are in the [checkpoint](../qualification/demo-studio-implementation-progress-2026-09-11.md).
 The observer treats `building` as processing, not success or an unknown state.
+After the user's OEM architecture correction, both 2.0.0 uploads created service
+identities/versions but failed Cloud bundle building; the checkpoint records
+the exact IDs. `service inspect <service-id> <version-id>` exposes the documented
+`container_build_info` through bounded secret-redacting projection; a null value
+means the API provides no diagnostic, not that the build succeeded.
 No browser mutation capability is added in this increment.
 
 ### Native service assignment — source implemented, live proof pending
