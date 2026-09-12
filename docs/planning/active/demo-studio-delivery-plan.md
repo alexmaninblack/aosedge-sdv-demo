@@ -130,7 +130,25 @@ or reported Units before discarding terminal old-Test assignment/runtime receipt
 The next Test reuses those Subjects through normal OEM assignment. No Subject,
 release, shared backing or Production mutation is added. Source tests: 130 affected
 local lifecycle/VM regressions and then 94 focused lifecycle/Subject/Cloud tests passed.
-Live replacement and reboot qualification are the next step, not yet evidence.
+An additional 40 component/status reader tests passed. Source checkpoint:
+`0526218` (Test Factory and retained Subjects).
+
+Live continuation at **12 September 02:52 UTC**: `democtl demo retire` stopped
+and deprovisioned Test, removed its verification membership and deleted the Unit
+and Node. Fresh Cloud reads confirmed both retained service Subjects have no
+assigned/reported Units and still carry only their expected service. Exact old-Test
+backend product/mock records are empty; both demo backend containers were stopped
+and removed, with volumes preserved for the peer. Production remains running
+with the same `.31` backing and identity. Local Test overlay/access removal has
+not begun: Docker Desktop's virtualization process retains an open handle to
+`.run/demo-current/backends/context/current-unit-context.json`.
+`democtl backend recover-file-sharing` refused to restart Docker because other
+containers are running (`BACKEND_FILE_SHARING_OTHER_CONTAINER_RUNNING`). No
+Docker restart was performed. Further recovery needs explicit authority for
+interrupting/restoring those applications; do not bypass the open-handle check.
+After recovery, resume `democtl demo retire` (completed Cloud mutations are not
+replayed), then create `.32` Test and perform the planned clean/reboot checks.
+Live replacement and reboot qualification remain open; no `.32` VM exists yet.
 Neither a successful image build nor transient service recovery closes N5.
 
 The [Factory .32 build record](../../../../aos-vehicle-platform/qualification/factory-32.md)
