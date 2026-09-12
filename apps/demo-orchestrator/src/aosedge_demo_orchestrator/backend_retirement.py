@@ -66,12 +66,14 @@ class BackendRetirement:
         path = self.root / item["overlay"]
         if path.exists() or path.is_symlink():
             if unprovisioned:
-                manifest = self.root / MANIFEST
+                from .environment import factory_for
+                factory = factory_for(state, "test")
+                manifest = self.root / factory["manifestPath"]
                 self.environment._owned_file(manifest)
-                if digest(manifest) != state["factory"].get("manifestSha256"):
+                if digest(manifest) != factory.get("manifestSha256"):
                     raise EnvironmentError("VM_FACTORY_MANIFEST_CHANGED")
                 metadata = read_json(manifest)
-                self.environment._untouched_overlay(path, state["factory"], metadata["image"]["virtualSizeBytes"], item.get("runtime"))
+                self.environment._untouched_overlay(path, factory, metadata["image"]["virtualSizeBytes"], item.get("runtime"))
             else:
                 self.environment._owned_file(path)
                 self.environment._assert_unheld(path)

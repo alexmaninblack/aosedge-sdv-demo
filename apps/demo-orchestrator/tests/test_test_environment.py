@@ -3,11 +3,13 @@
 
 import copy
 import json
+from dataclasses import replace
 from unittest import TestCase
 from unittest.mock import Mock, patch
 
 import test_images_environment as fixtures
-from aosedge_demo_orchestrator.environment import EnvironmentError, EnvironmentService, JOURNAL, MANIFEST, atomic_json
+from aosedge_demo_orchestrator.environment import EnvironmentError, EnvironmentService, JOURNAL, MANIFEST, atomic_json, digest, factory_for
+from aosedge_demo_orchestrator.status import load_configuration
 from aosedge_demo_orchestrator.guest_access import ACCESS_FILES
 
 
@@ -80,6 +82,29 @@ class TestOnlyRetirementTests(TestCase):
         self.assertEqual(original["operations"], created["operations"])
         with self.assertRaisesRegex(EnvironmentError, "CURRENT_RUN_EXISTS"):
             self.create("test")
+
+    def test_retire_retains_subjects_discards_only_terminal_old_test_receipts(self):
+        from test_service_assignment import BRAKE, SUBJECT, USER
+        state = self.retired()
+        test = state["vehicles"]["test"]
+        owner = state["cloudBinding"]["ownerId"]
+        state["demoSubjects"] = {BRAKE: dict(ownerId=owner, id=SUBJECT, label="AosEdge SDV demo Brake",
+            isGroup=True, priority=0, createdBy=USER, create=dict(stage="CONFIRMED"))}
+        state["serviceOperations"] = {BRAKE: dict(ownerId=owner, serviceId=BRAKE, team="brake", state="ASSIGNED",
+            test={key: test[key] for key in ("unitId", "systemUid", "unitSetId")},
+            steps={key: dict(stage="CONFIRMED") for key in ("bind", "assign")})}
+        state["smServiceUpdateProof"] = dict(state="APPLIED")
+        state["cmServiceUpdateProof"] = dict(state="APPLIED")
+        atomic_json(self.root / JOURNAL, state)
+        with self.unheld():
+            self.service.retire_test(cloud_check=lambda value: True)
+        current = self.read()
+        self.assertEqual(state["demoSubjects"], current["demoSubjects"])
+        self.assertEqual(state["vehicles"]["production"], current["vehicles"]["production"])
+        for key in ("serviceOperations", "smServiceUpdateProof", "cmServiceUpdateProof"):
+            self.assertNotIn(key, current)
+        recreated = self.create("test")
+        self.assertEqual(state["demoSubjects"], recreated["demoSubjects"])
 
     def test_cloud_proof_required_and_never_production_absence(self):
         original = self.retired()
@@ -180,17 +205,73 @@ class TestOnlyRetirementTests(TestCase):
             self.service.retire_test()
         self.assertEqual({"production"}, set(self.read()["vehicles"]))
 
-    def test_recreate_conflicting_image_blocks_and_preserves_existing_state(self):
+    def test_recreate_wrong_digest_preserves_peer_and_failed_copy_intent(self):
         self.retired()
         with self.unheld():
             self.service.retire_test(cloud_check=lambda state: True)
         image = copy.copy(self.catalog.resolve("version-one/main-qemuarm64"))
         object.__setattr__(image, "sha256", "a" * 64)
-        before = (self.root / JOURNAL).read_bytes()
+        before = self.read()
         with patch.object(self.catalog, "resolve", return_value=image):
-            with self.assertRaisesRegex(EnvironmentError, "FACTORY_CONFLICT"):
+            with self.assertRaisesRegex(EnvironmentError, "SOURCE_DIGEST"):
                 self.create("test")
-        self.assertEqual(before, (self.root / JOURNAL).read_bytes())
+        self.assertEqual(before["vehicles"]["production"], self.read()["vehicles"]["production"])
+        self.assertEqual("RECOVERY_REQUIRED", self.read()["stage"])
+
+    def new_image(self):
+        image = self.catalog.resolve("version-one/main-qemuarm64")
+        path = self.source.parent.parent / "version-two/main-qemuarm64.img"
+        path.parent.mkdir()
+        path.write_bytes(b"new factory" + bytes(image.size - 11))
+        path.chmod(0o444)
+        return replace(image, version="version-two", selector="version-two/main-qemuarm64", path=path, sha256=digest(path))
+
+    def mixed(self):
+        original = self.retired()
+        with self.unheld():
+            self.service.retire_test(cloud_check=lambda state: True)
+        image = self.new_image()
+        with patch.object(self.catalog, "resolve", return_value=image):
+            created = self.create("test")
+        return original, image, created
+
+    def test_new_test_image_copy_status_and_retirement_preserve_production(self):
+        original, image, created = self.mixed()
+        self.assertEqual(original["factory"], created["factory"])
+        self.assertEqual(original["vehicles"]["production"], created["vehicles"]["production"])
+        self.assertEqual(original["shared"], created["shared"])
+        new = factory_for(created, "test")
+        self.assertEqual(image.sha256, digest(self.root / new["path"]))
+        self.assertEqual(original["factory"], factory_for(created, "production"))
+        self.assertEqual(str(self.root / new["path"]), self.service._info(self.root / created["vehicles"]["test"]["overlay"])["backing-filename"])
+        observed = load_configuration(self.root)
+        self.assertEqual("version-two", observed["vehicles"]["test"]["imageVersion"])
+        self.assertEqual("version-one", observed["vehicles"]["production"]["imageVersion"])
+        with self.assertRaisesRegex(EnvironmentError, "TEST_SCOPED_RETIRE"):
+            self.service.retire()
+        with self.unheld():
+            result = self.service.retire_test()
+        self.assertLess(result["removed"].index(created["vehicles"]["test"]["overlay"]), result["removed"].index(new["path"]))
+        self.assertFalse((self.root / new["path"]).exists())
+        self.assertTrue((self.root / original["factory"]["path"]).exists())
+        self.assertTrue(image.path.exists())
+        self.assertEqual(original["vehicles"]["production"], self.read()["vehicles"]["production"])
+
+    def test_mixed_factory_unlink_interruption_resumes_without_deleting_peer(self):
+        original, image, created = self.mixed()
+        factory = factory_for(created, "test")
+        unlink = self.service._unlink_owned
+        def interrupted(path, identity):
+            unlink(path, identity)
+            if path == self.root / factory["path"]:
+                raise OSError("after dedicated factory unlink")
+        with self.unheld(), patch.object(self.service, "_unlink_owned", side_effect=interrupted):
+            with self.assertRaises(OSError):
+                self.service.retire_test()
+        with self.unheld():
+            self.service.retire_test()
+        self.assertEqual(original["vehicles"]["production"], self.read()["vehicles"]["production"])
+        self.assertFalse((self.root / factory["manifestPath"]).exists())
 
     def test_interrupted_recreate_keeps_peer_and_does_not_retry_create(self):
         old = self.retired()

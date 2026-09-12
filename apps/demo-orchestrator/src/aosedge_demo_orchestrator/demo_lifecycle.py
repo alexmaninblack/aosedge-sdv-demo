@@ -102,7 +102,8 @@ class DemoLifecycle:
             record = (state or {}).get("demoLifecycle")
             if state and "test" in state.get("vehicles", {}):
                 self._state()
-                if state.get("factory", {}).get("sha256") != candidate.sha256:
+                from .environment import factory_for
+                if factory_for(state, "test").get("sha256") != candidate.sha256:
                     raise EnvironmentError("DEMO_EXISTING_FACTORY_CONFLICT")
                 if record and (record.get("action") != "create" or record.get("image") != image):
                     raise EnvironmentError("DEMO_EXISTING_CONTROLLER_USE_RESUME_OR_RETIRE")
@@ -240,8 +241,8 @@ class DemoLifecycle:
             else:
                 # Do not turn shutdown into an implicit Safe Stop/update action.
                 self._park_guard(state)
-                if state.get("serviceOperations") or state.get("demoSubject") or state.get("demoSubjects"):
-                    raise EnvironmentError("DEMO_SUBJECT_RETIREMENT_INTEGRATION_REQUIRED")
+                from .service_assignment import retirement_subjects
+                retirement_subjects(state)
                 record = self._record("retire")
             def context():
                 from .backend_context import sync_context

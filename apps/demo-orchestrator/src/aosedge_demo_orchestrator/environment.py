@@ -23,6 +23,9 @@ OVERLAYS = {"test": ".local/demo-current/validation.qcow2",
 FACTORY = {"raw": ".local/factory/oem-demo-factory.img",
            "qcow2": ".local/factory/oem-demo-factory.qcow2"}
 MANIFEST = ".local/factory/oem-demo-factory.manifest.json"
+TEST_FACTORY = {"raw": ".local/factory/test-factory.img",
+                "qcow2": ".local/factory/test-factory.qcow2"}
+TEST_MANIFEST = ".local/factory/test-factory.manifest.json"
 JOURNAL = ".run/demo-current/journal.json"
 SOURCE_RUNTIME_FILES = frozenset(("input.json", "configuration.json", "manifest.json",
     "startup-timeline.json", "startup-timeline.json.lock", "start.gate", "events.jsonl",
@@ -45,6 +48,19 @@ def cleanup_targets(state):
 
 class EnvironmentError(ValueError):
     pass
+
+
+def factory_for(state, role="test"):
+    """Resolve the owned backing, never infer it from a release label or path."""
+    override = state.get("vehicles", {}).get(role, {}).get("factory")
+    factory = override if override is not None else state.get("factory", {})
+    paths, manifest = (TEST_FACTORY, TEST_MANIFEST) if override is not None else (FACTORY, MANIFEST)
+    if (override is not None and role != "test") or not isinstance(factory, dict):
+        raise EnvironmentError("FACTORY_ROLE_BINDING_INVALID")
+    if (factory.get("format") not in paths or factory.get("path") != paths[factory["format"]]
+            or factory.get("manifestPath") != manifest):
+        raise EnvironmentError("FACTORY_ROLE_BINDING_INVALID")
+    return factory
 
 
 def encoded(value):
@@ -159,18 +175,23 @@ class EnvironmentService:
             raise EnvironmentError("FACTORY_FILE_INVALID")
         return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
 
-    def _copy_factory(self, image, journal):
-        destination = self.root / FACTORY[image.image_format]
-        manifest = self.root / MANIFEST
+    def _copy_factory(self, image, journal, role=None):
+        if role not in (None, "test"):
+            raise EnvironmentError("FACTORY_ROLE_BINDING_INVALID")
+        paths, manifest_relative = (TEST_FACTORY, TEST_MANIFEST) if role else (FACTORY, MANIFEST)
+        destination = self.root / paths[image.image_format]
+        manifest = self.root / manifest_relative
         self._directory(".local/factory")
+        if not destination.exists() and shutil.disk_usage(self.root).free < max(60 * 1024**3, image.size):
+            raise EnvironmentError("FACTORY_COPY_REQUIRES_60_GIB_FREE")
         original_identity = self._regular_readonly(image.path, image.size)
         virtual_size = self._standalone(image.path, image.image_format)
-        alternate = self.root / FACTORY["qcow2" if image.image_format == "raw" else "raw"]
+        alternate = self.root / paths["qcow2" if image.image_format == "raw" else "raw"]
         if alternate.exists() or alternate.is_symlink():
             raise EnvironmentError("DIFFERENT_LOCAL_FACTORY_PRESENT")
         metadata = {"schemaVersion": 1, "kind": "democtl.factory-copy",
                     "runtimeProfile": "aos-main-qemuarm64-v1" if image.architecture == "main-qemuarm64" else None,
-                    "image": {"path": FACTORY[image.image_format], "format": image.image_format,
+                    "image": {"path": paths[image.image_format], "format": image.image_format,
                               "version": image.version, "sha256": image.sha256,
                               "sizeBytes": image.size, "virtualSizeBytes": virtual_size},
                     "sourceSelector": image.selector,
@@ -198,9 +219,10 @@ class EnvironmentService:
             os.rename(str(temporary), str(destination))
             sync_directory(destination.parent)
             atomic_json(manifest, metadata)
-        journal["factory"] = {"path": FACTORY[image.image_format], "format": image.image_format,
+        owner = journal["vehicles"][role] if role else journal
+        owner["factory"] = {"path": paths[image.image_format], "format": image.image_format,
                               "version": image.version, "sha256": image.sha256,
-                              "manifestPath": MANIFEST, "manifestSha256": digest(manifest)}
+                              "manifestPath": manifest_relative, "manifestSha256": digest(manifest)}
         atomic_json(self.root / JOURNAL, journal)
         return destination, virtual_size
 
@@ -340,6 +362,8 @@ class EnvironmentService:
         return identity
 
     def _local_retirement_state(self, state):
+        if isinstance(state, dict) and state.get("vehicles", {}).get("test", {}).get("factory") is not None:
+            raise EnvironmentError("TEST_FACTORY_REQUIRES_TEST_SCOPED_RETIRE")
         if (not isinstance(state, dict) or type(state.get("schemaVersion")) is not int
                 or state["schemaVersion"] != 1 or state.get("kind") != "democtl.current-run"
                 or set(state) - {"schemaVersion", "kind", "startedAt", "stage", "scope", "factory",

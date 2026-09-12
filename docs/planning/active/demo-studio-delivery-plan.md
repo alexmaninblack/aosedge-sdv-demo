@@ -120,10 +120,17 @@ The immutable image SHA-256 is
 Transfer SHA matched and Builder stopped. These are not clean-image evidence.
 No existing VM, assignment, Cloud release or Production state was changed.
 
-The current local run has a shared .31 backing for Test and Production.
-`environment create --target test` currently requires that same backing.
-A separate Test .32 backing needs a bounded lifecycle adapter change; that
-choice was submitted to the user before replacing or retiring current Test.
+The user authorized a separate Test .32 backing on 12 September. Demo Control
+now resolves a Test-only `vehicles.test.factory` override, copies the chosen
+immutable artifact before creating its overlay, and preserves Production's .31
+backing, identity and runtime. Same-image recreation still reuses the shared copy.
+Test retirement retains exact per-service Group Subjects and service associations;
+after Unit/Node deletion, GET-only checks must prove both Subjects have no assigned
+or reported Units before discarding terminal old-Test assignment/runtime receipts.
+The next Test reuses those Subjects through normal OEM assignment. No Subject,
+release, shared backing or Production mutation is added. Source tests: 130 affected
+local lifecycle/VM regressions and then 94 focused lifecycle/Subject/Cloud tests passed.
+Live replacement and reboot qualification are the next step, not yet evidence.
 Neither a successful image build nor transient service recovery closes N5.
 
 The [Factory .32 build record](../../../../aos-vehicle-platform/qualification/factory-32.md)

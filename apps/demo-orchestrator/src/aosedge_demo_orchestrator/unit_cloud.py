@@ -259,8 +259,12 @@ def execute(request):
         inventory = cloud.inventory()
         unit = cloud.unit(identity)
         node = cloud.call("units/" + identity + "/nodes/" + object_id(request["nodeId"]) + "/", absent=True)
-        return {"absent": unit is None and node is None and all(item["id"] != identity for item in inventory["units"]),
-                "inventory": inventory}
+        result = {"absent": unit is None and node is None and all(item["id"] != identity for item in inventory["units"]),
+                  "inventory": inventory}
+        if request.get("retainedSubjects"):
+            from aosedge_demo_orchestrator.service_assignment import confirm_retired_subjects
+            result["subjectsRetainedUnbound"] = result["absent"] and confirm_retired_subjects(cloud, request)
+        return result
     if action in ("assign", "remove"):
         permission = "unit_sets_units_create" if action == "assign" else "unit_sets_units_remove"
         cloud.require(permission)

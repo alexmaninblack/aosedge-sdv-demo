@@ -19,7 +19,8 @@ class DemoPreparationTests(unittest.TestCase):
         self.root = Path(temporary.name)
         self.path = self.root / JOURNAL
         self.path.parent.mkdir(parents=True)
-        self.state = dict(factory=dict(sha256="factory"), vehicles=dict(test={}))
+        self.state = dict(factory=dict(sha256="factory", format="raw", path=".local/factory/oem-demo-factory.img",
+            manifestPath=".local/factory/oem-demo-factory.manifest.json"), vehicles=dict(test={}))
         self.path.write_text(json.dumps(self.state))
         env = SimpleNamespace(root=self.root, _writer=contextlib.nullcontext,
             catalog=Mock(resolve=Mock(return_value=SimpleNamespace(sha256="factory", problems=[]))))

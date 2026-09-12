@@ -120,7 +120,12 @@ class UnitService:
             if item["cloud"].get("lifecycle") != "DELETED":
                 raise EnvironmentError("CLOUD_RETIREMENT_PROOF_REQUIRED")
             self.progress(role + ": confirming retired Unit/Node absence before local cleanup")
-            result = self._cloud("absence", unitId=item["unitId"], nodeId=item["nodeId"])
+            from .service_assignment import retirement_subjects
+            subjects = retirement_subjects(state) if role == "test" else []
+            extra = dict(retainedSubjects=subjects) if subjects else {}
+            result = self._cloud("absence", unitId=item["unitId"], nodeId=item["nodeId"], **extra)
+            if subjects and result.get("subjectsRetainedUnbound") is not True:
+                raise EnvironmentError("SERVICE_RETIRED_SUBJECT_CHECK_REQUIRED")
             sets = self._bindings(state, result["inventory"])
             if (not result["absent"] or any(sets[target]["members"] for target in (roles if scoped else sets))
                     or any(unit["system_uid"] == item["systemUid"] for unit in result["inventory"]["units"])):

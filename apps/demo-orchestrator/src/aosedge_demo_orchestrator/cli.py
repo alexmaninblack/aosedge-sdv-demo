@@ -289,6 +289,8 @@ def render_human(result: OperationResult, details: bool = False) -> str:
         lines.append("Factory copy: " + data["factory"]["path"])
         for role, vehicle in data["vehicles"].items():
             lines.append(role + ": " + vehicle["overlay"] + "  " + vehicle["state"])
+            if vehicle.get("factory"):
+                lines.append("  Factory: " + vehicle["factory"]["version"] + "  " + vehicle["factory"]["path"])
         lines.append("Current Vehicle: none")
     if data and document["operation"] == "environment.retire":
         for path in data["removed"]:

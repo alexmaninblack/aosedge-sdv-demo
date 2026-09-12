@@ -196,7 +196,7 @@ class WorkerTests(unittest.TestCase):
         self.assertIn("UNRELATED_SERVICE", assignment.execute(self.cloud, dict(self.request, step="assign"))["reason"])
         self.assertEqual([], self.cloud.posts)
 
-    def test_protected_wrong_creator_group_and_stale_assignments_fail_closed(self):
+    def test_protected_wrong_creator_group_fail_closed_retained_service_can_bind(self):
         self.retained()
         row = self.cloud.subjects[-1]
         for key, invalid in (("is_protected", True), ("is_group", False), ("created_by", SP), ("priority", 1)):
@@ -205,7 +205,40 @@ class WorkerTests(unittest.TestCase):
             self.assertEqual("BLOCKED", assignment.execute(self.cloud, dict(self.request, step="bind"))["stage"])
             row[key] = original
         self.cloud.services.append(dict(service=dict(id=BRAKE)))
-        self.assertIn("STALE_SERVICE", assignment.execute(self.cloud, dict(self.request, step="bind"))["reason"])
+        self.assertEqual("ACCEPTED", assignment.execute(self.cloud, dict(self.request, step="bind"))["stage"])
+        self.assertEqual("OBSERVED", assignment.execute(self.cloud, dict(self.request, step="assign"))["stage"])
+        self.assertEqual(1, len(self.cloud.posts))
+
+    def test_retired_subject_check_is_read_only_and_requires_no_units(self):
+        self.retained()
+        self.cloud.services.append(dict(service=dict(id=BRAKE)))
+        request = dict(ownerId=OWNER, retainedSubjects=[dict(id=SUBJECT, serviceId=BRAKE,
+            label=assignment.LABELS["brake"], createdBy=USER)])
+        self.assertTrue(assignment.confirm_retired_subjects(self.cloud, request))
+        for collection in (self.cloud.assigned, self.cloud.reported):
+            collection.append(dict(id=UNIT, system_uid=TEST["systemUid"]))
+            with self.assertRaisesRegex(CloudFailure, "STILL_HAS_UNITS"):
+                assignment.confirm_retired_subjects(self.cloud, request)
+            collection.clear()
+        self.cloud.services.append(dict(service=dict(id=TIRE)))
+        with self.assertRaisesRegex(CloudFailure, "SERVICES_CHANGED"):
+            assignment.confirm_retired_subjects(self.cloud, request)
+        self.assertEqual([], self.cloud.posts)
+
+    def test_terminal_retirement_binding_rejects_peer_and_uncertainty(self):
+        subject = dict(ownerId=OWNER, id=SUBJECT, label=assignment.LABELS["brake"], isGroup=True,
+            priority=0, createdBy=USER, create=dict(stage="CONFIRMED"))
+        record = dict(serviceId=BRAKE, team="brake", ownerId=OWNER, test=TEST, state="ASSIGNED",
+            steps={step: dict(stage="CONFIRMED") for step in ("bind", "assign")})
+        state = dict(vehicles=dict(test=TEST, production={}), cloudBinding=dict(ownerId=OWNER),
+            demoSubjects={BRAKE: subject}, serviceOperations={BRAKE: record})
+        self.assertEqual(SUBJECT, assignment.retirement_subjects(state)[0]["id"])
+        for field, value in (("test", dict(TEST, unitId=SP)), ("state", "UNCERTAIN"), ("ownerId", SP), ("steps", {})):
+            original = record[field]
+            record[field] = value
+            with self.assertRaisesRegex(EnvironmentError, "RECONCILIATION"):
+                assignment.retirement_subjects(state)
+            record[field] = original
 
     def test_post_transport_and_bad_response_are_uncertain(self):
         original = self.cloud.call

@@ -125,6 +125,8 @@ def load_configuration(root, config_path=None):
                     vehicles[role]["accessRoot"] = ".run/demo-current/" + role + "-access"
             factory = state.get("factory")
             if factory:
+                from .environment import factory_for
+                factory = factory_for(state, role)
                 vehicles[role].update(imageVersion=factory["version"], imageSha256=factory["sha256"])
         journal = observation("CURRENT_RUN_JOURNAL", {"stage": state["stage"],
                               "runId": state.get("vehicles", {}).get("test", {}).get("localVmId"),

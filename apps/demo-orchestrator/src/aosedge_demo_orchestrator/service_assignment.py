@@ -120,8 +120,8 @@ def snapshot(cloud, request):
     service_ids = [object_id(row["service"]["id"]) for row in rows]
     if set(service_ids) - {identifier}:
         raise CloudFailure("SERVICE_SUBJECT_UNRELATED_SERVICE_PRESENT")
-    if not assigned and service_ids:
-        raise CloudFailure("SERVICE_SUBJECT_STALE_SERVICE_BINDINGS")
+    # A retained Group Subject may hold services before it has a Unit. This is
+    # the documented service-first flow, including replacement of a retired Test.
     result.update(unitBound=bool(assigned), serviceBound=identifier in service_ids, serviceIds=service_ids)
     if request.get("runtime"):
         from .cloud_observation import service as runtime_service
@@ -133,6 +133,63 @@ def snapshot(cloud, request):
         result["runtime"] = dict(services=[runtime_service(row) for row in listing if
             (row.get("service") or {}).get("id") == identifier], details=[runtime_service(row) for row in details])
     return result
+
+
+def retirement_subjects(state):
+    """Validate terminal, exact Test bindings before its lifecycle is retired."""
+    subjects, operations = state.get("demoSubjects", {}), state.get("serviceOperations", {})
+    if (state.get("demoSubject") or not isinstance(subjects, dict) or not isinstance(operations, dict)
+            or set(subjects) != set(operations) or len(subjects) > 2):
+        raise EnvironmentError("SERVICE_RETIREMENT_BINDINGS_REQUIRE_RECONCILIATION")
+    if not subjects:
+        return []
+    if "production" not in state.get("vehicles", {}):
+        # The full single-role journal removal does not yet retain Subject IDs.
+        raise EnvironmentError("SERVICE_SUBJECT_SINGLE_ROLE_RETENTION_REQUIRED")
+    item = state["vehicles"]["test"]
+    test = {key: item.get(key) for key in ("unitId", "systemUid", "unitSetId")}
+    owner = object_id(state["cloudBinding"]["ownerId"])
+    result = []
+    for service_id, subject in subjects.items():
+        record = operations[service_id]
+        team = record.get("team")
+        if (record.get("state") != "ASSIGNED" or record.get("serviceId") != service_id
+                or record.get("test") != test or record.get("ownerId") != owner
+                or subject.get("ownerId") != owner or team not in LABELS
+                or subject.get("label") != LABELS[team] or subject.get("isGroup") is not True
+                or type(subject.get("priority")) is not int or subject["priority"] != 0
+                or any(record.get("steps", {}).get(step, {}).get("stage") != "CONFIRMED" for step in ("bind", "assign"))
+                or subject.get("create", {}).get("stage") != "CONFIRMED"):
+            raise EnvironmentError("SERVICE_RETIREMENT_BINDINGS_REQUIRE_RECONCILIATION")
+        result.append(dict(serviceId=object_id(service_id), id=object_id(subject["id"]),
+            label=subject["label"], createdBy=object_id(subject["createdBy"])))
+    if len({entry["id"] for entry in result}) != len(result):
+        raise EnvironmentError("SERVICE_RETIREMENT_BINDINGS_REQUIRE_RECONCILIATION")
+    return result
+
+
+def confirm_retired_subjects(cloud, request):
+    """GET-only proof: retained owned Subjects have no remaining Unit recipients."""
+    from .unit_cloud import CloudFailure
+    if cloud.user["role"] != "oem" or cloud.user["ownerId"] != request["ownerId"]:
+        raise CloudFailure("SERVICE_ASSIGNMENT_OEM_BINDING_CHANGED")
+    subjects = request["retainedSubjects"]
+    if not isinstance(subjects, list) or not 0 < len(subjects) <= 2:
+        raise CloudFailure("SERVICE_RETIREMENT_SCOPE_INVALID")
+    cloud.require("subjects_read", "subjects_units_list", "subjects_units_reported", "subjects_services_list")
+    for entry in subjects:
+        subject_id, service_id = object_id(entry["id"]), object_id(entry["serviceId"])
+        if entry["label"] not in LABELS.values():
+            raise CloudFailure("SERVICE_RETIREMENT_SCOPE_INVALID")
+        path = "subjects/" + subject_id + "/"
+        _subject(cloud.call(path), entry["label"], subject_id, object_id(entry["createdBy"]))
+        for suffix in ("units/", "units/reported/"):
+            if _pages(cloud, path + suffix, lambda row: object_id(row["id"])):
+                raise CloudFailure("SERVICE_RETIRED_SUBJECT_STILL_HAS_UNITS")
+        rows = _pages(cloud, path + "services/", lambda row: object_id(row["service"]["id"]))
+        if [object_id(row["service"]["id"]) for row in rows] != [service_id]:
+            raise CloudFailure("SERVICE_RETIRED_SUBJECT_SERVICES_CHANGED")
+    return True
 
 
 def execute(cloud, request):

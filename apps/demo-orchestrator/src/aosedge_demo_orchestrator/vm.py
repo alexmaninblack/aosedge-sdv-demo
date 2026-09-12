@@ -19,7 +19,7 @@ from pathlib import Path
 from uuid import uuid4
 from uuid import UUID
 
-from .environment import EnvironmentError, EnvironmentService, JOURNAL, OVERLAYS, atomic_json, digest
+from .environment import EnvironmentError, EnvironmentService, JOURNAL, OVERLAYS, atomic_json, digest, factory_for
 from .guest_access import enroll_serial, read_guest
 from .status import now, object_id, project_root, read_json
 
@@ -169,13 +169,13 @@ class VMService:
                 raise EnvironmentError("VM_MAC_BINDING_INVALID")
             if item.get("sshPort") != (10022 if role == "test" else 10023):
                 raise EnvironmentError("VM_SSH_BINDING_INVALID")
-        descriptor = read_json(self.root / state["factory"]["manifestPath"])
-        if digest(self.root / state["factory"]["manifestPath"]) != state["factory"]["manifestSha256"]:
-            raise EnvironmentError("VM_FACTORY_MANIFEST_CHANGED")
-        # The initial profile is a variant binding, not a version selector.
-        if not descriptor.get("sourceSelector", "").endswith("/main-qemuarm64"):
-            raise EnvironmentError("VM_RUNTIME_PROFILE_UNSUPPORTED")
         for role in roles:
+            factory = factory_for(state, role)
+            descriptor = read_json(self.root / factory["manifestPath"])
+            if digest(self.root / factory["manifestPath"]) != factory["manifestSha256"]:
+                raise EnvironmentError("VM_FACTORY_MANIFEST_CHANGED")
+            if not descriptor.get("sourceSelector", "").endswith("/main-qemuarm64"):
+                raise EnvironmentError("VM_RUNTIME_PROFILE_UNSUPPORTED")
             item = state["vehicles"][role]
             if action == "start" and item.get("cloud", {}).get("lifecycle") in ("DEPROVISIONED", "DELETED"):
                 raise EnvironmentError("RETIRED_VM_REQUIRES_FRESH_FACTORY_OVERLAY")
@@ -362,7 +362,7 @@ class VMService:
         if pid is None:
             self.environment._assert_unheld(self.root / item["overlay"])
             info = self.environment._info(self.root / item["overlay"])
-            if info.get("backing-filename") != str(self.root / state["factory"]["path"]):
+            if info.get("backing-filename") != str(self.root / factory_for(state, role)["path"]):
                 raise EnvironmentError("VM_OVERLAY_BACKING_CHANGED")
             self._free_port(item["sshPort"])
             self._remove_sockets(role)

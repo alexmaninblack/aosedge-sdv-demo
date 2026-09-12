@@ -30,7 +30,8 @@ class LifecycleTests(unittest.TestCase):
         self.environment = EnvironmentService(self.root, catalog=self.catalog)
         self.environment._directory(".run/demo-current")
         self.state = dict(kind="democtl.current-run", vehicles=dict(test={}, production=dict(unitId="preserved")),
-            currentVehicle=None, operations=[dict(state="COMPLETED")], factory=dict(sha256="sha"))
+            currentVehicle=None, operations=[dict(state="COMPLETED")], factory=dict(sha256="sha",
+                format="raw", path=".local/factory/oem-demo-factory.img", manifestPath=".local/factory/oem-demo-factory.manifest.json"))
         self.write()
         self.app = Mock()
         self.app.environment_service = self.environment
@@ -101,11 +102,11 @@ class LifecycleTests(unittest.TestCase):
             self.workflow.create("factory/arch")
         self.app.execute.assert_not_called()
 
-    def test_retire_preserves_per_service_subject_records_until_cleanup_integration(self):
+    def test_retire_preserves_unresolved_subject_records(self):
         self.provisioned()
         self.state["demoSubjects"] = {"brake-id": dict(id="retained-brake")}
         self.write()
-        with self.assertRaisesRegex(EnvironmentError, "SUBJECT_RETIREMENT_INTEGRATION_REQUIRED"):
+        with self.assertRaisesRegex(EnvironmentError, "SERVICE_RETIREMENT_BINDINGS_REQUIRE_RECONCILIATION"):
             self.workflow.retire()
         self.assertEqual(self.state["demoSubjects"], self.read()["demoSubjects"])
         self.app.execute.assert_not_called()

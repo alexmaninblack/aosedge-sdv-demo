@@ -17,14 +17,18 @@ from pathlib import Path
 from uuid import UUID, uuid4
 
 from .environment import (EnvironmentError, FACTORY, JOURNAL, MANIFEST, OVERLAYS,
-                          atomic_json, digest, encoded, sync_directory)
+                          TEST_MANIFEST, factory_for, atomic_json, digest, encoded, sync_directory)
 from .guest_access import ACCESS_FILES
 from .status import object_id, read_json
 
 ROOT_FIELDS = {"schemaVersion", "kind", "startedAt", "stage", "scope", "factory",
     "currentVehicle", "vehicles", "operations", "shared", "cloudBinding", "source",
     "componentOperations", "componentSchema", "smDemoProof", "demoPreparation",
-    "backends", "demoLifecycle", "testRetirement", "workspace"}
+    "backends", "demoLifecycle", "testRetirement", "workspace", "demoSubjects", "serviceOperations",
+    "smServiceUpdateProof", "cmServiceUpdateProof"}
+
+TEST_RECEIPTS = ("componentOperations", "componentSchema", "smDemoProof", "demoPreparation",
+                 "serviceOperations", "smServiceUpdateProof", "cmServiceUpdateProof")
 
 
 def _state(environment):
@@ -67,12 +71,18 @@ def _layout(environment, state):
         raise EnvironmentError("UNTRACKED_RUNTIME_FILES_PRESENT")
 
 
-def _factory(environment, state):
-    factory = state.get("factory")
-    if (not isinstance(factory, dict) or factory.get("format") not in FACTORY
-            or factory.get("path") != FACTORY[factory["format"]] or factory.get("manifestPath") != MANIFEST):
-        raise EnvironmentError("CLEANUP_FACTORY_BINDING_INVALID")
-    manifest = environment.root / MANIFEST
+def _factory(environment, state, role="test"):
+    factory = factory_for(state, role)
+    manifest = environment.root / factory["manifestPath"]
+    receipts = state.get("testRetirement", {}).get("targets", {})
+    def removed(key, path):
+        receipt = receipts.get(key, {})
+        return (role == "test" and state["stage"] == "RETIRING_LOCAL"
+            and receipt.get("path") == str(path.relative_to(environment.root))
+            and receipt.get("state") in ("REMOVE_PENDING", "REMOVED")
+            and not (environment.root / OVERLAYS["test"]).exists())
+    if not manifest.exists() and not manifest.is_symlink() and removed("manifest", manifest):
+        return {"image": {}}  # Child already absent; per-file receipts are checked below.
     environment._owned_file(manifest)
     if digest(manifest) != factory.get("manifestSha256"):
         raise EnvironmentError("CLEANUP_FACTORY_MANIFEST_CHANGED")
@@ -80,13 +90,20 @@ def _factory(environment, state):
     image = metadata.get("image", {})
     if any(image.get(key) != factory.get(key) for key in ("path", "format", "version", "sha256")):
         raise EnvironmentError("CLEANUP_FACTORY_BINDING_INVALID")
-    environment._regular_readonly(environment.root / factory["path"], image["sizeBytes"])
+    backing = environment.root / factory["path"]
+    if not (not backing.exists() and not backing.is_symlink() and removed("factory", backing)):
+        environment._regular_readonly(backing, image["sizeBytes"])
     # The peer may hold the immutable backing. No lsof/rehash of that large file.
     return metadata
 
 
 def _terminal_receipts(state):
     """Do not make a new run inherit an old Test publication or uncertain call."""
+    from .service_assignment import retirement_subjects
+    retirement_subjects(state)
+    for key in ("smServiceUpdateProof", "cmServiceUpdateProof"):
+        if state.get(key) and state[key].get("state") != "APPLIED":
+            raise EnvironmentError("TEST_RUNTIME_PROOF_RECONCILIATION_REQUIRED")
     records = state.get("componentOperations", {})
     if not isinstance(records, dict):
         raise EnvironmentError("COMPONENT_OPERATION_RECONCILIATION_REQUIRED")
@@ -124,6 +141,9 @@ def _targets(environment, state):
             path = access / name
             if path.exists() or path.is_symlink():
                 targets["access:" + name] = str(path.relative_to(environment.root))
+    if item.get("factory") is not None:
+        factory = factory_for(state, "test")
+        targets.update(factory=factory["path"], manifest=factory["manifestPath"])
     return targets
 
 
@@ -190,8 +210,11 @@ def retire_test(environment, cloud_check, backend_check):
                 raise EnvironmentError("TEST_RETIREMENT_JOURNAL_INVALID")
             # Missing access files remain explicit intent, not newly guessed paths.
             for key, receipt in previous["targets"].items():
-                expected = OVERLAYS["test"] if key == "overlay" else (
+                expected = (factory_for(state, "test")["path"] if key == "factory" and item.get("factory") else
+                    TEST_MANIFEST if key == "manifest" and item.get("factory") else
+                    OVERLAYS["test"] if key == "overlay" else (
                     ".run/demo-current/test-access/" + key[7:] if key.startswith("access:") and key[7:] in ACCESS_FILES else None)
+                    )
                 if (not isinstance(receipt, dict) or set(receipt) != {"path", "identity", "state"}
                         or not expected or receipt.get("path") != expected or receipt.get("state") not in ("READY", "REMOVE_PENDING", "REMOVED")
                         or not isinstance(receipt.get("identity"), list) or len(receipt["identity"]) != 4
@@ -209,7 +232,7 @@ def retire_test(environment, cloud_check, backend_check):
                     raise EnvironmentError("CLEANUP_FILE_MISSING")
                 continue
             if key == "overlay":
-                identity = environment._untouched_overlay(path, state["factory"], metadata["image"]["virtualSizeBytes"], runtime, bool(cloud))
+                identity = environment._untouched_overlay(path, factory_for(state, "test"), metadata["image"]["virtualSizeBytes"], runtime, bool(cloud))
             else:
                 identity = environment._owned_file(path)
                 environment._assert_unheld(path)
@@ -241,7 +264,7 @@ def retire_test(environment, cloud_check, backend_check):
         state["testRetirement"] = dict(state="COMPLETED")
         state["vehicles"].pop("test")
         state["operations"] = state["operations"][:1]
-        for key in ("componentOperations", "componentSchema", "smDemoProof", "demoPreparation"):
+        for key in TEST_RECEIPTS:
             state.pop(key, None)
         # demoLifecycle is the caller's in-progress orchestration receipt.
         atomic_json(environment.root / JOURNAL, state)
@@ -259,11 +282,10 @@ def add_test(environment, image):
     access = environment.root / ".run/demo-current/test-access"
     if access.exists() or access.is_symlink():
         raise EnvironmentError("ORPHAN_ACCESS_MATERIAL_REQUIRES_RECONCILIATION")
-    metadata = _factory(environment, state)
-    if (image.sha256 != state["factory"]["sha256"] or image.selector != metadata.get("sourceSelector")
-            or image.image_format != state["factory"]["format"]):
-        raise EnvironmentError("TEST_RECREATE_FACTORY_CONFLICT")
-    for key in ("componentOperations", "componentSchema", "smDemoProof", "demoPreparation"):
+    metadata = _factory(environment, state, "production")
+    separate_factory = (image.sha256 != state["factory"]["sha256"] or image.selector != metadata.get("sourceSelector")
+            or image.image_format != state["factory"]["format"])
+    for key in TEST_RECEIPTS:
         if state.get(key):
             raise EnvironmentError("TEST_RECREATE_OLD_RECEIPTS_PRESENT")
     if state.get("testRetirement") not in (None, {"state": "COMPLETED"}):
@@ -283,14 +305,18 @@ def add_test(environment, image):
     atomic_json(environment.root / JOURNAL, state)
     overlay = environment.root / OVERLAYS["test"]
     try:
+        if separate_factory:
+            backing, virtual_size = environment._copy_factory(image, state, "test")
+        else:
+            backing = environment.root / state["factory"]["path"]
+            virtual_size = metadata["image"]["virtualSizeBytes"]
         fd = os.open(str(overlay), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         os.close(fd)
-        backing = environment.root / state["factory"]["path"]
         environment._command(["create", "-f", "qcow2", "-F", image.image_format, "-b", str(backing), str(overlay)])
         info = environment._info(overlay)
         if (info.get("format") != "qcow2" or info.get("backing-filename") != str(backing)
                 or info.get("backing-filename-format") != image.image_format
-                or info.get("virtual-size") != metadata["image"]["virtualSizeBytes"]
+                or info.get("virtual-size") != virtual_size
                 or stat.S_IMODE(overlay.stat().st_mode) != 0o600):
             raise EnvironmentError("OVERLAY_BACKING_MISMATCH")
         item["state"] = "MANUFACTURED"

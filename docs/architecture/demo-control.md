@@ -216,6 +216,33 @@ these checks perform no real provisioning, publication or approval.
 
 ## Accepted Factory .31 Test baseline and corrections — 2026-09-06
 
+### Distinct Test Factory — authorized 12 September 2026
+
+When replacing Test in a two-role environment, retained Brake/Tire Group Subjects
+and their service associations survive. `demo retire` accepts only confirmed
+assignments to that exact Test; after deleting its Unit/Node it reads each recorded
+Subject and requires zero assigned/reported Units and the unchanged service identity.
+It then removes terminal old-Test operation/runtime receipts, not the Subjects.
+Normal `service assign` may bind the next Test to a Subject already carrying its
+service, as documented in the [service-first Quick Start](https://docs.aosedge.tech/docs/quick-start/create-subject).
+Unknown bindings, unresolved calls and other Unit recipients block local cleanup.
+Single-role complete-journal removal with service Subjects remains explicitly blocked
+until persistent Subject retention is integrated; it is not silently treated as safe.
+
+After retiring only the current Test, `environment create --target test --image
+6.1.1-maninblack.32/main-qemuarm64` may select a different catalog image while
+Production retains .31. The original shared `factory` binding is unchanged;
+`vehicles.test.factory` binds a separately copied, SHA-verified immutable image
+at `.local/factory/test-factory.img` (or `.qcow2`) and its own manifest.
+No existing overlay is rebased. A same-image Test still reuses the shared copy.
+VM start/stop, status, component provenance and backend cleanup resolve the
+selected role's actual factory. Test retirement deletes its overlay before its
+dedicated copy/manifest, with interrupted-unlink reconciliation; it never
+touches the shared Production copy. While the override exists, legacy
+`environment retire` requires Test-scoped `demo retire` first and performs no
+partial all-role cleanup. This is a bounded extension of contract 1.8.0, not
+an authorization to change Production or manufacture a new build.
+
 Successor source integration, 12 September: `democtl image build
 6.1.1-maninblack.32` uses pinned Platform source and the same offline Builder,
 image layout, artifact catalog and transfer-digest check. It includes the proven

@@ -450,12 +450,12 @@ class ComponentService:
 
     def _factory_support(self, state, files):
         """Verify the owned copy receipt and catalog declaration, not a guest."""
-        from .environment import MANIFEST, digest
+        from .environment import MANIFEST, TEST_MANIFEST, digest, factory_for
         from .images import ImageError
         from .status import read_json
-        factory = state.get("factory", {})
-        path = self.environment.root / MANIFEST
-        if (factory.get("manifestPath") != MANIFEST or path.is_symlink() or not path.is_file()
+        factory = factory_for(state, "test")
+        path = self.environment.root / factory["manifestPath"]
+        if (factory.get("manifestPath") not in (MANIFEST, TEST_MANIFEST) or path.is_symlink() or not path.is_file()
                 or path.stat().st_size > 65536 or digest(path) != factory.get("manifestSha256")):
             raise EnvironmentError("COMPONENT_FACTORY_RECEIPT_NOT_PROVEN")
         manifest = read_json(path)
@@ -666,7 +666,8 @@ class ComponentService:
                 first, record = compose(version, files, inspected["sha256"], repository, contract)
                 second, repeat = compose(version, files, inspected["sha256"], repository, contract)
             else:
-                factory = read_json(self.environment.root / JOURNAL)["factory"]
+                from .environment import factory_for
+                factory = factory_for(read_json(self.environment.root / JOURNAL), "test")
                 first, record = replay(version, content_profile, files, inspected["sha256"], contract, factory)
                 second, repeat = replay(version, content_profile, files, inspected["sha256"], contract, factory)
             unsigned = pack(first)

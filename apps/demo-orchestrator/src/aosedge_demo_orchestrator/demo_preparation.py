@@ -32,8 +32,9 @@ class DemoPreparation:
         state = read_json(path) if path.exists() else None
         add_test = bool(state and target == VehicleTarget.TEST and set(state["vehicles"]) == {"production"}
                         and state.get("testRetirement") == {"state": "COMPLETED"})
-        if state and ((not roles.issubset(state["vehicles"]) and not add_test) or not state.get("factory")
-                or state["factory"]["sha256"] != candidate.sha256):
+        from .environment import factory_for
+        if state and not add_test and ((not roles.issubset(state["vehicles"])) or not state.get("factory")
+                or any(factory_for(state, role)["sha256"] != candidate.sha256 for role in roles)):
             raise EnvironmentError("DEMO_EXISTING_ENVIRONMENT_IMAGE_OR_ROLES_CONFLICT")
         record = (state or {}).get("demoPreparation") if not add_test else None
         if record:
