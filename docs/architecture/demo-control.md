@@ -740,6 +740,15 @@ VDP records were retained. It does not upload, reassign, reset native databases
 or retry after a failed/uncertain response. Resource readiness must precede a
 recovery attempt; a successful manager restart is not service-start evidence.
 
+For the explicitly authorized 12 September Factory .32 delivery comparison,
+the same CLI flag additionally admits only Test VM `5aa1f8e4-a111-4467-a6cc-fb269c62a7a8`
+and Unit `923b9820-999b-41bb-91db-b2a2c469e743`, with its exact Factory/CM/SM
+digests. This control restarts the installed CM once without uploading a
+binary, editing configuration, resetting storage or restarting SM/VM. Its
+existing runtime-proof journal records intent before execution; a completed
+repeat is a no-op, and an uncertain attempt requires read-only reconciliation.
+The control is not a general reconnect policy or evidence of a source fix.
+
 `component logs test` retains a bounded SM network/preparation projection
 separate from the last general events, so an initial preparation failure is
 not hidden by later status traffic. Native identities and fixed error labels

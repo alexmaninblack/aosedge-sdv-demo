@@ -196,6 +196,38 @@ to force delivery. The new Test is preserved for that investigation; service
 assignment, mock ingestion and reboot qualification have not yet run on .32.
 Production remains the same running .31 VM (PID 28620, unchanged Unit identity).
 
+Delivery control, **12 September 04:49 UTC**: the user authorized one restart
+of the unchanged installed .32 CM, followed by a .31 CM comparison only if
+delivery remained stuck. The existing `democtl component cm-apply test
+--restart-cm` now admits this exact Test VM/Unit/Factory identity as a one-attempt
+control; intent and outcome use the existing runtime-proof journal. Completed
+repeats are no-ops; uncertain outcomes require reconciliation, not a retry.
+
+The control succeeded: CM PID changed from `1653` to `6791`, while its installed
+SHA remained `85e03a5206576c71a571a46ef90345d43037ea71b2e00c77181d247be533028d`.
+SM PID `1875` and its binary were unchanged. There was no manager replacement,
+configuration/storage reset, VM/SM restart, reprovision, publication or direct
+Cloud mutation. The conditional .31 binary comparison was therefore not run.
+
+Native CM events record Cloud connection at `04:48:53.627952Z`, a full UnitStatus
+send, desiredStatus receipt at `04:48:53.939821Z`, Pending/Installing at about
+`04:48:55.309Z`, and Installed at `04:49:04.294191Z`: approximately 10.35 seconds
+from desired receipt to completion. A subsequent Cloud read reported VDP
+`18.0.0` installed with no pending component/error. Guest `component status test`
+confirmed active VDP `18.0.0`, slot `a`, matching process/slot, PID `6899`,
+`Result=success`, zero restarts and provider-reported READY/LIVE with 23 read
+paths. This is provider readiness, not independent service/KUKSA consumption.
+
+The previous delivery blocker is recovered, **not root-caused**. Restart resets
+CM process/session state, reconnects Cloud and resends UnitStatus together;
+this control does not isolate which factor restored delivery, prove a Cloud
+defect, or establish that the .32 source changes are regression-free. No
+automatic reconnect workaround has been introduced. Full .32 service assignment,
+mock-backend and retained-assignment reboot qualification remain open.
+Targeted control/runtime tests: 38 passed; delivery-reader tests: 27 passed.
+No new image build or artifact cleanup was performed; diagnostic state and
+Production remain preserved.
+
 The [Factory .32 build record](../../../../aos-vehicle-platform/qualification/factory-32.md)
 records exact source, artifact and outstanding cold-boot qualification.
 

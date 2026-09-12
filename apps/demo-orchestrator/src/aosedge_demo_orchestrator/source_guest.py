@@ -957,6 +957,38 @@ def sm_apply_service_update(request):
                 previousBinarySha256=previous, durableRecordsPreserved=True, **dict(result, mutation=True))
 
 
+def cm_restart_factory32_control(request):
+    """User-authorized unchanged-binary control, restricted to one current Test."""
+    if (request.get("target") != "test" or request.get("restartCm") is not True
+            or request["vehicle"].get("localVmId") != "5aa1f8e4-a111-4467-a6cc-fb269c62a7a8"
+            or request["vehicle"].get("unitId") != "923b9820-999b-41bb-91db-b2a2c469e743"):
+        raise ValueError("CM_CONTROL_REQUIRES_AUTHORIZED_TEST_32")
+    digest = "85e03a5206576c71a571a46ef90345d43037ea71b2e00c77181d247be533028d"
+    before = execute(dict(request, action="component-cm-status"))
+    sm = execute(dict(request, action="component-sm-status"))
+    if (before.get("binarySha256") != digest or before.get("executable") != "/usr/bin/aos_cm_app"
+            or before["service"]["ActiveState"] != "active"
+            or sm.get("binarySha256") != "936fbd563f7e9d54651504f5aeba84fee0f3736861d30c2efb60eb564e039783"
+            or sm["service"]["ActiveState"] != "active"):
+        raise ValueError("CM_CONTROL_FACTORY_BINARIES_REQUIRED")
+    print("Test32 CM: one restart with unchanged installed binary; SM and VM stay running", file=sys.stderr, flush=True)
+    subprocess.run(["systemctl", "restart", "aos-cm"], capture_output=True, text=True, timeout=25, check=True)
+    after = execute(dict(request, action="component-cm-status"))
+    sm_after = execute(dict(request, action="component-sm-status"))
+    if (after.get("binarySha256") != digest or after.get("executable") != before["executable"]
+            or after["service"]["ActiveState"] != "active"
+            or after["service"]["MainPID"] == before["service"]["MainPID"]
+            or sm_after["service"]["MainPID"] != sm["service"]["MainPID"]
+            or sm_after.get("binarySha256") != sm["binarySha256"]
+            or sm_after["service"]["ActiveState"] != "active"):
+        raise ValueError("CM_CONTROL_RESTART_UNCONFIRMED")
+    return dict(state="RESTARTED", noOp=False, mutation=True, binaryUnchanged=True,
+        previousPid=before["service"]["MainPID"], service=after["service"], binarySha256=digest,
+        smPidPreserved=True, smPid=sm["service"]["MainPID"],
+        storedDesiredBefore=before.get("delivery", {}).get("storedDesired"),
+        storedDesiredAfter=after.get("delivery", {}).get("storedDesired"))
+
+
 def cm_apply_service_update(request):
     """One Test CM restart; preserve SM, VDP and all native/cloud assignments."""
     if (request.get("target") != "test" or request.get("proof") != "service-snapshot-reconciliation"
@@ -1021,6 +1053,8 @@ def cm_apply_service_update(request):
 
 def execute(request):
     if request["action"] == "component-cm-apply":
+        if request.get("proof") == "factory32-delivery-control":
+            return cm_restart_factory32_control(request)
         return cm_apply_service_update(request)
     if request["action"] == "component-cm-status":
         props = command(["systemctl", "show", "aos-cm", "--property=MainPID,ActiveState,Result,NRestarts,FragmentPath"]).stdout

@@ -80,6 +80,38 @@ def apply_test(environment, target, manager="sm", restart_cm=False):
         raise EnvironmentError("SM_QUALIFICATION_TEST_ONLY")
     if type(restart_cm) is not bool or (restart_cm and manager != "cm"):
         raise EnvironmentError("RESTART_CM_USES_TEST_CM_APPLY_ONLY")
+    if manager == "cm" and restart_cm:
+        current = read_json(environment.root / JOURNAL)
+        if current.get("vehicles", {}).get("test", {}).get("localVmId") == "5aa1f8e4-a111-4467-a6cc-fb269c62a7a8":
+            with environment._writer():
+                state = read_json(environment.root / JOURNAL)
+                from .environment import factory_for
+                vehicle = state.get("vehicles", {}).get("test", {})
+                if (vehicle.get("localVmId") != "5aa1f8e4-a111-4467-a6cc-fb269c62a7a8"
+                        or vehicle.get("unitId") != "923b9820-999b-41bb-91db-b2a2c469e743"
+                        or factory_for(state, "test").get("sha256") !=
+                        "f56e037ff6ce11d1dea769055dc160a5a9a8061bbdd2d67745a3042181be2f14"):
+                    raise EnvironmentError("CM_CONTROL_REQUIRES_AUTHORIZED_TEST_32")
+                record = state.get("cmServiceUpdateProof", {})
+                if record:
+                    if record.get("proof") == "factory32-delivery-control" and record.get("state") == "COMPLETED":
+                        return dict(record["result"], noOp=True)
+                    raise EnvironmentError("CM_CONTROL_PREVIOUS_ATTEMPT_REQUIRES_RECONCILIATION")
+                record = dict(proof="factory32-delivery-control", state="ATTEMPT_STARTED", startedAt=now())
+                state["cmServiceUpdateProof"] = record
+                atomic_json(environment.root / JOURNAL, state)
+                try:
+                    driver = SourceDriver(VMService(environment))
+                    with driver.operation(timeout=60):
+                        result = driver.guest(state, "test", "component-cm-apply", target="test",
+                            proof=record["proof"], restartCm=True)
+                except (EnvironmentError, OSError, ValueError, subprocess.SubprocessError):
+                    record["state"] = "RECONCILIATION_REQUIRED"
+                    atomic_json(environment.root / JOURNAL, state)
+                    raise EnvironmentError("CM_CONTROL_RESTART_REQUIRES_RECONCILIATION") from None
+                record.update(state="COMPLETED", result=result, confirmedAt=now())
+                atomic_json(environment.root / JOURNAL, state)
+                return result
     artifact = ARTIFACT if manager == "sm" else ARTIFACT.with_name("cm-service-update-reconcile")
     manifest = read_json(artifact / "manifest.json")
     raw = (artifact / ("aos-" + manager)).read_bytes()

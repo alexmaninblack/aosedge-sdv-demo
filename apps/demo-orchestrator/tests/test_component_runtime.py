@@ -16,7 +16,77 @@ from aosedge_demo_orchestrator.api import execute_operation
 from aosedge_demo_orchestrator.cli import build_parser, request_from_arguments
 from aosedge_demo_orchestrator.component_runtime import apply_test, build, builder, build_factory, FACTORY_VERSION, FACTORY_REVISION, SM_REVISION
 from aosedge_demo_orchestrator.environment import EnvironmentError
-from aosedge_demo_orchestrator.source_guest import execute, process_wait_observation, container_runtime_observation, sm_saved_test_release, sm_recover_test, sm_apply_service_update, cm_apply_service_update
+from aosedge_demo_orchestrator.source_guest import execute, process_wait_observation, container_runtime_observation, sm_saved_test_release, sm_recover_test, sm_apply_service_update, cm_apply_service_update, cm_restart_factory32_control
+
+
+class Factory32CMControlTests(unittest.TestCase):
+    def setUp(self):
+        self.request = dict(action="component-cm-apply", proof="factory32-delivery-control", target="test", restartCm=True,
+            vehicle=dict(localVmId="5aa1f8e4-a111-4467-a6cc-fb269c62a7a8", unitId="923b9820-999b-41bb-91db-b2a2c469e743"))
+        self.cm = dict(binarySha256="85e03a5206576c71a571a46ef90345d43037ea71b2e00c77181d247be533028d",
+            executable="/usr/bin/aos_cm_app", service=dict(MainPID="10", ActiveState="active"))
+        self.after = dict(self.cm, service=dict(MainPID="11", ActiveState="active"))
+        self.sm = dict(binarySha256="936fbd563f7e9d54651504f5aeba84fee0f3736861d30c2efb60eb564e039783",
+            service=dict(MainPID="20", ActiveState="active"))
+
+    def test_only_cm_restarts_with_no_file_or_config_mutations(self):
+        with patch("aosedge_demo_orchestrator.source_guest.execute", side_effect=[self.cm, self.sm, self.after, self.sm]), \
+                patch("aosedge_demo_orchestrator.source_guest.subprocess.run") as process, \
+                patch("aosedge_demo_orchestrator.source_guest.command") as command:
+            result = cm_restart_factory32_control(self.request)
+        self.assertTrue(result["binaryUnchanged"])
+        self.assertTrue(result["smPidPreserved"])
+        self.assertEqual("10", result["previousPid"])
+        process.assert_called_once_with(["systemctl", "restart", "aos-cm"], capture_output=True, text=True, timeout=25, check=True)
+        command.assert_not_called()
+
+    def test_wrong_target_and_missing_flag_rejected(self):
+        with patch("aosedge_demo_orchestrator.source_guest.execute") as observe:
+            for changes in (dict(target="production"), dict(restartCm=False), dict(vehicle={})):
+                with self.assertRaisesRegex(ValueError, "AUTHORIZED_TEST_32"):
+                    cm_restart_factory32_control(dict(self.request, **changes))
+            observe.assert_not_called()
+
+    def test_wrong_binary_never_restarts(self):
+        with patch("aosedge_demo_orchestrator.source_guest.execute", side_effect=[dict(self.cm, binarySha256="other"), self.sm]), \
+                patch("aosedge_demo_orchestrator.source_guest.subprocess.run") as process:
+            with self.assertRaisesRegex(ValueError, "FACTORY_BINARIES"):
+                cm_restart_factory32_control(self.request)
+            process.assert_not_called()
+
+    def test_timeout_never_retries(self):
+        with patch("aosedge_demo_orchestrator.source_guest.execute", side_effect=[self.cm, self.sm]), \
+                patch("aosedge_demo_orchestrator.source_guest.subprocess.run", side_effect=subprocess.TimeoutExpired("systemctl", 25)) as process:
+            with self.assertRaises(subprocess.TimeoutExpired):
+                cm_restart_factory32_control(self.request)
+            process.assert_called_once()
+
+    def test_changed_sm_is_not_reported_as_success(self):
+        changed = dict(self.sm, service=dict(MainPID="21", ActiveState="active"))
+        with patch("aosedge_demo_orchestrator.source_guest.execute", side_effect=[self.cm, self.sm, self.after, changed]), \
+                patch("aosedge_demo_orchestrator.source_guest.subprocess.run"):
+            with self.assertRaisesRegex(ValueError, "RESTART_UNCONFIRMED"):
+                cm_restart_factory32_control(self.request)
+
+    def test_host_repeat_and_uncertain_attempt_do_not_restart(self):
+        from contextlib import nullcontext
+        vehicle = dict(self.request["vehicle"], factory=dict(format="raw", path=".local/factory/test-factory.img",
+            manifestPath=".local/factory/test-factory.manifest.json",
+            sha256="f56e037ff6ce11d1dea769055dc160a5a9a8061bbdd2d67745a3042181be2f14"))
+        state = dict(vehicles=dict(test=vehicle))
+        environment = SimpleNamespace(root=Path("/fixture"), _writer=nullcontext)
+        with patch("aosedge_demo_orchestrator.status.read_json", return_value=state), \
+                patch("aosedge_demo_orchestrator.environment.atomic_json"), \
+                patch("aosedge_demo_orchestrator.source.SourceDriver") as driver, \
+                patch("aosedge_demo_orchestrator.vm.VMService"):
+            driver.return_value.guest.return_value = dict(state="RESTARTED")
+            apply_test(environment, "test", manager="cm", restart_cm=True)
+            self.assertTrue(apply_test(environment, "test", manager="cm", restart_cm=True)["noOp"])
+            driver.return_value.guest.assert_called_once()
+            state["cmServiceUpdateProof"]["state"] = "RECONCILIATION_REQUIRED"
+            with self.assertRaisesRegex(EnvironmentError, "PREVIOUS_ATTEMPT"):
+                apply_test(environment, "test", manager="cm", restart_cm=True)
+            driver.return_value.guest.assert_called_once()
 
 
 class RuntimeProofBoundaryTests(unittest.TestCase):

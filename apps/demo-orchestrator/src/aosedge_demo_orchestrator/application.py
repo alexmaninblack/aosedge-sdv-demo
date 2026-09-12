@@ -233,7 +233,7 @@ class DemoOrchestrator:
                 data = (apply_test(self.environment_service, target, manager=manager, restart_cm=request.restart_cm) if request.action.endswith("-apply") else
                         build(target, compile_source=request.action.endswith("-build"), manager=manager) if request.action in ("sm-build", "sm-test", "cm-build", "cm-test") else builder(target, request.action.rsplit("-", 1)[1]))
                 return OperationResult(operation, OperationState.COMPLETED,
-                    "Test-only transient AosCore runtime; immutable image, Cloud and Production unchanged." if request.action.endswith("-apply") else
+                    "Test-only AosCore runtime operation; immutable image and Production unchanged; no direct Cloud mutation." if request.action.endswith("-apply") else
                     "Dedicated Builder only; no demo VM or Cloud mutation.", data=data)
             except EnvironmentError as error:
                 return OperationResult(operation, OperationState.BLOCKED, str(error))
