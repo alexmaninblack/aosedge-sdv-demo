@@ -113,10 +113,11 @@ def execute_operation(
             raise ValueError("Unsupported image list field")
         return application.execute(OperationRequest(domain, action)).to_dict()
     if domain == "image" and action == "build":
+        from .component_runtime import FACTORY_RELEASES
         if (set(payload) - {"domain", "action", "image", "metadata_only"}
-                or payload.get("image") != "6.1.1-maninblack.31"
+                or payload.get("image") not in FACTORY_RELEASES
                 or type(payload.get("metadata_only", False)) is not bool):
-            raise ValueError("Only the authorized Factory .31 build is available")
+            raise ValueError("Only pinned authorized Factory builds are available")
         return application.execute(OperationRequest(domain, action, image=payload["image"],
             metadata_only=payload.get("metadata_only", False))).to_dict()
     if domain == "environment" and action == "create":

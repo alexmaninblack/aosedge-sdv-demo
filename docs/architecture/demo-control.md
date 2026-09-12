@@ -216,6 +216,14 @@ these checks perform no real provisioning, publication or approval.
 
 ## Accepted Factory .31 Test baseline and corrections — 2026-09-06
 
+Successor source integration, 12 September: `democtl image build
+6.1.1-maninblack.32` uses pinned Platform source and the same offline Builder,
+image layout, artifact catalog and transfer-digest check. It includes the proven
+CM/SM service-recovery patches and persistent native service-resource/startup
+configuration. Build success is not clean Test/reboot qualification; .31 and
+Production remain preserved until the explicitly scoped successor check.
+See the [current delivery checkpoint](../planning/active/demo-studio-delivery-plan.md).
+
 Operator amendment after the fresh .31 run: `vm start` stages role assignment
 in an owned transient SM `ExecStartPre`, after the existing store mount/bootstrap
 and before the native process reads its configuration. This replaces early
@@ -690,6 +698,27 @@ this restart branch never retries or rolls back through a second restart on
 failure or response loss; use read-only reconciliation before another decision.
 An active SM does not by itself prove that assigned services recovered.
 
+For the authorized .31 Test recovery, initial resource activation may retain
+existing Cloud assignments only when the exact Unit/VM/factory identities,
+the journaled qualified SM application and its current PID match, and native
+inspection proves there are no container instances. This exception restores
+lost `/run` declarations after reboot; it does not permit a general resource
+migration while arbitrary services are running.
+
+`democtl component cm-apply test --restart-cm` is an explicit CLI-only recovery
+action for the already applied qualified Test CM. The default repeat remains
+a no-op. The flag verifies the owned unchanged transient binary/drop-in and
+qualified active SM, restarts CM once, and verifies that SM's PID and committed
+VDP records were retained. It does not upload, reassign, reset native databases
+or retry after a failed/uncertain response. Resource readiness must precede a
+recovery attempt; a successful manager restart is not service-start evidence.
+
+`component logs test` retains a bounded SM network/preparation projection
+separate from the last general events, so an initial preparation failure is
+not hidden by later status traffic. Native identities and fixed error labels
+are retained; credentials, transport payloads and unrestricted instance bodies
+remain excluded.
+
 <a id="native-service-publication"></a>
 
 ### Native service signing and publication — 2026-09-11
@@ -875,7 +904,14 @@ promotion through fleet validation. The original increment published only
 profile-replay releases. No caller-supplied UUID, URL, credential or filesystem path is
 accepted. The shared writer and existing journal own publication intents.
 `component logs <role>` and `component diagnose <role>` provide bounded redacted
-runtime events and an installed-KUKSA-schema comparison. Upload checks required
+runtime events and an installed-KUKSA-schema comparison. For Test-only delivery
+diagnosis, `component cm-status test` also reads the current CM process's existing
+journal (at most 30,000 records) and its persisted desired target through a
+read-only SQLite connection. It returns message types/timestamps, public
+deployment identities and the stored update phase, never certificates, tokens
+or unrestricted protocol bodies. Truncated native log entries are explicitly
+incomplete evidence, not malformed Cloud messages. It neither enables wire
+logging nor restarts a manager. Upload checks required
 leaf presence before mutation. This does not authorize changing the Factory
 schema: .28 lacks the eight v3 ChaosWheel leaves. The operator subsequently
 authorized a temporary Test-only Platform configuration continuation on

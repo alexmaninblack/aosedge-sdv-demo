@@ -4,6 +4,7 @@
 import hashlib
 import json
 import os
+import stat
 import tempfile
 import unittest
 from pathlib import Path
@@ -11,13 +12,33 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from aosedge_demo_orchestrator import service_inputs_guest as guest
-from aosedge_demo_orchestrator.service_inputs import ServiceInputs
+from aosedge_demo_orchestrator.service_inputs import ServiceInputs, qualified_reboot_restore
 from aosedge_demo_orchestrator.environment import EnvironmentService, EnvironmentError, JOURNAL, atomic_json
 from aosedge_demo_orchestrator.cli import build_parser, request_from_arguments
 from aosedge_demo_orchestrator.api import execute_operation
 
 
 class PublicInputTests(unittest.TestCase):
+    def test_reboot_restore_requires_exact_test_current_sm_and_empty_containers(self):
+        import copy
+        item = dict(localVmId="d53d05cd-4c46-49c9-a896-534b23b88273", unitId="2a29c145-bbd1-4494-a0e5-d4b79e6a9db5")
+        state = dict(factory=dict(sha256="a9019f4adfe70499bde339c8e9d95eb8568736b73dc218f6c0e390fbcd28ddf4"),
+            smServiceUpdateProof=dict(state="APPLIED", result=dict(
+                binarySha256="3e244f438b6f2a8b9dcd08fb4f4be80b21771278e89a0cf6706d87cdec0b2b21",
+                service=dict(MainPID="123"))))
+        observed = dict(serviceManager=dict(MainPID="123", ActiveState="active"),
+            nativeContainers=dict(state="CURRENT", containers=[]))
+        self.assertTrue(qualified_reboot_restore(state, item, observed))
+        for key in item:
+            self.assertFalse(qualified_reboot_restore(state, dict(item, **{key: "other"}), observed))
+        changed = copy.deepcopy(observed)
+        changed["serviceManager"]["MainPID"] = "124"
+        self.assertFalse(qualified_reboot_restore(state, item, changed))
+        changed = copy.deepcopy(observed)
+        changed["nativeContainers"]["containers"] = [dict(id="still-running")]
+        self.assertFalse(qualified_reboot_restore(state, item, changed))
+        self.assertFalse(qualified_reboot_restore({}, item, observed))
+
     def setUp(self):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
@@ -155,6 +176,7 @@ class PublicInputTests(unittest.TestCase):
         self.assertEqual(dict(ok=False, reason="SERVICE_INPUT_PREPARATION_FAILED"), value)
 
     def test_cold_restore_without_provider_then_native_process_verification(self):
+        guest.STARTUP.rmdir()  # A clean image has no transient activation files.
         guest.provider_process.side_effect = ValueError("SERVICE_INPUT_PROVIDER_NOT_RUNNING")
         with patch.object(guest.os, "geteuid", return_value=0), patch("builtins.print"):
             cold = guest.startup("cold")
@@ -185,7 +207,18 @@ class PublicInputTests(unittest.TestCase):
             result = guest.startup("cold")
         self.assertEqual("DEFERRED", result["stage"])
         self.assertEqual("SERVICE_INPUT_NATIVE_IDENTIFIER_UNSUPPORTED", result["reason"])
-        self.assertFalse(guest.PUBLIC.exists())
+        self.assertFalse(any(guest.PUBLIC.rglob("metadata.json")))
+        self.assertTrue((guest.PUBLIC / "brake").is_dir())
+
+    def test_factory_without_vdp_leaves_empty_mounts_and_does_not_block_sm(self):
+        (guest.STORE / "state/installed.json").unlink()
+        with patch.object(guest.os, "geteuid", return_value=0), patch("builtins.print"):
+            result = guest.startup("cold")
+        self.assertEqual("DEFERRED", result["stage"])
+        self.assertFalse(result["processVerified"])
+        self.assertFalse(any(guest.PUBLIC.rglob("metadata.json")))
+        for team in ("brake", "tire"):
+            self.assertEqual(0o755, stat.S_IMODE((guest.PUBLIC / team).stat().st_mode))
 
     def test_post_start_cannot_verify_another_process_slot(self):
         guest.project(self.request, cold=True)

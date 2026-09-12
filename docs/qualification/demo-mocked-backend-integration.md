@@ -82,6 +82,131 @@ Bounded CM diagnostics expose allowlisted stage labels, not message payloads.
    Tire production feature extraction and advisory acceptance explicitly open.
    No Factory rebuild or full cleanup before these gates are resolved.
 
+## Pending-delivery investigation — 12 September 2026, 01:07 UTC
+
+The failure is localized **before a new desired state is accepted by CM**, not
+inside an ongoing SM replacement. Its internal Cloud cause remains unproven.
+All times below are UTC. Read-only observations used the existing Demo Control
+commands `unit cloud-status test`, `unit monitoring test`, `component logs test`
+and `component cm-status test`; the latter gained bounded diagnostic fields.
+
+| Evidence | Observation |
+| --- | --- |
+| CM process | PID 183405, active/success, zero restarts; journal begins at its initialization at 2026-09-11 21:08:42.358910 |
+| Journal coverage | 6,598 records through 2026-09-12 01:03:43.206145; 30,000-record cap not reached |
+| Last outgoing `unitStatus` log | 2026-09-11 21:15:36.770213 |
+| Last incoming `desiredStatus` log | 2026-09-11 21:15:37.591460; eight received and eight handler entries since current CM initialization, none logged after this point |
+| Persisted CM database | `updatemanager.updateState = none`; desired items Tire 5.0.0, Brake 6.0.0 and VDP 18.0.0; each service requests one instance |
+| Last CM message-handling error in this process | 2026-09-11 21:09:12.439064, before subsequent successful service replacements; not evidence of rejection of the later mock releases |
+| Cloud Unit state | Provisioned, Offline since 2026-09-11 21:17:11; exact Unit/UID unchanged |
+| New release publication | Brake 7.0.0 at 21:52:48; Tire 6.0.0 at 21:53:21, both later than the last logged desired status |
+| Exact service assignments | Existing respective Subjects retained; Cloud reports ready package versions and `pending_service_version_status = to be installed`; installed versions remain Brake 6.0.0 and Tire 5.0.0 |
+| Current connection | CM continues receiving WebSocket frames, replying with PONG, sending monitoring and receiving ACK; no reconnect event after initial establishment in the captured process history |
+| Independent Cloud receipt | API sample for this exact system UID at 2026-09-12 01:06:35.019592: CPU 28 DMIPS, RAM 365072384 bytes, while Unit API still says Offline |
+
+### Meaning and limits of the evidence
+
+- The Cloud API's `to be installed` is not proof that CM reached its local
+  `Pending` phase. The stored phase is `none`, with the old service versions.
+  The documented update lifecycle begins with delivery of a desired state;
+  no accepted target containing Brake 7 / Tire 6 is present here.
+- Full wire bodies cannot be reconstructed from this journal. The pinned native
+  logger has a default 512-character line buffer; longer protocol entries are
+  truncated. The diagnostics retain the visible message type and timestamp and
+  explicitly mark the body incomplete. This is a logging limit, not proof that
+  malformed JSON was transmitted. Existing `cloudMessageLog` is disabled and
+  was not enabled as part of the diagnosis.
+- The running source copies received PING payloads into PONG frames. The
+  continued ACKs and Cloud's new monitoring sample rule out a completely dead
+  transport; ACK alone is not proof of successful desired-state dispatch.
+- In the pinned `UnitStatusHandler`, full status is sent on connection/update
+  completion; changed status starts a one-shot coalescing timer. Its timeout
+  is not a periodic Online heartbeat. No published requirement found in the
+  inspected documentation establishes a mandatory 90-second UnitStatus
+  heartbeat. The roughly 94-second gap between the last status and Offline is
+  a correlation for server-side investigation, **not a proven timeout cause**.
+- Nothing here justifies another service package, Subject reassignment, Safe
+  Stop, or an SM restart to resolve the missing new desired state. These checks
+  do not identify which Cloud service or session-state transition is faulty.
+
+### Exact server-side trace needed
+
+For Unit `2a29c145-bbd1-4494-a0e5-d4b79e6a9db5`, system UID
+`d53d05cd4c4649c9a896534b23b88273`, reconcile:
+
+1. Why did connectivity transition to Offline at 21:17:11 while this session
+   continued to send acknowledged traffic and accepted monitoring?
+2. Did the dispatcher generate a new desired state after the existing ready
+   versions were assigned? If not, record its actual eligibility/block reason.
+3. If generated, identify its transaction/session route, send attempt and
+   disposition; compare it with the CM receive journal after 21:15:37.
+4. Check whether a stale disconnect/session event or a status-consumer failure
+   overwrote the current connection record. These are candidates to verify,
+   not established defects.
+
+Use deployment IDs `bb56e411-90fc-4a47-a5a1-dd142f90a040` (Brake) and
+`c2767b6d-b1ee-4436-b9fa-d3e0cc78d944` (Tire), and service version IDs
+`49dbaddb-1df5-443f-b6a1-c1074fd9015a` / `4421337f-1862-41cd-9631-0d120974887f`.
+The OEM read endpoints and guest logs available here do not expose the Cloud
+dispatcher/session-manager server logs. No forced reconnect, VM restart,
+new release, assignment change or Production operation was performed.
+
+Diagnostic verification: 27 component-delivery tests passed, including
+read-only database access, truncated-message handling, secret redaction and
+no guest command for a stopped CM. This is not a successful mock-release E2E.
+
+References checked:
+
+- [Update flow and persisted desired state](https://docs.aosedge.tech/docs/aos-core/deployment-flows/update-flow-overview).
+- [Cloud communication, ACK and optional wire logging](https://docs.aosedge.tech/docs/aos-core/architecture/communication-manager/cloud-communication).
+- [Documented Unit connectivity states](https://docs.aosedge.tech/docs/how-to/advanced-device-operation/monitor-device).
+- Pinned Core `da50b60b7d72208bf17ad51250d24dbc727bc679`,
+  `src/cm/communication/communication.cpp` (`ReceiveFrames`, `HandleReceivedMessage`)
+  and `src/cm/database/database.cpp` (`GetDesiredStatus`, `GetUpdateState`).
+- Pinned CM shared-library source `0b82a6bf`,
+  `src/core/cm/updatemanager/unitstatushandler.cpp` (`OnConnect`, `StartTimer`),
+  and `src/core/common/tools/config.hpp` (`AOS_CONFIG_LOG_LINE_LEN`).
+
+## User-authorized VM restart — 12 September 2026, 01:26 UTC
+
+The user explicitly requested one VM restart to test Cloud Online recovery.
+`vm stop test` initially returned `CURRENT_VEHICLE_REQUIRES_PARK_OR_DETACH`
+without stopping the VM. `simulation stop --target test` then detached the
+selected role (Controller absent; physical stop not observed), followed by
+`vm stop test` and `vm start test`. Graceful shutdown took 3.97 seconds;
+startup took 25.95 seconds and confirmed guest SSH/DNS and the initialized
+Test role. The same overlay, Unit UUID and system UID were retained; Production
+was not changed. The simulator remains stopped/detached.
+
+- Cloud changed to **Online at 01:24:46** and remained Online at the final
+  read, **01:26:35.616323**.
+- CM received the existing Brake **7.0.0** / Tire **6.0.0** desired state,
+  persisted it, and completed its update state machine. No upload or Subject
+  reassignment was necessary to resume delivery.
+- Cloud changed `pending_service_version_status` to `installed`, although the
+  installed-version fields still show 6.0.0 / 5.0.0 and instance detail is
+  unavailable. This does not prove application startup.
+- Native logs report **both new service instances failed** with
+  `no nodes with with service resources (balancer.cpp:176)`. Native container
+  inspection returns an empty list. The effective resource configuration is
+  again `/etc/aos/resources.cfg`, with only `kuksa` / `kuksa-auth-client` among
+  the inspected declarations; Brake/Tire public metadata files are absent.
+- As warned before reboot, `/run` activation state did not survive. CM is now
+  `/usr/bin/aos_cm_app`, SHA
+  `8432c0ca62b3b7bebf0e20f3ae3f82d412429be44fadcd00d914dbf1170f48bc`,
+  PID 1018; SM PID 1077. The previous transient corrected managers and runtime
+  resource activation were **not reapplied** by this restart experiment.
+- Six `systemID mismatch` message-handling errors and two exhausted-message
+  retry records also appear in the new CM journal. They are recorded, not
+  conflated with proof of the earlier missing desired-state cause.
+
+Conclusion: reconnecting through a full VM restart restored Online and new
+desired-state delivery. It does not isolate the original Cloud/session failure,
+and the post-reboot service startup is not a test of the previous corrected
+runtime. Resume service/backend E2E only after the accepted runtime activation
+is restored through its explicitly authorized Demo Control operations. Do not
+run the backend outage proof while no new service instance is running.
+
 ## Presenter and adapter verification — 12 September 2026
 
 The existing Studio build now presents Cloud-installed service versions on
@@ -106,3 +231,100 @@ left-hand workspace was not restyled or automatically restarted. Service
 publication/assignment controls in Studio and the full operator E2E remain
 later plan gates; this increment exposes backend observations, not simulated
 success or a completed service workflow.
+
+## Authorized runtime restoration — 12 September 2026
+
+The user authorized restoring the proven transient runtime, debugging remaining
+failures and evaluating a new immutable image with the qualified CM/SM changes.
+The same .31 Test Unit, overlay, service assignments and VDP 18.0.0 were retained.
+Production was untouched. No new service release was uploaded.
+
+1. `component sm-apply test` restored the qualified teardown SM directly over
+   the exact rebooted factory binary; `component cm-apply test` restored CM.
+2. `service runtime-activate test` restored both team resource declarations and
+   cold/warm public-input hooks. The VM reboot qualification remains open.
+3. CM had already processed the desired services while their resources were
+   absent. A single explicit `component cm-apply test --restart-cm` after input
+   activation placed Tire 6.0.0 and attempted Brake 7.0.0.
+4. Tire became Cloud/native **active** and delivered real VM-originated records
+   to the isolated mock endpoint. At 01:45:14 UTC the backend had two function
+   statuses, two assessments and one band-change record, correlated with native
+   instance `b14e8bca-b1a3-30a0-b44c-d972263deee6`, the existing Tire Subject,
+   service 6.0.0 and the exact Test system UID. `source=DEMO_MOCK`,
+   `vehicleTelemetry=false`; this is not a KUKSA or driver-advisory proof.
+5. Brake's first preparation failed to find an image/config blob
+   (`imagemanager.cpp:304`). Its next same-version request attempted runtime
+   start without creating a network and failed at `networkmanager.cpp:252`.
+   The journal shows Tire network creation but no Brake network creation
+   between these two Brake failures.
+6. One `service runtime-activate test --restart-sm` re-entered native preparation.
+   Brake then failed allocation with `network stub not available
+   (smclient.cpp:350)` during SM startup, before the network subscription was
+   ready. Tire retained its allocation and restarted successfully. No further
+   restart-only loop, database edit or assignment reset was used.
+
+The pinned SM `Launcher::PrepareInstances` retains `InstanceData` after a config
+or network preparation failure, but its existing-instance branch resets the
+state and skips preparation on the next identical request. This explains why a
+temporary prerequisite failure becomes a persistent missing-network failure.
+The fix candidate retries preparation for a **failed same-identity service**;
+it preserves component behavior and the prior different-version failed-teardown
+guard. Tests cover missing config, temporary network allocation failure and a
+persistent allocation failure that must never launch a runtime.
+
+Platform candidate source: `f4ba4a8903f179461a6d8e831c33168fff1dc352`.
+Qualification uses `democtl component sm-build test` and a separate
+`runtime-proofs/sm-service-prepare-recovery` artifact; prior qualified artifacts
+are not overwritten. Compilation, live application and final recovery results
+must be recorded below before this candidate is described as qualified.
+
+Image decision: a new immutable image must include the accepted manager fixes,
+runtime resource declarations and public-input cold-start ordering together.
+A manager-only rebuild would still lose the transient resources. Do not build
+or qualify that image until the current failed-service recovery is demonstrated.
+
+<a id="runtime-recovery-2026-09-12"></a>
+
+### Recovery result — 12 September 2026, 02:05 UTC
+
+The corrected test fixture targets the config read after the separate TTL
+lookup. Production SM source was unchanged after its successful compile;
+`component sm-test test` verified byte identity before rebuilding tests only.
+All 23 launcher, 13 container, 12 bridge/namespace and 29 VDP/Safe Stop tests
+passed. Final source is `b66ab25979e53b997005c0519eda9c869b111d8b` and SM SHA-256
+is `ae36ada2815700d751549404d5fb93f5a9e1f22890507c14da7f2df1a0c30299`.
+Builder stopped cleanly after qualification.
+
+`component sm-apply test` applied the fix once, retaining resource hooks and
+VDP records. After startup initially lacked the CM network stub, one explicit
+`component cm-apply test --restart-cm` obtained the **same** existing desired
+state while SM remained running. This time native SM completed Brake's failed
+preparation instead of skipping it. No package, version, Subject assignment,
+native database or VM identity was changed.
+
+- Cloud Unit is **Online**. Brake **7.0.0** and Tire **6.0.0** both have
+  installed-version fields and native instance `run_state=active`, no pending
+  version and no instance error.
+- Guest inspection independently confirms both bootstrap processes alive,
+  with native runtime IDs `7cf522e4-ff3f-3b8c-b02e-b09458403b5a` (Brake) and
+  `b14e8bca-b1a3-30a0-b44c-d972263deee6` (Tire).
+- Brake backend received its first VM-originated event and assessment at
+  **02:03:56 UTC**, package 7.0.0, matching its exact native service/Subject/
+  instance and Test system UID. Tire continued delivery at **02:04:49 UTC**;
+  its observed counts were 42 function statuses, 40 assessments and one band
+  change. These are isolated synthetic product inputs over the real delivery
+  path, never vehicle telemetry or driver advisory.
+- VDP **18.0.0** remains active with slot/process agreement and zero reported
+  automatic restarts. SM PID 2326 and CM PID 2469 are active with zero reported
+  automatic restarts. Explicit proof restarts above are recorded separately.
+- 78 targeted Demo Control tests passed. Production was not changed; the
+  simulator remains stopped/detached following the earlier requested reboot.
+- Repeating `component sm-apply test` returned `noOp=true` with unchanged
+  PID 2326. SELinux remained enforcing; the complete kernel audit window since
+  this SM start contained zero AVC denials (78 journal entries scanned).
+
+The VM-to-backend mock-delivery boundary is now proven for both services.
+Backend outage/retry and complete operator E2E are still separate pending
+gates. The original Cloud Offline/dispatcher incident is not root-caused by
+this local SM fix. A clean image/reboot remains unqualified; do not claim that
+transient runtime restoration makes .31 a corrected factory image.

@@ -57,9 +57,13 @@ class OperationRequest:
     demo_no_telemetry: bool = False
     demo_mocked_data: bool = False
     restart_sm: bool = False
+    restart_cm: bool = False
 
     def selection_error(self) -> Optional[str]:
         """Validate agreed selectors before any lifecycle adapter is called."""
+        if type(self.restart_cm) is not bool or (self.restart_cm and
+                ((self.domain, self.action) != ("component", "cm-apply") or self.target != VehicleTarget.TEST)):
+            return "RESTART_CM_USES_TEST_CM_APPLY_ONLY"
         if type(self.demo_mocked_data) is not bool or (self.demo_mocked_data and
                 ((self.domain, self.action) != ("service", "prepare") or not self.without_permissions or self.demo_no_telemetry)):
             return "DEMO_MOCK_REQUIRES_EXCLUSIVE_PERMISSION_FREE_SERVICE_PREPARE"

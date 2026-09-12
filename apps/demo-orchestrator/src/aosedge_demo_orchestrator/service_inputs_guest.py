@@ -252,6 +252,15 @@ def startup(mode):
     """
     if os.geteuid() != 0 or mode not in ("cold", "verify"):
         raise ValueError("SERVICE_INPUT_OPERATION_INVALID")
+    # Factory boot has no transient democtl activation directory. Keep mount
+    # source inodes stable even before the first committed compatible VDP.
+    for directory, permissions in ((STARTUP, 0o700), (PUBLIC, 0o755),
+                                   (PUBLIC / "brake", 0o755), (PUBLIC / "tire", 0o755)):
+        safe_path(directory)
+        if not directory.exists():
+            directory.mkdir(mode=permissions)
+        if not directory.is_dir() or stat.S_IMODE(directory.stat().st_mode) != permissions:
+            raise ValueError("SERVICE_INPUT_DIRECTORY_MODE")
     value = dict(stage="DEFERRED", processVerified=False, observedMonotonicNs=time.monotonic_ns())
     try:
         uid = native_identity()

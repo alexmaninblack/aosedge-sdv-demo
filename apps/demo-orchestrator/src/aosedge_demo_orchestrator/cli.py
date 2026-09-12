@@ -112,8 +112,9 @@ def build_parser() -> argparse.ArgumentParser:
     image = commands.add_parser("image", help="discover published immutable factory images")
     image_commands = image.add_subparsers(dest="action", required=True)
     image_commands.add_parser("list", help="list readable version/architecture selectors without hashing images")
-    factory_build = image_commands.add_parser("build", help="build the authorized Factory .31 from committed sources using the warm offline Builder")
-    factory_build.add_argument("image", choices=("6.1.1-maninblack.31",))
+    from .component_runtime import FACTORY_RELEASES
+    factory_build = image_commands.add_parser("build", help="build a pinned authorized Factory release using the warm offline Builder")
+    factory_build.add_argument("image", choices=tuple(FACTORY_RELEASES))
     factory_build.add_argument("--metadata-only", action="store_true",
         help="register source-derived support on an existing image; never start Builder or rebuild")
 
@@ -123,11 +124,14 @@ def build_parser() -> argparse.ArgumentParser:
     for action in ("sm-builder-start", "sm-builder-stop", "sm-build", "sm-test", "sm-apply", "cm-build", "cm-test", "cm-apply"):
         command = component_commands.add_parser(action, help="bounded Test SM qualification: dedicated existing Builder, port 10024")
         command.add_argument("target", choices=("test",))
+        if action == "cm-apply":
+            command.add_argument("--restart-cm", action="store_true",
+                help="explicitly restart the already applied qualified Test CM once; retain SM and native state")
     component_status = component_commands.add_parser("status", help="read active slot and provider-reported telemetry readiness")
     component_status.add_argument("target", choices=("test", "production"))
     sm_status = component_commands.add_parser("sm-status", help="read effective SM binary and Safe Stop freshness profile")
     sm_status.add_argument("target", choices=("test",))
-    cm_status = component_commands.add_parser("cm-status", help="read effective Test CM binary and restart count")
+    cm_status = component_commands.add_parser("cm-status", help="read Test CM binary, restart count, bounded protocol history and persisted desired target")
     cm_status.add_argument("target", choices=("test",))
     component_logs = component_commands.add_parser("logs", help="read bounded, redacted SM/CM/provider events")
     component_logs.add_argument("target", choices=("test", "production"))
@@ -221,6 +225,7 @@ def request_from_arguments(arguments: argparse.Namespace) -> OperationRequest:
         demo_no_telemetry=getattr(arguments, "demo_no_telemetry", False),
         demo_mocked_data=getattr(arguments, "demo_mocked_data", False),
         restart_sm=getattr(arguments, "restart_sm", False),
+        restart_cm=getattr(arguments, "restart_cm", False),
         timeout=getattr(arguments, "timeout", 8.0),
     )
 

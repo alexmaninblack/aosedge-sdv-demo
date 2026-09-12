@@ -20,6 +20,48 @@ from aosedge_demo_orchestrator import source_guest
 
 
 class DeliveryTests(unittest.TestCase):
+    def test_cm_delivery_reads_persisted_target_without_exposing_wire_secrets(self):
+        import sqlite3
+        with tempfile.TemporaryDirectory() as directory:
+            proc = Path(directory)
+            root = proc / "123/root"
+            (root / "etc/aos").mkdir(parents=True)
+            (root / "var/aos/cm").mkdir(parents=True)
+            (root / "etc/aos/cm.cfg").write_text(json.dumps(dict(workingDir="/var/aos/cm")))
+            database = root / "var/aos/cm/cm.db"
+            payload = dict(items=[dict(item=dict(id="service-fixture", type="service"), version="6.0.0")],
+                certificates=[dict(privateKey="SECRET_FIXTURE")])
+            with sqlite3.connect(database) as connection:
+                connection.execute("CREATE TABLE updatemanager(updateState TEXT, desiredStatus TEXT)")
+                connection.execute("INSERT INTO updatemanager VALUES (?, ?)", ("none", json.dumps(payload)))
+            original = database.read_bytes()
+            wire = json.dumps(dict(header=dict(txn="fixture", systemId="test-fixture"),
+                data=dict(payload, messageType="desiredStatus", authToken="SECRET_FIXTURE")))
+            messages = ["(communication) Received message: message=" + wire,
+                '(communication) Received message: message={"data":{"messageType":"desiredStatus","certificates":[',
+                "(communication) Sent message: message=" + json.dumps(dict(header=dict(txn="ack-fixture"),
+                    data=dict(messageType="ack")))]
+            journal = SimpleNamespace(returncode=0, stderr="", stdout="\n".join(json.dumps(
+                dict(MESSAGE=message, __REALTIME_TIMESTAMP=str(index))) for index, message in enumerate(messages)))
+            with patch.object(source_guest, "command", return_value=journal) as read:
+                observed = source_guest.cm_delivery_observation("123", proc)
+            self.assertIn("_PID=123", read.call_args.args[0])
+            self.assertFalse(any("--grep" in arg for arg in read.call_args.args[0]))
+            self.assertEqual(original, database.read_bytes())
+            self.assertFalse(observed["mutation"])
+            self.assertEqual("none", observed["storedDesired"]["state"])
+            self.assertEqual("6.0.0", observed["storedDesired"]["payload"]["items"][0]["version"])
+            self.assertEqual(1, observed["journal"]["counts"]["incomplete:Received message:desiredStatus"])
+            self.assertFalse(observed["journal"]["limitReached"])
+            self.assertTrue(observed["journal"]["events"][-1]["incomplete"])
+            self.assertNotIn("SECRET_FIXTURE", json.dumps(observed))
+            self.assertNotIn("privateKey", json.dumps(observed))
+
+    def test_cm_delivery_does_not_read_a_stopped_process(self):
+        with patch.object(source_guest, "command") as read:
+            self.assertEqual(dict(state="UNAVAILABLE"), source_guest.cm_delivery_observation("0"))
+        read.assert_not_called()
+
     def test_focused_cloud_status_never_reads_a_guest_or_an_artifact(self):
         with patch.object(self.service, "_worker", return_value={"source": "AOS_CLOUD_ONLY"}) as worker, \
                 patch.object(self.service, "status") as guest, patch.object(self.service, "inspect") as inspect:

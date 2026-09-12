@@ -94,6 +94,17 @@ class RuntimeProofBoundaryTests(unittest.TestCase):
         self.assertEqual(request, app.execute.call_args.args[0])
         with self.assertRaises(ValueError):
             execute_operation(dict(domain="image", action="build", image="6.1.1-maninblack.29"), app)
+        request = request_from_arguments(build_parser().parse_args(["image", "build", "6.1.1-maninblack.32"]))
+        execute_operation(dict(domain="image", action="build", image="6.1.1-maninblack.32"), app)
+        self.assertEqual(request, app.execute.call_args.args[0])
+
+    def test_factory_projector_is_the_same_source_as_demo_control(self):
+        from aosedge_demo_orchestrator import service_inputs_guest
+        from aosedge_demo_orchestrator.component_runtime import FACTORY_SOURCE
+        packaged = FACTORY_SOURCE / "meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files/aos-demo-service-inputs.py"
+        if not packaged.exists():
+            self.skipTest("Sibling Platform source is not present in this workspace")
+        self.assertEqual(Path(service_inputs_guest.__file__).read_bytes(), packaged.read_bytes())
 
     def test_cli_and_api_share_test_only_operations(self):
         for action in ("sm-builder-start", "sm-builder-stop", "sm-build", "sm-test", "sm-apply", "sm-status", "cm-build", "cm-test", "cm-apply", "cm-status"):
@@ -165,6 +176,37 @@ class CMServiceUpdateApplyTests(unittest.TestCase):
         self.assertTrue(cm_apply_service_update(self.request)["noOp"])
         self.process.assert_not_called()
 
+    def test_explicit_cm_restart_preserves_existing_files_and_sm(self):
+        cm_apply_service_update(self.request)
+        before = {path: path.read_bytes() for path in self.root.rglob("*") if path.is_file()}
+        self.process.reset_mock()
+        self.commands.reset_mock()
+        self.observe.side_effect = [self.after, self.sm, self.after, self.sm]
+        result = cm_apply_service_update(dict(self.request, restartCm=True))
+        self.assertTrue(result["explicitRestart"])
+        self.assertTrue(result["smPidPreserved"])
+        self.process.assert_called_once()
+        self.assertEqual(["systemctl", "restart", "aos-cm"], self.process.call_args.args[0])
+        self.commands.assert_not_called()
+        self.assertEqual(before, {path: path.read_bytes() for path in before})
+
+    def test_explicit_cm_restart_rejects_factory_and_foreign_dropin(self):
+        self.observe.side_effect = [self.before]
+        with self.assertRaisesRegex(ValueError, "ALREADY_APPLIED"):
+            cm_apply_service_update(dict(self.request, restartCm=True))
+        self.observe.side_effect = [self.after, self.sm]
+        with self.assertRaisesRegex(ValueError, "TRANSIENT_STATE"):
+            cm_apply_service_update(dict(self.request, restartCm=True))
+        self.process.assert_not_called()
+
+    def test_explicit_cm_restart_is_cli_scoped(self):
+        request = request_from_arguments(build_parser().parse_args(["component", "cm-apply", "test", "--restart-cm"]))
+        self.assertTrue(request.restart_cm)
+        self.assertIsNone(request.selection_error())
+        self.assertIsNotNone(type(request)("component", "sm-apply", request.target, restart_cm=True).selection_error())
+        with self.assertRaises(ValueError):
+            execute_operation(dict(domain="component", action="cm-apply", target="test", restart_cm=True), Mock())
+
     def test_cm_wrong_sm_or_target_never_restarts(self):
         self.observe.side_effect = [self.before, dict(self.sm, binarySha256="unexpected")]
         with self.assertRaisesRegex(ValueError, "REQUIRES_QUALIFIED_SM"):
@@ -212,6 +254,27 @@ class ServiceUpdateApplyTests(unittest.TestCase):
             sm_apply_service_update(self.request)
         self.process.assert_not_called()
         self.assertEqual(self.old_text, self.dropin.read_text())
+
+    def test_rebooted_exact_factory_can_restore_directly_once(self):
+        self.before["binarySha256"] = "df141e0df7ed9dac6e74ef055e7b31994b501f9d26e1f34d50326c0f76839f86"
+        self.dropin.unlink()
+        result = sm_apply_service_update(self.request)
+        self.assertEqual(self.before["binarySha256"], result["previousBinarySha256"])
+        self.assertEqual(2, self.process.call_count)
+
+    def test_factory_restore_rejects_a_conflicting_dropin(self):
+        self.before["binarySha256"] = "df141e0df7ed9dac6e74ef055e7b31994b501f9d26e1f34d50326c0f76839f86"
+        with self.assertRaisesRegex(ValueError, "BASE_MISMATCH"):
+            sm_apply_service_update(self.request)
+        self.process.assert_not_called()
+
+    def test_preparation_fix_replaces_exact_teardown_patch_once(self):
+        self.before["binarySha256"] = "3e244f438b6f2a8b9dcd08fb4f4be80b21771278e89a0cf6706d87cdec0b2b21"
+        self.dropin.write_text("[Service]\nBindReadOnlyPaths=/run/democtl-sm-service-update/aos_sm_app:/usr/bin/aos_sm_app\n")
+        result = sm_apply_service_update(self.request)
+        self.assertEqual(self.before["binarySha256"], result["previousBinarySha256"])
+        self.assertEqual(2, self.process.call_count)
+        self.assertIn("democtl-sm-service-prepare", self.dropin.read_text())
 
     def test_stop_failure_is_not_retried(self):
         self.process.side_effect = subprocess.TimeoutExpired("stop", 20)

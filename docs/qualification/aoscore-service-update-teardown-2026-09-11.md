@@ -7,7 +7,18 @@ Date: 11 September 2026. Status: **native regressions and Test service
 replacement passed in explicit no-telemetry mode**. Full authenticated
 KUKSA, analytics and advisory qualification remains open.
 
-## Latest result — 21:16 UTC
+## Current recovery follow-up — 12 September 2026
+
+After an authorized .31 VM reboot lost the temporary manager/resource overrides,
+the prior SM/CM fixes were restored. A further SM same-service preparation
+retry defect was reproduced, patched and qualified: 77 native tests passed,
+and the existing Brake 7.0.0 / Tire 6.0.0 packages now run and deliver isolated
+mock records to their real backends. See the [complete recovery evidence and
+remaining image gate](demo-mocked-backend-integration.md#runtime-recovery-2026-09-12).
+This follow-up does not retroactively qualify cold boot of the immutable .31
+image or authenticated KUKSA/advisory functionality.
+
+## Service-update result — 11 September, 21:16 UTC
 
 The user authorized continuation without parking, the additional CM patch,
 and the service update scenarios. The original SM-only checkpoint below is

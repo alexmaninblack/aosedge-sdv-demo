@@ -19,6 +19,24 @@ from .status import load_configuration, read_json
 from .vm import VMService, access_path
 
 
+def qualified_reboot_restore(state, item, observed):
+    """Only the authorized diagnostic Test after its exact SM reapplication."""
+    proof = state.get("smServiceUpdateProof", {})
+    result = proof.get("result", {})
+    service = observed.get("serviceManager", {})
+    return (item.get("localVmId") == "d53d05cd-4c46-49c9-a896-534b23b88273"
+        and item.get("unitId") == "2a29c145-bbd1-4494-a0e5-d4b79e6a9db5"
+        and state.get("factory", {}).get("sha256") == "a9019f4adfe70499bde339c8e9d95eb8568736b73dc218f6c0e390fbcd28ddf4"
+        and proof.get("state") == "APPLIED"
+        and result.get("binarySha256") in (
+            "3e244f438b6f2a8b9dcd08fb4f4be80b21771278e89a0cf6706d87cdec0b2b21",
+            "ae36ada2815700d751549404d5fb93f5a9e1f22890507c14da7f2df1a0c30299")
+        and result.get("service", {}).get("MainPID") == service.get("MainPID")
+        and service.get("MainPID") not in (None, "0") and service.get("ActiveState") == "active"
+        and observed.get("nativeContainers", {}).get("state") == "CURRENT"
+        and observed.get("nativeContainers", {}).get("containers") == [])
+
+
 class ServiceInputs:
     def __init__(self, environment):
         self.environment = environment
@@ -93,7 +111,8 @@ class ServiceInputs:
                     raise EnvironmentError("SERVICE_INPUT_NATIVE_IDENTITY_MISMATCH")
                 if activate:
                     names = {resource.get("name") for resource in observed.get("resources", [])}
-                    if not {"brake-runtime-inputs", "tire-runtime-inputs"}.issubset(names):
+                    if (not {"brake-runtime-inputs", "tire-runtime-inputs"}.issubset(names)
+                            and not qualified_reboot_restore(state, item, observed)):
                         from .units import UnitService
                         cloud = UnitService(VMService(self.environment)).observe("cloud-status", "test")
                         services = cloud.get("services", {})

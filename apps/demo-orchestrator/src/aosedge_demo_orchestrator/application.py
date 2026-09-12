@@ -230,7 +230,7 @@ class DemoOrchestrator:
             try:
                 target = request.target.value if request.target else None
                 manager = "cm" if request.action.startswith("cm-") else "sm"
-                data = (apply_test(self.environment_service, target, manager=manager) if request.action.endswith("-apply") else
+                data = (apply_test(self.environment_service, target, manager=manager, restart_cm=request.restart_cm) if request.action.endswith("-apply") else
                         build(target, compile_source=request.action.endswith("-build"), manager=manager) if request.action in ("sm-build", "sm-test", "cm-build", "cm-test") else builder(target, request.action.rsplit("-", 1)[1]))
                 return OperationResult(operation, OperationState.COMPLETED,
                     "Test-only transient AosCore runtime; immutable image, Cloud and Production unchanged." if request.action.endswith("-apply") else

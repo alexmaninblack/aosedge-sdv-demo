@@ -40,6 +40,135 @@ VSS_PATHS = tuple("Vehicle.CarlaSimulation.ChaosWheel." + row + "." + side + "."
     for row in ("Row1", "Row2") for side in ("Left", "Right"))
 
 
+def cm_payload_observation(payload):
+    """Protocol shape and public deployment identities, never transport secrets."""
+    if not isinstance(payload, dict):
+        return {}
+    result = {"fields": sorted(key for key in payload if re.fullmatch(r"[A-Za-z]{1,40}", key))}
+    for key in ("messageType", "state", "updateState"):
+        value = payload.get(key)
+        if isinstance(value, str) and re.fullmatch(r"[A-Za-z]{1,40}", value):
+            result[key] = value
+    if type(payload.get("isDeltaInfo")) is bool:
+        result["isDeltaInfo"] = payload["isDeltaInfo"]
+    for group in ("items", "instances", "nodes", "subjects", "services"):
+        rows = payload.get(group)
+        if not isinstance(rows, list):
+            continue
+        result[group + "Count"] = len(rows)
+        projected = []
+        for row in rows[:64]:
+            if not isinstance(row, dict):
+                continue
+            value = {}
+            for obj in (row, row.get("item", {}), row.get("instance", {})):
+                if not isinstance(obj, dict):
+                    continue
+                for key in ("id", "itemId", "serviceId", "subjectId", "nodeId", "version", "type", "state", "status", "runState"):
+                    field = obj.get(key)
+                    if isinstance(field, str) and re.fullmatch(r"[A-Za-z0-9_.-]{1,128}", field):
+                        value[key] = field
+                for key in ("instance", "numInstances"):
+                    if type(obj.get(key)) is int:
+                        value[key] = obj[key]
+            if value:
+                projected.append(value)
+        result[group] = projected
+    return result
+
+
+def cm_delivery_observation(pid, proc=Path("/proc")):
+    """Read existing filtered journal and CM SQLite state; never enable logging."""
+    if not str(pid).isdigit() or int(pid) <= 0:
+        return dict(state="UNAVAILABLE")
+    result = dict(mutation=False)
+    # The factory journalctl has no PCRE2: filter after reading bounded rows,
+    # rather than depending on journalctl --grep.
+    journal = command(["journalctl", "-b", "-u", "aos-cm.service", "_PID=" + str(pid),
+        "-n", "30000", "-o", "json", "--output-fields=MESSAGE,__REALTIME_TIMESTAMP", "--no-pager"])
+    if journal.returncode or len(journal.stdout) > 67108864:
+        result["journal"] = dict(state="UNAVAILABLE_OR_TOO_LARGE", exitCode=journal.returncode,
+            bytes=len(journal.stdout), diagnostic=journal.stderr.strip()[:300])
+    else:
+        lines = journal.stdout.splitlines()
+        events, counts, latest, responses = [], {}, {}, {}
+        for line in lines:
+            record = json.loads(line)
+            message = record.get("MESSAGE", "")
+            if isinstance(message, list):
+                message = bytes(message).decode("utf-8", errors="replace")
+            if not isinstance(message, str):
+                continue
+            message = re.sub(r"\x1b\[[0-9;]*m", "", message)
+            wire = re.search(r"\(communication\) (Received message|Sent message|Handle cloud message):.*?message=(\{.*)", message)
+            entry = dict(time=record.get("__REALTIME_TIMESTAMP"))
+            if wire:
+                try:
+                    envelope, _ = json.JSONDecoder().raw_decode(wire[2])
+                except (ValueError, TypeError) as error:
+                    counts["unparsedWire"] = counts.get("unparsedWire", 0) + 1
+                    kind = re.search(r'"messageType"\s*:\s*"([A-Za-z]{1,40})"', wire[2])
+                    key = "incomplete:" + wire[1] + ":" + (kind[1] if kind else "UNKNOWN")
+                    counts[key] = counts.get(key, 0) + 1
+                    incomplete = dict(time=entry["time"], stage=wire[1], incomplete=True,
+                        messageType=kind[1] if kind else None, length=len(wire[2]),
+                        errorOffset=getattr(error, "pos", None), lineCount=wire[2].count("\n") + 1)
+                    latest[key] = incomplete
+                    if kind and kind[1] not in ("monitoringData", "ack"):
+                        events.append(incomplete)
+                    continue
+                payload = envelope.get("data", {})
+                entry.update(stage=wire[1], payload=cm_payload_observation(payload))
+                header = envelope.get("header", {})
+                for key in ("txn", "systemId", "createdAt"):
+                    value = header.get(key)
+                    if isinstance(value, str) and re.fullmatch(r"[A-Za-z0-9_.:+-]{1,128}", value):
+                        entry[key] = value
+                if payload.get("messageType") in ("ack", "nack"):
+                    responses[header.get("txn")] = payload["messageType"]
+            else:
+                # Only the fixed native log heading, never free-form error/body.
+                stage = re.search(r"\(([a-z_]{1,30})\) ([A-Za-z][A-Za-z '-]{1,100})(?=:|$)", message)
+                if not stage:
+                    continue
+                if not re.search(r"connect|Update state|Failed|ERROR|nack", message, re.I):
+                    continue
+                entry.update(module=stage[1], stage=stage[2])
+                phase = re.search(r"\bstate=([a-zA-Z]{1,32})", message)
+                if phase:
+                    entry["phase"] = phase[1]
+            label = entry["stage"] + ":" + entry.get("payload", {}).get("messageType", "")
+            counts[label] = counts.get(label, 0) + 1
+            latest[label] = entry
+            if entry.get("payload", {}).get("messageType") not in ("monitoringData", "ack"):
+                events.append(entry)
+        for entry in events:
+            if entry.get("txn") in responses and entry.get("stage") == "Sent message":
+                entry["response"] = responses[entry["txn"]]
+        result["journal"] = dict(state="CURRENT", records=len(lines), limitReached=len(lines) >= 30000,
+            firstTime=json.loads(lines[0]).get("__REALTIME_TIMESTAMP") if lines else None,
+            lastTime=json.loads(lines[-1]).get("__REALTIME_TIMESTAMP") if lines else None,
+            counts=counts, latest=list(latest.values()), events=events[-100:])
+    try:
+        import sqlite3
+        root = proc / str(pid) / "root"
+        config = json.loads((root / "etc/aos/cm.cfg").read_text())
+        directory = config.get("workingDir", "")
+        if not isinstance(directory, str) or not directory.startswith("/var/aos/") or ".." in Path(directory).parts:
+            raise ValueError("UNSUPPORTED_CM_WORKING_DIRECTORY")
+        database = root / directory.lstrip("/") / "cm.db"
+        with sqlite3.connect(database.as_uri() + "?mode=ro", uri=True, timeout=1) as connection:
+            row = connection.execute("SELECT updateState, desiredStatus FROM updatemanager LIMIT 1").fetchone()
+        result["storedDesired"] = dict(state=row[0] if re.fullmatch(r"[A-Za-z]{1,40}", row[0] or "") else "UNKNOWN",
+            payload=cm_payload_observation(json.loads(row[1]))) if row else dict(state="EMPTY")
+        result["wireLogConfigured"] = bool(config.get("cloudMessageLog"))
+    except ImportError:
+        result["storedDesired"] = dict(state="SQLITE_READER_UNAVAILABLE")
+    except (OSError, ValueError, sqlite3.Error):
+        result["storedDesired"] = dict(state="UNAVAILABLE")
+    return result
+
+
 def process_wait_observation(pid, proc=Path("/proc")):
     """Bounded wait/resource facts only: no argv, environment or file targets."""
     if not str(pid).isdigit() or int(pid) <= 0:
@@ -784,11 +913,18 @@ def sm_apply_service_update(request):
     observation = execute(dict(request, action="component-sm-status"))
     if observation["binarySha256"] == request["sha256"] and observation["service"]["ActiveState"] == "active":
         return dict(state="APPLIED", noOp=True, persistentFactoryInputs=True, **observation)
-    previous = "cf251da44d30aec38bd015210f08e284eb121aaff8f00feca2d74b75291a3dee"
+    previous = observation["binarySha256"]
     dropin = Path("/run/systemd/system/aos-sm.service.d/92-democtl-sm-queued-recovery.conf")
     old_text = "[Service]\nBindReadOnlyPaths=/run/democtl-sm-queued-recovery/aos_sm_app:/usr/bin/aos_sm_app\n"
-    if (observation["binarySha256"] != previous or observation["service"]["ActiveState"] != "active"
-            or dropin.is_symlink() or dropin.read_text() != old_text
+    predecessor = (previous == "cf251da44d30aec38bd015210f08e284eb121aaff8f00feca2d74b75291a3dee"
+        and dropin.is_file() and dropin.read_text() == old_text)
+    prepared_predecessor = (previous == "3e244f438b6f2a8b9dcd08fb4f4be80b21771278e89a0cf6706d87cdec0b2b21"
+        and dropin.is_file() and dropin.read_text() ==
+            "[Service]\nBindReadOnlyPaths=/run/democtl-sm-service-update/aos_sm_app:/usr/bin/aos_sm_app\n")
+    rebooted_factory = (previous == "df141e0df7ed9dac6e74ef055e7b31994b501f9d26e1f34d50326c0f76839f86"
+        and not dropin.exists())
+    if (not (predecessor or prepared_predecessor or rebooted_factory) or observation["service"]["ActiveState"] != "active"
+            or dropin.is_symlink()
             or observation["freshnessProfile"] != "demo-5s"):
         raise ValueError("SM_SERVICE_UPDATE_BASE_MISMATCH")
     runtime = FACTORY_INPUTS.parent
@@ -798,7 +934,7 @@ def sm_apply_service_update(request):
     if (len(raw) > 256 * 1024 * 1024 or hashlib.sha256(raw).hexdigest() != request["sha256"]
             or raw[:5] != b"\x7fELF\x02" or raw[18:20] != b"\xb7\x00"):
         raise ValueError("SM_ARM64_BINARY_SHA_MISMATCH")
-    root = Path("/run/democtl-sm-service-update")
+    root = Path("/run/democtl-sm-service-prepare" if prepared_predecessor else "/run/democtl-sm-service-update")
     if root.exists() or root.is_symlink():
         raise ValueError("SM_TRANSIENT_STATE_REQUIRES_RECONCILIATION")
     root.mkdir(mode=0o700)
@@ -810,6 +946,7 @@ def sm_apply_service_update(request):
     subprocess.run(["systemctl", "stop", "aos-sm"], capture_output=True, text=True, timeout=20, check=True)
     if sm_saved_test_release(runtime, committed=True) != saved:
         raise ValueError("SM_COMMITTED_VDP_RECORD_CHANGED")
+    dropin.parent.mkdir(parents=True, exist_ok=True)
     dropin.write_text("[Service]\nBindReadOnlyPaths=" + str(binary) + ":/usr/bin/aos_sm_app\n")
     command(["systemctl", "daemon-reload"], check=True)
     subprocess.run(["systemctl", "start", "aos-sm"], capture_output=True, text=True, timeout=25, check=True)
@@ -828,12 +965,22 @@ def cm_apply_service_update(request):
         raise ValueError("CM_PROOF_REQUIRES_AUTHORIZED_TEST_31")
     previous = "8432c0ca62b3b7bebf0e20f3ae3f82d412429be44fadcd00d914dbf1170f48bc"
     observation = execute(dict(request, action="component-cm-status"))
+    restart = request.get("restartCm", False)
+    if type(restart) is not bool:
+        raise ValueError("CM_RESTART_REQUIRES_BOOLEAN")
     if observation["binarySha256"] == request["sha256"] and observation["service"]["ActiveState"] == "active":
-        return dict(state="APPLIED", noOp=True, **observation)
+        if not restart:
+            return dict(state="APPLIED", noOp=True, **observation)
+        previous = request["sha256"]
+    elif restart:
+        raise ValueError("CM_RESTART_REQUIRES_ALREADY_APPLIED_PATCH")
     if observation["binarySha256"] != previous or observation["service"]["ActiveState"] != "active":
         raise ValueError("CM_SERVICE_UPDATE_BASE_MISMATCH")
     sm = execute(dict(request, action="component-sm-status"))
-    if sm["binarySha256"] != "3e244f438b6f2a8b9dcd08fb4f4be80b21771278e89a0cf6706d87cdec0b2b21":
+    if (sm["binarySha256"] not in (
+            "3e244f438b6f2a8b9dcd08fb4f4be80b21771278e89a0cf6706d87cdec0b2b21",
+            "ae36ada2815700d751549404d5fb93f5a9e1f22890507c14da7f2df1a0c30299")
+            or sm["service"]["ActiveState"] != "active"):
         raise ValueError("CM_PROOF_REQUIRES_QUALIFIED_SM_PATCH")
     saved = sm_saved_test_release(FACTORY_INPUTS.parent, committed=True)
     with gzip.GzipFile(fileobj=io.BytesIO(base64.b64decode(request["binary"], validate=True))) as payload:
@@ -843,16 +990,23 @@ def cm_apply_service_update(request):
         raise ValueError("CM_ARM64_BINARY_SHA_MISMATCH")
     root = Path("/run/democtl-cm-service-update")
     dropin = Path("/run/systemd/system/aos-cm.service.d/93-democtl-service-reconcile.conf")
-    if root.exists() or root.is_symlink() or dropin.exists() or dropin.is_symlink():
-        raise ValueError("CM_TRANSIENT_STATE_REQUIRES_RECONCILIATION")
-    root.mkdir(mode=0o700)
     binary = root / "aos_cm_app"
-    binary.write_bytes(raw)
-    binary.chmod(0o755)
-    command(["chcon", "--reference=/usr/bin/aos_cm_app", str(binary)], check=True)
-    dropin.parent.mkdir(parents=True, exist_ok=True)
-    dropin.write_text("[Service]\nBindReadOnlyPaths=" + str(binary) + ":/usr/bin/aos_cm_app\n")
-    command(["systemctl", "daemon-reload"], check=True)
+    expected_dropin = "[Service]\nBindReadOnlyPaths=" + str(binary) + ":/usr/bin/aos_cm_app\n"
+    if restart:
+        if (root.is_symlink() or dropin.is_symlink() or binary.is_symlink()
+                or not dropin.is_file() or dropin.read_text() != expected_dropin
+                or not binary.is_file() or hashlib.sha256(binary.read_bytes()).hexdigest() != request["sha256"]):
+            raise ValueError("CM_TRANSIENT_STATE_REQUIRES_RECONCILIATION")
+    else:
+        if root.exists() or root.is_symlink() or dropin.exists() or dropin.is_symlink():
+            raise ValueError("CM_TRANSIENT_STATE_REQUIRES_RECONCILIATION")
+        root.mkdir(mode=0o700)
+        binary.write_bytes(raw)
+        binary.chmod(0o755)
+        command(["chcon", "--reference=/usr/bin/aos_cm_app", str(binary)], check=True)
+        dropin.parent.mkdir(parents=True, exist_ok=True)
+        dropin.write_text(expected_dropin)
+        command(["systemctl", "daemon-reload"], check=True)
     print("Test CM: one restart with snapshot reconciliation fix; SM and native databases preserved", file=sys.stderr, flush=True)
     subprocess.run(["systemctl", "restart", "aos-cm"], capture_output=True, text=True, timeout=25, check=True)
     result = execute(dict(request, action="component-cm-status"))
@@ -861,7 +1015,7 @@ def cm_apply_service_update(request):
             or sm_after["service"]["MainPID"] != sm["service"]["MainPID"]
             or sm_saved_test_release(FACTORY_INPUTS.parent, committed=True) != saved):
         raise ValueError("CM_TRANSIENT_ACTIVATION_UNCONFIRMED")
-    return dict(state="APPLIED", noOp=False, previousBinarySha256=previous,
+    return dict(state="APPLIED", noOp=False, explicitRestart=restart, previousBinarySha256=previous,
                 smPidPreserved=True, durableRecordsPreserved=True, **dict(result, mutation=True))
 
 
@@ -876,7 +1030,8 @@ def execute(request):
         digest = hashlib.sha256(binary.read_bytes()).hexdigest() if pid.isdigit() and int(pid) > 0 else None
         return dict(mutation=False, service=service, binarySha256=digest,
                     executable=os.readlink(binary) if digest else None,
-                    processWaits=process_wait_observation(pid) if digest else None)
+                    processWaits=process_wait_observation(pid) if digest else None,
+                    delivery=cm_delivery_observation(pid) if digest else None)
     if request["action"] == "component-sm-apply" and request.get("proof") == "service-update-teardown":
         return sm_apply_service_update(request)
     if request["action"] == "service-runtime-inspect":
@@ -1173,7 +1328,7 @@ def execute(request):
         ids = [line[3:] for line in services.stdout.splitlines() if line.startswith("Id=")]
         streams = []
         for unit in ids + ["kuksa-databroker.service", "aos-vehicle-data-provider-selftest@a.service", "aos-vehicle-data-provider-selftest@b.service"]:
-            result = command(["journalctl", "-b", "-n", "600" if unit in ("aos-cm.service", "aos-sm.service") else "80",
+            result = command(["journalctl", "-b", "-n", "6000" if unit == "aos-sm.service" else "600" if unit == "aos-cm.service" else "80",
                               "-o", "json", "--no-pager", "-u", unit])
             if result.returncode or len(result.stdout) > (8388608 if unit in ("aos-cm.service", "aos-sm.service") else 2097152):
                 raise ValueError("COMPONENT_JOURNAL_UNAVAILABLE")
@@ -1270,7 +1425,7 @@ def execute(request):
             if (re.search(r"token|password|private.?key|certificate|authorization|jwt|https?://|wss?://", message, re.I)
                     or "-----BEGIN" in message or re.search(r"eyJ[A-Za-z0-9_-]+\.", message)):
                 continue
-            if not re.search(r"fail|error|cannot|could not|stop|start|health|slot|component|provider|safe.?stop|desired.?status|run.?instances|wait.*active|wait.*node|node.?status|instance.?status|instances.?statuses|Update state changed|Current update canceled", message, re.I):
+            if not re.search(r"fail|error|cannot|could not|stop|start|health|slot|component|provider|safe.?stop|desired.?status|run.?instances|wait.*active|wait.*node|node.?status|instance.?status|instances.?statuses|Update state changed|Current update canceled|instance network", message, re.I):
                 continue
             message = re.sub(r"[A-Za-z0-9_+/=-]{48,}", "[REDACTED_LONG_VALUE]", message)
             message = re.sub(r"[\x00-\x1f\x7f]", " ", message)[:600]
@@ -1282,6 +1437,10 @@ def execute(request):
             entries.append(entry)
         entries.sort(key=lambda entry: int(entry["time"] or 0))
         return dict(entries=entries[-100:], scannedEntries=len(streams), providerReadyEvents=ready_events, structuredFields=sorted(structures),
+                    smNetworkEvents=[entry for entry in entries if entry["unit"] == "aos-sm.service"
+                        and ("network" in entry["message"].lower() or
+                             entry.get("nativeInstance", {}).get("errorLocations") or
+                             "Failed to get instance configs" in entry["message"])][-40:],
                     cmJournal=dict(cm_journal, stages=cm_journal["stages"][-15:]),
                     cmTransportEvents=cm_transport[-20:],
                     cmEvents=[entry for entry in entries if entry["unit"] == "aos-cm.service"][-20:],

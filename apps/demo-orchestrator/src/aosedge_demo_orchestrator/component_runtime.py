@@ -27,17 +27,22 @@ import tempfile
 from .environment import EnvironmentError
 
 SOURCE = Path.home() / "OpenAI/aos-vehicle-platform"
-SM_REVISION = "1243780d292eacf463f6a8c79075915565b51927"
+SM_REVISION = "b66ab25979e53b997005c0519eda9c869b111d8b"
 CM_REVISION = "1c901cf75fb834b5c93224d846660b91137dd126"
 SM_TEST_VM = "d53d05cd-4c46-49c9-a896-534b23b88273"
 SM_TEST_UNIT = "2a29c145-bbd1-4494-a0e5-d4b79e6a9db5"
 FACTORY_SOURCE = Path.home() / "OpenAI/aos-vehicle-platform"
 FACTORY_VERSION = "6.1.1-maninblack.31"
 FACTORY_REVISION = "0bed8b3769b09fbe685ed599ca8d10e6594fbe53"
+FACTORY_RELEASES = {
+    FACTORY_VERSION: FACTORY_REVISION,
+    "6.1.1-maninblack.32": "025abc4ed24334f12c4d83a8fcb9571cff61501d",
+}
 RELATIVE = "meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files/systemd-slot-component"
 BUILDER_PROJECT = "/home/yocto/r61-build/project/yocto"
-ARTIFACT = Path.home() / "OpenAI/demo-artifacts/aosedge-sdv-demo/runtime-proofs/sm-service-update-teardown"
-SM_PATCHES = ("0002-idempotent-service-container-teardown.patch", "0003-preserve-failed-service-replacement.patch")
+ARTIFACT = Path.home() / "OpenAI/demo-artifacts/aosedge-sdv-demo/runtime-proofs/sm-service-prepare-recovery"
+SM_PATCHES = ("0002-idempotent-service-container-teardown.patch", "0003-preserve-failed-service-replacement.patch",
+              "0004-retry-failed-service-preparation.patch")
 FILES = ("config.hpp", "config.cpp", "safestop.hpp", "safestop.cpp", "runtime.hpp", "runtime.cpp",
          "tests/safestop.cpp", "tests/runtime.cpp")
 
@@ -45,7 +50,7 @@ FILES = ("config.hpp", "config.cpp", "safestop.hpp", "safestop.cpp", "runtime.hp
 def factory_component_support(revision):
     """Producer metadata for the exact supported source, not live qualification."""
     from .components import COMPONENT
-    if revision != FACTORY_REVISION:
+    if revision not in FACTORY_RELEASES.values():
         raise EnvironmentError("FACTORY_SOURCE_REVISION_MISMATCH")
     schema = runpy.run_path(str(FACTORY_SOURCE /
         "meta-aos-vehicle-platform/recipes-support/vss/files/vdp_vss_schema.py"))
@@ -66,13 +71,15 @@ def builder_ssh():
             "-o", "ConnectTimeout=5", "yocto@127.0.0.1"]
 
 
-def apply_test(environment, target, manager="sm"):
+def apply_test(environment, target, manager="sm", restart_cm=False):
     from .environment import JOURNAL, atomic_json
     from .status import read_json, now
     from .vm import VMService
     from .source import SourceDriver
     if target != "test" or manager not in ("sm", "cm"):
         raise EnvironmentError("SM_QUALIFICATION_TEST_ONLY")
+    if type(restart_cm) is not bool or (restart_cm and manager != "cm"):
+        raise EnvironmentError("RESTART_CM_USES_TEST_CM_APPLY_ONLY")
     artifact = ARTIFACT if manager == "sm" else ARTIFACT.with_name("cm-service-update-reconcile")
     manifest = read_json(artifact / "manifest.json")
     raw = (artifact / ("aos-" + manager)).read_bytes()
@@ -99,6 +106,7 @@ def apply_test(environment, target, manager="sm"):
             with driver.operation(timeout=60):
                 result = driver.guest(state, "test", "component-" + manager + "-apply", target="test",
                     proof=manifest["proof"],
+                    restartCm=restart_cm,
                     binary=base64.b64encode(gzip.compress(raw, compresslevel=1, mtime=0)).decode(),
                     sha256=manifest["executableSha256"])
                 # systemd clears service credentials on restart. Restore only
@@ -156,16 +164,17 @@ def build(target, compile_source=True, manager="sm"):
             if errors:
                 print("\n".join(errors[:20]), file=sys.stderr, flush=True)
                 raise EnvironmentError("SM_COMPILE_INCOMPLETE")
-            if manager == "cm":
-                # Test-only correction: reuse the completed CM when the only
+            if manager in ("sm", "cm"):
+                # Test-only correction: reuse the completed binary when the only
                 # changed production translation unit is byte-identical.
                 local_lib = SOURCE / "build/aos_core_lib_cpp"
-                runtime_file = "src/core/cm/launcher/instancemanager.cpp"
+                runtime_file = ("src/core/cm/launcher/instancemanager.cpp" if manager == "cm"
+                    else "src/core/sm/launcher/launcher.cpp")
                 remote_lib = work + "/service-update-deps/aos_core_lib_cpp/"
                 compiled_source = subprocess.check_output(ssh + ["cat " + remote_lib + runtime_file], timeout=15)
                 if compiled_source != (local_lib / runtime_file).read_bytes():
-                    raise EnvironmentError("CM_PRODUCTION_SOURCE_CHANGED_REBUILD_REQUIRED")
-                test_file = "src/core/cm/launcher/tests/launcher.cpp"
+                    raise EnvironmentError(manager.upper() + "_PRODUCTION_SOURCE_CHANGED_REBUILD_REQUIRED")
+                test_file = "src/core/" + manager + "/launcher/tests/launcher.cpp"
                 refresh = "from pathlib import Path; import sys; Path(" + repr(remote_lib + test_file) + ").write_bytes(sys.stdin.buffer.read())"
                 subprocess.run(ssh + ["python3 -c " + shlex.quote(refresh)],
                     input=(local_lib / test_file).read_bytes(), check=True, timeout=15)
@@ -256,7 +265,7 @@ subprocess.run([cache['CMAKE_COMMAND'], '--build', str(work / 'service-update-la
         candidates += subprocess.check_output(ssh + ["find " + work + "/service-update-launcher-tests -type f -name '*_test'"], timeout=20).decode().splitlines()
         native_results = []
         suites = (("/core/cm/launcher/tests/", "CMLauncherTest.ServiceUpdate:CMLauncherTest.ResendInstancesOnMismatchedNodeStatus:ServiceReconciliation/*"),) if manager == "cm" else (
-            ("/core/sm/launcher/tests/", "LauncherTest.*:ServiceUpdate/*"),
+            ("/core/sm/launcher/tests/", "LauncherTest.*:ServiceUpdate/*:ServicePreparation/*"),
             ("/sm/launcher/runtimes/container/tests/", "ContainerCleanupErrorTest.*:ContainerRunnerTest.*:ContainerRuntimeTest.StopInstance"),
             ("/sm/networkmanager/tests/", "BridgeNetworkTest.*:NamespaceCleanupTest.*"),
         )
@@ -271,6 +280,7 @@ subprocess.run([cache['CMAKE_COMMAND'], '--build', str(work / 'service-update-la
             print(native.stdout.decode(), file=sys.stderr, flush=True)
             print(native.stderr.decode(), file=sys.stderr, flush=True)
             native_results.append(native.stdout + native.stderr)
+            artifact.with_suffix(".native-tests.log").write_bytes(b"\n".join(native_results))
             if native.returncode or b"[  PASSED  ]" not in native.stdout or b"[  SKIPPED ]" in native.stdout:
                 raise EnvironmentError("SM_SERVICE_REGRESSION_FAILED:" + marker)
         if manager == "cm":
@@ -411,12 +421,12 @@ def build_factory(version, metadata_only=False):
     gate image construction on the new configuration test and package QA, then
     reuse the existing Rouge disk description. Never alter a published image.
     """
-    if version != FACTORY_VERSION:
+    if version not in FACTORY_RELEASES:
         raise EnvironmentError("FACTORY_BUILD_NOT_AUTHORIZED")
     if subprocess.check_output(["git", "status", "--porcelain"], cwd=FACTORY_SOURCE):
         raise EnvironmentError("FACTORY_COMMITTED_SOURCE_REQUIRED")
     revision = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=FACTORY_SOURCE).decode().strip()
-    if revision != FACTORY_REVISION:
+    if revision != FACTORY_RELEASES[version]:
         raise EnvironmentError("FACTORY_SOURCE_REVISION_MISMATCH")
     compatibility = factory_component_support(revision)
     destination = ARTIFACT.parents[1] / "factory-images" / version
@@ -434,7 +444,7 @@ def build_factory(version, metadata_only=False):
                                 stdout=subprocess.PIPE if capture else sys.stderr, stderr=sys.stderr, check=True)
         return result.stdout.decode() if capture else ""
     def stage(message):
-        print("Factory .31: " + message, file=sys.stderr, flush=True)
+        print("Factory ." + version.rsplit(".", 1)[1] + ": " + message, file=sys.stderr, flush=True)
     try:
         # The same established Builder adapter owns start/stop and disk guards.
         builder("test", "start")
@@ -473,9 +483,11 @@ def build_factory(version, metadata_only=False):
                                     Path(source).name + "/meta-aos-vehicle-platform")
         remote("python3 -c " + shlex.quote(layer_update))
         prefix = "cd " + BUILDER_PROJECT + "; . poky/oe-init-build-env build-main >/dev/null; "
-        flags = " -R " + source + "/qualification/factory-31.conf "
-        stage("compile the proven SM correction from committed source (offline)")
-        remote(prefix + "bitbake" + flags + "-c compile aos-servicemanager", timeout=1200, capture=False)
+        suffix = version.rsplit(".", 1)[1]
+        flags = " -R " + source + "/qualification/factory-" + suffix + ".conf "
+        managers = "aos-servicemanager" + (" aos-communicationmanager" if suffix == "32" else "")
+        stage("compile the proven manager corrections from committed source (offline)")
+        remote(prefix + "bitbake" + flags + "-c compile " + managers, timeout=1200, capture=False)
         work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-servicemanager/git"
         test = work + "/build/src/sm/launcher/runtimes/systemd-slot-component/tests/aos_sm_runtimes_systemdslotcomponent_test"
         loader = work + "/recipe-sysroot/usr/lib/ld-linux-aarch64.so.1"
@@ -486,11 +498,11 @@ def build_factory(version, metadata_only=False):
         print(test_log, file=sys.stderr, flush=True)
         if "[  PASSED  ] 5 tests." not in test_log:
             raise EnvironmentError("FACTORY_EXPECTED_FIVE_TESTS_NOT_EXECUTED")
-        stage("package SM with package QA")
-        remote(prefix + "bitbake" + flags + "aos-servicemanager", timeout=1200, capture=False)
+        stage("package the managers with package QA")
+        remote(prefix + "bitbake" + flags + managers, timeout=1200, capture=False)
         stage("construct the Factory filesystem from pinned sources")
         remote(prefix + "bitbake" + flags + "aos-image-vm", timeout=2400, capture=False)
-        output = "main-qemuarm64-factory-31.img"
+        output = "main-qemuarm64-factory-" + suffix + ".img"
         assembly = [output if item == "main-qemuarm64.img" else item for item in assembly[0]]
         assembly[0] = "/home/yocto/.local/bin/rouge"
         stage("assemble the same six-partition disk layout")

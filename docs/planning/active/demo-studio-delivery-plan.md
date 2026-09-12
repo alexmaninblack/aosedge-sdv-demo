@@ -93,23 +93,51 @@ Real VM-to-backend mock records and outage/retry are not yet proven. The team
 dashboard/read adapter increment displays isolated mock evidence separately
 from Cloud inventory. See the [bounded evidence and remaining gate](../../qualification/demo-mocked-backend-integration.md).
 
+Recovery checkpoint, **12 September 02:05 UTC**: the authorized VM reboot
+restored Cloud Online/delivery but lost temporary runtime declarations and
+manager overrides. These were restored through Demo Control. A subsequent
+SM preparation-retry fix passed 77 native regressions and was applied to the
+same Test; 78 focused Demo Control tests passed. Existing Brake **7/v3** and
+Tire **6/v1** are now Cloud/native Active, with no pending successor, and both
+deliver VM-originated records to isolated mock backend storage. No new package
+version, assignment, database reset or Production change was used to recover.
+Backend outage/retry and complete operator E2E remain open. A new immutable
+image must include qualified CM/SM plus resource/public-input boot integration;
+its build and retained-assignment reboot proof have not been performed. The
+underlying earlier Cloud connectivity contradiction remains unisolated.
+
+Factory continuation, **12 September 2026**: the user authorized the successor
+build. Platform commit `025abc4ed24334f12c4d83a8fcb9571cff61501d` packages the
+same CM/SM corrections plus native Brake/Tire resources and the accepted
+pre/post-SM public-input projector. `democtl image build 6.1.1-maninblack.32`
+is running offline from that pinned source. Ten Platform configuration tests
+and 48 focused Demo Control tests passed; these are not clean-image evidence.
+No existing VM, assignment, Cloud release or Production state was changed.
+
+The current local run has a shared .31 backing for Test and Production.
+`environment create --target test` currently requires that same backing.
+A separate Test .32 backing needs a bounded lifecycle adapter change; that
+choice was submitted to the user before replacing or retiring current Test.
+Neither a successful image build nor transient service recovery closes N5.
+
 | Step | Change and owner | Gate / evidence | State |
 | --- | --- | --- | --- |
 | N1 | Solution: accept ADR, update HLA/flows/requirements, runtime-input contract and D4 migration mapping | English documents, navigation and deterministic docs-check | Complete; product wire migration remains N3 |
 | N2 | Brake/Tire + Platform: private bootstrap sessions, dynamic token readers, native tmpfs resource mode; retire only token-owner patch | First create, isolation, atomic renewal, path/mode/symlink negatives, cleanup/restart, native host compilation | Host source tests passed; Linux/live proof remains N6 |
 | N3 | Solution contracts, both producers/backends: package version and native identity; explicit new message schemas without required service/model OCI digest | Producer-consumer fixtures; legacy queues/history retained; no fabricated digest; model/VDP hashes unchanged | Consumer and producer/input source increments passed; live integration remains N6 |
-| N4 | Demo Control: package the allocated version once; project public inputs; native configuration activation through existing commands | Package/publication equality; no manifest lookup dependency; stable-directory refresh after VDP commit | ARM64 exports, signing, warm projection and transient activation passed; permission-free 3.0.0 bundles READY and guest-installed. Normal permission-bearing publication and functional runtime remain unqualified |
+| N4 | Demo Control: package the allocated version once; project public inputs; native configuration activation through existing commands | Package/publication equality; no manifest lookup dependency; stable-directory refresh after VDP commit | ARM64 exports, signing, warm projection and transient activation passed; permission-free Brake 7/Tire 6 are installed and Active with real isolated mock-backend delivery. Normal permission-bearing publication remains unqualified |
 | N5 | Existing startup integration: restore public /run inputs before SM launches retained assignments | Exact hook/order documented and tested; no new daemon, persisted token or metadata authority | Cold/warm split accepted; pre-SM preparation and post-SM process verification passed with unchanged SM binary; persistent-image integration and retained-assignment VM reboot not qualified |
-| N6 | Bounded current Test SOTA and backend integration through democtl | Real Cloud Running/version, KAC/TLS/subscriptions, renew/expiry, actual product records, retained state and scoped access proof | No-telemetry replacement passed: Brake Active 6/v3 and Tire Active 5/v1. Mock releases Brake 7 and Tire 6 READY/pending; backend/native fixture integration passed, real VM delivery blocked by contradictory Cloud connectivity. Native KUKSA and functional/advisory proof remain open |
+| N6 | Bounded current Test SOTA and backend integration through democtl | Real Cloud Running/version, KAC/TLS/subscriptions, renew/expiry, actual product records, retained state and scoped access proof | No-telemetry version replacement passed. Brake 7/v3 and Tire 6/v1 are Active with native-identity-correlated VM-to-backend mock delivery. Backend outage/retry, retained-assignment cold boot, native KUKSA and functional/advisory proof remain open |
 | N7 | Checkpoint source/docs and record exclusions | Commit only tested source; no build artifacts; retain current VM/Factory/Production | N2/N3 local checkpoints created; full-migration checkpoint remains pending |
 
 Source increments may be developed independently, but **no new producer is
 published before its matching backend/contract migration**, and no configured
 1777 token mount is activated with a legacy fixed-path bootstrap. N2 changes
 credential placement only; it must not masquerade as completion of N3–N6.
-The live source/publication permissions already granted remain bounded to the
-current Test; this change does not authorize another Factory build, reset,
-provisioning cycle or Production mutation.
+The initial live source/publication permissions were bounded to current Test.
+The later 12 September authorization additionally permits the Factory .32
+build and its planned clean Test qualification, subject to the explicit
+shared-backing lifecycle decision above. Production remains excluded.
 
 User-confirmed execution boundary, 11 September 2026: use native AosCore
 container preparation, launch and retained-instance recovery unchanged. N4/N5
