@@ -231,6 +231,19 @@ Production remain preserved.
 The [Factory .32 build record](../../../../aos-vehicle-platform/qualification/factory-32.md)
 records exact source, artifact and outstanding cold-boot qualification.
 
+Service integration, **12 September 05:02 UTC**: after explicit
+`service runtime-prepare test`, both retained per-service Subjects were bound
+to the new Test through `service assign`. Existing Brake **7.0.0** and Tire
+**6.0.0** are now Cloud Active/installed with no pending successor; both native
+container processes are alive and continuously deliver identity-correlated
+mock records to their real backends. VDP 18.0.0 and SM retained their PIDs;
+no additional restart, build, upload or Production change was needed. Full
+available SM audit window reports enforcing SELinux and zero denials.
+See the [exact sequence, evidence and exclusions](../../qualification/demo-mocked-backend-integration.md#factory-32-integration-test).
+Fresh .32 service/backend integration is proven with warm preparation;
+retained-assignment reboot, .32 version replacement, backend outage/retry and
+native KUKSA/advisory gates remain open.
+
 | Step | Change and owner | Gate / evidence | State |
 | --- | --- | --- | --- |
 | N1 | Solution: accept ADR, update HLA/flows/requirements, runtime-input contract and D4 migration mapping | English documents, navigation and deterministic docs-check | Complete; product wire migration remains N3 |

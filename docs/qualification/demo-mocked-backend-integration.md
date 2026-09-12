@@ -36,6 +36,9 @@ production feature extraction or in-vehicle recommendations.
 
 ## Execution checkpoint — 11 September 2026, 22:08 UTC
 
+Latest result: the [Factory .32 integration test](#factory-32-integration-test)
+below supersedes the older pending/recovery observations for the current Test.
+
 | Boundary | Evidence | Result |
 | --- | --- | --- |
 | Brake product | Source `438cac887b7ef248f81b4dbf69285c89d903101d`; actual ARM64 v3 export and seven native tests | Passed |
@@ -328,3 +331,56 @@ Backend outage/retry and complete operator E2E are still separate pending
 gates. The original Cloud Offline/dispatcher incident is not root-caused by
 this local SM fix. A clean image/reboot remains unqualified; do not claim that
 transient runtime restoration makes .31 a corrected factory image.
+
+<a id="factory-32-integration-test"></a>
+
+## Factory .32 integration test — 12 September 2026, 05:02 UTC
+
+The user authorized preparing and assigning both retained services to the new
+Test, then verifying native containers and real mock-backend delivery. Source
+baseline: Solution `e3ad83f`; immutable Platform source `04fc8270c55ff5c35f1e98af534a5efccb035464`.
+Current Test Unit is `923b9820-999b-41bb-91db-b2a2c469e743`, system UID
+`5aa1f8e4a1114467a6ccfb269c62a7a8`. The preceding unchanged-CM delivery control
+had already restored VDP 18.0.0; this run performs no additional manager restart.
+
+The exact Demo Control sequence was:
+
+1. `service runtime-prepare test`: created the two public metadata/trust inputs
+   from native identity and committed VDP 18.0.0; process verification passed.
+   Native resource declarations were already packaged in .32. No activation,
+   SM restart or alternative container launcher was needed.
+2. `service assign 3bc71fa0-aae5-4363-8298-8d06501c3132 --target test`:
+   reused Brake Subject `ede5ae8b-9796-4bea-88d1-d2dfcab24725` and its existing
+   service membership; bound the current Test. Brake 7.0.0 became Active.
+3. `service assign d98957a1-83c2-4d14-a6fb-4e6a6ad27c77 --target test`:
+   reused Tire Subject `e6699b5d-b243-4bfe-8e0c-b905fcfa14df` and its existing
+   service membership; bound the current Test. Tire 6.0.0 became Active.
+4. `service runtime-inspect test`, `unit cloud-status test`, both
+   `backend inspect` commands and component/SM status reads established the
+   results below. One backend observation attempted while assignment held the
+   writer lock returned `CURRENT_RUN_BUSY` before observation; it was read
+   after assignment completed. No assignment was replayed.
+
+| Boundary | Observed result |
+| --- | --- |
+| Cloud, 05:00:41 UTC | Test Online; Brake 7.0.0 and Tire 6.0.0 each have one Active instance, installed status, no pending successor and no reported instance error |
+| Native containers | Both bootstrap processes alive; Brake runtime `7cf522e4-ff3f-3b8c-b02e-b09458403b5a`, Tire runtime `b14e8bca-b1a3-30a0-b44c-d972263deee6`; native item/Subject/index/instance inputs present |
+| Brake backend | First current-Test event/assessment received at 04:59:47 UTC; by 05:01:54 UTC, five assessments and one event; latest receipt 05:01:47.700 UTC |
+| Tire backend | First current-Test status/assessment/event received at 05:00:19 UTC; by 05:01:54 UTC, four statuses, four assessments and one band-change event; latest receipt 05:01:50.135 UTC |
+| Identity correlation | Both real HTTP backend records match the current Test UID, respective retained Subject, service UUID/version and observed native instance ID |
+| Unchanged runtime | SM PID 1875, active/success, zero automatic restarts; VDP 18.0.0 PID 6899, slot a/process agreement, READY/LIVE, 23 read paths, zero restarts |
+| Security observation | SELinux enforcing; complete available kernel window since SM startup: 402 entries, zero AVC denials |
+
+All backend records are `DEMO_MOCK` with `vehicleTelemetry=false`. Tire's
+`SERVICE_ACCESS_DENIED` function status is the expected permission-free mode,
+not evidence that this service failed to start. Native KUKSA authorization,
+actual vehicle telemetry and advisory functionality remain unqualified.
+
+This proves fresh service assignment, native launch and continuing delivery
+to both real backends on the immutable .32 runtime **after explicit warm input
+preparation**. It is not proof of automatic input refresh, retained-assignment
+reboot recovery, version replacement on .32 or backend outage/retry. Those
+remain separate gates. No build, upload, validation approval, VM/CM/SM/backend
+restart, cleanup, private-data export or Production mutation occurred in this
+integration run. Existing runtime and backend storage are preserved. No source
+code changed, so no additional compile/unit suite was run for this live test.
