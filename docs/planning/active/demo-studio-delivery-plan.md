@@ -167,6 +167,35 @@ returned `NO_CURRENT_TEST` without replaying Cloud mutations. Docker Desktop
 and the five Watt containers were not restarted. Backend volumes remain
 preserved. Next: clean Test .32 creation and the planned runtime/reboot proof.
 
+Clean Test continuation, **12 September**: `demo create --image
+6.1.1-maninblack.32/main-qemuarm64` created a separate immutable Factory copy
+with the recorded SHA and new Test overlay. Native password-dialog input was
+unavailable; that attempt ended before VM startup. Normal interactive `democtl
+vm start test` then completed SSH/DNS/role setup in 61.53 seconds, and the same
+composed Create resumed to start both retained backend images/volumes. No
+Factory rebuild, Docker Desktop restart or Watt-container restart occurred.
+
+`unit provision test` completed in 20.39 seconds: Unit
+`923b9820-999b-41bb-91db-b2a2c469e743`, system UID
+`5aa1f8e4a1114467a6ccfb269c62a7a8`, Node
+`dcb3094e-b1db-4352-865c-30aab4a43718`, Online in the existing Test Vehicles set.
+`simulation start --target test` and `vehicle initialize test` connected the
+simulator with advancing TLS VISS frames. The normal Driving Control Safe Stop
+button was exercised; telemetry visibly reported Safe Stop / stopped / 0 km/h.
+
+Installed `/usr/bin/aos_sm_app` and `/usr/bin/aos_cm_app` are active, each with
+`NRestarts=0` and `Result=success`; no transient manager replacement was applied.
+Native Brake/Tire resource mounts are present in `/etc/aos/resources.cfg`.
+SM observation reported SELinux enforcing and zero denied entries since startup.
+Cloud assigns VDP 18.0.0 as `to be installed`, but the retained native desired
+snapshot still has zero items/instances, and no downloaded/active VDP payload is
+observed. CM remains connected and receives acknowledgements; native logs show
+the initial empty desired update and no SM startup failure. Cause of the delivery
+gap is not established. Do not publish another release or restart managers merely
+to force delivery. The new Test is preserved for that investigation; service
+assignment, mock ingestion and reboot qualification have not yet run on .32.
+Production remains the same running .31 VM (PID 28620, unchanged Unit identity).
+
 The [Factory .32 build record](../../../../aos-vehicle-platform/qualification/factory-32.md)
 records exact source, artifact and outstanding cold-boot qualification.
 
