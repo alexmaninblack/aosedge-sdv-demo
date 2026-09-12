@@ -107,11 +107,17 @@ its build and retained-assignment reboot proof have not been performed. The
 underlying earlier Cloud connectivity contradiction remains unisolated.
 
 Factory continuation, **12 September 2026**: the user authorized the successor
-build. Platform commit `025abc4ed24334f12c4d83a8fcb9571cff61501d` packages the
+build. Platform commit `04fc8270c55ff5c35f1e98af534a5efccb035464` packages the
 same CM/SM corrections plus native Brake/Tire resources and the accepted
 pre/post-SM public-input projector. `democtl image build 6.1.1-maninblack.32`
-is running offline from that pinned source. Ten Platform configuration tests
-and 48 focused Demo Control tests passed; these are not clean-image evidence.
+completed offline from that pinned source. Eleven Platform configuration tests,
+80 affected Demo Control tests and five native Factory/VDP regressions passed.
+Package/image QA and final packaged resources/hooks passed; six nonfatal
+build-path warnings remain. A first CM package attempt failed on test-only
+CMake fixtures and was corrected before publication; no failed image was used.
+The immutable image SHA-256 is
+`f56e037ff6ce11d1dea769055dc160a5a9a8061bbdd2d67745a3042181be2f14`.
+Transfer SHA matched and Builder stopped. These are not clean-image evidence.
 No existing VM, assignment, Cloud release or Production state was changed.
 
 The current local run has a shared .31 backing for Test and Production.
@@ -119,6 +125,9 @@ The current local run has a shared .31 backing for Test and Production.
 A separate Test .32 backing needs a bounded lifecycle adapter change; that
 choice was submitted to the user before replacing or retiring current Test.
 Neither a successful image build nor transient service recovery closes N5.
+
+The [Factory .32 build record](../../../../aos-vehicle-platform/qualification/factory-32.md)
+records exact source, artifact and outstanding cold-boot qualification.
 
 | Step | Change and owner | Gate / evidence | State |
 | --- | --- | --- | --- |

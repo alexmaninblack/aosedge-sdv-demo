@@ -36,7 +36,7 @@ FACTORY_VERSION = "6.1.1-maninblack.31"
 FACTORY_REVISION = "0bed8b3769b09fbe685ed599ca8d10e6594fbe53"
 FACTORY_RELEASES = {
     FACTORY_VERSION: FACTORY_REVISION,
-    "6.1.1-maninblack.32": "025abc4ed24334f12c4d83a8fcb9571cff61501d",
+    "6.1.1-maninblack.32": "04fc8270c55ff5c35f1e98af534a5efccb035464",
 }
 RELATIVE = "meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files/systemd-slot-component"
 BUILDER_PROJECT = "/home/yocto/r61-build/project/yocto"
@@ -500,6 +500,21 @@ def build_factory(version, metadata_only=False):
             raise EnvironmentError("FACTORY_EXPECTED_FIVE_TESTS_NOT_EXECUTED")
         stage("package the managers with package QA")
         remote(prefix + "bitbake" + flags + managers, timeout=1200, capture=False)
+        if suffix == "32":
+            # Verify final package input after native do_update_config, not the
+            # intermediate resource file that do_install initially creates.
+            package_check = (
+                "import json; from pathlib import Path; "
+                "root=Path(%r); src=Path(%r); "
+                "resources=json.loads((root/'etc/aos/resources.cfg').read_text()); "
+                "names=[x['name'] for x in resources]; "
+                "assert len(names)==len(set(names)); "
+                "assert {'kuksa','kuksa-auth-client','brake-runtime-inputs','tire-runtime-inputs'} <= set(names); "
+                "assert (root/'usr/libexec/aos-demo-service-inputs.py').read_bytes()==(src/'aos-demo-service-inputs.py').read_bytes(); "
+                "assert (root/'etc/systemd/system/aos-sm.service.d/40-aos-demo-service-inputs.conf').read_bytes()==(src/'40-aos-demo-service-inputs.conf').read_bytes(); "
+                "print('Factory service-input package: PASS')"
+            ) % (work + "/image", source + "/meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files")
+            print(remote("python3 -c " + shlex.quote(package_check)), file=sys.stderr, flush=True)
         stage("construct the Factory filesystem from pinned sources")
         remote(prefix + "bitbake" + flags + "aos-image-vm", timeout=2400, capture=False)
         output = "main-qemuarm64-factory-" + suffix + ".img"
