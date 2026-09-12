@@ -42,6 +42,8 @@ test("Reload retains exact profile publication, ignores previous-run jobs and ca
   const requests = await retainedRun(page);
   await page.goto("/");
   await expect(page.getByRole("button", { name: "Continue registration" })).toBeEnabled();
+  await expect(page.getByLabel("Factory image")).toHaveValue("32/arm64");
+  await expect(page.getByLabel("Factory image")).toBeDisabled();
   await page.getByLabel("Preparation", { exact: true }).selectOption("quick");
   await expect(page.getByLabel("Factory image")).toHaveValue("32/arm64");
   await expect(page.getByRole("button", { name: "Continue preparation" })).toBeEnabled();

@@ -64,13 +64,16 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
   const [profile, setProfile] = useState<"v1" | "v2" | "v3">("v1");
   const [details, setDetails] = useState<"vdp" | "services" | "cloud" | null>(null);
   const [monitor, setMonitor] = useState(false);
-  const image = (mode === "quick" ? local.preparation?.image : local.lifecycle?.image) || selectedImage || local.images[0]?.selector || "";
+  const vehicle = local.vehicles.test;
+  const present = vehicle.state === "CURRENT" && vehicle.overlayExists === true;
+  // A retained Test may use a different image from the shared Production
+  // backing or the first catalog row. Never display a selectable replacement.
+  const image = present ? local.images.find((item) => item.version === vehicle.imageVersion)?.selector ?? ""
+    : (mode === "quick" ? local.preparation?.image : local.lifecycle?.image) || selectedImage || local.images[0]?.selector || "";
   const value = cloud.observation?.value;
   const inventory = value?.inventory;
   const current = cloud.observation?.state === "CURRENT";
   const componentCurrent = current && (!inventory || inventory.components.state === "CURRENT");
-  const vehicle = local.vehicles.test;
-  const present = vehicle.state === "CURRENT" && vehicle.overlayExists === true;
   const connected = snapshot.vehicle.value === "test";
   const jobs = (controls.session?.jobs ?? []).filter((job) => local.runId && job.runId === local.runId);
   const continuation = mode === "quick" ? Boolean(local.preparation && local.preparation.phase !== "READY_TO_DRIVE")
@@ -116,7 +119,7 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
             <footer><strong>Factory firmware</strong><span>{vehicle.imageVersion ?? "Choose a prepared image"}</span><small>{present ? `Local controller · ${known(vehicle.process)}` : "Not created"}</small></footer>
           </section></div>
         <section className="studio-actions"><h3>Demo lifecycle</h3><div className="studio-fields"><label>Preparation<select aria-label="Preparation" value={mode} onChange={(event) => setMode(event.target.value)}><option value="story">Full story</option><option value="quick">Quick preparation</option></select></label>
-          <label>Factory image<select value={image} disabled={present} onChange={(event) => setSelectedImage(event.target.value)}>{local.images.map((item) => <option key={item.selector} value={item.selector}>{item.version} · {item.architecture}</option>)}</select></label></div>
+          <label>Factory image<select value={image} disabled={present} onChange={(event) => setSelectedImage(event.target.value)}>{present && !image && <option value="">{vehicle.imageVersion ?? "Current image not reported"} · Not in catalog</option>}{local.images.map((item) => <option key={item.selector} value={item.selector}>{item.version} · {item.architecture}</option>)}</select></label></div>
           <div className="studio-buttons"><button disabled={controls.blocked || !image || (present && !continuation)} onClick={() => controls.request({ action: mode === "quick" ? "prepare-demo" : "create", image })}>{continuation ? "Continue preparation" : mode === "quick" ? "Prepare demo" : "Create controller"}</button>
             <button disabled={controls.blocked || !present} onClick={() => controls.request({ action: "start-simulation" })}>Start simulator</button>
             <button disabled={controls.blocked || !present || connected} onClick={() => controls.request({ action: "connect-test" })}>Connect in Manual</button>

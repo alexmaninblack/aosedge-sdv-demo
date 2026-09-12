@@ -47,6 +47,9 @@ export function composePresenterSnapshot(
     ...(platformReason ? { reason: platformReason } : {}),
   };
   snapshot.teams.platform.logs = cloud.unitLogs;
+  snapshot.teams.platform.backendStatus = cloud.units.state === "CURRENT"
+    ? "AosEdge state current"
+    : cloud.units.state === "STALE" ? "Stale authoritative state" : `${cloud.units.state} · Cloud read`;
   snapshot.teams.brake.source = {
     value: brake.brake.value ? "Brake Backend current-Unit projection" : null,
     source: { owner: "Brake Function Backend", system: "Contract-synthetic read adapter", fixture: true },

@@ -22,6 +22,12 @@ async function snapshot(id: string) {
   return new FixtureReadOnlyAdapter(new FixturePresenterReadAdapter(id), id, clock).read();
 }
 
+it("never labels stale Cloud fixture evidence as current", async () => {
+  const value = await snapshot("stale");
+  expect(value.teams.platform.source.state).toBe("STALE");
+  expect(value.teams.platform.backendStatus).toBe("Stale authoritative state");
+});
+
 describe("closed read request plans", () => {
   it("accepts every catalog request as a fixed GET-only route", () => {
     for (const id of readOnlyFixtureIds) {

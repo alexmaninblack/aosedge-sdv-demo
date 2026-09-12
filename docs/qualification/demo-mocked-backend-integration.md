@@ -36,8 +36,10 @@ production feature extraction or in-vehicle recommendations.
 
 ## Execution checkpoint — 11 September 2026, 22:08 UTC
 
-Latest result: the [Factory .32 integration test](#factory-32-integration-test)
-below supersedes the older pending/recovery observations for the current Test.
+Latest result: the [Factory .32 pre-release checks](#factory-32-pre-release)
+below supersede the older pending/recovery observations for the current Test.
+Service replacement and retained-input reboot recovery pass; sustained Cloud
+Online does not. Full E2E is not released by these checks.
 
 | Boundary | Evidence | Result |
 | --- | --- | --- |
@@ -384,3 +386,111 @@ remain separate gates. No build, upload, validation approval, VM/CM/SM/backend
 restart, cleanup, private-data export or Production mutation occurred in this
 integration run. Existing runtime and backend storage are preserved. No source
 code changed, so no additional compile/unit suite was run for this live test.
+
+<a id="factory-32-pre-release"></a>
+
+## Factory .32 pre-release checks — 12 September 2026
+
+The user authorized pre-release testing before full E2E and continuation of UI
+integration while normal service permissions remain blocked by the platform.
+Solution baseline: `47a6a41`. The exact .32 image, Test Unit/UID and retained
+Subjects are those in the preceding integration test; Production remains the
+same running .31 VM, PID 28620. All live actions below used `democtl`.
+
+### Service replacement and backend outage
+
+| Check | Actual result |
+| --- | --- |
+| Brake backend outage | `backend stop brake` preserved storage. Assessment `8b0a39f1-13d6-578a-b8dc-c633e6ae449e`, created at 05:05:46.962 UTC while the backend was stopped, arrived at 05:06:19.534 after `backend start brake`. Earlier records survived; Tire continued receiving at 05:05:50.736. |
+| Brake package | Current commit `76d80e9373c64ba815487254fe6c8820be0c22bb` differs from the previous export source only in its native-test-count fixture. Initial Prepare refused before allocation because its exact export was missing. Explicit `service build brake --content-profile v3` completed the cached ARM64 product export; no Factory build. |
+| Brake update | Prepare v3 with `--without-permissions --demo-mocked-data`, sign and upload `brake/8.0.0` once. Deployment `7f47bac3-489f-4e3f-9ff9-21fd54eb0fca`, version ID `84393fdc-1470-41de-ab4f-908a63dcbfa9`, signed SHA `7dc9b0a229ed1028d805b35e84bbe26f653d1e5042d6f659206b6b0fb663e5ff`. Cloud READY and one Active 8.0.0 instance; first new-version backend receipt 05:10:02.417. Tire 6.0.0 remained Active. |
+| Tire update | Reused committed ARM64 export `fc81a37dbb68425bf659f7bbd683898d64966792`; prepared v1 in the same explicit mock mode. Signed/uploaded `tire/7.0.0` once. Deployment `52c4d472-8ed1-4e04-a6d4-304a3045c1d6`, version ID `c5d9db31-1d84-40f9-9f5a-211ff4a2324e`, signed SHA `a9dff791ba0ca83661dca72291bd858aab2054c081ed7cc37ac9dd24afb7c147`. Cloud READY and one Active 7.0.0 instance; backend receipt 05:11:11.878. Brake 8.0.0 remained Active. |
+| Tire backend outage after Resume | `backend stop tire` / `backend start tire` retained storage and service process. Status `a289c4f3-f6ec-5abc-bbce-3da7ef673b2e`, observed at 05:27:56.362 during the outage, arrived at 05:28:27.864 after recovery. New assessment followed at 05:28:28.201. Brake continued receiving at 05:27:56.447. |
+
+Both signatures were independently verified RS256 with exact prepared-payload
+equality. Neither replacement required a second Subject assignment, validation
+approval, VM/SM/CM restart or a direct Cloud send. Each technical update reached
+the expected Cloud-installed and Active version before the next action. The
+service ID, Subject, native instance and Test UID match the real backend records.
+Duplicate receipt stability remains the earlier isolated HTTP/durability proof;
+these live outage checks prove service outbox retry, not a synthetic duplicate
+injected directly into the backend.
+
+### Retained-assignment Park/Resume
+
+`environment park` completed at 05:12:12.769 UTC after physical Safe Stop
+confirmation. It stopped the owned simulator, Test and both backends, preserving
+disks, Cloud assignments and peer Production. `environment resume` reached
+`RESUMED / COMPLETED`; initial stationary Manual connection was confirmed at
+05:14:49.791. The new Test QEMU PID is 91661.
+
+No `runtime-prepare`, resource activation, transient manager application,
+database change or additional restart was used after this boot:
+
+- SM PID 1120, installed binary SHA
+  `936fbd563f7e9d54651504f5aeba84fee0f3736861d30c2efb60eb564e039783`,
+  Active/success, zero automatic restarts. Both native containers are alive.
+- CM PID 1057, installed binary SHA
+  `85e03a5206576c71a571a46ef90345d43037ea71b2e00c77181d247be533028d`,
+  Active/success, zero automatic restarts.
+- Both public metadata inputs reconstructed as root-owned 0444; the public
+  trust input is present. Native packaged resources remain in effect.
+- VDP 18.0.0, PID 1142, slot a/process agreement, provider-reported READY/LIVE,
+  23 read paths, zero automatic restarts. This is not independent KUKSA use.
+- Post-boot backend records: Brake 8.0.0 at 05:19:55.347; Tire 7.0.0 at
+  05:20:25.378/.484. Identity matches the retained Test and respective service.
+- Complete available audit window since SM startup: SELinux Enforcing,
+  429 entries scanned, zero AVC denials.
+
+This closes the **N5 retained-assignment public-input/native-start gate on .32**,
+not the complete release or full E2E.
+
+### Failed pre-release gate: sustained Cloud Online
+
+At the 05:20:05 Cloud observation the exact Unit reports **Offline**, last
+transition 05:15:09 UTC. It still reports Brake 8.0.0 and Tire 7.0.0 installed
+and Active, with no pending successor. Those are last Cloud runtime reports,
+not proof of current connectivity. Native CM received the matching desired
+state at boot (05:12:14.612), and continues receiving ACKs; an ACK at
+05:20:26.529 is visible. Cloud's independent monitoring read contains a sample
+at **05:22:01.511** for this exact UID: node CPU 529 DMIPS and RAM 337104896,
+plus both service samples. This reproduces the earlier connectivity/transport
+contradiction on the packaged .32 runtime.
+
+The bounded log also records eight `systemID mismatch` handler errors and
+exhausted retries for initial state-request transactions
+`41217edb-5ca5-48b3-b555-48130de84d81` and
+`96186d20-71eb-42c4-bc29-bb7be0608eb9`. They are evidence for investigation,
+**not a demonstrated cause of Offline**. No new CM patch, reconnect loop,
+unchanged-binary restart or .31 binary swap was performed to hide the failure.
+
+The required next Cloud trace is the exact Unit's connection/session transition
+at 05:15:09 versus the acknowledged session and accepted monitoring above.
+Existing OEM APIs and native logs do not expose that server-side disposition.
+Preserve this Test and its current CM process. Do not start full E2E, publish
+more versions as a delivery retry, or claim that all pre-release checks passed.
+
+### UI and isolated verification
+
+- The service suite ran all **103 tests with no skips** using the installed
+  official Aos SDK/signer runtime and temporary fixtures. The first ordinary
+  environment run skipped six SDK/signing/certificate cases; the official
+  runtime run closes those skips without real credentials or Cloud mutations.
+- UI unit suite: **100 passed**. Full browser suite: **74 passed** after fixing
+  stale Cloud badge projection and correcting tests for title/status separation
+  and the already-supported Brake-view Cloud read. TypeScript and UI build pass.
+- A real-browser read confirms architecture versions, Offline presentation and
+  separately labelled `MOCK DATA` records from the actual Brake backend. Only
+  the idle Presenter was refreshed through `ui stop/serve`; its old Python
+  process had retained the pre-.32 shared-image reader. No VM/backend/Cloud
+  restart was needed for this source refresh.
+- The retained Test image picker was also corrected to follow the observed
+  Test image rather than the first catalog entry; it remains disabled while
+  the Test exists. This changes display, not the selected VM or lifecycle flow.
+
+The current UI still lacks the full service Prepare/Sign/Publish/first-Deploy
+controls. Continue that accepted P5/P7 binding through shared Demo Control;
+the read-only dashboards do not constitute the complete integration. Native
+KUKSA permissions, real vehicle acquisition, Tire production feature extraction
+and advisory remain excluded. No cleanup, artifact deletion or source push is
+part of this checkpoint; current images, backend stores and diagnostics survive.

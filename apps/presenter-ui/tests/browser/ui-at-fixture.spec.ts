@@ -69,7 +69,14 @@ for (const uiCase of cases) {
     if (uiCase.interaction === "details") await page.getByRole("button", { name: "Details" }).first().click();
     if (uiCase.interaction === "logs") await page.getByRole("button", { name: /Platform Logs|Operational Logs/ }).first().click();
     if (uiCase.interaction === "action") await page.getByRole("button", { name: "Sign and submit prepared candidate" }).first().click();
-    await expect(page.getByText(uiCase.expected, { exact: false }).first()).toBeVisible();
+    if (uiCase.id === 30 || uiCase.id === 36) {
+      // The release title and its stage are separate accessible elements.
+      // Verify their relationship instead of searching for a combined label.
+      const title = uiCase.id === 30 ? "VDP v1" : "Tire v1";
+      const stage = uiCase.id === 30 ? "SUBMITTING" : "FAILED";
+      const release = page.getByRole("article").filter({ has: page.getByRole("heading", { name: title, exact: true }) });
+      await expect(release.getByText(stage, { exact: true })).toBeVisible();
+    } else await expect(page.getByText(uiCase.expected, { exact: false }).first()).toBeVisible();
     await expect(page.getByText(/FIXTURE ONLY/)).toBeVisible();
   });
 }

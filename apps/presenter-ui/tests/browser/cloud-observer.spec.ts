@@ -21,6 +21,7 @@ test("Cloud entry/reentry and a failed refresh retain visibly last-known invento
       source: { state: "SELECTED_NOT_PROBED", selectedVehicle: "test", currentVehicle: null } } });
     // No native command capability is granted to this browser fixture.
     if (path === "/api/presenter/operations" && route.request().method() === "GET") return route.fulfill({ status: 401, json: {} });
+    if (path === "/api/presenter/backend/brake" && route.request().method() === "GET") return route.fulfill({ status: 503, json: { state: "UNAVAILABLE" } });
     unexpected.push(path); return route.abort();
   });
   await page.goto("/");
@@ -33,10 +34,13 @@ test("Cloud entry/reentry and a failed refresh retain visibly last-known invento
   await expect(page.getByText("VDP 18.0.0 · Cloud installed · last known", { exact: true })).toBeVisible();
   await expect(page.getByText("Previous observation — not current.", { exact: true })).toBeVisible();
   await expect(page.locator(".platform-cloud-facts")).toContainText("Online");
+  await expect.poll(() => cloudReads).toBe(initialReads + 1);
   await page.getByRole("button", { name: /Brake Team/ }).click();
+  // Every visible team now participates in the shared Cloud observer.
+  await expect.poll(() => cloudReads).toBe(initialReads + 2);
   fail = false;
   await page.getByRole("button", { name: /Platform Team/ }).click();
   await expect(page.getByText("VDP 18.0.0 · Cloud installed", { exact: true })).toBeVisible();
-  expect(cloudReads).toBe(initialReads + 2);
+  await expect.poll(() => cloudReads).toBe(initialReads + 3);
   expect(unexpected).toEqual([]);
 });

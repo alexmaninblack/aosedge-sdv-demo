@@ -244,14 +244,35 @@ Fresh .32 service/backend integration is proven with warm preparation;
 retained-assignment reboot, .32 version replacement, backend outage/retry and
 native KUKSA/advisory gates remain open.
 
+Pre-release checkpoint, **12 September 05:30 UTC**: the packaged .32 runtime
+passed Brake **7 → 8/v3** and Tire **6 → 7/v1** replacement through ordinary
+SP publication, with unchanged Subjects and no manager restart. Both real
+backends received the new versions; separate Brake and Tire backend outages
+proved queued-message recovery while the peer continued. Park/Resume restored
+both native containers and public inputs automatically from .32, without warm
+preparation or transient overrides. This closes the bounded **N5** reboot gate.
+
+The **overall pre-release gate fails**: after Resume, Cloud changed the same
+Test to Offline at 05:15:09 while CM continued receiving ACKs and Cloud accepted
+monitoring at 05:22:01.511. No retry release or restorative restart was used.
+Preserve the process/Unit and reconcile the Cloud session transition before
+full E2E. Service operation and backend mock success do not erase this blocker.
+All 103 service tests passed in the official SDK/signer runtime, with no skips;
+UI unit/browser regressions and build passed. Current UI reads Cloud/runtime
+and mock backend evidence; full service mutation controls remain unimplemented.
+Continue that UI binding independently of the platform's permission fix, but
+do not claim real KUKSA/vehicle/advisory functionality or P8 readiness. Exact
+versions, outage/reboot observations and exclusions are in the
+[pre-release record](../../qualification/demo-mocked-backend-integration.md#factory-32-pre-release).
+
 | Step | Change and owner | Gate / evidence | State |
 | --- | --- | --- | --- |
 | N1 | Solution: accept ADR, update HLA/flows/requirements, runtime-input contract and D4 migration mapping | English documents, navigation and deterministic docs-check | Complete; product wire migration remains N3 |
 | N2 | Brake/Tire + Platform: private bootstrap sessions, dynamic token readers, native tmpfs resource mode; retire only token-owner patch | First create, isolation, atomic renewal, path/mode/symlink negatives, cleanup/restart, native host compilation | Host source tests passed; Linux/live proof remains N6 |
 | N3 | Solution contracts, both producers/backends: package version and native identity; explicit new message schemas without required service/model OCI digest | Producer-consumer fixtures; legacy queues/history retained; no fabricated digest; model/VDP hashes unchanged | Consumer and producer/input source increments passed; live integration remains N6 |
-| N4 | Demo Control: package the allocated version once; project public inputs; native configuration activation through existing commands | Package/publication equality; no manifest lookup dependency; stable-directory refresh after VDP commit | ARM64 exports, signing, warm projection and transient activation passed; permission-free Brake 7/Tire 6 are installed and Active with real isolated mock-backend delivery. Normal permission-bearing publication remains unqualified |
-| N5 | Existing startup integration: restore public /run inputs before SM launches retained assignments | Exact hook/order documented and tested; no new daemon, persisted token or metadata authority | Cold/warm split accepted; pre-SM preparation and post-SM process verification passed with unchanged SM binary; persistent-image integration and retained-assignment VM reboot not qualified |
-| N6 | Bounded current Test SOTA and backend integration through democtl | Real Cloud Running/version, KAC/TLS/subscriptions, renew/expiry, actual product records, retained state and scoped access proof | No-telemetry version replacement passed. Brake 7/v3 and Tire 6/v1 are Active with native-identity-correlated VM-to-backend mock delivery. Backend outage/retry, retained-assignment cold boot, native KUKSA and functional/advisory proof remain open |
+| N4 | Demo Control: package the allocated version once; project public inputs; native configuration activation through existing commands | Package/publication equality; no manifest lookup dependency; stable-directory refresh after VDP commit | ARM64 exports/signing and .32 native integration passed; permission-free Brake 8/Tire 7 installed and Active with isolated mock-backend delivery. Normal permission-bearing publication remains unqualified |
+| N5 | Existing startup integration: restore public /run inputs before SM launches retained assignments | Exact hook/order documented and tested; no new daemon, persisted token or metadata authority | Passed on retained-assignment .32 Park/Resume: inputs reconstruct, native containers and mock delivery recover without warm preparation/transient overrides. Overall Cloud Online qualification remains blocked separately |
+| N6 | Bounded current Test SOTA and backend integration through democtl | Real Cloud Running/version, KAC/TLS/subscriptions, renew/expiry, actual product records, retained state and scoped access proof | .32 replacement, both backend outages/retry and native retained-assignment restart passed in explicit mock mode. Sustained Cloud Online, native KUKSA and actual vehicle/advisory functionality remain open; full E2E is blocked |
 | N7 | Checkpoint source/docs and record exclusions | Commit only tested source; no build artifacts; retain current VM/Factory/Production | N2/N3 local checkpoints created; full-migration checkpoint remains pending |
 
 Source increments may be developed independently, but **no new producer is
