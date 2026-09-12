@@ -5,6 +5,7 @@ import copy
 import json
 import subprocess
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from unittest import TestCase
 from unittest.mock import Mock, patch
 
@@ -227,11 +228,13 @@ class BackendRetirementTests(TestCase):
             contextIdentity=self.service._owned_file(context))
         atomic_json(self.root / JOURNAL, state)
         calls = list(self.calls)
-        def check_released(path):
+        original = Path.unlink
+        def check_released(path, *args, **kwargs):
             if path == context:
                 self.assertEqual(storage, self.backend.resources)
                 self.assertTrue(all(state["backends"][team]["cleanup"]["containerRemoval"] == "REMOVED" for team in TEAMS))
-        with patch.object(self.service, "_assert_unheld", side_effect=check_released) as check:
+            return original(path, *args, **kwargs)
+        with patch.object(Path, "unlink", autospec=True, side_effect=check_released) as check:
             self.assertTrue(self.cleanup.confirm_test_cleanup(state))
         self.assertIn(((context,), {}), check.call_args_list)
         self.assertEqual(storage, self.backend.resources)
@@ -243,27 +246,33 @@ class BackendRetirementTests(TestCase):
     def test_single_context_unlink_also_follows_both_container_releases(self):
         state = self.backend_fixture(production=False)
         context = self.root / CONTEXT
-        def check_released(path):
+        original = Path.unlink
+        def check_released(path, *args, **kwargs):
             if path == context:
                 self.assertEqual({"volume", "network"}, {key[0] for key in self.backend.resources})
                 self.assertEqual(4, len(self.backend.resources))
-        with patch.object(self.service, "_assert_unheld", side_effect=check_released) as check:
+            return original(path, *args, **kwargs)
+        with patch.object(Path, "unlink", autospec=True, side_effect=check_released) as check:
             self.assertTrue(self.cleanup.confirm_test_cleanup(state))
         self.assertIn(((context,), {}), check.call_args_list)
         self.assertEqual({}, self.backend.resources)
         self.assertEqual(2, len([action for action in self.backend.actions if action[0] == "container"]))
 
-    def test_context_still_held_after_bind_release_blocks_and_repeat_preserves_proofs(self):
+    def test_open_context_reader_does_not_require_engine_restart_after_container_removal(self):
         state = self.backend_fixture()
         context = self.root / CONTEXT
         def externally_held(path):
             if path == context:
                 raise EnvironmentError("CLEANUP_FILE_IN_USE")
-        with patch.object(self.service, "_assert_unheld", side_effect=externally_held):
-            with self.assertRaisesRegex(EnvironmentError, "FILE_IN_USE"):
-                self.cleanup.confirm_test_cleanup(state)
-        self.assertTrue(context.exists())
-        self.assertEqual("REMOVE_PENDING", state["backends"]["brake"]["cleanup"]["contextRemoval"])
+        with context.open("rb") as reader, patch.object(self.service, "_assert_unheld", side_effect=externally_held) as check:
+            before = reader.read()
+            self.assertTrue(self.cleanup.confirm_test_cleanup(state))
+            self.assertFalse(context.exists())
+            reader.seek(0)
+            self.assertEqual(before, reader.read())
+            self.assertNotIn(((context,), {}), check.call_args_list)
+            self.assertIn(((self.root / state["vehicles"]["test"]["overlay"],), {}), check.call_args_list)
+        self.assertEqual("REMOVED", state["backends"]["brake"]["cleanup"]["contextRemoval"])
         self.assertEqual({"volume", "network"}, {key[0] for key in self.backend.resources})
         calls, actions = list(self.calls), list(self.backend.actions)
         self.assertTrue(self.cleanup.confirm_test_cleanup(state))
@@ -352,17 +361,52 @@ class BackendRetirementTests(TestCase):
 
     def test_context_unlink_interruption_resumes_without_token_or_context_recreation(self):
         state = self.backend_fixture()
-        original = self.service._unlink_owned
-        def interrupted(path, identity):
-            original(path, identity)
-            raise OSError("after unlink")
-        with patch.object(self.service, "_unlink_owned", side_effect=interrupted):
-            with self.assertRaises(OSError):
+        original = Path.unlink
+        def interrupted(path, *args, **kwargs):
+            original(path, *args, **kwargs)
+            if path == self.root / CONTEXT:
+                raise OSError("after unlink")
+        with patch.object(Path, "unlink", autospec=True, side_effect=interrupted):
+            with self.assertRaisesRegex(EnvironmentError, "CONTEXT_UNLINK_UNCONFIRMED"):
                 self.cleanup.confirm_test_cleanup(state)
         self.assertEqual("REMOVE_PENDING", state["backends"]["brake"]["cleanup"]["contextRemoval"])
         self.assertTrue(self.cleanup.confirm_test_cleanup(state))
         self.assertFalse((self.root / CONTEXT).exists())
         self.assertEqual(1, self.calls.count(("brake", "execute")))
+
+    def test_context_exception_requires_both_actual_containers_absent_and_exact_content(self):
+        state = self.backend_fixture()
+        self.cleanup._brake(state, "test-uid", self.cleanup._owned(state, "brake", running=True))
+        self.cleanup._tire(state, "test-uid", self.cleanup._owned(state, "tire", running=True))
+        self.cleanup._stop(state)
+        for team in TEAMS:
+            state["backends"][team]["cleanup"]["containerRemoval"] = "REMOVED"
+        # A receipt alone must not permit unlink while a stopped container exists.
+        with self.assertRaisesRegex(EnvironmentError, "CONTEXT_CONTAINERS_NOT_RELEASED"):
+            self.cleanup._remove_context(state)
+        context = self.root / CONTEXT
+        self.assertTrue(context.exists())
+        for team in TEAMS:
+            del self.backend.resources[("container", "aosedge-demo-" + team + "-cloud")]
+        atomic_json(context, dict(schemaVersion=1, foreign=True))
+        with self.assertRaisesRegex(EnvironmentError, "CONTEXT_CHANGED"):
+            self.cleanup._remove_context(state)
+        self.assertTrue(context.exists())
+
+    def test_os_unlink_failure_preserves_pending_context_and_remaining_files(self):
+        state = self.backend_fixture()
+        context = self.root / CONTEXT
+        original = Path.unlink
+        def denied(path, *args, **kwargs):
+            if path == context:
+                raise PermissionError("fixture: unlink denied")
+            return original(path, *args, **kwargs)
+        with patch.object(Path, "unlink", autospec=True, side_effect=denied):
+            with self.assertRaisesRegex(EnvironmentError, "CONTEXT_UNLINK_UNCONFIRMED"):
+                self.cleanup.confirm_test_cleanup(state)
+        self.assertTrue(context.exists())
+        self.assertTrue((self.root / state["vehicles"]["test"]["overlay"]).exists())
+        self.assertEqual("REMOVE_PENDING", state["backends"]["brake"]["cleanup"]["contextRemoval"])
 
     def test_single_container_removal_response_loss_resumes_exact_remaining_resources(self):
         state = self.backend_fixture(production=False)

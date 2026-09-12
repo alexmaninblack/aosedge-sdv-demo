@@ -97,9 +97,28 @@ For a retained Production peer, backend cleanup deletes only records selected
 by the retiring Test UID and preserves storage/nonmatching records. Single-Test
 resource deletion additionally requires whole-store emptiness against the
 known schema. Legacy Tire images supply only a foundation-only proof; product
-images use the explicit protocol below. A retained
-demo Subject is not yet integrated: service assignment state blocks retirement
-rather than silently leaving or deleting a binding.
+images use the explicit protocol below. The 12 September two-role Test replacement
+retains exact per-service Group Subjects after Cloud proves their Unit bindings
+are empty; terminal old-Test assignment receipts are removed. Single-role full
+journal removal with Subjects remains blocked pending persistent ID retention.
+
+### Context-file cleanup amendment — authorized 12 September 2026
+
+After authoritative removal of both owned backend containers, `demo retire`
+unlinks only the fixed non-secret `current-unit-context.json` projection even
+if Docker's filesystem process retains an open reference. It checks recorded
+container removal, actual container absence, owner/regular-file identity and
+exact context contents; it journals intent and rechecks identity before unlink.
+An OS unlink/fsync error remains unconfirmed and preserves the pending receipt.
+Interruption after unlink resumes from that receipt without repeating Cloud
+deletion or product-data cleanup. A replacement/reappearing file is not adopted.
+
+This is the explicit, narrow exception to the generic zero-open-handles policy:
+VM images/overlays, access material, Compose files and stores retain their existing
+checks. No Docker Desktop restart or unrelated-container interruption is performed.
+[Apple's unlink contract](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/unlink.2.html)
+distinguishes removing a pathname from releasing the underlying open file. This
+operation claims pathname removal, not that Docker has closed its cached reference.
 
 ## Tire product cleanup protocol — 11 September 2026
 

@@ -389,6 +389,15 @@ class BackendRetirement:
                 self._save(state)
 
     def _remove_context(self, state):
+        # This public projection is not a disk, credential or data store. Once
+        # both exact containers are gone, an old Docker filesystem reference
+        # must not require restarting the engine (and unrelated applications).
+        for team in TEAMS:
+            record = state["backends"][team]
+            if (record.get("state") != "STOPPED"
+                    or record.get("cleanup", {}).get("containerRemoval") != "REMOVED"
+                    or self._owned(state, team) is not None):
+                raise EnvironmentError("BACKEND_CONTEXT_CONTAINERS_NOT_RELEASED")
         path = self.root / CONTEXT
         progress = state["backends"]["brake"]["cleanup"]
         if path.exists() or path.is_symlink():
@@ -401,7 +410,16 @@ class BackendRetirement:
                 raise EnvironmentError("BACKEND_CLEANUP_CONTEXT_CHANGED")
             progress.update(contextRemoval="REMOVE_PENDING", contextIdentity=identity)
             self._save(state)
-            self.environment._unlink_owned(path, identity)
+            # Only this fixed, content-validated projection uses POSIX unlink
+            # without the generic zero-open-handles gate. All VM/access/store
+            # cleanup continues through EnvironmentService._unlink_owned.
+            if self.environment._owned_file(path) != identity:
+                raise EnvironmentError("BACKEND_CLEANUP_CONTEXT_CHANGED")
+            try:
+                path.unlink()
+                sync_directory(path.parent)
+            except OSError:
+                raise EnvironmentError("BACKEND_CONTEXT_UNLINK_UNCONFIRMED") from None
         elif progress.get("contextRemoval") not in ("REMOVE_PENDING", "REMOVED"):
             raise EnvironmentError("BACKEND_CONTEXT_ABSENCE_NOT_PROVEN")
         progress["contextRemoval"] = "REMOVED"

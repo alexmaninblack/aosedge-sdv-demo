@@ -262,7 +262,9 @@ class LifecycleTests(unittest.TestCase):
         self.assertEqual(OperationState.PARTIAL, result.state)
         self.assertEqual("test-unit", self.read()["vehicles"]["test"]["unitId"])
         self.app.execute.reset_mock()
-        self.assertEqual(OperationState.COMPLETED, self.workflow.retire().state)
+        resumed = self.workflow.retire()
+        self.assertEqual(OperationState.COMPLETED, resumed.state)
+        self.assertNotIn("reason", resumed.data)
         self.app.execute.assert_not_called()
         self.assertEqual(2, self.environment.retire_test.call_count)
 

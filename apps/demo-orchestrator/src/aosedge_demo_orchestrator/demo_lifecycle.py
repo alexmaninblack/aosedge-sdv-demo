@@ -274,6 +274,7 @@ class DemoLifecycle:
                 self._save(record)
                 return self._result(record)
             record.update(state="COMPLETED", phase="RETIRED")
+            record.pop("reason", None)
             # Full single-Test retirement deliberately removes the journal;
             # dual-role retirement retains Production, not an old Test dossier.
             if self.path.exists():

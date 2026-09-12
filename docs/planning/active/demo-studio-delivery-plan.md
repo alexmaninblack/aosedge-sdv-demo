@@ -151,6 +151,22 @@ replayed), then create `.32` Test and perform the planned clean/reboot checks.
 Live replacement and reboot qualification remain open; no `.32` VM exists yet.
 Neither a successful image build nor transient service recovery closes N5.
 
+The preceding Docker-restart boundary was **superseded on 12 September** by
+the user's authorized context-only cleanup correction (contract 1.8.1). After
+both owned containers are authoritatively absent, only the exact non-secret
+context projection is unlinked without requiring its old filesystem reference
+to close. VM/access/store file guards are unchanged. A 71-test focused suite
+passed, including a real open-reader fixture, interruption, OS failure and
+container/content conflicts. The successful resumed response also now clears
+its stale prior error reason (20 lifecycle tests passed).
+
+Live `democtl demo retire` completed: old Test context, overlay and SSH access
+directory are absent. Production, shared Factory .31, shared DNS and retained
+Subjects match their pre-cleanup journal values exactly. A second invocation
+returned `NO_CURRENT_TEST` without replaying Cloud mutations. Docker Desktop
+and the five Watt containers were not restarted. Backend volumes remain
+preserved. Next: clean Test .32 creation and the planned runtime/reboot proof.
+
 The [Factory .32 build record](../../../../aos-vehicle-platform/qualification/factory-32.md)
 records exact source, artifact and outstanding cold-boot qualification.
 

@@ -2,7 +2,18 @@
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "schemaVersion": 1,
   "contractId": "aosedge-demo-run-state",
-  "contractVersion": "1.8.0",
+  "contractVersion": "1.8.1",
+  "backendContextUnlinkAmendment": {
+    "authorized": "2026-09-12",
+    "path": ".run/demo-current/backends/context/current-unit-context.json",
+    "scope": "NON_SECRET_CONTEXT_PROJECTION_ONLY",
+    "requiresBothOwnedContainersRemovedAndAuthoritativelyAbsent": true,
+    "requiresRecordedRetirementAndExactContentOwnerAndInode": true,
+    "openFilesystemReferenceDoesNotRequireEngineRestart": true,
+    "unlinkFailurePreservesPendingReceipt": true,
+    "vmDiskCredentialAndDataStoreOpenHandleChecksUnchanged": true,
+    "restartDockerDesktopOrUnrelatedContainers": false
+  },
   "testFactoryOverrideAmendment": {
     "authorized": "2026-09-12",
     "scope": "FRESH_TEST_WITH_DISTINCT_IMAGE_AND_PRODUCTION_PRESERVED",
