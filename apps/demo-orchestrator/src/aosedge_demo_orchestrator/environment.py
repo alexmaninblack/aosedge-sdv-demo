@@ -102,6 +102,13 @@ class EnvironmentService:
         self.qemu_img = qemu_img or shutil.which("qemu-img")
         self._writer_thread = threading.local()
 
+    @property
+    def factory31_comparison(self):
+        return self.root == project_root().parent / "aosedge-sdv-demo-qual-31"
+
+    def ssh_port(self, role):
+        return 11022 if self.factory31_comparison and role == "test" else (10022 if role == "test" else 10023)
+
     def _directory(self, relative):
         current = self.root
         for part in Path(relative).parts:
@@ -232,6 +239,9 @@ class EnvironmentService:
         if not self.qemu_img:
             raise EnvironmentError("QEMU_IMG_NOT_INSTALLED")
         image = self.catalog.resolve(selector, image_path)
+        if self.factory31_comparison and (target != "test" or image.selector != "6.1.1-maninblack.31/main-qemuarm64"
+                or image.sha256 != "a9019f4adfe70499bde339c8e9d95eb8568736b73dc218f6c0e390fbcd28ddf4"):
+            raise EnvironmentError("FACTORY31_COMPARISON_REQUIRES_ORIGINAL_TEST_IMAGE")
         # Reject known capacity failures before recording a new current run.
         # This is the repository's existing image-work guard, not a Builder run.
         if (not (self.root / FACTORY[image.image_format]).exists()
@@ -264,7 +274,7 @@ class EnvironmentService:
                 journal["vehicles"][role] = {
                     "overlay": OVERLAYS[role], "localVmId": str(identity),
                     "mac": "02:" + ":".join("%02x" % b for b in identity.bytes[:5]),
-                    "sshPort": 10022 if role == "test" else 10023,
+                    "sshPort": self.ssh_port(role),
                     "state": "PLANNED", "unitId": None, "nodeId": None, "unitSetId": None}
             atomic_json(self.root / JOURNAL, journal)
             try:

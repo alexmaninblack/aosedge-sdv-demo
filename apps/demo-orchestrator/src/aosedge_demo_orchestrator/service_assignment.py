@@ -323,9 +323,17 @@ class ServiceAssignment:
                     done = current["subject"] is not None if step == "create" else current["unitBound"] if step == "bind" else current["serviceBound"]
                     attempt = subject.get("create", {}) if step == "create" else record["steps"].get(step, {})
                     if done:
-                        if attempt:
-                            attempt.update(stage="CONFIRMED", confirmedAt=now())
-                            save()
+                        # A retained Subject can already contain the service
+                        # without a POST in this run. Record the authoritative
+                        # observation so retirement has the same terminal proof.
+                        if not attempt:
+                            attempt = dict(attempted=False, source="AOS_CLOUD_ONLY")
+                            if step == "create":
+                                subject["create"] = attempt
+                            else:
+                                record["steps"][step] = attempt
+                        attempt.update(stage="CONFIRMED", confirmedAt=current["observedAt"])
+                        save()
                         continue
                     if attempt.get("attempted") is True:
                         from .releases import number

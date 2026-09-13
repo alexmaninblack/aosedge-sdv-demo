@@ -342,6 +342,27 @@ class JournalTests(unittest.TestCase):
         self.assertEqual("ASSIGNED", self.service.assign(BRAKE)["state"])
         self.assertEqual(6, len(self.cloud.posts))
 
+    def test_retained_service_observation_closes_retirement_without_post(self):
+        self.service.assign(BRAKE)
+        state = read_json(self.root / JOURNAL)
+        state["vehicles"]["production"] = dict(localVmId="preserved-peer")
+        # A reused Subject already has its service; this run had no assign POST.
+        del state["serviceOperations"][BRAKE]["steps"]["assign"]
+        atomic_json(self.root / JOURNAL, state)
+        self.cloud.posts.clear()
+
+        result = self.service.assign(BRAKE)
+
+        self.assertTrue(result["noOp"])
+        self.assertEqual([], self.cloud.posts)
+        state = read_json(self.root / JOURNAL)
+        receipt = state["serviceOperations"][BRAKE]["steps"]["assign"]
+        self.assertEqual("CONFIRMED", receipt["stage"])
+        self.assertFalse(receipt["attempted"])
+        self.assertEqual("AOS_CLOUD_ONLY", receipt["source"])
+        self.assertEqual(SUBJECT, assignment.retirement_subjects(state)[0]["id"])
+        self.assertEqual(dict(localVmId="preserved-peer"), state["vehicles"]["production"])
+
     def test_legacy_shared_subject_is_not_silently_adopted_or_discarded(self):
         state = read_json(self.root / JOURNAL)
         state["demoSubject"] = dict(id=SUBJECT)

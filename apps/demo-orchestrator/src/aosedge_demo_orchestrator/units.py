@@ -12,7 +12,7 @@ from pathlib import Path
 
 from .environment import EnvironmentError, JOURNAL, OVERLAYS, digest
 from .guest_access import read_guest, ssh_command
-from .status import load_configuration, read_json, now
+from .status import load_configuration, read_json, now, project_root
 from .vm import access_path, qmp
 from .probes import provisioning_forward_states
 
@@ -200,6 +200,31 @@ class UnitService:
                 item = state["vehicles"][role]
                 expected = {item["unitId"]} if item.get("unitId") else set()
                 foreign = [member for member in selected[role]["members"] if member["id"] not in expected]
+                if self.environment.factory31_comparison is True and action in ("provision", "deprovision", "delete") and role == "test":
+                    # The isolated control may coexist with the preserved canonical
+                    # Test. This never authorizes removing/reassigning that peer.
+                    peer = read_json(project_root() / JOURNAL).get("vehicles", {}).get("test", {})
+                    foreign = [member for member in foreign if not (
+                        peer.get("unitId") and peer.get("systemUid")
+                        and member.get("id") == peer["unitId"]
+                        and member.get("system_uid") == peer["systemUid"])]
+                elif self.root == project_root() and action in ("deprovision", "delete") and role == "test":
+                    # Both owned comparison Units are authorized for retirement.
+                    # A stopped CM waiting for Cloud Offline is not a foreign
+                    # recipient that should prevent disconnecting the other CM.
+                    comparison = project_root().parent / "aosedge-sdv-demo-qual-31" / JOURNAL
+                    if comparison.is_file():
+                        control = read_json(comparison)
+                        peer = control.get("vehicles", {}).get("test", {})
+                        if (set(control.get("vehicles", {})) == {"test"}
+                                and control.get("factory", {}).get("sha256") == "a9019f4adfe70499bde339c8e9d95eb8568736b73dc218f6c0e390fbcd28ddf4"
+                                and peer.get("unitId") == "555290f6-0cd7-4eb0-bddc-8e5cfbed7ab6"
+                                and peer.get("systemUid") == "2af4d5ce11244fc49bc03124acec8b65"
+                                and peer.get("cloud", {}).get("cmDisconnectIntent") is True
+                                and peer.get("cloud", {}).get("lifecycle") == "DEPROVISIONING"):
+                            foreign = [member for member in foreign if not (
+                                member.get("id") == peer["unitId"]
+                                and member.get("system_uid") == peer["systemUid"])]
                 result = {"state": "BLOCKED", "unitSetId": selected[role]["id"],
                           "unitSetTitle": selected[role]["title"]}
                 if foreign:
@@ -272,7 +297,7 @@ class UnitService:
 
     def _forward(self, state, role, enable):
         self._live(state, role)
-        port = 18089 if role == "test" else 18090
+        port = 18093 if self.environment.factory31_comparison is True else (18089 if role == "test" else 18090)
         command = ("hostfwd_add aosnet tcp:127.0.0.1:" + str(port) + "-10.0.0.100:8089" if enable else
                    "hostfwd_remove aosnet tcp:127.0.0.1:" + str(port))
         if enable:
@@ -495,10 +520,19 @@ class UnitService:
             self._cloud("delete", unitId=item["unitId"], systemUid=item["systemUid"])
         result = self._cloud("absence", unitId=item["unitId"], nodeId=item["nodeId"])
         sets = self._bindings(state, result["inventory"])
-        if not result["absent"] or sets[role]["members"]:
+        remaining = sets[role]["members"]
+        if self.environment.factory31_comparison is True and role == "test":
+            # Deleting the isolated comparison must not require deleting the
+            # preserved canonical Test. Match both recorded identities.
+            peer = read_json(project_root() / JOURNAL).get("vehicles", {}).get("test", {})
+            remaining = [member for member in remaining if not (
+                peer.get("unitId") and peer.get("systemUid")
+                and member.get("id") == peer["unitId"]
+                and member.get("system_uid") == peer["systemUid"])]
+        if not result["absent"] or remaining:
             raise EnvironmentError("UNIT_DELETE_ABSENCE_NOT_PROVEN")
         item["cloud"].update(lifecycle="DELETED", absenceConfirmed=True)
         self._done(state, role)
         self.progress(role + ": Unit deleted; Unit and Node absence confirmed; disk retained")
         return {"unitId": item["unitId"], "lifecycle": "DELETED", "unitAbsent": True,
-                "nodeAbsent": True, "roleSetEmpty": True, "localDiskRetained": True}
+                "nodeAbsent": True, "roleSetEmpty": not sets[role]["members"], "localDiskRetained": True}

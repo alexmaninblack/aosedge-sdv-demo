@@ -29,6 +29,8 @@ def read_timeout(value):
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="democtl", description=__doc__)
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
+    parser.add_argument("--qualification", choices=("factory31",),
+        help="isolated original .31 connectivity control; preserves current Test and Production")
     parser.add_argument(
         "--output",
         choices=("human", "json"),
@@ -121,8 +123,8 @@ def build_parser() -> argparse.ArgumentParser:
     component = commands.add_parser("component", help="operate on VDP bundles in the artifact catalog")
     component_commands = component.add_subparsers(dest="action", required=True)
     component_commands.add_parser("list", help="list retained VDP artifact versions")
-    for action in ("sm-builder-start", "sm-builder-stop", "sm-build", "sm-test", "sm-apply", "cm-build", "cm-test", "cm-apply"):
-        command = component_commands.add_parser(action, help="bounded Test SM qualification: dedicated existing Builder, port 10024")
+    for action in ("sm-builder-start", "sm-builder-stop", "sm-build", "sm-test", "sm-apply", "cm-build", "cm-test", "cm-apply", "cm-compare-inspect", "cm-compare-build", "cm-compare-control", "cm-compare-without-patch", "cm-compare-restore", "cm-compare-startup", "cm-compare-refresh-build", "cm-compare-refresh-apply", "cm-compare-refresh-cache-restore"):
+        command = component_commands.add_parser(action, help="bounded Test AosCore qualification; comparison phases are CLI-only")
         command.add_argument("target", choices=("test",))
         if action == "cm-apply":
             command.add_argument("--restart-cm", action="store_true",
@@ -422,6 +424,16 @@ def render_human(result: OperationResult, details: bool = False) -> str:
 def main(argv: Optional[List[str]] = None) -> int:
     parser = build_parser()
     arguments = parser.parse_args(argv)
+    qualification = getattr(arguments, "qualification", None)
+    if qualification:
+        allowed = {"environment": {"create"}, "vm": {"start", "stop"},
+            "unit": {"provision", "deprovision", "delete", "cloud-status", "monitoring"},
+            "component": {"cm-status", "sm-status", "status", "logs"}, "vehicle": {"connectivity"}}
+        if (arguments.domain not in allowed or arguments.action not in allowed[arguments.domain]
+                or getattr(arguments, "target", None) != "test"
+                or (arguments.domain == "environment" and (arguments.image != "6.1.1-maninblack.31/main-qemuarm64"
+                    or arguments.image_path))):
+            parser.error("factory31 qualification permits only its fixed Test lifecycle/read/link controls")
     if arguments.domain == "ui":
         from .presenter import serve, stop
         return stop() if arguments.action == "stop" else serve()
@@ -437,13 +449,33 @@ def main(argv: Optional[List[str]] = None) -> int:
             return 1
         finally:
             access.clear()
-    service = StatusService(config_path=getattr(arguments, "config", None))
+    environment = None
+    if qualification:
+        from .environment import EnvironmentService, atomic_json
+        from .status import project_root, load_configuration, read_json
+        root = project_root().parent / "aosedge-sdv-demo-qual-31"
+        if root.is_symlink():
+            parser.error("qualification root cannot be a symlink")
+        root.mkdir(mode=0o700, exist_ok=True)
+        environment = EnvironmentService(root=root)
+        configuration = load_configuration(project_root())
+        public = dict(schemaVersion=1, cloudPython=str(configuration["cloudPython"]),
+            cloudProfiles={name:dict(value, credential=str(value["credential"]))
+                for name, value in configuration["cloudProfiles"].items()})
+        directory = environment._directory(".local/demo-control")
+        destination = directory / "status.json"
+        if not destination.exists():
+            atomic_json(destination, public)
+        elif destination.is_symlink() or read_json(destination) != public:
+            parser.error("qualification access references changed; reconciliation required")
+    service = StatusService(root=environment.root if environment else None,
+        config_path=getattr(arguments, "config", None))
     from .vm import VMService
     def password_provider(role):
         if not sys.stdin.isatty():
             return None
         return getpass.getpass("Guest root password for first SSH setup (" + role + "): ")
-    vm_service = VMService(password_provider=password_provider,
+    vm_service = VMService(environment=environment, password_provider=password_provider,
                           progress=lambda message: print(message, file=sys.stderr, flush=True))
     native_access = None
     if arguments.domain == "demo" and arguments.action in ("prepare", "create"):

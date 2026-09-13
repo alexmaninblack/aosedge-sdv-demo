@@ -37,6 +37,7 @@ FACTORY_REVISION = "0bed8b3769b09fbe685ed599ca8d10e6594fbe53"
 FACTORY_RELEASES = {
     FACTORY_VERSION: FACTORY_REVISION,
     "6.1.1-maninblack.32": "04fc8270c55ff5c35f1e98af534a5efccb035464",
+    "6.1.1-maninblack.33": "f7922b02b15f6cf816f181e1bf97572b61859aea",
 }
 RELATIVE = "meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files/systemd-slot-component"
 BUILDER_PROJECT = "/home/yocto/r61-build/project/yocto"
@@ -82,13 +83,17 @@ def apply_test(environment, target, manager="sm", restart_cm=False):
         raise EnvironmentError("RESTART_CM_USES_TEST_CM_APPLY_ONLY")
     if manager == "cm" and restart_cm:
         current = read_json(environment.root / JOURNAL)
-        if current.get("vehicles", {}).get("test", {}).get("localVmId") == "5aa1f8e4-a111-4467-a6cc-fb269c62a7a8":
+        authorized_controls = {
+            "5aa1f8e4-a111-4467-a6cc-fb269c62a7a8": "923b9820-999b-41bb-91db-b2a2c469e743",
+            "c7b8f9d8-68ea-4b65-b444-8b01595eb110": "d90798f6-a32c-40cc-8129-26a0f1343a67",
+        }
+        if current.get("vehicles", {}).get("test", {}).get("localVmId") in authorized_controls:
             with environment._writer():
                 state = read_json(environment.root / JOURNAL)
                 from .environment import factory_for
                 vehicle = state.get("vehicles", {}).get("test", {})
-                if (vehicle.get("localVmId") != "5aa1f8e4-a111-4467-a6cc-fb269c62a7a8"
-                        or vehicle.get("unitId") != "923b9820-999b-41bb-91db-b2a2c469e743"
+                if (vehicle.get("localVmId") not in authorized_controls
+                        or vehicle.get("unitId") != authorized_controls.get(vehicle.get("localVmId"))
                         or factory_for(state, "test").get("sha256") !=
                         "f56e037ff6ce11d1dea769055dc160a5a9a8061bbdd2d67745a3042181be2f14"):
                     raise EnvironmentError("CM_CONTROL_REQUIRES_AUTHORIZED_TEST_32")
@@ -517,7 +522,7 @@ def build_factory(version, metadata_only=False):
         prefix = "cd " + BUILDER_PROJECT + "; . poky/oe-init-build-env build-main >/dev/null; "
         suffix = version.rsplit(".", 1)[1]
         flags = " -R " + source + "/qualification/factory-" + suffix + ".conf "
-        managers = "aos-servicemanager" + (" aos-communicationmanager" if suffix == "32" else "")
+        managers = "aos-servicemanager" + (" aos-communicationmanager" if suffix in ("32", "33") else "")
         stage("compile the proven manager corrections from committed source (offline)")
         remote(prefix + "bitbake" + flags + "-c compile " + managers, timeout=1200, capture=False)
         work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-servicemanager/git"
@@ -532,7 +537,7 @@ def build_factory(version, metadata_only=False):
             raise EnvironmentError("FACTORY_EXPECTED_FIVE_TESTS_NOT_EXECUTED")
         stage("package the managers with package QA")
         remote(prefix + "bitbake" + flags + managers, timeout=1200, capture=False)
-        if suffix == "32":
+        if suffix in ("32", "33"):
             # Verify final package input after native do_update_config, not the
             # intermediate resource file that do_install initially creates.
             package_check = (
@@ -547,6 +552,13 @@ def build_factory(version, metadata_only=False):
                 "print('Factory service-input package: PASS')"
             ) % (work + "/image", source + "/meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files")
             print(remote("python3 -c " + shlex.quote(package_check)), file=sys.stderr, flush=True)
+        if suffix == "33":
+            cm_work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-communicationmanager/git"
+            cm_check = ("import json; from pathlib import Path; "
+                "config=json.loads(Path(%r).read_text()); "
+                "assert config['idleFullStatusInterval']=='60s'; "
+                "print('Factory CM idle full status: 60s, PASS')") % (cm_work + "/image/etc/aos/cm.cfg")
+            print(remote("python3 -c " + shlex.quote(cm_check)), file=sys.stderr, flush=True)
         stage("construct the Factory filesystem from pinned sources")
         remote(prefix + "bitbake" + flags + "aos-image-vm", timeout=2400, capture=False)
         output = "main-qemuarm64-factory-" + suffix + ".img"

@@ -3,6 +3,30 @@
 
 # Demo Orchestrator
 
+## Current working checkpoint — 13 September 2026
+
+Factory .33 Test passed the [scoped engineering E2E](../../docs/qualification/factory-33-e2e-2026-09-13.md).
+VDP23/V3, Brake11/V3 and Tire9/V1 are the dated installed results, not version
+numbers to reuse. VDP application waits for Safe Stop; service deployment and
+updates do not. Production .31 is preserved and outside this Test run.
+
+Normal .33 startup has the accepted public inputs/resources and CM/SM fixes
+built in. It does not require `service runtime-activate`, a manual input
+projection or an extra manager restart. Older dated .28/.29/.31/transient
+experiments below remain historical engineering references, not startup steps.
+
+While Cloud's service-permissions defect remains open, the qualified synthetic
+path is preparation with both `--without-permissions --demo-mocked-data`.
+This is distinct from the older no-telemetry lifecycle-only loop: synthetic
+records exercise the real native service-to-backend transport but do not
+establish KUKSA access, vehicle analytics or Driver Advisory. Ordinary packages
+continue to declare native permissions. Do not turn off authentication.
+
+Source publication and machine-readable workspace reconciliation are still
+open. See the [baseline](../../docs/qualification/current-baseline.md),
+[audit/retention inventory](../../docs/qualification/factory-33-consolidation-audit-2026-09-13.md)
+and [phase plan](../../docs/planning/active/demo-studio-delivery-plan.md).
+
 ### Service package preparation (development increment)
 
 ```bash
@@ -15,8 +39,9 @@ both package and publication metadata. The result returns a release handle and
 an unsigned package path. No VM, signing, upload or assignment is performed.
 `--profile` is functional content (`v1`, `v2`, `v3`); `--cloud-profile` optionally
 chooses the configured SP. Missing build output gives the explicit build command.
-Both teams have real ARM64 exports; Test resource activation is transient and
-does not qualify a persistent Factory image or reboot.
+Both teams have real ARM64 exports. .33 contains the persistent resource/input
+integration; older transient activation evidence is superseded by its scoped
+cold-start result, not by real permission-backed service qualification.
 See the [current package contract](../../docs/architecture/demo-control.md#native-service-package-preparation).
 
 Temporary Cloud workaround, explicitly authorized on 11 September:
@@ -31,8 +56,8 @@ This omits only `configuration.permissions` and records
 offline TTL and all other package settings are unchanged. Normal preparation
 without this flag retains native permissions. Do not disable KUKSA authentication
 or claim telemetry/advisory functionality for these releases. Signing/upload use
-the returned handles as usual. Brake/Tire 3.0.0 passed Cloud building and reached
-Test; native launch is not qualified. See the
+the returned handles as usual. Historically Brake/Tire 3.0.0 passed Cloud building
+and reached Test but did not qualify launch. See that dated
 [live result](../../docs/qualification/demo-studio-implementation-progress-2026-09-11.md#permission-free-delivery-experiment).
 
 For the subsequently approved **Test-only process/update experiment**, use:
@@ -62,10 +87,12 @@ and do not query the guest. See the [publication and failure contract](../../doc
 
 ### Test-only service assignment
 
-To perform an explicitly authorized single restart of an already activated
+For an older engineering migration only, to perform an explicitly authorized
+single restart of an already activated
 Test SM: `democtl service runtime-activate test --restart-sm`. This preserves
 its executable/configuration and does not restart the VM or reassign services.
-The ordinary repeat without the flag remains a no-op. A restart failure is
+The ordinary repeat without the flag remains a no-op. This is not a routine
+.33 deployment step. A restart failure is
 not retried automatically; SM health and service Running are separate results.
 
 ```bash

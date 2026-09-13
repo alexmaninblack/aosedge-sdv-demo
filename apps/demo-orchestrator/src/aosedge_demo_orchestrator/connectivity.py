@@ -23,13 +23,18 @@ class ConnectivityService:
             if role not in ("test", "production") or role not in state.get("vehicles", {}):
                 raise EnvironmentError("EXTERNAL_LINK_CURRENT_VEHICLE_REQUIRED")
             source = state.get("source") or {}
+            isolated = self.environment.factory31_comparison is True
+            if isolated:
+                self.vm._validate(state, "start", [role])
+                if current is not None or source:
+                    raise EnvironmentError("FACTORY31_COMPARISON_SOURCE_MUST_REMAIN_DETACHED")
             if (source.get("operation") or source.get("stopOperation")
                     or (action == "on" and current is not None and role != current)
-                    or (action == "off" and (role != current or source.get("state") != "RUNNING"))):
+                    or (action == "off" and not isolated and (role != current or source.get("state") != "RUNNING"))):
                 raise EnvironmentError("EXTERNAL_LINK_REQUIRES_CURRENT_VEHICLE")
             item = state["vehicles"][role]
             object_id(item["localVmId"])
-            if (item.get("sshPort") != (10022 if role == "test" else 10023)
+            if (item.get("sshPort") != self.environment.ssh_port(role)
                     or item.get("runtime", {}).get("state") != "RUNNING"):
                 raise EnvironmentError("EXTERNAL_LINK_RUNNING_VM_REQUIRED")
             observed = self.driver.guest(state, role, "connectivity-status")

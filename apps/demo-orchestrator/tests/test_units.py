@@ -83,6 +83,25 @@ class UnitSafetyTests(unittest.TestCase):
             with self.assertRaises(EnvironmentError):
                 self.service._bindings({}, inventory)
 
+    def test_isolated_provision_only_accepts_the_preserved_canonical_peer(self):
+        import contextlib
+        self.service.environment._writer = contextlib.nullcontext
+        self.service.root = Path("/isolated-test-root")
+        self.service._cloud = Mock(return_value=self.inventory)
+        self.service._provision = Mock(return_value={"lifecycle": "ONLINE"})
+        self.inventory["sets"][0]["members"] = [dict(id=PROD, system_uid="preserved-peer")]
+        peer = dict(vehicles=dict(test=dict(unitId=PROD, systemUid="preserved-peer")))
+        for isolated, peer_uid, allowed in ((False, "preserved-peer", False),
+                (True, "preserved-peer", True), (True, "different-peer", False)):
+            self.service.environment.factory31_comparison = isolated
+            peer["vehicles"]["test"]["systemUid"] = peer_uid
+            self.service._provision.reset_mock()
+            with patch("aosedge_demo_orchestrator.units.read_json", side_effect=lambda path:
+                    self.state if path == self.service.root / ".run/demo-current/journal.json" else peer):
+                result = self.service.execute("provision", "test")
+            self.assertEqual(allowed, self.service._provision.called)
+            self.assertEqual("COMPLETED" if allowed else "BLOCKED", result["vehicles"]["test"]["state"])
+
     def test_online_poll_reuses_client_and_known_uuid_without_node_or_inventory_reads(self):
         cloud = Mock()
         cloud.unit.side_effect = [dict(system_uid="uid", status="provisioned", online_status=value)
@@ -98,6 +117,34 @@ class UnitSafetyTests(unittest.TestCase):
         self.assertTrue(all(call.kwargs == {"nodes": False} for call in cloud.unit.call_args_list))
         cloud.pages.assert_not_called()
         cloud.inventory.assert_not_called()
+
+    def test_canonical_retirement_accepts_only_exact_disconnecting_control(self):
+        import contextlib
+        self.service.environment._writer = contextlib.nullcontext
+        self.service.environment.factory31_comparison = False
+        self.service.root = Path("/canonical")
+        self.service._cloud = Mock(return_value=self.inventory)
+        self.service._deprovision = Mock(return_value={"lifecycle": "DEPROVISIONED"})
+        self.service._provision = Mock(return_value={"lifecycle": "ONLINE"})
+        peer = dict(unitId="555290f6-0cd7-4eb0-bddc-8e5cfbed7ab6",
+                    systemUid="2af4d5ce11244fc49bc03124acec8b65",
+                    cloud=dict(lifecycle="DEPROVISIONING", cmDisconnectIntent=True))
+        control = dict(factory=dict(sha256="a9019f4adfe70499bde339c8e9d95eb8568736b73dc218f6c0e390fbcd28ddf4"),
+                       vehicles=dict(test=peer))
+        self.inventory["sets"][0]["members"] = [dict(id=peer["unitId"], system_uid=peer["systemUid"])]
+        for action, lifecycle, allowed in (("deprovision", "DEPROVISIONING", True),
+                                           ("deprovision", "ONLINE", False),
+                                           ("provision", "DEPROVISIONING", False)):
+            peer["cloud"]["lifecycle"] = lifecycle
+            self.service._deprovision.reset_mock()
+            with patch("aosedge_demo_orchestrator.units.project_root", return_value=self.service.root), \
+                    patch.object(Path, "is_file", return_value=True), \
+                    patch("aosedge_demo_orchestrator.units.read_json", side_effect=lambda path:
+                          self.state if path == self.service.root / ".run/demo-current/journal.json" else control):
+                result = self.service.execute(action, "test")
+            self.assertEqual(allowed, self.service._deprovision.called)
+            self.assertEqual("COMPLETED" if allowed else "BLOCKED", result["vehicles"]["test"]["state"])
+        self.service._provision.assert_not_called()
 
     def test_unknown_uuid_is_resolved_once_and_nodes_are_reused_within_wait(self):
         cloud = Mock()
@@ -413,6 +460,35 @@ class UnitSafetyTests(unittest.TestCase):
         self.assertEqual("DELETED", result["lifecycle"])
         self.assertEqual(["read", "delete", "absence"], [call.args[0] for call in self.service._cloud.call_args_list])
         self.assertNotIn("oldIdentityRejected", item["cloud"])
+
+    def test_isolated_delete_preserves_only_exact_canonical_peer(self):
+        for isolated, uid, allowed in ((True, "canonical-peer", True),
+                                      (True, "different-peer", False),
+                                      (False, "canonical-peer", False)):
+            with self.subTest(isolated=isolated, uid=uid):
+                state = copy.deepcopy(self.state)
+                item = state["vehicles"]["test"]
+                item.update(runtime={"state": "STOPPED"}, overlay=".local/demo-current/validation.qcow2")
+                item["cloud"]["lifecycle"] = "DEPROVISIONED"
+                state["cloudBinding"] = dict(ownerId=UNIT, sets=dict(test=TEST, production=PROD))
+                inventory = copy.deepcopy(self.inventory)
+                inventory["sets"][0]["members"] = [dict(id=PROD, system_uid=uid)]
+                self.service.root = Path("/fixture")
+                self.service.environment.factory31_comparison = isolated
+                self.service._cloud = Mock(side_effect=[
+                    {"unit": dict(status="new", online_status="Offline", unit_sets=[])}, {},
+                    dict(absent=True, inventory=inventory)])
+                peer = dict(vehicles=dict(test=dict(unitId=PROD, systemUid="canonical-peer")))
+                with patch("aosedge_demo_orchestrator.units.read_json", return_value=peer):
+                    if allowed:
+                        result = self.service._delete(state, "test", {})
+                        self.assertFalse(result["roleSetEmpty"])
+                        self.assertEqual("DELETED", result["lifecycle"])
+                    else:
+                        with self.assertRaisesRegex(EnvironmentError, "ABSENCE_NOT_PROVEN"):
+                            self.service._delete(state, "test", {})
+                deletes = [call for call in self.service._cloud.call_args_list if call.args[0] == "delete"]
+                self.assertEqual([UNIT], [call.kwargs["unitId"] for call in deletes])
 
 
 if __name__ == "__main__":

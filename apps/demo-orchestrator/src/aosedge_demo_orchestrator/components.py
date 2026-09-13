@@ -195,6 +195,8 @@ class ComponentService:
             readPathCount=len(capability.get("readPaths", [])),
             advisoryEndpointCount=len(capability.get("advisoryEndpoints", [])), problems=problems,
             contentProfile=provenance.get("contentProfile"), baseContentVersion=provenance.get("baseContentVersion"),
+            factoryImageVersion=provenance.get("factoryImageVersion"),
+            factoryImageRawSha256=provenance.get("factoryImageRawSha256"),
             claim="Packaging inspection only; not signature, runtime or Cloud qualification.")
         return result, payload
 

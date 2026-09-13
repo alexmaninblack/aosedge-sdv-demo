@@ -188,7 +188,7 @@ class PublicationServiceTests(unittest.TestCase):
         self.root = Path(temporary.name)
         self.catalog = SimpleNamespace(project=self.root, component_support=Mock(return_value={"schemaVersion": 1}))
         self.service = ComponentService(SimpleNamespace(root=self.root, catalog=self.catalog, _writer=contextlib.nullcontext))
-        self.state = dict(stage="LOCAL_ACTIVE", currentVehicle="test", factory=dict(path="factory.raw", format="raw",
+        self.state = dict(stage="LOCAL_ACTIVE", currentVehicle="test", factory=dict(path=".local/factory/oem-demo-factory.img", format="raw",
             version="1.0.31", sha256="a" * 64, manifestPath=MANIFEST),
             vehicles=dict(test=dict(localVmId=TEST, runtime=dict(state="RUNNING"))))
         manifest = self.root / MANIFEST

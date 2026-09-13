@@ -40,7 +40,7 @@ def qmp(path, command, timeout=3, arguments=None):
         raise EnvironmentError("QMP_LINK_ARGUMENTS_INVALID")
     if command == "human-monitor-command":
         allowed = {"info usernet"}
-        for port in (18089, 18090):
+        for port in (18089, 18090, 18093):
             allowed.add("hostfwd_add aosnet tcp:127.0.0.1:" + str(port) + "-10.0.0.100:8089")
             allowed.add("hostfwd_remove aosnet tcp:127.0.0.1:" + str(port))
         if not isinstance(arguments, dict) or set(arguments) != {"command-line"} or arguments["command-line"] not in allowed:
@@ -145,6 +145,10 @@ class VMService:
         atomic_json(self.root / JOURNAL, state)
 
     def _validate(self, state, action, roles):
+        if self.environment.factory31_comparison is True and (set(state.get("vehicles", {})) != {"test"}
+                or set(roles) != {"test"} or state.get("factory", {}).get("sha256") !=
+                "a9019f4adfe70499bde339c8e9d95eb8568736b73dc218f6c0e390fbcd28ddf4"):
+            raise EnvironmentError("FACTORY31_COMPARISON_STATE_MISMATCH")
         if (state.get("kind") != "democtl.current-run" or state.get("schemaVersion") != 1
                 or state.get("stage") not in ("MANUFACTURED", "LOCAL_ACTIVE", "LOCAL_STOPPED")
                 or not isinstance(state.get("vehicles"), dict)):
@@ -167,7 +171,7 @@ class VMService:
             expected_mac = "02:" + ":".join("%02x" % b for b in UUID(item["localVmId"]).bytes[:5])
             if item.get("mac") != expected_mac:
                 raise EnvironmentError("VM_MAC_BINDING_INVALID")
-            if item.get("sshPort") != (10022 if role == "test" else 10023):
+            if item.get("sshPort") != self.environment.ssh_port(role):
                 raise EnvironmentError("VM_SSH_BINDING_INVALID")
         for role in roles:
             factory = factory_for(state, role)

@@ -118,6 +118,24 @@ class TestOnlyRetirementTests(TestCase):
         with self.unheld():
             self.service.retire_test(cloud_check=check)
 
+    def test_completed_cm_comparison_is_retired_but_unrestored_proof_blocks(self):
+        state = self.retired()
+        state["cmServiceUpdateProof"] = dict(state="COMPLETED", proof="factory32-delivery-control",
+            result=dict(state="RESTARTED", binaryUnchanged=True))
+        state["cmComparison20260912"] = dict(restore=dict(state="COMPLETED",
+            result=dict(state="RESTORED", transientDropinPresent=True)))
+        atomic_json(self.root / JOURNAL, state)
+        with self.unheld(), self.assertRaisesRegex(EnvironmentError, "RUNTIME_PROOF_RECONCILIATION"):
+            self.service.retire_test(cloud_check=lambda value: True)
+        self.assertTrue((self.root / state["vehicles"]["test"]["overlay"]).exists())
+        state["cmComparison20260912"]["restore"]["result"]["transientDropinPresent"] = False
+        atomic_json(self.root / JOURNAL, state)
+        with self.unheld():
+            self.service.retire_test(cloud_check=lambda value: True)
+        self.assertNotIn("cmComparison20260912", self.read())
+        self.assertNotIn("cmServiceUpdateProof", self.read())
+        self.assertEqual(state["vehicles"]["production"], self.read()["vehicles"]["production"])
+
     def test_interrupted_unlink_rechecks_cloud_and_completes_without_duplicate_delete(self):
         self.retired()
         original = self.service._unlink_owned
@@ -198,6 +216,21 @@ class TestOnlyRetirementTests(TestCase):
         with self.assertRaisesRegex(EnvironmentError, "COMPONENT_OPERATION_RECONCILIATION"):
             self.service.retire_test(cloud_check=lambda state: True)
         self.assertEqual(state["componentOperations"], self.read()["componentOperations"])
+
+    def test_completed_idle_status_proof_retires_but_uncertainty_is_preserved(self):
+        state = self.retired()
+        state["cmIdleFullStatusProof"] = dict(state="ATTEMPT_STARTED", sha256="a" * 64)
+        atomic_json(self.root / JOURNAL, state)
+        with self.assertRaisesRegex(EnvironmentError, "TEST_RUNTIME_PROOF_RECONCILIATION"):
+            self.service.retire_test(cloud_check=lambda state: True)
+        state["cmIdleFullStatusProof"].update(state="COMPLETED", result=dict(state="APPLIED",
+            binarySha256="a" * 64, baseConfigPreserved=True, durableRecordsPreserved=True,
+            smAndVdpPidsPreserved=True))
+        atomic_json(self.root / JOURNAL, state)
+        with self.unheld():
+            self.service.retire_test(cloud_check=lambda state: True)
+        self.assertNotIn("cmIdleFullStatusProof", self.read())
+        self.assertIn("production", self.read()["vehicles"])
 
     def test_unprovisioned_test_requires_extent_or_stop_proof(self):
         state = self.create()

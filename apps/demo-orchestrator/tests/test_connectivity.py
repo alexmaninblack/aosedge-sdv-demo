@@ -137,6 +137,8 @@ class ConnectivityServiceTests(unittest.TestCase):
             for role, port in (("test", 10022), ("production", 10023))})
         self.source = Mock()
         self.source.environment.root = Path("/unused-connectivity-test")
+        self.source.environment.factory31_comparison = False
+        self.source.environment.ssh_port.side_effect = lambda role: 10022 if role == "test" else 10023
         self.source.environment._writer.side_effect = nullcontext
         self.source.driver.operation.side_effect = lambda **kwargs: nullcontext()
         self.service = ConnectivityService(self.source)

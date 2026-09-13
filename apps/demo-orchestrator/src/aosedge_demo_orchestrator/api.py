@@ -44,6 +44,8 @@ def execute_operation(
                 or target not in (None, VehicleTarget.TEST, VehicleTarget.ALL)):
             raise ValueError("Demo preparation accepts a catalog image and Test or all target only")
         return application.execute(OperationRequest(domain, action, target or VehicleTarget.TEST, image=payload["image"])).to_dict()
+    if domain == "component" and action.startswith("cm-compare-"):
+        raise ValueError("CM comparison is an explicitly authorized CLI-only engineering experiment")
     if domain == "component" and action in ("sm-builder-start", "sm-builder-stop", "sm-build", "sm-test", "sm-apply", "sm-status", "cm-build", "cm-test", "cm-apply", "cm-status"):
         if set(payload) != {"domain", "action", "target"} or target != VehicleTarget.TEST:
             raise ValueError("AosCore qualification accepts Test only, no caller-selected paths or commands")

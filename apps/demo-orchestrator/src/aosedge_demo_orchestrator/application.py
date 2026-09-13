@@ -43,8 +43,9 @@ class DemoOrchestrator:
                 data = ServiceInputs(self.environment_service).prepare("test", activate=activating, restart_sm=request.restart_sm)
                 if activating:
                     complete = data.get("state") == "ACTIVE" and data.get("verification", {}).get("stage") == "VERIFIED"
+                    configuration = "Packaged factory configuration reused" if data.get("factoryConfiguration") else "Transient native configuration"
                     return OperationResult(operation, OperationState.COMPLETED if complete else OperationState.PARTIAL,
-                        "Transient native configuration; no SM code change, service assignment or VM reboot qualification.", data=data)
+                        configuration + "; no SM code change, service assignment or VM reboot qualification.", data=data)
                 return OperationResult(operation, OperationState.COMPLETED,
                     "Public inputs prepared; no SM activation, container launch, assignment or cold-start qualification.", data=data)
             except EnvironmentError as error:
@@ -225,6 +226,15 @@ class DemoOrchestrator:
                 return OperationResult(operation, OperationState.BLOCKED, str(error))
             except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
                 return OperationResult(operation, OperationState.BLOCKED, "SOURCE_STATE_OR_RUNTIME_UNAVAILABLE")
+        if request.domain == "component" and request.action.startswith("cm-compare-"):
+            from .cm_comparison import compare
+            try:
+                data = compare(self.environment_service, request.target.value if request.target else None,
+                    request.action.removeprefix("cm-compare-"))
+                return OperationResult(operation, OperationState.COMPLETED,
+                    "Authorized Test CM comparison only; SM, VM, Cloud assignments and Production unchanged.", data=data)
+            except EnvironmentError as error:
+                return OperationResult(operation, OperationState.BLOCKED, str(error))
         if request.domain == "component" and request.action in ("sm-builder-start", "sm-builder-stop", "sm-build", "sm-test", "sm-apply", "cm-build", "cm-test", "cm-apply"):
             from .component_runtime import builder, build, apply_test
             try:

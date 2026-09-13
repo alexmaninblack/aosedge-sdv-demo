@@ -25,10 +25,10 @@ ROOT_FIELDS = {"schemaVersion", "kind", "startedAt", "stage", "scope", "factory"
     "currentVehicle", "vehicles", "operations", "shared", "cloudBinding", "source",
     "componentOperations", "componentSchema", "smDemoProof", "demoPreparation",
     "backends", "demoLifecycle", "testRetirement", "workspace", "demoSubjects", "serviceOperations",
-    "smServiceUpdateProof", "cmServiceUpdateProof"}
+    "smServiceUpdateProof", "cmServiceUpdateProof", "cmComparison20260912", "cmIdleFullStatusProof"}
 
 TEST_RECEIPTS = ("componentOperations", "componentSchema", "smDemoProof", "demoPreparation",
-                 "serviceOperations", "smServiceUpdateProof", "cmServiceUpdateProof")
+                 "serviceOperations", "smServiceUpdateProof", "cmServiceUpdateProof", "cmComparison20260912", "cmIdleFullStatusProof")
 
 
 def _state(environment):
@@ -101,8 +101,30 @@ def _terminal_receipts(state):
     """Do not make a new run inherit an old Test publication or uncertain call."""
     from .service_assignment import retirement_subjects
     retirement_subjects(state)
+    refresh = state.get("cmIdleFullStatusProof")
+    if refresh:
+        result = refresh.get("result", {})
+        if (refresh.get("state") != "COMPLETED" or result.get("state") != "APPLIED"
+                or result.get("binarySha256") != refresh.get("sha256")
+                or result.get("baseConfigPreserved") is not True
+                or result.get("durableRecordsPreserved") is not True
+                or result.get("smAndVdpPidsPreserved") is not True):
+            raise EnvironmentError("TEST_RUNTIME_PROOF_RECONCILIATION_REQUIRED")
+    comparison = state.get("cmComparison20260912")
+    if comparison:
+        restore = comparison.get("restore", {})
+        result = restore.get("result", {})
+        if (restore.get("state") != "COMPLETED" or result.get("state") != "RESTORED"
+                or result.get("transientDropinPresent") is not False
+                or any(record.get("state") != "COMPLETED" for record in comparison.values())):
+            raise EnvironmentError("TEST_RUNTIME_PROOF_RECONCILIATION_REQUIRED")
     for key in ("smServiceUpdateProof", "cmServiceUpdateProof"):
-        if state.get(key) and state[key].get("state") != "APPLIED":
+        proof = state.get(key) or {}
+        result = proof.get("result") or {}
+        unchanged_cm_control = (key == "cmServiceUpdateProof" and proof.get("state") == "COMPLETED"
+            and proof.get("proof") == "factory32-delivery-control"
+            and result.get("state") == "RESTARTED" and result.get("binaryUnchanged") is True)
+        if proof and proof.get("state") != "APPLIED" and not unchanged_cm_control:
             raise EnvironmentError("TEST_RUNTIME_PROOF_RECONCILIATION_REQUIRED")
     records = state.get("componentOperations", {})
     if not isinstance(records, dict):

@@ -113,6 +113,9 @@ def cm_delivery_observation(pid, proc=Path("/proc")):
                     incomplete = dict(time=entry["time"], stage=wire[1], incomplete=True,
                         messageType=kind[1] if kind else None, length=len(wire[2]),
                         errorOffset=getattr(error, "pos", None), lineCount=wire[2].count("\n") + 1)
+                    flag = re.search(r'"isDeltaInfo"\s*:\s*(true|false)', wire[2])
+                    if flag:
+                        incomplete["isDeltaInfo"] = flag[1] == "true"
                     latest[key] = incomplete
                     if kind and kind[1] not in ("monitoringData", "ack"):
                         events.append(incomplete)
@@ -131,7 +134,7 @@ def cm_delivery_observation(pid, proc=Path("/proc")):
                 stage = re.search(r"\(([a-z_]{1,30})\) ([A-Za-z][A-Za-z '-]{1,100})(?=:|$)", message)
                 if not stage:
                     continue
-                if not re.search(r"connect|Update state|Failed|ERROR|nack", message, re.I):
+                if not re.search(r"connect|Update state|Failed|ERROR|nack|full unit status|delta unit status", message, re.I):
                     continue
                 entry.update(module=stage[1], stage=stage[2])
                 phase = re.search(r"\bstate=([a-zA-Z]{1,32})", message)
@@ -957,11 +960,85 @@ def sm_apply_service_update(request):
                 previousBinarySha256=previous, durableRecordsPreserved=True, **dict(result, mutation=True))
 
 
+def cm_idle_refresh_factory32(request):
+    """One transient, CM-only status refresh proof on the authorized .32 Test."""
+    if (request.get("target") != "test" or request.get("restartCm") is not True
+            or request.get("proof") != "factory32-idle-full-status"
+            or request.get("vehicle", {}).get("localVmId") != "c7b8f9d8-68ea-4b65-b444-8b01595eb110"
+            or request["vehicle"].get("unitId") != "d90798f6-a32c-40cc-8129-26a0f1343a67"):
+        raise ValueError("CM_REFRESH_REQUIRES_CURRENT_TEST_32")
+    expected = "e1f06ff8a2bce082a0825c5e4163ba7cedc14e7c0863e9c021fbe85455c1c9fd"
+    if request.get("sha256") != expected:
+        raise ValueError("CM_REFRESH_QUALIFIED_BINARY_REQUIRED")
+    before = execute(dict(request, action="component-cm-status"))
+    if (before["binarySha256"] != "85e03a5206576c71a571a46ef90345d43037ea71b2e00c77181d247be533028d"
+            or before["service"]["ActiveState"] != "active"):
+        raise ValueError("CM_REFRESH_STOCK_BASE_REQUIRED")
+    args = (Path("/proc") / before["service"]["MainPID"] / "cmdline").read_bytes().decode().strip("\0").split("\0")
+    paths = [args[i+1] for i, arg in enumerate(args[:-1]) if arg in ("-c", "--config")]
+    paths += [arg.split("=",1)[1] for arg in args if arg.startswith("--config=")]
+    if len(paths) != 1 or not paths[0].startswith("/etc/") or not re.fullmatch(r"/[A-Za-z0-9_./-]+", paths[0]):
+        raise ValueError("CM_REFRESH_CONFIG_PATH_UNRESOLVED")
+    config_path = Path(paths[0])
+    original_config = config_path.read_bytes()
+    effective = Path("/proc") / before["service"]["MainPID"] / "root" / str(config_path).lstrip("/")
+    if effective.read_bytes() != original_config:
+        raise ValueError("CM_REFRESH_EXISTING_CONFIG_OVERRIDE")
+    config = json.loads(original_config)
+    if config.get("idleFullStatusInterval", "0s") != "0s":
+        raise ValueError("CM_REFRESH_INTERVAL_ALREADY_CONFIGURED")
+    config["idleFullStatusInterval"] = "60s"
+    peers = command(["systemctl", "show", "aos-sm", "aos-vehicle-data-provider",
+        "--property=Id,MainPID,ActiveState,NRestarts"]).stdout
+    saved = sm_saved_test_release(FACTORY_INPUTS.parent, committed=True)
+    root = Path("/run/democtl-cm-idle-full-status-20260913")
+    dropin = Path("/run/systemd/system/aos-cm.service.d/95-democtl-idle-full-status.conf")
+    if root.exists() or root.is_symlink() or dropin.exists() or dropin.is_symlink():
+        raise ValueError("CM_REFRESH_RECONCILE_TRANSIENT_STATE")
+    with gzip.GzipFile(fileobj=io.BytesIO(base64.b64decode(request["binary"], validate=True))) as payload:
+        raw = payload.read(16 * 1024 * 1024 + 1)
+    if (len(raw) > 16 * 1024 * 1024 or hashlib.sha256(raw).hexdigest() != expected
+            or raw[:6] != b"\x7fELF\x02\x01" or raw[18:20] != b"\xb7\x00"):
+        raise ValueError("CM_REFRESH_BINARY_DIGEST_MISMATCH")
+    root.mkdir(mode=0o700)
+    binary = root / "aos_cm_app"
+    binary.write_bytes(raw)
+    binary.chmod(0o755)
+    cfg = root / "cm.cfg"
+    cfg.write_text(json.dumps(config, indent=2) + "\n")
+    cfg.chmod(config_path.stat().st_mode & 0o777)
+    os.chown(cfg, config_path.stat().st_uid, config_path.stat().st_gid)
+    command(["chcon", "--reference=/usr/bin/aos_cm_app", str(binary)], check=True)
+    command(["chcon", "--reference=" + str(config_path), str(cfg)], check=True)
+    dropin.parent.mkdir(parents=True, exist_ok=True)
+    dropin.write_text("[Service]\nBindReadOnlyPaths=" + str(binary) + ":/usr/bin/aos_cm_app\n"
+        "BindReadOnlyPaths=" + str(cfg) + ":" + str(config_path) + "\n")
+    command(["systemctl", "daemon-reload"], check=True)
+    print("Test32: one CM restart; 60-second idle full status, SM/VDP unchanged", file=sys.stderr, flush=True)
+    subprocess.run(["systemctl", "restart", "aos-cm"], capture_output=True, text=True, timeout=30, check=True)
+    after = execute(dict(request, action="component-cm-status"))
+    peers_after = command(["systemctl", "show", "aos-sm", "aos-vehicle-data-provider",
+        "--property=Id,MainPID,ActiveState,NRestarts"]).stdout
+    if (after["binarySha256"] != expected or after["service"]["ActiveState"] != "active"
+            or before["service"]["MainPID"] == after["service"]["MainPID"]
+            or peers_after != peers or sm_saved_test_release(FACTORY_INPUTS.parent, committed=True) != saved
+            or config_path.read_bytes() != original_config):
+        raise ValueError("CM_REFRESH_ACTIVATION_REQUIRES_RECONCILIATION")
+    return dict(state="APPLIED", mutation=True, transient=True, previousPid=before["service"]["MainPID"],
+        service=after["service"], binarySha256=expected, idleFullStatusInterval="60s",
+        smAndVdpPidsPreserved=True, durableRecordsPreserved=True, baseConfigPreserved=True,
+        transientRoot=str(root), dropin=str(dropin), configPath=str(config_path))
+
+
 def cm_restart_factory32_control(request):
     """User-authorized unchanged-binary control, restricted to one current Test."""
+    authorized_controls = {
+        "5aa1f8e4-a111-4467-a6cc-fb269c62a7a8": "923b9820-999b-41bb-91db-b2a2c469e743",
+        "c7b8f9d8-68ea-4b65-b444-8b01595eb110": "d90798f6-a32c-40cc-8129-26a0f1343a67",
+    }
     if (request.get("target") != "test" or request.get("restartCm") is not True
-            or request["vehicle"].get("localVmId") != "5aa1f8e4-a111-4467-a6cc-fb269c62a7a8"
-            or request["vehicle"].get("unitId") != "923b9820-999b-41bb-91db-b2a2c469e743"):
+            or request["vehicle"].get("localVmId") not in authorized_controls
+            or request["vehicle"].get("unitId") != authorized_controls.get(request["vehicle"].get("localVmId"))):
         raise ValueError("CM_CONTROL_REQUIRES_AUTHORIZED_TEST_32")
     digest = "85e03a5206576c71a571a46ef90345d43037ea71b2e00c77181d247be533028d"
     before = execute(dict(request, action="component-cm-status"))
@@ -1051,8 +1128,165 @@ def cm_apply_service_update(request):
                 smPidPreserved=True, durableRecordsPreserved=True, **dict(result, mutation=True))
 
 
+def cm_compare_factory32(request):
+    """Swap only CM under /run, with an eight-minute automatic stock rollback."""
+    phase = request.get("phase")
+    if (request.get("target") != "test" or phase not in ("without-patch", "restore")
+            or request["vehicle"].get("localVmId") != "5aa1f8e4-a111-4467-a6cc-fb269c62a7a8"
+            or request["vehicle"].get("unitId") != "923b9820-999b-41bb-91db-b2a2c469e743"):
+        raise ValueError("CM_COMPARISON_REQUIRES_AUTHORIZED_TEST_32")
+    original = "85e03a5206576c71a571a46ef90345d43037ea71b2e00c77181d247be533028d"
+    candidate = "b57ce3b757ef3fbc1d32bdcf22be8d32d72d779d7d59acf03b67211af93aa9de"
+    if request.get("sha256") != candidate or hashlib.sha256(Path("/usr/bin/aos_cm_app").read_bytes()).hexdigest() != original:
+        raise ValueError("CM_COMPARISON_BINARY_IDENTITY_MISMATCH")
+    before = execute(dict(request, action="component-cm-status"))
+    sm = execute(dict(request, action="component-sm-status"))
+    vdp = command(["systemctl", "show", "aos-vehicle-data-provider", "--property=MainPID", "--value"]).stdout.strip()
+    if (sm.get("binarySha256") != "936fbd563f7e9d54651504f5aeba84fee0f3736861d30c2efb60eb564e039783"
+            or sm["service"]["ActiveState"] != "active"):
+        raise ValueError("CM_COMPARISON_REQUIRES_UNCHANGED_SM")
+    root = Path("/run/democtl-cm-comparison-20260912")
+    binary = root / "aos_cm_app"
+    dropin = Path("/run/systemd/system/aos-cm.service.d/94-democtl-comparison.conf")
+    contents = "[Service]\nBindReadOnlyPaths=" + str(binary) + ":/usr/bin/aos_cm_app\n"
+    timer = "democtl-cm-comparison-rollback"
+    if phase == "without-patch":
+        if (before.get("binarySha256") != original or before["service"]["ActiveState"] != "active"
+                or root.exists() or root.is_symlink() or dropin.exists() or dropin.is_symlink()):
+            raise ValueError("CM_COMPARISON_TRANSIENT_STATE_CONFLICT")
+        with gzip.GzipFile(fileobj=io.BytesIO(base64.b64decode(request["binary"], validate=True))) as payload:
+            raw = payload.read(8 * 1024 * 1024 + 1)
+        if (len(raw) > 8 * 1024 * 1024 or hashlib.sha256(raw).hexdigest() != candidate
+                or raw[:6] != b"\x7fELF\x02\x01" or raw[18:20] != b"\xb7\x00"):
+            raise ValueError("CM_COMPARISON_ARM64_BINARY_MISMATCH")
+        root.mkdir(mode=0o700)
+        binary.write_bytes(raw)
+        binary.chmod(0o755)
+        command(["chcon", "--reference=/usr/bin/aos_cm_app", str(binary)], check=True)
+        # Rollback survives host disconnect; it acts only on the exact owned drop-in.
+        rollback = ("from pathlib import Path; import subprocess; p=Path(" + repr(str(dropin)) + "); "
+            "assert not p.is_symlink() and p.read_text()==" + repr(contents) + "; p.unlink(); "
+            "subprocess.run(['systemctl','daemon-reload'],check=True); "
+            "subprocess.run(['systemctl','restart','aos-cm'],check=True)")
+        command(["systemd-run", "--unit=" + timer, "--on-active=8m", "--timer-property=AccuracySec=1s",
+            "/usr/bin/python3", "-c", rollback], check=True)
+        dropin.parent.mkdir(parents=True, exist_ok=True)
+        dropin.write_text(contents)
+        command(["systemctl", "daemon-reload"], check=True)
+        expected = candidate
+    else:
+        if root.is_symlink() or binary.is_symlink() or dropin.is_symlink():
+            raise ValueError("CM_COMPARISON_TRANSIENT_STATE_CONFLICT")
+        if not binary.is_file() or hashlib.sha256(binary.read_bytes()).hexdigest() != candidate:
+            raise ValueError("CM_COMPARISON_TRANSIENT_BINARY_MISMATCH")
+        if dropin.exists():
+            if dropin.read_text() != contents:
+                raise ValueError("CM_COMPARISON_DROPIN_CHANGED")
+            dropin.unlink()
+            command(["systemctl", "daemon-reload"], check=True)
+        elif before.get("binarySha256") != original:
+            raise ValueError("CM_COMPARISON_ROLLBACK_REQUIRES_RECONCILIATION")
+        command(["systemctl", "stop", timer + ".timer"], check=True)
+        expected = original
+    already_restored = phase == "restore" and before.get("binarySha256") == original
+    if not already_restored:
+        subprocess.run(["systemctl", "restart", "aos-cm"], capture_output=True, text=True, timeout=25, check=True)
+    after = execute(dict(request, action="component-cm-status"))
+    sm_after = execute(dict(request, action="component-sm-status"))
+    vdp_after = command(["systemctl", "show", "aos-vehicle-data-provider", "--property=MainPID", "--value"]).stdout.strip()
+    if (after.get("binarySha256") != expected or after["service"]["ActiveState"] != "active"
+            or sm_after["service"]["MainPID"] != sm["service"]["MainPID"] or vdp_after != vdp):
+        raise ValueError("CM_COMPARISON_ACTIVATION_UNCONFIRMED_ROLLBACK_ARMED")
+    if phase == "restore":
+        binary.unlink()
+        root.rmdir()
+    return dict(state="APPLIED" if phase == "without-patch" else "RESTORED", phase=phase, mutation=True,
+        alreadyRestored=already_restored, service=after["service"], binarySha256=expected,
+        smPidPreserved=True, smPid=sm["service"]["MainPID"], vdpPidPreserved=True, vdpPid=vdp,
+        transientDropinPresent=dropin.exists(), rollbackMinutes=8 if phase == "without-patch" else None,
+        storedDesired=after.get("delivery", {}).get("storedDesired"))
+
+
+def cm_startup_projection(records):
+    """Only public protocol fields and fixed native stages; never raw wire data."""
+    events, counts = [], {}
+    for record in records:
+        message = record.get("MESSAGE", "")
+        if isinstance(message, list):
+            message = bytes(message).decode("utf-8", errors="replace")
+        if not isinstance(message, str):
+            continue
+        message = re.sub(r"\x1b\[[0-9;]*m", "", message)
+        stage = re.search(r"\(([a-z_]{1,30})\) ([A-Za-z][A-Za-z '-]{1,100})(?=:|$)", message)
+        if not stage:
+            continue
+        item = dict(time=record.get("__REALTIME_TIMESTAMP"), pid=record.get("_PID"),
+            unit=record.get("_SYSTEMD_UNIT"), module=stage[1], stage=stage[2])
+        wire = stage[1] == "communication" and stage[2] in ("Sent message", "Received message", "Handle cloud message")
+        if wire:
+            kind = re.search(r'"messageType"\s*:\s*"([A-Za-z]{1,40})"', message)
+            item["messageType"] = kind[1] if kind else "UNKNOWN"
+            for field in ("txn", "systemId", "createdAt"):
+                value = re.search(r'"' + field + r'"\s*:\s*"([A-Za-z0-9_.:+-]{0,128})"', message)
+                if value:
+                    item[field] = value[1]
+            for field in ("isDeltaInfo", "isConnected"):
+                value = re.search(r'"' + field + r'"\s*:\s*(true|false)', message)
+                if value:
+                    item[field] = value[1] == "true"
+            if item["messageType"] in ("unitStatus", "desiredStatus"):
+                item["wireTruncated"] = not message.rstrip().endswith("}}")
+        else:
+            for field in ("state", "version", "nodeID", "nodeId", "itemID", "id", "isConnected", "connected"):
+                value = re.search(r'\b' + field + r'=([A-Za-z0-9_.-]{1,128})', message)
+                if value:
+                    item[field] = value[1]
+            for known in ("systemID mismatch", "node is not connected", "not found", "timeout", "max retries reached"):
+                if known.lower() in message.lower():
+                    item.setdefault("errors", []).append(known)
+        key = item["module"] + ":" + item["stage"] + ":" + item.get("messageType", "")
+        counts[key] = counts.get(key, 0) + 1
+        if ((wire and item["messageType"] in ("unitStatus", "desiredStatus", "stateRequest", "monitoringData", "ack", "nack"))
+                or (not wire and stage[1] in ("app", "communication", "iamclient", "smclient", "smcontroller", "nodeinfoprovider", "updatemanager")
+                    and re.search(r"start|connect|pong|unit status|node info|node state|update state|failed|can't load|instances status|update is required", stage[2], re.I))):
+            events.append(item)
+    events.sort(key=lambda item: int(item["time"] or 0))
+    return dict(events=events[:150], eventsTruncated=len(events) > 150, counts=counts)
+
+
+def cm_startup_comparison(request):
+    if (request.get("target") != "test"
+            or request["vehicle"].get("localVmId") != "5aa1f8e4-a111-4467-a6cc-fb269c62a7a8"
+            or request["vehicle"].get("unitId") != "923b9820-999b-41bb-91db-b2a2c469e743"):
+        raise ValueError("CM_STARTUP_READ_REQUIRES_CURRENT_TEST_32")
+    windows = {}
+    for name, start, end, pid, since_us in (
+            ("cold", "05:12:00", "05:16:00", "1057", 1789189933000000),
+            ("warm", "10:06:00", "10:10:00", "41710", 1789207564978000),
+            ("recurrence", "10:34:00", "10:42:00", "43568", 1789209240000000)):
+        result = command(["journalctl", "-b", "--since=2026-09-12 " + start + " UTC",
+            "--until=2026-09-12 " + end + " UTC", "-u", "aos-cm.service", "-u", "aos-sm.service",
+            "-n", "12000", "-o", "json", "--output-fields=MESSAGE,__REALTIME_TIMESTAMP,_PID,_SYSTEMD_UNIT", "--no-pager"])
+        if result.returncode or len(result.stdout) > 32 * 1024 * 1024:
+            windows[name] = dict(state="UNAVAILABLE")
+            continue
+        records = [json.loads(line) for line in result.stdout.splitlines()]
+        selected = [row for row in records if row.get("_PID") == pid
+            or (row.get("_PID") == "1120" and int(row.get("__REALTIME_TIMESTAMP", "0")) >= since_us)]
+        windows[name] = dict(state="CURRENT" if records else "NO_RETAINED_RECORDS", records=len(records),
+            journalLimitReached=len(records) >= 12000, **cm_startup_projection(selected))
+    properties = command(["systemctl", "show", "aos-cm", "aos-sm", "--property=Id,After,Before,Requires,Wants,Type,ActiveEnterTimestamp,MainPID,NRestarts"])
+    return dict(mutation=False, windows=windows, ordering=properties.stdout.splitlines())
+
+
 def execute(request):
+    if request["action"] == "component-cm-startup":
+        return cm_startup_comparison(request)
     if request["action"] == "component-cm-apply":
+        if request.get("proof") == "factory32-idle-full-status":
+            return cm_idle_refresh_factory32(request)
+        if request.get("proof") == "factory32-cm-comparison":
+            return cm_compare_factory32(request)
         if request.get("proof") == "factory32-delivery-control":
             return cm_restart_factory32_control(request)
         return cm_apply_service_update(request)

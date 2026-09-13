@@ -129,6 +129,21 @@ def activate(request):
             cold=json.loads((ROOT / "cold.json").read_bytes()), verification=json.loads((ROOT / "verify.json").read_bytes()),
             rebootQualified=False, transient=True, currentProcessVerified=True)
     if request.get("restartSm"):
+        # Factory .32 already contains these resources and both startup hooks.
+        # Reuse them without recreating the old transient configuration.
+        factory_program = Path("/usr/libexec/aos-demo-service-inputs.py")
+        factory_hook = Path("/etc/systemd/system/aos-sm.service.d/40-aos-demo-service-inputs.conf")
+        if (factory_program.is_file() and not factory_program.is_symlink()
+                and factory_hook.is_file() and not factory_hook.is_symlink()
+                and factory_program.read_bytes() == raw and compose(original) == original):
+            hook = factory_hook.read_text()
+            expected = {"ExecStartPre=/usr/bin/python3 -B " + str(factory_program) + " cold",
+                "ExecStartPost=/usr/bin/python3 -B " + str(factory_program) + " verify"}
+            directives = {line.strip() for line in hook.splitlines()
+                if line.strip() and not line.lstrip().startswith("#") and line.strip() != "[Service]"}
+            if directives != expected:
+                raise ValueError("SERVICE_ACTIVATION_FACTORY_HOOK_MISMATCH")
+            return dict(restart_existing_sm(before, binary), transient=False, factoryConfiguration=True)
         raise ValueError("SERVICE_ACTIVATION_RESTART_REQUIRES_EXISTING_CONFIGURATION")
     if ROOT.exists():
         raise ValueError("SERVICE_ACTIVATION_STAGING_RECONCILE")

@@ -89,6 +89,21 @@ class Factory32CMControlTests(unittest.TestCase):
             driver.return_value.guest.assert_called_once()
 
 
+class FreshFactory32CMControlTests(Factory32CMControlTests):
+    def setUp(self):
+        super().setUp()
+        self.request["vehicle"] = dict(localVmId="c7b8f9d8-68ea-4b65-b444-8b01595eb110",
+            unitId="d90798f6-a32c-40cc-8129-26a0f1343a67")
+
+    def test_crossed_identity_pair_never_restarts(self):
+        request = dict(self.request, vehicle=dict(self.request["vehicle"],
+            unitId="923b9820-999b-41bb-91db-b2a2c469e743"))
+        with patch("aosedge_demo_orchestrator.source_guest.execute") as observe:
+            with self.assertRaisesRegex(ValueError, "AUTHORIZED_TEST_32"):
+                cm_restart_factory32_control(request)
+            observe.assert_not_called()
+
+
 class RuntimeProofBoundaryTests(unittest.TestCase):
     def test_sm_compile_failure_stops_builder_without_image_build_or_guest_apply(self):
         with tempfile.TemporaryDirectory() as directory, \
@@ -166,6 +181,9 @@ class RuntimeProofBoundaryTests(unittest.TestCase):
             execute_operation(dict(domain="image", action="build", image="6.1.1-maninblack.29"), app)
         request = request_from_arguments(build_parser().parse_args(["image", "build", "6.1.1-maninblack.32"]))
         execute_operation(dict(domain="image", action="build", image="6.1.1-maninblack.32"), app)
+        self.assertEqual(request, app.execute.call_args.args[0])
+        request = request_from_arguments(build_parser().parse_args(["image", "build", "6.1.1-maninblack.33"]))
+        execute_operation(dict(domain="image", action="build", image="6.1.1-maninblack.33"), app)
         self.assertEqual(request, app.execute.call_args.args[0])
 
     def test_factory_projector_is_the_same_source_as_demo_control(self):

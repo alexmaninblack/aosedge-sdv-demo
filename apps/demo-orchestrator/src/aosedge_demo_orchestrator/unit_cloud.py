@@ -157,7 +157,7 @@ def execute(request):
         return dict(systemUid=uid, source="IAM_V6_GET_SYSTEM_INFO")
     # IAM identity is guest-local; it needs no OEM request or Cloud connection.
     if action == "identity":
-        if request.get("address") not in ("127.0.0.1:18089", "127.0.0.1:18090"):
+        if request.get("address") not in ("127.0.0.1:18089", "127.0.0.1:18090", "127.0.0.1:18093"):
             raise CloudFailure("SDK_ADDRESS_NOT_OWNED_LOOPBACK")
         from aosedge_demo_orchestrator.unit_sdk import identity
         return identity(request["address"])
@@ -206,7 +206,7 @@ def execute(request):
     if action == "inventory":
         return cloud.inventory(request.get("setIds"), request.get("includeUnits", True))
     if action in ("identity", "provision"):
-        if request.get("address") not in ("127.0.0.1:18089", "127.0.0.1:18090"):
+        if request.get("address") not in ("127.0.0.1:18089", "127.0.0.1:18090", "127.0.0.1:18093"):
             raise CloudFailure("SDK_ADDRESS_NOT_OWNED_LOOPBACK")
         from aosedge_demo_orchestrator.unit_sdk import identity, provision
         return identity(request["address"]) if action == "identity" else provision(request, cloud)
