@@ -6,13 +6,13 @@
 ## Current scope — 13 September 2026
 
 The locks described below are historical accepted AOS-2/R6.1 source records,
-not a complete fresh-checkout lock for the current Studio feature branches or
+not a complete fresh-checkout lock for the published Studio source checkpoint or
 Factory .33. Current image/source pins are in the
 [working baseline](current-baseline.md) and
-[consolidation audit](factory-33-consolidation-audit-2026-09-13.md#source-and-remote-audit).
+[published source checkpoint](factory-33-source-checkpoint-2026-09-13.md#published-return-point).
 Reconciling machine-readable workspace and component locks with the reviewed
 source checkpoint is OPEN-05; this documentation edit does not change accepted
-revision guards or claim they pass against the working feature-branch set.
+revision guards or claim they pass against the new main-branch checkpoint.
 
 ## Purpose
 

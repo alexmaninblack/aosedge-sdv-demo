@@ -40,14 +40,16 @@ depends on Safe Stop; Brake/Tire SOTA does not.
 
 **Still open:** native KUKSA permissions and real service/advisory behavior;
 Cloud stale connection-event ordering; complete Studio visual/product acceptance;
-source publication/lock reconciliation. .33 includes an idle full-status CM
+upstream review and workspace/lock reconciliation. .33 includes an idle full-status CM
 workaround, not a Cloud fix. See the
 [consolidation audit and open-issue register](factory-33-consolidation-audit-2026-09-13.md)
 and [current delivery plan](../planning/active/demo-studio-delivery-plan.md).
 
-The tested source set uses named feature branches, with some local-only commits
-and uncommitted work. It is not yet represented by a fully pushed clean-checkout
-lock. Old main-branch workspace metadata must not be mistaken for these pins.
+The tested source set is now committed and published on `main` in all seven
+custom repositories, with `checkpoint/demo-20260913` return-point tags.
+See the [exact source and branch-cleanup receipt](factory-33-source-checkpoint-2026-09-13.md).
+Historical workspace/lock metadata still needs reconciliation; its older pins
+must not be mistaken for this published source set or a fresh-clone qualification.
 
 ## Historical evidence
 

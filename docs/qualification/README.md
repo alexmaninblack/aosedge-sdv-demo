@@ -7,6 +7,9 @@ This directory records accepted baselines, exact component locks,
 qualification procedures, and sanitized defect evidence.
 
 - [Current working .33 baseline and acceptance limits](current-baseline.md)
+- [Published .33 source checkpoint and branch cleanup](factory-33-source-checkpoint-2026-09-13.md)
+  — seven public main branches and return-point tags; 18 local and 9 remote
+  temporary branches removed with historical source preserved.
 - [Factory .33 scoped E2E — 13 September](factory-33-e2e-2026-09-13.md)
   — VDP Safe Stop transitions; Brake/Tire updates while driving; synthetic
   backend retry; network and retained-identity cold recovery.

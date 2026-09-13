@@ -43,19 +43,21 @@ This checkpoint supersedes the dated execution history below. The accepted
 phase requirements and questionnaire decisions remain in force; passing a
 synthetic service run does not waive their real-product acceptance gates.
 The [consolidation audit](../../qualification/factory-33-consolidation-audit-2026-09-13.md)
-owns source/remote pins, artifact retention and OPEN-01 through OPEN-06.
+owns artifact retention and OPEN-01 through OPEN-06. The later
+[source-publication receipt](../../qualification/factory-33-source-checkpoint-2026-09-13.md)
+records the exact pushed main/tag pins and completed temporary-branch cleanup.
 
 | Phase | Proven implementation / evidence | Remaining gate |
 | --- | --- | --- |
 | P0 — Decisions | 2.8 review, dedicated Group Subjects, native service inputs and implementation authorization accepted | No new flow/design change is proposed by this audit |
-| P1 — Shared operations | Test-only lifecycle, release continuity, both backends/current-Test context and ownership-scoped retirement exercised through Demo Control | Publish/reconcile current source and machine-readable workspace pins; preserve existing dual-role CLI |
+| P1 — Shared operations | Test-only lifecycle, release continuity, both backends/current-Test context and ownership-scoped retirement exercised through Demo Control; source published on main | Reconcile machine-readable workspace pins; preserve existing dual-role CLI |
 | P2 — Cloud observations | Cloud inventory, per-Subject instances, release/runtime distinction, DMIPS and backend read adapters implemented/tested | Cloud stale-session ordering remains OPEN-02; complete visual acceptance, without guest reads in the platform panel |
 | P3 — CLI lifecycle / VDP | Fresh .33 Test, 21/V1 -> 22/V2 -> 23/V3, moving/pending -> Safe Stop, network recovery and retained-identity Park/Resume passed | Warehouse and every interrupted-operation variant were not rerun in this scoped cycle; final clean visual repeat remains P8 |
 | P4 — Presenter integration | Architecture installed-version and team/backend read views have unit/browser/build evidence | Complete service publication/assignment controls, accepted native visual alignment and operator review; current UI is not the full accepted workflow |
 | P5 — SOTA / Brake V1 | Native ARM64 service, dedicated Subject, automatic replacement, synthetic durable backend receipts/retry passed on .33 | OPEN-01: native KUKSA authorization and real vehicle-derived product results |
 | P6 — Brake V2/V3 | Profiles V2/V3 and service replacement while driving passed with synthetic transport | Real analytics, native expiring advisory and complete return path remain unqualified |
 | P7 — Tire / offline | Tire V1 version replacement, independent backend outage/retry and shared external-link recovery passed | Native KUKSA, real Tire analytics/advisory and calibration; no functional Tire V2/V3 is claimed |
-| P8 — Consolidation / repeat | Scoped .33 report, documentation audit and authorized artifact cleanup completed; 15.84 GiB reclaimed | Source checkpoint/push, remaining product/UI gates, then full fresh CLI and human visual repeat from the same image SHA |
+| P8 — Consolidation / repeat | Scoped .33 report, documentation/artifact cleanup and seven-repository source checkpoint/push completed; 15.84 GiB reclaimed | Workspace/lock reconciliation, remaining product/UI gates, then full fresh CLI and human visual repeat from the same image SHA |
 
 ### Next work, in order
 
@@ -63,9 +65,10 @@ owns source/remote pins, artifact retention and OPEN-01 through OPEN-06.
    direct cleanup. See the [exact receipt](../../qualification/factory-33-cleanup-2026-09-13.md).
    .33, Production, required VDP bases/current service exports, release continuity
    and source/review evidence remain preserved; no maintenance helper was added.
-2. Review and checkpoint the tested multi-repository source. Publish the named
-   public branches and reconcile workspace/lock metadata. Keep images, compiled
-   packages, secrets and private Cloud source outside Git.
+2. **Source publication completed:** seven public main branches, checkpoint
+   tags and authorized temporary-branch cleanup. Workspace/lock metadata
+   reconciliation remains OPEN-05. Images, compiled packages, secrets and
+   private Cloud source remain outside Git.
 3. Continue P4 against the real Cloud/backend adapters and explicitly synthetic
    service data while the platform permissions fix is pending. Installed,
    Running and functional Ready remain separate; service updates do not wait
