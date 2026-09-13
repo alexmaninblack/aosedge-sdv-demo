@@ -7,6 +7,16 @@ Status: implementation authorized by the user on 11 September 2026, after
 the service replacement proof. This does not close authenticated KUKSA or
 vehicle/advisory acceptance in the [delivery plan](../planning/active/demo-studio-delivery-plan.md).
 
+Latest live result, **13 September 2026**: the clean
+[Factory .33 Test E2E](factory-33-e2e-2026-09-13.md) passed native first launch,
+Brake V1/V2/V3 and Tire numeric replacement, actual synthetic backend delivery,
+both backend outages, external-link recovery and cold stop/start. Brake11/V3
+and Tire9/V1 replacements completed in Autopilot, without Safe Stop; that gate
+applies only to components. Packaged CM recovered a transient Cloud Connected
+regression without restart. The older unresolved checkpoints below are retained
+as history, not the current runtime result. Cloud ordering itself and real
+KUKSA/advisory remain unqualified.
+
 - Existing `democtl service prepare` gains an explicit mocked-data mode,
   mutually exclusive with the inert no-telemetry mode and requiring the
   temporary permission-free package. Normal authentication remains unchanged.
@@ -39,7 +49,17 @@ production feature extraction or in-vehicle recommendations.
 Latest result: the [Factory .32 pre-release checks](#factory-32-pre-release)
 below supersede the older pending/recovery observations for the current Test.
 Service replacement and retained-input reboot recovery pass; sustained Cloud
-Online does not. Full E2E is not released by these checks.
+Online after cold/resume startup remains unresolved. The later
+[CM A/B/A comparison](cm-online-controlled-comparison-2026-09-12.md) retained
+Online for more than five minutes after each warm CM restart, both with and
+without the snapshot patch; it did not isolate the original fault. The original
+patched CM is restored. Full E2E is not released by these checks.
+
+The subsequent [startup/recurrence investigation](cm-startup-and-online-recurrence-2026-09-12.md)
+found restored A Offline at 10:36:04 UTC despite uninterrupted Pong responses,
+matching monitoring ACKs and fresh Cloud monitoring receipt. The original
+five-minute observations do not establish sustained recovery. The live failing
+session is preserved for Cloud-side correlation; no new restart or fix was made.
 
 | Boundary | Evidence | Result |
 | --- | --- | --- |

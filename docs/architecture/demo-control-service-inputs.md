@@ -3,8 +3,8 @@
 
 # Service runtime inputs
 
-- Status: Accepted contract; implementation and live qualification tracked separately
-- Version: 2.1
+- Status: Accepted contract; .33 native startup and synthetic backend path qualified; real KUKSA access remains open
+- Version: 2.2 (implementation-status clarification; no schema change)
 - Prepared: 2026-09-11
 - Owner: Demo Control / OEM Platform
 - Decision: [ADR 0015](decisions/0015-use-native-aos-service-runtime-inputs.md)
@@ -12,6 +12,20 @@
 This is the replacement for the former seven-field input and SM token-owner
 patch design. Historical observations remain in the dated qualification
 checkpoints, not as competing instructions here.
+
+## Implementation checkpoint — 13 September 2026
+
+[Factory .33 E2E](../qualification/factory-33-e2e-2026-09-13.md) proves packaged
+public resources, cold input reconstruction, native retained-service recovery,
+service replacement while driving and explicitly synthetic backend delivery.
+No manual warm preparation, resource activation or transient manager patch was
+needed after cold restart. N4/N5 engineering integration is demonstrated in that
+scope; the permission-backed KAC/KUKSA/TLS/renewal and real advisory path is not.
+See [OPEN-01 and OPEN-02](../qualification/factory-33-consolidation-audit-2026-09-13.md#open-issues-and-exact-closure-conditions).
+
+The approved generic native service-teardown/CM-reconciliation fixes in .33
+are separate from this input design. They do not add a custom container
+launcher, token-owner patch, fixed UID or alternative identity authority.
 
 ## Package, public inputs and native identity
 
@@ -67,7 +81,8 @@ Reject symlink traversal, wrong ownership/mode and pre-existing session
 adoption. Bound crash-orphan accumulation; never delete an active peer
 session. Normal shutdown removes only the bootstrap's own session. Restart
 acquires new credentials; it does not recover a token from storage. No new
-daemon, wrapper, fixed service UID, privileged chown or SM code is introduced.
+daemon, wrapper, fixed service UID, privileged chown or token-specific SM code
+is introduced by this contract.
 
 KAC request/response, IAM authority, 300-second TTL, renewal at 180 seconds,
 expiry, denial, retry and redaction remain unchanged. Remove AOS_SECRET
@@ -81,9 +96,10 @@ before starting analytics. Persistent model/outbox data stay in native
 ### Native launch boundary — confirmed 11 September 2026
 
 Container launch and retained-instance recovery remain native AosCore duties.
-Do not add a launcher, container startup wrapper, SM code patch or replacement
-container lifecycle to implement N4/N5. Demo Control prepares our packages
-and public inputs and activates the declared resource configuration only.
+Do not add a launcher, container startup wrapper, token/identity SM patch or
+replacement container lifecycle for these inputs. Demo Control prepares our
+packages and public inputs; the Factory image carries the declared resource
+configuration. Generic native lifecycle bug fixes are tracked separately.
 
 The pinned AosCore revision `9eecb80c4994937b5c8cbe0464970f81e8ad4c2d`
 implements `Instance::Start`, `CreateAosEnvVars`, `AddResources` and
@@ -95,9 +111,10 @@ and [native CRunRunner](https://github.com/aosedge/aos_core_cpp/blob/9eecb80c499
 
 N5 concerns reconstructing our volatile input files, not implementing native
 container recovery again. A missing application input is not evidence that
-AosCore cannot launch a container. The existing cold-start input ordering
-still needs proof; this clarification does not mark N4/N5 complete or change
-the five-field schema, provenance authority or read-only mount contract.
+AosCore cannot launch a container. Cold-start input ordering was open on
+11 September; the .33 checkpoint above supplies its scoped live evidence.
+It changes neither the five-field schema nor the provenance authority and
+read-only mount contract, and does not establish real KUKSA authorization.
 
 ### Required sequence
 
@@ -105,9 +122,10 @@ the five-field schema, provenance authority or read-only mount contract.
    They do not require runtime inputs or a final OCI manifest lookup.
 2. Before launch, project native Unit/role, committed VDP and public trust.
    Reject missing/contradictory inputs instead of supplying placeholders.
-3. Activate the native resource configuration through Demo Control. The
-   pinned resource manager loads at initialization, not via hot reload.
-   Preserve existing SM binary, settings, credentials and resources.
+3. Load the Factory-packaged native resource configuration at SM initialization,
+   not via hot reload. .33 requires no runtime activation or SM restart for
+   routine service deployment. The older explicit activation command is an
+   engineering migration operation, not a normal preparation step.
 4. Assign service IDs through the existing Subject operation. Native Aos
    determines the actual instance and version.
 5. Bootstrap authenticates through KAC, establishes TLS/subscriptions and
@@ -126,7 +144,7 @@ a Demo Control operation, separate from dashboard observation.
 
 <a id="cold-start-ordering-conflict--11-september-2026"></a>
 
-### Cold-start ordering conflict — 11 September 2026
+### Historical cold-start ordering conflict — 11 September 2026
 
 The first warm public projection and its unchanged repeat succeeded through
 `democtl service runtime-prepare test` on the existing Test with VDP 18.0.0.
@@ -183,6 +201,9 @@ legacy queues and backend records remain readable and are never relabelled.
 Native environment/resource behavior was inspected at AosCore
 `9eecb80c4994937b5c8cbe0464970f81e8ad4c2d`; evidence links and limitations
 remain in [ADR 0015](decisions/0015-use-native-aos-service-runtime-inputs.md#9-evidence-and-limitations).
-Native mount/SELinux, real KAC/TLS/renewal, backend ingestion and retained-
-assignment cold start still require the focused live proof. Current Factory
-image and Production are not modified by this document.
+Native container startup with Enforcing SELinux, synthetic backend ingestion
+and retained-assignment cold start now have scoped .33 evidence. Real native
+KAC/TLS/subscriptions/renewal, token-session behavior under live credentials
+and vehicle-derived analytics/advisory remain unqualified while service
+permissions are blocked in Cloud. Neither the current Factory image nor
+Production is modified by this document.

@@ -14,6 +14,13 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Start Here
 
+- [Current working .33 baseline](qualification/current-baseline.md) — scoped
+  Test E2E, exact image, installed profiles and explicit exclusions.
+- [13 September consolidation audit](qualification/factory-33-consolidation-audit-2026-09-13.md)
+  — source/remote inventory, cleanup disposition, KUKSA permissions and Cloud
+  recovery workaround, with exact remaining closure conditions.
+- [Active Studio delivery plan](planning/active/demo-studio-delivery-plan.md)
+  — current phase position and next work; dated execution history is separate.
 - [Choose a task](getting-started/README.md) — run AosVM, reproduce the current
   demo, understand the system, modify a component or add a scenario.
 - [Reproduction guide and readiness matrix](getting-started/reproduce-demo.md)
@@ -113,9 +120,9 @@ not only the CARLA-to-AosEdge transport bridge.
 ## Qualification
 
 - [Qualification documentation index](qualification/README.md)
-- [Current accepted baseline](qualification/current-baseline.md)
+- [Current working baseline and acceptance limits](qualification/current-baseline.md)
 - [CARLA VISS-to-KUKSA qualification](qualification/carla-viss-to-kuksa.md)
-- [Exact component lock](qualification/component-lock.md)
+- [Legacy component locks and current pin reconciliation](qualification/component-lock.md)
 - [Validation-set scope defect](qualification/r6-1-validation-set-scope-defect.md)
 - [Repository-rename VM repair](qualification/repository-rename-vm-repair.md)
 - [AOS-0 Apple Silicon qualification record](qualification/aosvm-apple-silicon-baseline.md)

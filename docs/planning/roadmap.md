@@ -3,10 +3,25 @@
 
 # Current Design and Delivery Roadmap
 
-- Status: Working gate map
-- Updated: 2026-08-27
-- Current accepted architecture: High-Level Architecture 1.5
-- Cloud or Unit mutation authorized: no
+- Status: Design gate map with historical execution stages; current delivery tracked by the Studio plan
+- Updated: 2026-09-13 (current delivery pointer; historical gates retained)
+- Current accepted architecture: High-Level Architecture 1.6 and accepted Studio/native-input amendments
+- Authority: This roadmap grants no runtime mutation; actual authorizations and evidence are recorded in the active delivery plan
+
+## Current delivery pointer
+
+The [Studio plan](active/demo-studio-delivery-plan.md#current-delivery-position--13-september-2026)
+is the current implementation sequence. The [working .33 baseline](../qualification/current-baseline.md)
+passed scoped Test engineering E2E with synthetic service data. Production
+rollout, native KUKSA/advisory, full Studio visual acceptance and source/lock
+publication remain separate gates. The [13 September audit](../qualification/factory-33-consolidation-audit-2026-09-13.md)
+records the open Cloud permissions issue and client connectivity workaround.
+
+The D/I stages below preserve the earlier design rationale and their dated
+authorization history; they are not a current claim that .11/.21 is the working
+image or that Studio implementation is still unstarted. Current flow amendments
+include Test-first operation, independent retained service Subjects and no
+mandatory validation-batch approval gate for verification-Test delivery.
 
 ## Purpose
 

@@ -5,19 +5,25 @@
 
 ## Readiness at a Glance
 
-The project currently has two different meanings of “run the demo.” They must
-not be confused.
+Recorded 13 September 2026. Distinguish the working engineering workspace
+from a fully published, fresh-checkout, visually accepted product demo.
 
 | Path | Current status | What a newcomer can reproduce |
 | --- | --- | --- |
 | Standalone AosVM on Apple Silicon | Repeatable | Boot, persistent lifecycle, network mobility checks and guarded single-Main-Node provisioning |
 | CARLA engineering demonstration | Repeatable on the qualified workspace | Native CARLA vehicle, manual/autopilot control, deterministic brake-event scenario and live Engineering Telematics Dashboard |
 | CARLA VISS-to-KUKSA integration | Accepted qualification evidence | Vehicle telemetry crossing the Gateway boundary into KUKSA on the qualified VM baseline |
-| Full staged SDV story | Design and implementation target | Manufacturing, fresh Unit provisioning, versioned FOTA/SOTA stages, two functional backends and dashboards, advisory return, retirement and reset are not yet one fresh-checkout launcher |
+| Factory .33 Test lifecycle and FOTA/SOTA | Scoped E2E passed | Fresh Test provisioning; VDP V1/V2/V3 under Safe Stop; Brake/Tire replacement while driving; synthetic backend receipt/retry; network and retained-identity cold recovery |
+| Real service telemetry and advisory | Blocked on Cloud permissions; not live-qualified | Normal packages retain native authorization; temporary demo packages use explicitly synthetic data, not KUKSA or real advisory |
+| Full staged Studio story / fresh checkout | Partially implemented; acceptance remains open | Complete Presenter service actions, real product gates, published source/lock reconciliation and clean operator visual repeat remain |
 
-The last row is the destination described by the architecture and scenario
-documents. This repository does not claim that it can already be reproduced
-end to end.
+Use the [current working baseline](../qualification/current-baseline.md),
+[exact .33 E2E evidence](../qualification/factory-33-e2e-2026-09-13.md) and
+[consolidation audit](../qualification/factory-33-consolidation-audit-2026-09-13.md)
+for current pins and limitations. A synthetic backend receipt is real transport
+evidence but is not proof of vehicle-derived analytics. The packaged CM idle
+full-status setting is recovery around an unresolved Cloud ordering defect,
+not a server fix.
 
 ## Workspace Shape
 
@@ -32,18 +38,23 @@ workspace/
 ├── carla-ego-runtime/         Vehicle Gateway and engineering demo tools
 ├── aos-vehicle-platform/      Domain Controller platform/FOTA source
 ├── brake-health-service/      Function Team 1 in-vehicle SOTA source
-└── brake-health-cloud/        Function Team 1 backend/dashboard baseline
+├── brake-health-cloud/        Function Team 1 backend/dashboard
+├── tire-health-service/       Function Team 2 in-vehicle SOTA source
+├── tire-health-cloud/         Function Team 2 backend/dashboard
+└── demo-artifacts/            local immutable images and prepared build outputs; outside Git
 ```
 
-The planned `tire-health-service` checkout is intentionally not shown because
-its name and in-vehicle SOTA boundary are accepted, but the repository has not
-yet been created and qualified. The planned `tire-health-cloud` repository is
-also omitted. `brake-health-cloud` exists as a governance-only baseline; its
-product implementation and qualification remain open.
+Both service and backend repositories exist. Both backends accepted native
+service-produced synthetic records in the .33 run; real KUKSA/product/advisory
+qualification remains separate. Project-owned public remotes are under
+`alexmaninblack`; Unreal Engine remains a restricted external dependency.
 
 The machine-readable workspace contract is
-[`workspace/repositories.json`](../../workspace/repositories.json). From the
-solution repository, check the workspace without changing it:
+[`workspace/repositories.json`](../../workspace/repositories.json), but its
+accepted main-branch inputs predate the working Studio feature branches and
+Tire repositories. Reconciliation is explicitly OPEN-05 in the audit; do not
+interpret its older pins as the current build recipe. The read-only doctor
+can expose that drift:
 
 ```sh
 ./scripts/workspace-doctor
@@ -62,17 +73,39 @@ workspace or vault.
 - Apple Silicon Mac with sufficient disk space for Unreal Engine, CARLA and
   persistent VM overlays;
 - public access to the solution, CARLA fork, Vehicle Gateway, Vehicle Platform
-  and Brake Health repositories;
+  and both service/backend repositories;
 - Epic Games-linked GitHub access to the restricted Unreal Engine source and
   access to the qualified fork used by this workspace;
-- an OEM certificate only if a new AosVM Unit will be provisioned;
-- no customer workbook, private certificate, Unit identity or VM disk inside
-  any Git checkout.
+- configured OEM access for Unit/Subject operations and each team's SP access
+  for its own service catalog/publication; configured signing access for bundles;
+- private credentials, native access and generated VM state only in their
+  designated ignored/local stores; never stage credentials, VM disks, compiled
+  bundles or private Cloud source in Git.
 
-The exact repository URLs, branches and accepted revisions are recorded in
-the workspace contract. The CARLA and Unreal Engine ports deliberately remain
-on maintained Apple Silicon compatibility branches; custom project
-repositories use `main`.
+The current exact branches, source pins and remote-publication gaps are recorded
+in the consolidation audit. Some working changes are uncommitted or ahead of
+remote. The CARLA/Unreal compatibility branches and the project Studio branches
+must not be replaced with `main` merely to satisfy an older workspace file.
+
+## Use the current Demo Control workflow
+
+Run the installed `democtl` from `apps/demo-orchestrator`, as described in its
+[CLI guide](../../apps/demo-orchestrator/README.md). Use `democtl image list`
+to discover the real catalog; .33 is current Test, while existing Production
+still uses .31. Do not retire Production or use an obsolete image from an old
+example. The [E2E report](../qualification/factory-33-e2e-2026-09-13.md)
+records the commands and results of the current scoped cycle.
+
+All lifecycle, package preparation/signing/publication, assignment and runtime
+actions use the shared Demo Control implementation. A normal .33 start already
+contains the accepted CM/SM/resource/input fixes; do not reapply old runtime
+activation or restart recipes. The release allocator owns version numbers and
+must retain its continuity ledger. VDP profile bases and current service build
+exports are required preparation inputs, not disposable cache history.
+
+The following standalone CARLA/AosVM guides describe component-level or legacy
+entry points. They are useful background, not parallel launchers to run over
+an active Demo Control-owned environment.
 
 ## Reproduce AosVM First
 
@@ -106,21 +139,21 @@ terminated blindly.
 
 The accepted evidence and its limitations are recorded in
 [CARLA VISS-to-KUKSA qualification](../qualification/carla-viss-to-kuksa.md).
-This is currently a qualified integration path, not yet the complete staged
-Vehicle Data Platform Component release flow.
+The current .33 report additionally qualifies the VDP component release flow.
+Neither report claims that the permission-free Brake/Tire services consume
+live KUKSA data.
 
 ## What Must Be Built Before a One-Command Full Demo
 
-The active gaps and component states are authoritative in the
-[Component Register](../requirements/component-decomposition-and-interface-register.md)
-and [roadmap](../planning/roadmap.md). Major missing pieces include the clean
-factory baseline, accepted Vehicle Data Platform Component v1-v3 artifacts, both
-functional Cloud products, Tire Health service, Software Delivery
-Dashboard, unified orchestrator, the separately packaged removable
-current-release `CMP-KAC`, native IAM and protected signing integration, the
-qualified fixed OEM-trusted Provider path, outbound advisory path and
-end-to-end reset.
+The [active Studio plan](../planning/active/demo-studio-delivery-plan.md#current-delivery-position--13-september-2026)
+owns the remaining work: finish consolidation/source publication, complete
+Presenter actions/visual alignment, then qualify native permissions and real
+service analytics/advisory after the platform fix, followed by the clean
+CLI/visual repeat. Cloud ordering and the client workaround are tracked
+independently. Do not list the already built .33, VDP family, orchestrator or
+Tire repositories as missing implementation.
 
-Do not conceal those gaps with manual state changes or undocumented local
-files. Each completed component should add a reproducible launcher or test,
-sanitized evidence, an updated component state and an accepted workspace lock.
+No new image is needed just to repeat this workflow; rebuild only for an
+identified, approved guest change. Keep runtime observations distinct from
+accepted design requirements and never conceal a blocked gate with synthetic
+success or undocumented manual state changes.

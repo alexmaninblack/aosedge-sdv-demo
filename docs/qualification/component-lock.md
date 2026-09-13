@@ -3,13 +3,24 @@
 
 # Exact Component Lock
 
+## Current scope — 13 September 2026
+
+The locks described below are historical accepted AOS-2/R6.1 source records,
+not a complete fresh-checkout lock for the current Studio feature branches or
+Factory .33. Current image/source pins are in the
+[working baseline](current-baseline.md) and
+[consolidation audit](factory-33-consolidation-audit-2026-09-13.md#source-and-remote-audit).
+Reconciling machine-readable workspace and component locks with the reviewed
+source checkpoint is OPEN-05; this documentation edit does not change accepted
+revision guards or claim they pass against the working feature-branch set.
+
 ## Purpose
 
 `components/baseline.lock.json` identifies the exact accepted AOS-2 source and
 artifact inputs without Git submodules. It is public, non-secret, and contains
 no developer checkout path. The later R6.1 Yocto/runtime source baseline is
-separately pinned by `components/r6-1-source.lock.json`; exact candidate `.11`
-digests are recorded in [the current baseline](current-baseline.md).
+separately pinned by `components/r6-1-source.lock.json`. These older candidates
+must not be confused with the current .33 manufacturing input.
 
 The initial candidate pins:
 

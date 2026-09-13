@@ -18,6 +18,25 @@ not a new component or a replacement for the accepted requirements.
 It records the documentation audit, agreed direction and proposals still to
 review. Publishing this draft does not authorize runtime or Cloud changes.
 
+## Implementation status — 13 September 2026
+
+The [current .33 baseline](../qualification/current-baseline.md) and
+[delivery checkpoint](../planning/active/demo-studio-delivery-plan.md#current-delivery-position--13-september-2026)
+supersede older execution-status notes in this evolving design companion.
+Fresh Test lifecycle, VDP V1/V2/V3, native Brake/Tire replacement while driving,
+synthetic backend retry, network recovery and retained-identity cold startup
+have passed the scoped .33 E2E. Only component application requires Safe Stop.
+The combined native Driving Control/Telemetry exists; full Studio service
+actions and human visual acceptance remain open.
+
+Normal .33 operation does not reapply transient resource/manager patches.
+Cloud service permissions still block real KUKSA/advisory proof; its stale
+connection-event ordering is separately mitigated by packaged idle full status,
+not repaired. Current exclusions and source/cleanup obligations are in the
+[consolidation audit](../qualification/factory-33-consolidation-audit-2026-09-13.md).
+Historical commands bound to .28/.29/.31/.32 are not authority to operate them
+or current Production. No new runtime mutation is made by this audit.
+
 <a id="native-demo-desktop--accepted-direction-2026-09-07"></a>
 
 ## Native demo desktop — accepted direction 2026-09-07
@@ -38,11 +57,10 @@ and advisory-not-implemented semantics.
 The [Native Demo Desktop Plan](../planning/active/native-demo-desktop.md) records
 the accepted order: source commit/push and bounded housekeeping first, combined
 control/telemetry second, launcher third, then one-time dedicated-Space setup.
-The existing Terminal dashboard described below is the current implementation,
-not the intended final native surface. No new desktop implementation has begun.
-The accepted direction amends only these host-side presentation/lifecycle
-details; Factory .31, VDP payloads, Safe Stop authority and Production FOTA
-exclusions remain unchanged.
+The former Terminal dashboard below is historical; combined native Driving
+Control/Telemetry is implemented. Remaining visual alignment and launcher
+acceptance are tracked by P4/P8. This host-side direction does not alter
+VDP payloads, component Safe Stop authority or Production FOTA exclusions.
 
 ## Studio Test target contract — 2026-09-09
 
@@ -68,17 +86,17 @@ CLI and API use the same request/result path. These source changes are not yet
 a full Studio or live E2E qualification; the current phase and integration gates
 are recorded in the [delivery plan](../planning/active/demo-studio-delivery-plan.md#implementation-execution--9-september-2026).
 
-| Shared operation | Current target contract | As-built gap / phase |
+| Shared operation | Current target contract | Implementation position / phase |
 |---|---|---|
-| Create | Catalog copy/overlay + Test boot/DNS/role + both backend processes/storage | Compose existing low-level create/start; backend lifecycle/context in P1 |
-| Initial connect | Public stationary-Manual initialization; preserve ordinary select semantics | Expose existing internal initialization; P1 |
-| Provision | Running selected Test → official provisioning → Online → verification membership | Narrow provisioning-only detached-source guard; preserve retirement safety; P1/P3 |
+| Create | Catalog copy/overlay + Test boot/DNS/role + both backend processes/storage | Shared Test lifecycle implemented; .33 scoped E2E; P1 |
+| Initial connect | Public stationary-Manual initialization; preserve ordinary select semantics | Shared initialization implemented; ordinary select still requires provisioning; P1 |
+| Provision | Running selected Test → official provisioning → Online → verification membership | .33 native provisioning/role membership passed; P1/P3 |
 | Release Prepare | Operator selects content profile; shared allocator returns opaque release handle/version | Durable reservation survives cleanup; engineering explicit-version CLI need not be removed; P1 |
 | Publish | Signed deployment bundle → recorded processing result → independent recipient observation | No approval gate for verification Test; publication may precede Provision or occur while vehicle Offline; P2 |
 | First service Deploy | Bind current Test to this service's retained Group Subject; add only that service identity | Separate Brake/Tire Subjects (11 September amendment); no version or instance-count argument; package readiness and runtime qualification remain separate; P5 |
 | Cloud observation | Unit components + service detail/instances + DMIPS + sample/read freshness | No direct VM read or product-result inference; P2 |
-| Park/Resume | Same disks, identity, installed releases and product data; full local stop/restart | Shared composition/journal missing; no Create/reprovision; P1/P3 |
-| Finish / New cycle | One shared scoped Retire across Cloud, local runtimes and product records | Existing environment retire remains local-only, not full cleanup; P1/P3 |
+| Park/Resume | Same disks, identity, installed releases and product data; full local stop/restart | Shared composition implemented and .33 cold cycle passed; no Create/reprovision; P1/P3 |
+| Finish / New cycle | One shared scoped Retire across Cloud, local runtimes and product records | `demo retire` performs shared Test cleanup; low-level `environment retire` remains local-only. Full artifact-history pruning is separate; P1/P3 |
 
 Use the [delivery plan's command surface](../planning/active/demo-studio-delivery-plan.md#6-cli-surface-reuse-first-add-only-missing-operations)
 for proposed CLI names and the [action audit](../research/demo-studio-action-audit.md)

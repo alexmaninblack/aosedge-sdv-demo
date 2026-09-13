@@ -3,13 +3,208 @@
 
 # Demo Studio: staged delivery plan
 
-- Status: **Implementation authorized; P1–P4 integration and P5–P7 source increments, not full E2E-qualified**
+Publication note: private evidence links, infrastructure identifiers and source
+locations have been removed. The detailed working report is retained outside
+Git under the confidential-input policy; timings and our own conclusions remain.
+
+**13 September, Factory .33 checkpoint:** the user authorized a new image and
+the complete Test scenario, with services still using synthetic data because
+Cloud permissions/KUKSA access remains blocked. .33 built successfully from
+Platform `f7922b02b15f6cf816f181e1bf97572b61859aea`; idle full-status recovery
+is now packaged and enabled at 60 seconds. Builder is stopped. Authorized .31
+comparison and .32 canonical Cloud retirement completed; the .31 disk and all
+immutable originals are preserved. Fresh .33 Test is provisioned and Online.
+VDP21/V1 -> VDP22/V2 -> VDP23/V3 passed moving/pending -> Safe Stop/installed/running.
+Native Brake9/V1 -> Brake10/V2 -> Brake11/V3 and Tire8/V1 -> Tire9/V1 passed;
+Brake11 and Tire9 replaced their predecessors while driving, without Safe Stop.
+Both backend outages, external-network restoration and retained-identity cold
+stop/start passed without transient manager patches or recovery restarts.
+The scoped **.33 Test E2E passed with synthetic-service/Cloud exclusions**.
+Real KUKSA/advisory, Cloud stale-event ordering and human visual acceptance are
+not closed by this run. Production is preserved. The broad local
+suite passed (694 tests, six skips), followed by focused cleanup/publication
+regressions. VDP19/20 were prepared against .32 and remain excluded/unpublished;
+the .33 release sequence starts at 21, preserving monotonic release continuity.
+See the [exact results, authority boundary and resume sequence](../../qualification/factory-33-e2e-2026-09-13.md).
+
+- Status: **Implementation authorized; scoped Factory .33 engineering E2E passed; full product/visual acceptance remains open**
 - Prepared: 9 September 2026
 - Working language: English
 - Review mockup: [Interaction Mockup 2.8 — reviewed B2 visuals and corrected simulation](../../demo/mockups/aosedge-demo-interaction-mockup-2-8.html); [2.6 retained flow baseline](../../demo/mockups/aosedge-demo-interaction-mockup-2-6.html); [2.5 retained](../../demo/mockups/aosedge-demo-interaction-mockup-2-5.html) as the original action-audit basis
 - Basis: [action and integration audit][audit], including its 78 action/transition rows and 28 gaps
 - Target: the accepted Studio B composition connected to a real, repeatable Test-vehicle demo
 - Authorization: on 9 September 2026 the user authorized implementation and independent verification of P1–P8, in the accepted sequence. Production rollout and changes outside these phases remain excluded.
+
+<a id="current-delivery-position--13-september-2026"></a>
+
+## Current delivery position — 13 September 2026
+
+This checkpoint supersedes the dated execution history below. The accepted
+phase requirements and questionnaire decisions remain in force; passing a
+synthetic service run does not waive their real-product acceptance gates.
+The [consolidation audit](../../qualification/factory-33-consolidation-audit-2026-09-13.md)
+owns source/remote pins, artifact retention and OPEN-01 through OPEN-06.
+
+| Phase | Proven implementation / evidence | Remaining gate |
+| --- | --- | --- |
+| P0 — Decisions | 2.8 review, dedicated Group Subjects, native service inputs and implementation authorization accepted | No new flow/design change is proposed by this audit |
+| P1 — Shared operations | Test-only lifecycle, release continuity, both backends/current-Test context and ownership-scoped retirement exercised through Demo Control | Publish/reconcile current source and machine-readable workspace pins; preserve existing dual-role CLI |
+| P2 — Cloud observations | Cloud inventory, per-Subject instances, release/runtime distinction, DMIPS and backend read adapters implemented/tested | Cloud stale-session ordering remains OPEN-02; complete visual acceptance, without guest reads in the platform panel |
+| P3 — CLI lifecycle / VDP | Fresh .33 Test, 21/V1 -> 22/V2 -> 23/V3, moving/pending -> Safe Stop, network recovery and retained-identity Park/Resume passed | Warehouse and every interrupted-operation variant were not rerun in this scoped cycle; final clean visual repeat remains P8 |
+| P4 — Presenter integration | Architecture installed-version and team/backend read views have unit/browser/build evidence | Complete service publication/assignment controls, accepted native visual alignment and operator review; current UI is not the full accepted workflow |
+| P5 — SOTA / Brake V1 | Native ARM64 service, dedicated Subject, automatic replacement, synthetic durable backend receipts/retry passed on .33 | OPEN-01: native KUKSA authorization and real vehicle-derived product results |
+| P6 — Brake V2/V3 | Profiles V2/V3 and service replacement while driving passed with synthetic transport | Real analytics, native expiring advisory and complete return path remain unqualified |
+| P7 — Tire / offline | Tire V1 version replacement, independent backend outage/retry and shared external-link recovery passed | Native KUKSA, real Tire analytics/advisory and calibration; no functional Tire V2/V3 is claimed |
+| P8 — Consolidation / repeat | Scoped .33 report, documentation audit and authorized artifact cleanup completed; 15.84 GiB reclaimed | Source checkpoint/push, remaining product/UI gates, then full fresh CLI and human visual repeat from the same image SHA |
+
+### Next work, in order
+
+1. **Completed:** documentation/artifact audit and explicitly authorized one-off
+   direct cleanup. See the [exact receipt](../../qualification/factory-33-cleanup-2026-09-13.md).
+   .33, Production, required VDP bases/current service exports, release continuity
+   and source/review evidence remain preserved; no maintenance helper was added.
+2. Review and checkpoint the tested multi-repository source. Publish the named
+   public branches and reconcile workspace/lock metadata. Keep images, compiled
+   packages, secrets and private Cloud source outside Git.
+3. Continue P4 against the real Cloud/backend adapters and explicitly synthetic
+   service data while the platform permissions fix is pending. Installed,
+   Running and functional Ready remain separate; service updates do not wait
+   for Safe Stop. Only component application uses that gate.
+4. After the platform team confirms its deployed permissions fix, prepare new
+   automatically numbered ordinary packages through Demo Control, with native
+   permissions and without mock flags. Close the real KAC/KUKSA, analytics and
+   advisory gates of P5–P7. Do not weaken security to remove the blocker.
+5. Track the Cloud stale-event fix independently. Keep the packaged idle
+   full-status workaround until its removal is separately tested against that
+   fix. Do not present it as a server repair or promise a recovery deadline.
+6. Complete P8 once the remaining gates are ready. Reuse immutable .33 unless
+   an identified guest change requires a new approved Factory release; do not
+   rebuild or repeat the whole live cycle after every documentation/UI edit.
+
+## Dated execution history
+
+These entries record what was known and authorized at their stated time.
+Statements such as “blocked”, “not started”, “preserved” or “no patch” below
+are historical, not a competing current operational instruction. Consult the
+current checkpoint above and linked reports for subsequent closure.
+
+Historical diagnostic checkpoint, **13 September 05:16 UTC, CM idle-refresh proof passed**:
+the user authorized a CM-only proof on the preserved current .32 Test, with
+one CM restart. [The experiment](../../qualification/cm-idle-full-status-recovery-2026-09-13.md)
+adds optional idle full-status reporting, disabled by default and set to 60s
+only in the transient Test configuration. Native status/config tests (13) and
+focused Demo Control tests (58) passed. CM PID 80357 sends full UnitStatus
+every minute and Cloud responds; Test is Online. SM PID 56660, VDP18 and both
+native service containers are preserved. Warm CM source/compiled baseline
+are restored and Builder stopped. At 05:14:03.997747 the same Cloud consumer
+timed out; UMH received the old disconnect at 05:14:04 and API confirmed Offline
+at 05:14:13.637444. The existing CM's next full report restored Online at
+05:14:14.247, confirmed by API at 05:14:23.682634: **10.247-second recovery with
+no second restart/reconnect**. The CM retained PID 80357, NRestarts=0, one
+WebSocket connection and no additional update cycles after startup.
+No Cloud code/configuration, .31 control, Production or Factory image changed.
+The patch remains an idle Test workaround, not an upstream Cloud fix or full E2E
+closure. Review patches and the precise retained `/run` state are in the report.
+
+Earlier diagnostic checkpoint, **13 September 03:46 UTC**: the authorized
+[isolated original Factory .31 control](../../qualification/factory-31-isolated-online-control-2026-09-13.md)
+reproduced the same Cloud stale-event mechanism without the latest .32 CM/SM
+service-update patches. A separately provisioned Test used original .31 manager
+binaries with no post-provision restarts. Its link-off/on disconnect/reconnect
+events were processed in approximately 10 ms, but the first connect from
+03:10:18 was held until 03:40:18.293758, when the same RabbitMQ consumer tag
+timed out on channel 1275. UMH received the old true event at 03:40:18.295;
+the API regressed Online -> Connected. Fresh native UnitStatus/desiredStatus
+exchange subsequently restored Online without intervention. This is not the
+exact .32 Offline symptom: delayed true demotes to Connected, delayed false
+sets Offline. Latest service-update patches are not necessary for the Cloud
+defect; the original consumer-stall trigger still remains unresolved. Current
+.32 false Offline, Production and service assignments were preserved. The
+comparison remains separately running/connected for diagnosis. CLI isolation
+and evidence are uncommitted; 67 targeted tests passed. Full E2E remains open.
+
+Earlier diagnostic checkpoint, **13 September 02:28 UTC**: the
+[controlled false-Offline reproduction](../../qualification/factory-32-fresh-identity-2026-09-12.md#controlled-false-offline-reproduction)
+reproduced the defect without any further manager/VM restart. At 02:24:30.595724,
+the same Cloud consumer tag timed out after 1800000 ms on channel 1273. After
+channel closure, UMH received both delayed disconnects (01:54:30 and 02:10:32)
+at 02:24:30.598/.599 and Cloud became Offline over the newer 02:12 session.
+CM PID 55106 continued receiving ACK and sending Pong after that state change;
+SM PID 56660 and both native service processes remained alive. External link
+is ON. The failing Cloud state is preserved, not hidden by another restart.
+This establishes stale-event overwrite after consumer ACK timeout as the cause
+of false Offline; the consumer's original stall/recovery trigger still requires
+further evidence. The Cloud-only fixes remain out of scope for our mutations.
+No VM heartbeat/restart workaround, Cloud change or Production action was added.
+
+Earlier diagnostic checkpoint, **13 September 02:13 UTC**: the
+[same-binary recovery and link control](../../qualification/factory-32-fresh-identity-2026-09-12.md#same-binary-recovery-and-link-control)
+recovered the current fresh Test without a rebuild or Cloud mutation. One
+explicit CM restart produced a promptly consumed V7 connect and full UnitStatus;
+VDP 18 and Brake 8 / Tire 7 then installed. A separate first-launch gap was
+missing public service inputs after first VDP delivery. Preparing those inputs
+and one SM-only restart reusing exact packaged hooks/resources made both native
+services active; both real backends receive explicitly synthetic data. One
+Test-only external-link off/on cycle then restored Online in about 6.5 seconds
+without restarting CM/SM/VM. Cloud WS observed the disconnect, but Cloud still
+reported Online while the corresponding UMH false-event receipt was not found
+in that recovery window. Connectivity is restored; Production is unchanged.
+The original delayed V7 event caused legacy transport/architecture selection
+and a late Online -> Connected demotion; this is now source/log-correlated.
+The precise production consumer stall, stale-event protection, first-service
+input ordering and full no-restart cold E2E remain open. These controls do not
+qualify a Cloud fix or real KUKSA/advisory operation. No further release or
+factory image is justified by this dispatch failure.
+
+Earlier execution checkpoint, **12 September 18:41 UTC**: the authorized
+[fresh Test identity experiment](../../qualification/factory-32-fresh-identity-2026-09-12.md)
+retired the previous Test and created/provisioned a fresh VM from the unchanged
+.32 image. New Unit `d90798f6-a32c-40cc-8129-26a0f1343a67` is Online and attached
+to Test Vehicles; CARLA is connected in Safe Stop. Both retained service Subjects
+are bound to it. However, VDP 18 remains Cloud `to be installed`, CM retains zero
+desired items/instances, and service runtime lists are empty. CM/SM run the
+packaged binaries without post-provisioning restarts. Production is preserved.
+Two local retirement/journal compatibility defects were corrected and targeted
+tests passed. No replacement release or Factory build was performed; full E2E
+remains blocked before initial software delivery, not qualified by Online alone.
+
+Earlier diagnostic checkpoint, **12 September, broker trace**: both stale
+disconnect bursts follow RabbitMQ's 30-minute consumer-acknowledgement timeout
+on `connection-event queue` by milliseconds. Historical Prometheus metadata
+maps the client to Cloud UMH pod `CLOUD_INSTANCE_A`; its logs report
+stuck connection-event consumers. WS closure logs match the old timestamps
+within milliseconds, including the unpatched-B session. The remaining fault is
+the consumer ACK/recovery path and stale-session state guard, not evidence of
+a delayed CM close. Indirect influence of changed VM message content remains
+unresolved. See the [broker/consumer trace](../../qualification/cm-startup-and-online-recurrence-2026-09-12.md#disconnect-delivery-trace).
+No runtime fix or Cloud mutation was introduced; full E2E remains unqualified.
+
+Earlier diagnostic checkpoint, **12 September, Grafana follow-up**: user-provided
+Cloud logs show stale `is_connected=false` events received by UMH exactly at
+both Offline transitions (05:15:09 and 10:36:04), with embedded timestamps
+predating the newer active connections. The later episode follows an explicit
+Cloud Online write and continued acknowledged monitoring. See the
+[server-side correlation](../../qualification/cm-startup-and-online-recurrence-2026-09-12.md#cloud-log-correlation).
+The remaining boundary is Cloud event delivery/ordering and the consumer's
+stale-session guard; no CM/SM workaround or Cloud mutation was introduced.
+
+Earlier diagnostic checkpoint, **12 September 10:41 UTC**: the
+[read-only startup investigation](../../qualification/cm-startup-and-online-recurrence-2026-09-12.md)
+found restored A Offline again since **10:36:04**, while the same CM process
+continued exchanging Pong and acknowledged monitoring; the Cloud API still
+received fresh node/service samples. Cold-start ordering alone is insufficient.
+The exact transition now requires Cloud-side session/status correlation; no
+reconnect workaround or product fix was added, and the failing session is
+preserved. Full E2E remains blocked on sustained connectivity.
+
+Earlier checkpoint, **12 September 10:22 UTC**: the authorized
+[Test .32 CM A/B/A comparison](../../qualification/cm-online-controlled-comparison-2026-09-12.md)
+completed through Demo Control. The installed CM, the same build without only
+the stale-instance snapshot patch, and the restored installed CM each retained
+Online for more than five minutes. The original patched CM is restored; SM,
+VDP, assignments and Production were unchanged. This did not reproduce or
+isolate the cold/resume-start failure and does not release full E2E. No new
+Factory image or functional source fix was introduced.
 
 ### Native service input migration — 11 September 2026
 
@@ -270,9 +465,9 @@ versions, outage/reboot observations and exclusions are in the
 | N1 | Solution: accept ADR, update HLA/flows/requirements, runtime-input contract and D4 migration mapping | English documents, navigation and deterministic docs-check | Complete; product wire migration remains N3 |
 | N2 | Brake/Tire + Platform: private bootstrap sessions, dynamic token readers, native tmpfs resource mode; retire only token-owner patch | First create, isolation, atomic renewal, path/mode/symlink negatives, cleanup/restart, native host compilation | Host source tests passed; Linux/live proof remains N6 |
 | N3 | Solution contracts, both producers/backends: package version and native identity; explicit new message schemas without required service/model OCI digest | Producer-consumer fixtures; legacy queues/history retained; no fabricated digest; model/VDP hashes unchanged | Consumer and producer/input source increments passed; live integration remains N6 |
-| N4 | Demo Control: package the allocated version once; project public inputs; native configuration activation through existing commands | Package/publication equality; no manifest lookup dependency; stable-directory refresh after VDP commit | ARM64 exports/signing and .32 native integration passed; permission-free Brake 8/Tire 7 installed and Active with isolated mock-backend delivery. Normal permission-bearing publication remains unqualified |
-| N5 | Existing startup integration: restore public /run inputs before SM launches retained assignments | Exact hook/order documented and tested; no new daemon, persisted token or metadata authority | Passed on retained-assignment .32 Park/Resume: inputs reconstruct, native containers and mock delivery recover without warm preparation/transient overrides. Overall Cloud Online qualification remains blocked separately |
-| N6 | Bounded current Test SOTA and backend integration through democtl | Real Cloud Running/version, KAC/TLS/subscriptions, renew/expiry, actual product records, retained state and scoped access proof | .32 replacement, both backend outages/retry and native retained-assignment restart passed in explicit mock mode. Sustained Cloud Online, native KUKSA and actual vehicle/advisory functionality remain open; full E2E is blocked |
+| N4 | Demo Control: package the allocated version once; project public inputs; native resource configuration | Package/publication equality; no manifest lookup dependency; stable-directory refresh after VDP commit | .33 packaged integration passed: Brake9/10/11 and Tire8/9 native runtime and synthetic backend delivery. Normal permission-bearing publication/KUKSA remains OPEN-01 |
+| N5 | Existing startup integration: restore public /run inputs before SM launches retained assignments | Exact hook/order documented and tested; no new daemon, persisted token or metadata authority | .33 retained-assignment cold Park/Resume passed without warm preparation, resource activation or transient manager overrides; native containers and backend delivery recovered |
+| N6 | Bounded current Test SOTA and backend integration through democtl | Real Cloud Running/version, KAC/TLS/subscriptions, renew/expiry, actual product records, retained state and scoped access proof | .33 updates while driving, backend outages/retry, network recovery and cold recovery passed in explicit mock mode. Real native KUKSA/product/advisory remains OPEN-01; Cloud ordering remains OPEN-02 despite client recovery |
 | N7 | Checkpoint source/docs and record exclusions | Commit only tested source; no build artifacts; retain current VM/Factory/Production | N2/N3 local checkpoints created; full-migration checkpoint remains pending |
 
 Source increments may be developed independently, but **no new producer is
@@ -580,7 +775,7 @@ records the named return point, exact repository revisions and intentionally
 excluded work. Creating or publishing that Git checkpoint does not authorize
 starting P1 or any later implementation stage.
 
-### Current gate — mockup first
+### Historical pre-implementation gate — mockup first
 
 Current closure, 9 September 2026: the user approved 2.8's appearance and
 authorized the three post-visual audit fixes. Its
@@ -631,8 +826,8 @@ Test contract is [UI-STUDIO-026](../../demo/mockups/aosedge-demo-interaction-spe
 
 | Order | Required deliverable | Dependency / gate |
 |---|---|---|
-| Review now | 2.8 corrective re-audit closed; 2.6/2.7 retained; services/reload/offline/cleanup and visual-fit checks passed | Mockup/docs only; no application implementation authorization |
-| P0 | Subject/package settings accepted; use the final re-audit and current contract cascade | Separate implementation authorization |
+| Review completed | 2.8 corrective re-audit closed; 2.6/2.7 retained; services/reload/offline/cleanup and visual-fit checks passed | Implementation subsequently authorized on 9 September; mockup success is not live qualification |
+| P0 | Subject/package settings accepted; use the final re-audit and current contract cascade | Authorization granted; later bounded amendments are recorded above |
 | P1 | Shared Test lifecycle/results, automatic release ledger, initial Manual connection; backend process/storage/current-Test context | Migrate backend cardinality/cleanup contracts with their implementation; retain dual-role CLI |
 | P2 | Cloud inventory/instances, processing receipts, recovery, DMIPS, shared observations | Terminal state need not wait for missed Pending; expanded logs later |
 | P3 | Full CLI lifecycle/VDP including warehouse variant, Park/Resume/Retire | P1 backend lifecycle already exists; product algorithms are not a startup dependency |
@@ -643,12 +838,12 @@ Test contract is [UI-STUDIO-026](../../demo/mockups/aosedge-demo-interaction-spe
 | P8 | Full fresh CLI cycle → scoped Retire → visual UI repeat from same image SHA; qualification, commit/push, housekeeping | Contracts already current before implementation, not first updated here |
 | Later | Expanded logs/errors, terminal failed-install recovery, concurrent mutations and Production | Separate bounded scope |
 
-The existing executable backend profiles still describe a two-role API; this
-is an explicit P1 migration, not a working capability. Allow exactly the owned
-current Test for this flow and Test+Production for the existing dual-role flow.
-Reject empty, duplicate and unrelated cleanup selectors. Change the HTTP
-implementation and executable contracts together before depending on them;
-never create a hidden Production VM to satisfy old cardinality.
+The Test-only backend ownership migration is implemented and exercised in the
+.33 cycle. Allow exactly the owned current Test for this flow and Test+Production
+for the existing dual-role flow. Keep rejecting empty, duplicate and unrelated
+cleanup selectors; never create a hidden Production VM to satisfy old
+cardinality. Future changes must keep the HTTP implementation and executable
+contracts aligned.
 
 ## 1. Intended outcome and boundaries
 

@@ -7,16 +7,20 @@ Planning documents decompose accepted architecture into controlled delivery
 gates. A plan does not itself authorize a build, signature, Cloud mutation,
 assignment, VM restart, or provisioned-Unit change.
 
+- [Current .33 consolidation audit](../qualification/factory-33-consolidation-audit-2026-09-13.md)
+  — current runtime/source state and open permissions, Cloud, UI and publication gates.
 - [Current design and delivery roadmap](roadmap.md)
 - [Demo Studio staged delivery plan](active/demo-studio-delivery-plan.md)
-  — proposed integration sequence based on the Studio B action audit; mockup
-  changes require separate approval, and implementation is not yet authorized.
+  — authorized P1–P8 sequence and current .33 checkpoint. Scoped engineering
+  E2E passed; full product/visual acceptance remains open. New mockup/flow
+  changes still require separate approval.
 - [Native Demo Desktop Plan](active/native-demo-desktop.md)
   — accepted 2026-09-07: freeze/publish the working source checkpoint, combine
   Driving Control and telemetry, add a Demo Control-backed native launcher,
   and configure a dedicated Space. CARLA stays a separate window; new desktop
-  implementation has not started. Earlier train status below is historical
-  authorization evidence, not the current live demo status.
+  work is tracked by the Studio plan; combined native control/telemetry already
+  exists. Earlier train status below is historical authorization evidence,
+  not the current live demo status or a prohibition on authorized Studio work.
 - [Accepted Demo Implementation Plan 1.2](active/demo-implementation-plan.md)
   — bounded implementation increments, repository ownership, dependencies,
   verification and per-increment authorization gates.

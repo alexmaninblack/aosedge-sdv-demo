@@ -1,5 +1,20 @@
 # Presenter UI
 
+## Current integration position — 13 September 2026
+
+The accepted target is Studio 2.8 with Test-first shared Demo Control actions.
+The architecture map already reads installed service versions from Cloud;
+team views read per-Subject instances and their own backend observations via
+the same-origin adapter. Unit/browser/build evidence is recorded in the
+[Presenter checkpoint](../../docs/qualification/demo-mocked-backend-integration.md#presenter-and-adapter-verification-12-september-2026).
+
+Complete service publication/assignment controls, native visual alignment and
+human acceptance remain P4/P8 in the [delivery plan](../../docs/planning/active/demo-studio-delivery-plan.md).
+The .33 CLI E2E does not close those UI gates or real KUKSA/advisory operation.
+Do not present synthetic backend records as vehicle data. Older dual-VM,
+approval and header wording below documents earlier shell increments, not the
+final Studio contract or a claim of current visual acceptance.
+
 Platform Team now refreshes its Test state from **Aos Cloud only** on entry
 and re-entry, with a manual Refresh Cloud state action. It displays Cloud
 Online/lifecycle, installed and pending releases, update state and latest
