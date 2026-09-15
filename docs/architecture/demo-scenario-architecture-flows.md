@@ -9,7 +9,7 @@
 - Accepted: 2026-08-26
 - Previous accepted version: 1.8
 - Owner: System Architecture
-- Architecture input: [High-Level Architecture 1.6](high-level-architecture.md)
+- Architecture input: [High-Level Architecture 1.7](high-level-architecture.md)
 - Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.0](../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - CARLA input: [R10 Native CARLA Vehicle Telemetry Inventory](../research/demo-foundation/r10-carla-telemetry-and-function-team-2.md)
 - Requirements input: [System Requirements and Traceability 2.1](../requirements/system-requirements-and-traceability.md)

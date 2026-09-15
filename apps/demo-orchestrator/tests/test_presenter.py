@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import http.client
+import json
 import tempfile
 import threading
 import unittest
@@ -50,6 +51,42 @@ class PresenterTests(unittest.TestCase):
         self.assertIn("frame-ancestors 'none'", headers["Content-Security-Policy"])
         self.reader.assert_called_once_with()
 
+    def test_sequential_manual_cloud_refresh_is_not_a_one_second_cache_hit(self):
+        read = Mock(side_effect=[dict(state="CURRENT", version=1), dict(state="CURRENT", version=2)])
+        server = presenter.make_server(self.root, ("127.0.0.1", 0), self.reader, platform_reader=read)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            versions = []
+            for _ in range(2):
+                connection = http.client.HTTPConnection(*server.server_address, timeout=2)
+                connection.request("GET", "/api/presenter/platform")
+                response = connection.getresponse()
+                self.assertEqual(200, response.status)
+                versions.append(json.loads(response.read())["version"])
+                connection.close()
+            self.assertEqual([1, 2], versions)
+            self.assertEqual(2, read.call_count)
+        finally:
+            server.shutdown(); server.server_close(); thread.join()
+
+    def test_build_identity_changes_without_cloud_reads_and_reload_requires_idle(self):
+        native = Mock()
+        native.call.return_value = (200, dict(sessionId="one", active=None, uncertain=False))
+        first = presenter.client_state(self.root, native)
+        self.assertTrue(first["canReload"])
+        self.assertEqual(64, len(first["buildId"]))
+        (self.root / "index.html").write_text("<main>New client</main>")
+        self.assertNotEqual(first["buildId"], presenter.client_state(self.root, native)["buildId"])
+        for values in (dict(active="job"), dict(uncertain=True)):
+            native.call.return_value = (200, dict(sessionId="one", **values))
+            self.assertFalse(presenter.client_state(self.root, native)["canReload"])
+        self.assertFalse(presenter.client_state(self.root, None)["canReload"])
+        code, body, _ = self.request("/api/presenter/client-state")
+        self.assertEqual(200, code)
+        self.assertEqual({"buildId", "sessionId", "canReload"}, set(json.loads(body)))
+        self.reader.assert_not_called()
+
     def test_no_mutation_arbitrary_paths_or_cross_origin_access(self):
         for method in ("POST", "PUT", "PATCH", "DELETE"):
             self.assertEqual(405, self.request("/api/presenter/snapshot", method)[0])
@@ -87,13 +124,16 @@ class PresenterTests(unittest.TestCase):
         snapshot = dict(readCompletedAt="now", vehicles={"test": dict(local=dict(state="CURRENT", reason=None,
             value=dict(processState="NOT_CREATED", overlayExists=False, secret="private")))},
             source=dict(state="NOT_PREPARED", currentVehicle=None, secret="private"),
+            journal=dict(value=dict(registrationStarted=True, registrationComplete=False)),
             cloud={"oem-delivery": dict(credential=dict(value=dict(present=True, secret="private")))})
         image = dict(selector="31/arm64", version="31", architecture="arm64", state="METADATA_AVAILABLE", problems=[], path="private")
-        with patch.object(presenter, "execute_operation", side_effect=[dict(state="OBSERVED", status=snapshot), dict(data=dict(images=[image]))]) as execute:
+        with patch.object(presenter, "execute_operation", side_effect=[dict(state="OBSERVED", status=snapshot), dict(data=dict(images=[image])), dict(state="OBSERVED", data=dict(releases=[]))]) as execute:
             result = presenter.read_snapshot()
-        self.assertEqual([dict(domain="orchestrator", action="status", target="all"), dict(domain="image", action="list")],
+        self.assertEqual([dict(domain="orchestrator", action="status", target="all"), dict(domain="image", action="list"), dict(domain="service", action="releases")],
                          [call.args[0] for call in execute.call_args_list])
         self.assertEqual("NOT_CREATED", result["vehicles"]["test"]["process"])
+        self.assertTrue(result["registrationStarted"])
+        self.assertFalse(result["registrationComplete"])
         self.assertNotIn("private", str(result))
 
     def test_cli_owns_the_preview_server(self):

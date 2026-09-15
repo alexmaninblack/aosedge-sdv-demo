@@ -9,7 +9,7 @@
 - Prepared: 2026-08-26
 - Accepted: 2026-08-27
 - Owner: System Acceptance with Platform, Function, Gateway and Demo Solution teams
-- Architecture input: [High-Level Architecture 1.6](../../architecture/high-level-architecture.md)
+- Architecture input: [High-Level Architecture 1.7](../../architecture/high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - Flow input: [Architecture Flows 2.1](../../architecture/demo-scenario-architecture-flows.md)
 - System-requirements input: [System Requirements 2.1](../system-requirements-and-traceability.md)

@@ -1,27 +1,42 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# High-Level Architecture 1.6
+# High-Level Architecture 1.7
 
 - Status: Accepted
-- Version: 1.6
+- Version: 1.7
 - Prepared: 2026-08-22
-- Accepted: 2026-09-11
+- Accepted: 2026-09-15
 - Owner: System Architecture
-- Previous accepted version: 1.5, accepted 2026-08-26
+- Previous accepted version: 1.6, accepted 2026-09-11
 - Accepted architecture decisions: [ADR 0008](decisions/0008-use-tire-health-for-function-team-2.md),
   [ADR 0009](decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0011](decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
   [ADR 0012](decisions/0012-authorize-running-workloads-not-software-artifacts.md),
   [ADR 0013](decisions/0013-current-release-kuksa-authorization-compatibility.md),
   [ADR 0014](decisions/0014-enforce-platform-fota-safe-stop-in-oem-component-runtime.md),
-  [ADR 0015](decisions/0015-use-native-aos-service-runtime-inputs.md)
+  [ADR 0015](decisions/0015-use-native-aos-service-runtime-inputs.md),
+  [ADR 0016](decisions/0016-unsigned-packages-and-session-scoped-signing.md)
 - Scope: CARLA, Vehicle Gateway ECU, AosVM Domain Controller, AosCloud,
   shared Vehicle Data Platform Component, two independent OEM Service
   Providers, functional backends, and demonstration tooling
 - Implementation status: target architecture; current and planned elements are
   distinguished below
 - Cloud or Unit mutation authorized: no
+
+## Portable package content amendment — 2026-09-15
+
+[ADR 0016](decisions/0016-unsigned-packages-and-session-scoped-signing.md)
+separates immutable unsigned source/prepared content from destination-specific
+signatures and publication receipts. Demo Control uses the selected OEM
+credential for VDP and the matching SP credential for services. Target owner
+and catalog identities belong to publication, not the reusable payload.
+The official Aos signer, upload API, authority/recipient checks and automatic
+release continuity remain. No historical signing key is needed to reuse an
+approved source. This changes local artifact trust/representation only: the
+runtime architecture diagram, Factory firmware, manager binaries, KUKSA
+authorization and vehicle lifecycle are unchanged. Offline signing tests are
+not qualification of a new Cloud destination.
 
 ## Native service inputs amendment — 2026-09-11
 

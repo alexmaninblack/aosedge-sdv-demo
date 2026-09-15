@@ -22,25 +22,25 @@ test("Cloud entry/reentry and a failed refresh retain visibly last-known invento
     // No native command capability is granted to this browser fixture.
     if (path === "/api/presenter/operations" && route.request().method() === "GET") return route.fulfill({ status: 401, json: {} });
     if (path === "/api/presenter/backend/brake" && route.request().method() === "GET") return route.fulfill({ status: 503, json: { state: "UNAVAILABLE" } });
+    if (path === "/api/presenter/client-state" && route.request().method() === "GET") return route.fulfill({ json: { buildId: "test", canReload: false } });
     unexpected.push(path); return route.abort();
   });
   await page.goto("/");
   await page.getByRole("button", { name: /Platform Team/ }).click();
-  await expect(page.getByText("VDP 18.0.0 · Cloud installed", { exact: true })).toBeVisible();
+  await expect(page.getByText("Cloud installed · 18.0.0", { exact: true })).toBeVisible();
   expect(cloudReads).toBeGreaterThanOrEqual(1);
   const initialReads = cloudReads;
   fail = true;
-  await page.getByRole("button", { name: "Refresh Cloud state" }).click();
-  await expect(page.getByText("VDP 18.0.0 · Cloud installed · last known", { exact: true })).toBeVisible();
-  await expect(page.getByText("Previous observation — not current.", { exact: true })).toBeVisible();
-  await expect(page.locator(".platform-cloud-facts")).toContainText("Online");
+  await page.getByRole("button", { name: "Refresh", exact: true }).click();
+  await expect(page.getByText("Cloud installed · 18.0.0 · last known", { exact: true })).toBeVisible();
+  await expect(page.getByText("Test Vehicle · Last known Cloud report", { exact: true })).toBeVisible();
   await expect.poll(() => cloudReads).toBe(initialReads + 1);
   await page.getByRole("button", { name: /Brake Team/ }).click();
   // Every visible team now participates in the shared Cloud observer.
   await expect.poll(() => cloudReads).toBe(initialReads + 2);
   fail = false;
   await page.getByRole("button", { name: /Platform Team/ }).click();
-  await expect(page.getByText("VDP 18.0.0 · Cloud installed", { exact: true })).toBeVisible();
+  await expect(page.getByText("Cloud installed · 18.0.0", { exact: true })).toBeVisible();
   await expect.poll(() => cloudReads).toBe(initialReads + 3);
   expect(unexpected).toEqual([]);
 });

@@ -12,6 +12,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 from urllib.parse import parse_qs, urlsplit
+from urllib.error import URLError
 
 from aosedge_demo_orchestrator import service_assignment as assignment
 from aosedge_demo_orchestrator.api import execute_operation
@@ -116,6 +117,32 @@ class WorkerTests(unittest.TestCase):
     def retained(self):
         self.cloud.subjects.append(copy.deepcopy(self.cloud.subject_created))
         self.request["subject"] = dict(id=SUBJECT, createdBy=USER)
+
+    def test_network_preflight_failure_never_marks_post_attempted(self):
+        for error in (URLError("private transport detail"), TimeoutError("private timeout"), OSError("private socket")):
+            with self.subTest(error=type(error).__name__), patch.object(assignment, "snapshot", side_effect=error):
+                result = assignment.execute(self.cloud, dict(self.request, step="bind"))
+            self.assertEqual(("BLOCKED", False), (result["stage"], result["attempted"]))
+            self.assertNotIn("private", json.dumps(result))
+        self.assertEqual([], self.cloud.posts)
+
+    def test_auth_network_failure_is_before_service_post(self):
+        from aosedge_demo_orchestrator import unit_cloud
+        with patch.object(unit_cloud, "Cloud", side_effect=URLError("private auth detail")):
+            result = unit_cloud.execute(dict(self.request, step="bind"))
+        self.assertEqual(("BLOCKED", False), (result["stage"], result["attempted"]))
+        self.assertNotIn("private", json.dumps(result))
+
+    def test_network_failure_during_post_stays_uncertain(self):
+        original = self.cloud.call
+        def call(path, method="GET", *args, **kwargs):
+            if method != "GET":
+                raise URLError("private post detail")
+            return original(path, method, *args, **kwargs)
+        self.cloud.call = call
+        result = assignment.execute(self.cloud, dict(self.request, step="create"))
+        self.assertEqual(("UNCERTAIN", True), (result["stage"], result["attempted"]))
+        self.assertNotIn("private", json.dumps(result))
 
     def test_exact_openapi_create_bind_assign_bodies_and_no_version_or_count(self):
         result = assignment.execute(self.cloud, dict(self.request, step="create"))
@@ -240,6 +267,54 @@ class WorkerTests(unittest.TestCase):
                 assignment.retirement_subjects(state)
             record[field] = original
 
+    def test_retirement_accepts_retained_subjects_not_deployed_in_current_run(self):
+        def subject(identifier, team):
+            return dict(ownerId=OWNER, id=identifier, label=assignment.LABELS[team],
+                isGroup=True, priority=0, createdBy=USER, create=dict(stage="CONFIRMED"))
+        state = dict(vehicles=dict(test=TEST, production={}), cloudBinding=dict(ownerId=OWNER),
+            demoSubjects={BRAKE: subject(SUBJECT, "brake"), TIRE: subject(TIRE_SUBJECT, "tire")})
+        original = copy.deepcopy(state)
+        entries = assignment.retirement_subjects(state)
+        self.assertEqual([SUBJECT, TIRE_SUBJECT], [row["id"] for row in entries])
+        self.assertTrue(all(row["unassigned"] for row in entries))
+        self.assertEqual(original, state)
+        state["serviceOperations"] = {BRAKE: dict(serviceId=BRAKE, team="brake", ownerId=OWNER,
+            test=TEST, state="ASSIGNED", steps={step: dict(stage="CONFIRMED") for step in ("bind", "assign")})}
+        entries = assignment.retirement_subjects(state)
+        self.assertNotIn("unassigned", entries[0])
+        self.assertTrue(entries[1]["unassigned"])
+        state["serviceOperations"][TIRE] = dict(state="UNCERTAIN")
+        with self.assertRaisesRegex(EnvironmentError, "RECONCILIATION"):
+            assignment.retirement_subjects(state)
+
+    def test_retirement_unassigned_does_not_accept_orphan_operations_or_bad_owner(self):
+        subject = dict(ownerId=OWNER, id=SUBJECT, label=assignment.LABELS["brake"],
+            isGroup=True, priority=0, createdBy=USER, create=dict(stage="CONFIRMED"))
+        state = dict(vehicles=dict(test=TEST, production={}), cloudBinding=dict(ownerId=OWNER),
+            demoSubjects={BRAKE: subject}, serviceOperations={TIRE: dict(state="ASSIGNED")})
+        with self.assertRaisesRegex(EnvironmentError, "RECONCILIATION"):
+            assignment.retirement_subjects(state)
+        state["serviceOperations"] = {}
+        for key, value in (("ownerId", SP), ("create", dict(stage="UNCERTAIN")), ("isGroup", False)):
+            old = subject[key]
+            subject[key] = value
+            with self.assertRaisesRegex(EnvironmentError, "RECONCILIATION"):
+                assignment.retirement_subjects(state)
+            subject[key] = old
+
+    def test_unbound_subject_worker_is_get_only_and_refuses_existing_binding(self):
+        from aosedge_demo_orchestrator import unit_cloud
+        self.retained()
+        self.cloud.services.append(dict(service=dict(id=BRAKE)))
+        request = dict(action="subjects-unbound", ownerId=OWNER, retainedSubjects=[dict(id=SUBJECT,
+            serviceId=BRAKE, label=assignment.LABELS["brake"], createdBy=USER, unassigned=True)])
+        with patch.object(unit_cloud, "Cloud", return_value=self.cloud):
+            self.assertEqual(dict(subjectsRetainedUnbound=True), unit_cloud.execute(request))
+            self.cloud.assigned.append(dict(id=UNIT, system_uid=TEST["systemUid"]))
+            with self.assertRaisesRegex(CloudFailure, "STILL_HAS_UNITS"):
+                unit_cloud.execute(request)
+        self.assertEqual([], self.cloud.posts)
+
     def test_post_transport_and_bad_response_are_uncertain(self):
         original = self.cloud.call
         self.cloud.call = lambda path, method="GET", *args, **kw: original(path, method, *args, **kw) if method == "GET" else (_ for _ in ()).throw(TimeoutError("secret transport"))
@@ -297,7 +372,7 @@ class JournalTests(unittest.TestCase):
         # Assert intent reached durable storage before every external attempt.
         if action == "service-assignment-step":
             state = read_json(self.root / JOURNAL)
-            attempt = state["demoSubjects"][values["serviceId"]]["create"] if values["step"] == "create" else state["serviceOperations"][values["serviceId"]]["steps"][values["step"]]
+            attempt = assignment.cloud_subjects(state)[values["serviceId"]]["create"] if values["step"] == "create" else state["serviceOperations"][values["serviceId"]]["steps"][values["step"]]
             self.assertIs(attempt["attempted"], True)
             if self.loss == (values["step"], "before"):
                 self.loss = None
@@ -341,6 +416,38 @@ class JournalTests(unittest.TestCase):
         self.assertEqual(2, len(self.cloud.subjects))
         self.assertEqual("ASSIGNED", self.service.assign(BRAKE)["state"])
         self.assertEqual(6, len(self.cloud.posts))
+
+    def test_empty_selected_backend_creates_own_subjects_and_repeat_reuses_them(self):
+        state = read_json(self.root / JOURNAL)
+        state.update(selectedCloudDomain="developer.aos-dev.test",
+            cloudBinding=dict(ownerId=SP),
+            demoSubjects={BRAKE: dict(id=SP, label=assignment.LABELS["brake"], ownerId=SP)},
+            cloudContexts={"developer.aos-dev.test": dict(cloudBinding=dict(ownerId=OWNER)),
+                "other.aos-dev.test": dict(demoSubjects={TIRE: dict(id=VERSION)})})
+        state["vehicles"]["production"] = dict(localVmId="preserved-production", unitId=SP)
+        original = copy.deepcopy(state)
+        atomic_json(self.root / JOURNAL, state)
+
+        for service_id in (BRAKE, TIRE):
+            result = self.service.assign(service_id)
+            self.assertEqual("ASSIGNED", result["state"])
+            self.assertTrue(result["observation"]["unitBound"])
+            self.assertTrue(result["observation"]["serviceBound"])
+        self.assertEqual(6, len(self.cloud.posts))
+        for service_id in (BRAKE, TIRE):
+            self.assertTrue(self.service.assign(service_id)["noOp"])
+        self.assertEqual(6, len(self.cloud.posts))
+
+        final = read_json(self.root / JOURNAL)
+        for key in ("cloudBinding", "demoSubjects", "vehicles"):
+            self.assertEqual(original[key], final[key])
+        self.assertEqual(original["cloudContexts"]["other.aos-dev.test"],
+            final["cloudContexts"]["other.aos-dev.test"])
+        subjects = final["cloudContexts"]["developer.aos-dev.test"]["demoSubjects"]
+        self.assertEqual({BRAKE, TIRE}, set(subjects))
+        self.assertEqual(SUBJECT, subjects[BRAKE]["id"])
+        self.assertEqual(TIRE_SUBJECT, subjects[TIRE]["id"])
+        self.assertEqual(DEFAULT, self.cloud.subjects[0]["id"])
 
     def test_retained_service_observation_closes_retirement_without_post(self):
         self.service.assign(BRAKE)
@@ -430,6 +537,50 @@ class JournalTests(unittest.TestCase):
         self.assertEqual("ASSIGNED", self.service.assign(BRAKE)["state"])
         self.assertEqual(3, len(self.cloud.posts))
 
+    def test_transport_preflight_receipt_can_be_explicitly_repeated(self):
+        original = self.units._cloud
+        failed = False
+        def call(action, **values):
+            nonlocal failed
+            if action == "service-assignment-step" and values["step"] == "bind" and not failed:
+                failed = True
+                return dict(stage="BLOCKED", attempted=False, reason="SERVICE_ASSIGNMENT_PREFLIGHT_URLError")
+            return original(action, **values)
+        self.units._cloud = call
+        self.assertEqual("BLOCKED", self.service.assign(BRAKE)["state"])
+        attempt = read_json(self.root / JOURNAL)["serviceOperations"][BRAKE]["steps"]["bind"]
+        self.assertFalse(attempt["attempted"])
+        self.assertEqual("ASSIGNED", self.service.assign(BRAKE)["state"])
+        self.assertEqual(3, len(self.cloud.posts))
+
+    def test_exact_operator_confirmed_legacy_preflight_recovery_is_audited(self):
+        self.loss = ("bind", "before")
+        self.service.assign(BRAKE)
+        record = read_json(self.root / JOURNAL)["serviceOperations"][BRAKE]
+        stamp = record["steps"]["bind"]["startedAt"]
+        self.assertEqual("UNCERTAIN", self.service.assign(BRAKE)["state"])
+        self.assertEqual("UNCERTAIN", self.service.assign(BRAKE, "wrong-attempt")["state"])
+        self.assertEqual(1, len(self.cloud.posts))
+        result = self.service.assign(BRAKE, stamp)
+        self.assertEqual("ASSIGNED", result["state"])
+        record = read_json(self.root / JOURNAL)["serviceOperations"][BRAKE]
+        self.assertEqual(stamp, record["preflightRecovery"][0]["startedAt"])
+        self.assertEqual("OPERATOR_CONFIRMED_NO_POST", record["preflightRecovery"][0]["confirmation"])
+        self.assertEqual(3, len(self.cloud.posts))
+        self.assertTrue(self.service.assign(BRAKE)["noOp"])
+        self.assertEqual(3, len(self.cloud.posts))
+
+    def test_cli_recovery_confirmation_is_exact_test_only_and_not_default(self):
+        args = build_parser().parse_args(["service", "assign", BRAKE, "--target", "test",
+            "--confirm-bind-not-submitted-at", "2026-09-13T15:14:58.911973Z"])
+        request = request_from_arguments(args)
+        self.assertIsNone(request.selection_error())
+        self.assertEqual("2026-09-13T15:14:58.911973Z", request.confirm_bind_not_submitted_at)
+        self.assertIsNotNone(OperationRequest("service", "assign", VehicleTarget.PRODUCTION,
+            confirm_bind_not_submitted_at="stamp").selection_error())
+        self.assertIsNotNone(OperationRequest("service", "prepare", VehicleTarget.TEST,
+            confirm_bind_not_submitted_at="stamp").selection_error())
+
     def test_changed_test_binding_and_symlink_block_without_cloud(self):
         self.service.assign(BRAKE)
         state = read_json(self.root / JOURNAL)
@@ -451,22 +602,27 @@ class JournalTests(unittest.TestCase):
         directory.mkdir(parents=True)
         prepared = dict(schemaVersion=1, state="PREPARED", team="brake", version="8.0.0",
             releaseHandle="brake/8.0.0", packagePath=str(directory), files={str(n): {} for n in range(4)},
-            serviceProviderId=SP, serviceId=None)
-        receipt = dict(attempted=True, requestAccepted=True, httpStatus=201, deploymentId=VERSION, lastObservation=dict(stage="READY", source="AOS_CLOUD_ONLY",
+            cloudProfile="service-provider")
+        profile_patch = patch("aosedge_demo_orchestrator.service_packages.ServicePackages._profile", return_value=({}, "aoscloud.io"))
+        profile_patch.start()
+        self.addCleanup(profile_patch.stop)
+        from aosedge_demo_orchestrator.package_artifacts import publication_path
+        path = publication_path(directory, "aoscloud.io", "service provider", create=True)
+        receipt = dict(ownerId=SP, cloudDomain="aoscloud.io", attempted=True, requestAccepted=True, httpStatus=201, deploymentId=VERSION, lastObservation=dict(stage="READY", source="AOS_CLOUD_ONLY",
             serviceId=BRAKE, version="8.0.0", deploymentId=VERSION, bundleState="done", versionState="ready"))
         atomic_json(directory / "prepared.json", prepared)
-        atomic_json(directory / "publication.json", receipt)
+        atomic_json(path, receipt)
         self.assertEqual(dict(team="brake", serviceProviderId=SP, publishedVersion="8.0.0"), self.service._publication(BRAKE))
         receipt["lastObservation"].update(stage="ERROR", bundleState="error", versionState=None)
-        atomic_json(directory / "publication.json", receipt)
+        atomic_json(path, receipt)
         self.assertEqual("brake", self.service._publication(BRAKE)["team"])
         for key, value in (("requestAccepted", False), ("attempted", False), ("httpStatus", 400)):
             invalid = dict(receipt, **{key: value})
-            atomic_json(directory / "publication.json", invalid)
+            atomic_json(path, invalid)
             with self.assertRaisesRegex(EnvironmentError, "RECEIPT_MISMATCH"):
                 self.service._publication(BRAKE)
         receipt["lastObservation"]["deploymentId"] = SP
-        atomic_json(directory / "publication.json", receipt)
+        atomic_json(path, receipt)
         with self.assertRaisesRegex(EnvironmentError, "RECEIPT_MISMATCH"):
             self.service._publication(BRAKE)
 
@@ -503,11 +659,15 @@ assert cloud.call.call_count == 1
             capture_output=True, text=True, timeout=10)
         self.assertEqual(0, result.returncode, result.stderr)
 
-    def test_cli_fixed_catalog_and_target_but_browser_stays_read_only(self):
+    def test_cli_and_protected_browser_share_test_only_assignment(self):
         request = request_from_arguments(build_parser().parse_args(["service", "assign", BRAKE, "--target", "test"]))
         self.assertEqual((BRAKE, VehicleTarget.TEST), (request.service_id, request.target))
+        application = Mock()
+        execute_operation(dict(domain="service", action="assign", service_id=BRAKE, target="test"), application)
+        assigned = application.execute.call_args[0][0]
+        self.assertEqual((BRAKE, VehicleTarget.TEST), (assigned.service_id, assigned.target))
         with self.assertRaises(ValueError):
-            execute_operation(dict(domain="service", action="assign", service_id=BRAKE, target="test"), Mock())
+            execute_operation(dict(domain="service", action="assign", service_id=BRAKE, target="production"), application)
         app = DemoOrchestrator.__new__(DemoOrchestrator)
         for target in (None, VehicleTarget.PRODUCTION, VehicleTarget.ALL):
             result = app.execute(OperationRequest("service", "assign", target, service_id=BRAKE))

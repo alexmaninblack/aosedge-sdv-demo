@@ -118,6 +118,92 @@ class TestOnlyRetirementTests(TestCase):
         with self.unheld():
             self.service.retire_test(cloud_check=check)
 
+    def test_unprovisioned_test_reconciles_upload_before_local_cleanup(self):
+        from aosedge_demo_orchestrator.units import UnitService
+        from aosedge_demo_orchestrator.vm import VMService
+        state = self.create()
+        peer = copy.deepcopy(state["vehicles"]["production"])
+        owner = state["vehicles"]["test"]["localVmId"]
+        state["cloudBinding"] = dict(ownerId=owner)
+        state["componentOperations"] = {"61.0.0": dict(deploymentId=owner, ownerId=owner,
+            publicationPath="VERIFICATION_TEST", upload=dict(attemptStarted=True, state="RESPONDED",
+                response=dict(httpStatus=201, deploymentId=owner))),
+            "62.0.0": dict(prepare=dict(contentProfile="v2"), signed=dict(state="COMPLETED"))}
+        atomic_json(self.root / JOURNAL, state)
+        overlay = self.root / state["vehicles"]["test"]["overlay"]
+        ledger = self.root / ".local/release-continuity.json"
+        ledger.write_text('{"vdp":62}')
+        unit = UnitService(VMService(self.service))
+        entries = [dict(version="61.0.0", deploymentId=owner, verificationTest=True)]
+        unit._cloud = Mock(return_value=dict(confirmedUploads=entries))
+        with self.assertRaisesRegex(EnvironmentError, "FRESH_CLOUD_RETIREMENT"):
+            self.service.retire_test()
+        self.assertTrue(overlay.exists())
+        with self.unheld():
+            result = self.service.retire_test(cloud_check=unit.confirm_test_retired)
+        self.assertEqual("REMOVED", result["outcome"])
+        unit._cloud.assert_called_once_with("reconcile-uploads", uploads=entries)
+        self.assertFalse(overlay.exists())
+        self.assertEqual(peer, self.read()["vehicles"]["production"])
+        self.assertEqual('{"vdp":62}', ledger.read_text())
+
+    def test_unprovisioned_test_never_discards_unconfirmed_upload(self):
+        state = self.create()
+        state["componentOperations"] = {"61.0.0": dict(upload=dict(attemptStarted=True, state="UNCERTAIN"))}
+        atomic_json(self.root / JOURNAL, state)
+        check = Mock(return_value=True)
+        with self.unheld(), self.assertRaisesRegex(EnvironmentError, "COMPONENT_OPERATION_RECONCILIATION_REQUIRED"):
+            self.service.retire_test(cloud_check=check)
+        check.assert_called_once()
+        self.assertTrue((self.root / state["vehicles"]["test"]["overlay"]).exists())
+
+    def test_repeated_cycles_with_all_none_or_one_service_keep_only_retained_subjects(self):
+        from test_service_assignment import BRAKE, TIRE, SUBJECT, USER
+        from aosedge_demo_orchestrator.service_assignment import retirement_subjects
+        state = self.retired()
+        owner = state["cloudBinding"]["ownerId"]
+        subjects = {
+            service: dict(ownerId=owner, id=subject, label="AosEdge SDV demo " + team.title(),
+                isGroup=True, priority=0, createdBy=USER, create=dict(stage="CONFIRMED"))
+            for service, subject, team in ((BRAKE, SUBJECT, "brake"),
+                (TIRE, "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", "tire"))}
+        peer = copy.deepcopy(state["vehicles"]["production"])
+        factory = (self.root / state["factory"]["path"]).read_bytes()
+        ledger = self.root / ".local/release-continuity.json"
+        ledger.write_text('{"vdp":37}')
+        for cycle, assigned_count in enumerate((2, 0, 1, 0)):
+            with self.subTest(cycle=cycle, assigned=assigned_count):
+                test = state["vehicles"]["test"]
+                test.update(unitId=test["localVmId"], nodeId=test["localVmId"],
+                    systemUid="cycle-" + str(cycle), unitSetId=state["cloudBinding"]["sets"]["test"],
+                    cloud=dict(lifecycle="DELETED", absenceConfirmed=True),
+                    runtime=dict(state="STOPPED", pid=None, everStarted=True, accessCreated=cycle == 0))
+                state["demoSubjects"] = copy.deepcopy(subjects)
+                state["serviceOperations"] = {
+                    service: dict(ownerId=owner, serviceId=service, team=team, state="ASSIGNED",
+                        test={key: test[key] for key in ("unitId", "systemUid", "unitSetId")},
+                        steps={key: dict(stage="CONFIRMED") for key in ("bind", "assign")})
+                    for service, team in ((BRAKE, "brake"), (TIRE, "tire"))[:assigned_count]}
+                if not assigned_count:
+                    state.pop("serviceOperations")
+                atomic_json(self.root / JOURNAL, state)
+                def cloud_check(current):
+                    entries = retirement_subjects(current)
+                    self.assertEqual(2 - assigned_count, sum(e.get("unassigned", False) for e in entries))
+                    return True
+                with self.unheld():
+                    self.service.retire_test(cloud_check=cloud_check)
+                    self.service.retire_test(cloud_check=Mock(side_effect=AssertionError("Already retired")))
+                current = self.read()
+                self.assertEqual(subjects, current["demoSubjects"])
+                self.assertEqual(peer, current["vehicles"]["production"])
+                self.assertNotIn("serviceOperations", current)
+                self.assertFalse((self.root / test["overlay"]).exists())
+                self.assertEqual(factory, (self.root / state["factory"]["path"]).read_bytes())
+                self.assertEqual('{"vdp":37}', ledger.read_text())
+                if cycle < 3:
+                    state = self.create("test")
+
     def test_completed_cm_comparison_is_retired_but_unrestored_proof_blocks(self):
         state = self.retired()
         state["cmServiceUpdateProof"] = dict(state="COMPLETED", proof="factory32-delivery-control",

@@ -10,6 +10,14 @@ export function vehicleLabel(role: VehicleRole | null): string {
 
 export function SharedHeader({ snapshot, perspective, onNavigate }: { snapshot: PresenterSnapshot; perspective: Perspective; onNavigate: (value: Perspective) => void }) {
   const teams: TeamId[] = ["platform", "brake", "tire"];
+  if (snapshot.localDemo) return <header className="shared-header studio-shared-header"><div className="brand-row">
+    <button className="title-button" aria-label="AosEdge Software Evolution Demo" onClick={() => onNavigate("global")}><img className="studio-logo" src={logo} alt="AosEdge" /></button>
+    <CurrentVehicleIndicator vehicle={snapshot.vehicle} assetFailure={snapshot.assetFailure} /></div>
+    <button className="studio-header-session" onClick={() => {
+      const native = window as Window & { webkit?: { messageHandlers?: { navigation?: { postMessage: (value: string) => void } } } };
+      if (native.webkit?.messageHandlers?.navigation) native.webkit.messageHandlers.navigation.postMessage("session");
+      else window.dispatchEvent(new Event("presenter-session"));
+    }}>Session</button></header>;
   return (
     <header className="shared-header">
       <div className="brand-row">

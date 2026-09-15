@@ -42,7 +42,7 @@ describe("protected Presenter controls", () => {
     const dialog = screen.getByRole("dialog");
     expect(dialog).toHaveTextContent("fixed OEM publication context");
     expect(dialog).toHaveTextContent("13.0.0");
-    expect(dialog).toHaveTextContent("Production remains unchanged");
+    expect(dialog).toHaveTextContent("no Production membership or assignment is changed");
     expect(dialog).toHaveTextContent("no batch-approval step is required");
     expect(port.submit).not.toHaveBeenCalled();
   });

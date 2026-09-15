@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import sys
 import time
+from contextlib import contextmanager
 from pathlib import Path
 
 from .environment import EnvironmentError, JOURNAL, atomic_json
@@ -444,12 +445,28 @@ class BackendService:
             networks=[network], restart="unless-stopped", security_opt=["no-new-privileges:true"])},
             volumes={volume: dict(name=volume, labels=labels)}, networks={network: dict(name=network, labels=labels)})
 
+    @contextmanager
+    def _observation(self, team):
+        # Read-only dashboards must not contend with package upload. Only the
+        # selected run/vehicle/backend binding matters, not unrelated receipts.
+        def binding():
+            state = read_json(self.root / JOURNAL)
+            vehicle = state.get("vehicles", {}).get("test", {})
+            return (state.get("kind"), state.get("operations", [])[:1],
+                {key: vehicle.get(key) for key in ("localVmId", "systemUid", "unitId")},
+                state.get("backends", {}).get(team),
+                (state.get("demoLifecycle") or {}).get("fileSharingRecovery"))
+        before = binding()
+        yield
+        if before != binding():
+            raise EnvironmentError("BACKEND_OBSERVATION_BINDING_CHANGED")
+
     def execute(self, action, team):
         if team not in TEAMS or action not in ("build", "activate", "start", "stop", "status", "inspect"):
             raise EnvironmentError("BACKEND_OPERATION_INVALID")
         if action == "build":
             return self.build(team)
-        with self.environment._writer():
+        with self._observation(team) if action in ("inspect", "status") else self.environment._writer():
             state = read_json(self.root / JOURNAL)
             if (state.get("kind") != "democtl.current-run" or "test" not in state.get("vehicles", {})
                     or not state.get("operations") or state["operations"][0].get("class") != "LOCAL_CREATE"

@@ -33,9 +33,6 @@ class FakeRuntime(VMService):
     def _host_profile(self):
         pass
 
-    def _initialize_factory_role(self, state, role):
-        return {"state": "INITIALIZED", "role": role}
-
     def _free_port(self, port, udp=False):
         pass
 
@@ -54,14 +51,15 @@ class FakeRuntime(VMService):
             raise AssertionError("VM force kill forbidden")
         del self.running[pid]
 
-    def guest(self, access, port, timeout=5, shutdown=False):
+    def guest(self, access, port, timeout=5, shutdown=False, *, factory_role=None, cloud_host=None, cloud_configuration=None):
         if shutdown and self.shutdown_works:
             role = "test" if port == 10022 else "production"
             for pid, args in list(self.running.items()):
                 if any("democtl-" + role + "-" in arg for arg in args):
                     del self.running[pid]
         return {"guestReady": self.guest_ready, "guestDnsReady": self.guest_ready,
-                "unprovisioned": self.unprovisioned}
+                "unprovisioned": self.unprovisioned,
+                **({"factoryRole": dict(state="INITIALIZED", role=factory_role)} if factory_role else {})}
 
 
 class VMTests(unittest.TestCase):
@@ -94,18 +92,53 @@ class VMTests(unittest.TestCase):
     def state(self):
         return json.loads((self.root / JOURNAL).read_text())
 
+    def test_finish_stops_vm_but_preserves_uncertain_cloud_receipt(self):
+        self.runtime.execute("start", "test", 1)
+        state = self.state()
+        pending = dict(id="pending-cloud", **{"class": "UNIT_LIFECYCLE"}, target=["test"],
+            step="SDK_PROVISION", state="UNCERTAIN")
+        state["operations"].append(pending)
+        atomic_json(self.root / JOURNAL, state)
+        with self.assertRaisesRegex(EnvironmentError, "UNIT_OPERATION_RECONCILIATION_REQUIRED"):
+            self.runtime.execute("stop", "test", 1)
+        state["demoLifecycle"] = dict(action="retire", target="test", phase="stop-test")
+        atomic_json(self.root / JOURNAL, state)
+        result = self.runtime.execute("stop", "test", 1)
+        self.assertEqual("COMPLETED", result["vehicles"]["test"]["state"])
+        self.assertEqual(pending, self.state()["operations"][-1])
+        self.assertEqual("STOPPED", self.state()["vehicles"]["test"]["runtime"]["state"])
+
+    def test_finish_powers_off_exact_vm_after_shutdown_timeout_only(self):
+        self.runtime.execute("start", "test", 1)
+        self.runtime.shutdown_works = False
+        state = self.state()
+        state["demoLifecycle"] = dict(action="retire", target="test", phase="stop-test")
+        atomic_json(self.root / JOURNAL, state)
+        requests = []
+        def monitor(path, command):
+            requests.append((path.name, command))
+            if command == "quit":
+                for pid, args in list(self.runtime.running.items()):
+                    if any("democtl-test-" in arg for arg in args):
+                        del self.runtime.running[pid]
+            return {}
+        with patch("aosedge_demo_orchestrator.vm.qmp", side_effect=monitor):
+            result = self.runtime.execute("stop", "test", .01)
+        self.assertEqual([("test.qmp", "quit")], requests)
+        self.assertEqual("COMPLETED", result["vehicles"]["test"]["state"])
+        self.assertIsNone(self.state()["vehicles"]["test"]["runtime"]["stopProof"])
+
     def test_readiness_is_one_read_no_boot_role_write_or_journal_write(self):
         self.assertEqual("VM_NOT_RUNNING", self.runtime.observe_readiness("test")["reason"])
         self.runtime.execute("start", "test", 1)
         before = (self.root / JOURNAL).read_bytes()
         spawned = list(self.runtime.spawned)
-        with patch.object(self.runtime, "_initialize_factory_role") as role, patch(
-                "aosedge_demo_orchestrator.vm.read_guest", wraps=self.runtime.guest) as guest:
+        with patch("aosedge_demo_orchestrator.vm.read_guest", wraps=self.runtime.guest) as guest:
             self.assertEqual("CURRENT", self.runtime.observe_readiness("test")["state"])
             guest.assert_called_once()
             self.assertEqual(10022, guest.call_args.args[1])
             self.assertEqual(5, guest.call_args.args[2])
-            role.assert_not_called()
+            self.assertNotIn("factory_role", guest.call_args.kwargs)
         self.assertEqual(before, (self.root / JOURNAL).read_bytes())
         self.assertEqual(spawned, self.runtime.spawned)
         self.runtime.guest_ready = False
@@ -125,6 +158,39 @@ class VMTests(unittest.TestCase):
         self.assertEqual(1, len(self.runtime.killed))
         self.assertEqual("LOCAL_STOPPED", self.state()["stage"])
         self.assertTrue(self.state()["vehicles"]["test"]["runtime"]["stopProof"]["unprovisioned"])
+
+    def test_start_and_repeat_use_one_guest_round_trip_per_role(self):
+        for _ in range(2):
+            with patch("aosedge_demo_orchestrator.vm.read_guest", wraps=self.runtime.guest) as guest:
+                result = self.runtime.execute("start", "all", 1)
+            self.assertTrue(all(value["state"] == "COMPLETED" for value in result["vehicles"].values()))
+            self.assertEqual(2, guest.call_count)
+            self.assertEqual({"test", "production"}, {call.kwargs["factory_role"] for call in guest.call_args_list})
+        self.assertEqual(3, len(self.runtime.spawned))
+
+    def test_explicit_production_cloud_keeps_the_ordinary_start_path(self):
+        state = self.state()
+        state["selectedCloudDomain"] = "aoscloud.io"
+        atomic_json(self.root / JOURNAL, state)
+        with patch("aosedge_demo_orchestrator.vm.read_guest", wraps=self.runtime.guest) as guest, \
+                patch("aosedge_demo_orchestrator.cloud_connection.host_entries") as hosts:
+            result = self.runtime.execute("start", "test", 1)
+        self.assertEqual("COMPLETED", result["vehicles"]["test"]["state"])
+        guest.assert_called_once()
+        self.assertEqual({"factory_role": "test"}, guest.call_args.kwargs)
+        hosts.assert_not_called()
+
+    def test_debug_bootstrap_is_in_the_first_and_only_guest_round_trip(self):
+        request = dict(domain="developer.aos-dev.test", hosts=[], vmStart=True)
+        with patch("aosedge_demo_orchestrator.cloud_connection.guest_configuration", return_value=request), \
+                patch("aosedge_demo_orchestrator.vm.read_guest", wraps=self.runtime.guest) as guest, \
+                patch("aosedge_demo_orchestrator.cloud_connection.configure_guest") as separate_ssh:
+            result = self.runtime.execute("start", "test", 1)
+        self.assertEqual("COMPLETED", result["vehicles"]["test"]["state"])
+        guest.assert_called_once()
+        self.assertEqual(request, guest.call_args.kwargs["cloud_configuration"])
+        self.assertEqual(request["domain"], guest.call_args.kwargs["cloud_host"])
+        separate_ssh.assert_not_called()
 
     def test_isolated_test_reuses_exact_bridge_and_cannot_stop_its_owner(self):
         owner_root = self.root.parent / "aosedge-sdv-demo"

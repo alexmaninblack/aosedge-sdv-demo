@@ -9,7 +9,7 @@
 - Accepted: 2026-08-26
 - Previous accepted version: 1.0
 - Owner: System Architecture
-- Architecture input: [High-Level Architecture 1.6](../architecture/high-level-architecture.md)
+- Architecture input: [High-Level Architecture 1.7](../architecture/high-level-architecture.md)
 - Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.0](../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - Flow input: [Demo Scenario Architecture Flows 2.1](../architecture/demo-scenario-architecture-flows.md)
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md),

@@ -5,6 +5,7 @@
 
 from .environment import EnvironmentError, JOURNAL, atomic_json
 from .status import object_id, read_json, now
+from .cloud_connection import cloud_binding, cloud_subjects
 
 LABELS = {"brake": "AosEdge SDV demo Brake", "tire": "AosEdge SDV demo Tire"}
 STEPS = ("create", "bind", "assign")
@@ -136,10 +137,10 @@ def snapshot(cloud, request):
 
 
 def retirement_subjects(state):
-    """Validate terminal, exact Test bindings before its lifecycle is retired."""
-    subjects, operations = state.get("demoSubjects", {}), state.get("serviceOperations", {})
+    """Validate retained identities and any terminal bindings of this Test."""
+    subjects, operations = cloud_subjects(state), state.get("serviceOperations", {})
     if (state.get("demoSubject") or not isinstance(subjects, dict) or not isinstance(operations, dict)
-            or set(subjects) != set(operations) or len(subjects) > 2):
+            or set(operations) - set(subjects) or len(subjects) > 2):
         raise EnvironmentError("SERVICE_RETIREMENT_BINDINGS_REQUIRE_RECONCILIATION")
     if not subjects:
         return []
@@ -148,22 +149,35 @@ def retirement_subjects(state):
         raise EnvironmentError("SERVICE_SUBJECT_SINGLE_ROLE_RETENTION_REQUIRED")
     item = state["vehicles"]["test"]
     test = {key: item.get(key) for key in ("unitId", "systemUid", "unitSetId")}
-    owner = object_id(state["cloudBinding"]["ownerId"])
+    binding = cloud_binding(state)
+    if not binding.get("ownerId"):
+        raise EnvironmentError("SERVICE_RETIREMENT_BINDINGS_REQUIRE_RECONCILIATION")
+    owner = object_id(binding["ownerId"])
     result = []
     for service_id, subject in subjects.items():
-        record = operations[service_id]
-        team = record.get("team")
-        if (record.get("state") != "ASSIGNED" or record.get("serviceId") != service_id
-                or record.get("test") != test or record.get("ownerId") != owner
-                or subject.get("ownerId") != owner or team not in LABELS
-                or subject.get("label") != LABELS[team] or subject.get("isGroup") is not True
+        if (not isinstance(subject, dict) or subject.get("ownerId") != owner
+                or subject.get("label") not in LABELS.values() or subject.get("isGroup") is not True
                 or type(subject.get("priority")) is not int or subject["priority"] != 0
-                or any(record.get("steps", {}).get(step, {}).get("stage") != "CONFIRMED" for step in ("bind", "assign"))
                 or subject.get("create", {}).get("stage") != "CONFIRMED"):
             raise EnvironmentError("SERVICE_RETIREMENT_BINDINGS_REQUIRE_RECONCILIATION")
-        result.append(dict(serviceId=object_id(service_id), id=object_id(subject["id"]),
-            label=subject["label"], createdBy=object_id(subject["createdBy"])))
-    if len({entry["id"] for entry in result}) != len(result):
+        entry = dict(serviceId=object_id(service_id), id=object_id(subject["id"]),
+            label=subject["label"], createdBy=object_id(subject["createdBy"]))
+        if service_id not in operations:
+            # Retirement intentionally retains Subject identities but removes
+            # the old run's operations. Missing assignment is not uncertainty:
+            # the caller must prove this retained Subject is still unbound.
+            entry["unassigned"] = True
+        else:
+            record = operations[service_id]
+            if (not isinstance(record, dict) or record.get("state") != "ASSIGNED"
+                    or record.get("serviceId") != service_id or record.get("test") != test
+                    or record.get("ownerId") != owner or record.get("team") not in LABELS
+                    or subject["label"] != LABELS[record["team"]]
+                    or any(record.get("steps", {}).get(step, {}).get("stage") != "CONFIRMED" for step in ("bind", "assign"))):
+                raise EnvironmentError("SERVICE_RETIREMENT_BINDINGS_REQUIRE_RECONCILIATION")
+        result.append(entry)
+    if (len({entry["id"] for entry in result}) != len(result)
+            or len({entry["label"] for entry in result}) != len(result)):
         raise EnvironmentError("SERVICE_RETIREMENT_BINDINGS_REQUIRE_RECONCILIATION")
     return result
 
@@ -195,6 +209,7 @@ def confirm_retired_subjects(cloud, request):
 def execute(cloud, request):
     """One optional POST per worker; host journals before dispatch."""
     from .unit_cloud import CloudFailure
+    from urllib.error import URLError
     if request["action"] == "service-assignment-observe":
         return snapshot(cloud, request)
     if request["action"] != "service-assignment-step" or request.get("step") not in STEPS:
@@ -210,6 +225,9 @@ def execute(cloud, request):
             raise CloudFailure("SERVICE_ASSIGNMENT_ORDER_REQUIRED")
     except (CloudFailure, ValueError, TypeError, KeyError) as error:
         return dict(stage="BLOCKED", attempted=False, reason=str(error) if isinstance(error, CloudFailure) else "SERVICE_ASSIGNMENT_PREFLIGHT_SCHEMA_INVALID")
+    except (URLError, TimeoutError, OSError) as error:
+        return dict(stage="BLOCKED", attempted=False,
+            reason="SERVICE_ASSIGNMENT_PREFLIGHT_" + type(error).__name__)
     subject_id = before["subject"]["id"] if before["subject"] else None
     path, body = ("subjects/", dict(label=LABELS[request["team"]], is_group=True)) if step == "create" else (
         "subjects/" + subject_id + ("/units/" if step == "bind" else "/services/"),
@@ -244,10 +262,18 @@ class ServiceAssignment:
         matches = []
         for team in ("brake", "tire"):
             root = self.environment.catalog.project / "services" / team / "releases"
-            paths = list(root.glob("*/publication.json"))
-            if len(paths) > 256:
+            directories = list(root.glob("*"))
+            if len(directories) > 256:
                 raise EnvironmentError("SERVICE_ASSIGNMENT_PUBLICATION_SCAN_LIMIT")
-            for path in paths:
+            for directory in directories:
+                if directory.name.startswith("."):
+                    continue
+                _, record = packages._record(team + "/" + directory.name, verify_payload=False)
+                from .package_artifacts import publication_path
+                _, domain = packages._profile(record)
+                path = publication_path(directory, domain, "service provider")
+                if not path.is_file():
+                    continue
                 if any(part.is_symlink() for part in (path, *path.parents)
                         if part.is_relative_to(self.environment.catalog.project)):
                     raise EnvironmentError("SERVICE_PUBLICATION_PATH_UNSAFE")
@@ -255,27 +281,26 @@ class ServiceAssignment:
                 observation = receipt.get("lastObservation") or {}
                 if observation.get("serviceId") != service_id:
                     continue
-                _, record = packages._record(team + "/" + path.parent.name, verify_payload=False)
-                if (observation.get("version") != record["version"] or record.get("serviceId") not in (None, service_id)
+                if (observation.get("version") != record["version"] or receipt.get("cloudDomain") != domain
                         or receipt.get("attempted") is not True or receipt.get("requestAccepted") is not True
                         or receipt.get("httpStatus") != 201 or not receipt.get("deploymentId")
                         or observation.get("deploymentId") != receipt["deploymentId"]
                         or observation.get("source") != "AOS_CLOUD_ONLY"):
                     raise EnvironmentError("SERVICE_ASSIGNMENT_PUBLICATION_RECEIPT_MISMATCH")
-                matches.append(dict(team=team, serviceProviderId=record["serviceProviderId"], publishedVersion=record["version"]))
+                matches.append(dict(team=team, serviceProviderId=object_id(receipt["ownerId"]), publishedVersion=record["version"]))
         if not matches or len({(item["team"], item["serviceProviderId"]) for item in matches}) != 1:
             raise EnvironmentError("SERVICE_ASSIGNMENT_PUBLICATION_RECEIPT_REQUIRED")
         from .releases import number
         return max(matches, key=lambda item: number(item["publishedVersion"]))
 
-    def assign(self, service_id):
+    def assign(self, service_id, confirm_bind_not_submitted_at=None):
         service_id = object_id(service_id)
         with self.environment._writer():
             if self.path.is_symlink():
                 raise EnvironmentError("SERVICE_ASSIGNMENT_JOURNAL_UNSAFE")
             state = read_json(self.path)
             item = state.get("vehicles", {}).get("test") or {}
-            owner = object_id((state.get("cloudBinding") or {})["ownerId"])
+            owner = object_id(cloud_binding(state)["ownerId"])
             if (state.get("kind") != "democtl.current-run" or not item.get("localVmId") or not item.get("systemUid")
                     or item.get("cloud", {}).get("lifecycle") in ("DEPROVISIONED", "DELETED")
                     or state.get("demoLifecycle", {}).get("action") == "retire"):
@@ -286,7 +311,7 @@ class ServiceAssignment:
             if state.get("demoSubject"):
                 raise EnvironmentError("SERVICE_SUBJECT_LEGACY_SHARED_BINDING_REQUIRES_RECONCILIATION")
             label = LABELS[publication["team"]]
-            subjects = state.setdefault("demoSubjects", {})
+            subjects = cloud_subjects(state, create=True)
             subject = subjects.get(service_id)
             if subject and (subject.get("ownerId") != owner or subject.get("label") != label):
                 raise EnvironmentError("SERVICE_SUBJECT_RECORDED_OWNER_CONFLICT")
@@ -319,6 +344,25 @@ class ServiceAssignment:
                 if not subject.get("id") and subject.get("create", {}).get("attempted") is True:
                     return partial("SERVICE_SUBJECT_CREATE_ID_UNCERTAIN_NO_REPLAY")
                 current = observe()
+                if confirm_bind_not_submitted_at is not None:
+                    # Explicit operator attestation for a legacy preflight
+                    # failure. Never infer non-submission from absence alone.
+                    attempt = record["steps"].get("bind", {})
+                    if (not isinstance(confirm_bind_not_submitted_at, str)
+                            or attempt.get("startedAt") != confirm_bind_not_submitted_at
+                            or attempt.get("stage") != "ATTEMPTING"
+                            or attempt.get("attempted") is not True
+                            or "httpStatus" in attempt or current["subject"] is None
+                            or current["unitBound"]):
+                        raise EnvironmentError("SERVICE_BIND_NON_SUBMISSION_CONFIRMATION_MISMATCH")
+                    history = record.setdefault("preflightRecovery", [])
+                    if len(history) >= 16:
+                        raise EnvironmentError("SERVICE_BIND_RECOVERY_HISTORY_LIMIT")
+                    history.append(dict(attempt, step="bind", confirmation="OPERATOR_CONFIRMED_NO_POST",
+                        confirmedAt=now(), absenceObservedAt=current["observedAt"]))
+                    attempt.update(stage="BLOCKED", attempted=False,
+                        reason="OPERATOR_CONFIRMED_NO_POST")
+                    save()
                 for step in STEPS:
                     done = current["subject"] is not None if step == "create" else current["unitBound"] if step == "bind" else current["serviceBound"]
                     attempt = subject.get("create", {}) if step == "create" else record["steps"].get(step, {})

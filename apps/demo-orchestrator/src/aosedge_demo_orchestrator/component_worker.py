@@ -19,7 +19,50 @@ from aosedge_demo_orchestrator.components import archive_files, sha
 from aosedge_demo_orchestrator.environment import EnvironmentError
 
 
-def verify(path, credential, expected=None):
+def credential_identity(request):
+    """Private worker metadata; never expose the certificate identity in UI/CLI."""
+    from datetime import datetime, timezone
+    from cryptography.hazmat.primitives.serialization.pkcs12 import load_key_and_certificates
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.x509.oid import NameOID
+    from aosedge_demo_orchestrator.cloud_connection import trusted_host
+    key, cert, _ = load_key_and_certificates(Path(request["credential"]).read_bytes(), None)
+    if key is None or cert is None:
+        raise EnvironmentError("PACKAGE_SIGNING_CERTIFICATE_REQUIRED")
+    names = cert.subject.get_attributes_for_oid(NameOID.ORGANIZATION_NAME)
+    if len(names) != 1:
+        raise EnvironmentError("CLOUD_CERTIFICATE_DOMAIN_AMBIGUOUS")
+    domain = trusted_host(names[0].value, request.get("cloudDomain"))
+    if not cert.not_valid_before_utc <= datetime.now(timezone.utc) <= cert.not_valid_after_utc:
+        raise EnvironmentError("CLOUD_CERTIFICATE_TIME_INVALID")
+    role = request.get("role") or (request.get("expectedSigningContext") or {}).get("role")
+    if role not in ("oem", "service provider"):
+        raise EnvironmentError("PACKAGE_SIGNING_ROLE_REQUIRED")
+    return dict(domain=domain, role=role, signerId=cert.fingerprint(hashes.SHA256()).hex())
+
+
+@contextlib.contextmanager
+def credential_snapshot(request):
+    """One immutable private credential per worker, including its network call."""
+    if not request.get("credential"):
+        yield request
+        return
+    path = Path(request["credential"])
+    if (path.is_symlink() or not path.is_file() or path.stat().st_mode & 0o077
+            or path.stat().st_size > 1024 * 1024):
+        raise EnvironmentError("PACKAGE_CREDENTIAL_MISSING_OR_UNSAFE")
+    raw = path.read_bytes()
+    if len(raw) > 1024 * 1024:
+        raise EnvironmentError("PACKAGE_CREDENTIAL_MISSING_OR_UNSAFE")
+    with tempfile.TemporaryDirectory(prefix="democtl-signing-") as temporary:
+        copied = Path(temporary) / "credential.p12"
+        with copied.open("xb") as stream:
+            os.fchmod(stream.fileno(), 0o600)
+            stream.write(raw)
+        yield dict(request, credential=str(copied))
+
+
+def verify(path, credential, expected=None, *, certificate_format="pkcs12"):
     import jwt
     from cryptography.hazmat.primitives.serialization.pkcs12 import load_key_and_certificates
     raw = path.read_bytes()
@@ -28,7 +71,11 @@ def verify(path, credential, expected=None):
     outer = archive_files(raw)
     if set(outer) != {"package.sign", "config.yaml", "batch.tar.gz"}:
         raise EnvironmentError("COMPONENT_SIGNED_ENVELOPE_INVALID")
-    _, certificate, _ = load_key_and_certificates(credential.read_bytes(), b"")
+    if certificate_format == "pem":
+        from cryptography.x509 import load_pem_x509_certificate
+        certificate = load_pem_x509_certificate(credential.read_bytes())
+    else:
+        _, certificate, _ = load_key_and_certificates(credential.read_bytes(), b"")
     payload = jwt.decode(outer["package.sign"], certificate.public_key(), algorithms=["RS256"])
     records = payload.get("data")
     if not isinstance(records, list) or len(records) != 2:
@@ -44,6 +91,27 @@ def verify(path, credential, expected=None):
 
 
 def execute(request):
+    if request["action"] == "signing-context":
+        return credential_identity(request)
+    if request.get("expectedSigningContext"):
+        from aosedge_demo_orchestrator.package_artifacts import context
+        expected_context = request["expectedSigningContext"]
+        if context(credential_identity(request), expected_context["preparedSha256"]) != expected_context:
+            raise EnvironmentError("PACKAGE_SIGNING_CONTEXT_CHANGED")
+    if request["action"] == "verify-baseline":
+        from aosedge_demo_orchestrator.component_build import PROFILE_BASES
+        pins = {entry[0]: entry[1] for entry in PROFILE_BASES.values()}
+        expected = pins.get(request.get("baselineVersion"))
+        if not expected or request.get("expectedSha256") != expected:
+            raise EnvironmentError("COMPONENT_BASELINE_NOT_PINNED")
+        path, certificate = Path(request["bundle"]), Path(request["certificate"])
+        if path.is_symlink() or not path.is_file() or path.stat().st_size > 128 * 1024 * 1024:
+            raise EnvironmentError("COMPONENT_BUNDLE_UNSAFE")
+        if (certificate.is_symlink() or not certificate.is_file() or certificate.stat().st_mode & 0o022
+                or certificate.stat().st_size > 1024 * 1024):
+            raise EnvironmentError("COMPONENT_BASELINE_CERTIFICATE_MISSING_OR_UNSAFE")
+        return dict(verify(path, certificate, expected, certificate_format="pem"),
+                    verificationTrust="PINNED_BASELINE_AND_ORIGINAL_OEM_CERTIFICATE")
     if request["action"] == "validate-service":
         from aos_signer.upload_config_v2.batch_configuration import UpdateBundleConfiguration
         path = Path(request["directory"]) / "config.yaml"
@@ -66,7 +134,14 @@ def execute(request):
     if credential.is_symlink() or credential.stat().st_mode & 0o077:
         raise EnvironmentError("OEM_CREDENTIAL_UNSAFE")
     if request["action"] == "verify":
-        return verify(Path(request["bundle"]), credential, request["expectedSha256"])
+        result = verify(Path(request["bundle"]), credential, request.get("expectedSha256"))
+        if request.get("directory"):
+            outer = archive_files(Path(request["bundle"]).read_bytes())
+            inner = archive_files(outer["batch.tar.gz"])
+            prepared = json.loads((Path(request["directory"]) / "prepared.json").read_text())
+            if {name: sha(raw) for name, raw in inner.items()} != prepared["files"]:
+                raise EnvironmentError("COMPONENT_SIGN_CHANGED_PAYLOAD")
+        return result
     if request["action"] == "sign":
         from aos_signer.upload_config_v2.batch_configuration import UpdateBundleConfiguration
         from aos_signer.signer.signer import Signer
@@ -119,18 +194,13 @@ def verify_service(request):
 
 def sign_service(request):
     from aosedge_demo_orchestrator.service_packages import read_package
-    from aosedge_demo_orchestrator.unit_cloud import Cloud, CloudFailure
     from aos_signer.upload_config_v2.batch_configuration import UpdateBundleConfiguration
     from aos_signer.signer.signer import Signer
     credential = Path(request["credential"])
     if credential.is_symlink() or not credential.is_file() or credential.stat().st_mode & 0o077:
         raise EnvironmentError("SERVICE_SP_CREDENTIAL_UNSAFE")
-    # Confirm the configured signing account once; the prepared SP must not
-    # silently change with a different certificate at the same local path.
-    try:
-        Cloud(request, expected_role="service provider")
-    except CloudFailure as error:
-        raise EnvironmentError(str(error)) from None
+    # Signing is local. The selected SP authority and service binding are
+    # authenticated against the destination Cloud at publication time.
     directory, output = Path(request["directory"]), Path(request["bundle"])
     if output.exists() or output.is_symlink():
         raise EnvironmentError("SERVICE_SIGN_OUTPUT_EXISTS")
@@ -159,9 +229,17 @@ def sign_service(request):
 def main():
     try:
         request = json.loads(sys.stdin.read(65537))
-        # Never forward raw signer diagnostics, certificates, paths or headers.
-        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-            data = execute(request)
+        with credential_snapshot(request) as scoped:
+            # Never forward raw signer diagnostics, certificates, paths or headers.
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                if scoped.get("cloudDomain"):
+                    from aos_prov.utils.user_credentials import UserCredentials
+                    from aosedge_demo_orchestrator.cloud_connection import trusted_host
+                    try:
+                        trusted_host(UserCredentials(pkcs12=scoped["credential"]).cloud_url, scoped["cloudDomain"])
+                    except ValueError as error:
+                        raise EnvironmentError(str(error)) from None
+                data = execute(scoped)
         result = dict(ok=True, data=data)
     except EnvironmentError as error:
         result = dict(ok=False, reason=str(error))

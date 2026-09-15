@@ -38,11 +38,21 @@ def build_parser() -> argparse.ArgumentParser:
         help="result format (default: human)",
     )
     commands = parser.add_subparsers(dest="domain", required=True)
+    cloud = commands.add_parser("cloud", help="select the Test Cloud from a local OEM certificate")
+    cloud_commands = cloud.add_subparsers(dest="action", required=True)
+    cloud_commands.add_parser("check", help="read OEM/SP and first-use Test Cloud prerequisites; no mutation")
+    cloud_commands.add_parser("prepare", help="explicitly create missing Test model/set; preserve Production and existing objects")
+    for action in ("inspect", "select"):
+        command = cloud_commands.add_parser(action, help="local certificate metadata/selection; no Cloud or VM mutation")
+        command.add_argument("--certificate", help="local OEM PKCS#12 path; default uses the configured OEM certificate")
     service = commands.add_parser("service", help="read AosCloud service catalog, owners, versions and assignments")
     service_commands = service.add_subparsers(dest="action", required=True)
+    service_commands.add_parser("releases", help="read prepared release receipts; no payload hashing or Cloud access")
     service_assign = service_commands.add_parser("assign", help="OEM assignment through this service's dedicated Group Subject to current Test only")
     service_assign.add_argument("service_id", help="exact service UUID returned by cloud-status/list, never a version UUID")
     service_assign.add_argument("--target", required=True, choices=("test",))
+    service_assign.add_argument("--confirm-bind-not-submitted-at", metavar="ATTEMPT_TIMESTAMP",
+        help="operator-confirmed legacy bind preflight recovery; exact journal startedAt, only after proof no POST was sent")
     service_runtime = service_commands.add_parser("runtime-inspect", help="engineering-only Test native ABI and declared service resources; no mutation")
     service_runtime.add_argument("target", choices=("test",))
     service_inputs = service_commands.add_parser("runtime-prepare", help="project public Test inputs from native identity and committed VDP; no container or SM restart")
@@ -228,6 +238,8 @@ def request_from_arguments(arguments: argparse.Namespace) -> OperationRequest:
         demo_mocked_data=getattr(arguments, "demo_mocked_data", False),
         restart_sm=getattr(arguments, "restart_sm", False),
         restart_cm=getattr(arguments, "restart_cm", False),
+        confirm_bind_not_submitted_at=getattr(arguments, "confirm_bind_not_submitted_at", None),
+        certificate=getattr(arguments, "certificate", None),
         timeout=getattr(arguments, "timeout", 8.0),
     )
 
@@ -241,6 +253,19 @@ def render_human(result: OperationResult, details: bool = False) -> str:
         summary += f" role={document['technical_role']}"
     lines = [summary, document["message"]]
     data = document.get("data")
+    if data and document["operation"] in ("cloud.check", "cloud.prepare"):
+        lines.append("Cloud: " + str(data.get("domain", "not confirmed")))
+        lines.append("Setup: " + str(data.get("stage", "not observed"))
+                     + (" (unchanged)" if data.get("noOp") is True else ""))
+        for row in data.get("checks", []):
+            lines.append("  " + str(row["label"]) + ": " + str(row["state"]) + " — " + str(row["detail"]))
+        if data.get("reason"):
+            lines.append(str(data["reason"]))
+        if data.get("observedAt"):
+            lines.append("Observed: " + str(data["observedAt"]))
+    if data and document["operation"] in ("cloud.inspect", "cloud.select"):
+        lines.append("Selected Cloud: " + str(data.get("selectedDomain", "not configured")))
+        lines.append("Certificate domain: " + str(data.get("domain", "not available")))
     if data and document["operation"].startswith("vehicle.connectivity-"):
         lines.append("Vehicle: " + data["target"] + "; external connectivity: " + data["state"])
         lines.append("Filter evidence only; AosCloud Online/Offline is observed separately.")

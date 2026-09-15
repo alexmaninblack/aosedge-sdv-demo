@@ -210,14 +210,21 @@ class ServicePackages:
         from .status import object_id
         config = load_configuration(self.environment.root)
         profile = config["cloudProfiles"].get(record["cloudProfile"])
-        if (not profile or profile["expectedRole"] != "service provider"
-                or profile.get("expectedOwnerId", record["serviceProviderId"]) != record["serviceProviderId"]):
+        if not profile or profile["expectedRole"] != "service provider":
             raise EnvironmentError("SERVICE_SP_BINDING_CHANGED")
+        from .cloud_connection import LEGACY_DOMAIN
+        if values.get("expectedCloudDomain") and values["expectedCloudDomain"] != profile.get("cloudDomain", LEGACY_DOMAIN):
+            raise EnvironmentError("PACKAGE_PUBLICATION_CONTEXT_CHANGED")
         credential = profile["credential"]
         if credential.is_symlink() or not credential.is_file() or credential.stat().st_mode & 0o077:
             raise EnvironmentError("SERVICE_SP_CREDENTIAL_UNSAFE")
-        request = dict(values, action=action, credential=str(credential), ownerId=object_id(record["serviceProviderId"]),
-            serviceId=record.get("serviceId"), team=record["team"], version=record["version"], directory=str(directory))
+        owner = values.get("ownerId") or profile.get("expectedOwnerId")
+        if owner and profile.get("expectedOwnerId") and owner != profile["expectedOwnerId"]:
+            raise EnvironmentError("SERVICE_SP_BINDING_CHANGED")
+        request = dict(values, action=action, credential=str(credential), ownerId=object_id(owner) if owner else None,
+            role="service provider", team=record["team"], version=record["version"], directory=str(directory))
+        from .cloud_connection import cloud_request
+        request.update(cloud_request(profile))
         try:
             process = subprocess.run([str(config["cloudPython"]), "-I", "-B",
                 str(Path(__file__).with_name("component_worker.py"))], text=True, capture_output=True,
@@ -240,23 +247,83 @@ class ServicePackages:
             raise EnvironmentError("SERVICE_WORKER_RESPONSE_UNAVAILABLE")
         return result["data"]
 
+    def _profile(self, record):
+        from .cloud_connection import LEGACY_DOMAIN
+        profile = load_configuration(self.environment.root)["cloudProfiles"][record["cloudProfile"]]
+        return profile, profile.get("cloudDomain", LEGACY_DOMAIN)
+
+    def _signing_context(self, directory, record):
+        from .package_artifacts import context, digest
+        return context(self._worker("signing-context", directory, record), digest(record["files"]))
+
+    def _verify_signed(self, directory, record, bundle, signed, identity):
+        result = self._worker("service-verify", directory, record, bundle=str(bundle),
+            expectedSha256=signed["sha256"], expectedSigningContext=identity)
+        if result.get("signatureVerification") != "VERIFIED_RS256" or result.get("payloadMatchesPrepared") is not True:
+            raise EnvironmentError("SERVICE_SIGNATURE_NOT_VERIFIED")
+        return result
+
+    def _publication_path(self, directory, record, *, create=False):
+        from .package_artifacts import publication_path
+        profile, domain = self._profile(record)
+        legacy = directory / "publication.json"
+        if legacy.is_symlink():
+            raise EnvironmentError("SERVICE_PUBLICATION_PATH_UNSAFE")
+        if legacy.is_file() and read_json(legacy).get("attempted") is not False:
+            # Old receipts have no trustworthy destination. Do not silently
+            # adopt their IDs or retry a possibly successful legacy POST.
+            raise EnvironmentError("SERVICE_LEGACY_PUBLICATION_RECONCILIATION_REQUIRED")
+        return publication_path(directory, domain, "service provider", create=create, owner_id=profile.get("expectedOwnerId"))
+
     def sign(self, handle):
         with self.environment._writer():
             directory, record = self._record(handle)
-            bundle = directory / "deployment-bundle.tar.gz"
-            receipt = directory / "signed.json"
-            if bundle.is_symlink() or receipt.is_symlink():
-                raise EnvironmentError("SERVICE_SIGNED_PATH_UNSAFE")
+            from .package_artifacts import paths, credential_stamp
+            identity = self._signing_context(directory, record)
+            bundle, receipt = paths(directory, identity, create=True)
+            stamp = credential_stamp(self._profile(record)[0]["credential"])
             if receipt.exists() and not bundle.exists():
                 raise EnvironmentError("SERVICE_SIGNED_BUNDLE_MISSING")
             existing = bundle.exists()
             expected = read_json(receipt).get("sha256") if receipt.exists() else None
             result = self._worker("service-verify" if existing else "service-sign", directory, record,
-                bundle=str(bundle), expectedSha256=expected)
+                bundle=str(bundle), expectedSha256=expected, expectedSigningContext=identity)
             if result.get("signatureVerification") != "VERIFIED_RS256" or result.get("payloadMatchesPrepared") is not True:
                 raise EnvironmentError("SERVICE_SIGNATURE_NOT_VERIFIED")
-            atomic_json(receipt, result)
-            return dict(result, releaseHandle=handle, bundlePath=str(bundle), noOp=existing)
+            atomic_json(receipt, dict(result, signingContext=identity, credentialStamp=stamp))
+            return dict(result, releaseHandle=handle, bundlePath=str(bundle), noOp=existing, cloudDomain=identity["domain"])
+
+    def receipts(self):
+        """Small persisted authoring facts, separate from installed/runtime state."""
+        rows = []
+        for team in ("brake", "tire"):
+            base = self.environment.catalog.project / "services" / team / "releases"
+            if any(path.is_symlink() for path in (base, *base.parents) if path.is_relative_to(self.environment.catalog.project)):
+                raise EnvironmentError("SERVICE_PACKAGE_PATH_UNSAFE")
+            entries = sorted(base.iterdir()) if base.exists() else []
+            if len(entries) > 256:
+                raise EnvironmentError("SERVICE_RECEIPT_CATALOG_LIMIT")
+            for entry in entries:
+                if entry.name.startswith("."):
+                    continue
+                directory, record = self._record(team + "/" + entry.name, verify_payload=False)
+                row = {key: record.get(key) for key in ("releaseHandle", "team", "version", "contentProfile", "serviceId", "preparedAt", "runId", "demoMockedData")}
+                for name in ("signed.json", "publication.json"):
+                    if (directory / name).is_symlink():
+                        raise EnvironmentError("SERVICE_RECEIPT_PATH_UNSAFE")
+                from .package_artifacts import visible_signature, credential_stamp, publication_path
+                profile, domain = self._profile(record)
+                signed = visible_signature(directory, domain, "service provider", credential_stamp(profile["credential"]))
+                path = publication_path(directory, domain, "service provider", owner_id=profile.get("expectedOwnerId"))
+                publication = read_json(path) if path.is_file() else {}
+                observation = publication.get("lastObservation") or publication
+                row.update(signed=signed.get("signatureVerification") == "VERIFIED_RS256",
+                    submitted=publication.get("attempted") is True, sha256=signed.get("sha256"),
+                    publication={key: observation.get(key) for key in ("stage", "serviceId", "versionId", "observedAt", "reason")})
+                row["serviceId"] = observation.get("serviceId")
+                row["cloudDomain"] = domain
+                rows.append(row)
+        return dict(state="OBSERVED", releases=rows, observedAt=now())
 
     def _test_scope(self):
         from .environment import JOURNAL
@@ -278,28 +345,30 @@ class ServicePackages:
     def upload(self, handle):
         with self.environment._writer():
             directory, record = self._record(handle, verify_payload=False)
-            path = directory / "publication.json"
-            if path.is_symlink():
-                raise EnvironmentError("SERVICE_PUBLICATION_PATH_UNSAFE")
+            path = self._publication_path(directory, record, create=True)
             if path.exists():
                 previous = read_json(path)
                 if previous.get("attempted") is not False:
                     return dict(self.cloud_status(handle), noOp=True)
             read_package(directory, record["team"], record["version"])
-            bundle, receipt = directory / "deployment-bundle.tar.gz", directory / "signed.json"
-            if bundle.is_symlink() or receipt.is_symlink() or not bundle.is_file() or not receipt.is_file():
-                raise EnvironmentError("SERVICE_SIGNED_PACKAGE_REQUIRED")
-            signed = read_json(receipt)
+            from .package_artifacts import signed_receipt
+            identity = self._signing_context(directory, record)
+            bundle, signed = signed_receipt(directory, identity)
             if signed.get("signatureVerification") != "VERIFIED_RS256" or digest(bundle) != signed.get("sha256"):
                 raise EnvironmentError("SERVICE_SIGNED_BUNDLE_CHANGED")
             test = self._test_scope()
+            binding = ServiceCatalog(self.environment).release_versions(record["team"], record["cloudProfile"])
+            self._verify_signed(directory, record, bundle, signed, identity)
             intent = dict(schemaVersion=1, releaseHandle=handle, stage="ATTEMPTING", attempted=True,
-                sha256=signed["sha256"], startedAt=now())
+                sha256=signed["sha256"], startedAt=now(), cloudDomain=identity["domain"],
+                ownerId=binding["ownerId"], serviceId=binding["serviceId"], role="service provider",
+                preparedSha256=identity["preparedSha256"])
             atomic_json(path, intent)
             self.progress(record["team"] + ": SP preflight and one Deployment Bundle upload; no assignment or approval")
             try:
                 response = self._worker("service-upload", directory, record, bundle=str(bundle),
-                    expectedSha256=signed["sha256"], test=test)
+                    expectedSha256=signed["sha256"], test=test, expectedSigningContext=identity,
+                    ownerId=binding["ownerId"], serviceId=binding["serviceId"])
             except EnvironmentError:
                 response = dict(stage="UNCERTAIN", attempted=True, reason="SERVICE_UPLOAD_WORKER_RESPONSE_LOST")
             if (not isinstance(response, dict) or response.get("stage") not in ("ACCEPTED", "ERROR", "UNCERTAIN", "BLOCKED")
@@ -313,20 +382,32 @@ class ServicePackages:
     def cloud_status(self, handle):
         with self.environment._writer():
             directory, record = self._record(handle, verify_payload=False)
-            path = directory / "publication.json"
-            if path.is_symlink():
-                raise EnvironmentError("SERVICE_PUBLICATION_PATH_UNSAFE")
+            path = self._publication_path(directory, record)
             if not path.exists():
                 return dict(stage="NOT_PUBLISHED", releaseHandle=handle)
             intent = read_json(path)
             if intent.get("attempted") is False:
                 return intent
-            result = self._worker("service-cloud-status", directory, record, deploymentId=intent.get("deploymentId"))
-            # Preserve the actual mutation receipt; observations do not erase
-            # it, claim installation, retry upload or allocate another release.
-            intent["lastObservation"] = result
-            atomic_json(path, intent)
-            return dict(result, releaseHandle=handle)
+        # Network observation must not monopolize the environment mutation lock.
+        result = self._worker("service-cloud-status", directory, record, deploymentId=intent.get("deploymentId"),
+                              ownerId=intent.get("ownerId"), serviceId=intent.get("serviceId"),
+                              expectedCloudDomain=intent.get("cloudDomain"))
+        try:
+            with self.environment._writer():
+                if path.is_symlink():
+                    raise EnvironmentError("SERVICE_PUBLICATION_PATH_UNSAFE")
+                if path.exists():
+                    current_directory, current_record = self._record(handle, verify_payload=False)
+                    # Do not recreate retired receipts or overwrite a concurrent
+                    # mutation/observation. The returned Cloud read is still valid
+                    # for this release, even when its optional cache write loses.
+                    if current_directory == directory and current_record == record and read_json(path) == intent:
+                        intent["lastObservation"] = result
+                        atomic_json(path, intent)
+        except EnvironmentError as error:
+            if str(error) != "CURRENT_RUN_BUSY":
+                raise
+        return dict(result, releaseHandle=handle)
 
     def _validate(self, directory):
         # Reuse the installed official signer adapter. Validation reads source
@@ -396,10 +477,14 @@ class ServicePackages:
                 for parent, _, _ in os.walk(stage / "service"):
                     Path(parent).chmod(0o755)
                 self._validate(stage)
+                from .environment import JOURNAL
+                journal_path = self.environment.root / JOURNAL
+                journal = read_json(journal_path) if journal_path.is_file() and not journal_path.is_symlink() else {}
                 result = dict(schemaVersion=1, team=team, contentProfile=content_profile, version=version,
+                    runId=journal.get("vehicles", {}).get("test", {}).get("localVmId"),
                     releaseHandle=team + "/" + version, state="PREPARED", preparedAt=now(),
                     sourceRevision=build["sourceRevision"], files=inventory,
-                    serviceId=binding["serviceId"], serviceProviderId=binding["ownerId"], cloudProfile=cloud_profile,
+                    cloudProfile=cloud_profile,
                     withoutPermissions=without_permissions,
                     demoNoTelemetry=demo_no_telemetry,
                     demoMockedData=demo_mocked_data,

@@ -3,6 +3,84 @@
 
 # Demo Orchestrator
 
+## Selecting a Test Cloud
+
+Use **Session → Cloud connection** in the UI: read the configured OEM
+certificate or choose another one in the native Mac dialog, then confirm
+**Use this Cloud**. The domain comes from the certificate, not a browser URL.
+
+```sh
+democtl cloud inspect
+democtl cloud select --certificate ~/.aos/security/aos-user-oem.p12
+```
+
+The [Cloud selection contract](../../docs/architecture/certificate-selected-cloud.md)
+defines endpoint/CA defaults, SP-domain matching, Production isolation,
+switching prerequisites and transient guest configuration on VM start/provision.
+Selection itself does not provision, restart or publish anything.
+
+### First use with a new OEM / Service Provider
+
+After selecting the OEM certificate and configuring the matching SP certificate:
+
+```sh
+democtl cloud check
+democtl cloud prepare
+```
+
+The same explicit actions are **Session → Check Cloud setup** and
+**Prepare Test Cloud** (with confirmation). Check authenticates both accounts
+and reports the Default fleet, arm64, Factory model/configuration, node type,
+Test verification set and OEM/SP association together. Opening Session never
+creates Cloud settings.
+
+Prepare reuses matching settings and creates only the absent `aos-vm;1.0.0`
+model with the tracked single-node configuration and Test verification set in
+Default. It does not create Production, modify campaigns, provision a VM or
+publish a package. An incompatible object, denied read or uncertain previous
+creation blocks instead of being overwritten or blindly retried. An unchanged
+repeat is a no-op. Before the first provisioning, an absent node type is
+`AFTER_PROVISION`, not an artificial startup blocker.
+
+Setup and release history survive Finish; run-owned Units and Subjects do not.
+Same-owner certificate renewal keeps the context. Changing OEM/SP while a run
+has identity or uncertain operations requires finishing/reconciling that run.
+`READY` here means configuration prerequisites passed, **not** that services
+have reached or started on a Unit. See the
+[first-use qualification](../../docs/qualification/first-use-cloud-configuration-audit-2026-09-15.md).
+
+### Reuse prepared content with the selected certificate
+
+VDP and service packages remain unsigned until explicit Sign. Sign uses the
+Session-selected OEM certificate for VDP, or the configured SP certificate for
+the same Cloud for services. Changing a certificate does not require the old
+certificate, rebuilding the payload, preparing a new release or changing its
+version. UI **Sign & publish** composes these same democtl operations.
+
+```sh
+# Existing prepared version/handle; not a request to allocate a new version.
+democtl component sign <prepared-version>
+democtl component verify <prepared-version>
+democtl component upload <prepared-version>
+democtl service sign <team/version>
+democtl service upload <team/version>
+```
+
+The three pinned VDP source archives are migrated once with `democtl component
+unpack 1.0.16`, `democtl component unpack 2.0.0` and `democtl component unpack
+3.0.0`. For these source selectors, Unpack prepares the canonical unsigned
+source and is repeatable without overwriting anything. Prepare also ensures
+this source automatically. No certificate, VM or Cloud call is needed for
+source migration; the legacy `componentBaselineCertificate` is not used.
+
+An old signature is never silently submitted to a new Cloud. Upload requires
+a signature for the selected context. An already attempted publication keeps
+its exact destination/owner/response and is reconciled rather than resent.
+Unscoped legacy service attempts require explicit reconciliation; no automatic
+adoption is inferred. See [ADR 0016](../../docs/architecture/decisions/0016-unsigned-packages-and-session-scoped-signing.md)
+for local paths, source pins and compatibility rules. Local signature status
+is not evidence of Cloud installation or Running.
+
 ## Current working checkpoint — 13 September 2026
 
 Factory .33 Test passed the [scoped engineering E2E](../../docs/qualification/factory-33-e2e-2026-09-13.md).
@@ -10,9 +88,10 @@ VDP23/V3, Brake11/V3 and Tire9/V1 are the dated installed results, not version
 numbers to reuse. VDP application waits for Safe Stop; service deployment and
 updates do not. Production .31 is preserved and outside this Test run.
 
-Normal .33 startup has the accepted public inputs/resources and CM/SM fixes
-built in. It does not require `service runtime-activate`, a manual input
-projection or an extra manager restart. Older dated .28/.29/.31/transient
+Normal .33 startup has the accepted input hooks/resources and CM/SM fixes
+built in. The first warm service deployment after provisioning prepares public
+inputs as described below; Studio composes that step automatically. It does not
+require `service runtime-activate` or an extra manager restart. Older dated .28/.29/.31/transient
 experiments below remain historical engineering references, not startup steps.
 
 While Cloud's service-permissions defect remains open, the qualified synthetic
@@ -22,10 +101,16 @@ records exercise the real native service-to-backend transport but do not
 establish KUKSA access, vehicle analytics or Driver Advisory. Ordinary packages
 continue to declare native permissions. Do not turn off authentication.
 
-Source publication and machine-readable workspace reconciliation are still
-open. See the [baseline](../../docs/qualification/current-baseline.md),
+The seven-repository source checkpoint is published; machine-readable workspace
+reconciliation remains open. See the [baseline](../../docs/qualification/current-baseline.md),
 [audit/retention inventory](../../docs/qualification/factory-33-consolidation-audit-2026-09-13.md)
 and [phase plan](../../docs/planning/active/demo-studio-delivery-plan.md).
+
+The [UI command performance audit](../../docs/research/democtl-ui-performance-audit-2026-09-13.md)
+records the used command paths, retained checks and isolated timing results.
+Independent Cloud reads now overlap; VDP Prepare no longer builds the same
+package twice, and publication observation does not hold the environment
+writer while waiting for Cloud. No lifecycle/recipient checks were removed.
 
 ### Service package preparation (development increment)
 
@@ -109,7 +194,27 @@ result preserves the exact attempted step; repeating reconciles without blindly
 replaying a POST. One new explicit association attempt is allowed after a newer
 READY release only when the exact service binding is authoritatively absent and
 the retained Subject is already bound to Test. It never repeats Subject creation
-or Unit binding. Full Subject retirement integration remains unavailable.
+or Unit binding. The current Test lifecycle clears its owned Subject bindings
+at Retire and preserves the retained Subject identities.
+
+Transport failures before an assignment POST return `BLOCKED` with
+`attempted=false`; a later explicit Deploy can proceed. A failed/lost POST
+remains uncertain and is not replayed automatically. For a legacy bind record
+incorrectly left `ATTEMPTING`, an operator who has independently established
+that no POST was sent can use `--confirm-bind-not-submitted-at <exact-startedAt>`
+on `service assign`. It verifies the exact attempt, owned Subject, current Test
+and authoritative absence, and preserves an operator-attested recovery history.
+This is exceptional recovery, not a normal demo step or proof inferred from
+Cloud absence alone. It does not recover an unknown Subject creation.
+
+Before the first service assignment on a newly provisioned Factory .33, run
+`democtl service runtime-prepare test` after the first VDP is installed/running.
+It prepares public inputs without restarting SM. Subsequent cold-start hooks
+reconstruct those inputs; preparation is not equivalent to container Running.
+Studio's Deploy to Test composes this preparation before `service assign` for
+both teams. A blocked/partial/unknown preparation does not proceed to Cloud
+assignment; an unchanged repeat is a no-op before normal binding reconciliation.
+Later service releases still use publication alone, without another Deploy.
 
 ### Cloud-only Test observations
 
@@ -162,13 +267,13 @@ combined; the one-click launcher is not implemented. CARLA remains separate.
 Operator workflow (same core in CLI and the UI's **Prepare demo** button):
 
 ```bash
-democtl demo plan --image 6.1.1-maninblack.31/main-qemuarm64
-democtl demo prepare --image 6.1.1-maninblack.31/main-qemuarm64
+democtl demo plan --image 6.1.1-maninblack.33/main-qemuarm64
+democtl demo prepare --image 6.1.1-maninblack.33/main-qemuarm64
 ```
 
 Plan is read-only. Prepare chooses/reuses the correct v1 release automatically,
-creates or continues matching Test/Production VMs, publishes/approves baseline
-v1, starts/provisions both roles, starts simulation and initially connects Test
+creates or continues current Test, publishes baseline v1 without batch approval,
+starts/provisions Test, starts simulation and initially connects Test
 in stationary Manual. Then the operator starts Autopilot and presses Safe Stop.
 The component may already be downloaded; activation waits for actual Safe Stop.
 Completed stages persist in the existing run journal, not in the browser.
@@ -184,11 +289,15 @@ After building the existing `apps/presenter-ui` package, run `democtl ui serve`
 from this directory. The foreground server exposes the UI at
 `http://127.0.0.1:18080/`, local observations and explicitly confirmed operations.
 Startup does not start VMs or call Cloud. Buttons invoke the same application
-core as CLI. Cloud and guest reads are explicit, never background polling.
+core as CLI. Visible right-side views share bounded Cloud observation; no guest
+read is added to the panel. The native header does not duplicate Cloud reads.
 Private native port 18600 uses a temporary backend-only capability; enter the
 first-SSH password in the native macOS dialog, never in the browser.
 No caller-selected command, path, target, credential or Cloud endpoint is
-accepted over HTTP. Fixed actions prepare both VMs; VDP delivery is Test-only.
+accepted over HTTP. Fixed actions operate on current Test; Production is preserved.
+Service prepare/sign/upload and first identity assignment use the same package,
+SP and dedicated-Subject operations as CLI. `democtl service releases` reads
+bounded authoring metadata without payload hashing or Cloud calls.
 One job runs at a time with immediate receipts and no automatic retries.
 Ctrl+C while idle closes the UI session, preserving VMs and Units. Reset is a
 separate confirmed action without backups. Native composition has been visually
@@ -207,7 +316,7 @@ democtl workspace close
 ```
 
 `restore` places only the current demo's windows on the built-in display:
-shared header, CARLA upper-left, Controller and native Terminal telematics
+shared header, CARLA upper-left, combined native Driving Control and telemetry
 below it, and the Platform/Lifecycle panel on the right. The two Presenter
 windows host the existing local UI, not a separate lifecycle implementation.
 The compact profile aligns CARLA and the dashboard at their right edge,
@@ -215,8 +324,9 @@ narrows the Controller and expands the right panel (approximately 45/55).
 The shared header and dashboard width are unchanged on the built-in display.
 A black background in the same Presenter process fills the working area
 behind the demo panels. It closes with Presenter and does not change macOS
-wallpaper/settings. A changed native Presenter binary reloads only those UI
-windows during restore, never the simulator or VMs.
+wallpaper/settings. After adopting the current native host with close/restore,
+idle build/session changes reload both web views together. Dialogs and active or
+uncertain submissions prevent reload. Simulator and VMs are not restarted.
 `workspace close` gracefully closes only the owned native Presenter windows
 and black background. The simulation, VMs, Cloud Units and local web server
 remain running. Repeating close is a no-op; restore recreates the windows.
@@ -227,8 +337,8 @@ which `democtl` is invoked needs the relevant macOS Accessibility/Automation
 permission; permission for an unrelated app is not sufficient.
 
 After the first restore, a new `simulation start` restores this layout
-automatically. Its existing single telemetry client renders in one native
-Terminal, not an HTML copy or a log-following second client. Healthy repeated
+automatically. Its existing single telemetry client renders in the native
+control application, not a Terminal or an HTML copy. Healthy repeated
 starts do not restart the simulator. The controller is resizable. The operator
 accepted the compact composition and black background; later layout changes
 still require visual review. Interactive sessions now run until explicitly
@@ -245,7 +355,7 @@ democtl ui serve
 In another terminal in this package's activated virtual environment:
 
 ```bash
-democtl vm start all
+democtl vm start test
 democtl simulation start
 democtl vehicle select test
 ```
@@ -748,11 +858,13 @@ duration. The CLI and local API use the same UnitService implementation.
   owner and resolved set UUIDs are pinned in the current journal. Other Units
   in a selected role set block the command; they are never automatically removed.
   An already provisioned current Unit is observed/reused without another SDK attempt.
-- deprovision stops the selected guest's CM, waits for authoritative Offline,
-  performs Cloud deprovision once, reads new/Offline, then stops the exact VM.
+- deprovision gracefully stops the entire selected VM, waits for authoritative
+  Cloud Offline, performs Cloud deprovision once and reads new/Offline.
+  An already stopped VM continues without guest access or a restart. The peer
+  VM and any DNS dependency it still uses remain untouched.
   It does not restart CM with old credentials or test identity revocation;
-  that is Cloud's responsibility. No certificate is extracted. The initial
-  CM disconnect still observes its stock systemd stop limit when needed.
+  that is Cloud's responsibility. No certificate is extracted and there is no
+  separate CM-stop step. A Cloud timeout preserves the stopped VM and journal.
   There is no forced VM kill or systemd timeout change.
 - delete requires that deprovision proof and a stopped, released overlay. It
   removes only the current systemUID from its exact role set, deletes the Unit,
@@ -1055,12 +1167,21 @@ Cloud or modify an existing VM. The QMP fixture binds a temporary Unix socket.
 Creation integration tests use qemu-img and temporary 1 MiB raw images; these
 tests are skipped when qemu-img is unavailable.
 
+Real signing fixtures additionally require the separately installed Aos SDK
+Python environment (`aos_signer`, `cryptography`, and `jwt`). They are explicitly
+skipped in the dependency-free CLI environment; run the same suite with the SDK
+Python before a signing checkpoint. Tests generate disposable fixture keys and
+do not read the operator's certificates or publish to Cloud.
+
 ```text
 PYTHONPATH=apps/demo-orchestrator/src \
   python3 -m aosedge_demo_orchestrator --help
 
 PYTHONPATH=apps/demo-orchestrator/src \
   python3 -m unittest discover -s apps/demo-orchestrator/tests -p 'test_*.py'
+
+PYTHONPATH=apps/demo-orchestrator/src \
+  ~/.aos/venv/bin/python3 -m unittest discover -s apps/demo-orchestrator/tests -p 'test_*.py'
 ```
 
 Installing the package creates the `democtl` console command through the

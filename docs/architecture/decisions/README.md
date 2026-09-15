@@ -29,6 +29,9 @@ they do not replace the current HLA.
 - [ADR 0015: Use Native Aos Facilities for Service Identity, Data and Tokens](0015-use-native-aos-service-runtime-inputs.md)
   — accepted application provenance, public inputs and private KUKSA token
   sessions without new SM code changes; implementation authorized.
+- [ADR 0016: Unsigned Packages and Session-scoped Signing](0016-unsigned-packages-and-session-scoped-signing.md)
+  — proposed local source-trust and per-Cloud publication amendment; audited
+  migration, service parity and preservation of the operator's parked Test.
 
 The change process and stable-reference rules are defined in
 [Documentation and Requirements Management](../../governance/documentation-and-requirements-management.md).

@@ -34,9 +34,11 @@ class Cloud:
         from aos_prov.utils.user_credentials import UserCredentials
 
         credentials = UserCredentials(pkcs12=request["credential"])
-        host = credentials.cloud_url
-        if not re.fullmatch(r"(?:[a-z0-9-]+\.)*aoscloud\.io", host):
-            raise CloudFailure("CLOUD_TRUST_DOMAIN_INVALID")
+        from aosedge_demo_orchestrator.cloud_connection import trusted_host
+        try:
+            host = trusted_host(credentials.cloud_url, request.get("cloudDomain"))
+        except ValueError as error:
+            raise CloudFailure(str(error)) from None
         with resources.as_file(resources.files("aos_prov") / "files/1rootCA.crt") as ca:
             context = ssl.create_default_context(cafile=str(ca))
         with credentials.user_credentials as material:
@@ -93,9 +95,16 @@ class Cloud:
         value = self.call("units/" + identity + "/", absent=True)
         if value is None:
             return None
+        # A newly provisioned Unit can have no memberships yet; Cloud returns
+        # null in this case. Do not confuse that with an unreadable Unit.
+        unit_sets = value["unit_sets"]
+        if unit_sets is None:
+            unit_sets = []
+        if not isinstance(unit_sets, list) or any(not isinstance(item, dict) or "id" not in item for item in unit_sets):
+            raise CloudFailure("CLOUD_UNIT_SETS_INVALID")
         result = {key: safe_word(value[key]) for key in ("system_uid", "status", "online_status")}
         result.update(id=object_id(value["id"]), fleet=object_id(value["fleet"]) if value.get("fleet") else None,
-                      unit_sets=[object_id(item["id"]) for item in value["unit_sets"]])
+                      unit_sets=[object_id(item["id"]) for item in unit_sets])
         if nodes:
             result["nodes"] = [{key: item.get(key) for key in ("id", "node_id", "node_type", "is_main", "status")}
                                for item in self.pages("units/" + result["id"] + "/nodes/")]
@@ -129,6 +138,14 @@ class Cloud:
 
 def execute(request):
     action = request["action"]
+    if action in ("cloud-setup-check", "cloud-setup-step"):
+        from aosedge_demo_orchestrator.cloud_setup import inspect_setup, create_step
+        from aosedge_demo_orchestrator.cloud_connection import inspect_certificate
+        inspect_certificate(request["credential"])
+        discovery = dict(request)
+        discovery.pop("ownerId", None)  # Detect tenant changes; preparation checks both owners.
+        cloud = Cloud(discovery)
+        return inspect_setup(cloud, request) if action == "cloud-setup-check" else create_step(cloud, request)
     if action == "service-native-identity":
         address = request.get("address", "")
         if not re.fullmatch(r"unix:/tmp/democtl-native-[A-Za-z0-9_-]+/iam.sock", address):
@@ -161,31 +178,46 @@ def execute(request):
             raise CloudFailure("SDK_ADDRESS_NOT_OWNED_LOOPBACK")
         from aosedge_demo_orchestrator.unit_sdk import identity
         return identity(request["address"])
-    cloud = Cloud(request)
+    try:
+        cloud = Cloud(request)
+    except (urllib.error.URLError, TimeoutError, OSError) as error:
+        if action == "service-assignment-step":
+            # Authentication only reads users/me; no assignment POST was sent.
+            return dict(stage="BLOCKED", attempted=False,
+                reason="SERVICE_ASSIGNMENT_PREFLIGHT_" + type(error).__name__)
+        raise
     if action in ("service-assignment-observe", "service-assignment-step"):
         from aosedge_demo_orchestrator.service_assignment import execute as service_assignment
         return service_assignment(cloud, request)
+    if action == "subjects-unbound":
+        from aosedge_demo_orchestrator.service_assignment import confirm_retired_subjects
+        return dict(subjectsRetainedUnbound=confirm_retired_subjects(cloud, request))
     if action == "observe":
         from aosedge_demo_orchestrator.cloud_observation import inventory, monitoring
         if request.get("observation") not in ("cloud-status", "monitoring"):
             raise CloudFailure("UNIT_OBSERVATION_INVALID")
         return (monitoring if request["observation"] == "monitoring" else inventory)(cloud, request)
     if action == "reconcile-uploads":
-        from aosedge_demo_orchestrator.component_cloud import batch_guard
+        from aosedge_demo_orchestrator.component_cloud import batch_guard, resolve_component
         from aosedge_demo_orchestrator.components import COMPONENT, VERSION
         uploads = request["uploads"]
         if not isinstance(uploads, list) or not uploads or len(uploads) > 16:
             raise CloudFailure("COMPONENT_RECONCILIATION_SCOPE_INVALID")
         cloud.require("deployment_bundles_list")
         bundles = None
+        component = None
         for entry in request["uploads"]:
             deployment_id = object_id(entry["deploymentId"])
             if not VERSION.fullmatch(entry["version"]):
                 raise CloudFailure("COMPONENT_OPERATION_RECONCILIATION_REQUIRED")
             if entry.get("verificationTest") is True:
-                from aosedge_demo_orchestrator.component_publication import snapshot
-                observed = snapshot(cloud, dict(entry, vehicles={}, purpose="retirement"))
-                if observed["publication"]["stage"] != "READY":
+                from aosedge_demo_orchestrator.component_publication import Reads
+                # The caller holds the exact successful upload response and
+                # authenticated OEM binding. Retirement keeps this global
+                # release, even if parsing failed or is still in progress.
+                # Confirm acceptance, not catalog readiness or installation.
+                matches = Reads(cloud).pages("deployment-bundles/", deployment_id)
+                if len(matches) != 1 or matches[0].get("id") != deployment_id:
                     raise CloudFailure("COMPONENT_OPERATION_RECONCILIATION_REQUIRED")
                 continue
             cloud.require("verification_batch_read")
@@ -201,7 +233,10 @@ def execute(request):
             batch = cloud.call("verification-batch/" + batch_id + "/")
             if batch.get("id") != batch_id:
                 raise CloudFailure("COMPONENT_OPERATION_RECONCILIATION_REQUIRED")
-            batch_guard(batch, entry, cloud.user["ownerId"])
+            component = component or resolve_component(cloud)
+            if not component:
+                raise CloudFailure("COMPONENT_CLOUD_IDENTITY_NOT_OBSERVED")
+            batch_guard(batch, dict(entry, componentId=component["id"]), cloud.user["ownerId"])
         return {"confirmedUploads": request["uploads"]}
     if action == "inventory":
         return cloud.inventory(request.get("setIds"), request.get("includeUnits", True))

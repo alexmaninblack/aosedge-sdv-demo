@@ -15,6 +15,7 @@ from .guest_access import read_guest, ssh_command
 from .status import load_configuration, read_json, now, project_root
 from .vm import access_path, qmp
 from .probes import provisioning_forward_states
+from .cloud_connection import cloud_binding, cloud_scope, cloud_request, selected_domain, LEGACY_DOMAIN
 
 
 class UnitService:
@@ -37,7 +38,7 @@ class UnitService:
         if not item.get("unitId") or not item.get("systemUid"):
             raise EnvironmentError("TEST_CLOUD_BINDING_REQUIRED")
         identity = dict(unitId=object_id(item["unitId"]), systemUid=safe_word(item["systemUid"], 256))
-        owner = state.get("cloudBinding", {}).get("ownerId")
+        owner = cloud_binding(state).get("ownerId")
         if not owner:
             raise EnvironmentError("CLOUD_OBSERVATION_OWNER_REQUIRED")
         owner = object_id(owner)
@@ -57,6 +58,7 @@ class UnitService:
         if path.is_symlink() or not path.is_file() or path.stat().st_mode & 0o077:
             raise EnvironmentError("OEM_CREDENTIAL_MISSING_OR_UNSAFE")
         request = dict(values, action=action, credential=str(path))
+        request.update(cloud_request(profile))
         if getattr(self, "owner_id", None):
             request.setdefault("ownerId", self.owner_id)
         if profile.get("expectedOwnerId"):
@@ -80,22 +82,28 @@ class UnitService:
             raise EnvironmentError(payload.get("reason", "UNIT_CLOUD_FAILED"))
         return payload["data"]
 
-    def _bindings(self, state, inventory):
-        bindings = state.get("cloudBinding")
+    def _bindings(self, state, inventory, roles=None):
+        bindings = cloud_binding(state)
         if bindings and bindings["ownerId"] != inventory["ownerId"]:
             raise EnvironmentError("OEM_OWNER_CHANGED")
         selected = {}
+        required = set(roles) if roles is not None else set(state.get("vehicles", {}))
+        required = required or {"test", "production"}
         for role, title in (("test", "Test Vehicles"), ("production", "Production Vehicles")):
+            pinned = bindings.get("sets", {}).get(role)
             candidates = [item for item in inventory["sets"] if
-                          (item["id"] == bindings["sets"][role] if bindings else
+                          (item["id"] == pinned if pinned else
                            item["title"] == title or item["title"].endswith(" / " + title))]
+            if role not in required and not candidates:
+                continue
             if len(candidates) != 1:
                 raise EnvironmentError("ROLE_UNIT_SET_MISSING_OR_AMBIGUOUS:" + role)
             item = candidates[0]
             if item["is_validation_set"] is not (role == "test"):
                 raise EnvironmentError("ROLE_UNIT_SET_TYPE_MISMATCH:" + role)
             selected[role] = item
-        if selected["test"]["id"] == selected["production"]["id"] or selected["test"]["fleet"] != selected["production"]["fleet"]:
+        if len(selected) == 2 and (selected["test"]["id"] == selected["production"]["id"] or
+                (len(required) == 2 and selected["test"]["fleet"] != selected["production"]["fleet"])):
             raise EnvironmentError("ROLE_UNIT_SET_FLEET_OR_ID_CONFLICT")
         return selected
 
@@ -103,14 +111,29 @@ class UnitService:
         """Fresh Test-only absence proof, preserving the full peer journal."""
         return self.confirm_retired(state, roles=("test",))
 
+    def confirm_unassigned_subjects(self, state):
+        """Read-only Cloud cleanup proof for retained Subjects unused in this run."""
+        from .service_assignment import retirement_subjects
+        subjects = [entry for entry in retirement_subjects(state) if entry.get("unassigned")]
+        if not subjects:
+            return True
+        self.progress("Finish: confirming retained, unused service Subjects have no Cloud Unit bindings")
+        result = self._cloud("subjects-unbound", ownerId=cloud_binding(state)["ownerId"],
+            retainedSubjects=subjects)
+        if result.get("subjectsRetainedUnbound") is not True:
+            raise EnvironmentError("SERVICE_RETIRED_SUBJECT_CHECK_REQUIRED")
+        return True
+
     def confirm_retired(self, state, roles=None):
         """Read-only cleanup gate; caller already owns the current-run writer."""
-        binding = state.get("cloudBinding")
+        binding = cloud_binding(state)
         if not binding or not binding.get("ownerId"):
             raise EnvironmentError("CLOUD_RETIREMENT_OWNER_REQUIRED")
         self.owner_id = binding["ownerId"]
         scoped = roles is not None
         roles = tuple(state["vehicles"]) if roles is None else tuple(roles)
+        if selected_domain(state) != LEGACY_DOMAIN and set(roles) != {"test"}:
+            raise EnvironmentError("DEBUG_CLOUD_OPERATIONS_REQUIRE_TEST_ONLY")
         if (scoped and not roles) or any(role not in state["vehicles"] for role in roles):
             raise EnvironmentError("CLOUD_RETIREMENT_TARGET_INVALID")
         for role in roles:
@@ -126,7 +149,7 @@ class UnitService:
             result = self._cloud("absence", unitId=item["unitId"], nodeId=item["nodeId"], **extra)
             if subjects and result.get("subjectsRetainedUnbound") is not True:
                 raise EnvironmentError("SERVICE_RETIRED_SUBJECT_CHECK_REQUIRED")
-            sets = self._bindings(state, result["inventory"])
+            sets = self._bindings(state, result["inventory"], roles=roles)
             if (not result["absent"] or any(sets[target]["members"] for target in (roles if scoped else sets))
                     or any(unit["system_uid"] == item["systemUid"] for unit in result["inventory"]["units"])):
                 raise EnvironmentError("FRESH_CLOUD_RETIREMENT_CHECK_FAILED")
@@ -156,7 +179,8 @@ class UnitService:
                 raise EnvironmentError("COMPONENT_OPERATION_RECONCILIATION_REQUIRED")
             for entry in uploads:
                 state["componentOperations"][entry["version"]]["upload"].update(
-                    state="CONFIRMED", confirmedAt=now(), reconciliationScope="PUBLICATION_ONLY")
+                    state="CONFIRMED", confirmedAt=now(), reconciliationScope=(
+                        "UPLOAD_RECEIPT_ONLY" if entry.get("verificationTest") else "PUBLICATION_ONLY"))
             # This proves the publication outcome, not the old Production
             # snapshot (those Units have legitimately been deleted already).
             self.vm._save(state)
@@ -170,6 +194,8 @@ class UnitService:
         with self.environment._writer():
             self.mutations_started = False
             state = read_json(self.root / JOURNAL)
+            if selected_domain(state) != LEGACY_DOMAIN and target != "test":
+                raise EnvironmentError("DEBUG_CLOUD_OPERATIONS_REQUIRE_TEST_ONLY")
             roles = [role for role in OVERLAYS if role in state["vehicles"]] if target == "all" else [target]
             # Provision preserves the running guest and its initial source.
             # Stop validation intentionally rejects attached sources for
@@ -183,12 +209,13 @@ class UnitService:
                 and not state.get("source", {}).get("operation") and not state.get("source", {}).get("stopOperation"))
             if selected_role is not None and not connected_initial_test:
                 raise EnvironmentError("UNIT_LIFECYCLE_REQUIRES_DETACHED_SOURCE")
-            self.progress("Reading OEM authority and the two role Unit Sets")
-            inventory = self._cloud("inventory", setIds=state.get("cloudBinding", {}).get("sets"), includeUnits=False)
+            self.progress("Reading OEM authority and the selected role Unit Set(s)")
+            inventory = self._cloud("inventory", setIds=cloud_binding(state).get("sets"), includeUnits=False)
             self.owner_id = inventory["ownerId"]
-            selected = self._bindings(state, inventory)
-            state["cloudBinding"] = {"ownerId": inventory["ownerId"], "fleetId": selected["test"]["fleet"],
-                                      "sets": {role: value["id"] for role, value in selected.items()}}
+            selected = self._bindings(state, inventory, roles=roles)
+            binding = cloud_scope(state, create=True).setdefault("cloudBinding", {})
+            binding.update(ownerId=inventory["ownerId"], fleetId=selected[roles[0]]["fleet"])
+            binding.setdefault("sets", {}).update({role: value["id"] for role, value in selected.items()})
             # A lost mutation response may be reconciled by an explicit command,
             # but may never trigger another SDK attempt or destructive request.
             if len(state["operations"]) != 1:
@@ -276,7 +303,11 @@ class UnitService:
         item = state["vehicles"][role]
         value = self._cloud("find", systemUid=item["systemUid"])["unit"] if item.get("systemUid") else None
         step = op["step"]
-        applied = (step == "SDK_PROVISION" and value and value["status"] == "provisioned" and self._guest_provisioned(state, role))
+        lifecycle = state.get("demoLifecycle") or {}
+        retiring_stopped_test = (role == "test" and lifecycle.get("action") == "retire"
+            and "stop-test" in lifecycle.get("completedSteps", []) and item.get("runtime", {}).get("state") == "STOPPED")
+        applied = (step == "SDK_PROVISION" and value and value["status"] == "provisioned"
+            and (retiring_stopped_test or self._guest_provisioned(state, role)))
         applied = applied or (step == "ASSIGN_SET" and value and item["unitSetId"] in value["unit_sets"])
         applied = applied or (step == "REMOVE_SET" and value and item["unitSetId"] not in value["unit_sets"])
         applied = applied or (step == "DEPROVISION" and value and value["status"] == "new" and value["online_status"] == "Offline")
@@ -341,7 +372,7 @@ class UnitService:
             raise EnvironmentError("UNIT_NODE_IDENTITY_MISMATCH")
         if item.get("unitId") not in (None, unit["id"]):
             raise EnvironmentError("UNIT_UUID_CHANGED")
-        if unit["fleet"] != state["cloudBinding"]["fleetId"]:
+        if unit["fleet"] != cloud_binding(state)["fleetId"]:
             raise EnvironmentError("UNIT_FLEET_MISMATCH")
         item["unitId"] = unit["id"]
         if unit.get("nodes"):
@@ -367,7 +398,11 @@ class UnitService:
             raise EnvironmentError("RETIRED_VM_REQUIRES_FRESH_FACTORY_OVERLAY")
         self._live(state, role)
         if not item.get("systemUid"):
-            guest = read_guest(access_path(self.root, role), item["sshPort"], 8)
+            from .cloud_connection import configure_guest, LEGACY_DOMAIN
+            configure_guest(self.vm, state, role)
+            guest = read_guest(access_path(self.root, role), item["sshPort"], 8,
+                **({"cloud_host": selected_domain(state)}
+                   if role == "test" and selected_domain(state) != LEGACY_DOMAIN else {}))
             if not guest["unprovisioned"] or not guest["guestDnsReady"]:
                 raise EnvironmentError("UNPROVISIONED_GUEST_AND_DNS_REQUIRED")
             address = self._forward(state, role, True)
@@ -381,7 +416,7 @@ class UnitService:
                             cloud={"lifecycle": "PROVISIONING", "identity": identity})
                 self._intent(state, role, "SDK_PROVISION")
                 self.progress(role + ": official SDK provisioning, one Main Node, one attempt")
-                self._cloud("provision", address=address, identity=identity, ownerId=state["cloudBinding"]["ownerId"])
+                self._cloud("provision", address=address, identity=identity, ownerId=cloud_binding(state)["ownerId"])
                 self._done(state, role)
             finally:
                 self._forward(state, role, False)
@@ -405,7 +440,7 @@ class UnitService:
             self._cloud("assign", unitId=item["unitId"], systemUid=item["systemUid"], unitSetId=item["unitSetId"])
             unit = self._wait(state, role, lambda value: value and item["unitSetId"] in value["unit_sets"], "ROLE_UNIT_SET")
             self._done(state, role)
-        if selected["production" if role == "test" else "test"]["id"] in unit["unit_sets"]:
+        if selected.get("production" if role == "test" else "test", {}).get("id") in unit["unit_sets"]:
             raise EnvironmentError("CROSSED_ROLE_MEMBERSHIP")
         item["cloud"]["lifecycle"] = "ONLINE"
         self.vm._save(state)
@@ -428,13 +463,18 @@ class UnitService:
             if value and (value["status"] != "new" or value["online_status"] != "Offline"):
                 raise EnvironmentError("RETIRED_UNIT_STATE_CONTRADICTORY")
             return {"lifecycle": item["cloud"]["lifecycle"], "alreadyDeprovisioned": True}
-        self._live(state, role)
-        # Keep SSH/DNS and the peer VM available. CM is the Unit's sole
-        # Cloud communication owner; stopping it closes the external session.
-        item["cloud"].update(lifecycle="DEPROVISIONING", cmDisconnectIntent=True)
+        # Retirement stops the whole selected VM. The ordinary VM stop path
+        # proves exact ownership and is idempotent for an already stopped VM;
+        # continuation never starts a guest just to disconnect CM separately.
+        item["cloud"].update(lifecycle="DEPROVISIONING", vmShutdownIntent=True)
         self.vm._save(state)
-        self.progress(role + ": disconnecting CM; waiting for Cloud Offline")
-        self._stop_cm(state, role)
+        self.progress(role + ": stopping VM before Cloud deprovisioning")
+        result = self.vm._stop(state, role, 90)
+        if result["state"] != "COMPLETED":
+            raise EnvironmentError("RETIRED_VM_STOP_NOT_CONFIRMED")
+        self.vm._stop_dns(state)  # Preserves DNS while any peer still owns it.
+        state["stage"] = "LOCAL_ACTIVE" if any(v["runtime"]["state"] == "RUNNING" for v in state["vehicles"].values()) else "LOCAL_STOPPED"
+        self.vm._save(state)
         value = self._wait(state, role, lambda unit: unit and unit["online_status"] == "Offline", "CLOUD_OFFLINE")
         if value["status"] == "provisioned":
             self._intent(state, role, "DEPROVISION")
@@ -443,32 +483,12 @@ class UnitService:
             self._done(state, role)
         elif value["status"] != "new":
             raise EnvironmentError("UNEXPECTED_CLOUD_DEPROVISION_STATE")
-        self.progress(role + ": Cloud new/Offline confirmed; stopping VM")
-        # Cloud owns identity revocation. Do not restart CM with retired
-        # credentials; stop this exact VM after authoritative deprovisioning.
-        result = self.vm._stop(state, role, 90)
-        if result["state"] != "COMPLETED":
-            raise EnvironmentError("RETIRED_VM_STOP_NOT_CONFIRMED")
-        self.vm._stop_dns(state)
+        self.progress(role + ": Cloud new/Offline confirmed; VM remains stopped")
         item["cloud"].update(lifecycle="DEPROVISIONED", cloudStatus="new", onlineStatus="Offline")
         state["stage"] = "LOCAL_ACTIVE" if any(v["runtime"]["state"] == "RUNNING" for v in state["vehicles"].values()) else "LOCAL_STOPPED"
         self.vm._save(state)
         return {"unitId": item["unitId"], "lifecycle": "DEPROVISIONED", "cloudStatus": "new",
                 "onlineStatus": "Offline", "vmState": "STOPPED"}
-
-    def _stop_cm(self, state, role):
-        self._guest_script(state, role, "systemctl stop --no-block aos-cm.service\n")
-        deadline = time.monotonic() + 100
-        report = 0
-        while time.monotonic() < deadline:
-            value = self._guest_script(state, role, "systemctl show aos-cm.service -p ActiveState --value\n").strip()
-            if value == "inactive":
-                return
-            if time.monotonic() - report >= 10:
-                self.progress(role + ": CM shutdown in progress (stock systemd stop limit: 90 s)")
-                report = time.monotonic()
-            time.sleep(2)
-        raise EnvironmentError("CM_STOP_TIMEOUT_NO_FORCE_USED")
 
     def _unassign(self, state, role, selected):
         item = state["vehicles"][role]
@@ -478,7 +498,7 @@ class UnitService:
             raise EnvironmentError("UNIT_UNASSIGN_BINDING_REQUIRED")
         value = self._cloud("read", unitId=item["unitId"])["unit"]
         if (not value or value["system_uid"] != item["systemUid"] or value["status"] != "provisioned"
-                or selected["production"]["id"] in value["unit_sets"]):
+                or selected.get("production", {}).get("id") in value["unit_sets"]):
             raise EnvironmentError("UNIT_UNASSIGN_IDENTITY_OR_STATE_CHANGED")
         expected_sets = set(value["unit_sets"]) - {item["unitSetId"]}
         no_op = item["unitSetId"] not in value["unit_sets"]
@@ -508,7 +528,7 @@ class UnitService:
             value = self._cloud("read", unitId=item["unitId"])["unit"]
             if value is None or value["status"] != "new" or value["online_status"] != "Offline":
                 raise EnvironmentError("UNIT_DELETE_PRECONDITION_FAILED")
-            opposite = state["cloudBinding"]["sets"]["production" if role == "test" else "test"]
+            opposite = cloud_binding(state)["sets"].get("production" if role == "test" else "test")
             if opposite in value["unit_sets"]:
                 raise EnvironmentError("UNIT_HAS_CROSSED_ROLE_MEMBERSHIP")
             if item["unitSetId"] in value["unit_sets"]:
@@ -519,7 +539,7 @@ class UnitService:
             self._intent(state, role, "DELETE_UNIT")
             self._cloud("delete", unitId=item["unitId"], systemUid=item["systemUid"])
         result = self._cloud("absence", unitId=item["unitId"], nodeId=item["nodeId"])
-        sets = self._bindings(state, result["inventory"])
+        sets = self._bindings(state, result["inventory"], roles=(role,))
         remaining = sets[role]["members"]
         if self.environment.factory31_comparison is True and role == "test":
             # Deleting the isolated comparison must not require deleting the

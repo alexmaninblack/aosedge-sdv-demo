@@ -9,7 +9,7 @@
 - Accepted: 2026-09-11, explicit user approval
 - Owner: Demo Solution Team and OEM Platform Team
 - Change class: C — application provenance contract and credential-file boundary
-- Architecture input: [High-Level Architecture 1.6](../high-level-architecture.md)
+- Architecture input: [High-Level Architecture 1.7](../high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - Delivery context: [Demo Studio delivery plan](../../planning/active/demo-studio-delivery-plan.md)
 

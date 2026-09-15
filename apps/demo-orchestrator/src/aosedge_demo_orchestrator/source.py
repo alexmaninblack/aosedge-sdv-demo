@@ -202,7 +202,10 @@ class SourceDriver:
             if not pid:
                 continue
             self.progress("Simulation: stopping " + ("Controller/Gateway/UI" if key == "runnerCommand" else "CARLA"))
-            os.kill(pid, signal.SIGTERM)
+            if key == "simulatorCommand" and sys.platform == "darwin":
+                self._quit_simulator(pid, command)
+            else:
+                os.kill(pid, signal.SIGTERM)
             deadline = time.monotonic() + 30
             while self.live_process(command):
                 if time.monotonic() >= deadline:
@@ -219,6 +222,36 @@ class SourceDriver:
             close_terminal(source)
         except (EnvironmentError, OSError, subprocess.SubprocessError):
             self.progress("Simulation stopped; its inactive dashboard window could not be closed")
+
+    def _quit_simulator(self, pid, command):
+        # Unreal's macOS SIGTERM path can crash in its signal handler. Native
+        # Quit instead reaches LaunchMac's requestQuit on the game thread.
+        # Target only the already matched PID/executable, never a bundle name.
+        script = '''ObjC.import('AppKit');
+function run(args) {
+    const pid = Number(args[0]);
+    if (!Number.isInteger(pid) || pid <= 0 || args.length !== 2) {
+        throw new Error('SIMULATOR_QUIT_TARGET_INVALID');
+    }
+    const app = $.NSRunningApplication.runningApplicationWithProcessIdentifier(pid);
+    if (app.isNil()) { return 'ABSENT'; }
+    if (ObjC.unwrap(app.executableURL.path) !== args[1]) {
+        throw new Error('SIMULATOR_QUIT_OWNER_CHANGED');
+    }
+    if (!app.terminate) { throw new Error('SIMULATOR_QUIT_NOT_ACCEPTED'); }
+    return 'REQUESTED';
+}'''
+        try:
+            result = subprocess.run(["/usr/bin/osascript", "-l", "JavaScript", "-e", script,
+                str(pid), command[0]], capture_output=True, text=True, timeout=5)
+        except (OSError, subprocess.TimeoutExpired):
+            raise EnvironmentError("SIMULATION_QUIT_UNAVAILABLE") from None
+        if result.returncode or result.stdout.strip() not in ("REQUESTED", "ABSENT"):
+            raise EnvironmentError("SIMULATION_QUIT_NOT_ACCEPTED")
+        if result.stdout.strip() == "ABSENT" and self.live_process(command):
+            raise EnvironmentError("SIMULATION_NATIVE_OWNER_UNAVAILABLE")
+        # Acceptance is not exit: stop() still confirms process, ports/socket.
+        # No SIGTERM fallback, repeated Quit or automatic force termination.
 
     def start(self, state):
         previous = None
@@ -415,7 +448,10 @@ class SourceService:
         self.progress = vm.progress
 
     def cloud(self, state, roles):
-        self.units.owner_id = state["cloudBinding"]["ownerId"]
+        from .cloud_connection import cloud_binding, selected_domain, LEGACY_DOMAIN
+        if selected_domain(state) != LEGACY_DOMAIN and set(roles) != {"test"}:
+            raise EnvironmentError("DEBUG_CLOUD_OPERATIONS_REQUIRE_TEST_ONLY")
+        self.units.owner_id = cloud_binding(state)["ownerId"]
         inventory = self.units._cloud("inventory")
         sets = self.units._bindings(state, inventory)
         result = {}
@@ -456,13 +492,36 @@ class SourceService:
         views.update(selected)
         return views
 
-    def simulation(self, action, target=None):
+    def simulation(self, action, target=None, *, retiring=False):
         with self.environment._writer(), self.driver.operation():
             state = read_json(self.root / JOURNAL)
             if target is not None and (target != "test" or target not in state["vehicles"]
                     or state.get("currentVehicle") not in (None, target)):
                 raise EnvironmentError("SOURCE_TEST_SCOPE_CONFLICT")
             source = state.get("source")
+            if retiring:
+                lifecycle = state.get("demoLifecycle") or {}
+                if (target != "test" or action != "stop" or lifecycle.get("action") != "retire"
+                        or lifecycle.get("target") != "test" or lifecycle.get("phase") != "stop-simulation"):
+                    raise EnvironmentError("SOURCE_RETIREMENT_SCOPE_REQUIRED")
+                pending = (source or {}).get("operation") or {}
+                if pending and (pending.get("target") != "test" or pending.get("previous") not in (None, "test")):
+                    raise EnvironmentError("SOURCE_PRESERVED_PEER_OPERATION")
+                # Destroying the simulated actor needs neither a healthy Test
+                # guest nor a Safe Stop frame. Do not touch a selected/open peer.
+                peers = [role for role in state["vehicles"] if role != target]
+                if source and peers and any(view.get("gate") != "BLOCKED"
+                        for view in self.driver.guests(state, "status", roles=peers).values()):
+                    raise EnvironmentError("SOURCE_PRESERVED_PEER_NOT_DETACHED")
+                if source:
+                    self.driver.stop(source)
+                    source.update(state="STOPPED", stoppedAt=now(), operation=None)
+                    source.pop("stopOperation", None)
+                    source.pop("lastConnectionConfirmation", None)
+                state["currentVehicle"] = None
+                self.vm._save(state)
+                return dict(state="STOPPED", currentVehicle=None, physicalStop="NOT_OBSERVED",
+                    retirement=True, guestGate="NOT_REWRITTEN_SIMULATOR_TERMINATED")
             if target is not None and action == "stop" and source and source.get("state") != "STOPPED":
                 peer_views = self.driver.guests(state, "status")
                 if any(view.get("gate") != "BLOCKED" for role, view in peer_views.items() if role != target):

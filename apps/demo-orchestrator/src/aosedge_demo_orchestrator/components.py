@@ -118,8 +118,10 @@ class ComponentService:
             raise EnvironmentError("COMPONENT_BUNDLE_UNSAFE")
         return path
 
-    def _inspect(self, version):
-        path = self._bundle(version)
+    def _inspect(self, version, path=None):
+        path = path or self._bundle(version)
+        if path.is_symlink() or not path.is_file() or path.stat().st_size > MAX_ARCHIVE:
+            raise EnvironmentError("COMPONENT_BUNDLE_UNSAFE")
         raw = path.read_bytes()
         outer = archive_files(raw)
         signed = "package.sign" in outer
@@ -175,6 +177,10 @@ class ComponentService:
                 if (provenance.get("baseContentVersion") != base_version
                         or provenance.get("baselineBundleSha256") != base_sha):
                     problems.append("COMPONENT_CONTENT_PROFILE_MISMATCH")
+                if "unsignedSourceSha256" in provenance:
+                    from .component_sources import UNSIGNED_SHA
+                    if provenance["unsignedSourceSha256"] != UNSIGNED_SHA[base_version]:
+                        problems.append("COMPONENT_UNSIGNED_SOURCE_PROVENANCE_MISMATCH")
                 for name, expected_values in (
                     (PACKAGE + "releases/" + module + ".py", {"VERSION": version,
                         "MANIFEST_SHA256": sha(payload["config/capability-manifest.json"])}),
@@ -186,6 +192,7 @@ class ComponentService:
                     if assignments != expected_values:
                         problems.append("COMPONENT_RUNTIME_PROFILE_METADATA_MISMATCH")
         result = dict(version=version, bundle=path.name, sha256=sha(raw), sizeBytes=len(raw),
+            unsignedBundleSha256=sha(outer["batch.tar.gz"]) if signed else sha(raw),
             signedEnvelope=signed, signatureVerification="NOT_PERFORMED",
             componentId=COMPONENT, outerVersion=item.get("version"), innerVersion=metadata.get("version"),
             mediaType=image.get("mediaType"), payloadFile=layer_path, payloadSha256=sha(inner[layer_path]),
@@ -206,17 +213,27 @@ class ComponentService:
     def _worker(self, action, **values):
         from .status import load_configuration
         config = load_configuration(self.environment.root)
-        profile = config["cloudProfiles"].get("oem-delivery")
-        if not profile or profile["expectedRole"] != "oem":
-            raise EnvironmentError("OEM_DELIVERY_PROFILE_REQUIRED")
-        credential = profile["credential"]
-        if credential.is_symlink() or not credential.is_file() or credential.stat().st_mode & 0o077:
-            raise EnvironmentError("OEM_CREDENTIAL_MISSING_OR_UNSAFE")
-        owner = values.get("ownerId") or profile.get("expectedOwnerId")
-        if (values.get("ownerId") and profile.get("expectedOwnerId")
-                and values["ownerId"] != profile["expectedOwnerId"]):
-            raise EnvironmentError("COMPONENT_OEM_OWNER_CHANGED")
-        request = dict(values, action=action, credential=str(credential), ownerId=owner)
+        if action == "verify-baseline":
+            # A frozen source artifact is not signed by the selected destination
+            # account. Only its original public certificate is needed here.
+            request = dict(values, action=action, certificate=str(config["componentBaselineCertificate"]))
+        else:
+            profile = config["cloudProfiles"].get("oem-delivery")
+            if not profile or profile["expectedRole"] != "oem":
+                raise EnvironmentError("OEM_DELIVERY_PROFILE_REQUIRED")
+            from .cloud_connection import LEGACY_DOMAIN
+            if values.get("cloudDomain") and values["cloudDomain"] != profile.get("cloudDomain", LEGACY_DOMAIN):
+                raise EnvironmentError("PACKAGE_PUBLICATION_CONTEXT_CHANGED")
+            credential = profile["credential"]
+            if credential.is_symlink() or not credential.is_file() or credential.stat().st_mode & 0o077:
+                raise EnvironmentError("OEM_CREDENTIAL_MISSING_OR_UNSAFE")
+            owner = values.get("ownerId") or profile.get("expectedOwnerId")
+            if (values.get("ownerId") and profile.get("expectedOwnerId")
+                    and values["ownerId"] != profile["expectedOwnerId"]):
+                raise EnvironmentError("COMPONENT_OEM_OWNER_CHANGED")
+            request = dict(values, action=action, credential=str(credential), ownerId=owner)
+            from .cloud_connection import cloud_request
+            request.update(cloud_request(profile))
         try:
             process = subprocess.run([str(config["cloudPython"]), "-I", "-B",
                 str(Path(__file__).with_name("component_worker.py"))], input=json.dumps(request),
@@ -231,16 +248,63 @@ class ComponentService:
         return result["data"]
 
     def verify(self, version):
-        inspected = self.inspect(version)
-        if inspected["problems"] or not inspected["signedEnvelope"]:
-            raise EnvironmentError("COMPONENT_SIGNED_VALID_PACKAGE_REQUIRED")
-        return self._worker("verify", bundle=str(self._bundle(version)), expectedSha256=inspected["sha256"])
+        from .component_build import PROFILE_BASES
+        if version in {entry[0] for entry in PROFILE_BASES.values()}:
+            from .component_sources import source
+            return source(self, version)[0]
+        bundle, receipt, identity = self._signed(version)
+        return self._worker("verify", bundle=str(bundle), expectedSha256=receipt["sha256"],
+                            directory=str(self._directory(version)), expectedSigningContext=identity)
+
+    def _signing_context(self, version):
+        from .package_artifacts import context
+        from .status import read_json
+        record = read_json(self._directory(version) / "prepared.json")
+        return context(self._worker("signing-context", role="oem"), record["preparedSha256"])
+
+    def _signed(self, version):
+        from .package_artifacts import signed_receipt
+        identity = self._signing_context(version)
+        bundle, receipt = signed_receipt(self._directory(version), identity)
+        return bundle, receipt, identity
+
+    def _verify_signed(self, version, bundle, receipt, identity):
+        return self._worker("verify", bundle=str(bundle), directory=str(self._directory(version)),
+                            expectedSha256=receipt["sha256"], expectedSigningContext=identity)
+
+    def _publication_path(self, version, state, *, create=False):
+        from .package_artifacts import publication_path
+        from .cloud_connection import selected_domain
+        from .cloud_connection import cloud_binding
+        owner = cloud_binding(state).get("ownerId")
+        return publication_path(self._directory(version), selected_domain(state), "oem", create=create, owner_id=owner)
+
+    def _publication_record(self, version, state):
+        from .status import read_json
+        from .cloud_connection import selected_domain
+        record = state.get("componentOperations", {}).get(version, {})
+        from .cloud_connection import cloud_binding
+        owner = cloud_binding(state).get("ownerId")
+        if owner and record.get("ownerId") not in (None, owner):
+            record = {}
+        if record.get("cloudDomain", selected_domain(state)) != selected_domain(state):
+            record = {}
+        path = self._publication_path(version, state)
+        if path.is_file():
+            saved = read_json(path)
+            if saved.get("cloudDomain") != selected_domain(state):
+                raise EnvironmentError("PACKAGE_PUBLICATION_CONTEXT_MISMATCH")
+            return saved
+        return record
 
     def _cloud_scope(self, version, state=None):
         from .status import read_json
         from .environment import JOURNAL
         self._directory(version)
         state = state or read_json(self.environment.root / JOURNAL)
+        from .cloud_connection import selected_domain, LEGACY_DOMAIN
+        if selected_domain(state) != LEGACY_DOMAIN:
+            raise EnvironmentError("DEBUG_CLOUD_USES_VERIFICATION_PUBLICATION_ONLY")
         if "test" not in state["vehicles"] or set(state["vehicles"]) - {"test", "production"}:
             raise EnvironmentError("COMPONENT_TEST_PRODUCTION_SCOPE_REQUIRED")
         vehicles = {role: {key: value.get(key) for key in ("unitId", "unitSetId", "systemUid")}
@@ -262,7 +326,8 @@ class ComponentService:
                 raise EnvironmentError("COMPONENT_PRISTINE_DUAL_FACTORY_REQUIRED")
             scope["preProvisioning"] = True
         if "production" not in vehicles:
-            binding = state.get("cloudBinding", {})
+            from .cloud_connection import cloud_binding
+            binding = cloud_binding(state)
             if not binding.get("sets", {}).get("production"):
                 raise EnvironmentError("COMPONENT_PRODUCTION_GUARD_BINDING_REQUIRED")
             scope["productionSetId"] = binding["sets"]["production"]
@@ -358,7 +423,8 @@ class ComponentService:
         with self.environment._writer():
             state = read_json(self.environment.root / JOURNAL)
             scope = self._verification_scope(version, state)
-            previous = state.get("componentOperations", {}).get(version, {})
+            previous = self._publication_record(version, state)
+            publication_path = self._publication_path(version, state, create=True)
             if previous.get("upload", {}).get("attemptStarted") and not previous.get("deploymentId"):
                 raise EnvironmentError("COMPONENT_UPLOAD_RECONCILIATION_REQUIRED")
             # An exact response ID can be reconciled without opening an archive,
@@ -371,15 +437,21 @@ class ComponentService:
                     previous["upload"].update(state="CONFIRMED", confirmedAt=now())
                 elif previous.get("publicationPath") == "VERIFICATION_TEST":
                     previous["upload"]["state"] = "RESPONDED"
+                state.setdefault("componentOperations", {})[version] = previous
+                atomic_json(publication_path, previous)
                 atomic_json(self.environment.root / JOURNAL, state)
                 return dict(observed, noOp=stage == "READY", reconciled=True)
             prepared = read_json(self._directory(version) / "prepared.json")
             if (prepared.get("version") != version or prepared.get("contentProfile") not in PROFILE_BASES
                     or version_number(version) < (4, 0, 0)):
                 raise EnvironmentError("COMPONENT_PUBLICATION_VERSION_NOT_AUTHORIZED")
-            inspected, files = self._inspect(version)
+            signed_bundle, signed_receipt, signing_context = self._signed(version)
+            inspected, files = self._inspect(version, path=signed_bundle)
             if inspected["problems"] or not inspected["signedEnvelope"]:
                 raise EnvironmentError("COMPONENT_SIGNED_VALID_PACKAGE_REQUIRED")
+            if inspected["sha256"] != signed_receipt["sha256"]:
+                raise EnvironmentError("COMPONENT_SIGNED_DIGEST_CHANGED")
+            self._verify_signed(version, signed_bundle, signed_receipt, signing_context)
             if inspected.get("contentProfile") != prepared["contentProfile"]:
                 raise EnvironmentError("COMPONENT_PREPARED_PROFILE_MISMATCH")
             self._factory_support(state, files)
@@ -411,11 +483,14 @@ class ComponentService:
                 raise EnvironmentError("COMPONENT_VERIFICATION_RECIPIENT_COVERAGE_REQUIRED")
             record = state.setdefault("componentOperations", {}).setdefault(version, {})
             record.update(sha256=inspected["sha256"], target="test", publicationPath="VERIFICATION_TEST",
-                          ownerId=before["ownerId"], recipientCoverage=before["recipientCoverage"])
+                          ownerId=before["ownerId"], recipientCoverage=before["recipientCoverage"],
+                          cloudDomain=signing_context["domain"], role="oem",
+                          preparedSha256=signing_context["preparedSha256"])
             record["upload"] = dict(attemptStarted=True, startedAt=now(), state="UNCERTAIN")
+            atomic_json(publication_path, record)
             atomic_json(self.environment.root / JOURNAL, state)
             response = self._worker("upload", **dict(scope, ownerId=before["ownerId"],
-                bundle=str(self._bundle(version)), expectedSha256=inspected["sha256"]))
+                bundle=str(signed_bundle), expectedSha256=inspected["sha256"], expectedSigningContext=signing_context))
             if response.get("httpStatus") != 201 or not response.get("deploymentId"):
                 raise EnvironmentError("COMPONENT_UPLOAD_RESPONSE_UNCERTAIN")
             record["deploymentId"] = response["deploymentId"]
@@ -426,8 +501,10 @@ class ComponentService:
             if str(response.get("state") or "").lower() == "error":
                 record["publication"].update(stage="ERROR", reason="COMPONENT_CLOUD_PROCESSING_ERROR")
                 problems.append("COMPONENT_CLOUD_PROCESSING_ERROR")
+            atomic_json(publication_path, record)
             atomic_json(self.environment.root / JOURNAL, state)
-            return dict(response, publication=record["publication"], requestAccepted=True, noOp=False, problems=problems)
+            return dict(response, publication=record["publication"], requestAccepted=True, noOp=False, problems=problems,
+                        cloudDomain=signing_context["domain"])
 
     def _verification_scope(self, version, state=None):
         from .environment import JOURNAL
@@ -442,11 +519,13 @@ class ComponentService:
         if ((not provisioned and (any(identity.get(key) for key in fields) or identity.get("cloud")))
                 or (identity.get("cloud") or {}).get("lifecycle") in ("DEPROVISIONED", "DELETED")):
             raise EnvironmentError("COMPONENT_TEST_CLOUD_BINDING_INCOMPLETE_OR_RETIRED")
-        record = state.get("componentOperations", {}).get(version, {})
-        owner = state.get("cloudBinding", {}).get("ownerId") or record.get("ownerId")
+        record = self._publication_record(version, state)
+        from .cloud_connection import cloud_binding, selected_domain
+        owner = cloud_binding(state).get("ownerId") or record.get("ownerId")
         if (record.get("ownerId") and owner != record["ownerId"]):
             raise EnvironmentError("COMPONENT_OEM_OWNER_CHANGED")
         return dict(version=version, verificationTest=True, preProvisioning=not provisioned, ownerId=owner,
+                    cloudDomain=selected_domain(state),
                     deploymentId=record.get("deploymentId"),
                     vehicles={"test": {key: identity[key] for key in fields}} if provisioned else {})
 
@@ -503,7 +582,7 @@ class ComponentService:
                 if len(before["verificationBatches"]) != 1:
                     raise CloudFailure("COMPONENT_VERIFICATION_BATCH_NOT_READY_OR_AMBIGUOUS")
                 batch = before["verificationBatches"][0]
-                batch_guard(batch, scope, before["ownerId"])
+                batch_guard(batch, dict(scope, componentId=before.get("componentId")), before["ownerId"])
                 if (batch.get("approval_states") or {}).get("arm64", {}).get("is_approved") is not True:
                     raise CloudFailure("COMPONENT_SEND_REQUIRES_APPROVAL")
             except CloudFailure as error:
@@ -589,7 +668,7 @@ class ComponentService:
                 raise EnvironmentError("COMPONENT_VERIFICATION_BATCH_NOT_READY_OR_AMBIGUOUS")
             batch = before["verificationBatches"][0]
             try:
-                batch_guard(batch, scope, before["ownerId"])
+                batch_guard(batch, dict(scope, componentId=before.get("componentId")), before["ownerId"])
             except CloudFailure as error:
                 raise EnvironmentError(str(error)) from None
             if not record.get("deploymentId"):
@@ -603,7 +682,7 @@ class ComponentService:
                     response=dict(batchId=batch["id"], approved=desired))
                 atomic_json(self.environment.root / JOURNAL, state)
                 return dict(batchId=batch["id"], approved=desired, noOp=True)
-            values = dict(batchId=batch["id"])
+            values = dict(batchId=batch["id"], componentId=before["componentId"])
             record["batchId"] = batch["id"]
             if record.get(action, {}).get("attemptStarted"):
                 if record[action].get("state") != "CONFIRMED":
@@ -660,22 +739,24 @@ class ComponentService:
                 if previous and version_number(version) <= max(previous):
                     raise EnvironmentError("COMPONENT_PREPARATION_MUST_INCREMENT_VERSION")
             base_version = PROFILE_BASES[content_profile][0] if content_profile is not None else "1.0.16"
-            self.verify(base_version)
-            inspected, files = self._inspect(base_version)
+            from .component_sources import source
+            inspected, files = source(self, base_version, materialize=True)
+            baseline_sha = inspected["source"]["legacyArchiveSha256"]
+            baseline_verification = dict(inspected["source"], sourceIntegrity=inspected["sourceIntegrity"])
             contract = read_json(self.environment.root / "contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json")
             repository = self.environment.root.parent / "aos-vehicle-platform"
             if content_profile is None:
-                first, record = compose(version, files, inspected["sha256"], repository, contract)
-                second, repeat = compose(version, files, inspected["sha256"], repository, contract)
+                first, record = compose(version, files, baseline_sha, repository, contract)
             else:
                 from .environment import factory_for
                 factory = factory_for(read_json(self.environment.root / JOURNAL), "test")
-                first, record = replay(version, content_profile, files, inspected["sha256"], contract, factory)
-                second, repeat = replay(version, content_profile, files, inspected["sha256"], contract, factory)
+                first, record = replay(version, content_profile, files, baseline_sha, contract, factory,
+                                       unsigned_source_sha=inspected["source"]["unsignedSha256"])
+            # Deterministic replay/packing is a regression-test invariant, not
+            # a second full construction/compression on every operator Prepare.
             unsigned = pack(first)
-            if unsigned != pack(second) or record != repeat:
-                raise EnvironmentError("COMPONENT_PREPARATION_NOT_DETERMINISTIC")
             record["preparedSha256"] = sha(unsigned)
+            record["baselineVerification"] = baseline_verification
             record["files"] = {name: sha(data) for name, data in first.items()}
             with tempfile.TemporaryDirectory(prefix=".prepare-", dir=self.root) as temporary:
                 stage = Path(temporary) / "candidate"
@@ -702,39 +783,55 @@ class ComponentService:
         with self.environment._writer():
             directory = self._directory(version)
             record = read_json(directory / "prepared.json")
-            inspected = self.inspect(version)
+            unsigned_path = directory / ("aosedge-vdp-component-" + version + "-linux-arm64.unsigned.tar.gz")
+            inspected = self._inspect(version, path=unsigned_path)[0]
             if inspected["problems"]:
                 raise EnvironmentError("COMPONENT_PACKAGING_INVALID")
-            if inspected["signedEnvelope"]:
-                return dict(self.verify(version), noOp=True)
             if inspected["sha256"] != record["preparedSha256"]:
                 raise EnvironmentError("COMPONENT_PREPARED_DIGEST_CHANGED")
-            inputs = archive_files(self._bundle(version).read_bytes())
+            inputs = archive_files(unsigned_path.read_bytes())
             if record["files"] != {name: sha(data) for name, data in inputs.items()}:
                 raise EnvironmentError("COMPONENT_SIGN_INPUT_CHANGED")
             for name, expected in record["files"].items():
                 path = directory.joinpath(*PurePosixPath(name).parts)
                 if not path.resolve().is_relative_to(directory.resolve()) or path.is_symlink() or sha(path.read_bytes()) != expected:
                     raise EnvironmentError("COMPONENT_SIGN_INPUT_CHANGED")
-            signed = directory / ("vdp-" + version + "-deployment-bundle.tar.gz")
-            if signed.exists() or signed.is_symlink():
-                raise EnvironmentError("COMPONENT_SIGN_OUTPUT_EXISTS")
-            result = self._worker("sign", directory=str(directory), output=str(signed))
-            if self.inspect(version)["payloadSha256"] != record["payloadSha256"]:
+            from .package_artifacts import paths, credential_stamp
+            from .status import load_configuration
+            identity = self._signing_context(version)
+            stamp = credential_stamp(load_configuration(self.environment.root)["cloudProfiles"]["oem-delivery"]["credential"])
+            signed, receipt = paths(directory, identity, create=True)
+            existing = signed.exists()
+            old = read_json(receipt) if receipt.exists() else {}
+            if old and old.get("signingContext") != identity:
+                raise EnvironmentError("PACKAGE_SIGNING_RECEIPT_MISMATCH")
+            if old and not existing:
+                raise EnvironmentError("COMPONENT_SIGNED_BUNDLE_MISSING")
+            result = self._worker("verify" if existing else "sign", directory=str(directory), output=str(signed),
+                bundle=str(signed), expectedSha256=old.get("sha256"), expectedSigningContext=identity,
+                preparedSha256=record["preparedSha256"])
+            signed_info = self._inspect(version, path=signed)[0]
+            if signed_info["payloadSha256"] != record["payloadSha256"]:
                 raise EnvironmentError("COMPONENT_SIGN_CHANGED_PAYLOAD")
-            atomic_json(directory / "signed.json", result)
+            atomic_json(receipt, dict(result, signingContext=identity, credentialStamp=stamp))
             from .environment import JOURNAL
             journal_path = self.environment.root / JOURNAL
             if journal_path.is_file():
                 state = read_json(journal_path)
                 owned = state.get("componentOperations", {}).get(version)
                 if owned and owned.get("prepare", {}).get("state") == "COMPLETED":
-                    owned["signed"] = dict(state="COMPLETED", sha256=result.get("sha256"))
+                    owned["signed"] = dict(state="COMPLETED", sha256=result.get("sha256"), cloudDomain=identity["domain"], credentialStamp=stamp)
                     atomic_json(journal_path, state)
-            return result
+            return dict(result, noOp=existing, cloudDomain=identity["domain"])
 
     def unpack(self, version):
         with self.environment._writer():
+            from .component_build import PROFILE_BASES
+            if version in {entry[0] for entry in PROFILE_BASES.values()}:
+                from .component_sources import source
+                info, _ = source(self, version, materialize=True)
+                return dict(state="UNSIGNED_SOURCE_READY", **info["source"],
+                            sourceIntegrity=info["sourceIntegrity"], signatureVerification="NOT_APPLICABLE")
             result, files = self._inspect(version)
             if result["problems"]:
                 raise EnvironmentError("COMPONENT_PACKAGING_INVALID")

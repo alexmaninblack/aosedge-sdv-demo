@@ -31,7 +31,7 @@ describe("local composition preview", () => {
     // The architecture's Cloud card is also a visible subscriber.
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: /Platform Team/ }));
-    expect(await screen.findByText("VDP 15.0.0 · Cloud installed")).toBeInTheDocument();
+    expect(await screen.findByText("Cloud installed · 15.0.0")).toBeInTheDocument();
     expect(readPlatform).toHaveBeenCalledTimes(2);
     expect(screen.queryByText("Refresh running Test VDP")).not.toBeInTheDocument();
     expect(screen.queryByText("Read Test VDP logs")).not.toBeInTheDocument();
@@ -74,11 +74,12 @@ describe("local composition preview", () => {
     expect(screen.queryByText("Connection confirmed")).not.toBeInTheDocument();
     expect(snapshot.vehicle.value).toBe("test");
   });
-  it("shows only the demo title, assignment and team names without subtitles", () => {
+  it("keeps the shared header to brand, assignment and Session; teams live in the right panel", () => {
     const snapshot = composeLocalSnapshot(data);
     const { container } = render(<SharedHeader snapshot={snapshot} perspective="global" onNavigate={() => {}} />);
     expect(screen.getByRole("button", { name: "AosEdge Software Evolution Demo" })).toBeInTheDocument();
-    for (const team of Object.values(snapshot.teams)) expect(screen.getByText(team.name)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Session" })).toBeInTheDocument();
+    expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
     expect(screen.queryByText("Open the run-wide Demo Lifecycle")).not.toBeInTheDocument();
     expect(screen.queryByText("Test Vehicle pass")).not.toBeInTheDocument();
     expect(screen.queryByText("Not connected")).not.toBeInTheDocument();
@@ -147,8 +148,9 @@ describe("local composition preview", () => {
     render(<PresenterReadModelProvider dependencies={dependencies}><PresenterApp /></PresenterReadModelProvider>);
     expect(await screen.findByTestId("studio-workspace")).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Factory image" })).toHaveValue("factory-31/arm64");
-    expect(screen.getByRole("option", { name: "Production · Deferred" })).toBeDisabled();
+    expect(screen.getByText("Production · Deferred")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Create controller" })).toBeDisabled();
+    await userEvent.click(screen.getAllByRole("button", { name: "Session" })[0]);
     expect(screen.getByRole("button", { name: "Finish demo" })).toBeDisabled();
     expect(screen.queryByText("FIXTURE ONLY")).not.toBeInTheDocument();
   });

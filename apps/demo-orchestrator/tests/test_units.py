@@ -20,6 +20,47 @@ NODE = "44444444-4444-4444-8444-444444444444"
 
 
 class UnitSafetyTests(unittest.TestCase):
+    def test_cloud_unit_accepts_null_memberships_without_losing_online_state(self):
+        cloud = unit_cloud.Cloud.__new__(unit_cloud.Cloud)
+        cloud.require = Mock()
+        cloud.pages = Mock(return_value=[dict(id=NODE, is_main=True)])
+        for raw, expected in ((None, []), ([], []), ([dict(id=TEST)], [TEST])):
+            with self.subTest(unit_sets=raw):
+                cloud.call = Mock(return_value=dict(id=UNIT, system_uid="uid", fleet=NODE,
+                    status="provisioned", online_status="Online", unit_sets=raw))
+                result = cloud.unit(UNIT)
+                self.assertEqual(expected, result["unit_sets"])
+                self.assertEqual("Online", result["online_status"])
+                self.assertEqual(NODE, result["nodes"][0]["id"])
+
+    def test_cloud_unit_rejects_malformed_memberships(self):
+        cloud = unit_cloud.Cloud.__new__(unit_cloud.Cloud)
+        cloud.require = Mock()
+        cloud.pages = Mock()
+        for raw in ({}, "", False, 0, [None], [{}]):
+            with self.subTest(unit_sets=raw):
+                cloud.call = Mock(return_value=dict(unit_sets=raw))
+                with self.assertRaisesRegex(unit_cloud.CloudFailure, "CLOUD_UNIT_SETS_INVALID"):
+                    cloud.unit(UNIT)
+        cloud.pages.assert_not_called()
+
+    def test_resume_provision_binds_online_unit_without_repeating_sdk(self):
+        item = self.state["vehicles"]["test"]
+        item.update(unitId=None, nodeId=None, cloud=dict(lifecycle="PROVISIONING", step="SDK_PROVISION"))
+        self.state["cloudBinding"] = dict(ownerId=UNIT, fleetId=NODE)
+        self.service._live = Mock()
+        self.service._guest_provisioned = Mock(return_value=True)
+        self.service._intent = Mock()
+        self.service._done = Mock()
+        online = dict(id=UNIT, system_uid=item["systemUid"], fleet=NODE, status="provisioned",
+            online_status="Online", nodes=[dict(id=NODE)], unit_sets=[])
+        self.service._cloud = Mock(side_effect=[dict(unit=online), {}, dict(unit=dict(online, unit_sets=[TEST]))])
+        result = self.service._provision(self.state, "test", dict(test=dict(id=TEST), production=dict(id=PROD)))
+        self.assertEqual(["wait", "assign", "wait"], [call.args[0] for call in self.service._cloud.call_args_list])
+        self.assertEqual(UNIT, result["unitId"])
+        self.assertEqual(NODE, result["nodeId"])
+        self.assertEqual("ONLINE", item["cloud"]["lifecycle"])
+
     def test_real_source_identity_is_bound_before_verification_membership(self):
         import contextlib
         self.state.update(currentVehicle="test", source=dict(assignmentGeneration=1))
@@ -82,6 +123,36 @@ class UnitSafetyTests(unittest.TestCase):
                 inventory["sets"][1]["fleet"] = UNIT
             with self.assertRaises(EnvironmentError):
                 self.service._bindings({}, inventory)
+
+    def test_unused_subject_preflight_reads_only_unassigned_and_requires_literal_success(self):
+        self.state["cloudBinding"] = dict(ownerId=UNIT)
+        unused = dict(id=TEST, serviceId=NODE, unassigned=True)
+        assigned = dict(id=PROD, serviceId=UNIT)
+        self.service._cloud = Mock(return_value=dict(subjectsRetainedUnbound=True))
+        with patch("aosedge_demo_orchestrator.service_assignment.retirement_subjects", return_value=[assigned, unused]):
+            self.assertTrue(self.service.confirm_unassigned_subjects(self.state))
+            self.service._cloud.assert_called_once_with("subjects-unbound", ownerId=UNIT, retainedSubjects=[unused])
+            self.service._cloud.return_value = dict(subjectsRetainedUnbound=False)
+            with self.assertRaisesRegex(EnvironmentError, "SUBJECT_CHECK_REQUIRED"):
+                self.service.confirm_unassigned_subjects(self.state)
+        self.service._cloud.reset_mock()
+        with patch("aosedge_demo_orchestrator.service_assignment.retirement_subjects", return_value=[assigned]):
+            self.assertTrue(self.service.confirm_unassigned_subjects(self.state))
+        self.service._cloud.assert_not_called()
+
+    def test_finish_reconciles_provisioned_identity_without_reviving_stopped_guest(self):
+        self.state["cloudBinding"] = dict(ownerId=UNIT, fleetId=NODE)
+        self.state["demoLifecycle"] = dict(action="retire", completedSteps=["stop-test"])
+        self.state["vehicles"]["test"]["runtime"] = dict(state="STOPPED")
+        self.state["operations"].append(dict(target=["test"], step="SDK_PROVISION", **{"class": "UNIT_LIFECYCLE"}))
+        self.service._guest_provisioned = Mock(side_effect=EnvironmentError("GUEST_STOPPED"))
+        self.service._cloud.return_value = dict(unit=dict(id=UNIT, system_uid="hardware-identity",
+            status="provisioned", online_status="Offline", fleet=NODE, nodes=[dict(id=NODE)]))
+        self.service._cloud.side_effect = None
+        self.service._reconcile(self.state)
+        self.service._guest_provisioned.assert_not_called()
+        self.assertEqual(1, len(self.state["operations"]))
+        self.assertEqual(UNIT, self.state["vehicles"]["test"]["unitId"])
 
     def test_isolated_provision_only_accepts_the_preserved_canonical_peer(self):
         import contextlib
@@ -231,10 +302,11 @@ class UnitSafetyTests(unittest.TestCase):
         # Old journals must not resume the removed probe either.
         item["cloud"].update(credentialProbeIntent=True, oldIdentityRejected=False)
         self.service._live = Mock()
-        self.service._stop_cm = Mock()
         self.service._guest_script = Mock(side_effect=AssertionError("No reconnect or probe logs"))
-        self.service._wait = Mock(side_effect=[{"status": "provisioned", "online_status": "Offline"},
-                                               {"status": "new", "online_status": "Offline"}])
+        def waited(state, role, predicate, label):
+            self.assertEqual("STOPPED", state["vehicles"][role]["runtime"]["state"])
+            return {"status": "provisioned" if label == "CLOUD_OFFLINE" else "new", "online_status": "Offline"}
+        self.service._wait = Mock(side_effect=waited)
         self.service._cloud = Mock(return_value={})
         def stopped(*args):
             item["runtime"]["state"] = "STOPPED"
@@ -245,9 +317,44 @@ class UnitSafetyTests(unittest.TestCase):
         self.assertNotIn("oldIdentityRejected", result)
         self.assertFalse(item["cloud"]["oldIdentityRejected"])
         self.service._guest_script.assert_not_called()
-        self.service._stop_cm.assert_called_once_with(self.state, "test")
+        self.service._live.assert_not_called()
+        self.service.vm._stop.assert_called_once_with(self.state, "test", 90)
+        self.assertTrue(item["cloud"]["vmShutdownIntent"])
         self.assertEqual(["deprovision"], [call.args[0] for call in self.service._cloud.call_args_list])
         self.assertEqual(1, len(self.state["operations"]))
+
+    def test_deprovision_continues_stopped_vm_without_guest_access(self):
+        item = self.state["vehicles"]["test"]
+        item["runtime"] = {"state": "STOPPED"}
+        item["cloud"].update(lifecycle="DEPROVISIONING", cmDisconnectIntent=True)
+        self.service._live = Mock(side_effect=AssertionError("Must not require a live guest"))
+        self.service._guest_script = Mock(side_effect=AssertionError("Must not access stopped guest"))
+        self.service.vm._stop.return_value = {"state": "COMPLETED", "alreadyStopped": True}
+        self.service._wait = Mock(side_effect=[{"status": "provisioned", "online_status": "Offline"}, {"status": "new", "online_status": "Offline"}])
+        self.service._cloud = Mock(return_value={})
+        self.assertEqual("DEPROVISIONED", self.service._deprovision(self.state, "test", {})["lifecycle"])
+        self.service._live.assert_not_called()
+        self.service._guest_script.assert_not_called()
+        self.service.vm._start.assert_not_called()
+
+    def test_failed_whole_vm_stop_never_requests_cloud_retirement(self):
+        self.state["vehicles"]["test"]["runtime"] = {"state": "RUNNING"}
+        self.service.vm._stop.return_value = {"state": "PARTIAL"}
+        self.service._wait = Mock()
+        with self.assertRaisesRegex(EnvironmentError, "RETIRED_VM_STOP_NOT_CONFIRMED"):
+            self.service._deprovision(self.state, "test", {})
+        self.service._wait.assert_not_called()
+        self.service._cloud.assert_not_called()
+
+    def test_offline_timeout_preserves_stopped_vm_and_does_not_deprovision(self):
+        self.state["vehicles"]["test"]["runtime"] = {"state": "STOPPED"}
+        self.service.vm._stop.return_value = {"state": "COMPLETED", "alreadyStopped": True}
+        self.service._wait = Mock(side_effect=EnvironmentError("UNIT_WAIT_TIMEOUT:CLOUD_OFFLINE"))
+        with self.assertRaisesRegex(EnvironmentError, "CLOUD_OFFLINE"):
+            self.service._deprovision(self.state, "test", {})
+        self.service._cloud.assert_not_called()
+        self.assertEqual("STOPPED", self.state["vehicles"]["test"]["runtime"]["state"])
+        self.assertEqual("DEPROVISIONING", self.state["vehicles"]["test"]["cloud"]["lifecycle"])
 
     def test_local_cleanup_rechecks_identity_and_role_sets_without_mutation(self):
         self.state["vehicles"]["test"]["cloud"]["lifecycle"] = "DELETED"
@@ -356,7 +463,8 @@ class UnitSafetyTests(unittest.TestCase):
             self.service.confirm_retired(self.state)
 
     def test_upload_reconciliation_worker_is_read_only_exact_and_owner_scoped(self):
-        from aosedge_demo_orchestrator.component_cloud import COMPONENT, COMPONENT_ID
+        from aosedge_demo_orchestrator.component_cloud import COMPONENT
+        COMPONENT_ID = "66666666-6666-4666-8666-666666666666"
         entry = dict(version="12.0.0", deploymentId=TEST, batchId=PROD)
         bundle = dict(id=TEST, state="done", items=[dict(codename=COMPONENT, version="12.0.0")])
         batch = dict(id=PROD, oem_id=UNIT, architectures=["arm64"],
@@ -377,19 +485,40 @@ class UnitSafetyTests(unittest.TestCase):
                 elif failure == "batch":
                     detail["id"] = NODE
                 cloud = Mock(user={"ownerId": UNIT})
-                cloud.pages.return_value, cloud.call.return_value = bundles, detail
+                cloud.pages.side_effect = lambda path: ([dict(id=COMPONENT_ID, codename=COMPONENT, oem_id=UNIT)]
+                    if path.startswith("components/?") else bundles)
+                cloud.call.return_value = detail
                 with patch.object(unit_cloud, "Cloud", return_value=cloud):
                     if failure:
                         with self.assertRaises(unit_cloud.CloudFailure):
                             unit_cloud.execute(dict(action="reconcile-uploads", uploads=[entry]))
                     else:
                         self.assertEqual({"confirmedUploads": [entry]}, unit_cloud.execute(dict(action="reconcile-uploads", uploads=[entry])))
-                cloud.pages.assert_called_once_with("deployment-bundles/")
+                    paths = [call.args[0] for call in cloud.pages.call_args_list]
+                    self.assertEqual(1, paths.count("deployment-bundles/"))
+                    self.assertTrue(all(path == "deployment-bundles/" or path.startswith("components/?search=") for path in paths))
                 for call in cloud.call.call_args_list:
                     self.assertEqual(("verification-batch/" + PROD + "/",), call.args)
                     self.assertEqual({}, call.kwargs)  # GET only; never POST/DELETE.
                 cloud.unit.assert_not_called()
                 cloud.inventory.assert_not_called()
+
+    def test_finish_verification_upload_confirms_receipt_not_successful_processing(self):
+        entry = dict(version="39.0.0", deploymentId=TEST, verificationTest=True)
+        for stage in ("uploaded", "building", "error", "done"):
+            with self.subTest(stage=stage):
+                cloud = Mock(user={"ownerId": UNIT})
+                cloud.call.return_value = dict(offset=0, total=1, items=[dict(id=TEST, state=stage)])
+                with patch.object(unit_cloud, "Cloud", return_value=cloud):
+                    self.assertEqual({"confirmedUploads": [entry]}, unit_cloud.execute(
+                        dict(action="reconcile-uploads", uploads=[entry])))
+                cloud.call.assert_called_once_with("deployment-bundles/?limit=100&offset=0")
+                cloud.unit.assert_not_called()
+                cloud.pages.assert_not_called()
+        cloud.call.return_value = dict(offset=0, total=0, items=[])
+        with patch.object(unit_cloud, "Cloud", return_value=cloud), self.assertRaisesRegex(
+                unit_cloud.CloudFailure, "RECONCILIATION_REQUIRED"):
+            unit_cloud.execute(dict(action="reconcile-uploads", uploads=[entry]))
 
     def test_forward_removal_allows_draining_connection_but_not_listener(self):
         self.service._live = Mock()

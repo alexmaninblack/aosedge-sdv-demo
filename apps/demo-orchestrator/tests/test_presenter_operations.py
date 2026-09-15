@@ -13,6 +13,8 @@ from unittest.mock import Mock
 from uuid import uuid4
 
 from aosedge_demo_orchestrator.presenter import make_server
+from aosedge_demo_orchestrator.api import execute_operation
+from aosedge_demo_orchestrator.models import OperationResult, OperationState, VehicleTarget
 from aosedge_demo_orchestrator.presenter_operations import NativeSession, SessionOperations, operation_plan, public_result, reset_plan
 
 
@@ -25,6 +27,128 @@ def completed(request):
 
 
 class OperationTests(unittest.TestCase):
+    def test_receipt_rollover_preserves_finish_and_duplicate_identity(self):
+        execute = Mock(side_effect=completed)
+        session = SessionOperations(execute)
+        first = payload(session, "observe-test")
+        session.submit(first)
+        self.finish(session)
+        for _ in range(128):
+            session.submit(payload(session, "observe-test"))
+            self.finish(session)
+        before = execute.call_count
+        archived = session.submit(first)
+        self.assertTrue(archived["archived"])
+        self.assertEqual(before, execute.call_count)
+        self.assertIn(first["requestId"], session.snapshot()["recordedRequestIds"])
+        self.assertEqual(128, len(session.snapshot()["jobs"]))
+        with self.assertRaisesRegex(ValueError, "REQUEST_ID_INPUT_CHANGED"):
+            session.submit(dict(first, action="reset"))
+        session.submit(payload(session, "reset"))
+        self.assertEqual("COMPLETED", self.finish(session)["state"])
+
+    def test_service_publication_and_first_assignment_keep_native_authority(self):
+        session = SessionOperations()
+        request = payload(session, "service-prepare", team="brake", profile="v3")
+        self.assertEqual([dict(domain="service", action="prepare", team="brake", content_profile="v3",
+            without_permissions=True, demo_mocked_data=True)], operation_plan(request)[1])
+        plan = operation_plan(payload(session, "service-publish", release="brake/12.0.0"))[1]
+        self.assertEqual(["sign", "upload"], [row["action"] for row in plan])
+        self.assertTrue(all(row["service_release"] == "brake/12.0.0" for row in plan))
+        identifier = str(uuid4())
+        self.assertEqual([dict(domain="service", action="runtime-prepare", target="test"),
+            dict(domain="service", action="assign", target="test", service_id=identifier)],
+            operation_plan(payload(session, "service-assign", serviceId=identifier))[1])
+        for action, values in (("service-prepare", dict(team="tire", profile="v2")),
+                ("service-publish", dict(release="../private")), ("service-assign", dict(serviceId=identifier, target="production")),
+                ("service-assign", dict(serviceId=identifier, version="12.0.0"))):
+            with self.assertRaises(ValueError):
+                operation_plan(payload(session, action, **values))
+
+    def test_composed_publication_stops_before_upload_if_sign_fails(self):
+        execute = Mock(return_value=dict(operation="service.sign", state="BLOCKED", message="SIGN_FAILED"))
+        session = SessionOperations(execute)
+        session.submit(payload(session, "service-publish", release="tire/10.0.0"))
+        self.assertEqual("BLOCKED", self.finish(session)["state"])
+        self.assertEqual(1, execute.call_count)
+
+    def test_first_service_deploy_prepares_inputs_then_assigns_once(self):
+        execute = Mock(side_effect=completed)
+        session = SessionOperations(execute)
+        request = payload(session, "service-assign", serviceId=str(uuid4()))
+        session.submit(request)
+        job = self.finish(session)
+        self.assertEqual("COMPLETED", job["state"])
+        self.assertEqual([dict(domain="service", action="runtime-prepare", target="test"),
+            dict(domain="service", action="assign", target="test", service_id=request["serviceId"])],
+            [call.args[0] for call in execute.call_args_list])
+        self.assertEqual(["service.runtime-prepare", "service.assign"],
+            [result["operation"] for result in job["results"]])
+        session.submit(request)
+        self.assertEqual(2, execute.call_count)
+
+    def test_service_deploy_does_not_assign_after_input_failure(self):
+        for state in ("BLOCKED", "PARTIAL"):
+            with self.subTest(state=state):
+                execute = Mock(return_value=dict(operation="service.runtime-prepare", state=state,
+                    message="SERVICE_INPUTS_NOT_READY"))
+                session = SessionOperations(execute)
+                session.submit(payload(session, "service-assign", serviceId=str(uuid4())))
+                self.assertEqual(state, self.finish(session)["state"])
+                execute.assert_called_once_with(dict(domain="service", action="runtime-prepare", target="test"))
+
+    def test_service_deploy_input_noop_still_reconciles_assignment(self):
+        def execute(request):
+            result = completed(request)
+            if request["action"] == "runtime-prepare":
+                result["data"] = dict(noOp=True)
+            return result
+        worker = Mock(side_effect=execute)
+        session = SessionOperations(worker)
+        session.submit(payload(session, "service-assign", serviceId=str(uuid4())))
+        self.assertEqual("COMPLETED", self.finish(session)["state"])
+        self.assertEqual(["runtime-prepare", "assign"], [call.args[0]["action"] for call in worker.call_args_list])
+
+    def test_service_deploy_unknown_input_outcome_never_assigns_or_replays(self):
+        execute = Mock(side_effect=RuntimeError("SECRET"))
+        session = SessionOperations(execute)
+        request = payload(session, "service-assign", serviceId=str(uuid4()))
+        session.submit(request)
+        self.assertEqual("UNCERTAIN", self.finish(session)["state"])
+        session.submit(request)
+        execute.assert_called_once_with(dict(domain="service", action="runtime-prepare", target="test"))
+        self.assertNotIn("SECRET", json.dumps(session.snapshot()))
+
+    def test_studio_simulation_start_and_stop_are_test_scoped(self):
+        for action in ("start", "stop"):
+            with self.subTest(action=action):
+                execute = Mock(side_effect=completed)
+                session = SessionOperations(execute)
+                session.submit(payload(session, action + "-simulation"))
+                self.assertEqual("COMPLETED", self.finish(session)["state"])
+                execute.assert_called_once_with(dict(domain="simulation", action=action, target="test"))
+                for target in ("production", "all"):
+                    with self.assertRaises(ValueError):
+                        operation_plan(payload(session, action + "-simulation", target=target))
+
+    def test_fixed_studio_plans_cross_the_real_api_adapter(self):
+        cases = [("service-assign", dict(serviceId=str(uuid4())),
+                  ["service.runtime-prepare", "service.assign"]),
+                 ("start-simulation", {}, ["simulation.start"]),
+                 ("stop-simulation", {}, ["simulation.stop"])]
+        for action, fields, expected in cases:
+            with self.subTest(action=action):
+                application = Mock()
+                application.execute.side_effect = lambda request: OperationResult(
+                    request.domain + "." + request.action, OperationState.COMPLETED, "done")
+                session = SessionOperations(lambda request: execute_operation(request, application))
+                session.submit(payload(session, action, **fields))
+                self.assertEqual("COMPLETED", self.finish(session)["state"])
+                requests = [call.args[0] for call in application.execute.call_args_list]
+                self.assertEqual(expected, [request.domain + "." + request.action for request in requests])
+                self.assertTrue(all(request.target == VehicleTarget.TEST for request in requests))
+                self.assertTrue(all(not request.restart_sm and not request.restart_cm for request in requests))
+
     def finish(self, session):
         deadline = time.monotonic() + 2
         while session.snapshot()["active"] and time.monotonic() < deadline:

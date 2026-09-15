@@ -52,7 +52,9 @@ class DemoLifecycle:
                 return self._result(record)
             if isinstance(result, OperationResult):
                 succeeded = result.state in (OperationState.COMPLETED, OperationState.OBSERVED)
-                reason = result.message
+                data = result.data or {}
+                reason = ((data.get("vehicles", {}).get("test") or {}).get("reason")
+                    or data.get("reason") or result.message)
             else:
                 succeeded = result.get("state") in ("RUNNING", "STOPPED", "COMPLETED")
                 reason = result.get("reason", "DEMO_STEP_NOT_CONFIRMED")
@@ -124,7 +126,7 @@ class DemoLifecycle:
             return self._steps(record, [("start-test", lambda: self._vm("start")),
                 ("start-backends", self.backends.start_stack)], "CONTROLLER_RUNNING")
 
-    def _park_guard(self, state):
+    def _shutdown_guard(self, state):
         # This is a one-shot action guard, not polling or a scheduled shutdown.
         pending = state.get("operations", [])[1:]
         previous = state.get("demoLifecycle") or {}
@@ -150,7 +152,8 @@ class DemoLifecycle:
         if any(section.get("state") != "CURRENT" or not isinstance(section.get("value"), list) for section in sections):
             raise EnvironmentError("DEMO_UPDATE_STATE_NOT_CURRENT")
         components = sections[0]["value"]
-        if any(row.get("pending_component") or row.get("pending_component_error") for row in components):
+        pending_components = [row for row in components if row.get("pending_component")]
+        if any(row.get("pending_component_error") for row in components) or pending_components:
             raise EnvironmentError("DEMO_COMPONENT_UPDATE_PENDING_OR_FAILED")
         for section in sections[1:]:
             for row in section["value"]:
@@ -168,7 +171,7 @@ class DemoLifecycle:
     def park(self):
         with self.environment._writer():
             state = self._state()
-            self._park_guard(state)  # before Safe Stop, detach, VM or backend stop
+            self._shutdown_guard(state)  # before Safe Stop, detach, VM or backend stop
             previous = state.get("demoLifecycle") or {}
             if previous.get("action") == "park" and previous.get("state") == "PARTIAL":
                 # Existing child primitives reconcile their exact owned state.
@@ -239,11 +242,20 @@ class DemoLifecycle:
             if previous.get("action") == "retire":
                 record = previous
             else:
-                # Do not turn shutdown into an implicit Safe Stop/update action.
-                self._park_guard(state)
-                from .service_assignment import retirement_subjects
-                retirement_subjects(state)
                 record = self._record("retire")
+            # Retirement destroys this Test. Software health, a Safe Stop
+            # observation and Cloud availability cannot precede local shutdown.
+            # Exact ownership and unresolved external receipts remain enforced
+            # by the child operations; no cancellation or successful update is
+            # fabricated. Old narrow-exception checkpoints resume here too.
+            record.pop("unreceivedComponent", None)
+            def subjects():
+                from .service_assignment import retirement_subjects
+                current = self._state()
+                retirement_subjects(current)
+                if self.app.unit_service.confirm_unassigned_subjects(current) is not True:
+                    raise EnvironmentError("SERVICE_RETIRED_SUBJECT_CHECK_REQUIRED")
+                return dict(state="COMPLETED")
             def context():
                 from .backend_context import sync_context
                 current = self._state()
@@ -256,12 +268,14 @@ class DemoLifecycle:
                     return completed_no_cloud()
                 return self.app.execute(OperationRequest("unit", action, VehicleTarget.TEST))
             prepared = self._steps(record, [
-                ("stop-simulation", lambda: self.app.source_service.simulation("stop", target="test")),
-                ("start-cleanup-backends", self.backends.start_stack),
-                ("bind-cleanup-context", context),
+                ("stop-simulation", lambda: self.app.source_service.simulation("stop", target="test", retiring=True)),
+                ("stop-test", lambda: self._vm("stop")),
+                ("stop-backends", self.backends.stop_stack),
+                ("reconcile-subjects", subjects),
                 ("deprovision-test", lambda: cloud_action("deprovision")),
                 ("delete-test", lambda: cloud_action("delete")),
-                ("stop-test", lambda: self._vm("stop"))], "READY_FOR_LOCAL_RETIREMENT")
+                ("start-cleanup-backends", self.backends.start_stack),
+                ("bind-cleanup-context", context)], "READY_FOR_LOCAL_RETIREMENT")
             if prepared.state != OperationState.COMPLETED:
                 return prepared
             record.update(state="IN_PROGRESS", phase="retire-test-data-and-overlay")

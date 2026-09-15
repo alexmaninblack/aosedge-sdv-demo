@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 import json
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -17,6 +18,60 @@ IMAGE = "sha256:" + "a" * 64
 
 
 class BackendTests(unittest.TestCase):
+    def test_observation_does_not_acquire_writer_but_mutations_still_do(self):
+        self.service._context_handles = Mock(return_value=dict(state="CLEAR", owners=[]))
+        self.state["vehicles"]["test"]["systemUid"] = "test-uid"
+        self.state["backends"] = dict(brake=dict(imageId=IMAGE))
+        atomic_json(self.root / JOURNAL, self.state)
+        self.container = dict(Image=IMAGE, Config=dict(Labels={"tech.aosedge.demo.owner": OWNER,
+            "tech.aosedge.demo.team": "brake"}), State=dict(Running=True))
+        self.service._product_observation = Mock(return_value=dict(state="OBSERVED"))
+        held, release = threading.Event(), threading.Event()
+        def writer():
+            with self.environment._writer():
+                held.set()
+                release.wait(5)
+        thread = threading.Thread(target=writer)
+        thread.start()
+        try:
+            self.assertTrue(held.wait(2))
+            before = (self.root / JOURNAL).read_bytes()
+            self.assertEqual("OBSERVED", self.service.execute("inspect", "brake")["state"])
+            self.service._product_observation.assert_called_once_with("brake", "test-uid")
+            self.assertEqual("RUNNING", self.service.execute("status", "brake")["state"])
+            with self.assertRaisesRegex(EnvironmentError, "CURRENT_RUN_BUSY"):
+                self.service.execute("stop", "brake")
+            self.assertEqual(before, (self.root / JOURNAL).read_bytes())
+            self.assertEqual([], self.commands)
+        finally:
+            release.set()
+            thread.join(3)
+        self.assertFalse(thread.is_alive())
+
+    def test_observation_rejects_changed_binding_but_not_unrelated_upload(self):
+        for field in ("vehicle", "owner", "backend", "upload"):
+            with self.subTest(field=field):
+                initial = json.loads((self.root / JOURNAL).read_text())
+                def inspect(kind, name):
+                    current = json.loads((self.root / JOURNAL).read_text())
+                    if field == "vehicle":
+                        current["vehicles"]["test"]["systemUid"] = "replacement"
+                    elif field == "owner":
+                        current["operations"][0]["id"] = "other-run"
+                    elif field == "backend":
+                        current["backends"] = dict(brake=dict(imageId="replacement"))
+                    else:
+                        current["servicePublication"] = dict(state="UPLOADED")
+                    atomic_json(self.root / JOURNAL, current)
+                    return None
+                self.service._inspect = inspect
+                if field == "upload":
+                    self.assertEqual("STOPPED", self.service.execute("inspect", "brake")["state"])
+                else:
+                    with self.assertRaisesRegex(EnvironmentError, "OBSERVATION_BINDING_CHANGED"):
+                        self.service.execute("inspect", "brake")
+                atomic_json(self.root / JOURNAL, initial)
+
     def test_product_inspect_uses_only_fixed_local_endpoints_and_mock_provenance(self):
         connection = Mock()
         response = connection.getresponse.return_value

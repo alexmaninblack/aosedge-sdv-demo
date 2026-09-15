@@ -62,6 +62,8 @@ class ServiceCatalog:
             return dict(authority=observed(None, reason="SERVICE_CREDENTIAL_MISSING_OR_UNSAFE"))
         request = dict(action=action, serviceId=service_id, expectedRole=profile["expectedRole"],
             ownerId=profile.get("expectedOwnerId"), credential=str(credential))
+        from .cloud_connection import cloud_request
+        request.update(cloud_request(profile))
         if version_id is not None:
             request["versionId"] = version_id
         try:

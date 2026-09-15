@@ -11,6 +11,7 @@ import hashlib
 import hmac
 import json
 import os
+import re
 import secrets
 import tempfile
 import threading
@@ -29,7 +30,7 @@ from .environment import EnvironmentError
 from .native_access import NativeVMAccess
 
 NATIVE_ADDRESS = ("127.0.0.1", 18600)
-READ_ACTIONS = ("inspect", "verify", "cloud-status", "observe-test", "cloud-access")
+READ_ACTIONS = ("inspect", "verify", "cloud-status", "observe-test", "cloud-access", "service-observe", "cloud-inspect", "cloud-choose", "cloud-check")
 
 
 def operation_plan(payload):
@@ -39,7 +40,12 @@ def operation_plan(payload):
     identity = str(UUID(payload["requestId"]))
     action = payload.get("action")
     fields = {"requestId", "action", "sessionId"}
-    if action in ("create", "prepare-demo"):
+    if action in ("cloud-inspect", "cloud-choose", "cloud-check", "cloud-prepare"):
+        plan = [dict(domain="cloud", action=action.removeprefix("cloud-"))]
+    elif action == "cloud-select":
+        fields.add("selectionId")
+        plan = [dict(domain="cloud", action="select", selection_id=str(UUID(payload.get("selectionId", ""))))]
+    elif action in ("create", "prepare-demo"):
         fields.add("image")
         if not isinstance(payload.get("image"), str) or not 1 <= len(payload["image"]) <= 128:
             raise ValueError("CATALOG_IMAGE_REQUIRED")
@@ -59,12 +65,39 @@ def operation_plan(payload):
             raise ValueError("COMPONENT_VERSION_REQUIRED")
         request = dict(domain="component", action=action, component_version=version)
         plan = [request]
+    elif action == "service-prepare":
+        fields.update(("team", "profile"))
+        team, profile = payload.get("team"), payload.get("profile")
+        if team not in ("brake", "tire") or profile not in (("v1",) if team == "tire" else ("v1", "v2", "v3")):
+            raise ValueError("SERVICE_PROFILE_REQUIRED")
+        plan = [dict(domain="service", action="prepare", team=team, content_profile=profile,
+                     without_permissions=True, demo_mocked_data=True)]
+    elif action in ("service-publish", "service-observe"):
+        fields.add("release")
+        release = payload.get("release")
+        if not isinstance(release, str) or not re.fullmatch(r"(?:brake|tire)/[0-9]{1,9}\.[0-9]{1,9}\.[0-9]{1,9}", release):
+            raise ValueError("PREPARED_SERVICE_HANDLE_REQUIRED")
+        plan = [dict(domain="service", action=step, service_release=release)
+                for step in (("sign", "upload") if action == "service-publish" else ("cloud-status",))]
+    elif action == "service-assign":
+        fields.add("serviceId")
+        identifier = str(UUID(payload.get("serviceId", "")))
+        # First delivery may launch immediately. Establish the existing public
+        # inputs before Cloud assignment; a failed preparation stops this plan.
+        plan = [dict(domain="service", action="runtime-prepare", target="test"),
+                dict(domain="service", action="assign", service_id=identifier, target="test")]
+    elif action == "publish":
+        fields.add("version")
+        version = payload.get("version")
+        if not isinstance(version, str) or len(version) > 32 or not VERSION.fullmatch(version):
+            raise ValueError("COMPONENT_VERSION_REQUIRED")
+        plan = [dict(domain="component", action=step, component_version=version) for step in ("sign", "upload")]
     elif action in ("start-vms", "stop-vms"):
         plan = [dict(domain="vm", action="start" if action == "start-vms" else "stop", target="test")]
     elif action == "provision":
         plan = [dict(domain="unit", action="provision", target="test")]
     elif action in ("start-simulation", "stop-simulation"):
-        plan = [dict(domain="simulation", action="start" if action == "start-simulation" else "stop")]
+        plan = [dict(domain="simulation", action="start" if action == "start-simulation" else "stop", target="test")]
     elif action == "connect-test":
         plan = [dict(domain="vehicle", action="initialize", target="test")]
     elif action == "reconnect-test":
@@ -89,10 +122,18 @@ def public_result(result):
     """Fixed public facts, not an unrestricted worker response."""
     public = {key: result.get(key) for key in ("operation", "state", "message")}
     data = result.get("data") or {}
-    allowed = ("activeVersion", "activeSlot", "vdpProcess", "vdpData", "vdpStatusText", "vdpRestarts",
+    allowed = ("releaseHandle", "team", "serviceId", "serviceProviderId", "demoMockedData", "stage", "observedAt", "signatureVerification",
+               "activeVersion", "activeSlot", "vdpProcess", "vdpData", "vdpStatusText", "vdpRestarts",
                "processSlotMatches", "readPathCount", "gate", "advisory", "state", "noOp", "currentVehicle",
-               "version", "contentProfile", "sha256", "approved", "outcome", "signatureVerified", "phase", "completedSteps", "reason", "image")
+               "version", "contentProfile", "sha256", "cloudDomain", "approved", "outcome", "signatureVerified", "phase", "completedSteps", "reason", "image")
     public["facts"] = {key: data[key] for key in allowed if key in data}
+    if result.get("operation") in ("cloud.check", "cloud.prepare"):
+        public["facts"].update({key: data[key] for key in ("domain", "observedAt", "stage", "noOp", "productionPreserved") if key in data})
+        public["facts"]["checks"] = [{key: row.get(key) for key in ("key", "label", "state", "detail")}
+            for row in data.get("checks", [])]
+    if result.get("operation") in ("cloud.inspect", "cloud.select"):
+        public["facts"].update({key: data[key] for key in ("domain", "selectedDomain", "certificateName", "validUntil",
+            "apiUrl", "serviceDiscoveryUrl", "trust", "applied", "productionPreserved", "guestConfiguration") if key in data})
     if isinstance(data.get("publication"), dict):
         public["facts"]["publication"] = {key: data["publication"].get(key) for key in
             ("stage", "deploymentId", "bundleState", "versionState", "versionId", "observedAt", "reason")}
@@ -135,9 +176,13 @@ class SessionOperations:
         self.executor = executor
         self.session_id = str(uuid4())  # Public generation ID, not a capability.
         self.jobs = {}
+        # Compact request tombstones preserve at-most-once execution after the
+        # detailed UI history rolls over. Never discard a request identity.
+        self.archived_jobs = {}
         self.lock = threading.RLock()
         self.active = None
         self.uncertain = False
+        self.cloud_candidates = {}  # Local paths never enter job receipts/browser JSON.
 
     def submit(self, payload):
         identity, plan = operation_plan(payload)
@@ -145,8 +190,9 @@ class SessionOperations:
         with self.lock:
             if payload["sessionId"] != self.session_id:
                 raise ValueError("UI_SESSION_CHANGED_NO_REPLAY")
-            if identity in self.jobs:
-                if self.jobs[identity]["fingerprint"] != fingerprint:
+            if identity in self.jobs or identity in self.archived_jobs:
+                existing = self.jobs.get(identity) or self.archived_jobs[identity]
+                if existing["fingerprint"] != fingerprint:
                     raise ValueError("REQUEST_ID_INPUT_CHANGED")
                 return self.view(identity)
             if self.active:
@@ -154,8 +200,12 @@ class SessionOperations:
             if self.uncertain and payload["action"] not in READ_ACTIONS:
                 raise ValueError("UNCERTAIN_OPERATION_REQUIRES_NATIVE_RECONCILIATION")
             if len(self.jobs) >= 128:
-                raise ValueError("UI_SESSION_RECEIPT_LIMIT")
+                oldest = next(key for key, job in self.jobs.items() if job["state"] != "UNCERTAIN")
+                archived = self.jobs.pop(oldest)
+                self.archived_jobs[oldest] = {**archived, "progress": [], "results": [], "archived": True}
+                self.cloud_candidates.pop(oldest, None)
             self.jobs[identity] = dict(id=identity, action=payload["action"], version=payload.get("version"), profile=payload.get("profile"),
+                team=payload.get("team"), release=payload.get("release"), serviceId=payload.get("serviceId"),
                 fingerprint=fingerprint, state="ACCEPTED", startedAt=now(), progress=[], results=[])
             self.active = identity
             threading.Thread(target=self.run, args=(identity, plan), daemon=True).start()
@@ -163,12 +213,18 @@ class SessionOperations:
 
     def view(self, identity):
         with self.lock:
-            return json.loads(json.dumps({key: value for key, value in self.jobs[identity].items() if key != "fingerprint"}))
+            job = self.jobs.get(identity) or self.archived_jobs[identity]
+            return json.loads(json.dumps({key: value for key, value in job.items() if key != "fingerprint"}))
 
     def snapshot(self):
         with self.lock:
+            from .cloud_connection import CloudConnection, LEGACY_DOMAIN
+            from .status import project_root
+            from types import SimpleNamespace
+            domain = CloudConnection(SimpleNamespace(root=project_root()))._configuration().get("cloudConnection", {}).get("domain", LEGACY_DOMAIN) if not self.executor else None
             return dict(sessionId=self.session_id, active=self.active, uncertain=self.uncertain,
-                        jobs=[self.view(identity) for identity in self.jobs])
+                        cloudDomain=domain,
+                        jobs=[self.view(identity) for identity in self.jobs], recordedRequestIds=list(self.archived_jobs))
 
     def run(self, identity, plan):
         job = self.jobs[identity]
@@ -182,18 +238,50 @@ class SessionOperations:
                 from .environment import JOURNAL
                 from .status import read_json
                 path = application.environment_service.root / JOURNAL
+                from .status import load_configuration
+                from .cloud_connection import LEGACY_DOMAIN
+                job["cloudDomain"] = (load_configuration(application.environment_service.root).get("cloudConnection") or {}).get("domain", LEGACY_DOMAIN)
                 if path.is_file():
                     job["runId"] = read_json(path).get("vehicles", {}).get("test", {}).get("localVmId")
             with self.lock:
                 job["state"] = "RUNNING"
             for request in plan:
                 progress(request["domain"] + "." + request["action"] + (" " + request["target"] if request.get("target") else ""))
-                result = self.executor(request) if self.executor else execute_operation(request, application)
+                if request["domain"] == "cloud" and request["action"] in ("inspect", "choose", "select") and not self.executor:
+                    from .cloud_connection import CloudConnection
+                    from .models import OperationRequest
+                    certificate = None
+                    if request["action"] == "choose":
+                        from .native_access import choose_cloud_certificate
+                        progress("Choose the OEM certificate in the macOS file dialog; nothing is uploaded")
+                        certificate = choose_cloud_certificate()
+                    if request["action"] in ("inspect", "choose"):
+                        connection = CloudConnection(application.environment_service)
+                        certificate = certificate or str(connection.credential())
+                        result = application.execute(OperationRequest("cloud", "inspect", certificate=certificate)).to_dict()
+                        if result["state"] == "OBSERVED":
+                            self.cloud_candidates[identity] = (certificate, result["data"]["domain"])
+                    else:
+                        candidate = self.cloud_candidates.get(request["selection_id"])
+                        if not candidate:
+                            raise EnvironmentError("CLOUD_CERTIFICATE_PREVIEW_REQUIRED")
+                        result = application.execute(OperationRequest("cloud", "select", certificate=candidate[0],
+                            expected_domain=candidate[1])).to_dict()
+                else:
+                    result = self.executor(request) if self.executor else execute_operation(request, application)
+                # Create can establish the identity after this job was accepted.
+                # Tag its receipt from the same journal, never a browser selector.
+                if application and not job.get("runId") and path.is_file():
+                    job["runId"] = read_json(path).get("vehicles", {}).get("test", {}).get("localVmId")
                 with self.lock:
                     job["results"].append(public_result(result))
                     if payload_version := (result.get("data") or {}).get("version"):
                         job["version"] = payload_version
-                        job["profile"] = (result.get("data") or {}).get("contentProfile")
+                        if (result.get("data") or {}).get("contentProfile"):
+                            job["profile"] = result["data"]["contentProfile"]
+                    for key, source in (("team", "team"), ("release", "releaseHandle"), ("serviceId", "serviceId")):
+                        if (result.get("data") or {}).get(source):
+                            job[key] = result["data"][source]
                 if result["state"] not in ("COMPLETED", "OBSERVED", "READY"):
                     with self.lock:
                         job["state"] = result["state"]

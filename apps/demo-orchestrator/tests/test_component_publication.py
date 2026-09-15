@@ -12,7 +12,7 @@ from unittest.mock import Mock, patch
 from urllib.parse import parse_qs, urlsplit
 
 from aosedge_demo_orchestrator.components import ComponentService, COMPONENT
-from aosedge_demo_orchestrator.component_cloud import COMPONENT_ID
+from aosedge_demo_orchestrator.component_cloud import resolve_component
 from aosedge_demo_orchestrator.component_publication import Reads, snapshot, publication
 from aosedge_demo_orchestrator.environment import JOURNAL, MANIFEST, EnvironmentError, digest
 from aosedge_demo_orchestrator.unit_cloud import CloudFailure
@@ -22,6 +22,7 @@ TEST = "22222222-2222-4222-8222-222222222222"
 SET = "33333333-3333-4333-8333-333333333333"
 BUNDLE = "44444444-4444-4444-8444-444444444444"
 RELEASE = "55555555-5555-4555-8555-555555555555"
+COMPONENT_ID = "66666666-6666-4666-8666-666666666666"
 
 
 def ready(version="16.0.0", identity=BUNDLE):
@@ -39,6 +40,7 @@ class FixtureCloud:
         self.unit = dict(id=TEST, system_uid="test-uid", status="provisioned", online_status="Offline",
             unit_sets=[dict(id=SET)], unit_update_components=[])
         self.component_owner = OWNER
+        self.component_rows = None
 
     def require(self, *permissions):
         self.permissions.extend(permissions)
@@ -50,6 +52,12 @@ class FixtureCloud:
         if path == "units/" + TEST + "/":
             return copy.deepcopy(self.unit)
         parsed = urlsplit(path)
+        if parsed.path == "components/":
+            rows = self.component_rows if self.component_rows is not None else [
+                dict(id=COMPONENT_ID, codename=COMPONENT, oem_id=self.component_owner)]
+            query = parse_qs(parsed.query)
+            offset, limit = int(query["offset"][0]), int(query["limit"][0])
+            return dict(offset=offset, total=len(rows), items=copy.deepcopy(rows[offset:offset + limit]))
         if parsed.path not in self.collections:
             raise AssertionError("Undocumented/unrelated read: " + path)
         query = parse_qs(parsed.query)
@@ -98,8 +106,7 @@ class PublicationAdapterTests(unittest.TestCase):
         with self.assertRaisesRegex(CloudFailure, "FILTER_NOT_PROVEN"):
             snapshot(self.cloud, self.request)
         self.cloud.component_owner = RELEASE
-        with self.assertRaisesRegex(CloudFailure, "IDENTITY_OR_OWNER_MISMATCH"):
-            snapshot(self.cloud, self.request)
+        self.assertIsNone(resolve_component(self.cloud, Reads(self.cloud)))
 
     def test_missing_component_report_is_unknown_not_empty(self):
         self.request["vehicles"] = dict(test=dict(unitId=TEST, unitSetId=SET, systemUid="test-uid"))
@@ -109,13 +116,15 @@ class PublicationAdapterTests(unittest.TestCase):
         with self.assertRaisesRegex(CloudFailure, "UPDATE_STATE_NOT_PROVEN"):
             snapshot(self.cloud, self.request)
 
-    def test_verification_retirement_needs_ready_bundle_not_batch(self):
+    def test_verification_retirement_needs_accepted_bundle_not_readiness_or_batch(self):
         from aosedge_demo_orchestrator import unit_cloud
         self.mark_ready()
         entry = dict(version="16.0.0", deploymentId=BUNDLE, verificationTest=True)
         with patch.object(unit_cloud, "Cloud", return_value=self.cloud):
             self.assertEqual(dict(confirmedUploads=[entry]), unit_cloud.execute(dict(action="reconcile-uploads", uploads=[entry])))
             self.cloud.collections["deployment-bundles/"][0]["state"] = "error"
+            self.assertEqual(dict(confirmedUploads=[entry]), unit_cloud.execute(dict(action="reconcile-uploads", uploads=[entry])))
+            self.cloud.collections["deployment-bundles/"] = []
             with self.assertRaisesRegex(CloudFailure, "RECONCILIATION_REQUIRED"):
                 unit_cloud.execute(dict(action="reconcile-uploads", uploads=[entry]))
         self.assertNotIn("verification_batch_read", self.cloud.permissions)
@@ -208,6 +217,9 @@ class PublicationServiceTests(unittest.TestCase):
         self.before = dict(versions=[], deploymentBundles=[], ownerId=OWNER,
             recipientCoverage=dict(complete=True, recipientUnitIds=[]))
         self.response = dict(deploymentId=BUNDLE, httpStatus=201, state="uploaded")
+        self.service._signed = Mock(return_value=(self.root / "bundle", {"sha256": "signed"},
+                                                {"domain": "aoscloud.io", "preparedSha256": "a" * 64}))
+        self.service._verify_signed = Mock()  # Real signature/payload boundary has separate offline tests.
 
     def save(self):
         self.journal.write_text(json.dumps(self.state))
@@ -265,6 +277,11 @@ class PublicationServiceTests(unittest.TestCase):
     def test_warehouse_all_profiles_publish_before_provision_connected_running(self):
         for profile in ("v1", "v2", "v3"):
             self.save()
+            # Each profile is an independent fixture, not another POST of the
+            # same already accepted artifact in the same Cloud.
+            receipt = self.service._publication_path("16.0.0", self.state)
+            if receipt.exists():
+                receipt.unlink()
             self.prepared_path.write_text(json.dumps(dict(version="16.0.0", contentProfile=profile)))
             result, calls = self.upload([self.before, self.response])
             self.assertEqual("ACCEPTED", result["publication"]["stage"])

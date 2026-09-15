@@ -22,7 +22,7 @@ from .guest_access import ACCESS_FILES
 from .status import object_id, read_json
 
 ROOT_FIELDS = {"schemaVersion", "kind", "startedAt", "stage", "scope", "factory",
-    "currentVehicle", "vehicles", "operations", "shared", "cloudBinding", "source",
+    "currentVehicle", "vehicles", "operations", "shared", "cloudBinding", "source", "selectedCloudDomain", "cloudContexts",
     "componentOperations", "componentSchema", "smDemoProof", "demoPreparation",
     "backends", "demoLifecycle", "testRetirement", "workspace", "demoSubjects", "serviceOperations",
     "smServiceUpdateProof", "cmServiceUpdateProof", "cmComparison20260912", "cmIdleFullStatusProof"}
@@ -205,10 +205,16 @@ def retire_test(environment, cloud_check, backend_check):
                 raise EnvironmentError("CLOUD_RETIREMENT_PROOF_REQUIRED")
             for key in ("unitId", "nodeId", "unitSetId"):
                 object_id(item[key])
-            if cloud_check is None or cloud_check(state) is not True:
-                raise EnvironmentError("FRESH_CLOUD_RETIREMENT_CHECK_REQUIRED")
         elif any(item.get(key) is not None for key in ("unitId", "nodeId", "systemUid", "unitSetId")):
             raise EnvironmentError("CLOUD_RETIREMENT_PROOF_REQUIRED")
+        # Publication precedes provisioning in Full story. Its accepted upload
+        # still needs reconciliation even when no Unit identity was created.
+        pending_uploads = any(isinstance(record, dict) and isinstance(record.get("upload"), dict)
+            and record["upload"].get("attemptStarted") and record["upload"].get("state") != "CONFIRMED"
+            for record in state.get("componentOperations", {}).values())
+        if cloud or pending_uploads:
+            if cloud_check is None or cloud_check(state) is not True:
+                raise EnvironmentError("FRESH_CLOUD_RETIREMENT_CHECK_REQUIRED")
         if state.get("backends") and (backend_check is None or backend_check(state) is not True):
             raise EnvironmentError("TEST_BACKEND_CLEANUP_PROOF_REQUIRED")
         if (any(state.get(key) != value for key, value in protected.items() if key != "production")

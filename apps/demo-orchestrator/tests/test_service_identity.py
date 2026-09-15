@@ -20,6 +20,29 @@ from aosedge_demo_orchestrator.unit_cloud import CloudFailure, execute
 STUB = "aos_prov.communication.unit.v6.generated.iamanager_pb2_grpc.IAMPublicIdentityServiceStub"
 
 
+class PreparationInspectionTests(unittest.TestCase):
+    def test_identity_projection_does_not_walk_containers_processes_or_resources(self):
+        from aosedge_demo_orchestrator import source_guest as guest
+        for reachable in (True, False):
+            with self.subTest(reachable=reachable), patch.object(guest, "command") as command, patch.object(
+                    Path, "read_text", autospec=True) as read, patch.object(guest.socket, "create_connection") as connect, patch.object(
+                    guest, "container_runtime_observation") as containers, patch.object(guest, "process_wait_observation") as waits:
+                command.return_value.stdout = "MainPID=42\nActiveState=active\n"
+                files = {"/proc/42/root/etc/aos/sm.cfg": json.dumps(dict(iamPublicServerUrl="main:8090")),
+                    "/etc/aos/iam.cfg": json.dumps(dict(identifier=dict(plugin="fileidentifier", params=dict(systemIDPath="/etc/machine-id")))),
+                    "/etc/machine-id": "native-unit\n"}
+                read.side_effect = lambda path, *args, **kwargs: files[str(path)]
+                if not reachable:
+                    connect.side_effect = OSError("fixture unavailable")
+                result = guest.execute(dict(action="service-runtime-inspect", role="test", identityOnly=True))
+                self.assertEqual("native-unit", result["iamFileIdentifier"]["systemUid"])
+                self.assertEqual(reachable, result["iamLocalEndpoint"]["loopback8090Reachable"])
+                self.assertEqual(3, read.call_count)
+                command.assert_called_once()
+                containers.assert_not_called()
+                waits.assert_not_called()
+
+
 @unittest.skipUnless(importlib.util.find_spec("aos_prov"), "run with the installed official Aos SDK Python")
 class NativeIAMTests(unittest.TestCase):
     def test_server_authenticated_iam_tls_with_fixed_name_no_cloud_or_plaintext(self):

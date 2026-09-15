@@ -4,12 +4,14 @@
 """Guest checks and explicit-user-password enrollment through owned local serial."""
 
 import re
+import json
 import os
 import stat
 import shlex
 import socket
 import subprocess
 import time
+from pathlib import Path
 
 from .environment import EnvironmentError
 
@@ -33,22 +35,90 @@ def ssh_command(access, port, timeout):
             "-i", str(access / ACCESS_FILES[0]), "-p", str(port), "root@127.0.0.1", "sh", "-s"]
 
 
-def read_guest(access, port, timeout=5, shutdown=False):
-    script = ("printf 'DEMO_GUEST_READY\\n'\nif " + UNPROVISIONED +
+def read_guest(access, port, timeout=5, shutdown=False, *, factory_role=None, cloud_host=None,
+               cloud_configuration=None):
+    if factory_role is not None and (shutdown or factory_role not in ("test", "production")):
+        raise EnvironmentError("SOURCE_ROLE_INVALID")
+    script = ""
+    if cloud_configuration is not None:
+        if shutdown or factory_role != "test" or cloud_configuration.get("domain") != cloud_host:
+            raise EnvironmentError("CLOUD_GUEST_CONFIGURATION_SCOPE_INVALID")
+        from . import cloud_guest
+        script = ("printf 'DEMO_CLOUD_CONFIGURATION_STARTED\\n'\npython3 - <<'DEMOCTL_CLOUD_PY'\n"
+            + Path(cloud_guest.__file__).read_text()
+            + "\nif not main(" + repr(cloud_configuration) + "): raise SystemExit(1)\nDEMOCTL_CLOUD_PY\n"
+            + "[ $? -eq 0 ] || exit 1\nprintf 'DEMO_CLOUD_CONFIGURATION_READY\\n'\n")
+    script += ("printf 'DEMO_GUEST_READY\\n'\nif " + UNPROVISIONED +
               "; then printf 'DEMO_UNPROVISIONED\\n'; fi\n")
     if shutdown:
         script += "sync\nsystemctl poweroff\n"
     else:
-        script += "if timeout 2 busybox nslookup aoscloud.io >/dev/null 2>&1; then printf 'DEMO_DNS_READY\\n'; fi\n"
+        if cloud_host is not None:
+            from .cloud_connection import domain_name
+            lookup = "python3 -c " + shlex.quote("import socket; socket.getaddrinfo(" + repr(domain_name(cloud_host)) + ", 9000)")
+        else:
+            lookup = "busybox nslookup aoscloud.io"
+        script += "if timeout 2 " + lookup + " >/dev/null 2>&1; then\nprintf 'DEMO_DNS_READY\\n'\n"
+        if factory_role is not None:
+            # Start needs readiness and role reconciliation, not two SSH logins.
+            # The existing role operation runs only after a fresh DNS success.
+            from . import source_guest
+            script += ("python3 - <<'DEMOCTL_ROLE_PY'\n" + Path(source_guest.__file__).read_text()
+                + "\nmain(" + repr(dict(action="factory-role", role=factory_role)) + ")\nDEMOCTL_ROLE_PY\n")
+        script += "fi\n"
     try:
         result = subprocess.run(ssh_command(access, port, timeout), input=script,
                                 capture_output=True, text=True, timeout=timeout)
-    except (OSError, subprocess.TimeoutExpired):
+    except subprocess.TimeoutExpired as error:
+        output = error.stdout or b""
+        if isinstance(output, bytes):
+            output = output.decode(errors="replace")
+        if cloud_configuration is not None and "DEMO_CLOUD_CONFIGURATION_STARTED" in output.splitlines():
+            raise EnvironmentError("CLOUD_GUEST_CONFIGURATION_UNCONFIRMED") from None
+        if factory_role is not None and "DEMO_DNS_READY" in output.splitlines():
+            raise EnvironmentError("SOURCE_FACTORY_ROLE_UNCONFIRMED:" + factory_role) from None
+        return {"guestReady": False, "guestDnsReady": False, "unprovisioned": False}
+    except OSError:
         return {"guestReady": False, "guestDnsReady": False, "unprovisioned": False}
     lines = result.stdout.splitlines()
-    return {"guestReady": "DEMO_GUEST_READY" in lines and (result.returncode == 0 or shutdown),
+    if cloud_configuration is not None and "DEMO_CLOUD_CONFIGURATION_STARTED" in lines:
+        if "DEMO_CLOUD_CONFIGURATION_READY" not in lines:
+            reason = "CLOUD_GUEST_CONFIGURATION_UNCONFIRMED"
+            if len(result.stdout) <= 8192:
+                for line in lines:
+                    try:
+                        value = json.loads(line)
+                        reported = value.get("reason") if isinstance(value, dict) and value.get("ok") is False else None
+                        if isinstance(reported, str) and re.fullmatch(r"CLOUD_GUEST_[A-Z_]+", reported):
+                            reason = reported
+                    except ValueError:
+                        pass
+            raise EnvironmentError(reason)
+    if factory_role is not None and "DEMO_DNS_READY" in lines and result.returncode:
+        raise EnvironmentError("SOURCE_FACTORY_ROLE_UNCONFIRMED:" + factory_role)
+    observed = {"guestReady": "DEMO_GUEST_READY" in lines and (result.returncode == 0 or shutdown),
             "guestDnsReady": "DEMO_DNS_READY" in lines,
             "unprovisioned": "DEMO_UNPROVISIONED" in lines}
+    if factory_role is not None and observed["guestReady"] and observed["guestDnsReady"]:
+        try:
+            value = json.loads(lines[-1]) if len(result.stdout) <= 65536 else None
+            if not isinstance(value, dict):
+                raise ValueError()
+            if not value.get("ok"):
+                reason = value.get("reason", "")
+                if not isinstance(reason, str) or not re.fullmatch(r"[A-Z][A-Z0-9_]+", reason):
+                    raise ValueError()
+                raise EnvironmentError(reason + ":" + factory_role)
+            role = value["data"]
+            if (not isinstance(role, dict) or not (role.get("state") == "NOT_APPLICABLE"
+                    or (role.get("state") in ("INITIALIZED", "STAGED_BEFORE_SM") and role.get("role") == factory_role))):
+                raise ValueError()
+            observed["factoryRole"] = role
+        except EnvironmentError:
+            raise
+        except (ValueError, KeyError, TypeError):
+            raise EnvironmentError("SOURCE_FACTORY_ROLE_RESPONSE_INVALID:" + factory_role) from None
+    return observed
 
 
 def enroll_serial(serial, access, port, deadline, password, progress=None):

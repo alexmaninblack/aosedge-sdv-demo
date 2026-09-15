@@ -22,8 +22,10 @@ class StudioCloudReaderTests(unittest.TestCase):
         self.path.parent.mkdir(parents=True)
         self.journal = dict(vehicles=dict(test=dict(localVmId="vm-a", unitId="unit-a")))
         self.write()
-        self.reader = presenter.StudioCloudReader.__new__(presenter.StudioCloudReader)
-        self.reader.application = SimpleNamespace(environment_service=SimpleNamespace(root=self.root))
+        application = SimpleNamespace(environment_service=SimpleNamespace(root=self.root))
+        with patch("aosedge_demo_orchestrator.application.DemoOrchestrator", return_value=application):
+            self.reader = presenter.StudioCloudReader()
+        self.addCleanup(self.reader.pool.shutdown)
 
     def write(self):
         self.path.write_text(json.dumps(self.journal))
@@ -42,15 +44,22 @@ class StudioCloudReaderTests(unittest.TestCase):
         self.assertEqual("18.0.0", result["value"]["installedVersion"])
         self.assertEqual("STALE", result["value"]["inventory"]["components"]["state"])
         self.assertEqual("NOT_REPORTED_BY_CLOUD", result["value"]["runtimeState"])
-        self.assertEqual(dict(domain="unit", action="cloud-status", target="test"), call.call_args.args[0])
+        call.assert_any_call(dict(domain="unit", action="cloud-status", target="test"), self.reader.application)
 
     def test_ready_publication_is_selected_by_receipt_and_does_not_repeat_release_scan(self):
         self.journal["componentOperations"] = {"19.0.0": dict(deploymentId="bundle-a")}
         self.write()
         publication = dict(stage="READY", deploymentId="bundle-a", versionState="ready", secret="not-public")
-        with patch.object(presenter, "execute_operation", side_effect=[dict(data=dict(publication=publication)), self.inventory(), self.inventory()]) as call:
+        def execute(request, application):
+            if request["domain"] == "component":
+                return dict(data=dict(publication=publication))
+            if request["domain"] == "service":
+                return dict(data=dict(releases=[]))
+            return self.inventory()
+        with patch.object(presenter, "execute_operation", side_effect=execute) as call:
             first, second = self.reader(), self.reader()
-        self.assertEqual(3, call.call_count)
+        self.assertEqual(5, call.call_count)
+        self.assertEqual(1, sum(row.args[0]["domain"] == "component" for row in call.call_args_list))
         self.assertEqual("19.0.0", first["publication"]["version"])
         self.assertNotIn("secret", first["publication"])
         self.assertEqual(first["publication"], second["publication"])
@@ -59,7 +68,11 @@ class StudioCloudReaderTests(unittest.TestCase):
     def test_preprovision_publication_is_visible_without_inventing_unit_installation(self):
         self.journal = dict(vehicles=dict(test=dict(localVmId="vm-b")), componentOperations={"19.0.0": dict(deploymentId="bundle-a")})
         self.write()
-        with patch.object(presenter, "execute_operation", side_effect=[dict(data=dict(publication=dict(stage="PROCESSING"))), dict(state="BLOCKED")]):
+        def execute(request, application):
+            if request["domain"] == "component":
+                return dict(data=dict(publication=dict(stage="PROCESSING")))
+            return dict(state="BLOCKED")
+        with patch.object(presenter, "execute_operation", side_effect=execute):
             result = self.reader()
         self.assertEqual("vm-b:none", result["bindingKey"])
         self.assertIsNone(result["value"])
@@ -79,7 +92,7 @@ class StudioCloudReaderTests(unittest.TestCase):
         result["data"]["serviceDetails"] = {"brake-id":dict(state="CURRENT",value=[row])}
         with patch.object(presenter,"execute_operation",return_value=result):
             data=self.reader()["value"]["inventory"]
-        self.assertEqual([row],data["services"]["value"])
+        self.assertEqual([dict(row, reportReadCompletedAt=None)],data["services"]["value"])
         self.assertEqual({"brake":"brake-id"},data["teamServiceIds"])
         result["data"]["serviceDetails"]["brake-id"] = dict(state="UNAVAILABLE",value=None)
         with patch.object(presenter,"execute_operation",return_value=result):
@@ -94,9 +107,13 @@ class StudioCloudReaderTests(unittest.TestCase):
         }
         self.write()
         ready = dict(data=dict(publication=dict(stage="READY")))
-        with patch.object(presenter, "execute_operation", side_effect=[
-            ready, self.inventory(), ready, self.inventory(), self.inventory(),
-        ]) as call:
+        def execute(request, application):
+            if request["domain"] == "component":
+                return ready
+            if request["domain"] == "service":
+                return dict(data=dict(releases=[]))
+            return self.inventory()
+        with patch.object(presenter, "execute_operation", side_effect=execute) as call:
             self.reader()
             second = self.reader()
             self.assertEqual({"19.0.0", "20.0.0"}, {row["version"] for row in second["publications"]})

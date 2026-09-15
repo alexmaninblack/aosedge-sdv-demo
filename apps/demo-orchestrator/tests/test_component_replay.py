@@ -12,7 +12,7 @@ from unittest.mock import patch
 
 from aosedge_demo_orchestrator.component_build import PROFILE_BASES, PACKAGE, encoded, pack, replay
 from aosedge_demo_orchestrator.components import ComponentService, archive_files, sha
-from aosedge_demo_orchestrator.environment import EnvironmentError
+from aosedge_demo_orchestrator.environment import EnvironmentError, JOURNAL, FACTORY, MANIFEST
 from aosedge_demo_orchestrator.api import execute_operation
 from aosedge_demo_orchestrator.cli import main
 
@@ -45,6 +45,53 @@ def inputs(profile):
 
 class ReplayTests(unittest.TestCase):
     factory = {"version": "6.1.1-maninblack.29", "sha256": "immutable-factory"}
+
+    def test_prepare_checks_pinned_unsigned_source_and_constructs_once(self):
+        for profile in PROFILE_BASES:
+            with self.subTest(profile=profile), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                baseline, digest, contract = inputs(profile)
+                environment = SimpleNamespace(root=root, catalog=SimpleNamespace(project=root / "artifacts"),
+                    _writer=contextlib.nullcontext)
+                service = ComponentService(environment)
+                service.root.mkdir(parents=True)
+                factory = dict(self.factory, format="raw", path=FACTORY["raw"], manifestPath=MANIFEST)
+                (root / JOURNAL).parent.mkdir(parents=True)
+                (root / JOURNAL).write_bytes(encoded(dict(factory=factory)))
+                config = root / "contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json"
+                config.parent.mkdir(parents=True)
+                config.write_bytes(encoded(contract))
+                from aosedge_demo_orchestrator.component_sources import UNSIGNED_SHA
+                inspected = dict(source={"legacyArchiveSha256": digest, "unsignedSha256": UNSIGNED_SHA[PROFILE_BASES[profile][0]]},
+                                 sourceIntegrity="VERIFIED_PINNED_DIGESTS")
+                with patch("aosedge_demo_orchestrator.component_sources.source", return_value=(inspected, baseline)) as inspect, \
+                        patch.object(service, "_worker", side_effect=AssertionError("Explicit-version replay needs no certificate")) as verify, \
+                        patch("aosedge_demo_orchestrator.component_build.replay", wraps=replay) as construct, \
+                        patch("aosedge_demo_orchestrator.component_build.pack", wraps=pack) as compress:
+                    result = service.prepare("40.0.0", profile)
+                inspect.assert_called_once_with(service, PROFILE_BASES[profile][0], materialize=True)
+                verify.assert_not_called()
+                self.assertEqual(1, construct.call_count)
+                self.assertEqual(2, compress.call_count)  # One inner payload and one outer bundle.
+                expected, _ = replay("40.0.0", profile, baseline, digest, contract, factory,
+                                     unsigned_source_sha=inspected["source"]["unsignedSha256"])
+                bundle = service._directory("40.0.0") / "aosedge-vdp-component-40.0.0-linux-arm64.unsigned.tar.gz"
+                self.assertEqual(pack(expected), bundle.read_bytes())
+                self.assertEqual(sha(bundle.read_bytes()), result["preparedSha256"])
+
+    def test_failed_source_integrity_prevents_construction(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            environment = SimpleNamespace(root=root, catalog=SimpleNamespace(project=root / "artifacts"),
+                _writer=contextlib.nullcontext)
+            service = ComponentService(environment)
+            service.root.mkdir(parents=True)
+            with patch("aosedge_demo_orchestrator.component_sources.source", side_effect=EnvironmentError("SOURCE_DIGEST_FAILED")), \
+                    patch("aosedge_demo_orchestrator.component_build.replay") as construct:
+                with self.assertRaisesRegex(EnvironmentError, "SOURCE_DIGEST_FAILED"):
+                    service.prepare("40.0.0", "v1")
+            construct.assert_not_called()
+            self.assertFalse(service._directory("40.0.0").exists())
 
     def test_content_profile_is_independent_of_release_major_and_all_metadata_agrees(self):
         for version, profile in (("4.0.0", "v1"), ("5.0.0", "v2"), ("6.0.0", "v3"), ("10.1.0", "v2")):

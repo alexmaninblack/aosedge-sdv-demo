@@ -50,10 +50,13 @@ def cloud_status(name, profile, vehicles, interpreter, timeout):
     targets = {}
     if name == "oem-delivery":
         targets = {role: {k: item[k] for k in ("unitId", "unitSetId", "systemUid", "cloudLifecycle") if k in item}
-                   for role, item in vehicles.items() if item is not None}
+                   for role, item in vehicles.items() if item is not None
+                   and (not profile.get("cloudDomain") or item.get("cloudHost") == profile["cloudDomain"])}
     request = {"name": name, "credential": str(profile["credential"]),
                "expectedRole": profile["expectedRole"], "expectedOwnerId": profile.get("expectedOwnerId"),
                "vehicles": targets, "timeout": timeout}
+    from .cloud_connection import cloud_request
+    request.update(cloud_request(profile))
     process = None
     try:
         process = subprocess.Popen(
@@ -173,9 +176,8 @@ def read_cloud(request):
             "timeValid": starts <= datetime.now(timezone.utc) <= expires,
         })
         credentials = UserCredentials(pkcs12=request["credential"])
-        hostname = credentials.cloud_url
-        if not isinstance(hostname, str) or not re.fullmatch(r"(?:[a-z0-9-]+\.)*aoscloud\.io", hostname):
-            raise ValueError("Unconfigured Cloud trust domain")
+        from aosedge_demo_orchestrator.cloud_connection import trusted_host
+        hostname = trusted_host(credentials.cloud_url, request.get("cloudDomain"))
         ca = resources.files("aos_prov") / "files/1rootCA.crt"
         with resources.as_file(ca) as ca_file:
             context = ssl.create_default_context(cafile=str(ca_file))
@@ -188,8 +190,11 @@ def read_cloud(request):
     except ImportError:
         result["access"] = observation(source, reason="AOS_DEPENDENCIES_UNAVAILABLE")
         return result
-    except (OSError, ValueError, IndexError, AttributeError):
-        result["access"] = observation(source, reason="CREDENTIAL_UNUSABLE")
+    except (OSError, ValueError, IndexError, AttributeError) as error:
+        reason = str(error)
+        result["access"] = observation(source, reason=reason if reason in (
+            "CLOUD_SELECTION_REQUIRED", "CLOUD_CERTIFICATE_DOMAIN_CHANGED", "CLOUD_CERTIFICATE_DOMAIN_INVALID")
+            else "CREDENTIAL_UNUSABLE")
         return result
     payload, failure = get_json(opener, base + "users/me/", deadline, source)
     if failure:

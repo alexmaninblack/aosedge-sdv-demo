@@ -3,11 +3,12 @@
 
 """Loopback Presenter backend; protected operations use the private session."""
 
+import hashlib
 import json
 import mimetypes
 import re
 import threading
-import time
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -72,6 +73,33 @@ class StudioCloudReader:
     def __init__(self):
         from .application import DemoOrchestrator
         self.application = DemoOrchestrator()
+        self.pool = ThreadPoolExecutor(max_workers=3, thread_name_prefix="presenter-read")
+        self.publication_reads = {}
+
+    def publication_read(self, kind, key, request, start_only=False):
+        """At most one bounded read per publication kind, never a polling loop.
+
+        A slow publication must not hold the Unit inventory response. Results
+        from another run/release are discarded, never relabelled as current.
+        """
+        flight = self.publication_reads.get(kind)
+        if flight and flight[0] != key:
+            if not flight[1].done():
+                return None
+            flight = None
+        if flight is None:
+            flight = (key, self.pool.submit(execute_operation, request, self.application))
+            self.publication_reads[kind] = flight
+        if start_only:
+            return None
+        try:
+            result = flight[1].result(timeout=0.05)
+        except FutureTimeout:
+            return None
+        except Exception:
+            result = {}
+        self.publication_reads.pop(kind, None)
+        return result
 
     def __call__(self):
         from .components import COMPONENT
@@ -86,20 +114,39 @@ class StudioCloudReader:
         cache = getattr(self, "publications", {})
         cache = {key: value for key, value in cache.items() if any(key == (version, row["deploymentId"]) for version, row in owned)}
         unresolved = [(version, record) for version, record in owned
-                      if cache.get((version, record["deploymentId"]), {}).get("stage") not in ("READY", "FAILED")]
+                      if cache.get((version, record["deploymentId"]), {}).get("stage") not in ("READY", "ERROR", "FAILED")]
+        releases_read = execute_operation(dict(domain="service", action="releases"), self.application)
+        service_releases = (releases_read.get("data") or {}).get("releases", [])
+        run_id = journal.get("vehicles", {}).get("test", {}).get("localVmId")
+        unresolved_services = [row for row in service_releases if run_id and row.get("runId") == run_id
+            and row.get("submitted") and row.get("publication", {}).get("stage") not in ("READY", "ERROR", "FAILED")]
+        # Independent read-only Cloud boundaries: do not add their latencies.
+        # Only the main thread merges projections; mutation plans remain serial.
+        unit_read = self.pool.submit(execute_operation, dict(domain="unit", action="cloud-status", target="test"), self.application)
+        if unresolved_services:
+            selected = max(unresolved_services, key=lambda row: row.get("preparedAt") or "")
+            self.publication_read("service", (run_id, selected["releaseHandle"]), dict(domain="service", action="cloud-status", service_release=selected["releaseHandle"]), start_only=True)
         if unresolved:
             version, record = max(unresolved, key=lambda item: tuple(map(int, item[0].split("."))))
             identity = (version, record["deploymentId"])
-            observed = execute_operation(dict(domain="component", action="cloud-status", component_version=version), self.application)
-            raw = (observed.get("data") or {}).get("publication")
-            cache[identity] = ({key: raw.get(key) for key in ("stage", "deploymentId", "bundleState", "versionState", "versionId", "observedAt", "reason")}
-                               if raw else dict(stage="UNKNOWN", reason="PUBLICATION_NOT_OBSERVED"))
-            cache[identity]["version"] = version
+            component_result = self.publication_read("component", (run_id, identity), dict(domain="component", action="cloud-status", component_version=version))
+            if component_result is not None:
+                raw = (component_result.get("data") or {}).get("publication")
+                cache[identity] = ({key: raw.get(key) for key in ("stage", "deploymentId", "bundleState", "versionState", "versionId", "observedAt", "reason")}
+                                   if raw else dict(stage="UNKNOWN", reason="PUBLICATION_NOT_OBSERVED"))
+                cache[identity]["version"] = version
+        if unresolved_services:
+            selected = max(unresolved_services, key=lambda row: row.get("preparedAt") or "")
+            service_result = self.publication_read("service", (run_id, selected["releaseHandle"]), dict(domain="service", action="cloud-status", service_release=selected["releaseHandle"]))
+            if service_result is not None:
+                raw = service_result.get("data") or {}
+                selected["publication"] = {key: raw.get(key) for key in ("stage", "serviceId", "versionId", "observedAt", "reason")}
+                selected["serviceId"] = raw.get("serviceId") or selected.get("serviceId")
+        result = unit_read.result()
         self.publications = cache
         if owned:
             version, record = max(owned, key=lambda item: tuple(map(int, item[0].split("."))))
             publication = cache.get((version, record["deploymentId"]))
-        result = execute_operation(dict(domain="unit", action="cloud-status", target="test"), self.application)
         data = result.get("data") or {}
         # The list endpoint is an aggregate. Per-Subject detail owns instance
         # versions/statuses; do not silently turn a failed detail into absence.
@@ -111,7 +158,8 @@ class StudioCloudReader:
             complete = service_list.get("state") == "CURRENT" and all(section.get("state") == "CURRENT" and isinstance(section.get("value"), list) for section in sections)
             data = dict(data, services=dict(service_list, state="CURRENT" if complete else "INCOMPLETE",
                 reason=None if complete else "CLOUD_SERVICE_DETAILS_NOT_CURRENT",
-                value=[row for section in sections for row in section.get("value") or []] or ( [] if complete else None)))
+                value=[dict(row, reportReadCompletedAt=section.get("lastKnownReadCompletedAt") or section.get("readCompletedAt"))
+                       for section in sections for row in section.get("value") or []] or ( [] if complete else None)))
         data["teamServiceIds"] = {record["team"]: identifier for identifier, record in journal.get("serviceOperations", {}).items()
             if record.get("team") in ("brake", "tire") and record.get("test", {}).get("unitId") == data.get("unitId")}
         section = data.get("unit") or {}
@@ -127,7 +175,8 @@ class StudioCloudReader:
                 pendingVersion=(row.get("pending_component") or {}).get("version"), updateStatus=row.get("pending_component_status"),
                 latestPublishedVersion=None, releases=[], runtimeState="NOT_REPORTED_BY_CLOUD", dataReadiness="NOT_REPORTED_BY_CLOUD",
                 inventory=data, publication=publication) if unit else None,
-            publication=publication, publications=list(cache.values()))
+            publication=publication, publications=list(cache.values()), serviceReleases=service_releases,
+            serviceReleasesState="CURRENT" if releases_read.get("state") == "OBSERVED" else "UNAVAILABLE")
 
     def monitoring(self):
         result = execute_operation(dict(domain="unit", action="monitoring", target="test"), self.application)
@@ -171,6 +220,7 @@ def read_platform():
 def read_snapshot():
     status = execute_operation(dict(domain="orchestrator", action="status", target="all"))
     catalog = execute_operation(dict(domain="image", action="list"))
+    releases = execute_operation(dict(domain="service", action="releases"))
     snapshot = status["status"]
     vehicles = {}
     for role, item in snapshot["vehicles"].items():
@@ -181,9 +231,12 @@ def read_snapshot():
             overlayExists=value.get("overlayExists"))
     # A fixed public projection, never raw configuration, credentials or paths.
     return dict(mode="LOCAL_READ_ONLY", observedAt=snapshot["readCompletedAt"],
+        serviceReleases=(releases.get("data") or {}).get("releases", []),
+        serviceReleasesState="CURRENT" if releases.get("state") == "OBSERVED" else "UNAVAILABLE",
         preparation=(snapshot.get("journal", {}).get("value") or {}).get("preparation"),
         candidates=(snapshot.get("journal", {}).get("value") or {}).get("candidates", []),
         runId=(snapshot.get("journal", {}).get("value") or {}).get("runId"),
+        registrationStarted=(snapshot.get("journal", {}).get("value") or {}).get("registrationStarted", False),
         registrationComplete=(snapshot.get("journal", {}).get("value") or {}).get("registrationComplete", False),
         lifecycle=(snapshot.get("journal", {}).get("value") or {}).get("lifecycle"),
         result=status["state"], vehicles=vehicles,
@@ -194,6 +247,18 @@ def read_snapshot():
                           state="NOT_REQUESTED") for name, profile in snapshot["cloud"].items()})
 
 
+def client_state(root, native):
+    """Small local build identity; never consult a VM or Cloud for refresh."""
+    index = root / "index.html"
+    if index.is_symlink() or index.stat().st_size > 1_048_576:
+        raise ValueError("PRESENTER_ENTRY_INVALID")
+    code, session = native.call() if native else (503, {})
+    return dict(buildId=hashlib.sha256(index.read_bytes()).hexdigest(),
+                sessionId=session.get("sessionId") if code == 200 else None,
+                canReload=code == 200 and isinstance(session.get("sessionId"), str)
+                and not session.get("active") and not session.get("uncertain"))
+
+
 def make_server(static_root, address=ADDRESS, reader=read_snapshot, native=None, platform_reader=None):
     root = Path(static_root).resolve(strict=True)
     if not (root / "index.html").is_file():
@@ -202,16 +267,17 @@ def make_server(static_root, address=ADDRESS, reader=read_snapshot, native=None,
     platform_reader = platform_reader or cloud_reader
     platform_lock = threading.Lock()
     platform_result = None
-    platform_finished = 0.0
+    platform_generation = 0
 
     def platform_once():
-        nonlocal platform_result, platform_finished
+        nonlocal platform_result, platform_generation
         # Collapse overlapping windows/StrictMode reads, not a polling service
         # or persisted source of truth. Original observation time is retained.
+        generation = platform_generation
         with platform_lock:
-            if platform_result is None or time.monotonic() - platform_finished > 1:
+            if platform_result is None or generation == platform_generation:
                 platform_result = platform_reader()
-                platform_finished = time.monotonic()
+                platform_generation += 1
             return platform_result
 
     class Handler(BaseHTTPRequestHandler):
@@ -241,6 +307,12 @@ def make_server(static_root, address=ADDRESS, reader=read_snapshot, native=None,
             origin = self.headers.get("Origin")
             if origin and origin != "http://" + expected:
                 self.reply(403, b'{"error":"SAME_ORIGIN_REQUIRED"}')
+                return
+            if self.path == "/api/presenter/client-state":
+                try:
+                    self.reply(200, json.dumps(client_state(root, native)).encode())
+                except Exception:
+                    self.reply(503, b'{"error":"CLIENT_STATE_UNAVAILABLE"}')
                 return
             if self.path == "/api/presenter/snapshot":
                 try:

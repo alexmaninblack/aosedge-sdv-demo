@@ -134,7 +134,7 @@ python3 -m unittest discover -s tests -p 'test_*.py'
 - [Documentation map](docs/README.md)
 - [Getting started](docs/getting-started/README.md)
 - [Reproduction guide and readiness matrix](docs/getting-started/reproduce-demo.md)
-- [High-Level Architecture 1.6 — accepted](docs/architecture/high-level-architecture.md)
+- [High-Level Architecture 1.7 — accepted](docs/architecture/high-level-architecture.md)
 - [System Requirements and Traceability 2.1 — accepted](docs/requirements/system-requirements-and-traceability.md)
 - [Component Decomposition and Interface Register 2.1 — accepted](docs/requirements/component-decomposition-and-interface-register.md)
 - [R9 Demo Foundation Research](docs/research/demo-foundation/README.md)

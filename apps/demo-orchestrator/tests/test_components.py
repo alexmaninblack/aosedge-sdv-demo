@@ -56,12 +56,12 @@ class ComponentTests(unittest.TestCase):
         self.environment = SimpleNamespace(catalog=SimpleNamespace(project=self.root), _writer=contextlib.nullcontext)
         self.service = ComponentService(self.environment)
 
-    def put(self, data=None, signed=True):
-        directory = self.service.root / "2.0.0"
+    def put(self, data=None, signed=True, version="2.0.0"):
+        directory = self.service.root / version
         directory.mkdir(parents=True)
-        name = "vdp-2.0.0-deployment-bundle.tar.gz" if signed else "aosedge-vdp-component-2.0.0-linux-arm64.unsigned.tar.gz"
+        name = "vdp-" + version + "-deployment-bundle.tar.gz" if signed else "aosedge-vdp-component-" + version + "-linux-arm64.unsigned.tar.gz"
         target = directory / name
-        target.write_bytes(data or bundle(signed=signed))
+        target.write_bytes(data or bundle(version=version, signed=signed))
         return target
 
     def test_inspect_signed_is_read_only_and_not_signature_proof(self):
@@ -80,21 +80,21 @@ class ComponentTests(unittest.TestCase):
         self.assertFalse(self.service.inspect("2.0.0")["signedEnvelope"])
 
     def test_mismatched_versions_and_media_are_visible_not_successful_unpack(self):
-        self.put(bundle(inner_version="1.0.16", media="old"))
-        result = self.service.inspect("2.0.0")
+        self.put(bundle(version="1.0.99", inner_version="1.0.16", media="old"), version="1.0.99")
+        result = self.service.inspect("1.0.99")
         self.assertIn("COMPONENT_VERSION_MISMATCH", result["problems"])
         self.assertIn("COMPONENT_MEDIA_TYPE_MISMATCH", result["problems"])
         with self.assertRaisesRegex(EnvironmentError, "PACKAGING_INVALID"):
-            self.service.unpack("2.0.0")
+            self.service.unpack("1.0.99")
 
     def test_unpack_is_scoped_nonexecutable_and_refuses_overwrite(self):
-        path = self.put()
-        result = self.service.unpack("2.0.0")
+        path = self.put(version="1.0.99")  # Generic extraction, not pinned source migration.
+        result = self.service.unpack("1.0.99")
         destination = Path(result["destination"])
         self.assertEqual(path.parent / "unpacked", destination)
         self.assertEqual(0o600, (destination / "bin/vehicle-data-provider").stat().st_mode & 0o777)
         with self.assertRaisesRegex(EnvironmentError, "DESTINATION_EXISTS"):
-            self.service.unpack("2.0.0")
+            self.service.unpack("1.0.99")
 
     def test_catalog_selectors_and_links_rejected(self):
         for version in ("../other", "2.0.0/../../", "latest", None, "01.0.0"):

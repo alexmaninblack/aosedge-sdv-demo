@@ -3,11 +3,18 @@
 
 # Demo Control
 
+The [certificate-selected Test Cloud amendment](certificate-selected-cloud.md)
+defines the 2026-09-14 Session setting, certificate-derived endpoint contract,
+Production isolation and transient guest-configuration boundary.
+Its 15 September first-use amendment adds explicit `cloud check` / `cloud
+prepare` in CLI and Session: authenticated tenant contexts, Test-only setup,
+idempotent creation and preservation of reusable settings across Finish.
+
 - Status: Draft
 - Version: 0.19
 - Prepared: 2026-09-07
 - Owner: Demo Solution Team
-- Architecture input: [High-Level Architecture 1.6](high-level-architecture.md)
+- Architecture input: [High-Level Architecture 1.7](high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.0](../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - Flow input: [Architecture Flows 2.1](demo-scenario-architecture-flows.md)
 - Requirements input: [Demo Orchestration Component Requirements 1.2](../requirements/components/demo-orchestration.md)
@@ -234,12 +241,72 @@ these checks perform no real provisioning, publication or approval.
 
 ## Accepted Factory .31 Test baseline and corrections — 2026-09-06
 
+<a id="finish-after-an-abnormal-run--authorized-14-september-2026"></a>
+
+### Finish after an abnormal run — authorized 14 September 2026
+
+`demo retire` / UI **Finish demo** destroys the current owned Test; it does not
+preserve a usable guest as Park does. A pending, installing, failed or unknown
+VDP/service update, failed certificate validation, missing Test SSH/CM readiness
+or stale monitoring is **not** a prerequisite for retirement. The earlier
+Cloud-assigned-but-unreceived exception is superseded. Finish does not read
+CM's update state or wait for successful publication/installation.
+
+The checkpointed order is:
+
+1. Stop the owned simulator, Controller and Gateway processes. This terminal
+   path does not need a Safe Stop frame or Test guest gate update: the simulated
+   actor is being destroyed, not handed over. An existing Test-only source
+   operation can end here; selected/open Production or a peer handover remains
+   protected. Ordinary `simulation stop` and Park retain their Safe Stop rules.
+2. Stop the complete Test VM, then stop the owned backend stack. If the guest
+   does not shut down within the bounded Finish budget, use `quit` on the exact
+   owned Test QMP endpoint and confirm emulator exit. This explicitly disposable
+   overlay needs no successful guest-shutdown proof. No arbitrary PID/name kill
+   is added; ordinary VM Stop/Park remain graceful-only. An uncertain Test
+   Cloud-operation receipt is retained, not overwritten by VM stop.
+3. Reconcile retained Subjects and authoritative Cloud identity. Observe
+   Offline, deprovision once, confirm new/Offline, delete the exact Unit, and
+   confirm absence. No forced Cloud state, separate CM restart or cancellation
+   API is introduced. A lost provisioning response may be reconciled for
+   destruction using Cloud identity without requiring the stopped guest online.
+4. Start the owned backends only for scoped data cleanup, bind the exact retiring
+   identity, remove Test data, and remove the stopped Test overlay/runtime.
+   Immutable Factory originals, published releases, version continuity, retained
+   Group Subjects and Production remain preserved under the existing contracts.
+
+A recorded successful verification-set upload is reconciled by its exact
+deployment ID in the authenticated OEM catalog; a bundle still processing or
+in error does not prevent retiring its recipient. `UPLOAD_RECEIPT_ONLY` is proof
+of acceptance, **not** proof of parsing, installation or delivery. Missing IDs,
+lost external responses and foreign ownership are not silently discarded.
+
+This reconciliation also runs when publication preceded provisioning and Test
+has no Cloud Unit identity. In that case, Finish skips Unit deprovision/delete,
+confirms only the existing accepted upload, and removes the owned local Test.
+It does not upload again or wait for a recipient to exist. Prepared/signed
+packages with no upload attempt need no Cloud receipt reconciliation. The same
+rule applies to both single-Test and retained-Production environments.
+
+Every incomplete step retains `PARTIAL`, the exact reason and completed steps.
+**Continue Finish** resumes that step without replaying completed mutations.
+Cloud unavailability/delayed Offline may pause Cloud deletion after local
+shutdown; this is never reported as a completely removed environment. Owned
+process-stop failures, ambiguous ownership and unresolved external outcomes
+remain explicit recovery conditions, not an unrestricted force switch.
+
 ### Distinct Test Factory — authorized 12 September 2026
 
 When replacing Test in a two-role environment, retained Brake/Tire Group Subjects
-and their service associations survive. `demo retire` accepts only confirmed
-assignments to that exact Test; after deleting its Unit/Node it reads each recorded
-Subject and requires zero assigned/reported Units and the unchanged service identity.
+and their service associations survive. `demo retire` accepts confirmed
+assignments to that exact Test, and confirmed retained Subjects unused in the
+current run. An unused Subject has no current assignment receipt; this is not
+an uncertain assignment. After local shutdown, one GET-only Cloud worker checks the
+unused subset: exact owner, ID, creator, label, Group type, priority, unchanged
+service association, and zero assigned/reported Units. A present incomplete or
+uncertain assignment, orphan receipt or changed identity still blocks. No
+assignment is fabricated and no Subject is deleted. After deleting the Test
+Unit/Node, the same proof is required for every recorded Subject.
 It then removes terminal old-Test operation/runtime receipts, not the Subjects.
 Normal `service assign` may bind the next Test to a Subject already carrying its
 service, as documented in the [service-first Quick Start](https://docs.aosedge.tech/docs/quick-start/create-subject).
@@ -275,6 +342,14 @@ and before the native process reads its configuration. This replaces early
 writing into a potentially unmounted directory. The role's persistent location
 and authority stay unchanged; no extra SM restart or image rebuild is introduced.
 Provisioning confirms the actual role in its existing guest readiness read.
+
+Guest-check optimization, 13 September: `vm start` executes fresh SSH/DNS
+readiness and the existing role reconciliation in one authenticated guest call.
+Role initialization runs only after DNS succeeds; no journal-only readiness
+cache is introduced. A missing or failed role result cannot produce success,
+and lost completion after role execution may have started stops as unconfirmed
+rather than retrying the mutation. Read-only readiness and shutdown retain their
+existing behavior, including the stopped-unprovisioned cleanup proof.
 
 The same amendment authorizes removing repeated broad Cloud comparisons:
 exact-ID bundle/batch confirmation replaces the second full snapshot; approval
@@ -471,8 +546,9 @@ Full retirement is explicitly distinct from parking. Safe Stop and detach
 the live source, then retire the exact Units that were created for this
 environment. Follow the existing
 [retirement order](../../contracts/demo-run-state/demo-run-state-profile.v1.json):
-Cloud offline/deprovisioning with authoritative new/Offline confirmation, VM shutdown
-and overlay release, scoped role-set membership removal, Unit deletion and
+Selected VM shutdown and overlay release, Cloud Offline observation and
+deprovisioning with authoritative new/Offline confirmation, scoped role-set
+membership removal, Unit deletion and
 authoritative absence reconciliation.
 
 Delete local overlays and run-specific access/runtime material only after
@@ -651,6 +727,11 @@ occurs. A stopped backend is `STOPPED`; unavailable/malformed observations are
 `PARTIAL` or blocked, never an empty successful result. `OBSERVED` proves the
 read, not that the current service delivered a record.
 
+`backend inspect/status` do not take the global lifecycle writer lock. They
+retain exact container ownership checks and reject an observation if the
+current run, Test identity or backend binding changes during the read. Package
+uploads therefore do not block the dashboard; backend mutations remain locked.
+
 Presenter reads this same operation through fixed same-origin routes
 `/api/presenter/backend/brake` and `/api/presenter/backend/tire`. Cloud alone
 supplies installation/instance/connection state. Backend readiness, received
@@ -701,6 +782,13 @@ over a temporary SSH Unix-socket forward, with the installed SDK trust root,
 server-authenticated TLS and fixed server name `main`. It does not log in to
 Cloud, install an SDK in the guest, modify DNS or persist a second identity.
 
+Ordinary preparation requests only the guest IAM identity projection, not a
+full container/process diagnostic inventory. Explicit `runtime-inspect` and
+`runtime-activate` retain that full view. Each preparation still reads native
+IAM freshly and validates the active VDP transaction/slot/process and public
+trust. Unchanged files retain before/after source reconciliation but skip disk
+synchronization and post-write-only verification because no write occurred.
+
 The result includes `changed`, `noOp`, `vdpVersion`, `metadata` and `sources`.
 An unchanged repeat leaves files and directory inodes intact. Directories are
 root-owned 0755; public files are 0444. Public trust comes only from the accepted
@@ -712,7 +800,11 @@ No staging file becomes a successful readiness result after a failed check.
 `resourcesActivated`, `containerActions` and `coldStartQualified` are explicitly
 false. This command neither activates resource configuration nor restarts SM,
 assigns services, publishes a package or proves retained-assignment recovery.
-It is Test-only and is not exposed to browser mutations. The accepted cold/warm
+It is Test-only and has no standalone browser action. As authorized in the
+13 September command audit correction, Studio's explicit Deploy to Test composes
+`service runtime-prepare test` before `service assign <service-id> --target test`.
+Preparation failure stops before assignment; unchanged inputs are reused. This
+does not add a guest read to Presenter monitoring or restart SM. The accepted cold/warm
 split and remaining boot qualification are recorded in the
 [runtime-input contract](demo-control-service-inputs.md#cold-start-ordering-conflict--11-september-2026).
 
@@ -840,7 +932,7 @@ the exact IDs. `service inspect <service-id> <version-id>` exposes the documente
 means the API provides no diagnostic, not that the build succeeded.
 No browser mutation capability is added in this increment.
 
-### Native service assignment — source implemented, live proof pending
+### Native service assignment — backend-scoped create, bind and assign
 
 ```bash
 democtl service assign <catalog-service-UUID> --target test
@@ -857,11 +949,22 @@ The user-approved 11 September amendment replaces the shared Subject with two
 retained OEM Group Subjects: `AosEdge SDV demo Brake` and `AosEdge SDV demo Tire`.
 Each contains only its logical service, independent of release number, and is
 bound only to the current Test's native system UID. Exact identities are stored
-under `demoSubjects[serviceId]` in the existing run journal. Creating/assigning
+under `demoSubjects[serviceId]` in the existing run journal's selected Cloud
+scope (`cloudContexts[domain]` for a debug backend; legacy root fields for
+`aoscloud.io`). Creating/assigning
 one does not change the other; future per-Unit subsets need no shared-service
 membership edit. Production remains unsupported by this command. Factory/default
 Subjects are untouched. A legacy shared record is blocked for explicit
 reconciliation, never silently adopted, renamed or discarded.
+
+`Deploy to Test` uses the existing `service runtime-prepare test` then
+`service assign` sequence. On a fresh backend, assignment checks the current
+OEM, published service identity and current verification Test, then creates
+the missing team Group Subject, binds the Test and assigns only `service_ids`.
+It does not require the operator to prepare Subjects manually, copy UUIDs from
+another backend or run a separate setup command. A repeated completed Deploy
+observes the existing configuration without duplicate POSTs. Publication must
+first resolve a service UUID; a rejected bundle cannot be assigned as a service.
 
 Each POST intent is recorded in the existing run journal before dispatch;
 the returned exact UUID/creator is retained and authoritative reads reconcile
@@ -869,11 +972,17 @@ the result. A matching label is never enough to adopt an unrecorded Subject.
 A lost create UUID remains uncertain and is not replayed. Known bind/assign
 uncertainty can be reconciled by read; there are no blind retries.
 `ASSIGNED` means desired binding only; Cloud-reported instances are separate,
-and the result explicitly sets `runtimeQualified=false`. Browser mutation and
-Subject retirement integration remain separate work; do not reset this run to
-work around an assignment failure. The retirement guard covers both the legacy
-record and the new per-service records; no retained identity can be lost through
-the ordinary Retire path before that integration is implemented.
+and the result explicitly sets `runtimeQualified=false`. The protected browser
+operation calls this same CLI implementation. Finish reconciles the recorded
+service bindings and retains confirmed Subject identities for the next Test;
+it does not discard unresolved operations or modify Production Subjects.
+
+Live debug-backend proof on 14 September 2026: `service assign` created the
+missing Brake Group Subject on `developer.aos-dev.test`, bound only the current
+Test and assigned Brake `26.0.0`. The authoritative response reported that
+version installed with instance 0 `active`. This proves Cloud-reported delivery
+and execution, not backend analytics or KUKSA connectivity. The existing
+synthetic-data/permissions limitation remains unchanged.
 
 `service list --profile oem-delivery` also reads the available architecture
 codes and those assigned to this exact OEM. This is read-only diagnosis; it
@@ -1077,6 +1186,12 @@ manufactured environment supplies the one journal and owned runtime paths.
 - stop enters Safe Stop, confirms physical stop and both gates blocked, then
   gracefully stops the owned runner and simulator. Preserve VMs, disks, Cloud
   identities and compact run evidence. No reset, backup or forced process kill.
+  On macOS, the simulator receives native Quit addressed by its matched PID and
+  verified executable, not SIGTERM: Unreal's signal path was observed crashing
+  during both CLI and UI shutdowns. The runner still receives SIGTERM. Native
+  Quit acceptance is not completion; the same bounded process-exit and endpoint
+  checks remain. Refusal or timeout returns PARTIAL, without signal fallback or
+  automatic force termination. CLI stop, Park and UI Finish share this path.
   A stopped repeat is a no-op after local ownership reconciliation. If the
   Controller has already exited, report physical-stop evidence unavailable;
   confirmed guest detachment and owned-process shutdown still permit cleanup.
@@ -1474,8 +1589,11 @@ Cloud/scenario retirement, source selection or live qualification.
   missing, ambiguous, crossed-role or foreign-member bindings without removal.
 - Reuse the qualified SDK 5.4.2 transition correction only as a library. No old
   VM/checkpoint workflow, backup, image patch or inherited baseline identity.
-- deprovision stops only CM, waits for Cloud Offline, deprovisions once and
-  confirms new/Offline, then stops the exact VM. By the operator's 2026-09-05
+- By the operator's 2026-09-13 amendment, deprovision gracefully stops the entire
+  selected VM first, waits for Cloud Offline, deprovisions once and confirms
+  new/Offline. An already stopped VM resumes this sequence without requiring
+  SSH or restarting the guest. No separate CM-stop phase remains. A Cloud
+  timeout preserves the stopped VM and exact cleanup journal. By the 2026-09-05
   amendment, no old-identity reconnect/probe is performed: Cloud owns identity
   revocation. Do not restart CM after deprovision or claim certificate-revocation
   testing. Preserve peer VM/DNS until the last VM stops.

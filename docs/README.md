@@ -30,7 +30,7 @@ not only the CARLA-to-AosEdge transport bridge.
 ## Architecture
 
 - [Architecture documentation index](architecture/README.md)
-- [High-Level Architecture 1.6 — accepted](architecture/high-level-architecture.md)
+- [High-Level Architecture 1.7 — accepted](architecture/high-level-architecture.md)
   — current end-to-end system view with the accepted authorization,
   Release Authority, Safe Stop and Tire Health decisions.
 - [Demo Scenario Architecture Flows 2.1 — accepted](architecture/demo-scenario-architecture-flows.md)
@@ -87,6 +87,13 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Research
 
+- [Unsigned-package and session-signing change audit](architecture/decisions/0016-unsigned-packages-and-session-scoped-signing.md)
+  — source-certificate failure, per-Cloud signing/publication gaps, bounded
+  migration, service parity and preservation of the current parked Test.
+
+- [Demo Control UI command performance audit](research/democtl-ui-performance-audit-2026-09-13.md)
+  — used command paths, implemented latency reductions, isolated measurements
+  and retained identity/readiness/cleanup checks; not live E2E qualification.
 - [Demo Studio action and integration audit](research/demo-studio-action-audit.md)
   — Studio B mockup actions mapped to current Demo Control and Cloud APIs,
   with observed gaps and proposed integration boundaries; not live qualification.

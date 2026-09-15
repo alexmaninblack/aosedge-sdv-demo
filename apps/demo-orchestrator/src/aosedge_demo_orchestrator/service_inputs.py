@@ -101,7 +101,7 @@ class ServiceInputs:
                 raise EnvironmentError("SERVICE_INPUTS_CURRENT_TEST_BINDING_REQUIRED")
             driver = SourceDriver(VMService(self.environment))
             with driver.operation(timeout=120 if activate else 30):
-                observed = driver.guest(state, "test", "service-runtime-inspect")
+                observed = driver.guest(state, "test", "service-runtime-inspect", identityOnly=not activate)
                 if not observed.get("iamLocalEndpoint", {}).get("loopback8090Reachable"):
                     raise EnvironmentError("SERVICE_NATIVE_IAM_NOT_LISTENING")
                 uid = self.identity(state, observed.get("iamPublicServerUrl"))

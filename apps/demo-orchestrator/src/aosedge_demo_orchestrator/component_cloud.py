@@ -15,7 +15,24 @@ from .components import COMPONENT, VERSION
 from .unit_cloud import Cloud, CloudFailure
 from .status import object_id
 
-COMPONENT_ID = "c33bc994-460b-476f-8000-934b55a70455"
+def resolve_component(cloud, reads=None):
+    """Resolve an OEM-local identity in this Cloud, including first publication.
+
+    Only a successful complete list can prove absence. HTTP failures (including
+    404 on the collection) are never translated into an empty catalog.
+    """
+    cloud.require("components_list")
+    rows = (reads or cloud).pages("components/?" + urlencode({"search": COMPONENT}))
+    matches = []
+    for row in rows:
+        if (not isinstance(row, dict) or not isinstance(row.get("codename"), str)
+                or not isinstance(row.get("oem_id"), str)):
+            raise CloudFailure("COMPONENT_CATALOG_SCHEMA_INVALID")
+        if row["codename"].casefold() == COMPONENT.casefold() and row["oem_id"] == cloud.user["ownerId"]:
+            matches.append(dict(row, id=object_id(row.get("id"))))
+    if len(matches) > 1:
+        raise CloudFailure("COMPONENT_CLOUD_IDENTITY_AMBIGUOUS")
+    return matches[0] if matches else None
 
 
 def guard(value):
@@ -40,7 +57,8 @@ def guard(value):
 def batch_guard(value, request, owner):
     entries = value.get("update_items") or []
     if (value.get("oem_id") != owner or value.get("architectures") != ["arm64"]
-            or len(entries) != 1 or entries[0].get("identity_id") != COMPONENT_ID
+            or not request.get("componentId") or len(entries) != 1
+            or entries[0].get("identity_id") != request["componentId"]
             or entries[0].get("codename") != COMPONENT or entries[0].get("version") != request["version"]):
         raise CloudFailure("COMPONENT_VERIFICATION_BATCH_SCOPE_MISMATCH")
 
@@ -128,11 +146,13 @@ def unit_view(cloud, identity, strict=False):
 def snapshot(cloud, request):
     if request.get("purpose") == "overview":
         cloud.require("units_read")
+        component = resolve_component(cloud)
         with ThreadPoolExecutor(max_workers=2) as pool:
             unit = pool.submit(unit_view, cloud, request["vehicles"]["test"])
-            versions = pool.submit(cloud.pages, "components/" + COMPONENT_ID + "/versions/")
+            versions = pool.submit(cloud.pages, "components/" + component["id"] + "/versions/") if component else None
             result = dict(test=unit.result(), versions=[project(item, ("version", "state", "is_fake"))
-                          for item in versions.result()])
+                          for item in versions.result()] if versions else [],
+                          componentId=component["id"] if component else None)
         published = [item["version"] for item in result["versions"] if item.get("is_fake") is False
                      and isinstance(item.get("version"), str) and VERSION.fullmatch(item["version"])]
         result["latestPublishedVersion"] = max(published, key=lambda value: tuple(map(int, value.split("."))), default=None)
@@ -142,6 +162,8 @@ def snapshot(cloud, request):
     purpose = request.get("purpose", "status")
     confirmation = purpose == "confirm"
     approval = purpose in ("approve", "unapprove")
+    component_id = request.get("componentId")
+    component_resolved = False
     if "production" not in request["vehicles"]:
         # A single-role qualification owns no Production VM. Observe exactly
         # the existing member of the provisioner's bound Production set; never
@@ -154,12 +176,15 @@ def snapshot(cloud, request):
             unitId=object_id(members[0]["id"]), systemUid=members[0]["system_uid"], unitSetId=set_id)))
     version = request["version"]
     if not confirmation and not approval:
-        component = cloud.call("components/" + COMPONENT_ID + "/")
-        if component["codename"] != COMPONENT:
-            raise CloudFailure("COMPONENT_CLOUD_IDENTITY_MISMATCH")
+        component = resolve_component(cloud)
+        actual_id = component["id"] if component else None
+        if component_id and component_id != actual_id:
+            raise CloudFailure("COMPONENT_CLOUD_IDENTITY_CHANGED")
+        component_id = actual_id
+        component_resolved = True
     def versions():
         return [project(item, ("id", "version", "state", "file_size", "is_fake"))
-                for item in cloud.pages("components/" + COMPONENT_ID + "/versions/")]
+                for item in cloud.pages("components/" + component_id + "/versions/")] if component_id else []
     def bundles():
         # v11 exposes GET on the collection only; /{id}/ supports DELETE,
         # not GET. Resolve the exact recorded ID from the documented list.
@@ -169,9 +194,18 @@ def snapshot(cloud, request):
                     entry.get("codename") == COMPONENT and entry.get("version") == version
                     for entry in item.get("items") or []))]
     def batches():
+        nonlocal component_id, component_resolved
+        if not component_id and not component_resolved:
+            component = resolve_component(cloud)
+            component_id = component["id"] if component else None
+            component_resolved = True
+        if not component_id:
+            if request.get("batchId"):
+                raise CloudFailure("COMPONENT_CLOUD_IDENTITY_NOT_OBSERVED")
+            return []
         if request.get("batchId"):
             detail = cloud.call("verification-batch/" + object_id(request["batchId"]) + "/")
-            batch_guard(detail, request, cloud.user["ownerId"])
+            batch_guard(detail, dict(request, componentId=component_id), cloud.user["ownerId"])
             return [project(detail, ("id", "state", "oem_id", "architectures", "update_bundle_id", "update_items", "approval_states"))]
         matches = []
         for item in cloud.pages("verification-batch/?" + urlencode({"search": COMPONENT})):
@@ -237,7 +271,7 @@ def snapshot(cloud, request):
                  and VERSION.fullmatch(item["version"]) and item.get("is_fake") is False]
     result["latestPublishedVersion"] = max(published, key=lambda value: tuple(map(int, value.split("."))), default=None)
     result["versions"] = [item for item in catalog if item.get("version") == version]
-    result.update(version=version, componentId=COMPONENT_ID, ownerId=cloud.user["ownerId"])
+    result.update(version=version, componentId=component_id, ownerId=cloud.user["ownerId"])
     # Production FOTA is deferred pending the platform release (operator's
     # platform-team report, 2026-09-06). Observe its Unit as a non-target guard,
     # but do not probe fleet validation or campaign APIs during Test status.
@@ -268,11 +302,13 @@ def reconcile_list_guard(record, observed):
 def execute(request):
     cloud = Cloud(request)
     if request["action"] == "release-catalog":
-        if cloud.call("components/" + COMPONENT_ID + "/")["codename"] != COMPONENT:
-            raise CloudFailure("COMPONENT_CLOUD_IDENTITY_MISMATCH")
-        versions = [item["version"] for item in cloud.pages("components/" + COMPONENT_ID + "/versions/")
+        component = resolve_component(cloud)
+        rows = cloud.pages("components/" + component["id"] + "/versions/") if component else []
+        versions = [item["version"] for item in rows
                     if item.get("is_fake") is False and isinstance(item.get("version"), str) and VERSION.fullmatch(item["version"])]
-        return dict(versions=versions, latest=max(versions, key=lambda value: tuple(map(int, value.split("."))), default="0.0.0"))
+        return dict(versions=versions, componentId=component["id"] if component else None,
+                    catalogState="PRESENT" if component else "ABSENT",
+                    latest=max(versions, key=lambda value: tuple(map(int, value.split("."))), default=None))
     if request["action"] == "cloud-status":
         if request.get("verificationTest") is True:
             from .component_publication import snapshot as publication_snapshot
@@ -297,9 +333,12 @@ def execute(request):
                     requestId=object_id(result[0]["id"]), requestAccepted=True, httpStatus=201)
     if request["action"] in ("approve", "unapprove"):
         cloud.require("verification_batch_approval")
+        component = resolve_component(cloud)
+        if not component or request.get("componentId", component["id"]) != component["id"]:
+            raise CloudFailure("COMPONENT_CLOUD_IDENTITY_CHANGED")
         path = "verification-batch/" + object_id(request["batchId"]) + "/"
         current = cloud.call(path)
-        batch_guard(current, request, cloud.user["ownerId"])
+        batch_guard(current, dict(request, componentId=component["id"]), cloud.user["ownerId"])
         desired = request["action"] == "approve"
         if (current.get("approval_states") or {}).get("arm64", {}).get("is_approved") is desired:
             return dict(batchId=current["id"], approved=desired, noOp=True)

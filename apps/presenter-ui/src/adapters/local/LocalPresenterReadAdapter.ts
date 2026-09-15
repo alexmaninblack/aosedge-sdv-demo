@@ -1,6 +1,11 @@
 import type { LocalDemoView, Observed, PresenterReadPort, PresenterSnapshot, ReleaseStage, TeamId, TeamView, VehicleRole, PlatformCloudObservation } from "../../domain";
 
 let monitoringFlight: Promise<unknown> | null = null;
+export async function readClientState(): Promise<{ buildId?: string; canReload?: boolean }> {
+  const response = await fetch("/api/presenter/client-state", { cache: "no-store", signal: AbortSignal.timeout(3000) });
+  if (!response.ok) throw new Error("CLIENT_STATE_UNAVAILABLE");
+  return response.json();
+}
 export function readCloudMonitoring(): Promise<unknown> {
   if (!monitoringFlight) monitoringFlight = fetch("/api/presenter/monitoring", { cache: "no-store", signal: AbortSignal.timeout(65000) })
     .then((response) => { if (!response.ok) throw new Error("CLOUD_MONITORING_UNAVAILABLE"); return response.json(); })
@@ -81,23 +86,24 @@ export function composeLocalSnapshot(data?: LocalDemoView & { observedAt: string
   const manufactured = Boolean(data && Object.values(data.vehicles).every((item) => item.state === "CURRENT" && item.overlayExists));
   return { localDemo, fixtureId: "local", fixtureLabel: "Local Demo Control · explicit protected actions", observedAt: data?.observedAt ?? "",
     vehicle: observed(vehicle, data?.observedAt ?? null, unavailable ?? (vehicle === "unavailable" ? source?.reason ?? "Vehicle assignment is unavailable" : undefined)),
-    workspace: observed("INCOMPLETE", null, "Native window composition not yet confirmed"),
-    global: { qualification: observed({ status: "NOT_QUALIFIED", reason: "UI integration is under review. The accepted .31 Test result is not qualification of this new UI." }, null),
+    workspace: observed<"INCOMPLETE" | "READY">(null, null, "Native window layout is observed separately by Demo Control"),
+    global: { qualification: observed({ status: "NOT_QUALIFIED", reason: "The .33 engineering result is not full UI or real-vehicle product qualification." }, null),
       stage: !data ? "RECOVERY_REQUIRED" : manufactured ? "M0" : "READY_FOR_M0", manufactured, provisioned: false,
       recovery: unavailable ?? "Mutations require explicit confirmation; no automatic retries",
-      milestone: "Two-VM preparation · Test-only VDP updates · Production FOTA deferred" },
+      milestone: "Test-only Studio · native vehicle surfaces · Production deferred" },
     teams: teams(), assetFailure: false, eventChain: [],
     redactionNotice: "Local observations only. No credentials, helper capabilities or filesystem paths are sent to the browser." };
 }
 
 export class LocalPresenterReadAdapter implements PresenterReadPort {
   private platformRead: Promise<PlatformCloudObservation> | null = null;
+  private snapshotRead: Promise<Readonly<PresenterSnapshot>> | null = null;
 
   readPlatform(): Promise<PlatformCloudObservation> {
     if (this.platformRead) return this.platformRead;
     this.platformRead = (async (): Promise<PlatformCloudObservation> => {
       try {
-        const response = await fetch("/api/presenter/platform", { signal: AbortSignal.timeout(35000), cache: "no-store" });
+        const response = await fetch("/api/presenter/platform", { signal: AbortSignal.timeout(65000), cache: "no-store" });
         if (!response.ok) throw new Error("unavailable");
         const value: PlatformCloudObservation = await response.json();
         if (!["CURRENT", "UNAVAILABLE"].includes(value.state) || typeof value.observedAt !== "string"
@@ -112,7 +118,12 @@ export class LocalPresenterReadAdapter implements PresenterReadPort {
     return this.platformRead;
   }
 
-  async read(): Promise<Readonly<PresenterSnapshot>> {
+  read(): Promise<Readonly<PresenterSnapshot>> {
+    if (!this.snapshotRead) this.snapshotRead = this.readSnapshot().finally(() => { this.snapshotRead = null; });
+    return this.snapshotRead;
+  }
+
+  private async readSnapshot(): Promise<Readonly<PresenterSnapshot>> {
     try {
       const response = await fetch("/api/presenter/snapshot", { signal: AbortSignal.timeout(8000), cache: "no-store" });
       if (!response.ok) throw new Error("unavailable");
@@ -128,15 +139,37 @@ export class LocalPresenterReadAdapter implements PresenterReadPort {
 
   subscribe(listener: (snapshot: Readonly<PresenterSnapshot>) => void): () => void {
     let stopped = false;
-    let timer: ReturnType<typeof setTimeout>;
-    const schedule = () => { timer = setTimeout(async () => {
-      if (document.visibilityState === "visible") {
+    let reading = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const schedule = () => {
+      clearTimeout(timer);
+      if (!stopped && document.visibilityState === "visible") timer = setTimeout(refresh, 10000);
+    };
+    const refresh = async () => {
+      if (stopped || reading || document.visibilityState !== "visible") return;
+      clearTimeout(timer);
+      reading = true;
+      try {
         const snapshot = await this.read();
         if (!stopped) listener(snapshot);
+      } finally {
+        reading = false;
+        schedule();
       }
-      if (!stopped) schedule();
-    }, 10000); };
+    };
+    // CLI lifecycle changes do not produce Presenter jobs. Reconcile local
+    // state on return, without waiting for another idle tick or reading a VM.
+    const visibility = () => {
+      clearTimeout(timer);
+      if (document.visibilityState === "visible") void refresh();
+    };
+    document.addEventListener("visibilitychange", visibility);
+    window.addEventListener("focus", refresh);
     schedule();
-    return () => { stopped = true; clearTimeout(timer); };
+    return () => {
+      stopped = true; clearTimeout(timer);
+      document.removeEventListener("visibilitychange", visibility);
+      window.removeEventListener("focus", refresh);
+    };
   }
 }

@@ -7,6 +7,7 @@ import importlib.util
 import io
 import json
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -56,6 +57,19 @@ class ServicePublicationTests(unittest.TestCase):
         self.assertNotIn("running", json.dumps(result).lower())
         self.cloud.collections["services/" + SERVICE + "/service-versions/"] = []
         self.assertEqual("PROCESSING", service_publication.snapshot(self.cloud, dict(self.request, deploymentId=BUNDLE))["stage"])
+
+    def test_catalog_and_bundle_reads_overlap_without_extra_requests(self):
+        self.cloud.ready()
+        barrier = threading.Barrier(2)
+        call = self.cloud.call
+        def simultaneous(path):
+            if path.startswith(("services/?", "deployment-bundles/?")):
+                barrier.wait(timeout=1)
+            return call(path)
+        with patch.object(self.cloud, "call", side_effect=simultaneous):
+            result = service_publication.snapshot(self.cloud, dict(self.request, deploymentId=BUNDLE))
+        self.assertEqual("READY", result["stage"])
+        self.assertEqual(3, len(self.cloud.calls))
 
     def test_processing_error_unknown_and_wrong_contents_do_not_claim_ready(self):
         for state, expected in (("uploaded", "PROCESSING"), ("processing", "PROCESSING"), ("building", "PROCESSING"), ("error", "ERROR"), (None, "UNKNOWN"), ("unrecognized-new-state", "UNKNOWN")):
@@ -152,12 +166,19 @@ class ServiceReceiptTests(unittest.TestCase):
         self.prepared = self.packages.prepare("brake", "v1")
         self.directory = Path(self.prepared["packagePath"])
         self.handle = self.prepared["releaseHandle"]
-        self.bundle = self.directory / "deployment-bundle.tar.gz"
+        from aosedge_demo_orchestrator.package_artifacts import paths, digest
+        self.identity = dict(schemaVersion=1, role="service provider", domain="aoscloud.io", signerId="b" * 64,
+                             preparedSha256=digest(self.prepared["files"]))
+        self.bundle, self.signed_path = paths(self.directory, self.identity, create=True)
+        self.publication_path = package_fixtures.publication(self.prepared)
+        self.packages._signing_context = Mock(return_value=self.identity)
+        self.packages._verify_signed = Mock()  # Real signer/verification tested separately.
 
     def signed_fixture(self):
         self.bundle.write_bytes(b"fixture: signature worker is tested separately")
-        receipt = dict(sha256=digest(self.bundle), signatureVerification="VERIFIED_RS256", payloadMatchesPrepared=True)
-        atomic_json(self.directory / "signed.json", receipt)
+        receipt = dict(sha256=digest(self.bundle), signatureVerification="VERIFIED_RS256", payloadMatchesPrepared=True,
+                       signingContext=self.identity)
+        atomic_json(self.signed_path, receipt)
         return receipt
 
     def test_upload_repeat_after_acceptance_only_observes_recorded_id(self):
@@ -181,14 +202,14 @@ class ServiceReceiptTests(unittest.TestCase):
         self.assertEqual("UNCERTAIN", self.packages.upload(self.handle)["stage"])
         self.assertEqual("UNCERTAIN", self.packages.upload(self.handle)["stage"])
         self.assertEqual(["service-upload", "service-cloud-status"], [call.args[0] for call in self.packages._worker.call_args_list])
-        self.assertTrue(json.loads((self.directory / "publication.json").read_text())["attempted"])
+        self.assertTrue(json.loads(self.publication_path.read_text())["attempted"])
 
     def test_invalid_worker_response_preserves_uncertainty_and_does_not_retry(self):
         self.signed_fixture()
         self.packages._worker = Mock(return_value=None)
         result = self.packages.upload(self.handle)
         self.assertEqual("UNCERTAIN", result["stage"])
-        self.assertTrue(json.loads((self.directory / "publication.json").read_text())["attempted"])
+        self.assertTrue(json.loads(self.publication_path.read_text())["attempted"])
 
     def test_failed_preflight_can_be_explicitly_retried_without_allocating(self):
         self.signed_fixture()
@@ -209,7 +230,7 @@ class ServiceReceiptTests(unittest.TestCase):
         path.chmod(0o644)
         with self.assertRaisesRegex(EnvironmentError, "MODE_CHANGED"):
             self.packages.sign(self.handle)
-        self.assertFalse((self.directory / "publication.json").exists())
+        self.assertFalse(self.publication_path.exists())
 
     def test_completed_sign_output_reconciles_missing_receipt_without_resigning(self):
         self.bundle.write_bytes(b"fixture")
@@ -217,7 +238,9 @@ class ServiceReceiptTests(unittest.TestCase):
         self.packages._worker = Mock(return_value=response)
         self.assertTrue(self.packages.sign(self.handle)["noOp"])
         self.assertEqual("service-verify", self.packages._worker.call_args.args[0])
-        self.assertEqual(response, json.loads((self.directory / "signed.json").read_text()))
+        from aosedge_demo_orchestrator.package_artifacts import credential_stamp
+        self.assertEqual(dict(response, signingContext=self.identity, credentialStamp=credential_stamp(self.fixture_credential)),
+                         json.loads(self.signed_path.read_text()))
 
     def test_handle_traversal_and_extra_payload_are_rejected(self):
         for handle in ("../8.0.0", "brake/../../secret", "brake", "tire/01.0.0"):
@@ -227,14 +250,18 @@ class ServiceReceiptTests(unittest.TestCase):
         with self.assertRaisesRegex(EnvironmentError, "CONTENT_CHANGED"):
             read_package(self.directory, "brake", "8.0.0")
 
-    def test_cli_has_no_second_version_or_account_override_and_browser_remains_read_only(self):
+    def test_cli_and_fixed_api_share_release_without_version_or_account_override(self):
         for action in ("sign", "upload", "cloud-status"):
             request = request_from_arguments(build_parser().parse_args(["service", action, self.handle]))
             self.assertEqual(self.handle, request.service_release)
             self.assertIsNone(request.component_version)
             self.assertIsNone(request.profile)
-            with self.assertRaises(ValueError):
-                execute_operation(dict(domain="service", action=action, service_release=self.handle), Mock())
+            application = Mock()
+            execute_operation(dict(domain="service", action=action, service_release=self.handle), application)
+            application.execute.assert_called_once_with(request)
+            for extra in (dict(profile="another-account"), dict(version="99.0.0"), dict(target="production")):
+                with self.assertRaises(ValueError):
+                    execute_operation(dict(domain="service", action=action, service_release=self.handle, **extra), Mock())
 
 
 @unittest.skipUnless(importlib.util.find_spec("aos_signer"), "run with the installed official Aos signer Python")
@@ -264,7 +291,7 @@ class OfficialSigningTests(unittest.TestCase):
             result = component_worker.execute(request)
         self.assertEqual("VERIFIED_RS256", result["signatureVerification"])
         self.assertTrue(result["payloadMatchesPrepared"])
-        authority.assert_called_once_with(request, expected_role="service provider")
+        authority.assert_not_called()  # Signing is local; SP authority is checked before upload.
         self.assertEqual("CONFIGURED_SP_SIGNING_CERTIFICATE", result["verificationTrust"])
         verified = component_worker.execute(dict(request, action="service-verify", expectedSha256=result["sha256"]))
         self.assertEqual(result, verified)

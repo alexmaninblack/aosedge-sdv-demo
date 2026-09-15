@@ -3,10 +3,23 @@
 
 # Qualification Documentation
 
+- [Staging source checkpoint and open boundaries — 15 September 2026](staging-source-checkpoint-2026-09-15.md): consolidated source audit, publication references, regression results and the separate next KUKSA phase; current Test retired.
+- [First-use OEM/SP configuration and qualification — 15 September 2026](first-use-cloud-configuration-audit-2026-09-15.md): dated Check/Prepare, staging provision/VDP and registration-recovery evidence; not a current Online Unit inventory.
+- [Unsigned packages and session signing — 15 September 2026](unsigned-package-signing-2026-09-15.md): offline gate and live staging publications passed; the subsequent first-use receipt above tracks provisioning and delivery.
+
 This directory records accepted baselines, exact component locks,
 qualification procedures, and sanitized defect evidence.
 
 - [Current working .33 baseline and acceptance limits](current-baseline.md)
+- [Assisted real UI repeat — 15 September](ui-hour-repeat-2026-09-15.md)
+  — VDP and service transitions, network recovery and complete Test retirement;
+  the operator ended further timeout observation after deletion succeeded.
+- [UI status audit corrections — 14 September](ui-status-corrections-2026-09-14.md)
+  — exact-version status, freshness, bounded lists and recovery regression proof;
+  separate from the next live operator-visible cycle.
+- [Demo Control live command timings — 13 September](democtl-live-performance-2026-09-13.md)
+  — real Test lifecycle/publication/read timings after the optimization increment,
+  with explicit sequencing and Cloud/permissions qualification limits.
 - [Published .33 source checkpoint and branch cleanup](factory-33-source-checkpoint-2026-09-13.md)
   — seven public main branches and return-point tags; 18 local and 9 remote
   temporary branches removed with historical source preserved.

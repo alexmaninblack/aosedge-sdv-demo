@@ -1314,6 +1314,26 @@ def execute(request):
             raise ValueError("SERVICE_MANAGER_NOT_RUNNING")
         root = Path("/proc") / pid / "root"
         cfg = json.loads((root / "etc/aos/sm.cfg").read_text())
+        # Preparation needs native identity, not container/process forensics.
+        # Explicit engineering inspection and migration retain the full view.
+        if request.get("identityOnly") is True:
+            identifier = json.loads(Path("/etc/aos/iam.cfg").read_text()).get("identifier", {})
+            identifier_path = identifier.get("params", {}).get("systemIDPath")
+            native_file = None
+            if identifier.get("plugin") == "fileidentifier" and identifier_path == "/etc/machine-id":
+                candidate = Path(identifier_path).read_text().strip()
+                if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}", candidate):
+                    native_file = candidate
+            try:
+                with socket.create_connection(("127.0.0.1", 8090), timeout=1):
+                    iam_loopback = True
+            except OSError:
+                iam_loopback = False
+            return dict(iamPublicServerUrl=cfg.get("iamPublicServerUrl"),
+                iamLocalEndpoint=dict(loopback8090Reachable=iam_loopback),
+                iamFileIdentifier=dict(plugin=identifier.get("plugin"),
+                    path=identifier_path if identifier_path == "/etc/machine-id" else "UNSUPPORTED",
+                    systemUid=native_file))
         resource_path = cfg.get("resourcesConfigFile", "/etc/aos/resources.cfg")
         if not isinstance(resource_path, str) or not resource_path.startswith("/") or ".." in Path(resource_path).parts:
             raise ValueError("SERVICE_RESOURCE_PATH_INVALID")

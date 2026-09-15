@@ -20,6 +20,15 @@ from .status import observation, safe_word, skipped
 def host_dns(config, timeout):
     if not config or "dnsPort" not in config:
         return skipped("HOST_DNS", "DNS_PORT_NOT_CONFIGURED")
+    from .cloud_connection import host_entries
+    from .environment import EnvironmentError
+    try:
+        if any(entry["host"] == config["cloudHost"] for entry in host_entries(config["cloudHost"])):
+            # A hosts override is not a DNS bridge answer. Guest getaddrinfo
+            # separately proves that the selected name resolves on the VM.
+            return skipped("HOST_DNS", "HOSTS_MAPPING_USED_NOT_DNS")
+    except (OSError, ValueError, EnvironmentError):
+        return observation("HOST_DNS", reason="CLOUD_HOST_MAPPING_UNAVAILABLE")
     transaction = os.urandom(2)
     question = b"".join(bytes([len(s)]) + s.encode("ascii") for s in config["cloudHost"].split(".")) + b"\0\0\1\0\1"
     packet = transaction + struct.pack("!5H", 0x0100, 1, 0, 0, 0) + question
@@ -197,7 +206,7 @@ def _guest_script(config):
         "ip -4 route show default | sed 's/^/route=/'\n"
         "printf 'dnsmasq='; systemctl is-active dnsmasq.service 2>/dev/null\n"
         "sed -n 's/^server=10\\.0\\.0\\.1#/hostDnsPort=/p' /var/aos/dns/dnsmasq.conf 2>/dev/null\n"
-        "timeout 2 busybox nslookup " + host + " >/dev/null 2>&1\n"
+        "timeout 2 python3 -c " + shlex.quote("import socket; socket.getaddrinfo(" + repr(config["cloudHost"]) + ", 9000)") + " >/dev/null 2>&1\n"
         "rc=$?; printf '__DEMO_DNS_RC__=%s\\n' \"$rc\"\n"
         "printf '__DEMO_CM_LOG__\\n'\n"
         "journalctl -u aos-cm.service -n 200 --no-pager -o cat 2>/dev/null\n"

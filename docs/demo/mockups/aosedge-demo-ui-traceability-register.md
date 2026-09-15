@@ -10,7 +10,7 @@
 - Owner: Demo Solution Team with visible-surface owners and System Acceptance
 - Interaction contract: [AosEdge Demo Interaction Specification 2.6](aosedge-demo-interaction-specification.md)
 - Surface register: [I0 Audience-Visible Interface Register 0.17](README.md)
-- Implementation authorized: no
+- Implementation authorized: yes, current Test Studio scope; see the staged delivery plan. This does not authorize or qualify deferred Production/KUKSA functionality.
 
 ## Current Studio Test traceability amendment
 
@@ -21,16 +21,20 @@ Production/approval and terminal-only clauses are superseded for this scope.
 
 | Current rule group | Implementation mapping | Mock evidence / real gate |
 |---|---|---|
-| UI-STUDIO-026 Create/connect/provision/VDP | Action audit A01–A11, L01–L08, V01–V11 | [Current 2.8 isolated tests](../../../tests/mockups/mockup-2-8.test.cjs); real P1–P4 still open |
-| UI-STUDIO-026 service identity/runtime/products | Action audit S/N/C/B rows | Isolated service, stale-advisory and offline tests; P5–P7 real runtime/product proof open |
-| UI-STUDIO-026 Park/Resume/Retire/recovery/ledger | Action audit R rows | Isolated partial-Park, reload, rejection, clean-repeat tests; shared implementation open |
+| UI-STUDIO-026 Create/connect/provision/VDP | Action audit A01–A11, L01–L08, V01–V11 | Implemented; [Factory .33 scoped E2E](../../qualification/factory-33-e2e-2026-09-13.md) and [Studio implementation](../../qualification/studio-2-8-implementation-2026-09-13.md). Mockup tests remain design evidence, not runtime qualification. |
+| UI-STUDIO-026 service identity/runtime/products | Action audit S/N/C/B rows | Implemented with synthetic service inputs; scoped .33 runtime/update/backend proof recorded. Real KUKSA and vehicle advisory remain open. |
+| UI-STUDIO-026 Park/Resume/Retire/recovery/ledger | Action audit R rows | Implemented with resumable scoped Finish; [14 September status corrections](../../qualification/ui-status-corrections-2026-09-14.md) add recovery diagnostics and receipt rollover. Unknown external outcomes require engineering reconciliation, not replay. |
 | UI-STUDIO-026 repeat qualification | Accepted Q14 / Studio P8 | Fresh CLI cycle, scoped Retire, same-image visual UI repeat; mockup is not E2E evidence |
 | UI-STUDIO-026 observation/offline | Separate Cloud-reported inventory/runtime from local state; P2 | 2.8 offline apply, reconnect, read-access failure, identity isolation and legacy-storage regressions |
 | ADR-0014 continuous Safe Stop | Preserve healthy VDP through activation; revalidate before commit | 2.8 loss in both phases, stale timer, missing vehicle evidence, reload and browser negative cases; SOTA remains ungated |
 | Accepted fixed desktop composition | B2 artwork, unchanged CARLA, readable populated architecture and footer | 2.8 full-profile browser check at three desktop sizes plus Pending display; no page scrolling |
 
 Current action IDs and gaps are in the [re-audit](../../research/demo-studio-action-audit.md).
-Subject Group/TTL/minimum-instance settings are accepted in UI-STUDIO-026; actual package/tenant qualification is pending.
+Subject Group/TTL/minimum-instance settings are accepted and implemented in the
+scoped service path. New tenant configuration and real KUKSA access are not
+qualified by mockup tests. The [status audit](../../research/demo-ui-status-audit-2026-09-14.md)
+and [correction receipt](../../qualification/ui-status-corrections-2026-09-14.md)
+distinguish current-renderer regressions from retained legacy fixture coverage.
 
 
 ## Purpose

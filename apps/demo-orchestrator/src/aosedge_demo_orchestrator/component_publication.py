@@ -8,9 +8,10 @@ deployment-bundle uploader remains the only mutation boundary.
 """
 
 from urllib.parse import urlencode
+from threading import Lock
 
 from .components import COMPONENT, VERSION
-from .component_cloud import COMPONENT_ID, unit_view
+from .component_cloud import resolve_component, unit_view
 from .cloud_observation import pick
 from .status import now, object_id
 from .unit_cloud import CloudFailure
@@ -21,11 +22,13 @@ class Reads:
 
     def __init__(self, cloud):
         self.cloud, self.remaining = cloud, 24
+        self.lock = Lock()
 
     def call(self, path):
-        if self.remaining <= 0:
-            raise CloudFailure("COMPONENT_CLOUD_READ_BUDGET_EXCEEDED")
-        self.remaining -= 1
+        with self.lock:
+            if self.remaining <= 0:
+                raise CloudFailure("COMPONENT_CLOUD_READ_BUDGET_EXCEEDED")
+            self.remaining -= 1
         return self.cloud.call(path)
 
     def pages(self, path, exact_id=None):
@@ -82,7 +85,7 @@ def publication(version, deployment_id, bundles, versions):
     bundle_state = str(bundle.get("state") or "").lower()
     if bundle_state == "error" or any(str(row.get("state") or "").lower() == "error" for row in versions):
         return dict(value, stage="ERROR", reason="COMPONENT_CLOUD_PROCESSING_ERROR")
-    if bundle_state in ("uploaded", "processing", "in progress", "pending"):
+    if bundle_state in ("uploaded", "building", "processing", "in progress", "pending"):
         return dict(value, stage="PROCESSING")
     if bundle_state != "done":
         return dict(value, stage="UNKNOWN", reason="COMPONENT_BUNDLE_STATE_UNKNOWN")
@@ -132,13 +135,14 @@ def recipients(reads, request):
 def snapshot(cloud, request):
     cloud.require("deployment_bundles_list")
     reads = Reads(cloud)
-    component = reads.call("components/" + COMPONENT_ID + "/")
-    if component.get("codename") != COMPONENT or component.get("oem_id") != cloud.user["ownerId"]:
-        raise CloudFailure("COMPONENT_CLOUD_IDENTITY_OR_OWNER_MISMATCH")
+    component = resolve_component(cloud, reads)
+    component_id = component["id"] if component else None
+    if request.get("componentId") and request["componentId"] != component_id:
+        raise CloudFailure("COMPONENT_CLOUD_IDENTITY_CHANGED")
     version = request["version"]
     if not isinstance(version, str) or not VERSION.fullmatch(version):
         raise CloudFailure("COMPONENT_VERSION_INVALID")
-    all_versions = reads.pages("components/" + COMPONENT_ID + "/versions/")
+    all_versions = reads.pages("components/" + component_id + "/versions/") if component_id else []
     versions = [pick(row, ("id", "version", "state"), ("file_size",), ("is_fake",))
                 for row in all_versions if row.get("version") == version]
     deployment_id = object_id(request["deploymentId"]) if request.get("deploymentId") else None
@@ -155,7 +159,8 @@ def snapshot(cloud, request):
     if not deployment_id:
         bundles = [row for row in bundles if any(isinstance(item, dict) and item.get("codename") == COMPONENT
             and item.get("version") == version for item in row.get("items") or [])]
-    result = dict(source="AOS_CLOUD_ONLY", ownerId=cloud.user["ownerId"], versions=versions,
+    result = dict(source="AOS_CLOUD_ONLY", ownerId=cloud.user["ownerId"], componentId=component_id,
+                  catalogState="PRESENT" if component else "ABSENT", versions=versions,
                   deploymentBundles=[bundle_view(row) for row in bundles])
     result["publication"] = publication(version, deployment_id, result["deploymentBundles"], versions)
     if previous:

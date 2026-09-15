@@ -3,11 +3,12 @@ import { Icon } from "../components/Icon";
 import { StatusBadge } from "../components/StatusBadge";
 
 export function VehicleEvidenceReservations({ snapshot }: { snapshot: PresenterSnapshot }) {
+  if (snapshot.localDemo) return <aside className="native-reservations studio-native-reservation" aria-label="Native vehicle workspace"><strong>Native vehicle workspace</strong><p>CARLA, Driving Control and live telemetry run in their own windows.</p><p>This browser does not embed or simulate the vehicle.</p></aside>;
   return (
     <aside className="native-reservations" aria-label="Reserved native vehicle evidence workspace">
       <section className="native-slot native-slot-carla" data-native-surface="carla">
         <div className="native-slot-label"><Icon name="vehicle" label="CARLA" broken={snapshot.assetFailure} /> CARLA · native vehicle scene</div>
-        <div className="native-reservation-copy"><strong>{snapshot.localDemo ? "CARLA scene" : "Reserved for native CARLA window"}</strong><span>{snapshot.localDemo ? `Source: ${snapshot.localDemo.source.state} · native window not composed yet` : "Browser content intentionally absent"}</span></div>
+        <div className="native-reservation-copy"><strong>Reserved for native CARLA window</strong><span>Browser content intentionally absent</span></div>
       </section>
       <div className="native-lower-row">
         <section className="native-slot" data-native-surface="controller">

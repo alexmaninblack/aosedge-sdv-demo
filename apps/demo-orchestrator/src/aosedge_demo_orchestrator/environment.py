@@ -269,6 +269,22 @@ class EnvironmentService:
             journal = {"schemaVersion": 1, "kind": "democtl.current-run", "startedAt": now(),
                        "stage": "CREATING", "scope": "DUAL_ROLE" if target == "all" else "SINGLE_ROLE_ENGINEERING",
                        "factory": None, "currentVehicle": None, "vehicles": {}, "operations": [operation]}
+            from .cloud_connection import CONFIG, domain_name
+            configuration = self.root / CONFIG
+            if configuration.is_file():
+                connection = read_json(configuration).get("cloudConnection")
+                if connection:
+                    journal["selectedCloudDomain"] = domain_name(connection["domain"])
+                    if connection.get("owners"):
+                        from .cloud_connection import bind_tenant
+                        from .package_artifacts import digest as context_digest
+                        scope = bind_tenant(journal, connection["domain"], connection["owners"])
+                        key = context_digest(dict(domain=connection["domain"], ownerId=connection["owners"]["oem"]))
+                        setup = read_json(configuration).get("cloudSetupContexts", {}).get(key, {})
+                        objects = setup.get("objects", {})
+                        if objects.get("testSetId") and objects.get("fleetId"):
+                            scope["cloudBinding"] = dict(ownerId=connection["owners"]["oem"],
+                                fleetId=objects["fleetId"], sets={"test": objects["testSetId"]})
             for role in roles:
                 identity = uuid4()
                 journal["vehicles"][role] = {
@@ -377,7 +393,7 @@ class EnvironmentService:
         if (not isinstance(state, dict) or type(state.get("schemaVersion")) is not int
                 or state["schemaVersion"] != 1 or state.get("kind") != "democtl.current-run"
                 or set(state) - {"schemaVersion", "kind", "startedAt", "stage", "scope", "factory",
-                                 "currentVehicle", "vehicles", "operations", "retirement", "shared", "cloudBinding",
+                                 "currentVehicle", "vehicles", "operations", "retirement", "shared", "cloudBinding", "selectedCloudDomain", "cloudContexts",
                                  "source", "componentOperations", "componentSchema", "smDemoProof", "runtimeCleanup", "demoPreparation", "demoLifecycle", "testRetirement", "workspace"}
                 or state.get("stage") not in ("MANUFACTURED", "LOCAL_STOPPED", "RETIRING_LOCAL")
                 or state.get("currentVehicle") is not None):
@@ -609,7 +625,10 @@ class EnvironmentService:
                 factory.update(sizeBytes=metadata["sizeBytes"], virtualSizeBytes=metadata["virtualSizeBytes"])
             roles = [role for role in OVERLAYS if role in state["vehicles"]]
             cloud_retired = any(state["vehicles"][role].get("cloud") for role in roles)
-            if cloud_retired:
+            pending_uploads = any(isinstance(record, dict) and isinstance(record.get("upload"), dict)
+                and record["upload"].get("attemptStarted") and record["upload"].get("state") != "CONFIRMED"
+                for record in state.get("componentOperations", {}).values())
+            if cloud_retired or pending_uploads:
                 if cloud_check is None:
                     raise EnvironmentError("FRESH_CLOUD_RETIREMENT_CHECK_REQUIRED")
                 # Every invocation, including interrupted-unlink recovery, gets
@@ -694,7 +713,7 @@ class EnvironmentService:
             return {"scope": "CLOUD_RETIRED_CLI_RUN" if cloud_retired else "UNUSED_LOCAL_CREATE", "outcome": "REMOVED",
                     "removed": list(targets.values()) + state["runtimeCleanup"]["directories"] + [JOURNAL],
                     "preserved": ["demo-artifacts source image and published manifests"], "cloudActions": False,
-                    "cloudReadsPerformed": cloud_retired, "recoverable": False}
+                    "cloudReadsPerformed": bool(cloud_retired or pending_uploads), "recoverable": False}
 
     def retire_test(self, cloud_check=None, backend_check=None):
         """Retire only Test working state; never dispose a retained Production peer."""

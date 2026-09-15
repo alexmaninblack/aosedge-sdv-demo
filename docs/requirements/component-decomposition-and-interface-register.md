@@ -9,7 +9,7 @@
 - Accepted: 2026-08-26
 - Previous accepted version: 1.1
 - Owner: System Architecture
-- Architecture input: [High-Level Architecture 1.6](../architecture/high-level-architecture.md)
+- Architecture input: [High-Level Architecture 1.7](../architecture/high-level-architecture.md)
 - Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.0](../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - Flow input: [Demo Scenario Architecture Flows 2.1](../architecture/demo-scenario-architecture-flows.md)
 - Requirements input: [System Requirements and Traceability 2.1](system-requirements-and-traceability.md)

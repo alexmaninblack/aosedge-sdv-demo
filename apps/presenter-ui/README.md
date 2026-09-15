@@ -1,122 +1,115 @@
 # Presenter UI
 
-## Current integration position — 13 September 2026
+## Current Studio integration — 13 September 2026
 
-The accepted target is Studio 2.8 with Test-first shared Demo Control actions.
-The architecture map already reads installed service versions from Cloud;
-team views read per-Subject instances and their own backend observations via
-the same-origin adapter. Unit/browser/build evidence is recorded in the
-[Presenter checkpoint](../../docs/qualification/demo-mocked-backend-integration.md#presenter-and-adapter-verification-12-september-2026).
+The accepted visual/interaction reference is [Studio 2.8](../../docs/demo/mockups/aosedge-demo-interaction-mockup-2-8.html), qualified by the current [UI-STUDIO-026 amendment](../../docs/demo/mockups/aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract).
+The original mockup is unchanged. Live state comes from existing Demo Control operations, not mockup timers.
 
-Complete service publication/assignment controls, native visual alignment and
-human acceptance remain P4/P8 in the [delivery plan](../../docs/planning/active/demo-studio-delivery-plan.md).
-The .33 CLI E2E does not close those UI gates or real KUKSA/advisory operation.
-Do not present synthetic backend records as vehicle data. Older dual-VM,
-approval and header wording below documents earlier shell increments, not the
-final Studio contract or a claim of current visual acceptance.
+The physical workspace remains CARLA upper-left, the combined native Driving
+Control/telemetry below, and Studio on the right. CARLA is neither embedded nor
+restyled. The shared header contains brand, accepted vehicle assignment and
+Session; team navigation belongs to the right panel.
 
-Platform Team now refreshes its Test state from **Aos Cloud only** on entry
-and re-entry, with a manual Refresh Cloud state action. It displays Cloud
-Online/lifecycle, installed and pending releases, update state and latest
-published release. Running/READY/Safe Stop and functional-profile mapping are
-not inferred from Installed or from release numbers. No direct VM status or
-guest-log action is available in the panel. Stale/unavailable observations are
-explicit, with no background Cloud polling or duplicated native-header read.
+### Operator flow
 
-The local header distinguishes the accepted vehicle assignment from a fresh
-connection probe: `SELECTED_NOT_PROBED` uses `selectedVehicle` and says
-“Connection not rechecked”, rather than treating `currentVehicle: null` as
-Not assigned. Unknown/conflicting state remains unavailable. This does not
-add background guest or Cloud reads.
+1. Full story: choose Factory firmware, Create controller, start simulator,
+   Connect in Manual. Create prepares current Test and the product backends,
+   not Production. It does not provision.
+2. Platform: choose a capability profile, Prepare, Sign & publish. Release
+   allocation stays in Demo Control. Publish before Provision supports the
+   warehouse scenario; no forced downgrade or batch-approval step is added.
+3. Provision to Test / Continue registration completes only the remaining
+   native stages. Cloud Online is not inferred from local connectivity.
+4. VDP installation follows native Safe Stop. Installed and Pending are Cloud
+   facts; VDP process state is **Not reported by Cloud**.
+5. Brake/Tire: Prepare, Sign & publish through the configured Service Provider.
+   The first READY release exposes Deploy to Test: Demo Control first runs
+   `service runtime-prepare test`, then OEM binds the dedicated retained Group
+   Subject and exact service identity, preserving its peer. Preparation failure
+   prevents assignment; unchanged inputs are reused without an SM restart.
+   Later higher releases use only Publish. No service update requires Safe Stop.
+6. Backend cards open product results; Aos Cloud opens Software/Resources.
+   Component/service cards expose only their scoped details.
+7. Session offers Park, Resume and Finish demo via the existing lifecycle.
+   Finish retires only owned Test state; Factory originals, Cloud releases and
+   release continuity survive. Production remains untouched.
 
-The accepted Presenter shell exposes local observations and explicitly
-authorized Demo Control operations. Mutation buttons show actor, exact selection,
-target and effect before confirmation; Cancel does nothing. Credentials and
-the private native session capability never enter the browser.
+Quick preparation is an explicit alternative composing the existing Test-only
+sequence. Opening a page never starts it. The contextual guide derives the next
+action from observations; it cannot manufacture missed intermediate states.
+Studio simulation Start/Stop always pass `--target test`; the unscoped CLI
+simulation path is not used by Presenter actions.
 
-The original fixture-only `WP-P1-UI-001` remains available explicitly through
-`?fixture=ready` (or another fixture ID). Fixture actions never submit externally.
+### Evidence and safety boundaries
 
-The primary operator action is **Prepare demo**, not a sequence of engineering
-buttons. It invokes `democtl demo prepare`'s application operation: both VMs,
-automatically numbered v1, signing/upload/approval, provisioning, simulation and
-initial Test connection in stationary Manual. The native run journal exposes
-progress even for a CLI-started run and across UI-server restarts. The page never
-auto-starts a mutation on load. Individual steps remain under Engineering steps.
+- Right-side inventory/runtime/resources are Aos Cloud only. No guest read is
+  introduced by tab entry, Refresh, details or monitoring. Resources preserve
+  node/service/Subject/instance/partition identity. CPU is DMIPS; unknown units
+  remain unconverted. Missing/stale is not zero, absent, Offline or success.
+- Team backends use the existing same-origin Demo Control backend read. Product
+  receipts are explicitly **synthetic**, current-Test scoped, and versioned.
+  They do not qualify vehicle analytics or in-vehicle advisory while the Cloud
+  permissions/KUKSA defect remains open.
+- Native telemetry observes vehicle data only. It reads the existing advisory
+  contract, rejects unknown values, and does not consume synthetic backend data.
+- Confirmation shows actor, exact candidate, target and effect. Cancel emits no
+  mutation. VM credentials use the existing macOS Use once / Save in Keychain
+  dialog; no password, native capability, caller-selected shell/path/endpoint
+  enters the browser.
+- One writer/job, no queue and no automatic mutation retry. Reload does not
+  cancel work. Lost responses reconcile the original request ID. Unknown native
+  outcomes refuse new mutations; terminal recovery remains an engineering
+  intervention, not an invented Cancel/rollback operation.
 
-VM access uses a visible macOS dialog with Use once / Save in Keychain / Cancel.
-There is no password prompt in a hidden terminal. Access can also be configured
-with `democtl access setup`. Keychain storage is only by explicit dialog choice;
-passwords never enter the browser, logs, argv or repository. Native input follows
-[Apple's hidden-answer dialog guidance](https://developer.apple.com/library/archive/documentation/LanguagesUtilities/Conceptual/MacAutomationScriptingGuide/PromptforText.html).
+### Observation and native refresh
 
-Use Node `26.0.0` and npm `11.12.1`:
+Visible Cloud panels share an in-flight-deduplicated observer. Entry/re-entry
+refreshes; pending state backs off from 2 to 10 seconds, idle reads use 10 seconds.
+Hidden panels stop scheduling reads. Local operation receipts poll independently
+at one second active / five seconds idle. Local snapshot reads do not hash images.
+Local lifecycle snapshots refresh immediately when the tab becomes visible or
+the window regains focus, and on manual Refresh/post-action observation. These
+reads share one in-flight request and otherwise retain the visible-only 10-second
+idle interval. CLI retirement therefore returns the open page to Create without
+a reload; a still-partial retirement remains blocked. Refresh never retries a
+mutation, starts a runtime or substitutes local data for Cloud software status.
+Prepared service receipts are a bounded metadata-only projection; published
+service processing is observed separately from installed/runtime state.
 
-```text
+The native host checks a small build/session descriptor every five seconds.
+Both windows reload together only when the native job is idle and neither
+window has a dialog or unresolved submission. It never restarts VMs, CARLA or
+services. Updated native host source requires an explicit workspace close/restore;
+subsequent frontend builds and idle server session changes are detected in place.
+
+### Build and run
+
+Use the project's pinned Node/npm versions. In this package:
+
+```bash
 npm ci
 npm run typecheck
 npm run test:unit
 npm run test:browser
 npm run build
-npm run dev -- --host 127.0.0.1 --port 18070
 ```
 
-Append `?fixture=<id>` to select an accepted deterministic presentation state.
-Without that parameter, the app requires the local Demo Control backend and
-shows unavailable state if it cannot be reached; there is no fixture fallback.
-Fixture identifiers are owned by
-`src/adapters/fixtures/fixtureCatalog.ts`.
+Then, in the installed `apps/demo-orchestrator` environment:
 
-For the local review, build the existing package once with `npm run build`,
-then run `democtl ui serve` from `apps/demo-orchestrator` in its installed virtual
-environment. Open `http://127.0.0.1:18080/`. Ctrl+C stops only this foreground UI
-server, not VMs, simulation or Cloud Units. No daemon or background auto-start
-is installed. The server serves only the built entry point and assets, uses
-loopback/Host/Origin checks and returns a fixed public projection of existing
-`status` and `image list` operations. Background reads do not hash image files,
-read guest/Cloud state or expose credentials/host paths. Local
-reads repeat every ten seconds while the browser page is visible, without
-overlapping polls or retaining old green states after an unavailable response.
+```bash
+democtl ui serve
+```
 
-The fixed same-origin `/api/presenter/operations` route accepts create/start/stop
-both VMs, provision both roles, simulator start/stop, Test connection, selected
-VDP prepare/unpack/inspect/sign/verify/upload/approve/Cloud-state,
-explicit Cloud access and reset. It invokes the same core as CLI; no arbitrary
-commands, paths, profiles, Cloud endpoints or Production FOTA target are accepted.
+Open `http://127.0.0.1:18080/`. With simulation running,
+`democtl workspace restore` places the native surfaces. `democtl ui stop` refuses
+to stop a busy or uncertain server. `workspace close` closes only Presenter.
 
-The backend alone owns a 256-bit capability for private loopback port 18600,
-stored in a temporary directory (0700), file (0400). The native API rejects
-browser Origin headers and missing capabilities. Normal shutdown removes both
-listeners and the capability; no daemon is installed. Enter first-SSH passwords
-only in the visible macOS dialog (or reuse Keychain). Keep the server open during jobs.
+`npm run dev -- --host 127.0.0.1 --port 18070` is the development server;
+`?fixture=ready` explicitly selects retained deterministic fixture review.
+Fixtures never submit external actions and are not live qualification evidence.
+Without a fixture selector, an unavailable local backend stays unavailable.
 
-Submissions return a receipt immediately. Progress is polled locally every
-second while a job runs / five seconds while idle, without Cloud polling. One
-job, no queue, no automatic retries. Duplicate IDs return the original receipt;
-a changed session generation rejects old submissions. Unknown outcomes block
-new mutations; reconcile through existing native journals, never blindly repeat.
-Page reload does not cancel a job. Stop the UI server only when idle.
-
-Order: create both vehicles → prepare/sign/upload/approve a new v1-profile
-release on Platform Team → start VMs → provision → start simulator → connect
-Test. Then use increasing v2/v3-profile releases and native Safe Stop. Engineer
-CLI guest observations remain separate from the Cloud-only Platform panel:
-Cloud approval is not proof of running VDP. Profile
-cards describe the workflow; timestamped operation results are actual evidence.
-
-Reset calls applicable existing operations: simulation stop, deprovision,
-Unit delete, VM stop, environment retire. Never-provisioned environments skip
-Cloud steps from the owned journal; empty environments use existing retire/orphan
-checks. A blocker stops the sequence. No backups; original images and Cloud
-releases remain. This is engineering cleanup, not qualified scenario R0.
-
-The existing native Presenter physically places the separate CARLA, Controller
-and Terminal dashboard windows, the shared header/right panel and black
-background. The operator accepted the built-in-display composition. This is
-not qualification of a one-click launcher, a fresh-environment UI E2E or the
-accepted prebuilt-container hosting contract. The
-[native desktop plan](../../docs/planning/active/native-demo-desktop.md) will
-combine control/telemetry and add a launcher; CARLA stays separate. Production
-FOTA is visibly deferred; Brake/Tire navigation is retained
-without simulated service results. VDP functional profiles v1/v2/v3 are
-distinct from future monotonically increasing Cloud release versions.
+See the [delivery plan](../../docs/planning/active/demo-studio-delivery-plan.md)
+and [implementation receipt](../../docs/qualification/studio-2-8-implementation-2026-09-13.md).
+The scoped .33 CLI E2E and isolated browser tests do not replace the final fresh
+operator UI cycle or human visual acceptance.

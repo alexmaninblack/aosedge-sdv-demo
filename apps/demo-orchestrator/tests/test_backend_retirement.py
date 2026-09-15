@@ -191,6 +191,16 @@ class BackendRetirementTests(TestCase):
         self.assertNotIn(TOKEN, (self.root / JOURNAL).read_text())
         self.assertEqual([("brake", "preview"), ("brake", "execute"), ("brake", "preview"), ("tire", "foundation-proof")], self.calls)
 
+    def test_no_service_records_still_finishes_without_cleanup_mutation(self):
+        state = self.backend_fixture()
+        self.matching = dict.fromkeys(COUNTS, 0)
+        self.assertTrue(self.cleanup.confirm_test_cleanup(state))
+        self.assertNotIn(("brake", "execute"), self.calls)
+        self.assertEqual(7, self.nonmatching["messages"])
+        self.assertFalse((self.root / CONTEXT).exists())
+        self.assertEqual(4, len(self.backend.resources))
+        self.assertTrue(all(record["state"] == "STOPPED" for record in state["backends"].values()))
+
     def test_docker_desktop_exact_host_mount_alias_is_accepted_only_on_macos(self):
         state = self.backend_fixture()
         for team in TEAMS:

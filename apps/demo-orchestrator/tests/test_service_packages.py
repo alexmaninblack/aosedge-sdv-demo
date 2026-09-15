@@ -1,10 +1,12 @@
 # SPDX-FileCopyrightText: 2026 maninblack
 # SPDX-License-Identifier: MIT
 
+import contextlib
 import copy
 import json
 import os
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -18,10 +20,15 @@ from aosedge_demo_orchestrator.releases import ReleaseContinuity, number
 from aosedge_demo_orchestrator.service_packages import ServicePackages, RELEASE_FILE, package_configuration, product_files
 from aosedge_demo_orchestrator.services import ServiceCatalog
 from aosedge_demo_orchestrator import service_cloud
+from aosedge_demo_orchestrator.package_artifacts import publication_path, paths, credential_stamp, digest as metadata_digest
 
 ROOT = Path(__file__).resolve().parents[3]
 OWNER = "11111111-1111-4111-8111-111111111111"
 SERVICE = "22222222-2222-4222-8222-222222222222"
+
+
+def publication(prepared):
+    return publication_path(Path(prepared["packagePath"]), "aoscloud.io", "service provider", create=True)
 
 
 class ServicePackageTests(unittest.TestCase):
@@ -53,6 +60,13 @@ class ServicePackageTests(unittest.TestCase):
         self.catalog = catalog_patch.start()
         self.addCleanup(catalog_patch.stop)
         self.catalog.return_value.release_versions.return_value = dict(serviceId=SERVICE, ownerId=OWNER, versions=["7.0.0"])
+        self.fixture_credential = self.base / "metadata-only.p12"
+        self.fixture_credential.write_bytes(b"metadata fixture, not a signing key")
+        self.fixture_credential.chmod(0o600)
+        config_patch = patch("aosedge_demo_orchestrator.service_packages.load_configuration", return_value={
+            "cloudProfiles": {"service-provider": {"expectedRole": "service provider", "credential": self.fixture_credential}}})
+        config_patch.start()
+        self.addCleanup(config_patch.stop)
 
     def test_prepare_before_vehicle_uses_one_version_and_returns_handle(self):
         result = self.packages.prepare("brake", "v1")
@@ -81,6 +95,105 @@ class ServicePackageTests(unittest.TestCase):
         changed = [key for key in first["files"] if first["files"][key] != second["files"][key]]
         self.assertEqual({"config.yaml", "service/arm64/" + RELEASE_FILE}, set(changed))
         self.assertEqual(first, json.loads((Path(first["packagePath"]) / "prepared.json").read_text()))
+
+    def test_receipts_are_metadata_only_and_expose_no_paths_or_credentials(self):
+        prepared = self.packages.prepare("brake", "v1", without_permissions=True, demo_mocked_data=True)
+        directory = Path(prepared["packagePath"])
+        publication(prepared).write_text(json.dumps(dict(attempted=True,
+            lastObservation=dict(stage="READY", serviceId=SERVICE, versionId="version-id", observedAt="2026-09-13T10:00:00Z", token="not-public"))))
+        identity = dict(schemaVersion=1, role="service provider", domain="aoscloud.io", signerId="b" * 64,
+                        preparedSha256=metadata_digest(prepared["files"]))
+        bundle, receipt = paths(directory, identity, create=True)
+        bundle.write_bytes(b"metadata-only fixture")
+        receipt.write_text(json.dumps(dict(signatureVerification="VERIFIED_RS256", sha256="a" * 64,
+            signingContext=identity, credentialStamp=credential_stamp(self.fixture_credential))))
+        with patch.object(self.packages, "_record", wraps=self.packages._record) as record:
+            result = self.packages.receipts()
+        record.assert_called_once_with("brake/8.0.0", verify_payload=False)
+        row = result["releases"][0]
+        self.assertTrue(row["signed"] and row["submitted"])
+        self.assertEqual(SERVICE, row["serviceId"])
+        self.assertEqual("READY", row["publication"]["stage"])
+        self.assertNotIn("packagePath", row)
+        self.assertNotIn("token", json.dumps(result))
+
+    def test_receipts_reject_symlinked_publication(self):
+        prepared = self.packages.prepare("brake", "v1")
+        (Path(prepared["packagePath"]) / "publication.json").symlink_to(self.base / "not-a-receipt")
+        with self.assertRaisesRegex(EnvironmentError, "SERVICE_RECEIPT_PATH_UNSAFE"):
+            self.packages.receipts()
+
+    def test_cloud_status_does_not_hold_writer_during_network_observation(self):
+        prepared = self.packages.prepare("brake", "v1")
+        path = publication(prepared)
+        intent = dict(attempted=True, deploymentId=SERVICE)
+        path.write_text(json.dumps(intent))
+        acquired = threading.Event()
+
+        def worker(*args, **kwargs):
+            def concurrent_operator():
+                with self.environment._writer():
+                    acquired.set()
+            thread = threading.Thread(target=concurrent_operator)
+            thread.start()
+            thread.join(timeout=1)
+            self.assertTrue(acquired.is_set(), "Cloud read blocked an independent operator")
+            return dict(stage="READY", deploymentId=SERVICE)
+
+        with patch.object(self.packages, "_worker", side_effect=worker):
+            result = self.packages.cloud_status(prepared["releaseHandle"])
+        saved = json.loads(path.read_text())
+        self.assertEqual("READY", result["stage"])
+        self.assertEqual(intent, {key: value for key, value in saved.items() if key != "lastObservation"})
+        self.assertEqual("READY", saved["lastObservation"]["stage"])
+
+    def test_cloud_status_does_not_overwrite_changed_or_removed_receipt(self):
+        prepared = self.packages.prepare("brake", "v1")
+        path = publication(prepared)
+        for change in ("replace", "remove", "symlink"):
+            with self.subTest(change=change):
+                path.write_text(json.dumps(dict(attempted=True, deploymentId=SERVICE)))
+                def worker(*args, **kwargs):
+                    if change == "replace":
+                        path.write_text(json.dumps(dict(attempted=True, stage="UNCERTAIN")))
+                    else:
+                        path.unlink()
+                        if change == "symlink":
+                            path.symlink_to(self.base / "not-a-receipt")
+                    return dict(stage="READY")
+                with patch.object(self.packages, "_worker", side_effect=worker):
+                    if change == "symlink":
+                        with self.assertRaisesRegex(EnvironmentError, "SERVICE_PUBLICATION_PATH_UNSAFE"):
+                            self.packages.cloud_status(prepared["releaseHandle"])
+                        path.unlink()
+                    else:
+                        self.assertEqual("READY", self.packages.cloud_status(prepared["releaseHandle"])["stage"])
+                        if change == "replace":
+                            self.assertEqual(dict(attempted=True, stage="UNCERTAIN"), json.loads(path.read_text()))
+                        else:
+                            self.assertFalse(path.exists())
+
+    def test_cloud_status_returns_read_without_waiting_for_busy_cache_writer(self):
+        prepared = self.packages.prepare("brake", "v1")
+        path = publication(prepared)
+        intent = dict(attempted=True, deploymentId=SERVICE)
+        path.write_text(json.dumps(intent))
+        original_writer = self.environment._writer
+        calls = []
+
+        @contextlib.contextmanager
+        def writer():
+            calls.append(True)
+            if len(calls) == 2:
+                raise EnvironmentError("CURRENT_RUN_BUSY")
+            with original_writer():
+                yield
+
+        with patch.object(self.environment, "_writer", side_effect=writer), patch.object(
+                self.packages, "_worker", return_value=dict(stage="READY")):
+            self.assertEqual("READY", self.packages.cloud_status(prepared["releaseHandle"])["stage"])
+        self.assertEqual(2, len(calls))
+        self.assertEqual(intent, json.loads(path.read_text()))
 
     def test_explicit_delivery_only_mode_removes_only_permissions(self):
         for team, profile in (("brake", "v1"), ("brake", "v2"), ("brake", "v3"), ("tire", "v1")):

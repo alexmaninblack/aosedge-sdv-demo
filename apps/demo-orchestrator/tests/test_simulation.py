@@ -3,6 +3,7 @@
 
 import contextlib
 import json
+import signal
 import subprocess
 import tempfile
 import unittest
@@ -55,6 +56,43 @@ class SimulationTests(unittest.TestCase):
         self.driver.start.assert_not_called()
         self.driver.guests.assert_not_called()
         self.vm._save.assert_not_called()
+
+    def test_finish_stops_owned_simulator_without_test_guest_or_controller_readiness(self):
+        self.state["demoLifecycle"] = dict(action="retire", target="test", phase="stop-simulation")
+        self.state["source"]["operation"] = dict(target="test", previous=None, phase="RESETTING")
+        self.driver.rpc.side_effect = EnvironmentError("CONTROLLER_UNAVAILABLE")
+        self.driver.guest.side_effect = EnvironmentError("TEST_SSH_UNAVAILABLE")
+        result = self.service.simulation("stop", target="test", retiring=True)
+        self.assertEqual("STOPPED", result["state"])
+        self.assertEqual("NOT_OBSERVED", result["physicalStop"])
+        self.driver.guests.assert_called_once_with(self.state, "status", roles=["production"])
+        self.driver.rpc.assert_not_called()
+        self.driver.guest.assert_not_called()
+        self.driver.wait.assert_not_called()
+        self.driver.stop.assert_called_once_with(self.state["source"])
+        self.assertIsNone(self.state["currentVehicle"])
+        self.assertIsNone(self.state["source"]["operation"])
+
+    def test_terminal_stop_cannot_be_used_outside_finish_or_against_peer(self):
+        with self.assertRaisesRegex(EnvironmentError, "RETIREMENT_SCOPE_REQUIRED"):
+            self.service.simulation("stop", target="test", retiring=True)
+        self.state["demoLifecycle"] = dict(action="retire", target="test", phase="stop-simulation")
+        self.state["source"]["operation"] = dict(target="production", previous="test")
+        with self.assertRaisesRegex(EnvironmentError, "PRESERVED_PEER_OPERATION"):
+            self.service.simulation("stop", target="test", retiring=True)
+        self.state["source"]["operation"] = None
+        self.driver.guests.return_value["production"]["gate"] = "OPEN"
+        with self.assertRaisesRegex(EnvironmentError, "PRESERVED_PEER_NOT_DETACHED"):
+            self.service.simulation("stop", target="test", retiring=True)
+        self.driver.stop.assert_not_called()
+
+    def test_failed_terminal_stop_keeps_identity_for_retry(self):
+        self.state["demoLifecycle"] = dict(action="retire", target="test", phase="stop-simulation")
+        self.driver.stop.side_effect = EnvironmentError("SIMULATION_STOP_TIMEOUT")
+        with self.assertRaisesRegex(EnvironmentError, "STOP_TIMEOUT"):
+            self.service.simulation("stop", target="test", retiring=True)
+        self.assertEqual("test", self.state["currentVehicle"])
+        self.assertEqual("RUNNING", self.state["source"]["state"])
 
     def test_terminal_started_session_is_observed_without_relaunch(self):
         self.state["source"]["state"] = "STARTING"
@@ -214,12 +252,97 @@ class SimulationTests(unittest.TestCase):
         result = app.execute(request)
         self.assertIn("Simulation: RUNNING (unchanged)", render_human(result))
         self.assertEqual("COMPLETED", execute_operation(dict(domain="simulation", action="start"), app)["state"])
-        for field in ("target", "command", "force", "credential", "socket"):
+        self.assertEqual("COMPLETED", execute_operation(dict(domain="simulation", action="start", target="test"), app)["state"])
+        for target in ("production", "all", None):
+            with self.assertRaises(ValueError):
+                execute_operation(dict(domain="simulation", action="start", target=target), app)
+        for field in ("command", "force", "credential", "socket"):
             with self.assertRaises(ValueError):
                 execute_operation(dict(domain="simulation", action="start", **{field: "test"}), app)
 
 
 class SourceTransportTests(unittest.TestCase):
+    def test_macos_stop_quits_exact_simulator_after_runner_without_signals(self):
+        with tempfile.TemporaryDirectory() as folder:
+            driver = SourceDriver(Mock(root=Path(folder)))
+            source = dict(runnerCommand=["python", "owned-runner"],
+                          simulatorCommand=["/owned/UnrealEditor", "owned-project"],
+                          controlDirectory="control")
+            driver.live_process = Mock(side_effect=[101, None, 202, 202, None])
+            with patch("aosedge_demo_orchestrator.source.sys.platform", "darwin"), \
+                 patch("aosedge_demo_orchestrator.source.os.kill") as kill, \
+                 patch("aosedge_demo_orchestrator.source.subprocess.run",
+                       return_value=Mock(returncode=0, stdout="REQUESTED\n")) as run, \
+                 patch("aosedge_demo_orchestrator.source.time.sleep"), \
+                 patch("aosedge_demo_orchestrator.workspace.close_terminal"):
+                driver.stop(source)
+            kill.assert_called_once_with(101, signal.SIGTERM)
+            self.assertEqual(["202", "/owned/UnrealEditor"], run.call_args.args[0][-2:])
+            script = run.call_args.args[0][4]
+            self.assertIn("app.executableURL.path", script)
+            self.assertIn("app.terminate", script)
+            self.assertNotIn("forceTerminate", script)
+            self.assertEqual(5, run.call_args.kwargs["timeout"])
+            self.assertEqual(5, driver.live_process.call_count)
+            self.assertEqual([unittest.mock.call(2000), unittest.mock.call(16443)],
+                             driver.vm._free_port.call_args_list)
+
+    def test_quit_failure_preserves_partial_without_signal_fallback(self):
+        driver = SourceDriver(Mock(root=Path("/not-live")))
+        driver.live_process = Mock(side_effect=[None, 202])
+        source = dict(runnerCommand=["runner"], simulatorCommand=["/owned/UnrealEditor"])
+        with patch("aosedge_demo_orchestrator.source.sys.platform", "darwin"), \
+             patch("aosedge_demo_orchestrator.source.os.kill") as kill, \
+             patch("aosedge_demo_orchestrator.source.subprocess.run",
+                   return_value=Mock(returncode=1, stdout="", stderr="private fixture")):
+            with self.assertRaisesRegex(EnvironmentError, "^SIMULATION_QUIT_NOT_ACCEPTED$"):
+                driver.stop(source)
+        kill.assert_not_called()
+        driver.vm._free_port.assert_not_called()
+
+    def test_accepted_quit_does_not_hide_exit_timeout_or_force_kill(self):
+        driver = SourceDriver(Mock(root=Path("/not-live")))
+        driver.live_process = Mock(side_effect=[None, 202, 202])
+        driver._quit_simulator = Mock()
+        source = dict(runnerCommand=["runner"], simulatorCommand=["/owned/UnrealEditor"])
+        with patch("aosedge_demo_orchestrator.source.sys.platform", "darwin"), \
+             patch("aosedge_demo_orchestrator.source.time.monotonic", side_effect=[0, 31]), \
+             patch("aosedge_demo_orchestrator.source.os.kill") as kill:
+            with self.assertRaisesRegex(EnvironmentError, "^SIMULATION_STOP_TIMEOUT:simulatorCommand$"):
+                driver.stop(source)
+        driver._quit_simulator.assert_called_once_with(202, source["simulatorCommand"])
+        kill.assert_not_called()
+        driver.vm._free_port.assert_not_called()
+
+    def test_native_missing_app_does_not_hide_a_live_process(self):
+        driver = SourceDriver(Mock(root=Path("/not-live")))
+        driver.live_process = Mock(return_value=202)
+        with patch("aosedge_demo_orchestrator.source.subprocess.run",
+                   return_value=Mock(returncode=0, stdout="ABSENT\n")):
+            with self.assertRaisesRegex(EnvironmentError, "^SIMULATION_NATIVE_OWNER_UNAVAILABLE$"):
+                driver._quit_simulator(202, ["/owned/UnrealEditor"])
+
+    def test_native_quit_timeout_is_redacted_and_never_retried(self):
+        driver = SourceDriver(Mock(root=Path("/not-live")))
+        with patch("aosedge_demo_orchestrator.source.subprocess.run",
+                   side_effect=subprocess.TimeoutExpired("private fixture", 5)) as run:
+            with self.assertRaisesRegex(EnvironmentError, "^SIMULATION_QUIT_UNAVAILABLE$"):
+                driver._quit_simulator(202, ["/owned/UnrealEditor"])
+        self.assertEqual(1, run.call_count)
+
+    def test_other_platform_retains_sigterm(self):
+        with tempfile.TemporaryDirectory() as folder:
+            driver = SourceDriver(Mock(root=Path(folder)))
+            driver.live_process = Mock(side_effect=[None, 202, None])
+            source = dict(runnerCommand=["runner"], simulatorCommand=["carla"], controlDirectory="control")
+            with patch("aosedge_demo_orchestrator.source.sys.platform", "linux"), \
+                 patch("aosedge_demo_orchestrator.source.os.kill") as kill, \
+                 patch.object(driver, "_quit_simulator") as quit_app, \
+                 patch("aosedge_demo_orchestrator.workspace.close_terminal"):
+                driver.stop(source)
+            kill.assert_called_once_with(202, signal.SIGTERM)
+            quit_app.assert_not_called()
+
     def test_busy_dedicated_traffic_manager_port_blocks_before_launch(self):
         driver = SourceDriver(Mock(root=Path("/not-live")))
         driver.assets = Mock(return_value={})

@@ -20,7 +20,39 @@ def execute_operation(
     target_value = payload.get("target")
     target = VehicleTarget(target_value) if target_value else None
     application = orchestrator or DemoOrchestrator()
+    if domain == "cloud":
+        if set(payload) != {"domain", "action"} or action not in ("inspect", "check", "prepare"):
+            raise ValueError("Cloud selection uses a native certificate preview, never browser paths or URLs")
+        return application.execute(OperationRequest(domain, action)).to_dict()
     if domain == "service":
+        if action == "runtime-prepare":
+            # Trusted Deploy composition only; no standalone Presenter action,
+            # caller paths, resource activation or manager restart capability.
+            if set(payload) != {"domain", "action", "target"} or target != VehicleTarget.TEST:
+                raise ValueError("Service input preparation requires current Test only")
+            return application.execute(OperationRequest(domain, action, target)).to_dict()
+        if action == "prepare":
+            fields = {"domain", "action", "team", "content_profile", "without_permissions", "demo_mocked_data"}
+            if (set(payload) != fields or payload["team"] not in ("brake", "tire")
+                    or payload["content_profile"] not in (("v1",) if payload["team"] == "tire" else ("v1", "v2", "v3"))
+                    or payload["without_permissions"] is not True or payload["demo_mocked_data"] is not True):
+                raise ValueError("Presenter services use the accepted synthetic Test profile only")
+            return application.execute(OperationRequest(domain, action, team=payload["team"],
+                content_profile=payload["content_profile"], without_permissions=True, demo_mocked_data=True)).to_dict()
+        if action in ("sign", "upload", "cloud-status"):
+            import re
+            if set(payload) != {"domain", "action", "service_release"} or not isinstance(payload["service_release"], str) or not re.fullmatch(r"(?:brake|tire)/[0-9]{1,9}\.[0-9]{1,9}\.[0-9]{1,9}", payload["service_release"]):
+                raise ValueError("Service publication requires a prepared release handle")
+            return application.execute(OperationRequest(domain, action, service_release=payload["service_release"])).to_dict()
+        if action == "assign":
+            from .status import object_id
+            if set(payload) != {"domain", "action", "service_id", "target"} or target != VehicleTarget.TEST:
+                raise ValueError("Service assignment requires current Test and its catalog identity")
+            return application.execute(OperationRequest(domain, action, target, service_id=object_id(payload["service_id"]))).to_dict()
+        if action == "releases":
+            if set(payload) != {"domain", "action"}:
+                raise ValueError("Release receipts accept no caller paths")
+            return application.execute(OperationRequest(domain, action)).to_dict()
         expected = {"domain", "action"} | ({"service_id"} if action == "status" else set())
         if "profile" in payload:
             expected.add("profile")
@@ -73,9 +105,10 @@ def execute_operation(
             raise ValueError("Workspace accepts no paths, targets or caller-selected windows")
         return application.execute(OperationRequest(domain, action)).to_dict()
     if domain == "simulation" and action in ("start", "stop"):
-        if set(payload) != {"domain", "action"}:
+        if (set(payload) not in ({"domain", "action"}, {"domain", "action", "target"})
+                or ("target" in payload and target != VehicleTarget.TEST)):
             raise ValueError("Simulation uses only the owned current environment")
-        return application.execute(OperationRequest(domain, action)).to_dict()
+        return application.execute(OperationRequest(domain, action, target)).to_dict()
     if domain == "environment" and action == "prepare":
         if set(payload) != {"domain", "action", "target", "current"}:
             raise ValueError("Prepare requires only an explicit target and current vehicle")

@@ -31,6 +31,33 @@ class DemoOrchestrator:
         selection_error = request.selection_error()
         if selection_error:
             return OperationResult(operation, OperationState.BLOCKED, selection_error)
+        if request.domain == "cloud" and request.action in ("check", "prepare"):
+            if any((request.target, request.certificate, request.image, request.profile, request.expected_domain)):
+                return OperationResult(operation, OperationState.BLOCKED, "CLOUD_SETUP_USES_CONFIGURED_TEST_CONTEXT")
+            from .cloud_setup import CloudSetup
+            try:
+                setup = CloudSetup(self.unit_service)
+                data = setup.prepare() if request.action == "prepare" else setup.check()
+                result_state = (OperationState.OBSERVED if request.action == "check" else
+                    OperationState.COMPLETED if data["stage"] == "READY" else OperationState.BLOCKED)
+                return OperationResult(operation, result_state,
+                    "Test Cloud prerequisites; no provisioning, publication, Subject assignment or Production change.", data=data)
+            except EnvironmentError as error:
+                return OperationResult(operation, OperationState.BLOCKED, str(error))
+            except (OSError, ValueError, TypeError, KeyError):
+                return OperationResult(operation, OperationState.BLOCKED, "CLOUD_SETUP_UNAVAILABLE")
+        if request.domain == "cloud" and request.action in ("inspect", "select"):
+            from .cloud_connection import CloudConnection
+            try:
+                connection = CloudConnection(self.environment_service)
+                data = (connection.select(request.certificate, request.expected_domain) if request.action == "select"
+                        else connection.inspect(request.certificate))
+                return OperationResult(operation, OperationState.COMPLETED if request.action == "select" else OperationState.OBSERVED,
+                    "Certificate-derived Test Cloud selection; no Cloud mutation, VM restart or provisioning.", data=data)
+            except EnvironmentError as error:
+                return OperationResult(operation, OperationState.BLOCKED, str(error))
+            except (OSError, ValueError, TypeError, KeyError):
+                return OperationResult(operation, OperationState.BLOCKED, "CLOUD_CONNECTION_UNAVAILABLE")
         if operation in ("service.runtime-prepare", "service.runtime-activate"):
             if (request.target != VehicleTarget.TEST or request.current or request.image or request.image_path
                     or request.profile or request.team or request.service_id or request.content_profile or request.component_version):
@@ -98,6 +125,14 @@ class DemoOrchestrator:
                 return OperationResult(operation, OperationState.BLOCKED, str(error))
             except (OSError, ValueError, KeyError, TypeError):
                 return OperationResult(operation, OperationState.BLOCKED, "SERVICE_PUBLICATION_UNAVAILABLE")
+        if operation == "service.releases":
+            from .service_packages import ServicePackages
+            try:
+                return OperationResult(operation, OperationState.OBSERVED,
+                    "Prepared release receipts; no payload hashing, Cloud read or mutation.",
+                    data=ServicePackages(self.environment_service).receipts())
+            except (EnvironmentError, OSError, ValueError, KeyError, TypeError):
+                return OperationResult(operation, OperationState.BLOCKED, "SERVICE_RECEIPTS_UNAVAILABLE")
         if operation == "service.prepare":
             from .service_packages import ServicePackages
             import subprocess
@@ -121,7 +156,9 @@ class DemoOrchestrator:
                 return OperationResult(operation, OperationState.BLOCKED, "SERVICE_ASSIGNMENT_USES_CATALOG_ID_AND_TEST_ONLY")
             try:
                 from .service_assignment import ServiceAssignment
-                data = ServiceAssignment(self.environment_service, self.unit_service).assign(request.service_id)
+                assign = ServiceAssignment(self.environment_service, self.unit_service).assign
+                data = (assign(request.service_id, request.confirm_bind_not_submitted_at)
+                    if request.confirm_bind_not_submitted_at is not None else assign(request.service_id))
                 return OperationResult(operation, OperationState.COMPLETED if data["state"] == "ASSIGNED" else
                     OperationState.BLOCKED if data["state"] == "BLOCKED" else OperationState.PARTIAL,
                     "OEM desired assignment only; Cloud runtime and product readiness remain separate.", target="test", data=data)

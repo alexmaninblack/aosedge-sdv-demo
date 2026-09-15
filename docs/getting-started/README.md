@@ -27,7 +27,7 @@ a newcomer from interpreting a target architecture as a finished launcher.
 
 Read the accepted design chain in this order:
 
-1. [High-Level Architecture 1.6](../architecture/high-level-architecture.md)
+1. [High-Level Architecture 1.7](../architecture/high-level-architecture.md)
 2. [Demo Scenario 2.0](../demo/staged-post-sop-brake-health-demo-scenarios.md)
 3. [Demo Scenario Architecture Flows 2.1](../architecture/demo-scenario-architecture-flows.md)
 4. [System Requirements and Traceability 2.1](../requirements/system-requirements-and-traceability.md)

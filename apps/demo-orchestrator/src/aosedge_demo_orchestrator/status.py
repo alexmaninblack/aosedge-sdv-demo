@@ -79,8 +79,19 @@ def load_configuration(root, config_path=None):
     data = read_json(path) if custom else {"schemaVersion": 1}
     if not isinstance(data, dict) or type(data.get("schemaVersion")) is not int or data["schemaVersion"] != 1:
         raise ValueError("Unsupported configuration")
-    if set(data) - {"schemaVersion", "vehicles", "cloudProfiles", "cloudPython"}:
+    if set(data) - {"schemaVersion", "vehicles", "cloudProfiles", "cloudPython", "cloudConnection", "cloudSetupContexts", "componentBaselineCertificate"}:
         raise ValueError("Unknown configuration field")
+    from .cloud_connection import LEGACY_DOMAIN, domain_name, cloud_binding, selected_domain
+    connection = data.get("cloudConnection")
+    if connection is not None and (not isinstance(connection, dict)
+            or set(connection) - {"domain", "source", "owners"} or connection.get("source") != "OEM_CERTIFICATE_ORGANIZATION"):
+        raise ValueError("Invalid Cloud connection")
+    if connection and "owners" in connection:
+        if not isinstance(connection["owners"], dict) or set(connection["owners"]) != {"oem", "sp"}:
+            raise ValueError("Invalid Cloud tenant context")
+        for owner in connection["owners"].values():
+            object_id(owner)
+    domain = domain_name(connection["domain"]) if connection else LEGACY_DOMAIN
     journal = skipped("CURRENT_RUN_JOURNAL", "NO_MANAGED_CURRENT_RUN")
     managed_owner = None
     vehicles = data.get("vehicles", {})
@@ -98,8 +109,10 @@ def load_configuration(root, config_path=None):
                 or (not state["vehicles"] and state.get("scope") != "FACTORY_COPY_ONLY")
                 or set(state["vehicles"]) - {"test", "production"}):
             raise ValueError("Unsupported current journal")
-        if state.get("cloudBinding"):
-            managed_owner = object_id(state["cloudBinding"]["ownerId"])
+        if selected_domain(state) != domain:
+            raise ValueError("Cloud selection requires reconciliation")
+        if cloud_binding(state):
+            managed_owner = object_id(cloud_binding(state)["ownerId"])
         vehicles = {"test": None, "production": None}
         for role, entry in state["vehicles"].items():
             expected = ".local/demo-current/" + ("validation" if role == "test" else role) + ".qcow2"
@@ -110,6 +123,7 @@ def load_configuration(root, config_path=None):
                 raise ValueError("Invalid manufactured role")
             object_id(entry.get("localVmId"))
             vehicles[role] = {"overlay": expected}
+            vehicles[role]["cloudHost"] = domain if role == "test" else LEGACY_DOMAIN
             for key in ("unitId", "unitSetId"):
                 if entry.get(key):
                     vehicles[role][key] = object_id(entry[key])
@@ -130,13 +144,15 @@ def load_configuration(root, config_path=None):
                 vehicles[role].update(imageVersion=factory["version"], imageSha256=factory["sha256"])
         journal = observation("CURRENT_RUN_JOURNAL", {"stage": state["stage"],
                               "runId": state.get("vehicles", {}).get("test", {}).get("localVmId"),
-                              "registrationComplete": state.get("vehicles", {}).get("test", {}).get("cloud", {}).get("lifecycle") == "ONLINE",
+                              "registrationStarted": bool((vehicles.get("test") or {}).get("systemUid")) and (vehicles.get("test") or {}).get("cloudLifecycle") in ("PROVISIONING", "ONLINE"),
+                              "registrationComplete": (state.get("vehicles", {}).get("test", {}).get("cloud") or {}).get("lifecycle") == "ONLINE",
                               "lifecycle": {key: value for key, value in (state.get("demoLifecycle") or {}).items()
                                             if key in ("action", "state", "phase", "reason", "image")},
                               "roles": sorted(state["vehicles"]), "currentVehicle": state.get("currentVehicle"),
                               "candidates": [dict(version=version, contentProfile=row["prepare"]["contentProfile"],
-                                  signed=row.get("signed", {}).get("state") == "COMPLETED",
-                                  submitted=bool(row.get("deploymentId")), preparedSha256=row["prepare"].get("sha256"))
+                                  signed=False,
+                                  submitted=bool(row.get("deploymentId")) and row.get("cloudDomain", domain) == domain,
+                                  cloudDomain=domain, preparedSha256=row["prepare"].get("sha256"))
                                   for version, row in state.get("componentOperations", {}).items()
                                   if row.get("prepare", {}).get("state") == "COMPLETED"
                                   and row["prepare"].get("contentProfile") in ("v1", "v2", "v3")],
@@ -198,19 +214,35 @@ def load_configuration(root, config_path=None):
     for name, profile in profiles.items():
         if not re.fullmatch(r"[a-z][a-z0-9-]{0,39}", name) or not isinstance(profile, dict):
             raise ValueError("Invalid Cloud profile")
-        if set(profile) - {"credential", "expectedRole", "expectedOwnerId"}:
+        if set(profile) - {"credential", "expectedRole", "expectedOwnerId", "cloudDomain"}:
             raise ValueError("Invalid Cloud profile field")
         if profile.get("expectedRole") not in ("oem", "service provider"):
             raise ValueError("Unknown Cloud role")
         normalized[name] = dict(profile, credential=_path(profile["credential"], root))
+        if connection:
+            normalized[name]["cloudDomain"] = domain
+        elif "cloudDomain" in profile:
+            domain_name(profile["cloudDomain"])
         if "expectedOwnerId" in profile:
             normalized[name]["expectedOwnerId"] = object_id(profile["expectedOwnerId"])
         if managed_owner and name == "oem-delivery":
             if profile.get("expectedOwnerId") not in (None, managed_owner):
                 raise ValueError("Managed OEM owner conflicts with configured profile")
             normalized[name]["expectedOwnerId"] = managed_owner
+    if journal["value"] and "oem-delivery" in normalized:
+        from .package_artifacts import credential_stamp
+        stamp = credential_stamp(normalized["oem-delivery"]["credential"])
+        for candidate in journal["value"]["candidates"]:
+            record = state["componentOperations"][candidate["version"]]
+            owner = normalized["oem-delivery"].get("expectedOwnerId")
+            if owner and record.get("ownerId") not in (None, owner):
+                candidate["submitted"] = False
+            signed = state["componentOperations"][candidate["version"]].get("signed", {})
+            candidate["signed"] = bool(stamp and signed.get("credentialStamp") == stamp
+                and signed.get("cloudDomain") == domain and signed.get("state") == "COMPLETED")
     return {
-        "vehicles": resolved, "cloudProfiles": normalized,
+        "vehicles": resolved, "cloudProfiles": normalized, "cloudConnection": connection,
+        "componentBaselineCertificate": _path(data.get("componentBaselineCertificate", "~/.aos/security/aos-user-oem.pem"), root),
         "cloudPython": _path(data.get("cloudPython", "~/.aos/venv/bin/python3"), root),
         "configuration": "CURRENT_RUN_JOURNAL" if journal["value"] else (
             "LOCAL_PROFILE" if custom else "CANONICAL_LAYOUT_DEFAULTS"),

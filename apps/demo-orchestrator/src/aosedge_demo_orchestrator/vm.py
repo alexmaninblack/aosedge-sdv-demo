@@ -33,7 +33,7 @@ def access_path(root, role):
 
 
 def qmp(path, command, timeout=3, arguments=None):
-    if command not in ("query-status", "system_powerdown", "human-monitor-command", "set_link"):
+    if command not in ("query-status", "system_powerdown", "human-monitor-command", "set_link", "quit"):
         raise EnvironmentError("QMP_COMMAND_NOT_ALLOWED")
     if command == "set_link" and (not isinstance(arguments, dict) or set(arguments) != {"name", "up"}
                                     or arguments["name"] != "guestnet" or type(arguments["up"]) is not bool):
@@ -300,9 +300,15 @@ class VMService:
             if not roles:
                 raise EnvironmentError("VM_TARGET_NOT_CREATED")
             self._validate(state, action, roles)
+            lifecycle = state.get("demoLifecycle") or {}
+            retiring = (action == "stop" and target == "test" and lifecycle.get("action") == "retire"
+                and lifecycle.get("target") == "test" and lifecycle.get("phase") == "stop-test")
+            preserve_cloud_attempt = False
             for operation in state["operations"][1:]:
                 if operation.get("class") == "UNIT_LIFECYCLE":
-                    raise EnvironmentError("UNIT_OPERATION_RECONCILIATION_REQUIRED")
+                    if not retiring or operation.get("target") != ["test"] or len(state["operations"]) != 2:
+                        raise EnvironmentError("UNIT_OPERATION_RECONCILIATION_REQUIRED")
+                    preserve_cloud_attempt = True
                 previous = operation.get("target", [])
                 if not previous or any(role not in roles for role in previous):
                     raise EnvironmentError("VM_PREVIOUS_TARGETS_REQUIRE_RECONCILIATION")
@@ -314,11 +320,15 @@ class VMService:
                 for role in roles:
                     if not (access_path(self.root, role) / "known_hosts").exists() and self.password_provider:
                         passwords[role] = self.password_provider(role)
-            state["operations"] = state["operations"][:1] + [{
+            local_operation = {
                 "id": str(uuid4()), "class": "VM_" + action.upper(), "team": "DEMO_SOLUTION",
                 "authority": "LOCAL_OPERATOR", "target": list(roles), "knownExternalIds": {},
                 "requestFingerprint": action + ":" + target, "resourceKeys": ["CURRENT_RUN"],
-                "state": "SUBMITTING", "reconciliation": "UNOBSERVABLE", "lastRead": None}]
+                "state": "SUBMITTING", "reconciliation": "UNOBSERVABLE", "lastRead": None}
+            # Finish has its own durable stop checkpoint. Keep a lost Cloud
+            # response intact for later reconciliation, but stop the VM now.
+            if not preserve_cloud_attempt:
+                state["operations"] = state["operations"][:1] + [local_operation]
             self._save(state)
             launch_errors = {}
             started_at = {}
@@ -351,7 +361,9 @@ class VMService:
             state["stage"] = "LOCAL_ACTIVE" if any(
                 item.get("runtime", {}).get("state") in ("RUNNING", "STARTING", "STOPPING") for item in state["vehicles"].values()
             ) else "LOCAL_STOPPED"
-            if infrastructure["state"] == "COMPLETED" and all(item["state"] == "COMPLETED" for item in results.values()):
+            if preserve_cloud_attempt:
+                pass
+            elif infrastructure["state"] == "COMPLETED" and all(item["state"] == "COMPLETED" for item in results.values()):
                 state["operations"] = state["operations"][:1]
             else:
                 state["operations"][-1]["state"] = "UNCERTAIN"
@@ -403,16 +415,14 @@ class VMService:
             result["readCompletedAt"] = now()
         return result
 
-    def _initialize_factory_role(self, state, role):
-        from .source import SourceDriver
-        driver = SourceDriver(self)
-        with driver.operation(timeout=10):
-            return driver.guest(state, role, "factory-role")
-
     def _start(self, state, role, timeout, password):
+        from .cloud_connection import guest_configuration
         item = state["vehicles"][role]
         runtime = item["runtime"]
         command = self._command(state, role)
+        cloud = guest_configuration(self, state, role, vm_start=True)
+        if cloud is not None:
+            self.progress(role + ": debug hosts and Cloud endpoint will be applied before guest role/DNS readiness")
         self.progress(role + ": VM process running; waiting for console/SSH/DNS readiness")
         deadline = time.monotonic() + timeout
         monitor, serial = self._paths(role)
@@ -430,12 +440,13 @@ class VMService:
                     enroll_serial(serial, access, item["sshPort"], deadline, password,
                                   progress=lambda stage: self.progress(role + ": " + stage))
                 if (access / "known_hosts").exists():
-                    guest = read_guest(access, item["sshPort"], min(5, max(1, deadline - time.monotonic())))
+                    guest = read_guest(access, item["sshPort"], min(10, max(1, deadline - time.monotonic())),
+                                       factory_role=role,
+                                       **({"cloud_host": cloud["domain"], "cloud_configuration": cloud} if cloud else {}))
                 elif running and password is None:
                     return {"state": "PARTIAL", "processState": "RUNNING", "reason": "SSH_ENROLLMENT_REQUIRES_INTERACTIVE_PASSWORD",
                             "sshPort": item["sshPort"]}
                 if guest["guestReady"] and guest["guestDnsReady"]:
-                    guest["factoryRole"] = self._initialize_factory_role(state, role)
                     runtime["factoryRole"] = guest["factoryRole"]
                     return {"state": "COMPLETED", "processState": "RUNNING", **guest,
                             "sshPort": item["sshPort"], "access": str(access.relative_to(self.root))}
@@ -449,6 +460,11 @@ class VMService:
     def _stop(self, state, role, timeout):
         item = state["vehicles"][role]
         runtime = item["runtime"]
+        lifecycle = state.get("demoLifecycle") or {}
+        retiring = (role == "test" and lifecycle.get("target") == "test" and lifecycle.get("action") == "retire"
+            and lifecycle.get("phase") == "stop-test" and state.get("currentVehicle") is None
+            and (state.get("source") or {}).get("state") in (None, "STOPPED"))
+        timed_out = retiring and runtime.get("state") == "STOPPING" and lifecycle.get("reason") == "VM_STOP_TIMEOUT_NO_FORCE_USED"
         command = self._command(state, role)
         pid = self._owned_pid(command, str(self.root / item["overlay"]))
         if pid is None:
@@ -459,15 +475,37 @@ class VMService:
         runtime.update(state="STOPPING", everStarted=True, stopProof=None)
         self._save(state)
         self.progress(role + ": requesting graceful shutdown")
-        guest = read_guest(access_path(self.root, role), item["sshPort"], min(8, timeout), shutdown=True)
+        guest = (dict(guestReady=False, unprovisioned=False) if timed_out else
+            read_guest(access_path(self.root, role), item["sshPort"], min(8, timeout), shutdown=True))
         runtime["shutdownUnprovisioned"] = guest["guestReady"] and guest["unprovisioned"]
         self._save(state)
-        if not guest["guestReady"]:
-            qmp(self._paths(role)[0], "system_powerdown")
-        deadline = time.monotonic() + timeout
+        if not guest["guestReady"] and not timed_out:
+            try:
+                qmp(self._paths(role)[0], "system_powerdown")
+            except (OSError, ValueError):
+                if not retiring:
+                    raise
+        deadline = time.monotonic() + (0 if timed_out else min(timeout, 8) if retiring else timeout)
         while self._owned_pid(command, str(self.root / item["overlay"])):
             if time.monotonic() >= deadline:
-                raise EnvironmentError("VM_STOP_TIMEOUT_NO_FORCE_USED")
+                if not retiring:
+                    raise EnvironmentError("VM_STOP_TIMEOUT_NO_FORCE_USED")
+                # This overlay is explicitly being destroyed by Finish. QMP
+                # quit powers off only the exact owned emulator; no process-name
+                # kill, reboot or successful guest shutdown is fabricated.
+                self.progress("test: guest shutdown stalled; powering off the retiring VM via QEMU")
+                runtime.update(shutdownUnprovisioned=False, stopProof=None)
+                self._save(state)
+                try:
+                    qmp(self._paths(role)[0], "quit")
+                except (OSError, ValueError):
+                    pass  # QEMU can close the socket before returning a reply.
+                deadline = time.monotonic() + 5
+                while self._owned_pid(command, str(self.root / item["overlay"])):
+                    if time.monotonic() >= deadline:
+                        raise EnvironmentError("VM_RETIRE_POWER_OFF_NOT_CONFIRMED")
+                    time.sleep(.1)
+                break
             time.sleep(0.25)
         self.environment._assert_unheld(self.root / item["overlay"])
         runtime.update(state="STOPPED", pid=None)

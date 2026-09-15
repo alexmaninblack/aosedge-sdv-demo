@@ -8,7 +8,7 @@
 - Prepared: 2026-08-25
 - Accepted: 2026-08-26
 - Owner: Demo Solution Team with Platform Team and Function Teams 1 and 2
-- Architecture input: [High-Level Architecture 1.6](../../architecture/high-level-architecture.md)
+- Architecture input: [High-Level Architecture 1.7](../../architecture/high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.0](../staged-post-sop-brake-health-demo-scenarios.md)
 - Flow input: [Architecture Flows 2.1](../../architecture/demo-scenario-architecture-flows.md)
 - Interaction decision: [D4-026.7 Linear Audience Interaction Model](../../requirements/d4-decision-register.md#d4-026-7)
@@ -26,7 +26,7 @@
 - Retained earlier 2.5-contract artifact (current Studio artifact linked below):
   [Accepted Interaction Mockup](aosedge-demo-interaction-mockup-2-4.html)
 - Layout review artifact predating this complete contract: [Linear-flow HTML mockup](aosedge-demo-linear-flow-mockup.html)
-- UI implementation authorized: no
+- UI implementation authorized: yes — 9 September 2026; the 13 September Studio convergence increment and remaining acceptance gates are recorded in the [current delivery plan](../../planning/active/demo-studio-delivery-plan.md#current-delivery-position--13-september-2026).
 
 <a id="ui-studio-026--current-test-studio-contract"></a>
 
@@ -39,8 +39,10 @@ The [current 2.8 mockup](aosedge-demo-interaction-mockup-2-8.html) simulates thi
 contract with the reviewed B2 visuals; [2.6](aosedge-demo-interaction-mockup-2-6.html)
 and [2.7](aosedge-demo-interaction-mockup-2-7.html) remain unchanged references.
 The [2.8 corrective re-audit](../../research/demo-studio-action-audit.md#mockup-28-corrective-re-audit)
-does not establish working Cloud or product integration. Application
-implementation is still gated by the re-audit and explicit authorization.
+does not establish working Cloud or product integration. The user subsequently
+authorized implementation on 9 September; the current delivery plan owns
+implementation evidence and remaining acceptance gates. Mockup review alone
+does not close those gates.
 
 ### Applicability and replacement map
 
@@ -71,6 +73,8 @@ waiver of platform requirements outside the bounded demo.
    service slots remain empty; factory VDP metadata is not a Cloud observation.
 2. **Connect** starts/reuses simulator, Gateway and native surfaces and initially
    connects Test in stationary Manual. No automatic Autopilot or Safe Stop.
+   Presenter simulation Start/Stop explicitly use `--target test`, preserving
+   any existing Production source gate.
 3. **Full story** shows Platform Prepare → Sign → Publish v1 before Provision.
    **Warehouse variant** may publish a higher VDP profile before Provision;
    the eligible latest release may arrive first. Do not force v1, downgrade,
@@ -85,7 +89,10 @@ waiver of platform requirements outside the bounded demo.
    Unit Pending and Installed. Apply is owned by the vehicle's Safe Stop policy,
    not a Cloud panel button. The Cloud component inventory has no VDP-process
    run-state field: display runtime Not reported, with functional proof separate.
-6. **Service** first Publish uses its team's SP. Deploy to Test uses OEM: resolve
+6. **Service** first Publish uses its team's SP. Deploy to Test first composes
+   the existing `service runtime-prepare test` operation; preparation failure
+   prevents assignment and unchanged inputs are reused without restarting SM.
+   It then uses OEM: resolve
    the retained dedicated Subject, bind the exact current Test `system_uid`,
    add only the requested `service_ids:[service UUID]`, preserve its peer, then
    read assignment and expected service version/instance runtime. The payload
@@ -114,12 +121,28 @@ waiver of platform requirements outside the bounded demo.
     product records, stop backends and remove working files. Preserve factory
     image, permanent infrastructure, Subject, published releases and minimal
     release-number continuity. Never reuse a retired overlay.
+    **14 September 2026 abnormal-Finish amendment:** Finish, unlike Park,
+    destroys Test without waiting for successful VDP/service installation,
+    publication, CM readiness or a Safe Stop observation. Stop the local
+    simulator, VM and backends before Cloud retirement. A stalled guest may
+    be powered off through its exact owned QMP endpoint, only for Finish.
+    See the shared Demo Control
+    [retirement contract](../../architecture/demo-control.md#finish-after-an-abnormal-run--authorized-14-september-2026).
+    Retained Brake/Tire Subjects may be unused in a new run: their exact
+    identities and absence of assigned/reported Units are verified after local
+    shutdown, without inventing service assignments. Existing incomplete or
+    uncertain assignments still block. Finish retains the actual failing step
+    and reason; **Continue Finish** resumes remaining work. Cloud Offline is
+    awaited only where required by Unit deprovisioning, not by unrelated local
+    cleanup or after confirmed Unit deletion.
 11. **Interrupted action** preserves recorded identity, bundle result and
     completed stages. Reconcile observes first and resumes only remaining work;
     it cannot turn Processing into Published or replay an uncertain upload.
     A confirmed publication rejection offers a corrected new release. An
-    unresolved installation failure remains a truthful stop requiring engineering
-    intervention; forced cleanup/campaign recovery is not claimed implemented.
+    unresolved installation failure requires engineering intervention to repair
+    the update; it does not prevent the explicitly confirmed, owned-Test Finish
+    described in item 10. General campaign recovery and replay of an uncertain
+    external operation are not implemented by this scoped destructive exit.
 12. **Versions** are allocated by Demo Control, not entered by the operator.
     Persist reservations/used numbers and verified profile bindings across
     ordinary cleanup. Number allocation details do not appear as audience copy.

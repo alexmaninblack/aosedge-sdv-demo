@@ -17,6 +17,21 @@ return (button returned of reply) & linefeed & (text returned of reply)
 '''
 
 
+def choose_cloud_certificate(runner=subprocess.run):
+    """Only a native file picker can introduce a credential path from the UI."""
+    if sys.platform != "darwin":
+        raise EnvironmentError("CLOUD_CERTIFICATE_PICKER_REQUIRES_MACOS")
+    script = 'activate\nreturn POSIX path of (choose file with prompt "Choose the OEM PKCS#12 certificate for Test Cloud" of type {"p12", "pfx"})'
+    try:
+        result = runner(["/usr/bin/osascript", "-e", script], capture_output=True, text=True, timeout=180)
+    except subprocess.TimeoutExpired:
+        raise EnvironmentError("CLOUD_CERTIFICATE_PICKER_TIMED_OUT") from None
+    path = result.stdout.rstrip("\n")
+    if result.returncode or not path.startswith("/") or any(char in path for char in "\r\n\x00"):
+        raise EnvironmentError("CLOUD_CERTIFICATE_SELECTION_CANCELLED")
+    return path
+
+
 class Keychain:
     def __init__(self):
         if sys.platform != "darwin":

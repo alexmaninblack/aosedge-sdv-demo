@@ -99,9 +99,26 @@ class PublicInputTests(unittest.TestCase):
             self.assertEqual(0o755, directory.stat().st_mode & 0o777)
             for path in directory.iterdir():
                 self.assertEqual(0o444, path.stat().st_mode & 0o777)
-        self.assertTrue(guest.project(self.request)["noOp"])
+        with patch.object(guest, "snapshot", wraps=guest.snapshot) as observe, patch.object(guest.os, "fsync") as sync:
+            self.assertTrue(guest.project(self.request)["noOp"])
+            self.assertEqual(2, observe.call_count)
+            sync.assert_not_called()
         self.assertEqual(inodes, [path.stat().st_ino for path in paths])
         self.assertEqual(files, {str(path): path.stat().st_ino for directory in paths for path in directory.iterdir()})
+
+    def test_unchanged_repeat_still_rejects_active_transaction_and_source_race(self):
+        guest.project(self.request)
+        files = {path: path.read_bytes() for path in guest.PUBLIC.rglob("*") if path.is_file()}
+        transaction = guest.STORE / "state/transaction.json"
+        transaction.write_text("{}")
+        with self.assertRaisesRegex(ValueError, "COMPONENT_TRANSACTION_ACTIVE"):
+            guest.project(self.request)
+        transaction.unlink()
+        original = guest.snapshot(self.request)
+        with patch.object(guest, "snapshot", side_effect=[original, dict(original, pid="99")]):
+            with self.assertRaisesRegex(ValueError, "SOURCE_CHANGED"):
+                guest.project(self.request)
+        self.assertEqual(files, {path: path.read_bytes() for path in files})
 
     def test_committed_refresh_changes_files_not_directories(self):
         guest.project(self.request)
@@ -231,11 +248,25 @@ class PublicInputTests(unittest.TestCase):
 
 
 class InputBoundaryTests(unittest.TestCase):
-    def test_cli_engineering_mutation_not_browser_dashboard(self):
+    def test_input_preparation_is_fixed_test_step_not_standalone_browser_action(self):
         request = request_from_arguments(build_parser().parse_args(["service", "runtime-prepare", "test"]))
         self.assertEqual("test", request.target.value)
+        application = Mock()
+        execute_operation(dict(domain="service", action="runtime-prepare", target="test"), application)
+        self.assertEqual(request, application.execute.call_args.args[0])
+        application.reset_mock()
+        for extra in (dict(target="production"), dict(target="all"), dict(target=None),
+                dict(restart_sm=True), dict(path="/tmp/input"), dict(team="brake")):
+            with self.assertRaises(ValueError):
+                execute_operation(dict(dict(domain="service", action="runtime-prepare", target="test"), **extra), application)
+        for action in ("runtime-activate", "runtime-inspect"):
+            with self.assertRaises(ValueError):
+                execute_operation(dict(domain="service", action=action, target="test"), application)
+        application.execute.assert_not_called()
+        from aosedge_demo_orchestrator.presenter_operations import operation_plan
+        from uuid import uuid4
         with self.assertRaises(ValueError):
-            execute_operation(dict(domain="service", action="runtime-prepare", target="test"), Mock())
+            operation_plan(dict(requestId=str(uuid4()), sessionId=str(uuid4()), action="runtime-prepare"))
 
     def test_host_reconciles_native_identity_before_guest_write_no_cloud(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -252,8 +283,26 @@ class InputBoundaryTests(unittest.TestCase):
                 with self.assertRaisesRegex(EnvironmentError, "IDENTITY_MISMATCH"):
                     service.prepare("test")
                 self.assertEqual(1, driver.return_value.guest.call_count)
+                self.assertEqual({"identityOnly": True}, driver.return_value.guest.call_args.kwargs)
                 service.identity.return_value = "native-unit"
                 service.prepare("test")
                 self.assertEqual("service-runtime-prepare", driver.return_value.guest.call_args.args[2])
             with self.assertRaisesRegex(EnvironmentError, "TEST_ONLY"):
                 service.prepare("production")
+
+    def test_activation_keeps_full_runtime_inspection(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        root = Path(temporary.name)
+        environment = EnvironmentService(root, catalog=SimpleNamespace(project=root / "catalog"))
+        environment._directory(".run/demo-current")
+        atomic_json(root / JOURNAL, dict(vehicles=dict(test=dict(unitId="cloud-unit", systemUid="native-unit", localVmId="local-vm"))))
+        service = ServiceInputs(environment)
+        service.identity = Mock(return_value="native-unit")
+        with patch("aosedge_demo_orchestrator.service_inputs.SourceDriver") as driver:
+            driver.return_value.guest.return_value = dict(iamPublicServerUrl="main:8090", iamLocalEndpoint=dict(loopback8090Reachable=True),
+                iamFileIdentifier=dict(plugin="fileidentifier", path="/etc/machine-id", systemUid="native-unit"),
+                resources=[dict(name=name) for name in ("brake-runtime-inputs", "tire-runtime-inputs")])
+            service.prepare("test", activate=True)
+            self.assertEqual({"identityOnly": False}, driver.return_value.guest.call_args_list[0].kwargs)
+            self.assertEqual("service-runtime-activate", driver.return_value.guest.call_args.args[2])

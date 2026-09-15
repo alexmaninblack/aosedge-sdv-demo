@@ -55,3 +55,18 @@ test("mock-labelled vehicle telemetry is rejected", async () => {
   expect(await screen.findByText(/Backend unavailable/)).toBeVisible();
   expect(screen.queryByText("brake.health.assessment")).not.toBeInTheDocument();
 });
+
+test("Tire result uses its actual confidence, source time and content provenance fields", async () => {
+  const sourceTime = "2026-09-13T12:10:08.150Z";
+  const value = { ...observation(), team: "tire" };
+  Object.assign(value.observations.mockData.data.records[0].message, {
+    messageType: "TIRE_HEALTH_ASSESSMENT", sourceEventTime: sourceTime,
+    content: { conditionScore: 40, confidencePercent: 75, currentBand: "INSPECTION_RECOMMENDED", provenance: "DEMO_SYNTHETIC" },
+  });
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => value }));
+  render(<BackendEvidence team="tire" unitSystemUid="current-test" expectedVersion="7.0.0" />);
+  expect(await screen.findByText("Confidence · 75%")).toBeVisible();
+  expect(screen.getByText(new Date(sourceTime).toLocaleTimeString())).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Inspect latest result ↗" }));
+  expect(screen.getByRole("dialog")).toHaveTextContent("DEMO SYNTHETIC");
+});

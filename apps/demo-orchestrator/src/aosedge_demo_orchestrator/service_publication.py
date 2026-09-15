@@ -9,6 +9,7 @@ from .releases import number
 from .service_cloud import service_view, version_view, unit_view
 from .status import now, object_id
 from .unit_cloud import Cloud, CloudFailure
+from concurrent.futures import ThreadPoolExecutor
 
 
 def snapshot(cloud, request, preflight=False):
@@ -20,17 +21,21 @@ def snapshot(cloud, request, preflight=False):
         raise CloudFailure("SERVICE_TEAM_INVALID")
     number(version)
     reads = Reads(cloud)
-    services = [service_view(row, cloud.user) for row in reads.pages("services/")]
-    matches = [row for row in services if row["codename"] == codename]
-    if len(matches) > 1 or (request.get("serviceId") and (not matches or matches[0]["id"] != request["serviceId"])):
-        raise CloudFailure("SERVICE_CLOUD_BINDING_CHANGED")
-    service_id = matches[0]["id"] if matches else None
-    versions = []
-    if service_id:
-        cloud.require("services_service_versions_list")
-        versions = [version_view(row) for row in reads.pages("services/" + service_id + "/service-versions/")]
     deployment_id = object_id(request["deploymentId"]) if request.get("deploymentId") else None
-    bundles = reads.pages("deployment-bundles/", exact_id=deployment_id)
+    # Bundle discovery is independent of catalog/versions. Keep every identity,
+    # coverage and recipient guard, but overlap these two read-only paths.
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        bundle_read = pool.submit(reads.pages, "deployment-bundles/", exact_id=deployment_id)
+        services = [service_view(row, cloud.user) for row in reads.pages("services/")]
+        matches = [row for row in services if row["codename"] == codename]
+        if len(matches) > 1 or (request.get("serviceId") and (not matches or matches[0]["id"] != request["serviceId"])):
+            raise CloudFailure("SERVICE_CLOUD_BINDING_CHANGED")
+        service_id = matches[0]["id"] if matches else None
+        versions = []
+        if service_id:
+            cloud.require("services_service_versions_list")
+            versions = [version_view(row) for row in reads.pages("services/" + service_id + "/service-versions/")]
+        bundles = bundle_read.result()
     if not deployment_id:
         bundles = [row for row in bundles if any(isinstance(item, dict) and item.get("codename") == codename
             and item.get("version") == version for item in row.get("items") or [])]

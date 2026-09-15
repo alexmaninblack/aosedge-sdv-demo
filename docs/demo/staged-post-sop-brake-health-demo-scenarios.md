@@ -1628,7 +1628,7 @@ refines only the Brake Health product evolution:
 
 ## Reference Basis
 
-- [High-Level Architecture 1.6](../architecture/high-level-architecture.md)
+- [High-Level Architecture 1.7](../architecture/high-level-architecture.md)
   defines the accepted capability-superset architecture baseline; this
   scenario defines its staged component presence and lifecycle, while
   [Architecture Flows 2.1](../architecture/demo-scenario-architecture-flows.md)

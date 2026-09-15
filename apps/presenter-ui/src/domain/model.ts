@@ -205,9 +205,18 @@ export interface PresenterSnapshot {
   readOnly?: ReadOnlyPresenterView;
 }
 
+export interface ServiceRelease {
+  releaseHandle: string; team: "brake" | "tire"; version: string; contentProfile: "v1" | "v2" | "v3";
+  serviceId: string | null; runId?: string | null; preparedAt?: string; cloudDomain?: string; signed: boolean; submitted: boolean;
+  sha256?: string | null; demoMockedData: boolean;
+  publication: { stage?: string | null; serviceId?: string | null; versionId?: string | null; observedAt?: string | null; reason?: string | null };
+}
 export interface LocalDemoView {
+  serviceReleases?: ServiceRelease[];
+  serviceReleasesState?: string;
   runId?: string | null;
   registrationComplete?: boolean;
+  registrationStarted?: boolean;
   lifecycle?: { action?: string; state?: string; phase?: string; image?: string; reason?: string } | null;
   candidates?: { version: string; contentProfile: "v1" | "v2" | "v3"; signed: boolean; submitted: boolean; preparedSha256: string }[];
   preparation?: { image?: string; phase?: string; version?: string; contentProfile?: string; completedSteps?: string[]; updatedAt?: string; reason?: string } | null;

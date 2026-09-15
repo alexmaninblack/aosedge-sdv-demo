@@ -412,6 +412,22 @@ class ImagesAndCreateTests(unittest.TestCase):
         self.assertEqual("REMOVED", self.service.retire(cloud_check=reconciled)["outcome"])
         self.assertFalse(run.exists())
 
+    def test_retire_single_unprovisioned_test_reconciles_upload(self):
+        state = self.create("test")
+        state["componentOperations"] = {"61.0.0": dict(upload=dict(attemptStarted=True, state="RESPONDED"))}
+        atomic_json(self.root / JOURNAL, state)
+        def confirmed(current):
+            self.assertIsNone(current["vehicles"]["test"]["unitId"])
+            self.assertTrue((self.root / current["vehicles"]["test"]["overlay"]).exists())
+            current["componentOperations"]["61.0.0"]["upload"]["state"] = "CONFIRMED"
+            return True
+        with self.assertRaisesRegex(EnvironmentError, "FRESH_CLOUD_RETIREMENT"):
+            self.service.retire(cloud_check=Mock(return_value=False))
+        result = self.service.retire(cloud_check=confirmed)
+        self.assertTrue(result["cloudReadsPerformed"])
+        self.assertEqual("REMOVED", result["outcome"])
+        self.assertFalse((self.root / JOURNAL).exists())
+
     def test_retire_obsolete_send_needs_exact_deleted_target_and_fresh_proof(self):
         state, run = self.source_retirement_fixture()
         send = {"attemptStarted": True, "state": "UNCERTAIN", "unitId": "wrong-target"}

@@ -58,9 +58,19 @@ class OperationRequest:
     demo_mocked_data: bool = False
     restart_sm: bool = False
     restart_cm: bool = False
+    confirm_bind_not_submitted_at: Optional[str] = None
+    certificate: Optional[str] = None
+    expected_domain: Optional[str] = None
 
     def selection_error(self) -> Optional[str]:
         """Validate agreed selectors before any lifecycle adapter is called."""
+        if (self.certificate is not None or self.expected_domain is not None) and self.domain != "cloud":
+            return "CERTIFICATE_SELECTION_USES_CLOUD_ONLY"
+        if self.confirm_bind_not_submitted_at is not None and (
+                not isinstance(self.confirm_bind_not_submitted_at, str)
+                or (self.domain, self.action) != ("service", "assign")
+                or self.target != VehicleTarget.TEST):
+            return "BIND_NON_SUBMISSION_CONFIRMATION_USES_TEST_ASSIGN_ONLY"
         if type(self.restart_cm) is not bool or (self.restart_cm and
                 ((self.domain, self.action) != ("component", "cm-apply") or self.target != VehicleTarget.TEST)):
             return "RESTART_CM_USES_TEST_CM_APPLY_ONLY"

@@ -7,7 +7,7 @@ from unittest import TestCase
 from unittest.mock import Mock
 
 from test_backend_retirement import BackendRetirementTests, TOKEN
-from aosedge_demo_orchestrator.backend_retirement import TIRE_COUNTS
+from aosedge_demo_orchestrator.backend_retirement import COUNTS, TIRE_COUNTS
 from aosedge_demo_orchestrator.environment import EnvironmentError, JOURNAL, atomic_json
 
 
@@ -77,6 +77,24 @@ class TireProductRetirementTests(TestCase):
         self.assertTrue(self.cleanup.confirm_test_cleanup(state))
         self.assertIn(("tire", "empty-proof"), self.calls)
         self.assertEqual({}, self.backend.resources)
+
+    def test_no_services_means_empty_product_and_mock_stores_not_a_retirement_blocker(self):
+        state = self.product()
+        self.matching = dict.fromkeys(COUNTS, 0)
+        self.tire_matching = dict.fromkeys(TIRE_COUNTS, 0)
+        for record in state["backends"].values():
+            record["mockCleanupProtocol"] = "isolated-mock-v1"
+        atomic_json(self.root / JOURNAL, state)
+        self.cleanup._private.side_effect = lambda team, identity, operation, payload=None: self.tire_private(
+            team, identity, operation.removeprefix("mock-"), payload)
+        self.assertTrue(self.cleanup.confirm_test_cleanup(state))
+        self.assertFalse(any(call.args[2].endswith("execute") for call in self.cleanup._private.call_args_list))
+        self.assertEqual(7, self.nonmatching["messages"])
+        self.assertEqual(7, self.tire_peer["assessments"])
+        for record in state["backends"].values():
+            self.assertEqual("CONFIRMED", record["cleanup"]["state"])
+            self.assertEqual("CONFIRMED", record["mockCleanup"]["state"])
+        self.assertEqual(4, len(self.backend.resources))
 
     def test_nonmatching_tire_data_prevents_single_store_removal(self):
         state = self.product(False)

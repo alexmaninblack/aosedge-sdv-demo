@@ -3,6 +3,110 @@
 
 # Demo Studio: staged delivery plan
 
+## Current checkpoint — 15 September, after staging Finish
+
+The operator requested source audit, commits and pushes before starting a
+separate staging KUKSA phase. See the [staging source checkpoint and open
+boundaries](../../qualification/staging-source-checkpoint-2026-09-15.md).
+The current Test was retired through Presenter at 14:38 UTC; there is no Test
+to resume. Factory `.33`, published releases, version continuity and Production
+are preserved. The dated increment descriptions below are historical evidence,
+not current instructions to operate a parked/Online Test.
+
+Next: resolve the audited SP publication-to-assignment receipt-path gap after
+approval; separately verify staging permissions and the real service-data path
+under the accepted native Aos contract. Do not claim
+KUKSA access from synthetic service/backend results, change Production, or build
+a new Factory image as part of this checkpoint.
+
+## Dated increments and evidence
+
+**15 September, accepted unsigned-package increment:** replacing OEM credentials for
+staging exposed the retained VDP source-signature dependency. The user agreed
+with unsigned reusable packages and current-session signing, then requested a
+recorded impact audit. [ADR 0016](../../architecture/decisions/0016-unsigned-packages-and-session-scoped-signing.md)
+contains the accepted trust amendment, frozen VDP/service publication-context
+schema, migration and verification order. Implementation, targeted offline
+tests and actual source migration are complete on `codex/unsigned-package-signing`;
+see the [verification receipt](../../qualification/unsigned-package-signing-2026-09-15.md)
+for exact results and broader-suite limitations. The operator
+successfully parked the same unprovisioned .33 Test; do not recreate it or
+consume its release numbers during fixture tests. This audit does not close a
+new staging publication, guest installation or any deferred KUKSA gate.
+
+Subsequent authorized live checks reached Ready for VDP 58.0.0, Brake 37.0.0
+and Tire 25.0.0 using the current staging certificates. Repeat Sign/Upload
+checks reused signatures or reconciled existing publications. Provisioning
+was blocked before mutation because the selected OEM has no matching demo
+role sets; four unrelated campaign sets were found in the full inventory.
+The same Test is parked again; guest E2E remains open. Agree the missing
+staging role-set configuration before resuming; do not recreate Test or
+republish these releases to work around the preflight. The receipt above
+also records the open page's stale local view after external CLI operations.
+The [first-use configuration audit](../../qualification/first-use-cloud-configuration-audit-2026-09-15.md)
+separates native automatic registration from missing demo setup and proposes
+Test-only/tenant-context corrections. The user approved this packet on 15 September:
+implement Check/Prepare in Demo Control and Session, remove Test's dependency on
+an unused Production set, isolate authenticated tenants and verify the retained
+staging run with the three already Ready releases. That implementation and its
+targeted regression checks are complete. Explicit staging Prepare created only
+the matching single-node model and Test verification set in Default; repeat
+Prepare returned no-op in 1.48 seconds. The same Test provisioned/Online in
+approximately 28 seconds; VDP 58.0.0 installed and runs after Safe Stop.
+Brake 37.0.0 and Tire 25.0.0 are Ready and assigned through their dedicated
+Group Subjects but absent from the received Desired Status; service execution
+and backend ingestion remain **open**. See the first-use receipt for bounded
+Cloud observations and the next investigation boundary. At that checkpoint Test
+was Online in Safe Stop; it has since been retired. No new Factory image, speculative
+republishing or campaign mutation is authorized by this increment.
+
+**14 September, UI status correction increment:** the prioritized status audit
+was authorized for implementation. Version-bound Running, fresh detail selection,
+Cloud error/freshness reporting, bounded lists, receipt rollover, recovery
+diagnostics and build-awareness are now implemented. See the
+[correction and verification receipt](../../qualification/ui-status-corrections-2026-09-14.md).
+The next gate is one explicitly agreed operator-visible cycle. Isolated tests
+do not close live Cloud timing, native visual acceptance, KUKSA or Production.
+
+**14 September, abnormal Finish amendment:** pending/failed software and stale
+monitoring no longer gate destruction of the owned Test. Stop the local
+simulator/VM/backend stack first; then perform Subject/Cloud retirement and
+scoped cleanup. Keep resumable checkpoints, Production protection, published
+releases and automatic release continuity. Accepted upload receipts do not
+require successful Cloud processing for recipient retirement. See
+[Finish after an abnormal run](../../architecture/demo-control.md#finish-after-an-abnormal-run--authorized-14-september-2026)
+and run-state contract **1.8.6**. Cloud Offline, exact ownership and unresolved
+external outcomes remain authoritative; local shutdown is not falsely reported
+as complete Cloud deletion.
+
+Live qualification: the current debug Test with a certificate-failed VDP update
+completed retirement on 14 September. The simulator stopped; guest shutdown
+initially exceeded the old 90-second limit and Finish resumed its recorded
+stop phase. Cloud new/Offline and Unit/Node absence were confirmed, then the
+Test overlay/access files and its separate Factory working copy were removed.
+A second Finish returned `NO_CURRENT_TEST` without Cloud mutations. The new
+QMP power-off fallback for a stalled disposable Test is covered by a targeted
+runtime regression; it was not needed on the successful live continuation.
+
+**14 September, certificate-selected Cloud amendment:** the user approved
+deriving the Test Cloud domain from the OEM certificate, using the existing
+API port 10000, Service Discovery port 9000 and packaged Aos CA. Session now
+offers local certificate preview/native selection and explicit application.
+See [Certificate-selected Test Cloud](../../architecture/certificate-selected-cloud.md)
+for the source of truth, backend-scoped identities/Subjects and Production
+protection. Offline selection/guest-projection tests and UI checks do not close
+the separate live developer-Cloud provision/reboot qualification. Guest debug
+configuration remains transient; no Factory image or manager binary is changed.
+
+First VDP publication in a new Cloud resolves the component by current OEM and
+codename; an authoritatively empty catalog permits the normal deployment-bundle
+upload. New bundles use the Session-selected OEM certificate, while unchanged
+source profiles are verified with their pinned unsigned digests under ADR 0016;
+normal Prepare does not require the historical public certificate.
+No production component UUID or signing-key fallback is retained.
+Offline identity/signing regressions and read-only checks do not constitute a
+completed live debug publication or device installation.
+
 Publication note: private evidence links, infrastructure identifiers and source
 locations have been removed. The detailed working report is retained outside
 Git under the confidential-input policy; timings and our own conclusions remain.
@@ -39,6 +143,33 @@ See the [exact results, authority boundary and resume sequence](../../qualificat
 
 ## Current delivery position — 13 September 2026
 
+**Command performance increment:** independent Cloud observations overlap,
+VDP preparation avoids duplicate construction, terminal publication errors stop
+automatic repolling, and service observation releases the writer during HTTP.
+The [command-by-command audit and measured limits](../../research/democtl-ui-performance-audit-2026-09-13.md)
+record this scoped optimization; it does not advance live/visual qualification.
+
+**Later Studio implementation increment:** the user authorized the six-step
+mockup-to-live convergence plan after the .33 audit. Service authoring,
+SP publication and first Test assignment are now connected to the protected
+Presenter bridge; later service versions expose publication without another
+Deploy. Studio uses contextual lifecycle/software guidance, architecture-linked
+details, scoped monitoring and explicit synthetic product dashboards. The native
+host adopts idle build/session changes and Driving Control uses the telemetry
+palette. See the [exact implementation/test receipt](../../qualification/studio-2-8-implementation-2026-09-13.md).
+This updates P4 implementation, not P5–P7 real KUKSA/advisory qualification.
+The full clean operator UI repeat and human visual acceptance remain P8 gates;
+the live retained-Test smoke test must not be described as that full repeat.
+
+The later fresh UI continuation reached an **assisted working Test** with
+VDP25/V1 →26/V2 →27/V3, Brake13/V1 →14/V2 →15/V3 and Tire11/V1. It exposed
+a preflight-attempt accounting defect (corrected and tested) and a missing
+first-service public-input preparation in the UI sequence (performed through
+the existing CLI, not yet integrated into that sequence). Both Cloud-active
+services and real synthetic backend receipts were observed; the simulator is
+left connected in Safe Stop. This does not close the unassisted clean UI or
+real-KUKSA gates. See the [exact assisted-run receipt](../../qualification/studio-clean-cycle-2026-09-13.md).
+
 This checkpoint supersedes the dated execution history below. The accepted
 phase requirements and questionnaire decisions remain in force; passing a
 synthetic service run does not waive their real-product acceptance gates.
@@ -53,7 +184,7 @@ records the exact pushed main/tag pins and completed temporary-branch cleanup.
 | P1 — Shared operations | Test-only lifecycle, release continuity, both backends/current-Test context and ownership-scoped retirement exercised through Demo Control; source published on main | Reconcile machine-readable workspace pins; preserve existing dual-role CLI |
 | P2 — Cloud observations | Cloud inventory, per-Subject instances, release/runtime distinction, DMIPS and backend read adapters implemented/tested | Cloud stale-session ordering remains OPEN-02; complete visual acceptance, without guest reads in the platform panel |
 | P3 — CLI lifecycle / VDP | Fresh .33 Test, 21/V1 -> 22/V2 -> 23/V3, moving/pending -> Safe Stop, network recovery and retained-identity Park/Resume passed | Warehouse and every interrupted-operation variant were not rerun in this scoped cycle; final clean visual repeat remains P8 |
-| P4 — Presenter integration | Architecture installed-version and team/backend read views have unit/browser/build evidence | Complete service publication/assignment controls, accepted native visual alignment and operator review; current UI is not the full accepted workflow |
+| P4 — Presenter integration | Service prepare/publish/first assignment, later publish-only updates, contextual Studio, scoped resource/detail views, synthetic backend product cards and native refresh/theme implemented; isolated UI tests and retained-Test smoke recorded separately | Final fresh operator cycle and human visual acceptance; expanded terminal recovery remains deferred by UI-STUDIO-026 |
 | P5 — SOTA / Brake V1 | Native ARM64 service, dedicated Subject, automatic replacement, synthetic durable backend receipts/retry passed on .33 | OPEN-01: native KUKSA authorization and real vehicle-derived product results |
 | P6 — Brake V2/V3 | Profiles V2/V3 and service replacement while driving passed with synthetic transport | Real analytics, native expiring advisory and complete return path remain unqualified |
 | P7 — Tire / offline | Tire V1 version replacement, independent backend outage/retry and shared external-link recovery passed | Native KUKSA, real Tire analytics/advisory and calibration; no functional Tire V2/V3 is claimed |
@@ -1450,6 +1581,27 @@ semantics require the final audit; backend retention is settled by Q13b below.
 
 ### <a id="q13-clean-cycle-cleanup-proposal"></a>Accepted Q13a — shared Retire at demo completion and before a new cycle, 9 September 2026
 
+**14 September 2026 abnormal-Finish amendment, approved:** Finish destroys
+the owned Test independently of pending/failed software, CM readiness and
+Safe Stop observation. Stop local runtimes first, then reconcile Subjects,
+retire Cloud identity and remove scoped data. A stalled guest can be powered
+off using its exact owned QMP endpoint; ordinary Stop/Park are unchanged.
+See the exact
+[retirement contract](../../architecture/demo-control.md#finish-after-an-abnormal-run--authorized-14-september-2026).
+Unknown external outcomes/ownership still need reconciliation; neither false
+Cloud deletion nor update cancellation is reported. Published releases remain.
+
+**14 September whole-Finish correction:** retained per-service Group Subjects
+need not be used in every run. Confirmed identities without current assignment
+receipts are checked with GET-only Cloud reads after local shutdown; all retained
+Subjects are checked again for zero Unit recipients after Test deletion. A
+present uncertain assignment is not treated as unused. The UI preserves the
+leaf failure reason and offers remaining-step continuation without requiring
+Offline for unrelated stages or for an already deleted Unit. Completed phases
+are not replayed. See the follow-up
+[test evidence](../../qualification/democtl-and-ui-repeat-2026-09-14.md#later-operator-run-follow-up-finish-with-cloud-only-vdp-37);
+the current operator's live Finish remains unexecuted by the agent.
+
 The user selected **option A**: an explicit **Finish demo** action executes
 Retire, while **New cycle** offers/completes the same Retire if previous owned
 resources or partial cleanup remain, then starts the fresh flow only after
@@ -1663,7 +1815,7 @@ Output: accepted change list, named work packages and a concrete baseline, with 
 
 Affected area: `aosedge-sdv-demo/apps/demo-orchestrator`, its tests and affected executable contracts.
 
-1. Add explicit Test targeting to `demo plan/prepare` and Presenter actions. Remove the requirement for a live Production VM from Test preparation/publication. Keep genuine recipient/ownership protection: a deployment-bundle upload is not a Unit-specific transport simply because CLI says `test`.
+1. Add explicit Test targeting to `demo plan/prepare` and Presenter actions. Presenter simulation Start/Stop must pass `--target test`, including compatibility routes; they must not use the unscoped all-VM detach path. Remove the requirement for a live Production VM from Test preparation/publication. Keep genuine recipient/ownership protection: a deployment-bundle upload is not a Unit-specific transport simply because CLI says `test`.
 2. Bind the run to catalog image identity/SHA, firmware compatibility metadata, Unit UUID/system_uid/Node and Test set. Replace the universal `.31` assumption with catalog-declared support; do not mark an arbitrary image compatible just because it is listed. Cache unchanged manifest facts rather than hashing the image at each action.
    For accepted M02, compose Presenter Create as disk creation followed by VM start. Revise the pre-provision publication contract to permit the compatible unprovisioned controller to remain running; do not make power-off a publication prerequisite or insert a stop/start workaround.
 3. Expose the existing initial stationary-Manual connection as a public Demo Control operation immediately after Create and before Provision, per Q03. Retain ordinary `vehicle select` Safe Stop/reset behavior for its distinct operation. Narrow the provisioning restriction that currently requires a detached source so the agreed local connection is preserved, without weakening deprovision/delete safeguards. First connection, reconnect and vehicle switch remain distinct and cannot silently reset a running demonstration.
@@ -1718,7 +1870,7 @@ Affected owners: Demo Control/Presenter, `brake-health-service`, `brake-health-c
 
 1. Close the complete service contract before uploading: ARM64 OCI/service manifest, layers/entrypoint, execution identity, minimum instances, resource declarations/quotas, VDP/KUKSA access through the accepted credential boundary, networking and backend endpoint. Reuse accepted runtime/SDK/credential mechanisms; do not invent another helper or broaden permissions.
 2. Establish the actual deployable Brake v1 runtime and its bounded braking-window output. Foundation code alone is not a deployable service. Register the immutable candidate and its functional profile/release version.
-3. Add service preparation, inspection, signing, upload, assignment and observation to Demo Control. Reuse the deployment-bundle/signing machinery where applicable, selecting Brake SP authority for publication and OEM authority for assignment.
+3. Add service preparation, inspection, signing, upload, assignment and observation to Demo Control. Reuse the deployment-bundle/signing machinery where applicable, selecting Brake SP authority for publication and OEM authority for assignment. Studio's first Deploy to Test must compose `service runtime-prepare test` before assignment for either team, reuse unchanged public inputs, and stop before Cloud assignment on preparation failure. No SM restart or Safe Stop dependency is introduced; later service versions still use publication only.
 4. Apply amended Q09b: use separate retained OEM Group Subjects for Brake and Tire, each containing only its logical service and only current Test system_uid. Create only if necessary and authorized; retain each identity across updates. Preserve the peer Subject and default Subjects. Reconcile partial assignment before a repeat; send no service-version UUID. Package readiness is observed separately, not a local assignment prerequisite. Apply Q13 binding reset/Subject retention to each.
 5. Reuse the P1 backend lifecycle/storage/current-Test context in composed Create and Quick preparation. Extend it with real Brake product ingestion/queries and validate durable records. Do not reintroduce the two-role requirement or defer basic Tire backend startup to P7. A healthy backend process alone does not prove product-query readiness.
 6. Add backend REST reads to Presenter through the trusted application boundary. SSE announces a change and triggers a REST read; it does not replace persisted records.

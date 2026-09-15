@@ -42,7 +42,7 @@ def replace_constant(data, name, old, new):
     return changed.encode()
 
 
-def replay(version, profile, baseline, baseline_sha, contract, factory):
+def replay(version, profile, baseline, baseline_sha, contract, factory, *, unsigned_source_sha=None):
     """New Cloud release, frozen functional profile; no application-code change."""
     if profile not in PROFILE_BASES or version_number(version) < (4, 0, 0):
         raise EnvironmentError("COMPONENT_REPLAY_PROFILE_OR_VERSION_INVALID")
@@ -84,6 +84,11 @@ def replay(version, profile, baseline, baseline_sha, contract, factory):
     sbom["documentNamespace"] = sbom["documentNamespace"].replace("/" + base_version + "/", "/" + version + "/")
     files["sbom/spdx.json"] = encoded(sbom)
     provenance = document(files, "provenance/provenance.json")
+    if unsigned_source_sha is not None:
+        from .component_sources import UNSIGNED_SHA
+        if unsigned_source_sha != UNSIGNED_SHA[base_version]:
+            raise EnvironmentError("COMPONENT_SOURCE_DIGEST_MISMATCH")
+        provenance["unsignedSourceSha256"] = unsigned_source_sha
     provenance.update(semanticVersion=version, buildType="democtl-profile-replay-v1",
         contentProfile=profile, baseContentVersion=base_version, baselineBundleSha256=baseline_sha,
         factoryImageVersion=factory["version"], factoryImageRawSha256=factory["sha256"],

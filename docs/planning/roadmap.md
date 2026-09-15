@@ -68,7 +68,7 @@ Exact retained versions and limitations remain recorded in the
 
 The following documents form one ordered design chain:
 
-1. [High-Level Architecture 1.6](../architecture/high-level-architecture.md)
+1. [High-Level Architecture 1.7](../architecture/high-level-architecture.md)
    owns boundaries, authorities and invariants.
 2. [Demo Scenario 2.0](../demo/staged-post-sop-brake-health-demo-scenarios.md)
    owns the accepted audience-visible stage sequence.

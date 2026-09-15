@@ -33,6 +33,10 @@ final class Presenter: NSObject, NSApplicationDelegate, WKScriptMessageHandler, 
     var backdrop: BackdropWindow?
     var foregroundPids = Set<Int>()
     var terminalWindows = Set<Int>()
+    var clientTimer: Timer?
+    var checkingClient = false
+    var loadedClient: String?
+    var perspective = "global"
     init(_ path: String) { layoutPath = path }
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
@@ -63,6 +67,7 @@ final class Presenter: NSObject, NSApplicationDelegate, WKScriptMessageHandler, 
             view.load(URLRequest(url: URL(string: "http://127.0.0.1:18080/#native-" + name)!))
         }
         restore()
+        clientTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in self?.checkClient() }
         for number in [SIGUSR1, SIGTERM, SIGINT] {
             signal(number, SIG_IGN)
             let source = DispatchSource.makeSignalSource(signal: number, queue: .main)
@@ -99,6 +104,43 @@ final class Presenter: NSObject, NSApplicationDelegate, WKScriptMessageHandler, 
         placeBackdrop()
     }
     func applicationDidBecomeActive(_ notification: Notification) { placeBackdrop() }
+    func checkClient() {
+        guard !checkingClient, !views.values.contains(where: { $0.isLoading }) else { return }
+        checkingClient = true
+        var request = URLRequest(url: URL(string: "http://127.0.0.1:18080/api/presenter/client-state")!)
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.timeoutInterval = 3
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, _ in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                guard (response as? HTTPURLResponse)?.statusCode == 200, let data = data,
+                      let state = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let build = state["buildId"] as? String, build.count == 64,
+                      let session = state["sessionId"] as? String, state["canReload"] as? Bool == true else {
+                    self.checkingClient = false; return
+                }
+                let identity = build + ":" + session
+                guard identity != self.loadedClient else { self.checkingClient = false; return }
+                // Keep a protected confirmation or an unresolved client submission
+                // intact. Only the paired idle windows adopt the new build/session.
+                let group = DispatchGroup()
+                var safe = true
+                for view in self.views.values {
+                    group.enter()
+                    view.evaluateJavaScript("!document.querySelector('[role=dialog]') && !document.querySelector('[data-submission-pending=true]')") { value, error in
+                        if error != nil || value as? Bool != true { safe = false }
+                        group.leave()
+                    }
+                }
+                group.notify(queue: .main) {
+                    self.checkingClient = false
+                    guard safe else { return }
+                    self.loadedClient = identity
+                    for view in self.views.values { view.reloadFromOrigin() }
+                }
+            }
+        }.resume()
+    }
     func placeBackdrop() {
         guard let backdrop = backdrop else { return }
         // Window numbers/PIDs only: no screenshots or titles from unrelated apps.
@@ -123,11 +165,19 @@ final class Presenter: NSObject, NSApplicationDelegate, WKScriptMessageHandler, 
     }
     func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
         guard message.frameInfo.isMainFrame, message.frameInfo.securityOrigin.host == "127.0.0.1",
-              let target = message.body as? String, ["global", "platform", "brake", "tire"].contains(target) else { return }
+              let target = message.body as? String, ["global", "platform", "brake", "tire", "session"].contains(target) else { return }
+        if target == "session" {
+            views["browser"]?.evaluateJavaScript("window.dispatchEvent(new Event('presenter-session'))", completionHandler: nil)
+            return
+        }
+        perspective = target
         // A closed navigation enum only; never command or lifecycle dispatch.
         for view in views.values {
             view.evaluateJavaScript("window.dispatchEvent(new CustomEvent('presenter-navigation',{detail:'" + target + "'}))", completionHandler: nil)
         }
+    }
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        webView.evaluateJavaScript("window.dispatchEvent(new CustomEvent('presenter-navigation',{detail:'" + perspective + "'}))", completionHandler: nil)
     }
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction,
                  decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {

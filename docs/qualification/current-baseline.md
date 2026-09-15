@@ -3,13 +3,19 @@
 
 # Current working baseline
 
-Recorded: **13 September 2026**. Engineering Test E2E passed with explicit
+Factory qualification recorded: **13 September 2026**. Engineering Test E2E passed with explicit
 synthetic-service and Cloud-ordering exclusions. This is not full product or
 human visual acceptance.
 
+**Current source/lifecycle update — 15 September:** see the [staging source
+checkpoint](staging-source-checkpoint-2026-09-15.md). The current Test has been
+retired; the Unit/release rows below describe the historical 13 September
+qualification, not a live Unit inventory. Factory `.33` is unchanged. New
+source commits do not retroactively change its image digest or build provenance.
+
 ## Factory and runtime
 
-| Item | Current value |
+| Item | Immutable baseline / dated qualification value |
 | --- | --- |
 | Immutable Factory | `6.1.1-maninblack.33/main-qemuarm64` |
 | Artifact | `$WORKSPACE_ROOT/demo-artifacts/aosedge-sdv-demo/factory-images/6.1.1-maninblack.33/main-qemuarm64.img` |

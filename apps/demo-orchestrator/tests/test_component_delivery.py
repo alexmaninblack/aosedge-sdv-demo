@@ -10,7 +10,9 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from aosedge_demo_orchestrator.components import ComponentService
-from aosedge_demo_orchestrator.component_cloud import guard, batch_guard, snapshot, COMPONENT_ID, reconcile_list_guard
+from aosedge_demo_orchestrator.component_cloud import guard, batch_guard, snapshot, reconcile_list_guard
+
+COMPONENT_ID = "66666666-6666-4666-8666-666666666666"
 from aosedge_demo_orchestrator.components import COMPONENT
 from aosedge_demo_orchestrator.unit_cloud import CloudFailure
 from aosedge_demo_orchestrator.environment import EnvironmentError, JOURNAL
@@ -94,7 +96,7 @@ class DeliveryTests(unittest.TestCase):
         self.journal = self.root / JOURNAL
         self.journal.parent.mkdir(parents=True)
         self.save()
-        self.before = dict(ownerId="owner", versions=[], deploymentBundles=[], verificationBatches=[],
+        self.before = dict(ownerId="owner", componentId=COMPONENT_ID, versions=[], deploymentBundles=[], verificationBatches=[],
             testSet=dict(is_validation_set=True), productionSet=dict(is_validation_set=False),
             test=dict(id="test", fleet="fleet", online_status="Online"), production=dict(id="production", fleet="fleet"))
 
@@ -131,6 +133,8 @@ class DeliveryTests(unittest.TestCase):
             for role, identity in ids.items()}
         class EmptyCloud:
             user = {"ownerId": "owner"}
+            def require(self, *permissions):
+                pass
             def inventory(self):
                 return dict(sets=list(sets.values()), units=[])
             def call(self, path):
@@ -187,10 +191,10 @@ class DeliveryTests(unittest.TestCase):
             guard(dict(self.before, productionSet=dict(is_validation_set=True)))
         batch = dict(oem_id="owner", architectures=["arm64"], update_items=[dict(
             identity_id=COMPONENT_ID, codename=COMPONENT, version="2.0.0")])
-        batch_guard(batch, dict(version="2.0.0"), "owner")
+        batch_guard(batch, dict(version="2.0.0", componentId=COMPONENT_ID), "owner")
         for changed in (dict(architectures=["amd64"]), dict(oem_id="other"), dict(update_items=batch["update_items"] * 2)):
             with self.assertRaises(CloudFailure):
-                batch_guard(dict(batch, **changed), dict(version="2.0.0"), "owner")
+                batch_guard(dict(batch, **changed), dict(version="2.0.0", componentId=COMPONENT_ID), "owner")
 
     def test_available_components_uses_array_endpoint_and_filters_identity(self):
         test_id = "11111111-1111-4111-8111-111111111111"
@@ -200,7 +204,8 @@ class DeliveryTests(unittest.TestCase):
             user = {"ownerId": "owner"}
 
             def require(self, *permissions):
-                raise AssertionError("No extra Production validation permissions: " + ",".join(permissions))
+                if permissions != ("components_list",):
+                    raise AssertionError("No extra Production validation permissions: " + ",".join(permissions))
 
             def call(self, path):
                 if path == "components/" + COMPONENT_ID + "/":
