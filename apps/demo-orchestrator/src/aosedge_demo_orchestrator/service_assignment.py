@@ -269,9 +269,8 @@ class ServiceAssignment:
                 if directory.name.startswith("."):
                     continue
                 _, record = packages._record(team + "/" + directory.name, verify_payload=False)
-                from .package_artifacts import publication_path
-                _, domain = packages._profile(record)
-                path = publication_path(directory, domain, "service provider")
+                profile, domain = packages._profile(record)
+                path = packages._publication_path(directory, record)
                 if not path.is_file():
                     continue
                 if any(part.is_symlink() for part in (path, *path.parents)
@@ -282,6 +281,7 @@ class ServiceAssignment:
                 if observation.get("serviceId") != service_id:
                     continue
                 if (observation.get("version") != record["version"] or receipt.get("cloudDomain") != domain
+                        or (profile.get("expectedOwnerId") and receipt.get("ownerId") != profile["expectedOwnerId"])
                         or receipt.get("attempted") is not True or receipt.get("requestAccepted") is not True
                         or receipt.get("httpStatus") != 201 or not receipt.get("deploymentId")
                         or observation.get("deploymentId") != receipt["deploymentId"]

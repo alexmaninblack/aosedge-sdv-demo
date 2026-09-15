@@ -153,7 +153,7 @@ outside Git. New files use the following schema-1 representation:
 | Prepared VDP | Existing release directory, unsigned archive and `prepared.json` | Existing immutable payload/file digests and profile; replay provenance adds `unsignedSourceSha256` while preserving legacy source provenance |
 | Prepared service | Existing `services/<team>/releases/<version>/prepared.json` and payload | Existing file inventory and logical Cloud profile; no authoritative SP/service UUIDs in new prepared records |
 | Signature | Release directory `.signatures/<context-digest>/deployment-bundle.tar.gz` and `signed.json` | `signingContext` contains schemaVersion, domain, role, signerId and preparedSha256; receipt records verified signed SHA-256 |
-| Publication | Release directory `.publications/<destination-digest>/publication.json` | Domain and role select the directory; immutable attempt owner, signed SHA, exact response ID and observations remain in the receipt |
+| Publication | Release directory `.publications/<destination-digest>/publication.json` | Domain, role and configured authenticated owner select the directory; immutable attempt owner, signed SHA, exact response ID and observations remain in the receipt |
 
 Digests of objects use SHA-256 over sorted, compact JSON. VDP preparedSha256
 hashes the unsigned archive; service preparedSha256 hashes its sorted file
@@ -167,6 +167,9 @@ key halfway through an operation. Normal completion removes the snapshot.
 Publication directories deliberately exclude signer identity. Rotation must
 not unlock a second POST for an accepted or uncertain attempt. Its recorded
 owner is checked on subsequent reads; a different owner cannot adopt its IDs.
+Service Upload, Cloud status and Deploy use the same destination resolver.
+A legacy domain/role-only receipt is reused only for the same recorded owner;
+missing owner provenance requires reconciliation rather than assignment.
 Source/prepared content is shared across destinations, but publication status
 is not. No automatic version allocation occurs during Sign or re-signing.
 

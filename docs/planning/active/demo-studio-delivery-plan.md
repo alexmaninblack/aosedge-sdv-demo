@@ -13,8 +13,13 @@ to resume. Factory `.33`, published releases, version continuity and Production
 are preserved. The dated increment descriptions below are historical evidence,
 not current instructions to operate a parked/Online Test.
 
-Next: resolve the audited SP publication-to-assignment receipt-path gap after
-approval; separately verify staging permissions and the real service-data path
+The operator approved the bounded SP publication-to-assignment correction.
+Deploy now uses the same owner-scoped receipt resolver as Upload and Cloud
+status, retaining same-owner legacy compatibility and rejecting foreign owners.
+See the checkpoint's follow-up for isolated regression evidence; this is not
+a new live staging deployment.
+
+Next: separately verify staging permissions and the real service-data path
 under the accepted native Aos contract. Do not claim
 KUKSA access from synthetic service/backend results, change Production, or build
 a new Factory image as part of this checkpoint.

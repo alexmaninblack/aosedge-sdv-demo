@@ -596,6 +596,92 @@ class JournalTests(unittest.TestCase):
             self.service.assign(BRAKE)
         self.assertEqual([], self.cloud.posts)
 
+    def published_release(self, team="brake", *, legacy=False, receipt_owner=SP):
+        from aosedge_demo_orchestrator.service_packages import ServicePackages
+        from aosedge_demo_orchestrator.package_artifacts import publication_path
+        directory = self.environment.catalog.project / "services" / team / "releases/8.0.0"
+        directory.mkdir(parents=True)
+        prepared = dict(schemaVersion=1, state="PREPARED", team=team, version="8.0.0",
+            releaseHandle=team + "/8.0.0", packagePath=str(directory), files={str(n): {} for n in range(4)},
+            cloudProfile="service-provider")
+        atomic_json(directory / "prepared.json", prepared)
+        # Use the actual Upload/Cloud-status resolver, not a parallel test path.
+        path = (publication_path(directory, "aoscloud.io", "service provider", create=True) if legacy
+                else ServicePackages(self.environment)._publication_path(directory, prepared, create=True))
+        receipt = dict(ownerId=receipt_owner, cloudDomain="aoscloud.io", attempted=True,
+            requestAccepted=True, httpStatus=201, deploymentId=VERSION,
+            lastObservation=dict(stage="READY", source="AOS_CLOUD_ONLY",
+                serviceId=BRAKE if team == "brake" else TIRE, version="8.0.0", deploymentId=VERSION))
+        atomic_json(path, receipt)
+        return path, receipt
+
+    def test_owner_scoped_upload_deploy_repeat_and_restart_for_both_services(self):
+        del self.service._publication
+        profile = dict(expectedOwnerId=SP, certificate="first-fixture.p12")
+        with patch("aosedge_demo_orchestrator.service_packages.ServicePackages._profile",
+                return_value=(profile, "aoscloud.io")):
+            for team in ("brake", "tire"):
+                self.published_release(team)
+            for service_id in (BRAKE, TIRE):
+                self.assertEqual("ASSIGNED", self.service.assign(service_id)["state"])
+            self.assertEqual(6, len(self.cloud.posts))
+            # Same SP, renewed certificate and reconstructed caller: no second
+            # publication or duplicate Subject, binding or assignment.
+            profile["certificate"] = "renewed-fixture.p12"
+            restarted = assignment.ServiceAssignment(self.environment, self.units)
+            for service_id in (BRAKE, TIRE):
+                self.assertTrue(restarted.assign(service_id)["noOp"])
+            self.assertEqual(6, len(self.cloud.posts))
+
+    def test_legacy_same_owner_publication_is_reused_without_migration(self):
+        del self.service._publication
+        with patch("aosedge_demo_orchestrator.service_packages.ServicePackages._profile",
+                return_value=(dict(expectedOwnerId=SP), "aoscloud.io")):
+            path, receipt = self.published_release(legacy=True)
+            self.assertEqual("ASSIGNED", self.service.assign(BRAKE)["state"])
+            self.assertTrue(self.service.assign(BRAKE)["noOp"])
+            self.assertEqual(3, len(self.cloud.posts))
+            self.assertEqual(receipt, read_json(path))
+            self.assertEqual([path], list(path.parents[1].glob("*/publication.json")))
+
+    def test_foreign_tenant_publications_never_assign(self):
+        del self.service._publication
+        with patch("aosedge_demo_orchestrator.service_packages.ServicePackages._profile",
+                return_value=(dict(expectedOwnerId=USER), "aoscloud.io")):
+            self.published_release(receipt_owner=USER)
+        with patch("aosedge_demo_orchestrator.service_packages.ServicePackages._profile",
+                return_value=(dict(expectedOwnerId=SP), "aoscloud.io")):
+            with self.assertRaisesRegex(EnvironmentError, "PUBLICATION_RECEIPT_REQUIRED"):
+                self.service.assign(BRAKE)
+        self.assertEqual([], self.cloud.posts)
+
+    def test_foreign_legacy_publication_never_assigns(self):
+        del self.service._publication
+        with patch("aosedge_demo_orchestrator.service_packages.ServicePackages._profile",
+                return_value=(dict(expectedOwnerId=SP), "aoscloud.io")):
+            self.published_release(legacy=True, receipt_owner=USER)
+            with self.assertRaisesRegex(EnvironmentError, "PUBLICATION_RECEIPT_REQUIRED"):
+                self.service.assign(BRAKE)
+        self.assertEqual([], self.cloud.posts)
+
+    def test_owner_scoped_receipt_with_wrong_embedded_owner_is_rejected(self):
+        del self.service._publication
+        with patch("aosedge_demo_orchestrator.service_packages.ServicePackages._profile",
+                return_value=(dict(expectedOwnerId=SP), "aoscloud.io")):
+            self.published_release(receipt_owner=USER)
+            with self.assertRaisesRegex(EnvironmentError, "PUBLICATION_RECEIPT_MISMATCH"):
+                self.service.assign(BRAKE)
+        self.assertEqual([], self.cloud.posts)
+
+    def test_ownerless_legacy_receipt_requires_reconciliation(self):
+        del self.service._publication
+        with patch("aosedge_demo_orchestrator.service_packages.ServicePackages._profile",
+                return_value=(dict(expectedOwnerId=SP), "aoscloud.io")):
+            self.published_release(legacy=True, receipt_owner=None)
+            with self.assertRaisesRegex(EnvironmentError, "PACKAGE_LEGACY_OWNER_RECONCILIATION_REQUIRED"):
+                self.service.assign(BRAKE)
+        self.assertEqual([], self.cloud.posts)
+
     def test_publication_mapping_requires_exact_accepted_bundle_not_ready(self):
         del self.service._publication
         directory = self.environment.catalog.project / "services/brake/releases/8.0.0"

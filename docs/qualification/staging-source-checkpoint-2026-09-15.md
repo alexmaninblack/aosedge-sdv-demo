@@ -91,6 +91,30 @@ rerun passed as recorded above.
 
 ## Source and artifact inventory
 
+### Authorized follow-up: owner-scoped service Deploy
+
+After the checkpoint the operator authorized a separate fix/commit/push before
+permissions work. The new regression reproduced both the missing owner-scoped
+receipt and acceptance of a foreign owner's legacy receipt. Assignment now
+uses the same publication-path resolver as Upload and Cloud status, and checks
+the embedded owner against the selected SP profile. No publication is copied,
+re-signed or uploaded by this correction.
+
+Six new isolated regression tests cover Brake and Tire first assignment,
+idempotent repeat, reconstruction of the assignment caller, same-owner
+certificate-profile rotation, legacy same-owner reuse, foreign owner-scoped and
+legacy refusal, a conflicting embedded owner, and ownerless legacy rejection.
+The assignment/package/signing suites ran 80 tests: 79 passed, one existing
+skip. API mutations in these tests are fixtures, not calls to a live Cloud.
+The complete SDK-backed suite then ran 852 tests in 58.34 seconds: 851 passed,
+one existing skip. Its first sandboxed run was not a pass: 23 checks were
+blocked by denied local socket/process access. The rerun with the required
+local-test access passed without further product changes. Documentation and
+staged confidential-input/whitespace gates passed.
+No Test, Production, image, runtime, release number or permissions were changed.
+
+### Original checkpoint inventory
+
 | Repository | Source checkpoint |
 | --- | --- |
 | aosedge-sdv-demo | Source return point: `checkpoint/staging-20260915`; exact peeled commit is available from the Git tag |
