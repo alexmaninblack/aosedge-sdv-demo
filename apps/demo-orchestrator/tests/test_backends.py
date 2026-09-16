@@ -18,6 +18,50 @@ IMAGE = "sha256:" + "a" * 64
 
 
 class BackendTests(unittest.TestCase):
+    def test_reset_uses_owned_admin_only_and_reuses_uncertain_command(self):
+        self.state["vehicles"]["test"]["systemUid"] = OWNER
+        self.state["backends"] = {"brake": {"imageId": IMAGE}}
+        atomic_json(self.root / JOURNAL, self.state)
+        self.container = dict(Id="b" * 64, Image=IMAGE, Config=dict(Labels={"tech.aosedge.demo.owner": OWNER,
+            "tech.aosedge.demo.team": "brake"}), State=dict(Running=True))
+        status = dict(schemaVersion=1, unitSystemUid=OWNER, connected=True, command=None)
+        self.service._reset_status = Mock(return_value=status)
+        with patch("aosedge_demo_orchestrator.backend_retirement.BackendRetirement._private") as admin:
+            admin.side_effect = EnvironmentError("BACKEND_PRIVATE_RESPONSE_UNCERTAIN")
+            with self.assertRaisesRegex(EnvironmentError, "UNCERTAIN"):
+                self.service.execute("reset-scenario", "brake")
+            identifier = admin.call_args.args[3]["commandId"]
+            status["connected"] = False
+            admin.side_effect = None
+            admin.return_value = dict(status, command=dict(commandId=identifier, unitSystemUid=OWNER,
+                operation="RESET_DEMO_SCENARIO", state="CLEARED"))
+            result = self.service.execute("reset-scenario", "brake")
+            self.assertEqual("CLEARED", result["state"])
+            self.assertTrue(result["noOp"])
+            self.assertEqual(identifier, admin.call_args.args[3]["commandId"])
+            self.assertEqual(("brake", "b" * 64, "demo-reset"), admin.call_args.args[:3])
+        self.assertEqual([], self.commands)
+
+    def test_reset_read_and_pending_are_non_mutating_and_foreign_scope_rejected(self):
+        for team in ("brake", "tire"):
+            parsed = request_from_arguments(build_parser().parse_args(["backend", "reset-status", team, "--target", "test"]))
+            self.assertEqual("test", parsed.target.value)
+            application = Mock()
+            application.execute.return_value.to_dict.return_value = {}
+            execute_operation(dict(domain="backend", action="reset-scenario", team=team, target="test"), application)
+            with self.assertRaises(ValueError):
+                execute_operation(dict(domain="backend", action="reset-scenario", team=team, target="production"), application)
+        with self.assertRaisesRegex(EnvironmentError, "SCOPE_OR_SHAPE"):
+            self.service._validate_reset(dict(schemaVersion=1, unitSystemUid="foreign", connected=True, command=None), OWNER)
+
+    def test_presenter_native_prepare_does_not_force_the_old_mock_workaround(self):
+        application = Mock()
+        application.execute.return_value.to_dict.return_value = {}
+        execute_operation(dict(domain="service", action="prepare", team="brake", content_profile="v3"), application)
+        request = application.execute.call_args.args[0]
+        self.assertFalse(request.without_permissions)
+        self.assertFalse(request.demo_mocked_data)
+
     def test_observation_does_not_acquire_writer_but_mutations_still_do(self):
         self.service._context_handles = Mock(return_value=dict(state="CLEAR", owners=[]))
         self.state["vehicles"]["test"]["systemUid"] = "test-uid"
@@ -78,16 +122,16 @@ class BackendTests(unittest.TestCase):
         response.status = 200
         response.read.side_effect = [b'{"ready":true}', b'{"state":"CURRENT"}', json.dumps(dict(
             source="DEMO_MOCK", vehicleTelemetry=False, unitSystemUid="test-uid", counts={})).encode()] + [
-                b'{"unitSystemUid":"test-uid","items":[]}'] * 4
+                b'{"unitSystemUid":"test-uid","items":[]}'] * 4 + [b'{"schemaVersion":1,"unitSystemUid":"test-uid","connected":false,"command":null}']
         with patch("aosedge_demo_orchestrator.backends.http.client.HTTPConnection", return_value=connection) as factory:
             result = self.service._product_observation("tire", "test-uid")
         self.assertEqual("OBSERVED", result["state"])
         self.assertFalse(result["cloudAuthority"])
         self.assertFalse(result["vehicleTelemetry"])
-        self.assertEqual(7, connection.close.call_count)
+        self.assertEqual(8, connection.close.call_count)
         self.assertTrue(all(call.args == ("127.0.0.1", 18092) and call.kwargs == {"timeout": 3} for call in factory.call_args_list))
         self.assertEqual(["/health/ready", "/health/context", "/api/v1/tire/demo-mock/summary"] + [
-            "/api/v1/tire/units/test-uid/" + name + "?limit=10" for name in ("assessments", "events", "advisories", "function-status")],
+            "/api/v1/tire/units/test-uid/" + name + "?limit=10" for name in ("assessments", "events", "advisories", "function-status")] + ["/api/v1/tire/units/test-uid/demo-reset"],
             [call.args[1] for call in connection.request.call_args_list])
 
     def test_product_inspect_rejects_wrong_scope_or_fabricated_source(self):
@@ -110,15 +154,15 @@ class BackendTests(unittest.TestCase):
         response.read.side_effect = [b'{"ready":true}', b'{}', json.dumps(dict(
             source="DEMO_MOCK", vehicleTelemetry=False, unitSystemUid="test-uid")).encode(),
             json.dumps(window).encode()] + [json.dumps(dict(unitSystemUid="test-uid", resourceType=kind, items=[])).encode()
-                for kind in ("ASSESSMENT", "EVENT", "ADVISORY")]
+                for kind in ("ASSESSMENT", "EVENT", "ADVISORY")] + [b'{"schemaVersion":1,"unitSystemUid":"test-uid","connected":false,"command":null}']
         with patch("aosedge_demo_orchestrator.backends.http.client.HTTPConnection", return_value=connection):
             result = self.service._product_observation("brake", "test-uid")
         self.assertEqual("OBSERVED", result["state"])
         self.assertEqual(window, result["observations"]["productData"]["data"])
         self.assertEqual("DEMO_MOCK", result["observations"]["mockData"]["data"]["source"])
         self.assertEqual("/api/v1/brake/units/test-uid/windows?limit=10", connection.request.call_args_list[3].args[1])
-        self.assertEqual("/api/v1/brake/units/test-uid/advisories?limit=10", connection.request.call_args.args[1])
-        self.assertEqual(7, connection.close.call_count)
+        self.assertEqual("/api/v1/brake/units/test-uid/demo-reset", connection.request.call_args.args[1])
+        self.assertEqual(8, connection.close.call_count)
 
     def test_brake_product_windows_reject_wrong_unit_or_shape(self):
         for change in (dict(unitSystemUid="production-uid"), dict(resourceType="MOCK"),
@@ -144,7 +188,7 @@ class BackendTests(unittest.TestCase):
             connection = factory.return_value
             response = connection.getresponse.return_value
             response.status = 200
-            response.read.side_effect = [b'[]', OSError("not available"), b'not JSON'] + [b'not JSON'] * 4
+            response.read.side_effect = [b'[]', OSError("not available"), b'not JSON'] + [b'not JSON'] * 5
             result = self.service._product_observation("brake", "test-uid")
             self.assertEqual("PARTIAL", result["state"])
             self.assertTrue(all(item["state"] == "UNAVAILABLE" for item in result["observations"].values()))

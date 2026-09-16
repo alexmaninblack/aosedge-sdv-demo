@@ -3,6 +3,14 @@
 
 # Demo Studio: staged delivery plan
 
+## Authorized next increment — advisory readiness and scenario reset
+
+The operator approved implementing the [bounded readiness/reset packet](work-packets/advisory-readiness-and-demo-reset.md)
+before completing the existing end-to-end work. Preserve the working checkpoint,
+implement and prove on current staging Test through Demo Control and UI, then
+consolidate the Factory successor and perform the clean full UI cycle. Historical
+checkpoints below remain evidence, not completion of this new increment.
+
 ## Current checkpoint — 16 September, staging real-data and advisory qualification
 
 ### Office network recovery and Brake V3 publication

@@ -390,6 +390,10 @@ class ComponentService:
             advisory = read_json(self.environment.root / "contracts/qm-advisory-profile/qm-advisory-profile.v1.json")
             declared = {(item[path], item[kind]) for item in advisory["endpoints"]
                 for path, kind in (("requestPath", "requestEntryType"), ("statusPath", "statusEntryType"))}
+            readiness = read_json(self.environment.root / "contracts/qm-advisory-profile/advisory-readiness.v1.json")
+            if readiness.get("schemaVersion") != 1 or readiness.get("vssDatatype") != "string":
+                raise EnvironmentError("COMPONENT_READINESS_SCHEMA_CONTRACT_CHANGED")
+            declared.update((item["path"], item["entryType"]) for item in readiness["endpoints"])
             if declared != set(VSS_ADVISORY_TYPES) or advisory["encoding"]["vssDatatype"] != "string":
                 raise EnvironmentError("COMPONENT_ADVISORY_SCHEMA_CONTRACT_CHANGED")
             if state.get("currentVehicle") is not None:

@@ -45,6 +45,10 @@ class AdvisoryObservationTests(unittest.TestCase):
             source_guest.advisory_log_observation(raw))
         self.assertEqual(40, len(source_guest.advisory_log_observation("\n".join(
             json.dumps(dict(MESSAGE=message)) for _ in range(50)))))
+        readiness = message.replace(".Request", ".Availability")
+        self.assertEqual("Vehicle.OEM.TireHealth.Advisory.Availability",
+            source_guest.advisory_log_observation(json.dumps(dict(MESSAGE=readiness)))[0]["endpoint"])
+        self.assertEqual([], source_guest.advisory_log_observation(json.dumps(dict(MESSAGE=readiness + " secret"))))
 
 
 class AdvisoryRuntimeTests(unittest.TestCase):

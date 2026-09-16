@@ -34,7 +34,7 @@ FOUNDATION = dict(scope="FOUNDATION_ONLY", productIngestion=False, schemaVersion
 
 
 def _counts(value, keys=COUNTS):
-    if (not isinstance(value, dict) or set(value) != keys
+    if (not isinstance(value, dict) or set(value) not in (keys, keys | {"resetProducers", "resetCommands"})
             or any(type(count) is not int or count < 0 for count in value.values())):
         raise EnvironmentError("BACKEND_CLEANUP_COUNTS_INVALID")
     return value
@@ -124,7 +124,7 @@ class BackendRetirement:
         return value
 
     def _private(self, team, container_id, operation, payload=None):
-        if team not in TEAMS or operation not in ("preview", "execute", "empty-proof", "mock-preview", "mock-execute", "mock-empty-proof", *( ("foundation-proof",) if team == "tire" else ())):
+        if team not in TEAMS or operation not in ("preview", "execute", "empty-proof", "mock-preview", "mock-execute", "mock-empty-proof", "demo-reset", *( ("foundation-proof",) if team == "tire" else ())):
             raise EnvironmentError("BACKEND_PRIVATE_OPERATION_INVALID")
         if not isinstance(container_id, str) or not SHA.fullmatch(container_id):
             raise EnvironmentError("BACKEND_CONTAINER_ID_INVALID")
@@ -142,13 +142,17 @@ class BackendRetirement:
         except (OSError, subprocess.TimeoutExpired):
             # Exceptions can contain stdin/stdout; never include them in errors.
             raise EnvironmentError("BACKEND_PRIVATE_RESPONSE_UNCERTAIN") from None
-        if reply.returncode or len(reply.stdout.encode()) > 16384:
+        if (reply.returncode and operation != "demo-reset") or len(reply.stdout.encode()) > 16384:
             raise EnvironmentError("BACKEND_PRIVATE_RESPONSE_FAILED")
         try:
             envelope = json.loads(reply.stdout)
         except (ValueError, TypeError):
             raise EnvironmentError("BACKEND_PRIVATE_RESPONSE_INVALID") from None
-        if not isinstance(envelope, dict) or set(envelope) != {"status", "body"} or envelope["status"] != 200:
+        if operation == "demo-reset" and isinstance(envelope, dict) and envelope.get("status") == 409:
+            code = (envelope.get("body") or {}).get("errorCode")
+            if code in ("RESET_ALREADY_PENDING", "RESET_SERVICE_NOT_CONNECTED", "CURRENT_UNIT_CONTEXT_UNAVAILABLE", "UNIT_NOT_CURRENT"):
+                raise EnvironmentError(code)
+        if not isinstance(envelope, dict) or set(envelope) != {"status", "body"} or envelope["status"] != 200 or reply.returncode:
             raise EnvironmentError("BACKEND_PRIVATE_RESPONSE_REJECTED")
         return envelope["body"]
 
@@ -277,7 +281,7 @@ class BackendRetirement:
         body = self._private(team, observed["Id"], "mock-empty-proof" if mock else "empty-proof", dict(schemaVersion=1, contractVersion="1.0.0"))
         # N3 adds Brake projection schema 3; Tire retains schema 2. The admin
         # proof, ownership/selector checks and actual empty-state rules stay intact.
-        supported_schema_versions = (2, 3) if team == "brake" else (2,)
+        supported_schema_versions = (2, 3, 4) if team == "brake" else (2, 3)
         if (not isinstance(body, dict) or set(body) != {"schemaVersion", "contractVersion", "state", "databaseSchemaVersion", "recordCounts", "observedAt"}
                 or type(body.get("schemaVersion")) is not int or body["schemaVersion"] != 1
                 or body.get("contractVersion") != "1.0.0" or type(body.get("databaseSchemaVersion")) is not int
@@ -285,6 +289,8 @@ class BackendRetirement:
             raise EnvironmentError("BACKEND_WHOLE_STORE_EMPTY_PROOF_UNAVAILABLE")
         _timestamp(body["observedAt"])
         counts = _counts(body.get("recordCounts"), TIRE_COUNTS if team == "tire" else COUNTS)
+        if not mock and body["databaseSchemaVersion"] == (4 if team == "brake" else 3) and not {"resetProducers", "resetCommands"} <= set(counts):
+            raise EnvironmentError("BACKEND_WHOLE_STORE_EMPTY_PROOF_UNAVAILABLE")
         empty = not any(counts.values())
         if (body["state"] == "EMPTY") is not empty:
             raise EnvironmentError("BACKEND_WHOLE_STORE_EMPTY_PROOF_UNAVAILABLE")

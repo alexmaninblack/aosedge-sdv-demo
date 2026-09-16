@@ -27,12 +27,12 @@ PROFILE_BASES = {
 # Reviewed Platform checkpoint; no working-tree input is accepted. A missing
 # pin blocks new V3 preparation instead of falling back to deferred V3.
 ADVISORY_RUNTIME_PIN = {
-    "revision": "05cbff85c52eb0fe09641e177f1b3089a1df5b1f",
-    "tree": "d561cce0123776669a8f208904d46c8ecf577dfd",
+    "revision": "4bc0f7e1fd9746ec8a5e612f0281c294c1dca115",
+    "tree": "303bcf1b7e3cd5628757b4d9ff3255dc51821391",
     "modules": {
-        "runtime.py": "d2a784314b20c597716f11f176230c427290b4c800e04eb864f40c6592471d99",
+        "runtime.py": "4dd787652dcca4be6d3bfea1018f93d4c14a72c1e1d821d46756ff3a54c675c6",
         "advisory.py": "a9150d817b95b4aa6b9dbe5ac5a873d02f9efce02f02ff1949e22e06b7242bef",
-        "advisory_transport.py": "2b3fa7029b39a86da6e8c44c15533bd77122cd4358392e9672957e9988ca2e77",
+        "advisory_transport.py": "76379cbf36121a6a9a12d689ea2e7d88cc303f5a06c56f13cafed58862c73d0a",
         "manifest.py": "94f57fd9a280d83d2d9c28ced213f5a860e46e41e6cc8ef86c3c0d70e5b8c635",
     },
 }

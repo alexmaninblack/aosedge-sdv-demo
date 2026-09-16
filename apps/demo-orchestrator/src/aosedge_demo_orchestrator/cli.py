@@ -63,6 +63,7 @@ def build_parser() -> argparse.ArgumentParser:
     service_activate.add_argument("--kac-time-read-proof", action="store_true", help="explicitly authorized temporary KAC time-marker read-policy proof; automatic stock-policy rollback")
     service_activate.add_argument("--kac-data-proof", action="store_true", help="authorized bounded Brake real-data trial using the same exact KAC rules; automatic stock rollback, no restart")
     service_activate.add_argument("--kac-recovery", action="store_true", help="current Test: apply proven KAC recovery for a bounded six-hour qualification; automatic stock-policy rollback")
+    service_activate.add_argument("--kac-recovery-remove", action="store_true", help="current Test: restore exact stock policy and remove only the owned transient KAC recovery drop-in")
     service_activate.add_argument("--restart-sm", action="store_true", help="explicit one-time restart of the already activated Test SM; same binary/configuration, no retry")
     service_build = service_commands.add_parser("build", help="development-only real ARM64 service build; no publication or VM action")
     service_build.add_argument("team", choices=("brake", "tire"))
@@ -90,9 +91,11 @@ def build_parser() -> argparse.ArgumentParser:
     backend_commands = backend.add_subparsers(dest="action", required=True)
     recovery = backend_commands.add_parser("recover-file-sharing", help="explicit Docker Desktop recovery for blocked owned cleanup; preserves storage")
     recovery.add_argument("--restart-project", choices=("watt-the-app",), help="explicitly authorized one-time interruption and restoration of the five Watt containers")
-    for action in ("build", "activate", "start", "stop", "status", "inspect"):
+    for action in ("build", "activate", "start", "stop", "status", "inspect", "reset-scenario", "reset-status"):
         command = backend_commands.add_parser(action, help="explicit development build" if action == "build" else "owned backend " + action)
         command.add_argument("team", choices=("brake", "tire"))
+        if action in ("reset-scenario", "reset-status"):
+            command.add_argument("--target", choices=("test",), default="test")
 
     workspace = commands.add_parser("workspace", help="built-in-display window composition only")
     workspace_commands = workspace.add_subparsers(dest="action", required=True)
@@ -157,7 +160,10 @@ def build_parser() -> argparse.ArgumentParser:
     cm_status.add_argument("target", choices=("test",))
     component_logs = component_commands.add_parser("logs", help="read bounded, redacted SM/CM/provider events")
     component_logs.add_argument("target", choices=("test", "production"))
-    component_diagnose = component_commands.add_parser("diagnose", help="inspect 23 telemetry and four typed advisory schema leaves; read-only")
+    for action in ("readiness-build", "readiness-apply"):
+        command = component_commands.add_parser(action, help="current Test Provider readiness credential build/proof; immutable Factory unchanged")
+        command.add_argument("target", choices=("test",))
+    component_diagnose = component_commands.add_parser("diagnose", help="inspect 23 telemetry and six typed advisory schema leaves; read-only")
     component_diagnose.add_argument("target", choices=("test", "production"))
     for action in ("schema-apply", "schema-remove"):
         schema = component_commands.add_parser(action, help="temporary Test-only V3 telemetry and typed advisory schema; one broker restart, no image or permission change")
@@ -195,6 +201,8 @@ def build_parser() -> argparse.ArgumentParser:
     select.add_argument("target", choices=("test", "production"))
     authenticate = vehicle_commands.add_parser("authenticate", help="onboard the preserved Test for strict Gateway mTLS; one simulation restart")
     authenticate.add_argument("target", choices=("test",))
+    runtime_build = vehicle_commands.add_parser("build-runtime", help="development-only Gateway/client build; no lifecycle action")
+    runtime_build.add_argument("target", choices=("test",))
     connectivity = vehicle_commands.add_parser("connectivity", help="selected vehicle external world; preserve CARLA, VISS and control")
     connectivity.add_argument("link_action", choices=("status", "off", "on"))
     connectivity.add_argument("--target", choices=("test", "production"), help="defaults to Current Vehicle; off requires that same Current Vehicle")
@@ -259,6 +267,7 @@ def request_from_arguments(arguments: argparse.Namespace) -> OperationRequest:
         kac_time_read_proof=getattr(arguments, "kac_time_read_proof", False),
         kac_data_proof=getattr(arguments, "kac_data_proof", False),
         kac_recovery=getattr(arguments, "kac_recovery", False),
+        kac_recovery_remove=getattr(arguments, "kac_recovery_remove", False),
         iam_response_capacity=getattr(arguments, "iam_response_capacity", False),
         restart_cm=getattr(arguments, "restart_cm", False),
         confirm_bind_not_submitted_at=getattr(arguments, "confirm_bind_not_submitted_at", None),

@@ -331,7 +331,7 @@ class ServicePackageTests(unittest.TestCase):
         with self.assertRaisesRegex(EnvironmentError, "BINARY_MISMATCH"):
             product_files(self.build, "brake")
 
-    def test_cli_shared_dispatch_has_no_vehicle_selectors_or_browser_mutation(self):
+    def test_cli_shared_dispatch_has_no_vehicle_selectors_and_browser_uses_native_profile(self):
         args = build_parser().parse_args(["service", "prepare", "brake", "--profile", "v3"])
         request = request_from_arguments(args)
         self.assertEqual(("brake", "v3", "service-provider"), (request.team, request.content_profile, request.profile))
@@ -340,10 +340,10 @@ class ServicePackageTests(unittest.TestCase):
         self.assertEqual("COMPLETED", result.state.value)
         self.assertIn("brake/8.0.0", render_human(result))
         with self.assertRaises(ValueError):
-            execute_operation(dict(domain="service", action="prepare", team="brake", content_profile="v1"), Mock())
+            execute_operation(dict(domain="service", action="prepare", team="brake", content_profile="v1", target="production"), Mock())
 
     def test_fixed_schema_configuration_preserves_team_and_profile_scope(self):
-        for team, profile, count in (("brake", "v1", 6), ("brake", "v2", 12), ("brake", "v3", 14), ("tire", "v1", 17)):
+        for team, profile, count in (("brake", "v1", 6), ("brake", "v2", 12), ("brake", "v3", 15), ("tire", "v1", 18)):
             with self.subTest(team=team, profile=profile):
                 config = package_configuration(ROOT, team, profile, "42.0.0")["items"][0]
                 runtime = config["configuration"]
@@ -353,7 +353,7 @@ class ServicePackageTests(unittest.TestCase):
                 self.assertEqual({"kuksa", "kuksa-auth-client", team + "-runtime-inputs"}, {x["name"] for x in runtime["resources"]})
                 self.assertEqual(["Server/55555/tcp", "10.0.0.1/" + ("18091" if team == "brake" else "18092") + "/tcp"], runtime["allowedConnections"])
                 writes = [key for key, mode in runtime["permissions"]["kuksa"].items() if mode == "rw"]
-                expected = ["Vehicle.OEM." + team.title() + "Health.Advisory.Request"] if count in (14, 17) else []
+                expected = ["Vehicle.OEM." + team.title() + "Health.Advisory." + leaf for leaf in ("Request", "Readiness")] if count in (15, 18) else []
                 self.assertEqual(expected, writes)
                 self.assertNotIn("env", runtime)
         with self.assertRaisesRegex(EnvironmentError, "PROFILE_INVALID"):

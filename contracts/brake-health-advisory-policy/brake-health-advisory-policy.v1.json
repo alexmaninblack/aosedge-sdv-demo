@@ -2,7 +2,7 @@
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "schemaVersion": 1,
   "contractId": "aosedge-demo-brake-health-advisory-policy",
-  "contractVersion": "1.0.2",
+  "contractVersion": "1.0.3",
   "lifecycleState": "ACCEPTED",
   "decision": "D4-016.4",
   "inputs": {
@@ -51,6 +51,10 @@
     "reasonCode": "CONDITION_CLEARED",
     "currentMonotonicModelProducesClear": false,
     "acceptedFutureCause": "VALID_NON_INSPECTION_ASSESSMENT_AFTER_ACCEPTED_STATE_MIGRATION",
+    "acceptedDemoResetCause": "EXPLICIT_CURRENT_TEST_MODEL_RESET",
+    "demoResetDecisionIdSource": "DURABLE_RESET_COMMAND_UUID",
+    "demoResetCreatesAssessment": false,
+    "demoResetCompletionRequires": "MATCHING_GATEWAY_CLEARED",
     "serviceStopCreatesSyntheticClear": false,
     "crashCreatesSyntheticClear": false,
     "noRefreshUsesGatewayExpiry": true

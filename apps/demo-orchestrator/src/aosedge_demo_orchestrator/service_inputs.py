@@ -41,7 +41,7 @@ class ServiceInputs:
     def __init__(self, environment):
         self.environment = environment
 
-    def activate_kac(self, target, *, time_read_proof=False, data_proof=False, recovery=False):
+    def activate_kac(self, target, *, time_read_proof=False, data_proof=False, recovery=False, recovery_remove=False):
         if target != "test":
             raise EnvironmentError("SERVICE_INPUTS_TEST_ONLY")
         with self.environment._writer():
@@ -53,17 +53,17 @@ class ServiceInputs:
             driver = SourceDriver(VMService(self.environment))
             # Separate the now-corrected VAL FIELD_VALUE hypothesis from the
             # completed Brake42 freshness-only trial; retain its receipt.
-            key = "kacRecovery" if recovery else "kacDataSubscriptionProof" if data_proof else "kacTimeReadProof" if time_read_proof else "kacActivation"
+            key = "kacRecoveryRemoval" if recovery_remove else "kacRecovery" if recovery else "kacDataSubscriptionProof" if data_proof else "kacTimeReadProof" if time_read_proof else "kacActivation"
             with driver.operation(timeout=360 if data_proof else 120 if time_read_proof else 30):
                 proof = state.get(key, {})
-                if not recovery and proof.get("unitId") == item["unitId"] and proof.get("state") == "ATTEMPTED":
+                if not (recovery or recovery_remove) and proof.get("unitId") == item["unitId"] and proof.get("state") == "ATTEMPTED":
                     raise EnvironmentError("KAC_PREVIOUS_ATTEMPT_REQUIRES_RUNTIME_INSPECT")
                 if ((time_read_proof or data_proof) and proof.get("unitId") == item["unitId"]
                         and proof.get("state") == "PROVED" and proof.get("result", {}).get("originalPolicyRestored")):
                     return dict(proof["result"], noOp=True, evidence="RECORDED_COMPLETED_PROOF_NOT_CURRENT_READINESS")
                 state[key] = dict(state="ATTEMPTED", unitId=item["unitId"])
                 atomic_json(self.environment.root / JOURNAL, state)
-                result = driver.guest(state, "test", "service-kac-recovery" if recovery else "service-kac-data-proof" if data_proof else "service-kac-time-proof" if time_read_proof else "service-kac-activate")
+                result = driver.guest(state, "test", "service-kac-recovery-remove" if recovery_remove else "service-kac-recovery" if recovery else "service-kac-data-proof" if data_proof else "service-kac-time-proof" if time_read_proof else "service-kac-activate")
                 state[key].update(state=result["state"], result=result)
                 atomic_json(self.environment.root / JOURNAL, state)
                 return result

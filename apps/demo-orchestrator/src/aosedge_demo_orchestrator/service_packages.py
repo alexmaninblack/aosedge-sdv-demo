@@ -130,6 +130,7 @@ def package_configuration(root, team, content_profile, version, *, without_permi
         prefix = "Vehicle.OEM." + team.title() + "Health.Advisory."
         permissions[prefix + "GatewayStatus"] = "r"
         permissions[prefix + "Request"] = "rw"
+        permissions[prefix + "Readiness"] = "rw"
     config = dict(schemaVersion=2, publisher=dict(author="maninblack"), items=[dict(
         identity=dict(type="service", codename=team + "-health-service", title=team.title() + " Health Service"),
         version=version, sourceFolder="service", images=[dict(sourceFolder="arm64", archInfo=dict(architecture="arm64"))],

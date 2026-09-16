@@ -38,6 +38,7 @@ FACTORY_RELEASES = {
     FACTORY_VERSION: FACTORY_REVISION,
     "6.1.1-maninblack.32": "04fc8270c55ff5c35f1e98af534a5efccb035464",
     "6.1.1-maninblack.33": "f7922b02b15f6cf816f181e1bf97572b61859aea",
+    "6.1.1-maninblack.34": "81e7e1fda991c133a7dc83188c1dcf0f966fd62e",
 }
 RELATIVE = "meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files/systemd-slot-component"
 BUILDER_PROJECT = "/home/yocto/r61-build/project/yocto"
@@ -522,6 +523,108 @@ def build_permissions(target, iam_response_capacity=False):
             builder("test", "stop")
 
 
+READINESS_REVISION = "b308a64a637913c493a0ac98b4f8a4acaae53643"
+READINESS_ARTIFACT = ARTIFACT.with_name("provider-advisory-readiness-" + READINESS_REVISION[:12])
+
+
+def build_readiness(target):
+    """Warm compile of the fixed Provider only; no Factory or manager build."""
+    from .environment import atomic_json
+    if target != "test":
+        raise EnvironmentError("READINESS_TEST_ONLY")
+    artifact = READINESS_ARTIFACT
+    if artifact.exists():
+        value = json.loads((artifact / "manifest.json").read_text())
+        if (value.get("state") == "BUILT" and value.get("sourceRevision") == READINESS_REVISION
+                and hashlib.sha256((artifact / "aos-kuksa-provider-prepare").read_bytes()).hexdigest() == value.get("sha256")):
+            return dict(value, noOp=True)
+        raise EnvironmentError("READINESS_BUILD_RECONCILIATION_REQUIRED")
+    if shutil.disk_usage(artifact.parent).free < 60 * 1024**3:
+        raise EnvironmentError("READINESS_BUILD_FREE_SPACE_BELOW_60_GIB")
+    source = BUILDER_PROJECT + "/aos-vehicle-platform-" + READINESS_REVISION
+    ssh = builder_ssh()
+    def remote(command, timeout=30, data=None):
+        return subprocess.run(ssh + [command], input=data, capture_output=True, timeout=timeout, check=True).stdout
+    layers = BUILDER_PROJECT + "/build-main/conf/bblayers.conf"
+    old_layers = None
+    artifact.mkdir(mode=0o700)
+    result = dict(state="BUILD_STARTED", sourceRevision=READINESS_REVISION)
+    atomic_json(artifact / "manifest.json", result)
+    try:
+        builder("test", "start")
+        deadline = time.monotonic() + 90
+        while True:
+            try:
+                remote("true", timeout=7)
+                break
+            except (subprocess.SubprocessError, OSError):
+                if time.monotonic() >= deadline:
+                    raise EnvironmentError("READINESS_BUILDER_SSH_TIMEOUT") from None
+                time.sleep(1)
+        archive = subprocess.check_output(["git", "archive", READINESS_REVISION], cwd=SOURCE)
+        remote("mkdir -p " + source)
+        remote("tar -xf - -C " + source, data=archive)
+        old_layers = remote("cat " + layers)
+        replaced, count = re.subn(rb'aos-vehicle-platform(?:-[0-9a-f]{40})?/meta-aos-vehicle-platform',
+            (Path(source).name + "/meta-aos-vehicle-platform").encode(), old_layers)
+        if count != 1:
+            raise EnvironmentError("READINESS_BUILDER_LAYER_NOT_UNIQUE")
+        writer = "python3 -c " + shlex.quote("import sys; from pathlib import Path; Path(" + repr(layers) + ").write_bytes(sys.stdin.buffer.read())")
+        remote(writer, data=replaced)
+        command = "cd " + BUILDER_PROJECT + "; . poky/oe-init-build-env build-main >/dev/null; bitbake -R " + source + "/qualification/factory-33.conf -c compile aos-kuksa-auth-compat"
+        print("Test: compile KUKSA Provider readiness scope; warm cache, no image or manager build", file=sys.stderr, flush=True)
+        with (artifact / "compile.log").open("wb") as log:
+            built = subprocess.run(ssh + ["bash -lc " + shlex.quote(command)], stdout=log, stderr=subprocess.STDOUT, timeout=1200)
+        if built.returncode:
+            raise EnvironmentError("READINESS_COMPILE_FAILED_SEE_ARTIFACT_LOG")
+        work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-kuksa-auth-compat"
+        paths = remote("find " + work + " -path '*/build/aos-kuksa-provider-prepare' -type f").decode().splitlines()
+        if len(paths) != 1:
+            raise EnvironmentError("READINESS_EXECUTABLE_NOT_UNIQUE")
+        raw = remote("cat " + paths[0], timeout=30)
+        if raw[:6] != b"\x7fELF\x02\x01" or raw[18:20] != b"\xb7\x00" or len(raw) > 32*1024**2:
+            raise EnvironmentError("READINESS_ARM64_EXECUTABLE_REQUIRED")
+        (artifact / "aos-kuksa-provider-prepare").write_bytes(raw)
+        result.update(state="BUILT", sha256=hashlib.sha256(raw).hexdigest(), size=len(raw))
+        atomic_json(artifact / "manifest.json", result)
+        return result
+    except Exception:
+        result["state"] = "BUILD_FAILED_RECONCILE"
+        atomic_json(artifact / "manifest.json", result)
+        raise
+    finally:
+        try:
+            if old_layers is not None:
+                remote("python3 -c " + shlex.quote("import sys; from pathlib import Path; Path(" + repr(layers) + ").write_bytes(sys.stdin.buffer.read())"), data=old_layers)
+        finally:
+            builder("test", "stop")
+
+
+def apply_readiness(environment, target):
+    from .environment import JOURNAL, atomic_json
+    from .status import read_json
+    from .vm import VMService
+    from .source import SourceDriver
+    if target != "test":
+        raise EnvironmentError("READINESS_TEST_ONLY")
+    with environment._writer():
+        state = read_json(environment.root / JOURNAL)
+        item = state.get("vehicles", {}).get("test", {})
+        if item.get("localVmId") != PERMISSION_VM or item.get("unitId") != PERMISSION_UNIT:
+            raise EnvironmentError("READINESS_PRESERVED_TEST_REQUIRED")
+        manifest = read_json(READINESS_ARTIFACT / "manifest.json")
+        raw = (READINESS_ARTIFACT / "aos-kuksa-provider-prepare").read_bytes()
+        if manifest.get("state") != "BUILT" or manifest.get("sourceRevision") != READINESS_REVISION or hashlib.sha256(raw).hexdigest() != manifest.get("sha256"):
+            raise EnvironmentError("READINESS_BUILT_SOURCE_REQUIRED")
+        driver = SourceDriver(VMService(environment))
+        with driver.operation(timeout=100):
+            result = driver.guest(state, "test", "provider-readiness-apply", binary=dict(sha256=manifest["sha256"],
+                data=base64.b64encode(gzip.compress(raw, compresslevel=1, mtime=0)).decode()))
+        state["providerReadinessProof"] = dict(sourceRevision=READINESS_REVISION, result=result)
+        atomic_json(environment.root / JOURNAL, state)
+        return result
+
+
 def apply_permissions(environment, target, observe=False, iam_response_capacity=False):
     from .environment import JOURNAL, atomic_json, factory_for
     from .status import read_json, now
@@ -765,9 +868,12 @@ def build_factory(version, metadata_only=False):
         prefix = "cd " + BUILDER_PROJECT + "; . poky/oe-init-build-env build-main >/dev/null; "
         suffix = version.rsplit(".", 1)[1]
         flags = " -R " + source + "/qualification/factory-" + suffix + ".conf "
-        managers = "aos-servicemanager" + (" aos-communicationmanager" if suffix in ("32", "33") else "")
+        managers = "aos-servicemanager" + (" aos-communicationmanager" if suffix in ("32", "33", "34") else "")
+        if suffix == "34":
+            managers += " aos-iamanager"
+        targets = managers + (" aos-kuksa-auth-compat" if suffix == "34" else "")
         stage("compile the proven manager corrections from committed source (offline)")
-        remote(prefix + "bitbake" + flags + "-c compile " + managers, timeout=1200, capture=False)
+        remote(prefix + "bitbake" + flags + "-c compile " + targets, timeout=1200, capture=False)
         work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-servicemanager/git"
         test = work + "/build/src/sm/launcher/runtimes/systemd-slot-component/tests/aos_sm_runtimes_systemdslotcomponent_test"
         loader = work + "/recipe-sysroot/usr/lib/ld-linux-aarch64.so.1"
@@ -778,9 +884,27 @@ def build_factory(version, metadata_only=False):
         print(test_log, file=sys.stderr, flush=True)
         if "[  PASSED  ] 5 tests." not in test_log:
             raise EnvironmentError("FACTORY_EXPECTED_FIVE_TESTS_NOT_EXECUTED")
+        if suffix == "34":
+            stage("verify uniform CM/SM/IAM permission capacity and native KAC/Provider tests")
+            for recipe in managers.split():
+                manager_build = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/" + recipe + "/git/build"
+                check = ("from pathlib import Path; root=Path(%r); "
+                    "files=[p for p in root.rglob('flags.make') if 'CXX_FLAGS =' in p.read_text()]; "
+                    "assert files; assert all('-DAOS_CONFIG_TYPES_FUNCTION_LEN=256' in p.read_text() for p in files); "
+                    "print('Uniform permission key capacity 256: PASS')") % manager_build
+                print(remote("python3 -c " + shlex.quote(check)), file=sys.stderr, flush=True)
+            kac_root = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-kuksa-auth-compat"
+            candidates = remote("find " + kac_root + " -path '*/build/provider-tests' -type f").splitlines()
+            if len(candidates) != 1:
+                raise EnvironmentError("FACTORY_KAC_TEST_BUILD_NOT_UNIQUE")
+            kac_work = str(Path(candidates[0]).parents[1])
+            kac_loader = kac_work + "/recipe-sysroot/usr/lib/ld-linux-aarch64.so.1"
+            kac_libs = kac_work + "/recipe-sysroot/lib:" + kac_work + "/recipe-sysroot/usr/lib"
+            for executable in ("kac-tests", "provider-tests", "verifier-prepare-tests"):
+                test_log += remote(kac_loader + " --library-path " + kac_libs + " " + kac_work + "/build/" + executable, timeout=60)
         stage("package the managers with package QA")
-        remote(prefix + "bitbake" + flags + managers, timeout=1200, capture=False)
-        if suffix in ("32", "33"):
+        remote(prefix + "bitbake" + flags + targets, timeout=1200, capture=False)
+        if suffix in ("32", "33", "34"):
             # Verify final package input after native do_update_config, not the
             # intermediate resource file that do_install initially creates.
             package_check = (
@@ -795,7 +919,7 @@ def build_factory(version, metadata_only=False):
                 "print('Factory service-input package: PASS')"
             ) % (work + "/image", source + "/meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files")
             print(remote("python3 -c " + shlex.quote(package_check)), file=sys.stderr, flush=True)
-        if suffix == "33":
+        if suffix in ("33", "34"):
             cm_work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-communicationmanager/git"
             cm_check = ("import json; from pathlib import Path; "
                 "config=json.loads(Path(%r).read_text()); "

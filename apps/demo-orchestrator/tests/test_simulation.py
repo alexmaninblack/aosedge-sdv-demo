@@ -140,6 +140,31 @@ class SimulationTests(unittest.TestCase):
         self.driver.guests.assert_any_call(self.state, "block", roles=["test"])
         self.assertNotIn(unittest.mock.call(self.state, "block"), self.driver.guests.call_args_list)
 
+    def test_crashed_mtls_gateway_stop_proves_absence_and_still_blocks_guest(self):
+        self.state["source"]["trust"] = dict(enabled=True)
+        self.driver.live_process.return_value = None
+        with patch("aosedge_demo_orchestrator.source_authentication.detach") as detach:
+            result = self.service.simulation("stop", target="test")
+        detach.assert_not_called()
+        self.driver.vm._free_port.assert_called_once_with(16443)
+        self.driver.guests.assert_any_call(self.state, "block", roles=["test"])
+        self.assertEqual("NOT_OBSERVED", result["physicalStop"])
+        self.assertEqual("STOPPED", result["state"])
+
+    def test_crashed_runner_cannot_hide_surviving_gateway_or_pending_assignment(self):
+        self.state["source"]["trust"] = dict(enabled=True)
+        self.driver.live_process.return_value = None
+        self.driver.vm._free_port.side_effect = EnvironmentError("PORT_IN_USE")
+        with self.assertRaisesRegex(EnvironmentError, "PORT_IN_USE"):
+            self.service.simulation("stop", target="test")
+        self.driver.stop.assert_not_called()
+        self.driver.vm._free_port.side_effect = None
+        self.state["source"]["trust"]["pending"] = dict(action="select", generation=2)
+        with self.assertRaisesRegex(EnvironmentError, "PENDING_ASSIGNMENT"):
+            self.service.simulation("stop", target="test")
+        self.assertEqual("test", self.state["currentVehicle"])
+        self.assertEqual(2, self.state["source"]["assignmentGeneration"])
+
     def test_test_scoped_stop_cannot_stop_selected_production(self):
         self.state["currentVehicle"] = "production"
         with self.assertRaisesRegex(EnvironmentError, "TEST_SCOPE_CONFLICT"):

@@ -32,13 +32,12 @@ def execute_operation(
                 raise ValueError("Service input preparation requires current Test only")
             return application.execute(OperationRequest(domain, action, target)).to_dict()
         if action == "prepare":
-            fields = {"domain", "action", "team", "content_profile", "without_permissions", "demo_mocked_data"}
+            fields = {"domain", "action", "team", "content_profile"}
             if (set(payload) != fields or payload["team"] not in ("brake", "tire")
-                    or payload["content_profile"] not in (("v1",) if payload["team"] == "tire" else ("v1", "v2", "v3"))
-                    or payload["without_permissions"] is not True or payload["demo_mocked_data"] is not True):
-                raise ValueError("Presenter services use the accepted synthetic Test profile only")
+                    or payload["content_profile"] not in (("v1",) if payload["team"] == "tire" else ("v1", "v2", "v3"))):
+                raise ValueError("Presenter services use the native KUKSA Test profile")
             return application.execute(OperationRequest(domain, action, team=payload["team"],
-                content_profile=payload["content_profile"], without_permissions=True, demo_mocked_data=True)).to_dict()
+                content_profile=payload["content_profile"])).to_dict()
         if action in ("sign", "upload", "cloud-status"):
             import re
             if set(payload) != {"domain", "action", "service_release"} or not isinstance(payload["service_release"], str) or not re.fullmatch(r"(?:brake|tire)/[0-9]{1,9}\.[0-9]{1,9}\.[0-9]{1,9}", payload["service_release"]):
@@ -60,6 +59,10 @@ def execute_operation(
             raise ValueError("Service inspection accepts only catalog identity and configured profile")
         return application.execute(OperationRequest(domain, action, service_id=payload.get("service_id"),
             profile=payload.get("profile"))).to_dict()
+    if domain == "backend" and action in ("reset-scenario", "reset-status"):
+        if set(payload) != {"domain", "action", "team", "target"} or payload["team"] not in ("brake", "tire") or target != VehicleTarget.TEST:
+            raise ValueError("Scenario reset accepts a fixed team and current Test only")
+        return application.execute(OperationRequest(domain, action, target, team=payload["team"])).to_dict()
     if domain == "backend" and action in ("start", "stop", "status", "inspect"):
         if set(payload) != {"domain", "action", "team"} or payload["team"] not in ("brake", "tire"):
             raise ValueError("Backend accepts a fixed team only, never paths, images or commands")

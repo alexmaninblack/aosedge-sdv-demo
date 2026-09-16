@@ -1,6 +1,7 @@
 import { afterEach, expect, test, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { BackendEvidence } from "../../src/features/service-team/BackendEvidence";
+import { PresenterControls } from "../../src/app/state/PresenterControls";
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 const observation = (uid = "current-test") => ({state:"OBSERVED",team:"brake",source:"REAL_BACKEND_HTTP",observedAt:"2026-09-11T22:00:00Z",
@@ -97,6 +98,45 @@ test("Tire function failure and staleness remain visible without qualifying anal
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => value }));
   const onEvidence = vi.fn();
   render(<BackendEvidence team="tire" unitSystemUid="current-test" expectedVersion="7.0.0" onEvidence={onEvidence} />);
-  expect(await screen.findByRole("status")).toHaveTextContent("Function status · stale report: NOT READY · SERVICE ACCESS DENIED");
+  expect(await screen.findByText("Function status · stale report: NOT READY · SERVICE ACCESS DENIED")).toBeVisible();
   expect(onEvidence).not.toHaveBeenCalled();
+});
+
+test("reset waits for CLEAR and keeps late historical warnings out of the current result", async () => {
+  const base = realObservation();
+  Object.assign((base.observations.assessments.data.items[0] as { message: Record<string, unknown> }).message, {
+    sourceEventTime: "2026-09-11T21:58:00Z", content: {currentBand: "INSPECTION_RECOMMENDED"},
+  });
+  const command = {commandId: "reset-one", unitSystemUid: "current-test", state: "PENDING", issuedAt: "2026-09-11T22:00:00Z", expiresAt: "2026-09-11T22:01:00Z"};
+  const value = {...base, observations: {...base.observations, demoReset: {state: "OBSERVED", data: {schemaVersion: 1, unitSystemUid: "current-test", connected: true, command}}}};
+  vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => ({ok: true, json: async () => value})));
+  render(<BackendEvidence team="brake" unitSystemUid="current-test" expectedVersion="7.0.0" />);
+  expect(await screen.findByText("Resetting · waiting for Gateway CLEAR confirmation")).toBeVisible();
+  expect(screen.queryByText("INSPECTION RECOMMENDED")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", {name: "Reset demo scenario"})).toBeDisabled();
+  command.state = "CLEARED";
+  fireEvent.click(screen.getByRole("button", {name: "Refresh backend"}));
+  expect(await screen.findByText(/Scenario reset · Gateway confirmed CLEAR/)).toBeVisible();
+  expect(screen.queryByText("INSPECTION RECOMMENDED")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", {name: "Records"}));
+  expect(screen.getByText("BRAKE_HEALTH_ASSESSMENT")).toBeVisible();
+});
+
+test("a submitted reset does not display the previous command as its completion", async () => {
+  const base = realObservation();
+  const value = {...base, observations: {...base.observations, demoReset: {state: "OBSERVED", data: {
+    schemaVersion: 1, unitSystemUid: "current-test", connected: true,
+    command: {commandId: "previous", unitSystemUid: "current-test", state: "CLEARED", issuedAt: "2026-09-11T22:00:00Z", expiresAt: "2026-09-11T22:01:00Z"},
+  }}}};
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ok: true, json: async () => value}));
+  const session = {sessionId: "test-session", active: "new-request", uncertain: false, jobs: [{
+    id: "new-request", action: "backend-reset" as const, team: "brake" as const,
+    state: "RUNNING", startedAt: "2026-09-11T22:02:00Z", progress: [], results: [],
+  }]};
+  const port = {read: vi.fn().mockResolvedValue(session), submit: vi.fn()};
+  render(<PresenterControls port={port}><BackendEvidence team="brake" unitSystemUid="current-test" expectedVersion="7.0.0" /></PresenterControls>);
+  expect(await screen.findByText("Resetting · submitting the current request")).toBeVisible();
+  await waitFor(() => expect(screen.getByText(/Observed/)).toBeVisible());
+  expect(screen.queryByText(/Scenario reset · Gateway confirmed CLEAR/)).not.toBeInTheDocument();
+  expect(screen.getByRole("button", {name: "Reset demo scenario"})).toBeDisabled();
 });

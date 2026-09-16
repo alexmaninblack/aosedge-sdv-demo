@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Vehicle-only producer readiness; never advisory application acknowledgement",
+  "vssDatatype": "string",
+  "refreshSeconds": 5,
+  "expirySeconds": 15,
+  "gatewayHeartbeatForwardClockSkewSeconds": 5,
+  "gatewayExpiryClock": "receipt-monotonic-and-wall",
+  "endpoints": [
+    {"path": "Vehicle.OEM.BrakeHealth.Advisory.Readiness", "entryType": "actuator"},
+    {"path": "Vehicle.OEM.TireHealth.Advisory.Readiness", "entryType": "actuator"}
+  ]
+}

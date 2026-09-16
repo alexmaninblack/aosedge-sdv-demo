@@ -65,6 +65,11 @@ def operation_plan(payload):
             raise ValueError("COMPONENT_VERSION_REQUIRED")
         request = dict(domain="component", action=action, component_version=version)
         plan = [request]
+    elif action == "backend-reset":
+        fields.add("team")
+        if payload.get("team") not in ("brake", "tire"):
+            raise ValueError("BACKEND_TEAM_REQUIRED")
+        plan = [dict(domain="backend", action="reset-scenario", team=payload["team"], target="test")]
     elif action == "service-prepare":
         fields.update(("team", "profile"))
         team, profile = payload.get("team"), payload.get("profile")
@@ -126,6 +131,8 @@ def public_result(result):
                "processSlotMatches", "readPathCount", "gate", "advisory", "state", "noOp", "currentVehicle",
                "version", "contentProfile", "sha256", "cloudDomain", "approved", "outcome", "signatureVerified", "phase", "completedSteps", "reason", "image")
     public["facts"] = {key: data[key] for key in allowed if key in data}
+    if result.get("operation") == "backend.reset-scenario" and isinstance(data.get("command"), dict):
+        public["facts"]["command"] = {key: data["command"].get(key) for key in ("commandId", "state", "issuedAt", "expiresAt")}
     if result.get("operation") in ("cloud.check", "cloud.prepare"):
         public["facts"].update({key: data[key] for key in ("domain", "observedAt", "stage", "noOp", "productionPreserved") if key in data})
         public["facts"]["checks"] = [{key: row.get(key) for key in ("key", "label", "state", "detail")}

@@ -19,6 +19,29 @@ from aosedge_demo_orchestrator.api import execute_operation
 
 
 class KuksaAuthorizationObservationTests(unittest.TestCase):
+    def test_recovery_removal_is_exclusive_and_preserves_original_proof(self):
+        from dataclasses import replace
+        request = request_from_arguments(build_parser().parse_args([
+            "service", "runtime-activate", "test", "--kac-only", "--kac-recovery-remove"]))
+        self.assertTrue(request.kac_recovery_remove)
+        self.assertIsNone(request.selection_error())
+        for extra in (dict(kac_only=False), dict(kac_recovery=True), dict(kac_time_read_proof=True),
+                      dict(kac_data_proof=True), dict(restart_sm=True)):
+            self.assertIsNotNone(replace(request, **extra).selection_error())
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            environment = EnvironmentService(root, catalog=SimpleNamespace(project=root / "catalog"))
+            environment._directory(".run/demo-current")
+            historical = dict(state="ACTIVE", result=dict(deadlineEpoch=123))
+            atomic_json(root / JOURNAL, dict(vehicles=dict(test=dict(unitId="unit", systemUid="native", localVmId="local")),
+                kacRecovery=historical))
+            with patch("aosedge_demo_orchestrator.service_inputs.SourceDriver") as driver:
+                driver.return_value.guest.return_value = dict(state="RESTORED", originalPolicyRestored=True)
+                result = ServiceInputs(environment).activate_kac("test", recovery_remove=True)
+                self.assertEqual("service-kac-recovery-remove", driver.return_value.guest.call_args.args[2])
+            self.assertTrue(result["originalPolicyRestored"])
+            self.assertEqual(historical, json.loads((root / JOURNAL).read_text())["kacRecovery"])
+
     def test_recovery_is_explicit_exclusive_and_test_only(self):
         from dataclasses import replace
         args = build_parser().parse_args(["service", "runtime-activate", "test", "--kac-only", "--kac-recovery"])
@@ -226,7 +249,10 @@ class KuksaAuthorizationObservationTests(unittest.TestCase):
         self.assertFalse(result["mutation"])
         self.assertEqual(["systemctl", "show"], calls[0][:2])
         self.assertEqual("journalctl", calls[1][0])
-        self.assertEqual(2, len(calls))
+        self.assertEqual(5, len(calls))
+        self.assertEqual(["journalctl", "-k"], calls[2][:2])
+        self.assertEqual(["systemctl", "show"], calls[3][:2])
+        self.assertEqual("findmnt", calls[4][0])
         self.assertEqual(13, result["startupEvents"][0]["errno"])
         self.assertEqual(1, len(result["startupEvents"]))
         self.assertNotIn("do-not-export", json.dumps(result))

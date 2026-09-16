@@ -9,6 +9,7 @@ Separate owned tables select the VISS source and fault the external uplink.
 
 import json
 import base64
+import datetime
 import gzip
 import io
 import hashlib
@@ -40,7 +41,7 @@ VSS_PATHS = tuple("Vehicle.CarlaSimulation.ChaosWheel." + row + "." + side + "."
     for row in ("Row1", "Row2") for side in ("Left", "Right"))
 VSS_ADVISORY_TYPES = tuple(("Vehicle.OEM." + team + ".Advisory." + leaf, kind)
     for team in ("BrakeHealth", "TireHealth")
-    for leaf, kind in (("Request", "actuator"), ("GatewayStatus", "sensor")))
+    for leaf, kind in (("Request", "actuator"), ("GatewayStatus", "sensor"), ("Readiness", "actuator")))
 VSS_PROOF_PATHS = VSS_PATHS + tuple(name for name, _ in VSS_ADVISORY_TYPES)
 
 
@@ -62,7 +63,7 @@ def advisory_log_observation(raw):
         message = item.get("MESSAGE", "")
         if not isinstance(message, str):
             continue
-        match = re.search(r"QM_ADVISORY endpoint=(transport|Vehicle\.OEM\.(?:BrakeHealth|TireHealth)\.Advisory\.(?:Request|GatewayStatus)) result=([A-Z_]{1,64})$", message)
+        match = re.search(r"QM_ADVISORY endpoint=(transport|Vehicle\.OEM\.(?:BrakeHealth|TireHealth)\.Advisory\.(?:Request|GatewayStatus|Availability)) result=([A-Z_]{1,64})$", message)
         if match and match[2] in {
             "KUKSA_TARGETS_READY", "KUKSA_TARGETS_UNAVAILABLE", "VISS_RESPONSE_TIMEOUT",
             "VISS_SET_ACCEPTED", "VISS_SET_REJECTED", "FORWARDED_TO_GATEWAY",
@@ -414,10 +415,10 @@ print(json.dumps(result))
 
 
 def advisory_schema_observation(lookup):
-    """Read four fixed contract leaves, without adding schema or authority."""
+    """Read six fixed contract leaves, without adding schema or authority."""
     rows = []
     for team in ("BrakeHealth", "TireHealth"):
-        for leaf, expected_type in (("Request", "actuator"), ("GatewayStatus", "sensor")):
+        for leaf, expected_type in (("Request", "actuator"), ("GatewayStatus", "sensor"), ("Readiness", "actuator")):
             name = "Vehicle.OEM." + team + ".Advisory." + leaf
             value = lookup(name)
             present = isinstance(value, dict)
@@ -429,7 +430,7 @@ def advisory_schema_observation(lookup):
         permissionProbe="NOT_PERFORMED", transportProbe="NOT_PERFORMED")
 
 
-def vss_supplement(schema, *, advisory=True):
+def vss_supplement(schema, *, advisory=True, readiness=True):
     """Append fixed V3 telemetry and D4-008 leaves; never grant permissions."""
     result = json.loads(json.dumps(schema))
     for name in VSS_PATHS:
@@ -450,6 +451,8 @@ def vss_supplement(schema, *, advisory=True):
             raise ValueError("COMPONENT_VSS_LEAF_CONFLICT")
         current.setdefault(leaf, expected)
     for name, kind in VSS_ADVISORY_TYPES if advisory else ():
+        if not readiness and name.endswith(".Readiness"):
+            continue
         current = result
         parts = name.split(".")
         for part in parts[:-1]:
@@ -512,7 +515,8 @@ def vss_change(request):
     remove = request["action"] == "component-schema-remove"
     if VSS_TEMP.exists() and VSS_TEMP.read_bytes() != expected:
         legacy = (json.dumps(vss_supplement(json.loads(base), advisory=False), sort_keys=True) + "\n").encode()
-        if not (remove and present and VSS_TEMP.read_bytes() == legacy):
+        previous = (json.dumps(vss_supplement(json.loads(base), readiness=False), sort_keys=True) + "\n").encode()
+        if not (remove and present and VSS_TEMP.read_bytes() in (legacy, previous)):
             raise ValueError("COMPONENT_VSS_CONTENT_CONFLICT")
     result = dict(baseSha256=base_sha, temporarySchema=str(VSS_TEMP), dropIn=str(VSS_DROPIN),
                   temporary=True, rebootRestoresBase=True, productionChanged=False)
@@ -601,13 +605,21 @@ def kuksa_authorization_observation():
             unit = record.get("UNIT") or record.get("_SYSTEMD_UNIT")
             if unit not in units or not isinstance(message, str):
                 continue
-            match = re.fullmatch(r"(?:aos-kuksa-auth-compat: startup|aos-kuksa-verifier-prepare:|verifier-prepare:) ?stage=([a-z0-9-]{1,48})(?: failed errno=([0-9]{1,5})| rv=(0x[0-9a-f]{1,16}))?", message)
+            match = re.fullmatch(r"(?:aos-kuksa-auth-compat: startup|aos-kuksa-verifier-prepare:|verifier-prepare:|provider-prepare:) ?stage=([a-z0-9-]{1,48})(?: failed errno=([0-9]{1,5})| rv=(0x[0-9a-f]{1,16})| result=([0-9]{1,3}))?", message)
             skipped = "condition" in message.lower() and "skipped" in message.lower()
+            failed_step = re.search(r'Failed at step ([A-Z_]+) spawning', message)
+            systemd_exit = re.search(r'status=([0-9]{1,3})/([A-Z_]+)', message)
+            if failed_step or systemd_exit:
+                events.append(dict(unit=unit, time=record.get("__REALTIME_TIMESTAMP"),
+                    stage="systemd-" + (failed_step[1] if failed_step else systemd_exit[2]).lower(),
+                    result=int(systemd_exit[1]) if systemd_exit else None))
             if match or skipped:
                 stamp = record.get("__REALTIME_TIMESTAMP", "")
                 events.append(dict(unit=unit, time=stamp if re.fullmatch(r"[0-9]{1,20}", stamp) else None,
+                    context=record.get("_SELINUX_CONTEXT") if re.fullmatch(r'[A-Za-z0-9_:,.-]{1,160}', str(record.get("_SELINUX_CONTEXT", ""))) else None,
                     stage=match[1] if match else "condition-skipped",
-                    errno=int(match[2]) if match and match[2] else None, rv=match[3] if match else None))
+                    errno=int(match[2]) if match and match[2] else None, rv=match[3] if match else None,
+                    result=int(match[4]) if match and match[4] else None))
     status = dict(state="SOCKET_ABSENT")
     time_access = {}
     kac_pid = services.get("aos-kuksa-auth-compat.service", {}).get("MainPID", "0")
@@ -665,11 +677,65 @@ def kuksa_authorization_observation():
                     and (type(value) is bool or isinstance(value, str) and re.fullmatch(r"[A-Za-z_]{1,64}", value))}
         except (OSError, ValueError, TypeError):
             status = dict(state="UNAVAILABLE")
+    kernel = command(["journalctl", "-k", "-b", "-n", "600", "--no-pager", "-o", "json"])
+    provider_denials = []
+    for line in kernel.stdout.splitlines() if kernel.returncode == 0 else []:
+        record = json.loads(line)
+        message = str(record.get("MESSAGE", ""))
+        if "avc:" not in message or "denied" not in message:
+            continue
+        fields = {key: (match[1] if (match := re.search(key + r'=([^\s]+)', message)) else None)
+            for key in ("scontext", "tcontext", "tclass", "permissive")}
+        permission = re.search(r'denied\s+\{([a-z_ ]+)\}', message)
+        provider_denials.append(dict(time=record.get("__REALTIME_TIMESTAMP"),
+            permissions=permission[1].strip().split() if permission else [], **fields))
+    proof = {}
+    for name, path in (("binary", Path("/run/democtl-provider-readiness/exec/aos-kuksa-provider-prepare")),
+            ("receipt", Path("/run/democtl-provider-readiness/receipt.json")),
+            ("dropin", Path("/run/systemd/system/aos-kuksa-provider-prepare.service.d/97-democtl-readiness.conf"))):
+        try:
+            info = path.lstat()
+            proof[name] = dict(present=True, symlink=stat.S_ISLNK(info.st_mode),
+                sha256=hashlib.sha256(path.read_bytes()).hexdigest() if stat.S_ISREG(info.st_mode) else None)
+        except OSError as error:
+            proof[name] = dict(present=False if isinstance(error, FileNotFoundError) else None,
+                sha256=None, errno=error.errno)
+    provider_unit = command(["systemctl", "show", "aos-kuksa-provider-prepare", "--property=ExecStart,DropInPaths,SELinuxContext,MemoryDenyWriteExecute,NoNewPrivileges"])
+    provider_config = {key: value for line in provider_unit.stdout.splitlines() if "=" in line
+        for key, value in [line.split("=", 1)]
+        if key in ("ExecStart", "DropInPaths", "SELinuxContext", "MemoryDenyWriteExecute", "NoNewPrivileges")}
+    # ExecStart arguments are not exposed: only the configured executable.
+    configured_exec = re.search(r'path=([^ ;]+)', provider_config.pop("ExecStart", ""))
+    provider_config["executable"] = configured_exec[1] if configured_exec else None
+    try:
+        installed_provider = Path("/usr/libexec/aos-kuksa-provider-prepare").read_bytes()
+        provider_config["installedSha256"] = hashlib.sha256(installed_provider).hexdigest()
+        provider_config["installedInterfaces"] = {name: name.encode() in installed_provider
+            for name in ("OSSL_STORE_load", "OSSL_STORE_close", "C_GetFunctionList")}
+    except OSError:
+        provider_config["installedSha256"] = None
+    provider_config["executionFiles"] = {}
+    for name, path in (("installed", Path("/usr/libexec/aos-kuksa-provider-prepare")),
+            ("staged", Path("/run/democtl-provider-readiness/exec/aos-kuksa-provider-prepare"))):
+        try:
+            info = path.stat()
+            provider_config["executionFiles"][name] = dict(uid=info.st_uid, gid=info.st_gid,
+                mode=oct(stat.S_IMODE(info.st_mode)), size=info.st_size,
+                context=os.getxattr(path, "security.selinux").decode().strip("\0"),
+                hasFileCapabilities="security.capability" in os.listxattr(path),
+                mountOptions=command(["findmnt", "-n", "-o", "OPTIONS", "-T", str(path)]).stdout.strip())
+        except OSError:
+            provider_config["executionFiles"][name] = dict(state="UNAVAILABLE")
+    mount_options = command(["findmnt", "-n", "-o", "OPTIONS", "-T", "/var/aos/workdirs"]).stdout.strip()
+    provider_config["stateStoreMountOptions"] = mount_options if re.fullmatch(r"[A-Za-z0-9_,:=.-]{1,512}", mount_options) else "UNAVAILABLE"
     return dict(mutation=False, state="CURRENT" if response.returncode == 0 and len(services) == len(units) else "INCOMPLETE",
+        providerConfiguration=provider_config,
+        providerDenials=provider_denials[-20:],
         protocolStatus=status,
         timeAccess=time_access, clockSample=dict(realtime=time.time(),
             boottime=time.clock_gettime(time.CLOCK_BOOTTIME) if hasattr(time, "CLOCK_BOOTTIME") else None),
         services=services, inputs=inputs, startupEvents=events[-30:], journalRecords=records,
+        providerReadinessProof=proof,
         journalState="CURRENT" if journal.returncode == 0 and len(journal.stdout) <= 2097152 else "UNAVAILABLE")
 
 
@@ -804,7 +870,7 @@ def arm_kac_policy_rollback(original, load_path, timeout=75, *, leased_policy=Fa
     os._exit(0)
 
 
-def kac_recovery(request):
+def kac_recovery(request, *, remove=False):
     """Reuse the exact proven policy for this disposable Test, with a lease.
 
     Separate from the completed short proofs: no canonical policy store,
@@ -831,6 +897,30 @@ def kac_recovery(request):
     if receipt.is_symlink():
         raise ValueError("KAC_RECOVERY_RECEIPT_SYMLINK")
     active = Path("/sys/fs/selinux/policy").read_bytes()
+    if remove:
+        if not receipt.is_file() or receipt.stat().st_uid != 0 or stat.S_IMODE(receipt.stat().st_mode) != 0o600:
+            raise ValueError("KAC_RECOVERY_OWNED_RECEIPT_REQUIRED")
+        record = json.loads(receipt.read_text())
+        if active != original and hashlib.sha256(active).hexdigest() != record.get("activePolicySha256"):
+            raise ValueError("KAC_RECOVERY_ACTIVE_POLICY_CHANGED")
+        dropin = Path("/run/systemd/system/aos-vehicle-data-provider.service.d/21-democtl-kac-recovery.conf")
+        content = "# democtl current-Test KAC recovery\n[Unit]\nWants=aos-kuksa-auth-compat.service\nAfter=aos-kuksa-auth-compat.service\n"
+        if any(path.is_symlink() for path in (dropin,) + tuple(dropin.parents)) or (dropin.exists() and dropin.read_text() != content):
+            raise ValueError("KAC_RECOVERY_DROPIN_CONFLICT")
+        no_op = active == original and not dropin.exists()
+        if active != original:
+            Path("/sys/fs/selinux/load").write_bytes(original)
+        if Path("/sys/fs/selinux/policy").read_bytes() != original:
+            raise ValueError("KAC_RECOVERY_STOCK_POLICY_NOT_RESTORED")
+        if dropin.exists():
+            dropin.unlink()
+            command(["systemctl", "daemon-reload"], check=True)
+        # The leased child only restores if its candidate is still active;
+        # after this rollback it cannot overwrite any later policy.
+        record.update(state="RESTORED", originalPolicyRestored=True, transientDropinRemoved=True)
+        write_public(receipt, record, mode=0o600)
+        return dict(state="RESTORED", originalPolicyRestored=True, transientDropinRemoved=True,
+            canonicalPolicyStoreChanged=False, noOp=no_op)
     if receipt.exists() and hashlib.sha256(active).hexdigest() == json.loads(receipt.read_text()).get("activePolicySha256"):
         record = json.loads(receipt.read_text())
         if record["deadlineEpoch"] <= time.time():
@@ -2073,11 +2163,152 @@ def core_iam_response_apply(request):
     return dict(after, mutation=True, state="APPLIED", responseCapacity=32, cmPreserved=True, durableVdpPreserved=True)
 
 
+def resume_readiness_provider():
+    """Resume only the preserved committed VDP69 stopped by its Requires edge.
+
+    This is a current-Test proof repair, not a general component-start fallback.
+    No selector, transaction or installed metadata is changed.
+    """
+    root = FACTORY_INPUTS.parent
+    if any((root / "state" / name).exists() for name in ("transaction.json", "stopped.json")):
+        raise ValueError("READINESS_PROVIDER_TRANSACTION_REQUIRES_RECONCILIATION")
+    active = root / "active"
+    installed = json.loads((root / "state/installed.json").read_text())
+    if (not active.is_symlink() or os.readlink(active) not in ("slots/a", "slots/b")
+            or installed.get("Version") != "69.0.0"
+            or installed.get("slot") != Path(os.readlink(active)).name
+            or json.loads((active / ".aos-instance.json").read_text()) != installed):
+        raise ValueError("READINESS_PROVIDER_COMMITTED_BASELINE_MISMATCH")
+    subprocess.run(["systemctl", "start", "aos-vehicle-data-provider"], capture_output=True, timeout=25, check=True)
+
+
+def provider_readiness_apply(request):
+    """One transient fixed Provider update; retain the private old token for rollback."""
+    if (request.get("role") != "test" or os.geteuid() != 0
+            or request.get("vehicle", {}).get("unitId") != "42c0bf43-4eb7-44e6-8c74-f60f9959da66"
+            or Path("/etc/machine-id").read_text().strip() != request["vehicle"].get("systemUid")
+            or Path("/sys/fs/selinux/enforce").read_text().strip() != "1"):
+        raise ValueError("READINESS_CURRENT_ENFORCING_TEST_REQUIRED")
+    root = Path("/run/democtl-provider-readiness")
+    dropin = Path("/run/systemd/system/aos-kuksa-provider-prepare.service.d/97-democtl-readiness.conf")
+    token = Path("/var/lib/aos-kuksa-provider/kuksa-token")
+    installed = Path("/usr/libexec/aos-kuksa-provider-prepare")
+    for path in (root, dropin, token, installed):
+        if any(part.is_symlink() for part in (path,) + tuple(path.parents)):
+            raise ValueError("READINESS_PATH_UNSAFE")
+    info = request["binary"]
+    with gzip.GzipFile(fileobj=io.BytesIO(base64.b64decode(info["data"], validate=True))) as stream:
+        raw = stream.read(32*1024**2+1)
+    if (len(raw)>32*1024**2 or raw[:6] != b"\x7fELF\x02\x01" or raw[18:20] != b"\xb7\x00"
+            or hashlib.sha256(raw).hexdigest() != info["sha256"]):
+        raise ValueError("READINESS_BINARY_INVALID")
+    def scopes():
+        if not stat.S_ISREG(token.stat().st_mode) or token.stat().st_uid != 0 or stat.S_IMODE(token.stat().st_mode) != 0o600:
+            raise ValueError("READINESS_CREDENTIAL_UNSAFE")
+        parts = token.read_bytes().split(b".")
+        if len(parts) != 3:
+            raise ValueError("READINESS_CREDENTIAL_INVALID")
+        payload = json.loads(base64.urlsafe_b64decode(parts[1] + b"="*(-len(parts[1])%4)))
+        return set(payload["scope"].split())
+    additions = {"read:Vehicle.OEM." + team + ".Advisory.Readiness" for team in ("BrakeHealth", "TireHealth")}
+    previous_binary = root / installed.name
+    execution = root / "exec"
+    binary = execution / installed.name
+    receipt = root / "receipt.json"
+    backup = root / "previous-token"
+    reconciled = False
+    if root.exists():
+        if receipt.is_file() and binary.is_file() and hashlib.sha256(binary.read_bytes()).hexdigest() == info["sha256"]:
+            saved = json.loads(receipt.read_text())
+            if dropin.read_text() == saved["dropin"] and scopes() == set(saved["scopes"]):
+                # Recover the exact first proof, which omitted the Requires=
+                # dependent restart. Persist once; later repeats cannot start
+                # an intentionally stopped provider.
+                if not saved.get("providerResumeReconciled"):
+                    resume_readiness_provider()
+                    saved["providerResumeReconciled"] = True
+                    write_public(receipt, json.dumps(saved), mode=0o600)
+                return dict(state="APPLIED", noOp=True, scopeCount=len(scopes()), binarySha256=info["sha256"], transient=True)
+        # One classified, rolled-back proof may be replaced by its diagnostic
+        # successor. Compare private credentials locally; return no contents.
+        reconciled = (not receipt.exists() and not dropin.exists() and not backup.is_symlink()
+            and backup.is_file() and previous_binary.is_file() and not previous_binary.is_symlink()
+            and not execution.exists()
+            and hashlib.sha256(previous_binary.read_bytes()).hexdigest() in (
+                "d8e68eaa32d1e9dca0f125a5d51deb423fb8f839814344a5807142e82e8165c5",
+                "5bd605eccb9cd2347687f8176cb2d94ad1288c819e592a48fa69983f87d0c5f1",
+                "7dc4a24b6bed3cc58a71ebeccb41914be2aabddd86c540ba24104d65bde89b74",
+                "4d5f955da62039975ce8c47486282140368288b38906070fca34294d82a6a297",
+                "1565ef029b585348c8189df87fb7ea6879d659b4beca7806745bf7caabd021b3",
+                "d5e11fe5cb348a48e367523df778933597a6da785cdc2b51192d03e2b084da25")
+            and backup.read_bytes() == token.read_bytes())
+        if not reconciled:
+            raise ValueError("READINESS_PREVIOUS_ATTEMPT_REQUIRES_RECONCILIATION")
+    if dropin.exists():
+        raise ValueError("READINESS_DROPIN_CONFLICT")
+    # The unchanged native preparer validates/reuses (or renews) the exact
+    # signed old credential before migration; no token is returned to the host.
+    provider_was_active = command(["systemctl", "is-active", "aos-vehicle-data-provider"]).stdout.strip() == "active"
+    subprocess.run(["systemctl", "restart", "aos-kuksa-provider-prepare"], capture_output=True, timeout=25, check=True)
+    before = scopes()
+    if before & additions:
+        raise ValueError("READINESS_OLD_SCOPE_NOT_BASELINE")
+    if not reconciled:
+        root.mkdir(mode=0o700)
+    backup.write_bytes(token.read_bytes()); backup.chmod(0o600)
+    # /run is nosuid and suppresses the native SELinux transition. Use one
+    # private root-only filesystem, read-only at execution time, with no
+    # setuid bits/file capabilities. Keep /run flags, NNP and policy unchanged.
+    execution.mkdir(mode=0o700)
+    command(["mount", "-t", "tmpfs", "-o", "size=8m,mode=0700,nodev", "democtl-provider-proof", str(execution)], check=True)
+    original = installed.read_bytes()
+    binary.write_bytes(original); binary.chmod(0o755)
+    command(["chcon", "--reference=" + str(installed), str(binary)], check=True)
+    text = "[Service]\nBindReadOnlyPaths=" + str(binary) + ":" + str(installed) + "\n"
+    try:
+        command(["mount", "-o", "remount,ro,nodev", str(execution)], check=True)
+        dropin.parent.mkdir(parents=True, exist_ok=True)
+        dropin.write_text(text)
+        command(["systemctl", "daemon-reload"], check=True)
+        baseline = subprocess.run(["systemctl", "restart", "aos-kuksa-provider-prepare"], capture_output=True, timeout=25)
+        if baseline.returncode or scopes() != before:
+            raise ValueError("READINESS_BIND_BASELINE_FAILED")
+        command(["mount", "-o", "remount,rw,nodev", str(execution)], check=True)
+        binary.write_bytes(raw)
+        command(["mount", "-o", "remount,ro,nodev", str(execution)], check=True)
+        token.unlink()
+        subprocess.run(["systemctl", "restart", "aos-kuksa-provider-prepare"], capture_output=True, timeout=25, check=True)
+        if scopes() != before | additions:
+            raise ValueError("READINESS_SCOPE_DELTA_MISMATCH")
+        if provider_was_active:
+            resume_readiness_provider()
+        write_public(receipt, json.dumps(dict(dropin=text, scopes=sorted(scopes()), providerResumeReconciled=True)), mode=0o600)
+    except BaseException:
+        if dropin.exists():
+            dropin.unlink()
+        token.write_bytes(backup.read_bytes()); token.chmod(0o600)
+        command(["restorecon", str(token)], check=True)
+        command(["systemctl", "daemon-reload"], check=True)
+        subprocess.run(["systemctl", "restart", "aos-kuksa-provider-prepare"], capture_output=True, timeout=25)
+        if provider_was_active:
+            resume_readiness_provider()
+        if os.path.ismount(execution):
+            command(["umount", str(execution)], check=True)
+        execution.rmdir()
+        raise
+    return dict(state="APPLIED", noOp=False, scopeCount=len(scopes()), binarySha256=info["sha256"], transient=True,
+                vdpReload="NEXT_COMPONENT_ACTIVATION", managersChanged=False)
+
+
 def execute(request):
+    if request["action"] == "provider-readiness-apply":
+        return provider_readiness_apply(request)
     if request["action"] == "core-permissions-iam-response-apply":
         return core_iam_response_apply(request)
     if request["action"] == "service-kac-recovery":
         return kac_recovery(request)
+    if request["action"] == "service-kac-recovery-remove":
+        return kac_recovery(request, remove=True)
     if request["action"] in ("service-kac-time-proof", "service-kac-data-proof"):
         return kac_time_read_proof(request)
     if request["action"] == "service-kac-activate":
@@ -2442,6 +2673,7 @@ def execute(request):
                 raise ValueError("COMPONENT_JOURNAL_UNAVAILABLE")
             streams.extend((unit, line) for line in result.stdout.splitlines())
         entries, structures, ready_events, cm_transport = [], set(), 0, []
+        update_errors = []
         cm_journal = dict(records=0, messageTypes={}, lastEventTime=None, stages=[])
         for requested_unit, line in streams:
             item = json.loads(line)
@@ -2521,11 +2753,16 @@ def execute(request):
                     native_fields["errorLabels"] = [label for label in labels if label.lower() in message.lower()]
                     native_fields["errorLocations"] = re.findall(
                         r"\b(?:instance|container|crunrunner|filesystem|launcher|networkmanager|instancemanager)\.cpp:[0-9]{1,5}\b", message)
+                    if re.search(r"err=command `/usr/libexec/aos-vehicle-data-provider-health unavailab", message):
+                        native_fields["runtimeError"] = "PROVIDER_MARK_UNAVAILABLE_FAILED"
+                    native_fields["errorLocations"].extend(re.findall(r"\bproviderprofile\.cpp:[0-9]{1,5}\b", message))
             # Preserve only known fixed runtime failure labels before removing
             # instance bodies, which otherwise also hide the trailing error.
             diagnostic = next((label for label in (
                 "a different component transaction is already active",
                 "component runtime is not ready",
+                "safe stop wait canceled", "safe_stop_timeout", "safe_stop_lost_during_apply",
+                "failed to start provider", "cannot start provider",
             ) if label in message), None)
             # No message payloads, transport bodies, auth material or telemetry.
             if "{" in message:
@@ -2542,6 +2779,10 @@ def execute(request):
                 entry["diagnostic"] = diagnostic
             if native_fields:
                 entry["nativeInstance"] = native_fields
+            if (requested_unit in ("aos-sm.service", "aos-cm.service")
+                    and re.search(r"fail|error", message, re.I)
+                    and "monitoring" not in message.lower()):
+                update_errors.append(entry)
             entries.append(entry)
         # Use the existing fixed Python projection, not optional journalctl
         # PCRE support. A grep failure must not masquerade as an empty journal.
@@ -2549,9 +2790,21 @@ def execute(request):
             "-u", "aos-vehicle-data-provider.service"])
         if advisory_log.returncode != 0 or len(advisory_log.stdout) > 2097152:
             raise ValueError("COMPONENT_ADVISORY_JOURNAL_UNAVAILABLE")
+        # Transport readiness emits only on a changed result. Include the
+        # bounded current-process startup window, not an unbounded boot log.
+        started = command(["systemctl", "show", "aos-vehicle-data-provider.service", "--property=ActiveEnterTimestamp", "--value"])
+        advisory_startup = []
+        try:
+            start = datetime.datetime.strptime(started.stdout.strip(), "%a %Y-%m-%d %H:%M:%S UTC").replace(tzinfo=datetime.timezone.utc)
+            startup = command(["journalctl", "-b", "-n", "600", "-o", "json", "--no-pager", "-u", "aos-vehicle-data-provider.service",
+                "--since", "@" + str(int(start.timestamp())), "--until", "@" + str(int(start.timestamp()) + 10)])
+            if startup.returncode == 0 and len(startup.stdout) <= 2097152:
+                advisory_startup = advisory_log_observation(startup.stdout)
+        except (ValueError, OverflowError):
+            pass
         entries.sort(key=lambda entry: int(entry["time"] or 0))
         return dict(entries=entries[-100:], scannedEntries=len(streams), providerReadyEvents=ready_events, structuredFields=sorted(structures),
-                    advisoryEvents=advisory_log_observation(advisory_log.stdout),
+                    advisoryEvents=advisory_log_observation(advisory_log.stdout), advisoryStartupEvents=advisory_startup,
                     advisoryJournal=dict(records=len(advisory_log.stdout.splitlines()), returnCode=advisory_log.returncode),
                     smNetworkEvents=[entry for entry in entries if entry["unit"] == "aos-sm.service"
                         and ("network" in entry["message"].lower() or
@@ -2565,6 +2818,7 @@ def execute(request):
                         and "can't start launcher" in entry["message"]][:12],
                     cmUpdatePhases=[entry for entry in entries if entry["unit"] == "aos-cm.service" and
                         re.search(r"Update state changed|Current update canceled|Cancel current update|Failed to process desired status", entry["message"])][-20:],
+                    updateErrors=update_errors[-30:],
                     window="Current boot: last 600 CM / 6000 SM / 600 VDP / 80 other service events", projection="BOUNDED_REDACTED_SERVICE_EVENTS")
     if action == "component-status":
         result = execute(dict(request, action="status"))
@@ -2581,8 +2835,20 @@ def execute(request):
             value = json.loads(path.read_bytes())
             row = {key: value[key] for key in ("schemaVersion", "Version", "slot", "version", "candidateVersion", "candidateSlot", "previousVersion", "previousSlot", "hasPrevious", "phase", "operation") if key in value}
             message = value.get("message", "")
-            if isinstance(message, str) and re.fullmatch(r"[a-zA-Z0-9_ :.,()-]{1,200}", message):
+            if isinstance(message, str) and re.fullmatch(r"[a-zA-Z0-9_ :.,()\[\]-]{1,200}", message):
                 row["reason"] = message
+            elif isinstance(message, str) and message:
+                # Fixed public runtime error labels, not arbitrary exception
+                # text (which can contain credential paths or transport data).
+                row["reasonLabels"] = [label for label in (
+                    "safe stop wait canceled", "safe_stop_timeout", "safe_stop_lost_during_apply",
+                    "systemd credential is unavailable", "binding credential is inconsistent",
+                    "binding credential is unavailable", "component runtime is not ready",
+                    "systemctl stop failed", "systemctl start failed", "Permission denied",
+                    "Device or resource busy", "No such file or directory", "Invalid argument",
+                    "timeout", "canceled", "not found", "failed", "unavailable",
+                ) if label in message]
+                row["reasonLocations"] = re.findall(r"\b[a-z]+\.cpp:[0-9]{1,5}\b", message)
             row["modifiedEpoch"] = int(path.stat().st_mtime)
             result["runtimeState"][name] = row
         if not active.is_symlink():

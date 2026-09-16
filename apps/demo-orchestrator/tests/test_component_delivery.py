@@ -371,7 +371,7 @@ class DeliveryTests(unittest.TestCase):
             dict(MESSAGE="Failed to start instance: instance={hidden fixture}, error=a different component transaction is already active", __REALTIME_TIMESTAMP="5")]
         journal = SimpleNamespace(returncode=0, stdout="\n".join(json.dumps(value) for value in messages))
         empty = SimpleNamespace(returncode=0, stdout="")
-        with patch.object(source_guest, "command", side_effect=[service, journal, empty, empty, empty, empty]):
+        with patch.object(source_guest, "command", side_effect=[service, journal, empty, empty, empty, empty, empty]):
             result = source_guest.execute(dict(action="component-logs", vehicle=dict(localVmId="fixture")))
         self.assertEqual(1, result["providerReadyEvents"])
         self.assertEqual(["component self-test failed", "component health passed", "Failed to start instance: instance=[BODY_REDACTED]"], [item["message"] for item in result["entries"]])
@@ -389,7 +389,7 @@ class DeliveryTests(unittest.TestCase):
                 "(launcher) Instance status received: instance={component:0:vdp:subject:0}, version=8.0.0, state=active, token=SECRET_FIXTURE"))]
         journal = SimpleNamespace(returncode=0, stdout="\n".join(json.dumps(value) for value in messages))
         empty = SimpleNamespace(returncode=0, stdout="")
-        with patch.object(source_guest, "command", side_effect=[service, journal, empty, empty, empty, empty]):
+        with patch.object(source_guest, "command", side_effect=[service, journal, empty, empty, empty, empty, empty]):
             result = source_guest.execute(dict(action="component-logs", vehicle=dict(localVmId="fixture")))
         self.assertEqual(2, len(result["cmUpdatePhases"]))
         self.assertEqual(dict(type="component", preinstalled=True, itemId="factory-vdp", subjectId="aos-vm-main",
@@ -406,7 +406,7 @@ class DeliveryTests(unittest.TestCase):
                          __REALTIME_TIMESTAMP="31")]
         journal = SimpleNamespace(returncode=0, stdout="\n".join(json.dumps(value) for value in messages))
         empty = SimpleNamespace(returncode=0, stdout="")
-        with patch.object(source_guest, "command", side_effect=[service, journal, empty, empty, empty, empty]) as command:
+        with patch.object(source_guest, "command", side_effect=[service, journal, empty, empty, empty, empty, empty]) as command:
             result = source_guest.execute(dict(action="component-logs", vehicle=dict(localVmId="fixture")))
         self.assertEqual(31, result["cmJournal"]["records"])
         self.assertEqual(15, len(result["cmJournal"]["stages"]))
@@ -423,7 +423,7 @@ class DeliveryTests(unittest.TestCase):
         journal = SimpleNamespace(returncode=0, stdout=json.dumps(dict(MESSAGE=json.dumps(event),
             __REALTIME_TIMESTAMP="1", _SYSTEMD_UNIT="aos-sm.service", _EXE="/usr/bin/brake-health-bootstrap")))
         empty = SimpleNamespace(returncode=0, stdout="")
-        with patch.object(source_guest, "command", side_effect=[service, journal, empty, empty, empty, empty]):
+        with patch.object(source_guest, "command", side_effect=[service, journal, empty, empty, empty, empty, empty]):
             result = source_guest.execute(dict(action="component-logs", vehicle=dict(localVmId="fixture")))
         self.assertEqual("brake", result["entries"][0]["team"])
         self.assertEqual("Service bootstrap error: KUKSA_AUTH_UNAVAILABLE", result["entries"][0]["message"])
@@ -436,7 +436,7 @@ class DeliveryTests(unittest.TestCase):
         journal = SimpleNamespace(returncode=0, stdout=json.dumps(dict(
             MESSAGE=message, __REALTIME_TIMESTAMP="1", _SYSTEMD_UNIT="aos-sm.service")))
         empty = SimpleNamespace(returncode=0, stdout="")
-        with patch.object(source_guest, "command", side_effect=[service, journal, empty, empty, empty, empty]):
+        with patch.object(source_guest, "command", side_effect=[service, journal, empty, empty, empty, empty, empty]):
             result = source_guest.execute(dict(action="component-logs", vehicle=dict(localVmId="fixture")))
         native = result["entries"][0]["nativeInstance"]
         self.assertEqual(["No such process"], native["errorLabels"])

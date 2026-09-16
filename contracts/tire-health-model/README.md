@@ -5,7 +5,7 @@
 
 - Decision: `D4-018`
 - Lifecycle state: `ACCEPTED`
-- Contract version: `1.1.0`
+- Contract version: `1.1.1` (explicit current-Test demo reset; model thresholds unchanged)
 - Subdecision state: exact VDP v3 input/incompatibility, bounded dynamics
   episode, deterministic synthetic estimator and persistent hysteresis/
   idempotency plus pre-demo calibration/qualification policy accepted
@@ -67,6 +67,13 @@ the Gateway expires an unrefreshed lease. Only correlated Gateway Status—not a
 successful KUKSA write—proves application. The entire path remains local when
 external connectivity is absent and is presented only on the Engineering
 Telematics Dashboard, not a demo driver cluster.
+
+The operator-authorized demo-reset exception clears the current indication
+without fabricating a GOOD assessment. It resets model/capture to NOT_EVALUATED,
+retains sequence, epoch, history and outbox, and requires a correlated Gateway
+CLEARED acknowledgement. This is demo control, not a repair claim. The closed
+[reset protocol](../../docs/planning/active/work-packets/advisory-readiness-and-demo-reset.md)
+defines current-Test scope and bounded execution.
 
 Model state and the derived-message outbox survive ordinary Service and VM
 restart and are removed only with the disposable Unit overlay at R0. The

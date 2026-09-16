@@ -61,6 +61,7 @@ class OperationRequest:
     kac_time_read_proof: bool = False
     kac_data_proof: bool = False
     kac_recovery: bool = False
+    kac_recovery_remove: bool = False
     iam_response_capacity: bool = False
     restart_cm: bool = False
     restart_guest_resolver: bool = False
@@ -76,6 +77,9 @@ class OperationRequest:
         if type(self.iam_response_capacity) is not bool or (self.iam_response_capacity and
                 (self.domain != "component" or self.action not in ("core-permissions-build", "core-permissions-apply"))):
             return "IAM_RESPONSE_CAPACITY_OPERATION_REQUIRED"
+        if type(self.kac_recovery_remove) is not bool or (self.kac_recovery_remove and
+                (not self.kac_only or self.kac_recovery or self.kac_data_proof or self.kac_time_read_proof)):
+            return "KAC_RECOVERY_REMOVE_REQUIRES_EXCLUSIVE_KAC_ONLY"
         if type(self.kac_recovery) is not bool or (self.kac_recovery and
                 (not self.kac_only or self.kac_data_proof or self.kac_time_read_proof)):
             return "KAC_RECOVERY_REQUIRES_EXCLUSIVE_KAC_ONLY"

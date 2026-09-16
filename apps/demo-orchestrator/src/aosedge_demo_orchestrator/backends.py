@@ -12,6 +12,7 @@ import sys
 import time
 from contextlib import contextmanager
 from pathlib import Path
+from uuid import uuid4
 
 from .environment import EnvironmentError, JOURNAL, atomic_json
 from .status import read_json, now, object_id
@@ -36,6 +37,7 @@ class BackendService:
             paths[name] = "/api/v1/" + team + "/units/" + quote(uid, safe="") + "/" + name + "?limit=10"
         if team == "tire":
             paths["functionStatus"] = "/api/v1/tire/units/" + quote(uid, safe="") + "/function-status?limit=10"
+        paths["demoReset"] = "/api/v1/" + team + "/units/" + quote(uid, safe="") + "/demo-reset"
         for name, path in paths.items():
             connection = http.client.HTTPConnection("127.0.0.1", 18091 if team == "brake" else 18092, timeout=3)
             try:
@@ -48,6 +50,8 @@ class BackendService:
                 value = json.loads(raw)
                 if not isinstance(value, dict):
                     raise ValueError("BACKEND_RESPONSE_OBJECT_REQUIRED")
+                if name == "demoReset":
+                    self._validate_reset(value, uid)
                 if name == "mockData" and (value.get("source") != "DEMO_MOCK" or value.get("vehicleTelemetry") is not False
                         or value.get("unitSystemUid") != uid):
                     raise EnvironmentError("BACKEND_MOCK_SCOPE_OR_PROVENANCE_MISMATCH")
@@ -71,6 +75,59 @@ class BackendService:
                 connection.close()
         result["state"] = "OBSERVED" if all(item["state"] == "OBSERVED" for item in result["observations"].values()) else "PARTIAL"
         return result
+
+    def _validate_reset(self, value, uid):
+        if (not isinstance(value, dict) or set(value) != {"schemaVersion", "unitSystemUid", "connected", "command"}
+                or type(value.get("schemaVersion")) is not int or value["schemaVersion"] != 1
+                or value.get("unitSystemUid") != uid or type(value.get("connected")) is not bool):
+            raise EnvironmentError("BACKEND_RESET_SCOPE_OR_SHAPE_MISMATCH")
+        command = value["command"]
+        if command is not None:
+            if (not isinstance(command, dict) or command.get("unitSystemUid") != uid
+                    or command.get("operation") != "RESET_DEMO_SCENARIO"
+                    or command.get("state") not in ("PENDING", "CLEARED", "EXPIRED", "FAILED", "REJECTED")):
+                raise EnvironmentError("BACKEND_RESET_SCOPE_OR_SHAPE_MISMATCH")
+            object_id(command.get("commandId"))
+        return value
+
+    def _reset_status(self, team, uid):
+        from urllib.parse import quote
+        connection = http.client.HTTPConnection("127.0.0.1", 18091 if team == "brake" else 18092, timeout=3)
+        try:
+            connection.request("GET", "/api/v1/" + team + "/units/" + quote(uid, safe="") + "/demo-reset", headers={"Accept": "application/json"})
+            response = connection.getresponse()
+            raw = response.read(16385)
+            if response.status != 200 or len(raw) > 16384:
+                raise EnvironmentError("BACKEND_RESET_STATUS_UNAVAILABLE")
+            return self._validate_reset(json.loads(raw), uid)
+        except (OSError, ValueError, http.client.HTTPException):
+            raise EnvironmentError("BACKEND_RESET_STATUS_UNAVAILABLE") from None
+        finally:
+            connection.close()
+
+    def _reset_scenario(self, state, team, observed, record, uid):
+        from .backend_retirement import BackendRetirement
+        snapshot = self._reset_status(team, uid)
+        command = snapshot["command"]
+        if command and command["state"] == "PENDING":
+            return dict(team=team, state="PENDING", noOp=True, **snapshot)
+        receipt = (record or {}).get("scenarioReset") or {}
+        # A lost admin response must reuse its exact command ID, even if the
+        # service already completed it. A later deliberate click starts anew.
+        retry = receipt.get("state") == "UNCERTAIN" and receipt.get("unitSystemUid") == uid
+        if not retry and not snapshot["connected"]:
+            raise EnvironmentError("RESET_SERVICE_NOT_CONNECTED")
+        command_id = object_id(receipt["commandId"]) if retry else str(uuid4())
+        record["scenarioReset"] = dict(state="UNCERTAIN", unitSystemUid=uid, commandId=command_id)
+        atomic_json(self.root / JOURNAL, state)
+        result = BackendRetirement(self)._private(team, observed["Id"], "demo-reset",
+            dict(schemaVersion=1, unitSystemUid=uid, commandId=command_id))
+        self._validate_reset(result, uid)
+        if not result["command"] or result["command"]["commandId"] != command_id:
+            raise EnvironmentError("BACKEND_RESET_RESPONSE_UNCERTAIN")
+        record["scenarioReset"]["state"] = "ACCEPTED"
+        atomic_json(self.root / JOURNAL, state)
+        return dict(team=team, state=result["command"]["state"], noOp=retry, **result)
 
     def __init__(self, environment, progress=None):
         self.environment = environment
@@ -480,11 +537,11 @@ class BackendService:
             raise EnvironmentError("BACKEND_OBSERVATION_BINDING_CHANGED")
 
     def execute(self, action, team):
-        if team not in TEAMS or action not in ("build", "activate", "start", "stop", "status", "inspect"):
+        if team not in TEAMS or action not in ("build", "activate", "start", "stop", "status", "inspect", "reset-scenario", "reset-status"):
             raise EnvironmentError("BACKEND_OPERATION_INVALID")
         if action == "build":
             return self.build(team)
-        with self._observation(team) if action in ("inspect", "status") else self.environment._writer():
+        with self._observation(team) if action in ("inspect", "status", "reset-status") else self.environment._writer():
             state = read_json(self.root / JOURNAL)
             if (state.get("kind") != "democtl.current-run" or "test" not in state.get("vehicles", {})
                     or not state.get("operations") or state["operations"][0].get("class") != "LOCAL_CREATE"
@@ -495,6 +552,17 @@ class BackendService:
             record = state.get("backends", {}).get(team)
             observed = self._inspect("container", name)
             self._owned_container(observed, owner, team, (record or {}).get("imageId"))
+            if action in ("reset-scenario", "reset-status"):
+                if not record or not observed or not observed.get("State", {}).get("Running"):
+                    raise EnvironmentError("BACKEND_RESET_RUNNING_BACKEND_REQUIRED")
+                uid = state["vehicles"]["test"].get("systemUid")
+                if not isinstance(uid, str) or not re.fullmatch(r"[A-Za-z0-9._:-]{1,128}", uid):
+                    raise EnvironmentError("BACKEND_CURRENT_TEST_CONTEXT_REQUIRED")
+                if action == "reset-status":
+                    return dict(team=team, state="OBSERVED", **self._reset_status(team, uid))
+                if (state.get("demoLifecycle") or {}).get("action") == "retire":
+                    raise EnvironmentError("BACKEND_RESET_RETIREMENT_IN_PROGRESS")
+                return self._reset_scenario(state, team, observed, record, uid)
             if action == "inspect":
                 if not observed or not observed.get("State", {}).get("Running"):
                     return dict(team=team, state="STOPPED", source="DOCKER_PROCESS_ONLY")

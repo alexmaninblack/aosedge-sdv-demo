@@ -20,6 +20,31 @@ from aosedge_demo_orchestrator.environment import EnvironmentError
 
 
 class PermissionCapacityTests(unittest.TestCase):
+    def test_readiness_resume_only_exact_committed_preserved_provider(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "state").mkdir()
+            (root / "slots/b").mkdir(parents=True)
+            record = dict(schemaVersion=1, slot="b", Version="69.0.0")
+            for path in (root / "state/installed.json", root / "slots/b/.aos-instance.json"):
+                path.write_text(json.dumps(record))
+            (root / "active").symlink_to("slots/b")
+            with patch.object(guest, "FACTORY_INPUTS", root / "demo-inputs"), patch.object(guest.subprocess, "run") as run:
+                guest.resume_readiness_provider()
+                self.assertEqual(["systemctl", "start", "aos-vehicle-data-provider"], run.call_args.args[0])
+                run.reset_mock()
+                for name in ("transaction.json", "stopped.json"):
+                    marker = root / "state" / name
+                    marker.write_text("{}")
+                    with self.assertRaisesRegex(ValueError, "TRANSACTION"):
+                        guest.resume_readiness_provider()
+                    marker.unlink()
+                record["Version"] = "70.0.0"
+                (root / "state/installed.json").write_text(json.dumps(record))
+                with self.assertRaisesRegex(ValueError, "BASELINE_MISMATCH"):
+                    guest.resume_readiness_provider()
+                run.assert_not_called()
+
     def test_iam_reply_fix_uses_function_capacity_not_resource_capacity(self):
         files = runtime.permission_recipe_inputs(iam_response_capacity=True)
         patches = [data.decode() for name, data in files.items() if name.endswith(".patch")]
@@ -37,7 +62,7 @@ class PermissionCapacityTests(unittest.TestCase):
         from aosedge_demo_orchestrator.service_packages import package_configuration
         root = Path(__file__).resolve().parents[3]
         limits = {( "brake", "v1"): (6, 41), ("brake", "v2"): (12, 50),
-                  ("brake", "v3"): (14, 50), ("tire", "v1"): (17, 62)}
+                  ("brake", "v3"): (15, 50), ("tire", "v1"): (18, 62)}
         for (team, profile), (count, longest) in limits.items():
             permissions = package_configuration(root, team, profile, "99.0.0")["items"][0]["configuration"]["permissions"]["kuksa"]
             self.assertEqual(count, len(permissions))

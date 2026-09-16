@@ -2,7 +2,7 @@
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "schemaVersion": 1,
   "contractId": "aosedge-demo-tire-health-product",
-  "contractVersion": "1.1.0",
+  "contractVersion": "1.1.1",
   "lifecycleState": "ACCEPTED",
   "decision": "D4-018",
   "product": {
@@ -157,6 +157,13 @@
     "setOnFirstAcceptedNonGoodBand": true,
     "setOnAcceptedChangeBetweenNonGoodBands": true,
     "clearOnlyAfterAcceptedImprovementHysteresis": true,
+    "demoResetException": {
+      "cause": "EXPLICIT_CURRENT_TEST_MODEL_RESET",
+      "decisionIdSource": "DURABLE_RESET_COMMAND_UUID",
+      "modelAfterReset": "NOT_EVALUATED",
+      "createsAssessment": false,
+      "completionRequires": "MATCHING_GATEWAY_CLEARED"
+    },
     "restartWithPersistedNonGoodBand": "REESTABLISH_LEASE_USING_LAST_ACCEPTED_ASSESSMENT",
     "stopOrCrashCreatesClear": false,
     "leaseMs": 30000,

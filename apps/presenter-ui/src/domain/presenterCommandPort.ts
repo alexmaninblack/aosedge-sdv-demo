@@ -1,6 +1,6 @@
 export type DemoAction = "prepare-demo" | "create" | "start-vms" | "stop-vms" | "provision" | "start-simulation" | "stop-simulation" | "connect-test" | "reconnect-test" | "park" | "resume" | "reset"
   | "prepare" | "unpack" | "sign" | "upload" | "publish" | "approve" | "inspect" | "verify" | "cloud-status" | "observe-test" | "test-logs" | "cloud-access"
-  | "service-prepare" | "service-publish" | "service-observe" | "service-assign" | "cloud-inspect" | "cloud-choose" | "cloud-select" | "cloud-check" | "cloud-prepare";
+  | "service-prepare" | "service-publish" | "service-observe" | "service-assign" | "backend-reset" | "cloud-inspect" | "cloud-choose" | "cloud-select" | "cloud-check" | "cloud-prepare";
 export interface DemoCommand { action: DemoAction; image?: string; version?: string; profile?: "v1" | "v2" | "v3"; team?: "brake" | "tire"; release?: string; serviceId?: string; selectionId?: string }
 export interface DemoJob { id: string; action: DemoAction; cloudDomain?: string; runId?: string | null; version?: string; profile?: string; team?: "brake" | "tire"; release?: string; serviceId?: string; state: string; startedAt: string; finishedAt?: string; reason?: string;
   progress: string[]; results: { operation: string; state: string; message: string; facts: Record<string, unknown> }[] }

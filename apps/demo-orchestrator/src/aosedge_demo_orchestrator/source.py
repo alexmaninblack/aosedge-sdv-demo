@@ -93,7 +93,7 @@ class SourceDriver:
         request = dict(action=action, vehicle=vehicle, role=role, **extra)
         script = "python3 - <<'DEMOCTL_SOURCE_PY'\n" + code + "\nmain(" + repr(request) + ")\nDEMOCTL_SOURCE_PY\n"
         try:
-            timeout = self.budget(360 if action == "service-kac-data-proof" else 120 if action in ("core-permissions-apply", "core-permissions-iam-response-apply", "service-kac-time-proof") else 40 if action == "core-permissions-status" else 110 if action == "service-runtime-activate" else 60 if action in ("component-sm-apply", "component-cm-apply", "trust-configure") else 25)
+            timeout = self.budget(360 if action == "service-kac-data-proof" else 120 if action in ("core-permissions-apply", "core-permissions-iam-response-apply", "service-kac-time-proof") else 90 if action == "provider-readiness-apply" else 40 if action == "core-permissions-status" else 110 if action == "service-runtime-activate" else 60 if action in ("component-sm-apply", "component-cm-apply", "trust-configure") else 25)
             command = ssh_command(access_path(self.root, role), state["vehicles"][role]["sshPort"], min(5, timeout))
             if self._session:
                 command = ["ControlMaster=auto" if arg == "ControlMaster=no" else
@@ -496,10 +496,18 @@ class SourceService:
             self.simulation("start")
             return self.select(current)
 
-    def _detach(self, state, target=None):
+    def _detach(self, state, target=None, *, stopping=False):
         from . import source_authentication as authentication
         if authentication.enabled(state) and state["source"].get("state") != "STOPPED":
-            authentication.detach(self.driver, state)
+            if stopping and not self.driver.live_process(state["source"]["runnerCommand"]):
+                # A crashed Gateway has no assignment endpoint. Prove the
+                # listener is absent; never treat a timeout as detachment.
+                self.driver.vm._free_port(16443)
+                if state["source"]["trust"].get("pending"):
+                    raise EnvironmentError("SOURCE_TRUST_PENDING_ASSIGNMENT_CONFLICT")
+                state["source"]["trust"]["lastDetachEvidence"] = "GATEWAY_ABSENT"
+            else:
+                authentication.detach(self.driver, state)
         if target is None:
             return self.driver.guests(state, "block")
         # Studio may retain a running Production VM. Read its existing gate,
@@ -617,7 +625,7 @@ class SourceService:
                     physical = "CONFIRMED"
                 else:
                     self.progress("Simulation: Controller absent; physical stop not observed")
-                views = self._detach(state, target)
+                views = self._detach(state, target, stopping=True)
                 if any(v["gate"] != "BLOCKED" for v in views.values()):
                     raise EnvironmentError("SOURCE_DETACH_NOT_CONFIRMED")
                 state["currentVehicle"] = None

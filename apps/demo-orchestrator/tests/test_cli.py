@@ -30,7 +30,7 @@ class DemoCtlBoilerplateTests(unittest.TestCase):
     def test_status_is_read_only(self) -> None:
         output = io.StringIO()
         with contextlib.redirect_stdout(output), patch(
-            "aosedge_demo_orchestrator.probes.process_snapshot", return_value=[]
+            "aosedge_demo_orchestrator.status.StatusService.collect", return_value={}
         ), patch("aosedge_demo_orchestrator.source.SourceService.observe", return_value={"state": "NOT_PREPARED"}):
             exit_code = main(["--output", "json", "status"])
         result = json.loads(output.getvalue())

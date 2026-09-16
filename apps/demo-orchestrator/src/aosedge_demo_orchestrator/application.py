@@ -66,6 +66,10 @@ class DemoOrchestrator:
                 from .service_inputs import ServiceInputs
                 activating = request.action == "runtime-activate"
                 if request.kac_only:
+                    if request.kac_recovery_remove:
+                        data = ServiceInputs(self.environment_service).activate_kac("test", recovery_remove=True)
+                        return OperationResult(operation, OperationState.COMPLETED if data.get("originalPolicyRestored") else OperationState.PARTIAL,
+                            "Exact stock policy restored; owned transient KAC recovery removed. No VM, manager or container restart.", data=data)
                     if request.kac_recovery:
                         self.vm_service.progress("Test: proven KAC recovery for bounded qualification; no manager or container restart")
                         data = ServiceInputs(self.environment_service).activate_kac("test", recovery=True)
@@ -195,7 +199,9 @@ class DemoOrchestrator:
                 return OperationResult(operation, OperationState.BLOCKED, "SERVICE_CLOUD_CONFIGURATION_UNAVAILABLE")
         if request.domain == "backend":
             from .backends import BackendService
-            if request.target or request.current or request.image or request.image_path or request.profile:
+            reset_action = request.action in ("reset-scenario", "reset-status")
+            if ((request.target != VehicleTarget.TEST if reset_action else bool(request.target))
+                    or request.current or request.image or request.image_path or request.profile):
                 return OperationResult(operation, OperationState.BLOCKED, "BACKEND_USES_FIXED_TEAM_ONLY")
             try:
                 backend = BackendService(self.environment_service, self.vm_service.progress)
@@ -206,9 +212,11 @@ class DemoOrchestrator:
                     return OperationResult(operation, OperationState.COMPLETED if data["state"] == "COMPLETED" else OperationState.PARTIAL,
                         "Explicit Docker Desktop recovery; no pruning, Cloud mutation or QEMU VM restart.", data=data)
                 data = backend.execute(request.action, request.team)
-                state = (OperationState.PARTIAL if request.action == "inspect" and data.get("state") == "PARTIAL" else OperationState.OBSERVED if request.action in ("status", "inspect") else OperationState.PARTIAL
+                state = (OperationState.PARTIAL if request.action == "inspect" and data.get("state") == "PARTIAL" else OperationState.OBSERVED if request.action in ("status", "inspect", "reset-status") else OperationState.PARTIAL
                     if request.action == "start" and data.get("state") != "RUNNING" else OperationState.COMPLETED)
-                return OperationResult(operation, state, "Backend process/storage operation; not Cloud or in-vehicle function readiness.", data=data)
+                message = ("Reset request accepted; only a matching Gateway CLEARED acknowledgement confirms completion."
+                    if request.action == "reset-scenario" else "Backend process/storage operation; not Cloud or in-vehicle function readiness.")
+                return OperationResult(operation, state, message, data=data)
             except EnvironmentError as error:
                 return OperationResult(operation, OperationState.BLOCKED, str(error))
             except (OSError, ValueError, KeyError, TypeError):
@@ -265,6 +273,15 @@ class DemoOrchestrator:
                 return OperationResult(operation, OperationState.BLOCKED, str(error))
             except (OSError, ValueError, KeyError, TypeError):
                 return OperationResult(operation, OperationState.BLOCKED, "DEMO_PREPARATION_STATE_UNAVAILABLE")
+        if operation == "vehicle.build-runtime":
+            from .source_authentication import build
+            if request.target != VehicleTarget.TEST:
+                return OperationResult(operation, OperationState.BLOCKED, "SOURCE_TRUST_TEST_ONLY")
+            try:
+                data = build(self.source_service.driver)
+                return OperationResult(operation, OperationState.COMPLETED, "Gateway/client built; running processes unchanged.", data=data)
+            except EnvironmentError as error:
+                return OperationResult(operation, OperationState.BLOCKED, str(error))
         if operation == "vehicle.authenticate":
             from .source_authentication import authenticate
             import subprocess
@@ -294,6 +311,14 @@ class DemoOrchestrator:
                     request.action.removeprefix("cm-compare-"))
                 return OperationResult(operation, OperationState.COMPLETED,
                     "Authorized Test CM comparison only; SM, VM, Cloud assignments and Production unchanged.", data=data)
+            except EnvironmentError as error:
+                return OperationResult(operation, OperationState.BLOCKED, str(error))
+        if request.domain == "component" and request.action in ("readiness-build", "readiness-apply"):
+            from .component_runtime import build_readiness, apply_readiness
+            try:
+                target = request.target.value if request.target else None
+                data = build_readiness(target) if request.action == "readiness-build" else apply_readiness(self.environment_service, target)
+                return OperationResult(operation, OperationState.COMPLETED, "Exact Provider readiness read-scope proof; Factory and Aos managers unchanged.", data=data)
             except EnvironmentError as error:
                 return OperationResult(operation, OperationState.BLOCKED, str(error))
         if request.domain == "component" and request.action in ("core-permissions-build", "core-permissions-apply", "core-permissions-status"):
@@ -392,7 +417,7 @@ class DemoOrchestrator:
             except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
                 return OperationResult(operation, OperationState.BLOCKED, "SOURCE_STATE_OR_RUNTIME_UNAVAILABLE", target=request.target.value)
             return OperationResult(operation, OperationState.COMPLETED,
-                "One VM connected to the local server-TLS source. VDP/KUKSA readiness is reported separately; mTLS deferred.",
+                "One VM connected to the local source. The active TLS profile and VDP/KUKSA readiness are reported separately.",
                 target=request.target.value, data=data)
         if request.domain == "unit" and request.action in ("cloud-status", "monitoring"):
             if (request.target != VehicleTarget.TEST or request.guest or request.cloud or request.current or request.image
