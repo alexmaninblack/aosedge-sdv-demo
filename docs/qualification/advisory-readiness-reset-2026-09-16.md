@@ -81,6 +81,13 @@ the final warning proof.
   briefly displaying the previous command's CLEARED result as its completion.
 - Bounded diagnostic output includes readiness transport and only allowlisted
   update/mount labels; secret-redaction regression cases pass.
+- Final status reconciliation exposed the owned run journal's old 64 KiB
+  input limit (the preserved long-run journal reached 65,723 bytes). Only
+  `.run/demo-current/journal.json` now has a bounded 1 MiB read budget.
+  Other JSON inputs retain 64 KiB; explicit caller limits still take priority.
+  No history was deleted. After correction, VDP70 was independently observed
+  active, LIVE/REPORTED_READY, with zero restarts. Presenter alone was restarted
+  to load the correction; VM, CARLA and Driving Control were preserved.
 
 ## Security and transient disposition
 
@@ -103,10 +110,14 @@ rollback. None of these live inputs may be copied into Factory .34.
 
 ## Local gates and remaining work
 
-- Demo Control final full suite: 935 run, 16 skipped, no failures (72 seconds).
+- Demo Control final full suite: 936 run, 16 skipped, no failures (69 seconds).
   The first rerun exposed five journal fixture call-count mismatches and a
   status test coupled to live workstation state. Fixtures were corrected and
   status collection isolated; no runtime behavior was weakened to pass.
+  After the journal-budget correction, the full suite passed again. Presenter
+  was reloaded and visibly confirmed current Test Online, Brake49/V3,
+  Tire30/V1 and VDP70/V3; .34 appeared in the firmware catalog while the
+  running Test remained on .33.
 - Latest targeted gates: 34 service-input, 46 component-runtime, 8 Factory
   compatibility and 13 permission-capacity tests; Presenter backend UI 9 tests,
   typecheck and production build; full Presenter suite 135 passed;

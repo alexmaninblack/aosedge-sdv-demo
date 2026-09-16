@@ -47,7 +47,12 @@ def object_id(value):
     return str(UUID(value))
 
 
-def read_json(path, limit=65536):
+def read_json(path, limit=None):
+    # The owned run journal includes bounded receipts from several lifecycle
+    # steps. It is not a single external response/configuration document.
+    # Keep every other input and every explicit caller limit unchanged.
+    if limit is None:
+        limit = 1024 * 1024 if path.parts[-3:] == (".run", "demo-current", "journal.json") else 65536
     if path.is_symlink() or not stat.S_ISREG(path.stat().st_mode):
         raise ValueError("Expected a regular file")
     with path.open("rb") as stream:

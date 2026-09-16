@@ -20,13 +20,32 @@ from aosedge_demo_orchestrator.cli import main, render_human
 from aosedge_demo_orchestrator.cloud import get_json, local_profile, project_unit, project_user, NoRedirect
 from aosedge_demo_orchestrator.models import OperationRequest, VehicleTarget
 from aosedge_demo_orchestrator.probes import guest_status, local_vehicle, owns_overlay, parse_guest, process_snapshot, qmp_status
-from aosedge_demo_orchestrator.status import StatusService, has_unknown, load_configuration, observation
+from aosedge_demo_orchestrator.status import StatusService, has_unknown, load_configuration, observation, read_json
 
 UID = "00000000-0000-4000-8000-000000000001"
 OWNER = "00000000-0000-4000-8000-000000000002"
 
 
 class StatusTests(unittest.TestCase):
+    def test_run_journal_budget_is_separate_and_still_bounded(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            journal = root / ".run/demo-current/journal.json"
+            journal.parent.mkdir(parents=True)
+            value = {"kind": "democtl.current-run", "history": "x" * 70000}
+            journal.write_text(json.dumps(value))
+            self.assertEqual(value, read_json(journal))
+            with self.assertRaisesRegex(ValueError, "Input too large"):
+                read_json(journal, limit=65536)
+            for name in ("status.json", "journal.json"):
+                other = root / name
+                other.write_text(json.dumps(value))
+                with self.assertRaisesRegex(ValueError, "Input too large"):
+                    read_json(other)
+            journal.write_text(json.dumps({"history": "x" * (1024 * 1024)}))
+            with self.assertRaisesRegex(ValueError, "Input too large"):
+                read_json(journal)
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
