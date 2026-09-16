@@ -198,6 +198,13 @@ class ServicePackageTests(unittest.TestCase):
     def test_explicit_delivery_only_mode_removes_only_permissions(self):
         for team, profile in (("brake", "v1"), ("brake", "v2"), ("brake", "v3"), ("tire", "v1")):
             expected = package_configuration(ROOT, team, profile, "42.0.0")
+            configuration = expected["items"][0]["configuration"]
+            self.assertEqual(1024, configuration["quotas"]["noFileLimit"])
+            self.assertEqual(24 if team == "brake" else 16, configuration["quotas"]["pidsLimit"])
+            self.assertNotIn("--demo-", configuration["cmd"])
+            if team == "brake" and profile == "v1":
+                self.assertEqual(6, len(configuration["permissions"]["kuksa"]))
+                self.assertEqual({"r"}, set(configuration["permissions"]["kuksa"].values()))
             del expected["items"][0]["configuration"]["permissions"]
             self.assertEqual(expected, package_configuration(ROOT, team, profile, "42.0.0", without_permissions=True))
             self.assertIn("permissions", package_configuration(ROOT, team, profile, "42.0.0")["items"][0]["configuration"])

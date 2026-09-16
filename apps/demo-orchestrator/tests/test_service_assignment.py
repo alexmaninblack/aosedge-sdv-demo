@@ -682,6 +682,21 @@ class JournalTests(unittest.TestCase):
                 self.service.assign(BRAKE)
         self.assertEqual([], self.cloud.posts)
 
+    def test_unscoped_history_does_not_hide_exact_current_owner_publication(self):
+        del self.service._publication
+        with patch("aosedge_demo_orchestrator.service_packages.ServicePackages._profile",
+                return_value=(dict(expectedOwnerId=SP), "aoscloud.io")):
+            self.published_release("brake")
+            old, _ = self.published_release("tire")
+            legacy = old.parents[2] / "publication.json"
+            atomic_json(legacy, dict(attempted=True))
+            self.assertEqual("ASSIGNED", self.service.assign(BRAKE)["state"])
+            self.assertEqual(dict(attempted=True), read_json(legacy))
+            self.assertEqual(3, len(self.cloud.posts))
+            with self.assertRaisesRegex(EnvironmentError, "SERVICE_LEGACY_PUBLICATION_RECONCILIATION_REQUIRED"):
+                self.service.assign(TIRE)
+            self.assertEqual(3, len(self.cloud.posts))
+
     def test_publication_mapping_requires_exact_accepted_bundle_not_ready(self):
         del self.service._publication
         directory = self.environment.catalog.project / "services/brake/releases/8.0.0"

@@ -92,6 +92,61 @@ class VMTests(unittest.TestCase):
     def state(self):
         return json.loads((self.root / JOURNAL).read_text())
 
+    def dns_recovery_state(self):
+        self.runtime.execute("start", "test", 1)
+        state = self.state()
+        state["selectedCloudDomain"] = "cloud.example.test"
+        atomic_json(self.root / JOURNAL, state)
+        return state
+
+    def test_refresh_dns_healthy_is_noop(self):
+        self.dns_recovery_state()
+        before = (self.root / JOURNAL).read_bytes()
+        with patch("aosedge_demo_orchestrator.probes.host_dns", return_value={"state": "CURRENT"}):
+            self.assertTrue(self.runtime.refresh_dns()["noOp"])
+        self.assertEqual([], self.runtime.killed)
+        self.assertEqual(before, (self.root / JOURNAL).read_bytes())
+
+    def test_refresh_dns_restarts_only_owned_bridge(self):
+        state = self.dns_recovery_state()
+        old = state["shared"]["dns"]["pid"]
+        vm_pids = set(self.runtime.running) - {old}
+        with patch("aosedge_demo_orchestrator.probes.host_dns", side_effect=[
+                {"state": "UNKNOWN"}, {"state": "CURRENT"}]):
+            result = self.runtime.refresh_dns()
+        self.assertEqual("READY", result["state"])
+        self.assertEqual([old], self.runtime.killed)
+        self.assertTrue(vm_pids.issubset(self.runtime.running))
+        self.assertEqual(state["vehicles"], self.state()["vehicles"])
+        self.assertEqual(state["shared"]["dns"]["ownerId"], self.state()["shared"]["dns"]["ownerId"])
+
+    def test_refresh_dns_preserves_external_owner_and_production(self):
+        state = self.dns_recovery_state()
+        state["shared"]["dns"]["ownership"] = "EXTERNAL_DEPENDENCY"
+        atomic_json(self.root / JOURNAL, state)
+        with self.assertRaisesRegex(EnvironmentError, "DNS_RECOVERY_OWNER_UNPROVEN"):
+            self.runtime.refresh_dns()
+        del state["shared"]["dns"]["ownership"]
+        atomic_json(self.root / JOURNAL, state)
+        self.runtime.execute("start", "production", 1)
+        with self.assertRaisesRegex(EnvironmentError, "DNS_RECOVERY_PRESERVED_PEER_RUNNING"):
+            self.runtime.refresh_dns()
+        self.assertEqual([], self.runtime.killed)
+
+    def test_refresh_dns_guest_restart_is_explicit_and_test_only(self):
+        self.dns_recovery_state()
+        with patch("aosedge_demo_orchestrator.probes.host_dns", side_effect=[
+                {"state": "UNKNOWN"}, {"state": "CURRENT"}]), patch(
+                "aosedge_demo_orchestrator.source.SourceDriver.guest", return_value={"state": "ACTIVE"}) as guest:
+            result = self.runtime.refresh_dns(restart_guest_resolver=True)
+        guest.assert_called_once()
+        self.assertEqual(("test", "dns-restart"), guest.call_args.args[1:])
+        self.assertEqual("ACTIVE", result["guestResolver"]["state"])
+        request = request_from_arguments(build_parser().parse_args(
+            ["vm", "refresh-dns", "test", "--restart-guest-resolver"]))
+        self.assertTrue(request.restart_guest_resolver)
+        self.assertIsNone(request.selection_error())
+
     def test_finish_stops_vm_but_preserves_uncertain_cloud_receipt(self):
         self.runtime.execute("start", "test", 1)
         state = self.state()

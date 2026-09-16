@@ -191,6 +191,14 @@ class ComponentService:
                         and node.targets[0].id in expected_values}
                     if assignments != expected_values:
                         problems.append("COMPONENT_RUNTIME_PROFILE_METADATA_MISMATCH")
+                from .component_build import ADVISORY_RUNTIME_BUILD_TYPE, validate_advisory_payload
+                if (provenance.get("buildType") == ADVISORY_RUNTIME_BUILD_TYPE
+                        or PACKAGE + "advisory_transport.py" in payload
+                        or capability.get("contracts", {}).get("typedQmAdvisory", {}).get("contractVersion") == "1.1.0"):
+                    try:
+                        validate_advisory_payload(payload, provenance)
+                    except EnvironmentError as error:
+                        problems.append(str(error))
         result = dict(version=version, bundle=path.name, sha256=sha(raw), sizeBytes=len(raw),
             unsignedBundleSha256=sha(outer["batch.tar.gz"]) if signed else sha(raw),
             signedEnvelope=signed, signatureVerification="NOT_PERFORMED",
@@ -370,7 +378,7 @@ class ComponentService:
         from .status import read_json, now
         from .vm import VMService
         from .source import SourceDriver
-        from .source_guest import VSS_PATHS
+        from .source_guest import VSS_PATHS, VSS_PROOF_PATHS, VSS_ADVISORY_TYPES
         if target != "test":
             raise EnvironmentError("COMPONENT_VSS_TEST_ONLY")
         with self.environment._writer():
@@ -379,6 +387,11 @@ class ComponentService:
             versions = {item["contractVersion"]: set(item["readPaths"]) for item in contract["componentVersions"]}
             if versions["3.0.0"] - versions["2.0.0"] != set(VSS_PATHS):
                 raise EnvironmentError("COMPONENT_VSS_CONTRACT_CHANGED")
+            advisory = read_json(self.environment.root / "contracts/qm-advisory-profile/qm-advisory-profile.v1.json")
+            declared = {(item[path], item[kind]) for item in advisory["endpoints"]
+                for path, kind in (("requestPath", "requestEntryType"), ("statusPath", "statusEntryType"))}
+            if declared != set(VSS_ADVISORY_TYPES) or advisory["encoding"]["vssDatatype"] != "string":
+                raise EnvironmentError("COMPONENT_ADVISORY_SCHEMA_CONTRACT_CHANGED")
             if state.get("currentVehicle") is not None:
                 raise EnvironmentError("COMPONENT_VSS_DETACH_SIMULATION_FIRST")
             record = state.setdefault("componentSchema", {})
@@ -389,7 +402,7 @@ class ComponentService:
             try:
                 with driver.operation(timeout=25):
                     result = driver.guest(state, "test", "component-schema-" + action,
-                        target="test", additionalPaths=list(VSS_PATHS))
+                        target="test", additionalPaths=list(VSS_PROOF_PATHS))
             except EnvironmentError as error:
                 record.update(state="RECONCILIATION_REQUIRED", reason=str(error))
                 atomic_json(self.environment.root / JOURNAL, state)
@@ -713,9 +726,16 @@ class ComponentService:
             return dict(result, productionUnchanged=True)
 
     def prepare(self, version, content_profile=None):
-        from .component_build import compose, replay, pack, encoded, PROFILE_BASES, version_number
+        from .component_build import (compose, replay, pack, encoded, PROFILE_BASES, version_number,
+                                      advisory_runtime_pin, compose_advisory_runtime,
+                                      ADVISORY_RUNTIME_RELEASE_ENABLED)
         from .status import read_json
         from .environment import JOURNAL
+        reviewed_advisory = content_profile == "v3" and ADVISORY_RUNTIME_RELEASE_ENABLED
+        if reviewed_advisory:
+            # Do not allocate a release or contact Cloud while the reviewed
+            # runtime checkpoint is pending. No deferred-profile fallback.
+            advisory_runtime_pin()
         with self.environment._writer():
             from .releases import ReleaseContinuity
             continuity = ReleaseContinuity(self.environment)
@@ -750,8 +770,19 @@ class ComponentService:
             else:
                 from .environment import factory_for
                 factory = factory_for(read_json(self.environment.root / JOURNAL), "test")
-                first, record = replay(version, content_profile, files, baseline_sha, contract, factory,
-                                       unsigned_source_sha=inspected["source"]["unsignedSha256"])
+                if reviewed_advisory:
+                    advisory_contract = (self.environment.root /
+                        "contracts/qm-advisory-profile/qm-advisory-profile.v1.json").read_bytes()
+                    first, record = compose_advisory_runtime(version, files, baseline_sha, repository,
+                        contract, factory, advisory_contract,
+                        unsigned_source_sha=inspected["source"]["unsignedSha256"])
+                else:
+                    first, record = replay(version, content_profile, files, baseline_sha, contract, factory,
+                                           unsigned_source_sha=inspected["source"]["unsignedSha256"])
+                    if content_profile == "v3":
+                        # Packaging receipt exposes the source-release gate;
+                        # the frozen replay payload/provenance stays unchanged.
+                        record["advisoryRuntimeReleaseGate"] = "PENDING_SELECTED_UNIT_MUTUAL_TLS"
             # Deterministic replay/packing is a regression-test invariant, not
             # a second full construction/compression on every operator Prepare.
             unsigned = pack(first)

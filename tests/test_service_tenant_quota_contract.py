@@ -58,6 +58,10 @@ class ServiceTenantQuotaContractTest(unittest.TestCase):
         self.assertEqual("8MiB", envelopes["brakeHealth"]["storageLimit"])
         self.assertEqual("4MiB", envelopes["tireHealth"]["storageLimit"])
         self.assertEqual("2MiB", envelopes["tireHealth"]["stateLimit"])
+        self.assertEqual(16, envelopes["tireHealth"]["pidsLimit"])
+        self.assertEqual(24, envelopes["brakeHealth"]["pidsLimit"])
+        tire = json.loads((ROOT / "contracts/tire-health-model/tire-health-product-profile.v1.json").read_text())
+        self.assertEqual(16, tire["runtime"]["requestedQuota"]["pidsLimit"])
         self.assertFalse(envelopes["networkQuotaRequested"])
         self.assertFalse(envelopes["silentInflationAllowed"])
 

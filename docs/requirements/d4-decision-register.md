@@ -610,15 +610,23 @@ Consequences:
 - Accepted: 2026-08-21
 - Owners: Vehicle Gateway / Platform Team / Function Team 1 / Function Team 2
 - Canonical contract:
-  [Typed QM Advisory Profile 1.0.2](../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
+  [Typed QM Advisory Profile 1.1.0](../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - Profile SHA-256:
-  `f7ae78148fb3b3265c8b773117126665afb1edd97a73f59db5a1f3af7c223487`
+  `343e128bf9a0cac60a4f1b573315716f440accef17933fbcd9f6af49bc88300c`
 - Request-schema SHA-256:
-  `f2102fd948734a714160efb8ee09885107d58da1daabd95771dce56785149910`
+  `13d57a1afa5f236145eeb23ef7387a814a55fd69f5f870ed3f1f97d7b0eb050a`
 - Status-schema SHA-256:
   `1e0ecb28cc7548c65f1352b4c8b5874871400b8a83050a1b527c5f58f8493661`
 
 The accepted advisory contract freezes:
+
+Profile `1.1.0`, approved by the operator on 16 September 2026, separates
+Brake v3 / Tire v1 functional compatibility from allocated package releases.
+`serviceVersion` retains the actual installed release; it is not caller
+authority or a functional-profile selector. Native IAM/KUKSA exact-path
+authorization, endpoint isolation and all existing temporal protections
+remain unchanged. The wire fields remain unchanged. This amendment does not
+rewrite already released manifests/bundles or qualify the live transport.
 
 Profile `1.0.2` is a metadata-only repin to VDP Compatibility Profile 1.0.1.
 Profile `1.0.1` replaced the retired `D4-009` authorization reference with
@@ -2987,6 +2995,17 @@ RAM MiB, storage MiB, state MiB, tmp MiB, open files and PIDs respectively.
 Tire storage owns its persistent outbox/database metadata, state owns the
 versioned estimator and tmp owns temporary computation. No network quota is
 requested and silent inflation is forbidden.
+
+Operator amendment, 16 September 2026: Brake `pidsLimit` is **24**, replacing
+16 in its current executable profile and package. The measured failing V3
+instance used one bootstrap plus 15 product threads and reported thread
+creation failure. The new release must demonstrate actual task consumption
+and headroom. No other quota or model threshold changes in this amendment;
+prior approved `noFileLimit: 1024` and Tire `pidsLimit: 16` remain in force.
+Only the native signed package requests the quota; no guest-side override is
+permitted. The historical initial envelope above is retained as provenance.
+Current Brake runtime profile SHA-256:
+`bc93334ed7af4e5d4238b5720cbe1e4ea184c4c04aeeb5ad60d1ee926ce70820`.
 
 Signed-config inspection plus post-deployment OCI/cgroup/file/storage evidence
 must prove the live mapping, including the Node DMIPS capacity used for CPU.

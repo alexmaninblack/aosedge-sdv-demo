@@ -1531,6 +1531,29 @@ operator-selected local exception is not an automatic fallback when strict
 credentials or authentication fail. Re-enabling strict mode requires its
 separate onboarding/client integration and live qualification.
 
+#### Test-only strict qualification amendment — 16 September 2026
+
+The operator subsequently approved implementing and qualifying the deferred
+integration on the preserved staging Test. `democtl vehicle authenticate test`
+now issues separate selected-VDP, update-runtime and read-only Dashboard client
+identities, enrolls exact fingerprints through Gateway's private assignment
+socket, and supplies guest keys through systemd credentials. Cloud Main Node
+UUIDs identify TLS peers; SM retains its distinct native hardware Node ID
+ownership check. Demo Control validates their provisioning correspondence.
+Brake and Tire remain KUKSA clients and receive no Gateway credential.
+
+The first migration makes one controlled simulation-group restart and activates
+SM/VDP credentials once. A repeated call reconciles the same assignment without
+issuing credentials, rebuilding or restarting. Production, VM identity and
+Factory image are unchanged. This is an explicit engineering qualification
+command; automatic Presenter onboarding and reboot reconstruction remain open.
+Strict authentication failure never falls back to the development profile.
+
+Live VDP/Dashboard authentication, no-client-certificate rejection and the
+VDP68→69 Safe Stop update passed on the same Test. This does not qualify actual
+advisory application, whole-process replay recovery or a clean Factory run.
+See [the current qualification receipt](../qualification/staging-approved-model-changes-2026-09-16.md).
+
 Backing-image decision, confirmed 2026-09-05: make one independent local
 Factory Image copy under .local/factory; both role overlays use that copy,
 never the artifact-store original directly. Preserve the original bytes,

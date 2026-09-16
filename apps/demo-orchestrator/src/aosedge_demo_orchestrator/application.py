@@ -65,6 +65,19 @@ class DemoOrchestrator:
             try:
                 from .service_inputs import ServiceInputs
                 activating = request.action == "runtime-activate"
+                if request.kac_only:
+                    if request.kac_recovery:
+                        self.vm_service.progress("Test: proven KAC recovery for bounded qualification; no manager or container restart")
+                        data = ServiceInputs(self.environment_service).activate_kac("test", recovery=True)
+                        return OperationResult(operation, OperationState.COMPLETED if data.get("state") == "ACTIVE" else OperationState.PARTIAL,
+                            "Transient six-hour KAC recovery with automatic stock-policy rollback; not Factory/reboot qualification.", data=data)
+                    policy_proof = request.kac_time_read_proof or request.kac_data_proof
+                    self.vm_service.progress("Test: bounded KAC permission/data proof, with stock-policy rollback" if policy_proof
+                        else "Test: start existing KAC only; no VM, manager or container restart")
+                    data = ServiceInputs(self.environment_service).activate_kac("test", time_read_proof=request.kac_time_read_proof, data_proof=request.kac_data_proof)
+                    return OperationResult(operation, OperationState.COMPLETED if data.get("state") in ("ACTIVE", "PROVED") else OperationState.PARTIAL,
+                        "Temporary KAC permission proof; inspect originalPolicyRestored. Not persistent telemetry readiness." if policy_proof
+                        else "KAC-only activation; real token issuance and telemetry require independent observation.", data=data)
                 if activating:
                     self.vm_service.progress("Test: native resource/startup activation; one SM restart, unchanged executable")
                 data = ServiceInputs(self.environment_service).prepare("test", activate=activating, restart_sm=request.restart_sm)
@@ -252,6 +265,17 @@ class DemoOrchestrator:
                 return OperationResult(operation, OperationState.BLOCKED, str(error))
             except (OSError, ValueError, KeyError, TypeError):
                 return OperationResult(operation, OperationState.BLOCKED, "DEMO_PREPARATION_STATE_UNAVAILABLE")
+        if operation == "vehicle.authenticate":
+            from .source_authentication import authenticate
+            import subprocess
+            try:
+                data = authenticate(self.source_service, request.target.value if request.target else None)
+                return OperationResult(operation, OperationState.COMPLETED,
+                    "Test Gateway mTLS onboarding; VM/Cloud identity preserved, Production unchanged.", data=data)
+            except EnvironmentError as error:
+                return OperationResult(operation, OperationState.BLOCKED, str(error))
+            except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
+                return OperationResult(operation, OperationState.PARTIAL, "SOURCE_TRUST_RECONCILIATION_REQUIRED")
         if operation == "vehicle.initialize":
             import subprocess
             initialize = getattr(self.source_service, "initialize_test", None)
@@ -270,6 +294,17 @@ class DemoOrchestrator:
                     request.action.removeprefix("cm-compare-"))
                 return OperationResult(operation, OperationState.COMPLETED,
                     "Authorized Test CM comparison only; SM, VM, Cloud assignments and Production unchanged.", data=data)
+            except EnvironmentError as error:
+                return OperationResult(operation, OperationState.BLOCKED, str(error))
+        if request.domain == "component" and request.action in ("core-permissions-build", "core-permissions-apply", "core-permissions-status"):
+            from .component_runtime import build_permissions, apply_permissions
+            try:
+                target = request.target.value if request.target else None
+                data = (build_permissions(target, iam_response_capacity=request.iam_response_capacity) if request.action == "core-permissions-build" else
+                    apply_permissions(self.environment_service, target, observe=request.action == "core-permissions-status",
+                        iam_response_capacity=request.iam_response_capacity))
+                return OperationResult(operation, OperationState.COMPLETED,
+                    "Authorized Test-only permission capacity proof; immutable image and Production unchanged.", data=data)
             except EnvironmentError as error:
                 return OperationResult(operation, OperationState.BLOCKED, str(error))
         if request.domain == "component" and request.action in ("sm-builder-start", "sm-builder-stop", "sm-build", "sm-test", "sm-apply", "cm-build", "cm-test", "cm-apply"):
@@ -310,6 +345,30 @@ class DemoOrchestrator:
                 "Temporary Test-only KUKSA schema; no Factory image, credential, Cloud or Production mutation." if request.action in ("schema-apply", "schema-remove") else
                 "Read-only guest component observation; no restart or update." if request.action in ("status", "logs", "diagnose", "sm-status", "cm-status") else
                 "Local component artifact operation; no Cloud or VM mutation.", data=data)
+        if operation == "vm.refresh-dns":
+            if request.target != VehicleTarget.TEST:
+                return OperationResult(operation, OperationState.BLOCKED, "DNS_RECOVERY_TEST_ONLY")
+            try:
+                data = self.vm_service.refresh_dns(restart_guest_resolver=request.restart_guest_resolver)
+            except EnvironmentError as error:
+                return OperationResult(operation, OperationState.BLOCKED, str(error))
+            except (OSError, ValueError, KeyError, TypeError):
+                return OperationResult(operation, OperationState.PARTIAL, "DNS_RECOVERY_UNCONFIRMED")
+            return OperationResult(operation, OperationState.COMPLETED if data["state"] == "READY" else OperationState.PARTIAL,
+                "Owned DNS recovery only; VM, CM, SM, VDP, containers and Cloud configuration unchanged.", data=data)
+        if operation == "simulation.exercise":
+            if request.target != VehicleTarget.TEST or request.team not in ("brake", "tire"):
+                return OperationResult(operation, OperationState.BLOCKED, "SIMULATION_EXERCISE_TEST_ONLY")
+            try:
+                data = self.source_service.exercise(request.team)
+            except EnvironmentError as error:
+                return OperationResult(operation, OperationState.BLOCKED, str(error))
+            except (OSError, ValueError, KeyError, TypeError):
+                return OperationResult(operation, OperationState.PARTIAL,
+                    "SIMULATION_EXERCISE_UNCONFIRMED; control lease expires to Safe Stop; reconcile the same command")
+            return OperationResult(operation,
+                OperationState.COMPLETED if data["state"] == "COMPLETED" else OperationState.PARTIAL,
+                "Real CARLA maneuver only; observe service/backend/advisory results separately. VM and Cloud identities unchanged.", data=data)
         if operation in ("simulation.start", "simulation.stop"):
             import subprocess
             if request.target not in (None, VehicleTarget.TEST) or request.current or request.image or request.image_path:

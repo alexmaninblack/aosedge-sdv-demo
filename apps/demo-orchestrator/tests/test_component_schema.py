@@ -18,6 +18,31 @@ from aosedge_demo_orchestrator.environment import EnvironmentError
 
 
 class SchemaTests(unittest.TestCase):
+    def test_configuration_diagnostic_does_not_shadow_network_probe(self):
+        for unit in (None, "current-unit"):
+            request = dict(action="probe", vehicle=dict(localVmId="current-vm", unitId=unit))
+            with patch.object(guest, "probe", return_value={"state": "OBSERVED"}) as probe:
+                self.assertEqual({"state": "OBSERVED"}, guest.execute(request))
+                if unit is None:
+                    probe.assert_called_once_with(preprovision=True)
+                else:
+                    probe.assert_called_once_with()
+
+    def test_advisory_diagnostic_is_read_only_and_checks_exact_types(self):
+        schema = {}
+        missing = guest.advisory_schema_observation(schema.get)
+        self.assertEqual(4, len(missing["leaves"]))
+        self.assertFalse(missing["matchesContract"])
+        self.assertEqual({}, schema)
+        for row in missing["leaves"]:
+            schema[row["path"]] = dict(type="actuator" if row["path"].endswith("Request") else "sensor", datatype="string")
+        observed = guest.advisory_schema_observation(schema.get)
+        self.assertTrue(observed["matchesContract"])
+        self.assertEqual("NOT_PERFORMED", observed["permissionProbe"])
+        self.assertEqual("NOT_PERFORMED", observed["transportProbe"])
+        schema[missing["leaves"][0]["path"]]["type"] = "sensor"
+        self.assertFalse(guest.advisory_schema_observation(schema.get)["matchesContract"])
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
@@ -30,9 +55,9 @@ class SchemaTests(unittest.TestCase):
             "Speed": dict(type="sensor", datatype="float", unit="km/h", description="keep me")})}
         guest.VSS_BASE.write_text(json.dumps(self.base))
         self.request = dict(action="component-schema-apply", target="test",
-            additionalPaths=list(guest.VSS_PATHS), vehicle=dict(localVmId="360f228d-3aef-4919-9220-27ffeb4245b1"))
+            additionalPaths=list(guest.VSS_PROOF_PATHS), vehicle=dict(localVmId="360f228d-3aef-4919-9220-27ffeb4245b1"))
 
-    def test_merge_adds_exact_eight_and_preserves_base(self):
+    def test_merge_adds_only_eight_slip_and_four_typed_advisory_leaves(self):
         result = guest.vss_supplement(self.base)
         self.assertNotIn("CarlaSimulation", self.base["Vehicle"]["children"])
         self.assertEqual(self.base["Vehicle"]["children"]["Speed"], result["Vehicle"]["children"]["Speed"])
@@ -43,7 +68,26 @@ class SchemaTests(unittest.TestCase):
                 path = prefix + name
                 found.extend(leaves(node["children"], path + ".") if node["type"] == "branch" else [path])
             return found
-        self.assertEqual(set(guest.VSS_PATHS) | {"Vehicle.Speed"}, set(leaves(result)))
+        self.assertEqual(set(guest.VSS_PROOF_PATHS) | {"Vehicle.Speed"}, set(leaves(result)))
+        for team in ("BrakeHealth", "TireHealth"):
+            endpoints = result["Vehicle"]["children"]["OEM"]["children"][team]["children"]["Advisory"]["children"]
+            self.assertEqual("actuator", endpoints["Request"]["type"])
+            self.assertEqual("sensor", endpoints["GatewayStatus"]["type"])
+            self.assertEqual("string", endpoints["Request"]["datatype"])
+            endpoints["Request"]["type"] = "sensor"
+            with self.assertRaisesRegex(ValueError, "LEAF_CONFLICT"):
+                guest.vss_supplement(result)
+            endpoints["Request"]["type"] = "actuator"
+
+    def test_exact_owned_legacy_proof_is_removable_but_not_silently_replaced(self):
+        guest.VSS_DROPIN.parent.mkdir(parents=True)
+        guest.VSS_DROPIN.write_text(guest.vss_override_text(self.request["vehicle"]["localVmId"]))
+        guest.VSS_TEMP.parent.mkdir(parents=True)
+        guest.VSS_TEMP.write_text(json.dumps(guest.vss_supplement(self.base, advisory=False), sort_keys=True) + "\n")
+        with self.assertRaisesRegex(ValueError, "CONTENT_CONFLICT"):
+            guest.vss_change(self.request)
+        with patch.object(guest, "vss_restart", return_value=101):
+            self.assertEqual("REMOVED", guest.vss_change(dict(self.request, action="component-schema-remove"))["state"])
 
     def test_conflicting_schema_is_never_overwritten(self):
         self.base["Vehicle"]["children"]["CarlaSimulation"] = dict(type="sensor", datatype="float")

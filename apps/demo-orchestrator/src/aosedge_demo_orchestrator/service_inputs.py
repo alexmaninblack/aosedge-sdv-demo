@@ -12,7 +12,7 @@ import tempfile
 import time
 from pathlib import Path
 
-from .environment import EnvironmentError, JOURNAL
+from .environment import EnvironmentError, JOURNAL, atomic_json
 from .guest_access import ssh_command
 from .source import SourceDriver
 from .status import load_configuration, read_json
@@ -40,6 +40,33 @@ def qualified_reboot_restore(state, item, observed):
 class ServiceInputs:
     def __init__(self, environment):
         self.environment = environment
+
+    def activate_kac(self, target, *, time_read_proof=False, data_proof=False, recovery=False):
+        if target != "test":
+            raise EnvironmentError("SERVICE_INPUTS_TEST_ONLY")
+        with self.environment._writer():
+            state = read_json(self.environment.root / JOURNAL)
+            item = state.get("vehicles", {}).get("test", {})
+            if (not all(item.get(key) for key in ("unitId", "systemUid", "localVmId"))
+                    or item.get("cloud", {}).get("lifecycle") in ("DELETED", "DEPROVISIONED", "DEPROVISIONING")):
+                raise EnvironmentError("SERVICE_INPUTS_CURRENT_TEST_BINDING_REQUIRED")
+            driver = SourceDriver(VMService(self.environment))
+            # Separate the now-corrected VAL FIELD_VALUE hypothesis from the
+            # completed Brake42 freshness-only trial; retain its receipt.
+            key = "kacRecovery" if recovery else "kacDataSubscriptionProof" if data_proof else "kacTimeReadProof" if time_read_proof else "kacActivation"
+            with driver.operation(timeout=360 if data_proof else 120 if time_read_proof else 30):
+                proof = state.get(key, {})
+                if not recovery and proof.get("unitId") == item["unitId"] and proof.get("state") == "ATTEMPTED":
+                    raise EnvironmentError("KAC_PREVIOUS_ATTEMPT_REQUIRES_RUNTIME_INSPECT")
+                if ((time_read_proof or data_proof) and proof.get("unitId") == item["unitId"]
+                        and proof.get("state") == "PROVED" and proof.get("result", {}).get("originalPolicyRestored")):
+                    return dict(proof["result"], noOp=True, evidence="RECORDED_COMPLETED_PROOF_NOT_CURRENT_READINESS")
+                state[key] = dict(state="ATTEMPTED", unitId=item["unitId"])
+                atomic_json(self.environment.root / JOURNAL, state)
+                result = driver.guest(state, "test", "service-kac-recovery" if recovery else "service-kac-data-proof" if data_proof else "service-kac-time-proof" if time_read_proof else "service-kac-activate")
+                state[key].update(state=result["state"], result=result)
+                atomic_json(self.environment.root / JOURNAL, state)
+                return result
 
     def identity(self, state, endpoint):
         # One short-lived SSH Unix-socket forward to native public IAM. No

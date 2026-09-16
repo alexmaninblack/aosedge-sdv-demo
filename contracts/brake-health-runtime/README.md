@@ -6,7 +6,7 @@
 - Decision: D4-016.5 accepted 2026-08-23
 - Contract version: 1.1.0
 - Accepted profile SHA-256:
-  `cc90a091e044995a49ad886ae6a5f000c579c8a43a84dbaab8a6edf2a8c492c4`
+  `bc93334ed7af4e5d4238b5720cbe1e4ea184c4c04aeeb5ad60d1ee926ce70820`
 
 This profile freezes the proposed capability-oriented readiness, requested Aos
 quota envelope, cross-version state rules and bounded native-log vocabulary
@@ -17,6 +17,12 @@ resource manager nor a separate log archive.
 The quota values match the current scaffold and remain subject to live
 measurement and the independent D4-023 AosCore isolation qualification. A
 declared value is not evidence that enforcement or headroom has passed.
+
+On 16 September 2026 the operator approved increasing Brake `pidsLimit`
+from 16 to 24, with measured headroom required. Brake V3 had exhausted the
+16-task envelope (one bootstrap plus 15 product threads), with a thread
+creation failure. Only immutable Service package metadata changes; other
+quotas, model thresholds and native AosCore enforcement remain unchanged.
 
 Process health and product capability are separate. AosCore owns only the
 process lifecycle. The Service reports `OPERATIONAL`, `DEGRADED` or

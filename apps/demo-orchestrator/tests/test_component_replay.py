@@ -47,6 +47,8 @@ class ReplayTests(unittest.TestCase):
     factory = {"version": "6.1.1-maninblack.29", "sha256": "immutable-factory"}
 
     def test_prepare_checks_pinned_unsigned_source_and_constructs_once(self):
+        # Preserve the explicit legacy branch as a frozen replay regression;
+        # new V3 preparation is covered by the separate advisory-runtime tests.
         for profile in PROFILE_BASES:
             with self.subTest(profile=profile), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
@@ -64,7 +66,10 @@ class ReplayTests(unittest.TestCase):
                 from aosedge_demo_orchestrator.component_sources import UNSIGNED_SHA
                 inspected = dict(source={"legacyArchiveSha256": digest, "unsignedSha256": UNSIGNED_SHA[PROFILE_BASES[profile][0]]},
                                  sourceIntegrity="VERIFIED_PINNED_DIGESTS")
-                with patch("aosedge_demo_orchestrator.component_sources.source", return_value=(inspected, baseline)) as inspect, \
+                with patch("aosedge_demo_orchestrator.component_build.ADVISORY_RUNTIME_RELEASE_ENABLED", False), \
+                        patch("aosedge_demo_orchestrator.component_sources.source", return_value=(inspected, baseline)) as inspect, \
+                        patch("aosedge_demo_orchestrator.component_build.advisory_runtime_pin",
+                            side_effect=AssertionError("Closed source release gate must not require strict runtime")), \
                         patch.object(service, "_worker", side_effect=AssertionError("Explicit-version replay needs no certificate")) as verify, \
                         patch("aosedge_demo_orchestrator.component_build.replay", wraps=replay) as construct, \
                         patch("aosedge_demo_orchestrator.component_build.pack", wraps=pack) as compress:
@@ -78,6 +83,9 @@ class ReplayTests(unittest.TestCase):
                 bundle = service._directory("40.0.0") / "aosedge-vdp-component-40.0.0-linux-arm64.unsigned.tar.gz"
                 self.assertEqual(pack(expected), bundle.read_bytes())
                 self.assertEqual(sha(bundle.read_bytes()), result["preparedSha256"])
+                if profile == "v3":
+                    self.assertEqual("DEFERRED", result["advisory"])
+                    self.assertEqual("PENDING_SELECTED_UNIT_MUTUAL_TLS", result["advisoryRuntimeReleaseGate"])
 
     def test_failed_source_integrity_prevents_construction(self):
         with tempfile.TemporaryDirectory() as temporary:

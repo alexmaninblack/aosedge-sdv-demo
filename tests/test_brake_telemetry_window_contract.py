@@ -47,6 +47,15 @@ class BrakeTelemetryWindowContractTest(unittest.TestCase):
         self.assertEqual("1.0.0", self.profile["contractVersion"])
         self.assertEqual("HARD_BRAKING_EPISODE_V1", self.profile["eventType"])
 
+    def test_demo_freshness_budget_matches_both_provenance_schemas(self) -> None:
+        self.assertEqual(5000, self.profile["input"]["freshnessTimeoutMs"])
+        self.assertEqual(5000, self.profile_schema["properties"]["input"]["properties"]["freshnessTimeoutMs"]["const"])
+        for name in ("brake-telemetry-window-chunk.schema.json", "brake-telemetry-window-chunk.v2.schema.json"):
+            schema = json.loads((CONTRACT_ROOT / name).read_text())
+            age = schema["$defs"]["sample"]["properties"]["maxSourceAgeMs"]
+            self.assertEqual(0, age["minimum"])
+            self.assertEqual(5000, age["maximum"])
+
     def test_six_signal_acquisition_subset_and_trigger_are_exact(self) -> None:
         inputs = self.profile["input"]
         self.assertEqual(30, inputs["sourceCadenceHz"])

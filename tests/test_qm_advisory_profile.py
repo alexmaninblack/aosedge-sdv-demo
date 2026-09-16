@@ -23,7 +23,7 @@ class QmAdvisoryProfileTest(unittest.TestCase):
 
     def test_contract_identity_and_exact_endpoints_are_frozen(self) -> None:
         self.assertEqual("D4-008", self.profile["decision"])
-        self.assertEqual("1.0.2", self.profile["contractVersion"])
+        self.assertEqual("1.1.0", self.profile["contractVersion"])
         self.assertEqual("1.0.1", self.profile["inputs"]["vdpCompatibilityContractVersion"])
         self.assertEqual(
             {"BRAKE_HEALTH_ADVISORY", "TIRE_HEALTH_ADVISORY"},
@@ -44,6 +44,22 @@ class QmAdvisoryProfileTest(unittest.TestCase):
             "D4-027",
             self.profile["deferred"]["credentialIssuanceAndRefresh"],
         )
+
+    def test_functional_profile_and_package_release_are_distinct(self) -> None:
+        self.assertEqual(["v3"], self.endpoints["BRAKE_HEALTH_ADVISORY"]["compatibleFunctionalProfiles"])
+        self.assertEqual(["v1"], self.endpoints["TIRE_HEALTH_ADVISORY"]["compatibleFunctionalProfiles"])
+        for endpoint in self.endpoints.values():
+            self.assertNotIn("compatibleServiceVersions", endpoint)
+        versions = self.profile["versionSemantics"]
+        self.assertEqual("ACTUAL_INSTALLED_PACKAGE_RELEASE_VERSION", versions["requestServiceVersion"])
+        for name in ("releaseVersionIsAuthorizationEvidence", "releaseVersionInferredFromFunctionalProfile",
+                     "newReleaseRequiresEndpointAllowlistEdit", "functionalProfileSuppliedByRequest", "requestWireSchemaChanged"):
+            self.assertFalse(versions[name])
+        self.assertEqual(self.request_schema["properties"]["serviceVersion"]["pattern"], versions["requestVersionPattern"])
+        self.assertNotIn("functionalProfile", self.request_schema["properties"])
+        self.assertRegex("29.0.0", versions["requestVersionPattern"])
+        self.assertRegex("100.2.3", versions["requestVersionPattern"])
+        self.assertNotRegex("v3", versions["requestVersionPattern"])
 
     def test_services_cannot_share_or_cross_write_targets(self) -> None:
         brake = self.endpoints["BRAKE_HEALTH_ADVISORY"]

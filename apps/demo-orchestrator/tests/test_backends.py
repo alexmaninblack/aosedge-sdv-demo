@@ -77,15 +77,17 @@ class BackendTests(unittest.TestCase):
         response = connection.getresponse.return_value
         response.status = 200
         response.read.side_effect = [b'{"ready":true}', b'{"state":"CURRENT"}', json.dumps(dict(
-            source="DEMO_MOCK", vehicleTelemetry=False, unitSystemUid="test-uid", counts={})).encode()]
+            source="DEMO_MOCK", vehicleTelemetry=False, unitSystemUid="test-uid", counts={})).encode()] + [
+                b'{"unitSystemUid":"test-uid","items":[]}'] * 4
         with patch("aosedge_demo_orchestrator.backends.http.client.HTTPConnection", return_value=connection) as factory:
             result = self.service._product_observation("tire", "test-uid")
         self.assertEqual("OBSERVED", result["state"])
         self.assertFalse(result["cloudAuthority"])
         self.assertFalse(result["vehicleTelemetry"])
-        self.assertEqual(3, connection.close.call_count)
+        self.assertEqual(7, connection.close.call_count)
         self.assertTrue(all(call.args == ("127.0.0.1", 18092) and call.kwargs == {"timeout": 3} for call in factory.call_args_list))
-        self.assertEqual(["/health/ready", "/health/context", "/api/v1/tire/demo-mock/summary"],
+        self.assertEqual(["/health/ready", "/health/context", "/api/v1/tire/demo-mock/summary"] + [
+            "/api/v1/tire/units/test-uid/" + name + "?limit=10" for name in ("assessments", "events", "advisories", "function-status")],
             [call.args[1] for call in connection.request.call_args_list])
 
     def test_product_inspect_rejects_wrong_scope_or_fabricated_source(self):
@@ -100,6 +102,40 @@ class BackendTests(unittest.TestCase):
                     self.service._product_observation("brake", "test-uid")
             self.assertEqual(3, connection.close.call_count)
 
+    def test_brake_product_windows_are_read_separately_from_mock_data(self):
+        connection = Mock()
+        response = connection.getresponse.return_value
+        response.status = 200
+        window = dict(unitSystemUid="test-uid", resourceType="WINDOW", items=[dict(eventId="event-1", unitSystemUid="test-uid")])
+        response.read.side_effect = [b'{"ready":true}', b'{}', json.dumps(dict(
+            source="DEMO_MOCK", vehicleTelemetry=False, unitSystemUid="test-uid")).encode(),
+            json.dumps(window).encode()] + [json.dumps(dict(unitSystemUid="test-uid", resourceType=kind, items=[])).encode()
+                for kind in ("ASSESSMENT", "EVENT", "ADVISORY")]
+        with patch("aosedge_demo_orchestrator.backends.http.client.HTTPConnection", return_value=connection):
+            result = self.service._product_observation("brake", "test-uid")
+        self.assertEqual("OBSERVED", result["state"])
+        self.assertEqual(window, result["observations"]["productData"]["data"])
+        self.assertEqual("DEMO_MOCK", result["observations"]["mockData"]["data"]["source"])
+        self.assertEqual("/api/v1/brake/units/test-uid/windows?limit=10", connection.request.call_args_list[3].args[1])
+        self.assertEqual("/api/v1/brake/units/test-uid/advisories?limit=10", connection.request.call_args.args[1])
+        self.assertEqual(7, connection.close.call_count)
+
+    def test_brake_product_windows_reject_wrong_unit_or_shape(self):
+        for change in (dict(unitSystemUid="production-uid"), dict(resourceType="MOCK"),
+                       dict(items={}), dict(items=[{}] * 11)):
+            with self.subTest(change=change):
+                connection = Mock()
+                response = connection.getresponse.return_value
+                response.status = 200
+                window = dict(unitSystemUid="test-uid", resourceType="WINDOW", items=[])
+                window.update(change)
+                response.read.side_effect = [b'{}', b'{}', json.dumps(dict(source="DEMO_MOCK",
+                    vehicleTelemetry=False, unitSystemUid="test-uid")).encode(), json.dumps(window).encode()]
+                with patch("aosedge_demo_orchestrator.backends.http.client.HTTPConnection", return_value=connection):
+                    with self.assertRaisesRegex(EnvironmentError, "PRODUCT_SCOPE_OR_SHAPE"):
+                        self.service._product_observation("brake", "test-uid")
+                self.assertEqual(4, connection.close.call_count)
+
     def test_product_inspect_missing_context_malformed_or_unavailable_is_not_success(self):
         with patch("aosedge_demo_orchestrator.backends.http.client.HTTPConnection") as factory:
             with self.assertRaises(EnvironmentError):
@@ -108,7 +144,7 @@ class BackendTests(unittest.TestCase):
             connection = factory.return_value
             response = connection.getresponse.return_value
             response.status = 200
-            response.read.side_effect = [b'[]', OSError("not available"), b'not JSON']
+            response.read.side_effect = [b'[]', OSError("not available"), b'not JSON'] + [b'not JSON'] * 4
             result = self.service._product_observation("brake", "test-uid")
             self.assertEqual("PARTIAL", result["state"])
             self.assertTrue(all(item["state"] == "UNAVAILABLE" for item in result["observations"].values()))

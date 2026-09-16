@@ -24,6 +24,66 @@ PROFILE_BASES = {
     "v2": ("2.0.0", "8cea21f1280961f997fe38c724b346a1c4ee2cb246d7da660849afac87599450", "v2", 15),
     "v3": ("3.0.0", "451965e1d03259a7edf66a4c742125c290f5efbfb2089530572395da2a1901fd", "v3", 23),
 }
+# Reviewed Platform checkpoint; no working-tree input is accepted. A missing
+# pin blocks new V3 preparation instead of falling back to deferred V3.
+ADVISORY_RUNTIME_PIN = {
+    "revision": "05cbff85c52eb0fe09641e177f1b3089a1df5b1f",
+    "tree": "d561cce0123776669a8f208904d46c8ecf577dfd",
+    "modules": {
+        "runtime.py": "d2a784314b20c597716f11f176230c427290b4c800e04eb864f40c6592471d99",
+        "advisory.py": "a9150d817b95b4aa6b9dbe5ac5a873d02f9efce02f02ff1949e22e06b7242bef",
+        "advisory_transport.py": "2b3fa7029b39a86da6e8c44c15533bd77122cd4358392e9672957e9988ca2e77",
+        "manifest.py": "94f57fd9a280d83d2d9c28ced213f5a860e46e41e6cc8ef86c3c0d70e5b8c635",
+    },
+}
+# Source release gate, not a runtime fallback or an operator/UI flag. On
+# 16 September the preserved staging Test passed actual selected-VDP and
+# Dashboard mTLS, repeat/no-restart, and anonymous-client TLS denial. Publishing
+# this payload now enables the next Safe Stop/advisory qualification gate; it
+# does not claim that advisory or the future clean Factory run already passed.
+ADVISORY_RUNTIME_RELEASE_ENABLED = True
+ADVISORY_RUNTIME_MODULES = ("runtime.py", "advisory.py", "advisory_transport.py", "manifest.py")
+ADVISORY_RUNTIME_BUILD_TYPE = "democtl-reviewed-advisory-runtime-v1"
+ADVISORY_CONTRACT = {
+    "contractId": "aosedge-demo-typed-qm-advisory",
+    "contractVersion": "1.1.0",
+    "sha256": "343e128bf9a0cac60a4f1b573315716f440accef17933fbcd9f6af49bc88300c",
+}
+
+
+def advisory_runtime_pin():
+    pin = ADVISORY_RUNTIME_PIN
+    if pin is None:
+        raise EnvironmentError("COMPONENT_ADVISORY_SOURCE_CHECKPOINT_REQUIRED")
+    if (not isinstance(pin, dict) or set(pin) != {"revision", "tree", "modules"}
+            or any(not isinstance(pin[key], str) or not re.fullmatch(r"[0-9a-f]{40}", pin[key])
+                   for key in ("revision", "tree"))
+            or not isinstance(pin["modules"], dict) or set(pin["modules"]) != set(ADVISORY_RUNTIME_MODULES)
+            or any(not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{64}", value)
+                   for value in pin["modules"].values())):
+        raise EnvironmentError("COMPONENT_ADVISORY_SOURCE_PIN_INVALID")
+    return pin
+
+
+def advisory_source(repository):
+    """Read only the fixed reviewed commit, never the working tree or a caller ref."""
+    pin = advisory_runtime_pin()
+    try:
+        tree = subprocess.run(["git", "rev-parse", pin["revision"] + "^{tree}"], cwd=repository,
+            capture_output=True, text=True, timeout=10, check=True).stdout.strip()
+        if tree != pin["tree"]:
+            raise EnvironmentError("COMPONENT_ADVISORY_SOURCE_TREE_MISMATCH")
+        files = {}
+        for name in ADVISORY_RUNTIME_MODULES:
+            raw = subprocess.run(["git", "show", pin["revision"] + ":" + SOURCE_PACKAGE + name],
+                cwd=repository, capture_output=True, timeout=10, check=True).stdout
+            if len(raw) > 1024 * 1024 or sha(raw) != pin["modules"][name]:
+                raise EnvironmentError("COMPONENT_ADVISORY_SOURCE_DIGEST_MISMATCH")
+            compile(raw, name, "exec")
+            files[PACKAGE + name] = raw
+    except (OSError, subprocess.SubprocessError, SyntaxError, UnicodeError):
+        raise EnvironmentError("COMPONENT_ADVISORY_SOURCE_UNAVAILABLE") from None
+    return files
 
 
 def version_number(version):
@@ -42,8 +102,8 @@ def replace_constant(data, name, old, new):
     return changed.encode()
 
 
-def replay(version, profile, baseline, baseline_sha, contract, factory, *, unsigned_source_sha=None):
-    """New Cloud release, frozen functional profile; no application-code change."""
+def _replay_files(version, profile, baseline, baseline_sha, contract, factory, *, unsigned_source_sha=None):
+    """Rebase frozen metadata without packing or changing application code."""
     if profile not in PROFILE_BASES or version_number(version) < (4, 0, 0):
         raise EnvironmentError("COMPONENT_REPLAY_PROFILE_OR_VERSION_INVALID")
     base_version, expected_sha, module, path_count = PROFILE_BASES[profile]
@@ -103,20 +163,122 @@ def replay(version, profile, baseline, baseline_sha, contract, factory, *, unsig
     for name in allowed:
         if name.endswith(".py"):
             compile(files[name], name, "exec")
-    layer_name = "vdp-" + version + "-arm64.tar.gz"
-    layer = pack(files)
-    config = encoded(dict(schemaVersion=2, publisher=dict(author="maninblack"), items=[dict(
-        identity=dict(codename=COMPONENT, type="component", title="Vehicle Data Platform",
-                      description="Telemetry " + profile + "; advisory deferred"),
-        version=version, sourceFolder="vehicle-data-platform",
-        configuration=dict(runtimes=[dict(codename=COMPONENT, type="runtime")]),
-        images=[dict(path=layer_name, mediaType=MEDIA_TYPE, archInfo=dict(architecture="arm64"), osInfo=dict(os="linux"))])]))
-    return {"config.yaml": config, "vehicle-data-platform/" + layer_name: layer}, dict(
+    return files, dict(
         version=version, contentProfile=profile, baseContentVersion=base_version,
-        baseBundleSha256=baseline_sha, payloadSha256=sha(layer), readPathCount=path_count,
+        baseBundleSha256=baseline_sha, readPathCount=path_count,
         capabilityManifestSha256=manifest_sha, qualificationScope="TELEMETRY_ONLY",
         advisory="DEFERRED" if profile == "v3" else "NOT_APPLICABLE", deterministic=True,
         changedPayloadFiles=sorted(name for name in files if files[name] != baseline[name]))
+
+
+def _transport(files, version, description, record):
+    layer_name = "vdp-" + version + "-arm64.tar.gz"
+    layer = pack(files)
+    config = encoded(dict(schemaVersion=2, publisher=dict(author="maninblack"), items=[dict(
+        identity=dict(codename=COMPONENT, type="component", title="Vehicle Data Platform", description=description),
+        version=version, sourceFolder="vehicle-data-platform",
+        configuration=dict(runtimes=[dict(codename=COMPONENT, type="runtime")]),
+        images=[dict(path=layer_name, mediaType=MEDIA_TYPE, archInfo=dict(architecture="arm64"), osInfo=dict(os="linux"))])]))
+    return {"config.yaml": config, "vehicle-data-platform/" + layer_name: layer}, dict(record, payloadSha256=sha(layer))
+
+
+def replay(version, profile, baseline, baseline_sha, contract, factory, *, unsigned_source_sha=None):
+    """New Cloud release, frozen functional profile; no application-code change."""
+    files, record = _replay_files(version, profile, baseline, baseline_sha, contract, factory,
+        unsigned_source_sha=unsigned_source_sha)
+    return _transport(files, version, "Telemetry " + profile + "; advisory deferred", record)
+
+
+def compose_advisory_runtime(version, baseline, baseline_sha, repository, contract, factory,
+                             advisory_contract, *, unsigned_source_sha):
+    """New reviewed V3 runtime; frozen profile/dependencies remain untouched."""
+    pin = advisory_runtime_pin()
+    if sha(advisory_contract) != ADVISORY_CONTRACT["sha256"]:
+        raise EnvironmentError("COMPONENT_ADVISORY_CONTRACT_DIGEST_MISMATCH")
+    modules = advisory_source(repository)
+    files, record = _replay_files(version, "v3", baseline, baseline_sha, contract, factory,
+        unsigned_source_sha=unsigned_source_sha)
+    capability = document(files, "config/capability-manifest.json")
+    if not isinstance(capability.get("contracts"), dict) or "typedQmAdvisory" not in capability["contracts"]:
+        raise EnvironmentError("COMPONENT_ADVISORY_BASE_CONTRACT_MISSING")
+    previous_digest = sha(files["config/capability-manifest.json"])
+    capability["contracts"]["typedQmAdvisory"] = dict(ADVISORY_CONTRACT)
+    files["config/capability-manifest.json"] = encoded(capability)
+    manifest_sha = sha(files["config/capability-manifest.json"])
+    provider = document(files, "config/provider.json")
+    provider["capabilityManifestSha256"] = manifest_sha
+    files["config/provider.json"] = encoded(provider)
+    profile_path = PACKAGE + "releases/v3.py"
+    files[profile_path] = replace_constant(files[profile_path], "MANIFEST_SHA256", previous_digest, manifest_sha)
+    if any(isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == "ADVISORY_CONTRACT"
+            for target in node.targets) for node in ast.parse(files[profile_path]).body):
+        raise EnvironmentError("COMPONENT_ADVISORY_BASE_PROFILE_CHANGED")
+    files[profile_path] += b"\nADVISORY_CONTRACT = " + encoded(ADVISORY_CONTRACT) + b"\n"
+    files.update(modules)
+    # Validate the build-selected contract constant without executing source.
+    constants = {node.targets[0].id: ast.literal_eval(node.value)
+        for node in ast.parse(files[PACKAGE + "manifest.py"]).body if isinstance(node, ast.Assign)
+        and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name)
+        and node.targets[0].id == "CURRENT_ADVISORY_CONTRACT"}
+    if constants.get("CURRENT_ADVISORY_CONTRACT") != ADVISORY_CONTRACT:
+        raise EnvironmentError("COMPONENT_ADVISORY_RUNTIME_CONTRACT_MISMATCH")
+    provenance = document(files, "provenance/provenance.json")
+    provenance.update(buildType=ADVISORY_RUNTIME_BUILD_TYPE,
+        baselineSourceRevision=provenance.get("sourceRevision"), sourceRevision=pin["revision"],
+        sourceTree=pin["tree"], runtimeSourceModules=dict(pin["modules"]),
+        typedQmAdvisory=dict(ADVISORY_CONTRACT),
+        advisoryRuntimeReleaseGate=("ENABLED" if ADVISORY_RUNTIME_RELEASE_ENABLED
+                                    else "PENDING_SELECTED_UNIT_MUTUAL_TLS"),
+        qualificationScope="ADVISORY_RUNTIME_IMPLEMENTED_NOT_LIVE_QUALIFIED",
+        buildInputs=[dict(path=name, sha256=sha(content)) for name, content in sorted(files.items())
+                     if not name.startswith(("provenance/", "sbom/"))])
+    files["provenance/provenance.json"] = encoded(provenance)
+    sbom = document(files, "sbom/spdx.json")
+    sbom["documentNamespace"] = ("https://github.com/alexmaninblack/aos-vehicle-platform/sbom/vehicle-data-platform/"
+                                 + version + "/" + pin["revision"])
+    files["sbom/spdx.json"] = encoded(sbom)
+    allowed = set(record["changedPayloadFiles"]) | set(modules)
+    if set(files) != set(baseline) | set(modules) or any(
+            files[name] != baseline[name] for name in baseline.keys() - allowed):
+        raise EnvironmentError("COMPONENT_ADVISORY_CHANGED_UNREVIEWED_CONTENT")
+    validate_advisory_payload(files, provenance)
+    record.update(sourceRevision=pin["revision"], sourceTree=pin["tree"],
+        runtimeSourceModules=dict(pin["modules"]), buildType=ADVISORY_RUNTIME_BUILD_TYPE,
+        typedQmAdvisory=dict(ADVISORY_CONTRACT), capabilityManifestSha256=manifest_sha,
+        advisoryRuntimeReleaseGate=provenance["advisoryRuntimeReleaseGate"],
+        qualificationScope="ADVISORY_RUNTIME_IMPLEMENTED_NOT_LIVE_QUALIFIED",
+        advisory="IMPLEMENTED_NOT_LIVE_QUALIFIED",
+        changedPayloadFiles=sorted(name for name in files if baseline.get(name) != files[name]))
+    return _transport(files, version, "Telemetry v3 and typed QM advisory; live qualification pending", record)
+
+
+def validate_advisory_payload(files, provenance):
+    """Inspection of reviewed composition uses independent source pins, not self-claimed hashes."""
+    pin = advisory_runtime_pin()
+    if (provenance.get("buildType") != ADVISORY_RUNTIME_BUILD_TYPE
+            or provenance.get("contentProfile") != "v3"
+            or provenance.get("sourceRevision") != pin["revision"]
+            or provenance.get("sourceTree") != pin["tree"]
+            or provenance.get("runtimeSourceModules") != pin["modules"]
+            or provenance.get("typedQmAdvisory") != ADVISORY_CONTRACT
+            or provenance.get("advisoryRuntimeReleaseGate") not in ("ENABLED", "PENDING_SELECTED_UNIT_MUTUAL_TLS")
+            or provenance.get("qualificationScope") != "ADVISORY_RUNTIME_IMPLEMENTED_NOT_LIVE_QUALIFIED"):
+        raise EnvironmentError("COMPONENT_ADVISORY_SOURCE_PROVENANCE_MISMATCH")
+    if any(name not in files or sha(files[name]) != pin["modules"][name.removeprefix(PACKAGE)]
+           for name in (PACKAGE + module for module in ADVISORY_RUNTIME_MODULES)):
+        raise EnvironmentError("COMPONENT_ADVISORY_RUNTIME_DIGEST_MISMATCH")
+    if document(files, "config/capability-manifest.json").get("contracts", {}).get("typedQmAdvisory") != ADVISORY_CONTRACT:
+        raise EnvironmentError("COMPONENT_ADVISORY_CAPABILITY_CONTRACT_MISMATCH")
+    profile_constants = {node.targets[0].id: ast.literal_eval(node.value)
+        for node in ast.parse(files.get(PACKAGE + "releases/v3.py", b"")).body if isinstance(node, ast.Assign)
+        and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name)
+        and node.targets[0].id == "ADVISORY_CONTRACT"}
+    if profile_constants.get("ADVISORY_CONTRACT") != ADVISORY_CONTRACT:
+        raise EnvironmentError("COMPONENT_ADVISORY_PROFILE_CONTRACT_MISMATCH")
+    actual = [dict(path=name, sha256=sha(content)) for name, content in sorted(files.items())
+              if not name.startswith(("provenance/", "sbom/"))]
+    if provenance.get("buildInputs") != actual:
+        raise EnvironmentError("COMPONENT_ADVISORY_BUILD_INPUTS_CHANGED")
 
 
 def encoded(value):

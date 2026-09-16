@@ -29,6 +29,13 @@ class BackendService:
             vehicleTelemetry=False, observedAt=now(), observations={})
         paths = {"readiness": "/health/ready", "context": "/health/context",
                  "mockData": "/api/v1/" + team + "/demo-mock/summary"}
+        from urllib.parse import quote
+        if team == "brake":
+            paths["productData"] = "/api/v1/brake/units/" + quote(uid, safe="") + "/windows?limit=10"
+        for name in ("assessments", "events", "advisories"):
+            paths[name] = "/api/v1/" + team + "/units/" + quote(uid, safe="") + "/" + name + "?limit=10"
+        if team == "tire":
+            paths["functionStatus"] = "/api/v1/tire/units/" + quote(uid, safe="") + "/function-status?limit=10"
         for name, path in paths.items():
             connection = http.client.HTTPConnection("127.0.0.1", 18091 if team == "brake" else 18092, timeout=3)
             try:
@@ -44,6 +51,17 @@ class BackendService:
                 if name == "mockData" and (value.get("source") != "DEMO_MOCK" or value.get("vehicleTelemetry") is not False
                         or value.get("unitSystemUid") != uid):
                     raise EnvironmentError("BACKEND_MOCK_SCOPE_OR_PROVENANCE_MISMATCH")
+                resource = {"productData": "WINDOW", "assessments": "ASSESSMENT", "events": "EVENT", "advisories": "ADVISORY", "functionStatus": "FUNCTION_STATUS"}.get(name)
+                if resource:
+                    if (value.get("unitSystemUid") != uid or (team == "brake" and value.get("resourceType") != resource)
+                            or not isinstance(value.get("items"), list) or len(value["items"]) > 10):
+                        raise EnvironmentError("BACKEND_PRODUCT_SCOPE_OR_SHAPE_MISMATCH")
+                    for item in value["items"]:
+                        if not isinstance(item, dict):
+                            raise EnvironmentError("BACKEND_PRODUCT_RECORD_SHAPE_MISMATCH")
+                        message = item if resource == "WINDOW" else item.get("message", {})
+                        if not isinstance(message, dict) or message.get("unitSystemUid") != uid:
+                            raise EnvironmentError("BACKEND_PRODUCT_RECORD_SCOPE_MISMATCH")
                 result["observations"][name] = dict(state="OBSERVED", data=value)
             except EnvironmentError:
                 raise

@@ -3,7 +3,7 @@
   "schemaVersion": 2,
   "contractVersion": "2.0.0",
   "messageType": "BRAKE_HEALTH_ASSESSMENT",
-  "assessmentId": "d49ce480-a1ef-5cd2-9e05-fd3783bfd1de",
+  "assessmentId": "a8ff857c-a7ca-5a59-a3fc-4e4ae90ffe3a",
   "sourceEventId": "4cba2d80-c04a-4d24-9f03-f4a85d56da13",
   "unitSystemUid": "demo-unit-validation-001",
   "unitRole": "VALIDATION",
@@ -12,7 +12,7 @@
   "vdpContractSha256": "2222222222222222222222222222222222222222222222222222222222222222",
   "modelId": "brake-condition-demo-v1",
   "modelVersion": "1.0.0",
-  "modelConfigSha256": "7749dff2dd340f05ae5f3c90912d65007ad48c52a5136ab0e165a83109d55f53",
+  "modelConfigSha256": "ea74cda63116d1f9fc969ec292aedb7cd0935ae899775bd8bcd73c230190e028",
   "provenance": "DEMO_SYNTHETIC",
   "assessedAt": "2026-08-22T12:00:08.000Z",
   "content": {

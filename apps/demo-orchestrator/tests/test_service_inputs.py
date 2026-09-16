@@ -18,6 +18,230 @@ from aosedge_demo_orchestrator.cli import build_parser, request_from_arguments
 from aosedge_demo_orchestrator.api import execute_operation
 
 
+class KuksaAuthorizationObservationTests(unittest.TestCase):
+    def test_recovery_is_explicit_exclusive_and_test_only(self):
+        from dataclasses import replace
+        args = build_parser().parse_args(["service", "runtime-activate", "test", "--kac-only", "--kac-recovery"])
+        request = request_from_arguments(args)
+        self.assertTrue(request.kac_recovery)
+        self.assertIsNone(request.selection_error())
+        for extra in (dict(kac_only=False), dict(kac_time_read_proof=True),
+                      dict(kac_data_proof=True), dict(restart_sm=True)):
+            self.assertIsNotNone(replace(request, **extra).selection_error())
+
+    def test_recovery_preserves_completed_proofs_and_reconciles_runtime_on_repeat(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            environment = EnvironmentService(root, catalog=SimpleNamespace(project=root / "catalog"))
+            environment._directory(".run/demo-current")
+            historical = dict(state="PROVED", result=dict(originalPolicyRestored=True))
+            atomic_json(root / JOURNAL, dict(vehicles=dict(test=dict(unitId="unit", systemUid="native", localVmId="local")),
+                kacDataSubscriptionProof=historical, kacTimeReadProof=historical))
+            with patch("aosedge_demo_orchestrator.service_inputs.SourceDriver") as driver:
+                driver.return_value.guest.return_value = dict(state="ACTIVE", noOp=False)
+                ServiceInputs(environment).activate_kac("test", recovery=True)
+                driver.return_value.guest.return_value = dict(state="ACTIVE", noOp=True)
+                result = ServiceInputs(environment).activate_kac("test", recovery=True)
+                self.assertEqual(2, driver.return_value.guest.call_count)
+                self.assertEqual("service-kac-recovery", driver.return_value.guest.call_args.args[2])
+            self.assertTrue(result["noOp"])
+            state = json.loads((root / JOURNAL).read_text())
+            self.assertEqual(historical, state["kacTimeReadProof"])
+            self.assertEqual(historical, state["kacDataSubscriptionProof"])
+
+    def test_data_proof_selector_is_explicit_and_test_only(self):
+        from dataclasses import replace
+        args = build_parser().parse_args(["service", "runtime-activate", "test", "--kac-only", "--kac-data-proof"])
+        request = request_from_arguments(args)
+        self.assertTrue(request.kac_data_proof)
+        self.assertIsNone(request.selection_error())
+        for extra in (dict(kac_only=False), dict(kac_time_read_proof=True), dict(restart_sm=True)):
+            self.assertIsNotNone(replace(request, **extra).selection_error())
+
+    def test_completed_policy_proof_never_reapplies_on_repeat(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            environment = EnvironmentService(root, catalog=SimpleNamespace(project=root / "catalog"))
+            environment._directory(".run/demo-current")
+            atomic_json(root / JOURNAL, dict(vehicles=dict(test=dict(unitId="unit", systemUid="native", localVmId="local")),
+                kacTimeReadProof=dict(unitId="unit", state="PROVED", result=dict(state="PROVED", originalPolicyRestored=True))))
+            with patch("aosedge_demo_orchestrator.service_inputs.SourceDriver") as driver:
+                result = ServiceInputs(environment).activate_kac("test", time_read_proof=True)
+                driver.return_value.guest.assert_not_called()
+            self.assertTrue(result["noOp"])
+            self.assertEqual("RECORDED_COMPLETED_PROOF_NOT_CURRENT_READINESS", result["evidence"])
+
+    def test_completed_subscription_proof_preserves_prior_trial_and_never_reapplies(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            environment = EnvironmentService(root, catalog=SimpleNamespace(project=root / "catalog"))
+            environment._directory(".run/demo-current")
+            state = dict(vehicles=dict(test=dict(unitId="unit", systemUid="native", localVmId="local")),
+                kacDataProof=dict(state="PROVED", result=dict(input="MISSING_VALUE")),
+                kacDataSubscriptionProof=dict(unitId="unit", state="PROVED", result=dict(state="PROVED", originalPolicyRestored=True)))
+            atomic_json(root / JOURNAL, state)
+            with patch("aosedge_demo_orchestrator.service_inputs.SourceDriver") as driver:
+                result = ServiceInputs(environment).activate_kac("test", data_proof=True)
+                driver.return_value.guest.assert_not_called()
+            self.assertTrue(result["noOp"])
+            self.assertEqual(state, json.loads((root / JOURNAL).read_text()))
+
+    def test_structural_policy_gate_rejects_unrelated_or_conditional_rules(self):
+        from collections import Counter
+        from aosedge_demo_orchestrator import source_guest
+        before = dict(terules=Counter(), types=Counter(["type old;"]))
+        rules = ["allow aos_kuksa_auth_compat_t ntpd_pid_t:dir { getattr search };",
+                 "allow aos_kuksa_auth_compat_t ntpd_pid_t:file { getattr open read };"]
+        after = dict(before, terules=Counter(rules))
+        self.assertTrue(source_guest.kac_policy_structure_delta(before, after)["exact"])
+        self.assertFalse(source_guest.kac_policy_structure_delta(before,
+            dict(after, types=Counter(["type changed;"])))["exact"])
+        self.assertFalse(source_guest.kac_policy_structure_delta(before,
+            dict(after, terules=Counter(rules + [rules[0]])))["exact"])
+        self.assertFalse(source_guest.kac_policy_structure_delta(before,
+            dict(after, terules=Counter([rules[0], rules[1] + " [ enabled ]:True"])))["exact"])
+
+    @unittest.skipUnless(hasattr(os, "fork"), "requires Unix rollback guard")
+    def test_leased_guard_restores_only_its_own_active_policy(self):
+        from aosedge_demo_orchestrator import source_guest
+        with tempfile.TemporaryDirectory() as directory:
+            load, active = Path(directory) / "load", Path(directory) / "active"
+            for same in (True, False):
+                load.write_bytes(b"untouched")
+                active.write_bytes(b"candidate" if same else b"later-policy")
+                pid, fd = source_guest.arm_kac_policy_rollback(b"stock", load, timeout=0.05,
+                    leased_policy=True, active_path=active)
+                os.write(fd, b"L" + hashlib.sha256(b"candidate").hexdigest().encode("ascii"))
+                os.close(fd)
+                _, status = os.waitpid(pid, 0)
+                self.assertEqual(0, status)
+                self.assertEqual(b"stock" if same else b"untouched", load.read_bytes())
+
+    @unittest.skipUnless(hasattr(os, "fork"), "requires Unix rollback guard")
+    def test_rollback_guard_restores_on_eof_and_deadline_and_can_disarm(self):
+        from aosedge_demo_orchestrator import source_guest
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "load"
+            for mode in ("eof", "deadline", "disarm"):
+                path.write_bytes(b"candidate")
+                pid, fd = source_guest.arm_kac_policy_rollback(b"stock", path, timeout=0.05)
+                if mode == "disarm":
+                    os.write(fd, b"R")
+                if mode != "deadline":
+                    os.close(fd)
+                _, status = os.waitpid(pid, 0)
+                if mode == "deadline":
+                    os.close(fd)
+                self.assertEqual(0, status)
+                self.assertEqual(b"candidate" if mode == "disarm" else b"stock", path.read_bytes())
+
+    def test_temporary_policy_delta_is_exactly_read_only(self):
+        from aosedge_demo_orchestrator import source_guest
+        text = "Allow Rules: 2 added, 0 removed, 0 modified\n" + \
+            "+ allow aos_kuksa_auth_compat_t ntpd_pid_t:dir { getattr search };\n" + \
+            "+ allow aos_kuksa_auth_compat_t ntpd_pid_t:file { getattr open read };\n"
+        self.assertTrue(source_guest.kac_time_policy_delta(text))
+        for changed in (text.replace("open read", "open read write"), text.replace("ntpd_pid_t", "init_runtime_t"),
+                        text + "Types: 1 added, 0 removed, 0 modified\n", text.replace("+ allow", "- allow", 1)):
+            self.assertFalse(source_guest.kac_time_policy_delta(changed))
+
+    def test_time_proof_is_explicit_and_excludes_sm_restart(self):
+        args = build_parser().parse_args(["service", "runtime-activate", "test", "--kac-only", "--kac-time-read-proof"])
+        request = request_from_arguments(args)
+        self.assertTrue(request.kac_time_read_proof)
+        self.assertIsNone(request.selection_error())
+        from dataclasses import replace
+        self.assertIsNotNone(replace(request, kac_only=False).selection_error())
+        self.assertIsNotNone(replace(request, restart_sm=True).selection_error())
+
+    def test_protocol_probe_sends_status_only_and_drops_payload_secrets(self):
+        from aosedge_demo_orchestrator import source_guest
+        def run(args):
+            return SimpleNamespace(returncode=0, stdout="\n\n".join(
+                "Id=" + unit + "\nActiveState=inactive\nMainPID=0" for unit in args[2:-1]) if args[0] == "systemctl" else "")
+        def metadata(path):
+            if str(path) == "/run/aos-kuksa-auth-compat/request.sock":
+                return SimpleNamespace(st_uid=999, st_gid=997, st_mode=stat.S_IFSOCK | 0o660, st_mtime=1)
+            raise FileNotFoundError
+        with patch.object(source_guest, "command", side_effect=run), patch.object(Path, "lstat", metadata), \
+                patch.object(source_guest.socket, "socket") as factory:
+            client = factory.return_value.__enter__.return_value
+            client.recv.return_value = b'{"status":"ready","jwt":"do-not-export","aosSecret":"do-not-export"}\n'
+            result = source_guest.kuksa_authorization_observation()
+        self.assertEqual({"status": "ready"}, result["protocolStatus"])
+        self.assertNotIn("do-not-export", json.dumps(result))
+        client.sendall.assert_called_once_with(b'{"protocol":"aos-kuksa-auth-compat/v1","operation":"status"}\n')
+
+    def test_kac_only_cli_and_incompatible_restart(self):
+        args = build_parser().parse_args(["service", "runtime-activate", "test", "--kac-only"])
+        request = request_from_arguments(args)
+        self.assertTrue(request.kac_only)
+        self.assertIsNone(request.selection_error())
+        from dataclasses import replace
+        self.assertIsNotNone(replace(request, restart_sm=True).selection_error())
+        self.assertIsNotNone(replace(request, action="runtime-inspect").selection_error())
+
+    def test_kac_start_and_repeat_touch_no_other_unit(self):
+        from aosedge_demo_orchestrator import source_guest
+        import copy
+        unit = "aos-kuksa-auth-compat.service"
+        before = dict(state="CURRENT", services={unit:dict(ActiveState="inactive", MainPID="0", NRestarts="0"),
+            "aos-kuksa-verifier-prepare.service":dict(ActiveState="active")},
+            inputs={name:dict(present=True, symlink=False) for name in ("provisioned", "signingPin", "verifier", "requestDirectory")})
+        after = copy.deepcopy(before)
+        after["services"][unit].update(ActiveState="active", MainPID="42")
+        request = dict(role="test", vehicle=dict(unitId="unit", systemUid="native"))
+        with patch.object(source_guest.os, "geteuid", return_value=0), patch.object(Path, "read_text", return_value="native"), \
+                patch.object(source_guest, "kuksa_authorization_observation", side_effect=[before, after, after]), \
+                patch.object(source_guest, "command", return_value=SimpleNamespace(returncode=0)) as run:
+            self.assertEqual("ACTIVE", source_guest.activate_kac(request)["state"])
+            self.assertTrue(source_guest.activate_kac(request)["noOp"])
+        self.assertEqual([["systemctl", "is-active", "--quiet", "aos-iam.service"], ["systemctl", "start", unit]],
+            [call.args[0] for call in run.call_args_list])
+        before["inputs"]["verifier"]["present"] = False
+        with patch.object(source_guest.os, "geteuid", return_value=0), patch.object(Path, "read_text", return_value="native"), \
+                patch.object(source_guest, "kuksa_authorization_observation", return_value=before), \
+                patch.object(source_guest, "command") as run:
+            with self.assertRaisesRegex(ValueError, "PREREQUISITE_MISSING"):
+                source_guest.activate_kac(request)
+            run.assert_not_called()
+
+    def test_startup_probe_is_read_only_and_excludes_secret_messages(self):
+        from aosedge_demo_orchestrator import source_guest
+        calls = []
+        def run(args):
+            calls.append(args)
+            if args[0] == "systemctl":
+                units = args[2:-1]
+                return SimpleNamespace(returncode=0, stdout="\n\n".join(
+                    "Id=" + unit + "\nActiveState=failed\nExecMainStatus=1\nEnvironment=secret" for unit in units))
+            messages = ["aos-kuksa-auth-compat: startup stage=bind failed errno=13",
+                        "AOS_SECRET=do-not-export", "verifier-prepare: stage=ready secret=do-not-export"]
+            return SimpleNamespace(returncode=0, stdout="\n".join(json.dumps(dict(
+                _SYSTEMD_UNIT="aos-kuksa-auth-compat.service", __REALTIME_TIMESTAMP="123", MESSAGE=value))
+                for value in messages))
+        with patch.object(source_guest, "command", side_effect=run), patch.object(Path, "lstat", side_effect=FileNotFoundError):
+            result = source_guest.kuksa_authorization_observation()
+        self.assertEqual("CURRENT", result["state"])
+        self.assertFalse(result["mutation"])
+        self.assertEqual(["systemctl", "show"], calls[0][:2])
+        self.assertEqual("journalctl", calls[1][0])
+        self.assertEqual(2, len(calls))
+        self.assertEqual(13, result["startupEvents"][0]["errno"])
+        self.assertEqual(1, len(result["startupEvents"]))
+        self.assertNotIn("do-not-export", json.dumps(result))
+        self.assertNotIn("Environment", json.dumps(result))
+        self.assertEqual({"present": False}, result["inputs"]["signingPin"])
+
+    def test_failed_reads_are_not_reported_as_current_or_clean(self):
+        from aosedge_demo_orchestrator import source_guest
+        with patch.object(source_guest, "command", return_value=SimpleNamespace(returncode=1, stdout="")), \
+                patch.object(Path, "lstat", side_effect=FileNotFoundError):
+            result = source_guest.kuksa_authorization_observation()
+        self.assertEqual("INCOMPLETE", result["state"])
+        self.assertEqual("UNAVAILABLE", result["journalState"])
+
+
 class PublicInputTests(unittest.TestCase):
     def test_reboot_restore_requires_exact_test_current_sm_and_empty_containers(self):
         import copy

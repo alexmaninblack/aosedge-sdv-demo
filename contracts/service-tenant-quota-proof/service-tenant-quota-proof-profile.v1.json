@@ -65,8 +65,8 @@
       "storageLimit": "8MiB",
       "stateLimit": "1MiB",
       "tmpLimit": "8MiB",
-      "noFileLimit": 64,
-      "pidsLimit": 16
+      "noFileLimit": 1024,
+      "pidsLimit": 24
     },
     "tireHealth": {
       "cpuLimit": 150,
@@ -74,8 +74,8 @@
       "storageLimit": "4MiB",
       "stateLimit": "2MiB",
       "tmpLimit": "2MiB",
-      "noFileLimit": 32,
-      "pidsLimit": 8
+      "noFileLimit": 1024,
+      "pidsLimit": 16
     },
     "tireStorageOwnership": {
       "storageLimit": "PERSISTENT_OUTBOX_AND_SUPPORTING_DATABASE_METADATA",

@@ -28,7 +28,9 @@ export function serviceCandidate(local: LocalDemoView, releases: ServiceRelease[
   const prepared = jobs.filter(job => job.runId === local.runId && job.action === "service-prepare" && job.state === "COMPLETED"
     && job.team === team && job.profile === profile && job.release && job.version).map(job => ({
       releaseHandle: job.release!, team, contentProfile: profile, version: job.version!, runId: job.runId,
-      serviceId: job.serviceId ?? null, signed: false, submitted: false, demoMockedData: true, publication: {},
+      serviceId: job.serviceId ?? null, signed: false, submitted: false,
+      demoMockedData: job.results.find(result => result.operation === "service.prepare")?.facts.demoMockedData !== false,
+      publication: {},
     } as ServiceRelease));
   const merged = new Map(prepared.map(row => [row.releaseHandle, row]));
   for (const row of releases) if (row.runId === local.runId && local.runId && row.team === team && row.contentProfile === profile) merged.set(row.releaseHandle, row);

@@ -50,8 +50,8 @@ class OperationTests(unittest.TestCase):
     def test_service_publication_and_first_assignment_keep_native_authority(self):
         session = SessionOperations()
         request = payload(session, "service-prepare", team="brake", profile="v3")
-        self.assertEqual([dict(domain="service", action="prepare", team="brake", content_profile="v3",
-            without_permissions=True, demo_mocked_data=True)], operation_plan(request)[1])
+        self.assertEqual([dict(domain="service", action="prepare", team="brake", content_profile="v3")],
+            operation_plan(request)[1])
         plan = operation_plan(payload(session, "service-publish", release="brake/12.0.0"))[1]
         self.assertEqual(["sign", "upload"], [row["action"] for row in plan])
         self.assertTrue(all(row["service_release"] == "brake/12.0.0" for row in plan))

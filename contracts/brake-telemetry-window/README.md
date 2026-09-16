@@ -3,6 +3,16 @@
 
 # Brake Telemetry Window Contract
 
+## Authorized demo freshness amendment — 15 September 2026
+
+For the single-Mac Brake V1 real-data trial, source age and stream idle use
+5000 ms, replacing the earlier 250-ms budget. Service ingress, V1 validation,
+raw-window schemas (both provenance revisions) and backend validation use
+the same bound. Missing, future, mixed-timestamp and physically invalid data
+remain invalid; no values/timestamps are synthesized. Capture hold/durations,
+authorization lease, V2/V3 model timing and advisory expiry are unchanged.
+This is a validation-budget change, not a payload-shape/version change.
+
 - Decision: [`D4-016`](../../docs/requirements/d4-decision-register.md#d4-016)
 - Accepted subdecisions: D4-016.1 and D4-016.2
 - Contract version: 1.0.0

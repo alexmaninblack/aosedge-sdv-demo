@@ -469,6 +469,8 @@ class EnvironmentService:
         source = state.get("source")
         base = ".run/demo-current/source"
         control = ".run/demo-current/control"
+        trust_directory = control + "/viss-trust"
+        from .source_trust import FILES as TRUST_FILES, owned as trust_owned
         if source:
             run_id = object_id(source.get("runId"))
             if (source.get("state") != "STOPPED" or source.get("operation") or source.get("stopOperation")
@@ -521,7 +523,18 @@ class EnvironmentService:
                 plan["directories"].append(base)
             if (self.root / control).exists() or (self.root / control).is_symlink():
                 self._directory(control)
-                if any((self.root / control).iterdir()):
+                if (self.root / trust_directory).exists() or (self.root / trust_directory).is_symlink():
+                    if not source or not source.get("trust"):
+                        raise EnvironmentError("SOURCE_TRUST_CLEANUP_OWNERSHIP_MISSING")
+                    trust_owned(self.root / trust_directory, directory=True)
+                    trust_files = list((self.root / trust_directory).iterdir())
+                    if {path.name for path in trust_files} != TRUST_FILES:
+                        raise EnvironmentError("SOURCE_TRUST_CLEANUP_FILES_CONFLICT")
+                    for path in sorted(trust_files):
+                        trust_owned(path)
+                        plan["files"].append(str(path.relative_to(self.root)))
+                    plan["directories"].append(trust_directory)
+                if any(p.name != "viss-trust" for p in (self.root / control).iterdir()):
                     raise EnvironmentError("SOURCE_CONTROL_CLEANUP_INCOMPLETE")
                 plan["directories"].append(control)
         if (not isinstance(plan, dict) or set(plan) != {"files", "directories"}
@@ -529,7 +542,7 @@ class EnvironmentService:
             raise EnvironmentError("RUNTIME_CLEANUP_PLAN_INVALID")
         for relative in plan["directories"]:
             parts = Path(relative).parts
-            if relative not in (base, control):
+            if relative not in (base, control, trust_directory):
                 if len(parts) != 4 or parts[:3] != Path(base).parts:
                     raise EnvironmentError("RUNTIME_CLEANUP_PLAN_INVALID")
                 object_id(parts[3])
@@ -541,6 +554,8 @@ class EnvironmentService:
                     raise EnvironmentError("UNTRACKED_SOURCE_RUNTIME_FILE")
         for relative in plan["files"]:
             parts = Path(relative).parts
+            if str(Path(relative).parent) == trust_directory and parts[-1] in TRUST_FILES and trust_directory in plan["directories"]:
+                continue
             if (len(parts) != 5 or parts[:3] != Path(base).parts or parts[4] not in SOURCE_RUNTIME_FILES
                     or str(Path(relative).parent) not in plan["directories"]):
                 raise EnvironmentError("RUNTIME_CLEANUP_PLAN_INVALID")

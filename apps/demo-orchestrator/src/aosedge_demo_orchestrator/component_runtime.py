@@ -384,6 +384,249 @@ subprocess.run([cache['CMAKE_COMMAND'], '--build', str(work / 'service-update-la
         builder("test", "stop")
 
 
+PERMISSION_RECIPES = {"iam": "aos-iamanager", "sm": "aos-servicemanager", "cm": "aos-communicationmanager"}
+PERMISSION_ARTIFACT = ARTIFACT.with_name("core-permission-keys-256")
+PERMISSION_VM = "6fcf5a74-0b74-4ef0-a05d-44bad598ab94"
+PERMISSION_UNIT = "42c0bf43-4eb7-44e6-8c74-f60f9959da66"
+
+
+def permission_recipe_inputs(iam_response_capacity=False):
+    """Only capacity may differ from the accepted .33 manager recipes."""
+    base = FACTORY_RELEASES["6.1.1-maninblack.33"]
+    files = {}
+    for recipe in PERMISSION_RECIPES.values():
+        name = f"meta-aos-vehicle-platform/recipes-aos/{recipe}/{recipe}_git.bbappend"
+        raw = (SOURCE / name).read_bytes()
+        previous = subprocess.check_output(["git", "show", base + ":" + name], cwd=SOURCE)
+        code = lambda value: [line for line in value.decode().splitlines()
+            if line.strip() and not line.lstrip().startswith("#")]
+        lines = code(raw)
+        reply_patch = 'SRC_URI += "file://0001-use-function-count-for-permission-response.patch"'
+        if recipe == "aos-iamanager" and reply_patch in lines:
+            if not iam_response_capacity or lines.count(reply_patch) != 1:
+                raise EnvironmentError("CORE_PERMISSION_IAM_RESPONSE_FIX_REQUIRES_SELECTION")
+            lines.remove(reply_patch)
+            patch_name = "meta-aos-vehicle-platform/recipes-aos/aos-iamanager/files/0001-use-function-count-for-permission-response.patch"
+            patch = (SOURCE / patch_name).read_bytes()
+            removed = [line for line in patch.decode().splitlines() if line.startswith("-") and not line.startswith("---")]
+            added = [line for line in patch.decode().splitlines() if line.startswith("+") and not line.startswith("+++")]
+            if removed != ['-    auto          aosInstancePerm = std::make_unique<StaticArray<FunctionPermissions, cFuncServiceMaxCount>>();'] or added != ['+    auto          aosInstancePerm = std::make_unique<StaticArray<FunctionPermissions, cFunctionsMaxCount>>();']:
+                raise EnvironmentError("CORE_PERMISSION_IAM_RESPONSE_PATCH_NOT_EXACT")
+            files[patch_name] = patch
+        flag = 'CXXFLAGS:append = " -DAOS_CONFIG_TYPES_FUNCTION_LEN=256"'
+        if lines.count(flag) != 1 or [line for line in lines if line != flag] != code(previous):
+            raise EnvironmentError("CORE_PERMISSION_RECIPE_DELTA_NOT_CAPACITY_ONLY")
+        files[name] = raw
+    return files
+
+
+def build_permissions(target, iam_response_capacity=False):
+    """Compile three .33 managers with one capacity delta, then stop Builder."""
+    from .environment import atomic_json
+    if target != "test":
+        raise EnvironmentError("CORE_PERMISSION_TEST_ONLY")
+    files = permission_recipe_inputs(iam_response_capacity)
+    base = FACTORY_RELEASES["6.1.1-maninblack.33"]
+    artifact = PERMISSION_ARTIFACT.with_name("core-permission-iam-response-32") if iam_response_capacity else PERMISSION_ARTIFACT
+    recipes = {"iam": PERMISSION_RECIPES["iam"]} if iam_response_capacity else PERMISSION_RECIPES
+    source_hashes = {name: hashlib.sha256(raw).hexdigest() for name, raw in files.items()}
+    identity = hashlib.sha256(json.dumps(source_hashes, sort_keys=True).encode()).hexdigest()
+    if artifact.exists():
+        previous = json.loads((artifact / "manifest.json").read_text())
+        if (not iam_response_capacity or previous.get("state") != "BUILD_FAILED_RECONCILE"
+                or previous.get("binaries") or previous.get("sourceIdentity") == identity
+                or not re.fullmatch(r"[0-9a-f]{64}", previous.get("sourceIdentity", ""))):
+            raise EnvironmentError("CORE_PERMISSION_ARTIFACT_EXISTS_RECONCILE")
+        failed = artifact.with_name(artifact.name + "-failed-" + previous["sourceIdentity"][:12])
+        if failed.exists() or failed.is_symlink():
+            raise EnvironmentError("CORE_PERMISSION_FAILURE_EVIDENCE_EXISTS")
+        artifact.rename(failed)
+    if shutil.disk_usage(artifact.parent).free < 60 * 1024**3:
+        raise EnvironmentError("CORE_PERMISSION_HOST_FREE_SPACE_BELOW_60_GIB")
+    source = BUILDER_PROJECT + "/aos-vehicle-platform-" + identity[:40]
+    ssh = builder_ssh()
+    def remote(command, timeout=30, data=None):
+        return subprocess.run(ssh + [command], input=data, capture_output=True, timeout=timeout, check=True).stdout
+    old_layers = None
+    layers = BUILDER_PROJECT + "/build-main/conf/bblayers.conf"
+    artifact.mkdir(mode=0o700)
+    manifest = dict(state="BUILD_STARTED", capacity=256, baseRevision=base,
+        recipeSha256=source_hashes, sourceIdentity=identity, builderSource=source, binaries={},
+        iamResponseCapacity=32 if iam_response_capacity else None)
+    atomic_json(artifact / "manifest.json", manifest)
+    try:
+        builder("test", "start")
+        deadline = time.monotonic() + 90
+        while True:
+            try:
+                remote("true", timeout=7)
+                break
+            except (subprocess.SubprocessError, OSError):
+                if time.monotonic() >= deadline:
+                    raise EnvironmentError("CORE_PERMISSION_BUILDER_SSH_TIMEOUT") from None
+                time.sleep(1)
+        if int(remote("df -Pk " + BUILDER_PROJECT + " | tail -1 | awk '{print $4}'")) * 1024 < 60 * 1024**3:
+            raise EnvironmentError("CORE_PERMISSION_BUILDER_FREE_SPACE_BELOW_60_GIB")
+        archive = subprocess.check_output(["git", "archive", base], cwd=SOURCE)
+        remote("mkdir -p " + source)
+        remote("tar -xf - -C " + source, data=archive)
+        data = io.BytesIO()
+        with tarfile.open(fileobj=data, mode="w") as tar:
+            for name, raw in files.items():
+                info = tarfile.TarInfo(name)
+                info.size, info.mode = len(raw), 0o644
+                tar.addfile(info, io.BytesIO(raw))
+        remote("tar -xf - -C " + source, data=data.getvalue())
+        old_layers = remote("cat " + layers)
+        replaced, count = re.subn(rb'aos-vehicle-platform(?:-[0-9a-f]{40})?/meta-aos-vehicle-platform',
+            (Path(source).name + "/meta-aos-vehicle-platform").encode(), old_layers)
+        if count != 1:
+            raise EnvironmentError("CORE_PERMISSION_BUILDER_LAYER_NOT_UNIQUE")
+        # Existing private Builder transport; restore its configuration in finally.
+        writer = "python3 -c " + shlex.quote("import sys; from pathlib import Path; Path(" + repr(layers) + ").write_bytes(sys.stdin.buffer.read())")
+        remote(writer, data=replaced)
+        command = "cd " + BUILDER_PROJECT + "; . poky/oe-init-build-env build-main >/dev/null; bitbake -R " + source + "/qualification/factory-33.conf -c compile " + " ".join(recipes.values())
+        print("Test: compile " + ", ".join(recipes).upper() + "; permission keys 256; offline, no image build", file=sys.stderr, flush=True)
+        with (artifact / "compile.log").open("wb") as log:
+            result = subprocess.run(ssh + ["bash -lc " + shlex.quote(command)], stdout=log, stderr=subprocess.STDOUT, timeout=1800)
+        if result.returncode:
+            raise EnvironmentError("CORE_PERMISSION_COMPILE_FAILED_SEE_ARTIFACT_LOG")
+        for manager, recipe in recipes.items():
+            work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/" + recipe + "/git"
+            # Both application and embedded library must have identical layouts.
+            check = "from pathlib import Path; root=Path(" + repr(work + "/build") + "); files=list(root.rglob('flags.make')); checked=[p for p in files if 'CXX_FLAGS =' in p.read_text()]; assert checked; assert all('-DAOS_CONFIG_TYPES_FUNCTION_LEN=256' in p.read_text() for p in checked); print(len(checked))"
+            checked = int(remote("python3 -c " + shlex.quote(check)))
+            paths = remote("find " + work + "/build -type f -name aos_" + manager + "_app").decode().splitlines()
+            if len(paths) != 1:
+                raise EnvironmentError("CORE_PERMISSION_EXECUTABLE_NOT_UNIQUE:" + manager)
+            raw = remote("cat " + paths[0], timeout=60)
+            if raw[:6] != b"\x7fELF\x02\x01" or raw[18:20] != b"\xb7\x00" or len(raw) > 256 * 1024**2:
+                raise EnvironmentError("CORE_PERMISSION_ARM64_EXECUTABLE_REQUIRED")
+            binary = artifact / ("aos_" + manager + "_app")
+            binary.write_bytes(raw)
+            binary.chmod(0o755)
+            manifest["binaries"][manager] = dict(sha256=hashlib.sha256(raw).hexdigest(), size=len(raw), checkedCppTargets=checked)
+            print(manager.upper() + ": compiled ARM64 executable exported", file=sys.stderr, flush=True)
+        manifest["state"] = "BUILT"
+        atomic_json(artifact / "manifest.json", manifest)
+        return dict(manifest, artifact=str(artifact), imageBuilt=False)
+    except Exception:
+        manifest["state"] = "BUILD_FAILED_RECONCILE"
+        atomic_json(artifact / "manifest.json", manifest)
+        raise
+    finally:
+        try:
+            if old_layers is not None:
+                remote("python3 -c " + shlex.quote("import sys; from pathlib import Path; Path(" + repr(layers) + ").write_bytes(sys.stdin.buffer.read())"), data=old_layers)
+        finally:
+            builder("test", "stop")
+
+
+def apply_permissions(environment, target, observe=False, iam_response_capacity=False):
+    from .environment import JOURNAL, atomic_json, factory_for
+    from .status import read_json, now
+    from .vm import VMService
+    from .source import SourceDriver
+    if target != "test":
+        raise EnvironmentError("CORE_PERMISSION_TEST_ONLY")
+    with environment._writer():
+        state = read_json(environment.root / JOURNAL)
+        vehicle = state.get("vehicles", {}).get("test", {})
+        if (vehicle.get("localVmId") != PERMISSION_VM or vehicle.get("unitId") != PERMISSION_UNIT
+                or factory_for(state, "test").get("sha256") !=
+                "a302b2f2e2f238b361682ab8a529ec036ff260e00b2fb9a4d21db325d8d45761"):
+            raise EnvironmentError("CORE_PERMISSION_AUTHORIZED_TEST_33_REQUIRED")
+        driver = SourceDriver(VMService(environment))
+        if observe:
+            with driver.operation(timeout=45):
+                return driver.guest(state, "test", "core-permissions-status", target="test")
+        if iam_response_capacity:
+            return apply_iam_response_capacity(environment, state, driver)
+        manifest = read_json(PERMISSION_ARTIFACT / "manifest.json")
+        if (manifest.get("state") != "BUILT" or manifest.get("capacity") != 256
+                or manifest.get("baseRevision") != FACTORY_RELEASES["6.1.1-maninblack.33"]
+                or set(manifest.get("binaries", {})) != set(PERMISSION_RECIPES)):
+            raise EnvironmentError("CORE_PERMISSION_QUALIFIED_BINARIES_REQUIRED")
+        payload = {}
+        for manager, info in manifest["binaries"].items():
+            raw = (PERMISSION_ARTIFACT / ("aos_" + manager + "_app")).read_bytes()
+            if hashlib.sha256(raw).hexdigest() != info["sha256"] or len(raw) != info["size"]:
+                raise EnvironmentError("CORE_PERMISSION_BINARY_DIGEST_MISMATCH")
+            payload[manager] = dict(sha256=info["sha256"], data=base64.b64encode(gzip.compress(raw, compresslevel=1, mtime=0)).decode())
+        record = state.get("corePermissionCapacityProof", {})
+        with driver.operation(timeout=150):
+            before = driver.guest(state, "test", "core-permissions-status", target="test")
+            if all(before["managers"][name].get("binarySha256") == value["sha256"]
+                    and before["managers"][name]["service"].get("ActiveState") == "active" for name, value in payload.items()):
+                if not before.get("committedVdp66Sha256") or not before.get("transientFilesMatchProcesses"):
+                    raise EnvironmentError("CORE_PERMISSION_POST_READ_INCOMPLETE")
+                record.update(state="APPLIED", result=before, confirmedAt=now(), reconciledByPostRead=True)
+                state["corePermissionCapacityProof"] = record
+                atomic_json(environment.root / JOURNAL, state)
+                return dict(before, noOp=True, reconciledByPostRead=True)
+            if record.get("state") in ("ATTEMPT_STARTED", "RECONCILIATION_REQUIRED"):
+                raise EnvironmentError("CORE_PERMISSION_PREVIOUS_ATTEMPT_REQUIRES_RECONCILIATION")
+            record = dict(state="ATTEMPT_STARTED", startedAt=now(), before=before, binaries=manifest["binaries"])
+            state["corePermissionCapacityProof"] = record
+            atomic_json(environment.root / JOURNAL, state)
+            try:
+                result = driver.guest(state, "test", "core-permissions-apply", target="test", binaries=payload,
+                    previous={name: value["binarySha256"] for name, value in before["managers"].items()})
+            except EnvironmentError:
+                record["state"] = "RECONCILIATION_REQUIRED"
+                atomic_json(environment.root / JOURNAL, state)
+                raise
+        record.update(state="APPLIED", result=result, confirmedAt=now())
+        atomic_json(environment.root / JOURNAL, state)
+        return result
+
+
+def apply_iam_response_capacity(environment, state, driver):
+    """One bounded IAM replacement, retaining the existing CM/SM bytes."""
+    from .environment import JOURNAL, atomic_json
+    from .status import read_json, now
+    artifact = PERMISSION_ARTIFACT.with_name("core-permission-iam-response-32")
+    manifest = read_json(artifact / "manifest.json")
+    original = read_json(PERMISSION_ARTIFACT / "manifest.json")
+    if (manifest.get("state") != "BUILT" or manifest.get("capacity") != 256
+            or manifest.get("iamResponseCapacity") != 32 or set(manifest.get("binaries", {})) != {"iam"}
+            or manifest.get("baseRevision") != FACTORY_RELEASES["6.1.1-maninblack.33"]):
+        raise EnvironmentError("IAM_RESPONSE_BUILD_REQUIRED")
+    raw = (artifact / "aos_iam_app").read_bytes()
+    info = manifest["binaries"]["iam"]
+    if hashlib.sha256(raw).hexdigest() != info["sha256"] or len(raw) != info["size"]:
+        raise EnvironmentError("IAM_RESPONSE_BINARY_DIGEST_MISMATCH")
+    expected = {name: value["sha256"] for name, value in original["binaries"].items()}
+    record = state.get("iamResponseCapacityProof", {})
+    with driver.operation(timeout=150):
+        before = driver.guest(state, "test", "core-permissions-status", target="test")
+        if (before["managers"]["iam"]["binarySha256"] == info["sha256"]
+                and all(before["managers"][name]["service"].get("ActiveState") == "active" for name in expected)
+                and all(before["managers"][name]["binarySha256"] == expected[name] for name in ("sm", "cm"))
+                and before.get("transientFilesMatchProcesses")):
+            record.update(state="APPLIED", result=before, confirmedAt=now(), reconciledByPostRead=True)
+            state["iamResponseCapacityProof"] = record
+            atomic_json(environment.root / JOURNAL, state)
+            return dict(before, noOp=True)
+        if record.get("state") in ("ATTEMPT_STARTED", "RECONCILIATION_REQUIRED"):
+            raise EnvironmentError("IAM_RESPONSE_RECONCILIATION_REQUIRED")
+        if not before.get("transientFilesMatchProcesses") or any(before["managers"][name]["binarySha256"] != expected[name] for name in expected):
+            raise EnvironmentError("IAM_RESPONSE_PREVIOUS_BINARY_CHANGED")
+        record = dict(state="ATTEMPT_STARTED", startedAt=now(), before=before, sha256=info["sha256"])
+        state["iamResponseCapacityProof"] = record
+        atomic_json(environment.root / JOURNAL, state)
+        try:
+            result = driver.guest(state, "test", "core-permissions-iam-response-apply", target="test", previous=expected,
+                binary=dict(sha256=info["sha256"], data=base64.b64encode(gzip.compress(raw, compresslevel=1, mtime=0)).decode()))
+        except EnvironmentError:
+            record["state"] = "RECONCILIATION_REQUIRED"
+            atomic_json(environment.root / JOURNAL, state)
+            raise
+    record.update(state="APPLIED", confirmedAt=now(), result=result)
+    atomic_json(environment.root / JOURNAL, state)
+    return result
+
+
 def builder(target, action):
     """Reuse the established Builder lifecycle, not another shell helper."""
     if target != "test" or action not in ("start", "stop"):

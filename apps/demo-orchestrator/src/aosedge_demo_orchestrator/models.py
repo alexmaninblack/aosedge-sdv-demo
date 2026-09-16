@@ -57,13 +57,36 @@ class OperationRequest:
     demo_no_telemetry: bool = False
     demo_mocked_data: bool = False
     restart_sm: bool = False
+    kac_only: bool = False
+    kac_time_read_proof: bool = False
+    kac_data_proof: bool = False
+    kac_recovery: bool = False
+    iam_response_capacity: bool = False
     restart_cm: bool = False
+    restart_guest_resolver: bool = False
     confirm_bind_not_submitted_at: Optional[str] = None
     certificate: Optional[str] = None
     expected_domain: Optional[str] = None
 
     def selection_error(self) -> Optional[str]:
         """Validate agreed selectors before any lifecycle adapter is called."""
+        if type(self.restart_guest_resolver) is not bool or (self.restart_guest_resolver and
+                ((self.domain, self.action) != ("vm", "refresh-dns") or self.target != VehicleTarget.TEST)):
+            return "DNS_RECOVERY_TEST_ONLY"
+        if type(self.iam_response_capacity) is not bool or (self.iam_response_capacity and
+                (self.domain != "component" or self.action not in ("core-permissions-build", "core-permissions-apply"))):
+            return "IAM_RESPONSE_CAPACITY_OPERATION_REQUIRED"
+        if type(self.kac_recovery) is not bool or (self.kac_recovery and
+                (not self.kac_only or self.kac_data_proof or self.kac_time_read_proof)):
+            return "KAC_RECOVERY_REQUIRES_EXCLUSIVE_KAC_ONLY"
+        if type(self.kac_time_read_proof) is not bool or (self.kac_time_read_proof and not self.kac_only):
+            return "KAC_TIME_READ_PROOF_REQUIRES_KAC_ONLY"
+        if type(self.kac_data_proof) is not bool or (self.kac_data_proof and (not self.kac_only or self.kac_time_read_proof)):
+            return "KAC_DATA_PROOF_REQUIRES_EXCLUSIVE_KAC_ONLY"
+        if type(self.kac_only) is not bool or (self.kac_only and
+                ((self.domain, self.action) != ("service", "runtime-activate")
+                 or self.target != VehicleTarget.TEST or self.restart_sm)):
+            return "KAC_ONLY_USES_TEST_RUNTIME_ACTIVATE_WITHOUT_SM_RESTART"
         if (self.certificate is not None or self.expected_domain is not None) and self.domain != "cloud":
             return "CERTIFICATE_SELECTION_USES_CLOUD_ONLY"
         if self.confirm_bind_not_submitted_at is not None and (

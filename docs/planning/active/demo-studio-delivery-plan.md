@@ -3,13 +3,369 @@
 
 # Demo Studio: staged delivery plan
 
-## Current checkpoint — 15 September, after staging Finish
+## Current checkpoint — 16 September, staging real-data and advisory qualification
+
+### Office network recovery and Brake V3 publication
+
+The preserved Test returned Online at **06:47:47 UTC** after recovery of its
+guest DNS resolver and owned host DNS bridge through `democtl`. The VM,
+CM PID 10061, SM, VDP and native containers were not restarted for recovery.
+The failing path was repeated guest UDP DNS queries congesting the host
+bridge; direct office DNS and bridge TCP worked. Host-bridge restart alone
+did not resolve it. The exact original trigger inside the guest resolver /
+QEMU forwarding path is not yet isolated; do not label it an AosCloud defect.
+
+Brake **47.0.0 / functional V3** was prepared from the existing V3 build,
+signed with the selected staging SP credential and uploaded once. At
+06:50:59 UTC Cloud reported publication Ready and Test instance active on
+47.0.0, with the existing Brake Subject. VDP69/V3 and Tire29/V1 remain.
+This supersedes the earlier "Brake V3 built, not installed" checkpoint below.
+Functional advisory remains unqualified. The first qualification maneuver
+incorrectly used 25% brake below the model's accepted 50% trigger; its motion
+success is not model evidence. The harness is corrected to 50% without
+changing model thresholds. Brake V3 also reports native thread creation
+failure at its 16-task envelope. The operator approved Brake-only
+`pidsLimit: 24` with measured headroom; other quotas and model thresholds
+remain unchanged. The targeted warm build from `b88ba79` completed with
+identical service/bootstrap binaries. Brake48/V3 is now Ready/installed/active
+on the same Test. Native limits are 24; sampled usage before/during/after
+real maneuvers is 17 (seven tasks spare), with no current-instance thread
+creation errors. Cgroup counters remain unavailable, so this is not a peak
+or full isolation/stress claim.
+
+Two real-input Brake48 assessments reached the backend: score 40/MONITOR,
+then 34/INSPECTION_RECOMMENDED. The latter produced a correlated Gateway
+APPLIED fact, durably received by the backend at 07:21:27.943 UTC. The native
+dashboard visibly shows Brake "Inspection recommended", Test selected/LIVE
+and physical Safe Stop. Brake V3's initial live advisory gate is passed;
+this does not substitute for the separate Brake V2, continuous-input
+stability, Tire round-trip, full UI replay or transient-security gates.
+
+The reset-start harness now waits for 0.5 seconds of advancing, fresh stopped
+frames before motion, avoiding the observed respawn-settling race without
+relaxing Safe Stop. A fresh command completed in 13.35 seconds without a
+rejected attempt. Exercise/schema/package focused tests: 41 run, one skipped,
+no failures. No new Factory build or full UI-cycle acceptance is claimed.
+
+### Selected-Unit mTLS passed; VDP69 installed, advisory qualification pending
+
+The operator approved the previously deferred selected-Unit mTLS integration
+on 16 September. Implement it through Demo Control, preserving the current
+staging Test VM, Unit, Subjects and service state; Production is out of scope.
+This is permission to implement and qualify, not evidence of live readiness.
+The strict transport certificate uses the Cloud Main Node UUID. The existing
+SM binding uses the native hardware Node ID as its independent local-ownership
+check; Demo Control must validate their existing provisioning correspondence,
+never substitute one identifier for the other or change the VM identity.
+
+The operator-approved profile/release separation is implemented as QM 1.1.0.
+Platform source checkpoint `05cbff85c52eb0fe09641e177f1b3089a1df5b1f`
+implements two bounded KUKSA target observations, multiplexed Set/status on
+the existing VISS connection, independent endpoint correlation and lease-expiry
+status delivery. Provider tests: 58 passed. Gateway/native display source and
+reviewed new-release composition have separate host gates; none is a live proof.
+Gateway checkpoint: `41d5e7103750311d0dc41f030bd0589cf6b2ecb9`. Both checkpoints
+are local. The new composition release gate was enabled after the bounded
+live mTLS prerequisite passed. Previously frozen V3 artifacts are unchanged.
+
+The accepted
+[5 September local-demo exception](../../architecture/demo-control.md#local-demo-amendment-defer-per-unit-viss-mtls)
+remains the explicit legacy profile, not a fallback. On 16 September,
+`democtl vehicle authenticate test` migrated the preserved Test to
+`SELECTED_UNIT_MUTUAL_TLS`: independent VDP, update-runtime and read-only
+Dashboard credentials; exact Unit/Cloud Main Node binding; assignment generation
+2. First activation, repeat without restart, live VDP/Dashboard authentication
+and anonymous-client TLS rejection passed. No development Set permission,
+shared certificate or authority inferred from an IP/role label was introduced.
+This engineering command is not yet automatic Presenter/Provision integration.
+
+With exact operator approval, VDP69 was signed and uploaded once to staging.
+At 05:13 UTC Cloud reported Ready/Installed and the same Test Online. Guest
+status confirmed VDP69/V3, slot b, 23 paths, LIVE, zero provider restarts.
+The update in Safe Stop exercised the distinct mTLS update-runtime role.
+Both service/Subject identities and the diagnostic schema/KAC proof remain.
+Whole-Gateway-process restart replay reconciliation is also not qualified:
+current source fails closed on pre-process-start requests, without inventing
+a durable replay store. Neither this checkpoint nor successful host tests
+close Brake's eligible-model gate, the live advisory/UI gate, or Factory gate.
+
+### Approved changes implemented; Tire real backend proof
+
+The operator additionally approved bounded `democtl simulation exercise
+brake|tire --target test` maneuvers on 16 September. They use real CARLA physics
+and the existing private single-owner control protocol, with no synthetic
+telemetry or model-threshold change. The Brake maneuver reuses the existing
+braking state machine; Tire uses controlled steering. Motion completion is not
+a passed service/advisory gate. CLI qualification precedes any Presenter control
+addition; the current native Safe Stop remains an abort control.
+
+Tire29/V1 and Brake46/V2 are installed on the preserved staging Test. VDP69/V3
+is active with all 23 telemetry paths. The three approved changes below are
+implemented and their focused host/ARM64 gates pass. Tire's new formulas
+produced three durably accepted real-input backend assessments (96, 96 and 97
+samples, GOOD scores 93, 93 and 91) plus its initial band-change event.
+
+A temporary exact four-leaf D4-008 schema supplement removed the proven Tire
+compatibility blocker; no service restart/reinstall or permission widening
+was used. The fixed 16-task envelope accommodates the observed bootstrap1 +
+product14 threads. Brake still needs an eligible real model episode; its
+earlier sample-quality failure is not a passed V2 gate.
+
+The frozen VDP3 payload does not wire advisory transport. Its dormant policy
+also hardcodes functional versions where requests now carry allocated release
+numbers. The operator accepted the separation on 16 September: QM profile
+1.1.0 binds Brake v3 and Tire v1 independently of the actual package release
+carried unchanged in each request. Native exact-path authorization is unchanged.
+Focused contract and policy tests pass; live transport remains unqualified.
+No new Factory image or full
+UI/E2E qualification is claimed. See the [16 September evidence and exact
+remaining gates](../../qualification/staging-approved-model-changes-2026-09-16.md).
+
+### Operator decisions accepted — 16 September
+
+All three previously pending proposals are approved: Tire `pidsLimit: 16`
+(all other quotas unchanged), Brake V2/V3 five-second delivery freshness with
+separate bounded measurement coherence, and exact Tire raw-feature formulas.
+The Tire formulas are now recorded in its executable product profile. This
+approval does not qualify a live result. Preserve existing model state/outbox,
+use a new profile digest for changed semantics, and retain historical message
+provenance. Safe Stop/FOTA gates, token lifetime and advisory leases are unchanged.
+Do not merge arbitrarily different vehicle states across the five-second budget.
+Continue the pre-Factory CLI gate, then UI replay, then consolidated Factory and
+clean UI run; Test/staging only. The previous pending-question entries below
+describe historical checkpoints, not outstanding approval requests.
+
+### Follow-up — 15 September, 21:33 UTC
+
+- Tire `28.0.0` is Ready in staging and installed on the same Test/Subject.
+  A diagnostic-only bootstrap change identified `IAM_UNAVAILABLE` rather
+  than assuming a missing Subject or changing permissions.
+- The pinned IAM RPC allocated its function-permission response using the
+  **16 functional-service limit**, while the registered permission map allows
+  **32 functions**. Tire requires 17 exact entries. The live IAM journal had
+  39 `Failed to get permissions` / `not enough memory` failures.
+- The one-line IAM response-capacity fix is compiled and transiently applied.
+  Tire now obtains its native token. CM PID `10061` and VDP67 were preserved;
+  IAM/SM were restarted once to replay native registrations. Repeating the
+  same Demo Control apply is a reconciled no-op. Builder is stopped.
+- A separate Tire runtime limit is now exposed: bootstrap 1 thread + product
+  7 threads exhaust `pidsLimit: 8`, with repeated `pthread_create failed`.
+  The approved quota contract explicitly requires reviewed measured changes.
+  A proposal for **16 threads, other quotas unchanged**, is awaiting the
+  operator; **no quota change has been made**. Tire is not function-qualified.
+- The Brake V2/V3 exact-equal-timestamp requirement conflicts with pinned
+  KUKSA's per-datapoint broker timestamps. A bounded proposal for real-signal
+  assembly within the operator's five-second demo window is awaiting approval.
+  Do not silently falsify timestamps, interpolate, reuse the old model hash
+  for changed semantics, or discard persisted model state.
+- The previous Tire raw-feature formula question remains unanswered. Neither
+  advisory chain, the pre-Factory UI cycle nor a new image is qualified.
+- Presenter now preserves and exposes backend-reported function failures and
+  `stale` status, and separates real records from explicit mock history. It
+  must not advance the real-data story from a function-status-only record.
+  Gates: 122 focused Demo Control tests, 133 Presenter unit tests, successful
+  typecheck/build, and 3 Platform capacity tests (including native C++ checks).
+
+See [the IAM response-capacity receipt and remaining blockers](../../qualification/staging-iam-response-capacity-2026-09-15.md).
+
+### Live progress and bounded blockers — 15 September, 20:52 UTC
+
+- The preserved Test is Online in staging, using Factory .33 with the recorded
+  transient CM/SM/IAM 256-byte permission capacity. No successor image has
+  been built or claimed qualified.
+- VDP `67.0.0` (functional V2) and Brake `45.0.0` (functional V2) are installed.
+  Brake retains its native service/Subject identity. VDP installation followed
+  Safe Stop; the service upgrade did not acquire a Safe Stop gate.
+- Native KAC token issuance and renewal work with the explicitly recorded
+  six-hour, hash-guarded transient recovery policy; KAC has not restarted.
+  The canonical policy store/rootfs remains unchanged. The transient policy
+  is not Factory qualification and must be removed or expired before final
+  security closure.
+- Brake V1 has a real COMPLETE backend window. V2 has not yet produced an
+  accepted assessment. Its first event was skipped for input quality.
+  Investigation found that the inspection command omitted model outcome
+  events and that the capture adapter retained every third frame regardless
+  of input frequency. The fixed adapter retains an actual sample at 10 Hz
+  for both 20/30-Hz sources, without interpolation; host and ARM64 tests pass.
+  Commit `023178a0ff3cbd041378c439ae377755914fb009` is deployed in Brake45 for
+  live proof. It does not change model math, eligibility or the 250-ms V2/V3
+  profile budget. Any freshness amendment must preserve truthful model-profile
+  identity and existing persistent state/outbox provenance.
+- Presenter now reads real backend window/assessment/event/advisory
+  projections through Demo Control. Explicit mock history remains separate;
+  an old-version record must not qualify the active release.
+- **Tire model contract blocker:** the accepted profile supplies normalized
+  features but does not close raw-input wheel-dispersion denominator and
+  slip-persistence threshold equality/aggregation. Its product runtime still
+  intentionally reports `MODEL_CONTRACT_UNRESOLVED`. A bounded proposed
+  formula was submitted to the operator; no answer has been received and
+  no formula is implemented or inferred from the Brake model. A source-only
+  fix requests explicit VAL `FIELD_VALUE` for Tire telemetry/GatewayStatus,
+  matching pinned KUKSA semantics; this is not Tire functional qualification.
+
+The pre-Factory gate remains open. Do not rebuild an image or describe the
+complete CLI/UI/advisory cycle as passed while these functional gates remain
+unresolved. Preserve this Test and its evidence rather than resetting it.
+
+### Required pre-Factory gate — operator amendment, 15 September
+
+The operator requires the current real-data chain to reach **VDP functional
+profile V3 and both Brake and Tire advisories visible in native vehicle
+telemetry before rebuilding the VM**. The initial V1 stop boundary below is
+now historical. The subsequent operator amendment includes Tire installation
+and its own advisory in the same Test/staging cycle; Production remains
+unchanged. Functional profiles are distinct from automatically allocated Cloud
+release numbers. The accepted Tire product has one functional profile (V1),
+requiring VDP V3; this does not introduce invented Tire V2/V3 profiles.
+
+Execute through Demo Control, preserving the current Test and native service
+identity/state. Do not rebuild/reprovision between these functional stages:
+
+1. Close the proven KAC time-marker access and post-provision startup defects;
+   verify native token issuance/renewal on the current VM before relying on an
+   unattended run. Do not silently turn the completed temporary policy proof
+   into a permanent grant. Record the exact source/runtime change separately.
+2. Close the remaining source-quality diagnosis and connect real Brake backend
+   results to the dashboard. Preserve the authorized five-second V1 budget;
+   check V2/V3 consumer budgets explicitly before their trial. This amendment
+   does not implicitly change token lifetimes or advisory lease/replay rules.
+3. Install the real native-permissions Tire package through its separate Group
+   Subject on the same Test. With VDP V1/V2 it must remain installed with a
+   healthy process but function NOT_READY / INCOMPATIBLE_VDP, without fabricated
+   results or advisory. Observe the explicit incompatibility, not an install
+   failure. Retain Brake's Subject, permissions, model state and backend data.
+4. Upgrade VDP to functional profile V2 and Brake to profile V2. Verify required
+   model inputs, actual processing and durable backend results, retaining
+   native persistent model state for the next transition.
+5. Upgrade VDP to functional profile V3 and Brake to profile V3. VDP exposes the
+   advisory transport; Brake V3 produces the advisory from its accepted model
+   condition. VDP installation alone cannot prove advisory operation. Correct
+   and test the known view-only GatewayStatus subscription before this stage.
+   Tire must automatically recognize compatible VDP V3, consume its required
+   dynamics signals and produce real-input assessments at its own backend,
+   without a manual reinstall/restart just to notice the VDP change.
+6. Exercise eligible Brake and Tire conditions through simulator telemetry, not a
+   manually injected advisory or synthetic backend record. Verify the full
+   chain: native service request → KUKSA actuator target → VDP/VISS → Gateway
+   matching APPLIED status → visible native telemetry indication. Verify both
+   independent indicators and service-specific correlated statuses without
+   cross-writing or one service replacing the other's indication. Verify lease
+   refresh and indication expiry when refresh stops. Tire's accepted GOOD/
+   hysteresis path can CLEAR its indication; do not invent a CLEAR transition
+   absent from the accepted Brake model. Preserve the Tire estimator's
+   DEMO_SYNTHETIC label: real input does not make it a production tire diagnosis.
+7. Record both chains' functional evidence and known limitations. After the
+   Demo Control functional gates pass, repeat the supported sequence through
+   Presenter and native Driving Control, observing results through the UI.
+   Keep the current diagnostic VM for this pre-Factory UI pass; use increasing
+   release numbers rather than silently resetting product state.
+8. Only after the CLI and UI gates pass, consolidate all proven platform fixes,
+   including 256-byte CM/SM/IAM permission capacity, into one Factory build.
+   Then run the full sequence from a fresh environment through the UI using
+   that immutable image, without the previous VM's transient files or manual
+   recovery steps. Verify both functional results and displayed state. The
+   operator authorizes the required Test/staging builds, deployments and
+   runtime changes while absent; Production remains excluded. Source/package
+   checkpoints and normal build/resource/security gates still apply.
+
+VDP component installation requires Safe Stop. Service upgrades do not acquire
+that gate. Successful upload, Cloud Running or KUKSA Set acceptance is not
+substituted for a matching Gateway acknowledgement and visible indication.
+The accepted native dashboard/CARLA layout and telemetry-only authority remain
+unchanged. The operator agrees the consolidated build and subsequent clean run
+only after the functional gates above. No image or live publication was
+started while updating this plan.
+
+### V1 trial checkpoint (historical scope, retained evidence)
+
+### Authorized staging real-data increment
+
+The operator approved `noFileLimit: 1024` for both normal service packages and
+restoration of native permissions/data mode in Presenter. Keep the explicit
+synthetic CLI options; never silently fall back to them on authorization failure.
+All other quotas and native Aos identity/resources remain unchanged.
+
+The live scope is deliberately narrow: existing Factory .33, Test only, a VDP
+providing basic telemetry, Brake V1 reading its six signals through KAC/KUKSA,
+and actual Brake backend/dashboard data. Run environment operations through
+Demo Control while the operator observes the desktop UI. Stop at this first
+functional result; Tire, later Brake profiles, update/restart qualification,
+load and Advisory are separate later checks. Do not claim real-data readiness
+from Cloud Running alone. No new Factory image is authorized in this increment.
+
+The authorized trial created and provisioned a fresh .33 Test in staging.
+VDP V1 / `66.0.0` is installed and active after the operator's Safe Stop;
+Brake V1 / `41.0.0` with six exact read permissions reached Cloud Ready and
+was assigned through its dedicated Subject. Delivery succeeded, but launch
+failed with `permission key parsing error (itemconfig.cpp:300)`. The pinned
+AosCore library limits permission keys to 32 characters; three required
+Brake V1 paths are longer. Real KUKSA ingestion and dashboard evidence remain
+**open**, not qualified by package delivery. No Core/VM patch, permission
+wildcard, shortened scope or synthetic fallback was applied in the initial trial.
+The operator subsequently approved a uniform **256-byte permission-key capacity**
+for CM, SM and IAM, affected-target compilation and a reversible binary proof on
+this same Test. Keep exact paths and native authorization unchanged. Mainline
+was checked first and still defaults to 32. Build from the .33 Platform source
+with only the three capacity recipe overrides; do not upgrade upstream or
+rebuild the image. The existing VDP66 and Brake41 assignment remain the proof
+targets. See the
+[trial receipt](../../qualification/staging-brake-v1-permissions-2026-09-15.md).
+
+The authorized 256-byte follow-up is now built and applied: all three manager
+hashes match the exported ARM64 artifacts, current parsing failures are zero,
+IAM registration succeeds and the same Brake41 instance is active locally and
+in staging Cloud. VDP66 is retained, Test is Online and Builder is stopped.
+The transient `/run` overrides are not a new Factory qualification and will
+not survive reboot. KAC-only activation has now restored its request socket,
+without a manager or VM restart. The operator then authorized the exact temporary
+marker-access policy proof. It passed: only two read/search rules changed, KAC
+became ready and the native Brake41 bootstrap obtained a private token. The
+original active policy was automatically restored and independently verified;
+Enforcing and all process identities were preserved. After lease expiry Brake
+correctly removed its token. The proof is not a persistent fix.
+
+At the first authorization-only checkpoint, real analytics remained open: Brake reported
+`KUKSA_DATA_UNAVAILABLE` rather than an authorization error. Credential-free
+TCP/TLS verification from the container namespace succeeds. The actual service
+also emitted `VDP_CONTRACT_ACCEPTED`, proving its metadata RPC and schema check;
+valid telemetry samples and analytics are not yet qualified. Its remaining
+250-ms data-validation window is an investigation lead, not an established cause.
+Next: localize that boundary, consolidate
+the proven marker grant and post-provision startup correction, then close real
+Brake/backend/dashboard data. The inactive copied proof store under
+`/run/democtl-kac-time-read-proof` is deliberately preserved; no new image,
+publication or canonical policy-store mutation was performed.
+No further release was needed merely
+to demonstrate that the permission-key parser accepts the existing package.
+
+**Subsequent authorized real-data proof, 19:46 UTC:** Brake V1 and the matching
+backend now use a five-second freshness window. Brake42 showed a separate
+subscription bug: KUKSA's pinned Subscribe handler consumes explicit `fields`,
+while our request set only `view`. Brake43 adds `FIELD_VALUE` without changing
+paths/permissions. It is installed and active on the same Online Test. A native
+Autopilot → Safe Stop transition produced a real, COMPLETE, durably received
+backend window: 40 samples / 4 chunks, with matching current-Test and native
+Brake43 provenance. The service independently reported backend connected and
+operational. This closes the first real-data functional result only. Both
+temporary policy trials rolled back; persistent KAC marker access/startup,
+intermittent missing/mixed frames and real-data dashboard integration remain
+open. Do not claim an unattended or restart-qualified fix. The subsequent
+pre-Factory amendments above now govern V2/V3 progression, the added Tire chain,
+and the gated Factory build; none is qualified by the V1 result alone. Exact commits, receipts and focused
+tests are in the [trial receipt](../../qualification/staging-brake-v1-permissions-2026-09-15.md).
+
+The unrelated historical-publication scan blocker found during Deploy is fixed:
+an exact independently verified current-owner receipt can be selected without
+adopting old unscoped receipts; legacy-only selection remains blocked. The
+focused assignment suite passes all 47 tests.
+
+### Pre-trial source checkpoint (historical)
 
 The operator requested source audit, commits and pushes before starting a
 separate staging KUKSA phase. See the [staging source checkpoint and open
 boundaries](../../qualification/staging-source-checkpoint-2026-09-15.md).
-The current Test was retired through Presenter at 14:38 UTC; there is no Test
-to resume. Factory `.33`, published releases, version continuity and Production
+The previous Test was retired through Presenter at 14:38 UTC. Factory `.33`,
+published releases, version continuity and Production
 are preserved. The dated increment descriptions below are historical evidence,
 not current instructions to operate a parked/Online Test.
 
@@ -19,7 +375,7 @@ status, retaining same-owner legacy compatibility and rejecting foreign owners.
 See the checkpoint's follow-up for isolated regression evidence; this is not
 a new live staging deployment.
 
-Next: separately verify staging permissions and the real service-data path
+The next step agreed at that checkpoint was to verify staging permissions and the real service-data path
 under the accepted native Aos contract. Do not claim
 KUKSA access from synthetic service/backend results, change Production, or build
 a new Factory image as part of this checkpoint.

@@ -2,14 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import { Modal } from "../../shared/components/Modal";
 import { readBackendObservation } from "../../adapters/local/LocalPresenterReadAdapter";
 import { ObservationTime } from "../../app/StudioReadViews";
+import { completedProduct, productRows, type ProductRow, type Resource } from "./backendProduct";
 
 type Team = "brake" | "tire";
-type RecordRow = { backendReceivedAt: string; message: {
+type RecordRow = { backendReceivedAt: string; deliveryState?: string; stale?: boolean; message: {
   messageType?: string; serviceVersion?: string; unitSystemUid?: string;
   serviceInstance?: { serviceId?: string; subjectId?: string; instance?: number };
   content?: unknown; [key: string]: unknown;
 } };
-type MockData = { source: "DEMO_MOCK"; vehicleTelemetry: false; unitSystemUid: string;
+type MockData = { source: "DEMO_MOCK" | "VEHICLE_DATA"; vehicleTelemetry: boolean; unitSystemUid: string;
   counts: { kind?: string; message_type?: string; count: number }[]; records: RecordRow[] };
 type Observation = { state: string; team: Team; source: "REAL_BACKEND_HTTP"; observedAt: string; recordsObservedAt?: string;
   observations: { readiness?: { state: string; reason?: string; data?: { ready?: boolean; reason?: string } };
@@ -25,12 +26,13 @@ export function BackendEvidence({ team, unitSystemUid, expectedVersion, onEviden
   const [detail, setDetail] = useState<RecordRow | null>(null);
   const [tab, setTab] = useState("Overview");
   const [page, setPage] = useState(0);
+  const [mockMode, setMockMode] = useState(false);
   const [pageSize, setPageSize] = useState(window.innerHeight <= 800 ? 1 : 2);
   useEffect(() => { const resize = () => { setPageSize(window.innerHeight <= 800 ? 1 : 2); setPage(0); }; window.addEventListener("resize", resize); return () => window.removeEventListener("resize", resize); }, []);
   const evidenceCallback = useRef(onEvidence);
   useEffect(() => { evidenceCallback.current = onEvidence; }, [onEvidence]);
   useEffect(() => {
-    setData(null); setError(false); setDetail(null); setBusy(false); setPage(0);
+    setData(null); setError(false); setDetail(null); setBusy(false); setPage(0); setMockMode(false);
   }, [team, unitSystemUid]);
   useEffect(() => {
     let active = true;
@@ -42,11 +44,22 @@ export function BackendEvidence({ team, unitSystemUid, expectedVersion, onEviden
         setBusy(true);
         try {
           const value = await readBackendObservation(team, controller.signal) as Observation;
-          const mock = value.observations?.mockData?.data;
+          const suppliedMock = value.observations?.mockData?.data;
           if (value.team !== team || value.source !== "REAL_BACKEND_HTTP" || !value.observations
-              || (mock && (mock.source !== "DEMO_MOCK" || mock.vehicleTelemetry !== false
-                || mock.unitSystemUid !== unitSystemUid || !Array.isArray(mock.records) || !Array.isArray(mock.counts)
-                || mock.records.some(row => row.message.unitSystemUid !== unitSystemUid)))) throw new Error("BACKEND_SCOPE_MISMATCH");
+              || (suppliedMock && (suppliedMock.source !== "DEMO_MOCK" || suppliedMock.vehicleTelemetry !== false
+                || suppliedMock.unitSystemUid !== unitSystemUid || !Array.isArray(suppliedMock.records) || !Array.isArray(suppliedMock.counts)
+                || suppliedMock.records.some(row => row.message.unitSystemUid !== unitSystemUid)))) throw new Error("BACKEND_SCOPE_MISMATCH");
+          if (!mockMode) {
+            const resources = value.observations as unknown as Record<string, Resource>;
+            const rows = productRows(resources, unitSystemUid);
+            const names = team === "brake" ? ["productData", "assessments", "events", "advisories"] : ["assessments", "events", "advisories", "functionStatus"];
+            const current = names.every(name => resources[name]?.state === "OBSERVED");
+            value.observations.mockData = { state: current ? "OBSERVED" : "UNAVAILABLE", ...(current ? { data: {
+              source: "VEHICLE_DATA" as const, vehicleTelemetry: true, unitSystemUid, records: rows, counts: [{ count: rows.length }],
+            } } : {}) };
+            value.state = current ? "OBSERVED" : "PARTIAL";
+          }
+          const mock = value.observations.mockData?.data;
           if (active) {
             setData(previous => ({ ...value, recordsObservedAt: value.observations.mockData?.state === "OBSERVED" && mock ? value.observedAt : previous?.recordsObservedAt, observations: { ...value.observations,
               mockData: value.observations.mockData?.data ? value.observations.mockData : { ...value.observations.mockData, state: value.observations.mockData?.state ?? "UNAVAILABLE", data: previous?.observations.mockData?.data } } }));
@@ -59,7 +72,7 @@ export function BackendEvidence({ team, unitSystemUid, expectedVersion, onEviden
     };
     void read();
     return () => { active = false; controller.abort(); clearTimeout(timer); };
-  }, [team, unitSystemUid, generation]);
+  }, [team, unitSystemUid, generation, mockMode]);
   const mock = data?.observations.mockData?.data;
   const available = !error && data?.observations.mockData?.state === "OBSERVED";
   const total = mock?.counts.reduce((sum, row) => sum + row.count, 0) ?? 0;
@@ -73,38 +86,42 @@ export function BackendEvidence({ team, unitSystemUid, expectedVersion, onEviden
   const resultMessage = assessment?.message ?? latest?.message;
   const resultContent = assessment ? assessmentContent : content;
   const confidence = team === "tire" && typeof resultContent.confidencePercent === "number";
-  const sourceTime = resultMessage?.sourceEventTime ?? resultMessage?.assessedAt ?? resultMessage?.capturedAt ?? resultMessage?.createdAt;
+  const sourceTime = resultMessage?.sourceEventTime ?? resultMessage?.windowStartTimestamp ?? resultMessage?.assessedAt ?? resultMessage?.capturedAt ?? resultMessage?.createdAt ?? resultMessage?.observedAt;
+  const functionStatus = mock?.records.find(row => row.message.messageType === "TIRE_FUNCTION_STATUS" && row.message.serviceVersion === expectedVersion);
+  const functionContent = recordObject(functionStatus?.message.content);
   useEffect(() => {
-    if (!available || !expectedVersion) return;
+    if (!available || !expectedVersion || mock?.source !== "VEHICLE_DATA") return;
     const completed = mock?.records.find(row => row.message.serviceVersion === expectedVersion
-      && ["WINDOW_COMPLETION", "BRAKE_HEALTH_ASSESSMENT", "TIRE_HEALTH_ASSESSMENT"].includes(row.message.messageType ?? ""));
+      && completedProduct(row as ProductRow, expectedVersion));
     if (completed) evidenceCallback.current?.(expectedVersion);
   }, [available, expectedVersion, mock]);
   return <section className="studio-cloud" aria-label={`${team} backend evidence`}>
     <div className="studio-panel-title"><h2>Function backend</h2><button disabled={busy || !unitSystemUid} onClick={() => refresh(value => value + 1)}>Refresh backend</button></div>
     <p className="studio-stamp">{busy ? "Reading backend…" : !unitSystemUid ? "Current Test identity not observed in Cloud" : error ? `Backend unavailable or incomplete${mock ? " · records are last known" : " · no confirmed records"}${issue ? ` · ${issue}` : ""}` : <>Observed <ObservationTime value={data?.observedAt} /></>}</p>
-    <div className="studio-mock-notice"><strong>MOCK DATA · Real service → real backend</strong><p>Synthetic inputs, not vehicle telemetry. Backend results do not establish in-vehicle advisory.</p></div>
+    <div className="studio-mock-notice"><strong>{mockMode ? "MOCK DATA · Explicit synthetic test records" : "Vehicle data · Real service → real backend"}</strong><p>{mockMode ? "Synthetic inputs, not vehicle telemetry." : "Model assessments are DEMO SYNTHETIC estimates from vehicle signals, not production diagnoses."} Backend results do not establish current in-vehicle advisory.</p></div>
+    <button className="studio-text-action" onClick={() => { setMockMode(value => !value); setData(null); setDetail(null); setPage(0); }}>{mockMode ? "Show vehicle results" : "Show mock history"}</button>
     <div className="studio-pills">{["Overview", "Records"].map(name => <button key={name} aria-pressed={tab === name} onClick={() => setTab(name)}>{name}</button>)}</div>
     {tab === "Overview" && <>
     <div className="studio-metrics"><article><small>Backend process</small><strong>{!error && data?.observations.readiness?.state === "OBSERVED" && data.observations.readiness.data?.ready ? "Ready" : "Not confirmed"}</strong></article>
-      <article><small>Stored mock messages{!available && mock ? " · last known" : ""}</small><strong>{mock ? total : "Not observed"}</strong></article>
+      <article><small>{mockMode ? "Mock messages" : "Recent product records"}{!available && mock ? " · last known" : ""}</small><strong>{mock ? total : "Not observed"}</strong></article>
       <article><small>Service release</small><strong>{latest?.message.serviceVersion ?? "Not reported"}</strong></article></div>
-    <div className="studio-result-card"><div><small>Latest synthetic result{!available && mock ? " · last known" : ""}</small><h3>{readable(assessmentContent.currentBand ?? assessmentContent.condition ?? content.status ?? latest?.message.messageType)}</h3>
+    {functionStatus && <p role="status">Function status{functionStatus.stale ? " · stale report" : " · service reported"}: {readable(functionContent.functionalState)} · {readable(functionContent.reason)}</p>}
+    <div className="studio-result-card"><div><small>{mockMode ? "Latest mock result" : "Latest product result"}{!available && mock ? " · last known" : ""}</small><h3>{readable(assessmentContent.currentBand ?? assessmentContent.condition ?? content.status ?? latest?.message.messageType)}</h3>
       {expectedVersion && !latest && <p>No result for release {expectedVersion} yet. Earlier releases remain in Records.</p>}
-      <p>{confidence ? `Confidence · ${resultContent.confidencePercent}%` : `Quality · ${readable(resultContent.quality)}`}</p></div>
+      <p>{typeof content.receivedSampleCount === "number" ? `${content.receivedSampleCount} samples · ${content.receivedChunkCount}/${content.expectedChunkCount} chunks` : confidence ? `Confidence · ${resultContent.confidencePercent}%` : `Quality · ${readable(resultContent.quality)}`}</p></div>
       {typeof assessmentContent.conditionScore === "number" && <div className="studio-score"><strong>{assessmentContent.conditionScore}<small> / 100</small></strong><meter min={0} max={100} value={assessmentContent.conditionScore} aria-label="Synthetic condition score" /></div>}</div>
-    <div className="studio-metrics"><article><small>Source event</small><strong>{typeof sourceTime === "string" ? new Date(sourceTime).toLocaleTimeString() : "Not reported"}</strong></article><article><small>Backend received</small><strong>{latest ? new Date((assessment ?? latest).backendReceivedAt).toLocaleTimeString() : "Not observed"}</strong></article><article><small>Vehicle advisory</small><strong>Not connected</strong></article></div>
+    <div className="studio-metrics"><article><small>Source event</small><strong>{typeof sourceTime === "string" ? new Date(sourceTime).toLocaleTimeString() : "Not reported"}</strong></article><article><small>Backend received</small><strong>{latest ? new Date((assessment ?? latest).backendReceivedAt).toLocaleTimeString() : "Not observed"}</strong></article><article><small>Vehicle advisory</small><strong>See vehicle telemetry</strong></article></div>
     {latest && <button className="studio-text-action" onClick={() => setDetail(assessment ?? latest)}>Inspect latest result ↗</button>}
     </>}
     {tab === "Records" && <>
     <h3 className="studio-evidence-title">Latest received records{!available && mock ? " · last known" : ""}</h3>
     <div className="studio-inventory">{mock?.records.slice(currentPage * pageSize, currentPage * pageSize + pageSize).map((row, index) => <button key={`${row.backendReceivedAt}-${index}`} onClick={() => setDetail(row)}>
       <strong>{row.message.messageType ?? "Product message"}</strong><span>Service {row.message.serviceVersion ?? "not reported"} · received {new Date(row.backendReceivedAt).toLocaleTimeString()}</span>
-      <small>Current Test · synthetic source · durable backend record</small></button>)}</div>
+      <small>Current Test · {mockMode ? "mock history" : readable(row.deliveryState)}</small></button>)}</div>
     {pages > 1 && <nav className="studio-pagination" aria-label="Backend record pages"><button disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}>Previous</button><span>Page {currentPage + 1} of {pages} · {mock?.records.length} records</span><button disabled={currentPage + 1 >= pages} onClick={() => setPage(currentPage + 1)}>Next</button></nav>}
-    {!mock?.records.length && <p>{available ? "No mock records received from this Test service yet." : "No current backend evidence."}</p>}
+    {!mock?.records.length && <p>{available ? "No product records received from this Test service yet." : "No current backend evidence."}</p>}
     </>}
-    {detail && <Modal title="Synthetic product record" subtitle={`${team === "brake" ? "Brake" : "Tire"} backend · MOCK DATA · not vehicle telemetry`} onClose={() => setDetail(null)}>
+    {detail && <Modal title={mockMode ? "Mock product record" : "Backend product record"} subtitle={`${team === "brake" ? "Brake" : "Tire"} backend · Current Test`} onClose={() => setDetail(null)}>
       <dl className="detail-grid"><dt>Result</dt><dd>{readable(detail.message.messageType)}</dd><dt>Service release</dt><dd>{readable(detail.message.serviceVersion)}</dd><dt>Backend received</dt><dd>{new Date(detail.backendReceivedAt).toLocaleString()}</dd><dt>{team === "tire" ? "Confidence (%)" : "Quality"}</dt><dd>{readable(team === "tire" ? recordObject(detail.message.content).confidencePercent : recordObject(detail.message.content).quality)}</dd><dt>VDP contract</dt><dd>{readable(detail.message.vdpContractVersion)}</dd><dt>Provenance</dt><dd>{readable(recordObject(detail.message.content).provenance ?? detail.message.provenance)}</dd></dl>
       <details><summary>Record content and technical identifiers</summary><pre className="studio-details">{JSON.stringify(detail, null, 2)}</pre></details></Modal>}
   </section>;

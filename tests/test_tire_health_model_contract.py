@@ -82,6 +82,19 @@ class TireHealthModelContractTest(unittest.TestCase):
         self.assertEqual(34, 100 - round_half_up(load_bps, 100))
         self.assertEqual("REPLACEMENT_RECOMMENDED", self.assessment["content"]["currentBand"])
 
+    def test_approved_raw_feature_definitions_are_explicit(self) -> None:
+        features = {item["id"]: item for item in self.profile["estimator"]["features"]}
+        dispersion = features["MAX_WHEEL_LINEAR_SPEED_DISPERSION"]
+        self.assertEqual(5, dispersion["minimumDenominatorKph"])
+        self.assertEqual("(MAX_WHEEL_SPEED_MINUS_MIN_WHEEL_SPEED)/MAX(MAX_WHEEL_SPEED,5_KPH)", dispersion["sampleFormula"])
+        self.assertEqual("MAX_OVER_VALID_ACTIVE_SAMPLES", dispersion["episodeReduction"])
+        persistence = features["SLIP_PERSISTENCE"]
+        self.assertEqual(.08, persistence["longitudinalThreshold"])
+        self.assertEqual(4, persistence["lateralThresholdDegrees"])
+        self.assertEqual("ABSOLUTE_VALUE_GREATER_THAN_OR_EQUAL", persistence["thresholdComparison"])
+        self.assertEqual("ANY_WHEEL_LONGITUDINAL_OR_LATERAL_THRESHOLD_REACHED", persistence["samplePredicate"])
+        self.assertEqual("MATCHING_VALID_ACTIVE_SAMPLES_DIVIDED_BY_ALL_VALID_ACTIVE_SAMPLES", persistence["episodeReduction"])
+
     def test_deterministic_ids_and_hashes(self) -> None:
         messages = self.profile["messages"]
         assessment_name = "\n".join([self.assessment["unitSystemUid"], self.assessment["sourceExerciseId"], self.assessment["modelConfigSha256"]])

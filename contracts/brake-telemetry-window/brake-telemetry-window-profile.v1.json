@@ -11,7 +11,7 @@
     "sourceCadenceHz": 30,
     "retainedCadenceHz": 10,
     "selection": "EVERY_THIRD_COMPLETE_VALID_FRAME",
-    "freshnessTimeoutMs": 250,
+    "freshnessTimeoutMs": 5000,
     "paths": [
       "Vehicle.Speed",
       "Vehicle.Acceleration.Longitudinal",

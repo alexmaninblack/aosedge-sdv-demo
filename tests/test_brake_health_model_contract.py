@@ -37,6 +37,13 @@ def uuid_name(fields: list[str]) -> str:
 
 
 class BrakeHealthModelContractTest(unittest.TestCase):
+    def test_demo_delivery_age_does_not_relax_measurement_coherence(self) -> None:
+        inputs = self.profile["input"]
+        self.assertEqual(5000, inputs["freshnessTimeoutMs"])
+        self.assertEqual(5000, inputs["maximumInputGapMs"])
+        self.assertEqual(100, inputs["maximumSignalTimestampSkewMs"])
+        self.assertEqual("ALL_REQUIRED_VALUES_WITHIN_ONE_RETAINED_100MS_PERIOD", inputs["coherencePolicy"])
+
     @classmethod
     def setUpClass(cls) -> None:
         cls.profile_path = CONTRACT_ROOT / "brake-health-model-profile.v1.json"

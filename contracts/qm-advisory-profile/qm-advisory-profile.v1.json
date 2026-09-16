@@ -3,7 +3,7 @@
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "schemaVersion": 1,
   "contractId": "aosedge-demo-typed-qm-advisory",
-  "contractVersion": "1.0.2",
+  "contractVersion": "1.1.0",
   "decision": "D4-008",
   "inputs": {
     "vdpCompatibilityContractVersion": "1.0.1",
@@ -28,7 +28,7 @@
     {
       "id": "BRAKE_HEALTH_ADVISORY",
       "ownerService": "BRAKE_HEALTH",
-      "compatibleServiceVersions": ["3.0.0"],
+      "compatibleFunctionalProfiles": ["v3"],
       "requestPath": "Vehicle.OEM.BrakeHealth.Advisory.Request",
       "requestEntryType": "actuator",
       "statusPath": "Vehicle.OEM.BrakeHealth.Advisory.GatewayStatus",
@@ -40,7 +40,7 @@
     {
       "id": "TIRE_HEALTH_ADVISORY",
       "ownerService": "TIRE_HEALTH",
-      "compatibleServiceVersions": ["1.0.0"],
+      "compatibleFunctionalProfiles": ["v1"],
       "requestPath": "Vehicle.OEM.TireHealth.Advisory.Request",
       "requestEntryType": "actuator",
       "statusPath": "Vehicle.OEM.TireHealth.Advisory.GatewayStatus",
@@ -50,6 +50,16 @@
       "clearReasonCodes": ["CONDITION_CLEARED"]
     }
   ],
+  "versionSemantics": {
+    "functionalProfileSource": "QUALIFIED_SERVICE_PACKAGE_PROFILE_AND_EXACT_AUTHORIZED_ENDPOINT",
+    "requestServiceVersion": "ACTUAL_INSTALLED_PACKAGE_RELEASE_VERSION",
+    "requestVersionPattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+    "releaseVersionIsAuthorizationEvidence": false,
+    "releaseVersionInferredFromFunctionalProfile": false,
+    "newReleaseRequiresEndpointAllowlistEdit": false,
+    "functionalProfileSuppliedByRequest": false,
+    "requestWireSchemaChanged": false
+  },
   "authority": {
     "kuksaWriteSuccessMeans": "The exact actuator target was accepted by KUKSA; Gateway application is not implied.",
     "vissSetSuccessMeans": "The exact VISS request passed protocol handling; Gateway application is not implied.",

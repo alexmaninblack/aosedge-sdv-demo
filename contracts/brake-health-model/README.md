@@ -4,18 +4,27 @@
 # Brake Health Synthetic Model Contract
 
 - Decision: [`D4-016.3`](../../docs/requirements/d4-decision-register.md#d4-016)
-- Contract version: 1.0.0 accepted 2026-08-23; byte/arithmetic closure
-  accepted 2026-08-29
+- Contract version: 1.1.0; original arithmetic accepted 2026-08-29,
+  demo timing amendment approved 2026-09-16
 - Model: `brake-condition-demo-v1`
 - Profile: `DEMO_PRECONDITIONED`
 - Provenance: `DEMO_SYNTHETIC`
 - Accepted profile SHA-256:
-  `7749dff2dd340f05ae5f3c90912d65007ad48c52a5136ab0e165a83109d55f53`
+  `ea74cda63116d1f9fc969ec292aedb7cd0935ae899775bd8bcd73c230190e028`
 
 This accepted contract defines the deterministic on-board Brake Health Service
 v2 model used by the demonstration. It proves event analysis can move from
 Cloud collection into the vehicle; it is not a production brake diagnostic,
 remaining-useful-life estimate or safety function.
+
+The timing amendment permits source age/input gaps up to 5000 ms, separately
+from signal skew <=100 ms (one retained period). The latest original timestamp
+identifies a sample; maximum age is measured from its oldest required value.
+Missing samples are never interpolated. The previous profile digest
+`7749dff2dd340f05ae5f3c90912d65007ad48c52a5136ab0e165a83109d55f53`
+remains an explicit state/outbox compatibility input, not the identity of new
+assessments. Retain old bytes and accumulated wear; adopt the new digest only
+on a successfully committed new assessment. Unknown profiles are not reset.
 
 Files:
 

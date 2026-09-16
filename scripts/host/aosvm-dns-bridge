@@ -265,6 +265,7 @@ def serve(address: str, port: int, resolver_pool: RefreshingResolverPool) -> Non
     print(f"AosVM DNS bridge ready on {address}:{port}", flush=True)
 
     last_loop_at = time.monotonic()
+    traced_queries = 0
     try:
         while True:
             events = selector.select(timeout=1.0)
@@ -282,10 +283,19 @@ def serve(address: str, port: int, resolver_pool: RefreshingResolverPool) -> Non
             for key, _ in events:
                 if key.data == "udp":
                     query, client = udp_server.recvfrom(MAX_DNS_MESSAGE)
+                    trace = traced_queries < 12
+                    traced_queries += 1
+                    started = time.monotonic()
+                    if trace:
+                        print(f"DNS UDP query: bytes={len(query)} client={client[0]}:{client[1]} "
+                              f"valid={validate_query(query)}", flush=True)
                     if validate_query(query):
                         response = resolver_pool.udp_query(query)
                         if response is not None:
                             udp_server.sendto(response, client)
+                        if trace:
+                            print(f"DNS UDP result: replied={response is not None} "
+                                  f"seconds={time.monotonic()-started:.3f}", flush=True)
                     continue
 
                 connection, _ = tcp_server.accept()

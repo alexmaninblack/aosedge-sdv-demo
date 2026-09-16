@@ -25,6 +25,9 @@ class BrakeHealthAdvisoryPolicyTest(unittest.TestCase):
         self.assertEqual(brake["requestPath"], self.policy["request"]["path"])
         self.assertEqual(brake["statusPath"], self.policy["status"]["path"])
         self.assertEqual(brake["recommendations"][0], self.policy["request"]["recommendation"])
+        self.assertEqual(self.qm["contractVersion"], self.policy["inputs"]["qmAdvisoryContractVersion"])
+        self.assertIn(self.policy["inputs"]["serviceFunctionalProfile"], brake["compatibleFunctionalProfiles"])
+        self.assertNotIn("serviceVersion", self.policy["inputs"])
 
     def test_request_is_deterministically_bound_to_assessment(self) -> None:
         fields = [

@@ -362,6 +362,27 @@ class ImagesAndCreateTests(unittest.TestCase):
         self.assertEqual(self.sha, digest(self.source))
         self.create()
 
+    def test_retire_removes_only_owned_viss_credentials_after_source_stop(self):
+        from aosedge_demo_orchestrator.source_trust import FILES
+        state, run = self.source_retirement_fixture()
+        state["source"]["trust"] = dict(profile="SELECTED_UNIT_MUTUAL_TLS", target="test")
+        atomic_json(self.root / JOURNAL, state)
+        directory = self.service._directory(".run/demo-current/control/viss-trust")
+        for name in FILES:
+            path = directory / name
+            path.write_text("owned test fixture, not a real credential")
+            path.chmod(0o600)
+        unknown = directory / "not-owned"
+        unknown.write_text("preserve")
+        with self.assertRaisesRegex(EnvironmentError, "SOURCE_TRUST_CLEANUP_FILES_CONFLICT"):
+            self.service.retire(cloud_check=Mock(return_value=True))
+        self.assertTrue((directory / "vdp-key.pem").exists())
+        unknown.unlink()
+        result = self.service.retire(cloud_check=Mock(return_value=True))
+        self.assertIn(".run/demo-current/control/viss-trust/vdp-key.pem", result["removed"])
+        self.assertFalse(directory.exists())
+        self.assertEqual(self.sha, digest(self.source))
+
     def test_retire_source_rejects_live_unknown_and_symlink_before_unlink(self):
         state, run = self.source_retirement_fixture()
         with patch("aosedge_demo_orchestrator.source.SourceDriver.live_process", return_value=123):

@@ -260,6 +260,7 @@ class ServiceAssignment:
         from .service_packages import ServicePackages
         packages = ServicePackages(self.environment)
         matches = []
+        legacy_error = None
         for team in ("brake", "tire"):
             root = self.environment.catalog.project / "services" / team / "releases"
             directories = list(root.glob("*"))
@@ -270,7 +271,17 @@ class ServiceAssignment:
                     continue
                 _, record = packages._record(team + "/" + directory.name, verify_payload=False)
                 profile, domain = packages._profile(record)
-                path = packages._publication_path(directory, record)
+                try:
+                    path = packages._publication_path(directory, record)
+                except EnvironmentError as error:
+                    if str(error) not in (
+                            "SERVICE_LEGACY_PUBLICATION_RECONCILIATION_REQUIRED",
+                            "PACKAGE_LEGACY_OWNER_RECONCILIATION_REQUIRED"):
+                        raise
+                    # Unrelated history must not hide an independently verified
+                    # current-owner receipt. Never adopt an unscoped receipt.
+                    legacy_error = legacy_error or error
+                    continue
                 if not path.is_file():
                     continue
                 if any(part.is_symlink() for part in (path, *path.parents)
@@ -288,6 +299,8 @@ class ServiceAssignment:
                         or observation.get("source") != "AOS_CLOUD_ONLY"):
                     raise EnvironmentError("SERVICE_ASSIGNMENT_PUBLICATION_RECEIPT_MISMATCH")
                 matches.append(dict(team=team, serviceProviderId=object_id(receipt["ownerId"]), publishedVersion=record["version"]))
+        if not matches and legacy_error:
+            raise legacy_error
         if not matches or len({(item["team"], item["serviceProviderId"]) for item in matches}) != 1:
             raise EnvironmentError("SERVICE_ASSIGNMENT_PUBLICATION_RECEIPT_REQUIRED")
         from .releases import number

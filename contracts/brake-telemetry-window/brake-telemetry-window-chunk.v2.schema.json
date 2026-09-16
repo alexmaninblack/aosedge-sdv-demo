@@ -191,7 +191,7 @@
         "maxSourceAgeMs": {
           "type": "integer",
           "minimum": 0,
-          "maximum": 250
+          "maximum": 5000
         },
         "speedKph": {
           "type": "number",

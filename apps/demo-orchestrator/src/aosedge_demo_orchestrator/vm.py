@@ -8,6 +8,7 @@ import ctypes
 import math
 import os
 import platform
+import re
 import shutil
 import signal
 import socket
@@ -136,6 +137,15 @@ class VMService:
         return rows[0][0] if rows else None
 
     def _spawn(self, command):
+        if "--owner-id" in command and command[1] == str(self.assets / "scripts/host/aosvm-dns-bridge"):
+            # Bounded, payload-free startup diagnostics for the owned bridge.
+            path = self.root / ".run/demo-current/dns-bridge.log"
+            fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW, 0o600)
+            with os.fdopen(fd, "w") as output:
+                child = subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=output,
+                    stderr=output, start_new_session=True, close_fds=True)
+            self.children.append(child)
+            return child.pid
         child = subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                                  stderr=subprocess.DEVNULL, start_new_session=True, close_fds=True)
         self.children.append(child)
@@ -218,6 +228,54 @@ class VMService:
     def _dns_command(self, state):
         return [sys.executable, str(self.assets / "scripts/host/aosvm-dns-bridge"),
                 "--listen-port", "18053", "--owner-id", state["shared"]["dns"]["ownerId"]]
+
+    def refresh_dns(self, *, restart_guest_resolver=False):
+        from .probes import host_dns
+        with self.environment._writer():
+            state = read_json(self.root / JOURNAL)
+            if self.environment.factory31_comparison is True or "test" not in state.get("vehicles", {}):
+                raise EnvironmentError("DNS_RECOVERY_TEST_ONLY")
+            dns = state.get("shared", {}).get("dns", {})
+            if dns.get("ownership") == "EXTERNAL_DEPENDENCY" or not dns.get("ownerId"):
+                raise EnvironmentError("DNS_RECOVERY_OWNER_UNPROVEN")
+            for role, item in state["vehicles"].items():
+                if role != "test" and self._owned_pid(self._command(state, role), str(self.root / item["overlay"])):
+                    raise EnvironmentError("DNS_RECOVERY_PRESERVED_PEER_RUNNING")
+            domain = state.get("selectedCloudDomain", "")
+            if not isinstance(domain, str) or not re.fullmatch(r"[a-z0-9.-]{1,253}", domain):
+                raise EnvironmentError("DNS_RECOVERY_CLOUD_DOMAIN_UNAVAILABLE")
+            config = dict(cloudHost=domain, dnsPort=18053)
+            before = host_dns(config, 2)
+            if before.get("state") == "CURRENT":
+                return dict(state="READY", noOp=True, observation=before)
+            if before.get("state") == "NOT_APPLICABLE":
+                raise EnvironmentError("DNS_RECOVERY_HOST_MAPPING_IN_USE")
+            guest = None
+            if restart_guest_resolver:
+                from .source import SourceDriver
+                command = self._command(state, "test")
+                if not self._owned_pid(command, str(self.root / state["vehicles"]["test"]["overlay"])):
+                    raise EnvironmentError("VM_NOT_RUNNING")
+                self.progress("DNS: restarting only Test dnsmasq; managers and containers remain running")
+                guest = SourceDriver(self).guest(state, "test", "dns-restart")
+            command = self._dns_command(state)
+            pid = self._owned_pid(command, dns["ownerId"])
+            if pid:
+                self.progress("DNS: restarting only the owned host bridge; Test VM and managers remain running")
+                os.kill(pid, signal.SIGTERM)
+                deadline = time.monotonic() + 5
+                while self._owned_pid(command, dns["ownerId"]):
+                    if time.monotonic() >= deadline:
+                        raise EnvironmentError("DNS_STOP_TIMEOUT")
+                    time.sleep(.1)
+            self._start_dns(state)
+            # One new listener startup wait, not another restart after failure.
+            time.sleep(.3)
+            after = host_dns(config, 4)
+            recovered = after.get("state") == "CURRENT" and (guest is None or guest.get("state") == "ACTIVE")
+            return dict(state="READY" if recovered else "UNCONFIRMED",
+                noOp=False, previousPid=pid, pid=state["shared"]["dns"]["pid"], observation=after,
+                guestResolver=guest)
 
     def _start_dns(self, state):
         # The isolated single-Test Factory qualification retains the canonical

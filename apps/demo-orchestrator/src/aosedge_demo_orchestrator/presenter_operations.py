@@ -70,8 +70,7 @@ def operation_plan(payload):
         team, profile = payload.get("team"), payload.get("profile")
         if team not in ("brake", "tire") or profile not in (("v1",) if team == "tire" else ("v1", "v2", "v3")):
             raise ValueError("SERVICE_PROFILE_REQUIRED")
-        plan = [dict(domain="service", action="prepare", team=team, content_profile=profile,
-                     without_permissions=True, demo_mocked_data=True)]
+        plan = [dict(domain="service", action="prepare", team=team, content_profile=profile)]
     elif action in ("service-publish", "service-observe"):
         fields.add("release")
         release = payload.get("release")

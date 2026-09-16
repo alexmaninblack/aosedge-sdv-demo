@@ -79,7 +79,10 @@ class SourceDriver:
     def guest(self, state, role, action, **extra):
         from . import source_guest
         worker = source_guest
-        if action == "service-runtime-prepare":
+        if action in ("trust-configure", "trust-status"):
+            from . import source_trust_guest
+            worker = source_trust_guest
+        elif action == "service-runtime-prepare":
             from . import service_inputs_guest
             worker = service_inputs_guest
         elif action == "service-runtime-activate":
@@ -90,7 +93,7 @@ class SourceDriver:
         request = dict(action=action, vehicle=vehicle, role=role, **extra)
         script = "python3 - <<'DEMOCTL_SOURCE_PY'\n" + code + "\nmain(" + repr(request) + ")\nDEMOCTL_SOURCE_PY\n"
         try:
-            timeout = self.budget(110 if action == "service-runtime-activate" else 60 if action in ("component-sm-apply", "component-cm-apply") else 25)
+            timeout = self.budget(360 if action == "service-kac-data-proof" else 120 if action in ("core-permissions-apply", "core-permissions-iam-response-apply", "service-kac-time-proof") else 40 if action == "core-permissions-status" else 110 if action == "service-runtime-activate" else 60 if action in ("component-sm-apply", "component-cm-apply", "trust-configure") else 25)
             command = ssh_command(access_path(self.root, role), state["vehicles"][role]["sshPort"], min(5, timeout))
             if self._session:
                 command = ["ControlMaster=auto" if arg == "ControlMaster=no" else
@@ -254,6 +257,10 @@ function run(args) {
         # No SIGTERM fallback, repeated Quit or automatic force termination.
 
     def start(self, state):
+        from . import source_authentication as authentication
+        strict = authentication.enabled(state)
+        saved_trust = (state.get("source") or {}).get("trust")
+        saved_generation = (state.get("source") or {}).get("assignmentGeneration", 0)
         previous = None
         if state.get("source"):
             source = state["source"]
@@ -273,6 +280,11 @@ function run(args) {
                     or any(v["gate"] != "BLOCKED" for v in self.guests(state, "status").values())):
                     raise EnvironmentError("SOURCE_PREVIOUS_RUN_NOT_RUNNING_RECONCILE_REQUIRED")
         paths = self.assets()
+        if strict:
+            paths.update(runtime=self.root / authentication.BUILD / "carla-ego-runtime",
+                         client=self.root / authentication.BUILD / "carla-viss-client")
+            if not all(paths[key].is_file() for key in ("runtime", "client")):
+                raise EnvironmentError("SOURCE_TRUST_GATEWAY_BUILD_REQUIRED")
         from .workspace import prepare_controller
         prepare_controller(paths, self.progress)
         # The fixed .28 client URI has no host listener. Without its owned
@@ -312,10 +324,12 @@ function run(args) {
             "--demo-journal", str(self.root / JOURNAL),
             "--connectivity-command", json.dumps([sys.executable, "-m", "aosedge_demo_orchestrator",
                 "--output", "json", "vehicle", "connectivity"])]
-        runner.append("--viss-development")
+        runner.extend(authentication.runner_options(self, state) if strict else ["--viss-development"])
         source = dict(runId=identity, controlDirectory=str(control.relative_to(self.root)),
             runDirectory=str(run.relative_to(self.root)), simulatorCommand=simulator, runnerCommand=runner,
-            state="STARTING", assignmentGeneration=0, operation=None, nativeTelemetry=True)
+            state="STARTING", assignmentGeneration=saved_generation if strict else 0, operation=None, nativeTelemetry=True)
+        if saved_trust:
+            source["trust"] = saved_trust
         state["source"] = source
         self.vm._save(state)
         if previous and previous["simulatorCommand"] != simulator:
@@ -453,13 +467,15 @@ class SourceService:
             raise EnvironmentError("DEBUG_CLOUD_OPERATIONS_REQUIRE_TEST_ONLY")
         self.units.owner_id = cloud_binding(state)["ownerId"]
         inventory = self.units._cloud("inventory")
-        sets = self.units._bindings(state, inventory)
+        sets = self.units._bindings(state, inventory, roles=roles)
         result = {}
         for role in roles:
             item = state["vehicles"][role]
             units = [u for u in inventory["units"] if u["id"] == item.get("unitId")]
             if len(units) != 1 or units[0]["online_status"] != "Online" or units[0]["status"] != "provisioned":
                 raise EnvironmentError("SOURCE_UNIT_NOT_ONLINE:" + role)
+            if units[0].get("system_uid") != item.get("systemUid"):
+                raise EnvironmentError("SOURCE_UNIT_IDENTITY_MISMATCH:" + role)
             if {u["id"] for u in sets[role]["members"]} != {item["unitId"]}:
                 raise EnvironmentError("SOURCE_UNIT_SET_MISMATCH:" + role)
             result[role] = "Online"
@@ -481,6 +497,9 @@ class SourceService:
             return self.select(current)
 
     def _detach(self, state, target=None):
+        from . import source_authentication as authentication
+        if authentication.enabled(state) and state["source"].get("state") != "STOPPED":
+            authentication.detach(self.driver, state)
         if target is None:
             return self.driver.guests(state, "block")
         # Studio may retain a running Production VM. Read its existing gate,
@@ -491,6 +510,11 @@ class SourceService:
         selected = self.driver.guests(state, "block", roles=[target])
         views.update(selected)
         return views
+
+    def exercise(self, kind):
+        from .source_exercise import execute
+        with self.environment._writer(), self.driver.operation(timeout=95):
+            return execute(self, read_json(self.root / JOURNAL), kind)
 
     def simulation(self, action, target=None, *, retiring=False):
         with self.environment._writer(), self.driver.operation():
@@ -627,12 +651,16 @@ class SourceService:
             return self._select(state, role, configure=True, initial_manual=initial_manual)
 
     def _select(self, state, role, configure=False, initial_manual=False):
+        from . import source_authentication as authentication
+        strict = authentication.enabled(state)
+        if strict and role != "test":
+            raise EnvironmentError("SOURCE_TRUST_TEST_ONLY")
         source = state["source"]
         pending = source.get("operation")
         if pending and pending["target"] != role:
             raise EnvironmentError("SOURCE_OPERATION_RECONCILIATION_REQUIRED")
         self.driver.vm._free_port(6443)
-        views = (self.driver.guests(state, "status", configure_role=role) if configure
+        views = (self.driver.guests(state, "status", configure_role=role) if configure and not strict
                  else self.driver.guests(state, "status"))
         old = state.get("currentVehicle")
         if initial_manual and (role != "test" or (old is not None and old != role)
@@ -645,10 +673,12 @@ class SourceService:
             raise EnvironmentError("SOURCE_LIVE_ASSIGNMENT_CONTRADICTORY")
         if old == role and not pending:
             frame = self.driver.rpc(source, "status", str(uuid4()))
-            data = self.driver.guest(state, role, "probe")
+            data = (authentication.connection(self.driver, state, role) if strict
+                    else self.driver.guest(state, role, "probe"))
             if not frame.get("fresh") or frame.get("held") or not data.get("serverTls"):
                 raise EnvironmentError("SOURCE_EXISTING_ASSIGNMENT_NOT_READY")
-            return dict(TRUST, currentVehicle=role, noOp=True, vehicles=views, controller=frame,
+            return dict(dict(trustProfile="SELECTED_UNIT_MUTUAL_TLS", perUnitMtls="ACTIVE") if strict else TRUST,
+                currentVehicle=role, noOp=True, vehicles=views, controller=frame,
                 connection=data, assignmentGeneration=source["assignmentGeneration"])
         identity = pending["id"] if pending else str(uuid4())
         phase = None
@@ -692,29 +722,40 @@ class SourceService:
                 frame = self.driver.wait(source, identity, "MANUAL_READY")
             source["operation"]["phase"] = "RESET_CONFIRMED"
             self.vm._save(state)
+            if strict:
+                authentication.attach(self.driver, state, role)
             views[role].update(self.driver.guest(state, role, "allow"))
         if any(v["gate"] != ("OPEN" if r == role else "BLOCKED") for r, v in views.items()):
             raise EnvironmentError("SOURCE_ATTACHMENT_NOT_EXCLUSIVE")
         try:
-            data = self.driver.guest(state, role, "probe")
+            data = (authentication.connection(self.driver, state, role, wait=True) if strict
+                    else self.driver.guest(state, role, "probe"))
         except (OSError, ValueError, subprocess.SubprocessError):
             self.driver.guest(state, role, "block")
             raise
         if not data.get("serverTls"):
             self.driver.guest(state, role, "block")
             raise EnvironmentError("SOURCE_SELECTED_DATA_NOT_READY:" + data.get("reason", "UNKNOWN"))
+        if strict:
+            # Reuse the final read; do not return pre-activation NOT_READY
+            # alongside the newly authenticated LIVE connection.
+            observed_guest = data["guest"]
+            views[role].update(vdpProcess=observed_guest["vdpProcess"],
+                vdpData="REPORTED_READY", vdpStatusText=observed_guest["vdpData"],
+                vdpRestarts=observed_guest["vdpRestarts"])
         source["operation"]["phase"] = "ATTACHED"
         state["currentVehicle"] = role
         self.vm._save(state)
         released = self.driver.rpc(source, "release_manual" if initial_manual else "release", identity)
         if released.get("held") or released.get("phase") != "RELEASED":
             raise EnvironmentError("SOURCE_HOLD_RELEASE_UNCONFIRMED")
-        source.update(assignmentGeneration=source["assignmentGeneration"] + 1, operation=None,
+        source.update(assignmentGeneration=source["assignmentGeneration"] + (0 if strict else 1), operation=None,
             lastConnectionConfirmation=dict(role=role, confirmedAt=now(), runId=source.get("runId"),
                 serverTls=True, initialManual=initial_manual, advancingVissFrames=data.get("advancingVissFrames", False)))
         self.vm._save(state)
         self.progress("Source: " + role + (" connected in stationary Manual; ready for Autopilot then Safe Stop" if initial_manual else " connected; car remains in Safe Stop"))
-        return dict(TRUST, currentVehicle=role, noOp=False, vehicles=views,
+        return dict(dict(trustProfile="SELECTED_UNIT_MUTUAL_TLS", perUnitMtls="ACTIVE") if strict else TRUST,
+            currentVehicle=role, noOp=False, vehicles=views,
             controller=frame, connection=data, assignmentGeneration=source["assignmentGeneration"])
 
     def observe(self, guest=False, timeout=8):
@@ -722,11 +763,14 @@ class SourceService:
             return self._observe(guest)
 
     def _observe(self, guest):
+        from . import source_authentication as authentication
         state = read_json(self.root / JOURNAL)
+        strict = authentication.enabled(state)
         if not state.get("source"):
             return dict(TRUST, state="NOT_PREPARED", currentVehicle=None)
         source = state["source"]
-        value = dict(TRUST, state="UNKNOWN", journalCurrentVehicle=state.get("currentVehicle"),
+        value = dict(dict(trustProfile="SELECTED_UNIT_MUTUAL_TLS", perUnitMtls="CONFIGURED") if strict else TRUST,
+            state="UNKNOWN", journalCurrentVehicle=state.get("currentVehicle"),
             selectedVehicle=state.get("currentVehicle"), lastConnectionConfirmation=source.get("lastConnectionConfirmation"),
             connectionObservation="LIVE_REQUESTED" if guest else "NOT_REQUESTED",
             operation=source.get("operation") or source.get("stopOperation"),
@@ -736,15 +780,18 @@ class SourceService:
             if not guest:
                 value.update(state="SELECTED_NOT_PROBED" if state.get("currentVehicle") else "RUNNING_UNASSIGNED")
                 return value
-            views = self.driver.guests(state, "observe")
+            views = self.driver.guests(state, "status" if strict else "observe")
             value["vehicles"] = views
             opened = [r for r, v in views.items() if v["gate"] == "OPEN"]
             if (len(opened) == 1 and opened[0] == state.get("currentVehicle")
                     and all(v["gate"] in ("OPEN", "BLOCKED") for v in views.values())):
-                value["connection"] = views[opened[0]].get("connection", {})
+                value["connection"] = (authentication.connection(self.driver, state, opened[0]) if strict
+                    else views[opened[0]].get("connection", {}))
                 if value["connection"].get("serverTls") and value["controller"].get("fresh") and not source.get("operation"):
                     value["currentVehicle"] = opened[0]
                     value["state"] = "CONNECTED"
+                    if strict:
+                        value["perUnitMtls"] = "ACTIVE"
             elif not opened and all(v["gate"] == "BLOCKED" for v in views.values()):
                 value.update(state="DETACHED", currentVehicle=None)
         except EnvironmentError as error:

@@ -146,9 +146,8 @@ def package_configuration(root, team, content_profile, version, *, without_permi
     if demo_no_telemetry or demo_mocked_data:
         configuration = config["items"][0]["configuration"]
         configuration["cmd"] += " --demo-mocked-data" if demo_mocked_data else " --demo-no-telemetry"
-        # Native libcrun needs headroom during container setup, before it closes
-        # inherited descriptors. Leave normal product contracts unchanged.
-        configuration["quotas"]["noFileLimit"] = 1024
+        # The approved product quota supplies native libcrun setup headroom
+        # in both real-data and explicit synthetic/lifecycle-only modes.
     return config
 
 

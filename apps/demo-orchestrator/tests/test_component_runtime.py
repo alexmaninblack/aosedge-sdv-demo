@@ -172,6 +172,23 @@ class RuntimeProofBoundaryTests(unittest.TestCase):
             config["runtimes"][0]["config"] = dict(runtimeDir="/run/../private")
             self.assertEqual("UNSUPPORTED_RUNTIME_PATH", container_runtime_observation(root, config)["state"])
 
+    def test_container_observation_keeps_model_outcomes_without_payloads(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            entry = root / "run/aos/runtime/11111111-1111-4111-8111-111111111111"
+            entry.mkdir(parents=True)
+            (entry / "config.json").write_text(json.dumps(dict(process=dict(args=["/usr/bin/brake-health-bootstrap"]))))
+            (entry / ".pid").write_text("42")
+            (root / "proc/42").mkdir(parents=True)
+            record = dict(eventType="ASSESSMENT_SKIPPED_INPUT_QUALITY", currentState="READY",
+                          reasonCode="EPISODE_NOT_COMPLETE", secret="SECRET-VALUE", content=dict(speed=42))
+            output = json.dumps(dict(MESSAGE=json.dumps(record)))
+            with patch("aosedge_demo_orchestrator.source_guest.command", return_value=SimpleNamespace(returncode=0, stdout=output)):
+                result = container_runtime_observation(root, dict(runtimes=[dict(plugin="container")]), root / "proc")
+            events = result["containers"][0]["telemetry"]["events"]
+            self.assertEqual([dict(eventType="ASSESSMENT_SKIPPED_INPUT_QUALITY", currentState="READY", reasonCode="EPISODE_NOT_COMPLETE")], events)
+            self.assertNotIn("SECRET-VALUE", json.dumps(result))
+
     def test_factory_build_cli_and_api_use_the_same_exact_release(self):
         request = request_from_arguments(build_parser().parse_args(["image", "build", "6.1.1-maninblack.31"]))
         app = Mock()

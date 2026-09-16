@@ -50,7 +50,7 @@
         "sourceTimestamp": { "type": "string", "format": "date-time" },
         "phase": { "enum": ["PRE", "ACTIVE", "POST"] },
         "quality": { "const": "VALID_COMPLETE_FRAME" },
-        "maxSourceAgeMs": { "type": "integer", "minimum": 0, "maximum": 250 },
+        "maxSourceAgeMs": { "type": "integer", "minimum": 0, "maximum": 5000 },
         "speedKph": { "type": "number", "minimum": 0, "maximum": 1000 },
         "longitudinalAccelerationMps2": { "type": "number", "minimum": -100, "maximum": 100 },
         "lateralAccelerationMps2": { "type": "number", "minimum": -100, "maximum": 100 },

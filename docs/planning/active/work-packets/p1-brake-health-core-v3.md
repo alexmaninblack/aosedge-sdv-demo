@@ -70,7 +70,7 @@ All hashes are raw file SHA-256 at the authoritative contract-cascade commit.
 | Typed QM Request schema | closed schema v1 | `f2102fd948734a714160efb8ee09885107d58da1daabd95771dce56785149910` |
 | Typed QM Gateway Status schema | closed schema v1 | `1e0ecb28cc7548c65f1352b4c8b5874871400b8a83050a1b527c5f58f8493661` |
 | Brake runtime README | D4-016.5 / lifecycle 1.1.0 | `066d23506302fc094385b666081385b2cef8fc8c8fbabbf313a50020dcefea65` |
-| Brake runtime profile | 1.1.0 | `cc90a091e044995a49ad886ae6a5f000c579c8a43a84dbaab8a6edf2a8c492c4` |
+| Brake runtime profile (16 September operator-approved PID amendment) | 1.1.0 | `bc93334ed7af4e5d4238b5720cbe1e4ea184c4c04aeeb5ad60d1ee926ce70820` |
 | Shared evidence profile | 1.1.0 | `657c4d0dc83fd2a98b2a827172f1cb408965105865903397fc7ba07564f5c0d2` |
 | Brake model profile | 1.0.0 | `7749dff2dd340f05ae5f3c90912d65007ad48c52a5136ab0e165a83109d55f53` |
 | Brake model persistent-state schema | 1.0.0 | `350a38547490547f3bf963971fb9a2f5e0cc7c4c4ea4d96b746b392779fc7f79` |

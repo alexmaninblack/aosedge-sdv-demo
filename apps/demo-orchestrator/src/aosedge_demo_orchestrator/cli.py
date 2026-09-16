@@ -59,6 +59,10 @@ def build_parser() -> argparse.ArgumentParser:
     service_inputs.add_argument("target", choices=("test",))
     service_activate = service_commands.add_parser("runtime-activate", help="Test-only transient resource/startup configuration; one SM restart, unchanged binary")
     service_activate.add_argument("target", choices=("test",))
+    service_activate.add_argument("--kac-only", action="store_true", help="start only the existing KAC after ready prerequisites; no manager/resource activation")
+    service_activate.add_argument("--kac-time-read-proof", action="store_true", help="explicitly authorized temporary KAC time-marker read-policy proof; automatic stock-policy rollback")
+    service_activate.add_argument("--kac-data-proof", action="store_true", help="authorized bounded Brake real-data trial using the same exact KAC rules; automatic stock rollback, no restart")
+    service_activate.add_argument("--kac-recovery", action="store_true", help="current Test: apply proven KAC recovery for a bounded six-hour qualification; automatic stock-policy rollback")
     service_activate.add_argument("--restart-sm", action="store_true", help="explicit one-time restart of the already activated Test SM; same binary/configuration, no retry")
     service_build = service_commands.add_parser("build", help="development-only real ARM64 service build; no publication or VM action")
     service_build.add_argument("team", choices=("brake", "tire"))
@@ -133,6 +137,12 @@ def build_parser() -> argparse.ArgumentParser:
     component = commands.add_parser("component", help="operate on VDP bundles in the artifact catalog")
     component_commands = component.add_subparsers(dest="action", required=True)
     component_commands.add_parser("list", help="list retained VDP artifact versions")
+    for action in ("core-permissions-build", "core-permissions-apply", "core-permissions-status"):
+        command = component_commands.add_parser(action, help="authorized Test-only 256-character permission capacity proof; CLI-only")
+        command.add_argument("target", choices=("test",))
+        if action != "core-permissions-status":
+            command.add_argument("--iam-response-capacity", action="store_true",
+                help="targeted IAM reply-count correction on the preserved 256-byte Test proof")
     for action in ("sm-builder-start", "sm-builder-stop", "sm-build", "sm-test", "sm-apply", "cm-build", "cm-test", "cm-apply", "cm-compare-inspect", "cm-compare-build", "cm-compare-control", "cm-compare-without-patch", "cm-compare-restore", "cm-compare-startup", "cm-compare-refresh-build", "cm-compare-refresh-apply", "cm-compare-refresh-cache-restore"):
         command = component_commands.add_parser(action, help="bounded Test AosCore qualification; comparison phases are CLI-only")
         command.add_argument("target", choices=("test",))
@@ -147,10 +157,10 @@ def build_parser() -> argparse.ArgumentParser:
     cm_status.add_argument("target", choices=("test",))
     component_logs = component_commands.add_parser("logs", help="read bounded, redacted SM/CM/provider events")
     component_logs.add_argument("target", choices=("test", "production"))
-    component_diagnose = component_commands.add_parser("diagnose", help="compare installed KUKSA schema against the fixed 23-path contract; read-only")
+    component_diagnose = component_commands.add_parser("diagnose", help="inspect 23 telemetry and four typed advisory schema leaves; read-only")
     component_diagnose.add_argument("target", choices=("test", "production"))
     for action in ("schema-apply", "schema-remove"):
-        schema = component_commands.add_parser(action, help="temporary Test-only eight-leaf KUKSA schema; one service restart, no image or permission change")
+        schema = component_commands.add_parser(action, help="temporary Test-only V3 telemetry and typed advisory schema; one broker restart, no image or permission change")
         schema.add_argument("target", choices=("test",))
     for action in ("inspect", "unpack", "prepare", "verify", "sign", "cloud-status", "upload", "approve", "unapprove", "send"):
         command = component_commands.add_parser(action)
@@ -183,6 +193,8 @@ def build_parser() -> argparse.ArgumentParser:
     initialize.add_argument("target", choices=("test",))
     select = vehicle_commands.add_parser("select", help="Safe Stop, detach, scene reset and connect one role")
     select.add_argument("target", choices=("test", "production"))
+    authenticate = vehicle_commands.add_parser("authenticate", help="onboard the preserved Test for strict Gateway mTLS; one simulation restart")
+    authenticate.add_argument("target", choices=("test",))
     connectivity = vehicle_commands.add_parser("connectivity", help="selected vehicle external world; preserve CARLA, VISS and control")
     connectivity.add_argument("link_action", choices=("status", "off", "on"))
     connectivity.add_argument("--target", choices=("test", "production"), help="defaults to Current Vehicle; off requires that same Current Vehicle")
@@ -192,9 +204,15 @@ def build_parser() -> argparse.ArgumentParser:
     for action in ("start", "stop"):
         command = simulation_commands.add_parser(action, help="manage the owned simulation; preserve VMs")
         command.add_argument("--target", choices=("test",), help="touch only Test's source gate; preserve an existing Production peer")
+    exercise = simulation_commands.add_parser("exercise", help="bounded real CARLA maneuver; not a service qualification result")
+    exercise.add_argument("team", choices=("brake", "tire"))
+    exercise.add_argument("--target", choices=("test",), required=True)
 
     vm = commands.add_parser("vm", help="manage local VM processes")
     vm_commands = vm.add_subparsers(dest="action", required=True)
+    refresh_dns = vm_commands.add_parser("refresh-dns", help="recover the owned host DNS bridge after a network change; preserve Test VM")
+    refresh_dns.add_argument("target", choices=("test",))
+    refresh_dns.add_argument("--restart-guest-resolver", action="store_true", help="restart only Test dnsmasq once before recovering the host bridge")
     for action in ("start", "stop"):
         command = vm_commands.add_parser(action)
         command.add_argument("target", choices=TARGETS)
@@ -237,10 +255,16 @@ def request_from_arguments(arguments: argparse.Namespace) -> OperationRequest:
         demo_no_telemetry=getattr(arguments, "demo_no_telemetry", False),
         demo_mocked_data=getattr(arguments, "demo_mocked_data", False),
         restart_sm=getattr(arguments, "restart_sm", False),
+        kac_only=getattr(arguments, "kac_only", False),
+        kac_time_read_proof=getattr(arguments, "kac_time_read_proof", False),
+        kac_data_proof=getattr(arguments, "kac_data_proof", False),
+        kac_recovery=getattr(arguments, "kac_recovery", False),
+        iam_response_capacity=getattr(arguments, "iam_response_capacity", False),
         restart_cm=getattr(arguments, "restart_cm", False),
         confirm_bind_not_submitted_at=getattr(arguments, "confirm_bind_not_submitted_at", None),
         certificate=getattr(arguments, "certificate", None),
         timeout=getattr(arguments, "timeout", 8.0),
+        restart_guest_resolver=getattr(arguments, "restart_guest_resolver", False),
     )
 
 
@@ -291,6 +315,9 @@ def render_human(result: OperationResult, details: bool = False) -> str:
         if data.get("workspace"):
             lines.append("Workspace: " + data["workspace"]["state"])
             lines.extend(data["workspace"].get("problems", []))
+        if document["operation"] == "simulation.exercise":
+            lines.append("Maneuver: " + data["kind"] + "; result: " + data["reason"])
+            lines.append("Service/backend/advisory qualification: NOT_EVALUATED")
     if data and document["operation"] in ("environment.prepare", "vehicle.select"):
         lines.append("Current Vehicle: " + data["currentVehicle"] + (" (unchanged)" if data["noOp"] else ""))
         lines.append("Profile: " + data["trustProfile"] + "; per-Unit mTLS: " + data["perUnitMtls"])
@@ -324,7 +351,9 @@ def render_human(result: OperationResult, details: bool = False) -> str:
             lines.append("Removed: " + path)
         for path in data.get("preserved", []):
             lines.append("Preserved: " + path)
-    if data and document["operation"].startswith("vm."):
+    if data and document["operation"] == "vm.refresh-dns":
+        lines.append("Host DNS: " + data["state"] + (" (unchanged)" if data.get("noOp") else ""))
+    if data and document["operation"] in ("vm.start", "vm.stop"):
         if data.get("infrastructure", {}).get("reason"):
             lines.append("Infrastructure: " + data["infrastructure"]["reason"])
         for role, item in data["vehicles"].items():

@@ -94,8 +94,14 @@ inputs as described below; Studio composes that step automatically. It does not
 require `service runtime-activate` or an extra manager restart. Older dated .28/.29/.31/transient
 experiments below remain historical engineering references, not startup steps.
 
-While Cloud's service-permissions defect remains open, the qualified synthetic
-path is preparation with both `--without-permissions --demo-mocked-data`.
+The operator authorized staging real-data verification on 15 September.
+Studio now uses ordinary preparation with native permissions; both services
+request `noFileLimit: 1024` for container setup. The first live gate is Brake V1
+reading real KUKSA signals and displaying backend data, not the complete
+update/Advisory scenario. This is not a claim that production permissions work.
+
+For Clouds where the service-permissions defect remains open, the previously
+qualified explicit synthetic path uses `--without-permissions --demo-mocked-data`.
 This is distinct from the older no-telemetry lifecycle-only loop: synthetic
 records exercise the real native service-to-backend transport but do not
 establish KUKSA access, vehicle analytics or Driver Advisory. Ordinary packages
@@ -179,6 +185,24 @@ its executable/configuration and does not restart the VM or reassign services.
 The ordinary repeat without the flag remains a no-op. This is not a routine
 .33 deployment step. A restart failure is
 not retried automatically; SM health and service Running are separate results.
+
+For an explicitly authorized KAC-only recovery, use
+`democtl service runtime-activate test --kac-only`. This starts the unchanged
+KAC only after its native identity, provisioning and verifier prerequisites
+are present. It does not restart SM, change resource configuration or alter
+SELinux/time settings; `--restart-sm` cannot be combined with it. Inspect the
+result through `democtl service runtime-inspect test`, which exposes redacted
+KAC readiness and Brake/Tire token-file metadata/events, never token contents.
+An active KAC process alone does not establish authorized telemetry reads.
+
+The explicitly authorized 15 September Test-only diagnostic adds
+`--kac-time-read-proof` to that command. It grants only the reviewed NTP-marker
+directory search/getattr and file open/read/getattr permissions, in a temporary
+policy store, after full structural comparison against the active policy.
+SELinux stays Enforcing; a same-context rollback guard and a `finally` restore
+the original policy. This is a short proof, not a permanent runtime repair.
+Its completed receipt is reused without reapplying policy. VM, managers, KAC,
+VDP and service processes are not restarted. Token contents are never returned.
 
 ```bash
 democtl service assign <catalog-service-UUID> --target test
@@ -505,12 +529,24 @@ democtl status --guest --cloud
 democtl --output json status --guest --cloud
 democtl vm start <test|production|all> [--timeout 90]
 democtl vm stop <test|production|all> [--timeout 90]
+democtl vm refresh-dns test [--restart-guest-resolver]
 democtl unit provision <test|production|all>
 democtl unit deprovision <test|production|all>
 democtl unit delete <test|production|all>
 democtl simulation start
 democtl simulation stop
 ```
+
+`vm refresh-dns test` is an explicit engineering recovery after a host network
+change. It first checks the selected Cloud name through the owned DNS bridge.
+A healthy bridge is a no-op. An unhealthy owned bridge is restarted once;
+`--restart-guest-resolver` additionally restarts only Test's configured
+`dnsmasq` once to clear repeated guest queries. It rejects external bridge
+ownership and a running Production peer. It never restarts the VM, CM, SM,
+VDP or containers, changes resolver configuration, provisions a Unit or
+claims Cloud Online from DNS readiness. Use `unit cloud-status test` to
+confirm the independent Cloud result. Startup diagnostics contain at most
+twelve query/result pairs, with packet lengths and timing, never payloads.
 
 Status, image list, environment create, VM start/stop and unused/Cloud-retired CLI environment retire are
 implemented, as are the three unit commands and local-profile environment
@@ -570,9 +606,11 @@ Installed with runtime readiness, manually resend, or report this delay as
 normal CLI/API execution time. The [qualification record](../../docs/qualification/democtl-vdp-family.md)
 preserves the timeline and remaining runtime defect.
 
-Temporary v3 platform proof (operator-authorized 2026-09-06): while no vehicle
-is selected, `component schema-apply test` adds only the eight accepted
-ChaosWheel sensor leaves to a copy of the base KUKSA schema in
+Temporary v3 platform proof (extended for the accepted advisory chain on
+2026-09-16): while no vehicle is selected, `component schema-apply test` adds
+only the eight accepted ChaosWheel sensor leaves and the four D4-008 typed
+advisory leaves (one string actuator Request and read-only GatewayStatus sensor
+per service) to a copy of the base KUKSA schema in
 `/run/democtl-vss/vss.json`. An owned runtime drop-in at
 `/run/systemd/system/kuksa-databroker.service.d/90-democtl-vss.conf` binds that
 file read-only over the existing schema **inside KUKSA's mount namespace**.
@@ -583,7 +621,9 @@ uncertain outcomes are recorded and require reconciliation, not blind retries.
 `component schema-remove test` restores the base service and deletes only those
 owned temporary files. Reboot also removes this `/run`-only configuration.
 `component diagnose test` reads the running service's namespace and reports
-the effective/base digests and missing leaves. This is a temporary Test proof,
+the effective/base digests, missing telemetry leaves and all four advisory
+leaf types. An exact owned older eight-leaf proof can be removed, but is not
+silently replaced by the extended proof. This is a temporary Test proof,
 not a repaired Factory image or full v3 advisory qualification.
 
 `component list` lists VDP versions in
@@ -642,14 +682,55 @@ It changes no schema, credentials or permissions. Factory .28 currently lacks
 the eight v3 ChaosWheel leaves, so v3 telemetry is not qualified on that image.
 
 Move to the next content profile only after the preceding release is active
-and ready. This run
-qualifies telemetry only: v3 advisory and client-authenticated write roles remain
-deferred; Gateway Set is still rejected. The current
+and ready. The historical frozen family run
+qualifies telemetry only: its v3 advisory and client-authenticated write roles
+were deferred. The
 [VDP family checkpoint](../../docs/qualification/democtl-vdp-family.md)
-records actual results and exclusions. No standalone workflow scripts are used.
+records those results and exclusions. New V3 composition explicitly binds the
+reviewed QM1.1 advisory transport and requires strict selected-Unit mTLS; it
+does not authorize development-profile writes. No standalone workflow scripts
+are used.
+
+For the explicitly authorized preserved staging Test qualification:
+
+```bash
+democtl vehicle authenticate test
+```
+
+This issues separate VDP, update-runtime and read-only Dashboard identities,
+enrolls the selected Unit, and supplies guest systemd credentials. The first
+activation compiles only Gateway/client, restarts the simulation group once,
+and activates SM/VDP credentials once. The VM, Cloud Unit, Subjects and service
+data remain. A repeat reconciles the same assignment without issuing new
+credentials or restarting. Production is excluded; no authentication fallback
+is allowed. This engineering CLI is not yet automatic Presenter onboarding or
+qualified VM/host reboot reconstruction. Owned host credentials are removed by
+the existing retirement flow after its stopped-owner gates. Live advisory
+application and clean Factory qualification remain separate gates; see the
+[16 September receipt](../../docs/qualification/staging-approved-model-changes-2026-09-16.md).
 
 The agreed preparation interface keeps operated-on VMs separate from the one
 live consumer:
+
+The operator-approved Test-only real-motion qualification commands are:
+
+```text
+democtl simulation exercise brake --target test
+democtl simulation exercise tire --target test
+```
+
+These engineering commands require an already selected Test and the native
+Driving Control session. They confirm Safe Stop, reset the scene through its
+existing tick owner, and run bounded physical control inputs. Brake reuses the
+scripted braking state machine with a distance-based stop line; Tire uses a
+bounded steering sweep. Neither command injects telemetry, changes models or
+claims a service/advisory result. Collision, departure from the driving area,
+operator Safe Stop, loss of the three-second command lease or the 60-second
+deadline aborts the maneuver. Completion is followed by a confirmed physical
+Safe Stop. An interrupted command reconciles the same journaled operation,
+never silently repeats the motion. VM, Cloud, services and model state remain.
+Presenter maneuver buttons are not implemented by this CLI-only qualification
+addition. Observe backend/model results independently after the maneuver.
 
 ```text
 democtl environment prepare --target all --current test

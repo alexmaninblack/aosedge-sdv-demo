@@ -38,6 +38,40 @@ VSS_DROPIN = Path("/run/systemd/system/kuksa-databroker.service.d/90-democtl-vss
 VSS_PATHS = tuple("Vehicle.CarlaSimulation.ChaosWheel." + row + "." + side + "." + leaf
     for leaf in ("LongitudinalSlip", "LateralSlipAngle")
     for row in ("Row1", "Row2") for side in ("Left", "Right"))
+VSS_ADVISORY_TYPES = tuple(("Vehicle.OEM." + team + ".Advisory." + leaf, kind)
+    for team in ("BrakeHealth", "TireHealth")
+    for leaf, kind in (("Request", "actuator"), ("GatewayStatus", "sensor")))
+VSS_PROOF_PATHS = VSS_PATHS + tuple(name for name, _ in VSS_ADVISORY_TYPES)
+
+
+def advisory_configuration_observation(capability):
+    """Manifest configuration only, never an application acknowledgement."""
+    if not capability.get("advisoryEndpoints"):
+        return "NOT_APPLICABLE"
+    expected = dict(contractId="aosedge-demo-typed-qm-advisory", contractVersion="1.1.0",
+        sha256="343e128bf9a0cac60a4f1b573315716f440accef17933fbcd9f6af49bc88300c")
+    contract = capability.get("contracts", {}).get("typedQmAdvisory")
+    return "CONFIGURED_NOT_APPLICATION_PROOF" if contract == expected else "DEFERRED"
+
+
+def advisory_log_observation(raw):
+    """Fixed endpoint/result projection; do not return unrestricted messages."""
+    result = []
+    for line in raw.splitlines():
+        item = json.loads(line)
+        message = item.get("MESSAGE", "")
+        if not isinstance(message, str):
+            continue
+        match = re.search(r"QM_ADVISORY endpoint=(transport|Vehicle\.OEM\.(?:BrakeHealth|TireHealth)\.Advisory\.(?:Request|GatewayStatus)) result=([A-Z_]{1,64})$", message)
+        if match and match[2] in {
+            "KUKSA_TARGETS_READY", "KUKSA_TARGETS_UNAVAILABLE", "VISS_RESPONSE_TIMEOUT",
+            "VISS_SET_ACCEPTED", "VISS_SET_REJECTED", "FORWARDED_TO_GATEWAY",
+            "GATEWAY_STATUS_PUBLISHED", "UNAUTHORIZED_PATH", "UNAUTHORIZED_SOURCE",
+            "INVALID_SCHEMA", "INVALID_VALUE", "STALE_REQUEST", "IDEMPOTENT_NO_NEW_EFFECT",
+            "REPLAY_DETECTED", "SEQUENCE_ROLLBACK", "RATE_LIMITED", "INTERNAL_ERROR",
+        }:
+            result.append(dict(time=item.get("__REALTIME_TIMESTAMP"), endpoint=match[1], result=match[2]))
+    return result[-40:]
 
 
 def cm_payload_observation(payload):
@@ -227,6 +261,146 @@ def container_runtime_observation(root, cfg, proc=Path("/proc")):
         env = {value.split("=", 1)[0] for value in process.get("env", []) if isinstance(value, str)}
         pid_file = entry / ".pid"
         pid = pid_file.read_text().strip() if pid_file.is_file() and pid_file.stat().st_size < 32 else "0"
+        telemetry = dict(state="PROCESS_UNAVAILABLE")
+        if pid.isdigit() and int(pid) > 0 and (proc / pid).is_dir():
+            token_root = proc / pid / "root/run/aosedge/secrets/kuksa"
+            tokens = []
+            if token_root.is_dir():
+                for session in list(token_root.iterdir())[:16]:
+                    if not session.name.startswith("session-") or session.is_symlink() or not session.is_dir():
+                        continue
+                    token = session / "token.jwt"
+                    if token.exists() or token.is_symlink():
+                        info = token.lstat()
+                        tokens.append(dict(regular=stat.S_ISREG(info.st_mode), uid=info.st_uid,
+                            mode=oct(stat.S_IMODE(info.st_mode)), modifiedEpoch=int(info.st_mtime)))
+            children_file = proc / pid / "task" / pid / "children"
+            children = children_file.read_text().split() if children_file.is_file() else []
+            pids = [pid] + [child for child in children[:8] if child.isdigit()]
+            uid = process.get("user", {}).get("uid")
+            # Namespace-visible children may be owned by another thread.
+            # Match this native UID and our exact executable names only.
+            if type(uid) is int and uid > 0:
+                names = {teams[0] + "-health-bootstrap", teams[0] + "-health-service"}
+                for candidate in list(proc.iterdir())[:4096]:
+                    if not candidate.name.isdigit() or candidate.name in pids:
+                        continue
+                    try:
+                        fields = dict(line.split(":", 1) for line in (candidate / "status").read_text().splitlines() if ":" in line)
+                        if int(fields.get("Uid", "-1").split()[0]) == uid and Path(os.readlink(candidate / "exe")).name in names:
+                            pids.append(candidate.name)
+                    except (OSError, ValueError):
+                        continue
+                    if len(pids) >= 16:
+                        break
+            process_facts = []
+            for child in pids:
+                try:
+                    raw_status = (proc / child / "status").read_text()
+                    fields = dict(line.split(":", 1) for line in raw_status.splitlines() if ":" in line)
+                    process_facts.append({key: fields[key].strip() for key in ("Name", "State", "Threads", "VmRSS") if key in fields})
+                except OSError:
+                    pass
+            transport = dict(state="NOT_PROBED")
+            # Credential-free TLS only, from the same network namespace.
+            # This is not a service-identity or authorized RPC success claim.
+            ca_index = args.index("--ca-file") + 1 if "--ca-file" in args else len(args)
+            ca_path = args[ca_index] if ca_index < len(args) else ""
+            if ca_path.startswith("/run/aosedge/platform/service-inputs/") and ".." not in Path(ca_path).parts:
+                ca = proc / pid / "root" / ca_path.lstrip("/")
+                probe = """import ctypes, json, os, socket, ssl, sys
+result = {"state": "FAILED", "stage": "namespace", "serviceIdentity": False}
+try:
+    fd = os.open('/proc/' + sys.argv[2] + '/ns/net', os.O_RDONLY)
+    try:
+        libc = ctypes.CDLL(None, use_errno=True)
+        if libc.setns(fd, 0x40000000):
+            raise OSError(ctypes.get_errno(), 'namespace unavailable')
+    finally:
+        os.close(fd)
+    result['stage'] = 'trust'
+    context = ssl.create_default_context(cafile=sys.argv[1])
+    result['stage'] = 'tcp'
+    with socket.create_connection(('10.0.0.100', 55555), timeout=2) as raw:
+        result['stage'] = 'tls'
+        with context.wrap_socket(raw, server_hostname='Server'):
+            result.update(state='TLS_VERIFIED', stage='complete')
+except Exception as error:
+    result['errorType'] = type(error).__name__
+    if isinstance(error, ssl.SSLCertVerificationError):
+        result['verifyCode'] = error.verify_code
+    elif isinstance(error, OSError):
+        result['errno'] = error.errno
+print(json.dumps(result))
+"""
+                checked = command(["/usr/bin/python3", "-c", probe, str(ca), pid])
+                if checked.returncode == 0:
+                    transport = json.loads(checked.stdout)
+                else:
+                    transport = dict(state="PROBE_UNAVAILABLE", returnCode=checked.returncode)
+            filters = ["_PID=" + child for child in pids]
+            uid = process.get("user", {}).get("uid")
+            if type(uid) is int and uid > 0:
+                # The native service UID changes on update. Do not mix old
+                # release outcomes into the current instance observation.
+                filters += ["+", "_EXE=/usr/bin/" + teams[0] + "-health-service", "_UID=" + str(uid)]
+            logs = command(["journalctl", "-b", "-n", "200", "-o", "json", "--no-pager", *filters])
+            events = []
+            failures = {key: 0 for key in ("pthread_create failed", "Could not create", "Resource temporarily unavailable",
+                "bad_alloc", "Cannot allocate memory", "std::system_error")}
+            if logs.returncode == 0 and len(logs.stdout) <= 1048576:
+                for line in logs.stdout.splitlines():
+                    try:
+                        record = json.loads(line)
+                        message = record.get("MESSAGE", "")
+                        if isinstance(message, str):
+                            for key in failures:
+                                failures[key] += message.count(key)
+                        event = json.loads(message)
+                    except (ValueError, TypeError):
+                        continue
+                    if not isinstance(event, dict) or event.get("eventType") not in (
+                            "KUKSA_AUTH_CHANGED", "KUKSA_CONNECTION_CHANGED", "KUKSA_SUBSCRIPTION_CHANGED", "BACKEND_SYNC_CHANGED",
+                            "READINESS_CHANGED", "WINDOW_TRIGGERED", "WINDOW_COMPLETED", "SERVICE_STARTED", "SERVICE_STOPPED",
+                            "VDP_CONTRACT_ACCEPTED", "KUKSA_INPUT_REJECTED", "KUKSA_INPUT_TIMING", "ASSESSMENT_CREATED",
+                            "ADVISORY_REQUESTED", "ADVISORY_GATEWAY_STATUS",
+                            "EXERCISE_COMPLETED", "EXERCISE_SKIPPED",
+                            "ASSESSMENT_SKIPPED_INPUT_QUALITY", "CONDITION_BAND_CHANGED", "DERIVED_OUTBOX_FULL"):
+                        continue
+                    fields = {key: value for key, value in event.items() if key in ("eventType", "currentState", "reasonCode")
+                        and isinstance(value, str) and re.fullmatch(r"[A-Z0-9_]{1,64}", value)}
+                    timestamp = record.get("__REALTIME_TIMESTAMP", "")
+                    if isinstance(timestamp, str) and re.fullmatch(r"[0-9]{1,20}", timestamp):
+                        fields["observedEpochMicros"] = timestamp
+                    events.append(fields)
+            cgroup = {}
+            try:
+                for line in (proc / pid / "cgroup").read_text().splitlines():
+                    hierarchy, controllers, relative = line.split(":", 2)
+                    if not re.fullmatch(r"/[A-Za-z0-9_./:-]{1,512}", relative) or ".." in Path(relative).parts:
+                        continue
+                    names = ("pids.current", "pids.max", "pids.events", "memory.current", "memory.events") if hierarchy == "0" else (
+                        ("pids.current", "pids.max", "pids.events") if controllers == "pids" else ())
+                    cgroot = Path("/sys/fs/cgroup") / ("" if hierarchy == "0" else "pids") / relative.lstrip("/")
+                    for name in names:
+                        try:
+                            text = (cgroot / name).read_text().strip()
+                        except OSError:
+                            continue
+                        if len(text) <= 1024 and re.fullmatch(r"[a-z0-9_ \n]+", text):
+                            cgroup[name] = text
+            except (OSError, ValueError):
+                pass
+            telemetry = dict(state="OBSERVED", tokens=tokens, processes=process_facts, transport=transport, events=events[-20:],
+                runtimeFailureCounts=failures, cgroup=cgroup,
+                modelEvents=[event for event in events if event.get("eventType") in (
+                    "ASSESSMENT_CREATED", "ASSESSMENT_SKIPPED_INPUT_QUALITY", "CONDITION_BAND_CHANGED", "DERIVED_OUTBOX_FULL",
+                    "EXERCISE_COMPLETED", "EXERCISE_SKIPPED")][-8:],
+                inputTiming=[event for event in events if event.get("eventType")=="KUKSA_INPUT_TIMING"][-8:],
+                inputRejections=[event for event in events if event.get("eventType")=="KUKSA_INPUT_REJECTED"][-8:],
+                captureEvents=[event for event in events if event.get("eventType") in ("WINDOW_TRIGGERED", "WINDOW_COMPLETED")][-8:],
+                advisoryEvents=[event for event in events if event.get("eventType") in ("ADVISORY_REQUESTED", "ADVISORY_GATEWAY_STATUS")][-8:],
+                journalState="CURRENT" if logs.returncode == 0 else "UNAVAILABLE")
         rows.append(dict(team=teams[0], containerId=entry.name,
             argumentCount=len(args), executable=args[0],
             nativeEnvPresent={key: key in env for key in (
@@ -235,12 +409,28 @@ def container_runtime_observation(root, cfg, proc=Path("/proc")):
                 for row in process.get("rlimits", [])],
             user={key: process.get("user", {}).get(key) for key in ("uid", "gid", "additionalGids")},
             linuxResources=config.get("linux", {}).get("resources"),
-            processAlive=pid.isdigit() and int(pid) > 0 and (proc / pid).is_dir()))
+            processAlive=pid.isdigit() and int(pid) > 0 and (proc / pid).is_dir(), telemetry=telemetry))
     return dict(state="CURRENT", runtimeDir=directory, containers=rows)
 
 
-def vss_supplement(schema):
-    """Only append the eight accepted v3 sensor leaves; preserve the base tree."""
+def advisory_schema_observation(lookup):
+    """Read four fixed contract leaves, without adding schema or authority."""
+    rows = []
+    for team in ("BrakeHealth", "TireHealth"):
+        for leaf, expected_type in (("Request", "actuator"), ("GatewayStatus", "sensor")):
+            name = "Vehicle.OEM." + team + ".Advisory." + leaf
+            value = lookup(name)
+            present = isinstance(value, dict)
+            rows.append(dict(path=name, present=present,
+                type=value.get("type") if present else None,
+                datatype=value.get("datatype") if present else None,
+                matchesContract=present and value.get("type") == expected_type and value.get("datatype") == "string"))
+    return dict(leaves=rows, matchesContract=all(row["matchesContract"] for row in rows),
+        permissionProbe="NOT_PERFORMED", transportProbe="NOT_PERFORMED")
+
+
+def vss_supplement(schema, *, advisory=True):
+    """Append fixed V3 telemetry and D4-008 leaves; never grant permissions."""
     result = json.loads(json.dumps(schema))
     for name in VSS_PATHS:
         current = result
@@ -259,6 +449,19 @@ def vss_supplement(schema):
         if leaf in current and (current[leaf].get("type") != "sensor" or current[leaf].get("datatype") != "float"):
             raise ValueError("COMPONENT_VSS_LEAF_CONFLICT")
         current.setdefault(leaf, expected)
+    for name, kind in VSS_ADVISORY_TYPES if advisory else ():
+        current = result
+        parts = name.split(".")
+        for part in parts[:-1]:
+            branch = current.setdefault(part, dict(type="branch", description=part, children={}))
+            if not isinstance(branch, dict) or branch.get("type") != "branch" or not isinstance(branch.get("children"), dict):
+                raise ValueError("COMPONENT_VSS_BRANCH_CONFLICT")
+            current = branch["children"]
+        expected = dict(type=kind, datatype="string", description="Typed D4-008 QM advisory " + parts[-1] + ".")
+        old = current.get(parts[-1])
+        if old is not None and (not isinstance(old, dict) or old.get("type") != kind or old.get("datatype") != "string"):
+            raise ValueError("COMPONENT_VSS_LEAF_CONFLICT")
+        current.setdefault(parts[-1], expected)
     return result
 
 
@@ -286,7 +489,7 @@ def vss_restart(expected_sha):
 
 
 def vss_change(request):
-    if request.get("target") != "test" or tuple(request.get("additionalPaths", [])) != VSS_PATHS:
+    if request.get("target") != "test" or tuple(request.get("additionalPaths", [])) != VSS_PROOF_PATHS:
         raise ValueError("COMPONENT_VSS_TEST_CONTRACT_ONLY")
     identity = request["vehicle"]["localVmId"]
     if not re.fullmatch(r"[a-f0-9-]{36}", identity):
@@ -306,9 +509,11 @@ def vss_change(request):
         raise ValueError("COMPONENT_VSS_OVERRIDE_OWNER_CONFLICT")
     if present and not VSS_TEMP.exists() and request["action"] != "component-schema-remove":
         raise ValueError("COMPONENT_VSS_RECONCILIATION_REQUIRED")
-    if VSS_TEMP.exists() and VSS_TEMP.read_bytes() != expected:
-        raise ValueError("COMPONENT_VSS_CONTENT_CONFLICT")
     remove = request["action"] == "component-schema-remove"
+    if VSS_TEMP.exists() and VSS_TEMP.read_bytes() != expected:
+        legacy = (json.dumps(vss_supplement(json.loads(base), advisory=False), sort_keys=True) + "\n").encode()
+        if not (remove and present and VSS_TEMP.read_bytes() == legacy):
+            raise ValueError("COMPONENT_VSS_CONTENT_CONFLICT")
     result = dict(baseSha256=base_sha, temporarySchema=str(VSS_TEMP), dropIn=str(VSS_DROPIN),
                   temporary=True, rebootRestoresBase=True, productionChanged=False)
     if remove:
@@ -320,7 +525,7 @@ def vss_change(request):
         VSS_TEMP.unlink(missing_ok=True)
         return dict(result, state="REMOVED", servicePid=pid)
     if present:
-        observed = execute(dict(request, action="component-diagnose", readPaths=list(VSS_PATHS)))
+        observed = execute(dict(request, action="component-diagnose", readPaths=list(VSS_PROOF_PATHS)))
         if observed["schemaLoadedByService"] and observed["schemaSha256"] == expected_sha:
             return dict(result, state="APPLIED", schemaSha256=expected_sha, noOp=True)
         # Do not blindly restart an uncertain prior attempt.
@@ -342,11 +547,430 @@ def vss_change(request):
             raise ValueError("COMPONENT_VSS_ROLLBACK_UNCONFIRMED") from None
         VSS_TEMP.unlink(missing_ok=True)
         raise ValueError("COMPONENT_VSS_APPLY_FAILED_BASE_RESTORED") from None
-    return dict(result, state="APPLIED", schemaSha256=expected_sha, servicePid=pid, addedPaths=list(VSS_PATHS))
+    return dict(result, state="APPLIED", schemaSha256=expected_sha, servicePid=pid, addedPaths=list(VSS_PROOF_PATHS))
 
 
 def command(args, **kwargs):
     return subprocess.run(args, capture_output=True, text=True, timeout=8, **kwargs)
+
+
+def kuksa_authorization_observation():
+    """Fixed read-only startup evidence; never credential or journal payloads."""
+    import shutil
+    units = ("aos-kuksa-substrate.target", "aos-kuksa-tls-prepare.service",
+             "aos-kuksa-verifier-prepare.service", "aos-kuksa-provider-prepare.service",
+             "aos-kuksa-auth-compat.service", "kuksa-databroker.service",
+             "systemd-timesyncd.service", "systemd-time-wait-sync.service")
+    properties = ("Id", "LoadState", "ActiveState", "SubState", "Result", "MainPID",
+                  "NRestarts", "ExecMainCode", "ExecMainStatus", "ConditionResult", "ConditionTimestampMonotonic",
+                  "ActiveEnterTimestampMonotonic", "InactiveEnterTimestampMonotonic")
+    response = command(["systemctl", "show", *units, "--property=" + ",".join(properties)])
+    services = {}
+    if len(response.stdout) <= 65536:
+        for block in response.stdout.split("\n\n"):
+            row = dict(line.split("=", 1) for line in block.splitlines() if "=" in line)
+            if row.get("Id") in units:
+                services[row["Id"]] = {key: value for key, value in row.items()
+                    if key in properties and re.fullmatch(r"[A-Za-z0-9_.@:-]{0,128}", value)}
+    inputs = {}
+    for name, path in (("provisioned", "/var/aos/.provisionstate"),
+                       ("timeSynchronized", "/run/systemd/timesync/synchronized"),
+                       ("signingPin", "/var/aos/iam/.kuksa-jwt-pin"),
+                       ("verifier", "/run/aos-kuksa-verifier/kuksa-jwt-public.pem"),
+                       ("requestDirectory", "/run/aos-kuksa-auth-compat"),
+                       ("requestSocket", "/run/aos-kuksa-auth-compat/request.sock")):
+        try:
+            info = Path(path).lstat()
+            inputs[name] = dict(present=True, uid=info.st_uid, gid=info.st_gid,
+                mode=oct(stat.S_IMODE(info.st_mode)), symlink=stat.S_ISLNK(info.st_mode), modifiedEpoch=int(info.st_mtime))
+        except FileNotFoundError:
+            inputs[name] = dict(present=False)
+    args = ["journalctl", "-b", "-n", "400", "-o", "json", "--no-pager"]
+    for unit in units:
+        args += ["-u", unit]
+    journal = command(args)
+    events, records = [], 0
+    if journal.returncode == 0 and len(journal.stdout) <= 2097152:
+        for line in journal.stdout.splitlines():
+            try:
+                record = json.loads(line)
+            except ValueError:
+                continue
+            records += 1
+            message = record.get("MESSAGE")
+            unit = record.get("UNIT") or record.get("_SYSTEMD_UNIT")
+            if unit not in units or not isinstance(message, str):
+                continue
+            match = re.fullmatch(r"(?:aos-kuksa-auth-compat: startup|aos-kuksa-verifier-prepare:|verifier-prepare:) ?stage=([a-z0-9-]{1,48})(?: failed errno=([0-9]{1,5})| rv=(0x[0-9a-f]{1,16}))?", message)
+            skipped = "condition" in message.lower() and "skipped" in message.lower()
+            if match or skipped:
+                stamp = record.get("__REALTIME_TIMESTAMP", "")
+                events.append(dict(unit=unit, time=stamp if re.fullmatch(r"[0-9]{1,20}", stamp) else None,
+                    stage=match[1] if match else "condition-skipped",
+                    errno=int(match[2]) if match and match[2] else None, rv=match[3] if match else None))
+    status = dict(state="SOCKET_ABSENT")
+    time_access = {}
+    kac_pid = services.get("aos-kuksa-auth-compat.service", {}).get("MainPID", "0")
+    if kac_pid.isdigit() and int(kac_pid) > 0:
+        process_root = Path("/proc") / kac_pid
+        time_access["process"] = dict(fdCount=len(list((process_root / "fd").iterdir())),
+            context=(process_root / "attr/current").read_text().strip().strip("\0"))
+        time_access["tools"] = {name: bool(shutil.which(name)) for name in ("sesearch", "checkmodule", "semodule_package", "semodule", "checkpolicy", "strace")}
+        policy_type = next((line.split("=", 1)[1].strip() for line in Path("/etc/selinux/config").read_text().splitlines()
+            if line.startswith("SELINUXTYPE=")), "")
+        if re.fullmatch(r"[a-z]{1,32}", policy_type):
+            time_access["policyType"] = policy_type
+            time_access["policyPaths"] = {path: dict(present=Path(path).exists(), symlink=Path(path).is_symlink())
+                for path in ("/var/lib/selinux/" + policy_type, "/etc/selinux/" + policy_type)}
+        if shutil.which("sesearch"):
+            policy = command(["sesearch", "-A", "-s", "aos_kuksa_auth_compat_t", "-t", "ntpd_pid_t"])
+            time_access["policy"] = dict(returnCode=policy.returncode,
+                rules=[line.strip() for line in policy.stdout.splitlines() if re.fullmatch(r"allow [a-z0-9_ :{};]+", line.strip())][:20])
+        proof_root = Path("/run/democtl-kac-time-read-proof")
+        if proof_root.is_dir() and not proof_root.is_symlink():
+            listed = command(["semodule", "-p", str(proof_root), "-S", "/var/lib/selinux", "-s", "aos", "-l"])
+            time_access["proofStore"] = dict(returnCode=listed.returncode, diagnostic=listed.stderr[:2048],
+                originalPolicyMatches=hashlib.sha256((proof_root / "original.policy").read_bytes()).hexdigest() ==
+                    hashlib.sha256(Path("/sys/fs/selinux/policy").read_bytes()).hexdigest(),
+                canonicalPolicyMatchesOriginal=hashlib.sha256(Path("/etc/selinux/aos/policy/policy.33").read_bytes()).hexdigest() ==
+                    hashlib.sha256((proof_root / "original.policy").read_bytes()).hexdigest(),
+                candidateSha256=hashlib.sha256((proof_root / "etc/selinux/aos/policy/policy.33").read_bytes()).hexdigest(),
+                files=[str(path.relative_to(proof_root)) for path in proof_root.glob("etc/selinux/aos/policy/*")])
+        for name, suffix in (("runSystemd", "run/systemd"), ("timesync", "run/systemd/timesync"),
+                             ("synchronized", "run/systemd/timesync/synchronized")):
+            path = Path("/proc") / kac_pid / "root" / suffix
+            try:
+                info = path.stat()
+                time_access[name] = dict(present=True, uid=info.st_uid, gid=info.st_gid, mode=oct(stat.S_IMODE(info.st_mode)))
+                try:
+                    time_access[name]["context"] = os.getxattr(path, "security.selinux").decode().strip("\0")
+                except OSError:
+                    pass
+            except OSError as error:
+                time_access[name] = dict(present=False, errno=error.errno)
+    if inputs["requestSocket"].get("present"):
+        try:
+            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as client:
+                client.settimeout(3)
+                client.connect("/run/aos-kuksa-auth-compat/request.sock")
+                client.sendall(b'{"protocol":"aos-kuksa-auth-compat/v1","operation":"status"}\n')
+                raw = b""
+                while len(raw) <= 32768 and not raw.endswith(b"\n"):
+                    part = client.recv(4096)
+                    if not part:
+                        break
+                    raw += part
+                payload = json.loads(raw) if len(raw) <= 32768 else {}
+                status = {key: value for key, value in payload.items() if key in ("status", "code", "retryable")
+                    and (type(value) is bool or isinstance(value, str) and re.fullmatch(r"[A-Za-z_]{1,64}", value))}
+        except (OSError, ValueError, TypeError):
+            status = dict(state="UNAVAILABLE")
+    return dict(mutation=False, state="CURRENT" if response.returncode == 0 and len(services) == len(units) else "INCOMPLETE",
+        protocolStatus=status,
+        timeAccess=time_access, clockSample=dict(realtime=time.time(),
+            boottime=time.clock_gettime(time.CLOCK_BOOTTIME) if hasattr(time, "CLOCK_BOOTTIME") else None),
+        services=services, inputs=inputs, startupEvents=events[-30:], journalRecords=records,
+        journalState="CURRENT" if journal.returncode == 0 and len(journal.stdout) <= 2097152 else "UNAVAILABLE")
+
+
+def activate_kac(request):
+    """One unchanged KAC start on the bound Test; no repair of prerequisites."""
+    vehicle = request.get("vehicle", {})
+    if (request.get("role") != "test" or not vehicle.get("unitId") or os.geteuid() != 0
+            or Path("/etc/machine-id").read_text().strip() != vehicle.get("systemUid")):
+        raise ValueError("KAC_CURRENT_TEST_IDENTITY_REQUIRED")
+    before = kuksa_authorization_observation()
+    unit = "aos-kuksa-auth-compat.service"
+    props = before.get("services", {}).get(unit, {})
+    if props.get("ActiveState") == "active":
+        return dict(state="ACTIVE", noOp=True, observation=before)
+    if (before.get("state") != "CURRENT" or props.get("ActiveState") != "inactive"
+            or props.get("MainPID") != "0" or props.get("NRestarts") != "0"):
+        raise ValueError("KAC_START_REQUIRES_INACTIVE_NEVER_RETRIED_UNIT")
+    for name in ("provisioned", "signingPin", "verifier", "requestDirectory"):
+        if not before["inputs"][name].get("present") or before["inputs"][name].get("symlink"):
+            raise ValueError("KAC_START_PREREQUISITE_MISSING")
+    if (before["services"]["aos-kuksa-verifier-prepare.service"].get("ActiveState") != "active"
+            or command(["systemctl", "is-active", "--quiet", "aos-iam.service"]).returncode):
+        raise ValueError("KAC_START_DEPENDENCY_NOT_ACTIVE")
+    started = command(["systemctl", "start", unit])
+    after = kuksa_authorization_observation()
+    active = started.returncode == 0 and after["services"].get(unit, {}).get("ActiveState") == "active"
+    return dict(state="ACTIVE" if active else "INCOMPLETE", noOp=False,
+        startReturnCode=started.returncode, observation=after)
+
+
+KAC_TIME_READ_CIL = """(allow aos_kuksa_auth_compat_t ntpd_pid_t (dir (getattr search)))
+(allow aos_kuksa_auth_compat_t ntpd_pid_t (file (getattr open read)))
+"""
+
+
+def kac_time_policy_delta(text):
+    """Accept only the two reviewed additive rules, no other semantic diff."""
+    rules = set()
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or re.fullmatch(r"allow(?: rules)?: 2 added, 0 removed, 0 modified", line, re.I):
+            continue
+        match = re.fullmatch(r"\+ allow aos_kuksa_auth_compat_t ntpd_pid_t:(dir|file) \{ ([a-z ]+) \};", line)
+        if not match:
+            return False
+        rules.add((match[1], frozenset(match[2].split())))
+    return rules == {("dir", frozenset(("getattr", "search"))), ("file", frozenset(("getattr", "open", "read")))}
+
+
+def kac_policy_structure(path):
+    """Compare native statements without expanding attribute-rule products.
+
+    Include attribute membership, permissive flags and condition branches;
+    identical names or counts alone are not a policy equivalence proof.
+    """
+    from collections import Counter
+    from setools import SELinuxPolicy
+    policy = SELinuxPolicy(str(path))
+    result = {}
+    for name in ("bools", "bounds", "categories", "classes", "commons", "conditionals",
+                 "constraints", "defaults", "devicetreecons", "fs_uses", "genfscons",
+                 "ibendportcons", "ibpkeycons", "initialsids", "iomemcons", "ioportcons",
+                 "levels", "mlsrules", "netifcons", "nodecons", "pcidevicecons", "pirqcons",
+                 "polcaps", "portcons", "rbacrules", "roles", "sensitivities", "terules",
+                 "typeattributes", "types", "users"):
+        rows = Counter()
+        for item in getattr(policy, name)():
+            try:
+                # A conditional is an expression, not a policy declaration.
+                text = str(item) if name == "conditionals" else item.statement()
+            except Exception as error:
+                raise ValueError(name + ":" + type(error).__name__) from None
+            if name == "typeattributes":
+                text += " members=" + ",".join(sorted(str(value) for value in item.expand()))
+            elif name == "types":
+                text += " permissive=" + str(item.ispermissive)
+            rows[text] += 1
+        result[name] = rows
+    result["properties"] = {name: str(getattr(policy, name)) for name in
+        ("version", "mls", "handle_unknown", "target_platform")}
+    return result
+
+
+def kac_policy_structure_delta(before, after):
+    changed = [name for name in sorted(set(before) | set(after)) if before.get(name) != after.get(name)]
+    if changed != ["terules"]:
+        return dict(exact=False, changedCategories=changed)
+    added, removed = after["terules"] - before["terules"], before["terules"] - after["terules"]
+    exact = not removed and sum(added.values()) == 2 and kac_time_policy_delta(
+        "\n".join("+ " + rule for rule in added))
+    return dict(exact=exact, changedCategories=changed, addedCount=sum(added.values()),
+        removedCount=sum(removed.values()), addedRules=list(added)[:4], removedRules=list(removed)[:4])
+
+
+def arm_kac_policy_rollback(original, load_path, timeout=75, *, leased_policy=False, active_path="/sys/fs/selinux/policy"):
+    """Child inherits the proven loader context; EOF/timeout restores stock.
+
+    No systemd exec/domain transition, shell helper, persistent unit or secret.
+    The parent disarms only after restoring and checking the original hash.
+    """
+    import select
+    import signal
+    read_fd, write_fd = os.pipe()
+    pid = os.fork()
+    if pid:
+        os.close(read_fd)
+        return pid, write_fd
+    os.close(write_fd)
+    try:
+        os.setsid()
+        signal.signal(signal.SIGHUP, signal.SIG_IGN)
+        null = os.open(os.devnull, os.O_RDWR)
+        for fd in (0, 1, 2):
+            os.dup2(null, fd)
+        os.close(null)
+        deadline = time.monotonic() + timeout
+        available, _, _ = select.select([read_fd], [], [], timeout)
+        response = os.read(read_fd, 1) if available else b""
+        if response == b"L" and leased_policy:
+            expected_sha = os.read(read_fd, 64).decode("ascii")
+            if not re.fullmatch(r"[0-9a-f]{64}", expected_sha):
+                Path(load_path).write_bytes(original)
+                os._exit(1)
+            time.sleep(max(0, deadline - time.monotonic()))
+            # Do not overwrite a later independently installed policy.
+            if hashlib.sha256(Path(active_path).read_bytes()).hexdigest() != expected_sha:
+                os._exit(0)
+        if response != b"R":
+            Path(load_path).write_bytes(original)
+    except BaseException:
+        os._exit(1)
+    os._exit(0)
+
+
+def kac_recovery(request):
+    """Reuse the exact proven policy for this disposable Test, with a lease.
+
+    Separate from the completed short proofs: no canonical policy store,
+    rootfs, manager executable, token lifetime or access scope is changed.
+    """
+    if (request.get("role") != "test" or os.geteuid() != 0
+            or request.get("vehicle", {}).get("unitId") != "42c0bf43-4eb7-44e6-8c74-f60f9959da66"
+            or Path("/etc/machine-id").read_text().strip() != request["vehicle"].get("systemUid")
+            or Path("/sys/fs/selinux/enforce").read_text().strip() != "1"):
+        raise ValueError("KAC_RECOVERY_CURRENT_ENFORCING_TEST_REQUIRED")
+    root = Path("/run/democtl-kac-time-read-proof")
+    candidate_path = root / "etc/selinux/aos/policy/policy.33"
+    original_path = root / "original.policy"
+    for path in (candidate_path, original_path):
+        if any(parent.is_symlink() for parent in (path,) + tuple(path.parents)):
+            raise ValueError("KAC_RECOVERY_POLICY_SYMLINK")
+        if path.stat().st_uid != 0:
+            raise ValueError("KAC_RECOVERY_POLICY_OWNER")
+    candidate, original = candidate_path.read_bytes(), original_path.read_bytes()
+    if (hashlib.sha256(candidate).hexdigest() != "bafa843730051d517a53c2d67b4a39a87ecebeba10b77fed7eff63b28a3143c7"
+            or hashlib.sha256(original).hexdigest() != "057a7caaa4c7387715af978df163bbc9551bb63033518b0e1265df17c7d61af9"):
+        raise ValueError("KAC_RECOVERY_PROVEN_POLICY_MISMATCH")
+    receipt = root / "recovery.json"
+    if receipt.is_symlink():
+        raise ValueError("KAC_RECOVERY_RECEIPT_SYMLINK")
+    active = Path("/sys/fs/selinux/policy").read_bytes()
+    if receipt.exists() and hashlib.sha256(active).hexdigest() == json.loads(receipt.read_text()).get("activePolicySha256"):
+        record = json.loads(receipt.read_text())
+        if record["deadlineEpoch"] <= time.time():
+            raise ValueError("KAC_RECOVERY_LEASE_EXPIRED")
+        os.kill(record["rollbackPid"], 0)
+        return dict(record, noOp=True, authorization=kuksa_authorization_observation())
+    if active != original:
+        raise ValueError("KAC_RECOVERY_ACTIVE_POLICY_CHANGED")
+    dropin = Path("/run/systemd/system/aos-vehicle-data-provider.service.d/21-democtl-kac-recovery.conf")
+    content = "# democtl current-Test KAC recovery\n[Unit]\nWants=aos-kuksa-auth-compat.service\nAfter=aos-kuksa-auth-compat.service\n"
+    if any(path.is_symlink() for path in (dropin,) + tuple(dropin.parents)) or (dropin.exists() and dropin.read_text() != content):
+        raise ValueError("KAC_RECOVERY_DROPIN_CONFLICT")
+    changed = write_public(dropin, content)
+    if changed:
+        command(["systemctl", "daemon-reload"], check=True)
+    load_path = Path("/sys/fs/selinux/load")
+    load_path.write_bytes(original)
+    pid, fd = arm_kac_policy_rollback(original, load_path, timeout=21600, leased_policy=True)
+    try:
+        load_path.write_bytes(candidate)
+        # The kernel serializes a loaded policy differently from the compiled
+        # store file. Compare policy semantics, then retain its active digest.
+        diff = kac_policy_structure_delta(kac_policy_structure(original_path),
+            kac_policy_structure(Path("/sys/fs/selinux/policy")))
+        if not diff["exact"]:
+            raise ValueError("KAC_RECOVERY_POLICY_NOT_ACTIVE")
+        active_sha = hashlib.sha256(Path("/sys/fs/selinux/policy").read_bytes()).hexdigest()
+        activation = activate_kac(request)
+        if activation.get("state") != "ACTIVE":
+            raise ValueError("KAC_RECOVERY_ACTIVATION_FAILED")
+        record = dict(state="ACTIVE", deadlineEpoch=int(time.time()) + 21600,
+            rollbackPid=pid, activePolicySha256=active_sha, policyDiff=diff, canonicalPolicyStoreChanged=False,
+            rebootQualified=False, transientDropin=str(dropin), proofRoot=str(root))
+        write_public(receipt, record, mode=0o600)
+        os.write(fd, b"L" + active_sha.encode("ascii"))
+    except BaseException:
+        load_path.write_bytes(original)
+        os.write(fd, b"R")
+        if changed:
+            dropin.unlink()
+            command(["systemctl", "daemon-reload"], check=True)
+        raise
+    finally:
+        os.close(fd)
+    return dict(record, noOp=False, authorization=kuksa_authorization_observation())
+
+
+def kac_time_read_proof(request):
+    """Explicitly authorized current-Test policy proof, never a durable install."""
+    import shutil
+    if (request.get("role") != "test" or os.geteuid() != 0
+            or request.get("vehicle", {}).get("unitId") != "42c0bf43-4eb7-44e6-8c74-f60f9959da66"
+            or Path("/etc/machine-id").read_text().strip() != request["vehicle"].get("systemUid")):
+        raise ValueError("KAC_TIME_PROOF_CURRENT_TEST_REQUIRED")
+    root = Path("/run/democtl-kac-time-read-proof")
+    if root.is_symlink() or Path("/sys/fs/selinux/enforce").read_text().strip() != "1":
+        raise ValueError("KAC_TIME_PROOF_REQUIRES_FRESH_ENFORCING_STATE")
+    before = kuksa_authorization_observation()
+    if (before["timeAccess"].get("policyType") != "aos" or before["protocolStatus"].get("code") != "TIME_UNTRUSTED"
+            or before["timeAccess"].get("policy") != dict(returnCode=0, rules=[])):
+        raise ValueError("KAC_TIME_PROOF_BASELINE_CHANGED")
+    original = Path("/sys/fs/selinux/policy").read_bytes()
+    original_sha = hashlib.sha256(original).hexdigest()
+    original_file = root / "original.policy"
+    cil = root / "democtl_kac_time_read.cil"
+    if root.exists():
+        if (root.stat().st_uid != 0 or stat.S_IMODE(root.stat().st_mode) != 0o700
+                or original_file.is_symlink() or cil.is_symlink() or cil.read_text() != KAC_TIME_READ_CIL
+                or hashlib.sha256(original_file.read_bytes()).hexdigest() != original_sha):
+            raise ValueError("KAC_TIME_PROOF_STORED_BASELINE_MISMATCH")
+    else:
+        root.mkdir(mode=0o700)
+        original_file.write_bytes(original)
+        original_file.chmod(0o600)
+        # Dereference into private copies; no link can redirect store writes.
+        shutil.copytree("/etc/selinux/aos", root / "etc/selinux/aos")
+        shutil.copytree("/var/lib/selinux/aos", root / "var/lib/selinux/aos")
+        cil.write_text(KAC_TIME_READ_CIL)
+    # libsemanage prefixes store-path with the alternate root itself.
+    # Only the copied store's newly-created parents need the corresponding
+    # native file labels. Do not change canonical labels or grant new access.
+    for source in ("/var/lib/selinux", "/etc/selinux"):
+        command(["chcon", "--reference=" + source, str(root / source.lstrip("/"))], check=True)
+    command(["chcon", "--reference=/var/lib/selinux/aos", str(cil)], check=True)
+    candidates = list((root / "etc/selinux/aos/policy").glob("policy.*"))
+    # Reuse the exact candidate produced by the previous successful compile.
+    candidate_sha = "bafa843730051d517a53c2d67b4a39a87ecebeba10b77fed7eff63b28a3143c7"
+    reused = len(candidates) == 1 and hashlib.sha256(candidates[0].read_bytes()).hexdigest() == candidate_sha
+    if reused:
+        built = subprocess.CompletedProcess([], 0, "", "")
+    else:
+        built = subprocess.run(["semodule", "-n", "-p", str(root), "-S", "/var/lib/selinux",
+            "-s", "aos", "-i", str(cil)], capture_output=True, text=True, timeout=45)
+        candidates = list((root / "etc/selinux/aos/policy").glob("policy.*"))
+    unchanged = hashlib.sha256(Path("/sys/fs/selinux/policy").read_bytes()).hexdigest() == original_sha
+    if built.returncode or len(candidates) != 1 or not unchanged:
+        return dict(state="BUILD_FAILED", returnCode=built.returncode, activePolicyUnchanged=unchanged,
+            diagnostic=built.stderr[:2048])
+    try:
+        diff = kac_policy_structure_delta(kac_policy_structure(original_file), kac_policy_structure(candidates[0]))
+    except Exception as error:
+        stage = str(error) if re.fullmatch(r"[a-z]+:[A-Za-z]+", str(error)) else None
+        return dict(state="DIFF_TOOL_FAILED", errorType=type(error).__name__, stage=stage, activePolicyUnchanged=True)
+    if not diff["exact"]:
+        return dict(state="DIFF_REVIEW_REQUIRED", policyDiff=diff, activePolicyUnchanged=True)
+    # This unchanged reload proves the current execution context can restore.
+    load_path = Path("/sys/fs/selinux/load")
+    load_path.write_bytes(original)
+    if hashlib.sha256(Path("/sys/fs/selinux/policy").read_bytes()).hexdigest() != original_sha:
+        raise ValueError("KAC_TIME_PROOF_STOCK_RELOAD_MISMATCH")
+    data_proof = request["action"] == "service-kac-data-proof"
+    guard_pid, guard_fd = arm_kac_policy_rollback(original, load_path, timeout=240 if data_proof else 75)
+    snapshots = []
+    restored = False
+    try:
+        load_path.write_bytes(candidates[0].read_bytes())
+        for delay in ((0, 12) + (15,) * 10 if data_proof else (0, 12, 25)):
+            if delay:
+                time.sleep(delay)
+            value = kuksa_authorization_observation()
+            snapshots.append(dict(protocolStatus=value["protocolStatus"],
+                service=value["services"]["aos-kuksa-auth-compat.service"]))
+            if value["protocolStatus"].get("code") not in (None, "TIME_UNTRUSTED"):
+                break
+        sm = command(["systemctl", "show", "aos-sm", "--property=MainPID", "--value"]).stdout.strip()
+        process_root = Path("/proc") / sm / "root"
+        containers = container_runtime_observation(process_root, json.loads((process_root / "etc/aos/sm.cfg").read_text()))
+    finally:
+        load_path.write_bytes(original)
+        restored = hashlib.sha256(Path("/sys/fs/selinux/policy").read_bytes()).hexdigest() == original_sha
+        if restored:
+            os.write(guard_fd, b"R")
+        os.close(guard_fd)
+        _, guard_status = os.waitpid(guard_pid, 0)
+        if guard_status:
+            raise ValueError("KAC_TIME_PROOF_ROLLBACK_GUARD_FAILED")
+    return dict(state="PROVED" if restored and snapshots[-1]["protocolStatus"].get("status") == "ready" else "INCOMPLETE",
+        snapshots=snapshots, nativeContainers=containers, originalPolicyRestored=restored,
+        originalPolicySha256=original_sha, proofRoot=str(root), canonicalPolicyStoreChanged=False,
+        policyDiff=diff, candidateReused=reused)
 
 
 def external_rules(interface="eth0"):
@@ -1279,7 +1903,189 @@ def cm_startup_comparison(request):
     return dict(mutation=False, windows=windows, ordering=properties.stdout.splitlines())
 
 
+def core_permission_status(request):
+    if (request.get("target") != "test" or request.get("role") != "test"
+            or request.get("vehicle", {}).get("localVmId") != "6fcf5a74-0b74-4ef0-a05d-44bad598ab94"
+            or request["vehicle"].get("unitId") != "42c0bf43-4eb7-44e6-8c74-f60f9959da66"):
+        raise ValueError("CORE_PERMISSION_AUTHORIZED_TEST_REQUIRED")
+    managers = {}
+    for name in ("iam", "sm", "cm"):
+        result = command(["systemctl", "show", "aos-" + name,
+            "--property=MainPID,ActiveState,Result,NRestarts,MemoryCurrent,ActiveEnterTimestamp"])
+        props = dict(line.split("=", 1) for line in result.stdout.splitlines() if "=" in line)
+        pid = props.get("MainPID", "0")
+        binary = Path("/proc") / pid / "exe"
+        managers[name] = dict(service=props, binarySha256=hashlib.sha256(binary.read_bytes()).hexdigest() if binary.exists() else None)
+        journal = command(["journalctl", "-b", "-u", "aos-" + name, "_PID=" + pid, "-n", "1000", "--no-pager", "-o", "cat"])
+        managers[name]["diagnostics"] = {text: journal.stdout.count(text) for text in (
+            "permission key parsing error", "permission value parsing error", "Register instance failed",
+            "Failed to push back permissions", "Can't schedule instance", "Register instance", "Unregister instance",
+            "Failed to get permissions", "not enough memory", "no memory")}
+    matched = True
+    for name in managers:
+        path = Path("/run/democtl-core-permissions-256/aos_" + name + "_app")
+        dropin = Path("/run/systemd/system/aos-" + name + ".service.d/96-democtl-permission-capacity.conf")
+        alternate = Path("/run/democtl-iam-response-32/aos_iam_app")
+        if (name == "iam" and dropin.is_file() and not dropin.is_symlink()
+                and dropin.read_text() == "[Service]\nBindReadOnlyPaths=" + str(alternate) + ":/usr/bin/aos_iam_app\n"):
+            path = alternate
+        expected = "[Service]\nBindReadOnlyPaths=" + str(path) + ":/usr/bin/aos_" + name + "_app\n"
+        matched = matched and (not path.is_symlink() and path.is_file() and not dropin.is_symlink()
+            and dropin.is_file() and dropin.read_text() == expected
+            and hashlib.sha256(path.read_bytes()).hexdigest() == managers[name]["binarySha256"])
+    return dict(managers=managers, mutation=False, transientFilesMatchProcesses=matched,
+        committedVdp66Sha256=core_permission_vdp_snapshot(),
+        selinuxEnforcing=Path("/sys/fs/selinux/enforce").read_text().strip() == "1")
+
+
+def core_permission_vdp_snapshot(root=FACTORY_INPUTS.parent):
+    """Preserve this trial's committed VDP66, not historical VDP17/18 proofs."""
+    if any((root / "state" / name).exists() or (root / "state" / name).is_symlink()
+            for name in ("transaction.json", "stopped.json")):
+        raise ValueError("CORE_PERMISSION_VDP_TRANSACTION_PRESENT")
+    installed = root / "state/installed.json"
+    if installed.is_symlink() or not installed.is_file() or installed.stat().st_size > 131072:
+        raise ValueError("CORE_PERMISSION_VDP_RECORD_INVALID")
+    raw = installed.read_bytes()
+    value = json.loads(raw)
+    slot = value.get("slot")
+    if (not isinstance(value.get("Version"), str) or not re.fullmatch(r"[1-9][0-9]*\.0\.0", value["Version"])
+            or slot not in ("a", "b") or value.get("schemaVersion") != 1):
+        raise ValueError("CORE_PERMISSION_COMMITTED_VDP_REQUIRED")
+    active = root / "active"
+    record = root / "slots" / slot / ".aos-instance.json"
+    if (not active.is_symlink() or os.readlink(active) != "slots/" + slot
+            or record.is_symlink() or json.loads(record.read_bytes()) != value):
+        raise ValueError("CORE_PERMISSION_VDP_COMMIT_MISMATCH")
+    return hashlib.sha256(raw).hexdigest()
+
+
+def core_permission_apply(request):
+    before = core_permission_status(request)
+    if set(request.get("binaries", {})) != {"iam", "sm", "cm"}:
+        raise ValueError("CORE_PERMISSION_ALL_THREE_BINARIES_REQUIRED")
+    root = Path("/run/democtl-core-permissions-256")
+    if root.exists() or root.is_symlink():
+        raise ValueError("CORE_PERMISSION_TRANSIENT_STATE_REQUIRES_RECONCILIATION")
+    binaries, dropins = {}, {}
+    for name in ("iam", "sm", "cm"):
+        props = before["managers"][name]
+        if props["service"].get("ActiveState") != "active" or props["binarySha256"] != request.get("previous", {}).get(name):
+            raise ValueError("CORE_PERMISSION_PREVIOUS_PROCESS_CHANGED")
+        # Do not stack this proof on another binary override.
+        installed = Path("/usr/bin/aos_" + name + "_app")
+        if hashlib.sha256(installed.read_bytes()).hexdigest() != props["binarySha256"]:
+            raise ValueError("CORE_PERMISSION_STOCK_33_PROCESS_REQUIRED")
+        info = request["binaries"][name]
+        with gzip.GzipFile(fileobj=io.BytesIO(base64.b64decode(info["data"], validate=True))) as stream:
+            raw = stream.read(256 * 1024**2 + 1)
+        if (len(raw) > 256 * 1024**2 or raw[:6] != b"\x7fELF\x02\x01" or raw[18:20] != b"\xb7\x00"
+                or hashlib.sha256(raw).hexdigest() != info["sha256"]):
+            raise ValueError("CORE_PERMISSION_ARM64_DIGEST_INVALID")
+        binaries[name] = raw
+        dropins[name] = Path("/run/systemd/system/aos-" + name + ".service.d/96-democtl-permission-capacity.conf")
+        if dropins[name].exists() or dropins[name].is_symlink() or dropins[name].parent.is_symlink():
+            raise ValueError("CORE_PERMISSION_DROPIN_CONFLICT")
+    saved = core_permission_vdp_snapshot()
+    root.mkdir(mode=0o700)
+    for name, raw in binaries.items():
+        binary = root / ("aos_" + name + "_app")
+        binary.write_bytes(raw)
+        binary.chmod(0o755)
+        command(["chcon", "--reference=/usr/bin/aos_" + name + "_app", str(binary)], check=True)
+    written = []
+    try:
+        for name, dropin in dropins.items():
+            dropin.parent.mkdir(parents=True, exist_ok=True)
+            dropin.write_text("[Service]\nBindReadOnlyPaths=" + str(root / ("aos_" + name + "_app")) + ":/usr/bin/aos_" + name + "_app\n")
+            written.append(dropin)
+        command(["systemctl", "daemon-reload"], check=True)
+        # Stop consumers first; initialize IAM before registrations are replayed.
+        for name in ("cm", "sm", "iam"):
+            subprocess.run(["systemctl", "stop", "aos-" + name], capture_output=True, timeout=25, check=True)
+        for name in ("iam", "sm", "cm"):
+            subprocess.run(["systemctl", "start", "aos-" + name], capture_output=True, timeout=25, check=True)
+        after = core_permission_status(request)
+        if any(after["managers"][name]["binarySha256"] != request["binaries"][name]["sha256"]
+                or after["managers"][name]["service"].get("ActiveState") != "active" for name in binaries):
+            raise ValueError("CORE_PERMISSION_ACTIVATION_UNCONFIRMED")
+        if core_permission_vdp_snapshot() != saved:
+            raise ValueError("CORE_PERMISSION_COMMITTED_VDP_CHANGED")
+    except Exception:
+        # Restore original packaged bytes, never alter durable identity/databases.
+        for dropin in written:
+            dropin.unlink()
+        command(["systemctl", "daemon-reload"], check=True)
+        subprocess.run(["systemctl", "stop", "aos-cm", "aos-sm", "aos-iam"], capture_output=True, timeout=35)
+        for name in ("iam", "sm", "cm"):
+            subprocess.run(["systemctl", "start", "aos-" + name], capture_output=True, timeout=25)
+        raise
+    return dict(after, mutation=True, state="APPLIED", capacity=256, durableVdpPreserved=True,
+        transientRoot=str(root), originalBinariesPreserved=True)
+
+
+def core_iam_response_apply(request):
+    before = core_permission_status(request)
+    if (not before.get("transientFilesMatchProcesses") or any(
+            row["service"].get("ActiveState") != "active" or row["binarySha256"] != request.get("previous", {}).get(name)
+            for name, row in before["managers"].items())):
+        raise ValueError("IAM_RESPONSE_PREVIOUS_PROCESS_CHANGED")
+    root = Path("/run/democtl-iam-response-32")
+    dropin = Path("/run/systemd/system/aos-iam.service.d/96-democtl-permission-capacity.conf")
+    old_text = "[Service]\nBindReadOnlyPaths=/run/democtl-core-permissions-256/aos_iam_app:/usr/bin/aos_iam_app\n"
+    if root.exists() or root.is_symlink() or dropin.is_symlink() or dropin.read_text() != old_text:
+        raise ValueError("IAM_RESPONSE_TRANSIENT_CONFLICT")
+    info = request.get("binary", {})
+    with gzip.GzipFile(fileobj=io.BytesIO(base64.b64decode(info.get("data", ""), validate=True))) as stream:
+        raw = stream.read(256 * 1024**2 + 1)
+    if (len(raw) > 256 * 1024**2 or raw[:6] != b"\x7fELF\x02\x01" or raw[18:20] != b"\xb7\x00"
+            or hashlib.sha256(raw).hexdigest() != info.get("sha256")):
+        raise ValueError("IAM_RESPONSE_ARM64_DIGEST_INVALID")
+    saved = core_permission_vdp_snapshot()
+    root.mkdir(mode=0o700)
+    binary = root / "aos_iam_app"
+    binary.write_bytes(raw)
+    binary.chmod(0o755)
+    command(["chcon", "--reference=/usr/bin/aos_iam_app", str(binary)], check=True)
+    try:
+        dropin.write_text("[Service]\nBindReadOnlyPaths=" + str(binary) + ":/usr/bin/aos_iam_app\n")
+        command(["systemctl", "daemon-reload"], check=True)
+        # IAM registrations are volatile: stop/start SM with IAM so native
+        # instance registration is replayed. CM, VDP, VM and databases stay.
+        for name in ("sm", "iam"):
+            subprocess.run(["systemctl", "stop", "aos-" + name], capture_output=True, timeout=30, check=True)
+        for name in ("iam", "sm"):
+            subprocess.run(["systemctl", "start", "aos-" + name], capture_output=True, timeout=30, check=True)
+        after = core_permission_status(request)
+        if (after["managers"]["iam"]["binarySha256"] != info["sha256"]
+                or any(after["managers"][name]["service"].get("ActiveState") != "active" for name in ("iam", "sm", "cm"))
+                or any(after["managers"][name]["binarySha256"] != request["previous"][name] for name in ("sm", "cm"))
+                or after["managers"]["cm"]["service"]["MainPID"] != before["managers"]["cm"]["service"]["MainPID"]
+                or not after["transientFilesMatchProcesses"] or core_permission_vdp_snapshot() != saved):
+            raise ValueError("IAM_RESPONSE_ACTIVATION_UNCONFIRMED")
+    except Exception:
+        dropin.write_text(old_text)
+        command(["systemctl", "daemon-reload"], check=True)
+        subprocess.run(["systemctl", "stop", "aos-sm", "aos-iam"], capture_output=True, timeout=35)
+        for name in ("iam", "sm"):
+            subprocess.run(["systemctl", "start", "aos-" + name], capture_output=True, timeout=30)
+        raise
+    return dict(after, mutation=True, state="APPLIED", responseCapacity=32, cmPreserved=True, durableVdpPreserved=True)
+
+
 def execute(request):
+    if request["action"] == "core-permissions-iam-response-apply":
+        return core_iam_response_apply(request)
+    if request["action"] == "service-kac-recovery":
+        return kac_recovery(request)
+    if request["action"] in ("service-kac-time-proof", "service-kac-data-proof"):
+        return kac_time_read_proof(request)
+    if request["action"] == "service-kac-activate":
+        return activate_kac(request)
+    if request["action"] == "core-permissions-status":
+        return core_permission_status(request)
+    if request["action"] == "core-permissions-apply":
+        return core_permission_apply(request)
     if request["action"] == "component-cm-startup":
         return cm_startup_comparison(request)
     if request["action"] == "component-cm-apply":
@@ -1388,6 +2194,7 @@ def execute(request):
             libc=libc, loader=file_fact(Path("/lib/ld-linux-aarch64.so.1")), serviceManager=service,
             processWaits=process_wait_observation(pid),
             nativeContainers=container_runtime_observation(root, cfg),
+            kuksaAuthorization=kuksa_authorization_observation(),
             resourcesConfigFile=resource_path, resources=selected,
             publicInputs={name: file_fact(Path(path)) for name, path in (
                 ("kuksaTrust", "/var/lib/aos-kuksa-tls/server.pem"),
@@ -1541,6 +2348,18 @@ def execute(request):
                         if any(path in line for path in ("/run/credentials", "/run/democtl-sm", "/etc/aos/sm.cfg", "/usr/bin/aos_sm_app"))][:20] if executable else [],
                     mutation=False)
     action = request["action"]
+    if action == "dns-restart":
+        if request.get("role") != "test":
+            raise ValueError("DNS_RECOVERY_TEST_ONLY")
+        config = Path("/var/aos/dns/dnsmasq.conf")
+        if config.is_symlink() or "server=10.0.0.1#18053" not in config.read_text().splitlines():
+            raise ValueError("DNS_RECOVERY_BRIDGE_CONFIG_MISMATCH")
+        before = command(["systemctl", "show", "dnsmasq.service", "--property=MainPID", "--value"]).stdout.strip()
+        result = command(["systemctl", "restart", "dnsmasq.service"])
+        after = command(["systemctl", "show", "dnsmasq.service", "--property=MainPID", "--value"]).stdout.strip()
+        active = command(["systemctl", "is-active", "dnsmasq.service"]).stdout.strip()
+        return dict(state="ACTIVE" if result.returncode == 0 and active == "active" else "UNCONFIRMED",
+            previousPid=before, pid=after)
     if action == "factory-role":
         return initialize_factory_role(request)
     identity = request["vehicle"]["localVmId"]
@@ -1609,6 +2428,7 @@ def execute(request):
             schemaSha256=hashlib.sha256(path.read_bytes()).hexdigest(),
             baseSha256=hashlib.sha256(base.read_bytes()).hexdigest(), baseFileContext=context,
             service=properties, present=present, missing=missing, safeStop=safe_stop,
+            advisorySchema=advisory_schema_observation(node),
             permissionProbe="NOT_PERFORMED", mutation=False)
     if action == "component-logs":
         services = command(["systemctl", "show", "aos-sm", "aos-cm", "aos-vehicle-data-provider",
@@ -1616,7 +2436,7 @@ def execute(request):
         ids = [line[3:] for line in services.stdout.splitlines() if line.startswith("Id=")]
         streams = []
         for unit in ids + ["kuksa-databroker.service", "aos-vehicle-data-provider-selftest@a.service", "aos-vehicle-data-provider-selftest@b.service"]:
-            result = command(["journalctl", "-b", "-n", "6000" if unit == "aos-sm.service" else "600" if unit == "aos-cm.service" else "80",
+            result = command(["journalctl", "-b", "-n", "6000" if unit == "aos-sm.service" else "600" if unit in ("aos-cm.service", "aos-vehicle-data-provider.service") else "80",
                               "-o", "json", "--no-pager", "-u", unit])
             if result.returncode or len(result.stdout) > (8388608 if unit in ("aos-cm.service", "aos-sm.service") else 2097152):
                 raise ValueError("COMPONENT_JOURNAL_UNAVAILABLE")
@@ -1723,8 +2543,16 @@ def execute(request):
             if native_fields:
                 entry["nativeInstance"] = native_fields
             entries.append(entry)
+        # Use the existing fixed Python projection, not optional journalctl
+        # PCRE support. A grep failure must not masquerade as an empty journal.
+        advisory_log = command(["journalctl", "-b", "-n", "600", "-o", "json", "--no-pager",
+            "-u", "aos-vehicle-data-provider.service"])
+        if advisory_log.returncode != 0 or len(advisory_log.stdout) > 2097152:
+            raise ValueError("COMPONENT_ADVISORY_JOURNAL_UNAVAILABLE")
         entries.sort(key=lambda entry: int(entry["time"] or 0))
         return dict(entries=entries[-100:], scannedEntries=len(streams), providerReadyEvents=ready_events, structuredFields=sorted(structures),
+                    advisoryEvents=advisory_log_observation(advisory_log.stdout),
+                    advisoryJournal=dict(records=len(advisory_log.stdout.splitlines()), returnCode=advisory_log.returncode),
                     smNetworkEvents=[entry for entry in entries if entry["unit"] == "aos-sm.service"
                         and ("network" in entry["message"].lower() or
                              entry.get("nativeInstance", {}).get("errorLocations") or
@@ -1737,7 +2565,7 @@ def execute(request):
                         and "can't start launcher" in entry["message"]][:12],
                     cmUpdatePhases=[entry for entry in entries if entry["unit"] == "aos-cm.service" and
                         re.search(r"Update state changed|Current update canceled|Cancel current update|Failed to process desired status", entry["message"])][-20:],
-                    window="Current boot: last 600 CM / 600 SM / 80 other service events", projection="BOUNDED_REDACTED_SERVICE_EVENTS")
+                    window="Current boot: last 600 CM / 6000 SM / 600 VDP / 80 other service events", projection="BOUNDED_REDACTED_SERVICE_EVENTS")
     if action == "component-status":
         result = execute(dict(request, action="status"))
         root = Path("/var/aos/workdirs/sm/runtimes/systemd-slot-component")
@@ -1786,7 +2614,30 @@ def execute(request):
         result.update(activeVersion=metadata["version"], activeSlot=target.name,
             readPathCount=len(capability["readPaths"]), capabilityManifestSha256=digest,
             processSlotMatches=configured, service=values,
-            advisory="DEFERRED" if capability.get("advisoryEndpoints") else "NOT_APPLICABLE")
+            advisory=advisory_configuration_observation(capability))
+        # Fixed public source bytes, not arbitrary guest file inspection. This
+        # distinguishes installed transport code from a manifest-only claim.
+        result["advisoryRuntimeFiles"] = {}
+        for name in ("runtime.py", "advisory.py", "advisory_transport.py", "manifest.py"):
+            path = target / "python/carla_viss_kuksa_provider" / name
+            if not path.exists():
+                continue
+            if path.is_symlink() or path.stat().st_size > 131072:
+                raise ValueError("COMPONENT_RUNTIME_MODULE_UNSAFE")
+            result["advisoryRuntimeFiles"][name] = hashlib.sha256(path.read_bytes()).hexdigest()
+        if result["advisory"] == "CONFIGURED_NOT_APPLICATION_PROOF":
+            configuration_probe = command(["/usr/bin/python3", "-I", "-B", "-c",
+                "import sys,json; from pathlib import Path; p=Path(sys.argv[1]); "
+                "sys.path[:0]=[str(p/'python'),str(p/'python/site-packages')]; "
+                "from carla_viss_kuksa_provider.runtime import load_payload_configuration; "
+                "c=load_payload_configuration(p/'config/provider.json'); "
+                "print(json.dumps(dict(advisoryEnabled=c.advisory_enabled,version=c.semantic_version)))",
+                str(target)])
+            if configuration_probe.returncode == 0 and len(configuration_probe.stdout) <= 512:
+                parsed = json.loads(configuration_probe.stdout)
+                if (set(parsed) == {"advisoryEnabled", "version"}
+                        and type(parsed["advisoryEnabled"]) is bool and parsed["version"] == metadata["version"]):
+                    result["advisoryConfiguration"] = dict(parsed, evidence="READ_ONLY_CONFIGURATION_LOAD_NOT_PROCESS_STATE")
         return result
     if action == "configure_status":
         configure(request)

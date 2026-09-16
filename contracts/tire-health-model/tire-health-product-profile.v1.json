@@ -88,8 +88,8 @@
     "features": [
       {"id": "MAX_ABSOLUTE_LONGITUDINAL_SLIP", "normalization": 0.20, "weightPercent": 30},
       {"id": "MAX_ABSOLUTE_LATERAL_SLIP_ANGLE", "normalizationDegrees": 8, "weightPercent": 30},
-      {"id": "MAX_WHEEL_LINEAR_SPEED_DISPERSION", "normalizationRatio": 0.15, "minimumDenominatorKph": 5, "weightPercent": 20},
-      {"id": "SLIP_PERSISTENCE", "longitudinalThreshold": 0.08, "lateralThresholdDegrees": 4, "weightPercent": 20}
+      {"id": "MAX_WHEEL_LINEAR_SPEED_DISPERSION", "normalizationRatio": 0.15, "minimumDenominatorKph": 5, "weightPercent": 20, "sampleFormula": "(MAX_WHEEL_SPEED_MINUS_MIN_WHEEL_SPEED)/MAX(MAX_WHEEL_SPEED,5_KPH)", "episodeReduction": "MAX_OVER_VALID_ACTIVE_SAMPLES"},
+      {"id": "SLIP_PERSISTENCE", "longitudinalThreshold": 0.08, "lateralThresholdDegrees": 4, "weightPercent": 20, "thresholdComparison": "ABSOLUTE_VALUE_GREATER_THAN_OR_EQUAL", "samplePredicate": "ANY_WHEEL_LONGITUDINAL_OR_LATERAL_THRESHOLD_REACHED", "episodeReduction": "MATCHING_VALID_ACTIVE_SAMPLES_DIVIDED_BY_ALL_VALID_ACTIVE_SAMPLES"}
     ],
     "rawScoreFormula": "100_MINUS_ROUND_HALF_UP_LOAD_BPS_DIVIDED_BY_100",
     "bands": [
@@ -219,7 +219,7 @@
     "externalConnectivityLossState": "DEGRADED_LOCAL_FUNCTION_CONTINUES",
     "backendConnectivityGatesLocalReadiness": false,
     "aosCloudConnectivityGatesLocalReadiness": false,
-    "requestedQuota": {"cpuLimit": 150, "cpuLimitUnit": "DMIPS", "ramLimit": "16MiB", "storageLimit": "4MiB", "stateLimit": "2MiB", "tmpLimit": "2MiB", "noFileLimit": 32, "pidsLimit": 8},
+    "requestedQuota": {"cpuLimit": 150, "cpuLimitUnit": "DMIPS", "ramLimit": "16MiB", "storageLimit": "4MiB", "stateLimit": "2MiB", "tmpLimit": "2MiB", "noFileLimit": 1024, "pidsLimit": 16},
     "quotaAuthority": "AOSCORE",
     "serviceResourceManagerImplemented": false,
     "quotaQualificationDecision": "D4-023",

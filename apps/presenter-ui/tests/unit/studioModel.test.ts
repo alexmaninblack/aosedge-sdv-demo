@@ -4,6 +4,18 @@ import { composeLocalSnapshot } from "../../src/adapters/local/LocalPresenterRea
 import type { ServiceRelease } from "../../src/domain/model";
 import type { CloudService, PlatformCloudObservation } from "../../src/domain/platformObservation";
 import type { LocalDemoView } from "../../src/domain/model";
+import type { DemoJob } from "../../src/domain/presenterCommandPort";
+
+test("prepared service data mode follows the command receipt before inventory refresh", () => {
+  const local = { runId: "current-run" } as LocalDemoView;
+  for (const demoMockedData of [false, true]) {
+    const job: DemoJob = { id: "prepare-fixture", startedAt: "2026-09-15T12:00:00Z", progress: [],
+      runId: "current-run", action: "service-prepare", state: "COMPLETED",
+      team: "brake", profile: "v1", release: "brake/42.0.0", version: "42.0.0",
+      results: [{ operation: "service.prepare", state: "COMPLETED", message: "Prepared", facts: { demoMockedData } }] };
+    expect(serviceCandidate(local, [], [job], "brake", "v1")?.demoMockedData).toBe(demoMockedData);
+  }
+});
 
 test("certificate rotation cannot restore Signed from an older Cloud observation", () => {
   const current = { releaseHandle: "brake/12.0.0", cloudDomain: "staging.example.test", signed: false,

@@ -17,7 +17,7 @@
     },
     {
       "id": "stale-sample",
-      "operations": [{"op": "replace", "path": "/samples/30/maxSourceAgeMs", "value": 251}],
+      "operations": [{"op": "replace", "path": "/samples/30/maxSourceAgeMs", "value": 5001}],
       "expectedReason": "STALE_SAMPLE"
     },
     {

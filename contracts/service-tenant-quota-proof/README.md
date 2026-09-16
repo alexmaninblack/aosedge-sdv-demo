@@ -35,8 +35,14 @@ The accepted requested envelopes are:
 | Storage | 8 MiB | 4 MiB |
 | State | 1 MiB | 2 MiB |
 | Temporary storage | 8 MiB | 2 MiB |
-| Open files | 64 | 32 |
-| PIDs | 16 | 8 |
+| Open files | 1024 | 1024 |
+| PIDs | 24 | 16 |
+
+On 16 September 2026 the operator approved Brake's task limit change from
+16 to 24 after V3 reached bootstrap 1 + product 15 threads and emitted native
+thread-creation failures. The increase applies through signed package metadata,
+not an in-guest quota override. All other Brake quotas remain unchanged; live
+headroom must be measured. Tire's independently approved limit is 16.
 
 Tire storage owns its persistent outbox/supporting database metadata, state
 owns the versioned estimator state and tmp owns temporary computation only.
