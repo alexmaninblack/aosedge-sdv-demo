@@ -3,8 +3,8 @@
 
 # Pre-UI source checkpoint and cleanup audit — 17 September 2026
 
-Status: source audit complete; publication requires the remote equality gate
-below. No new Vehicle UI implementation.
+Status: audit and seven-repository source publication complete. Remote commit
+and annotated-tag equality verified on 17 September. No new Vehicle UI implementation.
 Scope: seven custom repositories, documentation, reviewed proposal, source
 tests and obsolete artifact cleanup. Running Test, simulator, Cloud records,
 release ledger, credentials, Builder and native caches remain unchanged.
@@ -52,16 +52,31 @@ Mockup metrics do not introduce model thresholds or new product contracts.
 
 ## Source return point
 
-Reserved common annotated tag: `checkpoint/pre-ui-20260917` on `main` in:
+Published common annotated tag: `checkpoint/pre-ui-20260917` on `main` in:
 `aosedge-sdv-demo`, `carla-ego-runtime`, `aos-vehicle-platform`,
 `brake-health-service`, `tire-health-service`, `brake-health-cloud`,
 `tire-health-cloud`. All seven remote repositories were verified public.
 Unreal remains an existing licensed/private dependency, not a new project repo.
 
-Publication closes only when every remote peeled tag and `main` match its
-intended local commit. Component pins are in
+Every remote peeled tag and `main` matched the intended local commit at
+publication. This subsequent receipt-only commit advances the solution `main`
+without changing the frozen tag or implementation. Component pins are in
 [`workspace/repositories.json`](../../workspace/repositories.json).
 The solution tag resolves its own commit without a circular self-pin.
+
+| Repository | Verified checkpoint commit |
+| --- | --- |
+| aosedge-sdv-demo | `08e508feeb5f283a0ba9f1efc0b62194974919a4` |
+| carla-ego-runtime | `10e476d45c28d206d14ab0a3a5a7e1bfab85807f` |
+| aos-vehicle-platform | `57243dc0a7c6d27bd4a7a10e6250b3d37dc53288` |
+| brake-health-service | `057b444fa77960fa51ea61b47256339afe067216` |
+| tire-health-service | `e113183feb1974511d7171a7630eac404165058e` |
+| brake-health-cloud | `55bb8d820eb2d83a0bf7be9cf45aeca01a4d8924` |
+| tire-health-cloud | `2ac7ccbf3d32ab3bf6e5967fb38d115f488974ad` |
+
+All seven primary working trees were clean after checkpoint commits. Fast-forward
+atomic pushes published each `main` with its tag; no history was rewritten.
+Running Test QEMU and CARLA retained the same process IDs throughout the audit.
 
 To inspect source safely, fetch the tag in each repository and create a separate
 checkout (choose a different destination per repository):
