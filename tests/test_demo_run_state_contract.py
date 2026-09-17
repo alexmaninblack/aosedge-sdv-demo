@@ -17,7 +17,7 @@ class DemoRunStateContractTest(unittest.TestCase):
 
     def test_all_subdecisions_and_package_are_design_reviewed(self) -> None:
         self.assertEqual("D4-021", self.profile["decision"])
-        self.assertEqual("1.7.0", self.profile["contractVersion"])
+        self.assertEqual("1.8.6", self.profile["contractVersion"])
         self.assertEqual("DESIGN_REVIEWED", self.profile["lifecycleState"])
         self.assertEqual(
             {"D4-021.1", "D4-021.2", "D4-021.3", "D4-021.4", "D4-021.5", "D4-021.6"},

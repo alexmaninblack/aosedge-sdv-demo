@@ -73,7 +73,7 @@ class DemoPreparationTests(unittest.TestCase):
         result = self.workflow.prepare("31/arm64")
         self.assertEqual("READY_TO_DRIVE", result.data["phase"])
         self.assertEqual("13.0.1", result.data["version"])
-        self.assertEqual([("vm", "start"), ("simulation", "start"), ("vehicle", "initialize"),
+        self.assertEqual([("vm", "start"), ("simulation", "start"),
             ("component", "inspect"), ("component", "sign"), ("component", "upload"), ("component", "cloud-status"),
             ("unit", "provision"), ("component", "status")], self.calls)
         self.calls.clear()
@@ -90,7 +90,7 @@ class DemoPreparationTests(unittest.TestCase):
         result = self.workflow.prepare("31/arm64")
         self.assertEqual(OperationState.BLOCKED, result.state)
         self.assertEqual("publication", result.data["phase"])
-        self.assertEqual(["start-vms", "start-backends", "simulation", "connect-test-manual", "prepare-v1", "sign-v1", "upload-v1"], result.data["completedSteps"])
+        self.assertEqual(["start-vms", "start-backends", "simulation", "prepare-v1", "sign-v1", "upload-v1"], result.data["completedSteps"])
         self.assertNotIn(("unit", "provision"), self.calls)
 
     def test_processing_is_not_published_and_retry_does_not_reupload(self):

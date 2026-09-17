@@ -3,64 +3,64 @@
 
 # Current working baseline
 
-Factory qualification recorded: **13 September 2026**. Engineering Test E2E passed with explicit
-synthetic-service and Cloud-ordering exclusions. This is not full product or
-human visual acceptance.
+Updated: **17 September 2026**. Retained Factory: **.35**. New Vehicle overview
+UI integration is on hold until the audit checkpoint is complete and the operator
+authorizes that work. This supersedes the former .33 current status; historical
+receipts and the previous page remain in Git history.
 
-**Current source/lifecycle update — 15 September:** see the [staging source
-checkpoint](staging-source-checkpoint-2026-09-15.md). The current Test has been
-retired; the Unit/release rows below describe the historical 13 September
-qualification, not a live Unit inventory. Factory `.33` is unchanged. New
-source commits do not retroactively change its image digest or build provenance.
+## Immutable Factory
 
-## Factory and runtime
-
-| Item | Immutable baseline / dated qualification value |
+| Item | Value |
 | --- | --- |
-| Immutable Factory | `6.1.1-maninblack.33/main-qemuarm64` |
-| Artifact | `$WORKSPACE_ROOT/demo-artifacts/aosedge-sdv-demo/factory-images/6.1.1-maninblack.33/main-qemuarm64.img` |
-| Image SHA-256 | `a302b2f2e2f238b361682ab8a529ec036ff260e00b2fb9a4d21db325d8d45761` |
+| Selector | `6.1.1-maninblack.35/main-qemuarm64` |
+| Artifact relative to workspace | `demo-artifacts/aosedge-sdv-demo/factory-images/6.1.1-maninblack.35/main-qemuarm64.img` |
+| SHA-256 | `668690a922d62f158c60769cab673ca9cac1ccb7fde7dee2c7cd22dd9952a458` |
 | Image size | 6,997,147,648 bytes |
-| Image build source | `f7922b02b15f6cf816f181e1bf97572b61859aea` in `aos-vehicle-platform` |
-| Test Unit | `7e09f53d-d716-4ed3-a8b4-a8f0793c987c` |
-| Test system UID | `e1d2fc93c9c84ae79c7de98facee256a` |
-| Test role set | Test Vehicles, `f83dee0e-d93c-4dd2-905f-a3b4f8dc9878`, verification set |
-| Fleet | Default Fleet, `3871b7c7-c105-4cac-bec9-d9e4447c2a3d` |
-| Qualified VDP sequence | 21/V1 -> 22/V2 -> 23/V3; current23, 23 signal paths |
-| Qualified Brake sequence | 9/V1 -> 10/V2 -> 11/V3; current11 |
-| Qualified Tire sequence | 8/V1 -> 9/V1; current9, no functional Tire V2 claimed |
-| Production | Existing .31 preserved and excluded from this Test qualification |
+| Platform build source | `bb691efcbf19f1bebd74fd2ef3ae9ff0aee2bf74` |
 
-The factory placeholder is not a preinstalled service or VDP application.
-Current Unit/installed releases are dated run evidence, never a manufacturing
-source. New runs allocate new release numbers automatically through Demo
-Control; they do not reset the current number ledger or downgrade Cloud releases.
+This digest/build source is immutable. Later source, documentation, host and
+service-package commits do not retroactively alter the Factory image.
 
-## Proven and excluded
+## Qualified behavior and later corrections
 
-The [detailed E2E](factory-33-e2e-2026-09-13.md) covers clean provisioning,
-VDP Safe Stop gates, service replacement while driving, real native containers,
-explicitly synthetic backend delivery/retry, external-network recovery and
-cold stop/start without transient manager fixes. Only component application
-depends on Safe Stop; Brake/Tire SOTA does not.
+The [clean .35 staging cycle](factory-35-e2e-2026-09-17.md) passed by 05:32 UTC:
+VDP74/V1 → 75/V2 → 76/V3, Brake53/V1 → 54/V2 → 55/V3, Tire32/V1, actual KUKSA
+reads, real backend results, both native warnings and independent reset/CLEAR/
+renewed-warning chains. Cloud Offline/Online, first-attempt packaged Park/Resume
+and final Finish/deprovision/delete passed. CLI maneuvers supplied physical
+stimuli; lifecycle, publication and observation used Presenter/native UI.
+This is not UI-only test stimuli or complete visual acceptance.
 
-**Still open:** native KUKSA permissions and real service/advisory behavior;
-Cloud stale connection-event ordering; complete Studio visual/product acceptance;
-upstream review and workspace/lock reconciliation. .33 includes an idle full-status CM
-workaround, not a Cloud fix. See the
-[consolidation audit and open-issue register](factory-33-consolidation-audit-2026-09-13.md)
-and [current delivery plan](../planning/active/demo-studio-delivery-plan.md).
+The subsequent preserved Test uses .35 with VDP78/V3, Brake58/V3 and Tire34/V1
+in the dated [attachment-order evidence](source-attachment-order-2026-09-17.md).
+Brake V3 and Tire V1 are compatible advisory producers; there is no Tire V3
+requirement. Both services use the native gRPC hosts resolver to keep local
+KUKSA reconnect independent of external-network availability.
 
-The tested source set is now committed and published on `main` in all seven
-custom repositories, with `checkpoint/demo-20260913` return-point tags.
-See the [exact source and branch-cleanup receipt](factory-33-source-checkpoint-2026-09-13.md).
-Historical workspace/lock metadata still needs reconciliation; its older pins
-must not be mistaken for this published source set or a fresh-clone qualification.
+The [manual-control/cache evidence](manual-control-and-map-cache-2026-09-17.md)
+records bounded first-command handling, bridge recovery and explicit Unreal
+map-cache preparation. Native caches are preserved. No simulator texture cache
+or compiled shader rebuild is required on each normal start.
 
-## Historical evidence
+The latest attachment order is Create/boot → start local simulation detached →
+publish → Provision/Cloud Online → authenticate and attach the same Gateway in
+stationary Manual → operator Safe Stop. Focused tests and preserved-run reuse
+passed; **a clean first-Provision run of this latest amendment is still open**.
+The earlier .35 cycle must not be used as evidence that it passed the new order.
 
-The former contents of this page are preserved as the
-[Factory .21 baseline of 30 August](factory-21-baseline-2026-08-30.md).
-Older .27/.31/.32 qualification records describe their dated experiments, not
-the current Test or permission to operate Production. .31 remains retained for
-the existing Production VM; .33 is the current Test image.
+## Current boundaries
+
+- Native telemetry reads Gateway/VISS only; backend and Unit reports are
+  distinct evidence, not a substitute for a confirmed vehicle advisory.
+- Component application requires Safe Stop. Service installation does not.
+- Staging permissions/real KUKSA work with the qualified 256-character CM/SM/IAM
+  capacity and IAM response correction. Production Cloud parity and upstream
+  acceptance remain separate; no production platform fix is claimed.
+- CM idle full-status recovery is a guest workaround, not a Cloud queue fix.
+- Production stays excluded. Its dormant .31 backing is a separately recorded
+  cleanup dependency, not an available Test catalog baseline.
+- The [pre-UI checkpoint audit](pre-ui-checkpoint-2026-09-17.md) records source
+  publication, housekeeping, test results and remaining gates.
+
+Git restores source, not Cloud identity, VM contents, credentials or release
+allocation. Never restore an old release ledger to replay this source.

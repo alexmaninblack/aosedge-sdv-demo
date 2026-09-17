@@ -3,6 +3,39 @@
 
 # Demo Studio: staged delivery plan
 
+## Current position — 17 September pre-UI checkpoint
+
+Factory .35's scoped clean cycle is complete. Subsequent source-attachment,
+native control and offline KUKSA fixes have preserved-Test/focused evidence;
+the latest first-Provision no-restart path still needs a clean run. See the
+[checkpoint audit](../../qualification/pre-ui-checkpoint-2026-09-17.md) and
+[current baseline](../../qualification/current-baseline.md) for the exact split.
+
+The accepted [2.9 visual proposal](../../demo/mockups/aosedge-demo-interaction-mockup-2-9.html)
+is archived, not integrated. New UI implementation is **on hold** at the user's
+request. After the audit and publication return point are confirmed, the next
+instruction can authorize: map existing observations to inline summaries;
+reuse backend/Cloud detail content in dialogs; preserve actions/authority and
+test all data states; then verify the actual fixed desktop composition and a
+clean lifecycle. No additional API, VM polling or backend command is implied.
+
+Sections below are dated execution history where their status differs from
+this checkpoint. The readiness/reset increment was implemented and qualified;
+it is not a second pending implementation request.
+
+## 17 September amendment — simulator startup precedes Unit attachment
+
+Approved by the operator: Create/boot → start or reuse the local simulator,
+strict Gateway and native panels with no Unit attached → publish the platform
+release → Provision/Cloud Online → enroll and attach the running Gateway in
+stationary Manual → verification-set membership → operator Safe Stop/VDP.
+Provision preserves CARLA, Gateway, control/telemetry windows, actor and reset
+generation. Cloud loss after attachment never detaches the local data plane.
+This supersedes pre-Provision attachment in historical Q03/P1/P4 notes below;
+it does not change the separate explicit Test/Production handover contract.
+See the [current interaction contract](../../demo/mockups/aosedge-demo-interaction-specification.md)
+and [implementation packet](work-packets/advisory-readiness-and-demo-reset.md).
+
 ## Authorized next increment — advisory readiness and scenario reset
 
 The operator approved implementing the [bounded readiness/reset packet](work-packets/advisory-readiness-and-demo-reset.md)
@@ -12,6 +45,105 @@ consolidate the Factory successor and perform the clean full UI cycle. Historica
 checkpoints below remain evidence, not completion of this new increment.
 
 ## Current checkpoint — 16 September, staging real-data and advisory qualification
+
+### Factory .35 checkpoint — 17 September, 05:32 UTC — clean cycle passed
+
+The user-authorized successor build completed from Platform
+`bb691efcbf19f1bebd74fd2ef3ae9ff0aee2bf74`. Five Factory and 19 native CM
+regressions, uniform permission capacity, KUKSA/Provider, package/image QA
+and transfer digest passed. The immutable image passed the scoped clean
+staging Test qualification below; Production is not qualified by this run.
+
+Previous .34 Test was stopped, deprovisioned and deleted in staging without
+a 30-minute Cloud wait. Its local cleanup needed a targeted Demo Control
+allowlist correction for the known Test-only `cmStartupProof` receipt;
+all 27 Test lifecycle tests passed. UI Continue Finish completed.
+Production and Factory originals remain untouched. After operator one-use VM
+access, UI creation, stationary Manual connection and strict Test Provision
+completed. VDP74/V1 -> 75/V2 -> 76/V3 and Brake53/V1 -> 54/V2 -> 55/V3,
+plus Tire32/V1, passed real KUKSA/backend and native advisory checks.
+Both independent Reset operations received Gateway CLEAR; each warning
+returned after new real maneuvers, with the peer warning preserved during Reset.
+CLI maneuvers are test stimuli; publication, lifecycle and result observation
+use Presenter/native UI. Actual Cloud Offline/reconnect passed without a repair
+restart (observed within 63/44 seconds). First-attempt packaged Park/Resume
+passed in 20/122 seconds, preserving VM/Unit/Node and all installed releases;
+CM/SM had zero restarts, no recovery override and no fresh SELinux denials.
+Fresh post-restart results and both native warnings were confirmed. Final UI
+Finish returned to `No controller created` within 44 seconds, with Test Cloud
+and local data removed and Production/original images/release continuity kept.
+Presenter is ready for operator verification with .35 selected. No extra build,
+retry, native hotpatch or 30-minute Cloud wait was needed on the clean .35 cycle.
+See
+[Factory .35 qualification](../../qualification/factory-35-e2e-2026-09-17.md).
+
+### Latest preserved .34 checkpoint — 17 September, 03:45 UTC
+
+The authorized CM startup correction passed a production-equivalent native
+red/green regression and 19 launcher/reconciliation tests. It preserves a
+pending rebalance when an unchanged Subject list is processed. A fixed CM-only
+binary was applied transiently through Demo Control, retaining SM/VDP and all
+native/Cloud identities. It reconciled three instances without stopping them.
+The pending Resume composition was also corrected to recognize its exact live
+manual-selection operation rather than trying to start another simulator.
+All 139 focused Demo Control tests passed.
+
+UI Continue Resume completed in nine seconds. Presenter shows Test selected,
+Online, VDP73/V3, Brake52/V3, Tire31/V1. Native inspection confirms LIVE,
+stationary Manual and both advisory indicators Monitoring. This closes the
+preserved-session recovery, **not** first-attempt reboot qualification. The
+CM override is under `/run`; .34 is unchanged. The correction is now in the
+platform CM recipe, ready for a successor image after remaining rapid-debug
+gates. Full warning/reset/renewed-warning, clean restart and retirement gates
+remain open. See the [qualification log](../../qualification/advisory-readiness-reset-2026-09-16.md).
+
+### Earlier clean .34 UI checkpoint — 17 September, 00:50 UTC
+
+After unlock, native Manual/stationary/LIVE and both Monitoring indicators
+were confirmed. The guest bootstrap correction passed 63 focused tests:
+queue the selected-endpoint CM restart without blocking SSH readiness, and
+restore only the same enrolled Test's reboot-cleared credential projections.
+An additional 28 component-delivery/diagnostic tests passed.
+
+UI Park completed in 14 seconds. One new Resume passed VM startup, backends
+and simulator, but stopped PARTIAL after 115 seconds at source restoration:
+`SOURCE_TRUST_COMPONENT_TRANSACTION_ACTIVE:test`. SM/VDP projections exist,
+SM is active with NRestarts 0 and no fresh SELinux denials. The runtime has
+an unexpected `remove` transaction for the already installed VDP73, waiting
+for Safe Stop. Native logs show all three installed items starting, then
+stopping at 00:43:08.642 UTC, before the fresh Cloud desiredStatus at
+00:43:09.415 UTC. Persisted desired items still include VDP73/Brake52/Tire31.
+The exact trigger is not yet proven; this is not evidence of a Cloud removal
+request. No transaction deletion, gate bypass, new release or native patch
+was performed. Preserve this VM for diagnosis. A bounded scope extension for
+the CM/SM startup reconciliation is requested before implementation.
+
+### Earlier checkpoint — 16 September, 23:40 UTC
+
+The clean Test reached VDP73/V3, Brake52/V3 and Tire31/V1 through Presenter.
+Earlier VDP71/V1 and VDP72/V2 and Brake50/V1 and Brake51/V2 delivery were
+observed. Real Brake V1 windows and Tire V1 assessments reached their
+backends; both independent resets received correlated Gateway CLEAR.
+Network OFF became Cloud Offline after 85 seconds; reconnect returned Online
+without restarting the VM. This is not a claim about an upstream queue fix.
+
+Park completed. First Resume exposed a 10-second guest bootstrap timeout
+during the staging CM restart, plus missing reboot-cleared mTLS credential
+drop-ins. Exact staging endpoint and retained enrolled identities were
+reconciled read-only before continuation. Presenter now exposes partial Resume;
+the existing identity-bound Manual guard admits only the recorded Resume
+restore phase. The same Resume then completed in 61 seconds through UI,
+restoring the projections and selected Test; SM was active with zero subsequent
+restarts and no fresh SELinux denials. No new provision, publication or VM
+image was used. First-attempt reboot bootstrap still needs correction and a
+new restart proof; recovery success is not that proof.
+
+The Mac locked again at the native post-recovery inspection. Preserve the live
+Test and all current evidence. Remaining gates: Brake V2 qualified assessment;
+both teams' real warning -> Reset -> renewed warning on clean .34; native
+post-restart inspection; first-attempt restart; final Finish. A proposed UI
+entry for the existing real test maneuvers awaits approval. See the
+[qualification log](../../qualification/advisory-readiness-reset-2026-09-16.md).
 
 ### Office network recovery and Brake V3 publication
 
@@ -85,7 +217,10 @@ Dashboard credentials; exact Unit/Cloud Main Node binding; assignment generation
 2. First activation, repeat without restart, live VDP/Dashboard authentication
 and anonymous-client TLS rejection passed. No development Set permission,
 shared certificate or authority inferred from an IP/role label was introduced.
-This engineering command is not yet automatic Presenter/Provision integration.
+Automatic Test Provision integration was subsequently approved: protect the
+guest source gate before one simulator restart, restore stationary Manual,
+then enroll/reconnect the exact identity before verification membership.
+The .34 UI-only qualification remains open; see the current advisory work packet.
 
 With exact operator approval, VDP69 was signed and uploaded once to staging.
 At 05:13 UTC Cloud reported Ready/Installed and the same Test Online. Guest
@@ -1388,7 +1523,7 @@ The user explicitly selected **option B for Create** and **option A for Platform
 
 - **Create B:** the vehicle leaves manufacturing with its domain controller already running the selected base firmware. Presenter Create composes the existing disk-creation and VM-start operations through Demo Control. It does not silently provision the Unit. Keep the low-level `environment create` disk-only command and `vm start` available independently; do not silently change their CLI semantics. Show Running only after startup is observed.
 - **Platform Team A — Full story:** show real preparation, signing and upload of a fresh release carrying the VDP v1 profile as Platform Team actions during the demo, before provisioning. Do not silently consume this chapter in Full story or replay an already completed upload as a new action. Explicitly selected Quick preparation is the separate Q04b case below. Exact button grouping remains a later UX detail.
-- **Audience sequence, including accepted Q03:** Create and boot the factory controller → connect CARLA/Gateway with the vehicle stationary in Manual → Platform Team prepares/signs/publishes VDP v1 → provision the already running and locally connected controller and establish the agreed Test verification-set membership → observe delivery → apply under the native Safe Stop condition. Delivery and installation remain separate observations; this decision creates no manual Cloud install or approval gate.
+- **Audience sequence, amended 17 September:** Create/boot → start or reuse local simulator/Gateway/native panels without attaching the controller → Platform Team prepares/signs/publishes VDP v1 → Provision/Cloud Online → attach the same Gateway in stationary Manual → Test verification-set membership → observe delivery → operator Safe Stop. Delivery and installation remain separate observations; there is no manual Cloud install or approval gate.
 - **Independent work:** the platform team can prepare its release while the vehicle is being manufactured. Publication is not inherently a command against a running or stopped VM. The current democtl power-state restriction must be revised for this pre-provision path while preserving artifact compatibility, authority and actual recipient-scope checks. It must not be worked around by stopping and restarting the controller.
 - **Repeatability:** v1 names the content profile, not a fixed Cloud release number. A repeat uses a new monotonic release carrying that profile, published before provisioning, under the existing repeat-cycle policy.
 
@@ -1398,26 +1533,23 @@ Review impact: class B, behavior within existing component/authority boundaries.
 
 ### <a id="q03-accepted-initial-vehicle-connection"></a>Accepted Q03 — initial vehicle connection, 9 September 2026
 
-The user selected **option A: connect after Create, before Provision**, with
-the vehicle **stationary in Manual**. Once the factory controller has started,
-start or reuse the session's CARLA/Gateway/native surfaces and establish the
-first local vehicle connection through Demo Control. Do not automatically
-activate Safe Stop, start Autopilot or reuse ordinary `vehicle select` if its
-Safe Stop/reset behavior would change this initial state.
+The former pre-Provision attachment was superseded by explicit operator
+approval on 17 September. Start or reuse CARLA/Gateway/native surfaces after
+Create, but leave the Gateway DETACHED from the controller. Issue only local
+dashboard trust before provisioning; no placeholder Unit identity is allowed.
 
-Preserve the local connection during the subsequent Platform publication and
-provisioning chapter; do not insert a detach/reconnect or VM restart merely
-to satisfy the existing provisioning guard. Local connectivity does not imply
-Cloud registration or OTA installation. Safe Stop remains an explicit native
-driving action governed by the vehicle runtime.
+Once Provision confirms Online and exact Unit/Main Node identity, issue its
+purpose-bound leaves under the same CA and attach through the existing private
+assignment socket. Preserve processes, scene, actor and reset generation.
+Require the existing fresh physical stopped-frame/native-session gate, enter
+stationary Manual, then open the guest source gate. Internal Safe Stop must
+not authorize FOTA. No automatic Autopilot or first VDP activation occurs.
 
-Required follow-up: expose the initial-connection operation, distinguish
-provisioning from retirement in the shared source guard, and verify that the
-official provisioning path preserves local telemetry and the initial mode.
-Do not weaken the deprovision/delete guard as a side effect. Acceptance of
-this behavior does not prove that G03 is implemented or qualified; it remains
-an open implementation gap. This class-B decision updates the working review
-record only, with the canonical cascade and full audit before implementation.
+Connect before VDP is installed: the factory update-runtime needs the source
+for the operator's later Safe Stop. Repeat is an observed no-op; loss of Cloud
+connectivity does not remove local attachment. Production remains excluded.
+Source/protocol tests and live repeat are separate from clean first-Provision
+qualification; do not report the latter without an actual clean run.
 
 ### <a id="q04a-accepted-test-scope-and-production-presentation"></a>Accepted Q04a / M01 — Test scope and Production presentation, 9 September 2026
 
@@ -2125,7 +2257,7 @@ the 78 action/transition rows and 28 gaps before requesting implementation.
 |---|---|---|---|
 | Q01 | Does Create start the controller? | ANSWERED — B: create and start | M02; G02 |
 | Q02 | Is initial Platform v1 preparation/publication shown live? | ANSWERED — A: visible before Provision | M02; G02/G04 |
-| Q03 | When does CARLA connect, and what is the initial driving mode? | ANSWERED — A: after Create, before Provision; stationary Manual, no automatic Safe Stop | G03; provisioning source guard |
+| Q03 | When does CARLA connect, and what is the initial driving mode? | AMENDED 17 September: local simulation after Create; Unit attachment after Provision/Online; stationary Manual without a scene reset | G03; provisioning source guard |
 | Q04a | Test-only operational scope and deferred Production presentation | ANSWERED — A: one Test VM; Production visible, disabled and labelled Deferred; CLI production/all retained | M01; G01 |
 | Q04b | Any condensed/automatic preparation mode alongside the visible story | ANSWERED — A: explicitly selected Full story and Quick preparation; shared Demo Control; no action on page open | G21; accepted Q01–Q03 |
 | Q05 | Factory baseline, empty slots and version/profile presentation | ANSWERED — A: meaning first, exact release secondary, raw placeholder/IDs in Details; empty differs from Unknown | M04; G25 |

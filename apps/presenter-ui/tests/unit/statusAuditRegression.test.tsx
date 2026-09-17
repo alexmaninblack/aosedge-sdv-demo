@@ -14,6 +14,30 @@ const cloud=(version='1.0.0'):any=>({state:'CURRENT',observedAt:new Date().toISO
 const local:any={mode:'LOCAL_READ_ONLY',observedAt:new Date().toISOString(),runId:'vm',registrationComplete:true,vehicles:{test:{state:'CURRENT',process:'RUNNING',overlayExists:true,imageVersion:'Factory .33'},production:{state:'CURRENT',process:'NOT_CREATED',overlayExists:false}},images:[{selector:'33/arm64',version:'Factory .33',state:'METADATA_AVAILABLE',problems:[]}],source:{state:'SELECTED_NOT_PROBED',selectedVehicle:'test'},access:{},serviceReleases:[{releaseHandle:'brake/7.0.0',runId:'vm',team:'brake',contentProfile:'v1',version:'7.0.0',serviceId:'brake-id',submitted:true,publication:{stage:'READY'}}]};
 function app(readPlatform:any, snapshot:any=local){return render(<PresenterReadModelProvider dependencies={{readPort:{read:async()=>composeLocalSnapshot(snapshot),subscribe:()=>()=>{},readPlatform}} as any}><PresenterApp/></PresenterReadModelProvider>);}
 
+test('running simulator remains detached before Provision and does not offer premature connection',async()=>{
+ const snapshot={...local,registrationComplete:false,registrationStarted:false,source:{state:'RUNNING_UNASSIGNED',currentVehicle:null}};
+ app(async()=>({state:'CURRENT',observedAt:new Date().toISOString(),publications:[{version:'2.0.0',stage:'READY'}],value:{lifecycle:'new',online:'UNKNOWN'}}),snapshot);
+ expect(await screen.findByRole('button',{name:'Provision to Test'})).toBeVisible();
+ expect(screen.queryByRole('button',{name:'Connect in Manual'})).toBeNull();
+ expect(screen.queryByRole('button',{name:'Start simulator'})).toBeNull();
+ expect(screen.queryByText(/simulator restarts once/)).toBeNull();
+});
+
+test('provisioned controller can connect to the already running simulator',async()=>{
+ app(async()=>cloud(),{...local,source:{state:'RUNNING_UNASSIGNED',currentVehicle:null}});
+ expect(await screen.findByRole('button',{name:'Connect in Manual'})).toBeVisible();
+ expect(screen.queryByRole('button',{name:'Start simulator'})).toBeNull();
+});
+
+test('partial Resume preserves its continuation instead of offering a new simulator start',async()=>{
+ const snapshot={...local,source:{state:'STOPPED',currentVehicle:null},lifecycle:{action:'resume',state:'PARTIAL',phase:'start-test',reason:'CLOUD_GUEST_CONFIGURATION_UNCONFIRMED'}};
+ app(async()=>cloud(),snapshot);
+ expect(await screen.findByText('Resume paused',{selector:'strong'})).toBeVisible();
+ expect(screen.getByRole('button',{name:'Continue Resume'})).toBeVisible();
+ expect(screen.queryByRole('button',{name:'Start simulator'})).toBeNull();
+ expect(screen.getByText('CLOUD_GUEST_CONFIGURATION_UNCONFIRMED')).toBeVisible();
+});
+
 test('unknown local state is not interpreted as a missing controller',async()=>{
  const snapshot={...local,vehicles:{...local.vehicles,test:{state:'UNKNOWN',process:null,overlayExists:null}},images:[]};
  app(async()=>({state:'UNAVAILABLE',observedAt:null,value:null}),snapshot);

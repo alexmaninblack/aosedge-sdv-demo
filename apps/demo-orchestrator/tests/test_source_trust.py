@@ -28,6 +28,29 @@ class TrustTests(unittest.TestCase):
         with self.assertRaisesRegex(EnvironmentError, "PROVISIONING_BINDING_REQUIRED"):
             trust.identity(bad)
 
+    @unittest.skipUnless(Path(trust.OPENSSL).is_file(), "OpenSSL 3 unavailable")
+    def test_local_start_then_online_enrollment_preserves_gateway_and_dashboard_trust(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "trust"
+            local = trust.prepare_local(path)
+            self.assertEqual(trust.LOCAL_FILES, {p.name for p in path.iterdir()})
+            self.assertNotIn("unitId", local)
+            before = {name: (path / name).read_bytes() for name in trust.LOCAL_FILES - {"identity.json"}}
+            self.assertEqual(local, trust.prepare_local(path))
+            provisioned = trust.prepare(path, VEHICLE)
+            self.assertEqual(local["fingerprints"]["dashboard"], provisioned["fingerprints"]["dashboard"])
+            self.assertEqual(before, {name: (path / name).read_bytes() for name in before})
+            self.assertEqual(provisioned, trust.prepare(path, VEHICLE))
+
+    def test_local_material_does_not_authorize_an_unprovisioned_guest(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "trust"
+            trust.prepare_local(path)
+            before = {p.name: p.read_bytes() for p in path.iterdir()}
+            with self.assertRaises((EnvironmentError, ValueError, TypeError)):
+                trust.prepare(path, dict(localVmId=VEHICLE["localVmId"]))
+            self.assertEqual(before, {p.name: p.read_bytes() for p in path.iterdir()})
+
     def test_unprovisioned_does_not_issue_placeholder(self):
         with self.assertRaises((EnvironmentError, ValueError)):
             trust.identity(dict(localVmId=VEHICLE["localVmId"]))

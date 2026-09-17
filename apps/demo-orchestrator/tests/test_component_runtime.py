@@ -19,6 +19,34 @@ from aosedge_demo_orchestrator.environment import EnvironmentError
 from aosedge_demo_orchestrator.source_guest import execute, process_wait_observation, container_runtime_observation, sm_saved_test_release, sm_recover_test, sm_apply_service_update, cm_apply_service_update, cm_restart_factory32_control
 
 
+class Factory34StartupProofTests(unittest.TestCase):
+    def test_fixed_cli_selector_is_not_exposed_in_presenter(self):
+        for action in ("cm-test", "cm-build", "cm-apply"):
+            request = request_from_arguments(build_parser().parse_args([
+                "component", action, "test", "--startup-reconcile"]))
+            self.assertTrue(request.startup_reconcile)
+            self.assertIsNone(request.selection_error())
+            with self.assertRaises(ValueError):
+                execute_operation(dict(domain="component", action=action, target="test", startup_reconcile=True), Mock())
+
+    def test_guest_rejects_other_targets_before_observation(self):
+        from aosedge_demo_orchestrator.source_guest import cm_startup_factory34
+        request = dict(target="test", proof="factory34-startup-reconcile",
+            sha256="0c491e8a744458b01bf81126f99ecdab3367795f757c419b92ab338b6518da23",
+            vehicle=dict(localVmId="363d8b2d-187f-4713-8af1-5cf9aa598177",
+                unitId="db0f8a34-5adf-4dec-b0fb-9c4f5b15c905"))
+        with patch("aosedge_demo_orchestrator.source_guest.execute") as observe:
+            for changes in (dict(target="production"), dict(vehicle={}), dict(sha256="other")):
+                with self.assertRaisesRegex(ValueError, "PRESERVED_TEST_34"):
+                    cm_startup_factory34(dict(request, **changes))
+            observe.assert_not_called()
+        with patch("aosedge_demo_orchestrator.source_guest.execute", return_value=dict(binarySha256="other")), \
+                patch("aosedge_demo_orchestrator.source_guest.command") as command:
+            with self.assertRaisesRegex(ValueError, "FACTORY_BASE"):
+                cm_startup_factory34(request)
+            command.assert_not_called()
+
+
 class Factory32CMControlTests(unittest.TestCase):
     def setUp(self):
         self.request = dict(action="component-cm-apply", proof="factory32-delivery-control", target="test", restartCm=True,
@@ -202,6 +230,10 @@ class RuntimeProofBoundaryTests(unittest.TestCase):
         request = request_from_arguments(build_parser().parse_args(["image", "build", "6.1.1-maninblack.33"]))
         execute_operation(dict(domain="image", action="build", image="6.1.1-maninblack.33"), app)
         self.assertEqual(request, app.execute.call_args.args[0])
+        for version in ("6.1.1-maninblack.34", "6.1.1-maninblack.35"):
+            request = request_from_arguments(build_parser().parse_args(["image", "build", version]))
+            execute_operation(dict(domain="image", action="build", image=version), app)
+            self.assertEqual(request, app.execute.call_args.args[0])
 
     def test_factory_projector_is_the_same_source_as_demo_control(self):
         from aosedge_demo_orchestrator import service_inputs_guest

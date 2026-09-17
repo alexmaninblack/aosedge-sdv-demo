@@ -58,6 +58,9 @@ def status():
     result = call(["systemctl", "show", "aos-vehicle-data-provider", "--property=ActiveState,StatusText,NRestarts,MainPID"])
     values = dict(line.split("=", 1) for line in result.splitlines() if "=" in line)
     return dict(mutualTlsConfigured=SM_DROPIN.is_file() and VDP_DROPIN.is_file(),
+        factoryBaseline=(values.get("ActiveState") == "inactive"
+            and not os.path.lexists(INPUTS.parent / "active")
+            and not (INPUTS.parent / "state/installed.json").exists()),
         vdpProcess=values.get("ActiveState"), vdpData=values.get("StatusText"), vdpRestarts=values.get("NRestarts"))
 
 
@@ -74,6 +77,28 @@ def execute(request):
             raise ValueError("SOURCE_TRUST_GUEST_IDENTITY_MISMATCH")
     if request["action"] == "trust-status":
         return status()
+    if request["action"] == "trust-restore":
+        # Reconstruct only previously enrolled credentials after reboot. No
+        # new leaf, host secret transfer, selection or assignment is invented.
+        selected_path = INPUTS / "selected.json"
+        safe(selected_path)
+        selected = json.loads(selected_path.read_text())["selectedSource"]
+        if (selected.get("unitId") != item["unitId"] or selected.get("nodeId") != item["nodeId"]
+                or selected.get("clientCertificateSha256") != request["fingerprints"]["vdp"]):
+            raise ValueError("SOURCE_TRUST_GUEST_IDENTITY_MISMATCH")
+        files = {"ca": INPUTS / "viss-update-ca"}
+        for name, role in (("vdp", "selected-platform-unit"), ("runtime", "platform-update-runtime")):
+            files[name + "Certificate"] = STORE / role / "client.pem"
+            files[name + "Key"] = STORE / role / "client-key.pem"
+        for name, path in files.items():
+            safe(path)
+            info = path.stat()
+            if (not stat.S_ISREG(info.st_mode) or info.st_nlink != 1
+                    or stat.S_IMODE(info.st_mode) != (0o644 if name == "ca" else 0o600)
+                    or not 0 < info.st_size < 16384):
+                raise ValueError("SOURCE_TRUST_GUEST_FILE_UNSAFE")
+        return execute(dict(request, action="trust-configure", generation=selected["assignmentGeneration"],
+            material={name: path.read_text() for name, path in files.items()}))
     if request["action"] != "trust-configure":
         raise ValueError("SOURCE_TRUST_GUEST_ACTION_INVALID")
     generation = request["generation"]

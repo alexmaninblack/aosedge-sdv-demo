@@ -64,6 +64,7 @@ class OperationRequest:
     kac_recovery_remove: bool = False
     iam_response_capacity: bool = False
     restart_cm: bool = False
+    startup_reconcile: bool = False
     restart_guest_resolver: bool = False
     confirm_bind_not_submitted_at: Optional[str] = None
     certificate: Optional[str] = None
@@ -71,6 +72,10 @@ class OperationRequest:
 
     def selection_error(self) -> Optional[str]:
         """Validate agreed selectors before any lifecycle adapter is called."""
+        if type(self.startup_reconcile) is not bool or (self.startup_reconcile and
+                (self.domain != "component" or self.action not in ("cm-test", "cm-build", "cm-apply")
+                 or self.target != VehicleTarget.TEST)):
+            return "CM_STARTUP_RECONCILIATION_TEST_ONLY"
         if type(self.restart_guest_resolver) is not bool or (self.restart_guest_resolver and
                 ((self.domain, self.action) != ("vm", "refresh-dns") or self.target != VehicleTarget.TEST)):
             return "DNS_RECOVERY_TEST_ONLY"

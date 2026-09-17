@@ -6,14 +6,14 @@
 - Status: accepted
 - Version: 0.17
 - Prepared: 2026-08-25
-- Updated: 2026-09-09
+- Updated: 2026-09-17
 - Owner: Demo Solution Team with Platform Team and Function Teams 1 and 2
 - Architecture input: [High-Level Architecture 1.7](../../architecture/high-level-architecture.md)
 - Scenario input: [Demo Scenarios 2.0](../staged-post-sop-brake-health-demo-scenarios.md)
 - Flow input: [Architecture Flows 2.1](../../architecture/demo-scenario-architecture-flows.md)
 - Requirement inputs: [Component Register 2.1](../../requirements/component-decomposition-and-interface-register.md), [Demo Orchestration](../../requirements/components/demo-orchestration.md) and [End-to-End Acceptance](../../requirements/components/end-to-end-acceptance.md)
 - Presentation policy: [D4-026.6](../../requirements/d4-decision-register.md#d4-026)
-- UI implementation authorized: no
+- UI implementation: existing Studio authorized; new 2.9 integration is on hold
 - Layout review artifact that predates the complete Interaction Specification
   2.5 and is not the implementation baseline:
   [AosEdge Demo linear-flow HTML mockup](aosedge-demo-linear-flow-mockup.html)
@@ -26,7 +26,36 @@
 - Standalone build helper:
   [`scripts/build-demo-interaction-mockup`](../../../scripts/build-demo-interaction-mockup)
 
-## Current reviewed mockup — 2.8 automotive edition
+## Current visual proposal — 2.9 Vehicle backend popups
+
+[Open Vehicle proposal 2.9](aosedge-demo-interaction-mockup-2-9.html)
+([editable source](aosedge-demo-interaction-mockup-2-9.source.html)).
+
+The 17 September proposal preserves the B2 miniatures, architecture actors,
+connections and left/native versus right/Studio split. Backend summaries are
+visible on Vehicle; Brake/Tire details and Aos Cloud monitoring open in dialogs,
+not separate full pages. The completed-story action is Finish demo with its
+confirmation, not a second monitoring link. These visual decisions are accepted;
+application implementation is explicitly held until the checkpoint audit closes.
+
+Audit caveat: the Tire Reset button in this preserved proposal is disabled with
+incompatible-service wording. Real Tire V1 already supports advisory and reset.
+Correct that preview using the existing contract before integrating the new UI;
+do not implement the mockup's restriction as a new service-version rule.
+
+This is a **partial visual proposal**, not a new complete lifecycle simulator.
+All records and resources are examples; Reset/CLEAR and Finish are local previews,
+never real operations. The exported standalone file embeds the same source.
+The original inline source is preserved byte-for-byte in the project. Earlier
+2.8/2.7/2.6/2.4 files are unchanged. No production acceptance is implied.
+
+Run `node tests/mockups/mockup-2-9.test.cjs` after installing the existing
+Presenter dependencies. This checks interactions, dialog navigation, Reset,
+Finish confirmation/cancellation and no network calls using jsdom. It does not
+establish browser geometry, live-data integration or fixed-screen fit; those
+remain gates in the [pre-UI audit](../../qualification/pre-ui-checkpoint-2026-09-17.md).
+
+## Retained complete flow mockup — 2.8 automotive edition
 
 [Open Interaction Mockup 2.8](aosedge-demo-interaction-mockup-2-8.html)
 ([editable source](aosedge-demo-interaction-mockup-2-8.source.html)).

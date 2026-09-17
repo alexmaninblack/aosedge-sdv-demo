@@ -3,6 +3,27 @@
 
 # Demo Control
 
+## Simulator first-drive stalls — 17 September 2026
+
+`democtl simulation prepare-cache` explicitly fills Unreal's persistent derived
+data cache for `/Game/Carla/Maps/Town10HD_Opt` and its dependencies using the
+native `DerivedDataCache -fill -Map=... -TargetPlatform=Mac` commandlet. Run it
+after `simulation stop --target test`, before `simulation start --target test`.
+It refuses an active simulator/selection and requires 60 GiB free space.
+It does not change the Factory image, running VM, Cloud, graphics quality or
+map assets. No cache is deleted. Progress is reported every 30 seconds; native
+failure/timeout is not reported as ready. Preparation logs stay under
+`.local/simulator-cache/<operation>/`. This is an explicit development/setup
+operation, not an extra build during every demo start or status refresh.
+
+The purpose is to move first-use texture/material processing out of the drive.
+Successful preparation alone is not proof of hitch-free rendering; verify a
+drive on the same map. Updated engine/assets or a removed DDC may require
+preparation again. Manual's first-command timeout starts at mode selection,
+holds full brake while waiting, and is not cancelled by a stopped-state
+heartbeat during that wait. Existing command-expiry and ownership safeguards
+remain enabled.
+
 The [certificate-selected Test Cloud amendment](certificate-selected-cloud.md)
 defines the 2026-09-14 Session setting, certificate-derived endpoint contract,
 Production isolation and transient guest-configuration boundary.
@@ -80,9 +101,11 @@ No application change is claimed by this document update.
 Implementation started on 9 September after the separately approved 2.8 source
 checkpoint. The first source increment exposes `demo plan/prepare --target test`
 (default), explicit `--target all` for engineering, and `vehicle initialize test`
-for the first stationary-Manual connection before provisioning. Ordinary
-`vehicle select` still requires a provisioned target. Only provisioning may
-retain a confirmed initial Test connection; deprovision/delete remain detached.
+for the first stationary-Manual connection after provisioning and Cloud Online
+(17 September operator amendment). Simulator startup is independent: strict
+Gateway plus read-only local dashboard, with no Unit attached. Both initial
+connection and ordinary `vehicle select` require a provisioned target.
+Provision reuses the running simulator; deprovision/delete remain detached.
 
 `component prepare --profile v1|v2|v3` may omit the engineering version override.
 The shared allocator takes the maximum observed local/Cloud version and the
@@ -97,7 +120,7 @@ are recorded in the [delivery plan](../planning/active/demo-studio-delivery-plan
 |---|---|---|
 | Create | Catalog copy/overlay + Test boot/DNS/role + both backend processes/storage | Shared Test lifecycle implemented; .33 scoped E2E; P1 |
 | Initial connect | Public stationary-Manual initialization; preserve ordinary select semantics | Shared initialization implemented; ordinary select still requires provisioning; P1 |
-| Provision | Running selected Test → official provisioning → Online → verification membership | .33 native provisioning/role membership passed; P1/P3 |
+| Provision | Running Test → official provisioning → Online → attach existing strict Gateway in stationary Manual → verification membership | Shared CLI/UI order; no scene/process restart; P1/P3 |
 | Release Prepare | Operator selects content profile; shared allocator returns opaque release handle/version | Durable reservation survives cleanup; engineering explicit-version CLI need not be removed; P1 |
 | Publish | Signed deployment bundle → recorded processing result → independent recipient observation | No approval gate for verification Test; publication may precede Provision or occur while vehicle Offline; P2 |
 | First service Deploy | Bind current Test to this service's retained Group Subject; add only that service identity | Separate Brake/Tire Subjects (11 September amendment); no version or instance-count argument; package readiness and runtime qualification remain separate; P5 |
@@ -137,7 +160,8 @@ operation. Regular terminal `vm start` retains its terminal prompt.
 
 After an execution-review pause, the operator explicitly authorized the narrow
 stationary-Manual command-deadline exception. Initial Test selection still
-physically stops, blocks both paths and resets, then confirms a real Manual
+physically stops with the guest path blocked, preserves the scene and actor
+(17 September amendment), then confirms a real Manual
 frame with zero throttle/full brake before opening Test's path. A native
 operator session is required. Ordinary handover stays in Safe Stop. First
 actuator input restores the command deadline; ownership timeout/disconnect
@@ -539,6 +563,27 @@ restart, restore the owned infrastructure and VM processes, then restore the
 intended single Current Vehicle through the same selection rules. Do not
 create replacement overlays, reprovision or automatically resume driving.
 An unresolved previous action remains visible and requires reconciliation.
+
+For a previously enrolled strict Test, VM startup reconstructs the reboot-cleared
+SM/VDP credential drop-ins from that same guest's retained credentials before
+reporting guest readiness. It checks the recorded local VM, Unit, Node and leaf
+fingerprints; missing or conflicting material blocks startup rather than enrolling
+a replacement. This does not open the source gate or select the vehicle. The
+normal Resume connection phase still performs that work in stationary Manual.
+An unchanged repeat does not restart either consumer.
+
+When a selected non-production endpoint needs runtime projection at boot, the
+existing CM restart is queued once without synchronously waiting for its stop
+inside the SSH bootstrap. The bounded guest DNS probe remains. Guest readiness
+does not claim Cloud Online; Cloud observation remains a separate Resume step.
+An unconfirmed credential restoration remains PARTIAL and is not blindly retried.
+
+If that same Resume paused during manual source selection, continuation may
+reuse the already-running simulator only after its exact operation ID, fresh
+Controller frame and retained Test enrollment are confirmed. It preserves the
+pending selection for normal guest-gate and mTLS reconciliation. Unrelated
+selection, stop, lifecycle or identity state still blocks; continuation never
+clears a checkpoint merely to restart a simulator.
 
 ### 5. Retire and Delete the Environment
 
@@ -1466,10 +1511,10 @@ The initial pre-Provision connection stages only the public Gateway CA under
 the existing `/run/democtl-source` location and proves a real TLS/VISS read.
 It writes no fabricated Cloud Unit/Node IDs and no files beneath the unmounted
 SM store. Once provisioning establishes real Unit/Node IDs, guest Core and the
-mounted store, `unit provision test` binds that same source before assigning
-the verification set. No scene reset, source detach, SM restart or alternative
-identity is part of this handoff. The existing SM VISS provider validates its
-credential/binding on each frame read; this is not a new runtime API.
+mounted store, `unit provision test` enrolls the same identity for strict
+Gateway TLS before assigning the verification set (approved amendment below).
+The VM is not restarted or reprovisioned. The existing SM VISS provider
+validates its credential/binding on each frame read; this is not a new runtime API.
 
 Both gates are confirmed BLOCKED before reset. Only the selected gate opens
 after the Controller confirms reset. The selected guest must complete a
@@ -1542,12 +1587,37 @@ UUIDs identify TLS peers; SM retains its distinct native hardware Node ID
 ownership check. Demo Control validates their provisioning correspondence.
 Brake and Tire remain KUKSA clients and receive no Gateway credential.
 
-The first migration makes one controlled simulation-group restart and activates
-SM/VDP credentials once. A repeated call reconciles the same assignment without
+The 17 September operator amendment replaces the migration approach: start
+the Gateway in strict DETACHED mode, with a local CA and read-only Dashboard
+identity only. After provisioning, add Unit-bound leaves under the same CA.
+The CA, Dashboard certificate, Gateway process, CARLA actor and native window
+are unchanged. Activate SM/VDP credentials once. A repeated call reconciles the same assignment without
 issuing credentials, rebuilding or restarting. Production, VM identity and
-Factory image are unchanged. This is an explicit engineering qualification
-command; automatic Presenter onboarding and reboot reconstruction remain open.
+Factory image are unchanged. The explicit engineering command remains available.
 Strict authentication failure never falls back to the development profile.
+
+The operator subsequently approved automatic onboarding inside Test Provision,
+shared by Presenter, quick preparation and CLI. After Cloud identity and guest
+readiness are confirmed, keep the unselected guest's source gate closed;
+an internal Safe Stop must not authorize FOTA. There is no authentication-profile
+switch or runtime hot-reload. Enroll those exact Unit/Node identities without restarting the scene,
+confirm stationary Manual, configure guest credentials, then reopen the Test
+gate. Assign verification-set membership only after this succeeds. VM/Cloud
+identity and Production remain unchanged. Credential activation may restart
+SM/VDP once, never CM/IAM. A repeated completed onboarding observes the same
+assignment without restarting the simulator or minting credentials. First
+connection confirms a fresh stopped frame and native session, then stationary
+Manual without a scene reset. Explicit Test/Production handover retains its
+separate reset contract. An older running development-profile Gateway must
+be restarted explicitly, never silently inside Provision.
+
+An empty factory controller proves an authenticated update-runtime VISS read,
+not VDP readiness. Only absent active/installed state with an inactive provider
+qualifies for that baseline; failed or installed-but-inactive VDP does not.
+Installed VDP must independently report live data and have its authenticated
+selected-unit Gateway role. Operator Safe Stop remains a separate installation
+action. Interrupted onboarding retains an exact identity-bound pending receipt;
+it is not a general permission to reset later handovers to Manual.
 
 Live VDP/Dashboard authentication, no-client-certificate rejection and the
 VDP68→69 Safe Stop update passed on the same Test. This does not qualify actual
@@ -1571,6 +1641,13 @@ until a producer manifest binding is integrated; metadata is never guessed.
 
 ### Local VM Start/Stop — Agreed Increment
 
+- Explicit engineering recovery after host sleep: `democtl vm sync-time test`
+  restarts only the current owned Test's `systemd-timesyncd` once, waits up to
+  15 seconds for a fresh accepted NTP response, then independently bounds guest
+  clock skew against the host below five seconds. It does not set time manually,
+  change NTP configuration, restart Aos/CARLA/VM, or relax update freshness.
+  An unconfirmed result is not an automatic retry. An already active Safe Stop
+  can allow a pending component update to proceed once time is restored.
 - Target test, production or all already-created roles; reuse their image,
   overlays, local identities and ports. No implicit create, provision, CARLA,
   Current Vehicle change, backup, rebuild or full-demo readiness claim.

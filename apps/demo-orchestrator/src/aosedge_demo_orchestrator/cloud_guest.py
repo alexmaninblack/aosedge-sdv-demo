@@ -81,11 +81,15 @@ def apply(request):
         config["serviceDiscoveryUrl"] = url
         bind(json.dumps(config, indent=2) + "\n", "cm.cfg", target)
         if cm_active:
-            subprocess.run(["systemctl", "restart", "aos-cm.service"], check=True,
+            # Queue once after projecting the endpoint. VM startup confirms
+            # guest/DNS readiness, not CM/Cloud Online; observe Cloud separately.
+            # A synchronous stop can exceed the SSH bootstrap budget and leave
+            # the following credential reconstruction permanently unexecuted.
+            subprocess.run(["systemctl", "--no-block", "restart", "aos-cm.service"], check=True,
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    import socket
-    socket.getaddrinfo(domain, 9000, type=socket.SOCK_STREAM)
-    return dict(domain=domain, configured=True, changed=changed, cmRestarted=bool(changed and cm_active),
+    # The enclosing startup path performs the bounded DNS readiness probe.
+    return dict(domain=domain, configured=True, changed=changed, cmRestarted=False,
+                cmRestartRequested=bool(changed and cm_active),
                 hostsProjected=len(entries), serviceDiscoveryUrl=url, factoryUnchanged=True)
 
 

@@ -46,6 +46,20 @@ does not close those gates.
 
 ### Applicability and replacement map
 
+**17 September visual-only amendment:** the [2.9 Vehicle proposal](aosedge-demo-interaction-mockup-2-9.html)
+adds inline Brake/Tire backend summaries and a Cloud summary while retaining
+the architecture actors, B2 imagery, connectors and fixed native-left/Studio-right
+composition. Backend and Unit monitoring details use dialogs over Vehicle;
+separate read-only dashboard pages are no longer the intended navigation.
+Installed component/service detail clicks remain. Team release-authoring views
+remain separate and unchanged. At story completion, Finish demo replaces the
+redundant monitoring shortcut, retaining confirmation and all cleanup guards.
+No lifecycle, data authority, guest access or service protocol changes are
+authorized by this visual amendment. Integration is on hold for the checkpoint
+audit and the user's subsequent implementation instruction. Version-specific
+metrics, stale/missing data, modal polling and keyboard/fixed-screen fit must be
+qualified against real read models; mock values are never evidence.
+
 The earlier sections and their `UI-INT-*` / `UI-AT-*` anchors remain intact for
 traceability and future Production work. Their conflicting provisions are
 **superseded for this Test milestone**, not concurrent requirements:
@@ -71,8 +85,9 @@ waiver of platform requirements outside the bounded demo.
    immutable factory image, boot with role/DNS initialized, and preparation of
    both product backends. It does not provision or deploy a service. Empty
    service slots remain empty; factory VDP metadata is not a Cloud observation.
-2. **Connect** starts/reuses simulator, Gateway and native surfaces and initially
-   connects Test in stationary Manual. No automatic Autopilot or Safe Stop.
+2. **Start simulator** starts/reuses CARLA, strict Gateway and native surfaces.
+   The local dashboard works, but no Domain Controller is attached yet.
+   This 17 September operator amendment supersedes the pre-Provision connection.
    Presenter simulation Start/Stop explicitly use `--target test`, preserving
    any existing Production source gate.
 3. **Full story** shows Platform Prepare → Sign → Publish v1 before Provision.
@@ -80,11 +95,18 @@ waiver of platform requirements outside the bounded demo.
    the eligible latest release may arrive first. Do not force v1, downgrade,
    or claim skipped profile chapters were demonstrated. **Quick preparation**
    explicitly composes the ordinary sequence and stops in Manual.
-4. **Provision** preserves the running, locally connected controller: official
-   provisioning → observe Online → add Test verification membership → observe
+4. **Provision** preserves the running controller and simulator: official
+   provisioning → observe Online → enroll the real Unit/Main Node in the existing
+   Gateway → confirm stationary Manual → add Test verification membership → observe
    delivery. If registration succeeded but Online/membership did not, resume
    those remaining stages against the same identity. Local connectivity alone
-   never establishes Cloud Online.
+   never establishes Cloud Online. No CARLA, Gateway, native-window or scene
+   restart occurs. First connection retains the actor and reset generation;
+   it requires a fresh confirmed stopped frame and a native operator session.
+   The guest gate remains closed until Manual is confirmed, so internal stop
+   does not authorize FOTA. Connect before first VDP installation: the factory
+   update-runtime needs the operator's subsequent Safe Stop. External network
+   loss after enrollment does not remove the local assignment.
 5. **VDP update** distinguishes accepted bundle, server processing, Published,
    Unit Pending and Installed. Apply is owned by the vehicle's Safe Stop policy,
    not a Cloud panel button. The Cloud component inventory has no VDP-process

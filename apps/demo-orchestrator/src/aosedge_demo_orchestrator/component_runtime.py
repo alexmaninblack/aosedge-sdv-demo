@@ -39,6 +39,7 @@ FACTORY_RELEASES = {
     "6.1.1-maninblack.32": "04fc8270c55ff5c35f1e98af534a5efccb035464",
     "6.1.1-maninblack.33": "f7922b02b15f6cf816f181e1bf97572b61859aea",
     "6.1.1-maninblack.34": "81e7e1fda991c133a7dc83188c1dcf0f966fd62e",
+    "6.1.1-maninblack.35": "bb691efcbf19f1bebd74fd2ef3ae9ff0aee2bf74",
 }
 RELATIVE = "meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files/systemd-slot-component"
 BUILDER_PROJECT = "/home/yocto/r61-build/project/yocto"
@@ -730,6 +731,181 @@ def apply_iam_response_capacity(environment, state, driver):
     return result
 
 
+def qualify_cm_startup(target, compile_binary=False):
+    """Red/green startup proof on the warm .34 CM; restore Builder sources/cache."""
+    from .environment import atomic_json
+    if target != "test":
+        raise EnvironmentError("CM_STARTUP_RECONCILIATION_TEST_ONLY")
+    root = SOURCE / "build/aos_core_lib_cpp"
+    relative = "src/core/cm/launcher/launcher.cpp"
+    test_relative = "src/core/cm/launcher/tests/launcher.cpp"
+    before = subprocess.check_output(["git", "show", "HEAD:" + relative], cwd=root).decode()
+    old = "            Tie(doRebalance, err) = mInstanceManager.SetSubjects(mNewSubjects.GetValue());"
+    new = ("            bool subjectsChanged = false;\n"
+           "            Tie(subjectsChanged, err) = mInstanceManager.SetSubjects(mNewSubjects.GetValue());\n"
+           "            doRebalance = doRebalance || subjectsChanged;")
+    if before.count(old) != 1 or (root / relative).read_text() not in (before, before.replace(old, new)):
+        raise EnvironmentError("CM_STARTUP_BASELINE_REQUIRES_RECONCILIATION")
+    tests = subprocess.check_output(["git", "show", "HEAD:" + test_relative], cwd=root).decode()
+    start = tests.index("TEST_F(CMLauncherTest, RebalancingWithStoredNotScheduledInstances)")
+    end = tests.index("\nTEST_F(", start + 1)
+    original = tests[start:end]
+    needle = "    mInstanceRunner.SendInitialStatuses(cNodeIDRemoteSM1);"
+    replacement = '''    // SM may already run an instance whose stored CM scheduling was incomplete.
+    // Startup reconciliation must restore the plan before sending a stop request.
+    std::vector<InstanceStatus> running = {CreateInstanceStatus(
+        CreateInstanceIdent(cService2, cSubject1, 0), cNodeIDRemoteSM1, cRunnerRunc,
+        aos::InstanceStateEnum::eActive, ErrorEnum::eNone, "", false, digest2.CStr())};
+    static_cast<InstanceStatusReceiverItf&>(mLauncher).OnNodeInstancesStatusesReceived(cNodeIDRemoteSM1,
+        Array<InstanceStatus>(running.data(), running.size()));'''
+    if original.count(needle) != 1:
+        raise EnvironmentError("CM_STARTUP_REGRESSION_FIXTURE_CHANGED")
+    fixture = original.replace(needle, replacement).replace(
+        "    ASSERT_TRUE(mLauncher.Start().IsNone());",
+        '''    EXPECT_CALL(mInstanceRunner, OnRunRequest()).WillRepeatedly([this]() {
+        for (const auto& [node, request] : mInstanceRunner.GetRunRequests()) {
+            EXPECT_TRUE(request.mStopInstances.empty()) << "unexpected startup stop: " << node;
+        }
+    });
+    ASSERT_TRUE(mLauncher.Start().IsNone());''')
+    test_after = tests[:start] + fixture + tests[end:]
+    if (root / test_relative).read_text() not in (tests, test_after):
+        raise EnvironmentError("CM_STARTUP_LOCAL_TEST_SOURCE_CHANGED")
+    proof_root = ARTIFACT.with_name("cm-startup-reconcile-20260917")
+    proof_root.mkdir(mode=0o700, exist_ok=True)
+    attempt = Path(tempfile.mkdtemp(prefix="proof-", dir=proof_root))
+    payload = dict(work=BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-communicationmanager/git",
+        output=BUILDER_PROJECT + "/cm-startup-reconcile-" + attempt.name,
+        relative=relative, testRelative=test_relative, before=before, after=before.replace(old, new),
+        testBefore=tests, testAfter=test_after, compileBinary=compile_binary)
+    atomic_json(attempt / "intent.json", dict(state="STARTED", startedAt=time.time(),
+        sourceSha256=hashlib.sha256(before.encode()).hexdigest(), compileBinary=compile_binary))
+    script = r'''
+import hashlib,json,os,shlex,shutil,subprocess,sys
+from pathlib import Path
+c=json.load(sys.stdin); p=Path(c['work']); out=Path(c['output'])
+assert not out.exists(), 'attempt exists; reconcile'
+assert hashlib.sha256((p/'package/usr/bin/aos_cm_app').read_bytes()).hexdigest() == '3fffb5b89c742c233a634246c807d74e0bbc206dc143f8222c9b8283e0d78c98', 'warm Factory .34 package mismatch'
+lib=p/'service-update-deps/aos_core_lib_cpp'
+src=lib/c['relative']; test=lib/c['testRelative']
+assert src.read_text()==c['before'], 'warm source mismatch'
+assert test.read_text()==c['testBefore'], 'warm test baseline mismatch'
+out.mkdir(mode=0o700)
+cache=dict((x.split(':',1)[0],x.split('=',1)[1]) for x in (p/'build/CMakeCache.txt').read_text().splitlines() if ':' in x and '=' in x and not x.startswith(('#','//')))
+run=(p/'temp/run.do_compile').read_text(); assert run.count('\ndo_compile\n')==1
+env=os.environ.copy()
+env['PATH']=shlex.split(next(x for x in run.splitlines() if x.startswith('export PATH=')))[1].split('=',1)[1]
+testbuild=p/'service-update-launcher-tests'
+def logged(name,args,allowed=(0,),**kw):
+ with (out/(name+'.log')).open('wb') as log:
+  result=subprocess.run(args,stdout=log,stderr=subprocess.STDOUT,timeout=300,env=env,**kw)
+ if result.returncode not in allowed:
+  print(json.dumps(dict(state='FAILED',stage=name,tail=(out/(name+'.log')).read_text()[-5000:])),flush=True)
+  raise RuntimeError('stage failed: '+name)
+ return result.returncode
+def compile_test(name):
+ logged(name,[cache['CMAKE_COMMAND'],'--build',str(testbuild),'--target','aos_core_cm_launcher_test','--parallel','6'])
+def native(name,filters,allowed=(0,)):
+ matches=list(testbuild.rglob('aos_core_cm_launcher_test')); assert len(matches)==1
+ return logged(name,['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'),'--library-path',str(p/'recipe-sysroot/lib')+':'+str(p/'recipe-sysroot/usr/lib'),str(matches[0]),'--gtest_filter='+filters],allowed)
+app_script=run.replace('\ndo_compile\n','\ncmake --build '+str(p/'build')+' --target aos_cm_app -- -j6\n')
+binary_touched=False
+try:
+ test.write_text(c['testAfter'])
+ logged('configure-tests',[cache['CMAKE_COMMAND'],'-S',str(lib),'-B',str(testbuild),'-G',cache['CMAKE_GENERATOR'],'-DCMAKE_MAKE_PROGRAM='+cache['CMAKE_MAKE_PROGRAM'],'-DWITH_TEST=ON','-DWITH_MBEDTLS=OFF','-DWITH_OPENSSL=OFF','-DFETCHCONTENT_FULLY_DISCONNECTED=ON','-DCMAKE_GTEST_DISCOVER_TESTS_DISCOVERY_MODE=PRE_TEST','-DCMAKE_TOOLCHAIN_FILE='+str(p/'toolchain.cmake')])
+ compile_test('baseline-build')
+ red=native('baseline-test','CMLauncherTest.RebalancingWithStoredNotScheduledInstances',(0,1))
+ assert red==1 and 'unexpected startup stop:' in (out/'baseline-test.log').read_text(), 'exact startup fault not reproduced; stop proof'
+ src.write_text(c['after'])
+ compile_test('candidate-build')
+ native('candidate-test','CMLauncherTest.*:ServiceReconciliation/*')
+ manifest=dict(state='REGRESSION_PASSED',tests=[line for line in (out/'candidate-test.log').read_text().splitlines() if '[  PASSED  ]' in line],baselineFailsOnUnexpectedStop=True)
+ if c['compileBinary']:
+  binary_touched=True
+  logged('cm-build',['bash','-s'],input=app_script.encode())
+  binary=out/'aos_cm_app'; shutil.copyfile(p/'build/src/cm/app/aos_cm_app',binary)
+  subprocess.run([cache['CMAKE_STRIP'],'--strip-unneeded',str(binary)],check=True,capture_output=True,env=env)
+  raw=binary.read_bytes(); assert raw[:6]==b'\x7fELF\x02\x01' and raw[18:20]==b'\xb7\x00'
+  manifest.update(state='BUILT_TESTED',sha256=hashlib.sha256(raw).hexdigest(),size=len(raw))
+finally:
+ src.write_text(c['before']); test.write_text(c['testBefore'])
+ if binary_touched: logged('restore-cm-cache',['bash','-s'],input=app_script.encode())
+manifest.update(warmSourcesRestored=True,imageBuilt=False)
+(out/'manifest.json').write_text(json.dumps(manifest))
+print(json.dumps(manifest),flush=True)
+'''
+    try:
+        builder("test", "start")
+        ssh = builder_ssh()
+        deadline = time.monotonic() + 90
+        while subprocess.run(ssh + ["true"], capture_output=True, timeout=8).returncode:
+            if time.monotonic() > deadline:
+                raise EnvironmentError("CM_STARTUP_BUILDER_BOOT_TIMEOUT")
+            time.sleep(1)
+        print("Test: targeted native CM startup red/green test; VM and Cloud unchanged", file=sys.stderr, flush=True)
+        result = subprocess.run(ssh + ["python3 -c " + shlex.quote(script)], input=json.dumps(payload).encode(),
+            capture_output=True, timeout=1500)
+        (attempt / "build.log").write_bytes(result.stdout + result.stderr)
+        if result.returncode:
+            raise EnvironmentError("CM_STARTUP_PROOF_FAILED:" + str(attempt / "build.log"))
+        manifest = json.loads(result.stdout)
+        for name in ("baseline-test.log", "candidate-test.log"):
+            raw = subprocess.check_output(ssh + ["cat " + payload["output"] + "/" + name], timeout=20)
+            (attempt / name).write_bytes(raw)
+        if compile_binary:
+            raw = subprocess.check_output(ssh + ["cat " + payload["output"] + "/aos_cm_app"], timeout=30)
+            if hashlib.sha256(raw).hexdigest() != manifest["sha256"]:
+                raise EnvironmentError("CM_STARTUP_TRANSFER_DIGEST_MISMATCH")
+            (attempt / "aos_cm_app").write_bytes(raw)
+        atomic_json(attempt / "manifest.json", manifest)
+        return dict(manifest, artifact=str(attempt))
+    finally:
+        builder("test", "stop")
+
+
+def apply_cm_startup(environment, target):
+    """One reversible binary replacement on the preserved, explicitly owned Test."""
+    from .environment import JOURNAL, atomic_json, factory_for
+    from .status import read_json, now
+    from .source import SourceDriver
+    from .vm import VMService
+    if target != "test":
+        raise EnvironmentError("CM_STARTUP_RECONCILIATION_TEST_ONLY")
+    artifact = ARTIFACT.with_name("cm-startup-reconcile-20260917") / "proof-wfi3wx05"
+    expected = "0c491e8a744458b01bf81126f99ecdab3367795f757c419b92ab338b6518da23"
+    manifest = read_json(artifact / "manifest.json")
+    raw = (artifact / "aos_cm_app").read_bytes()
+    if (manifest.get("state") != "BUILT_TESTED" or not manifest.get("baselineFailsOnUnexpectedStop")
+            or manifest.get("sha256") != expected or hashlib.sha256(raw).hexdigest() != expected):
+        raise EnvironmentError("CM_STARTUP_QUALIFIED_BINARY_REQUIRED")
+    with environment._writer():
+        state = read_json(environment.root / JOURNAL)
+        vehicle = state.get("vehicles", {}).get("test", {})
+        if (vehicle.get("localVmId") != "363d8b2d-187f-4713-8af1-5cf9aa598177"
+                or vehicle.get("unitId") != "db0f8a34-5adf-4dec-b0fb-9c4f5b15c905"
+                or factory_for(state, "test").get("sha256") !=
+                "fac0cccfd5c4ededaf068bbd574b0f0a83b9af1b94f1df94022fa0ca5893eeeb"):
+            raise EnvironmentError("CM_STARTUP_REQUIRES_PRESERVED_TEST_34")
+        if state.get("cmStartupProof"):
+            raise EnvironmentError("CM_STARTUP_EXISTING_ATTEMPT_RECONCILE")
+        record = dict(state="STARTED", startedAt=now(), sha256=expected)
+        state["cmStartupProof"] = record
+        atomic_json(environment.root / JOURNAL, state)
+        driver = SourceDriver(VMService(environment))
+        try:
+            with driver.operation(timeout=65):
+                result = driver.guest(state, "test", "component-cm-apply", target="test",
+                    proof="factory34-startup-reconcile", sha256=expected,
+                    binary=base64.b64encode(gzip.compress(raw, mtime=0)).decode())
+        except (OSError, ValueError, EnvironmentError, subprocess.SubprocessError):
+            record.update(state="RECONCILIATION_REQUIRED")
+            atomic_json(environment.root / JOURNAL, state)
+            raise EnvironmentError("CM_STARTUP_ATTEMPT_RECONCILIATION_REQUIRED") from None
+        record.update(state="COMPLETED", result=result, confirmedAt=now())
+        atomic_json(environment.root / JOURNAL, state)
+        return result
+
+
 def builder(target, action):
     """Reuse the established Builder lifecycle, not another shell helper."""
     if target != "test" or action not in ("start", "stop"):
@@ -868,10 +1044,10 @@ def build_factory(version, metadata_only=False):
         prefix = "cd " + BUILDER_PROJECT + "; . poky/oe-init-build-env build-main >/dev/null; "
         suffix = version.rsplit(".", 1)[1]
         flags = " -R " + source + "/qualification/factory-" + suffix + ".conf "
-        managers = "aos-servicemanager" + (" aos-communicationmanager" if suffix in ("32", "33", "34") else "")
-        if suffix == "34":
+        managers = "aos-servicemanager" + (" aos-communicationmanager" if suffix in ("32", "33", "34", "35") else "")
+        if suffix in ("34", "35"):
             managers += " aos-iamanager"
-        targets = managers + (" aos-kuksa-auth-compat" if suffix == "34" else "")
+        targets = managers + (" aos-kuksa-auth-compat" if suffix in ("34", "35") else "")
         stage("compile the proven manager corrections from committed source (offline)")
         remote(prefix + "bitbake" + flags + "-c compile " + targets, timeout=1200, capture=False)
         work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-servicemanager/git"
@@ -884,7 +1060,27 @@ def build_factory(version, metadata_only=False):
         print(test_log, file=sys.stderr, flush=True)
         if "[  PASSED  ] 5 tests." not in test_log:
             raise EnvironmentError("FACTORY_EXPECTED_FIVE_TESTS_NOT_EXECUTED")
-        if suffix == "34":
+        if suffix == "35":
+            stage("compile and run the CM startup and service-reconciliation regressions")
+            cm_work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-communicationmanager/git"
+            cm_tests = r'''
+import os, pathlib, shlex, subprocess
+p=pathlib.Path(WORK)
+cache=dict((x.split(':',1)[0],x.split('=',1)[1]) for x in (p/'build/CMakeCache.txt').read_text().splitlines() if ':' in x and '=' in x and not x.startswith(('#','//')))
+env=os.environ.copy()
+run=(p/'temp/run.do_compile').read_text()
+env['PATH']=shlex.split(next(x for x in run.splitlines() if x.startswith('export PATH=')))[1].split('=',1)[1]
+b=p/'service-update-launcher-tests'
+subprocess.run([cache['CMAKE_COMMAND'],'-S',str(p/'service-update-deps/aos_core_lib_cpp'),'-B',str(b),'-G',cache['CMAKE_GENERATOR'],'-DCMAKE_MAKE_PROGRAM='+cache['CMAKE_MAKE_PROGRAM'],'-DWITH_TEST=ON','-DWITH_MBEDTLS=OFF','-DWITH_OPENSSL=OFF','-DFETCHCONTENT_FULLY_DISCONNECTED=ON','-DCMAKE_GTEST_DISCOVER_TESTS_DISCOVERY_MODE=PRE_TEST','-DCMAKE_TOOLCHAIN_FILE='+str(p/'toolchain.cmake')],env=env,check=True)
+subprocess.run([cache['CMAKE_COMMAND'],'--build',str(b),'--target','aos_core_cm_launcher_test','--parallel','6'],env=env,check=True)
+tests=list(b.rglob('aos_core_cm_launcher_test')); assert len(tests)==1
+subprocess.run(['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'),'--library-path',str(p/'recipe-sysroot/lib')+':'+str(p/'recipe-sysroot/usr/lib'),str(tests[0]),'--gtest_filter=CMLauncherTest.*:ServiceReconciliation/*'],env=env,check=True)
+'''.replace("WORK", repr(cm_work), 1)
+            cm_log = remote("python3 -c " + shlex.quote(cm_tests), timeout=300)
+            if "[  PASSED  ] 19 tests." not in cm_log:
+                raise EnvironmentError("FACTORY_CM_STARTUP_REGRESSIONS_INCOMPLETE")
+            test_log += cm_log
+        if suffix in ("34", "35"):
             stage("verify uniform CM/SM/IAM permission capacity and native KAC/Provider tests")
             for recipe in managers.split():
                 manager_build = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/" + recipe + "/git/build"
@@ -904,7 +1100,7 @@ def build_factory(version, metadata_only=False):
                 test_log += remote(kac_loader + " --library-path " + kac_libs + " " + kac_work + "/build/" + executable, timeout=60)
         stage("package the managers with package QA")
         remote(prefix + "bitbake" + flags + targets, timeout=1200, capture=False)
-        if suffix in ("32", "33", "34"):
+        if suffix in ("32", "33", "34", "35"):
             # Verify final package input after native do_update_config, not the
             # intermediate resource file that do_install initially creates.
             package_check = (
@@ -919,7 +1115,7 @@ def build_factory(version, metadata_only=False):
                 "print('Factory service-input package: PASS')"
             ) % (work + "/image", source + "/meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files")
             print(remote("python3 -c " + shlex.quote(package_check)), file=sys.stderr, flush=True)
-        if suffix in ("33", "34"):
+        if suffix in ("33", "34", "35"):
             cm_work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-communicationmanager/git"
             cm_check = ("import json; from pathlib import Path; "
                 "config=json.loads(Path(%r).read_text()); "

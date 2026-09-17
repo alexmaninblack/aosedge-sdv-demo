@@ -14,8 +14,10 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Start Here
 
-- [Current working .33 baseline](qualification/current-baseline.md) — scoped
+- [Current working .35 baseline](qualification/current-baseline.md) — scoped
   Test E2E, exact image, installed profiles and explicit exclusions.
+- [17 September pre-UI checkpoint audit](qualification/pre-ui-checkpoint-2026-09-17.md)
+  — source return point, current evidence, cleanup and remaining gates.
 - [13 September consolidation audit](qualification/factory-33-consolidation-audit-2026-09-13.md)
   — source/remote inventory, cleanup disposition, KUKSA permissions and Cloud
   recovery workaround, with exact remaining closure conditions.

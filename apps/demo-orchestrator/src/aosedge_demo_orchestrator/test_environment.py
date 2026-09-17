@@ -20,6 +20,9 @@ from .environment import (EnvironmentError, FACTORY, JOURNAL, MANIFEST, OVERLAYS
                           TEST_MANIFEST, factory_for, atomic_json, digest, encoded, sync_directory)
 from .guest_access import ACCESS_FILES
 from .status import object_id, read_json
+from .source_trust import FILES as TRUST_FILES, LOCAL_FILES as LOCAL_TRUST_FILES, PROFILE as TRUST_PROFILE, owned as trust_owned
+
+TRUST_DIRECTORY = ".run/demo-current/control/viss-trust"
 
 ROOT_FIELDS = {"schemaVersion", "kind", "startedAt", "stage", "scope", "factory",
     "currentVehicle", "vehicles", "operations", "shared", "cloudBinding", "source", "selectedCloudDomain", "cloudContexts",
@@ -27,8 +30,16 @@ ROOT_FIELDS = {"schemaVersion", "kind", "startedAt", "stage", "scope", "factory"
     "backends", "demoLifecycle", "testRetirement", "workspace", "demoSubjects", "serviceOperations",
     "smServiceUpdateProof", "cmServiceUpdateProof", "cmComparison20260912", "cmIdleFullStatusProof"}
 
+# Receipts produced only by the explicit Test-only transient qualification
+# commands. Their guest effects end with the stopped, retired Test overlay;
+# they must not leak into its successor or relax unknown-field rejection.
+TEST_GUEST_RECEIPTS = ("corePermissionCapacityProof", "iamResponseCapacityProof",
+    "kacActivation", "kacDataProof", "kacDataSubscriptionProof", "kacRecovery",
+    "kacRecoveryRemoval", "kacTimeReadProof", "providerReadinessProof", "cmStartupProof")
+ROOT_FIELDS.update(TEST_GUEST_RECEIPTS)
+
 TEST_RECEIPTS = ("componentOperations", "componentSchema", "smDemoProof", "demoPreparation",
-                 "serviceOperations", "smServiceUpdateProof", "cmServiceUpdateProof", "cmComparison20260912", "cmIdleFullStatusProof")
+                 "serviceOperations", "smServiceUpdateProof", "cmServiceUpdateProof", "cmComparison20260912", "cmIdleFullStatusProof") + TEST_GUEST_RECEIPTS
 
 
 def _state(environment):
@@ -61,7 +72,7 @@ def _state(environment):
 
 def _layout(environment, state):
     allowed = {"writer.lock", "journal.json", "test-access", "production-access", "source", "control", "backends",
-               "production.qmp", "production.serial"}
+               "production.qmp", "production.serial", "dns-bridge.log"}
     directory = environment.root / ".run/demo-current"
     if any(path.name not in allowed for path in directory.iterdir()):
         raise EnvironmentError("TEST_LIFECYCLE_UNTRACKED_RUNTIME_FILE")
@@ -166,6 +177,38 @@ def _targets(environment, state):
     if item.get("factory") is not None:
         factory = factory_for(state, "test")
         targets.update(factory=factory["path"], manifest=factory["manifestPath"])
+    source = state.get("source") or {}
+    trust = source.get("trust")
+    if trust:
+        environment._directory(".run/demo-current/control")
+        if (source.get("state") != "STOPPED" or source.get("operation") or source.get("stopOperation")
+                or state.get("currentVehicle") is not None or trust.get("profile") != TRUST_PROFILE
+                or trust.get("target") != "test"):
+            raise EnvironmentError("SOURCE_TRUST_RETIREMENT_SCOPE_CONFLICT")
+        directory = environment.root / TRUST_DIRECTORY
+        receipts = (state.get("testRetirement") or {}).get("targets", {})
+        if directory.exists() or directory.is_symlink():
+            trust_owned(directory, directory=True)
+            if any(path.name not in TRUST_FILES for path in directory.iterdir()):
+                raise EnvironmentError("SOURCE_TRUST_CLEANUP_FILES_CONFLICT")
+        identity = directory / "identity.json"
+        local_only = bool(receipts) and not any("trust:" + name in receipts for name in TRUST_FILES - LOCAL_TRUST_FILES)
+        if identity.exists() or identity.is_symlink():
+            trust_owned(identity)
+            recorded = read_json(identity)
+            local_only = recorded == dict(schemaVersion=1) and not ({"vdp", "runtime"} & set(trust.get("fingerprints", {})))
+            if not local_only and any(recorded.get(key) != item.get(key) for key in ("unitId", "nodeId", "localVmId")):
+                raise EnvironmentError("SOURCE_TRUST_RETIREMENT_IDENTITY_CONFLICT")
+        elif receipts.get("trust:identity.json", {}).get("state") not in ("REMOVE_PENDING", "REMOVED"):
+            raise EnvironmentError("SOURCE_TRUST_RETIREMENT_IDENTITY_MISSING")
+        expected_files = LOCAL_TRUST_FILES if local_only else TRUST_FILES
+        # Include any exact owned partial-enrollment leaves as cleanup targets.
+        existing_files = {path.name for path in directory.iterdir()} if directory.exists() else set()
+        for name in sorted(expected_files | existing_files):
+            path = directory / name
+            if path.exists() or path.is_symlink():
+                trust_owned(path)
+            targets["trust:" + name] = TRUST_DIRECTORY + "/" + name
     return targets
 
 
@@ -241,7 +284,8 @@ def retire_test(environment, cloud_check, backend_check):
                 expected = (factory_for(state, "test")["path"] if key == "factory" and item.get("factory") else
                     TEST_MANIFEST if key == "manifest" and item.get("factory") else
                     OVERLAYS["test"] if key == "overlay" else (
-                    ".run/demo-current/test-access/" + key[7:] if key.startswith("access:") and key[7:] in ACCESS_FILES else None)
+                    ".run/demo-current/test-access/" + key[7:] if key.startswith("access:") and key[7:] in ACCESS_FILES else
+                    TRUST_DIRECTORY + "/" + key[6:] if key.startswith("trust:") and key[6:] in TRUST_FILES else None)
                     )
                 if (not isinstance(receipt, dict) or set(receipt) != {"path", "identity", "state"}
                         or not expected or receipt.get("path") != expected or receipt.get("state") not in ("READY", "REMOVE_PENDING", "REMOVED")
@@ -288,6 +332,12 @@ def retire_test(environment, cloud_check, backend_check):
         if access.exists():
             access.rmdir()
             sync_directory(access.parent)
+        if any(key.startswith("trust:") for key in targets):
+            directory = environment.root / TRUST_DIRECTORY
+            if directory.exists():
+                directory.rmdir()
+                sync_directory(directory.parent)
+            state["source"].pop("trust", None)
         state["stage"] = state["testRetirement"]["restoreStage"]
         state["testRetirement"] = dict(state="COMPLETED")
         state["vehicles"].pop("test")

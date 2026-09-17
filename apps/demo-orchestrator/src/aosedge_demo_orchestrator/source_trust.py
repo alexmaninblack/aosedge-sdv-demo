@@ -17,11 +17,12 @@ import tempfile
 from pathlib import Path
 from uuid import UUID, uuid4
 
-from .environment import EnvironmentError
+from .environment import EnvironmentError, atomic_json
 
 PROFILE = "SELECTED_UNIT_MUTUAL_TLS"
 FILES = frozenset({"ca.pem", "ca-key.pem", "dashboard.pem", "dashboard-key.pem",
     "vdp.pem", "vdp-key.pem", "runtime.pem", "runtime-key.pem", "identity.json"})
+LOCAL_FILES = FILES - {"vdp.pem", "vdp-key.pem", "runtime.pem", "runtime-key.pem"}
 OPENSSL = "/opt/homebrew/opt/openssl@3/bin/openssl"
 URN = "urn:aosedge:demo:viss-client:v1:"
 
@@ -84,13 +85,23 @@ def verify_pair(directory, role, uri=None):
             raise EnvironmentError("SOURCE_TRUST_CERTIFICATE_IDENTITY_MISMATCH")
 
 
-def prepare(directory, vehicle):
-    """First create or validate the SAME identities; never rotate on a retry."""
-    expected = identity(vehicle)
+def issue(stage, authority, role, uri):
+    openssl(["req", "-new", "-newkey", "rsa:2048", "-nodes", "-sha256",
+        "-subj", "/CN=AosEdge VISS " + role, "-keyout", stage / (role + "-key.pem"),
+        "-out", stage / "request.pem"])
+    write_private(stage / "extensions", ("basicConstraints=critical,CA:FALSE\n"
+        "keyUsage=critical,digitalSignature\nextendedKeyUsage=clientAuth\n"
+        "subjectAltName=URI:" + uri + "\n").encode())
+    openssl(["x509", "-req", "-in", stage / "request.pem", "-CA", authority / "ca.pem",
+        "-CAkey", authority / "ca-key.pem", "-set_serial", "0x" + os.urandom(16).hex(),
+        "-days", "7", "-sha256", "-extfile", stage / "extensions", "-out", stage / (role + ".pem")])
+    (stage / "request.pem").unlink()
+    (stage / "extensions").unlink()
+
+
+def prepare_local(directory):
+    """Local dashboard/CA only. No Cloud identity and no guest authority."""
     owned(directory.parent, directory=True)
-    uris = dict(dashboard=URN + "engineering-dashboard",
-        vdp=URN + "selected-platform-unit:" + expected["unitId"] + ":" + expected["nodeId"],
-        runtime=URN + "platform-update-runtime:" + expected["unitId"] + ":" + expected["nodeId"])
     if not directory.exists() and not directory.is_symlink():
         with tempfile.TemporaryDirectory(prefix=".viss-issue-", dir=directory.parent) as temporary:
             stage = Path(temporary)
@@ -98,24 +109,55 @@ def prepare(directory, vehicle):
                 "-subj", "/CN=AosEdge local demo VISS client CA", "-keyout", stage / "ca-key.pem",
                 "-out", stage / "ca.pem", "-addext", "basicConstraints=critical,CA:TRUE,pathlen:0",
                 "-addext", "keyUsage=critical,keyCertSign,cRLSign"])
-            for role, uri in uris.items():
-                openssl(["req", "-new", "-newkey", "rsa:2048", "-nodes", "-sha256",
-                    "-subj", "/CN=AosEdge VISS " + role, "-keyout", stage / (role + "-key.pem"),
-                    "-out", stage / "request.pem"])
-                write_private(stage / "extensions", ("basicConstraints=critical,CA:FALSE\n"
-                    "keyUsage=critical,digitalSignature\nextendedKeyUsage=clientAuth\n"
-                    "subjectAltName=URI:" + uri + "\n").encode())
-                openssl(["x509", "-req", "-in", stage / "request.pem", "-CA", stage / "ca.pem",
-                    "-CAkey", stage / "ca-key.pem", "-set_serial", "0x" + os.urandom(16).hex(),
-                    "-days", "7", "-sha256", "-extfile", stage / "extensions", "-out", stage / (role + ".pem")])
-                (stage / "request.pem").unlink()
-                (stage / "extensions").unlink()
-            write_private(stage / "identity.json", json.dumps(expected, sort_keys=True).encode())
-            # Verify before adoption; temporary incomplete material is removed.
-            inspect(stage, expected, uris)
+            issue(stage, stage, "dashboard", URN + "engineering-dashboard")
+            write_private(stage / "identity.json", b'{"schemaVersion":1}')
+            inspect_local(stage)
             if directory.exists() or directory.is_symlink():
                 raise EnvironmentError("SOURCE_TRUST_CREATION_CONFLICT")
             os.rename(stage, directory)
+    return inspect_local(directory)
+
+
+def inspect_local(directory):
+    owned(directory, directory=True)
+    files = {p.name for p in directory.iterdir()}
+    if files not in (LOCAL_FILES, FILES):
+        raise EnvironmentError("SOURCE_TRUST_MATERIAL_INCOMPLETE")
+    for name in files:
+        owned(directory / name)
+    expected = json.loads((directory / "identity.json").read_text())
+    if files == LOCAL_FILES and expected != dict(schemaVersion=1):
+        raise EnvironmentError("SOURCE_TRUST_IDENTITY_CONFLICT")
+    verify_pair(directory, "ca")
+    verify_pair(directory, "dashboard", URN + "engineering-dashboard")
+    return dict(expected, trustProfile=PROFILE, fingerprints=dict(dashboard=fingerprint(directory / "dashboard.pem")))
+
+
+def prepare(directory, vehicle):
+    """First create or validate the SAME identities; never rotate on a retry."""
+    expected = identity(vehicle)
+    owned(directory.parent, directory=True)
+    uris = dict(dashboard=URN + "engineering-dashboard",
+        vdp=URN + "selected-platform-unit:" + expected["unitId"] + ":" + expected["nodeId"],
+        runtime=URN + "platform-update-runtime:" + expected["unitId"] + ":" + expected["nodeId"])
+    prepare_local(directory)
+    if {p.name for p in directory.iterdir()} == LOCAL_FILES:
+        # The running Gateway keeps this CA and dashboard identity. Only the
+        # now-provisioned Unit's leaves are added; no process is restarted.
+        with tempfile.TemporaryDirectory(prefix=".viss-issue-", dir=directory.parent) as temporary:
+            stage = Path(temporary)
+            for name in LOCAL_FILES - {"identity.json"}:
+                write_private(stage / name, (directory / name).read_bytes())
+            for role in ("vdp", "runtime"):
+                issue(stage, stage, role, uris[role])
+            write_private(stage / "identity.json", json.dumps(expected).encode())
+            inspect(stage, expected, uris)
+            for name in FILES - LOCAL_FILES:
+                # Exclusive publication; an interrupted partial enrollment is
+                # rejected on retry, never silently reissued or rotated.
+                os.link(stage / name, directory / name)
+                (stage / name).unlink()
+            atomic_json(directory / "identity.json", expected)
     return inspect(directory, expected, uris)
 
 

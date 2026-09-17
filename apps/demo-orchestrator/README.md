@@ -697,17 +697,18 @@ For the explicitly authorized preserved staging Test qualification:
 democtl vehicle authenticate test
 ```
 
-This issues separate VDP, update-runtime and read-only Dashboard identities,
-enrolls the selected Unit, and supplies guest systemd credentials. The first
-activation compiles only Gateway/client, restarts the simulation group once,
-and activates SM/VDP credentials once. The VM, Cloud Unit, Subjects and service
-data remain. A repeat reconciles the same assignment without issuing new
-credentials or restarting. Production is excluded; no authentication fallback
-is allowed. This engineering CLI is not yet automatic Presenter onboarding or
-qualified VM/host reboot reconstruction. Owned host credentials are removed by
-the existing retirement flow after its stopped-owner gates. Live advisory
-application and clean Factory qualification remain separate gates; see the
-[16 September receipt](../../docs/qualification/staging-approved-model-changes-2026-09-16.md).
+The simulator starts with its local CA and read-only Dashboard identity, with
+no Unit attached. After Provision confirms Cloud Online, Demo Control enrolls
+separate VDP/update-runtime identities and connects the same running Gateway
+in stationary Manual. CARLA, Driving Control and the scene are not restarted.
+A repeat reuses the same credentials and assignment. Production is excluded;
+there is no authentication fallback. Presenter uses this shared onboarding path.
+Owned credentials are removed by retirement after stopped-owner checks.
+Factory .35 passed clean staging restart and advisory qualification before the
+latest no-restart attachment amendment; the latter has focused and preserved-run
+proof, not a new clean first-Provision pass. See the
+[attachment-order evidence](../../docs/qualification/source-attachment-order-2026-09-17.md)
+and [Factory .35 receipt](../../docs/qualification/factory-35-e2e-2026-09-17.md).
 
 The agreed preparation interface keeps operated-on VMs separate from the one
 live consumer:

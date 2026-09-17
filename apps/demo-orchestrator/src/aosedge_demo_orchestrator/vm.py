@@ -229,6 +229,31 @@ class VMService:
         return [sys.executable, str(self.assets / "scripts/host/aosvm-dns-bridge"),
                 "--listen-port", "18053", "--owner-id", state["shared"]["dns"]["ownerId"]]
 
+    def sync_time(self):
+        """One native NTP restart; never set the clock or relax update freshness."""
+        from .source import SourceDriver
+        with self.environment._writer():
+            state = read_json(self.root / JOURNAL)
+            if self.environment.factory31_comparison is True or "test" not in state.get("vehicles", {}):
+                raise EnvironmentError("TIME_RECOVERY_TEST_ONLY")
+            vehicle = state["vehicles"]["test"]
+            if not self._owned_pid(self._command(state, "test"), str(self.root / vehicle["overlay"])):
+                raise EnvironmentError("VM_NOT_RUNNING")
+            driver = SourceDriver(self)
+            self.progress("Test: restarting only native time synchronization; VM and Aos services remain running")
+            recovered = driver.guest(state, "test", "time-sync")
+            started = time.time()
+            monotonic = time.monotonic()
+            observation = driver.guest(state, "test", "time-status")
+            ended = time.time()
+            elapsed = time.monotonic() - monotonic
+            guest = observation["guestEpochMilliseconds"] / 1000
+            bound = max(abs(guest - started), abs(guest - ended))
+            ready = (recovered["state"] == "SYNCHRONIZED" and bound < 5
+                     and abs((ended - started) - elapsed) < .5)
+            return dict(state="READY" if ready else "UNCONFIRMED", skewBoundSeconds=round(bound, 3),
+                synchronization=recovered, observation=observation)
+
     def refresh_dns(self, *, restart_guest_resolver=False):
         from .probes import host_dns
         with self.environment._writer():
@@ -479,6 +504,17 @@ class VMService:
         runtime = item["runtime"]
         command = self._command(state, role)
         cloud = guest_configuration(self, state, role, vm_start=True)
+        trust = (state.get("source") or {}).get("trust") or {}
+        source_restore = None
+        if role == "test" and trust.get("enabled") is True:
+            onboarding = trust.get("onboarding") or {}
+            if (onboarding.get("state") != "COMPLETE" or not item.get("unitId") or not item.get("nodeId")
+                    or onboarding.get("unitId") != item["unitId"] or onboarding.get("nodeId") != item["nodeId"]):
+                raise EnvironmentError("SOURCE_TRUST_BOOTSTRAP_BINDING_UNCONFIRMED")
+            source_restore = dict(action="trust-restore", role=role,
+                vehicle={**{key: item[key] for key in ("localVmId", "unitId", "nodeId")},
+                    "cloud": {"identity": {"nodeHardwareId": item["cloud"]["identity"]["nodeHardwareId"]}}},
+                fingerprints={key: trust["fingerprints"][key] for key in ("vdp", "runtime")})
         if cloud is not None:
             self.progress(role + ": debug hosts and Cloud endpoint will be applied before guest role/DNS readiness")
         self.progress(role + ": VM process running; waiting for console/SSH/DNS readiness")
@@ -498,9 +534,10 @@ class VMService:
                     enroll_serial(serial, access, item["sshPort"], deadline, password,
                                   progress=lambda stage: self.progress(role + ": " + stage))
                 if (access / "known_hosts").exists():
-                    guest = read_guest(access, item["sshPort"], min(10, max(1, deadline - time.monotonic())),
+                    guest = read_guest(access, item["sshPort"], min(60 if source_restore else 10, max(1, deadline - time.monotonic())),
                                        factory_role=role,
-                                       **({"cloud_host": cloud["domain"], "cloud_configuration": cloud} if cloud else {}))
+                                       **({"cloud_host": cloud["domain"], "cloud_configuration": cloud} if cloud else {}),
+                                       **({"source_restore": source_restore} if source_restore else {}))
                 elif running and password is None:
                     return {"state": "PARTIAL", "processState": "RUNNING", "reason": "SSH_ENROLLMENT_REQUIRES_INTERACTIVE_PASSWORD",
                             "sshPort": item["sshPort"]}

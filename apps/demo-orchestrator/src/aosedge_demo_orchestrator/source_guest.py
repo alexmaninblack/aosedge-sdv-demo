@@ -126,7 +126,7 @@ def cm_delivery_observation(pid, proc=Path("/proc")):
             bytes=len(journal.stdout), diagnostic=journal.stderr.strip()[:300])
     else:
         lines = journal.stdout.splitlines()
-        events, counts, latest, responses = [], {}, {}, {}
+        events, counts, latest, responses, launcher_events = [], {}, {}, {}, []
         for line in lines:
             record = json.loads(line)
             message = record.get("MESSAGE", "")
@@ -169,6 +169,13 @@ def cm_delivery_observation(pid, proc=Path("/proc")):
                 stage = re.search(r"\(([a-z_]{1,30})\) ([A-Za-z][A-Za-z '-]{1,100})(?=:|$)", message)
                 if not stage:
                     continue
+                if stage[1] == "launcher":
+                    observed = dict(time=entry["time"], module=stage[1], stage=stage[2])
+                    for field in ("instances", "numRequests", "numInstances", "stopInstances", "startInstances"):
+                        count = re.search(r"\b" + field + r"=([0-9]{1,8})(?=,|\s|$)", message)
+                        if count:
+                            observed[field] = int(count[1])
+                    launcher_events.append(observed)
                 if not re.search(r"connect|Update state|Failed|ERROR|nack|full unit status|delta unit status", message, re.I):
                     continue
                 entry.update(module=stage[1], stage=stage[2])
@@ -187,16 +194,36 @@ def cm_delivery_observation(pid, proc=Path("/proc")):
             firstTime=json.loads(lines[0]).get("__REALTIME_TIMESTAMP") if lines else None,
             lastTime=json.loads(lines[-1]).get("__REALTIME_TIMESTAMP") if lines else None,
             counts=counts, latest=list(latest.values()), events=events[-100:])
+        result["launcherEvents"] = launcher_events[:120]
     try:
         import sqlite3
         root = proc / str(pid) / "root"
         config = json.loads((root / "etc/aos/cm.cfg").read_text())
+        from urllib.parse import urlsplit
+        discovery = urlsplit(config.get("serviceDiscoveryUrl", ""))
+        hostname = discovery.hostname or ""
+        result["cloudEndpoint"] = dict(
+            host=hostname if re.fullmatch(r"[a-z0-9.-]{1,253}", hostname) else "UNAVAILABLE",
+            https=discovery.scheme == "https",
+            runtimeProjectionPresent=(root / "run/democtl-cloud/cm.cfg").is_file())
         directory = config.get("workingDir", "")
         if not isinstance(directory, str) or not directory.startswith("/var/aos/") or ".." in Path(directory).parts:
             raise ValueError("UNSUPPORTED_CM_WORKING_DIRECTORY")
         database = root / directory.lstrip("/") / "cm.db"
         with sqlite3.connect(database.as_uri() + "?mode=ro", uri=True, timeout=1) as connection:
             row = connection.execute("SELECT updateState, desiredStatus FROM updatemanager LIMIT 1").fetchone()
+            result["launcherStorage"] = {}
+            for table, columns in (
+                    ("launcher_run_requests", ("itemID", "type", "version", "subjectType", "isUnitSubject", "numInstances")),
+                    ("launcher_instances", ("itemID", "type", "version", "subjectType", "isUnitSubject", "state", "preinstalled"))):
+                try:
+                    rows = connection.execute("SELECT " + ",".join(columns) + " FROM " + table + " LIMIT 129").fetchall()
+                    result["launcherStorage"][table] = dict(truncated=len(rows) > 128, rows=[
+                        {key: value if isinstance(value, (int, bool)) or (isinstance(value, str)
+                            and re.fullmatch(r"[A-Za-z0-9_.-]{1,128}", value)) else "UNAVAILABLE"
+                         for key, value in zip(columns, values)} for values in rows[:128]])
+                except sqlite3.Error:
+                    result["launcherStorage"][table] = dict(state="UNAVAILABLE")
         result["storedDesired"] = dict(state=row[0] if re.fullmatch(r"[A-Za-z]{1,40}", row[0] or "") else "UNKNOWN",
             payload=cm_payload_observation(json.loads(row[1]))) if row else dict(state="EMPTY")
         result["wireLogConfigured"] = bool(config.get("cloudMessageLog"))
@@ -1347,7 +1374,7 @@ def configure(request):
     return {"configured": True}
 
 
-def probe(safe_stop=False, preprovision=False):
+def probe(safe_stop=False, preprovision=False, mutual_tls=False):
     # A real server-authenticated WebSocket read from this guest. No KUKSA or
     # mTLS success is inferred from it.
     def receive(stream, length):
@@ -1394,6 +1421,11 @@ def probe(safe_stop=False, preprovision=False):
               and not preprovision else ROOT / "ca.pem")
         started = time.monotonic()
         context = ssl.create_default_context(cafile=str(ca))
+        if mutual_tls:
+            # Fixed enrolled update-runtime identity only; never a caller path,
+            # anonymous fallback or a claim about the SM/VDP process itself.
+            base = Path("/var/aos/iam/vehicle-state/platform-update-runtime")
+            context.load_cert_chain(str(base / "client.pem"), str(base / "client-key.pem"))
         with socket.create_connection(("10.0.0.1", 6443), 3) as raw:
             with context.wrap_socket(raw, server_hostname="127.0.0.1") as client:
                 key = base64.b64encode(os.urandom(16)).decode()
@@ -1447,7 +1479,8 @@ def probe(safe_stop=False, preprovision=False):
                     ids.append(int(value))
                 if ids[1] <= ids[0]:
                     raise ValueError("VISS_FRAME_NOT_ADVANCING")
-                return {"serverTls": True, "advancingVissFrames": True, "frames": samples}
+                return {"serverTls": True, "mutualTls": mutual_tls,
+                    "advancingVissFrames": True, "frames": samples}
     try:
         return read()
     except Exception as error:
@@ -1672,6 +1705,66 @@ def sm_apply_service_update(request):
         raise ValueError("SM_TRANSIENT_ACTIVATION_UNCONFIRMED")
     return dict(state="APPLIED", noOp=False, persistentFactoryInputs=True,
                 previousBinarySha256=previous, durableRecordsPreserved=True, **dict(result, mutation=True))
+
+
+def cm_startup_factory34(request):
+    """Transient CM-only proof; retain native stores, configuration and peers."""
+    expected = "0c491e8a744458b01bf81126f99ecdab3367795f757c419b92ab338b6518da23"
+    baseline = "3fffb5b89c742c233a634246c807d74e0bbc206dc143f8222c9b8283e0d78c98"
+    vehicle = request.get("vehicle", {})
+    if (request.get("target") != "test" or request.get("proof") != "factory34-startup-reconcile"
+            or vehicle.get("localVmId") != "363d8b2d-187f-4713-8af1-5cf9aa598177"
+            or vehicle.get("unitId") != "db0f8a34-5adf-4dec-b0fb-9c4f5b15c905"
+            or request.get("sha256") != expected):
+        raise ValueError("CM_STARTUP_REQUIRES_PRESERVED_TEST_34")
+    before = execute(dict(request, action="component-cm-status"))
+    if before.get("binarySha256") != baseline or before["service"].get("ActiveState") != "active":
+        raise ValueError("CM_STARTUP_FACTORY_BASE_REQUIRED")
+    state_root = FACTORY_INPUTS.parent / "state"
+    installed = state_root / "installed.json"
+    transaction = state_root / "transaction.json"
+    if (transaction.exists() or transaction.is_symlink() or installed.is_symlink()
+            or not installed.is_file() or installed.stat().st_size > 131072):
+        raise ValueError("CM_STARTUP_COMPONENT_TRANSACTION_OR_UNSAFE_RECORD")
+    saved = installed.read_bytes()
+    if json.loads(saved).get("Version") != "73.0.0":
+        raise ValueError("CM_STARTUP_EXPECTED_VDP_73")
+    peers_args = ["systemctl", "show", "aos-sm", "aos-vehicle-data-provider",
+        "--property=Id,MainPID,ActiveState,NRestarts"]
+    peers = command(peers_args, check=True).stdout
+    root = Path("/run/democtl-cm-startup-20260917")
+    dropin = Path("/run/systemd/system/aos-cm.service.d/96-democtl-startup-reconcile.conf")
+    if root.exists() or root.is_symlink() or dropin.exists() or dropin.is_symlink():
+        raise ValueError("CM_STARTUP_TRANSIENT_ALREADY_EXISTS")
+    with gzip.GzipFile(fileobj=io.BytesIO(base64.b64decode(request["binary"], validate=True))) as payload:
+        raw = payload.read(16 * 1024 * 1024 + 1)
+    if (len(raw) > 16 * 1024 * 1024 or hashlib.sha256(raw).hexdigest() != expected
+            or raw[:6] != b"\x7fELF\x02\x01" or raw[18:20] != b"\xb7\x00"):
+        raise ValueError("CM_STARTUP_BINARY_DIGEST_MISMATCH")
+    root.mkdir(mode=0o700)
+    binary = root / "aos_cm_app"
+    binary.write_bytes(raw)
+    binary.chmod(0o755)
+    command(["chcon", "--reference=/usr/bin/aos_cm_app", str(binary)], check=True)
+    label = command(["stat", "-c", "%C", "/usr/bin/aos_cm_app"], check=True).stdout.strip()
+    if command(["stat", "-c", "%u:%g:%a:%C", str(binary)], check=True).stdout.strip() != "0:0:755:" + label:
+        raise ValueError("CM_STARTUP_EXECUTABLE_METADATA_MISMATCH")
+    dropin.parent.mkdir(parents=True, exist_ok=True)
+    dropin.write_text("[Service]\nBindReadOnlyPaths=" + str(binary) + ":/usr/bin/aos_cm_app\n")
+    command(["systemctl", "daemon-reload"], check=True)
+    print("Test34: one CM restart with startup reconciliation; native state and SM retained", file=sys.stderr, flush=True)
+    subprocess.run(["systemctl", "restart", "aos-cm"], capture_output=True, text=True, timeout=30, check=True)
+    after = execute(dict(request, action="component-cm-status"))
+    if (after.get("binarySha256") != expected or after["service"].get("ActiveState") != "active"
+            or after["service"].get("MainPID") == before["service"].get("MainPID")
+            or after["service"].get("NRestarts") != "0"
+            or command(peers_args, check=True).stdout != peers
+            or transaction.exists() or transaction.is_symlink() or installed.read_bytes() != saved):
+        raise ValueError("CM_STARTUP_ACTIVATION_REQUIRES_RECONCILIATION")
+    return dict(state="APPLIED", mutation=True, transient=True, binarySha256=expected,
+        previousBinarySha256=baseline, service=after["service"], smAndVdpPidsPreserved=True,
+        durableRecordsPreserved=True, transientRoot=str(root), dropin=str(dropin),
+        launcherEvents=after.get("delivery", {}).get("launcherEvents", []))
 
 
 def cm_idle_refresh_factory32(request):
@@ -2320,6 +2413,8 @@ def execute(request):
     if request["action"] == "component-cm-startup":
         return cm_startup_comparison(request)
     if request["action"] == "component-cm-apply":
+        if request.get("proof") == "factory34-startup-reconcile":
+            return cm_startup_factory34(request)
         if request.get("proof") == "factory32-idle-full-status":
             return cm_idle_refresh_factory32(request)
         if request.get("proof") == "factory32-cm-comparison":
@@ -2565,6 +2660,11 @@ def execute(request):
                     binaryContext=command(["stat", "-Lc", "%C", "/proc/" + pid + "/exe"]).stdout.strip() if executable else None,
                     configContext=command(["stat", "-c", "%C", str(cfg)]).stdout.strip(),
                     audit=audit,
+                    mutualTlsCredentialProjection={
+                        "smDropInPresent": Path("/run/systemd/system/aos-sm.service.d/85-democtl-viss-mtls.conf").is_file(),
+                        "vdpDropInPresent": Path("/run/systemd/system/aos-vehicle-data-provider.service.d/85-democtl-viss-mtls.conf").is_file(),
+                        "runtimeLeafPresent": Path("/var/aos/iam/vehicle-state/platform-update-runtime/client.pem").is_file(),
+                        "vdpLeafPresent": Path("/var/aos/iam/vehicle-state/selected-platform-unit/client.pem").is_file()},
                     queuedRecoveryProof={
                         "directoryPresent": Path("/run/democtl-sm-queued-recovery").exists(),
                         "dropInPresent": Path("/run/systemd/system/aos-sm.service.d/92-democtl-sm-queued-recovery.conf").exists(),
@@ -2579,6 +2679,26 @@ def execute(request):
                         if any(path in line for path in ("/run/credentials", "/run/democtl-sm", "/etc/aos/sm.cfg", "/usr/bin/aos_sm_app"))][:20] if executable else [],
                     mutation=False)
     action = request["action"]
+    if action in ("time-sync", "time-status"):
+        if request.get("role") != "test":
+            raise ValueError("TIME_RECOVERY_TEST_ONLY")
+        if action == "time-status":
+            return clock_status()
+        before = clock_status()
+        result = command(["systemctl", "restart", "systemd-timesyncd.service"])
+        deadline = time.monotonic() + 15
+        synchronized = False
+        while result.returncode == 0:
+            message = command(["timedatectl", "show-timesync", "--property=NTPMessage", "--value"]).stdout.strip()
+            # A marker or NTPSynchronized=yes can survive suspend/restart. Require
+            # a new successful response from this timesyncd process instead.
+            synchronized = ("Ignored=no" in message and re.search(r"PacketCount=[1-9][0-9]*\b", message) is not None)
+            if synchronized or time.monotonic() >= deadline:
+                break
+            time.sleep(.5)
+        after = clock_status()
+        return dict(state="SYNCHRONIZED" if result.returncode == 0 and synchronized else "UNCONFIRMED",
+            before=before, after=after, restartExitCode=result.returncode)
     if action == "dns-restart":
         if request.get("role") != "test":
             raise ValueError("DNS_RECOVERY_TEST_ONLY")
@@ -2804,6 +2924,9 @@ def execute(request):
             pass
         entries.sort(key=lambda entry: int(entry["time"] or 0))
         return dict(entries=entries[-100:], scannedEntries=len(streams), providerReadyEvents=ready_events, structuredFields=sorted(structures),
+                    reconciliationEvents=[entry for entry in entries
+                        if entry["unit"] in ("aos-sm.service", "aos-cm.service")
+                        and re.search(r"Run instances|Run instance request|Stop instance:|Start instance:|Node instances statuses received|Node instance status received|Failed to process message", entry["message"])][-80:],
                     advisoryEvents=advisory_log_observation(advisory_log.stdout), advisoryStartupEvents=advisory_startup,
                     advisoryJournal=dict(records=len(advisory_log.stdout.splitlines()), returnCode=advisory_log.returncode),
                     smNetworkEvents=[entry for entry in entries if entry["unit"] == "aos-sm.service"
@@ -2914,6 +3037,10 @@ def execute(request):
         return configure(request)
     if action == "probe":
         return probe(preprovision=True) if not request["vehicle"].get("unitId") else probe()
+    if action == "trust-probe":
+        if request["role"] != "test" or not request["vehicle"].get("unitId"):
+            raise ValueError("SOURCE_TRUST_TEST_IDENTITY_REQUIRED")
+        return probe(mutual_tls=True)
     if action in ("status", "observe"):
         active = command(["systemctl", "show", "aos-vehicle-data-provider", "--property=ActiveState,StatusText,NRestarts"])
         values = dict(line.split("=", 1) for line in active.stdout.splitlines() if "=" in line)

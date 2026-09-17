@@ -34,7 +34,9 @@ def configuration(driver, state):
 
 
 def runner_options(driver, state):
-    public = configuration(driver, state)
+    public = trust.inspect_local(driver.root / DIRECTORY)
+    if public["fingerprints"]["dashboard"] != state["source"]["trust"]["fingerprints"]["dashboard"]:
+        raise EnvironmentError("SOURCE_TRUST_ENROLLMENT_CHANGED")
     directory = driver.root / DIRECTORY
     return ["--viss-client-ca", str(directory / "ca.pem"),
         "--viss-assignment-socket", str(driver.root / SOCKET),
@@ -139,6 +141,16 @@ def connection(driver, state, role, wait=False):
             and current.get("activeRoleCounts", {}).get("selectedPlatformUnit") == 1
             and guest["mutualTlsConfigured"] and guest["vdpProcess"] == "active"
             and guest["vdpData"] == "VDP data READY; source LIVE; reason NONE")
+        baseline = (guest.get("factoryBaseline") is True and guest["mutualTlsConfigured"]
+            and current["state"] == "SELECTED" and current.get("selectedSource") == selection(state)
+            and current["assignmentGeneration"] == state["source"]["assignmentGeneration"])
+        if baseline:
+            probe = driver.guest(state, role, "trust-probe")
+            return dict(serverTls=probe.get("serverTls") is True and probe.get("mutualTls") is True
+                    and probe.get("advancingVissFrames") is True,
+                mutualTls=probe.get("mutualTls") is True, gateway=current, guest=guest,
+                advancingVissFrames=probe.get("advancingVissFrames") is True,
+                factoryBaseline=True, evidence="GUEST_UPDATE_IDENTITY_MUTUAL_TLS_READ_NOT_VDP_PROCESS")
         if good or time.monotonic() >= deadline:
             return dict(serverTls=good, mutualTls=good, gateway=current, guest=guest,
                 evidence="GATEWAY_AUTHENTICATED_ROLE_AND_PROVIDER_REPORTED_READY")
@@ -162,7 +174,39 @@ def build(driver):
     return dict(state="BUILT", directory=BUILD)
 
 
-def authenticate(service, role):
+def onboarding_manual(state):
+    """Only owned Provision/Resume handoffs may re-enter stationary Manual."""
+    record = ((state.get("source") or {}).get("trust") or {}).get("onboarding") or {}
+    item = state.get("vehicles", {}).get("test", {})
+    bound = (bool(item.get("unitId")) and bool(item.get("nodeId"))
+        and record.get("unitId") == item["unitId"] and record.get("nodeId") == item["nodeId"])
+    lifecycle = state.get("demoLifecycle") or {}
+    restoring = (record.get("state") == "COMPLETE" and lifecycle.get("action") == "resume"
+        and lifecycle.get("target") == "test" and lifecycle.get("state") == "IN_PROGRESS"
+        and lifecycle.get("phase") == "restore-test-connection"
+        and lifecycle.get("retainedConnection") == "test" and lifecycle.get("simulationWasRunning") is True)
+    return bound and (record.get("state") == "PENDING" or restoring)
+
+
+def initialize_gateway(driver, state):
+    """Prepare local strict admission before the first simulator startup."""
+    source = state.get("source") or {}
+    if source.get("trust"):
+        if not enabled(state):
+            raise EnvironmentError("SOURCE_TRUST_ENROLLMENT_RECONCILIATION_REQUIRED")
+        public = trust.inspect_local(driver.root / DIRECTORY)
+        if public["fingerprints"]["dashboard"] != source["trust"]["fingerprints"]["dashboard"]:
+            raise EnvironmentError("SOURCE_TRUST_ENROLLMENT_CHANGED")
+        return
+    driver.vm.environment._directory(".run/demo-current/control")
+    public = trust.prepare_local(driver.root / DIRECTORY)
+    source["trust"] = dict(profile=trust.PROFILE, target="test",
+        fingerprints=public["fingerprints"], enabled=True)
+    source.setdefault("assignmentGeneration", 0)
+    state["source"] = source
+
+
+def authenticate(service, role, *, provisioning=False):
     if role != "test":
         raise EnvironmentError("SOURCE_TRUST_TEST_ONLY")
     driver = service.driver
@@ -174,23 +218,26 @@ def authenticate(service, role):
         if not source or state.get("currentVehicle") not in (None, "test"):
             raise EnvironmentError("SOURCE_TRUST_CURRENT_TEST_REQUIRED")
         if not enabled(state):
-            if source.get("operation") or source.get("stopOperation"):
-                raise EnvironmentError("SOURCE_OPERATION_RECONCILIATION_REQUIRED")
-            # Read the actual current tenant/Unit once at the trust boundary.
+            # Legacy running simulations need an explicit development restart,
+            # never a hidden restart or downgrade during Provision.
+            raise EnvironmentError("SOURCE_RUNNING_VERSION_REQUIRES_EXPLICIT_RESTART")
+        driver.ready(state)
+        if not provisioning:
             service.cloud(state, [role])
-            build(driver)
-            directory = service.root / DIRECTORY
-            public = trust.prepare(directory, state["vehicles"][role])
-            source["trust"] = dict(profile=trust.PROFILE, target=role,
-                fingerprints=public["fingerprints"], enabled=False)
-            service.vm._save(state)
-            driver.progress("Source: one controlled simulation restart for strict TLS; VM, Cloud Unit and services retained")
-            service.simulation("stop", target=role)
-            state = read_json(service.root / JOURNAL)
-            state["source"]["trust"]["enabled"] = True
-            service.vm._save(state)
-        service.simulation("start", target=role)
-        result = service.select(role)
+        public = trust.prepare(service.root / DIRECTORY, state["vehicles"][role])
+        record = source["trust"]
+        if public["fingerprints"]["dashboard"] != record["fingerprints"]["dashboard"]:
+            raise EnvironmentError("SOURCE_TRUST_ENROLLMENT_CHANGED")
+        if any(record["fingerprints"].get(key, value) != value for key, value in public["fingerprints"].items()):
+            raise EnvironmentError("SOURCE_TRUST_ENROLLMENT_CHANGED")
+        record["fingerprints"] = public["fingerprints"]
+        if provisioning and (not record.get("onboarding") or state.get("currentVehicle") is None):
+            record["onboarding"] = dict(state="PENDING",
+                unitId=state["vehicles"][role]["unitId"], nodeId=state["vehicles"][role]["nodeId"])
+        service.vm._save(state)
+        # The existing strict Gateway admits the real Unit via assignment.
+        # No process replacement, scene reset or native-window restart.
+        result = service.select(role, initial_manual=True) if provisioning else service.select(role)
         state = read_json(service.root / JOURNAL)
         proof = state["source"]["trust"].get("noClientCertificateProof")
         if not proof or proof.get("runId") != state["source"]["runId"]:
@@ -210,4 +257,7 @@ def authenticate(service, role):
             state["source"]["trust"]["noClientCertificateProof"] = proof
             service.vm._save(state)
         result["noClientCertificateProof"] = proof["result"]
+        if provisioning and onboarding_manual(state):
+            state["source"]["trust"]["onboarding"]["state"] = "COMPLETE"
+            service.vm._save(state)
         return result

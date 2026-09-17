@@ -258,8 +258,6 @@ function run(args) {
 
     def start(self, state):
         from . import source_authentication as authentication
-        strict = authentication.enabled(state)
-        saved_trust = (state.get("source") or {}).get("trust")
         saved_generation = (state.get("source") or {}).get("assignmentGeneration", 0)
         previous = None
         if state.get("source"):
@@ -280,11 +278,6 @@ function run(args) {
                     or any(v["gate"] != "BLOCKED" for v in self.guests(state, "status").values())):
                     raise EnvironmentError("SOURCE_PREVIOUS_RUN_NOT_RUNNING_RECONCILE_REQUIRED")
         paths = self.assets()
-        if strict:
-            paths.update(runtime=self.root / authentication.BUILD / "carla-ego-runtime",
-                         client=self.root / authentication.BUILD / "carla-viss-client")
-            if not all(paths[key].is_file() for key in ("runtime", "client")):
-                raise EnvironmentError("SOURCE_TRUST_GATEWAY_BUILD_REQUIRED")
         from .workspace import prepare_controller
         prepare_controller(paths, self.progress)
         # The fixed .28 client URI has no host listener. Without its owned
@@ -300,6 +293,12 @@ function run(args) {
             raise EnvironmentError("SOURCE_TRAFFIC_MANAGER_PORT_IN_USE") from None
         if not previous:
             self.vm._free_port(2000)
+        authentication.initialize_gateway(self, state)
+        saved_trust = state["source"]["trust"]
+        paths.update(runtime=self.root / authentication.BUILD / "carla-ego-runtime",
+                     client=self.root / authentication.BUILD / "carla-viss-client")
+        if not all(paths[key].is_file() for key in ("runtime", "client")):
+            authentication.build(self)
         identity = str(uuid4())
         run = self.root / ".run/demo-current/source" / identity
         control = self.root / ".run/demo-current/control"
@@ -324,10 +323,10 @@ function run(args) {
             "--demo-journal", str(self.root / JOURNAL),
             "--connectivity-command", json.dumps([sys.executable, "-m", "aosedge_demo_orchestrator",
                 "--output", "json", "vehicle", "connectivity"])]
-        runner.extend(authentication.runner_options(self, state) if strict else ["--viss-development"])
+        runner.extend(authentication.runner_options(self, state))
         source = dict(runId=identity, controlDirectory=str(control.relative_to(self.root)),
             runDirectory=str(run.relative_to(self.root)), simulatorCommand=simulator, runnerCommand=runner,
-            state="STARTING", assignmentGeneration=saved_generation if strict else 0, operation=None, nativeTelemetry=True)
+            state="STARTING", assignmentGeneration=saved_generation, operation=None, nativeTelemetry=True)
         if saved_trust:
             source["trust"] = saved_trust
         state["source"] = source
@@ -524,6 +523,11 @@ class SourceService:
         with self.environment._writer(), self.driver.operation(timeout=95):
             return execute(self, read_json(self.root / JOURNAL), kind)
 
+    def prepare_cache(self):
+        from .source_cache import prepare
+        with self.environment._writer():
+            return prepare(self)
+
     def simulation(self, action, target=None, *, retiring=False):
         with self.environment._writer(), self.driver.operation():
             state = read_json(self.root / JOURNAL)
@@ -560,6 +564,29 @@ class SourceService:
                     raise EnvironmentError("SOURCE_PRESERVED_PEER_NOT_DETACHED")
             if action == "start":
                 if source and (source.get("operation") or source.get("stopOperation")):
+                    pending = source.get("operation") or {}
+                    lifecycle = state.get("demoLifecycle") or {}
+                    trust = source.get("trust") or {}
+                    enrollment = trust.get("onboarding") or {}
+                    vehicle = state["vehicles"].get("test", {})
+                    continuing = (target == "test" and not source.get("stopOperation")
+                        and lifecycle.get("action") == "resume" and lifecycle.get("target") == "test"
+                        and lifecycle.get("state") == "IN_PROGRESS" and lifecycle.get("phase") == "start-simulation"
+                        and lifecycle.get("retainedConnection") == "test" and lifecycle.get("simulationWasRunning") is True
+                        and pending.get("target") == "test" and pending.get("initialManual") is True
+                        and pending.get("previous") in (None, "test") and trust.get("enabled") is True
+                        and enrollment.get("state") == "COMPLETE" and bool(vehicle.get("unitId"))
+                        and bool(vehicle.get("nodeId")) and enrollment.get("unitId") == vehicle["unitId"]
+                        and enrollment.get("nodeId") == vehicle["nodeId"])
+                    if continuing:
+                        # Resume the existing handoff, never start another actor
+                        # or clear its checkpoint. _select reconciles guest gates.
+                        frame = self.driver.ready(state)
+                        if (frame.get("operationId") != pending.get("id") or frame.get("phase") not in
+                                ("SAFE_STOP", "RESETTING", "RESET", "MANUAL_PREPARING", "MANUAL_READY", "RELEASED")):
+                            raise EnvironmentError("SOURCE_OPERATION_OWNER_MISMATCH")
+                        return dict(state="RUNNING", noOp=True, pendingConnection=True,
+                            currentVehicle=state.get("currentVehicle"), controller=frame)
                     raise EnvironmentError("SOURCE_OPERATION_RECONCILIATION_REQUIRED")
                 if source and self.driver.live_process(source["runnerCommand"]):
                     if source["state"] == "STARTING":
@@ -640,7 +667,8 @@ class SourceService:
             return dict(state="STOPPED", noOp=False, currentVehicle=None, physicalStop=physical)
 
     def initialize_test(self):
-        return self.select("test", initial_manual=True)
+        from .source_authentication import authenticate
+        return authenticate(self, "test", provisioning=True)
 
     def select(self, role, initial_manual=False):
         with self.environment._writer(), self.driver.operation():
@@ -653,7 +681,7 @@ class SourceService:
             if state["source"].get("stopOperation"):
                 raise EnvironmentError("SIMULATION_NOT_READY")
             item = state["vehicles"][role]
-            if not initial_manual and (item.get("cloud", {}).get("lifecycle") != "ONLINE"
+            if (item.get("cloud", {}).get("lifecycle") != "ONLINE"
                     or not all(item.get(key) for key in ("unitId", "nodeId", "unitSetId"))):
                 raise EnvironmentError("SOURCE_UNIT_PROVISION_REQUIRED:" + role)
             return self._select(state, role, configure=True, initial_manual=initial_manual)
@@ -672,7 +700,8 @@ class SourceService:
                  else self.driver.guests(state, "status"))
         old = state.get("currentVehicle")
         if initial_manual and (role != "test" or (old is not None and old != role)
-                or (old is None and source.get("assignmentGeneration", 0) != 0)):
+                or (old is None and source.get("assignmentGeneration", 0) != 0
+                    and not (strict and authentication.onboarding_manual(state)))):
             raise EnvironmentError("INITIAL_MANUAL_REQUIRES_FIRST_TEST_CONNECTION")
         if pending and bool(pending.get("initialManual")) != initial_manual:
             raise EnvironmentError("SOURCE_OPERATION_MODE_CHANGED")
@@ -712,8 +741,9 @@ class SourceService:
             state["currentVehicle"] = None
             source["operation"]["phase"] = "DETACHED"
             self.vm._save(state)
-            self.progress("Source: both data paths blocked; resetting the CARLA scene")
-            self.driver.rpc(source, "reset", identity)
+            if not initial_manual:
+                self.progress("Source: both data paths blocked; resetting the CARLA scene for handover")
+                self.driver.rpc(source, "reset", identity)
         elif any(v["gate"] != "BLOCKED" for r, v in views.items() if r != role):
             raise EnvironmentError("SOURCE_PEER_NOT_DETACHED")
         if phase == "RESETTING" and any(v["gate"] != "BLOCKED" for v in views.values()):
@@ -723,7 +753,7 @@ class SourceService:
                 raise EnvironmentError("SOURCE_RELEASED_ASSIGNMENT_CONTRADICTORY")
             frame = observed
         else:
-            if phase not in ("MANUAL_PREPARING", "MANUAL_READY"):
+            if not initial_manual and phase not in ("MANUAL_PREPARING", "MANUAL_READY"):
                 frame = self.driver.wait(source, identity, "RESET")
             if initial_manual:
                 self.driver.rpc(source, "manual_ready", identity)
@@ -749,7 +779,8 @@ class SourceService:
             # alongside the newly authenticated LIVE connection.
             observed_guest = data["guest"]
             views[role].update(vdpProcess=observed_guest["vdpProcess"],
-                vdpData="REPORTED_READY", vdpStatusText=observed_guest["vdpData"],
+                vdpData="NOT_DEPLOYED" if data.get("factoryBaseline") else "REPORTED_READY",
+                vdpStatusText=observed_guest["vdpData"],
                 vdpRestarts=observed_guest["vdpRestarts"])
         source["operation"]["phase"] = "ATTACHED"
         state["currentVehicle"] = role

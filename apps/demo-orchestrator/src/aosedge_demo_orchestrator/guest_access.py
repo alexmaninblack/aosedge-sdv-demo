@@ -36,7 +36,7 @@ def ssh_command(access, port, timeout):
 
 
 def read_guest(access, port, timeout=5, shutdown=False, *, factory_role=None, cloud_host=None,
-               cloud_configuration=None):
+               cloud_configuration=None, source_restore=None):
     if factory_role is not None and (shutdown or factory_role not in ("test", "production")):
         raise EnvironmentError("SOURCE_ROLE_INVALID")
     script = ""
@@ -48,6 +48,15 @@ def read_guest(access, port, timeout=5, shutdown=False, *, factory_role=None, cl
             + Path(cloud_guest.__file__).read_text()
             + "\nif not main(" + repr(cloud_configuration) + "): raise SystemExit(1)\nDEMOCTL_CLOUD_PY\n"
             + "[ $? -eq 0 ] || exit 1\nprintf 'DEMO_CLOUD_CONFIGURATION_READY\\n'\n")
+    if source_restore is not None:
+        if shutdown or factory_role != "test" or source_restore.get("role") != "test":
+            raise EnvironmentError("SOURCE_TRUST_GUEST_IDENTITY_MISMATCH")
+        from . import source_trust_guest
+        script += ("printf 'DEMO_SOURCE_RESTORE_STARTED\\n'\npython3 - <<'DEMOCTL_TRUST_PY'\n"
+            + Path(source_trust_guest.__file__).read_text()
+            + "\ntry:\n    execute(" + repr(source_restore) + ")\n"
+            + "except Exception:\n    raise SystemExit(1)\nDEMOCTL_TRUST_PY\n"
+            + "[ $? -eq 0 ] || exit 1\nprintf 'DEMO_SOURCE_RESTORE_READY\\n'\n")
     script += ("printf 'DEMO_GUEST_READY\\n'\nif " + UNPROVISIONED +
               "; then printf 'DEMO_UNPROVISIONED\\n'; fi\n")
     if shutdown:
@@ -73,6 +82,8 @@ def read_guest(access, port, timeout=5, shutdown=False, *, factory_role=None, cl
         output = error.stdout or b""
         if isinstance(output, bytes):
             output = output.decode(errors="replace")
+        if source_restore is not None and "DEMO_SOURCE_RESTORE_STARTED" in output.splitlines():
+            raise EnvironmentError("SOURCE_TRUST_RESTORE_UNCONFIRMED") from None
         if cloud_configuration is not None and "DEMO_CLOUD_CONFIGURATION_STARTED" in output.splitlines():
             raise EnvironmentError("CLOUD_GUEST_CONFIGURATION_UNCONFIRMED") from None
         if factory_role is not None and "DEMO_DNS_READY" in output.splitlines():
@@ -81,6 +92,9 @@ def read_guest(access, port, timeout=5, shutdown=False, *, factory_role=None, cl
     except OSError:
         return {"guestReady": False, "guestDnsReady": False, "unprovisioned": False}
     lines = result.stdout.splitlines()
+    if (source_restore is not None and "DEMO_SOURCE_RESTORE_STARTED" in lines
+            and "DEMO_SOURCE_RESTORE_READY" not in lines):
+        raise EnvironmentError("SOURCE_TRUST_RESTORE_UNCONFIRMED")
     if cloud_configuration is not None and "DEMO_CLOUD_CONFIGURATION_STARTED" in lines:
         if "DEMO_CLOUD_CONFIGURATION_READY" not in lines:
             reason = "CLOUD_GUEST_CONFIGURATION_UNCONFIRMED"

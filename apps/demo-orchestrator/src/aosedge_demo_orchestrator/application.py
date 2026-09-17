@@ -299,7 +299,10 @@ class DemoOrchestrator:
             if request.target != VehicleTarget.TEST or not callable(initialize):
                 return OperationResult(operation, OperationState.BLOCKED, "INITIAL_MANUAL_REQUIRES_TEST")
             try:
-                return OperationResult(operation, OperationState.COMPLETED, "Initial Test connection in stationary Manual.", data=initialize())
+                data = initialize()
+                return OperationResult(operation, OperationState.COMPLETED,
+                    "Existing Test connection confirmed; driving mode unchanged." if data.get("noOp")
+                    else "Initial Test connection in stationary Manual.", data=data)
             except EnvironmentError as error:
                 return OperationResult(operation, OperationState.BLOCKED, str(error))
             except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
@@ -336,6 +339,12 @@ class DemoOrchestrator:
             from .component_runtime import builder, build, apply_test
             try:
                 target = request.target.value if request.target else None
+                if request.startup_reconcile:
+                    from .component_runtime import qualify_cm_startup, apply_cm_startup
+                    data = (apply_cm_startup(self.environment_service, target) if request.action == "cm-apply"
+                        else qualify_cm_startup(target, compile_binary=request.action == "cm-build"))
+                    return OperationResult(operation, OperationState.COMPLETED,
+                        "Bounded Test-only CM startup proof; identity, SM, Cloud assignments and image unchanged.", data=data)
                 manager = "cm" if request.action.startswith("cm-") else "sm"
                 data = (apply_test(self.environment_service, target, manager=manager, restart_cm=request.restart_cm) if request.action.endswith("-apply") else
                         build(target, compile_source=request.action.endswith("-build"), manager=manager) if request.action in ("sm-build", "sm-test", "cm-build", "cm-test") else builder(target, request.action.rsplit("-", 1)[1]))
@@ -370,6 +379,17 @@ class DemoOrchestrator:
                 "Temporary Test-only KUKSA schema; no Factory image, credential, Cloud or Production mutation." if request.action in ("schema-apply", "schema-remove") else
                 "Read-only guest component observation; no restart or update." if request.action in ("status", "logs", "diagnose", "sm-status", "cm-status") else
                 "Local component artifact operation; no Cloud or VM mutation.", data=data)
+        if operation == "vm.sync-time":
+            if request.target != VehicleTarget.TEST:
+                return OperationResult(operation, OperationState.BLOCKED, "TIME_RECOVERY_TEST_ONLY")
+            try:
+                data = self.vm_service.sync_time()
+            except EnvironmentError as error:
+                return OperationResult(operation, OperationState.BLOCKED, str(error))
+            except (OSError, ValueError, KeyError, TypeError):
+                return OperationResult(operation, OperationState.PARTIAL, "TIME_RECOVERY_UNCONFIRMED")
+            return OperationResult(operation, OperationState.COMPLETED if data["state"] == "READY" else OperationState.PARTIAL,
+                "Only Test systemd-timesyncd restarted; no VM, simulator or Aos service restart. Pending updates may proceed if Safe Stop is already active.", data=data)
         if operation == "vm.refresh-dns":
             if request.target != VehicleTarget.TEST:
                 return OperationResult(operation, OperationState.BLOCKED, "DNS_RECOVERY_TEST_ONLY")
@@ -394,6 +414,15 @@ class DemoOrchestrator:
             return OperationResult(operation,
                 OperationState.COMPLETED if data["state"] == "COMPLETED" else OperationState.PARTIAL,
                 "Real CARLA maneuver only; observe service/backend/advisory results separately. VM and Cloud identities unchanged.", data=data)
+        if operation == "simulation.prepare-cache":
+            try:
+                data = self.source_service.prepare_cache()
+            except EnvironmentError as error:
+                return OperationResult(operation, OperationState.BLOCKED, str(error))
+            except (OSError, ValueError, KeyError, TypeError, SubprocessError):
+                return OperationResult(operation, OperationState.PARTIAL, "SIMULATION_CACHE_PREPARATION_UNCONFIRMED")
+            return OperationResult(operation, OperationState.COMPLETED,
+                "Local Unreal map cache prepared; VM, Cloud and image unchanged. Driving verification is separate.", data=data)
         if operation in ("simulation.start", "simulation.stop"):
             import subprocess
             if request.target not in (None, VehicleTarget.TEST) or request.current or request.image or request.image_path:
@@ -442,7 +471,9 @@ class DemoOrchestrator:
                 return OperationResult(operation, OperationState.BLOCKED, "UNIT_STATE_UNAVAILABLE", target=request.target.value)
             complete = all(item["state"] == "COMPLETED" for item in data["vehicles"].values())
             return OperationResult(operation, OperationState.COMPLETED if complete else OperationState.PARTIAL,
-                "Current-run Unit operation; no CARLA, image rebuild or local disk deletion.", target=request.target.value, data=data)
+                ("Current-run Unit provisioning; attach the protected Gateway after Cloud Online without restarting the simulator. No image rebuild or local disk deletion."
+                 if request.action == "provision" else
+                 "Current-run Unit operation; no CARLA, image rebuild or local disk deletion."), target=request.target.value, data=data)
         if request.domain == "vm" and request.action in ("start", "stop"):
             if request.target is None:
                 return OperationResult(operation, OperationState.BLOCKED, "VM_TARGET_REQUIRED")

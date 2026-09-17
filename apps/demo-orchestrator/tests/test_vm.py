@@ -51,7 +51,7 @@ class FakeRuntime(VMService):
             raise AssertionError("VM force kill forbidden")
         del self.running[pid]
 
-    def guest(self, access, port, timeout=5, shutdown=False, *, factory_role=None, cloud_host=None, cloud_configuration=None):
+    def guest(self, access, port, timeout=5, shutdown=False, *, factory_role=None, cloud_host=None, cloud_configuration=None, source_restore=None):
         if shutdown and self.shutdown_works:
             role = "test" if port == 10022 else "production"
             for pid, args in list(self.running.items()):
@@ -98,6 +98,48 @@ class VMTests(unittest.TestCase):
         state["selectedCloudDomain"] = "cloud.example.test"
         atomic_json(self.root / JOURNAL, state)
         return state
+
+    def test_sync_time_preserves_vm_and_accepts_only_small_observed_skew(self):
+        import time
+        self.dns_recovery_state()
+        before = (self.root / JOURNAL).read_bytes()
+        for skew, expected in ((0, "READY"), (-18000, "UNCONFIRMED")):
+            with patch("aosedge_demo_orchestrator.source.SourceDriver.guest", side_effect=[
+                    {"state": "SYNCHRONIZED"}, {"guestEpochMilliseconds": int((time.time() + skew) * 1000)}]) as guest:
+                result = self.runtime.sync_time()
+            self.assertEqual(expected, result["state"])
+            self.assertEqual(["time-sync", "time-status"], [call.args[2] for call in guest.call_args_list])
+        self.assertEqual([], self.runtime.killed)
+        self.assertEqual(before, (self.root / JOURNAL).read_bytes())
+
+    def test_sync_time_requires_running_owned_vm(self):
+        with patch("aosedge_demo_orchestrator.source.SourceDriver.guest") as guest:
+            with self.assertRaisesRegex(EnvironmentError, "VM_NOT_RUNNING"):
+                self.runtime.sync_time()
+            guest.assert_not_called()
+
+    def test_sync_time_guest_restarts_only_native_ntp_once(self):
+        from types import SimpleNamespace
+        from aosedge_demo_orchestrator import source_guest
+        with patch.object(source_guest, "clock_status", return_value={}), patch.object(
+                source_guest, "command", side_effect=[SimpleNamespace(returncode=0),
+                SimpleNamespace(stdout="{ Ignored=no, PacketCount=1, Jitter=0 }")]) as command:
+            result = source_guest.execute({"action": "time-sync", "role": "test"})
+        self.assertEqual("SYNCHRONIZED", result["state"])
+        self.assertEqual(["systemctl", "restart", "systemd-timesyncd.service"], command.call_args_list[0].args[0])
+        self.assertEqual(2, command.call_count)
+        with self.assertRaisesRegex(ValueError, "TIME_RECOVERY_TEST_ONLY"):
+            source_guest.execute({"action": "time-sync", "role": "production"})
+
+    def test_sync_time_cli_dispatch(self):
+        from aosedge_demo_orchestrator.cli import build_parser, request_from_arguments
+        from aosedge_demo_orchestrator.application import DemoOrchestrator
+        from aosedge_demo_orchestrator.models import OperationState
+        request = request_from_arguments(build_parser().parse_args(["vm", "sync-time", "test"]))
+        with patch.object(self.runtime, "sync_time", return_value={"state": "READY"}) as sync:
+            result = DemoOrchestrator(vm_service=self.runtime).execute(request)
+        self.assertEqual(OperationState.COMPLETED, result.state)
+        sync.assert_called_once_with()
 
     def test_refresh_dns_healthy_is_noop(self):
         self.dns_recovery_state()
@@ -246,6 +288,24 @@ class VMTests(unittest.TestCase):
         self.assertEqual(request, guest.call_args.kwargs["cloud_configuration"])
         self.assertEqual(request["domain"], guest.call_args.kwargs["cloud_host"])
         separate_ssh.assert_not_called()
+
+    def test_strict_boot_reconstructs_only_the_bound_test_identity(self):
+        state = self.state()
+        item = state["vehicles"]["test"]
+        item.update(unitId="unit", nodeId="node", cloud=dict(identity=dict(nodeHardwareId="hardware")))
+        state["source"] = dict(trust=dict(enabled=True, fingerprints=dict(vdp="a" * 64, runtime="b" * 64),
+            onboarding=dict(state="COMPLETE", unitId="unit", nodeId="node")))
+        atomic_json(self.root / JOURNAL, state)
+        with patch("aosedge_demo_orchestrator.vm.read_guest", wraps=self.runtime.guest) as guest:
+            result = self.runtime.execute("start", "all", 90)
+        self.assertEqual("COMPLETED", result["vehicles"]["test"]["state"])
+        calls = {call.kwargs["factory_role"]: call for call in guest.call_args_list}
+        restore = calls["test"].kwargs["source_restore"]
+        self.assertEqual("trust-restore", restore["action"])
+        self.assertNotIn("material", restore)
+        self.assertNotIn("runtime", restore["vehicle"])
+        self.assertNotIn("source_restore", calls["production"].kwargs)
+        self.assertEqual(60, calls["test"].args[2])
 
     def test_isolated_test_reuses_exact_bridge_and_cannot_stop_its_owner(self):
         owner_root = self.root.parent / "aosedge-sdv-demo"

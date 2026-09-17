@@ -540,7 +540,7 @@ source-only observations below, not the accepted phase definitions.
 
 Platform, Brake and Tire backend revisions above were pushed to their existing
 `alexmaninblack` working branches, without changing main or forcing history.
-The canonical [Tire source repository](https://github.com/alexmaninblack/tire-health-service)
+The canonical [Tire source repository](../../../tire-health-service/README.md)
 is public under **alexmaninblack**. On 11 September, the user authorized a new
 repository in that account instead of transferring the earlier copy. The
 existing source history was pushed unchanged; GitHub confirms that

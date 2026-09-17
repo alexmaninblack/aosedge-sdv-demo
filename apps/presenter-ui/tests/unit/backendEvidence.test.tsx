@@ -41,6 +41,21 @@ test("wrong Test identity is never presented as received evidence", async () => 
   expect(screen.getByText("Not confirmed")).toBeVisible();
 });
 
+test.each([
+  [null, "20 samples · 2 chunks received · total pending"],
+  [undefined, "20 samples · 2 chunks received · total pending"],
+  [5, "20 samples · 2/5 chunks"],
+])("partial window does not render an absent chunk total (%s)", async (total, label) => {
+  const value = realObservation();
+  value.observations.assessments.data.items = [];
+  value.observations.productData.data.items = [{ backendReceivedAt: "2026-09-11T21:59:00Z",
+    deliveryState: "DURABLY_RECEIVED", serviceVersion: "7.0.0", unitSystemUid: "current-test",
+    receivedSampleCount: 20, receivedChunkCount: 2, expectedChunkCount: total }];
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ok: true, json: async () => value}));
+  render(<BackendEvidence team="brake" unitSystemUid="current-test" expectedVersion="7.0.0" />);
+  expect(await screen.findByText(label)).toBeVisible();
+});
+
 test("failed manual refresh retains last-known records; identity change clears them", async () => {
   const fetch=vi.fn().mockResolvedValueOnce({ok:true,json:async()=>realObservation()})
     .mockRejectedValue(new Error("offline"));

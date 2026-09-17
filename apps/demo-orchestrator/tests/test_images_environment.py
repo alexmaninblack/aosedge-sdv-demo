@@ -383,6 +383,15 @@ class ImagesAndCreateTests(unittest.TestCase):
         self.assertFalse(directory.exists())
         self.assertEqual(self.sha, digest(self.source))
 
+    def test_retire_includes_fixed_gateway_handoff_metadata(self):
+        self.source_retirement_fixture()
+        control = self.root / ".run/demo-current/control"
+        for name in ("telemetry-client.json", "gateway-reload.json", "gateway-reload-result.json"):
+            atomic_json(control / name, {})
+        result = self.service.retire(cloud_check=Mock(return_value=True))
+        self.assertIn(".run/demo-current/control/telemetry-client.json", result["removed"])
+        self.assertFalse(control.exists())
+
     def test_retire_source_rejects_live_unknown_and_symlink_before_unlink(self):
         state, run = self.source_retirement_fixture()
         with patch("aosedge_demo_orchestrator.source.SourceDriver.live_process", return_value=123):

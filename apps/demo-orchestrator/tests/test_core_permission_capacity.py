@@ -46,7 +46,20 @@ class PermissionCapacityTests(unittest.TestCase):
                 run.assert_not_called()
 
     def test_iam_reply_fix_uses_function_capacity_not_resource_capacity(self):
-        files = runtime.permission_recipe_inputs(iam_response_capacity=True)
+        # This historical transient proof is intentionally capacity-only.
+        # Factory .35 adds an unrelated CM startup patch, so exercise the
+        # accepted .34 inputs rather than weakening the production guard.
+        original_read = Path.read_bytes
+        def capacity_snapshot(path):
+            try:
+                relative = path.relative_to(runtime.SOURCE)
+            except ValueError:
+                return original_read(path)
+            return runtime.subprocess.check_output([
+                "git", "show", runtime.FACTORY_RELEASES["6.1.1-maninblack.34"] + ":" + str(relative)
+            ], cwd=runtime.SOURCE)
+        with patch.object(Path, "read_bytes", capacity_snapshot):
+            files = runtime.permission_recipe_inputs(iam_response_capacity=True)
         patches = [data.decode() for name, data in files.items() if name.endswith(".patch")]
         self.assertEqual(1, len(patches))
         self.assertIn("cFunctionsMaxCount", patches[0])
@@ -57,6 +70,10 @@ class PermissionCapacityTests(unittest.TestCase):
         permissions = package_configuration(root, "tire", "v1", "99.0.0")["items"][0]["configuration"]["permissions"]["kuksa"]
         self.assertGreater(len(permissions), 16)
         self.assertLessEqual(len(permissions), 32)
+
+    def test_old_transient_capacity_proof_rejects_new_factory_recipe_changes(self):
+        with self.assertRaisesRegex(EnvironmentError, "DELTA_NOT_CAPACITY_ONLY"):
+            runtime.permission_recipe_inputs(iam_response_capacity=True)
 
     def test_all_current_service_profiles_and_advisory_fit_native_capacity(self):
         from aosedge_demo_orchestrator.service_packages import package_configuration

@@ -46,6 +46,8 @@ class WorkspaceDoctorTests(unittest.TestCase):
                 "vehicle-platform",
                 "functional-service",
                 "brake-health-cloud",
+                "tire-health-service",
+                "tire-health-cloud",
             },
             identifiers,
         )

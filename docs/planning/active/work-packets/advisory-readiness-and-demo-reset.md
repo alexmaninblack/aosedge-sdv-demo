@@ -3,8 +3,46 @@
 
 # Advisory readiness and independent demo scenario reset
 
+17 September successor checkpoint: Factory .35 completed the authorized
+clean staging Test cycle by 05:32 UTC. Platform build source is pinned to
+`bb691efcbf19f1bebd74fd2ef3ae9ff0aee2bf74`. Build and qualification results
+are tracked in [Factory .35 execution evidence](../../../qualification/factory-35-e2e-2026-09-17.md).
+VDP V1/V2/V3, Brake V1/V2/V3, Tire V1, real KUKSA/backend results, both native
+warnings, independent Reset/CLEAR/renewed warnings, Offline/reconnect,
+first-attempt packaged Park/Resume and final UI retirement all passed.
+Lifecycle/publication/observation used Presenter/native UI; authorized real
+maneuvers used Demo Control. No Production work was included. Factory .34
+was retained at qualification time. The separate 17 September cleanup request
+supersedes that retention: the obsolete .34 image was deleted after dependency
+checks; compact evidence remains. See the pre-UI checkpoint audit.
+
+The earlier status below is historical and superseded by the .35 result.
+
 Status: preserved-Test CLI and targeted UI functional proofs passed,
-16 September 2026. Clean Factory/UI lifecycle qualification remains open.
+16 September 2026. Factory .34 built; automatic strict Test Provision and
+retirement support implemented and regression-tested. After the operator
+unlocked the Mac and entered VM access, clean .34 UI creation, stationary
+Manual connection, strict Provision, VDP71/V1 -> 72/V2 -> 73/V3 and
+Brake50/V1 -> 51/V2 -> 52/V3 delivery passed. Tire31/V1 produced a real
+assessment; both independent Reset commands received correlated CLEAR.
+Offline/reconnect passed. Park passed; Resume required a diagnosed recovery
+and is not yet qualified as a clean first-attempt restart. Full V2 assessment,
+warning -> Reset -> renewed warning, final UI/restart and retirement gates
+remain open. After unlock on 17 September, native post-recovery inspection
+passed. The corrected guest bootstrap passed a new UI Park/Resume attempt,
+but Resume stopped later on an unexpected native component removal transaction.
+The preserved .34 Test was blocked at source restoration at that checkpoint;
+no final full-cycle pass is claimed. At 03:44 UTC on 17 September, the approved
+CM startup fix passed native red/green tests and was applied transiently to the
+preserved Test. UI Continue Resume then completed in nine seconds, with Test
+selected, LIVE stationary Manual and both advisories Monitoring. The native
+patch is in the CM recipe; .34 is unchanged and the `/run` override does not
+survive reboot. First-attempt restart on a successor remains open.
+On 17 September the operator authorized a bounded
+CM/SM startup-reconciliation fix on this preserved Test: diagnose the native
+stop request, prove the smallest reversible correction, and repeat the UI
+restart gate. Cloud, Production, Safe Stop policy and retained identity remain
+unchanged. No transaction may be manually removed or bypassed.
 See [execution evidence](../../../qualification/advisory-readiness-reset-2026-09-16.md).
 
 ## Boundary and order
@@ -14,6 +52,14 @@ overlays, historical records and approved model thresholds. Implement on the
 existing Test, prove through Demo Control and Presenter, consolidate the known
 guest fixes in one Factory successor, then run the complete clean UI story.
 Do not describe a source test or an upload as end-to-end acceptance.
+
+Approved clean-run prerequisite: integrate strict Gateway enrollment into Test
+Provision, through the shared Demo Control path. Close the guest source gate
+before the first post-Provision attachment; reopen only after stationary Manual
+and authenticated connection are confirmed. Preserve VM/Cloud identity and
+Production. Do not require a deployed VDP at the empty Factory baseline or
+mistake a baseline TLS read for live VDP telemetry. Operator Safe Stop remains
+explicit. Qualify this order on .34 through UI before declaring the work done.
 
 Pre-change checkpoints: solution `0a0e604`, Gateway `1ad3212`, platform
 `1d8429b`, Brake service `b88ba79`, Tire service `6fe0f18`, Brake backend
@@ -118,5 +164,43 @@ commands expire rather than executing unexpectedly in a later demonstration.
 5. Close previously documented transient guest/schema/security fixes, build
    once with warm caches, and complete clean UI qualification and cleanup.
 
-CM/SM/IAM are not modified for this feature. Their already approved permission
-capacity fixes remain part of the separately tracked Factory consolidation.
+CM/SM/IAM are not modified for the readiness/reset feature itself. The separate
+17 September authorized startup-reconciliation correction is limited to the
+observed Resume defect. Their already approved permission capacity fixes remain
+part of the separately tracked Factory consolidation.
+
+## 17 September: control continuity and offline reconnection amendment
+
+Additional operator-approved first-drive corrections: fix the immediate Manual
+first-command timeout without relaxing the 250 ms expiry; verify control socket
+responsiveness independently of CARLA ticks; prepare the native Unreal DDC for
+Town10HD explicitly through `simulation prepare-cache`, with the simulator
+stopped and Test VM/Cloud/service identity preserved. No image rebuild or
+graphics-quality reduction belongs to this correction.
+
+Operator-approved corrections on the preserved staging Test:
+
+- Start the local simulator, strict Gateway and native telemetry independently,
+  without a Unit attachment. After Provision confirms Cloud Online, enroll the
+  exact Unit/Main Node under the existing CA and attach via the existing private
+  assignment protocol. Do not restart any source process or reset the actor.
+  Preserve fresh stationary-frame/native-session checks and confirm Manual
+  before opening the guest gate. First VDP installation follows the operator's
+  later Safe Stop. No Gateway hot-reload or anonymous fallback is introduced.
+  This supersedes Q03's former pre-Provision connection and the earlier draft
+  Gateway-only replacement. Older running development-profile Gateways require
+  an explicit development restart, not a hidden restart inside Provision.
+- Pedal release smoothing must never overlap nonzero throttle and brake.
+  A rejected pedal command requests Safe Stop without closing the UI channel;
+  a genuinely lost channel is recovered only by explicit operator input and
+  reacquires stopped, without replaying driving commands.
+- Both service bootstraps choose gRPC's native resolver before process start.
+  Aos's existing container-local `Server` hosts entry resolves KUKSA even with
+  external networking disabled, including reconnect after JWT renewal.
+  TLS hostname checks, permissions, model thresholds and the offline firewall
+  remain unchanged. No CM/SM/IAM or Factory modification is required.
+
+Proof order: focused source/protocol/native build tests; normal democtl package
+build/sign/upload for the same functional profiles; actual offline reconnection
+and control recovery; then the Provision continuity path. A source-only result
+must not be reported as a live first-Provision qualification.

@@ -20,6 +20,19 @@ NODE = "44444444-4444-4444-8444-444444444444"
 
 
 class UnitSafetyTests(unittest.TestCase):
+    def test_provision_summary_preserves_simulator_after_cloud_online(self):
+        from aosedge_demo_orchestrator.application import DemoOrchestrator
+        from aosedge_demo_orchestrator.models import OperationRequest, VehicleTarget
+        units = Mock()
+        units.execute.return_value = dict(vehicles=dict(test=dict(state="COMPLETED")))
+        app = DemoOrchestrator(environment_service=Mock(), vm_service=Mock(),
+            unit_service=units, source_service=Mock())
+        result = app.execute(OperationRequest("unit", "provision", VehicleTarget.TEST))
+        self.assertIn("after Cloud Online without restarting the simulator", result.message)
+        self.assertNotIn("no CARLA", result.message)
+        result = app.execute(OperationRequest("unit", "deprovision", VehicleTarget.TEST))
+        self.assertIn("no CARLA", result.message)
+
     def test_cloud_unit_accepts_null_memberships_without_losing_online_state(self):
         cloud = unit_cloud.Cloud.__new__(unit_cloud.Cloud)
         cloud.require = Mock()
@@ -62,25 +75,22 @@ class UnitSafetyTests(unittest.TestCase):
         self.assertEqual("ONLINE", item["cloud"]["lifecycle"])
 
     def test_real_source_identity_is_bound_before_verification_membership(self):
-        import contextlib
-        self.state.update(currentVehicle="test", source=dict(assignmentGeneration=1))
+        self.service.root = Path("/unused-test-root")
+        self.state.update(currentVehicle=None, source=dict(state="RUNNING", assignmentGeneration=0))
         self.service._live = Mock()
         self.service._guest_provisioned = Mock(return_value=True)
         self.service._wait = Mock(side_effect=[dict(unit_sets=[]), dict(unit_sets=[TEST])])
         self.service._intent = Mock()
         self.service._done = Mock()
         order = []
-        driver = Mock()
-        driver.operation.side_effect = contextlib.nullcontext
-        driver.assets.return_value = {"ca": Mock(read_text=Mock(return_value="PUBLIC_TEST_CA"))}
-        driver.guest.side_effect = lambda *a, **k: order.append("bind-source") or {"configured": True}
         self.service._cloud = Mock(side_effect=lambda *a, **k: order.append(a[0]))
         selected = dict(test=dict(id=TEST), production=dict(id=PROD))
-        with patch("aosedge_demo_orchestrator.source.SourceDriver", return_value=driver):
+        with patch("aosedge_demo_orchestrator.source_authentication.authenticate", side_effect=lambda *a, **k: order.append("secure-source")) as authenticate, \
+                patch("aosedge_demo_orchestrator.units.read_json", side_effect=lambda *a: copy.deepcopy(self.state)):
             self.service._provision(self.state, "test", selected)
-        self.assertEqual(["bind-source", "assign"], order)
-        driver.guest.assert_called_once_with(self.state, "test", "configure", generation=1, ca="PUBLIC_TEST_CA")
-        self.assertEqual(1, self.state["source"]["assignmentGeneration"])
+        self.assertEqual(["secure-source", "assign"], order)
+        self.assertEqual(dict(provisioning=True), authenticate.call_args.kwargs)
+        self.assertEqual(0, self.state["source"]["assignmentGeneration"])
 
     def test_connected_initial_test_can_provision_but_not_retire(self):
         import contextlib

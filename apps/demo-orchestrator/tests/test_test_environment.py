@@ -106,6 +106,78 @@ class TestOnlyRetirementTests(TestCase):
         recreated = self.create("test")
         self.assertEqual(state["demoSubjects"], recreated["demoSubjects"])
 
+    def test_test_guest_proof_receipts_retire_without_touching_peer(self):
+        from aosedge_demo_orchestrator.test_environment import TEST_GUEST_RECEIPTS
+        state = self.retired()
+        for key in TEST_GUEST_RECEIPTS:
+            state[key] = dict(result=dict(state="APPLIED"))
+        atomic_json(self.root / JOURNAL, state)
+        with self.unheld():
+            self.service.retire_test(cloud_check=lambda value: True)
+        current = self.read()
+        self.assertEqual(state["vehicles"]["production"], current["vehicles"]["production"])
+        self.assertFalse(set(current) & set(TEST_GUEST_RECEIPTS))
+
+    def test_unknown_root_receipt_still_blocks_retirement(self):
+        state = self.retired()
+        state["foreignProof"] = {}
+        atomic_json(self.root / JOURNAL, state)
+        with self.assertRaisesRegex(EnvironmentError, "JOURNAL_INVALID"):
+            self.service.retire_test(cloud_check=lambda value: True)
+
+    def test_completed_cm_startup_proof_is_owned_by_retired_test(self):
+        state = self.retired()
+        state["cmStartupProof"] = dict(state="COMPLETED", result=dict(state="APPLIED"))
+        atomic_json(self.root / JOURNAL, state)
+        with self.unheld():
+            self.service.retire_test(cloud_check=lambda value: True)
+        current = self.read()
+        self.assertNotIn("cmStartupProof", current)
+        self.assertEqual(state["vehicles"]["production"], current["vehicles"]["production"])
+
+    def test_retire_removes_only_exact_test_trust_and_preserves_shared_dns(self):
+        from aosedge_demo_orchestrator.test_environment import TRUST_DIRECTORY, TRUST_FILES, TRUST_PROFILE
+        state = self.retired()
+        state["currentVehicle"] = None
+        state["source"] = dict(state="STOPPED", trust=dict(profile=TRUST_PROFILE, target="test"))
+        directory = self.root / TRUST_DIRECTORY
+        directory.mkdir(parents=True, mode=0o700)
+        for name in TRUST_FILES:
+            path = directory / name
+            path.write_text("fixture only")
+            path.chmod(0o600)
+        atomic_json(directory / "identity.json", {key: state["vehicles"]["test"][key]
+            for key in ("unitId", "nodeId", "localVmId")})
+        dns = self.root / ".run/demo-current/dns-bridge.log"
+        dns.write_text("shared DNS log")
+        atomic_json(self.root / JOURNAL, state)
+        with self.unheld():
+            self.service.retire_test(cloud_check=lambda value: True)
+        self.assertFalse(directory.exists())
+        self.assertNotIn("trust", self.read()["source"])
+
+        self.assertEqual("shared DNS log", dns.read_text())
+
+    def test_retire_before_provision_removes_only_local_dashboard_trust(self):
+        from aosedge_demo_orchestrator.test_environment import TRUST_DIRECTORY, TRUST_PROFILE
+        from aosedge_demo_orchestrator.source_trust import LOCAL_FILES
+        state = self.create()
+        state["currentVehicle"] = None
+        state["source"] = dict(state="STOPPED", trust=dict(profile=TRUST_PROFILE,
+            target="test", enabled=True, fingerprints=dict(dashboard="a" * 64)))
+        directory = self.root / TRUST_DIRECTORY
+        directory.mkdir(parents=True, mode=0o700)
+        for name in LOCAL_FILES:
+            path = directory / name
+            path.write_text("fixture only")
+            path.chmod(0o600)
+        atomic_json(directory / "identity.json", dict(schemaVersion=1))
+        atomic_json(self.root / JOURNAL, state)
+        with self.unheld():
+            self.service.retire_test(cloud_check=lambda state: True)
+        self.assertFalse(directory.exists())
+        self.assertNotIn("trust", self.read()["source"])
+
     def test_cloud_proof_required_and_never_production_absence(self):
         original = self.retired()
         for check in (None, lambda state: False):

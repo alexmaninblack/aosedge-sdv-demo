@@ -469,8 +469,9 @@ class EnvironmentService:
         source = state.get("source")
         base = ".run/demo-current/source"
         control = ".run/demo-current/control"
+        control_metadata = {"telemetry-client.json", "gateway-reload.json", "gateway-reload-result.json"}
         trust_directory = control + "/viss-trust"
-        from .source_trust import FILES as TRUST_FILES, owned as trust_owned
+        from .source_trust import FILES as TRUST_FILES, LOCAL_FILES as LOCAL_TRUST_FILES, owned as trust_owned
         if source:
             run_id = object_id(source.get("runId"))
             if (source.get("state") != "STOPPED" or source.get("operation") or source.get("stopOperation")
@@ -528,14 +529,19 @@ class EnvironmentService:
                         raise EnvironmentError("SOURCE_TRUST_CLEANUP_OWNERSHIP_MISSING")
                     trust_owned(self.root / trust_directory, directory=True)
                     trust_files = list((self.root / trust_directory).iterdir())
-                    if {path.name for path in trust_files} != TRUST_FILES:
+                    if {path.name for path in trust_files} not in (TRUST_FILES, LOCAL_TRUST_FILES):
                         raise EnvironmentError("SOURCE_TRUST_CLEANUP_FILES_CONFLICT")
                     for path in sorted(trust_files):
                         trust_owned(path)
                         plan["files"].append(str(path.relative_to(self.root)))
                     plan["directories"].append(trust_directory)
-                if any(p.name != "viss-trust" for p in (self.root / control).iterdir()):
-                    raise EnvironmentError("SOURCE_CONTROL_CLEANUP_INCOMPLETE")
+                for path in sorted((self.root / control).iterdir()):
+                    if path.name == "viss-trust":
+                        continue
+                    if path.name not in control_metadata:
+                        raise EnvironmentError("SOURCE_CONTROL_CLEANUP_INCOMPLETE")
+                    self._owned_file(path)
+                    plan["files"].append(str(path.relative_to(self.root)))
                 plan["directories"].append(control)
         if (not isinstance(plan, dict) or set(plan) != {"files", "directories"}
                 or any(not isinstance(plan[k], list) or len(plan[k]) != len(set(plan[k])) for k in plan)):
@@ -554,6 +560,8 @@ class EnvironmentService:
                     raise EnvironmentError("UNTRACKED_SOURCE_RUNTIME_FILE")
         for relative in plan["files"]:
             parts = Path(relative).parts
+            if str(Path(relative).parent) == control and parts[-1] in control_metadata and control in plan["directories"]:
+                continue
             if str(Path(relative).parent) == trust_directory and parts[-1] in TRUST_FILES and trust_directory in plan["directories"]:
                 continue
             if (len(parts) != 5 or parts[:3] != Path(base).parts or parts[4] not in SOURCE_RUNTIME_FILES

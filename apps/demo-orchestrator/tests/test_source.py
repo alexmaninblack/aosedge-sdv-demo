@@ -47,6 +47,32 @@ class Driver:
 
 
 class SourceTests(unittest.TestCase):
+    def test_resume_reuses_only_exact_live_pending_manual_connection(self):
+        import contextlib
+        self.service.environment._writer = contextlib.nullcontext
+        self.driver.operation = contextlib.nullcontext
+        self.service.root = Path("/unused-test-root")
+        self.state["vehicles"]["test"] = dict(unitId="unit", nodeId="node")
+        self.state["demoLifecycle"] = dict(action="resume", target="test", state="IN_PROGRESS",
+            phase="start-simulation", retainedConnection="test", simulationWasRunning=True)
+        self.state["source"].update(operation=dict(id="same-operation", target="test", previous=None,
+            initialManual=True), trust=dict(enabled=True,
+            onboarding=dict(state="COMPLETE", unitId="unit", nodeId="node")))
+        self.driver.ready = Mock(return_value=dict(fresh=True, held=True,
+            operationId="same-operation", phase="MANUAL_READY"))
+        self.driver.start = Mock()
+        with patch("aosedge_demo_orchestrator.source.read_json", return_value=self.state):
+            value = self.service.simulation("start", target="test")
+            self.assertTrue(value["pendingConnection"])
+            self.assertEqual("same-operation", self.state["source"]["operation"]["id"])
+            self.driver.start.assert_not_called()
+            self.driver.ready.return_value["operationId"] = "another-operation"
+            with self.assertRaisesRegex(EnvironmentError, "OWNER_MISMATCH"):
+                self.service.simulation("start", target="test")
+            self.state["demoLifecycle"]["action"] = "create"
+            with self.assertRaisesRegex(EnvironmentError, "RECONCILIATION_REQUIRED"):
+                self.service.simulation("start", target="test")
+
     def test_startup_diagnostic_returns_fixed_categories_not_raw_payload(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -67,7 +93,7 @@ class SourceTests(unittest.TestCase):
             self.assertEqual([], driver.startup_diagnostic(dict(runDirectory=str(run.relative_to(root))))["failures"])
             self.assertEqual("SOURCE_DIAGNOSTIC_PATH_UNSAFE", driver.startup_diagnostic(dict(runDirectory="/tmp"))["reason"])
 
-    def test_initial_connection_does_not_require_cloud_but_select_still_does(self):
+    def test_first_connection_requires_provisioning_just_like_select(self):
         import contextlib
         self.service.environment._writer = contextlib.nullcontext
         self.driver.operation = contextlib.nullcontext
@@ -75,10 +101,11 @@ class SourceTests(unittest.TestCase):
         self.service.root = Path("/unused-test-root")
         self.service._select = Mock(return_value={"currentVehicle": "test"})
         with patch("aosedge_demo_orchestrator.source.read_json", return_value=self.state):
-            self.assertEqual("test", self.service.initialize_test()["currentVehicle"])
-            self.service._select.assert_called_once_with(self.state, "test", configure=True, initial_manual=True)
+            with self.assertRaisesRegex(EnvironmentError, "SOURCE_UNIT_PROVISION_REQUIRED"):
+                self.service.select("test", initial_manual=True)
             with self.assertRaisesRegex(EnvironmentError, "SOURCE_UNIT_PROVISION_REQUIRED"):
                 self.service.select("test")
+            self.service._select.assert_not_called()
 
     def test_initial_manual_test_only_never_requires_a_hidden_peer(self):
         self.state["vehicles"].pop("production")
@@ -95,6 +122,21 @@ class SourceTests(unittest.TestCase):
         self.assertNotIn("release", [call[0] for call in calls])
         self.assertNotIn(("block", "all"), calls)
         self.assertIn(("block", "test"), calls)
+        self.assertNotIn("reset", [call[0] for call in calls])
+        self.assertNotIn(("wait", "RESET"), calls)
+
+    def test_later_manual_requires_scoped_provision_receipt_and_keeps_order(self):
+        self.state["source"].update(assignmentGeneration=2, trust=dict(enabled=True))
+        self.state["vehicles"]["test"].update(unitId="unit", nodeId="node")
+        with self.assertRaisesRegex(EnvironmentError, "FIRST_TEST_CONNECTION"):
+            self.service._select(self.state, "test", initial_manual=True)
+        self.state["source"]["trust"]["onboarding"] = dict(state="PENDING", unitId="unit", nodeId="node")
+        base = "aosedge_demo_orchestrator.source_authentication."
+        with patch(base + "detach"), patch(base + "attach"), patch(base + "connection", return_value=dict(
+                serverTls=True, factoryBaseline=True, guest=dict(vdpProcess="inactive", vdpData="", vdpRestarts="0"))):
+            result = self.service._select(self.state, "test", initial_manual=True)
+        self.assertEqual("NOT_DEPLOYED", result["vehicles"]["test"]["vdpData"])
+        self.assertLess(self.driver.calls.index(("wait", "MANUAL_READY")), self.driver.calls.index(("allow", "test")))
 
     def test_initial_manual_cannot_be_used_for_handover(self):
         self.state["source"]["assignmentGeneration"] = 1

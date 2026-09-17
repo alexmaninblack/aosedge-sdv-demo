@@ -248,8 +248,12 @@ class GuestProjectionTests(unittest.TestCase):
         # An unchanged Factory boots again; host start reprojects the same selection.
         self.cfg.write_text(json.dumps(self.original))
         self.active = True
-        self.assertTrue(self.run_projection(vmStart=True)["cmRestarted"])
-        self.assertEqual(1, self.calls.count(["systemctl", "restart", "aos-cm.service"]))
+        restarted = self.run_projection(vmStart=True)
+        self.assertFalse(restarted["cmRestarted"])
+        self.assertTrue(restarted["cmRestartRequested"])
+        self.assertEqual(1, self.calls.count(["systemctl", "--no-block", "restart", "aos-cm.service"]))
+        self.assertFalse(self.run_projection(vmStart=True)["cmRestartRequested"])
+        self.assertEqual(1, self.calls.count(["systemctl", "--no-block", "restart", "aos-cm.service"]))
 
     def test_provision_does_not_repoint_an_active_or_provisioned_guest(self):
         self.active = True
@@ -279,10 +283,10 @@ class GuestProjectionTests(unittest.TestCase):
         lines = (self.root / "etc/hosts").read_text().splitlines()
         self.assertEqual(["192.0.2.42 " + " ".join(entry["host"] for entry in self.request["hosts"])],
                          [line for line in lines if DOMAIN in line])
-        actions = [call for call in self.calls if call[:2] in (["mount", "--bind"], ["systemctl", "restart"])]
+        actions = [call for call in self.calls if call[:2] in (["mount", "--bind"], ["systemctl", "--no-block"])]
         self.assertEqual(str(self.root / "etc/hosts"), actions[0][-1])
         self.assertEqual(str(self.cfg), actions[1][-1])
-        self.assertEqual(["systemctl", "restart", "aos-cm.service"], actions[2])
+        self.assertEqual(["systemctl", "--no-block", "restart", "aos-cm.service"], actions[2])
 
 
 if __name__ == "__main__":

@@ -29,17 +29,23 @@ class DeliveryTests(unittest.TestCase):
             root = proc / "123/root"
             (root / "etc/aos").mkdir(parents=True)
             (root / "var/aos/cm").mkdir(parents=True)
-            (root / "etc/aos/cm.cfg").write_text(json.dumps(dict(workingDir="/var/aos/cm")))
+            (root / "etc/aos/cm.cfg").write_text(json.dumps(dict(workingDir="/var/aos/cm",
+                serviceDiscoveryUrl="https://user:SECRET_FIXTURE@staging.example.test:9000/sd/v7/")))
             database = root / "var/aos/cm/cm.db"
             payload = dict(items=[dict(item=dict(id="service-fixture", type="service"), version="6.0.0")],
                 certificates=[dict(privateKey="SECRET_FIXTURE")])
             with sqlite3.connect(database) as connection:
                 connection.execute("CREATE TABLE updatemanager(updateState TEXT, desiredStatus TEXT)")
                 connection.execute("INSERT INTO updatemanager VALUES (?, ?)", ("none", json.dumps(payload)))
+                connection.execute("CREATE TABLE launcher_run_requests(itemID TEXT, type TEXT, version TEXT, subjectType TEXT, isUnitSubject INTEGER, numInstances INTEGER, privateKey TEXT)")
+                connection.execute("INSERT INTO launcher_run_requests VALUES ('service-fixture','service','6.0.0','group',0,1,'SECRET_FIXTURE')")
+                connection.execute("CREATE TABLE launcher_instances(itemID TEXT, type TEXT, version TEXT, subjectType TEXT, isUnitSubject INTEGER, state TEXT, preinstalled INTEGER)")
+                connection.execute("INSERT INTO launcher_instances VALUES ('unsafe/private/path','service','6.0.0','group',0,'active',0)")
             original = database.read_bytes()
             wire = json.dumps(dict(header=dict(txn="fixture", systemId="test-fixture"),
                 data=dict(payload, messageType="desiredStatus", authToken="SECRET_FIXTURE")))
-            messages = ["(communication) Received message: message=" + wire,
+            messages = ["(launcher) Resend instance update: nodeID=SECRET_FIXTURE, stopInstances=3, startInstances=0",
+                "(communication) Received message: message=" + wire,
                 '(communication) Received message: message={"data":{"messageType":"desiredStatus","certificates":[',
                 "(communication) Sent message: message=" + json.dumps(dict(header=dict(txn="ack-fixture"),
                     data=dict(messageType="ack")))]
@@ -51,6 +57,11 @@ class DeliveryTests(unittest.TestCase):
             self.assertFalse(any("--grep" in arg for arg in read.call_args.args[0]))
             self.assertEqual(original, database.read_bytes())
             self.assertFalse(observed["mutation"])
+            self.assertEqual(3, observed["launcherEvents"][0]["stopInstances"])
+            self.assertEqual(0, observed["launcherEvents"][0]["startInstances"])
+            self.assertEqual(1, observed["launcherStorage"]["launcher_run_requests"]["rows"][0]["numInstances"])
+            self.assertEqual("UNAVAILABLE", observed["launcherStorage"]["launcher_instances"]["rows"][0]["itemID"])
+            self.assertEqual(dict(host="staging.example.test", https=True, runtimeProjectionPresent=False), observed["cloudEndpoint"])
             self.assertEqual("none", observed["storedDesired"]["state"])
             self.assertEqual("6.0.0", observed["storedDesired"]["payload"]["items"][0]["version"])
             self.assertEqual(1, observed["journal"]["counts"]["incomplete:Received message:desiredStatus"])
@@ -395,6 +406,21 @@ class DeliveryTests(unittest.TestCase):
         self.assertEqual(dict(type="component", preinstalled=True, itemId="factory-vdp", subjectId="aos-vm-main",
             instance=0, version="0.0.0", state="activating"), result["entries"][1]["nativeInstance"])
         self.assertNotIn("SECRET_FIXTURE", json.dumps(result))
+        self.assertNotIn("{component:", json.dumps(result))
+
+    def test_reconciliation_events_survive_later_provider_noise(self):
+        service = SimpleNamespace(returncode=0, stdout="Id=aos-sm.service\n")
+        messages = [dict(MESSAGE="(launcher) Stop instance: instance={component:0:vdp:subject:0}",
+                         __REALTIME_TIMESTAMP="1")]
+        messages += [dict(MESSAGE="provider reconnect timed out", __REALTIME_TIMESTAMP=str(i))
+                     for i in range(2, 105)]
+        journal = SimpleNamespace(returncode=0, stdout="\n".join(json.dumps(value) for value in messages))
+        empty = SimpleNamespace(returncode=0, stdout="")
+        with patch.object(source_guest, "command", side_effect=[service, journal, empty, empty, empty, empty, empty]):
+            result = source_guest.execute(dict(action="component-logs", vehicle=dict(localVmId="fixture")))
+        self.assertEqual(100, len(result["entries"]))
+        self.assertEqual(1, len(result["reconciliationEvents"]))
+        self.assertEqual("vdp", result["reconciliationEvents"][0]["nativeInstance"]["itemId"])
         self.assertNotIn("{component:", json.dumps(result))
 
     def test_cm_transport_summary_is_bounded_and_allowlisted(self):

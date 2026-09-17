@@ -149,6 +149,10 @@ def build_parser() -> argparse.ArgumentParser:
     for action in ("sm-builder-start", "sm-builder-stop", "sm-build", "sm-test", "sm-apply", "cm-build", "cm-test", "cm-apply", "cm-compare-inspect", "cm-compare-build", "cm-compare-control", "cm-compare-without-patch", "cm-compare-restore", "cm-compare-startup", "cm-compare-refresh-build", "cm-compare-refresh-apply", "cm-compare-refresh-cache-restore"):
         command = component_commands.add_parser(action, help="bounded Test AosCore qualification; comparison phases are CLI-only")
         command.add_argument("target", choices=("test",))
+        if action in ("cm-test", "cm-build", "cm-apply"):
+            command.add_argument("--startup-reconcile", action="store_true",
+                help=("one transient CM-only proof on the preserved Test .34" if action == "cm-apply"
+                      else "preserved Factory .34 startup regression proof; warm target only, no VM mutation"))
         if action == "cm-apply":
             command.add_argument("--restart-cm", action="store_true",
                 help="explicitly restart the already applied qualified Test CM once; retain SM and native state")
@@ -199,7 +203,7 @@ def build_parser() -> argparse.ArgumentParser:
     initialize.add_argument("target", choices=("test",))
     select = vehicle_commands.add_parser("select", help="Safe Stop, detach, scene reset and connect one role")
     select.add_argument("target", choices=("test", "production"))
-    authenticate = vehicle_commands.add_parser("authenticate", help="onboard the preserved Test for strict Gateway mTLS; one simulation restart")
+    authenticate = vehicle_commands.add_parser("authenticate", help="onboard the preserved Test for strict Gateway mTLS; retain CARLA and Driving Control")
     authenticate.add_argument("target", choices=("test",))
     runtime_build = vehicle_commands.add_parser("build-runtime", help="development-only Gateway/client build; no lifecycle action")
     runtime_build.add_argument("target", choices=("test",))
@@ -209,6 +213,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     simulation = commands.add_parser("simulation", help="manage owned CARLA, Controller and Gateway; no VM/Cloud changes")
     simulation_commands = simulation.add_subparsers(dest="action", required=True)
+    simulation_commands.add_parser("prepare-cache", help="prepare Unreal derived data for Town10HD before driving; simulator must be stopped")
     for action in ("start", "stop"):
         command = simulation_commands.add_parser(action, help="manage the owned simulation; preserve VMs")
         command.add_argument("--target", choices=("test",), help="touch only Test's source gate; preserve an existing Production peer")
@@ -218,6 +223,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     vm = commands.add_parser("vm", help="manage local VM processes")
     vm_commands = vm.add_subparsers(dest="action", required=True)
+    sync_time = vm_commands.add_parser("sync-time", help="restart only Test time synchronization and verify guest time against this Mac")
+    sync_time.add_argument("target", choices=("test",))
     refresh_dns = vm_commands.add_parser("refresh-dns", help="recover the owned host DNS bridge after a network change; preserve Test VM")
     refresh_dns.add_argument("target", choices=("test",))
     refresh_dns.add_argument("--restart-guest-resolver", action="store_true", help="restart only Test dnsmasq once before recovering the host bridge")
@@ -270,6 +277,7 @@ def request_from_arguments(arguments: argparse.Namespace) -> OperationRequest:
         kac_recovery_remove=getattr(arguments, "kac_recovery_remove", False),
         iam_response_capacity=getattr(arguments, "iam_response_capacity", False),
         restart_cm=getattr(arguments, "restart_cm", False),
+        startup_reconcile=getattr(arguments, "startup_reconcile", False),
         confirm_bind_not_submitted_at=getattr(arguments, "confirm_bind_not_submitted_at", None),
         certificate=getattr(arguments, "certificate", None),
         timeout=getattr(arguments, "timeout", 8.0),
@@ -362,6 +370,8 @@ def render_human(result: OperationResult, details: bool = False) -> str:
             lines.append("Preserved: " + path)
     if data and document["operation"] == "vm.refresh-dns":
         lines.append("Host DNS: " + data["state"] + (" (unchanged)" if data.get("noOp") else ""))
+    if data and document["operation"] == "vm.sync-time":
+        lines.append("Test clock: " + data["state"] + "; maximum observed skew: " + str(data["skewBoundSeconds"]) + " s")
     if data and document["operation"] in ("vm.start", "vm.stop"):
         if data.get("infrastructure", {}).get("reason"):
             lines.append("Infrastructure: " + data["infrastructure"]["reason"])

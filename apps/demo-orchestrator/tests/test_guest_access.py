@@ -18,6 +18,28 @@ from aosedge_demo_orchestrator.vm import qmp
 
 
 class CombinedStartTests(unittest.TestCase):
+    def test_reboot_restore_precedes_ready_and_uncertain_result_is_not_retried(self):
+        request = dict(action="trust-restore", role="test")
+        real_run = subprocess.run
+        def source(path, *args, **kwargs):
+            if path.name == "source_trust_guest.py":
+                return "def execute(request):\n    print('RESTORED_EXISTING_IDENTITY')\n"
+            return "def main(request):\n    print('{\"ok\":true,\"data\":{\"state\":\"INITIALIZED\",\"role\":\"test\"}}')\n"
+        def shell(command, **kwargs):
+            script = kwargs["input"]
+            self.assertLess(script.index("DEMO_SOURCE_RESTORE_READY"), script.index("DEMO_GUEST_READY"))
+            kwargs["input"] = re.sub(r"if timeout 2 [^\n]+; then", "if true; then", script)
+            return real_run(["/bin/sh"], **kwargs)
+        with patch("aosedge_demo_orchestrator.guest_access.UNPROVISIONED", "false"), \
+                patch.object(Path, "read_text", source), \
+                patch("aosedge_demo_orchestrator.guest_access.subprocess.run", side_effect=shell):
+            self.assertTrue(read_guest(Path("/fixture"), 2222, factory_role="test", source_restore=request)["guestReady"])
+        with patch("aosedge_demo_orchestrator.guest_access.subprocess.run", side_effect=subprocess.TimeoutExpired(
+                "ssh", 60, output=b"DEMO_SOURCE_RESTORE_STARTED\n")) as call:
+            with self.assertRaisesRegex(EnvironmentError, "SOURCE_TRUST_RESTORE_UNCONFIRMED"):
+                read_guest(Path("/fixture"), 2222, factory_role="test", source_restore=request)
+            call.assert_called_once()
+
     def test_debug_bootstrap_precedes_readiness_dns_and_role_in_one_ssh(self):
         real_run = subprocess.run
         domain = "developer.aos-dev.test"

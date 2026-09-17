@@ -9,7 +9,10 @@ from pathlib import Path
 from unittest.mock import patch
 
 from aosedge_demo_orchestrator import source_trust as trust, source_trust_guest as guest
-from tests.test_source_trust import VEHICLE
+try:
+    from .test_source_trust import VEHICLE
+except ImportError:  # unittest discovery with the tests directory as its root
+    from test_source_trust import VEHICLE
 
 
 @unittest.skipUnless(Path(trust.OPENSSL).is_file(), "OpenSSL 3 unavailable")
@@ -65,6 +68,56 @@ class TrustGuestTests(unittest.TestCase):
         self.assertTrue(third["vdpRestarted"])
         self.assertEqual(1, self.calls.count(["systemctl", "restart", "aos-sm"]))
         self.assertFalse(any("aos-cm" in c or "aos-iam" in c for c in self.calls))
+
+    def test_empty_factory_is_distinct_from_installed_or_failed_provider(self):
+        with patch.object(guest, "call", return_value="ActiveState=inactive\n"):
+            self.assertTrue(guest.status()["factoryBaseline"])
+            (self.inputs.parent / "active").symlink_to("missing-slot")
+            self.assertFalse(guest.status()["factoryBaseline"])
+            (self.inputs.parent / "active").unlink()
+            (self.inputs.parent / "state").mkdir()
+            (self.inputs.parent / "state/installed.json").write_text("{}")
+            self.assertFalse(guest.status()["factoryBaseline"])
+        with patch.object(guest, "call", return_value="ActiveState=failed\n"):
+            self.assertFalse(guest.status()["factoryBaseline"])
+
+    def test_reboot_restores_existing_projection_without_new_identity_or_repeat_restart(self):
+        guest.execute(self.request)
+        before = {path: path.read_bytes() for path in guest.STORE.rglob("*") if path.is_file()}
+        selected = (self.inputs / "selected.json").read_bytes()
+        guest.SM_DROPIN.unlink()
+        guest.VDP_DROPIN.unlink()
+        self.calls.clear()
+        request = {key: value for key, value in self.request.items() if key not in ("material", "generation")}
+        result = guest.execute(dict(request, action="trust-restore"))
+        self.assertTrue(result["mutualTlsConfigured"])
+        self.assertTrue(result["smRestarted"])
+        self.assertTrue(result["vdpRestarted"])
+        self.assertEqual(selected, (self.inputs / "selected.json").read_bytes())
+        self.assertTrue(all(path.read_bytes() == data for path, data in before.items()))
+        result = guest.execute(dict(request, action="trust-restore"))
+        self.assertFalse(result["smRestarted"] or result["vdpRestarted"])
+        self.assertEqual(1, self.calls.count(["systemctl", "restart", "aos-sm"]))
+        self.assertFalse(any("aos-cm" in call or "aos-iam" in call for call in self.calls))
+
+    def test_restore_cannot_enroll_missing_or_foreign_material(self):
+        guest.execute(self.request)
+        request = {key: value for key, value in self.request.items() if key not in ("material", "generation")}
+        request["action"] = "trust-restore"
+        selected_path = self.inputs / "selected.json"
+        original = selected_path.read_text()
+        selected = json.loads(original)
+        selected["selectedSource"]["nodeId"] = "foreign"
+        selected_path.write_text(json.dumps(selected))
+        self.calls.clear()
+        with self.assertRaisesRegex(ValueError, "IDENTITY_MISMATCH"):
+            guest.execute(request)
+        self.assertEqual([], self.calls)
+        selected_path.write_text(original)
+        (guest.STORE / "selected-platform-unit/client-key.pem").unlink()
+        with self.assertRaises(FileNotFoundError):
+            guest.execute(request)
+        self.assertEqual([], self.calls)
 
     def test_wrong_vm_is_rejected_before_crypto_or_write(self):
         self.request["vehicle"]["localVmId"] = "6fcf5a74-0b74-4ef0-a05d-44bad598ab95"

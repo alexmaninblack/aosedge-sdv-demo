@@ -93,7 +93,6 @@ class DemoPreparation:
                 ("start-vms", OperationRequest("vm", "start", target, timeout=90)),
                 ("start-backends", None),
                 ("simulation", OperationRequest("simulation", "start")),
-                ("connect-test-manual", OperationRequest("vehicle", "initialize", VehicleTarget.TEST)),
                 ("prepare-v1", OperationRequest("component", "prepare", component_version=version, content_profile="v1")),
                 ("sign-v1", OperationRequest("component", "sign", component_version=version)),
                 ("upload-v1", OperationRequest("component", "upload", component_version=version)),

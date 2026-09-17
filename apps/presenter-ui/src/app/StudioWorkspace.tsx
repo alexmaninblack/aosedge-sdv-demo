@@ -57,6 +57,7 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
   const present = vehicle.state === "CURRENT" && vehicle.overlayExists === true;
   const running = present && vehicle.process === "RUNNING";
   const parked = local.lifecycle?.action === "park" && local.lifecycle.state === "COMPLETED";
+  const resumePartial = local.lifecycle?.action === "resume" && local.lifecycle.state === "PARTIAL";
   const retiring = local.lifecycle?.action === "retire" && local.lifecycle.state !== "COMPLETED";
   const connected = snapshot.vehicle.value === "test";
   const simulationRunning = connected || ["RUNNING_UNASSIGNED", "CONNECTED", "SELECTED_NOT_PROBED"].includes(local.source.state);
@@ -125,15 +126,15 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
   // This guide explains observed state; it never starts an operation itself.
   let guide = { title: "Create your vehicle", body: "Choose the factory firmware for its domain controller.", label: mode === "quick" ? "Prepare demo" : "Create controller", disabled: !image, action: create };
   if (present && continuation) guide = { title: "Continue preparation", body: local.lifecycle?.reason ?? local.preparation?.reason ?? "Continue only the remaining recorded steps.", label: "Continue preparation", disabled: !image, action: create };
-  else if (parked) guide = { title: "Demo parked", body: "Resume the same controller and Cloud identity.", label: "Resume", disabled: false, action: () => ask({ action: "resume" }) };
-  else if (present && !simulationRunning) guide = { title: "Connect the local vehicle", body: "Start CARLA, Gateway and the native vehicle panels.", label: "Start simulator", disabled: !running, action: () => ask({ action: "start-simulation" }) };
-  else if (present && !connected) guide = { title: "Connect the domain controller", body: "Initial connection is stationary Manual; driving remains operator-controlled.", label: "Connect in Manual", disabled: !running, action: () => ask({ action: "connect-test" }) };
+  else if (parked || resumePartial) guide = { title: resumePartial ? "Resume paused" : "Demo parked", body: resumePartial ? local.lifecycle?.reason ?? "Continue the same recorded resume." : "Resume the same controller and Cloud identity.", label: resumePartial ? "Continue Resume" : "Resume", disabled: false, action: () => ask({ action: "resume" }) };
+  else if (present && !simulationRunning) guide = { title: "Start the local vehicle", body: "Start CARLA, Gateway and the native vehicle panels. The controller connects after Cloud provisioning.", label: "Start simulator", disabled: !running, action: () => ask({ action: "start-simulation" }) };
   else if (present && !local.registrationComplete) {
     const hasRegistration = local.registrationStarted === true || value?.lifecycle === "provisioned";
     guide = publishedAny || hasRegistration
-      ? { title: hasRegistration ? "Complete Cloud registration" : "Provision your vehicle", body: "Register this controller in Test Vehicles, preserving its local connection.", label: hasRegistration ? "Continue registration" : "Provision to Test", disabled: false, action: () => ask({ action: "provision" }) }
+      ? { title: hasRegistration ? "Complete Cloud registration" : "Provision your vehicle", body: "Register in Test Vehicles, confirm Cloud Online, then connect the running Gateway in stationary Manual. The simulator and scene stay unchanged.", label: hasRegistration ? "Continue registration" : "Provision to Test", disabled: false, action: () => ask({ action: "provision" }) }
       : { title: "Prepare the platform release", body: "The Platform Team publishes software before the vehicle is provisioned.", label: "Open Platform", disabled: false, action: () => openView("platform") };
-  } else if (present && !componentCurrent) guide = { title: "Observe the current controller", body: "Cloud state is not current. Previous reports are not live confirmation.", label: "Refresh Cloud state", disabled: cloud.loading, action: cloud.refresh };
+  } else if (present && !connected) guide = { title: "Connect the domain controller", body: "Connect the provisioned controller in stationary Manual without restarting the simulator.", label: "Connect in Manual", disabled: !running, action: () => ask({ action: "connect-test" }) };
+  else if (present && !componentCurrent) guide = { title: "Observe the current controller", body: "Cloud state is not current. Previous reports are not live confirmation.", label: "Refresh Cloud state", disabled: cloud.loading, action: cloud.refresh };
   else if (present && vdpIssue) guide = { title: "Component update issue", body: `${vdpIssue}. Safe Stop does not resolve this reported error. Inspect the Cloud report or finish this run.`, label: "Open Platform", disabled: false, action: () => openView("platform") };
   else if (present && pending) guide = { title: "Component update pending", body: `Cloud reports ${value?.pendingVersion}. Use native Safe Stop when ready; installation is owned by the vehicle.`, label: "Open Platform", disabled: false, action: () => openView("platform") };
   else if (present && publishedAny && installed === "0.0.0") guide = { title: "First platform update", body: "Drive the vehicle, then use native Safe Stop. Observe the installed release here; no Apply button is needed.", label: "Refresh Cloud state", disabled: cloud.loading, action: cloud.refresh };
@@ -239,7 +240,7 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
     {sessionOpen && <Modal title="Demo session" subtitle="Current Test only · Production remains unchanged" onClose={closeSession}>
       <CloudConnectionPanel />
       <div className="studio-session-grid"><button disabled={controls.blocked || retiring || !running || pending || Object.values(services).some(hasServicePending)} onClick={() => { closeSession(); ask({ action: "park" }); }}>Park</button><p>Stop local runtimes; retain identity, disks and installed releases.</p>
-      <button disabled={controls.blocked || retiring || !parked} onClick={() => { closeSession(); ask({ action: "resume" }); }}>Resume</button><p>Restart the same parked run, without provisioning or publication.</p>
+      <button disabled={controls.blocked || retiring || !(parked || resumePartial)} onClick={() => { closeSession(); ask({ action: "resume" }); }}>{resumePartial ? "Continue Resume" : "Resume"}</button><p>Restart the same parked run, without provisioning or publication.</p>
       <button disabled={controls.blocked} onClick={() => { closeSession(); ask({ action: "reset" }); }}>Finish demo</button><p>Retire the owned Test and its working data. Preserve Factory originals and release continuity.</p></div></Modal>}
     {details && <Modal title={details.kind === "component" ? componentName(details.row) : details.kind === "service" ? details.row.service?.title ?? "Service" : "Prepared service package"} subtitle={details.kind === "release" ? "Demo Control · authoring metadata" : "Current Test · Aos Cloud observation"} onClose={() => setDetails(null)}>
       {details.kind === "component" ? <ComponentDetails row={details.row} current={Boolean(componentCurrent)} /> : details.kind === "service" ? <><ServiceRows rows={{ state: inventory?.services.state ?? "UNKNOWN", value: [details.row] }} current={Boolean(servicesCurrent)} /><p>Instance state is the last Cloud report, not proof of live telemetry or a product result.</p></>

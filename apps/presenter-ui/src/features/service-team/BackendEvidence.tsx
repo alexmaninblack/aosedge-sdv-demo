@@ -133,7 +133,13 @@ export function BackendEvidence({ team, unitSystemUid, expectedVersion, onEviden
     {functionStatus && <p role="status">Function status{functionStatus.stale ? " · stale report" : " · service reported"}: {readable(functionContent.functionalState)} · {readable(functionContent.reason)}</p>}
     <div className="studio-result-card"><div><small>{mockMode ? "Latest mock result" : "Latest product result"}{!available && mock ? " · last known" : ""}</small><h3>{readable(assessmentContent.currentBand ?? assessmentContent.condition ?? content.status ?? latest?.message.messageType)}</h3>
       {expectedVersion && !latest && <p>{resetCommand?.state === "CLEARED" ? "Waiting for a new drive result after reset." : `No result for release ${expectedVersion} yet.`} Earlier results remain in Records.</p>}
-      <p>{typeof content.receivedSampleCount === "number" ? `${content.receivedSampleCount} samples · ${content.receivedChunkCount}/${content.expectedChunkCount} chunks` : confidence ? `Confidence · ${resultContent.confidencePercent}%` : `Quality · ${readable(resultContent.quality)}`}</p></div>
+      <p>{typeof content.receivedSampleCount === "number"
+        ? `${content.receivedSampleCount} samples${typeof content.receivedChunkCount === "number"
+          ? typeof content.expectedChunkCount === "number"
+            ? ` · ${content.receivedChunkCount}/${content.expectedChunkCount} chunks`
+            : ` · ${content.receivedChunkCount} chunks received · total pending`
+          : ""}`
+        : confidence ? `Confidence · ${resultContent.confidencePercent}%` : `Quality · ${readable(resultContent.quality)}`}</p></div>
       {typeof assessmentContent.conditionScore === "number" && <div className="studio-score"><strong>{assessmentContent.conditionScore}<small> / 100</small></strong><meter min={0} max={100} value={assessmentContent.conditionScore} aria-label="Synthetic condition score" /></div>}</div>
     <div className="studio-metrics"><article><small>Source event</small><strong>{typeof sourceTime === "string" ? new Date(sourceTime).toLocaleTimeString() : "Not reported"}</strong></article><article><small>Backend received</small><strong>{latest ? new Date((assessment ?? latest).backendReceivedAt).toLocaleTimeString() : "Not observed"}</strong></article><article><small>Vehicle advisory</small><strong>See vehicle telemetry</strong></article></div>
     {latest && <button className="studio-text-action" onClick={() => setDetail(assessment ?? latest)}>Inspect latest result ↗</button>}

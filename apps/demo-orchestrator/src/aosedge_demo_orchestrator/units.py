@@ -423,18 +423,24 @@ class UnitService:
         unit = self._wait(state, role, lambda value: value and value["status"] == "provisioned" and value["online_status"] == "Online", "CLOUD_ONLINE")
         if not self._guest_provisioned(state, role):
             raise EnvironmentError("PROVISIONED_GUEST_CORE_NOT_READY")
-        if role == "test" and state.get("currentVehicle") == "test":
-            # Initial Manual connection precedes Cloud identity. Bind the
-            # existing source only after real Unit/Node IDs and the mounted
-            # SM store exist, before Test membership can trigger delivery.
-            from .source import SourceDriver
-            driver = SourceDriver(self.vm)
-            with driver.operation():
-                configured = driver.guest(state, role, "configure",
-                    generation=state["source"]["assignmentGeneration"], ca=driver.assets()["ca"].read_text())
-            if configured.get("configured") is not True or configured.get("preProvision"):
-                raise EnvironmentError("SOURCE_POST_PROVISION_BINDING_UNCONFIRMED")
-            self.progress(role + ": existing source bound to confirmed Cloud identity; no source reset")
+        item["cloud"]["lifecycle"] = "ONLINE"  # fresh Cloud/guest proof above, before TLS enrollment
+        from .source_authentication import authenticate, onboarding_manual
+        if role == "test" and ((state.get("source") or {}).get("state") == "RUNNING" or onboarding_manual(state)):
+            # This shared CLI/UI boundary has real Cloud and guest identities.
+            # Connect strict TLS in stationary Manual before membership can
+            # deliver FOTA. A repeat reuses the same enrollment and connection.
+            from .source import SourceService
+            self.vm._save(state)
+            try:
+                authenticate(SourceService(self.vm, self), role, provisioning=True)
+            finally:
+                # Nested source operations journal every boundary. Never let
+                # this outer lifecycle overwrite their completion/failure state.
+                latest = read_json(self.root / JOURNAL)
+                state.clear()
+                state.update(latest)
+            item = state["vehicles"][role]
+            self.progress(role + ": protected Gateway connected; operator Safe Stop remains required for VDP")
         if item["unitSetId"] not in unit["unit_sets"]:
             self._intent(state, role, "ASSIGN_SET")
             self._cloud("assign", unitId=item["unitId"], systemUid=item["systemUid"], unitSetId=item["unitSetId"])
