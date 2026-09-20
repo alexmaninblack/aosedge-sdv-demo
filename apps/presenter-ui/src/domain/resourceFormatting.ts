@@ -10,5 +10,11 @@ export function formatResource(value: unknown, unit?: string | null, key?: strin
     // Keep small nonzero observations distinguishable from zero.
     return `${scaled > 0 && scaled < .01 ? "<0.01" : new Intl.NumberFormat("en", { maximumFractionDigits: 2 }).format(scaled)} ${gib ? "GiB" : "MiB"}`;
   }
+  if (typeof value === "number" && Number.isFinite(value) && value >= 0 && /^(bytes|byte|b)$/i.test(unit ?? "")) {
+    const units = ["B", "KiB", "MiB", "GiB", "TiB", "PiB"];
+    const power = value < 1 ? 0 : Math.min(Math.floor(Math.log(value) / Math.log(1024)), units.length - 1);
+    const scaled = value / 1024 ** power;
+    return `${scaled > 0 && scaled < .01 ? "<0.01" : new Intl.NumberFormat("en", { maximumFractionDigits: 2 }).format(scaled)} ${units[power]}`;
+  }
   return `${String(value)} ${unit ?? "· unit not specified"}`;
 }

@@ -3,6 +3,49 @@
 import { test, expect, type Page } from "@playwright/test";
 import { confirmedReset, binding } from "../unit/backendFixture";
 
+for (const width of [1100, 640]) test(`UIA7 disk and traffic units, scope and compact layout (${width})`, async ({ page }) => {
+  await page.setViewportSize({ width, height: 850 });
+  const fixture = await scenario(page);
+  const now = new Date().toISOString();
+  const row = (value: number, partition?: string) => ({ nodeId: "controller", value, partition, time: now });
+  const metric = (value: unknown[]) => ({ state: "CURRENT", unit: "bytes", value });
+  await page.route("**/api/presenter/monitoring", route => route.fulfill({ json: { unitId: "test-a", readCompletedAt: now,
+    monitoring: { state: "CURRENT", value: {
+      disk: metric([row(138240, "states"), row(417792, "storages"), row(94048256, "var"), row(621244416, "workdirs"),
+        ...["brake", "tire"].flatMap(team => [row(0, "states"), row(102400, "storages")].map(sample => ({ ...sample, serviceId: team + "-id", subjectId: team + "-subject", instance: 0 })))]),
+      inTraffic: metric([row(22881064), { ...row(0), serviceId: "brake-id", subjectId: "brake-subject", instance: 0 }]),
+      outTraffic: metric([row(1942370), { ...row(0), serviceId: "brake-id", subjectId: "brake-subject", instance: 0 }]),
+    } } } }));
+  await page.goto("/#native-browser");
+  await page.getByRole("button", { name: "Aos Cloud Unit monitoring", exact: true }).click();
+  await page.getByRole("button", { name: "Resources", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("button", { name: "Disk", exact: true }).click();
+  await expect(dialog.getByText("135 KiB", { exact: true })).toBeVisible();
+  await expect(dialog.getByText("592.46 MiB", { exact: true })).toBeVisible();
+  await expect(dialog.getByRole("navigation", { name: "Resource pages" })).toHaveCount(0);
+  await expect(dialog.locator(".studio-disk-readings article")).toHaveCount(4);
+  await expect(dialog).not.toContainText("unit not specified");
+  expect(await dialog.evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+  await page.screenshot({ path: `test-results/disk-units-${width}.png` });
+  await dialog.getByRole("button", { name: "Service instance", exact: true }).click();
+  await expect(dialog.getByText("0 B", { exact: true })).toHaveCount(2);
+  await expect(dialog.getByText("100 KiB", { exact: true })).toHaveCount(2);
+  await dialog.getByRole("button", { name: "Inbound", exact: true }).click();
+  await expect(dialog.getByText("0 B", { exact: true })).toBeVisible();
+  await expect(dialog).toContainText("Local/private network traffic is excluded");
+  await expect(dialog).toContainText("Received · daily total");
+  await dialog.getByRole("button", { name: "Controller", exact: true }).click();
+  await expect(dialog.getByText("21.82 MiB", { exact: true })).toBeVisible();
+  await dialog.getByRole("button", { name: "Outbound", exact: true }).click();
+  await expect(dialog.getByText("1.85 MiB", { exact: true })).toBeVisible();
+  await expect(dialog).toContainText("Sent · daily total");
+  await expect(dialog).not.toContainText("unit not specified");
+  await page.screenshot({ path: `test-results/traffic-units-${width}.png` });
+  await page.keyboard.press("Escape");
+  expect(fixture.calls.every(call => call.method === "GET")).toBe(true);
+});
+
 for (const attempt of [1, 2, 3]) test(`UIA Reset feedback and details stay independent of hung history (${attempt})`, async ({ page }) => {
   const fixture = await scenario(page);
   let releasePost: () => void = () => {};

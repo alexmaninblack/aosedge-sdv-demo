@@ -21,6 +21,14 @@ from .unit_cloud import CloudFailure
 PAGE_LIMIT = 100
 SERVICE_DETAIL_LIMIT = 8
 METRICS = ("cpu", "ram", "usedDisk", "disk", "inTraffic", "outTraffic")
+METRIC_UNITS = {
+    "cpu": ("DMIPS", "CLOUD_DMIPS_DOCUMENTATION"),
+    "ram": ("bytes", "CLOUD_OEM_RAM_BYTES"),
+    "usedDisk": ("bytes", "AOS_PARTITION_USAGE_BYTES"),
+    "disk": ("bytes", "AOS_PARTITION_USAGE_BYTES"),
+    "inTraffic": ("bytes", "AOS_TRAFFIC_ACCOUNTING_BYTES"),
+    "outTraffic": ("bytes", "AOS_TRAFFIC_ACCOUNTING_BYTES"),
+}
 SOURCE = "AOSCLOUD_OEM"
 SECTIONS = ("unit", "components", "nodes", "layers", "assignedSubjects", "reportedSubjects", "services")
 
@@ -356,11 +364,11 @@ def monitoring(cloud, identity):
                 metric.update(state="INCOMPLETE", reason="METRIC_GROUP_NOT_REPORTED")
             if any(sample["state"] != "CURRENT" for sample in samples):
                 metric.update(state="INCOMPLETE", reason="METRIC_VALUE_OR_TIME_NOT_REPORTED")
-            # Cloud's own OEM monitoring client formats unscaled RAM with its
-            # bytesIEC formatter (verified 2026-09-20; contract records source).
-            # Disk/traffic semantics remain unverified; do not infer rates.
-            metric.update(unit="DMIPS" if key == "cpu" else "bytes" if key == "ram" else None,
-                          unitEvidence="CLOUD_DMIPS_DOCUMENTATION" if key == "cpu" else "CLOUD_OEM_RAM_BYTES" if key == "ram" else "UNIT_NOT_VERIFIED")
+            # Verified against Core/protocol and deployed OEM byte formatting
+            # on 2026-09-20; see the observation contract. Traffic is an
+            # accounting-period volume, never a rate. Preserve source values.
+            unit, evidence = METRIC_UNITS[key]
+            metric.update(unit=unit, unitEvidence=evidence)
             metrics[key] = metric
         result["monitoring"] = observed(metrics)
     except (CloudFailure, OSError, ValueError, TypeError, KeyError) as error:

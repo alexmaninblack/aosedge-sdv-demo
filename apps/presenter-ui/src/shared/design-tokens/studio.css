@@ -84,6 +84,9 @@
 .studio-cloud-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 .studio-pagination{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;font-size:12px}
 .studio-inventory [role=alert]{color:#9b2c2c;overflow-wrap:anywhere}
+.studio-disk-readings{grid-template-columns:repeat(2,minmax(0,1fr))}
+.studio-resource-note{margin:12px 0}.studio-resource-note p{margin:4px 0}
+@media(max-width:600px){.studio-disk-readings{grid-template-columns:1fr}}
 .studio-inventory-compact [role=alert],.studio-inventory-compact small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .studio-footer>span{min-width:0;font-size:11px}
 .studio-build-notice{padding:8px 12px;background:#fff2cd;border:1px solid #dbc58f;display:flex;gap:12px;align-items:center;font-size:12px}

@@ -192,8 +192,36 @@ formatter divides by 1024 into B/KiB/MiB/GiB. A selected-tenant dashboard read
 also returned controller and both service series. This supplements the Core
 source byte contract rather than assuming the REST layer preserves it.
 Presenter converts verified bytes to MiB for graph scales. Unknown-unit inputs
-remain raw. Disk/traffic retain `unit: null`, `UNIT_NOT_VERIFIED`; no rate or
-percentage denominator is invented.
+remain raw. Following the operator's disk/traffic review on 20 September,
+`disk` and `usedDisk` have `unit: "bytes"`, `unitEvidence:
+"AOS_PARTITION_USAGE_BYTES"`; `inTraffic`/`outTraffic` have `unit: "bytes"`,
+`unitEvidence: "AOS_TRAFFIC_ACCOUNTING_BYTES"`. No source numbers change.
+Evidence: [partition usage wire contract](https://docs.aosedge.tech/docs/reference/communication-protocol/unit-cloud-protocol),
+Core node `statvfs` block-size accounting and container UID quota accounting,
+and the same deployed OEM frontend's `bytesIEC` disk/traffic formatting.
+Read-only comparison of the live .36 guest partitions and Cloud samples
+confirmed byte scale. These are used space, not capacity/free space/percent.
+
+Traffic is accumulated byte volume, not bytes/s or bits/s. Native traffic
+accounting defaults to a calendar-day boundary, not a rolling 24-hour window;
+the current demo uses that default. This period is a verified demo/Core
+configuration fact, not a new field claimed to be present in the Cloud reply.
+See [native accounting](https://docs.aosedge.tech/docs/aos-core/architecture/service-manager/network-manager#traffic-monitoring).
+Local/private destinations are excluded. Live `aos-traffic` nftables rules
+confirmed those exclusions before the counters, zero Brake/Tire counters and
+nonzero system counters. Both backends use `10.0.0.1` on the Mac (ports 18091
+and 18092), so their actual delivery is deliberately outside this accounting.
+Do not infer absent delivery from zero, replace it with an unknown value, or
+add a second collector. A virtual/public backend network is explicitly deferred.
+
+Presenter formats verified disk/traffic bytes as B/KiB/MiB/GiB. Four disk rows
+per page expose all four current controller partitions (`states`, `storages`,
+`var`, `workdirs`) together; pagination remains bounded for larger inventories.
+Traffic labels are `Received · daily total` / `Sent · daily total`, qualified
+by the source sample's accounting day and private-network exclusion. Avoid
+`today` on retained older samples. Sample age, errors, scope and missing/zero
+distinctions remain unchanged. Unknown-unit fixture/legacy data remains explicit;
+no rate or percentage denominator is invented.
 
 `[]` means a successful empty source response. Missing/null means not reported.
 `0` is a measured zero, never substituted for missing. A 403/404/timeout does not

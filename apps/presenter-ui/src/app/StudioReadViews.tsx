@@ -94,23 +94,31 @@ export function Monitoring({ inventory, refreshKey, observation }: { inventory?:
   const selectedScope = allScopes.includes(scope) ? scope : allScopes[0] ?? scope;
   const effectiveKey = metricKey;
   const metric = metrics?.[effectiveKey];
+  const isDisk = metricKey === "usedDisk";
+  const isTraffic = metricKey === "inTraffic" || metricKey === "outTraffic";
+  const title = isDisk ? "Disk usage" : metricKey === "inTraffic" ? "Received · daily total" : "Sent · daily total";
   const rows = (metricKey === "usedDisk" ? diskRows(metrics ?? undefined) : groupedMetrics(metric?.value ?? []).map(row => ({ ...row, conflict: false, unit: metric?.unit, state: metric?.state, sources: [metricKey] }))).filter(row => row.scope === selectedScope);
-  const pages = Math.max(1, Math.ceil(rows.length / 3)), activePage = Math.min(page, pages - 1);
+  const pageSize = isDisk ? 4 : 3;
+  const pages = Math.max(1, Math.ceil(rows.length / pageSize)), activePage = Math.min(page, pages - 1);
   return <section><div className="studio-panel-title"><h3>Resources</h3><span>Aos Cloud · {busy ? "Reading…" : error ? data ? `Last known · ${stamp(data.readCompletedAt)}` : "Unavailable" : stamp(data?.readCompletedAt)}</span></div>
     {reason && <p role="alert">Latest readings: {reason}{data ? " · Previous latest samples retained." : " · No confirmed latest samples."} History is independent.</p>}
     {!data && <p>{!inventory?.unitId ? "Create and provision Test to observe Cloud resources." : error ? "Latest Cloud readings unavailable; history is shown independently below." : "Waiting for the first Cloud resource observation…"}</p>}
     <div className="studio-profile-cards">{Object.entries(names).map(([key, name]) => <button key={key} aria-pressed={key === metricKey} onClick={() => setMetricKey(key)}>{name}</button>)}</div>
     {metricKey === "charts" ? <ResourceGraphs model={observation ?? ownObservation} inventory={inventory} /> : <>
+    {isDisk && <p>Used space in Aos storage partitions, not physical disks or free capacity. Service rows show each instance's usage.</p>}
+    {isTraffic && <div className="studio-resource-note"><strong>Metered network traffic</strong>
+      <p>Accumulated volume for the source sample's accounting day, not a transfer rate.</p>
+      <p>Local/private network traffic is excluded. This demo's backend connections are local, so 0 B does not mean no telemetry delivery.</p></div>}
     <div className="studio-pills" role="group" aria-label="Resource scope">{allScopes.map(name => <button key={name} aria-pressed={selectedScope === name} onClick={() => setScope(name)}>{name}</button>)}</div>
-    <div className="studio-inventory">{rows.slice(activePage * 3, activePage * 3 + 3).map(({ key, sample, unit, state, conflict, sources }) => <article key={key}><strong>{names[effectiveKey]} · {selectedScope}</strong>
+    <div className={`studio-inventory${isDisk ? " studio-disk-readings" : ""}`}>{rows.slice(activePage * pageSize, activePage * pageSize + pageSize).map(({ key, sample, unit, state, conflict, sources }) => <article key={key}><strong>{isDisk && sample.partition ? sample.partition : title} · {selectedScope}</strong>
       <span>{conflict ? "Conflicting source parameters · value unresolved" : formatResource(sample.value, unit, effectiveKey)}{error || state !== "CURRENT" ? " · last known / incomplete" : ""}</span>
-      <small>{sample.serviceId ? inventory?.services.value?.find(row => row.service?.id === sample.serviceId)?.service?.title ?? sample.serviceId : sample.nodeId ?? "Scope not supplied by Cloud"}{sample.instance !== null && sample.instance !== undefined ? ` · instance ${sample.instance}` : ""}{sample.partition ? ` · ${sample.partition}` : ""}</small>
+      <small>{sample.serviceId ? inventory?.services.value?.find(row => row.service?.id === sample.serviceId)?.service?.title ?? sample.serviceId : sample.nodeId ? "Domain Controller" : "Scope not supplied by Cloud"}{sample.instance !== null && sample.instance !== undefined ? ` · instance ${sample.instance}` : ""}{!isDisk && sample.partition ? ` · ${sample.partition}` : ""}</small>
       <small>Node: {known(sample.nodeId)} · Subject: {known(sample.subjectId)}</small>
       <small>Parameter: {sources.join(" / ")}{sample.measurementType ? ` · ${sample.measurementType}` : ""}</small>
       <small>Sample {stamp(sample.time)} · read {stamp(data?.readCompletedAt)}</small></article>)}</div>
     {pages > 1 && <nav className="studio-pagination" aria-label="Resource pages"><button disabled={activePage === 0} onClick={() => setPage(activePage - 1)}>Previous samples</button><span>{activePage + 1} / {pages}</span><button disabled={activePage + 1 >= pages} onClick={() => setPage(activePage + 1)}>Next samples</button></nav>}
     {!rows.length && !reason && <p>{!inventory?.unitId ? "Create and provision Test to observe Cloud resources." : !data ? error ? "Cloud resources unavailable; no confirmed samples." : "Waiting for the first Cloud resource observation…" : metric?.reason ?? "No sample reported for this scope."}</p>}
-    {rows.some(row => !row.unit) && <p>Cloud has not supplied a verified unit. Values are shown unchanged, not converted to percentages or byte units.</p>}
+    {rows.some(row => !row.unit) && <p>The unit for this observation has not been verified. Values are shown unchanged, not converted to percentages or byte units.</p>}
     </>}
   </section>;
 }

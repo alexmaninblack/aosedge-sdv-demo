@@ -203,6 +203,23 @@ class CloudInventoryTests(unittest.TestCase):
 
 
 class MonitoringTests(unittest.TestCase):
+    def test_verified_disk_and_traffic_bytes_preserve_volume_zero_missing_and_source(self):
+        metrics = {key: [] for key in read.METRICS}
+        for key in ("usedDisk", "disk", "inTraffic", "outTraffic"):
+            metrics[key] = [dict(value=value, time="2026-09-19T23:59:00Z", nodeId="main",
+                                system_uid="owned-test", serviceId="brake", subjectId="subject", instance=0,
+                                partition="storages" if key in ("usedDisk", "disk") else None)
+                            for value in (102400, 0, None)]
+        result = read.monitoring(cloud({UNIT_PATH: unit(), MONITOR_PATH: [metrics]}), IDENTITY)["monitoring"]["value"]
+        for key in ("usedDisk", "disk", "inTraffic", "outTraffic"):
+            self.assertEqual("bytes", result[key]["unit"])
+            self.assertEqual("AOS_PARTITION_USAGE_BYTES" if key in ("usedDisk", "disk") else "AOS_TRAFFIC_ACCOUNTING_BYTES",
+                             result[key]["unitEvidence"])
+            self.assertEqual([102400, 0, None], [sample["value"] for sample in result[key]["value"]])
+            self.assertEqual("2026-09-19T23:59:00Z", result[key]["value"][0]["sourceTimestamp"])
+            self.assertEqual("brake", result[key]["value"][0]["serviceId"])
+            self.assertEqual("INCOMPLETE", result[key]["state"])
+
     def test_alternative_disk_field_absence_is_notice_not_failed_monitoring(self):
         metrics = {key: [] for key in read.METRICS if key != "usedDisk"}
         result = read.monitoring(cloud({UNIT_PATH: unit(), MONITOR_PATH: [metrics]}), IDENTITY)

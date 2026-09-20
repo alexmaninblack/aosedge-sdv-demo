@@ -141,3 +141,52 @@ No full reinstall/version-update/Finish run was repeated: this packet changes
 the host UI/read path, not the images or services. Deferred checks from the
 versioned-observability packet remain separate. Public push is not claimed.
 Do not use UI freshness or successful Reset as proof of vehicle health.
+
+## UIA7 — disk and traffic display follow-up
+
+Implemented and activated on 20 September 2026 after the operator accepted
+keeping the existing local backend network. This is a display/observation
+metadata correction, not a traffic-accounting or vehicle-runtime change.
+
+- Protocol/Core and deployed OEM formatting establish unscaled bytes for disk
+  usage and network volume. The host projection now supplies verified unit
+  metadata; numeric values, identities and source timestamps remain unchanged.
+- Disk shows used partition space with adaptive B/KiB/MiB/GiB formatting.
+  The four current controller partitions fit one resource page, with partition
+  names in card headings. They are not represented as separate physical disks,
+  free capacity or an additive controller total.
+- Inbound/Outbound show received/sent daily totals, not transfer rates. Text
+  ties the accounting day to the source sample, avoiding a false "today" label
+  for retained older data. Local/private traffic exclusions are explained;
+  measured 0 B does not claim missing backend delivery.
+- Unknown unit, missing value, conflict and retained/incomplete states remain
+  distinguishable. CPU/RAM formatting, graph sampling and API cadence are
+  unchanged. No additional observer or Cloud endpoint was introduced.
+
+Follow-up gates passed: 320 Presenter unit tests, 137 browser tests, 30 Cloud
+observation tests and 4 monitoring-history tests, plus typecheck, production
+build and documentation checks. After the final partition-heading polish,
+all 320 unit tests and both affected browser cases (1100 and 640 px viewports)
+were rerun successfully. Browser tests include previous-day samples, true zero,
+unknown units, service scope, read-only interaction and compact layout.
+
+Live inspection at 11:39 UTC showed controller `states` 135 KiB, `storages`
+408 KiB, `var` 96.61 MiB and `workdirs` 592.46 MiB. Service storage inspection
+showed Tire 52 KiB and Brake 100 KiB, with state usage 0 B. Both service network
+directions showed 0 B with the private-network explanation; controller received
+22.2 MiB and sent 2.03 MiB. These are source samples, not benchmark guarantees.
+The Test remained Online, with VDP 97/V3, Brake 77/V3 and Tire 43/V1 installed.
+
+Final served UI build:
+`aae933dcb67b2b4a852ec15b82b25597b50e4c9aeb992ccfca587563ef837d52`.
+The prior compatible build is retained at
+`/private/tmp/presenter-resource-units.YplMAR/previous-dist`; the prior adapter
+is available at source checkpoint `397e657`. Compiled files remain outside Git.
+The local browser was reloaded and Disk/Inbound/Outbound were inspected.
+The existing native Presenter window can load the same build using Reload UI;
+its reload was not independently observed in this follow-up.
+
+Presenter server session and the original desktop Presenter, QEMU, CARLA,
+Gateway, Driving Control and VISS processes were preserved. No runtime restart,
+network toggle, Reset, upload, service update or destructive action occurred.
+A full lifecycle rerun and public push are not claimed for this follow-up.

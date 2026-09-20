@@ -52,6 +52,19 @@ does not close those gates.
 
 ### Applicability and replacement map
 
+### Resource units follow-up — 20 September 2026
+
+The accepted [UI amendments](../../planning/active/presenter-ui-amendments-2026-09-20.md)
+and their resource-review follow-up retain native Cloud resource authority.
+Disk usage is verified used bytes, formatted as B/KiB/MiB/GiB, with all four
+current controller partitions visible together and separate instance scope.
+Network reads show accumulated daily byte volumes, not transfer rates;
+retained samples keep their source-day context. Explain that local/private
+traffic is excluded and local backend delivery can coexist with zero metered
+service traffic. A public/test backend network remains deferred. Unknown units,
+missing samples, measured zero and conflicting aliases remain distinct.
+No guest collector, network change or service/VM rebuild is introduced.
+
 ### Displayed-fact audit corrections — 19 September 2026
 
 The subsequent [flow/status re-audit](../../qualification/presenter-ui-flow-reaudit-2026-09-19.md)

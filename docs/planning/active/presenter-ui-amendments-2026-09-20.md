@@ -146,6 +146,29 @@ affected tests when implementation is explicitly started.
 
 ## Decision closure
 
-No product decision remains open for these three changes. Technical contract
-verification, implementation, visual review and live qualification remain
-pending in the final plan. No additional UI change is assumed or approved.
+No product decision remains open for these three changes. Implementation and
+scoped automated/live qualification are complete; the
+[qualification record](../../qualification/presenter-ui-amendments-qualification-2026-09-20.md)
+states the evidence and remaining handoff boundaries. The subsequent disk and
+traffic follow-up is explicitly recorded below; no other UI change is assumed.
+
+## Follow-up — verified disk and traffic presentation
+
+Accepted by the operator after read-only diagnosis on 20 September 2026.
+Implement only the observation-unit metadata and Presenter presentation:
+
+- Disk usage uses verified bytes, formatted as B/KiB/MiB/GiB; explain that
+  rows are used space in Aos partitions, not physical disks or free capacity.
+  Show the four current controller partitions together, preserving instance
+  scope, aliases, missing values and conflicts.
+- Network readings use the same verified byte formatting. Describe accumulated
+  daily accounting volume, not transfer speed. Retained older samples must not
+  be labelled today's measurements; use `Received/Sent · daily total` with
+  source-day context instead.
+- Explain the native private/local-network exclusion and that local backend
+  traffic is not counted. Preserve real zero; it is not proof of no delivery.
+- Defer any public/test backend network, forwarding or address changes.
+  No AosCore, VM, service package, network, Cloud or lifecycle change.
+
+Verification and provenance are in the
+[Cloud observation contract](../../architecture/demo-control-cloud-observation.md#monitoring-semantics).

@@ -251,3 +251,29 @@ They do not qualify the proposed UI or close deferred work outside this packet.
 
 The operator authorized implementation; scoped execution is complete. This plan does not authorize external publication,
 Production changes, destructive cleanup or an expanded VM/service project.
+
+## UIA7 — disk/traffic units follow-up
+
+Authorized after the operator's live resource review on 20 September 2026.
+The diagnosis verified bytes from protocol/Core, deployed Cloud frontend and
+live guest/source comparisons. Native private-network exclusions explain zero
+service traffic; a new backend network is deferred.
+
+1. Add verified byte metadata to the existing disk/traffic projection without
+   changing source values, permissions, endpoints or refresh cadence.
+2. Format byte volume adaptively; label used partition space and daily traffic
+   volume. Preserve unknown/missing/zero/conflict/retained-source distinctions.
+   Show all four current controller partitions on one page. Explain local
+   backend accounting exclusions without implying missing delivery.
+3. Test formatting boundaries, controller/service identities, four partitions,
+   daily versus per-second semantics, previous-day samples and unavailable reads.
+   Run Presenter regression/typecheck/build and affected Python tests.
+4. Preserve the previous build; activate only the Presenter display/host read
+   path and inspect live Disk/Inbound/Outbound. No VM/service/CARLA restart,
+   Reset, network toggle, publication or full demo cycle is needed.
+5. Record actual qualification and handoff. Do not claim public push or change
+   the accepted native resource source of truth.
+
+Status: implemented, activated and qualified on 20 September 2026. See the
+[UIA7 qualification](../../../qualification/presenter-ui-amendments-qualification-2026-09-20.md)
+for test totals, live observations, preserved runtimes and rollback evidence.
