@@ -13,7 +13,7 @@ made. No publication, retirement, record deletion or public push is included.
 
 ## Delivered behavior
 
-- Separate one-click Reset scenario and detail actions on each service card.
+- Separate one-click **Reset Driver Advisory** and detail actions on each service card.
   Only backend scenario Reset skips confirmation; it keeps request IDs,
   native authorization, serialization and uncertain-outcome protection.
 - Card and popup share submitting/pending/uncertain/CLEAR evidence. A completed
@@ -223,3 +223,15 @@ at the existing right-pane width. Earlier confirmed reset timestamps and the
 later Inspection recommended results remained intact; no new reset occurred.
 The native desktop window may use Reload UI to load the same served build;
 its reload was not independently observed.
+
+## Subsequent audit and retention update
+
+The operator then requested a full audit, obsolete-artifact cleanup and public
+commit/push checkpoint. The [separate receipt](ui-amendments-checkpoint-cleanup-2026-09-20.md)
+records the repeated regressions and publication boundary. It supersedes the
+earlier artifact-retention statements: the older UIA7 resource-units rollback
+directory was removed; the latest UIA8 `presenter-advisory-label` rollback pair
+remains. Factory .35's binary was removed; .36 and its live overlay remain.
+The no-push statements above describe the earlier individual follow-ups,
+not the subsequent authorized publication. This audit does not rerun the live
+Reset/network/lifecycle scenarios or promote the Factory qualification state.

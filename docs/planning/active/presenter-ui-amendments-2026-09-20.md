@@ -126,12 +126,12 @@ credential has `units_monitoring_dashboard`; the current Test returned CPU
 and RAM history for its controller and both Brake/Tire instances. The
 09:42 UTC observation contained 25 points per series over approximately
 14 minutes. This proves current availability, not a guaranteed retention or
-sampling interval. The existing Presenter reads only latest measurements and
-collapses samples to the newest per identity; historical adaptation and chart
-rendering remain to be implemented. Test the actual response shape as well as
-the documented schema: staging returned `services` as a keyed object rather
-than the array described by OpenAPI. Keep reads bounded and handle missing
-history permission/data explicitly.
+sampling interval. At that pre-implementation checkpoint, Presenter read only
+latest measurements and collapsed samples to the newest per identity. The
+subsequent implementation added history adaptation and chart rendering, with
+tests for the actual response shape as well as the documented schema: staging
+returned `services` as a keyed object rather than the array described by
+OpenAPI. Reads are bounded and missing history permission/data remain explicit.
 
 References: [Aos monitoring overview](https://docs.aosedge.tech/docs/aos-core/monitoring/),
 [Cloud OpenAPI](https://api.aoscloud.io/api/v11/openapi.json),
@@ -140,10 +140,10 @@ References: [Aos monitoring overview](https://docs.aosedge.tech/docs/aos-core/mo
 [instance RAM accounting](https://github.com/aosedge/aos_core_cpp/blob/main/src/sm/launcher/runtimes/container/monitoring.cpp).
 
 This accepted target supersedes the earlier “No CPU/RAM on the summary”
-requirement in Presenter slice V. It does not change the running UI yet.
-Reconcile the interaction specification and cover history, identity isolation,
-units, repeated samples, stale/offline gaps and permission/error states in the
-affected tests when implementation is explicitly started.
+requirement in Presenter slice V. The running UI and interaction specification
+now implement it. Regression covers history, identity isolation, units,
+repeated samples, stale/offline gaps and permission/error states; see the
+qualification record below for the exact live and fixture boundaries.
 
 ## Decision closure
 

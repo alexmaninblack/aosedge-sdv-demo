@@ -3,16 +3,27 @@
 
 # Current working baseline
 
-Updated: **20 September 2026**. Retained Factory: **.35**; clean-cycle image
-**.36**, both immutable and preserved. Vehicle overview integration and latest
+Updated: **20 September 2026**. Current retained Test Factory: **.36**.
+The obsolete .35 binary was removed at the operator's request; its manifest
+and compact qualification evidence remain. The separate Production .31 backing
+image remains because its overlay still depends on it. Vehicle overview integration and latest
 Presenter corrections are activated. The corrected continuous UI cycle has
 completed; broader qualification exclusions remain explicit. See the
 [active packet](../planning/active/work-packets/versioned-service-observability.md).
 The former UI hold and .33 current status are historical, not active blockers.
 
+Latest source/cleanup checkpoint: the operator approved audit, removal of
+obsolete artifacts and publication of all outstanding changes. UIA0–UIA8 are
+implemented; the active Presenter serves the Driver Advisory wording build.
+The [audit and cleanup receipt](ui-amendments-checkpoint-cleanup-2026-09-20.md)
+records regression, repository/remote state, deletion inventory and exclusions.
+This audit preserves the current Test; it does not repeat the lifecycle or
+close the remaining qualification gates. Dated retention statements below
+describe earlier checkpoints, not the current disk inventory.
+
 ## Current qualification limitation
 
-Latest targeted checkpoint: **20 September09:18UTC**, the same .36 Test is retained
+Latest targeted functional checkpoint: **20 September09:18UTC**, the same .36 Test is retained
 in staging, Online and Safe Stop with external network ON. The operator approved
 VDP97/V3, Brake77/V3 and Tire43/V1; all are installed and real products and both
 native warnings were observed. Moving/double-click Return to road and exact
@@ -34,8 +45,9 @@ is active; T14 native preflight copy is source-tested, not yet activated in the
 running Driving Control. Remaining gates are listed in the
 [single timing report](presenter-ui-timing-e2e-2026-09-20.md#targeted-follow-up-after-the-completed-cycle).
 All132 Presenter browser cases and42 deadline/source/layout tests passed in
-the latest continuation. Local correction90386c7 awaits exact public-push
-approval; it is not claimed published.
+that continuation. The later operator authorization covers publication of
+correction90386c7 and UIA0–UIA8; publication evidence is tracked in the
+[audit receipt](ui-amendments-checkpoint-cleanup-2026-09-20.md#publication).
 
 Previous full completion: **20 September06:46UTC**, then no active Test. The full recorded
 UI-only operator cycle after T10 reached VDP94/95/96, Brake73/74/75 then76,
@@ -104,11 +116,11 @@ Complete P8 acceptance remains open.
 
 | Item | Value |
 | --- | --- |
-| Selector | `6.1.1-maninblack.35/main-qemuarm64` |
-| Artifact relative to workspace | `demo-artifacts/aosedge-sdv-demo/factory-images/6.1.1-maninblack.35/main-qemuarm64.img` |
-| SHA-256 | `668690a922d62f158c60769cab673ca9cac1ccb7fde7dee2c7cd22dd9952a458` |
+| Selector | `6.1.1-maninblack.36/main-qemuarm64` |
+| Artifact relative to workspace | `demo-artifacts/aosedge-sdv-demo/factory-images/6.1.1-maninblack.36/main-qemuarm64.img` |
+| SHA-256 | `9ff1377a0261028bc7583bbca09be2e2c6f55f4754988071f873cbc630ab50c6` |
 | Image size | 6,997,147,648 bytes |
-| Platform build source | `bb691efcbf19f1bebd74fd2ef3ae9ff0aee2bf74` |
+| Platform build source | `a0f88d8fc47d5e84df874883cb01872e25516fd5` |
 
 This digest/build source is immutable. Later source, documentation, host and
 service-package commits do not retroactively alter the Factory image.

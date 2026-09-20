@@ -4,8 +4,11 @@
 # Presenter UI amendments — final implementation plan
 
 Date: 20 September 2026.
-Status: UIA0–UIA6 completed; implemented, activated and live-qualified on the
-preserved staging Test. Operator visual acceptance remains the handoff.
+Status: UIA0–UIA8 completed; implemented and activated on the preserved staging
+Test, with scoped live/fixture qualification recorded separately. The operator
+reviewed the resource presentation and accepted the Driver Advisory wording.
+Subsequent audit/cleanup/publication is recorded in the
+[checkpoint receipt](../../../qualification/ui-amendments-checkpoint-cleanup-2026-09-20.md).
 
 Authority: the operator accepted all three entries in the
 [UI decision register](../presenter-ui-amendments-2026-09-20.md), then accepted
