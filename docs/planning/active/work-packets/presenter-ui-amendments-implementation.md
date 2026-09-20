@@ -16,7 +16,7 @@ publication, Production change or retirement is included.
 
 ## Outcome and preserved boundary
 
-1. Brake and Tire each have a one-click **Reset scenario** on their Vehicle
+1. Brake and Tire each have a one-click **Reset Driver Advisory** on their Vehicle
    backend card, separate from **Backend details**, without a confirmation
    popup. Correlated CLEAR, not command submission, establishes success.
 2. Resources has one **Disk** view without an alternate-parameter button.
@@ -277,3 +277,18 @@ service traffic; a new backend network is deferred.
 Status: implemented, activated and qualified on 20 September 2026. See the
 [UIA7 qualification](../../../qualification/presenter-ui-amendments-qualification-2026-09-20.md)
 for test totals, live observations, preserved runtimes and rollback evidence.
+
+## UIA8 — Driver Advisory reset wording
+
+The operator approved the label/message follow-up on 20 September 2026.
+Rename the visible button on both cards to **Reset Driver Advisory**, with
+team-qualified accessible names. Submission/waiting says **Resetting driver
+advisory…**; only correlated CLEAR says **Driver advisory reset**. Align detail
+feedback and the operation title. Do not rename the native command or alter
+reset behavior. Cover both teams and pending/confirmed states in tests, build
+the Presenter, preserve its preceding assets and activate without runtime
+restarts or a live advisory reset. Record scoped qualification.
+
+Status: implemented and activated; typecheck, 322 unit tests, 137 browser tests
+and production build passed. See the
+[qualification report](../../../qualification/presenter-ui-amendments-qualification-2026-09-20.md).

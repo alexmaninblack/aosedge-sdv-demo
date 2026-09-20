@@ -8,7 +8,7 @@ export const actionLabels: Record<DemoCommand["action"], string> = {
   "workspace-restore": "Restore window layout",
   "cloud-inspect": "Read OEM certificate", "cloud-choose": "Choose OEM certificate", "cloud-select": "Use this Cloud",
   "cloud-check": "Check Cloud setup", "cloud-prepare": "Prepare Test Cloud",
-  "backend-reset": "Reset demo scenario",
+  "backend-reset": "Reset Driver Advisory",
   publish: "Sign & publish VDP", "service-prepare": "Prepare service", "service-publish": "Sign & publish service",
   "service-observe": "Refresh service publication", "service-assign": "Deploy service to Test",
   "prepare-demo": "Prepare demo",
@@ -134,7 +134,7 @@ export function PresenterControls({ port, children }: { port?: PresenterCommandP
         {confirmation.image && <><dt>Factory image</dt><dd>{confirmation.image}</dd></>}
         {confirmation.action === "cloud-select" && <><dt>Cloud domain</dt><dd>{String(session?.jobs.find(job => job.id === confirmation.selectionId)?.results.at(-1)?.facts.domain ?? "Preview unavailable")}</dd><dt>Effect</dt><dd>Select the Cloud from this OEM certificate for Test. Keep Production unchanged. No provisioning, publication or VM restart. Finish a provisioned Test before switching Clouds. SP access requires a certificate for the same Cloud.</dd></>}
         {confirmation.profile && <><dt>Capability profile</dt><dd>{confirmation.profile}</dd></>}
-        {confirmation.action === "backend-reset" && <><dt>Team</dt><dd>{confirmation.team === "brake" ? "Brake" : "Tire"}</dd><dt>Scenario reset</dt><dd>Reset this service's demo model and capture, then request CLEAR from the Gateway. Success requires a matching CLEARED acknowledgement. Preserve identity, releases, history and pending deliveries. This is not a repair or a healthy-vehicle assessment; the other service is unchanged.</dd></>}
+        {confirmation.action === "backend-reset" && <><dt>Team</dt><dd>{confirmation.team === "brake" ? "Brake" : "Tire"}</dd><dt>Driver advisory reset</dt><dd>Reset this service's demo model and capture, then request CLEAR from the Gateway. Success requires a matching CLEARED acknowledgement. Preserve identity, releases, history and pending deliveries. This is not a repair or a healthy-vehicle assessment; the other service is unchanged.</dd></>}
         {confirmation.action === "cloud-prepare" && <><dt>Cloud setup</dt><dd>Authenticate the selected OEM and SP. Reuse Default fleet; create only a missing matching Factory model/configuration and Test verification set. Recheck existing settings; stop on conflicts or an unknown creation outcome. No Unit provisioning, package upload, Subject assignment or Production change.</dd></>}
         {confirmation.release && <><dt>Prepared release</dt><dd>{confirmation.release}</dd></>}
         {confirmation.serviceId && <><dt>Service identity</dt><dd>{confirmation.serviceId}</dd><dt>Assignment</dt><dd>Bind this service's retained Group Subject to current Test, preserving the peer service. No version or instance count is sent. No Safe Stop is required.</dd></>}

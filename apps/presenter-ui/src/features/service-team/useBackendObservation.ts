@@ -127,7 +127,7 @@ export function backendSummary(model: BackendModel, team: Team, version?: string
   const proof = available && reset?.state === "OBSERVED" && !ambiguous ? selected.proof : undefined;
   const lastKnown = !productsAvailable || binding?.current === false;
   const status = !version ? "Release not observed" : integrityConflict ? `Result conflict${lastKnown ? " · last known" : ""}` : lastKnown ? "Last known / incomplete" : !available ? "Reset state not observed"
-    : selected.reset.state === "PENDING" ? "Resetting" : selected.reset.state === "UNCERTAIN" ? "Reset needs attention"
+    : selected.reset.state === "PENDING" ? "Resetting driver advisory…" : selected.reset.state === "UNCERTAIN" ? "Reset needs attention"
     : ambiguous ? "Instance not confirmed" : result ? "Result received" : guidance.status;
   const contact = model.error || reset?.state !== "OBSERVED" ? "Not observed" : reset.data?.connected ? "Recent" : "Not recent";
   // Capability explanation, not an assertion about a retained condition or a

@@ -20,7 +20,8 @@ Decision: accepted. Implementation and live qualification: passed.
 
 - Move the existing per-service Reset action from the backend detail popup to
   the corresponding Brake or Tire backend summary card on the Vehicle screen.
-- Label the secondary action **Reset scenario**. Keep it visually and
+- Label the secondary action **Reset Driver Advisory** (accepted wording
+  follow-up on 20 September). Keep it visually and
   interactively separate from opening backend details; clicking Reset must not
   also open the popup.
 - Start the action with one explicit click, without an additional confirmation
@@ -172,3 +173,13 @@ Implement only the observation-unit metadata and Presenter presentation:
 
 Verification and provenance are in the
 [Cloud observation contract](../../architecture/demo-control-cloud-observation.md#monitoring-semantics).
+
+## Follow-up — Driver Advisory reset wording
+
+The operator approved **Reset Driver Advisory** on both service cards,
+**Resetting driver advisory…** while submitting/waiting, and **Driver advisory
+reset** only after the existing correlated Gateway CLEAR. Keep the service
+name in the accessible label, not repeated in the visible button text.
+Apply the same terminology to detail feedback and the operation title.
+This is wording only: native commands, reset scope, model/capture behavior,
+history retention, capability guards and acknowledgement rules are unchanged.

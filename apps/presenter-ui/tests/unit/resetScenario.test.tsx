@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2026 maninblack
 // SPDX-License-Identifier: MIT
 import { afterEach, expect, test, vi } from "vitest";
-import { cleanup, renderHook } from "@testing-library/react";
-import { useResetScenario } from "../../src/features/service-team/ResetScenario";
+import { cleanup, fireEvent, render, renderHook, screen } from "@testing-library/react";
+import { ResetScenario, useResetScenario } from "../../src/features/service-team/ResetScenario";
 import { monotonicReset } from "../../src/features/service-team/useBackendObservation";
 const controls = vi.hoisted(() => ({ blocked: false, blockReason: null, request: vi.fn(), resetSubmissions: {} as any,
   session: { sessionId: "session", cloudDomain: "stage", jobs: [] as any[], active: null } }));
@@ -12,6 +12,16 @@ const binding: any = { unitSystemUid: "unit", serviceId: "b", subjectId: "s", in
 const model: any = { busy: false, error: false, data: { observations: { demoReset: { state: "OBSERVED", data: { connected: true, command: null } } } } };
 const scope = JSON.stringify(["stage", "run", "unit", "b", "s", 0, "77.0.0"]);
 afterEach(() => { cleanup(); controls.session.jobs = []; controls.resetSubmissions = {}; vi.clearAllMocks(); });
+
+test.each(["brake", "tire"] as const)("%s advisory label preserves the original team-specific command", team => {
+  render(<ResetScenario team={team} model={model} binding={{ ...binding, profile: team === "brake" ? "v3" : "v1" }} runId="run" />);
+  const button = screen.getByRole("button", { name: `Reset Driver Advisory — ${team === "brake" ? "Brake" : "Tire"}` });
+  expect(button).toHaveTextContent(/^Reset Driver Advisory$/);
+  expect(button).toBeEnabled();
+  fireEvent.click(button);
+  expect(controls.request).toHaveBeenCalledTimes(1);
+  expect(controls.request).toHaveBeenCalledWith({ action: "backend-reset", team }, scope);
+});
 
 test("card and popup share immediate progress; lost response stays guarded without claiming CLEAR", () => {
   controls.resetSubmissions.brake = { id: "request", sessionId: "session", scope, phase: "SUBMITTING" };

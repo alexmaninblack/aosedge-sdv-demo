@@ -1165,11 +1165,14 @@ producer-acceptance mutation, Unit Set change, provisioning, retirement,
 functional proof command or destructive cleanup is a protected action.
 
 Accepted 20 September amendment: `backend-reset` alone executes with one
-explicit click on the named Brake/Tire backend card's **Reset scenario**
+explicit click on the named Brake/Tire backend card's **Reset Driver Advisory**
 button. It still uses protected session/request-ID/serialization and uncertain
 outcome reconciliation; it is not a read. The detail popup retains outcome
 and history but no duplicate reset action. Only a correlated Gateway CLEAR
 establishes completion. All other protected actions retain confirmation.
+The accepted wording follow-up uses **Resetting driver advisory…** during
+submission/waiting and **Driver advisory reset** after that confirmation;
+the native `backend-reset` / `reset-scenario` commands and behavior are unchanged.
 
 A protected action otherwise requires an explicit verb-specific confirmation. The
 confirmation shall identify:

@@ -64,20 +64,22 @@ for (const attempt of [1, 2, 3]) test(`UIA Reset feedback and details stay indep
   });
   await page.goto("/#native-browser");
   const card = page.locator('[data-anchor="brake-backend"]');
-  const reset = page.getByRole("button", { name: "Reset Brake scenario", exact: true });
+  const reset = page.getByRole("button", { name: "Reset Driver Advisory — Brake", exact: true });
+  await expect(reset).toHaveText("Reset Driver Advisory");
+  await expect(page.getByRole("button", { name: "Reset Driver Advisory — Tire", exact: true })).toHaveText("Reset Driver Advisory");
   await expect(reset).toBeEnabled();
   const started = Date.now(); await reset.press("Enter");
-  await expect(card).toContainText("Resetting · submitting"); const feedbackMs = Date.now() - started;
+  await expect(card).toContainText("Resetting driver advisory… · submitting"); const feedbackMs = Date.now() - started;
   await expect(reset).toBeDisabled(); await expect(page.getByRole("dialog")).toHaveCount(0); expect(posts).toBe(1);
   const openAt = Date.now(); await page.getByRole("button", { name: "Brake backend Open dashboard", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Brake backend", exact: true })).toBeVisible(); const popupMs = Date.now() - openAt;
-  await expect(page.getByRole("dialog")).toContainText("Resetting · submitting");
+  await expect(page.getByRole("dialog")).toContainText("Resetting driver advisory… · submitting");
   releasePost(); fixture.state.reset = true; fixture.state.resetOutcome = "PENDING";
   await page.getByRole("button", { name: "Refresh backend", exact: true }).click();
   await expect(page.getByRole("dialog")).toContainText("waiting for Gateway CLEAR");
   fixture.state.resetOutcome = "CLEARED";
   const clearAt = Date.now(); await page.getByRole("button", { name: "Refresh backend", exact: true }).click();
-  await expect(page.getByRole("dialog")).toContainText("Gateway confirmed CLEAR"); const clearMs = Date.now() - clearAt;
+  await expect(page.getByRole("dialog")).toContainText("Driver advisory reset · Gateway confirmed CLEAR"); const clearMs = Date.now() - clearAt;
   await page.keyboard.press("Escape"); await expect(reset).toBeEnabled();
   await expect(page.locator('[data-anchor="tire-backend"]')).toContainText("Inspection recommended");
   // Initial latest read plus the existing post-operation refresh. Hung history
@@ -302,7 +304,7 @@ test("Vehicle summaries and dialogs share reads; closing restores Vehicle and fo
   const reads = fixture.reads("/backend/brake");
   await brake.click();
   await expect(page.getByRole("dialog", { name: "Brake backend", exact: true })).toBeVisible();
-  await expect(page.getByRole("dialog").getByRole("button", { name: /Reset.*scenario/ })).toHaveCount(0);
+  await expect(page.getByRole("dialog").getByRole("button", { name: /Reset Driver Advisory/ })).toHaveCount(0);
   expect(fixture.reads("/backend/brake")).toBe(reads);
   await page.getByRole("button", { name: "Records", exact: true }).click();
   await page.getByRole("button", { name: "Refresh backend", exact: true }).click();
@@ -374,7 +376,7 @@ test("team dialog retains its authoring profile; details have no reset action an
   await page.getByRole("button", { name: "Brake Team", exact: true }).click();
   await page.getByRole("button", { name: "v3 Driver advisory", exact: true }).click();
   await page.getByRole("button", { name: /Open Brake backend/ }).click();
-  await expect(page.getByRole("dialog").getByRole("button", { name: /Reset.*scenario/ })).toHaveCount(0);
+  await expect(page.getByRole("dialog").getByRole("button", { name: /Reset Driver Advisory/ })).toHaveCount(0);
   await expect(page.getByRole("dialog", { name: "Brake backend", exact: true })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("button", { name: "v3 Driver advisory", exact: true })).toHaveAttribute("aria-pressed", "true");
@@ -434,7 +436,7 @@ for (const outcome of ["PENDING", "EXPIRED", "FAILED", "REJECTED"]) test(`reset 
     await expect(dialog).toContainText(`Reset ${outcome.toLowerCase()} · outcome unconfirmed`);
     await expect(dialog).toContainText("Reset requires Brake V3 and a connected reset channel.");
   }
-  await expect(dialog.getByRole("button", { name: /Reset.*scenario/ })).toHaveCount(0);
+  await expect(dialog.getByRole("button", { name: /Reset Driver Advisory/ })).toHaveCount(0);
   const size = await dialog.locator(".modal-body").evaluate(n => ({ available: n.clientHeight, content: n.scrollHeight }));
   expect(size.content, JSON.stringify(size)).toBeLessThanOrEqual(size.available + 1);
   fixture.state.resetConnected = true;

@@ -190,3 +190,36 @@ Presenter server session and the original desktop Presenter, QEMU, CARLA,
 Gateway, Driving Control and VISS processes were preserved. No runtime restart,
 network toggle, Reset, upload, service update or destructive action occurred.
 A full lifecycle rerun and public push are not claimed for this follow-up.
+
+## UIA8 — Driver Advisory wording
+
+The operator approved a wording-only follow-up: both service-card buttons now
+say **Reset Driver Advisory**; accessible names retain Brake/Tire context.
+Submitting/waiting messages say **Resetting driver advisory…**, while the
+existing correlated Gateway CLEAR is labelled **Driver advisory reset**.
+Card, popup and operation-title wording are aligned. Native command names,
+request payloads, availability guards, reset semantics and history retention
+are unchanged.
+
+Typecheck, all 322 Presenter unit tests, all 137 fixture browser tests and the
+production build passed. Two new unit cases verify identical visible wording
+but distinct unchanged Brake/Tire command targets. Existing browser cases
+verify submission, pending CLEAR and confirmed feedback, duplicate protection,
+independent details and unchanged peer-service results.
+
+The tested static UI assets were activated at an idle operation boundary;
+the Presenter server session was retained and no runtime was restarted.
+Served build:
+`68fea053d6447e5a5b8fb3340a39a30678645ebc74f68b9978577f5ad3339cf5`.
+The previous assets are retained at
+`/private/tmp/presenter-advisory-label.igNif1/previous-dist`; preceding source
+checkpoint is `ff8931b`. No live advisory reset was needed or submitted for
+this copy-only check; no Python/backend/guest behavior changed. No full
+lifecycle rerun or public push is claimed.
+
+Read-only live browser inspection at 11:54 UTC confirmed the exact visible
+button text on both cards, the updated confirmation text and readable layout
+at the existing right-pane width. Earlier confirmed reset timestamps and the
+later Inspection recommended results remained intact; no new reset occurred.
+The native desktop window may use Reload UI to load the same served build;
+its reload was not independently observed.

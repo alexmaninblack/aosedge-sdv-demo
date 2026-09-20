@@ -112,7 +112,7 @@ clears, renews or proves application of a recommendation.
 
 ## Reset semantics
 
-The accepted 20 September UI amendment moves **Reset scenario** to each
+The accepted 20 September UI amendment moves **Reset Driver Advisory** to each
 Brake/Tire backend summary card with one-click protected submission and no
 additional confirmation. Details retain outcome/history, not a second action.
 Immediate submission, backend PENDING and correlated CLEAR remain distinct;
@@ -162,7 +162,9 @@ the service's existing private state. Duplicate delivery is idempotent;
 recovery completes the same intent without resetting twice or reusing a
 sequence. Old/foreign/expired commands cannot start a reset. Limit retained
 command history to 32 per Unit/team; include it in owned final cleanup.
-The UI shows Resetting, confirmed completion or explicit failure. Offline
+The UI shows **Resetting driver advisory…**, **Driver advisory reset** after
+correlated CLEAR, or explicit failure. This accepted wording does not rename
+`reset-scenario` or change its reset scope. Offline
 commands expire rather than executing unexpectedly in a later demonstration.
 
 ## Implementation and verification gates

@@ -21,11 +21,11 @@ export function useResetScenario(team: Team, model: BackendModel, binding?: Back
   const pending = waiting || reset?.command?.state === "PENDING";
   const compatible = !!binding?.current && (team === "brake" ? binding.profile === "v3" : binding.profile === "v1");
   const reason = pending ? currentIntent?.phase === "UNKNOWN" && !job ? "Reset submission response lost · reconciling the original request. Do not repeat it."
-    : currentIntent?.phase === "SUBMITTING" && !job ? "Resetting · submitting the current request" : "Resetting · waiting for Gateway CLEAR confirmation"
+    : currentIntent?.phase === "SUBMITTING" && !job ? "Resetting driver advisory… · submitting the current request" : "Resetting driver advisory… · waiting for Gateway CLEAR confirmation"
     : uncertain ? `Reset ${readable(reset?.command?.state).toLowerCase()} · outcome unconfirmed; partial application is possible. History retained.${!reset?.connected ? ` Reset requires ${team === "brake" ? "Brake V3" : "Tire V1"} and a connected reset channel.` : " Inspect Trace; do not repeat blindly."}`
     : retiring ? "Reset unavailable during Finish."
     : model.error ? "Reset unavailable until backend contact is restored."
-    : summary.resetState === "CLEARED" ? `Scenario reset · Gateway confirmed CLEAR. This is not a telemetry-readiness report. Last reset confirmed for release ${readable(reset?.command?.serviceVersion)} · ${stamp(recordObject(recordObject(reset?.command?.result).gatewayStatus).gatewayObservedAt as string)}${!reset?.connected ? `. Reset requires ${team === "brake" ? "Brake V3" : "Tire V1"} and a connected reset channel.` : ""}`
+    : summary.resetState === "CLEARED" ? `Driver advisory reset · Gateway confirmed CLEAR. This is not a telemetry-readiness report. Last reset confirmed for release ${readable(reset?.command?.serviceVersion)} · ${stamp(recordObject(recordObject(reset?.command?.result).gatewayStatus).gatewayObservedAt as string)}${!reset?.connected ? `. Reset requires ${team === "brake" ? "Brake V3" : "Tire V1"} and a connected reset channel.` : ""}`
     : summary.resetState === "HISTORICAL" ? `Reset for release ${readable(reset?.command?.serviceVersion)} confirmed · historical, not a reset of the current release.`
     : !compatible || !reset?.connected ? `Reset requires ${team === "brake" ? "Brake V3" : "Tire V1"} and a connected reset channel.`
     : controls.blocked ? controls.blockReason ?? "Another operation is in progress."
@@ -39,7 +39,7 @@ export function useResetScenario(team: Team, model: BackendModel, binding?: Back
 export function ResetScenario({ team, model, binding, retiring, runId, action = true }: { team: Team; model: BackendModel; binding?: BackendBinding; retiring?: boolean; runId?: string | null; action?: boolean }) {
   const reset = useResetScenario(team, model, binding, retiring, runId);
   return <div className="studio-reset-scenario">
-    {action && <button aria-label={`Reset ${team === "brake" ? "Brake" : "Tire"} scenario`} disabled={reset.disabled} onClick={reset.request}>Reset scenario</button>}
+    {action && <button aria-label={`Reset Driver Advisory — ${team === "brake" ? "Brake" : "Tire"}`} disabled={reset.disabled} onClick={reset.request}>Reset Driver Advisory</button>}
     <p role="status">{reset.reason}</p>
   </div>;
 }
