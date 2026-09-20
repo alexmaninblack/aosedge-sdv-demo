@@ -7,6 +7,9 @@ Planning documents decompose accepted architecture into controlled delivery
 gates. A plan does not itself authorize a build, signature, Cloud mutation,
 assignment, VM restart, or provisioned-Unit change.
 
+- [Presenter UI amendments — final implementation plan](active/work-packets/presenter-ui-amendments-implementation.md)
+  — three accepted changes: card-level Reset, one Disk view and Cloud CPU/RAM
+  history; implemented and live-qualified on the preserved staging Test.
 - [Current .33 consolidation audit](../qualification/factory-33-consolidation-audit-2026-09-13.md)
   — current runtime/source state and open permissions, Cloud, UI and publication gates.
 - [Current design and delivery roadmap](roadmap.md)

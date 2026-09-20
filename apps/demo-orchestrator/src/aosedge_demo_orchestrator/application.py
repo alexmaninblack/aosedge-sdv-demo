@@ -450,7 +450,7 @@ class DemoOrchestrator:
             return OperationResult(operation, OperationState.COMPLETED,
                 "One VM connected to the local source. The active TLS profile and VDP/KUKSA readiness are reported separately.",
                 target=request.target.value, data=data)
-        if request.domain == "unit" and request.action in ("cloud-status", "monitoring"):
+        if request.domain == "unit" and request.action in ("cloud-status", "monitoring", "monitoring-history"):
             if (request.target != VehicleTarget.TEST or request.guest or request.cloud or request.current or request.image
                     or request.image_path or request.profile or request.component_version or request.content_profile):
                 return OperationResult(operation, OperationState.BLOCKED, "UNIT_OBSERVATION_REQUIRES_TEST")

@@ -25,7 +25,8 @@ export function preparationRecovery(job?: DemoJob | null) {
   if (reason.includes("SERVICE_BUILD_REQUIRED")) return "The selected service profile has no compiled package for its source checkpoint. Engineering must build it before the demo; then use Prepare again. No upload or assignment has started.";
   return null;
 }
-interface Controls { session: OperationSession | null; blocked: boolean; readBlocked: boolean; blockReason: string | null; error: string | null; request: (command: DemoCommand) => void }
+export type ResetSubmission = { id: string; sessionId: string; scope?: string; phase: "SUBMITTING" | "ACCEPTED" | "UNKNOWN" | "REJECTED" };
+interface Controls { session: OperationSession | null; blocked: boolean; readBlocked: boolean; blockReason: string | null; error: string | null; resetSubmissions?: Partial<Record<"brake" | "tire", ResetSubmission>>; request: (command: DemoCommand, resetScope?: string) => void }
 const unavailable: Controls = { session: null, blocked: true, readBlocked: true, blockReason: "Demo Control unavailable", error: null, request: () => {} };
 const Context = createContext<Controls>(unavailable);
 export const usePresenterControls = () => useContext(Context);
@@ -38,6 +39,7 @@ export function PresenterControls({ port, children }: { port?: PresenterCommandP
   const submitting = useRef(false);
   const unresolved = useRef<{ id: string; sessionId: string; action: DemoCommand["action"] } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [resetSubmissions, setResetSubmissions] = useState<Controls["resetSubmissions"]>({});
   const connectionFailure = useRef(false);
   const cloud = usePlatformObservation();
   const seenJobs = useRef<{ sessionId: string; terminal: Set<string> } | null>(null);
@@ -86,26 +88,32 @@ export function PresenterControls({ port, children }: { port?: PresenterCommandP
     document.documentElement.dataset.submissionPending = String(busy || Boolean(unresolved.current) || Boolean(session?.uncertain));
     return () => { delete document.documentElement.dataset.submissionPending; };
   }, [busy, error, session]);
-  const submit = useCallback(async (command: DemoCommand) => {
+  const submit = useCallback(async (command: DemoCommand, resetScope?: string) => {
     if (!port || !session || (reads.has(command.action) ? readBlocked : blocked) || submitting.current) return;
     submitting.current = true; setBusy(true); setError(null); setConfirmation(null);
     const id = crypto.randomUUID();
+    const resetPhase = (phase: ResetSubmission["phase"]) => {
+      if (command.action === "backend-reset" && command.team) setResetSubmissions(previous => ({ ...previous, [command.team!]: { id, sessionId: session.sessionId, scope: resetScope, phase } }));
+    };
+    resetPhase("SUBMITTING");
     const originalPending = unresolved.current;
     if (!originalPending) unresolved.current = { id, sessionId: session.sessionId, action: command.action };
     try {
       const job = await port.submit(command, id, session.sessionId);
+      resetPhase("ACCEPTED");
       if (!originalPending) unresolved.current = null;
       setSession((previous) => previous ? { ...previous, active: ["ACCEPTED", "RUNNING"].includes(job.state) ? id : null,
         jobs: [...previous.jobs.filter((item) => item.id !== id), job] } : previous);
     } catch (problem) {
       if (problem instanceof Error && problem.message === "REJECTED") {
+        resetPhase("REJECTED");
         if (!originalPending) unresolved.current = null; setError("Operation rejected or another operation is running. Refresh the state before continuing.");
-      } else setError("Submission response lost. Checking the original request; it will not be submitted again.");
+      } else { resetPhase("UNKNOWN"); setError("Submission response lost. Checking the original request; it will not be submitted again."); }
     } finally { submitting.current = false; setBusy(false); }
   }, [port, session, blocked, readBlocked]);
-  const request = (command: DemoCommand) => {
+  const request = (command: DemoCommand, resetScope?: string) => {
     if (reads.has(command.action) ? readBlocked : blocked) return;
-    if (reads.has(command.action)) void submit(command); else setConfirmation(command);
+    if (reads.has(command.action) || command.action === "backend-reset") void submit(command, resetScope); else setConfirmation(command);
   };
   const close = useCallback(() => setConfirmation(null), []);
   const bundleRead = confirmation?.version ? [...(session?.jobs ?? [])].reverse().find((job) => job.cloudDomain === session?.cloudDomain && job.version === confirmation.version && job.results.some((result) => typeof result.facts.sha256 === "string")) : undefined;
@@ -115,7 +123,7 @@ export function PresenterControls({ port, children }: { port?: PresenterCommandP
     && (job.release === confirmation.release || job.results.some(result => result.facts.releaseHandle === confirmation.release))
     && job.state === "COMPLETED" && job.results.some(result => typeof result.facts.serviceProviderId === "string")) : undefined;
   const providerId = providerReceipt?.results.find(result => typeof result.facts.serviceProviderId === "string")?.facts.serviceProviderId;
-  return <Context.Provider value={{ session, blocked, readBlocked, blockReason, error, request }}>{children}
+  return <Context.Provider value={{ session, blocked, readBlocked, blockReason, error, resetSubmissions, request }}>{children}
     {confirmation && createPortal(<Modal title={actionLabels[confirmation.action]} subtitle="Protected operation · explicit confirmation required" onClose={close}
       footer={<><button className="button" onClick={close}>Cancel</button><button className="button button-primary" disabled={blocked} onClick={() => void submit(confirmation)}>{actionLabels[confirmation.action]}</button></>}>
       <dl className="detail-grid"><dt>Actor</dt><dd>{confirmation.action === "service-assign" ? "OEM · dedicated service Subject" : confirmation.action.startsWith("service-") ? `${confirmation.team ?? confirmation.release?.split("/")[0] ?? "Service"} Team · configured Service Provider` : ["prepare", "unpack", "sign", "upload", "publish"].includes(confirmation.action) ? "Platform Team · selected session OEM" : "Demo operator · current owned environment"}</dd>

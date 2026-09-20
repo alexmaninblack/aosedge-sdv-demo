@@ -1151,7 +1151,14 @@ mutation confirmation. Every publication, Cloud lifecycle mutation,
 producer-acceptance mutation, Unit Set change, provisioning, retirement,
 functional proof command or destructive cleanup is a protected action.
 
-A protected action requires an explicit verb-specific confirmation. The
+Accepted 20 September amendment: `backend-reset` alone executes with one
+explicit click on the named Brake/Tire backend card's **Reset scenario**
+button. It still uses protected session/request-ID/serialization and uncertain
+outcome reconciliation; it is not a read. The detail popup retains outcome
+and history but no duplicate reset action. Only a correlated Gateway CLEAR
+establishes completion. All other protected actions retain confirmation.
+
+A protected action otherwise requires an explicit verb-specific confirmation. The
 confirmation shall identify:
 
 - the organizational actor and active authority context;

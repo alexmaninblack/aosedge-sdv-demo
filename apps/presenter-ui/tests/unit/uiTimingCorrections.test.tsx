@@ -58,18 +58,18 @@ test("open Trace acknowledges Finish after retirement removes the run ID", () =>
 
 test("initial resource loading is not evidence of a missing sample", () => {
   const model: CloudResourcesModel = { data: null, error: false, reason: null, busy: true, refresh() {} };
-  const inventory = { unitId: "test" } as any;
+  const inventory = { unitId: "test", nodes: { value: [{ node_id: "controller" }] } } as any;
   const view = render(<Monitoring inventory={inventory} observation={model} />);
   expect(screen.getByText("Waiting for the first Cloud resource observation…")).toBeVisible();
   expect(screen.queryByText("No sample reported for this scope.")).not.toBeInTheDocument();
   view.rerender(<Monitoring inventory={inventory} observation={{ ...model, busy: false }} />);
   expect(screen.getByText("Waiting for the first Cloud resource observation…")).toBeVisible();
   view.rerender(<Monitoring inventory={inventory} observation={{ ...model, error: true, busy: false }} />);
-  expect(screen.getByText("Cloud resources unavailable; no confirmed samples.")).toBeVisible();
+  expect(screen.getByText("Latest Cloud readings unavailable; history is shown independently below.")).toBeVisible();
   view.rerender(<Monitoring inventory={inventory} observation={{ ...model, busy: false, data: { unitId: "test", monitoring: { state: "CURRENT", value: {} } } }} />);
-  expect(screen.getByText("No sample reported for this scope.")).toBeVisible();
+  expect(screen.getAllByText("No samples in this interval").length).toBeGreaterThan(0);
   view.rerender(<Monitoring inventory={inventory} observation={{ ...model, busy: true, data: { unitId: "test", monitoring: { state: "CURRENT", value: {
-    cpu: { state: "CURRENT", unit: "DMIPS", value: [{ nodeId: "controller", value: 758, time: new Date().toISOString() }] },
+    cpu: { state: "CURRENT", unit: "DMIPS", value: [{ nodeId: "controller", value: 758, time: new Date(Date.now() - 1000).toISOString() }] },
   } } } }} />);
   expect(screen.getByText("758 DMIPS")).toBeVisible();
   expect(screen.queryByText(/Waiting for the first/)).not.toBeInTheDocument();

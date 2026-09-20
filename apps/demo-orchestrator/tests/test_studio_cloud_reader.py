@@ -98,9 +98,11 @@ class StudioCloudReaderTests(unittest.TestCase):
         self.assertIn("18.0.0", [row["version"] for row in third["publications"]])
 
     def test_monitoring_is_fixed_test_cloud_operation(self):
-        with patch.object(presenter, "execute_operation", return_value=dict(data=dict(unitId="unit-a"))) as call:
-            self.assertEqual(dict(unitId="unit-a"), self.reader.monitoring())
-        self.assertEqual(dict(domain="unit", action="monitoring", target="test"), call.call_args.args[0])
+        for action, read in (("monitoring", self.reader.monitoring), ("monitoring-history", self.reader.monitoring_history)):
+            with self.subTest(action=action):
+                with patch.object(presenter, "execute_operation", return_value=dict(data=dict(unitId="unit-a"))) as call:
+                    self.assertEqual(dict(unitId="unit-a"), read())
+                self.assertEqual(dict(domain="unit", action=action, target="test"), call.call_args.args[0])
 
     def test_unavailable_installed_receipt_does_not_starve_successor_processing(self):
         self.journal["componentOperations"] = {

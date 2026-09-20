@@ -1,16 +1,17 @@
 import type { LocalDemoView, Observed, PresenterReadPort, PresenterSnapshot, ReleaseStage, TeamId, TeamView, VehicleRole, PlatformCloudObservation } from "../../domain";
 
-let monitoringFlight: Promise<unknown> | null = null;
+const resourceFlights = new Map<string, Promise<unknown>>();
 export async function readClientState(): Promise<{ buildId?: string; canReload?: boolean }> {
   const response = await fetch("/api/presenter/client-state", { cache: "no-store", signal: AbortSignal.timeout(3000) });
   if (!response.ok) throw new Error("CLIENT_STATE_UNAVAILABLE");
   return response.json();
 }
-export function readCloudMonitoring(): Promise<unknown> {
-  if (!monitoringFlight) monitoringFlight = fetch("/api/presenter/monitoring", { cache: "no-store", signal: AbortSignal.timeout(65000) })
+export function readCloudMonitoring(scope = "", history = false): Promise<unknown> {
+  const key = `${scope}:${history}`;
+  if (!resourceFlights.has(key)) resourceFlights.set(key, fetch(history ? "/api/presenter/monitoring-history" : "/api/presenter/monitoring", { cache: "no-store", signal: AbortSignal.timeout(65000) })
     .then((response) => { if (!response.ok) throw new Error("CLOUD_MONITORING_UNAVAILABLE"); return response.json(); })
-    .finally(() => { monitoringFlight = null; });
-  return monitoringFlight;
+    .finally(() => { resourceFlights.delete(key); }));
+  return resourceFlights.get(key)!;
 }
 
 export async function readBackendObservation(team: "brake" | "tire", signal: AbortSignal): Promise<unknown> {

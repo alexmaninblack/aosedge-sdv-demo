@@ -13,6 +13,27 @@ active-evidence file, not the agreed compatibility and product requirements.
 
 ## Preserved boundary
 
+**20 September UI amendments implemented and live-qualified:** the operator
+deferred the remaining live checks and accepted three additional UI changes.
+The first accepted
+decision moves per-service Reset scenario to its Vehicle backend card and
+removes the extra confirmation dialog. The second retains one Disk resource
+selector, with technical parameter fallback handled internally rather than
+exposed as Disk (alternate). The third adds native Cloud CPU/RAM history:
+five-minute controller graphs on the Aos Cloud card and separate controller,
+Brake and Tire resource rows in the popup, with honest sample age/gaps and
+verified units. It supersedes the earlier exclusion of CPU/RAM from the
+summary, not the existing connectivity/software/update facts. See the
+[UI amendment register](../presenter-ui-amendments-2026-09-20.md).
+The Resources navigation and long-Offline display choices are also accepted;
+the [final implementation plan](presenter-ui-amendments-implementation.md)
+defines UIA0–UIA6, scope, regression and live gates. No product question remains
+open for this bounded increment. The subsequent explicit start authorized
+implementation and activation. The [qualification report](../../../qualification/presenter-ui-amendments-qualification-2026-09-20.md)
+records the passing local/live gates, including independent service resets and
+349 seconds OFF with local operation and successful recovery. Existing runtime
+is preserved; this does not close the separate deferred checks below.
+
 **20 September09:18UTC independent-backend continuation:** the preserved .36
 Test passed independent Brake backend stop/start and a50-second unresponsive
 Tire backend pause/unpause. UI retained explicitly last-known facts, disabled
@@ -410,7 +431,10 @@ model or advisory lease policies:
 
 - Cloud summary: actual Unit connectivity, installed software counts, pending
   or failed update information and the relevant observation age. Partial or
-  stale reads cannot imply no pending updates. No CPU/RAM on the summary.
+  stale reads cannot imply no pending updates. The original exclusion of
+  CPU/RAM from the summary is superseded by accepted
+  [UI Change 3](../presenter-ui-amendments-2026-09-20.md#change-3-cloud-cpu-and-memory-history);
+  implementation remains pending under the discussion boundary above.
 - CPU remains DMIPS; format known byte memory as MiB/GiB in the resource
   dialog, preserving zero and unknown units. Never sum controller/instance
   measurements or use resource polling to refresh software evidence age.

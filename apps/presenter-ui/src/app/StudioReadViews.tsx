@@ -2,7 +2,10 @@ import { useEffect, useState } from "react";
 import type { CloudComponent, CloudInventory, CloudSection, CloudService, InstalledProfile } from "../domain/platformObservation";
 import { confirmedInstalledProfile, installedCompatibility } from "../domain/installedCompatibility";
 import { groupedMetrics, type MetricSample } from "../domain/studioModel";
-import { readCloudMonitoring } from "../adapters/local/LocalPresenterReadAdapter";
+import { useCloudResources, type CloudResourcesModel } from "./state/useCloudResources";
+export { useCloudResources, type CloudResourcesModel } from "./state/useCloudResources";
+import { diskRows } from "../domain/resourceHistory";
+import { ResourceGraphs } from "./ResourceGraphs";
 import { componentIssue, componentUpdateLabel, instanceIssue, serviceIssue, servicePending } from "../domain/softwareObservation";
 import { formatResource } from "../domain/resourceFormatting";
 
@@ -69,41 +72,6 @@ export function ServiceCompatibility({ evidence, team, profile, current }: {
   </dl><p>Cloud installation and package profiles only. Input, assessments and advisory are observed separately.</p></section>;
 }
 
-type Metric = CloudSection<MetricSample[]> & { unit?: string | null };
-type MonitoringRead = { unitId?: string; monitoring?: CloudSection<Record<string, Metric>>; readCompletedAt?: string };
-export function useCloudResources(unitId?: string, enabled = true, refreshKey?: number, scope = "") {
-  const identity = `${scope}:${unitId ?? ""}`;
-  const [stored, setStored] = useState<{ identity: string; data: MonitoringRead } | null>(null);
-  const [error, setError] = useState(false);
-  const [reason, setReason] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [generation, setGeneration] = useState(0);
-  useEffect(() => { setStored(null); setError(false); setReason(null); }, [identity]);
-  useEffect(() => {
-    let active = true;
-    let timer: ReturnType<typeof setTimeout>;
-    if (!unitId || !enabled) { setBusy(false); return; }
-    const read = async () => {
-    if (document.visibilityState === "hidden") { timer = setTimeout(read, 10000); return; }
-    setBusy(true);
-    await readCloudMonitoring().then(value => {
-      if (!active) return;
-      const incoming = value as MonitoringRead;
-      if (incoming.unitId !== unitId) { setStored(null); setError(true); setReason("Cloud monitoring scope changed; refresh required."); }
-      else if (incoming.monitoring?.state !== "CURRENT") {
-        setError(true); setReason(incoming.monitoring?.reason ?? "Cloud monitoring unavailable");
-        if (incoming.monitoring?.value) setStored({ identity, data: incoming });
-      } else { setStored({ identity, data: incoming }); setError(false); setReason(null); }
-    }).catch(() => { if (active) { setError(true); setReason("Cloud monitoring read failed"); } }).finally(() => { if (active) setBusy(false); });
-    if (active) timer = setTimeout(read, 10000);
-    };
-    void read();
-    return () => { active = false; clearTimeout(timer); };
-  }, [unitId, identity, enabled, refreshKey, generation]);
-  return { data: stored?.identity === identity ? stored.data : null, error, reason, busy, refresh: () => setGeneration(value => value + 1) };
-}
-export type CloudResourcesModel = ReturnType<typeof useCloudResources>;
-
 /** Preserve metric scope: a controller sample is never summed with an instance. */
 export function controllerMetric(model: CloudResourcesModel, key: string) {
   const metric = model.data?.monitoring?.value?.[key];
@@ -117,29 +85,32 @@ export function Monitoring({ inventory, refreshKey, observation }: { inventory?:
   const ownObservation = useCloudResources(inventory?.unitId, !observation, refreshKey);
   const { data, error, reason, busy } = observation ?? ownObservation;
   const [scope, setScope] = useState("Controller");
-  const [metricKey, setMetricKey] = useState("cpu");
+  const [metricKey, setMetricKey] = useState("charts");
   const [page, setPage] = useState(0);
   useEffect(() => setPage(0), [metricKey, scope, inventory?.unitId]);
   const metrics = data?.monitoring?.value;
-  const names: Record<string, string> = { cpu: "CPU", ram: "Memory", usedDisk: "Disk", ...(metrics?.disk ? { disk: "Disk (alternate)" } : {}), inTraffic: "Inbound", outTraffic: "Outbound" };
+  const names: Record<string, string> = { charts: "CPU & Memory", usedDisk: "Disk", inTraffic: "Inbound", outTraffic: "Outbound" };
   const allScopes = [...new Set(Object.values(metrics ?? {}).flatMap(metric => groupedMetrics(metric.value ?? []).map(row => row.scope)))];
   const selectedScope = allScopes.includes(scope) ? scope : allScopes[0] ?? scope;
-  const effectiveKey = metricKey === "usedDisk" && !metrics?.usedDisk?.value?.length && metrics?.disk?.state === "CURRENT" && metrics.disk.value?.length ? "disk" : metricKey;
+  const effectiveKey = metricKey;
   const metric = metrics?.[effectiveKey];
-  const rows = groupedMetrics(metric?.value ?? []).filter(row => row.scope === selectedScope);
+  const rows = (metricKey === "usedDisk" ? diskRows(metrics ?? undefined) : groupedMetrics(metric?.value ?? []).map(row => ({ ...row, conflict: false, unit: metric?.unit, state: metric?.state, sources: [metricKey] }))).filter(row => row.scope === selectedScope);
   const pages = Math.max(1, Math.ceil(rows.length / 3)), activePage = Math.min(page, pages - 1);
   return <section><div className="studio-panel-title"><h3>Resources</h3><span>Aos Cloud · {busy ? "Reading…" : error ? data ? `Last known · ${stamp(data.readCompletedAt)}` : "Unavailable" : stamp(data?.readCompletedAt)}</span></div>
-    {reason && <p role="alert">{reason}{data ? " · Previous samples retained." : " · No confirmed samples."}</p>}
-    <div className="studio-pills" role="group" aria-label="Resource scope">{allScopes.map(name => <button key={name} aria-pressed={selectedScope === name} onClick={() => setScope(name)}>{name}</button>)}</div>
+    {reason && <p role="alert">Latest readings: {reason}{data ? " · Previous latest samples retained." : " · No confirmed latest samples."} History is independent.</p>}
+    {!data && <p>{!inventory?.unitId ? "Create and provision Test to observe Cloud resources." : error ? "Latest Cloud readings unavailable; history is shown independently below." : "Waiting for the first Cloud resource observation…"}</p>}
     <div className="studio-profile-cards">{Object.entries(names).map(([key, name]) => <button key={key} aria-pressed={key === metricKey} onClick={() => setMetricKey(key)}>{name}</button>)}</div>
-    <div className="studio-inventory">{rows.slice(activePage * 3, activePage * 3 + 3).map(({ key, sample }) => <article key={key}><strong>{names[effectiveKey]} · {selectedScope}</strong>
-      <span title={sample.value !== null && sample.value !== undefined ? `${sample.value} ${metric?.unit ?? "· unit not specified"}` : undefined}>{formatResource(sample.value, metric?.unit, effectiveKey)}{error || metric?.state !== "CURRENT" ? " · last known" : ""}</span>
+    {metricKey === "charts" ? <ResourceGraphs model={observation ?? ownObservation} inventory={inventory} /> : <>
+    <div className="studio-pills" role="group" aria-label="Resource scope">{allScopes.map(name => <button key={name} aria-pressed={selectedScope === name} onClick={() => setScope(name)}>{name}</button>)}</div>
+    <div className="studio-inventory">{rows.slice(activePage * 3, activePage * 3 + 3).map(({ key, sample, unit, state, conflict, sources }) => <article key={key}><strong>{names[effectiveKey]} · {selectedScope}</strong>
+      <span>{conflict ? "Conflicting source parameters · value unresolved" : formatResource(sample.value, unit, effectiveKey)}{error || state !== "CURRENT" ? " · last known / incomplete" : ""}</span>
       <small>{sample.serviceId ? inventory?.services.value?.find(row => row.service?.id === sample.serviceId)?.service?.title ?? sample.serviceId : sample.nodeId ?? "Scope not supplied by Cloud"}{sample.instance !== null && sample.instance !== undefined ? ` · instance ${sample.instance}` : ""}{sample.partition ? ` · ${sample.partition}` : ""}</small>
       <small>Node: {known(sample.nodeId)} · Subject: {known(sample.subjectId)}</small>
-      <small>Parameter: {sample.parameter ?? effectiveKey}{sample.measurementType ? ` · ${sample.measurementType}` : ""}</small>
+      <small>Parameter: {sources.join(" / ")}{sample.measurementType ? ` · ${sample.measurementType}` : ""}</small>
       <small>Sample {stamp(sample.time)} · read {stamp(data?.readCompletedAt)}</small></article>)}</div>
     {pages > 1 && <nav className="studio-pagination" aria-label="Resource pages"><button disabled={activePage === 0} onClick={() => setPage(activePage - 1)}>Previous samples</button><span>{activePage + 1} / {pages}</span><button disabled={activePage + 1 >= pages} onClick={() => setPage(activePage + 1)}>Next samples</button></nav>}
     {!rows.length && !reason && <p>{!inventory?.unitId ? "Create and provision Test to observe Cloud resources." : !data ? error ? "Cloud resources unavailable; no confirmed samples." : "Waiting for the first Cloud resource observation…" : metric?.reason ?? "No sample reported for this scope."}</p>}
-    {metric && !metric.unit && <p>Cloud has not supplied a verified unit. Values are shown unchanged, not converted to percentages or byte units.</p>}
+    {rows.some(row => !row.unit) && <p>Cloud has not supplied a verified unit. Values are shown unchanged, not converted to percentages or byte units.</p>}
+    </>}
   </section>;
 }

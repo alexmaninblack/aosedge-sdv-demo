@@ -47,7 +47,7 @@ export function groupedMetrics(samples: MetricSample[]): { key: string; scope: s
   for (const sample of samples) {
     const key = JSON.stringify([sample.nodeId ?? null, sample.serviceId ?? null, sample.subjectId ?? null,
       sample.instance ?? null, sample.partition ?? null, sample.parameter ?? null, sample.measurementType ?? null]);
-    if (!groups.has(key) || (sample.time ?? "") > (groups.get(key)?.time ?? "")) groups.set(key, sample);
+    if (!groups.has(key) || (Date.parse(sample.time ?? "") || 0) > (Date.parse(groups.get(key)?.time ?? "") || 0)) groups.set(key, sample);
   }
   return [...groups].map(([key, sample]) => ({ key, scope: metricScope(sample), sample }));
 }

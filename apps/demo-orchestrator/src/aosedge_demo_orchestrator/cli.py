@@ -241,7 +241,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     unit = commands.add_parser("unit", help="manage AosCloud Unit lifecycle")
     unit_commands = unit.add_subparsers(dest="action", required=True)
-    for action in ("cloud-status", "monitoring"):
+    for action in ("cloud-status", "monitoring", "monitoring-history"):
         command = unit_commands.add_parser(action, help="one bounded read of current Test Cloud facts; no guest access")
         command.add_argument("target", choices=("test",))
     for action in ("provision", "deprovision", "delete"):
@@ -348,7 +348,7 @@ def render_human(result: OperationResult, details: bool = False) -> str:
         for role, value in data["vehicles"].items():
             lines.append(role + ": source=" + value["gate"] + "; VDP=" + value["vdpProcess"]
                          + "; VDP data=" + value["vdpData"])
-    if data and document["operation"] in ("unit.cloud-status", "unit.monitoring"):
+    if data and document["operation"] in ("unit.cloud-status", "unit.monitoring", "unit.monitoring-history"):
         lines.append(json.dumps(data, indent=2, sort_keys=True))
     elif data and document["operation"].startswith("unit."):
         for role, item in data["vehicles"].items():
@@ -507,7 +507,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     qualification = getattr(arguments, "qualification", None)
     if qualification:
         allowed = {"environment": {"create"}, "vm": {"start", "stop"},
-            "unit": {"provision", "deprovision", "delete", "cloud-status", "monitoring"},
+            "unit": {"provision", "deprovision", "delete", "cloud-status", "monitoring", "monitoring-history"},
             "component": {"cm-status", "sm-status", "status", "logs"}, "vehicle": {"connectivity"}}
         if (arguments.domain not in allowed or arguments.action not in allowed[arguments.domain]
                 or getattr(arguments, "target", None) != "test"

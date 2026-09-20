@@ -9,6 +9,8 @@ different facts. Read time is never substituted for a device report time.
 """
 
 import re
+import math
+from datetime import datetime, timezone
 from copy import deepcopy
 from concurrent.futures import Future, ThreadPoolExecutor
 from threading import Lock
@@ -68,7 +70,7 @@ def failed(error):
 
 def unavailable(identity, action, reason):
     result = base(identity)
-    keys = ("monitoring",) if action == "monitoring" else SECTIONS
+    keys = ("history",) if action == "monitoring-history" else ("monitoring",) if action == "monitoring" else SECTIONS
     result.update({key: failed(CloudFailure(reason)) for key in keys})
     return finish(result)
 
@@ -354,13 +356,103 @@ def monitoring(cloud, identity):
                 metric.update(state="INCOMPLETE", reason="METRIC_GROUP_NOT_REPORTED")
             if any(sample["state"] != "CURRENT" for sample in samples):
                 metric.update(state="INCOMPLETE", reason="METRIC_VALUE_OR_TIME_NOT_REPORTED")
-            # CPU is explicitly documented in Cloud DMIPS. The REST schema
-            # does not specify storage/memory/traffic scaling: preserve raw
-            # values without guessing bytes, KiB, rates or percentages.
-            metric.update(unit="DMIPS" if key == "cpu" else None,
-                          unitEvidence="CLOUD_DMIPS_DOCUMENTATION" if key == "cpu" else "UNIT_NOT_VERIFIED")
+            # Cloud's own OEM monitoring client formats unscaled RAM with its
+            # bytesIEC formatter (verified 2026-09-20; contract records source).
+            # Disk/traffic semantics remain unverified; do not infer rates.
+            metric.update(unit="DMIPS" if key == "cpu" else "bytes" if key == "ram" else None,
+                          unitEvidence="CLOUD_DMIPS_DOCUMENTATION" if key == "cpu" else "CLOUD_OEM_RAM_BYTES" if key == "ram" else "UNIT_NOT_VERIFIED")
             metrics[key] = metric
         result["monitoring"] = observed(metrics)
     except (CloudFailure, OSError, ValueError, TypeError, KeyError) as error:
         result["monitoring"] = failed(error)
+    return finish(result)
+
+
+def monitoring_history(cloud, identity):
+    """Fixed current-Test dashboard read; no guessed time-filter syntax.
+
+    Normalize the documented service array and observed keyed service object.
+    Bounds apply before flattening. Retention is whatever Cloud returned, not
+    a promised duration. No inventory scan or software-version inference.
+    """
+    result = base(identity)
+    try:
+        unit_read(cloud, identity)
+        cloud.require("units_monitoring_dashboard")
+        raw = cloud.call("units/" + identity["unitId"] + "/monitoring/dashboard/")
+        if not isinstance(raw, list) or len(raw) > 8:
+            raise ValueError("Invalid history groups")
+        series = {}
+        point_count = 0
+        conflicts = 0
+
+        def add(node_id, row, service=False):
+            nonlocal point_count, conflicts
+            if not isinstance(row, dict):
+                raise ValueError("Invalid history scope")
+            if row.get("system_uid") not in (None, identity["systemUid"]):
+                raise CloudFailure("CLOUD_METRIC_UNIT_IDENTITY_MISMATCH")
+            if row.get("nodeId") not in (None, node_id):
+                raise ValueError("History node mismatch")
+            scope = dict(nodeId=public_text(node_id))
+            if not scope["nodeId"] or scope["nodeId"] == "[REDACTED]":
+                raise ValueError("Invalid node")
+            if service:
+                index = row.get("instance")
+                if isinstance(index, str) and re.fullmatch(r"[0-9]{1,9}", index):
+                    index = int(index)
+                if type(index) is not int or not 0 <= index <= 2147483647:
+                    raise ValueError("Invalid instance")
+                scope.update(serviceId=object_id(row["serviceId"]), subjectId=object_id(row["subjectId"]), instance=index)
+            for metric in ("cpu", "ram"):
+                values = row.get(metric)
+                if values is not None and (not isinstance(values, list) or len(values) > 1000):
+                    raise ValueError("Invalid history points")
+                key = (*scope.values(), metric)
+                if key not in series:
+                    if len(series) >= 64:
+                        raise ValueError("History series limit")
+                    series[key] = dict(**scope, metric=metric, points={}, state="CURRENT" if values is not None else "UNKNOWN",
+                        reason=None if values is not None else "NOT_REPORTED", unit="DMIPS" if metric == "cpu" else "bytes",
+                        unitEvidence="CLOUD_DMIPS_DOCUMENTATION" if metric == "cpu" else "CLOUD_OEM_RAM_BYTES")
+                item = series[key]
+                for point in values or []:
+                    point_count += 1
+                    if point_count > 4096 or not isinstance(point, list) or len(point) != 2:
+                        raise ValueError("History point limit or shape")
+                    stamp, value = point
+                    if not isinstance(stamp, str) or len(stamp) > 40:
+                        raise ValueError("Invalid history timestamp")
+                    instant = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+                    if instant.tzinfo is None:
+                        raise ValueError("Unzoned history timestamp")
+                    stamp = instant.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+                    if value is not None and (type(value) not in (int, float) or not math.isfinite(value) or value < 0):
+                        raise ValueError("Invalid resource value")
+                    if stamp in item["points"] and item["points"][stamp] != value:
+                        conflicts += 1
+                        item.update(state="INCOMPLETE", reason="CONFLICTING_HISTORY_POINT")
+                        item["points"][stamp] = None
+                    else:
+                        item["points"][stamp] = value
+        for group in raw:
+            if not isinstance(group, dict) or len(group) > 8:
+                raise ValueError("Invalid history nodes")
+            for node_id, row in group.items():
+                add(node_id, row)
+                services = row.get("services", [])
+                if not isinstance(services, (dict, list)) or len(services) > 16:
+                    raise ValueError("Invalid history services")
+                for service in services.values() if isinstance(services, dict) else services:
+                    add(node_id, service, True)
+        output = []
+        for item in series.values():
+            item["points"] = sorted(item["points"].items())
+            output.append(item)
+        times = [point[0] for item in output for point in item["points"]]
+        result["history"] = observed(dict(series=output, coverage=dict(
+            fromTime=min(times) if times else None, toTime=max(times) if times else None,
+            points=sum(len(item["points"]) for item in output), retention="SOURCE_RETURNED", conflicts=conflicts)))
+    except (CloudFailure, OSError, ValueError, TypeError, KeyError, OverflowError) as error:
+        result["history"] = failed(error)
     return finish(result)

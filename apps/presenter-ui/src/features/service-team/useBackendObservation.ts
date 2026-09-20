@@ -23,6 +23,18 @@ export type BackendObservation = { state: string; team: Team; source: "REAL_BACK
 export const recordObject = (value: unknown): Record<string, unknown> => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
 export const readable = (value: unknown) => typeof value === "string" ? value.replaceAll("_", " ") : typeof value === "number" ? String(value) : "Not reported";
 
+/** Reset commands only move forward. A delayed projection must not revive an
+ * old command or turn a terminal acknowledgement back into PENDING. */
+export function monotonicReset(incoming: BackendObservation["observations"]["demoReset"], prior: BackendObservation["observations"]["demoReset"]) {
+  if (!incoming?.data) return { state: "UNAVAILABLE", data: prior?.data };
+  const next = incoming.data.command, old = prior?.data?.command;
+  if (old && (!next || Date.parse(next.issuedAt) < Date.parse(old.issuedAt)
+      || next.commandId === old.commandId && old.state !== "PENDING" && next.state === "PENDING")) {
+    return { ...incoming, data: { ...incoming.data, command: old } };
+  }
+  return incoming;
+}
+
 /** Preserve each resource's read outcome. History/reset failure cannot invalidate a valid function report. */
 export function mergeProductResources(value: BackendObservation, prior: BackendObservation | null, team: Team, uid: string) {
   const resources = value.observations as unknown as Record<string, Resource>;
@@ -71,13 +83,13 @@ export function useBackendObservation(team: Team, unitSystemUid?: string, enable
           if (!mockMode) mergeProductResources(value, null, team, unitSystemUid);
           if (active) setStored(previous => {
             const prior = previous.identity === identity ? previous.data : null;
+            if (prior && Date.parse(value.observedAt) < Date.parse(prior.observedAt)) return previous;
             const next = mockMode ? value : mergeProductResources(value, prior, team, unitSystemUid);
             return { identity, error: false, data: { ...next,
               recordsObservedAt: value.observations.mockData?.state === "OBSERVED" && value.observations.mockData.data ? value.observedAt : prior?.recordsObservedAt,
               ...(!mockMode ? { recordsObservedAt: next.recordsObservedAt } : {}),
               observations: { ...next.observations,
-                demoReset: value.observations.demoReset?.data ? value.observations.demoReset
-                  : { state: "UNAVAILABLE", data: prior?.observations.demoReset?.data },
+                demoReset: monotonicReset(value.observations.demoReset, prior?.observations.demoReset),
                 functionObservations: value.observations.functionObservations?.data ? value.observations.functionObservations
                   : { state: "UNAVAILABLE", data: prior?.observations.functionObservations?.data },
                 mockData: next.observations.mockData?.data ? next.observations.mockData

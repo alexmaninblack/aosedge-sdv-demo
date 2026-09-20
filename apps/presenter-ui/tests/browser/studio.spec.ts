@@ -28,12 +28,12 @@ async function retainedRun(page: Page, retiring = false, online = "ONLINE",
       value: { target: "test", source: "Aos Cloud", online, lifecycle: "provisioned", installedVersion: "20.0.0", pendingVersion: null,
         installedProfile: { state: confirmedProfile ? "CURRENT" : "UNKNOWN", profile: confirmedProfile ? "v2" : null, releaseVersion: "20.0.0", cloudVersionId: "vdp-20", source: "CLOUD_INSTALLATION_AND_PACKAGE", reason: confirmedProfile ? null : "INSTALLED_PROFILE_PUBLICATION_NOT_CONFIRMED" },
         updateStatus: "installed", latestPublishedVersion: null, releases: [], runtimeState: "NOT_REPORTED_BY_CLOUD", dataReadiness: "NOT_REPORTED_BY_CLOUD",
-        inventory: { unitId: "unit-a", systemUid: "test-system", components: { state: "CURRENT", value: [] }, services: { state: "CURRENT", value: [] } } },
+        inventory: { unitId: "unit-a", systemUid: "test-system", nodes: { state: "CURRENT", value: [{ node_id: "controller" }] }, components: { state: "CURRENT", value: [] }, services: { state: "CURRENT", value: [] } } },
     } });
     if (path.endsWith("/operations")) return route.fulfill({ json: { sessionId: "native", active: null, uncertain: false,
       jobs: [{ id: "old", runId: "old-test", action: "prepare", version: "99.0.0", profile: "v1", state: "COMPLETED", progress: [], results: [] }] } });
     if (path.endsWith("/monitoring")) return route.fulfill({ json: { unitId: "unit-a", readCompletedAt: new Date().toISOString(),
-      monitoring: { state: "CURRENT", value: { cpu: { state: "CURRENT", unit: "DMIPS", value: [{ value: 0, time: new Date().toISOString() }] } } } } });
+      monitoring: { state: "CURRENT", value: { cpu: { state: "CURRENT", unit: "DMIPS", value: [{ nodeId: "controller", value: 0, time: new Date().toISOString() }] } } } } });
     if (path === "/api/presenter/backend/brake" || path === "/api/presenter/backend/tire") return route.fulfill({ json: {
       team:path.split("/").at(-1),state:"OBSERVED",source:"REAL_BACKEND_HTTP",observedAt:new Date().toISOString(),
       observations:{readiness:{state:"OBSERVED",data:{ready:true}},mockData:{state:"OBSERVED",data:{source:"DEMO_MOCK",vehicleTelemetry:false,
@@ -228,10 +228,10 @@ test("Cloud monitoring has a return path, preserves zero DMIPS and never request
   await page.getByRole("button", { name: /Aos Cloud Unit monitoring/ }).click();
   await expect(page.getByRole("heading", { name: "Cloud monitoring", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Resources", exact: true }).click();
-  await expect(page.locator(".studio-inventory")).toContainText("0 DMIPS");
+  await expect(page.getByRole("dialog").getByRole("figure", { name: "controller CPU · last five minutes" })).toContainText("0 DMIPS");
   await page.keyboard.press("Escape");
   await expect(page.locator(".studio-controller")).toBeVisible();
-  expect(requests.every((request) => request.method === "GET" && ["/api/presenter/snapshot", "/api/presenter/platform", "/api/presenter/operations", "/api/presenter/monitoring", "/api/presenter/client-state", "/api/presenter/backend/brake", "/api/presenter/backend/tire"].includes(request.path))).toBe(true);
+  expect(requests.every((request) => request.method === "GET" && ["/api/presenter/snapshot", "/api/presenter/platform", "/api/presenter/operations", "/api/presenter/monitoring", "/api/presenter/monitoring-history", "/api/presenter/client-state", "/api/presenter/backend/brake", "/api/presenter/backend/tire"].includes(request.path))).toBe(true);
 });
 
 test("Studio uses protected Test actions, automatic releases and actual receipts without page-open mutation", async ({ page }) => {

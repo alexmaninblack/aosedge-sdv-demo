@@ -210,6 +210,10 @@ class StudioCloudReader:
         result = execute_operation(dict(domain="unit", action="monitoring", target="test"), self.application)
         return result.get("data") or dict(state="UNAVAILABLE", reason="CLOUD_MONITORING_NOT_OBSERVED", readCompletedAt=now())
 
+    def monitoring_history(self):
+        result = execute_operation(dict(domain="unit", action="monitoring-history", target="test"), self.application)
+        return result.get("data") or dict(state="UNAVAILABLE", reason="CLOUD_HISTORY_NOT_OBSERVED", readCompletedAt=now())
+
     def backend(self, team):
         if team not in ("brake", "tire"):
             raise ValueError("BACKEND_TEAM_INVALID")
@@ -360,9 +364,10 @@ def make_server(static_root, address=ADDRESS, reader=read_snapshot, native=None,
                 except Exception:
                     self.reply(503, b'{"error":"AOS_CLOUD_STATE_UNAVAILABLE"}')
                 return
-            if self.path == "/api/presenter/monitoring":
+            if self.path in ("/api/presenter/monitoring", "/api/presenter/monitoring-history"):
                 try:
-                    self.reply(200, json.dumps(cloud_reader.monitoring()).encode())
+                    resource_read = cloud_reader.monitoring_history if self.path.endswith("monitoring-history") else cloud_reader.monitoring
+                    self.reply(200, json.dumps(resource_read()).encode())
                 except Exception:
                     self.reply(503, b'{"error":"CLOUD_MONITORING_UNAVAILABLE"}')
                 return
@@ -460,7 +465,7 @@ def serve():
         print("BLOCKED ui.serve: build Presenter UI first; ports 18080/18600 must be available", flush=True)
         return 1
     print("Presenter UI: http://127.0.0.1:18080/", flush=True)
-    print("Actions require UI confirmation. VM access uses a native macOS dialog or Keychain, never a hidden terminal prompt.", flush=True)
+    print("Protected actions require UI confirmation; backend scenario Reset is one-click. VM access uses a native macOS dialog or Keychain, never a hidden terminal prompt.", flush=True)
     print("Ctrl+C closes this UI session; it does not reset VMs or Cloud Units.", flush=True)
     try:
         server.serve_forever()

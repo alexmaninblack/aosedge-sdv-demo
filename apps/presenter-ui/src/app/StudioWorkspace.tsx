@@ -13,6 +13,8 @@ import { BackendEvidence } from "../features/service-team/BackendEvidence";
 import { backendSummary, useBackendObservation } from "../features/service-team/useBackendObservation";
 import { backendBinding } from "../features/service-team/backendSelection";
 import { BackendSummary, CloudSummary } from "./StudioSummaryCards";
+import { ResetScenario } from "../features/service-team/ResetScenario";
+import { ResourceGraphs } from "./ResourceGraphs";
 import { CloudConnectionPanel } from "./CloudConnectionPanel";
 import { ClientBuildNotice } from "./ClientBuildNotice";
 import { FinishAcknowledgement } from "./FinishAcknowledgement";
@@ -114,7 +116,7 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
   const observationScope = `${local.runId ?? ""}:${controls.session?.cloudDomain ?? ""}:${inventory?.unitId ?? ""}`;
   const brakeObservation = useBackendObservation("brake", inventory?.systemUid, visibleWorkspace && (perspective === "global" || popup === "brake"), false, observationScope);
   const tireObservation = useBackendObservation("tire", inventory?.systemUid, visibleWorkspace && (perspective === "global" || popup === "tire"), false, observationScope);
-  const resources = useCloudResources(inventory?.unitId, visibleWorkspace && popup === "cloud" && monitorTab === "Resources", cloud.refreshGeneration, observationScope);
+  const resources = useCloudResources(inventory?.unitId, visibleWorkspace && (perspective === "global" || popup === "cloud"), cloud.refreshGeneration, observationScope);
   const backendModels = { brake: brakeObservation, tire: tireObservation };
   const backendBindings = { brake: backendBinding(inventory?.systemUid, services.brake, Boolean(servicesCurrent), serviceProfile(services.brake, releases)),
     tire: backendBinding(inventory?.systemUid, services.tire, Boolean(servicesCurrent), serviceProfile(services.tire, releases)) };
@@ -237,12 +239,16 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
       {perspective === "global" && <>
         <div ref={architecture} className="studio-architecture-stage">
           <ArchitectureWires element={architecture} cloudState={cloudState} brake={Boolean(services.brake?.service_versions?.installed_service_version)} tire={Boolean(services.tire?.service_versions?.installed_service_version)} />
-          <div className="studio-backends">{(["brake", "tire", "cloud"] as const).map(name => <button key={name} data-team={name === "cloud" ? "platform" : name} data-anchor={`${name}-backend`} aria-label={name === "cloud" ? "Aos Cloud Unit monitoring" : `${labels[name]} backend Open dashboard`} onClick={() => openBackend(name)}>
+          <div className="studio-backends">{(["brake", "tire", "cloud"] as const).map(name => <article className="studio-backend-card" key={name} data-team={name === "cloud" ? "platform" : name} data-anchor={`${name}-backend`}>
+            <button className="studio-backend-details" aria-label={name === "cloud" ? "Aos Cloud Unit monitoring" : `${labels[name]} backend Open dashboard`} onClick={() => openBackend(name)}>
             <span className="studio-summary-heading"><StudioIcon name={name} /><strong>{name === "cloud" ? "Aos Cloud" : `${labels[name]} backend`}</strong></span>
             {name === "cloud" ? <CloudSummary observation={bindingMatches ? observation : null} cloudLabel={cloudLabel} />
-              : <BackendSummary team={name} model={backendModels[name]} noController={noController} version={services[name]?.service_versions?.installed_service_version?.version ?? undefined} binding={backendBindings[name]} />}
+              : <BackendSummary team={name} model={backendModels[name]} noController={noController} version={services[name]?.service_versions?.installed_service_version?.version ?? undefined} binding={backendBindings[name]} runId={local.runId} />}
+            {name === "cloud" && <ResourceGraphs compact model={resources} inventory={inventory} />}
             <span className="studio-summary-link"><span>{name === "cloud" ? "Unit monitoring ↗" : "Backend details ↗"}</span>{name === "cloud" && <small className="studio-platform-brand">AosEdge platform</small>}</span>
-          </button>)}</div>
+            </button>
+            {name !== "cloud" && <ResetScenario team={name} model={backendModels[name]} binding={backendBindings[name]} retiring={lifecycleRestricted} runId={local.runId} />}
+          </article>)}</div>
           <div className="studio-architecture"><aside className="studio-gateway"><StudioIcon name="vehicle" /><strong>Vehicle</strong><small>Sensors & actuators</small><span>↓</span><StudioIcon name="gateway" /><strong>Vehicle Gateway</strong><small>VSS telemetry</small></aside><div className="studio-vss-line" />
             <section className="studio-controller" data-anchor="controller"><h2><StudioIcon name="platform" />Domain Controller</h2>
               <div className="studio-service-slots">{(["brake", "tire"] as const).map(name => {
@@ -289,7 +295,7 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
     </div>
     {popup && <Modal variant="studio" accent={popup === "cloud" ? "platform" : popup} title={popup === "cloud" ? "Cloud monitoring" : (popup === "brake" ? "Brake backend" : "Tire backend")} subtitle={noController ? "No controller created · setup preview" : "Current Test · observed data"} onClose={() => { setPopup(null); setDetails(null); }}>
       {popup === "cloud" ? <>
-<div className="studio-panel-title"><span>Software and resources reported by Aos Cloud</span><button disabled={cloud.loading || resources.busy} onClick={() => { cloud.refresh(); resources.refresh(); }}>Refresh Cloud state</button></div>
+<div className="studio-panel-title"><span>Software and resources reported by Aos Cloud</span><button disabled={cloud.loading} onClick={() => { cloud.refresh(); resources.refresh(); }}>Refresh Cloud state</button></div>
         <p className="studio-function-stamp">Unit connection · {cloudLabel}. Inventory and instance states are retained Cloud reports, not proof of live telemetry or a product result.</p>
         <div className="studio-pills">{["Software", "Resources"].map(tab => <button key={tab} aria-pressed={monitorTab === tab} onClick={() => setMonitorTab(tab)}>{tab}</button>)}</div>
         {monitorTab === "Software" ? <><h3>Components</h3><div className="studio-inventory studio-component-grid">{inventory?.components.value?.map((row, n) => <button key={n} onClick={() => setDetails({ kind: "component", row })}><strong>{componentName(row)}</strong><span>{known(row.installed_component?.version)}{componentCurrent ? "" : " · last known"}</span><small>{componentUpdateLabel(row, Boolean(componentCurrent))}</small></button>)}</div>
@@ -297,7 +303,7 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
           <h3>Services & instances</h3><ServiceRows current={Boolean(servicesCurrent)} rows={inventory?.services} onSelect={row => setDetails({ kind: "service", row })} /></>
           : <Monitoring key={inventory?.unitId} inventory={inventory} observation={resources} />}
 
-      </> : noController ? <p>Create and provision Test, then install {labels[popup]} Health. No vehicle data is expected before setup.</p> : <BackendEvidence key={popup + observationScope} team={popup} retiring={lifecycleRestricted} unitSystemUid={inventory?.systemUid} expectedVersion={services[popup]?.service_versions?.installed_service_version?.version ?? undefined} binding={backendBindings[popup]} observation={backendModels[popup]} />}
+      </> : noController ? <p>Create and provision Test, then install {labels[popup]} Health. No vehicle data is expected before setup.</p> : <BackendEvidence key={popup + observationScope} team={popup} retiring={lifecycleRestricted} unitSystemUid={inventory?.systemUid} expectedVersion={services[popup]?.service_versions?.installed_service_version?.version ?? undefined} binding={backendBindings[popup]} observation={backendModels[popup]} runId={local.runId} />}
     </Modal>}
     {traceOpen && <Modal variant="studio" title="Current run activity" subtitle="Actual Demo Control receipts · no simulated transitions" onClose={() => setTraceOpen(false)}><OperationProgress job={scopedJob} /><FinishAcknowledgement jobs={controls.session?.jobs ?? []} noController={noController} emptyMessage={!jobs.length && !activeJob ? "No operations recorded for the current run." : undefined} />{jobs.map(job => <article className="studio-trace-row" key={job.id}><strong>{job.action} · {job.state}</strong><p>{job.results.at(-1)?.message ?? job.reason}</p><small>{stamp(job.finishedAt ?? job.startedAt)}</small></article>)}</Modal>}
     {!traceOpen && (controls.error || controls.session?.active || scopedJob && !["COMPLETED", "OBSERVED"].includes(scopedJob.state)) && <OperationProgress job={controls.session?.jobs.find(job => job.id === controls.session?.active) ?? scopedJob} />}

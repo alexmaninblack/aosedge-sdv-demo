@@ -3,7 +3,22 @@
 
 # Demo Studio: staged delivery plan
 
-## Current position — 20 September, clean UI cycle completed
+## Current position — 20 September, UI amendments implemented and qualified
+
+The operator accepted card-level one-click Reset scenario, one Disk view,
+Cloud CPU/RAM graphs, combined CPU & Memory navigation and honest long-Offline
+history presentation. The
+[final UI implementation plan](work-packets/presenter-ui-amendments-implementation.md)
+consolidates the compatibility audit and UIA0–UIA6 gates. The operator started
+implementation; all three amendments are now active and passed their bounded
+local/live qualification. See the [qualification report](../../qualification/presenter-ui-amendments-qualification-2026-09-20.md)
+for Reset/CLEAR, CPU/RAM/Disk, 349-second network outage, recovery and timing
+evidence. The .36 Test remains running in staging. Preserve its runtime and the
+remaining checks in the [observability packet](work-packets/versioned-service-observability.md).
+The completed clean cycle below is historical evidence, not a claim that a
+subsequently created Test is absent.
+
+## Historical position — 20 September, clean UI cycle completed
 
 The corrected.36 continuous operator sequence passed through exact confirmed
 Finish at06:46UTC: all VDP/Brake profiles, early Tire recovery, real results,

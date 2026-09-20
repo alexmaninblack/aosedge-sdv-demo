@@ -31,7 +31,7 @@ class UnitService:
         """Journal selects identity only; every displayed fact comes from Cloud."""
         from .cloud_observation import unavailable
         from .status import object_id, safe_word
-        if target != "test" or action not in ("cloud-status", "monitoring"):
+        if target != "test" or action not in ("cloud-status", "monitoring", "monitoring-history"):
             raise EnvironmentError("UNIT_OBSERVATION_REQUIRES_TEST")
         state = read_json(self.root / JOURNAL)
         item = state.get("vehicles", {}).get("test", {})

@@ -5,10 +5,9 @@ import { ObservationTime, stamp } from "../../app/StudioReadViews";
 import { isProductResult, productSourceTime } from "./backendProduct";
 import type { BackendBinding } from "./backendSelection";
 import { BrakeWindowDetail } from "./BrakeWindowDetail";
-import { usePresenterControls } from "../../app/state/PresenterControls";
+import { ResetScenario, useResetScenario } from "./ResetScenario";
 
-export function BackendEvidence({ team, unitSystemUid, expectedVersion, binding, onEvidence, retiring = false, observation }: { team: Team; unitSystemUid?: string; expectedVersion?: string; binding?: BackendBinding; onEvidence?: (version: string) => void; retiring?: boolean; observation?: BackendModel }) {
-  const controls = usePresenterControls();
+export function BackendEvidence({ team, unitSystemUid, expectedVersion, binding, onEvidence, retiring = false, observation, runId }: { team: Team; unitSystemUid?: string; expectedVersion?: string; binding?: BackendBinding; onEvidence?: (version: string) => void; retiring?: boolean; observation?: BackendModel; runId?: string | null }) {
   const [detail, setDetail] = useState<RecordRow | null>(null);
   const [tab, setTab] = useState("Overview");
   const [page, setPage] = useState(0);
@@ -18,6 +17,7 @@ export function BackendEvidence({ team, unitSystemUid, expectedVersion, binding,
   const model = mockMode || !observation ? localObservation : observation;
   const { data, error, busy, refresh } = model;
   const summary = backendSummary(model, team, expectedVersion, binding);
+  const resetStatus = useResetScenario(team, model, binding, retiring, runId);
   const [pageSize, setPageSize] = useState(window.innerHeight <= 800 ? 1 : 2);
   useEffect(() => { const resize = () => { setPageSize(window.innerHeight <= 800 ? 1 : 2); setPage(0); }; window.addEventListener("resize", resize); return () => window.removeEventListener("resize", resize); }, []);
   const evidenceCallback = useRef(onEvidence);
@@ -27,12 +27,9 @@ export function BackendEvidence({ team, unitSystemUid, expectedVersion, binding,
   }, [team, unitSystemUid]);
   const mock = data?.observations.mockData?.data;
   const reset = data?.observations.demoReset?.state === "OBSERVED" ? data.observations.demoReset.data : undefined;
-  const resetCommand = !mockMode ? reset?.command : undefined;
-  const submittingReset = controls.session?.jobs.some(job => job.id === controls.session?.active
-    && job.action === "backend-reset" && job.team === team) ?? false;
   const available = mockMode ? !error && data?.observations.mockData?.state === "OBSERVED" : summary.available;
   const total = mock?.counts.reduce((sum, row) => sum + row.count, 0) ?? 0;
-  const latest = mockMode ? mock?.records[0] : summary.result;
+  const latest = mockMode ? mock?.records[0] : resetStatus.pending || resetStatus.uncertain ? undefined : summary.result;
   const records = (mock?.records ?? []).filter(row => recordFilter !== "windows" || row.message.messageType === "WINDOW_COMPLETION");
   const hasWindows = mock?.records.some(row => row.message.messageType === "WINDOW_COMPLETION");
   const pages = Math.max(1, Math.ceil(records.length / pageSize));
@@ -65,20 +62,7 @@ export function BackendEvidence({ team, unitSystemUid, expectedVersion, binding,
     {!!data?.partialResources?.length && <p className="studio-function-stamp" role="status">Partial backend read · {data.partialResources.join(", ")} unavailable. Independent facts retained.</p>}
     <div className="studio-mock-notice"><strong>{mockMode ? "MOCK DATA · Explicit synthetic test records" : resultConflict ? "Vehicle record · integrity conflict" : latest ? "Vehicle data · retained service result" : "Configured data path · service → backend"}</strong><p>{mockMode ? "Synthetic inputs, not vehicle telemetry." : observation ? compactExplanation : `${explanation} Backend results do not establish current in-vehicle advisory.`}</p></div>
     {(!observation || tab === "Records") && <button className="studio-text-action" onClick={() => { setMockMode(value => !value); setDetail(null); setPage(0); setRecordFilter("all"); }}>{mockMode ? "Show vehicle results" : "Show mock history"}</button>}
-    {!mockMode && <div className="studio-reset-scenario"><button disabled={controls.blocked || retiring || busy || error || !unitSystemUid || !reset?.connected || resetCommand?.state === "PENDING"}
-      onClick={() => controls.request({ action: "backend-reset", team })}>Reset demo scenario</button>
-      <p role="status">{submittingReset ? "Resetting · submitting the current request"
-        : resetCommand?.state === "PENDING" ? "Resetting · waiting for Gateway CLEAR confirmation"
-        : retiring ? "Reset unavailable during Finish."
-        : error ? "Reset unavailable until backend contact is restored."
-        : summary.resetState === "UNCERTAIN" ? `Reset ${readable(resetCommand?.state).toLowerCase()} · outcome unconfirmed; partial application is possible. History retained.`
-        : !reset?.connected ? `Reset requires ${team === "brake" ? "Brake V3" : "Tire V1"} and a connected reset channel.`
-        : summary.resetState === "CLEARED" ? "Scenario reset · Gateway confirmed CLEAR. This is not a telemetry-readiness report."
-        : summary.resetState === "HISTORICAL" ? `Reset for release ${readable(resetCommand?.serviceVersion)} confirmed · historical, not a reset of the current release.`
-        : resetCommand ? `Reset ${readable(resetCommand.state).toLowerCase()} · outcome unconfirmed; partial application is possible. History retained.`
-        : "Start a new demo drive. History is retained; no vehicle repair is implied."}
-        {!error && !retiring && summary.resetState === "UNCERTAIN" && !reset?.connected && <small> Reset requires {team === "brake" ? "Brake V3" : "Tire V1"} and a connected reset channel.</small>}
-        {!submittingReset && ["CLEARED", "HISTORICAL"].includes(summary.resetState) && <small> Last reset confirmed for release {readable(resetCommand?.serviceVersion)} · {stamp(recordObject(recordObject(resetCommand?.result).gatewayStatus).gatewayObservedAt as string)}{latest ? ". A newer result has since arrived." : ""}</small>}</p></div>}
+    {!mockMode && <ResetScenario action={false} team={team} model={model} binding={binding} retiring={retiring} runId={runId} />}
     <div className="studio-pills">{["Overview", "Records"].map(name => <button key={name} aria-pressed={tab === name} onClick={() => setTab(name)}>{name}</button>)}</div>
     {tab === "Overview" && <>
     {mockMode ? <div className="studio-metrics"><article><small>Backend process</small><strong>{!error && data?.observations.readiness?.state === "OBSERVED" && data.observations.readiness.data?.ready ? "Ready" : "Not confirmed"}</strong></article>
@@ -89,7 +73,7 @@ export function BackendEvidence({ team, unitSystemUid, expectedVersion, binding,
         <article><small>Delivery</small><strong>{functionKnown ? readable(facts?.delivery.state) : "Not confirmed"}</strong><small>{functionKnown ? `${facts?.delivery.queuedMessages} queued` : "Last receipt is not live input"}</small></article></div>
         {fn.item && <small className="studio-function-stamp">Function report · {readable(fn.state)} · source <ObservationTime value={fn.item.message.observedAt} /> · received <ObservationTime value={fn.item.backendReceivedAt} /></small>}</>}
     {functionStatus && !fn.item && <p role="status">Legacy function report{functionStatus.stale ? " · stale report" : " · historical"}: {readable(functionContent.functionalState)} · {readable(functionContent.reason)}</p>}
-    <div className="studio-result-card"><div><small>{mockMode ? "Latest mock result" : "Latest product result"}{(mockMode ? !available && mock : summary.lastKnown) ? " · last known" : ""}</small><h3>{latest ? mockMode ? readable(assessmentContent.currentBand ?? assessmentContent.condition ?? content.status ?? latest.message.messageType) : summary.title : ["CLEARED", "PENDING", "UNCERTAIN"].includes(summary.resetState) ? summary.title : "No result yet"}</h3>
+    <div className="studio-result-card"><div><small>{mockMode ? "Latest mock result" : "Latest product result"}{(mockMode ? !available && mock : summary.lastKnown) ? " · last known" : ""}</small><h3>{!mockMode && resetStatus.waiting ? "Resetting" : latest ? mockMode ? readable(assessmentContent.currentBand ?? assessmentContent.condition ?? content.status ?? latest.message.messageType) : summary.title : ["CLEARED", "PENDING", "UNCERTAIN"].includes(summary.resetState) ? summary.title : "No result yet"}</h3>
       {!mockMode && !latest && <>{expectedVersion && !["PENDING", "UNCERTAIN"].includes(summary.resetState) && <small>{summary.resetState === "CLEARED" ? `No new result for release ${expectedVersion} after the confirmed reset.` : `No result for release ${expectedVersion} yet.`}</small>}<p>{summary.guidance}</p>{summary.continuityNote && <p>{summary.continuityNote}</p>}{Boolean(mock?.records.length) && summary.resetState !== "UNCERTAIN" && <small>{mock?.records.some(row => isProductResult(row, team)) ? "Earlier results remain in Records." : "Service records remain in Records."}</small>}</>}
       {resultConflict && <p role="alert">{summary.guidance}</p>}
       {latest && !resultConflict && <p>{typeof content.receivedSampleCount === "number"

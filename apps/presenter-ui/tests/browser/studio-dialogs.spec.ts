@@ -3,6 +3,47 @@
 import { test, expect, type Page } from "@playwright/test";
 import { confirmedReset, binding } from "../unit/backendFixture";
 
+for (const attempt of [1, 2, 3]) test(`UIA Reset feedback and details stay independent of hung history (${attempt})`, async ({ page }) => {
+  const fixture = await scenario(page);
+  let releasePost: () => void = () => {};
+  let posts = 0, job: any = null, historyReads = 0;
+  await page.route("**/api/presenter/monitoring-history", async route => { historyReads++; await new Promise<void>(() => {}); });
+  await page.route("**/api/presenter/operations", async route => {
+    if (route.request().method() === "POST") {
+      const command = route.request().postDataJSON(); posts++;
+      expect(command.action).toBe("backend-reset"); expect(command.team).toBe("brake"); expect(command.sessionId).toBe("dialog");
+      await new Promise<void>(resolve => { releasePost = resolve; });
+      job = { ...command, id: command.requestId, runId: "dialog-run", cloudDomain: "fixture.test", state: "COMPLETED", startedAt: new Date().toISOString(), progress: [],
+        results: [{ facts: { command: { commandId: confirmedReset().commandId } } }] };
+      return route.fulfill({ status: 202, json: job });
+    }
+    return route.fulfill({ json: { sessionId: "dialog", cloudDomain: "fixture.test", active: null, uncertain: false, jobs: job ? [job] : [] } });
+  });
+  await page.goto("/#native-browser");
+  const card = page.locator('[data-anchor="brake-backend"]');
+  const reset = page.getByRole("button", { name: "Reset Brake scenario", exact: true });
+  await expect(reset).toBeEnabled();
+  const started = Date.now(); await reset.press("Enter");
+  await expect(card).toContainText("Resetting · submitting"); const feedbackMs = Date.now() - started;
+  await expect(reset).toBeDisabled(); await expect(page.getByRole("dialog")).toHaveCount(0); expect(posts).toBe(1);
+  const openAt = Date.now(); await page.getByRole("button", { name: "Brake backend Open dashboard", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Brake backend", exact: true })).toBeVisible(); const popupMs = Date.now() - openAt;
+  await expect(page.getByRole("dialog")).toContainText("Resetting · submitting");
+  releasePost(); fixture.state.reset = true; fixture.state.resetOutcome = "PENDING";
+  await page.getByRole("button", { name: "Refresh backend", exact: true }).click();
+  await expect(page.getByRole("dialog")).toContainText("waiting for Gateway CLEAR");
+  fixture.state.resetOutcome = "CLEARED";
+  const clearAt = Date.now(); await page.getByRole("button", { name: "Refresh backend", exact: true }).click();
+  await expect(page.getByRole("dialog")).toContainText("Gateway confirmed CLEAR"); const clearMs = Date.now() - clearAt;
+  await page.keyboard.press("Escape"); await expect(reset).toBeEnabled();
+  await expect(page.locator('[data-anchor="tire-backend"]')).toContainText("Inspection recommended");
+  // Initial latest read plus the existing post-operation refresh. Hung history
+  // stays coalesced; opening details does not create another observer.
+  expect(posts).toBe(1); expect(historyReads).toBe(1); expect(fixture.reads("/monitoring")).toBe(2);
+  console.log(JSON.stringify({ uiaFixtureTiming: attempt, feedbackMs, popupMs, clearReadToVisibleMs: clearMs }));
+  expect(Math.max(feedbackMs, popupMs, clearMs)).toBeLessThan(2000);
+});
+
 async function scenario(page: Page) {
   const state = { uid: "test-a", failBrake: false, oldBrake: false, pending: false, reset: false, failResources: false,
     statusOnlyPending: false, cloudCurrent: true, receiptAge: 0, partialEvents: false, productConflict: false, firstServicePending: false,
@@ -37,7 +78,7 @@ async function scenario(page: Page) {
       value: { target: "test", source: "Aos Cloud", online: "ONLINE", lifecycle: "provisioned", installedVersion: "78.0.0", pendingVersion: state.pending ? "79.0.0" : null,
         installedProfile: { state: state.profileState, profile: state.vdpProfile, releaseVersion: "78.0.0", cloudVersionId: state.profileId, source: "CLOUD_INSTALLATION_AND_PACKAGE", reason: null },
         releases: [], runtimeState: "NOT_REPORTED_BY_CLOUD", dataReadiness: "NOT_REPORTED_BY_CLOUD", inventory: {
-          unitId: state.uid, systemUid: state.uid, teamServiceIds: { brake: "brake-id", tire: "tire-id" },
+          unitId: state.uid, systemUid: state.uid, nodes: { state: "CURRENT", value: [{ node_id: "controller" }] }, teamServiceIds: { brake: "brake-id", tire: "tire-id" },
           components: { state: "CURRENT", value: [{ type: "demo-vehicle-data-provider", installed_component: { id: "vdp-78", version: "78.0.0" }, pending_component: null, pending_component_status: state.statusOnlyPending ? "downloading" : null }] },
           services: { state: "CURRENT", value: releases.map(release => ({ subject: `${release.team}-subject`, service: { id: release.serviceId, title: `${release.team === "brake" ? "Brake" : "Tire"} Health` },
             service_versions: { installed_service_version: state.firstServicePending && release.team === "brake" ? null : { version: release.version },
@@ -45,6 +86,7 @@ async function scenario(page: Page) {
             instances: { state: "CURRENT", value: state.firstServicePending && release.team === "brake" ? [] : [{ instance_id: 0, run_state: "active", version: release.version }] } })) },
         } },
     } });
+    if (path.endsWith("/monitoring-history")) return route.fulfill({ json: { unitId: state.uid, readCompletedAt: now, history: { state: "CURRENT", value: { series: [], coverage: { points: 0, retention: "SOURCE_RETURNED", conflicts: 0 } } } } });
     if (path.endsWith("/monitoring")) {
       if (state.failResources) return route.fulfill({ status: 503, json: {} });
       return route.fulfill({ json: { unitId: state.uid, readCompletedAt: now, monitoring: { state: "CURRENT", value: {
@@ -201,7 +243,7 @@ test("SOTA retains a confirmed earlier Reset as history without hiding the curre
   const brake = page.getByRole("button", { name: "Brake backend Open dashboard", exact: true });
   await expect(brake).toContainText("Inspection recommended");
   await brake.click();
-  await expect(page.getByText("Reset for release 57.0.0 confirmed · historical, not a reset of the current release.")).toBeVisible();
+  await expect(page.getByRole("dialog").getByText("Reset for release 57.0.0 confirmed · historical, not a reset of the current release.")).toBeVisible();
   await expect(page.getByRole("heading", { name: "INSPECTION RECOMMENDED", exact: true })).toBeVisible();
   await expect(page.getByText("Reset outcome unconfirmed", { exact: true })).toHaveCount(0);
   expect(fixture.calls.every(call => call.method === "GET")).toBe(true);
@@ -213,11 +255,11 @@ test("Vehicle summaries and dialogs share reads; closing restores Vehicle and fo
   const brake = page.getByRole("button", { name: "Brake backend Open dashboard", exact: true });
   await expect(brake).toContainText("Inspection recommended");
   await expect(page.getByRole("button", { name: "Aos Cloud Unit monitoring" })).toContainText("1 component · 2 services");
-  expect(fixture.reads("/monitoring")).toBe(0);
+  expect(fixture.reads("/monitoring")).toBe(1);
   const reads = fixture.reads("/backend/brake");
   await brake.click();
   await expect(page.getByRole("dialog", { name: "Brake backend", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Reset demo scenario", exact: true })).toBeEnabled();
+  await expect(page.getByRole("dialog").getByRole("button", { name: /Reset.*scenario/ })).toHaveCount(0);
   expect(fixture.reads("/backend/brake")).toBe(reads);
   await page.getByRole("button", { name: "Records", exact: true }).click();
   await page.getByRole("button", { name: "Refresh backend", exact: true }).click();
@@ -283,17 +325,13 @@ for (const condition of ["STALE", "UNKNOWN", "wrong-artifact"]) test(`profile ${
   expect(fixture.calls.every(call => call.method === "GET")).toBe(true);
 });
 
-test("team dialog retains its authoring profile; reset is confirmed and cancel writes nothing", async ({ page }) => {
+test("team dialog retains its authoring profile; details have no reset action and write nothing", async ({ page }) => {
   const fixture = await scenario(page);
   await page.goto("/#native-browser");
   await page.getByRole("button", { name: "Brake Team", exact: true }).click();
   await page.getByRole("button", { name: "v3 Driver advisory", exact: true }).click();
   await page.getByRole("button", { name: /Open Brake backend/ }).click();
-  await page.getByRole("button", { name: "Reset demo scenario", exact: true }).click();
-  const confirm = page.getByRole("dialog", { name: "Reset demo scenario", exact: true });
-  await expect(confirm).toContainText("Gateway");
-  await page.keyboard.press("Escape");
-  await expect(confirm).toHaveCount(0);
+  await expect(page.getByRole("dialog").getByRole("button", { name: /Reset.*scenario/ })).toHaveCount(0);
   await expect(page.getByRole("dialog", { name: "Brake backend", exact: true })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("button", { name: "v3 Driver advisory", exact: true })).toHaveAttribute("aria-pressed", "true");
@@ -353,7 +391,7 @@ for (const outcome of ["PENDING", "EXPIRED", "FAILED", "REJECTED"]) test(`reset 
     await expect(dialog).toContainText(`Reset ${outcome.toLowerCase()} · outcome unconfirmed`);
     await expect(dialog).toContainText("Reset requires Brake V3 and a connected reset channel.");
   }
-  await expect(dialog.getByRole("button", { name: "Reset demo scenario", exact: true })).toBeDisabled();
+  await expect(dialog.getByRole("button", { name: /Reset.*scenario/ })).toHaveCount(0);
   const size = await dialog.locator(".modal-body").evaluate(n => ({ available: n.clientHeight, content: n.scrollHeight }));
   expect(size.content, JSON.stringify(size)).toBeLessThanOrEqual(size.available + 1);
   fixture.state.resetConnected = true;
@@ -385,20 +423,20 @@ test("switching the observed Test drops prior summaries and a resource failure s
   await page.goto("/#native-browser");
   const cloud = page.getByRole("button", { name: "Aos Cloud Unit monitoring", exact: true });
   await expect(cloud).toContainText("No pending updates");
-  expect(fixture.reads("/monitoring")).toBe(0);
+  expect(fixture.reads("/monitoring")).toBe(1);
   await cloud.click();
   await page.getByRole("button", { name: "Resources", exact: true }).click();
-  await expect(page.getByText("0 DMIPS", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Memory", exact: true }).click();
-  await expect(page.getByText("0.12 MiB", { exact: true })).toBeVisible();
+  await expect(page.getByRole("dialog").getByText("0 DMIPS", { exact: true })).toBeVisible();
+  await expect(page.getByRole("dialog").getByText("0.12 MiB", { exact: true })).toBeVisible();
   fixture.state.failResources = true;
   await page.getByRole("button", { name: "Refresh Cloud state", exact: true }).click();
-  await expect(page.getByText(/Cloud monitoring read failed/)).toBeVisible();
-  await expect(page.getByText("0.12 MiB · last known", { exact: true })).toBeVisible();
+  await expect(page.getByText(/Cloud resource read failed/)).toBeVisible();
+  await expect(page.getByRole("dialog").getByText("0.12 MiB", { exact: true })).toBeVisible();
+  await expect(page.getByRole("dialog").getByRole("figure", { name: "controller Memory · last five minutes" })).toContainText("Last known");
   await page.keyboard.press("Escape");
   await expect(cloud).toContainText("No pending updates");
-  await expect(cloud).not.toContainText("DMIPS");
-  await expect(cloud).not.toContainText("Memory");
+  await expect(cloud).toContainText("DMIPS");
+  await expect(cloud).toContainText("Memory");
   fixture.state.uid = "test-b"; fixture.state.failBrake = true;
   await page.locator(".studio-footer").getByRole("button", { name: "Refresh", exact: true }).click();
   await expect(cloud).not.toContainText("0 DMIPS");
@@ -487,7 +525,17 @@ for (const viewport of [{ width: 1280, height: 720 }, { width: 1327, height: 851
       children: [...node.children].map(child => ({ class: child.className, height: child.getBoundingClientRect().height })),
       sections: [...node.querySelectorAll('.studio-backends,.studio-architecture,.studio-controller,.studio-controller h2,.studio-service-slots,.studio-vdp,.studio-factory,.studio-core')].map(child => ({ class: child.className, height: child.getBoundingClientRect().height })),
     }));
-    expect(box, JSON.stringify(dimensions)).toEqual({ width: true, height: true });
+    expect(box.width, JSON.stringify(dimensions)).toBe(true);
+    if (selector === ".studio-body" && !box.height) {
+      expect(await page.locator(selector).evaluate(node => getComputedStyle(node).overflowY)).toBe("auto");
+      await page.locator(".studio-controller").scrollIntoViewIfNeeded();
+      await expect(page.getByLabel("Factory image")).toBeInViewport();
+      await page.locator('[data-anchor="cloud-backend"]').scrollIntoViewIfNeeded();
+    } else if (!box.height && await page.getByRole("region", { name: "CPU and memory history" }).count()) {
+      expect(await page.locator(selector).evaluate(node => getComputedStyle(node).overflowY)).toBe("auto");
+      await page.getByRole("figure", { name: "tire Memory · last five minutes" }).scrollIntoViewIfNeeded();
+      await expect(page.getByRole("figure", { name: "tire Memory · last five minutes" })).toBeInViewport();
+    } else expect(box.height, JSON.stringify(dimensions)).toBe(true);
   };
   await fit(".studio-body");
   await expect(page.locator('[data-anchor="cloud-backend"] .studio-summary-time')).toBeVisible();

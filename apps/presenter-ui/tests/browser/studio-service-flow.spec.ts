@@ -106,7 +106,12 @@ for (const viewport of [{ width: 1280, height: 720 }, { width: 1512, height: 982
       await page.getByRole("button", { name, exact: true }).click();
       const fits = await page.locator(".studio-body").evaluate(node => ({ width: node.scrollWidth <= node.clientWidth + 1, height: node.scrollHeight <= node.clientHeight + 1 }));
       if (!fits.height || !fits.width) await page.screenshot({ path: `test-results/studio-overflow-${viewport.width}.png` });
-      expect(fits, name).toEqual({ width: true, height: true });
+      expect(fits.width, name).toBe(true);
+      if (name === "Vehicle" && !fits.height) {
+        expect(await page.locator(".studio-body").evaluate(node => getComputedStyle(node).overflowY)).toBe("auto");
+        await page.getByLabel("Factory image").scrollIntoViewIfNeeded();
+        await expect(page.getByLabel("Factory image")).toBeInViewport();
+      } else expect(fits.height, name).toBe(true);
     }
     await page.screenshot({ path: `test-results/studio-${viewport.width}.png` });
   });

@@ -13,12 +13,13 @@ not publication, Presenter refresh timers, service assignment or runtime qualifi
 ```bash
 democtl unit cloud-status test
 democtl unit monitoring test
+democtl unit monitoring-history test
 democtl --output json unit cloud-status test
 ```
 
 The transport-neutral API takes exactly
 `{"domain":"unit","action":"cloud-status","target":"test"}` or the same
-request with `"action":"monitoring"`. It accepts no paths, credentials,
+request with `"action":"monitoring"` or `"action":"monitoring-history"`. It accepts no paths, credentials,
 Unit IDs, endpoints or guest-read flags. Production/all are not accepted.
 
 The existing run journal selects the exact current Test `unitId`/`systemUid`
@@ -44,6 +45,7 @@ Schemas and descriptions take precedence over illustrative examples.
 | `GET /units/{U}/subjects-services/?limit=100&offset=0` | One page; subject/service identity, installed/pending version IDs, counts, priority, instances and errors |
 | `GET /units/{U}/subjects-services/{S}/?limit=100&offset=0` | One page per distinct observed service, up to eight services in parallel; all returned subjects/instances, actual installed/pending version detail and per-instance version/run state |
 | `GET /units/{U}/monitoring/?datetime_from=latest` | Only for `unit monitoring`; exact Unit read first, then one latest-sample request, no inventory/detail scan |
+| `GET /units/{U}/monitoring/dashboard/` | Only for `unit monitoring-history`; exact Unit and `units_monitoring_dashboard` permission checked independently of latest samples; no guessed `not_older_than` format |
 
 Every HTTP read uses the existing 12-second timeout and 2 MiB response cap.
 The observation worker has a 60-second overall process budget; its sanitized
@@ -79,6 +81,7 @@ serviceDetails: {service UUID: Observation<service-subject rows>}
 cloud-status: unit, components, nodes, layers,
               assignedSubjects, reportedSubjects, services
 monitoring:   monitoring
+monitoring-history: history
 ```
 
 Each named read uses the existing observation envelope:
@@ -181,11 +184,16 @@ the supplied `time`. Missing sample value/time remains `UNKNOWN` and marks
 the metric incomplete. A supplied different system UID rejects the response.
 
 CPU has `unit: "DMIPS"` and `unitEvidence: "CLOUD_DMIPS_DOCUMENTATION"`.
-The REST schema does not define RAM/disk/traffic scaling. Those fields retain
-raw values with `unit: null`, `unitEvidence: "UNIT_NOT_VERIFIED"`; no invented
-KiB/bytes/rate conversion or percentage denominator is applied. The Core source
-pipeline's bytes alone do not prove the REST layer has no scaling. One tenant
-integration read and authoritative unit mapping remain required.
+RAM has `unit: "bytes"`, `unitEvidence: "CLOUD_OEM_RAM_BYTES"`. Verified on
+20 September 2026 against the platform team's deployed [OEM frontend source](https://oem.aws-stage.epmp-aos.projects.epam.com/chunk-5VTGQMUH.js):
+the latest `ram` value is assigned without scaling and displayed with
+`bytesIEC`; dashboard `ram` pairs are used directly as chart data, whose axis
+formatter divides by 1024 into B/KiB/MiB/GiB. A selected-tenant dashboard read
+also returned controller and both service series. This supplements the Core
+source byte contract rather than assuming the REST layer preserves it.
+Presenter converts verified bytes to MiB for graph scales. Unknown-unit inputs
+remain raw. Disk/traffic retain `unit: null`, `UNIT_NOT_VERIFIED`; no rate or
+percentage denominator is invented.
 
 `[]` means a successful empty source response. Missing/null means not reported.
 `0` is a measured zero, never substituted for missing. A 403/404/timeout does not
@@ -193,6 +201,28 @@ mean Offline, no services or zero resource use. HTTP 404 deliberately remains
 not-found-or-inaccessible, matching the API's documented ambiguity.
 
 ## Sharing, freshness and remaining integration
+
+The additive history projection contains `series` keyed by Node, service,
+Subject, allocation index and metric (`cpu`/`ram`), each with UTC timestamp/value
+pairs. Both documented service arrays and observed keyed objects are accepted;
+unknown shapes fail closed. Bounds: eight response groups, eight Nodes per
+group, sixteen service entries per Node, 64 series, 1,000 points per input
+metric and 4,096 total input points, in addition to existing byte/time limits.
+Repeated equal instants deduplicate; conflicting values become explicit null
+gaps with `INCOMPLETE`, never arbitrary last-write-wins readings. Coverage
+reports actual returned dates/counts, not guaranteed retention. No point is
+attributed to a software release.
+
+Presenter exposes fixed GET `/api/presenter/monitoring-history` for current
+Test only. Latest/history have independent errors, retained values and nominal
+30-second asynchronous observers shared by card and popup. Identity changes
+drop previous scope data; hidden surfaces suspend scheduling. No identical
+read overlaps; other observers and protected commands remain independent.
+Charts use source instants in the current five-minute window. Gaps over three
+nominal polling intervals are not joined; old values stay aged outside an empty
+live window. This is presentation freshness, not a real-time service deadline.
+Disk aliases resolve per Node/service/Subject/index/partition/measurement type;
+equal value/time/unit aliases display once, disagreements remain unresolved.
 
 One persistent `UnitService` shares simultaneous reads per exact
 selected Cloud/OEM owner/Unit UUID/system UID/action through an in-memory future, and retains

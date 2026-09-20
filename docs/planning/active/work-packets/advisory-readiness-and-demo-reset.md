@@ -112,7 +112,11 @@ clears, renews or proves application of a recommendation.
 
 ## Reset semantics
 
-The separate Brake/Tire backend view offers `Reset demo scenario`. It resets
+The accepted 20 September UI amendment moves **Reset scenario** to each
+Brake/Tire backend summary card with one-click protected submission and no
+additional confirmation. Details retain outcome/history, not a second action.
+Immediate submission, backend PENDING and correlated CLEAR remain distinct;
+the previous reset cannot establish completion of a new request. It resets
 only that service's demo estimator and current capture, not the VM, installed
 versions, Subject, credentials, peer service, historical records or outbox.
 Brake returns to its existing preconditioned initial model; Tire returns to

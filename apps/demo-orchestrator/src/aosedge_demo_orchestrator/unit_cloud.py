@@ -193,10 +193,11 @@ def execute(request):
         from aosedge_demo_orchestrator.service_assignment import confirm_retired_subjects
         return dict(subjectsRetainedUnbound=confirm_retired_subjects(cloud, request))
     if action == "observe":
-        from aosedge_demo_orchestrator.cloud_observation import inventory, monitoring
-        if request.get("observation") not in ("cloud-status", "monitoring"):
+        from aosedge_demo_orchestrator.cloud_observation import inventory, monitoring, monitoring_history
+        readers = {"cloud-status": inventory, "monitoring": monitoring, "monitoring-history": monitoring_history}
+        if request.get("observation") not in readers:
             raise CloudFailure("UNIT_OBSERVATION_INVALID")
-        return (monitoring if request["observation"] == "monitoring" else inventory)(cloud, request)
+        return readers[request["observation"]](cloud, request)
     if action == "reconcile-uploads":
         from aosedge_demo_orchestrator.component_cloud import batch_guard, resolve_component
         from aosedge_demo_orchestrator.components import COMPONENT, VERSION

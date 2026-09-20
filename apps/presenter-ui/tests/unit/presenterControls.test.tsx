@@ -7,7 +7,7 @@ import type { DemoCommand, OperationSession } from "../../src/domain/presenterCo
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 function Buttons() {
   const controls = usePresenterControls();
-  return <><button disabled={controls.blocked} onClick={() => controls.request({ action: "create", image: "31/arm64" })}>Create</button>
+  return <><button disabled={controls.blocked} onClick={() => controls.request({ action: "backend-reset", team: "brake" })}>Reset Brake</button><span>{controls.resetSubmissions?.brake?.phase}</span><button disabled={controls.blocked} onClick={() => controls.request({ action: "create", image: "31/arm64" })}>Create</button>
     <button disabled={controls.blocked} onClick={() => controls.request({ action: "upload", version: "13.0.0" })}>Publish</button>
     <button disabled={controls.blocked} onClick={() => controls.request({ action: "service-publish", team: "brake", release: "brake/70" })}>Publish service</button>
     <button disabled={controls.blocked} onClick={() => controls.request({ action: "observe-test" })}>Observe</button><OperationProgress /></>;
@@ -20,6 +20,16 @@ function setup(jobs: OperationSession["jobs"] = []) {
   return port;
 }
 describe("protected Presenter controls", () => {
+  it("only backend reset skips confirmation, retaining duplicate and session guards", async () => {
+    const port = setup();
+    await waitFor(() => expect(screen.getByText("Reset Brake")).toBeEnabled());
+    const button = screen.getByText("Reset Brake"); fireEvent.click(button); fireEvent.click(button);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(port.submit).toHaveBeenCalledTimes(1);
+    expect(port.submit.mock.calls[0]).toEqual([{ action: "backend-reset", team: "brake" }, expect.any(String), "native-generation"]);
+    expect(screen.getByText("SUBMITTING")).toBeVisible();
+    await waitFor(() => expect(screen.getByText("ACCEPTED")).toBeVisible());
+  });
   it("explains engineering prerequisites without bypassing or retrying preparation", () => {
     const job: any = { action: "service-prepare", state: "BLOCKED", results: [], reason: "SERVICE_COMMITTED_SOURCE_REQUIRED" };
     expect(preparationRecovery(job)).toContain("Retrying Prepare unchanged cannot succeed");

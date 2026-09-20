@@ -56,7 +56,7 @@ test("reset-channel inactivity is not labelled as general service contact", asyn
   expect(screen.getByText(/Reset channel contact: not recent/)).toBeVisible();
   expect(screen.queryByText(/Service contact:/)).not.toBeInTheDocument();
   expect(screen.getByText(/Reset requires Brake V3 and a connected reset channel/)).toBeVisible();
-  expect(screen.getByRole("button", { name: "Reset demo scenario" })).toBeDisabled();
+  expect(screen.queryByRole("button", { name: "Reset demo scenario" })).not.toBeInTheDocument();
 });
 
 test.each([
@@ -149,7 +149,7 @@ test("reset waits for CLEAR and keeps late historical warnings out of the curren
   render(<BackendEvidence team="brake" unitSystemUid="current-test" expectedVersion="7.0.0" />);
   expect(await screen.findByText("Resetting · waiting for Gateway CLEAR confirmation")).toBeVisible();
   expect(screen.queryByText("INSPECTION RECOMMENDED")).not.toBeInTheDocument();
-  expect(screen.getByRole("button", {name: "Reset demo scenario"})).toBeDisabled();
+  expect(screen.queryByRole("button", { name: "Reset demo scenario" })).not.toBeInTheDocument();
   Object.assign(command, confirmedReset());
   fireEvent.click(screen.getByRole("button", {name: "Refresh backend"}));
   expect(await screen.findByText(/Scenario reset · Gateway confirmed CLEAR/)).toBeVisible();
@@ -171,8 +171,8 @@ test("a submitted reset does not display the previous command as its completion"
   }]};
   const port = {read: vi.fn().mockResolvedValue(session), submit: vi.fn()};
   render(<PresenterControls port={port}><BackendEvidence team="brake" unitSystemUid="current-test" expectedVersion="7.0.0" /></PresenterControls>);
-  expect(await screen.findByText("Resetting · submitting the current request")).toBeVisible();
+  expect(await screen.findByText("Resetting · waiting for Gateway CLEAR confirmation")).toBeVisible();
   await waitFor(() => expect(screen.getByText(/Backend checked/)).toBeVisible());
   expect(screen.queryByText(/Scenario reset · Gateway confirmed CLEAR/)).not.toBeInTheDocument();
-  expect(screen.getByRole("button", {name: "Reset demo scenario"})).toBeDisabled();
+  expect(screen.queryByRole("button", { name: "Reset demo scenario" })).not.toBeInTheDocument();
 });
