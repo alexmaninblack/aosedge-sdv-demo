@@ -132,3 +132,7 @@ used as evidence for that later amendment.
 
 Git restores source, not Cloud identity, VM contents, credentials or release
 allocation. Never restore an old release ledger to replay this source.
+
+The [20 September source checkpoint and cleanup receipt](source-checkpoint-and-cleanup-2026-09-20.md)
+pins the published integration and its dependency revisions. These source pins
+do not change immutable Factory provenance or promote broader qualification.

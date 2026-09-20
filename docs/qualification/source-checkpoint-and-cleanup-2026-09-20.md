@@ -1,0 +1,123 @@
+<!-- SPDX-FileCopyrightText: 2026 maninblack -->
+<!-- SPDX-License-Identifier: MIT -->
+
+# Source checkpoint and artifact cleanup — 20 September 2026
+
+## Scope and outcome
+
+The operator authorized completion of the accepted correction plan, the exact
+current staging Test retirement, source checkpoint publication, and removal of
+obsolete local artifacts. The [timing report](presenter-ui-timing-e2e-2026-09-20.md)
+is the authoritative run receipt. The continuous UI-only version, product,
+advisory, reset, external OFF/ON and Finish sequence completed. The Test was
+retired; the Presenter remains at the empty initial screen. This is not blanket
+P8 qualification or a claim that every negative branch has been executed.
+
+## Recoverable source set
+
+All rows below were checked against the actual remote branch head after push;
+CARLA was unchanged and already matched its remote. No force-push was used.
+Seven public project repositories were updated. The Engine delta was sent only
+to the existing repository whose PRIVATE visibility was verified first.
+
+| Repository | Branch | Source revision |
+| --- | --- | --- |
+| aosedge-sdv-demo | main | `f21476f798db8ae4facee2fd36b39fb6ecb2f350` — tested integration; subsequent receipt/pin-only commit contains this document |
+| carla-ego-runtime | main | `a3f62c0610b84ada0aac804d7e21d52572cae9f1` |
+| aos-vehicle-platform | main | `75503cdc2b9ab0ecb527db3bbf84e5380d6c42c7` |
+| brake-health-service | main | `4f75373123cbc00a5b7a3541b1d289cb07affd39` |
+| tire-health-service | main | `20e6a23dcb97c29a0315fedd2e720ab537f01ff8` |
+| brake-health-cloud | main | `42395715103d9f512c2586a2c9b98c3975c06ab7` |
+| tire-health-cloud | main | `47cfa632a80c89a7eaab0c501fe437c4ae2cb180` |
+| CarlaSim / carla | macos-apple-silicon | `ac7d882cac496ccbf8b40aa543d6b38513e1173c` |
+| UnrealEngine5_carla / UnrealEngine, restricted | macos-xcode26-compat | `9b705d6d2db5b769ab34edb04f3ca2bb8b960014` |
+
+The workspace manifest records the dependency revisions. To inspect or recover
+this source, use these commits in separate checkouts/worktrees; do not hard-reset
+an active workspace or restore an old release ledger. Source recovery does not
+restore deleted Cloud identity, guest state, backend run data, secrets or images.
+Rebuild from source and manufacture a new Test through the supported UI flow.
+Factory.35 and.36 remain immutable; their build provenance is not rewritten.
+
+## Gates
+
+- Presenter:292 unit tests;125 full browser cases before the final empty-state
+  correction, then48 affected browser cases; final TypeScript/Vite build.
+- Demo Control:1,019 passes and one environment-dependent skip out of1,020.
+- Solution:352 passes; contract/mockup checks104 passes and four opt-in skips.
+- Final Gateway source:47 targeted tests and native Swift typecheck; final
+  Platform diagnostic source:two tests.
+- Documentation and confidential-input guard passed. Outgoing and staged source
+  blobs across the seven public repositories were scanned for private-key/token
+  patterns, oversized objects and artifact extensions: no findings.
+- The exact live gates, timing bounds, previous failures and remaining
+  engineering branches stay in the linked timing report. No artifact rebuild
+  or additional live run was performed solely to create these commits.
+
+## Removed obsolete artifacts
+
+The following exact directories were inspected, confirmed non-symlink, checked
+for zero open handles immediately before removal and deleted. Current launcher
+and build configuration did not reference these old output paths. CTest receipts
+were copied before removal to the local artifact qualification directory
+`demo-artifacts/aosedge-sdv-demo/qualifications/cleanup-20260920` (96 KiB), outside
+Git. No unique source, manifest, release package or credential was deleted.
+
+| Absolute directory | Allocated KiB before deletion |
+| --- | ---: |
+| `/private/tmp/aosedge-qm-gateway-20260916` | 380572 |
+| `/private/tmp/aos-p1-normalization.ecuHHh/build` | 74676 |
+| `/private/tmp/brake-approved-20260916` | 22308 |
+| `/private/tmp/tire-approved-20260916` | 12772 |
+| `/private/tmp/aos-service-recovery.IvjCq0/brake` | 23664 |
+| `/private/tmp/aos-service-recovery.IvjCq0/tire` | 12424 |
+| `/private/tmp/aos-presenter-before-update.R596jX` | 2264 |
+| `/private/tmp/aos-cloud-profile.3s7vjT` | 2268 |
+| `/private/tmp/aos-presenter-clarity.T4NwBG` | 3140 |
+| `/private/tmp/aos-presenter-p2.WdZ7lq` | 2272 |
+
+Total removed build allocation:536,360 KiB (about524 MiB), before the96 KiB
+retained receipts. This is allocated-file accounting, not a promise of equal
+net APFS free-space growth while the host is active. Afterwards the volume
+reported269,816,000 KiB available (about257 GiB). Deletion was permanent, not
+Trash; the builds can be regenerated from preserved source, not undeleted.
+
+Also removed the324 KiB generated, untracked bytecode directory
+`carla-ego-runtime/tools/__pycache__` (workspace-relative) after a separate
+zero-open-handle check. It is regenerated by Python as needed; no source changed.
+Final documentation validation passed243 Markdown documents,658 stable IDs and
+38 Mermaid diagrams.
+
+## Deliberately preserved / deferred
+
+- Factory.35 and.36, current native executables, Presenter build, CARLA content,
+  Python environments, compiled shaders/DDC, Builder/download/shared-state caches.
+- Published release packages, unsigned composition inputs, manifests and release
+  continuity. Historical package directories are not assumed irrelevant just
+  because their versions are old; re-sign/composition and provenance use them.
+- `.local/demo-current/production.qcow2` and its backing
+  `.local/factory/oem-demo-factory.img`: this old.31 backing is a Production
+  dependency, not an obsolete selectable Test image. Production remains excluded.
+- `runtime-proofs/core-permission-keys-256` and
+  `runtime-proofs/core-permission-iam-response-32`: still referenced by the
+  engineering runtime preparation code. Do not delete solely by age.
+- `/private/tmp/aos-cm-lock-test.5CpXWu`,
+  `/private/tmp/aos-cm-lock-fix.WfcfVL`,
+  `/private/tmp/aos-storage-fix.T0LxA2` and
+  `/private/tmp/aos-service-p4.MutJS1`: Docker's Virtualization process still
+  held files in these directories, so the zero-open-handle gate was not met.
+  No Docker restart, shared-folder disruption or unrelated container stop was
+  performed for this cleanup. Compact proof/source portions must remain even
+  after build subdirectories become releasable.
+- Small legacy experiments/worktrees and presentation drafts with potentially
+  unique uncommitted content; no broad directory pruning. Existing unrelated
+  repositories, private inputs and credentials remain untouched.
+
+The excluded items are not reported as deleted or as a fully clean disk.
+
+Workspace doctor verified the new dependency revisions, remotes and clean
+owned source repositories. It is not globally green: the two previously
+recorded legacy launcher reference errors remain, and CARLA contains the
+preserved untracked drafts/experiments listed above. Current Demo Control uses
+its owned runtime build, not those legacy shell launchers. No ignore exception
+or launcher replacement was added to conceal these findings.

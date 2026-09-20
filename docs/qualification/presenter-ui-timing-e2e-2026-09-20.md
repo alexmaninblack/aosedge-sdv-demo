@@ -824,7 +824,7 @@ No runtime fixture or mocked product is counted as live E2E evidence.
 Final empty-screen activation was also inspected in the live Presenter: no
 obsolete layout warning; Session explains the stopped vehicle windows.
 Additional source checkpoint gates passed:352 solution tests,104 contract/mockup
-tests with four explicitly opt-in browser skips,49 targeted Gateway tests,
+tests with four explicitly opt-in browser skips,47 targeted Gateway tests,
 native Driving Control Swift typecheck and two Platform ordering tests.
 The first root-suite interpreter lacked PyYAML; rerunning with the existing
 configured interpreter passed without changing dependencies. The Swift
@@ -836,6 +836,9 @@ the private-key/token, artifact-size and artifact-extension scan; the solution
 confidential-input guard also passed. Preserve exact contract bytes and unified
 patch context: the staged whitespace check notes two contract EOF blank lines
 and two required blank context lines in the upstream regression patch.
+
+The completed source checkpoint and subsequent authorized artifact cleanup are
+recorded in the [checkpoint receipt](source-checkpoint-and-cleanup-2026-09-20.md).
 
 ### Remaining boundaries after the clean operator cycle
 

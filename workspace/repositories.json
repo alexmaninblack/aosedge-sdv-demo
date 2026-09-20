@@ -26,7 +26,7 @@
       "visibility": "private",
       "repository": "https://github.com/alexmaninblack/UnrealEngine.git",
       "remote": "personal",
-      "acceptedRevision": "2583a3fd4110bc430416d14820c6df2894ccc619",
+      "acceptedRevision": "9b705d6d2db5b769ab34edb04f3ca2bb8b960014",
       "acceptedBranches": ["macos-xcode26-compat"],
       "allowedDirtyPaths": ["Engine/Config/DefaultEngine.ini"]
     },
@@ -37,7 +37,7 @@
       "visibility": "public",
       "repository": "https://github.com/alexmaninblack/carla-ego-runtime.git",
       "remote": "origin",
-      "acceptedRevision": "10e476d45c28d206d14ab0a3a5a7e1bfab85807f",
+      "acceptedRevision": "a3f62c0610b84ada0aac804d7e21d52572cae9f1",
       "acceptedBranches": ["main"],
       "allowedDirtyPaths": []
     },
@@ -48,7 +48,7 @@
       "visibility": "public",
       "repository": "https://github.com/alexmaninblack/aos-vehicle-platform.git",
       "remote": "origin",
-      "acceptedRevision": "57243dc0a7c6d27bd4a7a10e6250b3d37dc53288",
+      "acceptedRevision": "75503cdc2b9ab0ecb527db3bbf84e5380d6c42c7",
       "acceptedBranches": ["main"],
       "allowedDirtyPaths": []
     },
@@ -59,7 +59,7 @@
       "visibility": "public",
       "repository": "https://github.com/alexmaninblack/brake-health-service.git",
       "remote": "origin",
-      "acceptedRevision": "057b444fa77960fa51ea61b47256339afe067216",
+      "acceptedRevision": "4f75373123cbc00a5b7a3541b1d289cb07affd39",
       "acceptedBranches": ["main"],
       "allowedDirtyPaths": []
     },
@@ -70,7 +70,7 @@
       "visibility": "public",
       "repository": "https://github.com/alexmaninblack/brake-health-cloud.git",
       "remote": "origin",
-      "acceptedRevision": "55bb8d820eb2d83a0bf7be9cf45aeca01a4d8924",
+      "acceptedRevision": "42395715103d9f512c2586a2c9b98c3975c06ab7",
       "acceptedBranches": ["main"],
       "allowedDirtyPaths": []
     },
@@ -81,7 +81,7 @@
       "visibility": "public",
       "repository": "https://github.com/alexmaninblack/tire-health-service.git",
       "remote": "origin",
-      "acceptedRevision": "e113183feb1974511d7171a7630eac404165058e",
+      "acceptedRevision": "20e6a23dcb97c29a0315fedd2e720ab537f01ff8",
       "acceptedBranches": ["main"],
       "allowedDirtyPaths": []
     },
@@ -92,7 +92,7 @@
       "visibility": "public",
       "repository": "https://github.com/alexmaninblack/tire-health-cloud.git",
       "remote": "origin",
-      "acceptedRevision": "2ac7ccbf3d32ab3bf6e5967fb38d115f488974ad",
+      "acceptedRevision": "47cfa632a80c89a7eaab0c501fe437c4ae2cb180",
       "acceptedBranches": ["main"],
       "allowedDirtyPaths": []
     }
