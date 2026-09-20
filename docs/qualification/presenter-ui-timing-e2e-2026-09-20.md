@@ -988,3 +988,68 @@ Final repeat checks passed35 affected Presenter unit tests, both Swift projectio
 tests and Swift typecheck. Documentation validation passed243 Markdown documents,
 658 identifiers and38 Mermaid diagrams. Vite's first repeat was sandbox-denied
 when creating its configuration cache; the authorized cache-write rerun passed.
+
+### Remaining negative checks continuation
+
+On20September08:41–09:02UTC, continue the same retained .36 staging Test with
+VDP97/V3, Brake77/V3 and Tire43/V1. No publication, provisioning, manager/service
+restart, Factory build or Finish occurred. Mutations used Presenter and native
+Driving Control; scoped read-only backend/guest checks supplement the UI proof,
+so the exact command accounting below is not labelled UI-only.
+
+| Case | Action / evidence in UTC | Result and boundary |
+| --- | --- | --- |
+| N1 concurrent OFF and Reset | OFF click08:42:59.880, immediately confirm the already-open Brake Reset dialog | BLOCKED CURRENT_RUN_BUSY; subsequent disabled Reset does not submit. Read-only08:44:39: zero Brake and zero Tire commands. Both native warnings retained. |
+| N2 accepted Brake Reset while offline | After confirmed OFF, Reset click08:45:05.093; issued08:45:05.216; expiry08:46:05.216 | Exactly one PENDING command. No invented CLEAR or healthy result. Existing60-second expiry unchanged. |
+| N2 pending reload | Browser reload08:45:40.935 | Same PENDING operation recovered, still exactly one command. This is reload/durable reconciliation, not injected mutation-response loss. |
+| N2 expiry and reconnect | Expired view observed08:46:20; ON click08:46:28.876; post-read08:47:02 | EXPIRED without ACK; polling resumed and warning remained. No late application of the expired command. |
+| N3 explicit new Brake Reset | Click08:54:44.174; issued08:54:44.303; Gateway CLEAR08:54:48.773 | CLEAR4.599s after click /4.470s after issue. Native Brake Monitoring observed08:54:57; Tire warning unchanged. Backend confirmation observed08:55:46; sparse observations do not imply a58-second transport latency. Old command remains EXPIRED; only the new command is CLEARED. |
+| N4 stale Tire confirmation | Confirmation opened while connected; OFF confirmed; final Reset click08:56:36.534 after contact had aged | BLOCKED RESET_SERVICE_NOT_CONNECTED; zero Tire commands and warning unchanged. This verifies revalidation at submission, not expiry of an accepted Tire command. ON restored08:56:44. |
+| New result after clear | Native Brake maneuver click08:57:31.378; new assessment source/receipt08:57:46 | Presenter shows Monitor40 and confirmed advisory ACK, explicitly newer than CLEAR. Records still contain pre-reset history. Native maneuver completed in Safe Stop; Brake Monitoring, Tire Inspection recommended. |
+
+#### T15: pending and uncertain Reset copy
+
+N2 exposed two presentation defects, without an incorrect backend mutation:
+
+- pending/expired Reset hid the current product deliberately, but the dialog
+  then claimed No result for release77 yet despite retained real results;
+- once reset-channel contact aged, the connection prerequisite masked the
+  known expired outcome and its uncertainty explanation.
+
+The existing shared summary now presents Reset pending or Reset outcome
+unconfirmed; the card status Reset needs attention is distinct from its title.
+Known expired/failed/rejected outcomes remain visible together with the
+reconnection prerequisite. Historical products are retained and uncertain Reset
+cannot supply current-result proof. Button eligibility, command lifetime,
+selection/authority, model thresholds and wire schemas are unchanged. The
+confirmed-CLEAR path still waits for a real newer product, as N3 demonstrates.
+
+Eight new unit cases first reproduced the defect, then passed after the narrow
+correction: both services across PENDING/EXPIRED/FAILED/REJECTED with retained
+data and lost contact. Final gates:300 Presenter unit tests across27 files,
+36 affected Studio-dialog browser cases, four final pending/uncertain browser
+repeats, TypeScript and Vite build. Browser cases also cover contact recovery,
+retained Records, no mutation during reads and compact720px dialog fit. FAILED
+and REJECTED command outcomes are fixture coverage, not injected live outcomes.
+
+The final built UI was loaded using Reload UI in the browser and checked against
+the preserved Test. Native desktop-wrapper refresh was not independently
+verified: the unbundled wrapper is not addressable by the available native UI
+surface. No CARLA, Driving Control, Presenter wrapper or guest restart was used
+to activate this copy-only change.
+
+At09:02UTC, Vehicle shows Online, three components/two services, no pending
+updates and the unchanged97/77/43 releases. Both service inputs are RECEIVING,
+delivery queues are zero, and native controls show Safe Stop/0km/h/Network ON.
+Read-only08:58 checks found CM, SM, IAM and VDP active, Result=success and
+NRestarts=0. Bounded VDP logs since07:31 contain zero previously tracked
+SAME_TIMESTAMP_CHANGED, TIME_REGRESSION or non-monotonic-source categories.
+This is bounded nonrecurrence, not a resolved historical root cause.
+
+The earlier remaining-work list still applies, narrowed by N1–N4. Actual manual
+off-road/occupied-spawn/held-input and deliberate Mac lock/unlock need their own
+live evidence; operator participation has been requested, not assumed. Do not
+lock an unattended Mac to manufacture completion. The D4-003 calibration and
+review/freeze gate precedes the independent20 Brake and10+10 Tire series.
+Guest reboot remains separate. Preserve this Test and do not use the previous
+cycle's Finish approval as authority to retire it.

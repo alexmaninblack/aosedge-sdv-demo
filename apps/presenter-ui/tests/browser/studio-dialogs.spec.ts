@@ -6,7 +6,7 @@ import { confirmedReset, binding } from "../unit/backendFixture";
 async function scenario(page: Page) {
   const state = { uid: "test-a", failBrake: false, oldBrake: false, pending: false, reset: false, failResources: false,
     statusOnlyPending: false, cloudCurrent: true, receiptAge: 0, partialEvents: false, productConflict: false, firstServicePending: false,
-    profileState: "CURRENT", vdpProfile: "v3", profileId: "vdp-78", functionAge: 0, functionInput: "RECEIVING", functionActivity: "ACTIVE", functionConflict: false, windowMode: false, windowInterrupted: false, noResult: false, resetVersion: "58.0.0" };
+    profileState: "CURRENT", vdpProfile: "v3", profileId: "vdp-78", functionAge: 0, functionInput: "RECEIVING", functionActivity: "ACTIVE", functionConflict: false, windowMode: false, windowInterrupted: false, noResult: false, resetVersion: "58.0.0", resetOutcome: "CLEARED", resetConnected: true };
   const calls: { path: string; method: string }[] = [];
   const now = new Date().toISOString();
   const windowRecord = { unitSystemUid: state.uid, serviceVersion: "56.0.0", eventId: "4cba2d80-c04a-4d24-9f03-f4a85d56da13",
@@ -74,9 +74,10 @@ async function scenario(page: Page) {
           serviceVersion: team === "brake" ? state.oldBrake ? "57.0.0" : "58.0.0" : "34.0.0", sourceEventTime: now,
           content: { currentBand: "INSPECTION_RECOMMENDED", conditionScore: 40, confidencePercent: 75, quality: "VALID", provenance: "DEMO_SYNTHETIC" },
         } }]),
-        demoReset: { state: "OBSERVED", data: { schemaVersion: 1, unitSystemUid: state.uid, connected: true,
-          command: state.reset && team === "brake" ? confirmedReset({ ...binding, unitSystemUid: state.uid, serviceVersion: state.resetVersion },
-            new Date(Date.parse(now) + 1).toISOString(), new Date(Date.parse(now) + 2).toISOString()) : null } },
+        demoReset: { state: "OBSERVED", data: { schemaVersion: 1, unitSystemUid: state.uid, connected: state.resetConnected,
+          command: state.reset && team === "brake" ? { ...confirmedReset({ ...binding, unitSystemUid: state.uid, serviceVersion: state.resetVersion },
+            new Date(Date.parse(now) + 1).toISOString(), new Date(Date.parse(now) + 2).toISOString()),
+            ...(state.resetOutcome === "CLEARED" ? {} : { state: state.resetOutcome, result: null }) } : null } },
       } } });
     }
     return route.fulfill({ status: 404, json: {} });
@@ -335,6 +336,33 @@ test("backend failure retains labelled history without affecting peer or Cloud; 
   await page.keyboard.press("Escape");
   await expect(brake).toContainText("No new result after reset");
   await expect(brake).not.toContainText("Inspection recommended");
+});
+
+for (const outcome of ["PENDING", "EXPIRED", "FAILED", "REJECTED"]) test(`reset ${outcome} retains honest card/dialog copy across contact recovery`, async ({ page }) => {
+  const fixture = await scenario(page); fixture.state.reset = true;
+  fixture.state.resetOutcome = outcome; fixture.state.resetConnected = false;
+  await page.setViewportSize({ width: 1280, height: 720 }); await page.goto("/#native-browser");
+  const card = page.getByRole("button", { name: "Brake backend Open dashboard", exact: true });
+  const title = outcome === "PENDING" ? "Reset pending" : "Reset outcome unconfirmed";
+  await expect(card).toContainText(title); await expect(card).not.toContainText("No current-release result");
+  await card.click();
+  const dialog = page.getByRole("dialog", { name: "Brake backend", exact: true });
+  await expect(dialog.getByRole("heading", { name: title, exact: true })).toBeVisible();
+  await expect(dialog).not.toContainText("No result for release 58.0.0 yet.");
+  if (outcome !== "PENDING") {
+    await expect(dialog).toContainText(`Reset ${outcome.toLowerCase()} · outcome unconfirmed`);
+    await expect(dialog).toContainText("Reset requires Brake V3 and a connected reset channel.");
+  }
+  await expect(dialog.getByRole("button", { name: "Reset demo scenario", exact: true })).toBeDisabled();
+  const size = await dialog.locator(".modal-body").evaluate(n => ({ available: n.clientHeight, content: n.scrollHeight }));
+  expect(size.content, JSON.stringify(size)).toBeLessThanOrEqual(size.available + 1);
+  fixture.state.resetConnected = true;
+  await dialog.getByRole("button", { name: "Refresh backend", exact: true }).click();
+  await expect(dialog).toContainText("Reset channel contact: recent");
+  await expect(dialog.getByRole("heading", { name: title, exact: true })).toBeVisible();
+  await dialog.getByRole("button", { name: "Records", exact: true }).click();
+  await expect(dialog).toContainText("BRAKE_HEALTH_ASSESSMENT");
+  expect(fixture.calls.every(call => call.method === "GET")).toBe(true);
 });
 
 test("Session defaults to lifecycle without credential inspection; setup is an explicit section", async ({ page }) => {

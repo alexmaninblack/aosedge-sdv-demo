@@ -13,6 +13,20 @@ active-evidence file, not the agreed compatibility and product requirements.
 
 ## Preserved boundary
 
+**20 September09:02UTC negative-check continuation:** the same .36 staging Test
+is preserved Online/Safe Stop/Network ON with VDP97, Brake77 and Tire43. Live
+concurrent-action rejection, Brake Reset expiry offline, pending reload without
+resubmission, no late CLEAR after reconnect and an explicit new successful Reset
+passed. A stale Tire confirmation was rejected without creating a command; this
+is not a Tire-expiry test. A new physical braking episode then produced Monitor40
+with advisory ACK; Tire retained its warning. T15 is a copy-only Presenter fix
+for misleading pending/expired Reset guidance, with 300 unit tests,36 affected
+browser cases, final four-case repeat and build passing. Browser activation is
+verified; no native wrapper, source, service, VM or manager restart occurred.
+Manual off-road/held-input, live Mac lock/unlock, wider fault combinations and
+reviewed/frozen D4-003 calibration remain separate gates. See the continuation
+in the [single timing report](../../../qualification/presenter-ui-timing-e2e-2026-09-20.md#remaining-negative-checks-continuation).
+
 **20 September07:47UTC targeted follow-up:** a newly created .36 staging Test
 is retained Online/Safe Stop/Network ON with exactly authorized VDP97/V3,
 Brake77/V3 and Tire43/V1. UI-led publication/provision/assignment, actual

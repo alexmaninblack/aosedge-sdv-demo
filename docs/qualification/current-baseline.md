@@ -12,11 +12,18 @@ The former UI hold and .33 current status are historical, not active blockers.
 
 ## Current qualification limitation
 
-Latest targeted checkpoint: **20 September07:47UTC**, a new .36 Test is retained
+Latest targeted checkpoint: **20 September09:02UTC**, the same .36 Test is retained
 in staging, Online and Safe Stop with external network ON. The operator approved
 VDP97/V3, Brake77/V3 and Tire43/V1; all are installed and real products and both
 native warnings were observed. Moving/double-click Return to road and exact
-offline delivery of54 captured messages passed. This is a targeted follow-up,
+offline delivery of54 captured messages passed. Subsequent live Reset checks
+covered a concurrent-action rejection, an accepted command expiring offline,
+reload without resubmission, no late application after reconnect, an explicit
+new successful Brake Reset and a stale Tire confirmation rejected without a
+command. Brake then produced a new Monitor40 result; native Brake is Monitoring
+and Tire retains Inspection recommended. T15 corrects misleading pending/expired
+Reset copy; its rebuilt UI is verified in the browser, not a separately reloaded
+native Presenter wrapper. This is a targeted follow-up,
 not another full version progression or a completed Finish. T13 Presenter copy
 is active; T14 native preflight copy is source-tested, not yet activated in the
 running Driving Control. Remaining gates are listed in the

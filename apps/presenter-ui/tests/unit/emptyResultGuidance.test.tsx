@@ -68,6 +68,31 @@ test("Reset copy scopes absence to the reset, keeps its date, and explains lost 
   expect(screen.getByText(/Last reset confirmed for release/)).toBeVisible();
   expect(screen.queryByText("Earlier results remain in Records.")).not.toBeInTheDocument();
 });
+
+for (const team of ["brake", "tire"] as const) test.each(["PENDING", "EXPIRED", "FAILED", "REJECTED"])(`${team} %s reset does not deny retained results or hide its outcome when disconnected`, state => {
+  vi.spyOn(Date, "now").mockReturnValue(Date.parse(now));
+  const { model, scope } = fixture("RECEIVING", team);
+  const reset = model.data!.observations.demoReset!.data!;
+  reset.command = { ...confirmedReset(scope), state, result: null }; reset.connected = false;
+  const records = model.data!.observations.mockData!.data!.records;
+  records.push({ backendReceivedAt: now, deliveryState: "DURABLY_RECEIVED", message: {
+    messageType: team === "brake" ? "BRAKE_HEALTH_ASSESSMENT" : "TIRE_HEALTH_ASSESSMENT",
+    unitSystemUid: scope.unitSystemUid, serviceVersion: scope.serviceVersion,
+    serviceInstance: nativeInstance, sourceEventTime: now, content: { currentBand: "INSPECTION_RECOMMENDED" },
+  } });
+  const title = state === "PENDING" ? "Reset pending" : "Reset outcome unconfirmed";
+  const summary = backendSummary(model, team, scope.serviceVersion, scope);
+  expect(summary.title).toBe(title); expect(summary.proof).toBeUndefined();
+  expect(summary.status).not.toBe(summary.title);
+  render(<BackendEvidence team={team} observation={model} binding={scope} expectedVersion={scope.serviceVersion} unitSystemUid={scope.unitSystemUid} />);
+  expect(screen.getByRole("heading", { name: title })).toBeVisible();
+  expect(screen.queryByText(/No result for release .* yet/)).not.toBeInTheDocument();
+  if (state !== "PENDING") {
+    expect(screen.getByText(new RegExp(`Reset ${state.toLowerCase()} · outcome unconfirmed`))).toBeVisible();
+    expect(screen.getByText(new RegExp(`Reset requires ${team === "brake" ? "Brake V3" : "Tire V1"} and a connected reset channel`))).toBeVisible();
+  }
+  expect(records).toHaveLength(1);
+});
 test.each(["PENDING", "RETRYING", "BLOCKED"])("receiving input with %s delivery does not ask for another drive", delivery => {
   vi.spyOn(Date, "now").mockReturnValue(Date.parse(now));
   const { model, scope, item } = fixture("RECEIVING");
