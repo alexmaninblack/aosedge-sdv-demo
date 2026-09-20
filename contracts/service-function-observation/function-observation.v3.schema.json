@@ -1,0 +1,532 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:aosedge-sdv-demo:function-observation:v3",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "contractVersion",
+    "messageType",
+    "unitSystemUid",
+    "unitRole",
+    "serviceVersion",
+    "serviceProfile",
+    "serviceInstance",
+    "generation",
+    "sequence",
+    "observedAt",
+    "content",
+    "contentSha256"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 3
+    },
+    "contractVersion": {
+      "const": "3.0.0"
+    },
+    "messageType": {
+      "enum": [
+        "BRAKE_FUNCTION_OBSERVATION",
+        "TIRE_FUNCTION_OBSERVATION"
+      ]
+    },
+    "unitSystemUid": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$(?![\\s\\S])"
+    },
+    "unitRole": {
+      "enum": [
+        "VALIDATION",
+        "PRODUCTION"
+      ]
+    },
+    "serviceVersion": {
+      "type": "string",
+      "maxLength": 32,
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$(?![\\s\\S])"
+    },
+    "serviceProfile": {
+      "enum": [
+        "v1",
+        "v2",
+        "v3"
+      ]
+    },
+    "serviceInstance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "serviceId",
+        "subjectId",
+        "instanceIndex",
+        "instanceId"
+      ],
+      "properties": {
+        "serviceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$(?![\\s\\S])"
+        },
+        "subjectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$(?![\\s\\S])"
+        },
+        "instanceIndex": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "instanceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$(?![\\s\\S])"
+        }
+      }
+    },
+    "generation": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "observedAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$"
+    },
+    "content": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "connection",
+        "input",
+        "activity",
+        "delivery",
+        "advisory",
+        "lastResult"
+      ],
+      "properties": {
+        "connection": {
+          "enum": [
+            "STARTING",
+            "CONNECTED",
+            "REAUTHENTICATING",
+            "DISCONNECTED",
+            "ACCESS_DENIED"
+          ]
+        },
+        "input": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "reason"
+          ],
+          "properties": {
+            "state": {
+              "enum": [
+                "WAITING",
+                "RECEIVING",
+                "STALE",
+                "DISCONNECTED",
+                "ACCESS_DENIED",
+                "INVALID"
+              ]
+            },
+            "reason": {
+              "enum": [
+                "NONE",
+                "AWAITING_INPUT",
+                "SOURCE_GAP",
+                "INVALID_SAMPLE",
+                "TRANSPORT_LOST",
+                "ACCESS_DENIED",
+                "REAUTHENTICATING"
+              ]
+            }
+          }
+        },
+        "activity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "reason",
+            "episodeId"
+          ],
+          "properties": {
+            "state": {
+              "enum": [
+                "WAITING",
+                "PRE",
+                "ACTIVE",
+                "POST",
+                "COMPLETED",
+                "SKIPPED"
+              ]
+            },
+            "reason": {
+              "enum": [
+                "NONE",
+                "NOT_QUALIFIED",
+                "INSUFFICIENT_SAMPLES",
+                "INVALID_INPUT",
+                "SOURCE_DISCONTINUITY",
+                "REAUTHENTICATING",
+                "RESET",
+                "STORAGE_UNAVAILABLE"
+              ]
+            },
+            "episodeId": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$(?![\\s\\S])"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "delivery": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "queuedMessages",
+            "lastReceiptAt"
+          ],
+          "properties": {
+            "state": {
+              "enum": [
+                "IDLE",
+                "PENDING",
+                "RETRYING",
+                "BLOCKED"
+              ]
+            },
+            "queuedMessages": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "lastReceiptAt": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "advisory": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "requestId"
+          ],
+          "properties": {
+            "state": {
+              "enum": [
+                "NOT_SUPPORTED",
+                "WAITING",
+                "CONFIRMED",
+                "UNAVAILABLE",
+                "REAUTHENTICATING"
+              ]
+            },
+            "requestId": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$(?![\\s\\S])"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "lastResult": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "id",
+                "sourceTime",
+                "serviceVersion"
+              ],
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "WINDOW",
+                    "ASSESSMENT"
+                  ]
+                },
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$(?![\\s\\S])"
+                },
+                "sourceTime": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$"
+                },
+                "serviceVersion": {
+                  "type": "string",
+                  "maxLength": 32,
+                  "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$(?![\\s\\S])"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "contentSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "messageType": {
+            "const": "TIRE_FUNCTION_OBSERVATION"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "serviceProfile": {
+            "const": "v1"
+          },
+          "content": {
+            "properties": {
+              "advisory": {
+                "properties": {
+                  "state": {
+                    "not": {
+                      "const": "NOT_SUPPORTED"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "messageType": {
+            "const": "BRAKE_FUNCTION_OBSERVATION"
+          },
+          "serviceProfile": {
+            "enum": [
+              "v1",
+              "v2"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "content": {
+            "properties": {
+              "advisory": {
+                "properties": {
+                  "state": {
+                    "const": "NOT_SUPPORTED"
+                  },
+                  "requestId": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "serviceProfile": {
+            "const": "v3"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "content": {
+            "properties": {
+              "advisory": {
+                "properties": {
+                  "state": {
+                    "not": {
+                      "const": "NOT_SUPPORTED"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "content": {
+            "properties": {
+              "input": {
+                "properties": {
+                  "state": {
+                    "const": "RECEIVING"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "content": {
+            "properties": {
+              "input": {
+                "properties": {
+                  "reason": {
+                    "const": "NONE"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "content": {
+            "properties": {
+              "input": {
+                "properties": {
+                  "reason": {
+                    "not": {
+                      "const": "NONE"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "content": {
+            "properties": {
+              "activity": {
+                "properties": {
+                  "state": {
+                    "const": "SKIPPED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "content": {
+            "properties": {
+              "activity": {
+                "properties": {
+                  "reason": {
+                    "not": {
+                      "const": "NONE"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "content": {
+            "properties": {
+              "advisory": {
+                "properties": {
+                  "state": {
+                    "const": "CONFIRMED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "content": {
+            "properties": {
+              "advisory": {
+                "properties": {
+                  "requestId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$(?![\\s\\S])"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
+

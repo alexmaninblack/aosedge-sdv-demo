@@ -8,9 +8,10 @@ This directory is the canonical cross-component contract for
 the two non-safety QM maintenance-advisory paths, schema-bound Request/Status
 envelopes, authority, freshness, replay/rate limits and clear/expiry behavior.
 
-- [accepted profile 1.1.0](qm-advisory-profile.v1.json) — operator-approved
-  separation of functional profiles from package release numbers on
-  16 September 2026. Earlier 1.0.2 repinned VDP Compatibility Profile 1.0.1;
+- [accepted profile 1.2.0](qm-advisory-profile.v1.json) — operator-approved
+  100 ms future-clock tolerance for the two QM advisory endpoints on
+  20 September 2026. Version 1.1.0 separated functional profiles from package
+  release numbers on 16 September 2026. Earlier 1.0.2 repinned VDP Compatibility Profile 1.0.1;
   1.0.1 replaced retired `D4-009` authorization with `D4-027`.
 - [Request schema](qm-advisory-request.schema.json)
 - [Gateway Status schema](qm-advisory-status.schema.json)
@@ -34,6 +35,16 @@ alternate path. The request's release number is checked for the existing
 numeric three-part format, not treated as authentication or independent proof
 of the installed software version. Cross-service writes and motion commands
 remain denied; replay/lease/rate and Gateway acknowledgement rules are unchanged.
+
+Both VDP and Gateway accept an `issuedAt` up to 100 ms ahead of their own UTC
+receipt time, inclusive; greater future offsets still fail `STALE_REQUEST`.
+The 2000 ms maximum past age and 30000 ms maximum declared lease are unchanged.
+Gateway caps effective `activeUntil` at the earlier of the original `expiresAt`
+and its acceptance time plus 30000 ms, and uses that same duration for its
+monotonic deadline. Either wall-clock expiry or monotonic expiry clears the
+warning. Original request bytes/timestamps remain unchanged for provenance
+and replay equality. Identical duplicates never extend either deadline.
+This is not a telemetry-age, readiness-heartbeat or motion-control tolerance.
 
 This contract update does not modify released bundles or qualify the dormant
 VDP advisory transport. A future payload must bind the updated policy/profile

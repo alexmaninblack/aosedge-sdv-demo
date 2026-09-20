@@ -49,10 +49,16 @@ def advisory_configuration_observation(capability):
     """Manifest configuration only, never an application acknowledgement."""
     if not capability.get("advisoryEndpoints"):
         return "NOT_APPLICABLE"
-    expected = dict(contractId="aosedge-demo-typed-qm-advisory", contractVersion="1.1.0",
-        sha256="343e128bf9a0cac60a4f1b573315716f440accef17933fbcd9f6af49bc88300c")
+    # This worker runs standalone in the guest; retain exact reviewed pairs
+    # without importing the host packaging implementation or guessing by version.
+    expected = (
+        dict(contractId="aosedge-demo-typed-qm-advisory", contractVersion="1.1.0",
+             sha256="343e128bf9a0cac60a4f1b573315716f440accef17933fbcd9f6af49bc88300c"),
+        dict(contractId="aosedge-demo-typed-qm-advisory", contractVersion="1.2.0",
+             sha256="e055578130968e69344de981634dd69a43a1b851e437fa8dcfa77771b6c1e24c"),
+    )
     contract = capability.get("contracts", {}).get("typedQmAdvisory")
-    return "CONFIGURED_NOT_APPLICATION_PROOF" if contract == expected else "DEFERRED"
+    return "CONFIGURED_NOT_APPLICATION_PROOF" if contract in expected else "DEFERRED"
 
 
 def advisory_log_observation(raw):
@@ -390,13 +396,19 @@ print(json.dumps(result))
                     if not isinstance(event, dict) or event.get("eventType") not in (
                             "KUKSA_AUTH_CHANGED", "KUKSA_CONNECTION_CHANGED", "KUKSA_SUBSCRIPTION_CHANGED", "BACKEND_SYNC_CHANGED",
                             "READINESS_CHANGED", "WINDOW_TRIGGERED", "WINDOW_COMPLETED", "SERVICE_STARTED", "SERVICE_STOPPED",
-                            "VDP_CONTRACT_ACCEPTED", "KUKSA_INPUT_REJECTED", "KUKSA_INPUT_TIMING", "ASSESSMENT_CREATED",
+                            "VDP_CONTRACT_ACCEPTED", "KUKSA_INPUT_REJECTED", "KUKSA_INPUT_TIMING", "KUKSA_INPUT_SUMMARY", "TELEMETRY_WATCHDOG_EXPIRED", "ASSESSMENT_CREATED",
                             "ADVISORY_REQUESTED", "ADVISORY_GATEWAY_STATUS",
                             "EXERCISE_COMPLETED", "EXERCISE_SKIPPED",
                             "ASSESSMENT_SKIPPED_INPUT_QUALITY", "CONDITION_BAND_CHANGED", "DERIVED_OUTBOX_FULL"):
                         continue
                     fields = {key: value for key, value in event.items() if key in ("eventType", "currentState", "reasonCode")
                         and isinstance(value, str) and re.fullmatch(r"[A-Z0-9_]{1,64}", value)}
+                    if event.get("eventType") == "KUKSA_INPUT_SUMMARY":
+                        for key, minimum, maximum in (("count", 0, 10000000), ("missingMask", 0, 4095),
+                                ("oldestAgeMs", -60000, 60000), ("newestAheadMs", -60000, 60000)):
+                            value = event.get(key)
+                            if type(value) is int and minimum <= value <= maximum:
+                                fields[key] = value
                     timestamp = record.get("__REALTIME_TIMESTAMP", "")
                     if isinstance(timestamp, str) and re.fullmatch(r"[0-9]{1,20}", timestamp):
                         fields["observedEpochMicros"] = timestamp
@@ -426,6 +438,8 @@ print(json.dumps(result))
                     "EXERCISE_COMPLETED", "EXERCISE_SKIPPED")][-8:],
                 inputTiming=[event for event in events if event.get("eventType")=="KUKSA_INPUT_TIMING"][-8:],
                 inputRejections=[event for event in events if event.get("eventType")=="KUKSA_INPUT_REJECTED"][-8:],
+                inputSummaries=[event for event in events if event.get("eventType")=="KUKSA_INPUT_SUMMARY"][-8:],
+                watchdogEvents=[event for event in events if event.get("eventType")=="TELEMETRY_WATCHDOG_EXPIRED"][-8:],
                 captureEvents=[event for event in events if event.get("eventType") in ("WINDOW_TRIGGERED", "WINDOW_COMPLETED")][-8:],
                 advisoryEvents=[event for event in events if event.get("eventType") in ("ADVISORY_REQUESTED", "ADVISORY_GATEWAY_STATUS")][-8:],
                 journalState="CURRENT" if logs.returncode == 0 else "UNAVAILABLE")

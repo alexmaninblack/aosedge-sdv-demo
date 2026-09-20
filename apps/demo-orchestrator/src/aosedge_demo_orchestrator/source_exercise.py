@@ -10,7 +10,8 @@ from .status import now
 
 def execute(service, state, kind):
     source = state.get("source") or {}
-    if kind not in ("brake", "tire") or state.get("currentVehicle") != "test" or "test" not in state.get("vehicles", {}):
+    recovery = kind == "return_to_road"
+    if kind not in ("brake", "tire", "return_to_road") or state.get("currentVehicle") != "test" or "test" not in state.get("vehicles", {}):
         raise EnvironmentError("SIMULATION_EXERCISE_REQUIRES_SELECTED_TEST")
     if source.get("operation") or source.get("stopOperation"):
         raise EnvironmentError("SIMULATION_EXERCISE_SOURCE_OPERATION_PENDING")
@@ -18,6 +19,8 @@ def execute(service, state, kind):
     observed = driver.ready(state)
     if observed.get("exerciseSupported") is not True:
         raise EnvironmentError("SIMULATION_EXERCISE_REQUIRES_UPDATED_CONTROLLER")
+    if recovery and observed.get("roadRecoverySupported") is not True:
+        raise EnvironmentError("ROAD_RECOVERY_REQUIRES_UPDATED_CONTROLLER")
     record = source.get("exercise")
     resume = bool(record and record.get("phase") != "RELEASED")
     if resume:
@@ -52,6 +55,20 @@ def execute(service, state, kind):
         observed = intent("reset")
     if observed["phase"] == "RESETTING":
         observed = driver.wait(source, identity, "RESET")
+    if observed["phase"] == "RESET_FAILED" or record.get("resetError"):
+        reason=record.get("resetError") or observed.get("resetError")
+        if reason not in ("ROAD_POSITION_INVALID","ROAD_POSITION_OCCUPIED","ROAD_POSITION_UNCONFIRMED"):
+            raise EnvironmentError("ROAD_RECOVERY_REJECTION_UNCONFIRMED")
+        record["resetError"]=reason
+        service.vm._save(state)
+        released=observed if observed.get("phase")=="RELEASED" else intent("release")
+        if released.get("held") or released.get("phase")!="RELEASED":
+            raise EnvironmentError("ROAD_RECOVERY_RELEASE_UNCONFIRMED")
+        result=dict(state="FAILED",kind=kind,reason=reason,noOp=resume,currentVehicle="test",operationId=identity,
+                    physicalStop="CONFIRMED",modelQualification="NOT_EVALUATED")
+        record.update(phase="RELEASED",finishedAt=now(),result=result)
+        service.vm._save(state)
+        return result
     if observed["phase"] == "RESET":
         # Reset can report one stationary frame before the respawned car
         # settles onto the road. Confirm an advancing, stable stopped interval
@@ -66,7 +83,7 @@ def execute(service, state, kind):
                 raise EnvironmentError("SIMULATION_EXERCISE_RESET_IDENTITY_MISMATCH")
             stopped = (observed.get("fresh") is True and frame.get("activeMode") == "SAFE_STOP"
                 and isinstance(frame.get("frameId"), int) and frame.get("speedKmh", 1) <= .5
-                and frame.get("brake", 0) >= .99)
+                and frame.get("brake", 0) >= .99 and (not recovery or frame.get("roadReady") is True))
             if not stopped:
                 stable_since = None
             elif frame["frameId"] != last_frame:
@@ -79,8 +96,28 @@ def execute(service, state, kind):
                 raise EnvironmentError("SIMULATION_EXERCISE_RESET_NOT_SETTLED")
             time.sleep(.05)
             observed = driver.rpc(source, "status", identity)
-        driver.progress("Test maneuver: " + kind + " real CARLA motion; maximum 60 seconds")
-        observed = intent("exercise_" + kind)
+        if recovery:
+            driver.progress("Return to road: confirming stationary Manual; Autopilot stays off")
+            observed=intent("manual_ready")
+        else:
+            driver.progress("Test maneuver: " + kind + " real CARLA motion; maximum 60 seconds")
+            observed = intent("exercise_" + kind)
+    if recovery:
+        if observed.get("phase")=="MANUAL_PREPARING":
+            observed=driver.wait(source,identity,"MANUAL_READY")
+        if observed.get("phase")=="MANUAL_READY":
+            observed=intent("release_manual")
+        if observed.get("operationId")!=identity or observed.get("held") or observed.get("phase")!="RELEASED":
+            raise EnvironmentError("ROAD_RECOVERY_UNCONFIRMED")
+        frame=observed.get("frame") or {}
+        if (record.get("phase")!="RELEASE_MANUAL_ATTEMPTED" or observed.get("fresh") is not True or
+                frame.get("activeMode")!="MANUAL" or frame.get("speedKmh",1)>.5 or frame.get("brake",0)<.99):
+            raise EnvironmentError("ROAD_RECOVERY_MANUAL_UNCONFIRMED")
+        result=dict(state="COMPLETED",kind=kind,reason="NONE",noOp=resume,currentVehicle="test",operationId=identity,
+                    physicalStop="CONFIRMED",driveMode="MANUAL",autopilotStarted=False,modelQualification="NOT_EVALUATED")
+        record.update(phase="RELEASED",finishedAt=now(),result=result)
+        service.vm._save(state)
+        return result
     deadline, heartbeat = time.monotonic() + 65, time.monotonic() + 10
     while True:
         motion = observed.get("exercise") or {}

@@ -3,6 +3,10 @@
 
 # Brake Health Runtime and Evidence Profile
 
+18 September amendment: [bounded function observation](../service-function-observation/README.md)
+extends backend-visible explanation of compatibility, input and episode state.
+It does not change the model, quota profile, existing logs or advisory authority.
+
 - Decision: D4-016.5 accepted 2026-08-23
 - Contract version: 1.1.0
 - Accepted profile SHA-256:

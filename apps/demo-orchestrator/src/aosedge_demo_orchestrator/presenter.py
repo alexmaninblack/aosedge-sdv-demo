@@ -75,6 +75,9 @@ class StudioCloudReader:
         self.application = DemoOrchestrator()
         self.pool = ThreadPoolExecutor(max_workers=3, thread_name_prefix="presenter-read")
         self.publication_reads = {}
+        from .component_profile import InstalledProfileResolver
+        from .components import ComponentService
+        self.profile_resolver = InstalledProfileResolver(lambda: ComponentService(self.application.environment_service))
 
     def publication_read(self, kind, key, request, start_only=False):
         """At most one bounded read per publication kind, never a polling loop.
@@ -108,6 +111,15 @@ class StudioCloudReader:
         # Current-run receipts select a release; they are not installation facts.
         path = self.application.environment_service.root / JOURNAL
         journal = read_json(path) if path.is_file() else {}
+        from .cloud_connection import cloud_binding, selected_domain
+        context = (selected_domain(journal), cloud_binding(journal).get("ownerId"),
+                   journal.get("vehicles", {}).get("test", {}).get("localVmId"),
+                   journal.get("vehicles", {}).get("test", {}).get("unitId"))
+        if getattr(self, "publication_context", None) != context:
+            self.publications = {}
+            self.last_component_publication = None
+            self.installed_versions_hint = set()
+            self.publication_context = context
         owned = [(version, row) for version, row in journal.get("componentOperations", {}).items()
                  if row.get("deploymentId") and re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version)]
         publication = None
@@ -125,24 +137,36 @@ class StudioCloudReader:
         unit_read = self.pool.submit(execute_operation, dict(domain="unit", action="cloud-status", target="test"), self.application)
         if unresolved_services:
             selected = max(unresolved_services, key=lambda row: row.get("preparedAt") or "")
-            self.publication_read("service", (run_id, selected["releaseHandle"]), dict(domain="service", action="cloud-status", service_release=selected["releaseHandle"]), start_only=True)
+            self.publication_read("service", (context, selected["releaseHandle"]), dict(domain="service", action="cloud-status", service_release=selected["releaseHandle"]), start_only=True)
         if unresolved:
-            version, record = max(unresolved, key=lambda item: tuple(map(int, item[0].split("."))))
+            # The last inventory is only a scheduling hint; installation and
+            # profile below always use this invocation's exact Cloud result.
+            # Preserve concurrent reads and consume an existing flight before
+            # giving the installed receipt priority over a processing successor.
+            flight = self.publication_reads.get("component")
+            continuing = [item for item in unresolved if flight and flight[0] == (context, (item[0], item[1]["deploymentId"]))]
+            version, record = continuing[0] if continuing else max(unresolved, key=lambda item: (
+                item[0] in self.installed_versions_hint and (item[0], item[1]["deploymentId"]) != self.last_component_publication,
+                tuple(map(int, item[0].split(".")))))
             identity = (version, record["deploymentId"])
-            component_result = self.publication_read("component", (run_id, identity), dict(domain="component", action="cloud-status", component_version=version))
+            component_result = self.publication_read("component", (context, identity), dict(domain="component", action="cloud-status", component_version=version))
             if component_result is not None:
+                self.last_component_publication = identity
                 raw = (component_result.get("data") or {}).get("publication")
                 cache[identity] = ({key: raw.get(key) for key in ("stage", "deploymentId", "bundleState", "versionState", "versionId", "observedAt", "reason")}
                                    if raw else dict(stage="UNKNOWN", reason="PUBLICATION_NOT_OBSERVED"))
                 cache[identity]["version"] = version
         if unresolved_services:
             selected = max(unresolved_services, key=lambda row: row.get("preparedAt") or "")
-            service_result = self.publication_read("service", (run_id, selected["releaseHandle"]), dict(domain="service", action="cloud-status", service_release=selected["releaseHandle"]))
+            service_result = self.publication_read("service", (context, selected["releaseHandle"]), dict(domain="service", action="cloud-status", service_release=selected["releaseHandle"]))
             if service_result is not None:
                 raw = service_result.get("data") or {}
                 selected["publication"] = {key: raw.get(key) for key in ("stage", "serviceId", "versionId", "observedAt", "reason")}
                 selected["serviceId"] = raw.get("serviceId") or selected.get("serviceId")
         result = unit_read.result()
+        component_rows = ((result.get("data") or {}).get("components") or {}).get("value") or []
+        self.installed_versions_hint = {(item.get("installed_component") or {}).get("version") for item in component_rows
+                                       if item.get("reported_component_id") == COMPONENT or item.get("type") == COMPONENT}
         self.publications = cache
         if owned:
             version, record = max(owned, key=lambda item: tuple(map(int, item[0].split("."))))
@@ -167,11 +191,15 @@ class StudioCloudReader:
         rows = (data.get("components") or {}).get("value")
         matches = [row for row in rows or [] if row.get("reported_component_id") == COMPONENT or row.get("type") == COMPONENT]
         row = matches[0] if len(matches) == 1 else {}
+        installed_profile = self.profile_resolver.resolve(journal, data, row, cache)
+        if row:
+            row["installedProfile"] = installed_profile
         return dict(state="CURRENT" if section.get("state") == "CURRENT" else "UNAVAILABLE",
             bindingKey=":".join(str(journal.get("vehicles", {}).get("test", {}).get(key) or "none") for key in ("localVmId", "unitId")),
             observedAt=data.get("readCompletedAt") or now(), reason=section.get("reason") or (None if unit else "TEST_CLOUD_BINDING_NOT_OBSERVED"),
             value=dict(target="test", source="Aos Cloud", online=unit.get("connectivity"), lifecycle=unit.get("status"),
                 installedVersion=(row.get("installed_component") or {}).get("version"),
+                installedProfile=installed_profile,
                 pendingVersion=(row.get("pending_component") or {}).get("version"), updateStatus=row.get("pending_component_status"),
                 latestPublishedVersion=None, releases=[], runtimeState="NOT_REPORTED_BY_CLOUD", dataReadiness="NOT_REPORTED_BY_CLOUD",
                 inventory=data, publication=publication) if unit else None,
@@ -191,6 +219,12 @@ class StudioCloudReader:
         if data.get("source") != "REAL_BACKEND_HTTP":
             return dict(state="UNAVAILABLE", team=team, observedAt=now(), reason="BACKEND_NOT_OBSERVED")
         return {key: data[key] for key in ("state", "team", "source", "cloudAuthority", "vehicleTelemetry", "observedAt", "observations") if key in data}
+
+    def brake_window(self, event_id):
+        result = execute_operation(dict(domain="backend", action="window-detail", team="brake", window_id=event_id), self.application)
+        if result.get("state") != "OBSERVED" or not isinstance(result.get("data"), dict):
+            raise ValueError("BACKEND_WINDOW_DETAIL_UNAVAILABLE")
+        return result["data"]
 
 
 def read_platform():
@@ -338,6 +372,13 @@ def make_server(static_root, address=ADDRESS, reader=read_snapshot, native=None,
                 except Exception:
                     self.reply(503, b'{"error":"BACKEND_OBSERVATION_UNAVAILABLE"}')
                 return
+            window_detail = re.fullmatch(r"/api/presenter/backend/brake/windows/([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})", self.path)
+            if window_detail:
+                try:
+                    self.reply(200, json.dumps(cloud_reader.brake_window(window_detail[1])).encode())
+                except Exception:
+                    self.reply(503, b'{"error":"BACKEND_WINDOW_DETAIL_UNAVAILABLE"}')
+                return
             if self.path == "/api/presenter/operations" and native:
                 try:
                     code, result = native.call()
@@ -403,9 +444,16 @@ def make_server(static_root, address=ADDRESS, reader=read_snapshot, native=None,
 def serve():
     from .presenter_operations import NativeSession
     native = None
+    recovery = None
     try:
         native = NativeSession()
         server = make_server(project_root() / "apps/presenter-ui/dist", native=native)
+        from .application import DemoOrchestrator
+        from .workspace import WorkspaceService, WorkspaceRecovery
+        layout_app = DemoOrchestrator()
+        native.operations.workspace = WorkspaceService(layout_app.environment_service, layout_app.source_service.driver)
+        recovery = WorkspaceRecovery(native.operations.workspace, native.operations)
+        recovery.thread.start()
     except (OSError, ValueError):
         if native:
             native.close()
@@ -419,6 +467,8 @@ def serve():
     except KeyboardInterrupt:
         pass
     finally:
+        if recovery:
+            recovery.close()
         server.server_close()
         native.close()
     return 0

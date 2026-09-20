@@ -91,6 +91,9 @@ def build_parser() -> argparse.ArgumentParser:
     backend_commands = backend.add_subparsers(dest="action", required=True)
     recovery = backend_commands.add_parser("recover-file-sharing", help="explicit Docker Desktop recovery for blocked owned cleanup; preserves storage")
     recovery.add_argument("--restart-project", choices=("watt-the-app",), help="explicitly authorized one-time interruption and restoration of the five Watt containers")
+    detail = backend_commands.add_parser("window-detail", help="read one retained Brake V1 window for current Test")
+    detail.add_argument("team", choices=("brake",))
+    detail.add_argument("window_id")
     for action in ("build", "activate", "start", "stop", "status", "inspect", "reset-scenario", "reset-status"):
         command = backend_commands.add_parser(action, help="explicit development build" if action == "build" else "owned backend " + action)
         command.add_argument("team", choices=("brake", "tire"))
@@ -196,7 +199,8 @@ def build_parser() -> argparse.ArgumentParser:
     prepare.add_argument("--current", choices=("test", "production"), required=True, help="the one VM to connect to CARLA/Gateway")
     environment_commands.add_parser("retire", help="remove unused local overlays and factory copy; keep original artifact")
     for action in ("park", "resume"):
-        environment_commands.add_parser(action, help="preserve the Test disks, Cloud identity and backend data; never affect Production")
+        warning = "engineering only: same-Test stop/start; known AosCore storage-retention defect, not supported in Demo Studio"
+        environment_commands.add_parser(action, help=warning, description=warning)
     vehicle = commands.add_parser("vehicle", help="select the single live vehicle")
     vehicle_commands = vehicle.add_subparsers(dest="action", required=True)
     initialize = vehicle_commands.add_parser("initialize", help="first Test connection in stationary Manual, before or after provisioning")
@@ -220,6 +224,8 @@ def build_parser() -> argparse.ArgumentParser:
     exercise = simulation_commands.add_parser("exercise", help="bounded real CARLA maneuver; not a service qualification result")
     exercise.add_argument("team", choices=("brake", "tire"))
     exercise.add_argument("--target", choices=("test",), required=True)
+    recovery = simulation_commands.add_parser("return-to-road", help="validated road placement; finish stationary Manual without model Reset")
+    recovery.add_argument("--target",choices=("test",),required=True)
 
     vm = commands.add_parser("vm", help="manage local VM processes")
     vm_commands = vm.add_subparsers(dest="action", required=True)
@@ -261,6 +267,7 @@ def request_from_arguments(arguments: argparse.Namespace) -> OperationRequest:
         component_version=getattr(arguments, "component_version", None),
         content_profile=getattr(arguments, "content_profile", None),
         team=getattr(arguments, "team", None),
+        window_id=getattr(arguments, "window_id", None),
         metadata_only=getattr(arguments, "metadata_only", False),
         restart_project=getattr(arguments, "restart_project", None),
         service_id=getattr(arguments, "service_id", None), profile=getattr(arguments, "profile", None),

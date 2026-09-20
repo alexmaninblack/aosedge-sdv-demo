@@ -4,7 +4,7 @@
 # I0 Audience-Visible Interface Register and Mockup Gate
 
 - Status: accepted
-- Version: 0.17
+- Version: 0.18
 - Prepared: 2026-08-25
 - Updated: 2026-09-17
 - Owner: Demo Solution Team with Platform Team and Function Teams 1 and 2
@@ -13,7 +13,7 @@
 - Flow input: [Architecture Flows 2.1](../../architecture/demo-scenario-architecture-flows.md)
 - Requirement inputs: [Component Register 2.1](../../requirements/component-decomposition-and-interface-register.md), [Demo Orchestration](../../requirements/components/demo-orchestration.md) and [End-to-End Acceptance](../../requirements/components/end-to-end-acceptance.md)
 - Presentation policy: [D4-026.6](../../requirements/d4-decision-register.md#d4-026)
-- UI implementation: existing Studio authorized; new 2.9 integration is on hold
+- UI implementation: 2.10 integration authorized and implemented; see the [verification record](../../qualification/presenter-ui-2-10-2026-09-17.md)
 - Layout review artifact that predates the complete Interaction Specification
   2.5 and is not the implementation baseline:
   [AosEdge Demo linear-flow HTML mockup](aosedge-demo-linear-flow-mockup.html)
@@ -26,7 +26,62 @@
 - Standalone build helper:
   [`scripts/build-demo-interaction-mockup`](../../../scripts/build-demo-interaction-mockup)
 
-## Current visual proposal — 2.9 Vehicle backend popups
+## Current complete review mockup — 2.10
+
+**19 September accepted difference:** [ADR 0017](../../architecture/decisions/0017-continuous-demo-lifecycle-and-upstream-core.md)
+removes Park/Resume from the working Studio and mandatory demo cycle. The
+retained 2.10 artifact still simulates these actions and is not silently edited.
+Use the current interaction specification for this amendment; allocate a new
+mockup version if a later consolidated simulation is requested.
+
+[Open Interaction Mockup 2.10](aosedge-demo-interaction-mockup-2-10.html)
+([editable source](aosedge-demo-interaction-mockup-2-10.source.html)).
+
+The operator authorized consolidating the **complete 2.8 flow simulator** with
+the accepted **2.9 Vehicle summary/dialog design** on 17 September. This is a
+new standalone version, not a modification of either retained artifact and not
+application implementation. The left CARLA/native composition, original image,
+official logo and B2 automotive miniature artwork remain unchanged.
+
+All lifecycle and team release actions remain interactive. Vehicle cards show
+the simulated backend receipts and Cloud observations used by their detail
+dialogs; no static success records are pre-populated. Backend Overview/Records,
+paged record detail, Cloud Overview/Software/Resources and installed-item detail
+stay over the current workspace. Team release-authoring pages remain separate.
+The completed story offers confirmed Finish demo instead of a monitoring link.
+
+The full mockup also incorporates previously accepted amendments that postdate
+2.8, rather than reintroducing obsolete behavior:
+
+- Factory .35; local simulator startup before provisioning, attachment after
+  Cloud Online without changing the source generation or scene.
+- Independent native advisory readiness; **Brake V3 and Tire V1** support
+  independent Reset demo scenario, matching CLEAR, retained history and a new
+  drive. This corrects the disabled Tire Reset in the preserved 2.9 proposal.
+- Finish does not require successful pending installation or Safe Stop. When
+  Cloud reads fail, local shutdown is shown separately from unconfirmed Cloud
+  retirement; Continue Finish preserves the same Unit context. Active/uncertain
+  mutations still require reconciliation; no cleanup success is invented.
+
+New browser state uses `aosedge-studio-mockup-2.10`; earlier runs are untouched.
+No Cloud request, native bridge, real reset, package or lifecycle command exists.
+All resource values, records, timings and physical maneuvers are simulations.
+
+Run `node --test tests/mockups/mockup-2-10.test.cjs`. Use the existing
+`MOCKUP_PLAYWRIGHT` and `MOCKUP_CHROME` opt-ins described below to run all browser
+cases. The [2.10 verification record](../../qualification/mockup-2-10-2026-09-17.md)
+documents scope, layout checks and exclusions. Visual approval and the later
+real-UI integration audit remain separate gates.
+
+The implementation-first follow-up aligns Session Cloud/OEM/SP setup, combined
+Sign & publish, same-profile re-preparation, version-scoped backend results,
+typed product-completion proof, producer-bound reset, resource scopes and
+Cloud-lag-aware Finish. Simulation-only fault controls are separated from real
+operator actions. Logs remain explicitly deferred. Rebuild only 2.10 with
+`node scripts/build-mockup-2-10.cjs`; see the verification record for the audit
+closure table and the remaining simulation limits.
+
+## Retained partial visual proposal — 2.9 Vehicle backend popups
 
 [Open Vehicle proposal 2.9](aosedge-demo-interaction-mockup-2-9.html)
 ([editable source](aosedge-demo-interaction-mockup-2-9.source.html)).

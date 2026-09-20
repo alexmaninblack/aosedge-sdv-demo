@@ -158,6 +158,8 @@ class SourceDriver:
         while time.monotonic() < deadline:
             value = self.rpc(source, "status", identity)
             frame = value.get("frame") or {}
+            if phase == "RESET" and value.get("operationId") == identity and value.get("phase") == "RESET_FAILED":
+                return value
             stopped = (frame.get("activeMode") == ("MANUAL" if phase == "MANUAL_READY" else "SAFE_STOP") and frame.get("speedKmh", float("inf")) <= .5
                        and frame.get("brake", -1) >= .99)
             if value.get("operationId") == identity and value.get("phase") == phase and value.get("fresh") and stopped:
@@ -322,7 +324,9 @@ function run(args) {
             "--control-directory", str(control), "--started-timestamp", str(time.time()),
             "--demo-journal", str(self.root / JOURNAL),
             "--connectivity-command", json.dumps([sys.executable, "-m", "aosedge_demo_orchestrator",
-                "--output", "json", "vehicle", "connectivity"])]
+                "--output", "json", "vehicle", "connectivity"]),
+            "--scene-command", json.dumps([sys.executable, "-m", "aosedge_demo_orchestrator",
+                "--output", "json", "simulation"])]
         runner.extend(authentication.runner_options(self, state))
         source = dict(runId=identity, controlDirectory=str(control.relative_to(self.root)),
             runDirectory=str(run.relative_to(self.root)), simulatorCommand=simulator, runnerCommand=runner,
@@ -607,7 +611,11 @@ class SourceService:
                     try:
                         result["workspace"] = WorkspaceService(self.environment, self.driver).execute("restore")
                     except (EnvironmentError, OSError, ValueError, subprocess.SubprocessError):
-                        result["workspace"] = dict(state="INCOMPLETE", problems=["Run democtl workspace restore"])
+                        result["workspace"] = dict(state="INCOMPLETE", problems=["WORKSPACE_RESTORE_FAILED"], lifecycleChanged=False)
+                        # Preserve the independent layout failure even though
+                        # starting the simulator itself succeeded.
+                        latest = read_json(self.root / JOURNAL)
+                        WorkspaceService(self.environment, self.driver).record(latest, result["workspace"], 0, False)
                 return result
             if action != "stop":
                 raise EnvironmentError("SIMULATION_ACTION_INVALID")

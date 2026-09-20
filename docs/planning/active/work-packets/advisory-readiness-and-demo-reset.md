@@ -3,6 +3,16 @@
 
 # Advisory readiness and independent demo scenario reset
 
+18 September preserved-Test follow-up: diagnostic Brake 59.0.0 distinguishes
+upstream missing-data aborts from completed-but-unqualified Autopilot episodes.
+Presenter contact/reset/result wording is corrected and tested. The operator-
+authorized VDP 79.0.0 update is installed through staging after explicit Safe
+Stop; Autopilot is restored. Identical periodic snapshots are ignored without
+freshness renewal, and the bounded live window shows no previous non-monotonic
+reconnect. Brief missing-input episodes remain under investigation; no new
+complete Brake end-to-end pass is claimed. See
+[driving-gap diagnosis](../../../qualification/brake-driving-gap-2026-09-18.md).
+
 17 September successor checkpoint: Factory .35 completed the authorized
 clean staging Test cycle by 05:32 UTC. Platform build source is pinned to
 `bb691efcbf19f1bebd74fd2ef3ae9ff0aee2bf74`. Build and qualification results

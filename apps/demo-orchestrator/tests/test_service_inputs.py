@@ -18,6 +18,39 @@ from aosedge_demo_orchestrator.cli import build_parser, request_from_arguments
 from aosedge_demo_orchestrator.api import execute_operation
 
 
+class RuntimeDiagnosticRedactionTests(unittest.TestCase):
+    def test_input_summaries_are_bounded_and_never_expose_payload(self):
+        from aosedge_demo_orchestrator import source_guest
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            instance = root / "run/aos/runtime/11111111-1111-4111-8111-111111111111"
+            instance.mkdir(parents=True)
+            (instance / "config.json").write_text(json.dumps(dict(process=dict(
+                args=["/usr/bin/brake-health-bootstrap"], user=dict(uid=5003)))))
+            (instance / ".pid").write_text("123")
+            proc = root / "proc"
+            (proc / "123").mkdir(parents=True)
+            (proc / "123/status").write_text("Name:\tbrake\nUid:\t5003\nThreads:\t17\n")
+            events = [dict(eventType="KUKSA_INPUT_SUMMARY", currentState="REJECTED", reasonCode="MISSING_VALUE",
+                count=2, missingMask=4095, oldestAgeMs=0, newestAheadMs=-60000, payload="DO_NOT_REPORT"),
+                dict(eventType="KUKSA_INPUT_SUMMARY", count=True, missingMask=4096,
+                     oldestAgeMs=-60001, newestAheadMs="DO_NOT_REPORT"),
+                dict(eventType="TELEMETRY_WATCHDOG_EXPIRED", currentState="NOT_READY",
+                     reasonCode="NO_VALID_FRAME_WITHIN_FRESHNESS")]
+            journal = "\n".join(json.dumps(dict(MESSAGE=json.dumps(event),
+                __REALTIME_TIMESTAMP="1789714089123093")) for event in events)
+            with patch.object(source_guest, "command", return_value=SimpleNamespace(returncode=0, stdout=journal)):
+                result = source_guest.container_runtime_observation(root, dict(runtimes=[dict(
+                    plugin="container", config=dict(runtimeDir="/run/aos/runtime"))]), proc)
+            telemetry = result["containers"][0]["telemetry"]
+            self.assertEqual(4095, telemetry["inputSummaries"][0]["missingMask"])
+            self.assertEqual(-60000, telemetry["inputSummaries"][0]["newestAheadMs"])
+            for key in ("count", "missingMask", "oldestAgeMs", "newestAheadMs"):
+                self.assertNotIn(key, telemetry["inputSummaries"][1])
+            self.assertEqual(1, len(telemetry["watchdogEvents"]))
+            self.assertNotIn("DO_NOT_REPORT", json.dumps(result))
+
+
 class KuksaAuthorizationObservationTests(unittest.TestCase):
     def test_recovery_removal_is_exclusive_and_preserves_original_proof(self):
         from dataclasses import replace
@@ -381,6 +414,50 @@ class PublicInputTests(unittest.TestCase):
         self.assertEqual(["brake/metadata.json", "tire/metadata.json"], result["changed"])
         self.assertEqual(inode, (guest.PUBLIC / "brake").stat().st_ino)
         self.assertEqual("1.0.2", result["metadata"]["vdpContractVersion"])
+
+    def test_legacy_projection_is_not_active_profile_evidence(self):
+        # P2 characterization: an actual profile/release transition must not
+        # be inferred from the unchanged, strictly versioned family document.
+        # This protects old readers; it does not qualify profile propagation.
+        before = None
+        for release, capabilities in (
+                ("37.0.0", ["INBOUND_BASE_DYNAMICS"]),
+                ("38.0.0", ["INBOUND_BASE_DYNAMICS", "INBOUND_WHEEL_SPEEDS"]),
+                ("39.0.0", ["INBOUND_BASE_DYNAMICS", "INBOUND_WHEEL_SPEEDS",
+                            "INBOUND_WHEEL_SLIP", "OUTBOUND_BRAKE_HEALTH_ADVISORY",
+                            "OUTBOUND_TIRE_HEALTH_ADVISORY"])):
+            self.record["Version"] = release
+            self.put("state/installed.json", self.record)
+            self.put("slots/a/.aos-instance.json", self.record)
+            self.put("slots/a/component.json", dict(version=release))
+            self.capability.update(semanticVersion=release, capabilities=capabilities)
+            self.put("slots/a/config/capability-manifest.json", self.capability)
+            self.provider.update(semanticVersion=release, capabilityManifestSha256=hashlib.sha256(
+                (guest.STORE / "slots/a/config/capability-manifest.json").read_bytes()).hexdigest())
+            self.put("slots/a/config/provider.json", self.provider)
+            result = guest.project(self.request)
+            observed = {team: (guest.PUBLIC / team / "metadata.json").read_bytes()
+                        for team in ("brake", "tire")}
+            self.assertEqual(release, result["vdpVersion"])
+            self.assertEqual("1.0.1", result["metadata"]["vdpContractVersion"])
+            self.assertEqual(5, len(result["metadata"]))
+            if before is not None:
+                self.assertTrue(result["noOp"])
+                self.assertEqual(before, observed)
+            before = observed
+
+    def test_missing_first_install_withholds_metadata_without_blocking_sm_start(self):
+        # This is projector behavior only, not proof that a service bootstrap
+        # survives the missing file or that FOTA later refreshes it.
+        (guest.STORE / "state/installed.json").unlink()
+        with patch.object(guest.os, "geteuid", return_value=0), patch("builtins.print"):
+            result = guest.startup("cold")
+        self.assertEqual("DEFERRED", result["stage"])
+        self.assertFalse(result["processVerified"])
+        for team in ("brake", "tire"):
+            self.assertTrue((guest.PUBLIC / team).is_dir())
+            self.assertFalse((guest.PUBLIC / team / "metadata.json").exists())
+        guest.provider_process.assert_not_called()
 
     def test_volatile_files_absent_without_provider_do_not_claim_cold_ready(self):
         guest.provider_process.side_effect = ValueError("SERVICE_INPUT_PROVIDER_NOT_RUNNING")

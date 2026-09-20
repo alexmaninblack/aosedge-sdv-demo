@@ -49,6 +49,77 @@ class ExerciseTests(unittest.TestCase):
         self.assertEqual(("simulation", "exercise", "brake", VehicleTarget.TEST),
             (request.domain, request.action, request.team, request.target))
 
+    def recovery_driver(self):
+        self.observed["roadRecoverySupported"]=True
+        original=self.rpc
+        def rpc(source,action,identity):
+            result=original(source,action,identity)
+            if action=="manual_ready":self.observed["phase"]="MANUAL_PREPARING"
+            if action=="release_manual":self.observed.update(phase="RELEASED",held=False)
+            return dict(self.observed)
+        self.service.driver.rpc.side_effect=rpc
+        original_wait=self.wait
+        def wait(source,identity,phase):
+            original_wait(source,identity,phase)
+            self.observed["frame"].update(roadReady=True,activeMode="MANUAL" if phase=="MANUAL_READY" else "SAFE_STOP")
+            return dict(self.observed)
+        self.service.driver.wait.side_effect=wait
+        return rpc
+
+    def test_return_to_road_finishes_stationary_manual_without_autopilot_or_reset_model(self):
+        self.recovery_driver()
+        request=request_from_arguments(build_parser().parse_args(["simulation","return-to-road","--target","test"]))
+        self.assertEqual("return-to-road",request.action)
+        result=execute(self.service,self.state,"return_to_road")
+        self.assertEqual("COMPLETED",result["state"])
+        self.assertEqual("MANUAL",result["driveMode"])
+        self.assertFalse(result["autopilotStarted"])
+        self.assertEqual(1,self.calls.count("reset"))
+        self.assertIn("release_manual",self.calls)
+        self.assertFalse(any(call.startswith("exercise_") for call in self.calls))
+        self.service.driver.guest.assert_not_called()
+
+    def test_return_to_road_requires_confirmed_placement_not_only_stopped(self):
+        self.recovery_driver()
+        original=self.service.driver.wait.side_effect
+        def wait(*args):
+            result=original(*args);self.observed["frame"]["roadReady"]=False;return result
+        self.service.driver.wait.side_effect=wait
+        with self.assertRaisesRegex(EnvironmentError,"RESET_NOT_SETTLED"):
+            execute(self.service,self.state,"return_to_road")
+        self.assertNotIn("manual_ready",self.calls)
+
+    def test_recovery_response_loss_reconciles_manual_without_repeated_reset(self):
+        original=self.recovery_driver()
+        def lost(source,action,identity):
+            result=original(source,action,identity)
+            if action=="release_manual":raise OSError("lost")
+            return result
+        self.service.driver.rpc.side_effect=lost
+        with self.assertRaises(OSError):execute(self.service,self.state,"return_to_road")
+        self.calls.clear();self.service.driver.rpc.side_effect=original
+        self.assertEqual("COMPLETED",execute(self.service,self.state,"return_to_road")["state"])
+        self.assertEqual(["status"],self.calls)
+
+    def test_blocked_placement_release_loss_never_becomes_recovery_success(self):
+        original=self.recovery_driver()
+        previous_wait=self.service.driver.wait.side_effect
+        def wait(source,identity,phase):
+            result=previous_wait(source,identity,phase)
+            if phase=="RESET":self.observed.update(phase="RESET_FAILED",resetError="ROAD_POSITION_OCCUPIED")
+            return dict(self.observed)
+        self.service.driver.wait.side_effect=wait
+        def lost(source,action,identity):
+            result=original(source,action,identity)
+            if action=="release":raise OSError("lost")
+            return result
+        self.service.driver.rpc.side_effect=lost
+        with self.assertRaises(OSError):execute(self.service,self.state,"return_to_road")
+        self.calls.clear();self.service.driver.rpc.side_effect=original
+        result=execute(self.service,self.state,"return_to_road")
+        self.assertEqual(("FAILED","ROAD_POSITION_OCCUPIED"),(result["state"],result["reason"]))
+        self.assertEqual(["status"],self.calls)
+
     def test_motion_then_physical_stop_then_release_no_guest_or_cloud(self):
         result = execute(self.service, self.state, "brake")
         self.assertEqual("COMPLETED", result["state"])

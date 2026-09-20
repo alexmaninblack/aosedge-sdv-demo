@@ -3,7 +3,7 @@
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "schemaVersion": 1,
   "contractId": "aosedge-demo-typed-qm-advisory",
-  "contractVersion": "1.1.0",
+  "contractVersion": "1.2.0",
   "decision": "D4-008",
   "inputs": {
     "vdpCompatibilityContractVersion": "1.0.1",
@@ -72,7 +72,11 @@
   },
   "temporalPolicy": {
     "maxGatewayAcceptanceAgeMs": 2000,
+    "maxFutureClockSkewMs": 100,
     "maxLeaseMs": 30000,
+    "maxActivationLifetimeMs": 30000,
+    "effectiveActiveUntil": "MIN_REQUEST_EXPIRY_AND_GATEWAY_ACCEPTANCE_PLUS_MAX_ACTIVATION_LIFETIME",
+    "requestTimestampsRewritten": false,
     "minRefreshIntervalMs": 10000,
     "minStateChangeIntervalMs": 1000,
     "minimumReplayRetentionMs": 300000,

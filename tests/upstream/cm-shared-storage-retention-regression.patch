@@ -1,0 +1,57 @@
+diff --git a/src/core/cm/launcher/tests/launcher.cpp b/src/core/cm/launcher/tests/launcher.cpp
+index 219ca4cd..dacea5e2 100644
+--- a/src/core/cm/launcher/tests/launcher.cpp
++++ b/src/core/cm/launcher/tests/launcher.cpp
+@@ -119,6 +119,8 @@ private:
+ 
+ class CMLauncherTest : public testing::Test {
+ protected:
++    void VerifySharedStorageCleanup(bool expire);
++
+     void SetUp() override
+     {
+         tests::utils::InitLog();
+@@ -568,6 +570,43 @@ EnvVar CreateEnvVar(const std::string& name, const std::string& value)
+  * Tests
+  **********************************************************************************************************************/
+ 
++void CMLauncherTest::VerifySharedStorageCleanup(bool expire)
++{
++    oci::ItemConfig itemConfig;
++    CreateItemConfig(itemConfig);
++    AddItem(cService1, cImageID1, itemConfig, CreateImageConfig(), "2.0.0");
++    if (expire) {
++        AddItem(cService1, cImageID1, itemConfig, CreateImageConfig(), "1.0.0");
++    }
++    const auto id = CreateInstanceIdent(cService1, cSubject1, 0);
++    const auto digest = GetManifestDigest(cService1, cImageID1);
++    ASSERT_TRUE(mStorage.AddInstance(CreateInstanceInfo(id, digest, "runc", "",
++        InstanceStateEnum::eCached, 5000, 5000,
++        Time::Now().Add(-25 * Time::cHours), "1.0.0")).IsNone());
++    ASSERT_TRUE(mStorage.AddInstance(CreateInstanceInfo(id, digest, "runc", "",
++        InstanceStateEnum::eActive, 5001, 5000, Time::Now(), "2.0.0")).IsNone());
++    mInstanceRunner.Init(mLauncher);
++    ASSERT_TRUE(mLauncher.Init(CreateConfig(), mNodeInfoProvider, mInstanceRunner,
++        mImageStore, mImageStore, mResourceManager, mStorageState, mMonitoringProvider,
++        mAlertsProvider, mIdentProvider, ValidateGID, ValidateUID, mStorage).IsNone());
++    ASSERT_TRUE(mLauncher.Start().IsNone());
++    EXPECT_FALSE(mStorage.HasInstance(id, "1.0.0"));
++    EXPECT_TRUE(mStorage.HasInstance(id, "2.0.0"));
++    EXPECT_TRUE(mStorageState.GetRemovedInstances().empty())
++        << "old version cleanup must not remove shared current-version storage";
++    ASSERT_TRUE(mLauncher.Stop().IsNone());
++}
++
++TEST_F(CMLauncherTest, MissingOldImagePreservesCurrentVersionStorage)
++{
++    VerifySharedStorageCleanup(false);
++}
++
++TEST_F(CMLauncherTest, ExpiredOldVersionPreservesCurrentVersionStorage)
++{
++    VerifySharedStorageCleanup(true);
++}
++
+ TEST_F(CMLauncherTest, InstancesWithInvalidImageAreRemovedOnStart)
+ {
+     // Store instance with non-empty manifest digest so image validity check is executed.

@@ -34,7 +34,8 @@ FOUNDATION = dict(scope="FOUNDATION_ONLY", productIngestion=False, schemaVersion
 
 
 def _counts(value, keys=COUNTS):
-    if (not isinstance(value, dict) or set(value) not in (keys, keys | {"resetProducers", "resetCommands"})
+    if (not isinstance(value, dict) or set(value) not in (keys, keys | {"resetProducers", "resetCommands"},
+            keys | {"resetProducers", "resetCommands", "functionObservations", "functionObservationConflicts"})
             or any(type(count) is not int or count < 0 for count in value.values())):
         raise EnvironmentError("BACKEND_CLEANUP_COUNTS_INVALID")
     return value
@@ -279,9 +280,8 @@ class BackendRetirement:
     def _empty_store(self, state, allow_nonempty=False, team="brake", mock=False):
         observed = self._owned(state, team, running=True)
         body = self._private(team, observed["Id"], "mock-empty-proof" if mock else "empty-proof", dict(schemaVersion=1, contractVersion="1.0.0"))
-        # N3 adds Brake projection schema 3; Tire retains schema 2. The admin
-        # proof, ownership/selector checks and actual empty-state rules stay intact.
-        supported_schema_versions = (2, 3, 4) if team == "brake" else (2, 3)
+        # Keep exact old and new proof shapes during consumer-first rollout.
+        supported_schema_versions = (2, 3, 4, 5) if team == "brake" else (2, 3, 4)
         if (not isinstance(body, dict) or set(body) != {"schemaVersion", "contractVersion", "state", "databaseSchemaVersion", "recordCounts", "observedAt"}
                 or type(body.get("schemaVersion")) is not int or body["schemaVersion"] != 1
                 or body.get("contractVersion") != "1.0.0" or type(body.get("databaseSchemaVersion")) is not int
@@ -289,7 +289,9 @@ class BackendRetirement:
             raise EnvironmentError("BACKEND_WHOLE_STORE_EMPTY_PROOF_UNAVAILABLE")
         _timestamp(body["observedAt"])
         counts = _counts(body.get("recordCounts"), TIRE_COUNTS if team == "tire" else COUNTS)
-        if not mock and body["databaseSchemaVersion"] == (4 if team == "brake" else 3) and not {"resetProducers", "resetCommands"} <= set(counts):
+        if not mock and body["databaseSchemaVersion"] >= (4 if team == "brake" else 3) and not {"resetProducers", "resetCommands"} <= set(counts):
+            raise EnvironmentError("BACKEND_WHOLE_STORE_EMPTY_PROOF_UNAVAILABLE")
+        if body["databaseSchemaVersion"] == (5 if team == "brake" else 4) and not {"functionObservations", "functionObservationConflicts"} <= set(counts):
             raise EnvironmentError("BACKEND_WHOLE_STORE_EMPTY_PROOF_UNAVAILABLE")
         empty = not any(counts.values())
         if (body["state"] == "EMPTY") is not empty:

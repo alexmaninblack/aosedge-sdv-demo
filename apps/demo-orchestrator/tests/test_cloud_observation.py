@@ -203,6 +203,16 @@ class CloudInventoryTests(unittest.TestCase):
 
 
 class MonitoringTests(unittest.TestCase):
+    def test_alternative_disk_field_absence_is_notice_not_failed_monitoring(self):
+        metrics = {key: [] for key in read.METRICS if key != "usedDisk"}
+        result = read.monitoring(cloud({UNIT_PATH: unit(), MONITOR_PATH: [metrics]}), IDENTITY)
+        self.assertEqual([], result["problems"])
+        self.assertEqual("snapshot.monitoring.value.usedDisk", result["notices"][0]["section"])
+        self.assertEqual("UNKNOWN", result["monitoring"]["value"]["usedDisk"]["state"])
+        del metrics["disk"]
+        result = read.monitoring(cloud({UNIT_PATH: unit(), MONITOR_PATH: [metrics]}), IDENTITY)
+        self.assertTrue(result["problems"])
+
     def test_dmips_raw_units_zero_and_source_time(self):
         sample = dict(time="2026-09-10T00:00:00Z", value=0, system_uid="owned-test", nodeId="main", instance=0)
         metrics = {key: [] for key in read.METRICS}
@@ -235,6 +245,31 @@ class MonitoringTests(unittest.TestCase):
 
 
 class ObservationIntegrationTests(unittest.TestCase):
+    def test_optional_absences_preserve_not_reported_without_failing_inventory(self):
+        raw = unit()
+        raw.update(layers=None, reported_subjects=None, assigned_subjects=[dict(id=SUBJECT, is_group=False, is_protected=True, services=None)])
+        result = read.inventory(cloud({UNIT_PATH: raw, LIST_PATH: page([])}), IDENTITY)
+        self.assertEqual([], result["problems"])
+        self.assertEqual(3, len(result["notices"]))
+        self.assertEqual("UNKNOWN", result["layers"]["state"])
+        self.assertIsNone(result["layers"]["value"])
+        raw["assigned_subjects"][0]["is_group"] = True
+        result = read.inventory(cloud({UNIT_PATH: raw, LIST_PATH: page([])}), IDENTITY)
+        self.assertEqual(1, len(result["problems"]))
+        raw["unit_update_components"] = None
+        result = read.inventory(cloud({UNIT_PATH: raw, LIST_PATH: page([])}), IDENTITY)
+        self.assertTrue(any(p["section"] == "snapshot.components" for p in result["problems"]))
+
+    def test_optional_field_transport_failure_and_stale_value_are_still_problems(self):
+        result = read.finish(dict(layers=read.failed(CloudFailure("CLOUD_HTTP_403"))))
+        self.assertTrue(result["problems"])
+        self.assertEqual([], result["notices"])
+        old = read.finish(dict(layers=read.observed([])))
+        missing = read.finish(dict(layers=read.observed(None, reason="NOT_REPORTED")))
+        retained = read.retain_last_known(missing, old)
+        self.assertEqual("STALE", retained["layers"]["state"])
+        self.assertTrue(retained["problems"])
+
     def test_failed_list_retains_details_but_confirmed_removal_does_not(self):
         previous = read.inventory(cloud({UNIT_PATH: unit(), LIST_PATH: page([service()]), DETAIL_PATH: page([service()])}), IDENTITY)
         failure = read.inventory(cloud({UNIT_PATH: unit(), LIST_PATH: CloudFailure("CLOUD_HTTP_403")}), IDENTITY)
@@ -300,6 +335,21 @@ class ObservationIntegrationTests(unittest.TestCase):
         with self.assertRaises(EnvironmentError):
             service_instance.observe("monitoring", "production")
         service_instance._cloud.assert_not_called()
+
+    def test_same_ids_on_another_domain_cannot_retain_the_first_cloud_inventory(self):
+        unit_service = UnitService(Mock(root=Path("/unused")))
+        journal = dict(cloudBinding=dict(ownerId=OWNER), vehicles=dict(test=IDENTITY))
+        current = read.inventory(cloud({UNIT_PATH: unit(), LIST_PATH: page([])}), IDENTITY)
+        unavailable = read.unavailable(IDENTITY, "cloud-status", "CLOUD_HTTP_403")
+        unit_service._cloud = Mock(side_effect=[current, unavailable, unavailable])
+        with patch("aosedge_demo_orchestrator.units.read_json", return_value=journal):
+            self.assertEqual("CURRENT", unit_service.observe("cloud-status", "test")["unit"]["state"])
+            self.assertEqual("STALE", unit_service.observe("cloud-status", "test")["unit"]["state"])
+            journal["selectedCloudDomain"] = "stage.example.com"
+            journal["cloudContexts"] = {"stage.example.com": dict(cloudBinding=dict(ownerId=OWNER))}
+            result = unit_service.observe("cloud-status", "test")
+        self.assertEqual("UNKNOWN", result["unit"]["state"])
+        self.assertIsNone(result["unit"]["value"])
 
     def test_cli_and_api_share_result_and_reject_injected_capabilities(self):
         data = read.inventory(cloud({UNIT_PATH: unit(), LIST_PATH: page([])}), IDENTITY)

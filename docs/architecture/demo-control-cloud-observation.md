@@ -3,7 +3,8 @@
 
 # Demo Control: bounded Cloud observations
 
-Implemented P2 source increment, 10 September 2026. This implements the
+Implemented P2 source increment, 10 September 2026; Cloud-first profile
+projection updated 18 September 2026. This implements the
 read-only portion of the [accepted delivery plan](../planning/active/demo-studio-delivery-plan.md#p2-make-cloud-observations-and-publication-results-truthful),
 not publication, Presenter refresh timers, service assignment or runtime qualification.
 
@@ -23,7 +24,9 @@ Unit IDs, endpoints or guest-read flags. Production/all are not accepted.
 The existing run journal selects the exact current Test `unitId`/`systemUid`
 and OEM owner. The configured `oem-delivery` credential is used by the existing
 isolated Aos SDK worker. The journal supplies no displayed software,
-connectivity or resource state. Missing identity is a local binding blocker,
+connectivity or resource state. Publication receipts may bind an installed
+release to its inspected package description as specified below; they never
+establish installation. Missing identity is a local binding blocker,
 not a Cloud-empty result. No VM inspection, image hash, permission change,
 provisioning, component mutation, log request or lifecycle journal write occurs.
 
@@ -56,8 +59,10 @@ first increment does not silently enumerate arbitrary account-sized inventories.
 ## Result shape
 
 Existing `OperationResult` is retained: `operation`, `state`, `message`,
-`target: "test"`, `data`. The outer state is `OBSERVED` if all requested
-observations are current, otherwise `PARTIAL`; missing local binding is `BLOCKED`.
+`target: "test"`, `data`. The outer state is `OBSERVED` when no material
+observation problems remain, otherwise `PARTIAL`; missing local binding is
+`BLOCKED`. Supplementary absence is retained explicitly in `notices`, not
+silently changed into a current or empty observation.
 
 `data` contains:
 
@@ -68,6 +73,7 @@ target: test
 unitId, systemUid
 readCompletedAt
 problems: [{section, state, reason}]
+notices: [{section, state, reason}]
 serviceDetails: {service UUID: Observation<service-subject rows>}
 
 cloud-status: unit, components, nodes, layers,
@@ -109,6 +115,61 @@ configuration, certificates, checksums of secrets and arbitrary response fields
 are not forwarded. Text is bounded; credential-like text, URLs, JWTs and PEM
 blocks in public error fields are redacted.
 
+Only successful `AVAILABLE` observations with `UNKNOWN`, `NOT_REPORTED` and
+null value qualify as supplementary absence: `layers`, `reportedSubjects`,
+the service list of a protected non-Group default Subject, and `usedDisk`
+when a current non-null `disk` observation is available. Group Subject
+services, component/service inventory, transport/schema failures and stale
+observations remain problems. A notice does not establish the missing fact.
+
+## Installed functional profile — 18 September 2026
+
+The selected staging read returned null installed-component `metadata_info`;
+the exact catalog version described its runtime binding but did not report a
+V1/V2/V3 functional profile. Forwarding arbitrary metadata cannot close this
+binding. Cloud installation remains authoritative, independently of whether
+the local package description is available.
+
+`StudioCloudReader` adds the same bounded `installedProfile` projection to
+the overview and the matching VDP component row:
+
+```text
+state: CURRENT | STALE | UNKNOWN
+profile: v1 | v2 | v3 | null
+releaseVersion, cloudVersionId
+source: CLOUD_INSTALLATION_AND_PACKAGE
+reason: fixed diagnostic code | null
+```
+
+The binding requires the exact selected Cloud/OEM/Unit/system UID, Cloud
+installed release and version UUID, matching READY publication and deployment
+receipt, successful upload, consistent preparation/signing receipts, and a
+package inspection matching the prepared unsigned digest and declared profile.
+Inspection validates existing package/provenance rules; this is not new
+cryptographic signature verification or live process/telemetry proof. No
+credential content, raw metadata or artifact paths are exposed in this view.
+
+Reuse the existing bounded publication reader and component inspector; add
+no new Cloud endpoint, guest access, timer or persistent observation store.
+After the first inventory is available, an installed release takes precedence
+over a processing successor when its publication receipt needs reconciliation.
+An existing in-flight request is consumed first, preserving independent
+concurrent reads and avoiding duplicate requests. The previous inventory is
+only a scheduling hint, never a substitute for the displayed observation. The reader
+interleaves successor observations if the installed receipt remains unavailable,
+and still issues at most one component-publication read per invocation. Its
+cache and asynchronous identity include Cloud/OEM/run/Unit scope.
+The inspected artifact is cached by path, device/inode, size and modification/
+change timestamps; an unchanged package is not rehashed on every UI refresh.
+
+Missing/mismatched evidence leaves the functional profile unknown while
+preserving the Cloud-reported release. The guide does not treat unknown as
+absent and offer V1 as a required restart. Prepared jobs/candidates cannot
+substitute for installed-profile evidence. A retained installation is labelled
+last known. A fresh Cloud report of an Offline Unit may still establish its
+last reported installed software; it never establishes current function or
+advisory. Backend product observations and native telemetry remain separate.
+
 ## Monitoring semantics
 
 `monitoring.value` has `cpu`, `ram`, `usedDisk`, `disk`, `inTraffic`, `outTraffic`
@@ -134,7 +195,7 @@ not-found-or-inaccessible, matching the API's documented ambiguity.
 ## Sharing, freshness and remaining integration
 
 One persistent `UnitService` shares simultaneous reads per exact
-OEM owner/Unit UUID/system UID/action through an in-memory future, and retains
+selected Cloud/OEM owner/Unit UUID/system UID/action through an in-memory future, and retains
 the previous snapshot in memory. A failed refresh retains available last-known
 values as `STALE`, preserving the failed attempt's transport/read time and a
 separate `lastKnownReadCompletedAt`. Identity changes cannot reuse that cache;
@@ -152,12 +213,24 @@ data and defer the read until entry. Read failure retains the previous value
 and timestamp with STALE, rather than inventing Offline or empty inventory.
 The old Platform projection now visibly labels retained values as last known.
 
-This does not bind the new Studio architecture/monitor screens. Their use of
-the complete normalized Unit identity/inventory and visible-only metrics is
-still part of P4 integration; the current Presenter Platform route remains the
-focused VDP overview. Inventory read time does not establish a fresh Unit
-report. Upload receipts/reconciliation, profile provenance, runtime completion
-rules and SOTA identity remain separate concerns.
+The 19 September U4 correction includes status-only component activity in the
+same pending predicate used by the UI; a missing pending-version expansion does
+not force the observer to idle cadence. This changes no Cloud API or source of
+truth. Separately, the functional-backend read adapter now includes Docker
+ownership preflight in a ten-second request budget (six seconds for exact-window
+detail). Its existing per-exchange HTTP watchdog also covers window response
+bodies. Ownership, binding checks, data caps and no-retry behavior are preserved.
+See the [U1–U5 correction record](../qualification/presenter-ui-reaudit-fixes-2026-09-19.md).
+
+The initial 10 September increment did not bind the Studio architecture and
+monitor screens. Subsequent P4/2.10 integration reuses this normalized Unit
+inventory and visible-only resource observer. The 18 September source increment
+adds exact installed-profile provenance, with fixture and selected staging
+read-only proof in the [qualification record](../qualification/cloud-installed-profile-2026-09-18.md).
+The operator subsequently authorized its Presenter-only activation on the
+same date; the qualification record contains build and live read/display proof.
+Inventory read time still does not establish a fresh Unit report. Service-local
+compatibility recovery and product-function status are not closed by this work.
 
 The separate [service catalog/ownership inspection](demo-control-service-observation.md)
 adds read-only, per-profile OEM/SP catalog and service-to-Unit observations.

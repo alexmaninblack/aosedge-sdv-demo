@@ -13,6 +13,23 @@ from aosedge_demo_orchestrator.environment import EnvironmentError
 
 
 class DemoCtlBoilerplateTests(unittest.TestCase):
+    def test_window_detail_uses_the_same_fixed_read_route_in_cli_and_api(self):
+        event_id = "4cba2d80-c04a-4d24-9f03-f4a85d56da13"
+        with patch("aosedge_demo_orchestrator.backends.BackendService.execute", return_value={"resourceType": "WINDOW_DETAIL"}) as backend:
+            result = execute_operation(dict(domain="backend", action="window-detail", team="brake", window_id=event_id))
+            self.assertEqual("OBSERVED", result["state"])
+            backend.assert_called_once_with("window-detail", "brake", window_id=event_id)
+            backend.reset_mock()
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output):
+                self.assertEqual(0, main(["--output", "json", "backend", "window-detail", "brake", event_id]))
+            backend.assert_called_once_with("window-detail", "brake", window_id=event_id)
+        for extra in (dict(team="tire"), dict(target="production"), dict(window_id="../other"), dict(url="http://elsewhere")):
+            request = dict(domain="backend", action="window-detail", team="brake", window_id=event_id)
+            request.update(extra)
+            with self.assertRaises(ValueError):
+                execute_operation(request)
+
     def test_composite_initialization_reaches_the_same_source_service(self):
         from aosedge_demo_orchestrator.application import DemoOrchestrator
         from aosedge_demo_orchestrator.models import OperationRequest, VehicleTarget, OperationState

@@ -14,6 +14,13 @@
 
 ## Native service inputs replacement — 2026-09-11
 
+The later [ADR 0017](../architecture/decisions/0017-continuous-demo-lifecycle-and-upstream-core.md)
+is accepted for the current Test Studio: no operator Park/Resume, no additional
+native CM storage patch, and continuous clean-cycle qualification. This narrows
+the demonstration lifecycle, not the platform requirement to retain shared
+service data. Restart/expired-version retention remains known failing upstream.
+The active work packet tracks implementation and evidence independently.
+
 <a id="native-service-inputs-replacement--2026-09-11"></a>
 
 [ADR 0015](../architecture/decisions/0015-use-native-aos-service-runtime-inputs.md)
@@ -610,15 +617,24 @@ Consequences:
 - Accepted: 2026-08-21
 - Owners: Vehicle Gateway / Platform Team / Function Team 1 / Function Team 2
 - Canonical contract:
-  [Typed QM Advisory Profile 1.1.0](../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
+  [Typed QM Advisory Profile 1.2.0](../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - Profile SHA-256:
-  `343e128bf9a0cac60a4f1b573315716f440accef17933fbcd9f6af49bc88300c`
+  `e055578130968e69344de981634dd69a43a1b851e437fa8dcfa77771b6c1e24c`
 - Request-schema SHA-256:
   `13d57a1afa5f236145eeb23ef7387a814a55fd69f5f870ed3f1f97d7b0eb050a`
 - Status-schema SHA-256:
   `1e0ecb28cc7548c65f1352b4c8b5874871400b8a83050a1b527c5f58f8493661`
 
 The accepted advisory contract freezes:
+
+Profile `1.2.0`, approved by the operator on 20 September 2026, permits at most
+100 ms of future-clock skew at both VDP and Gateway for these two QM targets.
+Greater future offsets and past ages over 2000 ms remain rejected. The declared
+lease stays at most 30000 ms; effective Gateway activation ends at the earlier
+of original expiry and acceptance plus 30000 ms, using both UTC and monotonic
+deadlines. Original request bytes/timestamps and replay identity are unchanged;
+duplicates do not renew either deadline. Wire schema, authority, service/model
+behavior, AosCore and readiness-heartbeat timing are unchanged.
 
 Profile `1.1.0`, approved by the operator on 16 September 2026, separates
 Brake v3 / Tire v1 functional compatibility from allocated package releases.
@@ -652,8 +668,9 @@ authority, timing or replay semantic from `1.0.0`.
 5. Gateway states are `RECEIVED`, `APPLIED`, `CLEARED`, `REJECTED`, `EXPIRED`
    and `FAILED`; reason enums distinguish source/path authority, schema/value,
    stale, replay, sequence rollback, rate, QM policy and internal failure.
-6. Gateway acceptance age is at most 2000 ms; the advisory lease is at most
-   30000 ms; refresh is no faster than 10000 ms and state-changing requests no
+6. Gateway acceptance age is at most 2000 ms, future skew at most 100 ms;
+   the declared lease and effective activation are each at most 30000 ms;
+   refresh is no faster than 10000 ms and state-changing requests no
    faster than 1000 ms per endpoint. Replay evidence is retained for at least
    300000 ms and 256 identities per endpoint.
 7. Identical duplicates are idempotent, conflicting duplicates and sequence
@@ -1918,6 +1935,13 @@ mutation, Unit deletion, VM stop or overlay disposal.
 - Owners: Function Team 1 / Vehicle Simulation / Platform Team
 
 #### D4-016.1 — Service v1 bounded braking acquisition
+
+18 September accepted work-packet amendment: item 3's historical 30-Hz /
+every-third-frame choice is superseded by first-valid-sample selection in
+100-ms source-time buckets at qualified 20/30-Hz input. No interpolation,
+timestamp changes or other acquisition/resource changes. The executable
+[cadence amendment](../../contracts/brake-telemetry-window/source-time-retention-amendment.v1.json)
+and its tests preserve the original logical wire and retained history.
 
 1. The audience and schemas call the detected condition
    `HARD_BRAKING_EPISODE_V1`. It is an observation derived from available

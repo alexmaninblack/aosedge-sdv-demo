@@ -78,10 +78,65 @@ class StudioCloudReaderTests(unittest.TestCase):
         self.assertIsNone(result["value"])
         self.assertEqual("PROCESSING", result["publication"]["stage"])
 
+    def test_processing_successor_does_not_starve_installed_receipt_after_restart(self):
+        self.journal["componentOperations"] = {
+            "18.0.0": dict(deploymentId="installed-bundle"),
+            "19.0.0": dict(deploymentId="processing-bundle"),
+        }
+        self.write()
+        def execute(request, application):
+            if request["domain"] == "component":
+                return dict(data=dict(publication=dict(stage="READY" if request["component_version"] == "18.0.0" else "PROCESSING")))
+            return self.inventory()
+        with patch.object(presenter, "execute_operation", side_effect=execute) as call:
+            first, second, third = self.reader(), self.reader(), self.reader()
+        self.assertEqual(["19.0.0", "18.0.0", "19.0.0"], [
+            row.args[0]["component_version"] for row in call.call_args_list if row.args[0]["domain"] == "component"])
+        self.assertEqual("PROCESSING", first["publication"]["stage"])
+        self.assertEqual("READY", next(row for row in second["publications"] if row["version"] == "18.0.0")["stage"])
+        self.assertEqual("PROCESSING", second["publication"]["stage"])
+        self.assertIn("18.0.0", [row["version"] for row in third["publications"]])
+
     def test_monitoring_is_fixed_test_cloud_operation(self):
         with patch.object(presenter, "execute_operation", return_value=dict(data=dict(unitId="unit-a"))) as call:
             self.assertEqual(dict(unitId="unit-a"), self.reader.monitoring())
         self.assertEqual(dict(domain="unit", action="monitoring", target="test"), call.call_args.args[0])
+
+    def test_unavailable_installed_receipt_does_not_starve_successor_processing(self):
+        self.journal["componentOperations"] = {
+            "18.0.0": dict(deploymentId="installed-bundle"),
+            "19.0.0": dict(deploymentId="processing-bundle"),
+        }
+        self.write()
+        def execute(request, application):
+            if request["domain"] == "component":
+                return dict(data=dict(publication=dict(stage="UNKNOWN" if request["component_version"] == "18.0.0" else "PROCESSING")))
+            return self.inventory()
+        with patch.object(presenter, "execute_operation", side_effect=execute) as call:
+            self.reader(); self.reader(); self.reader()
+        self.assertEqual(["19.0.0", "18.0.0", "19.0.0"], [
+            row.args[0]["component_version"] for row in call.call_args_list if row.args[0]["domain"] == "component"])
+
+    def test_profile_projection_is_shared_by_overview_and_component_details(self):
+        profile = dict(state="CURRENT", profile="v3", releaseVersion="18.0.0")
+        with patch.object(self.reader.profile_resolver, "resolve", return_value=profile), \
+                patch.object(presenter, "execute_operation", return_value=self.inventory()):
+            result = self.reader()
+        self.assertEqual(profile, result["value"]["installedProfile"])
+        self.assertEqual(profile, result["value"]["inventory"]["components"]["value"][0]["installedProfile"])
+
+    def test_same_receipt_new_cloud_context_does_not_reuse_ready_cache(self):
+        self.journal["componentOperations"] = {"19.0.0": dict(deploymentId="bundle-a")}
+        self.write()
+        def execute(request, application):
+            if request["domain"] == "component":
+                return dict(data=dict(publication=dict(stage="READY", deploymentId="bundle-a")))
+            return self.inventory()
+        with patch.object(presenter, "execute_operation", side_effect=execute) as call:
+            self.reader(); self.reader()
+            self.journal["selectedCloudDomain"] = "stage.example.com"
+            self.write(); self.reader()
+        self.assertEqual(2, sum(row.args[0]["domain"] == "component" for row in call.call_args_list))
 
     def test_service_details_own_runtime_and_missing_details_are_not_absence(self):
         self.journal["serviceOperations"] = {"brake-id":dict(team="brake",test=dict(unitId="unit-a"))}

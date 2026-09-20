@@ -170,11 +170,28 @@ def base(identity):
 
 def finish(result):
     problems = []
+    notices = []
+
+    def supplementary_absence(value, path):
+        if (value.get("reason") != "NOT_REPORTED" or value.get("state") != "UNKNOWN"
+                or value.get("transport") != "AVAILABLE" or value.get("value") is not None):
+            return False
+        if path in ("snapshot.layers", "snapshot.reportedSubjects"):
+            return True
+        if path == "snapshot.monitoring.value.usedDisk":
+            disk = ((result.get("monitoring") or {}).get("value") or {}).get("disk") or {}
+            return disk.get("state") == "CURRENT" and disk.get("value") is not None
+        match = re.fullmatch(r"snapshot.assignedSubjects.value.([0-9]+).services", path)
+        if match:
+            subject = result["assignedSubjects"]["value"][int(match[1])]
+            return subject.get("is_protected") is True and subject.get("is_group") is False
+        return False
 
     def inspect(value, path):
         if isinstance(value, dict):
             if "transport" in value and value.get("state") != "CURRENT":
-                problems.append(dict(section=path, state=value["state"], reason=value.get("reason")))
+                target = notices if supplementary_absence(value, path) else problems
+                target.append(dict(section=path, state=value["state"], reason=value.get("reason")))
             for key, child in value.items():
                 inspect(child, path + "." + key)
         elif isinstance(value, list):
@@ -182,7 +199,7 @@ def finish(result):
                 inspect(child, path + "." + str(index))
 
     inspect(result, "snapshot")
-    result.update(problems=problems, readCompletedAt=now())
+    result.update(problems=problems, notices=notices, readCompletedAt=now())
     return result
 
 

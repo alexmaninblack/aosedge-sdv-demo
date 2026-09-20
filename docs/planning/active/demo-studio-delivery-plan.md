@@ -3,6 +3,285 @@
 
 # Demo Studio: staged delivery plan
 
+## Current position — 20 September, clean UI cycle completed
+
+The corrected.36 continuous operator sequence passed through exact confirmed
+Finish at06:46UTC: all VDP/Brake profiles, early Tire recovery, real results,
+retained advisory through upgrades, independent resets, more than five minutes
+OFF with local operation, reconnect/backlog and empty initial UI. No30-minute
+retirement wait occurred. The [consolidated timing and correction report](../../qualification/presenter-ui-timing-e2e-2026-09-20.md)
+is the latest evidence; the [active packet](work-packets/versioned-service-observability.md)
+keeps unexecuted engineering/negative branches explicit. No new image was needed
+for host UI and delivered-VDP corrections. Source checkpointing does not promote
+the image manifest or claim full P8 acceptance. No active Test remains.
+
+## Historical position — 19 September, continuous lifecycle
+
+**UI truth-audit corrections:** all F1–F7, L1–L2 and O1–O7 are now authorized,
+including the earlier optional R6–R9 display improvements. The current bounded
+pass updates Presenter/read-path source and local regression evidence, not
+vehicle packages or Cloud behavior. Exact scope and test/activation status are
+in the [correction record](../../qualification/presenter-ui-truth-fixes-2026-09-19.md).
+No active Test exists. Remaining real version/offline/native qualification,
+the historical R2 source-order cause and separate reboot engineering check are
+not closed by UI fixtures. Earlier next-step/selection statements are history.
+
+**Selected follow-ups, local pass complete:** the operator accepted R1–R5.
+R1 and R3–R5 source corrections passed targeted local gates, including the
+actual ARM64 gRPC service builds and browser layout checks. R2 is still open:
+the old log cannot distinguish backward time from changed values sharing one
+timestamp. A fixed-category diagnostic and negative tests were added without
+relaxing ordering or freshness. See the
+[correction record](../../qualification/factory-36-follow-up-fixes-2026-09-19.md).
+No new Test or release publication was performed; R6–R9 and bare guest reboot
+remain separate. Next: review this local pass and agree the remaining live
+qualification matrix before publishing candidates/creating the next Test.
+
+**Latest completion, 17:29:30 UTC:** after exact operator approval, the single
+.36 Finish completed in 42.01 seconds. Cloud Unit/Node absence and local Test
+overlay removal were confirmed; a further staging inventory read found no
+matching Unit. UI is back at No controller created. Factory .35/.36, published
+releases, release continuity and Production remain. There is no active Test
+to preserve or resume. The diagnostic cycle is completed, not a full clean
+acceptance pass: remaining defects and unexecuted branches are explicit.
+The subsequent selected follow-up pass is recorded above. This retirement
+checkpoint itself did not authorize a new run; full guest reboot stays a
+separate engineering check.
+
+**Latest checkpoint, 17:23 UTC:** .36 main-cycle functional checks reached
+VDP83/84/85 V1/V2/V3, Brake64/65/66 V1/V2/V3 and Tire38 -> 39 V1. Real
+products, independent Reset/CLEAR, offline local warnings and exact delivery
+of all 32 captured offline messages passed. Cloud recovered ONLINE and Tire39
+installed without CM/SM/IAM/VM restart or service Safe Stop. Both model and
+producer continuity passed the observed replacement/CM-cleanup cases. Native
+stationary Manual Return to road passed without a model reset. Final Finish is
+not executed: tool safety requested exact destructive-retirement confirmation,
+which has been sent to the operator. Preserve this Test until confirmed.
+P8 remains open for Finish, the recorded source-gap/UI defects and unexecuted
+transition/negative branches; see the [current record](../../qualification/factory-36-e2e-2026-09-19.md).
+The dated checkpoints below are history, not additional current blockers.
+
+**Latest scope clarification:** .36 passed live service-update and CM-cleanup
+storage retention, including unchanged pending-message bytes. The operator
+separated full guest-reboot recovery into an engineering check and requested
+completion of the main version/offline/Finish cycle. A direct guest reboot
+preserved data but skipped existing host-managed runtime credential restoration;
+recover the same Test through existing democtl startup, without source changes
+or another reboot. See the [separate check](../../qualification/factory-36-guest-reboot-2026-09-19.md)
+and [main run](../../qualification/factory-36-e2e-2026-09-19.md). P8 remains open;
+the interrupted run must not be described as uninterrupted qualification.
+
+**Latest .36 progress, 16:10 UTC:** operator-entered native access completed
+the same Test creation; Provision/Online, VDP83/V1 and Brake64/V1 passed their
+initial live gates. The UI showed a complete real 75-sample Brake window.
+The operator accepted a deferred correction for misleading startup
+ACCESS_DENIED: initial token waiting must be distinct from a true rejection,
+without hiding denied access. It remains open and unchanged during this run.
+See the [.36 record](../../qualification/factory-36-e2e-2026-09-19.md).
+
+**Latest live checkpoint, 15:53 UTC:** the operator explicitly confirmed the
+clean .36 cycle. The preceding diagnostic Test was retired through Presenter
+Finish in 41.99 seconds; exact Cloud/local cleanup succeeded and .35 was
+preserved. New run `3ba61842-c8d9-45d7-864d-af92af55d937` selected .36 but
+Create returned PARTIAL at native first-access input. No guest boot or
+provisioning is claimed. Continue the same checkpoint after normal native
+access; P8 remains open. See the
+[.36 clean-cycle record](../../qualification/factory-36-e2e-2026-09-19.md).
+The retained-Test descriptions below are dated history, not the current target.
+
+**Latest authorization:** after platform-team confirmation, the operator approved
+the shared-storage fix: isolated native regression proof first, then a successor
+Factory build if the gates pass. The storage-patch exclusion in the historical
+positions below is superseded by the amendment to ADR 0017. Current Test remains
+diagnostic; no implicit reset, data restoration, reprovisioning or Cloud change.
+
+The [storage correction](../../qualification/cm-shared-storage-fix-2026-09-19.md)
+passed the expanded native matrix (43/43), full prior patch stack (45/45,
+ten repeats), ASan/UBSan (45/45), 174 Platform tests and 25 Factory CLI tests.
+Platform build source is locally committed as `a0f88d8`. Factory .36 is now
+built through the guarded warm/offline path: production native gates, package/
+image QA and transfer verification passed. Manifest remains
+**BUILT_NOT_LIVE_QUALIFIED**; current .35/Test are preserved. Next is fresh live
+storage-retention/version/offline qualification, not another speculative build.
+
+The operator accepted [ADR 0017](../../architecture/decisions/0017-continuous-demo-lifecycle-and-upstream-core.md):
+remove Park/Resume from Demo Studio and qualify a continuous clean run instead
+of adding a native CM storage fix. The existing `.35` image is unchanged, not stock
+mainline. A new image is conditional on a proved factory-owned delta, not on
+UI or service-package changes. The preceding failed Test was retired with exact
+operator approval; the fresh clean Test is now preserved after recovery from a
+native CM deadlock with the explicitly authorized transient correction. Its
+restart exposed the separate Brake storage-loss blocker, recorded below.
+
+P1–P6 source and the later P7 activation/proofs are recorded in the
+[work packet](work-packets/versioned-service-observability.md) and
+[retained-Test record](../../qualification/preserved-test-function-observation-2026-09-19.md).
+Brake60/V3 and Tire35/V1 with VDP79/V3 produced real results, independent
+reset/CLEAR/renewed warnings and a bounded offline/exact-backlog recovery proof.
+Park/Resume subsequently exposed upstream shared-storage loss; the continuous
+clean cycle, full profile-transition matrix and Manual off-road proof are open.
+
+Current next order: preserve the Brake storage-loss evidence and resolve the
+independent native storage defect or an explicitly accepted qualification
+strategy. The CM correction passed two live OFF/ON cycles; pending Tire37 has
+installed. Remaining service-continuity and transition/recovery branches still
+precede final Finish. Do not restart/rebuild/reprovision to conceal the failure. Do not mark
+excluded CM restart retention passed or erase its platform defect. Periodic
+cleanup can still expose it during a continuous run. The
+[upstream handoff](../../qualification/aoscore-shared-storage-handoff-2026-09-19.md)
+is prepared separately; no upstream submission is implied.
+
+Older dated positions below are execution history, not concurrent open approval
+requests. The accepted lifecycle amendment overrides their Park/Resume stage.
+
+The Session/API amendment is implemented and activated, with 224 UI unit,
+112 browser and 71 targeted Python tests passing. The
+[verification record](../../qualification/continuous-lifecycle-ui-2026-09-19.md)
+records the unchanged Test and no-operation Finish/Cancel check. Subsequently,
+the operator explicitly approved permanent scoped retirement. Finish completed
+in 42.07 seconds and returned UI to empty Create. The
+[new clean-cycle record](../../qualification/continuous-factory-35-e2e-2026-09-19.md)
+tracks the resumed local run `1ac3b4f2-cfe7-4e89-88e6-974637ab7afc`:
+Create, detached simulation, publication-before-Provision, same-source attachment,
+VDP 80→81→82 (V1→V2→V3), Brake 61→62→63 (V1→V2→V3) and first Tire36/V1
+passed their recorded gates. Real results, inherited Brake warning, independent
+resets, local offline renewal/analytics/advisory and exact queued delivery were
+observed. The run includes explicitly disclosed first-access and backend
+fault-injection CLI exceptions; it is UI-led, not strictly UI-only.
+
+External reconnect exposed a [native CM Monitoring/Communication deadlock](../../qualification/cm-monitoring-disconnect-deadlock-2026-09-19.md).
+Live stacks identify the lock cycle; current official upstream source still
+contains it. Cloud remains Offline; Tire37 is published/pending, not installed.
+No native patch or CM/VM restart was made during that live investigation. Both backends and service data are
+restored/preserved. Final Finish, same-profile installation preservation and
+the full Manual off-road/transition branch matrix remain open; P8 is not closed.
+A narrow reset-channel label correction passed 225 UI unit and 23 focused
+browser tests, typecheck/build and live asset-only reload verification.
+
+The operator subsequently authorized a bounded **connection lock** correction.
+Its [source and isolated verification record](../../qualification/cm-disconnect-lock-fix-2026-09-19.md)
+reports 85/85 expanded native tests, local automatic reconnect/wire delivery
+and two failing original-source worker controls. The Platform recipe now holds
+the pending patch, but no package/image or live CM update has been performed.
+ADR 0017's storage-fix exclusion remains unchanged. Live external OFF/ON,
+pending SOTA and full P8 acceptance are not closed by these source tests.
+
+Subsequent explicit operator approval authorized the production-target CM
+rebuild and reversible current-Test replacement. The fixed CM now runs from
+`/run`, the same Cloud Unit returned Online and pending Tire37 installed. The
+two live OFF/ON cycles recovered without another CM restart and Tire queues drained.
+However, Brake's persistent root disappeared during the independently known
+restart cleanup defect; its backend stopped advancing. This is a **failed
+service-continuity gate**, not complete P8. No storage repair is authorized by
+the connection patch. Completed CM verification and final disposition are in
+the correction record; Factory .35 is still unchanged.
+
+## Current position — 18 September, versioned service observability
+
+Decisions 1A–6A and Return to road are accepted; the operator instructed work
+to proceed. The [new work packet](work-packets/versioned-service-observability.md)
+owns the contract migration, repository order, preserved-Test proofs and clean
+UI cycle. The [audit](../../qualification/versioned-service-scenario-audit-2026-09-18.md)
+maps requirements and gaps. Existing .35/2.10 results are historical evidence,
+not acceptance of the new service/status contracts.
+
+The independent visual slice (Cloud summary, identity colors, AosCore) can be
+verified against existing observations before backend migration completes.
+No new function state may be inferred from those visual changes. Preserve
+current Test and uncommitted work; no .35 replacement until preceding gates pass.
+
+Slice V source verification is complete: **156 unit / 98 browser tests** and an
+isolated production build passed. No live asset replacement or Test mutation
+was performed. See the [verification record](../../qualification/presenter-platform-clarity-2026-09-18.md).
+The operator accepted a Cloud-first correction after rejecting the proposed
+guest timer. P2 now first reuses native Cloud inventory/runtime observations
+and binds the exact installed artifact to its verified functional profile.
+Service input/episode/result facts come from each team's backend; local
+analytics must not depend on Cloud reachability. After the executable local
+input proof, the operator selected P2 option A: exact version compatibility
+belongs to Cloud/package evidence in Presenter, while services report actual
+input/capability observations and recover through existing native inputs.
+Missing samples do not prove an incompatible profile. No new local profile
+transport, timer, evidence expiry or CM/SM/IAM change is
+authorized. Decisions 1A–3A are accepted but their implementation and live
+qualification remain open; passing visual fixtures do not close them.
+
+P2 read projection is now source-implemented: exact Cloud installed-version
+UUID, publication receipt and inspected package bind the displayed VDP profile;
+supplementary missing Cloud fields remain notices rather than blanket PARTIAL
+results. The preserved staging read confirms VDP 79.0.0 / V3. See the
+[qualification record](../../qualification/cloud-installed-profile-2026-09-18.md).
+The operator subsequently authorized Presenter-only activation; the new assets
+and server are live, with VM/simulation/native-control processes preserved.
+This closes neither service-local
+compatibility recovery nor the remaining service/function/E2E phases.
+The [renewal and P2 record](../../qualification/service-renewal-and-local-capability-2026-09-18.md)
+separates the remaining mandatory-reconnect gap and misleading advisory
+diagnostics from the qualified steering correction, and records the accepted
+option-A boundary. P3/P4 retain consumer-first ordering for the status and
+service recovery fixes; no new service release has been deployed by that audit.
+The option-A compatibility display is now source-implemented and independently
+verified: 176 UI unit tests, 103 browser fixtures and an isolated production
+build passed. Service dialogs distinguish Cloud-installed compatibility from
+actual telemetry/assessment/advisory; stale or unresolved profiles cannot imply
+current compatibility or completed story progress. This latest UI increment
+has not replaced the live assets. Early-start and real reconnect qualification
+remain in the consumer-first service work, not closed by these UI tests.
+
+## Current position — 17 September, authorized 2.10 UI integration
+
+The operator explicitly authorized the bounded real Presenter integration of
+Mockup 2.10. The earlier integration hold below is historical, not an active
+blocker. Preserve the pre-UI checkpoint and the accepted mockup files.
+
+1. Reuse current Test/backend/Cloud observations for Vehicle inline summaries.
+   Share each observer with its detail dialog; do not introduce VM reads.
+2. Open backend and Cloud monitoring details in scoped dialogs while retaining
+   the underlying Vehicle or team workspace, B2 icons, actors and connections.
+3. Keep team authoring, confirmations, reset acknowledgements, abnormal Finish
+   and current-release evidence rules. The completed-story shortcut requests
+   confirmed Finish; it never retires the environment on page entry.
+4. Verify missing/partial/stale/current data, identity changes, popup navigation,
+   keyboard focus, fixed-screen layout and existing action regression tests.
+5. Build and expose only the updated Presenter assets for operator review.
+   Do not restart CARLA/VM, publish packages or change Cloud configuration.
+
+Native-window redesign, credential persistence and new lifecycle/protocol work
+are outside this increment. Fixture browser tests are not a new live clean
+end-to-end qualification; report these evidence categories separately.
+
+Implementation result: the increment is integrated and built. **148 unit and
+97 browser tests passed**; a preserved-Test read-only smoke verified current
+software, backend summaries and the three detail dialogs. See the
+[UI verification record](../../qualification/presenter-ui-2-10-2026-09-17.md)
+for authority boundaries, memory-unit limitation and remaining native visual /
+clean-cycle acceptance. No demo resources were restarted or retired.
+
+## Current position — 17 September complete mockup consolidation
+
+The pre-UI audit/publication checkpoint is complete. The operator subsequently
+authorized a new **complete mockup**, not application integration:
+[Interaction Mockup 2.10](../../demo/mockups/aosedge-demo-interaction-mockup-2-10.html)
+combines the retained 2.8 actions/flows with the accepted 2.9 inline summaries
+and detail dialogs. It reflects already accepted Factory .35, no-restart
+post-Provision attachment, independent Brake V3 / Tire V1 readiness/reset and
+abnormal-Finish behavior. No new live protocol, backend or mutation is added.
+
+The [mockup verification record](../../qualification/mockup-2-10-2026-09-17.md)
+covers the simulated scenarios and fixed-screen/dialog checks. Next: operator
+review of this complete version; then reconcile its existing observation/action
+bindings for the bounded real-UI increment. Do not begin that increment without
+the user's instruction. The existing demo and the published pre-UI return point
+remain unchanged.
+
+Implementation-first parity follow-up: the 2.10 mockup now represents the
+working Session setup/signing context, current-release backend proof,
+producer-bound reset, independent Cloud observation states and Offline-gated
+Finish continuation. The verification record links each correction to its
+implementation source and labels intentional simulation limits. No live UI
+integration, package publication or Git checkpoint replacement is part of this
+follow-up. Review this corrected mockup before resuming the bounded UI increment.
+
 ## Current position — 17 September pre-UI checkpoint
 
 Factory .35's scoped clean cycle is complete. Subsequent source-attachment,

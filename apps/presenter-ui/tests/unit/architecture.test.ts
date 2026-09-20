@@ -31,7 +31,13 @@ describe("module architecture", () => {
   });
 
   it("allows POST only in the fixed local command adapter and no privileged material field", () => {
-    const mutation = /["'](?:POST|PATCH|PUT|DELETE)["']/;
+    // POST is also the accepted braking-window phase. The transport gate
+    // above still confines every HTTP call to the two adapters; reject method
+    // declarations outside the command adapter, not product phase literals.
+    const mutation = /\bmethod\s*[:=]\s*["'](?:POST|PATCH|PUT|DELETE)["']/;
+    expect(mutation.test('method: "POST"')).toBe(true);
+    expect(mutation.test('method = "DELETE"')).toBe(true);
+    expect(mutation.test('phase: "POST"')).toBe(false);
     const privilegedField = /\b(?:privateKey|private_key|certificate|certificateContent|token|credential|authHeader|authorizationHeader|password|rawResponse|helperCapability)\s*[?:]/i;
     expect(Object.entries(sources).filter(([path, source]) => mutation.test(source) && !path.endsWith("adapters/local/LocalPresenterCommandAdapter.ts")).map(([path]) => path)).toEqual([]);
     const command = Object.entries(sources).find(([path]) => path.endsWith("adapters/local/LocalPresenterCommandAdapter.ts"))![1];

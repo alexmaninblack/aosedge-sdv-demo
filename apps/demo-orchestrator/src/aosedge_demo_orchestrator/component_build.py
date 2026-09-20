@@ -26,7 +26,7 @@ PROFILE_BASES = {
 }
 # Reviewed Platform checkpoint; no working-tree input is accepted. A missing
 # pin blocks new V3 preparation instead of falling back to deferred V3.
-ADVISORY_RUNTIME_PIN = {
+PREVIOUS_ADVISORY_RUNTIME_PIN = {
     "revision": "4bc0f7e1fd9746ec8a5e612f0281c294c1dca115",
     "tree": "303bcf1b7e3cd5628757b4d9ff3255dc51821391",
     "modules": {
@@ -36,18 +36,50 @@ ADVISORY_RUNTIME_PIN = {
         "manifest.py": "94f57fd9a280d83d2d9c28ced213f5a860e46e41e6cc8ef86c3c0d70e5b8c635",
     },
 }
+# Older retained releases remain inspectable against their original reviewed
+# pin. New preparation always uses the current complete source set.
+PREVIOUS_CLOCK_STRICT_RUNTIME_PIN = {
+    "revision": "fb1d2b3a2d8e0a12213990b635c873a676d5bf67",
+    "tree": "024e46350de1f832708e2d12f89c28b19f3dbc4d",
+    "modules": {
+        "runtime.py": "7261e09690795a7f8b89981179f4c296e5f60f6c6522c0c8dcfb18c93fc506da",
+        "bridge.py": "a84e8feb0bd66964400f43de6f05c947d05daa358202ed153e9ffcf7ec2d2102",
+        "advisory.py": "a9150d817b95b4aa6b9dbe5ac5a873d02f9efce02f02ff1949e22e06b7242bef",
+        "advisory_transport.py": "76379cbf36121a6a9a12d689ea2e7d88cc303f5a06c56f13cafed58862c73d0a",
+        "manifest.py": "94f57fd9a280d83d2d9c28ced213f5a860e46e41e6cc8ef86c3c0d70e5b8c635",
+    },
+}
+ADVISORY_RUNTIME_HISTORY = (PREVIOUS_ADVISORY_RUNTIME_PIN, PREVIOUS_CLOCK_STRICT_RUNTIME_PIN)
+ADVISORY_RUNTIME_PIN = {
+    "revision": "394a645664f44a922b6a54388dfac7cfe9763221",
+    "tree": "fb09614830c8c9fa264d78f6df1fd74c885d8062",
+    "modules": {
+        **PREVIOUS_CLOCK_STRICT_RUNTIME_PIN["modules"],
+        "advisory.py": "5c28f83b779f6394244cd4a6dfb4c49bafcb461b19d4dbeab996d6a7d7d55c0f",
+        "manifest.py": "9788cf7c256bcee61061792e7686f8866859b57e6f236c2c50ef688ec8673259",
+    },
+}
 # Source release gate, not a runtime fallback or an operator/UI flag. On
 # 16 September the preserved staging Test passed actual selected-VDP and
 # Dashboard mTLS, repeat/no-restart, and anonymous-client TLS denial. Publishing
 # this payload now enables the next Safe Stop/advisory qualification gate; it
 # does not claim that advisory or the future clean Factory run already passed.
 ADVISORY_RUNTIME_RELEASE_ENABLED = True
-ADVISORY_RUNTIME_MODULES = ("runtime.py", "advisory.py", "advisory_transport.py", "manifest.py")
+ADVISORY_RUNTIME_MODULES = ("runtime.py", "bridge.py", "advisory.py", "advisory_transport.py", "manifest.py")
 ADVISORY_RUNTIME_BUILD_TYPE = "democtl-reviewed-advisory-runtime-v1"
 ADVISORY_CONTRACT = {
     "contractId": "aosedge-demo-typed-qm-advisory",
-    "contractVersion": "1.1.0",
-    "sha256": "343e128bf9a0cac60a4f1b573315716f440accef17933fbcd9f6af49bc88300c",
+    "contractVersion": "1.2.0",
+    "sha256": "e055578130968e69344de981634dd69a43a1b851e437fa8dcfa77771b6c1e24c",
+}
+# A retained payload must match its own reviewed source/contract pair, never
+# the new policy merely because the operator has updated democtl.
+ADVISORY_RUNTIME_CONTRACT_HISTORY = {
+    pin["revision"]: {
+        "contractId": "aosedge-demo-typed-qm-advisory",
+        "contractVersion": "1.1.0",
+        "sha256": "343e128bf9a0cac60a4f1b573315716f440accef17933fbcd9f6af49bc88300c",
+    } for pin in ADVISORY_RUNTIME_HISTORY
 }
 
 
@@ -255,25 +287,34 @@ def compose_advisory_runtime(version, baseline, baseline_sha, repository, contra
 def validate_advisory_payload(files, provenance):
     """Inspection of reviewed composition uses independent source pins, not self-claimed hashes."""
     pin = advisory_runtime_pin()
+    expected_contract = ADVISORY_CONTRACT
+    if provenance.get("sourceRevision") != pin["revision"]:
+        pin = next((old for old in ADVISORY_RUNTIME_HISTORY
+                    if old["revision"] == provenance.get("sourceRevision")), None)
+        if pin is None:
+            raise EnvironmentError("COMPONENT_ADVISORY_SOURCE_PROVENANCE_MISMATCH")
+        expected_contract = ADVISORY_RUNTIME_CONTRACT_HISTORY.get(pin["revision"])
+        if expected_contract is None:
+            raise EnvironmentError("COMPONENT_ADVISORY_SOURCE_PROVENANCE_MISMATCH")
     if (provenance.get("buildType") != ADVISORY_RUNTIME_BUILD_TYPE
             or provenance.get("contentProfile") != "v3"
             or provenance.get("sourceRevision") != pin["revision"]
             or provenance.get("sourceTree") != pin["tree"]
             or provenance.get("runtimeSourceModules") != pin["modules"]
-            or provenance.get("typedQmAdvisory") != ADVISORY_CONTRACT
+            or provenance.get("typedQmAdvisory") != expected_contract
             or provenance.get("advisoryRuntimeReleaseGate") not in ("ENABLED", "PENDING_SELECTED_UNIT_MUTUAL_TLS")
             or provenance.get("qualificationScope") != "ADVISORY_RUNTIME_IMPLEMENTED_NOT_LIVE_QUALIFIED"):
         raise EnvironmentError("COMPONENT_ADVISORY_SOURCE_PROVENANCE_MISMATCH")
     if any(name not in files or sha(files[name]) != pin["modules"][name.removeprefix(PACKAGE)]
-           for name in (PACKAGE + module for module in ADVISORY_RUNTIME_MODULES)):
+           for name in (PACKAGE + module for module in pin["modules"])):
         raise EnvironmentError("COMPONENT_ADVISORY_RUNTIME_DIGEST_MISMATCH")
-    if document(files, "config/capability-manifest.json").get("contracts", {}).get("typedQmAdvisory") != ADVISORY_CONTRACT:
+    if document(files, "config/capability-manifest.json").get("contracts", {}).get("typedQmAdvisory") != expected_contract:
         raise EnvironmentError("COMPONENT_ADVISORY_CAPABILITY_CONTRACT_MISMATCH")
     profile_constants = {node.targets[0].id: ast.literal_eval(node.value)
         for node in ast.parse(files.get(PACKAGE + "releases/v3.py", b"")).body if isinstance(node, ast.Assign)
         and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name)
         and node.targets[0].id == "ADVISORY_CONTRACT"}
-    if profile_constants.get("ADVISORY_CONTRACT") != ADVISORY_CONTRACT:
+    if profile_constants.get("ADVISORY_CONTRACT") != expected_contract:
         raise EnvironmentError("COMPONENT_ADVISORY_PROFILE_CONTRACT_MISMATCH")
     actual = [dict(path=name, sha256=sha(content)) for name, content in sorted(files.items())
               if not name.startswith(("provenance/", "sbom/"))]

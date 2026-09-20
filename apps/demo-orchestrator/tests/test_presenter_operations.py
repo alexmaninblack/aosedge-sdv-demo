@@ -162,8 +162,6 @@ class OperationTests(unittest.TestCase):
                  ("connect-test", {}, dict(domain="vehicle", action="initialize", target="test")),
                  ("prepare", dict(profile="v1"), dict(domain="component", action="prepare", content_profile="v1")),
                  ("upload", dict(version="13.0.0"), dict(domain="component", action="upload", component_version="13.0.0")),
-                 ("park", {}, dict(domain="environment", action="park")),
-                 ("resume", {}, dict(domain="environment", action="resume")),
                  ("provision", {}, dict(domain="unit", action="provision", target="test"))]
         for action, params, expected in cases:
             self.assertEqual([expected], operation_plan(payload(session, action, **params))[1])
@@ -172,6 +170,9 @@ class OperationTests(unittest.TestCase):
                 operation_plan(payload(session, **params))
         for action in ("shell", "send", "approve", "unapprove", "production-approve", "test-logs"):
             with self.assertRaises(ValueError):
+                operation_plan(payload(session, action))
+        for action in ("park", "resume"):
+            with self.assertRaisesRegex(ValueError, "PARK_RESUME_NOT_SUPPORTED_IN_STUDIO"):
                 operation_plan(payload(session, action))
         self.assertEqual([dict(domain="component", action="cloud-status")], operation_plan(payload(session, "observe-test"))[1])
         with self.assertRaises(ValueError):
@@ -296,6 +297,10 @@ class ProtectedFrontendTests(unittest.TestCase):
                 self.assertEqual(403, send(request)[0])
                 self.assertEqual(403, send(request, "https://other.example")[0])
                 self.assertEqual(400, send(dict(request, target="production"), origin)[0])
+                for action in ("park", "resume"):
+                    retired = {key: request[key] for key in ("requestId", "sessionId")}
+                    retired["action"] = action
+                    self.assertEqual(400, send(retired, origin)[0])
                 native.call.assert_not_called()
                 self.assertEqual(202, send(request, origin)[0])
                 native.call.assert_called_once_with(request)

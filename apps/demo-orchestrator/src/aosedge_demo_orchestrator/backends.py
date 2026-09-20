@@ -10,6 +10,8 @@ import shutil
 import subprocess
 import sys
 import time
+import socket
+import threading
 from contextlib import contextmanager
 from pathlib import Path
 from uuid import uuid4
@@ -19,10 +21,42 @@ from .status import read_json, now, object_id
 
 TEAMS = ("brake", "tire")
 DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
+BACKEND_OBSERVATION_BUDGET = 10.0  # Below the Presenter's 15-second HTTP deadline.
+BACKEND_WINDOW_BUDGET = 6.0  # Includes ownership preflight; browser limit is 8s.
+
+
+@contextmanager
+def observation_connection(port, deadline):
+    """Bound the whole HTTP exchange, including a slowly streamed response.
+
+    Socket timeout alone resets on each received byte. A scoped watchdog
+    interrupts only this read's socket; it cannot outlive the request.
+    """
+    remaining = min(3, max(0, deadline - time.monotonic()))
+    if remaining <= 0:
+        raise TimeoutError("BACKEND_READ_BUDGET_EXHAUSTED")
+    connection = http.client.HTTPConnection("127.0.0.1", port, timeout=remaining)
+    active_socket = [None]
+    def expire():
+        sock = active_socket[0] or connection.sock
+        if sock is not None:
+            try:
+                sock.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+    timer = threading.Timer(remaining, expire)
+    timer.daemon = True
+    timer.start()
+    try:
+        yield connection, active_socket
+    finally:
+        timer.cancel()
+        timer.join()
+        connection.close()
 
 
 class BackendService:
-    def _product_observation(self, team, uid):
+    def _product_observation(self, team, uid, *, deadline=None):
         """Fixed owned loopback endpoints; no arbitrary URL, proxy or redirect."""
         if team not in TEAMS or not uid:
             raise EnvironmentError("BACKEND_CURRENT_TEST_CONTEXT_REQUIRED")
@@ -37,13 +71,20 @@ class BackendService:
             paths[name] = "/api/v1/" + team + "/units/" + quote(uid, safe="") + "/" + name + "?limit=10"
         if team == "tire":
             paths["functionStatus"] = "/api/v1/tire/units/" + quote(uid, safe="") + "/function-status?limit=10"
+        paths["functionObservations"] = "/api/v1/" + team + "/units/" + quote(uid, safe="") + "/function-observations?limit=10"
         paths["demoReset"] = "/api/v1/" + team + "/units/" + quote(uid, safe="") + "/demo-reset"
+        if deadline is None:
+            deadline = time.monotonic() + BACKEND_OBSERVATION_BUDGET
         for name, path in paths.items():
-            connection = http.client.HTTPConnection("127.0.0.1", 18091 if team == "brake" else 18092, timeout=3)
+            if time.monotonic() >= deadline:
+                result["observations"][name] = dict(state="UNAVAILABLE", reason="BACKEND_READ_BUDGET_EXHAUSTED")
+                continue
             try:
-                connection.request("GET", path, headers={"Accept": "application/json"})
-                response = connection.getresponse()
-                raw = response.read(262145)
+                with observation_connection(18091 if team == "brake" else 18092, deadline) as (connection, active_socket):
+                    connection.request("GET", path, headers={"Accept": "application/json"})
+                    active_socket[0] = connection.sock
+                    response = connection.getresponse()
+                    raw = response.read(262145)
                 if response.status != 200 or len(raw) > 262144:
                     result["observations"][name] = dict(state="NOT_READY", httpStatus=response.status)
                     continue
@@ -52,6 +93,18 @@ class BackendService:
                     raise ValueError("BACKEND_RESPONSE_OBJECT_REQUIRED")
                 if name == "demoReset":
                     self._validate_reset(value, uid)
+                if name == "functionObservations":
+                    if (set(value) != {"schemaVersion", "contractVersion", "resourceType", "unitSystemUid", "items", "truncated"}
+                            or type(value.get("schemaVersion")) is not int or value["schemaVersion"] != 3
+                            or value.get("contractVersion") != "3.0.0" or value.get("resourceType") != "FUNCTION_OBSERVATION"
+                            or type(value.get("truncated")) is not bool or value.get("unitSystemUid") != uid
+                            or not isinstance(value.get("items"), list) or len(value["items"]) > 10):
+                        raise EnvironmentError("BACKEND_FUNCTION_SCOPE_OR_SHAPE_MISMATCH")
+                    for item in value["items"]:
+                        if (not isinstance(item, dict) or not isinstance(item.get("message"), dict)
+                                or item["message"].get("unitSystemUid") != uid
+                                or item["message"].get("messageType") != team.upper() + "_FUNCTION_OBSERVATION"):
+                            raise EnvironmentError("BACKEND_FUNCTION_RECORD_SCOPE_MISMATCH")
                 if name == "mockData" and (value.get("source") != "DEMO_MOCK" or value.get("vehicleTelemetry") is not False
                         or value.get("unitSystemUid") != uid):
                     raise EnvironmentError("BACKEND_MOCK_SCOPE_OR_PROVENANCE_MISMATCH")
@@ -71,8 +124,7 @@ class BackendService:
                 raise
             except (OSError, ValueError, http.client.HTTPException):
                 result["observations"][name] = dict(state="UNAVAILABLE")
-            finally:
-                connection.close()
+        result["observedAt"] = now()  # Read completion, not a new vehicle receipt.
         result["state"] = "OBSERVED" if all(item["state"] == "OBSERVED" for item in result["observations"].values()) else "PARTIAL"
         return result
 
@@ -162,13 +214,20 @@ class BackendService:
             raise EnvironmentError("BACKEND_DOCKER_REQUIRED")
         return self._run([executable, *arguments], timeout)
 
-    def _inspect(self, kind, name):
+    def _inspect(self, kind, name, *, deadline=None):
         # A list distinguishes absence from an unreachable engine. No error
         # string, empty socket response or read failure is treated as absence.
+        def inspect_command(*args):
+            if deadline is None:
+                return self._docker(*args)
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise EnvironmentError("BACKEND_READ_BUDGET_EXHAUSTED")
+            return self._docker(*args, timeout=min(12, remaining))
         if kind == "container":
-            listed = self._docker("container", "ls", "--all", "--filter", "name=^/" + name + "$", "--format", "{{.ID}}")
+            listed = inspect_command("container", "ls", "--all", "--filter", "name=^/" + name + "$", "--format", "{{.ID}}")
         elif kind in ("volume", "network"):
-            listed = self._docker(kind, "ls", "--filter", "name=" + name, "--format", "{{.Name}}")
+            listed = inspect_command(kind, "ls", "--filter", "name=" + name, "--format", "{{.Name}}")
             listed = "\n".join(item for item in listed.splitlines() if item == name)
         else:
             raise EnvironmentError("BACKEND_INSPECTION_KIND_INVALID")
@@ -177,7 +236,7 @@ class BackendService:
             return None
         if len(matches) != 1:
             raise EnvironmentError("BACKEND_RESOURCE_AMBIGUOUS")
-        value = json.loads(self._docker(kind, "inspect", matches[0]))
+        value = json.loads(inspect_command(kind, "inspect", matches[0]))
         if not isinstance(value, list) or len(value) != 1:
             raise EnvironmentError("BACKEND_RESOURCE_AMBIGUOUS")
         return value[0]
@@ -536,12 +595,50 @@ class BackendService:
         if before != binding():
             raise EnvironmentError("BACKEND_OBSERVATION_BINDING_CHANGED")
 
-    def execute(self, action, team):
-        if team not in TEAMS or action not in ("build", "activate", "start", "stop", "status", "inspect", "reset-scenario", "reset-status"):
+    def _window_detail(self, uid, event_id, *, deadline=None):
+        from urllib.parse import quote
+        if (not isinstance(uid, str) or not re.fullmatch(r"[A-Za-z0-9._:-]{1,128}", uid)
+                or not isinstance(event_id, str)
+                or not re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}", event_id)):
+            raise EnvironmentError("BACKEND_WINDOW_IDENTITY_INVALID")
+        if deadline is None:
+            deadline = time.monotonic() + BACKEND_WINDOW_BUDGET
+        try:
+            with observation_connection(18091, deadline) as (connection, active_socket):
+                connection.request("GET", "/api/v1/brake/units/" + quote(uid, safe="") + "/windows/" + event_id,
+                    headers={"Accept": "application/json"})
+                active_socket[0] = connection.sock
+                response = connection.getresponse()
+                raw = response.read(262145)
+            if response.status != 200 or len(raw) > 262144:
+                raise EnvironmentError("BACKEND_WINDOW_DETAIL_UNAVAILABLE")
+            value = json.loads(raw)
+            if (not isinstance(value, dict) or set(value) != {"schemaVersion", "contractVersion", "resourceType", "unitSystemUid", "unitRole", "window", "samples"}
+                    or type(value.get("schemaVersion")) is not int or value["schemaVersion"] != 2
+                    or value.get("contractVersion") != "2.0.0" or value.get("resourceType") != "WINDOW_DETAIL"
+                    or value.get("unitSystemUid") != uid or value.get("unitRole") != "VALIDATION"
+                    or not isinstance(value.get("window"), dict) or value["window"].get("unitSystemUid") != uid
+                    or value["window"].get("eventId") != event_id
+                    or not isinstance(value.get("samples"), list) or len(value["samples"]) > 150):
+                raise EnvironmentError("BACKEND_WINDOW_DETAIL_SCOPE_OR_SHAPE_MISMATCH")
+            return value
+        except EnvironmentError:
+            raise
+        except (OSError, ValueError, http.client.HTTPException):
+            raise EnvironmentError("BACKEND_WINDOW_DETAIL_UNAVAILABLE") from None
+
+    def execute(self, action, team, window_id=None):
+        # One request deadline covers preflight and HTTP. No shared mutable
+        # deadline on this service: independent concurrent reads stay isolated.
+        deadline = time.monotonic() + (BACKEND_WINDOW_BUDGET if action == "window-detail"
+            else BACKEND_OBSERVATION_BUDGET) if action in ("inspect", "window-detail") else None
+        if team not in TEAMS or action not in ("build", "activate", "start", "stop", "status", "inspect", "reset-scenario", "reset-status", "window-detail"):
             raise EnvironmentError("BACKEND_OPERATION_INVALID")
+        if action == "window-detail" and team != "brake":
+            raise EnvironmentError("BACKEND_WINDOW_DETAIL_USES_BRAKE_ONLY")
         if action == "build":
             return self.build(team)
-        with self._observation(team) if action in ("inspect", "status", "reset-status") else self.environment._writer():
+        with self._observation(team) if action in ("inspect", "status", "reset-status", "window-detail") else self.environment._writer():
             state = read_json(self.root / JOURNAL)
             if (state.get("kind") != "democtl.current-run" or "test" not in state.get("vehicles", {})
                     or not state.get("operations") or state["operations"][0].get("class") != "LOCAL_CREATE"
@@ -550,8 +647,12 @@ class BackendService:
             owner = object_id(state["operations"][0]["id"])
             name = "aosedge-demo-" + team + "-cloud"
             record = state.get("backends", {}).get(team)
-            observed = self._inspect("container", name)
+            observed = self._inspect("container", name, **({"deadline": deadline} if deadline is not None else {}))
             self._owned_container(observed, owner, team, (record or {}).get("imageId"))
+            if action == "window-detail":
+                if not record or not observed or not observed.get("State", {}).get("Running"):
+                    raise EnvironmentError("BACKEND_WINDOW_DETAIL_RUNNING_BACKEND_REQUIRED")
+                return self._window_detail(state["vehicles"]["test"].get("systemUid"), window_id, deadline=deadline)
             if action in ("reset-scenario", "reset-status"):
                 if not record or not observed or not observed.get("State", {}).get("Running"):
                     raise EnvironmentError("BACKEND_RESET_RUNNING_BACKEND_REQUIRED")
@@ -566,7 +667,7 @@ class BackendService:
             if action == "inspect":
                 if not observed or not observed.get("State", {}).get("Running"):
                     return dict(team=team, state="STOPPED", source="DOCKER_PROCESS_ONLY")
-                return self._product_observation(team, state["vehicles"]["test"].get("systemUid"))
+                return self._product_observation(team, state["vehicles"]["test"].get("systemUid"), deadline=deadline)
             if action == "activate":
                 return self._activate(state, team, record, observed, owner)
             if action == "status":

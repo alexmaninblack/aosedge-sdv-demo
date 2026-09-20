@@ -35,9 +35,9 @@ test("uncertain mutation leaves diagnostics available without enabling Finish or
   expect(port.submit.mock.calls.every(([command]) => command.action === "cloud-inspect")).toBe(true);
 });
 
-test("fresh configuration inspection outranks an earlier successful Cloud selection", async () => {
+test("current session configuration outranks an earlier successful Cloud selection", async () => {
   const selected = job("old", "old.test", "cloud-select"); selected.results[0].facts.applied = true;
-  const value = { ...state(), jobs: [selected] };
+  const value = { ...state(), cloudDomain: "new.test", jobs: [selected] };
   const port = { read: vi.fn(async () => value), submit: vi.fn(async (_command: DemoCommand, id: string) => job(id, "new.test")) };
   render(<PresenterControls port={port}><CloudConnectionPanel /></PresenterControls>);
   await waitFor(() => expect(screen.getAllByText("new.test")).toHaveLength(2));

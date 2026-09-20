@@ -7,6 +7,12 @@ Status: accepted input contract under
 [ADR 0015](../../docs/architecture/decisions/0015-use-native-aos-service-runtime-inputs.md);
 implementation and live qualification are separate.
 
+18 September accepted amendment: [active VDP capability evidence](active-vdp-capability-amendment.md)
+defines profile/release/capability observation, corrected to use native Cloud
+for Presenter inventory and verified artifact/profile binding. The strict v2
+schema below remains unchanged. No guest timer or mandatory new input revision
+is prescribed; service-local compatibility/recovery still requires proof.
+
 - [Public metadata schema](public-metadata.schema.json): schemaVersion 2;
   Unit/role and committed VDP compatibility only.
 - [Package release schema](service-release.schema.json): schemaVersion 1;

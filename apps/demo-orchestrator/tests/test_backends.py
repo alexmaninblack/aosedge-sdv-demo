@@ -6,7 +6,7 @@ import threading
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import Mock, patch
+from unittest.mock import ANY, Mock, patch
 
 from aosedge_demo_orchestrator.backends import BackendService
 from aosedge_demo_orchestrator.environment import EnvironmentService, EnvironmentError, JOURNAL, atomic_json
@@ -81,7 +81,7 @@ class BackendTests(unittest.TestCase):
             self.assertTrue(held.wait(2))
             before = (self.root / JOURNAL).read_bytes()
             self.assertEqual("OBSERVED", self.service.execute("inspect", "brake")["state"])
-            self.service._product_observation.assert_called_once_with("brake", "test-uid")
+            self.service._product_observation.assert_called_once_with("brake", "test-uid", deadline=ANY)
             self.assertEqual("RUNNING", self.service.execute("status", "brake")["state"])
             with self.assertRaisesRegex(EnvironmentError, "CURRENT_RUN_BUSY"):
                 self.service.execute("stop", "brake")
@@ -96,7 +96,7 @@ class BackendTests(unittest.TestCase):
         for field in ("vehicle", "owner", "backend", "upload"):
             with self.subTest(field=field):
                 initial = json.loads((self.root / JOURNAL).read_text())
-                def inspect(kind, name):
+                def inspect(kind, name, **kwargs):
                     current = json.loads((self.root / JOURNAL).read_text())
                     if field == "vehicle":
                         current["vehicles"]["test"]["systemUid"] = "replacement"
@@ -122,16 +122,16 @@ class BackendTests(unittest.TestCase):
         response.status = 200
         response.read.side_effect = [b'{"ready":true}', b'{"state":"CURRENT"}', json.dumps(dict(
             source="DEMO_MOCK", vehicleTelemetry=False, unitSystemUid="test-uid", counts={})).encode()] + [
-                b'{"unitSystemUid":"test-uid","items":[]}'] * 4 + [b'{"schemaVersion":1,"unitSystemUid":"test-uid","connected":false,"command":null}']
+                b'{"unitSystemUid":"test-uid","items":[]}'] * 4 + [json.dumps(dict(schemaVersion=3, contractVersion="3.0.0", resourceType="FUNCTION_OBSERVATION", unitSystemUid="test-uid", items=[], truncated=False)).encode(), b'{"schemaVersion":1,"unitSystemUid":"test-uid","connected":false,"command":null}']
         with patch("aosedge_demo_orchestrator.backends.http.client.HTTPConnection", return_value=connection) as factory:
             result = self.service._product_observation("tire", "test-uid")
         self.assertEqual("OBSERVED", result["state"])
         self.assertFalse(result["cloudAuthority"])
         self.assertFalse(result["vehicleTelemetry"])
-        self.assertEqual(8, connection.close.call_count)
+        self.assertEqual(9, connection.close.call_count)
         self.assertTrue(all(call.args == ("127.0.0.1", 18092) and call.kwargs == {"timeout": 3} for call in factory.call_args_list))
         self.assertEqual(["/health/ready", "/health/context", "/api/v1/tire/demo-mock/summary"] + [
-            "/api/v1/tire/units/test-uid/" + name + "?limit=10" for name in ("assessments", "events", "advisories", "function-status")] + ["/api/v1/tire/units/test-uid/demo-reset"],
+            "/api/v1/tire/units/test-uid/" + name + "?limit=10" for name in ("assessments", "events", "advisories", "function-status", "function-observations")] + ["/api/v1/tire/units/test-uid/demo-reset"],
             [call.args[1] for call in connection.request.call_args_list])
 
     def test_product_inspect_rejects_wrong_scope_or_fabricated_source(self):
@@ -154,7 +154,7 @@ class BackendTests(unittest.TestCase):
         response.read.side_effect = [b'{"ready":true}', b'{}', json.dumps(dict(
             source="DEMO_MOCK", vehicleTelemetry=False, unitSystemUid="test-uid")).encode(),
             json.dumps(window).encode()] + [json.dumps(dict(unitSystemUid="test-uid", resourceType=kind, items=[])).encode()
-                for kind in ("ASSESSMENT", "EVENT", "ADVISORY")] + [b'{"schemaVersion":1,"unitSystemUid":"test-uid","connected":false,"command":null}']
+                for kind in ("ASSESSMENT", "EVENT", "ADVISORY")] + [json.dumps(dict(schemaVersion=3, contractVersion="3.0.0", resourceType="FUNCTION_OBSERVATION", unitSystemUid="test-uid", items=[], truncated=False)).encode(), b'{"schemaVersion":1,"unitSystemUid":"test-uid","connected":false,"command":null}']
         with patch("aosedge_demo_orchestrator.backends.http.client.HTTPConnection", return_value=connection):
             result = self.service._product_observation("brake", "test-uid")
         self.assertEqual("OBSERVED", result["state"])
@@ -162,7 +162,7 @@ class BackendTests(unittest.TestCase):
         self.assertEqual("DEMO_MOCK", result["observations"]["mockData"]["data"]["source"])
         self.assertEqual("/api/v1/brake/units/test-uid/windows?limit=10", connection.request.call_args_list[3].args[1])
         self.assertEqual("/api/v1/brake/units/test-uid/demo-reset", connection.request.call_args.args[1])
-        self.assertEqual(8, connection.close.call_count)
+        self.assertEqual(9, connection.close.call_count)
 
     def test_brake_product_windows_reject_wrong_unit_or_shape(self):
         for change in (dict(unitSystemUid="production-uid"), dict(resourceType="MOCK"),
@@ -188,10 +188,29 @@ class BackendTests(unittest.TestCase):
             connection = factory.return_value
             response = connection.getresponse.return_value
             response.status = 200
-            response.read.side_effect = [b'[]', OSError("not available"), b'not JSON'] + [b'not JSON'] * 5
+            response.read.side_effect = [b'[]', OSError("not available"), b'not JSON'] + [b'not JSON'] * 6
             result = self.service._product_observation("brake", "test-uid")
             self.assertEqual("PARTIAL", result["state"])
             self.assertTrue(all(item["state"] == "UNAVAILABLE" for item in result["observations"].values()))
+
+    def test_window_detail_is_bounded_current_unit_read_without_arbitrary_path(self):
+        event_id = "4cba2d80-c04a-4d24-9f03-f4a85d56da13"
+        detail = dict(schemaVersion=2, contractVersion="2.0.0", resourceType="WINDOW_DETAIL", unitSystemUid="test-uid",
+            unitRole="VALIDATION", window=dict(eventId=event_id, unitSystemUid="test-uid"), samples=[])
+        connection = Mock()
+        connection.getresponse.return_value.status = 200
+        connection.getresponse.return_value.read.return_value = json.dumps(detail).encode()
+        with patch("aosedge_demo_orchestrator.backends.http.client.HTTPConnection", return_value=connection) as factory:
+            self.assertEqual(detail, self.service._window_detail("test-uid", event_id))
+            factory.assert_called_once_with("127.0.0.1", 18091, timeout=3)
+            self.assertEqual("/api/v1/brake/units/test-uid/windows/" + event_id, connection.request.call_args.args[1])
+            for change in (dict(unitSystemUid="other"), dict(samples=[{}] * 151), dict(window=dict(eventId="other", unitSystemUid="test-uid"))):
+                connection.getresponse.return_value.read.return_value = json.dumps(dict(detail, **change)).encode()
+                with self.assertRaisesRegex(EnvironmentError, "SCOPE_OR_SHAPE"):
+                    self.service._window_detail("test-uid", event_id)
+            for invalid in ("../other", event_id + "?target=production", None):
+                with self.assertRaisesRegex(EnvironmentError, "IDENTITY_INVALID"):
+                    self.service._window_detail("test-uid", invalid)
 
     def setUp(self):
         temporary = tempfile.TemporaryDirectory()
@@ -206,7 +225,7 @@ class BackendTests(unittest.TestCase):
         self.commands = []
         self.service._candidate = Mock(return_value=dict(imageId=IMAGE, sourceRevision="source"))
         self.service._image = Mock()
-        self.service._inspect = lambda kind, name: self.container if kind == "container" else None
+        self.service._inspect = lambda kind, name, **kwargs: self.container if kind == "container" else None
         def docker(*args, **kwargs):
             self.commands.append(args)
             if "up" in args:

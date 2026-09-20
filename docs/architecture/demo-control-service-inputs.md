@@ -3,6 +3,21 @@
 
 # Service runtime inputs
 
+## 18 September active-capability amendment
+
+The operator accepted [active VDP capability evidence](../../contracts/service-runtime-inputs/active-vdp-capability-amendment.md).
+The old strict five-field projection remains a legacy-compatible input; it
+does not identify the active functional profile. The accepted Cloud-first
+correction uses native Cloud for Presenter software state and exact installed
+artifact/profile binding. Automatic service-local compatibility reevaluation
+must be proved through existing inputs without a Cloud dependency; a new
+projection or guest timer is not prescribed. Follow the
+[current packet](../planning/active/work-packets/versioned-service-observability.md).
+No new native manager behavior or implicit guest polling from Presenter is
+authorized. The .33/permissions-blocked status below is dated history: .35's
+[17 September record](../qualification/factory-35-e2e-2026-09-17.md) supplies
+later scoped real-data evidence; it does not qualify this new amendment.
+
 - Status: Accepted contract; .33 native startup and synthetic backend path qualified; real KUKSA access remains open
 - Version: 2.2 (implementation-status clarification; no schema change)
 - Prepared: 2026-09-11

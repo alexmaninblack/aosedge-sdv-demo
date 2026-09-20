@@ -23,7 +23,7 @@ class QmAdvisoryProfileTest(unittest.TestCase):
 
     def test_contract_identity_and_exact_endpoints_are_frozen(self) -> None:
         self.assertEqual("D4-008", self.profile["decision"])
-        self.assertEqual("1.1.0", self.profile["contractVersion"])
+        self.assertEqual("1.2.0", self.profile["contractVersion"])
         self.assertEqual("1.0.1", self.profile["inputs"]["vdpCompatibilityContractVersion"])
         self.assertEqual(
             {"BRAKE_HEALTH_ADVISORY", "TIRE_HEALTH_ADVISORY"},
@@ -88,7 +88,11 @@ class QmAdvisoryProfileTest(unittest.TestCase):
     def test_time_replay_and_clear_policy_is_bounded(self) -> None:
         timing = self.profile["temporalPolicy"]
         self.assertEqual(2000, timing["maxGatewayAcceptanceAgeMs"])
+        self.assertEqual(100, timing["maxFutureClockSkewMs"])
         self.assertEqual(30000, timing["maxLeaseMs"])
+        self.assertEqual(30000, timing["maxActivationLifetimeMs"])
+        self.assertEqual("MIN_REQUEST_EXPIRY_AND_GATEWAY_ACCEPTANCE_PLUS_MAX_ACTIVATION_LIFETIME", timing["effectiveActiveUntil"])
+        self.assertFalse(timing["requestTimestampsRewritten"])
         self.assertGreaterEqual(
             timing["minimumReplayRetentionMs"], timing["maxLeaseMs"]
         )

@@ -211,8 +211,9 @@ class DemoOrchestrator:
                     data = backend.recover_file_sharing(request.restart_project)
                     return OperationResult(operation, OperationState.COMPLETED if data["state"] == "COMPLETED" else OperationState.PARTIAL,
                         "Explicit Docker Desktop recovery; no pruning, Cloud mutation or QEMU VM restart.", data=data)
-                data = backend.execute(request.action, request.team)
-                state = (OperationState.PARTIAL if request.action == "inspect" and data.get("state") == "PARTIAL" else OperationState.OBSERVED if request.action in ("status", "inspect", "reset-status") else OperationState.PARTIAL
+                data = (backend.execute(request.action, request.team, window_id=request.window_id)
+                    if request.action == "window-detail" else backend.execute(request.action, request.team))
+                state = (OperationState.PARTIAL if request.action == "inspect" and data.get("state") == "PARTIAL" else OperationState.OBSERVED if request.action in ("status", "inspect", "reset-status", "window-detail") else OperationState.PARTIAL
                     if request.action == "start" and data.get("state") != "RUNNING" else OperationState.COMPLETED)
                 message = ("Reset request accepted; only a matching Gateway CLEARED acknowledgement confirms completion."
                     if request.action == "reset-scenario" else "Backend process/storage operation; not Cloud or in-vehicle function readiness.")
@@ -401,11 +402,12 @@ class DemoOrchestrator:
                 return OperationResult(operation, OperationState.PARTIAL, "DNS_RECOVERY_UNCONFIRMED")
             return OperationResult(operation, OperationState.COMPLETED if data["state"] == "READY" else OperationState.PARTIAL,
                 "Owned DNS recovery only; VM, CM, SM, VDP, containers and Cloud configuration unchanged.", data=data)
-        if operation == "simulation.exercise":
-            if request.target != VehicleTarget.TEST or request.team not in ("brake", "tire"):
+        if operation in ("simulation.exercise", "simulation.return-to-road"):
+            recovery=operation=="simulation.return-to-road"
+            if request.target != VehicleTarget.TEST or (not recovery and request.team not in ("brake", "tire")):
                 return OperationResult(operation, OperationState.BLOCKED, "SIMULATION_EXERCISE_TEST_ONLY")
             try:
-                data = self.source_service.exercise(request.team)
+                data = self.source_service.exercise("return_to_road" if recovery else request.team)
             except EnvironmentError as error:
                 return OperationResult(operation, OperationState.BLOCKED, str(error))
             except (OSError, ValueError, KeyError, TypeError):

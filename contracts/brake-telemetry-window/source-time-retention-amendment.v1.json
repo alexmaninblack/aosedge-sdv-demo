@@ -1,0 +1,23 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "amendmentId": "brake-v1-source-time-retention-2026-09-18",
+  "baseProfile": "brake-telemetry-window-profile.v1.json",
+  "supersedes": [
+    "input.sourceCadenceHz",
+    "input.selection"
+  ],
+  "qualifiedSourceCadencesHz": [
+    20,
+    30
+  ],
+  "retainedCadenceHz": 10,
+  "selection": "FIRST_COMPLETE_VALID_FRAME_PER_SOURCE_TIME_BUCKET",
+  "sourceTimeBucketMs": 100,
+  "bucket": "FLOOR_SOURCE_EPOCH_MILLISECONDS_DIVIDED_BY_100",
+  "synthesizeMissingSamples": false,
+  "rewriteSourceTimestamp": false,
+  "triggerAndClearUnchanged": true,
+  "windowAndSpoolBoundsUnchanged": true,
+  "logicalMessageSchemasUnchanged": true
+}

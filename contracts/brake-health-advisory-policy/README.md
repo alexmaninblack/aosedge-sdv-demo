@@ -4,13 +4,14 @@
 # Brake Health v3 Advisory Policy
 
 - Decision: D4-016.4 accepted 2026-08-23
-- Contract version: 1.0.3 (Typed QM Advisory 1.1.0; functional profile v3 is
+- Contract version: 1.0.4 (metadata repin to Typed QM Advisory 1.2.0 on
+  20 September 2026; producer timing/model behavior is unchanged). Functional profile v3 is
   separate from the actual package release, approved 16 September 2026;
   normal Brake Health decision/lease semantics are unchanged; an explicit
-  current-Test demo model reset is an additional accepted CLEAR cause)
+  current-Test demo model reset is an additional accepted CLEAR cause.
 - Reuses: [Typed QM Advisory Profile](../qm-advisory-profile/README.md)
 - Accepted policy SHA-256:
-  `d9eb0aa80f5ba539939797bc79123a447b16111476a883d0bed327489692fed7`
+  `4cd9ca4b3870a96caf0c9ef33c71443f4070730780f3e6d8a991a747d56e47aa`
 
 An operator-authorized `Reset demo scenario` uses the durable reset-command UUID
 as the CLEAR decision ID, without creating an assessment or band-change event.

@@ -107,6 +107,8 @@ bounded observation wire contract before producer changes, then consumer-first
 backend/service implementation. A genuinely new native input interface requires
 the packet's bounded decision; these tests do not silently select one.
 
-Moving-source validation, qualified Brake/Tire maneuvers, new result/advisory
-delivery, reset/offline tests, all version transitions and the clean UI cycle
-remain open. No calibration or complete P1–P8 acceptance is claimed.
+Moving-source validation, qualified Brake/Tire maneuvers and new current-release
+result/advisory delivery subsequently passed the bounded
+[preserved-Test follow-up](preserved-test-motion-and-results-2026-09-18.md).
+Reset/offline tests, all version transitions and the clean UI cycle remain open
+for this increment. No calibration or complete P1–P8 acceptance is claimed.

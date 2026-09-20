@@ -40,6 +40,7 @@ FACTORY_RELEASES = {
     "6.1.1-maninblack.33": "f7922b02b15f6cf816f181e1bf97572b61859aea",
     "6.1.1-maninblack.34": "81e7e1fda991c133a7dc83188c1dcf0f966fd62e",
     "6.1.1-maninblack.35": "bb691efcbf19f1bebd74fd2ef3ae9ff0aee2bf74",
+    "6.1.1-maninblack.36": "a0f88d8fc47d5e84df874883cb01872e25516fd5",
 }
 RELATIVE = "meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files/systemd-slot-component"
 BUILDER_PROJECT = "/home/yocto/r61-build/project/yocto"
@@ -1044,10 +1045,10 @@ def build_factory(version, metadata_only=False):
         prefix = "cd " + BUILDER_PROJECT + "; . poky/oe-init-build-env build-main >/dev/null; "
         suffix = version.rsplit(".", 1)[1]
         flags = " -R " + source + "/qualification/factory-" + suffix + ".conf "
-        managers = "aos-servicemanager" + (" aos-communicationmanager" if suffix in ("32", "33", "34", "35") else "")
-        if suffix in ("34", "35"):
+        managers = "aos-servicemanager" + (" aos-communicationmanager" if suffix in ("32", "33", "34", "35", "36") else "")
+        if suffix in ("34", "35", "36"):
             managers += " aos-iamanager"
-        targets = managers + (" aos-kuksa-auth-compat" if suffix in ("34", "35") else "")
+        targets = managers + (" aos-kuksa-auth-compat" if suffix in ("34", "35", "36") else "")
         stage("compile the proven manager corrections from committed source (offline)")
         remote(prefix + "bitbake" + flags + "-c compile " + targets, timeout=1200, capture=False)
         work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-servicemanager/git"
@@ -1060,8 +1061,8 @@ def build_factory(version, metadata_only=False):
         print(test_log, file=sys.stderr, flush=True)
         if "[  PASSED  ] 5 tests." not in test_log:
             raise EnvironmentError("FACTORY_EXPECTED_FIVE_TESTS_NOT_EXECUTED")
-        if suffix == "35":
-            stage("compile and run the CM startup and service-reconciliation regressions")
+        if suffix in ("35", "36"):
+            stage("compile and run the CM startup, reconciliation and applicable storage regressions")
             cm_work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-communicationmanager/git"
             cm_tests = r'''
 import os, pathlib, shlex, subprocess
@@ -1074,13 +1075,14 @@ b=p/'service-update-launcher-tests'
 subprocess.run([cache['CMAKE_COMMAND'],'-S',str(p/'service-update-deps/aos_core_lib_cpp'),'-B',str(b),'-G',cache['CMAKE_GENERATOR'],'-DCMAKE_MAKE_PROGRAM='+cache['CMAKE_MAKE_PROGRAM'],'-DWITH_TEST=ON','-DWITH_MBEDTLS=OFF','-DWITH_OPENSSL=OFF','-DFETCHCONTENT_FULLY_DISCONNECTED=ON','-DCMAKE_GTEST_DISCOVER_TESTS_DISCOVERY_MODE=PRE_TEST','-DCMAKE_TOOLCHAIN_FILE='+str(p/'toolchain.cmake')],env=env,check=True)
 subprocess.run([cache['CMAKE_COMMAND'],'--build',str(b),'--target','aos_core_cm_launcher_test','--parallel','6'],env=env,check=True)
 tests=list(b.rglob('aos_core_cm_launcher_test')); assert len(tests)==1
-subprocess.run(['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'),'--library-path',str(p/'recipe-sysroot/lib')+':'+str(p/'recipe-sysroot/usr/lib'),str(tests[0]),'--gtest_filter=CMLauncherTest.*:ServiceReconciliation/*'],env=env,check=True)
+subprocess.run(['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'),'--library-path',str(p/'recipe-sysroot/lib')+':'+str(p/'recipe-sysroot/usr/lib'),str(tests[0]),'--gtest_filter=CMLauncherTest.*:ServiceReconciliation/*:CMStorage*.*:MissingImageAndExpiry/*'],env=env,check=True)
 '''.replace("WORK", repr(cm_work), 1)
             cm_log = remote("python3 -c " + shlex.quote(cm_tests), timeout=300)
-            if "[  PASSED  ] 19 tests." not in cm_log:
+            expected_cm_tests = 45 if suffix == "36" else 19
+            if "[  PASSED  ] " + str(expected_cm_tests) + " tests." not in cm_log:
                 raise EnvironmentError("FACTORY_CM_STARTUP_REGRESSIONS_INCOMPLETE")
             test_log += cm_log
-        if suffix in ("34", "35"):
+        if suffix in ("34", "35", "36"):
             stage("verify uniform CM/SM/IAM permission capacity and native KAC/Provider tests")
             for recipe in managers.split():
                 manager_build = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/" + recipe + "/git/build"
@@ -1100,7 +1102,7 @@ subprocess.run(['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'
                 test_log += remote(kac_loader + " --library-path " + kac_libs + " " + kac_work + "/build/" + executable, timeout=60)
         stage("package the managers with package QA")
         remote(prefix + "bitbake" + flags + targets, timeout=1200, capture=False)
-        if suffix in ("32", "33", "34", "35"):
+        if suffix in ("32", "33", "34", "35", "36"):
             # Verify final package input after native do_update_config, not the
             # intermediate resource file that do_install initially creates.
             package_check = (
@@ -1115,7 +1117,7 @@ subprocess.run(['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'
                 "print('Factory service-input package: PASS')"
             ) % (work + "/image", source + "/meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files")
             print(remote("python3 -c " + shlex.quote(package_check)), file=sys.stderr, flush=True)
-        if suffix in ("33", "34", "35"):
+        if suffix in ("33", "34", "35", "36"):
             cm_work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-communicationmanager/git"
             cm_check = ("import json; from pathlib import Path; "
                 "config=json.loads(Path(%r).read_text()); "

@@ -7,6 +7,20 @@ export type ProductRow = { backendReceivedAt: string; deliveryState?: string; st
 export type Resource = { state: string; data?: Record<string, unknown> };
 export const object = (value: unknown): Record<string, unknown> => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
 
+export function productSourceTime(row: ProductRow) {
+  const m = row.message;
+  return m.sourceEventTime ?? m.windowStartTimestamp ?? m.assessedAt ?? m.capturedAt ?? m.createdAt ?? m.observedAt;
+}
+export function afterReset(row: ProductRow, issuedAt?: string) {
+  if (!issuedAt) return true;
+  const source = productSourceTime(row);
+  return typeof source === "string" && Date.parse(source) > Date.parse(issuedAt);
+}
+export function isProductResult(row: ProductRow, team: "brake" | "tire") {
+  return row.message.messageType === (team === "brake" ? "BRAKE_HEALTH_ASSESSMENT" : "TIRE_HEALTH_ASSESSMENT")
+    || (team === "brake" && row.message.messageType === "WINDOW_COMPLETION");
+}
+
 /** Backend projections only: no guest reads, mock fallback or advisory claim. */
 export function productRows(resources: Record<string, Resource | undefined>, uid: string): ProductRow[] {
   const rows: ProductRow[] = [];
@@ -22,7 +36,8 @@ export function productRows(resources: Record<string, Resource | undefined>, uid
           content: { status: row.terminalState, quality: row.terminalState, receivedSampleCount: row.receivedSampleCount,
             receivedChunkCount: row.receivedChunkCount, expectedChunkCount: row.expectedChunkCount } } });
       else rows.push({ backendReceivedAt: row.backendReceivedAt, deliveryState: String(row.deliveryState ?? ""),
-        ...(typeof row.stale === "boolean" ? { stale: row.stale } : {}), message });
+        ...(typeof row.stale === "boolean" ? { stale: row.stale } : {}), message: { ...message,
+          ...(typeof row.sourceEventTime === "string" ? { sourceEventTime: row.sourceEventTime } : {}) } });
     }
   }
   return rows.sort((a, b) => b.backendReceivedAt.localeCompare(a.backendReceivedAt));

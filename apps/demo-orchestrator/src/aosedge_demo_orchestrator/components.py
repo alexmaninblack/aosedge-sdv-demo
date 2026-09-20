@@ -194,7 +194,7 @@ class ComponentService:
                 from .component_build import ADVISORY_RUNTIME_BUILD_TYPE, validate_advisory_payload
                 if (provenance.get("buildType") == ADVISORY_RUNTIME_BUILD_TYPE
                         or PACKAGE + "advisory_transport.py" in payload
-                        or capability.get("contracts", {}).get("typedQmAdvisory", {}).get("contractVersion") == "1.1.0"):
+                        or capability.get("contracts", {}).get("typedQmAdvisory", {}).get("contractVersion") in ("1.1.0", "1.2.0")):
                     try:
                         validate_advisory_payload(payload, provenance)
                     except EnvironmentError as error:

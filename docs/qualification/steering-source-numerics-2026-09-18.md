@@ -3,8 +3,9 @@
 
 # P1 steering-source investigation and numerical regression
 
-Date: 18 September 2026. Status: source corrections, isolated proof and scoped
-live activation completed; moving-vehicle and full-chain acceptance remain open.
+Date: 18 September 2026. Status: source corrections, isolated proof, scoped
+live activation and bounded moving-source proof completed; full-chain and
+all-scenario acceptance remain open.
 
 ## Authorized boundary
 
@@ -156,20 +157,25 @@ and actor recreation, but not VM, Cloud identity, service, model or queue reset.
   Monitoring for both services. This does not establish a new assessment or
   advisory application.
 
-The execution safety review rejected automated Autopilot activation despite
+At that stage, the execution safety review rejected automated Autopilot activation despite
 operator authorization. The control remained in Safe Stop; no alternate CLI,
 keyboard or script path was used to bypass that rejection. Motion-dependent
-tests remain explicitly unexecuted while independent investigation continues.
+tests were explicitly unexecuted at that checkpoint. A later fresh screenshot
+verification allowed the requested click without changing safeguards. The
+[moving follow-up](preserved-test-motion-and-results-2026-09-18.md) subsequently
+observed 3,598 coherent Autopilot frames without an invalid pair and traced real
+Brake/Tire results and applied advisories. It supersedes the motion blocker,
+not the remaining completeness, control-recovery or version-transition gates.
 The earlier installed-library comparison predates replacement; its executable
 now resolves the current module and must not be mislabeled as the old baseline
 if rerun.
 
 ## Outstanding gates
 
-1. Obtain authorized executable motion control without bypassing tool review,
-   then verify the corrected live source under the previously failing drive.
-2. Re-observe source pairs, named missing-path evidence, VDP invalidation,
-   KUKSA input readiness, qualified Brake episodes and backend delivery.
+1. Moving-source and current-release result/advisory proof passed in the linked
+   follow-up; broader duration/scenario qualification remains separate.
+2. Correlate named missing-path evidence, VDP invalidation and any remaining
+   KUKSA input interruption. Periodic complete-frame counts do not close this.
 3. Verify control-session recovery separately. A steering test does not close
    that defect or prove the entire P1–P8 plan.
 

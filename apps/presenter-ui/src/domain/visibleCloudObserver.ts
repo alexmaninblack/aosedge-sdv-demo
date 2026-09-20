@@ -1,5 +1,5 @@
 import type { PlatformCloudObservation } from "./platformObservation";
-import { servicePending } from "./softwareObservation";
+import { componentPending, servicePending } from "./softwareObservation";
 
 export interface CloudObserverState { observation: PlatformCloudObservation | null; loading: boolean; refreshGeneration?: number }
 const unavailable = (): PlatformCloudObservation => ({ state: "UNAVAILABLE", value: null, observedAt: null, reason: "AOS_CLOUD_STATE_UNAVAILABLE" });
@@ -79,6 +79,8 @@ export class VisibleCloudObserver {
       if (!this.visible()) return;
       if (this.dirty) { void this.refresh(); return; }
       const pending = Boolean(this.state.observation?.value?.pendingVersion)
+        || componentPending({ pending_component: null, pending_component_status: this.state.observation?.value?.updateStatus ?? null })
+        || this.state.observation?.value?.inventory?.components.value?.some(componentPending)
         || this.state.observation?.value?.inventory?.services.value?.some(servicePending)
         || this.state.observation?.serviceReleases?.some(row => row.submitted && ["ACCEPTED", "PROCESSING"].includes(row.publication.stage ?? ""))
         || ["ACCEPTED", "PROCESSING"].includes(this.state.observation?.publication?.stage ?? "");

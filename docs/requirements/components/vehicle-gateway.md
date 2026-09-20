@@ -338,7 +338,8 @@ decisions they exercise.
   `Vehicle.OEM.BrakeHealth.Advisory.Request` and
   `Vehicle.OEM.TireHealth.Advisory.Request` schema-bound non-safety targets;
   validate target, 2048-byte canonical envelope, endpoint-specific enum/value,
-  2000 ms age, 30000 ms lease, rate, request/epoch/sequence and replay identity;
+  2000 ms past age, 100 ms future skew, 30000 ms declared lease and effective
+  activation limit, rate, request/epoch/sequence and replay identity;
   and reject arbitrary VSS writes and every throttle, brake, steering, gear,
   vehicle-motion or safety-critical operation without changing vehicle state.
 - Parent system requirements: [allowlisted outbound advisory (`SYS-VDP-004`)](../system-requirements-and-traceability.md#sys-vdp-004), [allowlisted Brake Health advisory (`SYS-BHS-003`)](../system-requirements-and-traceability.md#sys-bhs-003), [offline Tire Health advisory (`SYS-TIRE-006`)](../system-requirements-and-traceability.md#sys-tire-006), [fail-closed advisory security (`SYS-SEC-003`)](../system-requirements-and-traceability.md#sys-sec-003), and [QM service and Gateway containment (`SYS-SEC-007`)](../system-requirements-and-traceability.md#sys-sec-007)
@@ -349,7 +350,7 @@ decisions they exercise.
   path/type/value, missing identity, stale, replay, excessive-rate,
   cross-service, arbitrary-write, throttle, brake, steer, gear and other
   safety/motion negative cases with no side effects
-- Executable contract: [Typed QM Advisory Profile 1.0.2](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
+- Executable contract: [Typed QM Advisory Profile 1.2.0](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - Requirement state: D3 design-reviewed; D4-008 contract accepted
 - Implementation state: `TARGET`; current all-Set rejection remains correct until the complete accepted endpoints and negative matrix are implemented
 

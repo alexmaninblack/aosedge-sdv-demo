@@ -47,6 +47,19 @@ class BrakeTelemetryWindowContractTest(unittest.TestCase):
         self.assertEqual("1.0.0", self.profile["contractVersion"])
         self.assertEqual("HARD_BRAKING_EPISODE_V1", self.profile["eventType"])
 
+    def test_current_source_time_amendment_preserves_legacy_wire_and_bounds(self) -> None:
+        amendment=json.loads((CONTRACT_ROOT / "source-time-retention-amendment.v1.json").read_text())
+        self.assertEqual(["input.sourceCadenceHz", "input.selection"], amendment["supersedes"])
+        self.assertEqual([20, 30], amendment["qualifiedSourceCadencesHz"])
+        self.assertEqual(100, amendment["sourceTimeBucketMs"])
+        self.assertEqual(10, amendment["retainedCadenceHz"])
+        self.assertEqual("FIRST_COMPLETE_VALID_FRAME_PER_SOURCE_TIME_BUCKET", amendment["selection"])
+        self.assertFalse(amendment["synthesizeMissingSamples"])
+        self.assertFalse(amendment["rewriteSourceTimestamp"])
+        self.assertTrue(amendment["triggerAndClearUnchanged"])
+        self.assertTrue(amendment["windowAndSpoolBoundsUnchanged"])
+        self.assertTrue(amendment["logicalMessageSchemasUnchanged"])
+
     def test_demo_freshness_budget_matches_both_provenance_schemas(self) -> None:
         self.assertEqual(5000, self.profile["input"]["freshnessTimeoutMs"])
         self.assertEqual(5000, self.profile_schema["properties"]["input"]["properties"]["freshnessTimeoutMs"]["const"])

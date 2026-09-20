@@ -11,7 +11,7 @@ from unittest.mock import Mock, patch
 
 import test_images_environment as fixtures
 from aosedge_demo_orchestrator.backend_context import CONTEXT, project_context
-from aosedge_demo_orchestrator.backend_retirement import BackendRetirement, COUNTS, FOUNDATION
+from aosedge_demo_orchestrator.backend_retirement import BackendRetirement, COUNTS, TIRE_COUNTS, FOUNDATION, _counts
 from aosedge_demo_orchestrator.backends import BackendService, TEAMS
 from aosedge_demo_orchestrator.environment import EnvironmentError, JOURNAL, atomic_json, digest
 from aosedge_demo_orchestrator.status import read_json
@@ -110,6 +110,35 @@ class BackendRetirementTests(TestCase):
                 else:
                     with self.assertRaisesRegex(EnvironmentError, "BACKEND_WHOLE_STORE_EMPTY_PROOF_UNAVAILABLE"):
                         self.cleanup._empty_store(state, allow_nonempty=True)
+
+    def test_observation_counts_are_closed_and_never_ignored_in_empty_proof(self):
+        state = self.backend_fixture(False)
+        for team, version, base in (("brake", 5, COUNTS), ("tire", 4, TIRE_COUNTS)):
+            with self.subTest(team=team):
+                state["backends"][team]["cleanup"] = {}
+                counts = dict.fromkeys(base | {"resetProducers", "resetCommands", "functionObservations", "functionObservationConflicts"}, 0)
+                self.assertEqual(_counts(counts, base), counts)
+                for missing in ("functionObservations", "functionObservationConflicts", "resetCommands"):
+                    with self.assertRaisesRegex(EnvironmentError, "COUNTS_INVALID"):
+                        _counts({key: value for key, value in counts.items() if key != missing}, base)
+                body = dict(schemaVersion=1, contractVersion="1.0.0", state="EMPTY",
+                    databaseSchemaVersion=version, recordCounts=counts, observedAt=datetime.now(timezone.utc).isoformat())
+                self.cleanup._private = Mock(return_value=body)
+                self.cleanup._empty_store(state, team=team)
+                for category in ("functionObservations", "functionObservationConflicts"):
+                    counts[category] = 1
+                    with self.assertRaisesRegex(EnvironmentError, "WHOLE_STORE_EMPTY_PROOF_UNAVAILABLE"):
+                        self.cleanup._empty_store(state, team=team)
+                    body["state"] = "NONEMPTY"
+                    with self.assertRaisesRegex(EnvironmentError, "NONMATCHING_DATA_PRESERVED"):
+                        self.cleanup._empty_store(state, team=team)
+                    self.cleanup._empty_store(state, team=team, allow_nonempty=True)
+                    self.assertFalse(state["backends"][team]["cleanup"]["wholeStoreEmpty"])
+                    counts[category] = 0
+                    body["state"] = "EMPTY"
+                body["recordCounts"] = {key: value for key, value in counts.items() if not key.startswith("functionObservation")}
+                with self.assertRaisesRegex(EnvironmentError, "WHOLE_STORE_EMPTY_PROOF_UNAVAILABLE"):
+                    self.cleanup._empty_store(state, team=team)
 
     def test_mock_store_cleanup_is_independent_and_required_before_single_volume_removal(self):
         state = self.backend_fixture(False)

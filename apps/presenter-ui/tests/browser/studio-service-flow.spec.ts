@@ -33,6 +33,7 @@ async function serviceScenario(page: Page) {
     if (path.endsWith("/platform")) return route.fulfill({ json: {
       state: "CURRENT", bindingKey: "current-run:unit-id", observedAt: now(), serviceReleases: releases,
       value: { target: "test", source: "Aos Cloud", online: "ONLINE", lifecycle: "provisioned", installedVersion: "23.0.0", pendingVersion: null,
+        installedProfile: { state: "CURRENT", profile: "v3", releaseVersion: "23.0.0", cloudVersionId: "vdp-23", source: "CLOUD_INSTALLATION_AND_PACKAGE", reason: null },
         updateStatus: "installed", releases: [], latestPublishedVersion: null, runtimeState: "NOT_REPORTED_BY_CLOUD", dataReadiness: "NOT_REPORTED_BY_CLOUD",
         inventory: { unitId: "unit-id", systemUid: "test-system", teamServiceIds: ids, components: { state: "CURRENT", value: [] }, services: { state: "CURRENT", value: [...assignments].map(id => {
           const latest = releases.filter(row => row.serviceId === id && row.submitted).at(-1)!;

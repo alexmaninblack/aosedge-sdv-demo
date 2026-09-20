@@ -7,6 +7,16 @@ This directory owns audience-visible scenarios, storyboards, presenter flows,
 and original demo visual assets. These documents describe what the audience
 sees; they do not redefine the system architecture.
 
+For the **current implemented Test-only Studio**, start with the
+[current interface register](mockups/README.md) and
+[UI-STUDIO-026](mockups/aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract).
+The [20 September UI timing and repair report](../qualification/presenter-ui-timing-e2e-2026-09-20.md)
+records the observed version/offline cycle, Presenter corrections and required
+engineering preflight for compiled Brake V1/V2/V3 and Tire V1 products. UI
+Prepare consumes those products; it does not build uncommitted service source.
+The earlier two-vehicle walkthrough below is historical narrative, not today's
+operator procedure or authorization to alter Production.
+
 Start a colleague or stakeholder review with the
 [AosEdge Demo Walkthrough and Review Guide](aosedge-demo-walkthrough.md) and the
 [clickable interaction mockup](mockups/aosedge-demo-interaction-mockup-2-4.html).

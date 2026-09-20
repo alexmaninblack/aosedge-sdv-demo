@@ -32,6 +32,9 @@ they do not replace the current HLA.
 - [ADR 0016: Unsigned Packages and Session-scoped Signing](0016-unsigned-packages-and-session-scoped-signing.md)
   — proposed local source-trust and per-Cloud publication amendment; audited
   migration, service parity and preservation of the operator's parked Test.
+- [ADR 0017: Continuous Demo Lifecycle and Upstream Core](0017-continuous-demo-lifecycle-and-upstream-core.md)
+  — accepted removal of operator Park/Resume without another native CM patch;
+  continuous clean-cycle qualification and explicit upstream retention defect.
 
 The change process and stable-reference rules are defined in
 [Documentation and Requirements Management](../../governance/documentation-and-requirements-management.md).

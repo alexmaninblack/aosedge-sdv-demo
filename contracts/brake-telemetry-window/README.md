@@ -3,6 +3,21 @@
 
 # Brake Telemetry Window Contract
 
+## Authorized source-cadence amendment — 18 September 2026
+
+The accepted versioned-service work packet supersedes the historical 30-Hz /
+every-third-valid-frame assumption with the first actual complete valid frame
+in each 100-ms source-time bucket (`floor(sourceEpochMs / 100)`). At both
+20-Hz and 30-Hz input this retains 10 samples per second. Validation happens
+before selection; invalid, duplicate or reordered inputs cannot fill buckets.
+An empty bucket stays a gap. No interpolation or timestamp rewriting occurs.
+Trigger/clear timing, 3/10/2-second windows, 150 samples, spool/receipt bounds
+and legacy/native logical message schemas are unchanged. The explicit
+[machine-readable amendment](source-time-retention-amendment.v1.json) overrides
+only `input.sourceCadenceHz` and `input.selection` in the retained base profile;
+the original profile and golden message files are preserved as baseline evidence.
+
+
 ## Authorized demo freshness amendment — 15 September 2026
 
 For the single-Mac Brake V1 real-data trial, source age and stream idle use

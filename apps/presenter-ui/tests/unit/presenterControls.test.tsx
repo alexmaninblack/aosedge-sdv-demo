@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { PresenterControls, OperationProgress, usePresenterControls } from "../../src/app/state/PresenterControls";
+import { PresenterControls, OperationProgress, preparationRecovery, usePresenterControls } from "../../src/app/state/PresenterControls";
 import { LocalPresenterCommandAdapter } from "../../src/adapters/local/LocalPresenterCommandAdapter";
 import type { DemoCommand, OperationSession } from "../../src/domain/presenterCommandPort";
 
@@ -9,16 +9,24 @@ function Buttons() {
   const controls = usePresenterControls();
   return <><button disabled={controls.blocked} onClick={() => controls.request({ action: "create", image: "31/arm64" })}>Create</button>
     <button disabled={controls.blocked} onClick={() => controls.request({ action: "upload", version: "13.0.0" })}>Publish</button>
+    <button disabled={controls.blocked} onClick={() => controls.request({ action: "service-publish", team: "brake", release: "brake/70" })}>Publish service</button>
     <button disabled={controls.blocked} onClick={() => controls.request({ action: "observe-test" })}>Observe</button><OperationProgress /></>;
 }
-function setup() {
-  const state: OperationSession = { sessionId: "native-generation", active: null, uncertain: false, jobs: [] };
+function setup(jobs: OperationSession["jobs"] = []) {
+  const state: OperationSession = { sessionId: "native-generation", cloudDomain: "selected.stage.example", active: null, uncertain: false, jobs };
   const port = { read: vi.fn().mockResolvedValue(state), submit: vi.fn(async (command: DemoCommand, id: string, _sessionId: string) => ({ id, ...command,
     state: "ACCEPTED", startedAt: "now", progress: [], results: [] })) };
   render(<div className="browser-workspace"><PresenterControls port={port}><Buttons /></PresenterControls></div>);
   return port;
 }
 describe("protected Presenter controls", () => {
+  it("explains engineering prerequisites without bypassing or retrying preparation", () => {
+    const job: any = { action: "service-prepare", state: "BLOCKED", results: [], reason: "SERVICE_COMMITTED_SOURCE_REQUIRED" };
+    expect(preparationRecovery(job)).toContain("Retrying Prepare unchanged cannot succeed");
+    job.reason = "SERVICE_BUILD_REQUIRED:democtl service build brake --content-profile v1";
+    expect(preparationRecovery(job)).toContain("Engineering must build it before the demo");
+    job.state = "COMPLETED"; expect(preparationRecovery(job)).toBeNull();
+  });
   it("cancel has no effect; confirmed double click submits exactly one bound action", async () => {
     const port = setup();
     await waitFor(() => expect(screen.getByText("Create")).toBeEnabled());
@@ -40,7 +48,9 @@ describe("protected Presenter controls", () => {
     await waitFor(() => expect(screen.getByText("Publish")).toBeEnabled());
     fireEvent.click(screen.getByText("Publish"));
     const dialog = screen.getByRole("dialog");
-    expect(dialog).toHaveTextContent("fixed OEM publication context");
+    expect(dialog).toHaveTextContent("selected session OEM");
+    expect(dialog).toHaveTextContent("selected.stage.example");
+    expect(dialog).toHaveTextContent("Selected session OEM certificate");
     expect(dialog).toHaveTextContent("13.0.0");
     expect(dialog).toHaveTextContent("no Production membership or assignment is changed");
     expect(dialog).toHaveTextContent("no batch-approval step is required");
@@ -53,6 +63,22 @@ describe("protected Presenter controls", () => {
     await waitFor(() => expect(port.submit).toHaveBeenCalledTimes(1));
     expect(port.submit.mock.calls[0]?.[0]).toEqual({ action: "observe-test" });
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+  it.each([
+    ["selected.stage.example", "brake/70", true],
+    ["other.cloud.example", "brake/70", false],
+    ["selected.stage.example", "brake/old", false],
+  ])("service confirmation scopes the SP receipt to Cloud %s and release %s", async (cloudDomain, release, matching) => {
+    const port = setup([{ id: "prepared", action: "service-prepare", cloudDomain, release, state: "COMPLETED", startedAt: "now", progress: [],
+      results: [{ operation: "service.prepare", state: "COMPLETED", message: "Prepared", facts: { serviceProviderId: "verified-provider" } }] }] as any);
+    await waitFor(() => expect(screen.getByText("Publish service")).toBeEnabled());
+    fireEvent.click(screen.getByText("Publish service"));
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveTextContent("selected.stage.example");
+    expect(dialog).toHaveTextContent("Selected session Service Provider certificate");
+    if (matching) expect(dialog).toHaveTextContent("verified-provider · last preparation/publication receipt");
+    else { expect(dialog).not.toHaveTextContent("verified-provider"); expect(dialog).toHaveTextContent("Not yet reported for this release"); }
+    expect(port.submit).not.toHaveBeenCalled();
   });
   it("a lost submit response blocks further clicks instead of replaying", async () => {
     const port = setup();

@@ -35,6 +35,9 @@ class AdvisoryObservationTests(unittest.TestCase):
         self.assertEqual("CONFIGURED_NOT_APPLICATION_PROOF", source_guest.advisory_configuration_observation(capability))
         capability["contracts"] = dict(typedQmAdvisory=dict(build.ADVISORY_CONTRACT, sha256="0" * 64))
         self.assertEqual("DEFERRED", source_guest.advisory_configuration_observation(capability))
+        for contract in build.ADVISORY_RUNTIME_CONTRACT_HISTORY.values():
+            capability["contracts"] = dict(typedQmAdvisory=contract)
+            self.assertEqual("CONFIGURED_NOT_APPLICATION_PROOF", source_guest.advisory_configuration_observation(capability))
 
     def test_log_projection_preserves_only_fixed_endpoints_and_results(self):
         message = "INFO QM_ADVISORY endpoint=Vehicle.OEM.TireHealth.Advisory.Request result=VISS_SET_ACCEPTED"
@@ -73,6 +76,7 @@ class AdvisoryRuntimeTests(unittest.TestCase):
             "contracts/qm-advisory-profile/qm-advisory-profile.v1.json").read_bytes()
         self.modules = {
             "runtime.py": b"from .advisory_transport import Transport\n",
+            "bridge.py": b"REPEATED_FRAME_IS_NOT_A_NEW_MEASUREMENT = True\n",
             "advisory.py": b"POLICY = 'reviewed profile independent of release'\n",
             "advisory_transport.py": b"class Transport: pass\n",
             "manifest.py": b"CURRENT_ADVISORY_CONTRACT = " + build.encoded(build.ADVISORY_CONTRACT) + b"\n",
@@ -127,7 +131,8 @@ class AdvisoryRuntimeTests(unittest.TestCase):
         self.assertEqual([], list(self.service.root.iterdir()))
 
     def test_pin_rejects_extra_module_and_nonimmutable_reference(self):
-        for pin in (dict(self.pin, revision="HEAD"), dict(self.pin, modules=dict(self.pin["modules"], **{"bridge.py": "c" * 64}))):
+        for pin in (dict(self.pin, revision="HEAD"), dict(self.pin, modules=dict(self.pin["modules"], **{"unreviewed.py": "c" * 64})),
+                    dict(self.pin, modules={key: value for key, value in self.pin["modules"].items() if key != "bridge.py"})):
             with self.subTest(pin=pin), patch.object(build, "ADVISORY_RUNTIME_PIN", pin):
                 with self.assertRaisesRegex(EnvironmentError, "SOURCE_PIN_INVALID"):
                     build.advisory_runtime_pin()
@@ -169,6 +174,43 @@ class AdvisoryRuntimeTests(unittest.TestCase):
         self.modules["runtime.py"] += b"CHANGED = True\n"
         with self.assertRaisesRegex(EnvironmentError, "SOURCE_DIGEST_MISMATCH"):
             self.compose()
+
+    def test_previous_reviewed_release_remains_inspectable_without_accepting_unknown_pins(self):
+        transport, _ = self.compose()
+        payload = self.payload(transport)
+        provenance = json.loads(payload["provenance/provenance.json"])
+        previous = dict(self.pin, revision="c" * 40, tree="d" * 40,
+            modules={key: value for key, value in self.pin["modules"].items() if key != "bridge.py"})
+        provenance.update(sourceRevision=previous["revision"], sourceTree=previous["tree"],
+            runtimeSourceModules=previous["modules"])
+        with patch.object(build, "ADVISORY_RUNTIME_HISTORY", (previous,)), patch.object(
+                build, "ADVISORY_RUNTIME_CONTRACT_HISTORY", {previous["revision"]: build.ADVISORY_CONTRACT}):
+            build.validate_advisory_payload(payload, provenance)
+            provenance["sourceTree"] = "e" * 40
+            with self.assertRaisesRegex(EnvironmentError, "SOURCE_PROVENANCE_MISMATCH"):
+                build.validate_advisory_payload(payload, provenance)
+        provenance["sourceRevision"] = "f" * 40
+        with self.assertRaisesRegex(EnvironmentError, "SOURCE_PROVENANCE_MISMATCH"):
+            build.validate_advisory_payload(payload, provenance)
+
+    def test_retained_source_cannot_claim_new_contract_or_unregistered_pair(self):
+        transport, _ = self.compose()
+        payload = self.payload(transport)
+        provenance = json.loads(payload["provenance/provenance.json"])
+        previous = dict(self.pin, revision="c" * 40)
+        provenance["sourceRevision"] = previous["revision"]
+        old_contract = dict(build.ADVISORY_CONTRACT, contractVersion="1.1.0", sha256="f" * 64)
+        with patch.object(build, "ADVISORY_RUNTIME_HISTORY", (previous,)), patch.object(
+                build, "ADVISORY_RUNTIME_CONTRACT_HISTORY", {previous["revision"]: old_contract}):
+            with self.assertRaisesRegex(EnvironmentError, "SOURCE_PROVENANCE_MISMATCH"):
+                build.validate_advisory_payload(payload, provenance)
+            provenance["typedQmAdvisory"] = old_contract
+            with self.assertRaisesRegex(EnvironmentError, "CAPABILITY_CONTRACT_MISMATCH"):
+                build.validate_advisory_payload(payload, provenance)
+        with patch.object(build, "ADVISORY_RUNTIME_HISTORY", (previous,)), patch.object(
+                build, "ADVISORY_RUNTIME_CONTRACT_HISTORY", {}):
+            with self.assertRaisesRegex(EnvironmentError, "SOURCE_PROVENANCE_MISMATCH"):
+                build.validate_advisory_payload(payload, provenance)
 
     def test_missing_git_object_is_fail_closed(self):
         with patch.object(build.subprocess, "run", side_effect=subprocess.CalledProcessError(128, "git")):
@@ -289,6 +331,8 @@ class ReviewedSourceIntegrationTests(unittest.TestCase):
                 self.assertEqual("69.0.0", configuration.semantic_version)
                 self.assertEqual(23, len(configuration.signals))
                 self.assertTrue(callable(advisory_transport.AdvisoryTransport))
+                bridge = importlib.import_module(package_name + ".bridge")
+                self.assertIn("repeated", bridge.Snapshot.__dataclass_fields__)
                 for test_only in (True, False):
                     selected = runtime.Configuration(configuration,
                         runtime.VissConfiguration("wss://offline.invalid", Path("/not-read"), "offline.invalid",

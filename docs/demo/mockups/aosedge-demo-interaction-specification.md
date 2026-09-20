@@ -35,8 +35,14 @@
 Accepted scope reconciliation: 9 September 2026. This section is the current
 interaction contract for the Test-only Studio B flow. It incorporates the
 [accepted questionnaire and subsequent amendments](../../planning/active/demo-studio-delivery-plan.md).
-The [current 2.8 mockup](aosedge-demo-interaction-mockup-2-8.html) simulates this
-contract with the reviewed B2 visuals; [2.6](aosedge-demo-interaction-mockup-2-6.html)
+The [complete 2.10 review mockup](aosedge-demo-interaction-mockup-2-10.html)
+consolidates the full flow with the accepted Vehicle summary/dialog design and
+the already accepted startup, readiness/reset and abnormal-Finish amendments.
+The operator explicitly authorized its bounded application UI integration on
+17 September. The current delivery plan records implementation and evidence;
+the mockup itself remains a simulated reference, not live qualification.
+The [retained 2.8 mockup](aosedge-demo-interaction-mockup-2-8.html) captures the
+earlier contract with reviewed B2 visuals; [2.6](aosedge-demo-interaction-mockup-2-6.html)
 and [2.7](aosedge-demo-interaction-mockup-2-7.html) remain unchanged references.
 The [2.8 corrective re-audit](../../research/demo-studio-action-audit.md#mockup-28-corrective-re-audit)
 does not establish working Cloud or product integration. The user subsequently
@@ -45,6 +51,121 @@ implementation evidence and remaining acceptance gates. Mockup review alone
 does not close those gates.
 
 ### Applicability and replacement map
+
+### Displayed-fact audit corrections — 19 September 2026
+
+The subsequent [flow/status re-audit](../../qualification/presenter-ui-flow-reaudit-2026-09-19.md)
+and operator-approved U1–U5 corrections additionally require:
+
+- Conflicted product content is explicitly untrusted on the backend card and
+  Overview. Keep the conflicting head inspectable in Records; neither a normal
+  condition score nor an older healthy fallback may stand in for it.
+- An assigned service pending installation offers Cloud observation, not
+  Prepare/publish again. No Safe Stop is required for services.
+- Selected Cloud comes from current session configuration independently of
+  certificate inspection success. Old operation receipts cannot override it.
+- Status-only component updates use the same pending interpretation for
+  display and the existing bounded 2/4/8/10-second observer.
+- Read-only backend inspection has one ten-second deadline including Docker
+  ownership preflight and HTTP. Exact-window detail uses six seconds total,
+  within its eight-second browser limit. Each HTTP exchange/body remains capped
+  at three seconds or the remaining budget, whichever is smaller. No ownership
+  guard is removed and no request is retried.
+
+These are display/read-path corrections, not telemetry cadence requirements,
+changed service thresholds or live qualification. See the
+[correction record](../../qualification/presenter-ui-reaudit-fixes-2026-09-19.md).
+
+The operator accepted all F1–F7, L1–L2 and O1–O7 in the
+[displayed-fact audit](../../qualification/presenter-ui-truth-audit-2026-09-19.md).
+These are bounded Presenter/read-path corrections, not new product authority:
+
+- Retained results keep their source and receipt dates. Backend/Cloud checked
+  time is separately labelled; it never means a new vehicle event. A stale
+  native binding qualifies the same result as last known on card and dialog.
+- Component update status establishes pending activity even before a version
+  is supplied. Cards, details and Platform guidance share this interpretation.
+  Preserve errors and unknown versions; do not infer a release.
+- Show aggregate and instance numeric errors without guessing an update cause.
+  A conflicting instance error cannot establish Running. Cloud API completion
+  is labelled Cloud checked, not device report time.
+- Resource detail exposes available `disk` as well as `usedDisk`, preserving
+  parameter, node, Subject, instance, partition and unknown units.
+- Brake window detail is an explicitly timestamped snapshot with Refresh for
+  that exact event and native identity. V1 recordings are not model estimates.
+- Independently valid function reports survive history/reset read failures.
+  Partial product history retains labelled records but cannot qualify story
+  completion; reset evidence remains required. Scope/shape conflicts still fail
+  closed. No freshness, reset, model or advisory policy changes.
+- A completed `demo.retire` receipt can produce a dismissible, at-most-one-minute
+  in-memory acknowledgement in the empty workspace. Empty state alone cannot
+  establish success. No additional run dossier or persistent history is added.
+- Explain global next-story routing, known not-created state and configured
+  input paths. Show existing band/score/recommendation fields without raw-JSON
+  navigation. Visible and accessible score labels both describe model estimates.
+
+The fixed workspace, miniature icons, existing actions, dialogs and retained
+2.10 mockup remain unchanged in ownership/flow. Local fixture qualification is
+not a new live version/offline/Finish acceptance pass.
+
+### Continuous lifecycle — 19 September 2026
+
+[ADR 0017](../../architecture/decisions/0017-continuous-demo-lifecycle-and-upstream-core.md)
+supersedes operator Park/Resume and the same-run VM restart demonstration.
+Session offers Finish; a pause uses native Safe Stop while the controller stays
+running. Historical parked/partially resumed or established stopped runs offer
+confirmed Finish, not restart. Old-browser Park/Resume submissions are rejected.
+The retained 2.10 simulation still has those old controls; this is a documented
+parity difference, not authority to reintroduce them in the application.
+Continuous SOTA/offline/model continuity remains required. Native CM shared
+storage loss is a known upstream defect, not fixed by hiding restart controls.
+
+<a id="versioned-service-and-platform-clarity--18-september-2026"></a>
+
+### Versioned service and platform clarity — 18 September 2026
+
+Decisions 1A–6A in the [accepted audit](../../qualification/versioned-service-scenario-audit-2026-09-18.md)
+and the subsequent instruction to proceed authorize the
+[versioned-observability packet](../../planning/active/work-packets/versioned-service-observability.md).
+The 2.10 mockup stays a retained reference; these amendments are not a claim
+that its simulation or the running application already implements them.
+
+- Backend cards/dialogs distinguish input, episode activity, last product
+  result and delivery freshness through their own backend's facts. Unknown
+  is not healthy; installed and reset-poll contact are not telemetry proof.
+- Accepted Cloud-first correction: Presenter obtains installed/pending software,
+  runtime observations and resources from native Aos Cloud. Bind the exact
+  installed artifact to its verified functional profile, not its release major.
+  Service input/episode/results come from their backends; Cloud Running is not
+  telemetry proof. No new guest timer or mandatory public-input revision is
+  prescribed. Prove service-local compatibility/recovery using existing inputs
+  without making analytics depend on Cloud or Presenter availability.
+- P2 option A, subsequently accepted: exact version/profile compatibility is
+  a Cloud/package-derived Presenter fact. Services report actual local input
+  and capability readiness; missing telemetry is not a proved incompatible
+  profile. No local active-profile interface is added. Keep Cloud compatibility,
+  backend input/episode state and native advisory separate, including during
+  token renewal, offline operation and late advisory acknowledgements.
+- Native Driving Control keeps Manual/Autopilot and exposes prepared Brake/
+  Tire maneuvers plus separate Return to road. Repositioning preserves model
+  and advisory state, marks scene discontinuity and finishes stationary Manual;
+  Autopilot is explicitly started afterward. No second simulator tick owner.
+- Aos Cloud card shows actual Unit state, installed software counts, update
+  state and observation age. Resource values move to its existing dialog:
+  verified byte memory is compact MiB/GiB and CPU remains DMIPS. Missing or
+  stale reads cannot become `No pending updates`.
+- Brake uses purple and Tire teal consistently across backend/service cards,
+  their association lines and dialog headings. Platform identity stays blue.
+  Status remains independently labelled with text/icon/color; B2 miniatures
+  remain natural. Empty slots and Cloud connection-state semantics remain.
+- Factory firmware contains an AosCore system-software miniature and
+  `In-vehicle runtime`; its image selector stays unchanged. Aos Cloud carries
+  `Cloud management`. Both show small `AosEdge platform` labels and common
+  blue identity accents. Do not infer Core version or health from an image name.
+- Keep the fixed native-left/Studio-right composition, existing dialogs and
+  lifecycle actions. A warning is not guaranteed merely by launching a maneuver.
+
+### Retained 17 September visual amendment
 
 **17 September visual-only amendment:** the [2.9 Vehicle proposal](aosedge-demo-interaction-mockup-2-9.html)
 adds inline Brake/Tire backend summaries and a Cloud summary while retaining
@@ -55,10 +176,21 @@ Installed component/service detail clicks remain. Team release-authoring views
 remain separate and unchanged. At story completion, Finish demo replaces the
 redundant monitoring shortcut, retaining confirmation and all cleanup guards.
 No lifecycle, data authority, guest access or service protocol changes are
-authorized by this visual amendment. Integration is on hold for the checkpoint
-audit and the user's subsequent implementation instruction. Version-specific
+authorized by this visual amendment. The checkpoint audit preceded the user's
+17 September integration instruction. Version-specific
 metrics, stale/missing data, modal polling and keyboard/fixed-screen fit must be
-qualified against real read models; mock values are never evidence.
+qualified against real read models; mock values are never evidence. The operator
+subsequently authorized the complete 2.10 mockup consolidation only. It corrects
+the 2.9 proposal's disabled Tire Reset: Brake V3 and Tire V1 both implement the
+accepted independent reset contract. Prior artifacts remain unchanged.
+
+The implementation-first 2.10 follow-up uses the existing application as truth:
+Prepare → Sign & publish; current-release backend proof; producer-bound reset;
+Session Cloud/OEM/SP setup; independent partial/last-known observations; and
+Finish continuation only after Cloud Offline. Its [audit closure table](../../qualification/mockup-2-10-2026-09-17.md#implementation-first-audit-closure)
+records source references and simulation limits. The approved summary/modal
+visual changes are now the authorized UI integration target; completion is
+established by the implementation verification record, not by mockup tests.
 
 The earlier sections and their `UI-INT-*` / `UI-AT-*` anchors remain intact for
 traceability and future Production work. Their conflicting provisions are
@@ -73,7 +205,7 @@ traceability and future Production work. Their conflicting provisions are
 | Independent team progress implies simultaneous mutations | Preserve separate ownership, releases and peer service bindings; serialize operator mutations in this milestone | Parallel writer execution is deferred, not a new Cloud restriction |
 | Full error/log and cancellation UX | Truthful failure/uncertainty and safe refusal; no invented cancellation, rollback or automatic campaign halt | Expanded diagnostics and terminal failed-install recovery are later-phase work |
 | Required intermediate Pending observation | Confirm terminal expected version/instance directly if intermediate states were missed | Do not manufacture historical transitions |
-| Retain all run evidence/history | Park retains current run; Retire removes ordinary owned run data | Formal qualification checkpoint is separate from routine demo retention |
+| Retain all run evidence/history | Finish removes ordinary owned run data; pause with the VM running | Formal qualification checkpoint is separate from routine demo retention; operator Park/Resume removed by ADR 0017 |
 
 All unchanged authority, Safe Stop, identity, product-evidence and security
 boundaries in the earlier sections remain applicable. This amendment is not a
@@ -135,15 +267,17 @@ waiver of platform requirements outside the bounded demo.
 9. **Offline** affects vehicle external access only. Local driving/telemetry and
    eligible local functions remain independent; durable queued product records
    upload once after reconnect. Host publication access is separately checked.
-10. **Park/Resume** stops/restarts owned local runtimes while preserving disks,
-    identity, installed releases and records. No Create/provision/republication.
-    Refuse conflicting unfinished/uncertain changes promptly, with no shutdown
-    queue. **Retire/New cycle** share scoped cleanup: quiesce producers, revoke
+10. **Pause/Finish/New cycle**: use native Safe Stop for a pause with the
+    controller running. Park/Resume are not supported operator actions
+    (ADR 0017); historical checkpoints remain readable. Finish before shutdown,
+    then create a fresh controller for the next run. An interrupted established
+    run offers confirmed Finish, not an automatic restart. Scoped cleanup:
+    quiesce producers, revoke
     and delete the exact Unit, reset owned Subject/Set bindings, clear owned
     product records, stop backends and remove working files. Preserve factory
     image, permanent infrastructure, Subject, published releases and minimal
     release-number continuity. Never reuse a retired overlay.
-    **14 September 2026 abnormal-Finish amendment:** Finish, unlike Park,
+    **14 September 2026 abnormal-Finish amendment:** Finish
     destroys Test without waiting for successful VDP/service installation,
     publication, CM readiness or a Safe Stop observation. Stop the local
     simulator, VM and backends before Cloud retirement. A stalled guest may

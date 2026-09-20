@@ -3,6 +3,18 @@
 
 # Demo Control
 
+## Current lifecycle amendment — 19 September 2026
+
+[ADR 0017](decisions/0017-continuous-demo-lifecycle-and-upstream-core.md)
+supersedes operator Park/Resume in earlier design notes below. Studio rejects
+those actions, retains historical receipts and offers confirmed Finish for an
+interrupted established run. Pause via native Safe Stop with the VM running;
+Finish before shutdown, then Create a fresh controller. CLI stop/start primitives
+remain engineering-only and explicitly warn of known AosCore shared-storage
+loss. Do not add another CM patch or claim that hiding restart fixes storage.
+The [current plan](../planning/active/demo-studio-delivery-plan.md) owns the
+continuous clean-cycle qualification, including all version/offline transitions.
+
 ## Simulator first-drive stalls — 17 September 2026
 
 `democtl simulation prepare-cache` explicitly fills Unreal's persistent derived
@@ -780,9 +792,17 @@ uploads therefore do not block the dashboard; backend mutations remain locked.
 Presenter reads this same operation through fixed same-origin routes
 `/api/presenter/backend/brake` and `/api/presenter/backend/tire`. Cloud alone
 supplies installation/instance/connection state. Backend readiness, received
-records and Cloud runtime remain separate facts. The visible team view refreshes
-at a ten-second interval without overlapping requests, shows last-known data
-on failure and clears records when Test identity changes. Every synthetic
+records and Cloud runtime remain separate facts. The current shared team
+observer refreshes five seconds after each completed attempt without overlapping
+requests, shows last-known data on failure and clears records when Test identity
+changes. The browser request budget is 15 seconds. The 19 September UI-audit
+correction bounds the nine fixed backend HTTP exchanges to ten seconds overall
+and three seconds each, including a streaming-response watchdog; no retry is
+added. Unattempted resources after budget expiry are explicitly unavailable.
+Product pages retain their separate outcomes; missing history/reset cannot hide
+an independently valid current function observation. Incomplete product/reset
+reads still cannot establish story proof, and shape/scope conflicts fail closed.
+Source event, backend receipt and local check time remain separate. Every synthetic
 record is visibly marked `MOCK DATA`, with real service version/identity and
 backend receipt time available in the detail view. No vehicle functionality
 is inferred from mock records.
@@ -1399,6 +1419,39 @@ denial, absent/ambiguous owners and geometry differences remain incomplete.
 Accessibility permission must apply to the actual invoking app. Geometry alone
 does not qualify readability; operator visual acceptance is still pending.
 Closing the native Presenter leaves simulation, VMs and Cloud unchanged.
+
+20 September 2026 layout recovery amendment: the native screen probe reports
+whether the current console session is unlocked. Restore performs no window
+operations on a locked/inactive desktop (`WAITING_FOR_UNLOCK`); an unknown
+session fails closed. The Presenter server continues only a previously
+requested pending layout after unlock, using the existing journal writer and
+action exclusion. It re-resolves current-run owners and verifies all five
+rectangles. Window readiness/geometry gets at most three follow-up attempts,
+two seconds apart; waiting for unlock consumes none. Permission errors,
+ambiguous windows, unclassified failures, run replacement and closing the
+native Presenter do not trigger indefinite retries or lifecycle changes.
+This worker exists only while the Presenter server runs, not as an OS service.
+
+The existing workspace journal retains placement state, time and diagnostics.
+Presenter exposes only a bounded summary, never paths or PIDs. A placement
+warning is separate from successful simulator startup; the Start receipt also
+retains its original layout outcome. Session → Lifecycle → Restore window
+layout is a fixed confirmed operation with no browser-selected target. A
+successful result means geometry was verified, not Cloud/telemetry readiness
+or visual acceptance. Restoring an already correct layout preserves processes,
+scene, driving mode and all VM/Cloud state.
+
+The same amendment includes independent native z-order verification. The black
+background remains normal-level, nonactivating and mouse-transparent; it must
+be behind every observed owned demo window. Native restore/activation/key-window
+events schedule a post-event check, with a one-second metadata-only watchdog.
+Only the background is reordered, with at most three attempts per unresolved
+episode; checks never raise/activate peer apps or alter their levels. Missing
+windows or a locked desktop are not verified order. The fixed local ordering
+receipt is matched to the exact layout generation and host PID and expires
+after15seconds; the public projection contains no PID/path. Geometry success
+cannot mask missing/incorrect/stale z-order evidence. An unrelated app chosen
+by the operator may remain in front: this is not an always-on-top demo mode.
 
 First built-in-display trial (superseded by the operator-approved compact
 profile above): 2056 × 1224 usable logical pixels. Header,

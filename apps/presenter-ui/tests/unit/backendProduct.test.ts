@@ -1,10 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { completedProduct, productRows } from "../../src/features/service-team/backendProduct";
+import { afterReset, isProductResult, completedProduct, productRows } from "../../src/features/service-team/backendProduct";
 
 const window = { unitSystemUid: "test", serviceVersion: "43.0.0", backendReceivedAt: "2026-09-15T19:45:49Z",
   deliveryState: "DURABLY_RECEIVED", terminalState: "COMPLETE", receivedSampleCount: 40, receivedChunkCount: 4, expectedChunkCount: 4 };
 const resource = (items: unknown[]) => ({ state: "OBSERVED", data: { unitSystemUid: "test", items } });
 describe("real backend product projection", () => {
+  it("preserves the backend source-event envelope across reset, never substitutes delivery time", () => {
+    const row = { backendReceivedAt: "2026-09-18T09:01:00Z", sourceEventTime: "2026-09-18T08:59:00Z",
+      message: { unitSystemUid: "test", serviceVersion: "59.0.0", messageType: "BRAKE_ADVISORY_FACT" } };
+    const [projected] = productRows({ advisories: resource([row]) }, "test");
+    expect(afterReset(projected, "2026-09-18T09:00:00Z")).toBe(false);
+    expect(isProductResult(projected, "brake")).toBe(false);
+    expect(afterReset({ ...projected, message: { ...projected.message, sourceEventTime: "invalid" } }, "2026-09-18T09:00:00Z")).toBe(false);
+  });
   it("projects durable window facts without mock data or fabricated samples", () => {
     const rows = productRows({ productData: resource([window]) }, "test");
     expect(rows).toHaveLength(1);

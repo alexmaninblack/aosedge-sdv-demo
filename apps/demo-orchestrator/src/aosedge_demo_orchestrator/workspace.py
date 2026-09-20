@@ -8,6 +8,8 @@ import shlex
 import signal
 import subprocess
 import time
+import threading
+from datetime import datetime, timezone
 from pathlib import Path
 
 from .environment import EnvironmentError, JOURNAL, atomic_json
@@ -43,8 +45,8 @@ def geometry(screen, combined=False):
     return result
 
 
-def applescript(script):
-    result = subprocess.run(["/usr/bin/osascript", "-e", script], capture_output=True, text=True, timeout=15)
+def applescript(script, timeout=15):
+    result = subprocess.run(["/usr/bin/osascript", "-e", script], capture_output=True, text=True, timeout=timeout)
     if result.returncode:
         code = re.search(r"\((-?\d+)\)\s*$", result.stderr.strip())
         reason = "WORKSPACE_ACCESSIBILITY_REQUIRED" if ("assistive access" in result.stderr or "-25211" in result.stderr) else "WORKSPACE_AUTOMATION_REQUIRED" if "-1743" in result.stderr else "WORKSPACE_WINDOW_OPERATION_FAILED" + (":" + code[1] if code else "")
@@ -73,8 +75,11 @@ if (count ws) is not 1 then error "WINDOW_NOT_UNIQUE:" & (count ws)
 set w to item 1 of ws
 {action}
 return {{position, size}} of w
-end tell''')
-    return [int(part.strip()) for part in value.split(",")]
+end tell''', timeout=3)
+    rectangle = [int(part.strip()) for part in value.split(",")]
+    if len(rectangle) != 4 or rectangle[2] <= 0 or rectangle[3] <= 0:
+        raise EnvironmentError("WORKSPACE_GEOMETRY_INVALID")
+    return rectangle
 
 
 def prepare_controller(paths, progress):
@@ -145,10 +150,51 @@ class WorkspaceService:
         if result.returncode:
             raise EnvironmentError("WORKSPACE_PRESENTER_BUILD_FAILED")
 
-    def execute(self, action):
+    def cached(self):
+        path = self.root / JOURNAL
+        state = read_json(path) if path.exists() else {}
+        placement = (state.get("workspace") or {}).get("placement") or {}
+        if placement.get("runId") != (state.get("source") or {}).get("runId"):
+            return {}
+        result = {key: placement[key] for key in ("state", "observedAt", "retryPending", "problems") if key in placement}
+        if placement.get("orderingGeneration"):
+            result["zOrder"] = self.ordering(placement["orderingGeneration"], placement.get("hostPid"))
+            if result.get("state") == "PLACED_AWAITING_VISUAL_REVIEW" and result["zOrder"]["state"] != "VERIFIED":
+                result.update(state="INCOMPLETE", problems=["WORKSPACE_Z_ORDER_NOT_VERIFIED"])
+        return result
+
+    def ordering(self, generation, pid):
+        path = self.directory / "ordering.json"
+        try:
+            value = read_json(path) if path.exists() else {}
+            stamp = datetime.fromisoformat(value["observedAt"].replace("Z", "+00:00"))
+            age = (datetime.now(timezone.utc) - stamp).total_seconds()
+            if value.get("generation") != generation or value.get("presenterPid") != pid or not 0 <= age <= 15:
+                raise ValueError("STALE_ORDERING")
+            if value.get("state") not in ("VERIFIED", "UNAVAILABLE", "BACKGROUND_ABOVE_DEMO", "WAITING_FOR_UNLOCK"):
+                raise ValueError("INVALID_ORDERING")
+            return {key: value[key] for key in ("state", "observedAt", "repairs") if key in value}
+        except (OSError, ValueError, KeyError, TypeError):
+            return dict(state="UNAVAILABLE")
+
+    def record(self, state, result, attempt, pending):
+        result.update(observedAt=now(), retryPending=pending)
+        record = state.setdefault("workspace", {})
+        record["placement"] = dict(result, attempt=attempt, runId=(state.get("source") or {}).get("runId"))
+        atomic_json(self.root / JOURNAL, state)
+        return result
+
+    def execute(self, action, *, recovery=False):
         if action not in ("restore", "status", "close"):
             raise EnvironmentError("WORKSPACE_ACTION_INVALID")
         with self.environment._writer():
+            state = read_json(self.root / JOURNAL) if (self.root / JOURNAL).exists() else {}
+            source = state.get("source") or {}
+            previous = (state.get("workspace") or {}).get("placement") or {}
+            attempt = previous.get("attempt", 0) + 1 if recovery else 0
+            if recovery and (not previous.get("retryPending") or previous.get("runId") != source.get("runId")
+                             or (state.get("workspace") or {}).get("profile") != "builtin-v1"):
+                return self.cached()
             if action == "close":
                 command = [str(self.binary), "present", str(self.directory / "layout.json")]
                 pid = self.driver.live_process(command)
@@ -159,7 +205,8 @@ class WorkspaceService:
                         if time.monotonic() >= deadline:
                             raise EnvironmentError("WORKSPACE_PRESENTER_CLOSE_TIMEOUT")
                         time.sleep(.1)
-                return dict(state="CLOSED", noOp=not bool(pid), problems=[], surfaces={}, lifecycleChanged=False)
+                result = dict(state="CLOSED", noOp=not bool(pid), problems=[], surfaces={}, lifecycleChanged=False)
+                return self.record(state, result, 0, False) if state else result
             if action == "restore":
                 self.build()
             elif not self.binary.exists():
@@ -168,12 +215,25 @@ class WorkspaceService:
             if result.returncode:
                 raise EnvironmentError("WORKSPACE_BUILTIN_DISPLAY_UNAVAILABLE")
             screen = json.loads(result.stdout)
-            state = read_json(self.root / JOURNAL)
-            source = state.get("source") or {}
+            if screen.get("desktopState") != "UNLOCKED":
+                pending = screen.get("desktopState") in ("LOCKED", "INACTIVE")
+                outcome = dict(state="WAITING_FOR_UNLOCK" if pending else "INCOMPLETE",
+                    problems=["WORKSPACE_DESKTOP_LOCKED" if pending else "WORKSPACE_DESKTOP_STATE_UNKNOWN"],
+                    surfaces={}, lifecycleChanged=False)
+                if action == "status":
+                    return outcome
+                if recovery and previous.get("state") == outcome["state"]:
+                    return self.cached()  # Waiting consumes no readiness attempt and no journal writes.
+                return self.record(state, outcome, previous.get("attempt", 0) if recovery else 0, pending)
             combined = source.get("nativeTelemetry") is True
             layout = geometry(screen, combined=combined)
             record = state.get("workspace") or {}
             surfaces, problems, foreground_pids = {}, [], []
+            retryable = True
+            host_command = [str(self.binary), "present", str(self.directory / "layout.json")]
+            if recovery and not self.driver.live_process(host_command):
+                return self.record(state, dict(state="INCOMPLETE", problems=["WORKSPACE_PRESENTER_CLOSED"],
+                    surfaces={}, lifecycleChanged=False), attempt, False)
             processes = self.driver.vm._processes()
             for name in ("carla", "controller"):
                 if name == "carla":
@@ -184,6 +244,8 @@ class WorkspaceService:
                     keyboard = runner[runner.index("--keyboard-ui") + 1] if "--keyboard-ui" in runner else None
                     matches = [pid for pid, args in processes if keyboard and args.startswith(keyboard + " ") and control in args]
                     pid = matches[0] if len(matches) == 1 else None
+                    if len(matches) > 1:
+                        retryable = False
                 if not pid:
                     problems.append(name + ": window owner absent or ambiguous")
                     continue
@@ -196,8 +258,11 @@ class WorkspaceService:
                         problems.append(name + ": geometry differs")
                 except EnvironmentError as error:
                     problems.append(name + ": " + str(error))
+                    if str(error) != "WORKSPACE_WINDOW_COUNT:0":
+                        retryable = False
                 except subprocess.TimeoutExpired:
                     problems.append(name + ": window observation timed out")
+                    retryable = False
             terminal = source.get("terminalWindowId")
             if combined:
                 surfaces["dashboard"] = dict(embeddedIn="controller", dataEvidence="NOT_PROBED_BY_LAYOUT")
@@ -218,12 +283,16 @@ end tell''')
                         problems.append("dashboard: geometry differs")
                 except EnvironmentError as error:
                     problems.append("dashboard: " + str(error))
+                    retryable = False
             else:
                 problems.append("dashboard: visible Terminal absent; restart simulation through democtl")
             command = [str(self.binary), "present", str(self.directory / "layout.json")]
             pid = self.driver.live_process(command)
+            generation = record.get("orderingGeneration")
             if action == "restore":
+                generation = time.time_ns()
                 atomic_json(self.directory / "layout.json", dict(layout,
+                    _generation=[generation],
                     _foregroundPids=foreground_pids,
                     _terminalWindows=[terminal] if isinstance(terminal, int) else []))
                 build_identity = self.binary.stat().st_mtime_ns
@@ -243,7 +312,8 @@ end tell''')
                         stderr=subprocess.DEVNULL, start_new_session=True)
                     self.driver.vm.children.append(child)
                     pid = child.pid
-                record.update(profile="builtin-v1", presenterCommand=command, presenterBuild=build_identity, restoredAt=now())
+                record.update(profile="builtin-v1", presenterCommand=command, presenterBuild=build_identity,
+                              orderingGeneration=generation, restoredAt=now())
                 state["workspace"] = record
                 atomic_json(self.root / JOURNAL, state)
             if not pid:
@@ -256,8 +326,70 @@ end tell''')
                         surfaces[name] = dict(pid=pid, actual=actual, expected=layout[name])
                         if any(abs(a - b) > 3 for a, b in zip(actual, layout[name])):
                             problems.append(name + ": geometry differs")
-                    except (EnvironmentError, subprocess.TimeoutExpired):
+                    except (EnvironmentError, subprocess.TimeoutExpired) as error:
                         problems.append(name + ": geometry observation unavailable")
-            return dict(state="INCOMPLETE" if problems else "PLACED_AWAITING_VISUAL_REVIEW", profile="builtin-v1",
+                        if str(error) != "WORKSPACE_WINDOW_COUNT:0":
+                            retryable = False
+            order = self.ordering(generation, pid)
+            if action == "restore" and pid:
+                deadline = time.monotonic() + 2
+                while order["state"] == "UNAVAILABLE" and time.monotonic() < deadline:
+                    time.sleep(.1)
+                    order = self.ordering(generation, pid)
+            if order["state"] != "VERIFIED":
+                problems.append("WORKSPACE_Z_ORDER_NOT_VERIFIED")
+            outcome = dict(state="INCOMPLETE" if problems else "PLACED_AWAITING_VISUAL_REVIEW", profile="builtin-v1",
                 display=screen, surfaces=surfaces, problems=problems,
+                zOrder=order, orderingGeneration=generation, hostPid=pid,
                 lifecycleChanged=False, readability="OPERATOR_REVIEW_REQUIRED")
+            pending = bool(problems) and retryable and attempt < 3
+            if pending and action == "restore":
+                outcome["state"] = "WAITING_FOR_WINDOWS"
+            return self.record(state, outcome, attempt, pending) if action == "restore" else outcome
+
+
+class WorkspaceRecovery:
+    """Continue only an explicitly requested pending layout, never a lifecycle.
+
+    The Presenter owns the worker. Its existing action lock and the journal
+    writer prevent overlap; exact current-run process ownership is re-read.
+    """
+    def __init__(self, service, operations):
+        self.service, self.operations = service, operations
+        self.stopped = threading.Event()
+        self.thread = threading.Thread(target=self.run, name="workspace-recovery", daemon=True)
+
+    def tick(self):
+        with self.operations.lock:
+            if self.operations.active or self.operations.uncertain or not self.service.cached().get("retryPending"):
+                return
+            self.operations.workspace_busy = True
+        try:
+            self.service.execute("restore", recovery=True)
+        except EnvironmentError as error:
+            if str(error) != "CURRENT_RUN_BUSY":
+                self.fail()
+        except (OSError, ValueError, KeyError, subprocess.SubprocessError):
+            self.fail()
+        finally:
+            with self.operations.lock:
+                self.operations.workspace_busy = False
+
+    def fail(self):
+        # Never retry an unclassified failure forever or expose a raw OS error.
+        with self.service.environment._writer():
+            state = read_json(self.service.root / JOURNAL)
+            self.service.record(state, dict(state="INCOMPLETE", problems=["WORKSPACE_RECOVERY_FAILED"],
+                surfaces={}, lifecycleChanged=False), 3, False)
+
+    def run(self):
+        while not self.stopped.wait(2):
+            try:
+                self.tick()
+            except (EnvironmentError, OSError, ValueError):
+                pass  # A concurrent journal writer is not permission to retry a lifecycle.
+
+    def close(self):
+        self.stopped.set()
+        if self.thread.is_alive():
+            self.thread.join(timeout=20)

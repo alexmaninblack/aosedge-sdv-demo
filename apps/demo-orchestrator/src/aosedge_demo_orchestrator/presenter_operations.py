@@ -100,6 +100,8 @@ def operation_plan(payload):
         plan = [dict(domain="vm", action="start" if action == "start-vms" else "stop", target="test")]
     elif action == "provision":
         plan = [dict(domain="unit", action="provision", target="test")]
+    elif action == "workspace-restore":
+        plan = [dict(domain="workspace", action="restore")]
     elif action in ("start-simulation", "stop-simulation"):
         plan = [dict(domain="simulation", action="start" if action == "start-simulation" else "stop", target="test")]
     elif action == "connect-test":
@@ -107,7 +109,9 @@ def operation_plan(payload):
     elif action == "reconnect-test":
         plan = [dict(domain="vehicle", action="select", target="test")]
     elif action in ("park", "resume"):
-        plan = [dict(domain="environment", action=action)]
+        # Old browser tabs must not reintroduce the retired operator workflow.
+        # CLI diagnostics and historical receipts remain readable separately.
+        raise ValueError("PARK_RESUME_NOT_SUPPORTED_IN_STUDIO")
     elif action == "observe-test":
         # Preserve old UI clients without retaining their direct guest probe.
         plan = [dict(domain="component", action="cloud-status")]
@@ -131,6 +135,12 @@ def public_result(result):
                "processSlotMatches", "readPathCount", "gate", "advisory", "state", "noOp", "currentVehicle",
                "version", "contentProfile", "sha256", "cloudDomain", "approved", "outcome", "signatureVerified", "phase", "completedSteps", "reason", "image")
     public["facts"] = {key: data[key] for key in allowed if key in data}
+    workspace = data if result.get("operation") == "workspace.restore" else data.get("workspace")
+    if isinstance(workspace, dict):
+        public["facts"]["workspace"] = {key: workspace[key] for key in
+            ("state", "problems", "retryPending", "observedAt") if key in workspace}
+        if isinstance(workspace.get("zOrder"), dict):
+            public["facts"]["workspace"]["zOrder"] = {key: workspace["zOrder"].get(key) for key in ("state", "observedAt", "repairs")}
     if result.get("operation") == "backend.reset-scenario" and isinstance(data.get("command"), dict):
         public["facts"]["command"] = {key: data["command"].get(key) for key in ("commandId", "state", "issuedAt", "expiresAt")}
     if result.get("operation") in ("cloud.check", "cloud.prepare"):
@@ -189,6 +199,8 @@ class SessionOperations:
         self.active = None
         self.uncertain = False
         self.cloud_candidates = {}  # Local paths never enter job receipts/browser JSON.
+        self.workspace = None
+        self.workspace_busy = False
 
     def submit(self, payload):
         identity, plan = operation_plan(payload)
@@ -201,6 +213,8 @@ class SessionOperations:
                 if existing["fingerprint"] != fingerprint:
                     raise ValueError("REQUEST_ID_INPUT_CHANGED")
                 return self.view(identity)
+            if self.workspace_busy:
+                raise ValueError("WORKSPACE_PLACEMENT_IN_PROGRESS")
             if self.active:
                 raise ValueError("OPERATION_ALREADY_RUNNING")
             if self.uncertain and payload["action"] not in READ_ACTIONS:
@@ -230,6 +244,7 @@ class SessionOperations:
             domain = CloudConnection(SimpleNamespace(root=project_root()))._configuration().get("cloudConnection", {}).get("domain", LEGACY_DOMAIN) if not self.executor else None
             return dict(sessionId=self.session_id, active=self.active, uncertain=self.uncertain,
                         cloudDomain=domain,
+                        workspace=self.workspace.cached() if self.workspace else None, workspaceBusy=self.workspace_busy,
                         jobs=[self.view(identity) for identity in self.jobs], recordedRequestIds=list(self.archived_jobs))
 
     def run(self, identity, plan):

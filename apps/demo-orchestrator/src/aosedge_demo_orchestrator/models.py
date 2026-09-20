@@ -69,9 +69,12 @@ class OperationRequest:
     confirm_bind_not_submitted_at: Optional[str] = None
     certificate: Optional[str] = None
     expected_domain: Optional[str] = None
+    window_id: Optional[str] = None
 
     def selection_error(self) -> Optional[str]:
         """Validate agreed selectors before any lifecycle adapter is called."""
+        if self.window_id is not None and ((self.domain, self.action, self.team) != ("backend", "window-detail", "brake")):
+            return "WINDOW_DETAIL_USES_BRAKE_BACKEND_ONLY"
         if type(self.startup_reconcile) is not bool or (self.startup_reconcile and
                 (self.domain != "component" or self.action not in ("cm-test", "cm-build", "cm-apply")
                  or self.target != VehicleTarget.TEST)):

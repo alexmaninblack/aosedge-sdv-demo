@@ -21,6 +21,14 @@ export async function readBackendObservation(team: "brake" | "tire", signal: Abo
   return response.json();
 }
 
+export async function readBrakeWindow(eventId: string, signal: AbortSignal): Promise<unknown> {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$(?![\s\S])/.test(eventId)) throw new Error("WINDOW_ID_INVALID");
+  const response = await fetch(`/api/presenter/backend/brake/windows/${eventId}`, { cache: "no-store",
+    signal: AbortSignal.any([signal, AbortSignal.timeout(8000)]) });
+  if (!response.ok) throw new Error("WINDOW_DETAIL_UNAVAILABLE");
+  return response.json();
+}
+
 const deferred = "Production FOTA is unavailable in the current Aos platform release. Production remains outside the verification set.";
 const profiles = [
   "Baseline read-only braking telemetry",

@@ -47,7 +47,7 @@ class UnitService:
                 return self._cloud("observe", observation=action, ownerId=owner, **identity)
             except EnvironmentError as error:
                 return unavailable(identity, action, str(error))
-        return self.cloud_observer.read((owner, identity["unitId"], identity["systemUid"], action), fetch)
+        return self.cloud_observer.read((selected_domain(state), owner, identity["unitId"], identity["systemUid"], action), fetch)
 
     def _cloud(self, action, **values):
         config = load_configuration(self.root)

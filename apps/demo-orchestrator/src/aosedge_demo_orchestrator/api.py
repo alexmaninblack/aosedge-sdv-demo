@@ -59,6 +59,13 @@ def execute_operation(
             raise ValueError("Service inspection accepts only catalog identity and configured profile")
         return application.execute(OperationRequest(domain, action, service_id=payload.get("service_id"),
             profile=payload.get("profile"))).to_dict()
+    if domain == "backend" and action == "window-detail":
+        import re
+        if (set(payload) != {"domain", "action", "team", "window_id"} or payload["team"] != "brake"
+                or not isinstance(payload["window_id"], str)
+                or not re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}", payload["window_id"])):
+            raise ValueError("Window detail accepts one event identity in the current Test Brake backend")
+        return application.execute(OperationRequest(domain, action, team="brake", window_id=payload["window_id"])).to_dict()
     if domain == "backend" and action in ("reset-scenario", "reset-status"):
         if set(payload) != {"domain", "action", "team", "target"} or payload["team"] not in ("brake", "tire") or target != VehicleTarget.TEST:
             raise ValueError("Scenario reset accepts a fixed team and current Test only")

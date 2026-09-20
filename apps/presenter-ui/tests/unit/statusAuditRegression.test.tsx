@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { composeLocalSnapshot } from '../../src/adapters/local/LocalPresenterReadAdapter';
 import { PresenterReadModelProvider } from '../../src/app/state/PresenterReadModelProvider';
 import { PresenterApp } from '../../src/app/PresenterApp';
@@ -29,13 +29,14 @@ test('provisioned controller can connect to the already running simulator',async
  expect(screen.queryByRole('button',{name:'Start simulator'})).toBeNull();
 });
 
-test('partial Resume preserves its continuation instead of offering a new simulator start',async()=>{
- const snapshot={...local,source:{state:'STOPPED',currentVehicle:null},lifecycle:{action:'resume',state:'PARTIAL',phase:'start-test',reason:'CLOUD_GUEST_CONFIGURATION_UNCONFIRMED'}};
+test.each(['park','resume'])('historical %s checkpoint offers Finish, never same-run restart',async(action)=>{
+ const snapshot={...local,source:{state:'STOPPED',currentVehicle:null},lifecycle:{action,state:'PARTIAL',phase:'start-test',reason:'CLOUD_GUEST_CONFIGURATION_UNCONFIRMED'}};
  app(async()=>cloud(),snapshot);
- expect(await screen.findByText('Resume paused',{selector:'strong'})).toBeVisible();
- expect(screen.getByRole('button',{name:'Continue Resume'})).toBeVisible();
+ expect(await screen.findByText('Demo interrupted',{selector:'strong'})).toBeVisible();
+ expect(screen.getByRole('button',{name:'Finish demo'})).toBeVisible();
+ expect(screen.queryByRole('button',{name:/Resume/})).toBeNull();
  expect(screen.queryByRole('button',{name:'Start simulator'})).toBeNull();
- expect(screen.getByText('CLOUD_GUEST_CONFIGURATION_UNCONFIRMED')).toBeVisible();
+ expect(screen.getByText(/CLOUD_GUEST_CONFIGURATION_UNCONFIRMED/)).toBeVisible();
 });
 
 test('unknown local state is not interpreted as a missing controller',async()=>{
@@ -60,12 +61,15 @@ test('regression: old active instance does not confirm the selected Running rele
  expect(view.container.querySelector('.studio-release-stages > div:last-child')).not.toHaveClass('complete');
 });
 test('regression: open details follow refreshed inventory',async()=>{
- let value=cloud(); const read=vi.fn(async()=>value);app(read);
- await screen.findByRole('button',{name:/Vehicle Data Platform.*1.0.0/});
+ vi.useFakeTimers();
+ let value=cloud(); const read=vi.fn(async()=>value);
+ await act(async()=>{app(read);});
  fireEvent.click(screen.getByRole('button',{name:/Vehicle Data Platform.*1.0.0/}));
  expect(screen.getByRole('dialog')).toHaveTextContent('1.0.0');
- value=cloud('2.0.0');fireEvent.click(screen.getByRole('button',{name:/^Refresh$/}));
- await screen.findByRole('button',{name:/Vehicle Data Platform.*2.0.0/});
+ value=cloud('2.0.0');
+ // Background controls are correctly inert while the modal is open.
+ // Inventory still refreshes through the shared visible observer.
+ await act(async()=>{await vi.advanceTimersByTimeAsync(10000);});
  expect(screen.getByRole('dialog')).toHaveTextContent('2.0.0');
  expect(screen.getByRole('dialog')).not.toHaveTextContent('last known');
 });

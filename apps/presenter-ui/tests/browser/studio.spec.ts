@@ -1,14 +1,16 @@
 import { expect, test, type Page } from "@playwright/test";
 
 async function retainedRun(page: Page, retiring = false, online = "ONLINE",
-  phase = "deprovision-test", reason = "UNIT_WAIT_TIMEOUT:CLOUD_OFFLINE", registrationStarted = false) {
+  phase = "deprovision-test", reason = "UNIT_WAIT_TIMEOUT:CLOUD_OFFLINE", registrationStarted = false,
+  options: { confirmedProfile?: boolean; registrationComplete?: boolean } = {}) {
+  const { confirmedProfile = true, registrationComplete = false } = options;
   const requests: { path: string; method: string }[] = [];
   await page.route("**/api/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
     requests.push({ path, method: route.request().method() });
     if (path.endsWith("/snapshot")) return route.fulfill({ json: {
       mode: "LOCAL_READ_ONLY", runId: "current-test", available: true, observedAt: new Date().toISOString(),
-      registrationComplete: false,
+      registrationComplete,
       registrationStarted,
       lifecycle: retiring ? { action: "retire", state: "PARTIAL", phase, reason } : undefined,
       preparation: { image: "32/arm64", phase: "PROVISIONING" },
@@ -17,13 +19,14 @@ async function retainedRun(page: Page, retiring = false, online = "ONLINE",
       images: [31, 32].map((n) => ({ selector: `${n}/arm64`, version: `Factory .${n}`, architecture: "arm64", state: "METADATA_AVAILABLE", problems: [] })), access: {},
       vehicles: { test: { state: "CURRENT", process: "RUNNING", imageVersion: "Factory .32", overlayExists: true },
         production: { state: "CURRENT", process: "NOT_CREATED", overlayExists: false } },
-      source: retiring ? { state: "STOPPED", currentVehicle: null } : { state: "SELECTED_NOT_PROBED", selectedVehicle: "test", currentVehicle: null },
+      source: retiring ? { state: "STOPPED", currentVehicle: null } : { state: "SELECTED_NOT_PROBED", selectedVehicle: "test", currentVehicle: registrationComplete ? "test" : null },
     } });
     if (path.endsWith("/platform")) return route.fulfill({ json: {
       state: "CURRENT", observedAt: new Date().toISOString(), bindingKey: "current-test:unit-a", reason: null,
       publication: { version: "20.0.0", stage: "READY" },
       publications: [{ version: "19.0.0", stage: "READY" }, { version: "20.0.0", stage: "READY" }],
       value: { target: "test", source: "Aos Cloud", online, lifecycle: "provisioned", installedVersion: "20.0.0", pendingVersion: null,
+        installedProfile: { state: confirmedProfile ? "CURRENT" : "UNKNOWN", profile: confirmedProfile ? "v2" : null, releaseVersion: "20.0.0", cloudVersionId: "vdp-20", source: "CLOUD_INSTALLATION_AND_PACKAGE", reason: confirmedProfile ? null : "INSTALLED_PROFILE_PUBLICATION_NOT_CONFIRMED" },
         updateStatus: "installed", latestPublishedVersion: null, releases: [], runtimeState: "NOT_REPORTED_BY_CLOUD", dataReadiness: "NOT_REPORTED_BY_CLOUD",
         inventory: { unitId: "unit-a", systemUid: "test-system", components: { state: "CURRENT", value: [] }, services: { state: "CURRENT", value: [] } } },
     } });
@@ -69,8 +72,33 @@ for (const [phase, reason, online] of [
   expect(requests.every(row => row.method === "GET")).toBe(true);
 });
 
+for (const [action, state] of [["park", "COMPLETED"], ["park", "PARTIAL"], ["resume", "PARTIAL"], ["resume", "COMPLETED"]])
+test(`stopped historical ${action}/${state} offers only confirmed Finish, not restart`, async ({ page }) => {
+  const requests = await retainedRun(page);
+  await page.route("**/api/presenter/snapshot", route => route.fulfill({ json: {
+    mode: "LOCAL_READ_ONLY", runId: "current-test", observedAt: new Date().toISOString(),
+    lifecycle: { action, state }, registrationComplete: true, images: [], access: {},
+    vehicles: { test: { state: "CURRENT", process: "STOPPED", overlayExists: true },
+      production: { state: "CURRENT", process: "STOPPED", overlayExists: true } },
+    source: { state: "STOPPED", currentVehicle: null },
+  } }));
+  await page.goto("/");
+  await expect(page.getByText("Demo interrupted", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^(Park|Resume|Continue Resume|Start simulator|Connect in Manual)$/ })).toHaveCount(0);
+  await page.getByRole("button", { name: "Finish demo", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Brake Team", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Prepare v1", exact: true })).toBeDisabled();
+  expect(requests.every(row => row.method === "GET")).toBe(true);
+});
+
 test("external CLI retirement returns the open Studio to Create without reloading or submitting actions", async ({ page }) => {
   const requests = await retainedRun(page, true);
+  await page.route("**/api/presenter/operations", route => route.fulfill({ json: {
+    sessionId: "native", active: null, uncertain: false, jobs: [],
+    workspace: { state: "INCOMPLETE", zOrder: { state: "UNAVAILABLE" } },
+  } }));
   let retired = false, snapshotReads = 0;
   await page.route("**/api/presenter/snapshot", route => {
     snapshotReads++;
@@ -87,6 +115,7 @@ test("external CLI retirement returns the open Studio to Create without reloadin
   await page.clock.install();
   await page.goto("/");
   await expect(page.getByText("Retirement paused", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Desktop window layout")).toBeVisible();
   // Cloud still returns the previous Unit. Only a fresh local receipt can
   // establish that CLI cleanup completed; no page reload or timed success.
   retired = true;
@@ -95,6 +124,7 @@ test("external CLI retirement returns the open Studio to Create without reloadin
   await expect(page.getByText("Retirement paused", { exact: true })).toHaveCount(0);
   await expect(page.getByLabel("Factory image")).toBeEnabled();
   await expect(page.getByRole("button", { name: "Vehicle Data Platform Factory slot · no Cloud report" })).toBeVisible();
+  await expect(page.getByLabel("Desktop window layout")).toHaveCount(0);
   expect(snapshotReads).toBeGreaterThan(1);
   expect(requests.every(row => row.method === "GET")).toBe(true);
   expect(requests.some(row => /guest|runtime-inspect/.test(row.path))).toBe(false);
@@ -133,17 +163,33 @@ test("Reload retains exact profile publication, ignores previous-run jobs and ca
   expect(requests.every((request) => request.method === "GET")).toBe(true);
 });
 
+test("installed profile never falls back to a matching local prepared candidate", async ({ page }) => {
+  const requests = await retainedRun(page, false, "ONLINE", "", "", false, { confirmedProfile: false, registrationComplete: true });
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: "Vehicle Data Platform Release · 20.0.0", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Vehicle Data Platform v2 · 20.0.0", exact: true })).toHaveCount(0);
+  await expect(page.getByText("Installed profile not confirmed", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Open Platform v1", exact: true })).toHaveCount(0);
+  expect(requests.every(row => row.method === "GET")).toBe(true);
+});
+
 test("Team backend is visibly synthetic, drillable and separate from Cloud runtime", async ({ page }) => {
   const requests=await retainedRun(page);
   await page.goto("/");
   await page.getByRole("button", {name:/Brake backend Open dashboard/}).click();
-  await expect(page.getByText("MOCK DATA · Real service → real backend")).toBeVisible();
+  await expect(page.getByText("Configured data path · service → backend")).toBeVisible();
+  await page.getByRole("button", { name: "Records", exact: true }).click();
+  await page.getByRole("button", { name: "Show mock history" }).click();
+  await expect(page.getByText("MOCK DATA · Explicit synthetic test records")).toBeVisible();
   await page.getByRole("button", {name:"Records", exact:true}).click();
   await expect(page.getByRole("button", {name:/Synthetic assessment/})).toBeVisible();
   await page.screenshot({path:"test-results/studio-brake-backend.png"});
   await page.getByRole("button", {name:/Synthetic assessment/}).click();
-  await expect(page.getByRole("dialog")).toContainText("not vehicle telemetry");
-  await expect(page.getByRole("dialog")).toContainText('"score": 42');
+  await expect(page.getByRole("dialog").last()).toContainText("Mock product record");
+  await page.getByText("Record content and technical identifiers").click();
+  await expect(page.getByRole("dialog").last()).toContainText('"score": 42');
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(1);
   await page.keyboard.press("Escape");
   await page.getByRole("button", {name:/Tire Team/}).click();
   await expect(page.getByRole("heading", {name:"Tire Health Service"})).toBeVisible();
@@ -160,9 +206,9 @@ test("Cloud monitoring has a return path, preserves zero DMIPS and never request
   await expect(page.getByRole("heading", { name: "Cloud monitoring", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Resources", exact: true }).click();
   await expect(page.locator(".studio-inventory")).toContainText("0 DMIPS");
-  await page.getByRole("button", { name: /Vehicle map/ }).click();
+  await page.keyboard.press("Escape");
   await expect(page.locator(".studio-controller")).toBeVisible();
-  expect(requests.every((request) => request.method === "GET" && ["/api/presenter/snapshot", "/api/presenter/platform", "/api/presenter/operations", "/api/presenter/monitoring", "/api/presenter/client-state"].includes(request.path))).toBe(true);
+  expect(requests.every((request) => request.method === "GET" && ["/api/presenter/snapshot", "/api/presenter/platform", "/api/presenter/operations", "/api/presenter/monitoring", "/api/presenter/client-state", "/api/presenter/backend/brake", "/api/presenter/backend/tire"].includes(request.path))).toBe(true);
 });
 
 test("Studio uses protected Test actions, automatic releases and actual receipts without page-open mutation", async ({ page }) => {
