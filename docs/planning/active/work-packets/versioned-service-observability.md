@@ -13,6 +13,18 @@ active-evidence file, not the agreed compatibility and product requirements.
 
 ## Preserved boundary
 
+**20 September07:47UTC targeted follow-up:** a newly created .36 staging Test
+is retained Online/Safe Stop/Network ON with exactly authorized VDP97/V3,
+Brake77/V3 and Tire43/V1. UI-led publication/provision/assignment, actual
+products/advisories, moving double-click Return to road and397.634s OFF/ON
+passed. All54 captured offline message bytes were accepted exactly once.
+T13 obsolete pre-start layout warning is corrected and active; T14 known
+preflight rejection wording is corrected/tested in native source, awaiting
+normal native build/start activation. No Factory/core change or new Finish.
+Live collision/occupied-spawn, deliberate Mac lock/unlock and the frozen
+quantitative calibration/independent series remain unqualified; fixture
+coverage is not substituted for these gates. See the same timing report.
+
 **20 September06:46UTC clean operator cycle complete:** after T10, the existing
 manufactured.36 Test completed UI-only VDP94/95/96 (V1/V2/V3), Brake73/74/75
 (V1/V2/V3), early Tire42/V1 with automatic post-FOTA recovery, both physical

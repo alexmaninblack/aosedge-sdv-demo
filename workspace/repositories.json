@@ -37,7 +37,7 @@
       "visibility": "public",
       "repository": "https://github.com/alexmaninblack/carla-ego-runtime.git",
       "remote": "origin",
-      "acceptedRevision": "a3f62c0610b84ada0aac804d7e21d52572cae9f1",
+      "acceptedRevision": "453b7948006d0264b0cede17816aaf551485b3cf",
       "acceptedBranches": ["main"],
       "allowedDirtyPaths": []
     },

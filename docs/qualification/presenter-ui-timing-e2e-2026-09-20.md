@@ -858,3 +858,133 @@ This report does not claim zero possible side effects or blanket P8 closure:
   are retained as observations, not hidden or called defects without cause;
 - the current completion proof is the actual Presenter receipt and empty UI,
   not an additional direct Cloud inventory/guest audit. Production is untouched.
+
+### Targeted follow-up after the completed cycle
+
+The operator approved the remaining qualification work and then explicitly
+approved signing/publishing VDP97.0.0/V3, Brake77.0.0/V3 and Tire43.0.0/V1 with
+the selected OEM/SP certificates, and Provision/assignment of only the current
+Factory.36 Test in staging. The earlier finished Test was not reused. Production,
+immutable images, service thresholds and AosCore were not changed.
+
+This is targeted qualification, not a second complete V1-to-V3 progression.
+Scenario actions used Presenter and native Driving Control. Read-only SSH and
+local backend database queries supplemented UI with exact delivery/stability
+evidence; therefore the supplemental accounting is not claimed UI-only.
+
+| Check | UTC action / observation | Result |
+| --- | --- | --- |
+| New .36 Create and Start simulator | Create complete before07:17:47; Start confirmation07:18:07, ready by07:18:58 | Clean controller, existing expected detached-source sequence; later Provision retained the same source run and actor. |
+| Pre-Provision Return to road double click | 07:20:05 while unassigned source was driving | Rejected before scene dispatch because no selected Test exists; no exercise operation created and no physical recovery. Native misleading Unconfirmed copy is T14 below, not a motion failure. |
+| Publication | Tire43 click07:27:12; Brake77 click07:28:23; VDP97 click07:29:47 | Each became READY; existing candidates reused after UI reload, no second Prepare/upload. VDP publication enabled Provision before a recipient existed. |
+| Provision | Click07:30:47; Online/attached by07:31:25 | Same simulator/source/actor retained; stationary Manual. |
+| VDP and services | Safe Stop around07:31:40; Brake Deploy07:32:25; Tire Deploy07:33:19 | VDP97, Brake77 and Tire43 installed/active. Service assignment did not require another Safe Stop. |
+| Moving Return to road with double click | Click07:34:34.207; journal07:34:34.636975–07:34:37.060458 | One completed/released operation in2.423483s, confirmed physical stop, Manual, autopilotStarted=false. Same actor; no automatic Autopilot, source restart or model Reset. This started on-road, not from collision/off-road. |
+| Real products/advisories | Brake maneuver around07:35; Tire around07:36; overview07:38:51 | Actual Brake assessment and Tire assessment; both native Inspection recommended, both backend results and current service input visible. |
+| External OFF | Click07:39:08.239 | Native OFF; Cloud OFFLINE observed07:44:44. Both native recommendations remained visible; real additional Brake/Tire maneuvers completed offline around07:44–07:45. |
+| External ON | Click07:45:45.873, after397.634s OFF | Local outboxes drained, native advice retained, UI Cloud ONLINE and both inputs RECEIVING by07:47:05. No runtime restart. |
+
+All UI observation times are upper bounds; sparse observations are not precise
+Cloud transition latency. The native return-operation duration is measured from
+its existing authoritative journal, not from tool round-trip time.
+
+#### Exact offline accounting
+
+Only current-Test canonical product bytes were inspected. No payload, credential
+or private identity was exported into this report or Git. A bounded snapshot of
+the two service outboxes was compared using SHA-256 and exact byte length with
+the backend canonical-message tables scoped to the same Test. Backend saved
+digests were also checked against a fresh digest of their canonical bytes.
+
+Before reconnect, backend product-table row counts remained unchanged across
+two reads: Brake12, Tire25; function-observation counts21/26 also did not advance.
+Last product receipts were07:39:08.656 and07:39:06.684 respectively. The first is
+417ms after the OFF click, which precedes confirmed disconnect; it is not
+misclassified as post-disconnection ingress. New physical episodes were then
+observed in guest outboxes without any backend-count advance.
+
+| Team | Captured messages | Exact-byte, exactly-once matches | Missing / duplicates | Receipt range after ON | Last captured receipt latency from ON click |
+| --- | --- | --- | --- | --- | --- |
+| Brake | 21:2 assessments,19 advisory facts | 21 | 0 / 0 | 07:46:14.490–07:46:15.846 | 29.973s |
+| Tire | 33:1 assessment,19 advisory facts,13 function-status records | 33 | 0 / 0 | 07:45:55.833–07:45:56.543 | 10.670s |
+
+A first reconciliation overlapped Brake queue draining and found only5 matches;
+the remaining16 were advisory facts, not missing assessments. Final
+reconciliation found all21 and both guest queues empty. Additional new live
+records after ON are outside this frozen54-message cohort and are not called
+duplicates. No synthetic telemetry, message rewrite, replay injection or queue
+modification was used. This closes this cohort's delivery proof, not all possible
+offline durations or retention failures.
+
+Read-only post-reconnect service checks found CM, SM, IAM and VDP active,
+Result=success and NRestarts=0. Bounded VDP logs since07:31 contained zero
+SAME_TIMESTAMP_CHANGED, TIME_REGRESSION or VISS source frame is not monotonic
+categories. This is a negative observation for this run, not the root cause or
+resolution of the earlier intermittent source gap.
+
+#### T13–T14 corrections and local negative coverage
+
+- **T13:** after successful Create but before Start simulator, the old incomplete
+  workspace receipt incorrectly warned about vehicle windows that should not
+  exist yet. The Presenter now suppresses this warning only for confirmed
+  completed Create, a running unregistered controller and STOPPED/NOT_PREPARED
+  source. UNKNOWN, partial lifecycle and actual running-source warnings remain.
+  Three browser regressions cover stopped, not-prepared and unknown. The built
+  Presenter was activated via Reload UI without restarting the source or VM.
+- **T14:** a scene action before selected Test is a known preflight rejection,
+  not an uncertain physical operation. Native copy now reads: Not started ·
+  provision and connect Test first. Driving mode unchanged. The correction
+  requires the exact operation, BLOCKED state and
+  SIMULATION_EXERCISE_REQUIRES_SELECTED_TEST reason. Unknown/busy/lost responses
+  keep pending identity and reconcile; they are not retried as new mutations.
+  Pure production Swift projection tests and full source typecheck pass.
+  **The running native binary was not replaced/restarted:** this correction
+  activates on its next normal source-built start. Its live pre-Provision
+  presentation is not yet requalified.
+
+Local follow-up gates passed:19 placement/status unit cases,27 controls/product/
+evidence unit cases,16 reset-selection cases (including pending/failure/expiry
+and mismatched completion),19 Studio browser cases, TypeScript/Vite build,
+11 source-exercise tests,17 Presenter-operation tests,2 native Swift projection
+cases plus full Swift typecheck, and2 Platform source-ordering diagnostic cases.
+Response-loss and release reconciliation tests verify no repeated scene reset;
+these isolated proofs do not mean faults were injected into the live Test.
+Initial loopback sandbox denial and one wrong test working directory were
+harness issues; the correctly scoped reruns passed without product changes.
+
+#### Remaining work and preserved state
+
+At07:47 the new Test remains Online, Safe Stop and Network ON, with both warnings
+visible. It has not been retired. No further image build is needed for these
+host-only copy changes. The earlier completed full-cycle receipt remains valid
+for that prior cycle, not as a Finish receipt for this new Test.
+
+The following gates remain explicitly open:
+
+1. Actual Manual off-road/collision/occupied-spawn recovery and held-key release.
+   The moving/double-click proof above is useful but not equivalent. The current
+   UI automation exposes discrete key presses, not a controlled held-input
+   interval; no out-of-band teleport, second tick owner or input workaround was
+   introduced to manufacture this case.
+2. Deliberate live macOS lock/unlock and deferred layout recovery. Existing
+   fixtures and unlocked restore proofs remain separate; no OS security setting
+   was changed, and no unlock bypass attempted.
+3. Every live conflict/response-loss/reset-failure/expiry combination. Local
+   negative tests pass; not every fault is injected in the preserved live run.
+4. The [D4-003 calibration plan](d4-003-stimulus-calibration-plan.md) still requires
+   completed calibration and reviewed/frozen Tire stimulus/friction and guard
+   parameters before its independent20 Brake and10+10 Tire series. These few
+   maneuvers are not substituted for that series; parameters are not invented.
+5. The historical source-frame gap remains root-cause-unproven; retain bounded
+   diagnostics and correlate an actual recurrence before changing strict checks.
+
+Full guest reboot remains the separately agreed engineering test. These limits
+prevent blanket P8 closure; none is hidden by marking the targeted run complete.
+
+The native source correction is checkpointed in Gateway
+`453b7948006d0264b0cede17816aaf551485b3cf`; the workspace dependency pin follows
+that tested source, not a claim that the already-running native binary changed.
+Final repeat checks passed35 affected Presenter unit tests, both Swift projection
+tests and Swift typecheck. Documentation validation passed243 Markdown documents,
+658 identifiers and38 Mermaid diagrams. Vite's first repeat was sandbox-denied
+when creating its configuration cache; the authorized cache-write rerun passed.

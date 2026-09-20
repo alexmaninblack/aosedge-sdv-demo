@@ -93,6 +93,29 @@ test(`stopped historical ${action}/${state} offers only confirmed Finish, not re
   expect(requests.every(row => row.method === "GET")).toBe(true);
 });
 
+for (const sourceState of ["STOPPED", "NOT_PREPARED", "UNKNOWN"]) test(`new controller with ${sourceState} source does not confuse old layout evidence with current windows`, async ({ page }) => {
+  const requests = await retainedRun(page);
+  await page.route("**/api/presenter/operations", route => route.fulfill({ json: {
+    sessionId: "native", active: null, uncertain: false, jobs: [],
+    workspace: { state: "INCOMPLETE", zOrder: { state: "UNAVAILABLE" } },
+  } }));
+  await page.route("**/api/presenter/snapshot", route => route.fulfill({ json: {
+    mode: "LOCAL_READ_ONLY", runId: "new-test", observedAt: new Date().toISOString(),
+    registrationStarted: false, registrationComplete: false,
+    lifecycle: { action: "create", state: "COMPLETED" }, images: [], access: {},
+    vehicles: { test: { state: "CURRENT", process: "RUNNING", overlayExists: true },
+      production: { state: "CURRENT", process: "STOPPED", overlayExists: true } },
+    source: { state: sourceState, currentVehicle: null },
+  } }));
+  await page.goto("/");
+  if (sourceState === "UNKNOWN") await expect(page.getByLabel("Desktop window layout")).toBeVisible();
+  else {
+    await expect(page.getByRole("button", { name: "Start simulator", exact: true })).toBeVisible();
+    await expect(page.getByLabel("Desktop window layout")).toHaveCount(0);
+  }
+  expect(requests.every(row => row.method === "GET")).toBe(true);
+});
+
 test("external CLI retirement returns the open Studio to Create without reloading or submitting actions", async ({ page }) => {
   const requests = await retainedRun(page, true);
   await page.route("**/api/presenter/operations", route => route.fulfill({ json: {

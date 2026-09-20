@@ -72,7 +72,12 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
   const retiring = local.lifecycle?.action === "retire" && local.lifecycle.state !== "COMPLETED";
   const connected = snapshot.vehicle.value === "test";
   const simulationRunning = connected || ["RUNNING_UNASSIGNED", "CONNECTED", "SELECTED_NOT_PROBED"].includes(local.source.state);
-  const vehicleWindowsAbsent = noController && !simulationRunning && ["STOPPED", "NOT_PREPARED"].includes(local.source.state);
+  // Controller creation does not start the native source windows. Their
+  // confirmed stopped state is expected both before and after Create.
+  const beforeSourceStart = present && running && !local.registrationStarted && !local.registrationComplete
+    && local.lifecycle?.action === "create" && local.lifecycle.state === "COMPLETED";
+  const vehicleWindowsAbsent = (noController || beforeSourceStart) && !simulationRunning
+    && ["STOPPED", "NOT_PREPARED"].includes(local.source.state);
   const image = present ? local.images.find(row => row.version === vehicle.imageVersion)?.selector ?? ""
     : (mode === "quick" ? local.preparation?.image : local.lifecycle?.image) || selectedImage || local.images[0]?.selector || "";
   const continuation = mode === "quick" ? Boolean(local.preparation && local.preparation.phase !== "READY_TO_DRIVE")

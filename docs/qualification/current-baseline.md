@@ -12,7 +12,17 @@ The former UI hold and .33 current status are historical, not active blockers.
 
 ## Current qualification limitation
 
-Latest completion: **20 September06:46UTC**, no active Test. The full recorded
+Latest targeted checkpoint: **20 September07:47UTC**, a new .36 Test is retained
+in staging, Online and Safe Stop with external network ON. The operator approved
+VDP97/V3, Brake77/V3 and Tire43/V1; all are installed and real products and both
+native warnings were observed. Moving/double-click Return to road and exact
+offline delivery of54 captured messages passed. This is a targeted follow-up,
+not another full version progression or a completed Finish. T13 Presenter copy
+is active; T14 native preflight copy is source-tested, not yet activated in the
+running Driving Control. Remaining gates are listed in the
+[single timing report](presenter-ui-timing-e2e-2026-09-20.md#targeted-follow-up-after-the-completed-cycle).
+
+Previous full completion: **20 September06:46UTC**, then no active Test. The full recorded
 UI-only operator cycle after T10 reached VDP94/95/96, Brake73/74/75 then76,
 Tire42, real products, inherited and new advisories, independent resets,
 five-minute OFF/local operation, reconnect/backlog and confirmed Finish.
