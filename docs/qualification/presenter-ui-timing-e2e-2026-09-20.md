@@ -1053,3 +1053,53 @@ lock an unattended Mac to manufacture completion. The D4-003 calibration and
 review/freeze gate precedes the independent20 Brake and10+10 Tire series.
 Guest reboot remains separate. Preserve this Test and do not use the previous
 cycle's Finish approval as authority to retire it.
+
+### Independent backend failure and timeout continuation
+
+On20September09:10–09:18UTC, the operator requested continuing the remaining
+checks. Preserve the same .36 Test,97/77/43 releases and selected staging Cloud.
+No publication, Factory/core change, service replacement or retirement was
+performed. This pass adds no product-code changes.
+
+The fault injection is explicitly engineering-assisted: existing democtl stopped
+and started only the owned Brake backend, preserving its database; Docker pause
+and unpause simulated an unresponsive Tire backend without changing its image
+or data. All physical maneuvers and display inspection used the live native/
+Presenter UIs. Do not describe backend fault injection as a UI-only action.
+
+| Case | UTC evidence | Result |
+| --- | --- | --- |
+| N5 independent Brake backend stop | Stop started09:12:09.375, confirmed09:12:09.767 with dataPreserved=true | By09:12:13.873, card is Last known / incomplete; retained Monitor40 is labelled last known. Dialog disables Reset and explicitly says the backend is unavailable. Tire stays RECEIVING and Cloud Online; neither inherits Brake failure. |
+| N5 local analytics during outage | Native Brake maneuver click09:12:28.329; new result source09:12:43 | Native warning changed from Monitoring to Inspection recommended while backend remained stopped. Presenter retained the older labelled Monitor result; it did not invent receipt of the new warning/result. |
+| N5 recovery | Start09:14:00.413, healthy09:14:06.194; new assessment received09:14:18 | Same backend storage reused without build/pull; UI shows Inspection recommended34/100 with original09:12:43 source time and later receipt time. Function report CURRENT/RECEIVING, queue0 and advisory ACK confirmed by09:14:42. No guest/service restart or Reset. |
+| N6 unresponsive Tire backend | Pause09:15:08; running=true/paused=true. UI Refresh click09:15:14.014; local Tire maneuver follows | By09:15:29.194, explicit Partial read lists unavailable observations and labels retained product/function facts last known. A subsequent automatic read may still show Reading backend; that does not erase the already-visible partial result. Reset is disabled. This15.18s observation bound is not a measured10-second request duration. |
+| N6 responsive peer/navigation | Close dialog09:15:39.631 | Vehicle opens within the0.35s tool-call bound; Brake remains RECEIVING with a newer result and Cloud remains Online/no pending updates. Tire alone stays last known. Native maneuver completes without losing either local warning. |
+| N6 recovery | Unpause09:15:58 after approximately50s; Tire result source09:15:28, received09:15:58 | By09:16:15.214, Tire function is CURRENT/RECEIVING, queue0, advisory ACK confirmed, and its new result visible. Health initially reflected the expected pause failure, then returned healthy without restart. |
+
+Source timestamps, receipt timestamps and observation bounds are deliberately
+separate. The delayed assessments demonstrably arrived; this pass does not
+repeat the earlier54-message exact-byte/duplicate accounting or claim to cover
+every outage duration. Recovered function reports were not prematurely treated
+as current while the backlog still contained only older source observations.
+
+Final read-only guest check: CM, SM, IAM and VDP active with Result=success and
+NRestarts=0. The three tracked source-regression categories each have zero matches
+since09:10UTC. Both local backend containers are running, unpaused and healthy.
+Brake was deliberately stopped/started once; its Docker RestartCount=0 is not
+misrepresented as no manual backend restart. Test remains Online, native Safe
+Stop/0km/h/Network ON, both local warnings visible, unchanged installed releases
+and no pending Cloud updates. No injected fault remains active.
+
+Regression: all132 Presenter browser cases passed in42.6s; eight backend
+observation-budget tests passed in13.731s, including a real trickling-stream
+watchdog and aggregate Docker/HTTP deadline;34 source-exercise/workspace tests
+passed. The latter cover response-loss reconciliation, occupied-placement
+rejection, deferred lock/unlock and bounded owner-safe placement with fixtures;
+they do not close the still-unexecuted corresponding live cases. No new confirmed
+UI defect was found in this continuation. Existing Manual/held-input, deliberate
+live lock/unlock, D4-003 calibration and separate reboot gates remain open.
+
+Source-publication boundary: correction90386c7 is committed locally. Public
+push was previously rejected pending explicit approval of its code/report
+payload; this continuation does not retry or bypass that decision. Current
+runtime state is not a Git-restorable resource.

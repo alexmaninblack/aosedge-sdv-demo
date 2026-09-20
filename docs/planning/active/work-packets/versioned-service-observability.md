@@ -13,6 +13,18 @@ active-evidence file, not the agreed compatibility and product requirements.
 
 ## Preserved boundary
 
+**20 September09:18UTC independent-backend continuation:** the preserved .36
+Test passed independent Brake backend stop/start and a50-second unresponsive
+Tire backend pause/unpause. UI retained explicitly last-known facts, disabled
+Reset and kept the peer/Cloud responsive; physical maneuvers continued locally,
+then their delayed products arrived with original source times. Both backends
+are healthy/unpaused, both inputs current with zero queues, both native warnings
+visible, Test Online/Safe Stop/Network ON. No new product fix, VM/core/service
+restart or Finish. All132 browser cases and42 deadline/source/layout tests
+passed. Remaining live Manual/held-input, lock/unlock and calibration gates are
+unchanged. See the [same report](../../../qualification/presenter-ui-timing-e2e-2026-09-20.md#independent-backend-failure-and-timeout-continuation).
+Local90386c7 is not yet pushed; the explicit public-publication boundary remains.
+
 **20 September09:02UTC negative-check continuation:** the same .36 staging Test
 is preserved Online/Safe Stop/Network ON with VDP97, Brake77 and Tire43. Live
 concurrent-action rejection, Brake Reset expiry offline, pending reload without
