@@ -3,6 +3,16 @@
 
 # Advisory readiness and independent demo scenario reset
 
+20 September authorized timing correction: services publish actual boolean
+readiness transitions at the next worker iteration, retaining the five-second
+heartbeat. VDP likewise forwards current changes without waiting for its
+heartbeat. Successful writes/attempts are bounded to at most one per 100 ms;
+unaccepted writes retry with current state after one second. KUKSA RPC and
+entry errors and VISS responses/timeouts are checked. No credentials, schema,
+freshness limit, model threshold, reset behavior or UI masking changes; no
+CM/SM/IAM or Factory rebuild is required. Source and live qualification are
+tracked separately in [renewal evidence](../../../qualification/advisory-readiness-renewal-2026-09-20.md).
+
 18 September preserved-Test follow-up: diagnostic Brake 59.0.0 distinguishes
 upstream missing-data aborts from completed-but-unqualified Autopilot episodes.
 Presenter contact/reset/result wording is corrected and tested. The operator-

@@ -49,14 +49,26 @@ PREVIOUS_CLOCK_STRICT_RUNTIME_PIN = {
         "manifest.py": "94f57fd9a280d83d2d9c28ced213f5a860e46e41e6cc8ef86c3c0d70e5b8c635",
     },
 }
-ADVISORY_RUNTIME_HISTORY = (PREVIOUS_ADVISORY_RUNTIME_PIN, PREVIOUS_CLOCK_STRICT_RUNTIME_PIN)
-ADVISORY_RUNTIME_PIN = {
+PREVIOUS_HEARTBEAT_RUNTIME_PIN = {
     "revision": "394a645664f44a922b6a54388dfac7cfe9763221",
     "tree": "fb09614830c8c9fa264d78f6df1fd74c885d8062",
     "modules": {
         **PREVIOUS_CLOCK_STRICT_RUNTIME_PIN["modules"],
         "advisory.py": "5c28f83b779f6394244cd4a6dfb4c49bafcb461b19d4dbeab996d6a7d7d55c0f",
         "manifest.py": "9788cf7c256bcee61061792e7686f8866859b57e6f236c2c50ef688ec8673259",
+    },
+}
+# Keep installed/retained releases inspectable against their own source and
+# contract. Only new preparations receive the transition-publication fix.
+ADVISORY_RUNTIME_HISTORY = (PREVIOUS_ADVISORY_RUNTIME_PIN, PREVIOUS_CLOCK_STRICT_RUNTIME_PIN,
+                            PREVIOUS_HEARTBEAT_RUNTIME_PIN)
+ADVISORY_RUNTIME_PIN = {
+    "revision": "1fe5649f860f62573b313e1f38e5ec0f4ca1b519",
+    "tree": "cfc2e0c790c179ddc10f734f0def0361535154c0",
+    "modules": {
+        **PREVIOUS_HEARTBEAT_RUNTIME_PIN["modules"],
+        "bridge.py": "96fab65b4f15d3c0b6891cf5241a098361a3162a69be685956b02be14a18c634",
+        "advisory_transport.py": "759106afe1f1b70b176264b2f7adf1395037088af6f5eb35108e63fe18dbbe9c",
     },
 }
 # Source release gate, not a runtime fallback or an operator/UI flag. On
@@ -81,6 +93,7 @@ ADVISORY_RUNTIME_CONTRACT_HISTORY = {
         "sha256": "343e128bf9a0cac60a4f1b573315716f440accef17933fbcd9f6af49bc88300c",
     } for pin in ADVISORY_RUNTIME_HISTORY
 }
+ADVISORY_RUNTIME_CONTRACT_HISTORY[PREVIOUS_HEARTBEAT_RUNTIME_PIN["revision"]] = dict(ADVISORY_CONTRACT)
 
 
 def advisory_runtime_pin():

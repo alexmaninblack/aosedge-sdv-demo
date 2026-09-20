@@ -36,7 +36,11 @@ class RuntimeDiagnosticRedactionTests(unittest.TestCase):
                 dict(eventType="KUKSA_INPUT_SUMMARY", count=True, missingMask=4096,
                      oldestAgeMs=-60001, newestAheadMs="DO_NOT_REPORT"),
                 dict(eventType="TELEMETRY_WATCHDOG_EXPIRED", currentState="NOT_READY",
-                     reasonCode="NO_VALID_FRAME_WITHIN_FRESHNESS")]
+                     reasonCode="NO_VALID_FRAME_WITHIN_FRESHNESS"),
+                dict(eventType="ADVISORY_READINESS_PUBLICATION", currentState="READY",
+                     reasonCode="NONE", token="DO_NOT_REPORT"),
+                dict(eventType="ADVISORY_READINESS_PUBLICATION", currentState="FAILED",
+                     reasonCode="KUKSA_SET_NOT_ACCEPTED", response="DO_NOT_REPORT")]
             journal = "\n".join(json.dumps(dict(MESSAGE=json.dumps(event),
                 __REALTIME_TIMESTAMP="1789714089123093")) for event in events)
             with patch.object(source_guest, "command", return_value=SimpleNamespace(returncode=0, stdout=journal)):
@@ -48,6 +52,9 @@ class RuntimeDiagnosticRedactionTests(unittest.TestCase):
             for key in ("count", "missingMask", "oldestAgeMs", "newestAheadMs"):
                 self.assertNotIn(key, telemetry["inputSummaries"][1])
             self.assertEqual(1, len(telemetry["watchdogEvents"]))
+            publications = [event for event in telemetry["events"]
+                            if event.get("eventType") == "ADVISORY_READINESS_PUBLICATION"]
+            self.assertEqual(["READY", "FAILED"], [event["currentState"] for event in publications])
             self.assertNotIn("DO_NOT_REPORT", json.dumps(result))
 
 

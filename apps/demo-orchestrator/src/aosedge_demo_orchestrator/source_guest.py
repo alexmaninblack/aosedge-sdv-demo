@@ -69,6 +69,11 @@ def advisory_log_observation(raw):
         message = item.get("MESSAGE", "")
         if not isinstance(message, str):
             continue
+        readiness = re.search(r"QM_ADVISORY endpoint=(Vehicle\.OEM\.(?:BrakeHealth|TireHealth)\.Advisory\.Availability):readiness result=(READY|NOT_READY)$", message)
+        if readiness:
+            result.append(dict(time=item.get("__REALTIME_TIMESTAMP"), endpoint=readiness[1],
+                               result="READINESS_" + readiness[2]))
+            continue
         match = re.search(r"QM_ADVISORY endpoint=(transport|Vehicle\.OEM\.(?:BrakeHealth|TireHealth)\.Advisory\.(?:Request|GatewayStatus|Availability)) result=([A-Z_]{1,64})$", message)
         if match and match[2] in {
             "KUKSA_TARGETS_READY", "KUKSA_TARGETS_UNAVAILABLE", "VISS_RESPONSE_TIMEOUT",
@@ -397,7 +402,7 @@ print(json.dumps(result))
                             "KUKSA_AUTH_CHANGED", "KUKSA_CONNECTION_CHANGED", "KUKSA_SUBSCRIPTION_CHANGED", "BACKEND_SYNC_CHANGED",
                             "READINESS_CHANGED", "WINDOW_TRIGGERED", "WINDOW_COMPLETED", "SERVICE_STARTED", "SERVICE_STOPPED",
                             "VDP_CONTRACT_ACCEPTED", "KUKSA_INPUT_REJECTED", "KUKSA_INPUT_TIMING", "KUKSA_INPUT_SUMMARY", "TELEMETRY_WATCHDOG_EXPIRED", "ASSESSMENT_CREATED",
-                            "ADVISORY_REQUESTED", "ADVISORY_GATEWAY_STATUS",
+                            "ADVISORY_REQUESTED", "ADVISORY_GATEWAY_STATUS", "ADVISORY_READINESS_PUBLICATION",
                             "EXERCISE_COMPLETED", "EXERCISE_SKIPPED",
                             "ASSESSMENT_SKIPPED_INPUT_QUALITY", "CONDITION_BAND_CHANGED", "DERIVED_OUTBOX_FULL"):
                         continue

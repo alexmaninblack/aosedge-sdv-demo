@@ -53,6 +53,16 @@ class AdvisoryObservationTests(unittest.TestCase):
             source_guest.advisory_log_observation(json.dumps(dict(MESSAGE=readiness)))[0]["endpoint"])
         self.assertEqual([], source_guest.advisory_log_observation(json.dumps(dict(MESSAGE=readiness + " secret"))))
 
+    def test_readiness_transition_projection_is_fixed_and_not_an_application_ack(self):
+        endpoint = "Vehicle.OEM.BrakeHealth.Advisory.Availability"
+        for state in ("READY", "NOT_READY"):
+            message = "QM_ADVISORY endpoint=" + endpoint + ":readiness result=" + state
+            self.assertEqual([dict(time="123", endpoint=endpoint, result="READINESS_" + state)],
+                source_guest.advisory_log_observation(json.dumps(dict(MESSAGE=message, __REALTIME_TIMESTAMP="123"))))
+            for invalid in (message + " token=secret", message.replace(":readiness", ":secret"),
+                            message.replace(".Availability", ".Request"), message.replace(state, "SECRET")):
+                self.assertEqual([], source_guest.advisory_log_observation(json.dumps(dict(MESSAGE=invalid))))
+
 
 class AdvisoryRuntimeTests(unittest.TestCase):
     def setUp(self):
