@@ -22,7 +22,7 @@ class RepositoryCiPinsTests(unittest.TestCase):
         checkouts = [step["with"] for step in workflow["jobs"]["qualify"]["steps"]
                      if step.get("uses", "").startswith("actions/checkout@")]
         self.assertEqual({item["path"].split("/")[-1] for item in checkouts},
-                         {"aosedge-sdv-demo", "carla-ego-runtime", "aos-vehicle-platform", "brake-health-service"})
+                         {"aosedge-sdv-demo", "carla-ego-runtime", "aos-vehicle-platform", "brake-health-service", "tire-health-service"})
         for item in checkouts:
             directory = item["path"].split("/")[-1]
             if directory == "aosedge-sdv-demo":

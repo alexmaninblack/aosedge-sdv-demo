@@ -27,7 +27,7 @@ PHASE13_GATE = ROOT / "tests" / "host" / "aosvm-phase13-stopped-gate"
 class SuccessorTestingVMTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory(
-            prefix="aosvm-successor-testing-", dir="/private/tmp"
+            prefix="aosvm-successor-testing-", dir=str(Path(tempfile.gettempdir()).resolve())
         )
         self.root = Path(self.temporary.name)
         self.image = self.root / "successor-testing.img"

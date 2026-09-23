@@ -39,6 +39,16 @@ jobs:
           repository: alexmaninblack/brake-health-service
           ref: 230cdd4515d1be94ef342197ff56f6b76498aff2
           path: workspace/brake-health-service
+      - name: Check out Tire source for cross-repository documentation links
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          repository: alexmaninblack/tire-health-service
+          ref: 8639b57535e32e3fb2ce68f10794c90d39bb5ae5
+          path: workspace/tire-health-service
+      - name: Install image-metadata fixture dependency
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y qemu-utils
       - name: Install pinned source-gate dependencies
         run: |
           python3 -m venv "$RUNNER_TEMP/reuse"

@@ -24,7 +24,7 @@ DETACHER = ROOT / "scripts" / "host" / "aosvm-detach-supervisor"
 class AosVMDetachSupervisorTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory(
-            prefix="aosvm-detacher-", dir="/private/tmp"
+            prefix="aosvm-detacher-", dir=str(Path(tempfile.gettempdir()).resolve())
         )
         self.root = Path(self.temporary.name)
         self.log = self.root / "supervisor.log"
