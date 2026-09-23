@@ -17,6 +17,11 @@ and hosted commit result when restoring. The .36 image and Production backing ch
 Automatic [host sleep/wake recovery](../planning/active/native-sleep-wake-recovery-2026-09-21.md)
 is accepted planning only, not implemented. This source audit is not a new E2E.
 
+The [completed publication/cleanup receipt](demo-v1.0-publication-cleanup-2026-09-23.md)
+confirms the remote `demo-v1.0` tag, green hosted source checks, removal of 219
+superseded artifact directories and three secondary worktrees, with private
+metadata/draft recovery and retained Factory/runtime files unchanged.
+
 ## Dated operational summary — 20 September
 
 The obsolete .35 binary was removed at the operator's request; its manifest

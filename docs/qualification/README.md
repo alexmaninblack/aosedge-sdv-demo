@@ -4,6 +4,7 @@
 # Qualification Documentation
 
 - [Demo version 1.0 return point](demo-v1.0-return-point.md): exact dependency revisions, Factory provenance, restore procedure and qualification limits.
+- [Completed v1.0 publication and cleanup](demo-v1.0-publication-cleanup-2026-09-23.md): verified remote tag/CI, exact removal scope, preserved runtime and private worktree recovery.
 
 - [Staging source checkpoint and open boundaries — 15 September 2026](staging-source-checkpoint-2026-09-15.md): consolidated source audit, publication references, regression results and the separate next KUKSA phase; current Test retired.
 - [First-use OEM/SP configuration and qualification — 15 September 2026](first-use-cloud-configuration-audit-2026-09-15.md): dated Check/Prepare, staging provision/VDP and registration-recovery evidence; not a current Online Unit inventory.
