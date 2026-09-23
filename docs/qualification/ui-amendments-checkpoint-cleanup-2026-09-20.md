@@ -160,6 +160,12 @@ non-secret environment details in source and this report are still a disclosure.
 
 ## Remaining qualification boundaries
 
+Publication reconciliation, 23 September: actual GitHub `main` was read as
+`eaf176465f9311ef9504b9543dd3be7df2309ddc`, which includes the UI amendment batch.
+The rejection above records the earlier attempt, not a permanent unpublished
+state. The later advisory readiness commit and current audit corrections are
+separate work; this addendum does not claim their publication or green CI.
+
 Preserve the open gates in the [timing report](presenter-ui-timing-e2e-2026-09-20.md#targeted-follow-up-after-the-completed-cycle):
 real Manual/off-road/occupied-spawn and held-input recovery; deliberate live
 macOS lock/unlock; the unexecuted live negative combinations; independent

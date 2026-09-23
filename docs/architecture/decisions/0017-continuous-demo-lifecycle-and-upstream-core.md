@@ -22,6 +22,16 @@ CM patch. Removing a demonstration action does not fix the storage defect.
 
 ## Decision
 
+### Planned host sleep/wake tolerance — 21 September 2026
+
+The operator accepted the separate [native sleep/wake recovery plan](../../planning/active/native-sleep-wake-recovery-2026-09-21.md).
+It targets local simulation and panel recovery while preserving the running Test
+VM and service data. Once implemented and qualified, it will supersede the
+finish-before-lid-close guidance for ordinary host sleep, not for a full host
+shutdown. It does not reinstate VM Park/Resume or authorize automatic VM/CM
+restarts. This is an accepted future change, not current recovery qualification;
+the original lifecycle guidance below remains the implementation baseline.
+
 ### Authorized storage correction — 19 September 2026
 
 After platform-team confirmation of the shared-storage defect, the operator

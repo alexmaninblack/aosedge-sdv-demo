@@ -10,7 +10,7 @@
 This directory records accepted baselines, exact component locks,
 qualification procedures, and sanitized defect evidence.
 
-- [Current working .33 baseline and acceptance limits](current-baseline.md)
+- [Current working .36 baseline and acceptance limits](current-baseline.md)
 - [Assisted real UI repeat — 15 September](ui-hour-repeat-2026-09-15.md)
   — VDP and service transitions, network recovery and complete Test retirement;
   the operator ended further timeout observation after deletion succeeded.

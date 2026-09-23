@@ -7,6 +7,10 @@ This directory owns audience-visible scenarios, storyboards, presenter flows,
 and original demo visual assets. These documents describe what the audience
 sees; they do not redefine the system architecture.
 
+Accepted audience-facing name: **AosEdge Platform - SDV Lab**. See the
+[naming decision](demo-name.md) for spelling and scope, including the planned
+demo video. This decision does not itself rename the running UI.
+
 For the **current implemented Test-only Studio**, start with the
 [current interface register](mockups/README.md) and
 [UI-STUDIO-026](mockups/aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract).

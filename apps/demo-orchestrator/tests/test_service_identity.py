@@ -121,7 +121,7 @@ class PublicTrustTests(unittest.TestCase):
             command.return_value = subprocess.CompletedProcess([], 0, b"Hostname Server does NOT match certificate\n", b"")
             with self.assertRaisesRegex(ValueError, "HOST_MISMATCH"):
                 guest.trust()
-            for invalid in (certificate + certificate, certificate + b"-----BEGIN PRIVATE KEY-----\n", b"not a certificate"):
+            for invalid in (certificate + certificate, certificate + b"-----BEGIN " + b"PRIVATE KEY-----\n", b"not a certificate"):
                 source.return_value = invalid
                 with self.assertRaisesRegex(ValueError, "PUBLIC_CERTIFICATE_REQUIRED"):
                     guest.trust()

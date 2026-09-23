@@ -3,7 +3,21 @@
 
 # Current working baseline
 
-Updated: **20 September 2026**. Current retained Test Factory: **.36**.
+Updated: **23 September 2026**. Current retained Test Factory: **.36**.
+
+Current source audit: the latest repository-contained scoped readiness proof
+is [VDP98/V3, Brake78/V3, Tire44/V1](advisory-readiness-renewal-2026-09-20.md).
+The 20 September Online/running statements below describe their observation
+time, not current status. On 23 September the local Presenter endpoint did not
+respond and no named QEMU/CARLA/Driving Control process was observed; the local
+Test overlay is absent. Cloud state was not queried. Nothing was restarted or
+retired by this audit. CI/docs/pin reconciliation is in progress, not yet a
+published green checkpoint. The .36 image and Production backing chain remain.
+Automatic [host sleep/wake recovery](../planning/active/native-sleep-wake-recovery-2026-09-21.md)
+is accepted planning only, not implemented. This source audit is not a new E2E.
+
+## Dated operational summary — 20 September
+
 The obsolete .35 binary was removed at the operator's request; its manifest
 and compact qualification evidence remain. The separate Production .31 backing
 image remains because its overlay still depends on it. Vehicle overview integration and latest
@@ -23,7 +37,7 @@ describe earlier checkpoints, not the current disk inventory.
 
 ## Current qualification limitation
 
-Latest targeted functional checkpoint: **20 September09:18UTC**, the same .36 Test is retained
+Earlier targeted functional checkpoint: **20 September09:18UTC**, the same .36 Test was retained
 in staging, Online and Safe Stop with external network ON. The operator approved
 VDP97/V3, Brake77/V3 and Tire43/V1; all are installed and real products and both
 native warnings were observed. Moving/double-click Return to road and exact

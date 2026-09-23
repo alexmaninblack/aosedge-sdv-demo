@@ -13,7 +13,24 @@ the current design and implementation target, not yet a one-command
 fresh-checkout demo. See the
 [reproduction readiness matrix](docs/getting-started/reproduce-demo.md).
 
-## Current Baseline
+## Current baseline — 23 September 2026 source audit
+
+The audience-facing demo name is **AosEdge Platform - SDV Lab**. The retained
+Test Factory is **6.1.1-maninblack.36**, with independently delivered VDP
+V1/V2/V3, Brake V1/V2/V3 and Tire V1 packages. The Presenter and Demo Control
+share lifecycle/actions; real KUKSA telemetry, local advisory and delayed
+backend delivery have scoped staging evidence. Cloud remains authoritative
+for installed software and unit monitoring.
+
+Read the [current working baseline](docs/qualification/current-baseline.md)
+for immutable image provenance, dated live evidence and remaining gates.
+The latest repository-contained readiness correction qualified VDP98/V3,
+Brake78/V3 and Tire44/V1; it is not a new full clean qualification. Source/CI
+publication reconciliation is in progress. The audit did not start the demo
+or establish current Cloud state. Automatic host sleep/wake recovery is planned,
+not implemented. The historical table below must not be used for current setup.
+
+## Historical early platform baseline
 
 | Area | Accepted state |
 | --- | --- |
@@ -42,7 +59,7 @@ CARLA -> Vehicle Gateway -> VISS 3.1 -> Vehicle Data Platform Component
                                            provider + contract
                                                     |
                                                     v
-                                      unmodified KUKSA Databroker
+                                         KUKSA Databroker
                                               /             \
                                              v               v
                                   Brake Health service   Tire Health service
@@ -64,7 +81,8 @@ platform-controlled and implementation-neutral. The current release uses a
 separately packaged removable helper outside the VDP and both SOTA artifacts
 to derive short-lived, Service-private, path-scoped KUKSA JWTs. Services do not
 carry reusable KUKSA tokens, select their own authority, create a parallel
-identity/policy store, or modify Eclipse KUKSA.
+identity/policy store. The current platform includes a bounded KUKSA scope-path
+compatibility patch; this is platform-owned, not service-owned authority.
 
 Read [architecture and repository ownership](docs/architecture/repository-boundaries.md) for the
 complete boundary.

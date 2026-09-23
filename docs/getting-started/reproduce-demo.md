@@ -5,7 +5,7 @@
 
 ## Readiness at a Glance
 
-Recorded 13 September 2026. Distinguish the working engineering workspace
+Updated 23 September 2026. Distinguish the working engineering workspace
 from a fully published, fresh-checkout, visually accepted product demo.
 
 | Path | Current status | What a newcomer can reproduce |
@@ -13,13 +13,14 @@ from a fully published, fresh-checkout, visually accepted product demo.
 | Standalone AosVM on Apple Silicon | Repeatable | Boot, persistent lifecycle, network mobility checks and guarded single-Main-Node provisioning |
 | CARLA engineering demonstration | Repeatable on the qualified workspace | Native CARLA vehicle, manual/autopilot control, deterministic brake-event scenario and live Engineering Telematics Dashboard |
 | CARLA VISS-to-KUKSA integration | Accepted qualification evidence | Vehicle telemetry crossing the Gateway boundary into KUKSA on the qualified VM baseline |
-| Factory .33 Test lifecycle and FOTA/SOTA | Scoped E2E passed | Fresh Test provisioning; VDP V1/V2/V3 under Safe Stop; Brake/Tire replacement while driving; synthetic backend receipt/retry; network and retained-identity cold recovery |
-| Real service telemetry and advisory | Blocked on Cloud permissions; not live-qualified | Normal packages retain native authorization; temporary demo packages use explicitly synthetic data, not KUKSA or real advisory |
-| Full staged Studio story / fresh checkout | Partially implemented; acceptance remains open | Complete Presenter service actions, real product gates, published source/lock reconciliation and clean operator visual repeat remain |
+| Factory .36 Test lifecycle and FOTA/SOTA | Scoped continuous UI E2E passed | Fresh Test provisioning; VDP V1/V2/V3 under Safe Stop; Brake/Tire replacement; real products, network OFF/local operation, reconnect/backlog and Finish |
+| Real service telemetry and advisory | Scoped staging proof, not production calibration | Normal packages retain native authorization and consume real KUKSA inputs; later readiness correction qualified VDP98/Brake78/Tire44 |
+| Full qualification / fresh checkout | Not fully closed | Source/CI/pin reconciliation in progress; remaining negative, manual/recovery and separate guest-reboot checks are explicit |
 
 Use the [current working baseline](../qualification/current-baseline.md),
-[exact .33 E2E evidence](../qualification/factory-33-e2e-2026-09-13.md) and
-[consolidation audit](../qualification/factory-33-consolidation-audit-2026-09-13.md)
+[.36 E2E evidence](../qualification/factory-36-e2e-2026-09-19.md),
+[continuous UI cycle](../qualification/presenter-ui-timing-e2e-2026-09-20.md) and
+[readiness correction](../qualification/advisory-readiness-renewal-2026-09-20.md)
 for current pins and limitations. A synthetic backend receipt is real transport
 evidence but is not proof of vehicle-derived analytics. The packaged CM idle
 full-status setting is recovery around an unresolved Cloud ordering defect,
@@ -44,16 +45,16 @@ workspace/
 └── demo-artifacts/            local immutable images and prepared build outputs; outside Git
 ```
 
-Both service and backend repositories exist. Both backends accepted native
-service-produced synthetic records in the .33 run; real KUKSA/product/advisory
-qualification remains separate. Project-owned public remotes are under
+Both service and backend repositories exist. Real KUKSA/product/advisory
+operation has the scoped evidence linked above; historical synthetic .33
+receipts are not its substitute. Project-owned public remotes are under
 `alexmaninblack`; Unreal Engine remains a restricted external dependency.
 
 The machine-readable workspace contract is
 [`workspace/repositories.json`](../../workspace/repositories.json), but its
-accepted main-branch inputs predate the working Studio feature branches and
-Tire repositories. Reconciliation is explicitly OPEN-05 in the audit; do not
-interpret its older pins as the current build recipe. The read-only doctor
+accepted main-branch pins must match the selected published checkpoint. It
+includes Tire and both backends. The 23 September audit found three pins lagging
+local readiness corrections; reconciliation is in progress. The read-only doctor
 can expose that drift:
 
 ```sh
@@ -91,13 +92,13 @@ must not be replaced with `main` merely to satisfy an older workspace file.
 
 Run the installed `democtl` from `apps/demo-orchestrator`, as described in its
 [CLI guide](../../apps/demo-orchestrator/README.md). Use `democtl image list`
-to discover the real catalog; .33 is current Test, while existing Production
+to discover the real catalog; .36 is retained for Test, while existing Production
 still uses .31. Do not retire Production or use an obsolete image from an old
-example. The [E2E report](../qualification/factory-33-e2e-2026-09-13.md)
-records the commands and results of the current scoped cycle.
+example. The [E2E report](../qualification/factory-36-e2e-2026-09-19.md)
+records a dated scoped cycle, not a claim that a Test is running now.
 
 All lifecycle, package preparation/signing/publication, assignment and runtime
-actions use the shared Demo Control implementation. A normal .33 start already
+actions use the shared Demo Control implementation. A normal .36 start already
 contains the accepted CM/SM/resource/input fixes; do not reapply old runtime
 activation or restart recipes. The release allocator owns version numbers and
 must retain its continuity ledger. VDP profile bases and current service build

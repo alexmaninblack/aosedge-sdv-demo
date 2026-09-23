@@ -3,6 +3,38 @@
 
 # Demo Studio: staged delivery plan
 
+## Current work — 23 September, source checkpoint and disk audit
+
+Approved scope: correct failing repository CI, reconcile current documentation
+and workspace/workflow pins, repeat source gates, publish dependencies before
+integration and create a cross-repository return point. Preserve immutable
+Factory provenance; no live VM/Cloud/simulator action or video edit is part of
+this packet. Automatic sleep/wake recovery below remains a future item.
+
+The operator also requested a read-only disk audit before selecting cleanup
+targets. Preserve .36 and the Production .31 backing chain, release continuity,
+Builder/engine caches, unique source/worktrees and film originals. No deletion
+is authorized by this audit addition. Old-looking package/export/cache names
+must be checked against current consumers, not removed by age alone.
+
+Source-publication guard changes require a separate exact safety confirmation:
+the existing rule rejects already tracked visual assets and the documented
+QEMU-host routes. No bypass or successful green publication is claimed while
+that boundary remains unresolved. Dated runtime statements below are history.
+
+The [local source-checkpoint progress receipt](../../qualification/source-checkpoint-progress-2026-09-23.md)
+records the completed fixes/tests and explicit remaining publication approvals.
+It is not a completed or remotely recoverable cross-repository checkpoint.
+
+## Accepted follow-up — 21 September, host sleep/wake recovery
+
+The operator accepted a separate [native sleep/wake recovery item](native-sleep-wake-recovery-2026-09-21.md).
+Automatic recovery is planned, not implemented or qualified. The immediate task
+is a scoped restoration of the current local simulation/Driving Control after
+lid-close sleep, preserving the Test VM, Cloud identity, releases and data, then
+returning to video work. This does not restore VM Park/Resume or authorize a
+Factory rebuild, Cloud changes or a new clean run.
+
 ## Current position — 20 September, UI amendments implemented and qualified
 
 The operator accepted card-level one-click Reset Driver Advisory, one Disk view,

@@ -3,6 +3,15 @@
 
 # Demo Implementation Plan
 
+**Historical design/ordering record.** The status and authorization statements
+below are dated August/early September, not today's implementation status.
+Use the [current Studio delivery plan](demo-studio-delivery-plan.md) and
+[working baseline](../../qualification/current-baseline.md) for the implemented
+Test flow, current source work and remaining qualification. Retain original
+identifiers and decisions for traceability; do not read the older statement
+"Application implementation remains unauthorized" as an active restriction
+on later explicitly accepted work packets.
+
 - Status: P1 isolated source implementation in progress; integration remains gated
 - Version: 1.2
 - Prepared: 2026-08-27
