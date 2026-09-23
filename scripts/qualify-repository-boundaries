@@ -7,12 +7,13 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
 import subprocess
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from urllib.parse import urlparse
 
 
@@ -50,6 +51,20 @@ PROHIBITED_SUFFIXES = {
     ".zip",
 }
 RESTRICTED_PATH_PARTS = {"Engine/Source", "UnrealEngine/Engine", "CarlaUE4/Content"}
+VISUAL_MANIFEST = Path(__file__).resolve().parents[1] / "workspace/public-visual-assets.json"
+# Approved existing D4-020 examples only; neither a hostname nor a directory
+# allowlist. New routes/files and changed binary bytes still require review.
+QEMU_ORIGIN = "http://" + "10.0.0.1"
+PUBLIC_QEMU_EXAMPLES = {
+    ("aosedge-sdv-demo", "contracts/local-demo-hosting/local-demo-hosting-profile.v1.json"):
+        {QEMU_ORIGIN + ":18091/api/v1/brake/messages", QEMU_ORIGIN + ":18092/api/v1/tire/messages"},
+    ("aosedge-sdv-demo", "tests/test_local_demo_hosting_contract.py"):
+        {QEMU_ORIGIN + ":"},
+    ("aosedge-sdv-demo", "docs/requirements/d4-decision-register.md"):
+        {QEMU_ORIGIN + ":18091/..."},
+    ("brake-health-service", "docs/runtime-executable.md"):
+        {QEMU_ORIGIN + ":18091/api/v1/brake/messages"},
+}
 
 
 class QualificationError(RuntimeError):
@@ -88,8 +103,27 @@ def _require_clean(repository: Path) -> None:
     _require(not result.stdout.strip(), f"repository is not clean: {repository}")
 
 
+def _visual_assets(repository: Path) -> dict[str, str]:
+    if repository.name != "aosedge-sdv-demo":
+        return {}
+    value = json.loads(VISUAL_MANIFEST.read_text(encoding="utf-8"))
+    _require(isinstance(value, dict) and value.get("schemaVersion") == 1,
+             "invalid public visual inventory schema")
+    files = value.get("files")
+    _require(isinstance(files, dict) and len(files) == 57,
+             "public visual inventory must contain the 57 reviewed assets")
+    for name, sha in files.items():
+        path = PurePosixPath(name)
+        _require(not path.is_absolute() and ".." not in path.parts
+                 and str(path) == name and path.suffix in {".png", ".jpeg"}
+                 and isinstance(sha, str) and re.fullmatch(r"[0-9a-f]{64}", sha) is not None,
+                 "invalid public visual inventory entry")
+    return files
+
+
 def _scan_public_source(repository: Path) -> None:
     files = _tracked_files(repository)
+    visuals = _visual_assets(repository)
     _require(not (repository / ".gitmodules").exists(), f"submodules are prohibited: {repository}")
     private_key_marker = "-----BEGIN " + "PRIVATE KEY-----"
     personal_home = "/Users/" + "alexagizim"
@@ -113,6 +147,12 @@ def _scan_public_source(repository: Path) -> None:
             f"restricted source path is tracked: {repository.name}/{relative}",
         )
         data = path.read_bytes()
+        if relative in visuals:
+            _require(not path.is_symlink()
+                     and hashlib.sha256(data).hexdigest() == visuals[relative]
+                     and (data.startswith(b"\x89PNG\r\n\x1a\n") or data.startswith(b"\xff\xd8\xff")),
+                     f"approved visual content changed: {repository.name}/{relative}")
+            continue
         _require(b"\x00" not in data, f"binary content is tracked: {repository.name}/{relative}")
         text = data.decode("utf-8", errors="replace")
         _require(
@@ -139,7 +179,7 @@ def _scan_public_source(repository: Path) -> None:
                 is not None
             )
             _require(
-                not private_hostname,
+                not private_hostname or raw_url in PUBLIC_QEMU_EXAMPLES.get((repository.name, relative), set()),
                 f"private URL is tracked: {repository.name}/{relative}",
             )
 
