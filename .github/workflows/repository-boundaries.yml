@@ -18,28 +18,32 @@ jobs:
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           path: workspace/aosedge-sdv-demo
+          fetch-depth: 0
       - name: Check out CARLA ego runtime
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           repository: alexmaninblack/carla-ego-runtime
-          ref: 3fcf1fac52151f30bf04bd3b5c5d67bfd8526aa1
+          ref: 453b7948006d0264b0cede17816aaf551485b3cf
           path: workspace/carla-ego-runtime
       - name: Check out vehicle platform
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           repository: alexmaninblack/aos-vehicle-platform
-          ref: 18a17bb53f141342b6b143395c8478fd6fc66d3d
+          ref: 50a66b73dfc11361c2b8457934b3a0d4a7118dfe
           path: workspace/aos-vehicle-platform
+          # Platform provenance tests inspect introducing commits and base blobs.
+          fetch-depth: 0
       - name: Check out Brake Health service
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           repository: alexmaninblack/brake-health-service
-          ref: dfaff4af63b59d6eb4c7878f6d13ff67adf3fe98
+          ref: 230cdd4515d1be94ef342197ff56f6b76498aff2
           path: workspace/brake-health-service
-      - name: Install pinned REUSE validator
+      - name: Install pinned source-gate dependencies
         run: |
           python3 -m venv "$RUNNER_TEMP/reuse"
-          "$RUNNER_TEMP/reuse/bin/pip" install 'reuse[charset-normalizer]==5.1.1'
+          "$RUNNER_TEMP/reuse/bin/pip" install 'reuse==5.1.1' 'charset-normalizer==3.4.4' 'PyYAML==6.0.3'
+          echo "$RUNNER_TEMP/reuse/bin" >> "$GITHUB_PATH"
       - name: Qualify clean repository boundaries
         run: >-
           workspace/aosedge-sdv-demo/scripts/qualify-repository-boundaries

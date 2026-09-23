@@ -48,7 +48,7 @@
       "visibility": "public",
       "repository": "https://github.com/alexmaninblack/aos-vehicle-platform.git",
       "remote": "origin",
-      "acceptedRevision": "75503cdc2b9ab0ecb527db3bbf84e5380d6c42c7",
+      "acceptedRevision": "50a66b73dfc11361c2b8457934b3a0d4a7118dfe",
       "acceptedBranches": ["main"],
       "allowedDirtyPaths": []
     },
@@ -59,7 +59,7 @@
       "visibility": "public",
       "repository": "https://github.com/alexmaninblack/brake-health-service.git",
       "remote": "origin",
-      "acceptedRevision": "4f75373123cbc00a5b7a3541b1d289cb07affd39",
+      "acceptedRevision": "230cdd4515d1be94ef342197ff56f6b76498aff2",
       "acceptedBranches": ["main"],
       "allowedDirtyPaths": []
     },
@@ -81,7 +81,7 @@
       "visibility": "public",
       "repository": "https://github.com/alexmaninblack/tire-health-service.git",
       "remote": "origin",
-      "acceptedRevision": "20e6a23dcb97c29a0315fedd2e720ab537f01ff8",
+      "acceptedRevision": "8639b57535e32e3fb2ce68f10794c90d39bb5ae5",
       "acceptedBranches": ["main"],
       "allowedDirtyPaths": []
     },
@@ -92,7 +92,7 @@
       "visibility": "public",
       "repository": "https://github.com/alexmaninblack/tire-health-cloud.git",
       "remote": "origin",
-      "acceptedRevision": "47cfa632a80c89a7eaab0c501fe437c4ae2cb180",
+      "acceptedRevision": "026018a47daa3b37ff1f4404954e8e48e70336b4",
       "acceptedBranches": ["main"],
       "allowedDirtyPaths": []
     }
