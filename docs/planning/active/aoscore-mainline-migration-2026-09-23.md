@@ -3,9 +3,9 @@
 
 # AosCore mainline migration — 23 September 2026
 
-Status: authorized by the operator; production-toolchain native/package gates
-passed; successor Factory build tooling ready for local qualification.
-No successor image or live replacement is qualified yet.
+Status: authorized by the operator; source/native/package/image gates and
+isolated .37 boot/repeat complete. Live replacement is not qualified yet.
+See the [Factory .37 qualification report](../../qualification/factory-37-mainline-build-2026-09-23.md).
 
 ## Decision and immutable inputs
 
@@ -68,8 +68,8 @@ are the starting evidence, not blanket permission to remove residual fixes.
 | M0 | Source/recipe inventory, upstream pins, preserve existing baseline | Complete |
 | M1 | Negative-control regressions and minimal adaptations in isolated source | Complete |
 | M2 | CM/SM/IAM and VDP native tests; permission, storage, UID and disconnect regressions; source/license gates | Complete; live quota/image checks remain M4 |
-| M3 | Commit pinned source, affected package tests/QA, one successor Factory build | In progress; no image built |
-| M4 | Clean Test installation and sequential E2E with UI observation | Not started |
+| M3 | Commit pinned source, affected package tests/QA, one successor Factory build | Complete; .37 frozen, offline boot/repeat checked |
+| M4 | Clean Test installation and sequential E2E with UI observation | Not started; exact current-Test Finish gate requested |
 
 M4 must publish each next VDP/Brake version only after the preceding version is
 installed and verified. VDP uses Safe Stop; QM service updates remain independent
