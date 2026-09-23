@@ -20,6 +20,7 @@
 #include <core/cm/monitoring/monitoring.hpp>
 #include <core/cm/alerts/alerts.hpp>
 #include <core/common/crypto/cryptohelper.hpp>
+#include <core/common/tools/heapallocator.hpp>
 
 using namespace std::chrono_literals;
 using aos::cm::communication::Communication;
@@ -208,12 +209,15 @@ int main(int argc, char** argv)
     Check(schedule == "serial" || schedule == "overlap" || lifecycle || worker, "invalid schedule");
     const bool overlap = schedule == "overlap";
 
+    aos::HeapAllocator allocator;
     auto communication = std::make_unique<Communication>();
     auto monitoring = std::make_unique<aos::cm::monitoring::Monitoring>();
     auto alerts = std::make_unique<aos::cm::alerts::Alerts>();
     GatedUUID uuid;
     MissingCert cert;
     auto crypto = std::make_unique<aos::crypto::CryptoHelper>();
+    crypto->mAllocator = &allocator;
+    alerts->mAllocator = &allocator;
     aos::cm::config::Config config;
     crypto->mCertProvider = &cert;
     crypto->mServiceDiscoveryURL = "http://127.0.0.1";

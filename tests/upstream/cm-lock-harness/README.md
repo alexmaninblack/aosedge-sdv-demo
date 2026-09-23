@@ -99,6 +99,16 @@ Serial controls have no rendezvous and report a null transport-lock field.
 
 ## Qualification limits
 
+Mainline migration on 23 September updates this fixture to inject a
+HeapAllocator into the real CryptoHelper/Alerts objects. Allocator lifetime
+outlives those objects and their workers. The same 17 tests pass against
+application `9d613a46df3c7f550062e2f19ae3406c57715694` plus the residual
+disconnect patch and library `5560291ba6914e36a5b841ade4d8fc54134a9e91`.
+Use RelWithDebInfo and the declared OpenSSL3.2.1 prefix for this native proof;
+the earlier Debug/OpenSSL3.0 invocation above records the legacy baseline.
+It is still not live Cloud or Factory qualification. The old fixture is
+preserved in Git for reproduction of the pre-mainline incident.
+
 - The serial proof checks native enqueue and notification recovery. Worker
   cases extend this to automatic local reconnect and wire delivery, not a full
   Cloud reconnect, ACK/NACK or retry worker.

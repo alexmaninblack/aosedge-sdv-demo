@@ -81,6 +81,8 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Planning
 
+- [AosCore mainline migration — 23 September](planning/active/aoscore-mainline-migration-2026-09-23.md)
+  — authorized sequence, native proof, pinned candidate and remaining Factory/E2E gates.
 - [Planning documentation index](planning/README.md)
 - [Current design and delivery roadmap](planning/roadmap.md)
 - [Repository inventory and migration plan](planning/repository-inventory-and-migration-plan.md)
@@ -128,6 +130,8 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Qualification
 
+- [Demo v1.0 sequential UI E2E — 23 September](qualification/demo-v1.0-ui-e2e-2026-09-23.md)
+  — observed run, resource-metric diagnosis and evidence prompting the mainline migration.
 - [Qualification documentation index](qualification/README.md)
 - [Current working baseline and acceptance limits](qualification/current-baseline.md)
 - [CARLA VISS-to-KUKSA qualification](qualification/carla-viss-to-kuksa.md)
