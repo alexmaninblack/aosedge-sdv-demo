@@ -25,8 +25,10 @@ for installed software and unit monitoring.
 Read the [current working baseline](docs/qualification/current-baseline.md)
 for immutable image provenance, dated live evidence and remaining gates.
 The latest repository-contained readiness correction qualified VDP98/V3,
-Brake78/V3 and Tire44/V1; it is not a new full clean qualification. Source/CI
-publication reconciliation is in progress. The audit did not start the demo
+Brake78/V3 and Tire44/V1; it is not a new full clean qualification. The
+[demo-v1.0 return point](docs/qualification/demo-v1.0-return-point.md) records
+exact source revisions, retained images, restore instructions and CI scope.
+The audit did not start the demo
 or establish current Cloud state. Automatic host sleep/wake recovery is planned,
 not implemented. The historical table below must not be used for current setup.
 

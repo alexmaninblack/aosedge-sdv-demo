@@ -1,0 +1,34 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "name": "AosEdge Platform - SDV Lab",
+  "milestone": "demo-v1.0",
+  "integrationRef": "refs/tags/demo-v1.0",
+  "dependencyManifest": "workspace/repositories.json",
+  "dependencyManifestSha256": "087b6c704107db6bb8e07ffcd160283d8012a0c7f42abaaf4dd3b601675aa5b2",
+  "factory": {
+    "version": "6.1.1-maninblack.36",
+    "image": "main-qemuarm64.img",
+    "format": "raw",
+    "sizeBytes": 6997147648,
+    "sha256": "9ff1377a0261028bc7583bbca09be2e2c6f55f4754988071f873cbc630ab50c6",
+    "sourceRevision": "a0f88d8fc47d5e84df874883cb01872e25516fd5",
+    "manifestState": "BUILT_NOT_LIVE_QUALIFIED",
+    "manifestRelativeToArtifactRoot": "factory-images/6.1.1-maninblack.36/manifest.json"
+  },
+  "preservedProductionBacking": {
+    "version": "6.1.1-maninblack.31",
+    "pathRelativeToIntegration": ".local/factory/oem-demo-factory.img",
+    "dependentOverlayRelativeToIntegration": ".local/demo-current/production.qcow2",
+    "sizeBytes": 6997147648,
+    "sha256": "a9019f4adfe70499bde339c8e9d95eb8568736b73dc218f6c0e390fbcd28ddf4"
+  },
+  "retention": {
+    "vdpBaseVersions": ["1.0.16", "2.0.0", "3.0.0"],
+    "existingVdpReleaseMajorsFrom": 89,
+    "existingBrakeReleaseMajorsFrom": 70,
+    "existingTireReleaseMajorsFrom": 41,
+    "releaseContinuityAtAudit": {"vdp": "105.0.0", "brake": "83.0.0", "tire": "46.0.0"}
+  },
+  "scope": "Source milestone with dated scoped staging evidence; not a fresh E2E, full P8 acceptance, image backup or Cloud-state snapshot."
+}

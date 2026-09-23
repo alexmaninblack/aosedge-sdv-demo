@@ -11,8 +11,9 @@ The 20 September Online/running statements below describe their observation
 time, not current status. On 23 September the local Presenter endpoint did not
 respond and no named QEMU/CARLA/Driving Control process was observed; the local
 Test overlay is absent. Cloud state was not queried. Nothing was restarted or
-retired by this audit. CI/docs/pin reconciliation is in progress, not yet a
-published green checkpoint. The .36 image and Production backing chain remain.
+retired by this audit. Source/CI/pins are reconciled in the
+[demo-v1.0 return-point record](demo-v1.0-return-point.md); verify its remote tag
+and hosted commit result when restoring. The .36 image and Production backing chain remain.
 Automatic [host sleep/wake recovery](../planning/active/native-sleep-wake-recovery-2026-09-21.md)
 is accepted planning only, not implemented. This source audit is not a new E2E.
 

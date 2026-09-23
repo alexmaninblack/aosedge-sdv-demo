@@ -3,9 +3,29 @@
 
 # Source checkpoint reconciliation — 23 September 2026
 
-Status: **local corrections and regression completed; publication incomplete**.
-This is a progress receipt, not a remotely recoverable cross-repository tag,
-green hosted CI claim, Factory promotion or live E2E qualification.
+## Publication follow-up — same day
+
+The operator subsequently approved dependency/default-branch publication,
+the exact57 visual path/digest exceptions and documented QEMU URL/file pairs,
+the `demo-v1.0` return point and reference-aware obsolete-artifact/worktree cleanup.
+The corrections and four dependency revisions below are now pushed; integration
+pins and workflow refs match them. Platform and Brake hosted checks passed.
+The full local boundary gate passed with365 integration tests (including12
+guard negatives and1 CI-pin test), Platform193 and Brake host/source gates.
+The first integration hosted run identified Linux harness portability and
+missing checkout/tool prerequisites; those were corrected, with19 targeted
+local tests passing. No product or VM behavior was changed by that correction.
+Use the [return-point record](demo-v1.0-return-point.md) for the final source
+manifest, remote tag verification, CI scope and retained artifact boundaries.
+
+The rest of this document is the **earlier local progress receipt**. Its pending
+approval/publication and no-deletion statements describe that earlier moment,
+not outstanding authorization. It remains evidence of the blocked attempt;
+no bypass or alternate publication transport was used.
+
+## Earlier local progress
+
+Status at that observation: **local corrections completed; publication incomplete**.
 
 ## Authorized scope and retained state
 

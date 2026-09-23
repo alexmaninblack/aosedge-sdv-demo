@@ -11,20 +11,21 @@ integration and create a cross-repository return point. Preserve immutable
 Factory provenance; no live VM/Cloud/simulator action or video edit is part of
 this packet. Automatic sleep/wake recovery below remains a future item.
 
-The operator also requested a read-only disk audit before selecting cleanup
-targets. Preserve .36 and the Production .31 backing chain, release continuity,
-Builder/engine caches, unique source/worktrees and film originals. No deletion
-is authorized by this audit addition. Old-looking package/export/cache names
-must be checked against current consumers, not removed by age alone.
+After the disk audit the operator approved publication/tagging and removal of
+obsolete worktrees/artifacts, explicitly preserving main integration runtime
+files/images and the private video repository. Preserve .36, the Production .31
+backing chain, release continuity, Builder/engine caches and unique source.
+Archive compact old receipts outside the active package catalog; retain current
+and rollback families. No deletion may precede the verified remote return point.
 
-Source-publication guard changes require a separate exact safety confirmation:
-the existing rule rejects already tracked visual assets and the documented
-QEMU-host routes. No bypass or successful green publication is claimed while
-that boundary remains unresolved. Dated runtime statements below are history.
-
-The [local source-checkpoint progress receipt](../../qualification/source-checkpoint-progress-2026-09-23.md)
-records the completed fixes/tests and explicit remaining publication approvals.
-It is not a completed or remotely recoverable cross-repository checkpoint.
+The exact57 visual path/digest and documented QEMU URL/file exceptions are now
+explicitly approved, implemented and covered by negative tests. Dependency
+publication and pin reconciliation are complete. Hosted Linux harness issues
+were isolated and corrected without changing product launchers. Dated runtime
+statements below are history. The [demo-v1.0 return record](../../qualification/demo-v1.0-return-point.md)
+defines tag/CI verification, source/image provenance and recovery limits; the
+[earlier progress receipt](../../qualification/source-checkpoint-progress-2026-09-23.md)
+retains the initial failures and their resolution, not a new live qualification.
 
 ## Accepted follow-up — 21 September, host sleep/wake recovery
 

@@ -3,6 +3,8 @@
 
 # Qualification Documentation
 
+- [Demo version 1.0 return point](demo-v1.0-return-point.md): exact dependency revisions, Factory provenance, restore procedure and qualification limits.
+
 - [Staging source checkpoint and open boundaries — 15 September 2026](staging-source-checkpoint-2026-09-15.md): consolidated source audit, publication references, regression results and the separate next KUKSA phase; current Test retired.
 - [First-use OEM/SP configuration and qualification — 15 September 2026](first-use-cloud-configuration-audit-2026-09-15.md): dated Check/Prepare, staging provision/VDP and registration-recovery evidence; not a current Online Unit inventory.
 - [Unsigned packages and session signing — 15 September 2026](unsigned-package-signing-2026-09-15.md): offline gate and live staging publications passed; the subsequent first-use receipt above tracks provisioning and delivery.
