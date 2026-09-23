@@ -72,7 +72,23 @@ class PermissionCapacityTests(unittest.TestCase):
         self.assertLessEqual(len(permissions), 32)
 
     def test_old_transient_capacity_proof_rejects_new_factory_recipe_changes(self):
-        with self.assertRaisesRegex(EnvironmentError, "DELTA_NOT_CAPACITY_ONLY"):
+        # Preserve this historical .36 rejection. The mainline migration also
+        # rebases the IAM patch and is rejected at the earlier exact-patch gate.
+        original_read = Path.read_bytes
+        def factory36_snapshot(path):
+            try:
+                relative = path.relative_to(runtime.SOURCE)
+            except ValueError:
+                return original_read(path)
+            return runtime.subprocess.check_output([
+                "git", "show", runtime.FACTORY_RELEASES["6.1.1-maninblack.36"] + ":" + str(relative)
+            ], cwd=runtime.SOURCE)
+        with patch.object(Path, "read_bytes", factory36_snapshot), \
+                self.assertRaisesRegex(EnvironmentError, "DELTA_NOT_CAPACITY_ONLY"):
+            runtime.permission_recipe_inputs(iam_response_capacity=True)
+
+    def test_old_transient_capacity_proof_rejects_rebased_mainline_patch(self):
+        with self.assertRaisesRegex(EnvironmentError, "CORE_PERMISSION_IAM_RESPONSE_PATCH_NOT_EXACT"):
             runtime.permission_recipe_inputs(iam_response_capacity=True)
 
     def test_all_current_service_profiles_and_advisory_fit_native_capacity(self):

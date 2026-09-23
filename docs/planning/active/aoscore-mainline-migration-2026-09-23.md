@@ -3,7 +3,8 @@
 
 # AosCore mainline migration — 23 September 2026
 
-Status: authorized by the operator; native/source proof complete, package gate next.
+Status: authorized by the operator; production-toolchain native/package gates
+passed; successor Factory build tooling ready for local qualification.
 No successor image or live replacement is qualified yet.
 
 ## Decision and immutable inputs
@@ -99,7 +100,7 @@ while any required native test is failing.
   while preparing a replacement. Network release precedes durable-row removal.
 - CM, IAM and SM application binaries compile against the pinned triplet. SM
   native proof includes container and VDP; boot/rootfs targets remain the package
-  gate. VDP:81 pass/2 VM-only tests skipped; container42/42; actual crun adapter
+  gate. VDP:81 pass/2 VM-only tests skipped; container42 pass/2 upstream-disabled; actual crun adapter
   with injected error returns5/5; network93/93; namespace4/4; IAM gRPC61/61;
   permission handler7/7; storage/state15/15; CM lock harness17/17; PKCS#11 with
   three real SoftHSM tokens14/14. Cache reset/reopen covers20 cycles with a
@@ -141,3 +142,48 @@ Cloud object, current Factory, or video artifact was changed.
   same Builder disk; no Production VM or Test was connected or mutated.
   Compiler concurrency is bounded to two tasks with four compiler jobs each
   while the current demo remains available.
+
+## Production-toolchain closure and Factory .37 build gate
+
+- Corrected compile resolved all three actual app/lib/API checkouts and CMake
+  bindings to the pinned triplet. All1743 compile tasks succeeded. SM includes
+  boot, rootfs, container and VDP runtimes; production OpenSSL3.2.6 is unchanged.
+- Native checks using each recipe's compiler and target sysroot passed:
+  CM launcher/UID47, idle11, storage15; SM replacement27; IAM permissions7,
+  three-token PKCS#11 cache14 and gRPC61; VDP81 (2 VM-only skips), container42
+  (2 upstream-disabled host-device tests), crun5, network97; CM lock17.
+  Total:424 passed,2 skipped,2 upstream-disabled; KAC/provider/verifier programs
+  also exited0. Core tests use upstream fixture configuration, not a duplicate
+  application configuration header. Application flags are checked separately.
+- Two evidence-harness corrections did not change product code: retain
+  root-owned synthetic storage fixtures instead of failing unprivileged cleanup;
+  count42 executed container cases separately from2 disabled upstream cases.
+  Reconcile existing XML instead of rerunning a successful uncertain attempt.
+- Package/QA completed all6484 tasks,59 executed. Nine nonfatal `buildpaths`
+  warnings refer to paths of the private upstream library sources in manager,
+  debug and staticdev packages. This known category is also recorded for earlier
+  Factory releases; no warning/error checks were disabled. Package dependencies
+  also refreshed the initramfs/kernel deploy output; no Factory disk or
+  `aos-image-vm` was built by that package command.
+- Packaged IAM retains enabled permissions and exactly the aoscloud/aoscore/
+  aos-kuksa token topology. No identity, permissions or trust scope was widened.
+- Demo Control .37 pins Platform `77d99770a3d9476736da55c3e2196396899bc563`.
+  Its committed qualification helper checks effective pins before compile,
+  checks actual sources/flags after compile, executes the matrix above before
+  packaging/image construction, and preserves compact XML/logs in the image
+  artifact. Old .35/.36 build paths and expected counts remain unchanged.
+  Tooling must be committed and clean; retries cannot overwrite evidence.
+- Demo Control regression:1035 cases,1019 passed and16 skipped in the project
+  environment. The initial sandboxed run is excluded:28 local socket/process
+  permission errors plus a historical fixture expecting the old rejection
+  boundary. Preserve that .36 fixture and add the mainline rejection separately;
+  no product guard was loosened. Focused Factory tests33/33, permission tests15/15.
+- Keep two BitBake tasks/four compiler jobs and the60GiB disk guards. The new
+  image remains `BUILT_NOT_LIVE_QUALIFIED` until a clean isolated smoke and the
+  separately authorized sequential staging matrix pass. The accepted solution
+  platform pin, immutable .36, current Test and video repository remain unchanged.
+
+Compact evidence is retained in the transient proof directory, particularly
+`production-compile-v3.log`, `production-native-v2.log` through
+`production-native-v4.log`, `production-lock.log`, `production-kac.log` and
+`production-package.log`. Failed/rejected attempts remain explicitly excluded.

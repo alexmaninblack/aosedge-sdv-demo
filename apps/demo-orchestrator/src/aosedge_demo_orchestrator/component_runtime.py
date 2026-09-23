@@ -41,6 +41,7 @@ FACTORY_RELEASES = {
     "6.1.1-maninblack.34": "81e7e1fda991c133a7dc83188c1dcf0f966fd62e",
     "6.1.1-maninblack.35": "bb691efcbf19f1bebd74fd2ef3ae9ff0aee2bf74",
     "6.1.1-maninblack.36": "a0f88d8fc47d5e84df874883cb01872e25516fd5",
+    "6.1.1-maninblack.37": "77d99770a3d9476736da55c3e2196396899bc563",
 }
 RELATIVE = "meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files/systemd-slot-component"
 BUILDER_PROJECT = "/home/yocto/r61-build/project/yocto"
@@ -974,6 +975,28 @@ def register_factory_support(destination, version, compatibility):
         raise EnvironmentError("FACTORY_EXISTING_METADATA_UNAVAILABLE") from None
 
 
+def stage_mainline_factory_gates(ssh, remote, project, source):
+    """Export committed test tooling separately from the immutable Platform pin."""
+    solution = Path(__file__).resolve().parents[4]
+    if subprocess.check_output(["git", "status", "--porcelain"], cwd=solution):
+        raise EnvironmentError("FACTORY_COMMITTED_QUALIFICATION_TOOLS_REQUIRED")
+    revision = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=solution).decode().strip()
+    script = "apps/demo-orchestrator/src/aosedge_demo_orchestrator/factory_mainline_gates.py"
+    harness = "tests/upstream/cm-lock-harness"
+    root = project + "/factory37-gates-" + revision
+    archive = subprocess.check_output(["git", "archive", revision, script,
+                                      harness + "/CMakeLists.txt", harness + "/probe.cpp"], cwd=solution)
+    remote("mkdir -p " + shlex.quote(root))
+    subprocess.run(ssh + ["tar -xf - -C " + shlex.quote(root)], input=archive, check=True, timeout=30)
+    conf = root + "/build.conf"
+    text = ('require ' + source + '/qualification/factory-37.conf\n'
+            'BB_NUMBER_THREADS = "2"\nPARALLEL_MAKE = "-j 4"\n')
+    remote("python3 -c " + shlex.quote("from pathlib import Path; Path(%r).write_text(%r)" % (conf, text)))
+    evidence = root + "/evidence-" + str(time.time_ns())
+    return dict(command="python3 " + shlex.quote(root + "/" + script), conf=conf,
+                harness=root + "/" + harness, evidence=evidence, solutionRevision=revision)
+
+
 def build_factory(version, metadata_only=False):
     """The release build is a Demo Control operation, not an operator script.
 
@@ -1045,10 +1068,17 @@ def build_factory(version, metadata_only=False):
         prefix = "cd " + BUILDER_PROJECT + "; . poky/oe-init-build-env build-main >/dev/null; "
         suffix = version.rsplit(".", 1)[1]
         flags = " -R " + source + "/qualification/factory-" + suffix + ".conf "
-        managers = "aos-servicemanager" + (" aos-communicationmanager" if suffix in ("32", "33", "34", "35", "36") else "")
-        if suffix in ("34", "35", "36"):
+        mainline = None
+        if suffix == "37":
+            mainline = stage_mainline_factory_gates(ssh, remote, project, source)
+            flags = " -R " + shlex.quote(mainline["conf"]) + " "
+            stage("verify effective mainline pins and offline guards before compilation")
+            print(remote(prefix + mainline["command"] + " preflight --conf " +
+                         shlex.quote(mainline["conf"]), timeout=600), file=sys.stderr, flush=True)
+        managers = "aos-servicemanager" + (" aos-communicationmanager" if suffix in ("32", "33", "34", "35", "36", "37") else "")
+        if suffix in ("34", "35", "36", "37"):
             managers += " aos-iamanager"
-        targets = managers + (" aos-kuksa-auth-compat" if suffix in ("34", "35", "36") else "")
+        targets = managers + (" aos-kuksa-auth-compat" if suffix in ("34", "35", "36", "37") else "")
         stage("compile the proven manager corrections from committed source (offline)")
         remote(prefix + "bitbake" + flags + "-c compile " + targets, timeout=1200, capture=False)
         work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-servicemanager/git"
@@ -1061,6 +1091,14 @@ def build_factory(version, metadata_only=False):
         print(test_log, file=sys.stderr, flush=True)
         if "[  PASSED  ] 5 tests." not in test_log:
             raise EnvironmentError("FACTORY_EXPECTED_FIVE_TESTS_NOT_EXECUTED")
+        mainline_root = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux"
+        if mainline:
+            stage("run production-toolchain mainline lifecycle, crypto, runtime and lock regressions")
+            mainline_log = remote(mainline["command"] + " native --root " + shlex.quote(mainline_root)
+                + " --evidence " + shlex.quote(mainline["evidence"])
+                + " --lock-source " + shlex.quote(mainline["harness"]), timeout=2400)
+            print(mainline_log, file=sys.stderr, flush=True)
+            test_log += mainline_log
         if suffix in ("35", "36"):
             stage("compile and run the CM startup, reconciliation and applicable storage regressions")
             cm_work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-communicationmanager/git"
@@ -1082,7 +1120,7 @@ subprocess.run(['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'
             if "[  PASSED  ] " + str(expected_cm_tests) + " tests." not in cm_log:
                 raise EnvironmentError("FACTORY_CM_STARTUP_REGRESSIONS_INCOMPLETE")
             test_log += cm_log
-        if suffix in ("34", "35", "36"):
+        if suffix in ("34", "35", "36", "37"):
             stage("verify uniform CM/SM/IAM permission capacity and native KAC/Provider tests")
             for recipe in managers.split():
                 manager_build = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/" + recipe + "/git/build"
@@ -1102,7 +1140,7 @@ subprocess.run(['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'
                 test_log += remote(kac_loader + " --library-path " + kac_libs + " " + kac_work + "/build/" + executable, timeout=60)
         stage("package the managers with package QA")
         remote(prefix + "bitbake" + flags + targets, timeout=1200, capture=False)
-        if suffix in ("32", "33", "34", "35", "36"):
+        if suffix in ("32", "33", "34", "35", "36", "37"):
             # Verify final package input after native do_update_config, not the
             # intermediate resource file that do_install initially creates.
             package_check = (
@@ -1117,13 +1155,16 @@ subprocess.run(['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'
                 "print('Factory service-input package: PASS')"
             ) % (work + "/image", source + "/meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files")
             print(remote("python3 -c " + shlex.quote(package_check)), file=sys.stderr, flush=True)
-        if suffix in ("33", "34", "35", "36"):
+        if suffix in ("33", "34", "35", "36", "37"):
             cm_work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-communicationmanager/git"
             cm_check = ("import json; from pathlib import Path; "
                 "config=json.loads(Path(%r).read_text()); "
                 "assert config['idleFullStatusInterval']=='60s'; "
                 "print('Factory CM idle full status: 60s, PASS')") % (cm_work + "/image/etc/aos/cm.cfg")
             print(remote("python3 -c " + shlex.quote(cm_check)), file=sys.stderr, flush=True)
+        if mainline:
+            print(remote(mainline["command"] + " package --root " + shlex.quote(mainline_root)),
+                  file=sys.stderr, flush=True)
         stage("construct the Factory filesystem from pinned sources")
         remote(prefix + "bitbake" + flags + "aos-image-vm", timeout=2400, capture=False)
         output = "main-qemuarm64-factory-" + suffix + ".img"
@@ -1154,6 +1195,20 @@ subprocess.run(['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'
                               byteLength=image.stat().st_size, sha256=remote_sha, format="raw"),
             build=dict(offline=True, targetedTests="PASS", packageQa="PASS", imageQa="PASS",
                        hostTransferSha256Matched=True, builderSource=source, assemblyCommand=assembly))
+        if mainline:
+            summary = json.loads(remote("cat " + shlex.quote(mainline["evidence"] + "/summary.json")))
+            manifest["build"]["mainlineQualification"] = dict(
+                solutionRevision=mainline["solutionRevision"], builderEvidence=mainline["evidence"],
+                native=summary,
+                knownPackageWarnings="buildpaths: recipe-private upstream source paths; no QA bypass")
+            # Preserve compact test XML/logs across Builder shutdown without
+            # exporting root-owned synthetic fixtures or any runtime state.
+            names = remote("python3 -c " + shlex.quote(
+                "from pathlib import Path; p=Path(%r); print('\\n'.join(sorted(x.name for x in p.iterdir() "
+                "if x.is_file() and x.suffix in ('.xml','.log','.json'))))" % mainline["evidence"])).splitlines()
+            evidence_bytes = subprocess.check_output(ssh + ["tar -cf - -C " +
+                shlex.quote(mainline["evidence"]) + " " + shlex.join(names)], timeout=60)
+            (destination / "mainline-tests.tar").write_bytes(evidence_bytes)
         (destination / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
         (destination / "configuration-tests.log").write_text(test_log)
         return manifest
