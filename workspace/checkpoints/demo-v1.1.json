@@ -1,0 +1,45 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "name": "AosEdge Platform - SDV Lab",
+  "milestone": "demo-v1.1",
+  "prepared": "2026-09-24",
+  "integrationRef": "refs/tags/demo-v1.1",
+  "dependencyManifest": "workspace/repositories.json",
+  "dependencyManifestSha256": "59e5e6a4e3117e922e0180cfc58e388321049ec9998a8c7d5aa70e6e2fc60d96",
+  "factory": {
+    "version": "6.1.1-maninblack.39",
+    "image": "main-qemuarm64.img",
+    "format": "raw",
+    "sizeBytes": 6997147648,
+    "sha256": "741a9717c4152dfe9baa997fcdd948fa5662e71473b0a7c91faba942aa63c557",
+    "sourceRevision": "793b1fc035d2b7c123f9a4161788955f389bb81d",
+    "manifestState": "BUILT_NOT_LIVE_QUALIFIED",
+    "manifestRelativeToArtifactRoot": "factory-images/6.1.1-maninblack.39/manifest.json"
+  },
+  "coreSources": {
+    "aos_core_cpp": "9d613a46df3c7f550062e2f19ae3406c57715694",
+    "aos_core_lib_cpp": "5560291ba6914e36a5b841ade4d8fc54134a9e91",
+    "aos_core_api": "af3552a0a5eb0237eff7f5f183780ca46c339cd3"
+  },
+  "observedInstalledReleases": {
+    "observed": "2026-09-24",
+    "vdp": {"release": "117.0.0", "profile": "V3"},
+    "brake": {"release": "92.0.0", "profile": "V3"},
+    "tire": {"release": "49.0.0", "profile": "V1"}
+  },
+  "preservedProductionBacking": {
+    "version": "6.1.1-maninblack.31",
+    "pathRelativeToIntegration": ".local/factory/oem-demo-factory.img",
+    "dependentOverlayRelativeToIntegration": ".local/demo-current/production.qcow2",
+    "sizeBytes": 6997147648,
+    "sha256": "a9019f4adfe70499bde339c8e9d95eb8568736b73dc218f6c0e390fbcd28ddf4"
+  },
+  "evidence": [
+    "docs/qualification/factory-39-build-2026-09-24.md",
+    "docs/qualification/factory-39-ignition-2026-09-24.md",
+    "docs/qualification/factory-39-offline-2026-09-24.md",
+    "docs/qualification/factory-39-cleanup-2026-09-24.md"
+  ],
+  "scope": "Source return point with focused Factory39 ignition and existing-installation offline evidence. Not full serial all-version E2E acceptance, an image backup or a running Cloud/VM snapshot."
+}

@@ -14,6 +14,8 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Start Here
 
+- [Demo1.1 source return point](qualification/demo-v1.1-return-point.md)
+  — exact dependency pins, Factory39 provenance, restoration and known limits.
 - [Current .39 candidate and baseline history](qualification/current-baseline.md)
   — retained Test image, installed profiles, dated qualification and exclusions.
 - [Factory .39 artifact cleanup](qualification/factory-39-cleanup-2026-09-24.md)

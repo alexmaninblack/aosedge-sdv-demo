@@ -5,6 +5,10 @@
 
 Updated: **24 September 2026**. Current retained Test Factory: **.39**.
 
+Source checkpoint: [demo-v1.1](demo-v1.1-return-point.md) records the exact
+integration/dependency return point and Factory39 provenance. Verify the remote
+tag and hosted result as described there; the milestone is not full E2E promotion.
+
 The current Test uses VDP117/V3, Brake92/V3 and Tire49/V1. The focused
 [ignition qualification](factory-39-ignition-2026-09-24.md) and
 [five-minute offline qualification](factory-39-offline-2026-09-24.md) passed with

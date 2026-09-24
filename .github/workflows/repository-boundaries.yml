@@ -23,13 +23,13 @@ jobs:
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           repository: alexmaninblack/carla-ego-runtime
-          ref: 453b7948006d0264b0cede17816aaf551485b3cf
+          ref: 98b0b70a0c16cb96475d2c34755a80a817e4a190
           path: workspace/carla-ego-runtime
       - name: Check out vehicle platform
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           repository: alexmaninblack/aos-vehicle-platform
-          ref: 50a66b73dfc11361c2b8457934b3a0d4a7118dfe
+          ref: 793b1fc035d2b7c123f9a4161788955f389bb81d
           path: workspace/aos-vehicle-platform
           # Platform provenance tests inspect introducing commits and base blobs.
           fetch-depth: 0
