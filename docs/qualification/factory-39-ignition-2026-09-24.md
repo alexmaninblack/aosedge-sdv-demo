@@ -6,6 +6,9 @@
 Status: focused raw reboot, graceful full process power-cycle recovery and
 post-cycle functional checks **PASS**, with exclusions below. No baseline promotion.
 
+Follow-up: [existing-installation external-OFF/ON qualification](factory-39-offline-2026-09-24.md)
+passes a five-minute interval on the same Test, with readiness/feedback observations.
+
 ## Authorized boundary
 
 The operator explicitly approved retirement of Test .38 Unit
@@ -123,7 +126,7 @@ omitted its required mode and was corrected to `--tracked`.
 
 These host fixes require no Factory rebuild. The image is not promoted to the
 accepted baseline by a narrow ignition pass. Fresh serial all-version E2E,
-long-duration externalOFF inference/delivery on .39, cold boot while explicitly
+externalOFF soak beyond the linked five-minute check, cold boot while explicitly
 externalOFF and nonempty queue persistence are separate gates. Historical
 VDP109 crash attribution remains unchanged. The reused-release Presenter
 profile binding observation remains open; no unrelated UI behavior was changed.
