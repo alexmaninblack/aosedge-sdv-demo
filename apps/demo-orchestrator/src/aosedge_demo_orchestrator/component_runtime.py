@@ -43,6 +43,7 @@ FACTORY_RELEASES = {
     "6.1.1-maninblack.36": "a0f88d8fc47d5e84df874883cb01872e25516fd5",
     "6.1.1-maninblack.37": "77d99770a3d9476736da55c3e2196396899bc563",
     "6.1.1-maninblack.38": "378c00efad0ec67b2fb0c90328b68c4e8970b511",
+    "6.1.1-maninblack.39": "793b1fc035d2b7c123f9a4161788955f389bb81d",
 }
 RELATIVE = "meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files/systemd-slot-component"
 BUILDER_PROJECT = "/home/yocto/r61-build/project/yocto"
@@ -978,7 +979,7 @@ def register_factory_support(destination, version, compatibility):
 
 def stage_mainline_factory_gates(ssh, remote, project, source, suffix="37"):
     """Export committed test tooling separately from the immutable Platform pin."""
-    if suffix not in ("37", "38"):
+    if suffix not in ("37", "38", "39"):
         raise EnvironmentError("FACTORY_MAINLINE_GATE_VERSION_UNSUPPORTED")
     solution = Path(__file__).resolve().parents[4]
     if subprocess.check_output(["git", "status", "--porcelain"], cwd=solution):
@@ -1072,19 +1073,21 @@ def build_factory(version, metadata_only=False):
         suffix = version.rsplit(".", 1)[1]
         flags = " -R " + source + "/qualification/factory-" + suffix + ".conf "
         mainline = None
-        if suffix in ("37", "38"):
+        if suffix in ("37", "38", "39"):
             mainline = stage_mainline_factory_gates(ssh, remote, project, source, suffix)
             flags = " -R " + shlex.quote(mainline["conf"]) + " "
             stage("verify effective mainline pins and offline guards before compilation")
             print(remote(prefix + mainline["command"] + " preflight --conf " +
                          shlex.quote(mainline["conf"]), timeout=600), file=sys.stderr, flush=True)
-        managers = "aos-servicemanager" + (" aos-communicationmanager" if suffix in ("32", "33", "34", "35", "36", "37", "38") else "")
-        if suffix in ("34", "35", "36", "37", "38"):
+        managers = "aos-servicemanager" + (" aos-communicationmanager" if suffix in ("32", "33", "34", "35", "36", "37", "38", "39") else "")
+        if suffix in ("34", "35", "36", "37", "38", "39"):
             managers += " aos-iamanager"
-        targets = managers + (" aos-kuksa-auth-compat" if suffix in ("34", "35", "36", "37", "38") else "")
-        if suffix == "38":
+        targets = managers + (" aos-kuksa-auth-compat" if suffix in ("34", "35", "36", "37", "38", "39") else "")
+        if suffix in ("38", "39"):
             # Compile/package the proven policy delta before image construction.
             targets += " refpolicy-aos"
+        if suffix == "39":
+            targets += " aos-vehicle-data-provider-platform"
         stage("compile the proven manager corrections from committed source (offline)")
         remote(prefix + "bitbake" + flags + "-c compile " + targets, timeout=1200, capture=False)
         work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-servicemanager/git"
@@ -1127,7 +1130,7 @@ subprocess.run(['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'
             if "[  PASSED  ] " + str(expected_cm_tests) + " tests." not in cm_log:
                 raise EnvironmentError("FACTORY_CM_STARTUP_REGRESSIONS_INCOMPLETE")
             test_log += cm_log
-        if suffix in ("34", "35", "36", "37", "38"):
+        if suffix in ("34", "35", "36", "37", "38", "39"):
             stage("verify uniform CM/SM/IAM permission capacity and native KAC/Provider tests")
             for recipe in managers.split():
                 manager_build = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/" + recipe + "/git/build"
@@ -1147,7 +1150,7 @@ subprocess.run(['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'
                 test_log += remote(kac_loader + " --library-path " + kac_libs + " " + kac_work + "/build/" + executable, timeout=60)
         stage("package the managers with package QA")
         remote(prefix + "bitbake" + flags + targets, timeout=1200, capture=False)
-        if suffix in ("32", "33", "34", "35", "36", "37", "38"):
+        if suffix in ("32", "33", "34", "35", "36", "37", "38", "39"):
             # Verify final package input after native do_update_config, not the
             # intermediate resource file that do_install initially creates.
             package_check = (
@@ -1162,7 +1165,7 @@ subprocess.run(['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'
                 "print('Factory service-input package: PASS')"
             ) % (work + "/image", source + "/meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files")
             print(remote("python3 -c " + shlex.quote(package_check)), file=sys.stderr, flush=True)
-        if suffix in ("33", "34", "35", "36", "37", "38"):
+        if suffix in ("33", "34", "35", "36", "37", "38", "39"):
             cm_work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-communicationmanager/git"
             cm_check = ("import json; from pathlib import Path; "
                 "config=json.loads(Path(%r).read_text()); "
@@ -1172,6 +1175,21 @@ subprocess.run(['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'
         if mainline:
             print(remote(mainline["command"] + " package --root " + shlex.quote(mainline_root)),
                   file=sys.stderr, flush=True)
+        if suffix == "39":
+            projection_check = (
+                "from pathlib import Path; import stat; "
+                "root=Path(%r); src=Path(%r); "
+                "helpers=list(root.glob('aos-vehicle-data-provider-platform/*/image/usr/libexec/aos-demo-viss-boot-projection.py')); "
+                "assert len(helpers)==1; helper=helpers[0]; image=helper.parents[2]; "
+                "assert helper.read_bytes()==(src/'aos-demo-viss-boot-projection.py').read_bytes(); "
+                "assert stat.S_IMODE(helper.stat().st_mode)==0o644; "
+                "units=list(image.glob('**/systemd/system/aos-vehicle-data-provider-bootstrap.service')); "
+                "assert len(units)==1; "
+                "assert units[0].read_bytes()==(src/units[0].name).read_bytes(); "
+                "assert 'Before=aos-sm.service' in units[0].read_text(); "
+                "print('Factory early retained VISS projection package: PASS')"
+            ) % (mainline_root, source + "/meta-aos-vehicle-platform/recipes-aos/aos-vehicle-data-provider-platform/files")
+            print(remote("python3 -c " + shlex.quote(projection_check)), file=sys.stderr, flush=True)
         stage("construct the Factory filesystem from pinned sources")
         remote(prefix + "bitbake" + flags + "aos-image-vm", timeout=2400, capture=False)
         output = "main-qemuarm64-factory-" + suffix + ".img"

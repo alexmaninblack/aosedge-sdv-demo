@@ -361,7 +361,8 @@ class WorkspaceRecovery:
 
     def tick(self):
         with self.operations.lock:
-            if self.operations.active or self.operations.uncertain or not self.service.cached().get("retryPending"):
+            if (self.operations.active or self.operations.uncertain
+                    or self.operations.source_recovery_busy or not self.service.cached().get("retryPending")):
                 return
             self.operations.workspace_busy = True
         try:

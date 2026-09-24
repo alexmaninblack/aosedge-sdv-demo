@@ -450,6 +450,7 @@ def serve():
     from .presenter_operations import NativeSession
     native = None
     recovery = None
+    source_recovery = None
     try:
         native = NativeSession()
         server = make_server(project_root() / "apps/presenter-ui/dist", native=native)
@@ -459,6 +460,12 @@ def serve():
         native.operations.workspace = WorkspaceService(layout_app.environment_service, layout_app.source_service.driver)
         recovery = WorkspaceRecovery(native.operations.workspace, native.operations)
         recovery.thread.start()
+        from .source_boot_recovery import SourceBootRecovery
+        # Each worker owns its driver/SSH context; only the journal/action
+        # interlocks are shared with layout and foreground operations.
+        boot_app = DemoOrchestrator()
+        source_recovery = SourceBootRecovery(boot_app.source_service, native.operations)
+        source_recovery.thread.start()
     except (OSError, ValueError):
         if native:
             native.close()
@@ -472,6 +479,8 @@ def serve():
     except KeyboardInterrupt:
         pass
     finally:
+        if source_recovery:
+            source_recovery.close()
         if recovery:
             recovery.close()
         server.server_close()

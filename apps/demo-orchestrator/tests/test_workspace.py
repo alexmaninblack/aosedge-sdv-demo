@@ -89,7 +89,7 @@ class WorkspaceTests(unittest.TestCase):
     def test_recovery_worker_reserves_only_idle_operations_and_releases_on_error(self):
         service = Mock()
         service.cached.return_value = dict(retryPending=True)
-        operations = Mock(lock=threading.RLock(), active="job", uncertain=False)
+        operations = Mock(lock=threading.RLock(), active="job", uncertain=False, source_recovery_busy=False)
         recovery = WorkspaceRecovery(service, operations)
         recovery.tick(); service.execute.assert_not_called()
         operations.active = None
@@ -97,6 +97,10 @@ class WorkspaceTests(unittest.TestCase):
         recovery.tick()
         service.execute.assert_called_once_with("restore", recovery=True)
         self.assertFalse(operations.workspace_busy)
+        service.execute.reset_mock()
+        operations.source_recovery_busy = True
+        recovery.tick()
+        service.execute.assert_not_called()
 
     def test_public_receipt_exposes_placement_but_no_process_paths(self):
         result = public_result(dict(operation="simulation.start", state="COMPLETED", data=dict(state="RUNNING",

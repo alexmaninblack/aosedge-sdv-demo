@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 maninblack
 # SPDX-License-Identifier: MIT
 
-"""Factory .37/.38 Builder-only gates; no live VM, credentials or Cloud access.
+"""Factory .37/.38/.39 Builder-only gates; no live VM, credentials or Cloud access.
 
 Demo Control exports this committed file to the isolated ARM64 Builder. Tests
 use the recipe toolchain/sysroot and synthetic fixtures, not the running Test.
@@ -25,7 +25,8 @@ APP = "9d613a46df3c7f550062e2f19ae3406c57715694"
 LIB = "5560291ba6914e36a5b841ade4d8fc54134a9e91"
 API = "af3552a0a5eb0237eff7f5f183780ca46c339cd3"
 MANAGERS = ("aos-communicationmanager", "aos-servicemanager", "aos-iamanager")
-SM_LAUNCHER_TEST_COUNTS = {"37": 27, "38": 32}
+SM_LAUNCHER_TEST_COUNTS = {"37": 27, "38": 32, "39": 32}
+CM_LAUNCHER_TEST_COUNTS = {"37": 47, "38": 47, "39": 53}
 
 
 def require(condition, message):
@@ -191,7 +192,7 @@ class NativeGates:
         cm, sm, iam = (self.root / name / "git" for name in MANAGERS)
         for work in (cm, sm, iam):
             verify_source(work)
-        self.core(cm, [("aos_core_cm_launcher_test", "cm-launcher", 47),
+        self.core(cm, [("aos_core_cm_launcher_test", "cm-launcher", CM_LAUNCHER_TEST_COUNTS[self.factory_suffix]),
                        ("aos_core_cm_updatemanager_test", "cm-idle", 11),
                        ("aos_core_cm_storagestate_test", "cm-storage", 15)])
         self.core(sm, [("aos_core_sm_launcher_test", "sm-replacement",

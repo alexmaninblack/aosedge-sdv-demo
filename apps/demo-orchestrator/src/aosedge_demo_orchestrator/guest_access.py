@@ -55,7 +55,10 @@ def read_guest(access, port, timeout=5, shutdown=False, *, factory_role=None, cl
         script += ("printf 'DEMO_SOURCE_RESTORE_STARTED\\n'\npython3 - <<'DEMOCTL_TRUST_PY'\n"
             + Path(source_trust_guest.__file__).read_text()
             + "\ntry:\n    execute(" + repr(source_restore) + ")\n"
-            + "except Exception:\n    raise SystemExit(1)\nDEMOCTL_TRUST_PY\n"
+            + "except Exception as error:\n    import json, re\n"
+            + "    reason = str(error) if isinstance(error, ValueError) else ''\n"
+            + "    if not re.fullmatch(r'SOURCE_TRUST_[A-Z_]{1,80}', reason): reason = 'SOURCE_TRUST_GUEST_FAILED'\n"
+            + "    print(json.dumps(dict(ok=False, reason=reason)))\n    raise SystemExit(1)\nDEMOCTL_TRUST_PY\n"
             + "[ $? -eq 0 ] || exit 1\nprintf 'DEMO_SOURCE_RESTORE_READY\\n'\n")
     script += ("printf 'DEMO_GUEST_READY\\n'\nif " + UNPROVISIONED +
               "; then printf 'DEMO_UNPROVISIONED\\n'; fi\n")
@@ -94,7 +97,17 @@ def read_guest(access, port, timeout=5, shutdown=False, *, factory_role=None, cl
     lines = result.stdout.splitlines()
     if (source_restore is not None and "DEMO_SOURCE_RESTORE_STARTED" in lines
             and "DEMO_SOURCE_RESTORE_READY" not in lines):
-        raise EnvironmentError("SOURCE_TRUST_RESTORE_UNCONFIRMED")
+        reason = "SOURCE_TRUST_RESTORE_UNCONFIRMED"
+        if len(result.stdout) <= 8192:
+            for line in lines:
+                try:
+                    value = json.loads(line)
+                    reported = value.get("reason") if isinstance(value, dict) and value.get("ok") is False else None
+                    if isinstance(reported, str) and re.fullmatch(r"SOURCE_TRUST_[A-Z_]{1,80}", reported):
+                        reason = reported
+                except ValueError:
+                    pass
+        raise EnvironmentError(reason)
     if cloud_configuration is not None and "DEMO_CLOUD_CONFIGURATION_STARTED" in lines:
         if "DEMO_CLOUD_CONFIGURATION_READY" not in lines:
             reason = "CLOUD_GUEST_CONFIGURATION_UNCONFIRMED"

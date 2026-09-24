@@ -18,6 +18,16 @@ from aosedge_demo_orchestrator.vm import qmp
 
 
 class CombinedStartTests(unittest.TestCase):
+    def test_restore_failure_reports_only_fixed_non_secret_stage(self):
+        for reported, expected in (("SOURCE_TRUST_CONSUMER_RESTART_UNCONFIRMED", "SOURCE_TRUST_CONSUMER_RESTART_UNCONFIRMED"),
+                                   ("SOURCE_TRUST_unsafe /private/secret", "SOURCE_TRUST_RESTORE_UNCONFIRMED")):
+            result = subprocess.CompletedProcess([], 1, stdout="DEMO_SOURCE_RESTORE_STARTED\n" +
+                json.dumps(dict(ok=False, reason=reported)) + "\n", stderr="private output")
+            with patch("aosedge_demo_orchestrator.guest_access.subprocess.run", return_value=result) as call:
+                with self.assertRaisesRegex(EnvironmentError, "^" + expected + "$"):
+                    read_guest(Path("/fixture"), 2222, factory_role="test", source_restore=dict(action="trust-restore", role="test"))
+                call.assert_called_once()
+
     def test_reboot_restore_precedes_ready_and_uncertain_result_is_not_retried(self):
         request = dict(action="trust-restore", role="test")
         real_run = subprocess.run

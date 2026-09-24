@@ -25,6 +25,36 @@ def call(argv, data=None):
     return result.stdout
 
 
+def activate_consumers(units, timeout=65):
+    """Submit one restart transaction, then observe it; never retry a timeout.
+
+    SM is ordered after CM. A queued endpoint restart can take longer than
+    the 25-second command budget. systemctl submission is not completion.
+    """
+    if not units:
+        return
+    call(['systemctl', '--no-block', 'restart', *units])
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        raw = call(['systemctl', 'show', *units, '-p', 'Id', '-p', 'ActiveState', '-p', 'Job'])
+        states = [dict(line.split('=', 1) for line in block.splitlines() if '=' in line)
+                  for block in raw.strip().split('\n\n')]
+        def ready(s):
+            # A freshly provisioned controller has no VDP assignment yet.
+            # Its condition-skipped unit is not a failed credential restore.
+            empty_provider = (s.get('Id') == 'aos-vehicle-data-provider.service'
+                and s.get('ActiveState') == 'inactive'
+                and not os.path.lexists(INPUTS.parent / 'active')
+                and not (INPUTS.parent / 'state/installed.json').exists())
+            return (s.get('ActiveState') == 'active' or empty_provider) and s.get('Job') in ('', '0')
+        if len(states) == len(units) and {s.get('Id') for s in states} == set(units) and all(ready(s) for s in states):
+            return
+        if any(s.get('ActiveState') == 'failed' and s.get('Job') in ('', '0') for s in states):
+            raise ValueError('SOURCE_TRUST_CONSUMER_FAILED')
+        time.sleep(.25)
+    raise ValueError('SOURCE_TRUST_CONSUMER_RESTART_UNCONFIRMED')
+
+
 def safe(path):
     for part in (path,) + tuple(path.parents):
         if part.is_symlink():
@@ -152,11 +182,11 @@ def execute(request):
     vdp_changed = write(VDP_DROPIN, vdp_text, 0o644) or vdp_changed
     if sm_changed or vdp_changed:
         call(["systemctl", "daemon-reload"])
-    if sm_changed:
-        # One credential snapshot activation, never CM/IAM/VM reprovisioning.
-        call(["systemctl", "restart", "aos-sm"])
-    if vdp_changed or changed:
-        call(["systemctl", "restart", "aos-vehicle-data-provider"])
+    # One credential snapshot activation. Queue both consumers before waiting
+    # so CM stop ordering cannot prevent VDP from loading its credentials.
+    units = (["aos-sm.service"] if sm_changed else []) + (
+        ["aos-vehicle-data-provider.service"] if vdp_changed or changed else [])
+    activate_consumers(units)
     return dict(configured=True, smRestarted=sm_changed, vdpRestarted=vdp_changed or changed,
         assignmentGeneration=generation, **status())
 

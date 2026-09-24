@@ -27,6 +27,20 @@ def completed(request):
 
 
 class OperationTests(unittest.TestCase):
+    def test_boot_recovery_interlock_and_public_status(self):
+        session = SessionOperations(Mock(side_effect=completed))
+        session.source_recovery_busy = True
+        with self.assertRaisesRegex(ValueError, "SOURCE_BOOT_RECOVERY_IN_PROGRESS"):
+            session.submit(payload(session))
+        self.assertTrue(session.snapshot()["sourceRecoveryBusy"])
+        session.source_recovery_busy = False
+        session.source_recovery = dict(state="FAILED", phase="RESTORE_EXISTING_GUEST")
+        with self.assertRaisesRegex(ValueError, "REQUIRES_RECONCILIATION"):
+            session.submit(payload(session))
+        session.submit(payload(session, "observe-test"))
+        self.assertEqual("COMPLETED", self.finish(session)["state"])
+        self.assertEqual("FAILED", session.snapshot()["sourceRecovery"]["state"])
+
     def test_receipt_rollover_preserves_finish_and_duplicate_identity(self):
         execute = Mock(side_effect=completed)
         session = SessionOperations(execute)

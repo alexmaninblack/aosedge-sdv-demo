@@ -150,3 +150,20 @@ Final preserved-Test read at12:43:19UTC: VDP114 PID159575 still READY/LIVE,
 NRestarts0,149m52s continuous since10:13:26, one ready transition and no matched
 stale/reconnect/non-monotonic/SEGV event. Core capture is off, no dump exists,
 SELinux Enforcing. This observation does not explain the historical109 crash.
+
+## Authorized live continuation
+
+The operator subsequently approved exact retirement of that .37 Test and fresh
+.38 creation. Both completed through normal Demo Control, with Production
+metadata unchanged, source images/releases/evidence preserved. See the
+[fresh staging E2E report](factory-38-staging-e2e-2026-09-24.md) for current
+execution and remaining gates. The build/smoke observations above remain
+historical; creation alone does not promote the image to qualified.
+
+Live continuation24September14:13UTC: stock .38 passed the continuous serial
+version/telemetry/advisory/Reset/OFF-ON scenario. The separately executed guest
+reboot retained models and service storage but failed functional recovery:
+volatile VISS integration and CM generated-component reconciliation require
+follow-up. The fresh report records exact evidence and interventions. Keep
+`BUILT_NOT_LIVE_QUALIFIED`, preserve current Test .38 and defer Finish/promotion;
+the continuous pass does not override that cold-recovery failure.

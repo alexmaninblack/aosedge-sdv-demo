@@ -201,6 +201,8 @@ class SessionOperations:
         self.cloud_candidates = {}  # Local paths never enter job receipts/browser JSON.
         self.workspace = None
         self.workspace_busy = False
+        self.source_recovery_busy = False
+        self.source_recovery = None
 
     def submit(self, payload):
         identity, plan = operation_plan(payload)
@@ -215,6 +217,10 @@ class SessionOperations:
                 return self.view(identity)
             if self.workspace_busy:
                 raise ValueError("WORKSPACE_PLACEMENT_IN_PROGRESS")
+            if self.source_recovery_busy:
+                raise ValueError("SOURCE_BOOT_RECOVERY_IN_PROGRESS")
+            if (self.source_recovery or {}).get("state") in ("ATTEMPTED", "FAILED") and payload["action"] not in READ_ACTIONS:
+                raise ValueError("SOURCE_BOOT_RECOVERY_REQUIRES_RECONCILIATION")
             if self.active:
                 raise ValueError("OPERATION_ALREADY_RUNNING")
             if self.uncertain and payload["action"] not in READ_ACTIONS:
@@ -245,6 +251,7 @@ class SessionOperations:
             return dict(sessionId=self.session_id, active=self.active, uncertain=self.uncertain,
                         cloudDomain=domain,
                         workspace=self.workspace.cached() if self.workspace else None, workspaceBusy=self.workspace_busy,
+                        sourceRecoveryBusy=self.source_recovery_busy, sourceRecovery=self.source_recovery,
                         jobs=[self.view(identity) for identity in self.jobs], recordedRequestIds=list(self.archived_jobs))
 
     def run(self, identity, plan):

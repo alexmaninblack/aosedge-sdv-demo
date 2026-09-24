@@ -43,6 +43,9 @@ class TrustGuestTests(unittest.TestCase):
             if argv[0] == "openssl":
                 return trust.openssl(argv[1:]).decode()
             if "show" in argv:
+                if "Job" in argv:
+                    return "\n\n".join("Id=" + unit + "\nActiveState=active\nJob=\n"
+                        for unit in argv if unit.endswith(".service"))
                 return "ActiveState=active\nStatusText=VDP data READY; source LIVE; reason NONE\nNRestarts=0\nMainPID=12\n"
             return ""
         self.stack.enter_context(patch.object(guest, "call", side_effect=command))
@@ -66,7 +69,7 @@ class TrustGuestTests(unittest.TestCase):
         third = guest.execute(dict(self.request, generation=3))
         self.assertFalse(third["smRestarted"])
         self.assertTrue(third["vdpRestarted"])
-        self.assertEqual(1, self.calls.count(["systemctl", "restart", "aos-sm"]))
+        self.assertEqual(1, sum("restart" in call and "aos-sm.service" in call for call in self.calls))
         self.assertFalse(any("aos-cm" in c or "aos-iam" in c for c in self.calls))
 
     def test_empty_factory_is_distinct_from_installed_or_failed_provider(self):
@@ -97,7 +100,7 @@ class TrustGuestTests(unittest.TestCase):
         self.assertTrue(all(path.read_bytes() == data for path, data in before.items()))
         result = guest.execute(dict(request, action="trust-restore"))
         self.assertFalse(result["smRestarted"] or result["vdpRestarted"])
-        self.assertEqual(1, self.calls.count(["systemctl", "restart", "aos-sm"]))
+        self.assertEqual(1, sum("restart" in call and "aos-sm.service" in call for call in self.calls))
         self.assertFalse(any("aos-cm" in call or "aos-iam" in call for call in self.calls))
 
     def test_restore_cannot_enroll_missing_or_foreign_material(self):

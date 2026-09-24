@@ -590,6 +590,57 @@ inside the SSH bootstrap. The bounded guest DNS probe remains. Guest readiness
 does not claim Cloud Online; Cloud observation remains a separate Resume step.
 An unconfirmed credential restoration remains PARTIAL and is not blindly retried.
 
+#### Retained Test ignition recovery amendment —24 September2026
+
+The operator accepted automatic reconnection after the selected Test controller
+reboots, while Demo Control/Presenter and the same simulator remain running.
+The retained Unit, Node, VM, source run and assignment generation are unchanged.
+No new provisioning, certificate enrollment, source selection, scene reset or
+Autopilot start is implied. This supersedes the earlier raw-guest-reboot
+manual-only reconnection behavior for this exact strict Test case.
+
+The Presenter-owned worker observes the pinned guest boot identifier outside
+the journal writer lock. A new boot with an absent transient gate is the only
+repair trigger; an explicit BLOCKED gate or a gate deleted within the same
+previously observed boot is not automatically opened. Foreground actions and
+workspace placement use the same action interlock, and recovery holds the
+existing journal writer. Unknown/offline external connectivity, foreign or
+pending enrollment, a different Gateway assignment, a held Controller or an
+unresolved operation prevent mutation. Production is outside this worker.
+
+After a fresh physical Safe Stop, the worker invokes existing VM startup to
+restore the same guest's verified credential projection and selected debug
+Cloud endpoint. Consumer restarts are submitted together once; completion is
+observed through systemd, including CM ordering, rather than inferred from
+submission. An empty Factory with no VDP assignment is a condition-skipped
+provider, not an error. Nested VM operation observations/UNCERTAIN state are
+preserved on failure. Only after rechecking boot, identity, assignment and
+trust does recovery open the previous route and verify TLS. It releases its
+own hold in Safe Stop and records completion. This proves a connection, not
+Cloud Online, installed versions or application readiness.
+
+The existing current-run journal records one `source.bootRecovery` attempt per
+exact boot/context. ATTEMPTED/FAILED is not automatically retried; read-only
+inspection remains available and explicit reconciliation is required. UI
+status exposes only recovery state/phase/reason/time, never credential material
+or private identifiers. No new daemon, trust store or persistent credential
+authority is added. Cold start with external connectivity OFF remains separately
+unqualified; continuous-run OFF behavior is unchanged.
+
+Implementation and isolated functional proof are recorded in the
+[.38 staging report](../qualification/factory-38-staging-e2e-2026-09-24.md).
+The .38 image still lacks early boot credential projection and the CM patch;
+successful late reconnection does not close that image's clean-start gate.
+The successor source uses the existing VDP store bootstrap, ordered before SM,
+to reconstruct just the volatile credential declarations from the same retained
+strict Test enrollment. Public binding, generation and local/Cloud identity,
+certificate/key match and safe file ownership are checked before writing either
+declaration. Empty Factory/unassigned Test and Production do not acquire demo
+credentials. This hook does not enroll, contact Cloud, open a source route or
+restart a service; host recovery remains responsible for the exact route and
+physical Safe Stop. Its ordered-start proof passed on the preserved .38 Test;
+successor image and cold-reboot qualification are still separate gates.
+
 If that same Resume paused during manual source selection, continuation may
 reuse the already-running simulator only after its exact operation ID, fresh
 Controller frame and retained Test enrollment are confirmed. It preserves the

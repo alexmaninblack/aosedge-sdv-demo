@@ -69,7 +69,7 @@ export function PresenterControls({ port, children }: { port?: PresenterCommandP
             unresolved.current = null; setError(null);
           } else setError(`Submission outcome unknown: ${actionLabels[pending.action]}. Request ${pending.id}. Do not repeat it; reconcile native state. Cloud reads remain available.`);
         }
-        if (value.active || value.workspaceBusy || value.workspace?.retryPending) delay = 1000;
+        if (value.active || value.workspaceBusy || value.sourceRecoveryBusy || value.workspace?.retryPending) delay = 1000;
       } catch {
         if (active) { connectionFailure.current = true; setReachable(false); setError("Demo Control session unavailable. No action will be retried automatically."); }
       }
@@ -78,9 +78,12 @@ export function PresenterControls({ port, children }: { port?: PresenterCommandP
     void poll();
     return () => { active = false; clearTimeout(timer); };
   }, [port]);
-  const blocked = !port || !reachable || !session || Boolean(session.active) || Boolean(session.workspaceBusy) || session.uncertain || busy || Boolean(unresolved.current);
-  const readBlocked = !port || !reachable || !session || Boolean(session.active) || Boolean(session.workspaceBusy) || busy;
+  const recoveryUncertain = session?.sourceRecovery?.state === "FAILED" || session?.sourceRecovery?.state === "ATTEMPTED";
+  const blocked = !port || !reachable || !session || Boolean(session.active) || Boolean(session.workspaceBusy) || Boolean(session.sourceRecoveryBusy) || recoveryUncertain || session.uncertain || busy || Boolean(unresolved.current);
+  const readBlocked = !port || !reachable || !session || Boolean(session.active) || Boolean(session.workspaceBusy) || Boolean(session.sourceRecoveryBusy) || busy;
   const blockReason = !port || !reachable || !session ? "Demo Control unavailable; reconnect before changing the environment."
+    : session.sourceRecoveryBusy ? "Restoring the controller connection after startup. The vehicle stays in Safe Stop; Autopilot will not resume automatically."
+    : recoveryUncertain ? "Controller connection recovery is incomplete. Reconcile the existing attempt before changing the environment. Read-only observations remain available."
     : session.workspaceBusy ? "Restoring the desktop window layout; the demo continues running."
     : session.active || busy ? "An operation is in progress; open Trace for its current step."
     : session.uncertain || unresolved.current ? "An operation outcome is unknown. Finish cannot safely overlap it; inspect Trace and reconcile the original operation before continuing. Read-only observations remain available." : null;

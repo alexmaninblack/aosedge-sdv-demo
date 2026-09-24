@@ -305,7 +305,10 @@ class VMTests(unittest.TestCase):
         self.assertNotIn("material", restore)
         self.assertNotIn("runtime", restore["vehicle"])
         self.assertNotIn("source_restore", calls["production"].kwargs)
-        self.assertEqual(60, calls["test"].args[2])
+        # The enclosing operation's remaining deadline bounds the expanded
+        # credential-consumer wait; it must not restore the old 60s cutoff.
+        self.assertGreater(calls["test"].args[2], 80)
+        self.assertLessEqual(calls["test"].args[2], 90)
 
     def test_isolated_test_reuses_exact_bridge_and_cannot_stop_its_owner(self):
         owner_root = self.root.parent / "aosedge-sdv-demo"

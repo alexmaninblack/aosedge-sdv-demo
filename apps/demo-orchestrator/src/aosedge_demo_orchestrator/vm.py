@@ -534,7 +534,7 @@ class VMService:
                     enroll_serial(serial, access, item["sshPort"], deadline, password,
                                   progress=lambda stage: self.progress(role + ": " + stage))
                 if (access / "known_hosts").exists():
-                    guest = read_guest(access, item["sshPort"], min(60 if source_restore else 10, max(1, deadline - time.monotonic())),
+                    guest = read_guest(access, item["sshPort"], min(90 if source_restore else 10, max(1, deadline - time.monotonic())),
                                        factory_role=role,
                                        **({"cloud_host": cloud["domain"], "cloud_configuration": cloud} if cloud else {}),
                                        **({"source_restore": source_restore} if source_restore else {}))

@@ -19,13 +19,13 @@ class DiagnosticSuccessorFactoryTests(unittest.TestCase):
                          '77d99770a3d9476736da55c3e2196396899bc563')
 
     def test_native_counts_preserve_37_and_require_async_cases_for_38(self):
-        self.assertEqual(gates.SM_LAUNCHER_TEST_COUNTS, {"37": 27, "38": 32})
+        self.assertEqual(gates.SM_LAUNCHER_TEST_COUNTS, {"37": 27, "38": 32, "39": 32})
         with tempfile.TemporaryDirectory() as directory:
             native = gates.NativeGates(Path('/unused'), Path(directory) / 'new', '38')
             self.assertEqual(native.factory_suffix, '38')
             self.assertIn('SM_LAUNCHER_TEST_COUNTS[self.factory_suffix]', inspect.getsource(native.run))
             with self.assertRaises(ValueError):
-                gates.NativeGates(Path('/unused'), Path(directory) / 'bad', '39')
+                gates.NativeGates(Path('/unused'), Path(directory) / 'bad', '40')
             self.assertFalse((Path(directory) / 'bad').exists())
 
     def test_gate_export_uses_successor_config_and_separate_evidence(self):
@@ -42,7 +42,7 @@ class DiagnosticSuccessorFactoryTests(unittest.TestCase):
     def test_unknown_gate_version_rejected_before_source_or_remote(self):
         with patch.object(runtime.subprocess, 'check_output') as read:
             with self.assertRaisesRegex(runtime.EnvironmentError, 'UNSUPPORTED'):
-                runtime.stage_mainline_factory_gates([], lambda *_: self.fail(), '', '', '39')
+                runtime.stage_mainline_factory_gates([], lambda *_: self.fail(), '', '', '40')
             read.assert_not_called()
 
     def test_policy_and_native_matrix_gate_image_and_keep_guards(self):

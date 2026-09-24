@@ -24,7 +24,84 @@ Clean offline boot and repeat health pass; fresh staging acceptance is still
 required and no accepted workspace pin is promoted. Exact retirement of the
 preserved .37 Test was requested separately before creating a fresh .38 Test.
 
+24September continuation: the operator approved that exact retirement/create
+boundary. Diagnostic .37 is now retired through normal Demo Control with Cloud
+absence and backend cleanup confirmed; its compact evidence and source images
+remain. Fresh .38 controller and detached simulator started successfully.
+[Fresh .38 staging report](../../qualification/factory-38-staging-e2e-2026-09-24.md)
+tracks the serial release set and separate publication/provisioning gate.
+Historical preservation instructions below describe the earlier diagnostic
+phase, not permission to recreate or restore the retired Cloud identity.
+
+24September14:13UTC status: fresh stock .38 continuous E2E passed the serial
+115/116/117 VDP,90/91/92 Brake and49 Tire set, real maneuvers/advisory, independent
+Reset/history, retained storage/UID/quotas, five-minute externalOFF local
+inference/renewal and ON queued recovery. **Separate guest reboot failed
+functional recovery**: volatile VISS projection/route reconstruction is missing
+from raw reboot; after explicit projection restoration, CM's incomplete
+generated-component startup plan stops the retained VDP117. Desired117 remains
+in CM storage while its active instance row is absent. Models are preserved.
+The exact Test .38 stays Online/externalON/Safe Stop with inactive VDP for
+diagnosis. See the fresh report for timestamps, temporary restoration, next
+native negative-control regression and the cold-recovery lifecycle decision.
+Do not promote .38 or execute Finish while that failing state is needed.
+
 ## Decision and immutable inputs
+
+### Ignition/cold recovery continuation —24 September
+
+The operator requested diagnosis and correction of the retained .38 cold-start
+failure, interpreting this as a domain-controller power-cycle/ignition recovery
+check. This does not assert that every ECU powers down immediately at ignition
+off. Preserve the exact .38 Test/Unit/Node, models, queues, Factory bytes and
+CARLA scene. Do not reprovision, edit launcher databases/slot records, republish
+VDP or automatically resume driving to hide the failure.
+
+First gate: reproduce persisted generated-component intent with a missing
+instance row and a late SM report; compare stock/candidate, then test intentional
+removal, wrong versions and repeated startup. Compile only the CM target for a
+reversible live proof after native gates. Existing identity-bound credential
+projection and source gate restoration are separate from CM reconciliation;
+The operator subsequently selected automatic restoration of that same retained
+connection after controller startup. Reuse the same Unit/Node and enrolled
+credentials; no reprovisioning, new trust authority, source reassignment, scene
+reset or Autopilot activation. Missing/foreign material must still fail closed.
+This authorizes closing the previous raw-guest-boot gap, not baking demo identity
+into Factory. No new image/promotion before both gates close.
+
+24September15:42UTC continuation: native negative control reproduced CM's
+undesired stop for a retained generated component with a missing active row.
+The minimal startup-regeneration patch passes53CM cases, actual target-toolchain
+compilation and a reversible live proof. Host restoration now queues the two
+credential-consumer restarts once and observes completion instead of aborting
+behind CM ordering at25seconds. An isolated combined reboot restored the same
+selected Test automatically in Safe Stop, with VDP READY and both services
+operational; its repeat did not resubmit an operation. Stock CM was restored
+after proof. The source worker and Presenter interlocks are implemented but
+the running Presenter has not been replaced yet.
+
+This is **functional recovery proof, not clean cold-start qualification**.
+Before host restoration, stock .38 still attempts VDP startup without its
+reboot-cleared VISS credential projection:8automatic retries and one SM startup
+ABRT were recorded. Close that early-input ordering separately before an image
+build/promotion. Do not mask it with reset-failed, weakened authentication,
+placeholder credentials or a new SM/Cloud lifecycle. The same current Test is
+now healthy and preserved; no new release, image or Cloud identity was created.
+See the appended ignition continuation in the .38 staging report for exact
+timings and the distinction between transient proof and deployed product.
+
+24September15:54UTC: the early-order gate now passes a production-equivalent
+transient proof. The existing store bootstrap validates the retained strict
+Test enrollment and reconstructs the two volatile credential declarations
+before native SM startup; it performs no enrollment, route opening or service
+restart. SM/VDP started without retries/failure, VDP became READY/LIVE, and
+models, identity, scene, Safe Stop and stock policy were preserved. The temporary
+hook was removed. Source regressions pass; the detailed report records their
+counts and exclusions. Proceed to checkpoint/package QA and one warm successor
+Factory build. Do not claim clean reboot acceptance or promote .38: the actual
+new-image ignition check remains open, as does externalOFF cold-start coverage.
+The [Factory .39 build gate](../../qualification/factory-39-build-2026-09-24.md)
+pins Platform793b1fc0; existing .38/Test/Cloud identity are preserved.
 
 Use a coordinated mainline baseline rather than an isolated UID-pool backport.
 Fresh official main refs were resolved on 23 September:
@@ -86,7 +163,7 @@ are the starting evidence, not blanket permission to remove residual fixes.
 | M1 | Negative-control regressions and minimal adaptations in isolated source | Complete |
 | M2 | CM/SM/IAM and VDP native tests; permission, storage, UID and disconnect regressions; source/license gates | Complete; live quota/image checks remain M4 |
 | M3 | Commit pinned source, affected package tests/QA, one successor Factory build | .37 preserved; corrected .38 built with native/package/QA gates and clean offline boot/repeat passing |
-| M4 | Clean Test installation and sequential E2E with UI observation | .37 diagnostic run proved VDP112→113→114, Brake87→88→89, Tire48, Safe Stop, stable UID/storage/quotas/Cloud metrics, real advisory, independent Reset/history, Return to road and five-minute OFF/local inference/token renewal plus ON/delivery recovery under bounded SM/KAC candidates. Stock restored. Diagnostic security closure and .38 image integration complete; fresh .38 live acceptance, cold persistence and final Finish remain open. Historical109 SIGSEGV cause remains unresolved, not claimed fixed |
+| M4 | Clean Test installation and sequential E2E with UI observation | Stock .38 continuous serial115→116→117,90→91→92,49 and real advisory/Reset/history/Return-to-road/OFF-local-inference/ON-delivery gates pass. Cold reboot retains data but fails functional recovery; preserve Test .38 and diagnose generated-component startup plus host integration reconstruction before Finish or promotion. Historical109 SIGSEGV cause remains unresolved, not claimed fixed |
 
 M4 must publish each next VDP/Brake version only after the preceding version is
 installed and verified. VDP uses Safe Stop; QM service updates remain independent
