@@ -47,9 +47,9 @@ class ReplayTests(unittest.TestCase):
     factory = {"version": "6.1.1-maninblack.29", "sha256": "immutable-factory"}
 
     def test_prepare_checks_pinned_unsigned_source_and_constructs_once(self):
-        # Preserve the explicit legacy branch as a frozen replay regression;
-        # new V3 preparation is covered by the separate advisory-runtime tests.
-        for profile in PROFILE_BASES:
+        # Preserve the explicit gated V3 branch as a frozen replay regression.
+        # V1/V2 now always use the reviewed common-runtime composition.
+        for profile in ("v3",):
             with self.subTest(profile=profile), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 baseline, digest, contract = inputs(profile)

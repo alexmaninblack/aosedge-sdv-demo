@@ -42,6 +42,7 @@ FACTORY_RELEASES = {
     "6.1.1-maninblack.35": "bb691efcbf19f1bebd74fd2ef3ae9ff0aee2bf74",
     "6.1.1-maninblack.36": "a0f88d8fc47d5e84df874883cb01872e25516fd5",
     "6.1.1-maninblack.37": "77d99770a3d9476736da55c3e2196396899bc563",
+    "6.1.1-maninblack.38": "378c00efad0ec67b2fb0c90328b68c4e8970b511",
 }
 RELATIVE = "meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files/systemd-slot-component"
 BUILDER_PROJECT = "/home/yocto/r61-build/project/yocto"
@@ -975,21 +976,23 @@ def register_factory_support(destination, version, compatibility):
         raise EnvironmentError("FACTORY_EXISTING_METADATA_UNAVAILABLE") from None
 
 
-def stage_mainline_factory_gates(ssh, remote, project, source):
+def stage_mainline_factory_gates(ssh, remote, project, source, suffix="37"):
     """Export committed test tooling separately from the immutable Platform pin."""
+    if suffix not in ("37", "38"):
+        raise EnvironmentError("FACTORY_MAINLINE_GATE_VERSION_UNSUPPORTED")
     solution = Path(__file__).resolve().parents[4]
     if subprocess.check_output(["git", "status", "--porcelain"], cwd=solution):
         raise EnvironmentError("FACTORY_COMMITTED_QUALIFICATION_TOOLS_REQUIRED")
     revision = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=solution).decode().strip()
     script = "apps/demo-orchestrator/src/aosedge_demo_orchestrator/factory_mainline_gates.py"
     harness = "tests/upstream/cm-lock-harness"
-    root = project + "/factory37-gates-" + revision
+    root = project + "/factory" + suffix + "-gates-" + revision
     archive = subprocess.check_output(["git", "archive", revision, script,
                                       harness + "/CMakeLists.txt", harness + "/probe.cpp"], cwd=solution)
     remote("mkdir -p " + shlex.quote(root))
     subprocess.run(ssh + ["tar -xf - -C " + shlex.quote(root)], input=archive, check=True, timeout=30)
     conf = root + "/build.conf"
-    text = ('require ' + source + '/qualification/factory-37.conf\n'
+    text = ('require ' + source + '/qualification/factory-' + suffix + '.conf\n'
             'BB_NUMBER_THREADS = "2"\nPARALLEL_MAKE = "-j 4"\n')
     remote("python3 -c " + shlex.quote("from pathlib import Path; Path(%r).write_text(%r)" % (conf, text)))
     evidence = root + "/evidence-" + str(time.time_ns())
@@ -1069,16 +1072,19 @@ def build_factory(version, metadata_only=False):
         suffix = version.rsplit(".", 1)[1]
         flags = " -R " + source + "/qualification/factory-" + suffix + ".conf "
         mainline = None
-        if suffix == "37":
-            mainline = stage_mainline_factory_gates(ssh, remote, project, source)
+        if suffix in ("37", "38"):
+            mainline = stage_mainline_factory_gates(ssh, remote, project, source, suffix)
             flags = " -R " + shlex.quote(mainline["conf"]) + " "
             stage("verify effective mainline pins and offline guards before compilation")
             print(remote(prefix + mainline["command"] + " preflight --conf " +
                          shlex.quote(mainline["conf"]), timeout=600), file=sys.stderr, flush=True)
-        managers = "aos-servicemanager" + (" aos-communicationmanager" if suffix in ("32", "33", "34", "35", "36", "37") else "")
-        if suffix in ("34", "35", "36", "37"):
+        managers = "aos-servicemanager" + (" aos-communicationmanager" if suffix in ("32", "33", "34", "35", "36", "37", "38") else "")
+        if suffix in ("34", "35", "36", "37", "38"):
             managers += " aos-iamanager"
-        targets = managers + (" aos-kuksa-auth-compat" if suffix in ("34", "35", "36", "37") else "")
+        targets = managers + (" aos-kuksa-auth-compat" if suffix in ("34", "35", "36", "37", "38") else "")
+        if suffix == "38":
+            # Compile/package the proven policy delta before image construction.
+            targets += " refpolicy-aos"
         stage("compile the proven manager corrections from committed source (offline)")
         remote(prefix + "bitbake" + flags + "-c compile " + targets, timeout=1200, capture=False)
         work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-servicemanager/git"
@@ -1096,7 +1102,8 @@ def build_factory(version, metadata_only=False):
             stage("run production-toolchain mainline lifecycle, crypto, runtime and lock regressions")
             mainline_log = remote(mainline["command"] + " native --root " + shlex.quote(mainline_root)
                 + " --evidence " + shlex.quote(mainline["evidence"])
-                + " --lock-source " + shlex.quote(mainline["harness"]), timeout=2400)
+                + " --lock-source " + shlex.quote(mainline["harness"])
+                + " --factory-suffix " + suffix, timeout=2400)
             print(mainline_log, file=sys.stderr, flush=True)
             test_log += mainline_log
         if suffix in ("35", "36"):
@@ -1120,7 +1127,7 @@ subprocess.run(['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'
             if "[  PASSED  ] " + str(expected_cm_tests) + " tests." not in cm_log:
                 raise EnvironmentError("FACTORY_CM_STARTUP_REGRESSIONS_INCOMPLETE")
             test_log += cm_log
-        if suffix in ("34", "35", "36", "37"):
+        if suffix in ("34", "35", "36", "37", "38"):
             stage("verify uniform CM/SM/IAM permission capacity and native KAC/Provider tests")
             for recipe in managers.split():
                 manager_build = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/" + recipe + "/git/build"
@@ -1140,7 +1147,7 @@ subprocess.run(['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'
                 test_log += remote(kac_loader + " --library-path " + kac_libs + " " + kac_work + "/build/" + executable, timeout=60)
         stage("package the managers with package QA")
         remote(prefix + "bitbake" + flags + targets, timeout=1200, capture=False)
-        if suffix in ("32", "33", "34", "35", "36", "37"):
+        if suffix in ("32", "33", "34", "35", "36", "37", "38"):
             # Verify final package input after native do_update_config, not the
             # intermediate resource file that do_install initially creates.
             package_check = (
@@ -1155,7 +1162,7 @@ subprocess.run(['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'
                 "print('Factory service-input package: PASS')"
             ) % (work + "/image", source + "/meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files")
             print(remote("python3 -c " + shlex.quote(package_check)), file=sys.stderr, flush=True)
-        if suffix in ("33", "34", "35", "36", "37"):
+        if suffix in ("33", "34", "35", "36", "37", "38"):
             cm_work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-communicationmanager/git"
             cm_check = ("import json; from pathlib import Path; "
                 "config=json.loads(Path(%r).read_text()); "

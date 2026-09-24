@@ -95,6 +95,11 @@ ADVISORY_RUNTIME_CONTRACT_HISTORY = {
 }
 ADVISORY_RUNTIME_CONTRACT_HISTORY[PREVIOUS_HEARTBEAT_RUNTIME_PIN["revision"]] = dict(ADVISORY_CONTRACT)
 
+# V1/V2 retain their frozen feature profiles, not their historical transport
+# implementation. Use the same reviewed source as V3, without advisory code.
+COMMON_RUNTIME_MODULES = ("runtime.py", "bridge.py", "manifest.py")
+COMMON_RUNTIME_BUILD_TYPE = "democtl-reviewed-common-runtime-v1"
+
 
 def advisory_runtime_pin():
     pin = ADVISORY_RUNTIME_PIN
@@ -295,6 +300,67 @@ def compose_advisory_runtime(version, baseline, baseline_sha, repository, contra
         advisory="IMPLEMENTED_NOT_LIVE_QUALIFIED",
         changedPayloadFiles=sorted(name for name in files if baseline.get(name) != files[name]))
     return _transport(files, version, "Telemetry v3 and typed QM advisory; live qualification pending", record)
+
+
+def compose_common_runtime(version, profile, baseline, baseline_sha, repository, contract, factory,
+                           *, unsigned_source_sha):
+    """Current common code with immutable V1/V2 capability and dependency sets."""
+    if profile not in ("v1", "v2"):
+        raise EnvironmentError("COMPONENT_COMMON_PROFILE_INVALID")
+    pin = advisory_runtime_pin()
+    reviewed = advisory_source(repository)
+    modules = {PACKAGE + name: reviewed[PACKAGE + name] for name in COMMON_RUNTIME_MODULES}
+    files, record = _replay_files(version, profile, baseline, baseline_sha, contract, factory,
+                                 unsigned_source_sha=unsigned_source_sha)
+    files.update(modules)
+    provenance = document(files, "provenance/provenance.json")
+    provenance.update(buildType=COMMON_RUNTIME_BUILD_TYPE,
+        baselineSourceRevision=provenance.get("sourceRevision"), sourceRevision=pin["revision"],
+        sourceTree=pin["tree"], runtimeSourceModules={name: pin["modules"][name] for name in COMMON_RUNTIME_MODULES},
+        qualificationScope="COMMON_RUNTIME_IMPLEMENTED_NOT_LIVE_QUALIFIED",
+        buildInputs=[dict(path=name, sha256=sha(content)) for name, content in sorted(files.items())
+                     if not name.startswith(("provenance/", "sbom/"))])
+    files["provenance/provenance.json"] = encoded(provenance)
+    sbom = document(files, "sbom/spdx.json")
+    sbom["documentNamespace"] = ("https://github.com/alexmaninblack/aos-vehicle-platform/sbom/vehicle-data-platform/"
+                                 + version + "/" + pin["revision"])
+    files["sbom/spdx.json"] = encoded(sbom)
+    allowed = set(record["changedPayloadFiles"]) | set(modules)
+    if set(files) != set(baseline) | set(modules) or any(
+            files[name] != baseline[name] for name in baseline.keys() - allowed):
+        raise EnvironmentError("COMPONENT_COMMON_CHANGED_UNREVIEWED_CONTENT")
+    validate_common_payload(files, provenance)
+    record.update(sourceRevision=pin["revision"], sourceTree=pin["tree"],
+        runtimeSourceModules=dict(provenance["runtimeSourceModules"]), buildType=COMMON_RUNTIME_BUILD_TYPE,
+        qualificationScope=provenance["qualificationScope"],
+        changedPayloadFiles=sorted(name for name in files if baseline.get(name) != files[name]))
+    return _transport(files, version, "Telemetry " + profile + "; reviewed common runtime", record)
+
+
+def validate_common_payload(files, provenance):
+    pin = advisory_runtime_pin()
+    # Keep current and retained immutable source pins independently checkable.
+    if provenance.get("sourceRevision") != pin["revision"]:
+        pin = next((old for old in ADVISORY_RUNTIME_HISTORY
+                    if old["revision"] == provenance.get("sourceRevision")
+                    and set(COMMON_RUNTIME_MODULES) <= set(old["modules"])), None)
+    if (pin is None or provenance.get("buildType") != COMMON_RUNTIME_BUILD_TYPE
+            or provenance.get("contentProfile") not in ("v1", "v2")
+            or provenance.get("sourceTree") != pin["tree"]
+            or provenance.get("runtimeSourceModules") != {name: pin["modules"][name] for name in COMMON_RUNTIME_MODULES}
+            or provenance.get("qualificationScope") != "COMMON_RUNTIME_IMPLEMENTED_NOT_LIVE_QUALIFIED"):
+        raise EnvironmentError("COMPONENT_COMMON_SOURCE_PROVENANCE_MISMATCH")
+    if any(PACKAGE + name not in files or sha(files[PACKAGE + name]) != pin["modules"][name]
+           for name in COMMON_RUNTIME_MODULES):
+        raise EnvironmentError("COMPONENT_COMMON_RUNTIME_DIGEST_MISMATCH")
+    capability = document(files, "config/capability-manifest.json")
+    if (capability.get("advisoryEndpoints") != []
+            or any(PACKAGE + name in files for name in ("advisory.py", "advisory_transport.py"))):
+        raise EnvironmentError("COMPONENT_COMMON_CONTAINS_ADVISORY")
+    actual = [dict(path=name, sha256=sha(content)) for name, content in sorted(files.items())
+              if not name.startswith(("provenance/", "sbom/"))]
+    if provenance.get("buildInputs") != actual:
+        raise EnvironmentError("COMPONENT_COMMON_BUILD_INPUTS_CHANGED")
 
 
 def validate_advisory_payload(files, provenance):

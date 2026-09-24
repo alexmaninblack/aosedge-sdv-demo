@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 maninblack
 # SPDX-License-Identifier: MIT
 
-"""Factory .37 Builder-only gates; no live VM, credentials or Cloud access.
+"""Factory .37/.38 Builder-only gates; no live VM, credentials or Cloud access.
 
 Demo Control exports this committed file to the isolated ARM64 Builder. Tests
 use the recipe toolchain/sysroot and synthetic fixtures, not the running Test.
@@ -25,6 +25,7 @@ APP = "9d613a46df3c7f550062e2f19ae3406c57715694"
 LIB = "5560291ba6914e36a5b841ade4d8fc54134a9e91"
 API = "af3552a0a5eb0237eff7f5f183780ca46c339cd3"
 MANAGERS = ("aos-communicationmanager", "aos-servicemanager", "aos-iamanager")
+SM_LAUNCHER_TEST_COUNTS = {"37": 27, "38": 32}
 
 
 def require(condition, message):
@@ -122,7 +123,9 @@ def check_gtest(path, executed, skipped=0, disabled=0):
 
 
 class NativeGates:
-    def __init__(self, root, evidence):
+    def __init__(self, root, evidence, factory_suffix="37"):
+        require(factory_suffix in SM_LAUNCHER_TEST_COUNTS, "unsupported Factory native matrix")
+        self.factory_suffix = factory_suffix
         self.root, self.evidence = root, evidence
         # Never overwrite/re-run an uncertain attempt. Keep root-owned synthetic
         # fixtures; an evidence cleanup error must not masquerade as test failure.
@@ -191,7 +194,8 @@ class NativeGates:
         self.core(cm, [("aos_core_cm_launcher_test", "cm-launcher", 47),
                        ("aos_core_cm_updatemanager_test", "cm-idle", 11),
                        ("aos_core_cm_storagestate_test", "cm-storage", 15)])
-        self.core(sm, [("aos_core_sm_launcher_test", "sm-replacement", 27)])
+        self.core(sm, [("aos_core_sm_launcher_test", "sm-replacement",
+                       SM_LAUNCHER_TEST_COUNTS[self.factory_suffix])])
         self.core(iam, [("aos_core_iam_permhandler_test", "iam-permissions", 7),
                         ("aos_core_common_pkcs11_test", "iam-pkcs11", 14)])
         for work, name, label, count, skipped, disabled in (
@@ -208,6 +212,7 @@ class NativeGates:
             self.execute([*loader(kac), str(kac / "build" / name)], name, cwd=cwd, timeout=60)
             self.results[name] = dict(exitCode=0)
         result = dict(state="NATIVE_GATES_PASS_NOT_LIVE_QUALIFIED", app=APP, lib=LIB, api=API,
+                      factorySuffix=self.factory_suffix,
                       tests=self.results)
         (self.evidence / "summary.json").write_text(json.dumps(result, indent=2) + "\n")
         print(json.dumps(result, indent=2), flush=True)
@@ -235,13 +240,14 @@ def main():
     parser.add_argument("--root", type=Path)
     parser.add_argument("--evidence", type=Path)
     parser.add_argument("--lock-source", type=Path)
+    parser.add_argument("--factory-suffix", choices=tuple(SM_LAUNCHER_TEST_COUNTS), default="37")
     args = parser.parse_args()
     if args.phase == "preflight":
         require(args.conf is not None, "--conf required")
         preflight(args.conf)
     elif args.phase == "native":
         require(all((args.root, args.evidence, args.lock_source)), "native paths required")
-        NativeGates(args.root, args.evidence).run(args.lock_source)
+        NativeGates(args.root, args.evidence, args.factory_suffix).run(args.lock_source)
     else:
         require(args.root is not None, "--root required")
         package_config(args.root)

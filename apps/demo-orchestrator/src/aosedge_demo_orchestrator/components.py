@@ -191,8 +191,15 @@ class ComponentService:
                         and node.targets[0].id in expected_values}
                     if assignments != expected_values:
                         problems.append("COMPONENT_RUNTIME_PROFILE_METADATA_MISMATCH")
-                from .component_build import ADVISORY_RUNTIME_BUILD_TYPE, validate_advisory_payload
-                if (provenance.get("buildType") == ADVISORY_RUNTIME_BUILD_TYPE
+                from .component_build import (ADVISORY_RUNTIME_BUILD_TYPE, validate_advisory_payload,
+                                              COMMON_RUNTIME_BUILD_TYPE, validate_common_payload)
+                if (provenance.get("buildType") == COMMON_RUNTIME_BUILD_TYPE
+                        or (profile in ("v1", "v2") and "runtimeSourceModules" in provenance)):
+                    try:
+                        validate_common_payload(payload, provenance)
+                    except EnvironmentError as error:
+                        problems.append(str(error))
+                elif (provenance.get("buildType") == ADVISORY_RUNTIME_BUILD_TYPE
                         or PACKAGE + "advisory_transport.py" in payload
                         or capability.get("contracts", {}).get("typedQmAdvisory", {}).get("contractVersion") in ("1.1.0", "1.2.0")):
                     try:
@@ -731,12 +738,12 @@ class ComponentService:
 
     def prepare(self, version, content_profile=None):
         from .component_build import (compose, replay, pack, encoded, PROFILE_BASES, version_number,
-                                      advisory_runtime_pin, compose_advisory_runtime,
+                                      advisory_runtime_pin, compose_advisory_runtime, compose_common_runtime,
                                       ADVISORY_RUNTIME_RELEASE_ENABLED)
         from .status import read_json
         from .environment import JOURNAL
         reviewed_advisory = content_profile == "v3" and ADVISORY_RUNTIME_RELEASE_ENABLED
-        if reviewed_advisory:
+        if reviewed_advisory or content_profile in ("v1", "v2"):
             # Do not allocate a release or contact Cloud while the reviewed
             # runtime checkpoint is pending. No deferred-profile fallback.
             advisory_runtime_pin()
@@ -779,6 +786,10 @@ class ComponentService:
                         "contracts/qm-advisory-profile/qm-advisory-profile.v1.json").read_bytes()
                     first, record = compose_advisory_runtime(version, files, baseline_sha, repository,
                         contract, factory, advisory_contract,
+                        unsigned_source_sha=inspected["source"]["unsignedSha256"])
+                elif content_profile in ("v1", "v2"):
+                    first, record = compose_common_runtime(version, content_profile, files, baseline_sha,
+                        repository, contract, factory,
                         unsigned_source_sha=inspected["source"]["unsignedSha256"])
                 else:
                     first, record = replay(version, content_profile, files, baseline_sha, contract, factory,
