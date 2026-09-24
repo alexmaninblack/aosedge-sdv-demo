@@ -14,8 +14,10 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Start Here
 
-- [Current working .36 baseline](qualification/current-baseline.md) — scoped
-  Test E2E, exact image, installed profiles and explicit exclusions.
+- [Current .39 candidate and baseline history](qualification/current-baseline.md)
+  — retained Test image, installed profiles, dated qualification and exclusions.
+- [Factory .39 artifact cleanup](qualification/factory-39-cleanup-2026-09-24.md)
+  — retired image/build inventory, preserved Production .31 and disk accounting.
 - [17 September pre-UI checkpoint audit](qualification/pre-ui-checkpoint-2026-09-17.md)
   — source return point, current evidence, cleanup and remaining gates.
 - [13 September consolidation audit](qualification/factory-33-consolidation-audit-2026-09-13.md)

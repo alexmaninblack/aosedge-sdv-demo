@@ -1,9 +1,24 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Current working baseline
+# Current live candidate and baseline history
 
-Updated: **23 September 2026**. Current retained Test Factory: **.36**.
+Updated: **24 September 2026**. Current retained Test Factory: **.39**.
+
+The current Test uses VDP117/V3, Brake92/V3 and Tire49/V1. The focused
+[ignition qualification](factory-39-ignition-2026-09-24.md) and
+[five-minute offline qualification](factory-39-offline-2026-09-24.md) passed with
+their explicit limitations. This does not promote .39 to complete all-version
+E2E acceptance or close its remaining readiness/presentation observations.
+
+The operator-authorized [artifact cleanup](factory-39-cleanup-2026-09-24.md)
+removed the .36/.37/.38 image binaries and obsolete Builder/smoke outputs.
+Only .39 remains available for new Test creation. Production and its dependent
+.31 image are explicitly preserved. Older source/manifests/test evidence remain;
+Git restores source, not removed VM/image bytes. The dated retention and state
+statements below describe historical .36 checkpoints, not today's inventory.
+
+## Historical source audit — 23 September
 
 Current source audit: the latest repository-contained scoped readiness proof
 is [VDP98/V3, Brake78/V3, Tire44/V1](advisory-readiness-renewal-2026-09-20.md).
@@ -133,6 +148,9 @@ complete acceptance; its later live evidence is summarized above. Existing
 Complete P8 acceptance remains open.
 
 ## Immutable Factory
+
+Historical .36 metadata only: its binary was retired on24 September2026.
+The heading is retained for existing links to this provenance record.
 
 | Item | Value |
 | --- | --- |
