@@ -57,6 +57,8 @@ def stop():
         with opener.open("http://127.0.0.1:18080/api/presenter/operations", timeout=3) as response:
             state = json.loads(response.read(262145))
         if (not isinstance(state.get("sessionId"), str) or state.get("active") or state.get("uncertain")
+                or state.get("sourceRecoveryBusy")
+                or (state.get("sourceRecovery") or {}).get("state") in ("ATTEMPTED", "FAILED")
                 or not owner()):
             raise ValueError()
         os.kill(pid, signal.SIGINT)

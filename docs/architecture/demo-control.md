@@ -626,6 +626,8 @@ status exposes only recovery state/phase/reason/time, never credential material
 or private identifiers. No new daemon, trust store or persistent credential
 authority is added. Cold start with external connectivity OFF remains separately
 unqualified; continuous-run OFF behavior is unchanged.
+CLI `ui.stop` also refuses busy, attempted or failed controller recovery;
+completed recovery does not block an otherwise idle Presenter shutdown.
 
 Implementation and isolated functional proof are recorded in the
 [.38 staging report](../qualification/factory-38-staging-e2e-2026-09-24.md).

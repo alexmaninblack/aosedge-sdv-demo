@@ -12,7 +12,7 @@ from aosedge_demo_orchestrator import presenter
 
 
 class PresenterStopTests(unittest.TestCase):
-    def run_stop(self, *, cwd="/fixture/apps/demo-orchestrator", active=None, absolute=False, user=501):
+    def run_stop(self, *, cwd="/fixture/apps/demo-orchestrator", active=None, absolute=False, user=501, recovery=None, recovery_busy=False):
         def command(arguments, **_):
             if arguments[0] == "/bin/ps":
                 script = "/fixture/apps/demo-orchestrator/.venv/bin/democtl" if absolute else ".venv/bin/democtl"
@@ -22,7 +22,8 @@ class PresenterStopTests(unittest.TestCase):
                 return SimpleNamespace(stdout=f"p123\nfcwd\nn{cwd}\n", returncode=0)
             return SimpleNamespace(stdout="123\n", returncode=0)
         opener = Mock()
-        opener.open.return_value = BytesIO(json.dumps(dict(sessionId="fixture", active=active, uncertain=False)).encode())
+        opener.open.return_value = BytesIO(json.dumps(dict(sessionId="fixture", active=active, uncertain=False,
+            sourceRecovery=recovery, sourceRecoveryBusy=recovery_busy)).encode())
         with patch.object(presenter, "project_root", return_value=Path("/fixture")), \
                 patch("subprocess.run", side_effect=command), patch("urllib.request.build_opener", return_value=opener), \
                 patch("os.getuid", return_value=501), patch("os.kill") as kill:
@@ -48,5 +49,18 @@ class PresenterStopTests(unittest.TestCase):
 
     def test_canonical_absolute_command_remains_supported(self):
         result, kill = self.run_stop(absolute=True)
+        self.assertEqual(0, result)
+        kill.assert_called_once()
+
+    def test_controller_recovery_cannot_be_interrupted_by_ui_stop(self):
+        for values in (dict(recovery_busy=True), dict(recovery={'state':'ATTEMPTED'}),
+                       dict(recovery={'state':'FAILED'})):
+            with self.subTest(values=values):
+                result, kill = self.run_stop(**values)
+                self.assertEqual(1, result)
+                kill.assert_not_called()
+
+    def test_completed_recovery_does_not_block_idle_shutdown(self):
+        result, kill = self.run_stop(recovery={'state':'COMPLETED'})
         self.assertEqual(0, result)
         kill.assert_called_once()

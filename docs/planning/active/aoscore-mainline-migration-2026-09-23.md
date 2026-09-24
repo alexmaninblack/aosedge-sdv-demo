@@ -102,6 +102,13 @@ Factory build. Do not claim clean reboot acceptance or promote .38: the actual
 new-image ignition check remains open, as does externalOFF cold-start coverage.
 The [Factory .39 build gate](../../qualification/factory-39-build-2026-09-24.md)
 pins Platform793b1fc0; existing .38/Test/Cloud identity are preserved.
+24September16:27UTC: .39 built successfully with435native passes, package/image
+QA and matching creation/transfer digest. Isolated empty first boot and graceful
+power-cycle repeat pass; helper no-enrollment/repeat is a no-op. The initial
+bootstrap-active harness assumption is corrected and documented, not hidden.
+Current .38 Test remains healthy and unchanged. Actual .39 installed-service
+ignition recovery, fresh staging E2E and any baseline promotion remain open;
+new-image smoke is not proof of those behaviors.
 
 Use a coordinated mainline baseline rather than an isolated UID-pool backport.
 Fresh official main refs were resolved on 23 September:
