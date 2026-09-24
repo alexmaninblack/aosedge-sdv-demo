@@ -12,10 +12,12 @@ from aosedge_demo_orchestrator import presenter
 
 
 class PresenterStopTests(unittest.TestCase):
-    def run_stop(self, *, cwd="/fixture/apps/demo-orchestrator", active=None, absolute=False, user=501, recovery=None, recovery_busy=False):
+    def run_stop(self, *, cwd="/fixture/apps/demo-orchestrator", active=None, absolute=False, user=501, recovery=None, recovery_busy=False, repo_relative=False):
         def command(arguments, **_):
             if arguments[0] == "/bin/ps":
                 script = "/fixture/apps/demo-orchestrator/.venv/bin/democtl" if absolute else ".venv/bin/democtl"
+                if repo_relative:
+                    script = "apps/demo-orchestrator/.venv/bin/democtl"
                 return SimpleNamespace(stdout=f"{user} /fixed/Python {script} ui serve", returncode=0)
             if "-d" in arguments:
                 self.assertIn("-a", arguments)  # No accidental all-process cwd scan.
@@ -39,6 +41,15 @@ class PresenterStopTests(unittest.TestCase):
         result, kill = self.run_stop(cwd="/unrelated")
         self.assertEqual(1, result)
         kill.assert_not_called()
+
+    def test_repository_relative_command_requires_repository_cwd(self):
+        result, kill = self.run_stop(repo_relative=True, cwd="/fixture")
+        self.assertEqual(0, result)
+        kill.assert_called_once()
+        for cwd in ("/unrelated", "/fixture/apps/demo-orchestrator"):
+            result, kill = self.run_stop(repo_relative=True, cwd=cwd)
+            self.assertEqual(1, result)
+            kill.assert_not_called()
 
     def test_busy_or_foreign_user_is_never_signalled(self):
         for values in (dict(active="running"), dict(user=502)):

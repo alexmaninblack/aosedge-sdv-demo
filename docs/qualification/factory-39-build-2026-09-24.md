@@ -7,6 +7,10 @@ Status: immutable build and isolated first/repeat offline smoke passed.
 Still **BUILT_NOT_LIVE_QUALIFIED**; retained installed-service ignition on .39
 and fresh staging E2E remain open. No accepted baseline pin is promoted.
 
+The separately authorized [live ignition qualification](factory-39-ignition-2026-09-24.md)
+records the subsequent Test .38 retirement, fresh .39 deployment and reboot /
+power-cycle results. This build report retains its original offline-only scope.
+
 ## Scope
 
 Platform checkpoint `793b1fc035d2b7c123f9a4161788955f389bb81d` retains

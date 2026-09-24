@@ -81,6 +81,31 @@ class RecoveryTests(unittest.TestCase):
         self.state['vehicles']['test']['runtime']['externalConnectivity']['state']='OFF';self.write()
         self.assertEqual(boot.tick(self.service)['state'],'DEFERRED')
         self.vm.execute.assert_not_called()
+
+    def test_first_run_missing_network_record_observes_guest_without_toggle(self):
+        self.state['vehicles']['test']['runtime'].pop('externalConnectivity');self.write()
+        previous=self.driver.guest.side_effect
+        self.driver.guest.side_effect=lambda s,r,a,**kw: dict(state='ON') if a=='connectivity-status' else previous(s,r,a,**kw)
+        self.assertTrue(boot.pending(self.service))
+        self.assertEqual(boot.tick(self.service)['state'],'COMPLETED')
+        saved=json.loads((self.root/boot.JOURNAL).read_text())
+        self.assertEqual(saved['vehicles']['test']['runtime']['externalConnectivity']['state'],'ON')
+        self.assertFalse(any(c.args[2] in ('connectivity-on','connectivity-off') for c in self.driver.guest.call_args_list))
+
+    def test_first_run_actual_off_or_unknown_never_restores(self):
+        for observed in (dict(state='OFF'),dict(state='UNKNOWN'),{}):
+            with self.subTest(observed=observed):
+                self.state['vehicles']['test']['runtime'].pop('externalConnectivity',None);self.write()
+                self.driver.guest.side_effect=lambda *a,**kw: observed
+                self.assertEqual(boot.tick(self.service)['state'],'DEFERRED')
+                self.vm.execute.assert_not_called();self.driver.rpc.assert_not_called()
+
+    def test_existing_off_or_uncertain_record_is_not_overridden_by_actual_on(self):
+        for record in (dict(state='OFF'),dict(state='UNCERTAIN'),{}):
+            self.state['vehicles']['test']['runtime']['externalConnectivity']=record;self.write()
+            self.assertFalse(boot.pending(self.service))
+            self.assertEqual(boot.tick(self.service)['state'],'DEFERRED')
+        self.driver.guest.assert_not_called();self.vm.execute.assert_not_called()
     def test_failed_attempt_is_not_automatically_retried(self):
         self.vm.execute.return_value=dict(vehicles=dict(test=dict(state='PARTIAL')))
         with self.assertRaisesRegex(boot.EnvironmentError,'REQUIRES_RECONCILIATION'):boot.tick(self.service)

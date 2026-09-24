@@ -45,7 +45,10 @@ def pending(service):
     state=read_json(service.root/JOURNAL)
     if not eligible(state):return False
     item=state['vehicles']['test'];source=state['source']
-    if (item.get('runtime',{}).get('externalConnectivity') or {}).get('state')!='ON':return False
+    network=item.get('runtime',{}).get('externalConnectivity')
+    # A newly provisioned Test has no operator link-fault record yet. It must
+    # be observed under the writer, never assumed ON or physically toggled.
+    if network is not None and network.get('state')!='ON':return False
     if not service.vm._owned_pid(service.vm._command(state,'test'),str(service.root/item['overlay'])):return False
     previous=source.get('bootRecovery') or {}
     identity=dict(localVmId=item['localVmId'],unitId=item['unitId'],nodeId=item['nodeId'],
@@ -101,7 +104,14 @@ def tick(service):
         state=read_json(service.root/JOURNAL)
         if not eligible(state):return dict(state='NOT_APPLICABLE')
         item=state['vehicles']['test'];source=state['source'];driver=service.driver
-        if (item.get('runtime',{}).get('externalConnectivity') or {}).get('state')!='ON':
+        network=item.get('runtime',{}).get('externalConnectivity')
+        if network is None:
+            observed=driver.guest(state,'test','connectivity-status')
+            if observed.get('state') in ('ON','OFF'):
+                network=dict(state=observed['state'],source='GUEST_OBSERVATION',observedAt=now())
+                item['runtime']['externalConnectivity']=network
+                service.vm._save(state)
+        if (network or {}).get('state')!='ON':
             return dict(state='DEFERRED',reason='COLD_OFFLINE_AUTHORIZATION_NOT_QUALIFIED')
         command=service.vm._command(state,'test')
         if not service.vm._owned_pid(command,str(service.root/item['overlay'])):

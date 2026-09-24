@@ -44,13 +44,17 @@ def stop():
                 return True
             # The documented terminal command can use a relative venv path.
             # Accept it only with the exact canonical process working directory.
-            if not command.endswith(" .venv/bin/democtl ui serve"):
+            if command.endswith(" .venv/bin/democtl ui serve"):
+                expected_cwd = project_root() / "apps/demo-orchestrator"
+            elif command.endswith(" apps/demo-orchestrator/.venv/bin/democtl ui serve"):
+                expected_cwd = project_root()
+            else:
                 return False
             cwd = subprocess.run(["/usr/sbin/lsof", "-a", "-p", str(pid), "-d", "cwd", "-Fn"],
                 capture_output=True, text=True, timeout=3)
             return (cwd.returncode == 0 and
                     [line[1:] for line in cwd.stdout.splitlines() if line.startswith("n")] ==
-                    [str(project_root() / "apps/demo-orchestrator")])
+                    [str(expected_cwd)])
         if not owner():
             raise ValueError()
         opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
