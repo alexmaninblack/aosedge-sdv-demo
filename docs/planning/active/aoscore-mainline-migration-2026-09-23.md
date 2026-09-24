@@ -17,8 +17,12 @@ images until successor qualification; stop the next live run on recurrence.
 The detailed current closure is at the end of the
 [live report](../../qualification/factory-37-staging-e2e-2026-09-23.md).
 Historical progress entries below retain their original time-scoped status.
-Successor [Factory .38 build packet](../../qualification/factory-38-build-2026-09-24.md)
-pins Platform378c00ef and retains the full native/package/image/offline/live gates.
+Successor [Factory .38 build report](../../qualification/factory-38-build-2026-09-24.md)
+pins Platform378c00ef and Demo Control5dda934. Its native/package/image gates
+passed; the immutable image is built and transferred with matching SHA-256.
+Clean offline boot and repeat health pass; fresh staging acceptance is still
+required and no accepted workspace pin is promoted. Exact retirement of the
+preserved .37 Test was requested separately before creating a fresh .38 Test.
 
 ## Decision and immutable inputs
 
@@ -81,8 +85,8 @@ are the starting evidence, not blanket permission to remove residual fixes.
 | M0 | Source/recipe inventory, upstream pins, preserve existing baseline | Complete |
 | M1 | Negative-control regressions and minimal adaptations in isolated source | Complete |
 | M2 | CM/SM/IAM and VDP native tests; permission, storage, UID and disconnect regressions; source/license gates | Complete; live quota/image checks remain M4 |
-| M3 | Commit pinned source, affected package tests/QA, one successor Factory build | Complete; .37 frozen, offline boot/repeat checked |
-| M4 | Clean Test installation and sequential E2E with UI observation | Sequential VDP112→113→114, Brake87→88→89 and Tire48 installation proved under an authorized temporary SM/KAC candidate. Stable Brake UID/storage/quotas and Cloud metrics survive upgrades; VDP114 waits for actual Safe Stop. Both real advisory paths, independent UI Reset/CLEAR/history retention, Return to road and subsequent Autopilot/Safe Stop pass. A separate KAC-only proof passes five-minute OFF with local Brake/Tire inference, applied advisory, token renewal, stopped backend ingress, then queued delivery and Online recovery after ON, with no workload restart. Original policy restored at11:03UTC. Cold persistence, crash/security closure, permanent image integration and final Finish remain open |
+| M3 | Commit pinned source, affected package tests/QA, one successor Factory build | .37 preserved; corrected .38 built with native/package/QA gates and clean offline boot/repeat passing |
+| M4 | Clean Test installation and sequential E2E with UI observation | .37 diagnostic run proved VDP112→113→114, Brake87→88→89, Tire48, Safe Stop, stable UID/storage/quotas/Cloud metrics, real advisory, independent Reset/history, Return to road and five-minute OFF/local inference/token renewal plus ON/delivery recovery under bounded SM/KAC candidates. Stock restored. Diagnostic security closure and .38 image integration complete; fresh .38 live acceptance, cold persistence and final Finish remain open. Historical109 SIGSEGV cause remains unresolved, not claimed fixed |
 
 M4 must publish each next VDP/Brake version only after the preceding version is
 installed and verified. VDP uses Safe Stop; QM service updates remain independent
@@ -94,6 +98,8 @@ records with mismatched UIDs in the preserved Test.
 
 Record executed tests and exclusions before advancing a gate. No image build
 while any required native test is failing.
+
+### Initial live findings (historical; see current closure above)
 
 The [live .37 report](../../qualification/factory-37-staging-e2e-2026-09-23.md)
 records two open migration defects: premature VDP active reporting and the new
