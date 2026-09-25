@@ -8,14 +8,21 @@ requires one current Test UID without a hidden Production vehicle. The JSON
 profiles and backend handlers/tests now accept exactly the current Test alone
 or the retained dual-role engineering flow. They
 reject empty, duplicate, foreign and partial unrelated selectors. Keep the
-current UID binding until scoped cleanup completes, then clear it. Park retains
-the database; Retire deletes owned ordinary run records without an archive.
+current UID binding until scoped cleanup completes, then clear it. Ordinary
+backend restart retains the database; Finish deletes the selected run records
+without an archive. Studio Park/Resume is retired.
 This is isolated contract/backend evidence, not full Demo Control lifecycle
 or live E2E qualification. Message formats, durable
 acknowledgement and authority boundaries below are unchanged.
 
 
 # Brake Health Cloud API — Accepted Contract
+
+Current implementation status (24 September 2026, demo-v1.1 / Factory .39):
+see the [complete protocol map](../implementation-status.md) for this family's
+implemented path, accepted amendments and remaining qualification or executable-
+profile differences. Design lifecycle labels below are not deployment verdicts.
+Historical golden schemas/digests are not rewritten as part of this audit.
 
 - Decision: `D4-017`
 - Lifecycle state: `ACCEPTED`
@@ -245,8 +252,9 @@ security boundaries remain unchanged.
 
 No database migration belongs to this amendment. Existing migration 002
 already retains canonical validated chunk content and the exact
-Unit/event/chunk index. Its separate source-only work packet is accepted and
-authorized only for the exact five-path offline implementation boundary.
+Unit/event/chunk index. The point read is implemented and used by Presenter;
+the original five-path source-only packet remains historical execution scope,
+not current evidence that this route is missing.
 
 The Brake Dashboard obtains functional windows, assessments, events and
 advisory facts only through the accepted 1.0.0 annex's bounded keyset-paginated
@@ -293,7 +301,8 @@ defines revision 2 / 2.0.0 beside the retained legacy schemas in this package.
 Use the immutable package release and native service/Subject/instance identity;
 do not require service/model OCI digest fields or relabel old queued records.
 Payload algorithms, model/VDP hashes, receipt keys and authorization remain
-unchanged. Backend consumer source is implemented; producer/input migration
-and real Test integration are still open. Earlier sections and v1 schema
+unchanged. Producer/input migration and backend consumers are implemented and
+have scoped live Test evidence. Full current-image qualification remains
+separate; see the protocol map above. Earlier sections and v1 schema
 files remain legacy evidence, not an instruction to reintroduce the digest
 dependency into new messages. Administrative/cleanup protocols are unaffected.

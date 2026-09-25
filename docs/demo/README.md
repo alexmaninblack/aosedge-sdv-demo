@@ -12,7 +12,8 @@ Accepted audience-facing name: **AosEdge Platform - SDV Lab**. See the
 demo video. This decision does not itself rename the running UI.
 
 For the **current implemented Test-only Studio**, start with the
-[current interface register](mockups/README.md) and
+[operator workflow](../operations/current-demo-workflow.md),
+[current implementation](../architecture/current-implementation.md) and
 [UI-STUDIO-026](mockups/aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract).
 The [20 September UI timing and repair report](../qualification/presenter-ui-timing-e2e-2026-09-20.md)
 records the observed version/offline cycle, Presenter corrections and required
@@ -23,7 +24,9 @@ operator procedure or authorization to alter Production.
 
 Start a colleague or stakeholder review with the
 [AosEdge Demo Walkthrough and Review Guide](aosedge-demo-walkthrough.md) and the
-[clickable interaction mockup](mockups/aosedge-demo-interaction-mockup-2-4.html).
+[retained review mockup](mockups/aosedge-demo-interaction-mockup-2-10.html).
+The mockup simulates facts and predates later accepted amendments; use the
+real Presenter for current status and operator behavior.
 The guide explains where to look, what action occurs, what the audience should
 observe and what each chapter demonstrates without requiring the reader to
 first study the technical specifications below.
@@ -31,8 +34,8 @@ first study the technical specifications below.
 The accepted [Native Demo Desktop Plan](../planning/active/native-demo-desktop.md)
 keeps this composition while combining control/telemetry, retaining CARLA as a
 separate window and adding one-click startup. The
-[source checkpoint](../qualification/democtl-release-checkpoint.md) separates
-today's Test demo evidence from future advisory and Production capabilities.
+[source checkpoint](../qualification/demo-v1.1-return-point.md) separates
+implemented Test/advisory behavior from broader Production qualification.
 
 [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.0](staged-post-sop-brake-health-demo-scenarios.md)
 is the accepted demo-scenario baseline. It defines the canonical
@@ -43,11 +46,11 @@ implementation.
 
 The corresponding
 [Demo Scenario Architecture Flows 2.1](../architecture/demo-scenario-architecture-flows.md)
-map Scenario 2.0 to High-Level Architecture 1.5, including lifecycle, runtime,
+map Scenario 2.0 to High-Level Architecture 1.7, including lifecycle, runtime,
 observability, failure and retirement flows. They do not authorize
 implementation.
 
-The [AosEdge Demo Interaction Specification 2.5](mockups/aosedge-demo-interaction-specification.md)
+The [AosEdge Demo Interaction Specification 2.6](mockups/aosedge-demo-interaction-specification.md)
 is the accepted presenter-interaction contract. It fixes the composed
 workspace, team perspectives, current-vehicle handover, release stories,
 Details, action/authority semantics, failure/recovery states and UI acceptance
@@ -61,5 +64,5 @@ or redefine the accepted scenario, architecture, requirements or contracts.
 The current I0 register is the
 [Audience-Visible Interface Register and Mockup Gate](mockups/README.md). It
 records the accepted surface inventory, navigation/authority split and required
-visible states while implementation and presenter-Mac qualification remain
-open.
+visible states. Later implemented amendments and the remaining presenter/host
+recovery qualification boundaries are identified at the top of that register.

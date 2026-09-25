@@ -3,6 +3,12 @@
 
 # Local Demo Hosting and VM Route — Design Reviewed
 
+Current implementation status (24 September 2026, demo-v1.1 / Factory .39):
+see the [complete protocol map](../implementation-status.md) for this family's
+implemented path, accepted amendments and remaining qualification or executable-
+profile differences. Design lifecycle labels below are not deployment verdicts.
+Historical golden schemas/digests are not rewritten as part of this audit.
+
 - Decision: `D4-020`
 - Lifecycle state: `DESIGN_REVIEWED`
 - Contract version: `1.0.0`
@@ -12,7 +18,14 @@
   2026-08-23; simplified local functional transport accepted 2026-08-23;
   startup/shutdown and R0-local-data behavior accepted 2026-08-23
 
-This package freezes the proposed first-demo local hosting shape. The Apple
+**Current Studio topology:** two separate backend containers/stores plus the
+host Demo Control/Presenter and native CARLA/Driving Control windows. There is
+no third Software Delivery Dashboard container in the normal path. The
+three-container topology and capability-helper layout below are the historical
+design; they are not assertions about current process placement. Test is the
+active demo target and preserved Production is not required to run it.
+
+This package retains the proposed first-demo local hosting shape. The Apple
 Silicon Mac runs three prebuilt ARM64 containers: the stateless Software
 Delivery Dashboard, the Brake Health Cloud product and the Tire Health Cloud
 product. No image is built, pulled or repackaged during presentation.

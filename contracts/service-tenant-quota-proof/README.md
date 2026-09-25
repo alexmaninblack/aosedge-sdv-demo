@@ -3,6 +3,12 @@
 
 # Service Tenant Quota Proof — Design Reviewed
 
+Current implementation status (24 September 2026, demo-v1.1 / Factory .39):
+see the [complete protocol map](../implementation-status.md) for this family's
+implemented path, accepted amendments and remaining qualification or executable-
+profile differences. Design lifecycle labels below are not deployment verdicts.
+Historical golden schemas/digests are not rewritten as part of this audit.
+
 - Decision: `D4-023`
 - Lifecycle state: `DESIGN_REVIEWED`
 - Contract version: `1.0.0`
@@ -49,12 +55,17 @@ owns the versioned estimator state and tmp owns temporary computation only.
 No network quota is requested. Insufficient implementation headroom requires
 a reviewed, measured envelope change; silent inflation is forbidden.
 
-The first audience proof intentionally saturates only CPU inside the actual
+The planned first audience proof intentionally saturates only CPU inside the actual
 Tire Health Service instance while Brake Health is the unaffected control
 tenant. Other approved metadata remains visible but memory, storage, file and
 PID exhaustion are not first-demo claims.
 
-The Tire Function Dashboard exposes one `Start CPU Isolation Proof` action.
+**Implementation gap:** the fixed control and CPU worker are not implemented;
+the backend returns `501 NOT_IMPLEMENTED`. Real Cloud/cgroup observations and
+resource graphs are not a substitute for this stress test. The following is
+the accepted design, not an available UI action or a PASS.
+
+The designed Tire Function Dashboard exposes one `Start CPU Isolation Proof` action.
 It asks the Mac-local Tire backend for one fixed, identity-bound command; the
 actual Tire Service obtains it through its existing service-initiated outbound
 backend route. The command is bound to the exact current `system_uid`, Tire

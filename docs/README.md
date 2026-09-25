@@ -14,6 +14,15 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Start Here
 
+- [Current implemented architecture and traceability](architecture/current-implementation.md)
+  — requirements, owning code, accepted amendments and qualification limits.
+- [All 25 protocol families: implementation status](../contracts/implementation-status.md)
+  — current wire versions, authority and remaining contract drift.
+- [Complete documentation audit](qualification/documentation-implementation-audit-2026-09-24.md)
+  — discrepancies, corrections, tests and unclosed gates.
+- [Current operator workflow](operations/current-demo-workflow.md)
+  — Test-only lifecycle, serial updates, reset, offline and ignition.
+
 - [Demo1.1 source return point](qualification/demo-v1.1-return-point.md)
   — exact dependency pins, Factory39 provenance, restoration and known limits.
 - [Current .39 candidate and baseline history](qualification/current-baseline.md)
@@ -21,7 +30,7 @@ not only the CARLA-to-AosEdge transport bridge.
 - [Factory .39 artifact cleanup](qualification/factory-39-cleanup-2026-09-24.md)
   — retired image/build inventory, preserved Production .31 and disk accounting.
 - [17 September pre-UI checkpoint audit](qualification/pre-ui-checkpoint-2026-09-17.md)
-  — source return point, current evidence, cleanup and remaining gates.
+  — historical source return point, evidence, cleanup and then-remaining gates.
 - [13 September consolidation audit](qualification/factory-33-consolidation-audit-2026-09-13.md)
   — source/remote inventory, cleanup disposition, KUKSA permissions and Cloud
   recovery workaround, with exact remaining closure conditions.
@@ -44,8 +53,8 @@ not only the CARLA-to-AosEdge transport bridge.
   `T1` Tire Health stage, observability, offline, and retirement mapping.
 - [Repository and component boundaries](architecture/repository-boundaries.md)
   — ownership across the participating repositories.
-- [Demo Control — draft implementation design](architecture/demo-control.md)
-  — shared `democtl`/UI core, initial lifecycle scope and status/access proposal.
+- [Demo Control — implementation design and history](architecture/demo-control.md)
+  — shared `democtl`/UI core; current workflow and dated implementation amendments.
 - [Native Aos service identity, data and tokens — accepted](architecture/decisions/0015-use-native-aos-service-runtime-inputs.md)
   — approved Brake/Tire metadata, private token sessions and native startup;
   documentation cascade and implementation authorized.

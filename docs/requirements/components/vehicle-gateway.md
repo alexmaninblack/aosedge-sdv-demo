@@ -20,7 +20,11 @@
 - Accepted D4 VISS decision: [D4-006 VISS Trust and Telemetry Profile](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
 - Accepted D4 Safe Stop freshness decision: [D4-028](../d4-decision-register.md#d4-028)
 - Accepted D4 advisory decision: [D4-008 Typed QM Advisory Profile](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
-- Implementation baseline: `carla-ego-runtime@22864c5` against `CarlaSim@ac7d882c`
+- Implementation baseline: demo-v1.1 runtime `98b0b70a` against `CarlaSim@ac7d882c`; original D3 checkpoint `22864c5` is historical
+
+## Implementation-status reading rule — 24 September 2026
+
+Implementation-status annotations retained from the original D3 review are historical allocation notes, not current deployment claims. The current baseline section and the gates below supersede those annotations; requirements and stable test obligations are unchanged.
 
 ## Purpose
 
@@ -79,22 +83,17 @@ or safety-critical authority to either service.
 
 ## Current Implementation Baseline
 
-| Capability | Evidence | State |
-| --- | --- | --- |
-| CARLA sampling, normalization and VSS 6.0 projection | [Telemetry contract v0.2](../../../../carla-ego-runtime/docs/telemetry-contract.md) | `CURRENT` |
-| Selected hardware-profile coverage | [R10 native CARLA inventory](../../research/demo-foundation/r10-carla-telemetry-and-function-team-2.md) exists, but the Gateway has no accepted manifest-driven coverage report | `PARTIAL`; D4 manifest and accounting contract required |
-| TLS VISS 3.1 Get/Subscribe/Unsubscribe | [VISS compatibility profile](../../../../carla-ego-runtime/docs/viss-profile.md) | `CURRENT` on the loopback development profile; broader trust contract remains D4 |
-| Authenticated manual/autopilot/safe-stop control | [External control contract v2](../../../../carla-ego-runtime/docs/external-control-contract.md) and protocol v3 scenario extension | `CURRENT` |
-| Continuous actor, telemetry and camera through handover | [M6.2 accepted behavior](../../../../carla-ego-runtime/docs/m6-2-live-handover.md) | `CURRENT` |
-| Engineering telemetry dashboard | Independent `carla-viss-client --monitor` for vehicle and wheel data | `CURRENT` |
-| Explicit source availability/status signal | Optional malformed values are omitted and dashboard connection is visible; no complete versioned Gateway source-status contract exists | `PARTIAL` |
-| Typed advisory Set and Gateway handler | Current VISS correctly rejects every Set to a read-only node | `TARGET` |
-| Advisory status in Engineering Dashboard | No accepted signal or UI exists | `TARGET` |
-| Local decision-to-Gateway chronology evidence | Vehicle and VISS timestamps exist; end-to-end advisory correlation does not | `TARGET` |
+Updated 24 September 2026 for **demo-v1.1 / Factory .39**.
+See [current architecture/traceability](../../architecture/current-implementation.md),
+[protocol status](../../../contracts/implementation-status.md) and
+[qualification limits](../../qualification/current-baseline.md).
+These are implementation/proof states, not changes to stable requirement IDs
+or blanket acceptance of every requirement in this package.
 
-All 18 registered tests in the existing native build passed on 2026-08-18,
-including isolated logic, TLS loopback, Unix control socket and native Swift
-type-checking. The live CARLA scene was not started for this requirements pass.
+| Boundary | Current state |
+| --- | --- |
+| Gateway, trust and native control implementation | Native sampling/normalization, frame-coherent control projection, VISS Get/Subscribe, selected-Unit mTLS, typed Brake/Tire advisory validation/status and native control/telemetry are implemented. Real maneuvers and stationary Manual Return to road exist. |
+| Evidence and remaining obligations | Scoped real advisory/control tests and .39 integration evidence exist. Complete hardware/actuator coverage, dual-role handover and all recovery negatives require their own proof. |
 
 ## Testability Boundary
 
@@ -136,7 +135,7 @@ decisions they exercise.
 
 ## Requirement Summary
 
-| Requirement | Plain-language obligation | Implementation | Verification levels |
+| Requirement | Plain-language obligation | D3 implementation snapshot | Verification levels |
 | --- | --- | --- | --- |
 | [Frame-coherent CARLA acquisition (`REQ-GATEWAY-001`)](#req-gateway-001) | Sample one attributable vehicle frame without mixing source time | `CURRENT` | Unit, Contract, Integration |
 | [Truthful normalization and provenance (`REQ-GATEWAY-002`)](#req-gateway-002) | Convert native values to defined physical/VSS semantics | `CURRENT` | Unit, Contract, Integration |
@@ -171,7 +170,7 @@ decisions they exercise.
 - Interfaces: [CARLA state (`IF-VEH-001`)](../component-decomposition-and-interface-register.md#if-veh-001) and [normalized model (`IF-VEH-004`)](../component-decomposition-and-interface-register.md#if-veh-004)
 - Required evidence: frame-aligned snapshot fixtures, rejection counters and live frame correlation
 - Requirement state: D3 design-reviewed
-- Implementation state: `CURRENT`
+- D3 implementation snapshot (historical; current baseline above): `CURRENT`
 
 ### Truthful normalization and provenance
 
@@ -189,7 +188,7 @@ decisions they exercise.
 - Interfaces: [CARLA state (`IF-VEH-001`)](../component-decomposition-and-interface-register.md#if-veh-001) and [normalized model (`IF-VEH-004`)](../component-decomposition-and-interface-register.md#if-veh-004)
 - Required evidence: normal, limit, sign, non-finite and contradictory-value fixtures
 - Requirement state: D3 design-reviewed
-- Implementation state: `CURRENT`
+- D3 implementation snapshot (historical; current baseline above): `CURRENT`
 
 ### Bounded latest-value and unavailable behavior
 
@@ -206,7 +205,7 @@ decisions they exercise.
 - Interface: [normalized model (`IF-VEH-004`)](../component-decomposition-and-interface-register.md#if-veh-004)
 - Required evidence: store ordering, GNSS freshness, optional-value omission and unavailable read results
 - Requirement state: D3 design-reviewed
-- Implementation state: `CURRENT` for data points; complete source-level degraded status belongs to `REQ-GATEWAY-009`
+- D3 implementation snapshot (historical; current baseline above): `CURRENT` for data points; complete source-level degraded status belongs to `REQ-GATEWAY-009`
 
 ### Bounded TLS VISS read service
 
@@ -230,7 +229,7 @@ decisions they exercise.
 - Executable contract: [VISS Trust and Telemetry Profile 1.1.0](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
 - Required evidence: protocol suite, real mTLS suite, role/selected-Unit negative matrix and bounded-delivery metrics
 - Requirement state: D3 design-reviewed; D4-006 contract accepted
-- Implementation state: `PARTIAL`; current server-authenticated read profile must add accepted mTLS roles and selected-Unit enforcement
+- D3 implementation snapshot (historical; current baseline above): `PARTIAL`; current server-authenticated read profile must add accepted mTLS roles and selected-Unit enforcement
 
 ### Source identity and selected-Unit evidence
 
@@ -249,7 +248,7 @@ decisions they exercise.
 - Executable contract: [Exclusive Live-Source Assignment 1.0.0](../../../contracts/exclusive-live-source-assignment/exclusive-live-source-assignment.v1.json)
 - Required evidence: VISS metadata plus orchestrator-owned selected live Unit binding
 - Requirement state: D3 design-reviewed; D4-005 contract accepted
-- Implementation state: `PARTIAL`
+- D3 implementation snapshot (historical; current baseline above): `PARTIAL`
 
 ### Authenticated fail-safe vehicle control
 
@@ -268,7 +267,7 @@ decisions they exercise.
 - Executable contract: [Simulator Control and Context 1.1.1](../../../contracts/simulator-control-context/simulator-control-context.v1.json)
 - Required evidence: isolated state-machine suite, local socket permission/lifecycle test and live safe-stop observation
 - Requirement state: D3 design-reviewed; D4-004 contract accepted
-- Implementation state: `CURRENT`
+- D3 implementation snapshot (historical; current baseline above): `CURRENT`
 
 ### Continuous manual/autopilot handover
 
@@ -289,7 +288,7 @@ decisions they exercise.
 - Executable contract: [Simulator Control and Context 1.1.1](../../../contracts/simulator-control-context/simulator-control-context.v1.json)
 - Required evidence: mode-transition suite, stable actor/run/frame identity and visual handover acceptance
 - Requirement state: D3 design-reviewed; D4-004 contract accepted
-- Implementation state: `PARTIAL`; current same-actor handover, lane validation and automatic-to-manual blend exist, while context-aware obstacle cleanup/reset before Autopilot does not
+- D3 implementation snapshot (historical; current baseline above): `PARTIAL`; current same-actor handover, lane validation and automatic-to-manual blend exist, while context-aware obstacle cleanup/reset before Autopilot does not
 
 ### Independent engineering telemetry view
 
@@ -307,7 +306,7 @@ decisions they exercise.
 - Interface: [engineering subscription (`IF-VEH-006`)](../component-decomposition-and-interface-register.md#if-veh-006)
 - Required evidence: dashboard command, observed VISS-only connection, factual labels and negative inspection for control/KUKSA/Cloud coupling
 - Requirement state: D3 design-reviewed
-- Implementation state: `CURRENT` for telemetry; advisory/status extension belongs to `REQ-GATEWAY-011`
+- D3 implementation snapshot (historical; current baseline above): `CURRENT` for telemetry; advisory/status extension belongs to `REQ-GATEWAY-011`
 
 ### Explicit source-loss state
 
@@ -325,7 +324,7 @@ decisions they exercise.
 - Required evidence: point omission/unavailable tests, source disconnect/stale/recovery fixtures and dashboard state
 - Executable contract: [VISS Trust and Telemetry Profile 1.1.0](../../../contracts/viss-trust-telemetry-profile/viss-trust-telemetry-profile.v1.json)
 - Requirement state: D3 design-reviewed; D4-006 contract accepted
-- Implementation state: `PARTIAL`; exact states and timing are accepted, implementation and live qualification remain open
+- D3 implementation snapshot (historical; current baseline above): `PARTIAL`; exact states and timing are accepted, implementation and live qualification remain open
 
 ### Authoritative QM advisory Set boundary
 
@@ -352,7 +351,7 @@ decisions they exercise.
   safety/motion negative cases with no side effects
 - Executable contract: [Typed QM Advisory Profile 1.2.0](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - Requirement state: D3 design-reviewed; D4-008 contract accepted
-- Implementation state: `TARGET`; current all-Set rejection remains correct until the complete accepted endpoints and negative matrix are implemented
+- D3 implementation snapshot (historical; current baseline above): `TARGET`; current all-Set rejection remains correct until the complete accepted endpoints and negative matrix are implemented
 
 ### Factual advisory status
 
@@ -373,7 +372,7 @@ decisions they exercise.
 - Required evidence: status transition/size/schema fixtures, VISS subscription result and factual dashboard labels
 - Executable contract: [Gateway Status schema](../../../contracts/qm-advisory-profile/qm-advisory-status.schema.json)
 - Requirement state: D3 design-reviewed; D4-008 contract accepted
-- Implementation state: `TARGET`
+- D3 implementation snapshot (historical; current baseline above): `TARGET`
 
 ### Local advisory chronology
 
@@ -392,7 +391,7 @@ decisions they exercise.
 - Interfaces: [advisory delivery (`IF-ADV-004`)](../component-decomposition-and-interface-register.md#if-adv-004), [advisory status (`IF-ADV-005`)](../component-decomposition-and-interface-register.md#if-adv-005) and [engineering subscription (`IF-VEH-006`)](../component-decomposition-and-interface-register.md#if-veh-006)
 - Required evidence: deterministic timestamp fixtures and a correlated local chronology record distinct from backend synchronization
 - Requirement state: D4-024 shared correlation/chronology design reviewed; implementation and live qualification remain open
-- Implementation state: `TARGET`
+- D3 implementation snapshot (historical; current baseline above): `TARGET`
 
 ### Truthful mode/context engineering projection
 
@@ -431,7 +430,7 @@ decisions they exercise.
 - Required evidence: state/path/type/freshness fixtures including per-sample acquisition freshness and latest-sample gate-time freshness; accepted controller-record schema, peer/permission and exact frame/time join fixtures; bounded missing/drop/duplicate/out-of-order/overflow/expiry negatives; monotonic generation checks; real-frame-only reset discontinuity sequence; runtime-role allowlist; dashboard rendering; and negative proof that neither the dashboard nor Gateway owns the update decision
 - Executable contracts: [Simulator Control and Context 1.1.1](../../../contracts/simulator-control-context/simulator-control-context.v1.json) and [Platform FOTA Safe Stop 1.1.1](../../../contracts/platform-fota-safe-stop/platform-fota-safe-stop-profile.v1.json)
 - Requirement state: D3 design-reviewed; D4-004 contract accepted
-- Implementation state: `TARGET`; current controller status contains part of the state outside VISS, but the accepted engineering projection and dashboard fields do not exist
+- D3 implementation snapshot (historical; current baseline above): `TARGET`; current controller status contains part of the state outside VISS, but the accepted engineering projection and dashboard fields do not exist
 
 ### Complete hardware-profile accounting
 
@@ -454,7 +453,7 @@ decisions they exercise.
 - Interfaces: [CARLA state (`IF-VEH-001`)](../component-decomposition-and-interface-register.md#if-veh-001) and [normalized model (`IF-VEH-004`)](../component-decomposition-and-interface-register.md#if-veh-004)
 - Required evidence: manifest digest and schema validation, manifest-to-adapter coverage report, optional/unavailable/unsupported cases and qualification-truth rejection
 - Requirement state: D3 design-reviewed; D4-002 contract accepted
-- Implementation state: `PARTIAL`; the current adapter maps the accepted
+- D3 implementation snapshot (historical; current baseline above): `PARTIAL`; the current adapter maps the accepted
   scalar/wheel/GNSS subset, but startup reconciliation and complete target
   coverage against the canonical profile are not implemented
 
@@ -482,7 +481,7 @@ profile before the Platform Team selects a narrower service-facing contract.
 - Interfaces: [control request (`IF-VEH-002`)](../component-decomposition-and-interface-register.md#if-veh-002), [Gateway commands (`IF-VEH-003`)](../component-decomposition-and-interface-register.md#if-veh-003) and [CARLA state (`IF-VEH-001`)](../component-decomposition-and-interface-register.md#if-veh-001)
 - Required evidence: capability-versus-authority matrix, valid/invalid command fixtures, command/result/applied-state correlation and negative tests proving that functional services have no vehicle-motion authority
 - Requirement state: D3 design-reviewed; D4-002 contract accepted
-- Implementation state: `PARTIAL`; throttle/brake/steer control and applied-control sampling exist, while the complete declared actuator set and execution-status contract are not frozen
+- D3 implementation snapshot (historical; current baseline above): `PARTIAL`; throttle/brake/steer control and applied-control sampling exist, while the complete declared actuator set and execution-status contract are not frozen
 
 ## Unit-Test Obligations
 
@@ -554,14 +553,14 @@ evidence is retained.
 
 ## Open Issues
 
-| Issue | Impact | Owner | Decision gate |
-| --- | --- | --- | --- |
-| Implement and qualify the accepted mTLS roles, selected-Unit gate and per-Unit credential lifecycle | Blocks final `REQ-GATEWAY-004` security acceptance; contract choice is closed | Vehicle Gateway + Platform Team + Demo Orchestration | Accepted [`D4-006`](../d4-decision-register.md#d4-006) |
-| Implement and qualify the accepted source-status projection, 250 ms freshness and recovery semantics | Blocks complete `REQ-GATEWAY-009`; contract choice is closed | Vehicle Gateway + Platform Team | Accepted [`D4-006`](../d4-decision-register.md#d4-006) |
-| Implement and qualify the accepted typed Brake/Tire Request/Status targets, schema, freshness, lease, rate, replay and clear/expiry behavior | Contract choice is closed; blocks `REQ-GATEWAY-010` through `REQ-GATEWAY-012` implementation acceptance | Vehicle Gateway + Platform Team + Function Teams | Accepted [`D4-008`](../d4-decision-register.md#d4-008) |
-| Implement and qualify the accepted selected-Unit gate, independent read-only Dashboard peer and bounded VU/PU frame ranges | Blocks complete `REQ-GATEWAY-005`; both contract choices are closed | Demo Orchestration + Vehicle Gateway | Accepted [`D4-005`](../d4-decision-register.md#d4-005) and [`D4-006`](../d4-decision-register.md#d4-006), followed by live qualification |
-| Implement the accepted mode/context/scenario/reset VSS projection and context-aware transactional activation | Blocks complete `REQ-GATEWAY-007`, `REQ-GATEWAY-013` and `UT-GATEWAY-008`/`013`; contract choice is closed | Vehicle Gateway + Vehicle Simulation | Accepted [`D4-004`](../d4-decision-register.md#d4-004), followed by implementation and qualification |
-| Implement live profile reconciliation and remaining target adapter/actuator coverage against the accepted manifest | Blocks complete `REQ-GATEWAY-014`, `REQ-GATEWAY-015` and `IF-VEH-001`/`IF-VEH-003` qualification; the profile decision itself is closed | Vehicle Gateway + Vehicle Simulation | Accepted [`D4-002`](../d4-decision-register.md#d4-002), followed by implementation and live qualification |
+Reviewed 24 September 2026 against demo-v1.1 / Factory .39. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
+
+| Boundary / gate | Current status and remaining obligation |
+| --- | --- |
+| Implemented source/trust | Strict role mTLS, selected-Unit gate, source identity/freshness, read-only engineering peer and purpose-bound FOTA safety projection exist. |
+| Implemented advisory/control | Typed Brake/Tire request/status, lease/sequence checks, native mode/context projection, same-actor handover, scripted maneuvers and Return to road exist. Return ends stationary Manual without automatic Autopilot. |
+| Remaining scope | Complete hardware/actuator profile accounting and the original exhaustive context/dual-role negative matrix are broader than current positive Test receipts. |
+| Recovery and freshness | Advisory readiness transitions and host sleep/wake remain separate work; no global 250 ms budget or automatic fail-open recovery is implied. |
 
 ## Change Rules
 
@@ -570,7 +569,7 @@ evidence is retained.
   tests together.
 - Changing control authority, VISS data direction, advisory trust or actuator
   scope follows the Level-C architecture cascade.
-- Current all-Set rejection remains the safe baseline until the typed advisory
-  contract and its negative tests are accepted.
+- VISS remains deny-by-default: only the two accepted typed advisory targets
+  are writable under their role/identity/freshness gates; arbitrary Set stays rejected.
 - Implementation test names may change, but accepted `UT-GATEWAY-*`
   obligations and their requirement mappings remain stable until retired.

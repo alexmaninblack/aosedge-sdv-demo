@@ -20,6 +20,24 @@
 - Accepted D4 publication decision: [D4-010.3 Artifact Publication Credential Profile](../../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
 - Accepted D4 Cloud authority decision: [D4-011 Cloud Role and Action Matrix](../d4-decision-register.md#d4-011)
 
+## Implementation-status reading rule — 24 September 2026
+
+Implementation-status annotations retained from the original D3 review are historical allocation notes, not current deployment claims. The current baseline section and the gates below supersede those annotations; requirements and stable test obligations are unchanged.
+
+## Current Implementation Baseline
+
+Updated 24 September 2026 for **demo-v1.1 / Factory .39**.
+See [current architecture/traceability](../../architecture/current-implementation.md),
+[protocol status](../../../contracts/implementation-status.md) and
+[qualification limits](../../qualification/current-baseline.md).
+These are implementation/proof states, not changes to stable requirement IDs
+or blanket acceptance of every requirement in this package.
+
+| Boundary | Current state |
+| --- | --- |
+| Native security and independent authorities | Aos identity/quota enforcement, selected-Unit transport, role-bound signing, private KAC sessions, Enforcing policy and separate backend/service stores are implemented. Source/receipt/Cloud times and uncertainty are not collapsed. |
+| Evidence and remaining obligations | Scoped security, identity, renewal and peer-preserving tests exist; full tenant CPU-load isolation and all negative/clock/failure cases remain open. |
+
 ## Purpose
 
 This package defines the security and operational invariants that must remain
@@ -478,18 +496,14 @@ repositories and are composed by the cross-package contract/integration gate.
 
 ## Open D4 Gates
 
-| Gate | Impact | Owner |
-| --- | --- | --- |
-| Implement and qualify the accepted D4-027.1–.6 fixed-resource IAM lookup, non-widening permission mapping, private JWT delivery/timing and D4-010.1 per-Unit signer/verifier lifecycle | `REQ-CROSS-001`, `REQ-CROSS-002` | Platform Team + Aos IAM/security owner |
-| Implement and qualify the complete accepted D4-027.7/.8 trustworthy-time, retry, rate, queue, process-resource and redaction envelope | `REQ-CROSS-001`, `REQ-CROSS-002` | Platform Team + Aos security owner |
-| Exact trusted Provider connection/configuration qualification | `REQ-CROSS-010`; dynamic Provider IAM/JWT is not a first-demo gate | Platform Team |
-| Exact common publication-helper request/result transport and AosCloud reconciliation lookup | `REQ-CROSS-011`; D4-010.3 profile/custody/state semantics are accepted | Demo Solution + Platform/Function Team release owners + AosCloud integration |
-| Typed Brake/Tire targets, values, correlation, freshness, rate and replay bounds | `REQ-CROSS-004` | Gateway + Platform + Function Teams |
-| Native log API roles, retention, deletion, offline and redaction behavior | `REQ-CROSS-005` | AosCloud integration + emitting owners |
-| Implement and live-qualify the complete design-reviewed D4-024 correlation, chronology, sanitized projection, ordering/anomaly and qualification contract | `REQ-CROSS-006`, `007` | Demo Solution + Gateway + Function Teams |
-| Atomic PU external-connectivity control, dual-path fault mechanism, excluded-path probes, functional-message synchronization and same-Unit reconnect contract | `REQ-CROSS-008` | Demo Solution + AosCloud and both Function Team integrations |
-| Implement and live-qualify design-reviewed D4-023, including profile characterization/freeze, two independent VU passes, fault matrix, one PU rehearsal and sanitized retained dossier | `REQ-CROSS-009` | AosCore integration + both Function Teams + Demo Solution |
-| Versioned shared fixture catalogue and conformance harness layout | All contract proofs | System Architecture + repository owners |
+Reviewed 24 September 2026 against demo-v1.1 / Factory .39. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
+
+| Boundary / gate | Current status and remaining obligation |
+| --- | --- |
+| Implemented security boundary | KAC/private native input projection, strict selected-peer trust, typed advisory allowlists and session-scoped signing are implemented. No Cloud or simulator oracle is needed for local analytics. |
+| Implemented connectivity proof | Factory39 Test externalOFF stopped backend receipts while local products/advisories continued; exact derived messages replayed. This is a scoped Test receipt, not the original complete PU/dual-role matrix. |
+| Remaining qualification | Complete native log permissions/retention, shared chronology anomaly matrix, resource/fault isolation, independent qualification runs and sanitized full acceptance dossier remain open. |
+| Known limits | CPU qualification endpoint/worker is not implemented; source-bound contract drift, short readiness transitions, cold externalOFF ignition and nonempty-outbox power loss remain explicit audit items. |
 
 ## Package Acceptance and Version 0.4 Delta
 

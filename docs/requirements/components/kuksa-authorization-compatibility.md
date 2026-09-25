@@ -16,6 +16,24 @@
 - Accepted authority: [ADR 0013](../../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md)
 - Implementation, build, signing, Cloud, or Unit mutation authorized: no
 
+## Implementation-status reading rule — 24 September 2026
+
+Implementation-status annotations retained from the original D3 review are historical allocation notes, not current deployment claims. The current baseline section and the gates below supersede those annotations; requirements and stable test obligations are unchanged.
+
+## Current Implementation Baseline
+
+Updated 24 September 2026 for **demo-v1.1 / Factory .39**.
+See [current architecture/traceability](../../architecture/current-implementation.md),
+[protocol status](../../../contracts/implementation-status.md) and
+[qualification limits](../../qualification/current-baseline.md).
+These are implementation/proof states, not changes to stable requirement IDs
+or blanket acceptance of every requirement in this package.
+
+| Boundary | Current state |
+| --- | --- |
+| Factory-installed removable compatibility helper | The platform KAC helper implements fixed-resource Unix exchange, native IAM permission lookup, protected Unit signer/public verifier, private service token sessions and local renewal. No service-selected claims or external Cloud renewal dependency. |
+| Evidence and remaining obligations | Real local subscriptions/renewal and .39 OFF/ON passed. Cold externalOFF authorization is not qualified; native replacement and production HSM/security claims remain outside current proof. |
+
 ## Native service input amendment — 2026-09-11
 
 [ADR 0015](../../architecture/decisions/0015-use-native-aos-service-runtime-inputs.md)
@@ -480,21 +498,14 @@ integration and end-to-end obligations.
 
 ## Open D4 Gates
 
-[`D4-027.1`](../d4-decision-register.md#d4-027-1) closes process ownership,
-package layout and top-level startup ordering. [`D4-027.2`](../d4-decision-register.md#d4-027-2)
-closes local Unix-socket placement, named-resource isolation, Service-private
-tmpfs delivery and bootstrap secret separation. [`D4-027.3`](../d4-decision-register.md#d4-027-3)
-closes request/response/rejection/readiness schemas and fixed error semantics.
-D4-027.4 through D4-027.8 close permission translation, JWT timing,
-signer/verifier preparation, trustworthy time and all operational bounds. No
-D4-027 subdecision remains. Source implementation, image build or Unit
-mutation still requires the active change plan and remaining cross-package D4
-gates.
+Reviewed 24 September 2026 against demo-v1.1 / Factory .39. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
 
-Provider dynamic authorization is not an open D4 gate for the first demo. The
-VDP remains an OEM-qualified trusted platform component, Service credentials
-cannot grant provider authority, and malicious/substituted-Provider containment
-is outside the accepted claim.
+| Boundary / gate | Current status and remaining obligation |
+| --- | --- |
+| Design and implementation | All accepted D4-027 decisions have source/Factory implementations: fixed-resource IAM lookup, strict wire validation, per-Unit trust, private service tokens and bounded renewal. It is not an unbuilt future package. |
+| Current proof | Real native permissions and local renewal work in the .39 chain, including externalOFF. This is not blanket proof of every malformed permission, clock, overload or identity-rotation case. |
+| Remaining qualification | Complete the negative/time/overload/resource and full repeatability matrices. Native permission-key 256-character build bound is distinct from the larger protocol path bound; do not claim every syntactically valid path is supported. |
+| Provider scope | Provider authority stays in the separate trusted OEM one-shot/systemd credential path. Dynamic Provider IAM and malicious-Provider containment remain outside the accepted first-demo claim. |
 
 ## Review Record for Version 0.12
 

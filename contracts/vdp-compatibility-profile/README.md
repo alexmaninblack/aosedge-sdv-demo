@@ -3,6 +3,12 @@
 
 # VDP Compatibility Profile
 
+Current implementation status (24 September 2026, demo-v1.1 / Factory .39):
+see the [complete protocol map](../implementation-status.md) for this family's
+implemented path, accepted amendments and remaining qualification or executable-
+profile differences. Design lifecycle labels below are not deployment verdicts.
+Historical golden schemas/digests are not rewritten as part of this audit.
+
 This directory is the canonical cross-component contract for
 [`D4-007`](../../docs/requirements/d4-decision-register.md#d4-007). It freezes
 the additive Vehicle Data Platform Component v1-v3 graph, service compatibility

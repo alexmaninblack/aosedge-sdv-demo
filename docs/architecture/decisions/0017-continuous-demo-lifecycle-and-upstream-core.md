@@ -22,6 +22,23 @@ CM patch. Removing a demonstration action does not fix the storage defect.
 
 ## Decision
 
+### Accepted controller ignition recovery — 24 September 2026
+
+The operator authorized automatic restoration of the existing provisioned
+connection after controller ignition off/on, retaining Unit/Node/certificates
+and service state, stationary and without Autopilot. The authorized native
+storage/cold-component corrections and Presenter-owned guarded recovery are
+implemented in the v1.1 source / Factory39. See the
+[ignition receipt](../../qualification/factory-39-ignition-2026-09-24.md).
+This supersedes original item 3's blanket fresh-controller-only instruction
+for this qualified controller recovery, not the removal of Studio Park/Resume.
+
+Recovery requires the same identities, a new boot, external network ON and
+no conflicting/uncertain operation; it does not override explicit blocking,
+reprovision or blindly retry. Cold externalOFF and nonempty-outbox power loss
+remain unqualified. Laptop sleep/wake recovery remains the separate planned
+item below. Historical failure descriptions are not current .39 behavior.
+
 ### Planned host sleep/wake tolerance — 21 September 2026
 
 The operator accepted the separate [native sleep/wake recovery plan](../../planning/active/native-sleep-wake-recovery-2026-09-21.md).
@@ -80,9 +97,10 @@ P7/P8 qualify a **continuous clean demonstration**:
   analytics, stopped backend ingress and exact queued delivery after reconnect.
 - Finish/deprovision/delete the owned Test and return to empty Create state.
 
-CM/VM restart retention remains **known failing upstream**, outside this
-mandatory operator flow; it is not marked passed or removed as a platform
-storage requirement. Page reload, Presenter/backend recovery, service updates
+At the original 19 September decision, CM/VM restart retention was **known
+failing upstream**. The later authorized storage/cold-start corrections and
+24 September scoped .39 proof supersede that current-state claim; the full
+retention/failure matrix is not marked passed or removed as a requirement. Page reload, Presenter/backend recovery, service updates
 and negative/partial-result handling remain applicable tests.
 
 Periodic old-version cleanup can also execute during uninterrupted operation.

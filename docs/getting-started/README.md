@@ -19,9 +19,10 @@ for this path.
 ## I Want to Reproduce the Demonstration
 
 Start with the [reproduction guide and readiness matrix](reproduce-demo.md).
-It separates the already repeatable engineering demonstration from the full
-staged SDV story that is still under design and implementation. This prevents
-a newcomer from interpreting a target architecture as a finished launcher.
+It separates implemented, scoped live-proven behavior from full qualification.
+Follow the [current workflow](../operations/current-demo-workflow.md) and
+[implemented architecture](../architecture/current-implementation.md), which
+connect requirements, protocols, source and evidence.
 
 ## I Want to Understand the System
 

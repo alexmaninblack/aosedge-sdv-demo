@@ -3,6 +3,12 @@
 
 # Native service runtime inputs
 
+Current implementation status (24 September 2026, demo-v1.1 / Factory .39):
+see the [complete protocol map](../implementation-status.md) for this family's
+implemented path, accepted amendments and remaining qualification or executable-
+profile differences. Design lifecycle labels below are not deployment verdicts.
+Historical golden schemas/digests are not rewritten as part of this audit.
+
 Status: accepted input contract under
 [ADR 0015](../../docs/architecture/decisions/0015-use-native-aos-service-runtime-inputs.md);
 implementation and live qualification are separate.

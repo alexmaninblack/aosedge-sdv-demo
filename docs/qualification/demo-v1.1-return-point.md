@@ -6,9 +6,11 @@
 Prepared24 September2026 for **AosEdge Platform - SDV Lab**, at the operator's
 request to commit and publish the current demo and mark version1.1.
 The annotated integration tag is **`demo-v1.1`**, following `demo-v1.0` naming.
-The tag creation gate is verified remote dependency revisions and a successful
-hosted Repository boundaries run on the integration commit. Verify the remote
-tag and hosted result before treating publication as complete.
+Publication was reconciled on 24 September 2026: annotated tag object
+`c7207e8fb061c753e66088663f251b8482274f0d` peels to integration commit
+`862d48b158e0f0980f80bb40eb0837453e21788e`; local and remote agreed.
+Hosted Repository boundaries run `36047149195` passed on that exact commit.
+Subsequent documentation corrections do not move this tag or rebuild its image.
 
 ## Frozen composition
 
@@ -76,8 +78,8 @@ Presenter unit invocation could not write its temporary Vite config in the
 sandbox and ran no tests; the properly authorized rerun passed without changes.
 Checkpoint hash, all eight local/remote dependency pins and Factory provenance
 were independently reconciled. Platform hosted run `36046615364` passed on its
-exact published revision. Tagging additionally requires hosted
-integration CI on the exact final commit.
+exact published revision. Hosted integration run `36047149195` subsequently
+passed on `862d48b158e0f0980f80bb40eb0837453e21788e`, closing that publication gate.
 The hosted job covers integration/Platform/Brake/Gateway source boundaries;
 it does not run native CARLA, the real VM, all UI/browser cases or the full
 Tire/backend suites. No new live E2E, package build or VM restart is implied.

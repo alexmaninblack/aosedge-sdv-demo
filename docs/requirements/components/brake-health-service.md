@@ -3,7 +3,7 @@
 
 # Brake Health In-Vehicle Service Component Requirements
 
-- Status: D4 exact v2 contract complete; ready for implementation review
+- Status: Design accepted; V1/V2/V3 implemented with scoped live evidence; full acceptance open
 - Package: [`CR-BHS`](../component-decomposition-and-interface-register.md#cr-bhs)
 - Version: 0.10
 - Prepared: 2026-08-29
@@ -20,7 +20,11 @@
 - Accepted D4 advisory input: [D4-008 Typed QM Advisory Profile](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - Accepted D4 v1 contract: [D4-016.1/.2 decision](../d4-decision-register.md#d4-016) and [executable Brake Telemetry Window Contract](../../../contracts/brake-telemetry-window/README.md)
 - Accepted D4 exact contracts: [v2 synthetic model](../../../contracts/brake-health-model/README.md), [v3 advisory policy](../../../contracts/brake-health-advisory-policy/README.md), [runtime/evidence profile](../../../contracts/brake-health-runtime/README.md) and [Brake Cloud API](../../../contracts/brake-cloud-api/README.md)
-- Implementation baseline: `brake-health-service@04abe5b`
+- Implementation baseline: demo-v1.1 dependency pin; earlier `04abe5b` scaffold is historical
+
+## Implementation-status reading rule — 24 September 2026
+
+Implementation-status annotations retained from the original D3 review are historical allocation notes, not current deployment claims. The current baseline section and the gates below supersede those annotations; requirements and stable test obligations are unchanged.
 
 ## Native service input amendment — 2026-09-11
 
@@ -105,24 +109,17 @@ rollout affecting OEM Units.
 
 ## Current Implementation Baseline
 
-| Capability | Current evidence | State for this package |
-| --- | --- | --- |
-| Repository and ownership boundary | [`architecture`](../../../../brake-health-service/docs/architecture.md) and boundary tests reject CARLA/VISS/provider coupling | `CURRENT` scaffold boundary |
-| ARM64 Aos packaging | Schema-v2 service metadata, unsigned staging builder and credential-negative tests | `CURRENT` scaffold; signing/deployment unqualified |
-| Compatibility declaration | `>=0.1.0,<0.2.0`, `kuksa.val.v1`, ARM64 and read-only resource intent | `CURRENT` draft metadata; runtime enforcement absent |
-| Resource declaration | 250 DMIPS CPU, 16 MiB RAM, 8 MiB storage, 1 MiB state, 8 MiB tmp, 64 files and 16 processes | D4-023.2 requested envelope accepted; live OCI/cgroup mapping and headroom evidence absent |
-| Executable behavior | Prints one English diagnostic line and exits | `CURRENT`; no product behavior |
-| KUKSA credential and subscription client | Architecture boundary documented; no implementation | `NEW` |
-| v1 event-window recorder and backend transport | Acquisition, logical chunk/completion, local spool and D4-017 transport/durable-ack contracts accepted; no implementation; production backend authentication remains out of scope | `NEW` |
-| v2 synthetic model, local assessment and derived output | No model, input/output contract or implementation | `NEW` |
-| v3 advisory request | Current scaffold intentionally requests read-only `kuksa`; no target or write permission | `NEW`; contract accepted, implementation and real platform/Gateway qualification open |
-| Unit tests and quality gate | Four scaffold/boundary tests and repository quality gate pass | `CURRENT` foundation; product obligations below are not implemented |
+Updated 24 September 2026 for **demo-v1.1 / Factory .39**.
+See [current architecture/traceability](../../architecture/current-implementation.md),
+[protocol status](../../../contracts/implementation-status.md) and
+[qualification limits](../../qualification/current-baseline.md).
+These are implementation/proof states, not changes to stable requirement IDs
+or blanket acceptance of every requirement in this package.
 
-The source packaging guide still reflects an obsolete caller-selected
-permission request and separate-policy model. Before implementation acceptance,
-it must use the fixed-resource `CMP-KAC` bootstrap: the Service supplies no
-paths, operations, subject, audience, TTL or claims, and the helper derives the
-JWT only from the current Aos IAM result.
+| Boundary | Current state |
+| --- | --- |
+| Functional V1/V2/V3 implementation | Real authenticated KUKSA runtime: V1 finite six-signal windows, V2 twelve-signal model, V3 retained-model advisory. Private bootstrap sessions, persistent products/outboxes, observation v3 and independent Reset are implemented. Ordinary packages request 1024 files and 24 PIDs. |
+| Evidence and remaining obligations | Real .39 V3 products, ignition retention and offline delivery passed; full .39 version progression, calibration and all crash/quota cases remain separate. |
 
 ## Testability Boundary
 
@@ -545,26 +542,16 @@ implementation still requires an exact work packet.
 
 ## Open Issues
 
-The D4-016.3/.4/.5 and D4-017 machine-readable packages linked above replace
-the former undefined-design gaps and are accepted. Live D4-003 calibration,
-CARLA separation,
-Aos quota, KUKSA/Gateway and backend-route qualification remain genuine
-implementation gates after design acceptance.
+Reviewed 24 September 2026 against demo-v1.1 / Factory .39. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
 
-| Issue | Impact | Owner | Decision gate |
-| --- | --- | --- | --- |
-| D4-016.1/.2 v1 acquisition, logical-message and local-spool implementation/qualification | Design is accepted; executable behavior and shared-fixture conformance remain to be built | Function Team 1 + Platform Team | D4 implementation and qualification |
-| Implement accepted D4-017 local backend transport, ordered reconstruction/resume and acknowledgement | Executable conformance and live route qualification block `REQ-BHS-005`/`009` implementation acceptance; production backend authentication is Function Team 1-owned and out of scope | Function Team 1 Cloud | D4-017 implementation plus D4-020 qualification |
-| Exact Aos metadata representation of KUKSA paths/modes; current SDK read-mode enum/default inconsistency | Blocks least-privilege packaging proof | AosEdge Platform Team + Platform Team | D4 SDK/metadata qualification |
-| Implement and qualify the complete accepted D4-027 named-resource/private-socket/tmpfs, strict-wire, JWT mapping, 300/180-second timing, per-Unit signer/verifier, trustworthy-time, retry and resource/failure boundary | Blocks `REQ-BHS-013` acceptance, but no D4-027 design question remains | Platform Team + Function Team 1 | D4-027 implementation and qualification |
-| Native Service-to-FOTA dependency admission unavailable in current release | Pre-transfer rejection remains deferred; service readiness still required | AosEdge Platform Team | Official release qualification |
-| Implement and qualify the accepted D4-016.3 exact model contract | Design is accepted; D4-003 calibration/conformance and executable tests still block `REQ-BHS-006`/`007` implementation acceptance | Function Team 1 + Platform Team | [`D4-016`](../d4-decision-register.md#d4-016), coordinated with D4-003 calibration |
-| Implement and qualify the accepted D4-016.4 model-to-advisory activation, lease, refresh and Gateway-status contract | Design is accepted; real upgrade/restart/KUKSA/VDP/VISS/Gateway conformance still blocks complete `REQ-BHS-008` acceptance | Function Team 1 + Platform + Gateway | [`D4-016`](../d4-decision-register.md#d4-016) |
-| Implement matching factual Gateway Status consumption and correlated backend advisory fact | D4-016.4 design is accepted; Engineering Telematics Dashboard remains the audience-visible Gateway authority | Function Team 1 + Gateway | D4-016.4 implementation and real Gateway conformance |
-| Per-version v2/v3 queue/state, D4-017 backend acknowledgement and transport retry/backoff | D4-016.3/.5 and D4-017 behavior is accepted; live restart/backend conformance still blocks `REQ-BHS-009`/`010` | Function Team 1 | Implementation and qualification |
-| Qualify accepted readiness schema and measured CPU/RAM/storage/state budgets | D4-016.5 design is accepted; live D4-023 evidence still blocks `REQ-BHS-011` implementation acceptance | Function Team 1 + Aos integration | D4-023 resource qualification |
-| Implement and qualify accepted structured log schema, redaction and chronology fields | D4-016.5 design is accepted; executable/native-log proof still blocks `REQ-BHS-012` implementation acceptance | Function Team 1 + Demo experience | D4 implementation and observability qualification |
-| Packaging guide still describes caller-selected paths and a separate FOTA-managed OEM policy | Conflicts with ADR 0013 and could mislead implementation | Function Team 1 | Correct before D4 implementation starts |
+| Boundary / gate | Current status and remaining obligation |
+| --- | --- |
+| Implemented product chain | V1 acquisition/window/spool, V2 synthetic model, V3 typed advisory/Gateway facts, IAM/KAC bootstrap and durable backend delivery are built and have scoped live evidence. |
+| Current .39 proof | Brake92/V3 retained model/storage identity across ignition and continued local work during externalOFF; exact derived-message replay was checked. This is not all-version acceptance. |
+| Remaining model/resource gates | Frozen Brake 20/20 calibration, full quota/failure-isolation, corrupt-state/crash, uninstall/recovery and log-API matrices remain separate. |
+| Readiness and source quality | Short advisory readiness transitions remain observable; missing inputs do not prove VDP version incompatibility. Presenter owns exact installed-profile reporting. |
+| Persistence fault scope | Empty-outbox ignition does not prove queued-message power-loss recovery. Retained native storage patch has scoped proof, not every migration/failure case. |
+| Native dependency admission | Cloud Service-to-FOTA pre-transfer admission remains deferred. Sequencing, current-input validation and explicit OEM approval are still required. |
 
 ## Change Rules
 

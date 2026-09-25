@@ -1,23 +1,23 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-## Pending Studio Test contract migration — 2026-09-09
+## Studio Test contract migration — implemented state, 24 September 2026
 
-The current [UI-STUDIO-026 target](../../docs/demo/mockups/aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract)
-requires one current Test UID without a hidden Production vehicle. The JSON
-profile in this package still specifies the earlier two-role context/cleanup
-contract. It is **not yet compatible with the Test-only Studio flow**.
-Studio P1 must migrate context validation and cleanup selectors with the backend
-handlers/tests: exactly the current Test alone or the retained dual-role flow;
-reject empty, duplicate, foreign and partial unrelated selectors. Keep the
-current UID binding until scoped cleanup completes, then clear it. Park retains
-the database; Retire deletes owned ordinary run records without an archive.
-This records the accepted target and remaining executable migration, not a
-silent schema update or proof of a working backend. Message formats, durable
-acknowledgement and authority boundaries below are unchanged.
-
+The backend supports one current Test and optional retained Production context;
+Test-only cleanup rejects unrelated selectors and preserves peer records.
+The old two-UID JSON profile/schema below has **not** been synchronized with
+this implementation. Its green legacy fixtures do not prove current wire
+conformance. Use the [as-implemented administrative protocol](studio-current-wire.md)
+for exact requests, responses, counts and guards. No handler or frozen digest
+is changed by this documentation correction.
 
 # Tire Health Cloud API — Accepted Contract
+
+Current implementation status (24 September 2026, demo-v1.1 / Factory .39):
+see the [complete protocol map](../implementation-status.md) for this family's
+implemented path, accepted amendments and remaining qualification or executable-
+profile differences. Design lifecycle labels below are not deployment verdicts.
+Historical golden schemas/digests are not rewritten as part of this audit.
 
 - Decision: `D4-019`
 - Lifecycle state: `ACCEPTED`
@@ -27,7 +27,7 @@ acknowledgement and authority boundaries below are unchanged.
   plus Dashboard query/authority and exact current-run cleanup accepted
   2026-08-23
 
-This package defines the proposed functional transport and dashboard-data
+This package defines the accepted functional transport and dashboard-data
 boundary for Function Team 2. It is deliberately separate from Brake Health:
 its API namespace, database, volume, dashboard, publication profile and
 failure boundary are not shared.
@@ -54,8 +54,10 @@ Delivery Dashboard and AosCloud.
 
 The Service sends only bounded assessments, band-change events, advisory facts
 and `TIRE_FUNCTION_STATUS`. The latter is a Function Team-reported diagnostic
-fact—not AosCore lifecycle readiness—and can factually explain required/actual
-VDP and missing paths/capabilities. It is emitted at start/change and as a
+fact—not AosCore lifecycle readiness. In the current implementation, exact
+installed VDP profile/compatibility comes from Presenter Cloud/artifact binding;
+services report real local input observations, not a profile inferred from
+missing values. Closed v3 function observations now coexist with legacy status. It is emitted at start/change and as a
 bounded heartbeat no more often than every 30 seconds. Continuous raw telemetry
 and hidden CARLA qualification truth are prohibited. The backend acknowledges
 only durable transactional storage; a matching acknowledgement is required
@@ -83,11 +85,14 @@ Backend health endpoints describe only this process/database. AosCloud/AosCore
 remain authoritative for Unit and Service lifecycle/readiness in the Software
 Delivery Dashboard. `TIRE_FUNCTION_STATUS` is labelled Function Team-reported;
 after 90 seconds without heartbeat it becomes `FUNCTION_STATUS_STALE` while
-retaining the last reason and making no process-state inference. An
-`INCOMPATIBLE_VDP` view factually shows required/actual VDP and missing contract
-facts with a non-mutating Platform Team handoff.
+retaining the last reason and making no process-state inference. An exact
+`INCOMPATIBLE_VDP` view requires Cloud/profile evidence in Presenter; missing
+local input alone cannot establish that verdict.
 
-D4-023.3 adds one deliberately narrow, demo-only Tire CPU-isolation control.
+D4-023.3 designs one deliberately narrow, demo-only Tire CPU-isolation control.
+**It is not implemented:** the endpoint returns `501 NOT_IMPLEMENTED`, and no
+worker is enabled. The following describes the retained design, not a usable
+action or observed enforcement proof.
 The Dashboard sends only `START_FIXED_CPU_LOAD` or `STOP_FIXED_CPU_LOAD` to its
 Mac-local backend. The Tire Service obtains the command over its existing
 service-initiated outbound route; the backend binds current `system_uid`, Tire
@@ -99,8 +104,10 @@ resume. The action is disabled when the selected vehicle is externally
 offline. Reported control state never proves AosCore quota enforcement.
 
 The backend retains current-demo functional state, not a historical run
-archive. Exact current Validation and Production `system_uid` values scope
-the reset preview and execution. AosCloud lifecycle and audit records are
+archive. The implemented cleanup uses current Test alone or all bound context
+UIDs, preserving nonselected records. See the [current wire](studio-current-wire.md).
+The two-UID description below records the legacy executable profile, whose
+schema/fixtures still require controlled synchronization. AosCloud lifecycle and audit records are
 outside this product and remain untouched.
 
 Only the local Demo Orchestrator can preview/execute cleanup. It obtains the
@@ -122,7 +129,8 @@ Files:
   [`tire-advisory-fact.schema.json`](tire-advisory-fact.schema.json),
   [`tire-function-status.schema.json`](tire-function-status.schema.json) and
   [`cleanup-preview.schema.json`](cleanup-preview.schema.json) — closed wire
-  message/response schemas;
+  message/response schemas; the cleanup preview schema is legacy and does not
+  validate the current one-Test/ten-counter response;
 - [`fixtures/tire-cloud-ack.valid.json`](fixtures/tire-cloud-ack.valid.json) and
   [`fixtures/tire-advisory-fact.valid.json`](fixtures/tire-advisory-fact.valid.json),
   [`fixtures/tire-function-status.valid.json`](fixtures/tire-function-status.valid.json)
@@ -139,7 +147,8 @@ defines revision 2 / 2.0.0 beside the retained legacy schemas in this package.
 Use the immutable package release and native service/Subject/instance identity;
 do not require service/model OCI digest fields or relabel old queued records.
 Payload algorithms, model/VDP hashes, receipt keys and authorization remain
-unchanged. Backend consumer source is implemented; producer/input migration
-and real Test integration are still open. Earlier sections and v1 schema
+unchanged. Producer/input migration and backend consumers are implemented and
+have scoped live Test evidence. Full current-image qualification remains
+separate; see the protocol map above. Earlier sections and v1 schema
 files remain legacy evidence, not an instruction to reintroduce the digest
 dependency into new messages. Administrative/cleanup protocols are unaffected.

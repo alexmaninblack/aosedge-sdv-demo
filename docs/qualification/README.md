@@ -3,6 +3,14 @@
 
 # Qualification Documentation
 
+- [Current .39 baseline and limits](current-baseline.md).
+- [Demo version 1.1 return point](demo-v1.1-return-point.md): published source checkpoint, not full E2E promotion.
+- [Documentation/implementation audit](documentation-implementation-audit-2026-09-24.md): requirements, architecture, implementation, all contract families, operator flow and unresolved contract/qualification gaps.
+- [Factory39 build](factory-39-build-2026-09-24.md), [ignition](factory-39-ignition-2026-09-24.md), [offline](factory-39-offline-2026-09-24.md) and [cleanup](factory-39-cleanup-2026-09-24.md): separate dated scopes.
+
+The following earlier receipts are historical evidence, not a current image or
+Unit inventory. An old report's “current” or “next” refers to that report's date.
+
 - [Demo version 1.0 return point](demo-v1.0-return-point.md): exact dependency revisions, Factory provenance, restore procedure and qualification limits.
 - [Completed v1.0 publication and cleanup](demo-v1.0-publication-cleanup-2026-09-23.md): verified remote tag/CI, exact removal scope, preserved runtime and private worktree recovery.
 
@@ -13,7 +21,7 @@
 This directory records accepted baselines, exact component locks,
 qualification procedures, and sanitized defect evidence.
 
-- [Current working .36 baseline and acceptance limits](current-baseline.md)
+- [Current baseline and historical .36 acceptance limits](current-baseline.md)
 - [Assisted real UI repeat — 15 September](ui-hour-repeat-2026-09-15.md)
   — VDP and service transitions, network recovery and complete Test retirement;
   the operator ended further timeout observation after deletion succeeded.

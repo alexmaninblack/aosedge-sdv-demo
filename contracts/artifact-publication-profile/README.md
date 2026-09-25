@@ -3,6 +3,12 @@
 
 # Artifact Publication Credential Profile
 
+Current implementation status (24 September 2026, demo-v1.1 / Factory .39):
+see the [complete protocol map](../implementation-status.md) for this family's
+implemented path, accepted amendments and remaining qualification or executable-
+profile differences. Design lifecycle labels below are not deployment verdicts.
+Historical golden schemas/digests are not rewritten as part of this audit.
+
 - Decision: [`D4-010.3`](../../docs/requirements/d4-decision-register.md#d4-010)
 - Contract version: 1.0.0
 - Accepted contract SHA-256: `52bafd7b1249ec8bc10265e913265cdc7c2975f5f56db7ff3cd5cdbad4001c39`

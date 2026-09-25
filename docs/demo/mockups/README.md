@@ -26,6 +26,22 @@
 - Standalone build helper:
   [`scripts/build-demo-interaction-mockup`](../../../scripts/build-demo-interaction-mockup)
 
+## Implemented amendments after the 2.10 mockup — 24 September 2026
+
+The retained mockup is not the live implementation source of truth.
+demo-v1.1 includes card-level **Reset Driver Advisory**, live backend detail
+popups and charts, one scoped Disk view, controller/per-service CPU and RAM
+history, byte/DMIPS formatting and separate Cloud/backend/native freshness.
+Studio Park/Resume remains retired. Factory39 adds guarded same-identity
+controller ignition recovery, stationary without Autopilot; laptop sleep/wake
+is still planned.
+
+See [current workflow](../../operations/current-demo-workflow.md),
+[implementation/authority mapping](../../architecture/current-implementation.md)
+and [protocol status](../../../contracts/implementation-status.md). Earlier
+mockup switches or simulated success are not live capabilities or evidence.
+No HTML mockup is changed by this documentation audit.
+
 ## Current complete review mockup — 2.10
 
 **19 September accepted difference:** [ADR 0017](../../architecture/decisions/0017-continuous-demo-lifecycle-and-upstream-core.md)

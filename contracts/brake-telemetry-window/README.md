@@ -3,6 +3,12 @@
 
 # Brake Telemetry Window Contract
 
+Current implementation status (24 September 2026, demo-v1.1 / Factory .39):
+see the [complete protocol map](../implementation-status.md) for this family's
+implemented path, accepted amendments and remaining qualification or executable-
+profile differences. Design lifecycle labels below are not deployment verdicts.
+Historical golden schemas/digests are not rewritten as part of this audit.
+
 ## Authorized source-cadence amendment — 18 September 2026
 
 The accepted versioned-service work packet supersedes the historical 30-Hz /
@@ -92,7 +98,8 @@ defines revision 2 / 2.0.0 beside the retained legacy schemas in this package.
 Use the immutable package release and native service/Subject/instance identity;
 do not require service/model OCI digest fields or relabel old queued records.
 Payload algorithms, model/VDP hashes, receipt keys and authorization remain
-unchanged. Backend consumer source is implemented; producer/input migration
-and real Test integration are still open. Earlier sections and v1 schema
+unchanged. Producer/input migration and backend consumers are implemented and
+have scoped live Test evidence. Full current-image qualification remains
+separate; see the protocol map above. Earlier sections and v1 schema
 files remain legacy evidence, not an instruction to reintroduce the digest
 dependency into new messages. Administrative/cleanup protocols are unaffected.

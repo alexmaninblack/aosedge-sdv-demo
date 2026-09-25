@@ -5,14 +5,15 @@
 
 ## Current scope — 13 September 2026
 
-The locks described below are historical accepted AOS-2/R6.1 source records,
-not a complete fresh-checkout lock for the published Studio source checkpoint or
-Factory .33. Current image/source pins are in the
-[working baseline](current-baseline.md) and
-[published source checkpoint](factory-33-source-checkpoint-2026-09-13.md#published-return-point).
-Reconciling machine-readable workspace and component locks with the reviewed
-source checkpoint is OPEN-05; this documentation edit does not change accepted
-revision guards or claim they pass against the new main-branch checkpoint.
+Historical heading retained for links. Current audit: 24 September 2026.
+
+The AOS-2/R6.1 locks below are immutable historical inputs, not effective
+Factory39 core overrides. Current source is pinned by
+[workspace/repositories.json](../../workspace/repositories.json) and hosted CI.
+The [v1.1 checkpoint](../../workspace/checkpoints/demo-v1.1.json) and
+[return point](demo-v1.1-return-point.md) record Factory39 provenance.
+Reconciliation is complete for that published checkpoint. Do not rewrite old
+release digests to manufacture agreement with newer source.
 
 ## Purpose
 
@@ -20,7 +21,7 @@ revision guards or claim they pass against the new main-branch checkpoint.
 artifact inputs without Git submodules. It is public, non-secret, and contains
 no developer checkout path. The later R6.1 Yocto/runtime source baseline is
 separately pinned by `components/r6-1-source.lock.json`. These older candidates
-must not be confused with the current .33 manufacturing input.
+must not be confused with the current .39 manufacturing input.
 
 The initial candidate pins:
 

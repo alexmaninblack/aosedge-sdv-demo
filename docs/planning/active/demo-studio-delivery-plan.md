@@ -3,6 +3,22 @@
 
 # Demo Studio: staged delivery plan
 
+## Current work — 24 September, v1.1 documentation alignment
+
+The current scope is **demo-v1.1 / Factory .39**. See the
+[implemented architecture](../../architecture/current-implementation.md),
+[protocol map](../../../contracts/implementation-status.md) and
+[audit](../../qualification/documentation-implementation-audit-2026-09-24.md).
+This requirements-to-source documentation audit changes neither live behavior
+nor the immutable release tag.
+
+Factory39 contains the accepted mainline/security/cold-recovery corrections.
+Focused ignition/offline checks passed with VDP117/V3, Brake92/V3 and Tire49/V1;
+a full fresh serial .39 E2E is still open. Superseded .36/.37/.38 binaries were
+removed; .39 and Production's dependent .31 remain. Source pins/pushes/tag v1.1
+are reconciled. Host sleep/wake remains planned. Earlier “current” statuses
+below are dated chronology, not current inventory or residual authorization.
+
 ## Current work — 23 September, source checkpoint and disk audit
 
 Approved scope: correct failing repository CI, reconcile current documentation

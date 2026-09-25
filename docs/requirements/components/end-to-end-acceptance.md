@@ -25,6 +25,24 @@
 - Accepted D4 qualification decision: [D4-026.1–.20 Qualification, Presentation, Update-State, Workspace and Icon/Terminal Policy](../d4-decision-register.md#d4-026)
 - Implementation, signing, Cloud, Unit, VM or CARLA mutation authorized: no
 
+## Implementation-status reading rule — 24 September 2026
+
+Implementation-status annotations retained from the original D3 review are historical allocation notes, not current deployment claims. The current baseline section and the gates below supersede those annotations; requirements and stable test obligations are unchanged.
+
+## Current Implementation Baseline
+
+Updated 24 September 2026 for **demo-v1.1 / Factory .39**.
+See [current architecture/traceability](../../architecture/current-implementation.md),
+[protocol status](../../../contracts/implementation-status.md) and
+[qualification limits](../../qualification/current-baseline.md).
+These are implementation/proof states, not changes to stable requirement IDs
+or blanket acceptance of every requirement in this package.
+
+| Boundary | Current state |
+| --- | --- |
+| Evidence composition and current acceptance boundary | Current source is demo-v1.1 and Factory39. Earlier all-version UI cycles and .39 build/smoke, ignition and five-minute offline receipts remain individually attributable. No full qualification verdict is inferred from the source tag. |
+| Evidence and remaining obligations | Fresh serial .39 V1→V2→V3 plus Tire/Finish, complete negative/recovery/calibration, nonempty-queue power loss, cold externalOFF and long soak remain unqualified. |
+
 ## Purpose
 
 This package defines how the complete accepted demonstration is judged as one
@@ -422,15 +440,15 @@ remain linkable historical records and are not active acceptance inputs.
 <a id="open-d4-gates"></a>
 ## Open Implementation and Qualification Gates
 
-| Gate | Impact | Owner |
-| --- | --- | --- |
-| Implement and qualify the complete design-reviewed D4-025 atomic-stage, assertion/evidence, Demo Baseline Qualification Dossier, exact parameterized map and verdict-composition framework | Every `AT-E2E-*` verdict | System Acceptance + Demo Solution |
-| Exact common-helper request/result transport and authoritative AosCloud publication-reconciliation lookup | Implements accepted D4-010.3 profile/custody/state semantics for `AT-E2E-003`; decision itself is closed | Demo Solution + Platform/Function Team release owners + AosCloud integration |
-| Update-state continuity: Platform VDP/KUKSA Safe-Stop readiness plus Brake/Tire QM Service in-motion readiness, unchanged actor/generation/control ownership where applicable and uninterrupted Gateway/VISS evidence | `REQ-E2E-003..008` and `E2E-D3` | Platform + Function Teams + Gateway + Demo Solution |
-| Live-qualify D4-015 on both disposable Units: bounded offline mechanism, post-`204` Unit state, retired-credential reconnect, exact `system_uid` set removal, Unit deletion, Unit-owned Node disappearance without a Node-delete call, authorization-masked `404` and uncertain-result reconciliation | `REQ-E2E-010`, `AT-E2E-010` and `REQ-DEMO-013` | AosCloud integration + Demo Solution |
-| D4 values still open in every accepted owner package | Blocks its dependent acceptance scenario | Respective package owner |
-| Exact destructive/negative-vector allocation that cannot revoke, replace or corrupt shared stable OEM/SP credentials | `AT-E2E-009..011` inside the accepted D4-026.2 identity boundary | AosCloud/OEM administration + Demo Solution |
-| Freeze the implementation-characterized VDP/KUKSA Safe-Stop readiness maximum and separate Brake/Tire in-motion Service readiness maxima before formal qualification | `AT-E2E-003..008`; no guessed performance claim | Platform/Function Teams + Gateway + Demo Solution |
+Reviewed 24 September 2026 against demo-v1.1 / Factory .39. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
+
+| Boundary / gate | Current status and remaining obligation |
+| --- | --- |
+| Available evidence | Source gates, earlier serial runs and .39 build/ignition/offline receipts exist. Each records exact source, releases, image and exclusions; none automatically passes every AT-E2E obligation. |
+| Current full-run gap | Execute a fresh strictly serial .39 VDP/Brake V1→V2→V3 and Tire V1 cycle, UI timing/status checks and confirmed Finish before claiming complete current-image E2E. |
+| Additional matrices | Complete applicable role/permission negatives, uncertain Cloud result reconciliation, retirement/old-credential checks, service recovery, nonempty-outbox power loss and cold externalOFF ignition separately. |
+| Calibration and performance | Freeze/verify model repeatability and measured readiness bounds before formal claims; observed reconnect timings are sampled bounds, not SLAs. |
+| Dossier and authority | Full parameterized acceptance/dossier and Production/dual-role scope remain broader obligations; do not manufacture a PASS from source tests or alter shared credentials to satisfy a negative test. |
 
 ## Version 0.8 Acceptance and Delta
 

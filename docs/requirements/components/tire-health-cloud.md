@@ -19,8 +19,12 @@
 - Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
 - Accepted D4 publication input: [D4-010.3 Artifact Publication Credential Profile](../../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
 - Accepted D4 product inputs: [Tire Health In-Vehicle Product Contract](../../../contracts/tire-health-model/README.md) and [Tire Cloud API](../../../contracts/tire-cloud-api/README.md); [Local Demo Hosting and VM Route](../../../contracts/local-demo-hosting/README.md) is design-reviewed and still requires implementation qualification
-- Implementation baseline: no `tire-health-cloud` repository or executable exists
+- Implementation baseline: `tire-health-cloud` at the demo-v1.1 dependency pin; real HTTP/SQLite backend
 - Implementation, repository creation, signing, Cloud, or Unit mutation authorized: no
+
+## Implementation-status reading rule — 24 September 2026
+
+Implementation-status annotations retained from the original D3 review are historical allocation notes, not current deployment claims. The current baseline section and the gates below supersede those annotations; requirements and stable test obligations are unchanged.
 
 ## Native service input amendment — 2026-09-11
 
@@ -68,7 +72,7 @@ and shall never be manually fabricated.
 | What this package does not own | In-vehicle estimation/advisory, CARLA/VISS/KUKSA/VDP, source building during the demo, signing-key custody in the browser/container, authoritative AosCloud log storage or Unit lifecycle state, OEM approval, Unit targeting, deployment, promotion, system/VDP or other-team logs, Engineering Telematics Dashboard or production HMI |
 | Intended result | The presenter publishes one mature Tire Health product and then shows real local condition results arriving independently from Brake Health on Validation and Production Units |
 | Accountable lifecycle owner | Function Team 2 publishes and accepts the exact Validation Unit result; independent OEM Release Authority authorizes Test deployment and Production rollout outside this package |
-| Primary repository | Planned public `tire-health-cloud`, containing the ARM64 backend/dashboard container and local deployment definition; creation is a later implementation action |
+| Primary repository | Public `tire-health-cloud`: backend container and deployment definition; audience views are integrated in Presenter, no live standalone Dashboard |
 
 ## Product Views and Authority
 
@@ -258,15 +262,17 @@ imply concurrent vehicle evidence.
 
 ## Current Implementation Baseline
 
-| Capability | Current evidence | State for this package |
-| --- | --- | --- |
-| Repository | Component Register plans `tire-health-cloud`; repository does not exist | `NEW` |
-| Backend and dashboard | No ingestion, persistence, API, catalogue or UI | `NEW` |
-| Service candidate | `CR-TIRE` defines target v1.0; no artifact or catalogue entry | `NEW` |
-| Signing/publication seam | `IF-LC-007` defines ownership; no helper integration | `NEW / QUALIFY` |
-| Local container runtime | Docker Desktop ARM64 capability was qualified for Brake Health Cloud design | `CURRENT` shared host dependency; Tire product image/volume/launcher `NEW` |
-| Multi-product isolation | Logical repository/component separation is accepted; no container/volume/port/helper proof | `NEW` |
-| Contract fixtures and tests | `IF-TIRE-003/004` are conceptual; no executable fixtures or suite | `NEW` |
+Updated 24 September 2026 for **demo-v1.1 / Factory .39**.
+See [current architecture/traceability](../../architecture/current-implementation.md),
+[protocol status](../../../contracts/implementation-status.md) and
+[qualification limits](../../qualification/current-baseline.md).
+These are implementation/proof states, not changes to stable requirement IDs
+or blanket acceptance of every requirement in this package.
+
+| Boundary | Current state |
+| --- | --- |
+| Independent backend implementation | tire-health-cloud owns its own HTTP/SQLite store, exact ACK, queries, SSE notification, v3 observations, Reset and Test-only/dual-context cleanup. The integrated Presenter owns audience cards/popups; no standalone live dashboard is implied. |
+| Evidence and remaining obligations | Current cleanup differs from the legacy two-UID JSON profile/schema; see the protocol status map. CPU qualification routes remain NOT_IMPLEMENTED; production authentication is out of scope. |
 
 ## Testability Boundary
 
@@ -576,23 +582,15 @@ keys, tokens, raw certificates, unrestricted telemetry or hidden truth.
 
 ## Open D4 Gates
 
-The accepted D4-018/D4-019 packages and design-reviewed D4-020 profile provide exact
-contracts for the in-vehicle logical products, Cloud API/storage/reset and Mac
-hosting boundary. The remaining gates below are human acceptance, repository
-implementation or live qualification rather than unspecified architecture.
+Reviewed 24 September 2026 against demo-v1.1 / Factory .39. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
 
-| Gate | Impact | Owner |
-| --- | --- | --- |
-| Implement and qualify the accepted `IF-TIRE-003/004` schemas, bounds, local transport and acknowledgement | Backend/service conformance; production authentication remains Function Team-owned and out of scope | Function Team 2 |
-| Condition/event dashboard fields, chart/state presentation and terminology | Audience UI and snapshot tests | Function Team 2 |
-| Repository framework plus implementation of the accepted HTTP API and SQLite schema | Repository scaffold and component tests | Function Team 2 |
-| Exact common-helper request/result transport, D4-010.3 `tire-sp2` configuration and authoritative Cloud reconciliation lookup | Publication integration; accepted profile/custody semantics are closed | Function Team 2 security/release owner + Demo Solution |
-| Docker startup/minimum version, container/volume/port names and collision policy with Brake Cloud | Launcher and simultaneous products | `CR-DEMO` + both Function Teams |
-| QEMU guest-visible local route without LAN exposure | Real functional ingestion | `CR-DEMO` + Function Team 2 |
-| Exact current-run deletion selector and completeness proof | Storage cleanup and R0 | Function Team 2 + Demo owner |
-| Exact sequential live VU attach/detach, deterministic reset/new generation and PU attach/detach | VU/PU labels and correlation | `CR-DEMO` |
-| Native AosCloud service-to-VDP admission | Deferred negative scenario only; not a local product responsibility | AosEdge Platform Team |
-| D4-023 implementation and live qualification dossier | Design is closed; Tire control state is not proof and live AosCore/AosCloud/cgroup evidence remains separately required | AosCore integration + Demo Solution |
+| Boundary / gate | Current status and remaining obligation |
+| --- | --- |
+| Implemented backend | Real HTTP/SQLite container, revision-2 products, revision-3 observations, durable receipts, exact Unit queries, reset and private Test-only cleanup exist. |
+| Known executable-contract mismatch | Legacy cleanup profile/preview schema still require two UIDs and fewer counters. Current handler accepts current Test alone and ten counters; see the as-built wire supplement. Static legacy fixture tests do not close this mismatch. |
+| Audience and CPU scope | Integrated Presenter provides live results. A standalone Tire dashboard and CPU qualification control/worker are not implemented; CPU control returns NOT_IMPLEMENTED. |
+| Remaining live matrix | Complete migration/corruption/crash, route/LAN-negative, stale-preview/peer preservation and broader dual-role qualification beyond scoped Test receipts. |
+| External ownership | Cloud signing/assignment and native service-to-VDP admission remain outside this backend; current Test proof does not authorize Production mutation. |
 
 ## D3 Acceptance Record
 

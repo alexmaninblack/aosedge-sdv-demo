@@ -20,9 +20,18 @@
 - Scope: CARLA, Vehicle Gateway ECU, AosVM Domain Controller, AosCloud,
   shared Vehicle Data Platform Component, two independent OEM Service
   Providers, functional backends, and demonstration tooling
-- Implementation status: target architecture; current and planned elements are
-  distinguished below
+- Implementation status: design plus accepted amendments; current delivery/evidence is mapped in the implementation view below
 - Cloud or Unit mutation authorized: no
+
+## Current implementation view — 24 September 2026
+
+The current source milestone is **demo-v1.1 / Factory .39**.
+[Implemented architecture and traceability](current-implementation.md) maps
+the accepted requirements, amendments, protocols, component owners and proof.
+Earlier allocation/implementation statuses in this design are dated review
+history, not a claim that today's services, permissions or UI are absent.
+Full acceptance still requires the explicitly outstanding tests; this view
+does not change stable IDs or grant deployment authority.
 
 ## Portable package content amendment — 2026-09-15
 

@@ -28,6 +28,10 @@
   five-path source packet are accepted/authorized; signing, Cloud, container,
   VM or Unit mutation is not authorized
 
+## Implementation-status reading rule — 24 September 2026
+
+Implementation-status annotations retained from the original D3 review are historical allocation notes, not current deployment claims. The current baseline section and the gates below supersede those annotations; requirements and stable test obligations are unchanged.
+
 ## Native service input amendment — 2026-09-11
 
 [ADR 0015](../../architecture/decisions/0015-use-native-aos-service-runtime-inputs.md)
@@ -89,7 +93,7 @@ non-exportable.
 | What this package does not own | In-vehicle Brake Health behavior, model training, CARLA/VISS/KUKSA, artifact compilation during the demo, signing-key custody, authoritative AosCloud log storage or Unit lifecycle state, OEM approval, Unit targeting, deployment, promotion, system/VDP or other-team logs, Engineering Telematics Dashboard or production driver HMI |
 | Intended result | A presenter can explain and publish each already-built service version, then show the real change from v1 braking windows to v2 derived health and v3 advisory facts on the Test Vehicle and Production Vehicle |
 | Accountable lifecycle owner | Function Team 1 publishes and accepts the exact Test Vehicle result; independent OEM Release Authority authorizes Test deployment and Production rollout outside this product |
-| Primary repository | Public `brake-health-cloud`; Data backend integrated at `1320dde`; additive window detail, ARM64 packaging, live adapter and Dashboard integration remain separately gated |
+| Primary repository | Public `brake-health-cloud` at demo-v1.1; real backend/window detail and container integration; Presenter consumes the API while the standalone Dashboard remains fixtures |
 
 ## Product Views and Authority
 
@@ -263,17 +267,17 @@ source/Unit/run correlation supplied to it.
 
 ## Current Implementation Baseline
 
-| Capability | Current evidence | State for this package |
-| --- | --- | --- |
-| Repository | Public `brake-health-cloud`; isolated foundation commit `68fe61b` over governance base `6da2926` | Foundation source `CURRENT` on isolated branch; main merge remains Coordinator-owned |
-| Backend | Loopback health/readiness server, explicit lifecycle and transactional migration seam; no D4 ingestion/query/admin behavior | Foundation `CURRENT`; data behavior `NEW` |
-| Dashboard | Fixture-only Release Candidates, Vehicle Data and Service Logs shell with non-live labels | Foundation `CURRENT`; real adapters/UI `NEW` |
-| Candidate catalogue | Service v1-v3 target behavior is specified in `CR-BHS`; no machine-readable UI catalogue exists | `NEW` |
-| Signing/publication UI seam | `IF-LC-002` defines the ownership boundary; no isolated helper integration exists | `NEW / QUALIFY` |
-| Local Docker runtime | Docker Desktop 4.87.0 / engine 29.7.2 reports native `arm64`/`aarch64` on the current Mac | `CURRENT` host dependency; product image and launcher `NEW` |
-| Containerized product | No Dockerfile, Compose definition, health endpoint, image, volume schema or QEMU ingestion qualification exists | `NEW` |
-| Contract fixtures | Accepted D4-016/D4-017 message, acknowledgement and cleanup fixtures exist in the solution repository | `CURRENT` read-only inputs; product conformance `NEW` |
-| Tests | Foundation has five Node, ten Vitest and four architecture tests plus strict type/build/quality gates | Foundation `CURRENT`; D4 data tests `NEW` |
+Updated 24 September 2026 for **demo-v1.1 / Factory .39**.
+See [current architecture/traceability](../../architecture/current-implementation.md),
+[protocol status](../../../contracts/implementation-status.md) and
+[qualification limits](../../qualification/current-baseline.md).
+These are implementation/proof states, not changes to stable requirement IDs
+or blanket acceptance of every requirement in this package.
+
+| Boundary | Current state |
+| --- | --- |
+| Backend, query and reset implementation | brake-health-cloud owns durable HTTP/SQLite ACK, deduplication, window detail, products, v3 function observations, SSE notification, Reset and current-Test cleanup. The integrated Presenter consumes these APIs; the standalone dashboard remains a fixture shell. |
+| Evidence and remaining obligations | Real delivery and peer-preserving cleanup have scoped evidence; production ingestion authentication and all native-log/negative scenarios are not implied. |
 
 ## Accepted Technology and Implementation Decomposition
 
@@ -853,24 +857,15 @@ five-path packet and authorized its source-only offline implementation.
 
 ## Open Issues for D4
 
-The accepted D4-017 API/storage/reset and design-reviewed D4-020
-hosting/helper/route packages replace the former undefined design choices.
-Rows below are retained only as implementation or live-qualification gates;
-they no longer represent open product design.
+Reviewed 24 September 2026 against demo-v1.1 / Factory .39. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
 
-| Issue | Impact | Owner | Decision gate |
-| --- | --- | --- | --- |
-| Implement accepted D4-017 `IF-FUNC-001` local transport, endpoint discovery, retry/backoff and durable acknowledgement | Delivery and backend completion still block integration; production authentication is intentionally out of scope | Function Team 1 | Backend implementation and qualification |
-| Implement accepted v1 pre/active/post display and chart fields | Dashboard fixtures and presentation remain to be built | Function Team 1 | UI implementation and human review |
-| Implement the accepted exact-Unit/window detail read over stored canonical samples | The collection summary alone does not provide the sample sequence needed by the Vehicle Data detail view | Function Team 1 | Authorized `BRAKE-CLOUD-WINDOW-DETAIL-001` source packet |
-| Implement accepted HTTP/SQLite/container deployment boundary | Repository scaffold and component tests remain to be built | Function Team 1 | Repository and implementation packets |
-| Implement exact common-helper request/result transport, D4-010.3 `brake-sp1` configuration and authoritative Cloud reconciliation lookup | Accepted profile/custody semantics are closed; executable integration remains open | Function Team 1 security/release owner + Demo Solution | Publication integration packet |
-| Exact Docker Desktop startup/wait behavior and accepted minimum version | Demo launcher and colleague reproduction | `CR-DEMO` plus Function Team 1 | Before launcher implementation |
-| Qualify the design-reviewed QEMU guest-visible host to loopback-published Docker route | Functional ingestion without LAN exposure | `CR-DEMO` plus Function Team 1 | D4-020 two-VM/LAN-negative qualification |
-| Implement accepted SQLite schema, volume, no-backup and forward-only migration policy | Restart, reset and service-version evolution | Function Team 1 | Backend implementation and restart tests |
-| Implement accepted exact current-run deletion selector and completeness proof | Storage cleanup and R0 | Function Team 1 plus Demo owner | Backend tests and end-to-end qualification |
-| Exact sequential live VU attach/detach, deterministic reset/new generation and PU attach/detach | VU/PU evidence labels and orchestration | `CR-DEMO` | Before source-orchestrator implementation |
-| Native AosCloud service-to-VDP admission | Negative dependency scenario | AosEdge platform | Deferred until an official implementing release is available |
+| Boundary / gate | Current status and remaining obligation |
+| --- | --- |
+| Implemented backend | HTTP/SQLite migrations, durable ACK/idempotency, exact Unit queries, real window detail, reset command/application protocol and private scoped cleanup exist. |
+| Audience view | Live cards/charts/popups are in integrated Presenter. This repository's standalone Dashboard is still a fixture shell, not an unimplemented backend. |
+| Remaining acceptance | Complete route/LAN-negative, corrupt storage, migration/crash and dual-role cleanup matrix remain independent of the successful Test receipts. |
+| Release ownership | Demo Control owns selected SP signing/publication and authoritative Cloud reconciliation; this backend does not gain that authority. |
+| Executable contracts | Native v2 products and v3 observations supplement legacy product fixtures. A static schema test is not evidence that all live routes conform. |
 
 ## Change Rules
 

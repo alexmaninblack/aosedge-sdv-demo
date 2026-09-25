@@ -21,6 +21,10 @@
 - Accepted D4 topology input: [D4-012.1 Dedicated Demo Fleet and Unit Set Identity](../d4-decision-register.md#d4-012-1)
 - Accepted D4 Safe Stop freshness decision: [D4-028](../d4-decision-register.md#d4-028)
 
+## Implementation-status reading rule — 24 September 2026
+
+Implementation-status annotations retained from the original D3 review are historical allocation notes, not current deployment claims. The current baseline section and the gates below supersede those annotations; requirements and stable test obligations are unchanged.
+
 ## Purpose
 
 This package defines the AosCore and AosCloud lifecycle behavior that makes the
@@ -77,26 +81,17 @@ an authorized OEM identity to confirm every mutation affecting OEM Units.
 
 ## Current Implementation Baseline
 
-| Capability | Evidence | State for this package |
-| --- | --- | --- |
-| Single-Main-Node provisioning and persistent restart identity | [Single-node provisioning qualification](../../qualification/aosvm-single-node-provisioning.md) | `CURRENT` engineering evidence on existing Units; fresh two-Unit M1 flow and partial-result reconciliation remain `TARGET` |
-| Desired/actual SOTA reconciliation | Official Hello World assignment, Active state, removal and recreation in the same qualification record | `CURRENT` for one development Unit |
-| FOTA provider delivery and A/B runtime interaction | [Current baseline](../../qualification/current-baseline.md) and provider qualification evidence | `EVIDENCE`; final staged v1-v3 lifecycle remains `TARGET` |
-| Verification Batch, Fleet Validation Batch and Campaign object model | [R2 lifecycle research](../../research/demo-foundation/r2-aoscloud-lifecycle.md) | `EXTERNAL / PROVEN model`; exact demo promotion sequence requires qualification |
-| Verification and Production Unit Set separation | Existing qualification proved that corrected topology plus a fresh batch can isolate the Validation Unit, while stale-batch behavior remains hazardous | `PARTIAL`; persistent set configuration, run-scoped membership and complete campaign targeting remain `TARGET / QUALIFY` |
-| Effective target truth | [Stale-batch scope defect](../../qualification/r6-1-validation-set-scope-defect.md) proves Unit Set membership alone is unsafe | `GAP`; pending-recipient reconciliation required before approval |
-| Team decision, Service Provider publication and OEM-authorized approval separation | D4-010.3 publication contract plus D4-011 public endpoint/role matrix | `DECIDED / QUALIFY`; exact public roles and permissions are frozen, while current account `effective_permissions` and live negative paths still require proof |
-| OEM delivery authority | D4-011 separates three publication profiles from the non-publication `oem-delivery` context | `DECIDED / IMPLEMENTATION OPEN`; technical verification, Fleet Validation, Campaign and desired-state mutations use this bounded OEM context in the demo |
-| Role-bound technical publication | D4-010.3 contract and installed `aos-signer` 2.0.1 inspection | `DECIDED / IMPLEMENTATION OPEN`; `platform-oem`, `brake-sp1` and `tire-sp2` are distinct pre-bound profiles, each using a local mode-`0600` PKCS#12 in the current compatibility path; publication still requires an authoritative Cloud re-read and grants no Unit approval |
-| Native system/service/crash logging | [R8 native logging research](../../research/demo-foundation/r8-aosedge-native-logging.md), official logging-pipeline documentation and OpenAPI v11 `6.1.26` | Collection, Cloud storage and Unit/Service list/create/read/download/delete contracts `CURRENT`; exact identifiers, live permissions/ownership, lifecycle states, file shape, delete effect, retention exposure and offline/reconnect behavior `TARGET / QUALIFY` |
-| Component-to-component dependencies | Official component-manifest contract provides predecessor/version constraints and `runtimeDependencies`; update state includes dependency waiting | `EXTERNAL / CURRENT`; preserve and qualify where used rather than reimplement |
-| Service-to-layer dependencies | Official service-configuration contract provides version-bounded layer dependencies; Cloud prevents deletion of a layer still required by service versions | `EXTERNAL / CURRENT`; preserve and qualify where used rather than reimplement |
-| Native Service-to-FOTA VDP Component dependency admission | Platform Team roadmap statement and released API inspection show no implementing cross-lifecycle rule | `DEFERRED`; no project-side substitute permitted |
-| Unit retirement API contract | [AosCloud OpenAPI v11](https://api.aoscloud.io/api/v11/openapi.json) implementation `6.1.26` documents offline-only `DELETE /units/{item_id}/deprovision/`, scoped Unit Set removal and `DELETE /units/{item_id}/`, each successful with `204`; Nodes have parent-Unit list/read but no standalone delete | `EXTERNAL / DECIDED`; post-`204` state, credential invalidation, Unit-owned Node disappearance and complete two-Unit ordering remain `TARGET / QUALIFY` |
+Updated 24 September 2026 for **demo-v1.1 / Factory .39**.
+See [current architecture/traceability](../../architecture/current-implementation.md),
+[protocol status](../../../contracts/implementation-status.md) and
+[qualification limits](../../qualification/current-baseline.md).
+These are implementation/proof states, not changes to stable requirement IDs
+or blanket acceptance of every requirement in this package.
 
-Existing `.1` and `.2` Units are retained engineering evidence. They are not
-fresh M1 proof and shall not be relabelled as manufactured Validation and
-Production Units for final acceptance.
+| Boundary | Current state |
+| --- | --- |
+| Test lifecycle and role-bound publication/assignment | Shared Demo Control plus native AosCore/Cloud; current-Test identities, exact recipient guards, uncertain-result reconciliation and guarded Finish are implemented. |
+| Evidence and remaining obligations | Factory39 ignition/offline passed; full production promotion, native service-to-FOTA admission and broader native-log/recovery matrix are not closed. |
 
 ## Unit Set and Demo Lane Model
 
@@ -609,17 +604,14 @@ authorizes no Cloud mutation.
 
 ## Open Issues
 
-| Issue | Impact | Owner | Decision gate |
-| --- | --- | --- | --- |
-| Live `oem-delivery` account role, owner binding and effective-permission proof, including the documented Fleet Validation approve-permission anomaly | Blocks live `REQ-AOS-007`/`008` execution, but not adapter contract design | AosCloud integration + OEM account administration | Account-bound positive/negative qualification against the D4-011 matrix |
-| Exact current Verification Unit Set designation, membership mutation and Campaign target operations | Blocks final `REQ-AOS-016` contract and `CR-DEMO` guard design | AosCloud integration + Demo Orchestration | D4 Unit Set/API qualification |
-| Exact service artifact digest/metadata identity exposed by the current public API | Blocks uniform candidate identity in `REQ-AOS-004`/`007` | AosCloud integration + Function Teams | D4 artifact contract |
-| Effective service-update recipient derivation | FOTA pending component references are understood; equivalent SOTA proof needs qualification | AosCloud integration | D4 target contract |
-| Combined-graph multi-owner enforcement | Native current behavior is not yet proven | AosEdge Platform Team + System Architecture | Before G3 implementation plan |
-| Live recovery matrix | D4-015 fixes pre-Apply revert, post-Apply forward repair and SOTA removal, but live reporting/convergence and exact prior-Service-Version selection remain unqualified | AosEdge Platform Team + Platform Team | Disposable recovery qualification |
-| Native Service-to-FOTA admission | No implementing release exists | AosEdge Platform Team | Deferred until official release qualification |
-| Native log POST/download permissions, offline and retention behavior | Product path exists but the demo API contract is unqualified | AosCloud integration | D4 log contract |
-| Offline transition, post-`204` state, retired-certificate behavior and Unit-owned Node disappearance | D4-015 fixes API/order semantics, but complete two-Unit retirement has not been executed | AosCloud integration + Demo Orchestration | Disposable R0 qualification before implementation acceptance |
+Reviewed 24 September 2026 against demo-v1.1 / Factory .39. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
+
+| Boundary / gate | Current status and remaining obligation |
+| --- | --- |
+| Implemented Test path | OEM/SP selection, unsigned preparation/session signing, serial FOTA/SOTA publication, recipient reconciliation and Test retirement exist. Earlier Fleet Validation observations are historical, not a universal current staging blocker. |
+| Account and role matrix | Test receipts do not qualify every account, Verification/Production campaign, permission-negative or multi-owner graph. Preserve separate OEM approval and exact-target reconciliation. |
+| Recovery and retirement | Complete negative/uncertain/dependent-first and dual-Unit retirement matrices remain; a .39 ignition check is not a fresh all-version/Finish run. |
+| Native platform gaps | Native Service-to-FOTA pre-transfer admission and the full native log API/retention contract remain deferred/unqualified. Presenter compatibility is not native Cloud admission. |
 
 ## Change Rules
 

@@ -7,19 +7,29 @@
 - Version: 1.1
 - Prepared: 2026-08-22
 - Previous working baseline: Version 0.9
-- Inputs: HLA 1.6, Demo Scenarios 2.0, Architecture Flows 2.1,
+- Inputs: HLA 1.7, Demo Scenarios 2.0, Architecture Flows 2.1,
   System Requirements 2.1, Component Register 2.1 and the corresponding
   component-package review candidates
 - Implementation, signing, Cloud, Unit, VM or CARLA mutation authorized: no
 
+## Current implementation view — 24 September 2026
+
+The current source milestone is **demo-v1.1 / Factory .39**.
+[Implemented architecture and traceability](../architecture/current-implementation.md) maps
+the accepted requirements, amendments, protocols, component owners and proof.
+Earlier allocation/implementation statuses in this design are dated review
+history, not a claim that today's services, permissions or UI are absent.
+Full acceptance still requires the explicitly outstanding tests; this view
+does not change stable IDs or grant deployment authority.
+
 ## Native service inputs replacement — 2026-09-11
 
 The later [ADR 0017](../architecture/decisions/0017-continuous-demo-lifecycle-and-upstream-core.md)
-is accepted for the current Test Studio: no operator Park/Resume, no additional
-native CM storage patch, and continuous clean-cycle qualification. This narrows
-the demonstration lifecycle, not the platform requirement to retain shared
-service data. Restart/expired-version retention remains known failing upstream.
-The active work packet tracks implementation and evidence independently.
+removes operator Park/Resume. Its subsequent accepted storage correction and
+24 September ignition amendment supersede the original no-patch/restart-loss
+statement. Factory39 has scoped retention/recovery evidence, not full P8.
+The [protocol map](../../contracts/implementation-status.md) distinguishes
+implemented protocols, amended legacy profiles and outstanding test/design scope.
 
 <a id="native-service-inputs-replacement--2026-09-11"></a>
 

@@ -3,6 +3,12 @@
 
 # Current-Demo KUKSA Authorization Exchange
 
+Current implementation status (24 September 2026, demo-v1.1 / Factory .39):
+see the [complete protocol map](../implementation-status.md) for this family's
+implemented path, accepted amendments and remaining qualification or executable-
+profile differences. Design lifecycle labels below are not deployment verdicts.
+Historical golden schemas/digests are not rewritten as part of this audit.
+
 This directory is the canonical machine-readable cross-component contract for
 accepted `D4-027.3` through
 [`D4-027.8`](../../docs/requirements/d4-decision-register.md#d4-027-8).
@@ -98,7 +104,10 @@ credential invalidation and recovery before the helper is removed; this
 temporary profile does not prescribe that native implementation.
 
 The helper accepts at most 16-KiB requests, 32-KiB responses, 16-KiB JWTs,
-64 exact permissions and 512-byte paths. It permits four concurrent requests,
+64 exact permissions and 512-byte paths at its own wire boundary. The current
+Factory's native IAM/CM/SM permission-key capacity is 256 characters; the larger
+KAC parser limit does not mean all such paths can traverse native IAM. It
+permits four concurrent requests,
 an eight-connection backlog, bounded per-peer/global token-bucket rates and an
 eight-second whole-request deadline. Retry uses 1/2/4/8/16/30-second backoff
 with ±20% jitter and never crosses JWT expiry. The process is capped at 32
@@ -110,8 +119,9 @@ client, denies external IP traffic and logs only fixed event code,
 correlation, outcome and retryability. Secrets, tokens, claims, paths,
 permission content, signing input and raw frames are forbidden.
 
-D4-027 is complete. Implementation still requires the broader D4 and change
-plan gates; this contract itself authorizes no source, image or Unit mutation.
+D4-027 design is complete and its helper is implemented in Factory39. Full
+negative/resource qualification remains scoped by the current evidence; this
+contract itself authorizes no source, image or Unit mutation.
 
 The package is deleted together with `CMP-KAC` after equivalent released native
 AosCore support passes the same authorization and negative qualification.

@@ -26,6 +26,10 @@
 - Prepared D4 functional/hosting review candidates: [Brake Cloud API](../../../contracts/brake-cloud-api/README.md), [Tire Cloud API](../../../contracts/tire-cloud-api/README.md), and [Local Demo Hosting and VM Route](../../../contracts/local-demo-hosting/README.md)
 - Implementation, signing, Cloud, Unit, VM, or CARLA mutation authorized: no
 
+## Implementation-status reading rule — 24 September 2026
+
+Implementation-status annotations retained from the original D3 review are historical allocation notes, not current deployment claims. The current baseline section and the gates below supersede those annotations; requirements and stable test obligations are unchanged.
+
 ## Native service input amendment — 2026-09-11
 
 [ADR 0015](../../architecture/decisions/0015-use-native-aos-service-runtime-inputs.md)
@@ -86,7 +90,7 @@ through the authorized OEM delivery context.
 | What this package does not own | Artifact source/build/package work, signing keys or signing authority, team release decisions, AosCloud lifecycle state, functional data, CARLA/Gateway behavior, VDP/service behavior, native dependency admission or production-fleet policy |
 | Intended result | A presenter can execute and explain `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> T1 -> R0` with two honest Unit roles, one visible vehicle source and authoritative evidence |
 | Accountable lifecycle owner | Demo Solution Team for facilitation and local orchestration; Platform/Function Teams retain Validation acceptance, while independent OEM Release Authority retains Test-deployment and Production-rollout authorization |
-| Primary repository | `aosedge-sdv-demo`; existing launchers are evidence, while the unified dashboard/orchestrator is new work |
+| Primary repository | `aosedge-sdv-demo`; implemented shared orchestration core, CLI and integrated Presenter |
 
 The accepted audience envelope is a planned 30-minute core narrative inside a
 45-minute reserved slot, with Q&A separate. The complete M0/M1, G0–G4, T1 and
@@ -250,33 +254,17 @@ demo-run history.
 
 ## Current Implementation Baseline
 
-| Capability | Current evidence | State for this package |
-| --- | --- | --- |
-| Main and Validation VM profiles | `scripts/aosvm` and `scripts/r6-1-validation-vm` isolate ports, overlays, state and launchers | `EVIDENCE`; current disks are persistent provisioned assets, not accepted fresh-run overlays |
-| Factory-derived overlay safety | Launcher verifies qcow2 backing/digest and protects provisioned overlays from reset/copy | `PARTIAL`; two fresh per-run overlays from the accepted factory artifact are not implemented |
-| Single-Node onboarding | `scripts/aosvm-macos-onboard` has preflight, exactly-once attempt journal and post-provision verification | `EVIDENCE`; dual-role orchestration and partial cross-Unit reconciliation are `NEW` |
-| Unit Set lifecycle | Previous qualification proves APIs and exposes stale-target risk | `PARTIAL`; persistent-set assignment/reconciliation workflow is `NEW / QUALIFY` |
-| Software Delivery Dashboard | Sanitized coverage matrix/schema and documentation exist | Executable dashboard, Cloud read model and approval flow are `NEW` |
-| Platform Releases catalogue/helper | Installed `aos-signer` 2.0.1 and local OEM/SP PKCS#12 inputs exist as separate evidence | D4-010.3 profile enforcement, unified v1-v3 catalogue, protected helper protocol and live publication flow are `NEW / QUALIFY` |
-| Cloud lifecycle adapter | User certificate setup and read-only qualification utilities exist | Normalized scoped dashboard API and confirmed mutation seam are `NEW / QUALIFY` |
-| Source binding | One CARLA/Gateway source and two Units exist | Sequential exclusive live VU-to-PU handover and evidence are `NEW`; telemetry replay is deferred |
-| Vehicle external-connectivity control | No accepted atomic dual-path fault control exists | One stateful control, exact fault-scope probes and synchronized restore are `NEW / QUALIFY` |
-| Native logs | AosEdge path is documented as external platform behavior | Dashboard request/status/result qualification is `NEW / QUALIFY` |
-| R0 retirement | Individual stop/reset safety mechanisms exist | Deprovision/delete/set reconciliation/backend cleanup/full reset are `NEW / QUALIFY` |
-| Workspace checks | Component locks, confidential-input guard, docs and workspace doctor exist | `CURRENT` reusable preflight evidence |
+Updated 24 September 2026 for **demo-v1.1 / Factory .39**.
+See [current architecture/traceability](../../architecture/current-implementation.md),
+[protocol status](../../../contracts/implementation-status.md) and
+[qualification limits](../../qualification/current-baseline.md).
+These are implementation/proof states, not changes to stable requirement IDs
+or blanket acceptance of every requirement in this package.
 
-Existing provisioned Unit identities and `.1/.2` runtime evidence must not be
-presented as the target per-run manufacturing baseline. They remain valuable
-qualification inputs until fresh M0/M1/R0 behavior is implemented.
-
-The persistent Cloud topology is an external prerequisite, not an orchestrator
-product feature. OEM/AosCloud administration creates exactly once the
-`AosEdge SDV Demo Fleet`, the validation-enabled
-`AosEdge SDV Demo / Test Vehicles` Unit Set and the non-validation
-`AosEdge SDV Demo / Production Vehicles` Unit Set. Their returned UUIDs are
-pinned only after authoritative validation. `CMP-ORCH` shall verify those
-objects and manage only run-scoped membership; it shall never create, rename,
-reconfigure, move or delete the Fleet or either Unit Set object.
+| Boundary | Current state |
+| --- | --- |
+| Shared CLI/Presenter and lifecycle implementation | Create, detached simulator reuse, provision/strict attach, sequential FOTA/SOTA, Cloud/backend observations, resource charts, per-service Reset and confirmed peer-preserving Finish are implemented. Guarded Presenter-owned ignition recovery restores the same identity in Safe Stop, no Autopilot. |
+| Evidence and remaining obligations | Studio Park/Resume is retired. Factory39 focused proofs do not close full .39 E2E; host sleep/wake, fixed CPU proof and production-promotion scope remain separate. |
 
 ## Testability Boundary
 
@@ -757,28 +745,16 @@ proof; they do not replace these isolated decisions and failure branches.
 
 ## Open D4 Gates
 
-D4-017/D4-019 define accepted exact functional-backend reset previews and D4-020
-defines the proposed container/helper/local-route layout. Human acceptance and
-the live two-VM route/LAN-negative tests remain gates; production functional-
-backend authentication is deliberately Function Team-owned and out of scope.
-These rows no longer represent an absence of a concrete design.
+Reviewed 24 September 2026 against demo-v1.1 / Factory .39. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
 
-| Gate | Impact | Owner |
-| --- | --- | --- |
-| Current account positive/negative qualification against accepted D4-011 endpoints, roles and effective permissions; live confirmation of documented API anomalies | Blocks live operation, not dashboard adapter contract design | Demo Solution + AosEdge Platform Team |
-| Native versus ARM64-container dashboard packaging, narrow local helper transport/session protocol and launcher supervision timeout | Local deployment and security tests; helper remains non-root and session-scoped in either packaging | Demo Solution |
-| Exact presenter-Mac display profile, native/browser window selectors, geometry/readability thresholds and restart-safe local restoration mechanism | `REQ-DEMO-023`, `UI-INT-078` and `UI-AT-049`; blocks workspace qualification, not Cloud/vehicle lifecycle design | Demo Solution + visible-surface owners |
-| Platform v1-v3 catalogue schema, release-storage layout, Factory Image/runtime binding, metadata canonicalization and prepared/signed/AosCloud identity mapping | Platform Releases implementation and evidence | Platform Team + Demo Solution |
-| Accepted factory artifact, two-overlay naming/location and per-run host-state layout | M0 and R0 | Platform Team + Demo Solution |
-| D4-015 live two-Unit deprovision, post-`204` state, old-credential rejection, scoped set removal, Unit deletion, Unit-owned Node disappearance and uncertain-result reconciliation | R0 implementation acceptance | Demo Solution + AosCloud Platform Team |
-| Live account qualification for D4-012 scoped Verification/Production Unit Set add/remove operations and exact re-read behavior | M1 targeting and R0 reset | OEM/AosCloud owner |
-| Implement and qualify the accepted sequential live-source assignment, selected-Unit mTLS credential lifecycle, technical drill-down and audience transition | VU/PU functional evidence; contract choices are closed | Demo Solution + Gateway owner; accepted [`D4-005`](../d4-decision-register.md#d4-005) and [`D4-006`](../d4-decision-register.md#d4-006) |
-| Functional backend exact-preview and permanent-deletion APIs, selected by exact current VU/PU `system_uid` equality with no independent time-window selector | R0 with no demo-history retention | Both Function Teams |
-| CARLA/Gateway reset/start/stop contract | R0 and next run | Simulator/Gateway owner |
-| Implement the D4-021.2/.3 bounded per-operation registry, exact conflict keys, mixed-operation restart reconciliation and run-exclusive gates | Restart safety and independent producer operation | Demo Solution |
-| Atomic macOS/QEMU vehicle external-connectivity mechanism, exact dual-path selectors, excluded-path probes, privilege boundary, rollback and recovery timeout | `REQ-DEMO-020` and `AF-X-OFFLINE` | Demo Solution + AosCloud integration + both Function Teams |
-| Implement and live-qualify the design-reviewed D4-023 mapping, fixed Tire control, Cloud/cgroup evidence, three-cycle characterization, two independent VU passes, fault matrix, one PU rehearsal and sanitized dossier | `REQ-DEMO-021` and `AF-TIRE-RES` | Demo Solution + AosCore integration + both Function Teams |
-| Native Service-to-FOTA VDP Component admission release | Deferred negative demo stage | AosEdge Platform Team |
+| Boundary / gate | Current status and remaining obligation |
+| --- | --- |
+| Implemented workflow | Shared CLI/Presenter lifecycle, selected Cloud/roles, unsigned catalogues, session signing, serial Test updates, exact source attachment, operation registry, Reset, offline switch and confirmed Finish exist. |
+| Implemented presentation | Measured window placement/z-order, backend popups/charts, resource/freshness views and native control are implemented. Current status authority is defined in the operator guide, not the old mockup. |
+| Factory39 acceptance | Focused ignition and offline receipts passed; fresh serial V1→V2→V3 plus Finish and the remaining failure/uncertain/negative matrix are still required. |
+| Recovery limits | Guarded same-identity controller ignition is implemented; cold externalOFF ignition and host laptop sleep/wake are not qualified. Park/Resume is retired from Studio. |
+| Unimplemented qualification feature | Fixed Tire CPU control/worker and the full resource-isolation dossier remain open. Existing Cloud charts do not prove CPU stress isolation. |
+| Scope and contract maintenance | The current milestone is Test-only; Production is preserved. Legacy dual-Unit contract annotations and the Tire cleanup executable-schema drift must not drive destructive current-Test behavior. |
 
 ## Package Acceptance
 

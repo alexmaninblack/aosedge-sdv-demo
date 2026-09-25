@@ -3,8 +3,15 @@
 
 # AosCore mainline migration — 23 September 2026
 
-Status: authorized by the operator; source/native/package/image gates and
-isolated .37 boot/repeat complete. Live replacement is not qualified yet.
+Current status (24 September, demo-v1.1): migration and retained corrections
+are integrated in Factory39; focused ignition/offline proofs passed, full
+fresh serial .39 acceptance remains open. See the
+[current baseline](../../qualification/current-baseline.md). Earlier .37/.38
+preservation instructions below are historical; their binaries were later
+retired while Production .31 remains.
+
+Historical initial status: source/native/package/image gates and isolated .37
+boot/repeat complete; live replacement was not yet qualified.
 See the [Factory .37 qualification report](../../qualification/factory-37-mainline-build-2026-09-23.md).
 
 Current continuation (24September12:16UTC): diagnostic/security stage closed

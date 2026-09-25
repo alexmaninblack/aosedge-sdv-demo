@@ -3,6 +3,12 @@
 
 # Shared Evidence, Correlation and Chronology — Design Reviewed
 
+Current implementation status (24 September 2026, demo-v1.1 / Factory .39):
+see the [complete protocol map](../implementation-status.md) for this family's
+implemented path, accepted amendments and remaining qualification or executable-
+profile differences. Design lifecycle labels below are not deployment verdicts.
+Historical golden schemas/digests are not rewritten as part of this audit.
+
 - Decision: `D4-024`
 - Lifecycle state: `DESIGN_REVIEWED`
 - Contract version: `1.1.0`

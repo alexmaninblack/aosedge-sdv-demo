@@ -4,24 +4,25 @@
 # Current Design and Delivery Roadmap
 
 - Status: Design gate map with historical execution stages; current delivery tracked by the Studio plan
-- Updated: 2026-09-13 (current delivery pointer; historical gates retained)
-- Current accepted architecture: High-Level Architecture 1.6 and accepted Studio/native-input amendments
+- Updated: 2026-09-24 (current implementation pointers; historical gates retained)
+- Current accepted architecture: High-Level Architecture 1.7 and accepted Studio/native-input/lifecycle amendments
 - Authority: This roadmap grants no runtime mutation; actual authorizations and evidence are recorded in the active delivery plan
 
 ## Current delivery pointer
 
-The [Studio plan](active/demo-studio-delivery-plan.md#current-delivery-position--13-september-2026)
-is the current implementation sequence. The [working .33 baseline](../qualification/current-baseline.md)
-passed scoped Test engineering E2E with synthetic service data. Production
-rollout, native KUKSA/advisory, full Studio visual acceptance and source/lock
-publication remain separate gates. The [13 September audit](../qualification/factory-33-consolidation-audit-2026-09-13.md)
-records the open Cloud permissions issue and client connectivity workaround.
+Current implementation is **demo-v1.1 / Factory .39**.
+The [implemented architecture](../architecture/current-implementation.md) maps
+requirements/protocols to source and proof; the
+[audit](../qualification/documentation-implementation-audit-2026-09-24.md) lists
+remaining gaps. Native permissions, real analytics/advisory, UI actions and
+source publication are implemented, not pending .33 work.
 
-The D/I stages below preserve the earlier design rationale and their dated
-authorization history; they are not a current claim that .11/.21 is the working
-image or that Studio implementation is still unstarted. Current flow amendments
-include Test-first operation, independent retained service Subjects and no
-mandatory validation-batch approval gate for verification-Test delivery.
+The [Studio plan](active/demo-studio-delivery-plan.md) retains chronology.
+.39 ignition/offline checks passed in scope; fresh serial E2E, broader negative/
+calibration proof and host sleep/wake remain open. D/I stages below preserve
+original design-review status, not today's delivery state. Apply Test-only
+Studio and ADR 0015/0016/0017 amendments before their original dual-vehicle and
+lifecycle wording.
 
 ## Purpose
 

@@ -16,16 +16,18 @@ must agree.
 | Factory-image integration, native IAM/PKCS#11 seam, unmodified KUKSA trust and removable current-release `CMP-KAC` (`authorization/aos-kuksa-compat/`) | `aos-vehicle-platform` | Platform Team / pre-SOP factory and system integration |
 | Vehicle Data Provider runtime, signal/advisory contract or Vehicle Data Platform Component | `aos-vehicle-platform` | Platform Team / post-SOP FOTA |
 | Brake Health in-vehicle analytics | `brake-health-service` | Function Team 1 / SOTA |
-| Tire Health condition estimation, bounded reporting and inspection advisory | planned `tire-health-service` | Function Team 2 / independent SOTA |
-| Brake Health backend or Function Dashboard | `brake-health-cloud` | Function Team 1 Cloud product; governance baseline exists, product implementation is `NEW` |
-| Tire Health backend or Function Dashboard | planned `tire-health-cloud` | Function Team 2 Cloud product |
+| Tire Health condition estimation, bounded reporting and inspection advisory | `tire-health-service` | Function Team 2 / independent SOTA |
+| Brake Health backend and its API | `brake-health-cloud` | Function Team 1 Cloud product |
+| Tire Health backend and its API | `tire-health-cloud` | Function Team 2 Cloud product |
+| Integrated Presenter backend cards/popups and Cloud resource charts | `aosedge-sdv-demo` | shared operator presentation; backend APIs retain team ownership |
 | Software Delivery Dashboard, demo orchestration, cross-component contract or end-to-end qualification | `aosedge-sdv-demo` | solution integration |
 | Unreal Engine compatibility required by CARLA | restricted Unreal fork | maintained Apple Silicon dependency branch |
 
 Backends and function dashboards are separate from their in-vehicle SOTA
-containers. Each Function Team backend and dashboard share its planned Cloud
-repository; do not place them in this solution repository merely because it is
-convenient.
+containers. Team-owned backend APIs and standalone fixture dashboards stay in
+their Cloud repositories. The implemented integrated Presenter is owned by the
+solution repository; its popups are not evidence that the standalone fixture
+dashboards have become live integrations.
 
 ## Read Before Changing an Interface
 
@@ -47,9 +49,10 @@ upstream architectural decision.
 
 For the shared CLI/UI orchestrator, start with the
 [Demo Control draft](../architecture/demo-control.md) and the
-[package README](../../apps/demo-orchestrator/README.md). The draft separates
-the authorized read-only status implementation from proposed lifecycle
-behavior; it does not authorize lifecycle changes.
+[package README](../../apps/demo-orchestrator/README.md). Its early read-only
+milestone is historical; the [current workflow](../operations/current-demo-workflow.md)
+describes implemented lifecycle/actions. Draft proposals still do not authorize
+new lifecycle changes. Use the dated amendments and accepted work packet.
 
 Keep source, tests and component-specific usage documentation in the owning
 repository. Update this solution repository when a change affects:

@@ -8,15 +8,15 @@ does not vendor CARLA, Unreal Engine, AosCore, AosVM images, platform-component
 source or functional-service source.
 
 The standalone AosVM path and the CARLA engineering demonstration are
-repeatable on the qualified workspace. The complete staged FOTA/SOTA story is
-the current design and implementation target, not yet a one-command
+repeatable on the qualified workspace. The staged FOTA/SOTA story is implemented
+and has scoped live evidence; it is not a fully qualified one-command
 fresh-checkout demo. See the
 [reproduction readiness matrix](docs/getting-started/reproduce-demo.md).
 
-## Current baseline — 23 September 2026 source audit
+## Current baseline — 24 September 2026
 
 The audience-facing demo name is **AosEdge Platform - SDV Lab**. The retained
-Test Factory is **6.1.1-maninblack.36**, with independently delivered VDP
+Test Factory is **6.1.1-maninblack.39**, with independently delivered VDP
 V1/V2/V3, Brake V1/V2/V3 and Tire V1 packages. The Presenter and Demo Control
 share lifecycle/actions; real KUKSA telemetry, local advisory and delayed
 backend delivery have scoped staging evidence. Cloud remains authoritative
@@ -24,13 +24,16 @@ for installed software and unit monitoring.
 
 Read the [current working baseline](docs/qualification/current-baseline.md)
 for immutable image provenance, dated live evidence and remaining gates.
-The latest repository-contained readiness correction qualified VDP98/V3,
-Brake78/V3 and Tire44/V1; it is not a new full clean qualification. The
-[demo-v1.0 return point](docs/qualification/demo-v1.0-return-point.md) records
-exact source revisions, retained images, restore instructions and CI scope.
-The audit did not start the demo
-or establish current Cloud state. Automatic host sleep/wake recovery is planned,
-not implemented. The historical table below must not be used for current setup.
+The last recorded .39 installation is VDP117/V3, Brake92/V3 and Tire49/V1.
+Focused ignition and five-minute offline checks passed with explicit exclusions;
+they do not qualify a complete fresh all-version cycle. The published
+[demo-v1.1 return point](docs/qualification/demo-v1.1-return-point.md) fixes
+source revisions, retained images, restore instructions and CI scope.
+Use the [current operator workflow](docs/operations/current-demo-workflow.md)
+and [documentation audit/open items](docs/qualification/documentation-implementation-audit-2026-09-24.md).
+Automatic host sleep/wake recovery remains planned, not implemented. Only .39
+is retained for new Tests; Production's dependent .31 is preserved. The
+historical table below must not be used for current setup.
 
 ## Historical early platform baseline
 

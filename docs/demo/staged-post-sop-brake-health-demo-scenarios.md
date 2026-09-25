@@ -13,14 +13,31 @@
   capability evolution, release sequence, dashboards, observability, and
   end-of-demo retirement
 - Architecture alignment: dynamic staged projection of High-Level Architecture
-  1.5, with detailed interaction mapping in Demo Scenario Architecture Flows
-  2.0
+  1.7, with detailed interaction mapping in Demo Scenario Architecture Flows
+  2.1
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0011](../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
   [ADR 0013](../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md),
   [ADR 0014](../architecture/decisions/0014-enforce-platform-fota-safe-stop-in-oem-component-runtime.md)
 - Accepted publication decision: [D4-010.3 Artifact Publication Credential Profile](../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
 - Implementation, build, signing, Cloud, or Unit mutation authorized: no
+
+## Current implemented story — demo-v1.1 / Factory39
+
+The current Test-only story starts with an empty controller whose Factory
+already integrates AosCore, KUKSA, KAC and the OEM component runtime. CARLA and
+native control can run detached; attachment occurs after provisioning without
+restarting the simulator. VDP FOTA needs Safe Stop. QM Brake/Tire SOTA can evolve
+while driving, with release installation and functional results checked
+separately. Publish one successive version at a time.
+
+Brake V1 captures bounded episodes, V2 estimates locally, V3 adds typed advisory;
+Tire V1 already provides its independent model/advisory. Reset Driver Advisory
+is not history deletion. externalOFF separates local work from backend delivery;
+controller ignition is a separate guarded resilience check, not routine
+Park/Resume. Full current-image serial acceptance remains open despite focused
+.39 receipts. See [workflow](../operations/current-demo-workflow.md) and
+[implementation matrix](../architecture/current-implementation.md).
 
 ## Studio Test scope amendment — 2026-09-09
 
@@ -32,8 +49,9 @@ writer and routine-history-retention provisions below. Keep original stable IDs
 and their unchanged authority/product/safety obligations; Production remains
 future scope rather than a prerequisite for Test. D4-012.1 and D4-026's earlier
 presentation/order provisions must not be applied as simultaneous requirements
-against that amendment. Backend context cardinality and cleanup selectors still
-need the identified P1 executable-contract/handler migration. This scoped
+against that amendment. Both backend handlers now implement Test-only context
+and cleanup; the older Tire executable profile/preview schema still needs
+synchronization, as recorded in the [protocol map](../../contracts/implementation-status.md). This scoped
 amendment does not authorize implementation, live calls or deletion.
 
 
@@ -52,7 +70,7 @@ Platform Component payload and all functional SOTA services.
 
 Scenario 2.0 defines what should happen and what an
 audience should see. It is the dynamic, stage-by-stage projection of the
-capability-superset model in High-Level Architecture 1.5. It does not yet
+capability-superset model in High-Level Architecture 1.7. It does not yet
 select exact APIs, define every detailed interaction, or authorize
 implementation.
 

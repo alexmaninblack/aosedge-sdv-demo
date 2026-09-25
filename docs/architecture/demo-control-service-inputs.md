@@ -18,7 +18,7 @@ authorized. The .33/permissions-blocked status below is dated history: .35's
 [17 September record](../qualification/factory-35-e2e-2026-09-17.md) supplies
 later scoped real-data evidence; it does not qualify this new amendment.
 
-- Status: Accepted contract; .33 native startup and synthetic backend path qualified; real KUKSA access remains open
+- Status: Accepted contract; implemented with scoped real KUKSA/renewal and .39 ignition/offline proof; full acceptance separate
 - Version: 2.2 (implementation-status clarification; no schema change)
 - Prepared: 2026-09-11
 - Owner: Demo Control / OEM Platform
@@ -217,8 +217,9 @@ Native environment/resource behavior was inspected at AosCore
 `9eecb80c4994937b5c8cbe0464970f81e8ad4c2d`; evidence links and limitations
 remain in [ADR 0015](decisions/0015-use-native-aos-service-runtime-inputs.md#9-evidence-and-limitations).
 Native container startup with Enforcing SELinux, synthetic backend ingestion
-and retained-assignment cold start now have scoped .33 evidence. Real native
-KAC/TLS/subscriptions/renewal, token-session behavior under live credentials
-and vehicle-derived analytics/advisory remain unqualified while service
-permissions are blocked in Cloud. Neither the current Factory image nor
-Production is modified by this document.
+and retained-assignment cold start had scoped .33 evidence. Later real native
+KAC/TLS/subscriptions/renewal, private sessions and vehicle-derived products
+have the [current .39 evidence](../qualification/current-baseline.md).
+The old Cloud-permissions block is not the current integration state.
+Exact profile comparison uses Cloud in Presenter; services validate local
+inputs independently. Full negative-matrix acceptance remains separate.

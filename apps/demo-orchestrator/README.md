@@ -3,6 +3,14 @@
 
 # Demo Orchestrator
 
+Current implementation: **demo-v1.1 / Factory39**. Start with the
+[current operator workflow](../../docs/operations/current-demo-workflow.md)
+and [implementation/authority map](../../docs/architecture/current-implementation.md).
+Real native permissions, backend products and typed advisory are implemented.
+The dated .28/.29/.31/.33 sections below retain engineering history, not the
+selected image or mandatory setup steps. Current source publication is complete;
+full fresh .39 all-version E2E remains a separate gate.
+
 ## Selecting a Test Cloud
 
 Use **Session → Cloud connection** in the UI: read the configured OEM
@@ -81,7 +89,7 @@ adoption is inferred. See [ADR 0016](../../docs/architecture/decisions/0016-unsi
 for local paths, source pins and compatibility rules. Local signature status
 is not evidence of Cloud installation or Running.
 
-## Current working checkpoint — 13 September 2026
+## Historical working checkpoint — 13 September 2026
 
 Factory .33 Test passed the [scoped engineering E2E](../../docs/qualification/factory-33-e2e-2026-09-13.md).
 VDP23/V3, Brake11/V3 and Tire9/V1 are the dated installed results, not version
@@ -107,8 +115,8 @@ records exercise the real native service-to-backend transport but do not
 establish KUKSA access, vehicle analytics or Driver Advisory. Ordinary packages
 continue to declare native permissions. Do not turn off authentication.
 
-The seven-repository source checkpoint is published; machine-readable workspace
-reconciliation remains open. See the [baseline](../../docs/qualification/current-baseline.md),
+At that .33 checkpoint, source was published but machine-readable workspace
+reconciliation remained open. demo-v1.1 later closed publication/pin reconciliation. See the [baseline](../../docs/qualification/current-baseline.md),
 [audit/retention inventory](../../docs/qualification/factory-33-consolidation-audit-2026-09-13.md)
 and [phase plan](../../docs/planning/active/demo-studio-delivery-plan.md).
 
@@ -550,11 +558,11 @@ twelve query/result pairs, with packet lengths and timing, never payloads.
 
 Status, image list, environment create, VM start/stop and unused/Cloud-retired CLI environment retire are
 implemented, as are the three unit commands and local-profile environment
-prepare/vehicle select. `environment park` / `environment resume` preserve the
-owned Test disk and Cloud identity. They do not provision, publish, or touch
-Production. Resume restores only the formerly running source/selection and
-then reads Cloud once; a failed Cloud read can be repeated without replaying
-startup. Pending/uncertain updates prevent Park before shutdown begins.
+prepare/vehicle select. Legacy `environment park` / `environment resume`
+commands remain engineering/history scope; they are retired from Studio and
+are not the normal pause procedure. Use Safe Stop. Factory39's guarded
+same-identity ignition recovery is a distinct path, with no re-provisioning or
+automatic Autopilot; see the current operator workflow.
 
 Repeated completed `demo create` and `demo prepare` perform one focused
 readiness observation instead of trusting the recorded phase. Create reads
@@ -757,9 +765,10 @@ the transport and separate live-acceptance record.
 
 For this local demo the operator has
 [deferred per-Unit VISS client mTLS](../../docs/architecture/demo-control.md#local-demo-amendment-defer-per-unit-viss-mtls).
-The explicit `LOCAL_DEMO_SERVER_TLS` profile retains server TLS verification
-and actual single-VM connectivity. It does not alter AosCloud provisioning or
-claim strict mTLS qualification.
+The historical explicit `LOCAL_DEMO_SERVER_TLS` engineering profile retains
+server verification but is not the current Studio trust path. Studio uses
+strict selected-Unit mTLS and isolated role material; never downgrade trust
+as a workaround for attachment failure.
 
 `simulation start` starts CARLA, Controller, Gateway and the associated UI,
 without booting/provisioning VMs or selecting a vehicle. Existing VM source
@@ -776,10 +785,10 @@ uses provisioned local bindings, not a full Cloud inventory; `status --cloud`
 provides live Cloud observations. `environment prepare` composes the same
 primitives. Use simulation commands for operator and engineering startup/stop.
 
-Current visual limitation: the runner's terminal telemetry dashboard is active
-but its output goes to the private run log. Unlike the old desktop launcher,
-this command does not yet open a visible dashboard Terminal window. CARLA and
-the keyboard-control window do open; dashboard presentation remains unfinished.
+The current desktop path opens combined native Driving Control/Telemetry plus
+CARLA and Presenter with bounded layout/z-order restoration. The early private
+terminal-log limitation is historical; raw engineering launch modes are not the
+composed desktop UI. Host sleep/wake recovery remains separate planned work.
 
 Ordinary `democtl status` quickly shows `CARLA selected VM` and the timestamp
 of its last connection confirmation, with fresh local Controller/runtime facts.
@@ -836,8 +845,9 @@ The original image and existing experimental VMs/Cloud Units are untouched.
 
 Existing run state or overlays block a second create. Partial results and
 unfinished writes are retained as RECOVERY_REQUIRED; no automatic rollback,
-deletion or blind retry occurs. Failed-create recovery and full Cloud retirement
-are not yet implemented, so this increment is not a complete demo lifecycle.
+deletion or blind retry occurs. Guarded failed-create recovery and confirmed
+Test Finish/retirement are now implemented; they must reconcile exact owned
+state rather than repeat create or delete unrelated overlays.
 
 Default status uses the newly created journal's exact disk bindings, with no
 inherited legacy Unit IDs or SSH credentials. The old observation configuration
@@ -879,17 +889,19 @@ For all, both processes launch before readiness checks, so their boots overlap.
 It reports each VM separately, with duration excluding interactive password entry. Running
 without SSH/DNS readiness is PARTIAL, not COMPLETED or Cloud Online.
 
-First SSH enrollment requires an interactive CLI terminal and an explicit
-guest root password prompt. It creates a per-VM key, installs its public key
+First SSH enrollment needs the guest root password once unless already
+supplied through the accepted access provider. Presenter/`access setup` uses
+native macOS **Use once** or explicit **Save in Keychain**; CLI may use its
+interactive prompt. No password is entered into the browser. It creates a per-VM key, installs its public key
 over the owned local serial console, and pins the guest's public host key from
 that console. Host-key paths come from sshd's effective configuration, including
 the -f option in /etc/default/ssh used by the readonly guest. No fixed /etc/ssh
 host-key path is assumed. Before login, the console prompt is requested again
 after boot if the initial Enter preceded getty readiness. Login/password are
 never blindly resubmitted, and fixed progress stages identify any timeout.
-The password exists in memory only, is never discovered from
-legacy scripts, and is not accepted in command arguments, API requests or the
-journal. Subsequent starts use the enrolled key without prompting. With no
+Use once keeps the password transient; explicit Save in Keychain stores it in
+macOS Keychain for later access. It is never discovered from legacy scripts or
+accepted in command arguments, HTTP API requests, logs or the run journal. Subsequent starts use the enrolled key without prompting. With no
 interactive password and no enrollment, the VM can start but reports
 SSH_ENROLLMENT_REQUIRES_INTERACTIVE_PASSWORD; rerun start from an interactive
 terminal. Access files live in .run/demo-current/test-access or production-access.
@@ -901,9 +913,10 @@ stop requests guest poweroff over SSH, or QMP system_powerdown if SSH is
 unavailable. It waits for the owned QEMU process to exit and release its disk.
 There is no automatic forced kill. Disks, keys and identities are retained;
 stopping the last managed VM also stops its owned DNS service. An already
-stopped VM is a no-op. A Current Vehicle must first be detached/parked through
-the corresponding lifecycle operation; stop does not hide that transition.
-Those higher-level operations remain unimplemented in this slice.
+stopped VM is a no-op. A Current Vehicle must first be detached through the
+corresponding lifecycle operation; stop does not hide that transition. Normal
+Studio pause is Safe Stop, not Park. Guarded ignition recovery is separately
+documented and never resumes driving automatically.
 
 The current-run journal records process ownership and interrupted operations.
 Explicit retries re-observe process ownership first. An unresolved operation
@@ -1132,9 +1145,9 @@ are never returned.
 Each observation carries source, readCompletedAt, sourceTimestamp when
 available, read state, transport classification and a fixed error reason.
 There is no persisted observation cache. Missing/denied reads do not prove
-Cloud-object absence. The API adapter uses the same application core but is
-not an HTTP server or an authenticated UI session implementation. It rejects
-caller-selected paths, credentials and profiles.
+Cloud-object absence. The transport-neutral API adapter uses the same core;
+Presenter adds its own loopback HTTP/session/confirmation boundary. Neither
+accepts arbitrary caller-selected paths, credentials or profiles.
 
 Guest mode is inferred from the observed IAM/SM/CM service states. Active
 services do not prove the AosCore-to-Cloud connection: that field remains
@@ -1208,7 +1221,7 @@ artifact and stops Builder.
 compiled target without compiling again. Test failures retain their output.
 `component sm-builder-stop test` is the explicit graceful stop.
 
-The current authorized target is Test .31, local VM
+The historical qualification target was Test .31, local VM
 `d53d05cd-4c46-49c9-a896-534b23b88273`, Unit
 `2a29c145-bbd1-4494-a0e5-d4b79e6a9db5`, with the existing immutable .31 SHA.
 Proof sources are pinned to Platform commit
@@ -1236,7 +1249,7 @@ predecessor, changed transaction or foreign selector is rejected. A repeated
 application to the already active proof binary performs no restart. This is not
 a general missing-selector repair policy, Cloud retry, or new VDP publication.
 
-After Park/Resume of this same qualified Test, the same command may reapply the
+For the historical parked Test only, the same command could reapply the
 previously confirmed proof to committed **18.0.0 / slot a**. It requires the
 existing active selector, exact installed/slot metadata and capability digest,
 with no transaction or intentionally stopped marker. It never repairs a missing

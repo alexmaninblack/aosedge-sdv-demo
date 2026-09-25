@@ -21,6 +21,16 @@
 - Accepted publication decision: [D4-010.3 Artifact Publication Credential Profile](../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
 - Implementation, build, signing, Cloud, or Unit mutation authorized: no
 
+## Current implementation view — 24 September 2026
+
+The current source milestone is **demo-v1.1 / Factory .39**.
+[Implemented architecture and traceability](current-implementation.md) maps
+the accepted requirements, amendments, protocols, component owners and proof.
+Earlier allocation/implementation statuses in this design are dated review
+history, not a claim that today's services, permissions or UI are absent.
+Full acceptance still requires the explicitly outstanding tests; this view
+does not change stable IDs or grant deployment authority.
+
 ## Native service inputs amendment — 2026-09-11
 
 Apply [ADR 0015](decisions/0015-use-native-aos-service-runtime-inputs.md) and
@@ -55,7 +65,7 @@ amendment does not authorize implementation, live calls or deletion.
 ## Purpose
 
 This document is the traceability bridge between the static capability model
-in High-Level Architecture 1.5, the audience-visible Demo Scenario 2.0, and the
+in High-Level Architecture 1.7, the audience-visible Demo Scenario 2.0, and the
 next component-requirements package.
 
 It defines how software, data, decisions, evidence, and ownership move through
@@ -86,7 +96,7 @@ rollout.
 
 When the inputs differ, use this order:
 
-1. High-Level Architecture 1.5 owns component boundaries, interfaces,
+1. High-Level Architecture 1.7 owns component boundaries, interfaces,
    authority, security boundaries, and architectural invariants.
 2. Demo Scenario 2.0 owns stage order, component presence, audience-visible
    proof, and the manufacturing-to-retirement narrative.
@@ -1903,7 +1913,7 @@ OEM approval explicit. It was accepted on 2026-08-19
 after reviewers confirmed that:
 
 1. `M0`, `M1`, `G0–G4`, `T1`, and `R0` match Demo Scenario 1.5;
-2. every component and interface respects High-Level Architecture 1.5;
+2. every component and interface respects High-Level Architecture 1.7;
 3. VU validation and PU promotion use explicit current targeting and identical
    accepted artifacts;
 4. manufacturing state, Unit identity, software graph, functional data, and

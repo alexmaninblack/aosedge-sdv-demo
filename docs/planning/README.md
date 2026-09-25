@@ -7,78 +7,53 @@ Planning documents decompose accepted architecture into controlled delivery
 gates. A plan does not itself authorize a build, signature, Cloud mutation,
 assignment, VM restart, or provisioned-Unit change.
 
-- [Presenter UI amendments — final implementation plan](active/work-packets/presenter-ui-amendments-implementation.md)
-  — three accepted changes: card-level Reset, one Disk view and Cloud CPU/RAM
-  history; implemented and live-qualified on the preserved staging Test.
-- [Current .33 consolidation audit](../qualification/factory-33-consolidation-audit-2026-09-13.md)
-  — current runtime/source state and open permissions, Cloud, UI and publication gates.
-- [Current design and delivery roadmap](roadmap.md)
-- [Demo Studio staged delivery plan](active/demo-studio-delivery-plan.md)
-  — authorized P1–P8 sequence and current .33 checkpoint. Scoped engineering
-  E2E passed; full product/visual acceptance remains open. New mockup/flow
-  changes still require separate approval.
-- [Native Demo Desktop Plan](active/native-demo-desktop.md)
-  — accepted 2026-09-07: freeze/publish the working source checkpoint, combine
-  Driving Control and telemetry, add a Demo Control-backed native launcher,
-  and configure a dedicated Space. CARLA stays a separate window; new desktop
-  work is tracked by the Studio plan; combined native control/telemetry already
-  exists. Earlier train status below is historical authorization evidence,
-  not the current live demo status or a prohibition on authorized Studio work.
-- [Accepted Demo Implementation Plan 1.2](active/demo-implementation-plan.md)
-  — bounded implementation increments, repository ownership, dependencies,
-  verification and per-increment authorization gates.
-- [Consolidated Implementation Execution Trains](active/infrastructure-first-critical-path-proposal.md)
-  — the completed Platform Train authorization record and bounded Demo
-  Interface Train authorization. Its macOS handoff correction is now accepted;
-  the train may begin only after the synchronized contract checkpoint and
-  exact clean entry gates pass, and authorizes no live source or external
-  mutation.
-- Completed P0 work packets:
-  [UI readiness](active/work-packets/p0-ui-readiness.md),
-  [Vehicle/Gateway readiness](active/work-packets/p0-vehicle-gateway-readiness.md)
-  and [Platform readiness](active/work-packets/p0-platform-readiness.md).
-  Their P0 read-only assessment and local-test execution completed on
-  2026-08-28. They are retained as the evidence that admitted the later P1
-  work; current authorization state is recorded by the consolidated execution
-  trains and their linked detailed packets.
-- Authorized P1 work packets:
-  [Presenter UI implementation](active/work-packets/p1-ui-presenter-shell.md)
-  and
-  [Vehicle/Gateway wheel-unit correction](active/work-packets/p1-vehicle-gateway-wheel-units.md).
-  Both are stored in Git as reviewable execution-control records and were
-  explicitly authorized on 2026-08-28. Their authorization is limited to the
-  exact repository, paths, dependencies, commands, tests and exclusions in
-  each packet; it does not authorize push, merge or live external operations.
-- The completed Platform Train provenance includes the
-  [Factory/Runtime source packet](active/work-packets/p1-platform-factory-runtime.md)
-  and its [compile qualification](active/work-packets/p1-platform-runtime-compile-qualification.md),
-  KAC compile/Row2 checkpoints and the
-  [KAC Factory stage](active/work-packets/p1-platform-kac-factory-integration.md).
-  Their source/fan-in/qualification result is accepted Factory baseline `.21`;
-  these historical execution records grant no residual product, Builder, VM
-  or Cloud authority. The Demo Interface Train is separately authorized but
-  remains not started until the synchronized contract checkpoint lands.
-- The next Platform execution boundary is the authorized
-  [VDP deployable artifact preparation packet](active/work-packets/p1-platform-vdp-artifacts.md),
-  which is offline-only and not started. It owns no signing, Cloud, VM or FOTA
-  operation.
-- The [Gateway controller handoff packet](active/work-packets/p1-vehicle-gateway-controller-cpp.md)
-  records the preserved `d4a20c` candidate and its macOS/targeted
-  CARLA-enabled Gateway compile
-  blockers; its bounded
-  [macOS correction packet](active/work-packets/p1-vehicle-gateway-controller-macos-correction.md)
-  is accepted/authorized but not started. The [Brake v2 packet](active/work-packets/p1-brake-health-core-v2.md)
-  is implemented and integrated; the accepted
-  [Brake v3 advisory-core packet](active/work-packets/p1-brake-health-core-v3.md)
-  authorizes only its exact nine-path source-only product boundary. The
-  [Brake Cloud Data packet](active/work-packets/p1-brake-cloud-data.md) is
-  implemented and integrated on product `main` at `1320dde`. The proposed
-  [Brake Cloud window-detail packet](active/work-packets/p1-brake-cloud-window-detail.md)
-  is accepted and authorizes the additive five-path, no-migration local
-  source-only point-read implementation; it authorizes no packaging, network,
-  live, merge or push action.
-- [Repository inventory and migration plan](repository-inventory-and-migration-plan.md)
-  — completed migration and local-cleanup execution record.
+## Current implementation and remaining work
+
+- [demo-v1.1 return point](../qualification/demo-v1.1-return-point.md): published
+  source composition and retained Factory39; Production31 is preserved.
+- [Implemented architecture](../architecture/current-implementation.md) and
+  [documentation audit](../qualification/documentation-implementation-audit-2026-09-24.md):
+  current requirements/code/protocol mapping and explicit gaps.
+- [Studio delivery plan](active/demo-studio-delivery-plan.md): dated execution
+  chronology, not a fresh authorization to repeat old work.
+- [AosCore migration](active/aoscore-mainline-migration-2026-09-23.md):
+  mainline-derived Factory39 with retained native corrections.
+- [Host sleep/wake recovery](active/native-sleep-wake-recovery-2026-09-21.md):
+  accepted planning, not implemented or qualified by controller ignition.
+- [Presenter amendments](active/work-packets/presenter-ui-amendments-implementation.md):
+  implemented card Reset, consolidated Disk and CPU/RAM history.
+- [Versioned service observability](active/work-packets/versioned-service-observability.md):
+  product/function/Cloud authority and qualification exclusions.
+- [Roadmap](roadmap.md): design/delivery order and original milestones.
+
+Current gaps include fresh serial .39 all-version/Finish acceptance,
+cold externalOFF ignition/nonempty-outbox power loss, remaining calibration and
+negative/resource matrices, readiness transitions, and executable Tire cleanup
+contract synchronization. Cloud charts do not implement the missing CPU worker.
+
+## Historical execution packets
+
+The [implementation plan](active/demo-implementation-plan.md),
+[execution trains](active/infrastructure-first-critical-path-proposal.md),
+[native desktop plan](active/native-demo-desktop.md), P0/P1 packets and
+[repository migration](repository-inventory-and-migration-plan.md) retain their
+dated scope and ownership. “Not started” in an old packet describes its
+checkpoint; it is not today's status or residual permission to mutate a Unit.
+
+VDP artifact preparation, native Gateway handoff, Brake V2/V3, real backend
+window detail, KAC and Factory integration have subsequently been implemented.
+Their original bounded packets remain traceability:
+[VDP](active/work-packets/p1-platform-vdp-artifacts.md),
+[Gateway](active/work-packets/p1-vehicle-gateway-controller-macos-correction.md),
+[Brake V2](active/work-packets/p1-brake-health-core-v2.md),
+[Brake V3](active/work-packets/p1-brake-health-core-v3.md),
+[window detail](active/work-packets/p1-brake-cloud-window-detail.md),
+[KAC](active/work-packets/p1-platform-kac-factory-integration.md),
+[Factory/runtime source](active/work-packets/p1-platform-factory-runtime.md) and
+[runtime compile qualification](active/work-packets/p1-platform-runtime-compile-qualification.md).
+The [.33 audit](../qualification/factory-33-consolidation-audit-2026-09-13.md)
+is historical; its old permissions/source-publication blockers are not the
+current .39 baseline.
 
 ## Active Architecture Changes
 

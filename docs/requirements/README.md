@@ -3,14 +3,15 @@
 
 # Requirements Documentation
 
+The [current implementation matrix](../architecture/current-implementation.md) and [protocol audit](../../contracts/implementation-status.md) cover the implemented demo-v1.1 / Factory .39. Normative requirements remain obligations, not assertions that every qualification case has passed.
+
 - [System Requirements and Traceability 2.1 — accepted](system-requirements-and-traceability.md)
   — system obligations, coverage of all Architecture Flows gaps, verification
-  intent, repository ownership and allocation to future component requirement
+  intent, repository ownership and allocation to the thirteen component requirement
   packages.
 - [Component Decomposition and Interface Register 2.1 — accepted](component-decomposition-and-interface-register.md)
   — stable logical-component and interface identifiers, current/target state,
-  lifecycle ownership, repository candidates and the review gate before
-  component requirements.
+  lifecycle ownership, implemented repositories and requirement allocation.
 - [Component requirement packages](components/README.md)
   — D3 package order, stable component-requirement and unit-test-obligation
   identifiers, reusable package template and the D3/D4 verification boundary.

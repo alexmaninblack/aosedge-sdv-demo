@@ -3,11 +3,16 @@
 
 # Bounded service function observation
 
-Accepted semantics: decisions 1A and 2A, 18 September 2026. This amendment
-defines the new observation requirement, not a deployed wire protocol.
-The [v3 executable contract](v3-contract.md), closed schema, reference decoder
-and negative tests now freeze the new consumer-first wire boundary. Producers
-and live activation remain separate gates in the
+Current implementation status (24 September 2026, demo-v1.1 / Factory .39):
+see the [complete protocol map](../implementation-status.md) for this family's
+implemented path, accepted amendments and remaining qualification or executable-
+profile differences. Design lifecycle labels below are not deployment verdicts.
+Historical golden schemas/digests are not rewritten as part of this audit.
+
+Accepted semantics: decisions 1A and 2A, 18 September 2026. The
+[v3 executable contract](v3-contract.md), closed schema, producers, backend
+consumers and Presenter selectors are implemented and have scoped live
+evidence. Remaining acceptance and freshness observations are recorded in the
 [work packet](../../docs/planning/active/work-packets/versioned-service-observability.md).
 
 ## Authority and axes

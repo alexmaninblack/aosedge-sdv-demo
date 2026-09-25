@@ -5,26 +5,21 @@
 
 ## Readiness at a Glance
 
-Updated 23 September 2026. Distinguish the working engineering workspace
-from a fully published, fresh-checkout, visually accepted product demo.
+Updated 24 September 2026: **demo-v1.1 / Factory .39**.
 
-| Path | Current status | What a newcomer can reproduce |
+| Path | Implemented / proven scope | Remaining boundary |
 | --- | --- | --- |
-| Standalone AosVM on Apple Silicon | Repeatable | Boot, persistent lifecycle, network mobility checks and guarded single-Main-Node provisioning |
-| CARLA engineering demonstration | Repeatable on the qualified workspace | Native CARLA vehicle, manual/autopilot control, deterministic brake-event scenario and live Engineering Telematics Dashboard |
-| CARLA VISS-to-KUKSA integration | Accepted qualification evidence | Vehicle telemetry crossing the Gateway boundary into KUKSA on the qualified VM baseline |
-| Factory .36 Test lifecycle and FOTA/SOTA | Scoped continuous UI E2E passed | Fresh Test provisioning; VDP V1/V2/V3 under Safe Stop; Brake/Tire replacement; real products, network OFF/local operation, reconnect/backlog and Finish |
-| Real service telemetry and advisory | Scoped staging proof, not production calibration | Normal packages retain native authorization and consume real KUKSA inputs; later readiness correction qualified VDP98/Brake78/Tire44 |
-| Full qualification / fresh checkout | Not fully closed | Source/CI/pin reconciliation in progress; remaining negative, manual/recovery and separate guest-reboot checks are explicit |
+| Native simulation/control | CARLA, Gateway, combined control/telemetry, Brake/Tire maneuvers and Return to road | Full calibration/repetition and automatic host sleep/wake not closed |
+| Platform and services | Selected-Unit trust, KAC/KUKSA, VDP V1–V3, Brake V1–V3, Tire V1, real products/advisory | Production calibration and complete negative matrix are separate |
+| Current .39 | Build/smoke; same-identity ignition and five-minute offline checks with VDP117/Brake92/Tire49 | Not a fresh serial all-version/Finish cycle or full P8 |
+| Earlier serial UI cycles | Dated .36/.38 evidence retained | Their removed binaries and earlier results do not qualify .39 automatically |
+| Source checkpoint | v1.1 dependencies, integration and tag published; hosted checks passed | Git does not restore images, credentials, release ledger or live state |
 
-Use the [current working baseline](../qualification/current-baseline.md),
-[.36 E2E evidence](../qualification/factory-36-e2e-2026-09-19.md),
-[continuous UI cycle](../qualification/presenter-ui-timing-e2e-2026-09-20.md) and
-[readiness correction](../qualification/advisory-readiness-renewal-2026-09-20.md)
-for current pins and limitations. A synthetic backend receipt is real transport
-evidence but is not proof of vehicle-derived analytics. The packaged CM idle
-full-status setting is recovery around an unresolved Cloud ordering defect,
-not a server fix.
+See the [baseline](../qualification/current-baseline.md),
+[v1.1 return point](../qualification/demo-v1.1-return-point.md),
+[implemented architecture](../architecture/current-implementation.md) and
+[audit/open items](../qualification/documentation-implementation-audit-2026-09-24.md).
+Historical synthetic receipts are not vehicle-derived analytic proof.
 
 ## Workspace Shape
 
@@ -53,9 +48,8 @@ receipts are not its substitute. Project-owned public remotes are under
 The machine-readable workspace contract is
 [`workspace/repositories.json`](../../workspace/repositories.json), but its
 accepted main-branch pins must match the selected published checkpoint. It
-includes Tire and both backends. The 23 September audit found three pins lagging
-local readiness corrections; reconciliation is in progress. The read-only doctor
-can expose that drift:
+includes Tire and both backends. The v1.1 publication reconciled all eight
+dependency pins and hosted CI. The read-only doctor checks actual checkout drift:
 
 ```sh
 ./scripts/workspace-doctor
@@ -83,22 +77,21 @@ workspace or vault.
   designated ignored/local stores; never stage credentials, VM disks, compiled
   bundles or private Cloud source in Git.
 
-The current exact branches, source pins and remote-publication gaps are recorded
-in the consolidation audit. Some working changes are uncommitted or ahead of
-remote. The CARLA/Unreal compatibility branches and the project Studio branches
-must not be replaced with `main` merely to satisfy an older workspace file.
+Exact revisions/branches are in the v1.1 return point and workspace manifest.
+CARLA/Unreal retain compatibility branches; the other six dependencies use their
+recorded main revisions. Do not replace pinned inputs with arbitrary branches.
 
 ## Use the current Demo Control workflow
 
 Run the installed `democtl` from `apps/demo-orchestrator`, as described in its
 [CLI guide](../../apps/demo-orchestrator/README.md). Use `democtl image list`
-to discover the real catalog; .36 is retained for Test, while existing Production
+to discover the real catalog; .39 is retained for new Tests, while existing Production
 still uses .31. Do not retire Production or use an obsolete image from an old
 example. The [E2E report](../qualification/factory-36-e2e-2026-09-19.md)
 records a dated scoped cycle, not a claim that a Test is running now.
 
 All lifecycle, package preparation/signing/publication, assignment and runtime
-actions use the shared Demo Control implementation. A normal .36 start already
+actions use the shared Demo Control implementation. A normal .39 start already
 contains the accepted CM/SM/resource/input fixes; do not reapply old runtime
 activation or restart recipes. The release allocator owns version numbers and
 must retain its continuity ledger. VDP profile bases and current service build
@@ -138,23 +131,21 @@ terminated blindly.
 
 ## Verify the Cross-VM Telemetry Boundary
 
-The accepted evidence and its limitations are recorded in
-[CARLA VISS-to-KUKSA qualification](../qualification/carla-viss-to-kuksa.md).
-The current .33 report additionally qualifies the VDP component release flow.
-Neither report claims that the permission-free Brake/Tire services consume
-live KUKSA data.
+The initial [VISS-to-KUKSA proof](../qualification/carla-viss-to-kuksa.md)
+is historical evidence. Current real-data proof is in the
+[.39 ignition](../qualification/factory-39-ignition-2026-09-24.md) and
+[offline](../qualification/factory-39-offline-2026-09-24.md) receipts.
+Normal packages use native permissions; the explicit historical
+permission-free lifecycle mode is never an authorization-failure fallback.
 
 ## What Must Be Built Before a One-Command Full Demo
 
-The [active Studio plan](../planning/active/demo-studio-delivery-plan.md#current-delivery-position--13-september-2026)
-owns the remaining work: finish consolidation/source publication, complete
-Presenter actions/visual alignment, then qualify native permissions and real
-service analytics/advisory after the platform fix, followed by the clean
-CLI/visual repeat. Cloud ordering and the client workaround are tracked
-independently. Do not list the already built .33, VDP family, orchestrator or
-Tire repositories as missing implementation.
+Use the [current audit](../qualification/documentation-implementation-audit-2026-09-24.md)
+for remaining work, not earlier lists of missing repositories or permissions
+that are now implemented. Complete the fresh .39 serial sequence and remaining
+recovery/negative/calibration gates. Source tests are not live/human acceptance.
 
-No new image is needed just to repeat this workflow; rebuild only for an
-identified, approved guest change. Keep runtime observations distinct from
-accepted design requirements and never conceal a blocked gate with synthetic
-success or undocumented manual state changes.
+The [Studio plan](../planning/active/demo-studio-delivery-plan.md) retains
+chronology. Rebuild only for a proved, approved guest delta; documentation or
+host UI changes alone do not require a new image. Never conceal a blocked gate
+with synthetic success or undocumented manual state.

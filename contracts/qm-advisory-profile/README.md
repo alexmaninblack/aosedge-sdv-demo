@@ -3,6 +3,12 @@
 
 # Typed QM Advisory Profile
 
+Current implementation status (24 September 2026, demo-v1.1 / Factory .39):
+see the [complete protocol map](../implementation-status.md) for this family's
+implemented path, accepted amendments and remaining qualification or executable-
+profile differences. Design lifecycle labels below are not deployment verdicts.
+Historical golden schemas/digests are not rewritten as part of this audit.
+
 This directory is the canonical cross-component contract for
 [`D4-008`](../../docs/requirements/d4-decision-register.md#d4-008). It freezes
 the two non-safety QM maintenance-advisory paths, schema-bound Request/Status
@@ -46,10 +52,10 @@ warning. Original request bytes/timestamps remain unchanged for provenance
 and replay equality. Identical duplicates never extend either deadline.
 This is not a telemetry-age, readiness-heartbeat or motion-control tolerance.
 
-This contract update does not modify released bundles or qualify the dormant
-VDP advisory transport. A future payload must bind the updated policy/profile
-digest during its normal preparation and signing, without rewriting frozen
-VDP3.0.0 artifacts.
+The profile is bound during normal preparation/signing of current payloads;
+previously frozen artifacts are never rewritten. Current V3 transport has
+scoped live proof in the integration baseline; the original contract edit
+alone did not qualify that transport.
 
 Future end-to-end support for VSS struct actuators may replace the wire
 encoding without changing the semantic fields or authority model. Driver HMI,

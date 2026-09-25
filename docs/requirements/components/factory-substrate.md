@@ -21,6 +21,10 @@
   accepted image `6.1.1-maninblack.21` SHA-256
   `80e0c0dc4f7f9c51a25d3461047e2e3d85bf540059c7052af3944ce8650e19e1`
 
+## Implementation-status reading rule — 24 September 2026
+
+Implementation-status annotations retained from the original D3 review are historical allocation notes, not current deployment claims. The current baseline section and the gates below supersede those annotations; requirements and stable test obligations are unchanged.
+
 ## Purpose
 
 This package defines the pre-SOP OEM assembly that produces a clean,
@@ -114,22 +118,17 @@ required when manufacturing a fresh Unit from the accepted Factory Image.
 
 ## Current Implementation Baseline
 
-| Capability | Evidence | State |
-| --- | --- | --- |
-| Accepted bootable Factory image | `.21`, 6,997,147,648 bytes, SHA-256 `80e0c0dc4f7f9c51a25d3461047e2e3d85bf540059c7052af3944ce8650e19e1`; frozen rootfs SHA-256 `32290e8f45632b3993ef0dc61b23be8a508bfd4d94f97f6ab65c80cbbad8d00b` | `ACCEPTED FACTORY BASELINE` |
-| Source lock | `aos-vehicle-platform@667afb1512cf43ff27f1ab5327293208bf73045b`, tree `164f907bf041dbc99df24d2ebe7b0e5d2bbaeab0` | `ACCEPTED`; controlled same-source reproducibility remains a final-dossier obligation |
-| Provider-specific runtime and Safe Stop gate | `systemd-slot-component` A/B runtime, durable waiting state and Gateway vehicle-state Safe Stop provider are installed; active VDP slot remains empty | `ACCEPTED FACTORY SUBSTRATE`; live FOTA qualification belongs to the later VDP artifacts |
-| Empty-slot behavior | VDP executable absent, service inactive, no active slot or installed component; strict TLS/JWT read reports `Vehicle.Speed: NotAvailable` | `ACCEPTED / EXPECTED FACTORY STATE` |
-| Security and IAM/KAC substrate | Shared native Permission Handler configuration, dedicated per-Unit `kuksa-jwt` PKCS#11 identity, atomic verifier preparation, bounded systemd/SELinux domains and native CA trust | `ACCEPTED`; first-create, idempotent reuse, normal restart and zero-scoped-AVC evidence passed |
-| OEM Component Runtime A/B working storage | 512 MiB nested ext4 inside encrypted Aos workdirs for slots, transaction state and private credential sources | `ACCEPTED` for demo; not a VDP application/log store, and production runtime storage remains deferred `D4-X03` |
-| Clean unprovisioned checks | Offline Enforcing boot, no provisioning marker, issued key/PIN, provider payload, functional service or reusable secret; factory chain correctly gated | `PASS` |
-| Provisioning and normal-mode checks | One official SDK attempt succeeded; IAM/CM/SM/TLS/verifier/provider/auth/broker all successful with zero restarts; final scoped AVC set empty | `PASS` |
-| Historical `.11` raw/rootfs candidates | Prior raw image and unsigned rootfs FOTA evidence | `HISTORICAL EVIDENCE`; neither is a current candidate or M0 input |
-| VDP component artifacts | VDP v1-v3 source is integrated, but no prepared/signed/published/installed v1-v3 artifact exists | `ABSENT / NEXT POST-SOP ARTIFACT GATE` |
+Updated 24 September 2026 for **demo-v1.1 / Factory .39**.
+See [current architecture/traceability](../../architecture/current-implementation.md),
+[protocol status](../../../contracts/implementation-status.md) and
+[qualification limits](../../qualification/current-baseline.md).
+These are implementation/proof states, not changes to stable requirement IDs
+or blanket acceptance of every requirement in this package.
 
-Provisioned overlays and Cloud Units are acceptance evidence, never Factory
-Image sources. Every new M0 instance starts from the unchanged read-only `.21`
-image and a fresh copy-on-write overlay.
+| Boundary | Current state |
+| --- | --- |
+| Current Factory39 substrate | Mainline-derived AosCore with retained corrections, KUKSA/KAC, empty provider slot, Safe Stop runtime, private native resource projection and boot recovery integration are built. The immutable digest is in the v1.1 checkpoint; Production .31 remains separate. |
+| Evidence and remaining obligations | .39 build/smoke, ignition and offline evidence exist; manifest remains BUILT_NOT_LIVE_QUALIFIED. Same-source reproducibility/full P8 are not inferred. |
 
 ## Testability Boundary
 
@@ -166,7 +165,7 @@ redacted comparison or digests.
 
 ## Requirement Summary
 
-| Requirement | Plain-language obligation | Implementation | Verification levels |
+| Requirement | Plain-language obligation | D3 implementation snapshot | Verification levels |
 | --- | --- | --- | --- |
 | [Pinned factory assembly (`REQ-FACTORY-001`)](#req-factory-001) | Rebuild from identified upstream and OEM inputs | `PARTIAL` | Unit, Contract, Component |
 | [Distinct build artifacts (`REQ-FACTORY-002`)](#req-factory-002) | Never confuse Factory Image, rootfs FOTA and provider component FOTA | `PARTIAL` | Unit, Contract, Inspection |
@@ -196,7 +195,7 @@ redacted comparison or digests.
 - Components: [Factory Assembly (`CMP-FACTORY`)](../component-decomposition-and-interface-register.md#cmp-factory)
 - Required evidence: validated source lock, build manifest, tool versions and output manifest
 - Requirement state: D3 design-reviewed
-- Implementation state: `IMPLEMENTED / ACCEPTED OUTPUT`; `.21` has exact
+- D3 implementation snapshot (historical; current baseline above): `IMPLEMENTED / ACCEPTED OUTPUT`; `.21` has exact
   source, tree, size, image/rootfs digests and retained build evidence;
   independent same-source rebuild equivalence remains a final-dossier proof
 
@@ -220,7 +219,7 @@ record cannot identify every effective integration input.
 - Interfaces: [Cloud-to-Unit lifecycle (`IF-LC-004`)](../component-decomposition-and-interface-register.md#if-lc-004) and [runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006)
 - Required evidence: machine-readable artifact manifest and negative cross-type installation tests
 - Requirement state: D3 design-reviewed
-- Implementation state: `PARTIAL`; the bytes and component types exist, while one normative factory artifact manifest is not yet accepted
+- D3 implementation snapshot (historical; current baseline above): `PARTIAL`; the bytes and component types exist, while one normative factory artifact manifest is not yet accepted
 
 Acceptance requires the rootfs envelope to target the factory-installed rootfs
 A/B runtime and the Vehicle Data Platform Component to target only the
@@ -243,7 +242,7 @@ provider-specific runtime. Neither may be labelled as the Factory Image.
 - Components: [Factory Assembly (`CMP-FACTORY`)](../component-decomposition-and-interface-register.md#cmp-factory), [AosCore (`CMP-AOS-CORE`)](../component-decomposition-and-interface-register.md#cmp-aos-core), [KUKSA (`CMP-KUKSA`)](../component-decomposition-and-interface-register.md#cmp-kuksa) and [Empty-Slot Runtime (`CMP-RUNTIME`)](../component-decomposition-and-interface-register.md#cmp-runtime)
 - Required evidence: image-content manifest, forbidden-content scan and clean guest-state qualification
 - Requirement state: D3 design-reviewed
-- Implementation state: `PASS`; the accepted `.21` offline image scan and
+- D3 implementation snapshot (historical; current baseline above): `PASS`; the accepted `.21` offline image scan and
   unprovisioned boot prove the required absence set
 
 ### Immutable bootable Factory Image
@@ -261,7 +260,7 @@ provider-specific runtime. Neither may be labelled as the Factory Image.
 - Interface: [Orchestrated VM lifecycle (`IF-DEMO-001`)](../component-decomposition-and-interface-register.md#if-demo-001)
 - Required evidence: raw-image format, partition/boot proof, size, digest, read-only state and qcow2 backing-chain validation
 - Requirement state: D3 design-reviewed
-- Implementation state: `ACCEPTED`; `.21` is the complete bootable read-only
+- D3 implementation snapshot (historical; current baseline above): `ACCEPTED`; `.21` is the complete bootable read-only
   Factory image with frozen size and digest
 
 ### Healthy provider-specific empty slot
@@ -280,7 +279,7 @@ provider-specific runtime. Neither may be labelled as the Factory Image.
 - Interface: [Runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006)
 - Required evidence: runtime inventory, empty filesystem/state checks, inactive systemd state and health result
 - Requirement state: D3 design-reviewed
-- Implementation state: `CURRENT / QUALIFY`
+- D3 implementation snapshot (historical; current baseline above): `CURRENT / QUALIFY`
 
 ### Atomic component lifecycle
 
@@ -318,7 +317,7 @@ provider-specific runtime. Neither may be labelled as the Factory Image.
 - Executable contract: [Platform FOTA Safe Stop 1.1.1](../../../contracts/platform-fota-safe-stop/platform-fota-safe-stop-profile.v1.json)
 - Required evidence: blocking runtime C++ suite plus pure policy/provider doubles, distinct/repeated/non-monotonic frame cases, asynchronous worker/mutex/cancel-and-join proof, first-install/replacement/removal, moving/stale/reset/timeout, restart-while-waiting with no persisted samples, Safe Stop loss and disposable guest pre-Apply revert/post-Apply forward-repair qualification
 - Requirement state: D3 design-reviewed
-- Implementation state: A/B lifecycle `CURRENT / QUALIFY`; Safe Stop provider, durable gate and accepted Factory Image integration `TARGET`
+- D3 implementation snapshot (historical; current baseline above): A/B lifecycle `CURRENT / QUALIFY`; Safe Stop provider, durable gate and accepted Factory Image integration `TARGET`
 
 ### Bounded security and storage
 
@@ -337,7 +336,7 @@ provider-specific runtime. Neither may be labelled as the Factory Image.
 - Interface: [Runtime enforcement (`IF-LC-006`)](../component-decomposition-and-interface-register.md#if-lc-006)
 - Required evidence: source gate, policy build, guest identity/capability/SELinux checks and negative Runtime A/B working-storage qualification
 - Requirement state: D3 design-reviewed
-- Implementation state: `CURRENT / QUALIFY`; the 512 MiB nested ext4 Runtime A/B working storage is accepted only as a demonstration backend and is not VDP application state
+- D3 implementation snapshot (historical; current baseline above): `CURRENT / QUALIFY`; the 512 MiB nested ext4 Runtime A/B working storage is accepted only as a demonstration backend and is not VDP application state
 
 ### Identity-safe fresh deployments
 
@@ -354,7 +353,7 @@ provider-specific runtime. Neither may be labelled as the Factory Image.
 - Interface: [Orchestrated VM lifecycle (`IF-DEMO-001`)](../component-decomposition-and-interface-register.md#if-demo-001)
 - Required evidence: redacted two-overlay identity comparison, no provisioning material before M1 and later distinct Cloud Unit/Node evidence
 - Requirement state: D3 design-reviewed
-- Implementation state: `TARGET`; existing provisioned `.1/.2` overlays are not valid proof for this requirement
+- D3 implementation snapshot (historical; current baseline above): `TARGET`; existing provisioned `.1/.2` overlays are not valid proof for this requirement
 
 ### Pre-provision runtime availability
 
@@ -369,7 +368,7 @@ provider-specific runtime. Neither may be labelled as the Factory Image.
 - Components: [Factory Assembly (`CMP-FACTORY`)](../component-decomposition-and-interface-register.md#cmp-factory) and [Empty-Slot Runtime (`CMP-RUNTIME`)](../component-decomposition-and-interface-register.md#cmp-runtime)
 - Required evidence: M0 image manifest, pre-provision runtime inventory and absence of a rootfs-update action in M0-M1 evidence
 - Requirement state: D3 design-reviewed
-- Implementation state: `ACCEPTED`; `.21` contains the empty-slot runtime
+- D3 implementation snapshot (historical; current baseline above): `ACCEPTED`; `.21` contains the empty-slot runtime
   before provisioning and M0-M1 requires no rootfs update
 
 A later post-SOP rootfs FOTA remains permitted for a platform/runtime fix or
@@ -390,7 +389,7 @@ presented as installation of the Vehicle Data Platform Component.
 - Interface: [Orchestrated VM lifecycle (`IF-DEMO-001`)](../component-decomposition-and-interface-register.md#if-demo-001)
 - Required evidence: pre/post-reset base digest, exact retired-overlay inventory and next-run overlay backing-chain proof
 - Requirement state: D3 design-reviewed
-- Implementation state: `TARGET`
+- D3 implementation snapshot (historical; current baseline above): `TARGET`
 
 ### Native IAM credential substrate
 
@@ -468,7 +467,7 @@ presented as installation of the Vehicle Data Platform Component.
   `NOT_READY`, fail-closed start ordering, and
   forbidden key/token/shared-verifier content scan
 - Requirement state: complete D4-027.1 through D4-027.8 package, transport, wire, non-widening JWT mapping, 300/180-second lifetime/renewal, exact per-Unit signer/verifier preparation, trustworthy-time behavior and operational bounds plus D4-010.1 lifecycle accepted
-- Implementation state: `IMPLEMENTED / FACTORY-QUALIFIED` in accepted `.21`;
+- D3 implementation snapshot (historical; current baseline above): `IMPLEMENTED / FACTORY-QUALIFIED` in accepted `.21`;
   the shared native handler configuration, dedicated module,
   verifier-preparation wiring and bounded runtime chain passed unprovisioned,
   post-provision and clean normal-mode qualification
@@ -525,10 +524,14 @@ build tree is not acceptance evidence.
 
 ## Open Issues
 
-| Issue | Impact | Owner | Decision gate |
-| --- | --- | --- | --- |
-| Implement the D4-027 shared `enablePermissionsHandler: true` configuration and separately packaged removable `CMP-KAC` seam plus D4-010.1 dedicated signer/verifier-preparation wiring, then produce and qualify one new versioned Factory Image with the D4-001 normative manifest and canonical rebuild-equivalence proof. Dynamic Provider authorization is not a first-demo gate. | Blocks selection of the final Factory Image but does not reopen its accepted artifact model | Platform Team + Aos security architecture | D4-027 executable contract followed by successor build and qualification |
-| Production OEM Component Runtime storage backend remains undecided | No impact on demo acceptance if nested ext4 remains explicitly demo-only and is not presented as VDP application state | OEM platform architecture | Outside current demo |
+Reviewed 24 September 2026 against demo-v1.1 / Factory .39. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
+
+| Boundary / gate | Current status and remaining obligation |
+| --- | --- |
+| Implemented Factory | Factory39 includes native IAM permissions, KAC/signer/verifier integration, empty-slot runtime/Safe Stop, native boot/storage corrections and public-input recovery. .21 is historical evidence, not the selected image. |
+| Remaining acceptance | Factory39 remains BUILT_NOT_LIVE_QUALIFIED in its manifest. Complete serial E2E, cold externalOFF and nonempty-outbox power-loss cases; canonical same-source reproducibility remains separate from one successful build. |
+| Security limits | Retained patches are explicit, not a stock-mainline claim. Scoped AVC receipts do not substitute for all security/negative cases. |
+| Production storage | Nested ext4 is the accepted demo backend, not a production vehicle storage architecture. Production .31 is retained unchanged. |
 
 ## D3 Review Closure and Product Acceptance
 

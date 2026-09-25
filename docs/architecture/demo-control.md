@@ -5,15 +5,18 @@
 
 ## Current lifecycle amendment — 19 September 2026
 
+Historical heading retained for links; current interpretation: 24 September.
 [ADR 0017](decisions/0017-continuous-demo-lifecycle-and-upstream-core.md)
-supersedes operator Park/Resume in earlier design notes below. Studio rejects
-those actions, retains historical receipts and offers confirmed Finish for an
-interrupted established run. Pause via native Safe Stop with the VM running;
-Finish before shutdown, then Create a fresh controller. CLI stop/start primitives
-remain engineering-only and explicitly warn of known AosCore shared-storage
-loss. Do not add another CM patch or claim that hiding restart fixes storage.
-The [current plan](../planning/active/demo-studio-delivery-plan.md) owns the
-continuous clean-cycle qualification, including all version/offline transitions.
+removes Studio Park/Resume. Pause with Safe Stop and the VM running.
+Subsequently authorized storage/cold-component corrections and Presenter-owned
+same-identity recovery have [.39 ignition evidence](../qualification/factory-39-ignition-2026-09-24.md).
+Do not apply the old universal restart-storage-loss warning to this corrected
+image or confuse it with automatic host sleep/wake, which remains planned.
+
+The [implemented architecture](current-implementation.md) and
+[current workflow](../operations/current-demo-workflow.md) supersede dated
+implementation-status notes below; the draft still contains proposals, not
+blanket authorization or proof of full qualification.
 
 ## Simulator first-drive stalls — 17 September 2026
 

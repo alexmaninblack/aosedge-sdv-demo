@@ -3,7 +3,7 @@
 
 # Component Requirement Packages
 
-- Status: Draft framework
+- Status: Accepted requirement packages; implementation inventory reviewed 2026-09-24
 - Prepared: 2026-08-18
 - Owner: System Architecture
 
@@ -19,35 +19,36 @@ of unexplained identifiers.
 
 ## Planned Packages and Order
 
-| Order | Package | File | Requirement / unit-test prefix | State |
+All thirteen packages exist. The order below is the original decomposition order;
+the final column is the current **implementation scope**, not blanket acceptance
+of every requirement. See the [current implementation matrix](../../architecture/current-implementation.md)
+for owning source and dated evidence, and each package's current baseline/gates.
+
+| Order | Package | File | Requirement / unit-test prefix | Current scope — demo-v1.1 / Factory .39 |
 | --- | --- | --- | --- | --- |
-| 1 | [`CR-VEHICLE-SIM`](../component-decomposition-and-interface-register.md#cr-vehicle-sim) | [Vehicle Simulation 0.8](vehicle-simulation.md) | `VEHICLE-SIM` | D3 design-reviewed; D4-002, D4-004 and D4-005 accepted, D4-003 working direction reviewed |
-| 1 | [`CR-GATEWAY`](../component-decomposition-and-interface-register.md#cr-gateway) | [Vehicle Gateway 1.1](vehicle-gateway.md) | `GATEWAY` | D3 design-reviewed; D4-002, D4-004, D4-005, D4-006 and D4-008 contracts accepted |
-| 2 | [`CR-FACTORY`](../component-decomposition-and-interface-register.md#cr-factory) | [Factory Substrate 0.5](factory-substrate.md) | `FACTORY` | D3 design-reviewed; implementation and `.21` Factory qualification accepted 2026-08-30; same-source reproducibility dossier remains separate |
-| 2 | [`CR-KAC`](../component-decomposition-and-interface-register.md#cr-kac) | [Current-Release KUKSA Authorization Compatibility 0.12](kuksa-authorization-compatibility.md) | `KAC` | D3 design-reviewed; complete D4-027.1 through D4-027.8 helper contract implemented and Factory-qualified in `.21`; Service-artifact integration remains later |
-| 2 | [`CR-VDP`](../component-decomposition-and-interface-register.md#cr-vdp) | [Vehicle Data Platform 0.9](vehicle-data-platform.md) | `VDP` | D3 design-reviewed; v1-v3 source integrated through `f565251`; prepared artifacts and live FOTA qualification absent |
-| 3 | [`CR-AOS`](../component-decomposition-and-interface-register.md#cr-aos) | [Aos Lifecycle 0.4](aos-lifecycle.md) | `AOS` | D3 review candidate; D4-011 public role/action matrix and separate `oem-delivery` authority recorded |
-| 4 | [`CR-BHS`](../component-decomposition-and-interface-register.md#cr-bhs) | [Brake Health Service 0.9](brake-health-service.md) | `BHS` | D4-016.3 exact input/arithmetic/identity/persistence closure accepted 2026-08-29; ready for implementation review, not authorized |
-| 4 | [`CR-BRAKE-CLOUD`](../component-decomposition-and-interface-register.md#cr-brake-cloud) | [Brake Health Cloud Product 0.5](brake-health-cloud.md) | `BRAKE-CLOUD` | D4 API plus Query/SSE/Admin annex accepted; source foundation `68fe61b` complete; data packet proposed/review required |
-| 5 | [`CR-TIRE`](../component-decomposition-and-interface-register.md#cr-tire) | [Tire Health Service 0.6](tire-health-service.md) | `TIRE` | D3 design-reviewed; D4-018/D4-027 accepted; D4-003 empirical qualification and implementation remain open |
-| 5 | [`CR-TIRE-CLOUD`](../component-decomposition-and-interface-register.md#cr-tire-cloud) | [Tire Health Cloud Product 0.4](tire-health-cloud.md) | `TIRE-CLOUD` | D3 design-reviewed; D4-018/D4-019 accepted; D4-020 design-reviewed; repository and implementation remain open |
-| 6 | [`CR-DEMO`](../component-decomposition-and-interface-register.md#cr-demo) | [Demo Orchestration 1.1](demo-orchestration.md) | `DEMO` | D3 design-reviewed; D4-026.19 fixed team context/version-only scrolling, D4-026.18 global lifecycle workspace, D4-026.17 workspace ownership and D4-021.2/.3 resource-scoped operation registry revalidated; implementation open |
-| 6 | [`CR-CROSS`](../component-decomposition-and-interface-register.md#cr-cross) | [Cross-Cutting Security and Operations 0.4](cross-cutting.md) | `CROSS` | D3 design-reviewed 2026-08-28; KAC, trusted Provider and D4-010.3 publication boundaries accepted; implementation and qualification open |
-| 6 | [`CR-E2E`](../component-decomposition-and-interface-register.md#cr-e2e) | [End-to-End Acceptance 0.8](end-to-end-acceptance.md) | `E2E` | D3 design-reviewed 2026-08-27; complete D4-026.1–.20 presentation, qualification and composed-workspace design accepted; implementation and live qualification open |
+| 1 | [`CR-VEHICLE-SIM`](../component-decomposition-and-interface-register.md#cr-vehicle-sim) | [Vehicle Simulation](vehicle-simulation.md) | `VEHICLE-SIM` | Native physics, control and real maneuvers implemented; formal repeatability/calibration and full hardware coverage remain open |
+| 2 | [`CR-GATEWAY`](../component-decomposition-and-interface-register.md#cr-gateway) | [Vehicle Gateway](vehicle-gateway.md) | `GATEWAY` | Strict selected-peer VISS, telemetry, typed advisory and native control implemented; broader negative/dual-role matrix remains |
+| 3 | [`CR-FACTORY`](../component-decomposition-and-interface-register.md#cr-factory) | [Factory Substrate](factory-substrate.md) | `FACTORY` | Factory .39 built and focused ignition/offline proof recorded; complete fresh serial qualification remains open |
+| 4 | [`CR-KAC`](../component-decomposition-and-interface-register.md#cr-kac) | [KUKSA Authorization Compatibility](kuksa-authorization-compatibility.md) | `KAC` | Native IAM mapping, private JWT lifecycle and Factory integration implemented; scoped local/offline proof |
+| 5 | [`CR-VDP`](../component-decomposition-and-interface-register.md#cr-vdp) | [Vehicle Data Platform](vehicle-data-platform.md) | `VDP` | V1/V2/V3 common-runtime artifacts, Safe Stop FOTA and V3 advisory implemented; full fresh .39 progression remains open |
+| 6 | [`CR-AOS`](../component-decomposition-and-interface-register.md#cr-aos) | [Aos Lifecycle](aos-lifecycle.md) | `AOS` | Selected staging Test provisioning, serial publication/assignment, observation and retirement implemented; native dependency admission remains deferred |
+| 7 | [`CR-BHS`](../component-decomposition-and-interface-register.md#cr-bhs) | [Brake Health Service](brake-health-service.md) | `BHS` | V1 windows, V2 model and V3 advisory implemented; independent calibration and full fault/resource matrix remain open |
+| 8 | [`CR-BRAKE-CLOUD`](../component-decomposition-and-interface-register.md#cr-brake-cloud) | [Brake Health Cloud Product](brake-health-cloud.md) | `BRAKE-CLOUD` | Real ingest/query/reset/cleanup implemented; integrated Presenter is live, standalone Dashboard remains fixtures |
+| 9 | [`CR-TIRE`](../component-decomposition-and-interface-register.md#cr-tire) | [Tire Health Service](tire-health-service.md) | `TIRE` | Real V1 model, advisory and durable delivery implemented; formal calibration and CPU worker remain open |
+| 10 | [`CR-TIRE-CLOUD`](../component-decomposition-and-interface-register.md#cr-tire-cloud) | [Tire Health Cloud Product](tire-health-cloud.md) | `TIRE-CLOUD` | Real API, SQLite, Test-scoped cleanup and observation implemented; legacy cleanup schema drift and CPU control remain open |
+| 11 | [`CR-DEMO`](../component-decomposition-and-interface-register.md#cr-demo) | [Demo Orchestration](demo-orchestration.md) | `DEMO` | Presenter, CLI, lifecycle, monitoring, Reset and guarded ignition recovery implemented; host sleep/wake remains planned |
+| 12 | [`CR-CROSS`](../component-decomposition-and-interface-register.md#cr-cross) | [Cross-Cutting Security and Operations](cross-cutting.md) | `CROSS` | Native trust, isolation and scoped offline/recovery proof; complete security/resource qualification not claimed |
+| 13 | [`CR-E2E`](../component-decomposition-and-interface-register.md#cr-e2e) | [End-to-End Acceptance](end-to-end-acceptance.md) | `E2E` | Dated receipts and source gates exist; full .39 all-version/Finish and remaining negative matrix are not complete |
 
-The files listed above are created only when work begins on the corresponding
-package. Their absence therefore means “not started,” not a broken link.
+D3 review dates and requirement/verification obligations remain preserved.
+Design approval is not implementation or deployment authorization. Historical
+design-review status annotations inside a requirement do not override the
+current baseline and qualification gates.
 
-`D3 design-reviewed` means that the component boundary, requirement
-obligations, interface ownership, verification levels and stable unit-test
-obligations are accepted as input to D4. It does not mean that target behavior
-is implemented, qualified or authorized for deployment; each package keeps
-those states and open gates explicit.
-
-Shared D4 questions are consolidated in the
-[D4 Interface and Qualification Decision Register](../d4-decision-register.md).
-Package `Open D4 Gates` and `Open Issues` sections remain the requirement-owner
-source, while one `D4-*` ID controls each cross-package decision.
+Shared decisions remain in the [D4 register](../d4-decision-register.md).
+Implementation discrepancies are tracked in the [documentation audit](../../qualification/documentation-implementation-audit-2026-09-24.md),
+including executable-contract drift; they are not silently accepted as a new
+protocol.
 
 ## Stable Identifier Rules
 

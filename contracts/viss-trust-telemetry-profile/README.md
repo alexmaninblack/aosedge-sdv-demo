@@ -3,11 +3,18 @@
 
 # VISS Trust and Telemetry Profile
 
-The current presenter-Mac CLI demo has an explicit
-[operator-accepted local exception](../../docs/architecture/demo-control.md#local-demo-amendment-defer-per-unit-viss-mtls)
-dated 2026-09-05: per-Unit client mTLS is deferred, while server TLS verification
-and single-VM source exclusivity remain required. The strict contract below
-remains the future target; local-demo success is not strict mTLS qualification.
+Current implementation status (24 September 2026, demo-v1.1 / Factory .39):
+see the [complete protocol map](../implementation-status.md) for this family's
+implemented path, accepted amendments and remaining qualification or executable-
+profile differences. Design lifecycle labels below are not deployment verdicts.
+Historical golden schemas/digests are not rewritten as part of this audit.
+
+The 5 September server-TLS-only local exception is historical. The current
+Test workflow uses strict selected-Unit mTLS and separate safety/observer roles;
+scoped proof is in the [Factory39 ignition receipt](../../docs/qualification/factory-39-ignition-2026-09-24.md).
+Legacy engineering exception support is not the normal Studio trust mode and
+must not be represented as strict-mTLS qualification. The original dual-role
+contract remains broader than the current Test-only milestone.
 
 - Decision: [`D4-006`](../../docs/requirements/d4-decision-register.md#d4-006)
 - Contract version: 1.1.0

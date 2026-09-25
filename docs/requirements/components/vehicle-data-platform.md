@@ -3,7 +3,7 @@
 
 # Vehicle Data Platform Component Requirements
 
-- Status: D3 design-reviewed; v1-v3 source integrated, artifacts absent
+- Status: D3 design-reviewed; V1/V2/V3 artifacts implemented/delivered; current qualification limits below
 - Package: [`CR-VDP`](../component-decomposition-and-interface-register.md#cr-vdp)
 - Version: 0.9
 - Prepared: 2026-08-21
@@ -26,6 +26,10 @@
   accepted Factory-source revision
   `aos-vehicle-platform@667afb1512cf43ff27f1ab5327293208bf73045b`;
   no v1/v2/v3 prepared artifact exists
+
+## Implementation-status reading rule — 24 September 2026
+
+Implementation-status annotations retained from the original D3 review are historical allocation notes, not current deployment claims. The current baseline section and the gates below supersede those annotations; requirements and stable test obligations are unchanged.
 
 ## Purpose
 
@@ -77,14 +81,17 @@ as the generic workload-authorization model.
 
 ## Current Implementation Baseline
 
-| Capability | Current evidence | Required disposition |
-| --- | --- | --- |
-| Inbound provider | Integrated v1-v3 source family with the v1 seven-path base profile, VISS TLS, KUKSA publication, source timestamps, unavailable-state handling and reconnect behavior | Build and qualify the exact ARM64 artifacts against `.21` |
-| Component FOTA | Integrated release manifests, packaging/build validation and accepted Factory A/B runtime contract; no prepared component bytes exist | Produce and freeze three immutable candidates before any signing or Cloud action |
-| KUKSA executable | External Eclipse KUKSA 0.5.0 using `kuksa.val.v1` | Keep unchanged; change only contract and verifier configuration |
-| Trusted Provider connection | Integrated systemd-credential source path using the accepted KUKSA CA contract | Qualify with the packaged VDP artifact; do not add Provider IAM/JWT exchange |
-| SOTA authorization compatibility | Implemented separately in accepted `.21` Factory substrate | Owned by `CR-KAC`; not delivered in the VDP FOTA artifact |
-| Outbound advisory | Typed, allowlisted v3 source path integrated at `f565251` | Qualify in the v3 artifact and live Gateway path |
+Updated 24 September 2026 for **demo-v1.1 / Factory .39**.
+See [current architecture/traceability](../../architecture/current-implementation.md),
+[protocol status](../../../contracts/implementation-status.md) and
+[qualification limits](../../qualification/current-baseline.md).
+These are implementation/proof states, not changes to stable requirement IDs
+or blanket acceptance of every requirement in this package.
+
+| Boundary | Current state |
+| --- | --- |
+| Prepared and delivered VDP family | Common current runtime is packaged as profile-bound V1/V2/V3 (7/15/23 telemetry paths); V3 adds only typed advisory. Prepared unsigned content is signed per selected OEM environment. KAC stays outside FOTA. Selected-Unit mTLS and real KUKSA processing are implemented. |
+| Evidence and remaining obligations | .39 retained VDP117/V3 recovers through ignition and works offline. Earlier serial families are dated evidence, not full .39 serial acceptance. Historical109 crash cause remains unresolved/not reproduced. |
 
 ## Testability Boundary
 
@@ -120,7 +127,7 @@ obligations and shall not be replaced by mocks in acceptance evidence.
 
 ## Requirement Summary
 
-| Requirement | Plain-language obligation | Verification levels | Design state | Implementation state |
+| Requirement | Plain-language obligation | Verification levels | Design state | D3 implementation snapshot |
 | --- | --- | --- | --- | --- |
 | [Immutable lifecycle (`REQ-VDP-001`)](#req-vdp-001) | One identifiable FOTA artifact per release and identical promotion bytes | Unit, Contract, Integration, End-to-end | D3 design-reviewed | `PARTIAL` |
 | [Versioned v1 data contract (`REQ-VDP-002`)](#req-vdp-002) | Publish only the accepted first read-only subset with explicit quality | Unit, Contract, Integration, End-to-end | D3 design-reviewed | `PARTIAL` |
@@ -428,11 +435,14 @@ signing, Cloud upload, VM restart, provisioning or Unit mutation.
 
 ## Open Design and Qualification Gates
 
-| Gate | Why it remains open | Owner |
-| --- | --- | --- |
-| Exact trusted Provider connection configuration | The first demo intentionally does not add dynamic Provider IAM/JWT; exact protected configuration and two-Unit qualification evidence must still be frozen | Platform Team |
-| Implement and qualify selected-Unit mTLS, readiness and atomic unavailable/recovery semantics | D4-006 contract is accepted but the current provider uses the historical server-authenticated profile | Platform Team plus Gateway and Demo Orchestration |
-| Native Cloud permission admission | Platform roadmap capability is not released; no project-side substitute is allowed | AosEdge Platform Team |
+Reviewed 24 September 2026 against demo-v1.1 / Factory .39. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
+
+| Boundary / gate | Current status and remaining obligation |
+| --- | --- |
+| Implemented profiles and trust | Common-runtime V1/V2/V3 packages, selected-Unit mTLS, real KUKSA provider and typed V3 return channel are implemented. The server-authenticated-only prototype is historical. |
+| Current-image qualification | Complete fresh .39 serial profile progression, Safe Stop/update/recovery negatives and broader peer/dual-Unit matrix. Reused VDP117 profile-not-confirmed Presenter observation remains open. |
+| Diagnostics | VDP109 SIGSEGV has no captured cause; later common-runtime checks did not reproduce it. Temporary core capture is removed, not silently left enabled. |
+| Native admission | Service-to-FOTA pre-transfer dependency admission remains deferred; present this separately from working IAM/KUKSA Service permissions. |
 
 ## Change Rules
 

@@ -21,8 +21,12 @@
 - Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
 - Accepted D4 advisory input: [D4-008 Typed QM Advisory Profile](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - Accepted D4 exact product inputs: [Tire Health In-Vehicle Product Contract](../../../contracts/tire-health-model/README.md) and [Tire Cloud API](../../../contracts/tire-cloud-api/README.md); [Local Demo Hosting and VM Route](../../../contracts/local-demo-hosting/README.md) is design-reviewed and still requires implementation qualification
-- Implementation baseline: no `tire-health-service` repository or executable exists
+- Implementation baseline: `tire-health-service` at the demo-v1.1 dependency pin; current V1 product and proof scope below
 - Implementation, repository creation, signing, Cloud, or Unit mutation authorized: no
+
+## Implementation-status reading rule — 24 September 2026
+
+Implementation-status annotations retained from the original D3 review are historical allocation notes, not current deployment claims. The current baseline section and the gates below supersede those annotations; requirements and stable test obligations are unchanged.
 
 ## Native service input amendment — 2026-09-11
 
@@ -74,7 +78,7 @@ authorizes Test deployment and Production rollout affecting OEM Units.
 | What this package does not own | CARLA stimulus or hidden truth, VISS, VDP/KUKSA/`CMP-KAC` implementation, Gateway enforcement, Aos lifecycle execution, Tire Health backend/dashboard, native Cloud Service-to-FOTA VDP Component admission, production tire diagnostics or driver HMI |
 | Intended result | A second independent SOTA product runs beside Brake Health, derives a local tire-condition band, survives Cloud loss, sends bounded results and requests only its approved inspection advisory |
 | Accountable lifecycle owner | Function Team 2 publishes and accepts the exact Validation Unit result; independent OEM Release Authority authorizes Test deployment and Production rollout through SOTA 2 |
-| Primary repository | Proposed public `tire-health-service`; repository creation remains a later implementation action |
+| Primary repository | Public `tire-health-service`; actual C++ runtime, native ARM64 product packaging and scoped live evidence |
 
 ## Component Boundary
 
@@ -126,16 +130,17 @@ authorizes Test deployment and Production rollout affecting OEM Units.
 
 ## Current Implementation Baseline
 
-| Capability | Current evidence | State for this package |
-| --- | --- | --- |
-| Repository and source boundary | Component Register allocates proposed `tire-health-service`; repository does not exist | `NEW` |
-| ARM64 Aos service candidate | No payload, metadata, build or secret-negative scan | `NEW` |
-| VDP v3 compatibility declaration | Accepted architecture and flow require it; no machine-readable service metadata exists | `NEW` |
-| KUKSA authorization and subscription client | Accepted `CMP-KAC` fixed-resource bootstrap architecture exists; no Tire client implementation | `NEW` |
-| Persistent condition estimator | ADR 0008 and system requirements define the boundary; model/state contract absent | `NEW` |
-| Functional backend transport | `IF-TIRE-003` defines direction; D4-018/D4-019 propose exact messages, isolated local transport, queue and acknowledgement; production backend authentication is Function Team 2-owned and out of scope | `NEW` |
-| Typed advisory request | VDP/Gateway target is accepted design; no Tire service request implementation | `NEW` |
-| Unit tests and quality gate | No Tire repository or test suite | `NEW` |
+Updated 24 September 2026 for **demo-v1.1 / Factory .39**.
+See [current architecture/traceability](../../architecture/current-implementation.md),
+[protocol status](../../../contracts/implementation-status.md) and
+[qualification limits](../../qualification/current-baseline.md).
+These are implementation/proof states, not changes to stable requirement IDs
+or blanket acceptance of every requirement in this package.
+
+| Boundary | Current state |
+| --- | --- |
+| Independent Tire V1 product | Repository, ARM64 packaging, native KAC/KUKSA runtime, fifteen VDP V3 inputs, deterministic model/hysteresis, persistent outbox, typed advisory, function observation and Reset exist. Ordinary packages request 1024 files and 16 PIDs. There is no Tire V3. |
+| Evidence and remaining obligations | Real .39 V1 products, ignition and offline delivery passed. Full frozen healthy/pre-aged calibration, CPU-load demonstration and all crash/overflow cases remain separate. |
 
 ## Accepted Provisional Resource Envelope
 
@@ -155,8 +160,8 @@ logical envelope:
 | Persistent storage | 4 MiB | Bounded functional outbox and supporting database metadata |
 | Persistent model state | 2 MiB | Versioned cumulative condition state |
 | Temporary storage | 2 MiB | No Brake-style high-detail event-window buffering |
-| Open files | 32 | One service process, local state, KUKSA/backend connections and logs |
-| Processes | 8 | Deliberately smaller process budget than Brake Health |
+| Open files | 1024 | Accepted ordinary-package envelope; native construction and connections |
+| Processes | 16 | Tire's accepted independent task budget; Brake now requests 24 |
 
 The D4-023.2 design maps this logical envelope to current Aos Service metadata:
 CPU is expressed in DMIPS and the size fields normalize to bytes. Live
@@ -254,7 +259,7 @@ executable against controlled adjacent components.
 - Flows: [independent Tire lifecycle (`AF-TIRE-LC`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-lc)
 - Verification: Unit, Component, Contract, Integration
 - Evidence: reproducible staging bytes, secret-negative scan, exact artifact/metadata digests and release manifest
-- State: D3 design-reviewed; no repository or candidate exists
+- State: D3 design-reviewed; repository and candidates implemented, complete qualification remains scoped below
 
 Changed content shall produce a new immutable version/digest. Validation and
 Production promotion use identical accepted bytes; no presentation-time
@@ -506,25 +511,16 @@ waive D4-003 calibration, implementation review or live qualification.
 
 ## Open D4 Gates
 
-The D4-018 and D4-019 packages linked above contain the accepted exact
-input/model/message/advisory/state/transport design. Their numeric values are
-the current design input, but D4-003 still permits calibration-owned
-normalization adjustment before the configuration is frozen and digest-pinned;
-artifact/product acceptance therefore remains blocked until the frozen live
-healthy/pre-aged separation passes. D4-020 route qualification, D4-023 quota
-enforcement and real KUKSA/Gateway integration remain live gates.
+Reviewed 24 September 2026 against demo-v1.1 / Factory .39. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
 
-| Gate | Why it blocks implementation acceptance | Owner |
-| --- | --- | --- |
-| Exact D4-018 model-consumed subset of the accepted VDP v3 paths, plus estimator cadence/quality/freshness bounds | Accepted; real VDP/KUKSA conformance remains a gate | Platform Team + Function Team 2 |
-| Accelerated/pre-aged stimulus, service-visible initial estimate and hidden qualification oracle | Blocks honest deterministic demonstration without oracle leakage | Vehicle Simulation + Function Team 2 |
-| Synthetic estimator, state schema, bands, confidence, thresholds and tolerance | Exact design is accepted; D4-003 calibration and artifact/product acceptance remain gates | Function Team 2 |
-| Assessment/event schemas, local transport, idempotency key, rate/size and acknowledgement | D4-018 logical contract accepted; D4-019 and live backend conformance remain gates; production authentication is intentionally out of scope | Function Team 2 + `CR-TIRE-CLOUD` |
-| D4-018 Tire decision thresholds and hysteresis that trigger the accepted advisory envelope | Accepted; D4-003 live qualification remains open | Function Team 2 |
-| Queue/state capacity, retention, retry/backoff, overflow and future migration policy | Exact current-release design is accepted; live offline/restart/uninstall qualification remains a gate | Function Team 2 |
-| Mapping and runtime qualification of the accepted provisional CPU/RAM/state/tmp/file/process envelope, plus health/readiness endpoint | Blocks resource and failure-isolation acceptance; any increase requires a reviewed Level-B change | Function Team 2 + Aos integration |
-| Source/local/backend chronology fields plus log schema/redaction | Blocks observability and chronology acceptance | Function Team 2 + Demo experience |
-| Native Cloud service-to-VDP dependency admission | Deferred platform roadmap item; does not block v1.0 when sequencing, OEM evidence and fail-closed readiness are proved | AosEdge Platform Team |
+| Boundary / gate | Current status and remaining obligation |
+| --- | --- |
+| Implemented V1 | Fifteen real KUKSA dynamics inputs, source-time maneuvers, synthetic model, durable outbox, typed advisory/Gateway correlation and independent Reset are implemented; V1 is already advisory-capable. |
+| Calibration | The accepted 16 September raw dispersion/slip arithmetic exists. Frozen healthy/pre-aged 10+10 classification and oracle-negative/repeatability evidence remain required; do not call the model a production diagnosis. |
+| Current .39 proof | Tire49/V1 retained state through ignition and produced local results during externalOFF. Exact assessment/advisory replay was checked; ten legacy status messages have only count/time evidence. |
+| Remaining fault/resource matrix | Complete corrupt-state physical quarantine, replacement epoch, crash/overflow, cold externalOFF, nonempty-queue power loss and quota/failure isolation. |
+| CPU qualification | No fixed CPU worker/control is enabled. A design profile or Cloud CPU chart is not an implemented isolation test. |
+| Compatibility and native admission | Service checks actual local inputs; Presenter maps exact installed VDP profile. Missing data is not proven incompatibility; native Cloud pre-transfer dependency admission remains deferred. |
 
 ## Change Rules
 

@@ -20,6 +20,16 @@
   repository creation, implementation, signing, Cloud or Unit mutation is
   authorized by this requirements baseline alone
 
+## Current implementation view — 24 September 2026
+
+The current source milestone is **demo-v1.1 / Factory .39**.
+[Implemented architecture and traceability](../architecture/current-implementation.md) maps
+the accepted requirements, amendments, protocols, component owners and proof.
+Earlier allocation/implementation statuses in this design are dated review
+history, not a claim that today's services, permissions or UI are absent.
+Full acceptance still requires the explicitly outstanding tests; this view
+does not change stable IDs or grant deployment authority.
+
 ## Native service inputs amendment — 2026-09-11
 
 The accepted [ADR 0015](../architecture/decisions/0015-use-native-aos-service-runtime-inputs.md)
@@ -56,9 +66,9 @@ passes its acceptance criteria, and the evidence is retained.
 
 ## Source Precedence
 
-1. High-Level Architecture 1.5 owns boundaries, authority and invariants.
+1. High-Level Architecture 1.7 owns boundaries, authority and invariants.
 2. Demo Scenario 2.0 owns the audience-visible stage progression.
-3. Architecture Flows 2.0 owns detailed lifecycle, runtime, observability and
+3. Architecture Flows 2.1 owns detailed lifecycle, runtime, observability and
    failure-flow mapping.
 4. This document owns system requirement identifiers, gap traceability,
    verification intent and the next component-allocation boundary.

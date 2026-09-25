@@ -3,6 +3,12 @@
 
 # Tire Health In-Vehicle Product Contract — Accepted Contract
 
+Current implementation status (24 September 2026, demo-v1.1 / Factory .39):
+see the [complete protocol map](../implementation-status.md) for this family's
+implemented path, accepted amendments and remaining qualification or executable-
+profile differences. Design lifecycle labels below are not deployment verdicts.
+Historical golden schemas/digests are not rewritten as part of this audit.
+
 - Decision: `D4-018`
 - Lifecycle state: `ACCEPTED`
 - Contract version: `1.1.1` (explicit current-Test demo reset; model thresholds unchanged)
@@ -19,10 +25,11 @@ are qualification truth and are forbidden from the Service, KUKSA, backend and
 dashboard.
 
 Service v1.0 is compatible only with VDP v3 and consumes the exact 15-path
-subset frozen in the product profile. VDP v1/v2, a missing capability or an
-incomplete path contract leaves the process healthy but the function
-`NOT_READY` with reason `INCOMPATIBLE_VDP`; it emits no condition result or
-advisory and re-evaluates automatically when compatible VDP v3 appears. The
+subset frozen in the product profile. Under the accepted [option-A amendment](../service-runtime-inputs/active-vdp-capability-amendment.md),
+Presenter establishes exact VDP compatibility from Cloud/artifact evidence.
+The service validates real local inputs, remains waiting/not-ready on absent
+or invalid data, and recovers automatically; absence alone must not be called
+proven `INCOMPATIBLE_VDP`. It emits no fabricated condition result/advisory. The
 Function Team view may direct the operator to the Platform Team, but the first
 demo claims no native pre-transfer AosCloud dependency rejection.
 
@@ -143,7 +150,8 @@ defines revision 2 / 2.0.0 beside the retained legacy schemas in this package.
 Use the immutable package release and native service/Subject/instance identity;
 do not require service/model OCI digest fields or relabel old queued records.
 Payload algorithms, model/VDP hashes, receipt keys and authorization remain
-unchanged. Backend consumer source is implemented; producer/input migration
-and real Test integration are still open. Earlier sections and v1 schema
+unchanged. Producer/input migration and backend consumers are implemented and
+have scoped live Test evidence. Full current-image qualification remains
+separate; see the protocol map above. Earlier sections and v1 schema
 files remain legacy evidence, not an instruction to reintroduce the digest
 dependency into new messages. Administrative/cleanup protocols are unaffected.
