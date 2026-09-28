@@ -174,6 +174,12 @@ Direct native observations confirmed:
    explanatory line overlaps the upper area of the external-network button.
    Primary button labels remain readable, but this is a visual defect to triage
    before closing the complete native presentation gate.
+   Read-only source inspection located the overlap: `KeyboardControl.swift`
+   draws `sceneDetail` in a 50-unit-high text rectangle starting at y=70,
+   intersecting the network button's y=86..122 rectangle. This is drawing
+   geometry, not a window-placement or connectivity failure. A bounded caption
+   rectangle in the existing inter-row gap is the proposed correction; no
+   native binary or pinned artifact was changed in this continuation.
 3. Bounded guest logs contain VISS response timeouts during this session, while
    current readiness is READY/LIVE, automatic SM/CM/VDP restart counts are zero,
    and fresh backend advisory facts say APPLIED. These observations do not prove
@@ -184,6 +190,13 @@ Direct native observations confirmed:
    timeouts, so they cannot be dismissed as a short import-only load spike.
    At 08:06:21 UTC the car was independently confirmed SAFE_STOP, 0 km/h,
    brake 1.0; fresh APPLIED receipts and READY/LIVE continued. Cause remains open.
+   Source inspection distinguishes the two signals: `AdvisoryTransport` expires
+   an unconsumed Set reply after two monotonic seconds; APPLIED is a separate
+   Gateway status delivered through the subscription. Therefore a visible
+   recommendation and a Set-reply timeout are not logically contradictory.
+   The next diagnostic must correlate the exact request/reply arrival and
+   consumption timings before selecting a transport fix; increasing the
+   deadline or changing model/readiness policy is not justified yet.
 
 The read-only comparison is recorded in
 `Build-distribution-stage2-20260926/packaged-live-stage2-ui-20260928.json` and
