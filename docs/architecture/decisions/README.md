@@ -36,5 +36,9 @@ they do not replace the current HLA.
   — accepted removal of operator Park/Resume without another native CM patch;
   continuous clean-cycle qualification and explicit upstream retention defect.
 
+- [ADR 0018: Installable Demo and First-use Boundary](0018-installable-demo-and-first-use.md)
+  — accepted staged installation/onboarding direction; initial offline
+  transaction slice cannot activate a runtime or change user state.
+
 The change process and stable-reference rules are defined in
 [Documentation and Requirements Management](../../governance/documentation-and-requirements-management.md).

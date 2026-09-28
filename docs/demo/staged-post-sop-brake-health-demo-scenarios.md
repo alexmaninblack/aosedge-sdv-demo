@@ -4,23 +4,34 @@
 # Staged Post-SOP Brake and Tire Health Demo Scenarios
 
 - Status: Accepted
-- Version: 2.0
+- Version: 2.1
 - Prepared: 2026-08-22
-- Accepted: 2026-08-26
-- Previous accepted version: 1.9
+- Accepted: 2026-09-27 (installed-workstation amendment)
+- Previous accepted version: 2.0
 - Owner: Demo Architecture
 - Scope: manufacturing output, end-of-line provisioning, audience-visible
   capability evolution, release sequence, dashboards, observability, and
   end-of-demo retirement
 - Architecture alignment: dynamic staged projection of High-Level Architecture
-  1.7, with detailed interaction mapping in Demo Scenario Architecture Flows
-  2.1
+  1.8, with detailed interaction mapping in Demo Scenario Architecture Flows
+  2.2
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0011](../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
   [ADR 0013](../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md),
   [ADR 0014](../architecture/decisions/0014-enforce-platform-fota-safe-stop-in-oem-component-runtime.md)
 - Accepted publication decision: [D4-010.3 Artifact Publication Credential Profile](../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
 - Implementation, build, signing, Cloud, or Unit mutation authorized: no
+
+## Distribution entry sequence — 27 September 2026
+
+Under [ADR 0018](../architecture/decisions/0018-installable-demo-and-first-use.md),
+first install the immutable runtime, then explicitly select a private data
+instance, configure access and verify prerequisites before M0. Installation
+does not mean that the controller exists, a Unit is provisioned or telemetry
+is flowing. The first-use topology has one OEM and one associated SP for both
+independent services; two SP organizations are not required. The existing
+sequential-version, FOTA Safe Stop, QM SOTA, offline and retirement story stays
+unchanged. Package replacement/removal never performs R0 or erases run history.
 
 ## Current implemented story — demo-v1.1 / Factory39
 
@@ -57,6 +68,26 @@ amendment does not authorize implementation, live calls or deletion.
 
 ## Purpose
 
+For the accepted installable-distribution work, prebuilt inputs replace source
+checkouts under the [portable Prepare contract](../../contracts/portable-preparation-inputs/README.md).
+The [portable host launch contract](../../contracts/portable-host-launch/README.md)
+likewise replaces developer build inputs, not the story: one stationary local
+CARLA/Driving Control source can start detached, and the existing provisioned
+Test attachment remains a separate operation. No installer or full portable
+vehicle-run acceptance is implied by the host-only engineering proof.
+The [portable VM input slice](../../contracts/portable-vm-launch/README.md)
+likewise replaces QEMU/firmware/helper input locations without changing the
+audience sequence, vehicle identity or safety gates. Its assembly/unit evidence
+is not a completed guest/UI demonstration.
+The [Cloud/backend input slice](../../contracts/portable-cloud-backend-inputs/README.md)
+also replaces development inputs, not audience actions or functional evidence.
+The selected backend image must already be available in the declared engine;
+no automatic import, build or engine launch is implied. Packaging a Cloud SDK
+does not configure credentials, authorize publication or establish connectivity.
+Audience actions and story remain unchanged: prepare unsigned content, sign and
+publish in the selected context, then observe actual installation and function.
+This input-location change does not merge FOTA with SOTA or imply readiness.
+
 This document defines one connected demonstration lifecycle. It begins with
 two newly manufactured virtual vehicle computers, provisions them into
 AosCloud, evolves their software capabilities after SOP, and retires the
@@ -68,9 +99,9 @@ its Vehicle Gateway, and contains an operational Domain Controller with the
 AosEdge platform substrate. What is initially absent is the Vehicle Data
 Platform Component payload and all functional SOTA services.
 
-Scenario 2.0 defines what should happen and what an
+Scenario 2.1 defines what should happen and what an
 audience should see. It is the dynamic, stage-by-stage projection of the
-capability-superset model in High-Level Architecture 1.7. It does not yet
+capability-superset model in High-Level Architecture 1.8. It does not yet
 select exact APIs, define every detailed interaction, or authorize
 implementation.
 
@@ -1646,10 +1677,10 @@ refines only the Brake Health product evolution:
 
 ## Reference Basis
 
-- [High-Level Architecture 1.7](../architecture/high-level-architecture.md)
+- [High-Level Architecture 1.8](../architecture/high-level-architecture.md)
   defines the accepted capability-superset architecture baseline; this
   scenario defines its staged component presence and lifecycle, while
-  [Architecture Flows 2.1](../architecture/demo-scenario-architecture-flows.md)
+  [Architecture Flows 2.2](../architecture/demo-scenario-architecture-flows.md)
   defines detailed cross-component interaction mapping.
 - [AosEdge overview](https://docs.aosedge.tech/docs/aos-edge/) describes the
   Cloud-to-edge lifecycle and operational visibility model.

@@ -30,8 +30,8 @@ Use these sources together, not as competing requirements:
 
 | Source | Authority used in this audit |
 | --- | --- |
-| [Scenario 2.0](../demo/staged-post-sop-brake-health-demo-scenarios.md), especially G2/G3/G4/T1 | Original product evolution and audience-visible proof. Its provisional G3 signal wish list is not the later frozen signal contract. |
-| [Architecture Flows 2.1](../architecture/demo-scenario-architecture-flows.md), AF-G2-RT/OB, AF-G3-RT/OB, AF-G4 and AF-TIRE | Data directions, ownership, continuity, failure containment and correlation. |
+| [Scenario 2.1](../demo/staged-post-sop-brake-health-demo-scenarios.md), especially G2/G3/G4/T1 | Original product evolution and audience-visible proof. Its provisional G3 signal wish list is not the later frozen signal contract. |
+| [Architecture Flows 2.2](../architecture/demo-scenario-architecture-flows.md), AF-G2-RT/OB, AF-G3-RT/OB, AF-G4 and AF-TIRE | Data directions, ownership, continuity, failure containment and correlation. |
 | [D4 register](../requirements/d4-decision-register.md), D4-003/007/016/018/026 | Stimulus, compatibility, product/state/advisory and evidence decisions. |
 | [VDP compatibility](../../contracts/vdp-compatibility-profile/README.md), [Brake window](../../contracts/brake-telemetry-window/README.md), [Brake model](../../contracts/brake-health-model/README.md), [Brake runtime](../../contracts/brake-health-runtime/README.md), [Brake advisory](../../contracts/brake-health-advisory-policy/README.md), [Tire product](../../contracts/tire-health-model/README.md) | Executable signal, model, freshness, persistence, compatibility and message semantics, including dated accepted amendments. |
 | [UI-STUDIO-026](../demo/mockups/aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract) | Current Test-only flow, publication/assignment, native-left/Studio-right layout, summary/dialog navigation and evidence sources. Supersedes older Production/approval/terminal presentation provisions. |

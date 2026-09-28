@@ -1,18 +1,18 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Component Decomposition and Interface Register 2.1
+# Component Decomposition and Interface Register 2.2
 
 - Status: Accepted
-- Version: 2.1
+- Version: 2.2
 - Prepared: 2026-08-22
-- Accepted: 2026-08-26
-- Previous accepted version: 1.1
+- Accepted: 2026-09-27 (installed-workstation amendment)
+- Previous accepted version: 2.1
 - Owner: System Architecture
-- Architecture input: [High-Level Architecture 1.7](../architecture/high-level-architecture.md)
-- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.0](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Demo Scenario Architecture Flows 2.1](../architecture/demo-scenario-architecture-flows.md)
-- Requirements input: [System Requirements and Traceability 2.1](system-requirements-and-traceability.md)
+- Architecture input: [High-Level Architecture 1.8](../architecture/high-level-architecture.md)
+- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.1](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Demo Scenario Architecture Flows 2.2](../architecture/demo-scenario-architecture-flows.md)
+- Requirements input: [System Requirements and Traceability 2.2](system-requirements-and-traceability.md)
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0011](../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
   [ADR 0013](../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md),
@@ -20,6 +20,24 @@
 - Brake Cloud repository creation completed on 2026-08-28; no additional
   repository creation, implementation, Cloud or Unit mutation is authorized by
   this component baseline alone
+
+## Installed workstation allocation
+
+The existing [Demo Orchestrator](#cmp-orch) owns the local installation and
+instance-path selection adapter for [separate installed data authority](system-requirements-and-traceability.md#sys-dist-001).
+It reuses the existing lifecycle and presentation interfaces; it does not
+introduce a second VM/Cloud controller or a vehicle wire protocol. The private
+instance marker and separate input/output roots are specified by the
+[installed-state contract](../../contracts/distribution-installation/installed-state.md).
+The package-store transaction has no runtime readiness authority.
+
+The same adapter owns the [version-selection/recovery detail](../../contracts/distribution-installation/version-selection.md).
+Instance selection and package-use leases introduce no vehicle wire interface
+or independent controller; destructive removal and native activation remain gated.
+
+| Parent obligation | Allocation | Derived package |
+| --- | --- | --- |
+| `SYS-DIST-001` | `CMP-ORCH`, `IF-DEMO-001` | `REQ-DEMO-025` |
 
 ## Current implementation view — 24 September 2026
 
@@ -60,12 +78,12 @@ surfaces. Those concepts are related, but they are not interchangeable.
 
 ## Source Precedence
 
-1. High-Level Architecture 1.7 owns system boundaries, authorities and
+1. High-Level Architecture 1.8 owns system boundaries, authorities and
    invariants.
-2. Demo Scenario 2.0 owns the audience-visible lifecycle and stage sequence.
-3. Architecture Flows 2.1 owns detailed runtime, lifecycle, observability and
+2. Demo Scenario 2.1 owns the audience-visible lifecycle and stage sequence.
+3. Architecture Flows 2.2 owns detailed runtime, lifecycle, observability and
    failure flows.
-4. System Requirements 2.1 owns normative `SYS-*` obligations and gap
+4. System Requirements 2.2 owns normative `SYS-*` obligations and gap
    traceability.
 5. This register owns stable component and interface identifiers, component
    allocation, implementation state and repository placement candidates.
@@ -432,6 +450,11 @@ implementation:
 | <a id="cr-event-cloud"></a>`CR-EVENT-CLOUD` | `CR-TIRE-CLOUD` |
 
 ## Detailed Package Traceability
+
+Installed workstation allocation: [separate installed data authority (`SYS-DIST-001`)](system-requirements-and-traceability.md#sys-dist-001)
+is owned by [Demo Orchestrator](#cmp-orch), through the existing
+[local lifecycle interface](#if-demo-001), and derives
+[installed instance separation](components/demo-orchestration.md#req-demo-025).
 
 The short labels below are reader aids. The linked System Requirements remain
 the only normative definitions.

@@ -179,9 +179,79 @@ class CloudConnection:
         path = self.root / CONFIG
         return read_json(path) if path.exists() else {"schemaVersion": 1}
 
+    def first_use_guard(self):
+        from .runtime_paths import installed, instance, canonical, small_json
+        from .environment import OVERLAYS
+        if not installed(self.root):
+            raise EnvironmentError("CLOUD_FIRST_USE_INSTALLED_INSTANCE_REQUIRED")
+        instance(self.root)
+        for name in (JOURNAL, JOURNAL + ".pending", *OVERLAYS.values()):
+            path = canonical(self.root / name)
+            if path.exists():
+                raise EnvironmentError("CLOUD_FIRST_USE_CURRENT_RUN_RETAINED")
+        path = canonical(self.root / CONFIG)
+        pending = canonical(path.with_name(path.name + ".pending"))
+        if pending.exists():
+            raise EnvironmentError("CLOUD_SELECTION_RECONCILIATION_REQUIRED")
+        if path.exists():
+            small_json(path, owned=True)
+
+    def _pair_stamp(self, oem, sp):
+        import hashlib
+        from .runtime_paths import canonical, private
+        from .installed_control import RECORD
+        self.first_use_guard()
+        records = []
+        for raw in (oem, sp):
+            if not isinstance(raw, str) or not raw.startswith('/') or str(Path(raw)) != raw:
+                raise EnvironmentError("CLOUD_CREDENTIAL_PATH_INVALID")
+            path = canonical(raw)
+            private(path)
+            info = path.stat()
+            if not 0 < info.st_size <= 1024 * 1024:
+                raise EnvironmentError("CLOUD_CREDENTIAL_MISSING_OR_UNSAFE")
+            records.append([str(path), info.st_dev, info.st_ino, info.st_size,
+                            info.st_mtime_ns, info.st_ctime_ns])
+        if records[0][1:3] == records[1][1:3]:
+            raise EnvironmentError("CLOUD_DISTINCT_OEM_SP_CERTIFICATES_REQUIRED")
+        # Metadata only, never a hash of reusable certificate/key contents.
+        records.extend([self._configuration(), read_json(self.root / RECORD)])
+        return hashlib.sha256(json.dumps(records, sort_keys=True).encode()).hexdigest()
+
+    def inspect_pair(self, oem, sp):
+        before = self._pair_stamp(oem, sp)
+        first, second = self.inspect(oem), self.inspect(sp)
+        if first['domain'] != second['domain']:
+            raise EnvironmentError("CLOUD_OEM_SP_DOMAIN_MISMATCH")
+        if before != self._pair_stamp(oem, sp):
+            raise EnvironmentError("CLOUD_CERTIFICATE_CHANGED_SINCE_PREVIEW")
+        return dict(domain=first['domain'], oemValidUntil=first['validUntil'],
+                    spValidUntil=second['validUntil'], selectionToken=before,
+                    rolesChecked=False)
+
+    def select_pair(self, oem, sp, expected_token):
+        with self.environment._writer():
+            metadata = self.inspect_pair(oem, sp)
+            if metadata['selectionToken'] != expected_token:
+                raise EnvironmentError("CLOUD_CERTIFICATE_CHANGED_SINCE_PREVIEW")
+            data = self._configuration()
+            prior = json.dumps(data, sort_keys=True)
+            profiles = data.setdefault('cloudProfiles', {})
+            profiles['oem-delivery'] = dict(credential=oem, expectedRole='oem')
+            profiles['service-provider'] = dict(credential=sp, expectedRole='service provider')
+            data['cloudConnection'] = dict(domain=metadata['domain'], source='OEM_CERTIFICATE_ORGANIZATION')
+            if json.dumps(data, sort_keys=True) != prior:
+                destination = self.environment._directory('.local/demo-control') / 'status.json'
+                # Guard again after any directory preparation, immediately before the write.
+                if self._pair_stamp(oem, sp) != expected_token:
+                    raise EnvironmentError("CLOUD_CERTIFICATE_CHANGED_SINCE_PREVIEW")
+                atomic_json(destination, data)
+            return dict(metadata, selectionToken=self._pair_stamp(oem, sp))
+
     def credential(self):
+        from .runtime_paths import credential_defaults
         data = self._configuration()
-        value = data.get("cloudProfiles", DEFAULT_PROFILES).get("oem-delivery", {}).get("credential")
+        value = data.get("cloudProfiles", credential_defaults(self.root)).get("oem-delivery", {}).get("credential")
         if not value:
             raise EnvironmentError("OEM_DELIVERY_PROFILE_REQUIRED")
         path = Path(value).expanduser()
@@ -193,10 +263,12 @@ class CloudConnection:
         if not path.is_absolute():
             path = self.root / path
         interpreter = str(Path(data.get("cloudPython", "~/.aos/venv/bin/python3")).expanduser())
+        from .cloud_runtime import launch
+        command, environment = launch(self.root, interpreter, "cloud_connection_worker.py")
         try:
-            result = subprocess.run([interpreter, "-I", "-B", str(Path(__file__).with_name("cloud_connection_worker.py"))],
+            result = subprocess.run(command,
                 input=json.dumps({"certificate": str(path)}), capture_output=True, text=True,
-                timeout=8, env={"PATH": os.defpath})
+                timeout=8, env=environment)
             if result.returncode or len(result.stdout) > 8192:
                 raise ValueError()
             value = json.loads(result.stdout)
@@ -237,8 +309,10 @@ class CloudConnection:
             path = Path(certificate).expanduser() if certificate else self.credential()
             if not path.is_absolute():
                 path = self.root / path
-            profiles = data.setdefault("cloudProfiles", {k: dict(v) for k, v in DEFAULT_PROFILES.items()})
-            profile = profiles.setdefault("oem-delivery", dict(DEFAULT_PROFILES["oem-delivery"]))
+            from .runtime_paths import credential_defaults
+            defaults = credential_defaults(self.root)
+            profiles = data.setdefault("cloudProfiles", {k: dict(v) for k, v in defaults.items()})
+            profile = profiles.setdefault("oem-delivery", dict(defaults["oem-delivery"]))
             profile.update(credential=str(path), expectedRole="oem")
             if domain != old_domain:
                 profile.pop("expectedOwnerId", None)

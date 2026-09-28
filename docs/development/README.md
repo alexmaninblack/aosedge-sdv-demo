@@ -38,8 +38,8 @@ dashboards have become live integrations.
 3. Check the relevant runtime and lifecycle sequence in
    [Architecture Flows](../architecture/demo-scenario-architecture-flows.md).
 4. Confirm that the change still fits
-   [High-Level Architecture 1.7](../architecture/high-level-architecture.md)
-   and [Demo Scenario 2.0](../demo/staged-post-sop-brake-health-demo-scenarios.md).
+   [High-Level Architecture 1.8](../architecture/high-level-architecture.md)
+   and [Demo Scenario 2.1](../demo/staged-post-sop-brake-health-demo-scenarios.md).
 
 If the proposed behavior does not fit, change and review the owning design
 document first. A downstream implementation must not silently redefine an

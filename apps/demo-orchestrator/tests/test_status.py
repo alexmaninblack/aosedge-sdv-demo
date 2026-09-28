@@ -167,7 +167,8 @@ class StatusTests(unittest.TestCase):
         self.write_config()
         barrier = threading.Barrier(2)
 
-        def fake(name, profile, vehicles, interpreter, timeout):
+        def fake(name, profile, vehicles, interpreter, timeout, *, root=None):
+            self.assertEqual(self.root, root)
             barrier.wait(timeout=2)
             return {"access": observation("AOSCLOUD:" + name, {"role": profile["expectedRole"]})}
         with patch("aosedge_demo_orchestrator.cloud.cloud_status", side_effect=fake):

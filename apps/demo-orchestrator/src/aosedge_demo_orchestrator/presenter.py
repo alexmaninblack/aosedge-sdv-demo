@@ -35,11 +35,16 @@ def stop():
             raise ValueError()
         pid = int(pids[0])
         expected = str(project_root() / "apps/demo-orchestrator/.venv/bin/democtl") + " ui serve"
+        from .host_runtime import selected
+        runtime = selected()
+        packaged_command = " ".join([*runtime.cli(project_root()), "ui", "serve"]) if runtime is not None else None
         def owner():
             value = subprocess.run(["/bin/ps", "-p", str(pid), "-o", "uid=,command="], capture_output=True, text=True, timeout=3).stdout.strip()
             uid, command = value.split(None, 1)
             if int(uid) != os.getuid():
                 return False
+            if packaged_command is not None:
+                return command == packaged_command
             if command.endswith(" " + expected):
                 return True
             # The documented terminal command can use a relative venv path.
@@ -126,6 +131,10 @@ class StudioCloudReader:
             self.last_component_publication = None
             self.installed_versions_hint = set()
             self.publication_context = context
+        # Reused releases may predate this run. Project their exact retained
+        # receipt in memory; Cloud still confirms installation and publication.
+        journal = dict(journal, componentOperations=self.profile_resolver.publication_records(
+            journal, self.installed_versions_hint))
         owned = [(version, row) for version, row in journal.get("componentOperations", {}).items()
                  if row.get("deploymentId") and re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version)]
         publication = None
@@ -340,8 +349,13 @@ def make_server(static_root, address=ADDRESS, reader=read_snapshot, native=None,
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Referrer-Policy", "no-referrer")
             self.send_header("Content-Security-Policy", "default-src 'self'; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
-            self.end_headers()
-            self.wfile.write(body)
+            try:
+                self.end_headers()
+                self.wfile.write(body)
+            except (BrokenPipeError, ConnectionResetError):
+                # A cancelled response is not an observation/action failure.
+                # Never send a second error response or replay work on it.
+                self.close_connection = True
 
         def do_GET(self):
             expected = "127.0.0.1:" + str(self.server.server_port)
@@ -459,7 +473,12 @@ def serve():
     source_recovery = None
     try:
         native = NativeSession()
-        server = make_server(project_root() / "apps/presenter-ui/dist", native=native)
+        from .host_runtime import selected
+        runtime = selected()
+        if runtime is not None:
+            runtime.verify("ui")
+        static_root = runtime.entry("web").parent if runtime is not None else project_root() / "apps/presenter-ui/dist"
+        server = make_server(static_root, native=native)
         from .application import DemoOrchestrator
         from .workspace import WorkspaceService, WorkspaceRecovery
         layout_app = DemoOrchestrator()

@@ -5,15 +5,16 @@
 
 - Status: D3 design-reviewed
 - Package: [`CR-DEMO`](../component-decomposition-and-interface-register.md#cr-demo)
-- Version: 1.2
+- Version: 1.3
 - Prepared: 2026-08-19
-- Accepted: 2026-08-20
+- Accepted: 2026-09-27 (installed-workstation amendment; earlier allocations retain their dated review status)
+- Previous accepted version: 1.2
 - Owner: Demo Solution Team
-- Architecture input: [High-Level Architecture 1.7](../../architecture/high-level-architecture.md)
-- Scenario input: [Demo Scenarios 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.1](../../architecture/demo-scenario-architecture-flows.md)
-- System-requirements input: [System Requirements 2.1](../system-requirements-and-traceability.md)
-- Component-register input: [Component Register 2.1](../component-decomposition-and-interface-register.md)
+- Architecture input: [High-Level Architecture 1.8](../../architecture/high-level-architecture.md)
+- Scenario input: [Demo Scenarios 2.1](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.2](../../architecture/demo-scenario-architecture-flows.md)
+- System-requirements input: [System Requirements 2.2](../system-requirements-and-traceability.md)
+- Component-register input: [Component Register 2.2](../component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0009](../../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md) and [ADR 0011](../../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md)
 - Accepted D4 Cloud authority input: [D4-011 Cloud Role and Action Matrix](../d4-decision-register.md#d4-011)
 - Accepted D4 topology input: [D4-012.1 Dedicated Demo Fleet and Unit Set Identity](../d4-decision-register.md#d4-012-1)
@@ -27,6 +28,30 @@
 - Implementation, signing, Cloud, Unit, VM, or CARLA mutation authorized: no
 
 ## Implementation-status reading rule — 24 September 2026
+
+Post-baseline distribution realization (26 September): the
+[portable preparation input contract](../../../contracts/portable-preparation-inputs/README.md)
+implements the user-accepted no-source-checkout delivery direction. Its
+pre-allocation integrity/no-build/fail-closed tests supplement the existing
+unsigned-candidate and version-continuity proof; they do not change producer,
+signing, Cloud or vehicle authority, or renumber the requirements below.
+The [portable host launch contract](../../../contracts/portable-host-launch/README.md)
+also requires prebuilt native execution, independent manifest trust, exact
+ownership and idempotent start/normal stop. Missing operator TLS is explicit;
+there is no copied credential or developer-path fallback. Existing geometry,
+source admission and UI idle/recovery guards remain requirements. Installer,
+full guest/Cloud binding and clean-machine live acceptance remain separate gates.
+The [portable VM input contract](../../../contracts/portable-vm-launch/README.md)
+extends those fixed-input, integrity and no-fallback obligations to image tools,
+QEMU, firmware and the DNS helper. Interpreter-independent helper commands must
+not weaken exact-owner checks or silently adopt a legacy running process.
+Existing VM/source safety, IDs, data retention and interface obligations remain.
+The [Cloud/backend input contract](../../../contracts/portable-cloud-backend-inputs/README.md)
+extends these obligations to the private SDK and fixed backend image set.
+Absent selections preserve development behavior; invalid selections cannot
+fall back, send credentials to a worker or silently replace a recorded backend.
+Existing authority, asynchronous observation, attempt/reconciliation, exact
+container ownership and data-retention obligations remain authoritative.
 
 Implementation-status annotations retained from the original D3 review are historical allocation notes, not current deployment claims. The current baseline section and the gates below supersede those annotations; requirements and stable test obligations are unchanged.
 
@@ -56,6 +81,43 @@ against that amendment. Backend context cardinality and cleanup selectors still
 need the identified P1 executable-contract/handler migration. This scoped
 amendment does not authorize implementation, live calls or deletion.
 
+
+## Installed instance path separation
+
+<a id="req-demo-025"></a>
+
+- ID: `REQ-DEMO-025`
+- Statement: The installed adapter shall bind one explicit private instance to the executing installed program for the invocation, read code/contracts/locked input groups from that version, and write all existing state and generated artifacts beneath the instance. It shall retain developer mode unchanged without instance selection; installed mode shall reject missing inputs, foreign artifact overrides, unsafe/unknown markers, path overlap and inherited developer credential defaults. A fresh instance shall not reuse the developer VM-password Keychain item. Existing Cloud, native-process, journal and publication guards remain authoritative; selecting paths never implicitly activates an update or reports the demo ready.
+- Parent: [separate installed data authority](../system-requirements-and-traceability.md#sys-dist-001).
+- Flow: [distribution entry](../../architecture/demo-scenario-architecture-flows.md#af-dist-entry).
+- Components/interfaces: `CMP-ORCH`, `IF-DEMO-001`.
+- Verification: Unit, Contract, isolated installed-package Integration; native/live activation remains open.
+- Contract: [installed state](../../../contracts/distribution-installation/installed-state.md) and its [version-selection/recovery detail](../../../contracts/distribution-installation/version-selection.md).
+
+<a id="ut-demo-025"></a>
+
+- ID: `UT-DEMO-025`
+- Obligation: Prove exact root routing, legacy preservation, private marker first/repeat/failure behavior, no developer credential/input fallback, installed command identity and persistence of a ledger sentinel across version selection using isolated fixtures.
+- Requirement: [installed instance path separation](#req-demo-025).
+
+Engineering acceptance detail: prove explicit compatible selection, stale-revision
+rejection, runtime/package lease exclusion, retained-run and detached-consumer
+blocking, compatible rollback, interrupted program repair and byte-for-byte
+state preservation. This refines the existing obligation; it is not a native
+activation, migration or data-removal acceptance claim.
+
+The [native setup detail](../../../contracts/distribution-installation/native-setup.md)
+also requires an independently trusted bootstrap/pin, bounded request/progress
+protocol, responsive single-operation UI, read-only preflight, explicit local
+preparation and truthful not-started/not-enrolled feedback. Test malformed
+requests, changed disk/revision, terminal-result plus process-exit agreement,
+and preservation of active developer owners. Enrollment and native activation
+are not accepted by these local-wrapper checks.
+The existing-access extension additionally tests explicit OEM/SP references,
+same-domain validity inspection, metadata/configuration compare-and-swap,
+atomic pair save, fresh-instance guards, GET-only access/association/delivery
+checks, bounded waiting and fixed redacted feedback. Fixture success does not
+qualify real credentials, secure enrollment or first launch.
 
 ## Purpose
 

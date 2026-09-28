@@ -10,6 +10,12 @@ confirmed that this is the intended version for the documentation audit.
 
 ## Reading the design chain
 
+The 27 September distribution work advances the canonical design to HLA 1.8,
+Scenario 2.1, Flows/System/Register 2.2 and CR-DEMO 1.3. That separate installed
+workstation amendment does not retag `demo-v1.1` or extend its live evidence.
+The versions in the following paragraph identify the reviewed 24 September
+snapshot, not the latest canonical document headers.
+
 HLA 1.7, Scenario 2.0, Flows 2.1 and System/Component Register 2.1 retain their
 stable identities. Their dated D3 allocation states describe the design review,
 not current delivery. Apply accepted amendments in date order; use this view

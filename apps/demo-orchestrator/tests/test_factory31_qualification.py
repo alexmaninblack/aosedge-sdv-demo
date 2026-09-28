@@ -24,7 +24,9 @@ class QualificationTests(unittest.TestCase):
             self.assertEqual(10023, default.ssh_port("production"))
             self.assertTrue(control.factory31_comparison)
             self.assertEqual(11022, control.ssh_port("test"))
-            control.catalog = Mock()
+            # The packaged-input preflight needs the catalogue path even when
+            # image resolution itself is a double. No selected bundle exists.
+            control.catalog = Mock(project=Path('/workspace/demo-artifacts/aosedge-sdv-demo'))
             control.catalog.resolve.return_value = SimpleNamespace(selector="wrong")
             with self.assertRaisesRegex(EnvironmentError, "ORIGINAL_TEST_IMAGE"):
                 control.create("test", "wrong")

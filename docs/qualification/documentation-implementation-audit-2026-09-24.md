@@ -84,9 +84,10 @@ remain explicitly historical, not competing current instructions.
 1. Complete a fresh, strictly serial VDP V1→V2→V3 / Brake V1→V2→V3 / Tire V1
    cycle on .39, including final Finish. Focused reuse of 117/92/49 does not
    replace it; Factory39 remains `BUILT_NOT_LIVE_QUALIFIED` in its manifest.
-2. Investigate short advisory readiness transitions and the reused VDP117
-   installed/profile-not-confirmed Presenter observation. Do not hide them by
-   relabeling unavailable as healthy.
+2. Investigate short advisory readiness transitions. Do not hide them by
+   relabeling unavailable as healthy. The separate reused VDP117
+   installed/profile-not-confirmed observation was corrected on26September:
+   [retained publication binding and activation](presenter-retained-profile-2026-09-26.md).
 3. Keep reconnect milestones separate: Cloud Online was observed within 8.13s,
    empty queues within 29.30s, with later function/UI freshness around 65s in
    the recorded .39 check. These are sampled upper bounds, not product SLAs.

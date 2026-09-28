@@ -112,7 +112,8 @@ def package_configuration(root, team, content_profile, version, *, without_permi
         raise EnvironmentError("SERVICE_WITHOUT_PERMISSIONS_FLAG_INVALID")
     if type(demo_no_telemetry) is not bool or (demo_no_telemetry and not without_permissions):
         raise EnvironmentError("SERVICE_DEMO_NO_TELEMETRY_REQUIRES_WITHOUT_PERMISSIONS")
-    contracts = root / "contracts"
+    from .runtime_paths import program_root
+    contracts = program_root(root) / "contracts"
     if team == "brake" and content_profile in ("v1", "v2", "v3"):
         source = ("brake-telemetry-window/brake-telemetry-window-profile.v1.json" if content_profile == "v1"
                   else "brake-health-model/brake-health-model-profile.v1.json")
@@ -225,10 +226,11 @@ class ServicePackages:
             role="service provider", team=record["team"], version=record["version"], directory=str(directory))
         from .cloud_connection import cloud_request
         request.update(cloud_request(profile))
+        from .cloud_runtime import launch
+        command, environment = launch(self.environment.root, config["cloudPython"], "component_worker.py")
         try:
-            process = subprocess.run([str(config["cloudPython"]), "-I", "-B",
-                str(Path(__file__).with_name("component_worker.py"))], text=True, capture_output=True,
-                timeout=90, env={"PATH": os.defpath}, input=json.dumps(request))
+            process = subprocess.run(command, text=True, capture_output=True,
+                timeout=90, env=environment, input=json.dumps(request))
             if process.returncode or len(process.stdout) > 262144:
                 raise EnvironmentError("SERVICE_WORKER_RESPONSE_UNAVAILABLE")
             result = json.loads(process.stdout)
@@ -413,9 +415,10 @@ class ServicePackages:
         # Reuse the installed official signer adapter. Validation reads source
         # paths/schema only; it neither reads a signing key nor signs/uploads.
         config = load_configuration(self.environment.root)
-        process = subprocess.run([str(config["cloudPython"]), "-I", "-B",
-            str(Path(__file__).with_name("component_worker.py"))], text=True, capture_output=True, timeout=30,
-            env={"PATH": os.defpath}, input=json.dumps(dict(action="validate-service", directory=str(directory))))
+        from .cloud_runtime import launch
+        command, environment = launch(self.environment.root, config["cloudPython"], "component_worker.py")
+        process = subprocess.run(command, text=True, capture_output=True, timeout=30,
+            env=environment, input=json.dumps(dict(action="validate-service", directory=str(directory))))
         if process.returncode or len(process.stdout) > 4096:
             raise EnvironmentError("SERVICE_PACKAGE_SCHEMA_INVALID")
         result = json.loads(process.stdout)
@@ -455,7 +458,8 @@ class ServicePackages:
                     observed.append(path.name)
             version = ReleaseContinuity(self.environment).reserve(team, observed)
             self.progress(team + ": preparing release " + version + "; no build or VM action")
-            config = package_configuration(self.environment.root, team, content_profile, version,
+            config_root = Path(build["preparationInputsRoot"]) if "preparationInputsRoot" in build else self.environment.root
+            config = package_configuration(config_root, team, content_profile, version,
                 without_permissions=without_permissions, demo_no_telemetry=demo_no_telemetry, demo_mocked_data=demo_mocked_data)
             files[RELEASE_FILE] = (encoded(dict(schemaVersion=1, serviceVersion=version)), 0o444)
             directory.mkdir(parents=True, exist_ok=True, mode=0o700)

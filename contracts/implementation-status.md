@@ -12,6 +12,30 @@ implementation. See the [implemented architecture](../docs/architecture/current-
 
 ## Complete contract-family map
 
+Stage 2 distribution work after this baseline is tracked separately by the
+[portable preparation input contract](portable-preparation-inputs/README.md) and
+[portable host launch contract](portable-host-launch/README.md), followed by the
+[portable VM input slice](portable-vm-launch/README.md) and
+[Cloud/backend input slice](portable-cloud-backend-inputs/README.md).
+It preserves publication and runtime authority; its engineering checkpoint is
+not part of the published `demo-v1.1` qualification claim.
+
+The subsequent [Stage 3 offline installation contract](distribution-installation/README.md)
+is an engineering-only non-activating transaction tool. Its
+[separate evidence](../docs/qualification/offline-installation-2026-09-27.md)
+must not be read as first-use, update switching or clean-system qualification.
+
+The [installed-state routing contract](distribution-installation/installed-state.md)
+now has [isolated Kit 005 evidence](../docs/qualification/installed-state-2026-09-27.md).
+Private operator state is distinct from program/locked inputs; native active
+version switching, onboarding and the complete Stage 3 exit gate remain open.
+
+The subsequent [version-selection/recovery contract](distribution-installation/version-selection.md)
+adds an engineering manager and runtime-use leases under the same authority.
+Its [dated qualification](../docs/qualification/installed-versions-2026-09-27.md)
+separates fixture/complete-kit proof from native activation, retained-run updates
+and destructive uninstall, which remain open.
+
 | Family | Current implementation / authority | Boundary or discrepancy |
 | --- | --- | --- |
 | [Artifact publication](artifact-publication-profile/README.md) | Demo Control unsigned preparation and selected OEM/SP signing/publication | ADR 0016 supersedes pre-signed reuse. Publication is not installation; non-exportable artifact signing remains future hardening |

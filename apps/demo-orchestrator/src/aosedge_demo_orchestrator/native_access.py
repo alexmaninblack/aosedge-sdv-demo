@@ -34,6 +34,9 @@ def choose_cloud_certificate(runner=subprocess.run):
 
 class Keychain:
     def __init__(self):
+        from .runtime_paths import instance_id
+        instance = instance_id()
+        self.service = SERVICE + (b'.' + instance.encode('ascii') if instance else b'')
         if sys.platform != "darwin":
             raise EnvironmentError("NATIVE_VM_ACCESS_REQUIRES_MACOS")
         self.api = ctypes.CDLL("/System/Library/Frameworks/Security.framework/Security")
@@ -46,7 +49,7 @@ class Keychain:
 
     def read(self):
         size, data = ctypes.c_uint32(), ctypes.c_void_p()
-        code = self.api.SecKeychainFindGenericPassword(None, len(SERVICE), SERVICE, len(ACCOUNT), ACCOUNT, ctypes.byref(size), ctypes.byref(data), None)
+        code = self.api.SecKeychainFindGenericPassword(None, len(self.service), self.service, len(ACCOUNT), ACCOUNT, ctypes.byref(size), ctypes.byref(data), None)
         if code == -25300:  # errSecItemNotFound
             return None
         if code:
@@ -62,7 +65,7 @@ class Keychain:
         raw = value.encode()
         buffer = ctypes.create_string_buffer(raw)
         try:
-            code = self.api.SecKeychainAddGenericPassword(None, len(SERVICE), SERVICE, len(ACCOUNT), ACCOUNT, len(raw), buffer, None)
+            code = self.api.SecKeychainAddGenericPassword(None, len(self.service), self.service, len(ACCOUNT), ACCOUNT, len(raw), buffer, None)
             if code:
                 raise EnvironmentError("VM_KEYCHAIN_SAVE_FAILED")
         finally:

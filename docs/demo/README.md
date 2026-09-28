@@ -37,7 +37,7 @@ separate window and adding one-click startup. The
 [source checkpoint](../qualification/demo-v1.1-return-point.md) separates
 implemented Test/advisory behavior from broader Production qualification.
 
-[Staged Post-SOP Brake and Tire Health Demo Scenarios 2.0](staged-post-sop-brake-health-demo-scenarios.md)
+[Staged Post-SOP Brake and Tire Health Demo Scenarios 2.1](staged-post-sop-brake-health-demo-scenarios.md)
 is the accepted demo-scenario baseline. It defines the canonical
 `M0 -> M1 -> G0 -> G1 -> G2 -> G3 -> G4 -> T1 -> R0` presentation lifecycle,
 including manufacturing, provisioning, Brake Health evolution, the independent
@@ -45,7 +45,7 @@ Tire Health stage, and end-of-demo retirement, without authorizing
 implementation.
 
 The corresponding
-[Demo Scenario Architecture Flows 2.1](../architecture/demo-scenario-architecture-flows.md)
+[Demo Scenario Architecture Flows 2.2](../architecture/demo-scenario-architecture-flows.md)
 map Scenario 2.0 to High-Level Architecture 1.7, including lifecycle, runtime,
 observability, failure and retirement flows. They do not authorize
 implementation.

@@ -29,6 +29,7 @@ def read_timeout(value):
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="democtl", description=__doc__)
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
+    parser.add_argument("--instance-root", help="explicit existing private installed instance; no migration or implicit activation")
     parser.add_argument("--qualification", choices=("factory31",),
         help="isolated original .31 connectivity control; preserves current Test and Production")
     parser.add_argument(
@@ -504,6 +505,21 @@ def render_human(result: OperationResult, details: bool = False) -> str:
 def main(argv: Optional[List[str]] = None) -> int:
     parser = build_parser()
     arguments = parser.parse_args(argv)
+    if arguments.instance_root:
+        from .runtime_paths import installed_session
+        try:
+            with installed_session(arguments.instance_root):
+                return dispatch(parser, arguments)
+        except (OSError, ValueError) as error:
+            reason = str(error) if isinstance(error, ValueError) and str(error).startswith('INSTALLED_') else 'INSTALLED_STATE_UNAVAILABLE'
+            print('BLOCKED ' + reason, file=sys.stderr)
+            return 1
+    return dispatch(parser, arguments)
+
+
+def dispatch(parser, arguments):
+    if arguments.instance_root and arguments.qualification:
+        parser.error('installed instances do not use developer Factory qualification roots')
     qualification = getattr(arguments, "qualification", None)
     if qualification:
         allowed = {"environment": {"create"}, "vm": {"start", "stop"},

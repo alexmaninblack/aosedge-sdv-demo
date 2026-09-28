@@ -47,15 +47,26 @@ class ImageRecord:
 
 class ImageCatalog:
     def __init__(self, root=None, workspace=None):
+        from .runtime_paths import installed, state_root, program_root, input_root, require
+        if installed():
+            require(root is None and not os.environ.get("DEMO_ARTIFACT_ROOT"), 'ARTIFACT_OVERRIDE_FORBIDDEN')
+            self.workspace = program_root().parent
+            self.root = state_root() / 'artifacts'
+            self.project = self.root / 'aosedge-sdv-demo'
+            self.input_root = input_root()
+            self.input_project = self.input_root / 'aosedge-sdv-demo'
+            return
         self.workspace = Path(workspace) if workspace else project_root().parent
         configured = root if root is not None else os.environ.get("DEMO_ARTIFACT_ROOT")
         self.root = Path(configured).expanduser().resolve() if configured else self.workspace / "demo-artifacts"
         self.project = self.root / "aosedge-sdv-demo"
+        self.input_root = self.root
+        self.input_project = self.project
 
     def _image_reference(self, value, manifest):
         if not isinstance(value, str):
             raise ImageError("IMAGE_REFERENCE_INVALID")
-        substitutions = {"$DEMO_ARTIFACT_ROOT": self.root, "$WORKSPACE_ROOT": self.workspace}
+        substitutions = {"$DEMO_ARTIFACT_ROOT": self.input_root, "$WORKSPACE_ROOT": self.workspace}
         for prefix, replacement in substitutions.items():
             if value.startswith(prefix + "/"):
                 return replacement / value[len(prefix) + 1:]
@@ -68,10 +79,10 @@ class ImageCatalog:
         records = {}
         issues = []
         # Only known manifest locations; do not traverse bundles or runtime state.
-        paths = list((self.project / "manifest").glob("*.json"))
-        paths.extend((self.project / "factory-images").glob("*/*.json"))
+        paths = list((self.input_project / "manifest").glob("*.json"))
+        paths.extend((self.input_project / "factory-images").glob("*/*.json"))
         for path in sorted(paths):
-            if not path.resolve().is_relative_to(self.project.resolve()):
+            if not path.resolve().is_relative_to(self.input_project.resolve()):
                 issues.append({"source": path.name, "reason": "MANIFEST_OUTSIDE_CATALOG"})
                 continue
             try:
@@ -98,7 +109,7 @@ class ImageCatalog:
                     fmt = "raw"
                 if fmt not in ("raw", "qcow2"):
                     raise ImageError("MANIFEST_FORMAT_UNKNOWN")
-                source = path.relative_to(self.root).as_posix()
+                source = path.relative_to(self.input_root).as_posix()
                 records.setdefault(target, []).append((sha, size, version, fmt, source))
             except (OSError, ValueError, TypeError, KeyError):
                 issues.append({"source": path.name, "reason": "MANIFEST_INVALID"})
@@ -107,7 +118,7 @@ class ImageCatalog:
     def records(self):
         manifests, issues = self._metadata()
         result = []
-        for path in sorted((self.project / "factory-images").glob("*/*")):
+        for path in sorted((self.input_project / "factory-images").glob("*/*")):
             if path.suffix not in (".img", ".qcow2") or not path.is_file():
                 continue
             version, arch = path.parent.name, path.stem
@@ -116,7 +127,7 @@ class ImageCatalog:
             problems = []
             info = path.stat()
             canonical = path.resolve()
-            if path.is_symlink() or not canonical.is_relative_to(self.project.resolve()):
+            if path.is_symlink() or not canonical.is_relative_to(self.input_project.resolve()):
                 problems.append("IMAGE_PATH_NOT_OWNED")
             if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
                 problems.append("IMAGE_NOT_INDEPENDENT_REGULAR_FILE")
@@ -143,8 +154,8 @@ class ImageCatalog:
             records, issues = self.records()
             return {
                 "catalog": "$DEMO_ARTIFACT_ROOT/aosedge-sdv-demo/factory-images",
-                "catalogExists": (self.project / "factory-images").is_dir(),
-                "images": [record.public(self.root) for record in records],
+                "catalogExists": (self.input_project / "factory-images").is_dir(),
+                "images": [record.public(self.input_root) for record in records],
                 "issues": issues, "digestChecked": False,
                 "claim": "Artifact and metadata inventory, not qualification or a digest verification.",
             }
@@ -185,8 +196,8 @@ class ImageCatalog:
         declarations = []
         fields = {"schemaVersion", "runtimeProfile", "componentType", "supportedReadPaths", "sourceRevision"}
         for source in record.metadata_sources:
-            path = self.root / source
-            if path.is_symlink() or not path.resolve().is_relative_to(self.project.resolve()):
+            path = self.input_root / source
+            if path.is_symlink() or not path.resolve().is_relative_to(self.input_project.resolve()):
                 raise ImageError("COMPONENT_FACTORY_DECLARATION_UNSAFE")
             data = read_json(path, limit=262144)
             support = data.get("demoCompatibility")

@@ -57,7 +57,8 @@ def provision(request, cloud):
         raise CloudFailure("PROVISIONING_IDENTITY_ALREADY_EXISTS")
     # Reuse the already qualified narrow SDK transition correction as a
     # library. No old VM/checkpoint/provisioning workflow is invoked.
-    scripts = Path(__file__).resolve().parents[4] / "scripts/host"
+    from .cloud_runtime import adapter_directory
+    scripts = adapter_directory(Path(__file__).resolve().parents[4])
     sys.path.insert(0, str(scripts))
     from aos_prov_5_4_2_guard import verify
     verify()

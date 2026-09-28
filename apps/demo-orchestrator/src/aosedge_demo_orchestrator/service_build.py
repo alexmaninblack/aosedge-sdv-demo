@@ -21,6 +21,8 @@ class ServiceBuilder:
 
     def status(self, team):
         """Read completed build history for this exact repository, never retry."""
+        from .runtime_paths import installed, require
+        require(not installed(self.environment.root), 'DEVELOPER_BUILD_UNAVAILABLE')
         if team not in ("brake", "tire"):
             raise EnvironmentError("SERVICE_TEAM_INVALID")
         repository = self.environment.root.parent / (team + "-health-service")
@@ -101,10 +103,17 @@ class ServiceBuilder:
             raise EnvironmentError(reason)
 
     def execute(self, team, content_profile="v1", *, build_missing=True):
+        from .runtime_paths import installed, require
+        require(not build_missing or not installed(self.environment.root), 'DEVELOPER_BUILD_UNAVAILABLE')
         if team not in ("brake", "tire"):
             raise EnvironmentError("SERVICE_PRODUCT_BUILD_NOT_IMPLEMENTED")
         if content_profile not in (("v1", "v2", "v3") if team == "brake" else ("v1",)):
             raise EnvironmentError("SERVICE_CONTENT_PROFILE_INVALID")
+        if not build_missing:
+            from .preparation_inputs import selected
+            inputs = selected(self.environment)
+            if inputs is not None:
+                return inputs.service(team, content_profile)
         repository = self.environment.root.parent / (team + "-health-service")
         prefix = "BHS" if team == "brake" else "THS"
         with self.environment._writer():

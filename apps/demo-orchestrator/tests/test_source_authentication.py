@@ -26,6 +26,23 @@ class AuthenticationTests(unittest.TestCase):
         for state in ({}, {"source": None}, {"source": {}}, {"source": {"trust": {"enabled": False}}}):
             self.assertFalse(auth.enabled(state))
 
+    def test_anonymous_probe_uses_verified_packaged_client(self):
+        runtime = Mock()
+        runtime.entry.return_value = Path('/package/native/bin/carla-viss-client')
+        self.assertEqual(runtime.entry.return_value,
+            auth.admission_probe_client(self.driver, {'packaged-runtime': runtime}))
+        runtime.verify.assert_called_once_with('native')
+        runtime.entry.assert_called_once_with('client')
+
+    def test_anonymous_probe_preserves_legacy_but_never_falls_back_from_invalid_package(self):
+        self.assertEqual(self.driver.root / auth.BUILD / 'carla-viss-client',
+                         auth.admission_probe_client(self.driver, {}))
+        runtime = Mock()
+        runtime.verify.side_effect = EnvironmentError('HOST_RUNTIME_FILE_CHANGED')
+        with self.assertRaisesRegex(EnvironmentError, 'HOST_RUNTIME_FILE_CHANGED'):
+            auth.admission_probe_client(self.driver, {'packaged-runtime': runtime})
+        runtime.entry.assert_not_called()
+
     def test_lost_detach_response_is_reconciled_without_second_mutation(self):
         self.state["source"]["trust"]["pending"] = dict(action="detach", generation=2)
         with patch.object(auth, "observe", return_value=dict(state="DETACHED", assignmentGeneration=3)), \

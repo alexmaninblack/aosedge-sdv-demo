@@ -35,14 +35,22 @@ def local_profile(name, profile):
     return {"credential": credential, "access": skipped("AOSCLOUD:" + name, "NOT_REQUESTED"), "units": {}}
 
 
-def cloud_status(name, profile, vehicles, interpreter, timeout):
+def cloud_status(name, profile, vehicles, interpreter, timeout, *, root=None):
     result = local_profile(name, profile)
     source = "AOSCLOUD:" + name
     local = result["credential"].get("value") or {}
     if not local.get("present") or not local.get("privateMode"):
         result["access"] = observation(source, reason="CREDENTIAL_MISSING_OR_UNSAFE")
         return result
-    if not interpreter.is_file():
+    from .cloud_runtime import launch
+    from .environment import EnvironmentError
+    from .status import project_root
+    try:
+        command, environment = launch(root or project_root(), interpreter, "cloud.py")
+    except EnvironmentError as error:
+        result["access"] = observation(source, reason=str(error), transport="SOURCE_UNAVAILABLE")
+        return result
+    if not Path(command[0]).is_file():
         result["access"] = observation(source, reason="AOS_PYTHON_UNAVAILABLE")
         return result
     # Only explicit OEM delivery reads Unit state. Publication/SP profiles do not
@@ -60,9 +68,9 @@ def cloud_status(name, profile, vehicles, interpreter, timeout):
     process = None
     try:
         process = subprocess.Popen(
-            [str(interpreter), "-I", "-B", str(Path(__file__).resolve())],
+            command,
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            text=True, env={"PATH": os.defpath},
+            text=True, env=environment,
         )
         try:
             output, _ = process.communicate(json.dumps(request), timeout=timeout + 0.5)

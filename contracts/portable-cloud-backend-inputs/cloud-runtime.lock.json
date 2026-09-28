@@ -1,0 +1,11 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "contractId": "aosedge-demo-portable-cloud-inputs",
+  "qualification": "ENGINEERING_CANDIDATE_NOT_LIVE_QUALIFIED",
+  "manifest": {
+    "path": "cloud-runtime-manifest.json",
+    "bytes": 604355,
+    "sha256": "46fe0adf22a6843f9d7c4162208f38caf194ca19e98e1089e3fb931ed2a5bb46"
+  }
+}

@@ -240,12 +240,12 @@ def replay(version, profile, baseline, baseline_sha, contract, factory, *, unsig
 
 
 def compose_advisory_runtime(version, baseline, baseline_sha, repository, contract, factory,
-                             advisory_contract, *, unsigned_source_sha):
+                             advisory_contract, *, unsigned_source_sha, source_files=None):
     """New reviewed V3 runtime; frozen profile/dependencies remain untouched."""
     pin = advisory_runtime_pin()
     if sha(advisory_contract) != ADVISORY_CONTRACT["sha256"]:
         raise EnvironmentError("COMPONENT_ADVISORY_CONTRACT_DIGEST_MISMATCH")
-    modules = advisory_source(repository)
+    modules = advisory_source(repository) if source_files is None else dict(source_files)
     files, record = _replay_files(version, "v3", baseline, baseline_sha, contract, factory,
         unsigned_source_sha=unsigned_source_sha)
     capability = document(files, "config/capability-manifest.json")
@@ -303,12 +303,12 @@ def compose_advisory_runtime(version, baseline, baseline_sha, repository, contra
 
 
 def compose_common_runtime(version, profile, baseline, baseline_sha, repository, contract, factory,
-                           *, unsigned_source_sha):
+                           *, unsigned_source_sha, source_files=None):
     """Current common code with immutable V1/V2 capability and dependency sets."""
     if profile not in ("v1", "v2"):
         raise EnvironmentError("COMPONENT_COMMON_PROFILE_INVALID")
     pin = advisory_runtime_pin()
-    reviewed = advisory_source(repository)
+    reviewed = advisory_source(repository) if source_files is None else dict(source_files)
     modules = {PACKAGE + name: reviewed[PACKAGE + name] for name in COMMON_RUNTIME_MODULES}
     files, record = _replay_files(version, profile, baseline, baseline_sha, contract, factory,
                                  unsigned_source_sha=unsigned_source_sha)

@@ -1,0 +1,11 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "contractId": "aosedge-demo-portable-vm-launch",
+  "qualification": "ENGINEERING_CANDIDATE_NOT_LIVE_QUALIFIED",
+  "manifest": {
+    "path": "vm-runtime-manifest.json",
+    "bytes": 1369,
+    "sha256": "d9b06cfa14bc602059ce80a1311f79177bd3e6d058108f83c9a0db6dba25082d"
+  }
+}

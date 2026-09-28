@@ -1,0 +1,92 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "inventoryVersion": 1,
+  "prepared": "2026-09-25",
+  "purpose": "Observed Stage 0 inputs only; not an installer manifest, redistributability approval or qualified runtime release",
+  "baseline": "demo-v1.1",
+  "integrationImplementation": "862d48b158e0f0980f80bb40eb0837453e21788e",
+  "integrationDocumentationAtEntry": "0d132125f8c88776b173060dc0cbc414332bcc45",
+  "dependencyPins": "repositories.json",
+  "factoryAndCorePins": "checkpoints/demo-v1.1.json",
+  "additionalSimulatorInput": {
+    "owner": "Vehicle Simulation",
+    "repository": "https://bitbucket.org/carla-simulator/carla-content.git",
+    "revision": "639d6eff5aae672da4219e9ace4a2ee891367548",
+    "licenseObserved": "CC-BY-4.0",
+    "map": "/Game/Carla/Maps/Town10HD_Opt",
+    "egoBlueprint": "vehicle.lincoln.mkz",
+    "contentClosureStatus": "REQUIRES_COOKED_ASSET_DEPENDENCY_AUDIT"
+  },
+  "observedHost": {
+    "architecture": "arm64",
+    "model": "Mac17,8",
+    "chip": "Apple M5 Pro",
+    "cpuCount": 18,
+    "gpuCoreCount": 20,
+    "memoryBytes": 51539607552,
+    "macOS": "26.6.2",
+    "macOSBuild": "25G83",
+    "xcode": "27.0 (27A266a)",
+    "supportClaim": "INITIAL_NATIVE_TEST_TARGET_ONLY_NOT_MINIMUM_REQUIREMENTS"
+  },
+  "runtimeVersions": {
+    "carla": "0.10.0",
+    "unreal": "5.5.4 with pinned Apple Silicon corrections",
+    "gatewayCmakeVersion": "0.9.2",
+    "demoControlProjectVersion": "0.1.0",
+    "presenterProjectVersion": "0.1.0",
+    "demoAndCarlaPython": "3.9.6, currently supplied by Xcode",
+    "cloudPython": "3.12.14",
+    "qemu": "11.0.3",
+    "qemuMachine": "virt-11.0,accel=hvf",
+    "controllerVcpus": 2,
+    "controllerMemoryMiB": 2048,
+    "opensslHost": "3.6.3",
+    "dockerDesktop": "4.89.0",
+    "dockerEngine": "29.7.2",
+    "dockerCompose": "5.5.0",
+    "node": "26.0.0",
+    "npmBuildPin": "11.12.1",
+    "aos-prov": "5.4.2 plus integration source-locked adapter",
+    "aos-keys": "1.10.0",
+    "aos-signer": "2.0.1"
+  },
+  "publicBinaryObservations": [
+    {"component": "gateway", "bytes": 13906320, "sha256": "5afb2cd74cc0fb3cb646466b8bdec4d61569adf72f7c0b12d60bf26d988a667d"},
+    {"component": "viss-client", "bytes": 2233344, "sha256": "9014aa063053505bdc948077cc691cd97f3af25c98d135b4a8b40cd8a98e16ff"},
+    {"component": "carla-cpython39-darwin-extension", "bytes": 8443352, "sha256": "2e70e5e5ba252cc082ed49d83597fa832f5fe3e0d2c6f2e3bea024bdf0f68655"},
+    {"component": "native-presenter-host", "bytes": 178784, "sha256": "31549dccda5a6349148553693e7386d61088a4aaa3c4ed3e4748e1e037a16697"},
+    {"component": "native-driving-control", "bytes": 297760, "sha256": "6c7625e409084abc6f1a825d64536e57bb7520a6364affd19c4c41ae7f6ca290"},
+    {"component": "QEMU_EFI.fd", "bytes": 2097152, "sha256": "30f7042c23b81c28b8196a76f4af6bcf10046f08049c9d78b4387472c5bbcd10"}
+  ],
+  "binaryProvenanceCaveat": "Current-file checksums do not prove rebuild provenance or supply a complete dependency closure; Stage 1/2 must produce creation-time manifests",
+  "backendImages": [
+    {"team": "brake", "source": "42395715103d9f512c2586a2c9b98c3975c06ab7", "architecture": "linux/arm64", "localImageId": "sha256:48f633748d225b27079e69a439e875745067a5248a7006c3b9685dc8a5e2baf1", "reportedSizeBytes": 82063389},
+    {"team": "tire", "source": "47cfa632a80c89a7eaab0c501fe437c4ae2cb180", "architecture": "linux/arm64", "localImageId": "sha256:5dddd12060c3e65f928e844a65f92ae8826d1e8e52dce66329f86682934c3326", "reportedSizeBytes": 82044422}
+  ],
+  "backendPublicationStatus": "LOCAL_IMAGES_ONLY; no remote downloadable image/artifact was verified",
+  "unsignedVdpInputs": [
+    {"version": "1.0.16", "bytes": 6608410, "sha256": "d6757035407968553f27fe7e93caae00bbab72bb13fc4f3527a37700e8f34fa1", "digestVerified": true},
+    {"version": "2.0.0", "bytes": 6617630, "sha256": "8728a0779cb1665910f2953457a1140ccfcda07ee236f215836193ff0d6b1a90", "digestVerified": true},
+    {"version": "3.0.0", "bytes": 6620916, "sha256": "746a38d76848f86ed6d4c4150893c95eb36cf044cf6f44c7a6f57506d72e7411", "digestVerified": true}
+  ],
+  "vdpPreparationSource": {
+    "profileSource": "0a2c8249ec780e822bff90f29f9d3d5ba5dd7feb",
+    "commonAndAdvisoryRuntime": "1fe5649f860f62573b313e1f38e5ec0f4ca1b519",
+    "moduleDigestAuthority": "apps/demo-orchestrator/src/aosedge_demo_orchestrator/component_build.py"
+  },
+  "serviceExports": [
+    {"team": "brake", "source": "230cdd4515d1be94ef342197ff56f6b76498aff2", "profile": "v1", "architecture": "linux/arm64", "bootstrapSha256": "5bf714928307cf65e4952a8e046d35642a8c3067249e4ebb4a0fdd2346113046", "serviceSha256": "3562240634d4e30fc9fef2914b67f62fe65c697b94a4d417bd793099f4256760"},
+    {"team": "brake", "source": "230cdd4515d1be94ef342197ff56f6b76498aff2", "profile": "v2", "architecture": "linux/arm64", "bootstrapSha256": "319d96d23360538aab05dddda85d4ca13816bbf2a2dcd310dddb8a1903e1310d", "serviceSha256": "947aaa489f885673e0d26e7b042ace25aa31af3061d0bcc5a87acb0b4f3a2e37"},
+    {"team": "brake", "source": "230cdd4515d1be94ef342197ff56f6b76498aff2", "profile": "v3", "architecture": "linux/arm64", "bootstrapSha256": "9046697b6981fac2fe67c18d050274e5f9c0699a68a7c60e4c2a7aaae0d8f7b0", "serviceSha256": "bf4dd56b0b1327a4d8043866eb3f3187fbc715aa1a6d107444fa704cf7700bfb"},
+    {"team": "tire", "source": "8639b57535e32e3fb2ce68f10794c90d39bb5ae5", "profile": "v1", "architecture": "linux/arm64", "bootstrapSha256": "44f44b04b0aa624620dd25bc1c5be4409463e723525671dd37240a6c7fd2dcbb", "serviceSha256": "e3b271769c212c42c400d0317015288803c541e48f8d51958970fa306c86ba46"}
+  ],
+  "serviceExportVerification": "All eight selected executable digests matched their existing build receipts; no build performed",
+  "distributionSizes": {
+    "downloadBytes": null,
+    "installedRuntimeBytes": null,
+    "peakInstallTemporaryBytes": null,
+    "peakSimulatorBuildTemporaryBytes": null,
+    "reason": "No portable package or installation exists yet; owners and measurement gates are in the Stage 0 report"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "contractId": "aosedge-demo-portable-backend-inputs",
+  "qualification": "ENGINEERING_CANDIDATE_NOT_LIVE_QUALIFIED",
+  "manifest": {
+    "path": "backend-image-manifest.json",
+    "bytes": 986,
+    "sha256": "7d0d9b01feab0ce22a6d5e566cb90fab92431f3526c4f46706f99a7b10b422ed"
+  },
+  "protocols": {
+    "brake": {"mockCleanupProtocol": "isolated-mock-v1"},
+    "tire": {"mockCleanupProtocol": "isolated-mock-v1", "privateCleanupProtocol": "tire-product-v1"}
+  }
+}

@@ -12,9 +12,14 @@ from aosedge_demo_orchestrator import presenter
 
 
 class PresenterStopTests(unittest.TestCase):
-    def run_stop(self, *, cwd="/fixture/apps/demo-orchestrator", active=None, absolute=False, user=501, recovery=None, recovery_busy=False, repo_relative=False):
+    def run_stop(self, *, cwd="/fixture/apps/demo-orchestrator", active=None, absolute=False, user=501, recovery=None, recovery_busy=False, repo_relative=False, packaged=False, supplied_command=None):
+        runtime = Mock()
+        runtime.cli.return_value = ['/private/runtime/python', '-I', '-B', '/fixture/host_entry.py']
         def command(arguments, **_):
             if arguments[0] == "/bin/ps":
+                if supplied_command is not None or packaged:
+                    actual = supplied_command if supplied_command is not None else ' '.join(runtime.cli.return_value + ['ui', 'serve'])
+                    return SimpleNamespace(stdout=f"{user} {actual}", returncode=0)
                 script = "/fixture/apps/demo-orchestrator/.venv/bin/democtl" if absolute else ".venv/bin/democtl"
                 if repo_relative:
                     script = "apps/demo-orchestrator/.venv/bin/democtl"
@@ -27,6 +32,7 @@ class PresenterStopTests(unittest.TestCase):
         opener.open.return_value = BytesIO(json.dumps(dict(sessionId="fixture", active=active, uncertain=False,
             sourceRecovery=recovery, sourceRecoveryBusy=recovery_busy)).encode())
         with patch.object(presenter, "project_root", return_value=Path("/fixture")), \
+                patch('aosedge_demo_orchestrator.host_runtime.selected', return_value=runtime if packaged else None), \
                 patch("subprocess.run", side_effect=command), patch("urllib.request.build_opener", return_value=opener), \
                 patch("os.getuid", return_value=501), patch("os.kill") as kill:
             result = presenter.stop()
@@ -75,3 +81,16 @@ class PresenterStopTests(unittest.TestCase):
         result, kill = self.run_stop(recovery={'state':'COMPLETED'})
         self.assertEqual(0, result)
         kill.assert_called_once()
+
+    def test_packaged_stop_requires_exact_owned_private_entry(self):
+        result, kill = self.run_stop(packaged=True)
+        self.assertEqual(0, result)
+        kill.assert_called_once()
+        for values in (dict(supplied_command='/other/python -I -B /fixture/host_entry.py ui serve'),
+                       dict(supplied_command='/fixed/Python /fixture/apps/demo-orchestrator/.venv/bin/democtl ui serve'),
+                       dict(supplied_command='/private/runtime/python -I -B /other/host_entry.py ui serve'),
+                       dict(active='running'), dict(user=502), dict(recovery_busy=True)):
+            with self.subTest(values=values):
+                result, kill = self.run_stop(packaged=True, **values)
+                self.assertEqual(1, result)
+                kill.assert_not_called()

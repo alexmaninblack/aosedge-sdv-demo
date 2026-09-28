@@ -63,8 +63,8 @@ def read_json(path, limit=None):
 
 
 def project_root():
-    # Editable installation is the supported first-slice deployment.
-    return Path(__file__).resolve().parents[4]
+    from .runtime_paths import state_root
+    return state_root()
 
 
 def _path(value, root):
@@ -208,10 +208,8 @@ def load_configuration(root, config_path=None):
         if any(not isinstance(s, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.@-]*\.service", s) for s in item["services"]):
             raise ValueError("Invalid service name")
         resolved[role] = item
-    defaults = {
-        "oem-delivery": {"credential": "~/.aos/security/aos-user-oem.p12", "expectedRole": "oem"},
-        "service-provider": {"credential": "~/.aos/security/aos-user-sp.p12", "expectedRole": "service provider"},
-    }
+    from .runtime_paths import credential_defaults, installed, input_root
+    defaults = credential_defaults(root)
     profiles = data.get("cloudProfiles", defaults)
     if not isinstance(profiles, dict) or len(profiles) > 8:
         raise ValueError("Invalid Cloud profiles")
@@ -247,8 +245,10 @@ def load_configuration(root, config_path=None):
                 and signed.get("cloudDomain") == domain and signed.get("state") == "COMPLETED")
     return {
         "vehicles": resolved, "cloudProfiles": normalized, "cloudConnection": connection,
-        "componentBaselineCertificate": _path(data.get("componentBaselineCertificate", "~/.aos/security/aos-user-oem.pem"), root),
-        "cloudPython": _path(data.get("cloudPython", "~/.aos/venv/bin/python3"), root),
+        "componentBaselineCertificate": _path(data.get("componentBaselineCertificate",
+            ".local/demo-control/credentials/aos-user-oem.pem" if installed(root) else "~/.aos/security/aos-user-oem.pem"), root),
+        "cloudPython": _path(str(input_root() / "aosedge-sdv-demo/cloud-runtime/bin/python3.12")
+            if installed(root) else data.get("cloudPython", "~/.aos/venv/bin/python3"), root),
         "configuration": "CURRENT_RUN_JOURNAL" if journal["value"] else (
             "LOCAL_PROFILE" if custom else "CANONICAL_LAYOUT_DEFAULTS"),
         "journal": journal,
@@ -304,7 +304,7 @@ class StatusService:
                     continue
                 if cloud:
                     targets = {role: config["vehicles"][role] for role in roles}
-                    jobs[("cloud", name)] = pool.submit(cloud_status, name, item, targets, config["cloudPython"], timeout)
+                    jobs[("cloud", name)] = pool.submit(cloud_status, name, item, targets, config["cloudPython"], timeout, root=self.root)
                 else:
                     cloud_results[name] = local_profile(name, item)
             for (kind, name), future in jobs.items():

@@ -167,4 +167,4 @@ of unlimited retention.
 - [AosCloud storage components](https://docs.aosedge.tech/docs/aos-cloud/components-view/storage-components)
 - [AosCloud API v11](https://api.aoscloud.io/api/v11/docs#/)
 - [AosCloud audit actions](https://docs.aosedge.tech/docs/reference/misc/audit-actions)
-- [Current Demo Scenario 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- [Current Demo Scenario 2.1](../../demo/staged-post-sop-brake-health-demo-scenarios.md)

@@ -3,6 +3,8 @@
 
 import http.client
 import json
+import socket
+import struct
 import tempfile
 import threading
 import unittest
@@ -50,6 +52,70 @@ class PresenterTests(unittest.TestCase):
         self.assertEqual("no-store", headers["Cache-Control"])
         self.assertIn("frame-ancestors 'none'", headers["Content-Security-Policy"])
         self.reader.assert_called_once_with()
+
+    def disconnected_handler(self):
+        handler = object.__new__(self.server.RequestHandlerClass)
+        handler.server = self.server
+        handler.path = '/api/presenter/snapshot'
+        handler.headers = {'Host': '127.0.0.1:' + str(self.server.server_port)}
+        handler.send_response = Mock()
+        handler.send_header = Mock()
+        handler.end_headers = Mock()
+        handler.wfile = Mock()
+        return handler
+
+    def test_cancelled_response_body_does_not_retry_as_observation_failure(self):
+        handler = self.disconnected_handler()
+        handler.wfile.write.side_effect = BrokenPipeError()
+        handler.do_GET()
+        handler.send_response.assert_called_once_with(200)
+        handler.wfile.write.assert_called_once()
+        self.reader.assert_called_once_with()
+        self.assertTrue(handler.close_connection)
+
+    def test_reset_during_headers_does_not_attempt_body_or_error_response(self):
+        handler = self.disconnected_handler()
+        handler.end_headers.side_effect = ConnectionResetError()
+        handler.do_GET()
+        handler.send_response.assert_called_once_with(200)
+        handler.wfile.write.assert_not_called()
+        self.assertTrue(handler.close_connection)
+
+    def test_reply_does_not_hide_unrelated_writer_errors(self):
+        handler = self.disconnected_handler()
+        handler.wfile.write.side_effect = RuntimeError('fixture')
+        with self.assertRaises(RuntimeError):
+            handler.reply(200, b'{}')
+
+    def test_real_client_reset_leaves_server_available(self):
+        entered, release, finished = threading.Event(), threading.Event(), threading.Event()
+        def read():
+            entered.set()
+            if not release.wait(2):
+                raise AssertionError('fixture release timed out')
+            return {'mode': 'FIXTURE'}
+        self.reader.side_effect = read
+        original = self.server.RequestHandlerClass.reply
+        def observed_reply(handler, *args):
+            try:
+                return original(handler, *args)
+            finally:
+                finished.set()
+        with patch.object(self.server.RequestHandlerClass, 'reply', observed_reply), \
+                patch.object(self.server, 'handle_error') as error:
+            client = socket.create_connection(self.server.server_address, timeout=2)
+            try:
+                client.sendall(('GET /api/presenter/snapshot HTTP/1.1\r\nHost: 127.0.0.1:' +
+                    str(self.server.server_port) + '\r\n\r\n').encode())
+                self.assertTrue(entered.wait(2))
+                client.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack('ii', 1, 0))
+            finally:
+                client.close()
+                release.set()
+            self.assertTrue(finished.wait(2))
+            self.reader.assert_called_once_with()
+            self.assertEqual(200, self.request('/')[0])
+            error.assert_not_called()
 
     def test_sequential_manual_cloud_refresh_is_not_a_one_second_cache_hit(self):
         read = Mock(side_effect=[dict(state="CURRENT", version=1), dict(state="CURRENT", version=2)])

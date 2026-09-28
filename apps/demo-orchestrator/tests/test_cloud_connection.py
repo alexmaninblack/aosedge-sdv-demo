@@ -6,6 +6,7 @@
 import copy
 import json
 import shutil
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -190,9 +191,11 @@ class ContractTests(unittest.TestCase):
                           stat=Mock(return_value=SimpleNamespace(st_mode=0o600)))
         profile = dict(credential=credential, expectedRole="oem", cloudDomain=DOMAIN)
         process = Mock(returncode=0, communicate=Mock(return_value=(json.dumps({"access": {}, "certificate": {}, "units": {}}), "")))
-        with patch("aosedge_demo_orchestrator.cloud.subprocess.Popen", return_value=process):
+        with tempfile.TemporaryDirectory() as directory, \
+                patch("aosedge_demo_orchestrator.cloud.subprocess.Popen", return_value=process):
             cloud_status("oem-delivery", profile, {"test": {"unitId": "debug-test", "cloudHost": DOMAIN},
-                "production": {"unitId": "retained-production", "cloudHost": LEGACY_DOMAIN}}, Mock(is_file=Mock(return_value=True)), 1)
+                "production": {"unitId": "retained-production", "cloudHost": LEGACY_DOMAIN}}, Path(sys.executable), 1,
+                root=Path(directory))
         request = json.loads(process.communicate.call_args.args[0])
         self.assertEqual(DOMAIN, request["cloudDomain"])
         self.assertEqual({"test": {"unitId": "debug-test"}}, request["vehicles"])

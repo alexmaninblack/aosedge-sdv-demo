@@ -18,6 +18,29 @@ class InstalledProfileResolver:
         self.components_factory = components_factory
         self.inspection = None
 
+    def publication_records(self, journal, installed_versions):
+        """Recover only inventory-selected receipts; never scan or rewrite a run.
+
+        These records schedule existing Cloud reconciliation, not installation
+        facts. A retained READY field cannot replace that independent read.
+        """
+        records = dict(journal.get("componentOperations") or {})
+        owner = cloud_binding(journal).get("ownerId")
+        if not owner:
+            return records
+        for version in installed_versions:
+            if version in records or not isinstance(version, str) or not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version):
+                continue
+            try:
+                record = self.components_factory()._publication_record(version, journal)
+            except (EnvironmentError, OSError, ValueError, KeyError, TypeError):
+                continue
+            if (isinstance(record, dict) and record.get("ownerId") == owner
+                    and record.get("cloudDomain") == selected_domain(journal)
+                    and isinstance(record.get("deploymentId"), str) and record["deploymentId"]):
+                records[version] = record
+        return records
+
     def resolve(self, journal, inventory, row, publications):
         installed = row.get("installed_component") or {}
         version, version_id = installed.get("version"), installed.get("id")

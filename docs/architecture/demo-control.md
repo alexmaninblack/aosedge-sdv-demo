@@ -3,6 +3,40 @@
 
 # Demo Control
 
+## Portable preparation input increment — 26 September 2026
+
+The accepted [Stage 2 distribution plan](../planning/active/installable-distribution-and-reproducibility.md#stage-2-assemble-portable-demo-runtime-artifacts)
+is realized first through the [packaged Prepare contract](../../contracts/portable-preparation-inputs/README.md).
+The existing orchestrator reads a locked, explicitly selected input directory
+inside its artifact catalogue. Missing or invalid selected content blocks before
+version allocation; no source checkout/build fallback is permitted. Unsigned
+output locations, selected-Cloud catalogue reads, ledger, signatures and upload
+ownership remain unchanged. The subsequent [portable host launch slice](../../contracts/portable-host-launch/README.md)
+selects prebuilt native hosts, web assets, private Python/Gateway/OpenSSL and the
+qualified standalone Game through the same artifact catalogue. Existing source
+and workspace owners, fixed ports, strict trust and native Quit remain in use.
+An invalid selected bundle blocks without a developer/build fallback. Initial
+Game geometry accounts for its title bar; the existing layout verifier remains
+authoritative. One timed-out readiness probe cannot restart the simulator or
+end the overall 120-second readiness observation early. Editor-only DDC setup
+is rejected for packaged Game inputs. Installation and complete VM/Cloud binding
+are separate gates; see the [execution packet](../planning/active/portable-runtime-artifacts.md).
+
+The [portable VM input slice](../../contracts/portable-vm-launch/README.md)
+then selects existing packaged QEMU/private Python plus fixed firmware/DNS
+inputs, retaining EnvironmentService/VMService and every lifecycle argument.
+DNS command identity is independent of the calling UI/CLI interpreter. This
+does not adopt already running developer processes: exact owner mismatches
+still block, and the later explicit handoff must reconcile old owners first.
+Assembly and deterministic tests precede the deferred live guest/UI gate.
+
+The [portable Cloud/backend input slice](../../contracts/portable-cloud-backend-inputs/README.md)
+selects pinned SDK workers and immutable backend images through the existing
+owners. SDK integrity is checked at dispatch, not UI configuration parsing;
+worker authority, operation envelopes and deadlines remain unchanged. Existing
+backend records retain their image until explicit stopped-owner activation.
+Selection never imports images, starts Docker or changes backend data.
+
 ## Current lifecycle amendment — 19 September 2026
 
 Historical heading retained for links; current interpretation: 24 September.
@@ -50,9 +84,9 @@ idempotent creation and preservation of reusable settings across Finish.
 - Version: 0.19
 - Prepared: 2026-09-07
 - Owner: Demo Solution Team
-- Architecture input: [High-Level Architecture 1.7](high-level-architecture.md)
-- Scenario input: [Demo Scenarios 2.0](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Architecture Flows 2.1](demo-scenario-architecture-flows.md)
+- Architecture input: [High-Level Architecture 1.8](high-level-architecture.md)
+- Scenario input: [Demo Scenarios 2.1](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Architecture Flows 2.2](demo-scenario-architecture-flows.md)
 - Requirements input: [Demo Orchestration Component Requirements 1.2](../requirements/components/demo-orchestration.md)
 
 This is the implementation-design companion for the existing

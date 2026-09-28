@@ -1,0 +1,12 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "contractId": "aosedge-demo-portable-preparation-inputs",
+  "contractVersion": "1.0.0",
+  "qualification": "ENGINEERING_CANDIDATE_NOT_DISTRIBUTION_RELEASE",
+  "manifest": {
+    "path": "vehicle-input-manifest.json",
+    "bytes": 51157,
+    "sha256": "ea3e4f67661b9aa5f73f52786e1d0e13b44ba87a6fc2688dc82479dbdcbaff51"
+  }
+}

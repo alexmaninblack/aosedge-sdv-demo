@@ -63,14 +63,15 @@ class UnitService:
             request.setdefault("ownerId", self.owner_id)
         if profile.get("expectedOwnerId"):
             request.setdefault("ownerId", profile["expectedOwnerId"])
+        from .cloud_runtime import launch
+        command, environment = launch(self.root, config["cloudPython"], "unit_cloud.py")
         if action in ("provision", "assign", "remove", "deprovision", "delete", "service-assignment-step"):
             # Submission/attempt, not a claim that Cloud applied the operation.
             self.mutations_started = True
         try:
-            result = subprocess.run([str(config["cloudPython"]), "-I", "-B",
-                str(Path(__file__).with_name("unit_cloud.py"))], input=json.dumps(request),
+            result = subprocess.run(command, input=json.dumps(request),
                 capture_output=True, text=True, timeout=195 if action == "provision" else 120 if action == "wait" else 90 if action.startswith("service-assignment-") else 60 if action == "observe" else 45,
-                env={"PATH": os.defpath})
+                env=environment)
             if result.returncode or len(result.stdout) > 262144:
                 raise EnvironmentError("UNIT_WORKER_UNAVAILABLE")
             payload = json.loads(result.stdout)

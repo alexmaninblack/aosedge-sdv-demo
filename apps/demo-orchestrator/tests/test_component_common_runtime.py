@@ -107,7 +107,9 @@ class CommonRuntimeTests(unittest.TestCase):
         contract=json.loads((solution/'contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json').read_bytes())
         for profile in ('v1','v2'):
             version,digest,_,count=build.PROFILE_BASES[profile]
-            inspected,baseline=source(service,version,materialize=False)
+            # Keep this retained-source proof independent of live package selection.
+            with patch('aosedge_demo_orchestrator.preparation_inputs.selected',return_value=None):
+                inspected,baseline=source(service,version,materialize=False)
             transport,record=build.compose_common_runtime('112.0.0',profile,baseline,digest,platform,contract,
                 {'version':'offline','sha256':'offline'},unsigned_source_sha=inspected['source']['unsignedSha256'])
             payload=archive_files(transport['vehicle-data-platform/vdp-112.0.0-arm64.tar.gz'])

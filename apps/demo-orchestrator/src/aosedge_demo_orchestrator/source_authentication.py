@@ -15,6 +15,14 @@ DIRECTORY = ".run/demo-current/control/viss-trust"
 SOCKET = ".run/demo-current/control/viss.sock"
 
 
+def admission_probe_client(driver, paths):
+    runtime = paths.get("packaged-runtime")
+    if runtime is not None:
+        runtime.verify("native")
+        return runtime.entry("client")
+    return driver.root / BUILD / "carla-viss-client"
+
+
 def enabled(state):
     return ((state.get("source") or {}).get("trust") or {}).get("enabled") is True
 
@@ -159,6 +167,9 @@ def connection(driver, state, role, wait=False):
 
 def build(driver):
     paths = driver.assets()
+    if paths.get("packaged-runtime") is not None:
+        paths["packaged-runtime"].verify("native")
+        return dict(state="BUILT", source="PACKAGED_INPUTS", noOp=True)
     build_root = driver.root / BUILD
     driver.vm.environment._directory(BUILD)
     prefix = paths["carla-root"] / "Build-macos-client-v3/install"
@@ -244,7 +255,7 @@ def authenticate(service, role, *, provisioning=False):
             # One anonymous read against the same healthy endpoint. Only an
             # explicit TLS certificate rejection counts, not any connection error.
             paths = driver.assets()
-            attempt = subprocess.run([str(service.root / BUILD / "carla-viss-client"),
+            attempt = subprocess.run([str(admission_probe_client(driver, paths)),
                 "--host", "localhost", "--port", "16443", "--ca", str(paths["ca"]),
                 "--messages", "1", "--request", json.dumps(dict(action="get",
                     path="Vehicle.CarlaSimulation.FrameId", requestId="unauthenticated-admission-proof"))],

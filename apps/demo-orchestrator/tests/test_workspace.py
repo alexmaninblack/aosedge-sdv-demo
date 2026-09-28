@@ -173,6 +173,63 @@ class WorkspaceTests(unittest.TestCase):
         self.assertNotIn("TRANSIENT T10 PROOF", source)
         self.assertNotIn("orderFrontRegardless", source)
 
+    def test_borderless_restore_notifies_accessibility_of_real_frame_changes(self):
+        source = (Path(__file__).parents[1] / "src/aosedge_demo_orchestrator/native/PresenterWorkspace.swift").read_text()
+        restore = source[source.index("    func restore()"):source.index("    func applicationDidBecomeActive(")]
+        for owner in ("background", "window"):
+            for notification in ("resized", "moved"):
+                self.assertIn(f"NSAccessibility.post(element: {owner}, notification: .{notification})", restore)
+
+    def test_native_client_recovery_loads_fixed_entry_and_retains_idle_guards(self):
+        source = (Path(__file__).parents[1] / "src/aosedge_demo_orchestrator/native/PresenterWorkspace.swift").read_text()
+        client = source[source.index("    func loadClient("):source.index("    func orderObservation()")]
+        self.assertIn('http://127.0.0.1:18080/#native-', client)
+        self.assertIn('state["canReload"] as? Bool == true', client)
+        self.assertIn('guard identity != self.loadedClient', client)
+        self.assertIn('guard self.committedViews.contains(ObjectIdentifier(view)) else { continue }', client)
+        self.assertIn("document.querySelector('[role=dialog]')", client)
+        self.assertIn("document.querySelector('[data-submission-pending=true]')", client)
+        self.assertIn('if error != nil || value as? Bool != true { safe = false }', client)
+        self.assertIn('guard safe else { return }', client)
+        self.assertIn('self.loadClient(name, view)', client)
+        self.assertNotIn('view.reloadFromOrigin()', source)
+
+    def test_navigation_failure_rearms_check_but_cancellation_does_not(self):
+        source = (Path(__file__).parents[1] / "src/aosedge_demo_orchestrator/native/PresenterWorkspace.swift").read_text()
+        failed = source[source.index("    func navigationFailed("):source.index("    func webView(_ webView: WKWebView, didFinish")]
+        self.assertLess(failed.index('NSURLErrorCancelled { return }'), failed.index('loadedClient = nil'))
+        self.assertEqual(2, failed.count('navigationFailed(error)'))
+        self.assertIn('committedViews.insert(ObjectIdentifier(webView))', source)
+        self.assertNotIn('loadClient(', failed)  # No immediate retry loop inside a failure callback.
+
+    def test_restore_waits_for_native_generation_before_reading_presenter_geometry(self):
+        with tempfile.TemporaryDirectory() as folder:
+            service, driver = self.layout_fixture(folder)
+            screen = dict(x=0, y=39, width=2056, height=1224, desktopState="UNLOCKED")
+            desired = geometry(screen, combined=True)
+            acknowledged = False
+            events = []
+            def order(*args):
+                nonlocal acknowledged
+                events.append("order")
+                if events.count("order") == 1:
+                    return dict(state="UNAVAILABLE")
+                acknowledged = True
+                return dict(state="VERIFIED")
+            service.ordering.side_effect = order
+            def observe(pid, rectangle=None, title=None):
+                if rectangle is not None:
+                    return rectangle
+                self.assertTrue(acknowledged)
+                events.append("geometry")
+                return desired[{"Demo Presenter — Header": "header", "Demo Presenter — Platform": "browser", "Demo Presenter — Background": "backdrop"}[title]]
+            with patch.object(service, "build"), patch("aosedge_demo_orchestrator.workspace.subprocess.run", return_value=Mock(returncode=0, stdout=json.dumps(screen))), patch("aosedge_demo_orchestrator.workspace.window", side_effect=observe), patch("aosedge_demo_orchestrator.workspace.os.kill"), patch("aosedge_demo_orchestrator.workspace.time.sleep"):
+                result = service.execute("restore")
+            self.assertEqual([], result["problems"])
+            self.assertEqual(["order", "order", "geometry", "geometry", "geometry"], events)
+            driver.start.assert_not_called()
+            driver.stop.assert_not_called()
+
     def test_combined_control_and_telemetry_keep_the_carla_column(self):
         layout = geometry(dict(x=0, y=39, width=2056, height=1224), combined=True)
         self.assertEqual([8, 753, 914, 502], layout["controller"])

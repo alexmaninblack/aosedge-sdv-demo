@@ -61,9 +61,22 @@ class SourceDriver:
         return remaining
 
     def assets(self):
-        manifest = read_json(self.root / "workspace/repositories.json")
-        paths = {entry["id"]: ((self.root.parent if entry["base"] == "workspace" else Path.home()) / entry["path"])
-                 for entry in manifest["launcherPaths"]}
+        from .host_runtime import selected
+        from .runtime_paths import installed, program_root
+        packaged = selected(self.root)
+        if installed(self.root):
+            paths = {'tls': self.root / '.local/demo-control/tls'}
+        else:
+            manifest = read_json(program_root(self.root) / "workspace/repositories.json")
+            paths = {entry["id"]: ((self.root.parent if entry["base"] == "workspace" else Path.home()) / entry["path"])
+                     for entry in manifest["launcherPaths"] if packaged is None or entry["id"] == "tls"}
+        if packaged is not None:
+            if "tls" not in paths:
+                raise EnvironmentError("SOURCE_OPERATOR_TLS_REQUIRED")
+            paths.update(packaged.source_assets(), ca=paths["tls"] / "server-cert.pem", key=paths["tls"] / "server-key.pem")
+            if not all(paths[k].is_file() and not paths[k].is_symlink() for k in ("ca", "key")):
+                raise EnvironmentError("SOURCE_OPERATOR_TLS_REQUIRED")
+            return paths
         paths.update(project=paths["carla-root"] / "Unreal/CarlaUnreal/CarlaUnreal.uproject",
             config=paths["runtime-root"] / "config/m6_2_town10hd_handover.json",
             runner=paths["runtime-root"] / "tools/run_m6_interactive.py",
@@ -176,11 +189,11 @@ class SourceDriver:
             raise EnvironmentError("SOURCE_PROCESS_OWNER_AMBIGUOUS")
         return matches[0][0] if matches else None
 
-    def spawn(self, command, log):
+    def spawn(self, command, log, *, environment=None):
         fd = os.open(log, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
         with os.fdopen(fd, "w") as stream:
             process = subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=stream, stderr=stream,
-                start_new_session=True, close_fds=True)
+                start_new_session=True, close_fds=True, **({"env": environment} if environment is not None else {}))
         self.vm.children.append(process)
         return process.pid
 
@@ -280,6 +293,14 @@ function run(args) {
                     or any(v["gate"] != "BLOCKED" for v in self.guests(state, "status").values())):
                     raise EnvironmentError("SOURCE_PREVIOUS_RUN_NOT_RUNNING_RECONCILE_REQUIRED")
         paths = self.assets()
+        packaged = paths.get("packaged-runtime")
+        spawn_options = {}
+        if packaged is not None:
+            self.progress("CARLA: verifying packaged host inputs; no build")
+            packaged.verify("ui", "python", "native", "simulator", "openssl")
+            clean_env = {k: v for k, v in os.environ.items() if not k.startswith(("PYTHON", "DYLD_"))}
+            clean_env.update(PATH=os.defpath, PYTHONNOUSERSITE="1", PYTHONDONTWRITEBYTECODE="1")
+            spawn_options["environment"] = clean_env
         from .workspace import prepare_controller
         prepare_controller(paths, self.progress)
         # The fixed .28 client URI has no host listener. Without its owned
@@ -297,10 +318,11 @@ function run(args) {
             self.vm._free_port(2000)
         authentication.initialize_gateway(self, state)
         saved_trust = state["source"]["trust"]
-        paths.update(runtime=self.root / authentication.BUILD / "carla-ego-runtime",
-                     client=self.root / authentication.BUILD / "carla-viss-client")
-        if not all(paths[key].is_file() for key in ("runtime", "client")):
-            authentication.build(self)
+        if packaged is None:
+            paths.update(runtime=self.root / authentication.BUILD / "carla-ego-runtime",
+                         client=self.root / authentication.BUILD / "carla-viss-client")
+            if not all(paths[key].is_file() for key in ("runtime", "client")):
+                authentication.build(self)
         identity = str(uuid4())
         run = self.root / ".run/demo-current/source" / identity
         control = self.root / ".run/demo-current/control"
@@ -312,20 +334,31 @@ function run(args) {
         config["controller"]["autopilot"]["traffic_manager_port"] = TRAFFIC_MANAGER_PORT
         config["simulation"]["fixed_delta_seconds"] = .05
         config["runtime"].update(viss_port=16443, chase_camera_update_hz=20)
+        if packaged is not None:
+            config["route"]["start_spawn_point"] = 88  # Qualified equivalent of Editor index 40.
         atomic_json(run / "input.json", config)
-        simulator = [str(paths["unreal-editor"]), str(paths["project"]), "/Game/Carla/Maps/Town10HD_Opt",
+        if packaged is not None:
+            from .host_runtime import simulator_command
+            screen = subprocess.run([str(packaged.entry("presenter")), "screen"], capture_output=True, text=True, timeout=5)
+            if screen.returncode:
+                raise EnvironmentError("WORKSPACE_BUILTIN_DISPLAY_UNAVAILABLE")
+            simulator = simulator_command(paths, json.loads(screen.stdout))
+        else:
+            simulator = [str(paths["unreal-editor"]), str(paths["project"]), "/Game/Carla/Maps/Town10HD_Opt",
             "-game", "-windowed", "-ResX=1100", "-ResY=700", "-WinX=20", "-WinY=70",
             "-quality-level=Low", "-nosound", "-carla-rpc-port=2000"]
+        api_root = paths["python-api-root"] if packaged is not None else paths["carla-root"] / "PythonAPI/carla"
+        cli = packaged.cli(self.root) if packaged is not None else [sys.executable, "-m", "aosedge_demo_orchestrator"]
         runner = [str(paths["python"]), str(paths["runner"]), "--config", str(run / "input.json"),
             "--runtime", str(paths["runtime"]), "--viss-client", str(paths["client"]),
-            "--python", str(paths["python"]), "--python-api-root", str(paths["carla-root"] / "PythonAPI/carla"),
+            "--python", str(paths["python"]), "--python-api-root", str(api_root),
             "--certificate", str(paths["ca"]), "--private-key", str(paths["key"]),
             "--keyboard-ui", str(paths["keyboard"]), "--run-directory", str(run),
             "--control-directory", str(control), "--started-timestamp", str(time.time()),
             "--demo-journal", str(self.root / JOURNAL),
-            "--connectivity-command", json.dumps([sys.executable, "-m", "aosedge_demo_orchestrator",
+            "--connectivity-command", json.dumps([*cli,
                 "--output", "json", "vehicle", "connectivity"]),
-            "--scene-command", json.dumps([sys.executable, "-m", "aosedge_demo_orchestrator",
+            "--scene-command", json.dumps([*cli,
                 "--output", "json", "simulation"])]
         runner.extend(authentication.runner_options(self, state))
         source = dict(runId=identity, controlDirectory=str(control.relative_to(self.root)),
@@ -333,30 +366,37 @@ function run(args) {
             state="STARTING", assignmentGeneration=saved_generation, operation=None, nativeTelemetry=True)
         if saved_trust:
             source["trust"] = saved_trust
+        # A stopped simulator has no live window geometry to preserve. A
+        # recoverable startup still requires its exact recorded command.
+        if previous and previous["state"] != "STOPPED" and previous["simulatorCommand"] != simulator:
+            raise EnvironmentError("SOURCE_SIMULATOR_OWNER_CHANGED")
         state["source"] = source
         self.vm._save(state)
-        if previous and previous["simulatorCommand"] != simulator:
-            raise EnvironmentError("SOURCE_SIMULATOR_OWNER_CHANGED")
         if previous and self.live_process(simulator):
             self.progress("CARLA: reusing the exact owned simulator after reconciled startup failure")
         else:
             self.vm._free_port(2000)
             self.progress("CARLA: starting the owned simulator")
-            self.spawn(simulator, run / "simulator.log")
+            self.spawn(simulator, run / "simulator.log", **spawn_options)
         deadline = time.monotonic() + 120
         probe_code = "import sys; sys.path.insert(0,sys.argv[1]); import carla; c=carla.Client('127.0.0.1',2000); c.set_timeout(2); print(c.get_world().get_map().name)"
         while time.monotonic() < deadline:
             if not self.live_process(simulator):
                 raise EnvironmentError("SOURCE_SIMULATOR_EXITED")
-            probe = subprocess.run([str(paths["python"]), "-c", probe_code,
-                str(paths["carla-root"] / "PythonAPI/carla")], capture_output=True, text=True, timeout=6)
+            try:
+                probe = subprocess.run([str(paths["python"]), *(["-I", "-B"] if packaged is not None else []), "-c", probe_code,
+                    str(api_root)], capture_output=True, text=True, timeout=min(6, max(.1, deadline - time.monotonic())))
+            except subprocess.TimeoutExpired:
+                # A cold native import/RPC may outlive one probe. Keep the
+                # single owned simulator and the original overall deadline.
+                continue
             if probe.returncode == 0 and probe.stdout.strip() == config["carla"]["expected_map"]:
                 break
             time.sleep(1)
         else:
             raise EnvironmentError("SOURCE_SIMULATOR_READY_TIMEOUT")
         self.progress("CARLA: starting Controller, Gateway and keyboard UI")
-        self.spawn(runner, run / "runner.log")
+        self.spawn(runner, run / "runner.log", **spawn_options)
         self.vm._save(state)
         return self.finish_start(state)
 

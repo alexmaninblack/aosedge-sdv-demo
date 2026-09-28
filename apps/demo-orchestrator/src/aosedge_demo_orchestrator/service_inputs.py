@@ -74,6 +74,8 @@ class ServiceInputs:
         if endpoint not in ("main:8090", "aosiam:8090", "10.0.0.100:8090", "127.0.0.1:8090"):
             raise EnvironmentError("SERVICE_NATIVE_IAM_ENDPOINT_UNSUPPORTED")
         config = load_configuration(self.environment.root)
+        from .cloud_runtime import launch
+        worker, worker_environment = launch(self.environment.root, config["cloudPython"], "unit_cloud.py")
         with tempfile.TemporaryDirectory(prefix="democtl-native-", dir="/tmp") as directory:
             socket = Path(directory) / "iam.sock"
             command = ssh_command(access_path(self.environment.root, "test"), state["vehicles"]["test"]["sshPort"], 5)[:-2]
@@ -89,10 +91,9 @@ class ServiceInputs:
                         if forward.poll() is not None or time.monotonic() >= deadline:
                             raise EnvironmentError("SERVICE_NATIVE_IAM_FORWARD_UNAVAILABLE")
                         time.sleep(0.05)
-                    result = subprocess.run([str(config["cloudPython"]), "-I", "-B",
-                        str(Path(__file__).with_name("unit_cloud.py"))],
+                    result = subprocess.run(worker,
                         input=json.dumps(dict(action="service-native-identity", address="unix:" + str(socket))),
-                        capture_output=True, text=True, timeout=10)
+                        capture_output=True, text=True, timeout=10, env=worker_environment)
                     if result.returncode or len(result.stdout) > 4096:
                         raise EnvironmentError("SERVICE_NATIVE_IDENTITY_UNAVAILABLE")
                     value = json.loads(result.stdout)

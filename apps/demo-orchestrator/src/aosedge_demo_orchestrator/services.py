@@ -66,10 +66,11 @@ class ServiceCatalog:
         request.update(cloud_request(profile))
         if version_id is not None:
             request["versionId"] = version_id
+        from .cloud_runtime import launch
         try:
-            response = subprocess.run([str(config["cloudPython"]), "-I", "-B",
-                str(Path(__file__).with_name("service_cloud.py"))], input=json.dumps(request),
-                text=True, capture_output=True, timeout=60, env={"PATH": os.defpath})
+            command, environment = launch(self.environment.root, config["cloudPython"], "service_cloud.py")
+            response = subprocess.run(command, input=json.dumps(request),
+                text=True, capture_output=True, timeout=60, env=environment)
             if response.returncode or len(response.stdout) > 262144:
                 raise ValueError("Service observation unavailable")
             value = json.loads(response.stdout)
@@ -78,6 +79,8 @@ class ServiceCatalog:
                                      "availableArchitectures", "oemArchitectures"}):
                 raise ValueError("Service observation shape")
             return value
+        except EnvironmentError as error:
+            return dict(authority=observed(None, reason=str(error)))
         except (OSError, ValueError, subprocess.TimeoutExpired):
             return dict(authority=observed(None, reason="SERVICE_CLOUD_READER_UNAVAILABLE"))
 

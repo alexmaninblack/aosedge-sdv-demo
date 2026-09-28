@@ -45,10 +45,10 @@ not only the CARLA-to-AosEdge transport bridge.
 ## Architecture
 
 - [Architecture documentation index](architecture/README.md)
-- [High-Level Architecture 1.7 — accepted](architecture/high-level-architecture.md)
+- [High-Level Architecture 1.8 — accepted](architecture/high-level-architecture.md)
   — current end-to-end system view with the accepted authorization,
   Release Authority, Safe Stop and Tire Health decisions.
-- [Demo Scenario Architecture Flows 2.1 — accepted](architecture/demo-scenario-architecture-flows.md)
+- [Demo Scenario Architecture Flows 2.2 — accepted](architecture/demo-scenario-architecture-flows.md)
   — complete manufacturing, provisioning, post-SOP evolution, Function Team 2
   `T1` Tire Health stage, observability, offline, and retirement mapping.
 - [Repository and component boundaries](architecture/repository-boundaries.md)
@@ -69,7 +69,7 @@ not only the CARLA-to-AosEdge transport bridge.
 - [AosEdge Demo Walkthrough and Review Guide](demo/aosedge-demo-walkthrough.md)
   — human-readable companion for following the clickable mockup chapter by
   chapter and collecting colleague feedback.
-- [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.0](demo/staged-post-sop-brake-health-demo-scenarios.md)
+- [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.1](demo/staged-post-sop-brake-health-demo-scenarios.md)
   — accepted baseline combining Brake Health v1-v3 evolution with one mature
   independent Tire Health v1.0 product on VDP v3.
 - [Demo assets](demo/assets/) — original, license-cleared visual sources and
@@ -78,10 +78,10 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Requirements
 
-- [System Requirements and Traceability 2.1 — accepted](requirements/system-requirements-and-traceability.md)
+- [System Requirements and Traceability 2.2 — accepted](requirements/system-requirements-and-traceability.md)
   — system obligations, complete coverage of the twenty-two Architecture Flows
   gaps, verification intent, repository ownership and component allocation.
-- [Component Decomposition and Interface Register 2.1 — accepted](requirements/component-decomposition-and-interface-register.md)
+- [Component Decomposition and Interface Register 2.2 — accepted](requirements/component-decomposition-and-interface-register.md)
   — logical components, implementation state, lifecycle and repository
   boundaries, runtime and Cloud interfaces, and component-package allocation.
 - [Component requirement packages and template](requirements/components/README.md)
@@ -94,6 +94,12 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Planning
 
+- [Installable distribution and reproducibility](planning/active/installable-distribution-and-reproducibility.md)
+  — accepted packaging, repository-entry-point and clean-Mac qualification plan;
+  not a claim that an installer is already available.
+- [External SSD deployment plan](planning/active/external-ssd-deployment.md)
+  — prepared 1 TB disk, package retention and isolated/clean-system test sequence;
+  macOS installation and runtime migration have not been performed.
 - [AosCore mainline migration — 23 September](planning/active/aoscore-mainline-migration-2026-09-23.md)
   — authorized sequence, native proof, pinned candidate and remaining Factory/E2E gates.
 - [Planning documentation index](planning/README.md)
@@ -104,6 +110,16 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Research
 
+- [Post-assembly disk retention audit — 27 September](research/distribution-stage2-retention-audit-2026-09-27.md)
+  — obsolete runtime kits, old Zen cache, updated Docker accounting and
+  recipe-gated consolidation; inspection only, no deletion.
+- [Distribution Stage 0 input inventory](research/distribution-stage0-inventory-2026-09-25.md)
+  — observed source/artifact pins, dependency and licensing owners, portability
+  risks and next bounded packets; not an installer release.
+- [Disk usage and warm-build retention audit — 25 September](research/disk-usage-retention-audit-2026-09-25.md)
+  — measured Builder/Docker candidates, hard-link accounting and protected
+  current build inputs; authorized Builder cleanup recovered about 28 GiB,
+  while Docker and other candidate pools remain untouched.
 - [Unsigned-package and session-signing change audit](architecture/decisions/0016-unsigned-packages-and-session-scoped-signing.md)
   — source-certificate failure, per-Cloud signing/publication gaps, bounded
   migration, service parity and preservation of the current parked Test.

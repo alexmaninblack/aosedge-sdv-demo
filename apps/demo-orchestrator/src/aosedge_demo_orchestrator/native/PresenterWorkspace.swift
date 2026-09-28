@@ -62,6 +62,7 @@ final class Presenter: NSObject, NSApplicationDelegate, WKScriptMessageHandler, 
     var lastOrderState = ""
     var checkingClient = false
     var loadedClient: String?
+    var committedViews = Set<ObjectIdentifier>()
     var perspective = "global"
     init(_ path: String) { layoutPath = path }
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -91,7 +92,7 @@ final class Presenter: NSObject, NSApplicationDelegate, WKScriptMessageHandler, 
             window.isReleasedWhenClosed = false
             windows[name] = window
             views[name] = view
-            view.load(URLRequest(url: URL(string: "http://127.0.0.1:18080/#native-" + name)!))
+            loadClient(name, view)
         }
         restore()
         clientTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in self?.checkClient() }
@@ -130,10 +131,18 @@ final class Presenter: NSObject, NSApplicationDelegate, WKScriptMessageHandler, 
         if let r = layout["backdrop"], r.count == 4 {
             backdrop?.setFrame(NSRect(x: r[0], y: Int(primary.frame.maxY) - r[1] - r[3],
                                      width: r[2], height: r[3]), display: true)
+            // Borderless windows can leave System Events' AX frame cached
+            // even after the window server has applied the new rectangle.
+            if let background = backdrop {
+                NSAccessibility.post(element: background, notification: .resized)
+                NSAccessibility.post(element: background, notification: .moved)
+            }
         }
         for (name, window) in windows {
             guard let r = layout[name], r.count == 4 else { continue }
             window.setFrame(NSRect(x: r[0], y: Int(primary.frame.maxY) - r[1] - r[3], width: r[2], height: r[3]), display: true)
+            NSAccessibility.post(element: window, notification: .resized)
+            NSAccessibility.post(element: window, notification: .moved)
             window.orderFront(nil)
         }
         placeBackdrop()
@@ -150,6 +159,11 @@ final class Presenter: NSObject, NSApplicationDelegate, WKScriptMessageHandler, 
             self?.orderCheckPending = false
             self?.placeBackdrop()
         }
+    }
+    func loadClient(_ name: String, _ view: WKWebView) {
+        // A failed first navigation has no document for reloadFromOrigin().
+        // Use only the fixed local entry; never replay a protected operation.
+        view.load(URLRequest(url: URL(string: "http://127.0.0.1:18080/#native-" + name)!))
     }
     func checkClient() {
         guard !checkingClient, !views.values.contains(where: { $0.isLoading }) else { return }
@@ -173,6 +187,9 @@ final class Presenter: NSObject, NSApplicationDelegate, WKScriptMessageHandler, 
                 let group = DispatchGroup()
                 var safe = true
                 for view in self.views.values {
+                    // No committed page means no client dialog/submission exists.
+                    // The server's idle/session guard above still applies.
+                    guard self.committedViews.contains(ObjectIdentifier(view)) else { continue }
                     group.enter()
                     view.evaluateJavaScript("!document.querySelector('[role=dialog]') && !document.querySelector('[data-submission-pending=true]')") { value, error in
                         if error != nil || value as? Bool != true { safe = false }
@@ -183,7 +200,7 @@ final class Presenter: NSObject, NSApplicationDelegate, WKScriptMessageHandler, 
                     self.checkingClient = false
                     guard safe else { return }
                     self.loadedClient = identity
-                    for view in self.views.values { view.reloadFromOrigin() }
+                    for (name, view) in self.views { self.loadClient(name, view) }
                 }
             }
         }.resume()
@@ -257,6 +274,21 @@ final class Presenter: NSObject, NSApplicationDelegate, WKScriptMessageHandler, 
         for view in views.values {
             view.evaluateJavaScript("window.dispatchEvent(new CustomEvent('presenter-navigation',{detail:'" + target + "'}))", completionHandler: nil)
         }
+    }
+    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        committedViews.insert(ObjectIdentifier(webView))
+    }
+    func navigationFailed(_ error: Error) {
+        // Superseding a navigation cancels the old one; that is not a retry.
+        let failure = error as NSError
+        if failure.domain == NSURLErrorDomain && failure.code == NSURLErrorCancelled { return }
+        loadedClient = nil // The existing five-second, idle-only check retries.
+    }
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        navigationFailed(error)
+    }
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        navigationFailed(error)
     }
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         webView.evaluateJavaScript("window.dispatchEvent(new CustomEvent('presenter-navigation',{detail:'" + perspective + "'}))", completionHandler: nil)

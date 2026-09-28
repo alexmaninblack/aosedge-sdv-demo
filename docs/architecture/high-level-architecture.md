@@ -1,14 +1,14 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# High-Level Architecture 1.7
+# High-Level Architecture 1.8
 
 - Status: Accepted
-- Version: 1.7
+- Version: 1.8
 - Prepared: 2026-08-22
-- Accepted: 2026-09-15
+- Accepted: 2026-09-27 (installed-workstation amendment)
 - Owner: System Architecture
-- Previous accepted version: 1.6, accepted 2026-09-11
+- Previous accepted version: 1.7
 - Accepted architecture decisions: [ADR 0008](decisions/0008-use-tire-health-for-function-team-2.md),
   [ADR 0009](decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0011](decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
@@ -18,10 +18,44 @@
   [ADR 0015](decisions/0015-use-native-aos-service-runtime-inputs.md),
   [ADR 0016](decisions/0016-unsigned-packages-and-session-scoped-signing.md)
 - Scope: CARLA, Vehicle Gateway ECU, AosVM Domain Controller, AosCloud,
-  shared Vehicle Data Platform Component, two independent OEM Service
-  Providers, functional backends, and demonstration tooling
+  shared Vehicle Data Platform Component, independently managed functional
+  services/backends and demonstration tooling; first installation uses one
+  associated Service Provider, with a separate expanded two-provider scenario
 - Implementation status: design plus accepted amendments; current delivery/evidence is mapped in the implementation view below
 - Cloud or Unit mutation authorized: no
+
+## Installed workstation boundary — 27 September 2026
+
+[ADR 0018](decisions/0018-installable-demo-and-first-use.md) allocates local
+installation and first-use facilitation to the existing Demo Control, not a
+second vehicle/Cloud orchestrator. Immutable application/contract/input versions
+are separate from one explicit private instance's durable state, credentials,
+release ledger, prepared outputs and working VM/backend data. Missing package
+or user access blocks the installed path; developer fallbacks and implicit
+credential/state adoption are prohibited. Installation, explicit runtime
+selection, Cloud access setup and vehicle provisioning remain distinct facts.
+
+The first installable topology uses one OEM and one associated SP owning Brake
+and Tire as separate services. Function-team and service lifecycles remain
+independent; the two-provider model/diagram below is the expanded scenario,
+not a first-install prerequisite or a claim of tested cross-provider isolation.
+Neither the vehicle safety boundary nor any FOTA/SOTA authority changes.
+
+The [installed-state contract](../../contracts/distribution-installation/installed-state.md)
+defines the staged path separation. No installer may implicitly Finish a run,
+replace a running version, roll back Cloud or decrement release numbers.
+Native activation/update/rollback and clean-system qualification remain gates;
+engineering installation evidence alone does not close them.
+
+The [version-selection/recovery detail](../../contracts/distribution-installation/version-selection.md)
+implements these existing preservation constraints through compatible manifest
+selection and shared runtime-use leases. It adds no runtime owner or vehicle
+interface. Native activation and updates around a retained run remain unqualified.
+
+The [native local-setup wrapper](../../contracts/distribution-installation/native-setup.md)
+is an offline adapter of those same engines, with a trusted embedded bootstrap
+and release pin. Its scope ends at explicit local version selection, not Cloud
+enrollment, demo activation or a second runtime owner.
 
 ## Current implementation view — 24 September 2026
 
@@ -443,7 +477,7 @@ architecture. A deployable FOTA or SOTA box indicates that the architecture can
 host that element; it does not imply that every element is installed at every
 demonstration stage. The manufacturing, provisioning, `G0–G4`, independent
 `T1` Tire Health, and retirement sequence and the precise presence or absence of each deployable component are
-owned by Demo Scenario 2.0 rather than by this static component diagram.
+owned by Demo Scenario 2.1 rather than by this static component diagram.
 
 The logical Domain Controller architecture is instantiated twice for the
 demonstration: once as the Validation Unit and once as the Production Unit.
@@ -1105,7 +1139,7 @@ Architecture 1.6 is aligned only while all of the following remain true:
     a driver.
 15. No secret, Unit identity, or private credential is embedded in a FOTA or
     SOTA payload.
-16. The static diagram is a target capability superset; Demo Scenario 2.0 owns
+16. The static diagram is a target capability superset; Demo Scenario 2.1 owns
     component presence and absence at each manufacturing, provisioning,
     `G0–G4`, `T1`, and retirement stage.
 17. Validation and Production Units are separate instances of the same

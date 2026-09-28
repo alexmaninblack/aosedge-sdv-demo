@@ -76,9 +76,10 @@ def qmp(path, command, timeout=3, arguments=None):
 
 class VMService:
     def __init__(self, environment=None, password_provider=None, progress=None, assets_root=None):
+        from .runtime_paths import program_root
         self.environment = environment or EnvironmentService()
         self.root = self.environment.root
-        self.assets = Path(assets_root) if assets_root else project_root()
+        self.assets = Path(assets_root) if assets_root else program_root(project_root())
         self.password_provider = password_provider
         self.progress = progress or (lambda message: None)
         self.children = []
@@ -87,18 +88,27 @@ class VMService:
         directory = self.root / ".run/demo-current"
         return directory / (role + ".qmp"), directory / (role + ".serial")
 
+    def _portable(self):
+        from .vm_runtime import selected
+        return selected(self.environment)
+
     def _command(self, state, role):
         item = state["vehicles"][role]
         monitor, serial = self._paths(role)
         if len(os.fsencode(serial)) >= 104 or any(
                 any(c in str(p) for c in (",", "\n")) for p in (self.root, self.assets)):
             raise EnvironmentError("VM_PATH_NOT_SUPPORTED_BY_QEMU")
-        executable = shutil.which("qemu-system-aarch64")
+        portable = self._portable()
+        executable, firmware = portable.machine() if portable else (
+            shutil.which("qemu-system-aarch64"), str(self.assets / FIRMWARE))
         if not executable:
             raise EnvironmentError("QEMU_NOT_INSTALLED")
-        return [executable, "-name", "democtl-" + role + "-" + item["localVmId"],
+        if any(c in value for value in (executable, firmware) for c in (",", "\n")):
+            raise EnvironmentError("VM_PATH_NOT_SUPPORTED_BY_QEMU")
+        return [executable, *(["-L", str(portable.data_directory())] if portable else []),
+                "-name", "democtl-" + role + "-" + item["localVmId"],
                 "-machine", "virt-11.0,accel=hvf", "-cpu", "host", "-smp", "2", "-m", "2048",
-                "-nodefaults", "-bios", str(self.assets / FIRMWARE), "-uuid", item["localVmId"],
+                "-nodefaults", "-bios", firmware, "-uuid", item["localVmId"],
                 "-drive", "file=" + str(self.root / item["overlay"]) + ",if=none,id=aos-image,format=qcow2,cache=writeback",
                 "-device", "virtio-scsi-pci,id=scsi", "-device", "scsi-hd,drive=aos-image,bootindex=0",
                 "-netdev", "user,id=aosnet,net=10.0.0.0/24,host=10.0.0.1,dns=10.0.0.2,restrict=off,hostfwd=tcp:127.0.0.1:"
@@ -137,17 +147,26 @@ class VMService:
         return rows[0][0] if rows else None
 
     def _spawn(self, command):
-        if "--owner-id" in command and command[1] == str(self.assets / "scripts/host/aosvm-dns-bridge"):
+        portable = self._portable()
+        options = {}
+        if portable:
+            from .vm_runtime import clean_environment
+            if "--owner-id" in command:
+                portable.verify_dns()
+            else:
+                portable.machine(execute=True)
+            options['env'] = clean_environment()
+        if "--owner-id" in command:
             # Bounded, payload-free startup diagnostics for the owned bridge.
             path = self.root / ".run/demo-current/dns-bridge.log"
             fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW, 0o600)
             with os.fdopen(fd, "w") as output:
                 child = subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=output,
-                    stderr=output, start_new_session=True, close_fds=True)
+                    stderr=output, start_new_session=True, close_fds=True, **options)
             self.children.append(child)
             return child.pid
         child = subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                                 stderr=subprocess.DEVNULL, start_new_session=True, close_fds=True)
+                                 stderr=subprocess.DEVNULL, start_new_session=True, close_fds=True, **options)
         self.children.append(child)
         return child.pid
 
@@ -203,13 +222,25 @@ class VMService:
     def _host_profile(self):
         if platform.system() != "Darwin" or platform.machine() != "arm64":
             raise EnvironmentError("VM_REQUIRES_MACOS_ARM64_HVF")
-        firmware = self.assets / FIRMWARE
+        portable = self._portable()
+        if portable:
+            binary, firmware = portable.machine(execute=True)
+            firmware = Path(firmware)
+        else:
+            binary, firmware = shutil.which("qemu-system-aarch64"), self.assets / FIRMWARE
         if firmware.is_symlink() or not firmware.is_file() or digest(firmware) != FIRMWARE_SHA:
             raise EnvironmentError("PINNED_QEMU_FIRMWARE_UNAVAILABLE")
-        binary = shutil.which("qemu-system-aarch64")
         if not binary:
             raise EnvironmentError("QEMU_NOT_INSTALLED")
-        version = subprocess.run([binary, "--version"], capture_output=True, text=True, timeout=3)
+        from .vm_runtime import clean_environment
+        # A relocated native closure can exceed the old developer-path budget
+        # on first execution. This is only a preflight, never a VM-start retry.
+        try:
+            version = subprocess.run([binary, "--version"], capture_output=True, text=True,
+                                     timeout=15 if portable else 3,
+                                     **({'env': clean_environment()} if portable else {}))
+        except subprocess.TimeoutExpired:
+            raise EnvironmentError("VM_VERSION_PROBE_TIMEOUT") from None
         if not any(version.stdout.startswith("QEMU emulator version " + value + "\n")
                    for value in ("11.0.3", "11.1.0")):
             raise EnvironmentError("QEMU_VERSION_OUTSIDE_ACCEPTED_PROFILE")
@@ -226,6 +257,9 @@ class VMService:
                 raise EnvironmentError("VM_OR_DNS_PORT_IN_USE") from None
 
     def _dns_command(self, state):
+        portable = self._portable()
+        if portable:
+            return portable.dns_command(state['shared']['dns']['ownerId'])
         return [sys.executable, str(self.assets / "scripts/host/aosvm-dns-bridge"),
                 "--listen-port", "18053", "--owner-id", state["shared"]["dns"]["ownerId"]]
 

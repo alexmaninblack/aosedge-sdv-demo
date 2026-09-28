@@ -28,6 +28,8 @@ def progress_detail(log):
 
 
 def command(paths, log):
+    if paths.get("packaged-runtime") is not None:
+        raise EnvironmentError("SIMULATION_CACHE_EDITOR_ONLY_NOT_PACKAGED")
     # This native commandlet follows map dependencies and fills the same DDC
     # used by UnrealEditor -game. No cooking, project save or engine rebuild.
     # Unlike the game launcher, this commandlet's NormalizePackageNames takes

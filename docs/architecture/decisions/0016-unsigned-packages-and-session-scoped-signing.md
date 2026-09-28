@@ -8,8 +8,8 @@
 - Prepared: 2026-09-15
 - Owner: Demo Solution Team
 - Change class: C — local source-artifact trust and publication-context separation
-- Architecture input: [High-Level Architecture 1.7](../high-level-architecture.md)
-- Scenario input: [Demo Scenarios 2.0](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Architecture input: [High-Level Architecture 1.8](../high-level-architecture.md)
+- Scenario input: [Demo Scenarios 2.1](../../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - Existing contract: [Certificate-selected Test Cloud](../certificate-selected-cloud.md)
 - Delivery context: [Demo Studio delivery plan](../../planning/active/demo-studio-delivery-plan.md)
 

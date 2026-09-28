@@ -1,19 +1,19 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Demo Scenario Architecture Flows 2.1
+# Demo Scenario Architecture Flows 2.2
 
 - Status: Accepted
-- Version: 2.1
+- Version: 2.2
 - Prepared: 2026-08-22
-- Accepted: 2026-08-26
-- Previous accepted version: 1.8
+- Accepted: 2026-09-27 (installed-workstation amendment)
+- Previous accepted version: 2.1
 - Owner: System Architecture
-- Architecture input: [High-Level Architecture 1.7](high-level-architecture.md)
-- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.0](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Architecture input: [High-Level Architecture 1.8](high-level-architecture.md)
+- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.1](../demo/staged-post-sop-brake-health-demo-scenarios.md)
 - CARLA input: [R10 Native CARLA Vehicle Telemetry Inventory](../research/demo-foundation/r10-carla-telemetry-and-function-team-2.md)
-- Requirements input: [System Requirements and Traceability 2.1](../requirements/system-requirements-and-traceability.md)
-- Component input: [Component Decomposition and Interface Register 2.1](../requirements/component-decomposition-and-interface-register.md)
+- Requirements input: [System Requirements and Traceability 2.2](../requirements/system-requirements-and-traceability.md)
+- Component input: [Component Decomposition and Interface Register 2.2](../requirements/component-decomposition-and-interface-register.md)
 - Accepted architecture decisions: [ADR 0009](decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0011](decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
   [ADR 0013](decisions/0013-current-release-kuksa-authorization-compatibility.md),
@@ -21,7 +21,58 @@
 - Accepted publication decision: [D4-010.3 Artifact Publication Credential Profile](../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
 - Implementation, build, signing, Cloud, or Unit mutation authorized: no
 
+## Installed workstation entry flow
+
+<a id="af-dist-entry"></a>
+
+`AF-DIST-ENTRY`: verify/install immutable version → explicitly validate private
+instance and schema → select separate program, input and writable roots →
+report missing access/dependencies → enter existing Demo Control operations
+only after their normal guards. Unknown instance/volume/schema, conflicting
+paths or missing packaged input stops the sequence without fallback, Cloud
+mutation, credential adoption or a ready claim. The engineering selection does
+not replace a running installation. See the
+[installed-state contract](../../contracts/distribution-installation/installed-state.md).
+Native activation and compatible update/rollback have separate later gates.
+
+For managed engineering packages, the [selection/recovery detail](../../contracts/distribution-installation/version-selection.md)
+inserts explicit compatible manifest selection before runtime entry. Selection
+requires the observed revision and an idle instance/store; runtime entry leases
+both instance and package and re-reads the selection. Retained current-run data
+blocks this first update slice without deletion or implicit Finish. Program-only
+repair verifies a replacement and preserves the original, without rolling back
+Cloud, state or release numbers. Native/live qualification is still separate.
+
+The [native setup detail](../../contracts/distribution-installation/native-setup.md)
+exposes the first part of this flow as folder choice → read-only check → verified
+installation → separate local-data preparation. Changed fields invalidate the
+check; mutations revalidate the volume and selection revision. The window stays
+responsive and distinguishes installed, selected and ready. Secure enrollment
+and first launch remain downstream gates rather than implied success.
+
 ## Current implementation view — 24 September 2026
+
+The later [portable Prepare slice](../../contracts/portable-preparation-inputs/README.md)
+inserts locked artifact validation before the existing catalogue-read/version-
+allocation sequence. It selects no new Cloud target, creates no new lifecycle
+state and leaves the post-preparation signing, publication and vehicle flows
+below unchanged. Invalid packaged inputs cannot trigger a developer build or
+consume a release number. The later [host launch contract](../../contracts/portable-host-launch/README.md)
+adds locked prebuilt-input selection before the existing SourceDriver and
+WorkspaceService startup paths, not a new lifecycle/session owner. Detached
+CARLA/local dashboard startup is distinct from provisioned guest attachment;
+package selection does not authorize or imply a Cloud/Unit connection.
+The [portable VM input slice](../../contracts/portable-vm-launch/README.md)
+validates packaged image/native/helper inputs before existing create/start
+operations. It adds no owner, port or VM lifecycle; a selected command mismatch
+with a running legacy process blocks until the explicit owner handoff. Source,
+provisioning, FOTA/SOTA and recovery sequences below retain their authority.
+The [Cloud/backend selector slice](../../contracts/portable-cloud-backend-inputs/README.md)
+adds local SDK integrity before existing worker dispatch and immutable image
+selection before existing backend start/activation. It creates no Cloud attempt
+on local validation failure. Background observation remains asynchronous; an
+existing run keeps its backend identity. No implicit image import or engine
+start is inserted into navigation, observation or runtime start.
 
 The current source milestone is **demo-v1.1 / Factory .39**.
 [Implemented architecture and traceability](current-implementation.md) maps
@@ -65,7 +116,7 @@ amendment does not authorize implementation, live calls or deletion.
 ## Purpose
 
 This document is the traceability bridge between the static capability model
-in High-Level Architecture 1.7, the audience-visible Demo Scenario 2.0, and the
+in High-Level Architecture 1.8, the audience-visible Demo Scenario 2.1, and the
 next component-requirements package.
 
 It defines how software, data, decisions, evidence, and ownership move through
@@ -96,9 +147,9 @@ rollout.
 
 When the inputs differ, use this order:
 
-1. High-Level Architecture 1.7 owns component boundaries, interfaces,
+1. High-Level Architecture 1.8 owns component boundaries, interfaces,
    authority, security boundaries, and architectural invariants.
-2. Demo Scenario 2.0 owns stage order, component presence, audience-visible
+2. Demo Scenario 2.1 owns stage order, component presence, audience-visible
    proof, and the manufacturing-to-retirement narrative.
 3. This document owns detailed cross-component flow mapping and exposes gaps;
    it does not silently change either source.
@@ -1746,7 +1797,7 @@ vehicle rollback or proof of a fleet-wide deletion policy.
 
 ## Scenario-to-Flow Traceability
 
-| Demo Scenario 2.0 claim | Architecture flow coverage |
+| Demo Scenario 2.1 claim | Architecture flow coverage |
 | --- | --- |
 | OEM-integrated SOP substrate enables post-SOP extension | `AF-M0-LC`, `AF-G0-RT` |
 | Two freshly manufactured, unprovisioned vehicle computers | `AF-M0-LC`, `AF-M0-OB` |
@@ -1913,7 +1964,7 @@ OEM approval explicit. It was accepted on 2026-08-19
 after reviewers confirmed that:
 
 1. `M0`, `M1`, `G0–G4`, `T1`, and `R0` match Demo Scenario 1.5;
-2. every component and interface respects High-Level Architecture 1.7;
+2. every component and interface respects High-Level Architecture 1.8;
 3. VU validation and PU promotion use explicit current targeting and identical
    accepted artifacts;
 4. manufacturing state, Unit identity, software graph, functional data, and

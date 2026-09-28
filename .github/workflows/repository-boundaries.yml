@@ -45,6 +45,18 @@ jobs:
           repository: alexmaninblack/tire-health-service
           ref: 8639b57535e32e3fb2ce68f10794c90d39bb5ae5
           path: workspace/tire-health-service
+      - name: Check out Brake backend for cross-repository documentation links
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          repository: alexmaninblack/brake-health-cloud
+          ref: 42395715103d9f512c2586a2c9b98c3975c06ab7
+          path: workspace/brake-health-cloud
+      - name: Check out Tire backend for cross-repository documentation links
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          repository: alexmaninblack/tire-health-cloud
+          ref: 026018a47daa3b37ff1f4404954e8e48e70336b4
+          path: workspace/tire-health-cloud
       - name: Install image-metadata fixture dependency
         run: |
           sudo apt-get update
@@ -52,7 +64,7 @@ jobs:
       - name: Install pinned source-gate dependencies
         run: |
           python3 -m venv "$RUNNER_TEMP/reuse"
-          "$RUNNER_TEMP/reuse/bin/pip" install 'reuse==5.1.1' 'charset-normalizer==3.4.4' 'PyYAML==6.0.3'
+          "$RUNNER_TEMP/reuse/bin/pip" install 'reuse==5.1.1' 'charset-normalizer==3.4.4' 'PyYAML==6.0.3' 'packaging==26.3'
           echo "$RUNNER_TEMP/reuse/bin" >> "$GITHUB_PATH"
       - name: Qualify clean repository boundaries
         run: >-

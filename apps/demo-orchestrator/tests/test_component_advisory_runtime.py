@@ -304,7 +304,10 @@ class ReviewedSourceIntegrationTests(unittest.TestCase):
             self.skipTest("Reviewed local Platform checkout and frozen unsigned V3 dependency source unavailable")
         from aosedge_demo_orchestrator.component_sources import source
         service = ComponentService(SimpleNamespace(catalog=SimpleNamespace(project=project)))
-        inspected, baseline = source(service, "3.0.0", materialize=False)
+        # This optional proof owns retained developer inputs, not the operator's
+        # currently selected package catalogue (covered by selector tests).
+        with patch("aosedge_demo_orchestrator.preparation_inputs.selected", return_value=None):
+            inspected, baseline = source(service, "3.0.0", materialize=False)
         solution = Path(__file__).resolve().parents[3]
         contract = json.loads((solution / "contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json").read_bytes())
         advisory = (solution / "contracts/qm-advisory-profile/qm-advisory-profile.v1.json").read_bytes()

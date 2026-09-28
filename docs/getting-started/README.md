@@ -24,15 +24,20 @@ Follow the [current workflow](../operations/current-demo-workflow.md) and
 [implemented architecture](../architecture/current-implementation.md), which
 connect requirements, protocols, source and evidence.
 
+For the bounded new installation work, see the
+[local setup preview](local-setup-preview.md). It covers verified offline files
+and explicit private-instance preparation only; the complete first-use wizard,
+DMG and clean-Mac distribution are not released yet.
+
 ## I Want to Understand the System
 
 Read the accepted design chain in this order:
 
-1. [High-Level Architecture 1.7](../architecture/high-level-architecture.md)
-2. [Demo Scenario 2.0](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-3. [Demo Scenario Architecture Flows 2.1](../architecture/demo-scenario-architecture-flows.md)
-4. [System Requirements and Traceability 2.1](../requirements/system-requirements-and-traceability.md)
-5. [Component Decomposition and Interface Register 2.1](../requirements/component-decomposition-and-interface-register.md)
+1. [High-Level Architecture 1.8](../architecture/high-level-architecture.md)
+2. [Demo Scenario 2.1](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+3. [Demo Scenario Architecture Flows 2.2](../architecture/demo-scenario-architecture-flows.md)
+4. [System Requirements and Traceability 2.2](../requirements/system-requirements-and-traceability.md)
+5. [Component Decomposition and Interface Register 2.2](../requirements/component-decomposition-and-interface-register.md)
 
 The [current baseline](../qualification/current-baseline.md) states which
 parts have accepted implementation evidence and which remain targets.

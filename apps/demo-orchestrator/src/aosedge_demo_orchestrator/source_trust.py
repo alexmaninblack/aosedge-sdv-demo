@@ -52,9 +52,17 @@ def owned(path, directory=False):
 
 
 def openssl(arguments, input_data=None):
+    from .host_runtime import selected
+    runtime = selected()
+    executable, options = OPENSSL, {}
+    if runtime is not None:
+        runtime.verify("openssl")
+        executable = str(runtime.entry("openssl"))
+        options["env"] = {"PATH": os.defpath, "OPENSSL_CONF": str(runtime.entry("openssl-config")),
+                          "OPENSSL_MODULES": str(runtime.root / "openssl/lib")}
     try:
-        result = subprocess.run([OPENSSL, *map(str, arguments)], input=input_data,
-            capture_output=True, timeout=10, umask=0o077)
+        result = subprocess.run([executable, *map(str, arguments)], input=input_data,
+            capture_output=True, timeout=10, umask=0o077, **options)
         if result.returncode:
             raise EnvironmentError("SOURCE_TRUST_CERTIFICATE_INVALID")
         return result.stdout

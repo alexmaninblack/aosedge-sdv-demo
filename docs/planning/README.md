@@ -9,6 +9,20 @@ assignment, VM restart, or provisioned-Unit change.
 
 ## Current implementation and remaining work
 
+- [Installable distribution and reproducibility](active/installable-distribution-and-reproducibility.md):
+  accepted Stage 0–7 plan for a portable Apple Silicon runtime, operator/developer
+  documentation and clean-system acceptance; Stage 3 offline transaction
+  installation/repeat passed, native first-use and activation remain open.
+- [External SSD deployment plan](active/external-ssd-deployment.md):
+  prepared 1 TB Work/Clean split, verified Kit 004 transfer, isolated/native
+  proof and invalid-input rejection;
+  installer and clean macOS qualification remain future gates.
+- [Distribution Stage 0 inventory](../research/distribution-stage0-inventory-2026-09-25.md):
+  completed input/ownership audit, preservation, portability risks and bounded
+  next packets; inventory alone is not runtime qualification.
+- [Standalone CARLA Stage 1 proof](../qualification/standalone-carla-stage1-2026-09-25.md):
+  completed scoped simulator/runtime and window-layout feasibility checks;
+  portable host helpers and clean-install acceptance remain later gates.
 - [demo-v1.1 return point](../qualification/demo-v1.1-return-point.md): published
   source composition and retained Factory39; Production31 is preserved.
 - [Implemented architecture](../architecture/current-implementation.md) and
@@ -62,7 +76,10 @@ They do not become a second source of architectural truth and are removed from
 the current tree when their change closes; ADRs, canonical requirements,
 contracts and Git history retain the lasting decision and evidence.
 
-There is currently no active architecture-change plan. ADR 0013 and its
+The [installable distribution plan](active/installable-distribution-and-reproducibility.md)
+now implements [ADR 0018](../architecture/decisions/0018-installable-demo-and-first-use.md)
+in gated slices; offline package installation precedes installed-state/runtime
+integration. ADR 0013 and its
 canonical requirements/contracts retain the accepted KUKSA compatibility
 boundary. The active Demo Implementation Plan is a delivery control derived
 from that baseline, not a competing architecture source; implementation

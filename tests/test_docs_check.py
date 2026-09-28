@@ -322,9 +322,11 @@ class DocumentationCheckTests(unittest.TestCase):
         temporary, root = self.temporary_documentation()
         self.addCleanup(temporary.cleanup)
         target = root / "docs" / "demo" / "README.md"
-        text = target.read_text(encoding="utf-8").replace(
-            "Scenarios 2.0", "Scenarios 1.9", 1
+        text, replacements = re.subn(
+            r"Scenarios [0-9]+\.[0-9]+", "Scenarios 0.0",
+            target.read_text(encoding="utf-8"), count=1,
         )
+        self.assertEqual(1, replacements)
         target.write_text(text, encoding="utf-8")
         result = self.run_check(root)
         self.assertNotEqual(0, result.returncode)

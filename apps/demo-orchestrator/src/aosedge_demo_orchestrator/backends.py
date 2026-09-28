@@ -243,6 +243,8 @@ class BackendService:
 
     def build(self, team):
         """Explicit development build. Never called by start/navigation."""
+        from .runtime_paths import installed, require
+        require(not installed(self.root), 'DEVELOPER_BUILD_UNAVAILABLE')
         if team not in TEAMS:
             raise EnvironmentError("BACKEND_TEAM_INVALID")
         with self.environment._writer():
@@ -438,6 +440,10 @@ class BackendService:
                 restoredContainers=restored, contextOpenHandles=observation)
 
     def _candidate(self, team):
+        from .backend_inputs import selected
+        packaged = selected(self.environment)
+        if packaged is not None:
+            return packaged.candidate(team)
         values = []
         for path in (self.catalog / team).glob("*/manifest.json"):
             if path.is_symlink() or not path.resolve().is_relative_to(self.catalog.resolve()):

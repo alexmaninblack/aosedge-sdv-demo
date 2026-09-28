@@ -9,7 +9,7 @@
 - Owner: Demo Solution Team
 - Review artifact: [AosEdge Demo Interaction Mockup](mockups/aosedge-demo-interaction-mockup-2-4.html)
 - Accepted interaction contract: [AosEdge Demo Interaction Specification 2.5](mockups/aosedge-demo-interaction-specification.md)
-- Accepted scenario source: [Demo Scenarios 2.0](staged-post-sop-brake-health-demo-scenarios.md)
+- Accepted scenario source: [Demo Scenarios 2.1](staged-post-sop-brake-health-demo-scenarios.md)
 - Authority: explanatory only; this guide does not redefine product behavior,
   release authority, requirements or implementation
 
@@ -332,11 +332,11 @@ While following the mockup, please consider:
 This walkthrough deliberately avoids requirement and API detail. When deeper
 review is needed, use:
 
-- [Demo Scenarios 2.0](staged-post-sop-brake-health-demo-scenarios.md) for the
+- [Demo Scenarios 2.1](staged-post-sop-brake-health-demo-scenarios.md) for the
   accepted product and vehicle lifecycle;
 - [Interaction Specification 2.5](mockups/aosedge-demo-interaction-specification.md)
   for exact UI behavior, actions and state semantics;
 - [UI Traceability Register](mockups/aosedge-demo-ui-traceability-register.md)
   for requirement and acceptance-case coverage; and
-- [Demo Scenario Architecture Flows 2.1](../architecture/demo-scenario-architecture-flows.md)
+- [Demo Scenario Architecture Flows 2.2](../architecture/demo-scenario-architecture-flows.md)
   for detailed component and interface sequences.

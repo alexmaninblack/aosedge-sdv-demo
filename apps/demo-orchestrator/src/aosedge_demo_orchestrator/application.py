@@ -28,6 +28,17 @@ class DemoOrchestrator:
 
     def execute(self, request: OperationRequest) -> OperationResult:
         operation = f"{request.domain}.{request.action}"
+        from .runtime_paths import installed
+        developer_only = {
+            'image.build', 'vehicle.build-runtime', 'service.build', 'service.build-status',
+            'backend.build', 'component.readiness-build', 'component.readiness-apply',
+            'component.core-permissions-build', 'component.core-permissions-apply',
+            'component.core-permissions-status', 'component.sm-builder-start',
+            'component.sm-builder-stop', 'component.sm-build', 'component.sm-test',
+            'component.sm-apply', 'component.cm-build', 'component.cm-test', 'component.cm-apply',
+        }
+        if installed() and (operation in developer_only or operation.startswith('component.cm-compare-')):
+            return OperationResult(operation, OperationState.BLOCKED, 'INSTALLED_DEVELOPER_OPERATION_UNAVAILABLE')
         selection_error = request.selection_error()
         if selection_error:
             return OperationResult(operation, OperationState.BLOCKED, selection_error)

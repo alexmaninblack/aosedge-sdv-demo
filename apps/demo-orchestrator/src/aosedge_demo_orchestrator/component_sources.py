@@ -24,6 +24,10 @@ def source(service, version, *, materialize=False):
     if version not in bases or version not in UNSIGNED_SHA:
         raise EnvironmentError("COMPONENT_SOURCE_NOT_PINNED")
     service._directory(version)  # Existing catalog boundary.
+    from .preparation_inputs import selected
+    inputs = selected(service.environment)
+    if inputs is not None:
+        return inputs.vdp(service, version)
     parent = service.root / ".source-profiles"
     destination = parent / version
     expected = dict(schemaVersion=1, version=version, legacyArchiveSha256=bases[version],

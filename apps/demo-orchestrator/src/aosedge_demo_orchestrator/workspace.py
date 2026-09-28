@@ -83,6 +83,9 @@ end tell''', timeout=3)
 
 
 def prepare_controller(paths, progress):
+    if paths.get("packaged-runtime") is not None:
+        paths["packaged-runtime"].verify("ui")
+        return
     source = paths["runtime-root"] / "tools/KeyboardControl.swift"
     if paths["keyboard"].stat().st_mtime >= source.stat().st_mtime:
         return
@@ -140,6 +143,13 @@ class WorkspaceService:
         self.binary = self.directory / "Demo Presenter"
 
     def build(self):
+        from .host_runtime import selected
+        runtime = selected(self.root)
+        if runtime is not None:
+            runtime.verify("ui")
+            self.binary = runtime.entry("presenter")
+            self.directory.mkdir(parents=True, exist_ok=True)
+            return
         source = Path(__file__).parent / "native/PresenterWorkspace.swift"
         self.directory.mkdir(parents=True, exist_ok=True)
         if self.binary.exists() and self.binary.stat().st_mtime >= source.stat().st_mtime:
@@ -187,6 +197,10 @@ class WorkspaceService:
     def execute(self, action, *, recovery=False):
         if action not in ("restore", "status", "close"):
             raise EnvironmentError("WORKSPACE_ACTION_INVALID")
+        from .host_runtime import selected
+        runtime = selected(self.root)
+        if runtime is not None:
+            self.binary = runtime.entry("presenter")
         with self.environment._writer():
             state = read_json(self.root / JOURNAL) if (self.root / JOURNAL).exists() else {}
             source = state.get("source") or {}
@@ -316,6 +330,14 @@ end tell''')
                               orderingGeneration=generation, restoredAt=now())
                 state["workspace"] = record
                 atomic_json(self.root / JOURNAL, state)
+            # A signal queues restore on the native main loop. Observe geometry
+            # only after that exact generation has been applied, not before it.
+            order = self.ordering(generation, pid)
+            if action == "restore" and pid:
+                deadline = time.monotonic() + 2
+                while order["state"] == "UNAVAILABLE" and time.monotonic() < deadline:
+                    time.sleep(.1)
+                    order = self.ordering(generation, pid)
             if not pid:
                 problems.append("presenter: window host absent")
             else:
@@ -330,12 +352,6 @@ end tell''')
                         problems.append(name + ": geometry observation unavailable")
                         if str(error) != "WORKSPACE_WINDOW_COUNT:0":
                             retryable = False
-            order = self.ordering(generation, pid)
-            if action == "restore" and pid:
-                deadline = time.monotonic() + 2
-                while order["state"] == "UNAVAILABLE" and time.monotonic() < deadline:
-                    time.sleep(.1)
-                    order = self.ordering(generation, pid)
             if order["state"] != "VERIFIED":
                 problems.append("WORKSPACE_Z_ORDER_NOT_VERIFIED")
             outcome = dict(state="INCOMPLETE" if problems else "PLACED_AWAITING_VISUAL_REVIEW", profile="builtin-v1",

@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import json
+import re
 import unittest
 from pathlib import Path
 
@@ -14,6 +15,13 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "workspace" / "repositories.json"
 SCHEMA = ROOT / "workspace" / "repositories.schema.json"
 DOCTOR = ROOT / "scripts" / "workspace-doctor"
+WORKFLOW = ROOT / ".github" / "workflows" / "repository-boundaries.yml"
+
+
+def pinned_ci_dependencies(workflow: str) -> dict[str, tuple[str, str]]:
+    """Extract the deliberately fixed sibling-checkout shape used by this job."""
+    return {repository: (revision, path) for repository, revision, path in re.findall(
+        r"repository: ([^\s]+)\n\s+ref: ([0-9a-f]{40})\n\s+path: ([^\s]+)", workflow)}
 
 
 class WorkspaceDoctorTests(unittest.TestCase):
@@ -61,6 +69,22 @@ class WorkspaceDoctorTests(unittest.TestCase):
     def test_schema_and_manifest_version_agree(self) -> None:
         self.assertEqual(1, self.manifest["schemaVersion"])
         self.assertEqual({"const": 1}, self.schema["properties"]["schemaVersion"])
+
+    def test_ci_checks_out_all_owned_documentation_dependencies_at_manifest_pins(self) -> None:
+        checkouts = pinned_ci_dependencies(WORKFLOW.read_text(encoding="utf-8"))
+        for item in self.manifest["repositories"]:
+            if item["id"] in {"carla", "unreal-engine"}:
+                continue
+            repository = item["repository"].removeprefix("https://github.com/").removesuffix(".git")
+            with self.subTest(repository=repository):
+                self.assertEqual((item["acceptedRevision"], "workspace/" + item["directory"]),
+                                 checkouts.get(repository))
+
+    def test_ci_dependency_extraction_does_not_treat_branch_or_comment_as_a_pin(self) -> None:
+        for invalid in ("main", "# 42395715103d9f512c2586a2c9b98c3975c06ab7"):
+            fixture = ("repository: alexmaninblack/brake-health-cloud\n"
+                       "  ref: " + invalid + "\n  path: workspace/brake-health-cloud\n")
+            self.assertEqual({}, pinned_ci_dependencies(fixture))
 
 
 if __name__ == "__main__":

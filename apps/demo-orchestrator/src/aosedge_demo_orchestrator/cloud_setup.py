@@ -124,6 +124,17 @@ def inspect_setup(cloud, request, sp_factory=None):
         matched = any(v.get("id") == owners["sp"] for v in cloud.pages("service-providers/"))
         return ("READY", "Selected SP is visible to OEM") if matched else ("BLOCKED", "OEM_SP_ASSOCIATION_REQUIRED")
     row("association", "OEM / SP association", association)
+    if request.get("firstUse") is True:
+        def components():
+            cloud.require("components_list", "deployment_bundles_create")
+            return "READY", "VDP catalog and publication permissions"
+        row("componentDelivery", "VDP delivery permissions", components)
+
+        def services():
+            from .service_cloud import PERMISSIONS
+            sp_future.result().require(*PERMISSIONS)
+            return "READY", "One associated SP can deliver Brake and Tire packages"
+        row("serviceDelivery", "Brake and Tire delivery permissions", services)
     failed = any(v["state"] in ("BLOCKED", "CONFLICT") for v in checks)
     missing = any(v["state"] == "MISSING" for v in checks)
     return dict(stage="BLOCKED" if failed else "MISSING" if missing else "READY",
@@ -176,6 +187,7 @@ class CloudSetup:
         self.root = units.root
 
     def _request(self):
+        from .runtime_paths import program_root
         config = load_configuration(self.root)
         profiles = config["cloudProfiles"]
         sp = profiles.get("service-provider")
@@ -189,10 +201,13 @@ class CloudSetup:
         domain = config.get("cloudConnection", {}).get("domain", LEGACY_DOMAIN)
         return dict(cloudDomain=domain, spCredential=str(sp["credential"]),
                     testUnitId=state.get("vehicles", {}).get("test", {}).get("unitId"),
-                    unitConfig=read_json(self.root / "config/aosvm-single-node-unitconfig.json"))
+                    unitConfig=read_json(program_root(self.root) / "config/aosvm-single-node-unitconfig.json"))
 
-    def check(self):
-        report = self.units._cloud("cloud-setup-check", **self._request())
+    def check(self, *, first_use=False):
+        request = self._request()
+        if first_use:
+            request['firstUse'] = True
+        report = self.units._cloud("cloud-setup-check", **request)
         self._check_owner_switch(report, apply=False)
         return report
 
@@ -254,8 +269,8 @@ class CloudSetup:
             # Public owner IDs, not keys. Configuration survives run retirement.
             connection = config.setdefault("cloudConnection", {})
             connection.update(domain=report["domain"], owners=report["owners"], source="OEM_CERTIFICATE_ORGANIZATION")
-            from .cloud_connection import DEFAULT_PROFILES
-            profiles = config.setdefault("cloudProfiles", {k: dict(v) for k, v in DEFAULT_PROFILES.items()})
+            from .runtime_paths import credential_defaults
+            profiles = config.setdefault("cloudProfiles", credential_defaults(self.environment.root))
             for name, role in (("oem-delivery", "oem"), ("service-provider", "sp")):
                 profiles[name]["expectedOwnerId"] = report["owners"][role]
             setup.update(objects=report["objects"], checkedAt=now())

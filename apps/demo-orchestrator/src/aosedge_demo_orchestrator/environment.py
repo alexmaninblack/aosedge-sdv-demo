@@ -97,9 +97,11 @@ def atomic_json(path, document):
 
 class EnvironmentService:
     def __init__(self, root=None, catalog=None, qemu_img=None):
+        from .runtime_paths import installed
         self.root = (Path(root) if root else project_root()).resolve()
+        packaged = installed(self.root)
         self.catalog = catalog or ImageCatalog()
-        self.qemu_img = qemu_img or shutil.which("qemu-img")
+        self.qemu_img = qemu_img or (None if packaged else shutil.which("qemu-img"))
         self._writer_thread = threading.local()
 
     @property
@@ -148,9 +150,13 @@ class EnvironmentService:
             os.close(fd)
 
     def _command(self, arguments):
+        from .vm_runtime import selected, clean_environment
+        portable = selected(self)
+        binary = portable.image_tool() if portable else self.qemu_img
         try:
-            result = subprocess.run([self.qemu_img] + arguments, capture_output=True,
-                                    timeout=30, check=False)
+            result = subprocess.run([binary] + arguments, capture_output=True,
+                                    timeout=30, check=False,
+                                    **({'env': clean_environment()} if portable else {}))
         except (OSError, subprocess.TimeoutExpired):
             raise EnvironmentError("QEMU_IMG_UNAVAILABLE_OR_TIMEOUT") from None
         if result.returncode:
@@ -236,7 +242,11 @@ class EnvironmentService:
     def create(self, target, selector=None, image_path=None):
         if target not in ("test", "production", "all"):
             raise EnvironmentError("INVALID_TARGET")
-        if not self.qemu_img:
+        from .vm_runtime import selected
+        portable = selected(self)
+        if portable:
+            portable.image_tool()  # Fail before catalogue access or a new journal.
+        elif not self.qemu_img:
             raise EnvironmentError("QEMU_IMG_NOT_INSTALLED")
         image = self.catalog.resolve(selector, image_path)
         if self.factory31_comparison and (target != "test" or image.selector != "6.1.1-maninblack.31/main-qemuarm64"

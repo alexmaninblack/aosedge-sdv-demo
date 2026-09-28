@@ -249,10 +249,11 @@ class ComponentService:
             request = dict(values, action=action, credential=str(credential), ownerId=owner)
             from .cloud_connection import cloud_request
             request.update(cloud_request(profile))
+        from .cloud_runtime import launch
+        command, environment = launch(self.environment.root, config["cloudPython"], "component_worker.py")
         try:
-            process = subprocess.run([str(config["cloudPython"]), "-I", "-B",
-                str(Path(__file__).with_name("component_worker.py"))], input=json.dumps(request),
-                text=True, capture_output=True, timeout=30 if values.get("purpose") == "overview" else 90, env={"PATH": os.defpath})
+            process = subprocess.run(command, input=json.dumps(request),
+                text=True, capture_output=True, timeout=30 if values.get("purpose") == "overview" else 90, env=environment)
             if process.returncode or len(process.stdout) > 262144:
                 raise EnvironmentError("COMPONENT_WORKER_RESULT_UNAVAILABLE")
             result = json.loads(process.stdout)
@@ -307,6 +308,8 @@ class ComponentService:
         path = self._publication_path(version, state)
         if path.is_file():
             saved = read_json(path)
+            if not isinstance(saved, dict):
+                raise EnvironmentError("PACKAGE_PUBLICATION_RECORD_INVALID")
             if saved.get("cloudDomain") != selected_domain(state):
                 raise EnvironmentError("PACKAGE_PUBLICATION_CONTEXT_MISMATCH")
             return saved
@@ -390,14 +393,15 @@ class ComponentService:
             raise EnvironmentError("COMPONENT_VSS_TEST_ONLY")
         with self.environment._writer():
             state = read_json(self.environment.root / JOURNAL)
-            contract = read_json(self.environment.root / "contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json")
+            from .runtime_paths import program_root
+            contract = read_json(program_root(self.environment.root) / "contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json")
             versions = {item["contractVersion"]: set(item["readPaths"]) for item in contract["componentVersions"]}
             if versions["3.0.0"] - versions["2.0.0"] != set(VSS_PATHS):
                 raise EnvironmentError("COMPONENT_VSS_CONTRACT_CHANGED")
-            advisory = read_json(self.environment.root / "contracts/qm-advisory-profile/qm-advisory-profile.v1.json")
+            advisory = read_json(program_root(self.environment.root) / "contracts/qm-advisory-profile/qm-advisory-profile.v1.json")
             declared = {(item[path], item[kind]) for item in advisory["endpoints"]
                 for path, kind in (("requestPath", "requestEntryType"), ("statusPath", "statusEntryType"))}
-            readiness = read_json(self.environment.root / "contracts/qm-advisory-profile/advisory-readiness.v1.json")
+            readiness = read_json(program_root(self.environment.root) / "contracts/qm-advisory-profile/advisory-readiness.v1.json")
             if readiness.get("schemaVersion") != 1 or readiness.get("vssDatatype") != "string":
                 raise EnvironmentError("COMPONENT_READINESS_SCHEMA_CONTRACT_CHANGED")
             declared.update((item["path"], item["entryType"]) for item in readiness["endpoints"])
@@ -434,7 +438,8 @@ class ComponentService:
         driver = SourceDriver(VMService(self.environment))
         extra = {}
         if action == "component-diagnose":
-            contract = read_json(self.environment.root / "contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json")
+            from .runtime_paths import program_root
+            contract = read_json(program_root(self.environment.root) / "contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json")
             extra["readPaths"] = next(item["readPaths"] for item in contract["componentVersions"] if item["contractVersion"] == "3.0.0")
         with driver.operation(timeout=25):
             return dict(target=target, **driver.guest(state, target, action, **extra))
@@ -750,6 +755,18 @@ class ComponentService:
         with self.environment._writer():
             from .releases import ReleaseContinuity
             continuity = ReleaseContinuity(self.environment)
+            from .preparation_inputs import selected
+            inputs = selected(self.environment)
+            runtime_options, packaged_source = {}, None
+            contract_name = "vdp-compatibility-profile/vdp-compatibility-profile.v1.json"
+            if inputs is not None:
+                if content_profile not in PROFILE_BASES:
+                    raise EnvironmentError("COMPONENT_CONTENT_PROFILE_REQUIRED")
+                packaged_source = inputs.vdp(self, PROFILE_BASES[content_profile][0])
+                runtime_options["source_files"] = inputs.runtime()
+                packaged_contract = inputs.contract(contract_name)
+                if reviewed_advisory:
+                    packaged_advisory = inputs.read("contracts/qm-advisory-profile/qm-advisory-profile.v1.json")
             if version is None:
                 if content_profile not in PROFILE_BASES:
                     raise EnvironmentError("COMPONENT_CONTENT_PROFILE_REQUIRED")
@@ -765,16 +782,17 @@ class ComponentService:
                 raise EnvironmentError("COMPONENT_CONTENT_PROFILE_REQUIRED")
             continuity.remember("vdp", version)
             if content_profile is not None:
-                previous = [version_number(item.name) for item in self.root.iterdir()
+                previous = [version_number(item.name) for item in (self.root.iterdir() if self.root.exists() else [])
                             if item.is_dir() and VERSION.fullmatch(item.name)]
                 if previous and version_number(version) <= max(previous):
                     raise EnvironmentError("COMPONENT_PREPARATION_MUST_INCREMENT_VERSION")
             base_version = PROFILE_BASES[content_profile][0] if content_profile is not None else "1.0.16"
             from .component_sources import source
-            inspected, files = source(self, base_version, materialize=True)
+            inspected, files = packaged_source or source(self, base_version, materialize=True)
             baseline_sha = inspected["source"]["legacyArchiveSha256"]
             baseline_verification = dict(inspected["source"], sourceIntegrity=inspected["sourceIntegrity"])
-            contract = read_json(self.environment.root / "contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json")
+            from .runtime_paths import program_root
+            contract = packaged_contract if inputs is not None else read_json(program_root(self.environment.root) / "contracts" / contract_name)
             repository = self.environment.root.parent / "aos-vehicle-platform"
             if content_profile is None:
                 first, record = compose(version, files, baseline_sha, repository, contract)
@@ -782,15 +800,15 @@ class ComponentService:
                 from .environment import factory_for
                 factory = factory_for(read_json(self.environment.root / JOURNAL), "test")
                 if reviewed_advisory:
-                    advisory_contract = (self.environment.root /
+                    advisory_contract = packaged_advisory if inputs is not None else (self.environment.root /
                         "contracts/qm-advisory-profile/qm-advisory-profile.v1.json").read_bytes()
                     first, record = compose_advisory_runtime(version, files, baseline_sha, repository,
                         contract, factory, advisory_contract,
-                        unsigned_source_sha=inspected["source"]["unsignedSha256"])
+                        unsigned_source_sha=inspected["source"]["unsignedSha256"], **runtime_options)
                 elif content_profile in ("v1", "v2"):
                     first, record = compose_common_runtime(version, content_profile, files, baseline_sha,
                         repository, contract, factory,
-                        unsigned_source_sha=inspected["source"]["unsignedSha256"])
+                        unsigned_source_sha=inspected["source"]["unsignedSha256"], **runtime_options)
                 else:
                     first, record = replay(version, content_profile, files, baseline_sha, contract, factory,
                                            unsigned_source_sha=inspected["source"]["unsignedSha256"])
@@ -804,6 +822,8 @@ class ComponentService:
             record["preparedSha256"] = sha(unsigned)
             record["baselineVerification"] = baseline_verification
             record["files"] = {name: sha(data) for name, data in first.items()}
+            if inputs is not None:
+                self.root.mkdir(parents=True, exist_ok=True, mode=0o700)
             with tempfile.TemporaryDirectory(prefix=".prepare-", dir=self.root) as temporary:
                 stage = Path(temporary) / "candidate"
                 stage.mkdir(mode=0o700)

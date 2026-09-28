@@ -3,6 +3,56 @@
 
 # Qualification Documentation
 
+- [Distribution Stage 2 closure — 28 September](distribution-stage2-closure-2026-09-28.md):
+  current acceptance checklist, SSD reconnection, source checkpoint and the
+  remaining visual/fresh-engine gates; not another installer increment.
+
+- [Native existing Cloud access — 27 September](native-cloud-access-2026-09-27.md):
+  explicit OEM/SP pair inspection/save and read-only prerequisite adapter;
+  source/helper and bounded native pair checks pass; earlier startup latency and
+  live access remain separate open gates.
+
+- [Native local setup — 27 September](native-setup-2026-09-27.md):
+  separate offline AppKit installer and local-instance preparation preview;
+  secure enrollment, first launch and distributable DMG remain separate gates.
+
+- [Installed version selection/recovery — 27 September](installed-versions-2026-09-27.md):
+  engineering compatibility, leased use, state-preserving rollback and interrupted
+  program repair; complete Kit 007 qualification tracked separately from native delivery.
+
+- [Installed runtime state — 27 September](installed-state-2026-09-27.md):
+  separate immutable/private roots, Kit 005 installation and isolated execution;
+  native activation, onboarding and clean-Mac acceptance remain open.
+
+- [Offline installation transaction — 27 September](offline-installation-2026-09-27.md):
+  Stage 3 first slice, deterministic integrity/preservation/recovery gates and
+  isolated Kit 004 installation evidence; not native wizard or activation.
+
+- [External SSD package — 27 September](external-ssd-package-2026-09-27.md):
+  verified Kit 004 transfer, isolated execution, native smoke and invalid-input
+  rejection with internal copies denied;
+  preserved harness failure, no installer or live-runtime migration.
+
+- [Portable application — 26 September](portable-application-2026-09-26.md):
+  complete source/input assembly, offline relocated proof, preserved-run
+  advisory/maneuvers, external OFF/ON and automatic reboot recovery.
+
+- [Portable Cloud/backend inputs — 26 September](portable-cloud-backend-inputs-2026-09-26.md):
+  source-locked SDK/image selection and later preserved-run integration.
+
+- [Portable VM inputs — 26 September](portable-vm-inputs-2026-09-26.md):
+  small assembly/source selection and later corrected live QEMU/DNS handoff.
+
+- [Deferred distribution live checks — 26 September](distribution-deferred-live-checks-2026-09-26.md):
+  historical deferral, identified native-input regression and post-assembly disposition.
+
+- [Retained VDP profile binding — 26 September](presenter-retained-profile-2026-09-26.md):
+  exact Cloud/package metadata recovery after reuse across demo runs.
+- [Standalone host handoff — 26 September](standalone-host-handoff-2026-09-26.md):
+  proved resize corrections, ordinary standalone selection and preserved Test;
+  DNS owner migration and complete packaged lifecycle acceptance remain open.
+- [Standalone CARLA Stage 1 proof](standalone-carla-stage1-2026-09-25.md):
+  completed scoped standalone simulator and native-layout proof; not clean-Mac or installer qualification.
 - [Current .39 baseline and limits](current-baseline.md).
 - [Demo version 1.1 return point](demo-v1.1-return-point.md): published source checkpoint, not full E2E promotion.
 - [Documentation/implementation audit](documentation-implementation-audit-2026-09-24.md): requirements, architecture, implementation, all contract families, operator flow and unresolved contract/qualification gaps.

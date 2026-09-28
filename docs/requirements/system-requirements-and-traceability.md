@@ -1,17 +1,17 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# System Requirements and Traceability 2.1
+# System Requirements and Traceability 2.2
 
 - Status: Accepted
-- Version: 2.1
+- Version: 2.2
 - Prepared: 2026-08-22
-- Accepted: 2026-08-26
-- Previous accepted version: 1.0
+- Accepted: 2026-09-27 (installed-workstation amendment)
+- Previous accepted version: 2.1
 - Owner: System Architecture
-- Architecture input: [High-Level Architecture 1.7](../architecture/high-level-architecture.md)
-- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.0](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-- Flow input: [Demo Scenario Architecture Flows 2.1](../architecture/demo-scenario-architecture-flows.md)
+- Architecture input: [High-Level Architecture 1.8](../architecture/high-level-architecture.md)
+- Scenario input: [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.1](../demo/staged-post-sop-brake-health-demo-scenarios.md)
+- Flow input: [Demo Scenario Architecture Flows 2.2](../architecture/demo-scenario-architecture-flows.md)
 - Accepted architecture decisions: [ADR 0009](../architecture/decisions/0009-separate-release-decision-from-cloud-execution.md),
   [ADR 0011](../architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md),
   [ADR 0013](../architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md),
@@ -19,6 +19,30 @@
 - Brake Cloud repository creation completed on 2026-08-28; no additional
   repository creation, implementation, signing, Cloud or Unit mutation is
   authorized by this requirements baseline alone
+
+## Installed workstation obligations
+
+| ID | Requirement | Statement | Verification | Basis |
+| --- | --- | --- | --- | --- |
+| <a id="sys-dist-001"></a>`SYS-DIST-001` | Separate installed data authority | Installed Demo Control shall read code/contracts/locked inputs from the selected immutable version and keep journal, release counters, credentials, generated artifacts and working data in an explicit private instance. Missing inputs/access, unsafe or unknown instance state, and conflicting paths shall block without developer fallback or adoption of another setup. Repeat installation/version selection shall not reset durable data or change Cloud. | Unit, Contract, isolated installed-package integration; live activation separately gated | ADR 0018 |
+
+This obligation refines [ADR 0018](../architecture/decisions/0018-installable-demo-and-first-use.md)
+and the [distribution entry flow](../architecture/demo-scenario-architecture-flows.md#af-dist-entry).
+The accepted first-use scope is one OEM and one associated SP for two separate
+services, not cross-provider qualification.
+
+The [version-selection/recovery contract](../../contracts/distribution-installation/version-selection.md)
+is an implementation refinement of this same data-preservation obligation:
+explicit compatibility, leased runtime use, atomic version selection and
+program-only recovery. It does not establish permission to migrate retained
+runs, remove data or activate a native installation.
+
+For that first-install scope, the logical OEM/Brake/Tire publication roles in
+[role-bound publication](#sys-rel-011) remain distinct, but the two service
+roles may use the same authorized SP identity. The earlier two-provider count
+is an expanded scenario, not a requirement for a second account/certificate.
+Enrollment/profile wiring and its executable contract review remain a gated
+first-use deliverable; path separation does not grant publishing authority.
 
 ## Current implementation view — 24 September 2026
 
@@ -66,9 +90,9 @@ passes its acceptance criteria, and the evidence is retained.
 
 ## Source Precedence
 
-1. High-Level Architecture 1.7 owns boundaries, authority and invariants.
-2. Demo Scenario 2.0 owns the audience-visible stage progression.
-3. Architecture Flows 2.1 owns detailed lifecycle, runtime, observability and
+1. High-Level Architecture 1.8 owns boundaries, authority and invariants.
+2. Demo Scenario 2.1 owns the audience-visible stage progression.
+3. Architecture Flows 2.2 owns detailed lifecycle, runtime, observability and
    failure-flow mapping.
 4. This document owns system requirement identifiers, gap traceability,
    verification intent and the next component-allocation boundary.
@@ -373,7 +397,7 @@ requirements have accepted evidence.
 
 The canonical component IDs, interface IDs, repository candidates and package
 boundaries are defined in the
-[Component Decomposition and Interface Register 2.1](component-decomposition-and-interface-register.md).
+[Component Decomposition and Interface Register 2.2](component-decomposition-and-interface-register.md).
 The next derivation step shall expand the following packages. A system
 requirement may allocate obligations to several packages and one integration
 test.

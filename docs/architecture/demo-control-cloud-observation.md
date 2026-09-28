@@ -162,6 +162,16 @@ only a scheduling hint, never a substitute for the displayed observation. The re
 interleaves successor observations if the installed receipt remains unavailable,
 and still issues at most one component-publication read per invocation. Its
 cache and asynchronous identity include Cloud/OEM/run/Unit scope.
+For a release reused from an earlier run, the reader also resolves the exact
+inventory-selected release's retained, domain/OEM-scoped publication receipt
+through the existing component catalogue. It projects that record only in
+memory; it does not recreate publication operations in the current journal,
+scan all retained releases, or select a pending/latest candidate. The retained
+receipt's saved READY status is not trusted as the current reconciliation:
+the same bounded Cloud publication read must bind the installed version UUID.
+Missing, malformed, unsafe or mismatched receipts leave inventory available
+and the profile unconfirmed. See the
+[retained-profile regression proof](../qualification/presenter-retained-profile-2026-09-26.md).
 The inspected artifact is cached by path, device/inode, size and modification/
 change timestamps; an unchanged package is not rehashed on every UI refresh.
 
