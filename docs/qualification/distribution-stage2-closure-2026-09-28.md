@@ -14,11 +14,11 @@
 | --- | --- | --- |
 | Preserved restart point | Same source branch, Test/Production disks and selected runtime; no competing live owners | Observed before starting work |
 | SSD identity | Original Work/Clean UUIDs, ownership and available capacity | Pass; Work approximately 572 GiB free |
-| Source checkpoint | Reviewed source/contract/docs set, source gates and a local commit | Source gates pass; local commit pending |
+| Source checkpoint | Reviewed source/contract/docs set, source gates and a local commit | PASS; local commit `70dac05`; no push or baseline tag change |
 | Live resource preflight | Existing 90-GiB internal reserve before guarded live qualification | Restored to approximately 90.5 GiB after authorized cache retention; recheck before launch |
-| Native/operator UI | Complete panels, correct profiles/status/freshness, popup behavior, layout/order and bounded feedback | Not run in this continuation |
-| Fresh-engine import | Empty independent image store, pinned archive load, exact identities, repeat and networkless startup | Not run in this continuation |
-| Preservation | No Production/Factory/identity/ledger/backend-data changes; unrelated Docker resources intact | Observed preflight; repeat after execution |
+| Native/operator UI | Complete panels, correct profiles/status/freshness, popup behavior, layout/order and bounded feedback | Native simulator/control reviewed; Presenter pending; findings below |
+| Fresh-engine import | Empty independent image store, pinned archive load, exact identities, repeat and networkless startup | PASS in a separate rootless nested engine; not clean-OS qualification |
+| Preservation | No replacement/deletion of Production, Factory, identities, ledgers or backend histories; unrelated Docker resources intact | Same Test/Production identities and all seven existing container IDs retained; histories not reset |
 
 No successful row authorizes silently closing another row. Stage 3 preview 005
 and Kit 007 remain the existing candidates; there is no new setup preview,
@@ -86,24 +86,126 @@ Final local source results:
   isolated process-lease check (5.732 seconds).
 - Official-schema/service targeted suite: 25 tests, PASS (7.713 seconds).
 - Documentation, component locks, whitespace, confidential-input and public
-  source gates: PASS before the final evidence update; rerun before committing.
+  source gates: PASS; confidential-input and documentation gates repeated at
+  the source commit.
+
+The first retained-VM start was blocked by the equivalent host-runtime inventory
+guard: 49 additional CPython cache files (1,184,907 bytes), dated before this
+continuation, existed beside the pinned host Python sources. After verifying
+their corresponding pinned sources, these exact generated files were moved to
+a separate recoverable private quarantine. The complete host Python group passed
+verification and one corrected start completed. No integrity exception or
+fallback was introduced.
+
+## Independent empty-engine proof
+
+The fixture used the official ARM64 `docker:29.7.2-dind-rootless` manifest
+`sha256:cac84af5928c5d88e920165ce675b17c03ab2165e5418abb3c0c25cb8a1e3cbf`.
+Its independent daemon reported zero images and zero containers before import.
+There were no published ports, external network, host mounts or shared Docker
+socket. Image data lived in bounded tmpfs storage; outer limits were 2 GiB of
+memory with no additional swap, two CPUs and 512 processes.
+
+The official nested rootless setup requires an outer privileged container.
+Inner cgroups were unavailable; this is **not** evidence of service quota
+enforcement, VM-grade isolation, a fresh Docker Desktop installation or a clean
+Mac. Those limitations are explicit, not inferred away from the import result.
+
+The first two attempts preserved a harness failure: default image listing hid
+the imported untagged OCI indices. Import output already reported both expected
+IDs, and the archive digest remained correct. Docker's
+[image-list documentation](https://docs.docker.com/reference/cli/docker/image/ls/)
+and CLI help confirmed that `--all` is required. The fixture was corrected to
+enumerate all images without changing the exact-ID assertion or adding tags.
+
+The corrected fresh attempt passed:
+
+- First archive import: **1.901 seconds**; exactly the two pinned image IDs.
+- Repeat import: **0.775 seconds**; unchanged image set.
+- Both images: exact source revision and Linux/arm64 identity, non-root `node`
+  user, read-only rootfs, no network, dropped capabilities and no-new-privileges.
+- Both processes: readiness HTTP 200, missing Unit context correctly rejected
+  with HTTP 503, private admin socket and a newly created empty SQLite database.
+- Both disposable backends and the test daemon were removed. All seven existing
+  outer container IDs were retained, including the five running Watt containers.
+  The exact test-daemon image downloaded for this proof was also removed after
+  confirming no container used it; required backend images were retained.
+
+Compact evidence: `Build-distribution-stage2-20260926/empty-engine-20260928-003.json`
+in the ignored CARLA workspace. Failed attempts 001/002 remain separately
+recorded; they are not relabelled as successful runs.
+
+## Preserved Test restart and native visual review
+
+Test Unit `5395f7d6-2ff3-4d10-9e7f-efa85e7994eb` was reused with its existing
+VM, enrollment and stored backend data. Corrected VM start took 33.24 seconds.
+The packaged simulation started once; selecting its exact registered app path
+did not create another simulator process. Normal authentication/selection
+confirmed stationary Safe Stop, reset the simulator scene through the existing
+handover path, and established one selected-platform role and one dashboard
+role. There were zero qualification clients. Production remained stopped.
+
+At 08:05:21 UTC, AosCloud independently reported ONLINE, Factory .39, VDP117,
+Brake92 and Tire49; both service instances were active, with no pending release
+or reported error. No Cloud publication, new release allocation, provisioning,
+model reset or new image build occurred.
+
+Direct native observations confirmed:
+
+- CARLA displays the expected vehicle and Town10HD scene, not a blank window.
+- Driving Control's Dashboard, Vehicle and Data tabs render live values;
+  observed Data values include 20 Hz simulation and approximately 4 events/s.
+- Both retained inspection recommendations appear on the driver dashboard and
+  agree with fresh backend APPLIED advisory facts.
+- Autopilot was requested through the native UI. The source frame independently
+  reported AUTOPILOT at 19.397 km/h. Native Safe Stop then showed STOPPING and
+  finally STOPPED at 0.0 km/h. The car was left in Safe Stop, network ON.
+- Window geometry matched the requested layout and ordering reported VERIFIED.
+  This does not substitute for inspection of Presenter cards/popups.
+
+### Open findings and proof limits
+
+1. The built-in browser retained a `data:` error page from the earlier shutdown.
+   Computer-use policy rejected selecting that page. The operator was asked to
+   reopen the allowed local HTTP address; no alternate browser or indirect UI
+   workaround was used. Presenter cards, detailed dialogs and their feedback
+   timing remain unreviewed in this continuation.
+2. At the normal 914-by-503-point control-window size, the Return-to-road
+   explanatory line overlaps the upper area of the external-network button.
+   Primary button labels remain readable, but this is a visual defect to triage
+   before closing the complete native presentation gate.
+3. Bounded guest logs contain VISS response timeouts during this session, while
+   current readiness is READY/LIVE, automatic SM/CM/VDP restart counts are zero,
+   and fresh backend advisory facts say APPLIED. These observations do not prove
+   uninterrupted advisory transport or explain the timeout cause. Keep this
+   distinct from the previously retained readiness-flap follow-up; do not close
+   either merely because the dashboard currently displays recommendations.
+   A second snapshot after the import fixture was removed still showed those
+   timeouts, so they cannot be dismissed as a short import-only load spike.
+   At 08:06:21 UTC the car was independently confirmed SAFE_STOP, 0 km/h,
+   brake 1.0; fresh APPLIED receipts and READY/LIVE continued. Cause remains open.
+
+The read-only comparison is recorded in
+`Build-distribution-stage2-20260926/packaged-live-stage2-ui-20260928.json` and
+`packaged-live-stage2-post-import-20260928.json` in the same directory.
+Stage 2 remains open; no new Stage 3 installer feature starts on this evidence.
 
 ## Next bounded work
 
-1. Finish the source gates and preserve the reviewed branch checkpoint without
-   moving `demo-v1.1` or claiming a published installer.
-2. Recheck the restored internal reserve; preserve current runtime inputs,
-   Factory .39/.31, overlays, credentials, source, video assets and warm
-   standalone build caches.
-3. Qualify the ordinary packaged runtime's visible UI against authoritative
-   observations, not just native geometry. Reuse current Test, with no new
-   release allocation, Cloud publication or model reset.
-4. Verify backend archive import in a genuinely separate empty engine/store.
-   Never clear the shared Docker engine or describe its idempotent load as a
-   clean import. Any nested-engine proof is an artifact test, not clean-macOS
-   or fresh Docker Desktop installation evidence.
-5. Update the stage verdict with actual results. Only then resume the accepted
-   installed-package first-use journey; do not add unrelated wizard features.
+1. Resume Presenter visual review after the operator reopens the allowed local
+   HTTP page. Reuse current Test, with no new release allocation, publication
+   or model reset.
+2. Triage the native caption overlap and correlate VDP request/response timeouts
+   with Gateway evidence before selecting any fix. Do not rebuild from a symptom
+   or widen security. Do not merge this with the existing readiness-flap issue
+   without evidence.
+3. Maintain the internal reserve and preserve all current runtime inputs,
+   Factory .39/.31, overlays, credentials, source, video assets and warm build
+   caches. After test-image removal, the observed reserve was approximately
+   92.17 GiB; values remain time-dependent.
+4. Close Stage 2 only after the remaining UI and observation findings have an
+   explicit disposition. Then resume the accepted installed-package first-use
+   journey; do not add unrelated wizard features or repeat completed import work.
 
 Raw local test logs remain in the ignored CARLA workspace. Project documentation
 and compact qualification facts are English; secrets and private runtime state

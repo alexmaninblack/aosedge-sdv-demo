@@ -412,15 +412,20 @@ evidence, not a queue of simultaneous next actions.
 | --- | --- | --- |
 | 0 — Inventory | Complete in its recorded scope | Preserve the input inventory |
 | 1 — Standalone CARLA | Complete in its recorded scope | Reuse the qualified Game; no rebuild |
-| 2 — Portable runtime | Open | Operator-visible acceptance and fresh-engine backend import |
+| 2 — Portable runtime | Open; independent empty-engine import passed | Finish Presenter visual acceptance and triage recorded native UI/advisory observations |
 | 3 — Installation and first use | Partial | One installed-package path from setup through first launch; then lifecycle cases |
 | 4 — Reproduction documentation | Partial supporting work | Coherent release-specific operator and developer routes |
 | 5 — Verification | Source/fixture coverage exists | Repeatable installed-product and UI scenario evidence |
 | 6 — Clean-system qualification | Not complete | Native clean-system installation and mandatory E2E |
 | 7 — Publication | Not complete | Exact qualified release, artifacts, notices and supported scope |
 
-Immediate order: preserve a reviewable source checkpoint; close the two Stage 2
-gates; then resume the existing Stage 3 design as one first-use journey. Do not
+The local source checkpoint is `70dac05`; existing `demo-v1.1` is unchanged.
+Independent empty-engine import, repeated import and networkless backend startup
+passed on 28 September. Native CARLA and Driving Control were observed directly;
+Presenter review is still incomplete. These results are not clean-Mac proof.
+
+Immediate order: finish Stage 2's operator-visible acceptance; then resume the
+existing Stage 3 design as one first-use journey. Do not
 add installer features, rebuild Factory/Game, change service models or start a
 new demo scenario while that closure is pending. Existing-access verification
 does not replace the accepted new-user registration/enrollment path. Source
