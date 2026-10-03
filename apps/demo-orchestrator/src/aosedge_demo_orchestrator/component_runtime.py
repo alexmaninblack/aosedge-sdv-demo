@@ -45,6 +45,7 @@ FACTORY_RELEASES = {
     "6.1.1-maninblack.38": "378c00efad0ec67b2fb0c90328b68c4e8970b511",
     "6.1.1-maninblack.39": "793b1fc035d2b7c123f9a4161788955f389bb81d",
     "6.1.1-maninblack.40": "9adee816b4f942ceafb4d30da4adba318352bf59",
+    "6.1.1-maninblack.41": "3fd1f8eb8e8d51c7e89c9f89f1646c7d4f55494f",
 }
 RELATIVE = "meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files/systemd-slot-component"
 BUILDER_PROJECT = "/home/yocto/r61-build/project/yocto"
@@ -980,7 +981,7 @@ def register_factory_support(destination, version, compatibility):
 
 def stage_mainline_factory_gates(ssh, remote, project, source, suffix="37"):
     """Export committed test tooling separately from the immutable Platform pin."""
-    if suffix not in ("37", "38", "39", "40"):
+    if suffix not in ("37", "38", "39", "40", "41"):
         raise EnvironmentError("FACTORY_MAINLINE_GATE_VERSION_UNSUPPORTED")
     solution = Path(__file__).resolve().parents[4]
     if subprocess.check_output(["git", "status", "--porcelain"], cwd=solution):
@@ -1074,21 +1075,25 @@ def build_factory(version, metadata_only=False):
         suffix = version.rsplit(".", 1)[1]
         flags = " -R " + source + "/qualification/factory-" + suffix + ".conf "
         mainline = None
-        if suffix in ("37", "38", "39", "40"):
+        if suffix in ("37", "38", "39", "40", "41"):
             mainline = stage_mainline_factory_gates(ssh, remote, project, source, suffix)
             flags = " -R " + shlex.quote(mainline["conf"]) + " "
             stage("verify effective mainline pins and offline guards before compilation")
             print(remote(prefix + mainline["command"] + " preflight --conf " +
                          shlex.quote(mainline["conf"]), timeout=600), file=sys.stderr, flush=True)
-        managers = "aos-servicemanager" + (" aos-communicationmanager" if suffix in ("32", "33", "34", "35", "36", "37", "38", "39", "40") else "")
-        if suffix in ("34", "35", "36", "37", "38", "39", "40"):
+        managers = "aos-servicemanager" + (" aos-communicationmanager" if suffix in ("32", "33", "34", "35", "36", "37", "38", "39", "40", "41") else "")
+        if suffix in ("34", "35", "36", "37", "38", "39", "40", "41"):
             managers += " aos-iamanager"
-        targets = managers + (" aos-kuksa-auth-compat" if suffix in ("34", "35", "36", "37", "38", "39", "40") else "")
-        if suffix in ("38", "39", "40"):
+        targets = managers + (" aos-kuksa-auth-compat" if suffix in ("34", "35", "36", "37", "38", "39", "40", "41") else "")
+        if suffix in ("38", "39", "40", "41"):
             # Compile/package the proven policy delta before image construction.
             targets += " refpolicy-aos"
-        if suffix in ("39", "40"):
+        if suffix in ("39", "40", "41"):
             targets += " aos-vehicle-data-provider-platform"
+        if suffix == "41":
+            # Native Rust scope, timestamp and complete library tests execute
+            # in do_compile, before this candidate can construct an image.
+            targets += " kuksa-databroker"
         stage("compile the proven manager corrections from committed source (offline)")
         remote(prefix + "bitbake" + flags + "-c compile " + targets, timeout=1200, capture=False)
         work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-servicemanager/git"
@@ -1131,7 +1136,7 @@ subprocess.run(['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'
             if "[  PASSED  ] " + str(expected_cm_tests) + " tests." not in cm_log:
                 raise EnvironmentError("FACTORY_CM_STARTUP_REGRESSIONS_INCOMPLETE")
             test_log += cm_log
-        if suffix in ("34", "35", "36", "37", "38", "39", "40"):
+        if suffix in ("34", "35", "36", "37", "38", "39", "40", "41"):
             stage("verify uniform CM/SM/IAM permission capacity and native KAC/Provider tests")
             for recipe in managers.split():
                 manager_build = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/" + recipe + "/git/build"
@@ -1151,7 +1156,7 @@ subprocess.run(['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'
                 test_log += remote(kac_loader + " --library-path " + kac_libs + " " + kac_work + "/build/" + executable, timeout=60)
         stage("package the managers with package QA")
         remote(prefix + "bitbake" + flags + targets, timeout=1200, capture=False)
-        if suffix in ("32", "33", "34", "35", "36", "37", "38", "39", "40"):
+        if suffix in ("32", "33", "34", "35", "36", "37", "38", "39", "40", "41"):
             # Verify final package input after native do_update_config, not the
             # intermediate resource file that do_install initially creates.
             package_check = (
@@ -1166,7 +1171,7 @@ subprocess.run(['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'
                 "print('Factory service-input package: PASS')"
             ) % (work + "/image", source + "/meta-aos-vehicle-platform/recipes-aos/aos-servicemanager/files")
             print(remote("python3 -c " + shlex.quote(package_check)), file=sys.stderr, flush=True)
-        if suffix in ("33", "34", "35", "36", "37", "38", "39", "40"):
+        if suffix in ("33", "34", "35", "36", "37", "38", "39", "40", "41"):
             cm_work = BUILDER_PROJECT + "/build-main/tmp/work/cortexa57-aos-linux/aos-communicationmanager/git"
             cm_check = ("import json; from pathlib import Path; "
                 "config=json.loads(Path(%r).read_text()); "
@@ -1176,7 +1181,7 @@ subprocess.run(['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'
         if mainline:
             print(remote(mainline["command"] + " package --root " + shlex.quote(mainline_root)),
                   file=sys.stderr, flush=True)
-        if suffix in ("39", "40"):
+        if suffix in ("39", "40", "41"):
             projection_check = (
                 "from pathlib import Path; import stat; "
                 "root=Path(%r); src=Path(%r); "
