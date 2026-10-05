@@ -23,13 +23,13 @@ jobs:
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           repository: alexmaninblack/carla-ego-runtime
-          ref: 98b0b70a0c16cb96475d2c34755a80a817e4a190
+          ref: 2e3d1164d491dac25e212f59315057deca0bf3d8
           path: workspace/carla-ego-runtime
       - name: Check out vehicle platform
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           repository: alexmaninblack/aos-vehicle-platform
-          ref: 793b1fc035d2b7c123f9a4161788955f389bb81d
+          ref: 92a2138813983cb1c029fd3e61bd90b68241af63
           path: workspace/aos-vehicle-platform
           # Platform provenance tests inspect introducing commits and base blobs.
           fetch-depth: 0
@@ -37,25 +37,25 @@ jobs:
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           repository: alexmaninblack/brake-health-service
-          ref: 230cdd4515d1be94ef342197ff56f6b76498aff2
+          ref: 5aa652fda603e7621043961331e58236b19204e9
           path: workspace/brake-health-service
       - name: Check out Tire source for cross-repository documentation links
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           repository: alexmaninblack/tire-health-service
-          ref: 8639b57535e32e3fb2ce68f10794c90d39bb5ae5
+          ref: f0a0f6edadb51aa338775d157aa3bde28f5b76f4
           path: workspace/tire-health-service
       - name: Check out Brake backend for cross-repository documentation links
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           repository: alexmaninblack/brake-health-cloud
-          ref: 42395715103d9f512c2586a2c9b98c3975c06ab7
+          ref: 7c64adf7b3d99535ecc7c8cbe468bc527cbcdc12
           path: workspace/brake-health-cloud
       - name: Check out Tire backend for cross-repository documentation links
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           repository: alexmaninblack/tire-health-cloud
-          ref: 026018a47daa3b37ff1f4404954e8e48e70336b4
+          ref: ea2d6deec9b704cb866d362eaefc9d87356ddeb5
           path: workspace/tire-health-cloud
       - name: Install image-metadata fixture dependency
         run: |

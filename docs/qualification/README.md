@@ -3,6 +3,10 @@
 
 # Qualification Documentation
 
+- [Kit028 / Setup042 source return point — 5 October](kit028-setup042-source-publication-2026-10-05.md):
+  candidate source tag, immutable media identity, verified source receipts and
+  remaining acceptance gates; no DMG rebuild or video-repository changes.
+
 - [M1 live installed journey — 3 October](m1-live-journey-2026-10-03.md):
   installed Kit 025 / Setup 039 live measurements, runner ordering corrections
   and explicit remaining acceptance; full E2E is still in progress.

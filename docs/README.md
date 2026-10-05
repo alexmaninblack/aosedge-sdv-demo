@@ -14,6 +14,9 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Start Here
 
+- [Kit028 / Setup042 source return point](qualification/kit028-setup042-source-publication-2026-10-05.md)
+  — candidate tag, exact cross-repository source pins, unchanged DMG provenance
+  and explicit remaining qualification gates.
 - [Installed preview: Cloud first use](getting-started/installed-preview-cloud-first-use.md)
   — existing access, secure enrollment/recovery and exact Subject selection;
   [native first-use evidence](qualification/cloud-first-use-implementation-2026-09-29.md) and
