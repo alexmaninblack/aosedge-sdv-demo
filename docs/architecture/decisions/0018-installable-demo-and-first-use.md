@@ -4,7 +4,7 @@
 # ADR 0018: Installable Demo and First-use Boundary
 
 - Status: Accepted direction; staged implementation and qualification incomplete
-- Version: 1.0
+- Version: 1.1
 - Prepared: 2026-09-27
 - Owner: Demo Solution Team
 - Change class: C for installed-state/first-use integration; the first delivery
@@ -22,6 +22,15 @@ download hosting and its authorization are not selected or purchased. The
 operator does not build Unreal, CARLA, Python, the host UI or vehicle services.
 Docker Desktop is an explicit separately installed prerequisite with its own
 operator acceptance and licensing; do not silently install or reconfigure it.
+
+On 1 October the user accepted the separate native **Prepare backends** step:
+the trusted Setup wrapper imports the pinned untagged image set into the already
+running local Docker Desktop engine. It uses existing instance/package leases
+and the Demo Control writer; only a private attempt record is added for lost
+response reconciliation. Docker remains image-readiness authority. No second
+runtime lifecycle, auto-import during Create or new backend build is introduced.
+The [native setup contract](../../../contracts/distribution-installation/native-setup.md#explicit-backend-preparation-accepted-on-1-october-2026)
+defines the bounded operation and qualification gates.
 
 Keep immutable program/component versions separate from durable user state,
 credentials and disposable caches. Use a user-selected package store; ordinary
@@ -55,6 +64,41 @@ Before external delivery, close Developer ID/notarization, dependency notices
 and redistribution review, and declare only the measured support envelope.
 Do not disable OS security to make installation work.
 
+On 29 September the user selected direct beta distribution: Developer ID
+Application signing and Apple notarization, delivered through a DMG rather
+than TestFlight. This refines the existing delivery channel, not vehicle/runtime
+authority. Apple Development remains an explicitly local engineering signature.
+The accepted channel does not establish that a distribution certificate/private
+key, notarization credentials or permission to upload a particular archive is
+available. Resolve those actual prerequisites without stopping independent
+installation and lifecycle work. No certificate or account may be silently
+created and no security warning may be bypassed.
+
+Distribution signing covers the macOS executable closure, not only Setup's
+outer bundle. Preserve the previous verified kit; sign only a new candidate,
+then regenerate its integrity manifests and independent installer pin. Qualify
+the required hardened-runtime/entitlement behavior and strict signatures before
+submitting the exact archive to Apple. A successful local DMG build, developer
+signature or checksum alone does not qualify distribution or notarization.
+
+## Single DMG delivery accepted on 2 October 2026
+
+The user accepted the operator-experience direction and requested complete media
+as the first implementation milestone. Ship the trusted native Setup and its
+matching complete runtime kit in one DMG. Setup may discover only the fixed
+sibling payload and prefill its source field; the existing independently pinned
+validation still authenticates it. Discovery is not installation or readiness.
+No folder picker is needed on the ordinary mounted-media path. No arbitrary
+payload code is executed and no Cloud, dependency installation or runtime start
+is added to the offline transaction.
+
+Build from the current verified kit without rebuilding Factory or CARLA. Verify
+the mounted media and install on M1 without a separately staged kit fallback.
+The candidate remains local engineering media until signing, notarization and
+redistribution gates close. Persistent launcher installation, unified onboarding
+and the guided scenario are accepted direction but later implementation slices;
+do not claim that wrapping today's Setup completes those deliverables.
+
 ## Staged allocation and non-claims
 
 The [installation contract](../../../contracts/distribution-installation/README.md)
@@ -82,13 +126,31 @@ separate gates, not consequences of a successful local selection.
 
 The [native local-setup detail](../../../contracts/distribution-installation/native-setup.md)
 wraps these same engines with bounded progress and explicit local preparation.
-It remains an offline engineering preview, not enrollment or runtime activation.
+Its original preparation actions remain offline. The separate explicit-launch
+increment opens the selected instance using existing Demo Control ownership,
+leases and workspace restoration, without version activation or VM/Cloud
+mutations. Source/native/live qualification remain distinct; enrollment is open.
+
+The accepted 29 September [first-use completion detail](../../../contracts/distribution-installation/cloud-first-use.md)
+now has source implementation for one-shot SDK enrollment, durable private
+attempt/key recovery and explicit exact unbound Subject references. The existing
+assignment owner rechecks a saved reference before use; installation cannot bind
+it to a Unit. Native secure input and the existing writer/leases preserve the
+same ownership boundary. Source/fixture results do not qualify real token
+issuance, ordinary installed first use, or clean-system acceptance.
 
 The complete wizard/DMG, state migration, secure enrollment, fresh Docker import, signing,
 clean-Mac installation and live E2E remain separate deliverables. Installing
 bytes must report `INSTALLED_NOT_ACTIVATED`, never claim the demo is ready.
 
 ## Impact and preservation
+
+Accepted 28 September first-use refinement: Demo Control initializes a separate
+private local Gateway server identity during explicit first simulator start,
+as defined in the [local-trust contract](../../../contracts/distribution-installation/local-gateway-trust.md).
+This is local lab authority, not an Aos Cloud/OEM certificate or system trust
+enrollment. It fills the previously explicit missing server-TLS prerequisite;
+client mTLS and selected-Unit authorization remain unchanged.
 
 Owner: integration distribution tooling and the existing Demo Control. No
 vehicle service, Gateway, Factory, model threshold or AosCore change is needed.

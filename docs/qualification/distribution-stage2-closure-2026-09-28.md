@@ -3,7 +3,7 @@
 
 # Distribution Stage 2 Closure — 28 September 2026
 
-- Status: In progress; no Stage 2 exit or clean-install claim.
+- Status: Functional/UI checks passed in their recorded scope; timeout follow-up explicitly user-deferred. Stage 3 continuation allowed; no unconditional Stage 2 exit or clean-install claim.
 - Owner: Demo Solution Team.
 - Scope: Resume the [accepted delivery sequence](../planning/active/installable-distribution-and-reproducibility.md), close existing gates, preserve the current demo.
 - Change: Execution/evidence reconciliation only; no new runtime behavior or architectural decision.
@@ -16,7 +16,7 @@
 | SSD identity | Original Work/Clean UUIDs, ownership and available capacity | Pass; Work approximately 572 GiB free |
 | Source checkpoint | Reviewed source/contract/docs set, source gates and a local commit | PASS; local commit `70dac05`; no push or baseline tag change |
 | Live resource preflight | Existing 90-GiB internal reserve before guarded live qualification | Restored to approximately 90.5 GiB after authorized cache retention; recheck before launch |
-| Native/operator UI | Complete panels, correct profiles/status/freshness, popup behavior, layout/order and bounded feedback | Native simulator/control reviewed; Presenter pending; findings below |
+| Native/operator UI | Complete panels, correct profiles/status/freshness, popup behavior, layout/order and bounded feedback | Retained-Test UI E2E and bounded correction recheck passed; prior transport causality remains open |
 | Fresh-engine import | Empty independent image store, pinned archive load, exact identities, repeat and networkless startup | PASS in a separate rootless nested engine; not clean-OS qualification |
 | Preservation | No replacement/deletion of Production, Factory, identities, ledgers or backend histories; unrelated Docker resources intact | Same Test/Production identities and all seven existing container IDs retained; histories not reset |
 
@@ -205,20 +205,44 @@ Stage 2 remains open; no new Stage 3 installer feature starts on this evidence.
 
 ## Next bounded work
 
-1. Resume Presenter visual review after the operator reopens the allowed local
-   HTTP page. Reuse current Test, with no new release allocation, publication
-   or model reset.
-2. Triage the native caption overlap and correlate VDP request/response timeouts
+The operator reopened Presenter and requested a full E2E check. The subsequent
+[retained-Test live E2E report](distribution-stage2-live-e2e-2026-09-28.md)
+supersedes the earlier Presenter-pending status above: popups, team views,
+independent resets, real maneuvers, a five-minute-plus network outage, queued
+delivery, ignition recovery and post-boot maneuvers were exercised. All 23
+recorded-state assertions passed; no clean install or serial-release run is
+claimed. The intentional resets preserved assessment/event history.
+
+1. **Completed:** Presenter ignition/Finish classification and native caption
+   corrections are deployed and rechecked. See the
+   [UI correction report](distribution-stage2-ui-corrections-2026-09-28.md) for
+   red/green tests, actual power-cycle UI proof and preserved retirement guards.
+2. **User-deferred on 28 September — `VDP-TIMEOUT-01`:** later correlate VDP request/response timeouts
    with Gateway evidence before selecting any fix. Do not rebuild from a symptom
    or widen security. Do not merge this with the existing readiness-flap issue
-   without evidence.
+   without evidence. The actual runtime loop reproduces expiry-before-consumption
+   under controlled local delay, but that is not yet the old incident's cause.
+   The user requested parking this investigation and returning to the main
+   packaging plan. Preserve the evidence; do not mark the issue fixed.
 3. Maintain the internal reserve and preserve all current runtime inputs,
    Factory .39/.31, overlays, credentials, source, video assets and warm build
    caches. After test-image removal, the observed reserve was approximately
    92.17 GiB; values remain time-dependent.
-4. Close Stage 2 only after the remaining UI and observation findings have an
-   explicit disposition. Then resume the accepted installed-package first-use
-   journey; do not add unrelated wizard features or repeat completed import work.
+4. Resume the accepted installed-package first-use journey with the explicit
+   timeout deferral recorded above. Reconcile corrected UI inputs, verify the
+   native install/access path and complete guarded first launch; do not add
+   unrelated wizard features or repeat completed import work. Clean-system and
+   external-release acceptance remain separate gates; the deferral does not
+   convert the timeout into a passed transport test.
+
+**Subsequent authorized clean-install checkpoint:** the operator explicitly
+authorized retiring the old Test, superseding its overlay-preservation boundary
+for that run only. Normal Finish completed; Production's local data, original
+Factories and published releases were preserved. The
+[clean installation report](clean-installation-2026-09-28.md) records new native
+installation/selection, real existing-access checks and installed Presenter
+startup against empty state. Native launch UX, new-user enrollment and fresh
+installed E2E remain separate gates; `VDP-TIMEOUT-01` remains deferred.
 
 Raw local test logs remain in the ignored CARLA workspace. Project documentation
 and compact qualification facts are English; secrets and private runtime state

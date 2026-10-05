@@ -4,7 +4,7 @@
 # Installed Runtime Path Separation
 
 - Status: Accepted for the isolated Stage 3 implementation; live activation unqualified
-- Version: 1.0
+- Version: 1.1
 - Prepared: 2026-09-27
 - Owner: Demo Solution Team
 - Decision: [ADR 0018](../../docs/architecture/decisions/0018-installable-demo-and-first-use.md)
@@ -29,6 +29,13 @@ reset the release ledger, provisioned identity, backend history or credentials.
 Developer build/patch entry points are unavailable in installed mode. A kit
 must already contain its public Cloud Unit template and all five locked input
 groups; copying that template into mutable instance state is not required.
+
+Docker Desktop remains the separately installed prerequisite in ADR 0018.
+Installed backend commands resolve its executable inside the standard
+`/Applications/Docker.app` bundle, independently of an interactive shell PATH.
+They do not start/install Docker, inherit a developer PATH or fall back to
+Homebrew. Missing executable and unavailable engine remain distinct blocking
+results. Developer-mode executable discovery is unchanged.
 
 ## Instance creation and explicit selection
 
@@ -61,6 +68,18 @@ Existing bounded source-lock and consumed-file validation remains mandatory;
 installation performs full-payload trust verification. A selected package must
 never be used as a writable runtime working directory.
 
+## Window metadata is not lifecycle state
+
+Accepted 29 September amendment: the existing window owner stores its private
+metadata at `.local/demo-control/workspace/state.json`, independently of the
+vehicle-run journal. This is physical UI state, not a second lifecycle authority.
+First/repeat/restarted Open Presenter must leave the vehicle journal absent
+until Create Controller initializes it. Existing journals remain byte-for-byte
+unchanged by layout operations; legacy workspace fields are read-only fallback
+only when the new record is absent. Invalid journals are not repaired or accepted.
+The exact schema, file checks and qualification are in
+[native setup](native-setup.md#independent-window-metadata--accepted-29-september-2026).
+
 ## Credentials and transport defaults
 
 Fresh installed instances default to private relative paths under
@@ -72,6 +91,12 @@ namespace includes the instance UUID. Native explicit credential selection
 remains the only existing mechanism for choosing external certificate files.
 This slice does not enroll users, generate trust or claim encrypted PKCS#12
 support. One OEM and one associated SP own the two distinct demo services.
+
+Accepted 28 September amendment: [local Gateway server trust](local-gateway-trust.md)
+adds per-instance initialization during explicit first simulator start, not
+during installation or read-only observation. It replaces only the missing
+server-pair prerequisite for a fresh installed instance; unsafe/foreign material
+still blocks, and Cloud credential selection and client mTLS authority do not change.
 
 ## Acceptance boundary
 

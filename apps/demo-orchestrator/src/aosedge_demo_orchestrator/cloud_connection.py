@@ -158,6 +158,9 @@ def inspect_certificate(path):
     key, cert, _ = load_key_and_certificates(path.read_bytes(), None)
     if key is None or cert is None:
         raise ValueError("CLOUD_CLIENT_CERTIFICATE_REQUIRED")
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    if not isinstance(key, rsa.RSAPrivateKey) or not isinstance(cert.public_key(), rsa.RSAPublicKey):
+        raise ValueError("CLOUD_PACKAGE_SIGNING_RSA_KEY_REQUIRED")
     domains = cert.subject.get_attributes_for_oid(NameOID.ORGANIZATION_NAME)
     if len(domains) != 1:
         raise ValueError("CLOUD_CERTIFICATE_DOMAIN_AMBIGUOUS")

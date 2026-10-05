@@ -7,7 +7,7 @@ import type { BackendBinding } from "./backendSelection";
 import { BrakeWindowDetail } from "./BrakeWindowDetail";
 import { ResetScenario, useResetScenario } from "./ResetScenario";
 
-export function BackendEvidence({ team, unitSystemUid, expectedVersion, binding, onEvidence, retiring = false, observation, runId }: { team: Team; unitSystemUid?: string; expectedVersion?: string; binding?: BackendBinding; onEvidence?: (version: string) => void; retiring?: boolean; observation?: BackendModel; runId?: string | null }) {
+export function BackendEvidence({ team, unitSystemUid, expectedVersion, binding, onEvidence, retiring = false, observation, runId, unavailableReason }: { team: Team; unitSystemUid?: string; expectedVersion?: string; binding?: BackendBinding; onEvidence?: (version: string) => void; retiring?: boolean; observation?: BackendModel; runId?: string | null; unavailableReason?: string }) {
   const [detail, setDetail] = useState<RecordRow | null>(null);
   const [tab, setTab] = useState("Overview");
   const [page, setPage] = useState(0);
@@ -17,7 +17,7 @@ export function BackendEvidence({ team, unitSystemUid, expectedVersion, binding,
   const model = mockMode || !observation ? localObservation : observation;
   const { data, error, busy, refresh } = model;
   const summary = backendSummary(model, team, expectedVersion, binding);
-  const resetStatus = useResetScenario(team, model, binding, retiring, runId);
+  const resetStatus = useResetScenario(team, model, binding, retiring, runId, unavailableReason);
   const [pageSize, setPageSize] = useState(window.innerHeight <= 800 ? 1 : 2);
   useEffect(() => { const resize = () => { setPageSize(window.innerHeight <= 800 ? 1 : 2); setPage(0); }; window.addEventListener("resize", resize); return () => window.removeEventListener("resize", resize); }, []);
   const evidenceCallback = useRef(onEvidence);
@@ -62,7 +62,7 @@ export function BackendEvidence({ team, unitSystemUid, expectedVersion, binding,
     {!!data?.partialResources?.length && <p className="studio-function-stamp" role="status">Partial backend read · {data.partialResources.join(", ")} unavailable. Independent facts retained.</p>}
     <div className="studio-mock-notice"><strong>{mockMode ? "MOCK DATA · Explicit synthetic test records" : resultConflict ? "Vehicle record · integrity conflict" : latest ? "Vehicle data · retained service result" : "Configured data path · service → backend"}</strong><p>{mockMode ? "Synthetic inputs, not vehicle telemetry." : observation ? compactExplanation : `${explanation} Backend results do not establish current in-vehicle advisory.`}</p></div>
     {(!observation || tab === "Records") && <button className="studio-text-action" onClick={() => { setMockMode(value => !value); setDetail(null); setPage(0); setRecordFilter("all"); }}>{mockMode ? "Show vehicle results" : "Show mock history"}</button>}
-    {!mockMode && <ResetScenario action={false} team={team} model={model} binding={binding} retiring={retiring} runId={runId} />}
+    {!mockMode && <ResetScenario action={false} team={team} model={model} binding={binding} retiring={retiring} runId={runId} unavailableReason={unavailableReason} />}
     <div className="studio-pills">{["Overview", "Records"].map(name => <button key={name} aria-pressed={tab === name} onClick={() => setTab(name)}>{name}</button>)}</div>
     {tab === "Overview" && <>
     {mockMode ? <div className="studio-metrics"><article><small>Backend process</small><strong>{!error && data?.observations.readiness?.state === "OBSERVED" && data.observations.readiness.data?.ready ? "Ready" : "Not confirmed"}</strong></article>

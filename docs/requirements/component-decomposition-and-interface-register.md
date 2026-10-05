@@ -397,6 +397,12 @@ not stop local Brake Health or Tire Health analysis and advisory generation.
 | <a id="if-demo-001"></a>`IF-DEMO-001` | `CMP-ORCH` | Native macOS helper, QEMU/AosVM instances and CARLA/Gateway launchers | Launcher-owned non-root session boundary, overlay creation, role binding, start/stop, source selection and safe retirement | Authenticated local session, allowlisted operations, local session manifest plus authoritative Unit state | `CURRENT / SCOPED`; shared CLI/Presenter core and owned process lifecycle |
 | <a id="if-demo-002"></a>`IF-DEMO-002` | `CMP-ORCH` | `CMP-SW-DASH` Representation Layer and launcher-owned CARLA, Controller, Engineering Telematics and browser window surfaces | Session-scoped measured workspace profile, exact owned-window identity, reserved header strip, physical bounds/visibility/non-overlap/readability probes and safe local layout restoration; the dashboard supplies the stateless shared-header read model and team navigation while every surface owner retains its content | `CMP-ORCH` owns physical composition only; `CMP-SW-DASH` owns header meaning from the existing browser read model; no Cloud/vehicle/release mutation, content authority, native-window embedding or second state store | `CURRENT / SCOPED`; current Test source binding; dual-role and host sleep/wake scope separate |
 
+Accepted 29 September 2026 clarification of `IF-DEMO-002`: the existing window
+owner may retain physical layout metadata in its own workspace directory, but
+not duplicate lifecycle state. Opening Presenter does not create or rewrite the
+vehicle-run journal; Create Controller remains its initialization boundary.
+See the [native setup contract](../../contracts/distribution-installation/native-setup.md#independent-window-metadata--accepted-29-september-2026).
+
 Native admission of a SOTA service against a required FOTA Vehicle Data
 Platform Component version is a future behavior on `IF-LC-004`. Until an
 implementing AosEdge release is available and qualified, the corresponding

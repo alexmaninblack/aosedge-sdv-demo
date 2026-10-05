@@ -22,6 +22,8 @@ export function emptyResultGuidance(fn: ReturnType<typeof selectFunction>, team:
     return { status: "Input disconnected", text: "Local telemetry is disconnected. Waiting for the input connection to recover." };
   if (c.input.state !== "RECEIVING")
     return { status: "Waiting for input", text: "The service is waiting for usable local input. No denied access or telemetry readiness is confirmed." };
+  if (c.activity.state === "SKIPPED" && c.activity.reason === "STORAGE_UNAVAILABLE")
+    return { status: "Service storage unavailable", text: "Local service storage is unavailable. Receiving input does not confirm working analytics or result delivery. No new backend result is confirmed." };
   if (c.delivery.state === "BLOCKED")
     return { status: "Delivery blocked", text: "Input is arriving, but the service reports blocked delivery. No new backend result is confirmed." };
   if (c.delivery.queuedMessages > 0 || ["PENDING", "RETRYING"].includes(c.delivery.state))

@@ -3,6 +3,15 @@
 
 # Demo Run State, Overlays and Cleanup — Design Reviewed
 
+Implementation clarification, 2 October 2026: an assignment preflight rejected
+with `SERVICE_SUBJECT_UNRECORDED_LABEL_COLLISION` may leave an identity-free
+`ownerId`/`label` placeholder. When its exact current Test/owner/service record
+contains no create identity or receipt and no attempted operation steps, it is
+not a retained Cloud Subject. Normal scoped Test retirement can proceed without
+adopting or deleting the colliding object. Preserve the failed receipt until
+ordinary run cleanup; unknown external outcomes, attempted steps and all other
+retirement checks remain enforced.
+
 Current implementation status (24 September 2026, demo-v1.1 / Factory .39):
 see the [complete protocol map](../implementation-status.md) for this family's
 implemented path, accepted amendments and remaining qualification or executable-
@@ -11,7 +20,7 @@ Historical golden schemas/digests are not rewritten as part of this audit.
 
 - Decision: `D4-021`
 - Lifecycle state: `DESIGN_REVIEWED`
-- Contract version: `1.7.0`
+- Contract version: `1.8.0`
 - Accepted subdecisions: D4-021.1 Factory Image and overlay layout, D4-021.2
   minimal current-run journal, D4-021.3 interrupted-operation recovery and
   D4-021.4 complete R0 ordering plus D4-021.5 functional/simulator cleanup,
@@ -123,6 +132,43 @@ that existing cleanup only after the compositor has persisted backend cleanup
 and removed the cleaned backend ownership/path references. Shared source
 stop/reset and product cleanup belong to the compositor, not this local leaf.
 These primitives alone do not qualify complete Studio R0 or its UI.
+
+Version 1.8.0 corrects the installed single-Test Finish path under the existing
+authorized Test-only retirement and explicit first-use reference decisions.
+It does not require an invented Production peer. Exact Subject identities and
+terminal service receipts remain in the current journal until fresh Cloud
+reads prove the retired Unit/Node absent and both desired and reported Subject
+recipients empty. Cloud Subject/service objects and published versions remain
+unchanged. The complete local cleanup owner validates terminal receipts before
+unlinking; the single-Test compositor also performs fresh absence and receipt
+checks before backend-data cleanup. Interrupted local cleanup accepts only
+that owner's validated per-file receipt and rechecks authoritative absence.
+Unknown fields, unresolved publications, foreign bindings and unsafe files
+continue to block deletion.
+
+The complete single-Test cleanup includes the fixed `dns-bridge.log` only
+when its journal identifies the locally owned, stopped bridge and no process
+still carries that owner ID. Normal file identity/link/open-handle guards
+apply. The retained-Production path keeps its shared DNS log unchanged.
+Unreceipted historical source fragments are not silently adopted or deleted.
+
+A simulator can exit before the runner starts and creates its terminal receipt.
+The exact current, stopped, never-assigned source run can therefore be retired
+without a runner manifest only when its journal-bound runner command names the
+same input and run directory, no vehicle is attached, and the directory contains
+only its owned JSON input and optional simulator log. A runner log, historical
+fragment, unknown file or conflicting command binding blocks this exception.
+Stopped-owner, file identity, link and open-handle checks still apply before any
+unlink; interrupted cleanup resumes only from the existing validated per-file
+retirement intent. No synthetic runner-completion receipt is created.
+
+Successful single-Test Finish removes the completed run journal last. Public
+references remain discoverable from Cloud; they are not automatically adopted
+into another instance or saved as a new state store. Subsequent reuse follows
+the [explicit exact-reference first-use contract](../distribution-installation/cloud-first-use.md).
+Existing configuration, external credentials, release ledger, Factory source
+and every non-target remain unchanged. Dual-role retirement keeps its existing
+retained-Production journal and Subject references.
 
 No historical ordinary-run directory exists. `.local/demo-current` and
 `.run/demo-current` represent the only current run. If they describe an

@@ -22,7 +22,7 @@ CONTRACT = 'aosedge-demo-portable-cloud-inputs'
 HINT = 'AOSEDGE_CLOUD_RUNTIME'
 PYTHON = 'bin/python3.12'
 ADAPTERS = ('aos-prov-5-4-2-compat', 'aos_prov_5_4_2_guard.py', 'aos-prov-5.4.2-source-lock.json')
-WORKERS = {'cloud.py', 'cloud_connection_worker.py', 'component_worker.py', 'unit_cloud.py', 'service_cloud.py'}
+WORKERS = {'cloud.py', 'cloud_connection_worker.py', 'component_worker.py', 'unit_cloud.py', 'service_cloud.py', 'cloud_enrollment.py'}
 _verified = {}
 
 

@@ -17,7 +17,8 @@ from ui_helpers import PACKAGE, regular, safe_relative, tracked
 from vehicle_inputs import CONTRACTS, clone_factory
 
 REVIEWED = frozenset(('backend_inputs.py', 'cloud_runtime.py', 'host_entry.py',
-                     'host_runtime.py', 'preparation_inputs.py', 'vm_runtime.py', 'runtime_paths.py', 'installed_control.py'))
+                     'host_runtime.py', 'preparation_inputs.py', 'vm_runtime.py', 'runtime_paths.py', 'installed_control.py',
+                     'source_server_trust.py', 'cloud_enrollment.py', 'subject_first_use.py'))
 LOCKS = {
     'host-runtime': 'portable-host-launch/host-runtime.lock.json',
     'preparation-inputs': 'portable-preparation-inputs/vehicle-inputs.lock.json',
@@ -153,6 +154,9 @@ def assemble(integration, groups, output):
     require(shutil.disk_usage(output.parent).free >= 90*2**30 + MAX_APP, 'Disk reserve exceeded')
     files = export_plan(integration)
     checked = {name: checked_group(root, files['contracts/' + LOCKS[name]]) for name, root in groups.items()}
+    vm_manifest = json.loads(small(groups['vm-runtime'], checked['vm-runtime'][0]['path']))
+    require(vm_manifest.get('hostManifest') == checked['host-runtime'][0],
+            'VM host manifest binding mismatch')
     require(sum(value[2] for value in checked.values()) <= MAX_PAYLOAD, 'Combined input budget exceeded')
     output.mkdir(mode=0o700)
     app = output / 'aosedge-sdv-demo'

@@ -53,23 +53,45 @@ def host_dns(config, timeout):
 
 def process_snapshot(timeout):
     try:
-        result = subprocess.run(["ps", "-axo", "pid=,args="], capture_output=True, text=True, timeout=timeout)
+        deadline = time.monotonic() + timeout
+        commands = subprocess.run(["ps", "-axo", "pid=,comm="], capture_output=True, text=True, timeout=timeout)
+        if commands.returncode:
+            raise OSError()
+        executables = {}
+        for line in commands.stdout.splitlines():
+            parts = line.strip().split(None, 1)
+            if len(parts) == 2 and parts[0].isdigit() and Path(parts[1]).name.startswith("qemu-system-"):
+                executables[int(parts[0])] = parts[1]
+        if not executables:
+            return []
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise OSError()
+        result = subprocess.run(["ps", "-axo", "pid=,args="], capture_output=True, text=True, timeout=remaining)
         if result.returncode:
             raise OSError()
+        seen = set()
         rows = []
         for line in result.stdout.splitlines():
             parts = line.strip().split(None, 1)
-            if len(parts) != 2:
+            if len(parts) != 2 or not parts[0].isdigit() or int(parts[0]) not in executables:
                 continue
-            # Never include raw process arguments in an observation.
-            if "qemu-system-" not in parts[1]:
-                continue
+            pid = int(parts[0])
+            executable = executables[pid]
+            # ps does not shell-quote argv. Identify the executable using comm
+            # before splitting options, including installed paths with spaces.
+            # A changed/missing process between reads is unknown, never STOPPED.
+            if pid in seen or not (parts[1] == executable or parts[1].startswith(executable + " ")):
+                raise OSError()
+            seen.add(pid)
             try:
-                args = shlex.split(parts[1])
-                if args and Path(args[0]).name.startswith("qemu-system-"):
-                    rows.append((int(parts[0]), args))
-            except (ValueError, IndexError):
-                continue
+                args = [executable] + shlex.split(parts[1][len(executable):])
+            except ValueError:
+                raise OSError() from None
+            # Never include raw process arguments in an observation.
+            rows.append((pid, args))
+        if seen != set(executables):
+            raise OSError()
         return rows
     except (OSError, subprocess.SubprocessError):
         return None

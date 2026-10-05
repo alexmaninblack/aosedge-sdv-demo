@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import re
 import shutil
 import stat
 import subprocess
@@ -24,6 +25,7 @@ CONTRACTS = (
     'tire-health-model/tire-health-product-profile.v1.json',
 )
 MAX_SMALL = 256 * 2**20
+DEFAULT_FACTORY_CHECKPOINT = 'workspace/checkpoints/demo-v1.1.json'
 
 
 def require(condition, message):
@@ -65,10 +67,19 @@ def service_inputs(artifacts, pin, product_files):
     return files
 
 
-def collect(integration, platform, artifacts, firmware, api):
+def collect(integration, platform, artifacts, firmware, api, *, factory_checkpoint=DEFAULT_FACTORY_CHECKPOINT):
     inventory = json.loads(read(integration, 'workspace/distribution-stage0-inventory.json'))
-    checkpoint = json.loads(read(integration, 'workspace/checkpoints/demo-v1.1.json'))
+    # Build-time source checkpoint only: never rewrite the historical return
+    # point or adopt a Factory from an adjacent self-generated receipt.
+    checkpoint = json.loads(read(integration, factory_checkpoint))
     factory = checkpoint['factory']
+    require(isinstance(factory, dict) and
+            re.fullmatch(r'6\.1\.1-maninblack\.[0-9]+', str(factory.get('version', ''))) and
+            factory.get('image') == 'main-qemuarm64.img' and factory.get('format') == 'raw' and
+            type(factory.get('sizeBytes')) is int and 0 < factory['sizeBytes'] <= 16*2**30 and
+            re.fullmatch('[a-f0-9]{64}', str(factory.get('sha256', ''))) and
+            re.fullmatch('[a-f0-9]{40}', str(factory.get('sourceRevision', ''))),
+            'Factory checkpoint identity invalid')
     manifest_path = 'factory-images/' + factory['version'] + '/manifest.json'
     manifest_raw = read(artifacts, manifest_path)
     manifest = json.loads(manifest_raw)
@@ -139,10 +150,11 @@ def clone_factory(source, target, expected):
             (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns), 'Factory source changed during clone')
 
 
-def assemble(integration, platform, artifacts, firmware, output, api):
+def assemble(integration, platform, artifacts, firmware, output, api, *, factory_checkpoint=DEFAULT_FACTORY_CHECKPOINT):
     require(not output.exists() and not output.is_symlink() and output.parent.is_dir(), 'Output must be new')
     require(shutil.disk_usage(output.parent).free >= 90 * 2**30 + MAX_SMALL, 'Insufficient disk reserve')
-    files, image, identities = collect(integration, platform, artifacts, firmware, api)
+    files, image, identities = collect(integration, platform, artifacts, firmware, api,
+                                       factory_checkpoint=factory_checkpoint)
     output.mkdir(mode=0o700)
     entries = []
     for name, (raw, mode) in sorted(files.items()):
@@ -173,6 +185,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('integration', 'platform', 'artifacts', 'firmware', 'output'):
         parser.add_argument('--' + name, type=Path, required=True)
+    parser.add_argument('--factory-checkpoint', default=DEFAULT_FACTORY_CHECKPOINT,
+                        help='Reviewed source checkpoint relative to integration; historical default is unchanged')
     args = parser.parse_args()
     # Build-time only: runtime input selectors are deliberately not changed here.
     sys.path.insert(0, str(args.integration / 'apps/demo-orchestrator/src'))
@@ -180,7 +194,8 @@ def main():
     from aosedge_demo_orchestrator import component_build
     from aosedge_demo_orchestrator.service_packages import product_files
     result = assemble(args.integration, args.platform, args.artifacts, args.firmware, args.output,
-                      (ComponentService.__new__(ComponentService), component_build, product_files))
+                      (ComponentService.__new__(ComponentService), component_build, product_files),
+                      factory_checkpoint=args.factory_checkpoint)
     print(json.dumps({'status': result['status'], 'files': len(result['files']),
                       'bytes': sum(row['bytes'] for row in result['files'])}))
 

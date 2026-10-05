@@ -40,6 +40,10 @@ class DocumentationCheckTests(unittest.TestCase):
         shutil.copy2(ROOT / "workspace" / "repositories.json", root / "workspace" / "repositories.json")
         shutil.copytree(ROOT / "contracts", root / "contracts")
         shutil.copytree(ROOT / "docs", root / "docs", ignore=shutil.ignore_patterns(".DS_Store"))
+        for source in (ROOT / "scripts").rglob("*.md"):
+            destination = root / source.relative_to(ROOT)
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, destination)
         shutil.copytree(
             ROOT / "apps", root / "apps",
             ignore=shutil.ignore_patterns(".DS_Store", ".venv", "node_modules", "build", "dist", "__pycache__", "*.egg-info"),

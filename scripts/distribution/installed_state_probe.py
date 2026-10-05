@@ -106,7 +106,9 @@ def main():
                     assert not images['images'][0]['problems']
                     for team, profiles in (('brake', ('v1', 'v2', 'v3')), ('tire', ('v1',))):
                         for profile in profiles:
-                            configuration = package_configuration(state, team, profile, '999.0.0')
+                            product = preparation_inputs.selected(env).service(team, profile)
+                            configuration = package_configuration(Path(product['preparationInputsRoot']), team, profile, '999.0.0')
+                            assert configuration == package_configuration(state, team, profile, '999.0.0')
                             assert configuration['items'][0]['configuration']['quotas']['noFileLimit'] == 1024
                     vm_service = VMService(env)
                     for call, reason in ((lambda: SourceDriver(vm_service).assets(), 'SOURCE_OPERATOR_TLS_REQUIRED'),

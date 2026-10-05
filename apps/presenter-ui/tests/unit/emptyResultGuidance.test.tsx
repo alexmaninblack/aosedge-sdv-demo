@@ -99,6 +99,19 @@ test.each(["PENDING", "RETRYING", "BLOCKED"])("receiving input with %s delivery 
   item.message.content.delivery.state = delivery; item.message.content.delivery.queuedMessages = 2;
   expect(backendSummary(model, "brake", scope.serviceVersion, scope).status).toBe(delivery === "BLOCKED" ? "Delivery blocked" : "Delivery pending");
 });
+test.each(["brake", "tire"] as const)("%s distinguishes reported storage failure from a delivery-only fault", team => {
+  vi.spyOn(Date, "now").mockReturnValue(Date.parse(now));
+  const { model, scope, item } = fixture("RECEIVING", team);
+  item.message.content.activity.state = "SKIPPED";
+  item.message.content.activity.reason = "STORAGE_UNAVAILABLE";
+  item.message.content.delivery.state = "BLOCKED";
+  const summary = backendSummary(model, team, scope.serviceVersion, scope);
+  expect(summary.status).toBe("Service storage unavailable");
+  expect(summary.guidance).toContain("Local service storage is unavailable");
+  expect(summary.guidance).not.toContain("Waiting for a qualifying");
+  item.stale = true;
+  expect(backendSummary(model, team, scope.serviceVersion, scope).status).toBe("Input not confirmed");
+});
 test.each(["PRE", "ACTIVE", "POST", "COMPLETED", "SKIPPED"])("current %s activity provides guidance instead of a generic wait", activity => {
   vi.spyOn(Date, "now").mockReturnValue(Date.parse(now));
   const { model, scope, item } = fixture("RECEIVING");

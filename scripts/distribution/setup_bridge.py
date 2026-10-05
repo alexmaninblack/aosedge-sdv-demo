@@ -60,7 +60,13 @@ def request(raw):
     value = parse(raw)
     require(isinstance(value, dict), 'SETUP_REQUEST_INVALID')
     action = value.get('action')
-    if action in ('cloud-inspect', 'cloud-save', 'cloud-check'):
+    if action == 'prepare-backends':
+        from setup_backends import request as backends_request
+        return backends_request(value)
+    if action == 'launch':
+        from setup_launch import request as launch_request
+        return launch_request(value)
+    if isinstance(action, str) and action.startswith('cloud-'):
         from setup_cloud import request as cloud_request
         return cloud_request(value)
     require(action in ('preflight', 'install', 'prepare'), 'SETUP_ACTION_INVALID')
@@ -97,6 +103,19 @@ def state_check(path):
 
 def perform(value, pin, emit=lambda event: None):
     supported_platform()
+    if value['action'] == 'prepare-backends':
+        from setup_backends import perform as backends_perform
+        state_check(Path(value['state']))
+        require(Path(value['state']).exists(), 'SETUP_INSTANCE_NOT_FOUND')
+        return backends_perform(value, pin, emit)
+    if value['action'] == 'launch':
+        from setup_launch import perform as launch_perform
+        try:
+            state_check(Path(value['state']))
+            require(Path(value['state']).exists(), 'SETUP_INSTANCE_NOT_FOUND')
+        except FileNotFoundError:
+            raise ValueError('SETUP_INSTANCE_NOT_FOUND') from None
+        return launch_perform(value, pin, emit)
     if value['action'].startswith('cloud-'):
         from setup_cloud import perform as cloud_perform
         state_check(Path(value['state']))
@@ -140,6 +159,8 @@ def perform(value, pin, emit=lambda event: None):
 
 
 def error_code(error):
+    if isinstance(error, PermissionError):
+        return 'SETUP_FILE_ACCESS_DENIED'
     value = str(error)
     if isinstance(error, ValueError) and re.fullmatch(r'[A-Z][A-Z0-9_]{2,100}', value):
         return value

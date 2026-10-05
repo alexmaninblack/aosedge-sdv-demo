@@ -5,7 +5,7 @@
   "qualification": "ENGINEERING_CANDIDATE_NOT_DISTRIBUTION_RELEASE",
   "manifest": {
     "path": "host-runtime-manifest.json",
-    "bytes": 3822981,
-    "sha256": "15522032314610362d678e3ddbb464d204a18fd09085dbb3e4a1d5cf1f71d28e"
+    "bytes": 3825784,
+    "sha256": "f6ae4b1222e55a0d15501176ca0ab91aaa29ce011817419c1e6b3443c5dacff2"
   }
 }

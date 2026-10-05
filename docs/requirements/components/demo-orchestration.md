@@ -84,6 +84,13 @@ amendment does not authorize implementation, live calls or deletion.
 
 ## Installed instance path separation
 
+Accepted 28 September first-use amendment: the
+[local Gateway trust contract](../../../contracts/distribution-installation/local-gateway-trust.md)
+allocates per-instance server identity initialization to Demo Control's explicit
+first simulator start. Status and installation do not create credentials.
+Repeat reuses the same identity; unsafe, foreign, expired or partial material
+blocks without rotation. Cloud identities and client mTLS remain distinct.
+
 <a id="req-demo-025"></a>
 
 - ID: `REQ-DEMO-025`
@@ -113,13 +120,50 @@ preparation and truthful not-started/not-enrolled feedback. Test malformed
 requests, changed disk/revision, terminal-result plus process-exit agreement,
 and preservation of active developer owners. Enrollment and native activation
 are not accepted by these local-wrapper checks.
+Accepted 2 October complete-media amendment: supply Setup and the complete
+matching kit in one DMG. The native source field may discover the fixed sibling
+payload without starting any operation; independent pin and inventory validation
+remain mandatory. Prove wrong/missing payload, corrupt copy, output overlap,
+mounted-media installation and no separate-kit or developer fallback. This
+delivery proof does not qualify the subsequent persistent launcher or guided demo.
 The existing-access extension additionally tests explicit OEM/SP references,
 same-domain validity inspection, metadata/configuration compare-and-swap,
 atomic pair save, fresh-instance guards, GET-only access/association/delivery
 checks, bounded waiting and fixed redacted feedback. Fixture success does not
 qualify real credentials, secure enrollment or first launch.
 
+The explicit-launch increment in that same contract additionally requires the
+independent selected pin, verified application/runtime inputs, exact ownership
+of both fixed ports, one existing workspace operation and post-read native
+surface evidence. First/repeat/response-loss/foreign-owner/busy/changed-selection
+tests must preserve VM, Cloud, models and driving state. Opening Presenter is not
+full demo readiness, package activation or enrollment qualification.
+
+Accepted 1 October backend preparation amendment: expose a separate Setup
+action to verify and import only the selected immutable Brake/Tire image set
+into an already running local Docker Desktop engine. Preserve the existing
+no-import-on-start rule. Test empty engine, repeat/reopen, changed inputs and
+engine, interrupted attempt reconciliation, fixed diagnostics and non-target
+preservation under the linked native setup contract. A successful import is
+neither a running backend nor full first-use acceptance.
+
+Accepted 29 September window-state amendment: first, repeated and restarted
+Open Presenter must not initialize or rewrite a vehicle-run journal. Keep
+window-owner metadata in the existing workspace directory, validate it strictly,
+and preserve legacy journals through read-only compatibility. Create Controller
+remains the journal initialization boundary. Test configuration/status access
+after Open, invalid/pending metadata, stale-run restoration and independent
+simulator-start layout recovery under the same native setup contract.
+
 ## Purpose
+
+The accepted 29 September [Cloud first-use completion](../../../contracts/distribution-installation/cloud-first-use.md)
+refines REQ-DEMO-025/UT-DEMO-025: exact reference selection and fresh validation
+stay under the existing configuration/assignment writers; enrollment is one-shot
+with packaged trust, private durable attempt/key preservation, explicit recovery
+and native secure input. Test first/repeat/restart, response loss, changed
+authority, no replay, redaction and no vehicle journal before Create Controller.
+Do not infer real enrollment or clean-system qualification from fixture tests.
 
 This package defines the audience-facing software-delivery experience and the
 safe local orchestration needed to execute one complete bounded demonstration

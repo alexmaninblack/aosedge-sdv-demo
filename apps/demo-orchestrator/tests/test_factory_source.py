@@ -102,16 +102,16 @@ class FactorySourceTests(unittest.TestCase):
                     self.assertFalse(inputs.exists())
                     script = dropin.read_text().split("ExecStartPre=/usr/bin/python3 -c '", 1)[1].rsplit("'", 1)[0]
                     # A missing mount fails before creating any shadow files.
-                    result = subprocess.run([sys.executable, "-c", "import os; os.path.ismount=lambda p: False; " + script], capture_output=True)
+                    result = subprocess.run([sys.executable, "-I", "-B", "-c", "import os; os.path.ismount=lambda p: False; " + script], capture_output=True)
                     self.assertNotEqual(0, result.returncode)
                     self.assertFalse(inputs.exists())
                     # The native SM start sequence now has the actual store.
-                    result = subprocess.run([sys.executable, "-c", "import os; os.path.ismount=lambda p: True; " + script], capture_output=True)
+                    result = subprocess.run([sys.executable, "-I", "-B", "-c", "import os; os.path.ismount=lambda p: True; " + script], capture_output=True)
                     self.assertEqual(0, result.returncode, result.stderr)
                     self.assertEqual(role + "\n", (inputs / "role").read_text())
-                    self.assertEqual(0, subprocess.run([sys.executable, "-c", "import os; os.path.ismount=lambda p: True; " + script], capture_output=True).returncode)
+                    self.assertEqual(0, subprocess.run([sys.executable, "-I", "-B", "-c", "import os; os.path.ismount=lambda p: True; " + script], capture_output=True).returncode)
                     (inputs / "role").write_text("conflicting-role\n")
-                    self.assertNotEqual(0, subprocess.run([sys.executable, "-c", "import os; os.path.ismount=lambda p: True; " + script], capture_output=True).returncode)
+                    self.assertNotEqual(0, subprocess.run([sys.executable, "-I", "-B", "-c", "import os; os.path.ismount=lambda p: True; " + script], capture_output=True).returncode)
                     (inputs / "role").unlink()
                     inputs.rmdir()
                 self.assertFalse(any("start" in call.args[0] or "restart" in call.args[0] for call in calls.call_args_list))

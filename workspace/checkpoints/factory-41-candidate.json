@@ -1,0 +1,28 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "name": "Factory .41 source timestamp correction engineering candidate",
+  "prepared": "2026-10-03",
+  "factory": {
+    "version": "6.1.1-maninblack.41",
+    "image": "main-qemuarm64.img",
+    "format": "raw",
+    "sizeBytes": 6997147648,
+    "sha256": "361c187374469f4a97b3b9c74cb755ce432bc5287fb19ccd2f6bfb9c3eb46769",
+    "sourceRevision": "3fd1f8eb8e8d51c7e89c9f89f1646c7d4f55494f",
+    "manifestState": "BUILT_NOT_LIVE_QUALIFIED",
+    "manifestRelativeToArtifactRoot": "factory-images/6.1.1-maninblack.41/manifest.json"
+  },
+  "qualificationToolsRevision": "30ae66148255830b7e29cc82e2cd251d065bb894",
+  "installedQualification": {
+    "date": "2026-10-04",
+    "candidate": "Kit 028 / Setup 042",
+    "scriptedMainSteps": 98,
+    "scriptedSequence": "PASS",
+    "offlineOnlineAndIgnition": "PASS",
+    "fullE2E": "NOT_COMPLETE",
+    "note": "The immutable build manifest state above is unchanged. Native operator and separate release gates remain open."
+  },
+  "scope": "Separate engineering candidate; native manager gates retained, Rust library 167 passed and 15 ignored. Does not replace demo-v1.1 or imply live acceptance.",
+  "evidence": ["docs/qualification/m1-live-journey-2026-10-03.md"]
+}

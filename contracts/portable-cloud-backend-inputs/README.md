@@ -51,9 +51,11 @@ Stop and recovery do not depend on an unused successor archive.
 Start/activation still require the exact image already available in the declared
 Docker-compatible engine. They never build, pull, load archives, start Docker
 Desktop or alter another container. Archive integrity verification is read-only;
-import/installation is a later explicit setup step, not a side effect of status
-or navigation. The current container-runtime installation/licensing choice and
-fresh-engine import remain open. Missing engine/image remains explicit.
+import/installation belongs to the separate explicit
+[Prepare backends operation](../distribution-installation/native-setup.md#explicit-backend-preparation-accepted-on-1-october-2026),
+accepted on 1 October 2026, not a side effect of status or navigation. Docker
+Desktop is a separately accepted prerequisite. Fresh-engine import and ordinary
+first Create must be qualified independently. Missing engine/image remains explicit.
 
 ## Gates and exclusions
 

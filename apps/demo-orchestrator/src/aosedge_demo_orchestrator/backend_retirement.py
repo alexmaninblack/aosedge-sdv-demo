@@ -12,7 +12,6 @@ NoCurrentTest until normal provisioning publishes the next closed projection.
 
 import json
 import re
-import shutil
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -129,9 +128,7 @@ class BackendRetirement:
             raise EnvironmentError("BACKEND_PRIVATE_OPERATION_INVALID")
         if not isinstance(container_id, str) or not SHA.fullmatch(container_id):
             raise EnvironmentError("BACKEND_CONTAINER_ID_INVALID")
-        executable = shutil.which("docker")
-        if executable is None:
-            raise EnvironmentError("BACKEND_DOCKER_REQUIRED")
+        executable = self.service._docker_executable()
         body = encoded(payload or {}).decode()
         if len(body.encode()) > 4096:
             raise EnvironmentError("BACKEND_PRIVATE_REQUEST_TOO_LARGE")

@@ -38,6 +38,10 @@ client admission, certificate validity/identity, assignment, guest enrollment
 and all VM/Cloud boundaries stay unchanged. Packaged OpenSSL uses a fixed
 public minimal request configuration, never an implicit Homebrew config/provider.
 
+Installed first use now follows the accepted
+[per-instance server-trust amendment](../distribution-installation/local-gateway-trust.md).
+The developer TLS reference and all client-admission rules above remain unchanged.
+
 ## Existing lifecycle and visible behavior
 
 Use existing SourceDriver, WorkspaceService, one-writer journal, exact process
@@ -53,6 +57,14 @@ Its qualified spawn index 88 represents the original Editor index 40 location.
 Its initial client rectangle derives from existing built-in display geometry
 with the measured 32-point standalone title bar; existing AX verification and
 ordering remain authoritative. Do not alter the layout or model thresholds.
+
+On smaller supported displays, the same upper-left CARLA / lower-left combined
+Control / right Presenter composition must budget the native Control window's
+900 × 502-point outer minimum before placing adjacent surfaces. AppKit must
+not enlarge it into the Presenter or Dock after placement. Retain the exact
+2056 × 1224 reference geometry; only the proportional split below those native
+minimums changes. Do not shrink fonts, clip telemetry, change macOS display/Dock
+settings or relax the three-point verification tolerance to hide overlap.
 
 Use the standard Game setting `bShouldWindowPreserveAspectRatio=False` at
 packaged launch: Desktop Restore owns the outer rectangle, so a height change

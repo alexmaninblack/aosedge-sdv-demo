@@ -37,6 +37,28 @@ test("first Create Trace exposes the active job before a run identity exists", (
   expect(screen.getByRole("dialog")).not.toHaveTextContent("No operations recorded");
 });
 
+test.each(["create", "prepare-demo"])("terminal %s failure remains visible before a run is allocated", action => {
+  state.enter.mockReturnValue(leave);
+  controls.session.jobs = [{ id: "failed", action, runId: null, state: "BLOCKED", startedAt: new Date().toISOString(), progress: [], results: [{ operation: "demo.create", state: "BLOCKED", message: "BACKEND_DOCKER_REQUIRED", facts: {} }] }];
+  render(<StudioWorkspace snapshot={snapshot()} perspective="global" navigate={() => {}} />);
+  expect(screen.getByText("BACKEND_DOCKER_REQUIRED")).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: /Trace · 1/ }));
+  expect(screen.getByRole("dialog")).toHaveTextContent("BACKEND_DOCKER_REQUIRED");
+  expect(screen.getByRole("dialog")).not.toHaveTextContent("No operations recorded");
+});
+
+test("pre-run failures do not leak across an allocated run or its Finish", () => {
+  state.enter.mockReturnValue(leave);
+  controls.session.jobs = [{ id: "failed", action: "create", runId: null, state: "BLOCKED", startedAt: new Date().toISOString(), progress: [], results: [{ operation: "demo.create", state: "BLOCKED", message: "old failure", facts: {} }] },
+    { id: "created", action: "create", runId: "old", state: "COMPLETED", startedAt: new Date().toISOString(), progress: [], results: [] }];
+  const view = render(<StudioWorkspace snapshot={snapshot("new")} perspective="global" navigate={() => {}} />);
+  expect(screen.queryByText("old failure")).not.toBeInTheDocument();
+  view.rerender(<StudioWorkspace snapshot={snapshot()} perspective="global" navigate={() => {}} />);
+  expect(screen.queryByText("old failure")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: /Trace · 0/ }));
+  expect(screen.getByRole("dialog")).not.toHaveTextContent("old failure");
+});
+
 test("new run resets authoring profile without changing it within the same run", () => {
   state.enter.mockReturnValue(leave);
   const view = render(<StudioWorkspace snapshot={snapshot("old")} perspective="platform" navigate={() => {}} />);

@@ -193,6 +193,46 @@ class ProbeTests(unittest.TestCase):
         with patch("aosedge_demo_orchestrator.probes.subprocess.run", side_effect=PermissionError()):
             self.assertIsNone(process_snapshot(0.2))
 
+    def test_installed_executable_with_spaces_is_not_false_stopped(self):
+        executable = "/Users/operator/AosEdge SDV Packages/qemu-system-aarch64"
+        outputs = [Mock(returncode=0, stdout="123 " + executable),
+                   Mock(returncode=0, stdout="123 " + executable + " -drive file=/tmp/With Space/test.qcow2,format=qcow2")]
+        with patch("aosedge_demo_orchestrator.probes.subprocess.run", side_effect=outputs) as run:
+            rows = process_snapshot(0.2)
+        self.assertEqual(123, rows[0][0])
+        self.assertEqual(executable, rows[0][1][0])
+        self.assertTrue(owns_overlay(rows[0][1], Path("/tmp/With Space/test.qcow2")))
+        self.assertEqual(["ps", "-axo", "pid=,comm="], run.call_args_list[0].args[0])
+        self.assertEqual(["ps", "-axo", "pid=,args="], run.call_args_list[1].args[0])
+        self.assertLessEqual(run.call_args_list[1].kwargs["timeout"], 0.2)
+
+    def test_path_without_spaces_still_matches(self):
+        executable = "/opt/bin/qemu-system-aarch64"
+        outputs = [Mock(returncode=0, stdout="123 " + executable),
+                   Mock(returncode=0, stdout="123 " + executable + " -m 2048")]
+        with patch("aosedge_demo_orchestrator.probes.subprocess.run", side_effect=outputs):
+            self.assertEqual([(123, [executable, "-m", "2048"])], process_snapshot(0.2))
+
+    def test_qemu_mentioned_by_another_executable_is_not_an_owner(self):
+        with patch("aosedge_demo_orchestrator.probes.subprocess.run", return_value=Mock(
+                returncode=0, stdout="123 /tmp/qemu-system-aarch64-wrapper/python")) as run:
+            self.assertEqual([], process_snapshot(0.2))
+        self.assertEqual(1, run.call_count)
+
+    def test_unreconciled_process_read_is_unknown(self):
+        executable = "/opt/bin/qemu-system-aarch64"
+        for raw in ("", "123 /bin/echo " + executable,
+                    "123 " + executable + " -drive 'unterminated",
+                    "123 " + executable + "\n123 " + executable):
+            with self.subTest(raw=raw), patch("aosedge_demo_orchestrator.probes.subprocess.run", side_effect=[
+                    Mock(returncode=0, stdout="123 " + executable), Mock(returncode=0, stdout=raw)]):
+                self.assertIsNone(process_snapshot(0.2))
+
+    def test_failed_arguments_read_is_unknown(self):
+        with patch("aosedge_demo_orchestrator.probes.subprocess.run", side_effect=[
+                Mock(returncode=0, stdout="123 /opt/bin/qemu-system-aarch64"), Mock(returncode=1)]):
+            self.assertIsNone(process_snapshot(0.2))
+
     def test_exact_overlay_not_substring(self):
         overlay = Path("/tmp/owned.qcow2")
         self.assertFalse(owns_overlay(["qemu-system-aarch64", "-drive", "file=/tmp/owned.qcow2.old"], overlay))

@@ -10,6 +10,14 @@ from .package_artifacts import digest, credential_stamp
 
 MODEL = {"name": "aos-vm", "version": "1.0.0"}
 TITLE = "Test Vehicles"
+# First-use delivery is an SP workflow, not the cross-role catalog display.
+# Provider discovery belongs to the OEM association check below. Bundle reads
+# are required by service publication preflight and post-upload reconciliation.
+SP_DELIVERY_PERMISSIONS = (
+    "services_list", "services_read", "services_create",
+    "services_service_versions_list", "services_versions_read", "services_units_list",
+    "deployment_bundles_create", "deployment_bundles_list",
+)
 
 
 def inspect_setup(cloud, request, sp_factory=None):
@@ -131,8 +139,7 @@ def inspect_setup(cloud, request, sp_factory=None):
         row("componentDelivery", "VDP delivery permissions", components)
 
         def services():
-            from .service_cloud import PERMISSIONS
-            sp_future.result().require(*PERMISSIONS)
+            sp_future.result().require(*SP_DELIVERY_PERMISSIONS)
             return "READY", "One associated SP can deliver Brake and Tire packages"
         row("serviceDelivery", "Brake and Tire delivery permissions", services)
     failed = any(v["state"] in ("BLOCKED", "CONFLICT") for v in checks)

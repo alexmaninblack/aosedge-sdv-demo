@@ -11,7 +11,7 @@ Historical golden schemas/digests are not rewritten as part of this audit.
 
 - Decision: `D4-023`
 - Lifecycle state: `DESIGN_REVIEWED`
-- Contract version: `1.0.0`
+- Contract version: `1.0.1`
 - Accepted subdecisions: D4-023.1 metadata/authority, D4-023.2 exact requested
   envelopes/native mapping design, D4-023.3 fixed Tire CPU-load control and
   D4-023.4 authoritative evidence split, D4-023.5 sample-driven verdict and
@@ -36,7 +36,7 @@ The accepted requested envelopes are:
 
 | Quota | Brake Health | Tire Health |
 | --- | ---: | ---: |
-| CPU | 250 DMIPS | 150 DMIPS |
+| CPU | 250 DMIPS | 600 DMIPS (staging requalification candidate) |
 | RAM | 16 MiB | 16 MiB |
 | Storage | 8 MiB | 4 MiB |
 | State | 1 MiB | 2 MiB |
@@ -114,7 +114,7 @@ and frozen in a profile bound to the exact Factory Image, AosCore release,
 Tire artifact/configuration and Node DMIPS capacity. No arbitrary percentage
 tolerance is accepted.
 
-`PASS` requires the exact Tire instance and 150-DMIPS approval, three samples
+`PASS` requires the exact Tire instance and the reviewed CPU-envelope approval, three samples
 in the qualified saturation band, bound cgroup cap/throttle evidence, no Tire
 restart/replacement, one completed deterministic Brake event with Brake and
 the platform graph healthy, and three post-stop recovery samples without

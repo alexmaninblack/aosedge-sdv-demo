@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric import ec, rsa
 from cryptography.hazmat.primitives.serialization import pkcs12
 from cryptography.x509.oid import NameOID
 
@@ -24,8 +24,9 @@ from aosedge_demo_orchestrator.cloud_setup import inspect_setup
 from test_cloud_setup import CloudFixture, REQUEST, SP
 
 
-def certificate(path, domain='stage.example.test', expired=False, encrypted=False):
-    key = ec.generate_private_key(ec.SECP256R1())
+def certificate(path, domain='stage.example.test', expired=False, encrypted=False, use_ec=False):
+    key = (ec.generate_private_key(ec.SECP256R1()) if use_ec else
+           rsa.generate_private_key(public_exponent=65537, key_size=2048))
     name = x509.Name([x509.NameAttribute(NameOID.ORGANIZATION_NAME, domain)])
     now = datetime.now(timezone.utc)
     cert = (x509.CertificateBuilder().subject_name(name).issuer_name(name).public_key(key.public_key())
@@ -80,6 +81,17 @@ class PairTests(unittest.TestCase):
             self.connection.inspect_pair(str(self.oem), str(self.oem))
         self.assertFalse((self.state/CONFIG).exists())
 
+    def test_authentication_only_ec_certificate_is_not_a_usable_demo_pair(self):
+        for path in (self.oem, self.sp):
+            certificate(path, use_ec=True)
+            before = path.read_bytes()
+            with self.assertRaisesRegex(ValueError, 'CLOUD_PACKAGE_SIGNING_RSA_KEY_REQUIRED'):
+                self.preview()
+            self.assertEqual(before, path.read_bytes())
+            self.assertFalse((self.state/CONFIG).exists())
+            self.assertFalse((self.state/JOURNAL).exists())
+            certificate(path)
+
     def test_changed_file_config_or_selection_rejects_save(self):
         for mutation in ('file', 'config', 'selection'):
             token = self.preview()['selectionToken']
@@ -122,6 +134,49 @@ class PairTests(unittest.TestCase):
 
 
 class PermissionTests(unittest.TestCase):
+    def delivery_report(self, *, sp_denied=None, oem_denied=None, occupied=False):
+        from test_cloud_setup import SET, OTHER, FLEET
+        cloud, sp = CloudFixture(), CloudFixture()
+        sp.user = {'ownerId': SP}
+        cloud.denied, sp.denied = oem_denied, sp_denied
+        if occupied:
+            cloud.sets.append(dict(id=SET, title='Test Vehicles', fleet=FLEET,
+                                   is_validation_set=True, allow_unknown_components=False))
+            cloud.members = [dict(id=OTHER)]
+        with patch('aosedge_demo_orchestrator.cloud_connection.inspect_certificate', return_value={}), \
+                patch.object(sp, 'pages', wraps=sp.pages) as sp_pages:
+            result = inspect_setup(cloud, dict(REQUEST, firstUse=True), sp_factory=lambda *a, **k: sp)
+        sp_pages.assert_not_called()
+        self.assertEqual([], cloud.posts)
+        self.assertEqual([], sp.posts)
+        return {v['key']: v for v in result['checks']}
+
+    def test_sp_does_not_need_oem_provider_discovery_and_repeat_is_read_only(self):
+        for _ in range(2):
+            rows = self.delivery_report(sp_denied='service_providers_list')
+            self.assertEqual('READY', rows['serviceDelivery']['state'])
+            self.assertEqual('READY', rows['association']['state'])
+
+    def test_oem_provider_discovery_is_still_required_for_association(self):
+        rows = self.delivery_report(oem_denied='service_providers_list')
+        self.assertEqual('BLOCKED', rows['association']['state'])
+        self.assertEqual('READY', rows['serviceDelivery']['state'])
+
+    def test_each_required_sp_delivery_permission_fails_closed(self):
+        for permission in ('services_list', 'services_read', 'services_create',
+                           'services_service_versions_list', 'services_versions_read', 'services_units_list',
+                           'deployment_bundles_create', 'deployment_bundles_list'):
+            with self.subTest(permission=permission):
+                rows = self.delivery_report(sp_denied=permission)
+                self.assertEqual('BLOCKED', rows['serviceDelivery']['state'])
+                self.assertEqual('READY', rows['association']['state'])
+
+    def test_role_correct_permissions_do_not_bypass_occupied_test_set(self):
+        rows = self.delivery_report(sp_denied='service_providers_list', occupied=True)
+        self.assertEqual('READY', rows['serviceDelivery']['state'])
+        self.assertEqual('CONFLICT', rows['testSet']['state'])
+        self.assertEqual('TEST_UNIT_SET_HAS_OTHER_UNITS', rows['testSet']['detail'])
+
     def test_first_use_read_only_delivery_checks(self):
         cloud, sp = CloudFixture(), CloudFixture()
         sp.user = {'ownerId': SP}

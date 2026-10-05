@@ -3,6 +3,10 @@
 
 # Qualification Documentation
 
+- [M1 live installed journey — 3 October](m1-live-journey-2026-10-03.md):
+  installed Kit 025 / Setup 039 live measurements, runner ordering corrections
+  and explicit remaining acceptance; full E2E is still in progress.
+
 - [Distribution Stage 2 closure — 28 September](distribution-stage2-closure-2026-09-28.md):
   current acceptance checklist, SSD reconnection, source checkpoint and the
   remaining visual/fresh-engine gates; not another installer increment.

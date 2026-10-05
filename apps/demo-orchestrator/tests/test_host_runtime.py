@@ -183,6 +183,54 @@ class HostTests(unittest.TestCase):
             self.assertNotIn('PYTHONPATH', call.kwargs['environment'])
             self.assertNotIn('DYLD_LIBRARY_PATH', call.kwargs['environment'])
 
+    def cold_start(self, ready_after=None, exits=False):
+        clock, commands = [0.0], []
+        state = dict(currentVehicle=None, vehicles={})
+        self.driver.live_process = lambda cmd: 123 if cmd in commands and not (exits and clock[0] > 20) else None
+        self.driver.spawn = Mock(side_effect=lambda cmd, log, **kw: commands.append(cmd))
+        self.driver.finish_start = Mock(side_effect=lambda s: s['source'])
+        def initialize(driver, value):
+            value['source'] = {'trust': {'enabled': True}}
+        def advance(seconds):
+            clock[0] += seconds
+        def query(cmd, **kw):
+            if cmd[-1] == 'screen':
+                return Mock(returncode=0, stdout=json.dumps(self.screen))
+            advance(min(5, kw['timeout']))
+            ready = ready_after is not None and clock[0] >= ready_after
+            return Mock(returncode=0 if ready else 1,
+                        stdout='Carla/Maps/Town10HD_Opt' if ready else '')
+        with patch.object(source_authentication, 'initialize_gateway', side_effect=initialize), \
+                patch.object(source_authentication, 'runner_options', return_value=[]), \
+                patch('aosedge_demo_orchestrator.source.subprocess.run', side_effect=query), \
+                patch('aosedge_demo_orchestrator.source.time.monotonic', side_effect=lambda: clock[0]), \
+                patch('aosedge_demo_orchestrator.source.time.sleep', side_effect=advance):
+            try:
+                return self.driver.start(state)
+            finally:
+                self.cold_elapsed = clock[0]
+
+    def test_cold_game_ready_after_old_deadline_starts_one_runner(self):
+        self.cold_start(135)
+        self.assertLessEqual(self.cold_elapsed, 141)
+        self.assertEqual(2, self.driver.spawn.call_count)
+        self.driver.finish_start.assert_called_once()
+
+    def test_unready_game_has_bounded_wait_without_runner_or_retry(self):
+        with self.assertRaisesRegex(EnvironmentError, 'SOURCE_SIMULATOR_READY_TIMEOUT'):
+            self.cold_start()
+        self.assertGreaterEqual(self.cold_elapsed, 300)
+        self.assertLessEqual(self.cold_elapsed, 301)
+        self.assertEqual(1, self.driver.spawn.call_count)
+        self.driver.finish_start.assert_not_called()
+
+    def test_cold_game_exit_is_not_hidden_by_longer_deadline(self):
+        with self.assertRaisesRegex(EnvironmentError, 'SOURCE_SIMULATOR_EXITED'):
+            self.cold_start(exits=True)
+        self.assertLessEqual(self.cold_elapsed, 30)
+        self.assertEqual(1, self.driver.spawn.call_count)
+        self.driver.finish_start.assert_not_called()
+
     def test_bad_binary_blocks_before_any_spawn_or_gateway_enrollment(self):
         (self.root / host.ENTRY['runtime']).write_bytes(b'changed')
         with patch.object(self.driver, 'spawn') as spawn, patch.object(source_authentication, 'initialize_gateway') as enroll:

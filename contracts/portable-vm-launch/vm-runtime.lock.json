@@ -6,6 +6,6 @@
   "manifest": {
     "path": "vm-runtime-manifest.json",
     "bytes": 1369,
-    "sha256": "d9b06cfa14bc602059ce80a1311f79177bd3e6d058108f83c9a0db6dba25082d"
+    "sha256": "b825aaee0ce34b5f72c93104d49728e90eb32a8ca0630cc9cc9b62a601f4d205"
   }
 }

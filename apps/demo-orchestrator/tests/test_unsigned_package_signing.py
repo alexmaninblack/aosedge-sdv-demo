@@ -25,13 +25,13 @@ from test_component_replay import inputs
 import test_service_packages as service_fixtures
 
 
-def credential(path, domain):
+def credential(path, domain, key=None):
     from cryptography import x509
     from cryptography.hazmat.primitives import hashes, serialization
     from cryptography.hazmat.primitives.asymmetric import rsa
     from cryptography.hazmat.primitives.serialization.pkcs12 import serialize_key_and_certificates
     from cryptography.x509.oid import NameOID
-    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    key = key or rsa.generate_private_key(public_exponent=65537, key_size=2048)
     subject = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "Disposable test fixture"),
                         x509.NameAttribute(NameOID.ORGANIZATION_NAME, domain)])
     stamp = datetime.datetime.now(datetime.timezone.utc)
@@ -129,6 +129,19 @@ class PackageSigningTests(unittest.TestCase):
         self.config["cloudProfiles"]["service-provider"]["cloudDomain"] = "wrong.example.test"
         with self.assertRaisesRegex(EnvironmentError, "CLOUD_CERTIFICATE_DOMAIN_CHANGED"):
             self.packages.sign(self.handle)
+        self.assertFalse((self.directory / ".signatures").exists())
+
+    def test_ec_credential_is_rejected_before_packaging_without_replacement(self):
+        from cryptography.hazmat.primitives.asymmetric import ec
+        credential(self.key, self.domain, ec.generate_private_key(ec.SECP256R1()))
+        before = self.key.read_bytes()
+        with self.assertRaisesRegex(EnvironmentError, "PACKAGE_SIGNING_RSA_KEY_REQUIRED"):
+            self.packages.sign(self.handle)
+        for role in ('oem', 'service provider'):
+            with self.assertRaisesRegex(EnvironmentError, "PACKAGE_SIGNING_RSA_KEY_REQUIRED"):
+                component_worker.execute(dict(action='signing-context', credential=str(self.key),
+                                              cloudDomain=self.domain, role=role))
+        self.assertEqual(before, self.key.read_bytes())
         self.assertFalse((self.directory / ".signatures").exists())
 
     def test_service_publication_resolves_destination_ids_not_legacy_prepared_ids(self):

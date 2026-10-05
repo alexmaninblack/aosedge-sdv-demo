@@ -11,7 +11,7 @@ class IgnitionSuccessorFactoryTests(unittest.TestCase):
     def test_exact_pin_and_historical_counts(self):
         self.assertEqual(runtime.FACTORY_RELEASES['6.1.1-maninblack.39'],
                          '793b1fc035d2b7c123f9a4161788955f389bb81d')
-        self.assertEqual(gates.CM_LAUNCHER_TEST_COUNTS, {'37': 47, '38': 47, '39': 53})
+        self.assertEqual(gates.CM_LAUNCHER_TEST_COUNTS, {'37': 47, '38': 47, '39': 53, '40': 53, '41': 53})
         self.assertEqual(gates.SM_LAUNCHER_TEST_COUNTS['39'], 32)
         self.assertIn('CM_LAUNCHER_TEST_COUNTS[self.factory_suffix]', inspect.getsource(gates.NativeGates.run))
 

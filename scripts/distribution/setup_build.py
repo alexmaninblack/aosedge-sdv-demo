@@ -15,11 +15,12 @@ import tempfile
 
 from installation_inputs import Bundle, digest, file_info, require, unlinked
 from setup_bridge import release, supported_platform
+import setup_signing
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 PYTHON = 'demo-artifacts/aosedge-sdv-demo/host-runtime/python/'
-HELPERS = ('setup_bridge.py', 'setup_cloud.py', 'setup_release.json', 'installation.py', 'installation_inputs.py', 'version_management.py')
+HELPERS = ('setup_bridge.py', 'setup_cloud.py', 'setup_launch.py', 'setup_backends.py', 'setup_release.json', 'installation.py', 'installation_inputs.py', 'version_management.py')
 
 
 def python_files(bundle):
@@ -44,9 +45,26 @@ def copy_python(bundle, destination):
     return len(rows)
 
 
-def build(kit, output):
+def bundle_info(executable):
+    return dict(CFBundleIdentifier=setup_signing.IDENTIFIER, CFBundleName='SDV Lab Setup',
+                CFBundleDisplayName='AosEdge SDV Lab Setup', CFBundleExecutable=executable,
+                CFBundlePackageType='APPL', CFBundleShortVersionString='0.1.0', CFBundleVersion='1',
+                LSMinimumSystemVersion='26.0', NSHighResolutionCapable=True, NSPrincipalClass='NSApplication',
+                NSRemovableVolumesUsageDescription='SDV Lab installs and reads its packages in your selected folder on an external drive.')
+
+
+def build(kit, output, *, signing_identity=None, ad_hoc=False,
+          developer_id_identity=None, hardened_runtime=False):
     from application import export_plan
     supported_platform()
+    # Fail before copying or compiling when stable signing is unavailable.
+    distribution = developer_id_identity is not None
+    require(not distribution or (signing_identity is None and not ad_hoc),
+            'SETUP_SIGNING_MODE_REQUIRED')
+    require(type(hardened_runtime) is bool and not (hardened_runtime and ad_hoc),
+            'SETUP_SIGNING_HARDENED_MODE_INVALID')
+    signer = setup_signing.select(developer_id_identity if distribution else signing_identity,
+                                  ad_hoc, distribution=distribution)
     kit, output = unlinked(kit), unlinked(output)
     require(output.parent.is_dir() and not output.exists(), 'SETUP_OUTPUT_MUST_BE_NEW')
     require(not output.is_relative_to(kit) and not kit.is_relative_to(output), 'SETUP_OUTPUT_OVERLAP')
@@ -73,11 +91,7 @@ def build(kit, output):
         target = resources / 'tooling' / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(raw)
-    info = dict(CFBundleIdentifier='org.aosedge.sdvlab.setup.preview', CFBundleName='SDV Lab Setup',
-                CFBundleDisplayName='AosEdge SDV Lab Setup', CFBundleExecutable=executable.name,
-                CFBundlePackageType='APPL', CFBundleShortVersionString='0.1.0', CFBundleVersion='1',
-                LSMinimumSystemVersion='26.0', NSHighResolutionCapable=True,
-                NSPrincipalClass='NSApplication')
+    info = bundle_info(executable.name)
     (contents / 'Info.plist').write_bytes(plistlib.dumps(info))
     env = {'PATH': '/usr/bin:/bin:/usr/sbin:/sbin', 'HOME': str(Path.home()), 'LC_ALL': 'C'}
     with tempfile.TemporaryDirectory(prefix='sdv-setup-compile.') as scratch:
@@ -87,8 +101,8 @@ def build(kit, output):
                    '-o', str(executable), '-framework', 'AppKit']
         subprocess.run(command, check=True, env=env, timeout=180)
     subprocess.run([str(executable), '--self-test'], check=True, env=env, timeout=30)
-    subprocess.run(['/usr/bin/codesign', '--force', '--sign', '-', str(app)], check=True, env=env, timeout=60)
-    subprocess.run(['/usr/bin/codesign', '--verify', '--deep', '--strict', str(app)], check=True, env=env, timeout=60)
+    signing = setup_signing.sign(app, signer, hardened=hardened_runtime or distribution,
+                                 distribution=distribution)
     # Prove the embedded interpreter + trusted helper can start, without kit code.
     probe = subprocess.run([str(resources / 'python/bin/python3.12'), '-I', '-B',
                             str(resources / 'tooling/scripts/distribution/setup_bridge.py')],
@@ -96,13 +110,17 @@ def build(kit, output):
     require(probe.returncode == 1 and probe.stderr == b''
             and json.loads(probe.stdout) == dict(kind='error', code='SETUP_ACTION_INVALID'),
             'SETUP_EMBEDDED_PROBE_FAILED')
-    source_files = [HERE / leaf for leaf in HELPERS] + [HERE / 'native/Setup.swift', HERE / 'setup_build.py']
+    source_files = [HERE / leaf for leaf in HELPERS] + [
+        HERE / 'native/Setup.swift', HERE / 'setup_build.py', HERE / 'setup_signing.py']
     source_files += [ROOT / name for name in application_sources]
-    receipt = dict(schemaVersion=1, status='LOCAL_NATIVE_SETUP_PREVIEW', manifestSha256=bundle.pin,
+    receipt = dict(schemaVersion=1, status=('DISTRIBUTION_SETUP_UNNOTARIZED' if distribution
+                                          else 'LOCAL_NATIVE_SETUP_PREVIEW'), manifestSha256=bundle.pin,
                    bootstrapFiles=count, binarySha256=digest(executable),
                    sources={str(p.relative_to(ROOT)): digest(p) for p in source_files},
-                   signing='ad-hoc-local-only', notarized=False, cloudEnrollmentImplemented=False,
+                   **signing, notarized=False, cloudEnrollmentImplemented=True,
+                   cloudEnrollmentLiveQualified=False, exactSubjectReferencesImplemented=True,
                    existingCloudAccessImplemented=True,
+                   presenterLaunchImplemented=True,
                    runtimeLaunched=False, developerCredentialsCopied=False)
     (output / 'build-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
     return receipt
@@ -112,5 +130,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--kit', required=True, type=Path)
     parser.add_argument('--output', required=True, type=Path)
+    signing = parser.add_mutually_exclusive_group(required=True)
+    signing.add_argument('--signing-identity', help='Exact SHA-1 identity from security find-identity; Apple Development only')
+    signing.add_argument('--developer-id-identity', help='Exact Developer ID Application SHA-1; hardened/timestamped output, no notarization submission')
+    signing.add_argument('--ad-hoc', action='store_true', help='Engineering-only preview; permissions may reset between builds')
+    parser.add_argument('--hardened-runtime', action='store_true', help='Explicit Apple Development hardening proof; implicit for Developer ID')
     args = parser.parse_args()
-    print(json.dumps(build(args.kit, args.output), sort_keys=True))
+    print(json.dumps(build(args.kit, args.output, signing_identity=args.signing_identity,
+                           ad_hoc=args.ad_hoc, developer_id_identity=args.developer_id_identity,
+                           hardened_runtime=args.hardened_runtime), sort_keys=True))

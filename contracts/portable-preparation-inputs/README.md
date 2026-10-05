@@ -30,6 +30,14 @@ selecting the bundle and each consumed file's SHA-256 at preparation. Do not
 rehash the multi-gigabyte Factory merely to prepare a software release.
 This local integrity contract is not publisher signature/notarization proof.
 
+The offline producer may select an explicit reviewed Factory checkpoint from
+the integration source tree. Its default remains the historical `demo-v1.1`
+checkpoint; a successor uses a separate candidate file, never overwrites the
+return point. The producer validates version, image name, source revision, size
+and digest against the immutable Factory manifest, with no fallback on an
+invalid explicit choice. This is build-time input only: runtime selection,
+the independent release-source lock and installation authority are unchanged.
+
 The bound source artifact supplies the three exact unsigned VDP profiles,
 reviewed common/advisory modules, four prebuilt Linux/arm64 service profiles,
 public notices, build receipts and six configuration contracts. The existing

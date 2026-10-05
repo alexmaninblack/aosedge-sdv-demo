@@ -349,6 +349,13 @@ native log archive.
 <a id="req-e2e-012"></a>
 ### Composed presenter workspace
 
+Accepted 29 September 2026 clarification: "no second state store" below means
+no duplicate Cloud/vehicle/release lifecycle store. The existing window owner
+keeps physical UI metadata in its workspace directory under the
+[native setup contract](../../../contracts/distribution-installation/native-setup.md#independent-window-metadata--accepted-29-september-2026).
+First/repeat/restarted Open must not create a vehicle-run journal; existing
+journals and their strict validation remain unchanged.
+
 - Statement: Formal acceptance shall qualify the exact presenter-Mac display profile as one composed full-screen workspace containing the shared header, CARLA, Vehicle Controller, Engineering Telematics Dashboard and active browser stage without required tab switching. Presenter Launcher shall own only physical window discovery, placement, visibility, non-overlap, readability and local restoration; the stateless Representation Layer shall own shared-header meaning, team navigation and the title-selected right-hand global Demo Lifecycle page from the same browser read model; every visible surface owner shall retain its content. In every producer perspective, the one-line team purpose, compact non-selectable Release Authority line, state summaries and current team evidence panels shall remain fixed and fully readable while only the release/version region scrolls; Platform, Brake and Tire shall restore independent release/version scroll and focus context. The global page shall present the bounded Qualification Status, M0/M1/G0, current lifecycle/recovery and R0 without becoming a fourth producer or duplicating native launcher actions and may use its own independent whole-page right-region scroll. Workspace restoration and browser navigation shall neither mutate AosCloud/vehicle lifecycle state nor create another state store.
 - Parents: [`SYS-SRC-002`](../system-requirements-and-traceability.md#sys-src-002) and [`SYS-OBS-001`](../system-requirements-and-traceability.md#sys-obs-001)
 - Interface: [`IF-DEMO-002`](../component-decomposition-and-interface-register.md#if-demo-002)

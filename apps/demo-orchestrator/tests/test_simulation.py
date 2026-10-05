@@ -31,6 +31,7 @@ class SimulationTests(unittest.TestCase):
     def setUp(self):
         self.vm, self.units, self.driver = Mock(), Mock(), Mock()
         self.vm.root = Path("/not-live")
+        self.vm.environment.root = self.vm.root
         self.vm.environment._writer.side_effect = contextlib.nullcontext
         self.driver.operation.side_effect = lambda **kw: contextlib.nullcontext()
         self.service = SourceService(self.vm, self.units, self.driver)

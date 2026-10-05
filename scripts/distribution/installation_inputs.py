@@ -175,6 +175,9 @@ class Bundle:
             self.verify_file(name)
             value = parse(read_small(self.root/name))
             require(isinstance(value, dict), 'INPUT_MANIFEST_INVALID')
+            if group == 'vm-runtime':
+                require(value.get('hostManifest') == manifest['inputs']['host-runtime'],
+                        'VM_HOST_MANIFEST_MISMATCH')
             if group == 'backend-inputs':
                 rows = [dict(path='backends.tar', bytes=value.get('archiveBytes'), sha256=value.get('archiveSha256'))]
             else:

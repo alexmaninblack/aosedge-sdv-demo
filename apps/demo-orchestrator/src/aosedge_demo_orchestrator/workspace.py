@@ -6,6 +6,7 @@ import os
 import re
 import shlex
 import signal
+import stat
 import subprocess
 import time
 import threading
@@ -14,6 +15,16 @@ from pathlib import Path
 
 from .environment import EnvironmentError, JOURNAL, atomic_json
 from .status import read_json, now
+
+WORKSPACE_FIELDS = frozenset(("profile", "presenterCommand", "presenterBuild", "orderingGeneration", "restoredAt", "placement"))
+
+
+def validate_configuration(record):
+    if (not isinstance(record, dict) or set(record) - WORKSPACE_FIELDS
+            or ("placement" in record and not isinstance(record["placement"], dict))
+            or ("profile" in record and record["profile"] != "builtin-v1")):
+        raise EnvironmentError("WORKSPACE_STATE_INVALID")
+    return record
 
 
 def geometry(screen, combined=False):
@@ -27,9 +38,18 @@ def geometry(screen, combined=False):
     # from the Controller to the Platform panel, not to another empty gutter.
     previous_left = (usable - gap) // 2
     left = round((usable - gap) * .45)
+    if combined:
+        # AppKit clamps the combined Control/Telemetry window to 900 points.
+        # Budget that real minimum before positioning the adjacent Presenter.
+        left = max(left, 900)
     top = y + margin + header + gap
     body = height - 2 * margin - header - gap
     carla = round((body - gap) * .55)
+    if combined:
+        # 470-point native content plus the qualified 32-point title bar.
+        # Preserve the existing large-display split; only reclaim excess CARLA
+        # height when the lower native window would otherwise enter the Dock.
+        carla = min(carla, body - gap - 502)
     lower = body - carla - gap
     dashboard = (previous_left - gap) // 2
     controller = max(360, left - gap - dashboard)
@@ -142,6 +162,42 @@ class WorkspaceService:
         self.directory = self.root / ".local/demo-control/workspace"
         self.binary = self.directory / "Demo Presenter"
 
+    def configuration(self, state=None):
+        """Window-owner metadata is never a vehicle lifecycle journal."""
+        from .runtime_paths import canonical, private
+        path = self.directory / "state.json"
+        canonical(path)
+        if path.with_name("state.json.pending").exists() or path.with_name("state.json.pending").is_symlink():
+            raise EnvironmentError("WORKSPACE_STATE_RECOVERY_REQUIRED")
+        if path.exists() or path.is_symlink():
+            private(path)
+            value = read_json(path, limit=65536)
+            if (not isinstance(value, dict) or set(value) != {"schemaVersion", "kind", "workspace"}
+                    or type(value["schemaVersion"]) is not int or value["schemaVersion"] != 1
+                    or value["kind"] != "democtl.workspace" or not isinstance(value["workspace"], dict)):
+                raise EnvironmentError("WORKSPACE_STATE_INVALID")
+            return validate_configuration(value["workspace"])
+        if state is None:
+            journal = self.root / JOURNAL
+            state = read_json(journal) if journal.exists() else {}
+        # Read old layout metadata without migrating or rewriting its journal.
+        legacy = state.get("workspace") or {}
+        if not isinstance(legacy, dict):
+            raise EnvironmentError("WORKSPACE_STATE_INVALID")
+        return validate_configuration({key: value for key, value in legacy.items() if key in WORKSPACE_FIELDS})
+
+    def save_configuration(self, record):
+        from .runtime_paths import canonical
+        validate_configuration(record)
+        canonical(self.directory)
+        self.directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+        info = self.directory.stat()
+        if info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) & 0o022:
+            raise EnvironmentError("WORKSPACE_DIRECTORY_UNSAFE")
+        # Recheck existing ownership/pending state before the atomic write.
+        self.configuration({})
+        atomic_json(self.directory / "state.json", dict(schemaVersion=1, kind="democtl.workspace", workspace=record))
+
     def build(self):
         from .host_runtime import selected
         runtime = selected(self.root)
@@ -163,7 +219,7 @@ class WorkspaceService:
     def cached(self):
         path = self.root / JOURNAL
         state = read_json(path) if path.exists() else {}
-        placement = (state.get("workspace") or {}).get("placement") or {}
+        placement = self.configuration(state).get("placement") or {}
         if placement.get("runId") != (state.get("source") or {}).get("runId"):
             return {}
         result = {key: placement[key] for key in ("state", "observedAt", "retryPending", "problems") if key in placement}
@@ -189,9 +245,9 @@ class WorkspaceService:
 
     def record(self, state, result, attempt, pending):
         result.update(observedAt=now(), retryPending=pending)
-        record = state.setdefault("workspace", {})
+        record = self.configuration(state)
         record["placement"] = dict(result, attempt=attempt, runId=(state.get("source") or {}).get("runId"))
-        atomic_json(self.root / JOURNAL, state)
+        self.save_configuration(record)
         return result
 
     def execute(self, action, *, recovery=False):
@@ -204,10 +260,11 @@ class WorkspaceService:
         with self.environment._writer():
             state = read_json(self.root / JOURNAL) if (self.root / JOURNAL).exists() else {}
             source = state.get("source") or {}
-            previous = (state.get("workspace") or {}).get("placement") or {}
+            record = self.configuration(state)
+            previous = record.get("placement") or {}
             attempt = previous.get("attempt", 0) + 1 if recovery else 0
             if recovery and (not previous.get("retryPending") or previous.get("runId") != source.get("runId")
-                             or (state.get("workspace") or {}).get("profile") != "builtin-v1"):
+                             or record.get("profile") != "builtin-v1"):
                 return self.cached()
             if action == "close":
                 command = [str(self.binary), "present", str(self.directory / "layout.json")]
@@ -220,7 +277,7 @@ class WorkspaceService:
                             raise EnvironmentError("WORKSPACE_PRESENTER_CLOSE_TIMEOUT")
                         time.sleep(.1)
                 result = dict(state="CLOSED", noOp=not bool(pid), problems=[], surfaces={}, lifecycleChanged=False)
-                return self.record(state, result, 0, False) if state else result
+                return self.record(state, result, 0, False) if state or record else result
             if action == "restore":
                 self.build()
             elif not self.binary.exists():
@@ -241,7 +298,6 @@ class WorkspaceService:
                 return self.record(state, outcome, previous.get("attempt", 0) if recovery else 0, pending)
             combined = source.get("nativeTelemetry") is True
             layout = geometry(screen, combined=combined)
-            record = state.get("workspace") or {}
             surfaces, problems, foreground_pids = {}, [], []
             retryable = True
             host_command = [str(self.binary), "present", str(self.directory / "layout.json")]
@@ -300,6 +356,9 @@ end tell''')
                     retryable = False
             else:
                 problems.append("dashboard: visible Terminal absent; restart simulation through democtl")
+            # With no simulator source, these absent surfaces cannot become ready
+            # through layout recovery. Keep the findings, but retry only Presenter.
+            expected_absences = len(problems) if not source else 0
             command = [str(self.binary), "present", str(self.directory / "layout.json")]
             pid = self.driver.live_process(command)
             generation = record.get("orderingGeneration")
@@ -328,8 +387,7 @@ end tell''')
                     pid = child.pid
                 record.update(profile="builtin-v1", presenterCommand=command, presenterBuild=build_identity,
                               orderingGeneration=generation, restoredAt=now())
-                state["workspace"] = record
-                atomic_json(self.root / JOURNAL, state)
+                self.save_configuration(record)
             # A signal queues restore on the native main loop. Observe geometry
             # only after that exact generation has been applied, not before it.
             order = self.ordering(generation, pid)
@@ -352,13 +410,24 @@ end tell''')
                         problems.append(name + ": geometry observation unavailable")
                         if str(error) != "WORKSPACE_WINDOW_COUNT:0":
                             retryable = False
+            if action == "restore":
+                # Registering a native app can change the usable display area
+                # (for example when the Dock resizes). Keep the applied geometry
+                # as evidence, but let existing bounded recovery settle that change.
+                settled = subprocess.run([str(self.binary), "screen"], capture_output=True, text=True, timeout=5)
+                if settled.returncode:
+                    raise EnvironmentError("WORKSPACE_BUILTIN_DISPLAY_UNAVAILABLE")
+                current_screen = json.loads(settled.stdout)
+                if any(current_screen.get(key) != screen.get(key)
+                       for key in ("x", "y", "width", "height", "scale", "desktopState")):
+                    problems.append("WORKSPACE_DISPLAY_CHANGED")
             if order["state"] != "VERIFIED":
                 problems.append("WORKSPACE_Z_ORDER_NOT_VERIFIED")
             outcome = dict(state="INCOMPLETE" if problems else "PLACED_AWAITING_VISUAL_REVIEW", profile="builtin-v1",
                 display=screen, surfaces=surfaces, problems=problems,
                 zOrder=order, orderingGeneration=generation, hostPid=pid,
                 lifecycleChanged=False, readability="OPERATOR_REVIEW_REQUIRED")
-            pending = bool(problems) and retryable and attempt < 3
+            pending = len(problems) > expected_absences and retryable and attempt < 3
             if pending and action == "restore":
                 outcome["state"] = "WAITING_FOR_WINDOWS"
             return self.record(state, outcome, attempt, pending) if action == "restore" else outcome
@@ -395,7 +464,8 @@ class WorkspaceRecovery:
     def fail(self):
         # Never retry an unclassified failure forever or expose a raw OS error.
         with self.service.environment._writer():
-            state = read_json(self.service.root / JOURNAL)
+            path = self.service.root / JOURNAL
+            state = read_json(path) if path.exists() else {}
             self.service.record(state, dict(state="INCOMPLETE", problems=["WORKSPACE_RECOVERY_FAILED"],
                 surfaces={}, lifecycleChanged=False), 3, False)
 

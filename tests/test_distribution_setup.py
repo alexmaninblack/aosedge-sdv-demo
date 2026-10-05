@@ -196,6 +196,20 @@ class PlatformTests(unittest.TestCase):
 
 
 class BootstrapTests(unittest.TestCase):
+    def test_native_busy_state_hides_completed_step_guidance(self):
+        source = (builder.HERE / 'native/Setup.swift').read_text()
+        refresh = source.split('    private func refresh() {', 1)[1].split('\n    }', 1)[0]
+        self.assertIn('next.isHidden = busy', refresh)
+        self.assertIn('guard busy else { return true }', source)
+        self.assertIn('You can close this setup window; the Presenter stays open.', source)
+
+    def test_removable_storage_purpose_is_explicit_without_broad_entitlements(self):
+        info = builder.bundle_info('SDVLabSetup')
+        self.assertIn('selected', info['NSRemovableVolumesUsageDescription'])
+        self.assertIn('external drive', info['NSRemovableVolumesUsageDescription'])
+        self.assertNotIn('NSSystemAdministrationUsageDescription', info)
+        self.assertEqual('SDVLabSetup', info['CFBundleExecutable'])
+
     def setUp(self):
         import hashlib
         from types import SimpleNamespace

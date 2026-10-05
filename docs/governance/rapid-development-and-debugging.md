@@ -4,8 +4,9 @@
 # Rapid Development and Debugging Policy
 
 - Status: Accepted operating policy
-- Version: 1.0
+- Version: 1.3
 - Prepared: 2026-08-30
+- Updated: 2026-10-02
 - Owner: Demo Solution Team with repository and integration owners
 - Applies to: implementation, integration, debugging, build, qualification,
   Cloud operations and artifact cleanup across the AosEdge SDV demo workspace
@@ -51,6 +52,53 @@ The agent shall stop and request direction only when:
 Routine compiler errors, test failures and corrections inside the accepted
 boundary are not new approval gates. An agent shall not ask for repeated
 approval merely because an operation contains multiple internal checks.
+
+### Standing staging qualification authorization
+
+On 30 September 2026 the user authorized the ongoing installer/demo test cycle
+in `aws-stage.epmp-aos.projects.epam.com`, including retirement of previous
+owned Test Units, working VMs and backend run data, replacement Test creation,
+builds, signing with already authorized identities, test release publication,
+installation and verification. Treat this as authorization for the whole cycle,
+not a reason to request the same permission for each generated UUID or version.
+
+The agent must still resolve exact ownership, record intent, reconcile remote
+results and preserve compact evidence. Production (including retained Production
+on staging), source/Git, current Factory, required rollback/build inputs,
+credentials and unrelated resources are excluded. Sequential version checks,
+Safe Stop, no-blind-retry and end-of-check shutdown remain mandatory. Tool safety
+controls, new credential/access boundaries and public distribution are not
+overridden. Do not weaken product occupancy or ownership guards; retire the
+authorized old Test through its normal lifecycle before replacing it.
+
+## Mandatory End-of-Check Shutdown
+
+The operator explicitly required this rule on 29 September 2026. A completed
+check includes cleanup of its running processes, not only collection of evidence.
+
+- Gracefully close owned test windows, Presenter servers, helpers, simulators,
+  VMs and containers when the check/session ends and the active sequence no
+  longer needs them. Leave a test environment running after handoff only on an
+  explicit user request, not for convenience or to preserve an installed Test.
+- Stopping must preserve persistent state, Cloud identities, VM disks, models,
+  histories, release ledgers and evidence. It is not Finish, deprovisioning,
+  retirement, uninstall or deletion. Capture necessary fault evidence first.
+- Use the normal ownership-checked shutdown path. Reconcile active/uncertain
+  operations before shutdown. Never kill unrelated applications or shared
+  infrastructure; do not force a stop merely to claim the checklist passed.
+- Verify actual process exit and released listeners. Report exact unresolved
+  owners if shutdown cannot safely finish. No completed-check claim while
+  unnecessary owned test processes remain unexplained.
+- The 2 October clarification excludes Docker Engine/Desktop from routine
+  shutdown. It is shared background infrastructure: check availability without
+  opening Dashboard, start only when confirmed stopped and required, and reuse
+  it throughout qualification. Stop demo-owned containers at session end; do
+  not stop, restart or quit the Engine. A separate explicit host-maintenance
+  request is not an ordinary test cleanup. Engine lifecycle is not a test gate.
+- Track delivery against the existing accepted stage criteria. Do not replace
+  the plan with a series of fixes, builds or reports, or request routine approval
+  between them. Continue authorized work until the stage is complete or a real
+  external dependency blocks it; distinguish partial progress from acceptance.
 
 ## Mandatory Rapid-Debug Cycle
 

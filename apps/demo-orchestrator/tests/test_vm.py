@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import json
+import copy
 import os
 import shutil
 import subprocess
@@ -288,6 +289,58 @@ class VMTests(unittest.TestCase):
         self.assertEqual(request, guest.call_args.kwargs["cloud_configuration"])
         self.assertEqual(request["domain"], guest.call_args.kwargs["cloud_host"])
         separate_ssh.assert_not_called()
+
+    def test_dashboard_only_trust_allows_preprovisioned_start_repeat_and_restart(self):
+        state = self.state()
+        state["source"] = dict(state="STOPPED", assignmentGeneration=0, trust=dict(enabled=True,
+            profile="SELECTED_UNIT_MUTUAL_TLS", target="test", fingerprints=dict(dashboard="a" * 64)))
+        expected = copy.deepcopy(state["source"])
+        atomic_json(self.root / JOURNAL, state)
+        with patch("aosedge_demo_orchestrator.vm.read_guest", wraps=self.runtime.guest) as guest:
+            for action in ("start", "start", "stop", "start"):
+                result = self.runtime.execute(action, "test", 2)
+                self.assertEqual("COMPLETED", result["vehicles"]["test"]["state"])
+                self.assertEqual(expected, self.state()["source"])
+            self.assertTrue(all("source_restore" not in call.kwargs for call in guest.call_args_list))
+        self.assertEqual(4, len(self.runtime.spawned))  # Two boots, one VM and DNS each; repeat reuses both.
+        self.assertIsNone(self.state()["vehicles"]["test"].get("unitId"))
+        self.assertIsNone(self.state()["vehicles"]["test"].get("nodeId"))
+        self.assertEqual(1, len(self.state()["operations"]))
+
+    def test_dashboard_only_exception_rejects_partial_or_contradictory_guest_binding(self):
+        state = self.state()
+        state["source"] = dict(state="STOPPED", assignmentGeneration=0, trust=dict(enabled=True,
+            profile="SELECTED_UNIT_MUTUAL_TLS", target="test", fingerprints=dict(dashboard="a" * 64)))
+        changes = [
+            lambda s: s["vehicles"]["test"].update(unitId="unit"),
+            lambda s: s["vehicles"]["test"].update(nodeId="node"),
+            lambda s: s["vehicles"]["test"].update(cloud=dict(lifecycle="ONLINE")),
+            lambda s: s["source"]["trust"].update(onboarding={}),
+            lambda s: s["source"]["trust"].update(onboarding=dict(state="PENDING")),
+            lambda s: s["source"]["trust"].update(onboarding=dict(state="COMPLETE", unitId="other", nodeId="other")),
+            lambda s: s["source"]["trust"].update(pending=dict(action="select")),
+            lambda s: s["source"]["trust"]["fingerprints"].update(vdp="b" * 64),
+            lambda s: s["source"]["trust"]["fingerprints"].update(runtime="b" * 64),
+            lambda s: s["source"]["trust"]["fingerprints"].update(dashboard="invalid"),
+            lambda s: s["source"]["trust"].update(target="production"),
+            lambda s: s["source"]["trust"].update(profile="unexpected"),
+            lambda s: s.update(currentVehicle="test"),
+            lambda s: s["source"].update(assignmentGeneration=1),
+            lambda s: s["source"].update(operation=dict(id="pending")),
+            lambda s: s["source"].update(stopOperation=dict(id="pending")),
+        ]
+        for index, change in enumerate(changes):
+            with self.subTest(case=index):
+                candidate = copy.deepcopy(state)
+                change(candidate)
+                expected = copy.deepcopy(candidate["source"])
+                atomic_json(self.root / JOURNAL, candidate)
+                with patch("aosedge_demo_orchestrator.vm.read_guest") as guest:
+                    result = self.runtime.execute("start", "test", 2)["vehicles"]["test"]
+                self.assertEqual("BLOCKED", result["state"])
+                self.assertEqual("SOURCE_TRUST_BOOTSTRAP_BINDING_UNCONFIRMED", result["reason"])
+                guest.assert_not_called()
+                self.assertEqual(expected, self.state()["source"])
 
     def test_strict_boot_reconstructs_only_the_bound_test_identity(self):
         state = self.state()

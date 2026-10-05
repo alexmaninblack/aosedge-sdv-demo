@@ -20,6 +20,12 @@ ROM and their license notices,
 and binds the independently locked [host runtime](../portable-host-launch/README.md).
 QEMU and private Python are reused from that host closure, not copied again.
 
+Complete-kit assembly and installation preflight must check the VM manifest's
+`hostManifest` against the independently pinned host group before copying or
+creating a package store. An individually valid VM manifest bound to an older
+host closure is not a valid complete kit. Runtime validation remains mandatory;
+this earlier check does not replace or weaken it.
+
 Validate canonical regular files, exact size/hash/mode, no links or extra files,
 and the complete consumed native/Python dependency inventories. The unchanged
 firmware SHA-256 is independently checked against the VM profile. No key,

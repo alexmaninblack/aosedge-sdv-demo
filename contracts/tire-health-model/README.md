@@ -11,12 +11,19 @@ Historical golden schemas/digests are not rewritten as part of this audit.
 
 - Decision: `D4-018`
 - Lifecycle state: `ACCEPTED`
-- Contract version: `1.1.1` (explicit current-Test demo reset; model thresholds unchanged)
+- Contract version: `1.1.2` (authorized Tire CPU requalification candidate;
+  model thresholds, 250 ms freshness and all other quotas unchanged)
 - Subdecision state: exact VDP v3 input/incompatibility, bounded dynamics
   episode, deterministic synthetic estimator and persistent hysteresis/
   idempotency plus pre-demo calibration/qualification policy accepted
   2026-08-23; local advisory chain plus persistence/offline/readiness/resource
   boundary and logs/fault isolation accepted 2026-08-23
+
+The 3 October CPU amendment requests a 600-DMIPS candidate after measurement
+of the initial 300-DMIPS candidate (original baseline: 150), through native
+signed staging releases only. It is a qualification candidate, not an accepted
+live baseline; see D4-023 and the M1 qualification report. No guest quota override
+or relaxation of input quality is permitted.
 
 This package defines the proposed exact current-demo contract for the single
 Tire Health Service v1.0. It consumes only the accepted VDP v3 native dynamics

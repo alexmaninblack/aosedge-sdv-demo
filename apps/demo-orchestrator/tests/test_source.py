@@ -47,6 +47,49 @@ class Driver:
 
 
 class SourceTests(unittest.TestCase):
+    def start_with_workspace(self, configuration, *, record_failure=False):
+        import contextlib
+        self.service.environment._writer = contextlib.nullcontext
+        self.driver.operation = contextlib.nullcontext
+        self.service.root = Path('/unused-test-root')
+        self.state.pop('source')
+        self.driver.start = Mock(return_value=dict(runId='new-run'))
+        with patch('aosedge_demo_orchestrator.source.read_json', return_value=self.state), \
+                patch('aosedge_demo_orchestrator.runtime_paths.installed', return_value=False), \
+                patch('aosedge_demo_orchestrator.workspace.WorkspaceService') as factory:
+            workspace = factory.return_value
+            if isinstance(configuration, Exception):
+                workspace.configuration.side_effect = configuration
+            else:
+                workspace.configuration.return_value = configuration
+            workspace.execute.return_value = dict(state='PLACED_AWAITING_VISUAL_REVIEW')
+            if record_failure:
+                workspace.record.side_effect = EnvironmentError('WORKSPACE_STATE_RECOVERY_REQUIRED')
+            result = self.service.simulation('start')
+        self.driver.start.assert_called_once_with(self.state)
+        self.assertEqual('RUNNING', result['state'])
+        self.assertNotIn('workspace', self.state)
+        return result, workspace
+
+    def test_simulator_start_uses_independent_workspace_profile(self):
+        result, workspace = self.start_with_workspace(dict(profile='builtin-v1'))
+        workspace.configuration.assert_called_once_with(self.state)
+        workspace.execute.assert_called_once_with('restore')
+        self.assertEqual('PLACED_AWAITING_VISUAL_REVIEW', result['workspace']['state'])
+
+    def test_simulator_start_without_profile_does_not_open_windows(self):
+        result, workspace = self.start_with_workspace({})
+        workspace.execute.assert_not_called()
+        self.assertNotIn('workspace', result)
+
+    def test_unsafe_workspace_preserves_successful_simulator_start(self):
+        result, workspace = self.start_with_workspace(
+            EnvironmentError('WORKSPACE_STATE_RECOVERY_REQUIRED'), record_failure=True)
+        workspace.execute.assert_not_called()
+        workspace.record.assert_called_once()
+        self.assertEqual(['WORKSPACE_RESTORE_FAILED'], result['workspace']['problems'])
+        self.assertFalse(result['workspace']['lifecycleChanged'])
+
     def test_resume_reuses_only_exact_live_pending_manual_connection(self):
         import contextlib
         self.service.environment._writer = contextlib.nullcontext

@@ -208,11 +208,17 @@ class BackendService:
             raise EnvironmentError("BACKEND_RESPONSE_TOO_LARGE")
         return result.stdout
 
-    def _docker(self, *arguments, timeout=12):
-        executable = shutil.which("docker")
+    def _docker_executable(self):
+        from .runtime_paths import installed
+        # Native launch has no shell PATH. Use the declared external prerequisite,
+        # never a developer PATH or an installer-driven Docker start.
+        executable = shutil.which("docker", path="/Applications/Docker.app/Contents/Resources/bin") if installed(self.root) else shutil.which("docker")
         if executable is None:
             raise EnvironmentError("BACKEND_DOCKER_REQUIRED")
-        return self._run([executable, *arguments], timeout)
+        return executable
+
+    def _docker(self, *arguments, timeout=12):
+        return self._run([self._docker_executable(), *arguments], timeout)
 
     def _inspect(self, kind, name, *, deadline=None):
         # A list distinguishes absence from an unreachable engine. No error

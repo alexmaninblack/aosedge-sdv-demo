@@ -138,6 +138,15 @@ class Cloud:
 
 def execute(request):
     action = request["action"]
+    if action in ("first-use-subjects", "first-use-subject-check"):
+        from aosedge_demo_orchestrator.subject_first_use import execute as first_use
+        from aosedge_demo_orchestrator.cloud_connection import inspect_certificate
+        for credential in (request["credential"], request["spCredential"]):
+            if inspect_certificate(credential)["domain"] != request["cloudDomain"]:
+                raise CloudFailure("FIRST_USE_CERTIFICATE_DOMAIN_CHANGED")
+        cloud = Cloud(request)
+        provider = Cloud(dict(credential=request["spCredential"], cloudDomain=request["cloudDomain"]), expected_role="service provider")
+        return first_use(cloud, provider, request)
     if action in ("cloud-setup-check", "cloud-setup-step"):
         from aosedge_demo_orchestrator.cloud_setup import inspect_setup, create_step
         from aosedge_demo_orchestrator.cloud_connection import inspect_certificate

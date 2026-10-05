@@ -1,0 +1,38 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "prepared": "2026-10-03",
+  "name": "Kit 027 installed E2E candidate",
+  "status": "REJECTED_VM_HOST_MANIFEST_BINDING",
+  "applicationManifestSha256": "d4caa56bf25aa15428ec5bbba37c1915c96e3d65a3d27e871344e78d56c4b893",
+  "setup": {
+    "version": "041",
+    "binarySha256": "e1efd310fe4904b57724ff4bee36783b6e6cd8b212d43fb667c2c499e214cfac",
+    "signing": "apple-development-local-only",
+    "notarized": false
+  },
+  "media": {
+    "name": "AosEdge-SDV-Lab-Kit027-Setup041.dmg",
+    "bytes": 14160036368,
+    "sha256": "b546a460e05ec3530a0ad1f8ef0d32036a04fd99ff2526ce7837f5fa3bd9bba1"
+  },
+  "factoryCheckpoint": "workspace/checkpoints/factory-41-candidate.json",
+  "source": {
+    "platform": "3fd1f8eb8e8d51c7e89c9f89f1646c7d4f55494f",
+    "brake": "5aa652fda603e7621043961331e58236b19204e9",
+    "tire": "f0a0f6edadb51aa338775d157aa3bde28f5b76f4"
+  },
+  "hostManifest": {
+    "bytes": 3825784,
+    "sha256": "f6ae4b1222e55a0d15501176ca0ab91aaa29ce011817419c1e6b3443c5dacff2"
+  },
+  "preparationManifest": {
+    "bytes": 51532,
+    "sha256": "d3f4e503e5f5157d946340fabb87572528194ee8cea1d5a01d0c2642bf208b47"
+  },
+  "tireCpuDmips": 600,
+  "previousKitManifest": "f05444400262473e039197bb3b308f511e71604d2f96c402a55db4001db883ad",
+  "preserved": ["demo-v1.1 historical return point", "Kit 026 rollback media and evidence", "Production", "credentials", "warm build inputs"],
+  "knownLimitations": ["Load-sensitive brief readiness transitions deferred by operator", "VDP-TIMEOUT-01 deferred", "D4-023 fixed-load CPU isolation worker not implemented", "Not notarized or publicly distributable"],
+  "evidence": ["docs/qualification/m1-live-journey-2026-10-03.md"]
+}

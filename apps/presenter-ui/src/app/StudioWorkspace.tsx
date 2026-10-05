@@ -84,11 +84,13 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
     : (mode === "quick" ? local.preparation?.image : local.lifecycle?.image) || selectedImage || local.images[0]?.selector || "";
   const continuation = mode === "quick" ? Boolean(local.preparation && local.preparation.phase !== "READY_TO_DRIVE")
     : local.lifecycle?.action === "create" && local.lifecycle.state !== "COMPLETED";
-  // Read historical checkpoints, but never offer an unsupported same-run restart.
+  // Legacy Park/Resume is not the controller's supported ignition recovery.
   const interruptedRun = !retiring && (local.lifecycle?.action === "park"
-    || local.lifecycle?.action === "resume" && local.lifecycle.state !== "COMPLETED"
-    || present && vehicle.process === "STOPPED" && !continuation);
-  const lifecycleRestricted = retiring || interruptedRun;
+    || local.lifecycle?.action === "resume" && local.lifecycle.state !== "COMPLETED");
+  const controllerStopped = !retiring && !interruptedRun && present && vehicle.process === "STOPPED" && !continuation;
+  const lifecycleRestricted = retiring || interruptedRun || controllerStopped;
+  const lifecycleReason = controllerStopped ? "Reset unavailable while the controller is switched off."
+    : interruptedRun ? "Reset unavailable for an interrupted legacy run. Finish its recorded cleanup first." : undefined;
   const observation = cloud.observation;
   const bindingMatches = !observation?.bindingKey || Boolean(local.runId && observation.bindingKey.startsWith(local.runId + ":"));
   const value = bindingMatches ? observation?.value : null;
@@ -103,7 +105,12 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
     : selectedRow ? { kind: selection!.kind, row: selectedRow } as Detail : null;
   useEffect(() => { setDetails(null); }, [local.runId, inventory?.unitId]);
   useEffect(() => { setProfiles({ platform: "v1", brake: "v1", tire: "v1" }); }, [local.runId]);
-  const jobs = (controls.session?.jobs ?? []).filter(job => local.runId && job.runId === local.runId);
+  const sessionJobs = controls.session?.jobs ?? [];
+  // First-create can fail before a journal exists. Keep those receipts only
+  // in this session's empty-controller epoch, never across an allocated run.
+  const lastAllocatedRun = sessionJobs.findLastIndex(job => Boolean(job.runId));
+  const jobs = local.runId ? sessionJobs.filter(job => job.runId === local.runId)
+    : noController ? sessionJobs.slice(lastAllocatedRun + 1).filter(job => !job.runId && ["create", "prepare-demo"].includes(job.action)) : [];
   // Create can be active before it allocates a run ID; Finish outlives that ID.
   // Keep only the session's actual active operation outside the scoped history.
   const activeJob = controls.session?.jobs.find(job => job.id === controls.session?.active);
@@ -142,7 +149,8 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
   const row = team === "platform" ? undefined : services[team];
   const serviceId = service?.serviceId ?? (team === "platform" ? undefined : inventory?.teamServiceIds?.[team]);
   const servicePending = hasServicePending(row);
-  const publicationBlockedReason = controls.blockReason ?? (lifecycleRestricted ? "Finish the interrupted run before preparing or publishing again." : !present ? "Create a controller first." : team === "platform"
+  const publicationBlockedReason = controls.blockReason ?? (controllerStopped ? "The controller is switched off. Wait for power-on and connection recovery before preparing or publishing."
+    : lifecycleRestricted ? "Finish the interrupted run before preparing or publishing again." : !present ? "Create a controller first." : team === "platform"
     ? pending ? "Another component update is pending; inspect its Cloud state before publishing again." : submitted ? "This candidate was already submitted. Observe its existing publication; it will not be sent twice." : !version ? "Prepare this capability profile before signing and publishing." : null
     : servicePending ? "A service update is pending; inspect its Cloud state before publishing again." : serviceSubmitted ? "This candidate was already submitted. Refresh its publication or prepare a higher release." : !service ? "Prepare this service profile before signing and publishing." : null);
   const openView = (next: Perspective) => { navigate(next); setPopup(null); setDetails(null); };
@@ -174,6 +182,7 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
   // This guide explains observed state; it never starts an operation itself.
   let guide = { title: "Create your vehicle", body: "Choose the factory firmware for its domain controller.", label: mode === "quick" ? "Prepare demo" : "Create controller", disabled: !image, action: create };
   if (interruptedRun) guide = { title: "Demo interrupted", body: `${local.lifecycle?.reason ? `${local.lifecycle.reason}. ` : ""}Same-run restart is not supported in Demo Studio. Finish this run, then create a fresh controller.`, label: "Finish demo", disabled: controls.blocked, action: () => ask({ action: "reset" }) };
+  else if (controllerStopped) guide = { title: "Controller switched off", body: "This is not Finish demo. After power-on, the existing provisioned controller can recover its connection with external network ON. Recovery ends in Safe Stop; Autopilot does not start automatically.", label: "Refresh state", disabled: cloud.loading, action: cloud.refresh };
   else if (present && continuation) guide = { title: "Continue preparation", body: local.lifecycle?.reason ?? local.preparation?.reason ?? "Continue only the remaining recorded steps.", label: "Continue preparation", disabled: !image, action: create };
   else if (present && !simulationRunning) guide = { title: "Start the local vehicle", body: "Start CARLA, Gateway and the native vehicle panels. The controller connects after Cloud provisioning.", label: "Start simulator", disabled: !running, action: () => ask({ action: "start-simulation" }) };
   else if (present && !local.registrationComplete) {
@@ -223,6 +232,7 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
   }
   if (!localStateKnown && !retiring) guide = { title: "Controller state unavailable", body: "The local read did not confirm whether a controller exists. Refresh before starting another operation.", label: "Refresh state", disabled: cloud.loading, action: cloud.refresh };
   if (recovery && present && !lifecycleRestricted) guide = { title: "Preparation needs engineering setup", body: recovery, label: "View progress", disabled: false, action: () => setTraceOpen(true) };
+  if (!lifecycleRestricted && controls.session?.sourceRecoveryBusy) guide = { title: "Restoring controller connection", body: "Reconnecting the same provisioned controller after ignition on. Wait for recovery to finish in Safe Stop; Autopilot will not resume automatically.", label: "Refresh state", disabled: cloud.loading, action: cloud.refresh };
   if (controls.session?.active) guide = { title: "Operation in progress", body: "Demo Control owns the current operation. Follow its actual receipt in Trace; no action is repeated automatically.", label: "View progress", disabled: false, action: () => setTraceOpen(true) };
   const title = perspective === "global" ? "Your vehicle" : `${labels[perspective]} Team`;
   const cloudState = current ? value?.online ?? "UNKNOWN" : "UNKNOWN";
@@ -247,7 +257,7 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
             {name === "cloud" && <ResourceGraphs compact model={resources} inventory={inventory} />}
             <span className="studio-summary-link"><span>{name === "cloud" ? "Unit monitoring ↗" : "Backend details ↗"}</span>{name === "cloud" && <small className="studio-platform-brand">AosEdge platform</small>}</span>
             </button>
-            {name !== "cloud" && <ResetScenario team={name} model={backendModels[name]} binding={backendBindings[name]} retiring={lifecycleRestricted} runId={local.runId} />}
+            {name !== "cloud" && <ResetScenario team={name} model={backendModels[name]} binding={backendBindings[name]} retiring={retiring} unavailableReason={lifecycleReason} runId={local.runId} />}
           </article>)}</div>
           <div className="studio-architecture"><aside className="studio-gateway"><StudioIcon name="vehicle" /><strong>Vehicle</strong><small>Sensors & actuators</small><span>↓</span><StudioIcon name="gateway" /><strong>Vehicle Gateway</strong><small>VSS telemetry</small></aside><div className="studio-vss-line" />
             <section className="studio-controller" data-anchor="controller"><h2><StudioIcon name="platform" />Domain Controller</h2>
@@ -303,7 +313,7 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
           <h3>Services & instances</h3><ServiceRows current={Boolean(servicesCurrent)} rows={inventory?.services} onSelect={row => setDetails({ kind: "service", row })} /></>
           : <Monitoring key={inventory?.unitId} inventory={inventory} observation={resources} />}
 
-      </> : noController ? <p>Create and provision Test, then install {labels[popup]} Health. No vehicle data is expected before setup.</p> : <BackendEvidence key={popup + observationScope} team={popup} retiring={lifecycleRestricted} unitSystemUid={inventory?.systemUid} expectedVersion={services[popup]?.service_versions?.installed_service_version?.version ?? undefined} binding={backendBindings[popup]} observation={backendModels[popup]} runId={local.runId} />}
+      </> : noController ? <p>Create and provision Test, then install {labels[popup]} Health. No vehicle data is expected before setup.</p> : <BackendEvidence key={popup + observationScope} team={popup} retiring={retiring} unavailableReason={lifecycleReason} unitSystemUid={inventory?.systemUid} expectedVersion={services[popup]?.service_versions?.installed_service_version?.version ?? undefined} binding={backendBindings[popup]} observation={backendModels[popup]} runId={local.runId} />}
     </Modal>}
     {traceOpen && <Modal variant="studio" title="Current run activity" subtitle="Actual Demo Control receipts · no simulated transitions" onClose={() => setTraceOpen(false)}><OperationProgress job={scopedJob} /><FinishAcknowledgement jobs={controls.session?.jobs ?? []} noController={noController} emptyMessage={!jobs.length && !activeJob ? "No operations recorded for the current run." : undefined} />{jobs.map(job => <article className="studio-trace-row" key={job.id}><strong>{job.action} · {job.state}</strong><p>{job.results.at(-1)?.message ?? job.reason}</p><small>{stamp(job.finishedAt ?? job.startedAt)}</small></article>)}</Modal>}
     {!traceOpen && (controls.error || controls.session?.active || scopedJob && !["COMPLETED", "OBSERVED"].includes(scopedJob.state)) && <OperationProgress job={controls.session?.jobs.find(job => job.id === controls.session?.active) ?? scopedJob} />}
@@ -312,7 +322,7 @@ export function StudioWorkspace({ snapshot, perspective, navigate }: { snapshot:
       <div className="studio-pills" role="group" aria-label="Session sections">{["Lifecycle", "Cloud", "Test setup"].map(tab => <button key={tab} aria-pressed={sessionTab === tab} onClick={() => setSessionTab(tab)}>{tab}</button>)}</div>
       {sessionTab === "Cloud" && <CloudConnectionPanel section="connection" />}
       {sessionTab === "Test setup" && <CloudConnectionPanel section="setup" />}
-      {sessionTab === "Lifecycle" && <><WorkspacePlacement session vehicleWindowsAbsent={vehicleWindowsAbsent} /><p>Use Safe Stop in Driving Control for a pause; keep the controller running. Finish before shutting down. Start a fresh run next time.</p>
+      {sessionTab === "Lifecycle" && <><WorkspacePlacement session vehicleWindowsAbsent={vehicleWindowsAbsent} /><p>Use Safe Stop in Driving Control for a normal pause; keep the controller running. After controller ignition off/on, the same provisioned controller can recover its connection with external network ON and no conflicting operation. Recovery ends in Safe Stop, without starting Autopilot. Finish retires the Test and its working data; it is not required for ignition recovery. Host laptop sleep/wake recovery is not yet qualified.</p>
       <div className="studio-session-grid"><button disabled={controls.blocked} onClick={() => { closeSession(); ask({ action: "reset" }); }}>Finish demo</button><p>Retire the owned Test and its working data. Preserve Factory originals and release continuity.</p></div></>}</Modal>}
     {details && <Modal variant="studio" title={details.kind === "component" ? componentName(details.row) : details.kind === "service" ? details.row.service?.title ?? "Service" : "Prepared service package"} subtitle={details.kind === "release" ? "Demo Control · authoring metadata" : "Current Test · Aos Cloud observation"} onClose={() => setDetails(null)}>
       {details.kind === "component" ? <ComponentDetails row={details.row} current={Boolean(componentCurrent)} /> : details.kind === "service" ? <><ServiceRows rows={{ state: inventory?.services.state ?? "UNKNOWN", value: [details.row] }} current={Boolean(servicesCurrent)} /><ServiceCompatibility evidence={profileEvidence} team={details.row.service?.id ? (["brake", "tire"] as const).find(team => services[team]?.service?.id === details.row.service?.id) : undefined} profile={serviceProfile(details.row, releases)} current={Boolean(componentCurrent && servicesCurrent)} /><p>Instance state is the last Cloud report, not proof of live telemetry or a product result.</p></>

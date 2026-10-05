@@ -144,9 +144,9 @@ def retirement_subjects(state):
         raise EnvironmentError("SERVICE_RETIREMENT_BINDINGS_REQUIRE_RECONCILIATION")
     if not subjects:
         return []
-    if "production" not in state.get("vehicles", {}):
-        # The full single-role journal removal does not yet retain Subject IDs.
-        raise EnvironmentError("SERVICE_SUBJECT_SINGLE_ROLE_RETENTION_REQUIRED")
+    # Single-Test Finish retains these objects in Cloud, not an artificial
+    # Production journal. Keep their exact IDs through all absence checks;
+    # subsequent first use must explicitly reselect verified unbound objects.
     item = state["vehicles"]["test"]
     test = {key: item.get(key) for key in ("unitId", "systemUid", "unitSetId")}
     binding = cloud_binding(state)
@@ -155,6 +155,23 @@ def retirement_subjects(state):
     owner = object_id(binding["ownerId"])
     result = []
     for service_id, subject in subjects.items():
+        record = operations.get(service_id, {})
+        # A label collision is detected by GET before any create/bind/assign
+        # attempt. Its private placeholder is not a Cloud Subject to retain or
+        # delete. Permit normal Test retirement, without adopting the collision
+        # or clearing receipts. Any identity/create/step evidence still blocks.
+        if (isinstance(subject, dict) and set(subject) == {"ownerId", "label"}
+                and subject.get("ownerId") == owner and isinstance(record, dict)
+                and set(record) <= {"serviceId", "team", "serviceProviderId", "publishedVersion",
+                    "test", "ownerId", "state", "steps", "reason", "observedAt"}
+                and record.get("serviceId") == service_id and record.get("ownerId") == owner
+                and record.get("team") in LABELS and subject["label"] == LABELS[record["team"]]
+                and record.get("test") == test and record.get("steps") == {}
+                and record.get("state") == "UNCERTAIN"
+                and record.get("reason") == "SERVICE_SUBJECT_UNRECORDED_LABEL_COLLISION"):
+            object_id(service_id)
+            object_id(record.get("serviceProviderId"))
+            continue
         if (not isinstance(subject, dict) or subject.get("ownerId") != owner
                 or subject.get("label") not in LABELS.values() or subject.get("isGroup") is not True
                 or type(subject.get("priority")) is not int or subject["priority"] != 0
@@ -326,6 +343,11 @@ class ServiceAssignment:
             label = LABELS[publication["team"]]
             subjects = cloud_subjects(state, create=True)
             subject = subjects.get(service_id)
+            if subject is None:
+                from .subject_first_use import selected_reference
+                subject = selected_reference(self.units, state, publication, service_id)
+                if subject is not None:
+                    subjects[service_id] = subject
             if subject and (subject.get("ownerId") != owner or subject.get("label") != label):
                 raise EnvironmentError("SERVICE_SUBJECT_RECORDED_OWNER_CONFLICT")
             subject = subjects.setdefault(service_id, dict(ownerId=owner, label=label))

@@ -287,6 +287,28 @@ class WorkerTests(unittest.TestCase):
         with self.assertRaisesRegex(EnvironmentError, "RECONCILIATION"):
             assignment.retirement_subjects(state)
 
+    def test_retirement_collision_before_any_post_has_no_owned_subject(self):
+        state = dict(vehicles=dict(test=TEST), cloudBinding=dict(ownerId=OWNER),
+            demoSubjects={BRAKE: dict(ownerId=OWNER, label=assignment.LABELS["brake"])},
+            serviceOperations={BRAKE: dict(serviceId=BRAKE, team="brake", serviceProviderId=SP,
+                publishedVersion="8.0.0", test=TEST, ownerId=OWNER, state="UNCERTAIN", steps={},
+                reason="SERVICE_SUBJECT_UNRECORDED_LABEL_COLLISION")})
+        before = copy.deepcopy(state)
+        self.assertEqual([], assignment.retirement_subjects(state))
+        self.assertEqual(before, state)
+        for section, edit in (("demoSubjects", dict(id=SUBJECT)),
+                ("demoSubjects", dict(create=dict(attempted=True))),
+                ("serviceOperations", dict(steps=dict(bind=dict(attempted=True)))),
+                ("serviceOperations", dict(reason="POST_RESPONSE_UNKNOWN")),
+                ("serviceOperations", dict(test=dict(TEST, unitId=SP))),
+                ("serviceOperations", dict(ownerId=SP)),
+                ("serviceOperations", dict(unknownAttempt=True))):
+            with self.subTest(section=section, edit=edit):
+                wrong = copy.deepcopy(state)
+                wrong[section][BRAKE].update(edit)
+                with self.assertRaisesRegex(EnvironmentError, "RECONCILIATION"):
+                    assignment.retirement_subjects(wrong)
+
     def test_retirement_unassigned_does_not_accept_orphan_operations_or_bad_owner(self):
         subject = dict(ownerId=OWNER, id=SUBJECT, label=assignment.LABELS["brake"],
             isGroup=True, priority=0, createdBy=USER, create=dict(stage="CONFIRMED"))
@@ -363,7 +385,7 @@ class JournalTests(unittest.TestCase):
         atomic_json(self.root / JOURNAL, state)
         self.cloud = AssignmentCloud()
         self.loss = None
-        self.units = SimpleNamespace(_cloud=self.call)
+        self.units = SimpleNamespace(_cloud=self.call, environment=self.environment, root=self.root)
         self.service = assignment.ServiceAssignment(self.environment, self.units)
         self.service._publication = Mock(side_effect=lambda identifier: dict(team="brake" if identifier == BRAKE else "tire",
             serviceProviderId=SP, publishedVersion="8.0.0"))

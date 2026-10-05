@@ -540,7 +540,19 @@ class VMService:
         cloud = guest_configuration(self, state, role, vm_start=True)
         trust = (state.get("source") or {}).get("trust") or {}
         source_restore = None
-        if role == "test" and trust.get("enabled") is True:
+        source = state.get("source") or {}
+        fingerprints = trust.get("fingerprints") or {}
+        # initialize_gateway creates dashboard-only trust before Provision.
+        # That exact detached state has no guest credentials to reconstruct.
+        local_only = (set(trust) == {"enabled", "profile", "target", "fingerprints"}
+            and trust.get("profile") == "SELECTED_UNIT_MUTUAL_TLS" and trust.get("target") == "test"
+            and set(fingerprints) == {"dashboard"} and isinstance(fingerprints["dashboard"], str)
+            and len(fingerprints["dashboard"]) == 64
+            and all(char in "0123456789abcdef" for char in fingerprints["dashboard"])
+            and not item.get("unitId") and not item.get("nodeId") and not item.get("cloud")
+            and state.get("currentVehicle") is None and source.get("assignmentGeneration") == 0
+            and not source.get("operation") and not source.get("stopOperation"))
+        if role == "test" and trust.get("enabled") is True and not local_only:
             onboarding = trust.get("onboarding") or {}
             if (onboarding.get("state") != "COMPLETE" or not item.get("unitId") or not item.get("nodeId")
                     or onboarding.get("unitId") != item["unitId"] or onboarding.get("nodeId") != item["nodeId"]):

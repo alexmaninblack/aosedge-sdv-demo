@@ -647,6 +647,13 @@ authoritative source. CARLA and Controller remain native windows rather than
 browser-embedded or streamed surfaces. This responsibility split adds no HLA
 component or lifecycle authority.
 
+Accepted 29 September 2026 workstation clarification: physical window metadata
+belongs to the existing WorkspaceService and its workspace directory, not the
+vehicle-run journal. Opening Presenter before Create Controller must not create
+a run. Legacy journals are preserved, lifecycle validation is unchanged, and
+the separate window record adds no vehicle/Cloud/release authority. See the
+[installed-state contract](../../contracts/distribution-installation/installed-state.md#window-metadata-is-not-lifecycle-state).
+
 The existing telemetry dashboard is the `carla-viss-client --monitor` mode. It
 connects directly to the Vehicle Gateway VISS endpoint as an independent,
 read-only subscriber. It does not connect to CARLA RPC, KUKSA, AosVM, or the

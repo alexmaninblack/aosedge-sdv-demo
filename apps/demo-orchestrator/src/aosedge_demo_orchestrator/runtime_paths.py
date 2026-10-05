@@ -102,7 +102,9 @@ def create_instance(path):
     with os.fdopen(fd, 'w') as stream:
         json.dump(value, stream, sort_keys=True)
         stream.flush(); os.fsync(stream.fileno())
-    for name in ('.local', '.run', 'artifacts'):
+    # Create the shared parent privately before any first-use consumer runs.
+    # pathlib mkdir(parents=True) applies its mode only to the final directory.
+    for name in ('.local', '.local/demo-control', '.run', 'artifacts'):
         (root / name).mkdir(mode=0o700)
     fd = os.open(root, os.O_RDONLY)
     try:

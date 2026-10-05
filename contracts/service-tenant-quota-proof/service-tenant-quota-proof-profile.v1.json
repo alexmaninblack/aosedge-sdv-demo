@@ -2,7 +2,7 @@
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "schemaVersion": 1,
   "contractId": "aosedge-demo-service-tenant-quota-proof",
-  "contractVersion": "1.0.0",
+  "contractVersion": "1.0.1",
   "lifecycleState": "DESIGN_REVIEWED",
   "decision": "D4-023",
   "acceptedSubdecisions": [
@@ -69,7 +69,7 @@
       "pidsLimit": 24
     },
     "tireHealth": {
-      "cpuLimit": 150,
+      "cpuLimit": 600,
       "ramLimit": "16MiB",
       "storageLimit": "4MiB",
       "stateLimit": "2MiB",
@@ -188,7 +188,7 @@
       "NODE_DMIPS_CAPACITY"
     ],
     "passRequires": [
-      "EXACT_TIRE_INSTANCE_AND_APPROVED_150_DMIPS_BINDING",
+      "EXACT_TIRE_INSTANCE_AND_APPROVED_600_DMIPS_BINDING",
       "THREE_FRESH_CLOUD_SAMPLES_IN_SATURATION_BAND",
       "QUALIFIED_CGROUP_CAP_AND_THROTTLE_COUNTER_DELTA",
       "SAME_TIRE_INSTANCE_WITHOUT_RESTART_OR_REDEPLOY",

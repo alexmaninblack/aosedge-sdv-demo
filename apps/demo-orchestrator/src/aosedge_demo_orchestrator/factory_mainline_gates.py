@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 maninblack
 # SPDX-License-Identifier: MIT
 
-"""Factory .37/.38/.39 Builder-only gates; no live VM, credentials or Cloud access.
+"""Factory .37–.41 Builder-only gates; no live VM, credentials or Cloud access.
 
 Demo Control exports this committed file to the isolated ARM64 Builder. Tests
 use the recipe toolchain/sysroot and synthetic fixtures, not the running Test.
@@ -25,8 +25,8 @@ APP = "9d613a46df3c7f550062e2f19ae3406c57715694"
 LIB = "5560291ba6914e36a5b841ade4d8fc54134a9e91"
 API = "af3552a0a5eb0237eff7f5f183780ca46c339cd3"
 MANAGERS = ("aos-communicationmanager", "aos-servicemanager", "aos-iamanager")
-SM_LAUNCHER_TEST_COUNTS = {"37": 27, "38": 32, "39": 32}
-CM_LAUNCHER_TEST_COUNTS = {"37": 47, "38": 47, "39": 53}
+SM_LAUNCHER_TEST_COUNTS = {"37": 27, "38": 32, "39": 32, "40": 32, "41": 32}
+CM_LAUNCHER_TEST_COUNTS = {"37": 47, "38": 47, "39": 53, "40": 53, "41": 53}
 
 
 def require(condition, message):
@@ -199,6 +199,8 @@ class NativeGates:
                        SM_LAUNCHER_TEST_COUNTS[self.factory_suffix])])
         self.core(iam, [("aos_core_iam_permhandler_test", "iam-permissions", 7),
                         ("aos_core_common_pkcs11_test", "iam-pkcs11", 14)])
+        if self.factory_suffix in ("40", "41"):
+            self.test(cm, unique_binary(cm / "build", "aos_cm_networkmanager_test"), "cm-vlan", 31)
         for work, name, label, count, skipped, disabled in (
             (sm, "aos_sm_runtimes_systemdslotcomponent_test", "vdp", 83, 2, 0),
             (sm, "aos_sm_runtimes_container_test", "container", 42, 0, 2),

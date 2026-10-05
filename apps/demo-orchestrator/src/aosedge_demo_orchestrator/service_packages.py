@@ -112,8 +112,14 @@ def package_configuration(root, team, content_profile, version, *, without_permi
         raise EnvironmentError("SERVICE_WITHOUT_PERMISSIONS_FLAG_INVALID")
     if type(demo_no_telemetry) is not bool or (demo_no_telemetry and not without_permissions):
         raise EnvironmentError("SERVICE_DEMO_NO_TELEMETRY_REQUIRES_WITHOUT_PERMISSIONS")
-    from .runtime_paths import program_root
-    contracts = program_root(root) / "contracts"
+    from .runtime_paths import input_root, installed, program_root
+    # Prepare supplies a manifest-verified input root, not a state root. Only
+    # this selected instance's exact input group is an alternate authority;
+    # all other roots retain the strict program/state routing guard.
+    if installed() and Path(root) == input_root() / "aosedge-sdv-demo/preparation-inputs":
+        contracts = Path(root) / "contracts"
+    else:
+        contracts = program_root(root) / "contracts"
     if team == "brake" and content_profile in ("v1", "v2", "v3"):
         source = ("brake-telemetry-window/brake-telemetry-window-profile.v1.json" if content_profile == "v1"
                   else "brake-health-model/brake-health-model-profile.v1.json")

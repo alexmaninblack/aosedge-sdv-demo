@@ -5,7 +5,7 @@ import type { BackendBinding } from "./backendSelection";
 import { backendSummary, recordObject, readable, type BackendModel, type Team } from "./useBackendObservation";
 import { stamp } from "../../app/StudioReadViews";
 
-export function useResetScenario(team: Team, model: BackendModel, binding?: BackendBinding, retiring = false, runId?: string | null) {
+export function useResetScenario(team: Team, model: BackendModel, binding?: BackendBinding, retiring = false, runId?: string | null, unavailableReason?: string) {
   const controls = usePresenterControls();
   const summary = backendSummary(model, team, binding?.serviceVersion, binding);
   const reset = model.data?.observations.demoReset?.state === "OBSERVED" ? model.data.observations.demoReset.data : undefined;
@@ -24,6 +24,7 @@ export function useResetScenario(team: Team, model: BackendModel, binding?: Back
     : currentIntent?.phase === "SUBMITTING" && !job ? "Resetting driver advisory… · submitting the current request" : "Resetting driver advisory… · waiting for Gateway CLEAR confirmation"
     : uncertain ? `Reset ${readable(reset?.command?.state).toLowerCase()} · outcome unconfirmed; partial application is possible. History retained.${!reset?.connected ? ` Reset requires ${team === "brake" ? "Brake V3" : "Tire V1"} and a connected reset channel.` : " Inspect Trace; do not repeat blindly."}`
     : retiring ? "Reset unavailable during Finish."
+    : unavailableReason ? unavailableReason
     : model.error ? "Reset unavailable until backend contact is restored."
     : summary.resetState === "CLEARED" ? `Driver advisory reset · Gateway confirmed CLEAR. This is not a telemetry-readiness report. Last reset confirmed for release ${readable(reset?.command?.serviceVersion)} · ${stamp(recordObject(recordObject(reset?.command?.result).gatewayStatus).gatewayObservedAt as string)}${!reset?.connected ? `. Reset requires ${team === "brake" ? "Brake V3" : "Tire V1"} and a connected reset channel.` : ""}`
     : summary.resetState === "HISTORICAL" ? `Reset for release ${readable(reset?.command?.serviceVersion)} confirmed · historical, not a reset of the current release.`
@@ -32,12 +33,12 @@ export function useResetScenario(team: Team, model: BackendModel, binding?: Back
     : "Start a new demo drive. History retained; no vehicle repair is implied.";
   // A routine background observation is not a mutation lock. Keep the last
   // verified capability while reading; native execution still rechecks it.
-  return { pending, waiting, uncertain, reason, disabled: controls.blocked || retiring || model.busy && !model.data || model.error || !compatible || !reset?.connected || pending || uncertain,
+  return { pending, waiting, uncertain, reason, disabled: controls.blocked || retiring || Boolean(unavailableReason) || model.busy && !model.data || model.error || !compatible || !reset?.connected || pending || uncertain,
     request: () => controls.request({ action: "backend-reset", team }, scope) };
 }
 
-export function ResetScenario({ team, model, binding, retiring, runId, action = true }: { team: Team; model: BackendModel; binding?: BackendBinding; retiring?: boolean; runId?: string | null; action?: boolean }) {
-  const reset = useResetScenario(team, model, binding, retiring, runId);
+export function ResetScenario({ team, model, binding, retiring, runId, unavailableReason, action = true }: { team: Team; model: BackendModel; binding?: BackendBinding; retiring?: boolean; runId?: string | null; unavailableReason?: string; action?: boolean }) {
+  const reset = useResetScenario(team, model, binding, retiring, runId, unavailableReason);
   return <div className="studio-reset-scenario">
     {action && <button aria-label={`Reset Driver Advisory — ${team === "brake" ? "Brake" : "Tire"}`} disabled={reset.disabled} onClick={reset.request}>Reset Driver Advisory</button>}
     <p role="status">{reset.reason}</p>

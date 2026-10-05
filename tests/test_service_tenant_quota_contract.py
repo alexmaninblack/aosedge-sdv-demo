@@ -54,7 +54,7 @@ class ServiceTenantQuotaContractTest(unittest.TestCase):
     def test_exact_requested_envelopes_are_distinct(self) -> None:
         envelopes = self.profile["approvedRequestedEnvelopes"]
         self.assertEqual(250, envelopes["brakeHealth"]["cpuLimit"])
-        self.assertEqual(150, envelopes["tireHealth"]["cpuLimit"])
+        self.assertEqual(600, envelopes["tireHealth"]["cpuLimit"])
         self.assertEqual("8MiB", envelopes["brakeHealth"]["storageLimit"])
         self.assertEqual("4MiB", envelopes["tireHealth"]["storageLimit"])
         self.assertEqual("2MiB", envelopes["tireHealth"]["stateLimit"])

@@ -15,6 +15,8 @@ with patch.object(sys, 'path', [str(SCRIPTS), *sys.path]):
 from aosedge_demo_orchestrator import runtime_paths
 from aosedge_demo_orchestrator.cloud_connection import CloudConnection, CONFIG
 from aosedge_demo_orchestrator.cloud_setup import CloudSetup
+from aosedge_demo_orchestrator import cloud_enrollment
+from aosedge_demo_orchestrator.subject_first_use import FirstUseSubjects
 
 
 class CloudBridgeTests(unittest.TestCase):
@@ -86,3 +88,27 @@ class CloudBridgeTests(unittest.TestCase):
             with self.assertRaises(ValueError): self.req('cloud-inspect', **change)
         with self.assertRaises(ValueError): self.req('cloud-save')
         with self.assertRaises(ValueError): self.req('cloud-save', 'invalid')
+
+    def test_enrollment_protocol_uses_stdin_fields_and_separate_read_only_inspection(self):
+        base = dict(action='cloud-enrollment-status', state=str(self.state), domain='stage.example.test', role='oem')
+        reply = dict(enrollmentStage='NOT_STARTED', role='oem', domain=base['domain'], cloudAccessed=False, rolesChecked=False)
+        with patch.object(cloud_enrollment, 'run_worker', return_value=reply) as worker:
+            result = local_setup.bridge.perform(local_setup.bridge.request(json.dumps(base).encode()), self.f.f.pin)
+        worker.assert_called_once_with(self.state, base['domain'], 'oem', 'status', None, None)
+        self.assertFalse(result['demoReady']); self.assertFalse(result['runtimeChanged'])
+        self.assertNotIn('credentialPath', result)
+        submitted = dict(base, action='cloud-enrollment-submit', token='synthetic-token', reconcileAttempt=None)
+        self.assertEqual(submitted, local_setup.bridge.request(json.dumps(submitted).encode()))
+        for changes in (dict(token='x\ny'), dict(token='x'*4097), dict(reconcileAttempt='wrong'), dict(role='admin'), dict(domain='https://stage.example.test')):
+            with self.assertRaises(ValueError): local_setup.bridge.request(json.dumps(dict(submitted, **changes)).encode())
+        with self.assertRaises(ValueError): local_setup.bridge.request(json.dumps(dict(base, token='unexpected')).encode())
+
+    def test_subject_protocol_requires_exact_complete_reference(self):
+        base = dict(action='cloud-subjects-save', state=str(self.state), oem=str(self.oem), sp=str(self.sp), selectionToken='a'*64)
+        reference = dict(team='brake', **{key: UUID for key in ('id','ownerId','serviceProviderId','serviceId','createdBy')})
+        value = local_setup.bridge.request(json.dumps(dict(base, reference=reference)).encode())
+        with patch.object(FirstUseSubjects, 'perform', return_value={'status':'fixture'}) as perform:
+            self.assertEqual({'status':'fixture'}, local_setup.bridge.perform(value, self.f.f.pin))
+            perform.assert_called_once_with(str(self.oem), str(self.sp), 'a'*64, reference)
+        for bad in ({}, {'team':'brake'}, dict(reference, id='label'), dict(reference, team='any-service')):
+            with self.assertRaises(ValueError): local_setup.bridge.request(json.dumps(dict(base, reference=bad)).encode())

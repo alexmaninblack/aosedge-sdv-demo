@@ -45,7 +45,16 @@ TEST_RECEIPTS = ("componentOperations", "componentSchema", "smDemoProof", "demoP
 def _state(environment):
     environment._owned_file(environment.root / JOURNAL)
     value = read_json(environment.root / JOURNAL)
-    if (not isinstance(value, dict) or set(value) - ROOT_FIELDS
+    allowed = ROOT_FIELDS
+    if (isinstance(value, dict) and value.get("scope") == "SINGLE_ROLE_ENGINEERING"
+            and value.get("stage") == "RETIRING_LOCAL"
+            and isinstance(value.get("vehicles"), dict) and set(value["vehicles"]) == {"test"}):
+        # Single-Test disposal delegates to the complete local cleanup owner.
+        # Validate its interrupted per-file receipt; do not allow these fields
+        # in a retained-Production journal or an ordinary running state.
+        environment._local_retirement_state(value)
+        allowed = allowed | {"retirement", "runtimeCleanup"}
+    if (not isinstance(value, dict) or set(value) - allowed
             or type(value.get("schemaVersion")) is not int or value["schemaVersion"] != 1
             or value.get("kind") != "democtl.current-run"
             or value.get("stage") not in ("MANUFACTURED", "LOCAL_ACTIVE", "LOCAL_STOPPED", "RETIRING_LOCAL")
@@ -218,6 +227,10 @@ def retire_test(environment, cloud_check, backend_check):
             return environment.retire(cloud_check=cloud_check)
         state = _state(environment)
         if "production" not in state["vehicles"]:
+            if state["vehicles"]["test"].get("cloud"):
+                if cloud_check is None or cloud_check(state) is not True:
+                    raise EnvironmentError("FRESH_CLOUD_RETIREMENT_CHECK_REQUIRED")
+            _terminal_receipts(state)
             if state.get("backends") and (backend_check is None or backend_check(state) is not True):
                 raise EnvironmentError("TEST_BACKEND_CLEANUP_PROOF_REQUIRED")
             # The composer removes stopped/clean backend ownership and paths.

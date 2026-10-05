@@ -136,6 +136,19 @@ class ApplicationExportTests(unittest.TestCase):
             module.assemble(self.app, {k: self.root for k in module.LOCKS}, self.output)
         self.assertFalse(self.output.exists())
 
+    def test_stale_vm_host_binding_blocks_before_output_or_copy(self):
+        pin = dict(path='manifest.json', bytes=1, sha256='a'*64)
+        groups = {k: self.root/k for k in module.LOCKS}
+        self.put(groups['vm-runtime'], 'manifest.json', json.dumps(dict(hostManifest={**pin, 'sha256':'b'*64})).encode())
+        with patch.object(module.shutil, 'disk_usage', return_value=SimpleNamespace(free=200*2**30)), \
+                patch.object(module, 'export_plan', return_value={'contracts/'+n:b'{}' for n in module.LOCKS.values()}), \
+                patch.object(module, 'checked_group', return_value=(pin, [], 0)), \
+                patch.object(module, 'clone_group') as clone, \
+                self.assertRaisesRegex(module.BundleError, 'VM host manifest binding mismatch'):
+            module.assemble(self.app, groups, self.output)
+        clone.assert_not_called()
+        self.assertFalse(self.output.exists())
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -35,6 +35,14 @@ not replace a running installation. See the
 [installed-state contract](../../contracts/distribution-installation/installed-state.md).
 Native activation and compatible update/rollback have separate later gates.
 
+The installed single-Test Finish path follows the same Test-only authority:
+stop owned runtime, reconcile exact Subjects, deprovision/delete the exact
+Test, freshly verify Cloud absence, clean only its backend data, then dispose
+owned local files and the journal last. Cloud service/Subject objects and
+published versions survive; subsequent first use explicitly reselects exact
+unbound references. No synthetic Production peer or new reference store is
+introduced. See the [run-state cleanup amendment](../../contracts/demo-run-state/README.md).
+
 For managed engineering packages, the [selection/recovery detail](../../contracts/distribution-installation/version-selection.md)
 inserts explicit compatible manifest selection before runtime entry. Selection
 requires the observed revision and an idle instance/store; runtime entry leases
@@ -49,6 +57,14 @@ installation → separate local-data preparation. Changed fields invalidate the
 check; mutations revalidate the volume and selection revision. The window stays
 responsive and distinguishes installed, selected and ready. Secure enrollment
 and first launch remain downstream gates rather than implied success.
+
+Accepted 28 September local-trust amendment: explicit installed simulator start
+initializes or validates the private per-instance Gateway server identity before
+native spawning. The existing managed SSH enrollment delivers only its public
+server anchor to the guest; the server key stays on the host. Read-only status,
+Cloud checks and installation never initialize it. Client CA/Unit admission,
+system trust, Cloud credentials and source-selection guards are unchanged. See
+the [local Gateway trust contract](../../contracts/distribution-installation/local-gateway-trust.md).
 
 ## Current implementation view — 24 September 2026
 

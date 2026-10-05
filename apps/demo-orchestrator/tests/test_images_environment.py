@@ -149,6 +149,22 @@ class ImagesAndCreateTests(unittest.TestCase):
                 self.create()
         self.assertEqual(before, (self.root / JOURNAL).read_bytes())
 
+    def test_window_state_before_create_preserves_vehicle_journal_boundary(self):
+        from aosedge_demo_orchestrator.workspace import WorkspaceService
+        workspace = WorkspaceService(self.service, Mock())
+        with self.service._writer():
+            workspace.save_configuration(dict(profile='builtin-v1', placement=dict(state='INCOMPLETE')))
+        path = workspace.directory / 'state.json'
+        before = path.read_bytes()
+        self.assertFalse((self.root / JOURNAL).exists())
+        load_configuration(self.root)
+        result = self.create('test')
+        self.assertEqual('MANUFACTURED', result['stage'])
+        self.assertEqual('democtl.current-run', json.loads((self.root / JOURNAL).read_bytes())['kind'])
+        self.assertNotIn('workspace', result)
+        self.assertEqual(before, path.read_bytes())
+        load_configuration(self.root)
+
     def test_single_role_is_not_a_complete_dual_role_demo(self):
         result = self.create("production")
         self.assertEqual("SINGLE_ROLE_ENGINEERING", result["scope"])
@@ -362,6 +378,125 @@ class ImagesAndCreateTests(unittest.TestCase):
         self.assertEqual(self.sha, digest(self.source))
         self.create()
 
+    def pre_runner_retirement_fixture(self):
+        state, run = self.source_retirement_fixture()
+        (run / "manifest.json").unlink()
+        (run / "runner.log").unlink()
+        atomic_json(run / "input.json", {})
+        (run / "simulator.log").write_text("simulator exited before runner launch\n")
+        state["source"].update(assignmentGeneration=0,
+            runnerCommand=["fixture", "--config", str(run / "input.json"),
+                           "--run-directory", str(run)])
+        atomic_json(self.root / JOURNAL, state)
+        return state, run
+
+    def test_retire_pre_runner_failure_preserves_factory_and_recreates(self):
+        state, run = self.pre_runner_retirement_fixture()
+        result = self.service.retire(cloud_check=Mock(return_value=True))
+        self.assertIn(str(run.relative_to(self.root) / "input.json"), result["removed"])
+        self.assertFalse(run.exists())
+        self.assertEqual(self.sha, digest(self.source))
+        self.assertEqual([], self.service.retire()["removed"])
+        self.create()
+
+    def test_pre_runner_cleanup_plan_requires_exact_never_assigned_current_run(self):
+        state, run = self.pre_runner_retirement_fixture()
+        cases = [
+            ("assignmentGeneration", 1), ("assignmentGeneration", None),
+            ("runnerCommand", []),
+            ("runnerCommand", ["fixture", "--config"]),
+            ("runnerCommand", ["fixture", "--config", str(run / "input.json"),
+                               "--run-directory", str(run), "--config", "other"]),
+            ("runnerCommand", ["fixture", "--config", str(run / "other.json"),
+                               "--run-directory", str(run)]),
+            ("runnerCommand", ["fixture", "--config", str(run / "input.json"),
+                               "--run-directory", str(run.parent)]),
+        ]
+        for key, value in cases:
+            with self.subTest(key=key, value=value):
+                changed = json.loads(json.dumps(state))
+                changed["source"][key] = value
+                with self.assertRaisesRegex(EnvironmentError, "SOURCE_RUNTIME_RECEIPT_REQUIRED"):
+                    self.service._runtime_cleanup(changed)
+        state["currentVehicle"] = "test"
+        with self.assertRaisesRegex(EnvironmentError, "SOURCE_RUNTIME_RECEIPT_REQUIRED"):
+            self.service._runtime_cleanup(state)
+        self.assertTrue(run.exists())
+
+    def test_retire_pre_runner_failure_keeps_historical_unreceipted_fragment(self):
+        state, run = self.pre_runner_retirement_fixture()
+        history = self.service._directory(".run/demo-current/source/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb")
+        atomic_json(history / "input.json", {})
+        before = (self.root / JOURNAL).read_bytes()
+        with self.assertRaisesRegex(EnvironmentError, "SOURCE_RUNTIME_RECEIPT_REQUIRED"):
+            self.service.retire(cloud_check=Mock(return_value=True))
+        self.assertEqual(before, (self.root / JOURNAL).read_bytes())
+        self.assertTrue((self.root / state["vehicles"]["test"]["overlay"]).exists())
+        self.assertTrue(run.exists())
+        self.assertTrue(history.exists())
+
+    def test_retire_pre_runner_failure_rejects_runner_or_unknown_output(self):
+        state, run = self.pre_runner_retirement_fixture()
+        before = (self.root / JOURNAL).read_bytes()
+        for name in ("runner.log", "unknown.txt"):
+            with self.subTest(name=name):
+                extra = run / name
+                extra.write_text("preserve until reconciled")
+                with self.assertRaisesRegex(EnvironmentError, "SOURCE_RUNTIME_RECEIPT_REQUIRED"):
+                    self.service.retire(cloud_check=Mock(return_value=True))
+                self.assertEqual(before, (self.root / JOURNAL).read_bytes())
+                self.assertTrue((self.root / state["vehicles"]["test"]["overlay"]).exists())
+                extra.unlink()
+
+    def test_retire_pre_runner_failure_rejects_unsafe_input_and_log(self):
+        state, run = self.pre_runner_retirement_fixture()
+        before = (self.root / JOURNAL).read_bytes()
+        for name in ("input.json", "simulator.log"):
+            with self.subTest(name=name):
+                path = run / name
+                content = path.read_bytes()
+                path.unlink()
+                path.symlink_to(self.source)
+                with self.assertRaisesRegex(EnvironmentError, "CLEANUP_FILE_NOT_OWNED"):
+                    self.service.retire(cloud_check=Mock(return_value=True))
+                self.assertEqual(before, (self.root / JOURNAL).read_bytes())
+                self.assertTrue((self.root / state["vehicles"]["test"]["overlay"]).exists())
+                path.unlink()
+                path.write_bytes(content)
+        atomic_json(run / "input.json", [])
+        with self.assertRaisesRegex(EnvironmentError, "SOURCE_RUNTIME_INPUT_INVALID"):
+            self.service.retire(cloud_check=Mock(return_value=True))
+        self.assertTrue(run.exists())
+
+    def test_retire_pre_runner_failure_requires_stopped_owners_and_unheld_files(self):
+        state, run = self.pre_runner_retirement_fixture()
+        before = (self.root / JOURNAL).read_bytes()
+        with patch("aosedge_demo_orchestrator.source.SourceDriver.live_process", return_value=123):
+            with self.assertRaisesRegex(EnvironmentError, "SIMULATION_MUST_BE_STOPPED"):
+                self.service.retire(cloud_check=Mock(return_value=True))
+        original = self.service._assert_unheld
+        def held(path):
+            if path == run / "simulator.log":
+                raise EnvironmentError("CLEANUP_FILE_IN_USE")
+            return original(path)
+        with patch.object(self.service, "_assert_unheld", side_effect=held):
+            with self.assertRaisesRegex(EnvironmentError, "CLEANUP_FILE_IN_USE"):
+                self.service.retire(cloud_check=Mock(return_value=True))
+        self.assertEqual(before, (self.root / JOURNAL).read_bytes())
+        self.assertTrue((self.root / state["vehicles"]["test"]["overlay"]).exists())
+
+    def test_retire_pre_runner_cleanup_resumes_after_interrupted_unlink(self):
+        _, run = self.pre_runner_retirement_fixture()
+        original = self.service._unlink_owned
+        def interrupted(path, identity):
+            original(path, identity)
+            if path == run / "input.json":
+                raise OSError("interrupted after input unlink")
+        with patch.object(self.service, "_unlink_owned", side_effect=interrupted), self.assertRaises(OSError):
+            self.service.retire(cloud_check=Mock(return_value=True))
+        self.assertEqual("REMOVED", self.service.retire(cloud_check=Mock(return_value=True))["outcome"])
+        self.assertFalse(run.exists())
+
     def test_retire_removes_only_owned_viss_credentials_after_source_stop(self):
         from aosedge_demo_orchestrator.source_trust import FILES
         state, run = self.source_retirement_fixture()
@@ -489,7 +624,7 @@ class ImagesAndCreateTests(unittest.TestCase):
     def test_retire_real_open_file_is_not_deleted(self):
         state = self.create("test")
         overlay = self.root / state["vehicles"]["test"]["overlay"]
-        process = subprocess.Popen([sys.executable, "-c",
+        process = subprocess.Popen([sys.executable, "-I", "-B", "-c",
             "import sys; f=open(sys.argv[1], 'rb'); print('ready', flush=True); sys.stdin.read()",
             str(overlay)], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
         try:

@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import plistlib
+import shutil
 import tempfile
 from types import SimpleNamespace
 import unittest
@@ -67,8 +68,38 @@ class InstalledPathsTests(unittest.TestCase):
         self.assertEqual(paths.create_instance(self.state), dict(instanceId=self.identity, reused=True))
         self.assertEqual({p.name for p in self.state.iterdir()}, {'instance.json', '.local', '.run', 'artifacts'})
         self.assertEqual((self.state / 'instance.json').stat().st_mode & 0o777, 0o600)
-        for name in ('', '.local', '.run', 'artifacts'):
+        for name in ('', '.local', '.local/demo-control', '.run', 'artifacts'):
             self.assertEqual((self.state / name).stat().st_mode & 0o777, 0o700)
+
+    def test_first_presenter_open_keeps_enrollment_parent_private(self):
+        from aosedge_demo_orchestrator import workspace, cloud_enrollment
+        previous = os.umask(0o022)
+        self.addCleanup(os.umask, previous)
+        service = workspace.WorkspaceService(SimpleNamespace(root=self.state), Mock())
+        runtime = Mock()
+        runtime.entry.return_value = self.state / 'not-executed-presenter'
+        with patch.object(host_runtime, 'selected', return_value=runtime):
+            service.build()
+        service.save_configuration(dict(profile='builtin-v1'))
+        before = {p: p.stat().st_mode for p in self.state.rglob('*')}
+        for role in ('oem', 'sp'):
+            for _ in range(2):
+                observed = cloud_enrollment.operation(self.state, 'fixture.example.test', role, 'status')
+                self.assertEqual('NOT_STARTED', observed['enrollmentStage'])
+                self.assertFalse(observed['cloudAccessed'])
+        self.assertEqual(before, {p: p.stat().st_mode for p in self.state.rglob('*')})
+        self.assertFalse((self.state / '.local/demo-control/credentials').exists())
+        self.assertFalse((self.state / '.run/demo-current/journal.json').exists())
+
+    def test_existing_unsafe_enrollment_parent_is_not_silently_repaired(self):
+        from aosedge_demo_orchestrator import cloud_enrollment
+        parent = self.state / '.local/demo-control'
+        parent.chmod(0o755)
+        paths.create_instance(self.state)  # Existing state is not a migration.
+        with self.assertRaisesRegex(ValueError, 'CLOUD_ENROLLMENT_DIRECTORY_UNSAFE'):
+            cloud_enrollment.operation(self.state, 'fixture.example.test', 'oem', 'status')
+        self.assertEqual(0o755, parent.stat().st_mode & 0o777)
+        self.assertFalse((parent / 'credentials').exists())
 
     def test_unknown_existing_directory_is_not_adopted(self):
         other = self.base / 'foreign'
@@ -176,6 +207,52 @@ class InstalledPathsTests(unittest.TestCase):
             self.assertTrue(command[3].startswith(str(self.program) + '/'))
             self.assertEqual(command[1:3], ['-I', '-B'])
 
+    def test_all_service_prepares_use_selected_input_contracts_not_state_root(self):
+        from aosedge_demo_orchestrator.service_packages import ServicePackages, package_configuration
+        source = Path(__file__).resolve().parents[3]
+        cases = (('brake', 'v1'), ('brake', 'v2'), ('brake', 'v3'), ('tire', 'v1'))
+        expected = {(team, profile): package_configuration(source, team, profile, '8.0.0')
+                    for team, profile in cases}
+        names = ('brake-telemetry-window/brake-telemetry-window-profile.v1.json',
+                 'brake-health-model/brake-health-model-profile.v1.json',
+                 'brake-health-runtime/brake-health-runtime-profile.v1.json',
+                 'tire-health-model/tire-health-product-profile.v1.json')
+        with self.session():
+            inputs = paths.input_root() / 'aosedge-sdv-demo/preparation-inputs'
+            for name in names:
+                target = inputs / 'contracts' / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(source / 'contracts' / name, target)
+            before = {name: (inputs / 'contracts' / name).read_bytes() for name in names}
+            # Intentionally no contracts in program or private state: an input
+            # selection must not fall back to either location.
+            env = EnvironmentService()
+            packages = ServicePackages(env)
+            for team, profile in cases:
+                with self.subTest(team=team, profile=profile), \
+                        patch('aosedge_demo_orchestrator.service_packages.ServiceBuilder') as builder, \
+                        patch('aosedge_demo_orchestrator.service_packages.ServiceCatalog') as cloud, \
+                        patch('aosedge_demo_orchestrator.service_packages.product_files', return_value={}), \
+                        patch.object(packages, '_validate'):
+                    builder.return_value.execute.return_value = dict(
+                        preparationInputsRoot=str(inputs), sourceRevision='a' * 40)
+                    cloud.return_value.release_versions.return_value = dict(versions=['7.0.0'])
+                    prepared = packages.prepare(team, profile)
+                    output = Path(prepared['packagePath'])
+                    self.assertTrue(output.is_relative_to(self.state / 'artifacts'))
+                    actual = json.loads((output / 'config.yaml').read_bytes())
+                    baseline = expected[(team, profile)]
+                    baseline['items'][0]['version'] = prepared['version']
+                    self.assertEqual(baseline, actual)
+                    builder.return_value.execute.assert_called_once_with(team, profile, build_missing=False)
+            self.assertEqual(before, {name: (inputs / 'contracts' / name).read_bytes() for name in names})
+            for foreign in (self.base / 'foreign-state', inputs.parent / 'other-inputs'):
+                with self.assertRaisesRegex(ValueError, 'INSTALLED_FOREIGN_STATE_ROOT'):
+                    package_configuration(foreign, 'brake', 'v1', '8.0.0')
+            (inputs / 'contracts' / names[0]).unlink()
+            with self.assertRaises(FileNotFoundError):
+                package_configuration(inputs, 'brake', 'v1', '8.0.0')
+
     def test_keychain_namespace_is_per_instance_without_reading_keychain(self):
         from aosedge_demo_orchestrator.native_access import Keychain, SERVICE
         with patch('aosedge_demo_orchestrator.native_access.ctypes.CDLL') as api:
@@ -197,7 +274,11 @@ class InstalledPathsTests(unittest.TestCase):
             tls.mkdir(parents=True)
             for name in ('server-cert.pem', 'server-key.pem'):
                 (tls / name).write_text('fixture, not a certificate')
-            self.assertEqual(driver.assets()['tls'], tls)
+            with self.assertRaisesRegex(EnvironmentError, 'SOURCE_SERVER_TLS_'):
+                driver.assets()  # A path fixture must not become accepted trust.
+            with patch('aosedge_demo_orchestrator.source_server_trust.inspect') as verify:
+                self.assertEqual(driver.assets()['tls'], tls)
+                verify.assert_called_once_with(self.state)
 
     def test_generated_components_and_backends_belong_to_instance(self):
         from aosedge_demo_orchestrator.components import ComponentService

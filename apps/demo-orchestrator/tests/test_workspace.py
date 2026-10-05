@@ -17,7 +17,7 @@ from aosedge_demo_orchestrator.api import execute_operation
 
 class WorkspaceTests(unittest.TestCase):
     def layout_fixture(self, root):
-        environment = Mock(root=Path(root))
+        environment = Mock(root=Path(root).resolve())
         environment._writer.side_effect = contextlib.nullcontext
         driver = Mock()
         driver.live_process.side_effect = lambda command: 10 if command == ["/carla"] else 30
@@ -80,7 +80,9 @@ class WorkspaceTests(unittest.TestCase):
             with patch.object(service, "build"), patch("aosedge_demo_orchestrator.workspace.subprocess.run", return_value=Mock(returncode=0, stdout=json.dumps(screen))), patch("aosedge_demo_orchestrator.workspace.window") as move:
                 self.assertFalse(service.execute("restore")["retryPending"])
                 state = json.loads((Path(folder) / JOURNAL).read_text())
-                state["workspace"]["placement"]["retryPending"] = True
+                record = service.configuration(state)
+                record["placement"]["retryPending"] = True
+                service.save_configuration(record)
                 state["source"]["runId"] = "different"
                 atomic_json(Path(folder) / JOURNAL, state)
                 self.assertEqual({}, service.execute("restore", recovery=True))
@@ -235,6 +237,20 @@ class WorkspaceTests(unittest.TestCase):
         self.assertEqual([8, 753, 914, 502], layout["controller"])
         self.assertNotIn("dashboard", layout)
         self.assertEqual(layout["controller"][2], layout["carla"][2])
+
+    def test_combined_layout_budgets_native_minimum_before_window_placement(self):
+        for width, height in ((1800, 1040), (1728, 1030), (1440, 900)):
+            with self.subTest(width=width, height=height):
+                layout = geometry(dict(x=0, y=39, width=width, height=height), combined=True)
+                control = layout["controller"]
+                # Model the actual AppKit clamp, not only requested rectangles.
+                actual = [*control[:2], max(900, control[2]), max(502, control[3])]
+                self.assertEqual(control, actual)
+                self.assertLessEqual(actual[0] + actual[2], layout["browser"][0])
+                self.assertLessEqual(actual[1] + actual[3], 39 + height - 8)
+                self.assertEqual(layout["carla"][2], actual[2])
+                self.assertLessEqual(layout["carla"][1] + layout["carla"][3] + 8, actual[1])
+                self.assertNotIn("dashboard", layout)
 
     def test_close_owns_only_presenter_and_repeat_is_noop(self):
         environment = Mock(root=Path("/not-live"))

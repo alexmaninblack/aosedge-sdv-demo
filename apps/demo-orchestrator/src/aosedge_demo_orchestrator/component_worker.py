@@ -29,6 +29,9 @@ def credential_identity(request):
     key, cert, _ = load_key_and_certificates(Path(request["credential"]).read_bytes(), None)
     if key is None or cert is None:
         raise EnvironmentError("PACKAGE_SIGNING_CERTIFICATE_REQUIRED")
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    if not isinstance(key, rsa.RSAPrivateKey) or not isinstance(cert.public_key(), rsa.RSAPublicKey):
+        raise EnvironmentError("PACKAGE_SIGNING_RSA_KEY_REQUIRED")
     names = cert.subject.get_attributes_for_oid(NameOID.ORGANIZATION_NAME)
     if len(names) != 1:
         raise EnvironmentError("CLOUD_CERTIFICATE_DOMAIN_AMBIGUOUS")

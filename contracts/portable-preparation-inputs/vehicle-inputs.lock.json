@@ -6,7 +6,7 @@
   "qualification": "ENGINEERING_CANDIDATE_NOT_DISTRIBUTION_RELEASE",
   "manifest": {
     "path": "vehicle-input-manifest.json",
-    "bytes": 51157,
-    "sha256": "ea3e4f67661b9aa5f73f52786e1d0e13b44ba87a6fc2688dc82479dbdcbaff51"
+    "bytes": 51532,
+    "sha256": "d3f4e503e5f5157d946340fabb87572528194ee8cea1d5a01d0c2642bf208b47"
   }
 }

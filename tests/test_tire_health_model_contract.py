@@ -145,7 +145,8 @@ class TireHealthModelContractTest(unittest.TestCase):
         self.assertTrue(state["ordinaryVmRestartPreservesState"])
         self.assertEqual("QUARANTINE_NO_SILENT_RESET", state["unknownStateBehavior"])
         runtime = self.profile["runtime"]
-        self.assertEqual(150, runtime["requestedQuota"]["cpuLimit"])
+        self.assertEqual(600, runtime["requestedQuota"]["cpuLimit"])
+        self.assertEqual("2026-10-03_AUTHORIZED_STAGING_CANDIDATE_REQUIRES_LIVE_REQUALIFICATION", runtime["requestedQuotaQualification"])
         self.assertEqual("DMIPS", runtime["requestedQuota"]["cpuLimitUnit"])
         self.assertEqual("4MiB", runtime["requestedQuota"]["storageLimit"])
         self.assertEqual("AOSCORE", runtime["quotaAuthority"])

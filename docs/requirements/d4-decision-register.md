@@ -3011,7 +3011,7 @@ not.
 - Qualification matrix and requalification triggers accepted: 2026-08-23
 - Owners: AosCore integration / both Function Teams / Demo Solution
 - Machine-readable contract:
-  [Service Tenant Quota Proof 1.0.0](../../contracts/service-tenant-quota-proof/README.md)
+  [Service Tenant Quota Proof 1.0.1](../../contracts/service-tenant-quota-proof/README.md)
 
 D4-023.1 assigns quota requests to each owning Function Team's immutable SOTA
 Service metadata, OEM approval to the post-validation release decision and
@@ -3040,6 +3040,29 @@ Only the native signed package requests the quota; no guest-side override is
 permitted. The historical initial envelope above is retained as provenance.
 Current Brake runtime profile SHA-256:
 `bc93334ed7af4e5d4238b5720cbe1e4ea184c4c04aeeb5ad60d1ee926ce70820`.
+
+Operator amendment, 3 October 2026: CPU-budget measurement and requalification
+for Tire are authorized through native signed releases to the retained M1 Test
+in staging. The first requested candidate is **300 DMIPS**, replacing 150 in
+the executable packaging profile. This is permission to qualify the candidate,
+not a live acceptance verdict. At 150 DMIPS, native `cpu.max` was `1500 100000`;
+a 25.009 s observation measured 231226 us CPU, 22 throttled periods and 1037207 us
+throttled time. Durable state operations sometimes held the shared input lock
+for 300–500 ms despite average use below the cap. The storage-replay, watchdog
+and unnecessary-copy corrections are independently tested. Qualify the new
+signed metadata/native mapping and repeat maneuvers, token renewal, restart,
+SOTA, unaffected Brake and security checks before selecting a final envelope.
+The existing 250 ms freshness, estimator, storage durability, other quotas and
+AosCore-only enforcement stay unchanged; manual cgroup overrides remain
+forbidden. Any prior quota-isolation dossier is stale for this candidate.
+
+Measured follow-up on the same day: the signed 300-DMIPS Tire 56 candidate
+completed three Tire products (including post-renewal) and an unaffected Brake
+product, but a 300.635 s soak still measured 69 throttled periods / 4245785 us
+throttled time and three readiness gaps. Average CPU was 1.020% of one core.
+The next executable candidate requests **600 DMIPS** using the same tested
+binary and native signed SOTA path. This remains requalification, not acceptance;
+no new timing tolerance or enforcement owner is introduced.
 
 Signed-config inspection plus post-deployment OCI/cgroup/file/storage evidence
 must prove the live mapping, including the Node DMIPS capacity used for CPU.
@@ -3085,7 +3108,8 @@ test. Freshness, saturation/recovery bands and cgroup mapping tolerance are
 measured during live characterization and frozen in the exact baseline-bound
 qualification profile; arbitrary percentage tolerance is forbidden.
 
-`PASS` requires exact Tire/150-DMIPS identity, three saturation samples, bound
+`PASS` requires exact Tire/approved-DMIPS identity (600-DMIPS candidate after the
+3 October measured follow-up), three saturation samples, bound
 cgroup cap/throttle proof, no Tire restart/replacement, one completed
 deterministic Brake event with Brake and VDP/KUKSA/Gateway/AosCore/Unit healthy,
 then three recovery samples without reinstall/restart. Existing scenario
@@ -4108,6 +4132,14 @@ This Level-B clarification adds `IF-DEMO-002`, `REQ-DEMO-023`,
 component, repository, persistent privileged daemon, product-content owner or
 lifecycle authority. Implementation and presenter-Mac qualification remain
 open, and no external mutation is authorized.
+
+Accepted 29 September 2026 installed-workstation amendment: preserve physical
+window metadata separately in the existing workspace directory. First/repeat/
+restarted Open Presenter must not create a vehicle-run journal; old journals
+remain read-only to layout operations and their validation stays strict.
+This refines physical persistence only, not lifecycle authority. The accepted
+[native setup contract](../../contracts/distribution-installation/native-setup.md#independent-window-metadata--accepted-29-september-2026)
+defines the file/schema boundary and negative/restart evidence.
 
 ### <a id="d4-026-18"></a>D4-026.18 Accepted — Global Lifecycle Workspace and Qualification Status
 

@@ -2,7 +2,7 @@
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "schemaVersion": 1,
   "contractId": "aosedge-demo-tire-health-product",
-  "contractVersion": "1.1.1",
+  "contractVersion": "1.1.2",
   "lifecycleState": "ACCEPTED",
   "decision": "D4-018",
   "product": {
@@ -226,7 +226,8 @@
     "externalConnectivityLossState": "DEGRADED_LOCAL_FUNCTION_CONTINUES",
     "backendConnectivityGatesLocalReadiness": false,
     "aosCloudConnectivityGatesLocalReadiness": false,
-    "requestedQuota": {"cpuLimit": 150, "cpuLimitUnit": "DMIPS", "ramLimit": "16MiB", "storageLimit": "4MiB", "stateLimit": "2MiB", "tmpLimit": "2MiB", "noFileLimit": 1024, "pidsLimit": 16},
+    "requestedQuota": {"cpuLimit": 600, "cpuLimitUnit": "DMIPS", "ramLimit": "16MiB", "storageLimit": "4MiB", "stateLimit": "2MiB", "tmpLimit": "2MiB", "noFileLimit": 1024, "pidsLimit": 16},
+    "requestedQuotaQualification": "2026-10-03_AUTHORIZED_STAGING_CANDIDATE_REQUIRES_LIVE_REQUALIFICATION",
     "quotaAuthority": "AOSCORE",
     "serviceResourceManagerImplemented": false,
     "quotaQualificationDecision": "D4-023",

@@ -1,0 +1,19 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "name": "Factory .40 VLAN correction engineering candidate",
+  "prepared": "2026-10-03",
+  "factory": {
+    "version": "6.1.1-maninblack.40",
+    "image": "main-qemuarm64.img",
+    "format": "raw",
+    "sizeBytes": 6997147648,
+    "sha256": "13fc1b3c9893df80261228783d345ea830658d3b4822993b5ed5a7e5b3a2f30f",
+    "sourceRevision": "9adee816b4f942ceafb4d30da4adba318352bf59",
+    "manifestState": "BUILT_NOT_LIVE_QUALIFIED",
+    "manifestRelativeToArtifactRoot": "factory-images/6.1.1-maninblack.40/manifest.json"
+  },
+  "qualificationToolsRevision": "a57bb215fe6ef2ca2e62146327f0c3ee704bd8f8",
+  "scope": "Separate candidate for clean offline smoke and installed staging E2E. Native gates: 466 passed, 2 skipped, 2 disabled. Does not replace demo-v1.1 or imply live acceptance.",
+  "evidence": ["docs/qualification/m1-live-journey-2026-10-03.md"]
+}

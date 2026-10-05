@@ -85,6 +85,8 @@ class InstallationTests(unittest.TestCase):
                     row = self.put(base+name)
                     rows.append(dict(row, path=name, mode=0o444))
                 manifest = dict(files=rows)
+                if group == 'vm-runtime':
+                    manifest['hostManifest'] = self.manifest['inputs']['host-runtime']
                 if group == 'preparation-inputs':
                     manifest['factory'] = dict(version='39', image='factory.img')
                     for leaf in ('manifest.json', 'factory.img'):
@@ -146,6 +148,22 @@ class InstallationTests(unittest.TestCase):
         path.chmod(0o644); raw = path.read_bytes(); path.write_bytes(bytes([raw[0]^1])+raw[1:])
         with self.assertRaisesRegex(InstallError, 'INPUT_DIGEST_MISMATCH'):
             self.install()
+
+    def test_individually_pinned_vm_with_stale_host_binding_rejected_before_writes(self):
+        name = CATALOGUE+'/vm-runtime/manifest.json'
+        value = json.loads((self.source/name).read_bytes())
+        value['hostManifest']['sha256'] = '0'*64
+        row = self.put(name, json.dumps(value).encode())
+        pin = dict(row, path='manifest.json')
+        self.manifest['inputs']['vm-runtime'] = pin
+        lock_name = 'contracts/'+LOCKS['vm-runtime']
+        lock = self.put('aosedge-sdv-demo/'+lock_name, json.dumps(dict(manifest=pin)).encode())
+        self.manifest['applicationFiles'] = [dict(lock, path=lock_name) if r['path']==lock_name else r
+                                            for r in self.manifest['applicationFiles']]
+        self.rewrite_manifest()
+        with self.assertRaisesRegex(InstallError, 'VM_HOST_MANIFEST_MISMATCH'):
+            self.install()
+        self.assertFalse(self.target.exists())
 
     def test_payload_corruption_never_promoted(self):
         path = self.source/'aosedge-sdv-demo/LICENSE'

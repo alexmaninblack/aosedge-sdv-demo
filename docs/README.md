@@ -14,6 +14,16 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Start Here
 
+- [Installed preview: Cloud first use](getting-started/installed-preview-cloud-first-use.md)
+  — existing access, secure enrollment/recovery and exact Subject selection;
+  [native first-use evidence](qualification/cloud-first-use-implementation-2026-09-29.md) and
+  [serial E2E and installed-candidate qualification](qualification/installed-serial-e2e-2026-09-29.md).
+- [Installer first-use continuation 30 September](qualification/installer-first-use-2026-09-30.md)
+  — changing-display recovery, native password entry, private directory ordering
+  and existing-account enrollment qualification.
+- [M1 installation qualification](qualification/m1-installation-2026-10-01.md)
+  — pinned clean-host candidate, automation, measured preflight and current
+  native installation/E2E evidence; internal storage only.
 - [Current implemented architecture and traceability](architecture/current-implementation.md)
   — requirements, owning code, accepted amendments and qualification limits.
 - [All 25 protocol families: implementation status](../contracts/implementation-status.md)
@@ -96,7 +106,7 @@ not only the CARLA-to-AosEdge transport bridge.
 
 - [Installable distribution and reproducibility](planning/active/installable-distribution-and-reproducibility.md)
   — accepted packaging, repository-entry-point and clean-Mac qualification plan;
-  not a claim that an installer is already available.
+  engineering previews do not constitute a clean-Mac-qualified release.
 - [External SSD deployment plan](planning/active/external-ssd-deployment.md)
   — prepared 1 TB disk, package retention and isolated/clean-system test sequence;
   macOS installation and runtime migration have not been performed.
@@ -110,6 +120,34 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Research
 
+- [Native Setup permission continuity — 29 September](qualification/native-setup-signing-2026-09-29.md)
+  — explicit stable signing, preserved travel state and remaining native checks.
+- [Installed first-use reconciliation — 28 September](qualification/installed-first-use-2026-09-28.md)
+- [Installed existing-access handover — 28 September](qualification/installed-existing-access-2026-09-28.md)
+- [Clean application installation — 28 September](qualification/clean-installation-2026-09-28.md)
+  — current Kit 009, native setup and isolated installation evidence; explicit
+  remaining onboarding and launch gates.
+- [Installed clean-state E2E — 28 September](qualification/installed-clean-e2e-2026-09-28.md)
+  — serial upgrades, independent resets/history, offline backlog delivery and
+  ignition recovery; explicit first-use engineering corrections retained.
+- [Installed travel pause and resume point — 28 September](qualification/installed-pause-2026-09-28.md)
+  — data-preserving stop and SSD ejection, followed by the next launch checkpoint.
+- [Native Presenter launch — 28 September](qualification/native-presenter-launch-2026-09-28.md)
+  — warm/reopened native entry, ownership and preservation passed; initial
+  file-open delay remains an explicit first-use gate.
+- [Installed Gateway trust — 28 September](qualification/installed-gateway-trust-2026-09-28.md)
+  — accepted per-instance server identity, source/security tests, live TLS proof
+  and Kit 010 installation boundary; cold first-use remains separately tracked.
+- [Retained-Test distribution E2E — 28 September](qualification/distribution-stage2-live-e2e-2026-09-28.md)
+  — UI, real maneuvers, independent resets, offline delivery, ignition recovery,
+  timings and unresolved presentation/transport findings; not clean installation.
+- [Stage 2 UI corrections and recheck — 28 September](qualification/distribution-stage2-ui-corrections-2026-09-28.md)
+  — deployed ignition/Finish separation, native caption fixes and the still-open
+  transport investigation; includes bounded synthetic receive-delay evidence.
+- [Internal disk growth audit — 29 September](research/disk-growth-audit-2026-09-29.md)
+- [Authorized storage consolidation — 29 September](qualification/storage-consolidation-2026-09-29.md)
+  — reconciles the earlier 200+ GB free-space observation with retained standalone
+  build inputs, cloned runtime/video copies, system data and SSD capacity; no cleanup.
 - [Post-assembly disk retention audit — 27 September](research/distribution-stage2-retention-audit-2026-09-27.md)
   — obsolete runtime kits, old Zen cache, updated Docker accounting and
   recipe-gated consolidation; inspection only, no deletion.
@@ -159,6 +197,9 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Qualification
 
+- [Cloud first-use boundary proof — 29 September](qualification/cloud-first-use-boundaries-2026-09-29.md)
+  — isolated certificate-transport and exact-Subject tests, retained-Test
+  GET-only observation, and the two remaining onboarding design choices.
 - [Demo v1.0 sequential UI E2E — 23 September](qualification/demo-v1.0-ui-e2e-2026-09-23.md)
   — observed run, resource-metric diagnosis and evidence prompting the mainline migration.
 - [Qualification documentation index](qualification/README.md)

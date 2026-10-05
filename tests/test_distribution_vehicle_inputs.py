@@ -107,6 +107,33 @@ class VehicleInputsTests(unittest.TestCase):
         with self.assertRaisesRegex(module.BundleError, 'Incomplete service'):
             self.collect()
 
+    def test_explicit_checkpoint_does_not_rewrite_historical_return_point(self):
+        original = (self.integration / module.DEFAULT_FACTORY_CHECKPOINT).read_bytes()
+        name = 'workspace/checkpoints/factory-candidate.json'
+        self.put(self.integration / name, {'factory': self.factory})
+        _, image, identities = module.collect(self.integration, self.platform, self.artifacts,
+            self.firmware, self.api, factory_checkpoint=name)
+        self.assertEqual(image, self.image)
+        self.assertEqual(identities['factory'], self.factory)
+        self.assertEqual((self.integration / module.DEFAULT_FACTORY_CHECKPOINT).read_bytes(), original)
+
+    def test_explicit_checkpoint_fails_closed_without_default_fallback(self):
+        with self.assertRaises(FileNotFoundError):
+            module.collect(self.integration, self.platform, self.artifacts, self.firmware,
+                self.api, factory_checkpoint='workspace/checkpoints/missing.json')
+        with self.assertRaisesRegex(module.BundleError, 'relative'):
+            module.collect(self.integration, self.platform, self.artifacts, self.firmware,
+                self.api, factory_checkpoint='../outside.json')
+
+    def test_invalid_factory_identity_rejected_before_catalogue_read(self):
+        for key, value in [('version', '../escape'), ('image', '../escape.img'),
+                           ('sourceRevision', 'main'), ('sha256', 'bad'), ('sizeBytes', True)]:
+            name = 'workspace/checkpoints/invalid.json'
+            self.put(self.integration / name, {'factory': {**self.factory, key: value}})
+            with self.subTest(key=key), self.assertRaisesRegex(module.BundleError, 'identity invalid'):
+                module.collect(self.integration, self.platform, self.artifacts, self.firmware,
+                    self.api, factory_checkpoint=name)
+
     def test_missing_vdp_profile(self):
         self.inventory['unsignedVdpInputs'].pop()
         self.save_inventory()

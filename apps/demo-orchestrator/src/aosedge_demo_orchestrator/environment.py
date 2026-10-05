@@ -404,7 +404,7 @@ class EnvironmentService:
                 or state["schemaVersion"] != 1 or state.get("kind") != "democtl.current-run"
                 or set(state) - {"schemaVersion", "kind", "startedAt", "stage", "scope", "factory",
                                  "currentVehicle", "vehicles", "operations", "retirement", "shared", "cloudBinding", "selectedCloudDomain", "cloudContexts",
-                                 "source", "componentOperations", "componentSchema", "smDemoProof", "runtimeCleanup", "demoPreparation", "demoLifecycle", "testRetirement", "workspace"}
+                                 "source", "componentOperations", "componentSchema", "smDemoProof", "runtimeCleanup", "demoPreparation", "demoLifecycle", "testRetirement", "workspace", "demoSubjects", "serviceOperations"}
                 or state.get("stage") not in ("MANUFACTURED", "LOCAL_STOPPED", "RETIRING_LOCAL")
                 or state.get("currentVehicle") is not None):
             raise EnvironmentError("LOCAL_RETIRE_REQUIRES_UNUSED_MANUFACTURED_ENVIRONMENT")
@@ -514,6 +514,9 @@ class EnvironmentService:
         plan = state.get("runtimeCleanup")
         if plan is None:
             plan = {"files": [], "directories": []}
+            dns_log = self.root / ".run/demo-current/dns-bridge.log"
+            if dns_log.exists() or dns_log.is_symlink():
+                plan["files"].append(".run/demo-current/dns-bridge.log")
             root = self.root / base
             if root.exists() or root.is_symlink():
                 self._directory(base)
@@ -522,10 +525,31 @@ class EnvironmentService:
                     relative = base + "/" + run.name
                     self._directory(relative)
                     manifest = run / "manifest.json"
-                    self._owned_file(manifest)
-                    receipt = read_json(manifest)
-                    if receipt.get("run_id") != run.name or receipt.get("status") not in ("completed", "failed"):
-                        raise EnvironmentError("SOURCE_RUNTIME_RECEIPT_INVALID")
+                    if manifest.exists() or manifest.is_symlink():
+                        self._owned_file(manifest)
+                        receipt = read_json(manifest)
+                        if receipt.get("run_id") != run.name or receipt.get("status") not in ("completed", "failed"):
+                            raise EnvironmentError("SOURCE_RUNTIME_RECEIPT_INVALID")
+                    else:
+                        # spawn opens runner.log before attempting Popen. Only
+                        # this exact current stopped, never-assigned run may
+                        # have failed before that runner/receipt owner existed.
+                        names = {p.name for p in run.iterdir()}
+                        command = (source or {}).get("runnerCommand")
+                        expected = {"--config": str(run / "input.json"),
+                                    "--run-directory": str(run)}
+                        if (not source or source.get("runId") != run.name
+                                or source.get("assignmentGeneration") != 0
+                                or state.get("currentVehicle") is not None
+                                or names not in ({"input.json"}, {"input.json", "simulator.log"})
+                                or not isinstance(command, list)
+                                or any(command.count(flag) != 1 or command.index(flag) + 1 >= len(command)
+                                       or command[command.index(flag) + 1] != value
+                                       for flag, value in expected.items())):
+                            raise EnvironmentError("SOURCE_RUNTIME_RECEIPT_REQUIRED")
+                        self._owned_file(run / "input.json")
+                        if not isinstance(read_json(run / "input.json"), dict):
+                            raise EnvironmentError("SOURCE_RUNTIME_INPUT_INVALID")
                     for path in sorted(run.iterdir()):
                         if path.name not in SOURCE_RUNTIME_FILES:
                             raise EnvironmentError("UNTRACKED_SOURCE_RUNTIME_FILE")
@@ -569,6 +593,16 @@ class EnvironmentService:
                 if any(str(p.relative_to(self.root)) not in allowed for p in path.iterdir()):
                     raise EnvironmentError("UNTRACKED_SOURCE_RUNTIME_FILE")
         for relative in plan["files"]:
+            if relative == ".run/demo-current/dns-bridge.log":
+                dns = state.get("shared", {}).get("dns") or {}
+                if (dns.get("ownership") == "EXTERNAL_DEPENDENCY" or dns.get("state") != "STOPPED"
+                        or dns.get("pid") is not None or not dns.get("ownerId")):
+                    raise EnvironmentError("DNS_LOG_CLEANUP_OWNERSHIP_INVALID")
+                owner = object_id(dns["ownerId"])
+                from .vm import VMService
+                if any(owner in command for _, command in VMService(self)._processes()):
+                    raise EnvironmentError("DNS_MUST_BE_STOPPED_BEFORE_RETIRE")
+                continue
             parts = Path(relative).parts
             if str(Path(relative).parent) == control and parts[-1] in control_metadata and control in plan["directories"]:
                 continue
@@ -594,7 +628,7 @@ class EnvironmentService:
         """Dispose unused or authoritatively Cloud-retired CLI output; not scenario R0."""
         with self._writer():
             run_root = self.root / ".run/demo-current"
-            if any(p.name not in ("writer.lock", "journal.json", "test-access", "production-access", "source", "control") for p in run_root.iterdir()):
+            if any(p.name not in ("writer.lock", "journal.json", "test-access", "production-access", "source", "control", "dns-bridge.log") for p in run_root.iterdir()):
                 raise EnvironmentError("CURRENT_RUN_RECOVERY_REQUIRED")
             overlay_root = self.root / ".local/demo-current"
             if overlay_root.exists() or overlay_root.is_symlink():
@@ -670,6 +704,9 @@ class EnvironmentService:
                     raise EnvironmentError("FRESH_CLOUD_RETIREMENT_CHECK_FAILED")
             # The read-only Cloud gate also reconciles recorded upload responses
             # before unresolved global operations can block local disposal.
+            if "test" in state["vehicles"]:
+                from .test_environment import _terminal_receipts
+                _terminal_receipts(state)
             state["runtimeCleanup"] = self._runtime_cleanup(state)
             targets = cleanup_targets(state)
             from .guest_access import ACCESS_FILES

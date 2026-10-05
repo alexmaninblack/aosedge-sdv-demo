@@ -3,6 +3,18 @@
 
 # Reproduce the AosEdge SDV Demonstration
 
+## Choose the operator or developer route
+
+For the prebuilt **engineering preview**, start with
+[Installed Preview: Cloud First Use](installed-preview-cloud-first-use.md).
+That operator route uses the matching prebuilt kit and native Setup, without
+reconstructing old experiments or compiling Unreal/CARLA. It is not yet a
+notarized or clean-Mac-qualified public release.
+
+The rest of this page is the **source/developer route for demo-v1.1**. Its
+workspace, Editor and build prerequisites are not prerequisites for using the
+prebuilt preview. Do not mix its component launchers into an installed run.
+
 ## Readiness at a Glance
 
 Updated 24 September 2026: **demo-v1.1 / Factory .39**.

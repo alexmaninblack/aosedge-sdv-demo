@@ -65,6 +65,8 @@ class SourceDriver:
         from .runtime_paths import installed, program_root
         packaged = selected(self.root)
         if installed(self.root):
+            from .source_server_trust import inspect
+            inspect(self.root)  # Read-only; first-use creation belongs to explicit start.
             paths = {'tls': self.root / '.local/demo-control/tls'}
         else:
             manifest = read_json(program_root(self.root) / "workspace/repositories.json")
@@ -378,7 +380,12 @@ function run(args) {
             self.vm._free_port(2000)
             self.progress("CARLA: starting the owned simulator")
             self.spawn(simulator, run / "simulator.log", **spawn_options)
-        deadline = time.monotonic() + 120
+        # A newly installed Game can spend almost two minutes in macOS image
+        # validation before engine initialization. Keep one bounded owner;
+        # neither restart it nor relax signature/integrity checks while waiting.
+        ready_budget = 300 if packaged is not None else 120
+        self.progress("CARLA: waiting for map readiness (up to " + str(ready_budget) + " seconds; no restart)")
+        deadline = time.monotonic() + ready_budget
         probe_code = "import sys; sys.path.insert(0,sys.argv[1]); import carla; c=carla.Client('127.0.0.1',2000); c.set_timeout(2); print(c.get_world().get_map().name)"
         while time.monotonic() < deadline:
             if not self.live_process(simulator):
@@ -529,6 +536,10 @@ class SourceService:
             state = read_json(self.root / JOURNAL)
             roles = list(state["vehicles"]) if target == "all" else [target]
             self.vm._validate(state, "start", roles)
+            from .runtime_paths import installed
+            if installed(self.root):
+                from .source_server_trust import prepare
+                prepare(self.root, state)
             self.driver.assets()  # small path/config preflight, never image hashes
             started = self.vm.execute("start", target, 90)
             if any(x["state"] != "COMPLETED" for x in started["vehicles"].values()):
@@ -607,6 +618,11 @@ class SourceService:
                 if any(view.get("gate") != "BLOCKED" for role, view in peer_views.items() if role != target):
                     raise EnvironmentError("SOURCE_PRESERVED_PEER_NOT_DETACHED")
             if action == "start":
+                from .runtime_paths import installed
+                if installed(self.root):
+                    from .source_server_trust import prepare
+                    self.progress("Gateway: validating private per-instance server trust")
+                    prepare(self.root, state)
                 if source and (source.get("operation") or source.get("stopOperation")):
                     pending = source.get("operation") or {}
                     lifecycle = state.get("demoLifecycle") or {}
@@ -646,16 +662,20 @@ class SourceService:
                     raise EnvironmentError("SOURCE_DETACH_NOT_CONFIRMED")
                 source = self.driver.start(state)
                 result = dict(state="RUNNING", noOp=False, currentVehicle=None, runId=source["runId"])
-                if (state.get("workspace") or {}).get("profile") == "builtin-v1":
-                    from .workspace import WorkspaceService
+                from .workspace import WorkspaceService
+                workspace = WorkspaceService(self.environment, self.driver)
+                try:
+                    if workspace.configuration(state).get("profile") == "builtin-v1":
+                        result["workspace"] = workspace.execute("restore")
+                except (EnvironmentError, OSError, ValueError, subprocess.SubprocessError):
+                    result["workspace"] = dict(state="INCOMPLETE", problems=["WORKSPACE_RESTORE_FAILED"], lifecycleChanged=False)
+                    # Layout failure must not relabel a successful simulator
+                    # start. Preserve unsafe/interrupted workspace metadata.
                     try:
-                        result["workspace"] = WorkspaceService(self.environment, self.driver).execute("restore")
-                    except (EnvironmentError, OSError, ValueError, subprocess.SubprocessError):
-                        result["workspace"] = dict(state="INCOMPLETE", problems=["WORKSPACE_RESTORE_FAILED"], lifecycleChanged=False)
-                        # Preserve the independent layout failure even though
-                        # starting the simulator itself succeeded.
                         latest = read_json(self.root / JOURNAL)
-                        WorkspaceService(self.environment, self.driver).record(latest, result["workspace"], 0, False)
+                        workspace.record(latest, result["workspace"], 0, False)
+                    except (EnvironmentError, OSError, ValueError):
+                        pass
                 return result
             if action != "stop":
                 raise EnvironmentError("SIMULATION_ACTION_INVALID")

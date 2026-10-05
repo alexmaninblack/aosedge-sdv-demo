@@ -29,6 +29,45 @@ debugging and qualification task in this repository and its worktrees.
 - Send concise factual progress while work is active; do not leave a command or
   investigation without a user-visible heartbeat for more than 60 seconds.
 
+## Standing staging test authorization
+
+On 30 September 2026 the user explicitly authorized the complete ongoing
+installer/demo qualification cycle in `aws-stage.epmp-aos.projects.epam.com`:
+retire previous owned Test runs (including their Cloud Units, working VMs and
+backend run data), create replacement Tests, build and sign test packages with
+the already selected authorized identities, publish test releases and install
+and verify them. Do not ask again for routine steps inside this scope.
+
+Resolve exact targets and ownership before each mutation and retain compact
+evidence. Preserve Production even on staging, source/Git, current Factory and
+required rollback/build inputs, credentials and unrelated resources. Publish
+VDP/Brake versions serially, verifying each before the next. This authorization
+does not bypass tool safety controls, permit credential disclosure, change the
+accepted architecture or authorize public distribution. Ask only at an actual
+boundary outside this scope or when a mandatory tool control requires it.
+
+## Finish checks and follow the accepted delivery stages
+
+- At the end of a check or a paused test session, gracefully close all windows,
+  servers, helpers, simulators, VMs and containers started for that check and no
+  longer needed by the active sequence. Do not leave them running for convenience.
+- Keep a test environment running after handoff only when the user explicitly
+  requests it. Preserve persistent Test/Cloud identities, disks, journals, models,
+  release ledgers and evidence: stopping is not Finish, retirement or deletion.
+- Verify that owned processes and listeners have exited; a successful stop
+  request alone is insufficient. Do not stop unrelated user applications or
+  shared infrastructure. Reconcile an active or uncertain operation before
+  shutdown; report any concrete shutdown blocker rather than killing blindly.
+- Docker Engine is background infrastructure, not a test-owned runtime. Reuse
+  it without opening Dashboard; start it only if confirmed stopped and needed.
+  End-of-test cleanup stops the demo containers, never Docker Engine/Desktop.
+  Do not add Engine restart tests or automatic quit cycles to this qualification.
+- Execute the accepted delivery stages without turning each fix, test or build
+  into a new plan or approval checkpoint. Report stage completion against its
+  original acceptance criteria; partial tests and new kit numbers are not a
+  completed stage. Continue authorized in-scope work until those criteria or a
+  concrete external blocker are reached.
+
 ## Rapid-debug before formal build
 
 1. Preserve the failing VM, overlay, checkpoint, Cloud identity and evidence.
