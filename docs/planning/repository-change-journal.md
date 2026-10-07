@@ -9,6 +9,10 @@ controls delivery order; the [current baseline](../qualification/current-baselin
 identifies the implemented candidate. Component source, contracts and release
 locks remain authoritative. This journal links them and does not duplicate them.
 
+The latest [publication checkpoint](#2026-october-7-documentation-publication)
+records the committed and remotely verified documentation baseline. Earlier
+local-only entries below retain their original checkpoint state.
+
 ## Recording convention
 
 Use one dated entry per meaningful cross-repository work block, not per command.
@@ -56,3 +60,48 @@ Do not make the journal required reading for installing or rebuilding the demo.
 - Next action: review the detailed specification, then begin R1 release and
   dependency definition when implementation is requested. Do not start a
   new native E2E campaign merely because this planning packet was added.
+
+## 2026 October 7 Documentation publication
+
+The user authorized committing and pushing the documentation reconciliation
+and reproduction plan before beginning repository reorganization. The following
+seven commits were pushed and their exact branch heads verified by remote read:
+
+- Integration, `codex/installable-demo-stage3`:
+  [b8e78c2](https://github.com/alexmaninblack/aosedge-sdv-demo/commit/b8e78c2743386d407237301f795ccc715e8869be).
+- [Vehicle platform](../../../aos-vehicle-platform/README.md), `main`:
+  `b4fe9b7e441843f7cd75071ef96aaf25b2f469f9`.
+- [Gateway and Driving Control](../../../carla-ego-runtime/README.md), `main`:
+  `a64b9950fc0ea6cf4eaf0cf3ac162e8b810b09e4`.
+- [Brake service](../../../brake-health-service/README.md), `main`:
+  `abda6c566cb77a8f75df91224d4460531c60bc43`.
+- [Tire service](../../../tire-health-service/README.md), `main`:
+  `41248034c282407ff4e693fe4b61d2f2ad75203a`.
+- [Brake backend](../../../brake-health-cloud/README.md), `main`:
+  `614f1c1abd75bf369bbacb791dbd8e0074d8dcfb`.
+- [Tire backend](../../../tire-health-cloud/README.md), `main`:
+  `fc1f6a8d0e015d583a0abb7b412d2e3733e2cd5b`.
+
+The scope is 90 documentation/inventory files across seven repositories. This
+receipt is a subsequent journal-only commit. The integration branch is not
+merged into `main`; component source/build pins, existing release tags and
+immutable media remain unchanged. These documentation commits are not new
+Kit028 build inputs or evidence of a new runtime qualification. The video
+repository and simulation forks are untouched.
+
+Before publication, `docs-check` passed with 331 scanned Markdown documents,
+662 stable identifiers and 38 Mermaid diagrams; component lock validation and
+whitespace checks passed. The repeated integration suite ran 759 tests in
+38.513 seconds, with 758 passing and one skipped. The integration confidential
+input guards passed during commit and push.
+
+The public-source scanner passed for integration, platform, Gateway, Brake
+service and both backends. Applying that scanner beyond its ordinary repository
+set to Tire service flagged an unchanged private VM bridge URL example in its
+README. The same example exists in the parent commit; the documentation delta
+adds no such URL or credential. No scanner exception or runtime change was
+introduced to hide this pre-existing scope difference.
+
+Next work remains R1 release/dependency definition under the detailed packet.
+This publication does not start implementation, rebuild an installer, change
+Cloud objects or close any outstanding native acceptance gate.
