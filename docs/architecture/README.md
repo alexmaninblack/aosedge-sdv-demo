@@ -3,7 +3,7 @@
 
 # Architecture Documentation
 
-For `demo-v1.1 / Factory .39`, start with the [implemented architecture and traceability](current-implementation.md). It maps the accepted design and later amendments to source, contracts and dated proof; it does not promote untested requirements.
+For `Kit028 / Setup042 / Factory .41`, start with the [implemented architecture and traceability](current-implementation.md). It maps the accepted design and later amendments to source, contracts and dated proof; it does not promote untested requirements.
 
 [High-Level Architecture 1.8](high-level-architecture.md) is the accepted
 current architecture. It incorporates the accepted authorization compatibility
@@ -12,8 +12,8 @@ boundary; High-Level Architecture 1.4 remains historical traceability only.
 
 - [High-Level Architecture 1.8 — accepted](high-level-architecture.md)
 - [Demo Scenario Architecture Flows 2.2 — accepted](demo-scenario-architecture-flows.md)
-  — complete `M0 -> M1 -> G0–G4 -> T1 -> R0` mapping of Scenario 2.0 to
-  High-Level Architecture 1.7, including the independent Tire Health stage.
+  — complete `M0 -> M1 -> G0–G4 -> T1 -> R0` mapping of Scenario 2.1 to
+  High-Level Architecture 1.8, including the independent Tire Health stage.
 - [Repository and component boundaries](repository-boundaries.md)
 - [Demo Control — implementation design and history](demo-control.md)
   — shared CLI/UI orchestration, current Test workflow and dated status/lifecycle amendments.

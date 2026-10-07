@@ -1,7 +1,7 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Native Offline Setup — Local Preparation Slice
+# Native Setup — Installation and First-use Actions
 
 - Status: Accepted bounded implementation detail of ADR 0018 / REQ-DEMO-025
 - Version: 1.9
@@ -9,15 +9,19 @@
 - Parent: [installation](README.md), [installed state](installed-state.md),
   [version selection](version-selection.md)
 
-The native application wraps the existing transaction and selection engines;
-it is not a second runtime orchestrator. This increment provides folder choice,
-read-only preflight, verified installation with progress, and a separate explicit
-local-data preparation/selection operation. It neither launches the demo nor
-enrolls, provisions, contacts Cloud, reads credentials, starts Docker, or changes
-the working developer installation. Cloud enrollment and native launch have
-separate qualification gates. A checklist must say so, without a false Ready state.
-The following separately authorized existing-access increment extends that
-local-only slice; the original installation actions remain network-free.
+The native application wraps existing transaction, selection and Demo Control
+engines; it is not a second runtime orchestrator. Its installation actions
+provide folder choice, read-only preflight, verified copying and explicit
+private-instance preparation/selection. Those actions remain offline: they
+do not enroll, provision, read credentials or launch the runtime.
+
+Setup042 also implements the separately accepted actions below: existing Cloud
+access, enrollment/recovery, exact Subject selection, Prepare backends and
+Open demo. None implicitly starts Docker or adopts the working developer
+installation. Installation, selection, Cloud access, image availability and
+Presenter launch must report their own outcomes, never a combined false Ready
+state. Current evidence and remaining native gates are in the
+[baseline](../../docs/qualification/current-baseline.md).
 
 ## Complete local media accepted on 2 October 2026
 
@@ -104,12 +108,14 @@ A retained vehicle journal or pending write blocks this first-use operation.
 The source kit is not needed again; consumed locks and backend inputs are
 verified against the selected installed inventory before use.
 
-Docker Desktop must already be running and its current context must be
+Docker Desktop's engine must already be running and its current context must be
 `desktop-linux`, pointing to the current user's local Docker Desktop socket.
 Setup uses the fixed Docker application executable, a clean environment and
 that explicit local endpoint. A missing engine, remote context, different
 engine identity or non-Linux/arm64 engine blocks without changing settings.
-Setup neither starts nor installs Docker or accepts its license.
+Setup neither starts nor installs Docker or accepts its license. An already
+running engine needs no dashboard opening/closing and is preserved after demo
+shutdown; engine restart is not an ordinary qualification step.
 
 Verify the pinned untagged archive, then inspect the two exact immutable image
 IDs. If both are present with their pinned platform/source/team identities,
@@ -343,5 +349,8 @@ progress bounds, and absence of source execution/credential/runtime effects.
 Compile only the new native target, exercise its protocol model, then inspect
 the actual window and perform a bounded local setup against an isolated store.
 Record separate evidence for source tests, native UI, real kit verification and
-unchanged live owners. DMG, secure enrollment, retained-run updates, uninstall,
-notarization, installed live E2E and a genuinely clean Mac are not closed here.
+unchanged live owners. These original slice tests do not close every later gate.
+Complete DMG and
+installed scripted M1 evidence now exist; full native UI, moving SOTA, secure
+native token entry and target-host interruption/repair remain open. Retained-run
+updates, public distribution/notarization and broader acceptance are not implied.

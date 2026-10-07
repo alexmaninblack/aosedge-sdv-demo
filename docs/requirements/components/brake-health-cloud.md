@@ -93,7 +93,7 @@ non-exportable.
 | What this package does not own | In-vehicle Brake Health behavior, model training, CARLA/VISS/KUKSA, artifact compilation during the demo, signing-key custody, authoritative AosCloud log storage or Unit lifecycle state, OEM approval, Unit targeting, deployment, promotion, system/VDP or other-team logs, Engineering Telematics Dashboard or production driver HMI |
 | Intended result | A presenter can explain and publish each already-built service version, then show the real change from v1 braking windows to v2 derived health and v3 advisory facts on the Test Vehicle and Production Vehicle |
 | Accountable lifecycle owner | Function Team 1 publishes and accepts the exact Test Vehicle result; independent OEM Release Authority authorizes Test deployment and Production rollout outside this product |
-| Primary repository | Public `brake-health-cloud` at demo-v1.1; real backend/window detail and container integration; Presenter consumes the API while the standalone Dashboard remains fixtures |
+| Primary repository | Public `brake-health-cloud` at the candidate source-lock pin; real backend/window detail and container integration; Presenter consumes the API while the standalone Dashboard remains fixtures |
 
 ## Product Views and Authority
 
@@ -267,7 +267,7 @@ source/Unit/run correlation supplied to it.
 
 ## Current Implementation Baseline
 
-Updated 24 September 2026 for **demo-v1.1 / Factory .39**.
+Updated 7 October 2026 for **Kit028 / Setup042 / Factory .41**.
 See [current architecture/traceability](../../architecture/current-implementation.md),
 [protocol status](../../../contracts/implementation-status.md) and
 [qualification limits](../../qualification/current-baseline.md).
@@ -857,7 +857,7 @@ five-path packet and authorized its source-only offline implementation.
 
 ## Open Issues for D4
 
-Reviewed 24 September 2026 against demo-v1.1 / Factory .39. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
+Reviewed 7 October 2026 against Kit028 / Setup042 / Factory .41. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |

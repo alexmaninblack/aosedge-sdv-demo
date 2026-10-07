@@ -24,10 +24,11 @@ Follow the [current workflow](../operations/current-demo-workflow.md) and
 [implemented architecture](../architecture/current-implementation.md), which
 connect requirements, protocols, source and evidence.
 
-For the bounded new installation work, see the
-[local setup preview](local-setup-preview.md). It covers verified offline files
-and explicit private-instance preparation only; the complete first-use wizard,
-DMG and clean-Mac distribution are not released yet.
+For installation, use [the current Kit028 / Setup042 guide](installed-preview-cloud-first-use.md).
+The complete DMG includes the matching Runtime Kit. Installed scripted M1
+checks passed; the complete native journey and public distribution remain open.
+The [local setup preview](local-setup-preview.md) is historical, not today's
+installation route.
 
 ## I Want to Understand the System
 

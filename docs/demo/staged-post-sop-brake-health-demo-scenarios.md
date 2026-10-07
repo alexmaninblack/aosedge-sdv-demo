@@ -33,7 +33,8 @@ independent services; two SP organizations are not required. The existing
 sequential-version, FOTA Safe Stop, QM SOTA, offline and retirement story stays
 unchanged. Package replacement/removal never performs R0 or erases run history.
 
-## Current implemented story — demo-v1.1 / Factory39
+<a id="current-implemented-story--demo-v11--factory39"></a>
+## Current implemented story — Kit028 / Setup042 / Factory41
 
 The current Test-only story starts with an empty controller whose Factory
 already integrates AosCore, KUKSA, KAC and the OEM component runtime. CARLA and
@@ -46,8 +47,8 @@ Brake V1 captures bounded episodes, V2 estimates locally, V3 adds typed advisory
 Tire V1 already provides its independent model/advisory. Reset Driver Advisory
 is not history deletion. externalOFF separates local work from backend delivery;
 controller ignition is a separate guarded resilience check, not routine
-Park/Resume. Full current-image serial acceptance remains open despite focused
-.39 receipts. See [workflow](../operations/current-demo-workflow.md) and
+Park/Resume. Kit028 passed the installed scripted serial sequence; moving SOTA
+and the complete native journey remain unqualified. See [workflow](../operations/current-demo-workflow.md) and
 [implementation matrix](../architecture/current-implementation.md).
 
 ## Studio Test scope amendment — 2026-09-09
@@ -88,10 +89,11 @@ Audience actions and story remain unchanged: prepare unsigned content, sign and
 publish in the selected context, then observe actual installation and function.
 This input-location change does not merge FOTA with SOTA or imply readiness.
 
-This document defines one connected demonstration lifecycle. It begins with
-two newly manufactured virtual vehicle computers, provisions them into
-AosCloud, evolves their software capabilities after SOP, and retires the
-disposable demonstration identities and VM state at the end of the run.
+The implemented first-install story begins with one empty Test controller,
+provisions it into Aos Cloud, evolves software after SOP, and retires its
+run identity/data. The original expanded VU/PU sequence below remains the
+longer-term design under the Test-scope amendment, not a second machine to
+create in the current operator flow.
 
 The post-SOP portion deliberately starts with a working vehicle rather than a
 broken or incomplete prototype. The vehicle drives, exposes telemetry through

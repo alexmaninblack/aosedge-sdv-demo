@@ -118,7 +118,12 @@ required when manufacturing a fresh Unit from the accepted Factory Image.
 
 ## Current Implementation Baseline
 
-Updated 24 September 2026 for **demo-v1.1 / Factory .39**.
+The original unmodified-KUKSA/.21 descriptions above retain their design-review
+scope. Factory .41 uses the documented scope-path and source-timestamp patches;
+it is not byte-identical upstream KUKSA. No service gains permission authority
+or owns these Factory corrections.
+
+Updated 7 October 2026 for **Kit028 / Setup042 / Factory .41**.
 See [current architecture/traceability](../../architecture/current-implementation.md),
 [protocol status](../../../contracts/implementation-status.md) and
 [qualification limits](../../qualification/current-baseline.md).
@@ -127,7 +132,7 @@ or blanket acceptance of every requirement in this package.
 
 | Boundary | Current state |
 | --- | --- |
-| Current Factory39 substrate | Mainline-derived AosCore with retained corrections, KUKSA/KAC, empty provider slot, Safe Stop runtime, private native resource projection and boot recovery integration are built. The immutable digest is in the v1.1 checkpoint; Production .31 remains separate. |
+| Current Factory41 substrate | Mainline-derived AosCore with retained corrections, KUKSA/KAC, empty provider slot, Safe Stop runtime, private native resource projection and boot recovery integration are built. The immutable digest is in the Factory41 checkpoint; retained Production remains separate. |
 | Evidence and remaining obligations | .39 build/smoke, ignition and offline evidence exist; manifest remains BUILT_NOT_LIVE_QUALIFIED. Same-source reproducibility/full P8 are not inferred. |
 
 ## Testability Boundary
@@ -524,12 +529,12 @@ build tree is not acceptance evidence.
 
 ## Open Issues
 
-Reviewed 24 September 2026 against demo-v1.1 / Factory .39. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
+Reviewed 7 October 2026 against Kit028 / Setup042 / Factory .41. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |
-| Implemented Factory | Factory39 includes native IAM permissions, KAC/signer/verifier integration, empty-slot runtime/Safe Stop, native boot/storage corrections and public-input recovery. .21 is historical evidence, not the selected image. |
-| Remaining acceptance | Factory39 remains BUILT_NOT_LIVE_QUALIFIED in its manifest. Complete serial E2E, cold externalOFF and nonempty-outbox power-loss cases; canonical same-source reproducibility remains separate from one successful build. |
+| Implemented Factory | Factory41 includes native IAM permissions, KAC/signer/verifier integration, empty-slot runtime/Safe Stop, native boot/storage corrections, VLAN allocation, original KUKSA source timestamps and public-input recovery. .21 is historical evidence, not the selected image. |
+| Remaining acceptance | Factory41 retains BUILT_NOT_LIVE_QUALIFIED in its immutable build manifest. Kit028's 98-step installed scripted sequence passed separately; complete native E2E, cold externalOFF, nonempty-outbox power loss and same-source reproducibility remain separate. |
 | Security limits | Retained patches are explicit, not a stock-mainline claim. Scoped AVC receipts do not substitute for all security/negative cases. |
 | Production storage | Nested ext4 is the accepted demo backend, not a production vehicle storage architecture. Production .31 is retained unchanged. |
 

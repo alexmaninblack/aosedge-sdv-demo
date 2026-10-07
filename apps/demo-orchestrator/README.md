@@ -3,13 +3,14 @@
 
 # Demo Orchestrator
 
-Current implementation: **demo-v1.1 / Factory39**. Start with the
+Current implementation: **Kit028 / Setup042 / Factory41**. Start with the
 [current operator workflow](../../docs/operations/current-demo-workflow.md)
 and [implementation/authority map](../../docs/architecture/current-implementation.md).
 Real native permissions, backend products and typed advisory are implemented.
 The dated .28/.29/.31/.33 sections below retain engineering history, not the
 selected image or mandatory setup steps. Current source publication is complete;
-full fresh .39 all-version E2E remains a separate gate.
+the installed scripted sequence passed 98 steps. Native UI/moving-SOTA/token-entry
+and installation interruption/repair remain separate open gates.
 
 ## Selecting a Test Cloud
 
@@ -239,7 +240,7 @@ and authoritative absence, and preserves an operator-attested recovery history.
 This is exceptional recovery, not a normal demo step or proof inferred from
 Cloud absence alone. It does not recover an unknown Subject creation.
 
-Before the first service assignment on a newly provisioned Factory .33, run
+Before the first service assignment on a newly provisioned current Factory, run
 `democtl service runtime-prepare test` after the first VDP is installed/running.
 It prepares public inputs without restarting SM. Subsequent cold-start hooks
 reconstruct those inputs; preparation is not equivalent to container Running.
@@ -560,7 +561,7 @@ Status, image list, environment create, VM start/stop and unused/Cloud-retired C
 implemented, as are the three unit commands and local-profile environment
 prepare/vehicle select. Legacy `environment park` / `environment resume`
 commands remain engineering/history scope; they are retired from Studio and
-are not the normal pause procedure. Use Safe Stop. Factory39's guarded
+are not the normal pause procedure. Use Safe Stop. The current Factory's guarded
 same-identity ignition recovery is a distinct path, with no re-provisioning or
 automatic Autopilot; see the current operator workflow.
 
@@ -807,8 +808,9 @@ package-only `READY`. Neither result is a demo-readiness or qualification claim.
 
 The audience-facing target `test` maps to the accepted technical role
 `VALIDATION`; `production` maps to `PRODUCTION`. Local creation uses the accepted
-.run/demo-current/journal.json contract; single-role use is engineering scope,
-not complete-demo qualification.
+run-journal contract; installed mode resolves it under the selected private
+instance rather than the source checkout. Test-only is the accepted current
+Studio scope, not full dual-role production qualification.
 
 ## Image Discovery and Local Creation
 

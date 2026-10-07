@@ -13,7 +13,7 @@ must agree.
 | --- | --- | --- |
 | CARLA physics, maps, native simulator build | `CarlaSim` | vehicle simulation baseline |
 | Vehicle control, CARLA sampling, VSS/VISS, engineering dashboard or deterministic scenario | `carla-ego-runtime` | Vehicle Gateway/demo tooling |
-| Factory-image integration, native IAM/PKCS#11 seam, unmodified KUKSA trust and removable current-release `CMP-KAC` (`authorization/aos-kuksa-compat/`) | `aos-vehicle-platform` | Platform Team / pre-SOP factory and system integration |
+| Factory-image integration, native IAM/PKCS#11 seam, KUKSA trust with documented compatibility patches and removable current-release `CMP-KAC` (`authorization/aos-kuksa-compat/`) | `aos-vehicle-platform` | Platform Team / pre-SOP factory and system integration |
 | Vehicle Data Provider runtime, signal/advisory contract or Vehicle Data Platform Component | `aos-vehicle-platform` | Platform Team / post-SOP FOTA |
 | Brake Health in-vehicle analytics | `brake-health-service` | Function Team 1 / SOTA |
 | Tire Health condition estimation, bounded reporting and inspection advisory | `tire-health-service` | Function Team 2 / independent SOTA |

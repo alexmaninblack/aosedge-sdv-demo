@@ -3,13 +3,20 @@
 
 # Qualification Documentation
 
+Start with the [current baseline](current-baseline.md) and
+[7 October documentation reconciliation](documentation-reconciliation-2026-10-07.md).
+Reports below are dated evidence: their “current”, “next” and “open” wording
+describes that checkpoint, not today's installation instructions. Historical
+results remain unchanged; newer results do not retroactively qualify old images.
+
 - [Kit028 / Setup042 source return point — 5 October](kit028-setup042-source-publication-2026-10-05.md):
   candidate source tag, immutable media identity, verified source receipts and
   remaining acceptance gates; no DMG rebuild or video-repository changes.
 
 - [M1 live installed journey — 3 October](m1-live-journey-2026-10-03.md):
-  installed Kit 025 / Setup 039 live measurements, runner ordering corrections
-  and explicit remaining acceptance; full E2E is still in progress.
+  successive candidate measurements through Kit028 / Setup042 / Factory .41;
+  98 installed scripted steps passed, partial native observations and later Test
+  retirement recorded; full native E2E remains incomplete.
 
 - [Distribution Stage 2 closure — 28 September](distribution-stage2-closure-2026-09-28.md):
   current acceptance checklist, SSD reconnection, source checkpoint and the

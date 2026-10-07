@@ -11,6 +11,16 @@
 - Current candidate: [Complete portable application](../../qualification/portable-application-2026-09-26.md)
 - Retention input: [Post-assembly disk audit](../../research/distribution-stage2-retention-audit-2026-09-27.md)
 
+## Current disposition — 7 October 2026
+
+The current clean-host campaign uses a separate M1 and its internal disk.
+External-SSD and host sleep/wake tests are excluded from that campaign.
+The Work/Clean preparation and dual-boot plan below retain their dated scope;
+they are not prerequisites for the current installer. Use the
+[current baseline](../../qualification/current-baseline.md) and parent plan
+for selected media and open gates. Historical disk IDs are never current
+destructive-operation targets.
+
 ## Scope and authority
 
 The user authorized formatting the newly connected 1 TB external disk, then

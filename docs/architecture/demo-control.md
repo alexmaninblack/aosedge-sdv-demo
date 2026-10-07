@@ -39,7 +39,8 @@ Selection never imports images, starts Docker or changes backend data.
 
 ## Current lifecycle amendment — 19 September 2026
 
-Historical heading retained for links; current interpretation: 24 September.
+Historical heading retained for links; current implementation is Kit028 / Setup042 / Factory .41.
+See the [current baseline](../qualification/current-baseline.md) for later installed proof.
 [ADR 0017](decisions/0017-continuous-demo-lifecycle-and-upstream-core.md)
 removes Studio Park/Resume. Pause with Safe Stop and the VM running.
 Subsequently authorized storage/cold-component corrections and Presenter-owned

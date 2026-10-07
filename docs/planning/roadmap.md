@@ -3,23 +3,25 @@
 
 # Current Design and Delivery Roadmap
 
-- Status: Design gate map with historical execution stages; current delivery tracked by the Studio plan
-- Updated: 2026-09-24 (current implementation pointers; historical gates retained)
-- Current accepted architecture: High-Level Architecture 1.7 and accepted Studio/native-input/lifecycle amendments
+- Status: Design gate map with historical execution stages; current delivery tracked by the distribution plan
+- Updated: 2026-10-07 (current implementation pointers; historical gates retained)
+- Current accepted architecture: High-Level Architecture 1.8 and accepted Studio/native-input/lifecycle amendments
 - Authority: This roadmap grants no runtime mutation; actual authorizations and evidence are recorded in the active delivery plan
 
 ## Current delivery pointer
 
-Current implementation is **demo-v1.1 / Factory .39**.
+Current implementation is **Kit028 / Setup042 / Factory .41**.
 The [implemented architecture](../architecture/current-implementation.md) maps
 requirements/protocols to source and proof; the
-[audit](../qualification/documentation-implementation-audit-2026-09-24.md) lists
+[audit](../qualification/documentation-reconciliation-2026-10-07.md) lists
 remaining gaps. Native permissions, real analytics/advisory, UI actions and
 source publication are implemented, not pending .33 work.
 
 The [Studio plan](active/demo-studio-delivery-plan.md) retains chronology.
-.39 ignition/offline checks passed in scope; fresh serial E2E, broader negative/
-calibration proof and host sleep/wake remain open. D/I stages below preserve
+The [distribution plan](active/installable-distribution-and-reproducibility.md)
+owns the current execution order. Kit028's installed scripted serial, ignition
+and offline checks passed; native UI and separate release gates remain open.
+Host sleep/wake is excluded from this campaign, not implemented by ignition. D/I stages below preserve
 original design-review status, not today's delivery state. Apply Test-only
 Studio and ADR 0015/0016/0017 amendments before their original dual-vehicle and
 lifecycle wording.
@@ -39,7 +41,7 @@ The current target uses:
 - one provider-specific empty-slot runtime in the OEM Demo Factory Image;
 - one independently versioned Vehicle Data Platform Component FOTA family;
 - two peer OEM functional services with independent SOTA lifecycles;
-- fresh Validation and Production Unit identities per demo run;
+- one fresh Test identity per current run; dual VU/PU is the expanded design;
 - controlled retirement and disposable-overlay replacement for the normal
   next-run reset.
 

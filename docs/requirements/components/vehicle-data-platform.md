@@ -81,7 +81,7 @@ as the generic workload-authorization model.
 
 ## Current Implementation Baseline
 
-Updated 24 September 2026 for **demo-v1.1 / Factory .39**.
+Updated 7 October 2026 for **Kit028 / Setup042 / Factory .41**.
 See [current architecture/traceability](../../architecture/current-implementation.md),
 [protocol status](../../../contracts/implementation-status.md) and
 [qualification limits](../../qualification/current-baseline.md).
@@ -435,12 +435,12 @@ signing, Cloud upload, VM restart, provisioning or Unit mutation.
 
 ## Open Design and Qualification Gates
 
-Reviewed 24 September 2026 against demo-v1.1 / Factory .39. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
+Reviewed 7 October 2026 against Kit028 / Setup042 / Factory .41. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |
 | Implemented profiles and trust | Common-runtime V1/V2/V3 packages, selected-Unit mTLS, real KUKSA provider and typed V3 return channel are implemented. The server-authenticated-only prototype is historical. |
-| Current-image qualification | Complete fresh .39 serial profile progression, Safe Stop/update/recovery negatives and broader peer/dual-Unit matrix. Reused VDP117 profile-not-confirmed Presenter observation remains open. |
+| Current-image qualification | Kit028/.41 scripted V1→V2→V3 progression passed; installed native profile labels were observed for VDP136/V3. Complete native, Safe Stop/update/recovery negative and broader peer/dual-Unit matrices remain open. VDP-TIMEOUT-01 is deferred. |
 | Diagnostics | VDP109 SIGSEGV has no captured cause; later common-runtime checks did not reproduce it. Temporary core capture is removed, not silently left enabled. |
 | Native admission | Service-to-FOTA pre-transfer dependency admission remains deferred; present this separately from working IAM/KUKSA Service permissions. |
 

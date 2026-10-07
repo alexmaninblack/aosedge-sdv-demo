@@ -22,7 +22,7 @@ Implementation-status annotations retained from the original D3 review are histo
 
 ## Current Implementation Baseline
 
-Updated 24 September 2026 for **demo-v1.1 / Factory .39**.
+Updated 7 October 2026 for **Kit028 / Setup042 / Factory .41**.
 See [current architecture/traceability](../../architecture/current-implementation.md),
 [protocol status](../../../contracts/implementation-status.md) and
 [qualification limits](../../qualification/current-baseline.md).
@@ -498,12 +498,12 @@ integration and end-to-end obligations.
 
 ## Open D4 Gates
 
-Reviewed 24 September 2026 against demo-v1.1 / Factory .39. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
+Reviewed 7 October 2026 against Kit028 / Setup042 / Factory .41. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |
 | Design and implementation | All accepted D4-027 decisions have source/Factory implementations: fixed-resource IAM lookup, strict wire validation, per-Unit trust, private service tokens and bounded renewal. It is not an unbuilt future package. |
-| Current proof | Real native permissions and local renewal work in the .39 chain, including externalOFF. This is not blanket proof of every malformed permission, clock, overload or identity-rotation case. |
+| Current proof | Real native permissions and local renewal work in the Kit028/.41 chain, including externalOFF; original source timestamps are preserved rather than refreshed on cached values. This is not blanket proof of every malformed permission, clock, overload or identity-rotation case. |
 | Remaining qualification | Complete the negative/time/overload/resource and full repeatability matrices. Native permission-key 256-character build bound is distinct from the larger protocol path bound; do not claim every syntactically valid path is supported. |
 | Provider scope | Provider authority stays in the separate trusted OEM one-shot/systemd credential path. Dynamic Provider IAM and malicious-Provider containment remain outside the accepted first-demo claim. |
 

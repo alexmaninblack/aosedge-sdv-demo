@@ -360,7 +360,7 @@ demo-run history.
 
 ## Current Implementation Baseline
 
-Updated 24 September 2026 for **demo-v1.1 / Factory .39**.
+Updated 7 October 2026 for **Kit028 / Setup042 / Factory .41**.
 See [current architecture/traceability](../../architecture/current-implementation.md),
 [protocol status](../../../contracts/implementation-status.md) and
 [qualification limits](../../qualification/current-baseline.md).
@@ -370,7 +370,7 @@ or blanket acceptance of every requirement in this package.
 | Boundary | Current state |
 | --- | --- |
 | Shared CLI/Presenter and lifecycle implementation | Create, detached simulator reuse, provision/strict attach, sequential FOTA/SOTA, Cloud/backend observations, resource charts, per-service Reset and confirmed peer-preserving Finish are implemented. Guarded Presenter-owned ignition recovery restores the same identity in Safe Stop, no Autopilot. |
-| Evidence and remaining obligations | Studio Park/Resume is retired. Factory39 focused proofs do not close full .39 E2E; host sleep/wake, fixed CPU proof and production-promotion scope remain separate. |
+| Evidence and remaining obligations | Studio Park/Resume is retired. Kit028 installed scripted proof does not close full native E2E; host sleep/wake, fixed CPU proof and production-promotion scope remain separate. |
 
 ## Testability Boundary
 
@@ -851,13 +851,13 @@ proof; they do not replace these isolated decisions and failure branches.
 
 ## Open D4 Gates
 
-Reviewed 24 September 2026 against demo-v1.1 / Factory .39. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
+Reviewed 7 October 2026 against Kit028 / Setup042 / Factory .41. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |
 | Implemented workflow | Shared CLI/Presenter lifecycle, selected Cloud/roles, unsigned catalogues, session signing, serial Test updates, exact source attachment, operation registry, Reset, offline switch and confirmed Finish exist. |
 | Implemented presentation | Measured window placement/z-order, backend popups/charts, resource/freshness views and native control are implemented. Current status authority is defined in the operator guide, not the old mockup. |
-| Factory39 acceptance | Focused ignition and offline receipts passed; fresh serial V1→V2→V3 plus Finish and the remaining failure/uncertain/negative matrix are still required. |
+| Kit028 / Factory41 acceptance | Installed scripted V1→V2→V3, OFF/ON and ignition passed; the exact Test was subsequently retired. Native UI, moving SOTA, secure token entry, interruption/repair and the broader failure/negative matrix remain open. |
 | Recovery limits | Guarded same-identity controller ignition is implemented; cold externalOFF ignition and host laptop sleep/wake are not qualified. Park/Resume is retired from Studio. |
 | Unimplemented qualification feature | Fixed Tire CPU control/worker and the full resource-isolation dossier remain open. Existing Cloud charts do not prove CPU stress isolation. |
 | Scope and contract maintenance | The current milestone is Test-only; Production is preserved. Legacy dual-Unit contract annotations and the Tire cleanup executable-schema drift must not drive destructive current-Test behavior. |

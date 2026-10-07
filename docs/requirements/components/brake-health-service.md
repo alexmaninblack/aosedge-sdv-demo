@@ -20,7 +20,7 @@
 - Accepted D4 advisory input: [D4-008 Typed QM Advisory Profile](../../../contracts/qm-advisory-profile/qm-advisory-profile.v1.json)
 - Accepted D4 v1 contract: [D4-016.1/.2 decision](../d4-decision-register.md#d4-016) and [executable Brake Telemetry Window Contract](../../../contracts/brake-telemetry-window/README.md)
 - Accepted D4 exact contracts: [v2 synthetic model](../../../contracts/brake-health-model/README.md), [v3 advisory policy](../../../contracts/brake-health-advisory-policy/README.md), [runtime/evidence profile](../../../contracts/brake-health-runtime/README.md) and [Brake Cloud API](../../../contracts/brake-cloud-api/README.md)
-- Implementation baseline: demo-v1.1 dependency pin; earlier `04abe5b` scaffold is historical
+- Implementation baseline: candidate source-lock pin; earlier `04abe5b` scaffold is historical
 
 ## Implementation-status reading rule — 24 September 2026
 
@@ -109,7 +109,7 @@ rollout affecting OEM Units.
 
 ## Current Implementation Baseline
 
-Updated 24 September 2026 for **demo-v1.1 / Factory .39**.
+Updated 7 October 2026 for **Kit028 / Setup042 / Factory .41**.
 See [current architecture/traceability](../../architecture/current-implementation.md),
 [protocol status](../../../contracts/implementation-status.md) and
 [qualification limits](../../qualification/current-baseline.md).
@@ -542,12 +542,12 @@ implementation still requires an exact work packet.
 
 ## Open Issues
 
-Reviewed 24 September 2026 against demo-v1.1 / Factory .39. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
+Reviewed 7 October 2026 against Kit028 / Setup042 / Factory .41. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |
 | Implemented product chain | V1 acquisition/window/spool, V2 synthetic model, V3 typed advisory/Gateway facts, IAM/KAC bootstrap and durable backend delivery are built and have scoped live evidence. |
-| Current .39 proof | Brake92/V3 retained model/storage identity across ignition and continued local work during externalOFF; exact derived-message replay was checked. This is not all-version acceptance. |
+| Current Kit028 proof | Brake112/113/114 V1→V2→V3, products, independent Reset/history, offline recovery and post-ignition products passed in the installed scripted sequence. Native/full fault acceptance remains separate. |
 | Remaining model/resource gates | Frozen Brake 20/20 calibration, full quota/failure-isolation, corrupt-state/crash, uninstall/recovery and log-API matrices remain separate. |
 | Readiness and source quality | Short advisory readiness transitions remain observable; missing inputs do not prove VDP version incompatibility. Presenter owns exact installed-profile reporting. |
 | Persistence fault scope | Empty-outbox ignition does not prove queued-message power-loss recovery. Retained native storage patch has scoped proof, not every migration/failure case. |

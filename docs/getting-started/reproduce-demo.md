@@ -11,27 +11,24 @@ That operator route uses the matching prebuilt kit and native Setup, without
 reconstructing old experiments or compiling Unreal/CARLA. It is not yet a
 notarized or clean-Mac-qualified public release.
 
-The rest of this page is the **source/developer route for demo-v1.1**. Its
+The rest of this page is the **source/developer route for Kit028 / Setup042**. Its
 workspace, Editor and build prerequisites are not prerequisites for using the
 prebuilt preview. Do not mix its component launchers into an installed run.
 
 ## Readiness at a Glance
 
-Updated 24 September 2026: **demo-v1.1 / Factory .39**.
+Updated 7 October 2026. The selected source return point is
+`candidate/kit028-setup042`, with Factory .41. The complete DMG is an
+engineering preview; the installed M1 scripted sequence passed 98 steps.
+Full native UI, moving-SOTA, secure token entry and interruption/repair gates
+remain open. No source checkout alone reproduces private artifact bytes,
+Cloud identities, credentials or the release ledger.
 
-| Path | Implemented / proven scope | Remaining boundary |
-| --- | --- | --- |
-| Native simulation/control | CARLA, Gateway, combined control/telemetry, Brake/Tire maneuvers and Return to road | Full calibration/repetition and automatic host sleep/wake not closed |
-| Platform and services | Selected-Unit trust, KAC/KUKSA, VDP V1–V3, Brake V1–V3, Tire V1, real products/advisory | Production calibration and complete negative matrix are separate |
-| Current .39 | Build/smoke; same-identity ignition and five-minute offline checks with VDP117/Brake92/Tire49 | Not a fresh serial all-version/Finish cycle or full P8 |
-| Earlier serial UI cycles | Dated .36/.38 evidence retained | Their removed binaries and earlier results do not qualify .39 automatically |
-| Source checkpoint | v1.1 dependencies, integration and tag published; hosted checks passed | Git does not restore images, credentials, release ledger or live state |
-
-See the [baseline](../qualification/current-baseline.md),
-[v1.1 return point](../qualification/demo-v1.1-return-point.md),
-[implemented architecture](../architecture/current-implementation.md) and
-[audit/open items](../qualification/documentation-implementation-audit-2026-09-24.md).
-Historical synthetic receipts are not vehicle-derived analytic proof.
+Use the [current baseline](../qualification/current-baseline.md),
+[source return point](../qualification/kit028-setup042-source-publication-2026-10-05.md)
+and [implementation map](../architecture/current-implementation.md).
+Historical .39/v1.1 instructions and earlier source builds remain historical,
+not replacements for the current pinned package.
 
 ## Workspace Shape
 
@@ -60,8 +57,8 @@ receipts are not its substitute. Project-owned public remotes are under
 The machine-readable workspace contract is
 [`workspace/repositories.json`](../../workspace/repositories.json), but its
 accepted main-branch pins must match the selected published checkpoint. It
-includes Tire and both backends. The v1.1 publication reconciled all eight
-dependency pins and hosted CI. The read-only doctor checks actual checkout drift:
+includes Tire and both backends. The candidate source lock records the exact
+published source pins and their distinctions from the original built inputs. The read-only doctor checks actual checkout drift:
 
 ```sh
 ./scripts/workspace-doctor
@@ -83,13 +80,13 @@ workspace or vault.
   and both service/backend repositories;
 - Epic Games-linked GitHub access to the restricted Unreal Engine source and
   access to the qualified fork used by this workspace;
-- configured OEM access for Unit/Subject operations and each team's SP access
-  for its own service catalog/publication; configured signing access for bundles;
+- configured OEM access for Unit/Subject operations and one associated SP
+  for separate Brake and Tire service catalogs/publication; configured signing access for bundles;
 - private credentials, native access and generated VM state only in their
   designated ignored/local stores; never stage credentials, VM disks, compiled
   bundles or private Cloud source in Git.
 
-Exact revisions/branches are in the v1.1 return point and workspace manifest.
+Exact revisions/branches are in the candidate source lock and workspace manifest.
 CARLA/Unreal retain compatibility branches; the other six dependencies use their
 recorded main revisions. Do not replace pinned inputs with arbitrary branches.
 
@@ -97,13 +94,12 @@ recorded main revisions. Do not replace pinned inputs with arbitrary branches.
 
 Run the installed `democtl` from `apps/demo-orchestrator`, as described in its
 [CLI guide](../../apps/demo-orchestrator/README.md). Use `democtl image list`
-to discover the real catalog; .39 is retained for new Tests, while existing Production
-still uses .31. Do not retire Production or use an obsolete image from an old
-example. The [E2E report](../qualification/factory-36-e2e-2026-09-19.md)
+to discover the real catalog; Kit028 selects .41. Do not retire any retained
+Production or use an obsolete image from an old example. The [E2E report](../qualification/factory-36-e2e-2026-09-19.md)
 records a dated scoped cycle, not a claim that a Test is running now.
 
 All lifecycle, package preparation/signing/publication, assignment and runtime
-actions use the shared Demo Control implementation. A normal .39 start already
+actions use the shared Demo Control implementation. A normal .41 start already
 contains the accepted CM/SM/resource/input fixes; do not reapply old runtime
 activation or restart recipes. The release allocator owns version numbers and
 must retain its continuity ledger. VDP profile bases and current service build
@@ -122,14 +118,14 @@ identity.
 
 ## Reproduce the CARLA Engineering Demonstration
 
-The operator-facing launcher and its exact prerequisites are owned by the
-Vehicle Gateway repository:
+The following historical component-level launchers and their prerequisites
+are owned by the Vehicle Gateway repository. They are not the Kit028 installer:
 
 - [native CARLA setup on macOS](../../../carla-ego-runtime/docs/carla-setup-macos.md);
 - [macOS desktop launchers](../../../carla-ego-runtime/docs/macos-launchers.md);
 - [deterministic brake-event scenario](../../../carla-ego-runtime/docs/brake-event-scenario.md).
 
-The installer creates three operator applications:
+That standalone launcher generator creates three developer applications:
 
 - `CARLA Simulator.app` for the fixed route and live telemetry;
 - `CARLA Manual Drive.app` for manual/autopilot handover;
@@ -145,19 +141,25 @@ terminated blindly.
 
 The initial [VISS-to-KUKSA proof](../qualification/carla-viss-to-kuksa.md)
 is historical evidence. Current real-data proof is in the
-[.39 ignition](../qualification/factory-39-ignition-2026-09-24.md) and
-[offline](../qualification/factory-39-offline-2026-09-24.md) receipts.
+[Kit028 installed journey](../qualification/m1-live-journey-2026-10-03.md) and
+[candidate record](../../workspace/checkpoints/installer-kit-028-candidate.json).
 Normal packages use native permissions; the explicit historical
 permission-free lifecycle mode is never an authorization-failure fallback.
 
-## What Must Be Built Before a One-Command Full Demo
+## Current package build boundary
 
-Use the [current audit](../qualification/documentation-implementation-audit-2026-09-24.md)
-for remaining work, not earlier lists of missing repositories or permissions
-that are now implemented. Complete the fresh .39 serial sequence and remaining
-recovery/negative/calibration gates. Source tests are not live/human acceptance.
+The distribution tooling assembles locked application, host, VM, vehicle
+preparation and Cloud/backend inputs. See the [portable artifact plan](../planning/active/portable-runtime-artifacts.md)
+and [distribution contracts](../../contracts/distribution-installation/README.md).
+Rebuild only the owner whose inputs change, then rebuild dependent manifests
+and the matching Setup pin. Never modify an installed kit in place or combine
+a new host manifest with a stale VM binding (the rejected Kit027 defect).
 
-The [Studio plan](../planning/active/demo-studio-delivery-plan.md) retains
-chronology. Rebuild only for a proved, approved guest delta; documentation or
-host UI changes alone do not require a new image. Never conceal a blocked gate
-with synthetic success or undocumented manual state.
+The Factory build-tool checkout is separately pinned in the source lock; it
+is not a replacement for the application checkout. Unreal/CARLA compiler,
+licensed content and cooked output are build-time concerns, not operator
+prerequisites. Reproduce from the recorded pins, not today's upstream branches.
+
+Use repository-only validation first. The [remote qualification harness](../../scripts/qualification/README.md)
+drives the installed owners and records scripted evidence separately from
+native UI acceptance. A source rebuild is not a new release qualification.

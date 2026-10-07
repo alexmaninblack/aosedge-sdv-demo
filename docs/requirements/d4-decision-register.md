@@ -7,14 +7,17 @@
 - Version: 1.1
 - Prepared: 2026-08-22
 - Previous working baseline: Version 0.9
-- Inputs: HLA 1.7, Demo Scenarios 2.0, Architecture Flows 2.1,
-  System Requirements 2.1, Component Register 2.1 and the corresponding
-  component-package review candidates
+- Original review inputs: HLA 1.7, Demo Scenarios 2.0, Architecture Flows 2.1,
+  System Requirements 2.1 and Component Register 2.1
+- Revalidated reading baseline (2026-10-07): HLA 1.8, Scenario 2.1,
+  Flows/System/Register 2.2 and current component packages; accepted dated
+  amendments retain precedence over original quota/lifecycle examples
 - Implementation, signing, Cloud, Unit, VM or CARLA mutation authorized: no
 
 ## Current implementation view — 24 September 2026
 
-The current source milestone is **demo-v1.1 / Factory .39**.
+The current candidate is **Kit028 / Setup042 / Factory .41** (7 October 2026).
+The historical heading is retained for incoming links.
 [Implemented architecture and traceability](../architecture/current-implementation.md) maps
 the accepted requirements, amendments, protocols, component owners and proof.
 Earlier allocation/implementation statuses in this design are dated review
@@ -27,7 +30,8 @@ does not change stable IDs or grant deployment authority.
 The later [ADR 0017](../architecture/decisions/0017-continuous-demo-lifecycle-and-upstream-core.md)
 removes operator Park/Resume. Its subsequent accepted storage correction and
 24 September ignition amendment supersede the original no-patch/restart-loss
-statement. Factory39 has scoped retention/recovery evidence, not full P8.
+statement. Factory41/Kit028 has installed scripted retention/recovery evidence,
+not full native acceptance or P8.
 The [protocol map](../../contracts/implementation-status.md) distinguishes
 implemented protocols, amended legacy profiles and outstanding test/design scope.
 

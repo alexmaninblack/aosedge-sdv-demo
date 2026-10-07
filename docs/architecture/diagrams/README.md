@@ -7,9 +7,15 @@ Store accepted, editable architecture sources here together with their
 reviewable SVG or PNG exports. Use stable names and keep the version and status
 in the owning architecture document.
 
-The accepted HLA 1.5 architecture is maintained as Mermaid source inside
+The current HLA 1.8 includes its diagram and accepted amendments inside
 [`high-level-architecture.md`](../high-level-architecture.md), with the Draw.io
-source below as the primary visual-authoring artifact.
+source below retained as the expanded-design visual-authoring artifact.
+For the current installed topology and authority view, use
+[implemented architecture](../current-implementation.md). The old image depicts
+two SP organizations; the current first-install topology uses one associated
+SP. Its original unmodified-KUKSA target is not an as-built binary claim:
+retained scope-path and source-timestamp patches are documented. This audit
+labels that scope without altering the source/export pair.
 
 The editable visual model is the primary visual architecture source:
 
@@ -18,12 +24,12 @@ The editable visual model is the primary visual architecture source:
 
 The Draw.io file is authoritative for diagram layout and visual relationships;
 the PNG must be regenerated from it after every accepted visual change. The
-accepted HLA 1.5 visual reflects two peer OEM Service Providers, independent
+historical HLA 1.5 visual reflects two peer OEM Service Providers, independent
 SOTA lifecycles, the shared FOTA-owned Vehicle Data Platform Component, the
 Tire Health service, the Factory Baseline Assembly-to-Factory Image and
 factory-installed runtime boundaries, the Software Delivery Dashboard's
 AosCloud lifecycle and native-log views, and the KUKSA-mediated advisory
-return. It keeps Eclipse KUKSA unchanged and factory-installed outside the VDP
+return. Its original target keeps Eclipse KUKSA unchanged and factory-installed outside the VDP
 FOTA payload. It shows an implementation-neutral platform Service-credential
 boundary and a visually subordinate current-release overlay: a removable
 helper outside the VDP and both SOTA artifacts that translates active native

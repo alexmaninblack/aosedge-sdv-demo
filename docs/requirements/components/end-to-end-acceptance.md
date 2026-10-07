@@ -31,7 +31,7 @@ Implementation-status annotations retained from the original D3 review are histo
 
 ## Current Implementation Baseline
 
-Updated 24 September 2026 for **demo-v1.1 / Factory .39**.
+Updated 7 October 2026 for **Kit028 / Setup042 / Factory .41**.
 See [current architecture/traceability](../../architecture/current-implementation.md),
 [protocol status](../../../contracts/implementation-status.md) and
 [qualification limits](../../qualification/current-baseline.md).
@@ -40,8 +40,8 @@ or blanket acceptance of every requirement in this package.
 
 | Boundary | Current state |
 | --- | --- |
-| Evidence composition and current acceptance boundary | Current source is demo-v1.1 and Factory39. Earlier all-version UI cycles and .39 build/smoke, ignition and five-minute offline receipts remain individually attributable. No full qualification verdict is inferred from the source tag. |
-| Evidence and remaining obligations | Fresh serial .39 V1→V2→V3 plus Tire/Finish, complete negative/recovery/calibration, nonempty-queue power loss, cold externalOFF and long soak remain unqualified. |
+| Evidence composition and current acceptance boundary | Current source is candidate/kit028-setup042 with Factory41. The installed scripted run passed 98 steps; native journey, moving SOTA, secure UI token entry and interruption/repair remain open. Earlier candidates' receipts retain their own scope. No full qualification verdict is inferred from the source tag. |
+| Evidence and remaining obligations | Complete native UI/moving-SOTA/token-entry/interruption gates, negative/recovery/calibration, nonempty-queue power loss, cold externalOFF and long soak remain unqualified. |
 
 ## Purpose
 
@@ -447,12 +447,12 @@ remain linkable historical records and are not active acceptance inputs.
 <a id="open-d4-gates"></a>
 ## Open Implementation and Qualification Gates
 
-Reviewed 24 September 2026 against demo-v1.1 / Factory .39. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
+Reviewed 7 October 2026 against Kit028 / Setup042 / Factory .41. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |
 | Available evidence | Source gates, earlier serial runs and .39 build/ignition/offline receipts exist. Each records exact source, releases, image and exclusions; none automatically passes every AT-E2E obligation. |
-| Current full-run gap | Execute a fresh strictly serial .39 VDP/Brake V1→V2→V3 and Tire V1 cycle, UI timing/status checks and confirmed Finish before claiming complete current-image E2E. |
+| Current full-run gap | The Kit028 scripted serial cycle and subsequent retirement passed. Complete the separately open native journey, moving SOTA, secure token entry and target-host interruption/repair before claiming full current-candidate E2E. |
 | Additional matrices | Complete applicable role/permission negatives, uncertain Cloud result reconciliation, retirement/old-credential checks, service recovery, nonempty-outbox power loss and cold externalOFF ignition separately. |
 | Calibration and performance | Freeze/verify model repeatability and measured readiness bounds before formal claims; observed reconnect timings are sampled bounds, not SLAs. |
 | Dossier and authority | Full parameterized acceptance/dossier and Production/dual-role scope remain broader obligations; do not manufacture a PASS from source tests or alter shared credentials to satisfy a negative test. |

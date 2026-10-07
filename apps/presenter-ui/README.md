@@ -1,6 +1,6 @@
 # Presenter UI
 
-## Current Studio integration — 13 September 2026
+## Current Studio integration — 7 October 2026
 
 The accepted visual/interaction reference is [Studio 2.8](../../docs/demo/mockups/aosedge-demo-interaction-mockup-2-8.html), qualified by the current [UI-STUDIO-026 amendment](../../docs/demo/mockups/aosedge-demo-interaction-specification.md#ui-studio-026--current-test-studio-contract).
 The original mockup is unchanged. Live state comes from existing Demo Control operations, not mockup timers.
@@ -12,9 +12,10 @@ Session; team navigation belongs to the right panel.
 
 ### Operator flow
 
-1. Full story: choose Factory firmware, Create controller, start simulator,
-   Connect in Manual. Create prepares current Test and the product backends,
-   not Production. It does not provision.
+1. Full story: choose Factory firmware, Create controller, then start the
+   detached simulator. Create prepares Test and its backends, not Production;
+   it does not provision. Connect to that Test only after provisioning/Online,
+   starting stationary in Manual.
 2. Platform: choose a capability profile, Prepare, Sign & publish. Release
    allocation stays in Demo Control. Publish before Provision supports the
    warehouse scenario; no forced downgrade or batch-approval step is added.
@@ -30,7 +31,8 @@ Session; team navigation belongs to the right panel.
    Later higher releases use only Publish. No service update requires Safe Stop.
 6. Backend cards open product results; Aos Cloud opens Software/Resources.
    Component/service cards expose only their scoped details.
-7. Session offers Park, Resume and Finish demo via the existing lifecycle.
+7. Session offers Finish demo; Park/Resume have been removed. Pause with
+   Safe Stop while the controller stays running. Ignition recovery is separate.
    Finish retires only owned Test state; Factory originals, Cloud releases and
    release continuity survive. Production remains untouched.
 
@@ -44,12 +46,11 @@ simulation path is not used by Presenter actions.
 
 - Right-side inventory/runtime/resources are Aos Cloud only. No guest read is
   introduced by tab entry, Refresh, details or monitoring. Resources preserve
-  node/service/Subject/instance/partition identity. CPU is DMIPS; unknown units
-  remain unconverted. Missing/stale is not zero, absent, Offline or success.
-- Team backends use the existing same-origin Demo Control backend read. Product
-  receipts are explicitly **synthetic**, current-Test scoped, and versioned.
-  They do not qualify vehicle analytics or in-vehicle advisory while the Cloud
-  permissions/KUKSA defect remains open.
+  node/service/Subject/instance/partition identity. CPU is DMIPS; memory/disk and traffic accounting are bytes, formatted
+  without inventing a rate. Missing units/values are not guessed. Missing/stale is not zero, absent, Offline or success.
+- Team backends use the existing same-origin Demo Control backend read. Products are current-Test scoped and versioned. Real vehicle-derived
+  products/advisories are recorded in the Kit028 installed journey; historical
+  synthetic .33 receipts and fixture mode are separate, never live evidence.
 - Native telemetry observes vehicle data only. It reads the existing advisory
   contract, rejects unknown values, and does not consume synthetic backend data.
 - Confirmation shows actor, exact candidate, target and effect. Cancel emits no
@@ -111,5 +112,9 @@ Without a fixture selector, an unavailable local backend stays unavailable.
 
 See the [delivery plan](../../docs/planning/active/demo-studio-delivery-plan.md)
 and [implementation receipt](../../docs/qualification/studio-2-8-implementation-2026-09-13.md).
-The scoped .33 CLI E2E and isolated browser tests do not replace the final fresh
-operator UI cycle or human visual acceptance.
+The [current baseline](../../docs/qualification/current-baseline.md) separates
+98 passed installed scripted steps from the incomplete native journey. Reset
+Driver Advisory is on each backend's main card; independent result history is
+preserved. Cloud resource history, installed-profile mapping and backend
+function observation have separate authorities. Open demo opens Presenter,
+not a stopped controller; no native Power on action is implemented.

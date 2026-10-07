@@ -1,0 +1,2893 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "prepared": "2026-10-07",
+  "basis": "Previously tracked Markdown; excludes this newly added report/inventory, video, upstream CARLA/Unreal manuals and binary artifacts",
+  "meaning": "Documentation scope and edit disposition, not a per-file semantic acceptance or live-test verdict",
+  "files": [
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "AGENTS.md",
+      "title": "AosEdge SDV Development Instructions",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "README.md",
+      "title": "AosEdge SDV Demo",
+      "scope": "entry-or-operations",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "THIRD_PARTY_NOTICES.md",
+      "title": "Third-Party Notices",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "apps/demo-orchestrator/README.md",
+      "title": "Demo Orchestrator",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "apps/presenter-ui/README.md",
+      "title": "Presenter UI",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "apps/presenter-ui/tests/human/full-screen-review.md",
+      "title": "WP-P1-UI-001 Full-screen Review",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "components/upstream-review/README.md",
+      "title": "AosCore review deltas",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/README.md",
+      "title": "Cross-Component Contracts",
+      "scope": "contract",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/artifact-publication-profile/README.md",
+      "title": "Artifact Publication Credential Profile",
+      "scope": "contract",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/brake-cloud-api/README.md",
+      "title": "Brake Health Cloud API — Accepted Contract",
+      "scope": "contract",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/brake-health-advisory-policy/README.md",
+      "title": "Brake Health v3 Advisory Policy",
+      "scope": "contract",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/brake-health-model/README.md",
+      "title": "Brake Health Synthetic Model Contract",
+      "scope": "contract",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/brake-health-runtime/README.md",
+      "title": "Brake Health Runtime and Evidence Profile",
+      "scope": "contract",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/brake-telemetry-window/README.md",
+      "title": "Brake Telemetry Window Contract",
+      "scope": "contract",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/demo-run-state/README.md",
+      "title": "Demo Run State, Overlays and Cleanup — Design Reviewed",
+      "scope": "contract",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/distribution-installation/README.md",
+      "title": "Offline Distribution Installation — Transaction Slice",
+      "scope": "contract",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/distribution-installation/cloud-first-use.md",
+      "title": "Cloud First-use Completion",
+      "scope": "contract",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/distribution-installation/installed-state.md",
+      "title": "Installed Runtime Path Separation",
+      "scope": "contract",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/distribution-installation/local-gateway-trust.md",
+      "title": "Installed-instance Local Gateway Server Trust",
+      "scope": "contract",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/distribution-installation/native-setup.md",
+      "title": "Native Setup — Installation and First-use Actions",
+      "scope": "contract",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/distribution-installation/version-selection.md",
+      "title": "Installed Version Selection and Recovery",
+      "scope": "contract",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/e2e-stage-evidence/README.md",
+      "title": "End-to-End Stage Evidence — Design Reviewed",
+      "scope": "contract",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/exclusive-live-source-assignment/README.md",
+      "title": "Exclusive Live-Source Assignment Contract",
+      "scope": "contract",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/implementation-status.md",
+      "title": "Protocol and executable-contract status",
+      "scope": "contract",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/kuksa-current-demo-authorization/README.md",
+      "title": "Current-Demo KUKSA Authorization Exchange",
+      "scope": "contract",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/local-demo-hosting/README.md",
+      "title": "Local Demo Hosting and VM Route — Design Reviewed",
+      "scope": "contract",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/platform-fota-safe-stop/README.md",
+      "title": "Platform FOTA Safe Stop Contract",
+      "scope": "contract",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/portable-cloud-backend-inputs/README.md",
+      "title": "Portable Cloud and backend inputs",
+      "scope": "contract",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/portable-host-launch/README.md",
+      "title": "Portable host launch inputs",
+      "scope": "contract",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/portable-preparation-inputs/README.md",
+      "title": "Portable preparation inputs",
+      "scope": "contract",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/portable-vm-launch/README.md",
+      "title": "Portable VM launch inputs",
+      "scope": "contract",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/qm-advisory-profile/README.md",
+      "title": "Typed QM Advisory Profile",
+      "scope": "contract",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/service-function-observation/README.md",
+      "title": "Bounded service function observation",
+      "scope": "contract",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/service-function-observation/v3-contract.md",
+      "title": "Service function observation v3 — executable contract",
+      "scope": "contract",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/service-runtime-inputs/README.md",
+      "title": "Native service runtime inputs",
+      "scope": "contract",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/service-runtime-inputs/active-vdp-capability-amendment.md",
+      "title": "Active VDP capability evidence — accepted semantic amendment",
+      "scope": "contract",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/service-runtime-inputs/product-message-migration.md",
+      "title": "Native product-message migration",
+      "scope": "contract",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/service-tenant-quota-proof/README.md",
+      "title": "Service Tenant Quota Proof — Design Reviewed",
+      "scope": "contract",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/shared-evidence-correlation/README.md",
+      "title": "Shared Evidence, Correlation and Chronology — Design Reviewed",
+      "scope": "contract",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/simulator-control-context/README.md",
+      "title": "Simulator Control and Context Contract",
+      "scope": "contract",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/software-delivery-dashboard/README.md",
+      "title": "Software Delivery Dashboard Contracts",
+      "scope": "contract",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/tire-cloud-api/README.md",
+      "title": "Tire Health Cloud API — Accepted Contract",
+      "scope": "contract",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/tire-cloud-api/studio-current-wire.md",
+      "title": "Tire current-Test administrative wire — implemented v1.1 demo",
+      "scope": "contract",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/tire-health-model/README.md",
+      "title": "Tire Health In-Vehicle Product Contract — Accepted Contract",
+      "scope": "contract",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/vdp-compatibility-profile/README.md",
+      "title": "VDP Compatibility Profile",
+      "scope": "contract",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/vehicle-external-connectivity/README.md",
+      "title": "Vehicle External Connectivity — Design Reviewed",
+      "scope": "contract",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/vehicle-hardware-profile/README.md",
+      "title": "Vehicle Hardware Capability Profile",
+      "scope": "contract",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "contracts/viss-trust-telemetry-profile/README.md",
+      "title": "VISS Trust and Telemetry Profile",
+      "scope": "contract",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/README.md",
+      "title": "Documentation Map",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/README.md",
+      "title": "Architecture Documentation",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/certificate-selected-cloud.md",
+      "title": "Certificate-selected Test Cloud",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/current-implementation.md",
+      "title": "Implemented architecture and traceability",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/decisions/0001-repository-and-artifact-boundaries.md",
+      "title": "ADR 0001: Repository and Artifact Boundaries",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/decisions/0002-qemu-system-hvf-for-aosvm.md",
+      "title": "ADR 0002: Run AosVM as a QEMU System VM with HVF",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/decisions/0003-two-node-aos1-topology.md",
+      "title": "ADR 0003: Use the Official Two-Node AosVM Topology in AOS-1",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/decisions/0004-single-main-node-for-aos1.md",
+      "title": "ADR 0004: Start AOS-1 with One Main Node",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/decisions/0005-kuksa-vehicle-data-boundary.md",
+      "title": "ADR 0005: Keep the CARLA Adapter Inside AosVM",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/decisions/0006-lifecycle-based-repository-ownership.md",
+      "title": "ADR 0006: Separate Platform and Service Repositories by Lifecycle",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/decisions/0007-solution-documentation-home.md",
+      "title": "ADR 0007: Solution Documentation Home",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/decisions/0008-use-tire-health-for-function-team-2.md",
+      "title": "ADR 0008: Use Tire Health for Function Team 2",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/decisions/0009-separate-release-decision-from-cloud-execution.md",
+      "title": "ADR 0009: Separate Release Decision Ownership from Cloud Execution",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/decisions/0010-aos-kuksa-credential-broker.md",
+      "title": "ADR 0010: Derive KUKSA Credentials from Aos IAM Without Forking KUKSA",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/decisions/0011-qm-service-containment-and-evidence-backed-oem-approval.md",
+      "title": "ADR 0011: Contain QM Services at the Gateway and Make OEM Approval Evidence-Backed",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/decisions/0012-authorize-running-workloads-not-software-artifacts.md",
+      "title": "ADR 0012: Authorize Running Workloads, Not Software Artifacts",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/decisions/0013-current-release-kuksa-authorization-compatibility.md",
+      "title": "ADR 0013: Use a Removable Current-Release KUKSA Authorization Compatibility Layer",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/decisions/0014-enforce-platform-fota-safe-stop-in-oem-component-runtime.md",
+      "title": "ADR 0014: Enforce Platform FOTA Safe Stop in the OEM Component Runtime",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/decisions/0015-use-native-aos-service-runtime-inputs.md",
+      "title": "ADR 0015: Use Native Aos Facilities for Service Identity, Data and Tokens",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/decisions/0016-unsigned-packages-and-session-scoped-signing.md",
+      "title": "ADR 0016: Unsigned Packages and Session-scoped Signing",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/decisions/0017-continuous-demo-lifecycle-and-upstream-core.md",
+      "title": "ADR 0017: Continuous Demo Lifecycle and Upstream Core",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/decisions/0018-installable-demo-and-first-use.md",
+      "title": "ADR 0018: Installable Demo and First-use Boundary",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/decisions/README.md",
+      "title": "Architecture Decision Records",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/demo-control-backends.md",
+      "title": "Demo Control: backend foundation increment",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/demo-control-cloud-observation.md",
+      "title": "Demo Control: bounded Cloud observations",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/demo-control-component-publication.md",
+      "title": "Demo Control: verification-Test component publication",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/demo-control-image-compatibility.md",
+      "title": "Demo Control: image-bound component support",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/demo-control-service-inputs.md",
+      "title": "Service runtime inputs",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/demo-control-service-observation.md",
+      "title": "Demo Control: service catalog and ownership inspection",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/demo-control.md",
+      "title": "Demo Control",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/demo-scenario-architecture-flows.md",
+      "title": "Demo Scenario Architecture Flows 2.2",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/diagrams/README.md",
+      "title": "Architecture Diagrams",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/high-level-architecture.md",
+      "title": "High-Level Architecture 1.8",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/architecture/repository-boundaries.md",
+      "title": "Architecture and Repository Ownership",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/demo/README.md",
+      "title": "Demo Documentation",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/demo/aosedge-demo-walkthrough.md",
+      "title": "AosEdge Demo Walkthrough and Review Guide",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/demo/assets/README.md",
+      "title": "Demo Assets",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/demo/demo-name.md",
+      "title": "Demo name",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/demo/mockups/README.md",
+      "title": "I0 Audience-Visible Interface Register and Mockup Gate",
+      "scope": "design-reference",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/demo/mockups/aosedge-demo-interaction-specification.md",
+      "title": "AosEdge Demo Interaction Specification",
+      "scope": "design-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/demo/mockups/aosedge-demo-ui-traceability-register.md",
+      "title": "AosEdge Demo UI Traceability Register",
+      "scope": "design-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/demo/mockups/demo-experience-proposal.md",
+      "title": "AosEdge: from an operations panel to a demonstration of vehicle evolution",
+      "scope": "design-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/demo/mockups/icon-concepts-2-7/README.md",
+      "title": "Alternative icon families for mockup 2.7",
+      "scope": "design-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/demo/mockups/icon-concepts-2-7/b2-generation-prompt.md",
+      "title": "B2 automotive miniatures edit prompt",
+      "scope": "design-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/demo/mockups/icon-concepts-2-7/b2-service-code-prompt.md",
+      "title": "B2 Service code-symbol edit prompt",
+      "scope": "design-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/demo/mockups/icon-concepts-2-7/generation-prompts.md",
+      "title": "Icon family generation prompts",
+      "scope": "design-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/demo/staged-post-sop-brake-health-demo-scenarios.md",
+      "title": "Staged Post-SOP Brake and Tire Health Demo Scenarios",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/development/README.md",
+      "title": "Development Map",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/development/add-demo-scenario.md",
+      "title": "Add or Change a Demo Scenario",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/getting-started/README.md",
+      "title": "Getting Started",
+      "scope": "entry-or-operations",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/getting-started/installed-preview-cloud-first-use.md",
+      "title": "Install the demo and connect Cloud access",
+      "scope": "entry-or-operations",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/getting-started/local-setup-preview.md",
+      "title": "Local Setup Preview",
+      "scope": "entry-or-operations",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/getting-started/reproduce-demo.md",
+      "title": "Reproduce the AosEdge SDV Demonstration",
+      "scope": "entry-or-operations",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/governance/README.md",
+      "title": "Governance Documentation",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/governance/confidential-source-handling.md",
+      "title": "Confidential Source Handling",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/governance/development-workflow.md",
+      "title": "Development Workflow",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/governance/documentation-and-requirements-management.md",
+      "title": "Documentation and Requirements Management",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/governance/licensing-and-copyright-policy.md",
+      "title": "Licensing and Copyright Policy",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/governance/rapid-development-and-debugging.md",
+      "title": "Rapid Development and Debugging Policy",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/operations/README.md",
+      "title": "Operations Documentation",
+      "scope": "entry-or-operations",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/operations/aosvm-apple-silicon.md",
+      "title": "Run AosVM on an Apple Silicon Mac",
+      "scope": "entry-or-operations",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/operations/current-demo-workflow.md",
+      "title": "Current SDV Lab operator workflow",
+      "scope": "entry-or-operations",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/README.md",
+      "title": "Planning Documentation",
+      "scope": "plan-with-dated-history",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/aoscore-mainline-migration-2026-09-23.md",
+      "title": "AosCore mainline migration — 23 September 2026",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/demo-implementation-plan.md",
+      "title": "Demo Implementation Plan",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/demo-studio-delivery-plan.md",
+      "title": "Demo Studio: staged delivery plan",
+      "scope": "plan-with-dated-history",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/external-ssd-deployment.md",
+      "title": "External SSD Deployment and Clean-System Test Plan",
+      "scope": "plan-with-dated-history",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/infrastructure-first-critical-path-proposal.md",
+      "title": "Consolidated Implementation Execution Trains",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/installable-distribution-and-reproducibility.md",
+      "title": "Installable Distribution and Reproducibility Plan",
+      "scope": "plan-with-dated-history",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/native-demo-desktop.md",
+      "title": "Native Demo Desktop Plan",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/native-sleep-wake-recovery-2026-09-21.md",
+      "title": "Native simulation recovery after host sleep",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/portable-runtime-artifacts.md",
+      "title": "Portable Runtime Artifact Work Packet",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/presenter-ui-amendments-2026-09-20.md",
+      "title": "Presenter UI amendments — 20 September 2026",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/work-packets/advisory-readiness-and-demo-reset.md",
+      "title": "Advisory readiness and independent demo scenario reset",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/work-packets/p0-platform-readiness.md",
+      "title": "P0 Platform Readiness Work Packet",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/work-packets/p0-tire-readiness-reconciliation.md",
+      "title": "P0 Tire Acceptance and Baseline Reconciliation Work Packet",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/work-packets/p0-ui-readiness.md",
+      "title": "P0 UI Readiness Work Packet",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/work-packets/p0-vehicle-gateway-readiness.md",
+      "title": "P0 Vehicle and Gateway Readiness Work Packet",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/work-packets/p1-brake-cloud-data.md",
+      "title": "P1 Brake Cloud Data Implementation Work Packet",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/work-packets/p1-brake-cloud-foundation.md",
+      "title": "P1 Brake Cloud Foundation Implementation Work Packet",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/work-packets/p1-brake-cloud-window-detail.md",
+      "title": "P1 Brake Cloud Window Detail Work Packet",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/work-packets/p1-brake-health-core-v1.md",
+      "title": "P1 Brake Health v1 Domain Core Implementation Work Packet",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/work-packets/p1-brake-health-core-v2.md",
+      "title": "P1 Brake Health v2 Domain Core Implementation-Review Work Packet",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/work-packets/p1-brake-health-core-v3.md",
+      "title": "P1 Brake Health v3 Advisory Core Work Packet",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/work-packets/p1-platform-factory-runtime.md",
+      "title": "P1 Platform Factory and Runtime Implementation Work Packet",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/work-packets/p1-platform-kac-compile-integration.md",
+      "title": "P1 Platform KAC Source, Recipe and Compile Integration Work Packet",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/work-packets/p1-platform-kac-dependency-acquisition.md",
+      "title": "P1 Platform KAC Dependency Acquisition Work Packet",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/work-packets/p1-platform-kac-factory-integration.md",
+      "title": "P1 Platform KAC Factory Integration Work Packet",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/work-packets/p1-platform-kac.md",
+      "title": "P1 Platform KUKSA Authorization Compatibility Work Packet",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/work-packets/p1-platform-kuksa-row2-scope-parser.md",
+      "title": "P1 Platform KUKSA Row2 Scope Parser Work Packet",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/work-packets/p1-platform-runtime-compile-qualification.md",
+      "title": "P1 Platform Runtime Compile Qualification Work Packet",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/work-packets/p1-platform-vdp-artifacts.md",
+      "title": "P1 Vehicle Data Platform Deployable Artifact Preparation Work Packet",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/work-packets/p1-platform-vdp-family.md",
+      "title": "P1 Vehicle Data Platform v1-v3 Implementation Work Packet",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/work-packets/p1-ui-aoscloud-readonly-adapters.md",
+      "title": "P1 AosCloud Read-Only Presenter Adapters Work Packet",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/work-packets/p1-ui-presenter-shell.md",
+      "title": "P1 Presenter UI Implementation Work Packet",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/work-packets/p1-vehicle-gateway-controller-cpp.md",
+      "title": "P1 Vehicle Gateway Controller-to-C++ Handoff Work Packet",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/work-packets/p1-vehicle-gateway-controller-macos-correction.md",
+      "title": "P1 Vehicle Gateway Controller Handoff macOS Correction Review Packet",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/work-packets/p1-vehicle-gateway-safe-stop-projection.md",
+      "title": "P1 Vehicle/Gateway Safe Stop Projection Work Packet",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/work-packets/p1-vehicle-gateway-selected-unit-mtls.md",
+      "title": "P1 Vehicle Gateway Selected-Unit mTLS Work Packet",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/work-packets/p1-vehicle-gateway-wheel-units.md",
+      "title": "P1 Vehicle/Gateway Wheel-Unit Implementation Work Packet",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/work-packets/presenter-ui-amendments-implementation.md",
+      "title": "Presenter UI amendments — final implementation plan",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/active/work-packets/versioned-service-observability.md",
+      "title": "Versioned service observability and Studio clarity",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/repository-inventory-and-migration-plan.md",
+      "title": "Repository Inventory and Migration Plan",
+      "scope": "plan-with-dated-history",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/planning/roadmap.md",
+      "title": "Current Design and Delivery Roadmap",
+      "scope": "plan-with-dated-history",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/README.md",
+      "title": "Qualification Documentation",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/advisory-readiness-renewal-2026-09-20.md",
+      "title": "Advisory readiness flicker during KUKSA token renewal",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/advisory-readiness-reset-2026-09-16.md",
+      "title": "Advisory readiness and independent Reset — preserved Test",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/aoscore-mainline-sync-and-patch-audit-2026-09-19.md",
+      "title": "AosCore mainline synchronization and demo patch audit",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/aoscore-service-update-teardown-2026-09-11.md",
+      "title": "AosCore service replacement: SM/CM patches and live update proof",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/aoscore-shared-storage-handoff-2026-09-19.md",
+      "title": "AosCore CM: old-version cleanup removes current shared service storage",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/aosvm-apple-silicon-baseline.md",
+      "title": "AOS-0 Qualification Record: Official ARM64 AosVM on Apple Silicon",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/aosvm-single-node-provisioning.md",
+      "title": "AOS-1 Qualification Record: Register and Provision One Main Node",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/brake-driving-gap-2026-09-18.md",
+      "title": "Brake driving-result and Presenter diagnosis — 18 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/carla-viss-to-kuksa.md",
+      "title": "AOS-2 CARLA VISS-to-KUKSA Qualification",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/clean-installation-2026-09-28.md",
+      "title": "Clean Application Installation — 28 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/cloud-first-use-boundaries-2026-09-29.md",
+      "title": "Cloud First-use Boundary Proof — 29 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/cloud-first-use-implementation-2026-09-29.md",
+      "title": "Cloud First-use Implementation — 29 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/cloud-installed-profile-2026-09-18.md",
+      "title": "Cloud-confirmed installed VDP profile",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/cm-disconnect-lock-fix-2026-09-19.md",
+      "title": "CM disconnect lock correction: native and live qualification",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/cm-idle-full-status-recovery-2026-09-13.md",
+      "title": "Test .32: idle full-status recovery experiment",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/cm-monitoring-disconnect-deadlock-2026-09-19.md",
+      "title": "CM reconnect blocked by Monitoring/Communication lock inversion",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/cm-online-controlled-comparison-2026-09-12.md",
+      "title": "Test .32 CM Online controlled comparison — 12 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/cm-shared-storage-fix-2026-09-19.md",
+      "title": "CM shared-storage retention correction",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/cm-sm-patch-causality-2026-09-12.md",
+      "title": "CM/SM service-update patches versus delayed Cloud Offline",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/cm-startup-and-online-recurrence-2026-09-12.md",
+      "title": "CM startup ordering and delayed Online loss — 12 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/component-lock.md",
+      "title": "Exact Component Lock",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/continuous-factory-35-e2e-2026-09-19.md",
+      "title": "Factory .35: continuous clean-cycle qualification",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/continuous-lifecycle-ui-2026-09-19.md",
+      "title": "Continuous lifecycle: Presenter verification",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/current-baseline.md",
+      "title": "Current demo baseline",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/d4-003-stimulus-calibration-plan.md",
+      "title": "D4-003 Brake and Tire Stimulus Calibration Plan",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/demo-mocked-backend-integration.md",
+      "title": "Explicit mocked service data and real backend integration",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/demo-studio-implementation-progress-2026-09-10.md",
+      "title": "Demo Studio implementation checkpoint — 10 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/demo-studio-implementation-progress-2026-09-11.md",
+      "title": "Demo Studio implementation checkpoint — 11 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/demo-v1.0-publication-cleanup-2026-09-23.md",
+      "title": "Demo v1.0 — completed publication and cleanup",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/demo-v1.0-return-point.md",
+      "title": "Demo version 1.0 — source return point",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/demo-v1.0-ui-e2e-2026-09-23.md",
+      "title": "Demo v1.0 — fresh UI-led end-to-end run, 23 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/demo-v1.1-return-point.md",
+      "title": "Demo version 1.1 — source return point",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/democtl-and-ui-repeat-2026-09-14.md",
+      "title": "CLI and UI repeat — 14 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/democtl-live-performance-2026-09-13.md",
+      "title": "Demo Control live performance run — 13 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/democtl-local-vm-lifecycle.md",
+      "title": "democtl Local VM Lifecycle — Terminal Acceptance",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/democtl-release-checkpoint.md",
+      "title": "Demo Control Source Checkpoint and Next Factory Release",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/democtl-source-selection.md",
+      "title": "democtl Local Source Selection",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/democtl-unit-lifecycle.md",
+      "title": "democtl Unit Lifecycle — Terminal Acceptance",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/democtl-vdp-family.md",
+      "title": "Demo Control VDP Family Checkpoint",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/distribution-deferred-live-checks-2026-09-26.md",
+      "title": "Distribution assembly: deferred live checks",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/distribution-stage2-closure-2026-09-28.md",
+      "title": "Distribution Stage 2 Closure — 28 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/distribution-stage2-live-e2e-2026-09-28.md",
+      "title": "Distribution Stage 2 — Retained-Test Live E2E, 28 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/distribution-stage2-ui-corrections-2026-09-28.md",
+      "title": "Stage 2 UI corrections — 28 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/documentation-implementation-audit-2026-09-24.md",
+      "title": "Implementation and documentation audit — 24 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/external-ssd-package-2026-09-27.md",
+      "title": "External SSD Package Transfer and Isolated Proof",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/factory-21-baseline-2026-08-30.md",
+      "title": "Historical Factory .21 baseline — 30 August 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/factory-31-isolated-online-control-2026-09-13.md",
+      "title": "Original Factory .31: isolated Online control",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/factory-32-fresh-identity-2026-09-12.md",
+      "title": "Factory .32: fresh Test identity qualification",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/factory-33-cleanup-2026-09-13.md",
+      "title": "Factory .33 artifact cleanup — 13 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/factory-33-consolidation-audit-2026-09-13.md",
+      "title": "Factory .33 consolidation audit — 13 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/factory-33-e2e-2026-09-13.md",
+      "title": "Factory .33 build and E2E checkpoint — 13 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/factory-33-source-checkpoint-2026-09-13.md",
+      "title": "Factory .33 source publication and branch cleanup",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/factory-35-e2e-2026-09-17.md",
+      "title": "Factory .35 — clean staging qualification",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/factory-36-e2e-2026-09-19.md",
+      "title": "Factory .36: clean-cycle qualification",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/factory-36-follow-up-fixes-2026-09-19.md",
+      "title": "Factory .36 follow-ups: local correction and diagnostic pass",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/factory-36-follow-up-review-2026-09-19.md",
+      "title": "Factory .36: follow-up review before selecting fixes",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/factory-36-guest-reboot-2026-09-19.md",
+      "title": "Factory .36: separate guest-reboot engineering check",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/factory-37-mainline-build-2026-09-23.md",
+      "title": "Factory .37 — mainline build and offline qualification",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/factory-37-staging-e2e-2026-09-23.md",
+      "title": "Factory .37 clean staging E2E — 23 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/factory-38-build-2026-09-24.md",
+      "title": "Factory .38 successor candidate — 24 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/factory-38-staging-e2e-2026-09-24.md",
+      "title": "Factory .38 fresh staging E2E — 24 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/factory-39-build-2026-09-24.md",
+      "title": "Factory .39 — retained controller ignition recovery",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/factory-39-cleanup-2026-09-24.md",
+      "title": "Factory .39 — artifact revision and cleanup",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/factory-39-ignition-2026-09-24.md",
+      "title": "Factory .39 — live ignition qualification",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/factory-39-offline-2026-09-24.md",
+      "title": "Factory .39 — existing-installation offline qualification",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/first-use-cloud-configuration-audit-2026-09-15.md",
+      "title": "First-use OEM/SP configuration audit — 15 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/function-observation-consumers-2026-09-18.md",
+      "title": "P3 function-observation consumers and Brake window detail",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/installed-clean-e2e-2026-09-28.md",
+      "title": "Installed Clean-state E2E — 28 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/installed-existing-access-2026-09-28.md",
+      "title": "Installed Existing-access Handover — 28 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/installed-first-use-2026-09-28.md",
+      "title": "Installed First-use Reconciliation — 28 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/installed-gateway-trust-2026-09-28.md",
+      "title": "Installed Gateway Server Trust — 28 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/installed-pause-2026-09-28.md",
+      "title": "Installed Demo — Laptop Travel Pause, 28 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/installed-serial-e2e-2026-09-29.md",
+      "title": "Installed Serial Functional Check — 29 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/installed-state-2026-09-27.md",
+      "title": "Installed Runtime State Separation — Stage 3",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/installed-versions-2026-09-27.md",
+      "title": "Installed Version Selection and Recovery — Stage 3",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/installer-consolidation-2026-09-29.md",
+      "title": "Installer Consolidation Checkpoint — 29 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/installer-first-use-2026-09-30.md",
+      "title": "Installer First Use Qualification 30 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/kit028-setup042-source-publication-2026-10-05.md",
+      "title": "Kit028 / Setup042 source return point",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/m1-complete-media-2026-10-02.md",
+      "title": "Complete DMG installation qualification on M1",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/m1-installation-2026-10-01.md",
+      "title": "M1 installation qualification",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/m1-live-journey-2026-10-03.md",
+      "title": "M1 live installed journey",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/manual-control-and-map-cache-2026-09-17.md",
+      "title": "Manual first-command handling and first-drive cache preparation",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/mockup-2-10-2026-09-17.md",
+      "title": "Complete Studio mockup 2.10 — verification record",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/native-cloud-access-2026-09-27.md",
+      "title": "Native Existing Cloud Access — 27 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/native-presenter-launch-2026-09-28.md",
+      "title": "Native Presenter Launch — 28 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/native-recovery-and-presenter-observation-2026-09-19.md",
+      "title": "Native recovery and shared Presenter observation",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/native-setup-2026-09-27.md",
+      "title": "Native Offline Setup — 27 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/native-setup-signing-2026-09-29.md",
+      "title": "Native Setup Permission Continuity — 29 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/offline-installation-2026-09-27.md",
+      "title": "Offline Installation Transaction — Stage 3 First Slice",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/portable-application-2026-09-26.md",
+      "title": "Portable application assembly and preserved-run handoff",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/portable-cloud-backend-inputs-2026-09-26.md",
+      "title": "Portable Cloud and backend input integration",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/portable-vm-inputs-2026-09-26.md",
+      "title": "Portable VM inputs: assembly and source integration",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/post-cleanup-acceptance.md",
+      "title": "Post-Cleanup Acceptance",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/pre-cleanup-e2e-acceptance.md",
+      "title": "Pre-Cleanup End-to-End Acceptance",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/pre-studio-implementation-2026-09-09.md",
+      "title": "Pre-Studio implementation source checkpoint",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/pre-ui-checkpoint-2026-09-17.md",
+      "title": "Pre-UI source checkpoint and cleanup audit — 17 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/presenter-platform-clarity-2026-09-18.md",
+      "title": "Presenter platform clarity — source and fixture verification",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/presenter-retained-profile-2026-09-26.md",
+      "title": "Presenter profile binding for retained VDP releases",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/presenter-ui-2-10-2026-09-17.md",
+      "title": "Presenter UI 2.10 integration verification",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/presenter-ui-amendments-qualification-2026-09-20.md",
+      "title": "Presenter UI amendments — qualification",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/presenter-ui-e2e-2026-09-19.md",
+      "title": "Presenter UI E2E observation run — 19 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/presenter-ui-flow-reaudit-2026-09-19.md",
+      "title": "Presenter UI flow, message and status re-audit",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/presenter-ui-reaudit-fixes-2026-09-19.md",
+      "title": "Presenter U1–U5 re-audit corrections",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/presenter-ui-timing-e2e-2026-09-20.md",
+      "title": "Presenter UI-only E2E and response-time observation — 20 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/presenter-ui-truth-audit-2026-09-19.md",
+      "title": "Presenter and native UI: displayed facts and evidence audit",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/presenter-ui-truth-fixes-2026-09-19.md",
+      "title": "Presenter displayed-fact corrections",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/preserved-test-function-observation-2026-09-19.md",
+      "title": "Preserved Test: function observation activation",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/preserved-test-motion-and-results-2026-09-18.md",
+      "title": "Preserved Test: moving source, real results and advisory",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/r6-1-demo-isolated-provider-store.md",
+      "title": "R6.1 Demo Isolated Provider Store",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/r6-1-validation-set-scope-defect.md",
+      "title": "R6.1 stale validation-scope defect",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/rabbitmq-full-cycle-2026-09-14.md",
+      "title": "Full Test cycle and RabbitMQ timeout observation — 14 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/repository-rename-vm-repair.md",
+      "title": "Repository-Rename VM Repair",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/scripted-journey-2026-10-02.md",
+      "title": "Scripted installed journey qualification",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/service-chain-audit-2026-09-18.md",
+      "title": "Running service-chain audit — 18 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/service-input-recovery-2026-09-18.md",
+      "title": "Service input recovery: preserved Test and host regressions",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/service-renewal-and-local-capability-2026-09-18.md",
+      "title": "Service interruptions and the P2 local-capability boundary",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/source-attachment-order-2026-09-17.md",
+      "title": "Source attachment order — 17 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/source-checkpoint-and-cleanup-2026-09-20.md",
+      "title": "Source checkpoint and artifact cleanup — 20 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/source-checkpoint-progress-2026-09-23.md",
+      "title": "Source checkpoint reconciliation — 23 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/staging-approved-model-changes-2026-09-16.md",
+      "title": "Approved model changes: preserved Test qualification, 16 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/staging-brake-v1-permissions-2026-09-15.md",
+      "title": "Staging Brake V1 permissions trial — 15 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/staging-iam-response-capacity-2026-09-15.md",
+      "title": "Staging IAM permission response capacity — 15 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/staging-source-checkpoint-2026-09-15.md",
+      "title": "Staging source checkpoint — 15 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/standalone-carla-stage1-2026-09-25.md",
+      "title": "Standalone CARLA — Stage 1 proof",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/standalone-host-handoff-2026-09-26.md",
+      "title": "Standalone host layout and ordinary-demo handoff",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/steering-source-numerics-2026-09-18.md",
+      "title": "P1 steering-source investigation and numerical regression",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/storage-consolidation-2026-09-29.md",
+      "title": "Authorized Storage Consolidation — 29 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/studio-2-8-implementation-2026-09-13.md",
+      "title": "Studio 2.8 implementation increment — 13 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/studio-clean-cycle-2026-09-13.md",
+      "title": "Studio clean operator cycle — 13 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/ui-amendments-checkpoint-cleanup-2026-09-20.md",
+      "title": "UI amendments: audit, cleanup and source checkpoint",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/ui-hour-repeat-2026-09-15.md",
+      "title": "One-hour UI E2E repeat — 15 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/ui-status-corrections-2026-09-14.md",
+      "title": "Presenter status audit: correction receipt",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/unsigned-package-signing-2026-09-15.md",
+      "title": "Unsigned package and session signing verification — 15 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/qualification/versioned-service-scenario-audit-2026-09-18.md",
+      "title": "Versioned Brake/Tire scenario and Presenter audit",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/requirements/README.md",
+      "title": "Requirements Documentation",
+      "scope": "requirements",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/requirements/component-decomposition-and-interface-register.md",
+      "title": "Component Decomposition and Interface Register 2.2",
+      "scope": "requirements",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/requirements/components/README.md",
+      "title": "Component Requirement Packages",
+      "scope": "requirements",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/requirements/components/aos-lifecycle.md",
+      "title": "Aos Lifecycle Component Requirements",
+      "scope": "requirements",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/requirements/components/brake-health-cloud.md",
+      "title": "Brake Health Cloud Product Component Requirements",
+      "scope": "requirements",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/requirements/components/brake-health-service.md",
+      "title": "Brake Health In-Vehicle Service Component Requirements",
+      "scope": "requirements",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/requirements/components/cross-cutting.md",
+      "title": "Cross-Cutting Security and Operations Requirements",
+      "scope": "requirements",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/requirements/components/demo-orchestration.md",
+      "title": "Demo Orchestration Component Requirements",
+      "scope": "requirements",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/requirements/components/end-to-end-acceptance.md",
+      "title": "End-to-End Acceptance Requirements",
+      "scope": "requirements",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/requirements/components/factory-substrate.md",
+      "title": "Factory Substrate Component Requirements",
+      "scope": "requirements",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/requirements/components/kuksa-authorization-compatibility.md",
+      "title": "Current-Release KUKSA Authorization Compatibility 0.13",
+      "scope": "requirements",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/requirements/components/template.md",
+      "title": "Component Requirement Package Template",
+      "scope": "requirements",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/requirements/components/tire-health-cloud.md",
+      "title": "Tire Health Cloud Product Component Requirements",
+      "scope": "requirements",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/requirements/components/tire-health-service.md",
+      "title": "Tire Health In-Vehicle Service Component Requirements",
+      "scope": "requirements",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/requirements/components/vehicle-data-platform.md",
+      "title": "Vehicle Data Platform Component Requirements",
+      "scope": "requirements",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/requirements/components/vehicle-gateway.md",
+      "title": "Vehicle Gateway Component Requirements",
+      "scope": "requirements",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/requirements/components/vehicle-simulation.md",
+      "title": "Vehicle Simulation Component Requirements",
+      "scope": "requirements",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/requirements/d4-decision-register.md",
+      "title": "D4 Interface and Qualification Decision Register",
+      "scope": "requirements",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/requirements/system-requirements-and-traceability.md",
+      "title": "System Requirements and Traceability 2.2",
+      "scope": "requirements",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/research/demo-foundation/README.md",
+      "title": "R9 Demo Foundation Research",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/research/demo-foundation/automotive-orchestration-coverage-matrix.md",
+      "title": "Automotive Orchestration Coverage Matrix",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/research/demo-foundation/integration-summary.md",
+      "title": "R9 Demo Foundation — Integrated Research Summary",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/research/demo-foundation/r1-g0-platform-baseline.md",
+      "title": "R1 — G0 Platform Baseline and Generic Runtime",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/research/demo-foundation/r10-carla-telemetry-and-function-team-2.md",
+      "title": "R10 — Native CARLA Vehicle Telemetry Inventory",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/research/demo-foundation/r2-aoscloud-lifecycle.md",
+      "title": "R2 — AosCloud Lifecycle, Targeting, and Reset Semantics",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/research/demo-foundation/r3-vm-recovery-and-identity.md",
+      "title": "R3 — VM Recovery, Checkpoints, and Unit Identity",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/research/demo-foundation/r4-carla-scenario-and-signals.md",
+      "title": "R4 — Deterministic CARLA Scenario and Signal Production",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/research/demo-foundation/r5-brake-health-data-and-model.md",
+      "title": "R5 — Brake Health Data Contract and Demo Model",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/research/demo-foundation/r6-bidirectional-advisory-and-security.md",
+      "title": "R6 — Bidirectional Advisory Path and Security",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/research/demo-foundation/r7-functional-cloud-and-offline.md",
+      "title": "R7 — Functional Cloud Contract and Offline Operation",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/research/demo-foundation/r8-aosedge-native-logging.md",
+      "title": "R8 — AosEdge Native Logging",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/research/demo-foundation/r9-demo-dashboards-and-apis.md",
+      "title": "R9 — Demo Dashboards and AosCloud API Feasibility",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/research/demo-studio-action-audit.md",
+      "title": "Demo Studio B: action, transition and integration audit",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/research/demo-ui-status-audit-2026-09-14.md",
+      "title": "Demo UI: status, consistency and latency audit",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/research/democtl-ui-performance-audit-2026-09-13.md",
+      "title": "Demo Control: UI command performance audit",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/research/development-disk-cleanup-2026-10-02.md",
+      "title": "Development disk audit and cleanup",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/research/disk-growth-audit-2026-09-29.md",
+      "title": "Internal Disk Growth Audit — 29 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/research/disk-usage-retention-audit-2026-09-25.md",
+      "title": "Disk Usage and Warm-Build Retention Audit",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/research/distribution-stage0-inventory-2026-09-25.md",
+      "title": "Distribution Stage 0 — release inputs and implementation boundaries",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/research/distribution-stage1-retention-audit-2026-09-26.md",
+      "title": "Post-Stage-1 Disk Retention Audit",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/research/distribution-stage2-retention-audit-2026-09-27.md",
+      "title": "Post-assembly disk retention audit",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "docs/research/installer-operator-experience-audit-2026-10-02.md",
+      "title": "Installer and launcher operator experience audit",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "scripts/qualification/README.md",
+      "title": "Remote Mac qualification harness",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aosedge-sdv-demo",
+      "path": "tests/upstream/cm-lock-harness/README.md",
+      "title": "Native CM disconnect lock regression",
+      "scope": "architecture-navigation-or-governance",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aos-vehicle-platform",
+      "path": "CONTRIBUTING.md",
+      "title": "Contributing",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aos-vehicle-platform",
+      "path": "README.md",
+      "title": "Aos Vehicle Platform",
+      "scope": "component-or-developer-reference",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aos-vehicle-platform",
+      "path": "SECURITY.md",
+      "title": "Security Policy",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aos-vehicle-platform",
+      "path": "THIRD_PARTY_NOTICES.md",
+      "title": "Third-Party Notices",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aos-vehicle-platform",
+      "path": "authorization/aos-kuksa-compat/README.md",
+      "title": "Current-Release KUKSA Authorization Compatibility Boundary",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aos-vehicle-platform",
+      "path": "authorization/aos-kuksa/README.md",
+      "title": "Superseded Aos–KUKSA Authorization Notes",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aos-vehicle-platform",
+      "path": "config/kuksa/README.md",
+      "title": "KUKSA Platform Configuration",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aos-vehicle-platform",
+      "path": "contracts/vehicle-telemetry-profile/README.md",
+      "title": "Vehicle Telemetry Profile",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aos-vehicle-platform",
+      "path": "docs/advisory-readiness-publication.md",
+      "title": "Advisory readiness transition publication",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aos-vehicle-platform",
+      "path": "docs/aos2-provider-design.md",
+      "title": "AOS-2 CARLA VISS-to-KUKSA provider design",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aos-vehicle-platform",
+      "path": "docs/aoscore-mainline-migration-2026-09-23.md",
+      "title": "Coordinated AosCore mainline candidate — 23 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aos-vehicle-platform",
+      "path": "docs/architecture.md",
+      "title": "Architecture and Ownership Boundary",
+      "scope": "component-or-developer-reference",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aos-vehicle-platform",
+      "path": "docs/cm-vlan-allocation-2026-10-03.md",
+      "title": "CM VLAN allocation correction",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aos-vehicle-platform",
+      "path": "docs/contract-compatibility.md",
+      "title": "Vehicle Telemetry Contract Compatibility",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aos-vehicle-platform",
+      "path": "docs/decisions/0001-service-manager-component-runtime.md",
+      "title": "ADR 0001: Use a Service Manager Runtime for the Provider Component",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aos-vehicle-platform",
+      "path": "docs/service-runtime-inputs.md",
+      "title": "Test service public-input resources",
+      "scope": "component-or-developer-reference",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "aos-vehicle-platform",
+      "path": "docs/vdp-security-closure-2026-09-24.md",
+      "title": "VDP diagnostic security closure — 24 September 2026",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aos-vehicle-platform",
+      "path": "meta-aos-vehicle-platform/README.md",
+      "title": "Aos Vehicle Platform Yocto Layer",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aos-vehicle-platform",
+      "path": "packaging/fota/README.md",
+      "title": "Vehicle-Data Provider FOTA Packaging",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aos-vehicle-platform",
+      "path": "providers/carla-viss-kuksa/README.md",
+      "title": "CARLA VISS-to-KUKSA Provider",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "aos-vehicle-platform",
+      "path": "qualification/cm-stream-write-fix/README.md",
+      "title": "CM shared gRPC write lock — targeted qualification",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aos-vehicle-platform",
+      "path": "qualification/factory-29-vss.md",
+      "title": "Factory .29: VDP telemetry schema",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aos-vehicle-platform",
+      "path": "qualification/factory-31.md",
+      "title": "Factory .31: terminal factory-placeholder status",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aos-vehicle-platform",
+      "path": "qualification/factory-32.md",
+      "title": "Factory .32 — native service recovery",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aos-vehicle-platform",
+      "path": "qualification/factory-33.md",
+      "title": "Factory .33 — persistent CM idle status recovery",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aos-vehicle-platform",
+      "path": "qualification/factory-34.md",
+      "title": "Factory .34 — native permissions and advisory readiness",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aos-vehicle-platform",
+      "path": "qualification/factory-35.md",
+      "title": "Factory .35 — retained startup reconciliation",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aos-vehicle-platform",
+      "path": "qualification/factory-36.md",
+      "title": "Factory .36 — CM connection and shared-storage corrections",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "aos-vehicle-platform",
+      "path": "qualification/factory-37.md",
+      "title": "Factory .37 — coordinated AosCore mainline candidate",
+      "scope": "dated-evidence",
+      "disposition": "preserve-original-evidence"
+    },
+    {
+      "repository": "carla-ego-runtime",
+      "path": "README.md",
+      "title": "CARLA Ego Runtime",
+      "scope": "component-or-developer-reference",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "carla-ego-runtime",
+      "path": "THIRD_PARTY.md",
+      "title": "Third-party dependencies",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "carla-ego-runtime",
+      "path": "docs/architecture.md",
+      "title": "Architecture",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "carla-ego-runtime",
+      "path": "docs/brake-event-scenario.md",
+      "title": "Deterministic CARLA brake-event scenario",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "carla-ego-runtime",
+      "path": "docs/carla-setup-macos.md",
+      "title": "Native CARLA setup on macOS",
+      "scope": "component-or-developer-reference",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "carla-ego-runtime",
+      "path": "docs/decisions/0001-separate-public-runtime.md",
+      "title": "ADR 0001: Separate public runtime repository",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "carla-ego-runtime",
+      "path": "docs/decisions/0002-basic-telemetry-first.md",
+      "title": "ADR 0002: Basic telemetry and GNSS first",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "carla-ego-runtime",
+      "path": "docs/decisions/0003-viss-external-interface.md",
+      "title": "ADR 0003: VISS is the external telemetry interface",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "carla-ego-runtime",
+      "path": "docs/decisions/0004-ros2-optional-adapter.md",
+      "title": "ADR 0004: ROS 2 is an optional adapter",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "carla-ego-runtime",
+      "path": "docs/decisions/0005-installed-libcarla-and-cxx20.md",
+      "title": "ADR 0005: Installed LibCarla package and C++20",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "carla-ego-runtime",
+      "path": "docs/decisions/0006-frame-aligned-latest-value-store.md",
+      "title": "ADR 0006 — Frame-aligned latest-value store",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "carla-ego-runtime",
+      "path": "docs/decisions/0007-embedded-viss-endpoint.md",
+      "title": "ADR 0007 — Embedded VISS 3.1 endpoint",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "carla-ego-runtime",
+      "path": "docs/decisions/0008-replaceable-external-control-source.md",
+      "title": "ADR 0008 — Replaceable external control source",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "carla-ego-runtime",
+      "path": "docs/decisions/0009-local-external-control-channel.md",
+      "title": "ADR 0009 — Authenticated local external-control channel",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "carla-ego-runtime",
+      "path": "docs/decisions/0010-live-handover-with-traffic-manager.md",
+      "title": "ADR 0010 — Live handover with one tick owner and Traffic Manager",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "carla-ego-runtime",
+      "path": "docs/decisions/0011-hybrid-brake-scenario-control.md",
+      "title": "ADR 0011 — Reuse the M6.2 controller for hybrid brake scenarios",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "carla-ego-runtime",
+      "path": "docs/external-control-contract.md",
+      "title": "External control contract v3",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "carla-ego-runtime",
+      "path": "docs/m5-operations.md",
+      "title": "M5 operations and acceptance",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "carla-ego-runtime",
+      "path": "docs/m6-1-keyboard-driving.md",
+      "title": "M6.1 keyboard driving and observable startup",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "carla-ego-runtime",
+      "path": "docs/m6-2-live-handover.md",
+      "title": "M6.2 live manual and automatic handover",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "carla-ego-runtime",
+      "path": "docs/m6-operations.md",
+      "title": "M6 external-control operations and acceptance",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "carla-ego-runtime",
+      "path": "docs/macos-launchers.md",
+      "title": "macOS desktop launchers",
+      "scope": "component-or-developer-reference",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "carla-ego-runtime",
+      "path": "docs/public-repository-policy.md",
+      "title": "Public repository policy",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "carla-ego-runtime",
+      "path": "docs/roadmap.md",
+      "title": "Roadmap",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "carla-ego-runtime",
+      "path": "docs/ros2-role.md",
+      "title": "Role of ROS 2",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "carla-ego-runtime",
+      "path": "docs/telemetry-contract.md",
+      "title": "VISS/VSS telemetry contract v0.4",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "carla-ego-runtime",
+      "path": "docs/viss-profile.md",
+      "title": "VISS 3.1 compatibility profile",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "brake-health-service",
+      "path": "CONTRIBUTING.md",
+      "title": "Contributing",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "brake-health-service",
+      "path": "README.md",
+      "title": "Brake Health Service",
+      "scope": "component-or-developer-reference",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "brake-health-service",
+      "path": "SECURITY.md",
+      "title": "Security Policy",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "brake-health-service",
+      "path": "THIRD_PARTY_NOTICES.md",
+      "title": "Third-Party Notices",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "brake-health-service",
+      "path": "docs/advisory-demo-control.md",
+      "title": "Current-Test advisory demo control",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "brake-health-service",
+      "path": "docs/architecture.md",
+      "title": "Brake Health Service Architecture Boundary",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "brake-health-service",
+      "path": "docs/product-build.md",
+      "title": "Linux ARM64 product build and export contract",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "brake-health-service",
+      "path": "docs/release-policy.md",
+      "title": "Versioning, Resources, and Rollback",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "brake-health-service",
+      "path": "docs/runtime-executable.md",
+      "title": "Brake executable integration boundary",
+      "scope": "component-or-developer-reference",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "brake-health-service",
+      "path": "docs/runtime-increment.md",
+      "title": "Studio P5: bounded v1 runtime increment",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "brake-health-service",
+      "path": "docs/runtime-profiles.md",
+      "title": "Explicit Brake product runtime profiles",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "brake-health-service",
+      "path": "docs/runtime-v2-v3-audit.md",
+      "title": "Brake v2/v3 runtime wiring audit",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "brake-health-service",
+      "path": "packaging/aos/README.md",
+      "title": "Aos Service Packaging",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "tire-health-service",
+      "path": "README.md",
+      "title": "Tire Health service",
+      "scope": "component-or-developer-reference",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "tire-health-service",
+      "path": "THIRD_PARTY_NOTICES.md",
+      "title": "Third-party notices",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "tire-health-service",
+      "path": "docs/advisory-demo-control.md",
+      "title": "Current-Test advisory demo control",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "tire-health-service",
+      "path": "docs/product-build.md",
+      "title": "Linux ARM64 product export contract",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "brake-health-cloud",
+      "path": "CONTRIBUTING.md",
+      "title": "Contributing",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "brake-health-cloud",
+      "path": "README.md",
+      "title": "Brake Health Cloud",
+      "scope": "component-or-developer-reference",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "brake-health-cloud",
+      "path": "SECURITY.md",
+      "title": "Security",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "brake-health-cloud",
+      "path": "THIRD_PARTY_NOTICES.md",
+      "title": "Third-Party Notices",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "brake-health-cloud",
+      "path": "docs/advisory-demo-control.md",
+      "title": "Current-Test demo scenario reset",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "brake-health-cloud",
+      "path": "docs/demo-freshness.md",
+      "title": "Local-demo raw-window freshness budget",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    },
+    {
+      "repository": "tire-health-cloud",
+      "path": "README.md",
+      "title": "Tire Health Cloud",
+      "scope": "component-or-developer-reference",
+      "disposition": "reconciled-current-prose"
+    },
+    {
+      "repository": "tire-health-cloud",
+      "path": "docs/advisory-demo-control.md",
+      "title": "Current-Test demo scenario reset",
+      "scope": "component-or-developer-reference",
+      "disposition": "screened-no-change"
+    }
+  ]
+}

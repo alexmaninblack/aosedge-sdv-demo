@@ -3,7 +3,7 @@
 
 # Current SDV Lab operator workflow
 
-Updated: 24 September 2026. This is the implemented Demo Studio / Demo Control
+Updated: 7 October 2026. Candidate: Kit028 / Setup042 / Factory .41. This is the implemented Demo Studio / Demo Control
 workflow, not a new qualification run. Use the
 [current baseline](../qualification/current-baseline.md) for dated evidence and
 exclusions and the [CLI reference](../../apps/demo-orchestrator/README.md) for
@@ -12,12 +12,12 @@ configuration and engineering commands. The public demo name is
 
 ## Preparation and version sequence
 
-1. Select the intended Cloud instance, OEM and each team's SP configuration.
+1. Select the intended Cloud instance, OEM and one associated SP configuration for both independent services.
    Check access and first-use tenant prerequisites before publication. Prepared
    packages are unsigned; sign with the selected instance's current certificate.
    Neither an old signature nor a previous tenant's identity is reusable authority.
-2. Create an empty Test controller from the current Factory catalog (.39).
-   Production and its dependent .31 image are outside the Test workflow.
+2. Create an empty Test controller from the current Factory catalog (.41 in Kit028).
+   Any retained Production identity/backing image is outside the Test workflow.
 3. Start or reuse CARLA and native Driving Control / Telemetry in detached mode.
    A not-yet-provisioned controller is not a usable Gateway destination.
 4. Prepare and publish VDP V1, provision the selected Test and observe Cloud
@@ -40,12 +40,13 @@ configuration and engineering commands. The public demo name is
 
 VDP is an OEM platform component delivered by FOTA and gated by Safe Stop.
 Brake and Tire are independently delivered QM SOTA containers: their updates
-do not require that component gate and can occur while the simulated car moves.
+do not require that component gate. Moving updates are supported by this
+separation, but moving-SOTA qualification for Kit028 remains open.
 These condition/advisory services do not control braking or steering.
 
-Functional profiles and allocated release numbers are different: VDP117/V3,
-Brake92/V3 and Tire49/V1 are the last recorded .39 installation, not mandatory
-numbers for the next run. The release-continuity ledger allocates new numbers;
+Functional profiles and allocated release numbers are different. The Kit028
+scripted run used VDP134/135/136, Brake112/113/114 and Tire60; these are dated
+evidence, not mandatory numbers for the next run. The release-continuity ledger allocates new numbers;
 never restore an old ledger to reuse a published release.
 
 ## Read the UI by authority, not by appearance
@@ -101,7 +102,7 @@ reads must not block independent backend/control actions.
   Gateway–KUKSA–service chain continues. Verify unchanged backend receipts,
   new local products and queued messages; after ON verify their delivery and
   restored freshness separately from Unit Online.
-- Controller ignition off/on is a separate test. On .39 the Presenter-owned
+- Controller ignition off/on is a separate test. In the current implementation the Presenter-owned
   recovery worker can restore the same provisioned Unit/Node attachment after
   a new boot, with external network ON, unchanged identities and no conflicting
   operation. It does not provision again or start Autopilot; it ends Safe Stop.
@@ -118,7 +119,12 @@ before retry or deletion. It preserves Production, Factory images, published
 releases and release-number continuity. Git stores source and compact evidence,
 not provisioned disks, credentials or live model state.
 
-The .39 focused checks are not a completed fresh all-version/Finish cycle.
-Follow their exclusions rather than promoting the image merely because the
-current installation works. No destructive or Cloud action is implicit in
-reading this guide.
+The Kit028 installed scripted sequence and subsequent Test retirement passed;
+the complete native operator journey is still open. Opening Presenter does not
+power on a stopped retained controller: that UI action is not implemented.
+Do not confuse engineering recovery with native acceptance.
+
+After each check, stop demo-owned processes/containers through their owners,
+close the windows and verify no owned listeners remain. Keep Docker Engine
+and unrelated workloads running. A temporary stop preserves data; Finish does
+not. No destructive or Cloud action is implicit in reading this guide.

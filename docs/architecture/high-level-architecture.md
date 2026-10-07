@@ -53,13 +53,23 @@ selection and shared runtime-use leases. It adds no runtime owner or vehicle
 interface. Native activation and updates around a retained run remain unqualified.
 
 The [native local-setup wrapper](../../contracts/distribution-installation/native-setup.md)
-is an offline adapter of those same engines, with a trusted embedded bootstrap
-and release pin. Its scope ends at explicit local version selection, not Cloud
-enrollment, demo activation or a second runtime owner.
+wraps those same engines with a trusted embedded bootstrap and release pin.
+Its installation actions remain offline. Separately accepted Cloud access,
+enrollment/recovery, backend preparation and Presenter launch actions are now
+implemented under the same owners; see the current implementation view.
+None creates a second runtime owner or implies full native acceptance.
 
 ## Current implementation view — 24 September 2026
 
-The current source milestone is **demo-v1.1 / Factory .39**.
+As-built exception to the original “unmodified KUKSA” target: the current
+Factory retains explicit scope-path compatibility and VAL v1 source-timestamp
+patches. See the [platform compatibility record](../../../aos-vehicle-platform/docs/contract-compatibility.md).
+Factory ownership, KAC/IAM authority and service isolation remain unchanged.
+The historical .21 allocation and original diagram below are not the current
+image selector or a claim of byte-identical upstream KUKSA.
+
+The current candidate is **Kit028 / Setup042 / Factory .41**, reviewed on
+7 October 2026. The historical heading is retained for incoming links.
 [Implemented architecture and traceability](current-implementation.md) maps
 the accepted requirements, amendments, protocols, component owners and proof.
 Earlier allocation/implementation statuses in this design are dated review

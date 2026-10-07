@@ -17,7 +17,7 @@
 - Reviewed D4 working direction: [D4-003 deterministic stimuli and calibration](../d4-decision-register.md#d4-003)
 - Accepted D4 control decision: [D4-004 Simulator Control and Context Contract](../../../contracts/simulator-control-context/simulator-control-context.v1.json)
 - Accepted D4 source decision: [D4-005 Exclusive Live-Source Assignment](../../../contracts/exclusive-live-source-assignment/exclusive-live-source-assignment.v1.json)
-- Implementation baseline: demo-v1.1 `CarlaSim@ac7d882c` and `carla-ego-runtime@98b0b70a`; original runtime `22864c5` is historical
+- Implementation baseline: candidate `CarlaSim@eb09b824` and `carla-ego-runtime@2e3d1164`; original runtime `22864c5` is historical
 
 ## Implementation-status reading rule — 24 September 2026
 
@@ -74,7 +74,7 @@ remain to be implemented.
 
 ## Current Implementation Baseline
 
-Updated 24 September 2026 for **demo-v1.1 / Factory .39**.
+Updated 7 October 2026 for **Kit028 / Setup042 / Factory .41**.
 See [current architecture/traceability](../../architecture/current-implementation.md),
 [protocol status](../../../contracts/implementation-status.md) and
 [qualification limits](../../qualification/current-baseline.md).
@@ -445,14 +445,14 @@ repository and documentation gates pass.
 
 ## Open Issues
 
-Reviewed 24 September 2026 against demo-v1.1 / Factory .39. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
+Reviewed 7 October 2026 against Kit028 / Setup042 / Factory .41. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |
 | Implemented simulation | Real CARLA physics, source/run identity, manual/Autopilot/Safe Stop, scripted Brake/Tire exercises and road recovery exist; no service result is injected. |
 | Formal calibration | Freeze exact healthy/pre-aged stimulus and pass Brake 20/20 and Tire 10+10 strict-reset qualification. Real positive maneuvers alone do not establish this. |
 | Remaining context/hardware cases | Complete declared sensor/actuator accounting, partial actor cleanup, transactional obstacle/context and oracle-negative cases against the accepted profile. |
-| Lifecycle scope | Current Test attachment and .39 controller recovery are implemented; full sequential dual-role handover and laptop sleep/wake are not covered by those receipts. |
+| Lifecycle scope | Current Test attachment and .41 controller recovery are implemented; full sequential dual-role handover and laptop sleep/wake are not covered by those receipts. |
 
 ## Change Rules
 

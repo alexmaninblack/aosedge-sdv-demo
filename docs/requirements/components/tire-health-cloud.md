@@ -19,7 +19,7 @@
 - Accepted D4 compatibility input: [D4-007 VDP Compatibility Profile](../../../contracts/vdp-compatibility-profile/vdp-compatibility-profile.v1.json)
 - Accepted D4 publication input: [D4-010.3 Artifact Publication Credential Profile](../../../contracts/artifact-publication-profile/artifact-publication-profile.v1.json)
 - Accepted D4 product inputs: [Tire Health In-Vehicle Product Contract](../../../contracts/tire-health-model/README.md) and [Tire Cloud API](../../../contracts/tire-cloud-api/README.md); [Local Demo Hosting and VM Route](../../../contracts/local-demo-hosting/README.md) is design-reviewed and still requires implementation qualification
-- Implementation baseline: `tire-health-cloud` at the demo-v1.1 dependency pin; real HTTP/SQLite backend
+- Implementation baseline: `tire-health-cloud` at the candidate source-lock pin; real HTTP/SQLite backend
 - Implementation, repository creation, signing, Cloud, or Unit mutation authorized: no
 
 ## Implementation-status reading rule — 24 September 2026
@@ -160,8 +160,10 @@ Release sequencing, OEM-reviewed evidence and service-side fail-closed
 readiness remain explicit.
 
 The catalogue also shows the accepted provisional in-vehicle envelope from
-`CR-TIRE` 0.2: 150 DMIPS CPU, 16 MiB RAM, 4 MiB persistent storage, 2 MiB persistent model state, 2 MiB
-temporary storage, 32 open files, and 8 processes. It separately labels the
+the current [CR-TIRE package](tire-health-service.md#accepted-provisional-resource-envelope):
+600 DMIPS CPU (staging requalification candidate), 16 MiB RAM, 4 MiB persistent
+storage, 2 MiB persistent model state, 2 MiB temporary storage, 1024 open files,
+and 16 processes. It separately labels the
 normal summary cadence of at most one per 30 seconds and the offline queue
 limit of 256 messages or 2 MiB. These are Tire Health SOTA candidate
 requirements, not the hosting limits of the `tire-health-cloud` container.
@@ -262,7 +264,7 @@ imply concurrent vehicle evidence.
 
 ## Current Implementation Baseline
 
-Updated 24 September 2026 for **demo-v1.1 / Factory .39**.
+Updated 7 October 2026 for **Kit028 / Setup042 / Factory .41**.
 See [current architecture/traceability](../../architecture/current-implementation.md),
 [protocol status](../../../contracts/implementation-status.md) and
 [qualification limits](../../qualification/current-baseline.md).
@@ -582,7 +584,7 @@ keys, tokens, raw certificates, unrestricted telemetry or hidden truth.
 
 ## Open D4 Gates
 
-Reviewed 24 September 2026 against demo-v1.1 / Factory .39. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
+Reviewed 7 October 2026 against Kit028 / Setup042 / Factory .41. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |

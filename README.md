@@ -7,53 +7,30 @@ workspace locks, orchestration, qualification and operator documentation. It
 does not vendor CARLA, Unreal Engine, AosCore, AosVM images, platform-component
 source or functional-service source.
 
-The standalone AosVM path and the CARLA engineering demonstration are
-repeatable on the qualified workspace. The staged FOTA/SOTA story is implemented
-and has scoped live evidence; it is not a fully qualified one-command
-fresh-checkout demo. See the
-[reproduction readiness matrix](docs/getting-started/reproduce-demo.md).
+The current engineering candidate is **Kit028 / Setup042 / Factory .41**,
+published as source checkpoint `candidate/kit028-setup042`. Operators use a
+complete prebuilt DMG; Unreal Editor and source compilation are not required
+on the demo Mac. This is not yet a notarized public release or a completed
+native end-to-end acceptance.
 
-## Current baseline — 24 September 2026
+## Current baseline — 7 October 2026
 
-The audience-facing demo name is **AosEdge Platform - SDV Lab**. The retained
-Test Factory is **6.1.1-maninblack.39**, with independently delivered VDP
-V1/V2/V3, Brake V1/V2/V3 and Tire V1 packages. The Presenter and Demo Control
-share lifecycle/actions; real KUKSA telemetry, local advisory and delayed
-backend delivery have scoped staging evidence. Cloud remains authoritative
-for installed software and unit monitoring.
+The audience-facing name is **AosEdge Platform - SDV Lab**. One Test controller
+uses real AosCore, KUKSA and local service authorization; CARLA simulates the
+vehicle. VDP V1/V2/V3 arrives through Safe Stop-gated FOTA. Independent Brake
+V1/V2/V3 and Tire V1 containers arrive through SOTA. One associated SP owns
+both services in the first-install topology.
 
-Read the [current working baseline](docs/qualification/current-baseline.md)
-for immutable image provenance, dated live evidence and remaining gates.
-The last recorded .39 installation is VDP117/V3, Brake92/V3 and Tire49/V1.
-Focused ignition and five-minute offline checks passed with explicit exclusions;
-they do not qualify a complete fresh all-version cycle. The published
-[demo-v1.1 return point](docs/qualification/demo-v1.1-return-point.md) fixes
-source revisions, retained images, restore instructions and CI scope.
-Use the [current operator workflow](docs/operations/current-demo-workflow.md)
-and [documentation audit/open items](docs/qualification/documentation-implementation-audit-2026-09-24.md).
-Automatic host sleep/wake recovery remains planned, not implemented. Only .39
-is retained for new Tests; Production's dependent .31 is preserved. The
-historical table below must not be used for current setup.
-
-## Historical early platform baseline
-
-| Area | Accepted state |
-| --- | --- |
-| macOS VM | Official AosVM 6.1.0 `qemuarm64` runs with QEMU/HVF on Apple Silicon |
-| Cloud identity | One persistent, provisioned Main Node; no Secondary Node |
-| Simulation bridge | CARLA VISS 3.1 telemetry reaches the in-VM KUKSA Databroker |
-| Provider | `0.2.0` is signed and locally verified; not published or assigned |
-| Platform runtime | Service Manager A/B runtime, fixed `aos-vdp` identity, SELinux policy, and bounded demo store are implemented |
-| Rootfs candidate | `6.1.1-maninblack.11` is frozen locally, unsigned, and not uploaded or installed |
-| Installed Units | validation Unit: `.2`; production Unit: `.1`, accepted as the current operational baseline after end-to-end verification |
-
-Candidate `.11` closes the qualified provider runtime dependency chain under
-SELinux Enforcing and remains accepted local evidence. It is not the accepted
-clean factory artifact or selected for Cloud promotion. Signing, Cloud upload,
-assignment, and provisioned-Unit mutation remain separate approval gates. See the
-[exact current baseline](docs/qualification/current-baseline.md).
-The acceptance records the already running `.1` state without approving its
-stale Verification Batch or selecting it for a new rollout.
+The installed M1 campaign passed 98 scripted steps, including serial updates,
+real products, resets, offline backlog recovery and same-identity ignition.
+The complete native journey, moving SOTA, secure UI token entry and installation
+interruption/repair remain open. See the
+[current baseline](docs/qualification/current-baseline.md) for exact pins and
+limits, the [operator workflow](docs/operations/current-demo-workflow.md) for
+actions, and the [documentation reconciliation](docs/qualification/documentation-reconciliation-2026-10-07.md)
+for remaining inconsistencies. Old tags, including
+[demo-v1.1](docs/qualification/demo-v1.1-return-point.md), keep their historical
+evidence; they do not select the current installer.
 
 ## Architecture
 
@@ -94,45 +71,17 @@ complete boundary.
 
 ## Start Here
 
-Choose the path that matches your goal in [Getting Started](docs/getting-started/README.md):
+- **Run the prebuilt demo:** [installation and Cloud first use](docs/getting-started/installed-preview-cloud-first-use.md).
+- **Build or modify it:** [source reproduction](docs/getting-started/reproduce-demo.md).
+- **Understand it:** [implemented architecture](docs/architecture/current-implementation.md),
+  then the canonical requirements/design chain.
+- **Run AosVM alone:** [standalone engineering guide](docs/operations/aosvm-apple-silicon.md).
+  Do not layer standalone launchers over an installed Demo Control instance.
 
-- run AosVM on an Apple Silicon Mac;
-- reproduce the currently available engineering demonstration;
-- understand the architecture;
-- modify an existing component;
-- add a demo scenario.
-
-For AosVM itself, follow the canonical
-[Apple Silicon guide](docs/operations/aosvm-apple-silicon.md):
-
-```sh
-./scripts/aosvm-macos-onboard doctor
-./scripts/aosvm-macos-onboard bootstrap
-./scripts/aosvm-macos-onboard setup
-```
-
-Provisioning is never implicit. It requires an existing OEM certificate, a
-read-only preflight, and explicit confirmation.
-
-For the existing persistent VM:
-
-```sh
-./scripts/aosvm status
-./scripts/aosvm start
-./scripts/aosvm smoke-test
-./scripts/aosvm stop
-```
-
-Do not reset or copy a provisioned overlay. Its disk contains a unique Cloud
-identity and must remain persistent across stops, Mac sleep, and network
-changes.
-
-For the complete sibling-repository workspace, run the read-only doctor before
-a demo or migration:
-
-```sh
-./scripts/workspace-doctor
-```
+The installer, Presenter and CLI use the same Demo Control owners. Installation,
+Cloud access, controller creation, provisioning and software installation are
+separate steps. Never copy a provisioned overlay or roll back a release ledger.
+Keep credentials and mutable demo data separate from immutable program inputs.
 
 The machine-readable contract is
 [`workspace/repositories.json`](workspace/repositories.json). It pins each
@@ -161,7 +110,7 @@ python3 -m unittest discover -s tests -p 'test_*.py'
 - [System Requirements and Traceability 2.2 — accepted](docs/requirements/system-requirements-and-traceability.md)
 - [Component Decomposition and Interface Register 2.2 — accepted](docs/requirements/component-decomposition-and-interface-register.md)
 - [R9 Demo Foundation Research](docs/research/demo-foundation/README.md)
-- [Current accepted baseline](docs/qualification/current-baseline.md)
+- [Current candidate and qualification limits](docs/qualification/current-baseline.md)
 - [Roadmap and next gates](docs/planning/roadmap.md)
 - [Run AosVM on Apple Silicon](docs/operations/aosvm-apple-silicon.md)
 - [Development map](docs/development/README.md)

@@ -81,7 +81,7 @@ an authorized OEM identity to confirm every mutation affecting OEM Units.
 
 ## Current Implementation Baseline
 
-Updated 24 September 2026 for **demo-v1.1 / Factory .39**.
+Updated 7 October 2026 for **Kit028 / Setup042 / Factory .41**.
 See [current architecture/traceability](../../architecture/current-implementation.md),
 [protocol status](../../../contracts/implementation-status.md) and
 [qualification limits](../../qualification/current-baseline.md).
@@ -91,7 +91,7 @@ or blanket acceptance of every requirement in this package.
 | Boundary | Current state |
 | --- | --- |
 | Test lifecycle and role-bound publication/assignment | Shared Demo Control plus native AosCore/Cloud; current-Test identities, exact recipient guards, uncertain-result reconciliation and guarded Finish are implemented. |
-| Evidence and remaining obligations | Factory39 ignition/offline passed; full production promotion, native service-to-FOTA admission and broader native-log/recovery matrix are not closed. |
+| Evidence and remaining obligations | Kit028/Factory41 installed scripted serial progression, ignition/offline and later Test retirement passed; full production promotion, native service-to-FOTA admission and broader native-log/recovery matrix are not closed. |
 
 ## Unit Set and Demo Lane Model
 
@@ -604,7 +604,7 @@ authorizes no Cloud mutation.
 
 ## Open Issues
 
-Reviewed 24 September 2026 against demo-v1.1 / Factory .39. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
+Reviewed 7 October 2026 against Kit028 / Setup042 / Factory .41. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |

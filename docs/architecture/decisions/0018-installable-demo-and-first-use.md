@@ -99,6 +99,16 @@ redistribution gates close. Persistent launcher installation, unified onboarding
 and the guided scenario are accepted direction but later implementation slices;
 do not claim that wrapping today's Setup completes those deliverables.
 
+## Current implementation — 7 October 2026
+
+Kit028 / Setup042 implements complete local DMG delivery, installed private
+state, explicit backend preparation, Cloud access/enrollment/recovery and
+Presenter launch using existing owners. The staged paragraphs below preserve
+the order and non-claims of each original increment. They are not today's
+“not implemented” list. The [current baseline](../../qualification/current-baseline.md)
+records 98 installed scripted steps, incomplete native acceptance and the
+still-unimplemented simplified wizard/returning-stopped-controller path.
+
 ## Staged allocation and non-claims
 
 The [installation contract](../../../contracts/distribution-installation/README.md)
@@ -139,8 +149,9 @@ it to a Unit. Native secure input and the existing writer/leases preserve the
 same ownership boundary. Source/fixture results do not qualify real token
 issuance, ordinary installed first use, or clean-system acceptance.
 
-The complete wizard/DMG, state migration, secure enrollment, fresh Docker import, signing,
-clean-Mac installation and live E2E remain separate deliverables. Installing
+The complete wizard, state migration, public signing/notarization and full native
+E2E remain separate deliverables. DMG, backend import and installed scripted M1
+evidence are recorded separately; they are not full wizard/native acceptance. Installing
 bytes must report `INSTALLED_NOT_ACTIVATED`, never claim the demo is ready.
 
 ## Impact and preservation

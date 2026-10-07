@@ -1,35 +1,48 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Implemented architecture and traceability — demo-v1.1
+# Implemented architecture and traceability
 
-Reviewed 24 September 2026 against `demo-v1.1`, Factory .39 and its retained
-qualification receipts. This is the current implementation view of the accepted
-design, not HLA version 1.8 and not a new wire-protocol version. The operator
-confirmed that this is the intended version for the documentation audit.
+- Status: as-built candidate view; not blanket requirements acceptance
+- Version: 2.0
+- Prepared: 2026-10-07
+- Owner: SDV Lab integration
+- Source: [Kit028 / Setup042 source lock](../../workspace/checkpoints/installer-kit-028-source-lock.json)
 
 ## Reading the design chain
 
-The 27 September distribution work advances the canonical design to HLA 1.8,
-Scenario 2.1, Flows/System/Register 2.2 and CR-DEMO 1.3. That separate installed
-workstation amendment does not retag `demo-v1.1` or extend its live evidence.
-The versions in the following paragraph identify the reviewed 24 September
-snapshot, not the latest canonical document headers.
+The accepted chain remains HLA 1.8 → Scenario 2.1 → Flows 2.2 →
+System Requirements 2.2 → Component Register 2.2 → component packages.
+Stable IDs and unfulfilled obligations remain intact. Accepted later amendments
+take precedence over original design examples; implementation is not authority
+to invent a new requirement or mark an unexecuted test passed.
 
-HLA 1.7, Scenario 2.0, Flows 2.1 and System/Component Register 2.1 retain their
-stable identities. Their dated D3 allocation states describe the design review,
-not current delivery. Apply accepted amendments in date order; use this view
-for current implementation and the [audit](../qualification/documentation-implementation-audit-2026-09-24.md)
-for unresolved discrepancies. A local or contract test does not prove a full
-requirement's live acceptance. No requirement is removed merely because its
-implementation is missing.
+The [current baseline](../qualification/current-baseline.md) selects Kit028,
+Setup042 and Factory .41. The [source return point](../qualification/kit028-setup042-source-publication-2026-10-05.md)
+records exact sources; demo-v1.1 / Factory .39 is historical. Factory .41
+embeds mainline-derived AosCore with explicit retained patches, KUKSA and the
+removable KAC helper. It is not unmodified current upstream mainline.
 
-The [source return point](../qualification/demo-v1.1-return-point.md) binds exact
-repository revisions. Factory39 embeds mainline-derived AosCore with retained
-explicit patches, KUKSA and the removable KAC helper. FOTA/SOTA releases are
-independent of that source tag. Only .39 is retained for new Test creation;
-Production and its .31 backing image are preserved and not a prerequisite for
-this milestone's Test-only flow.
+## Installed workstation
+
+One complete DMG supplies signed Setup and a digest-bound Runtime Kit:
+application/UI, prebuilt standalone CARLA/Driving Control/Gateway, QEMU and
+Factory, preparation inputs, Cloud SDK and backend image archive. No Unreal
+Editor, source checkout or compiler is required on the operator Mac.
+Docker Engine and access/permissions remain prerequisites.
+
+Setup wraps existing transaction, selection and Demo Control code; it does not
+own a second vehicle lifecycle. Immutable program/input versions are separate
+from a private instance containing credentials or their references, release
+continuity, workspace metadata, run journal, VM and backend data. Opening windows
+creates no vehicle journal; Create Controller does. Installer actions cannot
+silently adopt a foreign instance or replace a live selected version.
+
+The first-use topology is one OEM and one associated SP with independent Brake
+and Tire identities. Cloud reads and backend-image preparation are explicit
+steps. Open demo opens Presenter; it does not create or start a controller.
+The full guided-wizard/returning-stopped-instance experience is not complete.
+See the [native Setup contract](../../contracts/distribution-installation/native-setup.md).
 
 ## Runtime and authority
 
@@ -85,17 +98,17 @@ cases and final acceptance remain as stated below and in the dated receipts.
 | --- | --- | --- |
 | [Vehicle Simulation](../requirements/components/vehicle-simulation.md) | `CarlaSim`; Gateway scenario/controller tooling | Native physics, scripted Brake/Tire maneuvers and road recovery; full frozen healthy/pre-aged repeat matrix is not established by a few successful maneuvers |
 | [Vehicle Gateway](../requirements/components/vehicle-gateway.md) | [runtime source](../../../carla-ego-runtime/src/runtime_carla.cpp), [tests](../../../carla-ego-runtime/tests/qm_advisory_test.cpp) | Sampling/units, bounded control handoff, strict selected-peer VISS, typed advisory and native telemetry implemented; complete hardware/actuator and dual-role matrix remain broader obligations |
-| [Factory Substrate](../requirements/components/factory-substrate.md) | [platform layer](../../../aos-vehicle-platform/meta-aos-vehicle-platform) | Empty immutable .39, native managers, runtime/KUKSA/KAC and scoped boot/security proofs; manifest not promoted to full live qualification |
+| [Factory Substrate](../requirements/components/factory-substrate.md) | [platform layer](../../../aos-vehicle-platform/meta-aos-vehicle-platform) | Immutable .41 with native managers, KUKSA/KAC, VLAN allocation and source-timestamp corrections; installed scripted sequence passed, full native acceptance open |
 | [KUKSA compatibility](../requirements/components/kuksa-authorization-compatibility.md) | [KAC source](../../../aos-vehicle-platform/authorization/aos-kuksa-compat) | Real IAM/TLS/token renewal and offline-local operation; removable compatibility layer, not future native API or hardware-HSM certification |
-| [VDP](../requirements/components/vehicle-data-platform.md) | [provider](../../../aos-vehicle-platform/providers/carla-viss-kuksa), Demo Control component preparation | Common current runtime, profile-bound 7/15/23 telemetry paths, typed V3 output; Safe Stop FOTA and restored retained .39 V3 demonstrated; full fresh .39 serial family cycle still open |
-| [Aos lifecycle](../requirements/components/aos-lifecycle.md) | Demo Control Unit, component/service publication and assignment modules; native AosCore/Cloud | Guarded Test provision/publish/assign/retire implemented; .39 ignition/offline proof, no new native service-to-FOTA pre-transfer admission or full production-promotion qualification |
+| [VDP](../requirements/components/vehicle-data-platform.md) | [provider](../../../aos-vehicle-platform/providers/carla-viss-kuksa), Demo Control component preparation | Common current runtime, profile-bound 7/15/23 telemetry paths, typed V3 output; Safe Stop FOTA and serial V1→V2→V3 passed in the installed Kit028 journey; native moving-SOTA/complete UI acceptance remain separate |
+| [Aos lifecycle](../requirements/components/aos-lifecycle.md) | Demo Control Unit, component/service publication and assignment modules; native AosCore/Cloud | Guarded Test provision/publish/assign/retire implemented; Kit028/.41 ignition/offline proof, no new native service-to-FOTA pre-transfer admission or full production-promotion qualification |
 | [Brake service](../requirements/components/brake-health-service.md) | [service source](../../../brake-health-service/src/runtime/product.cpp), [runtime profiles](../../../brake-health-service/docs/runtime-profiles.md) | V1 captures, V2 analyzes, V3 preserves model and adds advisory; real inputs/delivery/reset; quota stress/calibration/crash matrix not all complete |
 | [Brake Cloud](../requirements/components/brake-health-cloud.md) | [backend](../../../brake-health-cloud/README.md), Presenter | Durable ACK/idempotency, windows/details, products, function observation, Reset and exact cleanup implemented; production ingestion authentication and standalone live dashboard are not claimed |
 | [Tire service](../requirements/components/tire-health-service.md) | [service source](../../../tire-health-service/src/runtime/application.cpp) | Functional V1 consumes 15 VDP V3 inputs, estimates, queues and publishes advisory; fixed CPU-load demonstration and complete calibration remain unimplemented/unqualified scope |
 | [Tire Cloud](../requirements/components/tire-health-cloud.md) | [backend source](../../../tire-health-cloud/src/store.mjs), Presenter | Separate persistence/ACK/query/SSE/Reset/cleanup; fixed CPU qualification endpoint is not implemented; retained legacy cleanup schema differs from current Studio handler |
 | [Demo orchestration](../requirements/components/demo-orchestration.md) | [orchestrator](../../apps/demo-orchestrator), [Presenter](../../apps/presenter-ui) | Shared guarded commands, bounded read paths, source attachment, layout, resources, Finish and boot recovery; host sleep/wake remains planning |
 | [Cross-cutting](../requirements/components/cross-cutting.md) | Native policy/identity, contracts and repository/security gates | Enforcing/private credentials, separate teams, bounded transport and scoped negatives; no production safety/security certification inferred |
-| [End-to-end acceptance](../requirements/components/end-to-end-acceptance.md) | [qualification receipts](../qualification/README.md) | Earlier serial cycles and current .39 focused proof are distinct; no complete .39 P8 dossier, long soak or nonempty-queue power-loss PASS |
+| [End-to-end acceptance](../requirements/components/end-to-end-acceptance.md) | [qualification receipts](../qualification/README.md) | Kit028 passed 98 installed scripted steps; native acceptance, full P8 dossier, long soak and nonempty-queue power-loss are not closed |
 
 ## Protocol, compatibility and resource facts
 
@@ -106,7 +119,8 @@ Tire V1 requires the fifteen-signal V3 dynamics subset. Presence of all catalog
 entries alone is not a live publisher or fresh sample.
 
 Current service packages request 1024 file descriptors; Brake has 24 PIDs and
-Tire 16. Native AosCore enforces quotas. CPU graphs in DMIPS are not proof of
+Tire 16. Brake requests 250 DMIPS and Tire 600 DMIPS; the latter is the
+authorized staging requalification envelope, not a completed isolation proof. Native AosCore enforces quotas. CPU graphs in DMIPS are not proof of
 the planned fixed-load isolation experiment. That experiment must not be
 described as available merely because its design profile exists.
 
@@ -130,9 +144,18 @@ operation. It never opens an explicitly blocked gate, creates a new identity,
 rebuilds CARLA or resumes Autopilot. Uncertain/failed attempts require
 reconciliation. Laptop sleep/wake is not this controller-ignition feature.
 
+## Source time and continuity
+
+Factory .41 preserves original source timestamps in KUKSA VAL v1 output.
+Refreshing a cached value must not turn old data into fresh input. Current
+Brake/Tire sources separate input acquisition from longer processing and
+preserve subscription continuity across credential renewal; Tire also recovers
+interrupted state writes. These corrections do not widen freshness tolerances.
+Load-sensitive readiness and VDP-TIMEOUT-01 remain explicitly deferred.
+
 ## Qualification and residual mismatches
 
-The [audit register](../qualification/documentation-implementation-audit-2026-09-24.md)
+The [audit register](../qualification/documentation-reconciliation-2026-10-07.md)
 is the current consolidated list. The
 [protocol map](../../contracts/implementation-status.md) records legacy
 machine-readable packages that need a separately versioned synchronization;

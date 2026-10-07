@@ -3,6 +3,13 @@
 
 # Cross-Component Contracts
 
+Start with [implementation status](implementation-status.md) for the current
+Kit028 / Setup042 / Factory .41 mapping. Accepted later amendments take
+precedence over original dual-role/credential examples. One associated SP
+serves both independent services in the first-install topology. Contract,
+functional profile, Cloud release and installer versions are separate.
+Frozen historical schemas are not silently rewritten to match newer handlers.
+
 - [Native Service Runtime Inputs](service-runtime-inputs/README.md)
   — package release, public Unit/VDP metadata, private token sessions and the
   versioned product-message migration under ADR 0015.

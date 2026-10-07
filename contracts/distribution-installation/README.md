@@ -4,9 +4,11 @@
 # Offline Distribution Installation — Transaction Slice
 
 The [native setup wrapper](native-setup.md) adds explicit local installation and
-private-instance preparation without runtime activation or Cloud enrollment.
+private-instance preparation, with separate explicit Cloud access/enrollment,
+backend-image preparation and Presenter launch actions. The offline transaction
+specified here still performs none of those later actions.
 
-- Status: Accepted for implementation; not qualified for operator activation
+- Status: Implemented offline transaction; full native journey remains open
 - Version: 1.0
 - Prepared: 2026-09-27
 - Owner: Demo Solution Team / integration distribution tooling
@@ -19,8 +21,8 @@ This slice installs an explicitly selected complete local kit only. It has no
 network, credential, Docker, process-control or runtime activation operations.
 It never imports or executes code from the supplied kit. The expected
 application-manifest SHA-256 is an independently supplied release pin; reading
-a hash from the same untrusted folder is not authentication. The eventual
-signed installer supplies this pin. The engineering CLI requires it explicitly.
+a hash from the same untrusted folder is not authentication. The current
+signed Setup supplies this pin. The engineering CLI requires it explicitly.
 
 The pinned application manifest binds every exported application file and all
 five input manifests. Their source locks must match the declared input pins;

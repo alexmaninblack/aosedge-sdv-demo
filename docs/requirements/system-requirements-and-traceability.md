@@ -46,7 +46,8 @@ first-use deliverable; path separation does not grant publishing authority.
 
 ## Current implementation view — 24 September 2026
 
-The current source milestone is **demo-v1.1 / Factory .39**.
+The current candidate is **Kit028 / Setup042 / Factory .41**, reviewed on
+7 October 2026. The historical heading is retained for incoming links.
 [Implemented architecture and traceability](../architecture/current-implementation.md) maps
 the accepted requirements, amendments, protocols, component owners and proof.
 Earlier allocation/implementation statuses in this design are dated review

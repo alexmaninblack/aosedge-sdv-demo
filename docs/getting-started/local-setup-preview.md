@@ -6,7 +6,7 @@
 **Historical instructions — 27 September 2026.** For the current operator path,
 use [Installed Preview: Cloud First Use](installed-preview-cloud-first-use.md).
 The matching candidate and actual qualification results are in the
-[current installed-package receipt](../qualification/installed-serial-e2e-2026-09-29.md).
+[current baseline](../qualification/current-baseline.md).
 Do not choose Kit 007 or an old ad-hoc Setup because this retained page mentions
 them. This page preserves the original local-slice evidence and link targets;
 its "not yet wired" statements below are historical, not current capability claims.

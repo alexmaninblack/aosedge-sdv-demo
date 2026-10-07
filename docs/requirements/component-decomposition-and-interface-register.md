@@ -41,7 +41,13 @@ or independent controller; destructive removal and native activation remain gate
 
 ## Current implementation view — 24 September 2026
 
-The current source milestone is **demo-v1.1 / Factory .39**.
+Original allocation text describing “unmodified KUKSA” is the design target.
+The current Factory's documented scope-path/source-timestamp compatibility
+patches are an explicit as-built exception, not service-owned authority.
+See the [implementation map](../architecture/current-implementation.md).
+
+The current candidate is **Kit028 / Setup042 / Factory .41**, reviewed on
+7 October 2026. The historical heading is retained for incoming links.
 [Implemented architecture and traceability](../architecture/current-implementation.md) maps
 the accepted requirements, amendments, protocols, component owners and proof.
 Earlier allocation/implementation statuses in this design are dated review
@@ -241,7 +247,7 @@ they interact with its simulated boundaries.
 
 | ID | Component | Responsibility | Owner and lifecycle | Source boundary | State |
 | --- | --- | --- | --- | --- | --- |
-| <a id="cmp-factory"></a>`CMP-FACTORY` | OEM Factory Baseline Assembly | Reproducibly compose, build, qualify and freeze the unprovisioned SOP substrate, including one stock Aos IAM configuration with `enablePermissionsHandler: true`, factory-installed unmodified KUKSA, separately packaged removable `CMP-KAC`, no pre-populated Service authority/secret state, and dedicated non-secret `kuksa-jwt` signer/verifier preparation wiring without a key, JWT or shared production verifier | Platform Team; pre-SOP manufacturing/build lifecycle | Integration recipes and qualification inputs in `aos-vehicle-platform`; output image remains outside Git | `IMPLEMENTED`; Factory39 built; full live qualification not promoted |
+| <a id="cmp-factory"></a>`CMP-FACTORY` | OEM Factory Baseline Assembly | Reproducibly compose, build, qualify and freeze the unprovisioned SOP substrate, including one stock Aos IAM configuration with `enablePermissionsHandler: true`, factory-installed unmodified KUKSA, separately packaged removable `CMP-KAC`, no pre-populated Service authority/secret state, and dedicated non-secret `kuksa-jwt` signer/verifier preparation wiring without a key, JWT or shared production verifier | Platform Team; pre-SOP manufacturing/build lifecycle | Integration recipes and qualification inputs in `aos-vehicle-platform`; output image remains outside Git | `IMPLEMENTED`; Factory41 built and Kit028 installed scripted sequence passed; full native E2E remains open |
 | <a id="cmp-runtime"></a>`CMP-RUNTIME` | Provider-Specific Empty-Slot Runtime | Preinstalled OEM Service Manager runtime, bounded provider slot, health/storage boundary and Safe Stop application gate for the Vehicle Data Platform payload; owns durable transaction metadata and asynchronous bounded waiting/recovery, consumes fresh monotonic Gateway frames through a purpose-bound mTLS `VehicleStateProviderItf`, and never persists Safe Stop samples | Platform Team; factory image | `aos-vehicle-platform` | `CURRENT / SCOPED`; FOTA and retained-component boot recovery implemented |
 | <a id="cmp-aos-core"></a>`CMP-AOS-CORE` | AosCore and Service Manager | Unit identity, desired state, security, update lifecycle, service execution and status | AosEdge platform | External AosVM/AosCore release | `EXTERNAL / CURRENT` |
 | <a id="cmp-kuksa"></a>`CMP-KUKSA` | Eclipse KUKSA Databroker | Stable factory-installed in-vehicle VSS resource server, direct authorized Service access and verification of short-lived Service JWTs using the configured per-Unit public verifier | External Eclipse component in the SOP substrate; Platform Team governs integration and exposed contract | Unmodified external executable; configuration/contract in `aos-vehicle-platform` | `CURRENT`; real VDP data and authorized service access have scoped .39 proof |

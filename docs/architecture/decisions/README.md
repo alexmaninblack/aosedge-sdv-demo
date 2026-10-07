@@ -5,7 +5,9 @@
 
 Architecture Decision Records begin as `Proposed` and become `Accepted` or
 `Rejected`. Accepted records explain why the canonical architecture changed;
-they do not replace the current HLA.
+they do not replace the current HLA. Dated implementation gates describe each
+record's checkpoint; use the [current implementation map](../current-implementation.md)
+for delivery and remaining proof.
 
 - [ADR 0001: Repository and Artifact Boundaries](0001-repository-and-artifact-boundaries.md)
 - [ADR 0002: Run AosVM as a QEMU System VM with HVF](0002-qemu-system-hvf-for-aosvm.md)
@@ -30,15 +32,15 @@ they do not replace the current HLA.
   — accepted application provenance, public inputs and private KUKSA token
   sessions without new SM code changes; implementation authorized.
 - [ADR 0016: Unsigned Packages and Session-scoped Signing](0016-unsigned-packages-and-session-scoped-signing.md)
-  — proposed local source-trust and per-Cloud publication amendment; audited
+  — accepted local source-trust and per-Cloud publication amendment; audited
   migration, service parity and preservation of the operator's parked Test.
 - [ADR 0017: Continuous Demo Lifecycle and Upstream Core](0017-continuous-demo-lifecycle-and-upstream-core.md)
-  — accepted removal of operator Park/Resume without another native CM patch;
-  continuous clean-cycle qualification and explicit upstream retention defect.
+  — accepted removal of operator Park/Resume; later explicitly authorized
+  retention/recovery corrections are recorded in the current implementation.
 
 - [ADR 0018: Installable Demo and First-use Boundary](0018-installable-demo-and-first-use.md)
-  — accepted staged installation/onboarding direction; initial offline
-  transaction slice cannot activate a runtime or change user state.
+  — accepted staged installation/onboarding direction; implemented separate
+  installation, Cloud/backend and Presenter actions retain their own authority.
 
 The change process and stable-reference rules are defined in
 [Documentation and Requirements Management](../../governance/documentation-and-requirements-management.md).

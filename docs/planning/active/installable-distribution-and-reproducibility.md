@@ -4,21 +4,44 @@
 # Installable Distribution and Reproducibility Plan
 
 - Status: Accepted planning; implementation and qualification are not complete.
-- Version: 1.6
+- Version: 1.7
 - Prepared: 2026-09-25
-- Updated: 2026-10-04
+- Updated: 2026-10-07
 - Owner: Demo Solution Team
-- Source baseline: [demo-v1.1 / Factory .39](../../qualification/demo-v1.1-return-point.md)
+- Original source baseline: [demo-v1.1 / Factory .39](../../qualification/demo-v1.1-return-point.md)
+- Current candidate: [Kit028 / Setup042 / Factory .41](../../qualification/current-baseline.md)
 - Implementation input: [Current implemented architecture](../../architecture/current-implementation.md)
 - Operational input: [Current operator workflow](../../operations/current-demo-workflow.md)
-- Evidence input: [Documentation audit and open items](../../qualification/documentation-implementation-audit-2026-09-24.md)
+- Evidence input: [Documentation audit and open items](../../qualification/documentation-reconciliation-2026-10-07.md)
 
-## Current execution route — updated 4 October 2026
+## Current execution route — updated 7 October 2026
+
+The candidate source checkpoint was published on 5 October. Documentation was
+reconciled on 7 October without rebuilding or altering the media. The 4 October
+Test was subsequently retired and old M1 installations removed; the verified
+DMG was delivered for the user's manual launch, which was not started in the
+last recorded disposition. Do not follow retained-run instructions below as
+if that Test still exists. Re-observe current state before any later test.
+
+The four separate candidate gates remain native operator journey, moving SOTA,
+secure native token entry and target-host installation interruption/repair.
+The native Power on gap for a retained stopped controller remains explicit.
+No additional live gate is closed by this documentation revision.
 
 This section is the single current execution checklist. The numbered delivery
 stages below retain their acceptance criteria. Dated kit/preview notes record
 evidence, not separate projects, new approval gates or competing queues of
 "next" actions. Do not restart completed work from an earlier checkpoint.
+
+On 7 October the user requested detailed planning for a human-friendly source
+and release entry point. The [repository reproduction packet](work-packets/human-friendly-reproduction.md)
+expands Stage 4 and the relevant Stage 5/7 work into R1 release definition,
+R2 build automation, R3 documentation routes and R4 reproduction proof. It is
+subordinate to this plan, not a replacement installer plan or a claim that
+those blocks are implemented. This documentation-only task does not reopen
+completed runtime checks. The [cross-repository journal](../repository-change-journal.md)
+records coordinated changes and publication state without duplicating source
+locks or runtime authority.
 
 The user accepted both outstanding Cloud first-use choices on 29 September:
 explicit verified exact-object reuse and preserved uncertain enrollment without
@@ -92,7 +115,7 @@ and [candidate checkpoint](../../../workspace/checkpoints/installer-kit-028-cand
 | Stage 1 standalone CARLA | Qualified on the development host; M1 rendering, actual maneuvers and corrected native layout observed at Stage 6 | Preserve the accepted Game/API; no further Factory or engine rebuild for the completed host checks |
 | Stage 2 portable runtime | Functional evidence exists; VDP timeout explicitly deferred | Preserve the exception; do not restart this workstream |
 | Stage 3 installer and first use | Recorded installed results retained; three remaining same-Mac checks explicitly deferred by the user on 30 September | Preserve the open native-access, interrupted-start cleanup and retained-instance selection cases; proceed to clean-system qualification without claiming A/B complete |
-| Stages 4–5 reproduction docs and verification | Partly implemented | Finish alongside Stage 3, then bind to one candidate |
+| Stages 4–5 reproduction docs and verification | Operator/developer docs, requirements/implementation map and contract status reconciled to Kit028 on 7 October; scripted harness implemented; R1–R4 reproduction packet defined | Implement the release resolver/build entry and prove fresh-clone reproduction; maintain candidate-bound evidence. Documentation does not close native usability/release acceptance |
 | Stage 6 clean-system qualification | Kit 028 / Setup 042 / Factory .41 passed all 98 installed scripted checks on 4 October, including serial updates, both services' products, Reset/history, OFF/ON delivery and post-ignition products. Earlier Kit 024/026 evidence is retained; Kit 026 Test is retired and Kit 027 rejected. | Close separate native operator, secure UI token entry, moving SOTA and interruption/repair gates. Restore native access on the development host; M1 itself was observed unlocked. Do not rerun the completed serial sequence merely for UI review. Short load-sensitive readiness tuning and VDP timeout remain deferred. Preserve rollback and evidence; see the [current live record](../../qualification/m1-live-journey-2026-10-03.md). SSD and host sleep/wake checks are excluded |
 | Stage 7 release | Not complete | Reconcile deferred cases and distribution gates before an authorized distributable release |
 
@@ -741,6 +764,11 @@ operating-system security the installation procedure.
 and preserve unrelated applications, identities and data.
 
 ### Stage 4 — Organize the repository for reproduction
+
+The [human-friendly reproduction packet](work-packets/human-friendly-reproduction.md)
+defines the concrete R1–R4 deliverables and acceptance checks. Its developer
+route distinguishes builds using pinned heavy artifacts from a separately
+qualified full-source rebuild. Future command examples are not current tools.
 
 Use the existing integration repository as the release landing page. Retain
 component ownership and source history; do not create a monorepo or rewrite

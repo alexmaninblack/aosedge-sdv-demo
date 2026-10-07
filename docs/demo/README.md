@@ -34,7 +34,7 @@ first study the technical specifications below.
 The accepted [Native Demo Desktop Plan](../planning/active/native-demo-desktop.md)
 keeps this composition while combining control/telemetry, retaining CARLA as a
 separate window and adding one-click startup. The
-[source checkpoint](../qualification/demo-v1.1-return-point.md) separates
+[source checkpoint](../qualification/kit028-setup042-source-publication-2026-10-05.md) separates
 implemented Test/advisory behavior from broader Production qualification.
 
 [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.1](staged-post-sop-brake-health-demo-scenarios.md)
@@ -46,7 +46,7 @@ implementation.
 
 The corresponding
 [Demo Scenario Architecture Flows 2.2](../architecture/demo-scenario-architecture-flows.md)
-map Scenario 2.0 to High-Level Architecture 1.7, including lifecycle, runtime,
+map Scenario 2.1 to High-Level Architecture 1.8, including lifecycle, runtime,
 observability, failure and retirement flows. They do not authorize
 implementation.
 

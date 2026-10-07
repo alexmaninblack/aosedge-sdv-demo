@@ -11,8 +11,15 @@ assignment, VM restart, or provisioned-Unit change.
 
 - [Installable distribution and reproducibility](active/installable-distribution-and-reproducibility.md):
   accepted Stage 0–7 plan for a portable Apple Silicon runtime, operator/developer
-  documentation and clean-system acceptance; Stage 3 offline transaction
-  installation/repeat passed, native first-use and activation remain open.
+  documentation and clean-system acceptance; Kit028 installed scripted sequence passed; complete native first-use,
+  moving SOTA, secure token entry, interruption/repair and release gates remain open.
+- [Human-friendly repository and release reproduction](active/work-packets/human-friendly-reproduction.md):
+  detailed R1–R4 plan for one release definition, automated preparation/builds,
+  three human documentation routes and fresh-environment proof. Planning only;
+  subordinate to the distribution plan, not an implemented build interface.
+- [Cross-repository change journal](repository-change-journal.md): maintainer
+  record of coordinated changes, evidence, publication state and next actions;
+  not a second release lock or an operator prerequisite.
 - [External SSD deployment plan](active/external-ssd-deployment.md):
   prepared 1 TB Work/Clean split, verified Kit 004 transfer, isolated/native
   proof and invalid-input rejection;
@@ -26,7 +33,7 @@ assignment, VM restart, or provisioned-Unit change.
 - [demo-v1.1 return point](../qualification/demo-v1.1-return-point.md): published
   source composition and retained Factory39; Production31 is preserved.
 - [Implemented architecture](../architecture/current-implementation.md) and
-  [documentation audit](../qualification/documentation-implementation-audit-2026-09-24.md):
+  [documentation audit](../qualification/documentation-reconciliation-2026-10-07.md):
   current requirements/code/protocol mapping and explicit gaps.
 - [Studio delivery plan](active/demo-studio-delivery-plan.md): dated execution
   chronology, not a fresh authorization to repeat old work.
@@ -40,10 +47,13 @@ assignment, VM restart, or provisioned-Unit change.
   product/function/Cloud authority and qualification exclusions.
 - [Roadmap](roadmap.md): design/delivery order and original milestones.
 
-Current gaps include fresh serial .39 all-version/Finish acceptance,
-cold externalOFF ignition/nonempty-outbox power loss, remaining calibration and
-negative/resource matrices, readiness transitions, and executable Tire cleanup
-contract synchronization. Cloud charts do not implement the missing CPU worker.
+Current candidate and acceptance are in the [baseline](../qualification/current-baseline.md).
+Kit028's installed scripted serial run and subsequent retirement are complete.
+Native UI/moving-SOTA/token-entry/interruption gates remain open. Cold
+externalOFF ignition/nonempty-outbox power loss, calibration/negative/resource
+matrices and executable Tire cleanup contract synchronization remain separate.
+Brief readiness and VDP timeout work are deferred. Charts do not implement
+the missing CPU worker; host sleep/wake and SSD are excluded from the M1 campaign.
 
 ## Historical execution packets
 
@@ -67,7 +77,7 @@ Their original bounded packets remain traceability:
 [runtime compile qualification](active/work-packets/p1-platform-runtime-compile-qualification.md).
 The [.33 audit](../qualification/factory-33-consolidation-audit-2026-09-13.md)
 is historical; its old permissions/source-publication blockers are not the
-current .39 baseline.
+current Kit028/.41 baseline.
 
 ## Active Architecture Changes
 

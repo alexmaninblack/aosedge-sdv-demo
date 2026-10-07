@@ -26,7 +26,7 @@ Implementation-status annotations retained from the original D3 review are histo
 
 ## Current Implementation Baseline
 
-Updated 24 September 2026 for **demo-v1.1 / Factory .39**.
+Updated 7 October 2026 for **Kit028 / Setup042 / Factory .41**.
 See [current architecture/traceability](../../architecture/current-implementation.md),
 [protocol status](../../../contracts/implementation-status.md) and
 [qualification limits](../../qualification/current-baseline.md).
@@ -496,12 +496,12 @@ repositories and are composed by the cross-package contract/integration gate.
 
 ## Open D4 Gates
 
-Reviewed 24 September 2026 against demo-v1.1 / Factory .39. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
+Reviewed 7 October 2026 against Kit028 / Setup042 / Factory .41. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |
 | Implemented security boundary | KAC/private native input projection, strict selected-peer trust, typed advisory allowlists and session-scoped signing are implemented. No Cloud or simulator oracle is needed for local analytics. |
-| Implemented connectivity proof | Factory39 Test externalOFF stopped backend receipts while local products/advisories continued; exact derived messages replayed. This is a scoped Test receipt, not the original complete PU/dual-role matrix. |
+| Implemented connectivity proof | Kit028/Factory41 passed 302.807 seconds of externalOFF/local operation and queued delivery after ON. This is a scoped installed scripted Test receipt, not the original complete PU/dual-role matrix. |
 | Remaining qualification | Complete native log permissions/retention, shared chronology anomaly matrix, resource/fault isolation, independent qualification runs and sanitized full acceptance dossier remain open. |
 | Known limits | CPU qualification endpoint/worker is not implemented; source-bound contract drift, short readiness transitions, cold externalOFF ignition and nonempty-outbox power loss remain explicit audit items. |
 

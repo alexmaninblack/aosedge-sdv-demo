@@ -14,46 +14,29 @@ not only the CARLA-to-AosEdge transport bridge.
 
 ## Start Here
 
-- [Kit028 / Setup042 source return point](qualification/kit028-setup042-source-publication-2026-10-05.md)
-  — candidate tag, exact cross-repository source pins, unchanged DMG provenance
-  and explicit remaining qualification gates.
-- [Installed preview: Cloud first use](getting-started/installed-preview-cloud-first-use.md)
-  — existing access, secure enrollment/recovery and exact Subject selection;
-  [native first-use evidence](qualification/cloud-first-use-implementation-2026-09-29.md) and
-  [serial E2E and installed-candidate qualification](qualification/installed-serial-e2e-2026-09-29.md).
-- [Installer first-use continuation 30 September](qualification/installer-first-use-2026-09-30.md)
-  — changing-display recovery, native password entry, private directory ordering
-  and existing-account enrollment qualification.
-- [M1 installation qualification](qualification/m1-installation-2026-10-01.md)
-  — pinned clean-host candidate, automation, measured preflight and current
-  native installation/E2E evidence; internal storage only.
-- [Current implemented architecture and traceability](architecture/current-implementation.md)
-  — requirements, owning code, accepted amendments and qualification limits.
-- [All 25 protocol families: implementation status](../contracts/implementation-status.md)
-  — current wire versions, authority and remaining contract drift.
-- [Complete documentation audit](qualification/documentation-implementation-audit-2026-09-24.md)
-  — discrepancies, corrections, tests and unclosed gates.
-- [Current operator workflow](operations/current-demo-workflow.md)
-  — Test-only lifecycle, serial updates, reset, offline and ignition.
+- [Current baseline](qualification/current-baseline.md) — Kit028 / Setup042 /
+  Factory .41, exact media identity, installed results and remaining gates.
+- [Install the demo](getting-started/installed-preview-cloud-first-use.md) —
+  actual Setup buttons, Docker/Cloud prerequisites, first use and limitations.
+- [Operator workflow](operations/current-demo-workflow.md) — serial FOTA/SOTA,
+  real products, Reset, offline, ignition and Finish.
+- [Implemented architecture](architecture/current-implementation.md) —
+  requirements, source owners, runtime authority and qualification boundaries.
+- [Protocol status](../contracts/implementation-status.md) — runtime/product
+  and distribution families, accepted amendments and remaining schema drift.
+- [Documentation reconciliation](qualification/documentation-reconciliation-2026-10-07.md) —
+  coverage, corrected discrepancies and explicit unresolved items.
+- [Source reproduction](getting-started/reproduce-demo.md) and
+  [candidate return point](qualification/kit028-setup042-source-publication-2026-10-05.md) —
+  developer route and exact cross-repository pins.
+- [Active distribution plan](planning/active/installable-distribution-and-reproducibility.md) —
+  one execution checklist, not a new queue for every historical kit.
 
-- [Demo1.1 source return point](qualification/demo-v1.1-return-point.md)
-  — exact dependency pins, Factory39 provenance, restoration and known limits.
-- [Current .39 candidate and baseline history](qualification/current-baseline.md)
-  — retained Test image, installed profiles, dated qualification and exclusions.
-- [Factory .39 artifact cleanup](qualification/factory-39-cleanup-2026-09-24.md)
-  — retired image/build inventory, preserved Production .31 and disk accounting.
-- [17 September pre-UI checkpoint audit](qualification/pre-ui-checkpoint-2026-09-17.md)
-  — historical source return point, evidence, cleanup and then-remaining gates.
-- [13 September consolidation audit](qualification/factory-33-consolidation-audit-2026-09-13.md)
-  — source/remote inventory, cleanup disposition, KUKSA permissions and Cloud
-  recovery workaround, with exact remaining closure conditions.
-- [Active Studio delivery plan](planning/active/demo-studio-delivery-plan.md)
-  — current phase position and next work; dated execution history is separate.
-- [Choose a task](getting-started/README.md) — run AosVM, reproduce the current
-  demo, understand the system, modify a component or add a scenario.
-- [Reproduction guide and readiness matrix](getting-started/reproduce-demo.md)
-  — what works today, required repositories and access, and what remains a
-  target.
+Dated qualification/research reports preserve their original observations.
+Their “current”, “next” and “not started” wording applies to their dates.
+Historical [demo-v1.1 / Factory .39](qualification/demo-v1.1-return-point.md)
+remains restorable as source, but is not the selected installer. Read the
+stable current baseline before following old troubleshooting instructions.
 
 ## Architecture
 
@@ -80,7 +63,7 @@ not only the CARLA-to-AosEdge transport bridge.
 
 - [Demo documentation index](demo/README.md)
 - [AosEdge Demo Walkthrough and Review Guide](demo/aosedge-demo-walkthrough.md)
-  — human-readable companion for following the clickable mockup chapter by
+  — historical design-review companion for following the clickable mockup chapter by
   chapter and collecting colleague feedback.
 - [Staged Post-SOP Brake and Tire Health Demo Scenarios 2.1](demo/staged-post-sop-brake-health-demo-scenarios.md)
   — accepted baseline combining Brake Health v1-v3 evolution with one mature
@@ -100,7 +83,7 @@ not only the CARLA-to-AosEdge transport bridge.
 - [Component requirement packages and template](requirements/components/README.md)
   — ordered D3 work, human-readable component requirements, unit-test
   obligations and verification traceability.
-- [D4 Interface and Qualification Decision Register 1.0](requirements/d4-decision-register.md)
+- [D4 Interface and Qualification Decision Register 1.1](requirements/d4-decision-register.md)
   — one consolidated route through shared D4 decisions without duplicating
   component requirements or ownership.
 - [Requirements documentation](requirements/README.md)
@@ -128,7 +111,7 @@ not only the CARLA-to-AosEdge transport bridge.
 - [Installed first-use reconciliation — 28 September](qualification/installed-first-use-2026-09-28.md)
 - [Installed existing-access handover — 28 September](qualification/installed-existing-access-2026-09-28.md)
 - [Clean application installation — 28 September](qualification/clean-installation-2026-09-28.md)
-  — current Kit 009, native setup and isolated installation evidence; explicit
+  — historical Kit 009 native setup and isolated installation evidence; then-open
   remaining onboarding and launch gates.
 - [Installed clean-state E2E — 28 September](qualification/installed-clean-e2e-2026-09-28.md)
   — serial upgrades, independent resets/history, offline backlog delivery and

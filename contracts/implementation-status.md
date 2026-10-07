@@ -1,10 +1,10 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Protocol and executable-contract status — demo-v1.1
+# Protocol and executable-contract status
 
-Reviewed against the published source checkpoint and Factory39 evidence on
-24 September 2026. Contract versions, product wire versions, functional
+Reviewed against Kit028 / Setup042 / Factory .41 and the candidate source lock
+on 7 October 2026. Contract versions, product wire versions, functional
 profiles, allocated Cloud releases and the demo tag are different namespaces.
 This map documents implemented behavior; it does not silently regenerate
 digest-pinned historical profiles or claim every design fixture tests the live
@@ -12,29 +12,24 @@ implementation. See the [implemented architecture](../docs/architecture/current-
 
 ## Complete contract-family map
 
-Stage 2 distribution work after this baseline is tracked separately by the
-[portable preparation input contract](portable-preparation-inputs/README.md) and
-[portable host launch contract](portable-host-launch/README.md), followed by the
-[portable VM input slice](portable-vm-launch/README.md) and
-[Cloud/backend input slice](portable-cloud-backend-inputs/README.md).
-It preserves publication and runtime authority; its engineering checkpoint is
-not part of the published `demo-v1.1` qualification claim.
+The original 25 runtime/product families below are supplemented by five
+distribution/input families: [preparation](portable-preparation-inputs/README.md),
+[host](portable-host-launch/README.md), [VM](portable-vm-launch/README.md),
+[Cloud/backends](portable-cloud-backend-inputs/README.md) and
+[installation](distribution-installation/README.md). They preserve the same
+runtime/publication owners; they do not create a second orchestrator.
 
-The subsequent [Stage 3 offline installation contract](distribution-installation/README.md)
-is an engineering-only non-activating transaction tool. Its
-[separate evidence](../docs/qualification/offline-installation-2026-09-27.md)
-must not be read as first-use, update switching or clean-system qualification.
-
-The [installed-state routing contract](distribution-installation/installed-state.md)
-now has [isolated Kit 005 evidence](../docs/qualification/installed-state-2026-09-27.md).
-Private operator state is distinct from program/locked inputs; native active
-version switching, onboarding and the complete Stage 3 exit gate remain open.
-
-The subsequent [version-selection/recovery contract](distribution-installation/version-selection.md)
-adds an engineering manager and runtime-use leases under the same authority.
-Its [dated qualification](../docs/qualification/installed-versions-2026-09-27.md)
-separates fixture/complete-kit proof from native activation, retained-run updates
-and destructive uninstall, which remain open.
+Kit028 implements complete-media assembly, offline verified installation,
+private-instance selection/leases, explicit backend-image import, Cloud access
+and enrollment/recovery, exact Subject selection and native Presenter launch.
+The [installed-state](distribution-installation/installed-state.md),
+[selection/recovery](distribution-installation/version-selection.md),
+[native Setup](distribution-installation/native-setup.md),
+[Cloud first-use](distribution-installation/cloud-first-use.md) and
+[Gateway trust](distribution-installation/local-gateway-trust.md) details
+retain action-specific authority. Installation is still network-free; later
+Cloud and launch actions are explicit. Isolated repair tests do not close the
+target-host interruption/repair gate. See the [current baseline](../docs/qualification/current-baseline.md).
 
 | Family | Current implementation / authority | Boundary or discrepancy |
 | --- | --- | --- |
@@ -57,12 +52,12 @@ and destructive uninstall, which remain open.
 | [QM advisory](qm-advisory-profile/README.md) | Typed JSON leaf request/status and readiness, exact endpoints, freshness/replay/lease | Brake V3 and Tire V1; package release remains unchanged in provenance. Short genuine readiness interruptions are not hidden |
 | [Function observation](service-function-observation/README.md) | Closed v3 producer/backend/Presenter chain with epoch/sequence ordering | Deployed; legacy Tire status remains readable. Delayed status cannot replace newer source state |
 | [Local hosting](local-demo-hosting/README.md) | Separate backend containers and stores; host Demo Control/Presenter and native panels | Original three-container dashboard/helper topology is not the current Studio implementation; local isolated HTTP is not production authentication |
-| [Run state/cleanup](demo-run-state/README.md) | Bounded operation journal, fresh Test overlay, peer-preserving Finish | Apply Test-only and lifecycle amendments; no Studio Park/Resume. .39 ignition is separate, guarded and same-identity |
-| [External connectivity](vehicle-external-connectivity/README.md) | Independent VM vehicle/external planes and explicit link state | .39 focused OFF/ON passed. Cloud Online, outbox drained and UI freshness are separate milestones; no SLA or dual-vehicle matrix inferred |
+| [Run state/cleanup](demo-run-state/README.md) | Bounded operation journal, fresh Test overlay, peer-preserving Finish | Apply Test-only and lifecycle amendments; no Studio Park/Resume. Kit028/.41 ignition is separate, guarded and same-identity |
+| [External connectivity](vehicle-external-connectivity/README.md) | Independent VM vehicle/external planes and explicit link state | Kit028/.41 scripted OFF/ON passed. Cloud Online, outbox drained and UI freshness are separate milestones; no SLA or dual-vehicle matrix inferred |
 | [Tenant quota proof](service-tenant-quota-proof/README.md) | Native package quotas and real controller/instance resource observations | Fixed Tire CPU-load endpoint/worker demonstration is **not implemented**; do not render planned proof as PASS |
 | [Shared evidence](shared-evidence-correlation/README.md) | Native identity, source/decision/receipt times, original retries and v3 ordering | Public/legacy digest wording is amended by ADR 0015; a reconnect timestamp is not a synchronization watermark or latency KPI |
 | [Software dashboard](software-delivery-dashboard/README.md) | Cloud lifecycle/resource projections and integrated function views | Coverage catalogue and formal CPU verdict/dossier design are not proof that every coverage item has a live implementation |
-| [E2E stage evidence](e2e-stage-evidence/README.md) | Atomic operations/reconciliation plus dated qualification receipts | Full composed two-cycle/human acceptance dossier not established for .39; legacy golden stage maps retain their design scope |
+| [E2E stage evidence](e2e-stage-evidence/README.md) | Atomic operations/reconciliation plus dated qualification receipts | 98 installed scripted steps passed for Kit028; full native/two-cycle acceptance is not established; legacy golden stage maps retain their design scope |
 
 ## Current wire authorities and amendment precedence
 

@@ -3,6 +3,12 @@
 
 # Demo Studio: staged delivery plan
 
+Current delivery is tracked by the [distribution plan](installable-distribution-and-reproducibility.md)
+and [Kit028 baseline](../../qualification/current-baseline.md). This document
+retains earlier Studio execution chronology and accepted amendments. Dated
+“current work” headings below are historical, not instructions to repeat .39
+qualification or restore removed images.
+
 ## Current work — 24 September, v1.1 documentation alignment
 
 The current scope is **demo-v1.1 / Factory .39**. See the

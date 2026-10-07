@@ -90,7 +90,8 @@ on local validation failure. Background observation remains asynchronous; an
 existing run keeps its backend identity. No implicit image import or engine
 start is inserted into navigation, observation or runtime start.
 
-The current source milestone is **demo-v1.1 / Factory .39**.
+The current candidate is **Kit028 / Setup042 / Factory .41**, reviewed on
+7 October 2026. The historical heading is retained for incoming links.
 [Implemented architecture and traceability](current-implementation.md) maps
 the accepted requirements, amendments, protocols, component owners and proof.
 Earlier allocation/implementation statuses in this design are dated review

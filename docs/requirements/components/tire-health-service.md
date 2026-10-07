@@ -130,7 +130,7 @@ authorizes Test deployment and Production rollout affecting OEM Units.
 
 ## Current Implementation Baseline
 
-Updated 24 September 2026 for **demo-v1.1 / Factory .39**.
+Updated 7 October 2026 for **Kit028 / Setup042 / Factory .41**.
 See [current architecture/traceability](../../architecture/current-implementation.md),
 [protocol status](../../../contracts/implementation-status.md) and
 [qualification limits](../../qualification/current-baseline.md).
@@ -140,7 +140,7 @@ or blanket acceptance of every requirement in this package.
 | Boundary | Current state |
 | --- | --- |
 | Independent Tire V1 product | Repository, ARM64 packaging, native KAC/KUKSA runtime, fifteen VDP V3 inputs, deterministic model/hysteresis, persistent outbox, typed advisory, function observation and Reset exist. Ordinary packages request 1024 files and 16 PIDs. There is no Tire V3. |
-| Evidence and remaining obligations | Real .39 V1 products, ignition and offline delivery passed. Full frozen healthy/pre-aged calibration, CPU-load demonstration and all crash/overflow cases remain separate. |
+| Evidence and remaining obligations | Kit028/.41 V1 products, ignition and offline delivery passed. Current source includes input/renewal continuity and interrupted-state recovery. Full frozen healthy/pre-aged calibration, CPU-load demonstration and all crash/overflow cases remain separate. |
 
 ## Accepted Provisional Resource Envelope
 
@@ -150,12 +150,13 @@ Tire Health performs a lower-rate continuous incremental estimate, retains a
 slightly larger persistent model state, and never stores or transfers a normal
 raw-telemetry stream.
 
-The Tire Health v1.0 candidate shall start with this accepted provisional
-logical envelope:
+The current Tire Health V1 candidate uses the provisional envelope below.
+The 3 October D4-023 amendment supersedes the original 150-DMIPS value;
+600 DMIPS is a requalification candidate, not a production acceptance claim.
 
 | Resource | Tire Health v1.0 | Design intent |
 | --- | ---: | --- |
-| CPU | 150 DMIPS | Lower than the accepted Brake Health value of 250 DMIPS |
+| CPU | 600 DMIPS | Authorized 3 October staging requalification envelope; not a completed isolation verdict |
 | RAM | 16 MiB | Small estimator and transport runtime; must be confirmed with the selected implementation |
 | Persistent storage | 4 MiB | Bounded functional outbox and supporting database metadata |
 | Persistent model state | 2 MiB | Versioned cumulative condition state |
@@ -415,7 +416,7 @@ and persistence rules remain owned by D4-018 rather than the stimulus profile.
 <a id="req-tire-011"></a>
 
 - ID: `REQ-TIRE-011`
-- Statement: The service shall expose truthful health/readiness, request the accepted envelope of 150 DMIPS CPU, 16 MiB RAM, 4 MiB persistent storage, 2 MiB versioned model state, 2 MiB temporary storage, 32 open files and 8 processes, remain within the subsequently qualified native/OCI mapping of those bounds, implement no resource manager, and shall not degrade VDP, Brake Health or vehicle control. Persistent storage owns the outbox/supporting database metadata, state owns the estimator and tmp owns temporary computation. For the first-demo proof, the Service shall accept only fixed idempotent `START_FIXED_CPU_LOAD`/`STOP_FIXED_CPU_LOAD` commands bound to the current Unit, exact Tire version/digest and `TIRE_CPU_ISOLATION_PROOF_V1`, obtained over its existing service-initiated outbound backend route. It shall run at most one prepared worker inside its actual Aos-managed cgroup, accept no caller-selected shell/worker/intensity/duration, auto-stop on backend-lease loss or an absolute 180-second ceiling and return to `INACTIVE` without persistence/resume after Service or VM restart. The intentional load shall be contained by AosCore throttling without Service stop, restart or redeployment; the same instance shall recover when load stops. Service-reported load state shall not be treated as enforcement evidence. No equivalent first-demo behavior is claimed for unexercised RAM/storage/file/PID exhaustion.
+- Statement: The service shall expose truthful health/readiness, request the amended candidate envelope of 600 DMIPS CPU, 16 MiB RAM, 4 MiB persistent storage, 2 MiB versioned model state, 2 MiB temporary storage, 1024 open files and 16 processes, remain within the subsequently qualified native/OCI mapping of those bounds, implement no resource manager, and shall not degrade VDP, Brake Health or vehicle control. Persistent storage owns the outbox/supporting database metadata, state owns the estimator and tmp owns temporary computation. For the first-demo proof, the Service shall accept only fixed idempotent `START_FIXED_CPU_LOAD`/`STOP_FIXED_CPU_LOAD` commands bound to the current Unit, exact Tire version/digest and `TIRE_CPU_ISOLATION_PROOF_V1`, obtained over its existing service-initiated outbound backend route. It shall run at most one prepared worker inside its actual Aos-managed cgroup, accept no caller-selected shell/worker/intensity/duration, auto-stop on backend-lease loss or an absolute 180-second ceiling and return to `INACTIVE` without persistence/resume after Service or VM restart. The intentional load shall be contained by AosCore throttling without Service stop, restart or redeployment; the same instance shall recover when load stops. Service-reported load state shall not be treated as enforcement evidence. No equivalent first-demo behavior is claimed for unexercised RAM/storage/file/PID exhaustion.
 - Parents: [independent Tire product (`SYS-TIRE-005`)](../system-requirements-and-traceability.md#sys-tire-005), [QM containment (`SYS-SEC-007`)](../system-requirements-and-traceability.md#sys-sec-007) and [AosCore-enforced service-tenant isolation (`SYS-RES-001`)](../system-requirements-and-traceability.md#sys-res-001)
 - Flows: [Tire failure boundaries (`AF-TIRE-FR`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-fr) and [AosCore tenant isolation (`AF-TIRE-RES`)](../../architecture/demo-scenario-architecture-flows.md#af-tire-res)
 - Verification: Unit, Component, Integration
@@ -511,13 +512,13 @@ waive D4-003 calibration, implementation review or live qualification.
 
 ## Open D4 Gates
 
-Reviewed 24 September 2026 against demo-v1.1 / Factory .39. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
+Reviewed 7 October 2026 against Kit028 / Setup042 / Factory .41. The following replaces the old implementation-to-do list without removing any requirement or test obligation. Source and dated receipts are linked in [Current Implementation Baseline](#current-implementation-baseline) and the [cross-package matrix](../../architecture/current-implementation.md).
 
 | Boundary / gate | Current status and remaining obligation |
 | --- | --- |
 | Implemented V1 | Fifteen real KUKSA dynamics inputs, source-time maneuvers, synthetic model, durable outbox, typed advisory/Gateway correlation and independent Reset are implemented; V1 is already advisory-capable. |
 | Calibration | The accepted 16 September raw dispersion/slip arithmetic exists. Frozen healthy/pre-aged 10+10 classification and oracle-negative/repeatability evidence remain required; do not call the model a production diagnosis. |
-| Current .39 proof | Tire49/V1 retained state through ignition and produced local results during externalOFF. Exact assessment/advisory replay was checked; ten legacy status messages have only count/time evidence. |
+| Current Kit028 proof | Tire60/V1 produced results/advisory with VDP136/V3; independent Reset/history, offline backlog recovery and post-ignition products passed in the installed scripted sequence. Deferred load-sensitive readiness is not claimed fixed. |
 | Remaining fault/resource matrix | Complete corrupt-state physical quarantine, replacement epoch, crash/overflow, cold externalOFF, nonempty-queue power loss and quota/failure isolation. |
 | CPU qualification | No fixed CPU worker/control is enabled. A design profile or Cloud CPU chart is not an implemented isolation test. |
 | Compatibility and native admission | Service checks actual local inputs; Presenter maps exact installed VDP profile. Missing data is not proven incompatibility; native Cloud pre-transfer dependency admission remains deferred. |
