@@ -1,0 +1,1115 @@
+{
+  "$schema": "./release.schema.json",
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "id": "kit028-setup042",
+  "productVersion": null,
+  "status": "engineering-candidate",
+  "baselineTag": {
+    "name": "candidate/kit028-setup042",
+    "commit": "b6600cfeee29e95ae92ac09d5b422de6885207c6"
+  },
+  "internalVersions": {
+    "kit": "028",
+    "setup": "042",
+    "factory": "6.1.1-maninblack.41"
+  },
+  "sourceLock": "workspace/checkpoints/installer-kit-028-source-lock.json",
+  "authorities": [
+    {
+      "path": "workspace/repositories.json",
+      "sha256": "80b4ae374f1a415ca532a702a0855a5c59b1897108ed5fc98cd5f3d42b4fcfed"
+    },
+    {
+      "path": "workspace/checkpoints/installer-kit-028-source-lock.json",
+      "sha256": "bd5271220717343bc06927efcc2a8172ccc6d4f42f7326cd0240c458757a5206"
+    },
+    {
+      "path": "workspace/checkpoints/installer-kit-028-candidate.json",
+      "sha256": "0243fec6fe3e72de84b22461360f08c370aae458f1309f5e3315bc2d42e607d9"
+    },
+    {
+      "path": "workspace/checkpoints/factory-41-candidate.json",
+      "sha256": "0b9e41c459fff7cc4456b76f27f2f2dbdb64250734c1230abd46a0266377c448"
+    },
+    {
+      "path": "workspace/cloud-worker-wheels.lock.json",
+      "sha256": "47a91441b93f3f1e922c71ae423a7b16db5a39ffced206e71003fbffc6a7501f"
+    },
+    {
+      "path": "contracts/portable-host-launch/host-runtime.lock.json",
+      "sha256": "cf2e70da60e6af2d1d0d6000a5fb56b550b1a668278e2e4849b9d2a9245dbb11"
+    },
+    {
+      "path": "contracts/portable-preparation-inputs/vehicle-inputs.lock.json",
+      "sha256": "bb21b00f9d2682cdcdd663b981b3a18b5e77c45fc7f8bd86cdd79074795d0772"
+    },
+    {
+      "path": "contracts/portable-vm-launch/vm-runtime.lock.json",
+      "sha256": "15b8bd838d31ce825644fbf8cea5ccbe6b37f4ee8c5c2d6fd0127999e6438873"
+    },
+    {
+      "path": "contracts/portable-cloud-backend-inputs/cloud-runtime.lock.json",
+      "sha256": "5948205958fc62a514d6ab1e170416462c8cd16c9c2d62dcecd44daf4cacd8f4"
+    },
+    {
+      "path": "contracts/portable-cloud-backend-inputs/backend-inputs.lock.json",
+      "sha256": "499a0d97266dd6dbce4bda071381e14b0e5c2b4bb36b67f4edad3fd32659b4dc"
+    },
+    {
+      "path": "scripts/distribution/setup_release.json",
+      "sha256": "7a3a15d82160b7faca91573037009701ab6de6ebdfe5dacbf29e24a699bd56f3"
+    },
+    {
+      "path": "apps/presenter-ui/package.json",
+      "sha256": "1248b0c896286eb27f809f7495435fcb3637673213ea542acfa938ce869b11a8"
+    },
+    {
+      "path": "apps/presenter-ui/package-lock.json",
+      "sha256": "fcb9e6114b021dfa02f93a76d453f2ca06980c780947dbe38ac9a5d378a7364c"
+    }
+  ],
+  "sources": [
+    {
+      "id": "integration",
+      "repository": "https://github.com/alexmaninblack/aosedge-sdv-demo.git",
+      "revision": "638fc8d18b1ee66f10a253fd51ab4238582ba843",
+      "buildRevision": "22ee79e0e21709de34803c6db20047847138eba0",
+      "sourceLockIndex": 0,
+      "access": "public-git",
+      "note": "The candidate tag additionally records source publication metadata, documentation and CI pins; the frozen source hash sets below resolve against this commit."
+    },
+    {
+      "id": "factory-tools",
+      "repository": "https://github.com/alexmaninblack/aosedge-sdv-demo.git",
+      "revision": "30ae66148255830b7e29cc82e2cd251d065bb894",
+      "buildRevision": "30ae66148255830b7e29cc82e2cd251d065bb894",
+      "sourceLockIndex": 1,
+      "access": "public-git",
+      "note": "Separate immutable tools checkout; no branch selection or merge required."
+    },
+    {
+      "id": "vehicle-platform",
+      "repository": "https://github.com/alexmaninblack/aos-vehicle-platform.git",
+      "revision": "92a2138813983cb1c029fd3e61bd90b68241af63",
+      "buildRevision": "3fd1f8eb8e8d51c7e89c9f89f1646c7d4f55494f",
+      "sourceLockIndex": 2,
+      "access": "public-git",
+      "note": "Publication adds SPDX sidecars and test headers only; Factory41 patches unchanged."
+    },
+    {
+      "id": "functional-service",
+      "repository": "https://github.com/alexmaninblack/brake-health-service.git",
+      "revision": "5aa652fda603e7621043961331e58236b19204e9",
+      "buildRevision": "5aa652fda603e7621043961331e58236b19204e9",
+      "sourceLockIndex": 3,
+      "access": "public-git",
+      "note": "Exact source publication revision."
+    },
+    {
+      "id": "tire-health-service",
+      "repository": "https://github.com/alexmaninblack/tire-health-service.git",
+      "revision": "f0a0f6edadb51aa338775d157aa3bde28f5b76f4",
+      "buildRevision": "f0a0f6edadb51aa338775d157aa3bde28f5b76f4",
+      "sourceLockIndex": 4,
+      "access": "public-git",
+      "note": "Exact source publication revision."
+    },
+    {
+      "id": "vehicle-gateway",
+      "repository": "https://github.com/alexmaninblack/carla-ego-runtime.git",
+      "revision": "2e3d1164d491dac25e212f59315057deca0bf3d8",
+      "buildRevision": "4e384798c95298a706709775c6fb33367edd00c6",
+      "sourceLockIndex": 5,
+      "access": "public-git",
+      "note": "Native Driving Control build inputs match the committed source hashes below."
+    },
+    {
+      "id": "carla",
+      "repository": "https://github.com/alexmaninblack/carla.git",
+      "revision": "eb09b82464076596ee47e42b3f5f9b48f9ff5b30",
+      "buildRevision": "eb09b82464076596ee47e42b3f5f9b48f9ff5b30",
+      "sourceLockIndex": 6,
+      "access": "public-git",
+      "note": "Retains source corrections and content-profile recipe; licensed cooked assets remain external."
+    },
+    {
+      "id": "unreal-engine",
+      "repository": "https://github.com/alexmaninblack/UnrealEngine.git",
+      "revision": "9b705d6d2db5b769ab34edb04f3ca2bb8b960014",
+      "buildRevision": "9b705d6d2db5b769ab34edb04f3ca2bb8b960014",
+      "sourceLockIndex": 7,
+      "access": "epic-entitlement",
+      "note": "Exact source publication revision."
+    },
+    {
+      "id": "brake-health-cloud",
+      "repository": "https://github.com/alexmaninblack/brake-health-cloud.git",
+      "revision": "7c64adf7b3d99535ecc7c8cbe468bc527cbcdc12",
+      "buildRevision": "42395715103d9f512c2586a2c9b98c3975c06ab7",
+      "sourceLockIndex": 8,
+      "access": "public-git",
+      "note": "Later commit changes documentation only."
+    },
+    {
+      "id": "tire-health-cloud",
+      "repository": "https://github.com/alexmaninblack/tire-health-cloud.git",
+      "revision": "ea2d6deec9b704cb866d362eaefc9d87356ddeb5",
+      "buildRevision": "47cfa632a80c89a7eaab0c501fe437c4ae2cb180",
+      "sourceLockIndex": 9,
+      "access": "public-git",
+      "note": "Later commits change documentation only."
+    }
+  ],
+  "inputs": [
+    {
+      "id": "host-runtime",
+      "lock": "contracts/portable-host-launch/host-runtime.lock.json",
+      "path": "host-runtime-manifest.json",
+      "bytes": 3825784,
+      "sha256": "f6ae4b1222e55a0d15501176ca0ab91aaa29ce011817419c1e6b3443c5dacff2",
+      "kitPath": "demo-artifacts/aosedge-sdv-demo/host-runtime/host-runtime-manifest.json"
+    },
+    {
+      "id": "preparation-inputs",
+      "lock": "contracts/portable-preparation-inputs/vehicle-inputs.lock.json",
+      "path": "vehicle-input-manifest.json",
+      "bytes": 51532,
+      "sha256": "d3f4e503e5f5157d946340fabb87572528194ee8cea1d5a01d0c2642bf208b47",
+      "kitPath": "demo-artifacts/aosedge-sdv-demo/preparation-inputs/vehicle-input-manifest.json"
+    },
+    {
+      "id": "vm-runtime",
+      "lock": "contracts/portable-vm-launch/vm-runtime.lock.json",
+      "path": "vm-runtime-manifest.json",
+      "bytes": 1369,
+      "sha256": "b825aaee0ce34b5f72c93104d49728e90eb32a8ca0630cc9cc9b62a601f4d205",
+      "kitPath": "demo-artifacts/aosedge-sdv-demo/vm-runtime/vm-runtime-manifest.json"
+    },
+    {
+      "id": "cloud-runtime",
+      "lock": "contracts/portable-cloud-backend-inputs/cloud-runtime.lock.json",
+      "path": "cloud-runtime-manifest.json",
+      "bytes": 604355,
+      "sha256": "46fe0adf22a6843f9d7c4162208f38caf194ca19e98e1089e3fb931ed2a5bb46",
+      "kitPath": "demo-artifacts/aosedge-sdv-demo/cloud-runtime/cloud-runtime-manifest.json"
+    },
+    {
+      "id": "backend-inputs",
+      "lock": "contracts/portable-cloud-backend-inputs/backend-inputs.lock.json",
+      "path": "backend-image-manifest.json",
+      "bytes": 986,
+      "sha256": "7d0d9b01feab0ce22a6d5e566cb90fab92431f3526c4f46706f99a7b10b422ed",
+      "kitPath": "demo-artifacts/aosedge-sdv-demo/backend-inputs/backend-image-manifest.json"
+    }
+  ],
+  "artifacts": {
+    "dmg": {
+      "name": "AosEdge-SDV-Lab-Kit028-Setup042.dmg",
+      "bytes": 14150764550,
+      "sha256": "27c4dbcac02c5cefcd3f20c75d7e51e3d54ec9f631bbc48e8d58839ea8e67236",
+      "digestEvidence": "Existing creation/transfer receipts; no rebuild or resigning performed by this source checkpoint."
+    },
+    "applicationManifest": {
+      "sha256": "1cb2628a3c358d685441644b500a94598c826f976b0bcff13ab5e7144754fbef"
+    },
+    "setup": {
+      "version": "042",
+      "binarySha256": "4eb4e060d5e7306b402aa03a4282ea00ea4e3e7f9f968e152c19e5b824277fd5",
+      "receiptSha256": "2104d082c35215a36168862ce46fc6eb583d004ef2145ebb1c0692476580f6a3",
+      "signing": "apple-development-local-only",
+      "notarized": false
+    },
+    "uiBuildReceipt": {
+      "sha256": "26453cfa1964b1f30d9b403202fc9ee3961d4d96b705f4ee6bf496820ec080ce"
+    },
+    "hostManifest": {
+      "sha256": "f6ae4b1222e55a0d15501176ca0ab91aaa29ce011817419c1e6b3443c5dacff2"
+    },
+    "preparationManifest": {
+      "sha256": "d3f4e503e5f5157d946340fabb87572528194ee8cea1d5a01d0c2642bf208b47"
+    },
+    "vmManifest": {
+      "sha256": "b825aaee0ce34b5f72c93104d49728e90eb32a8ca0630cc9cc9b62a601f4d205"
+    },
+    "backendManifest": {
+      "sha256": "7d0d9b01feab0ce22a6d5e566cb90fab92431f3526c4f46706f99a7b10b422ed"
+    },
+    "factory": {
+      "version": "6.1.1-maninblack.41",
+      "name": "main-qemuarm64.img",
+      "bytes": 6997147648,
+      "sha256": "361c187374469f4a97b3b9c74cb755ce432bc5287fb19ccd2f6bfb9c3eb46769"
+    }
+  },
+  "application": {
+    "kitPath": "application-manifest.json",
+    "bytes": 19594,
+    "sha256": "1cb2628a3c358d685441644b500a94598c826f976b0bcff13ab5e7144754fbef",
+    "inputLogicalBytes": 28453262020,
+    "originalBuildHadUncommittedSources": true
+  },
+  "distribution": {
+    "approved": false,
+    "locator": null,
+    "access": "unpublished",
+    "retention": "not-selected",
+    "provenance": "Google Drive selected for future delivery; existing source lock and creation/transfer receipts remain authoritative. Folder/API binding and authenticated external release channel not yet implemented."
+  },
+  "profiles": [
+    {
+      "id": "operator",
+      "claim": "not-qualified",
+      "components": [
+        "unreal",
+        "carla-content",
+        "carla",
+        "native-host",
+        "python-host",
+        "vm-support",
+        "cloud-sdk",
+        "factory-layer",
+        "aoscore-kuksa",
+        "factory",
+        "vdp",
+        "brake-service",
+        "tire-service",
+        "brake-backend",
+        "tire-backend",
+        "gateway",
+        "presenter",
+        "preparation",
+        "backend-export",
+        "application",
+        "setup-media"
+      ],
+      "platform": "macOS-arm64",
+      "prerequisites": [
+        "Supported Apple Silicon macOS",
+        "Docker Engine and authorized staging accounts for live demo",
+        "User-granted native permissions"
+      ]
+    },
+    {
+      "id": "developer",
+      "claim": "not-qualified",
+      "components": [
+        "unreal",
+        "carla-content",
+        "carla",
+        "native-host",
+        "python-host",
+        "vm-support",
+        "cloud-sdk",
+        "factory-layer",
+        "aoscore-kuksa",
+        "factory",
+        "vdp",
+        "brake-service",
+        "tire-service",
+        "brake-backend",
+        "tire-backend",
+        "gateway",
+        "presenter",
+        "preparation",
+        "backend-export",
+        "application",
+        "setup-media"
+      ],
+      "platform": "macOS-arm64",
+      "prerequisites": [
+        "Pinned sources and toolchain",
+        "Declared dependency access",
+        "Measured workspace capacity before expensive work"
+      ]
+    },
+    {
+      "id": "full-source",
+      "claim": "not-qualified",
+      "components": [
+        "unreal",
+        "carla-content",
+        "carla",
+        "native-host",
+        "python-host",
+        "vm-support",
+        "cloud-sdk",
+        "factory-layer",
+        "aoscore-kuksa",
+        "factory",
+        "vdp",
+        "brake-service",
+        "tire-service",
+        "brake-backend",
+        "tire-backend",
+        "gateway",
+        "presenter",
+        "preparation",
+        "backend-export",
+        "application",
+        "setup-media"
+      ],
+      "platform": "macOS-arm64",
+      "prerequisites": [
+        "Pinned sources and toolchain",
+        "Declared dependency access",
+        "Measured workspace capacity before expensive work"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "id": "unreal",
+      "owner": "Vehicle Simulation",
+      "sourceIds": [
+        "unreal-engine"
+      ],
+      "manifestIds": [
+        "host-runtime"
+      ],
+      "requires": [],
+      "recipes": [
+        {
+          "source": "unreal-engine",
+          "path": "Engine/Build/BatchFiles/Mac/Build.sh"
+        }
+      ],
+      "format": "Embedded compiled engine",
+      "license": "Epic Unreal terms; entitlement and redistribution review required",
+      "access": "restricted",
+      "actions": {
+        "operator": "reuse",
+        "developer": "reuse",
+        "full-source": "build"
+      }
+    },
+    {
+      "id": "carla-content",
+      "owner": "Vehicle Simulation",
+      "sourceIds": [
+        "carla"
+      ],
+      "manifestIds": [
+        "host-runtime"
+      ],
+      "requires": [],
+      "recipes": [
+        {
+          "source": "carla",
+          "path": "Util/BuildTools/standalone_content_profile.py"
+        },
+        {
+          "source": "carla",
+          "path": "Util/BuildTools/road_sampler_profile.py"
+        }
+      ],
+      "format": "Cooked Town10HD_Opt content",
+      "license": "Stage0 observed CC-BY-4.0; current complete cooked closure requires review",
+      "access": "restricted",
+      "actions": {
+        "operator": "reuse",
+        "developer": "reuse",
+        "full-source": "build"
+      }
+    },
+    {
+      "id": "carla",
+      "owner": "Vehicle Simulation",
+      "sourceIds": [
+        "carla"
+      ],
+      "manifestIds": [
+        "host-runtime"
+      ],
+      "requires": [
+        "unreal",
+        "carla-content"
+      ],
+      "recipes": [
+        {
+          "source": "carla",
+          "path": "CMakeLists.txt"
+        }
+      ],
+      "format": "Standalone macOS arm64 Game and matching Python binding",
+      "license": "CARLA MIT plus licensed engine and assets",
+      "access": "restricted",
+      "actions": {
+        "operator": "reuse",
+        "developer": "reuse",
+        "full-source": "build"
+      }
+    },
+    {
+      "id": "native-host",
+      "owner": "Integration build tooling",
+      "sourceIds": [
+        "integration"
+      ],
+      "manifestIds": [
+        "host-runtime"
+      ],
+      "requires": [],
+      "recipes": [
+        {
+          "source": "integration",
+          "path": "scripts/distribution/native_bundle.py"
+        }
+      ],
+      "format": "Relocated QEMU, native libraries, OpenSSL",
+      "license": "Mixed third-party licenses; notices and source offers incomplete",
+      "access": "review-required",
+      "actions": {
+        "operator": "reuse",
+        "developer": "reuse",
+        "full-source": "build"
+      }
+    },
+    {
+      "id": "python-host",
+      "owner": "Integration build tooling",
+      "sourceIds": [
+        "integration"
+      ],
+      "manifestIds": [
+        "host-runtime",
+        "cloud-runtime"
+      ],
+      "requires": [],
+      "recipes": [
+        {
+          "source": "integration",
+          "path": "scripts/distribution/private_python.py"
+        }
+      ],
+      "format": "Private CPython 3.12 and native modules",
+      "license": "Python and module licenses; source closure review required",
+      "access": "review-required",
+      "actions": {
+        "operator": "reuse",
+        "developer": "reuse",
+        "full-source": "build"
+      }
+    },
+    {
+      "id": "vm-support",
+      "owner": "Integration build tooling",
+      "sourceIds": [
+        "integration"
+      ],
+      "manifestIds": [
+        "vm-runtime"
+      ],
+      "requires": [
+        "native-host"
+      ],
+      "recipes": [
+        {
+          "source": "integration",
+          "path": "scripts/distribution/vm_inputs.py"
+        }
+      ],
+      "format": "EDK2 firmware, QEMU ROM, notices and DNS helper",
+      "license": "Firmware and QEMU notices retained; exact source recipe gate open",
+      "access": "review-required",
+      "actions": {
+        "operator": "reuse",
+        "developer": "reuse",
+        "full-source": "build"
+      }
+    },
+    {
+      "id": "cloud-sdk",
+      "owner": "Integration build tooling",
+      "sourceIds": [
+        "integration"
+      ],
+      "manifestIds": [
+        "cloud-runtime"
+      ],
+      "requires": [
+        "python-host"
+      ],
+      "recipes": [
+        {
+          "source": "integration",
+          "path": "scripts/distribution/cloud_worker.py"
+        }
+      ],
+      "format": "41 pinned public PyPI wheels and bundled worker",
+      "license": "Per-wheel licenses; public availability does not imply redistribution approval",
+      "access": "public-pypi",
+      "actions": {
+        "operator": "reuse",
+        "developer": "assemble",
+        "full-source": "assemble"
+      }
+    },
+    {
+      "id": "factory-layer",
+      "owner": "Platform Team",
+      "sourceIds": [
+        "vehicle-platform",
+        "factory-tools"
+      ],
+      "manifestIds": [
+        "preparation-inputs"
+      ],
+      "requires": [],
+      "recipes": [
+        {
+          "source": "factory-tools",
+          "path": "manifests/r6-1/aos-vm-project.pinned.yaml"
+        },
+        {
+          "source": "factory-tools",
+          "path": "scripts/r6-1-builder"
+        },
+        {
+          "source": "factory-tools",
+          "path": "scripts/guest/r6-1-yocto-build"
+        },
+        {
+          "source": "vehicle-platform",
+          "path": "meta-aos-vehicle-platform/conf/layer.conf"
+        }
+      ],
+      "format": "Yocto layers and resolved build configuration",
+      "license": "Mixed Yocto recipe licenses; exact Factory41 override closure pending",
+      "access": "public-git",
+      "actions": {
+        "operator": "reuse",
+        "developer": "reuse",
+        "full-source": "build"
+      }
+    },
+    {
+      "id": "aoscore-kuksa",
+      "owner": "Platform Team",
+      "sourceIds": [
+        "vehicle-platform"
+      ],
+      "manifestIds": [
+        "preparation-inputs"
+      ],
+      "requires": [
+        "factory-layer"
+      ],
+      "recipes": [
+        {
+          "source": "vehicle-platform",
+          "path": "meta-aos-vehicle-platform/recipes-aos/aos-communicationmanager/aos-communicationmanager_git.bbappend"
+        },
+        {
+          "source": "vehicle-platform",
+          "path": "meta-aos-vehicle-platform/recipes-connectivity/kuksa-databroker/kuksa-databroker_git.bbappend"
+        }
+      ],
+      "format": "AosCore and KUKSA binaries with owned patches",
+      "license": "Upstream and patch licenses retained by recipes",
+      "access": "public-git",
+      "actions": {
+        "operator": "reuse",
+        "developer": "reuse",
+        "full-source": "build"
+      }
+    },
+    {
+      "id": "factory",
+      "owner": "Platform Team",
+      "sourceIds": [
+        "vehicle-platform",
+        "factory-tools"
+      ],
+      "manifestIds": [
+        "preparation-inputs"
+      ],
+      "requires": [
+        "aoscore-kuksa"
+      ],
+      "recipes": [
+        {
+          "source": "factory-tools",
+          "path": "scripts/r6-1-builder"
+        }
+      ],
+      "format": "Raw arm64 main-qemuarm64.img",
+      "license": "Image SBOM and source offers required for delivery",
+      "access": "review-required",
+      "actions": {
+        "operator": "reuse",
+        "developer": "reuse",
+        "full-source": "build"
+      }
+    },
+    {
+      "id": "vdp",
+      "owner": "Platform Team",
+      "sourceIds": [
+        "vehicle-platform"
+      ],
+      "manifestIds": [
+        "preparation-inputs"
+      ],
+      "requires": [
+        "factory"
+      ],
+      "recipes": [
+        {
+          "source": "integration",
+          "path": "scripts/distribution/vehicle_inputs.py"
+        }
+      ],
+      "format": "Unsigned V1/V2/V3 FOTA inputs with shared runtime",
+      "license": "Owned platform source plus guest base dependencies",
+      "access": "public-git",
+      "actions": {
+        "operator": "reuse",
+        "developer": "build",
+        "full-source": "build"
+      }
+    },
+    {
+      "id": "brake-service",
+      "owner": "Function Team 1",
+      "sourceIds": [
+        "functional-service"
+      ],
+      "manifestIds": [
+        "preparation-inputs"
+      ],
+      "requires": [],
+      "recipes": [
+        {
+          "source": "functional-service",
+          "path": "Dockerfile"
+        },
+        {
+          "source": "functional-service",
+          "path": "tools/build_scaffold.py"
+        }
+      ],
+      "format": "V1/V2/V3 bootstrap and service OCI exports",
+      "license": "Apache-2.0 project; digest-pinned Debian base, dated package snapshot and pinned native dependencies; distribution review remains open",
+      "access": "public-git",
+      "actions": {
+        "operator": "reuse",
+        "developer": "build",
+        "full-source": "build"
+      }
+    },
+    {
+      "id": "tire-service",
+      "owner": "Function Team 2",
+      "sourceIds": [
+        "tire-health-service"
+      ],
+      "manifestIds": [
+        "preparation-inputs"
+      ],
+      "requires": [],
+      "recipes": [
+        {
+          "source": "tire-health-service",
+          "path": "Dockerfile"
+        },
+        {
+          "source": "tire-health-service",
+          "path": "tools/build_product.py"
+        }
+      ],
+      "format": "V1 bootstrap and service OCI exports",
+      "license": "Apache-2.0 project; digest-pinned Debian base, dated package snapshot and pinned native dependencies; distribution review remains open",
+      "access": "public-git",
+      "actions": {
+        "operator": "reuse",
+        "developer": "build",
+        "full-source": "build"
+      }
+    },
+    {
+      "id": "brake-backend",
+      "owner": "Function Team 1",
+      "sourceIds": [
+        "brake-health-cloud"
+      ],
+      "manifestIds": [
+        "backend-inputs"
+      ],
+      "requires": [],
+      "recipes": [
+        {
+          "source": "brake-health-cloud",
+          "path": "Dockerfile"
+        }
+      ],
+      "format": "linux/arm64 OCI image",
+      "license": "Apache-2.0 project plus digest-pinned Node base and npm dependency licenses",
+      "access": "public-git",
+      "actions": {
+        "operator": "reuse",
+        "developer": "build",
+        "full-source": "build"
+      }
+    },
+    {
+      "id": "tire-backend",
+      "owner": "Function Team 2",
+      "sourceIds": [
+        "tire-health-cloud"
+      ],
+      "manifestIds": [
+        "backend-inputs"
+      ],
+      "requires": [],
+      "recipes": [
+        {
+          "source": "tire-health-cloud",
+          "path": "Dockerfile"
+        }
+      ],
+      "format": "linux/arm64 OCI image",
+      "license": "Apache-2.0 project plus digest-pinned Node base licenses",
+      "access": "public-git",
+      "actions": {
+        "operator": "reuse",
+        "developer": "build",
+        "full-source": "build"
+      }
+    },
+    {
+      "id": "gateway",
+      "owner": "Vehicle Gateway Team",
+      "sourceIds": [
+        "vehicle-gateway"
+      ],
+      "manifestIds": [
+        "host-runtime"
+      ],
+      "requires": [
+        "carla",
+        "native-host"
+      ],
+      "recipes": [
+        {
+          "source": "vehicle-gateway",
+          "path": "CMakeLists.txt"
+        },
+        {
+          "source": "vehicle-gateway",
+          "path": "tools/KeyboardControl.swift"
+        }
+      ],
+      "format": "Gateway, Driving Control and native helpers",
+      "license": "Project and linked dependency licenses",
+      "access": "public-git",
+      "actions": {
+        "operator": "reuse",
+        "developer": "build",
+        "full-source": "build"
+      }
+    },
+    {
+      "id": "presenter",
+      "owner": "Demo Solution Team",
+      "sourceIds": [
+        "integration"
+      ],
+      "manifestIds": [
+        "host-runtime"
+      ],
+      "requires": [],
+      "recipes": [
+        {
+          "source": "integration",
+          "path": "scripts/distribution/ui_build.py"
+        }
+      ],
+      "format": "Pinned npm build and Swift host UI",
+      "license": "Project MIT and npm dependency licenses",
+      "access": "public-git",
+      "actions": {
+        "operator": "reuse",
+        "developer": "build",
+        "full-source": "build"
+      }
+    },
+    {
+      "id": "preparation",
+      "owner": "Integration build tooling",
+      "sourceIds": [
+        "integration"
+      ],
+      "manifestIds": [
+        "preparation-inputs"
+      ],
+      "requires": [
+        "factory",
+        "vdp",
+        "brake-service",
+        "tire-service"
+      ],
+      "recipes": [
+        {
+          "source": "integration",
+          "path": "scripts/distribution/vehicle_inputs.py"
+        }
+      ],
+      "format": "Verified unsigned input directory",
+      "license": "No private credentials or previously signed Cloud releases",
+      "access": "public-git",
+      "actions": {
+        "operator": "reuse",
+        "developer": "assemble",
+        "full-source": "assemble"
+      }
+    },
+    {
+      "id": "backend-export",
+      "owner": "Integration build tooling",
+      "sourceIds": [
+        "integration"
+      ],
+      "manifestIds": [
+        "backend-inputs"
+      ],
+      "requires": [
+        "brake-backend",
+        "tire-backend"
+      ],
+      "recipes": [
+        {
+          "source": "integration",
+          "path": "scripts/distribution/backend_archive.py"
+        }
+      ],
+      "format": "Verified OCI archive",
+      "license": "No backend run data; image notices apply",
+      "access": "public-git",
+      "actions": {
+        "operator": "reuse",
+        "developer": "assemble",
+        "full-source": "assemble"
+      }
+    },
+    {
+      "id": "application",
+      "owner": "Demo Solution Team",
+      "sourceIds": [
+        "integration"
+      ],
+      "manifestIds": [
+        "host-runtime",
+        "preparation-inputs",
+        "vm-runtime",
+        "cloud-runtime",
+        "backend-inputs"
+      ],
+      "requires": [
+        "gateway",
+        "python-host",
+        "vm-support",
+        "cloud-sdk",
+        "presenter",
+        "preparation",
+        "backend-export"
+      ],
+      "recipes": [
+        {
+          "source": "integration",
+          "path": "scripts/distribution/application.py"
+        }
+      ],
+      "format": "Runtime Kit and application manifest",
+      "license": "Mixed notices; distribution approval remains separate",
+      "access": "review-required",
+      "actions": {
+        "operator": "reuse",
+        "developer": "assemble",
+        "full-source": "assemble"
+      }
+    },
+    {
+      "id": "setup-media",
+      "owner": "Demo Solution Team",
+      "sourceIds": [
+        "integration"
+      ],
+      "manifestIds": [],
+      "requires": [
+        "application"
+      ],
+      "recipes": [
+        {
+          "source": "integration",
+          "path": "scripts/distribution/setup_build.py"
+        },
+        {
+          "source": "integration",
+          "path": "scripts/distribution/full_dmg.py"
+        }
+      ],
+      "format": "Setup app and complete DMG",
+      "license": "Local Apple Development only; no notarization",
+      "access": "review-required",
+      "actions": {
+        "operator": "reuse",
+        "developer": "assemble",
+        "full-source": "assemble"
+      }
+    }
+  ],
+  "toolchains": [
+    {
+      "id": "ui-node",
+      "identity": "26.0.0",
+      "evidence": "apps/presenter-ui/package.json",
+      "state": "pinned"
+    },
+    {
+      "id": "ui-npm",
+      "identity": "11.12.1",
+      "evidence": "apps/presenter-ui/package.json",
+      "state": "pinned"
+    },
+    {
+      "id": "cloud-wheels",
+      "identity": "CPython 3.12; 41 wheels with hashes",
+      "evidence": "workspace/cloud-worker-wheels.lock.json",
+      "state": "pinned"
+    },
+    {
+      "id": "native-build",
+      "identity": "Compiler, SDK and transitive native build closure pending",
+      "evidence": "workspace/distribution-stage0-inventory.json",
+      "state": "unresolved"
+    },
+    {
+      "id": "factory-build",
+      "identity": "Builder base and tools have pins; effective Factory41 configuration and full dependency closure pending",
+      "evidence": "workspace/checkpoints/factory-41-candidate.json",
+      "state": "unresolved"
+    }
+  ],
+  "gates": [
+    {
+      "id": "artifact-delivery",
+      "profiles": [
+        "operator",
+        "developer"
+      ],
+      "owner": "Release owner",
+      "resolution": "Google Drive selected. R2 must bind the actual folder/account, verify authorized downloads and enforce no-overwrite, supported-release retention and entitlement boundaries. No hosted file binding exists in this definition."
+    },
+    {
+      "id": "redistribution",
+      "profiles": [
+        "operator",
+        "developer",
+        "full-source"
+      ],
+      "owner": "Release and component owners",
+      "resolution": "Complete license, notices and source-offer review; restricted code/assets are not made public by source publication."
+    },
+    {
+      "id": "distribution-signing",
+      "profiles": [
+        "operator"
+      ],
+      "owner": "Release owner",
+      "resolution": "Use an eligible distribution identity and notarization for the intended external channel; Setup042 is local Apple Development."
+    },
+    {
+      "id": "native-qualification",
+      "profiles": [
+        "operator",
+        "developer",
+        "full-source"
+      ],
+      "owner": "Integration qualification",
+      "resolution": "Close current native journey, moving SOTA, secure token entry and interruption/repair gates."
+    },
+    {
+      "id": "source-provenance",
+      "profiles": [
+        "developer",
+        "full-source"
+      ],
+      "owner": "Integration build tooling",
+      "resolution": "Produce a new clean committed build receipt; original Kit028 build had uncommitted sources. Do not rewrite old receipts."
+    },
+    {
+      "id": "build-automation",
+      "profiles": [
+        "developer",
+        "full-source"
+      ],
+      "owner": "Integration build tooling",
+      "resolution": "R2 must implement workspace preparation/build adapters and R4 must prove fresh-clone reproduction."
+    },
+    {
+      "id": "toolchain-closure",
+      "profiles": [
+        "developer",
+        "full-source"
+      ],
+      "owner": "Component build owners",
+      "resolution": "Close compiler/SDK/native build dependencies and measure capacity. Service/backend Docker base images are already digest-pinned; qualify their acquisition and clean builds in R2/R4. Historical host versions are observations, not a toolchain lock."
+    },
+    {
+      "id": "factory-config",
+      "profiles": [
+        "full-source"
+      ],
+      "owner": "Platform and integration build owners",
+      "resolution": "Freeze resolved Factory41 Yocto configuration and overrides, and align the guest build driver. Both the pinned template and guest driver still select older platform/image values."
+    },
+    {
+      "id": "simulation-access",
+      "profiles": [
+        "full-source"
+      ],
+      "owner": "Vehicle Simulation",
+      "resolution": "Confirm Epic entitlement and close source/content/cook dependencies including the road material correction."
+    },
+    {
+      "id": "native-source-closure",
+      "profiles": [
+        "full-source"
+      ],
+      "owner": "Integration build tooling",
+      "resolution": "Supply exact QEMU/EDK2/OpenSSL/CPython and native module source/toolchain recipes, not only relocation manifests."
+    },
+    {
+      "id": "full-source-proof",
+      "profiles": [
+        "full-source"
+      ],
+      "owner": "Integration qualification",
+      "resolution": "Qualify full-source build capacity and declared binary inputs independently from M1 runtime tests."
+    }
+  ],
+  "documentation": {
+    "contract": "contracts/release-reproduction/README.md",
+    "inventory": "docs/development/release-reproduction-r1.md",
+    "baseline": "docs/qualification/current-baseline.md",
+    "version": "1.3"
+  },
+  "evidence": [
+    "workspace/checkpoints/installer-kit-028-candidate.json",
+    "docs/qualification/m1-live-journey-2026-10-03.md",
+    "docs/qualification/kit028-setup042-source-publication-2026-10-05.md"
+  ],
+  "limitations": [
+    "Load-sensitive brief readiness transitions deferred by operator",
+    "VDP-TIMEOUT-01 deferred",
+    "D4-023 fixed-load CPU isolation worker not implemented",
+    "First Kit027 certificate inspection failed transiently; exact cause unproven",
+    "Not notarized or publicly distributable"
+  ],
+  "historicalInputsExcluded": [
+    "components/baseline.lock.json",
+    "components/r6-1-source.lock.json",
+    "workspace/distribution-stage0-inventory.json"
+  ]
+}

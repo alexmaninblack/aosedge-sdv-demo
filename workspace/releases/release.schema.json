@@ -1,0 +1,768 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "title": "SDV Lab release definition v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "$comment",
+    "schemaVersion",
+    "id",
+    "productVersion",
+    "status",
+    "baselineTag",
+    "internalVersions",
+    "sourceLock",
+    "authorities",
+    "sources",
+    "inputs",
+    "artifacts",
+    "application",
+    "distribution",
+    "profiles",
+    "components",
+    "toolchains",
+    "gates",
+    "documentation",
+    "evidence",
+    "limitations",
+    "historicalInputsExcluded"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "./release.schema.json"
+    },
+    "$comment": {
+      "type": "string",
+      "minLength": 1
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "productVersion": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-rc\\.[1-9][0-9]*)?$"
+    },
+    "status": {
+      "enum": [
+        "engineering-candidate"
+      ]
+    },
+    "baselineTag": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "commit"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        }
+      }
+    },
+    "internalVersions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kit",
+        "setup",
+        "factory"
+      ],
+      "properties": {
+        "kit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "setup": {
+          "type": "string",
+          "minLength": 1
+        },
+        "factory": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "sourceLock": {
+      "type": "string",
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)[A-Za-z0-9_.@/-]+$"
+    },
+    "authorities": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "sha256"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)[A-Za-z0-9_.@/-]+$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "repository",
+          "revision",
+          "buildRevision",
+          "sourceLockIndex",
+          "access",
+          "note"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "repository": {
+            "type": "string",
+            "pattern": "^https://github\\.com/[^/]+/[^/]+\\.git$"
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "buildRevision": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "sourceLockIndex": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "access": {
+            "enum": [
+              "public-git",
+              "epic-entitlement"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "inputs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "lock",
+          "path",
+          "bytes",
+          "sha256",
+          "kitPath"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "lock": {
+            "type": "string",
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)[A-Za-z0-9_.@/-]+$"
+          },
+          "path": {
+            "type": "string",
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)[A-Za-z0-9_.@/-]+$"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "kitPath": {
+            "type": "string",
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)[A-Za-z0-9_.@/-]+$"
+          }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dmg",
+        "applicationManifest",
+        "setup",
+        "uiBuildReceipt",
+        "hostManifest",
+        "preparationManifest",
+        "vmManifest",
+        "backendManifest",
+        "factory"
+      ],
+      "properties": {
+        "dmg": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "bytes",
+            "sha256",
+            "digestEvidence"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "digestEvidence": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "applicationManifest": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sha256"
+          ],
+          "properties": {
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "setup": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "binarySha256",
+            "receiptSha256",
+            "signing",
+            "notarized"
+          ],
+          "properties": {
+            "version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "binarySha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "receiptSha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "signing": {
+              "type": "string",
+              "minLength": 1
+            },
+            "notarized": {
+              "type": "boolean"
+            }
+          }
+        },
+        "uiBuildReceipt": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sha256"
+          ],
+          "properties": {
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "hostManifest": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sha256"
+          ],
+          "properties": {
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "preparationManifest": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sha256"
+          ],
+          "properties": {
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "vmManifest": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sha256"
+          ],
+          "properties": {
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "backendManifest": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sha256"
+          ],
+          "properties": {
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "factory": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "name",
+            "bytes",
+            "sha256"
+          ],
+          "properties": {
+            "version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        }
+      }
+    },
+    "application": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kitPath",
+        "bytes",
+        "sha256",
+        "inputLogicalBytes",
+        "originalBuildHadUncommittedSources"
+      ],
+      "properties": {
+        "kitPath": {
+          "type": "string",
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)[A-Za-z0-9_.@/-]+$"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "inputLogicalBytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "originalBuildHadUncommittedSources": {
+          "type": "boolean"
+        }
+      }
+    },
+    "distribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "approved",
+        "locator",
+        "access",
+        "retention",
+        "provenance"
+      ],
+      "properties": {
+        "approved": {
+          "const": false
+        },
+        "locator": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "access": {
+          "enum": [
+            "unpublished"
+          ]
+        },
+        "retention": {
+          "type": "string",
+          "minLength": 1
+        },
+        "provenance": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "profiles": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "claim",
+          "components",
+          "platform",
+          "prerequisites"
+        ],
+        "properties": {
+          "id": {
+            "enum": [
+              "operator",
+              "developer",
+              "full-source"
+            ]
+          },
+          "claim": {
+            "enum": [
+              "not-qualified"
+            ]
+          },
+          "components": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "platform": {
+            "const": "macOS-arm64"
+          },
+          "prerequisites": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "components": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "owner",
+          "sourceIds",
+          "manifestIds",
+          "requires",
+          "recipes",
+          "format",
+          "license",
+          "access",
+          "actions"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "owner": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sourceIds": {
+            "type": "array",
+            "minItems": 0,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "manifestIds": {
+            "type": "array",
+            "minItems": 0,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "requires": {
+            "type": "array",
+            "minItems": 0,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "recipes": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source",
+                "path"
+              ],
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "path": {
+                  "type": "string",
+                  "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)[A-Za-z0-9_.@/-]+$"
+                }
+              }
+            }
+          },
+          "format": {
+            "type": "string",
+            "minLength": 1
+          },
+          "license": {
+            "type": "string",
+            "minLength": 1
+          },
+          "access": {
+            "enum": [
+              "restricted",
+              "review-required",
+              "public-git",
+              "public-pypi"
+            ]
+          },
+          "actions": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "operator",
+              "developer",
+              "full-source"
+            ],
+            "properties": {
+              "operator": {
+                "type": "string",
+                "enum": [
+                  "reuse",
+                  "build",
+                  "assemble"
+                ]
+              },
+              "developer": {
+                "type": "string",
+                "enum": [
+                  "reuse",
+                  "build",
+                  "assemble"
+                ]
+              },
+              "full-source": {
+                "type": "string",
+                "enum": [
+                  "reuse",
+                  "build",
+                  "assemble"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "toolchains": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "identity",
+          "evidence",
+          "state"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "identity": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence": {
+            "type": "string",
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)[A-Za-z0-9_.@/-]+$"
+          },
+          "state": {
+            "enum": [
+              "pinned",
+              "unresolved"
+            ]
+          }
+        }
+      }
+    },
+    "gates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "profiles",
+          "owner",
+          "resolution"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "profiles": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "enum": [
+                "operator",
+                "developer",
+                "full-source"
+              ]
+            }
+          },
+          "owner": {
+            "type": "string",
+            "minLength": 1
+          },
+          "resolution": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "documentation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "inventory",
+        "baseline",
+        "version"
+      ],
+      "properties": {
+        "contract": {
+          "type": "string",
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)[A-Za-z0-9_.@/-]+$"
+        },
+        "inventory": {
+          "type": "string",
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)[A-Za-z0-9_.@/-]+$"
+        },
+        "baseline": {
+          "type": "string",
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)[A-Za-z0-9_.@/-]+$"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)[A-Za-z0-9_.@/-]+$"
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "historicalInputsExcluded": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)[A-Za-z0-9_.@/-]+$"
+      }
+    }
+  }
+}

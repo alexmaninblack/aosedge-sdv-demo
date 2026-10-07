@@ -3,8 +3,8 @@
 
 # Human Friendly Repository and Release Reproduction Plan
 
-- Status: Accepted direction; detailed execution specification for review; implementation not started
-- Version: 0.1
+- Status: R1 complete; delivery and version policy accepted; R2 to R4 planned
+- Version: 0.4
 - Prepared: 2026-10-07
 - Owner: Demo Solution Team
 - Parent: [Installable distribution and reproducibility](../installable-distribution-and-reproducibility.md)
@@ -26,9 +26,11 @@ signed output, safety certification or access to restricted dependencies.
 
 This packet refines Stage 4, Stage 5 build verification and Stage 7 release
 materials. It does not replace the parent execution plan or close its remaining
-native installer and runtime gates. The current request authorizes planning and
-documentation; no repository move, implementation, build or publication is
-performed by recording this packet.
+native installer and runtime gates. The initial request authorized planning and
+documentation. On 7 October the user authorized starting R1. Its definition and
+read-only validator are now implemented; no repository move, binary build or
+binary publication is performed by R1. Its source and documents use the
+existing integration branch for the Git handoff.
 
 ## Scope and preserved boundaries
 
@@ -76,7 +78,7 @@ actually need them.
 
 | Block | Responsible owner | Dependencies | Completion evidence | Current state |
 | --- | --- | --- | --- | --- |
-| R1 Define the release and dependency closure | Demo Solution Team with component build owners | Current locks, recipes and source publication evidence | Validated release specification, ownership map and closed input acquisition paths | Planned |
+| R1 Define the release and dependency closure | Demo Solution Team with component build owners | Current locks, recipes and source publication evidence | Validated release specification, ownership map and delivery design with explicit unresolved gates | Complete; Google Drive and version policy accepted |
 | R2 Automate preparation and builds | Integration build tooling; component owners retain their build logic | R1 schema, profile and dependency decisions | Repeatable commands, deterministic validation, resume and negative tests | Planned |
 | R3 Provide the human documentation routes | Integration documentation; component maintainers | R1 terminology and R2 public command contract | One release landing page, three usable guides and working navigation | Planned |
 | R4 Prove reproduction and prepare release handoff | Integration qualification and release owners | R1 to R3 candidate | Fresh environment reproduction evidence, preserved runtime gate results and obtainable matching artifacts | Planned |
@@ -88,6 +90,36 @@ checkpoint. Escalate only a real unresolved design, access or authorization
 boundary; retain the parent plan's scope and safety constraints.
 
 ## Block R1 Define the release and dependency closure
+
+### Current result
+
+The [resolved Kit028 definition](../../../../workspace/releases/kit028-setup042.json),
+[schema and contract](../../../../contracts/release-reproduction/README.md),
+[inventory](../../../development/release-reproduction-r1.md) and read-only
+`scripts/validate-release-definition` are implemented. They retain original
+source/build provenance, pin the two integration roles separately, check CI
+consistency and expose three blocked profiles. No automatic downloader or
+builder has been added.
+
+The optional local source gate additionally checks ten commit objects, the
+baseline tag target and 28 recipe files without fetching or changing checkouts.
+Service/backend Docker base digests and service native-dependency pins are
+already present; the inventory preserves them and records Apache-2.0 project
+licensing rather than treating those bases as unpinned.
+
+The owner selected Google Drive in the existing Workspace account instead of
+S3. The [delivery design](../../../development/release-reproduction-r1.md#selected-delivery-route)
+keeps public Git metadata and separate, non-overwritten release files with
+read/download access for approved testers. Supported release inputs are retained.
+The owner accepted the product numbering/tag policy: next new candidate
+`1.2.0-rc.1`, stable target `1.2.0` after qualification, and tags
+`sdv-lab-v<version>`. **R1 is complete.** The accepted policy does not create
+a cloud resource, upload, release tag or replacement for the historical kit.
+Actual folder/API setup and verified downloads belong to R2, not R1 acceptance.
+Effective Factory41 configuration and native/simulation dependency closure
+remain explicit inputs for R2; clean-build/native qualification belongs to R4.
+Neither local media nor the older Factory template/guest driver is presented
+as a complete clean-reproduction recipe.
 
 ### Work
 
@@ -304,16 +336,16 @@ record the exact blocker and preserve completed results. Do not copy raw logs,
 chat transcripts, credentials or large artifacts into the journal. Do not mark
 work done merely because a plan, a commit or an intermediate kit exists.
 
-## Decisions to resolve before the affected block
+## Accepted decisions and remaining release boundaries
 
-| Choice | Recommended treatment | Required before |
+| Choice | Treatment | Status or required before |
 | --- | --- | --- |
-| Future product version and tag syntax | One SDV Lab version plus candidate/stable status; preserve old tags | R1 candidate definition |
-| Artifact host and access | Immutable authorized downloads with retention and provenance; no personal disk URLs | R1 acquisition implementation and external handoff |
+| Future product version and tag syntax | `1.2.0-rc.1` then qualified `1.2.0`; `sdv-lab-v<version>` tags; preserve old tags and independent internal numbers | Accepted; no new tag created by R1 |
+| Artifact host and access | Google Drive in the existing Workspace account; separate non-overwritten files, approved readers and retained supported-release inputs | Accepted design; actual binding and download checks in R2 |
 | Full source support envelope | Declare licensed/binary inputs and measure a suitable builder; report this profile separately | R2 full-source preflight and R4 claim |
 | Distribution signing availability | Use the accepted Developer ID and notarization channel when its actual prerequisites are available | External distributable release |
 
-These choices do not block documentation or independent offline work. Record
-the selected values in the owning release/build contracts before implementing
-them. Any change to runtime, trust or repository ownership still follows the
-existing architecture-change procedure.
+The R1 choices are recorded in the owning release contract. Remaining build
+and external-release conditions do not block independent offline work. Any
+change to runtime, trust or repository ownership still follows the existing
+architecture-change procedure.

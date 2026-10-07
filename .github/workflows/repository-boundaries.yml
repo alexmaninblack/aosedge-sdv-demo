@@ -66,6 +66,8 @@ jobs:
           python3 -m venv "$RUNNER_TEMP/reuse"
           "$RUNNER_TEMP/reuse/bin/pip" install 'reuse==5.1.1' 'charset-normalizer==3.4.4' 'PyYAML==6.0.3' 'packaging==26.3'
           echo "$RUNNER_TEMP/reuse/bin" >> "$GITHUB_PATH"
+      - name: Validate resolved release definition
+        run: python3 -B workspace/aosedge-sdv-demo/scripts/validate-release-definition
       - name: Qualify clean repository boundaries
         run: >-
           workspace/aosedge-sdv-demo/scripts/qualify-repository-boundaries

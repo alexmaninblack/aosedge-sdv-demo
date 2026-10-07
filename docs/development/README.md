@@ -7,6 +7,11 @@ This page helps a contributor decide where a change belongs before editing
 code. The architectural component, lifecycle owner and repository boundary
 must agree.
 
+For the new release/build route, see the
+[R1 inventory and reproduction readiness](release-reproduction-r1.md).
+The read-only release validator exists; automatic preparation/build commands
+remain R2 work and no profile is yet marked reproducible.
+
 ## Choose the Change Boundary
 
 | If the change concerns | Primary repository | Lifecycle |

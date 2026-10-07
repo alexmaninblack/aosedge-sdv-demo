@@ -15,8 +15,10 @@ assignment, VM restart, or provisioned-Unit change.
   moving SOTA, secure token entry, interruption/repair and release gates remain open.
 - [Human-friendly repository and release reproduction](active/work-packets/human-friendly-reproduction.md):
   detailed R1–R4 plan for one release definition, automated preparation/builds,
-  three human documentation routes and fresh-environment proof. Planning only;
-  subordinate to the distribution plan, not an implemented build interface.
+  three human documentation routes and fresh-environment proof. R1 is complete:
+  definition and validator implemented, Google Drive and the product version
+  policy accepted. Actual acquisition/build closure belongs to R2–R4; no
+  automatic build interface yet.
 - [Cross-repository change journal](repository-change-journal.md): maintainer
   record of coordinated changes, evidence, publication state and next actions;
   not a second release lock or an operator prerequisite.

@@ -1,0 +1,338 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+"""Read-only R1 definition gate; not a downloader, builder or runtime owner."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+DEFAULT = Path('workspace/releases/kit028-setup042.json')
+SCHEMA = Path('workspace/releases/release.schema.json')
+LIMIT = 8 * 1024 * 1024  # Metadata only; never rehash the multi-GB payload here.
+PROFILES = {'operator', 'developer', 'full-source'}
+GROUPS = {'host-runtime', 'preparation-inputs', 'vm-runtime', 'cloud-runtime', 'backend-inputs'}
+LOCKS = {
+    'host-runtime': 'contracts/portable-host-launch/host-runtime.lock.json',
+    'preparation-inputs': 'contracts/portable-preparation-inputs/vehicle-inputs.lock.json',
+    'vm-runtime': 'contracts/portable-vm-launch/vm-runtime.lock.json',
+    'cloud-runtime': 'contracts/portable-cloud-backend-inputs/cloud-runtime.lock.json',
+    'backend-inputs': 'contracts/portable-cloud-backend-inputs/backend-inputs.lock.json',
+}
+COMPONENTS = {
+    'unreal', 'carla-content', 'carla', 'native-host', 'python-host', 'vm-support',
+    'cloud-sdk', 'factory-layer', 'aoscore-kuksa', 'factory', 'vdp', 'brake-service',
+    'tire-service', 'brake-backend', 'tire-backend', 'gateway', 'presenter',
+    'preparation', 'backend-export', 'application', 'setup-media',
+}
+
+
+class DefinitionError(ValueError):
+    pass
+
+
+def require(condition, message):
+    if not condition:
+        raise DefinitionError(message)
+
+
+def safe_path(root, value):
+    path = Path(value)
+    require(not path.is_absolute() and '..' not in path.parts and '\\' not in value,
+            f'Unsafe relative path: {value}')
+    result = root / path
+    require(result.resolve().is_relative_to(root.resolve()), f'Path escapes root: {value}')
+    require(not result.is_symlink(), f'Symlink is not an immutable metadata file: {value}')
+    return result
+
+
+def read_bytes(path):
+    require(path.is_file(), f'Required metadata unavailable: {path}')
+    require(path.stat().st_size <= LIMIT, f'Metadata exceeds size limit: {path.name}')
+    with path.open('rb') as stream:
+        data = stream.read(LIMIT + 1)
+    require(len(data) <= LIMIT, f'Metadata exceeds size limit: {path.name}')
+    return data
+
+
+def unique_pairs(pairs):
+    result = {}
+    for key, value in pairs:
+        require(key not in result, f'Duplicate JSON key: {key}')
+        result[key] = value
+    return result
+
+
+def read_json(path):
+    try:
+        return json.loads(read_bytes(path), object_pairs_hook=unique_pairs)
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise DefinitionError(f'Invalid JSON: {path.name}') from exc
+
+
+def schema_check(value, spec, at='$'):
+    """Enforce every keyword used by our deliberately small JSON Schema subset.
+
+    Unknown keywords fail closed, so extending the published schema cannot
+    silently bypass validation. No third-party package/network is required.
+    """
+    supported = {'$schema', '$comment', 'title', 'type', 'const', 'enum', 'pattern',
+                 'minimum', 'minLength', 'minItems', 'items', 'properties',
+                 'required', 'additionalProperties'}
+    require(set(spec) <= supported, f'{at}: unsupported schema keyword')
+    types = {'object': dict, 'array': list, 'string': str, 'integer': int,
+             'boolean': bool, 'null': type(None)}
+    if 'type' in spec:
+        choices = spec['type'] if isinstance(spec['type'], list) else [spec['type']]
+        require(any(type(value) is types[t] for t in choices), f'{at}: invalid type')
+    if 'const' in spec:
+        require(type(value) is type(spec['const']) and value == spec['const'], f'{at}: wrong constant')
+    if 'enum' in spec:
+        require(value in spec['enum'], f'{at}: unsupported value {value!r}')
+    if isinstance(value, str):
+        require(len(value) >= spec.get('minLength', 0), f'{at}: empty value')
+        if 'pattern' in spec:
+            require(re.search(spec['pattern'], value) is not None, f'{at}: invalid format')
+    if type(value) is int:
+        require(value >= spec.get('minimum', value), f'{at}: below minimum')
+    if isinstance(value, list):
+        require(len(value) >= spec.get('minItems', 0), f'{at}: missing entries')
+        for index, item in enumerate(value):
+            schema_check(item, spec['items'], f'{at}[{index}]')
+    if isinstance(value, dict):
+        require(set(spec.get('required', [])) <= set(value), f'{at}: missing required field')
+        properties = spec.get('properties', {})
+        if spec.get('additionalProperties') is False:
+            require(set(value) <= set(properties), f'{at}: unknown field')
+        for key, item in value.items():
+            if key in properties:
+                schema_check(item, properties[key], f'{at}.{key}')
+
+
+def indexed(rows, key, label):
+    result = {row[key]: row for row in rows}
+    require(len(result) == len(rows), f'{label}: duplicate {key}')
+    return result
+
+
+def unique(values, label):
+    require(len(values) == len(set(values)), f'{label}: duplicate reference')
+
+
+def validate(value, root=ROOT):
+    schema_check(value, read_json(root / SCHEMA))
+    authorities = indexed(value['authorities'], 'path', 'authorities')
+    for path, entry in authorities.items():
+        data = read_bytes(safe_path(root, path))
+        require(hashlib.sha256(data).hexdigest() == entry['sha256'], f'Authority digest mismatch: {path}')
+    needed = {value['sourceLock'], 'workspace/repositories.json',
+              'workspace/checkpoints/installer-kit-028-candidate.json',
+              'workspace/checkpoints/factory-41-candidate.json',
+              'workspace/cloud-worker-wheels.lock.json', 'scripts/distribution/setup_release.json',
+              'apps/presenter-ui/package.json', 'apps/presenter-ui/package-lock.json'}
+    needed.update(row['lock'] for row in value['inputs'])
+    require(needed <= set(authorities), 'Missing required authority binding')
+    source = read_json(safe_path(root, value['sourceLock']))
+    workspace = read_json(root / 'workspace/repositories.json')
+    repos = indexed(workspace['repositories'], 'id', 'workspace')
+    sources = indexed(value['sources'], 'id', 'sources')
+    require(set(sources) == set(repos) | {'integration', 'factory-tools'}, 'Incomplete source roles')
+    require(len(sources) == len(source['repositories']), 'Source lock role count mismatch')
+    unique([s['sourceLockIndex'] for s in sources.values()], 'source indices')
+    for id_, row in sources.items():
+        index = row['sourceLockIndex']
+        require(index < len(source['repositories']), f'{id_}: source index outside lock')
+        locked = source['repositories'][index]
+        require(row['revision'] == locked['sourceCommit'], f'{id_}: source lock revision mismatch')
+        built = locked.get('builtSourceCommit', locked.get('originalBuildHead',
+                    source['originalBuildSourceRevision'] if id_ == 'integration' else locked['sourceCommit']))
+        require(row['buildRevision'] == built, f'{id_}: original build revision mismatch')
+        if id_ in repos:
+            expected = repos[id_]
+            require(row['revision'] == expected['acceptedRevision'] and
+                    row['repository'] == expected['repository'] and
+                    locked['directory'] == expected['directory'], f'{id_}: workspace pin mismatch')
+        else:
+            require(locked['directory'] == 'aosedge-sdv-demo', f'{id_}: wrong integration owner')
+            require(row['repository'] == 'https://github.com/alexmaninblack/aosedge-sdv-demo.git',
+                    f'{id_}: wrong integration repository')
+        require(row['access'] == ('epic-entitlement' if locked.get('restricted') else 'public-git'),
+                f'{id_}: source access boundary mismatch')
+    require(sources['integration']['revision'] == source['integrationSourceCommit'], 'Wrong application source role')
+    factory = read_json(root / 'workspace/checkpoints/factory-41-candidate.json')
+    require(sources['factory-tools']['revision'] == factory['qualificationToolsRevision'], 'Wrong Factory tools role')
+    require(value['baselineTag']['name'] == source['tag'], 'Source tag mismatch')
+    require(value['sourceLock'] == 'workspace/checkpoints/installer-kit-028-source-lock.json', 'Wrong candidate source authority')
+    require(value['id'] == 'kit028-setup042' and value['internalVersions']['kit'] == '028', 'Wrong candidate identity')
+    require(value['productVersion'] is None, 'Historical candidate has no assigned product version')
+    require(value['artifacts'] == source['artifacts'], 'Artifact identity mismatch with immutable source lock')
+    require(value['internalVersions']['setup'] == source['artifacts']['setup']['version'] and
+            value['internalVersions']['factory'] == source['artifacts']['factory']['version'], 'Internal version mismatch')
+    require(value['application']['sha256'] == source['artifacts']['applicationManifest']['sha256'], 'Application identity mismatch')
+    require(value['application']['originalBuildHadUncommittedSources'] == source['originalBuildHadUncommittedSources'], 'Original provenance was changed')
+    setup = read_json(root / 'scripts/distribution/setup_release.json')
+    require(setup['manifestSha256'] == value['application']['sha256'], 'Setup/application pin mismatch')
+    groups = indexed(value['inputs'], 'id', 'input groups')
+    require(set(groups) == GROUPS, 'Incomplete input manifest set')
+    for id_, row in groups.items():
+        require(row['lock'] == LOCKS[id_], f'{id_}: wrong manifest authority')
+        locked = read_json(safe_path(root, row['lock']))['manifest']
+        require({k: row[k] for k in ('path', 'bytes', 'sha256')} == locked, f'{id_}: input manifest mismatch')
+        require(row['kitPath'] == f'demo-artifacts/aosedge-sdv-demo/{id_}/{row["path"]}', f'{id_}: wrong kit path')
+    workflow = (root / '.github/workflows/repository-boundaries.yml').read_text()
+    checkouts = dict(re.findall(r'repository: (\S+)\s+ref: ([0-9a-f]{40})', workflow))
+    for id_, row in repos.items():
+        if id_ in {'carla', 'unreal-engine'}:
+            continue
+        repo = row['repository'].removeprefix('https://github.com/').removesuffix('.git')
+        require(checkouts.get(repo) == row['acceptedRevision'], f'{id_}: CI checkout pin mismatch')
+    components = indexed(value['components'], 'id', 'components')
+    require(set(components) == COMPONENTS, 'Incomplete component closure')
+    profiles = indexed(value['profiles'], 'id', 'profiles')
+    require(set(profiles) == PROFILES, 'Missing or unsupported profile')
+    for id_, profile in profiles.items():
+        unique(profile['components'], id_)
+        require(set(profile['components']) == COMPONENTS, f'{id_}: incomplete profile closure')
+    for id_, component in components.items():
+        for field, allowed in [('sourceIds', sources), ('manifestIds', groups), ('requires', components)]:
+            unique(component[field], f'{id_}.{field}')
+            require(set(component[field]) <= set(allowed), f'{id_}: unknown {field} reference')
+        require(component['actions']['operator'] == 'reuse', f'{id_}: operator must not build')
+        for recipe in component['recipes']:
+            require(recipe['source'] in sources, f'{id_}: unknown recipe owner')
+            # Other owners are pinned, not required as sibling checkouts for this gate.
+            if recipe['source'] == 'integration':
+                require(safe_path(root, recipe['path']).is_file(), f'{id_}: missing recipe')
+    visiting, done = set(), set()
+    def visit(id_):
+        require(id_ not in visiting, f'Dependency cycle at {id_}')
+        if id_ in done:
+            return
+        visiting.add(id_)
+        for child in components[id_]['requires']:
+            visit(child)
+        visiting.remove(id_)
+        done.add(id_)
+    for id_ in components:
+        visit(id_)
+    require(value['distribution']['locator'] is None, 'Unpublished candidate must not advertise a download URL')
+    indexed(value['gates'], 'id', 'gates')
+    toolchains = indexed(value['toolchains'], 'id', 'toolchains')
+    package = read_json(root / 'apps/presenter-ui/package.json')
+    for name in ('node', 'npm'):
+        require(toolchains.get(f'ui-{name}', {}).get('identity') == package['engines'][name],
+                f'UI {name} toolchain mismatch')
+    for gate in value['gates']:
+        unique(gate['profiles'], gate['id'])
+    for path in [*value['evidence'], *[v for k, v in value['documentation'].items() if k != 'version'],
+                 *[t['evidence'] for t in value['toolchains']]]:
+        require(safe_path(root, path).is_file(), f'Missing documentation/evidence: {path}')
+    return value
+
+
+def verify_kit(value, kit):
+    """Check existing small manifests, not payload integrity or runtime behavior."""
+    checked = {}
+    for row in [dict(value['application'], id='application'), *value['inputs']]:
+        data = read_bytes(safe_path(kit, row['kitPath']))
+        require(len(data) == row['bytes'] and hashlib.sha256(data).hexdigest() == row['sha256'],
+                f'{row["id"]}: kit manifest digest/size mismatch')
+        checked[row['id']] = json.loads(data, object_pairs_hook=unique_pairs)
+    require(checked['application']['inputs'] == {
+        row['id']: {k: row[k] for k in ('path', 'bytes', 'sha256')} for row in value['inputs']
+    }, 'Application input bindings mismatch')
+    host = next(row for row in value['inputs'] if row['id'] == 'host-runtime')
+    require(checked['vm-runtime']['hostManifest'] == {k: host[k] for k in ('path', 'bytes', 'sha256')},
+            'VM/host manifest binding mismatch')
+    require(checked['application']['inputLogicalBytes'] == value['application']['inputLogicalBytes'],
+            'Recorded input size mismatch')
+    return len(checked)
+
+
+def git_metadata(repository, *arguments):
+    """Inspect local immutable objects only, without lazy fetching or hooks."""
+    require(repository.is_dir(), f'Source checkout unavailable: {repository.name}')
+    env = {k: v for k, v in os.environ.items() if not k.startswith('GIT_')}
+    env.update(GIT_NO_LAZY_FETCH='1', GIT_TERMINAL_PROMPT='0',
+               GIT_CONFIG_NOSYSTEM='1', GIT_CONFIG_GLOBAL=os.devnull)
+    try:
+        result = subprocess.run(['git', '--no-pager', '-C', str(repository), *arguments],
+                                env=env, capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise DefinitionError(f'Local Git inspection unavailable: {repository.name}') from exc
+    require(result.returncode == 0, f'Required local Git object unavailable: {repository.name}')
+    return result.stdout.strip()
+
+
+def verify_sources(value, workspace, root=ROOT):
+    """Optional R1 evidence check, not checkout preparation or a build."""
+    directories = {r['id']: r['directory'] for r in read_json(root / 'workspace/repositories.json')['repositories']}
+    directories.update(integration='aosedge-sdv-demo', **{'factory-tools': 'aosedge-sdv-demo'})
+    sources = indexed(value['sources'], 'id', 'sources')
+    for id_, source in sources.items():
+        repository = safe_path(workspace, directories[id_])
+        top = git_metadata(repository, 'rev-parse', '--show-toplevel')
+        require(Path(top).resolve() == repository.resolve(), f'{id_}: wrong checkout root')
+        require(git_metadata(repository, 'cat-file', '-t', source['revision']) == 'commit',
+                f'{id_}: revision is not a commit')
+    integration = safe_path(workspace, directories['integration'])
+    tag = value['baselineTag']
+    actual = git_metadata(integration, 'rev-parse', '--verify', f'refs/tags/{tag["name"]}^{{commit}}')
+    require(actual == tag['commit'], 'Baseline tag commit mismatch')
+    recipes = {(r['source'], r['path']) for c in value['components'] for r in c['recipes']}
+    for id_, path in sorted(recipes):
+        repository = safe_path(workspace, directories[id_])
+        type_ = git_metadata(repository, 'cat-file', '-t', f'{sources[id_]["revision"]}:{path}')
+        require(type_ == 'blob', f'{id_}: recipe is not a file: {path}')
+    return len(sources), len(recipes)
+
+
+def readiness(value, profile):
+    require(profile in PROFILES, f'Unsupported profile: {profile}')
+    pending = [g for g in value['gates'] if profile in g['profiles']]
+    # v1 describes an unqualified historical candidate only. Future promotion
+    # needs a reviewed schema and qualification evidence, not deletion of gates.
+    return [f'{g["id"]}: {g["resolution"]}' for g in pending] + [
+        'PROFILE_NOT_QUALIFIED: no fresh-environment reproduction claim for this candidate.']
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--manifest', type=Path, default=ROOT / DEFAULT)
+    parser.add_argument('--kit-root', type=Path, help='Optional existing kit; read six small manifests only')
+    parser.add_argument('--source-workspace', type=Path, help='Optional existing sibling sources; inspect pinned Git objects without fetching or changing checkouts')
+    parser.add_argument('--profile', help='Require reproduction readiness; unresolved candidate exits 2')
+    args = parser.parse_args(argv)
+    try:
+        value = validate(read_json(args.manifest))
+        print(f'DEFINITION_VALID: {value["id"]}; 3 profiles, {len(value["components"])} components')
+        if args.kit_root:
+            count = verify_kit(value, args.kit_root)
+            print(f'KIT_METADATA_MATCH: {count} manifests; payloads and runtime NOT checked')
+        if args.source_workspace:
+            sources, recipes = verify_sources(value, args.source_workspace)
+            print(f'SOURCE_OBJECTS_MATCH: {sources} roles, {recipes} recipe files and baseline tag; build NOT checked')
+        if args.profile:
+            pending = readiness(value, args.profile)
+            print(f'PROFILE_BLOCKED: {args.profile}')
+            for item in pending:
+                print(f'- {item}')
+            return 2
+        print('Reproduction readiness NOT claimed; use --profile to inspect gates.')
+        return 0
+    except (DefinitionError, OSError, KeyError, IndexError, TypeError, json.JSONDecodeError) as exc:
+        print(f'DEFINITION_INVALID: {exc}', file=sys.stderr)
+        return 1
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

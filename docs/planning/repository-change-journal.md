@@ -105,3 +105,173 @@ introduced to hide this pre-existing scope difference.
 Next work remains R1 release/dependency definition under the detailed packet.
 This publication does not start implementation, rebuild an installer, change
 Cloud objects or close any outstanding native acceptance gate.
+
+## 2026 October 7 R1 implementation and parked handoff
+
+The user authorized starting R1, then requested parking the work to close the
+computer and disconnect the external SSD. All R1 changes are saved locally in
+the integration checkout on `codex/installable-demo-stage3`, based on
+`f65e2df28b1757bc0b37bfa4c99dfe0a6bb8c11c`. They are not yet committed or pushed.
+Preserve the modified and untracked files; do not reset or clean this checkout.
+
+Completed local work:
+
+- Added [resolved Kit028 definition](../../workspace/releases/kit028-setup042.json),
+  its [schema](../../workspace/releases/release.schema.json),
+  [contract](../../contracts/release-reproduction/README.md) and
+  [inventory](../development/release-reproduction-r1.md).
+- Recorded 21 dependency nodes, ten exact source roles, five input groups,
+  three explicitly unqualified reproduction profiles and original artifact
+  identities. Application source and Factory tools remain separate pinned roles.
+- Added read-only `scripts/validate-release-definition`, 41 offline tests and
+  a CI definition gate; updated navigation and the existing R1 work packet.
+- Verified all referenced recipe paths at their selected local Git revisions.
+  Six small manifests from retained Kit028 match, including VM-to-host binding.
+  The original media and payloads were neither copied nor rebuilt/rehashed.
+
+Validation before parking:
+
+- Full integration suite: **800 tests in 38.640 seconds, 799 passed and one
+  skipped**. The runner completed and exited; no test process remains active.
+- Dedicated R1 suite: 41 passed. Missing/changed inputs, profile errors, CI pin
+  drift, cycles, provenance changes and access-boundary changes are rejected.
+- Documentation gate: PASS, 333 Markdown documents, 662 stable identifiers,
+  38 Mermaid diagrams. Whitespace and public-source checks passed, including
+  new untracked R1 files.
+- An additional whole-integration `reuse lint` audit did not pass: existing
+  root licensing metadata lacks `LICENSES/MIT.txt`, and the repository's JSON
+  comment convention is not parsed as SPDX by that tool. This is not an existing
+  integration CI gate (REUSE runs on platform/service there). R1 JSON follows
+  that same convention; do not claim whole-repository REUSE compliance or
+  silently expand R1 into a repository-wide licensing rewrite.
+
+R1 is **not fully closed**. Artifact hosting/access/retention and the proposed
+future product version policy remain release-owner decisions. Effective
+Factory41 configuration and heavy/native/container build-input closure remain
+explicit gates; the old pinned template alone still contains older values.
+No profile claims reproduction readiness. R2 build automation and R4 fresh
+environment/native qualification have not been started by this work.
+
+Resume from this checkpoint: inspect the preserved diff, finish the R1 review
+and resolve those specific acquisition/closure decisions. Do not repeat large
+artifact hashing, restart a demo, regenerate a kit or move an existing tag.
+The component and private video repositories are unchanged. No simulator, VM,
+Presenter, Docker Engine or container was started during R1; unrelated user
+processes must be preserved when ejecting the SSD.
+
+Parking completed: the normal eject was initially held by an idle Terminal
+tab whose working directory was on the SSD. Its exact TTY was verified idle
+with no child process, then its directory was changed to an internal workspace;
+the tab and unrelated processes were preserved. Normal physical-disk eject
+succeeded for both Work/Clean volumes. Presenter had no listener. No force
+unmount, deletion or data cleanup was used. Reconnect the SSD before an optional
+real-kit metadata recheck; the saved R1 code, documents and tests are internal.
+
+## 2026 October 7 R1 resumed review and local verification
+
+The user reconnected the external storage and authorized continuing R1. The
+preserved checkout and retained Kit028 were reused without a new kit, image,
+cache copy or payload rehash. Changes remain local on the existing integration
+branch; no commit, push, tag or artifact publication was performed in this step.
+
+The source review corrected the preliminary inventory: Brake/Tire services
+and both backends are Apache-2.0 projects and already pin their container base
+digests. Service builds also pin dated Debian repositories and native dependency
+revisions. Those inputs are no longer described as missing. Acquisition,
+redistribution review and fresh-build proof remain separate requirements.
+
+The Factory gap is confirmed in both the pinned template and guest build
+driver: they still select/check rootfs .11 and the older platform revision,
+whereas the retained receipt identifies Factory .41. The effective generated
+configuration and aligned driver belong in a new source revision during R2;
+the historical tools commit and retained Factory were not modified.
+
+Added optional `--source-workspace` verification to the existing definition
+gate. It inspects local pinned Git objects, not the current branch or HEAD,
+and never fetches, checks out or executes build recipes. Inherited Git
+repository overrides, lazy fetching and terminal credential prompts are
+disabled; failures do not echo raw Git responses.
+
+Completed checks:
+
+- Full integration suite: **807 tests in 39.245 seconds, 806 passed and one
+  skipped**. The runner completed and exited.
+- Dedicated R1 suite: **48 passed**, including missing objects, wrong tag/root,
+  non-file recipes, Git environment isolation, timeout and error redaction.
+- Actual local source inspection: **10 source roles, 28 unique recipe files
+  and the original baseline tag target matched**.
+- Existing Kit028 metadata: **six manifest identities matched**, including the
+  application/input and VM/host bindings; payloads and runtime were not retested.
+- Documentation gate: **PASS**, 333 Markdown documents, 662 stable identifiers
+  and 38 Mermaid diagrams. Whitespace and public-source checks passed, including
+  the new R1 files.
+
+The delivery/version proposal is recorded in the
+[R1 inventory](../development/release-reproduction-r1.md#selected-delivery-route):
+public Git metadata, private S3 delivery to approved testers, and a proposed
+next new candidate `1.2.0-rc.1`. The single existing DMG exceeds GitHub's
+per-asset release limit. The release-owner choice was requested and remains
+pending; no AWS account, bucket, budget or credentials are assumed. The current
+definition stays unpublished with a null product version and download locator.
+
+R1's inventory, specification and local gates are implemented. R1 overall
+remains open only for its release-owner acquisition/version decisions; the
+recorded build-input gaps feed R2 and reproduction proof belongs to R4. Do not
+restart the inventory, alter old tags or treat this result as a clean build or
+native E2E pass. No demo, VM, simulator, Docker Engine or UI was started. The
+external disk remains connected for the resumed work; no eject was requested.
+
+## 2026 October 7 Google Drive delivery decision
+
+The release owner selected Google Drive in the existing Google Workspace
+account instead of the earlier S3 proposal. The current R1 contract, inventory,
+plan and candidate gate explanations now reflect that decision. Source and
+release metadata remain in public Git; approved testers receive read/download
+access to separate release files. Preserve supported release inputs and do not
+overwrite published bytes. Actual file access and content must be verified
+before a candidate is described as obtainable.
+
+R1's remaining owner decision is the proposed product version and tag policy
+(`1.2.0-rc.1`, then `1.2.0`; tags `sdv-lab-v<version>`). Acceptance of Google
+Drive does not approve those numbers. Final reconciliation and Git handoff
+follow the decision. Folder/account binding, authorized API setup and upload/
+download verification are R2 implementation work, not new R1 prerequisites.
+The source/build closure and native qualification gates retain their R2/R4
+owners. No Drive resource, sharing permission, upload, credential, release tag
+or old artifact was changed by this documentation update.
+
+Decision-update validation passed: 48 targeted R1 tests in 0.179 seconds,
+the resolved-definition gate, documentation checks (333 documents, 662 stable
+identifiers, 38 Mermaid diagrams) and whitespace checks. The earlier 807-test
+suite remains the code validation receipt; only decision text and explanatory
+manifest fields changed in this step.
+
+## 2026 October 7 R1 completion
+
+The release owner accepted the remaining numbering decision: product versions
+use `MAJOR.MINOR.PATCH`, candidate suffixes `-rc.N`, and tags
+`sdv-lab-v<version>`. The next new candidate is `1.2.0-rc.1`; `1.2.0` is the
+stable target after qualification. Google Drive in the existing Workspace
+account is the selected delivery route. These decisions complete R1 together
+with the resolved definition, dependency inventory, schema, validation script,
+tests and CI gate.
+
+The contract, inventory and plan now show R1 as complete. Historical Kit028
+retains its null product version, source pins and artifact identities;
+`demo-v1.1` and `candidate/kit028-setup042` are unchanged. No new product tag,
+release binary, cloud resource or runtime qualification is created by this
+source/documentation handoff. The existing integration branch is retained;
+this completion does not merge it into `main` or modify component/video repos.
+
+Next is R2 preparation/build automation, including actual Drive folder/API
+binding and verified downloads. Effective Factory configuration and other
+explicit source-input gaps stay with their R2 owners; fresh reproduction and
+native acceptance remain R4. Do not restart R1's inventory or treat its closure
+as a claim that the new product candidate has been built or qualified.
+
+Final local validation for the R1 completion commit: 807 integration tests in
+37.826 seconds (806 passed, one skipped); definition/source inspection passed
+for ten roles, 28 recipe files and the baseline tag. Documentation checks passed
+for 333 documents, 662 stable identifiers and 38 Mermaid diagrams; public-source
+scanning included new files and passed. The test runner exited normally. No
+demo, VM, simulator, Docker Engine or UI was started for this completion.
