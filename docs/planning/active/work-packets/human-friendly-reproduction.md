@@ -4,7 +4,7 @@
 # Human Friendly Repository and Release Reproduction Plan
 
 - Status: R1 complete; R2 implementation in progress; R3 and R4 planned
-- Version: 0.7
+- Version: 0.8
 - Prepared: 2026-10-08
 - Owner: Demo Solution Team
 - Parent: [Installable distribution and reproducibility](../installable-distribution-and-reproducibility.md)
@@ -216,11 +216,13 @@ change Gateway runtime source. The latest integration suite passed 884 tests
 with one skip. The connected Drive root also passed a small synthetic text
 upload/readback; CLI authorization and release-sized transfer remain open.
 
-The next packaging dependency is explicit: the pinned preparation owner still
-selects historical Stage 0 service exports, not the current source pins. A new
-reviewed preparation recipe/input record must reconcile fresh products before
-the new candidate can be assembled. Historical inventory and release locks
-stay unchanged; no stale-product fallback is permitted.
+The pinned preparation owner selects historical Stage 0 exports, not current
+service sources. The current build-only producer now supports an explicit
+reviewed service checkpoint, and all four fresh exports pass its unchanged
+product reader. Its new recipe/checkpoint still need to be selected in the
+future candidate definition before complete assembly. Historical inventory
+and release locks stay unchanged; no stale-product fallback is permitted.
+The final suite after this correction ran 892 tests: 891 passed, one skipped.
 
 R2 remains **in progress**. No complete profile, new installer or Drive download
 is qualified. Next work is authenticated release-input binding/acquisition and

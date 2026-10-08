@@ -1,0 +1,39 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "kind": "reviewed-service-exports",
+  "serviceExports": [
+    {
+      "team": "brake",
+      "source": "5aa652fda603e7621043961331e58236b19204e9",
+      "profile": "v1",
+      "architecture": "linux/arm64",
+      "bootstrapSha256": "8a3c8585f666c4fccb403e418f64e3add0050668a8f70fed86a0948ad9e37cd8",
+      "serviceSha256": "71b4fe17db421404fe255a7a310fc4c5e7f080e203fd2da9f9bd4c38ccaa48cb"
+    },
+    {
+      "team": "brake",
+      "source": "5aa652fda603e7621043961331e58236b19204e9",
+      "profile": "v2",
+      "architecture": "linux/arm64",
+      "bootstrapSha256": "ae58dba3368e356e4eddc417eed8eddb4724f215971dae7b6e5218d1926e2c25",
+      "serviceSha256": "5f2978660580e1eea27824441ebd772ad5a0692c3dab90cd929814da4d618488"
+    },
+    {
+      "team": "brake",
+      "source": "5aa652fda603e7621043961331e58236b19204e9",
+      "profile": "v3",
+      "architecture": "linux/arm64",
+      "bootstrapSha256": "99a97c03a2385fec280a3ddd3363cfb03aa2f72ea6f85f065baf239d9b94a1bb",
+      "serviceSha256": "a3dd220ba8baae7c0510d6088441a05771263c76a5a8debf95e7c3827737bda0"
+    },
+    {
+      "team": "tire",
+      "source": "f0a0f6edadb51aa338775d157aa3bde28f5b76f4",
+      "profile": "v1",
+      "architecture": "linux/arm64",
+      "bootstrapSha256": "b0a4a2d11dd087f4975d74fb77fc9bc8d75a9aba8606946680aecc420f359928",
+      "serviceSha256": "7f18bed479fe2dd844af0569202bffb1cb3923d13f8fb94ad2865014c8d16f6d"
+    }
+  ]
+}

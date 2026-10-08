@@ -386,3 +386,33 @@ pins and source checkouts. VDP/preparation, native relocation, complete-package
 assembly, authenticated Drive delivery and effective full-source closure
 remain open. This local checkpoint changes only integration tooling and docs;
 it does not publish a product, tag, installer or Cloud update.
+
+## 2026 October 8 R2 preparation owner correction
+
+Corrected the build-only vehicle-input producer to accept an explicit reviewed
+service checkpoint, following the existing explicit Factory-checkpoint model.
+The new checkpoint selects the four verified R2 service products. The default
+historical inventory and old portable manifest lock are unchanged. Explicit
+choices fail closed on invalid schema/identity, missing or duplicate profiles,
+mixed Brake revisions, unsafe paths, links and executable digest mismatch.
+The product reader and Factory/VDP checks remain authoritative; no runtime,
+signing, credential or Cloud interface changed.
+
+All four real exports passed the canonical input reader with 46 files each.
+The temporary APFS clones on SSD were removed; no Factory or complete kit was
+copied. This is partial input composition proof, not complete-package assembly.
+The new producer source/checkpoint still must be frozen in the future candidate
+definition; the pinned historical checkout was not patched.
+
+Validation: 25 vehicle-input tests passed; full regression 892 tests in
+45.571 seconds, 891 passed and one skipped. The historical release definition
+still passes, and status verified all ten retained R2 build results.
+Build/test runners exited; no demo, VM, simulator or new runtime container
+remains. The shared Docker Engine was not stopped. The Google Drive CLI access
+gate remains open: connected-tool upload/readback is proven, but a CLI
+credential setup was not available and no account/token was created or extracted.
+
+Next: select the corrected producer in the future candidate and complete
+VDP/preparation and native/application packaging adapters. Keep actual Drive
+CLI acquisition, full-source closure and R4 qualification separately gated.
+Preserve the current warm results; do not restart completed builds to resume.

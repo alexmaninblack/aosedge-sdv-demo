@@ -212,6 +212,11 @@ The connected-tool probe does not qualify this command-line adapter, which
 still has offline fixture proof only. Actual CLI authorization, release
 file binding, capacity, no-overwrite upload/retention enforcement and large-file
 transfer remain unqualified. Folder creation does not approve redistribution.
+The local Google Cloud CLI has no credential database or application-default
+credential file at its selected configuration location. No account was added
+or token obtained. This is not evidence of a Drive permission failure. A
+separately authorized CLI OAuth setup remains required; connected-tool
+credentials must not be extracted or silently repurposed.
 
 ## Recorded proof
 
@@ -298,10 +303,25 @@ The selected Brake and Tire source revisions are `5aa652fda603` and
 `f0a0f6edadb5`. The pinned integration owner's `vehicle_inputs.py` still reads
 `serviceExports` from the historical Stage 0 inventory, which points to older
 sources and binary hashes. That inventory is not authority for these fresh
-outputs. A new source revision of the preparation owner must accept explicit
-selected input identities and verify the corresponding build receipts; it
-must retain existing product, Factory and VDP checks. Until that is implemented
-and frozen in the new candidate definition, complete preparation is blocked.
+outputs. The current build-only owner now accepts `--service-checkpoint`, a
+reviewed source-tree file selecting all four service revisions and executable
+digests. Its default still selects the historical inventory. Explicit choices
+reject missing profiles, duplicate or mixed Brake revisions, wrong architecture,
+invalid hashes, unknown fields and unsafe paths without fallback. Existing
+product/test, Factory and VDP checks remain unchanged.
+
+The [new checkpoint](../../workspace/checkpoints/reproduction-services-20261008.json)
+was checked against all four real exports through the canonical input reader:
+46 files each, with totals of 25,830,068 / 25,830,069 / 25,830,068 bytes for
+Brake V1/V2/V3 and 24,611,237 bytes for Tire V1. Temporary same-SSD APFS clones
+were removed afterward; Factory was not copied. This proves service input
+composition, not a complete preparation bundle or new installer.
+
+All 25 vehicle-input tests passed. The final integration regression ran 892
+tests in 45.571 seconds: 891 passed, one skipped. The historical release
+definition still validates, and `lab status` verifies all ten retained builds.
+The new producer revision and checkpoint must be frozen in the future candidate
+definition before full assembly is enabled. Complete preparation remains gated.
 Do not edit the historical inventory, old release lock or prepared source
 checkout, or fall back to stale products to bypass the mismatch.
 
@@ -309,10 +329,10 @@ checkout, or fall back to stale products to bypass the mismatch.
 
 1. Qualify authenticated Drive acquisition, release binding, capacity, approved
    access and retention. Keep old media unpublished until its gate closes.
-2. Reconcile the preparation owner's selected inputs, then add VDP/preparation,
-   native relocation and complete-package adapters. Preserve the verified
-   eight-target outputs. Complete cross-workspace cache reuse and full-profile
-   capacity accounting.
+2. Freeze the corrected preparation owner and explicit input checkpoint in the
+   future candidate; add VDP/preparation, native relocation and complete-package
+   adapters. Preserve the verified eight-target outputs. Complete
+   cross-workspace cache reuse and full-profile capacity accounting.
 3. Close effective Factory configuration, native/simulation prerequisites and
    entitlement gaps before enabling full-source preparation/builds.
 4. Extend CI/build proof to those targets. R3 reader-facing routes and R4 fresh

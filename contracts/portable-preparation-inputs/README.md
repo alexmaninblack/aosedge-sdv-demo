@@ -4,8 +4,8 @@
 # Portable preparation inputs
 
 - Status: Accepted Stage 2 integration slice; not installer/live qualification.
-- Version: 1.0
-- Prepared: 2026-09-26
+- Version: 1.1
+- Prepared: 2026-10-08
 - Owner: Demo Solution Team
 - Parent: [accepted distribution plan, Stage 2](../../docs/planning/active/installable-distribution-and-reproducibility.md#stage-2-assemble-portable-demo-runtime-artifacts).
 - Authority: [unsigned inputs and session-scoped signing](../../docs/architecture/decisions/0016-unsigned-packages-and-session-scoped-signing.md#4-accepted-artifact-and-signing-contract).
@@ -37,6 +37,17 @@ return point. The producer validates version, image name, source revision, size
 and digest against the immutable Factory manifest, with no fallback on an
 invalid explicit choice. This is build-time input only: runtime selection,
 the independent release-source lock and installation authority are unchanged.
+
+Likewise, the offline producer may select `--service-checkpoint`, a reviewed
+source-tree JSON file containing exactly Brake V1/V2/V3 and Tire V1 source
+revisions, ARM64 architecture and executable digests. Brake profiles share one
+source revision. Missing, invalid, linked or escaping explicit checkpoints fail
+without falling back to the historical Stage 0 inventory. Omitting this option
+preserves the historical producer inputs. Product identity, test receipt,
+executable and notice checks still apply; the checkpoint does not adopt a
+nearby self-generated build receipt. It adds no runtime selector or new manifest
+format. Fresh output still needs its own independent release-source lock and
+candidate qualification; Kit028's lock is not changed automatically.
 
 The bound source artifact supplies the three exact unsigned VDP profiles,
 reviewed common/advisory modules, four prebuilt Linux/arm64 service profiles,

@@ -107,6 +107,84 @@ class VehicleInputsTests(unittest.TestCase):
         with self.assertRaisesRegex(module.BundleError, 'Incomplete service'):
             self.collect()
 
+    def service_checkpoint(self, rows=None):
+        name = 'workspace/checkpoints/services-candidate.json'
+        rows = rows if rows is not None else [dict(r, architecture='linux/arm64') for r in self.inventory['serviceExports']]
+        self.put(self.integration / name, dict(schemaVersion=1, kind='reviewed-service-exports', serviceExports=rows))
+        return name
+
+    def test_explicit_service_checkpoint_preserves_historical_inventory(self):
+        name = self.service_checkpoint()
+        self.inventory['serviceExports'] = []
+        self.save_inventory()
+        old = (self.integration / 'workspace/distribution-stage0-inventory.json').read_bytes()
+        _, _, identities = module.collect(self.integration, self.platform, self.artifacts, self.firmware,
+            self.api, service_checkpoint=name)
+        self.assertEqual(len(identities['serviceProfiles']), 4)
+        self.assertEqual((self.integration / 'workspace/distribution-stage0-inventory.json').read_bytes(), old)
+
+    def test_explicit_service_checkpoint_never_falls_back(self):
+        for name, error in [('workspace/checkpoints/absent.json', FileNotFoundError),
+                            ('../outside.json', module.BundleError)]:
+            with self.subTest(name=name), self.assertRaises(error):
+                module.collect(self.integration, self.platform, self.artifacts, self.firmware,
+                    self.api, service_checkpoint=name)
+        name = self.service_checkpoint([])
+        with self.assertRaisesRegex(module.BundleError, 'Incomplete service'):
+            module.collect(self.integration, self.platform, self.artifacts, self.firmware,
+                self.api, service_checkpoint=name)
+
+    def test_invalid_service_checkpoint_identity_is_rejected_before_products(self):
+        for key, value in [('source', '../escape'), ('source', 'main'), ('architecture', 'linux/amd64'),
+                           ('bootstrapSha256', 'bad'), ('serviceSha256', True), ('unexpected', 'field')]:
+            rows = [dict(r, architecture='linux/arm64') for r in self.inventory['serviceExports']]
+            rows[0][key] = value
+            name = self.service_checkpoint(rows)
+            with self.subTest(key=key, value=value), patch.object(module, 'service_inputs') as reader:
+                with self.assertRaisesRegex(module.BundleError, 'Service checkpoint identity'):
+                    module.collect(self.integration, self.platform, self.artifacts, self.firmware,
+                        self.api, service_checkpoint=name)
+                reader.assert_not_called()
+
+    def test_service_checkpoint_duplicates_and_mixed_brake_revisions_rejected(self):
+        original = [dict(r, architecture='linux/arm64') for r in self.inventory['serviceExports']]
+        for rows in ([original[0], original[0], *original[2:]],
+                     [dict(original[0], source='e'*40), *original[1:]]):
+            name = self.service_checkpoint(rows)
+            with self.assertRaises(module.BundleError):
+                module.service_pins(self.integration, self.inventory, name)
+
+    def test_service_checkpoint_bad_schema_and_link_rejected(self):
+        name = self.service_checkpoint()
+        for version in (2, True, '1'):
+            self.put(self.integration / name, dict(schemaVersion=version, kind='reviewed-service-exports', serviceExports=[]))
+            with self.assertRaisesRegex(module.BundleError, 'schema'):
+                module.service_pins(self.integration, self.inventory, name)
+        self.put(self.integration / name, b'{"schemaVersion": 1, "schemaVersion": 2}')
+        with self.assertRaisesRegex(module.BundleError, 'Duplicate'):
+            module.service_pins(self.integration, self.inventory, name)
+        (self.integration / name).unlink()
+        (self.integration / name).symlink_to(self.integration / 'workspace/distribution-stage0-inventory.json')
+        with self.assertRaisesRegex(module.BundleError, 'symlink'):
+            module.service_pins(self.integration, self.inventory, name)
+
+    def test_new_service_checkpoint_keeps_binary_pin_guard(self):
+        rows = [dict(r, architecture='linux/arm64') for r in self.inventory['serviceExports']]
+        rows[0]['bootstrapSha256'] = '0'*64
+        name = self.service_checkpoint(rows)
+        with self.assertRaisesRegex(module.BundleError, 'binary pins'):
+            module.collect(self.integration, self.platform, self.artifacts, self.firmware,
+                self.api, service_checkpoint=name)
+
+    def test_reviewed_reproduction_checkpoint_matches_selected_component_sources(self):
+        root = SCRIPTS.parents[1]
+        pins = module.service_pins(root, {}, 'workspace/checkpoints/reproduction-services-20261008.json')
+        release = json.loads((root / 'workspace/releases/kit028-setup042.json').read_text())
+        sources = {row['id']: row['revision'] for row in release['sources']}
+        for pin in pins:
+            owner = 'functional-service' if pin['team'] == 'brake' else 'tire-health-service'
+            self.assertEqual(pin['source'], sources[owner])
+
     def test_explicit_checkpoint_does_not_rewrite_historical_return_point(self):
         original = (self.integration / module.DEFAULT_FACTORY_CHECKPOINT).read_bytes()
         name = 'workspace/checkpoints/factory-candidate.json'

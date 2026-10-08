@@ -206,10 +206,12 @@ incomplete Gateway build may resume only with `--resume` and matching inputs;
 the first stage logs are retained. Raw outputs still require native packaging
 and library relocation before they can be treated as portable runtime files.
 
-Preparation/complete-profile adapters remain gated. In particular, the pinned
-vehicle-input assembler's historical Stage 0 service inventory does not select
-the current service sources. A new reviewed recipe/input record must reconcile
-them; neither historical manifests nor pinned source checkouts may be edited
-to make a new package appear to match the old kit.
+Preparation/complete-profile adapters remain gated. The historical pinned
+vehicle-input assembler selects old Stage 0 service exports. The current
+build-only owner now accepts an explicit reviewed service checkpoint, preserving
+the historical default and all product checks. The four new exports pass that
+owner, but the new recipe/checkpoint must still be selected in the future
+candidate definition. Neither historical manifests nor pinned source checkouts
+may be edited to make a new package appear to match the old kit.
 See [R2 commands and evidence](../../docs/development/release-reproduction-r2.md)
 for the exercised scope, exit codes and remaining gates.

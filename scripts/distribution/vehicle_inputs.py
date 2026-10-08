@@ -67,8 +67,44 @@ def service_inputs(artifacts, pin, product_files):
     return files
 
 
-def collect(integration, platform, artifacts, firmware, api, *, factory_checkpoint=DEFAULT_FACTORY_CHECKPOINT):
+def service_pins(integration, inventory, checkpoint=None):
+    """Explicit source checkpoint, never adjacent receipts or automatic adoption."""
+    if checkpoint is None:
+        pins = inventory['serviceExports']
+    else:
+        def unique_pairs(pairs):
+            result = {}
+            for key, value in pairs:
+                require(key not in result, 'Duplicate service checkpoint field')
+                result[key] = value
+            return result
+        value = json.loads(read(integration, checkpoint), object_pairs_hook=unique_pairs)
+        require(isinstance(value, dict) and
+                set(value) <= {'$comment', 'schemaVersion', 'kind', 'serviceExports'} and
+                type(value.get('schemaVersion')) is int and value['schemaVersion'] == 1 and
+                value.get('kind') == 'reviewed-service-exports',
+                'Service checkpoint schema invalid')
+        pins = value.get('serviceExports')
+    require(isinstance(pins, list) and len(pins) == 4 and
+            all(isinstance(r, dict) and isinstance(r.get('team'), str) and isinstance(r.get('profile'), str) for r in pins) and
+            {(r.get('team'), r.get('profile')) for r in pins} ==
+            {('brake', 'v1'), ('brake', 'v2'), ('brake', 'v3'), ('tire', 'v1')},
+            'Incomplete service profile inventory')
+    if checkpoint is not None:
+        fields = {'team', 'profile', 'source', 'architecture', 'bootstrapSha256', 'serviceSha256'}
+        require(all(set(r) == fields and all(isinstance(v, str) for v in r.values()) and
+                    r['architecture'] == 'linux/arm64' and re.fullmatch('[a-f0-9]{40}', r['source']) and
+                    all(re.fullmatch('[a-f0-9]{64}', r[k]) for k in ('bootstrapSha256', 'serviceSha256'))
+                    for r in pins), 'Service checkpoint identity invalid')
+        require(len({r['source'] for r in pins if r['team'] == 'brake'}) == 1,
+                'Brake profiles must select one source revision')
+    return pins
+
+
+def collect(integration, platform, artifacts, firmware, api, *, factory_checkpoint=DEFAULT_FACTORY_CHECKPOINT,
+            service_checkpoint=None):
     inventory = json.loads(read(integration, 'workspace/distribution-stage0-inventory.json'))
+    pins = service_pins(integration, inventory, service_checkpoint)
     # Build-time source checkpoint only: never rewrite the historical return
     # point or adopt a Factory from an adjacent self-generated receipt.
     checkpoint = json.loads(read(integration, factory_checkpoint))
@@ -122,9 +158,7 @@ def collect(integration, platform, artifacts, firmware, api, *, factory_checkpoi
     for name, raw in builder.advisory_source(platform).items():
         files['vdp/reviewed-runtime/' + name] = raw, 0o444
     files['vdp/reviewed-runtime/pin.json'] = json.dumps(runtime_pin, indent=2).encode(), 0o444
-    require(len(inventory['serviceExports']) == 4 and {(r['team'], r['profile']) for r in inventory['serviceExports']} ==
-            {('brake', 'v1'), ('brake', 'v2'), ('brake', 'v3'), ('tire', 'v1')}, 'Incomplete service profile inventory')
-    for pin in inventory['serviceExports']:
+    for pin in pins:
         for name, value in service_inputs(artifacts, pin, products).items():
             files['services/' + pin['team'] + '/' + pin['profile'] + '/' + name] = value
     for contract in CONTRACTS:
@@ -135,7 +169,7 @@ def collect(integration, platform, artifacts, firmware, api, *, factory_checkpoi
         files['notices/' + owner + '/LICENSE'] = read(root, 'LICENSE'), 0o444
     require(sum(len(raw) for raw, _ in files.values()) <= MAX_SMALL, 'Vehicle input budget exceeded')
     return files, image, {'factory': factory, 'vdpProfiles': vdp_rows, 'runtimePin': runtime_pin,
-                          'serviceProfiles': inventory['serviceExports']}
+                          'serviceProfiles': pins}
 
 
 def clone_factory(source, target, expected):
@@ -150,11 +184,12 @@ def clone_factory(source, target, expected):
             (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns), 'Factory source changed during clone')
 
 
-def assemble(integration, platform, artifacts, firmware, output, api, *, factory_checkpoint=DEFAULT_FACTORY_CHECKPOINT):
+def assemble(integration, platform, artifacts, firmware, output, api, *, factory_checkpoint=DEFAULT_FACTORY_CHECKPOINT,
+             service_checkpoint=None):
     require(not output.exists() and not output.is_symlink() and output.parent.is_dir(), 'Output must be new')
     require(shutil.disk_usage(output.parent).free >= 90 * 2**30 + MAX_SMALL, 'Insufficient disk reserve')
     files, image, identities = collect(integration, platform, artifacts, firmware, api,
-                                       factory_checkpoint=factory_checkpoint)
+                                       factory_checkpoint=factory_checkpoint, service_checkpoint=service_checkpoint)
     output.mkdir(mode=0o700)
     entries = []
     for name, (raw, mode) in sorted(files.items()):
@@ -187,6 +222,8 @@ def main():
         parser.add_argument('--' + name, type=Path, required=True)
     parser.add_argument('--factory-checkpoint', default=DEFAULT_FACTORY_CHECKPOINT,
                         help='Reviewed source checkpoint relative to integration; historical default is unchanged')
+    parser.add_argument('--service-checkpoint',
+                        help='Reviewed service source/digest checkpoint relative to integration; no implicit fallback')
     args = parser.parse_args()
     # Build-time only: runtime input selectors are deliberately not changed here.
     sys.path.insert(0, str(args.integration / 'apps/demo-orchestrator/src'))
@@ -195,7 +232,7 @@ def main():
     from aosedge_demo_orchestrator.service_packages import product_files
     result = assemble(args.integration, args.platform, args.artifacts, args.firmware, args.output,
                       (ComponentService.__new__(ComponentService), component_build, product_files),
-                      factory_checkpoint=args.factory_checkpoint)
+                      factory_checkpoint=args.factory_checkpoint, service_checkpoint=args.service_checkpoint)
     print(json.dumps({'status': result['status'], 'files': len(result['files']),
                       'bytes': sum(row['bytes'] for row in result['files'])}))
 
