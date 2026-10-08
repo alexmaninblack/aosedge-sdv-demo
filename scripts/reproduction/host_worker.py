@@ -9,12 +9,38 @@ import sys
 import tempfile
 
 
+def clone_selected(source, target, rows, native, regular):
+    """Copy only manifest-selected regular files, never incidental Finder data."""
+    target.mkdir(mode=0o700)
+    by_parent = {}
+    before = {}
+    for row in rows:
+        path = regular(source, row['path'])
+        s = path.stat()
+        if s.st_nlink != 1 or s.st_size != row['bytes'] or stat.S_IMODE(s.st_mode) != row['mode']:
+            raise native.BundleError('Retained host input metadata changed')
+        before[row['path']] = (s.st_dev, s.st_ino, s.st_size, s.st_mtime_ns, s.st_ctime_ns)
+        parent = Path(row['path']).parent
+        by_parent.setdefault(parent, []).append(path)
+    for parent, paths in by_parent.items():
+        destination = target/parent
+        destination.mkdir(parents=True, exist_ok=True)
+        for index in range(0, len(paths), 128):
+            native.command(['/bin/cp', '-c', '-p', *paths[index:index+128], destination])
+    for row in rows:
+        original = regular(source, row['path'])
+        copied = regular(target, row['path'])
+        s = original.stat()
+        if ((s.st_dev, s.st_ino, s.st_size, s.st_mtime_ns, s.st_ctime_ns) != before[row['path']]
+                or copied.stat().st_size != row['bytes'] or native.sha256(copied) != row['sha256']):
+            raise native.BundleError('Host selected input transfer changed')
+
+
 def assemble(root, integration, gateway, retained, sdk, ui, binaries, output):
     sys.path.insert(0, str(root/'scripts/distribution'))
     sys.path.insert(0, str(root/'apps/demo-orchestrator/src'))
     import native_bundle as native
     import ui_helpers
-    from application import clone_group
     from aosedge_demo_orchestrator import host_runtime
 
     def require(ok, message):
@@ -32,9 +58,7 @@ def assemble(root, integration, gateway, retained, sdk, ui, binaries, output):
         rows = [{**r, 'path': name[len(group)+1:]} for name, r in original_rows.items()
                 if name.startswith(group+'/')]
         require(rows, 'Missing retained host group')
-        # clone_group's manifest argument can be one inventory row; do not invent
-        # a second per-group manifest or change the established runtime format.
-        clone_group(retained/group, output/group, rows[1:], rows[0])
+        clone_selected(retained/group, output/group, rows, native, ui_helpers.regular)
         copied.extend({**r, 'path': group+'/'+r['path']} for r in rows)
         print(json.dumps({'stage': 'HOST_GROUP_TRANSFERRED', 'group': group}), flush=True)
     ui_helpers.assemble(integration, gateway, ui, output/'ui')

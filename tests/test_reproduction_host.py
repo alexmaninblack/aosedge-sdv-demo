@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 """Host packaging receipts do not imply live or installer qualification."""
 import json
+import shutil
 from pathlib import Path
 import sys
 from types import SimpleNamespace
@@ -9,7 +10,7 @@ import unittest
 from unittest.mock import patch
 
 from test_reproduction import StorageFixture
-from reproduction import core, host
+from reproduction import core, host, host_worker
 from reproduction.artifacts import sha256
 
 
@@ -121,6 +122,22 @@ class HostTests(StorageFixture, unittest.TestCase):
             self.assertIn(call.args[0][-1], ('--help', '--version'))
             self.assertIn('deny network*', call.args[0][2])
             self.assertIn('/opt/homebrew', call.args[0][2])
+
+    def test_only_declared_files_are_cloned_not_finder_metadata(self):
+        source = self.base/'source'
+        source.mkdir()
+        (source/'file').write_bytes(b'fixture')
+        (source/'.DS_Store').write_bytes(b'not a package input')
+        def command(args):
+            for path in args[3:-1]:
+                shutil.copy2(path, Path(args[-1])/path.name)
+        native = SimpleNamespace(command=command, sha256=sha256, BundleError=core.LabError)
+        rows = [{'path': 'file', 'bytes': 7, 'sha256': sha256(source/'file'),
+                 'mode': (source/'file').stat().st_mode & 0o777}]
+        output = self.base/'copy'
+        host_worker.clone_selected(source, output, rows, native, lambda root, name: core.regular(root/name))
+        self.assertEqual({p.name for p in output.iterdir()}, {'file'})
+        self.assertTrue((source/'.DS_Store').exists())
 
 
 if __name__ == '__main__':
