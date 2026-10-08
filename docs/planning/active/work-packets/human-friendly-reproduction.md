@@ -4,7 +4,7 @@
 # Human Friendly Repository and Release Reproduction Plan
 
 - Status: R1 complete; R2 implementation in progress; R3 and R4 planned
-- Version: 0.8
+- Version: 0.9
 - Prepared: 2026-10-08
 - Owner: Demo Solution Team
 - Parent: [Installable distribution and reproducibility](../installable-distribution-and-reproducibility.md)
@@ -192,42 +192,38 @@ file bindings are not yet configured; folder creation does not publish a release
 ### Implementation checkpoint
 
 The [R2 command and evidence record](../../../development/release-reproduction-r2.md)
-covers exact developer source preparation, repeat/verification, SSD-bound state
-and caches, an offline-tested resumable Drive reader, and the existing native/web
-UI build adapter. Seven public source roles were prepared from remote pins;
-first build and reuse passed. 38 targeted tests and the 845-test integration
-suite passed (one suite skip).
+contains exact build keys, first/repeat results and preserved failure diagnoses.
+Seven public source roles were remotely prepared at fixed commits. Real owner
+builds passed for Presenter/Driving Control/web UI, the Cloud SDK, both backend
+images and OCI export, Brake V1/V2/V3, Tire V1 and Gateway. Their unchanged
+outputs are reusable; the Gateway SDK is an explicit hash-bound input, not an
+undeclared host library or full-source qualification.
 
-The subsequent Cloud SDK adapter delegates to the pinned owner recipe, derives
-only the declared isolated Python base from an explicit SSD kit, and acquires
-41 digest-verified public wheels. Actual assembly and no-download/no-rebuild
-repeat passed. This is a second target proof, not a complete developer profile.
-Both backend Dockerfile adapters and their OCI export now also pass first-build
-and no-rebuild repeats. Their guard requires Docker's active backing disk on the
-selected SSD. The separately authorized host migration preserved existing
-Docker data and freed the internal duplicate; R2 itself does not manage Engine
-lifecycle. Five target proofs do not close the remaining input/profile gates.
+Preparation now selects the reviewed service exports and common VDP runtime,
+while retaining Factory .41. Host assembly verifies native ancestry and
+relocation, then probes help/version without network or Homebrew. Backend and
+VM inputs, complete application assembly and stable-signed Setup also pass
+first/repeat proof. Independent source checkpoints select their new manifests
+and application digest; historical locks and media stay unchanged. The DMG
+adapter is implemented and its real media qualification is in progress.
 
-Brake V1/V2/V3, Tire V1 and Gateway now also have real compile/owner-test and
-no-rebuild repeat proof. Eight target types account for ten stored results.
-The declared Gateway SDK is hash-bound on SSD, not implicit host state or
-full-source qualification. Its socket/cache test-environment fixes do not
-change Gateway runtime source. The latest integration suite passed 884 tests
-with one skip. The connected Drive root also passed a small synthetic text
-upload/readback; CLI authorization and release-sized transfer remain open.
+Full local regression ran 932 tests: 931 passed and one skipped. A separate
+root-only source export passed all 109 reproduction fixture tests. CI now has
+a clearly labelled root-only resolver/adapter job; these fixtures do not prove
+a complete native build, installation or live operation.
 
-The pinned preparation owner selects historical Stage 0 exports, not current
-service sources. The current build-only producer now supports an explicit
-reviewed service checkpoint, and all four fresh exports pass its unchanged
-product reader. Its new recipe/checkpoint still need to be selected in the
-future candidate definition before complete assembly. Historical inventory
-and release locks stay unchanged; no stale-product fallback is permitted.
-The final suite after this correction ran 892 tests: 891 passed, one skipped.
+The separately authorized Docker disk migration preserved existing data;
+R2 itself does not manage Engine lifecycle. The private Drive root passed
+metadata and small synthetic upload/readback checks. CLI OAuth, release file
+binding, capacity and release-sized transfer remain open.
 
-R2 remains **in progress**. No complete profile, new installer or Drive download
-is qualified. Next work is authenticated release-input binding/acquisition and
-remaining owner adapters; full-source input closure and R4 acceptance remain
-explicit. Do not repeat this proof or rebuild heavy inputs merely to resume work.
+R2 remains **in progress**. Remaining work is the one-command dependency chain
+and complete candidate/producer selection, narrow invalidation and shared-cache
+capacity accounting, authenticated artifact delivery and full-source input
+closure. In particular, per-target success does not yet make `--target all`
+available or qualify a fresh-clone profile. R3 human routes and R4 acceptance
+remain separate. Reuse completed results; do not rebuild heavy inputs merely
+to resume this packet.
 
 ### Work
 
