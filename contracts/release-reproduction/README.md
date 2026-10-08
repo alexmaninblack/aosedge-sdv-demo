@@ -4,7 +4,7 @@
 # Release Definition and Reproduction Contract
 
 - Status: R1 complete; delivery and version policy accepted; acquisition and reproduction unqualified
-- Version: 1.8
+- Version: 1.9
 - Prepared: 2026-10-08
 - Owner: Demo Solution Team
 - Scope: [R1 work packet](../../docs/planning/active/work-packets/human-friendly-reproduction.md)
@@ -172,7 +172,7 @@ source inputs remain gated rather than being taken from undeclared warm state.
 The supported developer build targets are `presenter`, `cloud-sdk`,
 `brake-backend`, `tire-backend`, `backend-export`, `brake-service`,
 `tire-service`, `gateway`, `preparation`, `host-runtime`, `backend-inputs`,
-`vm-runtime` and `application`.
+`vm-runtime`, `application`, `setup` and `dmg`.
 `presenter` uses the pinned owner's native
 Presenter, Driving Control and web UI recipe. It performs local ad-hoc signing
 required by that recipe, not Developer ID signing, notarization or publication.
@@ -250,5 +250,11 @@ must equal those in the selected verified kit. Only the embedded build copy of
 `setup_release.json` changes; the historical source pin stays intact. Complete
 media assembly checks that same independent source pin against the signed Setup.
 Omitting the explicit successor parameters retains the historical build behavior.
+`setup` requires an explicitly selected authorized signing identity; it has no
+automatic ad-hoc fallback. `dmg` reuses the verified Setup built for that same
+application and independent source pin. Neither target launches Setup or the
+demo. Compiler scratch, assembly and media staging remain on the selected
+external volume. A signed engineering candidate is not notarized distribution
+or installation qualification.
 See [R2 commands and evidence](../../docs/development/release-reproduction-r2.md)
 for the exercised scope, exit codes and remaining gates.

@@ -21,6 +21,12 @@ REQ = 'designated => identifier "' + signing.IDENTIFIER + '" and anchor apple ge
 
 
 class SigningTests(unittest.TestCase):
+    def test_build_environment_keeps_selected_scratch_without_ambient_secrets(self):
+        with patch.object(builder.tempfile, 'gettempdir', return_value='/Volumes/BUILD/tmp'):
+            env = builder.build_environment()
+        self.assertEqual(env['TMPDIR'], '/Volumes/BUILD/tmp')
+        self.assertEqual(set(env), {'PATH', 'HOME', 'LC_ALL', 'TMPDIR'})
+
     def test_successor_requires_both_independent_checkpoint_inputs(self):
         with tempfile.TemporaryDirectory() as scratch:
             for kwargs in ({'input_checkpoint': 'fixture'}, {'release_checkpoint': 'fixture'}):

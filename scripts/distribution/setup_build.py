@@ -53,6 +53,13 @@ def bundle_info(executable):
                 NSRemovableVolumesUsageDescription='SDV Lab installs and reads its packages in your selected folder on an external drive.')
 
 
+def build_environment():
+    # Keep compiler subprocess scratch on the caller's selected build volume.
+    # Do not forward the rest of the caller's environment or credentials.
+    return {'PATH': '/usr/bin:/bin:/usr/sbin:/sbin', 'HOME': str(Path.home()),
+            'LC_ALL': 'C', 'TMPDIR': tempfile.gettempdir()}
+
+
 def build(kit, output, *, signing_identity=None, ad_hoc=False,
           developer_id_identity=None, hardened_runtime=False,
           input_checkpoint=None, release_checkpoint=None):
@@ -104,7 +111,7 @@ def build(kit, output, *, signing_identity=None, ad_hoc=False,
         target.write_bytes(raw)
     info = bundle_info(executable.name)
     (contents / 'Info.plist').write_bytes(plistlib.dumps(info))
-    env = {'PATH': '/usr/bin:/bin:/usr/sbin:/sbin', 'HOME': str(Path.home()), 'LC_ALL': 'C'}
+    env = build_environment()
     with tempfile.TemporaryDirectory(prefix='sdv-setup-compile.') as scratch:
         command = ['/usr/bin/sandbox-exec', '-p', '(version 1)(allow default)(deny network*)',
                    '/usr/bin/xcrun', 'swiftc', '-O', '-target', 'arm64-apple-macos26.0',
