@@ -21,6 +21,17 @@ REQ = 'designated => identifier "' + signing.IDENTIFIER + '" and anchor apple ge
 
 
 class SigningTests(unittest.TestCase):
+    def test_successor_requires_both_independent_checkpoint_inputs(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            for kwargs in ({'input_checkpoint': 'fixture'}, {'release_checkpoint': 'fixture'}):
+                with patch.object(sys, 'path', [str(fixtures.SCRIPTS), *sys.path]), \
+                        patch.object(builder, 'supported_platform'), \
+                        patch.object(signing, 'select', return_value='-'), \
+                        patch.object(builder, 'Bundle') as bundle:
+                    with self.assertRaisesRegex(ValueError, 'CHECKPOINT_PAIR_REQUIRED'):
+                        builder.build(Path(scratch)/'kit', Path(scratch)/'new', ad_hoc=True, **kwargs)
+                    bundle.assert_not_called()
+
     def test_build_blocks_before_copy_compile_or_output_creation(self):
         import tempfile
         with tempfile.TemporaryDirectory() as scratch:

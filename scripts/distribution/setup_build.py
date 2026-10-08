@@ -54,8 +54,9 @@ def bundle_info(executable):
 
 
 def build(kit, output, *, signing_identity=None, ad_hoc=False,
-          developer_id_identity=None, hardened_runtime=False):
-    from application import export_plan
+          developer_id_identity=None, hardened_runtime=False,
+          input_checkpoint=None, release_checkpoint=None):
+    from application import export_plan, LOCKS
     supported_platform()
     # Fail before copying or compiling when stable signing is unavailable.
     distribution = developer_id_identity is not None
@@ -68,10 +69,19 @@ def build(kit, output, *, signing_identity=None, ad_hoc=False,
     kit, output = unlinked(kit), unlinked(output)
     require(output.parent.is_dir() and not output.exists(), 'SETUP_OUTPUT_MUST_BE_NEW')
     require(not output.is_relative_to(kit) and not kit.is_relative_to(output), 'SETUP_OUTPUT_OVERLAP')
-    trusted = release()
+    require((input_checkpoint is None) == (release_checkpoint is None), 'SETUP_CHECKPOINT_PAIR_REQUIRED')
+    if release_checkpoint is None:
+        trusted = release()
+    else:
+        from candidate_inputs import setup_release
+        trusted = setup_release(ROOT, release_checkpoint)
     bundle = Bundle(kit, trusted['manifestSha256'])
     rows = python_files(bundle)
-    application_sources = export_plan(ROOT)
+    application_sources = export_plan(ROOT) if input_checkpoint is None else export_plan(ROOT, input_checkpoint)
+    for lock_name in LOCKS.values():
+        selected = json.loads(application_sources['contracts/'+lock_name])['manifest']
+        shipped = json.loads((kit/'aosedge-sdv-demo/contracts'/lock_name).read_bytes())['manifest']
+        require(selected == shipped, 'SETUP_APPLICATION_INPUT_PIN_MISMATCH')
     require(shutil.disk_usage(output.parent).free >= sum(row.size for row in rows.values()) + 2 * 2**30,
             'SETUP_BUILD_SPACE_INSUFFICIENT')
     output.mkdir(mode=0o700)
@@ -85,7 +95,8 @@ def build(kit, output, *, signing_identity=None, ad_hoc=False,
     for leaf in HELPERS:
         target = resources / 'tooling/scripts/distribution' / leaf
         target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(HERE / leaf, target)
+        source = ROOT/release_checkpoint if leaf == 'setup_release.json' and release_checkpoint else HERE/leaf
+        shutil.copyfile(source, target)
     for name, raw in application_sources.items():
         relative = Path(name)
         target = resources / 'tooling' / relative
@@ -110,7 +121,8 @@ def build(kit, output, *, signing_identity=None, ad_hoc=False,
     require(probe.returncode == 1 and probe.stderr == b''
             and json.loads(probe.stdout) == dict(kind='error', code='SETUP_ACTION_INVALID'),
             'SETUP_EMBEDDED_PROBE_FAILED')
-    source_files = [HERE / leaf for leaf in HELPERS] + [
+    source_files = [ROOT/release_checkpoint if leaf == 'setup_release.json' and release_checkpoint else HERE/leaf
+                    for leaf in HELPERS] + [
         HERE / 'native/Setup.swift', HERE / 'setup_build.py', HERE / 'setup_signing.py']
     source_files += [ROOT / name for name in application_sources]
     receipt = dict(schemaVersion=1, status=('DISTRIBUTION_SETUP_UNNOTARIZED' if distribution
@@ -122,6 +134,11 @@ def build(kit, output, *, signing_identity=None, ad_hoc=False,
                    existingCloudAccessImplemented=True,
                    presenterLaunchImplemented=True,
                    runtimeLaunched=False, developerCredentialsCopied=False)
+    if input_checkpoint is not None:
+        import hashlib
+        receipt['packagingCheckpoint'] = dict(path=input_checkpoint, sha256=digest(ROOT/input_checkpoint))
+        receipt['exportedApplicationHashes'] = {name: hashlib.sha256(raw).hexdigest()
+                                                 for name, raw in application_sources.items()}
     (output / 'build-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
     return receipt
 
@@ -130,6 +147,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--kit', required=True, type=Path)
     parser.add_argument('--output', required=True, type=Path)
+    parser.add_argument('--input-checkpoint')
+    parser.add_argument('--release-checkpoint')
     signing = parser.add_mutually_exclusive_group(required=True)
     signing.add_argument('--signing-identity', help='Exact SHA-1 identity from security find-identity; Apple Development only')
     signing.add_argument('--developer-id-identity', help='Exact Developer ID Application SHA-1; hardened/timestamped output, no notarization submission')
@@ -138,4 +157,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
     print(json.dumps(build(args.kit, args.output, signing_identity=args.signing_identity,
                            ad_hoc=args.ad_hoc, developer_id_identity=args.developer_id_identity,
-                           hardened_runtime=args.hardened_runtime), sort_keys=True))
+                           hardened_runtime=args.hardened_runtime, input_checkpoint=args.input_checkpoint,
+                           release_checkpoint=args.release_checkpoint), sort_keys=True))

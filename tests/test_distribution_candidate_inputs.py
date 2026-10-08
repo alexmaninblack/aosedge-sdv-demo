@@ -79,6 +79,16 @@ class CandidateInputTests(unittest.TestCase):
         with self.assertRaisesRegex(module.BundleError, 'Unsafe relative'):
             module.pins(self.root, '../escape', ('host-runtime',))
 
+    def test_setup_independent_pin_validation(self):
+        name = 'workspace/releases/setup-fixture.json'
+        good = {'schemaVersion': 1, 'label': 'Engineering fixture', 'manifestSha256': 'a'*64}
+        (self.root/name).write_text(json.dumps(good))
+        self.assertEqual(module.setup_release(self.root, name), good)
+        for change in ({'manifestSha256': 'bad'}, {'extra': True}, {'schemaVersion': True}):
+            (self.root/name).write_text(json.dumps({**good, **change}))
+            with self.assertRaisesRegex(module.BundleError, 'Invalid reviewed Setup'):
+                module.setup_release(self.root, name)
+
 
 if __name__ == '__main__':
     unittest.main()

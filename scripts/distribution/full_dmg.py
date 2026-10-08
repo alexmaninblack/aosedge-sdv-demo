@@ -92,9 +92,13 @@ def copy_payload(bundle, destination, progress=lambda row: None):
     return dict(files=len(bundle.rows), logicalBytes=total)
 
 
-def build(kit, setup, output, *, progress=lambda row: None):
+def build(kit, setup, output, *, progress=lambda row: None, release_checkpoint=None):
     kit, setup, output = validate_paths(kit, setup, output)
-    pin = release()['manifestSha256']
+    if release_checkpoint is None:
+        pin = release()['manifestSha256']
+    else:
+        from candidate_inputs import setup_release
+        pin = setup_release(Path(__file__).resolve().parents[2], release_checkpoint)['manifestSha256']
     bundle = Bundle(kit, pin)
     app, signature = setup_pin(setup, pin)
     # Allow an ordinary staging copy plus compressed-image worst case. Never
@@ -130,6 +134,8 @@ if __name__ == '__main__':
     parser.add_argument('--kit', required=True, type=Path)
     parser.add_argument('--setup', required=True, type=Path)
     parser.add_argument('--output', required=True, type=Path)
+    parser.add_argument('--release-checkpoint')
     args = parser.parse_args()
-    result = build(args.kit, args.setup, args.output, progress=lambda row: print(json.dumps(row), flush=True))
+    result = build(args.kit, args.setup, args.output, progress=lambda row: print(json.dumps(row), flush=True),
+                   release_checkpoint=args.release_checkpoint)
     print(json.dumps(result), flush=True)

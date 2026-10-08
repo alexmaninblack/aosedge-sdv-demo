@@ -244,5 +244,11 @@ complete application. Adapter evidence stays outside installed payloads.
 Backend assembly reuses the verified untagged OCI export without an Engine call.
 Setup must subsequently bind the new application digest independently; none of
 these commands creates a release tag, installs, provisions or publishes.
+For successor Setup builds, both the reviewed group checkpoint and a separate
+source-reviewed application release pin are required. Embedded contract pins
+must equal those in the selected verified kit. Only the embedded build copy of
+`setup_release.json` changes; the historical source pin stays intact. Complete
+media assembly checks that same independent source pin against the signed Setup.
+Omitting the explicit successor parameters retains the historical build behavior.
 See [R2 commands and evidence](../../docs/development/release-reproduction-r2.md)
 for the exercised scope, exit codes and remaining gates.

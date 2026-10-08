@@ -57,3 +57,15 @@ def locks(root, checkpoint, required):
         value['manifest'] = selected[group]
         result[group] = (json.dumps(value, sort_keys=True, indent=2)+'\n').encode()
     return result
+
+
+def setup_release(root, checkpoint):
+    """Read an independent source pin before selecting any supplied kit bytes."""
+    value = parse(read(root, checkpoint))
+    if (not isinstance(value, dict) or set(value) != {'schemaVersion', 'label', 'manifestSha256'}
+            or type(value['schemaVersion']) is not int or value['schemaVersion'] != 1
+            or not isinstance(value['label'], str) or not 0 < len(value['label']) < 120
+            or not isinstance(value['manifestSha256'], str)
+            or not re.fullmatch('[a-f0-9]{64}', value['manifestSha256'])):
+        raise BundleError('Invalid reviewed Setup release pin')
+    return value

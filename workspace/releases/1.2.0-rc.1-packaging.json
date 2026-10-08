@@ -19,6 +19,11 @@
       "bytes": 604355,
       "sha256": "46fe0adf22a6843f9d7c4162208f38caf194ca19e98e1089e3fb931ed2a5bb46"
     },
+    "vm-runtime": {
+      "path": "vm-runtime-manifest.json",
+      "bytes": 1369,
+      "sha256": "a65b65b3b59459d6bde198152a062b86395b4ffa3fa3973c229b6b8265ec3ecc"
+    },
     "backend-inputs": {
       "path": "backend-image-manifest.json",
       "bytes": 986,
