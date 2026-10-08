@@ -3,7 +3,7 @@
 
 # R2 Preparation and Build Tooling
 
-- Status: In progress; complete application and signed Setup built, media packaging under qualification
+- Status: In progress; application, signed Setup and complete DMG built and locally verified
 - Date: 2026-10-08
 - Owner: Demo Solution Team
 - Authority: [Work packet](../planning/active/work-packets/human-friendly-reproduction.md)
@@ -398,6 +398,7 @@ result; no heavy compilation or Factory rebuild was performed.
 | VM runtime | `57997265dd6d0760abdce34a5835fdcac06ae01d066829c8f0159914f15c8c09` |
 | Application | `48bece9229758e9018f220b8c7eeeffe8457b78e2c08ac53dca60fd610492abf` |
 | Signed Setup | `a1c53895cdde873e90c2b3c6a6770be9856fbe9a1b026f69ab8b9c0e83fd46da` |
+| Complete DMG | `98ba1c5048376b7e12aa597fa42d52d3098972347259162835a9a103a99369fb` |
 
 The [group checkpoint](../../workspace/releases/1.2.0-rc.1-packaging.json)
 records the five new input manifests. The 19,767-byte application manifest has
@@ -413,6 +414,25 @@ probe, and verified its stable Apple Development signature. It contains
 `c3a196d8ad10aaf7ed00f50bf313520569e50d8cdf8de576a8278aff479aea9e`.
 A repeat reused the signature and output. This is local engineering signing,
 not Developer ID, notarization, installation or distribution approval.
+
+The complete `AosEdge-SDV-Lab-1.2.0-rc.1.dmg` was created and passed the media
+owner's archive verification. It is 14,162,125,968 bytes; SHA-256 is
+`7bac892b2398e38fe511de738838c23dd02e5ec26d2578afd3f6f932868cc755`.
+The media receipt contains 17,697 runtime-kit files and 35,456,467,266 logical
+bytes. This larger logical count includes the existing cloned Factory
+catalogue as well as the preparation input; it is not another Factory build
+or a measure of additional physical SSD use.
+
+An immediate repeat returned `BUILD_REUSED` without compression or signing.
+The unchanged, already archive-verified image was then mounted read-only,
+without opening Finder, Setup or payload code. The canonical bundle reader
+validated all 17,697 file entries and independent manifest pin. Setup's strict
+signature, executable digest, bundle identifier and embedded release pin
+matched. The normal detach succeeded and the private test mount was removed.
+No installation, provisioning, publication or live runtime test was performed.
+The workspace now holds 17 verified results across 15 target types. The final
+observed free space was approximately 256 GiB externally and 132 GiB internally;
+these are observations, not full-profile peak-space requirements.
 
 Full local regression ran 932 tests in 78.072 seconds: 931 passed and one was
 skipped. A separate source-only Git export on SSD, with no sibling checkouts,
@@ -435,6 +455,10 @@ must not be presented as physical disk space recovered.
    selection, owner-scoped invalidation, cross-workspace cache reuse and
    full-profile capacity accounting. Per-target owner builds are not yet this
    complete route; `--target all` remains blocked. Preserve verified results.
+   Freeze exact producer roles for the application and its later independent
+   Setup pin; do not create a circular source-to-manifest pin or reuse the
+   current root revision implicitly. Current conservative whole-tool-tree
+   fingerprints also require refinement before claiming narrow invalidation.
 3. Close effective Factory configuration, native/simulation prerequisites and
    entitlement gaps before enabling full-source preparation/builds.
 4. Finish release-level build evidence and handoff. CI now separately runs the

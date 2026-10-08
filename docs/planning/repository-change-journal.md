@@ -416,3 +416,50 @@ Next: select the corrected producer in the future candidate and complete
 VDP/preparation and native/application packaging adapters. Keep actual Drive
 CLI acquisition, full-source closure and R4 qualification separately gated.
 Preserve the current warm results; do not restart completed builds to resume.
+
+## 2026 October 8 R2 successor packaging and media proof
+
+Continued the accepted external-SSD build packet through preparation, portable
+host closure, backend/VM inputs, complete application, stable-signed Setup and
+DMG. Canonical owners and strict validators remain authoritative. Two separate
+source-reviewed successor checkpoints bind group manifests and the application
+digest. Historical Kit028/Setup042 locks, Factory .41, component pins and tags
+were not overwritten. These are new local engineering outputs, not promotion
+of the historical media or a qualified release.
+
+The preparation run fetched one exact reviewed VDP history object, preserving
+the source HEAD. Host corrections addressed nested sandbox execution and
+incidental Finder metadata in blanket copies, not runtime behavior. All four
+native help/version probes passed with network and Homebrew reads denied.
+Setup's compiler temporary directory now follows the selected SSD. Its native
+self-test, embedded bootstrap protocol and Apple Development signature passed.
+Signing keys were not exported or added to evidence.
+
+Complete media: `AosEdge-SDV-Lab-1.2.0-rc.1.dmg`, 14,162,125,968 bytes,
+SHA-256 `7bac892b2398e38fe511de738838c23dd02e5ec26d2578afd3f6f932868cc755`.
+First builds and immediate no-rebuild repeats passed. The archive was verified;
+its read-only mount passed canonical inventory and Setup signature/pin checks,
+then detached normally. No Setup window, demo, simulator, guest or new container
+was launched. No Cloud state, Production or video repository changed; the
+shared Docker Engine remains running. Two unreferenced failed host copies and
+the completed root-only test export were removed, preserving compact evidence,
+successful outputs and historical inputs.
+
+Validation: 932 integration tests, 931 passing and one skipped; all 109
+reproduction tests also passed in a separate root-only Git export. A dedicated
+CI job now exercises the same resolver and offline fixtures, with no native or
+remote-CI success claim. Documentation, historical release-definition and
+public-source gates passed. Build keys and precise scope are in the
+[R2 evidence record](../development/release-reproduction-r2.md).
+
+Source changes are committed locally on the existing integration branch:
+preparation/host implementations through `ecb3894`, successor owner bindings
+`15c75ad` and `f13a186`, media adapters `2597959`, independent Setup pin and
+compiler scratch fix `ad6b338`, root-only CI `7ac3c85`. No new tag, push or
+binary upload was performed by this block.
+
+R2 remains in progress. Next: complete the single-command dependency chain
+with exact producer-role selection, narrow invalidation and shared-cache/space
+accounting; qualify authenticated Drive input delivery and close full-source
+prerequisites. R3 human-facing instructions and R4 fresh/native installation
+remain separate. The signed DMG alone does not close those criteria.

@@ -204,8 +204,10 @@ while retaining Factory .41. Host assembly verifies native ancestry and
 relocation, then probes help/version without network or Homebrew. Backend and
 VM inputs, complete application assembly and stable-signed Setup also pass
 first/repeat proof. Independent source checkpoints select their new manifests
-and application digest; historical locks and media stay unchanged. The DMG
-adapter is implemented and its real media qualification is in progress.
+and application digest; historical locks and media stay unchanged. Complete
+DMG creation, unchanged-output reuse and read-only mounted inventory/signature
+checks also passed. The workspace contains 17 verified results across 15 target
+types. The test image was detached; no installer or demo was launched.
 
 Full local regression ran 932 tests: 931 passed and one skipped. A separate
 root-only source export passed all 109 reproduction fixture tests. CI now has
