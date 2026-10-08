@@ -12,7 +12,7 @@ import sys
 from .core import Release, Storage, LabError, require, read_json, digest
 from .sources import prepare_sources, verify_sources
 from .artifacts import Drive, binding_entry, download, cached
-from . import build, cloud, containers, services, gateway, packaging, host, package_chain, media, chain
+from . import build, cloud, containers, services, gateway, packaging, host, package_chain, media, chain, cache, space
 
 def emit(value):
     print(json.dumps(value, sort_keys=True), flush=True)
@@ -76,11 +76,12 @@ def status(storage, state):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=('plan', 'prepare', 'status', 'verify', 'build'))
+    parser.add_argument('action', choices=('plan', 'prepare', 'status', 'verify', 'build', 'cache', 'space'))
     parser.add_argument('--profile', choices=('operator', 'developer', 'full-source'))
     parser.add_argument('--storage', type=Path)
     parser.add_argument('--manifest', type=Path)
     parser.add_argument('--sources-only', action='store_true')
+    parser.add_argument('--cache-from', type=Path, help='Explicit existing workspace on the same SSD for verified digest-cache reuse')
     parser.add_argument('--drive-binding', type=Path)
     parser.add_argument('--drive-token-fd', type=int)
     parser.add_argument('--target', choices=('all', 'presenter', 'cloud-sdk', *containers.TARGETS, 'backend-export', *services.TARGETS, 'gateway', 'preparation', 'host-runtime', *package_chain.MANIFESTS, *media.TARGETS), default='all')
@@ -110,9 +111,22 @@ def main(argv=None):
             return 0
         require(args.storage is not None, 'Specify --storage on an external SSD')
         storage = Storage(args.storage, release, profile)
+        if args.action == 'space':
+            state = storage.state() if storage.state_path.exists() else {
+                'binding':storage.binding, 'sources':{}, 'artifacts':{}, 'builds':{}}
+            require(storage.state_path.exists() or not storage.root.exists() or not any(storage.root.iterdir()),
+                    'Refusing an unowned nonempty workspace')
+            emit(space.report(storage, state, args.target, args.build_plan, args.cache_from))
+            return 0
+        if args.action == 'cache':
+            require(args.cache_from is not None, 'Specify --cache-from with an existing prepared workspace')
+            require(profile != 'full-source', 'Full-source cache closure is not yet supported')
         if args.action in ('status', 'verify'):
             require(storage.state_path.exists(), 'No prepared state; use prepare first')
         with storage.locked() as state:
+            if args.action == 'cache':
+                emit(cache.reuse(storage, args.cache_from, progress))
+                return 0
             if args.action == 'prepare':
                 require(profile != 'full-source', 'Full-source preparation blocked by Factory/native/entitlement input closure; see plan')
                 prepare_sources(storage, state, progress)

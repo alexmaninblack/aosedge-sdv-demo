@@ -201,6 +201,38 @@ Real chain and repeat evidence is recorded separately from fixture results.
 
 ## Storage and recovery
 
+### Reusing a declared cache
+
+Use a completed workspace's digest cache explicitly when preparing another
+workspace on the same external volume:
+
+```sh
+./lab space --storage /Volumes/BUILD/new-workspace \
+  --cache-from /Volumes/BUILD/existing-workspace
+./lab cache --storage /Volumes/BUILD/new-workspace \
+  --cache-from /Volumes/BUILD/existing-workspace
+./lab prepare --storage /Volumes/BUILD/new-workspace --sources-only
+```
+
+`space` does not create the new directory. `cache` initializes only the ordinary
+build-workspace binding and copies eligible complete cache objects through APFS
+copy-on-write clones. It neither prepares sources nor downloads missing objects.
+The source workspace remains unchanged. Each clone is hash-verified before
+promotion; no full-copy fallback, hardlink or overwrite is permitted. An exact
+prepared integration source supplies the selected wheel lock, including when
+it is read from the explicitly declared donor. Arbitrary donor files and build
+outputs do not become trusted cache entries.
+
+The report separates file sizes from allocated-block observations and lists the
+existing build guards. It does not add the Factory twice to its input group or
+claim that APFS clones occupy the sum of their apparent sizes. Cache absence
+does not imply a retained input is unavailable. In particular, historical DMG
+and Factory bytes are not copied into the cache just to make its report green.
+The 166 GiB single-step guard and 285 GiB sum of step reservations are not cold
+peak measurements. Full-source and unreviewed-plan capacity remain gated.
+
+### Existing workspace observations
+
 State binds the definition digest, profile and volume UUID. A parent lock
 prevents concurrent writers. Sources, digest cache, tool caches, temporary files
 and outputs stay in the workspace. Disconnects, volume replacement, symlinks,
@@ -488,8 +520,9 @@ must not be presented as physical disk space recovered.
    access and retention. Keep old media unpublished until its gate closes.
 2. Exact producer roles, dependency selection and whole-chain unchanged-output
    reuse now pass real verification. Cold profile reproduction, narrow recipe
-   invalidation, cross-workspace cache reuse and
-   full-profile capacity accounting remain open. Preserve verified results.
+   invalidation and measured full-profile capacity remain open. Cross-workspace
+   digest-cache reuse and read-only capacity accounting now pass local proof;
+   neither establishes the cold-build peak. Preserve verified results.
    Current conservative whole-tool-tree fingerprints still require refinement
    before claiming narrow invalidation for recipe changes.
 3. Close effective Factory configuration, native/simulation prerequisites and
@@ -539,3 +572,46 @@ No unnecessary build worker or demo process remains. Shared Docker and unrelated
 containers are unchanged. Observed free space after checks was approximately
 255 GiB externally and 129 GiB internally; concurrent host activity prevents
 attributing the host's free-space change to this build-only check.
+
+## Cache reuse and capacity proof on October 8
+
+A disposable empty SSD workspace received all 41 declared wheel objects from
+the existing workspace by direct APFS `clonefile`: **24,581,670 logical bytes**,
+zero downloaded bytes. The repeat imported zero objects and reused all 41.
+The frozen `ad6b338` owner consumed every resulting cache entry without changes
+or network access. The historical DMG and Factory were absent from these caches
+and correctly reported as two missing cache objects; their retained inputs
+remain untouched. No new kit, image, compilation or signing was involved.
+
+The read-only report for the established workspace completed in **3.53 seconds**.
+It observed about 255 GiB free on the SSD and 41 local wheel entries. Its section
+sizes are logical, not additional unique physical allocation:
+
+| Section | Logical bytes |
+| --- | ---: |
+| Prepared sources and build owners | 494,804,839 |
+| Digest and tool caches | 57,633,028 |
+| Declared SDK and staged inputs | 247,906,004 |
+| Builds and retained receipts | 78,578,063,629 |
+| Temporary owner files | 2,429,848 |
+
+The report does not traverse the 11 source-tree symlinks or inspect unrelated
+directories. Existing outputs include APFS clones; their apparent totals are
+not a disk-cleanup recommendation. The shared Docker disk is not attributed
+to this one workspace. Available space satisfies the existing 166 GiB largest
+step guard, but not the 285 GiB reservation sum. Neither comparison promises
+that a cold build fits or invalidates the completed warm build.
+
+Full regression after the cache/capacity changes ran 968 tests in 56.017
+seconds: 967 passed, one skipped. The new fixtures cover corruption, forged
+donor receipts, source changes, interruption/resume, links, wrong volumes,
+missing objects, cloning failure, insufficient space and read-only reporting.
+Guard-drift tests check the report against the existing recipes, and a different
+unreviewed producer plan cannot inherit the capacity claim. Documentation,
+release-definition and source-publication gates passed.
+
+The disposable receiver workspace was removed after verifying no open handles
+and no source, build or runtime dependencies. Its wheel contents remain in the
+original cache and are recoverable through the same command. No Factory, DMG,
+accepted output, shared Docker state or user file was removed. Byte-size sums
+are not reported as recovered physical space for these APFS clones.

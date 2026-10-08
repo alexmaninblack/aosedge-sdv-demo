@@ -4,7 +4,7 @@
 # Release Definition and Reproduction Contract
 
 - Status: R1 complete; delivery and version policy accepted; acquisition and reproduction unqualified
-- Version: 1.10
+- Version: 1.11
 - Prepared: 2026-10-08
 - Owner: Demo Solution Team
 - Scope: [R1 work packet](../../docs/planning/active/work-packets/human-friendly-reproduction.md)
@@ -142,7 +142,7 @@ See the [R1 inventory and remaining gates](../../docs/development/release-reprod
 ## R2 build tooling boundary
 
 The build-only [lab](../../lab) entry point implements `plan`, `prepare`, `status`,
-`verify` and `build`. An explicit external storage root holds state, exact
+`verify`, `build`, `cache` and `space`. An explicit external storage root holds state, exact
 detached source checkouts, a digest-keyed artifact cache, temporary files and
 outputs. It binds the volume UUID, selected profile and complete definition
 digest; changing any binding requires a different preparation directory, not
@@ -296,3 +296,43 @@ installation or publication. Frozen owner selection avoids invalidation from
 unrelated current-root changes. Changing recipe trees still uses each owner's
 existing fingerprints; fine-grained recipe invalidation, cold reproduction,
 artifact delivery and full-source closure retain their separate gates.
+
+### Cross workspace cache reuse and capacity
+
+`cache --storage <destination> --cache-from <existing-workspace>` reuses only
+declared complete digest-cache objects. Both workspaces must be separate,
+ownership-marked and on the same bound external volume. Expected sizes and
+hashes come from the selected release; developer wheels additionally require
+the clean exact integration source and its wheel lock in either the destination
+or the explicitly selected source workspace. A donor cannot supply new pins.
+Unlisted cache files, build results, credentials and runtime state are excluded.
+
+The existing destination lock covers transfers. The source remains read-only.
+The macOS `clonefile` call shares file data blocks while creating independent
+file identities; it never overwrites an existing file or falls back to a full
+copy. Each transferred object is SHA-256 verified before atomic promotion to
+the existing cache layout. Links, corruption, changed source identity, foreign
+volume binding and unowned partials fail without deletion. Owned complete
+partial clones may resume verification. No shared mutable hardlinks or new
+cache daemon are introduced; existing frozen consumers use the resulting
+cache without changes. Normal disk reserves remain in force.
+
+This is local cache reuse, not artifact acquisition or profile completion.
+Missing objects remain explicit (`CACHE_REUSE_PARTIAL`); the command downloads
+nothing and does not set artifact/source/build readiness receipts. Existing
+verified objects are reused on repeat. Full-source cache closure remains gated.
+
+`space` is read-only and does not initialize a workspace. It reports declared
+cache objects present locally, available from the optional explicit donor, or
+absent from both. Absence from a cache does not mean an explicitly retained kit
+or Factory input is missing. Workspace logical bytes and file-reported blocks
+are separate; neither measures unique APFS clone extents. Symlinks are counted
+but not followed, and hardlinked files are counted once within each section.
+
+For the reviewed developer chain the report exposes the existing per-owner
+guards, the largest single-step requirement (166 GiB) and the sum of additional
+step reservations plus one largest reserve (285 GiB). The sum is not a measured
+peak, an upper bound, or a new build gate. Shared Docker growth, cold acquisition
+and unique physical extent usage remain unmeasured. A recorded candidate is not
+verified reuse; `space` does not substitute for owner validation. It refuses
+capacity claims for a different unreviewed producer plan or full-source profile.

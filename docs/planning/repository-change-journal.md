@@ -490,3 +490,30 @@ or trust pin changes. Precise evidence and outstanding R2 criteria are in the
 Narrow recipe invalidation, shared-cache/capacity accounting, authenticated
 artifact delivery and full-source closure remain open; R3/R4 are not closed by
 warm-chain success. No push, release tag or binary publication in this block.
+
+## 2026 October 8 R2 cache reuse and capacity reporting
+
+Added `lab cache --cache-from` and read-only `lab space` inside the accepted
+build-only packet. Only release-declared complete digest objects and wheels
+from the selected exact source lock are eligible. Both workspaces use the same
+external volume. Direct APFS `clonefile` shares data without mutable hardlinks,
+overwrites or full-copy fallback. A transfer verifies SHA-256 before promotion;
+the donor is not modified and no source/build/qualification receipts are adopted.
+
+Real proof: 41 wheel objects, 24,581,670 logical bytes, zero network bytes.
+The repeat imported zero objects and reused all 41; the frozen `ad6b338` owner
+accepted them. The two absent historical DMG/Factory cache entries remained
+explicit rather than triggering unnecessary copies of their retained inputs.
+The disposable receiver was removed after a no-open-handle/dependency check.
+Original caches, accepted artifacts, Factory, runtime and video are unchanged.
+
+The workspace report took 3.53 seconds. It distinguishes logical sizes, file
+block counts, cache availability and recipe guards. The 166 GiB largest-step
+guard and 285 GiB reservation sum are not cold-build peaks or claims about
+unique APFS allocation. Actual cold peak, shared Docker growth and full-source
+capacity remain open. Full regression: 968 tests, 967 passed and one skipped;
+documentation, historical-definition and public-source gates passed.
+
+Next R2 work remains narrow recipe invalidation, measured cold capacity,
+authenticated artifact delivery and full-source closure. These cache/reporting
+results do not close R3/R4 or promote the candidate. No push, tag or upload.

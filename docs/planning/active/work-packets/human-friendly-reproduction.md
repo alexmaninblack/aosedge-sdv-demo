@@ -4,7 +4,7 @@
 # Human Friendly Repository and Release Reproduction Plan
 
 - Status: R1 complete; R2 implementation in progress; R3 and R4 planned
-- Version: 0.10
+- Version: 0.11
 - Prepared: 2026-10-08
 - Owner: Demo Solution Team
 - Parent: [Installable distribution and reproducibility](../installable-distribution-and-reproducibility.md)
@@ -222,8 +222,12 @@ binding, capacity and release-sized transfer remain open.
 R2 remains **in progress**. The ordered `--target all` chain and explicit frozen
 producer selection passed two real 17-step unchanged-output runs; the repeat
 took 80.09 seconds. Offline first/repeat/failure fixtures also pass.
-Narrow recipe invalidation and shared-cache capacity
-accounting, authenticated artifact delivery and full-source input closure
+Cross-workspace digest-cache reuse now passes first/repeat proof for all 41
+declared wheels through APFS clones, without downloading or changing frozen
+consumers. A read-only capacity report separates cache availability, workspace
+file sizes and per-owner guards; a cold peak is not inferred from those guards.
+Narrow recipe invalidation, measured cold capacity, authenticated artifact
+delivery and full-source input closure
 remain open. Chain implementation does not qualify a fresh-clone profile.
 R3 human routes and R4 acceptance
 remain separate. Reuse completed results; do not rebuild heavy inputs merely
