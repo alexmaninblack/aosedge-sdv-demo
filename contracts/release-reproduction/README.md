@@ -4,7 +4,7 @@
 # Release Definition and Reproduction Contract
 
 - Status: R1 complete; delivery and version policy accepted; acquisition and reproduction unqualified
-- Version: 1.3
+- Version: 1.4
 - Prepared: 2026-10-07
 - Owner: Demo Solution Team
 - Scope: [R1 work packet](../../docs/planning/active/work-packets/human-friendly-reproduction.md)
@@ -138,3 +138,40 @@ artifact requires a new candidate identity and corresponding qualification;
 it must not relabel the retained bytes as rebuilt or fully tested.
 
 See the [R1 inventory and remaining gates](../../docs/development/release-reproduction-r1.md).
+
+## R2 build tooling boundary
+
+The build-only [lab](../../lab) entry point implements `plan`, `prepare`, `status`,
+`verify` and `build`. An explicit external storage root holds state, exact
+detached source checkouts, a digest-keyed artifact cache, temporary files and
+outputs. It binds the volume UUID, selected profile and complete definition
+digest; changing any binding requires a different preparation directory, not
+an implicit reset. Existing unrelated or dirty directories are rejected.
+
+Source preparation is independently resumable. `prepare --sources-only` may
+succeed while artifact/build gates remain open. Ordinary `prepare` must not
+report complete without the profile's required verified inputs. `status` and
+`plan` distinguish source readiness, artifact readiness, supported target builds
+and full-profile qualification. They never start or install the demo.
+
+Google Drive acquisition consumes a separate non-secret binding of release
+digest, artifact name and file ID. Expected size/digest come from the release,
+not the binding. A short-lived authorized OAuth token may be supplied through
+an inherited file descriptor; it is not a command argument, logged value or
+stored receipt. Downloads enforce byte ranges, metadata consistency and final
+SHA-256 before atomic promotion. Partial files stay on the SSD for resume.
+An absent binding or credentials is an explicit acquisition failure.
+
+Build adapters use exact source roles and existing recipes, with explicit
+toolchain identity, SSD caches/temp/output and recorded input fingerprints.
+Verified unchanged outputs may be reused; changing an upstream input changes
+its downstream build key. A supported target build is not a completed profile,
+signed installer, publication or native acceptance. Unresolved Factory/native
+source inputs remain gated rather than being taken from undeclared warm state.
+
+The initial supported build target is `presenter`: the pinned owner's native
+Presenter, Driving Control and web UI recipe. It performs local ad-hoc signing
+required by that recipe, not Developer ID signing, notarization or publication.
+The remaining component/full-profile adapters are not implemented by this
+checkpoint. See [R2 commands and evidence](../../docs/development/release-reproduction-r2.md)
+for the exercised scope, exit codes and remaining gates.

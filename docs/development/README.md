@@ -9,6 +9,9 @@ must agree.
 
 For the new release/build route, see the
 [R1 inventory and reproduction readiness](release-reproduction-r1.md).
+For implemented preparation commands and the first verified build adapter, see
+[R2 commands and evidence](release-reproduction-r2.md). R2 is not yet a complete
+installer reproduction route.
 The read-only release validator exists; automatic preparation/build commands
 remain R2 work and no profile is yet marked reproducible.
 

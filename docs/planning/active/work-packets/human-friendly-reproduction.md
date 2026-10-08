@@ -3,8 +3,8 @@
 
 # Human Friendly Repository and Release Reproduction Plan
 
-- Status: R1 complete; delivery and version policy accepted; R2 to R4 planned
-- Version: 0.4
+- Status: R1 complete; R2 implementation in progress; R3 and R4 planned
+- Version: 0.5
 - Prepared: 2026-10-07
 - Owner: Demo Solution Team
 - Parent: [Installable distribution and reproducibility](../installable-distribution-and-reproducibility.md)
@@ -79,7 +79,7 @@ actually need them.
 | Block | Responsible owner | Dependencies | Completion evidence | Current state |
 | --- | --- | --- | --- | --- |
 | R1 Define the release and dependency closure | Demo Solution Team with component build owners | Current locks, recipes and source publication evidence | Validated release specification, ownership map and delivery design with explicit unresolved gates | Complete; Google Drive and version policy accepted |
-| R2 Automate preparation and builds | Integration build tooling; component owners retain their build logic | R1 schema, profile and dependency decisions | Repeatable commands, deterministic validation, resume and negative tests | Planned |
+| R2 Automate preparation and builds | Integration build tooling; component owners retain their build logic | R1 schema, profile and dependency decisions | Repeatable commands, deterministic validation, resume and negative tests | In progress; external SSD required for this development campaign |
 | R3 Provide the human documentation routes | Integration documentation; component maintainers | R1 terminology and R2 public command contract | One release landing page, three usable guides and working navigation | Planned |
 | R4 Prove reproduction and prepare release handoff | Integration qualification and release owners | R1 to R3 candidate | Fresh environment reproduction evidence, preserved runtime gate results and obtainable matching artifacts | Planned |
 
@@ -169,6 +169,40 @@ as a complete clean-reproduction recipe.
 
 ## Block R2 Automate preparation and builds
 
+### Storage and execution boundary
+
+On 8 October the owner required external SSD storage for R2. Sources and small
+project documents may stay in the integration checkout. Prepared checkouts,
+downloads, caches, temporary build/test directories and outputs must use the
+explicit external storage root. Verify its mounted external volume identity,
+bind that identity to preparation state, and fail closed on disconnect or
+replacement; never fall back to the internal disk. Reuse retained inputs
+without copying a kit merely for status checks. Preserve the existing build
+space guards and show additional space demand before acquisition/build.
+
+The build-only entry point stores no live Test, enrollment or runtime state.
+Its local preparation receipt binds the release definition, profile and SSD.
+Exact source preparation and verified artifact acquisition are separate stages;
+source-only success is not complete preparation. Initial target adapters must
+call the existing owner scripts, and unsupported/unresolved targets must fail
+with their actual gates rather than claim a full build. The separate private
+Drive artifact root is created. Authenticated CLI acquisition and per-release
+file bindings are not yet configured; folder creation does not publish a release.
+
+### Implementation checkpoint
+
+The [R2 command and evidence record](../../../development/release-reproduction-r2.md)
+covers exact developer source preparation, repeat/verification, SSD-bound state
+and caches, an offline-tested resumable Drive reader, and the existing native/web
+UI build adapter. Seven public source roles were prepared from remote pins;
+first build and reuse passed. 38 targeted tests and the 845-test integration
+suite passed (one suite skip).
+
+R2 remains **in progress**. No complete profile, new installer or Drive download
+is qualified. Next work is authenticated release-input binding/acquisition and
+remaining owner adapters; full-source input closure and R4 acceptance remain
+explicit. Do not repeat this proof or rebuild heavy inputs merely to resume work.
+
 ### Work
 
 1. Provide one small product-facing entry command over the existing build and
@@ -198,17 +232,19 @@ as a complete clean-reproduction recipe.
    resume, corrupt/missing artifacts, unavailable access, insufficient space,
    wrong pins, unsupported OS/architecture and a dirty pre-existing checkout.
 
-### Proposed command interface
+### Command interface
 
-These are design examples, not commands implemented by this document:
+The implemented interface requires an explicit external workspace. These
+examples prepare and verify sources only, not the complete profile:
 
 ```sh
-./lab prepare --profile developer
-./lab build
-./lab verify
+./lab plan --profile developer
+./lab prepare --profile developer --storage /Volumes/BUILD/workspace --sources-only
+./lab verify --storage /Volumes/BUILD/workspace --sources-only
 ```
 
-The same entry point selects `full-source` explicitly. The prepared profile and
+The entry point plans `full-source` explicitly; its preparation/build remains
+blocked on declared missing inputs. The prepared profile and
 release are recorded so a later command cannot silently switch them. A status
 operation explains completed work, reusable results, missing prerequisites and
 the next operation. A failed command exits nonzero and reports a bounded cause.

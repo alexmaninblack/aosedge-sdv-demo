@@ -275,3 +275,29 @@ for ten roles, 28 recipe files and the baseline tag. Documentation checks passed
 for 333 documents, 662 stable identifiers and 38 Mermaid diagrams; public-source
 scanning included new files and passed. The test runner exited normally. No
 demo, VM, simulator, Docker Engine or UI was started for this completion.
+
+## 2026 October 8 R2 source and UI proof
+
+The user authorized R2 on external SSD storage and requested a separate Google
+Drive directory for artifacts. The private artifact root was created and its
+unshared metadata verified; it remains empty. Private folder/account identifiers
+are not recorded in public Git. Supported commands, proof and remaining gates
+are in [R2 commands and evidence](../development/release-reproduction-r2.md).
+
+Only the integration repository changed: a build-only `lab` entry point,
+SSD-bound state/source preparation, a fixture-tested resumable Drive reader,
+the existing UI owner adapter, tests and a CI planning gate. Seven developer
+source roles were prepared at exact remote pins. Native Presenter, Driving
+Control and web UI built successfully; repeats reused sources and outputs.
+The retained workspace occupies about 300 MiB on the external volume, without
+duplicating the retained kit.
+
+Validation: 38 targeted tests passed; full suite 845 tests, 844 passed and one
+skipped. This is source/UI proof, not complete R2, new installer qualification
+or release publication. This checkpoint is local; no remote push is performed.
+Existing tags, component repositories and video are unchanged. Runners exited;
+no demo or shared Docker infrastructure was started or stopped.
+
+Next: actual authorized Drive acquisition/binding and remaining component
+adapters. Keep R2 in progress; do not repeat its completed source/UI proof or
+treat the empty Drive folder as a released product.

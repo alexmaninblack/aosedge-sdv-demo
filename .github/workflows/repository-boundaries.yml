@@ -68,6 +68,8 @@ jobs:
           echo "$RUNNER_TEMP/reuse/bin" >> "$GITHUB_PATH"
       - name: Validate resolved release definition
         run: python3 -B workspace/aosedge-sdv-demo/scripts/validate-release-definition
+      - name: Resolve build-only profile without host dependencies
+        run: python3 -B workspace/aosedge-sdv-demo/lab plan --profile developer
       - name: Qualify clean repository boundaries
         run: >-
           workspace/aosedge-sdv-demo/scripts/qualify-repository-boundaries
