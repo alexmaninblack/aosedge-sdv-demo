@@ -160,9 +160,44 @@ identity and reuse completed output without signing or compression again.
 | Invalid input, collision, wrong pin, disk/access failure | 1 | No unsafe repair or fallback |
 | Interrupted command | 130 | Owned command group stopped; partial work retained |
 
-`--target all` and full-source preparation fail until their adapters/input
-closure are implemented. Operator mode needs no source roles but is not yet
-a complete acquisition route.
+`--target all` now uses an explicit frozen producer plan for the ordered
+developer chain. Full-source preparation remains blocked on input closure.
+Operator mode needs no source roles but is not yet a complete acquisition route.
+
+### Ordered developer invocation
+
+The chain uses the same 17 owner builds above, including all four service
+profiles. It requires prepared component sources and these explicit inputs:
+
+```sh
+./lab build --target all --storage /Volumes/BUILD/workspace \
+  --kit-inputs /Volumes/BUILD/retained-kit \
+  --gateway-sdk /Volumes/BUILD/inputs/gateway-sdk \
+  --test-tmp-parent /Volumes/BUILD/tmp \
+  --python /path/to/python3.12 --ui-python /usr/bin/python3 \
+  --node /path/to/node --npm /path/to/npm --cmake /path/to/cmake \
+  --docker /path/to/docker \
+  --signing-identity <authorized-Apple-Development-fingerprint>
+```
+
+Add `--prepare-dependencies` only when acquisition is required and authorized.
+The [producer plan](../../workspace/releases/1.2.0-rc.1-build-chain.json)
+binds five exact tool revisions to six roles; it retains the base release and
+the independent successor manifest pins. A tool checkout is prepared once on
+the SSD and verified on reuse. It is a build input, not a branch/worktree edit.
+The root's current HEAD is not silently substituted for a frozen producer.
+
+One workspace lock covers the entire chain. Each step sees its selected
+dependencies, not unrelated previous applications or signers. Existing result
+receipts remain intact. A failed step stops the chain while retaining completed
+work; rerunning verifies/reuses those results before continuing. Incomplete
+native output is not automatically promoted. The chain does not start the demo,
+change Cloud state, publish artifacts or qualify a fresh installation.
+
+Preflight requires the inputs on the bound SSD, available tools, explicit
+signing identity and at least 166 GiB free under the existing conservative
+76 GiB demand plus 90 GiB reserve. This is not measured cold-build capacity.
+Real chain and repeat evidence is recorded separately from fixture results.
 
 ## Storage and recovery
 
@@ -451,14 +486,12 @@ must not be presented as physical disk space recovered.
 
 1. Qualify authenticated Drive acquisition, release binding, capacity, approved
    access and retention. Keep old media unpublished until its gate closes.
-2. Complete the one-command developer dependency chain, reviewed candidate
-   selection, owner-scoped invalidation, cross-workspace cache reuse and
-   full-profile capacity accounting. Per-target owner builds are not yet this
-   complete route; `--target all` remains blocked. Preserve verified results.
-   Freeze exact producer roles for the application and its later independent
-   Setup pin; do not create a circular source-to-manifest pin or reuse the
-   current root revision implicitly. Current conservative whole-tool-tree
-   fingerprints also require refinement before claiming narrow invalidation.
+2. Verify the ordered developer chain on real retained outputs and on repeat.
+   Exact producer roles and dependency selection are implemented; cold profile
+   reproduction, narrow recipe invalidation, cross-workspace cache reuse and
+   full-profile capacity accounting remain open. Preserve verified results.
+   Current conservative whole-tool-tree fingerprints still require refinement
+   before claiming narrow invalidation for recipe changes.
 3. Close effective Factory configuration, native/simulation prerequisites and
    entitlement gaps before enabling full-source preparation/builds.
 4. Finish release-level build evidence and handoff. CI now separately runs the

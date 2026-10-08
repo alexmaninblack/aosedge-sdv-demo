@@ -12,7 +12,7 @@ import sys
 from .core import Release, Storage, LabError, require, read_json, digest
 from .sources import prepare_sources, verify_sources
 from .artifacts import Drive, binding_entry, download, cached
-from . import build, cloud, containers, services, gateway, packaging, host, package_chain, media
+from . import build, cloud, containers, services, gateway, packaging, host, package_chain, media, chain
 
 def emit(value):
     print(json.dumps(value, sort_keys=True), flush=True)
@@ -22,15 +22,18 @@ def progress(event, detail):
     if event != 'DOWNLOAD_BYTES' or detail % (64*2**20) == 0:
         emit({'event': event, 'detail': detail})
 
-def plan(release, profile):
+def plan(release, profile, build_plan=None):
+    ordered = chain.read_plan(release, build_plan) if profile == 'developer' else None
     return {'release': release.value['id'], 'definitionDigest': release.key, 'profile': profile,
             'sources': list(release.selected_sources(profile)), 'buildOrder': release.graph(profile),
             'implementedBuildTargets': ['presenter', 'cloud-sdk', *containers.TARGETS, 'backend-export', *services.TARGETS, 'gateway', 'preparation', 'host-runtime', *package_chain.MANIFESTS, *media.TARGETS] if profile == 'developer' else [],
             'serviceProfiles': {'brake-service': ['v1', 'v2', 'v3'], 'tire-service': ['v1']},
             'gates': release.gates(profile), 'qualified': False,
+            'orderedDeveloperChain': ordered,
             'storage': 'Explicit external SSD; no internal fallback',
             'space': {'reserveGiB': 60, 'presenterReserveGiB': 90,
-                      'fullProfilePeak': 'Unmeasured; full profile build is not enabled'}}
+                      'chainAdditionalGiB': 76, 'chainReserveGiB': 90,
+                      'fullProfilePeak': 'Unmeasured; guards are conservative, not a cold-build measurement'}}
 
 def status(storage, state):
     sources = verify_sources(storage, state, complete=False)
@@ -82,6 +85,8 @@ def main(argv=None):
     parser.add_argument('--drive-token-fd', type=int)
     parser.add_argument('--target', choices=('all', 'presenter', 'cloud-sdk', *containers.TARGETS, 'backend-export', *services.TARGETS, 'gateway', 'preparation', 'host-runtime', *package_chain.MANIFESTS, *media.TARGETS), default='all')
     parser.add_argument('--signing-identity', help='Explicit authorized Apple Development certificate fingerprint for Setup')
+    parser.add_argument('--build-plan', type=Path, help='Reviewed ordered producer plan for --target all')
+    parser.add_argument('--ui-python', type=Path, default=Path('/usr/bin/python3'), help='Declared interpreter for the pinned UI owner')
     parser.add_argument('--gateway-sdk', type=Path)
     parser.add_argument('--test-tmp-parent', type=Path)
     parser.add_argument('--resume', action='store_true', help='Explicitly resume an inspected incomplete Gateway build')
@@ -101,7 +106,7 @@ def main(argv=None):
             profile = read_json(args.storage / 'preparation.json')['binding']['profile']
         profile = profile or 'developer'
         if args.action == 'plan':
-            emit(plan(release, profile))
+            emit(plan(release, profile, args.build_plan))
             return 0
         require(args.storage is not None, 'Specify --storage on an external SSD')
         storage = Storage(args.storage, release, profile)
@@ -130,7 +135,9 @@ def main(argv=None):
                 if args.action == 'status':
                     return 0
                 return 0 if args.sources_only and not result['missingSources'] else 2
-            require(args.target != 'all', 'Full-profile build adapters/input closure are not yet complete; see plan and explicit supported targets')
+            if args.target == 'all':
+                emit(chain.execute(storage, state, args, progress))
+                return 0
             if args.target == 'presenter':
                 require(args.node and args.npm, 'Pinned Node and npm are required')
                 key = build.presenter(storage, state, args.node, args.npm, args.prepare_dependencies, progress)

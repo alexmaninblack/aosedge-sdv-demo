@@ -4,7 +4,7 @@
 # Human Friendly Repository and Release Reproduction Plan
 
 - Status: R1 complete; R2 implementation in progress; R3 and R4 planned
-- Version: 0.9
+- Version: 0.10
 - Prepared: 2026-10-08
 - Owner: Demo Solution Team
 - Parent: [Installable distribution and reproducibility](../installable-distribution-and-reproducibility.md)
@@ -219,11 +219,12 @@ R2 itself does not manage Engine lifecycle. The private Drive root passed
 metadata and small synthetic upload/readback checks. CLI OAuth, release file
 binding, capacity and release-sized transfer remain open.
 
-R2 remains **in progress**. Remaining work is the one-command dependency chain
-and complete candidate/producer selection, narrow invalidation and shared-cache
-capacity accounting, authenticated artifact delivery and full-source input
-closure. In particular, per-target success does not yet make `--target all`
-available or qualify a fresh-clone profile. R3 human routes and R4 acceptance
+R2 remains **in progress**. The ordered `--target all` chain and explicit frozen
+producer selection are implemented, with offline first/repeat/failure fixtures.
+Real chain verification, narrow recipe invalidation and shared-cache capacity
+accounting, authenticated artifact delivery and full-source input closure
+remain open. Chain implementation does not qualify a fresh-clone profile.
+R3 human routes and R4 acceptance
 remain separate. Reuse completed results; do not rebuild heavy inputs merely
 to resume this packet.
 

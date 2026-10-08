@@ -4,7 +4,7 @@
 # Release Definition and Reproduction Contract
 
 - Status: R1 complete; delivery and version policy accepted; acquisition and reproduction unqualified
-- Version: 1.9
+- Version: 1.10
 - Prepared: 2026-10-08
 - Owner: Demo Solution Team
 - Scope: [R1 work packet](../../docs/planning/active/work-packets/human-friendly-reproduction.md)
@@ -258,3 +258,41 @@ external volume. A signed engineering candidate is not notarized distribution
 or installation qualification.
 See [R2 commands and evidence](../../docs/development/release-reproduction-r2.md)
 for the exercised scope, exit codes and remaining gates.
+
+### Ordered developer chain
+
+`build --target all` invokes the 17 developer steps from the source-reviewed
+[ordered producer plan](../../workspace/releases/1.2.0-rc.1-build-chain.json).
+This plan extends the accepted separate build-tools roles: it binds the base
+definition, exact integration-repository commits and dependency order. It does
+not modify component pins, input manifests, the independent Setup pin or trust
+policy. `plan` exposes these selections before execution.
+
+Each producer is an independent clean detached checkout on the bound SSD.
+An exact object already in the explicitly selected root repository can be
+prepared without network; fetching a missing object requires
+`--prepare-dependencies`. Wrong remotes, revisions, dirty checkouts and unowned
+paths fail without reset. Each worker imports only its selected frozen adapter.
+This separates application generation from the later source-reviewed Setup pin
+without a circular source-to-manifest hash or implicit current-HEAD selection.
+
+The parent holds the existing workspace lock. Workers receive only the exact
+selected dependency results and their own target cache. Saved state retains
+all older valid results; workers cannot replace an existing build receipt or
+change source, artifact or storage bindings. Repeats run owner verification and
+reuse unchanged results. A failure preserves completed work and compact logs;
+an unverified partial native output still requires the owner's inspection and
+resume procedure. No automatic retry or pin adoption is introduced.
+
+The complete chain requires explicit retained kit/SDK inputs on the bound SSD,
+declared build tools, a short SSD test directory and an authorized signing
+fingerprint. It retains the per-owner guards and preflights 76 GiB additional
+space plus a 90 GiB reserve. This is a conservative guard, not a measured cold
+peak. UI and build Python entry points are selected separately; virtual
+environment paths are not resolved to a different interpreter.
+
+Success reports `CHAIN_BUILT_NOT_QUALIFIED`, never profile readiness,
+installation or publication. Frozen owner selection avoids invalidation from
+unrelated current-root changes. Changing recipe trees still uses each owner's
+existing fingerprints; fine-grained recipe invalidation, cold reproduction,
+artifact delivery and full-source closure retain their separate gates.
