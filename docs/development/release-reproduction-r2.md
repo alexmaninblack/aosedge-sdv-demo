@@ -528,6 +528,8 @@ Subsequent hardening adds malformed/empty worker-result rejection and retains
 the first failed-step log across recovery; it changes no payload or input pin.
 After that hardening, all 124 reproduction fixtures passed in 9.405 seconds,
 and the full suite ran 947 tests in 53.878 seconds: 946 passed, one skipped.
+The final source checkpoint `f2e22b6` also passed all 124 reproduction fixtures
+in a new root-only export in 10.676 seconds; that temporary export was removed.
 
 The five producer checkouts occupy approximately 306 MiB according to `du`;
 existing workspace caches occupy 56 MiB. They are retained build inputs, not
