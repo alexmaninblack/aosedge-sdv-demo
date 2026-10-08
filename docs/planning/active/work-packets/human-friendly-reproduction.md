@@ -4,7 +4,7 @@
 # Human Friendly Repository and Release Reproduction Plan
 
 - Status: R1 complete; R2 implementation in progress; R3 and R4 planned
-- Version: 0.14
+- Version: 0.15
 - Prepared: 2026-10-08
 - Owner: Demo Solution Team
 - Parent: [Installable distribution and reproducibility](../installable-distribution-and-reproducibility.md)
@@ -191,6 +191,19 @@ CLI transfer now verifies the complete successor DMG; this does not qualify
 historical media, all build inputs or a distributable product release.
 
 ### Implementation checkpoint
+
+The owner subsequently included rebuilding Factory .41 in the clean build
+campaign. This is the developer build plus a source-built Factory; it still
+reuses the reviewed CARLA dependency and is not a full-source Unreal build.
+The Builder root disk, base disk, guest build/cache storage, host scratch and
+new image outputs must reside on the selected external SSD. Migrate the stopped
+retained Builder with content verification before boot; preserve its caches,
+old build and the immutable historical Factory. Prepare a separate exact-source
+build directory, reconcile the effective .41 configuration, retain native and
+package gates, then build and record a new image identity. Do not inherit an
+unrecorded warm `local.conf`, use the historical .11 driver for .41, or present
+cache reuse as a cache-cold compiler run. The new image must pass qualification
+and independent packaging pins before replacing any installer input.
 
 The [R2 command and evidence record](../../../development/release-reproduction-r2.md)
 contains exact build keys, first/repeat results and preserved failure diagnoses.

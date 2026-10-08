@@ -571,6 +571,42 @@ must not be presented as physical disk space recovered.
    tests. R3 reader-facing routes and R4 fresh environment/native acceptance
    remain separate deliverables.
 
+## Factory source build on external storage
+
+The October 8 campaign includes rebuilding Factory .41 while retaining the
+reviewed prebuilt CARLA dependency. The stopped Builder was copied to the
+selected SSD with an SSD-local Ubuntu backing image. Base SHA-256, seed/trust
+file equality, `qemu-img check`, complete virtual disk content comparison and
+boot on the new disk passed. Its old internal disk is retained until the
+transfer/testing cleanup gate; it must not be booted concurrently.
+
+The prior effective path combined a generated .11 configuration, a warm .27
+`auto.conf` and the final .41 qualification override. The new adapter renders
+.41 from the immutable template and checkpoint, creates nine independent exact
+source checkouts, and executes the pinned Moulin configuration generator in
+a separate empty build directory. It does not copy the warm configuration,
+native objects or Factory image. Downloads and sstate are explicitly reused.
+The first real preparation on the relocated Builder passed; image construction
+and equivalence qualification are not implied by this result.
+
+```sh
+./lab factory plan
+./lab factory prepare --storage /Volumes/BUILD/factory41-clean \
+  --builder-root /Volumes/BUILD/yocto-builder \
+  --platform-source /path/to/aos-vehicle-platform
+./lab factory build --storage /Volumes/BUILD/factory41-clean \
+  --builder-root /Volumes/BUILD/yocto-builder \
+  --platform-source /path/to/aos-vehicle-platform
+```
+
+The Builder must already be prepared on that SSD. Source acquisition currently
+uses the explicitly selected platform repository and the retained Builder's
+Git object cache; fresh independent checkouts verify exact commits. This is
+not proof of downloading every prerequisite onto a blank Builder. Source fixes
+do not automatically change frozen developer-chain producers or installer pins.
+After transfer/build checks, remove only verified obsolete internal copies,
+preserving source, keys, the historical Factory and required cache inputs.
+
 ## Ordered chain proof on October 8
 
 Source checkpoint `1f95e9d` added the complete ordered developer invocation.

@@ -8,7 +8,10 @@ from __future__ import annotations
 import importlib.machinery
 import importlib.util
 import unittest
+import plistlib
+import subprocess
 from pathlib import Path
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,6 +32,22 @@ BUILDER = load_builder()
 
 
 class R61BuilderTests(unittest.TestCase):
+    def test_bound_ssd_never_accepts_internal_or_wrong_volume(self):
+        with patch.object(BUILDER, 'ROOT', Path('/tmp/factory-builder-missing')), \
+                patch.object(BUILDER, 'VOLUME_UUID', 'expected'):
+            for info in ({'VolumeUUID': 'other'},
+                         {'VolumeUUID': 'expected', 'Internal': True},
+                         {'VolumeUUID': 'expected', 'Internal': False, 'WritableVolume': False}):
+                result = subprocess.CompletedProcess([], 0, plistlib.dumps(info).decode())
+                with patch.object(BUILDER, 'run', return_value=result):
+                    with self.assertRaises(BUILDER.BuilderError):
+                        BUILDER.check_storage()
+
+    def test_storage_lookup_uses_existing_ancestor_not_home(self):
+        with patch.object(BUILDER, 'ROOT', ROOT / 'not-created-yet' / 'child'), \
+                patch.object(BUILDER, 'VOLUME_UUID', None):
+            self.assertEqual(BUILDER.check_storage(), ROOT)
+
     def test_download_url_is_https_and_allowlisted(self) -> None:
         BUILDER.validate_download_url(BUILDER.IMAGE_URL)
         with self.assertRaisesRegex(BUILDER.BuilderError, "unexpected URL"):

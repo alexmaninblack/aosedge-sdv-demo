@@ -11,6 +11,7 @@ import hashlib
 import json
 import os
 import platform
+import plistlib
 import shutil
 import socket
 import stat
@@ -104,6 +105,7 @@ ROOT = Path(
         ),
     )
 )
+VOLUME_UUID = os.environ.get("R61_BUILDER_VOLUME_UUID")
 CACHE_DIR = ROOT / "cache"
 LOCAL_DIR = ROOT / "local"
 RUN_DIR = ROOT / "run"
@@ -257,7 +259,8 @@ def host_check() -> None:
         fail(f"the host has fewer than the required {VCPUS} CPUs")
     if sysctl_integer("hw.memsize") < MINIMUM_HOST_MEMORY:
         fail("the host has less than the required 32 GiB of memory")
-    free = shutil.disk_usage(ROOT.parent if ROOT.parent.exists() else Path.home()).free
+    storage = check_storage()
+    free = shutil.disk_usage(storage).free
     minimum_free = (
         MINIMUM_OPERATIONAL_HOST_FREE if OVERLAY.exists() else MINIMUM_INITIAL_HOST_FREE
     )
@@ -286,6 +289,25 @@ def host_check() -> None:
     print(f"Resources: {VCPUS} vCPUs, {MEMORY_MIB} MiB RAM, {DISK_GIB} GiB sparse disk")
     print(f"SSH exposure: 127.0.0.1:{SSH_PORT} only")
     print(f"DNS exposure: 127.0.0.1:{DNS_PORT} only")
+
+
+def check_storage() -> Path:
+    """An explicitly bound SSD must never fall back to the home filesystem."""
+    if not ROOT.is_absolute() or any(p.is_symlink() for p in (ROOT, *ROOT.parents)):
+        fail("builder storage must be an absolute non-linked directory")
+    existing = next(p for p in (ROOT, *ROOT.parents) if p.exists())
+    if VOLUME_UUID:
+        mount = next(p for p in (existing, *existing.parents) if p.is_mount())
+        result = run(["/usr/sbin/diskutil", "info", "-plist", str(mount)], capture=True)
+        try:
+            info = plistlib.loads(result.stdout.encode())
+        except (ValueError, plistlib.InvalidFileException) as error:
+            raise BuilderError("cannot inspect builder SSD") from error
+        if (info.get("VolumeUUID") != VOLUME_UUID or info.get("Internal") is not False
+                or info.get("WritableVolume") is not True or info.get("MountPoint") != str(mount)
+                or mount == Path("/") or not ROOT.is_relative_to(mount)):
+            fail("builder SSD is absent, replaced or not writable; no internal fallback")
+    return existing
 
 
 def download() -> None:

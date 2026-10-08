@@ -4,7 +4,7 @@
 # Release Definition and Reproduction Contract
 
 - Status: R1 complete; delivery and version policy accepted; acquisition and reproduction unqualified
-- Version: 1.14
+- Version: 1.15
 - Prepared: 2026-10-08
 - Owner: Demo Solution Team
 - Scope: [R1 work packet](../../docs/planning/active/work-packets/human-friendly-reproduction.md)
@@ -171,6 +171,29 @@ verified transfer and consumer-input check do not claim a fresh build, runtime
 qualification, public redistribution approval or complete R2 acceptance.
 
 ## Version policy
+
+The October 8 clean-build campaign additionally selects a source rebuild of
+Factory .41 while reusing `carla-macos-arm64-r1`. This explicit combination does
+not change the default developer profile or enable the still-gated full-source
+profile. The old Factory checkpoint and recipe remain historical authorities.
+`lab factory plan` renders the successor Moulin input by binding that template
+to the checkpoint's exact .41 platform revision/version. `factory prepare`
+creates independent pinned source checkouts and a fresh configuration inside
+the explicitly selected SSD-backed Builder. It reuses declared downloads and
+sstate, not old `tmp`, `auto.conf` or image outputs. The original guest driver
+remains the historical .11 route; the new adapter uses the pinned Moulin
+configuration generator instead of changing that old driver in place.
+
+`factory build` uses the existing Factory owner and native/package/image gates,
+with new source/project/output paths. Its tools must be committed. Effective
+image version, architecture and KUKSA source identity are checked before
+compilation and retained with manager pins in the output manifest. The campaign
+requires 40 GiB additional host headroom plus a 90 GiB reserve before compilation,
+checks that reserve between stages, and retains the guest 60 GiB guard. These
+are guards, not measured cold peak requirements. The adapter stops its Builder
+after completion/failure and never starts a live demo or changes Cloud state.
+Fresh Factory outputs require new evidence and independently reviewed downstream
+packaging identities. Preparation alone does not prove a completed image build.
 
 The release owner accepted product numbering `MAJOR.MINOR.PATCH`, candidate
 suffixes `-rc.N`, and tags `sdv-lab-v<version>`. The next new candidate is

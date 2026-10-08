@@ -73,10 +73,12 @@ def factory_component_support(revision):
 
 
 def builder_ssh():
+    root = Path(os.environ.get("R61_BUILDER_ROOT", str(
+        Path.home() / "Library/Application Support/CarlaAosEdge/YoctoBuilder")))
     return ["ssh", "-p", "10024", "-o", "HostKeyAlias=[127.0.0.1]:10023",
             "-o", "BatchMode=yes", "-o", "IdentitiesOnly=yes",
             "-i", str(Path.home() / ".ssh/id_ed25519"), "-o", "StrictHostKeyChecking=yes",
-            "-o", 'UserKnownHostsFile="' + str(Path.home() / "Library/Application Support/CarlaAosEdge/YoctoBuilder/local/known_hosts") + '"',
+            "-o", 'UserKnownHostsFile="' + str(root / "local/known_hosts") + '"',
             "-o", "ConnectTimeout=5", "yocto@127.0.0.1"]
 
 
@@ -916,7 +918,7 @@ def builder(target, action):
     """Reuse the established Builder lifecycle, not another shell helper."""
     if target != "test" or action not in ("start", "stop"):
         raise EnvironmentError("SM_QUALIFICATION_TEST_ONLY")
-    script = Path.home() / "OpenAI/aosedge-sdv-demo/scripts/r6-1-builder"
+    script = Path(__file__).resolve().parents[4] / "scripts/r6-1-builder"
     # 10023 belongs to Production; the dedicated Builder port is 10024.
     with contextlib.ExitStack() as stack:
         previous = os.environ.get("R61_BUILDER_SSH_PORT")
@@ -1003,7 +1005,7 @@ def stage_mainline_factory_gates(ssh, remote, project, source, suffix="37"):
                 harness=root + "/" + harness, evidence=evidence, solutionRevision=revision)
 
 
-def build_factory(version, metadata_only=False):
+def build_factory(version, metadata_only=False, *, storage_check=None):
     """The release build is a Demo Control operation, not an operator script.
 
     Export only committed Platform source, reuse the warm offline build tree,
@@ -1033,6 +1035,8 @@ def build_factory(version, metadata_only=False):
                                 stdout=subprocess.PIPE if capture else sys.stderr, stderr=sys.stderr, check=True)
         return result.stdout.decode() if capture else ""
     def stage(message):
+        if storage_check is not None:
+            storage_check()
         print("Factory ." + version.rsplit(".", 1)[1] + ": " + message, file=sys.stderr, flush=True)
     try:
         # The same established Builder adapter owns start/stop and disk guards.
@@ -1080,7 +1084,8 @@ def build_factory(version, metadata_only=False):
             flags = " -R " + shlex.quote(mainline["conf"]) + " "
             stage("verify effective mainline pins and offline guards before compilation")
             print(remote(prefix + mainline["command"] + " preflight --conf " +
-                         shlex.quote(mainline["conf"]), timeout=600), file=sys.stderr, flush=True)
+                         shlex.quote(mainline["conf"]) + " --factory-suffix " + suffix,
+                         timeout=900), file=sys.stderr, flush=True)
         managers = "aos-servicemanager" + (" aos-communicationmanager" if suffix in ("32", "33", "34", "35", "36", "37", "38", "39", "40", "41") else "")
         if suffix in ("34", "35", "36", "37", "38", "39", "40", "41"):
             managers += " aos-iamanager"
@@ -1232,6 +1237,8 @@ subprocess.run(['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'
                 solutionRevision=mainline["solutionRevision"], builderEvidence=mainline["evidence"],
                 native=summary,
                 knownPackageWarnings="buildpaths: recipe-private upstream source paths; no QA bypass")
+            manifest["build"]["effectiveConfiguration"] = json.loads(remote(
+                "cat " + shlex.quote(str(Path(mainline["conf"]).parent / "effective-factory.json"))))
             # Preserve compact test XML/logs across Builder shutdown without
             # exporting root-owned synthetic fixtures or any runtime state.
             names = remote("python3 -c " + shlex.quote(

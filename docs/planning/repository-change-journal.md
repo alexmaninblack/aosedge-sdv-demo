@@ -15,6 +15,27 @@ local-only entries below retain their original checkpoint state.
 
 ## Recording convention
 
+### 2026 October 8 Factory source rebuild on the external SSD
+
+The owner included Factory .41 in the clean build and required the QEMU Builder
+disk and build storage on the external SSD. The relocated disk passed base
+identity, structure, complete virtual-content comparison and boot verification.
+The new build-only `lab factory` route prepares nine exact source checkouts and
+a clean Moulin configuration; it reuses downloads/sstate explicitly but no old
+`tmp`, image or warm `auto.conf`. The historical .11 recipe, Factory .41 image,
+CARLA dependency and frozen installer chain remain unchanged.
+
+Corrective build-tool changes bind the Builder volume UUID, use the selected
+SSH trust path and repository-local lifecycle owner, and check the effective
+Factory version/architecture and KUKSA source before compiling. Initial real
+preparation passed. Offline regression: 1,014 tests, 1,013 passed and one skipped;
+25 Factory build-tool tests, historical definition and documentation gates pass.
+The source checkpoint enables the image attempt; it does not claim a completed
+rebuild, cold acquisition or live qualification. See the
+[Factory build route](../development/release-reproduction-r2.md#factory-source-build-on-external-storage).
+The remaining sequence is native/package/image gates, new image verification
+and cleanup of verified obsolete internal copies, then downstream packaging.
+
 Use one dated entry per meaningful cross-repository work block, not per command.
 Record purpose, affected repositories, outcome, validation, commit/publication
 state, remaining blocker and next action. Use exact commit/tag and evidence

@@ -62,11 +62,32 @@ def check_flags(flags, name):
         require("AOS_CONFIG_PKCS11_SESSIONS_PER_LIB" not in flags, "obsolete IAM allocator override")
 
 
-def preflight(conf):
+def check_factory_image(data, suffix):
+    for key, expected in (("AOS_ROOTFS_IMAGE_VERSION", "6.1.1-maninblack." + suffix),
+                          ("MACHINE", "qemuarm64"), ("DISTRO", "aos-core"),
+                          ("AOS_ARCHITECTURE", "arm64"), ("BB_NO_NETWORK", "1"),
+                          ("BB_FETCH_PREMIRRORONLY", "1")):
+        require(variable(data, key) == expected, "Factory image: incorrect " + key)
+
+
+def preflight(conf, factory_suffix="37"):
+    evidence = {}
     for name in MANAGERS:
         data = subprocess.check_output(["bitbake", "-R", str(conf), "-e", name], text=True, timeout=180)
         check_effective(data, name)
+        evidence[name] = {key: variable(data, key) for key in
+                          ("SRCREV", "SRCREV_serviceupdatelib", "SRCREV_serviceupdateapi", "CXXFLAGS")}
         print(name + ": effective mainline pins/offline configuration PASS", flush=True)
+    data = subprocess.check_output(["bitbake", "-R", str(conf), "-e", "aos-image-vm"], text=True, timeout=180)
+    check_factory_image(data, factory_suffix)
+    evidence['image'] = {key: variable(data, key) for key in
+                         ('AOS_ROOTFS_IMAGE_VERSION', 'MACHINE', 'DISTRO', 'AOS_ARCHITECTURE', 'DL_DIR', 'SSTATE_DIR')}
+    data = subprocess.check_output(["bitbake", "-R", str(conf), "-e", "kuksa-databroker"], text=True, timeout=180)
+    revision = variable(data, 'SRCREV')
+    require(re.fullmatch('[0-9a-f]{40}', revision), 'KUKSA source must have an exact revision')
+    evidence['kuksa'] = {'revision': revision, 'version': variable(data, 'PV')}
+    (conf.parent / 'effective-factory.json').write_text(json.dumps(evidence, indent=2) + '\n')
+    print('Factory version, architecture and KUKSA source identity: PASS', flush=True)
 
 
 def cache(work):
@@ -247,7 +268,7 @@ def main():
     args = parser.parse_args()
     if args.phase == "preflight":
         require(args.conf is not None, "--conf required")
-        preflight(args.conf)
+        preflight(args.conf, args.factory_suffix)
     elif args.phase == "native":
         require(all((args.root, args.evidence, args.lock_source)), "native paths required")
         NativeGates(args.root, args.evidence, args.factory_suffix).run(args.lock_source)

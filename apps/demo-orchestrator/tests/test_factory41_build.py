@@ -8,6 +8,15 @@ from aosedge_demo_orchestrator import factory_mainline_gates as gates
 
 
 class TimestampSuccessorFactoryTests(unittest.TestCase):
+    def test_effective_image_version_is_not_inherited_from_old_configuration(self):
+        values = dict(AOS_ROOTFS_IMAGE_VERSION='6.1.1-maninblack.41', MACHINE='qemuarm64',
+                      DISTRO='aos-core', AOS_ARCHITECTURE='arm64', BB_NO_NETWORK='1', BB_FETCH_PREMIRRORONLY='1')
+        data = '\n'.join(f'{key}="{value}"' for key, value in values.items())
+        gates.check_factory_image(data, '41')
+        for old in ('6.1.1-maninblack.11', '6.1.1-maninblack.27'):
+            with self.assertRaisesRegex(ValueError, 'AOS_ROOTFS_IMAGE_VERSION'):
+                gates.check_factory_image(data.replace('6.1.1-maninblack.41', old), '41')
+
     def test_exact_source_and_preserved_predecessor(self):
         self.assertEqual(runtime.FACTORY_RELEASES['6.1.1-maninblack.41'],
                          '3fd1f8eb8e8d51c7e89c9f89f1646c7d4f55494f')

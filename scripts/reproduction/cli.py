@@ -79,6 +79,9 @@ def main(argv=None):
     if argv and argv[0] == 'dependencies':
         from .dependencies import main as dependencies_main
         return dependencies_main(argv[1:])
+    if argv and argv[0] == 'factory':
+        from .factory import main as factory_main
+        return factory_main(argv[1:])
     parser = argparse.ArgumentParser(description=__doc__, epilog='Reusable prebuilt CARLA inputs: lab dependencies --help')
     parser.add_argument('action', choices=('plan', 'prepare', 'status', 'verify', 'build', 'cache', 'space'))
     parser.add_argument('--profile', choices=('operator', 'developer', 'full-source'))
