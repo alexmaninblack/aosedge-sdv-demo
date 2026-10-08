@@ -24,6 +24,7 @@ class HostTests(StorageFixture, unittest.TestCase):
                    (target, self.base/target))
         self.state['builds']['gateway'] = {'inputs': {'sdk': {'sha256': 'b'*64}}}
         self.command = self.patch('reproduction.host.run_command', side_effect=self.owner)
+        self.patch('reproduction.host.probe_native', return_value=[])
 
     def owner(self, args, **kwargs):
         output = Path(args[-1])
@@ -110,6 +111,16 @@ class HostTests(StorageFixture, unittest.TestCase):
         env = self.command.call_args.kwargs['env']
         self.assertNotIn('HOME', env)
         self.assertNotIn('DYLD_LIBRARY_PATH', env)
+
+    def test_native_probes_are_separate_and_do_not_start_runtime(self):
+        with patch('reproduction.host.run_command', return_value=SimpleNamespace(returncode=0, stdout=b'help')) as run:
+            rows = host.probe_native(self.storage, self.base/'output')
+        self.assertEqual(len(rows), 4)
+        for call in run.call_args_list:
+            self.assertEqual(str(call.args[0][0]), '/usr/bin/sandbox-exec')
+            self.assertIn(call.args[0][-1], ('--help', '--version'))
+            self.assertIn('deny network*', call.args[0][2])
+            self.assertIn('/opt/homebrew', call.args[0][2])
 
 
 if __name__ == '__main__':

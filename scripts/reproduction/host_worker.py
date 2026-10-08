@@ -2,12 +2,10 @@
 # SPDX-License-Identifier: MIT
 """Offline build worker; no UI, simulator, VM or service process is launched."""
 import json
-import os
 from pathlib import Path
 import shutil
 import stat
 import sys
-import subprocess
 import tempfile
 
 
@@ -82,17 +80,6 @@ def assemble(root, integration, gateway, retained, sdk, ui, binaries, output):
         result = native.build(roots, [old_native, staging], output/'native',
             'R2 verified Gateway build and retained host native manifest; exact OpenSSL SDK source hashes checked',
             90*2**30, 512*2**20)
-        policy = staging/'no-developer-libraries.sb'
-        policy.write_text('(version 1)\n(allow default)\n(deny network*)\n'
-                          '(deny file-read* (subpath "/opt/homebrew"))\n')
-        probes = []
-        for name in ('carla-ego-runtime', 'carla-viss-client', 'qemu-img', 'qemu-system-aarch64'):
-            flag = '--help' if name == 'carla-viss-client' else '--version'
-            probe = subprocess.run(['/usr/bin/sandbox-exec', '-f', str(policy),
-                str(output/'native/bin'/name), flag], capture_output=True, timeout=30,
-                env={**os.environ, 'CARLA_CACHE_DIR': str(staging/'carla-cache')})
-            require(probe.returncode == 0 and probe.stdout.strip(), 'Relocated native version probe failed: '+name)
-            probes.append({'entry': name, 'argument': flag, 'exitCode': 0, 'homebrewReadDenied': True, 'networkDenied': True})
         notices = [r for r in rows if r['path'].startswith('notices/')]
         for row in notices:
             target = output/'native'/row['path']
@@ -101,7 +88,6 @@ def assemble(root, integration, gateway, retained, sdk, ui, binaries, output):
             target.chmod(row['mode'])
         result['retainedNoticeFiles'] = notices
         result['gatewayBuildReceiptSha256'] = native.sha256(binaries/'build-receipt.json')
-        result['versionProbes'] = probes
         (output/'native/native-manifest.json').write_text(json.dumps(result, indent=2)+'\n')
     print(json.dumps({'stage': 'NATIVE_RELOCATED_AND_SIGNATURES_VERIFIED'}), flush=True)
     # New UI/native outputs are small; heavy bytes already have transfer hashes.

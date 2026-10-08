@@ -67,6 +67,24 @@ def verify(output, inputs):
     return receipt
 
 
+def probe_native(storage, output):
+    """A separate process boundary: macOS rejects sandbox_apply inside a sandbox."""
+    policy = '(version 1)(allow default)(deny network*)(deny file-read* (subpath "/opt/homebrew"))'
+    env = storage.environment()
+    cache = storage.path('cache/carla')
+    cache.mkdir(parents=True, exist_ok=True)
+    env['CARLA_CACHE_DIR'] = str(cache)
+    result = []
+    for name in ('carla-ego-runtime', 'carla-viss-client', 'qemu-img', 'qemu-system-aarch64'):
+        flag = '--help' if name == 'carla-viss-client' else '--version'
+        response = run_command(['/usr/bin/sandbox-exec', '-p', policy, output/'native/bin'/name, flag],
+                               env=env, cwd=storage.root, timeout=30)
+        require(response.returncode == 0 and response.stdout.strip(), 'Relocated native probe failed: '+name)
+        result.append({'entry': name, 'argument': flag, 'exitCode': 0,
+                       'homebrewReadDenied': True, 'networkDenied': True})
+    return result
+
+
 def assemble(storage, state, kit, sdk, python, progress):
     require(storage.profile == 'developer', 'Host adapter requires developer profile')
     verify_sources(storage, state)
@@ -105,9 +123,11 @@ def assemble(storage, state, kit, sdk, python, progress):
             env=storage.environment(), cwd=storage.root, timeout=900)
         output.parent.joinpath(key+'.log').write_bytes((result.stdout+result.stderr)[-2**20:])
         require(result.returncode == 0, 'Host owner failed; inspect retained SSD log')
+        probes = probe_native(storage, output)
         value = read_json(output/MANIFEST)
         atomic_json(receipt_path(output), {'status': 'ASSEMBLED_NOT_RUNTIME_QUALIFIED',
             'inputs': inputs, 'producerRevision': revision, 'externalDistributionApproved': False,
+            'nativeProbes': probes,
             'manifest': {'path': MANIFEST, 'bytes': (output/MANIFEST).stat().st_size, 'sha256': sha256(output/MANIFEST)},
             'stamps': {r['path']: packaging.stamp(regular(output/r['path'])) for r in value['files']}})
     verify_sources(storage, state)
