@@ -23,6 +23,14 @@ class Response(io.BytesIO):
 
 
 class DeliveryTests(unittest.TestCase):
+    def test_error_reason_does_not_include_provider_messages_or_urls(self):
+        value = {'error': {'message': 'secret message', 'errors': [
+            {'reason': 'rateLimitExceeded', 'message': 'secret message'},
+            {'reason': 'https://sensitive.example/token'}, {'reason': 'private value'}]}}
+        self.assertEqual(d.error_reason(io.BytesIO(json.dumps(value).encode())), 'rateLimitExceeded')
+        self.assertEqual(d.error_reason(io.BytesIO(b'not json')), '')
+        self.assertEqual(d.error_reason(io.BytesIO(b'x'*70000)), '')
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory(prefix='drive-test-')
         self.addCleanup(self.tmp.cleanup)
@@ -51,6 +59,14 @@ class DeliveryTests(unittest.TestCase):
         self.assertEqual(self.upload(), self.meta)
         self.client.request.assert_not_called()
         self.client.json.assert_not_called()
+
+    def test_dependency_upload_sets_archive_mime_without_changing_dmg_descriptor(self):
+        self.client.request.side_effect = [Response(200, {'Location': d.ORIGIN + '/upload/drive/v3/files'}), Response(200)]
+        d.upload(self.client, self.source, self.expected, self.folder, self.intent, mime_type='application/gzip')
+        first = self.client.request.call_args_list[0]
+        self.assertEqual(json.loads(first.args[2])['mimeType'], 'application/gzip')
+        self.assertEqual(first.args[3]['X-Upload-Content-Type'], 'application/gzip')
+        self.assertEqual(self.client.request.call_args_list[1].args[3]['Content-Type'], 'application/gzip')
 
     def test_response_loss_reconciles_offset_before_resend(self):
         with patch.object(d, 'UPLOAD_CHUNK', 4), patch.object(d.time, 'sleep'):

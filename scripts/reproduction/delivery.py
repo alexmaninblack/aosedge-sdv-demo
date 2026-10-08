@@ -21,6 +21,21 @@ FIELDS = 'id,name,size,sha256Checksum,version,parents,trashed,shared,webViewLink
 UPLOAD_CHUNK = 32 * 2**20
 
 
+def error_reason(response):
+    """Only bounded API reason identifiers, never messages, URLs or response bodies."""
+    try:
+        raw = response.read(65537)
+        if len(raw) > 65536:
+            return ''
+        values = json.loads(raw).get('error', {}).get('errors', [])
+        reasons = sorted({v['reason'] for v in values if isinstance(v, dict)
+                          and isinstance(v.get('reason'), str)
+                          and re.fullmatch('[A-Za-z0-9_]{1,80}', v['reason'])})
+        return ','.join(reasons[:4])
+    except (OSError, ValueError, TypeError, AttributeError):
+        return ''
+
+
 def identifier(value):
     require(isinstance(value, str) and re.fullmatch(r'[A-Za-z0-9_-]{10,200}', value), 'Invalid Drive identifier')
     return value
@@ -71,7 +86,9 @@ class Client:
         except urllib.error.HTTPError as exc:
             if exc.code in (308, 404, 409, 429, 500, 502, 503, 504):
                 return exc
-            raise LabError(f'Drive HTTP {exc.code}; response body omitted') from None
+            reason = error_reason(exc)
+            raise LabError(f'Drive HTTP {exc.code}' + (f' ({reason})' if reason else '')
+                           + '; response body omitted') from None
         except (OSError, urllib.error.URLError, http.client.HTTPException):
             raise LabError('Drive connection interrupted; reconcile the recorded file ID before retry') from None
 
@@ -135,8 +152,10 @@ def acknowledged(response, total):
     return int(match[1]) + 1
 
 
-def upload(client, source, expected, folder, state_path, check=lambda: None, progress=lambda *x: None):
+def upload(client, source, expected, folder, state_path, check=lambda: None, progress=lambda *x: None,
+           mime_type='application/x-apple-diskimage'):
     """Persist only a non-secret ID/intent. Session capabilities remain in memory."""
+    require(mime_type in ('application/x-apple-diskimage', 'application/gzip'), 'Unsupported upload MIME type')
     before = artifacts.identity(source)
     require(before[2] == expected['bytes'], 'Source size differs from reviewed descriptor')
     binding = {'descriptorDigest': digest(expected), 'folderId': identifier(folder)}
@@ -165,9 +184,9 @@ def upload(client, source, expected, folder, state_path, check=lambda: None, pro
     progress('SOURCE_VERIFIED', expected['bytes'])
     url = ORIGIN + '/upload/drive/v3/files?uploadType=resumable&fields=' + FIELDS
     body = json.dumps({'id': file_id, 'name': expected['file'], 'parents': [folder],
-                       'mimeType': 'application/x-apple-diskimage'}).encode()
+                       'mimeType': mime_type}).encode()
     with client.request('POST', url, body, {'Content-Type': 'application/json',
-                        'X-Upload-Content-Type': 'application/x-apple-diskimage',
+                        'X-Upload-Content-Type': mime_type,
                         'X-Upload-Content-Length': str(expected['bytes'])}) as response:
         require(response.status in (200, 201), f'Upload initiation HTTP {response.status}; intent preserved')
         session = response.headers.get('Location')
@@ -181,7 +200,7 @@ def upload(client, source, expected, folder, state_path, check=lambda: None, pro
             data = stream.read(min(UPLOAD_CHUNK, expected['bytes'] - offset))
             try:
                 response = client.request('PUT', session, data, {
-                    'Content-Type': 'application/x-apple-diskimage',
+                    'Content-Type': mime_type,
                     'Content-Range': f'bytes {offset}-{offset + len(data)-1}/{expected["bytes"]}'})
             except LabError:
                 response = None

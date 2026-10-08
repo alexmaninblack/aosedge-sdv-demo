@@ -75,7 +75,11 @@ def status(storage, state):
             'profileReady': False, 'qualified': False, 'gates': storage.release.gates(storage.profile)}
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] == 'dependencies':
+        from .dependencies import main as dependencies_main
+        return dependencies_main(argv[1:])
+    parser = argparse.ArgumentParser(description=__doc__, epilog='Reusable prebuilt CARLA inputs: lab dependencies --help')
     parser.add_argument('action', choices=('plan', 'prepare', 'status', 'verify', 'build', 'cache', 'space'))
     parser.add_argument('--profile', choices=('operator', 'developer', 'full-source'))
     parser.add_argument('--storage', type=Path)

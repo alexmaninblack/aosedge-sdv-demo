@@ -4,7 +4,7 @@
 # Release Definition and Reproduction Contract
 
 - Status: R1 complete; delivery and version policy accepted; acquisition and reproduction unqualified
-- Version: 1.13
+- Version: 1.14
 - Prepared: 2026-10-08
 - Owner: Demo Solution Team
 - Scope: [R1 work packet](../../docs/planning/active/work-packets/human-friendly-reproduction.md)
@@ -142,6 +142,33 @@ digest cache; it is not another network-transfer proof. The authenticated
 release index records the definition revision and file identity separately
 from build provenance. Source publication and access by another approved user
 remain distinct gates; this command grants no new readers automatically.
+
+## Reusable simulation inputs
+
+On 8 October the owner approved extracting the retained, already built macOS
+ARM64 CARLA into independently versioned private Drive dependencies. Normal
+developer assembly reuses these bytes; it does not rebuild Unreal or CARLA.
+Three archives separate the simulator and compatible Python API, small native
+host support, and the existing Gateway SDK. The retained host and SDK manifests
+remain authoritative. Original binaries, signatures and historical release
+definitions are not rewritten. No Editor, engine source, build cache, Factory,
+credentials or installed demo state is added to these archives.
+
+A separately reviewed dependency lock binds package bytes, SHA-256, selected
+manifest ancestry and compatibility. A separate Drive binding supplies file
+identifiers only. Export validates every selected source member. Acquisition
+uses the existing bounded, resumable digest cache, rejects unsafe/extra archive
+members, verifies payload hashes and modes, and publishes extracted inputs only
+after the entire set passes. Repeats validate recorded file identities; changed
+files fail rather than being silently overwritten. Everything large stays on
+the explicitly bound external SSD, with a 90 GiB reserve for extraction/export.
+
+The restored layout feeds existing `--kit-inputs` for host/Cloud assembly and
+`--gateway-sdk` for Gateway, without adopting new producer revisions or creating
+a second build implementation. It is a sparse build-input directory, not a
+complete kit: Factory and preparation inputs remain separately required. A
+verified transfer and consumer-input check do not claim a fresh build, runtime
+qualification, public redistribution approval or complete R2 acceptance.
 
 ## Version policy
 

@@ -704,6 +704,10 @@ worker or owned test process remained.
 
 ## Private Drive delivery proof on October 8
 
+The subsequent [reusable CARLA input route](reusable-simulation-inputs.md)
+separates retained simulation dependencies from complete installer releases.
+Its transfer and consumer checks are recorded independently below.
+
 The existing `1.2.0-rc.1` engineering DMG was uploaded to a separate private
 release folder, without rebuilding or changing any existing artifact. Its
 14,162,125,968 bytes and SHA-256

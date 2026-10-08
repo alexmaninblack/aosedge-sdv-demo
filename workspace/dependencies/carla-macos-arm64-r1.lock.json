@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "carla-macos-arm64-r1",
+  "status": "RETAINED_PREBUILT_PRIVATE_NOT_DISTRIBUTION_QUALIFIED",
+  "hostManifestSha256": "f6ae4b1222e55a0d15501176ca0ab91aaa29ce011817419c1e6b3443c5dacff2",
+  "sdkManifestSha256": "977f67ad9f67e003e78aee619ff262138d5fb49a7bda5d3e1c18fc16f55ebeca",
+  "sourceRevisions": {
+    "carla": "eb09b82464076596ee47e42b3f5f9b48f9ff5b30",
+    "unreal-engine": "9b705d6d2db5b769ab34edb04f3ca2bb8b960014"
+  },
+  "compatibility": {
+    "os": "macOS",
+    "architecture": "arm64",
+    "python": "3.12",
+    "map": "/Game/Carla/Maps/Town10HD_Opt",
+    "editorRequired": false,
+    "freshSourceBuild": false
+  },
+  "packages": {
+    "carla-runtime": {
+      "file": "carla-macos-arm64-r1-carla-runtime.tar.gz",
+      "bytes": 13302049728,
+      "sha256": "3d680119205aace4bc61572eebfd3b2b9cd091db614df498c7e40ca7be96b105",
+      "manifestSha256": "0d58000649c14f5ce8e6cd619519af408fbb1820c98f7c9b94bd9c893b4ebeea",
+      "files": 13987,
+      "unpackedBytes": 21043013655
+    },
+    "gateway-sdk": {
+      "file": "carla-macos-arm64-r1-gateway-sdk.tar.gz",
+      "bytes": 32520332,
+      "sha256": "e03889a39412e4a771263a9914f8862986418082ad3fbeb68ba6fa463c1d629c",
+      "manifestSha256": "d1e1e5a728c4def1edba084f8ffdbd7cf7ee8ca67fd04c2f95dd4755a3e20b3f",
+      "files": 17398,
+      "unpackedBytes": 186489207
+    },
+    "host-support": {
+      "file": "carla-macos-arm64-r1-host-support.tar.gz",
+      "bytes": 23975979,
+      "sha256": "313356e1b142277ea5784f8fba310e34522e058cd34f9d48f3147cfdc58f25a0",
+      "manifestSha256": "622b20d2ce40f3f66aaf5bca867ca43eaddb69991337b7a96eade854b9daec78",
+      "files": 92,
+      "unpackedBytes": 88815909
+    }
+  }
+}
