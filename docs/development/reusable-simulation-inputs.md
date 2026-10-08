@@ -3,8 +3,8 @@
 
 # Reusable CARLA build inputs
 
-- Status: Private dependency delivery under verification
-- Version: 0.1
+- Status: Private delivery and frozen consumer input checks verified
+- Version: 1.0
 - Prepared: 2026-10-08
 - Owner: Demo Solution Team
 - Contract: [Release reproduction](../../contracts/release-reproduction/README.md#reusable-simulation-inputs)
@@ -110,3 +110,41 @@ neither the accepted 17-step producer plan nor historical release definitions,
 application manifests, Factory images, signatures or the published demo DMG.
 The next discussion selects the scope and capacity of a clean developer build;
 a full-source Unreal/CARLA build remains a separate maintenance route.
+
+## Verified result on October 8
+
+The three archives total **13,358,546,039 bytes** and restore **31,477 files**
+with **21,318,318,771 payload bytes**. Private upload metadata and independent
+empty-cache downloads matched every Git-pinned archive SHA-256. Extraction
+checked every file's bytes and mode. Upload repeat reused the same three Drive
+IDs without retransmitting archives or creating duplicates. The private
+binding also passed exact content readback.
+
+The unchanged `ecb3894` build producer accepted the restored host, isolated
+Python base and Gateway SDK inputs. Four native version/help probes passed
+with network and Homebrew reads denied. Restored Python 3.12.14 imported CARLA
+from inside its own bundle under the same restrictions. The restored simulator
+passed deep, strict signature verification without being launched or re-signed.
+Repeated preparation passed with network denied, no account and an unusable
+Google CLI path: it reused the verified local inputs.
+
+Direct diagnostic Python imports must preserve the existing owner's explicit
+`CARLA_CACHE_DIR` on SSD. An initial probe removed both the normal home context
+and that cache variable and terminated with SIGSEGV. Adding the already-declared
+cache setting to the diagnostic environment made the same bytes pass; no CARLA
+payload or security policy changed. This is not a claim that arbitrary stripped
+environments are supported. Native build consumers already set that variable.
+
+Tooling checkpoint `8b7b245` passed 1,008 local fixture tests (1,007 passes, one
+skip) and all 185 reproduction fixtures from a disposable root-only source
+export. Documentation, historical-definition and public-source gates passed.
+The temporary source export was removed after checking for open handles.
+The private index separates source correspondence, actual transfer/consumer
+evidence and the still-open distribution, fresh-build and runtime gates.
+
+The three temporary publication copies (13,358,546,039 logical bytes) were
+removed after identity, verified-recovery-cache and zero-open-handle checks.
+One compressed digest cache and the restored working inputs remain on SSD;
+Drive retains the archives, binding and evidence index. Original Kit028/SDK,
+Factory and accepted demo media remain unchanged. The removed copies are
+recoverable from that verified cache or Drive, not required for ordinary builds.

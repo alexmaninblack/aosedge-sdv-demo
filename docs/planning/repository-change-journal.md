@@ -567,3 +567,35 @@ Next discussion: distinguish a fresh developer build with declared prebuilt
 heavy dependencies from a full-source CARLA/Factory/native build, then select
 the exact cold-build inputs and capacity proof. The verified DMG route does not
 by itself supply or qualify all build prerequisites or another user's access.
+
+## 2026 October 8 Reusable CARLA dependency delivery
+
+At the owner's request, preserved the existing standalone simulation as
+`carla-macos-arm64-r1`, independently of demo release media. Three private
+archives contain CARLA/Python, native host support and the pinned Gateway SDK.
+The [Git lock and usage route](../development/reusable-simulation-inputs.md)
+preserve byte identities, source correspondence and existing manifest ancestry.
+New `lab dependencies` commands export, explicitly publish, acquire and verify
+them; no engine build, live demo or cold build is started implicitly.
+
+All 13.36 GB passed private Drive upload and independent full download. All
+31,477 extracted files passed content/mode checks. Upload repeats reused the
+same IDs; local preparation repeated with network denied and no Google CLI or
+account. The frozen `ecb3894` consumer accepted the inputs. Four native probes,
+Python 3.12.14/CARLA import with the declared SSD cache, and deep/strict simulator
+signature verification passed. The bounded HTTP 403/reconciliation event and
+initial missing-cache diagnostic mistake are recorded in the
+[R2 evidence](../development/release-reproduction-r2.md#reusable-simulation-dependencies-on-october-8).
+
+Tooling checkpoint `8b7b245`: 1,008 local tests (1,007 passed, one skipped),
+185 passing reproduction fixtures from a root-only source export, documentation,
+historical definition and public-source gates. Temporary source-test files and
+the three duplicate publication archives were removed after open-handle and
+recovery checks. Verified SSD cache/working inputs, private Drive files, original
+kit, Factory, accepted DMG, receipts and video remain intact. No runtime process,
+VM or demo container was started; shared Docker was not changed.
+
+This closes the reusable simulation input delivery step, not full R2/R4 or
+public distribution. No source push, tag, signing or permission expansion.
+Next: discuss a clean developer build that reuses these declared dependencies,
+separately from a full-source engine/Factory rebuild.

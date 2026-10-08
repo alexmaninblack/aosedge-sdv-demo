@@ -746,3 +746,38 @@ installer, not delivery of every dependency needed for source rebuilding.
 Build-input acquisition, another approved reader, distribution entitlements,
 signing/notarization and native release acceptance keep their separate gates.
 No source push, new tag, public sharing or cold build was performed.
+
+## Reusable simulation dependencies on October 8
+
+Following the owner's approval, the retained CARLA was extracted into three
+independent private archives: simulator/Python, native host support and Gateway
+SDK. The [input route and verification record](reusable-simulation-inputs.md)
+and [Git lock](../../workspace/dependencies/carla-macos-arm64-r1.lock.json)
+bind exact bytes and original manifest ancestry. `lab dependencies` prepares
+these inputs without compiling, installing or launching the demo. Neither the
+old release definition nor the frozen 17-step producer plan was changed.
+
+All 13.36 GB of archive bytes passed private Drive upload and independent
+empty-cache download verification. All 31,477 extracted files passed payload
+and mode checks. A network-denied repeat needed neither an account nor a working
+Google CLI. Repeated upload reused all three IDs and created no duplicates.
+The original `ecb3894` build consumer accepted the restored host/Python/SDK
+inputs. Native version/help probes, isolated Python/CARLA import with the
+declared cache environment, and deep/strict simulator signature checks passed.
+
+Two diagnostic events were classified rather than hidden. Initial upload
+initiation returned HTTP 403; no remote object existed on read reconciliation,
+and one exact-ID repeat succeeded without a permission change. Its initial API
+reason was not retained, so the cause remains unproven; future diagnostics now
+expose only bounded non-secret API reason codes. The first Python probe omitted
+`CARLA_CACHE_DIR` from its sanitized environment and crashed; restoring the
+existing native owner's SSD cache setting made the same bytes pass. No product
+runtime, engine, authentication scope or sandbox policy was changed.
+
+Tooling commit `8b7b245` passed 1,008 local fixtures, with one skip, and all 185
+reproduction fixtures from a root-only source export on SSD. The source export
+was removed after verifying zero open handles. Large inputs and outputs used
+external storage; Factory, original Kit028, the accepted DMG, video and shared
+Docker were not changed. This completes the retained simulation package route,
+not the complete R2 input closure, a fresh developer build, full-source build
+or native runtime qualification. Clean-build scope remains the next discussion.

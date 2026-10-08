@@ -4,7 +4,7 @@
 # Human Friendly Repository and Release Reproduction Plan
 
 - Status: R1 complete; R2 implementation in progress; R3 and R4 planned
-- Version: 0.13
+- Version: 0.14
 - Prepared: 2026-10-08
 - Owner: Demo Solution Team
 - Parent: [Installable distribution and reproducibility](../installable-distribution-and-reproducibility.md)
@@ -222,6 +222,18 @@ OAuth, capacity, exact successor file binding, the full 14.16 GB upload/download
 controlled download interruption/resume and no-duplicate/cache repeats now pass.
 The private release index binds the definition commit, original build provenance
 and verified file. No reader grants, source push or public release were made.
+
+The owner subsequently approved independent retained CARLA packages before
+resuming the clean-build discussion. The
+[reusable simulation input route](../../../development/reusable-simulation-inputs.md)
+keeps simulator/Python, native host support and Gateway SDK separate from demo
+release media. It preserves existing binary and manifest identities and uses
+the same external SSD and private Drive boundary. Export, independent full
+download, payload extraction, upload reuse, offline preparation repeat and
+unchanged frozen consumer-input checks pass. Native help/version probes,
+Python API import and simulator signature verification also pass; the simulator
+was not launched. Exact evidence is recorded in the linked route. No CARLA or Unreal rebuild is needed
+for this block, and full-source qualification is not implied.
 
 R2 remains **in progress**. The ordered `--target all` chain and explicit frozen
 producer selection passed two real 17-step unchanged-output runs; the repeat
