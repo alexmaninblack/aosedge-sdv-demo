@@ -3,17 +3,19 @@
 
 # R2 Preparation and Build Tooling
 
-- Status: In progress; preparation and host assembly proved, complete packaging under qualification
+- Status: In progress; complete application and signed Setup built, media packaging under qualification
 - Date: 2026-10-08
 - Owner: Demo Solution Team
 - Authority: [Work packet](../planning/active/work-packets/human-friendly-reproduction.md)
   and [reproduction contract](../../contracts/release-reproduction/README.md)
 
 `lab` prepares pinned sources and builds the native/web UI, Cloud SDK, both
-backend images, service profiles, Gateway and the OCI export on external storage. It does not yet
-reproduce a complete installer. The selected
-definition remains Kit028 / Setup042 / Factory .41; this tooling does not rename
-that media to the future `1.2.0-rc.1` candidate.
+backend images, service profiles, Gateway and the OCI export on external storage.
+It also assembles preparation, host, VM and backend inputs, the complete
+application, signed Setup and media through explicit owner adapters. The base
+definition remains Kit028 / Setup042 / Factory .41. Independently reviewed
+successor checkpoints select new `1.2.0-rc.1` engineering inputs; historical
+media, source locks and Setup's old pin are not renamed or overwritten.
 
 ## Exercised commands
 
@@ -49,6 +51,9 @@ by this release/profile/volume binding. Replace the example path below:
 ./lab build --storage /Volumes/BUILD/workspace --target backend-inputs
 ./lab build --storage /Volumes/BUILD/workspace --target vm-runtime --kit-inputs /Volumes/BUILD/retained-kit
 ./lab build --storage /Volumes/BUILD/workspace --target application
+./lab build --storage /Volumes/BUILD/workspace --target setup \
+  --signing-identity <authorized-Apple-Development-fingerprint>
+./lab build --storage /Volumes/BUILD/workspace --target dmg
 ```
 
 The first build requires pinned Node 26.0.0/npm 11.12.1, Xcode's macOS SDK and
@@ -138,6 +143,13 @@ and probes only version/help with network/Homebrew denied. The small backend
 and VM targets prepare existing runtime input formats. VM assembly binds the
 new host manifest, firmware and NIC ROM; it does not boot a guest. Complete
 application export requires all five independently checkpointed group manifests.
+Setup additionally requires the independent source-reviewed application digest
+in `workspace/releases/1.2.0-rc.1-setup.json` and an explicit authorized stable
+signer. The DMG target selects only the verified Setup for that application.
+Their receipts record `BUILT_NOT_INSTALLED`: a successful build never implies
+installer launch, native acceptance, notarization or publication. Swift compiler
+scratch and media staging also use the selected SSD. Repeats verify file
+identity and reuse completed output without signing or compression again.
 
 | Operation | Exit | Meaning |
 | --- | --- | --- |
@@ -357,11 +369,13 @@ checkout, or fall back to stale products to bypass the mismatch.
 
 1. Qualify authenticated Drive acquisition, release binding, capacity, approved
    access and retention. Keep old media unpublished until its gate closes.
-2. Freeze the corrected preparation owner and explicit input checkpoint in the
-   future candidate; add VDP/preparation, native relocation and complete-package
-   adapters. Preserve the verified eight-target outputs. Complete
-   cross-workspace cache reuse and full-profile capacity accounting.
+2. Complete the one-command developer dependency chain, reviewed candidate
+   selection, owner-scoped invalidation, cross-workspace cache reuse and
+   full-profile capacity accounting. Per-target owner builds are not yet this
+   complete route; `--target all` remains blocked. Preserve verified results.
 3. Close effective Factory configuration, native/simulation prerequisites and
    entitlement gaps before enabling full-source preparation/builds.
-4. Extend CI/build proof to those targets. R3 reader-facing routes and R4 fresh
-   environment/native acceptance remain separate deliverables.
+4. Finish release-level build evidence and handoff. CI now separately runs the
+   root-only resolver and adapter fixtures; those are not native builds or live
+   tests. R3 reader-facing routes and R4 fresh environment/native acceptance
+   remain separate deliverables.
