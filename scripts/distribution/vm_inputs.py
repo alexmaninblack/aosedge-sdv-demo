@@ -10,6 +10,7 @@ from pathlib import Path
 import shutil
 import stat
 import sys
+import tempfile
 
 from native_bundle import BundleError
 
@@ -31,19 +32,33 @@ def source_file(root, name, limit):
     return data
 
 
-def assemble(integration, host, vehicle, output, api, qemu_prefix):
+def assemble(integration, host, vehicle, output, api, qemu_prefix, *, input_checkpoint=None):
     host_api, preparation_api, vm_api = api
     output = output.absolute()
     require(not output.exists() and not output.is_symlink() and output.parent.is_dir(),
             'Output must be new with an existing parent')
     for path in (integration, host, vehicle, qemu_prefix, output.parent):
         require(not any(p.is_symlink() for p in (path, *path.parents)), 'Linked input or output root')
-    runtime = host_api.HostRuntime(host, integration / host_api.LOCK)
+    if input_checkpoint is None:
+        runtime = host_api.HostRuntime(host, integration / host_api.LOCK)
+        inputs = preparation_api.PreparationInputs(vehicle, integration / preparation_api.LOCK)
+        host_pin = json.loads(source_file(integration, host_api.LOCK, 16384))['manifest']
+    else:
+        from candidate_inputs import locks
+        chosen = locks(integration, input_checkpoint, ('host-runtime', 'preparation-inputs'))
+        # Existing validators read temporary copies of independently reviewed
+        # source locks; no runtime trust/configuration path is changed.
+        with tempfile.TemporaryDirectory(prefix='vm-input-locks-') as temporary:
+            holder = Path(temporary)
+            for group, raw in chosen.items():
+                (holder/group).write_bytes(raw)
+            runtime = host_api.HostRuntime(host, holder/'host-runtime')
+            inputs = preparation_api.PreparationInputs(vehicle, holder/'preparation-inputs')
+        host_pin = json.loads(chosen['host-runtime'])['manifest']
     runtime.verify('native', 'python')
     for name in ('native/bin/qemu-img', 'native/bin/qemu-system-aarch64'):
         runtime.file(name)
     runtime.entry('python')
-    inputs = preparation_api.PreparationInputs(vehicle, integration / preparation_api.LOCK)
     firmware = inputs.read('firmware/QEMU_EFI.fd', 4 * 2**20)
     require(hashlib.sha256(firmware).hexdigest() == vm_api.FIRMWARE_SHA, 'Firmware pin mismatch')
     files = {'firmware/QEMU_EFI.fd': firmware,
@@ -56,7 +71,6 @@ def assemble(integration, host, vehicle, output, api, qemu_prefix):
         files['notices/qemu/' + name] = source_file(qemu_prefix, name, 128 * 2**10)
     size = sum(map(len, files.values()))
     require(shutil.disk_usage(output.parent).free >= 90 * 2**30 + size, 'Disk reserve exceeded')
-    host_pin = json.loads(source_file(integration, host_api.LOCK, 16384))['manifest']
     value = dict(schemaVersion=1, contractId=vm_api.CONTRACT,
                  status='ASSEMBLED_VM_INPUTS_NOT_LIVE_QUALIFIED', hostManifest=host_pin,
                  files=[dict(path=name, bytes=len(data), sha256=hashlib.sha256(data).hexdigest(), mode=0o444)
@@ -80,13 +94,15 @@ def assemble(integration, host, vehicle, output, api, qemu_prefix):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--input-checkpoint', help='Reviewed successor input pins relative to integration source')
     for name in ('integration', 'host', 'vehicle', 'output', 'qemu-prefix'):
         parser.add_argument('--' + name, required=True, type=Path)
     args = parser.parse_args()
     sys.path.insert(0, str(args.integration / 'apps/demo-orchestrator/src'))
     from aosedge_demo_orchestrator import host_runtime, preparation_inputs, vm_runtime
     print(json.dumps(assemble(args.integration, args.host, args.vehicle, args.output,
-                              (host_runtime, preparation_inputs, vm_runtime), args.qemu_prefix), indent=2))
+                              (host_runtime, preparation_inputs, vm_runtime), args.qemu_prefix,
+                              input_checkpoint=args.input_checkpoint), indent=2))
 
 
 if __name__ == '__main__':

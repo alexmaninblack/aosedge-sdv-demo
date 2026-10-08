@@ -4,7 +4,7 @@
 # Release Definition and Reproduction Contract
 
 - Status: R1 complete; delivery and version policy accepted; acquisition and reproduction unqualified
-- Version: 1.7
+- Version: 1.8
 - Prepared: 2026-10-08
 - Owner: Demo Solution Team
 - Scope: [R1 work packet](../../docs/planning/active/work-packets/human-friendly-reproduction.md)
@@ -171,7 +171,8 @@ source inputs remain gated rather than being taken from undeclared warm state.
 
 The supported developer build targets are `presenter`, `cloud-sdk`,
 `brake-backend`, `tire-backend`, `backend-export`, `brake-service`,
-`tire-service`, `gateway` and `preparation`.
+`tire-service`, `gateway`, `preparation`, `host-runtime`, `backend-inputs`,
+`vm-runtime` and `application`.
 `presenter` uses the pinned owner's native
 Presenter, Driving Control and web UI recipe. It performs local ad-hoc signing
 required by that recipe, not Developer ID signing, notarization or publication.
@@ -222,5 +223,26 @@ packaging must explicitly select the new group manifests in a new candidate;
 its input-lock and Setup pin checks cannot be bypassed. Neither historical
 manifests nor pinned source checkouts may be edited to make a new package
 appear to match the old kit. Full-profile and runtime qualification stay gated.
+
+The host adapter combines verified compiled UI/Gateway outputs with explicitly
+retained simulator, Python, QEMU and OpenSSL inputs. It copies only manifest
+members, ignoring incidental source-folder metadata rather than importing it.
+OpenSSL reuse requires the exact original SDK library hashes, not a version
+string alone. The native closure owner preserves entitlements, relocates loads,
+removes build rpaths and verifies local signatures. Separate version/help-only
+probes deny network and Homebrew reads; they start no simulator, VM or listener.
+
+A new source-reviewed
+[packaging checkpoint](../../workspace/releases/1.2.0-rc.1-packaging.json)
+selects successor group manifests. It preserves the historical definition and
+five source locks. Build-time `--input-checkpoint` selects this file explicitly;
+there is no runtime pin adoption. Export retains every contract/protocol field
+and substitutes only those independently reviewed manifest pins. VM assembly
+requires both host/preparation pins; application assembly requires all five,
+including the VM-to-host binding. An incomplete checkpoint cannot produce a
+complete application. Adapter evidence stays outside installed payloads.
+Backend assembly reuses the verified untagged OCI export without an Engine call.
+Setup must subsequently bind the new application digest independently; none of
+these commands creates a release tag, installs, provisions or publishes.
 See [R2 commands and evidence](../../docs/development/release-reproduction-r2.md)
 for the exercised scope, exit codes and remaining gates.

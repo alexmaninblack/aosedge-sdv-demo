@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "kind": "reviewed-packaging-inputs",
+  "productVersion": "1.2.0-rc.1",
+  "baseDefinitionSha256": "cdfec741dc784774a1bcbe57c536a65e9d8c4a2077a68ad8b97104eabd7c2598",
+  "manifests": {
+    "host-runtime": {
+      "path": "host-runtime-manifest.json",
+      "bytes": 3825149,
+      "sha256": "0ae937f559f4240a5d86b2433c6432648da661551684bf8b011b4ce881635327"
+    },
+    "preparation-inputs": {
+      "path": "vehicle-input-manifest.json",
+      "bytes": 51157,
+      "sha256": "220d3e187c91f9d69324520fffabc8c6c1999d5c19850fbfda5a7a826fbb1c12"
+    },
+    "cloud-runtime": {
+      "path": "cloud-runtime-manifest.json",
+      "bytes": 604355,
+      "sha256": "46fe0adf22a6843f9d7c4162208f38caf194ca19e98e1089e3fb931ed2a5bb46"
+    },
+    "backend-inputs": {
+      "path": "backend-image-manifest.json",
+      "bytes": 986,
+      "sha256": "a86e09f914804be2acb7f5ef158b42018912781ad75ed9d4355d4985d2473bf8"
+    }
+  }
+}

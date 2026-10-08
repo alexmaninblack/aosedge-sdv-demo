@@ -49,7 +49,7 @@ def small(root, name):
     return raw
 
 
-def export_plan(integration):
+def export_plan(integration, input_checkpoint=None):
     tracked_py = {p for p in tracked(integration, str(PACKAGE)) if p.suffix == '.py'}
     reviewed = {PACKAGE / name for name in REVIEWED}
     allowed = tracked_py | reviewed
@@ -74,6 +74,10 @@ def export_plan(integration):
         files[name] = small(integration, name)
         if name.endswith('.json'):
             json.loads(files[name])
+    if input_checkpoint is not None:
+        from candidate_inputs import locks
+        for group, raw in locks(integration, input_checkpoint, LOCKS).items():
+            files['contracts/'+LOCKS[group]] = raw
     require(sum(map(len, files.values())) <= MAX_APP, 'Application export too large')
     return files
 
@@ -146,13 +150,13 @@ def write_new(root, name, raw):
     require(path.read_bytes() == raw, 'Application transfer changed')
 
 
-def assemble(integration, groups, output):
+def assemble(integration, groups, output, *, input_checkpoint=None):
     output = output.absolute()
     require(not output.exists() and not output.is_symlink() and output.parent.is_dir(), 'Output must be new')
     require(not any(p.is_symlink() for p in (output.parent, *output.parents)), 'Linked output root')
     require(set(groups) == set(LOCKS), 'Exactly five input groups required')
     require(shutil.disk_usage(output.parent).free >= 90*2**30 + MAX_APP, 'Disk reserve exceeded')
-    files = export_plan(integration)
+    files = export_plan(integration) if input_checkpoint is None else export_plan(integration, input_checkpoint)
     checked = {name: checked_group(root, files['contracts/' + LOCKS[name]]) for name, root in groups.items()}
     vm_manifest = json.loads(small(groups['vm-runtime'], checked['vm-runtime'][0]['path']))
     require(vm_manifest.get('hostManifest') == checked['host-runtime'][0],
@@ -192,6 +196,8 @@ def assemble(integration, groups, output):
                   openGates=['integrated live validation',
                              'Docker installation/licensing and fresh-engine import',
                              'first-use TLS and credentials', 'installer', 'clean Mac', 'redistribution'])
+    if input_checkpoint is not None:
+        report['packagingCheckpoint'] = dict(path=input_checkpoint, sha256=sha256(regular(integration, input_checkpoint)))
     write_new(output, 'application-manifest.json', (json.dumps(report, indent=2) + '\n').encode())
     return report
 
@@ -200,10 +206,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--integration', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--input-checkpoint', help='Reviewed successor input pins relative to integration source')
     for name in LOCKS:
         parser.add_argument('--' + name, type=Path, required=True)
     args = parser.parse_args()
-    result = assemble(args.integration, {name: getattr(args, name.replace('-', '_')) for name in LOCKS}, args.output)
+    result = assemble(args.integration, {name: getattr(args, name.replace('-', '_')) for name in LOCKS}, args.output,
+                      input_checkpoint=args.input_checkpoint)
     print(json.dumps({'status': result['status'], 'applicationFiles': len(result['applicationFiles']),
                       'inputLogicalBytes': result['inputLogicalBytes']}))
 

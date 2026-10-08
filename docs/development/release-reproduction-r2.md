@@ -3,7 +3,7 @@
 
 # R2 Preparation and Build Tooling
 
-- Status: In progress; eight build targets proved, preparation adapter under qualification
+- Status: In progress; preparation and host assembly proved, complete packaging under qualification
 - Date: 2026-10-08
 - Owner: Demo Solution Team
 - Authority: [Work packet](../planning/active/work-packets/human-friendly-reproduction.md)
@@ -43,7 +43,12 @@ by this release/profile/volume binding. Replace the example path below:
   --gateway-sdk /Volumes/BUILD/inputs/gateway-sdk \
   --test-tmp-parent /Volumes/BUILD/tmp --cmake /path/to/cmake
 ./lab build --storage /Volumes/BUILD/workspace --target preparation \
-  --kit-inputs /Volumes/BUILD/retained-kit --python /path/to/python3.12
+  --kit-inputs /Volumes/BUILD/retained-kit --python /path/to/python3.12 --prepare-dependencies
+./lab build --storage /Volumes/BUILD/workspace --target host-runtime \
+  --kit-inputs /Volumes/BUILD/retained-kit --gateway-sdk /Volumes/BUILD/inputs/gateway-sdk
+./lab build --storage /Volumes/BUILD/workspace --target backend-inputs
+./lab build --storage /Volumes/BUILD/workspace --target vm-runtime --kit-inputs /Volumes/BUILD/retained-kit
+./lab build --storage /Volumes/BUILD/workspace --target application
 ```
 
 The first build requires pinned Node 26.0.0/npm 11.12.1, Xcode's macOS SDK and
@@ -123,6 +128,16 @@ preserves the Factory hash, checks VDP profiles and reviewed runtime, and does
 not sign or publish anything. A new output has its own manifest and receipt;
 it cannot replace the historical kit's independently pinned manifest. Repeats
 reuse unchanged outputs; incomplete outputs remain available for diagnosis.
+First preparation may acquire the exact pinned common-runtime Git object with
+`--prepare-dependencies`; this leaves the prepared platform HEAD unchanged.
+
+The successor packaging checkpoint explicitly selects new manifests without
+rewriting Kit028's locks. The host target needs the declared SDK and retained
+heavy inputs. It verifies native library ancestry, relocates/signs the closure,
+and probes only version/help with network/Homebrew denied. The small backend
+and VM targets prepare existing runtime input formats. VM assembly binds the
+new host manifest, firmware and NIC ROM; it does not boot a guest. Complete
+application export requires all five independently checkpointed group manifests.
 
 | Operation | Exit | Meaning |
 | --- | --- | --- |
