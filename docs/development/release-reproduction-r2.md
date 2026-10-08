@@ -365,6 +365,68 @@ assembly still requires a new candidate selecting these new output manifests.
 Do not edit the historical inventory, old release lock or prepared source
 checkout, or fall back to stale products to bypass the mismatch.
 
+### Successor preparation, host and application proof
+
+The root-owned preparation recipe assembled Factory .41, all four newly built
+service exports and VDP profiles with 7/15/23 read paths. It preserved the
+Factory digest and verified common runtime commit `1fe5649f860f62573b313e1f38e5ec0f4ca1b519`.
+The shallow platform clone originally lacked that historical object; explicit
+dependency acquisition fetched only its reviewed commit and checked its tree
+without changing the prepared platform HEAD. A path-validator shadowing bug
+was also corrected before the successful preparation run.
+
+Host assembly retained the declared standalone simulator, Python and QEMU
+inputs and selected freshly compiled UI/Gateway products. Exact SDK library
+ancestry was checked before native relocation and signing. Initial host trials
+found two packaging-harness issues: nested macOS sandbox setup was rejected,
+and a blanket clone imported incidental Finder metadata. Native help/version
+probes now run in a separate network/Homebrew-denied sandbox; transfer selects
+only manifest members. All four native probes passed without starting a
+simulator, VM or listener. The source kit and runtime code were not altered.
+
+The small VM package binds the new host manifest. The backend package reuses
+the verified untagged OCI archive. Complete application assembly then passed
+the canonical strict inventory reader, including all five manifest pins and
+the VM-to-host binding. Each target's immediate repeat reused its completed
+result; no heavy compilation or Factory rebuild was performed.
+
+| Target | Verified build key |
+| --- | --- |
+| Preparation | `998d0d70b8a27bbf8e292cf858792dfffaaf6deef02e7d55d4bef930a97a6f0a` |
+| Host runtime | `e345486fc3a9861c4ce379b1acee117b77af0126832e2f94484a6bb831683a4c` |
+| Backend inputs | `490c2b29446d8ed78b3d39db5e29d6acaeab36ce459df1229f4ccb751bc427f4` |
+| VM runtime | `57997265dd6d0760abdce34a5835fdcac06ae01d066829c8f0159914f15c8c09` |
+| Application | `48bece9229758e9018f220b8c7eeeffe8457b78e2c08ac53dca60fd610492abf` |
+| Signed Setup | `a1c53895cdde873e90c2b3c6a6770be9856fbe9a1b026f69ab8b9c0e83fd46da` |
+
+The [group checkpoint](../../workspace/releases/1.2.0-rc.1-packaging.json)
+records the five new input manifests. The 19,767-byte application manifest has
+SHA-256 `60d258db46f2277af185fd794cafb9d3928aa4b361cc56b05d64df81d281d39a`
+and source revision `2597959d3070644dddc83bc5fc51e4658acf3b4a`.
+It selects 28,453,306,428 logical input bytes and 89 application source files.
+The separate [Setup pin](../../workspace/releases/1.2.0-rc.1-setup.json) was
+committed before signing; it was not adopted from untrusted media at runtime.
+
+Setup compiled, passed its native self-test and isolated bootstrap protocol
+probe, and verified its stable Apple Development signature. It contains
+2,430 Python bootstrap files. Its executable SHA-256 is
+`c3a196d8ad10aaf7ed00f50bf313520569e50d8cdf8de576a8278aff479aea9e`.
+A repeat reused the signature and output. This is local engineering signing,
+not Developer ID, notarization, installation or distribution approval.
+
+Full local regression ran 932 tests in 78.072 seconds: 931 passed and one was
+skipped. A separate source-only Git export on SSD, with no sibling checkouts,
+passed all 109 reproduction tests in 6.388 seconds. The new root-only CI job
+uses the same profile resolver and fixture suite; remote CI execution has not
+been claimed. These checks do not execute a complete fresh developer build.
+
+Two failed intermediate host output directories were removed after checking
+their ownership, zero open handles and absence from completed build dependency
+records. Their compact sibling logs, markers and receipts remain for diagnosis.
+The temporary root-only test export was also removed. Accepted outputs and
+historical media remain intact. These were APFS clones; their apparent sizes
+must not be presented as physical disk space recovered.
+
 ## Remaining R2 work
 
 1. Qualify authenticated Drive acquisition, release binding, capacity, approved
