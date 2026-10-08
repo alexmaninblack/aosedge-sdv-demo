@@ -3,7 +3,7 @@
 
 # R2 Preparation and Build Tooling
 
-- Status: In progress; eight build targets and repeat proof complete
+- Status: In progress; eight build targets proved, preparation adapter under qualification
 - Date: 2026-10-08
 - Owner: Demo Solution Team
 - Authority: [Work packet](../planning/active/work-packets/human-friendly-reproduction.md)
@@ -42,6 +42,8 @@ by this release/profile/volume binding. Replace the example path below:
 ./lab build --storage /Volumes/BUILD/workspace --target gateway \
   --gateway-sdk /Volumes/BUILD/inputs/gateway-sdk \
   --test-tmp-parent /Volumes/BUILD/tmp --cmake /path/to/cmake
+./lab build --storage /Volumes/BUILD/workspace --target preparation \
+  --kit-inputs /Volumes/BUILD/retained-kit --python /path/to/python3.12
 ```
 
 The first build requires pinned Node 26.0.0/npm 11.12.1, Xcode's macOS SDK and
@@ -111,6 +113,16 @@ and removed on exit. `CARLA_CACHE_DIR` is explicit inside the workspace, so
 tests do not depend on the operator's home directory. Test loading explicitly
 selects the declared SDK libraries. The output is still an unrelocated compiler
 product, not a portable native runtime package.
+
+`preparation` requires all four completed service builds and a clean committed
+root checkout. That root revision owns the updated packaging recipe; the
+component sources remain the exact prepared revisions. The adapter stages only
+the selected Factory .41, firmware, unsigned VDP bases and service outputs on
+the same SSD, then calls the existing vehicle-input assembler offline. It
+preserves the Factory hash, checks VDP profiles and reviewed runtime, and does
+not sign or publish anything. A new output has its own manifest and receipt;
+it cannot replace the historical kit's independently pinned manifest. Repeats
+reuse unchanged outputs; incomplete outputs remain available for diagnosis.
 
 | Operation | Exit | Meaning |
 | --- | --- | --- |
@@ -320,8 +332,9 @@ composition, not a complete preparation bundle or new installer.
 All 25 vehicle-input tests passed. The final integration regression ran 892
 tests in 45.571 seconds: 891 passed, one skipped. The historical release
 definition still validates, and `lab status` verifies all ten retained builds.
-The new producer revision and checkpoint must be frozen in the future candidate
-definition before full assembly is enabled. Complete preparation remains gated.
+The new root-owned adapter freezes its committed producer, explicit checkpoint,
+component inputs and toolchain in a separate build receipt. Complete installer
+assembly still requires a new candidate selecting these new output manifests.
 Do not edit the historical inventory, old release lock or prepared source
 checkout, or fall back to stale products to bypass the mismatch.
 

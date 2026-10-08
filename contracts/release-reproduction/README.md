@@ -4,7 +4,7 @@
 # Release Definition and Reproduction Contract
 
 - Status: R1 complete; delivery and version policy accepted; acquisition and reproduction unqualified
-- Version: 1.6
+- Version: 1.7
 - Prepared: 2026-10-08
 - Owner: Demo Solution Team
 - Scope: [R1 work packet](../../docs/planning/active/work-packets/human-friendly-reproduction.md)
@@ -171,7 +171,7 @@ source inputs remain gated rather than being taken from undeclared warm state.
 
 The supported developer build targets are `presenter`, `cloud-sdk`,
 `brake-backend`, `tire-backend`, `backend-export`, `brake-service`,
-`tire-service` and `gateway`.
+`tire-service`, `gateway` and `preparation`.
 `presenter` uses the pinned owner's native
 Presenter, Driving Control and web UI recipe. It performs local ad-hoc signing
 required by that recipe, not Developer ID signing, notarization or publication.
@@ -206,12 +206,21 @@ incomplete Gateway build may resume only with `--resume` and matching inputs;
 the first stage logs are retained. Raw outputs still require native packaging
 and library relocation before they can be treated as portable runtime files.
 
-Preparation/complete-profile adapters remain gated. The historical pinned
-vehicle-input assembler selects old Stage 0 service exports. The current
-build-only owner now accepts an explicit reviewed service checkpoint, preserving
-the historical default and all product checks. The four new exports pass that
-owner, but the new recipe/checkpoint must still be selected in the future
-candidate definition. Neither historical manifests nor pinned source checkouts
-may be edited to make a new package appear to match the old kit.
+The preparation adapter uses the clean, committed root checkout as its explicit
+build-tool owner. Its receipt records that revision and hashes the relevant
+source trees, checkpoints and toolchain. It selects the reviewed four-profile
+service checkpoint and Factory .41; retained unsigned VDP bases and firmware
+are selected through the historical manifest chain. The existing owner validates
+the products, tests, VDP profiles and reviewed runtime, and hashes the Factory
+at transfer. Same-volume APFS clones do not silently fall back to full copies.
+Repeat verification checks the unchanged output identities without repeatedly
+hashing the large Factory. A partial owner result without the verified outer
+receipt is preserved and rejected, not silently promoted.
+
+This produces new preparation inputs, not historical Kit028 bytes. Complete
+packaging must explicitly select the new group manifests in a new candidate;
+its input-lock and Setup pin checks cannot be bypassed. Neither historical
+manifests nor pinned source checkouts may be edited to make a new package
+appear to match the old kit. Full-profile and runtime qualification stay gated.
 See [R2 commands and evidence](../../docs/development/release-reproduction-r2.md)
 for the exercised scope, exit codes and remaining gates.
