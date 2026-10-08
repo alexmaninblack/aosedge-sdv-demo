@@ -3,6 +3,7 @@
 """Build-only preparation proof; fixture files stay in the selected test TMPDIR."""
 import copy
 import json
+import shutil
 from pathlib import Path
 import sys
 from types import SimpleNamespace
@@ -140,6 +141,25 @@ class PreparationTests(StorageFixture, unittest.TestCase):
         with patch('reproduction.packaging.external_volume', return_value={'uuid': 'OTHER'}):
             with self.assertRaisesRegex(core.LabError, 'bound SSD'):
                 packaging.retained_preparation(self.storage, self.base)
+
+    def test_actual_input_staging_maps_factory_and_profiles(self):
+        source, scratch = self.base/'retained', self.base/'staged'
+        scratch.mkdir()
+        rows = []
+        for name in ('firmware/QEMU_EFI.fd', 'factory/fixture/manifest.json', 'vdp/profiles/v2/source.json'):
+            path = source/name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(b'fixture')
+            path.chmod(0o444)
+            rows.append({'path': name, 'bytes': 7, 'sha256': sha256(path)})
+        def clone(args, **kwargs):
+            shutil.copy2(args[-2], args[-1])
+            return SimpleNamespace(returncode=0)
+        with patch('reproduction.packaging.run_command', side_effect=clone):
+            packaging.stage_inputs(self.storage, scratch, source, rows, {}, [])
+        self.assertTrue((scratch/'factory-images/fixture/manifest.json').is_file())
+        self.assertTrue((scratch/'components/vehicle-data-provider/.source-profiles/2.0.0/source.json').is_file())
+        self.assertEqual((scratch/'firmware/QEMU_EFI.fd').read_bytes(), b'fixture')
 
     def test_changed_tooling_is_new_key_and_docs_commit_reuses(self):
         self.fixture()

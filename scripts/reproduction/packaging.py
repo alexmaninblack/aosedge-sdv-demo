@@ -7,7 +7,7 @@ import stat
 import tempfile
 
 from .core import ROOT, require, regular, read_json, atomic_json, digest, external_volume, run_command, GIB
-from .cloud import matches, relative
+from .cloud import matches, relative as safe_relative
 from .sources import git, verify_sources
 from . import services
 from .artifacts import sha256
@@ -92,7 +92,7 @@ def verify_preparation(output, inputs):
     names = {PREPARATION_MANIFEST, 'build-receipt.json'}
     require(len(receipt['stamps']) == len(manifest['files']), 'Preparation stamp inventory differs')
     for row in manifest['files']:
-        name = str(relative(row['path']))
+        name = str(safe_relative(row['path']))
         require(name not in names, 'Duplicate preparation output')
         names.add(name)
         path = regular(output / name)
@@ -114,7 +114,7 @@ def stamp(path):
 
 def stage_inputs(storage, scratch, source, rows, factory, chosen):
     for row in rows:
-        original = regular(source / relative(row['path']))
+        original = regular(source / safe_relative(row['path']))
         require(original.stat().st_size == row['bytes'] and not original.stat().st_mode & 0o222,
                 'Retained input must match size and be immutable')
         relative = row['path']
