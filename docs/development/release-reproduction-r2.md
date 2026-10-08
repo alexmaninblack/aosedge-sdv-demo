@@ -657,3 +657,9 @@ Full regression after this change ran **976 tests in 64.704 seconds**: 975
 passed and one skipped. Documentation and historical release-definition gates
 also passed. All fixture scratch used the external SSD and was automatically
 removed; accepted outputs and the shared Docker Engine were untouched.
+
+Committed checkpoint `ed48b74` then passed all **153 reproduction fixtures in
+26.530 seconds** in a separate root-only Git export on the SSD, without sibling
+repositories. The public-source scan also passed. After test completion and
+zero-open-handle verification, the temporary export was removed; no build
+worker or owned test process remained.
