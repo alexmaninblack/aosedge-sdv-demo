@@ -129,6 +129,19 @@ def visible_results(plan, step, selected, state):
             {k for k,v in state['builds'].items() if v['target'] == step['target']})
 
 
+def completed_key(output):
+    lines = output.splitlines()
+    require(lines, 'Missing chain worker result')
+    try:
+        reply = json.loads(lines[-1])
+    except (ValueError, UnicodeError):
+        require(False, 'Invalid chain worker result')
+    require(isinstance(reply, dict) and reply.get('status') == 'OWNER_STEP_COMPLETED'
+            and isinstance(reply.get('buildKey'), str) and re.fullmatch('[a-f0-9]{64}', reply['buildKey']),
+            'Invalid chain worker result')
+    return reply['buildKey']
+
+
 def verify_result(storage, key, row, expected_target):
     require(row['target'] == expected_target and digest(row['inputs']) == key, 'Chain result identity differs')
     path = storage.path('builds/'+expected_target+'/'+key)
@@ -172,12 +185,14 @@ def execute(storage, state, args, progress):
             ROOT/'scripts/reproduction/chain_worker.py', request], env=storage.environment(), cwd=storage.root, timeout=3600)
         log = storage.path('builds/chains/'+key+'-'+step['id']+'.log')
         log.write_bytes((response.stdout+response.stderr)[-2**20:])
+        if response.returncode:
+            first = storage.path('builds/chains/'+key+'-'+step['id']+'.first-failure.log')
+            if not first.exists():
+                first.write_bytes((response.stdout+response.stderr)[-2**20:])
         require(response.returncode == 0, 'Chain step '+step['id']+' failed; prior completed results preserved, inspect SSD log')
-        reply = json.loads(response.stdout.splitlines()[-1])
-        require(reply.get('status') == 'OWNER_STEP_COMPLETED', 'Invalid chain worker result')
+        result_key = completed_key(response.stdout)
         fresh = storage.state()
         state.clear(); state.update(fresh)
-        result_key = reply['buildKey']
         verify_result(storage, result_key, state['builds'][result_key], step['target'])
         selected[step['id']] = result_key
         atomic_json(record, {'schemaVersion':1, 'planDigest':digest(plan), 'completed':selected,

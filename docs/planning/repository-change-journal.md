@@ -463,3 +463,30 @@ with exact producer-role selection, narrow invalidation and shared-cache/space
 accounting; qualify authenticated Drive input delivery and close full-source
 prerequisites. R3 human-facing instructions and R4 fresh/native installation
 remain separate. The signed DMG alone does not close those criteria.
+
+## 2026 October 8 R2 ordered developer chain
+
+Implemented `lab build --target all` at `1f95e9d`, retaining exact source owners,
+canonical adapters and independent successor input/Setup pins. A source-reviewed
+17-step plan prepares five immutable build-tool checkouts on external storage.
+The existing workspace lock covers worker invocations. Exact dependency views
+exclude unrelated old candidate/signing results without deleting them; owner
+saves cannot change source/artifact/storage bindings or existing receipts.
+
+Two real whole-chain runs passed, reusing the same 17 verified outputs. The
+repeat took 80.09 seconds, with no compilation, signing, recompression, runtime
+launch, Cloud change or upload. The output remains the earlier engineering
+`1.2.0-rc.1` DMG, not a new or qualified release. Historical media and the video
+repository are unchanged. Tests at this checkpoint: 946 integration tests,
+945 passing and one skipped; 123 reproduction fixtures passed again in a
+separate root-only source export. The temporary export was removed; retained
+producer inputs occupy approximately 306 MiB on the SSD. Shared Docker and
+unrelated containers remain untouched.
+
+Follow-up hardening rejects malformed worker completion records and retains
+the first failure log through a subsequent successful continuation. No artifact
+or trust pin changes. Precise evidence and outstanding R2 criteria are in the
+[R2 record](../development/release-reproduction-r2.md#ordered-chain-proof-on-october-8).
+Narrow recipe invalidation, shared-cache/capacity accounting, authenticated
+artifact delivery and full-source closure remain open; R3/R4 are not closed by
+warm-chain success. No push, release tag or binary publication in this block.

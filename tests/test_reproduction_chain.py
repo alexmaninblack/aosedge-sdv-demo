@@ -15,6 +15,15 @@ from reproduction import chain, chain_worker, core, sources
 
 
 class PlanTests(unittest.TestCase):
+    def test_worker_malformed_or_missing_completion_fails_closed(self):
+        for value in (b'', b'not-json', b'[]', b'{"status":"OWNER_STEP_COMPLETED"}',
+                      b'{"status":"OWNER_STEP_COMPLETED","buildKey":"../escape"}'):
+            with self.subTest(value=value), self.assertRaises(core.LabError):
+                chain.completed_key(value)
+        expected = 'f'*64
+        self.assertEqual(chain.completed_key(json.dumps({'status':'OWNER_STEP_COMPLETED',
+                                                       'buildKey':expected}).encode()), expected)
+
     def test_plan_is_complete_ordered_and_has_exact_owners(self):
         value = chain.read_plan(core.Release())
         self.assertEqual([r['id'] for r in value['steps']], list(chain.DEPENDENCIES))
@@ -136,6 +145,7 @@ class ExecuteTests(StorageFixture, unittest.TestCase):
         self.fail = None; self.created.clear()
         self.assertEqual(self.execute()['buildCount'], 17)
         self.assertEqual(len(self.created), 7)
+        self.assertEqual(len(list(self.storage.path('builds/chains').glob('*.first-failure.log'))), 1)
 
     def test_insufficient_space_does_not_prepare_or_run(self):
         self.fixture()

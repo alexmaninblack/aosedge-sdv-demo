@@ -3,7 +3,7 @@
 
 # R2 Preparation and Build Tooling
 
-- Status: In progress; application, signed Setup and complete DMG built and locally verified
+- Status: In progress; complete ordered developer chain and unchanged-output repeat verified
 - Date: 2026-10-08
 - Owner: Demo Solution Team
 - Authority: [Work packet](../planning/active/work-packets/human-friendly-reproduction.md)
@@ -486,9 +486,9 @@ must not be presented as physical disk space recovered.
 
 1. Qualify authenticated Drive acquisition, release binding, capacity, approved
    access and retention. Keep old media unpublished until its gate closes.
-2. Verify the ordered developer chain on real retained outputs and on repeat.
-   Exact producer roles and dependency selection are implemented; cold profile
-   reproduction, narrow recipe invalidation, cross-workspace cache reuse and
+2. Exact producer roles, dependency selection and whole-chain unchanged-output
+   reuse now pass real verification. Cold profile reproduction, narrow recipe
+   invalidation, cross-workspace cache reuse and
    full-profile capacity accounting remain open. Preserve verified results.
    Current conservative whole-tool-tree fingerprints still require refinement
    before claiming narrow invalidation for recipe changes.
@@ -498,3 +498,42 @@ must not be presented as physical disk space recovered.
    root-only resolver and adapter fixtures; those are not native builds or live
    tests. R3 reader-facing routes and R4 fresh environment/native acceptance
    remain separate deliverables.
+
+## Ordered chain proof on October 8
+
+Source checkpoint `1f95e9d` added the complete ordered developer invocation.
+The source-reviewed plan selected five exact tool commits, prepared as clean
+independent detached inputs on the bound SSD. No network source acquisition was
+needed for these already available exact objects. Neither application generation
+nor Setup's later independent pin used the current root HEAD implicitly.
+
+Both whole-chain invocations completed all 17 steps, preserving the existing
+17 build keys. Every step reported reuse. No compiler, signer, DMG compressor,
+installer, simulator, VM or demo container was started by these invocations.
+The second invocation took **80.09 seconds** wall clock, including source,
+dependency and output validation. This is warm verification time, not a cold
+build estimate. Result:
+
+- Chain key: `a9452e449ee997e01c7536311dbe5ee726566db3dd4fe48255db08dce847e66b`.
+- Final DMG key: `98ba1c5048376b7e12aa597fa42d52d3098972347259162835a9a103a99369fb`.
+- Verdict: `CHAIN_BUILT_NOT_QUALIFIED`; no profile promotion or publication.
+
+The full suite at that checkpoint ran 946 tests in 62.627 seconds, with 945
+passing and one skipped. An isolated root-only Git export, without sibling
+repositories, passed all 123 reproduction fixtures in 9.051 seconds. These
+fixtures include ordered first/repeat execution, failure/resume, preserved
+unselected results, exact detached source preparation, collision/dirty-source
+rejection, volume/tool/signing preflight and separate interpreter selection.
+Subsequent hardening adds malformed/empty worker-result rejection and retains
+the first failed-step log across recovery; it changes no payload or input pin.
+After that hardening, all 124 reproduction fixtures passed in 9.405 seconds,
+and the full suite ran 947 tests in 53.878 seconds: 946 passed, one skipped.
+
+The five producer checkouts occupy approximately 306 MiB according to `du`;
+existing workspace caches occupy 56 MiB. They are retained build inputs, not
+extra runtime kits. The temporary root-only source export was removed after
+successful tests and a zero-open-handle check; it can be recreated from Git.
+No unnecessary build worker or demo process remains. Shared Docker and unrelated
+containers are unchanged. Observed free space after checks was approximately
+255 GiB externally and 129 GiB internally; concurrent host activity prevents
+attributing the host's free-space change to this build-only check.

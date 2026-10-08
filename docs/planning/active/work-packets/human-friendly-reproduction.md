@@ -220,8 +220,9 @@ metadata and small synthetic upload/readback checks. CLI OAuth, release file
 binding, capacity and release-sized transfer remain open.
 
 R2 remains **in progress**. The ordered `--target all` chain and explicit frozen
-producer selection are implemented, with offline first/repeat/failure fixtures.
-Real chain verification, narrow recipe invalidation and shared-cache capacity
+producer selection passed two real 17-step unchanged-output runs; the repeat
+took 80.09 seconds. Offline first/repeat/failure fixtures also pass.
+Narrow recipe invalidation and shared-cache capacity
 accounting, authenticated artifact delivery and full-source input closure
 remain open. Chain implementation does not qualify a fresh-clone profile.
 R3 human routes and R4 acceptance
