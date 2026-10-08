@@ -1,0 +1,29 @@
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+
+name: Reproduction offline contract
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  root-only:
+    name: Root-only resolver and build-adapter fixtures (not native qualification)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out only the product entry repository
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+      - name: Resolve each profile with the public command
+        run: |
+          python3 -B lab plan --profile operator
+          python3 -B lab plan --profile developer
+          python3 -B lab plan --profile full-source
+      - name: Verify acquisition and owner adapters with offline fixtures
+        env:
+          TMPDIR: ${{ runner.temp }}
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: python3 -B -m unittest discover -s tests -p 'test_reproduction*.py' -v
