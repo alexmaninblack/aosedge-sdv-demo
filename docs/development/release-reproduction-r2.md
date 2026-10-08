@@ -610,6 +610,11 @@ Guard-drift tests check the report against the existing recipes, and a different
 unreviewed producer plan cannot inherit the capacity claim. Documentation,
 release-definition and source-publication gates passed.
 
+The committed source checkpoint `8e25dcd` also passed all 145 reproduction
+fixtures in **7.832 seconds** from a new root-only Git export on the bound SSD,
+without sibling repositories. That disposable export was removed after a
+zero-open-handle check; the source remains reproducible from Git.
+
 The disposable receiver workspace was removed after verifying no open handles
 and no source, build or runtime dependencies. Its wheel contents remain in the
 original cache and are recoverable through the same command. No Factory, DMG,
