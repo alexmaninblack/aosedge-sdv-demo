@@ -12,7 +12,7 @@ import sys
 from .core import Release, Storage, LabError, require, read_json, digest
 from .sources import prepare_sources, verify_sources
 from .artifacts import Drive, binding_entry, download, cached
-from . import build
+from . import build, cloud, containers
 
 def emit(value):
     print(json.dumps(value, sort_keys=True), flush=True)
@@ -25,7 +25,7 @@ def progress(event, detail):
 def plan(release, profile):
     return {'release': release.value['id'], 'definitionDigest': release.key, 'profile': profile,
             'sources': list(release.selected_sources(profile)), 'buildOrder': release.graph(profile),
-            'implementedBuildTargets': ['presenter'] if profile != 'operator' else [],
+            'implementedBuildTargets': ['presenter', 'cloud-sdk', *containers.TARGETS, 'backend-export'] if profile == 'developer' else [],
             'gates': release.gates(profile), 'qualified': False,
             'storage': 'Explicit external SSD; no internal fallback',
             'space': {'reserveGiB': 60, 'presenterReserveGiB': 90,
@@ -42,9 +42,17 @@ def status(storage, state):
             require('bytes' in expected and 'sha256' in expected and cached(storage, expected), 'Artifact receipt has no verified cache entry')
             artifacts.append(name)
     for key, receipt in state['builds'].items():
-        require(receipt.get('target') == 'presenter' and re.fullmatch('[a-f0-9]{64}', key), 'Unknown build receipt')
+        target = receipt.get('target')
+        require(target in ('presenter', 'cloud-sdk', *containers.TARGETS, 'backend-export') and re.fullmatch('[a-f0-9]{64}', key), 'Unknown build receipt')
         require(digest(receipt.get('inputs')) == key, 'Build receipt key differs from inputs')
-        build.verify_output(storage.path('builds/presenter/' + key))
+        if target == 'presenter':
+            build.verify_output(storage.path('builds/presenter/' + key))
+        elif target == 'cloud-sdk':
+            cloud.verify_output(storage.path('builds/cloud-sdk/' + key), receipt['inputs'])
+        elif target == 'backend-export':
+            containers.verify_export(storage.path('builds/backend-export/' + key), receipt['inputs'])
+        else:
+            containers.verify_output(storage.path('builds/' + target + '/' + key), receipt['inputs'])
     return {'status': ('SOURCES_PARTIAL' if missing else 'SOURCE_READY') if storage.profile != 'operator' else 'OPERATOR_INPUTS_PENDING',
             'sourceCount': sources, 'verifiedArtifacts': artifacts, 'buildCount': len(state['builds']),
             'missingSources': missing,
@@ -59,7 +67,10 @@ def main(argv=None):
     parser.add_argument('--sources-only', action='store_true')
     parser.add_argument('--drive-binding', type=Path)
     parser.add_argument('--drive-token-fd', type=int)
-    parser.add_argument('--target', choices=('all', 'presenter'), default='all')
+    parser.add_argument('--target', choices=('all', 'presenter', 'cloud-sdk', *containers.TARGETS, 'backend-export'), default='all')
+    parser.add_argument('--docker', type=Path, default=shutil.which('docker'))
+    parser.add_argument('--kit-inputs', type=Path)
+    parser.add_argument('--python', type=Path, default=sys.executable)
     parser.add_argument('--node', type=Path, default=shutil.which('node'))
     parser.add_argument('--npm', type=Path, default=shutil.which('npm'))
     parser.add_argument('--prepare-dependencies', action='store_true')
@@ -100,10 +111,19 @@ def main(argv=None):
                 if args.action == 'status':
                     return 0
                 return 0 if args.sources_only and not result['missingSources'] else 2
-            require(args.target == 'presenter', 'Full-profile build adapters/input closure are not yet complete; see plan and explicit supported targets')
-            require(args.node and args.npm, 'Pinned Node and npm are required')
-            key = build.presenter(storage, state, args.node, args.npm, args.prepare_dependencies, progress)
-            emit({'status': 'TARGET_BUILT_NOT_QUALIFIED', 'target': 'presenter', 'buildKey': key, 'profileReady': False})
+            require(args.target != 'all', 'Full-profile build adapters/input closure are not yet complete; see plan and explicit supported targets')
+            if args.target == 'presenter':
+                require(args.node and args.npm, 'Pinned Node and npm are required')
+                key = build.presenter(storage, state, args.node, args.npm, args.prepare_dependencies, progress)
+            elif args.target == 'cloud-sdk':
+                key = cloud.assemble(storage, state, args.kit_inputs, args.python, args.prepare_dependencies, progress)
+            else:
+                require(args.docker, 'Docker Desktop CLI required; Engine is not started automatically')
+                if args.target == 'backend-export':
+                    key = containers.export(storage, state, args.docker, args.prepare_dependencies, progress, args.python)
+                else:
+                    key = containers.assemble(storage, state, args.target, args.docker, args.prepare_dependencies, progress)
+            emit({'status': 'TARGET_BUILT_NOT_QUALIFIED', 'target': args.target, 'buildKey': key, 'profileReady': False})
             return 0
     except KeyboardInterrupt:
         emit({'status': 'INTERRUPTED', 'reason': 'Partial work retained; inspect status before resuming'})

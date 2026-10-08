@@ -18,7 +18,7 @@ from contextlib import redirect_stdout
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from reproduction import artifacts, build, cli, core, sources
+from reproduction import artifacts, build, cli, cloud, containers, core, sources
 
 
 class ReleaseTests(unittest.TestCase):
@@ -423,6 +423,302 @@ class BuildTests(StorageFixture, unittest.TestCase):
         core.atomic_json(output / 'build-receipt.json', receipt)
         with self.assertRaisesRegex(core.LabError, 'path'):
             build.verify_output(output)
+
+
+class PublicWheelTests(StorageFixture, unittest.TestCase):
+    def test_public_wheel_resumes_and_uses_no_auth(self):
+        data = b'fixture-wheel'
+        row = {'file': 'fixture-1-py3-none-any.whl', 'bytes': len(data),
+               'sha256': hashlib.sha256(data).hexdigest(),
+               'url': 'https://files.pythonhosted.org/packages/x/fixture-1-py3-none-any.whl'}
+        part = self.storage.path('cache/sha256/' + row['sha256']).with_suffix('.part')
+        part.parent.mkdir(parents=True)
+        part.write_bytes(data[:3])
+        response = io.BytesIO(data[3:])
+        response.status = 206
+        response.headers = {'Content-Range': f'bytes 3-{len(data)-1}/{len(data)}'}
+        with patch('reproduction.artifacts.urllib.request.OpenerDirector.open', return_value=response) as opened:
+            path = artifacts.public_wheel(self.storage, row)
+        request = opened.call_args.args[0]
+        self.assertNotIn('Authorization', request.headers)
+        self.assertEqual(request.headers['Range'], 'bytes=3-')
+        self.assertEqual(path.read_bytes(), data)
+        with patch('reproduction.artifacts.urllib.request.build_opener', side_effect=AssertionError):
+            self.assertEqual(artifacts.public_wheel(self.storage, row), path)
+
+    def test_public_transport_rejects_other_hosts_and_query_tokens(self):
+        row = {'file': 'x.whl', 'bytes': 1, 'sha256': 'a'*64}
+        for url in ('http://files.pythonhosted.org/packages/x.whl',
+                    'https://evil.invalid/packages/x.whl',
+                    'https://files.pythonhosted.org/packages/x.whl?token=secret',
+                    'https://user:secret@files.pythonhosted.org/packages/x.whl'):
+            with self.assertRaisesRegex(core.LabError, 'Invalid pinned'):
+                artifacts.public_wheel(self.storage, {**row, 'url': url})
+
+
+class CloudBuildTests(StorageFixture, unittest.TestCase):
+    def setUp(self):
+        super().setUp()
+        self.patch('reproduction.cloud.verify_sources', return_value=7)
+        self.patch('reproduction.cloud.external_volume', return_value=self.volume)
+        self.integration = self.storage.root / 'sources/integration'
+        owner = self.integration / 'scripts/distribution/cloud_worker.py'
+        owner.parent.mkdir(parents=True)
+        owner.write_text('# canonical owner fixture')
+        (self.integration / 'workspace').mkdir()
+        self.wheel_data = b'wheel fixture'
+        self.wheel = {'name': 'fixture', 'file': 'fixture-1-py3-none-any.whl', 'bytes': len(self.wheel_data),
+                      'sha256': hashlib.sha256(self.wheel_data).hexdigest(),
+                      'url': 'https://files.pythonhosted.org/packages/x/fixture-1-py3-none-any.whl'}
+        core.atomic_json(self.integration / 'workspace/cloud-worker-wheels.lock.json', {
+            'python': '3.12', 'platform': 'macOS-arm64', 'packages': [self.wheel]})
+        self.state['sources']['integration'] = {k: self.release.sources['integration'][k] for k in ('repository', 'revision')}
+        self.kit = self.base / 'kit'
+        self.python_source = self.kit / 'host/python'
+        (self.python_source / 'bin').mkdir(parents=True)
+        (self.python_source / 'bin/python3.12').write_bytes(b'python fixture')
+        (self.python_source / 'bin/python3.12').chmod(0o755)
+        row = self.row(self.python_source, 'bin/python3.12')
+        core.atomic_json(self.python_source / cloud.BASE_MANIFEST, {
+            'versionFamily': '3.12', 'sitePackagesCopied': False,
+            'developmentCustomizationHooksCopied': False, 'files': [row]})
+        subrow = self.row(self.python_source, cloud.BASE_MANIFEST)
+        host_path = self.python_source.parent / 'host.json'
+        core.atomic_json(host_path, {'files': [{**r, 'path': 'python/' + r['path']} for r in (row, subrow)]})
+        self.release.value['inputs'] = [{'id': 'host-runtime', 'kitPath': 'host/host.json',
+            'bytes': host_path.stat().st_size, 'sha256': artifacts.sha256(host_path)}]
+        self.commands = []
+        self.patch('reproduction.cloud.command', side_effect=self.command)
+        self.downloads = self.patch('reproduction.cloud.public_wheel', side_effect=self.download)
+
+    def row(self, root, name):
+        path = root / name
+        return {'path': name, 'bytes': path.stat().st_size, 'sha256': artifacts.sha256(path),
+                'mode': path.stat().st_mode & 0o777}
+
+    def download(self, storage, row, progress):
+        path = storage.path('cache/sha256/' + row['sha256'])
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(self.wheel_data)
+        return path
+
+    def command(self, args, env, cwd, timeout=15):
+        self.commands.append(list(map(str, args)))
+        if '-c' in args:
+            return json.dumps({'python': '3.12.14', 'packaging': '26.3', 'machine': 'arm64'})
+        output = args[args.index('--output') + 1]
+        output.mkdir()
+        (output / 'worker').write_bytes(b'fixture-output')
+        base = args[args.index('--base') + 1]
+        lock = args[args.index('--lock') + 1]
+        core.atomic_json(output / cloud.OUTPUT_MANIFEST, {
+            'status': 'ASSEMBLED_NOT_INTEGRATED', 'packageCount': 1,
+            'wheelLockSha256': artifacts.sha256(lock),
+            'baseManifestSha256': artifacts.sha256(base / cloud.BASE_MANIFEST),
+            'operatorCredentialsCopied': False, 'runtimeSelectorsChanged': False,
+            'externalDistributionApproved': False, 'files': [self.row(output, 'worker')]})
+        return ''
+
+    def invoke(self, dependencies=True):
+        return cloud.assemble(self.storage, self.state, self.kit, sys.executable, dependencies, lambda *e: None)
+
+    def test_owner_first_build_and_repeat_without_download_or_assembly(self):
+        key = self.invoke()
+        self.commands.clear()
+        self.downloads.reset_mock()
+        self.assertEqual(self.invoke(False), key)
+        self.downloads.assert_not_called()
+        self.assertFalse(any('--output' in a for a in self.commands))
+        self.assertEqual(self.state['builds'][key]['target'], 'cloud-sdk')
+
+    def test_completed_owner_receipt_recovers_missing_outer_state(self):
+        key = self.invoke()
+        self.state['builds'].clear()
+        self.commands.clear()
+        self.assertEqual(self.invoke(False), key)
+        self.assertFalse(any('--output' in a for a in self.commands))
+
+    def test_no_acquisition_without_explicit_flag(self):
+        with self.assertRaisesRegex(core.LabError, 'prepare-dependencies'):
+            self.invoke(False)
+        self.downloads.assert_not_called()
+
+    def test_wrong_host_manifest_rejected_before_acquisition(self):
+        (self.python_source.parent / 'host.json').write_text('{}')
+        with self.assertRaisesRegex(core.LabError, 'digest differs'):
+            self.invoke()
+        self.downloads.assert_not_called()
+
+    def test_kit_extra_packages_never_enter_python_base(self):
+        (self.python_source / 'not-selected').write_text('must not copy')
+        self.invoke()
+        self.assertFalse(any(self.storage.root.glob('inputs/python-base/*/not-selected')))
+
+    def test_extra_output_and_mode_changes_refused(self):
+        key = self.invoke()
+        output = self.storage.root / 'builds/cloud-sdk' / key
+        (output / 'extra').write_text('foreign')
+        with self.assertRaisesRegex(core.LabError, 'inventory differs'):
+            self.invoke()
+        (output / 'extra').unlink()
+        (output / 'worker').chmod(0o777)
+        with self.assertRaisesRegex(core.LabError, 'mode differs'):
+            self.invoke()
+
+    def test_corrupt_base_and_path_escape_rejected(self):
+        (self.python_source / 'bin/python3.12').write_bytes(b'corrupt')
+        with self.assertRaisesRegex(core.LabError, 'digest differs'):
+            self.invoke()
+        with self.assertRaisesRegex(core.LabError, 'path'):
+            cloud.relative('../escape')
+
+    def test_kit_on_other_volume_is_rejected(self):
+        with patch('reproduction.cloud.external_volume', return_value={'uuid': 'OTHER'}):
+            with self.assertRaisesRegex(core.LabError, 'selected external'):
+                self.invoke()
+
+    def test_declared_venv_entry_point_is_not_dereferenced(self):
+        python = self.base / 'venv/bin/python3'
+        python.parent.mkdir(parents=True)
+        python.symlink_to(sys.executable)
+        cloud.assemble(self.storage, self.state, self.kit, python, True, lambda *e: None)
+        self.assertTrue(all(args[0] == str(python) for args in self.commands))
+
+
+class BackendBuildTests(StorageFixture, unittest.TestCase):
+    def setUp(self):
+        super().setUp()
+        self.patch('reproduction.containers.verify_sources', return_value=7)
+        self.client = self.patch('reproduction.containers.Desktop').return_value
+        self.client.version = 'fixture-engine'
+        self.client.run.side_effect = self.build_image
+        for role, _ in containers.TARGETS.values():
+            root = self.storage.root / 'sources' / role
+            root.mkdir(parents=True)
+            (root / 'Dockerfile').write_text('# owner Dockerfile fixture')
+            self.state['sources'][role] = {k: self.release.sources[role][k] for k in ('repository', 'revision')}
+
+    def build_image(self, args, timeout=30):
+        self.assertNotIn('run', args)
+        self.assertNotIn('--push', args)
+        self.assertNotIn('--tag', args)
+        self.assertIn('linux/arm64', args)
+        Path(args[args.index('--iidfile') + 1]).write_text('sha256:' + 'a'*64)
+        return ''
+
+    def invoke(self, target='brake-backend', dependencies=True):
+        return containers.assemble(self.storage, self.state, target, sys.executable, dependencies, lambda *e: None)
+
+    def test_each_backend_build_uses_owner_then_reuses_exact_image(self):
+        for target in containers.TARGETS:
+            key = self.invoke(target)
+            self.client.run.reset_mock()
+            self.assertEqual(self.invoke(target, False), key)
+            self.client.run.assert_not_called()
+            self.client.image.assert_called_with('sha256:' + 'a'*64,
+                self.state['builds'][key]['inputs']['source']['revision'], target.split('-')[0])
+
+    def test_first_build_requires_explicit_network_preparation(self):
+        with self.assertRaisesRegex(core.LabError, 'prepare-dependencies'):
+            self.invoke(dependencies=False)
+        self.client.run.assert_not_called()
+
+    def test_complete_iid_recovers_without_rebuild(self):
+        key = self.invoke()
+        self.state['builds'].clear()
+        (self.storage.root / 'builds/brake-backend' / key / 'build-receipt.json').unlink()
+        self.client.run.reset_mock()
+        self.assertEqual(self.invoke(dependencies=False), key)
+        self.client.run.assert_not_called()
+
+    def test_changed_image_receipt_rejected(self):
+        key = self.invoke()
+        (self.storage.root / 'builds/brake-backend' / key / 'image-id').write_text('sha256:' + 'b'*64)
+        with self.assertRaisesRegex(core.LabError, 'differs'):
+            self.invoke()
+
+    def test_missing_image_not_silently_rebuilt(self):
+        self.invoke()
+        self.client.run.reset_mock()
+        self.client.image.side_effect = core.LabError('Image unavailable')
+        with self.assertRaisesRegex(core.LabError, 'unavailable'):
+            self.invoke()
+        self.client.run.assert_not_called()
+
+    def export_fixture(self):
+        self.state['sources']['integration'] = {k: self.release.sources['integration'][k] for k in ('repository', 'revision')}
+        owner = self.storage.root / 'sources/integration/scripts/distribution/backend_archive.py'
+        owner.parent.mkdir(parents=True)
+        owner.write_text('# existing archive owner fixture')
+        self.exports = []
+        def run(args, timeout=30):
+            if args[:2] == ['image', 'save']:
+                self.exports.append(args)
+                Path(args[args.index('--output') + 1]).write_bytes(b'archive-fixture')
+                return ''
+            return self.build_image(args, timeout)
+        self.client.run.side_effect = run
+        def verify(args, env, cwd, timeout=30):
+            archive = args[args.index('--archive') + 1]
+            expected = core.read_json(args[args.index('--inventory') + 1])['backendImages']
+            core.atomic_json(args[args.index('--receipt') + 1], {
+                'status': 'OFFLINE_INTEGRITY_VERIFIED_NOT_CLEAN_ENGINE_QUALIFIED',
+                'operatorDataIncluded': False, 'externalDistributionApproved': False,
+                'archiveBytes': archive.stat().st_size, 'archiveSha256': artifacts.sha256(archive),
+                'images': [{'team': r['team'], 'imageId': r['localImageId'], 'source': r['source']} for r in expected]})
+            return ''
+        return self.patch('reproduction.containers.command', side_effect=verify)
+
+    def export(self):
+        return containers.export(self.storage, self.state, sys.executable, True, lambda *e: None, sys.executable)
+
+    def test_export_uses_owner_and_reuses_without_save_or_rehash(self):
+        verifier = self.export_fixture()
+        key = self.export()
+        self.assertEqual(len(self.exports), 1)
+        self.assertEqual(verifier.call_count, 1)
+        verifier.reset_mock()
+        self.exports.clear()
+        self.assertEqual(self.export(), key)
+        self.assertFalse(self.exports)
+        verifier.assert_not_called()
+
+    def test_export_corruption_and_extra_file_refused(self):
+        self.export_fixture()
+        key = self.export()
+        output = self.storage.root / 'builds/backend-export' / key
+        (output / 'images.tar').write_bytes(b'x' * len(b'archive-fixture'))
+        with self.assertRaisesRegex(core.LabError, 'digest differs'):
+            self.export()
+
+    def test_export_recovers_owner_success_without_duplicate_save(self):
+        self.export_fixture()
+        key = self.export()
+        del self.state['builds'][key]
+        (self.storage.root / 'builds/backend-export' / key / 'build-receipt.json').unlink()
+        self.exports.clear()
+        self.assertEqual(self.export(), key)
+        self.assertFalse(self.exports)
+
+
+class DockerStorageTests(StorageFixture, unittest.TestCase):
+    def test_internal_or_unconfigured_docker_is_blocked_before_build(self):
+        for setting in ({}, {'DataFolder': str(self.base / 'internal')}):
+            with patch.object(self.storage, 'environment', return_value={}), \
+                 patch('reproduction.containers.command', return_value='unix:///local/docker.sock'), \
+                 patch('reproduction.containers.stat.S_ISSOCK', return_value=True), \
+                 patch('reproduction.containers.Path.stat', return_value=SimpleNamespace(st_mode=0)), \
+                 patch('reproduction.containers.Path.resolve', return_value=Path(sys.executable)), \
+                 patch('reproduction.containers.regular', side_effect=lambda p: p), \
+                 patch('reproduction.containers.read_json', return_value=setting), \
+                 patch('reproduction.containers.external_volume', side_effect=core.LabError('Internal disk')):
+                with self.assertRaisesRegex(core.LabError, 'Internal disk' if setting else 'Move Docker disk'):
+                    containers.Desktop(self.storage, sys.executable)
+
+    def test_remote_engine_refused(self):
+        with patch('reproduction.containers.command', return_value='tcp://remote.invalid:2376'):
+            with self.assertRaisesRegex(core.LabError, 'local Docker'):
+                containers.Desktop(self.storage, sys.executable)
 
 
 class CommandTests(unittest.TestCase):

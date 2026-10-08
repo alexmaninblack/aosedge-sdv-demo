@@ -4,7 +4,7 @@
 # Release Definition and Reproduction Contract
 
 - Status: R1 complete; delivery and version policy accepted; acquisition and reproduction unqualified
-- Version: 1.4
+- Version: 1.5
 - Prepared: 2026-10-07
 - Owner: Demo Solution Team
 - Scope: [R1 work packet](../../docs/planning/active/work-packets/human-friendly-reproduction.md)
@@ -169,9 +169,24 @@ its downstream build key. A supported target build is not a completed profile,
 signed installer, publication or native acceptance. Unresolved Factory/native
 source inputs remain gated rather than being taken from undeclared warm state.
 
-The initial supported build target is `presenter`: the pinned owner's native
+The supported developer build targets are `presenter`, `cloud-sdk`,
+`brake-backend`, `tire-backend` and `backend-export`.
+`presenter` uses the pinned owner's native
 Presenter, Driving Control and web UI recipe. It performs local ad-hoc signing
 required by that recipe, not Developer ID signing, notarization or publication.
+`cloud-sdk` uses the pinned Cloud worker assembly recipe, hash-locked public
+wheels and the isolated Python base selected from an explicit retained kit on
+the bound SSD. The release-to-host-to-Python manifest chain and payload hashes
+are checked; other kit files are not copied. Public wheel acquisition shares
+the bounded digest cache and resume checks, without Drive credentials. The
+worker is assembled offline and does not enroll identities or contact Cloud.
+The backend adapters require an already-running local Docker Desktop with its
+active disk on the bound SSD. They call the pinned component Dockerfiles and
+existing OCI export verifier; they do not start/stop the Engine, run containers,
+overwrite tags, publish images or reuse undeclared registry credentials.
+Build layers and client caches stay on external storage. Image receipts bind
+source/platform/runtime identity; export receipts bind the complete archive.
+Status-only receipt checks and live Engine image checks are distinguished.
 The remaining component/full-profile adapters are not implemented by this
 checkpoint. See [R2 commands and evidence](../../docs/development/release-reproduction-r2.md)
 for the exercised scope, exit codes and remaining gates.

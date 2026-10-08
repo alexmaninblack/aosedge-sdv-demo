@@ -301,3 +301,51 @@ no demo or shared Docker infrastructure was started or stopped.
 Next: actual authorized Drive acquisition/binding and remaining component
 adapters. Keep R2 in progress; do not repeat its completed source/UI proof or
 treat the empty Drive folder as a released product.
+
+## 2026 October 8 R2 Cloud and backend build proof
+
+Continued the authorized R2 packet without changing the retained release pins.
+The integration tooling now delegates to the existing owners for Cloud SDK
+assembly, Brake and Tire backend Dockerfile builds, and backend OCI export.
+Together with the earlier UI target, five targets have real first-build and
+no-rebuild repeat proof. Sources, public wheel downloads, build caches,
+temporary files and outputs use the bound external SSD. The reproduction
+workspace occupies approximately 582 MiB, excluding the shared Docker disk.
+
+The Cloud adapter derives only the manifest-bound isolated Python base from
+the explicitly selected retained kit and verifies 41 public wheels. It does
+not copy the whole kit, contact Cloud, enroll identities or install packages
+into host Python. Backend adapters require an already-running local Engine
+whose actual backing disk is on the same external volume. They build immutable
+image IDs without running containers, replacing tags or publishing images.
+The canonical export verifier accepted the 82,129,920-byte archive. Exact
+fingerprints and scope are in the [R2 evidence](../development/release-reproduction-r2.md).
+
+The user separately authorized shared Docker storage relocation. A stopped
+sparse copy was compared against the entire original logical disk, restored
+at the location selected by Docker's settings, and reconciled against all
+22 prior images, five containers, three volumes and 314 cache records. Only
+the verified internal duplicate and empty migration intermediate were removed;
+approximately 15 GiB was released internally. This host-maintenance operation
+does not become part of R2 build lifecycle. Docker now requires the SSD; stop
+it and verify released handles before a separately requested SSD disconnect.
+Ordinary end-of-test cleanup must still preserve the shared Engine and
+unrelated running workloads.
+
+Validation: 59 targeted reproduction tests passed. The complete integration
+suite ran 866 tests in 82.275 seconds: 865 passed and one skipped. No new demo
+container, VM, simulator, Presenter or Setup was launched. Build/test runners
+exited and Docker Dashboard was closed; the shared Engine remains running.
+Documentation checks passed for 334 Markdown documents, 662 stable identifiers
+and 38 Mermaid diagrams; whitespace and public-source checks, including new
+adapter files, also passed.
+Cloud, Production, existing tags, component sources and private video are
+unchanged. This is a local source checkpoint, not a remote push, new installer,
+release publication or runtime qualification.
+
+R2 remains in progress. Continue with authenticated Drive input binding and
+the remaining component adapters. Gateway/native SDK, VDP/service product
+recipes, full package assembly and effective Factory/full-source input closure
+remain required; R3 reader-facing documentation and R4 fresh reproduction/native
+acceptance are separate. Reuse the verified five-target outputs and shared
+caches rather than repeating builds or copying the retained kit.

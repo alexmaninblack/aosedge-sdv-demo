@@ -9,6 +9,7 @@ import re
 import stat
 import urllib.error
 import urllib.request
+from urllib.parse import urlsplit
 from .core import LabError, require, regular, read_json, atomic_json
 
 CHUNK = 4 * 2**20
@@ -104,6 +105,12 @@ def download(storage, drive, file_id, folder_id, expected, progress=lambda *args
             meta.get('capabilities', {}).get('canDownload') is True, 'Drive download not permitted')
     require(str(meta.get('size')) == str(expected['bytes']) and
             meta.get('sha256Checksum') == expected['sha256'] and meta.get('version'), 'Drive artifact metadata differs from release')
+    def unchanged():
+        require(drive.metadata(file_id) == meta, 'Drive artifact changed during download; not promoted')
+    return receive(storage, expected, lambda offset: drive.content(file_id, offset), progress, unchanged)
+
+def receive(storage, expected, open_content, progress, before_promote=lambda: None):
+    """Shared bounded/resumable transport; callers establish input authority."""
     path = storage.path('cache/sha256/' + expected['sha256'])
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     partial = path.with_suffix('.part')
@@ -111,13 +118,13 @@ def download(storage, drive, file_id, folder_id, expected, progress=lambda *args
     require(offset <= expected['bytes'], 'Partial artifact exceeds expected size')
     storage.check(additional=expected['bytes'] - offset)
     if offset < expected['bytes']:
-        with drive.content(file_id, offset) as response:
-            require(response.status in (200, 206), 'Unexpected Drive download status')
+        with open_content(offset) as response:
+            require(response.status in (200, 206), 'Unexpected download status')
             if response.status == 206:
                 require(response.headers.get('Content-Range') == f'bytes {offset}-{expected["bytes"]-1}/{expected["bytes"]}',
-                        'Drive byte range differs; partial data preserved')
+                        'Download byte range differs; partial data preserved')
             else:
-                require(offset == 0, 'Drive ignored resume range; partial data preserved')
+                require(offset == 0, 'Download ignored resume range; partial data preserved')
             require(response.headers.get('Content-Encoding', 'identity') == 'identity', 'Unexpected content encoding')
             declared = response.headers.get('Content-Length')
             require(declared is None or declared == str(expected['bytes']-offset), 'Download length differs')
@@ -139,9 +146,35 @@ def download(storage, drive, file_id, folder_id, expected, progress=lambda *args
                 raise LabError('Download interrupted; partial data retained') from None
     require(offset == expected['bytes'], 'Download incomplete; partial data retained')
     require(sha256(partial, lambda: storage.check(reserve=0)) == expected['sha256'], 'Downloaded artifact digest differs; not promoted')
-    require(drive.metadata(file_id) == meta, 'Drive artifact changed during download; not promoted')
+    before_promote()
     storage.check(reserve=0)
     os.rename(partial, path)
     atomic_json(path.with_suffix('.json'), {'sha256': expected['sha256'], 'identity': identity(path)})
     progress('ARTIFACT_VERIFIED', expected['sha256'][:12])
     return path
+
+def public_wheel(storage, expected, progress=lambda *args: None):
+    """Only public hash-locked PyPI wheels, with no ambient proxy/auth use."""
+    url = urlsplit(expected['url'])
+    require(url.scheme == 'https' and url.netloc == 'files.pythonhosted.org'
+            and url.path.startswith('/packages/') and not url.query and not url.fragment
+            and url.path.rsplit('/', 1)[-1] == expected['file']
+            and re.fullmatch(r'[A-Za-z0-9_.+-]+\.whl', expected['file'])
+            and re.fullmatch(r'[a-f0-9]{64}', expected['sha256'])
+            and type(expected['bytes']) is int and 0 < expected['bytes'] < 512*2**20,
+            'Invalid pinned public wheel')
+    hit = cached(storage, expected)
+    if hit:
+        progress('ARTIFACT_REUSED', expected['sha256'][:12])
+        return hit
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
+    def content(offset):
+        request = urllib.request.Request(expected['url'], headers={
+            'Accept-Encoding': 'identity', 'Range': f'bytes={offset}-'})
+        try:
+            return opener.open(request, timeout=30)
+        except urllib.error.HTTPError as exc:
+            raise LabError(f'Public wheel request rejected (HTTP {exc.code}); no response body recorded') from None
+        except (urllib.error.URLError, OSError):
+            raise LabError('Public wheel download interrupted; partial data retained') from None
+    return receive(storage, expected, content, progress)

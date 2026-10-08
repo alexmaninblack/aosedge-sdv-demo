@@ -4,7 +4,7 @@
 # Human Friendly Repository and Release Reproduction Plan
 
 - Status: R1 complete; R2 implementation in progress; R3 and R4 planned
-- Version: 0.5
+- Version: 0.6
 - Prepared: 2026-10-07
 - Owner: Demo Solution Team
 - Parent: [Installable distribution and reproducibility](../installable-distribution-and-reproducibility.md)
@@ -197,6 +197,16 @@ and caches, an offline-tested resumable Drive reader, and the existing native/we
 UI build adapter. Seven public source roles were prepared from remote pins;
 first build and reuse passed. 38 targeted tests and the 845-test integration
 suite passed (one suite skip).
+
+The subsequent Cloud SDK adapter delegates to the pinned owner recipe, derives
+only the declared isolated Python base from an explicit SSD kit, and acquires
+41 digest-verified public wheels. Actual assembly and no-download/no-rebuild
+repeat passed. This is a second target proof, not a complete developer profile.
+Both backend Dockerfile adapters and their OCI export now also pass first-build
+and no-rebuild repeats. Their guard requires Docker's active backing disk on the
+selected SSD. The separately authorized host migration preserved existing
+Docker data and freed the internal duplicate; R2 itself does not manage Engine
+lifecycle. Five target proofs do not close the remaining input/profile gates.
 
 R2 remains **in progress**. No complete profile, new installer or Drive download
 is qualified. Next work is authenticated release-input binding/acquisition and
