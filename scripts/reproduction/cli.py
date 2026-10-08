@@ -12,7 +12,7 @@ import sys
 from .core import Release, Storage, LabError, require, read_json, digest
 from .sources import prepare_sources, verify_sources
 from .artifacts import Drive, binding_entry, download, cached
-from . import build, cloud, containers, services, gateway, packaging
+from . import build, cloud, containers, services, gateway, packaging, host
 
 def emit(value):
     print(json.dumps(value, sort_keys=True), flush=True)
@@ -25,7 +25,7 @@ def progress(event, detail):
 def plan(release, profile):
     return {'release': release.value['id'], 'definitionDigest': release.key, 'profile': profile,
             'sources': list(release.selected_sources(profile)), 'buildOrder': release.graph(profile),
-            'implementedBuildTargets': ['presenter', 'cloud-sdk', *containers.TARGETS, 'backend-export', *services.TARGETS, 'gateway', 'preparation'] if profile == 'developer' else [],
+            'implementedBuildTargets': ['presenter', 'cloud-sdk', *containers.TARGETS, 'backend-export', *services.TARGETS, 'gateway', 'preparation', 'host-runtime'] if profile == 'developer' else [],
             'serviceProfiles': {'brake-service': ['v1', 'v2', 'v3'], 'tire-service': ['v1']},
             'gates': release.gates(profile), 'qualified': False,
             'storage': 'Explicit external SSD; no internal fallback',
@@ -44,7 +44,7 @@ def status(storage, state):
             artifacts.append(name)
     for key, receipt in state['builds'].items():
         target = receipt.get('target')
-        require(target in ('presenter', 'cloud-sdk', *containers.TARGETS, 'backend-export', *services.TARGETS, 'gateway', 'preparation') and re.fullmatch('[a-f0-9]{64}', key), 'Unknown build receipt')
+        require(target in ('presenter', 'cloud-sdk', *containers.TARGETS, 'backend-export', *services.TARGETS, 'gateway', 'preparation', 'host-runtime') and re.fullmatch('[a-f0-9]{64}', key), 'Unknown build receipt')
         require(digest(receipt.get('inputs')) == key, 'Build receipt key differs from inputs')
         if target == 'presenter':
             build.verify_output(storage.path('builds/presenter/' + key))
@@ -58,6 +58,8 @@ def status(storage, state):
             gateway.verify_output(storage.path('builds/gateway/' + key), receipt['inputs'])
         elif target == 'preparation':
             packaging.verify_preparation(storage.path('builds/preparation/' + key), receipt['inputs'])
+        elif target == 'host-runtime':
+            host.verify(storage.path('builds/host-runtime/' + key), receipt['inputs'])
         else:
             containers.verify_output(storage.path('builds/' + target + '/' + key), receipt['inputs'])
     return {'status': ('SOURCES_PARTIAL' if missing else 'SOURCE_READY') if storage.profile != 'operator' else 'OPERATOR_INPUTS_PENDING',
@@ -74,7 +76,7 @@ def main(argv=None):
     parser.add_argument('--sources-only', action='store_true')
     parser.add_argument('--drive-binding', type=Path)
     parser.add_argument('--drive-token-fd', type=int)
-    parser.add_argument('--target', choices=('all', 'presenter', 'cloud-sdk', *containers.TARGETS, 'backend-export', *services.TARGETS, 'gateway', 'preparation'), default='all')
+    parser.add_argument('--target', choices=('all', 'presenter', 'cloud-sdk', *containers.TARGETS, 'backend-export', *services.TARGETS, 'gateway', 'preparation', 'host-runtime'), default='all')
     parser.add_argument('--gateway-sdk', type=Path)
     parser.add_argument('--test-tmp-parent', type=Path)
     parser.add_argument('--resume', action='store_true', help='Explicitly resume an inspected incomplete Gateway build')
@@ -135,6 +137,8 @@ def main(argv=None):
             elif args.target == 'preparation':
                 key = packaging.preparation(storage, state, args.kit_inputs, args.python, progress,
                                             args.prepare_dependencies)
+            elif args.target == 'host-runtime':
+                key = host.assemble(storage, state, args.kit_inputs, args.gateway_sdk, args.python, progress)
             else:
                 require(args.docker, 'Docker Desktop CLI required; Engine is not started automatically')
                 if args.target in services.TARGETS:
