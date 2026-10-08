@@ -18,7 +18,7 @@ from contextlib import redirect_stdout
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from reproduction import artifacts, build, cli, cloud, containers, core, sources
+from reproduction import artifacts, build, cli, cloud, containers, core, sources, services, gateway_sdk, gateway
 
 
 class ReleaseTests(unittest.TestCase):
@@ -700,6 +700,285 @@ class BackendBuildTests(StorageFixture, unittest.TestCase):
         self.assertEqual(self.export(), key)
         self.assertFalse(self.exports)
 
+
+class ServiceBuildTests(StorageFixture, unittest.TestCase):
+    def setUp(self):
+        super().setUp()
+        self.patch('reproduction.services.verify_sources', return_value=7)
+        self.patch('reproduction.services.git', return_value='1780000000')
+        self.client = self.patch('reproduction.services.Desktop').return_value
+        self.client.version = 'fixture-engine'
+        self.client.run.side_effect = self.export_product
+        self.owner = self.patch('reproduction.services.owner_check', return_value={
+            'status': 'OWNER_PRODUCT_CHECK_PASSED', 'testCount': 8})
+        for role in ('functional-service', 'tire-health-service', 'integration'):
+            root = self.storage.root / 'sources' / role
+            root.mkdir(parents=True)
+            (root / 'Dockerfile').write_text('# pinned recipe fixture')
+            self.state['sources'][role] = {k: self.release.sources[role][k] for k in ('repository', 'revision')}
+
+    def export_product(self, args, timeout=30):
+        self.assertEqual(args[:2], ['buildx', 'build'])
+        self.assertIn('linux/arm64', args)
+        self.assertNotIn('--push', args)
+        self.assertNotIn('--tag', args)
+        self.assertNotIn('run', args)
+        destination = next(str(s)[len('type=local,dest='):] for s in args if str(s).startswith('type=local,dest='))
+        output = Path(destination)
+        output.mkdir()
+        team = 'brake' if any(str(s).startswith('BHS_') for s in args) else 'tire'
+        profile = next(str(s).split('=')[1] for s in args if '_FUNCTIONAL_PROFILE=' in str(s))
+        revision = next(str(s).split('=')[1] for s in args if str(s).startswith('SOURCE_REVISION='))
+        core.atomic_json(output / 'product-build.json', {
+            'sourceRevision': revision, 'functionalProfile': profile, 'sourceDateEpoch': 1780000000,
+            'kind': team + '-health-linux-arm64-product', 'tests': {'ctest': 'passed'}, 'liveQualified': False})
+        (output / 'binary').write_bytes(b'product fixture')
+        (output / 'binary').chmod(0o755)
+        return ''
+
+    def invoke(self, target='brake-service', profile='v1', dependencies=True):
+        return services.assemble(self.storage, self.state, target, profile, sys.executable, sys.executable,
+                                 dependencies, lambda *e: None)
+
+    def test_four_profiles_use_recipe_and_reuse_without_build_or_owner(self):
+        keys = []
+        for target, profile in [('brake-service', 'v1'), ('brake-service', 'v2'), ('brake-service', 'v3'), ('tire-service', 'v1')]:
+            key = self.invoke(target, profile)
+            keys.append(key)
+            self.client.run.reset_mock()
+            self.owner.reset_mock()
+            self.assertEqual(self.invoke(target, profile, False), key)
+            self.client.run.assert_not_called()
+            self.owner.assert_not_called()
+        self.assertEqual(len(set(keys)), 4)
+
+    def test_profile_required_and_tire_extra_profiles_rejected(self):
+        for target, profile in [('brake-service', None), ('tire-service', 'v2'), ('tire-service', 'v3')]:
+            with self.assertRaisesRegex(core.LabError, 'functional-profile'):
+                self.invoke(target, profile)
+        self.client.run.assert_not_called()
+
+    def test_network_preparation_required_before_first_build(self):
+        with self.assertRaisesRegex(core.LabError, 'prepare-dependencies'):
+            self.invoke(dependencies=False)
+        self.client.run.assert_not_called()
+
+    def test_owner_rejection_preserves_output_without_promotion(self):
+        self.owner.side_effect = core.LabError('owner rejected')
+        with self.assertRaisesRegex(core.LabError, 'owner rejected'):
+            self.invoke()
+        self.assertEqual(self.state['builds'], {})
+        self.assertEqual(len(list((self.storage.root / 'builds/brake-service').glob('*/product-build.json'))), 1)
+
+    def test_receipt_recovery_does_not_rebuild(self):
+        key = self.invoke()
+        self.state['builds'].clear()
+        (self.storage.root / 'builds/brake-service' / key / 'build-receipt.json').unlink()
+        self.client.run.reset_mock()
+        self.assertEqual(self.invoke(dependencies=False), key)
+        self.client.run.assert_not_called()
+
+    def test_partial_export_is_not_rebuilt(self):
+        key = self.invoke()
+        self.state['builds'].clear()
+        (self.storage.root / 'builds/brake-service' / key / 'product-build.json').unlink()
+        self.client.run.reset_mock()
+        with self.assertRaisesRegex(core.LabError, 'Incomplete'):
+            self.invoke()
+        self.client.run.assert_not_called()
+
+    def test_corruption_modes_extra_and_linked_files_are_rejected(self):
+        key = self.invoke()
+        output = self.storage.root / 'builds/brake-service' / key
+        binary = output / 'binary'
+        original = binary.read_bytes()
+        binary.write_bytes(b'corrupt')
+        with self.assertRaises(core.LabError):
+            self.invoke()
+        binary.write_bytes(original)
+        binary.chmod(0o644)
+        with self.assertRaises(core.LabError):
+            self.invoke()
+        binary.chmod(0o755)
+        extra = output / 'extra'
+        extra.write_text('unlisted')
+        with self.assertRaises(core.LabError):
+            self.invoke()
+        extra.unlink()
+        extra.symlink_to(binary)
+        with self.assertRaises(core.LabError):
+            self.invoke()
+
+    def test_product_identity_change_with_updated_inventory_is_rejected(self):
+        key = self.invoke()
+        output = self.storage.root / 'builds/brake-service' / key
+        product = core.read_json(output / 'product-build.json')
+        product['functionalProfile'] = 'v2'
+        core.atomic_json(output / 'product-build.json', product)
+        receipt = core.read_json(output / 'build-receipt.json')
+        for row in receipt['files']:
+            if row['path'] == 'product-build.json':
+                row.update(bytes=(output / row['path']).stat().st_size, sha256=artifacts.sha256(output / row['path']))
+        core.atomic_json(output / 'build-receipt.json', receipt)
+        with self.assertRaisesRegex(core.LabError, 'product receipt'):
+            self.invoke()
+
+
+class GatewaySDKTests(StorageFixture, unittest.TestCase):
+    def setUp(self):
+        super().setUp()
+        self.patch('reproduction.gateway_sdk.external_volume', return_value=self.volume)
+        self.carla = self.base / 'carla'
+        self.openssl = self.base / 'openssl'
+        self.output = self.storage.root / 'sdk'
+        self.carla.mkdir()
+        (self.carla / 'archive').write_bytes(b'accepted fixture')
+        self.patch('reproduction.gateway_sdk.ANCHORS', {'archive': artifacts.sha256(self.carla / 'archive')})
+        for name, value in {'include/openssl/opensslv.h': '# define OPENSSL_VERSION_TEXT "OpenSSL 3.6.3 fixture"',
+                'lib/libssl.3.dylib': 'ssl', 'lib/libcrypto.3.dylib': 'crypto', 'LICENSE.txt': 'license',
+                'certs/private.pem': 'must not copy', 'lib/ossl-modules/unused': 'not selected'}.items():
+            path = self.openssl / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(value)
+
+    def invoke(self):
+        return gateway_sdk.freeze(self.carla, self.openssl, self.output)
+
+    def test_freeze_only_selected_inputs_and_refuse_overwrite(self):
+        result = self.invoke()
+        self.assertEqual(result['files'], 5)
+        self.assertFalse((self.output / 'openssl/certs').exists())
+        self.assertFalse((self.output / 'openssl/lib/ossl-modules').exists())
+        self.assertEqual(result['manifestSha256'], artifacts.sha256(self.output / 'sdk-manifest.json'))
+        with self.assertRaisesRegex(core.LabError, 'new'):
+            self.invoke()
+
+    def test_wrong_accepted_anchor_rejected_before_copy(self):
+        (self.carla / 'archive').write_bytes(b'changed')
+        with self.assertRaisesRegex(core.LabError, 'anchors'):
+            self.invoke()
+        self.assertFalse(self.output.exists())
+
+    def test_symlinked_input_directory_rejected(self):
+        (self.carla / 'link').symlink_to(self.openssl, target_is_directory=True)
+        with self.assertRaisesRegex(core.LabError, 'Symlink'):
+            self.invoke()
+        self.assertFalse(self.output.exists())
+
+    def test_absent_sdk_is_explicit_gate(self):
+        with self.assertRaisesRegex(core.LabError, 'gateway-sdk'):
+            gateway.sdk_input(self.storage, None)
+
+    def test_manifest_pin_and_payload_are_both_checked(self):
+        result = self.invoke()
+        self.patch('reproduction.gateway.external_volume', return_value=self.volume)
+        lock = self.base / 'sdk-lock.json'
+        core.atomic_json(lock, {k: result[k] for k in ('manifestSha256', 'files', 'bytes')})
+        self.patch('reproduction.gateway.SDK_LOCK', lock)
+        gateway.sdk_input(self.storage, self.output)
+        (self.output / 'carla/archive').chmod(0o644)
+        (self.output / 'carla/archive').write_bytes(b'corrupt')
+        with self.assertRaises(core.LabError):
+            gateway.sdk_input(self.storage, self.output)
+
+
+class GatewayBuildTests(StorageFixture, unittest.TestCase):
+    NAMES = ['viss_network', 'qm_advisory', 'runtime_reports_version', 'keyboard_control_native', 'm6_gateway_trust']
+
+    def setUp(self):
+        super().setUp()
+        self.patch('reproduction.gateway.verify_sources', return_value=7)
+        self.patch('reproduction.gateway.sdk_input', return_value={'manifestSha256': 'a'*64})
+        self.patch('reproduction.gateway.temporary_parent', return_value=self.storage.root)
+        self.patch('reproduction.gateway.command', return_value='fixture-tool-version')
+        self.runner = self.patch('reproduction.gateway.run_command', side_effect=self.owner_step)
+        source = self.storage.root / 'sources/vehicle-gateway'
+        source.mkdir(parents=True)
+        (source / 'CMakeLists.txt').write_text('# exact owner recipe')
+        self.state['sources']['vehicle-gateway'] = {k: self.release.sources['vehicle-gateway'][k]
+                                                   for k in ('repository', 'revision')}
+        self.cmake = self.base / 'cmake'
+        self.cmake.write_text('fixture')
+        (self.base / 'ctest').write_text('fixture')
+
+    def owner_step(self, args, **kwargs):
+        args = list(map(str, args))
+        output = Path(kwargs['cwd'])
+        stdout = b''
+        if '--build' in args:
+            self.assertEqual(args[:2], ['/usr/bin/sandbox-exec', '-f'])
+            for name in gateway.BINARIES:
+                (output / name).write_bytes(b'fixture-binary')
+                (output / name).chmod(0o755)
+        elif '--show-only=json-v1' in args:
+            stdout = json.dumps({'tests': [{'name': name} for name in self.NAMES]}).encode()
+        elif '--output-junit' in args:
+            self.assertTrue(kwargs['env']['DYLD_LIBRARY_PATH'].startswith(str(self.storage.root)))
+            self.assertEqual(kwargs['env']['CARLA_CACHE_DIR'], str(self.storage.root / 'cache/carla'))
+            self.assertTrue(Path(kwargs['env']['TMPDIR']).is_dir())
+            (output / 'ctest-results.xml').write_text('<testsuite>' + ''.join(
+                '<testcase name="' + name + '" status="run" />' for name in self.NAMES) + '</testsuite>')
+        elif '-archs' in args:
+            stdout = b'arm64\n'
+        elif '-S' in args:
+            self.assertIn('-DCARLA_EGO_WITH_CARLA=ON', args)
+            self.assertIn('-DCARLA_EGO_WITH_VISS=ON', args)
+            self.assertIn('-DBUILD_TESTING=ON', args)
+        return SimpleNamespace(returncode=0, stdout=stdout, stderr=b'')
+
+    def invoke(self):
+        return gateway.assemble(self.storage, self.state, self.storage.root / 'sdk', self.cmake,
+                                sys.executable, lambda *e: None)
+
+    def test_owner_compile_tests_and_repeat(self):
+        key = self.invoke()
+        self.runner.reset_mock()
+        self.assertEqual(self.invoke(), key)
+        self.runner.assert_not_called()
+
+    def test_completed_receipt_recovered_without_rebuild(self):
+        key = self.invoke()
+        self.state['builds'].clear()
+        self.runner.reset_mock()
+        self.assertEqual(self.invoke(), key)
+        self.runner.assert_not_called()
+
+    def test_compile_failure_preserves_log_without_state(self):
+        self.runner.return_value = SimpleNamespace(returncode=1, stdout=b'', stderr=b'compile fixture')
+        self.runner.side_effect = None
+        with self.assertRaisesRegex(core.LabError, 'configure failed'):
+            self.invoke()
+        self.assertEqual(self.state['builds'], {})
+        self.assertEqual(len(list((self.storage.root / 'builds/gateway').glob('*/configure.log'))), 1)
+
+    def test_changed_binary_is_rejected(self):
+        key = self.invoke()
+        (self.storage.root / 'builds/gateway' / key / gateway.BINARIES[0]).write_text('changed')
+        with self.assertRaisesRegex(core.LabError, 'output changed'):
+            self.invoke()
+
+    def test_incomplete_build_requires_explicit_resume(self):
+        key = self.invoke()
+        self.state['builds'].clear()
+        (self.storage.root / 'builds/gateway' / key / 'build-receipt.json').unlink()
+        self.runner.reset_mock()
+        with self.assertRaisesRegex(core.LabError, 'explicitly use --resume'):
+            self.invoke()
+        self.runner.assert_not_called()
+        resumed = gateway.assemble(self.storage, self.state, self.storage.root / 'sdk', self.cmake,
+                                   sys.executable, lambda *e: None, resume=True)
+        self.assertEqual(resumed, key)
+        self.assertTrue((self.storage.root / 'builds/gateway' / key / 'tests.first.log').exists())
+        self.assertEqual(list(self.storage.root.glob('t????????')), [])
+
+    def test_test_failures_skips_duplicates_and_missing_cases_rejected(self):
+        report = self.storage.root / 'report.xml'
+        for body in ('<testcase name="one" status="run"><failure/></testcase>',
+                     '<testcase name="one" status="notrun"/>',
+                     '<testcase name="one" status="run"/><testcase name="one" status="run"/>', ''):
+            report.write_text('<testsuite>' + body + '</testsuite>')
+            with self.assertRaisesRegex(core.LabError, 'CTest'):
+                gateway.test_result(report, ['one'])
 
 class DockerStorageTests(StorageFixture, unittest.TestCase):
     def test_internal_or_unconfigured_docker_is_blocked_before_build(self):

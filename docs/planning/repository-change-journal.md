@@ -349,3 +349,40 @@ recipes, full package assembly and effective Factory/full-source input closure
 remain required; R3 reader-facing documentation and R4 fresh reproduction/native
 acceptance are separate. Reuse the verified five-target outputs and shared
 caches rather than repeating builds or copying the retained kit.
+
+## 2026 October 8 R2 service and Gateway build proof
+
+Added the pinned owner adapters for Brake V1/V2/V3, Tire V1 and Gateway.
+All four service exports passed the existing product and test validators
+(eight tests per Brake profile, five for Tire); repeat commands reused the
+verified exports. Gateway compiled with an explicit hash-bound prebuilt SDK
+on SSD. Two test-environment assumptions caused four initial failures: the
+Unix socket path limit and LibCarla's cache initializer in a scrubbed
+environment. A short same-SSD temporary directory and explicit CARLA cache
+made the four tests pass without changing or rebuilding Gateway binaries.
+The corrected adapter resumed the warm build; all 30 owner tests passed,
+and the repeat reused the result. First failure logs are preserved on SSD.
+
+The connected Google Drive tool uploaded and read back a 126-byte synthetic
+text probe in the private artifact root, with identical text and unshared
+metadata. This is not CLI OAuth, binary delivery, large-file integrity proof
+or redistribution approval. No source-public folder/file identifiers or
+credentials were added. No release binary was uploaded.
+
+Validation: 78 reproduction tests passed; full integration regression ran
+885 tests in 54.515 seconds (884 passed, one skipped). Eight target types now
+have ten build receipts. All new build payloads, temporary data and caches
+use external storage; the workspace is approximately 1.0 GiB excluding the
+shared Docker disk. No CARLA/Unreal/Factory rebuild or duplicate kit was made.
+The external volume has approximately 269 GiB free; internal free space is
+approximately 130 GiB. Detailed keys and commands are in the
+[R2 evidence](../development/release-reproduction-r2.md).
+
+R2 remains in progress. The next packaging gate is the preparation owner's
+historical Stage 0 service inventory, which does not match the selected
+current service source revisions. Reconcile that owner through a new reviewed
+recipe/input record and candidate definition; preserve historical manifests,
+pins and source checkouts. VDP/preparation, native relocation, complete-package
+assembly, authenticated Drive delivery and effective full-source closure
+remain open. This local checkpoint changes only integration tooling and docs;
+it does not publish a product, tag, installer or Cloud update.

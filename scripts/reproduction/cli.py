@@ -12,7 +12,7 @@ import sys
 from .core import Release, Storage, LabError, require, read_json, digest
 from .sources import prepare_sources, verify_sources
 from .artifacts import Drive, binding_entry, download, cached
-from . import build, cloud, containers
+from . import build, cloud, containers, services, gateway
 
 def emit(value):
     print(json.dumps(value, sort_keys=True), flush=True)
@@ -25,7 +25,8 @@ def progress(event, detail):
 def plan(release, profile):
     return {'release': release.value['id'], 'definitionDigest': release.key, 'profile': profile,
             'sources': list(release.selected_sources(profile)), 'buildOrder': release.graph(profile),
-            'implementedBuildTargets': ['presenter', 'cloud-sdk', *containers.TARGETS, 'backend-export'] if profile == 'developer' else [],
+            'implementedBuildTargets': ['presenter', 'cloud-sdk', *containers.TARGETS, 'backend-export', *services.TARGETS, 'gateway'] if profile == 'developer' else [],
+            'serviceProfiles': {'brake-service': ['v1', 'v2', 'v3'], 'tire-service': ['v1']},
             'gates': release.gates(profile), 'qualified': False,
             'storage': 'Explicit external SSD; no internal fallback',
             'space': {'reserveGiB': 60, 'presenterReserveGiB': 90,
@@ -43,7 +44,7 @@ def status(storage, state):
             artifacts.append(name)
     for key, receipt in state['builds'].items():
         target = receipt.get('target')
-        require(target in ('presenter', 'cloud-sdk', *containers.TARGETS, 'backend-export') and re.fullmatch('[a-f0-9]{64}', key), 'Unknown build receipt')
+        require(target in ('presenter', 'cloud-sdk', *containers.TARGETS, 'backend-export', *services.TARGETS, 'gateway') and re.fullmatch('[a-f0-9]{64}', key), 'Unknown build receipt')
         require(digest(receipt.get('inputs')) == key, 'Build receipt key differs from inputs')
         if target == 'presenter':
             build.verify_output(storage.path('builds/presenter/' + key))
@@ -51,6 +52,10 @@ def status(storage, state):
             cloud.verify_output(storage.path('builds/cloud-sdk/' + key), receipt['inputs'])
         elif target == 'backend-export':
             containers.verify_export(storage.path('builds/backend-export/' + key), receipt['inputs'])
+        elif target in services.TARGETS:
+            services.verify_output(storage.path('builds/' + target + '/' + key), receipt['inputs'])
+        elif target == 'gateway':
+            gateway.verify_output(storage.path('builds/gateway/' + key), receipt['inputs'])
         else:
             containers.verify_output(storage.path('builds/' + target + '/' + key), receipt['inputs'])
     return {'status': ('SOURCES_PARTIAL' if missing else 'SOURCE_READY') if storage.profile != 'operator' else 'OPERATOR_INPUTS_PENDING',
@@ -67,7 +72,12 @@ def main(argv=None):
     parser.add_argument('--sources-only', action='store_true')
     parser.add_argument('--drive-binding', type=Path)
     parser.add_argument('--drive-token-fd', type=int)
-    parser.add_argument('--target', choices=('all', 'presenter', 'cloud-sdk', *containers.TARGETS, 'backend-export'), default='all')
+    parser.add_argument('--target', choices=('all', 'presenter', 'cloud-sdk', *containers.TARGETS, 'backend-export', *services.TARGETS, 'gateway'), default='all')
+    parser.add_argument('--gateway-sdk', type=Path)
+    parser.add_argument('--test-tmp-parent', type=Path)
+    parser.add_argument('--resume', action='store_true', help='Explicitly resume an inspected incomplete Gateway build')
+    parser.add_argument('--cmake', type=Path, default=shutil.which('cmake'))
+    parser.add_argument('--functional-profile', choices=('v1', 'v2', 'v3'))
     parser.add_argument('--docker', type=Path, default=shutil.which('docker'))
     parser.add_argument('--kit-inputs', type=Path)
     parser.add_argument('--python', type=Path, default=sys.executable)
@@ -117,9 +127,15 @@ def main(argv=None):
                 key = build.presenter(storage, state, args.node, args.npm, args.prepare_dependencies, progress)
             elif args.target == 'cloud-sdk':
                 key = cloud.assemble(storage, state, args.kit_inputs, args.python, args.prepare_dependencies, progress)
+            elif args.target == 'gateway':
+                key = gateway.assemble(storage, state, args.gateway_sdk, args.cmake, args.python, progress,
+                                       args.test_tmp_parent, args.resume)
             else:
                 require(args.docker, 'Docker Desktop CLI required; Engine is not started automatically')
-                if args.target == 'backend-export':
+                if args.target in services.TARGETS:
+                    key = services.assemble(storage, state, args.target, args.functional_profile,
+                        args.docker, args.python, args.prepare_dependencies, progress)
+                elif args.target == 'backend-export':
                     key = containers.export(storage, state, args.docker, args.prepare_dependencies, progress, args.python)
                 else:
                     key = containers.assemble(storage, state, args.target, args.docker, args.prepare_dependencies, progress)

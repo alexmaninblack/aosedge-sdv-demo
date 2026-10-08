@@ -4,8 +4,8 @@
 # Human Friendly Repository and Release Reproduction Plan
 
 - Status: R1 complete; R2 implementation in progress; R3 and R4 planned
-- Version: 0.6
-- Prepared: 2026-10-07
+- Version: 0.7
+- Prepared: 2026-10-08
 - Owner: Demo Solution Team
 - Parent: [Installable distribution and reproducibility](../installable-distribution-and-reproducibility.md)
 - Baseline: [Kit028 / Setup042 / Factory .41](../../../qualification/current-baseline.md)
@@ -207,6 +207,20 @@ and no-rebuild repeats. Their guard requires Docker's active backing disk on the
 selected SSD. The separately authorized host migration preserved existing
 Docker data and freed the internal duplicate; R2 itself does not manage Engine
 lifecycle. Five target proofs do not close the remaining input/profile gates.
+
+Brake V1/V2/V3, Tire V1 and Gateway now also have real compile/owner-test and
+no-rebuild repeat proof. Eight target types account for ten stored results.
+The declared Gateway SDK is hash-bound on SSD, not implicit host state or
+full-source qualification. Its socket/cache test-environment fixes do not
+change Gateway runtime source. The latest integration suite passed 884 tests
+with one skip. The connected Drive root also passed a small synthetic text
+upload/readback; CLI authorization and release-sized transfer remain open.
+
+The next packaging dependency is explicit: the pinned preparation owner still
+selects historical Stage 0 service exports, not the current source pins. A new
+reviewed preparation recipe/input record must reconcile fresh products before
+the new candidate can be assembled. Historical inventory and release locks
+stay unchanged; no stale-product fallback is permitted.
 
 R2 remains **in progress**. No complete profile, new installer or Drive download
 is qualified. Next work is authenticated release-input binding/acquisition and

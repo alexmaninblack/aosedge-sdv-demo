@@ -3,14 +3,14 @@
 
 # R2 Preparation and Build Tooling
 
-- Status: In progress; five build targets and repeat proof complete
+- Status: In progress; eight build targets and repeat proof complete
 - Date: 2026-10-08
 - Owner: Demo Solution Team
 - Authority: [Work packet](../planning/active/work-packets/human-friendly-reproduction.md)
   and [reproduction contract](../../contracts/release-reproduction/README.md)
 
 `lab` prepares pinned sources and builds the native/web UI, Cloud SDK, both
-backend images and their OCI export on external storage. It does not yet
+backend images, service profiles, Gateway and the OCI export on external storage. It does not yet
 reproduce a complete installer. The selected
 definition remains Kit028 / Setup042 / Factory .41; this tooling does not rename
 that media to the future `1.2.0-rc.1` candidate.
@@ -35,6 +35,13 @@ by this release/profile/volume binding. Replace the example path below:
 ./lab build --storage /Volumes/BUILD/workspace --target brake-backend --prepare-dependencies
 ./lab build --storage /Volumes/BUILD/workspace --target tire-backend --prepare-dependencies
 ./lab build --storage /Volumes/BUILD/workspace --target backend-export
+./lab build --storage /Volumes/BUILD/workspace --target brake-service \
+  --functional-profile v1 --prepare-dependencies
+./lab build --storage /Volumes/BUILD/workspace --target tire-service \
+  --functional-profile v1 --prepare-dependencies
+./lab build --storage /Volumes/BUILD/workspace --target gateway \
+  --gateway-sdk /Volumes/BUILD/inputs/gateway-sdk \
+  --test-tmp-parent /Volumes/BUILD/tmp --cmake /path/to/cmake
 ```
 
 The first build requires pinned Node 26.0.0/npm 11.12.1, Xcode's macOS SDK and
@@ -79,6 +86,32 @@ rejected. `status` verifies local receipts/archive; an explicit backend build
 also checks the image still exists in the Engine. No clean-engine import or
 runtime qualification is implied.
 
+The service targets call the pinned Dockerfile's `export` stage, selecting
+Brake `v1`, `v2` or `v3`, or Tire `v1`. First builds require
+`--prepare-dependencies` for their pinned public dependencies. The adapters
+verify the owner test report, native dependency identity, ELF payload and
+complete export inventory. Repeating without that flag reuses a verified
+export. Services are neither loaded as runtime containers nor signed, published
+or installed. These builds share the external Docker/cache guard above.
+
+Gateway requires the explicit SDK whose complete manifest is bound by
+[`gateway-build-sdk.lock.json`](../../workspace/gateway-build-sdk.lock.json).
+The SDK is a declared prebuilt input: accepted LibCarla artifacts plus selected
+OpenSSL 3.6.3 headers/libraries and its license. No certificate store, private
+configuration or host library search is copied into it. The freeze helper
+records every selected file; it is not a clean source rebuild or a public
+download route. SDK acquisition and redistribution remain separate gates.
+
+The adapter enables CARLA, VISS and the owner's tests, targets ARM64/macOS 26.0,
+and records CMake, compiler, SDK and Python versions. Configure/compile steps
+deny network. Unit tests may bind local sockets; they do not start CARLA or a
+demo. An existing short directory selected by `--test-tmp-parent` must be on
+the same SSD and at most 29 UTF-8 bytes long. Its temporary child is private
+and removed on exit. `CARLA_CACHE_DIR` is explicit inside the workspace, so
+tests do not depend on the operator's home directory. Test loading explicitly
+selects the declared SDK libraries. The output is still an unrelocated compiler
+product, not a portable native runtime package.
+
 | Operation | Exit | Meaning |
 | --- | --- | --- |
 | `plan` or `status` | 0 | Report produced; inspect gates and readiness |
@@ -111,6 +144,11 @@ the digest cache for the unchanged owner recipe; no second kit is created.
 Including the backend export and client metadata, it occupies approximately
 582 MiB, excluding the shared Docker disk. Container layers and BuildKit cache
 are inside that external Docker disk, not the checkout or internal disk.
+After all four service profiles, the declared Gateway SDK and Gateway build,
+the same workspace occupies approximately 1.0 GiB. This includes 182,886,138
+SDK payload bytes; it does not duplicate CARLA/Unreal or Factory. At this
+checkpoint the external volume has approximately 269 GiB free and the internal
+volume 130 GiB free. These are point-in-time observations, not install demands.
 
 ### Docker storage maintenance
 
@@ -133,13 +171,17 @@ Repeat preparation verifies sources without refetching. Incomplete marked
 clones can resume before checkout when no user files could be overwritten.
 `status` lists missing source roles. Verified unchanged build output is reused;
 a completed owner receipt can be reconciled after interruption before the outer
-state save. An incomplete compile remains preserved for inspection; automatic
-recovery of failed compilation is not yet supported.
+state save. An incomplete compile remains preserved for inspection. Gateway
+alone supports explicit `--resume` after diagnosis, only when its owned marker
+and inputs match; it reuses compiler outputs and preserves the first stage
+logs. There is no automatic blind retry or recovery of an unowned directory.
 
 ## Google Drive binding
 
 A separate private artifact root has been created and its unshared metadata
-verified. It remains empty; no binary upload or sharing change was performed.
+verified. A 126-byte synthetic text probe was uploaded through the connected
+Drive tool and read back with identical text; its parent, size and unshared
+metadata were checked. No binary release upload or sharing change occurred.
 Private account/folder identifiers stay outside public source documentation.
 An administrative folder is not a release download locator.
 
@@ -166,7 +208,8 @@ Final size/digest and unchanged metadata are required before atomic promotion.
 Cache reuse requires unchanged file identity or renewed digest verification.
 Corrupt or interrupted payloads stay on the SSD and are never promoted.
 
-This adapter has offline fixture proof only. Actual CLI authorization, release
+The connected-tool probe does not qualify this command-line adapter, which
+still has offline fixture proof only. Actual CLI authorization, release
 file binding, capacity, no-overwrite upload/retention enforcement and large-file
 transfer remain unqualified. Folder creation does not approve redistribution.
 
@@ -220,12 +263,56 @@ transfer remain unqualified. Folder creation does not approve redistribution.
 - Complete integration regression after all five adapters: 866 tests in
   82.275 seconds, 865 passed and one skipped. The runner exited normally.
 
+### Service and Gateway continuation
+
+- All four unsigned service exports passed their exact owner checks: eight
+  tests for each Brake profile and five for Tire. Each export contains 46
+  files. Immediate repeats returned `BUILD_REUSED`, with no compilation or
+  repeat owner invocation. Selected component sources remain unchanged.
+- Build keys: Brake V1
+  `1700cc0883f01d131ddae246d5cc9b6572fc01471969f75bd4463bcbb6063367`,
+  V2 `63a87292a9f507df94f3dc978fe73ff4f17a327d1277b4d1903a7164ae77b966`,
+  V3 `1a6293312dcdd1c62d9cda3de57c2c3a61fceefb393d6c5af8381739485e5f9a`;
+  Tire V1 `0d67377410478408dcc6b88173c681ef65a980b0b0700fbb5668b3c15be912ef`.
+- The explicit SDK has 17,397 files and manifest SHA-256
+  `977f67ad9f67e003e78aee619ff262138d5fb49a7bda5d3e1c18fc16f55ebeca`.
+  Accepted LibCarla anchor hashes were checked before freezing it on SSD.
+- Gateway compiled successfully. Its initial test run found two harness
+  assumptions: long temporary paths exceeded Unix socket limits, and
+  LibCarla's static cache initializer required an explicit cache path when
+  the scrubbed environment had no home directory. The four affected tests
+  passed on the same binaries after the transient environment correction.
+  The adapter then resumed the warm build and all 30 owner tests passed.
+- Gateway key
+  `f96c3b15d11cef62270750bc23d4dd15a9345a35b35eb97484518cce0b6d8636`;
+  both binaries are ARM64. Repeat returned `BUILD_REUSED`. No Gateway runtime
+  source, simulator, installed demo or operating-system home setting changed.
+- 78 targeted reproduction tests passed. The full integration suite ran
+  885 tests in 54.515 seconds: 884 passed, one skipped. The workspace now has
+  ten verified build results across eight target types; it is not a complete
+  developer profile or an installed-system qualification.
+
+### Preparation input reconciliation
+
+The selected Brake and Tire source revisions are `5aa652fda603` and
+`f0a0f6edadb5`. The pinned integration owner's `vehicle_inputs.py` still reads
+`serviceExports` from the historical Stage 0 inventory, which points to older
+sources and binary hashes. That inventory is not authority for these fresh
+outputs. A new source revision of the preparation owner must accept explicit
+selected input identities and verify the corresponding build receipts; it
+must retain existing product, Factory and VDP checks. Until that is implemented
+and frozen in the new candidate definition, complete preparation is blocked.
+Do not edit the historical inventory, old release lock or prepared source
+checkout, or fall back to stale products to bypass the mismatch.
+
 ## Remaining R2 work
 
 1. Qualify authenticated Drive acquisition, release binding, capacity, approved
    access and retention. Keep old media unpublished until its gate closes.
-2. Add remaining component adapters and pinned heavy input dependencies,
-   cross-workspace cache reuse and full-profile capacity accounting.
+2. Reconcile the preparation owner's selected inputs, then add VDP/preparation,
+   native relocation and complete-package adapters. Preserve the verified
+   eight-target outputs. Complete cross-workspace cache reuse and full-profile
+   capacity accounting.
 3. Close effective Factory configuration, native/simulation prerequisites and
    entitlement gaps before enabling full-source preparation/builds.
 4. Extend CI/build proof to those targets. R3 reader-facing routes and R4 fresh

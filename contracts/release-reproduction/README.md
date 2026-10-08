@@ -4,8 +4,8 @@
 # Release Definition and Reproduction Contract
 
 - Status: R1 complete; delivery and version policy accepted; acquisition and reproduction unqualified
-- Version: 1.5
-- Prepared: 2026-10-07
+- Version: 1.6
+- Prepared: 2026-10-08
 - Owner: Demo Solution Team
 - Scope: [R1 work packet](../../docs/planning/active/work-packets/human-friendly-reproduction.md)
 
@@ -170,7 +170,8 @@ signed installer, publication or native acceptance. Unresolved Factory/native
 source inputs remain gated rather than being taken from undeclared warm state.
 
 The supported developer build targets are `presenter`, `cloud-sdk`,
-`brake-backend`, `tire-backend` and `backend-export`.
+`brake-backend`, `tire-backend`, `backend-export`, `brake-service`,
+`tire-service` and `gateway`.
 `presenter` uses the pinned owner's native
 Presenter, Driving Control and web UI recipe. It performs local ad-hoc signing
 required by that recipe, not Developer ID signing, notarization or publication.
@@ -187,6 +188,28 @@ overwrite tags, publish images or reuse undeclared registry credentials.
 Build layers and client caches stay on external storage. Image receipts bind
 source/platform/runtime identity; export receipts bind the complete archive.
 Status-only receipt checks and live Engine image checks are distinguished.
-The remaining component/full-profile adapters are not implemented by this
-checkpoint. See [R2 commands and evidence](../../docs/development/release-reproduction-r2.md)
+The service adapters require an explicit functional profile: Brake V1/V2/V3
+or Tire V1. They export unsigned ARM64 products through the pinned Dockerfiles
+and use the source owners' test, dependency and payload validators. They never
+sign, publish, install or run these products. Each profile has a separate input
+fingerprint and verified repeat receipt.
+
+Gateway uses the pinned CMake recipe and an explicit external SDK bound by
+[`gateway-build-sdk.lock.json`](../../workspace/gateway-build-sdk.lock.json).
+This is a declared prebuilt LibCarla/OpenSSL input, not full-source closure or
+redistribution approval. Compile steps deny network. The unchanged owner's
+socket tests need a short temporary directory; `--test-tmp-parent` must select
+an existing directory on the same verified SSD, with a path no longer than
+29 UTF-8 bytes. Only the invocation's private child directory is removed after
+testing. CARLA's test cache is explicitly inside the workspace. An inspected
+incomplete Gateway build may resume only with `--resume` and matching inputs;
+the first stage logs are retained. Raw outputs still require native packaging
+and library relocation before they can be treated as portable runtime files.
+
+Preparation/complete-profile adapters remain gated. In particular, the pinned
+vehicle-input assembler's historical Stage 0 service inventory does not select
+the current service sources. A new reviewed recipe/input record must reconcile
+them; neither historical manifests nor pinned source checkouts may be edited
+to make a new package appear to match the old kit.
+See [R2 commands and evidence](../../docs/development/release-reproduction-r2.md)
 for the exercised scope, exit codes and remaining gates.

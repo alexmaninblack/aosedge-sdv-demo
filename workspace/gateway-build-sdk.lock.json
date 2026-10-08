@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "kind": "gateway-build-sdk",
+  "manifestSha256": "977f67ad9f67e003e78aee619ff262138d5fb49a7bda5d3e1c18fc16f55ebeca",
+  "files": 17397,
+  "bytes": 182886138,
+  "provenance": "Accepted LibCarla prebuilt anchors and OpenSSL 3.6.3, selected public headers/libraries/notices; not a fresh full-source build",
+  "externalDistributionApproved": false
+}
