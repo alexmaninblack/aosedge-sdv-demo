@@ -517,3 +517,26 @@ documentation, historical-definition and public-source gates passed.
 Next R2 work remains narrow recipe invalidation, measured cold capacity,
 authenticated artifact delivery and full-source closure. These cache/reporting
 results do not close R3/R4 or promote the candidate. No push, tag or upload.
+
+## 2026 October 8 R2 packaging recipe dependencies
+
+Replaced the current direct packaging adapters' shared whole-directory identity
+with target-specific source-file closures. Static import selection includes
+deferred imports and package initializers without executing code. Exported data,
+Python modules, native Setup source and shared validation helpers remain explicit
+inputs with blob and executable-mode identities. Added the previously omitted
+VM DNS helper, application configuration and repository manifest dependencies.
+
+Eight targeted fixtures passed, including real committed changes in a disposable
+SSD Git repository: README changes affect no recipe, native Setup affects Setup,
+VM DNS affects VM inputs, and the shared native validator affects all seven
+packaging targets. Existing upstream result keys propagate output changes.
+Owner constants have drift tests for copied data and shipped helper files.
+Full regression: 976 tests, 975 passed and one skipped; documentation and
+historical release-definition checks passed.
+
+The frozen 17-step producer plan, old receipts, accepted DMG, Factory and caches
+are unchanged. No native rebuild, signing, runtime start or publication occurred.
+New producer adoption still needs source-reviewed independent manifest pins.
+Remaining R2 gates are authenticated artifact delivery, measured cold capacity
+and full-source input closure; R3/R4 remain separate.

@@ -35,7 +35,7 @@ def assemble(storage, state, target, python, signing_identity, progress):
     require(storage.profile == 'developer' and target in TARGETS, 'Unsupported media target/profile')
     verify_sources(storage, state)
     storage.check(additional=(76 if target == 'dmg' else 2)*GIB, reserve=90*GIB)
-    trees, revision = packaging.producer(storage)
+    trees, revision = packaging.producer(storage, target)
     kit_key, kit = package_chain.upstream(storage, state, 'application')
     trusted = read_json(ROOT/RELEASE)
     require(sha256(regular(kit/'application-manifest.json')) == trusted['manifestSha256'],
@@ -81,7 +81,7 @@ def assemble(storage, state, target, python, signing_identity, progress):
             'producerRevision': revision, 'published': False,
             'stamps': {p.relative_to(output).as_posix(): packaging.stamp(regular(p))
                        for p in output.rglob('*') if p.is_file()}})
-    require(packaging.producer(storage)[0] == trees, 'Producer changed during media build')
+    require(packaging.producer(storage, target)[0] == trees, 'Producer changed during media build')
     verify_sources(storage, state)
     verify(output, inputs)
     state['builds'][key] = {'target': target, 'inputs': inputs}

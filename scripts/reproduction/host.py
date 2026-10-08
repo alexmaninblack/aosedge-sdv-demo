@@ -89,7 +89,7 @@ def assemble(storage, state, kit, sdk, python, progress):
     require(storage.profile == 'developer', 'Host adapter requires developer profile')
     verify_sources(storage, state)
     storage.check(additional=24*GIB, reserve=90*GIB)
-    trees, revision = packaging.producer(storage)
+    trees, revision = packaging.producer(storage, 'host-runtime')
     source, pin = retained(storage, kit)
     sdk = Path(sdk) if sdk is not None else None
     sdk_pin = gateway.sdk_input(storage, sdk)
@@ -131,7 +131,7 @@ def assemble(storage, state, kit, sdk, python, progress):
             'manifest': {'path': MANIFEST, 'bytes': (output/MANIFEST).stat().st_size, 'sha256': sha256(output/MANIFEST)},
             'stamps': {r['path']: packaging.stamp(regular(output/r['path'])) for r in value['files']}})
     verify_sources(storage, state)
-    require(packaging.producer(storage)[0] == trees, 'Producer changed during host assembly')
+    require(packaging.producer(storage, 'host-runtime')[0] == trees, 'Producer changed during host assembly')
     verify(output, inputs)
     state['builds'][key] = {'target': 'host-runtime', 'inputs': inputs}
     storage.save(state)

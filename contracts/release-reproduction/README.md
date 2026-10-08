@@ -4,7 +4,7 @@
 # Release Definition and Reproduction Contract
 
 - Status: R1 complete; delivery and version policy accepted; acquisition and reproduction unqualified
-- Version: 1.11
+- Version: 1.12
 - Prepared: 2026-10-08
 - Owner: Demo Solution Team
 - Scope: [R1 work packet](../../docs/planning/active/work-packets/human-friendly-reproduction.md)
@@ -209,7 +209,7 @@ and library relocation before they can be treated as portable runtime files.
 
 The preparation adapter uses the clean, committed root checkout as its explicit
 build-tool owner. Its receipt records that revision and hashes the relevant
-source trees, checkpoints and toolchain. It selects the reviewed four-profile
+source files, checkpoints and toolchain. It selects the reviewed four-profile
 service checkpoint and Factory .41; retained unsigned VDP bases and firmware
 are selected through the historical manifest chain. The existing owner validates
 the products, tests, VDP profiles and reviewed runtime, and hashes the Factory
@@ -293,9 +293,33 @@ environment paths are not resolved to a different interpreter.
 
 Success reports `CHAIN_BUILT_NOT_QUALIFIED`, never profile readiness,
 installation or publication. Frozen owner selection avoids invalidation from
-unrelated current-root changes. Changing recipe trees still uses each owner's
-existing fingerprints; fine-grained recipe invalidation, cold reproduction,
-artifact delivery and full-source closure retain their separate gates.
+unrelated current-root changes. Historical producers retain their original
+fingerprints; they are not silently replaced by newer adapter code. Cold
+reproduction, artifact delivery and full-source closure retain separate gates.
+
+### Packaging recipe invalidation
+
+New direct packaging builds select file-level recipe inputs for preparation,
+host assembly, backend inputs, VM inputs, application, Setup and DMG. Static
+Python imports, including deferred imports and package initializers, select
+the conservative local module closure without executing it. Explicit data,
+exported Python modules, native Setup source, source-reviewed checkpoints and
+shared verification helpers complete the selection. Each input records its Git
+blob and executable mode; the actual producer revision remains in the receipt.
+Dirty roots, missing/untracked inputs and linked recipe files fail closed.
+
+Setup native-source edits no longer invalidate preparation or host recipes.
+The VM DNS helper and application configuration are explicit dependencies;
+they cannot change without changing the relevant key. Documentation and
+unrelated diagnostic tools are excluded. Shared validators and the full
+checkpoint validations remain conservative dependencies, not function-level
+reachability claims. Existing upstream result keys carry changes downstream.
+Tests compare copied-data lists with canonical owner constants to detect drift.
+
+This new fingerprint format does not adopt old receipts or rewrite a frozen
+producer plan. Selecting a new producer for an actual candidate remains an
+explicit source-reviewed change, with independently pinned output manifests
+and Setup identity. The existing warm candidate stays on its original owners.
 
 ### Cross workspace cache reuse and capacity
 

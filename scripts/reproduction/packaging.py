@@ -12,23 +12,32 @@ from .cloud import matches, relative as safe_relative
 from .sources import git, verify_sources
 from . import services
 from .artifacts import sha256
+from . import recipes
 
 SERVICE_CHECKPOINT = 'workspace/checkpoints/reproduction-services-20261008.json'
 FACTORY_CHECKPOINT = 'workspace/checkpoints/factory-41-candidate.json'
 PREPARATION_MANIFEST = 'vehicle-input-manifest.json'
 
 
-def producer(storage):
+def producer(storage, target='preparation'):
     """The cloned root revision owns tooling; it is not a hidden sibling input."""
     env = storage.environment()
     require(not git(ROOT, ['status', '--porcelain', '--untracked-files=all'], env),
             'Commit the root checkout before producing a new package')
     revision = git(ROOT, ['rev-parse', 'HEAD'], env)
-    paths = ['scripts/distribution', 'apps/demo-orchestrator/src', 'contracts',
-             SERVICE_CHECKPOINT, FACTORY_CHECKPOINT, 'workspace/distribution-stage0-inventory.json',
-             'scripts/reproduction/packaging.py', 'scripts/reproduction/preparation_worker.py', 'LICENSE']
-    # A docs-only commit does not invalidate a build. Receipts retain its actual producer revision.
-    identity = {name: git(ROOT, ['rev-parse', 'HEAD:' + name], env) for name in paths}
+    rows = git(ROOT, ['ls-tree', '-r', '-z', 'HEAD'], env).split('\0')
+    tracked = {}
+    for row in rows:
+        if not row:
+            continue
+        metadata, name = row.split('\t', 1)
+        mode, kind, oid = metadata.split()
+        tracked[name] = (mode, kind, oid)
+    names = recipes.paths(ROOT, tracked, target)
+    require(all(tracked[name][1] == 'blob' and tracked[name][0] in ('100644', '100755')
+                for name in names), 'Recipe contains a linked or non-file input')
+    # Include executable mode, not timestamps/revision/docs outside the actual closure.
+    identity = {name: {'mode': tracked[name][0], 'blob': tracked[name][2]} for name in names}
     return identity, revision
 
 

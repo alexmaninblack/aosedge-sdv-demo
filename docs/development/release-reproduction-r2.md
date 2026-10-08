@@ -519,12 +519,13 @@ must not be presented as physical disk space recovered.
 1. Qualify authenticated Drive acquisition, release binding, capacity, approved
    access and retention. Keep old media unpublished until its gate closes.
 2. Exact producer roles, dependency selection and whole-chain unchanged-output
-   reuse now pass real verification. Cold profile reproduction, narrow recipe
-   invalidation and measured full-profile capacity remain open. Cross-workspace
+   reuse now pass real verification. Cold profile reproduction and measured
+   full-profile capacity remain open. Cross-workspace
    digest-cache reuse and read-only capacity accounting now pass local proof;
    neither establishes the cold-build peak. Preserve verified results.
-   Current conservative whole-tool-tree fingerprints still require refinement
-   before claiming narrow invalidation for recipe changes.
+   New packaging adapters use target-specific file fingerprints, with real Git
+   change fixtures. Existing frozen producers keep their old keys; newer owner
+   adoption requires a separately reviewed candidate and output checkpoints.
 3. Close effective Factory configuration, native/simulation prerequisites and
    entitlement gaps before enabling full-source preparation/builds.
 4. Finish release-level build evidence and handoff. CI now separately runs the
@@ -620,3 +621,39 @@ and no source, build or runtime dependencies. Its wheel contents remain in the
 original cache and are recoverable through the same command. No Factory, DMG,
 accepted output, shared Docker state or user file was removed. Byte-size sums
 are not reported as recovered physical space for these APFS clones.
+
+## Packaging recipe dependency checks on October 8
+
+The shared whole-directory producer fingerprint had two defects: unrelated
+distribution or contract-document edits could invalidate all packaging owners,
+while `scripts/host/aosvm-dns-bridge`, `workspace/repositories.json` and the
+application unit configuration were absent. New direct packaging builds use
+target-specific file closures with Git blob and executable-mode identities.
+Static import inspection executes no source code. Application/Setup exports,
+native Setup source, data contracts, checkpoints and shared validators are
+included explicitly; fixtures guard their correspondence with owner constants.
+
+Eight focused tests passed, including a disposable real Git repository on the
+SSD. Its committed changes confirmed this direct recipe effect:
+
+| Source change | Direct recipe keys changed |
+| --- | --- |
+| README only | None |
+| Native Setup source | Setup |
+| VM DNS helper | VM inputs |
+| Shared native validator | All seven packaging targets |
+
+Existing upstream keys still propagate a changed output to consumers. This is
+file/module-level selection, not function-level analysis: shared validation
+code and checkpoint guards deliberately remain dependencies. No compiler,
+signer, media assembly, installer or runtime was launched by these fixtures.
+
+The accepted 17-step chain still selects its original frozen producers and
+verified outputs. No receipt was relabelled, manifest pin adopted or new DMG
+created. New producer adoption belongs to a source-reviewed candidate with
+independent output checkpoints; fixture success is not a fresh native build.
+
+Full regression after this change ran **976 tests in 64.704 seconds**: 975
+passed and one skipped. Documentation and historical release-definition gates
+also passed. All fixture scratch used the external SSD and was automatically
+removed; accepted outputs and the shared Docker Engine were untouched.

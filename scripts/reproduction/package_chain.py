@@ -53,7 +53,7 @@ def assemble(storage, state, target, kit, python, progress):
     require(storage.profile == 'developer' and target in MANIFESTS, 'Unsupported package target/profile')
     verify_sources(storage, state)
     storage.check(additional=(40 if target == 'application' else 1)*GIB, reserve=90*GIB)
-    trees, revision = packaging.producer(storage)
+    trees, revision = packaging.producer(storage, target)
     chosen, paths = {}, {}
     roles = ('backend-export',) if target == 'backend-inputs' else (
         ('host-runtime', 'preparation') if target == 'vm-runtime' else tuple(GROUP_TARGETS.values()))
@@ -99,7 +99,7 @@ def assemble(storage, state, target, kit, python, progress):
             'stamps': {p.relative_to(output).as_posix(): packaging.stamp(regular(p))
                        for p in output.rglob('*') if p.is_file() and p.name != manifest}})
     verify_sources(storage, state)
-    require(packaging.producer(storage)[0] == trees, 'Producer changed during package assembly')
+    require(packaging.producer(storage, target)[0] == trees, 'Producer changed during package assembly')
     verify(output, inputs)
     state['builds'][key] = {'target': target, 'inputs': inputs}
     storage.save(state)

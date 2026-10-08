@@ -4,7 +4,7 @@
 # Human Friendly Repository and Release Reproduction Plan
 
 - Status: R1 complete; R2 implementation in progress; R3 and R4 planned
-- Version: 0.11
+- Version: 0.12
 - Prepared: 2026-10-08
 - Owner: Demo Solution Team
 - Parent: [Installable distribution and reproducibility](../installable-distribution-and-reproducibility.md)
@@ -226,9 +226,12 @@ Cross-workspace digest-cache reuse now passes first/repeat proof for all 41
 declared wheels through APFS clones, without downloading or changing frozen
 consumers. A read-only capacity report separates cache availability, workspace
 file sizes and per-owner guards; a cold peak is not inferred from those guards.
-Narrow recipe invalidation, measured cold capacity, authenticated artifact
-delivery and full-source input closure
-remain open. Chain implementation does not qualify a fresh-clone profile.
+File-level packaging recipe selection now passes target-isolation and real Git
+change fixtures, including previously omitted VM DNS and application config
+inputs. Frozen chain owners and accepted outputs remain unchanged; candidate
+adoption of newer owners requires the normal independent manifest checkpoints.
+Measured cold capacity, authenticated artifact delivery and full-source input
+closure remain open. Chain implementation does not qualify a fresh-clone profile.
 R3 human routes and R4 acceptance
 remain separate. Reuse completed results; do not rebuild heavy inputs merely
 to resume this packet.
