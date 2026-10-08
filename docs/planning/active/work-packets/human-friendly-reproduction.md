@@ -4,7 +4,7 @@
 # Human Friendly Repository and Release Reproduction Plan
 
 - Status: R1 complete; R2 implementation in progress; R3 and R4 planned
-- Version: 0.12
+- Version: 0.13
 - Prepared: 2026-10-08
 - Owner: Demo Solution Team
 - Parent: [Installable distribution and reproducibility](../installable-distribution-and-reproducibility.md)
@@ -186,8 +186,9 @@ Exact source preparation and verified artifact acquisition are separate stages;
 source-only success is not complete preparation. Initial target adapters must
 call the existing owner scripts, and unsupported/unresolved targets must fail
 with their actual gates rather than claim a full build. The separate private
-Drive artifact root is created. Authenticated CLI acquisition and per-release
-file bindings are not yet configured; folder creation does not publish a release.
+Drive artifact root and successor release folder are private. Authenticated
+CLI transfer now verifies the complete successor DMG; this does not qualify
+historical media, all build inputs or a distributable product release.
 
 ### Implementation checkpoint
 
@@ -216,8 +217,11 @@ a complete native build, installation or live operation.
 
 The separately authorized Docker disk migration preserved existing data;
 R2 itself does not manage Engine lifecycle. The private Drive root passed
-metadata and small synthetic upload/readback checks. CLI OAuth, release file
-binding, capacity and release-sized transfer remain open.
+metadata and small synthetic upload/readback checks. Separately authorized CLI
+OAuth, capacity, exact successor file binding, the full 14.16 GB upload/download,
+controlled download interruption/resume and no-duplicate/cache repeats now pass.
+The private release index binds the definition commit, original build provenance
+and verified file. No reader grants, source push or public release were made.
 
 R2 remains **in progress**. The ordered `--target all` chain and explicit frozen
 producer selection passed two real 17-step unchanged-output runs; the repeat
@@ -230,8 +234,9 @@ File-level packaging recipe selection now passes target-isolation and real Git
 change fixtures, including previously omitted VM DNS and application config
 inputs. Frozen chain owners and accepted outputs remain unchanged; candidate
 adoption of newer owners requires the normal independent manifest checkpoints.
-Measured cold capacity, authenticated artifact delivery and full-source input
-closure remain open. Chain implementation does not qualify a fresh-clone profile.
+Measured cold capacity, complete build-input acquisition, approved-reader access
+and full-source input closure remain open. Verified private DMG delivery and
+chain implementation do not qualify a fresh-clone profile.
 R3 human routes and R4 acceptance
 remain separate. Reuse completed results; do not rebuild heavy inputs merely
 to resume this packet.

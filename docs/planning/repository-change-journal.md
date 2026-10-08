@@ -540,3 +540,30 @@ are unchanged. No native rebuild, signing, runtime start or publication occurred
 New producer adoption still needs source-reviewed independent manifest pins.
 Remaining R2 gates are authenticated artifact delivery, measured cold capacity
 and full-source input closure; R3/R4 remain separate.
+
+## 2026 October 8 Private Drive delivery
+
+The user selected delivery before discussing cold builds and separately approved
+Google CLI authorization. Added the explicit maintainer transport and a reviewed
+descriptor for the existing `1.2.0-rc.1` DMG. The root `lab` build commands do not
+publish artifacts or acquire credentials. Historical Kit028 and build receipts
+remain unchanged; component and video repositories were not modified.
+
+The complete 14.16 GB DMG passed private upload metadata/SHA-256 verification,
+full independent download and digest verification, controlled 32 MiB download
+interruption/range resume, no-duplicate upload repeat and cached download repeat.
+A private release index binds source revision, build provenance and object IDs;
+its bytes were read back and verified. No sharing permissions were expanded.
+The disposable downloaded copy was removed, preserving source, original media,
+Drive contents and compact receipts. No demo runtime was started.
+
+Tooling checkpoint: local commit `de109aa`. Tests: 12 targeted transport fixtures;
+988 integration tests with 987 passes and one skip. Documentation, historical
+definition and public-source checks passed. See the
+[delivery evidence](../development/release-reproduction-r2.md#private-drive-delivery-proof-on-october-8).
+No push, tag, cold build, public distribution or completed R2/R4 claim.
+
+Next discussion: distinguish a fresh developer build with declared prebuilt
+heavy dependencies from a full-source CARLA/Factory/native build, then select
+the exact cold-build inputs and capacity proof. The verified DMG route does not
+by itself supply or qualify all build prerequisites or another user's access.

@@ -287,7 +287,8 @@ logs. There is no automatic blind retry or recovery of an unowned directory.
 A separate private artifact root has been created and its unshared metadata
 verified. A 126-byte synthetic text probe was uploaded through the connected
 Drive tool and read back with identical text; its parent, size and unshared
-metadata were checked. No binary release upload or sharing change occurred.
+metadata were checked. That initial probe changed no sharing and uploaded no
+binary; the successor delivery proof below is a separate operation.
 Private account/folder identifiers stay outside public source documentation.
 An administrative folder is not a release download locator.
 
@@ -356,8 +357,8 @@ as the historical Kit028 artifact or as a profile qualification receipt.
 Twelve offline tests cover first/repeat, response-loss reconciliation, preserved
 intent, cross-workspace reuse, name/content conflicts, malformed ranges,
 credential endpoint guards and private-folder identity. The real large-file
-transfer is in progress; its completed upload/download evidence is required
-before declaring delivery verified. Approved-reader access, public source
+upload, complete SHA-256-verified download, controlled interruption/resume and
+idempotent repeats subsequently passed. Approved-reader access, public source
 handoff and release qualification remain separate gates.
 
 ## Recorded proof
@@ -552,8 +553,9 @@ must not be presented as physical disk space recovered.
 
 ## Remaining R2 work
 
-1. Qualify authenticated Drive acquisition, release binding, capacity, approved
-   access and retention. Keep old media unpublished until its gate closes.
+1. Private successor DMG upload, acquisition, file binding, capacity and repeats
+   now pass. Complete build-input acquisition and approved-reader handoff
+   separately; preserve supported inputs. Historical media remains unpublished.
 2. Exact producer roles, dependency selection and whole-chain unchanged-output
    reuse now pass real verification. Cold profile reproduction and measured
    full-profile capacity remain open. Cross-workspace
@@ -699,3 +701,44 @@ Committed checkpoint `ed48b74` then passed all **153 reproduction fixtures in
 repositories. The public-source scan also passed. After test completion and
 zero-open-handle verification, the temporary export was removed; no build
 worker or owned test process remained.
+
+## Private Drive delivery proof on October 8
+
+The existing `1.2.0-rc.1` engineering DMG was uploaded to a separate private
+release folder, without rebuilding or changing any existing artifact. Its
+14,162,125,968 bytes and SHA-256
+`7bac892b2398e38fe511de738838c23dd02e5ec26d2578afd3f6f932868cc755`
+matched the source-reviewed delivery descriptor and Drive metadata. The folder
+and artifact remained unshared; authorized owner access and capacity passed.
+
+The real reader started with an empty SSD cache. A controlled client-side
+interruption after 33,554,432 bytes left only a partial object. The ordinary
+download command resumed at that exact offset, retrieved the remaining bytes,
+verified the complete SHA-256 and unchanged remote metadata, then promoted the
+cache object. Repeating the download reused that verified cache. Repeating
+upload reused the same Drive ID without another upload; a folder read showed
+one DMG, not a duplicate. This is a controlled interruption proof, not a claim
+that the actual network failed during transfer.
+
+An immutable `release-index-v1.json` was uploaded beside the DMG and read back
+with matching size and SHA-256. It binds definition/tooling revision `de109aa`,
+the descriptor digest, original media producer `ad6b338`, build key, application
+manifest, Drive object identity/version and the exercised checks. It explicitly
+records local-only source publication, Apple Development signing, no notarization
+and no release/profile qualification. Private account and object IDs stay in
+the authenticated index and external receipts, not public Git documentation.
+
+The disposable full download was removed after successful verification/reuse
+and a zero-open-handle check. Small receipts and the index remain on the SSD;
+the original compiled DMG and its Drive object are preserved. The removed
+14.16 GB test copy can be reacquired through the same reader. No installer,
+simulator, VM or demo container was started; the shared Docker Engine was not
+changed. The temporary Google login listener exited normally.
+
+The delivery tooling has 12 targeted offline tests. Full integration regression
+ran 988 tests: 987 passed and one skipped; documentation, historical-definition
+and public-source gates passed. This verifies private transport of one complete
+installer, not delivery of every dependency needed for source rebuilding.
+Build-input acquisition, another approved reader, distribution entitlements,
+signing/notarization and native release acceptance keep their separate gates.
+No source push, new tag, public sharing or cold build was performed.
