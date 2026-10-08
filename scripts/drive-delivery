@@ -1,0 +1,5 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+from reproduction.delivery import main
+raise SystemExit(main())

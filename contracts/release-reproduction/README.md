@@ -4,7 +4,7 @@
 # Release Definition and Reproduction Contract
 
 - Status: R1 complete; delivery and version policy accepted; acquisition and reproduction unqualified
-- Version: 1.12
+- Version: 1.13
 - Prepared: 2026-10-08
 - Owner: Demo Solution Team
 - Scope: [R1 work packet](../../docs/planning/active/work-packets/human-friendly-reproduction.md)
@@ -117,6 +117,31 @@ R2 owns folder/account binding, capacity/sharing checks, authorized API access
 and verified acquisition. It must reject a missing locator for acquisition.
 Neither provider selection, a source push nor a successful local metadata
 check closes the actual delivery gate.
+
+The explicit maintainer command `python3 -B scripts/drive-delivery` transfers
+the separately reviewed [successor DMG descriptor](../../workspace/releases/1.2.0-rc.1-delivery.json).
+It is not called by `lab`, Setup or any build. The historical release definition
+and its `unpublished` locator remain unchanged. A private transfer of this new
+engineering candidate does not qualify its installation or any build profile.
+
+The command takes an explicit Google CLI account, private release folder and
+external workspace. Existing authorized CLI credentials remain in Google's
+credential store; access tokens and resumable session URLs stay in memory, not
+arguments, receipts or logs. It never initiates login, changes sharing, replaces
+a remote file or deletes an artifact. Source size and SHA-256 must match the
+reviewed descriptor before upload. A pre-generated file ID and non-secret intent
+prevent duplicate creation on repeat. Lost chunk responses are reconciled using
+the server's acknowledged range before retransmission. A process restart keeps
+the ID but not the session capability; absent completed metadata may require
+restarting the upload, never creating a second file ID.
+
+Readback checks the exact parent, private state, download permission, size,
+digest and version. A separate empty-cache download verifies all bytes and
+unchanged remote metadata before atomic promotion. A repeat may reuse the
+digest cache; it is not another network-transfer proof. The authenticated
+release index records the definition revision and file identity separately
+from build provenance. Source publication and access by another approved user
+remain distinct gates; this command grants no new readers automatically.
 
 ## Version policy
 

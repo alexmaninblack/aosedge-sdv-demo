@@ -72,7 +72,7 @@ Python base: the release pins the host manifest, which pins the Python manifest
 and its files. The adapter checks both inventories, hashes and modes, and stages
 only the declared base files. CARLA modules and other kit contents are excluded.
 The kit must be on the selected external volume; it is not an implicit local
-fallback or an alternative to the pending artifact delivery route.
+fallback or a replacement for verified artifact acquisition.
 
 First acquisition uses 41 hash-locked public PyPI wheels (24,581,670 bytes),
 with bounded HTTPS requests and no ambient authorization/proxy configuration.
@@ -314,15 +314,51 @@ Final size/digest and unchanged metadata are required before atomic promotion.
 Cache reuse requires unchanged file identity or renewed digest verification.
 Corrupt or interrupted payloads stay on the SSD and are never promoted.
 
-The connected-tool probe does not qualify this command-line adapter, which
-still has offline fixture proof only. Actual CLI authorization, release
-file binding, capacity, no-overwrite upload/retention enforcement and large-file
-transfer remain unqualified. Folder creation does not approve redistribution.
-The local Google Cloud CLI has no credential database or application-default
-credential file at its selected configuration location. No account was added
-or token obtained. This is not evidence of a Drive permission failure. A
-separately authorized CLI OAuth setup remains required; connected-tool
-credentials must not be extracted or silently repurposed.
+The original connected-tool probe did not qualify command-line acquisition.
+On October 8, the owner separately authorized Google CLI login with its disclosed
+Drive/Cloud scopes. The explicit Workspace account was authenticated, upload
+capacity checked and a private successor release folder created. No access
+grants or unrelated Cloud changes were made. Credentials remain in the Google
+CLI store; connected-tool credentials were not extracted.
+
+The new explicit maintainer transport uses the reviewed
+[1.2.0-rc.1 descriptor](../../workspace/releases/1.2.0-rc.1-delivery.json), not the
+historical Kit028 definition. It pins the existing 14,162,125,968-byte DMG and
+its exact SHA-256, media producer, build key and application manifest. It does
+not rebuild, sign, install or qualify the candidate. This is private engineering
+delivery, not approval for public binary redistribution.
+
+```sh
+python3 -B scripts/drive-delivery upload \
+  --descriptor workspace/releases/1.2.0-rc.1-delivery.json \
+  --storage /Volumes/BUILD/private-delivery \
+  --folder-id <authorized-private-release-folder> --account <authorized-account> \
+  --source /Volumes/BUILD/output/AosEdge-SDV-Lab-1.2.0-rc.1.dmg
+python3 -B scripts/drive-delivery download \
+  --descriptor workspace/releases/1.2.0-rc.1-delivery.json \
+  --storage /Volumes/BUILD/private-receiver \
+  --folder-id <authorized-private-release-folder> --account <authorized-account> \
+  --file-id <verified-file-id>
+```
+
+Supply `--gcloud` when the CLI is not on PATH. Login is a separate explicit
+operation, never an automatic side effect. A new storage directory must have
+an existing parent; the existing external-volume and 60 GiB reserve guards
+apply. The uploader records a pre-generated file ID before starting, reconciles
+acknowledged ranges after response loss and verifies remote metadata afterward.
+Matching existing files are reused; conflicting same-name files fail without
+overwrite or deletion. Session URLs remain in memory; after process loss an
+absent completed file can require retransmission with the same reserved ID.
+The downloader reuses the existing bounded range/SHA cache path and refreshes
+its in-memory CLI token for new requests. Completed payloads are never adopted
+as the historical Kit028 artifact or as a profile qualification receipt.
+
+Twelve offline tests cover first/repeat, response-loss reconciliation, preserved
+intent, cross-workspace reuse, name/content conflicts, malformed ranges,
+credential endpoint guards and private-folder identity. The real large-file
+transfer is in progress; its completed upload/download evidence is required
+before declaring delivery verified. Approved-reader access, public source
+handoff and release qualification remain separate gates.
 
 ## Recorded proof
 
