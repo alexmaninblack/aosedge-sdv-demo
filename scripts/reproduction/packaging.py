@@ -3,6 +3,7 @@
 """Build-only packaging over retained inputs and completed component receipts."""
 import json
 from pathlib import Path
+import re
 import stat
 import tempfile
 
@@ -144,7 +145,24 @@ def stage_inputs(storage, scratch, source, rows, factory, chosen):
         require(result.returncode == 0, 'Service input clone failed')
 
 
-def preparation(storage, state, kit, python, progress):
+def runtime_object(storage, state, pin, acquire, progress):
+    """Fetch one declared history object without changing the prepared HEAD."""
+    require(all(isinstance(pin.get(k), str) and re.fullmatch('[a-f0-9]{40}', pin[k])
+                for k in ('revision', 'tree')), 'Invalid reviewed runtime object')
+    checkout = storage.path('sources/vehicle-platform')
+    env = storage.environment()
+    probe = run_command(['git', '-C', checkout, 'cat-file', '-e', pin['revision']+'^{commit}'], env=env)
+    if probe.returncode:
+        require(acquire, 'Reviewed runtime Git object missing; use --prepare-dependencies')
+        progress('FETCH_SOURCE_OBJECT', 'vdp-reviewed-runtime')
+        git(checkout, ['fetch', '--quiet', '--depth=1', '--no-tags', 'origin', pin['revision']], env, timeout=180)
+    require(git(checkout, ['rev-parse', pin['revision']+'^{tree}'], env) == pin['tree'],
+            'Reviewed runtime tree differs')
+    require(git(checkout, ['rev-parse', 'HEAD'], env) == state['sources']['vehicle-platform']['revision'],
+            'Prepared platform revision changed')
+
+
+def preparation(storage, state, kit, python, progress, prepare_dependencies=False):
     require(storage.profile == 'developer', 'Preparation currently requires developer profile')
     verify_sources(storage, state)
     storage.check(additional=8*GIB, reserve=90*GIB)
@@ -152,6 +170,8 @@ def preparation(storage, state, kit, python, progress):
     pins = read_json(ROOT / SERVICE_CHECKPOINT)['serviceExports']
     chosen = selected_services(storage, state, pins)
     source, rows, retained_pin, factory = retained_preparation(storage, kit)
+    runtime_pin = read_json(source / PREPARATION_MANIFEST)['runtimePin']
+    runtime_object(storage, state, runtime_pin, prepare_dependencies, progress)
     python = Path(python).absolute()
     require(python.is_file(), 'Declared build Python is unavailable')
     probe = run_command([python, '-I', '-B', '-c',
@@ -163,7 +183,7 @@ def preparation(storage, state, kit, python, progress):
             'Preparation requires ARM64 Python 3.10 or newer')
     inputs = {'producerTrees': tooling, 'retainedManifest': retained_pin, 'factory': factory,
               'services': chosen, 'platform': state['sources']['vehicle-platform'], 'toolchain': toolchain,
-              'signed': False}
+              'runtimePin': runtime_pin, 'signed': False}
     key = digest(inputs)
     output = storage.path('builds/preparation/' + key)
     marker = output.parent / (key + '.inputs.json')

@@ -23,12 +23,14 @@ class PreparationTests(StorageFixture, unittest.TestCase):
         self.chosen = [{'target': r['team']+'-service', 'key': str(n)*64, 'pin': r}
                        for n, r in enumerate(self.pins)]
         self.factory = {'version': 'fixture', 'sha256': 'a'*64}
+        core.atomic_json(self.base / packaging.PREPARATION_MANIFEST, {'runtimePin': {'revision': 'd'*40, 'tree': 'e'*40}})
         self.patch('reproduction.packaging.verify_sources')
         self.patch('reproduction.packaging.producer', return_value=({'recipe': 'a'*40}, 'b'*40))
         self.patch('reproduction.packaging.selected_services', return_value=self.chosen)
         self.patch('reproduction.packaging.retained_preparation',
                    return_value=(self.base, [], {'sha256': 'c'*64}, self.factory))
         self.stage = self.patch('reproduction.packaging.stage_inputs')
+        self.patch('reproduction.packaging.runtime_object')
         self.command = self.patch('reproduction.packaging.run_command', side_effect=self.owner)
 
     def owner(self, args, **kwargs):
@@ -169,6 +171,18 @@ class PreparationTests(StorageFixture, unittest.TestCase):
         with patch('reproduction.packaging.producer', return_value=({'recipe': 'c'*40}, 'c'*40)):
             self.assertNotEqual(self.build(), key)
         self.assertEqual(self.stage.call_count, 2)
+
+    def test_runtime_acquisition_is_explicit_exact_and_preserves_head(self):
+        self.state['sources']['vehicle-platform'] = {'revision': 'a'*40}
+        pin = {'revision': 'd'*40, 'tree': 'e'*40}
+        with patch('reproduction.packaging.run_command', return_value=SimpleNamespace(returncode=1)), \
+                patch('reproduction.packaging.git', side_effect=['', 'e'*40, 'a'*40]) as git:
+            with self.assertRaisesRegex(core.LabError, 'prepare-dependencies'):
+                packaging.runtime_object(self.storage, self.state, pin, False, lambda *args: None)
+            git.assert_not_called()
+            packaging.runtime_object(self.storage, self.state, pin, True, lambda *args: None)
+            self.assertEqual(git.call_args_list[0].args[1][-1], 'd'*40)
+            self.assertNotIn('checkout', str(git.call_args_list))
 
 
 if __name__ == '__main__':

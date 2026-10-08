@@ -133,7 +133,8 @@ def main(argv=None):
                 key = gateway.assemble(storage, state, args.gateway_sdk, args.cmake, args.python, progress,
                                        args.test_tmp_parent, args.resume)
             elif args.target == 'preparation':
-                key = packaging.preparation(storage, state, args.kit_inputs, args.python, progress)
+                key = packaging.preparation(storage, state, args.kit_inputs, args.python, progress,
+                                            args.prepare_dependencies)
             else:
                 require(args.docker, 'Docker Desktop CLI required; Engine is not started automatically')
                 if args.target in services.TARGETS:
