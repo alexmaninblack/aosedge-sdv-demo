@@ -577,8 +577,9 @@ The October 8 campaign includes rebuilding Factory .41 while retaining the
 reviewed prebuilt CARLA dependency. The stopped Builder was copied to the
 selected SSD with an SSD-local Ubuntu backing image. Base SHA-256, seed/trust
 file equality, `qemu-img check`, complete virtual disk content comparison and
-boot on the new disk passed. Its old internal disk is retained until the
-transfer/testing cleanup gate; it must not be booted concurrently.
+boot on the new disk passed. After the source build, repeat preparation and a
+second clean disk check, the obsolete internal disk and Ubuntu base were removed.
+The working Builder, downloads, sstate and original guest build remain on SSD.
 
 The prior effective path combined a generated .11 configuration, a warm .27
 `auto.conf` and the final .41 qualification override. The new adapter renders
@@ -586,8 +587,40 @@ The prior effective path combined a generated .11 configuration, a warm .27
 source checkouts, and executes the pinned Moulin configuration generator in
 a separate empty build directory. It does not copy the warm configuration,
 native objects or Factory image. Downloads and sstate are explicitly reused.
-The first real preparation on the relocated Builder passed; image construction
-and equivalence qualification are not implied by this result.
+The real source build at tool checkpoint `78f837a` passed on the relocated
+Builder. Its new read-only image is 6,997,147,648 bytes, with SHA-256
+`e7c9e3b20c08a91f9072014ece0861d8ae34787ef14d4ef9b50693c062439d57`.
+The historical image and its checkpoint remain unchanged. Evidence is retained
+in the external `factory41-clean/factory-results/` directory; the producer
+manifest records exact source/tool revisions, effective configuration and tests.
+
+The effective Factory version is .41, architecture ARM64, and KUKSA revision
+`30e5c13abc496d0b39aaa6c25acebb088b9902e3`. The existing manager triplet passed
+effective-pin and actual-source verification. Qualification before image
+construction included 466 native GTest/lock passes (two skipped and two disabled
+cases remain explicit), successful KAC/Provider/verifier suites, five Factory
+configuration regressions, and 167 KUKSA test passes with 15 ignored cases.
+Package QA, image QA, six-partition assembly and the guest-to-host transfer
+digest passed. Known build-path warnings remained; no QA bypass was added.
+This proves source construction with retained caches, not a cache-cold build,
+blank-Builder acquisition, byte identity with the earlier image or live E2E.
+
+Two host-adapter defects were isolated without rebuilding the finished image:
+
+- Initial macOS transfer added four AppleDouble sidecars while every source
+  digest remained correct. The sidecars were quarantined as evidence. Transfers
+  now disable both extended attributes and macOS copyfile metadata; a real
+  metadata-bearing fixture rejects recurrence.
+- The existing Factory owner temporarily changes the Platform layer path to
+  its committed export. The clean-build adapter now requests exact restoration
+  before shutdown, preserving the preparation hashes. Unexpected concurrent
+  changes are rejected, not overwritten. Exact restoration and subsequent
+  preparation reuse passed on the actual Builder after the first completed run.
+
+After these corrections, the root offline suite ran 1,015 tests: 1,014 passed
+and one skipped. The separate Factory build-tool suite passed all 27 tests.
+Historical release-definition and documentation checks passed. The Builder and
+its DNS helper were cleanly stopped and their process/listener exit verified.
 
 ```sh
 ./lab factory plan
@@ -606,6 +639,21 @@ not proof of downloading every prerequisite onto a blank Builder. Source fixes
 do not automatically change frozen developer-chain producers or installer pins.
 After transfer/build checks, remove only verified obsolete internal copies,
 preserving source, keys, the historical Factory and required cache inputs.
+
+The cleanup removed only the old internal `local/r61-yocto-builder.qcow2` and
+`cache/ubuntu-22.04-server-cloudimg-arm64.img` below the previous Builder root.
+Exact identity, stopped owners, zero open handles, matching base bytes and the
+SSD-only backing chain were checked first. Measured internal free-space growth
+was 91,266,564,096 bytes, approximately 85 GiB; about 220 GiB remained free.
+The replacement is retained on SSD, not in Trash. Small old logs, seed/trust
+metadata, Production's .31 dependency, historical Factory images, source/assets
+and private video material were preserved. No shared Docker lifecycle changed.
+
+External free space after the new build was approximately 106 GiB. That is above
+the image campaign's 90-GiB reserve but below the frozen developer chain's
+166-GiB admission guard. Downstream packaging must resolve this capacity gap and
+independently bind the new image; it must not silently reuse the historical
+Factory, lower the guard or write build data back to the internal disk.
 
 ## Ordered chain proof on October 8
 

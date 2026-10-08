@@ -1,6 +1,9 @@
 # SPDX-FileCopyrightText: 2026 maninblack
 # SPDX-License-Identifier: MIT
 import inspect
+from pathlib import Path
+import shlex
+import tempfile
 import unittest
 from unittest.mock import patch
 from aosedge_demo_orchestrator import component_runtime as runtime
@@ -8,6 +11,34 @@ from aosedge_demo_orchestrator import factory_mainline_gates as gates
 
 
 class TimestampSuccessorFactoryTests(unittest.TestCase):
+    def test_prepared_layer_is_restored_without_accepting_other_changes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'bblayers.conf'
+            original = 'BBLAYERS="/build/aos-vehicle-platform/meta-aos-vehicle-platform"\n'
+            path.write_text(original)
+            def remote(command):
+                words = shlex.split(command)
+                if words[0] == 'cat':
+                    return Path(words[1]).read_text()
+                self.assertEqual(words[:2], ['python3', '-c'])
+                exec(words[2], {})
+            restore = runtime.bind_factory_layer(remote, str(path), '/build/aos-vehicle-platform-' + 'a'*40,
+                                                  restore=True)
+            self.assertNotEqual(path.read_text(), original)
+            updated = path.read_text()
+            path.write_text(updated + '# unexpected change\n')
+            with self.assertRaisesRegex(AssertionError, 'preserve and inspect'):
+                restore()
+            self.assertTrue(path.read_text().endswith('# unexpected change\n'))
+            path.write_text(updated)
+            restore()
+            restore()
+            self.assertEqual(path.read_text(), original)
+
+    def test_ambiguous_layer_is_not_written(self):
+        with self.assertRaisesRegex(runtime.EnvironmentError, 'NOT_UNIQUE'):
+            runtime.bind_factory_layer(lambda _: 'no platform layer', '/conf', '/source', restore=True)
+
     def test_effective_image_version_is_not_inherited_from_old_configuration(self):
         values = dict(AOS_ROOTFS_IMAGE_VERSION='6.1.1-maninblack.41', MACHINE='qemuarm64',
                       DISTRO='aos-core', AOS_ARCHITECTURE='arm64', BB_NO_NETWORK='1', BB_FETCH_PREMIRRORONLY='1')

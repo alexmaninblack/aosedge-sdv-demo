@@ -1005,7 +1005,24 @@ def stage_mainline_factory_gates(ssh, remote, project, source, suffix="37"):
                 harness=root + "/" + harness, evidence=evidence, solutionRevision=revision)
 
 
-def build_factory(version, metadata_only=False, *, storage_check=None):
+def bind_factory_layer(remote, path, source, *, restore=False):
+    """Bind the committed export; optionally restore only our exact change."""
+    original = remote("cat " + shlex.quote(path))
+    updated, count = re.subn(r'aos-vehicle-platform(?:-[0-9a-f]{40})?/meta-aos-vehicle-platform',
+                            Path(source).name + '/meta-aos-vehicle-platform', original)
+    if count != 1:
+        raise EnvironmentError("FACTORY_PLATFORM_LAYER_BINDING_NOT_UNIQUE")
+    def replace(expected, value):
+        script = ("from pathlib import Path; p=Path(%r); "
+                  "assert not p.is_symlink(); current=p.read_text(); "
+                  "assert current in (%r,%r), 'Factory layer changed; preserve and inspect'; "
+                  "p.write_text(%r) if current != %r else None") % (path, expected, value, value, value)
+        remote("python3 -c " + shlex.quote(script))
+    replace(original, updated)
+    return (lambda: replace(updated, original)) if restore else None
+
+
+def build_factory(version, metadata_only=False, *, storage_check=None, preserve_layer_binding=False):
     """The release build is a Demo Control operation, not an operator script.
 
     Export only committed Platform source, reuse the warm offline build tree,
@@ -1038,6 +1055,7 @@ def build_factory(version, metadata_only=False, *, storage_check=None):
         if storage_check is not None:
             storage_check()
         print("Factory ." + version.rsplit(".", 1)[1] + ": " + message, file=sys.stderr, flush=True)
+    restore_layer = None
     try:
         # The same established Builder adapter owns start/stop and disk guards.
         builder("test", "start")
@@ -1068,13 +1086,8 @@ def build_factory(version, metadata_only=False, *, storage_check=None):
         subprocess.run(ssh + ["tar -xf - -C " + source], input=archive, check=True, timeout=30, stdout=sys.stderr)
         # Change only the Platform layer binding. All other layers and caches
         # retain their existing pinned configuration; preserve the old checkout.
-        layer_update = "from pathlib import Path\n" + (
-            "p=Path(%r); s=p.read_text(); import re\n"
-            "s,n=re.subn(r'aos-vehicle-platform(?:-[0-9a-f]{40})?/meta-aos-vehicle-platform', %r, s)\n"
-            "assert n == 1, 'Platform layer binding must be unique'\n"
-            "p.write_text(s)\n") % (BUILDER_PROJECT + "/build-main/conf/bblayers.conf",
-                                    Path(source).name + "/meta-aos-vehicle-platform")
-        remote("python3 -c " + shlex.quote(layer_update))
+        restore_layer = bind_factory_layer(remote, BUILDER_PROJECT + "/build-main/conf/bblayers.conf",
+                                           source, restore=preserve_layer_binding)
         prefix = "cd " + BUILDER_PROJECT + "; . poky/oe-init-build-env build-main >/dev/null; "
         suffix = version.rsplit(".", 1)[1]
         flags = " -R " + source + "/qualification/factory-" + suffix + ".conf "
@@ -1255,4 +1268,8 @@ subprocess.run(['sudo','-n',str(p/'recipe-sysroot/usr/lib/ld-linux-aarch64.so.1'
     except (OSError, ValueError, subprocess.SubprocessError) as error:
         raise EnvironmentError("FACTORY_BUILD_FAILED:" + type(error).__name__) from None
     finally:
-        builder("test", "stop")
+        try:
+            if restore_layer is not None:
+                restore_layer()
+        finally:
+            builder("test", "stop")

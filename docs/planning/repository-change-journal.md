@@ -13,8 +13,6 @@ The latest [publication checkpoint](#2026-october-7-documentation-publication)
 records the committed and remotely verified documentation baseline. Earlier
 local-only entries below retain their original checkpoint state.
 
-## Recording convention
-
 ### 2026 October 8 Factory source rebuild on the external SSD
 
 The owner included Factory .41 in the clean build and required the QEMU Builder
@@ -30,11 +28,22 @@ SSH trust path and repository-local lifecycle owner, and check the effective
 Factory version/architecture and KUKSA source before compiling. Initial real
 preparation passed. Offline regression: 1,014 tests, 1,013 passed and one skipped;
 25 Factory build-tool tests, historical definition and documentation gates pass.
-The source checkpoint enables the image attempt; it does not claim a completed
-rebuild, cold acquisition or live qualification. See the
+The source checkpoint `78f837a` subsequently completed compilation, native tests,
+package/image QA and verified transfer of a new .41 image. Its SHA-256 is
+`e7c9e3b20c08a91f9072014ece0861d8ae34787ef14d4ef9b50693c062439d57`.
+Post-build exact layer restoration/preparation reuse and disk checks passed.
+Follow-up adapter fixes suppress macOS archive metadata and restore only the
+owner's exact layer change. Their regression passed 1,015 root tests (one
+skipped) and 27 Factory build-tool tests. Two verified obsolete internal Builder
+files were removed, recovering approximately 85 GiB; all working data and
+caches remain on SSD. Owned Builder/DNS processes are stopped. See the
 [Factory build route](../development/release-reproduction-r2.md#factory-source-build-on-external-storage).
-The remaining sequence is native/package/image gates, new image verification
-and cleanup of verified obsolete internal copies, then downstream packaging.
+Cold acquisition and live qualification are not claimed. The frozen installer
+chain and historical Factory remain unchanged. Downstream image binding and
+external capacity reconciliation remain: approximately 106 GiB is free versus
+the frozen chain's 166-GiB admission guard. No guard or storage boundary changed.
+
+## Recording convention
 
 Use one dated entry per meaningful cross-repository work block, not per command.
 Record purpose, affected repositories, outcome, validation, commit/publication

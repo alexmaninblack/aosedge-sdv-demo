@@ -65,6 +65,13 @@ def builder_module(storage, builder_root):
     return module
 
 
+def input_archive(directory, members):
+    # BSD tar can emit AppleDouble even with --no-xattrs for some metadata.
+    env = dict(os.environ, COPYFILE_DISABLE='1')
+    return subprocess.Popen(['tar', '--no-xattrs', '-cf', '-', '-C', str(directory), *members],
+                            stdout=subprocess.PIPE, env=env)
+
+
 def prepare(storage, builder, source):
     text, lock = recipe()
     script = ROOT / 'scripts/guest/factory41-prepare.py'
@@ -123,7 +130,7 @@ def prepare(storage, builder, source):
     # Source-only input transfer; no previous image, tmp, config or sstate output.
     if not exists:
         subprocess.run(ssh + ['mkdir ' + shlex.quote(guest_input)], check=True, timeout=30)
-        archive = subprocess.Popen(['tar', '--no-xattrs', '-cf', '-', '-C', str(output), *members], stdout=subprocess.PIPE)
+        archive = input_archive(output, members)
         try:
             subprocess.run(ssh + ['tar --keep-old-files -xf - -C ' + shlex.quote(guest_input)], stdin=archive.stdout, check=True, timeout=120)
         finally:
@@ -155,7 +162,8 @@ def build_factory(storage, prepared):
     owner.BUILDER_PROJECT = prepared['project'] + '/yocto'
     owner.ARTIFACT = storage.path('factory-results/runtime-proofs/factory41')
     storage.path('factory-results/factory-images').mkdir(parents=True, exist_ok=True)
-    result = owner.build_factory('6.1.1-maninblack.41', storage_check=lambda: storage.check(reserve=90*2**30))
+    result = owner.build_factory('6.1.1-maninblack.41', preserve_layer_binding=True,
+                                 storage_check=lambda: storage.check(reserve=90*2**30))
     atomic_json(storage.path('factory-results/result.json'), result)
     return {'status': 'FACTORY_BUILT_NOT_QUALIFIED', 'image': result['factoryImage']}
 

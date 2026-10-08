@@ -4,7 +4,7 @@
 # Release Definition and Reproduction Contract
 
 - Status: R1 complete; delivery and version policy accepted; acquisition and reproduction unqualified
-- Version: 1.15
+- Version: 1.16
 - Prepared: 2026-10-08
 - Owner: Demo Solution Team
 - Scope: [R1 work packet](../../docs/planning/active/work-packets/human-friendly-reproduction.md)
@@ -192,6 +192,11 @@ requires 40 GiB additional host headroom plus a 90 GiB reserve before compilatio
 checks that reserve between stages, and retains the guest 60 GiB guard. These
 are guards, not measured cold peak requirements. The adapter stops its Builder
 after completion/failure and never starts a live demo or changes Cloud state.
+The clean-build route restores the owner's temporary Platform-layer binding
+before shutdown so preparation hashes remain valid on repeat. Restoration
+compares the exact expected content and refuses unrelated changes. Source
+archives omit macOS extended attributes and AppleDouble sidecars; unexpected
+input members or digest changes remain errors, not ignored exceptions.
 Fresh Factory outputs require new evidence and independently reviewed downstream
 packaging identities. Preparation alone does not prove a completed image build.
 

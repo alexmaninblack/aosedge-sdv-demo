@@ -2,8 +2,12 @@
 # SPDX-License-Identifier: MIT
 """Factory recipe generation does not inherit warm configuration or outputs."""
 import hashlib
+import io
 from pathlib import Path
+import subprocess
 import sys
+import tarfile
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -14,6 +18,19 @@ from reproduction.core import LabError
 
 
 class FactoryRecipeTests(unittest.TestCase):
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS archive metadata regression')
+    def test_transfer_excludes_macos_appledouble_sidecars(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'recipe.json'
+            path.write_bytes(b'{}\n')
+            subprocess.run(['/usr/bin/xattr', '-w', 'com.aosedge.reproduction.test', 'metadata', str(path)], check=True)
+            with factory.input_archive(directory, [path.name]) as process:
+                raw, _ = process.communicate(timeout=10)
+                self.assertEqual(process.returncode, 0)
+            with tarfile.open(fileobj=io.BytesIO(raw)) as archive:
+                self.assertEqual(archive.getnames(), [path.name])
+                self.assertEqual(archive.extractfile(path.name).read(), b'{}\n')
+
     def test_successor_changes_only_version_and_platform(self):
         original = (ROOT / factory.TEMPLATE).read_text()
         rendered, lock = factory.recipe()

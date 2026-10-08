@@ -4,7 +4,7 @@
 # Human Friendly Repository and Release Reproduction Plan
 
 - Status: R1 complete; R2 implementation in progress; R3 and R4 planned
-- Version: 0.15
+- Version: 0.16
 - Prepared: 2026-10-08
 - Owner: Demo Solution Team
 - Parent: [Installable distribution and reproducibility](../installable-distribution-and-reproducibility.md)
@@ -204,6 +204,14 @@ package gates, then build and record a new image identity. Do not inherit an
 unrecorded warm `local.conf`, use the historical .11 driver for .41, or present
 cache reuse as a cache-cold compiler run. The new image must pass qualification
 and independent packaging pins before replacing any installer input.
+
+The new .41 source image, native/package/image gates, transfer verification and
+post-build preparation reuse now pass on the relocated Builder. The obsolete
+internal Builder/base copies were removed after verification, recovering about
+85 GiB; sources, original Factory and guest caches remain. The new image is not
+live-qualified or incorporated into the frozen developer installer chain.
+External free space is now about 106 GiB, below that chain's 166-GiB admission
+guard; capacity reconciliation and new downstream image binding remain open.
 
 The [R2 command and evidence record](../../../development/release-reproduction-r2.md)
 contains exact build keys, first/repeat results and preserved failure diagnoses.
