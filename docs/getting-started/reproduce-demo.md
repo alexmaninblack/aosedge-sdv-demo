@@ -17,11 +17,13 @@ selection; private input bindings still come through the approved handoff.
 
 ## 1 Prepare the host and access
 
-First complete [macOS developer preparation](macos-developer-tools.md).
-It supplies installation commands, version checks, storage selection, Google login,
-signing selection and all `SDV_*` variables below. Keep the same Terminal open.
-The rewritten sequence is awaiting the owner's joint walkthrough; **no commands
-were executed during this documentation-only revision**. Stop after any error.
+First run the standalone wizard in [README B1](../../README.md#b1-prepare-tools-storage-and-access)
+and load its saved environment there. It checks tools/versions, storage, Google
+access and signing selection, and supplies all `SDV_*` variables below. No long
+shell blocks or clone are required for preparation. The optional
+[preparation reference](macos-developer-tools.md) covers diagnostics and recovery.
+The real installation/build walkthrough remains pending; offline wizard fixtures
+are not evidence of a completed host setup or build. Stop after any error.
 
 | Requirement | Purpose |
 | --- | --- |
@@ -57,20 +59,20 @@ do not clone or repeat those steps: continue at step 3 below.
 ```sh
 git clone --branch main https://github.com/alexmaninblack/aosedge-sdv-demo.git "$SDV_ROOT/source"
 cd "$SDV_ROOT/source"
-git switch --detach dbfd542d38f3730f151f43dd303af94e4902c74d
 git rev-parse HEAD
 ```
 
-Expect `dbfd542d38f3730f151f43dd303af94e4902c74d`. Default `main` contains
-current documentation; the detached checkpoint selects the existing candidate.
-Keep this revised guide open in the browser because the older source checkpoint
-does not contain it. Do not substitute a moving branch for the recorded revision
-or manually collect component repositories.
+The current walkthrough intentionally uses root `main`; record the printed
+revision. It is not a frozen release tag. The build plan below still selects
+historical exact component and producer revisions, not all current component
+mains. Adopting newer owners requires a reviewed successor plan, not editing
+historical pins. For exact historical reproduction, use the root checkpoint in
+[release selection](release-status.md). Do not collect components manually.
 Source and frozen producer revisions are published; a public
 clone alone does not supply the private binary inputs or host tools.
 
-Run from that clean root checkout. Host preparation already defined the mounted
-SSD, parent directories and scratch (at most 29 UTF-8 bytes). `lab` creates and
+Run from that clean root checkout. Host preparation already defined the selected
+volume, parent directories and scratch (at most 29 UTF-8 bytes). `lab` creates and
 owns its own workspaces; do not populate them by hand.
 
 ```sh

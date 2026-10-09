@@ -11,7 +11,7 @@ no qualified public release or universal one-click installer yet.
 
 | Selection | Use and evidence |
 | --- | --- |
-| `1.2.0-rc.1`, source-Factory build | New build candidate. Assembly and private delivery passed; fresh-environment reproduction, installation and live qualification remain open. The developer guide selects this route. |
+| `1.2.0-rc.1`, source-Factory build | New build candidate. Assembly and private delivery passed; fresh-environment reproduction, installation and live qualification remain open. The developer build plan retains this candidate's exact input/producer pins; current host preparation uses root main. |
 | `candidate/kit028-setup042` | Published historical source checkpoint for the earlier installer. Its 98-step scripted M1 evidence and open native gates remain in the qualification baseline. It does not contain the newer reproduction commands. |
 | `demo-v1.1` | Earlier Factory .39 source return point, not the current installer or new build candidate. |
 

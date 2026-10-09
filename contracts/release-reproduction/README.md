@@ -4,7 +4,7 @@
 # Release Definition and Reproduction Contract
 
 - Status: R1 complete; delivery and version policy accepted; acquisition and reproduction unqualified
-- Version: 1.20
+- Version: 1.21
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Scope: [R1 work packet](../../docs/planning/active/work-packets/human-friendly-reproduction.md)
@@ -272,6 +272,56 @@ artifact requires a new candidate identity and corresponding qualification;
 it must not relabel the retained bytes as rebuilt or fully tested.
 
 See the [R1 inventory and remaining gates](../../docs/development/release-reproduction-r1.md).
+
+## Standalone macOS developer preparation
+
+The October 9 owner-approved wizard replaces the six manual prerequisite
+blocks. [prepare-macos.sh](../../scripts/prepare-macos.sh) is a single downloadable
+Bash 3.2 file, runnable before a source checkout, Python or Homebrew exists.
+It is a host-preparation owner, not a new builder or runtime controller.
+
+It inspects first, shows one plan and requests one preparation confirmation.
+Compatible installed tools are reused; mismatched project Node/npm are isolated
+inside the selected workspace. Missing Homebrew tools use binary bottles/casks;
+an incompatible already-installed formula is reported without a global upgrade.
+Xcode installation/license, Docker first-run/start and Google consent remain
+explicit user/system boundaries. Global Xcode selection, shell profiles,
+shared Docker storage and Engine lifecycle are not changed. No source clone,
+heavy input transfer, compile, signing operation, Cloud enrollment or demo launch
+is part of preparation.
+
+The six checks cover host/storage, Xcode/SDK/Swift/Git, CMake/Python, exact
+Node/npm, local Docker/Google access, and existing signing/input selections.
+Bootstrap version values are exposed by `--requirements` and tested against
+the source-owned UI engines and simulation Python compatibility. Existing
+build owners retain their own authoritative version/input checks; frozen
+release pins and historical evidence are not edited by preparation.
+
+Saved selections are private data, never evaluated shell code. A private,
+atomic shell environment handoff is generated only after all six checks pass;
+a failed new preparation invalidates the previous handoff before mutation.
+The handoff rejects a missing/replaced selected volume. Repeats re-probe tools,
+reconcile owned partial Python/Node work and reuse verified downloads. They
+preserve unexpected files and incompatible/unowned destinations. A lock
+prevents overlapping preparations; confirmed dead owners may be recovered.
+
+Google credentials stay in their existing store. Access tokens are obtained
+only inside a bounded helper and never printed, placed in shell variables,
+logs or state. Read-only metadata checks verify the selected account, folders,
+input roles and download permissions without transferring payloads. Local
+binding structure is not authoritative lock/content verification; that remains
+with `lab inputs prepare`. Missing/expired authorization or missing Drive scope
+may request one login; ordinary permission denial must not create a login loop.
+
+`--check` is local diagnosis without installation, persisted state, login or
+Drive requests. Exit 0 means local checks passed, not complete access readiness;
+exit 2 means an incomplete preparation/user action, and exit 1 rejects fatal
+host/storage, ownership, integrity or installer errors. Full preparation alone
+can publish `READY FOR SOURCE PREPARATION`. This is neither a build-capacity
+guarantee nor fresh-machine/build/runtime qualification. The 90 GiB preparation
+reserve does not replace per-stage capacity checks or exact-producer storage
+compatibility. UI/output and recovery are described in the
+[preparation reference](../../docs/getting-started/macos-developer-tools.md).
 
 ## Explicit build storage
 

@@ -16,17 +16,16 @@ ROOT = Path(__file__).resolve().parents[1]
 CHECK = ROOT / 'scripts/docs-check'
 
 
-class InteractiveStorageSnippetTests(unittest.TestCase):
+class InteractivePreparationSnippetTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which('zsh'), 'interactive zsh is required')
-    def test_storage_definition_survives_interactive_history_expansion(self):
-        guide = (ROOT / 'docs/getting-started/macos-developer-tools.md').read_text()
-        block = re.findall(r'```sh\n(.*?)```', guide, re.S)[0]
-        self.assertTrue(block.rstrip().endswith('\nsdv_check_storage'))
-        # Parse the exact guide definition in an interactive reader. Never call
-        # it: this fixture must not prompt, probe disks or write to a volume.
-        definition = block.rsplit('\nsdv_check_storage', 1)[0]
-        for label, candidate in (
-                ('guide', definition),
+    def test_short_preparation_blocks_survive_interactive_history_expansion(self):
+        guide = (ROOT / 'README.md').read_text().split('### B1.')[1].split('### B2.')[0]
+        blocks = re.findall(r'```sh\n(.*?)```', guide, re.S)
+        self.assertEqual(len(blocks), 3)
+        # Parse, but never execute downloads, setup or the environment handoff.
+        candidates = [('guide-' + str(i), 'sdv_check_storage() {\n' + block + '\n}')
+                      for i, block in enumerate(blocks)]
+        for label, candidate in (*candidates,
                 ('known-unsafe-control', 'sdv_check_storage() {\ncase 123 in\n'
                  "  *[!0-9]*) printf invalid ;;\nesac\n}")):
             with self.subTest(label=label):

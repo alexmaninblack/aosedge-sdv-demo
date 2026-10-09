@@ -4,7 +4,7 @@
 # Human Friendly Repository and Release Reproduction Plan
 
 - Status: R1 complete; R2 tooling complete for the agreed developer route; R3 step-by-step revision drafted; joint walkthrough pending; R4 planned
-- Version: 0.28
+- Version: 0.29
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Parent: [Installable distribution and reproducibility](../installable-distribution-and-reproducibility.md)
@@ -419,6 +419,24 @@ not guessed by users from internal scripts.
 ## Block R3 Provide the human documentation routes
 
 ### Current result
+
+**October 9 standalone preparation amendment:** after completing the first
+storage block, the owner requested one robust, resumable wizard for all six
+pre-clone stages instead of large pasted shell blocks. Class B host-tool/UX
+change inside the existing developer route; runtime/Cloud/release authorities
+are unaffected. The integration repository owns the single downloadable
+`scripts/prepare-macos.sh`, short README entry and optional reference. Accepted
+behavior is inspect-before-change, one plan confirmation, version-aware reuse,
+project-local incompatible Node/npm replacement, explicit system/account
+prompts, safe saved selections/environment handoff, fail-closed storage and
+offline fixture coverage. No live installation or build is authorized by this
+implementation exercise; the owner will perform the real walkthrough.
+
+The current walkthrough clones root `main`, as previously selected by the owner,
+rather than detaching to the older root checkpoint. Existing component/producer
+pins still select historical candidate inputs. A successor build plan adopting
+new component owners remains a separate reviewed change; do not silently move
+those immutable pins or call main a qualified release.
 
 **October 9 owner amendment:** the published navigation baseline below was
 not sufficient as a human first-use guide. All nine maintained top-level

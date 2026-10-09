@@ -14,6 +14,36 @@ records the owner-authorized README and build-storage source handoff. Earlier
 local-only entries below retain their original checkpoint state; they are
 superseded by that publication, not retroactive build or test evidence.
 
+### 2026 October 9 Standalone developer preparation wizard
+
+The owner accepted and requested implementation of one downloadable wizard
+covering all six pre-clone macOS preparation stages. Class B host-tool/UX change;
+the [work packet](active/work-packets/human-friendly-reproduction.md#block-r3-provide-the-human-documentation-routes)
+and [preparation contract](../../contracts/release-reproduction/README.md#standalone-macos-developer-preparation)
+record the accepted boundaries. README B1 now contains short download, launch
+and saved-environment commands; the former large guide becomes optional
+reference material. Root cloning uses current main as previously requested;
+frozen component/producer pins and release artifacts remain unchanged.
+
+The wizard discovers compatible tools, plans missing prerequisites, preserves
+global/shared installations, checks explicit storage, provides resumable owned
+Python/Node setup and private non-secret selection/environment files, and
+separates human Xcode/Docker/Google actions from unattended checks. Google
+metadata probes never transfer archives or expose tokens. No actual installer,
+login, Docker operation, build, signing, source acquisition or demo process was
+started during implementation. Offline fixtures exercise first/repeat/resume,
+decline/check-only, invalid versions/paths/archives, lock/volume handling,
+credential redaction and metadata-only access. Actual first-use qualification
+remains the owner's next walkthrough, not a claimed result of these fixtures.
+
+Validation of this source checkpoint: 25 targeted offline wizard/interactive
+reader tests pass, Bash syntax passes, the documentation gate passes (341
+documents), and the independent reader-route gate passes. The cancellation
+fixture verifies its owned child exits; disposable fixture directories are
+removed. No test helper or demo runtime is retained. Publication uses the
+ordinary confidential-input/documentation hooks and skips build CI to preserve
+the agreed no-install/no-build walkthrough boundary.
+
 ### 2026 October 9 Guided storage preflight presentation
 
 The owner completed the first macOS preparation block on the new APFS SSD,

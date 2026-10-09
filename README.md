@@ -25,10 +25,10 @@ management and updates use actual platform components.
   This is not a prerequisite for A or B.
 
 These instructions target **macOS on Apple Silicon**. Run Terminal blocks one
-at a time, in order, in the same terminal. Stop at the first error; do not
-continue with an empty variable or a different package. The revised walkthrough
-is source-reviewed documentation, **awaiting a joint step-by-step execution**.
-Writing these commands has not run a build, installation or test.
+at a time, in order. Stop at the first error; do not continue with an empty
+variable or a different package. Developer preparation now has a standalone
+wizard with offline regression checks; its real first-use walkthrough and the
+subsequent build remain **awaiting joint step-by-step execution**.
 
 <a id="release-status"></a>
 
@@ -173,45 +173,77 @@ and separating build data; it is not a platform requirement. Use a writable
 local APFS volume and keep the workspace, its reusable inputs and short test
 scratch directory on that volume. Docker may use a different local volume.
 
-Before downloading inputs, budget for source checkouts, downloads, unpacked
-dependencies, caches, temporary files, outputs and a free-space reserve. Check
-the disk that will actually hold each of them, including Docker's backing disk
-and, if following route C, the Factory Builder VM's storage. The final DMG size
-alone is not a build-space estimate. Use the selected release's capacity report
-and documented guards in B3; do not start acquisition or a build if space is
-insufficient.
+**Prepare the environment with one wizard.** No clone, Python or Homebrew is
+needed to start. It checks all six preparation stages, reuses compatible tools,
+shows what is missing and asks once before preparing it. Choose an existing
+internal folder or mounted external disk when prompted. Xcode, Docker first-run
+setup and account permissions may still require your interaction.
 
-**Source and release boundary:** the new storage-aware scripts are awaiting
-regression execution and the joint walkthrough. The frozen candidate selected
-in B2 still uses older, external-only build owners and requires Docker on that
-same external volume. It is not retroactively upgraded by this README or by
-editing its pins. A successor release must explicitly adopt the new owners
-before the complete internal-disk route can be called verified. The new
-preflight reports this compatibility separately from available space.
+Download the current script from this repository. Continue only if download
+succeeds; a partial download never replaces the completed script:
 
-These instructions never migrate or restart shared Docker. A disconnected
-external volume must never cause a silent fallback to internal storage.
+```sh
+curl --fail --location --proto '=https' --proto-redir '=https' \
+  --output "$HOME/Downloads/aosedge-prepare-macos.sh.download" \
+  https://raw.githubusercontent.com/alexmaninblack/aosedge-sdv-demo/main/scripts/prepare-macos.sh && \
+mv "$HOME/Downloads/aosedge-prepare-macos.sh.download" "$HOME/Downloads/aosedge-prepare-macos.sh"
+```
 
-Complete [macOS developer preparation](docs/getting-started/macos-developer-tools.md)
-in the same Terminal first. It defines `SDV_ROOT`, `SDV_TMP` and the explicit
-tool paths used below. Obtain both private input binding files, Drive access
-and an authorized signing identity.
+You can open the downloaded file in a text editor before executing it. Run:
+
+```sh
+/bin/bash "$HOME/Downloads/aosedge-prepare-macos.sh"
+```
+
+Have your Google account, the two private input binding files supplied by the
+release owner, and your Apple Development signing identity available. The wizard
+remembers selections; rerun the same command after resolving a missing item.
+It does not clone, build, sign anything or start the demo. It never restarts
+Docker or moves its disk. See the optional
+[preparation reference](docs/getting-started/macos-developer-tools.md) for
+diagnostic mode, installation locations and recovery.
+
+Only after **READY FOR SOURCE PREPARATION**, load the saved environment:
+
+```sh
+source "$HOME/Library/Application Support/AosEdge SDV Lab/Developer/environment.sh"
+```
+
+Expect `Developer environment loaded`. This supplies `SDV_ROOT`, `SDV_TMP` and
+the explicit tool/access paths below, also after a Terminal restart. Stop if
+the saved environment reports an error. Preparation is not a completed build
+or a substitute for the build-space and exact-source checks in B3.
 
 ### B2. Clone the one entry repository
 
 ```sh
 git clone --branch main https://github.com/alexmaninblack/aosedge-sdv-demo.git "$SDV_ROOT/source"
 cd "$SDV_ROOT/source"
-git switch --detach dbfd542d38f3730f151f43dd303af94e4902c74d
 git rev-parse HEAD
 ```
 
-Expect the exact hash above. `main` is where current documentation lives;
-the detached hash selects this candidate's reproducible source, not a new tag.
-Keep this current guide open in your browser: the selected older source commit
-does not contain this revised walkthrough. Do not clone components manually.
+This walkthrough uses the current `main`, as selected for the development
+exercise. Record the printed revision; it is not an immutable release tag.
+The existing build plan still selects frozen candidate component/producer
+revisions, not all component mains. Changing that plan is a separate reviewed
+step; the wizard does not change those pins. For exact historical candidate
+reproduction, use the checkpoint recorded in
+[release selection](docs/getting-started/release-status.md). Do not clone
+components manually.
 
 ### B3. Inspect the build before downloading inputs
+
+**Source and release boundary:** current storage-aware scripts and their joint
+walkthrough do not upgrade the historical build plan. That plan still uses
+older, external-only build owners and requires Docker on that same external
+volume. A reviewed successor must adopt new owners before the complete internal
+or split-Docker route can be qualified. Do not edit historical pins or relocate
+shared Docker to bypass this boundary. Compatibility is checked separately
+from available space; a disconnected disk must never trigger a fallback.
+
+Budget for source checkouts, downloads, unpacked inputs, caches, temporary files,
+outputs and reserves on each actual disk, including Docker and, for route C,
+the Factory Builder. The final DMG size is not a build-space estimate.
 
 ```sh
 ./lab plan --profile developer \
