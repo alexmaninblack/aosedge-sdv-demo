@@ -190,9 +190,10 @@ class PlatformTests(unittest.TestCase):
         from types import SimpleNamespace
         responses = [SimpleNamespace(returncode=0, stdout=b'Filesystem\n/dev/disk3s5 1 2 3\n'),
                      SimpleNamespace(returncode=0, stdout=plistlib.dumps({'Internal': False}))]
-        with patch.object(bridge.subprocess, 'run', side_effect=responses):
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(bridge.subprocess, 'run', side_effect=responses):
             with self.assertRaisesRegex(ValueError, 'INTERNAL_REQUIRED'):
-                bridge.internal_volume(Path('/private/tmp'))
+                bridge.internal_volume(Path(directory))
 
 
 class BootstrapTests(unittest.TestCase):

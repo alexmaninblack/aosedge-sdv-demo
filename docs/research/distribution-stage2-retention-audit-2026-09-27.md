@@ -10,7 +10,10 @@
 - Inputs: [distribution plan](../planning/active/installable-distribution-and-reproducibility.md),
   [complete application checkpoint](../qualification/portable-application-2026-09-26.md),
   [earlier retention audit](distribution-stage1-retention-audit-2026-09-26.md),
-  [standalone retention and handoff](../../../CarlaSim/Docs/standalone-retention-audit-2026-09-26.md).
+  and the maintainer-local standalone retention and handoff record
+  (`CarlaSim/Docs/standalone-retention-audit-2026-09-26.md`, not published in Git).
+  This local evidence is not a required clone/build input; the retained-input
+  conclusions relevant to this audit are recorded below.
 
 This is dated operational evidence, not a runtime/architecture change, an
 installer qualification or permission to delete. Only this report and its

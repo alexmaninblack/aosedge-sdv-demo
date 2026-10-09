@@ -44,6 +44,18 @@ separate from local tests and Git publication; the preceding `1e73ae5` already
 had a failing Repository boundaries workflow and a passing Reproduction offline
 workflow. This consolidation is not a new binary release or R4 qualification.
 
+Investigation of that pre-existing CI failure identified two portable-source
+defects: a disk-probe fixture required macOS-only `/private/tmp` on the Linux
+runner, and an audit linked to an ignored maintainer-local CARLA report that
+does not exist in a public clone. The fixture now owns a portable temporary
+directory; the audit identifies its local-only evidence without a broken public
+link. Runtime disk validation and documentation-link validation are unchanged.
+All 20 isolated Setup bridge tests and 19 documentation regression tests pass;
+the read-only source gate resolves all ten pinned roles, 28 recipe files and
+the original baseline tag. GitHub API readback confirms matching local/remote
+`main` heads in all nine repositories and the current root README on the default
+branch. No local tracked changes remain outside the publication commits.
+
 No build, installer, VM, simulator, Cloud operation or large artifact transfer
 was needed. Shared Docker and unrelated workloads remain untouched. Next work
 is the already planned R4 clean-SSD campaign after settling the declared Builder
