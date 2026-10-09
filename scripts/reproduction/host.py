@@ -41,8 +41,8 @@ def receipt_path(output):
     return output.parent/(output.name+'.receipt.json')
 
 
-def verify(output, inputs):
-    receipt = read_json(receipt_path(output))
+def verify(output, inputs, receipt=None):
+    receipt = read_json(receipt_path(output)) if receipt is None else receipt
     require(receipt.get('inputs') == inputs and receipt.get('status') == 'ASSEMBLED_NOT_RUNTIME_QUALIFIED'
             and receipt.get('externalDistributionApproved') is False, 'Host build receipt differs')
     matches(output/MANIFEST, receipt['manifest'])

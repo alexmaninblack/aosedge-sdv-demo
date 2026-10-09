@@ -32,8 +32,8 @@ def upstream(storage, state, target, pin=None):
     return key, path
 
 
-def verify(output, inputs):
-    receipt = read_json(host.receipt_path(output))
+def verify(output, inputs, receipt=None):
+    receipt = read_json(host.receipt_path(output)) if receipt is None else receipt
     require(receipt.get('inputs') == inputs and receipt.get('status') == 'ASSEMBLED_NOT_RUNTIME_QUALIFIED'
             and receipt.get('runtimeStarted') is False, 'Package receipt differs')
     manifest = MANIFESTS[inputs['target']]

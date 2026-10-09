@@ -89,8 +89,8 @@ def retained_preparation(storage, kit):
     return path.parent, selected, pin, factory
 
 
-def verify_preparation(output, inputs):
-    receipt = read_json(output / 'build-receipt.json')
+def verify_preparation(output, inputs, receipt=None):
+    receipt = read_json(output / 'build-receipt.json') if receipt is None else receipt
     require(receipt.get('status') == 'ASSEMBLED_NOT_RUNTIME_QUALIFIED' and receipt.get('inputs') == inputs
             and receipt.get('signed') is False and receipt.get('published') is False,
             'Preparation build receipt differs')

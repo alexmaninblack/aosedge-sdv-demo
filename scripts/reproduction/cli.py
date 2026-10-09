@@ -83,7 +83,7 @@ def main(argv=None):
         from .factory import main as factory_main
         return factory_main(argv[1:])
     parser = argparse.ArgumentParser(description=__doc__, epilog='Reusable prebuilt CARLA inputs: lab dependencies --help')
-    parser.add_argument('action', choices=('plan', 'prepare', 'status', 'verify', 'build', 'cache', 'space'))
+    parser.add_argument('action', choices=('plan', 'prepare', 'status', 'verify', 'build', 'cache', 'space', 'revalidate'))
     parser.add_argument('--profile', choices=('operator', 'developer', 'full-source'))
     parser.add_argument('--storage', type=Path)
     parser.add_argument('--manifest', type=Path)
@@ -131,9 +131,13 @@ def main(argv=None):
         if args.action == 'cache':
             require(args.cache_from is not None, 'Specify --cache-from with an existing prepared workspace')
             require(profile != 'full-source', 'Full-source cache closure is not yet supported')
-        if args.action in ('status', 'verify'):
+        if args.action in ('status', 'verify', 'revalidate'):
             require(storage.state_path.exists(), 'No prepared state; use prepare first')
         with storage.locked() as state:
+            if args.action == 'revalidate':
+                from .revalidate import refresh
+                emit(refresh(storage, state, args.target, progress))
+                return 0
             if args.action == 'cache':
                 emit(cache.reuse(storage, args.cache_from, progress))
                 return 0

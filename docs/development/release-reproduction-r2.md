@@ -813,8 +813,31 @@ selection is preserved. Fixture coverage includes first/repeat behavior,
 independent candidate selection, wrong volume, writable image, altered manifest,
 failed Factory gates, missing Setup selection and changed application digest.
 
-Real downstream assembly and immutable output pins are the next gate. This
-adapter change does not itself qualify the source-built image or installer.
+Preparation completed with key
+`1c1ba22a1c1d6db947da0f8c4c02a493eedae3a48ddfc987d977708269c96171`;
+its 51,158-byte manifest SHA-256 is
+`613413e6ba0563fe3cafbc17e9145d04cb86fd6a8956f4815d7c4b6cdfe063c3`.
+The independent source-Factory packaging checkpoint selects it while retaining
+the unchanged host, Cloud, VM and backend input pins. No image was rebuilt.
+The root regression ran 1,023 tests: 1,022 passed and one skipped.
+
+The existing disposable VM owner booted the source image through a new SSD-local
+overlay with external networking restricted. It reached `main login:` and
+completed ACPI shutdown with the process gone. This is an offline boot smoke,
+not installed service, Cloud or full E2E qualification. The first harness attempt
+failed before overlay/process creation because the SSD root was not writable;
+using the existing user-owned SSD directory fixed that test-path issue without
+changing filesystem permissions or the image.
+
+Downstream reuse exposed a separate reproducibility defect: macOS remounting
+changed `st_dev` from 16777243 to 16777241 while the external volume UUID, file
+inodes, sizes, times and modes remained unchanged. Legacy output stamps treated
+that as payload change. Explicit `lab revalidate` now checks the original volume
+binding, rejects changes beyond the device number, hashes every affected payload
+against its existing manifest, preserves the original receipt and refreshes only
+the device stamps. It neither recompiles nor adopts a new artifact identity.
+Negative fixtures cover wrong volume, changed payload, wrong digest, extra files
+and missing receipts. Real content revalidation precedes downstream continuation.
 
 ## Ordered chain proof on October 8
 

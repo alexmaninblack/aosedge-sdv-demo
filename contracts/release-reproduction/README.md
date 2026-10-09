@@ -422,6 +422,17 @@ and Setup identity. The existing warm candidate stays on its original owners.
 
 ### Cross workspace cache reuse and capacity
 
+`revalidate --storage <workspace> --target <input-target>` explicitly recovers
+completed host, preparation, VM or backend-input receipts after macOS renumbers
+the same mounted volume. The existing workspace UUID binding is mandatory.
+Only the device-number field may differ; inode, size, times, mode and inventory
+must remain unchanged. Every affected payload is hashed against its existing
+manifest before the original owner validates the proposed receipt. Original
+receipts and verification evidence are preserved before atomic stamp refresh.
+No payload, build key or source/manifest pin changes. Wrong volume, any other
+metadata change, missing receipt or content mismatch fails without resealing.
+This is explicit recovery, not an implicit status repair or a new build.
+
 `cache --storage <destination> --cache-from <existing-workspace>` reuses only
 declared complete digest-cache objects. Both workspaces must be separate,
 ownership-marked and on the same bound external volume. Expected sizes and
