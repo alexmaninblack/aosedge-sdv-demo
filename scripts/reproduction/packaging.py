@@ -7,7 +7,7 @@ import re
 import stat
 import tempfile
 
-from .core import ROOT, require, regular, read_json, atomic_json, digest, external_volume, run_command, GIB
+from .core import ROOT, require, regular, read_json, atomic_json, digest, storage_volume, run_command, GIB
 from .cloud import matches, relative as safe_relative
 from .sources import git, verify_sources
 from . import services
@@ -70,7 +70,7 @@ def selected_services(storage, state, pins):
 
 def retained_preparation(storage, kit):
     require(kit is not None, 'Specify --kit-inputs for declared Factory and unsigned VDP bases')
-    require(external_volume(kit)['uuid'] == storage.volume['uuid'], 'Kit must be on the bound SSD')
+    require(storage_volume(kit)['uuid'] == storage.volume['uuid'], 'Kit must be on the bound volume')
     pin = next(r for r in storage.release.value['inputs'] if r['id'] == 'preparation-inputs')
     path = matches(Path(kit) / pin['kitPath'], pin)
     manifest = read_json(path)
@@ -127,7 +127,7 @@ def stamp(path):
 
 def source_factory(storage, root):
     """Select only the independently pinned source build, never adopt a receipt."""
-    require(external_volume(root)['uuid'] == storage.volume['uuid'], 'Factory inputs must be on the bound SSD')
+    require(storage_volume(root)['uuid'] == storage.volume['uuid'], 'Factory inputs must be on the bound volume')
     pin = read_json(ROOT / SOURCE_FACTORY_CHECKPOINT)
     factory = pin['factory']
     manifest_path = matches(Path(root) / safe_relative(pin['manifest']['path']), pin['manifest'])
@@ -265,7 +265,7 @@ def preparation(storage, state, kit, python, progress, prepare_dependencies=Fals
                 SOURCE_FACTORY_CHECKPOINT if source_selection else FACTORY_CHECKPOINT, SERVICE_CHECKPOINT],
                 env=storage.environment(), cwd=scratch, timeout=300)
             output.parent.joinpath(key + '.log').write_bytes((result.stdout + result.stderr)[-2**20:])
-            require(result.returncode == 0, 'Preparation owner failed; inspect retained SSD log')
+            require(result.returncode == 0, 'Preparation owner failed; inspect retained workspace log')
             storage.check(reserve=90*GIB)
         manifest = read_json(output / PREPARATION_MANIFEST)
         # Owner verifies copied bytes, Factory hash and product/VDP identities before returning.

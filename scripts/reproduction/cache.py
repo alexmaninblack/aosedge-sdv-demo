@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 import re
 
-from .core import require, no_links, regular, read_json, atomic_json, external_volume
+from .core import require, no_links, regular, read_json, atomic_json, storage_volume
 from .artifacts import identity, sha256
 from .sources import check_source
 
@@ -15,8 +15,8 @@ def source(storage, path):
     root = no_links(path)
     require(root != storage.root and not root.is_relative_to(storage.root)
             and not storage.root.is_relative_to(root), 'Cache workspaces must be separate')
-    require(root.is_dir() and external_volume(root)['uuid'] == storage.volume['uuid'],
-            'Cache source must be on the bound external volume')
+    require(root.is_dir() and storage_volume(root)['uuid'] == storage.volume['uuid'],
+            'Cache source must be on the bound volume')
     value = read_json(root/'preparation.json')
     require(isinstance(value, dict), 'Invalid cache workspace state')
     binding = value.get('binding', {})
@@ -30,7 +30,7 @@ def source(storage, path):
     return root
 
 
-def catalogue(storage, donor=None):
+def catalogue(storage, donor=None, *, allow_unprepared=False):
     """Expected hashes come from the release and its exact public source lock."""
     selected = {}
     def add(row, name):
@@ -52,6 +52,8 @@ def catalogue(storage, donor=None):
                 check_source(candidate, expected, env)
                 owner = candidate
                 break
+        if owner is None and allow_unprepared:
+            return selected
         require(owner is not None, 'Prepared exact integration source required to resolve the wheel cache')
         lock = read_json(owner/'workspace/cloud-worker-wheels.lock.json')
         require(lock.get('python') == '3.12' and lock.get('platform') == 'macOS-arm64'

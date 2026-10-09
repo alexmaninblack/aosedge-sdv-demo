@@ -14,6 +14,10 @@ old kit numbers or sibling repositories to choose a route.
    This separate route lists its unresolved prerequisites and is not yet qualified.
 
 All routes start from [release selection and access](release-status.md).
+For copy/paste entry steps use the [root README](../../README.md). Developers
+first complete [macOS tool and access preparation](macos-developer-tools.md),
+then clone the single entry repository. The revised instructions are waiting
+for a joint step-by-step walkthrough; no build/test run is implied by the edit.
 For the system overview, use the [product map](../architecture/product-map.md).
 For changes, use [Contributing](../../CONTRIBUTING.md).
 

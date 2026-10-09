@@ -1,12 +1,13 @@
 # SPDX-FileCopyrightText: 2026 maninblack
 # SPDX-License-Identifier: MIT
 """Ordered invocation of exact build owners; no runtime or release promotion."""
+import ast
 import json
 import os
 from pathlib import Path
 import re
 
-from .core import ROOT, require, read_json, atomic_json, digest, no_links, external_volume, run_command, GIB
+from .core import ROOT, LabError, require, read_json, atomic_json, digest, no_links, storage_volume, run_command, require_capacity, GIB
 from .sources import git, check_source, verify_sources
 from . import build, cloud, containers, services, gateway, packaging, host, package_chain, media
 
@@ -65,6 +66,32 @@ def ancestors(plan, name):
     visit(name)
     return result
 
+def storage_compatibility(storage, plan, docker_volume=None):
+    """Inspect exact local Git blobs without importing/mutating frozen owners."""
+    required = {'internal-apfs' if storage.volume.get('internal') else 'external-apfs'}
+    separate_docker = docker_volume is not None and docker_volume['uuid'] != storage.volume['uuid']
+    rows = []
+    for revision in dict.fromkeys(plan['producers'].values()):
+        producer_required = set(required)
+        if separate_docker and any(plan['producers'][step['producer']] == revision and step['target'] in
+                ('brake-backend','tire-backend','backend-export','brake-service','tire-service') for step in plan['steps']):
+            producer_required.add('separate-docker-volume')
+        try:
+            text = git(ROOT, ['show', revision+':scripts/reproduction/core.py'],
+                       storage.environment(create=False))
+            declarations = [n for n in ast.parse(text).body if isinstance(n, ast.Assign)
+                            and any(isinstance(t, ast.Name) and t.id == 'STORAGE_CAPABILITIES' for t in n.targets)]
+            require(len(declarations) <= 1, 'Ambiguous storage capabilities')
+            capabilities = ast.literal_eval(declarations[0].value) if declarations else ('external-apfs',)
+            require(isinstance(capabilities, (list, tuple)) and all(isinstance(c, str) for c in capabilities),
+                    'Invalid storage capabilities')
+            missing = sorted(producer_required - set(capabilities))
+            rows.append({'revision':revision, 'compatible':not missing, 'missingCapabilities':missing})
+        except (LabError, SyntaxError, ValueError, TypeError):
+            rows.append({'revision':revision, 'compatible':False, 'reason':'Exact producer storage policy is unavailable locally'})
+    return {'compatible':all(r['compatible'] for r in rows),
+            'requiredCapabilities':sorted(required | ({'separate-docker-volume'} if separate_docker else set())), 'producers':rows}
+
 
 def producer(storage, plan, revision, acquire, progress):
     """An independent detached build-input checkout, never a working-tree edit."""
@@ -113,8 +140,8 @@ def preflight(storage, args):
     config = {k: str(Path(getattr(args, k)).absolute()) for k in required}
     for name in ('kit_inputs', 'gateway_sdk'):
         path = no_links(config[name])
-        require(path.is_dir() and external_volume(path)['uuid'] == storage.volume['uuid'],
-                'Chain input must exist on the bound SSD')
+        require(path.is_dir() and storage_volume(path)['uuid'] == storage.volume['uuid'],
+                'Chain input must exist on the bound volume')
     gateway.temporary_parent(storage, config['test_tmp_parent'])
     for name in ('python','ui_python','node','npm','cmake','docker'):
         path = Path(config[name])
@@ -123,8 +150,8 @@ def preflight(storage, args):
     config.update(signing_identity=args.signing_identity.upper(), prepare_dependencies=args.prepare_dependencies)
     if getattr(args, 'factory_inputs', None) is not None:
         path = no_links(Path(args.factory_inputs).absolute())
-        require(path.is_dir() and external_volume(path)['uuid'] == storage.volume['uuid'],
-                'Factory inputs must exist on the bound SSD')
+        require(path.is_dir() and storage_volume(path)['uuid'] == storage.volume['uuid'],
+                'Factory inputs must exist on the bound volume')
         config['factory_inputs'] = str(path)
     for name in ('input_checkpoint', 'release_checkpoint'):
         if getattr(args, name, None) is not None:
@@ -173,6 +200,13 @@ def execute(storage, state, args, progress):
     config = preflight(storage, args)
     # Preserve mandatory per-owner guards; this is not a measured cold peak.
     storage.check(additional=76*GIB, reserve=90*GIB)
+    docker_storage = containers.inspect_storage(args.docker, storage.environment(create=False), storage.root)
+    require_capacity(containers.capacity_requests(storage, docker_storage['disk'], docker_storage['volume'],
+                                                  additional=76*GIB, reserve=90*GIB))
+    compatibility = storage_compatibility(storage, plan, docker_storage['volume'])
+    require(compatibility['compatible'],
+            'Selected frozen producers do not support this storage layout (or their policy is unavailable); '
+            'use a reviewed successor producer plan, not edited historical pins')
     selected, paths = {}, {}
     for rev in dict.fromkeys(plan['producers'].values()):
         paths[rev] = producer(storage, plan, rev, args.prepare_dependencies, progress)
@@ -201,7 +235,7 @@ def execute(storage, state, args, progress):
             first = storage.path('builds/chains/'+key+'-'+step['id']+'.first-failure.log')
             if not first.exists():
                 first.write_bytes((response.stdout+response.stderr)[-2**20:])
-        require(response.returncode == 0, 'Chain step '+step['id']+' failed; prior completed results preserved, inspect SSD log')
+        require(response.returncode == 0, 'Chain step '+step['id']+' failed; prior completed results preserved, inspect workspace log')
         result_key = completed_key(response.stdout)
         fresh = storage.state()
         state.clear(); state.update(fresh)

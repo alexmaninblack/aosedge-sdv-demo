@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 maninblack
 # SPDX-License-Identifier: MIT
-"""Pinned release, external-volume guard and build-only state."""
+"""Pinned release, explicit-volume guards and build-only state."""
 from __future__ import annotations
 from contextlib import contextmanager
 import fcntl
@@ -19,6 +19,8 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parents[2]
 GIB = 2**30
+# Read statically by the chain planner; old producers retain their own policy.
+STORAGE_CAPABILITIES = ('internal-apfs', 'external-apfs', 'separate-docker-volume')
 
 class LabError(RuntimeError):
     pass
@@ -138,43 +140,99 @@ class Release:
     def gates(self, profile):
         return [{'id': g['id'], 'resolution': g['resolution']} for g in self.value['gates'] if profile in g['profiles']]
 
-def external_volume(path):
+def storage_volume(path):
     require(platform.system() == 'Darwin' and platform.machine() == 'arm64', 'Preparation requires macOS on Apple Silicon')
     path = no_links(path)
     existing = next(p for p in (path, *path.parents) if p.exists())
-    # diskutil accepts a device or mount point, not an arbitrary child directory.
-    selected_mount = next(p for p in (existing, *existing.parents) if p.is_mount())
     try:
-        result = subprocess.run(['/usr/sbin/diskutil', 'info', '-plist', str(selected_mount)], capture_output=True, timeout=10)
-        require(result.returncode == 0, 'Cannot inspect external storage')
+        # /Users is a firmlink into the Data volume: walking lexical parents
+        # would select the sealed system volume. Ask df for the actual device.
+        result = subprocess.run(['/bin/df', '-P', str(existing)], capture_output=True,
+                                timeout=10, env={'LC_ALL':'C', 'PATH':'/usr/bin:/bin:/usr/sbin:/sbin'})
+        require(result.returncode == 0, 'Cannot locate storage device')
+        rows = result.stdout.decode('utf-8').splitlines()
+        fields = rows[-1].split(None, 5) if len(rows) == 2 else []
+        require(len(fields) == 6 and fields[0].startswith('/dev/disk'), 'Expected a local mounted disk')
+        result = subprocess.run(['/usr/sbin/diskutil', 'info', '-plist', fields[0]], capture_output=True, timeout=10)
+        require(result.returncode == 0, 'Cannot inspect selected storage')
         info = plistlib.loads(result.stdout)
-    except (OSError, ValueError, plistlib.InvalidFileException, subprocess.TimeoutExpired) as exc:
-        raise LabError('Cannot inspect external storage') from exc
-    mount = no_links(info.get('MountPoint', '/'))
-    require(mount == selected_mount, 'Reported volume differs from selected mount')
-    require(info.get('Internal') is False and info.get('WritableVolume') is True and info.get('VolumeUUID'),
-            'A writable external volume is required; no internal fallback')
-    require(mount != Path('/') and mount.is_mount() and path != mount and path.is_relative_to(mount),
-            'Storage must be a directory inside a mounted external volume')
-    return {'uuid': info['VolumeUUID'], 'mount': str(mount), 'device': mount.stat().st_dev}
+    except (OSError, ValueError, UnicodeError, plistlib.InvalidFileException, subprocess.TimeoutExpired) as exc:
+        raise LabError('Cannot inspect selected storage') from exc
+    require(isinstance(info, dict) and isinstance(info.get('MountPoint'), str), 'Missing storage mount point')
+    mount = no_links(info['MountPoint'])
+    require(type(info.get('Internal')) is bool and info.get('WritableVolume') is True
+            and isinstance(info.get('VolumeUUID'), str) and info['VolumeUUID']
+            and info.get('FilesystemType') == 'apfs', 'A writable local APFS volume is required')
+    require(mount.is_mount() and existing.stat().st_dev == mount.stat().st_dev,
+            'Reported volume differs from selected storage')
+    require(path not in (mount, Path('/')), 'Select a directory within the volume, not its root')
+    # A stale/missing /Volumes/NAME directory can live on the internal Data
+    # volume. Even a first preparation must not mistake it for a mounted disk.
+    if path.is_relative_to('/Volumes'):
+        require(mount.is_relative_to('/Volumes') and mount != Path('/Volumes')
+                and path.is_relative_to(mount), 'Selected /Volumes disk is not mounted; no fallback')
+    if not info['Internal']:
+        require(path.is_relative_to(mount), 'External storage must remain inside its mounted volume')
+    pool = info.get('APFSContainerReference')
+    require(isinstance(pool, str) and pool.startswith('disk'), 'Missing APFS capacity pool identity')
+    return {'uuid': info['VolumeUUID'], 'mount': str(mount), 'device': mount.stat().st_dev,
+            'internal': info['Internal'], 'pool': pool}
+
+def check_volume(path, volume):
+    """Cheap in-operation checks; UUIDs are rebound/validated at command entry."""
+    mount = Path(volume['mount'])
+    require(mount.is_mount() and mount.stat().st_dev == volume['device'], 'Storage volume disconnected or replaced')
+    path = no_links(path)
+    existing = next(p for p in (path, *path.parents) if p.exists())
+    require(existing.stat().st_dev == volume['device'], 'Storage escaped the selected volume')
+    return existing
+
+def capacity_report(requests):
+    """Sum additional demand per APFS pool, retaining one largest reserve.
+
+    Each request is (label, path, volume, additional bytes, reserve bytes).
+    Per-volume checks also honor tighter volume quotas; free space is never
+    summed across volumes in the same pool. This is admission, not a peak claim.
+    """
+    pools = {}
+    for label, path, volume, additional, reserve in requests:
+        require(type(additional) is int and additional >= 0 and type(reserve) is int and reserve >= 0,
+                'Invalid capacity reservation')
+        existing = check_volume(path, volume)
+        free = shutil.disk_usage(existing).free
+        key = volume.get('pool', volume['uuid'])
+        row = pools.setdefault(key, {'pool':key, 'locations':[], 'freeBytes':free,
+                                    'additionalBytes':0, 'reserveBytes':0})
+        row['freeBytes'] = min(row['freeBytes'], free)
+        row['additionalBytes'] += additional
+        row['reserveBytes'] = max(row['reserveBytes'], reserve)
+        row['locations'].append({'role':label, 'path':str(path), 'volumeUUID':volume['uuid'],
+                                 'freeBytes':free, 'requiredBytes':additional+reserve})
+    for row in pools.values():
+        row['requiredBytes'] = row['additionalBytes'] + row['reserveBytes']
+        row['fits'] = row['freeBytes'] >= row['requiredBytes']
+    return list(pools.values())
+
+def require_capacity(requests):
+    rows = capacity_report(requests)
+    for row in rows:
+        locations = ', '.join(f"{r['role']}: {r['path']}" for r in row['locations'])
+        require(row['fits'], f"Insufficient disk space ({locations}): {row['freeBytes']/GIB:.2f} GiB available, "
+                f"{row['requiredBytes']/GIB:.2f} GiB required including reserve")
+    return rows
 
 class Storage:
     def __init__(self, path, release, profile):
         self.root = no_links(path)
         self.release, self.profile = release, profile
         release.selected_sources(profile)
-        self.volume = external_volume(self.root)
+        self.volume = storage_volume(self.root)
         self.binding = {'schemaVersion': 1, 'release': release.key, 'releaseId': release.value['id'],
                         'profile': profile, 'volumeUUID': self.volume['uuid']}
         self.state_path = self.root / 'preparation.json'
 
     def check(self, additional=0, reserve=60*GIB):
-        mount = Path(self.volume['mount'])
-        require(mount.is_mount() and mount.stat().st_dev == self.volume['device'], 'External volume disconnected or replaced')
-        no_links(self.root)
-        existing = next(p for p in (self.root, *self.root.parents) if p.exists())
-        require(existing.stat().st_dev == self.volume['device'], 'Storage escaped the selected volume')
-        require(shutil.disk_usage(existing).free >= reserve + additional, 'Insufficient external disk space including reserve')
+        require_capacity([('workspace', self.root, self.volume, additional, reserve)])
 
     def path(self, relative):
         p = Path(relative)

@@ -30,7 +30,7 @@ class ReleaseTests(unittest.TestCase):
         self.assertNotIn('unreal', release.selected_sources('developer'))
 
     def test_plan_is_offline_and_never_claims_qualification(self):
-        with patch('reproduction.core.external_volume', side_effect=AssertionError), redirect_stdout(io.StringIO()) as output:
+        with patch('reproduction.core.storage_volume', side_effect=AssertionError), redirect_stdout(io.StringIO()) as output:
             self.assertEqual(cli.main(['plan']), 0)
         self.assertFalse(json.loads(output.getvalue())['qualified'])
 
@@ -56,7 +56,7 @@ class StorageFixture:
         self.base = Path(self.temporary.name).resolve()
         self.release = core.Release()
         self.volume = {'mount': str(self.base), 'uuid': 'TEST-VOLUME', 'device': self.base.stat().st_dev}
-        self.patch('reproduction.core.external_volume', return_value=self.volume)
+        self.patch('reproduction.core.storage_volume', return_value=self.volume)
         self.patch('pathlib.Path.is_mount', lambda p: p == self.base)
         self.patch('reproduction.core.shutil.disk_usage', return_value=SimpleNamespace(free=300*core.GIB))
         self.storage = core.Storage(self.base / 'workspace', self.release, 'developer')
@@ -148,32 +148,127 @@ class StorageTests(StorageFixture, unittest.TestCase):
 
 
 class VolumeProbeTests(unittest.TestCase):
-    def test_probe_uses_mount_not_child_directory(self):
+    def test_probe_uses_actual_device_for_internal_and_external_paths(self):
         with tempfile.TemporaryDirectory(prefix='lab-volume-') as temporary:
             mount = Path(temporary).resolve()
             child = mount / 'child'
             child.mkdir()
-            info = {'Internal': False, 'WritableVolume': True, 'VolumeUUID': 'X', 'MountPoint': str(mount)}
-            with patch('reproduction.core.platform.system', return_value='Darwin'), \
-                 patch('reproduction.core.platform.machine', return_value='arm64'), \
-                 patch('pathlib.Path.is_mount', lambda p: p == mount), \
-                 patch('reproduction.core.subprocess.run', return_value=SimpleNamespace(returncode=0, stdout=plistlib.dumps(info))) as run:
-                self.assertEqual(core.external_volume(child)['uuid'], 'X')
-                self.assertEqual(run.call_args.args[0][-1], str(mount))
+            for internal in (False, True):
+                info = {'Internal': internal, 'WritableVolume': True, 'VolumeUUID': 'X', 'MountPoint': str(mount),
+                        'FilesystemType':'apfs', 'APFSContainerReference':'disk9'}
+                replies = [SimpleNamespace(returncode=0, stdout=b'Filesystem Blocks Used Available Capacity Mounted on\n/dev/disk9s1 100 10 90 10% /mount with spaces\n'),
+                           SimpleNamespace(returncode=0, stdout=plistlib.dumps(info))]
+                with patch('reproduction.core.platform.system', return_value='Darwin'), \
+                     patch('reproduction.core.platform.machine', return_value='arm64'), \
+                     patch('pathlib.Path.is_mount', lambda p: p == mount), \
+                     patch('reproduction.core.subprocess.run', side_effect=replies) as run:
+                    value = core.storage_volume(child)
+                    self.assertEqual(value['uuid'], 'X')
+                    self.assertEqual(value['internal'], internal)
+                    self.assertEqual(run.call_args.args[0][-1], '/dev/disk9s1')
 
     def test_unsupported_host_does_not_invoke_diskutil(self):
         with patch('reproduction.core.platform.system', return_value='Linux'), patch('reproduction.core.subprocess.run') as run:
             with self.assertRaisesRegex(core.LabError, 'Apple Silicon'):
-                core.external_volume(Path('/path'))
+                core.storage_volume(Path('/path'))
             run.assert_not_called()
 
-    def test_internal_disk_is_rejected(self):
-        with patch('reproduction.core.platform.system', return_value='Darwin'), \
-             patch('reproduction.core.platform.machine', return_value='arm64'), \
-             patch('reproduction.core.subprocess.run', return_value=SimpleNamespace(returncode=0, stdout=plistlib.dumps({
-                 'Internal': True, 'WritableVolume': True, 'VolumeUUID': 'X', 'MountPoint': '/'}))):
-            with self.assertRaisesRegex(core.LabError, 'external'):
-                core.external_volume(Path('/'))
+    def test_data_firmlink_does_not_require_lexical_mount_ancestor(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            mount, users = root/'Data', root/'Users'
+            mount.mkdir(); users.mkdir()
+            info = {'Internal':True, 'WritableVolume':True, 'VolumeUUID':'DATA', 'MountPoint':str(mount),
+                    'FilesystemType':'apfs', 'APFSContainerReference':'disk3'}
+            replies = [SimpleNamespace(returncode=0, stdout=b'header\n/dev/disk3s5 100 10 90 10% /System/Volumes/Data\n'),
+                       SimpleNamespace(returncode=0, stdout=plistlib.dumps(info))]
+            with patch('reproduction.core.platform.system', return_value='Darwin'), \
+                 patch('reproduction.core.platform.machine', return_value='arm64'), \
+                 patch('pathlib.Path.is_mount', lambda p:p == mount), \
+                 patch('reproduction.core.subprocess.run', side_effect=replies):
+                self.assertEqual(core.storage_volume(users/'new-build')['uuid'], 'DATA')
+
+    def test_read_only_non_apfs_missing_uuid_and_volume_root_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            mount = Path(directory).resolve()
+            baseline = {'Internal':True, 'WritableVolume':True, 'VolumeUUID':'X', 'MountPoint':str(mount),
+                        'FilesystemType':'apfs', 'APFSContainerReference':'disk3'}
+            for key, value in (('WritableVolume', False), ('FilesystemType','exfat'), ('VolumeUUID',''), ('APFSContainerReference','')):
+                info = {**baseline, key:value}
+                replies = [SimpleNamespace(returncode=0, stdout=b'header\n/dev/disk3s5 100 10 90 10% /mount\n'),
+                           SimpleNamespace(returncode=0, stdout=plistlib.dumps(info))]
+                with self.subTest(key=key), patch('reproduction.core.platform.system', return_value='Darwin'), \
+                     patch('reproduction.core.platform.machine', return_value='arm64'), \
+                     patch('pathlib.Path.is_mount', lambda p:p == mount), \
+                     patch('reproduction.core.subprocess.run', side_effect=replies):
+                    with self.assertRaises(core.LabError):
+                        core.storage_volume(mount/'new')
+            replies = [SimpleNamespace(returncode=0, stdout=b'header\n/dev/disk3s5 100 10 90 10% /mount\n'),
+                       SimpleNamespace(returncode=0, stdout=plistlib.dumps(baseline))]
+            with patch('reproduction.core.platform.system', return_value='Darwin'), \
+                 patch('reproduction.core.platform.machine', return_value='arm64'), \
+                 patch('pathlib.Path.is_mount', lambda p:p == mount), \
+                 patch('reproduction.core.subprocess.run', side_effect=replies):
+                with self.assertRaisesRegex(core.LabError, 'not its root'):
+                    core.storage_volume(mount)
+
+    def test_network_device_and_malformed_df_rejected(self):
+        for output in (b'header\nserver:/share 1 1 1 50% /share\n', b'broken', b''):
+            with patch('reproduction.core.platform.system', return_value='Darwin'), \
+                 patch('reproduction.core.platform.machine', return_value='arm64'), \
+                 patch('reproduction.core.subprocess.run', return_value=SimpleNamespace(returncode=0, stdout=output)):
+                with self.assertRaisesRegex(core.LabError, 'local mounted disk'):
+                    core.storage_volume(Path('/'))
+
+    def test_missing_volumes_mount_cannot_become_internal_storage(self):
+        with tempfile.TemporaryDirectory() as directory:
+            mount = Path(directory).resolve()
+            path = Path('/Volumes/UNMOUNTED-SDV-FIXTURE/work')
+            info = {'Internal':True, 'WritableVolume':True, 'VolumeUUID':'DATA', 'MountPoint':str(mount),
+                    'FilesystemType':'apfs', 'APFSContainerReference':'disk3'}
+            replies = [SimpleNamespace(returncode=0, stdout=b'header\n/dev/disk3s5 100 10 90 10% /System/Volumes/Data\n'),
+                       SimpleNamespace(returncode=0, stdout=plistlib.dumps(info))]
+            with patch('reproduction.core.platform.system', return_value='Darwin'), \
+                 patch('reproduction.core.platform.machine', return_value='arm64'), \
+                 patch('pathlib.Path.is_mount', lambda p:p == mount), \
+                 patch('pathlib.Path.stat', return_value=SimpleNamespace(st_dev=42, st_mode=0o040700)), \
+                 patch('reproduction.core.subprocess.run', side_effect=replies):
+                with self.assertRaisesRegex(core.LabError, 'not mounted; no fallback'):
+                    core.storage_volume(path)
+
+
+class CapacityTests(StorageFixture, unittest.TestCase):
+    def test_shared_pool_combines_demand_without_counting_free_space_twice(self):
+        other = {**self.volume, 'uuid':'OTHER', 'pool':'disk3'}
+        self.volume['pool'] = 'disk3'
+        requests = [('workspace', self.storage.root, self.volume, 76*core.GIB, 90*core.GIB),
+                    ('docker', self.base, other, 2*core.GIB, 60*core.GIB)]
+        rows = core.capacity_report(requests)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['requiredBytes'], 168*core.GIB)
+        self.assertEqual(rows[0]['freeBytes'], 300*core.GIB)
+        with patch('reproduction.core.shutil.disk_usage', return_value=SimpleNamespace(free=167*core.GIB)):
+            with self.assertRaisesRegex(core.LabError, '167.00 GiB available, 168.00 GiB required'):
+                core.require_capacity(requests)
+
+    def test_separate_docker_disk_is_checked_independently(self):
+        disk = self.base/'Docker.raw'; disk.touch()
+        other = {**self.volume, 'uuid':'DOCKER', 'pool':'disk8'}
+        requests = containers.capacity_requests(self.storage, disk, other)
+        with patch('reproduction.core.shutil.disk_usage', side_effect=lambda p:SimpleNamespace(
+                free=(61 if p == disk else 300)*core.GIB)):
+            rows = core.capacity_report(requests)
+            self.assertEqual(len(rows), 2)
+            with self.assertRaisesRegex(core.LabError, 'docker: .*Docker.raw.*61.00 GiB available, 62.00 GiB required'):
+                core.require_capacity(requests)
+
+    def test_quota_on_shared_volume_uses_smaller_available_space(self):
+        self.volume['pool'] = 'disk3'
+        other = {**self.volume, 'uuid':'QUOTA'}
+        with patch('reproduction.core.shutil.disk_usage', side_effect=[SimpleNamespace(free=300*core.GIB), SimpleNamespace(free=63*core.GIB)]):
+            rows = core.capacity_report(containers.capacity_requests(self.storage, self.base, other))
+        self.assertEqual(rows[0]['requiredBytes'], 64*core.GIB)
+        self.assertFalse(rows[0]['fits'])
 
 
 class SourceTests(StorageFixture, unittest.TestCase):
@@ -460,7 +555,7 @@ class CloudBuildTests(StorageFixture, unittest.TestCase):
     def setUp(self):
         super().setUp()
         self.patch('reproduction.cloud.verify_sources', return_value=7)
-        self.patch('reproduction.cloud.external_volume', return_value=self.volume)
+        self.patch('reproduction.cloud.storage_volume', return_value=self.volume)
         self.integration = self.storage.root / 'sources/integration'
         owner = self.integration / 'scripts/distribution/cloud_worker.py'
         owner.parent.mkdir(parents=True)
@@ -573,7 +668,7 @@ class CloudBuildTests(StorageFixture, unittest.TestCase):
             cloud.relative('../escape')
 
     def test_kit_on_other_volume_is_rejected(self):
-        with patch('reproduction.cloud.external_volume', return_value={'uuid': 'OTHER'}):
+        with patch('reproduction.cloud.storage_volume', return_value={'uuid': 'OTHER'}):
             with self.assertRaisesRegex(core.LabError, 'selected external'):
                 self.invoke()
 
@@ -827,7 +922,7 @@ class ServiceBuildTests(StorageFixture, unittest.TestCase):
 class GatewaySDKTests(StorageFixture, unittest.TestCase):
     def setUp(self):
         super().setUp()
-        self.patch('reproduction.gateway_sdk.external_volume', return_value=self.volume)
+        self.patch('reproduction.gateway_sdk.storage_volume', return_value=self.volume)
         self.carla = self.base / 'carla'
         self.openssl = self.base / 'openssl'
         self.output = self.storage.root / 'sdk'
@@ -871,7 +966,7 @@ class GatewaySDKTests(StorageFixture, unittest.TestCase):
 
     def test_manifest_pin_and_payload_are_both_checked(self):
         result = self.invoke()
-        self.patch('reproduction.gateway.external_volume', return_value=self.volume)
+        self.patch('reproduction.gateway.storage_volume', return_value=self.volume)
         lock = self.base / 'sdk-lock.json'
         core.atomic_json(lock, {k: result[k] for k in ('manifestSha256', 'files', 'bytes')})
         self.patch('reproduction.gateway.SDK_LOCK', lock)
@@ -981,18 +1076,50 @@ class GatewayBuildTests(StorageFixture, unittest.TestCase):
                 gateway.test_result(report, ['one'])
 
 class DockerStorageTests(StorageFixture, unittest.TestCase):
-    def test_internal_or_unconfigured_docker_is_blocked_before_build(self):
-        for setting in ({}, {'DataFolder': str(self.base / 'internal')}):
-            with patch.object(self.storage, 'environment', return_value={}), \
-                 patch('reproduction.containers.command', return_value='unix:///local/docker.sock'), \
-                 patch('reproduction.containers.stat.S_ISSOCK', return_value=True), \
-                 patch('reproduction.containers.Path.stat', return_value=SimpleNamespace(st_mode=0)), \
-                 patch('reproduction.containers.Path.resolve', return_value=Path(sys.executable)), \
-                 patch('reproduction.containers.regular', side_effect=lambda p: p), \
-                 patch('reproduction.containers.read_json', return_value=setting), \
-                 patch('reproduction.containers.external_volume', side_effect=core.LabError('Internal disk')):
-                with self.assertRaisesRegex(core.LabError, 'Internal disk' if setting else 'Move Docker disk'):
-                    containers.Desktop(self.storage, sys.executable)
+    def test_unconfigured_docker_never_guesses_another_disk(self):
+        for setting in ({}, {'DataFolder':'relative'}):
+            with patch('reproduction.containers.read_json', return_value=setting):
+                with self.assertRaisesRegex(core.LabError, 'Cannot resolve Docker'):
+                    containers.backing_disk()
+
+    def test_read_only_probe_accepts_active_internal_disk_without_relocation(self):
+        disk = self.base/'Docker.raw'; disk.touch()
+        internal = {**self.volume, 'internal':True, 'uuid':'INTERNAL', 'pool':'disk3'}
+        with patch('reproduction.containers.command', side_effect=['unix://'+str(disk), '123']) as command, \
+             patch('reproduction.containers.stat.S_ISSOCK', return_value=True), \
+             patch('reproduction.containers.read_json', return_value={'DataFolder':str(self.base)}), \
+             patch('reproduction.containers.storage_volume', return_value=internal):
+            before = sorted(self.base.rglob('*'))
+            result = containers.inspect_storage(sys.executable, {}, self.base)
+            self.assertEqual(result['volume']['uuid'], 'INTERNAL')
+            self.assertEqual(sorted(self.base.rglob('*')), before)
+            self.assertEqual(len(command.call_args_list), 2)
+            self.assertIn('context', command.call_args_list[0].args[0])
+            self.assertEqual(command.call_args_list[1].args[0][0], '/usr/sbin/lsof')
+
+    def test_replaced_or_reconfigured_docker_disk_rejected(self):
+        disk = self.base/'Docker.raw'; disk.touch()
+        client = containers.Desktop.__new__(containers.Desktop)
+        client.storage = self.storage; client.disk = disk; client.volume = self.volume
+        client.additional = 2*core.GIB; client.reserve = 60*core.GIB
+        client.disk_identity = (disk.stat().st_dev, disk.stat().st_ino)
+        with patch('reproduction.containers.backing_disk', return_value=disk):
+            self.assertTrue(client.check_storage()[0]['fits'])
+            client.disk_identity = (-1, -1)
+            with self.assertRaisesRegex(core.LabError, 'replaced'):
+                client.check_storage()
+        with patch('reproduction.containers.backing_disk', return_value=self.base/'other'):
+            with self.assertRaisesRegex(core.LabError, 'configuration changed'):
+                client.check_storage()
+
+    def test_inactive_disk_is_not_an_active_engine_proof(self):
+        disk = self.base/'Docker.raw'; disk.touch()
+        with patch('reproduction.containers.command', side_effect=['unix://'+str(disk), '']), \
+             patch('reproduction.containers.stat.S_ISSOCK', return_value=True), \
+             patch('reproduction.containers.backing_disk', return_value=disk), \
+             patch('reproduction.containers.storage_volume', return_value=self.volume):
+            with self.assertRaisesRegex(core.LabError, 'not active'):
+                containers.inspect_storage(sys.executable, {}, self.base)
 
     def test_remote_engine_refused(self):
         with patch('reproduction.containers.command', return_value='tcp://remote.invalid:2376'):

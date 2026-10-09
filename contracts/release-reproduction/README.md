@@ -4,7 +4,7 @@
 # Release Definition and Reproduction Contract
 
 - Status: R1 complete; delivery and version policy accepted; acquisition and reproduction unqualified
-- Version: 1.19
+- Version: 1.20
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Scope: [R1 work packet](../../docs/planning/active/work-packets/human-friendly-reproduction.md)
@@ -125,7 +125,7 @@ and its `unpublished` locator remain unchanged. A private transfer of this new
 engineering candidate does not qualify its installation or any build profile.
 
 The command takes an explicit Google CLI account, private release folder and
-external workspace. Existing authorized CLI credentials remain in Google's
+explicit workspace. Existing authorized CLI credentials remain in Google's
 credential store; access tokens and resumable session URLs stay in memory, not
 arguments, receipts or logs. It never initiates login, changes sharing, replaces
 a remote file or deletes an artifact. Source size and SHA-256 must match the
@@ -169,7 +169,7 @@ uses the existing bounded, resumable digest cache, rejects unsafe/extra archive
 members, verifies payload hashes and modes, and publishes extracted inputs only
 after the entire set passes. Repeats validate recorded file identities; changed
 files fail rather than being silently overwritten. Everything large stays on
-the explicitly bound external SSD, with a 90 GiB reserve for extraction/export.
+the explicitly bound workspace volume, with a 90 GiB reserve for extraction/export.
 
 The restored layout feeds existing `--kit-inputs` for host/Cloud assembly and
 `--gateway-sdk` for Gateway, without adopting new producer revisions or creating
@@ -195,7 +195,7 @@ The five archives restore a sparse `kit-inputs` directory, `gateway-sdk` and
 `factory-inputs`. They feed the existing frozen build owners through their
 explicit paths. Preparation must select the source-Factory checkpoint, rather
 than interpreting the sparse directory as a complete historical kit. Exact
-member sets, modes, digest checks, external-volume binding, 90 GiB reserve and
+member sets, modes, digest checks, selected-volume binding, 90 GiB reserve and
 fail-closed partial-output handling follow the simulation acquisition contract.
 Private Drive bindings contain transport identifiers, not artifact authority.
 An unchanged prepared result works without Google access. Changed prepared
@@ -237,7 +237,7 @@ packaging identities. Preparation alone does not prove a completed image build.
 
 `build --target preparation --factory-inputs <result-root>` explicitly selects
 the [October 8 source image checkpoint](../../workspace/checkpoints/factory-41-source-20261008.json).
-The result directory must be on the bound SSD. Its independently pinned
+The result directory must be on the bound volume. Its independently pinned
 manifest, exact source/tool revisions, native/package/image results and immutable
 image size are verified; the canonical assembler hashes the image at transfer.
 Retained firmware and unsigned VDP bases keep their historical manifest checks.
@@ -273,10 +273,60 @@ it must not relabel the retained bytes as rebuilt or fully tested.
 
 See the [R1 inventory and remaining gates](../../docs/development/release-reproduction-r1.md).
 
+## Explicit build storage
+
+The October 9 owner amendment permits an explicitly selected writable local
+APFS workspace on an internal or external disk. This is a build-tool policy
+change, not a release promotion. Earlier external-only campaign evidence and
+frozen producer commits retain their original meaning. The new implementation
+and regression fixtures await execution; no internal-disk build is qualified.
+
+Resolve the actual filesystem device before probing volume metadata: macOS
+`/Users` firmlinks do not identify the writable Data mount through lexical
+parent traversal. Bind workspace state to the volume UUID, profile and release
+as before; recheck mount/device/path ownership during operations. Reject read-
+only/non-APFS/network storage, linked paths, volume roots and stale `/Volumes`
+paths. A missing or replaced volume never selects another disk automatically.
+
+Source preparation, downloads, extraction, caches, temporary files and outputs
+use the explicit workspace. Retained inputs, clone donors, Gateway scratch and
+the selected Factory Builder stay on its bound volume; same-volume clone
+restrictions are not relaxed. Factory keeps its independent guest-space guard.
+
+Docker is the declared exception: its already-running local Desktop Engine may
+use another internal or external APFS volume. Verify the configured disk, actual
+open backing file and local socket without creating containers or moving data.
+Before Docker operations, reject a changed backing-file identity/configuration
+and check both workspace and Docker capacity. No Engine start/stop, shared
+storage migration, remote daemon or Docker credential inheritance is introduced.
+
+Report free and required bytes per actual APFS capacity pool. Sum additional
+workspace/Docker allowances that share a pool, retain its largest reserve and
+never sum the same pool's free space across volumes. Use the most restrictive
+reported available capacity for volumes sharing a pool, retaining volume-quota
+limits. Separate pools have separate guards. Existing owner reserves remain;
+the Docker layer allowance is not a measured upper bound or guest-disk guarantee.
+Failure identifies the affected paths and available/required GiB before work.
+
+`space` is read-only even for an unprepared workspace. Missing prepared source
+marks the wheel-cache scope incomplete, not zero required dependencies. It
+reports `capacityPools`, `dockerStorage`, `storagePreflightComplete` and
+`producerStorageCompatibility`; insufficient checked capacity or an incomplete
+storage preflight returns exit 2. Non-Docker direct targets do not require an
+Engine. A capacity report remains neither a cold-peak measurement nor readiness.
+
+For an ordered chain, read storage capabilities from the exact producer's Git
+blob without importing code or editing its checkout. Producers without a
+capability declaration retain external-only/same-Docker-volume semantics.
+Unavailable policy fails closed. The chain rejects an incompatible layout
+before preparing producer checkouts or starting any build step. A successor
+source-reviewed plan must adopt new committed owners; historical plans and
+checksums are never resealed to bypass the boundary.
+
 ## R2 build tooling boundary
 
 The build-only [lab](../../lab) entry point implements `plan`, `prepare`, `status`,
-`verify`, `build`, `cache` and `space`. An explicit external storage root holds state, exact
+`verify`, `build`, `cache` and `space`. An explicit selected storage root holds state, exact
 detached source checkouts, a digest-keyed artifact cache, temporary files and
 outputs. It binds the volume UUID, selected profile and complete definition
 digest; changing any binding requires a different preparation directory, not
@@ -293,11 +343,11 @@ digest, artifact name and file ID. Expected size/digest come from the release,
 not the binding. A short-lived authorized OAuth token may be supplied through
 an inherited file descriptor; it is not a command argument, logged value or
 stored receipt. Downloads enforce byte ranges, metadata consistency and final
-SHA-256 before atomic promotion. Partial files stay on the SSD for resume.
+SHA-256 before atomic promotion. Partial files stay on the selected volume for resume.
 An absent binding or credentials is an explicit acquisition failure.
 
 Build adapters use exact source roles and existing recipes, with explicit
-toolchain identity, SSD caches/temp/output and recorded input fingerprints.
+toolchain identity, workspace caches/temp/output and recorded input fingerprints.
 Verified unchanged outputs may be reused; changing an upstream input changes
 its downstream build key. A supported target build is not a completed profile,
 signed installer, publication or native acceptance. Unresolved Factory/native
@@ -312,15 +362,17 @@ Presenter, Driving Control and web UI recipe. It performs local ad-hoc signing
 required by that recipe, not Developer ID signing, notarization or publication.
 `cloud-sdk` uses the pinned Cloud worker assembly recipe, hash-locked public
 wheels and the isolated Python base selected from an explicit retained kit on
-the bound SSD. The release-to-host-to-Python manifest chain and payload hashes
+the bound volume. The release-to-host-to-Python manifest chain and payload hashes
 are checked; other kit files are not copied. Public wheel acquisition shares
 the bounded digest cache and resume checks, without Drive credentials. The
 worker is assembled offline and does not enroll identities or contact Cloud.
-The backend adapters require an already-running local Docker Desktop with its
-active disk on the bound SSD. They call the pinned component Dockerfiles and
+The current backend adapters require an already-running local Docker Desktop
+with its active disk checked under the explicit build-storage policy above.
+Frozen older adapters retain their original same-external-volume requirement.
+They call the pinned component Dockerfiles and
 existing OCI export verifier; they do not start/stop the Engine, run containers,
 overwrite tags, publish images or reuse undeclared registry credentials.
-Build layers and client caches stay on external storage. Image receipts bind
+Build layers stay on Docker's selected disk; client caches stay in the workspace. Image receipts bind
 source/platform/runtime identity; export receipts bind the complete archive.
 Status-only receipt checks and live Engine image checks are distinguished.
 The service adapters require an explicit functional profile: Brake V1/V2/V3
@@ -334,7 +386,7 @@ Gateway uses the pinned CMake recipe and an explicit external SDK bound by
 This is a declared prebuilt LibCarla/OpenSSL input, not full-source closure or
 redistribution approval. Compile steps deny network. The unchanged owner's
 socket tests need a short temporary directory; `--test-tmp-parent` must select
-an existing directory on the same verified SSD, with a path no longer than
+an existing directory on the same verified volume, with a path no longer than
 29 UTF-8 bytes. Only the invocation's private child directory is removed after
 testing. CARLA's test cache is explicitly inside the workspace. An inspected
 incomplete Gateway build may resume only with `--resume` and matching inputs;
@@ -388,7 +440,7 @@ Omitting the explicit successor parameters retains the historical build behavior
 automatic ad-hoc fallback. `dmg` reuses the verified Setup built for that same
 application and independent source pin. Neither target launches Setup or the
 demo. Compiler scratch, assembly and media staging remain on the selected
-external volume. A signed engineering candidate is not notarized distribution
+volume. A signed engineering candidate is not notarized distribution
 or installation qualification.
 See [R2 commands and evidence](../../docs/development/release-reproduction-r2.md)
 for the exercised scope, exit codes and remaining gates.
@@ -402,7 +454,7 @@ definition, exact integration-repository commits and dependency order. It does
 not modify component pins, input manifests, the independent Setup pin or trust
 policy. `plan` exposes these selections before execution.
 
-Each producer is an independent clean detached checkout on the bound SSD.
+Each producer is an independent clean detached checkout on the bound volume.
 An exact object already in the explicitly selected root repository can be
 prepared without network; fetching a missing object requires
 `--prepare-dependencies`. Wrong remotes, revisions, dirty checkouts and unowned
@@ -418,8 +470,8 @@ reuse unchanged results. A failure preserves completed work and compact logs;
 an unverified partial native output still requires the owner's inspection and
 resume procedure. No automatic retry or pin adoption is introduced.
 
-The complete chain requires explicit retained kit/SDK inputs on the bound SSD,
-declared build tools, a short SSD test directory and an authorized signing
+The complete chain requires explicit retained kit/SDK inputs on the bound volume,
+declared build tools, a short same-volume test directory and an authorized signing
 fingerprint. It retains the per-owner guards and preflights 76 GiB additional
 space plus a 90 GiB reserve. This is a conservative guard, not a measured cold
 peak. UI and build Python entry points are selected separately; virtual
@@ -470,7 +522,7 @@ This is explicit recovery, not an implicit status repair or a new build.
 
 `cache --storage <destination> --cache-from <existing-workspace>` reuses only
 declared complete digest-cache objects. Both workspaces must be separate,
-ownership-marked and on the same bound external volume. Expected sizes and
+ownership-marked and on the same bound volume. Expected sizes and
 hashes come from the selected release; developer wheels additionally require
 the clean exact integration source and its wheel lock in either the destination
 or the explicitly selected source workspace. A donor cannot supply new pins.
@@ -498,10 +550,12 @@ or Factory input is missing. Workspace logical bytes and file-reported blocks
 are separate; neither measures unique APFS clone extents. Symlinks are counted
 but not followed, and hardlinked files are counted once within each section.
 
-For the reviewed developer chain the report exposes the existing per-owner
-guards, the largest single-step requirement (166 GiB) and the sum of additional
-step reservations plus one largest reserve (285 GiB). The sum is not a measured
-peak, an upper bound, or a new build gate. Shared Docker growth, cold acquisition
-and unique physical extent usage remain unmeasured. A recorded candidate is not
-verified reuse; `space` does not substitute for owner validation. It refuses
-capacity claims for a different unreviewed producer plan or full-source profile.
+For the reviewed developer chains the report exposes the existing per-owner
+workspace guards, the largest single-step requirement and the sum of additional
+step reservations plus one largest reserve. These workspace-only summaries do
+not include the separate Docker allowance in `capacityPools`; use the pool
+verdict for admission. The sum is not a measured peak, an upper bound, or a new
+build gate. Shared Docker growth, cold acquisition and unique physical extent
+usage remain unmeasured. A recorded candidate is not verified reuse; `space`
+does not substitute for owner validation. It refuses capacity claims for a
+different unreviewed producer plan or full-source profile.

@@ -1,9 +1,9 @@
 # SPDX-FileCopyrightText: 2026 maninblack
 # SPDX-License-Identifier: MIT
-"""Explicit content verification after remount renumbers the same external volume."""
+"""Explicit content verification after remount renumbers the same selected volume."""
 import copy
 
-from .core import require, read_json, atomic_json, digest, regular, external_volume
+from .core import require, read_json, atomic_json, digest, regular, storage_volume
 from .artifacts import sha256
 from .cloud import relative, matches
 from . import packaging, host, package_chain
@@ -14,7 +14,7 @@ TARGETS = {'host-runtime':host.MANIFEST, 'preparation':packaging.PREPARATION_MAN
 
 def refresh(storage, state, target, progress):
     require(target in TARGETS, 'Storage revalidation requires an explicit manifest-backed input target')
-    require(external_volume(storage.root)['uuid'] == storage.binding['volumeUUID'], 'Storage volume changed')
+    require(storage_volume(storage.root)['uuid'] == storage.binding['volumeUUID'], 'Storage volume changed')
     selected = [(key,row) for key,row in state['builds'].items() if row['target'] == target]
     require(selected, 'No completed output for storage revalidation')
     refreshed, checked = 0, 0
@@ -52,7 +52,7 @@ def refresh(storage, state, target, progress):
                     'Revalidation payload digest differs; original receipt preserved')
             checked += 1
         storage.check(reserve=0)
-        require(external_volume(output)['uuid'] == storage.binding['volumeUUID'], 'Storage volume changed')
+        require(storage_volume(output)['uuid'] == storage.binding['volumeUUID'], 'Storage volume changed')
         require(read_json(path) == original, 'Receipt changed during revalidation')
         validator(output, row['inputs'], candidate)
         audit = storage.path('builds/storage-revalidation/'+digest(original))

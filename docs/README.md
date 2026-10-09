@@ -19,6 +19,7 @@ not only the CARLA-to-AosEdge transport bridge.
 | Choose a package or source revision | [Release selection and access](getting-started/release-status.md) |
 | Run the prebuilt demo | [Install and connect Cloud](getting-started/installed-preview-cloud-first-use.md), then [operator sequence](operations/current-demo-workflow.md) |
 | Build project components and the installer | [Developer build](getting-started/reproduce-demo.md) |
+| Prepare a developer Mac before cloning | [Tools, SSD, pinned Node/Python, Drive and signing](getting-started/macos-developer-tools.md) |
 | Rebuild heavy dependencies | [Full-source scope and remaining gates](getting-started/full-source-build.md) |
 | Understand the system | [Product map](architecture/product-map.md), then [implemented architecture](architecture/current-implementation.md) |
 | Make a change | [Contributing](../CONTRIBUTING.md) |

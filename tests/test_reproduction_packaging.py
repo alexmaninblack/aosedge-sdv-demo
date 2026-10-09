@@ -140,8 +140,8 @@ class PreparationTests(StorageFixture, unittest.TestCase):
     def test_wrong_ssd_and_missing_kit_fail(self):
         with self.assertRaisesRegex(core.LabError, 'Specify --kit-inputs'):
             packaging.retained_preparation(self.storage, None)
-        with patch('reproduction.packaging.external_volume', return_value={'uuid': 'OTHER'}):
-            with self.assertRaisesRegex(core.LabError, 'bound SSD'):
+        with patch('reproduction.packaging.storage_volume', return_value={'uuid': 'OTHER'}):
+            with self.assertRaisesRegex(core.LabError, 'bound volume'):
                 packaging.retained_preparation(self.storage, self.base)
 
     def test_actual_input_staging_maps_factory_and_profiles(self):
@@ -226,7 +226,7 @@ class PreparationTests(StorageFixture, unittest.TestCase):
         checkpoint = self.base/packaging.SOURCE_FACTORY_CHECKPOINT
         checkpoint.parent.mkdir(parents=True)
         core.atomic_json(checkpoint, pin)
-        self.patch('reproduction.packaging.external_volume', return_value=self.storage.volume)
+        self.patch('reproduction.packaging.storage_volume', return_value=self.storage.volume)
         return root, manifest, image, pin
 
     def test_source_factory_pin_and_readonly_image(self):
@@ -238,8 +238,8 @@ class PreparationTests(StorageFixture, unittest.TestCase):
 
     def test_source_factory_modified_manifest_and_wrong_volume(self):
         root, manifest, _, _ = self.source_fixture()
-        with patch('reproduction.packaging.external_volume', return_value={'uuid':'OTHER'}):
-            with self.assertRaisesRegex(core.LabError, 'bound SSD'):
+        with patch('reproduction.packaging.storage_volume', return_value={'uuid':'OTHER'}):
+            with self.assertRaisesRegex(core.LabError, 'bound volume'):
                 packaging.source_factory(self.storage, root)
         manifest.write_bytes(manifest.read_bytes()+b' ')
         with self.assertRaises(core.LabError):

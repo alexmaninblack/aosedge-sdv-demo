@@ -30,7 +30,7 @@ def plan(release, profile, build_plan=None):
             'serviceProfiles': {'brake-service': ['v1', 'v2', 'v3'], 'tire-service': ['v1']},
             'gates': release.gates(profile), 'qualified': False,
             'orderedDeveloperChain': ordered,
-            'storage': 'Explicit external SSD; no internal fallback',
+            'storage': 'Explicit internal or external APFS workspace; Docker storage checked separately; no disk fallback',
             'space': {'reserveGiB': 60, 'presenterReserveGiB': 90,
                       'chainAdditionalGiB': 76, 'chainReserveGiB': 90,
                       'fullProfilePeak': 'Unmeasured; guards are conservative, not a cold-build measurement'}}
@@ -92,7 +92,7 @@ def main(argv=None):
     parser.add_argument('--storage', type=Path)
     parser.add_argument('--manifest', type=Path)
     parser.add_argument('--sources-only', action='store_true')
-    parser.add_argument('--cache-from', type=Path, help='Explicit existing workspace on the same SSD for verified digest-cache reuse')
+    parser.add_argument('--cache-from', type=Path, help='Explicit existing workspace on the same volume for verified digest-cache reuse')
     parser.add_argument('--drive-binding', type=Path)
     parser.add_argument('--drive-token-fd', type=int)
     parser.add_argument('--target', choices=('all', 'presenter', 'cloud-sdk', *containers.TARGETS, 'backend-export', *services.TARGETS, 'gateway', 'preparation', 'host-runtime', *package_chain.MANIFESTS, *media.TARGETS), default='all')
@@ -123,15 +123,16 @@ def main(argv=None):
         if args.action == 'plan':
             emit(plan(release, profile, args.build_plan))
             return 0
-        require(args.storage is not None, 'Specify --storage on an external SSD')
+        require(args.storage is not None, 'Specify --storage as an explicit directory on a writable local APFS volume')
         storage = Storage(args.storage, release, profile)
         if args.action == 'space':
             state = storage.state() if storage.state_path.exists() else {
                 'binding':storage.binding, 'sources':{}, 'artifacts':{}, 'builds':{}}
             require(storage.state_path.exists() or not storage.root.exists() or not any(storage.root.iterdir()),
                     'Refusing an unowned nonempty workspace')
-            emit(space.report(storage, state, args.target, args.build_plan, args.cache_from))
-            return 0
+            result = space.report(storage, state, args.target, args.build_plan, args.cache_from, args.docker)
+            emit(result)
+            return 0 if result['fitsCheckedPools'] and result['storagePreflightComplete'] else 2
         if args.action == 'cache':
             require(args.cache_from is not None, 'Specify --cache-from with an existing prepared workspace')
             require(profile != 'full-source', 'Full-source cache closure is not yet supported')

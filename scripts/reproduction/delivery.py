@@ -254,7 +254,7 @@ def main(argv=None):
             if args.action == 'upload':
                 require(args.source is not None and args.file_id is None, 'Upload requires source, not file ID')
                 source = artifacts.regular(args.source)
-                require(source.stat().st_dev == storage.volume['device'], 'Source must be on the selected external volume')
+                require(source.stat().st_dev == storage.volume['device'], 'Source must be on the selected volume')
                 client.preflight(args.folder_id, expected)
                 meta = upload(client, source, expected, args.folder_id, storage.path('upload-intent.json'),
                               lambda: storage.check(reserve=0), progress)

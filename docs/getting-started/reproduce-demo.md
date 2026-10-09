@@ -17,6 +17,12 @@ selection; private input bindings still come through the approved handoff.
 
 ## 1 Prepare the host and access
 
+First complete [macOS developer preparation](macos-developer-tools.md).
+It supplies installation commands, version checks, storage selection, Google login,
+signing selection and all `SDV_*` variables below. Keep the same Terminal open.
+The rewritten sequence is awaiting the owner's joint walkthrough; **no commands
+were executed during this documentation-only revision**. Stop after any error.
+
 | Requirement | Purpose |
 | --- | --- |
 | Apple Silicon, macOS 26, Xcode macOS SDK and Swift | Native UI, Gateway and packaging |
@@ -33,28 +39,41 @@ Google login is separate from the build. Bindings contain file IDs, not
 credentials; checked-in locks supply sizes and hashes. OEM/SP certificates are
 needed later for the installed demo, not these builds.
 
-Docker must already use the selected SSD. Do not relocate its disk or restart
-it as a build side effect. No live Test, backend container, VM or simulator
-is started by this route.
+The table and exact commands below reproduce the existing candidate, whose
+frozen producers retain the external-only layout. New scripts accept internal
+or external APFS workspaces and separately check the active Docker disk, but
+those changes are not yet regression-tested or adopted by this candidate's
+producer plan. Do not edit historical pins or claim the complete internal-disk
+route passed. A successor plan must select the reviewed new producers.
+
+Do not relocate Docker's disk or restart it as a build side effect. No live
+Test, backend container, VM or simulator is started by this route.
 
 ## 2 Select the root revision and storage
 
-Clone only `https://github.com/alexmaninblack/aosedge-sdv-demo.git`.
-Its default `main` contains the current documentation and development work.
-For this candidate build, then select the exact published root revision in
-[release selection](release-status.md); do not substitute a moving branch for
-the recorded revision or manually collect component repositories.
+Clone only the product repository. If you already completed README B2/B3,
+do not clone or repeat those steps: continue at step 3 below.
+
+```sh
+git clone --branch main https://github.com/alexmaninblack/aosedge-sdv-demo.git "$SDV_ROOT/source"
+cd "$SDV_ROOT/source"
+git switch --detach dbfd542d38f3730f151f43dd303af94e4902c74d
+git rev-parse HEAD
+```
+
+Expect `dbfd542d38f3730f151f43dd303af94e4902c74d`. Default `main` contains
+current documentation; the detached checkpoint selects the existing candidate.
+Keep this revised guide open in the browser because the older source checkpoint
+does not contain it. Do not substitute a moving branch for the recorded revision
+or manually collect component repositories.
 Source and frozen producer revisions are published; a public
 clone alone does not supply the private binary inputs or host tools.
 
-Run from that clean root checkout. Replace the example mount with your SSD.
-Create only the parent directories; `lab` creates and owns its workspaces.
-The test path must be at most 29 UTF-8 bytes long.
+Run from that clean root checkout. Host preparation already defined the mounted
+SSD, parent directories and scratch (at most 29 UTF-8 bytes). `lab` creates and
+owns its own workspaces; do not populate them by hand.
 
 ```sh
-SDV_ROOT="/Volumes/BUILD/sdv"
-SDV_TMP="/Volumes/BUILD/tmp"
-mkdir -p "$SDV_ROOT" "$SDV_TMP"
 ./lab plan --profile developer \
   --build-plan workspace/releases/1.2.0-rc.1-source-factory-build-chain.json
 ./lab inputs plan
@@ -72,25 +91,27 @@ causes failure, not fallback to the internal disk.
 ./lab prepare --profile developer --storage "$SDV_ROOT/build" --sources-only
 ./lab verify --storage "$SDV_ROOT/build" --sources-only
 ./lab inputs prepare --storage "$SDV_ROOT/inputs" \
-  --binding /private/path/developer-inputs.drive.json \
-  --simulation-binding /private/path/simulation-inputs.drive.json \
-  --account authorized-reader@example.com
-./lab inputs verify --storage "$SDV_ROOT/inputs"
+  --binding "$SDV_BUILD_BINDING" \
+  --simulation-binding "$SDV_SIM_BINDING" \
+  --account "$SDV_DRIVE_ACCOUNT" --gcloud "$SDV_GCLOUD"
+./lab inputs verify --storage "$SDV_ROOT/inputs" > "$SDV_ROOT/input-paths.json"
 ```
 
-Replace both binding paths and the account with your approved handoff values.
-Supply `--gcloud /path/to/gcloud` if needed. Never paste tokens into commands,
-logs or source files. Repeats reuse verified inputs; after preparation no
-Google access is needed for offline verification.
+Both bindings and the account were selected in host preparation. Never paste
+tokens into commands, logs or source files. Repeats reuse verified inputs;
+after preparation no Google access is needed for offline verification. The last
+command writes only the input verification result, not progress lines or tokens.
 
 Expect seven source roles and `BUILD_INPUTS_READY_NOT_PROFILE_QUALIFIED`.
 Input preparation reports `kitInputs`, `gatewaySdk` and `factoryInputs`.
-Use those three returned paths, not guessed directories or an installed kit:
+Read those three paths from the verification result, without guessing a
+directory or substituting an installed kit:
 
 ```sh
-SDV_KIT_INPUTS="<returned kitInputs>"
-SDV_GATEWAY_SDK="<returned gatewaySdk>"
-SDV_FACTORY_INPUTS="<returned factoryInputs>"
+"$SDV_PYTHON" -c 'import json,sys; r=json.load(open(sys.argv[1])); assert r["status"] == "BUILD_INPUTS_READY_NOT_PROFILE_QUALIFIED"; print(r["status"])' "$SDV_ROOT/input-paths.json"
+SDV_KIT_INPUTS="$("$SDV_PYTHON" -c 'import json,sys; print(json.load(open(sys.argv[1]))["kitInputs"])' "$SDV_ROOT/input-paths.json")"
+SDV_GATEWAY_SDK="$("$SDV_PYTHON" -c 'import json,sys; print(json.load(open(sys.argv[1]))["gatewaySdk"])' "$SDV_ROOT/input-paths.json")"
+SDV_FACTORY_INPUTS="$("$SDV_PYTHON" -c 'import json,sys; print(json.load(open(sys.argv[1]))["factoryInputs"])' "$SDV_ROOT/input-paths.json")"
 ```
 
 The five archives contain CARLA/Python API, host support, Gateway SDK, unsigned
@@ -99,9 +120,11 @@ across demo releases while its inputs remain unchanged.
 
 ## 4 Build the complete candidate
 
-Replace tool paths and the signing fingerprint with your declared host inputs.
-This is one ordered command. The first run explicitly permits acquisition
-of missing pinned build dependencies.
+The tool paths and signing fingerprint come from host preparation; there are no
+remaining `/path/to/...` placeholders. This is one ordered command. The first
+run explicitly permits acquisition of missing pinned build dependencies.
+It compiles components and runs their build gates: do not use it for a
+documentation-only review.
 
 ```sh
 ./lab build --target all --storage "$SDV_ROOT/build" \
@@ -112,10 +135,10 @@ of missing pinned build dependencies.
   --input-checkpoint workspace/releases/1.2.0-rc.1-source-factory-packaging.json \
   --release-checkpoint workspace/releases/1.2.0-rc.1-source-factory-setup.json \
   --test-tmp-parent "$SDV_TMP" \
-  --python /path/to/python3.12 --ui-python /usr/bin/python3 \
-  --node /path/to/node --npm /path/to/npm --cmake /path/to/cmake \
-  --docker /path/to/docker \
-  --signing-identity YOUR_AUTHORIZED_CERTIFICATE_FINGERPRINT \
+  --python "$SDV_PYTHON" --ui-python /usr/bin/python3 \
+  --node "$SDV_NODE" --npm "$SDV_NPM" --cmake "$SDV_CMAKE" \
+  --docker "$SDV_DOCKER" \
+  --signing-identity "$SDV_SIGNING_IDENTITY" \
   --prepare-dependencies
 ```
 
@@ -135,7 +158,11 @@ the failed step. Omit `--prepare-dependencies` when no acquisition is needed.
 Preserve partial output and the first error. Incomplete native output requires
 diagnosis, not blind retries; see [recovery](troubleshooting.md#build-and-acquisition).
 
-`./lab status --storage "$SDV_ROOT/build"` inspects saved results. Source
+```sh
+./lab status --storage "$SDV_ROOT/build"
+```
+
+This inspects saved results without starting a simulator. Source
 readiness, built targets and qualification are distinct. Ordinary full-profile
 `prepare`/`verify` can remain blocked even when the explicit source/input/chain
 route above has passed. Do not erase those gates.

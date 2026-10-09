@@ -13,7 +13,7 @@ import shlex
 import subprocess
 import time
 
-from .core import ROOT, Release, Storage, LabError, read_json, require, atomic_json, external_volume, digest
+from .core import ROOT, Release, Storage, LabError, read_json, require, atomic_json, storage_volume, digest
 
 TEMPLATE = 'manifests/r6-1/aos-vm-project.pinned.yaml'
 TEMPLATE_SHA256 = 'b9b49a575798f2bc4a532a794e77352ed21596677ef5aced4304db9e7a87f09e'
@@ -52,8 +52,8 @@ def recipe(root=ROOT):
 
 
 def builder_module(storage, builder_root):
-    volume = external_volume(builder_root)
-    require(volume['uuid'] == storage.volume['uuid'], 'Builder must be on the same SSD')
+    volume = storage_volume(builder_root)
+    require(volume['uuid'] == storage.volume['uuid'], 'Builder must be on the same volume')
     os.environ['R61_BUILDER_ROOT'] = str(builder_root)
     os.environ['R61_BUILDER_VOLUME_UUID'] = volume['uuid']
     os.environ['R61_BUILDER_SSH_PORT'] = '10024'
@@ -181,7 +181,7 @@ def main(argv=None):
         value['status'] = 'RECIPE_DECLARED_NOT_BUILT'
         print(json.dumps(value, sort_keys=True))
         return 0
-    require(args.storage and args.builder_root and args.platform_source, 'Explicit SSD storage, Builder and platform source required')
+    require(args.storage and args.builder_root and args.platform_source, 'Explicit workspace storage, Builder and platform source required')
     storage = Storage(args.storage, Release(), 'developer')
     with storage.locked():
         builder = builder_module(storage, args.builder_root)

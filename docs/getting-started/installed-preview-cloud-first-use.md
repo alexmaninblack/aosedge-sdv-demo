@@ -4,7 +4,7 @@
 # Install the demo and connect Cloud access
 
 - Status: current engineering-preview instructions; complete native acceptance open
-- Version: 2.1
+- Version: 2.2
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Implementation: Kit028 / Setup042 / Factory .41
@@ -18,6 +18,13 @@ wizard or a claim of native acceptance for new media. No source checkout,
 Unreal Editor or local compilation is required.
 
 ## Before opening Setup
+
+Complete [README A1–A3](../../README.md#a1-check-the-mac) first: host checks,
+Docker's separate first-run setup, exact private DMG acquisition, size/checksum
+comparison and opening the verified file. No source clone is needed for this
+route. Then follow the numbered actions below in order and wait for each result.
+This revised walkthrough awaits joint execution; documentation review alone
+does not close an installation or runtime qualification gate.
 
 Use Apple silicon with macOS 26 or later. The recorded clean-host campaign
 used an M1 with 16 GiB RAM and an internal disk; it does not establish a
@@ -138,6 +145,13 @@ close the windows. Verify no owned processes/listeners remain. Preserve Docker
 Engine and unrelated processes. A stop preserves Test identity/state;
 **Finish demo** is the distinct destructive retirement of the exact Test and
 its run data. Package removal is not vehicle retirement or Cloud rollback.
+
+In particular, **Close Presenter (keep demo running)** means exactly that:
+closing its native window/menu is not a full runtime stop. A complete
+non-destructive operator shutdown/return journey is not yet available as one
+Setup action. For a retained Test, use the documented engineering owner with
+the release maintainer rather than assuming the disappearance of windows
+means storage is safe to eject.
 
 For external storage, only disconnect after owned consumers are stopped and
 the volume is safely ejected. External-SSD and host sleep/wake qualification

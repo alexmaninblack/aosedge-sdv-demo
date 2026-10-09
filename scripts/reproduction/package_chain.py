@@ -4,7 +4,7 @@
 from pathlib import Path
 import stat
 
-from .core import ROOT, require, regular, read_json, atomic_json, digest, run_command, external_volume, GIB
+from .core import ROOT, require, regular, read_json, atomic_json, digest, run_command, storage_volume, GIB
 from .artifacts import sha256
 from .cloud import matches, relative
 from .sources import verify_sources
@@ -71,7 +71,7 @@ def assemble(storage, state, target, kit, python, progress, input_checkpoint=Non
             chosen[role], paths[role] = upstream(storage, state, role)
     retained_pin = None
     if target == 'vm-runtime':
-        require(kit is not None and external_volume(kit)['uuid'] == storage.volume['uuid'], 'VM kit must be on bound SSD')
+        require(kit is not None and storage_volume(kit)['uuid'] == storage.volume['uuid'], 'VM kit must be on bound volume')
         retained_pin = next(r for r in storage.release.value['inputs'] if r['id'] == 'vm-runtime')
         paths['retained-vm'] = matches(Path(kit)/relative(retained_pin['kitPath']), retained_pin).parent
     inputs = {'target': target, 'producerTrees': trees, 'upstream': chosen, 'retainedManifest': retained_pin,
@@ -100,7 +100,7 @@ def assemble(storage, state, target, kit, python, progress, input_checkpoint=Non
             ROOT/'scripts/reproduction/package_worker.py', ROOT, target, selected, output, checkpoint_path],
             env=storage.environment(), cwd=storage.root, timeout=900)
         output.parent.joinpath(key+'.log').write_bytes((result.stdout+result.stderr)[-2**20:])
-        require(result.returncode == 0, 'Package owner failed; inspect retained SSD log')
+        require(result.returncode == 0, 'Package owner failed; inspect retained workspace log')
         manifest = MANIFESTS[target]
         atomic_json(host.receipt_path(output), {'status': 'ASSEMBLED_NOT_RUNTIME_QUALIFIED', 'inputs': inputs,
             'producerRevision': revision, 'runtimeStarted': False,

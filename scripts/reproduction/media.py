@@ -86,7 +86,7 @@ def assemble(storage, state, target, python, signing_identity, progress,
             ROOT, target, kit, str(setup or '-'), output, signing_identity, checkpoint_path, release_path],
             env=storage.environment(), cwd=storage.root, timeout=2700 if target == 'dmg' else 600)
         output.parent.joinpath(key+'.log').write_bytes((result.stdout+result.stderr)[-2**20:])
-        require(result.returncode == 0, 'Media owner failed; inspect retained SSD log')
+        require(result.returncode == 0, 'Media owner failed; inspect retained workspace log')
         atomic_json(host.receipt_path(output), {'status': 'BUILT_NOT_INSTALLED', 'inputs': inputs,
             'producerRevision': revision, 'published': False,
             'stamps': {p.relative_to(output).as_posix(): packaging.stamp(regular(p))

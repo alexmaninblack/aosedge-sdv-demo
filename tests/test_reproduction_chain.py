@@ -70,6 +70,37 @@ class PlanTests(unittest.TestCase):
         owner.preparation.assert_called_once()
 
 
+class StorageCompatibilityTests(StorageFixture, unittest.TestCase):
+    def test_legacy_producers_remain_external_only(self):
+        plan = chain.read_plan(self.release)
+        with patch.object(chain, 'git', return_value='GIB = 2**30\n'):
+            self.assertTrue(chain.storage_compatibility(self.storage, plan)['compatible'])
+            self.volume['internal'] = True
+            self.assertFalse(chain.storage_compatibility(self.storage, plan)['compatible'])
+
+    def test_new_capabilities_are_read_without_executing_producer_code(self):
+        self.volume['internal'] = True
+        text = 'raise RuntimeError("must not execute")\nSTORAGE_CAPABILITIES = ' + repr(core.STORAGE_CAPABILITIES)
+        with patch.object(chain, 'git', return_value=text):
+            value = chain.storage_compatibility(self.storage, chain.read_plan(self.release), {'uuid':'DOCKER'})
+        self.assertTrue(value['compatible'])
+        self.assertIn('separate-docker-volume', value['requiredCapabilities'])
+
+    def test_separate_docker_requires_capability_only_in_docker_producers(self):
+        plan = chain.read_plan(self.release)
+        docker_revs = {plan['producers'][s['producer']] for s in plan['steps'] if s['target'] in
+                       ('brake-backend','tire-backend','backend-export','brake-service','tire-service')}
+        def text(root, args, env):
+            revision = args[1].split(':')[0]
+            return 'STORAGE_CAPABILITIES = '+repr(core.STORAGE_CAPABILITIES) if revision in docker_revs else 'GIB = 2**30'
+        with patch.object(chain, 'git', side_effect=text):
+            self.assertTrue(chain.storage_compatibility(self.storage, plan, {'uuid':'OTHER'})['compatible'])
+
+    def test_unavailable_producer_policy_never_defaults_to_compatible(self):
+        with patch.object(chain, 'git', side_effect=core.LabError('Unavailable')):
+            self.assertFalse(chain.storage_compatibility(self.storage, chain.read_plan(self.release))['compatible'])
+
+
 class MergeTests(unittest.TestCase):
     def fixture(self):
         row = {'target':'presenter','inputs':{'source':'one'}}
@@ -101,10 +132,22 @@ class ExecuteTests(StorageFixture, unittest.TestCase):
         self.patch('reproduction.chain.verify_sources')
         self.patch('reproduction.chain.preflight', return_value=self.options)
         self.prepare = self.patch('reproduction.chain.producer', return_value=self.base)
+        self.patch('reproduction.chain.containers.inspect_storage', return_value={
+            'disk':self.base, 'volume':self.volume})
+        self.patch('reproduction.chain.storage_compatibility', return_value={'compatible':True})
+        self.args.docker = sys.executable
         self.verify = self.patch('reproduction.chain.verify_result')
         self.invocations, self.created = [], set()
         self.fail = None
         self.patch('reproduction.chain.run_command', side_effect=self.worker)
+
+    def test_incompatible_storage_stops_before_producer_preparation(self):
+        self.fixture()
+        with patch.object(chain, 'storage_compatibility', return_value={'compatible':False}):
+            with self.assertRaisesRegex(core.LabError, 'frozen producers'):
+                chain.execute(self.storage, self.state, self.args, lambda *e:None)
+        self.prepare.assert_not_called()
+        self.assertEqual(self.invocations, [])
 
     def worker(self, args, **kwargs):
         request = core.read_json(args[-1]); step = request['step']
@@ -209,17 +252,17 @@ class PreflightTests(StorageFixture, unittest.TestCase):
 
     def test_foreign_disk_and_unavailable_tool_block(self):
         args = self.options()
-        with patch.object(chain, 'external_volume', return_value={'uuid':'OTHER'}):
-            with self.assertRaisesRegex(core.LabError, 'bound SSD'):
+        with patch.object(chain, 'storage_volume', return_value={'uuid':'OTHER'}):
+            with self.assertRaisesRegex(core.LabError, 'bound volume'):
                 chain.preflight(self.storage, args)
-        with patch.object(chain, 'external_volume', return_value=self.volume), patch.object(chain.gateway, 'temporary_parent'):
+        with patch.object(chain, 'storage_volume', return_value=self.volume), patch.object(chain.gateway, 'temporary_parent'):
             args.node = self.base/'missing'
             with self.assertRaisesRegex(core.LabError, 'node'):
                 chain.preflight(self.storage, args)
 
     def test_venv_interpreter_not_resolved_away(self):
         args = self.options(); link = self.base/'venv-python'; link.symlink_to(sys.executable); args.python = link
-        with patch.object(chain, 'external_volume', return_value=self.volume), patch.object(chain.gateway, 'temporary_parent'):
+        with patch.object(chain, 'storage_volume', return_value=self.volume), patch.object(chain.gateway, 'temporary_parent'):
             result = chain.preflight(self.storage, args)
         self.assertEqual(result['python'], str(link))
         self.assertEqual(result['signing_identity'], 'A'*40)

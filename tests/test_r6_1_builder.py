@@ -8,13 +8,15 @@ from __future__ import annotations
 import importlib.machinery
 import importlib.util
 import unittest
-import plistlib
 import subprocess
+import sys
 from pathlib import Path
 from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'scripts'))
+from reproduction.core import LabError
 SCRIPT = ROOT / "scripts" / "r6-1-builder"
 
 
@@ -32,16 +34,17 @@ BUILDER = load_builder()
 
 
 class R61BuilderTests(unittest.TestCase):
-    def test_bound_ssd_never_accepts_internal_or_wrong_volume(self):
-        with patch.object(BUILDER, 'ROOT', Path('/tmp/factory-builder-missing')), \
+    def test_bound_storage_accepts_internal_but_not_wrong_or_unavailable_volume(self):
+        with patch.object(BUILDER, 'ROOT', ROOT / 'not-created-builder'), \
                 patch.object(BUILDER, 'VOLUME_UUID', 'expected'):
-            for info in ({'VolumeUUID': 'other'},
-                         {'VolumeUUID': 'expected', 'Internal': True},
-                         {'VolumeUUID': 'expected', 'Internal': False, 'WritableVolume': False}):
-                result = subprocess.CompletedProcess([], 0, plistlib.dumps(info).decode())
-                with patch.object(BUILDER, 'run', return_value=result):
-                    with self.assertRaises(BUILDER.BuilderError):
-                        BUILDER.check_storage()
+            with patch('reproduction.core.storage_volume', return_value={'uuid':'expected', 'internal':True}):
+                self.assertEqual(BUILDER.check_storage(), ROOT)
+            with patch('reproduction.core.storage_volume', return_value={'uuid':'other'}):
+                with self.assertRaises(BUILDER.BuilderError):
+                    BUILDER.check_storage()
+            with patch('reproduction.core.storage_volume', side_effect=LabError('Missing mount')):
+                with self.assertRaises(BUILDER.BuilderError):
+                    BUILDER.check_storage()
 
     def test_storage_lookup_uses_existing_ancestor_not_home(self):
         with patch.object(BUILDER, 'ROOT', ROOT / 'not-created-yet' / 'child'), \

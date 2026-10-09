@@ -3,44 +3,258 @@
 
 # AosEdge Platform SDV Lab
 
-Explore how a vehicle can gain capabilities after production using the real
-AosEdge platform. CARLA simulates the vehicle; an ARM64 virtual controller runs
-AosCore, the vehicle data platform, and independent Brake and Tire advisory
-services. Platform updates use Safe Stop-gated FOTA. Service containers have
-their own SOTA lifecycle and do not control steering or braking.
+AosEdge SDV Lab is a hands-on environment for exploring how to build and operate
+a software-defined vehicle with a modular, orchestrated and updatable software
+architecture. It demonstrates how the AosEdge platform manages the deployment,
+execution and evolution of platform components and independently delivered
+services—from establishing the vehicle’s software foundation to introducing
+new capabilities throughout its lifecycle.
+
+The lab combines a CARLA-simulated vehicle, an ARM64 virtual controller and the
+real AosEdge platform on a Mac, connected to Aos Cloud. The vehicle and
+controller hardware are simulated or virtualized; software deployment, runtime
+management and updates use actual platform components.
 
 ## Choose your route
 
-| I want to | Start here |
+- **I want to see the demo:** follow [A — install and run](#install-and-run).
+  You need one approved DMG, not nine Git repositories.
+- **I want to build the demo:** follow [B — developer build](#developer-build).
+  Clone this repository only; `lab` obtains the pinned component sources.
+- **I am changing the engine or Factory:** use [C — heavy dependencies](#heavy-dependencies).
+  This is not a prerequisite for A or B.
+
+These instructions target **macOS on Apple Silicon**. Run Terminal blocks one
+at a time, in order, in the same terminal. Stop at the first error; do not
+continue with an empty variable or a different package. The revised walkthrough
+is source-reviewed documentation, **awaiting a joint step-by-step execution**.
+Writing these commands has not run a build, installation or test.
+
+<a id="release-status"></a>
+
+## Releases
+
+See the [release status page](docs/getting-started/release-status.md) for
+available versions, validation status, known limitations and download access.
+
+Select a specific release before installing or building. Each release identifies
+its matching artifacts, source revisions and instructions. Preview candidates
+are listed separately from validated releases.
+
+<a id="install-and-run"></a>
+<a id="supported-route"></a>
+
+## A — Install and run (no source build)
+
+### A1. Check the Mac
+
+```sh
+uname -m
+sw_vers -productVersion
+df -h "$HOME"
+```
+
+Expect `arm64` and macOS 26 or later. If Terminal reports `x86_64` on Apple
+Silicon, reopen it without Rosetta. The recorded test host is an M1 with 16 GiB
+RAM, not a universal performance minimum. Setup checks the complete installed
+payload plus a **90 GiB free-space reserve**; the DMG size is not the installed
+footprint. No Xcode, Python, Node, Unreal Editor or source checkout is needed.
+
+### A2. Prepare Docker once
+
+Install **Docker Desktop for Mac with Apple Silicon** using
+[Docker's installation guide](https://docs.docker.com/desktop/setup/install/mac-install/).
+Complete its first-run and license dialogs. If Docker is already running,
+reuse it; do not quit/restart it or change another project's storage.
+
+```sh
+docker --context desktop-linux info --format '{{.OSType}}/{{.Architecture}}'
+```
+
+Expect `linux/aarch64` or `linux/arm64`. If `docker` is not found, finish Docker's
+CLI installation before continuing. Setup does not install or start the engine.
+
+### A3. Obtain and verify the complete DMG
+
+Ask the release owner for the approved private Drive link, release index and
+Cloud staging access described in [release selection](docs/getting-started/release-status.md).
+There is no public binary download in this repository. Download the complete
+DMG once; do not extract/copy individual kit files out of it.
+
+Paste the **absolute path** of your downloaded DMG when prompted (without quotes):
+
+```sh
+printf 'Downloaded DMG path: '
+read -r SDV_DMG
+stat -f '%z bytes' "$SDV_DMG"
+shasum -a 256 "$SDV_DMG"
+```
+
+For the selected source-Factory `1.2.0-rc.1` candidate, expect
+**14,162,601,112 bytes** and
+`f2b3d68d9dd4bd084d9fa199cc8053190a0466fb10ee3c5ecf024f877d4de82d`.
+Two candidates have the same filename: a different checksum is not acceptable.
+Only after both values match, open the verified file:
+
+```sh
+open "$SDV_DMG"
+```
+
+### A4. Install through Setup
+
+In the mounted disk, open **AosEdge SDV Lab Setup**. Keep its matching Runtime
+Kit beside it. Choose package storage and a separate short private-data path.
+Then perform these actions in order, waiting for each result:
+
+| Action | Expected result |
 | --- | --- |
-| Run the demo without compiling anything | [Install and run](docs/getting-started/installed-preview-cloud-first-use.md) |
-| Build while reusing the heavy simulation dependency | [Developer build guide](docs/getting-started/reproduce-demo.md) |
-| Understand what is simulated and what is real | [Product and component map](docs/architecture/product-map.md) |
-| Change a component or contribute a fix | [Contribution guide](CONTRIBUTING.md) |
+| **Check installation** | Host, storage and destination preflight succeeds |
+| **Install package** | Verified version copied; `INSTALLED_NOT_ACTIVATED` |
+| **Prepare local data** | Private instance selected; `SELECTED_NOT_STARTED` |
+| **Prepare backends** | Required images available in the existing Docker engine |
 
-## Release status
+These steps do not yet start a vehicle. Use ordinary macOS permission dialogs;
+do not disable Gatekeeper. This preview is Apple Development signed, not a
+notarized public-distribution package. If macOS refuses it, retain the exact
+message and contact the release owner rather than bypassing the check.
 
-**Engineering preview, not a qualified public release.** The new
-`1.2.0-rc.1` build candidate has a complete DMG and privately delivered build
-inputs. Fresh-environment installation and end-to-end qualification remain
-open. Earlier Kit028 / Setup042 M1 results belong to that earlier package,
-not automatically to the new candidate.
+### A5. Connect Cloud and open the demo
 
-Read [release selection and access](docs/getting-started/release-status.md)
-before choosing a package or source revision. Do not assume a proposed tag
-already exists or that the repository contains downloadable binaries.
+1. Choose **Set up Cloud access…**. Use the intended **staging** instance,
+   one OEM and its associated SP, shared by the two independent services.
+2. With existing certificates: select the OEM/SP files, then **1. Inspect
+   locally**, **2. Use this pair**, **3. Check Cloud access**. With a new
+   invitation, follow the [new-certificate route](docs/getting-started/installed-preview-cloud-first-use.md#set-up-cloud-access).
+   Setup does not register Cloud accounts or read your mailbox.
+3. Grant Accessibility to the signed Setup when requested for window layout.
+   Full Disk Access and screen recording are not installation prerequisites.
+4. Choose **Open demo**. Expected: Presenter opens. This action does not create
+   a controller or start CARLA.
+5. Follow the [numbered first-demo sequence](docs/operations/current-demo-workflow.md#preparation-and-version-sequence):
+   Create Controller → simulator → VDP V1 / Provision → attachment / Safe Stop
+   → Brake V1 → successive VDP/Brake versions → Tire V1.
 
-## Supported route
+Publish **one version at a time** and confirm installation/function before the
+next. VDP FOTA requires Safe Stop; Brake/Tire QM services have their own SOTA
+lifecycle. Enter the fresh VM password only in **VM access / Use once**, not
+in shell commands or committed configuration.
 
-The installer targets Apple Silicon and macOS 26 or later. The recorded test
-host is an M1 with 16 GiB RAM; this is a tested configuration, not a universal
-performance minimum. Running needs Docker Desktop, approved Aos Cloud staging
-access and sufficient storage. It does **not** need Unreal Editor, Xcode or a
-source checkout. Setup reports the actual storage requirement.
+### A6. Stop without deleting your Test
 
-The developer route builds project components on an external SSD using pinned
-sources and verified prebuilt CARLA/native inputs. Rebuilding the engine is a
-separate, currently gated [full-source route](docs/getting-started/full-source-build.md).
+For a short pause, choose **Safe Stop** and leave the controller running.
+The native menu **Close Presenter (keep demo running)** closes only the
+Presenter windows, not the simulator, controller or backends. Full
+non-destructive shutdown is still an engineering-owner procedure, not a
+completed one-button operator workflow; arrange that handoff before ending a
+retained Test session. Preserve Docker Engine and unrelated workloads.
+**Finish demo is destructive**: it
+retires the current Test and its data, not merely closes Presenter.
+The current UI does not yet offer a complete cold return/power-on workflow.
+Read [returning and stopping](docs/getting-started/installed-preview-cloud-first-use.md#returning-stopping-and-removing)
+before shutdown; do not improvise a VM restart or delete retained state.
+
+<a id="developer-build"></a>
+
+## B — Build project components and the installer
+
+This route builds the UI, Gateway, backends, services and installer. It reuses
+the prebuilt CARLA simulator, native dependencies and base images selected by
+the release, including the virtual controller's base image (Factory).
+**It does not rebuild the simulator engine or Factory.** Exact versions and
+checksums belong to the selected release's dependency records. A new signed
+build is not automatically byte-identical to the delivered DMG or qualified
+for release.
+
+### B1. Prepare tools, storage and access
+
+Storage should be chosen by available capacity, whether on the Mac's internal
+disk or an external disk. An external SSD is useful for additional capacity
+and separating build data; it is not a platform requirement. Use a writable
+local APFS volume and keep the workspace, its reusable inputs and short test
+scratch directory on that volume. Docker may use a different local volume.
+
+Before downloading inputs, budget for source checkouts, downloads, unpacked
+dependencies, caches, temporary files, outputs and a free-space reserve. Check
+the disk that will actually hold each of them, including Docker's backing disk
+and, if following route C, the Factory Builder VM's storage. The final DMG size
+alone is not a build-space estimate. Use the selected release's capacity report
+and documented guards in B3; do not start acquisition or a build if space is
+insufficient.
+
+**Source and release boundary:** the new storage-aware scripts are awaiting
+regression execution and the joint walkthrough. The frozen candidate selected
+in B2 still uses older, external-only build owners and requires Docker on that
+same external volume. It is not retroactively upgraded by this README or by
+editing its pins. A successor release must explicitly adopt the new owners
+before the complete internal-disk route can be called verified. The new
+preflight reports this compatibility separately from available space.
+
+These instructions never migrate or restart shared Docker. A disconnected
+external volume must never cause a silent fallback to internal storage.
+
+Complete [macOS developer preparation](docs/getting-started/macos-developer-tools.md)
+in the same Terminal first. It defines `SDV_ROOT`, `SDV_TMP` and the explicit
+tool paths used below. Obtain both private input binding files, Drive access
+and an authorized signing identity.
+
+### B2. Clone the one entry repository
+
+```sh
+git clone --branch main https://github.com/alexmaninblack/aosedge-sdv-demo.git "$SDV_ROOT/source"
+cd "$SDV_ROOT/source"
+git switch --detach dbfd542d38f3730f151f43dd303af94e4902c74d
+git rev-parse HEAD
+```
+
+Expect the exact hash above. `main` is where current documentation lives;
+the detached hash selects this candidate's reproducible source, not a new tag.
+Keep this current guide open in your browser: the selected older source commit
+does not contain this revised walkthrough. Do not clone components manually.
+
+### B3. Inspect the build before downloading inputs
+
+```sh
+./lab plan --profile developer \
+  --build-plan workspace/releases/1.2.0-rc.1-source-factory-build-chain.json
+./lab inputs plan
+./lab space --storage "$SDV_ROOT/build" \
+  --build-plan workspace/releases/1.2.0-rc.1-source-factory-build-chain.json
+```
+
+Review the reported free space, missing cached inputs and build-stage space
+guards for the selected release. The new tooling checks Docker separately and
+counts shared APFS capacity only once; an incomplete storage check is not a
+pass. These guards are not a measured cold-build
+peak or a universal minimum for every release. Keep the required reserve and
+resolve insufficient space or other blocking prerequisites before acquisition.
+A plan with `qualified: false` does not fail merely because qualification is
+still open; it does not mean that the build or release is qualified.
+
+### B4. Prepare, build and locate the result
+
+Continue directly at [developer guide step 3](docs/getting-started/reproduce-demo.md#3-prepare-sources-and-binary-inputs).
+That is the single copy/paste recipe for the remaining commands:
+
+1. Prepare and verify seven pinned source roles.
+2. Acquire the five locked binary inputs using your two binding files.
+3. Read the returned paths automatically; no manual path reconstruction.
+4. Run the ordered 17-step build using the explicit tools/signing identity.
+5. Expect `CHAIN_BUILT_NOT_QUALIFIED`; use its result/receipt path to find the
+   DMG, then install it through route A with **its own** matching descriptor.
+
+The guide includes failure recovery and cache reuse. A build never implicitly
+provisions a Cloud Unit, publishes services or starts a simulator. Stop on a
+failed step; do not turn retries into duplicate live actions.
+
+<a id="heavy-dependencies"></a>
+
+## C — Rebuild Factory or the simulator
+
+Use the separate [full-source guide](docs/getting-started/full-source-build.md).
+The selected Factory image has an exact-source retained-Builder procedure;
+fresh Builder acquisition and full Unreal/CARLA source closure remain explicit gaps. Do not
+use upstream Linux/Windows recipes as macOS instructions or claim an arbitrary
+clean Mac can already perform this route unattended.
 
 ## More information
 

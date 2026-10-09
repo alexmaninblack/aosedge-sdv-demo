@@ -24,7 +24,7 @@ class CacheTests(StorageFixture, unittest.TestCase):
         self.original = self.donor.path('cache/sha256/'+self.row['sha256'])
         self.original.parent.mkdir(parents=True)
         self.original.write_bytes(data)
-        self.patch('reproduction.cache.external_volume', return_value=self.volume)
+        self.patch('reproduction.cache.storage_volume', return_value=self.volume)
         self.patch('reproduction.cache.catalogue', return_value={self.row['sha256']:self.row})
         # Only fixtures use a copy; real reuse requires the tested macOS clonefile.
         self.cloner = self.patch('reproduction.cache.clone', side_effect=shutil.copyfile)
@@ -118,8 +118,8 @@ class CacheTests(StorageFixture, unittest.TestCase):
         self.original.unlink(); self.original.symlink_to(self.storage.state_path)
         with self.assertRaisesRegex(core.LabError, 'Symlink'):
             self.reuse()
-        with patch.object(cache, 'external_volume', return_value={'uuid':'OTHER'}):
-            with self.assertRaisesRegex(core.LabError, 'bound external'):
+        with patch.object(cache, 'storage_volume', return_value={'uuid':'OTHER'}):
+            with self.assertRaisesRegex(core.LabError, 'bound volume'):
                 self.reuse()
         for root in (self.storage.root, self.storage.root/'nested', self.storage.root.parent):
             with self.assertRaisesRegex(core.LabError, 'separate'):
@@ -238,9 +238,47 @@ class SpaceTests(StorageFixture, unittest.TestCase):
     def test_unreviewed_plan_cannot_reuse_capacity_claim(self):
         self.fixture(); original = space.chain.read_plan(self.release)
         changed = copy.deepcopy(original); changed['producers']['media'] = 'f'*40
-        with patch.object(space.chain, 'read_plan', side_effect=[changed,original]):
-            with self.assertRaisesRegex(core.LabError, 'reviewed default'):
+        with patch.object(space.chain, 'read_plan', side_effect=[changed,original,original]):
+            with self.assertRaisesRegex(core.LabError, 'reviewed producer'):
                 space.report(self.storage, self.state, build_plan=Path('different.json'))
+
+    def test_source_factory_plan_is_supported_without_changing_its_pins(self):
+        self.fixture()
+        plan = core.ROOT/'workspace/releases/1.2.0-rc.1-source-factory-build-chain.json'
+        before = plan.read_bytes()
+        value = space.report(self.storage, self.state, build_plan=plan)
+        self.assertEqual(plan.read_bytes(), before)
+        self.assertEqual(len(value['ownerGuards']), 17)
+
+    def test_fresh_developer_workspace_does_not_require_a_prepared_wheel_source(self):
+        value = space.report(self.storage, self.state)
+        self.assertFalse(value['cache']['wheelScopeComplete'])
+        self.assertFalse(value['storagePreflightComplete'])
+        self.assertFalse(value['qualified'])
+
+    def test_non_docker_target_does_not_probe_or_require_engine(self):
+        self.fixture()
+        with patch.object(space.containers, 'inspect_storage', side_effect=AssertionError):
+            value = space.report(self.storage, self.state, target='presenter', docker=Path('/unused'))
+        self.assertTrue(value['storagePreflightComplete'])
+
+    def test_separate_docker_capacity_is_visible_and_not_added_to_workspace_free(self):
+        self.fixture()
+        disk = self.base/'Docker.raw'; disk.touch()
+        volume = {**self.volume, 'uuid':'DOCKER', 'pool':'disk8'}
+        with patch.object(space.containers, 'inspect_storage', return_value={'disk':disk,'volume':volume}), \
+             patch.object(space.chain, 'storage_compatibility', return_value={'compatible':True}):
+            value = space.report(self.storage, self.state, docker=Path('/unused'))
+        self.assertEqual(len(value['capacityPools']), 2)
+        self.assertEqual(value['freeBytes'], 300*core.GIB)
+        self.assertTrue(value['storagePreflightComplete'])
+
+    def test_missing_engine_cannot_report_completed_storage_preflight(self):
+        self.fixture()
+        with patch.object(space.containers, 'inspect_storage', side_effect=core.LabError('stopped')):
+            value = space.report(self.storage, self.state, docker=Path('/unused'))
+        self.assertEqual(value['dockerStorage']['status'], 'BLOCKED')
+        self.assertFalse(value['storagePreflightComplete'])
 
 
 if __name__ == '__main__':

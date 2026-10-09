@@ -99,8 +99,8 @@ class HostTests(StorageFixture, unittest.TestCase):
     def test_explicit_kit_and_same_ssd_required(self):
         with self.assertRaisesRegex(core.LabError, 'Specify --kit-inputs'):
             host.retained(self.storage, None)
-        with patch('reproduction.host.external_volume', return_value={'uuid': 'OTHER'}):
-            with self.assertRaisesRegex(core.LabError, 'bound SSD'):
+        with patch('reproduction.host.storage_volume', return_value={'uuid': 'OTHER'}):
+            with self.assertRaisesRegex(core.LabError, 'bound volume'):
                 host.retained(self.storage, self.base)
 
     def test_worker_runs_offline_without_home_or_dyld_overrides(self):

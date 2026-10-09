@@ -4,7 +4,7 @@
 from pathlib import Path
 import stat
 
-from .core import ROOT, require, regular, read_json, atomic_json, digest, external_volume, run_command, GIB
+from .core import ROOT, require, regular, read_json, atomic_json, digest, storage_volume, run_command, GIB
 from .artifacts import sha256
 from .cloud import matches, relative
 from .sources import verify_sources
@@ -15,7 +15,7 @@ MANIFEST = 'host-runtime-manifest.json'
 
 def retained(storage, kit):
     require(kit is not None, 'Specify --kit-inputs for retained simulator, Python and QEMU')
-    require(external_volume(kit)['uuid'] == storage.volume['uuid'], 'Host kit must be on bound SSD')
+    require(storage_volume(kit)['uuid'] == storage.volume['uuid'], 'Host kit must be on bound volume')
     pin = next(r for r in storage.release.value['inputs'] if r['id'] == 'host-runtime')
     path = matches(Path(kit)/relative(pin['kitPath']), pin)
     value = read_json(path)
@@ -122,7 +122,7 @@ def assemble(storage, state, kit, sdk, python, progress):
             storage.path('sources/vehicle-gateway'), source, sdk, ui, native, output],
             env=storage.environment(), cwd=storage.root, timeout=900)
         output.parent.joinpath(key+'.log').write_bytes((result.stdout+result.stderr)[-2**20:])
-        require(result.returncode == 0, 'Host owner failed; inspect retained SSD log')
+        require(result.returncode == 0, 'Host owner failed; inspect retained workspace log')
         probes = probe_native(storage, output)
         value = read_json(output/MANIFEST)
         atomic_json(receipt_path(output), {'status': 'ASSEMBLED_NOT_RUNTIME_QUALIFIED',

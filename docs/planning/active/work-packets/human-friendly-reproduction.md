@@ -3,8 +3,8 @@
 
 # Human Friendly Repository and Release Reproduction Plan
 
-- Status: R1 complete; R2 tooling complete for the agreed developer route; R3 documentation complete; R4 planned
-- Version: 0.26
+- Status: R1 complete; R2 tooling complete for the agreed developer route; R3 step-by-step revision drafted; joint walkthrough pending; R4 planned
+- Version: 0.28
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Parent: [Installable distribution and reproducibility](../installable-distribution-and-reproducibility.md)
@@ -80,7 +80,7 @@ actually need them.
 | --- | --- | --- | --- | --- |
 | R1 Define the release and dependency closure | Demo Solution Team with component build owners | Current locks, recipes and source publication evidence | Validated release specification, ownership map and delivery design with explicit unresolved gates | Complete; Google Drive and version policy accepted |
 | R2 Automate preparation and builds | Integration build tooling; component owners retain their build logic | R1 schema, profile and dependency decisions | Repeatable commands, deterministic validation, resume and negative tests | Complete for developer plus source Factory .41 with retained CARLA; qualification remains open |
-| R3 Provide the human documentation routes | Integration documentation; component maintainers | R1 terminology and R2 public command contract | One release landing page, three usable guides and working navigation | Complete and source published; fresh-environment execution remains in R4 |
+| R3 Provide the human documentation routes | Integration documentation; component maintainers | R1 terminology and R2 public command contract | One release landing page, three usable guides and working navigation | Navigation baseline published; owner-requested copy/paste revision drafted, joint walkthrough pending |
 | R4 Prove reproduction and prepare release handoff | Integration qualification and release owners | R1 to R3 candidate | Fresh environment reproduction evidence, preserved runtime gate results and obtainable matching artifacts | Planned |
 
 Execute R1 before fixing the command contract in R2. Draft R3 alongside R2,
@@ -170,6 +170,26 @@ as a complete clean-reproduction recipe.
 ## Block R2 Automate preparation and builds
 
 ### Storage and execution boundary
+
+**October 9 storage amendment:** the owner accepted explicit internal or
+external APFS build storage and separately checked Docker storage. This
+supersedes the external-only restriction for new tooling, not the earlier
+campaign or its frozen producer revisions. Preserve workspace UUID binding,
+ownership, same-volume clone/input constraints, free-space reserves and failure
+on disconnect; never relocate shared Docker or fall back to another disk.
+Check each actual storage pool, combining demands that share an APFS container
+without counting its free space twice. Report available/required space before
+acquisition and recheck before large stages. Factory retains its guest guard.
+
+The owner subsequently authorized the script changes as well as the README.
+This is a Class B build-tool change with no runtime, Cloud or release-authority
+change. Add regression cases and reconcile the reproduction contract and reader
+guides. Builds, installations and test execution remain deferred to the agreed
+walkthrough; static review is not a passed regression run. The owner subsequently
+authorized committing and pushing this source checkpoint to `main`, with
+`[skip ci]` to preserve that execution boundary. Do not
+rewrite immutable candidate pins or run old external-only producers on a new
+storage layout. A successor pinned chain must explicitly adopt the new tooling.
 
 On 8 October the owner required external SSD storage for R2. Sources and small
 project documents may stay in the integration checkout. Prepared checkouts,
@@ -400,6 +420,34 @@ not guessed by users from internal scripts.
 
 ### Current result
 
+**October 9 owner amendment:** the published navigation baseline below was
+not sufficient as a human first-use guide. All nine maintained top-level
+READMEs now receive numbered macOS routes: prerequisites, explicit clone,
+dependencies, commands, expected results, scope and finish behavior. The root
+separates operator DMG installation from developer assembly and heavy-source
+rebuilds. A macOS preparation guide defines tool/access/path variables once;
+input verification results supply paths instead of guessed placeholders.
+Component protocols and dated evidence remain available in collapsed reference
+sections, without changing their meaning or canonical links. CARLA/Unreal lead
+with the maintained macOS route; upstream material is explicitly not that route.
+
+The owner explicitly prohibited **all builds, installations and test runs**
+during this revision. Only documentation edits, source inspection and static
+document checks are in scope. Do not run the documented commands, quality/test
+suites or publish changes that trigger build CI as part of this revision.
+The subsequent owner request authorizes source commits and pushes to `main`
+with `[skip ci]`; it does not authorize running builds or test suites or
+promoting a release. The normal confidentiality and static documentation hooks
+remain enabled for this publication.
+After the entire instruction set is ready, walk through it together with the
+owner one step at a time and incorporate feedback. Historical passed gates
+below are not evidence that this new sequence has been exercised. No release
+pin, artifact, runtime behavior or qualification status changes here.
+
+The preserved shutdown/return and full-source acquisition gaps must stay
+visible; documentation must not invent a native Stop button, silent Docker
+relocation or a turnkey clean Builder/Unreal recipe to hide them.
+
 The [root landing page](../../../../README.md) now offers Run, Build, Understand
 and Contribute. The [reader index](../../../getting-started/README.md) connects
 the operator, developer and full-source routes with release selection,
@@ -443,17 +491,22 @@ See the [branch policy](../../../governance/development-workflow.md).
 
 ### Work
 
-1. Make the root README a short product landing page: purpose, supported
-   configuration, selected release/status and four entries: Run the demo,
-   Build from source, Understand the architecture, Contribute.
+1. Make the root README a product landing page and numbered macOS quickstart:
+   purpose, supported configuration, release/access, copy/paste entry commands,
+   expected results and explicit next steps. Run and Build are separate linear
+   routes, not only links to architecture or history. Keep a single canonical
+   detailed build recipe and link to its exact next step without making the
+   reader reconstruct prerequisites.
 2. Write one linear operator guide and separate developer/full-source build
    guides. Show prerequisites, access, commands, expected results, measured
    build/storage needs and recovery from common failures. Keep unresolved
    measurements explicit until R4 supplies them; do not invent durations.
 3. Present a product map grouping platform, Brake, Tire and simulation under
    SDV Lab. Explain independent Git ownership without requiring manual clones.
-   Standardize component READMEs with role, local checks, component docs and
-   a link back to the complete demo entry point.
+   Standardize all nine top-level READMEs with role, prerequisites, clone,
+   dependency/build/check/run/stop steps where implemented, expected results,
+   component docs and a link back to the complete demo. Explicitly distinguish
+   host-only targets, real Linux ARM64 products and integrated qualification.
 4. Separate current instructions from specialist design and dated evidence.
    Preserve canonical requirements, contracts, ADRs, stable IDs and qualified
    release reports. Remove obsolete instructions from the normal route only

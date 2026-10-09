@@ -9,7 +9,7 @@ from reproduction.artifacts import sha256
 
 class RevalidationTests(StorageFixture, unittest.TestCase):
     def fixture(self):
-        self.patch('reproduction.revalidate.external_volume', return_value=self.volume)
+        self.patch('reproduction.revalidate.storage_volume', return_value=self.volume)
         inputs = {'fixture':True}
         key = core.digest(inputs)
         output = self.storage.path('builds/host-runtime/'+key)
@@ -62,7 +62,7 @@ class RevalidationTests(StorageFixture, unittest.TestCase):
 
     def test_wrong_volume_or_extra_file_fails_before_mutation(self):
         output, _, original = self.fixture()
-        with patch('reproduction.revalidate.external_volume', return_value={'uuid':'OTHER'}):
+        with patch('reproduction.revalidate.storage_volume', return_value={'uuid':'OTHER'}):
             with self.assertRaisesRegex(core.LabError, 'volume changed'):
                 self.refresh()
         (output/'extra').write_text('unowned')

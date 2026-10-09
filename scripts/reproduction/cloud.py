@@ -6,7 +6,7 @@ from pathlib import Path
 import shutil
 import stat
 
-from .core import require, regular, no_links, read_json, atomic_json, digest, external_volume, GIB
+from .core import require, regular, no_links, read_json, atomic_json, digest, storage_volume, GIB
 from .artifacts import sha256, cached, public_wheel
 from .build import command
 from .sources import verify_sources
@@ -46,8 +46,8 @@ def inventory(root, rows, extra=()):
 def python_input(storage, kit):
     """Inspect only pinned selected inputs, not the complete retained kit."""
     kit = no_links(kit)
-    volume = external_volume(kit)
-    require(volume['uuid'] == storage.volume['uuid'], 'Kit inputs must be on the selected external volume')
+    volume = storage_volume(kit)
+    require(volume['uuid'] == storage.volume['uuid'], 'Kit inputs must be on the selected volume')
     pin = next(row for row in storage.release.value['inputs'] if row['id'] == 'host-runtime')
     host_path = matches(kit / relative(pin['kitPath']), pin)
     host = read_json(host_path)
@@ -112,7 +112,7 @@ def verify_output(output, inputs):
 
 def assemble(storage, state, kit, python, prepare_dependencies, progress):
     require(storage.profile == 'developer', 'Cloud adapter currently requires the developer profile')
-    require(kit is not None, 'Specify --kit-inputs for the declared prebuilt Python base on SSD')
+    require(kit is not None, 'Specify --kit-inputs for the declared prebuilt Python base on the selected volume')
     verify_sources(storage, state)
     storage.check(additional=GIB, reserve=90*GIB)
     env = storage.environment()

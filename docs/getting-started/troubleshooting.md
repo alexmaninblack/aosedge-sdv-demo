@@ -19,6 +19,7 @@ everything or delete state as the first response.
 | Uncertain token submission | Use **Inspect saved attempt**. Do not replay the one-time token blindly or replace working credentials. |
 | macOS requests access | Grant the specific normal consent to the signed app. Window placement uses Accessibility; installation does not require blanket Full Disk Access. |
 | Presenter opens without a controller | **Open demo** opens Presenter only. Use Create Controller for a new Test. Native power-on of a stopped retained controller remains a limitation, not a passed returning-user flow. |
+| Presenter closed, but the demo still consumes resources | **Close Presenter (keep demo running)** closes its windows only. Use the engineering owner for a complete non-destructive shutdown; do not treat **Finish demo** as a generic Close button. |
 
 Follow the [installation steps](installed-preview-cloud-first-use.md) and
 [operator sequence](../operations/current-demo-workflow.md).
@@ -45,6 +46,8 @@ Follow the [installation steps](installed-preview-cloud-first-use.md) and
 | Failure | Next action |
 | --- | --- |
 | Root or producer commit missing | Obtain the exact source-handoff revision. An old tag or latest branch is not an implicit substitute. |
+| A command/variable is missing from a fresh Terminal | Complete [macOS preparation](macos-developer-tools.md) and keep that session open. Restore declared values after a terminal restart; do not guess tool or returned artifact paths. |
+| Node/npm version differs | Use exact Node 26.0.0 / npm 11.12.1 from the official ARM64 archive, then recheck PATH. A floating Homebrew Node is not the declared toolchain. |
 | Drive bindings/access missing | Obtain both approved binding files and authorize Google CLI separately. No credentials in Git. |
 | Interrupted transfer | Inspect the operation; reconcile its remote ID or reuse verified ranges/cache. Never create a duplicate or retry blindly. |
 | Checksum/metadata mismatch | Preserve and investigate the exact object. Do not promote it or accept a new expected hash from the download itself. |

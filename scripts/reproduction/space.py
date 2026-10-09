@@ -5,8 +5,8 @@ import os
 import shutil
 import stat
 
-from .core import GIB, require, digest
-from . import cache, chain
+from .core import GIB, ROOT, LabError, require, digest, capacity_report
+from . import cache, chain, containers
 
 # Additional GiB and reserve GiB from the existing owner guards. These are
 # reservations, not upper bounds on output or shared Docker layer growth.
@@ -37,12 +37,14 @@ def footprint(path, check):
     return result
 
 
-def report(storage, state, target='all', build_plan=None, donor_path=None):
+def report(storage, state, target='all', build_plan=None, donor_path=None, docker=None):
     require(storage.profile in ('developer','operator'), 'Full-source capacity closure is not yet supported')
     check = lambda: storage.check(reserve=0)
     check()
     donor = cache.source(storage, donor_path) if donor_path is not None else None
-    rows = cache.catalogue(storage, donor)
+    wheel_scope_complete = storage.profile == 'operator' or any(
+        root is not None and (root/'sources/integration').exists() for root in (storage.root, donor))
+    rows = cache.catalogue(storage, donor, allow_unprepared=True)
     local, shared, missing = [], [], []
     for key, row in rows.items():
         if cache.verified(storage.root, row, check):
@@ -54,7 +56,9 @@ def report(storage, state, target='all', build_plan=None, donor_path=None):
     steps = []
     if storage.profile == 'developer':
         plan = chain.read_plan(storage.release, build_plan)
-        require(plan == chain.read_plan(storage.release), 'Capacity guards require the reviewed default producer plan')
+        reviewed = [chain.read_plan(storage.release), chain.read_plan(storage.release,
+                    ROOT/'workspace/releases/1.2.0-rc.1-source-factory-build-chain.json')]
+        require(plan in reviewed, 'Capacity guards require a reviewed producer plan')
         selected = plan['steps'] if target == 'all' else [{'id':target,'target':target}]
         for step in selected:
             additional, reserve = GUARDS[step['target']]
@@ -66,11 +70,33 @@ def report(storage, state, target='all', build_plan=None, donor_path=None):
                     recorded.append(key)
             steps.append({'id':step['id'], 'additionalBytes':additional*GIB,
                           'reserveBytes':reserve*GIB, 'recordedCandidateCount':len(recorded)})
-    free = shutil.disk_usage(storage.root if storage.root.exists() else storage.root.parent).free
+    existing = next(p for p in (storage.root, *storage.root.parents) if p.exists())
+    free = shutil.disk_usage(existing).free
     envelope = sum(r['additionalBytes'] for r in steps) + max((r['reserveBytes'] for r in steps), default=60*GIB)
     largest = max((r['additionalBytes']+r['reserveBytes'] for r in steps), default=60*GIB)
+    limiting = max(steps, key=lambda r:r['additionalBytes']+r['reserveBytes'], default={'additionalBytes':0,'reserveBytes':60*GIB})
+    requests = [('workspace', storage.root, storage.volume, limiting['additionalBytes'], limiting['reserveBytes'])]
+    docker_status = {'status':'NOT_CHECKED', 'reason':'No Docker CLI selected'}
+    docker_volume = None
+    needs_docker = storage.profile == 'developer' and target in (
+        'all', 'brake-backend', 'tire-backend', 'backend-export', 'brake-service', 'tire-service')
+    if docker is not None and needs_docker:
+        try:
+            selected = containers.inspect_storage(docker, storage.environment(create=False), existing)
+            docker_volume = selected['volume']
+            requests.append(('docker', selected['disk'], docker_volume, 2*GIB, 60*GIB))
+            docker_status = {'status':'CHECKED', 'path':str(selected['disk']), 'volumeUUID':docker_volume['uuid']}
+        except (LabError, OSError):
+            docker_status = {'status':'BLOCKED', 'reason':'Cannot verify active local Docker storage; check Engine, disk and permissions'}
+    pools = capacity_report(requests)
+    compatibility = chain.storage_compatibility(storage, plan, docker_volume) if storage.profile == 'developer' and target == 'all' else None
     return {'status':'SPACE_REPORT', 'profile':storage.profile, 'freeBytes':free,
+        'storage':storage.volume, 'capacityPools':pools, 'fitsCheckedPools':all(p['fits'] for p in pools),
+        'dockerStorage':docker_status, 'producerStorageCompatibility':compatibility,
+        'storagePreflightComplete':(not needs_docker or docker_status['status'] == 'CHECKED')
+            and (compatibility is None or compatibility['compatible']),
         'cache':{'declaredObjectCount':len(rows), 'localCount':len(local), 'shareableCount':len(shared),
+                 'wheelScopeComplete':wheel_scope_complete,
                  'missingCount':len(missing), 'localLogicalBytes':sum(rows[k]['bytes'] for k in local),
                  'shareableLogicalBytes':sum(rows[k]['bytes'] for k in shared),
                  'absentFromCachesLogicalBytes':sum(rows[k]['bytes'] for k in missing),
@@ -80,5 +106,5 @@ def report(storage, state, target='all', build_plan=None, donor_path=None):
         'sumOfStepReservationsBytes':envelope, 'fitsSumOfStepReservations':free >= envelope,
         'reservationSumIsNotPeak':True, 'coldBuildPeakBytes':None,
         'physicalCloneSharingMeasured':False,
-        'unmeasured':['shared Docker growth', 'cold source/tool acquisition', 'cold peak and APFS unique extents'],
+        'unmeasured':['shared Docker growth and guest disk capacity', 'cold source/tool acquisition', 'cold peak and APFS unique extents'],
         'recordedCandidatesAreNotVerifiedReuse':True, 'profileReady':False, 'qualified':False}

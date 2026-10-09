@@ -56,7 +56,7 @@ def assemble(storage, state, target, profile, docker, python, prepare_dependenci
     env = storage.environment()
     epoch = git(checkout, ['show', '-s', '--format=%ct', 'HEAD'], env)
     require(epoch.isdigit() and int(epoch) > 0, 'Invalid service source timestamp')
-    client = Desktop(storage, docker)
+    client = Desktop(storage, docker, additional=8*GIB, reserve=90*GIB)
     inputs = {'source': state['sources'][source], 'integration': state['sources']['integration'],
               'recipeSha256': sha256(recipe), 'team': team, 'functionalProfile': profile,
               'epoch': int(epoch), 'platform': 'linux/arm64', 'docker': client.version,

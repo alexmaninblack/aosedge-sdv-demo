@@ -7,7 +7,7 @@ import stat
 import tempfile
 import xml.etree.ElementTree as ET
 
-from .core import ROOT, require, regular, read_json, atomic_json, digest, external_volume, run_command, GIB
+from .core import ROOT, require, regular, read_json, atomic_json, digest, storage_volume, run_command, GIB
 from .artifacts import sha256
 from .build import command
 from .cloud import inventory
@@ -18,9 +18,9 @@ BINARIES = ('carla-ego-runtime', 'carla-viss-client')
 
 
 def sdk_input(storage, sdk):
-    require(sdk is not None, 'Specify --gateway-sdk with the declared prebuilt SDK on SSD')
+    require(sdk is not None, 'Specify --gateway-sdk with the declared prebuilt SDK on the selected volume')
     sdk = Path(sdk)
-    require(external_volume(sdk)['uuid'] == storage.volume['uuid'], 'Gateway SDK must be on the bound SSD')
+    require(storage_volume(sdk)['uuid'] == storage.volume['uuid'], 'Gateway SDK must be on the bound volume')
     lock = read_json(SDK_LOCK)
     manifest = regular(sdk / 'sdk-manifest.json')
     require(sha256(manifest) == lock['manifestSha256'], 'Gateway SDK manifest differs from lock')
@@ -59,10 +59,10 @@ def verify_output(output, inputs):
 
 
 def temporary_parent(storage, parent):
-    require(parent is not None, 'Specify --test-tmp-parent: an existing short directory on the bound SSD')
+    require(parent is not None, 'Specify --test-tmp-parent: an existing short directory on the bound volume')
     parent = Path(parent)
-    require(parent.is_dir() and external_volume(parent)['uuid'] == storage.volume['uuid'],
-            'Gateway test temporary parent must be on the bound SSD')
+    require(parent.is_dir() and storage_volume(parent)['uuid'] == storage.volume['uuid'],
+            'Gateway test temporary parent must be on the bound volume')
     # mkdtemp adds ten bytes; the unchanged owner appends its fixture/socket names.
     require(len(str(parent).encode()) <= 29, 'Gateway test temporary parent is too long for Unix sockets')
     return parent
@@ -123,7 +123,7 @@ def assemble(storage, state, sdk, cmake, python, progress, test_tmp_parent=None,
             if log_path.exists() and not (output / (name + '.first.log')).exists():
                 (output / (name + '.first.log')).write_bytes(regular(log_path).read_bytes())
             log_path.write_bytes(log[-4*2**20:])
-            require(result.returncode == 0, 'Gateway ' + name + ' failed; inspect retained SSD log')
+            require(result.returncode == 0, 'Gateway ' + name + ' failed; inspect retained workspace log')
             return result.stdout.decode()
         progress('BUILD_STARTED', 'gateway')
         step('configure', [cmake, '-S', checkout, '-B', output,
@@ -145,9 +145,9 @@ def assemble(storage, state, sdk, cmake, python, progress, test_tmp_parent=None,
         # Unit tests bind ephemeral local sockets; no simulator or deployment is started.
         # Raw compiler outputs are not relocated packages. Select only this declared SDK for test loading.
         # The short temporary directory is the sole workspace-layout exception:
-        # same verified SSD, mode 0700, only this test invocation, removed on exit.
+        # same verified volume, mode 0700, only this test invocation, removed on exit.
         with tempfile.TemporaryDirectory(prefix='t', dir=tmp_parent) as test_tmp:
-            require(Path(test_tmp).stat().st_dev == storage.volume['device'], 'Test temporary directory escaped SSD')
+            require(Path(test_tmp).stat().st_dev == storage.volume['device'], 'Test temporary directory escaped its selected volume')
             step('tests', [ctest, '--test-dir', output, '--output-on-failure', '--output-junit', output / 'ctest-results.xml'],
                  offline=False, extra={'DYLD_LIBRARY_PATH': str(sdk / 'openssl/lib'), 'TMPDIR': test_tmp})
             storage.check(reserve=0)
@@ -161,7 +161,7 @@ def assemble(storage, state, sdk, cmake, python, progress, test_tmp_parent=None,
                 for name in (*BINARIES, 'ctest-results.xml')]
         atomic_json(output / 'build-receipt.json', {'status': 'BUILT_NOT_RUNTIME_QUALIFIED',
             'inputs': inputs, 'files': rows, 'sourcesUnchanged': True, 'testNames': names, 'testCount': count,
-            'testEnvironment': 'Explicit SSD CARLA cache and short-lived same-volume socket temporary directory',
+            'testEnvironment': 'Explicit workspace CARLA cache and short-lived same-volume socket temporary directory',
             'runtimeRelocated': False, 'externalDistributionApproved': False})
     verify_output(output, inputs)
     state['builds'][key] = {'target': 'gateway', 'inputs': inputs}

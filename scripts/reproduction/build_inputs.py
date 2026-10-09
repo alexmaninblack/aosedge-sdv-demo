@@ -13,7 +13,7 @@ import time
 from . import artifacts, dependencies as sim, delivery, packaging
 from .cloud import matches
 from .core import (ROOT, GIB, LabError, Release, Storage, atomic_json, digest,
-                   external_volume, no_links, read_json, regular, require)
+                   storage_volume, no_links, read_json, regular, require)
 
 SET_ID = 'developer-factory41-r1'
 ROLES = ('vehicle-bases', 'factory-image')
@@ -98,7 +98,7 @@ def immutable_manifest(storage, source, expected):
 
 
 def export(storage, kit, factory, progress):
-    require(external_volume(kit)['uuid'] == storage.volume['uuid'], 'Kit is not on bound SSD')
+    require(storage_volume(kit)['uuid'] == storage.volume['uuid'], 'Kit is not on bound volume')
     pins = ancestry(storage.release)
     members = []
     for role, names, prefix in (('preparation-inputs', PREP_FILES, PREP), ('vm-runtime', VM_FILES, VM)):
@@ -243,7 +243,7 @@ def main(argv=None):
                 'unpackedBytes':sum(p['unpackedBytes'] for p in rows.values()),
                 'reserveGiB':90, 'profileReady':False}), flush=True)
             return 0
-        require(args.storage is not None, 'Explicit external storage required')
+        require(args.storage is not None, 'Explicit storage directory required')
         storage = Storage(args.storage, release, 'developer')
         last = [0]
         def progress(stage, value):

@@ -11,7 +11,6 @@ import hashlib
 import json
 import os
 import platform
-import plistlib
 import shutil
 import socket
 import stat
@@ -292,21 +291,18 @@ def host_check() -> None:
 
 
 def check_storage() -> Path:
-    """An explicitly bound SSD must never fall back to the home filesystem."""
+    """An explicitly bound volume must never fall back to another filesystem."""
     if not ROOT.is_absolute() or any(p.is_symlink() for p in (ROOT, *ROOT.parents)):
         fail("builder storage must be an absolute non-linked directory")
     existing = next(p for p in (ROOT, *ROOT.parents) if p.exists())
     if VOLUME_UUID:
-        mount = next(p for p in (existing, *existing.parents) if p.is_mount())
-        result = run(["/usr/sbin/diskutil", "info", "-plist", str(mount)], capture=True)
+        from reproduction.core import LabError, storage_volume
         try:
-            info = plistlib.loads(result.stdout.encode())
-        except (ValueError, plistlib.InvalidFileException) as error:
-            raise BuilderError("cannot inspect builder SSD") from error
-        if (info.get("VolumeUUID") != VOLUME_UUID or info.get("Internal") is not False
-                or info.get("WritableVolume") is not True or info.get("MountPoint") != str(mount)
-                or mount == Path("/") or not ROOT.is_relative_to(mount)):
-            fail("builder SSD is absent, replaced or not writable; no internal fallback")
+            volume = storage_volume(ROOT)
+        except LabError as error:
+            raise BuilderError("cannot inspect bound builder storage") from error
+        if volume['uuid'] != VOLUME_UUID:
+            fail("builder volume is absent or replaced; no fallback")
     return existing
 
 

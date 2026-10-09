@@ -9,9 +9,99 @@ controls delivery order; the [current baseline](../qualification/current-baselin
 identifies the implemented candidate. Component source, contracts and release
 locks remain authoritative. This journal links them and does not duplicate them.
 
-The latest [publication checkpoint](#2026-october-9-main-consolidation)
-records the committed and remotely verified source baseline. Earlier
-local-only entries below retain their original checkpoint state.
+The latest [publication checkpoint](#2026-october-9-readme-and-build-storage-source-publication)
+records the owner-authorized README and build-storage source handoff. Earlier
+local-only entries below retain their original checkpoint state; they are
+superseded by that publication, not retroactive build or test evidence.
+
+### 2026 October 9 README and build-storage source publication
+
+The owner explicitly requested committing and pushing all pending README,
+documentation, script and regression-fixture changes across the nine maintained
+repositories. All use `main`; no new branch, release tag, binary publication or
+immutable source/producer pin change is part of this handoff. The video
+repository remains outside scope.
+
+The eight component README commits were pushed before this integration
+checkpoint: CARLA `d5adb807f`, restricted Unreal `d800754d1`, vehicle platform
+`5ba2b74`, Gateway `26a593a`, Brake service `b3f7955`, Brake backend `9bc8be8`,
+Tire service `ebb0ded` and Tire backend `0ce41f2`. The containing integration
+commit carries the root guides, new macOS preparation guide, accepted explicit
+APFS/split-Docker storage policy, adapters and their unexecuted regression cases.
+
+This authorization preserves the no-build/no-test boundary: all publication
+commits use `[skip ci]`; normal confidentiality and static documentation hooks
+remain enabled. Python syntax and Git whitespace checks do not execute product
+code or fixtures. No installer, simulator, VM, backend, signing, Cloud operation
+or artifact transfer is started. Published source is not a qualified release.
+
+Next: perform the agreed joint command walkthrough and regression execution,
+then select reviewed successor producer revisions if the new storage layout is
+to be adopted. Existing candidate pins and qualification remain unchanged.
+
+### 2026 October 9 Explicit build-storage choice — local implementation
+
+The owner accepted internal or external APFS workspace selection and then
+explicitly requested the corresponding script changes. Class B: build-tool
+storage policy only; runtime, Cloud, release authority and frozen pins are
+unchanged. The owning [reproduction contract](../../contracts/release-reproduction/README.md#explicit-build-storage)
+and existing reproduction work packet record the scope.
+
+The new probe resolves the actual Data volume for macOS firmlink paths, retains
+UUID/device/ownership guards and rejects a missing `/Volumes` mount rather
+than creating an internal fallback. Inputs and clone caches stay on the selected
+volume. Docker may use another local disk: read-only discovery verifies its
+active backing file, guards its capacity separately and combines reservations
+when it shares the workspace's APFS capacity pool. No Engine lifecycle or
+storage migration is introduced. The bound Factory Builder uses the same probe
+and retains its host/guest guards.
+
+Capacity inspection now works before wheel-source preparation, marks that
+cache scope incomplete, supports both reviewed frozen plans and reports exact
+producer storage compatibility without executing their code. Old producers
+remain external-only; a successor pinned plan must explicitly adopt the new
+tooling. No immutable descriptor, artifact, signature or candidate was changed.
+
+Regression cases have been added/updated but **not run** under the owner's
+continuing no-test/no-build instruction. Source/static checks are separate from
+qualification. Python AST parsing, the revised guide's shell syntax and Git
+whitespace checks pass; no project code was imported or executed by those
+checks. Read-only macOS volume metadata confirmed the Data firmlink and APFS
+pool fields used by the probe. Frozen workspace/component metadata has no diff.
+No installer, simulator, VM, Docker build or Cloud operation was
+started. Publication and the joint command walkthrough remain pending.
+
+### 2026 October 9 Step-by-step README revision — local draft
+
+Class A documentation/presentation change, authorized by the owner after the
+main-branch review. Scope: nine top-level READMEs, root getting-started guides,
+navigation, troubleshooting and the existing reproduction work packet.
+New human routes explain macOS prerequisites, explicit clone commands, exact
+Node/npm versions, private input acquisition, returned paths, expected results
+and stopping boundaries. Existing implementation detail and upstream notices
+are preserved as reference; no canonical contract or requirement was retired.
+
+The owner explicitly requested no builds of any size and a later joint
+step-by-step walkthrough. No installation, documented build/check command,
+project test suite, simulator, VM, Docker or Cloud operation was run for this
+revision. Source inspection and static Markdown/shell-shape review are not
+runtime proof. This draft is not yet committed/pushed; publication is deferred
+so it does not trigger build/test CI before the agreed walkthrough boundary.
+The older passed checks below belong to their original checkpoints.
+
+Static review of 14 first-use documents found no missing local targets or
+anchors among 89 inspected links. All 68 shell blocks parsed with `sh -n`;
+their commands were not executed. Git whitespace review is clean. The final
+working set is 17 Markdown files across nine repositories and contains no
+code, manifest, lock or binary edits. Repository test/quality suites remain
+deliberately unrun, not reported as passed. No runtime/helper was started, so
+this documentation task leaves no test-owned process to stop.
+
+Frozen release/source pins, existing candidate bytes, signatures, access,
+runtime behavior and the video repository remain unchanged. Full-source
+acquisition and native retained-Test shutdown/return gaps are disclosed rather
+than solved by invented instructions. The next activity is the owner's guided
+walkthrough, not an autonomous build or a renewed installer campaign.
 
 ### 2026 October 9 Main consolidation
 

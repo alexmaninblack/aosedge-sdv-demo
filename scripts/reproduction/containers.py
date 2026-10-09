@@ -6,7 +6,7 @@ from pathlib import Path
 import re
 import stat
 
-from .core import require, regular, no_links, read_json, atomic_json, digest, external_volume, GIB
+from .core import require, regular, no_links, read_json, atomic_json, digest, storage_volume, require_capacity, GIB
 from .build import command
 from .artifacts import sha256, identity
 from .sources import verify_sources
@@ -14,26 +14,42 @@ from .sources import verify_sources
 TARGETS = {'brake-backend': ('brake-health-cloud', 'brake'),
            'tire-backend': ('tire-health-cloud', 'tire')}
 
+def backing_disk():
+    settings = Path.home() / 'Library/Group Containers/group.com.docker/settings-store.json'
+    folder = read_json(settings).get('DataFolder')
+    require(isinstance(folder, str) and Path(folder).is_absolute(),
+            'Cannot resolve Docker backing disk; check Docker Desktop storage settings')
+    return regular(Path(folder) / 'Docker.raw')
+
+def inspect_storage(docker, env, cwd):
+    """Read-only: resolve the existing Engine and actual active local disk."""
+    docker = Path(docker).resolve(strict=True)
+    endpoint = command([docker, '--config', Path.home() / '.docker', 'context', 'inspect', 'desktop-linux', '--format',
+                        '{{.Endpoints.docker.Host}}'], env, cwd)
+    require(endpoint.startswith('unix:///'), 'Only local Docker Desktop is supported')
+    require(stat.S_ISSOCK(Path(endpoint[len('unix://'):]).stat().st_mode), 'Local Docker Desktop socket unavailable')
+    disk = backing_disk()
+    volume = storage_volume(disk)
+    require(command(['/usr/sbin/lsof', '-t', disk], env, cwd), 'Docker backing disk is not active')
+    return {'docker':docker, 'endpoint':endpoint, 'disk':disk, 'volume':volume}
+
+def capacity_requests(storage, disk, volume, additional=2*GIB, reserve=60*GIB):
+    # Workspace exports and Docker layer growth can consume the same APFS pool.
+    # Keep both allowances but only one largest reserve for a shared pool.
+    return [('workspace', storage.root, storage.volume, additional, reserve),
+            ('docker', disk, volume, 2*GIB, 60*GIB)]
+
 class Desktop:
-    def __init__(self, storage, docker):
+    def __init__(self, storage, docker, *, additional=2*GIB, reserve=60*GIB):
         self.storage = storage
+        self.additional, self.reserve = additional, reserve
+        selected = inspect_storage(docker, storage.environment(create=False), storage.root)
+        self.docker, self.disk, self.volume = selected['docker'], selected['disk'], selected['volume']
+        endpoint = selected['endpoint']
+        info = self.disk.stat()
+        self.disk_identity = (info.st_dev, info.st_ino)
+        self.check_storage()
         self.env = storage.environment()
-        self.docker = Path(docker).resolve(strict=True)
-        # Read the explicitly named local context; never inherit DOCKER_HOST/context.
-        endpoint = command([self.docker, '--config', Path.home() / '.docker', 'context', 'inspect', 'desktop-linux', '--format',
-                            '{{.Endpoints.docker.Host}}'], self.env, storage.root)
-        require(endpoint.startswith('unix:///'), 'Only local Docker Desktop is supported')
-        socket = Path(endpoint[len('unix://'):])
-        require(stat.S_ISSOCK(socket.stat().st_mode), 'Local Docker Desktop socket unavailable')
-        settings = Path.home() / 'Library/Group Containers/group.com.docker/settings-store.json'
-        folder = read_json(settings).get('DataFolder')
-        require(isinstance(folder, str), 'Move Docker disk to the selected external SSD before container builds')
-        self.disk = regular(Path(folder) / 'Docker.raw')
-        volume = external_volume(self.disk)
-        require(volume['uuid'] == storage.volume['uuid'], 'Docker disk must be on the selected external SSD')
-        # Check the actual open backing disk, not just a pending settings value.
-        require(command(['/usr/sbin/lsof', '-t', self.disk], self.env, storage.root),
-                'Docker backing disk is not active')
         config = storage.path('cache/docker-client')
         config.mkdir(parents=True, exist_ok=True)
         plugins = self.docker.parent.parent / 'cli-plugins'
@@ -54,9 +70,20 @@ class Desktop:
                 'Expected local ARM64 Docker Desktop')
         self.version = self.run(['version', '--format', '{{.Server.Version}}'])
 
+    def check_storage(self):
+        require(backing_disk() == self.disk, 'Docker storage configuration changed; stop and recheck')
+        info = regular(self.disk).stat()
+        require((info.st_dev, info.st_ino) == self.disk_identity, 'Docker backing disk was replaced')
+        return require_capacity(capacity_requests(self.storage, self.disk, self.volume,
+                                                  self.additional, self.reserve))
+
     def run(self, args, timeout=30):
-        self.storage.check(additional=2*GIB)
-        return command(self.args + args, self.env, self.storage.root, timeout=timeout)
+        self.check_storage()
+        require(command(['/usr/sbin/lsof', '-t', self.disk], self.env, self.storage.root),
+                'Docker backing disk is no longer active')
+        result = command(self.args + args, self.env, self.storage.root, timeout=timeout)
+        self.check_storage()
+        return result
 
     def image(self, image_id, revision, team):
         require(re.fullmatch('sha256:[a-f0-9]{64}', image_id), 'Invalid backend image identity')

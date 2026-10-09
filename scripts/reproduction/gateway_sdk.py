@@ -1,12 +1,12 @@
 # SPDX-FileCopyrightText: 2026 maninblack
 # SPDX-License-Identifier: MIT
-"""Freeze explicit, previously accepted native build inputs on external storage."""
+"""Freeze explicit, previously accepted native build inputs on selected storage."""
 import argparse
 import json
 from pathlib import Path
 import shutil
 
-from .core import require, regular, no_links, external_volume, atomic_json, GIB
+from .core import require, regular, no_links, storage_volume, atomic_json, GIB
 from .artifacts import sha256
 from .cloud import inventory
 
@@ -17,7 +17,7 @@ ANCHORS = {'lib/cmake/Carla/CarlaConfig.cmake': '027e2c1e5523060f4f88f7b10513442
 def freeze(carla, openssl, output):
     carla, openssl = Path(carla).resolve(strict=True), Path(openssl).resolve(strict=True)
     output = no_links(output)
-    volume = external_volume(output)
+    volume = storage_volume(output)
     require(not output.exists() and output.parent.is_dir(), 'SDK output must be new with existing parent')
     for name, expected in ANCHORS.items():
         require(sha256(regular(carla / name)) == expected, 'SDK differs from accepted LibCarla anchors')
@@ -40,7 +40,7 @@ def freeze(carla, openssl, output):
     output.mkdir(mode=0o700)
     rows = []
     for name, source in selected:
-        require(Path(volume['mount']).is_mount() and output.stat().st_dev == volume['device'], 'SDK SSD disconnected')
+        require(Path(volume['mount']).is_mount() and output.stat().st_dev == volume['device'], 'SDK volume disconnected')
         before = source.stat()
         value = sha256(source)
         target = output / name
