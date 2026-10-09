@@ -1,0 +1,44 @@
+{
+  "definitionDigest": "cdfec741dc784774a1bcbe57c536a65e9d8c4a2077a68ad8b97104eabd7c2598",
+  "factoryCheckpointSha256": "870948a9c30da401d4c164f8e4eba4e0c3f97d59c2b01ce82055c434bf47ba80",
+  "id": "developer-factory41-r1",
+  "packages": {
+    "factory-image": {
+      "bytes": 316796441,
+      "file": "developer-factory41-r1-factory-image.tar.gz",
+      "files": 2,
+      "manifestSha256": "623f9cb62d90003b7b72255a72428f367878c39d91c4b86bb219dc96ad90ba4f",
+      "sha256": "fa98b49a2d84a5f832df54d8d079905dd06193d4c0ba7fcac116bfca463d5be2",
+      "unpackedBytes": 6997158056
+    },
+    "vehicle-bases": {
+      "bytes": 20797429,
+      "file": "developer-factory41-r1-vehicle-bases.tar.gz",
+      "files": 12,
+      "manifestSha256": "aaab092524e19159955a6627db9fdacc2d7fffc833f1015afdc45169d53571e2",
+      "sha256": "ae2da1a5a7dd06e878a588833dc90c9100d0d73fef11f5195859b35c46f5e3d6",
+      "unpackedBytes": 22177570
+    }
+  },
+  "retainedManifests": {
+    "preparation-inputs": {
+      "bytes": 51532,
+      "id": "preparation-inputs",
+      "kitPath": "demo-artifacts/aosedge-sdv-demo/preparation-inputs/vehicle-input-manifest.json",
+      "lock": "contracts/portable-preparation-inputs/vehicle-inputs.lock.json",
+      "path": "vehicle-input-manifest.json",
+      "sha256": "d3f4e503e5f5157d946340fabb87572528194ee8cea1d5a01d0c2642bf208b47"
+    },
+    "vm-runtime": {
+      "bytes": 1369,
+      "id": "vm-runtime",
+      "kitPath": "demo-artifacts/aosedge-sdv-demo/vm-runtime/vm-runtime-manifest.json",
+      "lock": "contracts/portable-vm-launch/vm-runtime.lock.json",
+      "path": "vm-runtime-manifest.json",
+      "sha256": "b825aaee0ce34b5f72c93104d49728e90eb32a8ca0630cc9cc9b62a601f4d205"
+    }
+  },
+  "schemaVersion": 1,
+  "simulationLockSha256": "37311be6f3c1a18893bd61a112e42eddb7c457041168845e39a98c7b67ce151f",
+  "status": "PRIVATE_BUILD_INPUTS_NOT_PROFILE_QUALIFIED"
+}

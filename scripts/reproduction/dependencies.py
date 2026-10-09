@@ -41,12 +41,12 @@ def allowed(role, name):
             'Member outside selected dependency role')
 
 
-def rows_valid(role, rows):
+def rows_valid(role, rows, allow=allowed):
     require(isinstance(rows, list) and 0 < len(rows) <= 40000, 'Invalid dependency inventory')
     names = set()
     for row in rows:
         require(set(row) == {'path', 'bytes', 'sha256', 'mode'}, 'Unexpected dependency row')
-        allowed(role, row['path'])
+        allow(role, row['path'])
         require(row['path'] not in names and type(row['bytes']) is int and row['bytes'] >= 0
                 and type(row['mode']) is int and 0 <= row['mode'] <= 0o777
                 and re.fullmatch('[a-f0-9]{64}', row['sha256']), 'Invalid/duplicate dependency row')
@@ -92,13 +92,14 @@ class CheckedReader:
         return data
 
 
-def pack(storage, role, members, progress):
+def pack(storage, role, members, progress, *, set_id=SET_ID, validate=rows_valid):
     """Only explicit manifest members; deterministic tar metadata and gzip header."""
     rows = [row for row, _ in members]
-    rows_valid(role, rows)
+    require(isinstance(set_id, str) and re.fullmatch('[a-z0-9-]{1,80}', set_id), 'Invalid dependency set ID')
+    validate(role, rows)
     manifest = json.dumps({'schemaVersion': 1, 'role': role, 'files': rows},
                           sort_keys=True, separators=(',', ':')).encode()
-    filename = SET_ID+'-'+role+'.tar.gz'
+    filename = set_id+'-'+role+'.tar.gz'
     target = storage.path('exports/'+filename)
     receipt_path = target.with_suffix('.receipt.json')
     if target.exists():
@@ -177,7 +178,7 @@ def export(storage, kit, sdk, progress):
     return {'status': 'EXPORTED_FOR_REVIEW', 'lock': str(path)}
 
 
-def unpack(storage, archive_path, role, expected, output, progress):
+def unpack(storage, archive_path, role, expected, output, progress, *, validate=rows_valid):
     before = artifacts.identity(archive_path)
     require(before[2] == expected['bytes'], 'Archive size differs')
     # Caller must establish archive digest through the existing verified cache.
@@ -192,7 +193,7 @@ def unpack(storage, archive_path, role, expected, output, progress):
         require(set(manifest) == {'schemaVersion', 'role', 'files'} and manifest['schemaVersion'] == 1
                 and manifest['role'] == role, 'Package role differs')
         rows = manifest['files']
-        rows_valid(role, rows)
+        validate(role, rows)
         require(len(rows) == expected['files'] and sum(r['bytes'] for r in rows) == expected['unpackedBytes'],
                 'Package inventory differs')
         for index, row in enumerate(rows):

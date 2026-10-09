@@ -76,6 +76,9 @@ def status(storage, state):
 
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] == 'inputs':
+        from .build_inputs import main as inputs_main
+        return inputs_main(argv[1:])
     if argv and argv[0] == 'dependencies':
         from .dependencies import main as dependencies_main
         return dependencies_main(argv[1:])

@@ -56,6 +56,31 @@ by this release/profile/volume binding. Replace the example path below:
 ./lab build --storage /Volumes/BUILD/workspace --target dmg
 ```
 
+The source-Factory campaign can acquire its binary inputs separately:
+
+```sh
+./lab inputs plan
+./lab inputs prepare --storage /Volumes/BUILD/declared-inputs \
+  --binding /private/path/developer-inputs.drive.json \
+  --simulation-binding /private/path/simulation-inputs.drive.json \
+  --account authorized-reader@example.com
+./lab inputs verify --storage /Volumes/BUILD/declared-inputs
+```
+
+`prepare` reports `kitInputs`, `gatewaySdk` and `factoryInputs`. Use all three
+reported paths with the frozen source-Factory build plan and its checkpoints;
+the sparse result is not an installable kit or an input to the historical
+default Factory selection. Initial uncached acquisition needs an authorized
+Google CLI account. Prepared-output verification and repeat need no account.
+The private binding files are delivered to approved readers outside Git. Their
+file IDs select transport only; checked-in SHA-256 locks remain authoritative.
+Host compiler/SDK and pinned build-tool prerequisites still apply.
+
+Maintainers use `lab inputs export` with explicit retained `--kit-inputs` and
+source `--factory-inputs`, review the generated lock, then `lab inputs upload`
+with an explicit private folder and authorized account. These commands never
+rebuild CARLA/Factory, change sharing or publish runtime packages to AosCloud.
+
 The first build requires pinned Node 26.0.0/npm 11.12.1, Xcode's macOS SDK and
 Swift compiler, and explicit dependency acquisition. `--node` and `--npm` can
 select installed tools. The adapter calls the exact integration owner's

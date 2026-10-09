@@ -4,7 +4,7 @@
 # Release Definition and Reproduction Contract
 
 - Status: R1 complete; delivery and version policy accepted; acquisition and reproduction unqualified
-- Version: 1.17
+- Version: 1.18
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Scope: [R1 work packet](../../docs/planning/active/work-packets/human-friendly-reproduction.md)
@@ -169,6 +169,33 @@ a second build implementation. It is a sparse build-input directory, not a
 complete kit: Factory and preparation inputs remain separately required. A
 verified transfer and consumer-input check do not claim a fresh build, runtime
 qualification, public redistribution approval or complete R2 acceptance.
+
+## Declared developer inputs with source Factory
+
+The source-Factory campaign acquires the remaining binary inputs through
+`lab inputs`, without requiring an installed kit or the maintainer's retained
+directory. A separate reviewed `developer-factory41-r1` lock binds the release
+definition, existing simulation lock, source-Factory checkpoint and original
+vehicle/VM manifests. It adds only two archives: unsigned VDP bases with firmware
+and the retained VM support files; and the independently built Factory .41 image
+with its manifest. The original Factory image, services, operator state and
+credentials are excluded. Existing CARLA, host-support and SDK packages do not
+change. Export snapshots mutable, small Factory metadata into an immutable
+checked copy without modifying its producer.
+
+The five archives restore a sparse `kit-inputs` directory, `gateway-sdk` and
+`factory-inputs`. They feed the existing frozen build owners through their
+explicit paths. Preparation must select the source-Factory checkpoint, rather
+than interpreting the sparse directory as a complete historical kit. Exact
+member sets, modes, digest checks, external-volume binding, 90 GiB reserve and
+fail-closed partial-output handling follow the simulation acquisition contract.
+Private Drive bindings contain transport identifiers, not artifact authority.
+An unchanged prepared result works without Google access. Changed prepared
+files are not adopted or automatically repaired.
+
+This closes a build-input delivery boundary only after its real transfer and
+consumer checks pass. It does not supply undeclared host toolchains, qualify a
+cold build, change installer/runtime trust, or imply public distribution rights.
 
 ## Version policy
 
