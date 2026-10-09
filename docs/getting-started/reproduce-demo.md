@@ -12,8 +12,8 @@ The route targets the `1.2.0-rc.1` source-Factory candidate. Tooling and warm
 builds have passed; fresh-clone reproduction of this guide remains an R4 gate.
 Read [release selection](release-status.md) first. The historical source tag
 does not include these newer commands; the candidate tag is not yet published.
-Obtain the reviewed root revision and its producer commits through the approved
-source handoff before following the build steps.
+The exact published root revision and its source branch are recorded in release
+selection; private input bindings still come through the approved handoff.
 
 ## 1 Prepare the host and access
 
@@ -40,10 +40,10 @@ is started by this route.
 ## 2 Select the root revision and storage
 
 Clone only `https://github.com/alexmaninblack/aosedge-sdv-demo.git`, then select
-the exact root revision supplied with the release handoff. Do not substitute
-the latest branch or manually collect component repositories. Until the
-candidate and its producer commits are published, a public clone alone is
-insufficient for this candidate.
+the exact published root revision in [release selection](release-status.md).
+Do not substitute the latest/default branch or manually collect component
+repositories. Source and frozen producer revisions are published; a public
+clone alone does not supply the private binary inputs or host tools.
 
 Run from that clean root checkout. Replace the example mount with your SSD.
 Create only the parent directories; `lab` creates and owns its workspaces.

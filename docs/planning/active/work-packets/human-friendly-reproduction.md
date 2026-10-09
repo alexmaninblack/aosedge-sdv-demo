@@ -4,7 +4,7 @@
 # Human Friendly Repository and Release Reproduction Plan
 
 - Status: R1 complete; R2 tooling complete for the agreed developer route; R3 documentation complete; R4 planned
-- Version: 0.24
+- Version: 0.25
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Parent: [Installable distribution and reproducibility](../installable-distribution-and-reproducibility.md)
@@ -80,7 +80,7 @@ actually need them.
 | --- | --- | --- | --- | --- |
 | R1 Define the release and dependency closure | Demo Solution Team with component build owners | Current locks, recipes and source publication evidence | Validated release specification, ownership map and delivery design with explicit unresolved gates | Complete; Google Drive and version policy accepted |
 | R2 Automate preparation and builds | Integration build tooling; component owners retain their build logic | R1 schema, profile and dependency decisions | Repeatable commands, deterministic validation, resume and negative tests | Complete for developer plus source Factory .41 with retained CARLA; qualification remains open |
-| R3 Provide the human documentation routes | Integration documentation; component maintainers | R1 terminology and R2 public command contract | One release landing page, three usable guides and working navigation | Complete locally; publication and fresh-environment execution remain in R4 |
+| R3 Provide the human documentation routes | Integration documentation; component maintainers | R1 terminology and R2 public command contract | One release landing page, three usable guides and working navigation | Complete and source published; fresh-environment execution remains in R4 |
 | R4 Prove reproduction and prepare release handoff | Integration qualification and release owners | R1 to R3 candidate | Fresh environment reproduction evidence, preserved runtime gate results and obtainable matching artifacts | Planned |
 
 Execute R1 before fixing the command contract in R2. Draft R3 alongside R2,
@@ -409,9 +409,9 @@ Specialist contracts, requirements, ADRs and historical qualification remain
 available without being required reading for a new operator.
 
 The release selector distinguishes the new source-Factory candidate from old
-qualified evidence and the other same-named DMG. It states that the new source
-handoff/tag, fresh-host proof and native/runtime release qualification are not
-yet complete. Full-source documentation records its unresolved prerequisites;
+qualified evidence and the other same-named DMG. The R2/R3 source checkpoint is
+now published; a release tag, fresh-host proof and native/runtime release
+qualification remain open. Full-source documentation records its unresolved prerequisites;
 it does not promise an untested one-command engine rebuild. Existing manifests,
 source pins, binaries and readiness flags are unchanged.
 
@@ -426,9 +426,11 @@ found no horizontal page overflow; its helper closed after inspection.
 The documentation gate now permits only exact manifest-pinned hosted Markdown
 links for owned components; mutable/wrong-pin links still fail. CI tests the
 root-only route. These changes implement the accepted R3 navigation requirement,
-not a weaker runtime or release check. **R3 is complete locally.** R4 owns source
-publication and the actual fresh-environment command/install progression. No
-new payload transfer, build, Cloud operation, Git push or tag was made in R3.
+not a weaker runtime or release check. **R3 is complete and its source is
+published.** The subsequent October 9 publication checkpoint covers root
+`dbfd542` and the six component entry commits. R4 owns any successor source/tag
+handoff and actual fresh-environment command/install progression. No payload
+transfer, build, Cloud operation or tag was needed for documentation/publication.
 
 ### Work
 

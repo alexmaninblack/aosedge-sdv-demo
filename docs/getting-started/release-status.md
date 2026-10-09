@@ -23,9 +23,12 @@ identity. The selected source-Factory media must match the
 Do not substitute the earlier same-named candidate.
 
 `sdv-lab-v1.2.0-rc.1` and `sdv-lab-v1.2.0` are accepted future tag names,
-not tags created by this documentation. New tooling and frozen producer
-revisions still require source publication before a new user can reproduce
-this candidate from public Git alone. The
+not tags created by this documentation. The R2/R3 source checkpoint
+`dbfd542d38f3730f151f43dd303af94e4902c74d` and its frozen producer ancestors
+are published on `codex/installable-demo-stage3`; all six component README
+updates are also published. Select that exact root commit for this documented
+route, not the repository's default branch. Source availability does not
+supply the private build inputs or prove fresh-environment reproduction. The
 [qualification baseline](../qualification/current-baseline.md) preserves older
 installed results; those results are not promoted to new bytes.
 

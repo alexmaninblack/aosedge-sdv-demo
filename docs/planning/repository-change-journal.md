@@ -9,9 +9,38 @@ controls delivery order; the [current baseline](../qualification/current-baselin
 identifies the implemented candidate. Component source, contracts and release
 locks remain authoritative. This journal links them and does not duplicate them.
 
-The latest [publication checkpoint](#2026-october-7-documentation-publication)
-records the committed and remotely verified documentation baseline. Earlier
+The latest [publication checkpoint](#2026-october-9-r2-and-r3-source-publication)
+records the committed and remotely verified source baseline. Earlier
 local-only entries below retain their original checkpoint state.
+
+### 2026 October 9 R2 and R3 source publication
+
+At the owner's request, all pending work in the seven project repositories was
+pushed before the proposed R4 clean-SSD campaign. Root `dbfd542` (42 commits)
+is on `codex/installable-demo-stage3`, not merged into `main`. Component `main`
+heads are Gateway `1279f4b`, platform `9a7238a`, Brake service `8e21ab0`, Brake
+backend `3edc01e`, Tire service `9cb361e` and Tire backend `0ac481d`. Remote
+heads match local commits and all seven worktrees are clean. Existing tags,
+source locks, binary artifacts and the video repository are unchanged.
+
+Pre-push history guards passed for all seven repositories. The integration,
+platform and Brake public-source scans, source-license boundary checks,
+documentation and release-definition gates passed. The existing component
+REUSE gates passed for platform and Brake. An additional integration-wide
+REUSE probe did not pass: that repository has pre-existing JSON/asset/license
+annotation gaps and is not claimed REUSE-compliant. The committed CI applies
+REUSE lint to platform and Brake, not integration; no gate was relaxed.
+Remote CI completion is separate from verified Git publication.
+
+The owner proposes a new empty 1-TB SSD for a fresh build including Factory
+.41 and retaining the Drive-hosted CARLA dependency. Discussion identified
+two preparation boundaries: the Factory adapter currently uses the retained
+Builder's Git/download/sstate inputs, and the Docker adapter requires its
+active backing disk on the selected build volume. A blank-Builder acquisition
+route, declared cache policy and safe Docker storage isolation must be settled
+before claiming a clean run. No disk was formatted, Builder copied, Docker
+storage changed or R4 build started during this discussion. Publishing this
+snapshot does not qualify the candidate or create a release tag.
 
 ### 2026 October 9 R3 human documentation routes
 
