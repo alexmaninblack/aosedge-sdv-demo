@@ -1,0 +1,22 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+"""Embed the canonical catalog helper in the single-file pre-clone wizard."""
+import argparse
+from pathlib import Path
+import sys
+
+root = Path(__file__).resolve().parents[1]
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--check', action='store_true')
+args = parser.parse_args()
+script = root/'scripts/prepare-macos.sh'
+text = script.read_text()
+start = text.index("<<'PY'\n", text.index('drive_probe() {')) + len("<<'PY'\n")
+end = text.index('\nPY\n}', start)
+updated = text[:start] + (root/'scripts/developer_catalog.py').read_text().rstrip() + text[end:]
+if args.check:
+    if text != updated:
+        sys.exit('Embedded preparation catalog helper is stale; run scripts/sync-preparation-catalog')
+else:
+    script.write_text(updated)

@@ -45,8 +45,9 @@ installed results; those results are not promoted to new bytes.
   complete DMG containing Setup plus its Runtime Kit, with supported host and
   remaining limitations identified.
 - **Developer:** the exact root revision and available producer/component
-  commits, release index, and two private Drive binding files for the declared
-  simulation and vehicle/Factory inputs.
+  commits, and approved access to the release catalog plus simulation and
+  vehicle/Factory inputs. The preparation wizard obtains the compatible
+  references automatically; users do not supply JSON binding files.
 - **Both:** instructions for access to the intended Aos Cloud staging instance.
   The first-demo topology uses one OEM and one associated SP for two separate
   services. Credentials and provisioned identities are never included in media.

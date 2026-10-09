@@ -14,6 +14,75 @@ records the owner-authorized README and build-storage source handoff. Earlier
 local-only entries below retain their original checkpoint state; they are
 superseded by that publication, not retroactive build or test evidence.
 
+### 2026 October 9 Automatic pre-clone release catalog
+
+The owner accepted replacing ordinary JSON-path questions with automatic
+authenticated discovery, and keeping all format/release version fields inside
+a stable `release-index.json`. This Class B developer-preparation amendment is
+implemented in the existing integration repository and documented in the
+[preparation contract](../../contracts/release-reproduction/README.md#pre-clone-release-catalog).
+No runtime interface, frozen source pin or historical artifact is changed.
+
+The one-file wizard now discovers the authorized artifact folder/catalog,
+verifies a source-pinned immutable release record, checks all five archive
+metadata records and generates both private bindings atomically. Manual paths
+are available only through explicit `--advanced-inputs`, never as a fallback.
+README B2 checks the saved preparation requirements against the cloned main
+before downloads/builds; changed dependency requirements fail closed. The
+canonical helper is embedded mechanically and tested for exact parity.
+
+A new private 3,265-byte catalog was published in the existing artifact folder.
+Its initial SHA-256 is
+`432de15e36b6f82ecd7bffcd782212dc35610d077d6cdaded6999d2517c3c269`;
+the selected immutable record's canonical SHA-256 is
+`c4c5639edc09ddc363784b8fcf3c97fb5b5ff99b4815e8421bb2858b657d0da5`.
+The record identifies the existing `1.2.0-rc.1-source-factory-r1` input set,
+not a new or newly qualified release. Historical `release-index-v1.json`
+receipts, archives and private sharing remain unchanged; object IDs stay out
+of public Git.
+
+First and repeated real catalog discovery passed with the existing authorized
+Google account. Both runs transferred only the small catalog and checked
+input names, parents, permissions, sizes and hashes through metadata. The
+generated local selection passed the offline check and the current checkout's
+source-compatibility guard. No login, archive transfer, installation, build,
+signing operation, Cloud mutation or demo launch was performed. This targeted
+proof is not the owner's complete six-stage preparation or R4 qualification.
+
+Targeted coverage comprises 12 catalog tests, 26 wizard tests and nine reader
+tests: compatible selection rather than latest, missing/duplicate/unsupported
+catalogs, tampering, concurrent remote change, atomic failure/repeat, preserved
+local edits, source drift, immutable catalog append, legacy-path migration,
+secret redaction and existing wizard lifecycle. Bash syntax, embedded-helper
+parity, documentation and reader-route gates pass. Disposable private catalog
+and generated-selection files are removed after the checks; no helper remains
+running. Source publication uses the ordinary guards with build CI skipped.
+
+### 2026 October 9 Developer walkthrough parked for travel
+
+The published wizard checkpoint is `f884bd86acce497c7b356f4118a094c5d90e55a3`
+on `main`. The owner's live walkthrough reached the Google account and private
+binding-file questions; full preparation is not yet qualified. The owner found
+the `developer-inputs.drive.json` prompt unsuitable for a first-time reader.
+
+The next proposed UX change is to remove both manual JSON-path questions from
+the ordinary route, resolving compatible private bindings through an
+authenticated release catalog instead. Manual paths would remain an advanced
+route. Before implementation, review the existing private release index and
+define its discovery and trust contract: source compatibility and trusted
+checksums must be explicit, duplicate names must not select an arbitrary or
+blindly latest release, private Drive IDs stay outside public Git, and catalog
+discovery must not download large artifacts. This remains a proposal, not an
+implemented or qualified behavior.
+
+The owner requested parking before travel. No active preparation/build/demo
+process or open handle on the selected SSD was found. `SDV-Build` was normally
+ejected and its mount path was verified absent. Unrelated applications and
+shared infrastructure were preserved. Resume the UX work after reconnecting
+the same volume; do not restart cloning or builds. This handoff is saved locally
+on the internal disk; no new implementation, release or publication occurred
+during parking.
+
 ### 2026 October 9 Standalone developer preparation wizard
 
 The owner accepted and requested implementation of one downloadable wizard

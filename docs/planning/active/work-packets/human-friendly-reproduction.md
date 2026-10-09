@@ -4,7 +4,7 @@
 # Human Friendly Repository and Release Reproduction Plan
 
 - Status: R1 complete; R2 tooling complete for the agreed developer route; R3 step-by-step revision drafted; joint walkthrough pending; R4 planned
-- Version: 0.29
+- Version: 0.30
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Parent: [Installable distribution and reproducibility](../installable-distribution-and-reproducibility.md)
@@ -431,6 +431,17 @@ project-local incompatible Node/npm replacement, explicit system/account
 prompts, safe saved selections/environment handoff, fail-closed storage and
 offline fixture coverage. No live installation or build is authorized by this
 implementation exercise; the owner will perform the real walkthrough.
+
+**October 9 catalog UX amendment:** the owner rejected manual JSON-path
+questions and accepted a stable `release-index.json` with version fields inside
+the file. Implement authenticated bounded discovery, one trusted compatible
+release record, automatic private binding generation, post-clone compatibility
+checking and an explicit engineering-only manual mode. Preserve historical
+indexes, immutable records, source pins and sharing. The integration repository
+owns the code/docs and targeted offline gates; publication of the new small
+catalog in the existing artifact folder and metadata-only access proof are
+part of this amendment. No archives, builds, installations or demo processes
+are needed. The owner's complete preparation walkthrough remains separate.
 
 The current walkthrough clones root `main`, as previously selected by the owner,
 rather than detaching to the older root checkpoint. Existing component/producer

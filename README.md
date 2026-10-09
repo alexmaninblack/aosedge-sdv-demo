@@ -195,9 +195,13 @@ You can open the downloaded file in a text editor before executing it. Run:
 /bin/bash "$HOME/Downloads/aosedge-prepare-macos.sh"
 ```
 
-Have your Google account, the two private input binding files supplied by the
-release owner, and your Apple Development signing identity available. The wizard
-remembers selections; rerun the same command after resolving a missing item.
+Have your Google account with access to the SDV Lab artifacts and your Apple
+Development signing identity available. After Google authorization, the wizard
+finds the small release catalog, selects compatible inputs and prepares their
+references automatically. You do not need to find, create or enter JSON files.
+It shows the selected release and checks access without downloading the large
+CARLA/Factory archives. The wizard remembers selections; rerun the same command
+after resolving a missing item.
 It does not clone, build, sign anything or start the demo. It never restarts
 Docker or moves its disk. See the optional
 [preparation reference](docs/getting-started/macos-developer-tools.md) for
@@ -220,7 +224,13 @@ or a substitute for the build-space and exact-source checks in B3.
 git clone --branch main https://github.com/alexmaninblack/aosedge-sdv-demo.git "$SDV_ROOT/source"
 cd "$SDV_ROOT/source"
 git rev-parse HEAD
+"$SDV_PYTHON" -B scripts/developer_catalog.py --check-source "$SDV_PREPARED_SOURCE"
 ```
+
+Expect `Source compatibility: PASS`. Stop on a mismatch: the cloned dependency
+records/producer plan must match the prepared selection before any input
+download or build. Rerun the current preparation script; if no compatible
+release is available, contact the release owner rather than substituting inputs.
 
 This walkthrough uses the current `main`, as selected for the development
 exercise. Record the printed revision; it is not an immutable release tag.

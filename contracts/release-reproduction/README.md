@@ -4,7 +4,7 @@
 # Release Definition and Reproduction Contract
 
 - Status: R1 complete; delivery and version policy accepted; acquisition and reproduction unqualified
-- Version: 1.21
+- Version: 1.22
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Scope: [R1 work packet](../../docs/planning/active/work-packets/human-friendly-reproduction.md)
@@ -307,10 +307,10 @@ prevents overlapping preparations; confirmed dead owners may be recovered.
 
 Google credentials stay in their existing store. Access tokens are obtained
 only inside a bounded helper and never printed, placed in shell variables,
-logs or state. Read-only metadata checks verify the selected account, folders,
-input roles and download permissions without transferring payloads. Local
-binding structure is not authoritative lock/content verification; that remains
-with `lab inputs prepare`. Missing/expired authorization or missing Drive scope
+logs or state. The ordinary route downloads only the bounded catalog and checks
+input metadata, never archives. Local bindings are produced automatically from
+the trusted release record; archive verification remains with `lab inputs prepare`.
+Missing/expired authorization or missing Drive scope
 may request one login; ordinary permission denial must not create a login loop.
 
 `--check` is local diagnosis without installation, persisted state, login or
@@ -322,6 +322,63 @@ guarantee nor fresh-machine/build/runtime qualification. The 90 GiB preparation
 reserve does not replace per-stage capacity checks or exact-producer storage
 compatibility. UI/output and recovery are described in the
 [preparation reference](../../docs/getting-started/macos-developer-tools.md).
+
+### Pre-clone release catalog
+
+The October 9 owner-approved amendment replaces ordinary manual binding-path
+questions. The stable filename is `release-index.json` in the authorized
+`AosEdge SDV Lab Artifacts` folder. Versioning is internal: integer
+`schemaVersion` for format, positive `catalogRevision` for catalog updates,
+and immutable release records with unique `id` and `productVersion`.
+The product marker is `aosedge-sdv-lab`. Old version-suffixed historical receipts
+remain unchanged; this new discovery catalog is not a rename or promotion.
+
+Discovery is bounded to exact folder/file names through the authenticated API.
+Names are locators, not authorities. Missing/duplicate matches, incomplete
+searches, unsupported format and oversized content fail explicitly. Only a
+1 MiB maximum JSON catalog may be transferred. Its remote size/checksum and
+unchanged post-read identity/version are checked. Duplicate JSON keys and
+duplicate release IDs are rejected.
+
+The reviewed bootstrap pin contains the exact release record's canonical JSON
+SHA-256, release ID, dependency lock digests and source-file hashes, but no
+account or private Drive IDs. The canonical encoding is UTF-8 Python JSON with
+sorted keys and compact separators (ASCII escaping). Catalog entries cannot
+self-authorize by supplying their own checksum. The reader selects exactly its
+pinned compatible record; it never falls forward to a newer release or decides
+compatibility from current timestamps. Other new entries do not invalidate an
+older compatible pinned record. An altered selected record is rejected.
+
+Each record binds source definition, build plan, delivery descriptor and both
+dependency locks to the private bindings and all five objects' names, sizes
+and hashes. Read-only object checks verify identity, parent, download access,
+size and hash before saving anything. Authentication failure/scope renewal
+remain distinct from ordinary 403/404 access denial; no login loop is added.
+No sharing change, public artifact ID, new server or archive transfer is needed.
+
+The reader generates both existing binding formats and a source selection in
+a private, generation-specific directory under the existing preparation state.
+Promotion is atomic; repeat compares rather than overwrites. The shell handoff
+exports `SDV_BUILD_BINDING`, `SDV_SIM_BINDING` and `SDV_PREPARED_SOURCE`.
+The explicit post-clone `developer_catalog.py --check-source` guard compares the
+selection and local source authorities before acquisition/build. A moving main
+with different input requirements fails rather than mixing versions. Existing
+`lab inputs prepare` remains authoritative for archive bytes and consumers.
+
+`--advanced-inputs` is the only manual binding-path route and checks the same
+lock digests. It is never an automatic fallback after discovery fails. `--check`
+only validates existing local selection data and contacts no Drive endpoint.
+Source helper `scripts/developer_catalog.py` is embedded verbatim into the one
+downloadable shell script by `scripts/sync-preparation-catalog`; parity is an
+offline test, not a runtime network dependency.
+
+Maintainers create the initial catalog or append a reviewed record with
+`scripts/preparation-catalog`, supplying the existing private historical index
+and optional previous catalog. It checks source/receipt correspondence and
+refuses to alter an existing record ID. The private result is published to the
+existing authorized folder; only the public trust pin enters Git. Future
+producer/input adoption still requires its normal review and a new record;
+catalog discovery does not move any historical pin or qualify a release.
 
 ## Explicit build storage
 

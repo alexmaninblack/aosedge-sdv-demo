@@ -1,0 +1,98 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 maninblack
+# SPDX-License-Identifier: MIT
+"""Create/append a private discovery catalog from an existing release receipt.
+
+Offline only. Does not upload, grant access, edit old receipts or read credentials.
+The printed pin is public; the output catalog contains private transport IDs.
+"""
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'scripts'))
+from reproduction.core import digest, read_json, LabError, require, no_links
+
+
+def create(receipt_path, output, previous=None):
+    output = no_links(output)
+    require(not output.is_relative_to(ROOT), 'Private catalog output must remain outside the public checkout')
+    old = read_json(receipt_path)
+    plan_path = old['buildPlan']
+    require(plan_path == 'workspace/releases/1.2.0-rc.1-source-factory-build-chain.json',
+            'Review support for a different producer plan before publishing its preparation record')
+    plan = read_json(ROOT / plan_path)
+    descriptor_path = old['descriptorPath']
+    require(descriptor_path == 'workspace/releases/1.2.0-rc.1-source-factory-delivery.json',
+            'Unexpected delivery descriptor')
+    descriptor = read_json(ROOT / descriptor_path)
+    require(digest(descriptor) == old['descriptorCanonicalJsonSha256']
+            and old['productVersion'] == descriptor['productVersion'] == plan['productVersion'],
+            'Historical descriptor correspondence failed')
+    paths = [plan_path, descriptor_path, 'workspace/releases/kit028-setup042.json']
+    groups = {}
+    for group, path in (
+            ('buildInputs', 'workspace/dependencies/developer-factory41-r1.lock.json'),
+            ('simulation', 'workspace/dependencies/carla-macos-arm64-r1.lock.json')):
+        row = old['dependencyGroups'][group]
+        lock = read_json(ROOT / path)
+        require(row['lockPath'] == path and row['lockSha256'] == hashlib.sha256((ROOT/path).read_bytes()).hexdigest()
+                and row['binding']['lockDigest'] == digest(lock), 'Historical dependency correspondence failed')
+        require(set(row['objects']) == set(lock['packages']) == set(row['binding']['files']),
+                'Incomplete historical dependency group')
+        for role, obj in row['objects'].items():
+            pin = lock['packages'][role]
+            require(obj['id'] == row['binding']['files'][role]
+                    and all(obj[k] == pin[k] for k in ('file', 'bytes', 'sha256')), 'Historical object differs')
+        groups[group] = {'binding': row['binding'], 'packages': {
+            role: {k: value[k] for k in ('file', 'bytes', 'sha256')}
+            for role, value in lock['packages'].items()}}
+        paths.append(path)
+    entry = {
+        'id': old['productVersion'] + '-source-factory-r1',
+        'productVersion': old['productVersion'],
+        'status': 'ENGINEERING_CANDIDATE_NOT_QUALIFIED',
+        'sourceFiles': {p: hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in paths},
+        'dependencyGroups': groups,
+        'historicalIndexSha256': hashlib.sha256(Path(receipt_path).read_bytes()).hexdigest(),
+    }
+    catalog = read_json(previous) if previous else {
+        'schemaVersion': 1, 'product': 'aosedge-sdv-lab', 'catalogRevision': 0, 'releases': []}
+    require(set(catalog) == {'schemaVersion', 'product', 'catalogRevision', 'releases'}
+            and type(catalog['schemaVersion']) is int and catalog['schemaVersion'] == 1
+            and catalog['product'] == 'aosedge-sdv-lab'
+            and type(catalog['catalogRevision']) is int and catalog['catalogRevision'] >= 0,
+            'Unsupported previous catalog')
+    ids = [e['id'] for e in catalog['releases']]
+    require(len(ids) == len(set(ids)), 'Duplicate release IDs in previous catalog')
+    if entry['id'] in ids:
+        require(catalog['releases'][ids.index(entry['id'])] == entry, 'Published release records cannot be overwritten')
+    else:
+        catalog['releases'].append(entry)
+        catalog['catalogRevision'] += 1
+    raw = (json.dumps(catalog, indent=2, sort_keys=True) + '\n').encode()
+    require(len(raw) <= 1024*1024, 'Catalog exceeds discovery limit')
+    # Never replace a local receipt or follow an existing path/link.
+    fd = os.open(output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(fd, 'wb') as stream:
+        stream.write(raw)
+    return {'releaseId': entry['id'], 'recordSha256': digest(entry),
+            'sourceFiles': entry['sourceFiles'],
+            'lockDigests': {g: v['binding']['lockDigest'] for g, v in groups.items()}}
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--historical-index', type=Path, required=True)
+    parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--previous', type=Path)
+    args = parser.parse_args()
+    try:
+        print(json.dumps(create(args.historical_index, args.output, args.previous), indent=2, sort_keys=True))
+    except (LabError, OSError, ValueError, KeyError, TypeError) as exc:
+        print('Catalog preparation failed: ' + (str(exc) if isinstance(exc, LabError) else 'invalid input/output'), file=sys.stderr)
+        sys.exit(1)

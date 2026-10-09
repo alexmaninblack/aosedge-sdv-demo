@@ -13,7 +13,8 @@ builds have passed; fresh-clone reproduction of this guide remains an R4 gate.
 Read [release selection](release-status.md) first. The historical source tag
 does not include these newer commands; the candidate tag is not yet published.
 The exact published root revision and its source branch are recorded in release
-selection; private input bindings still come through the approved handoff.
+selection; the preparation wizard resolves private input bindings automatically
+through the authorized release catalog.
 
 ## 1 Prepare the host and access
 
@@ -32,12 +33,12 @@ are not evidence of a completed host setup or build. Stop after any error.
 | Node 26.0.0 and npm 11.12.1 | Pinned UI and backend tooling |
 | CMake, Git, Docker CLI and running local Docker Desktop | Gateway and Linux ARM64 builds |
 | Mounted external APFS SSD | Sources, caches, scratch, outputs and Docker's active backing disk |
-| Authorized Google CLI account and two private input bindings | Initial acquisition of five locked archives |
+| Authorized Google CLI account with access to the SDV Lab catalog and inputs | Automatic input selection, then acquisition of five locked archives |
 | Authorized Apple Development signing identity in Keychain | Explicit Setup signing, not notarized distribution |
 
 Host tools are prerequisites, not installed by `lab`. Declare their paths;
 do not use the installed demo's private Python as a development interpreter.
-Google login is separate from the build. Bindings contain file IDs, not
+Google login is separate from the build. Automatically prepared bindings contain file IDs, not
 credentials; checked-in locks supply sizes and hashes. OEM/SP certificates are
 needed later for the installed demo, not these builds.
 
@@ -60,7 +61,11 @@ do not clone or repeat those steps: continue at step 3 below.
 git clone --branch main https://github.com/alexmaninblack/aosedge-sdv-demo.git "$SDV_ROOT/source"
 cd "$SDV_ROOT/source"
 git rev-parse HEAD
+"$SDV_PYTHON" -B scripts/developer_catalog.py --check-source "$SDV_PREPARED_SOURCE"
 ```
+
+Expect `Source compatibility: PASS`. A mismatch means stop and prepare matching
+release inputs before continuing; no archive is downloaded by this check.
 
 The current walkthrough intentionally uses root `main`; record the printed
 revision. It is not a frozen release tag. The build plan below still selects

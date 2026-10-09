@@ -173,7 +173,11 @@ prepare_node''', ok=False)
         for name, roles in (('build.json', ('vehicle-bases', 'factory-image')),
                             ('simulation.json', ('carla-runtime', 'host-support', 'gateway-sdk'))):
             path = self.root/name
-            path.write_text(json.dumps(dict(schemaVersion=1, lockDigest='a'*64, folderId='folder_123456789',
+            lock_name = 'developer-factory41-r1' if name == 'build.json' else 'carla-macos-arm64-r1'
+            import hashlib
+            lock = json.loads((ROOT/'workspace/dependencies'/f'{lock_name}.lock.json').read_text())
+            lock_digest = hashlib.sha256(json.dumps(lock, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+            path.write_text(json.dumps(dict(schemaVersion=1, lockDigest=lock_digest, folderId='folder_123456789',
                                             files={role: 'file_123456789_'+role for role in roles})))
             paths.append(path)
         return paths
@@ -182,6 +186,7 @@ prepare_node''', ok=False)
         a, b = self.bindings()
         return f'''SDV_PYTHON={shlex.quote(python or sys.executable)}
 SDV_GCLOUD=/not-called; SDV_DRIVE_ACCOUNT=reader@example.invalid
+STATE={shlex.quote(str(self.root))}; ADVANCED_INPUTS=yes
 SDV_BUILD_BINDING={shlex.quote(str(a))}; SDV_SIM_BINDING={shlex.quote(str(b))}
 drive_probe {mode}
 '''
@@ -195,6 +200,24 @@ drive_probe {mode}
         result = self.shell(body, ok=False)
         self.assertEqual(result.returncode, 12)
         self.assertNotIn('Traceback', result.stderr)
+
+    def test_normal_prompt_does_not_ask_for_json_files(self):
+        result = self.shell('''SDV_DRIVE_ACCOUNT=; CONFIGURE_ACCESS=no; ADVANCED_INPUTS=no
+SDV_SIGNING_IDENTITY=; SDV_BUILD_BINDING=/missing; SDV_SIM_BINDING=/missing
+ask() { echo "$1" >&2; printf reader@example.invalid; }
+identity_ready() { :; }; save_choices() { :; }
+choose_access''')
+        self.assertIn('Google account', result.stderr)
+        self.assertNotIn('Full path', result.stderr)
+        self.assertIn('automatically', result.stdout)
+
+    def test_automatic_path_ignores_legacy_manual_selection(self):
+        result = self.shell('''STATE=/fixture; ADVANCED_INPUTS=no
+SDV_BUILD_BINDING=/old/build; SDV_SIM_BINDING=/old/simulation
+catalog_paths
+printf '%s\\n' "$SDV_BUILD_BINDING" "$SDV_SIM_BINDING" "$SDV_PREPARED_SOURCE"''')
+        self.assertNotIn('/old/', result.stdout)
+        self.assertIn('/automatic/source-requirements.json', result.stdout)
 
     def python_interceptor(self, prefix):
         # Execute the real embedded helper against fixture-only stdlib stubs.

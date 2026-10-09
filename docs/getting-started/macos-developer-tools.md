@@ -25,7 +25,7 @@ to publish this implementation.
 | 3. CMake and Python | CMake/CTest >=3.24; native Python 3.12; project virtual environment with packaging | Install missing Homebrew bottles and create/reconcile the owned project environment; do not upgrade an incompatible existing formula automatically |
 | 4. Node and npm | Exact versions from the current source requirement projection | Install a checksum-verified ARM64 Node distribution and the required npm inside the workspace, not over a global installation |
 | 5. Docker and Drive | Existing Docker CLI/Engine, local Linux ARM64 context, Google CLI and selected account access | Install missing casks; leave Docker first-run/start to the user; request Google login only if credentials/scope need it |
-| 6. Signing and inputs | Available Apple Development identity and both private Drive bindings | Select an identity by number; explain missing files/access; never create/export a key or sign a package |
+| 6. Signing and inputs | Available Apple Development identity; compatible release selected automatically from the private catalog | Select an identity by number; explain missing access or incompatible releases; never ask ordinary users for JSON paths or create/export a key |
 
 The screen shows a plan before changes and asks for one preparation confirmation.
 Xcode, Homebrew, Docker and Google can still require their own system/account
@@ -45,8 +45,8 @@ describes the consent flow.
 ## Result and next step
 
 Only `READY FOR SOURCE PREPARATION` makes the environment handoff usable.
-It means the six preparation checks passed, including read-only Drive metadata
-access. It does **not** mean a complete build fits, a candidate is qualified,
+It means the six preparation checks passed, including the small authenticated
+release catalog and read-only input metadata checks. It does **not** mean a complete build fits, a candidate is qualified,
 the signing key has been exercised, or private archives have been verified.
 
 The 90 GiB selected-volume reserve is a preparation floor, not an estimate of
@@ -99,7 +99,7 @@ It checks local tools, Docker and input-file structure where available. Exit 0
 means local checks passed, **not** full access readiness; exit 2 lists missing
 prerequisites. Fatal host/storage or unsafe-state errors exit 1.
 
-To review/change the saved account, binding files and signing selection:
+To review/change the saved account and signing selection:
 
 ```sh
 /bin/bash "$HOME/Downloads/aosedge-prepare-macos.sh" --configure-access
@@ -111,7 +111,38 @@ Paths with spaces are supported when quoted as command arguments. Interactive
 path answers are literal: do not add shell quotes. Scratch must stay on the
 selected volume and fit the existing 29-byte limit.
 
-The two private input files still come from the release owner. Metadata checks
-verify access and declared roles without downloading payloads; authoritative
-lock-digest/content checks remain with `lab inputs prepare` after cloning.
-No OEM/SP certificate is needed for this developer preparation.
+## Automatic release selection
+
+Sign in with a Google account that the release owner has granted access to the
+SDV Lab artifact folder and required dependencies. This is separate from Aos
+Cloud access. The wizard finds `release-index.json` in the accessible
+`AosEdge SDV Lab Artifacts` folder. Folder/file names locate the catalog but do
+not establish trust: the selected release record must match the public checksum
+embedded in the downloaded preparation script.
+
+The index keeps `schemaVersion`, `catalogRevision`, product versions and
+dependency identities inside JSON, not in its filename. Adding a release keeps
+older records intact. The script selects its compatible record, never the
+newest filename, timestamp or version. No match, unsupported schema, duplicates,
+changed checksums or denied access produce an actionable failure, not a manual
+JSON question or an implicit fallback. A missing catalog asks the release owner
+to grant access; repeated login is not the remedy for ordinary access denial.
+
+Only the bounded catalog is downloaded (maximum 1 MiB). The five archive checks
+read metadata: folder, download access, filename, size and checksum. Private
+bindings are generated in the existing private preparation state, atomically
+and with mode 0600, for the existing `lab inputs prepare` interface. Repeats
+reuse matching local files but still check remote access. Unexpected or edited
+files are preserved and reported. This does not grant new readers or alter
+sharing. No OEM/SP certificate is needed.
+
+After cloning, README B2 checks the saved selection against the checkout's
+dependency records, release definition and producer plan. A moving `main` cannot
+silently combine a previously prepared selection with changed requirements.
+Authoritative archive-content checks remain with `lab inputs prepare`.
+
+Only release engineers needing the old explicit binding workflow use
+`--advanced-inputs`; both binding paths are then requested and their lock
+digests are checked. This option is never entered automatically after a catalog
+failure. Ordinary reruns ignore legacy manual binding selections and use the
+catalog route. Historical `release-index-v1.json` receipts remain unchanged.
