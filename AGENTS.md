@@ -106,6 +106,11 @@ boundary outside this scope or when a mandatory tool control requires it.
   Reuse the recorded manifest while path, size and immutable identity remain
   unchanged; do not repeatedly hash an unchanged multi-gigabyte image merely
   for status reporting.
+- Routine artifact delivery uploads once and verifies remote identity, size,
+  checksum, parent and access metadata. Do not download the payload back merely
+  to recheck the provider. Verify bytes on the actual installation/build
+  consumer; reserve separate round-trip tests for changed transfer/recovery
+  code or a concrete integrity incident. Reuse verified caches and receipts.
 - Test with the deployed service identity/capability model. Do not weaken the
   product to satisfy a non-production harness identity.
 - Keep network-disabled/offline build guards and the work packet's disk guard;

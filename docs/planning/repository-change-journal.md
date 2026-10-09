@@ -13,6 +13,52 @@ The latest [publication checkpoint](#2026-october-7-documentation-publication)
 records the committed and remotely verified documentation baseline. Earlier
 local-only entries below retain their original checkpoint state.
 
+### 2026 October 9 Artifact transfer economy
+
+The owner accepted one upload plus exact remote metadata/checksum verification
+for routine artifacts, with byte verification on the actual installation/build
+consumer. A separate maintainer loopback download is no longer a per-candidate
+step. Dedicated round trips require a changed transfer/recovery implementation
+or provider integration, or a concrete integrity incident; completed evidence
+and verified caches are reused. The
+[operating policy](../governance/rapid-development-and-debugging.md#artifact-transfer-economy),
+repository instructions and release reproduction contract now agree. This is
+a workflow change; upload/download remain separate existing commands. No new
+large transfer, build, credential change or sharing change was needed.
+
+### 2026 October 9 R2 private delivery and tooling acceptance
+
+The owner restored Google CLI authorization and retained the existing OAuth
+scheme. Both new vehicle/Factory archives passed private upload, actual download,
+metadata/digest verification and no-duplicate repeat. A separate receiver restores
+31,491 files from five pinned archives; the three unchanged simulation archives
+are explicitly verified cache reuse, not another network-transfer claim.
+Offline repeat took 4.892 seconds. All 17 frozen steps accepted the received
+inputs with old maintainer/restoration directories denied by the OS, retaining
+every build key in 78.240 seconds. All 215 reproduction fixtures and three profile
+plans also passed from a root-only export without siblings.
+
+The source-Factory DMG subsequently passed full private upload/download and
+repeat checks. A transient Google rate limit stopped the first upload near
+completion; reconciliation and one same-ID restart succeeded without another
+login, changed permissions or duplicate media. The private release index binds
+all five inputs, exact DMG and locally committed code checkpoint `91fd485`;
+its upload and raw readback passed. See the
+[delivery result](../development/release-reproduction-r2.md#source-factory-media-delivery-on-october-9).
+
+The [original R2 tooling criteria](../development/release-reproduction-r2.md#r2-acceptance-and-remaining-release-work)
+are closed for the accepted developer plus source-Factory route. This is not
+release qualification: source push/tagging, a different approved reader, cold
+capacity/fresh-clone proof, full-source closure and native/live/signing/licensing
+gates remain explicit. R3 human documentation is next; R4 keeps its original
+qualification responsibilities. No historical manifest or readiness flag changed.
+
+Only documentation changed in this closure turn. Large files remained on SSD;
+the temporary source export was removed, all owned check/transfer processes are
+finished and no new runtime or media mount remains. Shared Docker and five Watt
+containers were preserved. Approximately 402 GB / 374.4 GiB remained free on Work.
+Private bindings, receipts and logs stay outside Git; no push or new tag was made.
+
 ### 2026 October 9 Source Factory integration through complete media
 
 After Work/Clean consolidation removed the capacity blocker, the independent

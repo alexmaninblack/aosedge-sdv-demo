@@ -4,7 +4,7 @@
 # Release Definition and Reproduction Contract
 
 - Status: R1 complete; delivery and version policy accepted; acquisition and reproduction unqualified
-- Version: 1.18
+- Version: 1.19
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Scope: [R1 work packet](../../docs/planning/active/work-packets/human-friendly-reproduction.md)
@@ -136,9 +136,17 @@ the ID but not the session capability; absent completed metadata may require
 restarting the upload, never creating a second file ID.
 
 Readback checks the exact parent, private state, download permission, size,
-digest and version. A separate empty-cache download verifies all bytes and
-unchanged remote metadata before atomic promotion. A repeat may reuse the
-digest cache; it is not another network-transfer proof. The authenticated
+provider-reported digest and version. For routine delivery, this readback after
+the verified upload is sufficient; do not perform a separate maintainer
+empty-cache download for every candidate. The actual installation/build
+consumer verifies all downloaded bytes and unchanged remote metadata before
+atomic promotion. A repeat may reuse the digest cache; it is not another
+network-transfer proof. A dedicated complete round trip is reserved for changes
+to transfer/recovery code or the provider integration, or a concrete integrity
+incident, preferably using the actual consumer download. Missing or conflicting
+metadata still fails verification. See the accepted
+[transfer economy rule](../../docs/governance/rapid-development-and-debugging.md#artifact-transfer-economy).
+The authenticated
 release index records the definition revision and file identity separately
 from build provenance. Source publication and access by another approved user
 remain distinct gates; this command grants no new readers automatically.

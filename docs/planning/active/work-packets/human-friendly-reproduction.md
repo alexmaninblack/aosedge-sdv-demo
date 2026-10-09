@@ -3,8 +3,8 @@
 
 # Human Friendly Repository and Release Reproduction Plan
 
-- Status: R1 complete; R2 implementation in progress; R3 and R4 planned
-- Version: 0.21
+- Status: R1 complete; R2 tooling complete for the agreed developer route; R3 and R4 planned
+- Version: 0.23
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Parent: [Installable distribution and reproducibility](../installable-distribution-and-reproducibility.md)
@@ -79,7 +79,7 @@ actually need them.
 | Block | Responsible owner | Dependencies | Completion evidence | Current state |
 | --- | --- | --- | --- | --- |
 | R1 Define the release and dependency closure | Demo Solution Team with component build owners | Current locks, recipes and source publication evidence | Validated release specification, ownership map and delivery design with explicit unresolved gates | Complete; Google Drive and version policy accepted |
-| R2 Automate preparation and builds | Integration build tooling; component owners retain their build logic | R1 schema, profile and dependency decisions | Repeatable commands, deterministic validation, resume and negative tests | In progress; external SSD required for this development campaign |
+| R2 Automate preparation and builds | Integration build tooling; component owners retain their build logic | R1 schema, profile and dependency decisions | Repeatable commands, deterministic validation, resume and negative tests | Complete for developer plus source Factory .41 with retained CARLA; qualification remains open |
 | R3 Provide the human documentation routes | Integration documentation; component maintainers | R1 terminology and R2 public command contract | One release landing page, three usable guides and working navigation | Planned |
 | R4 Prove reproduction and prepare release handoff | Integration qualification and release owners | R1 to R3 candidate | Fresh environment reproduction evidence, preserved runtime gate results and obtainable matching artifacts | Planned |
 
@@ -270,7 +270,7 @@ Python API import and simulator signature verification also pass; the simulator
 was not launched. Exact evidence is recorded in the linked route. No CARLA or Unreal rebuild is needed
 for this block, and full-source qualification is not implied.
 
-R2 remains **in progress**. The ordered `--target all` chain and explicit frozen
+The ordered `--target all` chain and explicit frozen
 producer selection passed two real 17-step unchanged-output runs; the repeat
 took 80.09 seconds. Offline first/repeat/failure fixtures also pass.
 The independent source-Factory campaign subsequently completed all 17 steps at
@@ -290,10 +290,15 @@ followed by all 17 frozen build steps with operating-system read denial for the
 old Kit028 and original Factory result directory. All build keys stayed equal;
 the warm proof took 71.845 seconds. This is local archive/consumer evidence, not
 a cold build or a Google download. The two new archives total 337,593,870 bytes.
-Their real Drive upload/download remains pending because the existing Google
-CLI account requires interactive reauthentication. Do not rebuild CARLA or
-Factory, infer transfer success from local extraction, or overwrite earlier
-Drive artifacts. See the
+The owner restored the existing Google CLI authorization, without changing the
+authentication scheme. Both archives now passed private upload, metadata/digest
+readback, real download and no-duplicate upload repeat. A separate SSD receiver
+restored all five locked inputs using explicitly verified simulation cache
+clones; an offline preparation repeat took 4.892 seconds. All 17 frozen build
+steps accepted those received inputs with the earlier kit, Factory result and
+local restoration denied by the OS, preserving all build keys in 78.240 seconds.
+All 215 reproduction fixtures also passed from a root-only export. Do not
+rebuild CARLA or Factory or overwrite earlier Drive artifacts. See the
 [declared-input result](../../../development/release-reproduction-r2.md#declared-build-input-closure-on-october-9).
 Cross-workspace digest-cache reuse now passes first/repeat proof for all 41
 declared wheels through APFS clones, without downloading or changing frozen
@@ -303,12 +308,31 @@ File-level packaging recipe selection now passes target-isolation and real Git
 change fixtures, including previously omitted VM DNS and application config
 inputs. Frozen chain owners and accepted outputs remain unchanged; candidate
 adoption of newer owners requires the normal independent manifest checkpoints.
-Measured cold capacity, complete build-input acquisition, approved-reader access
-and full-source input closure remain open. Verified private DMG delivery and
-chain implementation do not qualify a fresh-clone profile.
-R3 human routes and R4 acceptance
-remain separate. Reuse completed results; do not rebuild heavy inputs merely
-to resume this packet.
+Selected binary-input acquisition and the newer source-Factory DMG delivery are
+now verified. The complete 14.16-GB media passed a separate empty-cache download,
+SHA-256 readback and no-duplicate/cache repeats. One temporary Google rate-limit
+failure required a reconciled same-ID upload restart, not a new login or a change
+to the accepted authentication scheme. A private release index binds that media,
+all five archives and their source/descriptor authorities; its upload/readback
+also passed. Earlier media and sharing remain unchanged.
+
+The owner then accepted the
+[transfer economy rule](../../../governance/rapid-development-and-debugging.md#artifact-transfer-economy):
+routine candidates require one verified upload and remote metadata/checksum
+readback, not another full maintainer download. R4's actual installation/build
+consumer verifies its download. Dedicated round trips require a changed
+transport/recovery implementation or provider integration, or a concrete
+integrity incident. Reuse the completed R2 transport evidence and retained
+artifacts; no new large transfer is needed to close this block.
+
+The [original R2 acceptance reconciliation](../../../development/release-reproduction-r2.md#r2-acceptance-and-remaining-release-work)
+closes the tooling block for this agreed route. It does not qualify a fresh-clone
+profile or enable full-source builds with unresolved native/licensed inputs.
+Measured cold capacity, approved-reader access and source publication remain
+unproven release conditions. They retain their original R3/R4 and release-owner
+boundaries below; no acceptance gate is removed. Proceed to R3 human routes,
+then R4 fresh-environment and native/live acceptance. Reuse completed results;
+do not rebuild heavy inputs merely to resume this packet.
 
 ### Work
 

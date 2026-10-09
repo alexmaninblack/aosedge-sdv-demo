@@ -4,9 +4,9 @@
 # Rapid Development and Debugging Policy
 
 - Status: Accepted operating policy
-- Version: 1.3
+- Version: 1.4
 - Prepared: 2026-08-30
-- Updated: 2026-10-02
+- Updated: 2026-10-09
 - Owner: Demo Solution Team with repository and integration owners
 - Applies to: implementation, integration, debugging, build, qualification,
   Cloud operations and artifact cleanup across the AosEdge SDV demo workspace
@@ -234,6 +234,33 @@ source/static gate
 - Formal rebuild starts only after all currently known defects have passed the
   rapid proof. Several unproved guesses shall never be bundled into an hour-
   long build.
+
+### Artifact transfer economy
+
+On 9 October the owner accepted the following routine for large release media
+and reusable dependencies:
+
+1. Verify the local artifact against its recorded size and checksum at the
+   creation/upload boundary; preserve its immutable descriptor.
+2. Upload once. Confirm the exact remote object, parent, access, size,
+   provider-reported checksum and version. Reuse an already verified matching
+   object instead of uploading it again.
+3. Download when an actual installation or build consumer needs the artifact.
+   That consumer verifies size, checksum and unchanged remote metadata before
+   use. Reuse its verified cache on subsequent runs.
+
+A successful upload does not require a separate maintainer loopback download
+for every candidate. Exercise a dedicated complete round trip only when
+transfer/recovery code or the provider integration changes, or a concrete
+integrity incident warrants it. Record the trigger and reuse an actual consumer
+download as that proof where possible. Retain prior transport evidence rather
+than replaying it for status reporting or documentation changes.
+
+Missing or inconsistent remote metadata is an explicit verification failure,
+not permission to skip integrity checks. Reconcile uncertain uploads before
+retrying; never create a duplicate merely to get a fresh attempt. This economy
+rule changes no credentials, access grants, retention, consumer verification
+or release qualification requirements.
 
 ## Cloud, VM and API Operations
 

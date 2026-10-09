@@ -3,7 +3,7 @@
 
 # R2 Preparation and Build Tooling
 
-- Status: In progress; complete ordered developer chain and unchanged-output repeat verified
+- Status: R2 tooling complete for the agreed developer route; release qualification remains open
 - Date: 2026-10-09
 - Owner: Demo Solution Team
 - Authority: [Work packet](../planning/active/work-packets/human-friendly-reproduction.md)
@@ -342,6 +342,17 @@ logs. There is no automatic blind retry or recovery of an unowned directory.
 
 ## Google Drive binding
 
+Routine delivery follows the accepted
+[artifact transfer economy rule](../governance/rapid-development-and-debugging.md#artifact-transfer-economy):
+verify the local artifact, upload once and compare the exact remote size,
+checksum, identity, parent, access and version. Download for the actual
+installation/build consumer and verify there; do not perform a separate
+maintainer loopback download for each candidate. The upload and download
+commands below are separate operations, not a mandatory two-command release
+sequence. Dedicated round-trip tests are reserved for changed transfer/recovery
+code or provider integration, or a concrete integrity incident. Historical
+round-trip results below remain evidence, not a recurring checklist.
+
 A separate private artifact root has been created and its unshared metadata
 verified. A 126-byte synthetic text probe was uploaded through the connected
 Drive tool and read back with identical text; its parent, size and unshared
@@ -609,29 +620,35 @@ The temporary root-only test export was also removed. Accepted outputs and
 historical media remain intact. These were APFS clones; their apparent sizes
 must not be presented as physical disk space recovered.
 
-## Remaining R2 work
+## R2 acceptance and remaining release work
 
-1. Private successor DMG upload, acquisition, file binding, capacity and repeats
-   now pass for the earlier candidate. The source-Factory candidate remains
-   local. Declared build-input restoration and its complete frozen consumer
-   chain now pass locally without retained-kit access. Transfer the two new
-   locked archives after Google CLI reauthentication and complete the real
-   download/approved-reader handoff. Preserve supported inputs and distinguish
-   local acceptance from transfer evidence. Historical media remains unpublished.
-2. Exact producer roles, dependency selection and whole-chain unchanged-output
-   reuse now pass real verification. Cold profile reproduction and measured
-   full-profile capacity remain open. Cross-workspace
-   digest-cache reuse and read-only capacity accounting now pass local proof;
-   neither establishes the cold-build peak. Preserve verified results.
-   New packaging adapters use target-specific file fingerprints, with real Git
-   change fixtures. Existing frozen producers keep their old keys; newer owner
-   adoption requires a separately reviewed candidate and output checkpoints.
-3. Close effective Factory configuration, native/simulation prerequisites and
-   entitlement gaps before enabling full-source preparation/builds.
-4. Finish release-level build evidence and handoff. CI now separately runs the
-   root-only resolver and adapter fixtures; those are not native builds or live
-   tests. R3 reader-facing routes and R4 fresh environment/native acceptance
-   remain separate deliverables.
+The accepted campaign is the developer route with retained CARLA and a separately
+source-built Factory .41. R2 tooling acceptance is complete for that route.
+This does not enable the gated full-source route or promote an engineering
+candidate to a qualified release.
+
+| Original R2 acceptance criterion | Evidence and boundary |
+| --- | --- |
+| One entry point and resolver using existing owners | `lab` exposes exact source preparation, declared input acquisition and the 17-step ordered chain; existing component and packaging owners retain their logic. |
+| Empty preparation, safe repeat and dependency invalidation | Seven exact source roles were prepared independently. Five locked binary archives restore into an empty payload directory; explicitly pinned cache reuse is disclosed. Offline repeat, 17 identical warm build keys and recipe-isolation fixtures pass. This is not a cold compiler run. |
+| CI uses the same resolver and commands | All three profile plans and 215 reproduction fixtures pass in a root-only export, matching the committed CI job. Remote CI execution and native/live qualification are not claimed. |
+| No hidden maintainer directory or host path | Storage, tools, signing identity, Google account and private bindings are explicit. OS read-denial proof excludes the old kit, Factory output and earlier restored input directories; frozen consumers accept the received paths. Host toolchain prerequisites remain declared. |
+| No implicit runtime or publication | Build/preparation start no demo, enrollment or Cloud deployment. Setup signing and private Drive delivery require their explicit commands and authorized identity. No installer, simulator or VM ran during this closure check. |
+
+The successful [input acquisition](#verified-drive-input-acquisition-on-october-9)
+and [media delivery](#source-factory-media-delivery-on-october-9) close the remaining
+transport work. Earlier checkpoint lists combined tooling and future release
+qualification. The original work packet already assigns reader-facing guides to
+R3 and fresh-clone proof, measured cold capacity, full-source qualification,
+native/live acceptance and another approved reader's access to R4. Those gates
+remain open; none is removed or reported passed by this tooling result.
+
+Source publication/tagging, licensing/notices and the intended distribution
+signing/notarization channel also remain release-handoff conditions. The private
+index explicitly records the locally committed, not pushed, definition revision.
+Historical locks/media and `profileReady: false` / unqualified verdicts remain
+unchanged. The next planned block is R3; reuse these outputs rather than rebuild
+CARLA or Factory for a status check.
 
 ## Factory source build on external storage
 
@@ -952,11 +969,11 @@ not stopped as test cleanup. Approximately **474 GB / 442 GiB** was free on the
 SSD afterward. Historical images, media, Builder/caches, source, credentials and
 video were preserved. All new build/test payloads used the external volume.
 
-This closes the source-Factory-to-DMG integration segment, not all of R2.
-The next boundary is the declared-input route below, followed by release-level
-handoff/capacity evidence. Independent approved-reader access and full-source
-closure remain explicit; R3 human guides and R4 installation/live qualification
-are not replaced by these build results.
+That checkpoint closed the source-Factory-to-DMG integration segment. The later
+declared-input and media-delivery results below close the selected R2 tooling
+route. Independent approved-reader access and full-source closure remain
+explicit; R3 human guides and R4 installation/live qualification are not replaced
+by these build results.
 
 ## Declared build input closure on October 9
 
@@ -1007,15 +1024,93 @@ Documentation navigation and confidential-input gates passed. Approximately
 **445 GB / 415 GiB** remained free on the SSD after restoring the inputs; no
 additional full kit, CARLA build or Factory build was created on the internal disk.
 
-Live Drive preflight stopped before any upload: the existing authorized Google
-CLI account requires interactive reauthentication. Only the failure category was
-recorded; tokens and authorization responses were not logged. A browser login was
-opened, but transfer is not claimed until it completes and both new objects pass
-upload/read-back/download checks. The real three-package simulation transfer
-evidence remains valid; it does not substitute for these two new packages.
-R2 remains in progress. The frozen owners are now proven independent of the old
-kit directory, while host toolchains, cold reproduction, reader handoff and live
-qualification retain their separate boundaries.
+The initial Drive preflight stopped before upload because the existing Google
+CLI account required interactive reauthentication. The user completed that login
+and explicitly retained the current OAuth route; no service account, account
+migration or sharing change was introduced. The actual transfer result follows.
+
+## Verified Drive input acquisition on October 9
+
+Both new locked archives were uploaded into a separate private dependency folder,
+then downloaded into a separate SSD receiver. Drive metadata, exact parent,
+private state, size and SHA-256 matched the reviewed lock. Repeating the upload
+reused both exact object IDs with no transfer, replacement or duplicate.
+
+The receiver reused the three previously network-verified simulation archives
+through explicitly selected APFS cache clones, each SHA-256 checked. It downloaded
+the two new archives (**337,593,870 bytes**) and restored all **31,491** pinned
+files into an initially empty payload directory. The reused cache contributes
+**13,358,546,039 archive bytes**, not another network-transfer claim. This is the
+complete selected binary-input closure, not a cache-cold source build.
+
+Public preparation then repeated with no account and a nonexistent Google CLI:
+the identical result returned in **4.892 seconds**. Offline verification passed
+in **6.792 seconds**. All 17 frozen source-Factory build steps accepted these
+received inputs in **78.240 seconds**, retaining every original build key and
+the existing DMG bytes. The invocation-specific chain key is
+`c92c937de387683ae6f789d80694457e8a5148e65c1a257cb371e80ebf416382`.
+
+For that consumer proof, macOS denied reads of the original Kit028 directory,
+the original Factory result, the earlier local-only restoration and the older
+simulation receiver. Existing-file negative controls verified the denial before
+execution. No compiler, signer, compressor, simulator or VM was started.
+The proof deliberately reuses verified build results; it does not establish
+cold compilation, independent-reader access or installation qualification.
+
+The unchanged tooling at `91fd485` passed all **215** reproduction fixtures in
+58.289 seconds. A separate root-only Git export, without sibling checkouts,
+passed the same **215** fixtures in 51.309 seconds and all three public profile
+plans, matching the CI entry points. This is local CI-equivalent evidence, not
+a remotely executed CI job. The temporary source export was removed after its
+processes exited and a zero-open-handle check; its logs and committed source
+remain. Private bindings, acquisition receipts and the acceptance result remain
+on the external SSD, outside Git. No authorization response or token is logged.
+
+## Source Factory media delivery on October 9
+
+The already built source-Factory DMG (**14,162,601,112 bytes**, SHA-256
+`f2b3d68d9dd4bd084d9fa199cc8053190a0466fb10ee3c5ecf024f877d4de82d`)
+is stored in a separate private release folder. Metadata readback verifies its
+exact ID, parent, private state, size, digest and version. The earlier candidate,
+simulation archives, Factory build and source pins are unchanged.
+
+The first upload received `403 rateLimitExceeded` near completion. Read-only
+reconciliation found no completed file; a subsequent preflight also met the
+limit. A bounded read-only backoff check then passed. One controlled upload
+restart used the same persisted file ID and existing OAuth authorization;
+no duplicate, permission change or new login was needed. This follows Google's
+[media upload recovery guidance](https://developers.google.com/workspace/drive/api/guides/manage-uploads#handle_media_upload_errors).
+The failed attempt and reconciliation logs remain separate from success evidence;
+the provider limit is not represented as an authentication or product defect.
+
+| Successful operation | Seconds | Result |
+| --- | ---: | --- |
+| Same-ID upload restart | 929.595 | Complete remote file and metadata/digest verified |
+| Download into an independent empty cache | 665.905 | All bytes received and SHA-256 verified |
+| Upload repeat | 2.049 | Exact remote object reused; no upload |
+| Download repeat | 0.191 | Verified local cache reused; no download |
+
+These are observed network/verification times, not build times; the failed first
+attempt is excluded from the successful-upload timing. The download used the
+same authorized account, not a different reader. A later metadata read for the
+index briefly met the same rate limit before succeeding on a bounded repeat;
+large payloads were not uploaded or downloaded again for that index.
+
+A private, 5,567-byte `release-index-v1.json` binds the code checkpoint `91fd485`,
+frozen producer plan, DMG, all five dependency objects and exact private binding
+data. Upload and complete raw-file readback passed. Its SHA-256 is
+`06f9348fb559c30349fccd8d50d8bc3fabe0489129c77459fdec38708ff9c6ef`.
+File IDs, account binding and detailed receipts remain outside public Git; the
+index claims no source push, tag, reader grant, notarization or qualification.
+
+No current-run VM, simulator, installer, media mount or transfer worker remains.
+The temporary root-only export was removed; Git, logs, verified inputs, Builder
+caches and accepted outputs remain. The five unrelated Watt containers and
+shared Docker were not stopped. Observed free space afterward was approximately
+**402 GB / 374.4 GiB on Work** and **247 GB / 229.8 GiB internally**. Large
+transfer, cache and extraction data used the SSD. These observations are not a
+cold-build peak measurement, and the previously recorded APFS warning is not
+claimed repaired.
 
 ## Ordered chain proof on October 8
 
