@@ -33,14 +33,17 @@ def dispatch(storage, state, target, profile, options, progress):
         return owner.assemble(storage, state, options['gateway_sdk'], options['cmake'], python, progress,
                                  options['test_tmp_parent'], False)
     if target == 'preparation':
+        optional = {'factory_inputs': options['factory_inputs']} if options.get('factory_inputs') else {}
         return owner.preparation(storage, state, options['kit_inputs'], python, progress,
-                                     options['prepare_dependencies'])
+                                     options['prepare_dependencies'], **optional)
     if target == 'host-runtime':
         return owner.assemble(storage, state, options['kit_inputs'], options['gateway_sdk'], python, progress)
     if target in ('backend-inputs', 'vm-runtime', 'application'):
-        return owner.assemble(storage, state, target, options['kit_inputs'], python, progress)
+        optional = {'input_checkpoint': options['input_checkpoint']} if target != 'backend-inputs' and options.get('input_checkpoint') else {}
+        return owner.assemble(storage, state, target, options['kit_inputs'], python, progress, **optional)
     if target in ('setup', 'dmg'):
-        return owner.assemble(storage, state, target, python, options['signing_identity'], progress)
+        optional = {name:options[name] for name in ('input_checkpoint','release_checkpoint') if name in options}
+        return owner.assemble(storage, state, target, python, options['signing_identity'], progress, **optional)
     raise ValueError('Unknown build-only owner target')
 
 

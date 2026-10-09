@@ -68,6 +68,34 @@ class MediaTests(StorageFixture, unittest.TestCase):
         self.assertEqual(self.build(), key)
         self.assertEqual(self.command.call_count, 1)
 
+    def test_successor_requires_both_independent_checkpoints(self):
+        self.fixture()
+        with self.assertRaisesRegex(core.LabError, 'both group and Setup'):
+            media.assemble(self.storage, self.state, 'setup', sys.executable, 'A'*40,
+                           lambda *args: None, input_checkpoint='new.json')
+        self.command.assert_not_called()
+
+    def test_explicit_successor_checks_digest_and_preserves_default(self):
+        self.fixture()
+        for name in ('media.py', 'media_worker.py'):
+            destination = self.base/'scripts/reproduction'/name
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_bytes((core.ROOT/'scripts/reproduction'/name).read_bytes())
+        self.patch('reproduction.media.ROOT', self.base)
+        core.atomic_json(self.base/'groups.json', {'fixture':True})
+        pin = {'schemaVersion':1,'label':'candidate','manifestSha256':sha256(self.kit/'application-manifest.json')}
+        core.atomic_json(self.base/'release.json', pin)
+        key = media.assemble(self.storage, self.state, 'setup', sys.executable, 'A'*40,
+                             lambda *args: None, 'groups.json', 'release.json')
+        self.assertEqual(self.command.call_args.args[0][-2:], ['groups.json','release.json'])
+        self.assertEqual(self.state['builds'][key]['inputs']['release'], pin)
+        pin['manifestSha256'] = '0'*64
+        core.atomic_json(self.base/'release.json', pin)
+        with self.assertRaisesRegex(core.LabError, 'independent Setup checkpoint'):
+            media.assemble(self.storage, self.state, 'setup', sys.executable, 'A'*40,
+                           lambda *args: None, 'groups.json', 'release.json')
+        self.assertEqual(self.command.call_count, 1)
+
 
 if __name__ == '__main__':
     unittest.main()

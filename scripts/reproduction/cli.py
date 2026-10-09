@@ -102,6 +102,9 @@ def main(argv=None):
     parser.add_argument('--functional-profile', choices=('v1', 'v2', 'v3'))
     parser.add_argument('--docker', type=Path, default=shutil.which('docker'))
     parser.add_argument('--kit-inputs', type=Path)
+    parser.add_argument('--factory-inputs', type=Path, help='Explicit source-built Factory result root; must match the independent source checkpoint')
+    parser.add_argument('--input-checkpoint', help='Committed successor group checkpoint relative to the selected producer')
+    parser.add_argument('--release-checkpoint', help='Committed independent Setup pin relative to the selected producer')
     parser.add_argument('--python', type=Path, default=sys.executable)
     parser.add_argument('--node', type=Path, default=shutil.which('node'))
     parser.add_argument('--npm', type=Path, default=shutil.which('npm'))
@@ -169,13 +172,15 @@ def main(argv=None):
                                        args.test_tmp_parent, args.resume)
             elif args.target == 'preparation':
                 key = packaging.preparation(storage, state, args.kit_inputs, args.python, progress,
-                                            args.prepare_dependencies)
+                                            args.prepare_dependencies, args.factory_inputs)
             elif args.target == 'host-runtime':
                 key = host.assemble(storage, state, args.kit_inputs, args.gateway_sdk, args.python, progress)
             elif args.target in package_chain.MANIFESTS:
-                key = package_chain.assemble(storage, state, args.target, args.kit_inputs, args.python, progress)
+                key = package_chain.assemble(storage, state, args.target, args.kit_inputs, args.python, progress,
+                                             args.input_checkpoint)
             elif args.target in media.TARGETS:
-                key = media.assemble(storage, state, args.target, args.python, args.signing_identity, progress)
+                key = media.assemble(storage, state, args.target, args.python, args.signing_identity, progress,
+                                     args.input_checkpoint, args.release_checkpoint)
             else:
                 require(args.docker, 'Docker Desktop CLI required; Engine is not started automatically')
                 if args.target in services.TARGETS:

@@ -16,10 +16,11 @@ from . import recipes
 
 SERVICE_CHECKPOINT = 'workspace/checkpoints/reproduction-services-20261008.json'
 FACTORY_CHECKPOINT = 'workspace/checkpoints/factory-41-candidate.json'
+SOURCE_FACTORY_CHECKPOINT = 'workspace/checkpoints/factory-41-source-20261008.json'
 PREPARATION_MANIFEST = 'vehicle-input-manifest.json'
 
 
-def producer(storage, target='preparation'):
+def producer(storage, target='preparation', checkpoints=()):
     """The cloned root revision owns tooling; it is not a hidden sibling input."""
     env = storage.environment()
     require(not git(ROOT, ['status', '--porcelain', '--untracked-files=all'], env),
@@ -33,11 +34,13 @@ def producer(storage, target='preparation'):
         metadata, name = row.split('\t', 1)
         mode, kind, oid = metadata.split()
         tracked[name] = (mode, kind, oid)
-    names = recipes.paths(ROOT, tracked, target)
+    names = set(recipes.paths(ROOT, tracked, target))
+    names.update(str(safe_relative(name)) for name in checkpoints)
+    require(names <= tracked.keys(), 'Packaging checkpoint is not a committed source input')
     require(all(tracked[name][1] == 'blob' and tracked[name][0] in ('100644', '100755')
                 for name in names), 'Recipe contains a linked or non-file input')
     # Include executable mode, not timestamps/revision/docs outside the actual closure.
-    identity = {name: {'mode': tracked[name][0], 'blob': tracked[name][2]} for name in names}
+    identity = {name: {'mode': tracked[name][0], 'blob': tracked[name][2]} for name in sorted(names)}
     return identity, revision
 
 
@@ -122,6 +125,40 @@ def stamp(path):
     return [s.st_dev, s.st_ino, s.st_size, s.st_mtime_ns, s.st_ctime_ns, stat.S_IMODE(s.st_mode)]
 
 
+def source_factory(storage, root):
+    """Select only the independently pinned source build, never adopt a receipt."""
+    require(external_volume(root)['uuid'] == storage.volume['uuid'], 'Factory inputs must be on the bound SSD')
+    pin = read_json(ROOT / SOURCE_FACTORY_CHECKPOINT)
+    factory = pin['factory']
+    manifest_path = matches(Path(root) / safe_relative(pin['manifest']['path']), pin['manifest'])
+    manifest = read_json(manifest_path)
+    require(manifest['state'] == factory['manifestState'] and
+            manifest['source']['revision'] == factory['sourceRevision'] and
+            manifest['factoryImage'] == dict(version=factory['version'], architecture='main-qemuarm64',
+                path=factory['image'], byteLength=factory['sizeBytes'], sha256=factory['sha256'], format='raw') and
+            all(manifest['build'][key] == 'PASS' for key in ('targetedTests', 'packageQa', 'imageQa')) and
+            manifest['build']['hostTransferSha256Matched'] is True and
+            manifest['build']['mainlineQualification']['solutionRevision'] == pin['qualificationToolsRevision'],
+            'Source Factory build evidence differs from reviewed checkpoint')
+    image = regular(manifest_path.parent / factory['image'])
+    require(image.stat().st_size == factory['sizeBytes'] and not image.stat().st_mode & 0o222,
+            'Source Factory image must be immutable and match its size')
+    return pin, manifest_path, image
+
+
+def stage_source_factory(storage, scratch, pin, manifest, image):
+    dest = scratch / 'factory-images' / pin['factory']['version']
+    dest.mkdir(parents=True)
+    for source in (manifest, image):
+        before = stamp(source)
+        result = run_command(['/bin/cp', '-c', '-p', source, dest/source.name],
+                             env=storage.environment(), cwd=scratch, timeout=60)
+        require(result.returncode == 0 and stamp(source) == before, 'Source Factory clone failed or changed')
+        (dest/source.name).chmod(0o444)
+    matches(dest / manifest.name, pin['manifest'])
+    # The canonical vehicle-input owner verifies the complete image at transfer.
+
+
 def stage_inputs(storage, scratch, source, rows, factory, chosen):
     for row in rows:
         original = regular(source / safe_relative(row['path']))
@@ -171,7 +208,7 @@ def runtime_object(storage, state, pin, acquire, progress):
             'Prepared platform revision changed')
 
 
-def preparation(storage, state, kit, python, progress, prepare_dependencies=False):
+def preparation(storage, state, kit, python, progress, prepare_dependencies=False, factory_inputs=None):
     require(storage.profile == 'developer', 'Preparation currently requires developer profile')
     verify_sources(storage, state)
     storage.check(additional=8*GIB, reserve=90*GIB)
@@ -179,6 +216,10 @@ def preparation(storage, state, kit, python, progress, prepare_dependencies=Fals
     pins = read_json(ROOT / SERVICE_CHECKPOINT)['serviceExports']
     chosen = selected_services(storage, state, pins)
     source, rows, retained_pin, factory = retained_preparation(storage, kit)
+    source_selection = source_factory(storage, factory_inputs) if factory_inputs is not None else None
+    if source_selection:
+        factory = source_selection[0]['factory']
+        rows = [row for row in rows if not row['path'].startswith('factory/')]
     runtime_pin = read_json(source / PREPARATION_MANIFEST)['runtimePin']
     runtime_object(storage, state, runtime_pin, prepare_dependencies, progress)
     python = Path(python).absolute()
@@ -193,6 +234,8 @@ def preparation(storage, state, kit, python, progress, prepare_dependencies=Fals
     inputs = {'producerTrees': tooling, 'retainedManifest': retained_pin, 'factory': factory,
               'services': chosen, 'platform': state['sources']['vehicle-platform'], 'toolchain': toolchain,
               'runtimePin': runtime_pin, 'signed': False}
+    if source_selection:
+        inputs['sourceFactory'] = source_selection[0]
     key = digest(inputs)
     output = storage.path('builds/preparation/' + key)
     marker = output.parent / (key + '.inputs.json')
@@ -212,11 +255,14 @@ def preparation(storage, state, kit, python, progress, prepare_dependencies=Fals
         with tempfile.TemporaryDirectory(prefix='preparation-', dir=storage.path('tmp')) as temporary:
             scratch = Path(temporary)
             stage_inputs(storage, scratch, source, rows, factory, chosen)
+            if source_selection:
+                stage_source_factory(storage, scratch, *source_selection)
             policy = scratch / 'offline.sb'
             policy.write_text('(version 1)\n(allow default)\n(deny network*)\n')
             worker = ROOT / 'scripts/reproduction/preparation_worker.py'
             result = run_command(['/usr/bin/sandbox-exec', '-f', policy, python, '-I', '-B', worker,
-                ROOT, storage.path('sources/vehicle-platform'), scratch, output, FACTORY_CHECKPOINT, SERVICE_CHECKPOINT],
+                ROOT, storage.path('sources/vehicle-platform'), scratch, output,
+                SOURCE_FACTORY_CHECKPOINT if source_selection else FACTORY_CHECKPOINT, SERVICE_CHECKPOINT],
                 env=storage.environment(), cwd=scratch, timeout=300)
             output.parent.joinpath(key + '.log').write_bytes((result.stdout + result.stderr)[-2**20:])
             require(result.returncode == 0, 'Preparation owner failed; inspect retained SSD log')

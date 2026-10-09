@@ -4,8 +4,8 @@
 # Release Definition and Reproduction Contract
 
 - Status: R1 complete; delivery and version policy accepted; acquisition and reproduction unqualified
-- Version: 1.16
-- Prepared: 2026-10-08
+- Version: 1.17
+- Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Scope: [R1 work packet](../../docs/planning/active/work-packets/human-friendly-reproduction.md)
 
@@ -199,6 +199,25 @@ archives omit macOS extended attributes and AppleDouble sidecars; unexpected
 input members or digest changes remain errors, not ignored exceptions.
 Fresh Factory outputs require new evidence and independently reviewed downstream
 packaging identities. Preparation alone does not prove a completed image build.
+
+`build --target preparation --factory-inputs <result-root>` explicitly selects
+the [October 8 source image checkpoint](../../workspace/checkpoints/factory-41-source-20261008.json).
+The result directory must be on the bound SSD. Its independently pinned
+manifest, exact source/tool revisions, native/package/image results and immutable
+image size are verified; the canonical assembler hashes the image at transfer.
+Retained firmware and unsigned VDP bases keep their historical manifest checks.
+Without this option the historical Factory selection is unchanged. Source-built
+Factory selection changes the preparation key and requires independent downstream
+group and Setup pins. It does not qualify a live guest or replace historical media.
+
+Downstream `vm-runtime` and `application` accept an explicit `--input-checkpoint`
+relative to their committed producer. Setup and DMG additionally require the
+independent `--release-checkpoint`; selecting only one is rejected. Both files
+enter the recipe fingerprint. Matching upstream manifests are selected by their
+reviewed hashes, not by latest timestamp, while older results stay intact.
+The ordered chain forwards these explicit selections only to the affected
+owners and keeps a separate invocation identity. A frozen old owner is not
+implicitly upgraded; a new chain must pin owners supporting these options.
 
 The release owner accepted product numbering `MAJOR.MINOR.PATCH`, candidate
 suffixes `-rc.N`, and tags `sdv-lab-v<version>`. The next new candidate is

@@ -4,7 +4,7 @@
 # R2 Preparation and Build Tooling
 
 - Status: In progress; complete ordered developer chain and unchanged-output repeat verified
-- Date: 2026-10-08
+- Date: 2026-10-09
 - Owner: Demo Solution Team
 - Authority: [Work packet](../planning/active/work-packets/human-friendly-reproduction.md)
   and [reproduction contract](../../contracts/release-reproduction/README.md)
@@ -654,6 +654,167 @@ the image campaign's 90-GiB reserve but below the frozen developer chain's
 166-GiB admission guard. Downstream packaging must resolve this capacity gap and
 independently bind the new image; it must not silently reuse the historical
 Factory, lower the guard or write build data back to the internal disk.
+
+### SSD capacity audit on October 9
+
+The connected 1,000.2-GB Samsung T5 has two separate GPT partitions and APFS
+containers, not two volumes sharing capacity. Work is limited to 650.0 GB:
+535.2 GB is physically allocated, including container overhead, and 114.8 GB
+is free. Clean reserves the other 350.0 GB and contains only Finder, Spotlight
+and filesystem-event metadata, less than 1 MB of volume data. Neither volume
+has APFS snapshots. Reclaiming the empty trailing Clean partition would allow
+Work to grow to approximately 1 TB, with approximately 465 GB free before
+subsequent writes. Consolidation was initially deferred for the filesystem
+warning below. After the separate cleanup and the operator's renewed explicit
+instruction, standard in-place expansion completed as recorded below.
+
+Directory figures are allocated-block accounting, **not mutually exclusive
+physical usage or guaranteed cleanup recovery**. APFS clones explain why these
+figures together exceed physical allocation:
+
+| Retained area | Approximate GiB | Interpretation |
+| --- | ---: | --- |
+| Standalone CARLA build/cook/DDC and Metal-profile outputs | 128.7 | Warm inputs and several related output copies; dependency review required before cleanup |
+| Yocto Builder including its base and caches | 110.5 | Relocated from internal storage and enlarged by the new Factory source build; retain |
+| CARLA LFS objects | 40.4 | Relocated source-asset store; retain |
+| Runtime/preparation build inputs | 26.4 | Retained producer dependencies, not another running instance |
+| Docker data | 15.0 | Shared infrastructure, including unrelated Watt data; no prune |
+| Installed test stores | 196.4 | Old registrations and cloned payloads; owner/selection/dependency closure required |
+| R2 reproduction workspaces | 113.0 | Includes new Factory, verified outputs and compressed/unpacked simulation dependency |
+| Kit026 and Kit028 directories | 66.1 | Rollback and accepted media inputs; clone-shared |
+| Two retained full DMGs | 26.4 | Kit026/Setup040 and Kit028/Setup042 |
+| Private retained media | 24.8 | Protected recovery material |
+| Staging | 9.4 | Requires producer/consumer reconciliation before retirement |
+
+The separate Quant Trading Lab directory accounts for 69.6 GiB by the same
+directory method; its contents were not inspected or changed. OllamaModels
+has no allocated payload. Docker.raw advertises approximately 994.6 GB of
+virtual capacity but allocates only approximately 16.1 GB (15.0 GiB); it does
+not consume the entire SSD. Moving retained build inputs off the internal disk
+transfers their storage cost to this SSD rather than eliminating that cost.
+The audit does not establish an exact exclusive-byte attribution of historical
+growth. Protected macOS metadata directories were not traversed.
+
+The partition map verifies successfully. However, Work's APFS check repeatedly
+reports `Resource Fork xattr is missing or empty for compressed file` for inode
+2291193. A standard unmounted First Aid repair was performed once. It exited
+zero and reported success, but the following verification reproduced the same
+warning and intermediate corruption message. Therefore the final success line
+is not treated as evidence that this defect was resolved. The object was not
+located in accessible directory traversal; file-ID access returned permission
+denied. No permission bypass, attribute deletion, formatting or blind repair
+loop was attempted.
+
+At the end of the read-only audit both partitions, Work's UUID and all payloads
+remained; no capacity gain was claimed. The separately authorized cleanup below
+subsequently removed obsolete payloads without changing partition boundaries.
+The initial recommendation was to confirm backup coverage and resolve or
+reassess this warning before changing partition boundaries. Apple's
+[First Aid guidance](https://support.apple.com/en-ie/102611) recommends a current
+backup before disk repairs. Builder, simulator and Docker remain stopped;
+the idle Docker network helper holds no files on the SSD. The subsequent
+consolidation closes the capacity gap, not the compressed-file warning.
+
+### Authorized Work cleanup on October 9
+
+The operator approved the first cleanup batch. Seven exact obsolete targets
+were removed, after preserving application/input manifests and receipts:
+
+- The unused Editor-era `staging/zen-retention-20260928.KutobN` cache.
+- `AosEdge-SDV-Lab-Kit026-Setup040.dmg`; the unpacked Kit026 rollback remains.
+- One payload in `install-tests/stage3-clean-store-001/versions` and four in
+  `install-tests/stage3-kit012-store-001/versions`. The four owning registrations
+  were normally unselected with revision checks before deletion. Their private
+  state, history and registration metadata remain; restoring a removed version
+  requires reinstalling its payload rather than simply selecting it.
+
+The first apply attempt stopped at strict store validation before any selection
+or payload mutation. Finder had added `.DS_Store` to each of the two old store
+roots. Both exact metadata files were verified, preserved outside the stores
+and removed from their original locations. Product validation was not weakened;
+the subsequent normal unselect and cleanup passed. Store/state/payload leases,
+zero-consumer and mounted-image checks protected the deletion window.
+
+| Removed category | Observed free-space gain in bytes | Approximate decimal GB |
+| --- | ---: | ---: |
+| Old Editor Zen cache | 10,045,407,232 | 10.045 |
+| Kit026 full DMG | 14,141,624,320 | 14.142 |
+| Five old installed payloads together | 43,040,768 | 0.043 |
+| Total | 24,230,072,320 | 24.230 |
+
+Free space increased from **114,761,785,344** to **138,991,857,664 bytes**,
+approximately **139.0 GB / 129.4 GiB**. The large old-installation directory
+totals were clone-shared, not physical recovery. The developer-chain admission
+threshold remains 166 GiB: approximately **39.25 GB / 36.6 GiB** is still missing.
+No build guard was lowered and no new build was started.
+
+Kit011 and its retained run, Kit026 rollback, Kit028 and its full DMG, both
+historical and newly built Factory inputs, the Builder/base/caches, CARLA warm
+and staged outputs, simulation download archives, source/Git, credentials,
+private video, Docker and unrelated projects remain. Protected artifact
+identities were unchanged. No runtime was started, no Cloud object changed and
+the Work/Clean partitions were not modified. The earlier APFS warning was not
+retested or claimed repaired by this cleanup.
+
+Removed payloads are not in Trash. Zen can be regenerated; old software can be
+reconstructed from retained sources/manifests, and Kit026's unpacked rollback
+remains available. Exact target paths, original identities, metadata copies,
+normal unselect results and per-target/free-space receipts are retained under
+`CarlaSim/Build-distribution-stage2-20260926/cleanup-20261009-work/`.
+
+### Work and Clean consolidation on October 9
+
+After the unresolved warning and cleanup results were disclosed, the operator
+explicitly requested proceeding with one Work volume. The exact external T5,
+both volume UUIDs, physical-store order, empty Clean contents, absent Clean
+snapshots and zero open consumers were rechecked. No independent backup was
+claimed. A helper's initial preflight used an incorrect plist key and stopped
+before any disk mutation; the observed key was corrected before execution.
+
+Standard `diskutil apfs deleteContainer` removed only the empty trailing Clean
+container/partition. Standard `diskutil apfs resizeContainer` then expanded the
+existing Work container to fill the space. Its built-in storage check repeated
+the compressed-file warning, also reporting a flag-clear warning and an
+orphan/invalid `com.apple.decmpfs` attribute for the same object. The native
+check exited zero and permitted growth. No force, check bypass, direct metadata
+edit, full-disk erase or repeated mutation was used.
+
+Final state:
+
+- One user data volume, `SDV-Work`, plus the unchanged EFI system partition.
+- Work container capacity: **999,995,129,856 bytes**, approximately 1 TB.
+- Free space: **488,943,783,936 bytes**, approximately **489 GB / 455.4 GiB**.
+- Original Work UUID `591578E3-8196-4B44-A575-CEC76B406789`, mount path, ownership
+  enforcement and read/write access preserved.
+- Protected Kit026/Kit028, new Factory, Builder/base and Kit011 artifact
+  identities unchanged; final partition-map verification passed.
+
+Clean's empty filesystem metadata was removed, not placed in Trash. It contained
+no user payload. No Work payload was deleted by consolidation. The 166-GiB
+downstream admission requirement is now satisfied; runtime/build qualification
+and new Factory packaging remain separate. The metadata warning is **not claimed
+repaired**. No demo, Docker or Builder process was started. Compact before/after
+identity records and native command logs are retained under
+`CarlaSim/Build-distribution-stage2-20260926/merge-work-clean-20261009/`.
+
+## Source Factory downstream packaging on October 9
+
+The independent source-image checkpoint binds the new .41 image and its
+native/package/image evidence without changing the historical Factory checkpoint.
+Preparation accepts an explicit external `--factory-inputs` result directory;
+firmware and unsigned VDP inputs retain the original manifest checks. The owner
+verifies the image digest at transfer and records a separate preparation key.
+
+Downstream adapters accept committed `--input-checkpoint` and, for signed media,
+`--release-checkpoint` files. Matching upstream manifests are selected by exact
+hash, not the newest result, while prior build receipts stay intact. These
+checkpoints are included in the producer fingerprint. Default historical build
+selection is preserved. Fixture coverage includes first/repeat behavior,
+independent candidate selection, wrong volume, writable image, altered manifest,
+failed Factory gates, missing Setup selection and changed application digest.
+
+Real downstream assembly and immutable output pins are the next gate. This
+adapter change does not itself qualify the source-built image or installer.
 
 ## Ordered chain proof on October 8
 

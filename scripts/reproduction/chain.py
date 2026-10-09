@@ -121,6 +121,15 @@ def preflight(storage, args):
         # Preserve a virtual-environment Python entry point, not its symlink target.
         require(path.is_file() and os.access(path, os.X_OK), 'Declared chain tool is unavailable: '+name)
     config.update(signing_identity=args.signing_identity.upper(), prepare_dependencies=args.prepare_dependencies)
+    if getattr(args, 'factory_inputs', None) is not None:
+        path = no_links(Path(args.factory_inputs).absolute())
+        require(path.is_dir() and external_volume(path)['uuid'] == storage.volume['uuid'],
+                'Factory inputs must exist on the bound SSD')
+        config['factory_inputs'] = str(path)
+    for name in ('input_checkpoint', 'release_checkpoint'):
+        if getattr(args, name, None) is not None:
+            from .cloud import relative
+            config[name] = str(relative(getattr(args, name)))
     return config
 
 
@@ -168,6 +177,9 @@ def execute(storage, state, args, progress):
     for rev in dict.fromkeys(plan['producers'].values()):
         paths[rev] = producer(storage, plan, rev, args.prepare_dependencies, progress)
     key = digest({'plan': plan, 'signer': args.signing_identity.upper()})
+    selection = {name: config[name] for name in ('factory_inputs', 'input_checkpoint', 'release_checkpoint') if name in config}
+    if selection:
+        key = digest({'plan':plan, 'signer':args.signing_identity.upper(), 'selection':selection})
     record = storage.path('builds/chains/'+key+'.json')
     record.parent.mkdir(parents=True, exist_ok=True)
     progress('CHAIN_STARTED', len(plan['steps']))

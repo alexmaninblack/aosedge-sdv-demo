@@ -132,6 +132,7 @@ def paths(root, tracked, target):
         chosen.update(('scripts/reproduction/services.py',
                        'workspace/checkpoints/reproduction-services-20261008.json',
                        'workspace/checkpoints/factory-41-candidate.json',
+                       'workspace/checkpoints/factory-41-source-20261008.json',
                        'workspace/distribution-stage0-inventory.json', 'LICENSE'))
         chosen.update('contracts/'+name for name in CONTRACTS)
     if target == 'vm-runtime':

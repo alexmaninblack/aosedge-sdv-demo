@@ -31,13 +31,23 @@ def verify(output, inputs):
     return receipt
 
 
-def assemble(storage, state, target, python, signing_identity, progress):
+def assemble(storage, state, target, python, signing_identity, progress,
+             input_checkpoint=None, release_checkpoint=None):
     require(storage.profile == 'developer' and target in TARGETS, 'Unsupported media target/profile')
     verify_sources(storage, state)
     storage.check(additional=(76 if target == 'dmg' else 2)*GIB, reserve=90*GIB)
-    trees, revision = packaging.producer(storage, target)
-    kit_key, kit = package_chain.upstream(storage, state, 'application')
-    trusted = read_json(ROOT/RELEASE)
+    from .cloud import relative
+    require((input_checkpoint is None) == (release_checkpoint is None), 'Select both group and Setup checkpoints')
+    checkpoint_path = str(relative(input_checkpoint)) if input_checkpoint is not None else package_chain.CHECKPOINT
+    release_path = str(relative(release_checkpoint)) if release_checkpoint is not None else RELEASE
+    extras = (checkpoint_path, release_path) if input_checkpoint is not None else ()
+    trees, revision = packaging.producer(storage, target, extras)
+    trusted = read_json(ROOT/release_path)
+    if release_checkpoint is not None:
+        kit_key, kit = package_chain.upstream(storage, state, 'application',
+            {'path':'application-manifest.json', 'sha256':trusted['manifestSha256']})
+    else:
+        kit_key, kit = package_chain.upstream(storage, state, 'application')
     require(sha256(regular(kit/'application-manifest.json')) == trusted['manifestSha256'],
             'Application differs from independent Setup checkpoint')
     setup_key, setup = None, None
@@ -54,7 +64,7 @@ def assemble(storage, state, target, python, signing_identity, progress):
         signing_identity = value['inputs']['signingIdentity']
     inputs = {'target': target, 'producerTrees': trees, 'application': kit_key, 'setup': setup_key,
               'release': trusted, 'signingIdentity': signing_identity,
-              'checkpointSha256': sha256(ROOT/package_chain.CHECKPOINT),
+              'checkpointSha256': sha256(ROOT/checkpoint_path),
               'adapterSha256': sha256(ROOT/'scripts/reproduction/media.py'),
               'workerSha256': sha256(ROOT/'scripts/reproduction/media_worker.py')}
     key = digest(inputs)
@@ -73,7 +83,7 @@ def assemble(storage, state, target, python, signing_identity, progress):
         atomic_json(marker, inputs)
         progress('BUILD_STARTED', target)
         result = run_command([python, '-I', '-B', ROOT/'scripts/reproduction/media_worker.py',
-            ROOT, target, kit, str(setup or '-'), output, signing_identity, package_chain.CHECKPOINT, RELEASE],
+            ROOT, target, kit, str(setup or '-'), output, signing_identity, checkpoint_path, release_path],
             env=storage.environment(), cwd=storage.root, timeout=2700 if target == 'dmg' else 600)
         output.parent.joinpath(key+'.log').write_bytes((result.stdout+result.stderr)[-2**20:])
         require(result.returncode == 0, 'Media owner failed; inspect retained SSD log')
@@ -81,7 +91,7 @@ def assemble(storage, state, target, python, signing_identity, progress):
             'producerRevision': revision, 'published': False,
             'stamps': {p.relative_to(output).as_posix(): packaging.stamp(regular(p))
                        for p in output.rglob('*') if p.is_file()}})
-    require(packaging.producer(storage, target)[0] == trees, 'Producer changed during media build')
+    require(packaging.producer(storage, target, extras)[0] == trees, 'Producer changed during media build')
     verify_sources(storage, state)
     verify(output, inputs)
     state['builds'][key] = {'target': target, 'inputs': inputs}

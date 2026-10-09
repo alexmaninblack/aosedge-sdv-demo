@@ -17,8 +17,11 @@ GROUP_TARGETS = {'host-runtime': 'host-runtime', 'preparation-inputs': 'preparat
                 'cloud-runtime': 'cloud-sdk', 'backend-inputs': 'backend-inputs', 'vm-runtime': 'vm-runtime'}
 
 
-def upstream(storage, state, target):
+def upstream(storage, state, target, pin=None):
     found = [(key, value) for key, value in state['builds'].items() if value['target'] == target]
+    if pin is not None:
+        found = [(key, value) for key, value in found
+                 if sha256(regular(storage.path('builds/'+target+'/'+key)/relative(pin['path']))) == pin['sha256']]
     require(len(found) == 1, 'Exactly one completed '+target+' build required')
     key, value = found[0]
     require(digest(value['inputs']) == key, 'Upstream key differs')
@@ -49,17 +52,23 @@ def verify(output, inputs):
     return receipt
 
 
-def assemble(storage, state, target, kit, python, progress):
+def assemble(storage, state, target, kit, python, progress, input_checkpoint=None):
     require(storage.profile == 'developer' and target in MANIFESTS, 'Unsupported package target/profile')
     verify_sources(storage, state)
     storage.check(additional=(40 if target == 'application' else 1)*GIB, reserve=90*GIB)
-    trees, revision = packaging.producer(storage, target)
+    checkpoint_path = str(relative(input_checkpoint)) if input_checkpoint is not None else CHECKPOINT
+    extras = (checkpoint_path,) if input_checkpoint is not None else ()
+    trees, revision = packaging.producer(storage, target, extras)
+    checkpoint = read_json(ROOT/checkpoint_path)
     chosen, paths = {}, {}
     roles = ('backend-export',) if target == 'backend-inputs' else (
         ('host-runtime', 'preparation') if target == 'vm-runtime' else tuple(GROUP_TARGETS.values()))
     for role in roles:
-        chosen[role], paths[role] = upstream(storage, state, role)
-    checkpoint = read_json(ROOT/CHECKPOINT)
+        if input_checkpoint is not None and role != 'backend-export':
+            group = next(group for group, selected in GROUP_TARGETS.items() if selected == role)
+            chosen[role], paths[role] = upstream(storage, state, role, checkpoint['manifests'][group])
+        else:
+            chosen[role], paths[role] = upstream(storage, state, role)
     retained_pin = None
     if target == 'vm-runtime':
         require(kit is not None and external_volume(kit)['uuid'] == storage.volume['uuid'], 'VM kit must be on bound SSD')
@@ -88,7 +97,7 @@ def assemble(storage, state, target, kit, python, progress):
         policy.write_text('(version 1)\n(allow default)\n(deny network*)\n')
         progress('BUILD_STARTED', target)
         result = run_command(['/usr/bin/sandbox-exec', '-f', policy, python, '-I', '-B',
-            ROOT/'scripts/reproduction/package_worker.py', ROOT, target, selected, output, CHECKPOINT],
+            ROOT/'scripts/reproduction/package_worker.py', ROOT, target, selected, output, checkpoint_path],
             env=storage.environment(), cwd=storage.root, timeout=900)
         output.parent.joinpath(key+'.log').write_bytes((result.stdout+result.stderr)[-2**20:])
         require(result.returncode == 0, 'Package owner failed; inspect retained SSD log')
@@ -99,7 +108,7 @@ def assemble(storage, state, target, kit, python, progress):
             'stamps': {p.relative_to(output).as_posix(): packaging.stamp(regular(p))
                        for p in output.rglob('*') if p.is_file() and p.name != manifest}})
     verify_sources(storage, state)
-    require(packaging.producer(storage, target)[0] == trees, 'Producer changed during package assembly')
+    require(packaging.producer(storage, target, extras)[0] == trees, 'Producer changed during package assembly')
     verify(output, inputs)
     state['builds'][key] = {'target': target, 'inputs': inputs}
     storage.save(state)

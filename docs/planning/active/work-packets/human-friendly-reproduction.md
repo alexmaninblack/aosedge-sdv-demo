@@ -4,8 +4,8 @@
 # Human Friendly Repository and Release Reproduction Plan
 
 - Status: R1 complete; R2 implementation in progress; R3 and R4 planned
-- Version: 0.16
-- Prepared: 2026-10-08
+- Version: 0.19
+- Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Parent: [Installable distribution and reproducibility](../installable-distribution-and-reproducibility.md)
 - Baseline: [Kit028 / Setup042 / Factory .41](../../../qualification/current-baseline.md)
@@ -210,8 +210,19 @@ post-build preparation reuse now pass on the relocated Builder. The obsolete
 internal Builder/base copies were removed after verification, recovering about
 85 GiB; sources, original Factory and guest caches remain. The new image is not
 live-qualified or incorporated into the frozen developer installer chain.
-External free space is now about 106 GiB, below that chain's 166-GiB admission
-guard; capacity reconciliation and new downstream image binding remain open.
+The October 9 authorized cleanup of old Zen cache, one redundant DMG and five
+obsolete installed payloads released 24.23 decimal GB. Current artifacts and
+required rollback/cache inputs remain. See the
+[cleanup result](../../../development/release-reproduction-r2.md#authorized-work-cleanup-on-october-9).
+The operator then explicitly requested consolidating the empty Clean partition
+into Work after disclosure of the APFS warning. Standard in-place expansion
+completed with the original Work UUID and protected artifacts preserved.
+Work now has approximately **489 GB / 455.4 GiB free**, satisfying the chain's
+166-GiB admission guard. The capacity blocker is closed; independent downstream
+Factory image binding and qualification remain open. The native storage check
+permitted expansion but repeated the compressed-file warning, which is not
+claimed repaired. See the
+[consolidation result](../../../development/release-reproduction-r2.md#work-and-clean-consolidation-on-october-9).
 
 The [R2 command and evidence record](../../../development/release-reproduction-r2.md)
 contains exact build keys, first/repeat results and preserved failure diagnoses.
