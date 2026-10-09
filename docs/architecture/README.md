@@ -3,6 +3,9 @@
 
 # Architecture Documentation
 
+Start with the [product and component map](product-map.md) for the simulated
+and real parts, update lifecycles and source owners. It needs no sibling checkout.
+
 For `Kit028 / Setup042 / Factory .41`, start with the [implemented architecture and traceability](current-implementation.md). It maps the accepted design and later amendments to source, contracts and dated proof; it does not promote untested requirements.
 
 [High-Level Architecture 1.8](high-level-architecture.md) is the accepted

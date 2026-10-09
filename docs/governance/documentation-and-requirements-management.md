@@ -4,8 +4,8 @@
 # Documentation and Requirements Management
 
 - Status: Accepted
-- Version: 1.0
-- Prepared: 2026-08-18
+- Version: 1.1
+- Prepared: 2026-10-09
 - Owner: System Architecture
 
 ## Purpose
@@ -198,15 +198,23 @@ replaces required isolated behavioral proof.
 
 - Links to files owned by a repository declared in
   [`workspace/repositories.json`](../../workspace/repositories.json) use a
-  relative filesystem path to that sibling checkout. The local gate verifies
-  that the checkout and target exist and rejects a GitHub web link to the same
-  owned repository.
+  relative sibling path in specialist workspace documents, or an HTTPS GitHub
+  Markdown-file link at that repository's exact `acceptedRevision`. Floating
+  branch/tag links are not a replacement for release-pinned references. This
+  R3 amendment lets initial reader routes work without a sibling checkout.
+- The offline gate validates the hosted reference's repository, full revision
+  and path shape. Actual hosted availability is a separate external check;
+  syntax validation is not proof that unpublished content is online.
+- Initial human routes must not require sibling files. Check them with
+  `python3 -B scripts/docs-check --reader-routes` in a root-only checkout;
+  add `--external` for hosted-link checks. This scoped gate does not replace
+  the full design/requirements gate, which retains specialist sibling checks.
 - HTTPS links remain appropriate for genuine external or upstream sources
   that are not part of the workspace contract.
 - A repository clone URL in an installation procedure remains HTTPS because
   its purpose is to create the checkout before local links can work.
 
-Cross-repository links assume the accepted sibling workspace layout. A reader
+Specialist relative cross-repository links assume the sibling workspace layout. A reader
 using Obsidian or a similar knowledge-base application should open the
 workspace parent directory as the vault so those links remain navigable.
 

@@ -4,15 +4,17 @@
 # Install the demo and connect Cloud access
 
 - Status: current engineering-preview instructions; complete native acceptance open
-- Version: 2.0
-- Prepared: 2026-10-07
+- Version: 2.1
+- Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Implementation: Kit028 / Setup042 / Factory .41
 
-Use the complete `AosEdge-SDV-Lab-Kit028-Setup042.dmg` from the approved
-private transfer. Its identity and acceptance limits are in the
-[current baseline](../qualification/current-baseline.md). This guide describes
-the delivered Setup, not the proposed simplified wizard. No source checkout,
+First [select the exact release and obtain access](release-status.md), then
+use its complete approved DMG. The new source-Factory `1.2.0-rc.1` candidate
+awaits fresh installation/live qualification; earlier Kit028 / Setup042 results
+remain in the [qualification baseline](../qualification/current-baseline.md).
+This guide describes the implemented Setup actions, not the proposed simplified
+wizard or a claim of native acceptance for new media. No source checkout,
 Unreal Editor or local compilation is required.
 
 ## Before opening Setup
@@ -112,6 +114,11 @@ Create Controller → detached simulator → VDP V1 publication/provisioning →
 same-Unit attachment → Safe Stop FOTA → serial service/profile evolution.
 Use the ordinary secure **VM access / Use once** dialog when Create requests
 the fresh VM's password. Do not embed that password in a configuration or guide.
+
+The linked workflow is the next part of this operator route, not a requirement
+to read the architecture or engineering history. Start with its numbered
+sequence and keep each version's installation/check ahead of the next upload.
+If a step stops, use [troubleshooting](troubleshooting.md).
 
 Use a display configuration that fits all three windows. The M1 campaign
 observed the correct Presenter/CARLA/Driving Control layout; this does not

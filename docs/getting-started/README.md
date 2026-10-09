@@ -1,68 +1,34 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Getting Started
+# Getting started
 
-Use this page as the entry point to the AosEdge SDV demonstration. Choose the
-path that matches the job you want to do; the documents are not intended to be
-read in directory order.
+Choose a route by what you want to do. You do not need the project's history,
+old kit numbers or sibling repositories to choose a route.
 
-## I Want to Run AosVM on an Apple Silicon Mac
+1. **Run:** [Install and connect Cloud access](installed-preview-cloud-first-use.md).
+   Use one matching DMG, with no compiler or Unreal Editor.
+2. **Build:** [Developer build](reproduce-demo.md). Build project components
+   and the installer, reusing verified CARLA and Factory inputs.
+3. **Rebuild heavy dependencies:** [Full source](full-source-build.md).
+   This separate route lists its unresolved prerequisites and is not yet qualified.
 
-Follow [Run AosVM on an Apple Silicon Mac](../operations/aosvm-apple-silicon.md).
-It is the canonical standalone guide for installing, booting, operating and,
-when explicitly authorized, provisioning one persistent AosVM Main Node.
+All routes start from [release selection and access](release-status.md).
+For the system overview, use the [product map](../architecture/product-map.md).
+For changes, use [Contributing](../../CONTRIBUTING.md).
 
-CARLA, Unreal Engine and the functional-service repositories are not required
-for this path.
+## When something stops
 
-## I Want to Reproduce the Demonstration
+Use [troubleshooting](troubleshooting.md). Preserve the failed operation and
+existing state; do not combine packages, erase a retained Test or disable
+security checks to make progress.
 
-Start with the [reproduction guide and readiness matrix](reproduce-demo.md).
-It separates implemented, scoped live-proven behavior from full qualification.
-Follow the [current workflow](../operations/current-demo-workflow.md) and
-[implemented architecture](../architecture/current-implementation.md), which
-connect requirements, protocols, source and evidence.
+## Specialist routes
 
-For installation, use [the current Kit028 / Setup042 guide](installed-preview-cloud-first-use.md).
-The complete DMG includes the matching Runtime Kit. Installed scripted M1
-checks passed; the complete native journey and public distribution remain open.
-The [local setup preview](local-setup-preview.md) is historical, not today's
-installation route.
-
-## I Want to Understand the System
-
-Read the accepted design chain in this order:
-
-1. [High-Level Architecture 1.8](../architecture/high-level-architecture.md)
-2. [Demo Scenario 2.1](../demo/staged-post-sop-brake-health-demo-scenarios.md)
-3. [Demo Scenario Architecture Flows 2.2](../architecture/demo-scenario-architecture-flows.md)
-4. [System Requirements and Traceability 2.2](../requirements/system-requirements-and-traceability.md)
-5. [Component Decomposition and Interface Register 2.2](../requirements/component-decomposition-and-interface-register.md)
-
-The [current baseline](../qualification/current-baseline.md) states which
-parts have accepted implementation evidence and which remain targets.
-
-## I Want to Modify the Demonstration
-
-Read the [development map](../development/README.md) before choosing a
-repository. Source code stays with the component owner; this solution
-repository owns cross-component contracts, orchestration, system
-documentation and end-to-end evidence.
-
-For the current single-writer branch policy, see the
-[development workflow](../governance/development-workflow.md).
-
-## I Want to Add a Demo Scenario
-
-Follow [Add or Change a Demo Scenario](../development/add-demo-scenario.md).
-The workflow starts with the audience-visible story, traces it through the
-architecture and requirements, and only then allocates implementation to
-component repositories.
-
-## Safety Boundary
-
-Reading documentation and running repository-only validation does not
-authorize signing, Cloud upload, assignment, provisioning, deprovisioning,
-Unit mutation, VM reset or deletion. Those operations remain explicit gates
-in their relevant procedures.
+- [Standalone AosVM](../operations/aosvm-apple-silicon.md) is a component-level
+  engineering guide, not the installer workflow. Never run its launchers over
+  an installed Demo Control-owned instance.
+- [Design and requirements](../architecture/README.md) explain the system
+  contract. [Qualification](../qualification/README.md) contains dated evidence.
+- [Historical local setup preview](local-setup-preview.md) is retained for
+  reference, not as a current installation procedure.

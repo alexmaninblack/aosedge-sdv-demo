@@ -1,165 +1,163 @@
 <!-- SPDX-FileCopyrightText: 2026 maninblack -->
 <!-- SPDX-License-Identifier: MIT -->
 
-# Reproduce the AosEdge SDV Demonstration
+# Build the demo from pinned sources
 
-## Choose the operator or developer route
+This developer route builds project components and a matching installer using
+verified standalone CARLA, native support and source-built Factory .41 inputs.
+It does not compile Unreal/CARLA or require an old installed kit. To run
+a prebuilt package, use the [installation guide](installed-preview-cloud-first-use.md).
 
-For the prebuilt **engineering preview**, start with
-[Installed Preview: Cloud First Use](installed-preview-cloud-first-use.md).
-That operator route uses the matching prebuilt kit and native Setup, without
-reconstructing old experiments or compiling Unreal/CARLA. It is not yet a
-notarized or clean-Mac-qualified public release.
+The route targets the `1.2.0-rc.1` source-Factory candidate. Tooling and warm
+builds have passed; fresh-clone reproduction of this guide remains an R4 gate.
+Read [release selection](release-status.md) first. The historical source tag
+does not include these newer commands; the candidate tag is not yet published.
+Obtain the reviewed root revision and its producer commits through the approved
+source handoff before following the build steps.
 
-The rest of this page is the **source/developer route for Kit028 / Setup042**. Its
-workspace, Editor and build prerequisites are not prerequisites for using the
-prebuilt preview. Do not mix its component launchers into an installed run.
+## 1 Prepare the host and access
 
-## Readiness at a Glance
+| Requirement | Purpose |
+| --- | --- |
+| Apple Silicon, macOS 26, Xcode macOS SDK and Swift | Native UI, Gateway and packaging |
+| Python 3.10 or later for `lab`; ARM64 Python 3.12 with `packaging` for build owners | Resolver and isolated Cloud worker assembly |
+| Node 26.0.0 and npm 11.12.1 | Pinned UI and backend tooling |
+| CMake, Git, Docker CLI and running local Docker Desktop | Gateway and Linux ARM64 builds |
+| Mounted external APFS SSD | Sources, caches, scratch, outputs and Docker's active backing disk |
+| Authorized Google CLI account and two private input bindings | Initial acquisition of five locked archives |
+| Authorized Apple Development signing identity in Keychain | Explicit Setup signing, not notarized distribution |
 
-Updated 7 October 2026. The selected source return point is
-`candidate/kit028-setup042`, with Factory .41. The complete DMG is an
-engineering preview; the installed M1 scripted sequence passed 98 steps.
-Full native UI, moving-SOTA, secure token entry and interruption/repair gates
-remain open. No source checkout alone reproduces private artifact bytes,
-Cloud identities, credentials or the release ledger.
+Host tools are prerequisites, not installed by `lab`. Declare their paths;
+do not use the installed demo's private Python as a development interpreter.
+Google login is separate from the build. Bindings contain file IDs, not
+credentials; checked-in locks supply sizes and hashes. OEM/SP certificates are
+needed later for the installed demo, not these builds.
 
-Use the [current baseline](../qualification/current-baseline.md),
-[source return point](../qualification/kit028-setup042-source-publication-2026-10-05.md)
-and [implementation map](../architecture/current-implementation.md).
-Historical .39/v1.1 instructions and earlier source builds remain historical,
-not replacements for the current pinned package.
+Docker must already use the selected SSD. Do not relocate its disk or restart
+it as a build side effect. No live Test, backend container, VM or simulator
+is started by this route.
 
-## Workspace Shape
+## 2 Select the root revision and storage
 
-Keep participating repositories as siblings under one private workspace
-directory. Do not move CARLA or Unreal Engine into this solution repository.
+Clone only `https://github.com/alexmaninblack/aosedge-sdv-demo.git`, then select
+the exact root revision supplied with the release handoff. Do not substitute
+the latest branch or manually collect component repositories. Until the
+candidate and its producer commits are published, a public clone alone is
+insufficient for this candidate.
 
-```text
-workspace/
-├── aosedge-sdv-demo/          system integration and documentation
-├── CarlaSim/                  virtual physical vehicle
-├── UnrealEngine5_carla/       restricted CARLA build dependency
-├── carla-ego-runtime/         Vehicle Gateway and engineering demo tools
-├── aos-vehicle-platform/      Domain Controller platform/FOTA source
-├── brake-health-service/      Function Team 1 in-vehicle SOTA source
-├── brake-health-cloud/        Function Team 1 backend/dashboard
-├── tire-health-service/       Function Team 2 in-vehicle SOTA source
-├── tire-health-cloud/         Function Team 2 backend/dashboard
-└── demo-artifacts/            local immutable images and prepared build outputs; outside Git
-```
-
-Both service and backend repositories exist. Real KUKSA/product/advisory
-operation has the scoped evidence linked above; historical synthetic .33
-receipts are not its substitute. Project-owned public remotes are under
-`alexmaninblack`; Unreal Engine remains a restricted external dependency.
-
-The machine-readable workspace contract is
-[`workspace/repositories.json`](../../workspace/repositories.json), but its
-accepted main-branch pins must match the selected published checkpoint. It
-includes Tire and both backends. The candidate source lock records the exact
-published source pins and their distinctions from the original built inputs. The read-only doctor checks actual checkout drift:
+Run from that clean root checkout. Replace the example mount with your SSD.
+Create only the parent directories; `lab` creates and owns its workspaces.
+The test path must be at most 29 UTF-8 bytes long.
 
 ```sh
-./scripts/workspace-doctor
+SDV_ROOT="/Volumes/BUILD/sdv"
+SDV_TMP="/Volumes/BUILD/tmp"
+mkdir -p "$SDV_ROOT" "$SDV_TMP"
+./lab plan --profile developer \
+  --build-plan workspace/releases/1.2.0-rc.1-source-factory-build-chain.json
+./lab inputs plan
+./lab space --storage "$SDV_ROOT/build" \
+  --build-plan workspace/releases/1.2.0-rc.1-source-factory-build-chain.json
 ```
 
-The doctor reports missing, divergent or dirty repositories and stale
-generated launchers. It never clones, updates or cleans another repository.
+Inspect gates before acquisition. `qualified: false` is intentional: planning
+is not release acceptance. State binds the volume UUID; a missing/replaced SSD
+causes failure, not fallback to the internal disk.
 
-Documentation links into participating repositories use this sibling layout.
-For seamless navigation in a Markdown knowledge-base application, open the
-workspace parent directory—not only this repository—as the documentation
-workspace or vault.
+## 3 Prepare sources and binary inputs
 
-## Prerequisites and Access
+```sh
+./lab prepare --profile developer --storage "$SDV_ROOT/build" --sources-only
+./lab verify --storage "$SDV_ROOT/build" --sources-only
+./lab inputs prepare --storage "$SDV_ROOT/inputs" \
+  --binding /private/path/developer-inputs.drive.json \
+  --simulation-binding /private/path/simulation-inputs.drive.json \
+  --account authorized-reader@example.com
+./lab inputs verify --storage "$SDV_ROOT/inputs"
+```
 
-- Apple Silicon Mac with sufficient disk space for Unreal Engine, CARLA and
-  persistent VM overlays;
-- public access to the solution, CARLA fork, Vehicle Gateway, Vehicle Platform
-  and both service/backend repositories;
-- Epic Games-linked GitHub access to the restricted Unreal Engine source and
-  access to the qualified fork used by this workspace;
-- configured OEM access for Unit/Subject operations and one associated SP
-  for separate Brake and Tire service catalogs/publication; configured signing access for bundles;
-- private credentials, native access and generated VM state only in their
-  designated ignored/local stores; never stage credentials, VM disks, compiled
-  bundles or private Cloud source in Git.
+Replace both binding paths and the account with your approved handoff values.
+Supply `--gcloud /path/to/gcloud` if needed. Never paste tokens into commands,
+logs or source files. Repeats reuse verified inputs; after preparation no
+Google access is needed for offline verification.
 
-Exact revisions/branches are in the candidate source lock and workspace manifest.
-CARLA/Unreal retain compatibility branches; the other six dependencies use their
-recorded main revisions. Do not replace pinned inputs with arbitrary branches.
+Expect seven source roles and `BUILD_INPUTS_READY_NOT_PROFILE_QUALIFIED`.
+Input preparation reports `kitInputs`, `gatewaySdk` and `factoryInputs`.
+Use those three returned paths, not guessed directories or an installed kit:
 
-## Use the current Demo Control workflow
+```sh
+SDV_KIT_INPUTS="<returned kitInputs>"
+SDV_GATEWAY_SDK="<returned gatewaySdk>"
+SDV_FACTORY_INPUTS="<returned factoryInputs>"
+```
 
-Run the installed `democtl` from `apps/demo-orchestrator`, as described in its
-[CLI guide](../../apps/demo-orchestrator/README.md). Use `democtl image list`
-to discover the real catalog; Kit028 selects .41. Do not retire any retained
-Production or use an obsolete image from an old example. The [E2E report](../qualification/factory-36-e2e-2026-09-19.md)
-records a dated scoped cycle, not a claim that a Test is running now.
+The five archives contain CARLA/Python API, host support, Gateway SDK, unsigned
+vehicle/VM bases, and the independently built Factory image. CARLA is reused
+across demo releases while its inputs remain unchanged.
 
-All lifecycle, package preparation/signing/publication, assignment and runtime
-actions use the shared Demo Control implementation. A normal .41 start already
-contains the accepted CM/SM/resource/input fixes; do not reapply old runtime
-activation or restart recipes. The release allocator owns version numbers and
-must retain its continuity ledger. VDP profile bases and current service build
-exports are required preparation inputs, not disposable cache history.
+## 4 Build the complete candidate
 
-The following standalone CARLA/AosVM guides describe component-level or legacy
-entry points. They are useful background, not parallel launchers to run over
-an active Demo Control-owned environment.
+Replace tool paths and the signing fingerprint with your declared host inputs.
+This is one ordered command. The first run explicitly permits acquisition
+of missing pinned build dependencies.
 
-## Reproduce AosVM First
+```sh
+./lab build --target all --storage "$SDV_ROOT/build" \
+  --build-plan workspace/releases/1.2.0-rc.1-source-factory-build-chain.json \
+  --kit-inputs "$SDV_KIT_INPUTS" \
+  --gateway-sdk "$SDV_GATEWAY_SDK" \
+  --factory-inputs "$SDV_FACTORY_INPUTS" \
+  --input-checkpoint workspace/releases/1.2.0-rc.1-source-factory-packaging.json \
+  --release-checkpoint workspace/releases/1.2.0-rc.1-source-factory-setup.json \
+  --test-tmp-parent "$SDV_TMP" \
+  --python /path/to/python3.12 --ui-python /usr/bin/python3 \
+  --node /path/to/node --npm /path/to/npm --cmake /path/to/cmake \
+  --docker /path/to/docker \
+  --signing-identity YOUR_AUTHORIZED_CERTIFICATE_FINGERPRINT \
+  --prepare-dependencies
+```
 
-Follow [Run AosVM on an Apple Silicon Mac](../operations/aosvm-apple-silicon.md).
-Stop after local setup if Cloud registration is not part of the exercise.
-Provisioning is a separate, explicit operation and creates a persistent Unit
-identity.
+The 17 steps build UI, Cloud worker, backend images, Brake V1/V2/V3, Tire V1
+and Gateway, then assemble input groups, application, signed Setup and DMG.
+VDP bases and Factory are pinned binary inputs here. Rebuilding Factory itself
+is a separate [full-source subroute](full-source-build.md).
 
-## Reproduce the CARLA Engineering Demonstration
+Success is `CHAIN_BUILT_NOT_QUALIFIED`. Use emitted result paths and receipts
+to locate the DMG, not newest timestamps. Independent manifest and Setup pins
+must match; never replace expected hashes with observed ones to clear a failure.
 
-The following historical component-level launchers and their prerequisites
-are owned by the Vehicle Gateway repository. They are not the Kit028 installer:
+## 5 Repeat or continue after a failure
 
-- [native CARLA setup on macOS](../../../carla-ego-runtime/docs/carla-setup-macos.md);
-- [macOS desktop launchers](../../../carla-ego-runtime/docs/macos-launchers.md);
-- [deterministic brake-event scenario](../../../carla-ego-runtime/docs/brake-event-scenario.md).
+Repeat the same command to verify/reuse unchanged outputs and continue from
+the failed step. Omit `--prepare-dependencies` when no acquisition is needed.
+Preserve partial output and the first error. Incomplete native output requires
+diagnosis, not blind retries; see [recovery](troubleshooting.md#build-and-acquisition).
 
-That standalone launcher generator creates three developer applications:
+`./lab status --storage "$SDV_ROOT/build"` inspects saved results. Source
+readiness, built targets and qualification are distinct. Ordinary full-profile
+`prepare`/`verify` can remain blocked even when the explicit source/input/chain
+route above has passed. Do not erase those gates.
 
-- `CARLA Simulator.app` for the fixed route and live telemetry;
-- `CARLA Manual Drive.app` for manual/autopilot handover;
-- `CARLA Brake Event.app` for the persistent obstacle/braking scenario with
-  manual takeover and the Engineering Telematics Dashboard.
+## Space and elapsed time
 
-Closing the controller or pressing Escape in the accepted desktop workflow
-requests orderly cleanup of launcher-owned actors, telemetry resources and
-the CARLA editor. A reused editor that was not adopted by the launcher is not
-terminated blindly.
+| Observation or guard | Value | Interpretation |
+| --- | ---: | --- |
+| Five compressed archives | 13.70 GB | Download once or reuse a verified cache |
+| Extracted inputs | 28.34 GB | 31,491 files; not the complete footprint |
+| Chain admission guard | 166 GiB free | 76 GiB allowance plus 90 GiB reserve, not a measured cold peak |
+| Completed source-Factory chain | 17 min 2 sec | Recorded campaign run with reusable inputs, not a cold-host estimate |
+| Unchanged chain repeat | 69 sec | Observed warm result, not a guarantee |
+| Fresh-host build time and peak storage | Not yet measured | R4 must establish these on its declared host |
 
-## Verify the Cross-VM Telemetry Boundary
+Large payloads, caches and temporary files stay on SSD. Routine delivery does
+not download a just-uploaded DMG back to the maintainer. The real installation
+consumer verifies its own download.
 
-The initial [VISS-to-KUKSA proof](../qualification/carla-viss-to-kuksa.md)
-is historical evidence. Current real-data proof is in the
-[Kit028 installed journey](../qualification/m1-live-journey-2026-10-03.md) and
-[candidate record](../../workspace/checkpoints/installer-kit-028-candidate.json).
-Normal packages use native permissions; the explicit historical
-permission-free lifecycle mode is never an authorization-failure fallback.
+## Next steps
 
-## Current package build boundary
-
-The distribution tooling assembles locked application, host, VM, vehicle
-preparation and Cloud/backend inputs. See the [portable artifact plan](../planning/active/portable-runtime-artifacts.md)
-and [distribution contracts](../../contracts/distribution-installation/README.md).
-Rebuild only the owner whose inputs change, then rebuild dependent manifests
-and the matching Setup pin. Never modify an installed kit in place or combine
-a new host manifest with a stale VM binding (the rejected Kit027 defect).
-
-The Factory build-tool checkout is separately pinned in the source lock; it
-is not a replacement for the application checkout. Unreal/CARLA compiler,
-licensed content and cooked output are build-time concerns, not operator
-prerequisites. Reproduce from the recorded pins, not today's upstream branches.
-
-Use repository-only validation first. The [remote qualification harness](../../scripts/qualification/README.md)
-drives the installed owners and records scripted evidence separately from
-native UI acceptance. A source rebuild is not a new release qualification.
+Installation is a separate action through the [operator guide](installed-preview-cloud-first-use.md).
+A build does not launch the demo, create a Cloud Unit, publish a service,
+notarize the app or prove clean-machine operation. For changes, follow
+[Contributing](../../CONTRIBUTING.md); pins are not floating branches.
+The [build reference](../development/release-reproduction-r2.md) retains
+per-target options and evidence without making that history a prerequisite.

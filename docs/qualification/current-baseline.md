@@ -15,6 +15,11 @@ installer. HLA 1.8 is a document version, not a demo release number.
 This page reconciles retained evidence; it is not a fresh observation of a
 running Mac, VM or Cloud Unit.
 
+The later source-Factory `1.2.0-rc.1` build candidate has separate media and
+build/delivery evidence, not inherited installed qualification. Use
+[release selection](../getting-started/release-status.md) to choose between
+them. This page retains the exact Kit028 installed evidence and original hashes.
+
 ## Immutable Factory
 
 | Item | Selected candidate |

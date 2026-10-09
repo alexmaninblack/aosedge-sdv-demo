@@ -12,31 +12,36 @@ from `carla-aosedge-integration` after the solution boundary was accepted in
 ADR 0007. The repository name now reflects its ownership of the complete demo,
 not only the CARLA-to-AosEdge transport bridge.
 
-## Start Here
+## Start here
 
-- [Current baseline](qualification/current-baseline.md) — Kit028 / Setup042 /
-  Factory .41, exact media identity, installed results and remaining gates.
-- [Install the demo](getting-started/installed-preview-cloud-first-use.md) —
-  actual Setup buttons, Docker/Cloud prerequisites, first use and limitations.
-- [Operator workflow](operations/current-demo-workflow.md) — serial FOTA/SOTA,
-  real products, Reset, offline, ignition and Finish.
-- [Implemented architecture](architecture/current-implementation.md) —
-  requirements, source owners, runtime authority and qualification boundaries.
-- [Protocol status](../contracts/implementation-status.md) — runtime/product
-  and distribution families, accepted amendments and remaining schema drift.
-- [Documentation reconciliation](qualification/documentation-reconciliation-2026-10-07.md) —
-  coverage, corrected discrepancies and explicit unresolved items.
-- [Source reproduction](getting-started/reproduce-demo.md) and
-  [candidate return point](qualification/kit028-setup042-source-publication-2026-10-05.md) —
-  developer route and exact cross-repository pins.
-- [Active distribution plan](planning/active/installable-distribution-and-reproducibility.md) —
-  one execution checklist, not a new queue for every historical kit.
+| Route | Guide |
+| --- | --- |
+| Choose a package or source revision | [Release selection and access](getting-started/release-status.md) |
+| Run the prebuilt demo | [Install and connect Cloud](getting-started/installed-preview-cloud-first-use.md), then [operator sequence](operations/current-demo-workflow.md) |
+| Build project components and the installer | [Developer build](getting-started/reproduce-demo.md) |
+| Rebuild heavy dependencies | [Full-source scope and remaining gates](getting-started/full-source-build.md) |
+| Understand the system | [Product map](architecture/product-map.md), then [implemented architecture](architecture/current-implementation.md) |
+| Make a change | [Contributing](../CONTRIBUTING.md) |
+| Resolve a failure | [Troubleshooting](getting-started/troubleshooting.md) |
 
-Dated qualification/research reports preserve their original observations.
-Their “current”, “next” and “not started” wording applies to their dates.
-Historical [demo-v1.1 / Factory .39](qualification/demo-v1.1-return-point.md)
-remains restorable as source, but is not the selected installer. Read the
-stable current baseline before following old troubleshooting instructions.
+These entry routes work in a root-only checkout or on GitHub. Component
+references in the product map use exact source pins; no sibling vault is needed
+to start. Specialist design pages can still use the maintainer workspace layout.
+
+## Reference and dated evidence
+
+The [qualification baseline](qualification/current-baseline.md) preserves exact
+Kit028 installed results and limitations. The newer source-Factory build has
+separate evidence; see release selection above. The
+[protocol status](../contracts/implementation-status.md) distinguishes runtime
+contracts from unresolved drift.
+
+[Documentation reconciliation](qualification/documentation-reconciliation-2026-10-07.md)
+and the [source return point](qualification/kit028-setup042-source-publication-2026-10-05.md)
+retain dated findings. Historical [demo-v1.1](qualification/demo-v1.1-return-point.md)
+is not the selected installer. Dates and checkpoint-local status in older reports
+are evidence, not current setup instructions. Maintainers track delivery in the
+[active distribution plan](planning/active/installable-distribution-and-reproducibility.md).
 
 ## Architecture
 

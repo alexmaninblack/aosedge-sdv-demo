@@ -13,6 +13,45 @@ The latest [publication checkpoint](#2026-october-7-documentation-publication)
 records the committed and remotely verified documentation baseline. Earlier
 local-only entries below retain their original checkpoint state.
 
+### 2026 October 9 R3 human documentation routes
+
+The authorized R3 block is complete locally. The
+[product entry](../../README.md) offers Run, Build, Understand and Contribute;
+the [reader index](../getting-started/README.md) leads to separate operator,
+developer and full-source guides, a release selector, product map and recovery
+instructions. These are English reader routes, not another copy of component
+manuals. Canonical contracts, stable IDs, ADRs and dated evidence remain intact.
+
+The new source-Factory candidate is explicitly not the older qualified kit.
+Its exact delivery identity, unpublished source handoff, measured warm results
+and still-unknown cold capacity are disclosed. No source pin, binary, old tag
+or readiness flag was changed to make the instructions appear complete.
+The full-source guide records the remaining engine/access/capacity gates.
+
+Six component entry updates were committed locally without changing code:
+Gateway `1279f4b`, platform `9a7238a`, Brake service `8e21ab0`, Brake backend
+`3edc01e`, Tire service `9cb361e` and Tire backend `0ac481d`. Each adds its role,
+owned documentation, local checks and a link to the complete Lab. This is a
+Class A documentation/navigation change. The small accompanying documentation
+checker change allows only manifest-pinned hosted Markdown references; it
+continues to reject mutable/wrong-pin URLs and broken targets. Reader-only
+checking is explicitly separate from the full design/traceability gate.
+
+Evidence: ten root-only entry documents and seven live pinned GitHub references
+pass; 8 new reader tests and 19 existing documentation tests pass. The full
+gate checks 340 Markdown documents, 662 stable identifiers and 38 diagrams.
+All six component entry checks and the platform/Brake existing quality gates
+pass. Shell syntax, documented option names and checkpoint paths are validated
+without compiling. A network-disabled local browser render of the landing,
+operator and developer pages found no horizontal overflow; the landing page
+was also visually inspected and the browser closed. Scratch was on Work SSD.
+
+R4 remains the next block: reviewed source publication, fresh-environment
+execution, candidate-bound installation/live checks and the matching release
+handoff. No Git push/tag, build, large transfer, credential use or Cloud/runtime
+mutation was performed in R3. No owned helper remains running; shared Docker
+and unrelated workloads were left untouched.
+
 ### 2026 October 9 Artifact transfer economy
 
 The owner accepted one upload plus exact remote metadata/checksum verification

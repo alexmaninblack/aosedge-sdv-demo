@@ -7,13 +7,13 @@ This page helps a contributor decide where a change belongs before editing
 code. The architectural component, lifecycle owner and repository boundary
 must agree.
 
-For the new release/build route, see the
-[R1 inventory and reproduction readiness](release-reproduction-r1.md).
-For implemented preparation commands and the first verified build adapter, see
-[R2 commands and evidence](release-reproduction-r2.md). R2 is not yet a complete
-installer reproduction route.
-The read-only release validator exists; automatic preparation/build commands
-remain R2 work and no profile is yet marked reproducible.
+Start with the [developer build guide](../getting-started/reproduce-demo.md)
+or [contribution guide](../../CONTRIBUTING.md). The automated developer chain
+and private input delivery are implemented; fresh-environment and live
+qualification remain open. The [full-source route](../getting-started/full-source-build.md)
+has separate unresolved prerequisites. Specialist command options and dated
+proof remain in [R2 commands and evidence](release-reproduction-r2.md), with
+the original [R1 inventory](release-reproduction-r1.md) retained for provenance.
 
 ## Choose the Change Boundary
 

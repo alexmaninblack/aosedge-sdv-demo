@@ -22,6 +22,10 @@ jobs:
           python3 -B lab plan --profile operator
           python3 -B lab plan --profile developer
           python3 -B lab plan --profile full-source
+      - name: Check the human entry routes without sibling repositories
+        run: |
+          python3 -B scripts/docs-check --reader-routes
+          python3 -B -m unittest discover -s tests -p 'test_reader_routes.py' -v
       - name: Verify acquisition and owner adapters with offline fixtures
         env:
           TMPDIR: ${{ runner.temp }}

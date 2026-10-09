@@ -76,6 +76,7 @@ class WorkspaceRepository:
     directory: str
     path: Path
     github_path: str | None
+    accepted_revision: str | None
 
 
 def github_repository_path(url: str) -> str | None:
@@ -111,6 +112,7 @@ def workspace_repositories(root: Path) -> tuple[WorkspaceRepository, ...]:
                     if isinstance(repository, str)
                     else None
                 ),
+                accepted_revision=item.get("acceptedRevision"),
             )
         )
     return tuple(repositories)
@@ -141,6 +143,30 @@ def markdown_documents(root: Path) -> dict[Path, str]:
         for path in paths
         if path.is_file()
     }
+
+
+READER_ROUTES = (
+    "README.md", "CONTRIBUTING.md", "docs/getting-started/README.md",
+    "docs/getting-started/release-status.md",
+    "docs/getting-started/installed-preview-cloud-first-use.md",
+    "docs/getting-started/reproduce-demo.md",
+    "docs/getting-started/full-source-build.md",
+    "docs/getting-started/troubleshooting.md",
+    "docs/architecture/product-map.md", "docs/operations/current-demo-workflow.md",
+)
+
+
+def pinned_workspace_link(repository: WorkspaceRepository, url: str) -> bool:
+    parsed = urlsplit(url)
+    parts = unquote(parsed.path).split("/")
+    return (
+        parsed.scheme == "https" and not parsed.query
+        and len(parts) >= 6 and parts[3] == "blob"
+        and bool(re.fullmatch(r"[a-f0-9]{40}", parts[4]))
+        and parts[4] == repository.accepted_revision
+        and all(part not in {"", ".", ".."} for part in parts[5:])
+        and parts[-1].endswith(".md")
+    )
 
 
 def relative(root: Path, path: Path) -> str:
@@ -189,7 +215,7 @@ def resolve_local_target(root: Path, source: Path, raw: str) -> tuple[Path, str]
 
 
 def check_links(
-    root: Path, documents: dict[Path, str]
+    root: Path, documents: dict[Path, str], source_paths: set[Path] | None = None
 ) -> tuple[list[Issue], dict[Path, set[Path]], set[str]]:
     issues: list[Issue] = []
     graph = {path: set() for path in documents}
@@ -197,18 +223,20 @@ def check_links(
     anchor_cache = {path: anchors(text) for path, text in documents.items()}
     repositories = workspace_repositories(root)
     for source, text in documents.items():
+        if source_paths is not None and source not in source_paths:
+            continue
         for _, raw in MARKDOWN_LINK.findall(text):
             target = link_target(raw)
             scheme = urlsplit(target).scheme.lower()
             if scheme in {"http", "https"}:
                 external.add(target)
                 repository = workspace_repository_for_url(repositories, target)
-                if repository is not None:
+                if repository is not None and not pinned_workspace_link(repository, target):
                     issues.append(
                         Issue(
                             relative(root, source),
                             "workspace repository link must use the local sibling "
-                            f"checkout {repository.directory}: {target}",
+                            f"checkout {repository.directory} or its exact accepted-revision Markdown URL: {target}",
                         )
                     )
                 continue
@@ -219,6 +247,9 @@ def check_links(
                 continue
             destination, fragment = resolve_local_target(root, source, raw)
             inside_root = destination.is_relative_to(root.resolve())
+            if source_paths is not None and not inside_root:
+                issues.append(Issue(relative(root, source), f"reader route requires a sibling checkout: {target}"))
+                continue
             sibling = next(
                 (
                     repository
@@ -823,6 +854,7 @@ def check_repository(
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--external", action="store_true", help="also check HTTP(S) links")
+    parser.add_argument("--reader-routes", action="store_true", help="check initial human routes without sibling checkouts; not the full design gate")
     parser.add_argument(
         "--root",
         type=Path,
@@ -830,6 +862,21 @@ def main() -> int:
         help=argparse.SUPPRESS,
     )
     args = parser.parse_args()
+    if args.reader_routes:
+        root = args.root.resolve()
+        documents = markdown_documents(root)
+        selected = {(root / name).resolve() for name in READER_ROUTES}
+        issues, _, external = check_links(root, documents, selected)
+        issues.extend(Issue(relative(root, path), "required reader guide is missing")
+                      for path in selected if path not in documents)
+        if args.external:
+            issues.extend(check_external_links(external))
+        for issue in sorted(issues, key=lambda item: (item.path, item.message)):
+            print(f"ERROR {issue.render()}", file=sys.stderr)
+        if issues:
+            return 1
+        print(f"Reader route gate: PASS ({len(selected)} entry documents; no sibling checkout required)")
+        return 0
     issues, document_count, identifier_count, diagram_count = check_repository(
         args.root, args.external
     )

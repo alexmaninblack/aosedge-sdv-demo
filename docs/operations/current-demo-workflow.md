@@ -10,6 +10,11 @@ exclusions and the [CLI reference](../../apps/demo-orchestrator/README.md) for
 configuration and engineering commands. The public demo name is
 **AosEdge Platform - SDV Lab**.
 
+For a new installation, begin with the [operator guide](../getting-started/installed-preview-cloud-first-use.md)
+and [release selection](../getting-started/release-status.md). This sequence is
+the implemented workflow; its dated Kit028 observations do not qualify the new
+source-Factory candidate automatically.
+
 ## Preparation and version sequence
 
 1. Select the intended Cloud instance, OEM and one associated SP configuration for both independent services.

@@ -34,6 +34,7 @@ class DocumentationCheckTests(unittest.TestCase):
         root.mkdir()
         shutil.copy2(ROOT / ".gitignore", root / ".gitignore")
         shutil.copy2(ROOT / "README.md", root / "README.md")
+        shutil.copy2(ROOT / "CONTRIBUTING.md", root / "CONTRIBUTING.md")
         shutil.copy2(ROOT / "THIRD_PARTY_NOTICES.md", root / "THIRD_PARTY_NOTICES.md")
         shutil.copy2(ROOT / "LICENSE", root / "LICENSE")
         (root / "workspace").mkdir()
