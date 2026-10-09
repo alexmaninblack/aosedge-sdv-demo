@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "productVersion": "1.2.0-rc.1",
+  "status": "ENGINEERING_CANDIDATE_NOT_QUALIFIED",
+  "file": "AosEdge-SDV-Lab-1.2.0-rc.1.dmg",
+  "bytes": 14162601112,
+  "sha256": "f2b3d68d9dd4bd084d9fa199cc8053190a0466fb10ee3c5ecf024f877d4de82d",
+  "buildKey": "c6a65fa4c7fa75f86cf4c042fc6aa2b8ee479b44ce997027792b92a67c2e7a42",
+  "producerRevision": "609fcae5c5ccea0e5d02f134209c44bd48ecfa4b",
+  "manifestSha256": "d4c35a96b053ea021103a40269cebf119279f4d5236d887914964724302b840a",
+  "signing": "apple-development-local-only",
+  "notarized": false
+}

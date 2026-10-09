@@ -4,7 +4,7 @@
 # Human Friendly Repository and Release Reproduction Plan
 
 - Status: R1 complete; R2 implementation in progress; R3 and R4 planned
-- Version: 0.19
+- Version: 0.20
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Parent: [Installable distribution and reproducibility](../installable-distribution-and-reproducibility.md)
@@ -208,8 +208,10 @@ and independent packaging pins before replacing any installer input.
 The new .41 source image, native/package/image gates, transfer verification and
 post-build preparation reuse now pass on the relocated Builder. The obsolete
 internal Builder/base copies were removed after verification, recovering about
-85 GiB; sources, original Factory and guest caches remain. The new image is not
-live-qualified or incorporated into the frozen developer installer chain.
+85 GiB; sources, original Factory and guest caches remain. On October 9 the
+image passed an offline boot/shutdown smoke and independent downstream packaging
+into a new engineering DMG. It is not live-qualified; the historical/default
+developer chain and Factory pins remain unchanged.
 The October 9 authorized cleanup of old Zen cache, one redundant DMG and five
 obsolete installed payloads released 24.23 decimal GB. Current artifacts and
 required rollback/cache inputs remain. See the
@@ -217,9 +219,10 @@ required rollback/cache inputs remain. See the
 The operator then explicitly requested consolidating the empty Clean partition
 into Work after disclosure of the APFS warning. Standard in-place expansion
 completed with the original Work UUID and protected artifacts preserved.
-Work now has approximately **489 GB / 455.4 GiB free**, satisfying the chain's
-166-GiB admission guard. The capacity blocker is closed; independent downstream
-Factory image binding and qualification remain open. The native storage check
+Work had approximately **489 GB / 455.4 GiB free** after consolidation, satisfying
+the chain's unchanged 166-GiB admission guard. The capacity blocker and independent
+downstream Factory binding are closed; installation/live qualification remains
+open. The native storage check
 permitted expansion but repeated the compressed-file warning, which is not
 claimed repaired. See the
 [consolidation result](../../../development/release-reproduction-r2.md#work-and-clean-consolidation-on-october-9).
@@ -270,6 +273,20 @@ for this block, and full-source qualification is not implied.
 R2 remains **in progress**. The ordered `--target all` chain and explicit frozen
 producer selection passed two real 17-step unchanged-output runs; the repeat
 took 80.09 seconds. Offline first/repeat/failure fixtures also pass.
+The independent source-Factory campaign subsequently completed all 17 steps at
+the source plan checkpoint `01936d0`, producing a separate 14.16-GB signed-Setup
+DMG. Read-only mounted inventory, Factory SHA-256 and Setup signature checks
+passed; the image was detached without launching the installer. The full offline
+suite ran 1,028 tests (1,027 passed, one skipped); a root-only export passed all
+203 reproduction fixtures. An unchanged 17-step repeat reused every build key
+in 69.22 seconds. The explicit remount recovery fixes affected input-group
+receipts without changing payload bytes; it does not claim recovery of every
+historical media or dependency receipt. See the
+[source-Factory campaign](../../../development/release-reproduction-r2.md#source-factory-downstream-packaging-on-october-9).
+Approximately 474 GB / 442 GiB remained free externally after the new media.
+Owned build/VM processes are stopped. The next R2 action is complete declared
+build-input acquisition without requiring the maintainer's retained kit, not
+another CARLA or Factory rebuild.
 Cross-workspace digest-cache reuse now passes first/repeat proof for all 41
 declared wheels through APFS clones, without downloading or changing frozen
 consumers. A read-only capacity report separates cache availability, workspace

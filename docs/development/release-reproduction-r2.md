@@ -199,7 +199,40 @@ signing identity and at least 166 GiB free under the existing conservative
 76 GiB demand plus 90 GiB reserve. This is not measured cold-build capacity.
 Real chain and repeat evidence is recorded separately from fixture results.
 
+For the independently pinned source-Factory campaign, add all four selections
+to that invocation; do not replace the default historical checkpoint:
+
+```sh
+  --build-plan workspace/releases/1.2.0-rc.1-source-factory-build-chain.json \
+  --factory-inputs /Volumes/BUILD/factory41-clean/factory-results \
+  --input-checkpoint workspace/releases/1.2.0-rc.1-source-factory-packaging.json \
+  --release-checkpoint workspace/releases/1.2.0-rc.1-source-factory-setup.json
+```
+
+These are additional arguments to the complete command above, not a standalone
+shell command. They select the separately built image, group manifests and
+Setup pin, while reusing unchanged CARLA and component results.
+
 ## Storage and recovery
+
+### Device renumbering after reconnect
+
+macOS can assign a new device number when the same external volume is remounted.
+For completed manifest-backed input groups, an explicit recovery command is
+available:
+
+```sh
+./lab revalidate --storage /Volumes/BUILD/workspace --target host-runtime
+```
+
+Supported targets are `host-runtime`, `preparation`, `vm-runtime` and
+`backend-inputs`. The command checks the original volume UUID, permits only a
+device-number change in recorded file metadata, rehashes affected payloads
+against their existing manifests, and preserves the original receipts before
+refreshing device stamps. A repeat on unchanged stamps hashes nothing. Changed
+content, missing receipts or a different volume are not adopted or repaired.
+This does not yet revalidate historical application/media receipts or extracted
+simulation dependencies; it must not be described as recovery of every cache.
 
 ### Reusing a declared cache
 
@@ -838,6 +871,64 @@ against its existing manifest, preserves the original receipt and refreshes only
 the device stamps. It neither recompiles nor adopts a new artifact identity.
 Negative fixtures cover wrong volume, changed payload, wrong digest, extra files
 and missing receipts. Real content revalidation precedes downstream continuation.
+
+Actual revalidation passed for 14,182 host files, six VM inputs and the backend
+archive; the repeated host check refreshed zero receipts and hashed zero files.
+The new application manifest is
+`d4c35a96b053ea021103a40269cebf119279f4d5236d887914964724302b840a`.
+The source-Factory producer plan, committed at `01936d0`, binds preparation to
+`b7e0643`, application/VM inputs to `f20489e` and signed media to `609fcae`;
+unchanged native/component owners retain their prior commits.
+
+After the recovery fix, the full offline regression ran 1,028 tests in
+98.595 seconds: 1,027 passed and one skipped. This is source/tooling regression,
+not live or fresh-machine qualification.
+An independent root-only export of `01936d0`, without sibling repositories,
+passed all 203 reproduction fixtures in 52.614 seconds. That 44-MiB temporary
+export was removed after a zero-open-handle check; committed sources and its
+compact test log remain available.
+
+The complete ordered source-Factory chain finished all 17 steps in **1,021.92
+seconds** (17 minutes 1.92 seconds), reusing earlier component builds and creating
+the new application selection, signed Setup and compressed DMG. This is the
+downstream packaging time, not a cold build or the Factory compilation time.
+
+- Chain key: `bb2848aa17e0bd7b2863c9cf3856f39c5d1b48fa0bb735ea1a25d81b2207809d`.
+- Application key: `9f65e4a7321b4cd21dfa5a7b0499e76c2cd980d5963ae7b729beb572036432a5`.
+- Setup key: `5d0e8bfd5077c44e0819131d2b23ae8b777ba6091466968b2a954fdb03e32713`.
+- DMG key: `c6a65fa4c7fa75f86cf4c042fc6aa2b8ee479b44ce997027792b92a67c2e7a42`.
+- DMG: **14,162,601,112 bytes**, SHA-256
+  `f2b3d68d9dd4bd084d9fa199cc8053190a0466fb10ee3c5ecf024f877d4de82d`.
+
+The canonical media owner verified every copied payload hash and the disk-image
+container. A separate read-only mount verified the inventory of 17,697 files,
+the new Factory image hash, the embedded application pin and the deep/strict
+Setup signature. It then detached the media. No Setup, demo, Cloud connection
+or live installation was started. The
+[independent delivery descriptor](../../workspace/releases/1.2.0-rc.1-source-factory-delivery.json)
+records these exact bytes without replacing the earlier candidate or its private
+Drive object. Signing remains Apple Development, with no notarization, profile
+qualification, source push, tag or public release.
+
+The unchanged whole-chain repeat completed in **69.22 seconds**. Its completed
+record and all 17 build keys equal the preserved first-run record. Every step
+reported reuse; the 19 reuse events include two backend-image dependencies
+inside export and do not mean 19 chain steps. No compiler, signer or compressor
+was invoked by the repeat. First-run logs remain separately preserved.
+
+Final checks found no owned chain worker, media worker or QEMU process and no
+open handle to the DMG. The temporary read-only mount and media staging were
+released. Shared Docker remains running with unrelated Watt containers; it was
+not stopped as test cleanup. Approximately **474 GB / 442 GiB** was free on the
+SSD afterward. Historical images, media, Builder/caches, source, credentials and
+video were preserved. All new build/test payloads used the external volume.
+
+This closes the source-Factory-to-DMG integration segment, not all of R2.
+The next R2 work is complete acquisition of the remaining declared build inputs
+without requiring the maintainer's retained kit, followed by release-level
+handoff/capacity evidence. Independent approved-reader access and full-source
+closure remain explicit; R3 human guides and R4 installation/live qualification
+are not replaced by these build results.
 
 ## Ordered chain proof on October 8
 

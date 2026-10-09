@@ -13,6 +13,35 @@ The latest [publication checkpoint](#2026-october-7-documentation-publication)
 records the committed and remotely verified documentation baseline. Earlier
 local-only entries below retain their original checkpoint state.
 
+### 2026 October 9 Source Factory integration through complete media
+
+After Work/Clean consolidation removed the capacity blocker, the independent
+source Factory .41 passed an offline boot and clean shutdown. New committed
+image/group/application checkpoints and the producer plan at `01936d0` now
+select that image without changing historical/default pins. The complete
+17-step chain produced a separate 14.16-GB engineering DMG; every unchanged
+step reused its output on a 69.22-second repeat. Mounted inventory, Factory
+digest and Setup signature checks passed, followed by media detachment.
+
+An actual macOS device-number change after SSD remount exposed an input-receipt
+reuse defect. Explicit volume/content revalidation now restores the affected
+manifest-backed input stamps while preserving original receipts and all payload
+bytes. Recovery of other historical media/dependency receipt types remains
+outside that implementation. Full regression ran 1,028 tests (one skipped);
+203 reproduction fixtures also passed from a root-only export without siblings.
+
+Integration sources/checkpoints are committed locally; no push, tag, new Drive
+upload, public release, installation or Cloud mutation is part of this block.
+The new candidate remains Apple Development signed and not notarized or live
+qualified. The temporary source export was removed after checks; owned VMs,
+workers and the media mount are closed. Shared Docker/Watt is preserved.
+Approximately 474 GB / 442 GiB is free on the external SSD.
+
+See the [campaign evidence and exact artifact identity](../development/release-reproduction-r2.md#source-factory-downstream-packaging-on-october-9).
+R2 remains open for complete build-input acquisition, capacity and reader handoff;
+R3/R4 remain separate. Continue with the missing input acquisition rather than
+rebuilding the completed Factory or retained CARLA.
+
 ### 2026 October 8 Factory source rebuild on the external SSD
 
 The owner included Factory .41 in the clean build and required the QEMU Builder
