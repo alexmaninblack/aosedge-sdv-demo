@@ -612,8 +612,12 @@ must not be presented as physical disk space recovered.
 ## Remaining R2 work
 
 1. Private successor DMG upload, acquisition, file binding, capacity and repeats
-   now pass. Complete build-input acquisition and approved-reader handoff
-   separately; preserve supported inputs. Historical media remains unpublished.
+   now pass for the earlier candidate. The source-Factory candidate remains
+   local. Declared build-input restoration and its complete frozen consumer
+   chain now pass locally without retained-kit access. Transfer the two new
+   locked archives after Google CLI reauthentication and complete the real
+   download/approved-reader handoff. Preserve supported inputs and distinguish
+   local acceptance from transfer evidence. Historical media remains unpublished.
 2. Exact producer roles, dependency selection and whole-chain unchanged-output
    reuse now pass real verification. Cold profile reproduction and measured
    full-profile capacity remain open. Cross-workspace
@@ -949,11 +953,69 @@ SSD afterward. Historical images, media, Builder/caches, source, credentials and
 video were preserved. All new build/test payloads used the external volume.
 
 This closes the source-Factory-to-DMG integration segment, not all of R2.
-The next R2 work is complete acquisition of the remaining declared build inputs
-without requiring the maintainer's retained kit, followed by release-level
+The next boundary is the declared-input route below, followed by release-level
 handoff/capacity evidence. Independent approved-reader access and full-source
 closure remain explicit; R3 human guides and R4 installation/live qualification
 are not replaced by these build results.
+
+## Declared build input closure on October 9
+
+Source checkpoint `88b94d6` adds `lab inputs export/upload/prepare/verify/plan`.
+The reviewed [binary-input lock](../../workspace/dependencies/developer-factory41-r1.lock.json)
+keeps the existing simulation package identities and adds two bounded archives:
+
+| Package | Compressed bytes | Payload files | Unpacked bytes |
+| --- | ---: | ---: | ---: |
+| Vehicle bases | 20,797,429 | 12 | 22,177,570 |
+| Source Factory .41 | 316,796,441 | 2 | 6,997,158,056 |
+
+Vehicle bases contain only firmware, the three unsigned VDP base profiles,
+original vehicle/VM manifests, VM option ROM and QEMU notices. The source Factory
+archive contains the already built image and its manifest. The producer's small
+manifest was writable; export makes a digest-checked immutable metadata snapshot
+without modifying the producer. No old Factory image, compiled service,
+credential, runtime/operator state or Unreal source/cache is exported.
+
+Together with the unchanged three simulation archives, the complete binary set
+is **13,696,139,909 compressed bytes**, **28,337,654,397 payload bytes** and
+**31,491 files**. Local acceptance hashed the five archives, safely extracted
+every pinned member into an empty SSD directory, checked the restored consumer
+authorities and promoted the result only after success. It took 150.659 seconds.
+The public `lab inputs verify` subsequently passed offline without an account.
+This local test used already available archives and does **not** count as a
+download or approved-reader test.
+
+The complete 17-step source-Factory chain then ran using the restored paths,
+with macOS sandbox rules denying reads of both the original Kit028 tree and
+original Factory output directory. Negative controls first proved those existing
+files could not be read. All 17 build keys equal the previous completed chain;
+the DMG digest remains `f2b3d68d9dd4bd084d9fa199cc8053190a0466fb10ee3c5ecf024f877d4de82d`.
+The warm run took **71.845 seconds**. Its invocation-specific chain key is
+`29abe62dcaf9f93131c5f73d09f01eb734951845663d938065718d5cc13f016b`;
+the input-set key is
+`988daa40871bf8e2defc602c750fc2a899251c5a2daa229e3cbe39cdcec43b83`.
+No compiler, Factory build, signing operation or simulator was needed. An initial
+harness preflight rejected an overlong test path for Unix sockets; selecting the
+existing short SSD directory fixed the harness, without changing product code
+or losing the first failure log.
+
+Twelve new fixtures cover exact immutable member sets, mutable metadata snapshots,
+offline repeat, wrong ancestry/bindings, corrupt cache, changed/extra payload,
+missing receipts, insufficient space and preserved partial extraction. The full
+offline suite ran **1,040 tests in 92.931 seconds: 1,039 passed, one skipped**.
+Documentation navigation and confidential-input gates passed. Approximately
+**445 GB / 415 GiB** remained free on the SSD after restoring the inputs; no
+additional full kit, CARLA build or Factory build was created on the internal disk.
+
+Live Drive preflight stopped before any upload: the existing authorized Google
+CLI account requires interactive reauthentication. Only the failure category was
+recorded; tokens and authorization responses were not logged. A browser login was
+opened, but transfer is not claimed until it completes and both new objects pass
+upload/read-back/download checks. The real three-package simulation transfer
+evidence remains valid; it does not substitute for these two new packages.
+R2 remains in progress. The frozen owners are now proven independent of the old
+kit directory, while host toolchains, cold reproduction, reader handoff and live
+qualification retain their separate boundaries.
 
 ## Ordered chain proof on October 8
 

@@ -85,7 +85,8 @@ def main(argv=None):
     if argv and argv[0] == 'factory':
         from .factory import main as factory_main
         return factory_main(argv[1:])
-    parser = argparse.ArgumentParser(description=__doc__, epilog='Reusable prebuilt CARLA inputs: lab dependencies --help')
+    parser = argparse.ArgumentParser(description=__doc__, epilog=(
+        'Reusable CARLA: lab dependencies --help. Complete source-Factory binary inputs: lab inputs --help.'))
     parser.add_argument('action', choices=('plan', 'prepare', 'status', 'verify', 'build', 'cache', 'space', 'revalidate'))
     parser.add_argument('--profile', choices=('operator', 'developer', 'full-source'))
     parser.add_argument('--storage', type=Path)

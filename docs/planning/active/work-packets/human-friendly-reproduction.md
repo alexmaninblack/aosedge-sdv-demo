@@ -4,7 +4,7 @@
 # Human Friendly Repository and Release Reproduction Plan
 
 - Status: R1 complete; R2 implementation in progress; R3 and R4 planned
-- Version: 0.20
+- Version: 0.21
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Parent: [Installable distribution and reproducibility](../installable-distribution-and-reproducibility.md)
@@ -284,9 +284,17 @@ receipts without changing payload bytes; it does not claim recovery of every
 historical media or dependency receipt. See the
 [source-Factory campaign](../../../development/release-reproduction-r2.md#source-factory-downstream-packaging-on-october-9).
 Approximately 474 GB / 442 GiB remained free externally after the new media.
-Owned build/VM processes are stopped. The next R2 action is complete declared
-build-input acquisition without requiring the maintainer's retained kit, not
-another CARLA or Factory rebuild.
+Owned build/VM processes are stopped. The remaining binary-input packages have
+now been implemented and locally verified at `88b94d6`: 31,491 restored files,
+followed by all 17 frozen build steps with operating-system read denial for the
+old Kit028 and original Factory result directory. All build keys stayed equal;
+the warm proof took 71.845 seconds. This is local archive/consumer evidence, not
+a cold build or a Google download. The two new archives total 337,593,870 bytes.
+Their real Drive upload/download remains pending because the existing Google
+CLI account requires interactive reauthentication. Do not rebuild CARLA or
+Factory, infer transfer success from local extraction, or overwrite earlier
+Drive artifacts. See the
+[declared-input result](../../../development/release-reproduction-r2.md#declared-build-input-closure-on-october-9).
 Cross-workspace digest-cache reuse now passes first/repeat proof for all 41
 declared wheels through APFS clones, without downloading or changing frozen
 consumers. A read-only capacity report separates cache availability, workspace
