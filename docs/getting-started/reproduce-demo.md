@@ -39,10 +39,12 @@ is started by this route.
 
 ## 2 Select the root revision and storage
 
-Clone only `https://github.com/alexmaninblack/aosedge-sdv-demo.git`, then select
-the exact published root revision in [release selection](release-status.md).
-Do not substitute the latest/default branch or manually collect component
-repositories. Source and frozen producer revisions are published; a public
+Clone only `https://github.com/alexmaninblack/aosedge-sdv-demo.git`.
+Its default `main` contains the current documentation and development work.
+For this candidate build, then select the exact published root revision in
+[release selection](release-status.md); do not substitute a moving branch for
+the recorded revision or manually collect component repositories.
+Source and frozen producer revisions are published; a public
 clone alone does not supply the private binary inputs or host tools.
 
 Run from that clean root checkout. Replace the example mount with your SSD.

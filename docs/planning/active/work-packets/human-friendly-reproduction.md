@@ -4,7 +4,7 @@
 # Human Friendly Repository and Release Reproduction Plan
 
 - Status: R1 complete; R2 tooling complete for the agreed developer route; R3 documentation complete; R4 planned
-- Version: 0.25
+- Version: 0.26
 - Prepared: 2026-10-09
 - Owner: Demo Solution Team
 - Parent: [Installable distribution and reproducibility](../installable-distribution-and-reproducibility.md)
@@ -431,6 +431,15 @@ published.** The subsequent October 9 publication checkpoint covers root
 `dbfd542` and the six component entry commits. R4 owns any successor source/tag
 handoff and actual fresh-environment command/install progression. No payload
 transfer, build, Cloud operation or tag was needed for documentation/publication.
+
+The owner subsequently required current work and GitHub defaults on `main`
+across all nine maintained demo repositories. The root integration and Factory
+histories are consolidated; the latter's functional changes were already in
+the current source, whose newer SSD/configuration guards are preserved.
+CARLA and Unreal `main` retain their exact accepted source commits. Old branches,
+tags, private access and immutable producer/release pins remain unchanged.
+This supersedes the old compatibility-branch workflow, not R4 qualification.
+See the [branch policy](../../../governance/development-workflow.md).
 
 ### Work
 

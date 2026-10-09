@@ -22,12 +22,19 @@ identity. The selected source-Factory media must match the
 `f2b3d68d9dd4bd084d9fa199cc8053190a0466fb10ee3c5ecf024f877d4de82d`.
 Do not substitute the earlier same-named candidate.
 
+`main` is the current documentation and development entry in all nine maintained
+demo repositories, including our CARLA and restricted Unreal forks. Historical
+branches remain available; there is no separate maintenance branch to find for
+the latest README or current development work.
+
 `sdv-lab-v1.2.0-rc.1` and `sdv-lab-v1.2.0` are accepted future tag names,
-not tags created by this documentation. The R2/R3 source checkpoint
-`dbfd542d38f3730f151f43dd303af94e4902c74d` and its frozen producer ancestors
-are published on `codex/installable-demo-stage3`; all six component README
-updates are also published. Select that exact root commit for this documented
-route, not the repository's default branch. Source availability does not
+not tags created by this documentation. To reproduce the existing R2/R3
+candidate, select root checkpoint
+`dbfd542d38f3730f151f43dd303af94e4902c74d` and its frozen producer ancestors.
+That checkpoint is included in `main`; all six component README updates are
+also published on their respective `main` branches. Moving current work to
+`main` does not change the existing candidate's exact source pins or bytes.
+Source availability does not
 supply the private build inputs or prove fresh-environment reproduction. The
 [qualification baseline](../qualification/current-baseline.md) preserves older
 installed results; those results are not promoted to new bytes.

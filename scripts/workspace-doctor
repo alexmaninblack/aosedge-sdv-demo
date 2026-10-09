@@ -141,6 +141,11 @@ def dirty_paths(repository: Path) -> list[str]:
     return values
 
 
+def accepted_branch(branch: str, historical_branches: list[str]) -> bool:
+    """Accept the current trunk without rewriting a frozen release manifest."""
+    return branch == "main" or branch in historical_branches
+
+
 def check_repository(report: Report, workspace_root: Path, item: dict[str, Any], allow_dirty: bool) -> None:
     identifier = item["id"]
     repository = workspace_root / item["directory"]
@@ -159,7 +164,7 @@ def check_repository(report: Report, workspace_root: Path, item: dict[str, Any],
             report.error(f"{identifier}: HEAD {revision} differs from accepted {item['acceptedRevision']}")
         else:
             report.pass_(f"{identifier}: accepted revision {revision[:12]}")
-        if branch not in item["acceptedBranches"]:
+        if not accepted_branch(branch, item["acceptedBranches"]):
             report.error(f"{identifier}: unexpected branch {branch or '(detached)'}")
         else:
             report.pass_(f"{identifier}: branch {branch}")
@@ -236,7 +241,7 @@ def check_solution(report: Report, data: dict[str, Any], workspace_root: Path, a
         return
     try:
         branch = run_git(solution, ["branch", "--show-current"])
-        if branch not in workspace["acceptedBranches"]:
+        if not accepted_branch(branch, workspace["acceptedBranches"]):
             report.error(f"solution: unexpected branch {branch or '(detached)'}")
         else:
             report.pass_(f"solution: branch {branch}")

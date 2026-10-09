@@ -9,9 +9,45 @@ controls delivery order; the [current baseline](../qualification/current-baselin
 identifies the implemented candidate. Component source, contracts and release
 locks remain authoritative. This journal links them and does not duplicate them.
 
-The latest [publication checkpoint](#2026-october-9-r2-and-r3-source-publication)
+The latest [publication checkpoint](#2026-october-9-main-consolidation)
 records the committed and remotely verified source baseline. Earlier
 local-only entries below retain their original checkpoint state.
+
+### 2026 October 9 Main consolidation
+
+The owner required all current demo work on `main`, with other branches retained
+as history. The root advances the old `main` by the 51 accepted integration
+commits through `1e73ae5`. Merge `003cded` also includes Factory-tool head
+`30ae661`; its file tree is identical to its first parent because those changes
+were already present with newer SSD/configuration guards. Two historical merge
+conflicts were resolved without removing those guards or their tests.
+
+The current branch policy and reader guides now point to `main`. All nine
+maintained repositories use it as their development and GitHub default branch.
+CARLA `eb09b82` and private Unreal `9b705d6` retain identical source trees on
+new `main` refs; their old compatibility refs remain. The other six component
+`main` heads are unchanged from the publication checkpoint below. Upstream
+repositories, historical tags and branches, video, binaries and release source
+pins were not rewritten, deleted or republished.
+
+The initial branch-metadata edit correctly failed the release authority digest
+gate. It was withdrawn rather than resealing the frozen Kit028 definition.
+The workspace doctor now accepts current `main` alongside historical branch
+names; exact revision, remote and dirty-tree checks remain intact. Historical
+manifests and Factory/build-owner source compare byte-for-byte with `1e73ae5`.
+
+Local checks pass: 27 Factory build-gate tests, 215 offline reproduction fixtures,
+8 reader-route tests, 8 workspace-doctor tests, the release-definition gate,
+and the complete documentation gate (340 documents, 662 identifiers, 38 diagrams).
+The existing confidentiality hooks remain enabled. GitHub CI results are
+separate from local tests and Git publication; the preceding `1e73ae5` already
+had a failing Repository boundaries workflow and a passing Reproduction offline
+workflow. This consolidation is not a new binary release or R4 qualification.
+
+No build, installer, VM, simulator, Cloud operation or large artifact transfer
+was needed. Shared Docker and unrelated workloads remain untouched. Next work
+is the already planned R4 clean-SSD campaign after settling the declared Builder
+cache/acquisition and shared Docker storage-isolation boundaries.
 
 ### 2026 October 9 R2 and R3 source publication
 

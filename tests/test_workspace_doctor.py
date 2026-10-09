@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import re
+import runpy
 import unittest
 from pathlib import Path
 
@@ -43,6 +44,16 @@ class WorkspaceDoctorTests(unittest.TestCase):
     def test_contract_contains_no_personal_absolute_path(self) -> None:
         for path in (MANIFEST, SCHEMA, DOCTOR):
             self.assertNotIn("/Users/" + "alexagizim", path.read_text(encoding="utf-8"))
+
+    def test_main_and_historical_branches_do_not_require_rewriting_release_pins(self) -> None:
+        accepted_branch = runpy.run_path(str(DOCTOR))["accepted_branch"]
+        for item in [self.manifest["workspace"], *self.manifest["repositories"]]:
+            branches = item["acceptedBranches"]
+            self.assertTrue(accepted_branch("main", branches))
+            for branch in branches:
+                self.assertTrue(accepted_branch(branch, branches))
+            self.assertFalse(accepted_branch("", branches))
+            self.assertFalse(accepted_branch("unreviewed-experiment", branches))
 
     def test_manifest_covers_runtime_and_component_boundaries(self) -> None:
         identifiers = {item["id"] for item in self.manifest["repositories"]}
