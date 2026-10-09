@@ -3,6 +3,7 @@
 
 """Root-only reader navigation and documented command-shape regression tests."""
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -13,6 +14,37 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CHECK = ROOT / 'scripts/docs-check'
+
+
+class InteractiveStorageSnippetTests(unittest.TestCase):
+    @unittest.skipUnless(shutil.which('zsh'), 'interactive zsh is required')
+    def test_storage_definition_survives_interactive_history_expansion(self):
+        guide = (ROOT / 'docs/getting-started/macos-developer-tools.md').read_text()
+        block = re.findall(r'```sh\n(.*?)```', guide, re.S)[0]
+        self.assertTrue(block.rstrip().endswith('\nsdv_check_storage'))
+        # Parse the exact guide definition in an interactive reader. Never call
+        # it: this fixture must not prompt, probe disks or write to a volume.
+        definition = block.rsplit('\nsdv_check_storage', 1)[0]
+        for label, candidate in (
+                ('guide', definition),
+                ('known-unsafe-control', 'sdv_check_storage() {\ncase 123 in\n'
+                 "  *[!0-9]*) printf invalid ;;\nesac\n}")):
+            with self.subTest(label=label):
+                result = subprocess.run(
+                    [shutil.which('zsh'), '-d', '-f', '-i'],
+                    input='setopt BANG_HIST\n' + candidate
+                          + '\nwhence -w sdv_check_storage\nexit\n',
+                    text=True, capture_output=True, timeout=10,
+                    env={**os.environ, 'HISTFILE': '/dev/null', 'LC_ALL': 'C'},
+                )
+                if label == 'known-unsafe-control':
+                    self.assertIn('event not found', result.stderr)
+                    self.assertNotIn('sdv_check_storage: function', result.stdout)
+                else:
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertNotIn('event not found', result.stderr)
+                    self.assertNotIn('parse error', result.stderr)
+                    self.assertIn('sdv_check_storage: function', result.stdout)
 
 
 class ReaderRouteTests(unittest.TestCase):

@@ -59,9 +59,7 @@ sdv_check_storage() {
     false) sdv_kind=external ;;
     *) printf 'STOP: Cannot identify the selected local disk.\n' >&2; return 1 ;;
   esac
-  case "$sdv_free_kib" in
-    ''|*[!0-9]*) printf 'STOP: Cannot determine free space.\n' >&2; return 1 ;;
-  esac
+  printf '%s\n' "$sdv_free_kib" | LC_ALL=C grep -Eq '^[0-9]+$' || { printf 'STOP: Cannot determine free space.\n' >&2; return 1; }
   [ "$sdv_free_kib" -gt 0 ] || { printf 'STOP: The selected volume has no free space.\n' >&2; return 1; }
 
   SDV_PARENT=${sdv_parent%/}

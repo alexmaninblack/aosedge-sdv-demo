@@ -36,6 +36,17 @@ device dump is not evidence that the revised block has been executed.
 Static checks cover shell syntax in `sh` and `zsh`, documentation references
 and Git whitespace; no preflight, installer, build or regression suite is run.
 
+The owner's subsequent paste exposed `zsh: event not found: 0`: the numeric
+negation glob triggered interactive history expansion before the function
+could be defined. Static `sh -n`/`zsh -n` checks did not exercise that reader.
+The corrected guide uses a quoted numeric regular expression, not a history
+option change. The exact original error was reproduced in an isolated
+interactive zsh; the corrected bracketed paste successfully checked the new
+SSD read-only and rejected a nonexistent path. A narrowly scoped regression
+fixture defines, but does not run, the guide function in interactive zsh with
+history expansion enabled and includes an unsafe positive control. No build,
+installer, source preparation or broad regression campaign is part of this fix.
+
 ### 2026 October 9 README and build-storage source publication
 
 The owner explicitly requested committing and pushing all pending README,
