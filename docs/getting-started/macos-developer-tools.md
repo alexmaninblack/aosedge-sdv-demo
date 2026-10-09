@@ -10,23 +10,84 @@ any error. Do not paste the whole page as a script.
 
 ## 1 Select the Mac and storage
 
+Paste this block into the same Terminal session. Enter an existing absolute
+directory path when prompted. It checks the Mac and selected storage without
+creating files or changing the disk, then prints a short result. On failure it
+prints `STOP` and a reason; correct that issue and repeat this block. Continue
+to the next block only after `Storage check: PASS`.
+
 ```sh
-uname -m
-sw_vers -productVersion
-printf 'Existing build parent directory (absolute path, internal or external disk): '
-read -r SDV_PARENT
-test -d "$SDV_PARENT"
-SDV_DEVICE=$(df -P "$SDV_PARENT" | awk 'NR == 2 { print $1 }')
-diskutil info "$SDV_DEVICE"
-df -h "$SDV_PARENT"
+sdv_check_storage() {
+  local sdv_arch sdv_os sdv_parent sdv_df sdv_device sdv_info
+  local sdv_format sdv_writable sdv_internal sdv_mount sdv_free_kib sdv_kind sdv_name
+  SDV_PARENT=
+  sdv_arch=$(uname -m)
+  sdv_os=$(sw_vers -productVersion)
+  [ "$sdv_arch" = arm64 ] || { printf 'STOP: Use an Apple Silicon Mac and a native Terminal, not Rosetta.\n' >&2; return 1; }
+  [ "${sdv_os%%.*}" -ge 26 ] 2>/dev/null || { printf 'STOP: macOS 26 or later is required.\n' >&2; return 1; }
+
+  printf 'Existing build parent directory (absolute path, internal or external disk): '
+  read -r sdv_parent || return 1
+  case "$sdv_parent" in
+    /*) ;;
+    *) printf 'STOP: Enter an absolute directory path.\n' >&2; return 1 ;;
+  esac
+  [ -d "$sdv_parent" ] && [ -x "$sdv_parent" ] && [ -w "$sdv_parent" ] || { printf 'STOP: Choose an existing directory you can open and write to.\n' >&2; return 1; }
+  sdv_df=$(LC_ALL=C df -kP "$sdv_parent" 2>/dev/null) || { printf 'STOP: Cannot read the selected disk.\n' >&2; return 1; }
+  sdv_device=$(printf '%s\n' "$sdv_df" | awk 'NR == 2 { print $1 }')
+  sdv_free_kib=$(printf '%s\n' "$sdv_df" | awk 'NR == 2 { print $4 }')
+  case "$sdv_device" in
+    /dev/disk*) ;;
+    *) printf 'STOP: Choose a mounted local disk, not a network share.\n' >&2; return 1 ;;
+  esac
+  sdv_info=$(diskutil info -plist "$sdv_device" 2>/dev/null) || { printf 'STOP: Cannot inspect the selected volume.\n' >&2; return 1; }
+  sdv_format=$(printf '%s' "$sdv_info" | plutil -extract FilesystemType raw -o - - 2>/dev/null)
+  sdv_writable=$(printf '%s' "$sdv_info" | plutil -extract WritableVolume raw -o - - 2>/dev/null)
+  sdv_internal=$(printf '%s' "$sdv_info" | plutil -extract Internal raw -o - - 2>/dev/null)
+  sdv_mount=$(printf '%s' "$sdv_info" | plutil -extract MountPoint raw -o - - 2>/dev/null)
+  sdv_name=$(printf '%s' "$sdv_info" | plutil -extract VolumeName raw -o - - 2>/dev/null)
+  [ "$sdv_format" = apfs ] && [ "$sdv_writable" = true ] && [ -d "$sdv_mount" ] && [ -n "$sdv_name" ] || { printf 'STOP: Choose a mounted, writable APFS volume. No disk has been changed.\n' >&2; return 1; }
+  case "$sdv_parent" in
+    /Volumes|/Volumes/*)
+      case "$sdv_parent/" in
+        "$sdv_mount/"*) ;;
+        *) printf 'STOP: The selected external volume is not mounted at this path. Reconnect it; do not create a replacement folder.\n' >&2; return 1 ;;
+      esac ;;
+  esac
+  case "$sdv_internal" in
+    true) sdv_kind=internal ;;
+    false) sdv_kind=external ;;
+    *) printf 'STOP: Cannot identify the selected local disk.\n' >&2; return 1 ;;
+  esac
+  case "$sdv_free_kib" in
+    ''|*[!0-9]*) printf 'STOP: Cannot determine free space.\n' >&2; return 1 ;;
+  esac
+  [ "$sdv_free_kib" -gt 0 ] || { printf 'STOP: The selected volume has no free space.\n' >&2; return 1; }
+
+  SDV_PARENT=${sdv_parent%/}
+  printf 'Mac: Apple Silicon, macOS %s\n' "$sdv_os"
+  printf 'Storage: %s\n' "$SDV_PARENT"
+  printf 'Volume: %s (%s, APFS)\n' "$sdv_name" "$sdv_kind"
+  printf 'Write access: available (permission check)\n'
+  awk -v kib="$sdv_free_kib" 'BEGIN { printf "Free space: %.1f GiB\n", kib / 1048576 }'
+  printf 'Storage check: PASS — format and access only; build capacity is checked separately.\n'
+}
+sdv_check_storage
 ```
 
-Expect `arm64`, macOS 26 or later and a writable **local APFS volume**. For
-example, select your existing home directory for internal storage or an already
-mounted `/Volumes/BUILD` for external storage. Do not create a missing
-`/Volumes/...` directory: it could put the build on the internal disk. If the
-checks disagree, stop here. Check the selected release's space requirements
-before acquisition; the DMG size is not the required build capacity.
+The result identifies your selected path, volume name, internal/external location, APFS,
+write permission and available GiB. It does not print partition identifiers,
+UUIDs or the full device report. For example, choose your existing home
+directory for internal storage or an already mounted `/Volumes/BUILD` for an
+external disk. A missing external mount must not fall back to an internal
+directory. `SDV_PARENT` is set only after a successful check; keep this Terminal
+open for the next block.
+
+This is a read-only format/access preflight, not a test write or proof that a
+complete build fits. The selected build/source preparation commands retain
+their own space allowances and reserves. Check those before acquisition;
+the DMG size is not the required build capacity. Full device details are only
+needed for a separately requested diagnosis, not the normal walkthrough.
 
 The storage-aware scripts are a source update awaiting regression execution.
 The currently frozen candidate's complete chain still requires the external

@@ -14,6 +14,28 @@ records the owner-authorized README and build-storage source handoff. Earlier
 local-only entries below retain their original checkpoint state; they are
 superseded by that publication, not retroactive build or test evidence.
 
+### 2026 October 9 Guided storage preflight presentation
+
+The owner completed the first macOS preparation block on the new APFS SSD,
+then requested a concise, automatically checked result instead of the full
+device report. Class A documentation/UX correction within the accepted host
+and storage requirements. Only the first block and its explanation change;
+the source-selection and later build steps are not executed by this edit.
+
+The block uses built-in macOS tools, checks native Apple Silicon/macOS 26,
+an existing writable directory, a local writable APFS volume and a real mount
+for a `/Volumes` path. It reports path, volume name, location, access and
+free GiB, or an explicit `STOP` reason. No temporary file, formatter, installer,
+permission change or source clone is invoked. Success is format/access only,
+not a claim that a complete build fits; existing capacity guards remain intact.
+The selected parent variable is cleared before a retry and assigned only on
+success. Commands remain in the guide, not in parallel chat instructions.
+
+The revised block awaits the owner's walkthrough. The earlier successful
+device dump is not evidence that the revised block has been executed.
+Static checks cover shell syntax in `sh` and `zsh`, documentation references
+and Git whitespace; no preflight, installer, build or regression suite is run.
+
 ### 2026 October 9 README and build-storage source publication
 
 The owner explicitly requested committing and pushing all pending README,
