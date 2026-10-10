@@ -3,11 +3,12 @@
 
 # M1 installation and E2E verification on 10 October 2026
 
-The newly built `1.2.0-rc.1` DMG has passed transfer verification and a fresh
-installation on the separate M1. The Factory VM password was accepted and the
-VM started. The installed staging journey then exposed a backend build-file
-permission defect and is **not complete**. Earlier Kit028 results do
-not qualify this candidate.
+The original source-built `1.2.0-rc.1` DMG exposed a backend build-file permission
+defect after successful M1 installation and VM password enrollment. The defect
+is corrected in source; rebuilt r5 media has now passed a separate fresh M1
+installation and backend-image preparation. Its live staging journey is in
+progress and **not complete**. Earlier Kit028 results do not qualify either
+candidate. Candidate identities and recovery evidence are separated below.
 
 ## Candidate and target
 
@@ -90,8 +91,65 @@ The build adapter now exports a bounded pinned Git tree into private owned
 scratch with explicit public file modes, excluding Git metadata and untracked
 inputs. Its versioned context policy invalidates the affected image keys.
 Four context regression tests and 91 existing reproduction tests passed.
-A corrected immutable package and its complete M1 journey remain required;
-the transient proof does not qualify the failing DMG.
+Twenty chain tests, eight build-result tests and 29 cache/capacity tests also
+passed (152 targeted tests in total). The source correction is committed as
+`82dc1cca93645e0e5d4597dc41c32d5010fc7c81`. The r5 qualification plan pins that
+revision only for component production; unaffected producer roles remain
+unchanged. The public launcher is not yet promoted to this qualification plan.
+
+Both corrected images were then tested directly, without permission patches,
+as UID 1000 in disposable network-disabled, read-only containers with a
+memory-backed database directory. Fresh and repeated database startup returned
+HTTP 200 / `ready: true` for Brake schema 5 and Tire schema 4. Context readiness
+correctly stayed unavailable without a provisioned vehicle. Image identities:
+
+- Brake: `sha256:7a76fa8a9f100a2d8d5a98575554b91857bc958144e78954883f85c916f604f9`.
+- Tire: `sha256:c6c90b66ee33ae5f11e19957d579317dfc5f10c7cc770e43fb22317275c6e64f`.
+
+These image checks do not qualify the full DMG. Corrected media assembly and
+its fresh M1 installation/journey are tracked separately from the failed
+candidate; CARLA and Factory are reused rather than rebuilt.
+
+### Corrected media
+
+All 17 steps of the r5 source-build chain completed on the selected build SSD.
+The resulting media remains `CHAIN_BUILT_NOT_QUALIFIED`, not a promoted release.
+
+| Item | Corrected candidate |
+| --- | --- |
+| Build chain | `81bcdb5e30d3e2004d054d82b3d92949464d595863b3b97d92e05358a352072b` |
+| Media bytes | 14,160,792,575 |
+| Media SHA-256 | `e4fdebfe11762f6aaeba519fbc158df40151f866f62028160524d6b70bbf3ed3` |
+| Kit manifest SHA-256 | `57c61087778b31a0c50bc513ea44f53a2d2d5461287ae8cc88962585eeb81fc0` |
+| Setup executable SHA-256 | `52fd323896a7d9ba586b7e5f749e9d17fa4f48a1d0d629d0bb2ed012e388f870` |
+| Installation instance | Fresh `SDV-E2E-R5` on the M1 internal disk |
+
+Corrected-candidate private records use `m1-e2e-r5-20261010-install` and
+`m1-e2e-r5-20261010-journey` under the same qualification-record parent.
+
+Transfer/checksum (171.16 s), mount/signature (79.65 s), preflight (5.28 s),
+installation (122.34 s), preparation (35.28 s) and backend image preparation
+(7.63 s) all passed on M1.
+
+The attempted selection of the corrected package for the old instance was
+blocked by the intentional `CURRENT_RUN_RETAINED` rule. Read-only reconciliation
+confirmed the old selection and Test were unchanged. No selection guard,
+package file or journal was altered to bypass that rule.
+
+For disposal only, the known public-file permission correction was applied to
+the writable layers of the old exact-owned containers, preserving file bytes,
+image identities and the non-root service identity. The temporary helper first
+rejected Tire TypeScript/schema files; it stopped the containers and restored
+the original modes. After reconciling the saved retirement phase, the corrected
+helper normalized only the observed public source/schema files. Normal Finish
+then completed its backend checks and removed the unprovisioned Test, its
+overlay, owned containers and empty storage. No Cloud object existed or was
+deleted. Temporary changes disappeared with the retired containers. This is
+cleanup recovery evidence, not a passing installation or product acceptance
+test for either candidate.
+
+The corrected candidate's fresh full scripted journey started after that
+retirement. Its separate records, not the cleanup recovery, establish results.
 
 The runner classified the incomplete Create as uncertain and its automatic
 cleanup could not bind the partially created Test (`TEST_IDENTITY_CHANGED`).
@@ -117,14 +175,14 @@ Host sleep/wake and external-SSD operation are excluded from the M1 internal
 storage campaign. Deferred readiness and VDP timeout investigations are not
 silently reopened or declared fixed by this run.
 
-At 11:10 UTC, ordinary shutdown passed with zero owned demo processes and
+For the original candidate, at 11:10 UTC, ordinary shutdown passed with zero owned demo processes and
 listeners. Docker Engine and persistent installation/Test state were preserved;
 Finish was not executed. The scripted summary is eight passes (including
 shutdown), one unresolved Create and 89 steps not run. No components or services
 were published during this run.
 
-Do not blindly resume the failing image or request another password: VM access
-is already enrolled. Preserve this Test and its fault evidence while building
-the corrected candidate. A new candidate needs new bindings and qualification
-records; no pass is inherited merely from the former installation. The Keychain
-save failure and the harness's handling of partial Create remain separate findings.
+The original Test is now retired through the recovery described above; its fault
+evidence is retained. A new candidate has new bindings and qualification records;
+no pass is inherited merely from the former installation. The Keychain save
+failure and the harness's handling of partial Create remain separate findings.
+A fresh Test has its own VM-access enrollment.
