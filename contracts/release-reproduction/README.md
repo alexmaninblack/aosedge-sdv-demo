@@ -783,6 +783,11 @@ role, retaining all seventeen steps and the same source/input pins. This activat
 the temporary-storage amendment in actual worker checkouts, not only in the
 launcher's current source. Historical `r1`–`r3` plans remain unchanged.
 
+The M1 correction plan `r5` changes only the components producer to the committed
+public-source context fix. It preserves all seventeen steps, component/source
+pins and the other producer roles. Capacity guards are unchanged. The public
+launcher stays on its previous plan until the corrected candidate is checked.
+
 The complete chain requires explicit retained kit/SDK inputs on the bound volume,
 declared build tools, a short same-volume test directory and an authorized signing
 fingerprint. It retains the per-owner guards and preflights 76 GiB additional
