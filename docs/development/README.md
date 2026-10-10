@@ -14,6 +14,8 @@ qualification remain open. The [full-source route](../getting-started/full-sourc
 has separate unresolved prerequisites. Specialist command options and dated
 proof remain in [R2 commands and evidence](release-reproduction-r2.md), with
 the original [R1 inventory](release-reproduction-r1.md) retained for provenance.
+The [public artifact preparation record](public-artifact-preparation.md) tracks
+the actual notice/source materials and remaining gates for anonymous delivery.
 
 ## Choose the Change Boundary
 

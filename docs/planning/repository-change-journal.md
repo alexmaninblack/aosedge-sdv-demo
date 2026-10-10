@@ -14,6 +14,32 @@ records the owner-authorized README and one-run launcher source handoff. Earlier
 local-only entries below retain their original checkpoint state; source
 publication does not constitute retroactive build or test evidence.
 
+### 2026 October 10 Public distribution materials preparation
+
+The owner approved preparing the public artifact set after the activation
+preflight. A private SSD review bundle now contains 29 exact installed recipes,
+39 checksum-verified source inputs, retained/supplemental license notices and
+machine-readable preparation evidence. Four smaller dependency archives were
+fully verified for nested inspection. The simulator was not downloaded in full;
+only a bounded prefix supplied 22 hash-verified Python notice/metadata files.
+
+The [preparation record](../development/public-artifact-preparation.md) states
+the evidence limits and remaining gates. Factory was inspected read-only,
+without a VM. VDP inner profiles were inspected without executing their code.
+Factory Yocto license/source recovery requires inspecting the unconnected
+original build SSD; those records were not found on the current host. Two
+external Homebrew patch inputs also remain unresolved. Simulator
+asset/runtime terms and complete source/notice delivery still need closure.
+The prepared materials are not a complete corresponding-source offer, an
+approved EULA, or a publicly usable dependency release.
+
+Old immutable archives, source pins and private Drive permissions were not
+changed. No build, installation, public upload or runtime was started.
+`PUBLIC_PIN` remains inactive. Preparation/checksum results are retained on the
+SSD, with a resume checklist; this is real material preparation but not public
+activation. No new routine sharing authorization is required for the already
+authorized reviewed set.
+
 ### 2026 October 10 Public artifact activation preflight
 
 The owner authorized activating anonymous artifact access. The separate-public-

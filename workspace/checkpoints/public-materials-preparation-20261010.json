@@ -1,0 +1,39 @@
+{
+  "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
+  "schemaVersion": 1,
+  "prepared": "2026-10-10",
+  "status": "PREPARATION_NOT_DISTRIBUTION_APPROVAL",
+  "publicationAllowed": false,
+  "integrationSourceRevision": "266e1c6269f890f180c57e1d33fd8bcbdbc70d95",
+  "bundle": {
+    "directoryName": "distribution-materials",
+    "fileManifestSha256": "16e02cc6ee0364164b6df5bc3e23c0d10de869fae27de4427427ef73e76e4b88",
+    "filesInManifest": 339,
+    "totalBytesIncludingManifestAndChecksums": 321162679,
+    "installedRecipes": 29,
+    "verifiedSourceInputs": 39,
+    "noticeFiles": 263,
+    "completeCorrespondingSource": false
+  },
+  "verifiedArchiveRoles": [
+    "host-support",
+    "gateway-sdk",
+    "vehicle-bases",
+    "factory-image"
+  ],
+  "simulator": {
+    "fullPayloadReview": false,
+    "pythonNoticeMetadataFilesVerified": 22,
+    "boundedCompressedBytesRead": 33554432
+  },
+  "remainingGates": [
+    "factory-source-records",
+    "exact-recipe-patches",
+    "bundled-dependency-source-notices",
+    "simulator-content-terms",
+    "recipient-delivery"
+  ],
+  "sharingChanged": false,
+  "publicCatalogActive": false,
+  "buildsOrRuntimeStarted": false
+}
