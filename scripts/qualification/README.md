@@ -155,14 +155,20 @@ without turning them into native acceptance. Matching signed Setup media remains
 the runner uses its embedded worker and launch validation.
 
 The sequence covers dependency readiness, signed Setup backend preparation,
-existing OEM/SP reference selection and Cloud access, controller creation and
-provisioning, CARLA connection, sequential VDP V1/V2/V3 and Brake V1/V2/V3,
+existing OEM/SP reference selection and Cloud access, controller creation,
+CARLA startup, provisioning and connection, sequential VDP V1/V2/V3 and Brake V1/V2/V3,
 Tire V1, real maneuvers and fresh backend/advisory observations. It then checks
 independent Reset with observed history preservation, Return to road, five
 minutes of external-OFF local processing and queued recovery after ON,
 same-identity stationary ignition, and demo shutdown. Version numbers are
 allocated by the installed product; the runner never guesses or pre-publishes
 all versions. VDP publication requires physical Safe Stop.
+
+Start CARLA before provisioning: the product establishes the protected source
+connection before assigning Test-set membership, which may immediately offer
+an existing Cloud component. Provisioning first can start FOTA before its
+Gateway credentials exist. Never bypass the active-transaction credential guard
+to compensate for a reversed test sequence.
 
 Brake V3 advisory correlation also accepts its documented first-activation
 decision from the exact pinned V2 release, when that assessment is still present

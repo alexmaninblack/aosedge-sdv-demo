@@ -387,3 +387,41 @@ candidate must pass fresh enrollment without an in-memory correction.
 All 93 affected access, VM and Presenter-operation regression tests pass,
 including fragmented decorated prompts, rejection of kernel-banner hashes,
 unknown escapes and non-root prompts. The documentation gate also passes.
+
+### Diagnostic continuation and harness ordering
+
+The retained Test completed idempotent Create (42.168 s), start (5.877 s),
+provisioning (42.103 s) and CARLA startup (102.827 s). Connection then returned
+`SOURCE_TRUST_COMPONENT_TRANSACTION_ACTIVE:test`. This is a harness ordering
+defect, not permission to weaken the guest transaction guard: the runner put
+provisioning before simulation. Test-set membership therefore offered the
+existing VDP 136.0.0 before Gateway onboarding. The guest had no active VDP,
+zero provider restarts and an `install-or-replace` transaction waiting for
+Safe Stop. The Controller was held, stationary in Manual with brake 1.0;
+the guest data gate was BLOCKED.
+
+The product already establishes authenticated source identity before membership
+when CARLA is running. The runner now starts CARLA before provisioning, with an
+explicit ordering regression. All 73 journey/campaign fixture tests pass. No
+transaction file was removed, credential guard bypassed, timeout increased or
+Factory changed. The public launcher's candidate remains unpromoted.
+
+Ordinary non-destructive shutdown could not confirm cancellation of that partial
+initial connection. Once its cause was classified, the standing staging-test
+authorization was used for normal Finish of this exact Test only. The product
+retired its Cloud Unit, VM overlay and owned backend run data. A local diagnostic
+helper failed to parse a non-JSON progress line after the operation returned;
+no retirement was repeated. Fresh read-only reconciliation proved the exact
+Cloud Unit absent, current-run journal absent, zero owned demo processes and
+listeners, and Docker Engine preserved. Factory, packages, credentials and
+compact diagnostic/attempt evidence remain. The failed r7 sequence is not a
+passing first-use or full E2E result.
+
+## Incremental r8 candidate
+
+The qualification-only r8 plan selects application/media producer
+`9c1274bb872888939a936fd2cc1af01fc6300c1b`, containing the proven terminal-control
+prompt correction. The source build runs on the selected SSD and reuses Factory,
+CARLA and unchanged component producers. Fresh media and live qualification
+remain pending. The next candidate uses a new instance and evidence binding,
+the corrected harness order and the same explicit private test-password input.

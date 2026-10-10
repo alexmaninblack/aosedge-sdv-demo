@@ -175,8 +175,12 @@ def plan(config):
     add('presenter', 'presenter-start', timeout=90)
     op('controller-create', 'create', image=config['image'])
     op('controller-start', 'start-vms')
-    op('provision', 'provision')
+    # Provision binds Gateway credentials before Test-set membership only
+    # when the simulator is already running. Membership may immediately
+    # offer the existing Cloud component, so starting simulation later can
+    # deadlock first onboarding against an active FOTA transaction.
     op('simulation', 'start-simulation')
+    op('provision', 'provision')
     op('connect', 'connect-test')
     vdp('v1'); service('brake', 'v1', first=True)
     vdp('v2'); service('brake', 'v2')

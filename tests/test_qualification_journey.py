@@ -23,6 +23,13 @@ class Clock:
 
 
 class JourneyTests(unittest.TestCase):
+    def test_simulator_precedes_provisioning_and_automatic_fota_membership(self):
+        ids = [step['id'] for step in p.plan({'image': 'factory'})]
+        self.assertLess(ids.index('controller-create'), ids.index('simulation'))
+        self.assertLess(ids.index('simulation'), ids.index('provision'))
+        self.assertLess(ids.index('provision'), ids.index('connect'))
+        self.assertLess(ids.index('connect'), ids.index('vdp-v1-safe'))
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
