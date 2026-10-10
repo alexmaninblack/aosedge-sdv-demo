@@ -29,11 +29,21 @@ def fixed_code(value):
     return value if isinstance(value, str) and re.fullmatch('[A-Z][A-Z0-9_]{1,100}', value) else None
 
 
+def fixed_reason(value):
+    # Source guest failures append the fixed role, not arbitrary diagnostics.
+    # Preserve the reason while still excluding free text and secret suffixes.
+    if isinstance(value, str):
+        match = re.fullmatch(r'([A-Z][A-Z0-9_]{1,100}):(test|production)', value)
+        if match:
+            return match.group(1)
+    return fixed_code(value)
+
+
 def job_projection(job):
     """Bounded product fields only; exclude arbitrary progress/text/logs."""
     return dict(productState=fixed_code(job.get('state')), results=[
         dict(state=fixed_code(row.get('state')),
-             code=fixed_code(row.get('message')) or fixed_code((row.get('facts') or {}).get('reason')))
+             code=fixed_reason(row.get('message')) or fixed_reason((row.get('facts') or {}).get('reason')))
         for row in job.get('results', [])[-12:]])
 
 

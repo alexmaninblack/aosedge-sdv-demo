@@ -107,6 +107,17 @@ class CampaignTests(unittest.TestCase):
         self.assertLess(ids.index('vm-access'),ids.index('controller-create'))
         self.assertEqual(j.report([],steps)['nativeAcceptance'],'NOT_RUN')
 
+    def test_guest_role_suffix_keeps_fixed_reason_but_no_free_text(self):
+        self.assertEqual(w.fixed_reason('SOURCE_TRUST_COMPONENT_TRANSACTION_ACTIVE:test'),
+                         'SOURCE_TRUST_COMPONENT_TRANSACTION_ACTIVE')
+        self.assertEqual(w.fixed_reason('SOURCE_READ_TIMEOUT:production'),'SOURCE_READ_TIMEOUT')
+        for text in ('SOURCE_ERROR:PRIVATE_TEXT','SOURCE_ERROR:test:PRIVATE_TEXT',
+                     'SOURCE_ERROR:test\nPRIVATE_TEXT','private arbitrary text'):
+            self.assertIsNone(w.fixed_reason(text))
+        value=w.job_projection(dict(state='BLOCKED',results=[dict(state='BLOCKED',
+            message='SOURCE_TRUST_COMPONENT_TRANSACTION_ACTIVE:test')]))
+        self.assertEqual(value['results'][0]['code'],'SOURCE_TRUST_COMPONENT_TRANSACTION_ACTIVE')
+
     def test_bound_partial_create_can_continue_only_when_explicit(self):
         step=dict(id='controller-create',kind='presenter',args=dict(action='create'))
         calls=[]

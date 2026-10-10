@@ -425,3 +425,17 @@ prompt correction. The source build runs on the selected SSD and reuses Factory,
 CARLA and unchanged component producers. Fresh media and live qualification
 remain pending. The next candidate uses a new instance and evidence binding,
 the corrected harness order and the same explicit private test-password input.
+
+The additional 112 source/Unit/trust/lifecycle fixtures pass with their explicit
+developer OpenSSL dependency. An initial invocation selected an unrelated stale
+workstation artifact manifest; isolating the source-only fixture dependency
+removed that harness contamination without changing product validation or
+qualifying packaged OpenSSL. The campaign's bounded diagnostic projection also
+now retains fixed guest error codes with a `:test` / `:production` suffix while
+discarding the suffix and all arbitrary text. All 74 journey/campaign tests
+pass after this evidence-only improvement.
+
+The unused r6 DMG transfer copy on M1 was removed after verifying its exact
+size, no mount and no open handles; its original remains on the build SSD.
+r7 media was normally detached after shutdown. M1 free space was 153.5 GiB
+before the r8 transfer. Packages, credentials and compact evidence were retained.
