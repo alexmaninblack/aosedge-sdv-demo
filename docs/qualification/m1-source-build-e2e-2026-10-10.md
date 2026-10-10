@@ -6,8 +6,9 @@
 The original source-built `1.2.0-rc.1` DMG exposed a backend build-file permission
 defect after successful M1 installation and VM password enrollment. The defect
 is corrected in source; rebuilt r5 media has now passed a separate fresh M1
-installation and backend-image preparation. Its live staging journey is paused
-at first VM-password enrollment and **not complete**. Earlier Kit028 results do not qualify either
+installation and backend-image preparation. Its live staging journey exposed
+a separate serial-console prompt defect and is **not complete**. The prompt
+correction is source-only; the installed r5 media remains unchanged. Earlier Kit028 results do not qualify either
 candidate. Candidate identities and recovery evidence are separated below.
 
 ## Candidate and target
@@ -176,6 +177,46 @@ lifecycle phase. The ordinary product Create supports continuing that partial
 record without manufacturing again. Historical attempts are retained; none was
 rewritten into a pass. This recovery is separate engineering evidence, not a
 claim that first-use password cancellation or Keychain saving passed.
+
+### Serial console recovery on the retained r5 Test
+
+The 14:20 UTC continuation reused the same Test and Presenter. Native password
+input completed, but the progress jumped directly from waiting for the console
+to claiming authentication, without a Linux login/password exchange. Enrollment
+then ended with `SSH_CONSOLE_ENROLLMENT_INCOMPLETE` in 110.66 seconds. No host key
+was pinned. The normal stop attempt also remained incomplete: the guest had not
+yet reached Linux, so ACPI powerdown did not stop the emulator.
+
+Bounded serial inspection found the GRUB boot-entry editor (`setparams 'boot'`),
+not a Linux shell. Discarding its unsaved edit and selecting the existing boot
+entry started Linux; an SSH banner was independently observed. No disk boot
+configuration, immutable image, package bytes or security setting was changed.
+The precise earlier serial chunk was not retained, so its bytes are not claimed
+as a captured causal trace.
+
+A local protocol fixture established the source defect: with a synthetic kernel
+banner fragmented immediately after `#`, the old parser sent the SSH enrollment
+command before receiving any login prompt. The corrected parser requires the
+Factory's explicit root prompt and sends nothing for that fragment. The same
+fixture after correction confirmed this; synthetic passwords were not emitted.
+Regression coverage also verifies normal login and a retained authenticated
+root shell, alongside the existing wrong-password and host-key checks.
+All 81 targeted guest-access, native-access, VM, portable-VM and Presenter
+operation tests passed. No package/image build was run for this source fix.
+
+After the boot recovery, the ordinary product Create reopened the native dialog
+on M1 and it was visually confirmed. That dialog expired without input after
+180 seconds; its Create attempt took 185.63 seconds. Normal shutdown then passed
+in 13.18 seconds, with zero owned demo processes/listeners, persistent Test and
+installation data preserved, and Docker Engine left running. No Cloud Unit,
+component publication or service deployment was created. The summary remains
+eight passes, one incomplete Create and 89 steps not run. These results do not
+qualify the source-only prompt correction or a complete E2E journey.
+
+The next live continuation must keep the retained Test, reconcile the recorded
+partial Create and use fresh native password input. Rebuilding/promoting media
+and claiming clean first-boot acceptance require separate verification of the
+console correction; neither is implied by this recovery.
 
 ## Evidence and remaining acceptance
 

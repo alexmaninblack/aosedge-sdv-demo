@@ -252,6 +252,39 @@ class LocalProtocolTests(unittest.TestCase):
             enroll_serial(self.server(exchange), self.access, 10022, time.monotonic() + 5, "fixture-wrong")
         self.assertFalse((self.access / "known_hosts").exists())
 
+    def test_fragmented_boot_hash_is_not_an_authenticated_shell(self):
+        def exchange(connection):
+            self.assertEqual(b"\r", connection.recv(8192))
+            connection.sendall(b"\r\nLinux version fixture #")
+            connection.settimeout(.15)
+            with self.assertRaises(socket.timeout):
+                connection.recv(8192)
+            connection.settimeout(3)
+            connection.sendall(b"1 SMP\r\nfixture login: ")
+            self.assertEqual(b"root\r", connection.recv(8192))
+            connection.sendall(b"Password: ")
+            self.assertEqual(b"fixture-password\r", connection.recv(8192))
+            connection.sendall(b"\r\nroot@fixture:~# ")
+            self.assertIn(b"authorized_keys", connection.recv(16384))
+            connection.sendall(b"\r\nDEMO_HOSTKEY_BEGIN\r\nssh-ed25519 AAAAFixtureOnly\r\nDEMO_HOSTKEY_END\r\n")
+
+        enroll_serial(self.server(exchange), self.access, 10022,
+                      time.monotonic() + 4, "fixture-password")
+        self.assertTrue((self.access / "known_hosts").is_file())
+
+    def test_existing_factory_root_shell_can_complete_enrollment(self):
+        def exchange(connection):
+            self.assertEqual(b"\r", connection.recv(8192))
+            connection.sendall(b"\r\nroot@main:/home/root# ")
+            command = connection.recv(16384)
+            self.assertIn(b"authorized_keys", command)
+            self.assertNotIn(b"fixture-password", command)
+            connection.sendall(b"\r\nDEMO_HOSTKEY_BEGIN\r\nssh-ed25519 AAAAFixtureOnly\r\nDEMO_HOSTKEY_END\r\n")
+
+        enroll_serial(self.server(exchange), self.access, 10022,
+                      time.monotonic() + 4, "fixture-password")
+        self.assertTrue((self.access / "known_hosts").is_file())
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1806,6 +1806,10 @@ until a producer manifest binding is integrated; metadata is never guessed.
   CLI, the owned serial console and a new per-VM key. Pin the guest public host
   key through that console. Do not extract passwords from legacy tools or accept
   them in API/argv/journal. Noninteractive first start reports missing enrollment.
+  Enrollment commands require the Factory's explicit `root@hostname:path#`
+  shell prompt; a bootloader line or fragmented kernel banner ending in `#`
+  is not authenticated shell evidence. An already authenticated root console
+  remains supported without resubmitting the password.
 - stop asks the guest to power off over SSH, falling back to QMP powerdown.
   Wait for process exit and disk release, with no automatic forced kill. Keep
   overlay/identity/access material. Stop shared DNS only after the last owned VM.

@@ -215,7 +215,10 @@ def enroll_serial(serial, access, port, deadline, password, progress=None):
                 stage = "SHELL_PROMPT"
                 progress("console credentials submitted; waiting for shell")
                 buffer = ""
-            elif re.search(r"(?:^|[\r\n])[^\r\n]*# *$", buffer):
+            # Serial chunks can end at the '#' in a kernel build banner or
+            # bootloader text. Only the Factory's root shell prompt permits
+            # enrollment commands; a hash alone does not prove Linux login.
+            elif re.search(r"(?:^|[\r\n])root@[A-Za-z0-9_.-]+:(?:~|/)[^\r\n]*# *$", buffer):
                 authenticated = True
                 break
         if not authenticated:
