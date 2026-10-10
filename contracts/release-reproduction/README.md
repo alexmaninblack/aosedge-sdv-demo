@@ -433,12 +433,20 @@ mode remains available for maintainers. Public-read failure must never trigger
 OAuth, Google CLI installation, account questions or a private transport fallback.
 
 The public distribution folder is separate from historical/private artifacts.
-Publication needs prior content/redistribution review, read-only link sharing
-and a reviewed persistent `release-index.json` locator. An absent public URL or
-record pin makes the ordinary wizard exit 2 before prompts, state changes or
-tool installation; it is not an invitation for the reader to supply credentials.
-Implementation alone does not authorize or complete publication. `PUBLIC_PIN`
-is deliberately inactive until those release-owner steps are complete.
+Publication requires explicit owner authorization, read-only link sharing and
+a reviewed persistent `release-index.json` locator. On October 10 the owner
+explicitly authorized public reading of the prepared eight-file folder for the
+launcher walkthrough, after disclosure that the Unreal/Apple/SDK redistribution
+review remains unresolved. This bounded test-publication amendment activates
+`PUBLIC_PIN`; it does not declare license clearance, adopt draft terms or qualify
+a release. The original private folder and immutable source/byte pins remain
+unchanged. The [preparation record](../../docs/development/public-artifact-preparation.md)
+retains the review gaps and the omitted Factory audit separately.
+
+An absent public URL or record pin still makes the ordinary wizard exit 2 before
+prompts, state changes or tool installation; it is not an invitation for the
+reader to supply credentials. Implementation alone does not authorize or
+complete a new publication.
 
 The existing catalog envelope/versioning is retained. Public records have
 distinct immutable IDs and canonical record SHA-256 pins. A selected record

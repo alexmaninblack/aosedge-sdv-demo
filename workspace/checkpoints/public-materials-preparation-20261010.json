@@ -2,8 +2,9 @@
   "$comment": "SPDX-FileCopyrightText: 2026 maninblack; SPDX-License-Identifier: MIT",
   "schemaVersion": 1,
   "prepared": "2026-10-10",
-  "status": "PREPARATION_NOT_DISTRIBUTION_APPROVAL",
-  "publicationAllowed": false,
+  "status": "PUBLIC_TEST_ACCESS_ACTIVE_REVIEW_OPEN",
+  "publicationAllowed": true,
+  "publicationScope": "Owner-authorized public reading of the exact prepared eight-file folder for launcher testing; not license clearance or release qualification",
   "integrationSourceRevision": "266e1c6269f890f180c57e1d33fd8bcbdbc70d95",
   "bundle": {
     "directoryName": "distribution-materials",
@@ -37,7 +38,7 @@
   "publicPreparation": {
     "sourceRevision": "7f2c11339f076496fdd3d965f019957c8b2b26c9",
     "folderName": "AosEdge SDV Lab Public Artifacts",
-    "folderAccess": "PRIVATE",
+    "folderAccess": "ANYONE_WITH_LINK_READER",
     "serverSideCopiesVerified": 5,
     "preparedRemoteFilesVerified": 8,
     "catalogAndCompanionUploadHashesVerified": true,
@@ -47,7 +48,7 @@
     "catalogReleaseId": "1.2.0-rc.1-source-factory-r1-public",
     "catalogRecordSha256": "74943dc852a160b4cfdcc6e17496a56e48ca3d644756145b7ce1cc63544c0450",
     "catalogOfflineValidated": true,
-    "anonymousAccessTested": false,
+    "anonymousAccessTested": true,
     "companion": {
       "file": "aosedge-sdv-lab-dependency-materials-r2.tar.gz",
       "bytes": 324263318,
@@ -89,7 +90,21 @@
     "supersedes": "Factory audit/resume requirement in the original sealed preparation bundle",
     "preserve": "Existing license notices, source references, integrity checks and credential protection"
   },
-  "sharingChanged": false,
-  "publicCatalogActive": false,
+  "publicActivation": {
+    "date": "2026-10-10",
+    "ownerExplicitlyConfirmedAfterLicensingDisclosure": true,
+    "folderUrl": "https://drive.google.com/drive/folders/1DJQkMfbLICXe4LhROdg6pcqUHzp8Tvp7",
+    "permission": "anyone:reader",
+    "allowFileDiscovery": false,
+    "verifiedInheritedReaders": 8,
+    "catalogBytesVerified": 3481,
+    "anonymousOneByteProbesPassed": 5,
+    "originalPrivateRootAndArchivesUnchanged": true,
+    "fullArchivesDownloadedForAccessCheck": false,
+    "releaseQualified": false,
+    "licenseClearanceClaimed": false
+  },
+  "sharingChanged": true,
+  "publicCatalogActive": true,
   "buildsOrRuntimeStarted": false
 }

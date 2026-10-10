@@ -33,9 +33,13 @@ PIN = {
         'workspace/releases/1.2.0-rc.1-source-factory-delivery.json': '33cc8b296bfe76be301b33a170789539a3154dec7a8ad62a3333fff8e9a3ebdc',
         'workspace/releases/kit028-setup042.json': '5951852da7158a63802c1045fe0f37719f90d549b2e70f5f7ab63c5c9841ad13'},
 }
-# Populated only after release-owner review/publication of a separate public
-# catalog and its dependencies. Never expose the current private IDs as defaults.
-PUBLIC_PIN = {'url': '', 'releaseId': '1.2.0-rc.1-source-factory-r1-public', 'recordSha256': ''}
+# Owner-authorized public test distribution, separate from historical private
+# objects. Access activation is not license clearance or release qualification.
+PUBLIC_PIN = {
+    'url': 'https://drive.google.com/uc?id=11euQ35OM6BpmLHCT5ognHyukoi9lNq1v&export=download',
+    'releaseId': '1.2.0-rc.1-source-factory-r1-public',
+    'recordSha256': '74943dc852a160b4cfdcc6e17496a56e48ca3d644756145b7ce1cc63544c0450',
+}
 ROLES = {'buildInputs': {'vehicle-bases', 'factory-image'},
          'simulation': {'carla-runtime', 'host-support', 'gateway-sdk'}}
 LIMIT = 1024 * 1024

@@ -180,10 +180,13 @@ internal folder or mounted external disk when prompted. Xcode, Docker first-run
 setup and Apple account permissions may still require your interaction.
 
 The ordinary input route uses public downloads, without Google login or Google
-CLI. **Public input publication is not enabled yet:** the separate reviewed
-catalog and its source pin must be published before this route can complete.
-Until then the wizard reports `PUBLIC RELEASE NOT YET AVAILABLE` before making
-changes. This is a release-owner action, not a missing user credential. The
+CLI. **Public inputs are available for the developer walkthrough.** The
+[public artifact folder](https://drive.google.com/drive/folders/1DJQkMfbLICXe4LhROdg6pcqUHzp8Tvp7)
+also provides the prepared source/notice companion. This is an owner-authorized
+test distribution, not a qualified release or completed
+[redistribution review](docs/development/public-artifact-preparation.md).
+Download the current launcher below; older copies with an inactive public pin
+still report `PUBLIC RELEASE NOT YET AVAILABLE`. The
 [maintainer-only private route](docs/getting-started/macos-developer-tools.md#private-maintainer-route)
 remains available for the existing authorized artifacts.
 

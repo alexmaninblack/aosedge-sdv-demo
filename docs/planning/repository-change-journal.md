@@ -9,10 +9,39 @@ controls delivery order; the [current baseline](../qualification/current-baselin
 identifies the implemented candidate. Component source, contracts and release
 locks remain authoritative. This journal links them and does not duplicate them.
 
-The latest [publication checkpoint](#2026-october-10-one-run-launcher-source-handoff)
-records the owner-authorized README and one-run launcher source handoff. Earlier
+The latest [publication checkpoint](#2026-october-10-public-test-access-activation)
+records public input activation for the one-run launcher. Earlier
 local-only entries below retain their original checkpoint state; source
 publication does not constitute retroactive build or test evidence.
+
+### 2026 October 10 Public test access activation
+
+After disclosure of the remaining Unreal/Apple/SDK licensing questions, the
+owner explicitly confirmed public reading of the prepared eight-file **AosEdge
+SDV Lab Public Artifacts** folder. This scope amendment enables the launcher
+walkthrough; it does not declare redistribution compliance or qualify a release.
+The [preparation record](../development/public-artifact-preparation.md) and
+sanitized checkpoint retain those distinctions and the omitted Factory audit.
+
+One folder sharing write granted `anyone:reader` with discovery disabled. The
+first immediate child check preceded permission propagation; later readback
+confirmed inherited read-only access on all eight files without another write.
+Their identities, sizes, hashes and parents match the prepared receipts. The
+original private folder and archives remain unchanged. The product's anonymous
+reader verified the 3,481-byte pinned catalog and one-byte ranges for all five
+input roles without credentials or large archive downloads.
+
+The observed public catalog URL and record digest activate `PUBLIC_PIN` and the
+regenerated standalone launcher. README B1 and the preparation reference now
+describe available public test inputs and require a fresh launcher download.
+Historical dependency/source pins, old archives and the sealed companion stay
+unchanged. No compiler, installer, simulator, VM or Docker workload was started.
+The actual owner walkthrough remains the next separate test.
+
+Validation passed: 16 catalog tests, 19 anonymous transport tests, 31 launcher
+fixtures, shell syntax, embedded-helper synchronization and the documentation
+gate (342 Markdown documents, 662 stable identifiers, 38 Mermaid diagrams).
+These offline fixtures and bounded live access probes do not start a build.
 
 ### 2026 October 10 Public artifact set prepared privately
 

@@ -3,8 +3,8 @@
 
 # Public Artifact Distribution Preparation
 
-- Status: review candidate; public activation is not complete
-- Version: 1.2
+- Status: public test access active; redistribution review remains open
+- Version: 1.3
 - Prepared: 2026-10-10
 - Owner: Demo Solution Team
 
@@ -12,7 +12,10 @@ The owner authorized preparing the materials needed to distribute the five
 developer dependency archives anonymously. This follows the
 [public-delivery contract](../../contracts/release-reproduction/README.md#anonymous-developer-input-delivery)
 and the [activation preflight](../planning/repository-change-journal.md#2026-october-10-public-artifact-activation-preflight).
-It is not a new installer, runtime release or clean-build qualification.
+The owner subsequently confirmed public reading of the entire prepared eight-file
+folder after the remaining licensing questions were disclosed. The current
+launcher can use its inputs without Google authentication. This is not a new
+installer, runtime release, license-clearance decision or clean-build qualification.
 
 ## Prepared materials
 
@@ -49,10 +52,14 @@ bytes. Its digest and manifest digest are recorded in the checkpoint. The
 original sealed bundle has not been modified.
 
 Five exact server-side Drive copies and a distinct public-format
-`release-index.json` have been prepared in the separate **AosEdge SDV Lab Public
-Artifacts** folder. Despite its intended purpose, that folder and its files
-remain private. No recipient can yet use the ordinary anonymous preparation
-route. Historical private objects, permissions and source locks are unchanged.
+`release-index.json` are available in the separate
+[AosEdge SDV Lab Public Artifacts folder](https://drive.google.com/drive/folders/1DJQkMfbLICXe4LhROdg6pcqUHzp8Tvp7).
+Its eight files have read-only access for anyone with the link, with search
+discovery disabled. These are the five dependency archives, the catalog, the
+source/notice companion and its README. Historical private objects, permissions
+and source locks are unchanged. The companion and copied README retain their
+pre-activation review snapshot; this status supersedes their access statements,
+not their unresolved review findings or draft terms.
 
 Large files and private review evidence remain outside Git. The private
 checkpoint stores the exact workspace location and preparation tools. The
@@ -157,41 +164,45 @@ a provenance lead, not a demonstrated correspondence to every cooked asset in
 the selected archive. The terms draft includes CARLA attribution and the
 Unreal product-use/disclaimer boundary, but is not an adopted end-user agreement.
 
-Before activation, resolve the Apple binary terms, cooked-asset attribution
-and applicable Unreal product-distribution conditions; reconcile the remaining
-SDK source/notice mapping and adopt/deliver the end-user terms. The full archive
-integrity/content scan is complete; these are separate redistribution questions,
-not a reason to repeat that 13.3 GB download or request Factory build reports.
+The Apple binary terms, cooked-asset attribution and applicable Unreal
+product-distribution conditions remain unresolved, as do the complete SDK
+source/notice mapping and adopted end-user terms. The owner's explicit
+test-access authorization supersedes the earlier activation hold, not these
+findings. The full archive integrity and bounded content scan are complete;
+the remaining questions are not a reason to repeat the 13.3 GB download or
+request Factory build reports.
 
-### Package delivery and activation
+### Public test activation
 
-1. Close the remaining in-scope content, notice, source and terms gaps above
-   for the exact selected bytes, respecting the Factory scope decision. Keep a
-   reviewed component-to-material mapping; do not report the omitted audit as
-   completed.
-2. Make notices and matching required sources available with the binary
-   distribution, including a usable retrieval route for recipients. This
-   preparation bundle is not automatically consumed by Setup or the developer
-   launcher; that delivery integration must be checked before activation.
-3. Preserve old private archives/locks. If payload changes are required, create
-   and adopt a new reviewed dependency generation, never overwrite the old one.
-4. Publish only the approved set to a separate public folder. Verify remote
-   identity, size, checksum, parent and read-only sharing; do not download large
-   unchanged archives back merely to test the storage provider.
-5. Generate the distinct public catalog record, check bounded anonymous access,
-   activate its observed URL/hash and regenerate the standalone launcher.
-   Then perform the jointly planned user walkthrough.
+On October 10 the owner explicitly confirmed public reading of this exact
+eight-file folder after disclosure of the unresolved Unreal/Apple/SDK licensing
+questions. The folder permission is `anyone:reader`, with
+`allowFileDiscovery=false`; all eight files inherit it. An immediate child
+permission check ran before propagation had completed. Authoritative readback
+then confirmed every inherited permission, without repeating the sharing write.
+
+All eight names, sizes, provider SHA-256 values and parent identities match the
+prepared receipts. The original private root and five original archives remain
+private and unchanged. The anonymous reader obtained the 3,481-byte catalog,
+verified its pinned record and passed one-byte HTTP range probes for all five
+dependency roles. No cookies, OAuth, Google CLI credentials or API keys were
+used by that reader. No archive was downloaded back for this access check.
+
+The source/notice companion is available beside the binaries and linked from
+README B1 through the public folder. It is not automatically consumed by Setup
+or the launcher; its completeness and recipient-terms integration remain open.
+If review requires payload changes, create a new reviewed dependency generation
+rather than overwriting existing archives or locks.
 
 The new public record has ID `1.2.0-rc.1-source-factory-r1-public` and canonical
 SHA-256 `74943dc852a160b4cfdcc6e17496a56e48ca3d644756145b7ce1cc63544c0450`.
 The existing offline generator validated all five byte identities and source
 pins against the historical receipt. It contains only the new delivery
-locations; this is not an anonymous-access test.
-
-`PUBLIC_PIN` remains inactive. Historical private Drive sharing is unchanged.
-The existing authorization covers routine publication of the reviewed public
-set; these technical/content gaps are not a request to approve the same sharing
-operation again.
+locations. Its observed URL and hash are now active in `PUBLIC_PIN` and the
+regenerated standalone launcher. Download a fresh launcher from README B1;
+previously downloaded copies retain their inactive pins. The user's actual
+walkthrough, archive-consumer checksum verification and build remain separate
+evidence, not results of these bounded access probes.
 
 ## References and interpretation
 
@@ -202,7 +213,7 @@ The review uses the [Unreal Engine EULA](https://www.unrealengine.com/eula/unrea
 They identify release obligations; this preparation report is not a legal
 opinion or evidence that the product already satisfies them.
 
-No compiler, installer, simulator, VM or Docker workload was started. Drive
-copies and uploads are private preparation only; no public sharing was granted.
-Source artifacts and license texts were read, acquired where necessary and
-checksummed; no downloaded code was run.
+No compiler, installer, simulator, VM or Docker workload was started. Only the
+prepared distribution folder was opened publicly. Source artifacts and license
+texts were read, acquired where necessary and checksummed; no downloaded code
+was run.

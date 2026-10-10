@@ -203,6 +203,14 @@ class CatalogSourceTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('SDV_CATALOG_RECORD='+catalog.PIN['recordSha256'], (ROOT/'scripts/prepare-macos.sh').read_text())
 
+    def test_public_activation_pin_is_valid_and_embedded(self):
+        catalog.public_ready()
+        self.assertTrue(catalog.PUBLIC_PIN['releaseId'].endswith('-public'))
+        self.assertNotEqual(catalog.PUBLIC_PIN['recordSha256'], catalog.PIN['recordSha256'])
+        script = (ROOT/'scripts/prepare-macos.sh').read_text()
+        self.assertIn(catalog.PUBLIC_PIN['url'], script)
+        self.assertIn('SDV_PUBLIC_CATALOG_RECORD='+catalog.PUBLIC_PIN['recordSha256'], script)
+
     def test_catalog_append_repeat_preserves_history_and_refuses_mutation(self):
         owner = runpy.run_path(str(ROOT/'scripts/preparation-catalog'))
         create = owner['create']

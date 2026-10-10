@@ -15,11 +15,12 @@ Its offline fixtures cover control flow and failures; the owner's actual
 first-use walkthrough remains pending. No live installation or build was run
 to publish this implementation.
 
-The default route needs no Google account or Google CLI. It is implemented but
-not activated for real inputs: the release owner must first publish a separate
-reviewed public catalog/dependency set and pin its record in source. Until then
-the wizard exits with `PUBLIC RELEASE NOT YET AVAILABLE` before prompting for
-storage or installing tools. It never silently falls back to private access.
+The default route needs no Google account or Google CLI. The owner-authorized
+public test inputs and pinned catalog are available through the current launcher
+in README B1. Download it again if an older copy reports
+`PUBLIC RELEASE NOT YET AVAILABLE`. Public access does not complete the
+[redistribution review](../development/public-artifact-preparation.md) or qualify
+a build. An access failure never silently falls back to private access.
 
 <a id="1-select-the-mac-and-storage"></a>
 
