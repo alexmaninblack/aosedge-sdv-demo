@@ -540,6 +540,13 @@ before preparing producer checkouts or starting any build step. A successor
 source-reviewed plan must adopt new committed owners; historical plans and
 checksums are never resealed to bypass the boundary.
 
+The October 10 autonomous launcher test selects
+`workspace/releases/1.2.0-rc.1-public-build-chain-r1.json`. It preserves the
+historical source-Factory plan's inputs, seventeen steps and five downstream
+owners, adopting only the components owner with separate-Docker-volume support
+and the verified native APFS mount fix. Historical source/input pins and catalog
+records remain unchanged. This new plan is test input, not a completed build.
+
 ## R2 build tooling boundary
 
 The build-only [lab](../../lab) entry point implements `plan`, `prepare`, `status`,

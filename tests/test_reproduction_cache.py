@@ -238,7 +238,7 @@ class SpaceTests(StorageFixture, unittest.TestCase):
     def test_unreviewed_plan_cannot_reuse_capacity_claim(self):
         self.fixture(); original = space.chain.read_plan(self.release)
         changed = copy.deepcopy(original); changed['producers']['media'] = 'f'*40
-        with patch.object(space.chain, 'read_plan', side_effect=[changed,original,original]):
+        with patch.object(space.chain, 'read_plan', side_effect=[changed,original,original,original]):
             with self.assertRaisesRegex(core.LabError, 'reviewed producer'):
                 space.report(self.storage, self.state, build_plan=Path('different.json'))
 
@@ -249,6 +249,18 @@ class SpaceTests(StorageFixture, unittest.TestCase):
         value = space.report(self.storage, self.state, build_plan=plan)
         self.assertEqual(plan.read_bytes(), before)
         self.assertEqual(len(value['ownerGuards']), 17)
+
+    def test_public_plan_preserves_steps_and_only_adopts_component_storage_fix(self):
+        self.fixture()
+        old = space.chain.read_plan(self.release, core.ROOT/'workspace/releases/1.2.0-rc.1-source-factory-build-chain.json')
+        path = core.ROOT/'workspace/releases/1.2.0-rc.1-public-build-chain-r1.json'
+        new = space.chain.read_plan(self.release, path)
+        self.assertEqual(new['steps'], old['steps'])
+        self.assertEqual(new['baseDefinitionSha256'], old['baseDefinitionSha256'])
+        self.assertNotEqual(new['producers']['components'], old['producers']['components'])
+        self.assertEqual({k:v for k,v in new['producers'].items() if k != 'components'},
+                         {k:v for k,v in old['producers'].items() if k != 'components'})
+        self.assertEqual(len(space.report(self.storage, self.state, build_plan=path)['ownerGuards']), 17)
 
     def test_fresh_developer_workspace_does_not_require_a_prepared_wheel_source(self):
         value = space.report(self.storage, self.state)

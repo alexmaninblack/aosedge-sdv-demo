@@ -57,7 +57,8 @@ def report(storage, state, target='all', build_plan=None, donor_path=None, docke
     if storage.profile == 'developer':
         plan = chain.read_plan(storage.release, build_plan)
         reviewed = [chain.read_plan(storage.release), chain.read_plan(storage.release,
-                    ROOT/'workspace/releases/1.2.0-rc.1-source-factory-build-chain.json')]
+                    ROOT/'workspace/releases/1.2.0-rc.1-source-factory-build-chain.json'),
+                    chain.read_plan(storage.release, ROOT/'workspace/releases/1.2.0-rc.1-public-build-chain-r1.json')]
         require(plan in reviewed, 'Capacity guards require a reviewed producer plan')
         selected = plan['steps'] if target == 'all' else [{'id':target,'target':target}]
         for step in selected:
