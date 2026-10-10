@@ -14,6 +14,58 @@ records the owner-authorized README and one-run launcher source handoff. Earlier
 local-only entries below retain their original checkpoint state; source
 publication does not constitute retroactive build or test evidence.
 
+### 2026 October 10 Public artifact activation preflight
+
+The owner authorized activating anonymous artifact access. The separate-public-
+folder design remains applicable; this does not authorize sharing the historical
+private artifact root. No Drive write or sharing change was performed because
+the existing content/redistribution gate is not yet closed. `PUBLIC_PIN` remains
+inactive; this entry does not claim a usable anonymous release.
+
+Read-only checks covered the five exact archives selected by the published
+launcher. All provider-reported names, sizes and SHA-256 values matched the
+existing locks. Each archive's initial 1 MiB HTTP range supplied its complete
+inventory, verified against its pinned manifest SHA-256: **31,491 files** across
+the five inventories, **5 MiB** transferred in total. No complete archive was
+downloaded, extracted, rebuilt or executed. This verifies inventory identity,
+not every file's contents, embedded filesystem or absence of secrets.
+
+Concrete publication gaps:
+
+- The simulator subtree has no separately inventoried CARLA/Unreal license,
+  attribution or end-user terms file. The CARLA Python wheel has its own MIT
+  license, but that is not evidence for the entire simulator and its assets.
+  Editor/Developer plugin descriptors and resource files occur in the inventory;
+  no source/object/library files were identified under those two directory names.
+  Those names alone do **not** prove that prohibited Engine Tools are shipped.
+  Review the exact packaged product and asset terms before deciding that point.
+- QEMU and other host libraries have bundled license notices, but no matching
+  downloadable corresponding-source package or source-offer arrangement was
+  identified in the reviewed archive inventories, artifact folders or release
+  documents. Binary hash correspondence is not source-distribution compliance.
+- The Factory archive contains its image and manifest, while the vehicle bases
+  contain nested VDP packages. Their nested contents have not received a public
+  content/notice review in this check; a top-level filename scan cannot close it.
+
+The release preparation follow-up is to assemble a version-matched third-party
+notice/source-delivery set, resolve the simulator distribution terms and review
+the nested image/package contents. Preserve historical archives and locks. If
+payload changes are necessary, adopt a new reviewed dependency generation rather
+than overwrite the old one. Then copy only the approved public set, verify remote
+identity and anonymous bounded access, and activate the observed catalog URL and
+record hash. No additional routine sharing approval is needed inside the owner's
+authorized public set; unresolved license terms are not resolved by that approval.
+
+Reference checks on October 10 used the primary
+[Unreal Engine EULA](https://www.unrealengine.com/eula/unreal), especially product
+distribution and Engine Tools restrictions, the
+[QEMU GPLv2 text](https://www.qemu.org/license-gpl-2/) on binary/source delivery,
+and [CARLA's license summary](https://github.com/carla-simulator/carla#license).
+These identify review obligations, not a legal conclusion about this build.
+No installer, simulator, VM, container or background worker was started. Only
+small private inventory evidence remains outside Git; credentials and private
+Drive locators are excluded from this entry.
+
 ### 2026 October 10 One-run launcher source handoff
 
 The owner authorized committing and pushing the current README, anonymous input
