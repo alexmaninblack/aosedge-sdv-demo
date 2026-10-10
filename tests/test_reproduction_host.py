@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 """Host packaging receipts do not imply live or installer qualification."""
 import json
+import os
 import shutil
 from pathlib import Path
 import sys
@@ -15,6 +16,43 @@ from reproduction.artifacts import sha256
 
 
 class HostTests(StorageFixture, unittest.TestCase):
+    def test_generated_modes_ignore_private_launcher_umask(self):
+        native = SimpleNamespace(sha256=sha256, BundleError=core.LabError)
+        old = os.umask(0o077)
+        try:
+            output = self.base/'generated'
+            output.mkdir(mode=0o700)
+            metadata = output/'manifest.json'
+            metadata.write_bytes(b'fixture')
+            executable = output/'tool'
+            executable.write_bytes(b'fixture')
+            executable.chmod(0o700)  # Simulate a signing tool replacing a file.
+            private = self.base/'private-state'
+            private.write_bytes(b'fixture')
+            for path, expected in ((metadata, 0o644), (executable, 0o755)):
+                row = host_worker.generated_row(output, path, native)
+                self.assertEqual(row['mode'], expected)
+                self.assertEqual(path.stat().st_mode & 0o777, expected)
+                self.assertEqual(row['sha256'], sha256(path))
+            self.assertEqual(private.stat().st_mode & 0o777, 0o600)
+            self.assertEqual(output.stat().st_mode & 0o777, 0o700)
+        finally:
+            self.assertEqual(os.umask(old), 0o077)
+
+    def test_generated_mode_sealing_rejects_links_and_unsafe_modes(self):
+        native = SimpleNamespace(sha256=sha256, BundleError=core.LabError)
+        path = self.base/'payload'
+        path.write_bytes(b'fixture')
+        for mode in (0o666, 0o777):
+            path.chmod(mode)
+            with self.assertRaisesRegex(core.LabError, 'Unexpected'):
+                host_worker.generated_row(self.base, path, native)
+            self.assertEqual(path.stat().st_mode & 0o7777, mode)
+        link = self.base/'link'
+        link.symlink_to(path)
+        with self.assertRaisesRegex(core.LabError, 'regular'):
+            host_worker.generated_row(self.base, link, native)
+
     def fixture(self):
         self.storage.environment()
         self.patch('reproduction.host.verify_sources')

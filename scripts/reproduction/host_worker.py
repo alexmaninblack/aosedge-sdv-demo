@@ -9,6 +9,23 @@ import sys
 import tempfile
 
 
+def generated_row(output, path, native):
+    """Seal generated UI/native payload modes after tools may replace files.
+
+    Keep the launcher's private umask and retained input modes unchanged. Only
+    these declared, non-secret distribution files use the host contract modes.
+    """
+    if path.is_symlink() or not path.is_file():
+        raise native.BundleError('Host output must be a regular file')
+    mode = stat.S_IMODE(path.stat().st_mode)
+    if mode not in (0o444, 0o555, 0o600, 0o644, 0o700, 0o755):
+        raise native.BundleError('Unexpected generated host payload mode')
+    mode = {0o600: 0o644, 0o700: 0o755}.get(mode, mode)
+    path.chmod(mode)
+    return {'path': path.relative_to(output).as_posix(), 'bytes': path.stat().st_size,
+            'mode': mode, 'sha256': native.sha256(path)}
+
+
 def clone_selected(source, target, rows, native, regular):
     """Copy only manifest-selected regular files, never incidental Finder data."""
     target.mkdir(mode=0o700)
@@ -119,8 +136,7 @@ def assemble(root, integration, gateway, retained, sdk, ui, binaries, output):
         for path in sorted((output/group).rglob('*')):
             require(not path.is_symlink(), 'Host output contains a symlink')
             if path.is_file():
-                copied.append({'path': path.relative_to(output).as_posix(), 'bytes': path.stat().st_size,
-                    'mode': stat.S_IMODE(path.stat().st_mode), 'sha256': native.sha256(path)})
+                copied.append(generated_row(output, path, native))
     value = {'schemaVersion': 1, 'status': 'ASSEMBLED_HOST_LAUNCH_NOT_DISTRIBUTION_QUALIFIED',
         'credentialsIncluded': False, 'files': sorted(copied, key=lambda r: r['path']),
         'simulator': original['simulator'], 'derivedFromManifestSha256': native.sha256(retained/host_runtime.MANIFEST),

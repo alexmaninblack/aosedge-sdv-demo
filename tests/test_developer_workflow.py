@@ -262,7 +262,7 @@ class WorkflowTests(unittest.TestCase):
     def test_output_filters_raw_json_but_preserves_log(self):
         log, screen = io.StringIO(), io.StringIO()
         output = workflow.OwnerOutput(log, screen)
-        output.write('{"event":"CHAIN_STEP_STARTED","detail":"gateway"}\n')
+        output.write('{"event":"CHAIN_STEP","detail":"gateway"}\n')
         output.write('{"status":"CHAIN_BUILT_NOT_QUALIFIED"}\n')
         self.assertEqual(output.last['status'], 'CHAIN_BUILT_NOT_QUALIFIED')
         self.assertIn('gateway', screen.getvalue())

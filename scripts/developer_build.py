@@ -43,7 +43,7 @@ class OwnerOutput(io.TextIOBase):
                 self.last = row
                 event = row.get('event') or row.get('stage')
                 detail = row.get('detail', row.get('value', ''))
-                if event in ('CHAIN_STEP_STARTED', 'CHAIN_STEP_VERIFIED', 'BUILD_REUSED', 'SOURCE_READY'):
+                if event in ('CHAIN_STEP', 'CHAIN_STEP_STARTED', 'CHAIN_STEP_VERIFIED', 'BUILD_REUSED', 'SOURCE_READY'):
                     if isinstance(detail, str) and re.fullmatch('[a-zA-Z0-9._-]{1,100}', detail):
                         print('  ' + event.replace('_', ' ').lower() + ': ' + detail,
                               file=self.screen, flush=True)
