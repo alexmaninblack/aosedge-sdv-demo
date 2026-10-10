@@ -16,20 +16,63 @@
     "completeCorrespondingSource": false
   },
   "verifiedArchiveRoles": [
+    "carla-runtime",
     "host-support",
     "gateway-sdk",
     "vehicle-bases",
     "factory-image"
   ],
   "simulator": {
-    "fullPayloadReview": false,
+    "fullPayloadReview": true,
     "pythonNoticeMetadataFilesVerified": 22,
-    "boundedCompressedBytesRead": 33554432
+    "initialBoundedCompressedBytesRead": 33554432,
+    "exactArchiveBytesVerified": 13302049728,
+    "regularFileHashesVerified": 13987,
+    "privateKeyMarkerFindings": 0,
+    "sensitiveFilenameCandidates": 0,
+    "boundedConfigurationValueCandidates": 0,
+    "localRetainedRuntimeNonmatchingFiles": 1048,
+    "scope": "Archive and regular-file hashes plus targeted content scans; not cooked-asset semantics or redistribution approval"
+  },
+  "publicPreparation": {
+    "sourceRevision": "7f2c11339f076496fdd3d965f019957c8b2b26c9",
+    "folderName": "AosEdge SDV Lab Public Artifacts",
+    "folderAccess": "PRIVATE",
+    "serverSideCopiesVerified": 5,
+    "preparedRemoteFilesVerified": 8,
+    "catalogAndCompanionUploadHashesVerified": true,
+    "companionArchiveMembersVerified": 358,
+    "historicalObjectsAndSharingUnchanged": true,
+    "catalogFile": "release-index.json",
+    "catalogReleaseId": "1.2.0-rc.1-source-factory-r1-public",
+    "catalogRecordSha256": "74943dc852a160b4cfdcc6e17496a56e48ca3d644756145b7ce1cc63544c0450",
+    "catalogOfflineValidated": true,
+    "anonymousAccessTested": false,
+    "companion": {
+      "file": "aosedge-sdv-lab-dependency-materials-r2.tar.gz",
+      "bytes": 324263318,
+      "sha256": "874f34b49d7b791d8c79d1c91d7da1ed7fed9c0283379886e870909dbe2f5596",
+      "fileManifestSha256": "aca7dfd4bcc6dd4278f78bc5e519252f00325c90f8d4df14424383ac0ff290fa",
+      "filesInManifest": 356,
+      "noticeFiles": 274,
+      "endUserTermsStatus": "DRAFT_NOT_ADOPTED",
+      "completeCorrespondingSource": false
+    },
+    "exactRecipePatches": {
+      "status": "RECOVERED",
+      "glibHomebrewRevision": "190a6fa77b81b8ffbeeee1022b852063d55d71cc",
+      "pythonHomebrewRevision": "7b2c2f97093e29530dde60cf8bfd84f2ef2586a1",
+      "evidence": "Byte-identical installed formula after removing only upstream bottle metadata, plus matching installed arm64_tahoe SBOM bottle digest"
+    },
+    "supplementalSources": [
+      "GEOS 3.11.4",
+      "Shapely 2.0.7",
+      "public integration/exporter scripts at 638fc8d18b1ee66f10a253fd51ab4238582ba843"
+    ]
   },
   "remainingGates": [
-    "exact-recipe-patches",
     "bundled-dependency-source-notices",
-    "simulator-content-terms",
+    "simulator-redistribution-terms-and-attribution",
     "recipient-delivery"
   ],
   "scopeDecision": {

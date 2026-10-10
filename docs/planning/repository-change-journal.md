@@ -14,6 +14,39 @@ records the owner-authorized README and one-run launcher source handoff. Earlier
 local-only entries below retain their original checkpoint state; source
 publication does not constitute retroactive build or test evidence.
 
+### 2026 October 10 Public artifact set prepared privately
+
+Five byte-identical server-side copies now exist in the separate **AosEdge SDV
+Lab Public Artifacts** folder. Its access remains private. The public-format
+`release-index.json` and the 324,263,318-byte companion archive are uploaded and
+match their local size/SHA-256 metadata; no payload was downloaded back merely
+to test Drive. The standard connector rejected the companion before invocation
+at its 100 MiB limit; the existing authenticated resumable uploader completed
+that single upload instead.
+
+The exact CARLA archive and all 13,987 payload hashes passed. Targeted key/path
+and bounded configuration scans reported no candidates. This acquisition was
+needed because the retained local simulator differed from the selected release
+in 1,048 entries. The verified SSD cache can now be reused. Both missing
+Homebrew patches were recovered using normalized exact formula correspondence
+and matching installed bottle digests. The companion adds GEOS/Shapely sources,
+exporter source, ONNX notices and a simulator terms draft; it contains 356
+manifested files, including 274 notices.
+
+The [current preparation record](../development/public-artifact-preparation.md)
+and checkpoint supersede the earlier unresolved-patch and partial-simulator
+statements without altering the original sealed evidence. Fifteen offline
+catalog fixtures passed; the real generated public record passed source/byte
+pin validation. These are not anonymous-access tests. `PUBLIC_PIN` remains
+inactive pending the remaining SDK correspondence and simulator redistribution
+terms/attribution review and recipient-delivery integration. Factory's separate
+audit remains `OMITTED_BY_OWNER`; no original-SSD request or rebuild is needed.
+
+No compiler, installer, simulator, VM or Docker workload was started. Old
+archives, source locks and private sharing were preserved. No extra routine
+publication authorization is being requested; preparation is not represented
+as a completed anonymous release.
+
 ### 2026 October 10 Factory audit scope correction
 
 The owner excluded the separate Factory license/source-record audit, relying
