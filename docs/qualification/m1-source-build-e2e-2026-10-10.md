@@ -3,11 +3,18 @@
 
 # M1 installation and E2E verification on 10 October 2026
 
+The corrected r8 `1.2.0-rc.1` candidate passed fresh M1 installation and all
+100 steps of the automated staging journey on 10 October 2026. This includes
+unattended first-use VM enrollment, serial releases, functional maneuvers,
+offline recovery, ignition off/on and verified non-destructive shutdown.
+Native acceptance and the separate gates listed below remain open; this is
+**scripted-sequence PASS**, not complete E2E or release acceptance.
+
 The original source-built `1.2.0-rc.1` DMG exposed a backend build-file permission
 defect after successful M1 installation and VM password enrollment. The defect
-is corrected in source; rebuilt r5 media has now passed a separate fresh M1
+was corrected in source; rebuilt r5 media passed a separate fresh M1
 installation and backend-image preparation. Its live staging journey exposed
-a separate serial-console prompt defect and is **not complete**. The prompt
+a separate serial-console prompt defect and did not complete. The prompt
 correction is included in r6. Its automated installation passed but exposed a
 first-use qualification-access scope defect before VM creation. r7 resolves
 that scope defect but exposed terminal-control bytes hiding the real Factory
@@ -17,7 +24,7 @@ from clean first-use qualification of corrected media. Earlier Kit028 results
 do not qualify these candidates. Candidate identities and recovery evidence
 are separated below.
 
-## Candidate and target
+## Original candidate and target
 
 | Item | Observed value |
 | --- | --- |
@@ -422,9 +429,10 @@ passing first-use or full E2E result.
 The qualification-only r8 plan selects application/media producer
 `9c1274bb872888939a936fd2cc1af01fc6300c1b`, containing the proven terminal-control
 prompt correction. The source build runs on the selected SSD and reuses Factory,
-CARLA and unchanged component producers. Fresh media and live qualification
-remain pending. The next candidate uses a new instance and evidence binding,
-the corrected harness order and the same explicit private test-password input.
+CARLA and unchanged component producers. All 17 chain stages completed, followed
+by fresh installation and all 100 scripted journey steps. The candidate uses
+a new instance and evidence binding, the corrected harness order and the same
+explicit private test-password input.
 
 The additional 112 source/Unit/trust/lifecycle fixtures pass with their explicit
 developer OpenSSL dependency. An initial invocation selected an unrelated stale
@@ -447,3 +455,77 @@ read-only gate prevents racing that guard against the observed automatic VDP
 136 offer. Unknown, stale, malformed or pending/error observations cannot pass.
 All 75 campaign/journey fixtures pass. The fixed sequence now has 100 steps;
 earlier candidate counts remain historical evidence, not rewritten results.
+
+| Item | r8 candidate |
+| --- | --- |
+| Build chain | `5fa22359d272ceab9e979fe63fb9cd654d08f6a7e04a91b5d1573cc027d1a1a0` |
+| DMG bytes | 14,150,740,528 |
+| DMG SHA-256 | `307398a65394887136e47dfd1d2f2f209563af8e4ac3f3e4956a61d37d8cd3cc` |
+| Kit manifest SHA-256 | `551a0824a41b46a3803f1ece8623e34f3940c6a50b36014084899df473305176` |
+| Setup executable SHA-256 | `70a006dba2c6d825293c0c4249d240decf5077af221dd88fe3d6463c8332cb8b` |
+| Instance | Fresh `SDV-E2E-R8`, M1 internal disk |
+| Signing | Local Apple Development; not notarized |
+
+The automatic media/installation campaign uses separate
+`m1-e2e-r8-20261010-journey-installation` and
+`m1-e2e-r8-20261010-journey` evidence. No r7 pass establishes r8 acceptance.
+
+Fresh M1 delivery/checksum (204.174 s), read-only mount/signature (70.026 s),
+Setup installation (126.620 s) and instance preparation (38.788 s) passed.
+First Create completed in 88.605 seconds, including unattended console/SSH
+enrollment with the actual installed correction; repeated start passed in
+5.820 seconds. No transient replacement or native password dialog was used.
+CARLA startup (98.701 s) preceded provisioning (48.273 s); protected connection
+then passed (6.040 s). The r7 ordering defect did not recur.
+
+Sequential delivery and functional checks have passed for:
+
+| Functional profile | VDP release | Brake release | Tire release |
+| --- | --- | --- | --- |
+| V1 | `137.0.0` | `115.0.0` | `61.0.0` |
+| V2 | `138.0.0` | `116.0.0` | — |
+| V3 | `139.0.0` | `117.0.0` | — |
+
+Each VDP release passed its physical Safe Stop, installation, matching active
+slot and provider-readiness checks before the next profile was delivered.
+The table identifies logical profiles, not publication order: Tire V1 was
+delivered after Brake V3. Versions were not uploaded together.
+Brake V1/V2/V3 and Tire V1 passed real maneuvers and new backend product checks;
+Brake V3 and Tire also passed advisory application. Both independent Reset
+checks preserved history and the other service's model. Return to road passed.
+
+### Completed scripted sequence
+
+The r8 report records 100 attempts, all PASS, with no unresolved steps or
+required source review. The campaign used harness commit `a754c0d`; installed
+application/media bytes remain bound to the producer and digests above.
+
+Offline Brake and Tire maneuvers produced local progress. The offline soak
+passed in 302.623 seconds, followed by successful reconnection and queued-data
+delivery (32.342 s). Cloud offline and restored-online observations passed.
+
+Ignition off/on passed without reprovisioning. Identity, models, history and
+Safe Stop were preserved. VDP readiness returned after restart, and both Brake
+and Tire received fresh inputs and produced new backend results from new
+maneuvers. These are functional recovery checks, not merely process-start checks.
+
+The final shutdown completed at 17:35:50 UTC in 30.340 seconds. Its independent
+postconditions confirmed zero owned demo processes and listeners, persistent
+state preserved, no Finish execution and Docker Engine preserved. The passing
+Test remains stopped, not retired. Private attempt records and credential input
+remain outside Git; this report contains only bounded non-secret results.
+
+### Remaining acceptance boundaries
+
+The report retains `scriptedSequence: PASS`, `nativeAcceptance: NOT_RUN` and
+`fullE2E: NOT_COMPLETE`. Separate gates remain:
+
+- service updates while driving (`moving-SOTA`);
+- native secure token entry (`native-secure-token-entry`);
+- the native operator journey and visual acceptance (`native-operator-journey`);
+- installation interruption and repair (`installation-interruption-and-repair`).
+
+Host sleep/wake and external-SSD checks are excluded from this M1 internal-disk
+profile. `VDP-TIMEOUT-01` remains deferred as requested. The candidate is locally
+Apple Development signed, not notarized or publicly promoted. These results do
+not change the public launcher's selected candidate or close those other gates.
