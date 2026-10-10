@@ -278,6 +278,7 @@ class SpaceTests(StorageFixture, unittest.TestCase):
         with patch.object(space.containers, 'inspect_storage', side_effect=core.LabError('stopped')):
             value = space.report(self.storage, self.state, docker=Path('/unused'))
         self.assertEqual(value['dockerStorage']['status'], 'BLOCKED')
+        self.assertEqual(value['dockerStorage']['reason'], 'stopped')
         self.assertFalse(value['storagePreflightComplete'])
 
 

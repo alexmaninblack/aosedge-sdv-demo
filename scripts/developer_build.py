@@ -96,10 +96,15 @@ def failure_reason(result):
     if not isinstance(result, dict):
         return 'No verified result was returned.'
     if result.get('status') == 'SPACE_REPORT':
+        docker = result.get('dockerStorage') or {}
+        if docker.get('status') == 'BLOCKED':
+            return 'Docker storage check failed: ' + str(docker.get('reason', 'See the diagnostic log.'))[:1000]
         if not (result.get('producerStorageCompatibility') or {}).get('compatible', True):
             return ('The selected frozen build owners do not support this storage layout, or their policy is unavailable. '
                     'A reviewed successor build plan is required; shared Docker storage was not moved.')
-        return 'Insufficient capacity or incomplete Docker/storage checks. Resolve the reported storage prerequisite.'
+        if result.get('fitsCheckedPools') is False:
+            return 'Insufficient capacity on a checked volume. See capacityPools in the diagnostic log for available and required bytes.'
+        return 'Storage checks are incomplete. See the diagnostic log; no build was started.'
     return str(result.get('reason', 'Inspect the retained owner diagnostic.'))[:2000]
 
 

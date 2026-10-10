@@ -252,6 +252,13 @@ class WorkflowTests(unittest.TestCase):
             with self.assertRaisesRegex(bootstrap.WorkflowError, 'successor build plan'):
                 workflow.Owner(self.control)('space', ['space'])
 
+    def test_docker_failure_is_not_reported_as_insufficient_capacity(self):
+        reason = workflow.failure_reason({'status': 'SPACE_REPORT', 'fitsCheckedPools': True,
+            'dockerStorage': {'status': 'BLOCKED', 'reason': 'Reported volume differs from selected storage'}})
+        self.assertIn('Docker storage check failed', reason)
+        self.assertIn('Reported volume differs', reason)
+        self.assertNotIn('Insufficient capacity', reason)
+
     def test_output_filters_raw_json_but_preserves_log(self):
         log, screen = io.StringIO(), io.StringIO()
         output = workflow.OwnerOutput(log, screen)

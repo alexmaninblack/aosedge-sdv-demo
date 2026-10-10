@@ -148,6 +148,24 @@ class StorageTests(StorageFixture, unittest.TestCase):
 
 
 class VolumeProbeTests(unittest.TestCase):
+    def test_native_mount_identity_when_pathlib_misses_apfs_firmlink(self):
+        with tempfile.TemporaryDirectory() as directory:
+            mount = Path(directory).resolve()
+            volume = {'mount': str(mount), 'device': mount.stat().st_dev}
+            with patch('pathlib.Path.is_mount', return_value=False), \
+                 patch('reproduction.core.platform.system', return_value='Darwin'), \
+                 patch('reproduction.core.platform.machine', return_value='arm64'), \
+                 patch('reproduction.core.native_mountpoint', return_value=mount):
+                self.assertTrue(core.is_mounted_volume(mount))
+                self.assertEqual(core.check_volume(mount/'pending', volume), mount)
+                with patch('reproduction.core.native_mountpoint', return_value=mount.parent):
+                    with self.assertRaisesRegex(core.LabError, 'disconnected or replaced'):
+                        core.check_volume(mount/'pending', volume)
+                with patch('reproduction.core.native_mountpoint', side_effect=OSError):
+                    self.assertFalse(core.is_mounted_volume(mount))
+                with self.assertRaisesRegex(core.LabError, 'disconnected or replaced'):
+                    core.check_volume(mount, {**volume, 'device': -1})
+
     def test_probe_uses_actual_device_for_internal_and_external_paths(self):
         with tempfile.TemporaryDirectory(prefix='lab-volume-') as temporary:
             mount = Path(temporary).resolve()

@@ -140,6 +140,40 @@ class Release:
     def gates(self, profile):
         return [{'id': g['id'], 'resolution': g['resolution']} for g in self.value['gates'] if profile in g['profiles']]
 
+def native_mountpoint(path):
+    """Darwin statfs mount identity (sys/mount.h, 64-bit Apple Silicon ABI).
+
+    APFS firmlinks can give a mount and its parent the same st_dev, so the
+    generic pathlib mount heuristic is insufficient on the system Data volume.
+    """
+    import ctypes
+    class Statfs(ctypes.Structure):
+        _fields_ = ([('bsize', ctypes.c_uint32), ('iosize', ctypes.c_int32)]
+            + [(name, ctypes.c_uint64) for name in ('blocks', 'bfree', 'bavail', 'files', 'ffree')]
+            + [('fsid', ctypes.c_int32 * 2)]
+            + [(name, ctypes.c_uint32) for name in ('owner', 'type', 'flags', 'subtype')]
+            + [('fstype', ctypes.c_char * 16), ('mount', ctypes.c_char * 1024),
+               ('device', ctypes.c_char * 1024), ('flags_ext', ctypes.c_uint32),
+               ('reserved', ctypes.c_uint32 * 7)])
+    library = ctypes.CDLL('/usr/lib/libSystem.B.dylib', use_errno=True)
+    probe = library.statfs
+    probe.argtypes = [ctypes.c_char_p, ctypes.POINTER(Statfs)]
+    probe.restype = ctypes.c_int
+    value = Statfs()
+    if probe(os.fsencode(path), ctypes.byref(value)) != 0:
+        raise OSError(ctypes.get_errno(), 'Cannot inspect native mount')
+    return Path(os.fsdecode(value.mount))
+
+def is_mounted_volume(path):
+    if path.is_mount():
+        return True
+    if platform.system() != 'Darwin' or platform.machine() != 'arm64':
+        return False
+    try:
+        return path.is_dir() and native_mountpoint(path) == path
+    except (OSError, ValueError, AttributeError):
+        return False
+
 def storage_volume(path):
     require(platform.system() == 'Darwin' and platform.machine() == 'arm64', 'Preparation requires macOS on Apple Silicon')
     path = no_links(path)
@@ -163,7 +197,7 @@ def storage_volume(path):
     require(type(info.get('Internal')) is bool and info.get('WritableVolume') is True
             and isinstance(info.get('VolumeUUID'), str) and info['VolumeUUID']
             and info.get('FilesystemType') == 'apfs', 'A writable local APFS volume is required')
-    require(mount.is_mount() and existing.stat().st_dev == mount.stat().st_dev,
+    require(is_mounted_volume(mount) and existing.stat().st_dev == mount.stat().st_dev,
             'Reported volume differs from selected storage')
     require(path not in (mount, Path('/')), 'Select a directory within the volume, not its root')
     # A stale/missing /Volumes/NAME directory can live on the internal Data
@@ -181,7 +215,7 @@ def storage_volume(path):
 def check_volume(path, volume):
     """Cheap in-operation checks; UUIDs are rebound/validated at command entry."""
     mount = Path(volume['mount'])
-    require(mount.is_mount() and mount.stat().st_dev == volume['device'], 'Storage volume disconnected or replaced')
+    require(is_mounted_volume(mount) and mount.stat().st_dev == volume['device'], 'Storage volume disconnected or replaced')
     path = no_links(path)
     existing = next(p for p in (path, *path.parents) if p.exists())
     require(existing.stat().st_dev == volume['device'], 'Storage escaped the selected volume')

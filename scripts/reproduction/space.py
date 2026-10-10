@@ -86,7 +86,9 @@ def report(storage, state, target='all', build_plan=None, donor_path=None, docke
             docker_volume = selected['volume']
             requests.append(('docker', selected['disk'], docker_volume, 2*GIB, 60*GIB))
             docker_status = {'status':'CHECKED', 'path':str(selected['disk']), 'volumeUUID':docker_volume['uuid']}
-        except (LabError, OSError):
+        except LabError as error:
+            docker_status = {'status':'BLOCKED', 'reason':str(error)[:1000]}
+        except OSError:
             docker_status = {'status':'BLOCKED', 'reason':'Cannot verify active local Docker storage; check Engine, disk and permissions'}
     pools = capacity_report(requests)
     compatibility = chain.storage_compatibility(storage, plan, docker_volume) if storage.profile == 'developer' and target == 'all' else None

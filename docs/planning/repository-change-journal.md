@@ -14,6 +14,29 @@ records public input activation for the one-run launcher. Earlier
 local-only entries below retain their original checkpoint state; source
 publication does not constitute retroactive build or test evidence.
 
+### 2026 October 10 Autonomous launcher qualification started
+
+The owner authorized a complete README launcher walkthrough, defect correction,
+commit/push to main and cleanup of this test's outputs before the owner's manual
+repeat. This is the developer build-only route through a signed DMG, not demo
+installation, Cloud provisioning or runtime qualification. Use isolated test
+storage on the selected SSD and preserve shared Docker, unrelated containers,
+credentials, original source repositories and published input archives.
+
+The first real failure was the generic Python mount heuristic rejecting the
+system APFS Data volume: mount and parent can share a device number through
+firmlinks. The read-only native `statfs` prototype correctly identified the
+Data and external volumes. The canonical checks now use that kernel mount
+identity when the generic heuristic fails, retaining device, UUID, path and
+capacity checks. Docker inspection reports its actual bounded cause rather
+than mislabelling every failure as insufficient capacity. The targeted suites
+passed 237 reproduction tests and 22 workflow tests.
+
+Real capacity checks now pass on both disks. The historical components producer
+still rejects separate Docker storage; a successor plan must pin the corrected
+committed owner rather than edit historical pins or move shared Docker. The
+end-to-end run and cleanup are not yet complete.
+
 ### 2026 October 10 Public test access activation
 
 After disclosure of the remaining Unreal/Apple/SDK licensing questions, the

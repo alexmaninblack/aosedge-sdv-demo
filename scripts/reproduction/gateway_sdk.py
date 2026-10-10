@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 import shutil
 
-from .core import require, regular, no_links, storage_volume, atomic_json, GIB
+from .core import require, regular, no_links, storage_volume, check_volume, atomic_json, GIB
 from .artifacts import sha256
 from .cloud import inventory
 
@@ -40,7 +40,7 @@ def freeze(carla, openssl, output):
     output.mkdir(mode=0o700)
     rows = []
     for name, source in selected:
-        require(Path(volume['mount']).is_mount() and output.stat().st_dev == volume['device'], 'SDK volume disconnected')
+        check_volume(output, volume)
         before = source.stat()
         value = sha256(source)
         target = output / name
