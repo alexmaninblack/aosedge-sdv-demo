@@ -6,8 +6,8 @@
 The original source-built `1.2.0-rc.1` DMG exposed a backend build-file permission
 defect after successful M1 installation and VM password enrollment. The defect
 is corrected in source; rebuilt r5 media has now passed a separate fresh M1
-installation and backend-image preparation. Its live staging journey is in
-progress and **not complete**. Earlier Kit028 results do not qualify either
+installation and backend-image preparation. Its live staging journey is paused
+at first VM-password enrollment and **not complete**. Earlier Kit028 results do not qualify either
 candidate. Candidate identities and recovery evidence are separated below.
 
 ## Candidate and target
@@ -150,6 +150,23 @@ test for either candidate.
 
 The corrected candidate's fresh full scripted journey started after that
 retirement. Its separate records, not the cleanup recovery, establish results.
+Installation binding, Docker readiness, prepared backend images, existing Cloud
+pair/access, exact Subject references and Presenter startup passed. Create
+manufactured one new Test, then the native VM-access dialog expired after its
+180-second input budget. No VM access was enrolled, no Cloud Unit was created
+and no component/service was published for this new Test.
+
+Read-only reconciliation confirmed the completed local manufacture, partial
+`start-test` phase with `VM_ACCESS_CANCELLED_OR_DIALOG_UNAVAILABLE`, and an idle
+Presenter with no uncertain external operation. The harness again lacked the
+new Test binding for its automatic shutdown; after exact-identity reconciliation,
+normal shutdown passed in 12.56 seconds. Its explicit process/listener checks
+passed, while Docker Engine and persistent Test/installation data remained.
+The Screen Sharing connection used for the check was closed. Current scripted
+results are eight passes (including shutdown), one incomplete Create and 89
+steps not run. Resume this same retained Test after native password entry; do
+not manufacture another Test, reuse the old candidate's enrollment or treat
+this paused sequence as full E2E acceptance.
 
 The runner classified the incomplete Create as uncertain and its automatic
 cleanup could not bind the partially created Test (`TEST_IDENTITY_CHANGED`).
