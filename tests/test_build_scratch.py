@@ -103,6 +103,18 @@ class ScratchTests(unittest.TestCase):
                 if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
                     self.assertNotIn(node.func.attr, ('mkdtemp', 'TemporaryDirectory'), str(path))
 
+    def test_active_launcher_selects_committed_scratch_aware_producers(self):
+        tree = ast.parse((ROOT/'scripts/developer_build.py').read_text())
+        selected = next(ast.literal_eval(node.value) for node in tree.body
+            if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == 'PLAN' for t in node.targets))
+        plan = json.loads((ROOT/selected).read_bytes())
+        self.assertEqual(len(plan['steps']), 17)
+        self.assertEqual(plan['resultPolicy'], 'seal-developer-results-v1')
+        for revision in set(plan['producers'].values()):
+            result = subprocess.run(['git', '-C', str(ROOT), 'show',
+                revision+':scripts/distribution/build_scratch.py'], capture_output=True, check=True)
+            self.assertIn(scratch.MARKER.encode(), result.stdout)
+
     def test_busy_abandoned_run_is_preserved(self):
         with scratch.directory(self.anchor) as active:
             metadata = active.parent/'.run.json'

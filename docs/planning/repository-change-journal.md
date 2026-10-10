@@ -41,7 +41,13 @@ owner's request; 14.63 GiB was reclaimed and compact private receipts retained.
 Validation uses small offline fixtures, including success, failure, cancellation,
 hard-crash recovery, active/unknown owners, links, changed roots and DMG error
 staging. No product build, download, signing, installation or runtime launch is
-part of this change's checks. The prior complete DMG proof below remains evidence
+part of this change's checks. The checks passed: 13 scratch lifecycle/activation tests,
+31 standalone-launcher tests, 38 catalog/workflow tests, 250 reproduction tests
+and 319 distribution tests (one opt-in installed-process test skipped), plus
+shell syntax, embedded-helper synchronization and the documentation gate.
+The public `r4` plan selects committed owner `804a582` for all six producer roles;
+the seventeen-step order, component/input locks and result-sealing policy remain
+unchanged. Historical plans are preserved. The prior complete DMG proof below remains evidence
 for its original source revision, not a claimed full build of this revision.
 
 ### 2026 October 10 Autonomous launcher qualification

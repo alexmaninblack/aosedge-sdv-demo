@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 2,
+  "productVersion": "1.2.0-rc.1",
+  "baseDefinitionSha256": "cdfec741dc784774a1bcbe57c536a65e9d8c4a2077a68ad8b97104eabd7c2598",
+  "repository": "https://github.com/alexmaninblack/aosedge-sdv-demo.git",
+  "producers": {
+    "components": "804a582aa608edac669cc5c2a3719ebc948f64a1",
+    "preparation": "804a582aa608edac669cc5c2a3719ebc948f64a1",
+    "host": "804a582aa608edac669cc5c2a3719ebc948f64a1",
+    "inputs": "804a582aa608edac669cc5c2a3719ebc948f64a1",
+    "application": "804a582aa608edac669cc5c2a3719ebc948f64a1",
+    "media": "804a582aa608edac669cc5c2a3719ebc948f64a1"
+  },
+  "steps": [
+    {
+      "id": "presenter",
+      "target": "presenter",
+      "producer": "components",
+      "python": "ui",
+      "requires": []
+    },
+    {
+      "id": "cloud-sdk",
+      "target": "cloud-sdk",
+      "producer": "components",
+      "python": "build",
+      "requires": []
+    },
+    {
+      "id": "brake-backend",
+      "target": "brake-backend",
+      "producer": "components",
+      "python": "build",
+      "requires": []
+    },
+    {
+      "id": "tire-backend",
+      "target": "tire-backend",
+      "producer": "components",
+      "python": "build",
+      "requires": []
+    },
+    {
+      "id": "backend-export",
+      "target": "backend-export",
+      "producer": "components",
+      "python": "build",
+      "requires": [
+        "brake-backend",
+        "tire-backend"
+      ]
+    },
+    {
+      "id": "brake-v1",
+      "target": "brake-service",
+      "functionalProfile": "v1",
+      "producer": "components",
+      "python": "build",
+      "requires": []
+    },
+    {
+      "id": "brake-v2",
+      "target": "brake-service",
+      "functionalProfile": "v2",
+      "producer": "components",
+      "python": "build",
+      "requires": []
+    },
+    {
+      "id": "brake-v3",
+      "target": "brake-service",
+      "functionalProfile": "v3",
+      "producer": "components",
+      "python": "build",
+      "requires": []
+    },
+    {
+      "id": "tire-v1",
+      "target": "tire-service",
+      "functionalProfile": "v1",
+      "producer": "components",
+      "python": "build",
+      "requires": []
+    },
+    {
+      "id": "gateway",
+      "target": "gateway",
+      "producer": "components",
+      "python": "build",
+      "requires": []
+    },
+    {
+      "id": "preparation",
+      "target": "preparation",
+      "producer": "preparation",
+      "python": "build",
+      "requires": [
+        "brake-v1",
+        "brake-v2",
+        "brake-v3",
+        "tire-v1"
+      ]
+    },
+    {
+      "id": "host-runtime",
+      "target": "host-runtime",
+      "producer": "host",
+      "python": "build",
+      "requires": [
+        "presenter",
+        "gateway"
+      ]
+    },
+    {
+      "id": "backend-inputs",
+      "target": "backend-inputs",
+      "producer": "inputs",
+      "python": "build",
+      "requires": [
+        "backend-export"
+      ]
+    },
+    {
+      "id": "vm-runtime",
+      "target": "vm-runtime",
+      "producer": "application",
+      "python": "build",
+      "requires": [
+        "host-runtime",
+        "preparation"
+      ]
+    },
+    {
+      "id": "application",
+      "target": "application",
+      "producer": "application",
+      "python": "build",
+      "requires": [
+        "host-runtime",
+        "preparation",
+        "cloud-sdk",
+        "backend-inputs",
+        "vm-runtime"
+      ]
+    },
+    {
+      "id": "setup",
+      "target": "setup",
+      "producer": "media",
+      "python": "build",
+      "requires": [
+        "application"
+      ]
+    },
+    {
+      "id": "dmg",
+      "target": "dmg",
+      "producer": "media",
+      "python": "build",
+      "requires": [
+        "setup",
+        "application"
+      ]
+    }
+  ],
+  "resultPolicy": "seal-developer-results-v1"
+}

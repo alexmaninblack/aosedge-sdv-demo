@@ -18,7 +18,7 @@ from developer_catalog import source_check, CatalogError
 from reproduction.core import LabError
 
 ROOT = Path(__file__).resolve().parents[1]
-PLAN = 'workspace/releases/1.2.0-rc.1-public-build-chain-r3.json'
+PLAN = 'workspace/releases/1.2.0-rc.1-public-build-chain-r4.json'
 
 
 class OwnerOutput(io.TextIOBase):

@@ -238,7 +238,9 @@ class SpaceTests(StorageFixture, unittest.TestCase):
     def test_unreviewed_plan_cannot_reuse_capacity_claim(self):
         self.fixture(); original = space.chain.read_plan(self.release)
         changed = copy.deepcopy(original); changed['producers']['media'] = 'f'*40
-        with patch.object(space.chain, 'read_plan', side_effect=[changed,original,original,original,original,original]):
+        def selected(release, path=None):
+            return changed if path == Path('different.json') else original
+        with patch.object(space.chain, 'read_plan', side_effect=selected):
             with self.assertRaisesRegex(core.LabError, 'reviewed producer'):
                 space.report(self.storage, self.state, build_plan=Path('different.json'))
 

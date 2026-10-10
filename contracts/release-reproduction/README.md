@@ -744,6 +744,11 @@ The public launcher selects the schema-2 successor plan described above instead
 of the historical output-pin route. Both routes keep the same owner ordering,
 source isolation, result verification and failure preservation rules.
 
+The public `r4` plan selects the committed scratch-aware owner for every producer
+role, retaining all seventeen steps and the same source/input pins. This activates
+the temporary-storage amendment in actual worker checkouts, not only in the
+launcher's current source. Historical `r1`–`r3` plans remain unchanged.
+
 The complete chain requires explicit retained kit/SDK inputs on the bound volume,
 declared build tools, a short same-volume test directory and an authorized signing
 fingerprint. It retains the per-owner guards and preflights 76 GiB additional
